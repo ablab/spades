@@ -216,10 +216,12 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
 	PathExtendResolver resolver(gp.g);
 	auto seeds = resolver.makeSimpleSeeds();
 
-	ExtensionChooser * longReadEC = new LongReadsExtensionChooser(gp.g, true_paths, RL_true_paths);
+	ExtensionChooser * longReadEC = new LongReadsExtensionChooser(gp.g, true_paths,
+			cfg::get().pe_params.long_reads.filtering, cfg::get().pe_params.long_reads.priority);
 	INFO("Long Reads supporting contigs " << true_paths.size());
 	SimplePathExtender * longReadPathExtender = new SimplePathExtender(gp.g, pset.loop_removal.max_loops, longReadEC, false);
-	ExtensionChooser * pdEC = new LongReadsExtensionChooser(gp.g, supportingContigs, RL_true_paths);
+	ExtensionChooser * pdEC = new LongReadsExtensionChooser(gp.g, supportingContigs,
+			cfg::get().pe_params.long_reads.filtering, cfg::get().pe_params.long_reads.priority);
 	SimplePathExtender * pdPE = new SimplePathExtender(gp.g, pset.loop_removal.max_loops, pdEC, false);
 	vector<SimplePathExtender *> shortLoopPEs = make_extenders(gp, pset, libs, true);
 
@@ -303,14 +305,14 @@ void set_threshold(PairedInfoLibrary* lib, size_t index, size_t split_edge_lengt
 }
 
 void find_new_threshold(conj_graph_pack& gp, PairedInfoLibrary* lib, size_t index, size_t split_edge_length){
-	//SplitGraphPairInfo splitGraph(gp, *lib, index, 99);
-	//INFO("Calculating paired info threshold");
-	//splitGraph.ProcessReadPairs();
-	//double threshold = splitGraph.FindThreshold(split_edge_length, lib->insert_size_ - 2 * lib->is_variation_, lib->insert_size_ + 2 * lib->is_variation_);
-	//lib->SetSingleThreshold(threshold);
-	double tr = *cfg::get().pe_params.param_set.extension_options.select_options.single_threshold;
-	INFO("threshold taken from config - "  << tr);
-	lib->SetSingleThreshold(tr);
+	SplitGraphPairInfo splitGraph(gp, *lib, index, 99);
+	INFO("Calculating paired info threshold");
+	splitGraph.ProcessReadPairs();
+	double threshold = splitGraph.FindThreshold(split_edge_length, lib->insert_size_ - 2 * lib->is_variation_, lib->insert_size_ + 2 * lib->is_variation_);
+	lib->SetSingleThreshold(threshold);
+	//double tr = *cfg::get().pe_params.param_set.extension_options.select_options.single_threshold;
+	//INFO("threshold taken from config - "  << tr);
+	//lib->SetSingleThreshold(tr);
 
 }
 

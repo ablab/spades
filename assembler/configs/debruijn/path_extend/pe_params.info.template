@@ -3,7 +3,6 @@
 debug_output			    false
 
 output {
-	write_seeds             true
 	write_overlaped_paths   true
 	write_paths             true
 	write_path_loc		    true
@@ -11,27 +10,10 @@ output {
 
 
 visualize {
-        print_seeds  		    true
         print_overlaped_paths 	true
         print_paths 		    true
 }
 
-
-research {
-	on		    false
-	
-	count_seed_weight   true
-	count_path_weight   true
-
-	fiter_seeds_by_id   true
-	seed_ids {
-		count 0
-		id_0  
-		id_1
-		id_2
-		id_3
-	}
-}
 
 additional_contigs ""
 
@@ -48,24 +30,6 @@ singlecell {
 	metric 			        path_cover
 	normalize_weight        true
 	normalize_by_coverage   false
-	    
-	; seed selection
-	seed_selection
-	{
-	    min_coverage   		    0
-	    start_egde_coverage 	0
-	    max_cycles     		    1
-
-	    exclude_chimeric  false
-        chimeric_delta    10
-	    min_len           0
-        max_len           -1 ; -a = a * K
-	    check_trusted     true
-
-	    read_count_trusted_threshold 2
-	    path_cover_trusted_threshold 0.6
-	    
-	}
 	
 	; extension selection
 	extension_options
@@ -146,22 +110,6 @@ multicell {
 	normalize_weight        false
 	normalize_by_coverage   false
 	    
-	; seed selection
-	seed_selection
-	{
-	    min_coverage   		        0
-	    start_egde_coverage         0
-	    max_cycles     		        1
-
-	    exclude_chimeric  false
-        chimeric_delta    10
-        min_len           0
-        max_len           -1 ; -a = a * K
-	    check_trusted     true
-
-	    read_count_trusted_threshold 0.3
-	    path_cover_trusted_threshold 0.5
-	}
 	
 	; extension selection
 	extension_options
@@ -230,4 +178,10 @@ multicell {
 	{
 	    remove_overlaps     true
 	}
+}
+
+
+long_reads {
+	filtering 1.5
+	priority 4.0
 }

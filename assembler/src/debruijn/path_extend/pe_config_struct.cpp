@@ -15,7 +15,6 @@ void load(output_broken_scaffolds& obs, boost::property_tree::ptree const& pt, s
 void load(pe_config::OutputParamsT& o, boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
 
-  load(o.write_seeds,             pt, "write_seeds"           );
   load(o.write_overlaped_paths,   pt, "write_overlaped_paths" );
   load(o.write_paths,             pt, "write_paths"           );
   load(o.write_path_loc,          pt, "write_path_loc"        );
@@ -23,7 +22,6 @@ void load(pe_config::OutputParamsT& o, boost::property_tree::ptree const& pt, bo
 
 void load(pe_config::VisualizeParamsT& o, boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
-  load(o.print_seeds,             pt, "print_seeds"           );
   load(o.print_overlaped_paths,   pt, "print_overlaped_paths" );
   load(o.print_paths,             pt, "print_paths"           );
 }
@@ -65,20 +63,6 @@ void load(pe_config::DatasetT& ds, boost::property_tree::ptree const& pt, bool /
   //load(ds.libs,       pt,     "libs" );
 }
 
-
-void load(pe_config::ParamSetT::SeedSelectionT& ss, boost::property_tree::ptree const& pt, bool /*complete*/)
-{
-  using config_common::load;
-
-  load(ss.min_coverage       , pt, "min_coverage"     );
-  load(ss.start_egde_coverage, pt, "start_egde_coverage");
-  load(ss.max_cycles         , pt, "max_cycles"       );
-  load(ss.exclude_chimeric   , pt, "exclude_chimeric");
-  //load(ss.chimeric_delta     , pt, "chimeric_delta"    );
-
-  load(ss.check_trusted      , pt, "check_trusted"    );
-  load(ss.threshold          , pt, (ss.metric + "_trusted_threshold").c_str());
-}
 
 void load(pe_config::ParamSetT::ExtensionOptionsT::SelectOptionsT& so, boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
@@ -144,16 +128,21 @@ void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool /
 
   load(p.split_edge_length, pt, "split_edge_length");
 
-  p.seed_selection.metric = p.metric;
   p.extension_options.metric = p.metric;
   p.mate_pair_options.metric = "path_cover";
 
-  load(p.seed_selection,    pt, "seed_selection");
   load(p.extension_options, pt, "extension_options");
   load(p.mate_pair_options, pt, "mate_pair_options");
   load(p.scaffolder_options, pt, "scaffolder");
   load(p.loop_removal,      pt, "loop_removal");
   load(p.filter_options,    pt, "filter_options");
+}
+
+void load(pe_config::LongReads& p, boost::property_tree::ptree const& pt, bool /*complete*/) {
+
+  using config_common::load;
+  load(p.filtering, pt, "filtering");
+  load(p.priority, pt, "priority");
 }
 
 void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt, bool /*complete*/) {
@@ -165,6 +154,7 @@ void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt, bo
   load(p.viz         , pt,  "visualize");
   load(p.param_set   , pt,  p.name.c_str()   );
   load(p.obs         , pt,  "output_broken_scaffolds");
+  load(p.long_reads, pt, "long_reads");
 
 
   if (!p.debug_output) {

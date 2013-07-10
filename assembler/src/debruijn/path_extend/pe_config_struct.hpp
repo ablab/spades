@@ -87,13 +87,11 @@ struct pe_config {
   };
 
   struct OutputParamsT {
-    bool write_seeds;
     bool write_overlaped_paths;
     bool write_paths;
     bool write_path_loc;
 
     void DisableAll() {
-      write_seeds = false;
       write_overlaped_paths = false;
       write_paths = false;
       write_path_loc = false;
@@ -101,25 +99,13 @@ struct pe_config {
   };
 
   struct VisualizeParamsT {
-    bool print_seeds;
     bool print_overlaped_paths;
     bool print_paths;
 
     void DisableAll() {
-      print_seeds = false;
       print_overlaped_paths = false;
       print_paths = false;
     }
-  };
-
-  struct ResearchT {
-    bool on;
-
-    bool count_seed_weight;
-    bool count_path_weight;
-
-    bool fiter_seeds_by_id;
-    std::vector<size_t> seed_ids;
   };
 
   struct ParamSetT {
@@ -130,21 +116,6 @@ struct pe_config {
     bool improve_paired_info;
 
     size_t split_edge_length;
-
-    struct SeedSelectionT {
-      std::string metric;
-
-      double min_coverage;
-      double start_egde_coverage;
-      size_t max_cycles;
-
-      bool exclude_chimeric;
-      //int chimeric_delta;
-
-      bool check_trusted;
-      double threshold;
-    } seed_selection;
-
 
     struct ExtensionOptionsT {
       std::string metric;
@@ -209,6 +180,11 @@ struct pe_config {
     size_t dev;
   };
 
+  struct LongReads {
+	  double filtering;
+	  double priority;
+  };
+
   struct MainPEParamsT {
     std::string name;
 
@@ -222,11 +198,14 @@ struct pe_config {
     OutputParamsT output;
     VisualizeParamsT viz;
     ParamSetT param_set;
+    LongReads long_reads;
   } params;
 
   std::string dataset_name;
   DatasetT dataset;
 };
+
+
 
 void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt, bool complete);
 void load(pe_config& pe_cfg, boost::property_tree::ptree const& pt, bool complete);

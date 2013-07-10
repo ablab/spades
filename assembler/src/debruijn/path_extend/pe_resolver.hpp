@@ -328,177 +328,15 @@ public:
 };
 
 
-// Old one
-
-class OverlapRemover {
-
-protected:
-    Graph& g;
-
-    GraphCoverageMap& coverageMap;
-
-    std::set<EdgeId> multiCoveredEdges;
-
-
-    void findPathPairs(BidirectionalPath& sample, std::vector<BidirectionalPath*> * ending, std::vector<BidirectionalPath*> * starting) {
-        starting->clear();
-        ending->clear();
-
-        if (coverageMap.GetCoverage(sample) <= 1) {
-            return;
-        }
-
-        auto coveringPaths = coverageMap.GetCoveringPaths(sample);
-        for (auto iter = coveringPaths.begin(); iter != coveringPaths.end(); ++iter) {
-            if ((*iter)->StartsWith(sample)) {
-                starting->push_back(*iter);
-            }
-            else if ((*iter)->EndsWith(sample)) {
-                ending->push_back(*iter);
-            }
-        }
-    }
-
-    void cropOverlaps(std::vector<BidirectionalPath*> * ending, std::vector<BidirectionalPath*> * starting, size_t length) {
-        if (ending->size() <= starting->size()) {
-            for (auto iter = ending->begin(); iter != ending->end(); ++iter) {
-                for (size_t i = 0; i < length; ++i) {
-                    if ((*iter)->Back() != g.conjugate((*iter)->Back())) {
-                        (*iter)->PopBack();
-                    }
-                }
-            }
-        }
-        //Removing overlaps from starting paths will be performed at RC strand
-    }
-
-
-    void JoinByOverlaps(BidirectionalPath * ending, BidirectionalPath * starting, size_t length) {
-        for (size_t i = length; i < starting->Size(); ++i) {
-            ending->PushBack(starting->At(i), starting->GapAt(i));
-        }
-
-        starting->Clear();
-    }
-
-
-    void removeOverlapsOfLength(PathContainer& paths, size_t length) {
-        std::vector<BidirectionalPath*> ending;
-        std::vector<BidirectionalPath*> starting;
-
-        for (auto iter = multiCoveredEdges.begin(); iter != multiCoveredEdges.end(); ++iter) {
-            auto coveringPaths = coverageMap.GetCoveringPaths(*iter);
-
-            for (auto pathIter = coveringPaths.begin(); pathIter != coveringPaths.end(); ++pathIter) {
-                if ((*pathIter)->Size() > length && (*pathIter)->At(length - 1) == *iter) {
-                    BidirectionalPath sample = (*pathIter)->SubPath(0, length);
-                    findPathPairs(sample, &starting, &ending);
-                    cropOverlaps(&starting, &ending, length);
-                }
-
-                if ((*pathIter)->Size() > length && (*pathIter)->ReverseAt(length - 1) == *iter) {
-                    BidirectionalPath sample = (*pathIter)->SubPath((*pathIter)->Size() - length);
-                    findPathPairs(sample, &starting, &ending);
-                    cropOverlaps(&starting, &ending, length);
-                }
-            }
-        }
-    }
-
-    void updateMultiCoveredEdges() {
-        for (auto iter = multiCoveredEdges.begin(); iter != multiCoveredEdges.end(); ) {
-            auto next = iter;
-            ++next;
-            if (coverageMap.GetCoverage(*iter) <= 1) {
-                multiCoveredEdges.erase(iter);
-            }
-            iter = next;
-        }
-    }
-
-
-public:
-    OverlapRemover(Graph& g_, GraphCoverageMap& cm): g(g_), coverageMap(cm), multiCoveredEdges() {
-        for (auto iter = g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-            if (coverageMap.GetCoverage(*iter) > 1) {
-                multiCoveredEdges.insert(*iter);
-            }
-        }
-    }
-
-    void removeOverlaps(PathContainer& paths) {
-        if (paths.size() == 0) {
-            return;
-        }
-
-        size_t maxLen = paths.Get(0)->Size();
-        for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-            if (iter.get()->Size() > maxLen) {
-                maxLen = iter.get()->Size();
-            }
-        }
-
-        for (size_t i = 1; i < maxLen; ++i) {
-            removeOverlapsOfLength(paths, i);
-            updateMultiCoveredEdges();
-        }
-    }
-
-};
-
-
 class PathExtendResolver {
 
 protected:
     Graph& g_;
     size_t k_;
 
-    bool isEdgeSuitable(EdgeId e, double minEdgeCoverage = 0.0) {
-//        int len = g.length(e);
-//
-//        int max_len = (int) cfg::get().K; /*cfg::get().pe_params.param_set.seed_selection.max_len >= 0 ?
-//                cfg::get().pe_params.param_set.seed_selection.max_len :
-//                -cfg::get().pe_params.param_set.seed_selection.max_len * (int) cfg::get().K;*/
-
-        return math::ge(g_.coverage(e), minEdgeCoverage) &&
-                !(cfg::get().pe_params.param_set.seed_selection.exclude_chimeric /*&& len >= cfg::get().pe_params.param_set.seed_selection.min_len && len <= max_len*/);
-    }
-
 public:
     PathExtendResolver(Graph& g): g_(g), k_(g.k()) {
     }
-
-    PathContainer ReturnEdges(double minEdgeCoverage){
-        std::set<EdgeId> included;
-        PathContainer edges;
-        size_t count = 0;
-        for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-            if (included.count(*iter) == 0 && isEdgeSuitable(*iter, minEdgeCoverage)) {
-                count ++;
-                edges.AddPair(new BidirectionalPath(g_, *iter), new BidirectionalPath(g_, g_.conjugate(*iter)));
-                included.insert(*iter);
-                included.insert(g_.conjugate(*iter));
-            }
-        }
-        return edges;
-    }
-
-    PathContainer returnFilteredEdges(double minEdgeCoverage){
-		std::set<EdgeId> included;
-		PathContainer edges;
-		size_t count = 0;
-		for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-			if (included.count(*iter) == 0 && isEdgeSuitable(*iter, minEdgeCoverage)) {
-				count ++;
-				if (!InCycle(*iter) and !InBuble(*iter)) {
-					edges.AddPair(new BidirectionalPath(g_, *iter), new BidirectionalPath(g_, g_.conjugate(*iter)));
-					included.insert(*iter);
-					included.insert(g_.conjugate(*iter));
-				}
-			}
-		}
-		return edges;
-	}
 
     bool InCycle(EdgeId e)
     {
@@ -524,12 +362,6 @@ public:
     	return false;
     }
 
-    PathContainer makeSeeds(PathExtender& seedExtender, double minEdgeCoverage = 0.0) {
-    	PathContainer edges = returnFilteredEdges(minEdgeCoverage);
-        PathContainer seeds;
-        seedExtender.GrowAll(edges, &seeds);
-        return seeds;
-    }
 
     PathContainer makeSimpleSeeds() {
 		std::set<EdgeId> included;
