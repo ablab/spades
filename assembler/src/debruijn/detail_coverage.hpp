@@ -73,8 +73,8 @@ namespace debruijn_graph {
 
 			for (unsigned i = 0; i < size_bound; ++i) {
 				runtime_k::RtSeq kmer_out;
-				for ( unsigned j = len-K_-i; j >= 0 && j < len - i; ++j) {
-
+				for ( unsigned j = len-K_-i; j < len - i; ++j) {
+							
 					kmer_out <<= seq[j];
 				}
 
