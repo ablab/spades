@@ -162,7 +162,7 @@ public:
 class LoopDetector: public PathListener {
 
 protected:
-    Graph& g_;
+    const Graph& g_;
 
     size_t currentIteration_;
 
@@ -173,7 +173,7 @@ protected:
     BidirectionalPath * path_;
 
 public:
-    LoopDetector(Graph& g_, BidirectionalPath * p_);
+    LoopDetector(const Graph& g_, BidirectionalPath * p_);
 
     void Clear();
 
@@ -235,7 +235,7 @@ public:
 class BidirectionalPath: public PathListener {
 
 protected:
-	Graph& g_;
+	const Graph& g_;
 
 	//Unique ID
 	size_t id_;
@@ -391,7 +391,7 @@ public:
         listeners_.push_back(listener);
     }
 
-    BidirectionalPath(Graph& g): g_(g), data_(), cumulativeLength_(), gapLength_(), totalLength_(0), loopDetector_(g_, this), seedCoords_(), listeners_(){
+    BidirectionalPath(const Graph& g): g_(g), data_(), cumulativeLength_(), gapLength_(), totalLength_(0), loopDetector_(g_, this), seedCoords_(), listeners_(){
 	    Subscribe(&loopDetector_);
 	    Subscribe(&seedCoords_);
 	    overlaped_begin.clear();
@@ -400,7 +400,7 @@ public:
 	    weight = 1;
 	}
 
-	BidirectionalPath(Graph& g, std::vector < EdgeId > path): g_(g), data_(), cumulativeLength_(), gapLength_(), totalLength_(0), loopDetector_(g_, this), seedCoords_(), listeners_() {
+	BidirectionalPath(const Graph& g, std::vector < EdgeId > path): g_(g), data_(), cumulativeLength_(), gapLength_(), totalLength_(0), loopDetector_(g_, this), seedCoords_(), listeners_() {
 
 		Subscribe(&loopDetector_);
 		Subscribe(&seedCoords_);
@@ -571,7 +571,7 @@ public:
 	    return data_.size();
 	}
 
-	Graph& graph() const {
+	const Graph& graph() const {
 	    return g_;
 	}
 
@@ -687,7 +687,7 @@ public:
 	    id_ = uid;
 	}
 
-    BidirectionalPath(Graph& g_, EdgeId startingEdge): g_(g_), data_(), cumulativeLength_(), gapLength_(), totalLength_(0), loopDetector_(g_, this), seedCoords_(0, 0), listeners_() {
+    BidirectionalPath(const Graph& g_, EdgeId startingEdge): g_(g_), data_(), cumulativeLength_(), gapLength_(), totalLength_(0), loopDetector_(g_, this), seedCoords_(0, 0), listeners_() {
         Subscribe(&loopDetector_);
         Subscribe(&seedCoords_);
         overlap = false;
@@ -1062,7 +1062,7 @@ public:
 
 
 
-LoopDetector::LoopDetector(Graph& g_, BidirectionalPath * p_): g_(g_), currentIteration_(0), data_(), path_(p_) {
+LoopDetector::LoopDetector(const Graph& g_, BidirectionalPath * p_): g_(g_), currentIteration_(0), data_(), path_(p_) {
     current_ = new LoopDetectorData(currentIteration_);
 }
 

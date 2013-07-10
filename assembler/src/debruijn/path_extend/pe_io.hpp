@@ -24,7 +24,7 @@ using namespace debruijn_graph;
 class ContigWriter {
 
 protected:
-	Graph& g_;
+	const Graph& g_;
     size_t k_;
 
 
@@ -69,7 +69,7 @@ protected:
 
 
 public:
-    ContigWriter(Graph& g): g_(g), k_(g.k()){
+    ContigWriter(const Graph& g): g_(g), k_(g.k()){
 
     }
 

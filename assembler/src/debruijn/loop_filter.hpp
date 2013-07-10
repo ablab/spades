@@ -13,7 +13,7 @@ namespace debruijn_graph {
 	template <class GraphPack, class DetailedCoverage>
 	struct LoopFilter {
 
-		GraphPack* graph_p;
+		const GraphPack& graph_p;
 		DetailedCoverage* coverage;
 		std::vector<VertexId> order;
 		std::set<VertexId> usedVertices;
@@ -27,18 +27,19 @@ namespace debruijn_graph {
 		const double ratio_upper_threshold_;
 		const double repeat_length_upper_threshold_;
 
-		LoopFilter ( GraphPack& g, DetailedCoverage& index, double ratio_lower_threshold, double ratio_upper_threshold, double repeat_length_upper_threshold ):
+		LoopFilter ( const GraphPack& g, DetailedCoverage& index, double ratio_lower_threshold, double ratio_upper_threshold, double repeat_length_upper_threshold ):
+
+													graph_p(g),
 													ratio_lower_threshold_(ratio_lower_threshold),
 													ratio_upper_threshold_(ratio_upper_threshold),
 													repeat_length_upper_threshold_(repeat_length_upper_threshold) {
 	
-			graph_p = &g;
 			coverage = &index;
 		}
 
 		void get_loopy_components( EdgeQuality<typename GraphPack::graph_t>& quality_labeler ) {
 
-			for ( auto v = graph_p->g.begin(); v != graph_p->g.end(); ++v ) {
+			for ( auto v = graph_p.g.begin(); v != graph_p.g.end(); ++v ) {
 			
 				if ( usedVertices.find(*v) != usedVertices.end() ) 
 					continue;
@@ -70,7 +71,7 @@ namespace debruijn_graph {
 			for (auto loop = loops.begin(); loop != loops.end(); ++loop ){
 
 				//for (auto v = loop->begin(); v != loop->end(); ++v ) {
-				//	std::cout << graph_p->g.int_id(*v) << "  ";
+				//	std::cout << graph_p.g.int_id(*v) << "  ";
 				//}
 				
 				if (loop->size() == 1) {
@@ -85,7 +86,7 @@ namespace debruijn_graph {
 				if (ifSimple) {
 					simpleLoopsCounter++;
 					std::cout << "simple loop " ;
-					if ( graph_p->g.int_id(incomingEdge) != 0 && graph_p->g.int_id(outgoingEdge) != 0 )
+					if ( graph_p.g.int_id(incomingEdge) != 0 && graph_p.g.int_id(outgoingEdge) != 0 )
 						resolved = resolveSimpleLoop( resolvedLoop, incomingEdge, outgoingEdge );
 				}
 				/*if (!resolved) {
@@ -94,7 +95,7 @@ namespace debruijn_graph {
 				}*/
 				if (resolved) {
 					for (auto e = resolvedLoop.begin(); e != resolvedLoop.end(); ++e ) {
-						L += graph_p->g.length(*e);
+						L += graph_p.g.length(*e);
 					}
 					resolvedLoops.push_back(resolvedLoop);
 					//std::cout << "path: ";
@@ -103,7 +104,7 @@ namespace debruijn_graph {
 					//std::cout << "not path: ";
 				}
 				/*for (auto e = path.begin(); e != path.end(); ++e ) {
-					std::cout <<  graph_p->g.int_id(graph_p->g.EdgeStart(*e)) << ", " << graph_p->g.int_id(graph_p->g.EdgeEnd(*e)) << ", ";
+					std::cout <<  graph_p.g.int_id(graph_p.g.EdgeStart(*e)) << ", " << graph_p.g.int_id(graph_p.g.EdgeEnd(*e)) << ", ";
 				}*/
 
 				std::string str = "";
@@ -111,7 +112,7 @@ namespace debruijn_graph {
 
 				std::cout << str << "resolved ";
 				for (auto e = resolvedLoop.begin(); e != resolvedLoop.end(); ++e ) {
-					std::cout << graph_p->g.int_id(*e) << /*" (cov: " << graph_p->g.coverage(*e) << ",*/" q: (" << quality_labeler.quality(*e) << ") ";
+					std::cout << graph_p.g.int_id(*e) << /*" (cov: " << graph_p.g.coverage(*e) << ",*/" q: (" << quality_labeler.quality(*e) << ") ";
 				}
 				std::cout << std::endl << std::endl;
 			}
@@ -128,8 +129,8 @@ namespace debruijn_graph {
 				
 			bool canBeResolved = true;
 
-			VertexId inVertex = graph_p->g.EdgeEnd( incomingEdge );
-			//VertexId outVertex = graph_p->g.EdgeStart( outgoingEdge );
+			VertexId inVertex = graph_p.g.EdgeEnd( incomingEdge );
+			//VertexId outVertex = graph_p.g.EdgeStart( outgoingEdge );
 			auto inCov = coverage->GetOutCov(incomingEdge);
 			auto outCov = coverage->GetInCov(outgoingEdge);
 			auto cov = (inCov + outCov) / 2.0;	
@@ -140,18 +141,18 @@ namespace debruijn_graph {
 			//INFO("after initialization");
 
 			//INFO("before outgoing edges");
-			auto loopEdge1 = *graph_p->g.OutgoingEdges(inVertex).begin();
+			auto loopEdge1 = *graph_p.g.OutgoingEdges(inVertex).begin();
 
-			VertexId edge1End = graph_p->g.EdgeEnd(loopEdge1);
+			VertexId edge1End = graph_p.g.EdgeEnd(loopEdge1);
 			EdgeId loopEdge2;
-			auto loopEdge2it = graph_p->g.OutgoingEdges(edge1End).begin();
+			auto loopEdge2it = graph_p.g.OutgoingEdges(edge1End).begin();
 			if ( *loopEdge2it == outgoingEdge ) {
 				++loopEdge2it;
 			}
 			loopEdge2 = *loopEdge2it;
 
-			auto cov1 = graph_p->g.coverage(loopEdge1);
-			auto cov2 = graph_p->g.coverage(loopEdge2);
+			auto cov1 = graph_p.g.coverage(loopEdge1);
+			auto cov2 = graph_p.g.coverage(loopEdge2);
 
 			double intpart;
 			//double ratio_lower_threshold_ = 0.3;
@@ -205,16 +206,16 @@ namespace debruijn_graph {
 		
 			for ( auto v = loop.begin(); v != loop.end(); ++v ) {
 
-				//std::cout << "vertex: " << graph_p->g.int_id(*v) << std::endl;
-				auto incomingEdges = graph_p->g.IncomingEdges(*v);
+				//std::cout << "vertex: " << graph_p.g.int_id(*v) << std::endl;
+				auto incomingEdges = graph_p.g.IncomingEdges(*v);
 
 				int prevVerticesInLoop = 0;
 				//if ( incomingEdges.size() > 1 ) {
 		
 					///std::cout << "incoming edges: ";
 					for ( auto e = incomingEdges.begin(); e != incomingEdges.end(); ++e ){
-						///std::cout << graph_p->g.int_id(*e) << " ";
-						auto startVertex = graph_p->g.EdgeStart(*e);
+						///std::cout << graph_p.g.int_id(*e) << " ";
+						auto startVertex = graph_p.g.EdgeStart(*e);
 						
 						// count the number of edges in the loop coming into this vertex	
 						if ( std::find(loop.begin(),loop.end(),startVertex) != loop.end() ){
@@ -241,15 +242,15 @@ namespace debruijn_graph {
 				//}
 
 
-				auto outgoingEdges = graph_p->g.OutgoingEdges(*v);
+				auto outgoingEdges = graph_p.g.OutgoingEdges(*v);
 
 				int nextVerticesInLoop = 0;
 				//if (outgoingEdges.size() > 1 ) {
 					
 					///std::cout << "outgoing edges: " ;
 					for ( auto e = outgoingEdges.begin(); e != outgoingEdges.end(); ++e ){
-						///std::cout << graph_p->g.int_id(*e) << " ";
-						auto endVertex = graph_p->g.EdgeEnd(*e);
+						///std::cout << graph_p.g.int_id(*e) << " ";
+						auto endVertex = graph_p.g.EdgeEnd(*e);
 						// count the number of edges in the loop coming out of the vertex	
 						if ( std::find(loop.begin(), loop.end(), endVertex) != loop.end() ){
 							nextVerticesInLoop += 1;
@@ -280,7 +281,7 @@ namespace debruijn_graph {
 			/*if (ifSimple)
 			for ( auto e = path.begin(); e != path.end(); ++e) {
 				prohibitedEdges.insert(*e);
-				std::cout << graph_p->g.int_id(*e) << "  ";
+				std::cout << graph_p.g.int_id(*e) << "  ";
 			
 			}*/
 			std::cout << std::endl;
@@ -293,11 +294,11 @@ namespace debruijn_graph {
 
 			usedVertices.insert(v);
 
-			for ( auto incidentEdge = graph_p->g.out_begin(v); incidentEdge != graph_p->g.out_end(v); ++incidentEdge ){
+			for ( auto incidentEdge = graph_p.g.out_begin(v); incidentEdge != graph_p.g.out_end(v); ++incidentEdge ){
 	
-				if ( graph_p->g.length(*incidentEdge) > cfg::get().rr.max_repeat_length  ) continue;
+				if ( graph_p.g.length(*incidentEdge) > cfg::get().rr.max_repeat_length  ) continue;
 
-				VertexId vOut = graph_p->g.EdgeEnd(*incidentEdge);
+				VertexId vOut = graph_p.g.EdgeEnd(*incidentEdge);
 				if (usedVertices.find(vOut) != usedVertices.end())
 					continue;
 				dfs1( vOut );
@@ -312,11 +313,11 @@ namespace debruijn_graph {
 			usedVertices.insert( v );
 			loop.push_back( v );
 
-			for ( auto incidentEdge = graph_p->g.in_begin(v); incidentEdge != graph_p->g.in_end(v); ++incidentEdge ) {
+			for ( auto incidentEdge = graph_p.g.in_begin(v); incidentEdge != graph_p.g.in_end(v); ++incidentEdge ) {
 				
-				if ( graph_p->g.length(*incidentEdge) > cfg::get().rr.max_repeat_length  ) continue;
+				if ( graph_p.g.length(*incidentEdge) > cfg::get().rr.max_repeat_length  ) continue;
 
-				VertexId vIn = graph_p->g.EdgeStart(*incidentEdge);
+				VertexId vIn = graph_p.g.EdgeStart(*incidentEdge);
 				if (usedVertices.find(vIn) != usedVertices.end()) 
 					continue;
 				dfs2( vIn, loop );
