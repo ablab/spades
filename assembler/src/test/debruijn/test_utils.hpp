@@ -155,7 +155,7 @@ void AssertGraph(size_t k, const vector<string>& reads, const vector<string>& et
 	RawStream raw_stream(MakeReads(reads));
 	Stream read_stream(raw_stream);
 	Graph g(k);
-	typename graph_pack<Graph, runtime_k::RtSeq>::index_t index(g, k + 1, tmp_folder);
+	graph_pack<Graph, runtime_k::RtSeq>::index_t index(g, k + 1, tmp_folder);
 
 	ConstructGraphFromStream(k, CreateDefaultConstructionConfig(), read_stream, g, index);
 

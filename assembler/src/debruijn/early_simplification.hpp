@@ -9,12 +9,8 @@ namespace debruijn_graph {
 class LinkCleaner {
 private:
 	typedef DeBruijnExtensionIndex<> Index;
-	typedef typename Index::KMer Kmer;
+	typedef Index::KMer Kmer;
 	Index &index_;
-
-//	KmerWithHash CreateKmerWithHash(runtime_k::RtSeq kmer) const {
-//		return KmerWithHash(kmer, index_);
-//	}
 
 	void CleanForwardLinks(KmerWithHash<Kmer> &kh, char i) {
 		if(index_.CheckOutgoing(kh.idx, i)) {
@@ -53,7 +49,7 @@ public:
 class EarlyTipClipper {
 private:
 	typedef DeBruijnExtensionIndex<> Index;
-	typedef typename Index::KMer Kmer;
+	typedef Index::KMer Kmer;
 	Index &index_;
 	size_t length_bound_;
 

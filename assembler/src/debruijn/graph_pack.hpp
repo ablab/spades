@@ -56,7 +56,7 @@ struct graph_pack: private boost::noncopyable {
 
 typedef graph_pack<ConjugateDeBruijnGraph, runtime_k::RtSeq,
         DeBruijnEdgeIndex<KmerFreeDeBruijnEdgeIndex<ConjugateDeBruijnGraph, runtime_k::RtSeq>>> conj_graph_pack;
-typedef typename conj_graph_pack::index_t Index;
+typedef conj_graph_pack::index_t Index;
 typedef graph_pack<NonconjugateDeBruijnGraph, runtime_k::RtSeq,
         DeBruijnEdgeIndex<KmerFreeDeBruijnEdgeIndex<NonconjugateDeBruijnGraph, runtime_k::RtSeq>>> nonconj_graph_pack;
 

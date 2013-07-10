@@ -223,7 +223,7 @@ class UnbranchingPathFinder {
 private:
 	typedef DeBruijnExtensionIndex<> Index;
 	typedef runtime_k::RtSeq Kmer;
-	typedef typename Index::kmer_iterator kmer_iterator;
+	typedef Index::kmer_iterator kmer_iterator;
 
 	Index &origin_;
 	size_t kmer_size_;
@@ -290,8 +290,8 @@ class UnbranchingPathExtractor {
 private:
 	typedef DeBruijnExtensionIndex<> Index;
 	typedef runtime_k::RtSeq Kmer;
-	typedef typename Index::kmer_iterator kmer_iterator;
-	typedef typename UnbranchingPathFinder::KPlusOneMer KPlusOneMer;
+	typedef Index::kmer_iterator kmer_iterator;
+	typedef UnbranchingPathFinder::KPlusOneMer KPlusOneMer;
 
 	Index &origin_;
 	size_t kmer_size_;
