@@ -683,6 +683,12 @@ struct Range {
               end_pos(end_pos) {
         VERIFY(end_pos >= start_pos);
     }
+
+    inline bool operator<(const Range &other) const {
+      if (start_pos != other.start_pos)
+        return start_pos < other.start_pos;
+      return end_pos < other.end_pos;
+    }
 };
 
 std::ostream& operator<<(std::ostream& os, const Range& range) {

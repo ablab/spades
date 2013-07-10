@@ -35,6 +35,9 @@ class KmerFreeDeBruijnEdgeIndex : public DeBruijnKMerIndex<KmerFreeIndex<EdgeInf
     typedef typename base::KMerIdx KMerIdx;
     typedef Graph GraphT;
     typedef typename Graph::EdgeId IdType;
+		using base::valid_idx;
+		using base::seq_idx;
+		using base::BinWriteKmers;
 
     KmerFreeDeBruijnEdgeIndex(unsigned k, const Graph &graph, const std::string &workdir)
             : base(k, workdir), graph_(graph) {}
@@ -69,7 +72,7 @@ class KmerFreeDeBruijnEdgeIndex : public DeBruijnKMerIndex<KmerFreeIndex<EdgeInf
         KMerIdx idx = seq_idx(kmer);
         if (!valid_idx(idx))
             return;
-        EdgeInfo<IdType>& entry = operator[](idx);
+        EdgeInfo<IdType>& entry = this->operator[](idx);
         // if slot is empty or it contains information about this k-mer
         // (second condition is almost always not useful)
         if (entry.offset == -1u || contains(idx, kmer)) {
@@ -101,7 +104,7 @@ class KmerStoringDeBruijnEdgeIndex : public DeBruijnKMerIndex<KmerStoringIndex<E
    * Shows if kmer has some entry associated with it
    */
   bool contains(KMerIdx idx, const KMer &k) const {
-      if (!valid_key(idx, k))
+		  if (!base::valid_key(idx, k))
           return false;
 
       const typename base::ValueType &entry = base::operator[](idx);
@@ -110,7 +113,7 @@ class KmerStoringDeBruijnEdgeIndex : public DeBruijnKMerIndex<KmerStoringIndex<E
 
   void PutInIndex(const KMer &kmer, IdType id, int offset, bool ignore_new_kmer = false) {
     size_t idx = base::seq_idx(kmer);
-    if (valid_key(idx, kmer)) {
+    if (base::valid_key(idx, kmer)) {
       EdgeInfo<IdType> &entry = base::operator[](idx);
       entry.edge_id = id;
       entry.offset = offset;
@@ -137,11 +140,11 @@ class DeBruijnEdgeIndex : public Index {
 
     //todo why do we need to check equality???!!!
     bool DeleteIfEqual(const KMer &kmer, EdgeId e) {
-        KMerIdx idx = seq_idx(kmer);
+        KMerIdx idx = this->seq_idx(kmer);
         if (!contains(idx, kmer))
             return false;
 
-        EdgeInfo<EdgeId> &entry = operator[](idx);
+        EdgeInfo<EdgeId> &entry = this->operator[](idx);
         if (entry.edge_id == e) {
             entry.offset = -1u;
             return true;
@@ -167,7 +170,7 @@ class DeBruijnEdgeIndex : public Index {
      * Shows if kmer has some entry associated with it
      */
     bool contains(const KMer& kmer) const {
-        KMerIdx idx = seq_idx(kmer);
+			  KMerIdx idx = this->seq_idx(kmer);
         return contains(idx, kmer);
     }
 
@@ -178,7 +181,7 @@ class DeBruijnEdgeIndex : public Index {
         writer.write((char*)&sz, sizeof(sz));
         for (size_t i = 0; i < sz; ++i)
             writer.write((char*)&(this->data_[i].count), sizeof(this->data_[0].count));
-        BinWriteKmers(writer);
+        this->BinWriteKmers(writer);
     }
 
     template<class Reader>
@@ -190,7 +193,7 @@ class DeBruijnEdgeIndex : public Index {
         this->data_.resize(sz);
         for (size_t i = 0; i < sz; ++i)
             reader.read((char*)&(this->data_[i].count), sizeof(this->data_[0].count));
-        BinReadKmers(reader, FileName);
+        this->BinReadKmers(reader, FileName);
     }
 
 };

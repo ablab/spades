@@ -65,13 +65,14 @@ class CapEnvironmentManager {
 
     shared_ptr<gp_t> result(new gp_t(k, env_->kDefaultGPWorkdir));
 
+    //fixme use rc_wrapper
     vector<ContigStream*> rc_contigs;
     for (auto it = streams.begin(); it != streams.end(); ++it) {
       rc_contigs.push_back(new RCWrapper(**it));
       rc_contigs.back()->reset();
     }
 
-    io::ReadStreamVector<ContigStream> rc_read_stream_vector(rc_contigs, false);
+    io::ReadStreamVector<ContigStream> rc_read_stream_vector(rc_contigs, true);
 
     debruijn_graph::ConstructGraph(result->k_value, CreateDefaultConstructionConfig(), rc_read_stream_vector, result->g, result->index);
 
@@ -82,11 +83,26 @@ class CapEnvironmentManager {
 
     INFO("Filling positions");
     if (fill_pos) {
+      env_->coordinates_handler_.SetGraph(&(result->g));
+
+      unsigned char genome_id = 0;
+
       for (auto it = streams.begin(); it != streams.end(); ++it) {
         cap::RCWrapper stream(**it);
         stream.reset();
 
-        FillPos(*result, stream);
+        Mapper mapper(result->g, result->index, result->kmer_mapper, result->k_value + 1);
+        io::SingleRead genome;
+        // for forward and reverse directions
+        for (int i = 0; i < 2; ++i) {
+          stream >> genome;
+          MappingPath<EdgeId> mapping_path = mapper.MapRead(genome);
+          const std::vector<EdgeId> edge_path =
+              mapping_path.simple_path().sequence();
+          env_->coordinates_handler_.AddGenomePath(2 * genome_id + i, edge_path);
+        }
+
+        genome_id++;
       }
     }
     INFO("Filling positions done.");
@@ -125,25 +141,17 @@ class CapEnvironmentManager {
   template <class gp_t>
   void UpdateStreams(const gp_t &gp) {
 		for (size_t i = 0; i < env_->genomes_.size(); ++i) {
-      io::SequenceReader<io::SingleRead> stream(*env_->genomes_[i], env_->genomes_names_[i]);
-
-      io::ModifyingWrapper<io::SingleRead> refined_stream(
-          stream, GraphReadCorrectorInstance(gp.g, *MapperInstance(gp)));
-      io::SingleRead refined_genome;
-
-      refined_stream >> refined_genome;
-
-      VERIFY(refined_genome.IsValid());
-
-      env_->genomes_[i] = std::make_shared<Sequence>(refined_genome.sequence());
-      // I dont like storing and duplicating of strings
-      // last_streams_used_[i] = new io::Reader(env_->genomes_[i]);
+      env_->genomes_[i] = std::make_shared<Sequence>(
+          env_->coordinates_handler_.ReconstructGenome(2 * i));
+      //VERIFY(env_->genomes_[i]->IsValid());
 		}
   }
 
   template <class gp_t>
   void RefineTemplated(gp_t &gp) {
-    // TODO own config?
+    INFO("Store threads");
+    //env_->coordinates_handler_.StoreGenomeThreads();
+    INFO("Store threads ended");
     size_t delta = 5;
 
     debruijn_config::simplification::bulge_remover br_config;
@@ -154,10 +162,20 @@ class CapEnvironmentManager {
     br_config.max_relative_delta = 0.1;
 
     INFO("Removing bulges");
-    RemoveBulges(gp.g, br_config);
+
+    BulgeRemoverCallbackToCoordinatesHandlerAdapter<Graph> adapter(
+        env_->coordinates_handler_);
+    boost::function<void(EdgeId, const std::vector<EdgeId> &)> projecting_callback =
+        boost::bind(&BulgeRemoverCallbackToCoordinatesHandlerAdapter<Graph>::Project,
+                    &adapter, _1, _2);
+
+    //omp_set_num_threads(1);
+    RemoveBulges(gp.g, br_config, projecting_callback);
+    //omp_set_num_threads(4);
 
     INFO("Remapped " << gp.kmer_mapper.size() << " k-mers");
 
+    /*
     debruijn_config::simplification::complex_bulge_remover cbr_config;
     cbr_config.enabled = true;
     cbr_config.pics_enabled = false;
@@ -178,6 +196,12 @@ class CapEnvironmentManager {
     tc_config.condition = "{ tc_lb 2. }";
 
     ClipTipsWithProjection(gp, tc_config, true);
+    */
+
+    //INFO("Killing loops");
+
+    //SimpleLoopKiller<typename gp_t::graph_t> loop_killer(gp.g, /*splitting_edge_len*/ env_->GetGraphK() * 3, /*max_component_size*/ 10);
+    //loop_killer.KillAllLoops();
 
     //INFO("Killing loops");
 
@@ -189,25 +213,33 @@ class CapEnvironmentManager {
 
     env_->k_history_.push_back(env_->GetGraphK());
     env_->num_genomes_history_.push_back(env_->init_genomes_paths_.size());
+    env_->coordinates_handler_.StoreGenomeThreads();
 
     UpdateStreams(gp);
   }
 
   template <class gp_t>
-  void FindIndelsTemplated(gp_t& gp, std::ofstream &stream, const bool mask_indels) const {
-    //SimpleIndelFinder<gp_t> indel_finder(gp, *env_->coloring_, stream, mask_indels);
-    //indel_finder.FindIndelEvents();
+  void FindIndelsTemplated(gp_t& gp, std::ofstream &out_stream,
+      const bool mask_indels) {
+    SimpleIndelFinder<gp_t> indel_finder(gp, *env_->coloring_, 
+        env_->coordinates_handler_, out_stream, mask_indels);
+    indel_finder.FindIndelEvents();
 
-    SimpleInDelCorrector<Graph> corrector(gp.g, *env_->coloring_,
-        (*MapperInstance(gp)).MapSequence(*env_->genomes_[0]).simple_path().sequence(), /*genome_color*/
-        kRedColorSet, /*assembly_color*/kBlueColorSet);
-    corrector.Analyze();
+    if (mask_indels) {
+      env_->coordinates_handler_.StoreGenomeThreads();
+      UpdateStreams(gp);
+    }
+
+    //SimpleInDelCorrector<Graph> corrector(gp.g, *env_->coloring_,
+    //    (*MapperInstance(gp)).MapSequence(*env_->genomes_[0]).simple_path().sequence(), /*genome_color*/
+    //    kRedColorSet, /*assembly_color*/kBlueColorSet);
+    //corrector.Analyze();
   }
 
   template <class gp_t>
   void FindInversionsTemplated(gp_t& gp, const std::string &base_pic_file_name,
       const bool mask_inversions) const {
-    SimpleInversionFinder<gp_t> finder(gp, *env_->coloring_,
+    SimpleInversionFinder<gp_t> finder(gp, *env_->coloring_, env_->coordinates_handler_,
         base_pic_file_name, mask_inversions);
     finder.FindInversionEvents();
   }
@@ -227,13 +259,7 @@ class CapEnvironmentManager {
   }
 
   void ClearEnvironment() const {
-    // shared_ptr deletes automatically
-    env_->gp_rtseq_.reset();
-    env_->gp_lseq_.reset();
-    env_->graph_ = NULL;
-    env_->edge_pos_ = NULL;
-    env_->int_ids_ = NULL;
-    env_->coloring_.reset();
+    env_->ClearGP();
   }
 
   std::string GetDirForCurrentState() const {
@@ -251,27 +277,19 @@ class CapEnvironmentManager {
     return env_dir + "/" + cache_dir + "/";
   }
 
-  void ConstructGraphFromStreams(std::vector<ContigStream *> &streams, unsigned k, bool fill_pos) {
+  void ConstructGraphFromStreams(const std::vector<ContigStream *> &streams, unsigned k, bool fill_pos) {
     ClearEnvironment();
     env_->CheckConsistency();
     //last_streams_used_ = streams;
 
     VERIFY(env_->gp_rtseq_ == NULL && env_->gp_lseq_ == NULL);
     if (env_->UseLSeqForThisK(k)) {
-      env_->gp_lseq_ = BuildGPFromStreams<LSeqGP>(
-          streams, k, fill_pos);
-      env_->graph_ = &(env_->gp_lseq_->g);
-      env_->edge_pos_ = &(env_->gp_lseq_->edge_pos);
-      env_->int_ids_ = &(env_->gp_lseq_->int_ids);
+      env_->SetGraphPack(BuildGPFromStreams<LSeqGP>(
+          streams, k, fill_pos));
     } else {
-      env_->gp_rtseq_ = BuildGPFromStreams<RtSeqGP>(
-          streams, k, fill_pos);
-      env_->graph_ = &(env_->gp_rtseq_->g);
-      env_->edge_pos_ = &(env_->gp_rtseq_->edge_pos);
-      env_->int_ids_ = &(env_->gp_rtseq_->int_ids);
+      env_->SetGraphPack(BuildGPFromStreams<RtSeqGP>(
+          streams, k, fill_pos));
     }
-
-    env_->CheckConsistency();
   }
 
   void ConstructGraph(unsigned k, bool fill_pos) {
@@ -304,8 +322,13 @@ class CapEnvironmentManager {
     // Saving coloring of graph
     cap::SaveColoring(*env_->graph_, *env_->int_ids_, *env_->coloring_, filename);
     // Saving pics
+    std::vector<std::string> genomes_names;
+    for (const auto &gname : env_->genomes_names_) {
+      genomes_names.push_back(gname);
+      genomes_names.push_back(gname + "_RC");
+    }
     cap::PrintColoredGraphWithColorFilter(*env_->graph_, *env_->coloring_,
-        *env_->edge_pos_, folder + "/pics/graph.dot");
+        env_->coordinates_handler_, genomes_names, folder + "/pics/graph.dot");
   }
 
   void SetGenomes(const std::vector<std::string> &genomes_paths,
@@ -366,7 +389,8 @@ class CapEnvironmentManager {
     env_->CheckConsistency();
   }
 
-  int FindIndels(const bool mask_indels, const std::string &output_file, const std::string &output_mode) const {
+  int FindIndels(const bool mask_indels, const std::string &output_file,
+      const std::string &output_mode) {
     std::ios_base::openmode mode;
     if (output_mode == "w") {
       mode = std::ios_base::out;
@@ -424,15 +448,9 @@ class CapEnvironmentManager {
 
     VERIFY(env_->gp_rtseq_ == NULL && env_->gp_lseq_ == NULL);
     if (env_->UseLSeqForThisK(K)) {
-      env_->gp_lseq_ = BuildGPFromSaves<LSeqGP>(K, path);
-      env_->graph_ = &(env_->gp_lseq_->g);
-      env_->edge_pos_ = &(env_->gp_lseq_->edge_pos);
-      env_->int_ids_ = &(env_->gp_lseq_->int_ids);
+      env_->SetGraphPack(BuildGPFromSaves<LSeqGP>(K, path));
     } else {
-      env_->gp_rtseq_ = BuildGPFromSaves<RtSeqGP>(K, path);
-      env_->graph_ = &(env_->gp_rtseq_->g);
-      env_->edge_pos_ = &(env_->gp_rtseq_->edge_pos);
-      env_->int_ids_ = &(env_->gp_rtseq_->int_ids);
+      env_->SetGraphPack(BuildGPFromSaves<RtSeqGP>(K, path));
     }
 
     cap::SaveColoring(*env_->graph_, *env_->int_ids_, *env_->coloring_, path);

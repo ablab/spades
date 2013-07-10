@@ -98,12 +98,12 @@ class PerfectHashMap {
     return InvalidIdx;
   }
 
- public:
-  //todo ask AntonK what it is...
+ protected:
   size_t raw_seq_idx(const typename KMerIndexT::KMerRawReference s) const {
     return index_.raw_seq_idx(s);
   }
 
+ public:
   size_t size() const { return data_.size(); }
 
   value_iterator value_begin() {
@@ -172,14 +172,14 @@ class KmerStoringIndex : public PerfectHashMap<typename traits::SeqType, ValueTy
     INFO("Arranging kmers in hash map order");
     for (auto I = kmers_->begin(), E = kmers_->end(); I != E; ++I) {
       size_t cidx = I - kmers_->begin();
-      size_t kidx = raw_seq_idx(*I);
+      size_t kidx = this->raw_seq_idx(*I);
       while (cidx != kidx) {
         auto J = kmers_->begin() + kidx;
         using std::swap;
         swap(*I, *J);
         swaps += 1;
 
-        kidx = raw_seq_idx(*I);
+        kidx = this->raw_seq_idx(*I);
       }
     }
     INFO("Done. Total swaps: " << swaps);
@@ -212,6 +212,7 @@ class KmerStoringIndex : public PerfectHashMap<typename traits::SeqType, ValueTy
 
   void clear() {
     base::clear();
+    delete kmers_;
     kmers_ = NULL;
   }
 
@@ -230,7 +231,7 @@ class KmerStoringIndex : public PerfectHashMap<typename traits::SeqType, ValueTy
   }
 
   bool valid_key(KMerIdx idx, const KMer &k) const {
-      if (!valid_idx(idx))
+      if (!this->valid_idx(idx))
         return false;
 
       auto it = this->kmers_->begin() + idx;
@@ -238,7 +239,7 @@ class KmerStoringIndex : public PerfectHashMap<typename traits::SeqType, ValueTy
   }
 
   bool valid_key(const KMer &kmer) const {
-    KMerIdx idx = seq_idx(kmer);
+    KMerIdx idx = this->seq_idx(kmer);
     return valid_key(idx, kmer);
   }
 
@@ -377,14 +378,6 @@ class DeBruijnKMerIndex : public Index {
 //Seq is here for partial specialization
 template <class Seq, class Index>
 class DeBruijnStreamKMerIndexBuilder {
- public:
-  typedef Index IndexT;
-  typedef typename IndexT::GraphT GraphT;
-
-  template <class Streams>::
-  size_t BuildIndexFromStream(IndexT &index,
-                              Streams &streams,
-                              SingleReadStream* contigs_stream = 0) const;
 
 };
 

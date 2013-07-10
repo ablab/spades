@@ -123,7 +123,7 @@ class CoverageFillingEdgeIndexBuilder : public Builder {
             GraphT &graph, IndexT &index,
             /*io::ReadStreamVector<io::IReader<Read> >*/Streams &streams,
             SingleReadStream* contigs_stream = 0) const {
-        BuildIndexFromGraph(index, graph);
+        this->BuildIndexFromGraph(index, graph);
 
         return ParallelFillCoverage(index, streams, contigs_stream, true);
     }

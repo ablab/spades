@@ -300,15 +300,15 @@ public:
 				UniversalSaveGP(gp_, //coloring,
 						add_saves_path);
 				SaveColoring(gp_.g, gp_.int_ids, coloring_, add_saves_path);
-				PrintColoredGraphWithColorFilter(gp_.g, coloring_, gp_.edge_pos,
-						add_saves_path + ".dot");
+				//PrintColoredGraphWithColorFilter(gp_.g, coloring_, gp_.edge_pos,
+			//			add_saves_path + ".dot");
 			}
 			UniversalSaveGP(gp_, //coloring,
 					output_folder + "saves/colored_split_graph");
 			SaveColoring(gp_.g, gp_.int_ids, coloring_,
 					output_folder + "saves/colored_split_graph");
-			PrintColoredGraphWithColorFilter(gp_.g, coloring_, gp_.edge_pos,
-					output_folder + "saves/colored_split_graph.dot");
+			//PrintColoredGraphWithColorFilter(gp_.g, coloring_, gp_.edge_pos,
+			//		output_folder + "saves/colored_split_graph.dot");
 		}
 
 		// DISABLING ALL ANALYSIS AFTER WRITE
@@ -515,13 +515,10 @@ void RunMultipleGenomesVisualization(size_t k_visualize,
 
 	ofstream indel_event_logger(output_folder + "/indel_events");
 
-	SimpleIndelFinder<gp_t> indel_finder(gp, coloring, indel_event_logger);
-	indel_finder.FindIndelEvents();
-
 //  UnversalSaveGP(gp, output_folder + "/colored_split_graph");
 //  SaveColoring(gp.g, gp.int_ids, coloring, output_folder + "/colored_split_graph");
-	PrintColoredGraphWithColorFilter(gp.g, coloring, gp.edge_pos,
-			output_folder + "/colored_split_graph.dot");
+	//PrintColoredGraphWithColorFilter(gp.g, coloring, gp.edge_pos,
+	//		output_folder + "/colored_split_graph.dot");
 }
 
 }

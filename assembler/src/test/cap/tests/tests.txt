@@ -106,4 +106,12 @@
    <contig>+A+B+C-B+D</contig>
   </genome>
  </example>
+ <example n="13">
+  <genome>
+   <contig>+A+B+C+D+E</contig>
+  </genome>
+  <genome>
+   <contig>+A+C+D+B+E</contig>
+  </genome>
+ </example>
 </examples>
