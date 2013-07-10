@@ -21,8 +21,11 @@ template <class GraphPack>
 class CoverageBasedResolution {
 	typedef double coverage_value;
 	typedef enum { TOPOLOGY, LENGTH, PAIREDINFO } kind_of_repeat; 
-	
+
+	//TODO: by ref const
+	//TODO: remove std::
 	GraphPack *gp;
+	
 	const DeBruijnEdgeIndex<EdgeId>& kmer_index_;
 
 	std::map<EdgeId, kind_of_repeat> edge_to_kind_;
@@ -48,12 +51,8 @@ class CoverageBasedResolution {
 	}
 	
 	
-	//path without conjugate edges
-//	std::vector< PathInfo<typename GraphPack::graph_t> > filteredPaths;
-
-
 	private:
-	void JoinPaths( std::vector<std::vector<EdgeId> >& paths, //std::vector< std::vector<EdgeId> >& paths, 
+	void JoinPaths( vector<std::vector<EdgeId> >& paths, //std::vector< std::vector<EdgeId> >& paths,
 			std::vector< std::vector<EdgeId> >& resolvedLoops,
 			std::vector< std::vector<EdgeId> >& all_paths ) {
 
@@ -71,15 +70,15 @@ class CoverageBasedResolution {
 
 		INFO("before map filling");
 
-//TODO: assert that edge is not more than once first and not more than once last in these paths.	
+
 		for (auto path = bothPaths.begin(); path != bothPaths.end(); ++path) {
 		//	std::cout << gp->g.int_id(path->front()) << std::endl;
-		//	VERIFY(startEdgeToPath.find(path->front()) == startEdgeToPath.end());
+			VERIFY(startEdgeToPath.find(path->front()) == startEdgeToPath.end());
 			startEdgeToPath[path->front()] = *path;
 		}
 
 		for (auto path = bothPaths.begin(); path != bothPaths.end(); ++path) {
-		//	VERIFY(backEdgeToPath.find(path->back()) == backEdgeToPath.end());
+			VERIFY(backEdgeToPath.find(path->back()) == backEdgeToPath.end());
 			backEdgeToPath[path->back()] = *path;
 		}
 
@@ -95,7 +94,6 @@ class CoverageBasedResolution {
 			std::cout << std::endl; */
 			bool updated = true;
 			while (updated) {
-				
 				auto foundPath = startEdgeToPath.find( path->back() );
 				if (foundPath != startEdgeToPath.end() ) {
 					//INFO("found path before");
@@ -104,12 +102,9 @@ class CoverageBasedResolution {
 					}
 					std::cout << std::endl;*/
 					path->insert(path->end(), foundPath->second.begin() + 1, foundPath->second.end());
-				}
-
-				else {
+				} else {
 					updated = false;
 				}
-
 			}
 			/*INFO("path after");
 			for ( auto e = path->begin(); e != path->end(); ++e ){
@@ -119,11 +114,22 @@ class CoverageBasedResolution {
 			all_paths.push_back(*path);
 		}
 		INFO("out of path joining");
-	
 	}
 
+// class SingleRepeat
+//	vector<EdgeId> incoming;
+//	vector<EdgeId> outgoing;
+//	vector<EdgeId> component;
+//	const graph_pack &gp;
+//	bool VerifyComponentByReference;
+// 	set<vector<EdgeId> > ResolveRepeat(?);
 
+//	bool VerifyComponentWithUniqueShortEdge (VerifyComponent)?
+//  PatchComponentWithUniqueShortEdge (?)
 
+//TODO: excess white lines
+//TODO: google styleguide
+//TODO setup vim or eclipse via ssh:)
 	bool VerifyComponent( std::vector<EdgeId>& incoming_edges,
 			 std::vector<EdgeId>& outgoing_edges,
 		 	std::vector<EdgeId>& component ){
@@ -135,7 +141,6 @@ class CoverageBasedResolution {
 		int diff = incoming_edges.size() - outgoing_edges.size();
 
 		if ( diff < 0 ) {
-			
 			int counter = 0;
 			for ( auto edge = incoming_edges.begin(); edge != incoming_edges.end(); ++edge ) {
 
@@ -143,9 +148,8 @@ class CoverageBasedResolution {
 					counter += 1;
 				}
 			}
-
+//TODO: BUG Exactly one is short and other - long!!!
 			if ( counter == -diff ) {
-				
 				std::cout << "INCOMING COMPONENT UPDATED" << std::endl;
 				/*for ( auto edge = incomingEdges.begin(); edge != incomingEdges.end(); ++edge ) {
 
@@ -154,21 +158,17 @@ class CoverageBasedResolution {
 					}
 				}*/
 			}
-		
 		}
 
 		if ( diff > 0 ) {
-			
 			int counter = 0;
 			for ( auto edge = outgoing_edges.begin(); edge != outgoing_edges.end(); ++edge ) {
-
 				if ( gp->g.length(*edge) <= cfg::get().rr.max_repeat_length ) {
 					counter += 1;
 				}
 			}
 
 			if ( counter == -diff ) {
-				
 				std::cout << "OUTGOING COMPONENT UPDATED" << std::endl;
 				/*for ( auto edge = incomingEdges.begin(); edge != incomingEdges.end(); ++edge ) {
 
@@ -177,10 +177,7 @@ class CoverageBasedResolution {
 					}
 				}*/
 			}
-		
 		}
-
-
 	}
 
 
@@ -188,9 +185,14 @@ class CoverageBasedResolution {
 	template <class DetailedCoverage>
 	void resolve_repeats_by_coverage( DetailedCoverage& coverage, 
 					size_t insert_size,
+//TODO: Do not pass reference on graph_pack members.
+//TODO: EdgeQuality to constructor
+//TODO: check that everything works without reference:)
+
 					EdgeLabelHandler<typename GraphPack::graph_t>& labels_after,
 					EdgeQuality<typename GraphPack::graph_t>& quality_labeler,
 					PairedInfoIndexT<typename GraphPack::graph_t> & clustered_index,
+
 					std::vector< PathInfo<typename GraphPack::graph_t> >& filtered_paths
 					//std::set<EdgeId>& prohibitedEdges,
 					//std::vector< std::vector<EdgeId>>& resolvedLoops ) 
@@ -199,22 +201,16 @@ class CoverageBasedResolution {
 		auto filter = LoopFilter<GraphPack, DetailedCoverage>(*gp, coverage, tandem_lower_threshold_, tandem_upper_threshold_, repeat_length_upper_threshold_);
 		filter.get_loopy_components( quality_labeler );
 
-
 		INFO("Resolving repeats by coverage...");
-
-		std::cout << "prohibited edges" << std::endl;
-		for (auto e_iter = filter.prohibitedEdges.begin(); e_iter!= filter.prohibitedEdges.end(); ++e_iter){
-			std::cout << gp->g.int_id(*e_iter) << ", ";
-		}
-		std::cout << std::endl;
-
 		std::vector<EdgeId> components, singles;
 		std::vector<EdgeId> componentsRef, singlesRef;
 		INFO("Getting components...");
-		GetComponents(  components, singles, labels_after, quality_labeler, clustered_index, filter.prohibitedEdges );
-		GetComponentsWithReference(  componentsRef, singlesRef, quality_labeler, filter.prohibitedEdges );
 
-		
+		GetComponents(components, singles, labels_after, quality_labeler, clustered_index, filter.prohibitedEdges );
+//TODO:	CheckComponentsWithQuality()
+//TODO:: Dima stopped here
+		GetComponentsWithReference( componentsRef, singlesRef, quality_labeler, filter.prohibitedEdges );
+
 		int fp(0), fn(0);
 
 		std::cout << "in components (size: " << components.size() << ") but not in componentsRef: " << std::endl;
@@ -248,7 +244,9 @@ class CoverageBasedResolution {
 		}
 		std::cout << std::endl;
 		std::cout << "False positives: " << (double) fp / components.size() << "False negatives: " << (double) fn / (fn + singles.size()) << std::endl;
-			
+
+
+
 
 		//path with conjugate edges
 		std::vector< std::vector<EdgeId> > resolved_paths;
@@ -907,7 +905,7 @@ class CoverageBasedResolution {
 			}
 			std::cout << std::endl;
 			
-			bool correct_component = checkRepeatDetection( component, incoming_edges, outgoing_edges, quality_labeler  );
+			bool correct_component = CheckRepeatDetection( component, incoming_edges, outgoing_edges, quality_labeler  );
 
 			if (!correct_component) {
 				std::cout << "repeat is detected incorrectly" << std::endl;
@@ -992,16 +990,16 @@ class CoverageBasedResolution {
 
 			ordinal_repeat += 1;
 
-			int longestPathLen = getLongestPathLength(path);
+			int longestPathLen = GetLongestPathLength(path);
 
-			bool containsNotGenomicEdges = false;
+//			bool containsNotGenomicEdges = false;
 			for (auto iter = path.begin(); iter != path.end(); ++iter) {
 				if (quality_labeler.quality(*iter) < 0.5) {
-					containsNotGenomicEdges = true;
+				//containsNotGenomicEdges = true;
 				}
 			}
 
-			if ( containsOnlyShortEdges(path) ) {
+			if ( ContainsOnlyShortEdges(path) ) {
 				INFO("contains only short edges");
 				std::cout << "component: ";
 				for ( auto iter = path.begin(); iter != path.end(); ++iter ) {
@@ -1109,7 +1107,7 @@ class CoverageBasedResolution {
 		//std::cout << "Number of resolved components detected by topology : " << resolvedComponentsByTopology << std::endl;
 		//std::cout << "Number of resolved components detected by length : " << resolvedComponentsByLength << std::endl;
 		//std::cout << "Number of edges detected by paired info in resolved comps: " << numberOfEdgesDetectedByPairedInfoInResolvedComps << std::endl;
-		fclose(file);
+		//fclose(file);
 
 	}
 
