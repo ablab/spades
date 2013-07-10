@@ -28,11 +28,6 @@
 
 using namespace std;
 
-namespace hammer_tools {
-/// estimate total read size in input read files
-size_t EstimateTotalReadSize(const std::vector<std::string> &fnames);
-};
-
 /**
  * a container class for all general procedures in BayesHammer
  */
