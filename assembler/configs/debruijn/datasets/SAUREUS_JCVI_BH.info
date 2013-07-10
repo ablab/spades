@@ -4,3 +4,5 @@ RL                       100
 IS                       220
 single_cell              true
 reference_genome         ../../../data/input/S.aureus/USA300_FPR3757.fasta.gz
+
+reads	SAUREUS_JCVI_BH.yaml

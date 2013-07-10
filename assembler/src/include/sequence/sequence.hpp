@@ -41,7 +41,7 @@ class Sequence {
   }  
   
   template<typename S>
-  void InitFromNucls(const S &s) {
+  void InitFromNucls(const S &s, bool rc = false) {
     size_t bytes_size = DataSize(size_);
     ST * bytes = data_.get();
 
@@ -56,18 +56,35 @@ class Sequence {
     size_t cnt = 0;
     size_t cur = 0;
 
-    for (size_t i = 0; i < size_; ++i) {
-      //VERIFY(is_dignucl(s[i]) || is_nucl(s[i]));
-      char c = digit_str ? s[i] : (char)dignucl(s[i]);
+    if (rc) {
+        for (int i = (int) size_ - 1; i >= 0; --i) {
+          //VERIFY(is_dignucl(s[i]) || is_nucl(s[i]));
+          char c = complement(digit_str ? s[i] : dignucl(s[i]));
 
-      data = data | (ST(c) << cnt);
-      cnt += 2;
+          data = data | (ST(c) << cnt);
+          cnt += 2;
 
-      if (cnt == STBits) {
-        bytes[cur++] = data;
-        cnt = 0;
-        data = 0;
-      }
+          if (cnt == STBits) {
+            bytes[cur++] = data;
+            cnt = 0;
+            data = 0;
+          }
+        }
+    }
+    else {
+        for (size_t i = 0; i < size_; ++i) {
+          //VERIFY(is_dignucl(s[i]) || is_nucl(s[i]));
+          char c = digit_str ? s[i] : dignucl(s[i]);
+
+          data = data | (ST(c) << cnt);
+          cnt += 2;
+
+          if (cnt == STBits) {
+            bytes[cur++] = data;
+            cnt = 0;
+            data = 0;
+          }
+        }
     }
 
     if (cnt != 0)
@@ -77,26 +94,27 @@ class Sequence {
       bytes[cur] = 0;
   }
   
+
  public:
   /**
    * Sequence initialization (arbitrary size string)
    *
    * @param s ACGT or 0123-string
    */
-  explicit Sequence(const char* s) :
+  explicit Sequence(const char* s, bool rc = false) :
       from_(0), size_(strlen(s)), rtl_(false), data_(new ST[DataSize(size_)], array_deleter<ST>()) {
-    InitFromNucls(s);
+    InitFromNucls(s, rc);
   }
 
-  explicit Sequence(char* s) :
+  explicit Sequence(char* s, bool rc = false) :
       from_(0), size_(strlen(s)), rtl_(false), data_(new ST[DataSize(size_)], array_deleter<ST>()) {
-    InitFromNucls(s);
+    InitFromNucls(s, rc);
   }
 
   template<typename S>
-  explicit Sequence(const S &s):
+  explicit Sequence(const S &s, bool rc = false):
       from_(0), size_(s.size()), rtl_(false), data_(new ST[DataSize(size_)], array_deleter<ST>()) {
-    InitFromNucls(s);
+    InitFromNucls(s, rc);
   }
 
   Sequence():

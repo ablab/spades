@@ -155,13 +155,13 @@ def cvr(filename):
 
 def config(filename):
     f = open(filename)
+    lib_count = int(f.readline().split()[1])
     RL = int(f.readline().split()[1])
     IS = float(f.readline().split()[1])
     is_var = float(f.readline().split()[1])
-    perc = ' '.join(f.readline().split()[1:])
-    avg_coverage = float(f.readline().split()[1])
     median = int(f.readline().split()[1])
     mad = int(f.readline().split()[1])
+    avg_coverage = float(f.readline().split()[1])
     hist = ' '.join(f.readline().split()[1:])
     try:
         K = int(f.readline().split()[1])
@@ -172,7 +172,7 @@ def config(filename):
     hist2 = {}
     for k, v in hist.iteritems():
         hist2[k - RL] = v # * 1.0 / s
-    return dict(RL=RL, IS=IS, is_var=is_var, perc=perc, avg_coverage=avg_coverage, median=median, mad=mad, hist=hist2,
+    return dict(RL=RL, IS=IS, is_var=is_var, avg_coverage=avg_coverage, median=median, mad=mad, hist=hist2,
         K=K)
 
 #######

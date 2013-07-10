@@ -1,0 +1,4 @@
+- left reads: [../../../data/input/E.coli/emul/MG1655-K12_emul2.fastq.gz]
+  orientation: fr
+  right reads: [../../../data/input/E.coli/emul/MG1655-K12_emul1.fastq.gz]
+  type: paired-end

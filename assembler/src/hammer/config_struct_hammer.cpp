@@ -12,10 +12,20 @@
  */
 
 #include "config_struct_hammer.hpp"
+#include "config_common.hpp"
 #include "openmp_wrapper.h"
 
-void load(hammer_config& cfg, boost::property_tree::ptree const& pt)
-{
+#include <boost/property_tree/ptree.hpp>
+#include <string>
+
+void load(hammer_config& cfg, const std::string &filename) {
+  boost::property_tree::ptree pt;
+  boost::property_tree::read_info(filename, pt);
+
+  load(cfg, pt);
+}
+
+void load(hammer_config& cfg, boost::property_tree::ptree const& pt) {
   using config_common::load;
   load(cfg.general_do_everything_after_first_iteration, pt, "general_do_everything_after_first_iteration");
   load(cfg.general_reconstruct_only, pt, "general_reconstruct_only");
@@ -58,16 +68,14 @@ void load(hammer_config& cfg, boost::property_tree::ptree const& pt)
   load(cfg.correct_discard_bad, pt, "correct_discard_bad");
   cfg.correct_notrim = pt.get_optional<bool>("correct_notrim");
 
-  load(cfg.input_paired_1, pt, "input_paired_1");
-  load(cfg.input_paired_2, pt, "input_paired_2");
-  load(cfg.input_single, pt, "input_single");
+  std::string fname;
+  load(fname, pt, "dataset");
+  cfg.dataset.load(fname);
 
-  load(cfg.input_solid_kmers, pt, "input_solid_kmers");
   load(cfg.input_working_dir, pt, "input_working_dir");
   load(cfg.input_trim_quality, pt, "input_trim_quality");
   cfg.input_qvoffset_opt = pt.get_optional<int>("input_qvoffset");
-  load(cfg.input_read_solid_kmers, pt, "input_read_solid_kmers");
-  load(cfg.input_solid_kmers, pt, "input_solid_kmers");
+  load(cfg.output_dir, pt, "output_dir");
 
   // Fix number of threads according to OMP capabilities.
   cfg.general_max_nthreads = std::min(cfg.general_max_nthreads, (unsigned)omp_get_max_threads());

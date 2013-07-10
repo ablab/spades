@@ -9,21 +9,16 @@
 
 import os
 import shutil
-
 import support
 import process_cfg
+from site import addsitedir
 
 def prepare_config_bh(filename, cfg, log):
     subst_dict = dict()
-    cfg.working_dir = os.path.abspath(cfg.working_dir)
 
-    if len(cfg.paired_reads) == 2:
-        subst_dict["input_paired_1"] = cfg.paired_reads[0]
-        subst_dict["input_paired_2"] = cfg.paired_reads[1]
-    if len(cfg.single_reads) == 1:
-        subst_dict["input_single"] = cfg.single_reads[0]
-
-    subst_dict["input_working_dir"] = cfg.working_dir
+    subst_dict["dataset"] = cfg.dataset_yaml_filename
+    subst_dict["input_working_dir"] = os.path.abspath(cfg.tmp_dir)
+    subst_dict["output_dir"] = os.path.abspath(cfg.tmp_dir)  # we will move only final corrected reads to output_dir
     subst_dict["general_max_iterations"] = cfg.max_iterations
     subst_dict["general_max_nthreads"] = cfg.max_threads
     subst_dict["count_merge_nthreads"] = cfg.max_threads
@@ -38,7 +33,10 @@ def prepare_config_bh(filename, cfg, log):
     process_cfg.substitute_params(filename, subst_dict, log)
 
 
-def run_bh(configs_dir, execution_home, cfg, log):
+def run_bh(configs_dir, execution_home, cfg, ext_python_modules_home, log):
+    addsitedir(ext_python_modules_home)
+    import pyyaml
+
     dst_configs = os.path.join(cfg.output_dir, "configs")
     if os.path.exists(dst_configs):
         shutil.rmtree(dst_configs)
@@ -61,18 +59,14 @@ def run_bh(configs_dir, execution_home, cfg, log):
 
     log.info("\n== Running read error correction tool: " + command + "\n")
     support.sys_call(command, log)
-
+    corrected_dataset_yaml_filename = os.path.join(cfg.tmp_dir, "corrected.yaml")
+    corrected_dataset_data = pyyaml.load(file(corrected_dataset_yaml_filename, 'r'))
     if cfg.gzip_output:
         log.info("\n== Compressing corrected reads (with gzip)")
-        
-    import bh_aux
-    dataset_str = bh_aux.generate_dataset(cfg, log)
-    dataset_filename = cfg.dataset
-    dataset_file = open(dataset_filename, "w")
-    dataset_file.write(dataset_str)
-    dataset_file.close()
-    log.info("\n== Dataset description file created: " + dataset_filename + "\n")
+    support.move_dataset_files(corrected_dataset_data, cfg.output_dir, log, cfg.gzip_output)
+    corrected_dataset_yaml_filename = os.path.join(cfg.output_dir, "corrected.yaml")
+    pyyaml.dump(corrected_dataset_data, file(corrected_dataset_yaml_filename, 'w'))
+    log.info("\n== Dataset description file created: " + corrected_dataset_yaml_filename + "\n")
 
     shutil.rmtree(cfg.tmp_dir)
-
-    return dataset_filename
+    return corrected_dataset_yaml_filename

@@ -21,12 +21,6 @@
 
 namespace debruijn_graph {
 
-template<class Compared_obj>
-//bool WeightComparator(Compared_obj &pi1, Compared_obj &pi2){
-bool WeightComparator(const Compared_obj &pi1, const Compared_obj &pi2){
-  return pi1.weight() > pi2.weight();
-}
-
 
 template<class Graph>
 class PairInfoImprover {
@@ -36,8 +30,8 @@ class PairInfoImprover {
   typedef pair<EdgeId, EdgeId> EdgePair;
 
  public:
-  PairInfoImprover(const Graph& g, PairedInfoIndexT<Graph>& clustered_index) :
-                   graph_(g), index_(clustered_index)
+  PairInfoImprover(const Graph& g, PairedInfoIndexT<Graph>& clustered_index, const io::SequencingLibrary<debruijn_config::DataSetData> &lib) :
+                   graph_(g), index_(clustered_index), lib_(lib)
   {
   }
 
@@ -57,7 +51,6 @@ class PairInfoImprover {
   void ParallelCorrectPairedInfo(size_t nthreads) {
     size_t missing_paired_info_count = 0;
     size_t extra_paired_info_count = 0;
-
     extra_paired_info_count = ParallelRemoveContraditional(nthreads);
     missing_paired_info_count = ParallelFillMissing(nthreads);
 
@@ -163,7 +156,7 @@ class PairInfoImprover {
       #pragma omp for schedule(guided)
       for (size_t i = 0; i < infos.size(); ++i)
       {
-        vector<PathInfoClass<Graph>> paths = spc.ConvertPIToSplitPaths(infos[i]);
+        vector<PathInfoClass<Graph>> paths = spc.ConvertPIToSplitPaths(infos[i], lib_.data().mean_insert_size, lib_.data().insert_size_deviation);
         paths_size += paths.size();
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
           TRACE("Path " << iter->PrintPath(graph_));
@@ -216,7 +209,7 @@ class PairInfoImprover {
     SplitPathConstructor<Graph> spc(graph_);
     for (auto e_iter = graph_.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
       const PairInfos& infos = index_.GetEdgeInfo(*e_iter);
-      vector<PathInfoClass<Graph>> paths = spc.ConvertPIToSplitPaths(infos);
+      vector<PathInfoClass<Graph>> paths = spc.ConvertPIToSplitPaths(infos, lib_.data().mean_insert_size, lib_.data().insert_size_deviation);
       for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
         TRACE("Path " << iter->PrintPath(graph_));
         for (auto pi_iter = iter->begin(); pi_iter != iter->end(); ++pi_iter) {
@@ -232,41 +225,29 @@ class PairInfoImprover {
 // Checking the consitency of two edge pairs (e, e_1) and (e, e_2) for all pairs (e, <some_edge>)
   void FindInconsistent(EdgeId base_edge, const InnerMap<Graph>& inner_map, PairedInfoIndexT<Graph>* pi)
   {
-	PairInfos PIs;
     for (auto I_1 = inner_map.Begin(), E = inner_map.End(); I_1 != E; ++I_1) {
-    	PairInfo<EdgeId> tmp_edge(base_edge, (*I_1).first, (*I_1).second);
-    	PIs.push_back(tmp_edge);
-    }
-    std::sort(PIs.begin(), PIs.end(), WeightComparator<PairInfo<EdgeId>>);
-    for (auto I_1 = PIs.begin(); I_1 != PIs.end(); ++I_1) {
-      if (!IsPresent(*I_1, pi))
-      for (auto I_2 = I_1; I_2 != PIs.end(); ++I_2) {
+      for (auto I_2 = inner_map.Begin(); I_2 != E; ++I_2) {
         if (I_1 == I_2)
           continue;
-        EdgeId e1 = (*I_1).second;
-        const Point& p1 = (*I_1).point;
-        EdgeId e2 = (*I_2).second;
-        const Point& p2 = (*I_2).point;
-        if (!IsConsistent(base_edge, e1, e2, p1, p2)||!IsConsistent(base_edge, e2, e1, p2, p1)) {
-          if (math::le(p1.weight, p2.weight)) {
+        EdgeId e1 = (*I_1).first;
+        const Point& p1 = (*I_1).second;
+        EdgeId e2 = (*I_2).first;
+        const Point& p2 = (*I_2).second;
+
+        if (!IsConsistent(base_edge, e1, e2, p1, p2)) {
+          if (math::le(p1.weight, p2.weight))
             pi->AddPairInfo(base_edge, e1, p1);
-            TRACE("To remove: "<<graph_.int_id(base_edge)<<" "<<graph_.int_id(e1)<<" "<< p1 << " tr "  << omp_get_thread_num());
-          }
-          else {
-            if (math::le(p2.weight, p1.weight)) {
-              pi->AddPairInfo(base_edge, e2, p2);
-              TRACE("To remove: "<<graph_.int_id(base_edge)<<" "<<graph_.int_id(e2)<<" "<< p2 << " tr "  << omp_get_thread_num());
-            }
-          }
+          else
+            pi->AddPairInfo(base_edge, e2, p2);
         }
       }
     }
   }
 
-
-  // Checking the consistency of two edge pairs (e, e_1) and (e, e_2)
+//public:
+// Checking the consistency of two edge pairs (e, e_1) and (e, e_2)
   bool IsConsistent(EdgeId e, EdgeId e1, EdgeId e2, const Point& p1, const Point& p2) const {
-    if ((math::le(p1.d, 0.)
+	  if ((math::le(p1.d, 0.)
       || math::le(p2.d, 0.))
       || math::gr(p1.d, p2.d))
     return true;
@@ -275,8 +256,8 @@ class PairInfoImprover {
     int first_length = graph_.length(e1);
     double var = p1.var + p2.var;
 
-    TRACE("   PI " <<graph_.int_id(e)<<" "<<graph_.int_id(e1) <<" "  << p1  << " tr "  << omp_get_thread_num());
-    TRACE("vs PI " <<graph_.int_id(e)<<" "<<graph_.int_id(e2) <<" "  <<  p2  << " tr "  << omp_get_thread_num());
+    TRACE("   PI " << p1  << " tr "  << omp_get_thread_num());
+    TRACE("vs PI " << p2  << " tr "  << omp_get_thread_num());
 
     if (math::le(pi_dist, double(first_length) + var)
      && math::le(double(first_length), pi_dist + var))
@@ -285,9 +266,6 @@ class PairInfoImprover {
         return true;
       else {
         auto paths = GetAllPathsBetweenEdges(graph_, e1, e2, 0, ceil(pi_dist - first_length + var));
-        if (paths.size() == 0) {
-        	TRACE(" is contradict "<< " tr "  << omp_get_thread_num());
-        }
         return (paths.size() > 0);
       }
     }
@@ -302,18 +280,7 @@ class PairInfoImprover {
     }
   }
 
-  bool IsPresent(const PairInfo<EdgeId>& pi, PairedInfoIndexT<Graph>* pi_index){
-    const Histogram& histogram = pi_index->GetEdgePairInfo(pi.first, pi.second);
-    for (auto it = histogram.begin(); it != histogram.end(); ++it) {
-      const Point& cur_point = *it;
-      if (ClustersIntersect(cur_point, pi.point)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-
+//private:
   size_t DeleteIfExist(EdgeId e1, EdgeId e2, const Histogram& infos) {
     size_t cnt = 0;
     const Histogram& histogram = index_.GetEdgePairInfo(e1, e2);
@@ -397,6 +364,7 @@ class PairInfoImprover {
 
   const Graph& graph_;
   PairedInfoIndexT<Graph>& index_;
+  const io::SequencingLibrary<debruijn_config::DataSetData>& lib_;
 
   DECL_LOGGER("PairInfoImprover")
 };

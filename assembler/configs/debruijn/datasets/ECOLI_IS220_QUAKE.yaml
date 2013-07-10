@@ -1,15 +1,5 @@
-[
-  {
-    orientation: "fr",
-    type: "paired-end",
-    right reads: [
-      "/home/lab42/algorithmic-biology/assembler/data/input/E.coli/is220/cropped/s_6.first400000_2.fastq.gz"
-    ],
-    left reads: [
-      "/home/lab42/algorithmic-biology/assembler/data/input/E.coli/is220/cropped/s_6.first400000_1.fastq.gz"
-    ],
-    single reads: [
-    ]
-  }
-]
-
+- left reads: [../../../data/input/E.coli/is220/s_6_2.cor.fastq.gz]
+  orientation: fr
+  right reads: [../../../data/input/E.coli/is220/s_6_1.cor.fastq.gz]
+  single reads: [../../../data/input/E.coli/is220/s_6_1.cor_single.fastq.gz, ../../../data/input/E.coli/is220/s_6_2.cor_single.fastq.gz]
+  type: paired-end

@@ -7,9 +7,9 @@
 #pragma once
 
 #include "runtime_k.hpp"
+#include "compare_standard.hpp"
 #include "cap_kmer_index.hpp"
 #include "graph_construction.hpp"
-#include "compare_standard.hpp"
 
 namespace cap {
 
@@ -295,7 +295,8 @@ void SplitAndColorGraph(gp_t& gp,
 		ContigStreams& streams, bool fill_pos = true) {
 
     typedef typename gp_t::graph_t Graph;
-	typedef NewExtendedSequenceMapper<Graph, typename gp_t::seq_t> Mapper;
+    typedef typename gp_t::index_t Index;
+	typedef NewExtendedSequenceMapper<Graph, Index> Mapper;
 
 	ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp.g, // MAPPER K+1!!
 			coloring, *MapperInstance<gp_t>(gp));
@@ -314,6 +315,13 @@ void SplitAndColorGraph(gp_t& gp,
 	}
 }
 
+template<class Graph, class Index, class Streams>
+size_t CapConstructGraph(size_t k,
+        Streams& streams, Graph& g,
+        Index& index, SingleReadStream* contigs_stream = 0) {
+    return ConstructGraphUsingOldIndex(k, streams, g, index, contigs_stream);
+}
+
 template<class gp_t>
 void ConstructColoredGraph(gp_t& gp,
 		ColorHandler<typename gp_t::graph_t>& coloring,
@@ -322,7 +330,7 @@ void ConstructColoredGraph(gp_t& gp,
     INFO("Constructing de Bruijn graph for k=" << gp.k_value);
 
 	// false: do not delete streams after usage
-	debruijn_graph::ConstructGraph(gp.k_value, streams,
+	CapConstructGraph(gp.k_value, streams,
 			gp.g, gp.index);
 
 	SplitAndColorGraph(gp, coloring, streams, fill_pos);

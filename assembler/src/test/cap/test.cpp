@@ -130,15 +130,15 @@ BOOST_AUTO_TEST_CASE( SyntheticExamplesTestsRtSeq ) {
 	remove_dir("bp_graph_test");
 }
 
-BOOST_AUTO_TEST_CASE( SyntheticExamplesTestsLSeq ) {
-
-  utils::TmpFolderFixture _("tmp");
-	make_dir("bp_graph_test");
-
-	LoadAndRunBPG<15, 25, LSeq>("./src/test/cap/tests/synthetic/tests.xml",
-			"bp_graph_test/simulated_common/", "./src/test/cap/tests/synthetic/etalon/", "", false);
-	remove_dir("bp_graph_test");
-}
+//BOOST_AUTO_TEST_CASE( SyntheticExamplesTestsLSeq ) {
+//
+//  utils::TmpFolderFixture _("tmp");
+//	make_dir("bp_graph_test");
+//
+//	LoadAndRunBPG<15, 25, LSeq>("./src/test/cap/tests/synthetic/tests.xml",
+//			"bp_graph_test/simulated_common/", "./src/test/cap/tests/synthetic/etalon/", "", false);
+//	remove_dir("bp_graph_test");
+//}
 
 /*
 BOOST_AUTO_TEST_CASE( SyntheticExamplesWithErrorsTests ) {

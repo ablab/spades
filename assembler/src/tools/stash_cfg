@@ -1,0 +1,107 @@
+
+#!/bin/bash
+
+############################################################################
+# Copyright (c) 2011-2013 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
+cmd=cp
+pop=false
+mod='-all'
+name='stash'
+for arg; do
+	case $arg in
+		'-d')	cmd=diff   ;;
+		'pop')	pop=true   ;;
+		'c')    mod='c'    ;;
+		'h')    mod='h'    ;;  
+		's')    mod='s'    ;;
+		'de')   mod='de'   ;;
+		'dip')  mod='dip'  ;;
+		'log')  mod='log'  ;;
+		'sp')   mod='sp'   ;;
+		'pec')  mod='pec'  ;;
+		'pep')  mod='pep'  ;;
+		'con')  mod='con'  ;;
+		'-all') mod='-all' ;;
+		*)	   name=$arg
+	esac
+done
+if $pop
+then
+	case $mod in
+	  'c')   $cmd stashed_configs/$name/debruijn/config.info configs/debruijn/config.info ;;
+	  'h')   $cmd stashed_configs/$name/hammer/config.info configs/hammer/config.info ;;  
+	  's')   $cmd stashed_configs/$name/debruijn/simplification.info configs/debruijn/simplification.info ;;
+	  'de')  $cmd stashed_configs/$name/debruijn/distance_estimation.info configs/debruijn/distance_estimation.info;;
+	  'dip') $cmd stashed_configs/$name/debruijn/detail_info_printer.info configs/debruijn/detail_info_printer.info;;
+	  'log') $cmd stashed_configs/$name/debruijn/log.properties configs/debruijn/log.properties ;;
+	  'sp')  $cmd stashed_configs/$name/spades_config.info spades_config.info;;
+	  'pec') $cmd stashed_configs/$name/debruijn/path_extend/pe_config.info   configs/debruijn/path_extend/pe_config.info;;
+	  'pep') $cmd stashed_configs/$name/debruijn/path_extend/pe_params.info   configs/debruijn/path_extend/pe_params.info;;
+	  'con') $cmd stashed_configs/$name/debruijn/construction.info   configs/debruijn/construction.info;;
+	  '-all')
+	#  		echo ----------------------spades_config.info------------------------
+	#        $cmd spades_config.info.template                            spades_config.info
+			echo -----------------configs/debruijn/config.info-------------------
+		    $cmd stashed_configs/$name/debruijn/config.info                  configs/debruijn/config.info
+			echo ------------------configs/hammer/config.info--------------------
+		    $cmd stashed_configs/$name/hammer/config.info                    configs/hammer/config.info
+			echo -------------configs/debruijn/simplification.info---------------
+		    $cmd stashed_configs/$name/debruijn/simplification.info          configs/debruijn/simplification.info
+			echo -----------configs/debruijn/distance_estimation.info------------
+		    $cmd stashed_configs/$name/debruijn/distance_estimation.info     configs/debruijn/distance_estimation.info
+			echo -----------configs/debruijn/detail_info_printer.info------------
+		    $cmd stashed_configs/$name/debruijn/detail_info_printer.info     configs/debruijn/detail_info_printer.info
+			echo ----------------configs/debruijn/log.properties-----------------
+		    $cmd stashed_configs/$name/debruijn/log.properties               configs/debruijn/log.properties
+			echo ----------configs/debruijn/path_extend/pe_config.info-----------
+		    $cmd stashed_configs/$name/debruijn/path_extend/pe_config.info   configs/debruijn/path_extend/pe_config.info
+			echo ----------configs/debruijn/path_extend/pe_config.info-----------
+		    $cmd stashed_configs/$name/debruijn/path_extend/pe_params.info   configs/debruijn/path_extend/pe_params.info
+			echo --------------configs/debruijn/construction.info----------------
+		    $cmd stashed_configs/$name/debruijn/construction.info   configs/debruijn/construction.info
+	esac
+else
+	mkdir -p stashed_configs
+	mkdir -p stashed_configs/$name
+	mkdir -p stashed_configs/$name/debruijn
+	mkdir -p stashed_configs/$name/hammer
+	mkdir -p stashed_configs/$name/debruijn/path_extend
+	case $mod in
+	  'c')   $cmd configs/debruijn/config.info stashed_configs/$name/debruijn/config.info ;;
+	  'h')   $cmd configs/hammer/config.info stashed_configs/$name/hammer/config.info ;;  
+	  's')   $cmd configs/debruijn/simplification.info stashed_configs/$name/debruijn/simplification.info ;;
+	  'de')  $cmd configs/debruijn/distance_estimation.info stashed_configs/$name/debruijn/distance_estimation.info ;;
+	  'dip') $cmd configs/debruijn/detail_info_printer.info stashed_configs/$name/debruijn/detail_info_printer.info ;;
+	  'log') $cmd configs/debruijn/log.properties stashed_configs/$name/debruijn/log.properties ;;
+	  'sp')  $cmd spades_config.info stashed_configs/$name/spades_config.info ;;
+	  'pec') $cmd configs/debruijn/path_extend/pe_config.info stashed_configs/$name/debruijn/path_extend/pe_config.info ;;
+	  'pep') $cmd configs/debruijn/path_extend/pe_params.info stashed_configs/$name/debruijn/path_extend/pe_params.info ;;
+	  'con') $cmd configs/debruijn/construction.info stashed_configs/$name/debruijn/construction.info ;;
+	  '-all')
+	#  		echo ----------------------spades_config.info------------------------
+	#        $cmd spades_config.info.template                            spades_config.info
+			echo -----------------configs/debruijn/config.info-------------------
+		    $cmd configs/debruijn/config.info 					stashed_configs/$name/debruijn/config.info
+			echo ------------------configs/hammer/config.info--------------------
+		    $cmd configs/hammer/config.info                    	stashed_configs/$name/hammer/config.info
+			echo -------------configs/debruijn/simplification.info---------------
+		    $cmd configs/debruijn/simplification.info			stashed_configs/$name/debruijn/simplification.info
+			echo -----------configs/debruijn/distance_estimation.info------------
+		    $cmd configs/debruijn/distance_estimation.info		stashed_configs/$name/debruijn/distance_estimation.info
+			echo -----------configs/debruijn/detail_info_printer.info------------
+		    $cmd configs/debruijn/detail_info_printer.info		stashed_configs/$name/debruijn/detail_info_printer.info
+			echo ----------------configs/debruijn/log.properties-----------------
+		    $cmd configs/debruijn/log.properties				stashed_configs/$name/debruijn/log.properties
+			echo ----------configs/debruijn/path_extend/pe_config.info-----------
+		    $cmd configs/debruijn/path_extend/pe_config.info	stashed_configs/$name/debruijn/path_extend/pe_config.info
+			echo ----------configs/debruijn/path_extend/pe_config.info-----------
+		    $cmd configs/debruijn/path_extend/pe_params.info	stashed_configs/$name/debruijn/path_extend/pe_params.info
+			echo --------------configs/debruijn/construction.info----------------
+		    $cmd configs/debruijn/construction.info				stashed_configs/$name/debruijn/construction.info
+	esac
+fi
+

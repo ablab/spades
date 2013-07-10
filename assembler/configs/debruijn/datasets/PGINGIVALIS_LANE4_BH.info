@@ -4,3 +4,5 @@ RL                       100
 IS                       270
 single_cell              true
 reference_genome         ../../../data/input/P.gingivalis/TDC60.fasta.gz
+
+reads	PGINGIVALIS_LANE4_BH.yaml

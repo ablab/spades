@@ -235,4 +235,59 @@ std::shared_ptr<ReadStreamVector<Reader>> RCWrapStreams(ReadStreamVector<Reader>
     return rc_streams;
 }
 
+template<typename ReadType>
+class OrientationReaderWrapper: public IReader<ReadType> {
+
+public:
+
+    explicit OrientationReaderWrapper(IReader<ReadType> * reader, LibraryOrientation orientation, bool delete_reader = true) :
+            reader_(reader), changer_(GetOrientationChanger<ReadType>(orientation)), delete_reader_(delete_reader) {
+    }
+
+    ~OrientationReaderWrapper() {
+        delete changer_;
+        if (delete_reader_)
+            delete reader_;
+    }
+
+    bool is_open() {
+        return reader_->is_open();
+    }
+
+    bool eof() {
+        return reader_->eof();
+    }
+
+    OrientationReaderWrapper& operator>>(ReadType& read) {
+        reader_->operator >>(read);
+        read = changer_->Perform(read);
+        return (*this);
+    }
+
+    void close() {
+        reader_->close();
+    }
+
+    void reset() {
+        reader_->reset();
+    }
+
+    ReadStat get_stat() const {
+        return reader_->get_stat();
+    }
+
+private:
+
+    IReader<ReadType> * reader_;
+
+    OrientationChanger<ReadType> * changer_;
+
+    bool delete_reader_;
+
+    explicit OrientationReaderWrapper(const OrientationReaderWrapper<ReadType>& reader);
+
+    void operator=(const OrientationReaderWrapper<ReadType>& reader);
+};
+
+
 }

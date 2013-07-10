@@ -135,13 +135,13 @@ class MismatchStatistics {
   void Count(io::IReader<read_type>& stream, const graph_pack &gp) {
     stream.reset();
     DEBUG("count started");
-    NewExtendedSequenceMapper<Graph> sm(gp.g, gp.index, gp.kmer_mapper, gp.g.k() + 1);
+    auto sm = MapperInstance(gp);
     DEBUG("seq mapper created");
     while(!stream.eof()) {
       read_type read;
       stream >> read;
       const Sequence &s_read = read.sequence();
-      omnigraph::MappingPath<EdgeId> path = sm.MapSequence(s_read);
+      omnigraph::MappingPath<EdgeId> path = sm->MapSequence(s_read);
       TRACE("read mapped");
       if(path.size() == 1 && path[0].second.initial_range.size() == path[0].second.mapped_range.size()) {
         Range initial_range = path[0].second.initial_range;

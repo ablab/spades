@@ -14,4 +14,4 @@ add_executable(debruijn_test
  ${CMAKE_SOURCE_DIR}/debruijn/kmer_coverage_model.cpp
  test.cpp)
 
-target_link_libraries(debruijn_test ${COMMON_LIBRARIES} input mph_index otkpp)
+target_link_libraries(debruijn_test ${COMMON_LIBRARIES} input mph_index otkpp ssw ${ZLIB_LIBRARIES})

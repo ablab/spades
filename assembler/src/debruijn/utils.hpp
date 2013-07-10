@@ -45,12 +45,12 @@ using omnigraph::PairInfo;
 using omnigraph::GraphActionHandler;
 
 //todo rewrite with extended sequence mapper!
-template<class Graph>
+template<class Graph, class Index>
 class EtalonPairedInfoCounter {
 	typedef typename Graph::EdgeId EdgeId;
 
 	const Graph& g_;
-	const EdgeIndex<Graph>& index_;
+	const Index& index_;
 	const KmerMapper<Graph>& kmer_mapper_;
 	size_t k_;
 
@@ -103,7 +103,7 @@ class EtalonPairedInfoCounter {
 	}
 
 public:
-  EtalonPairedInfoCounter(const Graph& g, const EdgeIndex<Graph>& index,
+  EtalonPairedInfoCounter(const Graph& g, const Index& index,
 			const KmerMapper<Graph>& kmer_mapper,
 			size_t insert_size,
 			size_t read_length, size_t delta, size_t k) :
@@ -309,7 +309,7 @@ private:
 	DECL_LOGGER("LatePairedIndexFiller");
 };
 
-template<class Graph>
+template<class Graph, class Index>
 class EdgeQuality: public GraphLabeler<Graph>, public GraphActionHandler<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
@@ -318,7 +318,7 @@ class EdgeQuality: public GraphLabeler<Graph>, public GraphActionHandler<Graph> 
 
 public:
 
-	void FillQuality(const EdgeIndex<Graph> &index
+	void FillQuality(const Index &index
 			, const KmerMapper<Graph>& kmer_mapper, const Sequence &genome) {
 		if (genome.size() < k_)
 			return;
@@ -333,7 +333,7 @@ public:
 		}
 	}
 
-	EdgeQuality(const Graph &graph, const EdgeIndex<Graph> &index,
+	EdgeQuality(const Graph &graph, const Index &index,
 	const KmerMapper<Graph>& kmer_mapper,
 	const Sequence &genome) :
 
@@ -397,15 +397,15 @@ public:
 
 };
 
-template<class Graph>
+template<class Graph, class Index>
 class QualityLoggingRemovalHandler {
 	typedef typename Graph::EdgeId EdgeId;
 	const Graph& g_;
-	const EdgeQuality<Graph>& quality_handler_;
+	const EdgeQuality<Graph, Index>& quality_handler_;
 //	size_t black_removed_;
 //	size_t colored_removed_;
 public:
-	QualityLoggingRemovalHandler(const Graph& g, const EdgeQuality<Graph>& quality_handler) :
+	QualityLoggingRemovalHandler(const Graph& g, const EdgeQuality<Graph, Index>& quality_handler) :
 			g_(g), quality_handler_(quality_handler)/*, black_removed_(0), colored_removed_(
 	 0)*/{
 
@@ -428,16 +428,16 @@ private:
 	;
 };
 
-template<class Graph>
+template<class Graph, class Index>
 class QualityLoggingRemovalCountHandler {
 	typedef typename Graph::EdgeId EdgeId;
 	const Graph& g_;
-	const EdgeQuality<Graph>& quality_handler_;
+	const EdgeQuality<Graph, Index>& quality_handler_;
 	size_t black_removed_;
     size_t total;
 
 public:
-	QualityLoggingRemovalCountHandler(const Graph& g, const EdgeQuality<Graph>& quality_handler) :
+	QualityLoggingRemovalCountHandler(const Graph& g, const EdgeQuality<Graph, Index>& quality_handler) :
 			g_(g), quality_handler_(quality_handler)/*, black_removed_(0), colored_removed_(
 	 0)*/{
         black_removed_ = 0;
@@ -501,19 +501,19 @@ public:
 	}
 };
 
-template<class Graph>
+template<class Graph, class Index>
 class QualityEdgeLocalityPrintingRH {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 	const Graph& g_;
-	const EdgeQuality<Graph>& quality_handler_;
+	const EdgeQuality<Graph, Index>& quality_handler_;
 	const GraphLabeler<Graph>& labeler_;
 	const string& output_folder_;
 //	size_t black_removed_;
 //	size_t colored_removed_;
 public:
 	QualityEdgeLocalityPrintingRH(const Graph& g
-			, const EdgeQuality<Graph>& quality_handler
+			, const EdgeQuality<Graph, Index>& quality_handler
 			, const GraphLabeler<Graph>& labeler
 			, const string& output_folder) :
 			g_(g), quality_handler_(quality_handler),
@@ -542,14 +542,14 @@ private:
 	;
 };
 
-template<class Graph>
+template<class Graph, class Index>
 class QualityPairInfoHandler {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 	typedef omnigraph::PairInfo<EdgeId> PairInfo;
 	typedef vector<PairInfo> PairInfos;
 	const Graph& g_;
-	const EdgeQuality<Graph>& quality_handler_;
+	const EdgeQuality<Graph, Index>& quality_handler_;
 	const GraphLabeler<Graph>& labeler_;
 	const string& output_folder_;
     const PairedInfoIndex<ConjugateDeBruijnGraph>& index_;
@@ -557,7 +557,7 @@ class QualityPairInfoHandler {
 //	size_t colored_removed_;
 public:
 	QualityPairInfoHandler(const Graph& g
-			, const EdgeQuality<Graph>& quality_handler
+			, const EdgeQuality<Graph, Index>& quality_handler
 			, const GraphLabeler<Graph>& labeler
 			, const string& output_folder
             , const PairedInfoIndex<ConjugateDeBruijnGraph>& index) :
@@ -692,41 +692,66 @@ public:
     }
 };
 
+
 template<class graph_pack, class PairedRead, class ConfigType>
 bool RefineInsertSize(const graph_pack& gp,
                       io::ReadStreamVector<io::IReader<PairedRead> >& streams,
                       ConfigType& config,
-                      size_t edge_length_threshold)
-{
-    double mean;
-    double delta;
-    double median;
-    double mad;
-    std::map<size_t, size_t> percentiles;
-    std::map<int, size_t> hist;
-    // calling default method
-    refine_insert_size(streams, gp, edge_length_threshold, mean, delta, median, mad, percentiles, hist);
+                      size_t edge_length_threshold) {
+  size_t rl;
+  double mean;
+  double delta;
+  double median;
+  double mad;
+  std::map<size_t, size_t> percentiles;
+  std::map<int, size_t> hist;
+  // calling default method
+  refine_insert_size(streams, gp, edge_length_threshold, rl, mean, delta, median, mad, percentiles, hist);
 
-    if (hist.size() == 0) {
-        config.paired_mode = false;
-        WARN("Failed to estimate the insert size of paired reads, because none of the paired reads aligned to long edges.");
-        WARN("Paired reads will not be used.");
-        return false;
-    }
+  if (hist.size() == 0) {
+    config.paired_mode = false;
+    WARN("Failed to estimate the insert size of paired reads, because none of the paired reads aligned to long edges.");
+    WARN("Paired reads will not be used.");
+    return false;
+  }
 
-    config.ds.IS = mean;
-    config.ds.is_var = delta;
-    config.ds.median = median;
-    config.ds.mad = mad;
-    config.ds.percentiles = percentiles;
-    config.ds.hist = hist;
-    INFO("IS = " << mean);
-    INFO("Delta = " << delta);
-    INFO("Median = " << median);
-    INFO("MAD = " << mad);
-    DEBUG("Delta_Mad = " << 1.4826 * mad);
+  config.ds.set_IS(mean);
+  config.ds.set_is_var(delta);
+  config.ds.set_median(median);
+  config.ds.set_mad(mad);
+  config.ds.set_hist(hist);
+  INFO("Mean Insert Size = " << mean);
+  INFO("Insert Size stddev= " << delta);
+  INFO("Median Insert Size = " << median);
+  INFO("Insert Size MAD = " << mad);
+  DEBUG("Delta_Mad = " << 1.4826 * mad);
 
-    return true;
+  return true;
+}
+
+template<class graph_pack, class PairedRead, class DataSet>
+bool RefineInsertSizeForLib(const graph_pack& gp,
+                      io::ReadStreamVector<io::IReader<PairedRead> >& streams,
+                      DataSet& data,
+                      size_t edge_length_threshold) {
+
+  std::map<size_t, size_t> percentiles;
+  // calling default method
+  data.read_length = 0;
+  refine_insert_size(streams, gp, edge_length_threshold,
+          data.read_length,
+          data.mean_insert_size,
+          data.insert_size_deviation,
+          data.median_insert_size,
+          data.insert_size_mad,
+          percentiles,
+          data.insert_size_distribution);
+
+  if (data.insert_size_distribution.size() == 0) {
+    return false;
+  }
+
+  return true;
 }
 
 double UnityFunction(int /*x*/) {

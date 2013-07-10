@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config_common.hpp"
+#include "config_singl.hpp"
 
 namespace cap {
 

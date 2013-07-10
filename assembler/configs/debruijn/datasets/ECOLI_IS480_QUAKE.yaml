@@ -1,0 +1,4 @@
+- left reads: [../../../data/input/E.coli/is480/ERR022075_2.cor.fastq.gz]
+  orientation: fr
+  right reads: [../../../data/input/E.coli/is480/ERR022075_1.cor.fastq.gz]
+  type: paired-end

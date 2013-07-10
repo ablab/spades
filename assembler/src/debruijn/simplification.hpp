@@ -18,11 +18,12 @@
 #include "gap_closer.hpp"
 #include "omni_labelers.hpp"
 #include "omni/omni_tools.hpp"
-#include "internal_aligner.hpp"
 #include "io/single_read.hpp"
 #include "io/ireadstream.hpp"
 #include "mismatch_shall_not_pass.hpp"
 #include "contig_output.hpp"
+#include "detail_coverage.hpp"
+#include "graphio.hpp"
 
 namespace debruijn_graph {
 void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp,
@@ -31,116 +32,6 @@ void simplify_graph(PairedReadStream& stream, conj_graph_pack& gp,
 
 // move impl to *.cpp
 namespace debruijn_graph {
-
-
-io::OffsetType EvaluateOffset() {
-	int offset = 0;
-	if (cfg::get().ds.paired_reads.size() > 0){
-		if (cfg::get().ds.paired_reads[0].size() > 0) {
-			offset = determine_offset(input_file(cfg::get().ds.paired_reads[0][0]));
- 		}
-	}
-	if (offset == 0) {
-		if (cfg::get().ds.single_reads.size() > 0) {
-			offset = determine_offset(input_file(cfg::get().ds.single_reads[0]));
-		}
-	}
-	io::OffsetType offset_type;
-	if (offset == 33) {
-		INFO("Using offset +33");
-		offset_type = io::PhredOffset;
-	} else if (offset == 64) {
-		INFO("Using offset +64");
-		offset_type = io::SolexaOffset;
-	} else {
-		WARN("Unable to define offset type, assume +33");
-		offset_type = io::PhredOffset;
-	}
-	return offset_type;
-}
-
-
-void SAMBeforeResolve(conj_graph_pack& conj_gp) {
-	//assume same quality offset for all files!!!
-
-	io::OffsetType offset_type = EvaluateOffset();
-
-	string OutputFileName = (cfg::get().run_mode || cfg::get().paired_mode) ? cfg::get().output_dir + "align_before_RR.sam":  cfg::get().output_base + "contigs.sam";
-
-	if (cfg::get().sw.align_original_reads) {
-		{
-			if (cfg::get().paired_mode) {
-				auto paired_reads = paired_easy_reader(false, 0, false, false,
-						false, offset_type);
-				auto original_paired_reads = paired_easy_reader(false, 0, false,
-						false, true, offset_type);
-				typedef NewExtendedSequenceMapper<Graph> SequenceMapper;
-				SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper,
-						conj_gp.k_value + 1);
-
-				bool print_quality = (
-						cfg::get().sw.print_quality ?
-								*cfg::get().sw.print_quality : false);
-				OriginalReadsSimpleInternalAligner<ConjugateDeBruijnGraph,
-						SequenceMapper> Aligner(conj_gp.k_value, conj_gp.g, mapper,
-						cfg::get().sw.adjust_align, cfg::get().sw.output_map_format,
-						cfg::get().sw.output_broken_pairs, print_quality);
-				Aligner.AlignPairedReads(*original_paired_reads, *paired_reads,
-						OutputFileName);
-			} else {
-				auto single_reads = single_easy_reader(false, false,
-						false, offset_type);
-				auto original_single_reads = single_easy_reader(false,
-						false, true, offset_type);
-				typedef NewExtendedSequenceMapper<Graph> SequenceMapper;
-				SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper,
-						conj_gp.k_value + 1);
-
-				bool print_quality = (
-						cfg::get().sw.print_quality ?
-								*cfg::get().sw.print_quality : false);
-				OriginalReadsSimpleInternalAligner<ConjugateDeBruijnGraph,
-						SequenceMapper> Aligner(conj_gp.k_value, conj_gp.g, mapper,
-						cfg::get().sw.adjust_align, cfg::get().sw.output_map_format,
-						cfg::get().sw.output_broken_pairs, print_quality);
-				Aligner.AlignSingleReads(*original_single_reads, *single_reads,
-						OutputFileName);
-
-			}
-
-		}
-	} else {
-
-		auto paired_reads = paired_easy_reader(false, 0, false, false, false,
-				offset_type);
-		auto single_reads = single_easy_reader(false, false, false,
-				offset_type);
-
-		typedef NewExtendedSequenceMapper<Graph> SequenceMapper;
-		SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper,
-				conj_gp.k_value + 1);
-
-		bool print_quality = (
-				cfg::get().sw.print_quality ?
-						*cfg::get().sw.print_quality : false);
-		SimpleInternalAligner<ConjugateDeBruijnGraph, SequenceMapper> Aligner(
-				conj_gp.k_value, conj_gp.g, mapper, cfg::get().sw.adjust_align,
-				cfg::get().sw.output_map_format,
-				cfg::get().sw.output_broken_pairs, print_quality);
-		if (cfg::get().paired_mode){
-			if (cfg::get().sw.align_only_paired)
-				Aligner.AlignPairedReads(*paired_reads,
-						OutputFileName);
-			else
-				Aligner.AlignReads(*paired_reads, *single_reads,
-						OutputFileName);
-		} else {
-			Aligner.AlignSingleReads(*single_reads,
-					OutputFileName);
-
-		}
-	}
-}
 
 void PrintWeightDistribution(Graph &g, const string &file_name, size_t k) {
 	ofstream os(file_name.c_str());
@@ -165,8 +56,36 @@ void simplify_graph(conj_graph_pack& gp) {
 
 	exec_construction(gp);
 
-	INFO("STAGE == Simplifying graph");
+	//auto index = detail_coverage::FlankingKMers<DeBruijnEdgeIndex<EdgeId>,EdgeId>(gp.index.inner_index());
+	//index.save("/home/ksenia/detail_in.cvr","/home/ksenia/detail_out.cvr");
 
+	/*for ( auto index_iterator = gp.index.inner_index().value_begin(); index_iterator < gp.index.inner_index().value_end(); ++index_iterator ){
+	         std::cout << index_iterator->edgeId_ << " " << index_iterator->offset_ << " " << index_iterator->count_ << std::endl;
+	}*/
+	INFO("STAGE == Simplifying graph");
+/*
+#if 0
+	if (contigs_stream) {
+		contigs_stream->reset();
+		FillCoverageFromStream(*contigs_stream, index);
+	}
+#endif
+	
+	// Check sanity in developer mode
+	if (cfg::get().developer_mode) {
+		for (auto idx = gp.index.inner_index().kmer_idx_begin(), eidx = gp.index.inner_index().kmer_idx_end(); idx != eidx; ++idx) {
+			runtime_k::RtSeq k = gp.index.inner_index().kmer(idx);
+			INFO("" << gp.index.inner_index()[k].count_ << ":" << gp.index.inner_index()[!k].count_);
+
+			VERIFY(gp.index.inner_index()[k].count_ == gp.index.inner_index()[!k].count_);	
+		}
+	}
+*/
+
+	if (cfg::get().developer_mode) {	
+		INFO("developer mode - save edge index");
+		SaveEdgeIndex(cfg::get().output_dir + "/saves/debruijn_kmer_index_after_construction",gp.index.inner_index());
+	}
 //	PrintWeightDistribution<K>(gp.g, "distribution.txt");
 
 //	EdgeQuality<Graph> edge_qual(gp.g, gp.index, gp.kmer_mapper, gp.genome);
@@ -177,7 +96,7 @@ void simplify_graph(conj_graph_pack& gp) {
 	detail_info_printer printer(gp, labeler, cfg::get().output_dir,
 			"graph.dot");
 	printer(ipp_before_first_gap_closer);
-
+;
 //	QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, edge_qual);
 //	QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler(gp.g, edge_qual,
 //			labeler, cfg::get().output_dir);
@@ -187,11 +106,13 @@ void simplify_graph(conj_graph_pack& gp) {
 //			&QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
 //			boost::ref(qual_removal_handler), _1);
 
+	
 	SimplifyGraph(gp, 0/*removal_handler_f*/, labeler, printer, 10
 	/*, etalon_paired_index*/);
 
+
 	AvgCovereageCounter<Graph> cov_counter(gp.g);
-	cfg::get_writable().ds.avg_coverage = cov_counter.Count();
+  cfg::get_writable().ds.set_avg_coverage(cov_counter.Count());
 
 	//  ProduceInfo<k>(g, index, *totLab, genome, output_folder + "simplified_graph.dot", "simplified_graph");
 
@@ -214,11 +135,11 @@ void simplify_graph(conj_graph_pack& gp) {
 }
 
 void load_simplification(conj_graph_pack& gp, path::files_t* used_files) {
-    string p = path::append_path(cfg::get().load_from, "simplified_graph");
+  std::string p = path::append_path(cfg::get().load_from, "simplified_graph");
 	used_files->push_back(p);
 
-    ScanGraphPack(p, gp);
-    load_estimated_params(p);
+  ScanGraphPack(p, gp);
+  load_lib_data(p);
 }
 
 void save_simplification(conj_graph_pack& gp) {
@@ -226,7 +147,7 @@ void save_simplification(conj_graph_pack& gp) {
 		string p = path::append_path(cfg::get().output_saves, "simplified_graph");
 		INFO("Saving current state to " << p);
 		PrintGraphPack(p, gp);
-		write_estimated_params(p);
+		write_lib_data(p);
 	}
 	OutputContigs(gp.g, cfg::get().additional_contigs, cfg::get().use_unipaths,
 			cfg::get().simp.tec.plausibility_length

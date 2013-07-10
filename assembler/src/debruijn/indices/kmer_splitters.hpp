@@ -6,6 +6,8 @@
  *      Author: anton
  */
 
+#include "io/read_stream_vector.hpp"
+
 namespace debruijn_graph {
 // used for temporary reads storage during parallel reading
 static const size_t READS_BUFFER_SIZE = 536870912; // 512 MB in bytes
@@ -309,7 +311,7 @@ size_t DeBruijnKMerKMerSplitter::FillBufferFromKMers(kmer_iterator &kmer,
                                                      unsigned num_files, size_t cell_size) const {
   size_t seqs = 0;
   for (size_t kmers = 0; kmer.good() && kmers < num_files * cell_size; ++kmer) {
-    Sequence nucls(runtime_k::RtSeq(K_source_, *kmer), 0);
+    Sequence nucls(runtime_k::RtSeq(K_source_, *kmer));
     kmers += FillBufferFromSequence(nucls, buffer, num_files);
     seqs += 1;
   }

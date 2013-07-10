@@ -3,3 +3,5 @@ single_reads             "../../../data/input/Delta.Bacteria/hammer/it4/04.reads
 RL                       100
 IS                       250
 single_cell              true
+
+reads	DELTA_BH.yaml

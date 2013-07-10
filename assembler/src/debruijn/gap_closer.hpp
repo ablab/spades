@@ -38,13 +38,12 @@ Path<EdgeId> ConvertToPath(Path<EdgeId> mp) {
   return mp;
 }
 
-template<class Graph, class SequenceMapper, class PairedStream>
+template<class Graph, class SequenceMapper>
 class GapCloserPairedIndexFiller {
 private:
   typedef typename Graph::EdgeId EdgeId;
   const Graph &graph_;
   const SequenceMapper& mapper_;
-  io::ReadStreamVector<PairedStream>& streams_;
 
   map<EdgeId, pair<EdgeId, int> > OutTipMap;
   map<EdgeId, pair<EdgeId, int> > InTipMap;
@@ -140,10 +139,10 @@ private:
     }
   }
 
-  void FillUsualIndex(omnigraph::PairedInfoIndexT<Graph> &paired_index) {
+  template<class PairedStream>
+  void FillUsualIndex(omnigraph::PairedInfoIndexT<Graph> &paired_index, PairedStream& stream) {
     INFO("Processing paired reads (takes a while)");
 
-    PairedStream& stream = streams_.back();
     stream.reset();
     size_t n = 0;
     while (!stream.eof()) {
@@ -154,10 +153,11 @@ private:
     }
   }
 
-  void FillParallelIndex(omnigraph::PairedInfoIndexT<Graph> &paired_index) {
+  template<class Streams>
+  void FillParallelIndex(omnigraph::PairedInfoIndexT<Graph> &paired_index, Streams& streams) {
     INFO("Processing paired reads (takes a while)");
 
-    size_t nthreads = streams_.size();
+    size_t nthreads = streams.size();
     vector<omnigraph::PairedInfoIndexT<Graph>*> buffer_pi(nthreads);
     buffer_pi[0] = &paired_index;
 
@@ -170,8 +170,9 @@ private:
     {
       #pragma omp for reduction(+ : counter)
       for (size_t i = 0; i < nthreads; ++i) {
+        typedef typename Streams::ReaderType PairedStream;
         typename PairedStream::read_type r;
-        PairedStream& stream = streams_[i];
+        PairedStream& stream = streams[i];
         stream.reset();
 
         while (!stream.eof()) {
@@ -192,31 +193,39 @@ private:
 
 public:
 
-  GapCloserPairedIndexFiller(const Graph &graph, const SequenceMapper& mapper,
-      io::ReadStreamVector<PairedStream>& streams) :
-      graph_(graph), mapper_(mapper), streams_(streams) {
+  GapCloserPairedIndexFiller(const Graph &graph, const SequenceMapper& mapper) :
+      graph_(graph), mapper_(mapper) {
 
   }
 
   /**
    * Method reads paired data from stream, maps it to genome and stores it in this PairInfoIndex.
    */
-
-  void FillIndex(omnigraph::PairedInfoIndexT<Graph> &paired_index) {
+  template<class Streams>
+  void FillIndex(omnigraph::PairedInfoIndexT<Graph> &paired_index, Streams& streams) {
     INFO("Preparing shift maps");
     PrepareShiftMaps();
 
-    if (streams_.size() == 1) {
-      FillUsualIndex(paired_index);
+    if (streams.size() == 1) {
+      FillUsualIndex(paired_index, streams.back());
     } else {
-      FillParallelIndex(paired_index);
+      FillParallelIndex(paired_index, streams);
     }
   }
 
 };
 
+template<class Mapper>
+bool CheckNoKmerClash(const Sequence& s, const Mapper& mapper) {
+  vector<EdgeId> path = mapper.MapSequence(s).simple_path().sequence();
+  return path.empty();
+}
+
 template<class Graph, class SequenceMapper>
 class GapCloser {
+ public:
+  typedef function<bool (const Sequence&)> SequenceCheckF;
+ private:
   typedef typename Graph::EdgeId EdgeId;
   typedef typename Graph::VertexId VertexId;
   typedef set<Point> Histogram;
@@ -228,7 +237,7 @@ class GapCloser {
   const size_t hamming_dist_bound_;
   const int init_gap_val_;
   const double weight_threshold_;
-  const SequenceMapper mapper_;
+  SequenceCheckF sequence_check_f_;
 
   bool WeightCondition(const Histogram& infos) const {
     for (auto it = infos.begin(); it != infos.end(); ++it) {
@@ -296,11 +305,6 @@ class GapCloser {
         g_.length(e) + g_.k(), false).size() == mismatch_pos.size();
   }
 
-  bool CheckSequence(const Sequence& s) const {
-    vector<EdgeId> path = mapper_.MapSequence(s).simple_path().sequence();
-    return path.empty();
-  }
-
   bool MatchesEnd(const Sequence& long_seq, const Sequence& short_seq, bool from_begin) const {
     return from_begin ? long_seq.Subseq(0, short_seq.size()) == short_seq
         : long_seq.Subseq(long_seq.size() - short_seq.size()) == short_seq;
@@ -311,7 +315,7 @@ class GapCloser {
     Sequence new_sequence = g_.EdgeNucls(first).Subseq(g_.length(first) - overlap + diff_pos.front(), g_.length(first) + k_ - overlap)
         + g_.EdgeNucls(second).First(k_);
     DEBUG("Checking new k+1-mers.");
-    if (CheckSequence(new_sequence)) {
+    if (sequence_check_f_(new_sequence)) {
       DEBUG("Check ok.");
       DEBUG("Splitting first edge.");
       pair<EdgeId, EdgeId> split_res = g_.SplitEdge(first, g_.length(first) - overlap + diff_pos.front());
@@ -336,7 +340,7 @@ class GapCloser {
     DEBUG("Can correct second with sequence from first.");
     Sequence new_sequence = g_.EdgeNucls(first).Last(k_) + g_.EdgeNucls(second).Subseq(overlap, diff_pos.back() + 1 + k_);
     DEBUG("Checking new k+1-mers.");
-    if (CheckSequence(new_sequence)) {
+    if (sequence_check_f_(new_sequence)) {
       DEBUG("Check ok.");
       DEBUG("Splitting second edge.");
       pair<EdgeId, EdgeId> split_res = g_.SplitEdge(second, diff_pos.back() + 1);
@@ -383,7 +387,7 @@ class GapCloser {
     //old code
     Sequence edge_sequence = g_.EdgeNucls(first).Last(k_)
         + g_.EdgeNucls(second).Subseq(overlap, k_);
-    if (CheckSequence(edge_sequence)) {
+    if (sequence_check_f_(edge_sequence)) {
       DEBUG(
         "Gap filled: Gap size = " << k_ - overlap << "  Result seq "
             << edge_sequence.str());
@@ -394,7 +398,6 @@ class GapCloser {
       return false;
     }
   }
-
 
   bool ProcessPair(EdgeId first, EdgeId second) {
     TRACE("Processing edges " << g_.str(first) << " and " << g_.str(second));
@@ -462,11 +465,11 @@ public:
 
   GapCloser(Graph& g, PairedInfoIndexT<Graph>& tips_paired_idx,
       size_t min_intersection, double weight_threshold,
-      const SequenceMapper& mapper, size_t hamming_dist_bound = 0/*min_intersection_ / 5*/) :
+      const SequenceCheckF& sequence_check_f, size_t hamming_dist_bound = 0/*min_intersection_ / 5*/) :
       g_(g), k_(g_.k()), tips_paired_idx_(tips_paired_idx), min_intersection_(
           min_intersection), hamming_dist_bound_(
           hamming_dist_bound), init_gap_val_(-10), weight_threshold_(
-          weight_threshold), mapper_(mapper) {
+          weight_threshold), sequence_check_f_(sequence_check_f) {
     VERIFY(min_intersection_ < g_.k());
     DEBUG("weight_threshold=" << weight_threshold_);
     DEBUG("min_intersect=" << min_intersection_);
@@ -477,43 +480,49 @@ private:
   DECL_LOGGER("GapCloser");
 };
 
-template<class PairedStream>
-void CloseGaps(conj_graph_pack& gp, io::ReadStreamVector<PairedStream>& streams) {
-  const size_t k = gp.k_value;
-  typedef NewExtendedSequenceMapper<Graph> SequenceMapper;
-  SequenceMapper mapper(gp.g, gp.index, gp.kmer_mapper, k + 1);
-  GapCloserPairedIndexFiller< Graph, SequenceMapper, PairedStream> gcpif(
-      gp.g, mapper, streams);
+template<class Streams>
+void CloseGaps(conj_graph_pack& gp, Streams& streams) {
+  typedef NewExtendedSequenceMapper<Graph, Index> Mapper;
+  auto mapper = MapperInstance(gp);
+  GapCloserPairedIndexFiller<Graph, Mapper> gcpif(
+      gp.g, *mapper);
   PairedIndexT tips_paired_idx(gp.g);
 //  if (fileExists("tip_info.prd")) {
 //    ConjugateDataScanner<Graph> scanner(gp.g, gp.int_ids);
 //    scanner.loadPaired("tip_info", tips_paired_idx);
 //  } else {
-  gcpif.FillIndex(tips_paired_idx);
+  gcpif.FillIndex(tips_paired_idx, streams);
   ConjugateDataPrinter<Graph> printer(gp.g, gp.int_ids);
 //    printer.savePaired("tip_info", tips_paired_idx);
 //  }
-  GapCloser<Graph, SequenceMapper> gap_closer(gp.g, tips_paired_idx,
-      cfg::get().gc.minimal_intersection, cfg::get().gc.weight_threshold,
-      mapper);
+  GapCloser<Graph, Mapper> gap_closer(gp.g, tips_paired_idx,
+                                      cfg::get().gc.minimal_intersection, cfg::get().gc.weight_threshold,
+                                      boost::bind(&CheckNoKmerClash<Mapper>, _1, boost::ref(*mapper)));
   gap_closer.CloseShortGaps();
 }
 
 void CloseGaps(conj_graph_pack& gp) {
   INFO("SUBSTAGE == Closing gaps");
 
+  //TODO: discuss what to use for gap closing
+  size_t lib_index = 0;
+  for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+     if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd) {
+         lib_index = i;
+         break;
+     }
+  }
   if (cfg::get().use_multithreading) {
-    auto streams = paired_binary_readers(true, 0);
+    auto streams = paired_binary_readers(cfg::get().ds.reads[lib_index], true, 0);
 
-    CloseGaps<io::IReader<io::PairedReadSeq>>(gp, *streams);
+    CloseGaps(gp, *streams);
 
-//    for (size_t i = 0; i < streams.size(); ++i) {
-//      delete streams[i];
-//    }
   } else {
-    auto_ptr<PairedReadStream> stream = paired_easy_reader(true, 0);
-        io::ReadStreamVector <PairedReadStream> streams(stream.get());
-    CloseGaps<PairedReadStream>(gp, streams);
+    auto_ptr<PairedReadStream> stream = paired_easy_reader(cfg::get().ds.reads[lib_index], true, 0);
+    io::ReadStreamVector <PairedReadStream> streams(stream.get());
+    //todo WTF what does it mean?
+    streams.release();
+    CloseGaps(gp, streams);
   }
 
 }
