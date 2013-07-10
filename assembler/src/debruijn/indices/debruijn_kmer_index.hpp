@@ -98,12 +98,12 @@ class PerfectHashMap {
     return InvalidIdx;
   }
 
- public:
-  //todo ask AntonK what it is...
+ protected:
   size_t raw_seq_idx(const typename KMerIndexT::KMerRawReference s) const {
     return index_.raw_seq_idx(s);
   }
 
+ public:
   size_t size() const { return data_.size(); }
 
   value_iterator value_begin() {
@@ -212,6 +212,7 @@ class KmerStoringIndex : public PerfectHashMap<typename traits::SeqType, ValueTy
 
   void clear() {
     base::clear();
+    delete kmers_;
     kmers_ = NULL;
   }
 
@@ -377,14 +378,6 @@ class DeBruijnKMerIndex : public Index {
 //Seq is here for partial specialization
 template <class Seq, class Index>
 class DeBruijnStreamKMerIndexBuilder {
- public:
-  typedef Index IndexT;
-  typedef typename IndexT::GraphT GraphT;
-
-  template <class Streams>::
-  size_t BuildIndexFromStream(IndexT &index,
-                              Streams &streams,
-                              SingleReadStream* contigs_stream = 0) const;
 
 };
 
