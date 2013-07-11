@@ -13,7 +13,7 @@
 
 namespace online_visualization {
 
-typedef debruijn_graph::NewExtendedSequenceMapper<Graph> MapperClass;
+typedef debruijn_graph::NewExtendedSequenceMapper<debruijn_graph::Graph, debruijn_graph::Index> MapperClass;
 typedef debruijn_graph::PosFiller<Graph, MapperClass> FillerClass;
 typedef debruijn_graph::KmerMapper<Graph> KmerMapperClass;
 typedef map<EdgeId, string> ColoringClass;

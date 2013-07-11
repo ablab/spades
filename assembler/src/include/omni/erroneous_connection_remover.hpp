@@ -310,6 +310,7 @@ class ThornRemover : public ChimericEdgeRemovingAlgorithm<Graph,
     }
 };
 
+//todo rename
 template<class Graph>
 class TopologyChimericEdgeRemover : public ChimericEdgeRemovingAlgorithm<Graph,
         LengthComparator<Graph>> {

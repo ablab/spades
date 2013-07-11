@@ -311,9 +311,6 @@ public:
 			//		output_folder + "saves/colored_split_graph.dot");
 		}
 
-		// DISABLING ALL ANALYSIS AFTER WRITE
-		return;
-
 		if (untangle_) {
 			VERIFY(false);
 //			INFO("Untangling graph");
@@ -414,16 +411,16 @@ void RunBPComparison(ContigStream& raw_stream1, ContigStream& raw_stream2,
 	INFO("LOL_TIME:: " << lol_time);
 }
 
-template<size_t k, size_t K>
-void RunBPComparison(const Sequence& ref, ContigStream& stream,
-		const string& name1, const string& name2, bool refine, bool untangle,
-		const string& output_folder, bool detailed_output = true, size_t delta =
-				5) {
-	io::VectorReader<io::SingleRead> ref_stream(
-			io::SingleRead(name1, ref.str()));
-	RunBPComparison<k, K>(ref_stream, stream, name1, name2, refine, untangle,
-			output_folder, detailed_output, delta);
-}
+//template<size_t k, size_t K>
+//void RunBPComparison(const Sequence& ref, ContigStream& stream,
+//		const string& name1, const string& name2, bool refine, bool untangle,
+//		const string& output_folder, bool detailed_output = true, size_t delta =
+//				5) {
+//	io::VectorReader<io::SingleRead> ref_stream(
+//			io::SingleRead(name1, ref.str()));
+//	RunBPComparison<k, K>(ref_stream, stream, name1, name2, refine, untangle,
+//			output_folder, detailed_output, delta);
+//}
 
 //template<size_t k, size_t K>
 //void RunBPComparison(const Sequence& s1, const Sequence& s2,

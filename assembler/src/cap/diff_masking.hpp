@@ -115,16 +115,13 @@ void ConstructGPForRefinement(gp_t& gp, const ContigStreamsPtr& contigs,
     typedef typename gp_t::graph_t Graph;
     INFO("Constructing graph pack for refinement");
 
-    ContigStreamsPtr rc_streams = io::RCWrapStreams(*contigs);
-    rc_streams->reset();
-
-    CapConstructGraph(gp.k_value, *rc_streams, gp.g, gp.index);
+    CapConstructGraph(gp.k_value, *contigs, gp.g, gp.index);
 
     RefineGP(gp, delta);
 }
 
 template<class gp_t>
-ContigStreamsPtr RefineStreams(const ContigStreamsPtr& streams, const gp_t& gp) {
+ContigStreamsPtr RefinedStreams(const ContigStreamsPtr& streams, const gp_t& gp) {
     ContigStreamsPtr refined_streams(new ContigStreams());
     for (size_t i = 0; i < streams->size(); ++i) {
         refined_streams->push_back(
@@ -149,6 +146,33 @@ ContigStreamsPtr RefineStreams(const ContigStreamsPtr& streams,
 
     return RefineStreams(streams, gp);
 
+}
+
+
+inline ContigStreamsPtr OpenStreams(const string& root,
+        const vector<string>& filenames, bool add_rc) {
+    ContigStreamsPtr streams(new ContigStreams());
+    FOREACH (auto filename, filenames) {
+        DEBUG("Opening stream from " << root << filename);
+        ContigStream* reader = new io::Reader(root + filename);
+        if (add_rc)
+            reader = new io::CleanRCReaderWrapper<Contig>(reader);
+        streams->push_back(reader);
+    }
+    return streams;
+}
+
+
+template<class Seq>
+void RefineData(const string& base_path,
+                            const vector<string>& suffixes,
+                            const string& out_root,
+                            size_t k,
+                            size_t delta = 5,
+                            const std::string &workdir = "tmp") {
+    ContigStreamsPtr streams = OpenStreams(base_path, suffixes, true);
+    ContigStreamsPtr refined = RefineStreams<Seq>(streams, k, delta, workdir);
+    SaveAll(refined, suffixes, out_root);
 }
 
 //template<class gp_t>
@@ -213,16 +237,6 @@ ContigStreamsPtr RefineStreams(const ContigStreamsPtr& streams,
 //            AllSequences(refined_stream2));
 //}
 
-inline ContigStreamsPtr OpenStreams(const string& root,
-        const vector<string>& filenames, bool add_rc) {
-    ContigStreamsPtr streams(new ContigStreams());
-    FOREACH (auto filename, filenames) {
-        DEBUG("Opening stream from " << root << filename);
-        streams->push_back(new io::Reader(root + filename));
-    }
-    return streams;
-}
-
 template<class Seq>
 void PerformRefinement(ContigStreamsPtr streams, const string& root,
         const vector<string>& suffixes, size_t k, const string& gene_root,
@@ -243,7 +257,7 @@ void PerformRefinement(ContigStreamsPtr streams, const string& root,
 
     RefineGP(gp, delta);
 
-    ContigStreamsPtr refined_streams = RefineStreams(streams, gp);
+    ContigStreamsPtr refined_streams = RefinedStreams(streams, gp);
 
     MakeSaves(gp, refined_streams, root + "after_refinement/", suffixes);
 
@@ -287,7 +301,7 @@ inline void PerformIterativeRefinement(ContigStreamsPtr streams,
     }
 
     ContigStreamsPtr corr_streams = OpenStreams(root + "after_refinement/",
-            suffixes);
+            suffixes, true);
     //recursive call
     GeneCollection updated_collection;
 
@@ -307,7 +321,7 @@ inline void PerformIterativeRefinement(const string& base_path,
         vector<size_t>& k_values, bool gene_analysis = false) {
 //	remove_dir(out_root);
     utils::MakeDirPath(out_root);
-    ContigStreamsPtr streams = OpenStreams(base_path, suffixes);
+    ContigStreamsPtr streams = OpenStreams(base_path, suffixes, true);
 
     //stab
     GeneCollection gene_collection;

@@ -318,14 +318,8 @@ void SplitAndColorGraph(gp_t& gp,
 template<class Graph, class Index, class Streams>
 size_t CapConstructGraph(size_t k,
         Streams& streams, Graph& g,
-        Index& index, bool add_rc = false) {
-    if (add_rc) {
-        ContigStreamsPtr rc_streams = io::RCWrapStreams(streams);
-        rc_streams->reset();
-        return ConstructGraphUsingOldIndex(k, rc_streams, g, index);
-    } else {
-        return ConstructGraphUsingOldIndex(k, streams, g, index);
-    }
+        Index& index) {
+    return ConstructGraphUsingOldIndex(k, streams, g, index);
 }
 
 template<class gp_t>
@@ -335,20 +329,10 @@ void ConstructColoredGraph(gp_t& gp,
 
     INFO("Constructing de Bruijn graph for k=" << gp.k_value);
 
-	// false: do not delete streams after usage
 	CapConstructGraph(gp.k_value, streams,
 			gp.g, gp.index);
 
 	SplitAndColorGraph(gp, coloring, streams, fill_pos);
-}
-
-template<class gp_t>
-void ConstructColoredGraphRC(gp_t& gp,
-        ColorHandler<typename gp_t::graph_t>& coloring,
-        ContigStreams& streams, bool fill_pos = true) {
-    ContigStreamsPtr rc_streams = io::RCWrapStreams(streams);
-    rc_streams->reset();
-    return CapConstructGraph(k, streams, g, index, contigs_stream);
 }
 
 //template<class gp_t>

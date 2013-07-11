@@ -37,7 +37,7 @@ public:
 	}
 
 	/*virtual*/ RCRemovingOFastaStream& operator<<(const SingleRead& read) {
-	    if (++cnt_ % 2 == 1) {
+	    if (++cnt_ % 2 == 1 /*cnt ^= 1*/) {
 	        base::operator<<(read);
 	    }
 	    return *this;
