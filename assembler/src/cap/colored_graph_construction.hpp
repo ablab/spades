@@ -298,7 +298,7 @@ void SplitAndColorGraph(gp_t& gp,
     typedef typename gp_t::index_t Index;
 	typedef NewExtendedSequenceMapper<Graph, Index> Mapper;
 
-	ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp.g, // MAPPER K+1!!
+	ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp.g,
 			coloring, *MapperInstance<gp_t>(gp));
 
 
@@ -318,8 +318,14 @@ void SplitAndColorGraph(gp_t& gp,
 template<class Graph, class Index, class Streams>
 size_t CapConstructGraph(size_t k,
         Streams& streams, Graph& g,
-        Index& index, SingleReadStream* contigs_stream = 0) {
-    return ConstructGraphUsingOldIndex(k, streams, g, index, contigs_stream);
+        Index& index, bool add_rc = false) {
+    if (add_rc) {
+        ContigStreamsPtr rc_streams = io::RCWrapStreams(streams);
+        rc_streams->reset();
+        return ConstructGraphUsingOldIndex(k, rc_streams, g, index);
+    } else {
+        return ConstructGraphUsingOldIndex(k, streams, g, index);
+    }
 }
 
 template<class gp_t>
@@ -334,6 +340,15 @@ void ConstructColoredGraph(gp_t& gp,
 			gp.g, gp.index);
 
 	SplitAndColorGraph(gp, coloring, streams, fill_pos);
+}
+
+template<class gp_t>
+void ConstructColoredGraphRC(gp_t& gp,
+        ColorHandler<typename gp_t::graph_t>& coloring,
+        ContigStreams& streams, bool fill_pos = true) {
+    ContigStreamsPtr rc_streams = io::RCWrapStreams(streams);
+    rc_streams->reset();
+    return CapConstructGraph(k, streams, g, index, contigs_stream);
 }
 
 //template<class gp_t>

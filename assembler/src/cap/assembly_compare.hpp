@@ -229,11 +229,11 @@ public:
 //			FillPos(gp_, gp_.genome, "ref_0");
 //			FillPos(gp_, !gp_.genome, "ref_1");
 
-			SimpleInDelAnalyzer<Graph> del_analyzer(gp_.g, coloring_,
-					gp_.edge_pos,
-					(*MapperInstance < gp_t > (gp_)).MapSequence(gp_.genome).simple_path().sequence(),
-					kRedColorSet, output_folder);
-			del_analyzer.Analyze();
+//			SimpleInDelAnalyzer<Graph> del_analyzer(gp_.g, coloring_,
+//					gp_.edge_pos,
+//					(*MapperInstance < gp_t > (gp_)).MapSequence(gp_.genome).simple_path().sequence(),
+//					kRedColorSet, output_folder);
+//			del_analyzer.Analyze();
 
 //			AlternatingPathsCounter<Graph> alt_count(gp_.g, coloring);
 //			alt_count.CountPaths();
@@ -383,7 +383,7 @@ void RunBPComparison(ContigStream& raw_stream1, ContigStream& raw_stream2,
 		refining_gp_t refining_gp(k, "tmp");
 		io::VectorReader<io::SingleRead> genome_stream(
 				io::SingleRead("genome", reference.str()));
-    ContigStreamsPtr streams_ptr = make_shared<ContigStreams>(vector<ContigStream*>{&stream1, &stream2, &genome_stream}, false);
+		ContigStreamsPtr streams_ptr = make_shared<ContigStreams>(vector<ContigStream*>{&stream1, &stream2, &genome_stream}, false);
 
 		ConstructGPForRefinement(refining_gp, streams_ptr, delta);
 
@@ -425,23 +425,23 @@ void RunBPComparison(const Sequence& ref, ContigStream& stream,
 			output_folder, detailed_output, delta);
 }
 
-template<size_t k, size_t K>
-void RunBPComparison(const Sequence& s1, const Sequence& s2,
-		const string& name1, const string& name2, bool refine, bool untangle,
-		const string& output_folder, bool detailed_output = true) {
-	io::VectorReader<io::SingleRead> stream(io::SingleRead(name2, s2.str()));
-	RunBPComparison<k, K>(s1, stream, name1, name2, refine, untangle,
-			output_folder, detailed_output);
-}
-
-template<size_t k, size_t K>
-void RunBPComparison(const Sequence& ref, const vector<Sequence>& contigs,
-		const string& name1, const string& name2, bool refine, bool untangle,
-		const string& output_folder, bool detailed_output = true) {
-	io::VectorReader<io::SingleRead> stream(MakeReads(contigs));
-	RunBPComparison<k, K>(ref, stream, name1, name2, refine, untangle,
-			output_folder, detailed_output);
-}
+//template<size_t k, size_t K>
+//void RunBPComparison(const Sequence& s1, const Sequence& s2,
+//		const string& name1, const string& name2, bool refine, bool untangle,
+//		const string& output_folder, bool detailed_output = true) {
+//	io::VectorReader<io::SingleRead> stream(io::SingleRead(name2, s2.str()));
+//	RunBPComparison<k, K>(s1, stream, name1, name2, refine, untangle,
+//			output_folder, detailed_output);
+//}
+//
+//template<size_t k, size_t K>
+//void RunBPComparison(const Sequence& ref, const vector<Sequence>& contigs,
+//		const string& name1, const string& name2, bool refine, bool untangle,
+//		const string& output_folder, bool detailed_output = true) {
+//	io::VectorReader<io::SingleRead> stream(MakeReads(contigs));
+//	RunBPComparison<k, K>(ref, stream, name1, name2, refine, untangle,
+//			output_folder, detailed_output);
+//}
 
 template<size_t k, class BuildSeq>
 void CompareGenomes(const Sequence& genome_1, const Sequence& genome_2,
