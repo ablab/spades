@@ -640,6 +640,7 @@ public:
             return edges;
         }
         DEBUG("We in Filter of PathsDrivenExtension");
+        path.Print();
         map<EdgeId, double> weights_cands;
         for (auto it = edges.begin(); it != edges.end(); ++it) {
             weights_cands.insert(make_pair(it->e_, 0));
@@ -651,14 +652,21 @@ public:
             for (size_t i = 0; i < positions.size(); ++i) {
             	if (positions[i] > 0 &&
             			positions[i] < (*it)->Size() - 1 &&
-            			covered_path(path, **it, positions[i] ) &&
-            			unique_back_path(**it, positions[i])){
-            		EdgeId next = (*it)->At(positions[i] + 1);
-            		weights_cands[next] = weights_cands[next] + (*it)->getWeight();
-            		filtered_cands.insert(next);
+            			covered_path(path, **it, positions[i] )){
+            		INFO("covered path");
+            		(*it)->Print();
+            		if (unique_back_path(**it, positions[i])){
+            			INFO("unique path");
+            			EdgeId next = (*it)->At(positions[i] + 1);
+            			weights_cands[next] = weights_cands[next] + (*it)->getWeight();
+            			filtered_cands.insert(next);
+            		}
             	}
             }
         }
+        for (auto iter = weights_cands.begin(); iter != weights_cands.end(); ++iter){
+        	INFO("Candidate " << g_.int_id(iter->first) << " weight " << iter->second);
+      	}
 
         if (filtered_cands.size() > 1) {
         	vector<pair<EdgeId, double> > sorted_candidates = to_vector(weights_cands);
