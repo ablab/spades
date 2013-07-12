@@ -353,7 +353,7 @@ path::files_t DeBruijnKMerKMerSplitter::Split(size_t num_files) {
 
   bool anygood = false;
   do {
-#   pragma omp parallel for num_threads(nthreads) reduction(+ : counter) shared(rl)
+#   pragma omp parallel for num_threads(nthreads) reduction(+ : counter)
     for (size_t i = 0; i < nthreads; ++i)
       counter += FillBufferFromKMers(its[i], tmp_entries[i], num_files, cell_size);
 
