@@ -616,30 +616,45 @@ class CoverageBasedResolution {
 
 	
 
-	void CountProbabililtiesDistribution ( FILE* file, const vector< vector <double> > transition_probabilities ) {
 
-		vector<double> probabilities;   
-		for ( auto vec = transition_probabilities.begin(); vec != transition_probabilities.end(); ++vec ) {
-				probabilities.insert(probabilities.begin(), vec->begin(), vec->end());
+	void CountProbabililtiesDistribution ( FILE* file, const vector< vector <double> > transition_probabilities ) {
+		
+		unsigned size = transition_probabilities.size();
+
+		vector<unsigned> permutation;
+		for ( unsigned i = 0; i != size; ++i ) {
+			permutation.push_back(i);
 		}
+		
+		vector<double> probabilities;   
+		do {
+			probabilities.push_back(1);
+			for ( unsigned i = 0; i != size; ++i ) {
+				probabilities[probabilities.size()-1] *= transition_probabilities[permutation[i]][i] ;	
+			}
+			
+		}
+		while ( std::next_permutation(permutation.begin(), permutation.end() ));
 
 		printf("\n\n");
 		sort(probabilities.begin(), probabilities.end());
-		double ac(probabilities[0]);
-		unsigned i(0);
-		double pred = ac;
+
+		printf("%4.10f 0\n", probabilities[0]);
+		double pred(probabilities[0]);
+		unsigned i(1);
 		for ( auto it = probabilities.begin() + 1; it != probabilities.end(); ++it, ++i ) {
 			//cout << fabs(*it - pred) << endl;
-			if ( fabs(*it - pred) > 0.00001 ) {
+			if ( fabs(*it - pred) > 0.00000000001 ) {
 				//fprintf(file, "%5.2f %5.2f\n", ac, (double) i / (double) probabilities.size());
-				ac += *it; 
-				printf("%4.5f %4.5f\n", ac, (double) i / (double) probabilities.size());
+				printf("%4.10f %4.10f\n", *it, (double) i / (double) probabilities.size());
 			}
 			pred = *it;
 		}
 		//fprintf(file,"\n");
 		printf("\n\n");
 	}
+
+
 
 	void ChooseMostLikelyPairs( const vector< vector <double> > transition_probabilities,
 					 vector<pair<EdgeId,EdgeId>>& pairs_of_edges, 
@@ -753,6 +768,7 @@ class CoverageBasedResolution {
 		return false;
 		
 	}
+
 /*
 	void findClosest(vector<pair<EdgeId, coverage_value>>& incomingEdgesCoverage,
 			vector<pair<EdgeId, coverage_value>>& outgoingEdgesCoverage,
@@ -974,7 +990,7 @@ class CoverageBasedResolution {
 		set<EdgeId> visited_edges;
 		INFO("Traversing components");
 		//FILE* file = fopen("/home/ksenia/path_resolved.log", "w");
-		FILE* file = fopen("/home/ksenia/probabilities.log", "w");
+		FILE* file = fopen("/home/ksenia/probabilities_22.log", "w");
 		
 		int allLength = 0;
 		for (auto it = components.begin(); it != components.end(); ++it ){
