@@ -223,24 +223,29 @@ class DeBruijnExtensionIndexBuilder : public Builder {
     size_t BuildExtensionIndexFromStream(IndexT &index,
                                          Streams &streams,
                                          SingleReadStream* contigs_stream = 0) const {
+        unsigned nthreads = streams.size();
+
         // First, build a k+1-mer index
         DeBruijnReadKMerSplitter<typename Streams::ReaderType::read_type>
                 splitter(index.workdir(), index.k() + 1,
                          streams, contigs_stream);
         KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
-        counter.CountAll(16, streams.size());
+        counter.CountAll(nthreads, nthreads, /* merge */ false);
 
         // Now, count unique k-mers from k+1-mers
         DeBruijnKMerKMerSplitter splitter2(index.workdir(),
-                                           index.k(),
-                                           counter.GetFinalKMersFname(), index.k() + 1);
+                                           index.k(), index.k() + 1);
+        for (size_t i = 0; i < nthreads; ++i)
+          splitter2.AddKMers(counter.GetMergedKMersFname(i));
         KMerDiskCounter<runtime_k::RtSeq> counter2(index.workdir(), splitter2);
 
-        index.BuildIndex(counter2, 16, 1);
+        index.BuildIndex(counter2, 16, nthreads);
 
         // Build the kmer extensions
         INFO("Building k-mer extensions from k+1-mers");
-        FillExtensionsFromIndex(counter.GetFinalKMersFname(), index);
+#       pragma omp parallel for num_threads(nthreads)
+        for (size_t i = 0; i < nthreads; ++i)
+          FillExtensionsFromIndex(counter.GetMergedKMersFname(i), index);
         INFO("Building k-mer extensions from k+1-mers finished.");
 
         return splitter.read_length();

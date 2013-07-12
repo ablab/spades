@@ -35,9 +35,9 @@ class KmerFreeDeBruijnEdgeIndex : public DeBruijnKMerIndex<KmerFreeIndex<EdgeInf
     typedef typename base::KMerIdx KMerIdx;
     typedef Graph GraphT;
     typedef typename Graph::EdgeId IdType;
-		using base::valid_idx;
-		using base::seq_idx;
-		using base::BinWriteKmers;
+    using base::valid_idx;
+    using base::seq_idx;
+    using base::BinWriteKmers;
 
     KmerFreeDeBruijnEdgeIndex(unsigned k, const Graph &graph, const std::string &workdir)
             : base(k, workdir), graph_(graph) {}
