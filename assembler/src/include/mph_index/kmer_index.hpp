@@ -241,7 +241,7 @@ class KMerCounter {
   typedef typename traits::FinalKMerStorage        FinalKMerStorage;
 
   virtual size_t Count(unsigned num_buckets, unsigned num_threads) = 0;
-  virtual size_t CountAll(unsigned num_buckets, unsigned num_threads) = 0;
+  virtual size_t CountAll(unsigned num_buckets, unsigned num_threads, bool merge = true) = 0;
   virtual void MergeBuckets(unsigned num_buckets) = 0;
 
   virtual void OpenBucket(size_t idx, bool unlink = true) = 0;
@@ -351,9 +351,10 @@ public:
     ofs.close();
   }
 
-  size_t CountAll(unsigned num_buckets, unsigned num_threads) {
+  size_t CountAll(unsigned num_buckets, unsigned num_threads, bool merge = true) {
     size_t kmers = Count(num_buckets, num_threads);
-    MergeBuckets(num_buckets);
+    if (merge)
+      MergeBuckets(num_buckets);
 
     return kmers;
   }
@@ -361,6 +362,10 @@ public:
   typename __super::FinalKMerStorage *GetFinalKMers() {
     unsigned K = splitter_.K();
     return new MMappedRecordArrayReader<typename Seq::DataType>(GetFinalKMersFname(), Seq::GetDataSize(K), /* unlink */ true);
+  }
+
+  std::string GetMergedKMersFname(unsigned suffix) const {
+    return kmer_prefix_ + ".merged." + boost::lexical_cast<std::string>(suffix);
   }
 
   std::string GetFinalKMersFname() const {
@@ -377,10 +382,6 @@ private:
 
   std::string GetUniqueKMersFname(unsigned suffix) const {
     return kmer_prefix_ + ".unique." + boost::lexical_cast<std::string>(suffix);
-  }
-
-  std::string GetMergedKMersFname(unsigned suffix) const {
-    return kmer_prefix_ + ".merged." + boost::lexical_cast<std::string>(suffix);
   }
 
   size_t MergeKMers(const std::string &ifname, const std::string &ofname,
