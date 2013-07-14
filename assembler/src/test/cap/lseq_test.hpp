@@ -6,6 +6,7 @@
 
 #pragma once
 #include <boost/test/unit_test.hpp>
+#include "test_utils.hpp"
 #include "longseq.hpp"
 #include "sequence/sequence.hpp"
 #include "sequence/nucl.hpp"
@@ -14,6 +15,8 @@
 #include <string>
 
 namespace cap {
+
+BOOST_AUTO_TEST_SUITE(long_seq_tests)
 
 typedef unsigned long long ull;
 LSeq GenLSeq(unsigned length, const string &nucl_str, size_t pos = 0) {
@@ -743,5 +746,7 @@ BOOST_AUTO_TEST_CASE( TestLSeqFirstLast ) {
 	BOOST_CHECK_EQUAL(3, s2.last());
 }
 */
+
+BOOST_AUTO_TEST_SUITE_END()
 
 }

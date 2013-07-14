@@ -105,8 +105,8 @@ else
     'dv' ) build/debug/bin/online_vis $cfg_debruijn/config.info ;;
     'rc' ) run_n_measure build/release/bin/cap $cfg_debruijn/config.info $cfg_cap/gaf.info --log_level=test_suite ;;
     'dc' ) run_n_measure build/debug/bin/cap $cfg_debruijn/config.info $cfg_cap/gaf.info --log_level=test_suite ;;
-    'rct' ) run_n_measure build/release/bin/cap_test ;;
-    'dct' ) run_n_measure build/debug/bin/cap_test ;;
+    'rct' ) ./build/release/bin/cap_test --log_level=test_suite ;;
+    'dct' ) ./build/debug/bin/cap_test --log_level=test_suite ;;
 
     * ) 
         change_config $1
