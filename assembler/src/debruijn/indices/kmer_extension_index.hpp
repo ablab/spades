@@ -227,7 +227,7 @@ class DeBruijnExtensionIndexBuilder : public Builder {
 
         // First, build a k+1-mer index
         DeBruijnReadKMerSplitter<typename Streams::ReaderType::read_type>
-                splitter(index.workdir(), index.k() + 1,
+                splitter(index.workdir(), index.k() + 1, 0xDEADBEEF,
                          streams, contigs_stream);
         KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
         counter.CountAll(nthreads, nthreads, /* merge */ false);

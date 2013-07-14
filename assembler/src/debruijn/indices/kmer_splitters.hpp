@@ -27,7 +27,8 @@ class DeBruijnKMerSplitter : public RtSeqKMerSplitter {
 
  public:
   DeBruijnKMerSplitter(const std::string &work_dir,
-                       unsigned K) : RtSeqKMerSplitter(work_dir, K) {
+                       unsigned K, uint32_t seed = 0)
+      : RtSeqKMerSplitter(work_dir, K, seed) {
   }
 };
 
@@ -99,10 +100,10 @@ class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter {
 
  public:
   DeBruijnReadKMerSplitter(const std::string &work_dir,
-                           unsigned K,
+                           unsigned K, uint32_t seed,
                            io::ReadStreamVector< io::IReader<Read> >& streams,
                            SingleReadStream* contigs_stream = 0)
-      : DeBruijnKMerSplitter(work_dir, K),
+      : DeBruijnKMerSplitter(work_dir, K, seed),
         streams_(streams), contigs_(contigs_stream), rl_(0) {
   }
 

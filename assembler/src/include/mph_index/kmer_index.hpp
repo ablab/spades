@@ -210,8 +210,8 @@ class KMerSplitter {
  public:
   typedef typename Seq::hash hash_function;
 
-  KMerSplitter(const std::string &work_dir, unsigned K)
-      : work_dir_(work_dir), K_(K) {}
+  KMerSplitter(const std::string &work_dir, unsigned K, uint32_t seed = 0)
+      : work_dir_(work_dir), K_(K), seed_(seed) {}
 
   virtual path::files_t Split(size_t num_files) = 0;
 
@@ -221,12 +221,13 @@ class KMerSplitter {
   const std::string &work_dir_;
   hash_function hash_;
   unsigned K_;
+  uint32_t seed_;
 
   std::string GetRawKMersFname(unsigned suffix) const {
     return path::append_path(work_dir_, "kmers.raw." + boost::lexical_cast<std::string>(suffix));
   }
   unsigned GetFileNumForSeq(const Seq &s, unsigned total) const {
-    return (unsigned)(hash_(s) % total);
+    return (unsigned)(hash_(s, seed_) % total);
   }
 
   DECL_LOGGER("K-mer Splitting");

@@ -206,7 +206,7 @@ namespace debruijn_graph {
 //                              io::ReadStreamVector<io::IReader<Read> > &streams,
 //                              SingleReadStream* contigs_stream = 0) const {
 //    DeBruijnReadKMerSplitter<Read> splitter(index.workdir(),
-//                                            index.K(),
+//                                            index.K(), 0,
 //                                            streams, contigs_stream);
 //    KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
 //    KMerIndexBuilder<typename DeBruijnKMerIndex<IdType, kmer_index_traits<runtime_k::RtSeq>>::KMerIndexT> builder(index.workdir(), 16, streams.size());
