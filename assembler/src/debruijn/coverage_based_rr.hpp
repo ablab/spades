@@ -751,7 +751,7 @@ class CoverageBasedResolution {
 						CountDistance(*in_edge, *out_edge, component, distance);
 
 						//cout << distance << " " << in_bucket << " " << out_bucket << endl;
-						double probability = bm.GetProbablityFromBucketToBucketForDistance (in_bucket, out_bucket, distance, shift) ;
+						double probability = bm.GetProbabilityFromBucketToBucketForDistance (in_bucket, out_bucket, distance, shift) ;
 						//cout << probability << endl;
 						transition_probabilities[in_edge_counter][out_edge_counter] = probability;
 		        	} 
@@ -769,7 +769,7 @@ class CoverageBasedResolution {
 		
 	}
 
-/*
+
 	void findClosest(vector<pair<EdgeId, coverage_value>>& incomingEdgesCoverage,
 			vector<pair<EdgeId, coverage_value>>& outgoingEdgesCoverage,
 			vector<pair<EdgeId,EdgeId>>& pairsOfEdges){
@@ -821,7 +821,7 @@ class CoverageBasedResolution {
 		}
 
 	}
-*/
+
 
 	bool ContainsSmallLoop( const vector<EdgeId>& path){
 		
@@ -1041,7 +1041,7 @@ class CoverageBasedResolution {
 
 			if (path.size() == 0 ) continue;
 
-			if ( incoming_edges.size() == 0 || outgoing_edges.size() == 0) continue;
+			if ( incoming_edges.size() < 2 || outgoing_edges.size() < 2) continue;
 
 			ordinal_repeat += 1;
 
@@ -1101,20 +1101,20 @@ class CoverageBasedResolution {
 			fprintf(file,"\n");
 	*/		
 			
-			 
-/*			vector<pair<EdgeId, coverage_value>> incomingEdgesCoverage, outgoingEdgesCoverage;
+	/*
+			vector<pair<EdgeId, coverage_value>> incomingEdgesCoverage, outgoingEdgesCoverage;
 
 			for ( auto inEdge = incoming_edges.begin(); inEdge != incoming_edges.end(); ++inEdge) {
 				incomingEdgesCoverage.push_back(make_pair(*inEdge,coverage.GetOutCov(*inEdge)));
 			}
 
-			for ( auto outEdge = outgoingEdges.begin(); outEdge != outgoingEdges.end(); ++outEdge) {
+			for ( auto outEdge = outgoing_edges.begin(); outEdge != outgoing_edges.end(); ++outEdge) {
 				outgoingEdgesCoverage.push_back(make_pair(*outEdge,coverage.GetInCov(*outEdge)));
 			}
 	
 			sort(incomingEdgesCoverage.begin(), incomingEdgesCoverage.end(), CompareSecond<EdgeId, coverage_value>());
 			sort(outgoingEdgesCoverage.begin(), outgoingEdgesCoverage.end(), CompareSecond<EdgeId, coverage_value>());
-*/			
+	*/		
 		/*	INFO("incoming edges");
 			for ( auto e = incomingEdgesCoverage.begin(); e != incomingEdgesCoverage.end(); ++e) {
 	
@@ -1130,6 +1130,7 @@ class CoverageBasedResolution {
 
 
 			MatchPairs( incoming_edges, outgoing_edges, pairs_of_edges, path, bm, coverage, quality_labeler, file);
+			//findClosest( incomingEdgesCoverage, outgoingEdgesCoverage, pairs_of_edges);
 
 			if ( insert_size < (size_t)longestPathLen )
 				if (pairs_of_edges.size() == 0) 
