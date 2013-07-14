@@ -339,16 +339,20 @@ path::files_t DeBruijnKMerKMerSplitter::Split(size_t num_files) {
   }
   size_t cell_size = READS_BUFFER_SIZE /
                      (nthreads * num_files * runtime_k::RtSeq::GetDataSize(K_) * sizeof(runtime_k::RtSeq::DataType));
+  // Set sane minimum cell size
+  if (cell_size < 16384)
+    cell_size = 16384;
   INFO("Using cell size of " << cell_size);
 
   std::vector<KMerBuffer> tmp_entries(nthreads);
   for (unsigned i = 0; i < nthreads; ++i) {
     KMerBuffer &entry = tmp_entries[i];
-    entry.resize(num_files, RtSeqKMerVector(K_, 1.1 * cell_size));
+    entry.resize(num_files, RtSeqKMerVector(K_, 1.25 * cell_size));
   }
 
   size_t counter = 0, n = 10;
   std::vector<kmer_iterator> its;
+  its.reserve(nthreads);
   for (auto it = kmers_.begin(), et = kmers_.end(); it != et; ++it)
     its.emplace_back(*it, runtime_k::RtSeq::GetDataSize(K_source_));
 
@@ -358,7 +362,7 @@ path::files_t DeBruijnKMerKMerSplitter::Split(size_t num_files) {
     for (size_t i = 0; i < nthreads; ++i)
       counter += FillBufferFromKMers(its[i], tmp_entries[i], num_files, cell_size);
 
-    DumpBuffers(num_files, 1, tmp_entries, ostreams);
+    DumpBuffers(num_files, nthreads, tmp_entries, ostreams);
 
     if (counter >> n) {
       INFO("Processed " << counter << " kmers");
