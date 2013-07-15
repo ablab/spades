@@ -281,7 +281,7 @@ class KmerStoringIndex : public PerfectHashMap<typename traits::SeqType, ValueTy
   }
 
   KMer kmer(KMerIdx idx) const {
-      VERIFY(valid_idx(idx));
+      VERIFY(this->valid_idx(idx));
 
       auto it = this->kmers_->begin() + idx;
       return (typename traits::raw_create()(this->k(), *it));
