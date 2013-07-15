@@ -93,6 +93,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
       }
       size_t cur_end = cur_start + g_->length(edge);
       //INFO("edge " << g_->str(edge));
+      TRACE(Range(cur_start, cur_end));
       edge_ranges_[edge].AddGenomeRange(genome_id, Range(cur_start, cur_end));
       cur_start = cur_end;
     }
@@ -653,7 +654,7 @@ void CoordinatesHandler<Graph>::StoreGenomeThread(
       if (edge_info_it == edge_ranges_.end())
         continue;
       
-      TRACE("!");
+      //TRACE("!");
 
       if (edge_info_it->second.HasForwardLink(cur_pos)) {
         cur_edge = out_edge;
@@ -701,10 +702,16 @@ size_t CoordinatesHandler<Graph>::GetOriginalPos(
   for (auto thread_it = history.rbegin(), E = history.rend();
        thread_it != E; ++thread_it) {
     // Verify thread sort order?
+
+    // Kmers can have different lengths so going from larger kmers to smaller
+    // implies shorting of thread length what may lead to "range-overflow"
+    if (cur_pos > thread_it->back().first)
+      cur_pos = thread_it->back().first;
+
     auto found_it = std::lower_bound(thread_it->begin(), thread_it->end(),
                                      make_pair(cur_pos, size_t(0)));
 
-    //INFO("Searching for pos " << cur_pos << "in thread of " << thread_it->front() << " - " << thread_it->back());
+    TRACE("Searching for pos " << cur_pos << "in thread of " << thread_it->front() << " - " << thread_it->back());
     VERIFY(found_it != thread_it->end());
     if (cur_pos == found_it->first) {
       cur_pos = found_it->second;
@@ -721,6 +728,7 @@ size_t CoordinatesHandler<Graph>::GetOriginalPos(
     graph_range.start_pos = found_it->first;
     genome_range.start_pos = found_it->second;
 
+    TRACE("from ranges " << graph_range << " and " << genome_range << " in search of " << cur_pos);
     cur_pos = CalculatePos(graph_range, genome_range, cur_pos);
   }
 

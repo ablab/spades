@@ -247,7 +247,7 @@ class SimpleInversionFinder {
 
   inline int FindAndPrintPath(const VertexId v1, const VertexId v2, const VertexId v3, const VertexId v4) const {
     TRACE("Finding paths from " << g_.str(v1) << " to " << g_.str(v2));
-    const static size_t max_length = 50000;
+    const static size_t max_length = 800000;
 
     std::vector<EdgeId> out_edges;
     for (const auto e : g_.OutgoingEdges(v1)) {
