@@ -64,18 +64,21 @@ inline void CheckDiffs(const string& actual_prefix, const string& etalon_prefix,
 
 inline void RegenerateEtalon(size_t k, const string& filename,
                              const string& output_dir,
-                             const string& etalon_root) {
+                             const string& etalon_root,
+                             const string& work_dir) {
     remove_dir(etalon_root);
     make_dir(etalon_root);
     SyntheticTestsRunner<runtime_k::RtSeq> test_runner(filename, k,
-                                                       etalon_root);
+                                                       etalon_root,
+                                                       work_dir);
     test_runner.Run();
 }
 
 template<class Seq>
 void RunTests(size_t k, const string& filename, const string& output_dir,
-                     const string& etalon_root, const vector<size_t>& example_ids = vector<size_t>()) {
-    SyntheticTestsRunner<Seq> test_runner(filename, k, output_dir);
+                     const string& etalon_root, const string& work_dir,
+                     const vector<size_t>& example_ids = vector<size_t>()) {
+    SyntheticTestsRunner<Seq> test_runner(filename, k, output_dir, work_dir);
     vector<size_t> launched = test_runner.Run();
     FOREACH(size_t id, launched) {
         CheckDiffs(output_dir + ToString(id), etalon_root + ToString(id), false);
@@ -97,18 +100,19 @@ BOOST_AUTO_TEST_CASE( SyntheticExamplesTestsRtSeq ) {
     string input_dir = "./src/test/cap/tests/synthetic/";
     RunTests<runtime_k::RtSeq> (25, input_dir + "tests.xml",
                                 "simulated_tests/",
-                                input_dir + "etalon/");
+                                input_dir + "etalon/",
+                                "tmp");
     remove_dir("simulated_tests");
 }
 
 BOOST_AUTO_TEST_CASE( SyntheticExamplesTestsLSeq ) {
-
-  utils::TmpFolderFixture _("tmp");
+    utils::TmpFolderFixture _("tmp");
     make_dir("simulated_tests");
     string input_dir = "./src/test/cap/tests/synthetic/";
     RunTests<LSeq> (25, input_dir + "tests.xml",
                                 "simulated_tests/",
-                                input_dir + "etalon/");
+                                input_dir + "etalon/",
+                                "tmp");
     remove_dir("simulated_tests");
 }
 

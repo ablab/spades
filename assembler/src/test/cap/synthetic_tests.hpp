@@ -89,18 +89,12 @@ class SyntheticTestsRunner {
 
 public:
     SyntheticTestsRunner(const string& filename, size_t k,
-                         const string& output_dir, const string& work_dir =
-                                 "tmp")
+                         const string& output_dir, const string& work_dir)
             : filename_(filename),
               k_(k),
               output_dir_(output_dir),
               work_dir_(work_dir) {
-        make_dir(work_dir_);
         read_xml(filename, xml_tree_);
-    }
-
-    ~SyntheticTestsRunner() {
-        remove_dir(work_dir_);
     }
 
     vector<size_t> Run(const vector<size_t>& test_numbers = vector<size_t>()) {
