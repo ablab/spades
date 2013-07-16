@@ -57,6 +57,7 @@ public:
 		return int_id;
 	}
 
+	//fixme strange usages of PreviousId
 	size_t AddEdgeIntId(EdgeId e) {
 		VERIFY(!use_inner_ids_);
 		size_t PreviousId = ReturnIntId(e);
@@ -96,32 +97,26 @@ public:
 //		return MaxEdgeIntId;
 //	}
 
-	void ClearVertexId(VertexId OldVertexId) {
+	void ClearVertexId(VertexId v) {
 		VERIFY(!use_inner_ids_);
-		size_t PreviousId = ReturnIntId(OldVertexId);
-		if (PreviousId != 0)
-			id2vertex_.erase(PreviousId);
-		vertex2id_.erase(OldVertexId);
+		size_t id = ReturnIntId(v);
+		if (id != 0)
+			id2vertex_.erase(id);
+		vertex2id_.erase(v);
 	}
-	void ClearEdgeId(EdgeId OldEdgeId) {
+
+	void ClearEdgeId(EdgeId e) {
 		VERIFY(!use_inner_ids_);
-		size_t PreviousId = ReturnIntId(OldEdgeId);
-		if (PreviousId != 0)
-			id2edge_.erase(PreviousId);
-		edge2id_.erase(OldEdgeId);
+		size_t id = ReturnIntId(e);
+		if (id != 0)
+			id2edge_.erase(id);
+		edge2id_.erase(e);
 	}
 
 	//todo why can't we put verifies here?
 	size_t ReturnIntId(EdgeId e) const {
 		if (use_inner_ids_)
 			return e.int_id();
-
-		//todo what is this?
-		if (size_t(this) < 0x1000)
-		{
-			print_stacktrace();
-			exit(1);
-		}
 
 		auto it = edge2id_.find(e);
 		return it != edge2id_.end() ? it->second : 0;

@@ -36,7 +36,7 @@
 
 namespace cap {
 
-inline void CheckDiffs(const string& actual_prefix, const string& etalon_prefix,
+inline void CheckDiffs(size_t k, const string& actual_prefix, const string& etalon_prefix,
                        bool exact_match = true) {
     string comparison_type_string;
     if (exact_match) {
@@ -54,10 +54,9 @@ inline void CheckDiffs(const string& actual_prefix, const string& etalon_prefix,
                     "Check for suffix " + suffixes[i] + " failed");
         }
     } else {
-        // TODO load both graphs and compare them as graphs.
-        // In order to incapsulate reading of greaph and coloring.
+        ColoredGraphIsomorphismChecker<conj_graph_pack> checker(k, "tmp");
         BOOST_CHECK_MESSAGE(
-                CheckColoredGraphIsomorphism(actual_prefix, etalon_prefix),
+                checker.Check(actual_prefix, etalon_prefix),
                 "GRAPHS DIFFER");
     }
 }
@@ -77,11 +76,12 @@ inline void RegenerateEtalon(size_t k, const string& filename,
 template<class Seq>
 void RunTests(size_t k, const string& filename, const string& output_dir,
                      const string& etalon_root, const string& work_dir,
+                     bool exact_match = false,
                      const vector<size_t>& example_ids = vector<size_t>()) {
     SyntheticTestsRunner<Seq> test_runner(filename, k, output_dir, work_dir);
     vector<size_t> launched = test_runner.Run();
     FOREACH(size_t id, launched) {
-        CheckDiffs(output_dir + ToString(id), etalon_root + ToString(id), false);
+        CheckDiffs(k, output_dir + ToString(id), etalon_root + ToString(id), exact_match);
     }
 }
 
