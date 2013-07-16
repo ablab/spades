@@ -88,12 +88,12 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
     size_t cur_start = 0;
     for (auto &edge : genome_path) {
       if (edge == EdgeId(0)) {
-        TRACE("ZERO EDGE!");
+        DEBUG("ZERO EDGE!");
         continue;
       }
       size_t cur_end = cur_start + g_->length(edge);
       //INFO("edge " << g_->str(edge));
-      TRACE(Range(cur_start, cur_end));
+      DEBUG(Range(cur_start, cur_end));
       edge_ranges_[edge].AddGenomeRange(genome_id, Range(cur_start, cur_end));
       cur_start = cur_end;
     }
@@ -203,8 +203,10 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
 
     for (const auto &p : edge_data_it->second.GetRanges()) {
       const uchar genome_id = p.first;
+      DEBUG("from " << p.second);
       Range newest(GetNewestPos(genome_id, p.second.start_pos),
                      GetNewestPos(genome_id, p.second.end_pos));
+      DEBUG("from " << newest);
       const Range original(GetOriginalPos(genome_id, newest.start_pos),
                              GetOriginalPos(genome_id, newest.end_pos));
       res.push_back(make_pair(genome_id, make_pair(newest, original)));
@@ -385,7 +387,8 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
     return edge_ranges_.find(edge) != edge_ranges_.end();
   }
 
-  void CleanEdgeData(const EdgeId edge) {
+  template <class T>
+  inline void CleanEdgeData(const T edge) {
     edge_ranges_.erase(edge);
   }
 
@@ -533,6 +536,9 @@ CoordinatesHandler<Graph>::PopAndUpdateRangesToCopy(
     const EdgeId edge,
     std::vector<std::pair<uchar, size_t> > &delete_positions) {
   auto edge_data_it = edge_ranges_.find(edge);
+  if (edge_data_it == edge_ranges_.end()) {
+    INFO("trying to get " << delete_positions.size() << " positions from empty!!!");
+  }
   VERIFY(edge_data_it != edge_ranges_.end());
   auto &edge_data = edge_data_it->second;
 
@@ -549,7 +555,7 @@ CoordinatesHandler<Graph>::PopAndUpdateRangesToCopy(
     }
   }
   if (edge_data.GetMultiplicity() == 0)
-    edge_ranges_.erase(edge_data_it);
+    CleanEdgeData(edge_data_it);
 
   return genome_ranges_to_copy;
 }
@@ -589,8 +595,6 @@ CoordinatesHandler<Graph>::GetContiguousThreads(const Path &path) const {
     cur_pos.push_back(make_pair(entry.first, entry.second.end_pos));
   }
 
-  size_t result_size = result.size();
-
   for (size_t path_i = 1; path_i < path.size(); ++path_i) {
     const auto edge_data_it = edge_ranges_.find(path[path_i]);
     if (edge_data_it == edge_ranges_.end())
@@ -600,11 +604,10 @@ CoordinatesHandler<Graph>::GetContiguousThreads(const Path &path) const {
       if (edge_data_it->second.HasForwardLink(cur_pos[i])) {
         cur_pos[i].second = edge_data_it->second.GetForwardPos(cur_pos[i]);
       } else {
-        std::swap(cur_pos[i], cur_pos[result_size - 1]);
-        std::swap(result[i], result[result_size - 1]);
+        std::swap(cur_pos[i], cur_pos.back());
+        std::swap(result[i], result.back());
         cur_pos.pop_back();
         result.pop_back();
-        result_size--;
         i--;
       }
     }
@@ -645,10 +648,10 @@ void CoordinatesHandler<Graph>::StoreGenomeThread(
 
     const VertexId v = g_->EdgeEnd(cur_edge);
 
-    TRACE("current edge " << g_->str(cur_edge) << ", outgoing count " << g_->OutgoingEdgeCount(v));
+    DEBUG("current edge " << g_->str(cur_edge) << ", outgoing count " << g_->OutgoingEdgeCount(v));
     cur_edge = EdgeId(0);
     for (const auto &out_edge : g_->OutgoingEdges(v)) {
-      TRACE("considering edge " << g_->str(out_edge) << " at position (seq) " << genome_pos);
+      DEBUG("considering edge " << g_->str(out_edge) << " at position (seq) " << genome_pos);
 
       auto edge_info_it = edge_ranges_.find(out_edge);
       if (edge_info_it == edge_ranges_.end())
@@ -711,7 +714,7 @@ size_t CoordinatesHandler<Graph>::GetOriginalPos(
     auto found_it = std::lower_bound(thread_it->begin(), thread_it->end(),
                                      make_pair(cur_pos, size_t(0)));
 
-    TRACE("Searching for pos " << cur_pos << "in thread of " << thread_it->front() << " - " << thread_it->back());
+    DEBUG("Searching for pos " << cur_pos << "in thread of " << thread_it->front() << " - " << thread_it->back());
     VERIFY(found_it != thread_it->end());
     if (cur_pos == found_it->first) {
       cur_pos = found_it->second;
@@ -728,7 +731,7 @@ size_t CoordinatesHandler<Graph>::GetOriginalPos(
     graph_range.start_pos = found_it->first;
     genome_range.start_pos = found_it->second;
 
-    TRACE("from ranges " << graph_range << " and " << genome_range << " in search of " << cur_pos);
+    DEBUG("from ranges " << graph_range << " and " << genome_range << " in search of " << cur_pos);
     cur_pos = CalculatePos(graph_range, genome_range, cur_pos);
   }
 
@@ -746,12 +749,18 @@ size_t CoordinatesHandler<Graph>::GetNewestPos(
   const std::vector<Thread> &history = history_it->second;
   const Thread &latest = history.back();
 
+  // Kmers can have different lengths so going from larger kmers to smaller
+  // implies shorting of thread length what may lead to "range-overflow"
+  size_t search_pos = old_pos;
+  if (search_pos > latest.back().second)
+    search_pos = latest.back().second;
+
   auto found_it = std::lower_bound(latest.begin(), latest.end(),
-      make_pair(size_t(0), old_pos), utils::compare_pairs_reversed);
+      make_pair(size_t(0), search_pos), utils::compare_pairs_reversed);
 
   VERIFY(found_it != latest.end());
-  if (old_pos == found_it->first)
-    return found_it->second;
+  if (search_pos == found_it->second)
+    return found_it->first;
 
   VERIFY(found_it != latest.begin());
 
@@ -764,7 +773,8 @@ size_t CoordinatesHandler<Graph>::GetNewestPos(
   graph_range.start_pos = found_it->second;
   genome_range.start_pos = found_it->first;
 
-  return CalculatePos(graph_range, genome_range, old_pos);
+  DEBUG("from ranges " << graph_range << " and " << genome_range << " in search of " << search_pos);
+  return CalculatePos(graph_range, genome_range, search_pos);
 }
 
 /*
@@ -776,9 +786,9 @@ void CoordinatesHandler<Graph>::HandleDelete(EdgeId e) {
   if (HasEdgeData(e)) {
     INFO("edge " << g_->str(e) << " " << edge_ranges_[e].DebugOutput());
   }
-  VERIFY(!HasEdgeData(e));
   */
-  edge_ranges_.erase(e);
+  VERIFY(!HasEdgeData(e));
+  CleanEdgeData(e);
 }
 
 template <class Graph>
@@ -787,7 +797,7 @@ void CoordinatesHandler<Graph>::HandleMerge(const vector<EdgeId> &old_edges, Edg
   for (const auto &edge : old_edges) {
     if (HasEdgeData(edge)) {
       edge_ranges_[new_edge] += edge_ranges_[edge];
-      edge_ranges_.erase(edge);
+      CleanEdgeData(edge);
     }
   }
 }
@@ -797,11 +807,11 @@ void CoordinatesHandler<Graph>::HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId
   //TRACE("HandleGlue : " << g_->str(new_edge) << " <- " << g_->str(edge1) << " + " << g_->str(edge2));
   if (HasEdgeData(edge1)) {
     edge_ranges_[new_edge] += edge_ranges_[edge1];
-    edge_ranges_.erase(edge1);
+    CleanEdgeData(edge1);
   }
   if (HasEdgeData(edge2)) {
     edge_ranges_[new_edge] += edge_ranges_[edge2];
-    edge_ranges_.erase(edge2);
+    CleanEdgeData(edge2);
   }
 }
 

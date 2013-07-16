@@ -89,9 +89,9 @@ class SaveGenomesCommand : public LocalCommand<CapEnvironment> {
       force = true;
     }
 
-    std::cout << "Saving genomes to disk.. ";
-
     std::string dir = curr_env.manager().GetDirForCurrentState();
+
+    std::cout << "Saving genomes to " << dir << " ...";
     if (cap::utils::DirExist(dir)) {
       std::cout << "Looks like current state was already stored. ";
       if (force) {

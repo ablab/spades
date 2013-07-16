@@ -226,6 +226,8 @@ class CapEnvironmentManager {
     indel_finder.FindIndelEvents();
 
     if (mask_indels) {
+      env_->k_history_.push_back(env_->GetGraphK());
+      env_->num_genomes_history_.push_back(env_->init_genomes_paths_.size());
       env_->coordinates_handler_.StoreGenomeThreads();
       UpdateStreams(gp);
     }
