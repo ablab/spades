@@ -31,8 +31,8 @@ namespace online_visualization {
             }
             
             void CountStatsAlongGenomePart(DebruijnEnvironment& curr_env, Sequence& piece_of_genome, string label = "") const {    
-                GraphDistanceFinder<Graph> dist_finder(curr_env.graph(), *cfg::get().ds.IS, *cfg::get().ds.RL,
-                        size_t(*cfg::get().ds.is_var));
+                GraphDistanceFinder<Graph> dist_finder(curr_env.graph(), cfg::get().ds.IS(), cfg::get().ds.RL(),
+                        size_t(cfg::get().ds.is_var()));
                 cout << "Statistics for the part of genome :" << endl;
                 const MappingPath<EdgeId>& mapping_path = curr_env.mapper().MapSequence(piece_of_genome);
                 for (size_t i = 0; i < mapping_path.size(); ++i) {

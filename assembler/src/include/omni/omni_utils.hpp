@@ -155,13 +155,11 @@ private:
 
     void Attach() {
         VERIFY(!attached_);
-//        g_.AddActionHandler(this);
         attached_ = true;
     }
 
     void Detach() {
         VERIFY(attached_);
-//        g_.RemoveActionHandler(this);
         attached_ = false;
     }
 };

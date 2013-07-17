@@ -147,6 +147,7 @@ public:
 	}
 
 	const Sequence VertexNucls(VertexId v) const {
+	    //todo add verify on vertex nucls consistency
 		if (this->OutgoingEdges(v).size() > 0) {
 			return EdgeNucls(this->OutgoingEdges(v)[0]).Subseq(0, k_);
 		} else if (this->IncomingEdges(v).size() > 0) {

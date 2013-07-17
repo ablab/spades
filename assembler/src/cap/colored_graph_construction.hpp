@@ -298,7 +298,7 @@ void SplitAndColorGraph(gp_t& gp,
     typedef typename gp_t::index_t Index;
 	typedef NewExtendedSequenceMapper<Graph, Index> Mapper;
 
-	ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp.g, // MAPPER K+1!!
+	ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp.g,
 			coloring, *MapperInstance<gp_t>(gp));
 
 
@@ -318,8 +318,8 @@ void SplitAndColorGraph(gp_t& gp,
 template<class Graph, class Index, class Streams>
 size_t CapConstructGraph(size_t k,
         Streams& streams, Graph& g,
-        Index& index, SingleReadStream* contigs_stream = 0) {
-    return ConstructGraphUsingOldIndex(k, streams, g, index, contigs_stream);
+        Index& index) {
+    return ConstructGraphUsingOldIndex(k, streams, g, index);
 }
 
 template<class gp_t>
@@ -329,7 +329,6 @@ void ConstructColoredGraph(gp_t& gp,
 
     INFO("Constructing de Bruijn graph for k=" << gp.k_value);
 
-	// false: do not delete streams after usage
 	CapConstructGraph(gp.k_value, streams,
 			gp.g, gp.index);
 

@@ -983,7 +983,6 @@ void PrintWithClusteredIndices(const string& file_name, const graph_pack& gp,
   PrintWithPairedIndices(file_name, gp, paired_indices, true);
 }
 
-
 template<class Graph>
 void ScanBasicGraph(const string& file_name, DataScanner<Graph>& scanner) {
   scanner.loadGraph(file_name);

@@ -258,8 +258,10 @@ class KmerStoringIndex : public PerfectHashMap<typename traits::SeqType, ValueTy
   KMer NextEdge(const KMer &kmer) const { // returns any next edge
     for (char c = 0; c < 4; ++c) {
       KMer s = kmer << c;
-      if (valid_key(s))
-        return s;
+      KMerIdx idx = this->seq_idx(s);
+      if (valid_key(idx, s))
+        //hack for this code to work with long seqs! (oterwise return s is totally fine)
+        return this->kmer(idx);//s;
     }
 
     VERIFY_MSG(false, "Couldn't find requested edge!");

@@ -22,8 +22,6 @@ namespace debruijn_graph {
 
 /*
  * Constructs DeBruijnGraph from DeBruijn Graph using "new DeBruijnGraphConstructor(DeBruijn).ConstructGraph(DeBruijnGraph, Index)"
- *
- * Obsolete
  */
 template<class Graph, class Index>
 class DeBruijnGraphConstructor {
@@ -52,7 +50,6 @@ private:
 	}
 
 	KPlusOneMer GoRight(KPlusOneMer edge) {
-		//TRACE("Starting going right for edge " << edge);
 		KPlusOneMer initial = edge;
 		while (StepRightIfPossible(edge) && edge != initial) {
 			;
@@ -61,9 +58,7 @@ private:
 	}
 
 	KPlusOneMer GoLeft(KPlusOneMer edge) {
-		//TRACE("Starting going left for edge " << edge);
 		auto res = !GoRight(!edge);
-		//TRACE("Stopped going left at " << res);
 		return res;
 	}
 
@@ -72,7 +67,6 @@ private:
 		s.append(edge);
 		KPlusOneMer initial = edge;
 		while (StepRightIfPossible(edge) && edge != initial) {
-			//todo comment
 			s.append(edge[kmer_size_]);
 		}
 		return s.BuildSequence();
@@ -86,7 +80,7 @@ private:
 		for (char c = 0; c < 4; ++c) {
 			KPlusOneMer edge = kmer.pushBack(c);
 			auto idx = origin_.seq_idx(edge);
-			if (origin_.contains(idx, kmer))
+			if (origin_.contains(idx, edge))
 				return graph_.EdgeStart(origin_[idx].edge_id);
 		}
 		return VertexId(NULL);
@@ -96,8 +90,7 @@ private:
 		for (char c = 0; c < 4; ++c) {
 			KPlusOneMer edge = kmer.pushFront(c);
 			auto idx = origin_.seq_idx(edge);
-
-			if (origin_.contains(idx, kmer)) {
+			if (origin_.contains(idx, edge)) {
 				return graph_.EdgeEnd(origin_[idx].edge_id);
 			}
 		}
@@ -133,25 +126,6 @@ private:
 			return FindVertexMaybeMissing(end_kmer);
 		}
 	}
-
-	// GetSeqLabel is used to determine whether 2 sequences are same by getting unique part
-
-	//get first k+1 nucls
-	//	Kmer GetSeqLabel(NonconjugateDeBruijnGraph& graph, Sequence& seq) {
-	//		return seq.start<runtime_k::UPPER_BOUND>(kmer_size_ + 1);
-	//	}
-	//
-	//	// get min from first k+1 and complementary k+1
-	//	Kmer GetSeqLabel(ConjugateDeBruijnGraph& graph, Sequence& seq) {
-	//
-	//		//
-	//		Kmer start = seq.start<runtime_k::UPPER_BOUND>(kmer_size_ + 1);
-	//		Kmer complEnd = (!seq).start<runtime_k::UPPER_BOUND>(kmer_size_ + 1);
-	//
-	//		Kmer::less2 comparator;
-	//
-	//		return comparator(start, complEnd) ? start : complEnd;
-	//	}
 
 	void ConstructPart(const std::vector<KPlusOneMer>& kmers,
 			std::vector<Sequence>& sequences) {
@@ -327,13 +301,6 @@ private:
 		}
 	}
 
-//	Sequence ConstructLoopFromVertex(typename Index::KmerWithHash kh) {
-//		KPlusOneMer kpom(kh, origin_.GetUniqueOutgoing(kh.idx));
-//		Sequence result = ConstructSequenceWithEdge(kpom);
-//		origin_.IsolateVertex(kh.idx);
-//		return result;
-//	}
-
 	//This methods collects all loops that were not extracted by finding unbranching paths because there are no junctions on loops. Construction is performed in parallel
 	const std::vector<Sequence> CollectLoops() {
 		INFO("Collecting perfect loops");
@@ -391,53 +358,6 @@ public:
 private:
 	DECL_LOGGER("UnbranchingPathExtractor")
 };
-
-//template<class Graph>
-//class GraphFromSequencesConstructor {
-//private:
-//	typedef DeBruijnExtensionIndex<runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq> > Index;
-//	typedef typename Graph::EdgeId EdgeId;
-//	typedef typename Graph::VertexId VertexId;
-//	typedef runtime_k::RtSeq Kmer;
-//	typedef typename Index::kmer_iterator kmer_iterator;
-//	size_t kmer_size_;
-//
-//	bool CheckAndAdd(const Kmer &kmer, unordered_map<Kmer, VertexId, typename Kmer::hash> &mapping, Graph &graph) {
-//		if(mapping.count(kmer) == 1) {
-//			return false;
-//		}
-//		VertexId v = graph.AddVertex();
-//		mapping[kmer] = v;
-//		mapping[!kmer] = graph.conjugate(v);
-//		return true;
-//	}
-//
-//	void FillKmerVertexMapping(unordered_map<Kmer, VertexId, typename Kmer::hash> &result, Graph &graph, const vector<Sequence> &sequences) {
-//		for(auto it = sequences.begin(); it != sequences.end(); ++it) {
-//			CheckAndAdd(Kmer(kmer_size_, *it), result, graph);
-//			CheckAndAdd(Kmer(kmer_size_, *it, it->size() - kmer_size_), result, graph);
-//		}
-//	}
-//
-//	void CreateEdges(Graph &graph, const vector<Sequence> &sequences, const unordered_map<Kmer, VertexId, typename Kmer::hash> &kmer_vertex_mapping) {
-//		for(auto it = sequences.begin(); it != sequences.end(); ++it) {
-//			Sequence s = *it;
-//			VertexId start = kmer_vertex_mapping.find(Kmer(kmer_size_, s))->second;
-//			VertexId end = kmer_vertex_mapping.find(Kmer(kmer_size_, s, s.size() - kmer_size_))->second;
-//			graph.AddEdge(start, end, s);
-//		}
-//	}
-//
-//public:
-//	GraphFromSequencesConstructor(size_t k) : kmer_size_(k) {
-//	}
-//
-//	void ConstructGraph(Graph &graph, const vector<Sequence> &sequences) {
-//		unordered_map<Kmer, VertexId, typename Kmer::hash> kmer_vertex_mapping(typename Kmer::hash());
-//		FillKmerVertexMapping(kmer_vertex_mapping, graph, sequences);
-//		CreateEdges(graph, sequences, kmer_vertex_mapping);
-//	}
-//};
 
 /*
  * Only works for Conjugate dbg
