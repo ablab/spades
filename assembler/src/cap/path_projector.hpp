@@ -13,6 +13,7 @@ class PathProjector {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
   typedef std::vector<EdgeId> Path;
+  typedef typename CoordinatesHandler<Graph>::PosArray PosArray;
   typedef unsigned char uchar;
 
   PathProjector(Graph &g, CoordinatesHandler<Graph> &coordinates_handler)
@@ -22,17 +23,47 @@ class PathProjector {
         is_deleting_locked_(false) {
   }
 
-  bool CollapsePaths(const std::vector<Path> &paths) {
-    TRACE("CollapsePaths Begin");
+  virtual void FilterPaths(std::vector<Path> &paths) const {
+    return paths;
+  }
+  virtual std::vector<PosArray> GetThreadsToDelete(
+      const std::vector<Path> &paths) const {
+    std::vector<PosArray> threads_to_delete;
+    for (const auto &path : paths) {
+      threads_to_delete.push_back(coordinates_handler_.GetContiguousThreads(path));
+    }
+    return threads_to_delete;
+  }
 
-    std::vector<std::vector<std::pair<uchar, size_t> > > threads_to_delete;
+  virtual size_t ChooseBasePath(const std::vector<Path> &paths,
+      const std::vector<PosArray> &threads_to_delete) const {
     std::vector<size_t> num_bridges;
     std::vector<size_t> sum_multiplicities;
     for (const auto &path : paths) {
-      threads_to_delete.push_back(coordinates_handler_.GetContiguousThreads(path));
       num_bridges.push_back(CalcBridges(path, threads_to_delete.back().size()));
       sum_multiplicities.push_back(CalcMultiplicitySum(path));
     }
+    
+    size_t chosen_path = 0;
+    for (size_t i = 1; i < paths.size(); ++i) {
+      if (num_bridges[i] < num_bridges[chosen_path] ||
+            (num_bridges[i] == num_bridges[chosen_path] &&
+            sum_multiplicities[i] > sum_multiplicities[chosen_path])) {
+        chosen_path = i;
+      }
+    }
+
+    return chosen_path;
+  }
+
+  bool CollapsePaths(const std::vector<Path> &paths) {
+    TRACE("CollapsePaths Begin");
+
+    FilterPaths(paths);
+    std::vector<PosArray> threads_to_delete =
+        GetThreadsToDelete(paths);
+    size_t chosen_path = ChooseBasePath(paths, threads_to_delete);
+
     // RC paths
     std::vector<Path> rc_paths;
     std::vector<std::vector<std::pair<uchar, size_t> > > rc_threads;
@@ -51,15 +82,6 @@ class PathProjector {
     if (!CheckForCorrectPaths(paths))
       return false;
 
-
-    size_t chosen_path = 0;
-    for (size_t i = 1; i < paths.size(); ++i) {
-      if (num_bridges[i] < num_bridges[chosen_path] ||
-            (num_bridges[i] == num_bridges[chosen_path] &&
-            sum_multiplicities[i] > sum_multiplicities[chosen_path])) {
-        chosen_path = i;
-      }
-    }
 
     if (!CheckDeletionOfIntouchables(paths, threads_to_delete, chosen_path))
       return false;
