@@ -61,7 +61,7 @@ class CapEnvironmentManager {
   template <class gp_t>
   shared_ptr<gp_t> BuildGPFromStreams(std::vector<ContigStream*> streams,
                                       unsigned k, bool fill_pos = true) const {
-    typedef NewExtendedSequenceMapper<Graph, typename gp_t::seq_t> Mapper;
+    typedef NewExtendedSequenceMapper<Graph, typename gp_t::index_t> Mapper;
 
     shared_ptr<gp_t> result(new gp_t(k, env_->kDefaultGPWorkdir));
 

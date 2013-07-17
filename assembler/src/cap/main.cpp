@@ -1,5 +1,6 @@
 // just to check that headers from include and debruijn folders are correctly included
 #include "standard.hpp"
+#include "cap_kmer_index.hpp"
 #include "cap_logger.hpp"
 
 #include "../online_vis/standard_vis.hpp"
