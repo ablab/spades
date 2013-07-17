@@ -262,7 +262,10 @@ class ColoredGraphIsomorphismChecker {
     void LoadPack(Pack& pack, const string& path) {
         typedef typename ScannerTraits<typename gp_t::graph_t>::Scanner Scanner;
         Scanner scanner(pack.gp.g, pack.gp.int_ids);
+        pack.gp.index.Detach();
         scanner.loadGraph(path);
+        pack.gp.index.Refill();
+        pack.gp.index.Attach();
         LoadColoring(pack.gp.g, pack.gp.int_ids, pack.col, path);
         pack.FillMapping();
     }
