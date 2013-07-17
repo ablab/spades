@@ -307,7 +307,7 @@ class MMappedFileRecordArrayIterator :
         increment();
     }
     MMappedFileRecordArrayIterator(MMappedRecordReader<T> &&reader, size_t elcnt)
-            : value_(NULL), reader_(std::move(reader)),  elcnt_(elcnt), good_(true) {
+            : value_(NULL), reader_(std::move(reader)), elcnt_(elcnt), good_(true) {
         increment();
     }
 

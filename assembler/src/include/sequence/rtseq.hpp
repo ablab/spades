@@ -582,23 +582,23 @@ class RuntimeSeq {
     return operator[](0);
   }
 
-  static size_t GetHash(const DataType *data, size_t sz) {
+  static size_t GetHash(const DataType *data, size_t sz, uint32_t seed = 0) {
     uint64_t res[2];
-    MurmurHash3_x64_128(data, sz * sizeof(DataType), 0x9E3779B9, res);
+    MurmurHash3_x64_128(data, sz * sizeof(DataType), 0x9E3779B9 ^ seed, res);
     return res[0] ^ res[1];
   }
 
-  size_t GetHash() const {
-    return GetHash(data_.data(), GetDataSize(size_));
+  size_t GetHash(unsigned seed = 0) const {
+    return GetHash(data_.data(), GetDataSize(size_), seed);
   }
 
   struct hash {
-    size_t operator()(const RuntimeSeq<max_size_, T>& seq) const {
-      return seq.GetHash();
+    size_t operator()(const RuntimeSeq<max_size_, T>& seq, uint32_t seed = 0) const {
+      return seq.GetHash(seed);
     }
 
-    size_t operator()(const DataType *data, size_t sz) {
-      return GetHash(data, sz);
+    size_t operator()(const DataType *data, size_t sz, unsigned seed = 0) {
+      return GetHash(data, sz, seed);
     }
   };
 

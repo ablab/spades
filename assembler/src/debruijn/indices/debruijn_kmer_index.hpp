@@ -390,14 +390,13 @@ class DeBruijnStreamKMerIndexBuilder<runtime_k::RtSeq, Index> {
     size_t BuildIndexFromStream(IndexT &index,
                                 Streams &streams,
                                 SingleReadStream* contigs_stream = 0) const {
-        DeBruijnReadKMerSplitter<typename Streams::ReaderType::read_type> splitter(index.workdir(), index.k(),
-                                                streams, contigs_stream);
+        DeBruijnReadKMerSplitter<typename Streams::ReaderType::read_type>
+                splitter(index.workdir(), index.k(), 0, streams, contigs_stream);
         KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
 
         index.BuildIndex(counter, 16, streams.size());
         return 0;
     }
-
 };
 
 //fixme makes hierarchy a bit strange
@@ -413,7 +412,6 @@ class DeBruijnGraphKMerIndexBuilder {
       KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
       index.BuildIndex(counter, 16, 1);
   }
-
 };
 
 }
