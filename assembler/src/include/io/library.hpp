@@ -20,7 +20,7 @@ enum class LibraryType {
   SingleReads,
   PairedEnd,
   MatePairs,
-  LongSingleReads
+  PacBioReads,
 };
 
 enum class LibraryOrientation {
