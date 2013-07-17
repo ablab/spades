@@ -156,6 +156,11 @@ class CapKMerCounter: public ::KMerCounter<LSeq> {
     return storage_.size();
   }
 
+  virtual size_t CountAll(unsigned num_buckets, unsigned num_threads, bool merge = true) {
+    INFO("K-mer counting done. There are " << storage_.size() << " kmers in total. ");
+    return storage_.size();
+  }
+
   virtual void MergeBuckets(unsigned num_buckets) {
     VERIFY(bucket == NULL);
   }
