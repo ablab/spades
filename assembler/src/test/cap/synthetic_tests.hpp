@@ -30,7 +30,7 @@ class SyntheticTestsRunner {
     void ProcessExample(ContigStreamsPtr streams, size_t id) const {
         GraphPackT gp(k_, work_dir_);
         ColorHandler<GraphT> coloring(gp.g);
-        ConstructColoredGraph(gp, coloring, *RCWrapStreams(*streams), /*fill_pos*/true);
+        ConstructColoredGraph(gp, coloring, *RCWrapStreams(*streams), /*fill_pos*/false);
         Save(gp, coloring, output_dir_ + ToString(id));
     }
 
@@ -39,7 +39,7 @@ class SyntheticTestsRunner {
         INFO("Saving graph to " << filename);
         printer.saveGraph(filename);
         printer.saveEdgeSequences(filename);
-        printer.savePositions(filename, gp.edge_pos);
+//        printer.savePositions(filename, gp.edge_pos);
         SaveColoring(gp.g, gp.int_ids, coloring, filename);
         PrintColoredGraphWithColorFilter(gp.g, coloring, gp.edge_pos,
                                          filename + ".dot");

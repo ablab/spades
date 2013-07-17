@@ -38,22 +38,16 @@ namespace cap {
 
 inline void CheckDiffs(size_t k, const string& actual_prefix, const string& etalon_prefix,
                        bool exact_match = true) {
-    string comparison_type_string;
     if (exact_match) {
-        comparison_type_string = "exact match";
-    } else {
-        comparison_type_string = "graph isomorphism";
-    }
-    INFO("Checking differences for graphs: " + comparison_type_string);
-
-    if (exact_match) {
-        string suffixes[4] = { "grp", "clr", "sqn", "pos" };
-        for (size_t i = 0; i < 4; ++i) {
+        INFO("Checking differences for graphs: exact match");
+        vector<string> suffixes = { "grp", "clr", "sqn" };
+        FOREACH (auto suff, suffixes) {
             BOOST_CHECK_MESSAGE(
-                    CheckFileDiff(actual_prefix + "." + suffixes[i], etalon_prefix + "." + suffixes[i]),
-                    "Check for suffix " + suffixes[i] + " failed");
+                    CheckFileDiff(actual_prefix + "." + suff, etalon_prefix + "." + suff),
+                    "Check for suffix " + suff + " failed");
         }
     } else {
+        INFO("Checking differences for graphs: graph isomorphism");
         ColoredGraphIsomorphismChecker<conj_graph_pack> checker(k, "tmp");
         BOOST_CHECK_MESSAGE(
                 checker.Check(actual_prefix, etalon_prefix),
@@ -76,7 +70,7 @@ inline void RegenerateEtalon(size_t k, const string& filename,
 template<class Seq>
 void RunTests(size_t k, const string& filename, const string& output_dir,
                      const string& etalon_root, const string& work_dir,
-                     bool exact_match = false,
+                     bool exact_match = true,
                      const vector<size_t>& example_ids = vector<size_t>()) {
     SyntheticTestsRunner<Seq> test_runner(filename, k, output_dir, work_dir);
     vector<size_t> launched = test_runner.Run();
@@ -84,15 +78,6 @@ void RunTests(size_t k, const string& filename, const string& output_dir,
         CheckDiffs(k, output_dir + ToString(id), etalon_root + ToString(id), exact_match);
     }
 }
-
-/*
- BOOST_AUTO_TEST_CASE( ColoringStringsTest ) {
- ColorGenerator::instance().GenerateColors(20);
- for (size_t i = 0; i < 20; ++i) {
- INFO("Color #" << i << ": " << ColorGenerator::instance().GetIthColor(i));
- }
- }
- */
 
 BOOST_AUTO_TEST_CASE( SyntheticExamplesTestsRtSeq ) {
     utils::TmpFolderFixture _("tmp");

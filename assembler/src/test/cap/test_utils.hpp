@@ -328,24 +328,6 @@ public:
         LoadPack(pack2_, prefix2);
 
         return CheckColoredGraphIsomorphism();
-//        // Do we need graph structure?
-//        // fixme hell yeah! =)
-//
-//        ifstream *ifs1 = new ifstream((prefix1 + label_suffix).c_str()),
-//                 *ifs2 = new ifstream((prefix2 + label_suffix).c_str());
-//        ReadLabelsInMap(*ifs1, edges1);
-//        ReadLabelsInMap(*ifs2, edges2);
-//        delete ifs1,
-//        delete ifs2;
-//
-//        ifs1 = new ifstream((prefix1 + color_suffix).c_str()),
-//        ifs2 = new ifstream((prefix2 + color_suffix).c_str());
-//        ReadColorsInMap(*ifs1, edges1);
-//        ReadColorsInMap(*ifs2, edges2);
-//        delete ifs1,
-//        delete ifs2;
-//
-//        return MapsValueSetEquals(edges1, edges2);
     }
 };
 
