@@ -502,187 +502,65 @@ public:
     }
 };
 
-
-bool ReverseComparePairBySecond(const boost::tuple<EdgeId, int,int> & a, const boost::tuple<EdgeId, int, int>& b) {
-    return get<1>(a) > get<1>(b);
+bool EdgeWithWeightCompareReverse(const pair<EdgeId, double>& p1,
+                           const pair<EdgeId, double>& p2) {
+    return p1.second > p2.second;
 }
 
-//
-//class PathsDrivenExtensionChooser: public ExtensionChooser {
-//
-//protected:
-//
-//    GraphCoverageMap coverageMap_;
-//
-//public:
-//    PathsDrivenExtensionChooser(Graph& g, PathContainer& pc): ExtensionChooser(g, 0, .0), coverageMap_(g, pc) {
-//
-//    }
-//
-//    virtual EdgeContainer Filter(BidirectionalPath& path, EdgeContainer& edges) {
-//        if (edges.empty()) {
-//            return edges;
-//        }
-//        DEBUG("We in Filter of PathsDrivenExtension");
-//        set<EdgeId> candidatesSet;
-//        for (auto it = edges.begin(); it != edges.end(); ++it) {
-//            candidatesSet.insert(it->e_);
-//        }
-//
-//        auto supportingPaths = coverageMap_.GetCoveringPaths(path.Back());
-//        vector<pair<BidirectionalPath*, size_t> > supportPathCandidates;
-//        set<EdgeId> filteredCandidatesSet;
-//        EdgeId nullEdge;
-//        for (auto it = supportingPaths.begin(); it != supportingPaths.end(); ++it) {
-//            auto positions = (*it)->FindAll(path.Back());
-//            for (size_t i = 0; i < positions.size(); ++i) {
-//                if (positions[i] < (*it)->Size() - 1 && candidatesSet.count((*it)->At(positions[i] + 1)) > 0) {
-//                    supportPathCandidates.push_back(make_pair(*it, positions[i]));
-//                    filteredCandidatesSet.insert((*it)->At(positions[i] + 1));
-//                } else if (positions[i] == (*it)->Size() - 1){
-//                	supportPathCandidates.push_back(make_pair(*it, positions[i]));
-//                	filteredCandidatesSet.insert(nullEdge);
-//
-//                }
-//            }
-//        }
-//
-//        if (filteredCandidatesSet.size() > 1) {
-//            DEBUG("Several extensions are supported, calculating scores now");
-//
-//            vector< boost::tuple<EdgeId, int, int > > trustedCandidates;
-//            for (size_t i = 0; i < supportPathCandidates.size(); ++i) {
-//                int coveredEdges = 0;
-//                BidirectionalPath * supportingPath = supportPathCandidates[i].first;
-//                int backPos =  supportPathCandidates[i].second;
-//                DEBUG("Supporting path #" << i);
-//                supportingPath->Print();
-//
-//                while ((int) path.Size() - 1 - coveredEdges >= 0 && backPos - coveredEdges  >= 0) {
-//                    if (path[(int) path.Size() - 1 - coveredEdges] != supportingPath->At(backPos - coveredEdges)) {
-//                        break;
-//                    }
-//                    ++coveredEdges;
-//                }
-//                if (backPos < (int)supportingPath->Size() - 1){
-//                	int unCoveredEdges = std::min((int)path.Size() - 1 - coveredEdges, backPos - coveredEdges);
-//                	trustedCandidates.push_back(boost::make_tuple(supportingPath->At(backPos + 1), coveredEdges, unCoveredEdges));
-//                	DEBUG("This path supports " << g_.int_id(supportingPath->At(backPos + 1)) <<
-//                        " by " << coveredEdges << " edges");
-//                } else {
-//                	trustedCandidates.push_back(boost::make_tuple(nullEdge, coveredEdges, 0));
-//                	DEBUG("This path supports end "  <<
-//                	                        " by " << coveredEdges << " edges");
-//                }
-//            }
-//
-//            sort(trustedCandidates.begin(), trustedCandidates.end(), ReverseComparePairBySecond);
-//            filteredCandidatesSet.clear();
-//            size_t i = 0;
-//            while (i < trustedCandidates.size() &&
-//                    get<1>(trustedCandidates[0]) == get<1>(trustedCandidates[i])) {
-//                filteredCandidatesSet.insert(get<0>(trustedCandidates[i]));
-//                ++i;
-//            }
-//            if (get<0>(trustedCandidates[0]).get() == 0){
-//            	filteredCandidatesSet.clear();
-//            	size_t index = 0;
-//            	while (get<0>(trustedCandidates[index]).get() == 0 or get<2>(trustedCandidates[index]) >= 0){
-//            		index++;
-//            	}//TODO: if not one variant:unCovered =0 and not null should return two ore more version
-//            	if (index < trustedCandidates.size()){
-//            		int first_good_index = index;
-//            		while (index < trustedCandidates.size() and (get<1>(trustedCandidates[index]) == get<1>(trustedCandidates[first_good_index]))){
-//            			if (get<0>(trustedCandidates[index]).get() != 0 or get<2>(trustedCandidates[index]) < 0){
-//            				filteredCandidatesSet.insert(get<0>(trustedCandidates[index]));
-//            			}
-//            			index++;
-//            		}
-//            		DEBUG("NEW filterefCandidate " << get<1>(trustedCandidates[index]) << " "<<get<2>(trustedCandidates[index]));
-//            	}
-//            	DEBUG("ONLY with END PATH, trustedCandidates "<< trustedCandidates.size());
-//            }
-//            DEBUG("Found " << filteredCandidatesSet.size() << " trusted extension(s), supported paths " << i << " best score " << get<1>(trustedCandidates[0]));
-//        } else if (filteredCandidatesSet.size() == 1){
-//            DEBUG("Only one extension is supported: " << g_.int_id(*(filteredCandidatesSet.begin())));
-//        } else {
-//            DEBUG("NO extensions is supported" );
-//        }
-//
-//        EdgeContainer result;
-//        for (auto it = edges.begin(); it != edges.end(); ++it) {
-//            if (filteredCandidatesSet.count(it->e_) > 0) {
-//                result.push_back(*it);
-//            }
-//        }
-//        DEBUG("result size " << result.size());
-//        return result;
-//    }
-//};
-
-class LongReadsExtensionChooser: public ExtensionChooser {
-	double filtering_threshold_;
-	double priority_threshold_;
-
-protected:
-
-    GraphCoverageMap coverageMap_;
-
+class LongReadsExtensionChooser : public ExtensionChooser {
 
 public:
-    LongReadsExtensionChooser(Graph& g, PathContainer& pc, double filtering_threshold, double priority_threshold): ExtensionChooser(g, 0, .0),
-    filtering_threshold_(filtering_threshold), priority_threshold_(priority_threshold), coverageMap_(g, pc){
-
+    LongReadsExtensionChooser(Graph& g, PathContainer& pc,
+                              double filtering_threshold,
+                              double priority_threshold)
+            : ExtensionChooser(g, 0, .0),
+              filtering_threshold_(filtering_threshold),
+              priority_threshold_(priority_threshold),
+              coverage_map_(g, pc) {
     }
 
-    virtual EdgeContainer Filter(BidirectionalPath& path, EdgeContainer& edges) {
+    /* Choose extension as correct only if we have reads that traverse a unique edge from the path and this extension.
+     * Edge is unique if all reads mapped to this edge are consistent.
+     * Two reads are consistent if they can form one path in the graph.
+     */
+    virtual EdgeContainer Filter(BidirectionalPath& path,
+                                 EdgeContainer& edges) {
         if (edges.empty()) {
             return edges;
         }
-        DEBUG("We in Filter of PathsDrivenExtension");
+        DEBUG("We in Filter of LongReadsExtensionChooser");
         path.Print();
         map<EdgeId, double> weights_cands;
         for (auto it = edges.begin(); it != edges.end(); ++it) {
-            weights_cands.insert(make_pair(it->e_, 0));
+            weights_cands.insert(make_pair(it->e_, 0.0));
         }
         set<EdgeId> filtered_cands;
-        auto supporting_paths = coverageMap_.GetCoveringPaths(path.Back());
-        for (auto it = supporting_paths.begin(); it != supporting_paths.end(); ++it) {
-        	auto positions = (*it)->FindAll(path.Back());
+        auto support_paths = coverage_map_.GetCoveringPaths(path.Back());
+        for (auto it = support_paths.begin(); it != support_paths.end(); ++it) {
+            auto positions = (*it)->FindAll(path.Back());
             for (size_t i = 0; i < positions.size(); ++i) {
-            	if (positions[i] > 0 &&
-            			positions[i] < (*it)->Size() - 1 &&
-            			covered_path(path, **it, positions[i] )){
-            		INFO("covered path");
-            		(*it)->Print();
-            		if (unique_back_path(**it, positions[i])){
-            			INFO("unique path");
-            			EdgeId next = (*it)->At(positions[i] + 1);
-            			weights_cands[next] = weights_cands[next] + (*it)->getWeight();
-            			filtered_cands.insert(next);
-            		}
-            	}
+                if (positions[i] < (*it)->Size() - 1
+                        && EqualBegins(path, path.Size() - 1, **it, positions[i])) {
+                    if (UniqueBackPath(**it, positions[i])) {
+                        EdgeId next = (*it)->At(positions[i] + 1);
+                        weights_cands[next] += (*it)->getWeight();
+                        filtered_cands.insert(next);
+                    }
+                }
             }
         }
-        for (auto iter = weights_cands.begin(); iter != weights_cands.end(); ++iter){
-        	INFO("Candidate " << g_.int_id(iter->first) << " weight " << iter->second);
-      	}
-
-        if (filtered_cands.size() > 1) {
-        	vector<pair<EdgeId, double> > sorted_candidates = to_vector(weights_cands);
-        	DEBUG("First extension is supported" <<g_.int_id(sorted_candidates[0].first) << " weight " << sorted_candidates[0].second);
-        	DEBUG("First extension is supported" <<g_.int_id(sorted_candidates[1].first) << " weight " << sorted_candidates[1].second);
-        	if (sorted_candidates[0].second > 1.5 * sorted_candidates[1].second
-        			&& sorted_candidates[0].second > 1.5){
-        		filtered_cands.clear();
-        		filtered_cands.insert(sorted_candidates[0].first);
-        	}
-        } else if (filtered_cands.size() == 1
-        		&& weights_cands[ *(filtered_cands.begin())] >1){
-        	EdgeId candidate = *(filtered_cands.begin());
-            DEBUG("Only one extension is supported: " << g_.int_id(candidate) << " with weight " << weights_cands[candidate]);
-        } else {
-            DEBUG("NO extensions is supported" );
+        DEBUG("Candidates");
+        for (auto iter = weights_cands.begin(); iter != weights_cands.end();
+                ++iter) {
+            DEBUG("Candidate " << g_.int_id(iter->first) << " weight " << iter->second);
+        }
+        vector<pair<EdgeId, double> > sort_res = MapToSortVector(weights_cands);
+        if (sort_res[0].second < filtering_threshold_) {
+            filtered_cands.clear();
+        } else if ( sort_res.size() > 1
+                && sort_res[0].second > priority_threshold_ * sort_res[1].second) {
+            filtered_cands.clear();
+            filtered_cands.insert(sort_res[0].first);
         }
         EdgeContainer result;
         for (auto it = edges.begin(); it != edges.end(); ++it) {
@@ -690,119 +568,64 @@ public:
                 result.push_back(*it);
             }
         }
-        DEBUG("result size " << result.size());
         return result;
     }
 
 private:
-    bool unique_back_path( BidirectionalPath& cov_path, size_t pos) {
-    	DEBUG("running unique_path");
-    	int int_pos = pos;
-    	while (int_pos >=0) {
-    		DEBUG(int_pos <<" "<< g_.int_id(cov_path.At(int_pos) ) );
-    		if (unique_edge(cov_path.At(int_pos)) && g_.length(cov_path.At(int_pos)) > g_.k())
-    			return true;
-    		int_pos--;
-    	}
-    	DEBUG("path has no unique prefix");
-    	return false;
+    bool UniqueBackPath(const BidirectionalPath& path, size_t pos) const{
+        int int_pos = pos;
+        while (int_pos >= 0) {
+            if (UniqueEdge(path.At(int_pos)))
+                return true;
+            int_pos--;
+        }
+        return false;
     }
 
-    bool unique_edge(EdgeId e){
-    	//TODO: hack
-    	DEBUG("running unique_edge :"<< g_.int_id(e));
-    	if (g_.length(e) > cfg::get().rr.max_repeat_length) return true;
-        auto supporting_paths = coverageMap_.GetCoveringPaths(e);
-        for (auto it = supporting_paths.begin(); it != supporting_paths.end(); ++it) {
-        	auto positions = (*it)->FindAll(e);
-        	if (positions.size() > 1) return false;
-        	for (auto jit = it; jit!= supporting_paths.end(); jit ++) {
-            	auto j_positions = (*jit)->FindAll(e);
-            	if (j_positions.size() > 1) return false;
-            	double w1 = (*it)->getWeight();
-            	double w2 = (*it)->getWeight();
-            	if (w1 < filtering_threshold_ || w2 < filtering_threshold_
-            			|| w1/w2 > priority_threshold_ || w2/w1 > priority_threshold_)
-            		 continue;
-				if (!consistent_path(**it, **jit, positions[0], j_positions[0]))
-					return false;
-        	}
+    bool UniqueEdge(EdgeId e) const {
+        auto cov_paths = coverage_map_.GetCoveringPaths(e);
+        for (auto it1 = cov_paths.begin(); it1 != cov_paths.end(); ++it1) {
+            auto pos1 = (*it1)->FindAll(e);
+            if (pos1.size() > 1) return false;
+            for (auto it2 = it1; it2 != cov_paths.end(); it2++) {
+                auto pos2 = (*it2)->FindAll(e);
+                if (pos2.size() > 1) return false;
+                double w1 = (*it1)->getWeight();
+                double w2 = (*it2)->getWeight();
+                if (w1 > filtering_threshold_ && w2 > filtering_threshold_
+                        && w1 / w2 < priority_threshold_
+                        && w2 / w1 < priority_threshold_
+                        && !ConsistentPath(**it1, pos1[0], **it2, pos2[0]))
+                    return false;
+            }
         }
-        DEBUG("edge was unique!");
         return true;
     }
 
-    bool covered_path(BidirectionalPath& path, BidirectionalPath& cov_path, size_t pos){
-    	int cur_pos1 = path.Size() - 1;
-    	int cur_pos2 = pos;
-    	while (cur_pos1 >= 0 && cur_pos2 >=0){
-    		if (path.At(cur_pos1) == cov_path.At(cur_pos2)){
-    			cur_pos1--;
-    			cur_pos2--;
-    		} else {
-    			return false;
-    		}
-    	}
-    	return true;
+    bool ConsistentPath(const BidirectionalPath& path1, size_t pos1,
+                        const BidirectionalPath& path2, size_t pos2) const {
+        return EqualBegins(path1, pos1, path2, pos2)
+                && EqualEnds(path1, pos1, path2, pos2);
     }
 
-    bool consistent_path(BidirectionalPath& path, BidirectionalPath& cov_path, size_t pos, size_t cov_pos){
-    	DEBUG("running consistent path");
-    	path.Print();
-    	cov_path.Print();
-    	DEBUG(pos <<" " << path.Size());
-    	DEBUG(cov_pos <<" " << cov_path.Size());
-    	int cur_pos1 = pos;
-    	int cur_pos2 = cov_pos;
-    	while (cur_pos1 >= 0 && cur_pos2 >=0){
-    		if (path.At(cur_pos1) == cov_path.At(cur_pos2)){
-    			cur_pos1--;
-    			cur_pos2--;
-    		} else {
-    			DEBUG("path are not consitent at "<< cur_pos1 <<" "<<cur_pos2);
-    			return false;
-    		}
-    	}
-    	cur_pos1 = pos;
-		cur_pos2 = cov_pos;
-		while (cur_pos1 < (int)path.Size() && cur_pos2 < (int)cov_path.Size()){
-			if (path.At(cur_pos1) == cov_path.At(cur_pos2)){
-				cur_pos1++;
-				cur_pos2++;
-			} else {
-				DEBUG("path are not consitent at "<< cur_pos1 <<" "<<cur_pos2);
-				return false;
-			}
-		}
-		DEBUG("paths are consistent");
-    	return true;
+    vector<pair<EdgeId, double> > MapToSortVector(
+            map<EdgeId, double>& map) const {
+        vector<pair<EdgeId, double> > result1(map.begin(), map.end());
+        std::sort(result1.begin(), result1.end(), EdgeWithWeightCompareReverse);
+        return result1;
     }
 
-    vector<pair<EdgeId, double> > to_vector(map<EdgeId, double>& candidates){
-    	vector<pair<EdgeId, double> > result;
-    	while (candidates.size() > 0){
-    		double max = 0;
-    		EdgeId max_edge = candidates.begin()->first;
-    		for (auto iter = candidates.begin(); iter != candidates.end(); ++iter){
-    			if (iter->second > max){
-    				max = iter->second;
-    				max_edge = iter->first;
-    			}
-    		}
-    		result.push_back(make_pair(max_edge, max));
-    		candidates.erase(max_edge);
-    	}
-    	return result;
-    }
+    double filtering_threshold_;
+    double priority_threshold_;
+    GraphCoverageMap coverage_map_;
 };
 
 
 
-class LongReadsPEExtensionChooser: public ExtensionChooser {
+/*class LongReadsPEExtensionChooser: public ExtensionChooser {
 
 protected:
     GraphCoverageMap coverageMap_;
-//TODO: merge path_extend_4_exp + long_reads
 
 public:
     LongReadsPEExtensionChooser(Graph& g, PathContainer& pc, size_t RL,
@@ -875,8 +698,7 @@ public:
        }
 
 };
-
-
+*/
 }
 
 

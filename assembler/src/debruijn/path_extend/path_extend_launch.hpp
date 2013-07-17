@@ -219,10 +219,10 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
 	ExtensionChooser * longReadEC = new LongReadsExtensionChooser(gp.g, true_paths,
 			cfg::get().pe_params.long_reads.filtering, cfg::get().pe_params.long_reads.priority);
 	INFO("Long Reads supporting contigs " << true_paths.size());
-	SimplePathExtender * longReadPathExtender = new SimplePathExtender(gp.g, pset.loop_removal.max_loops, longReadEC, false);
+	SimplePathExtender * longReadPathExtender = new SimplePathExtender(gp.g, pset.loop_removal.max_loops, longReadEC, true);
 	ExtensionChooser * pdEC = new LongReadsExtensionChooser(gp.g, supportingContigs,
 			cfg::get().pe_params.long_reads.filtering, cfg::get().pe_params.long_reads.priority);
-	SimplePathExtender * pdPE = new SimplePathExtender(gp.g, pset.loop_removal.max_loops, pdEC, false);
+	SimplePathExtender * pdPE = new SimplePathExtender(gp.g, pset.loop_removal.max_loops, pdEC, true);
 	vector<SimplePathExtender *> shortLoopPEs = make_extenders(gp, pset, libs, true);
 
 	vector<PathExtender *> all_libs(usualPEs.begin(), usualPEs.end());
@@ -313,21 +313,22 @@ void find_new_threshold(conj_graph_pack& gp, PairedInfoLibrary* lib, size_t inde
 
 }
 
-void add_paths_to_container(conj_graph_pack& gp, const std::vector<PathInfo<Graph> >& paths, PathContainer& supportingContigs,
-		size_t size_threshold, double weight_threshold){
-
-	for (size_t i = 0; i < paths.size(); ++i){
-		PathInfo<Graph> path = paths[i];
-		if (path.getPath().size() <= size_threshold or path.getWeight() <= weight_threshold){
-			continue;
-		}
-		vector<EdgeId> edges = path.getPath();
-		BidirectionalPath* new_path = new BidirectionalPath(gp.g, edges);
-		BidirectionalPath* conj_path = new BidirectionalPath(new_path->Conjugate(gp.g.int_id(gp.g.conjugate(edges.back()))));
-		new_path->setWeight(path.getWeight());
-		conj_path->setWeight(path.getWeight());
-		supportingContigs.AddPair(new_path, conj_path);
-	}
+void AddPathsToContainer(conj_graph_pack& gp,
+                         const std::vector<PathInfo<Graph> >& paths,
+                         size_t size_threshold, PathContainer& result) {
+    for (size_t i = 0; i < paths.size(); ++i) {
+        PathInfo<Graph> path = paths[i];
+        if (path.getPath().size() <= size_threshold) {
+            continue;
+        }
+        vector<EdgeId> edges = path.getPath();
+        BidirectionalPath* new_path = new BidirectionalPath(gp.g, edges);
+        BidirectionalPath* conj_path = new BidirectionalPath(
+                new_path->Conjugate());
+        new_path->setWeight(path.getWeight());
+        conj_path->setWeight(path.getWeight());
+        result.AddPair(new_path, conj_path);
+    }
 }
 
 size_t get_max_read_length(){
@@ -386,7 +387,7 @@ void resolve_repeats_pe(conj_graph_pack& gp,
 	add_not_empty_lib(scaff_libs, pe_scaf_libs);
 	add_not_empty_lib(scaff_libs, mp_scaf_libs);
 	PathContainer supportingContigs;
-	add_paths_to_container(gp, true_paths, supportingContigs, 1, 1.0);
+	AddPathsToContainer(gp, true_paths, 1, supportingContigs);
 
 	INFO("== Long reads paths " << supportingContigs.size() << " == ");
 	for (size_t index = 0; index < supportingContigs.size(); ++index) {
@@ -394,8 +395,6 @@ void resolve_repeats_pe(conj_graph_pack& gp,
 		supportingContigs.Get(index)->Print();
 	}
 	INFO("==== ");
-
-
 
 	resolve_repeats_pe_many_libs(gp, rr_libs, scaff_libs, supportingContigs, get_max_read_length(), output_dir, contigs_name, traverseLoops, broken_contigs);
 

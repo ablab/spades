@@ -289,7 +289,7 @@ protected:
         size_t currentLength = 0;
 
         for(auto iter = data_.rbegin(); iter != data_.rend(); ++iter) {
-            currentLength += g_.length(*iter);
+            currentLength += g_.length((EdgeId)*iter);
             cumulativeLength_.push_front(currentLength);
         }
 
@@ -803,24 +803,12 @@ public:
         if (path.Size() > Size()) {
             return false;
         }
-
         for (size_t i = 0; i <= Size() - path.Size(); ++i) {
             if (CompareFrom(i, path)) {
                 return true;
             }
         }
         return true;
-    }
-
-    bool StartsWith(const BidirectionalPath& path) const {
-        return CompareFrom(0, path);
-    }
-
-    bool EndsWith(const BidirectionalPath& path) const {
-        if (Size() < path.Size()){
-            return false;
-        }
-        return CompareFrom(Size() - path.Size(), path);
     }
 
     bool operator==(const BidirectionalPath& path) const {
@@ -928,6 +916,35 @@ public:
 };
 
 
+bool EqualBegins(const BidirectionalPath& path1, int pos1,
+                 const BidirectionalPath& path2, int pos2) {
+    int cur_pos1 = pos1;
+    int cur_pos2 = pos2;
+    while (cur_pos1 >= 0 && cur_pos2 >= 0) {
+        if (path1.At(cur_pos1) == path2.At(cur_pos2)) {
+            cur_pos1--;
+            cur_pos2--;
+        } else {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool EqualEnds(const BidirectionalPath& path1, int pos1,
+               const BidirectionalPath& path2, int pos2) {
+    int cur_pos1 = pos1;
+    int cur_pos2 = pos2;
+    while (cur_pos1 < (int) path1.Size() && cur_pos2 < (int) path2.Size()) {
+        if (path1.At(cur_pos1) == path2.At(cur_pos2)) {
+            cur_pos1++;
+            cur_pos2++;
+        } else {
+            return false;
+        }
+    }
+    return true;
+}
 
 
 
@@ -1303,7 +1320,6 @@ bool LoopDetector::PrevEdgeInShortLoop() const {
     	return false;
     }
 	EdgeId e2 = path_->Head();
-    VertexId v1 = g_.EdgeEnd(e2);
     EdgeId e1 = path_->At(path_->Size() - 2);
     VertexId v2 = g_.EdgeEnd(e1);
     if (g_.OutgoingEdgeCount(v2) == 2 && g_.EdgeEnd(e2)== g_.EdgeStart(e1) && g_.EdgeEnd(e1)== g_.EdgeStart(e2)) {

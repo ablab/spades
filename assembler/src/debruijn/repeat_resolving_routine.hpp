@@ -1072,6 +1072,8 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
             long_read_mapper.ProcessLib(stream, long_single);
         }
     }
+    long_single.DumpToFile("long_reads_paths.mpr", conj_gp.edge_pos);
+    //long_single.LoadFromFile("long_reads_paths.mpr");
     //LongReadStorage<Graph> long_read(conj_gp.g);
      //long_read.LoadFromFile("/storage/labnas/students/igorbunova/path-extend2/algorithmic-biology/assembler/pacbio.mpr");
 
@@ -1171,22 +1173,6 @@ void resolve_repeats() {
 	if ((!cfg::get().paired_mode && !cfg::get().long_single_mode)
 			|| cfg::get().rm == debruijn_graph::resolving_mode::rm_none) {
 		OutputContigs(conj_gp.g, cfg::get().output_dir + "final_contigs.fasta");
-		/*if (cfg::get().pacbio_test_on) {
-
-		    PathStorage<Graph> long_read(conj_gp.g);
-		    GapStorage<Graph> gaps(conj_gp.g);
-			std::vector< PathInfo<Graph> > filteredPaths;
-		    //LongReadStorage<Graph> long_read(conj_gp.g);
-			INFO("creating  multiindex with k = " << cfg::get().pb.pacbio_k);
-
-			if (cfg::get().ds.reads.lib_count() == 1) {
-				clustered_indices[0].Attach();
-			}
-			PacBioAligner pac_aligner(conj_gp, cfg::get().pb.pacbio_k);
-			INFO("index created");
-			filteredPaths = long_read.GetAllPaths();
-			pac_aligner.pacbio_test(long_read, gaps);
-		}*/
 		return;
 	}
 
