@@ -4,6 +4,7 @@
 #include "compare_standard.hpp"
 #include "coloring.hpp"
 #include "coordinates_handler.hpp"
+#include "test_utils.hpp"
 
 namespace online_visualization {
 

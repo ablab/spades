@@ -23,7 +23,7 @@ class PathProjector {
         is_deleting_locked_(false) {
   }
 
-  virtual void FilterPaths(std::vector<Path> &paths) const {
+  virtual std::vector<Path> FilterPaths(const std::vector<Path> &paths) const {
     return paths;
   }
   virtual std::vector<PosArray> GetThreadsToDelete(
@@ -56,10 +56,10 @@ class PathProjector {
     return chosen_path;
   }
 
-  bool CollapsePaths(const std::vector<Path> &paths) {
+  bool CollapsePaths(const std::vector<Path> &paths_to_collapse) {
     TRACE("CollapsePaths Begin");
 
-    FilterPaths(paths);
+    const std::vector<Path> &paths = FilterPaths(paths_to_collapse);
     std::vector<PosArray> threads_to_delete =
         GetThreadsToDelete(paths);
     size_t chosen_path = ChooseBasePath(paths, threads_to_delete);

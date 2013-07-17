@@ -74,7 +74,7 @@ class CapEnvironmentManager {
 
     io::ReadStreamVector<ContigStream> rc_read_stream_vector(rc_contigs, true);
 
-    debruijn_graph::ConstructGraph(result->k_value, CreateDefaultConstructionConfig(), rc_read_stream_vector, result->g, result->index);
+    debruijn_graph::ConstructGraphUsingOldIndex(result->k_value, rc_read_stream_vector, result->g, result->index);
 
     env_->coloring_ = std::make_shared<ColorHandler<Graph> >(result->g, streams.size());
     ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(result->g,

@@ -21,6 +21,13 @@ inline void load(cap_config &cfg, boost::property_tree::ptree const& pt, bool co
   load(cfg.default_log_file_mode, pt, "default_log_file_mode");
 }
 
+void load(cap_config& cfg, const std::string &filename) {
+  boost::property_tree::ptree pt;
+  boost::property_tree::read_info(filename, pt);
+
+  load(cfg, pt, true);
+}
+
 }
 
 typedef config_common::config<cap::cap_config> cap_cfg;

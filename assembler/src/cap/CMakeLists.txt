@@ -20,9 +20,11 @@ add_executable(cap-tools
   ${CMAKE_SOURCE_DIR}/debruijn/kmer_coverage_model.cpp
   tools.cpp)
 
-#add_executable(cap
-#  ${CMAKE_SOURCE_DIR}/debruijn/kmer_coverage_model.cpp
-#  main.cpp)
+add_executable(cap
+  ${CMAKE_SOURCE_DIR}/debruijn/kmer_coverage_model.cpp
+  ${CMAKE_SOURCE_DIR}/debruijn/config_struct.cpp
+  ${CMAKE_SOURCE_DIR}/debruijn/path_extend/pe_config_struct.cpp
+  main.cpp)
 
 #if (DEFINED static_build)
 #  set_target_properties(cap PROPERTIES LINK_SEARCH_END_STATIC 1)
@@ -46,5 +48,5 @@ if (READLINE_FOUND AND CURSES_FOUND)
   set(CAP_LIBS ${CAP_LIBS} ${READLINE_LIBRARY} ${CURSES_NCURSES_LIBRARY})
 endif()
 
-#target_link_libraries(cap ${CAP_LIBS})
+target_link_libraries(cap ${CAP_LIBS})
 target_link_libraries(cap-tools ${CAP_LIBS})
