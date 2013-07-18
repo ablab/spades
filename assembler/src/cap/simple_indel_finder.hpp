@@ -10,6 +10,7 @@
 #include "coloring.hpp"
 #include "omni/graph_processing_algorithm.hpp"
 #include "path_projector.hpp"
+#include "graph_traversal_constraints.hpp"
 
 namespace cap {
 
@@ -26,6 +27,8 @@ class SimpleIndelFinder {
   Graph &g_;
   ColorHandler<Graph> &coloring_;
   CoordinatesHandler<Graph> &coordinates_handler_;
+
+  GraphTraversalConstraints<Graph> &graph_traversal_constraints_;
 
   ostream &output_stream_;
 
@@ -109,7 +112,7 @@ class SimpleIndelFinder {
     }
   }
 
-  void ColoringDfs(const EdgeId edge, const PosArray &pos_array,
+  void ColoringDfs(const EdgeId edge,
                    const size_t color_mask, const size_t path_length,
                    const size_t depth) {
     const VertexId vertex = g_.EdgeEnd(edge);
@@ -140,17 +143,16 @@ class SimpleIndelFinder {
     }
     vector<EdgeId> further_edges = g_.OutgoingEdges(vertex);
     for (auto it = further_edges.begin(); it != further_edges.end(); ++it) {
-      const PosArray further_array = coordinates_handler_.FilterPosArray(
-          pos_array, *it);
-      if (further_array.size() == 0)
-        continue;
-      ColoringDfs(*it, further_array, color_mask,
-          path_length + g_.length(*it), depth + 1);
+      graph_traversal_constraints_.PushEdge(*it);
+      if (graph_traversal_constraints_.PathIsCorrect())
+        ColoringDfs(*it, color_mask,
+            path_length + g_.length(*it), depth + 1);
+      graph_traversal_constraints_.PopEdge();
     }
   }
 
   // returns if endpoint was found or not
-  bool GatheringDfs(const EdgeId edge, const PosArray &pos_array,
+  bool GatheringDfs(const EdgeId edge,
                     /*const size_t color_mask_needed,*/ const size_t depth,
                     vector<EdgeId> &path_seq) {
     VertexId vertex = g_.EdgeEnd(edge);
@@ -185,14 +187,11 @@ class SimpleIndelFinder {
 
     vector<EdgeId> further_edges = g_.OutgoingEdges(vertex);
     for (auto it = further_edges.begin(); it != further_edges.end(); ++it) {
-      const PosArray further_array = coordinates_handler_.FilterPosArray(
-          pos_array, *it);
-      if (further_array.size() == 0)
-        continue;
-
-      GatheringDfs(*it, further_array,
-          /*color_mask_needed,*/ depth + 1, path_seq);
-      //found_merge_point |= is_path_to_merge_point;
+      graph_traversal_constraints_.PushEdge(*it);
+      if (graph_traversal_constraints_.PathIsCorrect())
+        GatheringDfs(*it,
+            /*color_mask_needed,*/ depth + 1, path_seq);
+      graph_traversal_constraints_.PopEdge();
     }
     path_seq.pop_back();
     return false;
@@ -350,9 +349,10 @@ class SimpleIndelFinder {
     restricted_vertex_ = starting_vertex;
     size_t branch_num = 0;
     for (auto it = outgoing_edges.begin(); it != outgoing_edges.end(); ++it) {
-      const PosArray init_pos_array = coordinates_handler_.GetEndPosArray(*it);
-      ColoringDfs(*it, init_pos_array, 1 << branch_num, g_.length(*it), 0);
+      graph_traversal_constraints_.PushEdge(*it);
+      ColoringDfs(*it, 1 << branch_num, g_.length(*it), 0);
       branch_num++;
+      graph_traversal_constraints_.PopEdge();
     }
 
     vertices_distances_.clear();
@@ -360,9 +360,10 @@ class SimpleIndelFinder {
     if (found_merge_point_) {
       vector<EdgeId> edge_seq_vector;
       for (auto it = outgoing_edges.begin(); it != outgoing_edges.end(); ++it) {
-        const PosArray init_pos_array = coordinates_handler_.GetEndPosArray(*it);
-        GatheringDfs(*it, init_pos_array,
+        graph_traversal_constraints_.PushEdge(*it);
+        GatheringDfs(*it,
             /*(1 << outgoing_edges_number) - 1,*/ 0, edge_seq_vector);
+        graph_traversal_constraints_.PopEdge();
       }
 
       AnalyseThreadLengths();
@@ -382,11 +383,13 @@ class SimpleIndelFinder {
  public:
   SimpleIndelFinder(gp_t &gp, ColorHandler<Graph> &coloring,
       CoordinatesHandler<Graph> &coordinates_handler,
+      GraphTraversalConstraints<Graph> &graph_traversal_constraints,
       ostream &output_stream, const bool mask_indels = false)
       : gp_(gp),
         g_(gp_.g),
         coloring_(coloring),
         coordinates_handler_(coordinates_handler),
+        graph_traversal_constraints_(graph_traversal_constraints),
         output_stream_(output_stream),
         mask_indels_(mask_indels),
         path_projector_(g_, coordinates_handler_),

@@ -12,6 +12,7 @@
 #include "assembly_compare.hpp"
 #include "simple_indel_finder.hpp"
 #include "simple_inversion_finder.hpp"
+#include "graph_traversal_constraints.hpp"
 #include "test_utils.hpp"
 
 #include "cap_environment.hpp"
@@ -221,8 +222,11 @@ class CapEnvironmentManager {
   template <class gp_t>
   void FindIndelsTemplated(gp_t& gp, std::ofstream &out_stream,
       const bool mask_indels) {
+    GenomeContiguousPathsGraphTraversalConstraints<Graph> traversal_constraints(
+        env_->coordinates_handler_);
     SimpleIndelFinder<gp_t> indel_finder(gp, *env_->coloring_, 
-        env_->coordinates_handler_, out_stream, mask_indels);
+        env_->coordinates_handler_, traversal_constraints, out_stream,
+        mask_indels);
     indel_finder.FindIndelEvents();
 
     if (mask_indels) {

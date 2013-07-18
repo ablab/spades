@@ -19,7 +19,7 @@
 #include "memory_limit.hpp"
 #include "read_converter.hpp"
 
-#include "../online_vis/cap_online_visualizer.hpp"
+#include "cap_online_visualizer.hpp"
 
 void create_console_logger(string const& cfg_filename) {
 	using namespace logging;

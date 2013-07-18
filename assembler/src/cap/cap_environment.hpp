@@ -1,6 +1,6 @@
 #pragma once
 
-#include "environment.hpp"
+#include "../online_vis/environment.hpp"
 #include "compare_standard.hpp"
 #include "coloring.hpp"
 #include "coordinates_handler.hpp"

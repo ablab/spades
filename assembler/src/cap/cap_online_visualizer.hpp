@@ -1,6 +1,6 @@
 #pragma once
 
-#include "online_visualizer.hpp"
+#include "../online_vis/online_visualizer.hpp"
 #include "cap_environment.hpp"
 #include "cap_commands.hpp"
 
