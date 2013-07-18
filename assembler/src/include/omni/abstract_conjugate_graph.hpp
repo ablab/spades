@@ -34,7 +34,7 @@ class PairedVertex {
     class conjugate_iterator : public std::iterator<std::forward_iterator_tag,
             typename std::iterator_traits<edge_raw_iterator>::value_type> {
         edge_raw_iterator it_;
-        const bool conjugate_;
+        bool conjugate_;
 
      public:
         typedef typename std::iterator_traits<edge_raw_iterator>::difference_type difference_type;
