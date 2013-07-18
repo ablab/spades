@@ -28,6 +28,22 @@ class SyntheticTestsRunner {
 
     XmlTreeT xml_tree_;
 
+    vector<string> GenomeNames(ContigStreams& streams) const {
+        vector<string> genome_names;
+        for (auto &stream : streams) {
+          stream.reset();
+
+          io::SingleRead contig;
+          while (!stream.eof()) {
+            stream >> contig;
+            genome_names.push_back(contig.name());
+          }
+
+          stream.reset();
+        }
+        return genome_names;
+    }
+
     void ProcessExample(ContigStreamsPtr streams, size_t id) const {
         GraphPackT gp(k_, work_dir_);
         ColorHandler<GraphT> coloring(gp.g);
@@ -47,25 +63,22 @@ class SyntheticTestsRunner {
   //        printer.savePositions(filename, gp.edge_pos);
         SaveColoring(gp.g, gp.int_ids, coloring, filename);
 
-        vector<string> genome_names;
-        for (auto &stream : *streams) {
-          stream.reset();
+        ReliableSplitter<Graph> splitter(gp.g,
+                                         numeric_limits<size_t>::max(),
+                                         numeric_limits<size_t>::max());
 
-          io::SingleRead contig;
-          while (!stream.eof()) {
-            stream >> contig;
-            genome_names.push_back(contig.name());
-          }
+        LengthGraphLabeler<Graph> length_labeler(gp.g);
+        EdgeCoordinatesGraphLabeler<Graph> pos_labeler(gp.g, coordinates_handler, GenomeNames(*streams));
 
-          stream.reset();
-        }
+        CompositeLabeler<Graph> labeler(length_labeler, pos_labeler);
 
-        PrintColoredGraphWithColorFilter(gp.g, coloring, coordinates_handler,
-                                         genome_names, filename + ".dot");
-        BlockPrinter<GraphPackT> block_printer(gp, filename + ".blk");
-        for (size_t i = 0; i < streams->size(); ++i) {
-            block_printer.ProcessGenome(i + 1, ReadSequence((*streams)[i]));
-        }
+        WriteComponents(gp.g, splitter, filename + ".dot",
+                *ConstructBorderColorer(gp.g, coloring), labeler);
+
+//        BlockPrinter<GraphT> block_printer(gp, filename + ".blk");
+//        for (size_t i = 0; i < streams->size(); ++i) {
+//            block_printer.ProcessGenome(i + 1, ReadSequence((*streams)[i]));
+//        }
     }
 
     const vector<io::SingleRead> ParseGenome(

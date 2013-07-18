@@ -35,8 +35,6 @@ void create_console_logger(string const& cfg_filename) {
     attach_logger(lg);
 }
 
-
-
 int main(int argc, char** argv) {
     const size_t GB = 1 << 30;
 

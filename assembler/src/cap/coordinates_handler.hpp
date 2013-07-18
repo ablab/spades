@@ -30,8 +30,7 @@ bool compare_pairs_reversed(const std::pair<size_t, size_t> p1,
 
 template<class Graph>
 class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
-                                                  typename Graph::EdgeId>,
-                           private boost::noncopyable {
+                                                  typename Graph::EdgeId> {
  public:
   typedef typename Graph::EdgeId EdgeId;
   typedef typename Graph::VertexId VertexId;

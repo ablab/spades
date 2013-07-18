@@ -37,7 +37,7 @@
 namespace cap {
 
 inline void CheckDiffs(size_t k, const string& actual_prefix, const string& etalon_prefix,
-                       bool exact_match = true) {
+                       const string& work_dir, bool exact_match = true) {
     if (exact_match) {
         INFO("Checking differences for graphs: exact match");
         vector<string> suffixes = { "grp", "clr", "sqn" };
@@ -48,7 +48,7 @@ inline void CheckDiffs(size_t k, const string& actual_prefix, const string& etal
         }
     } else {
         INFO("Checking differences for graphs: graph isomorphism");
-        ColoredGraphIsomorphismChecker<conj_graph_pack> checker(k, "tmp");
+        ColoredGraphIsomorphismChecker<conj_graph_pack> checker(k, work_dir);
         BOOST_CHECK_MESSAGE(
                 checker.Check(actual_prefix, etalon_prefix),
                 "GRAPHS DIFFER");
@@ -56,7 +56,6 @@ inline void CheckDiffs(size_t k, const string& actual_prefix, const string& etal
 }
 
 inline void RegenerateEtalon(size_t k, const string& filename,
-                             const string& output_dir,
                              const string& etalon_root,
                              const string& work_dir) {
     remove_dir(etalon_root);
@@ -75,30 +74,36 @@ void RunTests(size_t k, const string& filename, const string& output_dir,
     SyntheticTestsRunner<Seq> test_runner(filename, k, output_dir, work_dir);
     vector<size_t> launched = test_runner.Run();
     FOREACH(size_t id, launched) {
-        CheckDiffs(k, output_dir + ToString(id), etalon_root + ToString(id), exact_match);
+        CheckDiffs(k, output_dir + ToString(id), etalon_root + ToString(id), work_dir, exact_match);
     }
+}
+
+BOOST_AUTO_TEST_CASE( RegenerateEtalonTest ) {
+    return;
+    utils::TmpFolderFixture _("tmp");
+    make_dir("synthetic_tests");
+    string input_dir = "./src/test/cap/tests/synthetic/";
+    RegenerateEtalon(25, input_dir + "tests.xml",
+                                "synthetic_tests/",
+                                "tmp");
 }
 
 BOOST_AUTO_TEST_CASE( SyntheticExamplesTestsRtSeq ) {
     utils::TmpFolderFixture _("tmp");
-    make_dir("simulated_tests");
     string input_dir = "./src/test/cap/tests/synthetic/";
     RunTests<runtime_k::RtSeq> (25, input_dir + "tests.xml",
-                                "simulated_tests/",
+                                "tmp/",
                                 input_dir + "etalon/",
-                                "tmp", false);
-    remove_dir("simulated_tests");
+                                "tmp", true);
 }
 
 BOOST_AUTO_TEST_CASE( SyntheticExamplesTestsLSeq ) {
     utils::TmpFolderFixture _("tmp");
-    make_dir("simulated_tests");
     string input_dir = "./src/test/cap/tests/synthetic/";
     RunTests<LSeq> (25, input_dir + "tests.xml",
-                                "simulated_tests/",
+                                "tmp/",
                                 input_dir + "etalon/",
                                 "tmp", false);
-    remove_dir("simulated_tests");
 }
 
 /*

@@ -15,6 +15,8 @@
 
 namespace cap {
 
+typedef unsigned char uchar;
+
 template <class HashT = PolynomialHash<> >
 class LongSeq {
   typedef LongSeq<HashT> ThisType;
@@ -57,7 +59,6 @@ class LongSeq {
   static const char kNoNextNucl = char(69);
 
  private:
-  typedef unsigned char uchar;
   // Maybe SequenceData?
   Sequence sequence_;
 
