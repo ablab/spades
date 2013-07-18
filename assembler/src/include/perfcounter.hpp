@@ -54,8 +54,6 @@ inline std::string human_readable_time(double time_in_sec)
 }
 
 inline std::string human_readable_memory(size_t max_rss) {
-	assert(max_rss > 0);
-
 	if (max_rss < 1024 * 1024) {
 		return str(boost::format("%4dM") % (max_rss / 1024));
   } else {
