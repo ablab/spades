@@ -1040,38 +1040,37 @@ template <class Graph>
 struct PairedInfoIndicesT {
     typedef PairedInfoIndexT<Graph> IndexT;
 
-    vector< IndexT* > data_;
+    vector< IndexT > data_;
 
     PairedInfoIndicesT(const Graph& graph, size_t lib_num) {
-        for (size_t i = 0; i < lib_num; ++i) {
-            data_.push_back(new IndexT(graph));
-        }
+        for (size_t i = 0; i < lib_num; ++i)
+            data_.emplace_back(graph);
     }
 
     void Init() {
         for (auto it = data_.begin(); it != data_.end(); ++it) {
-            (*it)->Init();
+            it->Init();
         }
     }
 
     void Attach() {
         for (auto it = data_.begin(); it != data_.end(); ++it) {
-            (*it)->Attach();
+            it->Attach();
         }
     }
 
     void Detach() {
         for (auto it = data_.begin(); it != data_.end(); ++it) {
-            (*it)->Detach();
+            it->Detach();
         }
     }
 
     IndexT& operator[](size_t i) {
-        return *data_[i];
+        return data_[i];
     }
 
     const IndexT& operator[](size_t i) const {
-        return *data_[i];
+        return data_[i];
     }
 
     size_t size() const {
