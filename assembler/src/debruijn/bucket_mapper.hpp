@@ -194,8 +194,7 @@ namespace debruijn_graph {
 						for (auto i = 0; i < dimension; ++i){
 							histogram.push_back(vector<double>(dimension));
 							for (auto j = 0; j < dimension; ++j) {
-								auto res = fscanf(file_, "%lf", &histogram[i][j] );
-								VERIFY(res != EOF);
+								VERIFY(fscanf(file_, "%lf", &histogram[i][j] ) != EOF);
 							}
 							UpdateCache( distance, histogram ); 
 						}
@@ -432,7 +431,6 @@ namespace debruijn_graph {
 
 		void SetBucketsForDistance ( bucket_id id, int distance, std::vector<double>& histogram ) {
 
-			int kmers_in_bucket_counter = GetNumberKmersInBucket(id);
 			for (auto e = g_.SmartEdgeBegin(); !e.IsEnd(); ++e) {
 				if (g_.length(*e) >= cfg::get().rr.max_repeat_length) {
 					Sequence seq =  g_.EdgeNucls(*e) ;
