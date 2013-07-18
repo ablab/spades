@@ -538,7 +538,7 @@ public:
                    }
                    if (pos_end + 1 < cur_path->Size() && cur_path->At(pos_end + 1) == e2){
                 	   //INFO("covered path " << cur_path->getWeight());
-                	   weight += cur_path->getWeight();
+                	   weight += cur_path->GetWeight();
                    }
                }
            }

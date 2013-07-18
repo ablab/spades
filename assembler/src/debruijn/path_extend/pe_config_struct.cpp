@@ -145,23 +145,20 @@ void load(pe_config::LongReads& p, boost::property_tree::ptree const& pt, bool /
   load(p.priority, pt, "priority");
 }
 
-void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt, bool /*complete*/) {
-  using config_common::load;
-
-  load(p.debug_output, pt,  "debug_output"   );
-
-  load(p.output      , pt,  "output"   );
-  load(p.viz         , pt,  "visualize");
-  load(p.param_set   , pt,  p.name.c_str()   );
-  load(p.obs         , pt,  "output_broken_scaffolds");
-  load(p.long_reads, pt, "long_reads");
-
-
-  if (!p.debug_output) {
-    p.output.DisableAll();
-    p.viz.DisableAll();
-  }
-  p.etc_dir = "path_extend";
+void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt,
+          bool /*complete*/) {
+    using config_common::load;
+    load(p.debug_output, pt, "debug_output");
+    load(p.output, pt, "output");
+    load(p.viz, pt, "visualize");
+    load(p.param_set, pt, p.name.c_str());
+    load(p.obs, pt, "output_broken_scaffolds");
+    load(p.long_reads, pt, "long_reads");
+    if (!p.debug_output) {
+        p.output.DisableAll();
+        p.viz.DisableAll();
+    }
+    p.etc_dir = "path_extend";
 }
 
 

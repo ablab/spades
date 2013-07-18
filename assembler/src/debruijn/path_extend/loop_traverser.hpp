@@ -74,7 +74,7 @@ private:
 			return;
 		}
 		extender_->GrowPath(*startPath);
-		extender_->GrowPath(*endPath->getConjPath());
+		extender_->GrowPath(*endPath->GetConjPath());
 
 		size_t commonSize = startPath->CommonEndSize(*endPath);
 		size_t nLen = 0;

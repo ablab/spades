@@ -102,8 +102,8 @@ private:
         if (last1 == -1 || last2 == -1) {
             return;
         }
-        BidirectionalPath* conj1 = path1->getConjPath();
-        BidirectionalPath* conj2 = path2->getConjPath();
+        BidirectionalPath* conj1 = path1->GetConjPath();
+        BidirectionalPath* conj2 = path2->GetConjPath();
         int first1 = conj1->Size() - pos1 - 1;
         int first2 = conj2->Size() - pos2 - 1;
         posRes = ComparePaths(first1, first2, *conj1, *conj2, max_overlap);
@@ -172,10 +172,10 @@ private:
         } else if (first2 == 0 && first1 == 0 && del_begins) {
             if (size1 < size2 && !path1->HasOverlapedBegin()) {
                 DEBUG("delete begin path 1");
-                path1->getConjPath()->PopBack(last1 + 1);
+                path1->GetConjPath()->PopBack(last1 + 1);
             } else if (!path2->HasOverlapedBegin()) {
                 DEBUG("delete begin path 2");
-                path2->getConjPath()->PopBack(last2 + 1);
+                path2->GetConjPath()->PopBack(last2 + 1);
             }
         } else if ((last1 == size1 - 1 && last2 == size2 - 1) && del_begins) {
             if (size1 < size2 && !path1->HasOverlapedEnd()) {
@@ -187,13 +187,13 @@ private:
             }
         } else if (first2 == 0 && del_all && !path2->HasOverlapedBegin()) {
             DEBUG("delete path 2 begin");
-            path2->getConjPath()->PopBack(last2 + 1);
+            path2->GetConjPath()->PopBack(last2 + 1);
         } else if (last2 == size2 - 1 && del_all && !path2->HasOverlapedEnd()) {
             DEBUG("delete path 2 end");
             path2->PopBack(last1 + 1 - first1);
         } else if (first1 == 0 && del_all && !path1->HasOverlapedBegin()) {
             DEBUG("delete path1 begin");
-            path1->getConjPath()->PopBack(last1 + 1);
+            path1->GetConjPath()->PopBack(last1 + 1);
         } else if (last1 == size1 - 1 && del_all && !path1->HasOverlapedEnd()) {
             path1->PopBack(last1 + 1 - first1);
             DEBUG("delete path1 end")
@@ -225,7 +225,7 @@ private:
 
     bool IsSamePath(BidirectionalPath * path1,
                     BidirectionalPath * path2) const {
-        return *path2 == *path1 or *path2 == *path1->getConjPath();
+        return *path2 == *path1 or *path2 == *path1->GetConjPath();
     }
 
     void RemoveOverlap(PathContainer& paths, BidirectionalPath* path1,
@@ -234,7 +234,7 @@ private:
         path1->Print();
         DEBUG("next");
         path2->Print();
-        BidirectionalPath* conj2 = path2->getConjPath();
+        BidirectionalPath* conj2 = path2->GetConjPath();
         if (path1->IsOverlap() && overlap_size == path1->Size()) {
             conj2->PopBack(overlap_size);
             DEBUG("change second path");

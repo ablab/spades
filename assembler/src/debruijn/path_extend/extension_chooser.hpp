@@ -543,7 +543,7 @@ public:
                         && EqualBegins(path, path.Size() - 1, **it, positions[i])) {
                     if (UniqueBackPath(**it, positions[i])) {
                         EdgeId next = (*it)->At(positions[i] + 1);
-                        weights_cands[next] += (*it)->getWeight();
+                        weights_cands[next] += (*it)->GetWeight();
                         filtered_cands.insert(next);
                     }
                 }
@@ -590,8 +590,8 @@ private:
             for (auto it2 = it1; it2 != cov_paths.end(); it2++) {
                 auto pos2 = (*it2)->FindAll(e);
                 if (pos2.size() > 1) return false;
-                double w1 = (*it1)->getWeight();
-                double w2 = (*it2)->getWeight();
+                double w1 = (*it1)->GetWeight();
+                double w2 = (*it2)->GetWeight();
                 if (w1 > filtering_threshold_ && w2 > filtering_threshold_
                         && w1 / w2 < priority_threshold_
                         && w2 / w1 < priority_threshold_

@@ -454,19 +454,19 @@ public:
         listeners_.push_back(listener);
     }
 
-	void setConjPath(BidirectionalPath* path) {
+	void SetConjPath(BidirectionalPath* path) {
 		conj_path = path;
 	}
 
-	BidirectionalPath* getConjPath() {
+	BidirectionalPath* GetConjPath() {
 		return conj_path;
 	}
 
-    void setWeight(double w){
+    void SetWeight(double w){
     	weight_ = w;
     }
 
-    double getWeight() const{
+    double GetWeight() const{
     	return weight_;
     }
 
@@ -843,13 +843,13 @@ private:
         if (has_overlaped_begin_ != overlap) {
             has_overlaped_begin_ = overlap;
         }
-        if (getConjPath()->has_overlaped_end_ != overlap) {
-            getConjPath()->has_overlaped_end_ = overlap;
+        if (GetConjPath()->has_overlaped_end_ != overlap) {
+            GetConjPath()->has_overlaped_end_ = overlap;
         }
     }
 
     void set_overlap_end(bool overlap = true) {
-        getConjPath()->set_overlap_begin(overlap);
+        GetConjPath()->set_overlap_begin(overlap);
     }
 
     void Init() {
@@ -956,12 +956,12 @@ public:
     }
 
     BidirectionalPath* FindConjugate(BidirectionalPath* p) const {
-		return p->getConjPath();
+		return p->GetConjPath();
 	}
 
     bool AddPair(BidirectionalPath* p, BidirectionalPath* cp) {
-        p->setConjPath(cp);
-        cp->setConjPath(p);
+        p->SetConjPath(cp);
+        cp->SetConjPath(p);
         p->Subscribe(cp);
         cp->Subscribe(p);
         p->SetId(++path_id_);

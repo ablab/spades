@@ -102,7 +102,7 @@ public:
 			i++;
             BidirectionalPath* path = iter.get();
             if (path->GetId() % 2 != 0) {
-                path = path->getConjPath();
+                path = path->GetConjPath();
             }
             oss << "PATH " << path->GetId() << " " << path->Size() << " " << path->Length() + k_ << endl;
             for (size_t j = 0; j < path->Size(); ++j) {
@@ -126,7 +126,7 @@ public:
         	DEBUG("NODE " << ++i);
             BidirectionalPath* path = iter.get();
             if (path->GetId() % 2 != 0) {
-                path = path->getConjPath();
+                path = path->GetConjPath();
             }
             path->Print();
         	oss.setID(path->GetId());

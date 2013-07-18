@@ -187,9 +187,6 @@ struct pe_config {
 
   struct MainPEParamsT {
     std::string name;
-
-    std::string additional_contigs;
-
     output_broken_scaffolds obs;
 
     bool debug_output;

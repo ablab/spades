@@ -183,13 +183,6 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
 	ContigWriter writer(gp.g);
 	debug_output_edges(writer, gp, output_dir, "before_resolve");
 
-	PathContainer supportingContigs;
-	if (FileExists(cfg::get().pe_params.additional_contigs)) {
-		INFO("Reading additional contigs " << cfg::get().pe_params.additional_contigs);
-		supportingContigs = CreatePathsFromContigs(gp, cfg::get().pe_params.additional_contigs);
-		writer.writePaths(supportingContigs, get_etc_dir(output_dir) + "supporting_paths.fasta");
-	}
-
     vector<WeightCounter*> wcs;
     vector<WeightCounter*> scaf_wcs;
     for (size_t i = 0; i < libs.size(); ++i){
@@ -219,13 +212,9 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
 			cfg::get().pe_params.long_reads.filtering, cfg::get().pe_params.long_reads.priority);
 	INFO("Long Reads supporting contigs " << true_paths.size());
 	SimplePathExtender * longReadPathExtender = new SimplePathExtender(gp.g, pset.loop_removal.max_loops, longReadEC, true);
-	ExtensionChooser * pdEC = new LongReadsExtensionChooser(gp.g, supportingContigs,
-			cfg::get().pe_params.long_reads.filtering, cfg::get().pe_params.long_reads.priority);
-	SimplePathExtender * pdPE = new SimplePathExtender(gp.g, pset.loop_removal.max_loops, pdEC, true);
 	vector<SimplePathExtender *> shortLoopPEs = make_extenders(gp, pset, libs, true);
 
 	vector<PathExtender *> all_libs(usualPEs.begin(), usualPEs.end());
-	all_libs.push_back(pdPE);
 	all_libs.push_back(longReadPathExtender);
 	all_libs.insert(all_libs.end(), shortLoopPEs.begin(), shortLoopPEs.end());
 	all_libs.insert(all_libs.end(), scafPEs.begin(), scafPEs.end());
@@ -322,17 +311,16 @@ void AddPathsToContainer(conj_graph_pack& gp,
         }
         vector<EdgeId> edges = path.getPath();
         BidirectionalPath* new_path = new BidirectionalPath(gp.g, edges);
-        BidirectionalPath* conj_path = new BidirectionalPath(
-                new_path->Conjugate());
-        new_path->setWeight(path.getWeight());
-        conj_path->setWeight(path.getWeight());
+        BidirectionalPath* conj_path = new BidirectionalPath(new_path->Conjugate());
+        new_path->SetWeight(path.getWeight());
+        conj_path->SetWeight(path.getWeight());
         result.AddPair(new_path, conj_path);
     }
 }
 
 void resolve_repeats_pe(conj_graph_pack& gp,
 		vector<PairedIndexT*>& paired_index, vector<PairedIndexT*>& scaff_index,
-		vector<size_t>& indexs, const std::vector<PathInfo<Graph> >& true_paths,
+		vector<size_t>& indexs, const std::vector<PathInfo<Graph> >& long_reads,
 		const std::string& output_dir, const std::string& contigs_name, bool traverseLoops, boost::optional<std::string> broken_contigs, bool use_auto_threshold = true) {
 
     const pe_config::ParamSetT& pset = cfg::get().pe_params.param_set;
@@ -377,17 +365,17 @@ void resolve_repeats_pe(conj_graph_pack& gp,
 	vector<PairedInfoLibraries> scaff_libs;
 	add_not_empty_lib(scaff_libs, pe_scaf_libs);
 	add_not_empty_lib(scaff_libs, mp_scaf_libs);
-	PathContainer supportingContigs;
-	AddPathsToContainer(gp, true_paths, 1, supportingContigs);
+	PathContainer long_reads_container;
+	AddPathsToContainer(gp, long_reads, 1, long_reads_container);
 
-	INFO("== Long reads paths " << supportingContigs.size() << " == ");
-	for (size_t index = 0; index < supportingContigs.size(); ++index) {
+	INFO("== Long reads paths " << long_reads_container.size() << " == ");
+	for (size_t index = 0; index < long_reads_container.size(); ++index) {
 	    DEBUG("Long contig " << index);
-		supportingContigs.Get(index)->Print();
+		long_reads_container.Get(index)->Print();
 	}
 	INFO("==== ");
 
-	resolve_repeats_pe_many_libs(gp, rr_libs, scaff_libs, supportingContigs, output_dir, contigs_name, traverseLoops, broken_contigs);
+	resolve_repeats_pe_many_libs(gp, rr_libs, scaff_libs, long_reads_container, output_dir, contigs_name, traverseLoops, broken_contigs);
 
 	delete_libs(paired_end_libs);
 	delete_libs(mate_pair_libs);
