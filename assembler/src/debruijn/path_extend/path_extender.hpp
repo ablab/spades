@@ -25,7 +25,7 @@ class ShortLoopResolver {
 
 protected:
 
-    Graph& g_;
+    const Graph& g_;
 
     bool GetLoopAndExit(BidirectionalPath& path, pair<EdgeId, EdgeId>& result) const {
         EdgeId e = path.Head();
@@ -59,7 +59,7 @@ protected:
 
 public:
 
-    ShortLoopResolver(Graph& g): g_(g) {
+    ShortLoopResolver(const Graph& g): g_(g) {
 
     }
 
@@ -108,7 +108,7 @@ class LoopResolver: public ShortLoopResolver {
 public:
 
 
-    LoopResolver(Graph& g, ExtensionChooser& chooser): ShortLoopResolver(g), chooser_(chooser) {
+    LoopResolver(const Graph& g, ExtensionChooser& chooser): ShortLoopResolver(g), chooser_(chooser) {
 
     }
 
@@ -324,10 +324,10 @@ public:
 class PathExtender {
 
 protected:
-    Graph& g_;
+    const Graph& g_;
 
 public:
-    PathExtender(Graph & g): g_(g)
+    PathExtender(const Graph & g): g_(g)
     {
     }
 
@@ -352,7 +352,7 @@ protected:
     bool investigateShortLoops_;
 
 public:
-    LoopDetectingPathExtender(Graph & g, size_t max_loops, bool investigateShortLoops): PathExtender(g), maxLoops_(max_loops), investigateShortLoops_(investigateShortLoops)
+    LoopDetectingPathExtender(const Graph & g, size_t max_loops, bool investigateShortLoops): PathExtender(g), maxLoops_(max_loops), investigateShortLoops_(investigateShortLoops)
     {
     }
 
@@ -525,7 +525,7 @@ protected:
 
 public:
 
-    CoveringPathExtender(Graph& g_, size_t max_loops, bool investigateShortLoops): LoopDetectingPathExtender(g_, max_loops, investigateShortLoops), coverageMap_(g_) {
+    CoveringPathExtender(const Graph& g_, size_t max_loops, bool investigateShortLoops): LoopDetectingPathExtender(g_, max_loops, investigateShortLoops), coverageMap_(g_) {
     }
 
 
@@ -549,7 +549,7 @@ public:
 };
 
 
-class CompositePathExtender: public CoveringPathExtender {
+class CompositeExtender: public CoveringPathExtender {
 
 
 protected:
@@ -558,14 +558,14 @@ protected:
 
 public:
 
-    CompositePathExtender(Graph & g, size_t max_loops, bool investigateShortLoops): CoveringPathExtender(g, max_loops, investigateShortLoops), extenders_() {
+    CompositeExtender(Graph & g, size_t max_loops, bool investigateShortLoops): CoveringPathExtender(g, max_loops, investigateShortLoops), extenders_() {
     }
 
     void AddExender(PathExtender* pe) {
         extenders_.push_back(pe);
     }
 
-    CompositePathExtender(Graph & g, size_t max_loops, vector<PathExtender*> pes, bool investigateShortLoops = true) :
+    CompositeExtender(Graph & g, size_t max_loops, vector<PathExtender*> pes, bool investigateShortLoops = true) :
 			CoveringPathExtender(g, max_loops, investigateShortLoops), extenders_() {
 		extenders_ = pes;
 	}
@@ -588,7 +588,7 @@ public:
 
 
 
-class SimplePathExtender: public CoveringPathExtender {
+class SimpleExtender: public CoveringPathExtender {
 
 protected:
 
@@ -608,7 +608,7 @@ protected:
 
 public:
 
-    SimplePathExtender(Graph& g, size_t max_loops, ExtensionChooser * ec,  bool investigateShortLoops = true):
+    SimpleExtender(const Graph& g, size_t max_loops, ExtensionChooser * ec,  bool investigateShortLoops = true):
     	CoveringPathExtender(g, max_loops, investigateShortLoops), extensionChooser_(ec), loopResolver_(g, *extensionChooser_) {
     }
 

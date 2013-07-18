@@ -29,7 +29,7 @@ class PathGraphLabeler : public AbstractGraphLabeler<Graph> {
     std::map<EdgeId, std::string> labels_;
 
 public:
-    PathGraphLabeler(Graph& g, PathContainer& paths) : base(g) {
+    PathGraphLabeler(const Graph& g, PathContainer& paths) : base(g) {
         for(size_t i = 0; i < paths.size(); ++i) {
             BidirectionalPath * path = paths.Get(i);
             for (size_t j = 0; j < path->Size(); ++j) {
@@ -74,7 +74,7 @@ public:
 
     }
 
-    void writeGraphWithPathsSimple(conj_graph_pack& gp, const string& file_name, const string& graph_name, PathContainer& paths) const{
+    void writeGraphWithPathsSimple(const conj_graph_pack& gp, const string& file_name, const string& graph_name, PathContainer& paths) const {
         INFO("Visualizing graph " << graph_name << " to file " << file_name);
         std::fstream filestr;
         filestr.open(file_name.c_str(), std::fstream::out);

@@ -27,10 +27,10 @@ typedef std::multimap<double, EdgeWithDistance> AlternativeConteiner;
 class PathAnalyzer {
 
 protected:
-    Graph& g_;
+    const Graph& g_;
 
 public:
-    PathAnalyzer(Graph& g): g_(g) {
+    PathAnalyzer(const Graph& g): g_(g) {
     }
 
     int ExcludeTrivial(const BidirectionalPath& path, std::set<int>& edges, int from = -1) {
@@ -106,7 +106,7 @@ public:
     typedef std::vector<EdgeWithDistance> EdgeContainer;
 
 protected:
-    Graph& g_;
+    const Graph& g_;
 
     WeightCounter * wc_;
 
@@ -120,7 +120,7 @@ protected:
     std::vector<ExtensionChooserListener *> listeners_;
 
 public:
-    ExtensionChooser(Graph& g, WeightCounter * wc = 0, double priority = 0.0): g_(g), wc_(wc), analyzer_(g), priorityCoefficient_(priority),
+    ExtensionChooser(const Graph& g, WeightCounter * wc = 0, double priority = 0.0): g_(g), wc_(wc), analyzer_(g), priorityCoefficient_(priority),
         excludeTrivial_(true), excludeTrivialWithBulges_(true), listeners_() {
     }
 
@@ -312,7 +312,7 @@ protected:
 		return result;
 	}
 public:
-    SimpleExtensionChooser(Graph& g, WeightCounter * wc, double priority): ExtensionChooser(g, wc, priority){
+    SimpleExtensionChooser(const Graph& g, WeightCounter * wc, double priority): ExtensionChooser(g, wc, priority){
 
     }
 
@@ -510,7 +510,7 @@ bool EdgeWithWeightCompareReverse(const pair<EdgeId, double>& p1,
 class LongReadsExtensionChooser : public ExtensionChooser {
 
 public:
-    LongReadsExtensionChooser(Graph& g, PathContainer& pc,
+    LongReadsExtensionChooser(const Graph& g, PathContainer& pc,
                               double filtering_threshold,
                               double priority_threshold)
             : ExtensionChooser(g, 0, .0),

@@ -1022,8 +1022,12 @@ void split_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
 				pe_scaf_indexs.push_back(&resolved_graph_paired_info);
 			}
 			INFO("Scaffolding");
-			path_extend::resolve_repeats_pe(resolved_gp, pe_indexs,
-					pe_scaf_indexs, indexs,  vector<PathInfo<Graph > >(), cfg::get().output_dir, "scaffolds.fasta", false, boost::none, false);
+			path_extend::ResolveRepeatsPe(resolved_gp, pe_indexs,
+                                          pe_scaf_indexs, indexs,
+                                          vector<PathStorageInfo<Graph> >(),
+                                          cfg::get().output_dir,
+                                          "scaffolds.fasta", false, boost::none,
+                                          false);
 			SaveResolved(resolved_gp, resolved_graph_paired_info,
 					resolved_graph_paired_info_cl);
 			delete resolved_graph_scaff_clustered;
@@ -1038,73 +1042,85 @@ void split_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
 	}
 }
 
+void AddSingleLibrary(
+        conj_graph_pack& gp,
+        const io::SequencingLibrary<debruijn_config::DataSetData>& reads,
+        PathStorage<Graph>& storage) {
+    DEBUG("Mapping single reads from library");
+    path_extend::SimpleLongReadMapper read_mapper(gp);
+    auto streams = single_binary_readers(reads, false, false);
+    streams->release();
+    io::MultifileReader<io::SingleReadSeq> stream(streams->get(), true);
+    read_mapper.ProcessLib(stream, storage);
+}
 
-void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	PairedIndicesT& clustered_indices, EdgeQuality<Graph>& quality_labeler) {
-
-	vector<PairedIndexT*> pe_indexs;
-	vector<PairedIndexT*> pe_scaf_indexs;
-	vector<size_t> indexes;
-
-	for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-		if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd
-				|| cfg::get().ds.reads[i].type() == io::LibraryType::MatePairs) {
-			pe_indexs.push_back(&clustered_indices[i]);
-			pe_scaf_indexs.push_back(&paired_indices[i]);
-			indexes.push_back(i);
-		}
-	}
-
-    PathStorage<Graph> long_single(conj_gp.g);
-    path_extend::SimpleLongReadMapper long_read_mapper(conj_gp);
+void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
+                  PairedIndicesT& clustered_indices,
+                  EdgeQuality<Graph>& quality_labeler) {
+    vector<PairedIndexT*> pe_indexes;
+    vector<PairedIndexT*> pe_scaf_indexes;
+    vector<size_t> indexes;
+    vector<PathStorageInfo<Graph> > long_reads_libs;
+    GapStorage<Graph> gaps(conj_gp.g);
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        if (cfg::get().ds.reads[i].type() == io::LibraryType::LongSingleReads) {
-            INFO("Mapping long single reads from lib #" << i);
-            auto streams = single_binary_readers(cfg::get().ds.reads[i], false, false);
-            streams->release();
-            io::MultifileReader<io::SingleReadSeq> stream(streams->get(), true);
-
-            long_read_mapper.ProcessLib(stream, long_single);
+        io::LibraryType type = cfg::get().ds.reads[i].type();
+        if (type == io::LibraryType::SingleReads) {
+            PathStorage<Graph> long_single(conj_gp.g);
+            AddSingleLibrary(conj_gp, cfg::get().ds.reads[i], long_single);
+            //long_single.DumpToFile("long_reads_paths.mpr", conj_gp.edge_pos);
+            //long_single.LoadFromFile("long_reads_paths.mpr");
+            //LongReadStorage<Graph> long_read(conj_gp.g);
+            //pacbio_read.LoadFromFile("/storage/labnas/students/igorbunova/path-extend2/algorithmic-biology/assembler/pacbio.mpr");
+            vector<PathInfo<Graph> > long_paths = long_single.GetAllPaths();
+            PathStorageInfo<Graph> single_storage(
+                    long_paths, cfg::get().pe_params.long_reads.filtering,
+                    cfg::get().pe_params.long_reads.priority);
+            long_reads_libs.push_back(single_storage);
+        } else if (type == io::LibraryType::PairedEnd
+                || type == io::LibraryType::MatePairs) {
+            pe_indexes.push_back(&clustered_indices[i]);
+            pe_scaf_indexes.push_back(&paired_indexes[i]);
+            indexes.push_back(i);
+        } else if (type == io::LibraryType::PacBioReads) {
+            //TODO: need to read reads from stream instead of file and delete pacbio_on + pacbio reads from config
+            PathStorage<Graph> pacbio_read(conj_gp.g);
+            INFO("creating  multiindex with k = " << cfg::get().pb.pacbio_k);
+            PacBioAligner pac_aligner(conj_gp, cfg::get().pb.pacbio_k);
+            INFO("index created");
+            pac_aligner.pacbio_test(pacbio_read, gaps);
+            vector<PathInfo<Graph> > pacbio_paths = pacbio_read.GetAllPaths();
+            PathStorageInfo<Graph> pacbio_storage(
+                    pacbio_paths, cfg::get().pe_params.long_reads.filtering,
+                    cfg::get().pe_params.long_reads.priority);
+            long_reads_libs.push_back(pacbio_storage);
         }
     }
-    long_single.DumpToFile("long_reads_paths.mpr", conj_gp.edge_pos);
-    //long_single.LoadFromFile("long_reads_paths.mpr");
-    //LongReadStorage<Graph> long_read(conj_gp.g);
-     //long_read.LoadFromFile("/storage/labnas/students/igorbunova/path-extend2/algorithmic-biology/assembler/pacbio.mpr");
-
-    PathStorage<Graph> long_read(conj_gp.g);
-    GapStorage<Graph> gaps(conj_gp.g);
-
-	std::vector< PathInfo<Graph> > filteredPaths;
-	OutputContigs(conj_gp.g, cfg::get().output_dir + "before_resolve.fasta");
-	if (cfg::get().coverage_based_rr_on == true){
-		int pe_lib_index = get_first_pe_lib_index();
-		const io::SequencingLibrary<debruijn_config::DataSetData> &lib = cfg::get().ds.reads[pe_lib_index];
-		resolve_repeats_by_coverage(conj_gp, lib.data().mean_insert_size, filteredPaths, clustered_indices[0], quality_labeler);
-	}
-
-
-
-	if (cfg::get().pacbio_test_on == true){
-		INFO("creating  multiindex with k = " << cfg::get().pb.pacbio_k);
-		PacBioAligner pac_aligner(conj_gp, cfg::get().pb.pacbio_k);
-		INFO("index created");
-		pac_aligner.pacbio_test(long_read, gaps);
-		filteredPaths = long_read.GetAllPaths();
-	}
+    if (cfg::get().coverage_based_rr_on == true) {
+        std::vector<PathInfo<Graph> > filteredPaths;
+        int pe_lib_index = get_first_pe_lib_index();
+        const io::SequencingLibrary<debruijn_config::DataSetData> &lib =
+                cfg::get().ds.reads[pe_lib_index];
+        resolve_repeats_by_coverage(conj_gp, lib.data().mean_insert_size,
+                                    filteredPaths, clustered_indices[0],
+                                    quality_labeler);
+        PathStorageInfo<Graph> single_storage(
+                filteredPaths, 0.0,
+                1.5); //TODO: consts to config
+        long_reads_libs.push_back(single_storage);
+    }
 
 	if (cfg::get().use_scaffolder && cfg::get().pe_params.param_set.scaffolder_options.on) {
 	    if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
-	        prepare_all_scaf_libs(conj_gp, pe_scaf_indexs, indexes);
+	        prepare_all_scaf_libs(conj_gp, pe_scaf_indexes, indexes);
 	    }
-        //path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "scaffolds.fasta", true, boost::optional<std::string>("final_contigs.fasta"));
-        path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_single.GetAllPaths(), cfg::get().output_dir, "scaffolds.fasta", true, boost::optional<std::string>("final_contigs.fasta"));
-
-        delete_index(pe_scaf_indexs);
+        //path_extend::resolve_repeats_pe(conj_gp, pe_indexes, pe_scaf_indexes, indexes, pacbio_read.GetAllPaths(), cfg::get().output_dir, "scaffolds.fasta", true, boost::optional<std::string>("final_contigs.fasta"));
+        path_extend::ResolveRepeatsPe(conj_gp, pe_indexes, pe_scaf_indexes, indexes, long_reads_libs, cfg::get().output_dir, "scaffolds.fasta", true, boost::optional<std::string>("final_contigs.fasta"));
+        delete_index(pe_scaf_indexes);
 	}
 	else {
-		pe_scaf_indexs.clear();
-		//path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "final_contigs.fasta", false, boost::none);
-		path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_single.GetAllPaths(), cfg::get().output_dir, "final_contigs.fasta", false, boost::none);
+		pe_scaf_indexes.clear();
+		//path_extend::resolve_repeats_pe(conj_gp, pe_indexes, pe_scaf_indexes, indexes, pacbio_read.GetAllPaths(), cfg::get().output_dir, "final_contigs.fasta", false, boost::none);
+		path_extend::ResolveRepeatsPe(conj_gp, pe_indexes, pe_scaf_indexes, indexes, long_reads_libs, cfg::get().output_dir, "final_contigs.fasta", false, boost::none);
 	}
 }
 

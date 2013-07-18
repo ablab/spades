@@ -73,7 +73,7 @@ public:
 
     }
 
-    void writeEdges(const string& filename) {
+    void writeEdges(const string& filename) const {
         INFO("Outputting edges to " << filename);
         osequencestream_with_data_for_scaffold oss(filename);
 
@@ -92,7 +92,7 @@ public:
     }
 
 
-    void writePathEdges(PathContainer& paths, const string& filename){
+    void writePathEdges(PathContainer& paths, const string& filename) const {
 		INFO("Outputting path data to " << filename);
 		ofstream oss;
         oss.open(filename.c_str());
@@ -114,7 +114,7 @@ public:
 		INFO("Edges written");
 	}
 
-    void writePaths(PathContainer& paths, const string& filename) {
+    void writePaths(PathContainer& paths, const string& filename) const {
 
         INFO("Writing contigs to " << filename);
         osequencestream_with_data_for_scaffold oss(filename);

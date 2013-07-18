@@ -43,11 +43,11 @@ struct EdgeWithDistance {
 class ExtentionAnalyzer {
 
 protected:
-	Graph& g_;
+	const Graph& g_;
 	PairedInfoLibrary& lib_;
 
 public:
-	ExtentionAnalyzer(Graph& g, PairedInfoLibrary& l) :
+	ExtentionAnalyzer(const Graph& g, PairedInfoLibrary& l) :
 			g_(g), lib_(l) {
 	}
 
@@ -92,7 +92,7 @@ public:
 class WeightCounter {
 
 protected:
-	Graph& g_;
+	const Graph& g_;
 	PairedInfoLibraries& libs_;
 	std::vector<ExtentionAnalyzer *> analyzers_;
 	double avrageLibWeight_;
@@ -107,7 +107,7 @@ protected:
 
 public:
 
-	WeightCounter(Graph& g, PairedInfoLibraries& libs, double threshold = 0.0) :
+	WeightCounter(const Graph& g, PairedInfoLibraries& libs, double threshold = 0.0) :
 			g_(g), libs_(libs), threshold_(threshold), normalizeWeight_(true), normalizeWightByCoverage_(
 					true), tryDeepSearch_(false), excludedEdges_() {
 		avrageLibWeight_ = 0.0;
@@ -348,7 +348,7 @@ protected:
 
 public:
 
-	PathCoverWeightCounter(Graph& g_, PairedInfoLibraries& libs_,
+	PathCoverWeightCounter(const Graph& g_, PairedInfoLibraries& libs_,
 			double threshold_ = 0.0, double singleThreshold_ = 0.0) :
 			WeightCounter(g_, libs_, threshold_), singleThreshold(
 					singleThreshold_) {

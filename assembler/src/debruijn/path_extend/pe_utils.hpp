@@ -22,7 +22,7 @@ public:
 
 
 protected:
-    Graph& g_;
+    const Graph& g_;
 
     std::map <EdgeId, MapDataT * > edgeCoverage_;
 
@@ -49,11 +49,11 @@ protected:
     }
 
 public:
-    GraphCoverageMap(Graph& g) : g_(g), edgeCoverage_() {
+    GraphCoverageMap(const Graph& g) : g_(g), edgeCoverage_() {
         empty_ = new MapDataT();
     }
 
-    GraphCoverageMap(Graph& g, PathContainer& paths) : g_(g), edgeCoverage_() {
+    GraphCoverageMap(const Graph& g, PathContainer& paths) : g_(g), edgeCoverage_() {
         empty_ = new MapDataT();
 
         for (size_t i = 0; i < paths.size(); ++i) {
@@ -533,9 +533,9 @@ public:
 
 class ContigCorrector{
 protected:
-    Graph& g_;
+    const Graph& g_;
 public:
-    ContigCorrector(Graph& g) : g_(g) {}
+    ContigCorrector(const Graph& g) : g_(g) {}
 
     virtual ~ContigCorrector() {
 
@@ -550,7 +550,7 @@ public:
 
 class SameEdgeDeletionCorrector : public ContigCorrector{
 public:
-    SameEdgeDeletionCorrector(Graph &g) : ContigCorrector(g) {}
+    SameEdgeDeletionCorrector(const Graph &g) : ContigCorrector(g) {}
 
     ContigStorage * Correct(ContigStorage *contigs){
         for(size_t i = 0; i < contigs->Size(); i++){

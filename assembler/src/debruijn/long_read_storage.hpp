@@ -280,3 +280,30 @@ public:
 //	}
 };
 
+template<class Graph>
+class PathStorageInfo {
+public:
+    PathStorageInfo(vector<PathInfo<Graph> >& paths, double filtering_threshold,
+                    double priority_threshold)
+            : paths_(paths.begin(), paths.end()),
+              filtering_threshold_(filtering_threshold),
+              priority_threshold_(priority_threshold) {
+    }
+
+    double GetFilteringThreshold() const {
+        return filtering_threshold_;
+    }
+
+    double GetPriorityThreshold() const {
+        return priority_threshold_;
+    }
+
+    const vector<PathInfo<Graph> >& GetPaths() const {
+        return paths_;
+    }
+
+private:
+    vector<PathInfo<Graph> > paths_;
+    double filtering_threshold_;
+    double priority_threshold_;
+};
