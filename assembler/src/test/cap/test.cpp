@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE( SyntheticExamplesTestsRtSeq ) {
     RunTests<runtime_k::RtSeq> (25, input_dir + "tests.xml",
                                 "simulated_tests/",
                                 input_dir + "etalon/",
-                                "tmp");
+                                "tmp", false);
     remove_dir("simulated_tests");
 }
 
@@ -97,7 +97,7 @@ BOOST_AUTO_TEST_CASE( SyntheticExamplesTestsLSeq ) {
     RunTests<LSeq> (25, input_dir + "tests.xml",
                                 "simulated_tests/",
                                 input_dir + "etalon/",
-                                "tmp");
+                                "tmp", false);
     remove_dir("simulated_tests");
 }
 
