@@ -42,6 +42,7 @@
 #include "coverage_based_rr.hpp"
 #include "pacbio_aligner.hpp"
 #include "bucket_mapper.hpp"
+#include "path_extend/long_read_mapper.hpp"
 
 typedef io::CarefulFilteringReaderWrapper<io::SingleRead> CarefulFilteringStream;
 
@@ -1103,9 +1104,7 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
         resolve_repeats_by_coverage(conj_gp, lib.data().mean_insert_size,
                                     filteredPaths, clustered_indices[0],
                                     quality_labeler);
-        PathStorageInfo<Graph> single_storage(
-                filteredPaths, 0.0,
-                1.5); //TODO: consts to config
+        PathStorageInfo<Graph> single_storage(filteredPaths, 0.0, 1.5);  //TODO: consts to config
         long_reads_libs.push_back(single_storage);
     }
 
