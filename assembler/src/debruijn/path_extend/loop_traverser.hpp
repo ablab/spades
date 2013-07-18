@@ -99,8 +99,6 @@ private:
 		for (size_t i = commonSize + 1; i < endPath->Size(); ++i) {
 			startPath->PushBack(endPath->At(i));
 		}
-
-		startPath->clearOverlapedEnd();
 		endPath->Clear();
 	}
 
