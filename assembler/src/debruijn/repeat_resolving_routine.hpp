@@ -914,30 +914,24 @@ void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, s
 	}
 
 
-/*	int number_of_buckets = 10;
+	int number_of_buckets = 10;
 	auto bm = BucketMapper<conj_graph_pack::graph_t>(conj_gp.g, kmerIndex, cfg::get().K + 1, number_of_buckets);
 	bm.InitBuckets();
-
+/*
 	int bucket_in = 0;
 	int bucket_out = 0;
 	int repeat_distance = 500;
 	double probability = bm.GetProbablityFromBucketToBucketForDistance (bucket_in, bucket_out, repeat_distance) ;
 */
+/*
 	auto index = FlankingCoverage<Graph>(conj_gp.g, kmerIndex, 50, cfg::get().K + 1);
-//	for (auto e = conj_gp.g.SmartEdgeBegin(); !e.IsEnd(); ++e) { 
-		
-		/*if ( index.GetInCov(*e) != index.GetInCov(conj_gp.g.conjugate(*e)) ) {
-			std::cout << index.GetInCov(*e) << " " << index.GetInCov(conj_gp.g.conjugate(*e)) << std::endl;
-		}*/
-
-
-//	}
 	EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(conj_gp.g, conj_gp.g);
-	auto cov_rr = CoverageBasedResolution<conj_graph_pack> (&conj_gp, kmerIndex, cfg::get().cbrr.coverage_threshold_one_list, cfg::get().cbrr.coverage_threshold_match, 
+	auto cov_rr = CoverageBasedResolution<conj_graph_pack> (conj_gp, kmerIndex, cfg::get().cbrr.coverage_threshold_one_list, cfg::get().cbrr.coverage_threshold_match, 
 			cfg::get().cbrr.coverage_threshold_global, cfg::get().cbrr.tandem_ratio_lower_threshold, cfg::get().cbrr.tandem_ratio_upper_threshold, cfg::get().cbrr.repeat_length_upper_threshold);
 	cov_rr.resolve_repeats_by_coverage(index, insert_size, labels_after, quality_labeler, clustered_index, filteredPaths);
 
 	INFO("Repeats are resolved by coverage");
+*/
 }
 
 int get_first_pe_lib_index() {

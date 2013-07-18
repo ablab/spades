@@ -3,6 +3,5 @@ single_reads             "../../../data/input/E.coli/sc_lane_1/bh20130116/ecoli_
 RL                       100
 IS                       270
 single_cell              true
-reference_genome         ../../../data/input/E.coli/MG1655-K12.fasta.gz
 
-reads	ECOLI_RL36.yaml
+reads	/home/lab42/algorithmic-biology/assembler/configs/debruijn/datasets/ECOLI_RL36.yaml

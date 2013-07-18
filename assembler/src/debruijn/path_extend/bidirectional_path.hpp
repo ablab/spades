@@ -162,7 +162,7 @@ public:
 class LoopDetector: public PathListener {
 
 protected:
-    Graph& g_;
+    const Graph& g_;
 
     size_t currentIteration_;
 
@@ -173,7 +173,7 @@ protected:
     BidirectionalPath * path_;
 
 public:
-    LoopDetector(Graph& g_, BidirectionalPath * p_);
+    LoopDetector(const Graph& g_, BidirectionalPath * p_);
 
     void Clear();
 
@@ -235,7 +235,7 @@ public:
 class BidirectionalPath: public PathListener {
 
 public:
-    BidirectionalPath(Graph& g)
+    BidirectionalPath(const Graph& g)
             : g_(g),
               data_(),
               cumulativeLength_(),
@@ -248,7 +248,7 @@ public:
         Init();
     }
 
-    BidirectionalPath(Graph& g, std::vector<EdgeId> path)
+    BidirectionalPath(const Graph& g, std::vector<EdgeId> path)
             : g_(g),
               data_(),
               cumulativeLength_(),
@@ -269,7 +269,7 @@ public:
         }
     }
 
-    BidirectionalPath(Graph& g_, EdgeId startingEdge)
+    BidirectionalPath(const Graph& g_, EdgeId startingEdge)
             : g_(g_),
               data_(),
               cumulativeLength_(),
@@ -305,7 +305,7 @@ public:
     }
 
 protected:
-	Graph& g_;
+	const Graph& g_;
 
 	EdgeId prev_, now_;
 
@@ -474,7 +474,7 @@ public:
 	    return data_.size();
 	}
 
-	Graph& graph() const {
+	const Graph& graph() const {
 	    return g_;
 	}
 
@@ -1044,7 +1044,7 @@ private:
 
 
 
-LoopDetector::LoopDetector(Graph& g_, BidirectionalPath * p_): g_(g_), currentIteration_(0), data_(), path_(p_) {
+LoopDetector::LoopDetector(const Graph& g_, BidirectionalPath * p_): g_(g_), currentIteration_(0), data_(), path_(p_) {
     current_ = new LoopDetectorData(currentIteration_);
 }
 

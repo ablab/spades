@@ -1,4 +1,15 @@
-- left reads: [/johnny/data/input/Bacteria/E.coli/K12/SRX000429/SRR001665_1.fastq]
-  orientation: fr
-  right reads: [/johnny/data/input/Bacteria/E.coli/K12/SRX000429/SRR001665_2.fastq]
-  type: paired-end
+[
+  {
+    orientation: "fr",
+    type: "paired-end",
+    right reads: [
+      "/home/lab42/algorithmic-biology/assembler/data/input/E.coli/is220/cropped/s_6.first400000_2.fastq.gz"
+    ],
+    left reads: [
+      "/home/lab42/algorithmic-biology/assembler/data/input/E.coli/is220/cropped/s_6.first400000_1.fastq.gz"
+    ],
+    single reads: [
+    ]
+  }
+]
+
