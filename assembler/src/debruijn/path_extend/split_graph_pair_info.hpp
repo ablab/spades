@@ -14,8 +14,6 @@ using namespace debruijn_graph;
 
 namespace path_extend {
 class Basket {
-
-private:
     EdgeId edgeId_;
     size_t index_;
 
@@ -73,8 +71,6 @@ struct PairInfo {
 };
 
 class EdgePairInfo {
-
-public:
     EdgeId edgeId_;
     size_t basket_size_;
     vector<map<Basket, PairInfo> > pair_info_;
@@ -180,12 +176,8 @@ private:
 };
 
 class BasketsPairInfoIndex {
-
-public:
     const conj_graph_pack& gp_;
-
     size_t basket_size_;
-
     map<EdgeId, EdgePairInfo> pair_info_;
 
 public:
@@ -274,9 +266,9 @@ public:
 
         size_t counter = 0;
         static const double coeff = 1.3;
-#pragma omp parallel num_threads(nthreads)
+        #pragma omp parallel num_threads(nthreads)
         {
-#pragma omp for reduction(+ : counter)
+            #pragma omp for reduction(+ : counter)
             for (size_t i = 0; i < nthreads; ++i) {
                 size_t size = 0;
                 size_t limit = 1000000;
@@ -297,7 +289,7 @@ public:
                         end_of_stream = stream.eof();
                     }
 
-#pragma omp critical
+                    #pragma omp critical
                     {
                         DEBUG("Merging " << omp_get_thread_num() << " " << buffer_pi[i]->size());
                         basket_index_.AddAll(*(buffer_pi[i]));
