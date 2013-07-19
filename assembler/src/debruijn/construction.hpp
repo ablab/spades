@@ -54,46 +54,6 @@ std::string estimated_param_filename(const string& prefix) {
   return prefix + "_est_params.info";
 }
 
-void load_estimated_params(const string& prefix) {
-  std::string filename = estimated_param_filename(prefix);
-  //todo think of better architecture
-  if (FileExists(filename)) {
-    boost::optional<size_t> val1; boost::optional<double> val2;
-    load_param(filename, "RL", val1);
-    if (val1)
-      cfg::get_writable().ds.set_RL(*val1);
-    load_param(filename, "IS", val1);
-    if (val1)
-      cfg::get_writable().ds.set_IS(*val1);
-    load_param(filename, "is_var", val2);
-    if (val2)
-      cfg::get_writable().ds.set_is_var(*val2);
-    load_param(filename, "avg_coverage", val2);
-    if (val2)
-      cfg::get_writable().ds.set_avg_coverage(*val2);
-    load_param(filename, "median", val2);
-    if (val2)
-      cfg::get_writable().ds.set_median(*val2);
-    load_param(filename, "mad", val2);
-    if (val2)
-      cfg::get_writable().ds.set_mad(*val2);
-    std::map<int, size_t> val3;
-    load_param_map(filename, "hist", val3);
-    cfg::get_writable().ds.set_hist(val3);
-  }
-}
-
-void write_estimated_params(const string& prefix) {
-  std::string filename = estimated_param_filename(prefix);
-  write_param(filename, "RL", cfg::get().ds.RL());
-  write_param(filename, "IS", cfg::get().ds.IS());
-  write_param(filename, "is_var", cfg::get().ds.is_var());
-  write_param(filename, "avg_coverage", cfg::get().ds.avg_coverage());
-  write_param(filename, "median", cfg::get().ds.median());
-  write_param(filename, "mad", cfg::get().ds.mad());
-  write_param_map(filename, "hist", cfg::get().ds.hist());
-}
-
 void load_lib_data(const string& prefix) {
   std::string filename = estimated_param_filename(prefix);
 
