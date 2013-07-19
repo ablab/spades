@@ -80,9 +80,8 @@ private:
   }
 
   void PrepareShiftMaps() {
-
     stack<pair<EdgeId, int>> edge_stack;
-    for (auto iterator = graph_.SmartEdgeBegin(); !iterator.IsEnd();) {
+    for (auto iterator = graph_.ConstEdgeBegin(); !iterator.IsEnd();) {
       EdgeId edge = *iterator;
       if (graph_.IncomingEdgeCount(graph_.EdgeStart(edge)) == 0) {
         InTipMap.insert(make_pair(edge, make_pair(edge, 0)));
@@ -492,7 +491,7 @@ void CloseGaps(conj_graph_pack& gp, Streams& streams) {
 //    scanner.loadPaired("tip_info", tips_paired_idx);
 //  } else {
   gcpif.FillIndex(tips_paired_idx, streams);
-  ConjugateDataPrinter<Graph> printer(gp.g, gp.int_ids);
+//    ConjugateDataPrinter<Graph> printer(gp.g, gp.int_ids);
 //    printer.savePaired("tip_info", tips_paired_idx);
 //  }
   GapCloser<Graph, Mapper> gap_closer(gp.g, tips_paired_idx,

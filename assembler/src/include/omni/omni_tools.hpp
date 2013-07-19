@@ -215,7 +215,7 @@ public:
 			DEBUG("Added vertex " << new_vertex);
 			VerticesCopies.insert(make_pair(*iter, new_vertex));
 		}
-		for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+		for (auto iter = graph_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
 			EdgeId edge = *iter;
 			NewEdgeId new_edge = new_graph.AddEdge(
 					VerticesCopies[graph_.EdgeStart(edge)],
@@ -268,7 +268,7 @@ public:
 			}
 		}
 		set<EdgeId> was;
-		for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+		for (auto iter = graph_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
 			if (was.count(*iter) == 0) {
 				new_graph.AddEdge(copy[graph_.EdgeStart(*iter)],
 						copy[graph_.EdgeEnd(*iter)], graph_.data(*iter));
@@ -442,7 +442,7 @@ public:
 	double Count() const {
 		double cov = 0;
 		size_t length = 0;
-		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+		for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
 			if (graph_.length(*it) >= min_length_) {
 				cov += graph_.coverage(*it) * graph_.length(*it);
 				length += graph_.length(*it);
@@ -500,31 +500,6 @@ private:
 	const Graph &graph_;
 	size_t backet_width_;
 
-//	vector<double> CollectWeights() const {
-//		vector<double> result;
-//		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-//			const std::vector<EdgeId> &v1 = graph_.OutgoingEdges(graph_.EdgeStart(*it));
-//			const std::vector<EdgeId> &v2 = graph_.IncomingEdges(graph_.EdgeEnd(*it));
-//			bool eq = false;
-//			if (v1.size() == 2 && v2.size() == 2)
-//				if ((v1[0] == v2[0] && v1[1] == v2[1])
-//						|| (v1[0] == v2[1] && v1[0] == v2[1]))
-//					eq = false;
-//			if (graph_.length(*it) <= graph_.k() + 1
-//					&& graph_.OutgoingEdgeCount(graph_.EdgeStart(*it)) >= 2
-//					&& graph_.IncomingEdgeCount(graph_.EdgeEnd(*it)) >= 2
-//					&& !eq)
-//				result.push_back(graph_.coverage(*it));
-//		}
-//#ifdef USE_GLIBCXX_PARALLEL
-//    // Explicitly force a call to parallel sort routine.
-//    __gnu_parallel::sort(result.begin(), result.end());
-//#else
-//    std::sort(result.begin(), result.end());
-//#endif
-//		return result;
-//	}
-
 	bool CheckInteresting(EdgeId e) const {
 		const std::vector<EdgeId> v1 = graph_.OutgoingEdges(graph_.EdgeStart(e));
 		const std::vector<EdgeId> v2 = graph_.IncomingEdges(graph_.EdgeEnd(e));
@@ -534,8 +509,8 @@ private:
 
 	map<size_t, size_t> ConstructHistogram(/*const std::vector<double> &coverage_set*/) const {
 		map<size_t, size_t> result;
-		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			if(CheckInteresting(*it)) {
+		for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
+			if (CheckInteresting(*it)) {
 				result[(size_t)graph_.coverage(*it)]++;
 			}
 		}
@@ -554,8 +529,8 @@ private:
 	double AvgCoverage() const {
 		double cov = 0;
 		double length = 0;
-		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-      cov += graph_.coverage(*it) * graph_.length(*it);
+		for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
+            cov += graph_.coverage(*it) * graph_.length(*it);
 			length += graph_.length(*it);
 		}
 		return cov / length;
@@ -563,7 +538,7 @@ private:
 
 	double Median(double thr = 500.0) const {
 		vector<double> coverages;
-		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+		for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
 			if (graph_.length(*it) > thr)
 				coverages.push_back(graph_.coverage(*it));
 		}

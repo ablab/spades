@@ -74,7 +74,7 @@ class PairInfoImprover {
     DEBUG("ParallelRemoveContraditional: Put infos to vector");
 
     vector<pair<EdgeId, InnerMap<Graph> > > inner_maps; // map [EdgeId -> Histogram]
-    for (auto e_iter = graph_.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
+    for (auto e_iter = graph_.ConstEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
       if (graph_.length(*e_iter) >= cfg::get().rr.max_repeat_length)
         inner_maps.push_back(make_pair(*e_iter, index_.GetEdgeInfo(*e_iter, 0)));
     }
@@ -118,7 +118,7 @@ class PairInfoImprover {
     size_t cnt = 0;
     PairedInfoIndexT<Graph> *to_remove = new PairedInfoIndexT<Graph>(graph_);
 
-    for (auto e_iter = graph_.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
+    for (auto e_iter = graph_.ConstEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
       if (graph_.length(*e_iter )>= cfg::get().rr.max_repeat_length) {
         InnerMap<Graph> inner_map = index_.GetEdgeInfo(*e_iter, 0);
         FindInconsistent(*e_iter, inner_map, to_remove);
@@ -138,7 +138,7 @@ class PairInfoImprover {
     DEBUG("Fill missing: Put infos to vector");
     vector<PairInfos> infos;
     set<EdgeId> edges;
-    for (auto e_iter = graph_.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
+    for (auto e_iter = graph_.ConstEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
       infos.push_back(index_.GetEdgeInfo(*e_iter));
     }
 
@@ -207,7 +207,7 @@ class PairInfoImprover {
     size_t cnt = 0;
     PairedInfoIndexT<Graph> to_add(graph_);
     SplitPathConstructor<Graph> spc(graph_);
-    for (auto e_iter = graph_.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
+    for (auto e_iter = graph_.ConstEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
       const PairInfos& infos = index_.GetEdgeInfo(*e_iter);
       vector<PathInfoClass<Graph>> paths = spc.ConvertPIToSplitPaths(infos, lib_.data().mean_insert_size, lib_.data().insert_size_deviation);
       for (auto iter = paths.begin(); iter != paths.end(); ++iter) {

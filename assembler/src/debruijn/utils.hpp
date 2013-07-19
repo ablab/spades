@@ -217,7 +217,7 @@ private:
    * Method reads paired data from stream, maps it to genome and stores it in this PairInfoIndex.
    */
   void FillUsualIndex(omnigraph::PairedInfoIndexT<Graph>& paired_index) {
-    for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+    for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
       paired_index.AddPairInfo(*it, *it, 0., 0., 0.);
     }
 
@@ -235,7 +235,7 @@ private:
   }
 
   void FillParallelIndex(omnigraph::PairedInfoIndexT<Graph>& paired_index) {
-    for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+    for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
       paired_index.AddPairInfo(*it, *it, 0., 0., 0.);
     }
 

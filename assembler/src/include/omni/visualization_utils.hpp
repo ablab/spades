@@ -84,7 +84,7 @@ public:
 		for (auto it = this->g().SmartVertexBegin(); !it.IsEnd(); ++it) {
 			gp_.AddVertex(*it);
 		}TRACE("Vertices printed");
-		for (auto it = this->g().SmartEdgeBegin(); !it.IsEnd(); ++it) {
+		for (auto it = this->g().ConstEdgeBegin(); !it.IsEnd(); ++it) {
 			gp_.AddEdge(*it);
 		}TRACE("Edges printed");
 		gp_.close();

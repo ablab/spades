@@ -103,7 +103,7 @@ public:
 		}
 		int noncontinued = 0;
 		int long_nongapped = 0;
-		for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter ){
+		for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter ){
 			if (g_.length(*iter) > 500 && !g_.IsDeadEnd(g_.EdgeEnd(*iter))){
 				long_nongapped ++;
 				if (inner_index.find(*iter) == inner_index.end()) {
@@ -143,7 +143,7 @@ public:
 	ifstream filestr(s);
     	INFO("loading from " << s);
     	map<int, EdgeId> tmp_map;
-    	for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter ){
+        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter ){
     		tmp_map[g_.int_id(*iter)] = *iter;
     	}
     	int fl;

@@ -98,7 +98,7 @@ class MismatchStatistics {
         }
       }
     }
-    for (auto it = gp.g.SmartEdgeBegin(); !it.IsEnd(); ++it){
+    for (auto it = gp.g.ConstEdgeBegin(); !it.IsEnd(); ++it){
       if (gp.g.length(*it) < cfg::get().rr.max_repeat_length) {
         //					INFO("edge id " <<gp.g.int_id(*it) << " added to stat" );
         //					for(size_t i = 0; i < gp.g.length(*it) + gp.g.k(); i++)
@@ -324,7 +324,7 @@ class MismatchShallNotPass {
   size_t CorrectAllEdges(const mismatches::MismatchStatistics<typename Graph::EdgeId> &statistics) {
     size_t res = 0;
     set<EdgeId> conjugate_fix;
-    for(auto it = gp_.g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+    for (auto it = gp_.g.ConstEdgeBegin(); !it.IsEnd(); ++it) {
       if (conjugate_fix.find(gp_.g.conjugate(*it)) == conjugate_fix.end()){
         conjugate_fix.insert(*it);
       }

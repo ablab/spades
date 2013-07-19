@@ -1047,7 +1047,7 @@ const Sequence& genome, size_t /*bound*/, const string &file_name, size_t k) {
     path_set.insert(path1.begin(), path1.end());
     path_set.insert(path2.begin(), path2.end());
     osequencestream os((cfg::get().output_dir + "/" + file_name).c_str());
-    for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+    for (auto it = g.ConstEdgeBegin(); !it.IsEnd(); ++it) {
         if (path_set.count(*it) == 0 && g.length(*it) > 1000) {
             const Sequence &nucls = g.EdgeNucls(*it);
             os << nucls;
@@ -1092,7 +1092,7 @@ template<class Graph>
 size_t Nx(Graph &g, double percent) {
 	size_t sum_edge_length = 0;
 	vector<size_t> lengths;
-	for (auto iterator = g.SmartEdgeBegin(); !iterator.IsEnd(); ++iterator) {
+	for (auto iterator = g.ConstEdgeBegin(); !iterator.IsEnd(); ++iterator) {
 		lengths.push_back(g.length(*iterator));
 		sum_edge_length += g.length(*iterator);
 	}

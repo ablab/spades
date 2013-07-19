@@ -117,7 +117,7 @@ size_t GetAllPathsQuantity(const graph_pack& origin_gp,
       typedef set<Point> Histogram;
 
       map<size_t, size_t> sizes;
-      for (auto e_iter = origin_gp.g.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
+      for (auto e_iter = origin_gp.g.ConstEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
         EdgeId e1 = *e_iter;
         const InnerMap<Graph>& pi = clustered_index.GetEdgeInfo(*e_iter, 0);
         for (auto ext_iter = pi.begin(); ext_iter != pi.end(); ++ext_iter) {

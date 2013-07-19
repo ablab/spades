@@ -90,7 +90,7 @@ public:
   size_t edges() {
     size_t edgeNumber = 0;
     size_t sum_edge_length = 0;
-    for (auto iterator = graph_.SmartEdgeBegin(); !iterator.IsEnd();
+    for (auto iterator = graph_.ConstEdgeBegin(); !iterator.IsEnd();
         ++iterator) {
       edgeNumber++;
 //      if (graph_.coverage(*iterator) > 30) {
@@ -102,7 +102,7 @@ public:
 
   size_t edge_length() {
     size_t sum_edge_length = 0;
-    for (auto iterator = graph_.SmartEdgeBegin(); !iterator.IsEnd();
+    for (auto iterator = graph_.ConstEdgeBegin(); !iterator.IsEnd();
         ++iterator) {
       if (graph_.coverage(*iterator) > 30) {
         sum_edge_length += graph_.length(*iterator);
@@ -143,7 +143,7 @@ public:
     colored_edges.insert(path_edges1.begin(), path_edges1.end());
     colored_edges.insert(path_edges2.begin(), path_edges2.end());
     size_t sum_length = 0;
-    for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+    for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
       edge_count++;
       if (colored_edges.count(*it) == 0) {
         black_count++;
@@ -207,7 +207,7 @@ public:
   IsolatedEdgesStat(const Graph &graph, Path<EdgeId> path1,
       Path<EdgeId> path2) :
       graph_(graph) {
-    for (auto it = graph.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+    for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it) {
       black_edges_.insert(*it);
     }
     for (size_t i = 0; i < path1.size(); i++) {
@@ -223,7 +223,7 @@ public:
 
   virtual void Count() {
     lengths.clear();
-    for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+    for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
       EdgeId edge = *it;
       if (graph_.IsDeadEnd(graph_.EdgeEnd(edge))
           && graph_.IsDeadStart(graph_.EdgeStart(edge))
@@ -264,7 +264,7 @@ public:
 
   virtual void Count() {
     size_t sc_number = 0;
-    for (auto iterator = graph_.SmartEdgeBegin(); !iterator.IsEnd();
+    for (auto iterator = graph_.ConstEdgeBegin(); !iterator.IsEnd();
         ++iterator)
       if (graph_.conjugate(*iterator) == (*iterator))
         sc_number++;
@@ -1111,7 +1111,7 @@ public:
         size_t area10 = 0;
         size_t area5 = 0;
         size_t area2 = 0;
-        for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter){
+        for (auto iter = graph_.ConstEdgeBegin(); !iter.IsEnd(); ++iter){
             len_map[graph_.length(*iter)]++;
         }
         for (auto iter = graph_.begin(); iter != graph_.end(); ++iter)
