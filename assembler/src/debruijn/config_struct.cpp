@@ -5,6 +5,8 @@
 
 #include "io/reader.hpp"
 
+#include "logger/logger.hpp"
+
 #include <string>
 #include <vector>
 
@@ -37,6 +39,77 @@ static std::string MakeLaunchTimeDirName() {
   strftime(buffer, 80, "%m.%d_%H.%M.%S", timeinfo);
   return std::string(buffer);
 }
+
+std::string estimated_param_filename(const std::string& prefix) {
+  return prefix + "_est_params.info";
+}
+
+void load_lib_data(const std::string& prefix) {
+  std::string filename = estimated_param_filename(prefix);
+
+  if (!FileExists(filename)) {
+      WARN("Estimates params config " << prefix << " does not exist");
+  }
+
+  boost::optional<size_t> lib_count;
+  load_param(filename, "lib_count", lib_count);
+  if (!lib_count || lib_count != cfg::get().ds.reads.lib_count()) {
+      WARN("Estimated params file seems to be incorrect");
+      return;
+  }
+
+  for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+      boost::optional<size_t> sizet_val;
+      boost::optional<double> double_val;
+
+      load_param(filename, "read_length_" + ToString(i), sizet_val);
+      if (sizet_val) {
+          cfg::get_writable().ds.reads[i].data().read_length = *sizet_val;
+      }
+      load_param(filename, "insert_size_" + ToString(i), double_val);
+      if (double_val) {
+          cfg::get_writable().ds.reads[i].data().mean_insert_size = *double_val;
+      }
+      load_param(filename, "insert_size_deviation_" + ToString(i), double_val);
+      if (double_val) {
+          cfg::get_writable().ds.reads[i].data().insert_size_deviation = *double_val;
+      }
+      load_param(filename, "insert_size_median_" + ToString(i), double_val);
+      if (double_val) {
+          cfg::get_writable().ds.reads[i].data().median_insert_size = *double_val;
+      }
+      load_param(filename, "insert_size_mad_" + ToString(i), double_val);
+      if (double_val) {
+          cfg::get_writable().ds.reads[i].data().insert_size_mad = *double_val;
+      }
+      load_param(filename, "average_coverage_" + ToString(i), double_val);
+      if (double_val) {
+          cfg::get_writable().ds.reads[i].data().average_coverage = *double_val;
+      }
+
+      load_param_map(filename, "histogram_" + ToString(i), cfg::get_writable().ds.reads[i].data().insert_size_distribution);
+  }
+
+}
+
+void write_lib_data(const std::string& prefix) {
+  std::string filename = estimated_param_filename(prefix);
+
+  cfg::get().ds.reads.save("foo.txt");
+
+  write_param(filename, "lib_count", cfg::get().ds.reads.lib_count());
+
+  for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+      write_param(filename, "read_length_" + ToString(i), cfg::get().ds.reads[i].data().read_length);
+      write_param(filename, "insert_size_" + ToString(i), cfg::get().ds.reads[i].data().mean_insert_size);
+      write_param(filename, "insert_size_deviation_" + ToString(i), cfg::get().ds.reads[i].data().insert_size_deviation);
+      write_param(filename, "insert_size_median_" + ToString(i), cfg::get().ds.reads[i].data().median_insert_size);
+      write_param(filename, "insert_size_mad_" + ToString(i), cfg::get().ds.reads[i].data().insert_size_mad);
+      write_param(filename, "average_coverage_" + ToString(i), cfg::get().ds.reads[i].data().average_coverage);
+      write_param_map(filename, "histogram_" + ToString(i), cfg::get().ds.reads[i].data().insert_size_distribution);
+  }
+}
+
 
 void load(debruijn_config::simplification::tip_clipper& tc,
           boost::property_tree::ptree const& pt, bool complete) {
@@ -224,14 +297,14 @@ void load(debruijn_config::repeat_resolver& rr,
 void load(debruijn_config::coverage_based_rr& cbrr,
           boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
- 
+
     load(cbrr.coverage_threshold_one_list, pt, "coverage_threshold_one_list");
     load(cbrr.coverage_threshold_match, pt, "coverage_threshold_match");
     load(cbrr.coverage_threshold_global, pt, "coverage_threshold_global");
     load(cbrr.tandem_ratio_lower_threshold, pt, "tandem_ratio_lower_threshold");
     load(cbrr.tandem_ratio_upper_threshold, pt, "tandem_ratio_upper_threshold");
     load(cbrr.repeat_length_upper_threshold, pt, "repeat_length_upper_threshold");
- 
+
 }
 
 void load(debruijn_config::pacbio_processor& pb,
@@ -449,7 +522,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
     load (cfg.cbrr, pt, "coverage_based_rr");
 }
   if (cfg.pacbio_test_on) {
-	load(cfg.pb, pt, "pacbio_processor");
+    load(cfg.pb, pt, "pacbio_processor");
   } else {
   }
 

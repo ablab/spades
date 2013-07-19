@@ -18,7 +18,6 @@
 #include "io/vector_reader.hpp"
 #include "omni_labelers.hpp"
 #include "dataset_readers.hpp"
-#include "config_common.hpp" // FIXME: Get rid of this!
 
 namespace debruijn_graph {
 
@@ -50,75 +49,6 @@ void construct_graph(io::ReadStreamVector< io::IReader<Read> >& streams,
     WARN("In datasets.info, wrong RL is specified: " << cfg::get().ds.RL() << ", not " << rl);
 }
 
-std::string estimated_param_filename(const string& prefix) {
-  return prefix + "_est_params.info";
-}
-
-void load_lib_data(const string& prefix) {
-  std::string filename = estimated_param_filename(prefix);
-
-  if (!FileExists(filename)) {
-      WARN("Estimates params config " << prefix << " does not exist");
-  }
-
-  boost::optional<size_t> lib_count;
-  load_param(filename, "lib_count", lib_count);
-  if (!lib_count || lib_count != cfg::get().ds.reads.lib_count()) {
-      WARN("Estimated params file seems to be incorrect");
-      return;
-  }
-
-  for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-      boost::optional<size_t> sizet_val;
-      boost::optional<double> double_val;
-
-      load_param(filename, "read_length_" + ToString(i), sizet_val);
-      if (sizet_val) {
-          cfg::get_writable().ds.reads[i].data().read_length = *sizet_val;
-      }
-      load_param(filename, "insert_size_" + ToString(i), double_val);
-      if (double_val) {
-          cfg::get_writable().ds.reads[i].data().mean_insert_size = *double_val;
-      }
-      load_param(filename, "insert_size_deviation_" + ToString(i), double_val);
-      if (double_val) {
-          cfg::get_writable().ds.reads[i].data().insert_size_deviation = *double_val;
-      }
-      load_param(filename, "insert_size_median_" + ToString(i), double_val);
-      if (double_val) {
-          cfg::get_writable().ds.reads[i].data().median_insert_size = *double_val;
-      }
-      load_param(filename, "insert_size_mad_" + ToString(i), double_val);
-      if (double_val) {
-          cfg::get_writable().ds.reads[i].data().insert_size_mad = *double_val;
-      }
-      load_param(filename, "average_coverage_" + ToString(i), double_val);
-      if (double_val) {
-          cfg::get_writable().ds.reads[i].data().average_coverage = *double_val;
-      }
-
-      load_param_map(filename, "histogram_" + ToString(i), cfg::get_writable().ds.reads[i].data().insert_size_distribution);
-  }
-
-}
-
-void write_lib_data(const string& prefix) {
-  std::string filename = estimated_param_filename(prefix);
-
-  write_param(filename, "lib_count", cfg::get().ds.reads.lib_count());
-
-  for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-      write_param(filename, "read_length_" + ToString(i), cfg::get().ds.reads[i].data().read_length);
-      write_param(filename, "insert_size_" + ToString(i), cfg::get().ds.reads[i].data().mean_insert_size);
-      write_param(filename, "insert_size_deviation_" + ToString(i), cfg::get().ds.reads[i].data().insert_size_deviation);
-      write_param(filename, "insert_size_median_" + ToString(i), cfg::get().ds.reads[i].data().median_insert_size);
-      write_param(filename, "insert_size_mad_" + ToString(i), cfg::get().ds.reads[i].data().insert_size_mad);
-      write_param(filename, "average_coverage_" + ToString(i), cfg::get().ds.reads[i].data().average_coverage);
-      write_param_map(filename, "histogram_" + ToString(i), cfg::get().ds.reads[i].data().insert_size_distribution);
-  }
-}
-
-
 void load_construction(conj_graph_pack& gp, path::files_t* files) {
   string p = path::append_path(cfg::get().load_from, "constructed_graph");
   files->push_back(p);
@@ -134,17 +64,6 @@ void save_construction(conj_graph_pack& gp) {
     write_lib_data(p);
   }
 }
-
-//boost::optional<string> single_reads_filename(
-//    const boost::optional<string>& raw_name, const string& dir) {
-//  if (raw_name) {
-//    string full_name = dir + *raw_name;
-//    if (fileExists(full_name)) {
-//      return boost::optional<string>(full_name);
-//    }
-//  }
-//  return boost::none;
-//}
 
 void exec_construction(conj_graph_pack& gp) {
   if (cfg::get().entry_point <= ws_construction) {

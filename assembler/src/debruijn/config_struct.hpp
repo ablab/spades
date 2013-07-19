@@ -545,7 +545,8 @@ struct debruijn_config {
 };
 
 void load(debruijn_config& cfg, const std::string &filename);
-
+void load_lib_data(const std::string& prefix);
+void write_lib_data(const std::string& prefix);
 } // debruijn_graph
 
 typedef config_common::config<debruijn_graph::debruijn_config> cfg;
