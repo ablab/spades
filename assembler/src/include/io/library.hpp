@@ -242,6 +242,12 @@ class DataSet {
 
 namespace YAML {
 template<>
+struct convert<io::SequencingLibraryBase > {
+  static Node encode(const io::SequencingLibraryBase& rhs);
+  static bool decode(const Node& node, io::SequencingLibraryBase& rhs);
+};
+
+template<>
 struct convert<io::SequencingLibrary<> > {
   static Node encode(const io::SequencingLibrary<>& rhs);
   static bool decode(const Node& node, io::SequencingLibrary<>& rhs);
