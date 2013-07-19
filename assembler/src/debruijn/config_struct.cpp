@@ -13,16 +13,42 @@
 namespace YAML {
 template<>
 struct convert<io::SequencingLibrary<debruijn_graph::debruijn_config::DataSetData> > {
-  static Node encode(const io::SequencingLibrary<debruijn_graph::debruijn_config::DataSetData> &rhs);
+  static Node encode(const io::SequencingLibrary<debruijn_graph::debruijn_config::DataSetData> &rhs) {
+      // First, save the "common" stuff
+      Node node = convert<io::SequencingLibraryBase>::encode(rhs);
+
+      // Now, save the remaining stuff
+      auto const& data = rhs.data();
+      node["read length"] = data.read_length;
+      node["mean insert size"] = data.mean_insert_size;
+      node["insert size deviation"] = data.insert_size_deviation;
+      node["median insert size"] = data.median_insert_size;
+      node["insert size mad"] = data.insert_size_mad;
+      node["average coverage"] = data.average_coverage;
+      node["insert size distribution"] = data.insert_size_distribution;
+
+      return node;
+  }
+
   static bool decode(const Node& node, io::SequencingLibrary<debruijn_graph::debruijn_config::DataSetData> &rhs) {
-    // First, load the "common stuff"
-    rhs.load(node);
+      // First, load the "common stuff"
+      rhs.load(node);
 
-    // Now load the remaining stuff
-    rhs.data().read_length = node["RL"].as<size_t>(0);
-    rhs.data().mean_insert_size = node["IS"].as<size_t>(0);
+      // Now load the remaining stuff
+      auto& data = rhs.data();
+      data.read_length = node["RL"].as<size_t>(0);
+      if (data.read_length == 0)
+          data.read_length = node["read length"].as<size_t>(0);
+      data.mean_insert_size = node["IS"].as<size_t>(0);
+      if (data.mean_insert_size == 0.0)
+          data.mean_insert_size = node["mean insert size"].as<double>(0);
+      data.insert_size_deviation = node["insert size deviation"].as<double>(0.0);
+      data.median_insert_size = node["median insert size"].as<double>(0.0);
+      data.insert_size_mad = node["insert size mad"].as<double>(0.0);
+      data.average_coverage = node["average_coverage"].as<double>(0.0);
+      data.insert_size_distribution = node["insert size distribution"].as<decltype(data.insert_size_distribution)>(decltype(data.insert_size_distribution)());
 
-    return true;
+      return true;
   }
 };
 }
