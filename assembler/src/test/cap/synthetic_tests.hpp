@@ -1,6 +1,7 @@
 #pragma once
 
 #include "compare_standard.hpp"
+#include "comparison_utils.hpp"
 #include "logger/log_writers.hpp"
 #include "graphio.hpp"
 #include <boost/test/unit_test.hpp>
@@ -31,10 +32,10 @@ class SyntheticTestsRunner {
         GraphPackT gp(k_, work_dir_);
         ColorHandler<GraphT> coloring(gp.g);
         ConstructColoredGraph(gp, coloring, *RCWrapStreams(*streams), /*fill_pos*/false);
-        Save(gp, coloring, output_dir_ + ToString(id));
+        Save(gp, coloring, streams, output_dir_ + ToString(id));
     }
 
-    void Save(const GraphPackT& gp, const ColorHandler<GraphT>& coloring, const string& filename) const {
+    void Save(const GraphPackT& gp, const ColorHandler<GraphT>& coloring, ContigStreamsPtr streams, const string& filename) const {
         typename PrinterTraits<GraphT>::Printer printer(gp.g, gp.int_ids);
         INFO("Saving graph to " << filename);
         printer.saveGraph(filename);
@@ -43,6 +44,10 @@ class SyntheticTestsRunner {
         SaveColoring(gp.g, gp.int_ids, coloring, filename);
         PrintColoredGraphWithColorFilter(gp.g, coloring, gp.edge_pos,
                                          filename + ".dot");
+        BlockPrinter<GraphPackT> block_printer(gp, filename + ".blk");
+        for (size_t i = 0; i < streams->size(); ++i) {
+            block_printer.ProcessGenome(i + 1, ReadSequence((*streams)[i]));
+        }
     }
 
     const vector<io::SingleRead> ParseGenome(

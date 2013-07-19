@@ -54,7 +54,7 @@ class AddGenomeCommand : public LocalCommand<CapEnvironment> {
       std::cout << "Command takes one or more arguments. Aborting.\n";
       return false;
     }
-    
+
     const std::string &filename = args[1];
     if (!CheckFileExists(filename)) {
       std::cout << "There is no file linked to the path given. Aborting.\n";
@@ -210,7 +210,7 @@ class LoadCommand<CapEnvironment> : public Command<CapEnvironment> {
     return 1;
   }
 
-  bool CheckCorrectness(const vector<string>& args, LoadedEnvironments<Env>& loaded_environments) const 
+  bool CheckCorrectness(const vector<string>& args, LoadedEnvironments<Env>& loaded_environments) const
   {
     if (!this->CheckEnoughArguments(args))
       return false;
@@ -230,9 +230,9 @@ class LoadCommand<CapEnvironment> : public Command<CapEnvironment> {
  public:
   string Usage() const {
     string answer;
-    answer = answer + "Command `load` \n" + 
-      "Usage:\n" + 
-      "> load <environment_name> [description]\n" + 
+    answer = answer + "Command `load` \n" +
+      "Usage:\n" +
+      "> load <environment_name> [description]\n" +
       " You should specify the name of the new environment. All data and cache concerning \n" +
       " this environment will be stored in " + cap_cfg::get().cache_root + "/<environment_name>/\n" +
       " See cap_config for changing cache root folder.\n";
@@ -245,10 +245,10 @@ class LoadCommand<CapEnvironment> : public Command<CapEnvironment> {
 
   void Execute(shared_ptr<Env>& curr_env,
                LoadedEnvironments<Env>& loaded_environments,
-               const ArgumentList& arg_list) const 
+               const ArgumentList& arg_list) const
   {
     vector<string> args = arg_list.GetAllArguments();
-    string name  = args[1]; 
+    string name  = args[1];
     string desc = "";
     for (size_t i = 2; i < args.size(); ++i) {
       if (i > 2) {
@@ -280,7 +280,7 @@ class SaveGraphCommand : public LocalCommand<CapEnvironment> {
            "Usage:\n"
            "> save_graph <directory_to_save_to>\n";
   }
-  
+
   virtual void Execute(CapEnvironment& curr_env, const ArgumentList& arg_list) const {
     if (curr_env.GetGraphK() == CapEnvironment::kNoGraphK) {
       cout << "You should build graph prior to saving it. Aborting.\n";
@@ -398,6 +398,34 @@ class FindInversionsCommand : public LocalCommand<CapEnvironment> {
       cout << "Output file could not be opened for writing. Aborting.\n";
     }
     */
+  }
+
+};
+
+
+class SaveBlocksCommand : public LocalCommand<CapEnvironment> {
+ public:
+    SaveBlocksCommand() : LocalCommand<CapEnvironment>("save_blocks") {
+  }
+
+  virtual std::string Usage() const {
+    return "Command `save_blocks`\n"
+           " Saves all trivial synteny blocks (aka graph edges).\n"
+           " Namely, stores refined (modified) sequences on hard drive.\n"
+           "Usage:\n"
+           "> save_genomes [force]\n"
+           " `force` is optional parameter. If `force` is /y|Y|(force)/ then\n"
+           " genomes will be written even if this combination of genomes and Ks\n"
+           " was stored before/\n";
+  }
+
+  virtual void Execute(CapEnvironment& curr_env, const ArgumentList& arg_list) const {
+      VERIFY(false);
+  }
+
+ protected:
+  virtual size_t MinArgNumber() const {
+    return 0;
   }
 
 };
