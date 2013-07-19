@@ -185,6 +185,12 @@ struct pe_config {
 	  double priority;
   };
 
+  struct AllLongReads{
+      LongReads single_reads;
+      LongReads pacbio_reads;
+      LongReads coverage_base_rr;
+  };
+
   struct MainPEParamsT {
     std::string name;
     output_broken_scaffolds obs;
@@ -195,7 +201,7 @@ struct pe_config {
     OutputParamsT output;
     VisualizeParamsT viz;
     ParamSetT param_set;
-    LongReads long_reads;
+    AllLongReads long_reads;
   } params;
 
   std::string dataset_name;

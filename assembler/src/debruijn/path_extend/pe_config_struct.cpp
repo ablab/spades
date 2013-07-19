@@ -138,11 +138,19 @@ void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool /
   load(p.filter_options,    pt, "filter_options");
 }
 
-void load(pe_config::LongReads& p, boost::property_tree::ptree const& pt, bool /*complete*/) {
+void load(pe_config::LongReads& p, boost::property_tree::ptree const& pt,
+          bool) {
+    using config_common::load;
+    load(p.filtering, pt, "filtering");
+    load(p.priority, pt, "priority");
+}
 
-  using config_common::load;
-  load(p.filtering, pt, "filtering");
-  load(p.priority, pt, "priority");
+void load(pe_config::AllLongReads& p, boost::property_tree::ptree const& pt,
+          bool) {
+    using config_common::load;
+    load(p.pacbio_reads, pt, "pacbio_reads");
+    load(p.single_reads, pt, "single_reads");
+    load(p.coverage_base_rr, pt, "coverage_base_rr");
 }
 
 void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt,

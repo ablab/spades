@@ -915,16 +915,14 @@ void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, s
 	}
 
 
-	int number_of_buckets = 10;
+	/*int number_of_buckets = 10;
 	auto bm = BucketMapper<conj_graph_pack::graph_t>(conj_gp.g, kmerIndex, cfg::get().K + 1, number_of_buckets);
 	bm.InitBuckets();
-/*
+
 	int bucket_in = 0;
 	int bucket_out = 0;
 	int repeat_distance = 500;
-	double probability = bm.GetProbablityFromBucketToBucketForDistance (bucket_in, bucket_out, repeat_distance) ;
-*/
-/*
+	double probability = bm.GetProbablityFromBucketToBucketForDistance (bucket_in, bucket_out, repeat_distance) ;*/
 	auto index = FlankingCoverage<Graph>(conj_gp.g, kmerIndex, 50, cfg::get().K + 1);
 	EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(conj_gp.g, conj_gp.g);
 	auto cov_rr = CoverageBasedResolution<conj_graph_pack> (conj_gp, kmerIndex, cfg::get().cbrr.coverage_threshold_one_list, cfg::get().cbrr.coverage_threshold_match, 
@@ -932,10 +930,13 @@ void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, s
 	cov_rr.resolve_repeats_by_coverage(index, insert_size, labels_after, quality_labeler, clustered_index, filteredPaths);
 
 	INFO("Repeats are resolved by coverage");
-*/
+
 }
 
-int get_first_pe_lib_index() {
+/*
+ * Return index of first paired-end library or -1 if there is no paired end library
+ */
+int GetFirstPELibIndex() {
 	for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
 		if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd) {
 			return i;
@@ -1046,13 +1047,23 @@ void split_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
 void AddSingleLibrary(
         conj_graph_pack& gp,
         const io::SequencingLibrary<debruijn_config::DataSetData>& reads,
-        PathStorage<Graph>& storage) {
+        vector<PathStorageInfo<Graph> >& long_reads_libs) {
     DEBUG("Mapping single reads from library");
     path_extend::SimpleLongReadMapper read_mapper(gp);
     auto streams = single_binary_readers(reads, false, false);
     streams->release();
     io::MultifileReader<io::SingleReadSeq> stream(streams->get(), true);
-    read_mapper.ProcessLib(stream, storage);
+    PathStorage<Graph> long_single(gp.g);
+    read_mapper.ProcessLib(stream, long_single);
+    vector<PathInfo<Graph> > long_paths = long_single.GetAllPaths();
+    PathStorageInfo<Graph> single_storage(
+            long_paths, cfg::get().pe_params.long_reads.single_reads.filtering,
+            cfg::get().pe_params.long_reads.single_reads.priority);
+    long_reads_libs.push_back(single_storage);
+    //long_single.DumpToFile("long_reads_paths.mpr", conj_gp.edge_pos);
+    //long_single.LoadFromFile("long_reads_paths.mpr");
+    //LongReadStorage<Graph> long_read(conj_gp.g);
+    //pacbio_read.LoadFromFile("/storage/labnas/students/igorbunova/path-extend2/algorithmic-biology/assembler/pacbio.mpr");
 }
 
 void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
@@ -1066,17 +1077,7 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         io::LibraryType type = cfg::get().ds.reads[i].type();
         if (type == io::LibraryType::SingleReads) {
-            PathStorage<Graph> long_single(conj_gp.g);
-            AddSingleLibrary(conj_gp, cfg::get().ds.reads[i], long_single);
-            //long_single.DumpToFile("long_reads_paths.mpr", conj_gp.edge_pos);
-            //long_single.LoadFromFile("long_reads_paths.mpr");
-            //LongReadStorage<Graph> long_read(conj_gp.g);
-            //pacbio_read.LoadFromFile("/storage/labnas/students/igorbunova/path-extend2/algorithmic-biology/assembler/pacbio.mpr");
-            vector<PathInfo<Graph> > long_paths = long_single.GetAllPaths();
-            PathStorageInfo<Graph> single_storage(
-                    long_paths, cfg::get().pe_params.long_reads.filtering,
-                    cfg::get().pe_params.long_reads.priority);
-            long_reads_libs.push_back(single_storage);
+            AddSingleLibrary(conj_gp, cfg::get().ds.reads[i], long_reads_libs);
         } else if (type == io::LibraryType::PairedEnd
                 || type == io::LibraryType::MatePairs) {
             pe_indexes.push_back(&clustered_indices[i]);
@@ -1091,36 +1092,45 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
             pac_aligner.pacbio_test(pacbio_read, gaps);
             vector<PathInfo<Graph> > pacbio_paths = pacbio_read.GetAllPaths();
             PathStorageInfo<Graph> pacbio_storage(
-                    pacbio_paths, cfg::get().pe_params.long_reads.filtering,
-                    cfg::get().pe_params.long_reads.priority);
+                    pacbio_paths,
+                    cfg::get().pe_params.long_reads.pacbio_reads.filtering,
+                    cfg::get().pe_params.long_reads.pacbio_reads.priority);
             long_reads_libs.push_back(pacbio_storage);
         }
     }
     if (cfg::get().coverage_based_rr_on == true) {
         std::vector<PathInfo<Graph> > filteredPaths;
-        int pe_lib_index = get_first_pe_lib_index();
+        int pe_lib_index = GetFirstPELibIndex();
         const io::SequencingLibrary<debruijn_config::DataSetData> &lib =
                 cfg::get().ds.reads[pe_lib_index];
         resolve_repeats_by_coverage(conj_gp, lib.data().mean_insert_size,
                                     filteredPaths, clustered_indices[0],
                                     quality_labeler);
-        PathStorageInfo<Graph> single_storage(filteredPaths, 0.0, 1.5);  //TODO: consts to config
+        PathStorageInfo<Graph> single_storage(
+                filteredPaths,
+                cfg::get().pe_params.long_reads.coverage_base_rr.filtering,
+                cfg::get().pe_params.long_reads.coverage_base_rr.priority);
         long_reads_libs.push_back(single_storage);
     }
 
-	if (cfg::get().use_scaffolder && cfg::get().pe_params.param_set.scaffolder_options.on) {
-	    if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
-	        prepare_all_scaf_libs(conj_gp, pe_scaf_indexes, indexes);
-	    }
-        //path_extend::resolve_repeats_pe(conj_gp, pe_indexes, pe_scaf_indexes, indexes, pacbio_read.GetAllPaths(), cfg::get().output_dir, "scaffolds.fasta", true, boost::optional<std::string>("final_contigs.fasta"));
-        path_extend::ResolveRepeatsPe(conj_gp, pe_indexes, pe_scaf_indexes, indexes, long_reads_libs, cfg::get().output_dir, "scaffolds.fasta", true, boost::optional<std::string>("final_contigs.fasta"));
+    if (cfg::get().use_scaffolder
+            && cfg::get().pe_params.param_set.scaffolder_options.on) {
+        if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
+            prepare_all_scaf_libs(conj_gp, pe_scaf_indexes, indexes);
+        }
+        path_extend::ResolveRepeatsPe(
+                conj_gp, pe_indexes, pe_scaf_indexes, indexes, long_reads_libs,
+                cfg::get().output_dir, "scaffolds.fasta", true,
+                boost::optional<std::string>("final_contigs.fasta"));
         delete_index(pe_scaf_indexes);
-	}
-	else {
-		pe_scaf_indexes.clear();
-		//path_extend::resolve_repeats_pe(conj_gp, pe_indexes, pe_scaf_indexes, indexes, pacbio_read.GetAllPaths(), cfg::get().output_dir, "final_contigs.fasta", false, boost::none);
-		path_extend::ResolveRepeatsPe(conj_gp, pe_indexes, pe_scaf_indexes, indexes, long_reads_libs, cfg::get().output_dir, "final_contigs.fasta", false, boost::none);
-	}
+    } else {
+        pe_scaf_indexes.clear();
+        path_extend::ResolveRepeatsPe(conj_gp, pe_indexes, pe_scaf_indexes,
+                                      indexes, long_reads_libs,
+                                      cfg::get().output_dir,
+                                      "final_contigs.fasta", false,
+                                      boost::none);
+    }
 }
 
 void resolve_repeats() {
@@ -1186,7 +1196,7 @@ void resolve_repeats() {
 	}
 
 	//Repeat resolving begins
-	int pe_lib_index = get_first_pe_lib_index();
+	int pe_lib_index = GetFirstPELibIndex();
 	INFO("STAGE == Resolving Repeats");
 	if (cfg::get().ds.reads.lib_count() == 1 && pe_lib_index >= 0
 			&& cfg::get().rm == debruijn_graph::resolving_mode::rm_split && !cfg::get().long_single_mode) {

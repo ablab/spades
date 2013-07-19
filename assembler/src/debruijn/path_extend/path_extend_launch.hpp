@@ -251,6 +251,7 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
             gp.g, pset.loop_removal.max_loops, all_libs);
 
 	seeds.SortByLength();
+	seeds.ResetPathsId();
 	INFO("Extending seeds");
 	auto paths = resolver.extendSeeds(seeds, *mainPE);
 	if (cfg::get().pe_params.output.write_overlaped_paths) {
@@ -259,7 +260,10 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 
 	DebugOutputPaths(writer, gp, output_dir, paths, "overlaped_paths");
     size_t max_over = FindMaxOverlapedLen(libs);
-    resolver.removeOverlaps(paths, mainPE->GetCoverageMap(), max_over, writer, output_dir);
+    if (pset.filter_options.remove_overlaps) {
+        resolver.removeOverlaps(paths, mainPE->GetCoverageMap(), max_over,
+                                writer, output_dir);
+    }
     paths.FilterEmptyPaths();
 	paths.CheckSymmetry();
     resolver.addUncoveredEdges(paths, mainPE->GetCoverageMap());
@@ -319,7 +323,7 @@ void SetOldThreshold(PairedInfoLibrary* lib, size_t index, size_t split_edge_len
 
 void SetNewThreshold(conj_graph_pack& gp, PairedInfoLibrary* lib, size_t index,
                      size_t split_edge_length) {
-    SplitGraphPairInfo split_graph(gp, *lib, index, split_edge_length);
+    SplitGraphPairInfo split_graph(gp, *lib, index, 99);
     INFO("Calculating paired info threshold");
     split_graph.ProcessReadPairs();
     double threshold = split_graph.FindThreshold(
@@ -331,12 +335,12 @@ void SetNewThreshold(conj_graph_pack& gp, PairedInfoLibrary* lib, size_t index,
     //lib->SetSingleThreshold(tr);
 }
 
-bool InsertSizeCompareReverse(const PairedInfoLibraries& lib1,
-                              const PairedInfoLibraries& lib2) {
+bool InsertSizeCompare(const PairedInfoLibraries& lib1,
+                       const PairedInfoLibraries& lib2) {
     if (lib1.size() < 1 or lib2.size() < 1) {
         return true;
     }
-    return lib1[0]->insert_size_ > lib2[0]->insert_size_;
+    return lib1[0]->insert_size_ < lib2[0]->insert_size_;
 }
 
 void ResolveRepeatsPe(conj_graph_pack& gp, vector<PairedIndexT*>& paired_index,
@@ -364,7 +368,7 @@ void ResolveRepeatsPe(conj_graph_pack& gp, vector<PairedIndexT*>& paired_index,
             rr_libs.push_back(libs);
         }
     }
-    std::sort(rr_libs.begin(), rr_libs.end(), InsertSizeCompareReverse);
+    std::sort(rr_libs.begin(), rr_libs.end(), InsertSizeCompare);
     for (size_t i = 0; i < scaff_index.size(); ++i) {
         if (cfg::get().ds.reads[indexs[i]].type() == io::LibraryType::PairedEnd
                 || cfg::get().ds.reads[indexs[i]].type()
@@ -375,9 +379,12 @@ void ResolveRepeatsPe(conj_graph_pack& gp, vector<PairedIndexT*>& paired_index,
             scaff_libs.push_back(libs);
         }
     }
-    std::sort(scaff_libs.begin(), scaff_libs.end(), InsertSizeCompareReverse);
+    std::sort(scaff_libs.begin(), scaff_libs.end(), InsertSizeCompare);
     ResolveRepeatsManyLibs(gp, rr_libs, scaff_libs, long_reads, output_dir,
                            contigs_name, traverseLoops, broken_contigs);
+    for (size_t i = 0; i < rr_libs.size(); ++i) {
+        INFO("Insert size for lib# " << i << " = " << rr_libs[i][0]->insert_size_);
+    }
     DeleteLibs(rr_libs);
     DeleteLibs(scaff_libs);
 }

@@ -1023,6 +1023,14 @@ public:
     	DEBUG("empty paths are removed");
     }
 
+    void ResetPathsId() {
+        path_id_ = 0;
+        for (size_t i = 0; i < data_.size(); ++i) {
+            data_[i].first->SetId(++path_id_);
+            data_[i].second->SetId(++path_id_);
+        }
+    }
+
 private:
 
     class PathPairComparator {

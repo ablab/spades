@@ -202,8 +202,6 @@ namespace debruijn_graph {
 				
 
 			}
-
-		
 		}
 
 		void SetBucketsForDistanceFromFile ( bucket_id id, int distance, int genome_size, std::vector<int>& histogram ) {
@@ -353,7 +351,7 @@ namespace debruijn_graph {
 		void InitBuckets( ) {
 
 			file_ = fopen("/home/ksenia/probabilities.store", "aw");
-			LoadProbabilities();
+			//LoadProbabilities();
 
 			double kmer_counter = UpdateCoverageCounters( );
 					
@@ -377,7 +375,7 @@ namespace debruijn_graph {
 				printf("%d %4.10f\n", i, CheckChiSquare( i, distance ));
 			}*/
 
-			for ( int distance = 500; distance <= 500; distance += 1) {
+			/*for ( int distance = 500; distance <= 500; distance += 1) {
 			cout << distance << endl;
 			std::vector< std::vector<double> > bucketToBucket;
 			for ( unsigned id = 0; id < bucketNum_; ++id ) {
@@ -397,7 +395,7 @@ namespace debruijn_graph {
 				}
 
 				std::cout << std::endl;
-			}
+			}*/
 		
 		}
 
