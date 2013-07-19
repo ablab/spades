@@ -56,7 +56,7 @@ class EdgeInfoUpdater {
     }
 
     void UpdateAll() {
-        for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+        for (auto it = g_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
           UpdateKmers(*it);
         }
     }

@@ -211,7 +211,7 @@ path::files_t DeBruijnReadKMerSplitter<Read>::Split(size_t num_files) {
 
 template<class Graph>
 class DeBruijnGraphKMerSplitter : public DeBruijnKMerSplitter {
-  typedef typename Graph::SmartEdgeIt EdgeIt;
+  typedef typename Graph::ConstEdgeIt EdgeIt;
   typedef typename Graph::EdgeId EdgeId;
 
   const Graph &g_;
@@ -267,7 +267,7 @@ path::files_t DeBruijnGraphKMerSplitter<Graph>::Split(size_t num_files) {
   entry.resize(num_files, RtSeqKMerVector(K_, 1.25 * cell_size));
 
   size_t counter = 0, n = 10;
-  for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ) {
+  for (auto it = g_.ConstEdgeBegin(); !it.IsEnd(); ) {
     counter += FillBufferFromEdges(it, tmp_entries[0], num_files, cell_size);
 
     DumpBuffers(num_files, 1, tmp_entries, ostreams);
