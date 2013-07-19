@@ -40,7 +40,6 @@ public:
 
     template<class SingleRead>
     void ProcessLib(io::IReader<SingleRead>& stream, PathStorage<Graph>& storage) {
-        size_t count = 0;
     	while (!stream.eof()) {
             SingleRead r;
             stream >> r;
@@ -54,8 +53,6 @@ public:
             MappingContig * gc = gap_closer_.Correct(dc);
 
             storage.AddPath(gc->PathSeq(), 1, true);
-            if (count++ % 1000 == 0)
-            	DEBUG("read reads " << count);
         }
     }
 

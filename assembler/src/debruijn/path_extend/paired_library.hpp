@@ -123,7 +123,7 @@ struct PairedInfoLibrary {
     }
 
 
-    double IdealPairedInfo2(EdgeId e1, EdgeId e2, int distance) {
+    double IdealPairedInfo2(EdgeId e1, EdgeId e2, int distance) const{
             double w = 0.;
             if (distance == 0 && e1 == e2) {
                 w = 0. + g_.length(e1) - insert_size_ + 2 * read_size_ + 1 - k_;
@@ -148,7 +148,7 @@ struct PairedInfoLibrary {
             return math::gr(w, 0.0) ? w : 0.0;
     }
 
-    double IdealPairedInfo(EdgeId e1, EdgeId e2, int distance) {
+    double IdealPairedInfo(EdgeId e1, EdgeId e2, int distance) const{
         double w = 0.;
         if (distance == 0 && e1 == e2) {
             w = 0. + g_.length(e1) - insert_size_ + 2 * read_size_ + 1 - k_;
@@ -193,7 +193,7 @@ struct PairedInfoLibrary {
             return math::gr(w, 0.0) ? w : 0.0;
     }
 
-    double IdealPairedInfo(size_t length1, size_t length2, int distance) {
+    double IdealPairedInfo(size_t length1, size_t length2, int distance) const {
 		double w = 0.;
 		if (distance == 0) {
 			w = 0. + length1 - insert_size_ + 2 * read_size_ + 1 - k_;
