@@ -501,7 +501,7 @@ private:
     size_t backet_width_;
 
     bool IsInteresting(EdgeId e) const {
-        if (graph_.length(e) > graph_.k())
+        if (graph_.length(e) > graph_.k() + 1)
             return false;
 
         if (graph_.OutgoingEdgeCount(graph_.EdgeStart(e)) < 2 ||
