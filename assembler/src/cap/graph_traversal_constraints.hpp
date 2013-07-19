@@ -48,7 +48,7 @@ class GenomeContiguousPathsGraphTraversalConstraints
       pos_array_queue_.push(coordinates_handler_.GetEndPosArray(edge));
     else
       pos_array_queue_.push(
-          coordinates_handler_.FilterPosArray(pos_array_queue_.front(), edge));
+          coordinates_handler_.FilterPosArray(pos_array_queue_.top(), edge));
   }
 
   virtual void PopEdge() {
@@ -56,13 +56,13 @@ class GenomeContiguousPathsGraphTraversalConstraints
   }
 
   virtual bool PathIsCorrect() const {
-    return pos_array_queue_.front().size() > 0;
+    return pos_array_queue_.top().size() > 0;
   }
 
  private:
   const CoordinatesHandler<Graph> &coordinates_handler_;
 
-  std::queue<PosArray> pos_array_queue_;
+  std::stack<PosArray> pos_array_queue_;
 };
 
 }
