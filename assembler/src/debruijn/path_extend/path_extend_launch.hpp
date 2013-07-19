@@ -323,7 +323,7 @@ void SetOldThreshold(PairedInfoLibrary* lib, size_t index, size_t split_edge_len
 
 void SetNewThreshold(conj_graph_pack& gp, PairedInfoLibrary* lib, size_t index,
                      size_t split_edge_length) {
-    SplitGraphPairInfo split_graph(gp, *lib, index, 99);
+    SplitGraphPairInfo split_graph(gp, *lib, index, split_edge_length);
     INFO("Calculating paired info threshold");
     split_graph.ProcessReadPairs();
     double threshold = split_graph.FindThreshold(
