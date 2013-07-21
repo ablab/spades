@@ -169,7 +169,7 @@ void simplify_graph(conj_graph_pack& gp) {
 
 //	PrintWeightDistribution<K>(gp.g, "distribution.txt");
 
-//	EdgeQuality<Graph> edge_qual(gp.g, gp.index, gp.kmer_mapper, gp.genome);
+	EdgeQuality<Graph> edge_qual(gp.g, gp.index, gp.kmer_mapper, gp.genome);
 	total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
 	total_labeler labeler/*tot_lab*/(&graph_struct);
 //	CompositeLabeler<Graph> labeler(tot_lab, edge_qual);
@@ -178,16 +178,16 @@ void simplify_graph(conj_graph_pack& gp) {
 			"graph.dot");
 	printer(ipp_before_first_gap_closer);
 
-//	QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, edge_qual);
+	QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, edge_qual);
 //	QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler(gp.g, edge_qual,
 //			labeler, cfg::get().output_dir);
 //
-//	boost::function<void(EdgeId)> removal_handler_f = boost::bind(
-////			&QualityLoggingRemovalHandler<Graph>::HandleDelete,
+	boost::function<void(EdgeId)> removal_handler_f = boost::bind(
+			&QualityLoggingRemovalHandler<Graph>::HandleDelete,
 //			&QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
-//			boost::ref(qual_removal_handler), _1);
+			boost::ref(qual_removal_handler), _1);
 
-	SimplifyGraph(gp, boost::function<void(EdgeId)>(0)/*removal_handler_f*/, labeler, printer, 10
+	SimplifyGraph(gp, /*boost::function<void(EdgeId)>(0)*/removal_handler_f, labeler, printer, 10
 	/*, etalon_paired_index*/);
 
 	AvgCovereageCounter<Graph> cov_counter(gp.g);

@@ -608,10 +608,10 @@ void SimplificationCycle(conj_graph_pack& gp, const FlankingCoverage<Graph>& fla
   printer(ipp_tip_clipping, str(format("_%d") % iteration));
 
   //todo temporary disabled completely
-//  DEBUG(iteration << " ErroneousConnectionsRemoval");
-//  RemoveLowCoverageEdges(gp.g, cfg::get().simp.ec, /*todo return, removal_handler*/removal_handler,
-//                         *cfg::get().ds.RL, max_coverage, iteration_count,
-//                         iteration);
+  DEBUG(iteration << " ErroneousConnectionsRemoval");
+  RemoveLowCoverageEdges(gp.g, cfg::get().simp.ec, /*todo return, removal_handler*/removal_handler,
+                         *cfg::get().ds.RL, max_coverage, iteration_count,
+                         iteration);
   DEBUG(iteration << " ErroneousConnectionsRemoval stats");
 
   //todo temporary! relative coverage remover
