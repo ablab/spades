@@ -1029,10 +1029,11 @@ public:
 	        EdgeId e = genome_path[i].first;
 	        MappingRange range = genome_path[i].second;
 	        auto canon = CanonicalId(e);
-	        output_stream_ << std::string(format("%l\t%l\t%l\t%l\t%s\t%l") % genome_id %
+	        output_stream_ << (format("%d\t%d\t%d\t%d\t%s\t%d") %  
+    //        (format("%d") % genome_id).str() ;///%
 	                                     canon.first % range.initial_range.start_pos %
 	                                     range.initial_range.end_pos %
-	                                     (canon.second) ? "+" : "-" % gp_.g.int_id(e));
+	                                     ((canon.second) ? "+" : "-") % gp_.g.int_id(e)).str();
 //	        if (block_id_.count(e) == 0) {
 //	            block_id_[e] = ToString(curr_id_);
 //	            block_id_[gp_.g.conjugate(e)] = ToString(-curr_id_);
