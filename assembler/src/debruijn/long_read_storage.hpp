@@ -54,28 +54,33 @@ class PathStorage {
 	typedef map<EdgeId, set<PathInfo<Graph> > > InnerIndex;
 private:
 	Graph &g_;
-	InnerIndex inner_index;
+	InnerIndex inner_index_;
 
 	void HiddenAddPath(const vector<EdgeId> &p, int w){
 		if (p.size() == 0 ) return;
-		for (typename set<PathInfo<Graph> >::iterator iter = inner_index[p[0]].begin(); iter != inner_index[p[0]].end(); ++iter) {
+		for (typename set<PathInfo<Graph> >::iterator iter = inner_index_[p[0]].begin(); iter != inner_index_[p[0]].end(); ++iter) {
 			if (iter->path == p) {
 				iter->increaseWeight(w);
 				return;
 			}
 		}
-		inner_index[p[0]].insert(PathInfo<Graph>(p, w));
+		inner_index_[p[0]].insert(PathInfo<Graph>(p, w));
+		size_++;
 	}
 
 public:
-	PathStorage(Graph &g):g_(g), inner_index(){}
+	PathStorage(Graph &g)
+            : g_(g),
+              inner_index_(),
+              size_(0) {
+    }
 	void ReplaceEdges(map<EdgeId, EdgeId> &old_to_new){
 		map<int, EdgeId> tmp_map;
 //		for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter ){
 //	    	tmp_map[g_.int_id(*iter)] = *iter;
 //	    }
 		InnerIndex new_index;
-		for (auto iter = inner_index.begin(); iter != inner_index.end(); iter++) {
+		for (auto iter = inner_index_.begin(); iter != inner_index_.end(); iter++) {
 			auto tmp = iter->second;
 			EdgeId new_first;
 			if (old_to_new.find(iter->first) == old_to_new.end())
@@ -96,7 +101,7 @@ public:
 			}
 			new_index[new_first] = new_tmp;
 		}
-		inner_index = new_index;
+		inner_index_ = new_index;
 	}
 	void AddPath(const vector<EdgeId> &p, int w, bool add_rc = false){
 		HiddenAddPath(p, w);
@@ -112,7 +117,7 @@ public:
 		ofstream filestr(filename);
 		ofstream filestr2(filename + "_yana");
 		set<EdgeId> continued_edges;
-		for(auto iter = inner_index.begin(); iter != inner_index.end(); ++iter){
+		for(auto iter = inner_index_.begin(); iter != inner_index_.end(); ++iter){
 			filestr<< iter->second.size() << endl;
 			int non1 = 0;
 			for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); ++j_iter) {
@@ -187,7 +192,7 @@ public:
 
 	vector<PathInfo<Graph> > GetAllPaths() {
 		vector<PathInfo<Graph> > res;
-		for (auto iter = inner_index.begin(); iter != inner_index.end();
+		for (auto iter = inner_index_.begin(); iter != inner_index_.end();
 				++iter) {
 			for (auto j_iter = iter->second.begin();
 					j_iter != iter->second.end(); ++j_iter) {
@@ -201,7 +206,7 @@ public:
         vector<PathInfo<Graph> > res;
 
         std::set< PathInfo<Graph> > added;
-        for (auto iter = inner_index.begin(); iter != inner_index.end();  ++iter) {
+        for (auto iter = inner_index_.begin(); iter != inner_index_.end();  ++iter) {
             for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); ++j_iter) {
                 if (added.count(*j_iter) > 0) {
                     continue;
@@ -261,12 +266,21 @@ public:
 	}
 
 	void AddStorage(PathStorage<Graph> & to_add) {
-		for(auto iter = to_add.inner_index.begin(); iter != to_add.inner_index.end(); iter++) {
+		for(auto iter = to_add.inner_index_.begin(); iter != to_add.inner_index_.end(); iter++) {
 			for(auto j_iter = iter->second.begin(); j_iter != iter->second.end(); j_iter ++) {
 				this->AddPath(j_iter->path, j_iter->getWeight());
 			}
 		}
 	}
+
+	void Clear() {
+        inner_index_.clear();
+        size_ = 0;
+    }
+
+	size_t size() {
+        return size_;
+    }
 
 //	typename InnerIndex::iterator begin() const {
 //		return inner_index.begin();
@@ -278,6 +292,8 @@ public:
 //	typename InnerIndex::iterator operator*(){
 //		return this->first;
 //	}
+private:
+    size_t size_;
 };
 
 template<class Graph>

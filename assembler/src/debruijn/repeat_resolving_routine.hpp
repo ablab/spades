@@ -1054,7 +1054,8 @@ void AddSingleLibrary(
     streams->release();
     io::MultifileReader<io::SingleReadSeq> stream(streams->get(), true);
     PathStorage<Graph> long_single(gp.g);
-    read_mapper.ProcessLib(stream, long_single);
+    read_mapper.ProcessSingleReadLibrary(reads, long_single);
+    //read_mapper.ProcessLib(stream, long_single);
     vector<PathInfo<Graph> > long_paths = long_single.GetAllPaths();
     PathStorageInfo<Graph> single_storage(
             long_paths, cfg::get().pe_params.long_reads.single_reads.filtering,

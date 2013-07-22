@@ -259,7 +259,7 @@ def dataset_needs_paired_mode(dataset_data):
 
 def dataset_needs_long_single_mode(dataset_data):
     for reads_library in dataset_data:
-        if reads_library['type'] in ['long-single']:
+        if reads_library['type'] in ['single']:
             return True
     return False
 
