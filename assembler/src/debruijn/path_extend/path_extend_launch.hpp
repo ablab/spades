@@ -382,9 +382,6 @@ void ResolveRepeatsPe(conj_graph_pack& gp, vector<PairedIndexT*>& paired_index,
     std::sort(scaff_libs.begin(), scaff_libs.end(), InsertSizeCompare);
     ResolveRepeatsManyLibs(gp, rr_libs, scaff_libs, long_reads, output_dir,
                            contigs_name, traverseLoops, broken_contigs);
-    for (size_t i = 0; i < rr_libs.size(); ++i) {
-        INFO("Insert size for lib# " << i << " = " << rr_libs[i][0]->insert_size_);
-    }
     DeleteLibs(rr_libs);
     DeleteLibs(scaff_libs);
 }
