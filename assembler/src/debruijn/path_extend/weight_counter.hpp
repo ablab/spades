@@ -416,7 +416,7 @@ public:
 
 };
 
-class LongReadsWeightCounter: public WeightCounter {
+/*class LongReadsWeightCounter: public WeightCounter {
 
     size_t RL_;
     GraphCoverageMap& coverageMap_;
@@ -496,10 +496,6 @@ public:
 			weight -= min(g_.length(cur_edge), RL_ - g_.k() - 1 - common_length);
 			common_length =  p.LengthAt(index);
 		}
-		/*INFO("include edges ");
-		for (auto iter = includedEdges.begin(); iter != includedEdges.end(); ++iter){
-			INFO(" " << *iter);
-		}*/
 		//INFO("ideal weight result " << weight);
 		return weight;
 	}
@@ -549,7 +545,7 @@ public:
         return false;
     }
 
-};
+};*/
 
 }
 
