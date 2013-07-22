@@ -34,19 +34,27 @@ class SyntheticTestsRunner {
         CoordinatesHandler<GraphT> coordinates_handler;
 
         ConstructColoredGraph(gp, coloring, coordinates_handler, *RCWrapStreams(*streams));
-        Save(gp, coloring, streams, output_dir_ + ToString(id));
+        Save(gp, coloring, coordinates_handler, streams, output_dir_ + ToString(id));
     }
 
-    void Save(const GraphPackT& gp, const ColorHandler<GraphT>& coloring, ContigStreamsPtr streams, const string& filename) const {
+    void Save(const GraphPackT& gp, const ColorHandler<GraphT>& coloring,
+        const CoordinatesHandler<GraphT> &coordinates_handler,
+        ContigStreamsPtr streams, const string& filename) const {
         typename PrinterTraits<GraphT>::Printer printer(gp.g, gp.int_ids);
         INFO("Saving graph to " << filename);
         printer.saveGraph(filename);
         printer.saveEdgeSequences(filename);
-//        printer.savePositions(filename, gp.edge_pos);
+  //        printer.savePositions(filename, gp.edge_pos);
         SaveColoring(gp.g, gp.int_ids, coloring, filename);
-        PrintColoredGraphWithColorFilter(gp.g, coloring, gp.edge_pos,
-                                         filename + ".dot");
         streams->reset();
+
+        vector<string> genome_names;
+        for (size_t i = 0; i < streams->size(); ++i) {
+          genome_names.push_back(('A' + i) + "");
+          genome_names.push_back(('A' + i) + "_RC");
+        }
+        PrintColoredGraphWithColorFilter(gp.g, coloring, coordinates_handler,
+                                         genome_names, filename + ".dot");
         BlockPrinter<GraphPackT> block_printer(gp, filename + ".blk");
         for (size_t i = 0; i < streams->size(); ++i) {
             block_printer.ProcessGenome(i + 1, ReadSequence((*streams)[i]));

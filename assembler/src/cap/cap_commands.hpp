@@ -164,7 +164,6 @@ class BuildGraphCommand : public LocalCommand<CapEnvironment> {
       return;
     }
     size_t k;
-    bool fill_pos = true;
 
     std::stringstream ss(args[1]);
     ss >> k;

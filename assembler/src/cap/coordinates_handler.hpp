@@ -42,7 +42,14 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
   typedef unsigned char uchar;
   typedef std::vector<std::pair<uchar, size_t> > PosArray;
 
-  CoordinatesHandler() : base("CoordinatesHandler") {
+  CoordinatesHandler()
+      : base("CoordinatesHandler"),
+        g_(NULL),
+        genome_info_(),
+        edge_ranges_(),
+        stored_threading_history_(),
+        genome_first_edges_(),
+        cur_genome_threads_() {
   }
 
   virtual ~CoordinatesHandler() {
@@ -86,14 +93,15 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
     genome_first_edges_[genome_path[0]].push_back(genome_id);
 
     size_t cur_start = 0;
-    for (auto &edge : genome_path) {
+    for (const auto &edge : genome_path) {
       if (edge == EdgeId(0)) {
         DEBUG("ZERO EDGE!");
         continue;
       }
       size_t cur_end = cur_start + g_->length(edge);
-      //INFO("edge " << g_->str(edge));
-      DEBUG(Range(cur_start, cur_end));
+
+      DEBUG("edge " << g_->str(edge) << ": " << Range(cur_start, cur_end));
+
       edge_ranges_[edge].AddGenomeRange(genome_id, Range(cur_start, cur_end));
       cur_start = cur_end;
     }

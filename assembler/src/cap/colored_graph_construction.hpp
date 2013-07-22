@@ -318,6 +318,7 @@ void FillPositions(const gp_t &gp, ContigStreams &streams,
 	typedef NewExtendedSequenceMapper<typename gp_t::graph_t,
                                     typename gp_t::index_t> Mapper;
 
+  VERIFY(coordinates_handler.GetGraph() == NULL);
   coordinates_handler.SetGraph(&(gp.g));
 
   unsigned char genome_id = 0;
@@ -343,6 +344,7 @@ void FillPositions(const gp_t &gp, ContigStreams &streams,
       coordinates_handler.AddGenomePath(2 * genome_id + i, edge_path);
     }
 
+    stream.reset();
     genome_id++;
   }
 }
@@ -358,7 +360,7 @@ void ConstructColoredGraph(gp_t& gp,
 	CapConstructGraph(gp.k_value, streams,
 			gp.g, gp.index);
 	SplitAndColorGraph(gp, coloring, streams);
-  FillPositions(gp.g, streams, coordinates_handler);
+  FillPositions(gp, streams, coordinates_handler);
 }
 
 //template<class gp_t>
