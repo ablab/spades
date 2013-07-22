@@ -321,7 +321,7 @@ void FillPositions(const gp_t &gp, ContigStreams &streams,
   VERIFY(coordinates_handler.GetGraph() == NULL);
   coordinates_handler.SetGraph(&(gp.g));
 
-  unsigned char genome_id = 0;
+  unsigned contig_id = 0;
   std::shared_ptr<const Mapper> mapper = MapperInstance<gp_t>(gp);
 
   for (auto it = streams.begin(); it != streams.end(); ++it) {
@@ -329,23 +329,19 @@ void FillPositions(const gp_t &gp, ContigStreams &streams,
     ContigStream &stream = *it;
     stream.reset();
     
-    io::SingleRead genome;
+    io::SingleRead contig;
     // for forward and reverse directions
-    for (int i = 0; i < 2; ++i) {
-      // To cope both with RC-wrapped and simple vectors
-      if (stream.eof()) {
-        break;
-      }
+    while (!stream.eof()) {
+      stream >> contig;
 
-      stream >> genome;
-      MappingPath<EdgeId> mapping_path = mapper->MapRead(genome);
+      MappingPath<EdgeId> mapping_path = mapper->MapRead(contig);
       const std::vector<EdgeId> edge_path =
           mapping_path.simple_path().sequence();
-      coordinates_handler.AddGenomePath(2 * genome_id + i, edge_path);
+      coordinates_handler.AddGenomePath(contig_id, edge_path);
     }
 
     stream.reset();
-    genome_id++;
+    contig_id++;
   }
 }
 

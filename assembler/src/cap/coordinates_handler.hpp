@@ -13,9 +13,7 @@ namespace utils {
 
 // For some internal maps
 struct unordered_map_pair_hash {
-  size_t operator()(std::pair<unsigned char, size_t> p) const {
-    //return std::hash<unsigned char>()(p.first) |
-        //(std::hash<size_t>()(p.second) << 8);
+  size_t operator()(std::pair<unsigned, size_t> p) const {
     return size_t(p.first) | (p.second << 8);
   }
 };
@@ -39,8 +37,8 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
   typedef typename Graph::VertexId VertexId;
   typedef ActionHandler<VertexId, EdgeId> base;
   typedef std::vector<EdgeId> Path;
-  typedef unsigned char uchar;
-  typedef std::vector<std::pair<uchar, size_t> > PosArray;
+  typedef unsigned uint;
+  typedef std::vector<std::pair<uint, size_t> > PosArray;
 
   CoordinatesHandler()
       : base("CoordinatesHandler"),
@@ -80,7 +78,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
     return g_;
   }
 
-  void AddGenomePath(const uchar genome_id, const Path &genome_path) {
+  void AddGenomePath(const uint genome_id, const Path &genome_path) {
     TRACE("AddGenomePath Start");
     VERIFY(g_ != NULL);
 
@@ -111,7 +109,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
     TRACE("AddGenomePath End");
   }
 
-  Sequence ReconstructGenome(const uchar genome_id) const {
+  Sequence ReconstructGenome(const uint genome_id) const {
     VERIFY(cur_genome_threads_.size() > genome_id);
 
     std::vector<Sequence> path_sequences;
@@ -122,7 +120,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
     return MergeOverlappingSequences(path_sequences, g_->k());
   }
 
-  const Path &GetGenomePath(const uchar genome_id) const {
+  const Path &GetGenomePath(const uint genome_id) const {
     VERIFY(cur_genome_threads_.size() > genome_id);
 
     return *cur_genome_threads_[genome_id];
@@ -146,7 +144,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
   }
 
   void StoreGenomeThreads() {
-    std::vector<std::pair<std::pair<uchar, Range>, EdgeId> > all_ranges;
+    std::vector<std::pair<std::pair<uint, Range>, EdgeId> > all_ranges;
     /*
      *  A kind of verification
      */
@@ -172,7 +170,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
     TRACE("StoreGenomeThreads Start");
     VERIFY(g_ != NULL);
     for (auto &genome_it : genome_info_) {
-      const uchar genome_id = genome_it.first;
+      const uint genome_id = genome_it.first;
       stored_threading_history_[genome_id].push_back(Thread());
       Thread &thread = stored_threading_history_[genome_id].back();
 
@@ -186,12 +184,12 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
    */
   void ProjectPath(const Path &from, const Path &to); 
   void ProjectPath(const Path &from, const Path &to,
-      const std::vector<std::pair<uchar, size_t> > &threads_to_delete);
+      const PosArray &threads_to_delete);
 
-  std::vector<std::pair<uchar, size_t> > GetContiguousThreads(const Path &path) const;
+  PosArray GetContiguousThreads(const Path &path) const;
   bool CheckCorrectPathProjection(const Path &from, const Path &to) const;
-  size_t GetOriginalPos(const uchar genome_id, const size_t new_pos) const;
-  size_t GetNewestPos(const uchar genome_id, const size_t old_pos) const;
+  size_t GetOriginalPos(const uint genome_id, const size_t new_pos) const;
+  size_t GetNewestPos(const uint genome_id, const size_t old_pos) const;
   // TODO getOrigRange?? (Edge)
   virtual void HandleDelete(EdgeId e);
   virtual void HandleMerge(const vector<EdgeId> &old_edges, EdgeId new_edge);
@@ -200,9 +198,9 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
                                             EdgeId new_edge_2);
 
   // First range is graph range, second is original sequence range
-  std::vector<std::pair<uchar, std::pair<Range, Range> > > GetRanges(
+  std::vector<std::pair<uint, std::pair<Range, Range> > > GetRanges(
       const EdgeId e) const {
-    std::vector<std::pair<uchar, std::pair<Range, Range> > > res;
+    std::vector<std::pair<uint, std::pair<Range, Range> > > res;
     if (g_ == NULL)
       return res;
 
@@ -210,7 +208,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
     VERIFY(edge_data_it != edge_ranges_.end());
 
     for (const auto &p : edge_data_it->second.GetRanges()) {
-      const uchar genome_id = p.first;
+      const uint genome_id = p.first;
       DEBUG("from " << p.second);
       Range newest(GetNewestPos(genome_id, p.second.start_pos),
                      GetNewestPos(genome_id, p.second.end_pos));
@@ -237,7 +235,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
     return result;
   }
 
-  bool HasForwardLink(const EdgeId edge, const uchar genome_id,
+  bool HasForwardLink(const EdgeId edge, const uint genome_id,
                       const size_t start_pos) const {
     auto edge_it = edge_ranges_.find(edge);
     VERIFY(edge_it != edge_ranges_.end());
@@ -245,7 +243,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
     return edge_it->second.HasForwardLink(make_pair(genome_id, start_pos));
   }
 
-  size_t GetForwardPos(const EdgeId edge, const uchar genome_id,
+  size_t GetForwardPos(const EdgeId edge, const uint genome_id,
                       const size_t start_pos) const {
     auto edge_it = edge_ranges_.find(edge);
     VERIFY(edge_it != edge_ranges_.end());
@@ -265,7 +263,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
   }
 
  private:
-  typedef std::unordered_map<std::pair<uchar, size_t>, size_t,
+  typedef std::unordered_map<std::pair<uint, size_t>, size_t,
                              utils::unordered_map_pair_hash> MapT;
   typedef std::vector<std::pair<size_t, size_t> > Thread;
 
@@ -274,7 +272,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
     EdgeData() {
     }
 
-    inline void AddGenomeRange(const uchar genome_id, const Range &range) {
+    inline void AddGenomeRange(const uint genome_id, const Range &range) {
       //INFO("add genome range: genome " << int(genome_id) << ": " << range);
       //INFO("initial " << DebugOutput());
       Range extended_range = range;
@@ -312,7 +310,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
       }
     }
 
-    inline std::vector<Range> GetGenomeRanges(const uchar genome_id) const {
+    inline std::vector<Range> GetGenomeRanges(const uint genome_id) const {
       std::vector<Range> result;
 
       for (auto &it : genome_ranges_forward_) {
@@ -324,8 +322,8 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
       return result;
     }
 
-    inline std::vector<std::pair<uchar, Range> > GetRanges() const {
-      std::vector<std::pair<uchar, Range> > result;
+    inline std::vector<std::pair<uint, Range> > GetRanges() const {
+      std::vector<std::pair<uint, Range> > result;
       
       for (auto &it : genome_ranges_forward_) {
         result.push_back(make_pair(it.first.first,
@@ -335,10 +333,10 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
       return result;
     }
 
-    inline bool HasForwardLink(const std::pair<uchar, size_t> &start_pos) const {
+    inline bool HasForwardLink(const std::pair<uint, size_t> &start_pos) const {
       return genome_ranges_forward_.count(start_pos) > 0;
     }
-    inline void DeleteForwardLink(const std::pair<uchar, size_t> &pos) {
+    inline void DeleteForwardLink(const std::pair<uint, size_t> &pos) {
       const auto it = genome_ranges_forward_.find(pos);
       if (it == genome_ranges_forward_.end())
         return;
@@ -347,7 +345,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
       genome_ranges_forward_.erase(pos);
       genome_ranges_backward_.erase(make_pair(pos.first, end_pos));
     }
-    inline size_t GetForwardPos(const std::pair<uchar, size_t> &start_pos) const {
+    inline size_t GetForwardPos(const std::pair<uint, size_t> &start_pos) const {
       auto it = genome_ranges_forward_.find(start_pos);
       VERIFY(it != genome_ranges_forward_.end());
       return it->second;
@@ -377,18 +375,17 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
   };
 
   struct GenomeInfo {
-    uchar id;
+    uint id;
     EdgeId first_edge;
     size_t sequence_length;
   };
 
   constexpr static long double EPS = 1e-9;
 
-  void StoreGenomeThread(const uchar genome_id, Thread &thread);
-  EdgeId FindGenomeFirstEdge(const uchar genome_id) const;
-  std::vector<std::pair<uchar, Range> > PopAndUpdateRangesToCopy(
-      const EdgeId edge,
-      std::vector<std::pair<uchar, size_t> > &delete_positions);
+  void StoreGenomeThread(const uint genome_id, Thread &thread);
+  EdgeId FindGenomeFirstEdge(const uint genome_id) const;
+  PosArray PopAndUpdateRangesToCopy(const EdgeId edge,
+      PosArray &delete_positions);
   bool CheckContiguousPath(const Path &path) const;
 
   bool HasEdgeData(const EdgeId edge) {
@@ -417,7 +414,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
                   (graph_pos - graph_range.start_pos) * len_ratio);
   }
 
-  void SetGenomeThread(const uchar genome_id, const Path &thread) {
+  void SetGenomeThread(const uint genome_id, const Path &thread) {
     if (cur_genome_threads_.size() <= genome_id)
       cur_genome_threads_.resize(genome_id + 1);
     cur_genome_threads_[genome_id] = std::make_shared<Path>(thread);
@@ -427,10 +424,10 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
 
   const Graph *g_;
   
-  std::unordered_map<uchar, GenomeInfo> genome_info_;
+  std::unordered_map<uint, GenomeInfo> genome_info_;
   std::unordered_map<EdgeId, EdgeData> edge_ranges_;
-  std::unordered_map<uchar, std::vector<Thread> > stored_threading_history_;
-  std::unordered_map<EdgeId, std::vector<uchar> > genome_first_edges_;
+  std::unordered_map<uint, std::vector<Thread> > stored_threading_history_;
+  std::unordered_map<EdgeId, std::vector<uint> > genome_first_edges_;
   std::vector<std::shared_ptr<Path> > cur_genome_threads_;
 
   DECL_LOGGER("CoordinatesHandler")
@@ -447,7 +444,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
 
 template <class Graph>
 void CoordinatesHandler<Graph>::ProjectPath(const Path &from, const Path &to,
-    const std::vector<std::pair<uchar, size_t> > &threads_to_delete) {
+    const PosArray &threads_to_delete) {
 
   TRACE("ProjectPath Start");
   //VERIFY(CheckCorrectPathProjection(from, to));
@@ -459,10 +456,9 @@ void CoordinatesHandler<Graph>::ProjectPath(const Path &from, const Path &to,
              &p2 = to;
   size_t l1 = GetPathLength(p1),
          l2 = GetPathLength(p2);
-  std::vector<std::pair<uchar, size_t> > cur_delete_positions =
-      threads_to_delete;
+  PosArray cur_delete_positions = threads_to_delete;
   // For suspended adding
-  std::vector<std::pair<EdgeId, std::pair<uchar, Range> > > adding_ranges;
+  std::vector<std::pair<EdgeId, std::pair<uint, Range> > > adding_ranges;
 
   auto it2 = p2.begin();
 
@@ -475,7 +471,7 @@ void CoordinatesHandler<Graph>::ProjectPath(const Path &from, const Path &to,
   for (auto &edge1 : p1) {
     size_t cur_1_edge_len = g_->length(edge1);
 
-    std::vector<std::pair<uchar, Range> > genome_ranges_to_copy =
+    PosArray genome_ranges_to_copy =
       PopAndUpdateRangesToCopy(edge1, cur_delete_positions);
     //VERIFY(genome_ranges_to_copy.size() == threads_to_delete.size());
 
@@ -533,16 +529,16 @@ void CoordinatesHandler<Graph>::ProjectPath(const Path &from, const Path &to,
 template <class Graph>
 void CoordinatesHandler<Graph>::ProjectPath(
     const Path &from, const Path &to) {
-  std::vector<std::pair<uchar, size_t> > all_positions =
+  PosArray all_positions =
       GetContiguousThreads(from);
   ProjectPath(from, to, all_positions);
 }
 
 template <class Graph>
-std::vector<std::pair<unsigned char, Range> >
+typename CoordinatesHandler<Graph>::PosArray
 CoordinatesHandler<Graph>::PopAndUpdateRangesToCopy(
     const EdgeId edge,
-    std::vector<std::pair<uchar, size_t> > &delete_positions) {
+    PosArray &delete_positions) {
   auto edge_data_it = edge_ranges_.find(edge);
   if (edge_data_it == edge_ranges_.end()) {
     INFO("trying to get " << delete_positions.size() << " positions from empty!!!");
@@ -550,7 +546,7 @@ CoordinatesHandler<Graph>::PopAndUpdateRangesToCopy(
   VERIFY(edge_data_it != edge_ranges_.end());
   auto &edge_data = edge_data_it->second;
 
-  std::vector<std::pair<uchar, Range> > genome_ranges_to_copy;
+  PosArray genome_ranges_to_copy;
   for (auto &del_pos : delete_positions) {
     if (edge_data.HasForwardLink(del_pos)) {
       const Range range_to_copy(del_pos.second,
@@ -626,7 +622,7 @@ CoordinatesHandler<Graph>::GetContiguousThreads(const Path &path) const {
 
 template <class Graph>
 void CoordinatesHandler<Graph>::StoreGenomeThread(
-    const uchar genome_id, Thread &thread) {
+    const uint genome_id, Thread &thread) {
 
   TRACE("StoreGenomeThread Start");
 
@@ -635,7 +631,7 @@ void CoordinatesHandler<Graph>::StoreGenomeThread(
          genome_length = genome_info_[genome_id].sequence_length;
 
   cur_genome_threads_[genome_id] = std::make_shared<Path>();
-  std::pair<uchar, size_t> cur_pos = make_pair(genome_id, genome_pos);
+  std::pair<uint, size_t> cur_pos = make_pair(genome_id, genome_pos);
   EdgeId cur_edge = genome_info_[genome_id].first_edge;
   //INFO("searching for first edge " << cur_edge << "of genome " << int(genome_id));
   if (!HasEdgeData(cur_edge)) {
@@ -680,8 +676,8 @@ void CoordinatesHandler<Graph>::StoreGenomeThread(
 
 template <class Graph>
 typename CoordinatesHandler<Graph>::EdgeId
-CoordinatesHandler<Graph>::FindGenomeFirstEdge(const uchar genome_id) const {
-  std::pair<uchar, size_t> pos_in_question(genome_id, 0);
+CoordinatesHandler<Graph>::FindGenomeFirstEdge(const uint genome_id) const {
+  std::pair<uint, size_t> pos_in_question(genome_id, 0);
 
   for (auto it = g_->SmartEdgeBegin(); !it.IsEnd(); ++it) {
     auto range_it = edge_ranges_.find(*it);
@@ -699,7 +695,7 @@ CoordinatesHandler<Graph>::FindGenomeFirstEdge(const uchar genome_id) const {
 
 template <class Graph>
 size_t CoordinatesHandler<Graph>::GetOriginalPos(
-    const uchar genome_id, const size_t new_pos) const {
+    const uint genome_id, const size_t new_pos) const {
   // No refinement has been done
   if (stored_threading_history_.size() == 0)
     return new_pos;
@@ -748,7 +744,7 @@ size_t CoordinatesHandler<Graph>::GetOriginalPos(
 
 template<class Graph>
 size_t CoordinatesHandler<Graph>::GetNewestPos(
-    const uchar genome_id, const size_t old_pos) const {
+    const uint genome_id, const size_t old_pos) const {
   if (stored_threading_history_.size() == 0)
     return old_pos;
 
@@ -829,7 +825,7 @@ void CoordinatesHandler<Graph>::HandleSplit(EdgeId old_edge, EdgeId new_edge_1,
   //TRACE("HandleSplit " << old_edge << " -> " << new_edge_1 << " + " << new_edge_2);
   VERIFY(!HasEdgeData(old_edge));
   /*
-  const std::vector<std::pair<uchar, Range> > old_ranges =
+  const std::vector<std::pair<uint, Range> > old_ranges =
       edge_ranges[old_edge].GetRanges();
   for (const auto &range : old_ranges) {
 

@@ -14,7 +14,7 @@ class PathProjector {
 	typedef typename Graph::VertexId VertexId;
   typedef std::vector<EdgeId> Path;
   typedef typename CoordinatesHandler<Graph>::PosArray PosArray;
-  typedef unsigned char uchar;
+  typedef unsigned uint;
 
   PathProjector(Graph &g, CoordinatesHandler<Graph> &coordinates_handler)
       : g_(g),
@@ -66,7 +66,7 @@ class PathProjector {
 
     // RC paths
     std::vector<Path> rc_paths;
-    std::vector<std::vector<std::pair<uchar, size_t> > > rc_threads;
+    std::vector<std::vector<std::pair<uint, size_t> > > rc_threads;
     for (const auto &path : paths) {
       Path rc_path;
       for (auto it = path.rbegin(); it != path.rend(); ++it) {
@@ -141,7 +141,7 @@ class PathProjector {
   }
 
   void ProjectPath(const Path &from, const Path &to,
-      const std::vector<std::pair<uchar, size_t> > &threads_to_delete) {
+      const std::vector<std::pair<uint, size_t> > &threads_to_delete) {
     coordinates_handler_.ProjectPath(from, to, threads_to_delete);
 
     for (const auto e : from) {
@@ -152,7 +152,7 @@ class PathProjector {
   }
 
   inline void ProjectPath(const Path &from, const Path &to) {
-    const std::vector<std::pair<uchar, size_t> > threads_to_delete =
+    const std::vector<std::pair<uint, size_t> > threads_to_delete =
         coordinates_handler_.GetContiguousThreads(from);
     ProjectPath(from, to, threads_to_delete);
   }
@@ -183,10 +183,10 @@ class PathProjector {
   };
 
   bool CheckForRCAbsence(
-      const std::vector<std::vector<std::pair<uchar, size_t> > > &threads) {
+      const std::vector<std::vector<std::pair<uint, size_t> > > &threads) {
     return true;
     // We use that #of thread = 2 * genome_num + RC
-    std::vector<uchar> genomes;
+    std::vector<uint> genomes;
     for (const auto &entry : threads) {
       for (const auto &pos : entry) {
         genomes.push_back(pos.first);
@@ -235,7 +235,7 @@ class PathProjector {
   }
 
   bool CheckDeletionOfIntouchables(const std::vector<Path> &paths,
-      const std::vector<std::vector<std::pair<uchar, size_t> > > del_threads,
+      const std::vector<std::vector<std::pair<uint, size_t> > > del_threads,
       const size_t chosen_path) {
     std::unordered_set<EdgeId> intouchable_edges;
     for (const auto e : paths[chosen_path]) {

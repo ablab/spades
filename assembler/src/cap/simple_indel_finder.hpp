@@ -20,7 +20,6 @@ class SimpleIndelFinder {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
   typedef std::vector<EdgeId> Path;
-  typedef std::vector<std::pair<unsigned char, size_t> > PosArray;
   typedef uint64_t u64int;
 
   gp_t &gp_;

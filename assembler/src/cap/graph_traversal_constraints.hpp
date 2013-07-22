@@ -35,7 +35,7 @@ class GenomeContiguousPathsGraphTraversalConstraints
     : public GraphTraversalConstraints<Graph> {
 
  public:
-  typedef std::vector<std::pair<unsigned char, size_t> > PosArray;
+  typedef typename CoordinatesHandler<Graph>::PosArray PosArray;
 
   GenomeContiguousPathsGraphTraversalConstraints(
       const CoordinatesHandler<Graph> &coordinates_handler)

@@ -46,13 +46,20 @@ class SyntheticTestsRunner {
         printer.saveEdgeSequences(filename);
   //        printer.savePositions(filename, gp.edge_pos);
         SaveColoring(gp.g, gp.int_ids, coloring, filename);
-        streams->reset();
 
         vector<string> genome_names;
-        for (size_t i = 0; i < streams->size(); ++i) {
-          genome_names.push_back(('A' + i) + "");
-          genome_names.push_back(('A' + i) + "_RC");
+        for (auto &stream : *streams) {
+          stream.reset();
+
+          io::SingleRead contig;
+          while (!stream.eof()) {
+            stream >> contig;
+            genome_names.push_back(contig.name());
+          }
+
+          stream.reset();
         }
+
         PrintColoredGraphWithColorFilter(gp.g, coloring, coordinates_handler,
                                          genome_names, filename + ".dot");
         BlockPrinter<GraphPackT> block_printer(gp, filename + ".blk");
