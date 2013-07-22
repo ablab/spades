@@ -103,7 +103,7 @@ def run_spades(configs_dir, execution_home, cfg, log):
     else:
         run_iteration(configs_dir, execution_home, cfg, log, cfg.iterative_K[0], False, False)
         RL = get_read_length(cfg.output_dir, cfg.iterative_K[0])
-        if (cfg.iterative_K[1] > RL):
+        if (cfg.iterative_K[1] + 1 > RL):
             if cfg.paired_mode:
                 log.info("Second value of iterative K exceeded estimated read length. Rerunning in paired mode for the first value of K")
                 run_iteration(configs_dir, execution_home, cfg, log, cfg.iterative_K[0], False, True)
