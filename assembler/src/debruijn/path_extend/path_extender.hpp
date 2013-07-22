@@ -393,10 +393,7 @@ public:
 
         for (size_t i = 0; i < paths.size(); i ++) {
             BidirectionalPath * path = new BidirectionalPath(*paths.Get(i));
-            path->SetCurrentPathAsSeed();
             BidirectionalPath * conjugatePath = new BidirectionalPath(*paths.GetConjugate(i));
-            conjugatePath->SetCurrentPathAsSeed();
-
             result->AddPair(path, conjugatePath);
 
             do {
@@ -460,9 +457,7 @@ protected:
             if (!coverageMap_.IsCovered(*paths.Get(i))) {
                 usedPaths.AddPair(paths.Get(i), paths.GetConjugate(i));
                 BidirectionalPath * path = new BidirectionalPath(*paths.Get(i));
-                path->SetCurrentPathAsSeed();
                 BidirectionalPath * conjugatePath = new BidirectionalPath(*paths.GetConjugate(i));
-                conjugatePath->SetCurrentPathAsSeed();
                 result->AddPair(path, conjugatePath);
                 SubscribeCoverageMap(path);
                 SubscribeCoverageMap(conjugatePath);

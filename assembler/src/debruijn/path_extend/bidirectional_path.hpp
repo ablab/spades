@@ -41,67 +41,6 @@ public:
 
 };
 
-
-class CoordPair: public PathListener {
-
-protected:
-    const static int DEFAULT = -1;
-
-    int start_;
-    int end_;
-
-public:
-
-    CoordPair(): start_(DEFAULT), end_(DEFAULT) {
-    }
-
-    CoordPair(int s, int e): start_(s), end_(e) {
-    }
-
-
-    bool In(int c) {
-        if (start_ == -1 && end_ == -1) {
-            return false;
-        }
-        return c >= start_ && c <= end_;
-    }
-
-    void Set(int s, int e) {
-        start_ = s;
-        end_ = e;
-    }
-
-    void Clear() {
-        Set(DEFAULT, DEFAULT);
-    }
-
-    virtual void FrontEdgeAdded(EdgeId e, BidirectionalPath * path, int gap) {
-        ++start_;
-        ++end_;
-    }
-
-    virtual void BackEdgeAdded(EdgeId e, BidirectionalPath * path, int gap) {
-
-    }
-
-    virtual void FrontEdgeRemoved(EdgeId e, BidirectionalPath * path) {
-        --start_;
-        --end_;
-        if (start_ < 0) {
-            start_ = 0;
-        }
-
-        if (end_ < 0) {
-            Clear();
-        }
-    }
-
-    virtual void BackEdgeRemoved(EdgeId e, BidirectionalPath * path) {
-
-    }
-};
-
-
 class LoopDetectorData {
 
 public:
@@ -242,7 +181,6 @@ public:
               gapLength_(),
               totalLength_(0),
               loopDetector_(g_, this),
-              seedCoords_(),
               listeners_(),
               weight_(1.0) {
         Init();
@@ -255,7 +193,6 @@ public:
               gapLength_(),
               totalLength_(0),
               loopDetector_(g_, this),
-              seedCoords_(),
               listeners_(),
               weight_(1.0) {
         Init();
@@ -276,7 +213,6 @@ public:
               gapLength_(),
               totalLength_(0),
               loopDetector_(g_, this),
-              seedCoords_(0, 0),
               listeners_(),
               weight_(1.0) {
         Init();
@@ -292,7 +228,6 @@ public:
               gapLength_(path.gapLength_),
               totalLength_(path.totalLength_),
               loopDetector_(g_, this),
-              seedCoords_(),
               listeners_(),
               id_(path.id_),
               weight_(path.weight_) {
@@ -328,8 +263,6 @@ protected:
 
 	// Cycle analyzer
 	LoopDetector loopDetector_;
-
-	CoordPair seedCoords_;
 
 	//Path listeners
 	std::vector <PathListener *> listeners_;
@@ -441,11 +374,6 @@ protected:
     }
 
     void SafePopFront() {
-        if (seedCoords_.In(0)) {
-            DEBUG("Cannot remove front edge due to seed restrictions");
-            return;
-        }
-
         PopFront();
     }
 
@@ -527,11 +455,6 @@ public:
 	    return loopDetector_;
 	}
 
-	//Modification methods
-	void SetCurrentPathAsSeed() {
-	    seedCoords_.Set(0, Size() - 1);
-	}
-
 	void PushBack(EdgeId e, int gap = 0) {
 	    data_.push_back(e);
 	    gapLength_.push_back(gap);
@@ -565,17 +488,11 @@ public:
 	}
 
 	void SafePopBack() {
-        if (seedCoords_.In(Size() - 1)) {
-            DEBUG("Cannot remove back edge due to seed restrictions");
-            return;
-        }
-
-        PopBack();
+	    PopBack();
 	}
 
 
 	void Clear() {
-	    seedCoords_.Clear();
 	    while (!Empty()) {
 	        PopBack();
 	    }
@@ -854,7 +771,6 @@ private:
 
     void Init() {
         Subscribe(&loopDetector_);
-        Subscribe(&seedCoords_);
         InitOverlapes();
         id_ = 0;
     }
