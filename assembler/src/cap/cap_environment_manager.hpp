@@ -60,8 +60,8 @@ class CapEnvironmentManager {
   }
 
   template <class gp_t>
-  shared_ptr<gp_t> BuildGPFromStreams(std::vector<ContigStream*> streams,
-                                      unsigned k, bool fill_pos = true) const {
+  shared_ptr<gp_t> BuildGPFromStreams(std::vector<ContigStream*> &streams,
+                                      unsigned k) const {
     typedef NewExtendedSequenceMapper<Graph, typename gp_t::index_t> Mapper;
 
     shared_ptr<gp_t> result(new gp_t(k, env_->kDefaultGPWorkdir));
@@ -83,29 +83,7 @@ class CapEnvironmentManager {
     colored_graph_constructor.ConstructGraph(rc_read_stream_vector);
 
     INFO("Filling positions");
-    if (fill_pos) {
-      env_->coordinates_handler_.SetGraph(&(result->g));
-
-      unsigned char genome_id = 0;
-
-      for (auto it = streams.begin(); it != streams.end(); ++it) {
-        cap::RCWrapper stream(**it);
-        stream.reset();
-
-        Mapper mapper(result->g, result->index, result->kmer_mapper, result->k_value + 1);
-        io::SingleRead genome;
-        // for forward and reverse directions
-        for (int i = 0; i < 2; ++i) {
-          stream >> genome;
-          MappingPath<EdgeId> mapping_path = mapper.MapRead(genome);
-          const std::vector<EdgeId> edge_path =
-              mapping_path.simple_path().sequence();
-          env_->coordinates_handler_.AddGenomePath(2 * genome_id + i, edge_path);
-        }
-
-        genome_id++;
-      }
-    }
+    FillPositions(*result, rc_read_stream_vector, env_->coordinates_handler_);
     INFO("Filling positions done.");
 
     return result;
@@ -283,7 +261,7 @@ class CapEnvironmentManager {
     return env_dir + "/" + cache_dir + "/";
   }
 
-  void ConstructGraphFromStreams(const std::vector<ContigStream *> &streams, unsigned k, bool fill_pos) {
+  void ConstructGraphFromStreams(std::vector<ContigStream *> &streams, unsigned k) {
     ClearEnvironment();
     env_->CheckConsistency();
     //last_streams_used_ = streams;
@@ -291,21 +269,21 @@ class CapEnvironmentManager {
     VERIFY(env_->gp_rtseq_ == NULL && env_->gp_lseq_ == NULL);
     if (env_->UseLSeqForThisK(k)) {
       env_->SetGraphPack(BuildGPFromStreams<LSeqGP>(
-          streams, k, fill_pos));
+          streams, k));
     } else {
       env_->SetGraphPack(BuildGPFromStreams<RtSeqGP>(
-          streams, k, fill_pos));
+          streams, k));
     }
   }
 
-  void ConstructGraph(unsigned k, bool fill_pos) {
+  void ConstructGraph(unsigned k) {
     std::vector<ContigStream *> streams;
     for (size_t i = 0; i < env_->genomes_.size(); ++i) {
       streams.push_back(new io::SequenceReader<io::SingleRead>(
                     *env_->genomes_[i], env_->genomes_names_[i]));
     }
 
-    ConstructGraphFromStreams(streams, k, fill_pos);
+    ConstructGraphFromStreams(streams, k);
   }
 
   void SaveGraph(std::string folder) const {

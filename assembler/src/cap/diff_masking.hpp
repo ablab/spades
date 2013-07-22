@@ -59,7 +59,9 @@ void MakeSaves(gp_t& gp, ContigStreamsPtr streams, const string& root,
     streams->reset();
 
     ColorHandler<Graph> coloring(gp.g, streams->size());
-    SplitAndColorGraph(gp, coloring, *streams, true);
+    CoordinatesHandler<Graph> coordinates_handler;
+    SplitAndColorGraph(gp, coloring, *streams);
+    FillPositions(gp, *streams, coordinates_handler);
 
     PrintColoredGraphWithColorFilter(gp.g, coloring, gp.edge_pos,
             root + "colored_split_graph.dot");

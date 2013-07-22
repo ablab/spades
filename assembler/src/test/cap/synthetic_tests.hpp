@@ -31,7 +31,9 @@ class SyntheticTestsRunner {
     void ProcessExample(ContigStreamsPtr streams, size_t id) const {
         GraphPackT gp(k_, work_dir_);
         ColorHandler<GraphT> coloring(gp.g);
-        ConstructColoredGraph(gp, coloring, *RCWrapStreams(*streams), /*fill_pos*/false);
+        CoordinatesHandler<GraphT> coordinates_handler;
+
+        ConstructColoredGraph(gp, coloring, coordinates_handler, *RCWrapStreams(*streams));
         Save(gp, coloring, streams, output_dir_ + ToString(id));
     }
 

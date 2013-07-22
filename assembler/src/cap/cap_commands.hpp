@@ -154,9 +154,7 @@ class BuildGraphCommand : public LocalCommand<CapEnvironment> {
            " Sets K for multicolored De Bruijn graph and builds graph from genomes previously added to environment (see `add_genome`)\n"
            " K should be odd.\n"
            "Usage:\n"
-           "> build_graph <k> [<fill_pos>=Y]\n"
-           "Where\n"
-           " <fill_pos> is either Y or N\n";
+           "> build_graph <k>\n";
   }
 
   virtual void Execute(CapEnvironment& curr_env, const ArgumentList& arg_list) const {
@@ -176,15 +174,8 @@ class BuildGraphCommand : public LocalCommand<CapEnvironment> {
       return;
     }
 
-    if (args.size() > 2) {
-      VERIFY(args[2].size());
-      if (args[2][0] == 'N' || args[2][0] == 'n') {
-        fill_pos = false;
-      }
-    }
-
     cout << "Building graph..";
-    curr_env.manager().ConstructGraph(k, fill_pos);
+    curr_env.manager().ConstructGraph(k);
     cout << " Done.\n";
   }
 
