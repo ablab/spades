@@ -1008,7 +1008,7 @@ class BlockPrinter {
 	    if (block_id_.count(e) > 0) {
 	        return make_pair(get(block_id_, e), true);
 	    } else if (block_id_.count(gp_.g.conjugate(e)) > 0) {
-	        return make_pair(get(block_id_, e), false);
+	        return make_pair(get(block_id_, gp_.g.conjugate(e)), false);
 	    } else {
 	        block_id_[e] = curr_id_++;
 	        return make_pair(get(block_id_, e), true);
@@ -1029,11 +1029,12 @@ public:
 	        EdgeId e = genome_path[i].first;
 	        MappingRange range = genome_path[i].second;
 	        auto canon = CanonicalId(e);
-	        output_stream_ << (format("%d\t%d\t%d\t%d\t%s\t%d") %  
-    //        (format("%d") % genome_id).str() ;///%
-	                                     canon.first % range.initial_range.start_pos %
-	                                     range.initial_range.end_pos %
-	                                     ((canon.second) ? "+" : "-") % gp_.g.int_id(e)).str();
+            output_stream_
+                    << (format("%d\t%d\t%d\t%d\t%s\t%d") % genome_id
+                            % canon.first % range.initial_range.start_pos
+                            % range.initial_range.end_pos
+                            % ((canon.second) ? "+" : "-") % gp_.g.int_id(e))
+                            .str();
 //	        if (block_id_.count(e) == 0) {
 //	            block_id_[e] = ToString(curr_id_);
 //	            block_id_[gp_.g.conjugate(e)] = ToString(-curr_id_);
@@ -1043,7 +1044,6 @@ public:
 	}
 
 };
-
 
 //template<class Graph, class Mapper>
 //class ContigBlockStats {

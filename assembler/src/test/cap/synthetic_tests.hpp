@@ -46,6 +46,7 @@ class SyntheticTestsRunner {
         SaveColoring(gp.g, gp.int_ids, coloring, filename);
         PrintColoredGraphWithColorFilter(gp.g, coloring, gp.edge_pos,
                                          filename + ".dot");
+        streams->reset();
         BlockPrinter<GraphPackT> block_printer(gp, filename + ".blk");
         for (size_t i = 0; i < streams->size(); ++i) {
             block_printer.ProcessGenome(i + 1, ReadSequence((*streams)[i]));
