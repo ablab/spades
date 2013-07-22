@@ -18,7 +18,7 @@ typedef debruijn_graph::PosFiller<Graph, MapperClass> FillerClass;
 typedef debruijn_graph::KmerMapper<Graph> KmerMapperClass;
 typedef map<EdgeId, string> ColoringClass;
 
-class Environment {
+class Environment : private boost::noncopyable {
  protected:
   const string name_;
   const string path_;
@@ -43,7 +43,7 @@ class Environment {
   virtual string str() const {
     stringstream ss;
     ss << name_ + " " + path_;
-    return ss.str();   
+    return ss.str();
   }
 
   virtual inline bool IsCorrect() const {

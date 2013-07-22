@@ -392,7 +392,6 @@ class FindInversionsCommand : public LocalCommand<CapEnvironment> {
 
 };
 
-
 class SaveBlocksCommand : public LocalCommand<CapEnvironment> {
  public:
     SaveBlocksCommand() : LocalCommand<CapEnvironment>("save_blocks") {

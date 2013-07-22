@@ -16,7 +16,7 @@ class CapEnvironmentManager;
 class CapEnvironment : public Environment {
   friend class CapEnvironmentManager;
 
- protected:
+ private:
   typedef debruijn_graph::ConjugateDeBruijnGraph Graph;
   typedef Graph::VertexId VertexId;
   typedef Graph::EdgeId EdgeId;
@@ -46,7 +46,7 @@ class CapEnvironment : public Environment {
   std::shared_ptr<LSeqGraphPack> gp_lseq_;
 
   std::shared_ptr<ColorHandler> coloring_;
-  
+
   CoordinatesHandler coordinates_handler_;
 
   // Aliases to GraphPack parts:
@@ -54,7 +54,7 @@ class CapEnvironment : public Environment {
   Graph *graph_;
   EdgesPositionHandler<Graph> *edge_pos_;
 	IdTrackHandler<Graph> *int_ids_;
-  
+
   // Information concerning the default way to write out info about diversities
   std::string event_log_path_;
   // Either "w" or "a", and using the "a" mode during the environment load file
@@ -85,7 +85,7 @@ class CapEnvironment : public Environment {
   void set_gp(const std::shared_ptr<RtSeqGraphPack> &gp_rtseq) {
     gp_rtseq_ = gp_rtseq;
   }
-  
+
  public:
   static const size_t kNoGraphK = -1;
   const std::string kDefaultGPWorkdir;
@@ -170,6 +170,15 @@ class CapEnvironment : public Environment {
   const Graph &graph() const {
     return *graph_;
   }
+
+  RtSeqGraphPack& rt_seq_gp() const {
+      return *gp_rtseq_;
+  }
+
+  LSeqGraphPack& l_seq_gp() const {
+      return *gp_lseq_;
+  }
+
   const EdgesPositionHandler<Graph> &edge_pos() const {
     return *edge_pos_;
   }

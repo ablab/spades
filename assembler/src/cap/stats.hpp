@@ -269,10 +269,12 @@ private:
 	ComponentClassifier<Graph> cc_;
 
 public:
-	ComponentTypeFilter(const Graph &g, component_type to_draw,
-			const ColorHandler<Graph> &coloring) :
-			base(g), to_draw_(to_draw), cc_(g, coloring) {
-	}
+    ComponentTypeFilter(const Graph &g, component_type to_draw,
+                        const ColorHandler<Graph> &coloring)
+            : base(g),
+              to_draw_(to_draw),
+              cc_(g, coloring) {
+    }
 
 	/*virtual*/
 	bool Check(const vector<VertexId>& component) const {
@@ -988,11 +990,14 @@ public:
 //};
 
 //todo fixme use exact coordinates!
-template<class gp_t>
+template<class Graph>
 class BlockPrinter {
-    typedef typename gp_t::graph_t Graph;
+//    typedef typename gp_t::graph_t Graph;
 	typedef typename Graph::EdgeId EdgeId;
-	const gp_t& gp_;
+	typedef typename Graph::VertexId VertexId;
+//	const gp_t& gp_;
+	const Graph& g_;
+	const CoordinatesHandler<Graph>& coords_;
 	ofstream output_stream_;
 	int curr_id_;
 	map<EdgeId, size_t> block_id_;
@@ -1007,8 +1012,8 @@ class BlockPrinter {
 
 	    if (block_id_.count(e) > 0) {
 	        return make_pair(get(block_id_, e), true);
-	    } else if (block_id_.count(gp_.g.conjugate(e)) > 0) {
-	        return make_pair(get(block_id_, gp_.g.conjugate(e)), false);
+	    } else if (block_id_.count(g_.conjugate(e)) > 0) {
+	        return make_pair(get(block_id_, g_.conjugate(e)), false);
 	    } else {
 	        block_id_[e] = curr_id_++;
 	        return make_pair(get(block_id_, e), true);
@@ -1017,29 +1022,38 @@ class BlockPrinter {
 
 public:
 
-	BlockPrinter(const gp_t& gp, const string& filename) :
-			gp_(gp), output_stream_(filename) , curr_id_(1) {
-	    output_stream_ << "genome_id\tcanonical_id\tstart_pos\tend_pos\tsign\torig_id";
+	BlockPrinter(/*const gp_t& gp, */const Graph& g, const CoordinatesHandler<Graph>& coords, const string& filename) :
+			g_(g), coords_(coords), output_stream_(filename) , curr_id_(1) {
+        output_stream_
+                << "genome_id\tcanonical_id\tgenome_start_pos\tgenome_end_pos"
+                << "\trefined_start_pos\trefined_end_pos\tsign\torig_id";
 	}
 
 	//genome is supposed to perfectly correspond to some path in the graph
-	void ProcessGenome(size_t genome_id, const Sequence& genome) {
-	    MappingPath<EdgeId> genome_path = MapperInstance(gp_)->MapSequence(genome);
-	    for (size_t i = 0; i < genome_path.size(); ++i) {
-	        EdgeId e = genome_path[i].first;
-	        MappingRange range = genome_path[i].second;
+	void ProcessGenome(size_t genome_id) {
+	    VertexId v = g_.EdgeEnd(coords_.FindGenomeFirstEdge(genome_id));
+	    size_t genome_pos = 0;
+	    size_t graph_pos = 0;
+
+	    while (genome_pos != -1u) {
+	        auto step = coords_.StepForward(v, genome_id, genome_pos);
+	        EdgeId e = step.first;
+
 	        auto canon = CanonicalId(e);
             output_stream_
-                    << (format("%d\t%d\t%d\t%d\t%s\t%d") % genome_id
-                            % canon.first % range.initial_range.start_pos
-                            % range.initial_range.end_pos
-                            % ((canon.second) ? "+" : "-") % gp_.g.int_id(e))
+                    << (format("%d\t%d\t%d\t%d\t%d\t%d\t%s\t%d")
+                            % genome_id
+                            % canon.first
+                            % coords_.GetOriginalPos(genome_id, graph_pos)
+                            % coords_.GetOriginalPos(genome_id, graph_pos + g_.length(e))
+                            % graph_pos
+                            % graph_pos + g_.length(e)
+                            % (canon.second ? "+" : "-") % g_.int_id(e))
                             .str();
-//	        if (block_id_.count(e) == 0) {
-//	            block_id_[e] = ToString(curr_id_);
-//	            block_id_[gp_.g.conjugate(e)] = ToString(-curr_id_);
-//	            curr_id_++;
-//	        }
+
+	        graph_pos = graph_pos + g_.length(e);
+	        v = g_.EdgeEnd(e);
+	        genome_pos = step.second;
 	    }
 	}
 
