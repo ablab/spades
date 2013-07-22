@@ -285,7 +285,7 @@ namespace debruijn_graph {
 		}
 	
 
-		void SetBucketsForDistanceFromFile3D ( int distance, int genome_size, vector<vector<vector<int>>>& histogram ) const {
+		void SetBucketsForDistanceFromFile3D ( int distance, int genome_size, vector<vector<vector<int>>>& histogram ) {
 
 			for (int i = 0; i < genome_size - 2* distance; ++i ) {
 				auto position_i_bucket_id = GetCoverageBucket(position_to_coverage_[i]);
@@ -299,7 +299,7 @@ namespace debruijn_graph {
 		}
 
 
-		void SetBucketsForDistanceFromFile ( bucket_id id, int distance, int genome_size, std::vector<int>& histogram ) const {
+		void SetBucketsForDistanceFromFile ( bucket_id id, int distance, int genome_size, std::vector<int>& histogram ) {
 
 			for (int i = 0; i < genome_size - distance; ++i ) {
 				auto position_i_bucket_id = GetCoverageBucket(position_to_coverage_[i]);
@@ -311,7 +311,7 @@ namespace debruijn_graph {
 		}
 
 
-		double CheckChiSquareForGenomePositions( unsigned id, int distance, int genome_size ) const {
+		double CheckChiSquareForGenomePositions( unsigned id, int distance, int genome_size ) {
 		
 			vector<double> counter_ij(number_of_buckets_, 0);
 			vector<double> counter_jk(number_of_buckets_, 0);
