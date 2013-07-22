@@ -487,42 +487,6 @@ protected:
         }
     }
 
-    void RemoveSubpaths(PathContainer& usedPaths) {
-        for (size_t i = 0; i < usedPaths.size(); ++i) {
-            if (coverageMap_.GetUniqueCoverage(*usedPaths.Get(i)) > 1) {
-
-                size_t seedId = usedPaths.Get(i)->GetId();
-                size_t seedConjId = usedPaths.GetConjugate(i)->GetId();
-
-                std::set<BidirectionalPath*> coveringPaths = coverageMap_.GetCoveringPaths(*(usedPaths.Get(i)));
-                for (auto iter = coveringPaths.begin(); iter != coveringPaths.end(); ++iter) {
-
-                    if ((*iter)->GetId() == seedId) {
-                        bool otherSeedFound = false;
-                        for (auto it = coveringPaths.begin(); it != coveringPaths.end(); ++it) {
-                            if ((*it)->GetId() != seedId && (*it)->GetId() != seedConjId) {
-                                otherSeedFound = true;
-                                if ((*it)->Length() < (*iter)->Length()) {
-                                    DEBUG("Covering path is shorter than the original seed path; seed path is to be removed");
-                                }
-                                if (!(*it)->Contains(**iter)) {
-                                    DEBUG("Not subpaths");
-                                    DEBUG((*iter)->Length() << " " << (*it)->Length());
-                                    (*iter)->Print();
-                                    (*it)->Print();
-                                }
-                            }
-                        }
-
-                        if (otherSeedFound) {
-                            (*iter)->Clear();
-                        }
-                    }
-                }
-            }
-        }
-    }
-
 public:
 
     CoveringPathExtender(const Graph& g_, size_t max_loops, bool investigateShortLoops): LoopDetectingPathExtender(g_, max_loops, investigateShortLoops), coverageMap_(g_) {
@@ -535,7 +499,6 @@ public:
 
         for (size_t i = 0; i < paths.size() && !AllPathsCovered(paths); i ++) {
 		    GrowAll(paths, usedPaths, result);
-		    //RemoveSubpaths(usedPaths);
         }
 
         LengthPathFilter filter(g_, 0);
