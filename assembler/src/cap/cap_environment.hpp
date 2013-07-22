@@ -5,6 +5,7 @@
 #include "coloring.hpp"
 #include "coordinates_handler.hpp"
 #include "test_utils.hpp"
+#include "serialization.hpp"
 
 namespace online_visualization {
 
@@ -111,6 +112,34 @@ class CapEnvironment : public Environment {
         manager_(std::make_shared<CapEnvironmentManager>(this)),
         kDefaultGPWorkdir("./tmp") {
     cap::utils::MakeDirPath(dir_);
+  }
+
+  void WriteToStream(std::ostream out) const {
+    cap::Serializer s(out);
+
+    s.WriteLine("name", name_);
+    s.WriteLine("dir", dir_);
+    s.WriteLine("description", description_);
+    s.WriteLine("k_history", k_history_);
+    s.WriteLine("num_genomes_history", num_genomes_history_);
+    s.WriteLine("init_genomes_paths", init_genomes_paths_);
+    s.WriteLine("genomes_names", genomes_names_);
+    // TODO coordinates
+  }
+
+  void ReadFromStream(std::istream in) {
+    cap::Deserializer s(in);
+
+    s.ReadStream();
+
+    s.ReadValue("name", name_);
+    s.ReadValue("dir", dir_);
+    s.ReadValue("description", description_);
+    s.ReadValue("k_history", k_history_);
+    s.ReadValue("num_genomes_history", num_genomes_history_);
+    s.ReadValue("init_genomes_paths", init_genomes_paths_);
+    s.ReadValue("genomes_names", genomes_names_);
+    // TODO coordinates
   }
 
   void CheckConsistency() const {

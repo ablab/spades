@@ -222,7 +222,9 @@ public:
 		PrepareDirs(output_folder, detailed_output);
         vector<ContigStream*> stream_vec = { &stream1_, &stream2_ };
 		ContigStreams streams(stream_vec, false);
-		ConstructColoredGraph<gp_t>(gp_, coloring_, streams);
+
+    CoordinatesHandler<Graph> coordinates_handler;
+		ConstructColoredGraph<gp_t>(gp_, coloring_, coordinates_handler, streams);
 
 		if (gp_.genome.size() > 0) {
 			INFO("Filling ref pos " << gp_.genome.size());
@@ -498,6 +500,7 @@ void RunMultipleGenomesVisualization(size_t k_visualize,
 
 	gp_t gp(k_visualize, "tmp", Sequence(), 200, true);
 	ColorHandler<Graph> coloring(gp.g, genomes_paths.size());
+  CoordinatesHandler<Graph> coordinates_handler;
 
 	// ContigStream -> SplittingWrapper -> RCReaderWrapper -> PrefixAddingReaderWrapper
 
@@ -508,7 +511,7 @@ void RunMultipleGenomesVisualization(size_t k_visualize,
 
   ContigStreamsPtr rc_wrapped = RCWrapStreams(streams);
 
-  ConstructColoredGraph(gp, coloring, *rc_wrapped, true);
+  ConstructColoredGraph(gp, coloring, coordinates_handler, *rc_wrapped);
 
 	ofstream indel_event_logger(output_folder + "/indel_events");
 

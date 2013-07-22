@@ -321,7 +321,7 @@ class GenomePathsFinder {
   typedef typename Graph::VertexId VertexId;
   typedef typename Graph::EdgeId EdgeId;
   typedef std::vector<EdgeId> Path;
-  typedef CoordinatesHandler<Graph>::PosArray PosArray;
+  typedef typename CoordinatesHandler<Graph>::PosArray PosArray;
   
   GenomePathsFinder(const Graph &g, const CoordinatesHandler<Graph> &crd)
       : g_(g),

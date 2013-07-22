@@ -39,6 +39,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
   typedef std::vector<EdgeId> Path;
   typedef unsigned uint;
   typedef std::vector<std::pair<uint, size_t> > PosArray;
+  typedef std::vector<std::pair<uint, Range> > RangeArray;
 
   CoordinatesHandler()
       : base("CoordinatesHandler"),
@@ -410,8 +411,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
   void StoreGenomeThread(const uint genome_id, Thread &thread);
 
   EdgeId FindGenomeFirstEdge(const uint genome_id) const;
-
-  PosArray PopAndUpdateRangesToCopy(const EdgeId edge,
+  RangeArray PopAndUpdateRangesToCopy(const EdgeId edge,
       PosArray &delete_positions);
 
   bool CheckContiguousPath(const Path &path) const;
@@ -497,7 +497,7 @@ void CoordinatesHandler<Graph>::ProjectPath(const Path &from, const Path &to,
   for (auto &edge1 : p1) {
     size_t cur_1_edge_len = g_->length(edge1);
 
-    PosArray genome_ranges_to_copy =
+    RangeArray genome_ranges_to_copy =
       PopAndUpdateRangesToCopy(edge1, cur_delete_positions);
     //VERIFY(genome_ranges_to_copy.size() == threads_to_delete.size());
 
@@ -561,7 +561,7 @@ void CoordinatesHandler<Graph>::ProjectPath(
 }
 
 template <class Graph>
-typename CoordinatesHandler<Graph>::PosArray
+typename CoordinatesHandler<Graph>::RangeArray
 CoordinatesHandler<Graph>::PopAndUpdateRangesToCopy(
     const EdgeId edge,
     PosArray &delete_positions) {
@@ -572,7 +572,7 @@ CoordinatesHandler<Graph>::PopAndUpdateRangesToCopy(
   VERIFY(edge_data_it != edge_ranges_.end());
   auto &edge_data = edge_data_it->second;
 
-  PosArray genome_ranges_to_copy;
+  RangeArray genome_ranges_to_copy;
   for (auto &del_pos : delete_positions) {
     if (edge_data.HasForwardLink(del_pos)) {
       const Range range_to_copy(del_pos.second,
