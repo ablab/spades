@@ -29,7 +29,7 @@
 #include "io/vector_reader.hpp"
 #include "io/multifile_reader.hpp"
 #include "io/rc_reader_wrapper.hpp"
-#include "io/ofastastream.hpp"
+#include "io/osequencestream.hpp"
 
 namespace cap {
 typedef io::SingleRead Contig;

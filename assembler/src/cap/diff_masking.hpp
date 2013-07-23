@@ -36,8 +36,9 @@ inline void SaveAll(ContigStreamsPtr streams, const vector<string>& suffixes,
     for (size_t i = 0; i < streams->size(); ++i) {
         if (!suffixes[i].empty()) {
             string output_filename = out_root + suffixes[i];
-            io::RCRemovingOFastaStream/*io::ofastastream*/ out_stream(output_filename);
-            Transfer((*streams)[i], out_stream);
+            io::RCRemovingWrapper<Contig> wrapper((*streams)[i]);
+            io::osequencestream ostream(output_filename);
+            Transfer(wrapper, ostream);
         }
     }
 }

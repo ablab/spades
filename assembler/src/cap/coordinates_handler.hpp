@@ -205,7 +205,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
   virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge_1,
                                             EdgeId new_edge_2);
 
-  EdgeId FindGenomeFirstEdge(const uchar genome_id) const;
+  EdgeId FindGenomeFirstEdge(const uint genome_id) const;
 
   // First range is graph range, second is original sequence range
   std::vector<std::pair<uint, std::pair<Range, Range> > > GetRanges(
@@ -268,7 +268,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
         return make_pair(e, GetForwardPos(e, genome_id, pos));
       }
     }
-    return -1u;
+    return make_pair(EdgeId(0), -1u);
   }
 
   pair<EdgeId, size_t> StepForwardPos(const EdgeId last_edge, const uchar genome_id,
@@ -409,7 +409,6 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
 
   void StoreGenomeThread(const uint genome_id, Thread &thread);
 
-  EdgeId FindGenomeFirstEdge(const uint genome_id) const;
   RangeArray PopAndUpdateRangesToCopy(const EdgeId edge,
       PosArray &delete_positions);
 
@@ -702,6 +701,7 @@ void CoordinatesHandler<Graph>::StoreGenomeThread(
 template <class Graph>
 typename CoordinatesHandler<Graph>::EdgeId
 CoordinatesHandler<Graph>::FindGenomeFirstEdge(const uint genome_id) const {
+    cout << "id " << genome_id << endl;
   std::pair<uint, size_t> pos_in_question(genome_id, 0);
 
   for (auto it = g_->SmartEdgeBegin(); !it.IsEnd(); ++it) {
@@ -721,6 +721,7 @@ CoordinatesHandler<Graph>::FindGenomeFirstEdge(const uint genome_id) const {
 template <class Graph>
 size_t CoordinatesHandler<Graph>::GetOriginalPos(
     const uint genome_id, const size_t new_pos) const {
+
   // No refinement has been done
   if (stored_threading_history_.size() == 0)
     return new_pos;

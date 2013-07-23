@@ -992,10 +992,8 @@ public:
 //todo fixme use exact coordinates!
 template<class Graph>
 class BlockPrinter {
-//    typedef typename gp_t::graph_t Graph;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-//	const gp_t& gp_;
 	const Graph& g_;
 	const CoordinatesHandler<Graph>& coords_;
 	ofstream output_stream_;
@@ -1022,33 +1020,41 @@ class BlockPrinter {
 
 public:
 
-	BlockPrinter(/*const gp_t& gp, */const Graph& g, const CoordinatesHandler<Graph>& coords, const string& filename) :
+	BlockPrinter(const Graph& g, const CoordinatesHandler<Graph>& coords, const string& filename) :
 			g_(g), coords_(coords), output_stream_(filename) , curr_id_(1) {
         output_stream_
-                << "genome_id\tcanonical_id\tgenome_start_pos\tgenome_end_pos"
+                << "genome_id\tcontig_name\tcanonical_id\tcontig_start_pos\tcontig_end_pos"
                 << "\trefined_start_pos\trefined_end_pos\tsign\torig_id";
 	}
 
 	//genome is supposed to perfectly correspond to some path in the graph
-	void ProcessGenome(size_t genome_id) {
-	    VertexId v = g_.EdgeEnd(coords_.FindGenomeFirstEdge(genome_id));
+	void ProcessContig(size_t genome_id, size_t transparent_id, const string& contig_name) {
+	    INFO("Processing contig " << transparent_id << " name " << contig_name);
+	    VertexId v = g_.EdgeStart(coords_.FindGenomeFirstEdge(transparent_id));
+	    cout << "here" << endl;
 	    size_t genome_pos = 0;
 	    size_t graph_pos = 0;
 
-	    while (genome_pos != -1u) {
-	        auto step = coords_.StepForward(v, genome_id, genome_pos);
+	    while (true) {
+	        auto step = coords_.StepForward(v, transparent_id, genome_pos);
+	        if (step.second == -1u)
+	            break;
+
 	        EdgeId e = step.first;
 
 	        auto canon = CanonicalId(e);
+
             output_stream_
-                    << (format("%d\t%d\t%d\t%d\t%d\t%d\t%s\t%d")
+                    << (format("%d\t%s\t%d\t%d\t%d\t%d\t%d\t%s\t%d")
                             % genome_id
+                            % contig_name
                             % canon.first
-                            % coords_.GetOriginalPos(genome_id, graph_pos)
-                            % coords_.GetOriginalPos(genome_id, graph_pos + g_.length(e))
+                            % coords_.GetOriginalPos(transparent_id, graph_pos)
+                            % coords_.GetOriginalPos(transparent_id, graph_pos + g_.length(e))
                             % graph_pos
-                            % graph_pos + g_.length(e)
-                            % (canon.second ? "+" : "-") % g_.int_id(e))
+                            % (graph_pos + g_.length(e))
+                            % (canon.second ? "+" : "-")
+                            % g_.int_id(e))
                             .str();
 
 	        graph_pos = graph_pos + g_.length(e);
@@ -1057,6 +1063,8 @@ public:
 	    }
 	}
 
+private:
+	DECL_LOGGER("BlockPrinter");
 };
 
 //template<class Graph, class Mapper>

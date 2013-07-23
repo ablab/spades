@@ -105,7 +105,7 @@ class CapEnvironmentManager {
       std::string output_filename = dir + path::filename(env_->init_genomes_paths_[i]);
 			if (!output_filename.empty()) {
 				Contig contig;
-				io::ofastastream out_stream(output_filename);
+				io::osequencestream out_stream(output_filename);
 				DEBUG("Saving to " << output_filename);
 
         io::SequenceReader<io::SingleRead> stream(*env_->genomes_[i], env_->genomes_names_[i]);

@@ -29,6 +29,7 @@
 
 #include "ireader.hpp"
 #include "read_stream_vector.hpp"
+#include "delegating_reader_wrapper.hpp"
 
 namespace io {
 
@@ -287,6 +288,26 @@ private:
     explicit OrientationReaderWrapper(const OrientationReaderWrapper<ReadType>& reader);
 
     void operator=(const OrientationReaderWrapper<ReadType>& reader);
+};
+
+template<typename ReadType>
+class RCRemovingWrapper: public DelegatingReaderWrapper<ReadType> {
+    typedef DelegatingReaderWrapper<ReadType> base;
+public:
+
+    explicit RCRemovingWrapper(IReader<ReadType>& reader) : base(reader) {
+    }
+
+    RCRemovingWrapper& operator>>(ReadType& read) {
+        base::operator>>(read);
+
+        VERIFY(!this->eof());
+        ReadType skip;
+        base::operator>>(skip);
+
+        return *this;
+    }
+
 };
 
 

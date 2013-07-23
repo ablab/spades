@@ -94,7 +94,6 @@ std::string GetMD5CommandString() {
 
   FILE *output;
   char buf[40];
-  
   output = popen("echo a | md5sum 2> /dev/null", "r");
   fscanf(output, "%s", buf);
   if (strcmp(buf, "60b725f10c9c85c70d97880dfe8191b3") == 0) {
