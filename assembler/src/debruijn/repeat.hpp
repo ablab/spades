@@ -50,9 +50,61 @@ namespace debruijn_graph {
 		vector<EdgeId> component_;
 		const double repeat_length_upper_threshold_;
 		const map<EdgeId, kind_of_repeat> edge_to_kind_;
+		FILE* file;
 
+
+
+		template <class EdgesPositionHandlerT> 
+		bool match( const vector<EdgeId> &path, const unsigned current_id, const unsigned current_start,
+			EdgesPositionHandlerT& ref_pos) {
+			if (path.size() == current_id ){
+				return true;
+			}
+			EdgeId edge = path[current_id];
+			auto pos_it = ref_pos.edges_positions().find(edge);
+			if ( current_id == path.size() - 1 && pos_it->second.size() > 1 ){
+				return false;
+			}
+			bool matched = false;
+			for (size_t i = 0; i < pos_it->second.size(); ++i) {
+				auto start = pos_it->second[i].start();
+				if ( fabs(start - current_start) < 2 ) {
+					auto end = pos_it->second[i].end();
+					matched = match( path, current_id + 1, end + 1, ref_pos);
+				}
+			}
+			return matched;
+		}
+
+		bool MatchReference( const vector<EdgeId>& path) {
+			auto ref_pos = gp_.edge_pos;
+			EdgeId edge = path[0];
+			auto pos_it = ref_pos.edges_positions().find(edge);
+			if ( pos_it->second.size() == 1 ){
+				auto next_start = pos_it->second[0].end();
+				return match( path, 1, next_start + 1, ref_pos );
+			}
+			return false;
+		}
+
+		bool IfContainsLinearlyDependentRows(const vector<vector<double>>& transition_probabilities ) const {
+			for (unsigned i = 0; i < transition_probabilities.size() - 1; ++i) {
+				bool dependent = true;
+				for (unsigned k = i+1; k < transition_probabilities.size(); ++k) 
+					for (unsigned j = 0; j < transition_probabilities.size(); ++j) {
+						if (fabs(transition_probabilities[i][j] - transition_probabilities[k][j]) > 0.001) { 
+							dependent = false;
+							break;
+						}
+					}
+				if (dependent) return true;
+			}
+			return false;
+		}
 	
 		void ChoosePairsGreedy(vector<vector<double>>& transition_probabilities, vector<pair<EdgeId,EdgeId>>& pairs_of_edges, double match_quality_threshold) {
+			if (IfContainsLinearlyDependentRows (transition_probabilities)) 
+				return;
 			unsigned counter(0);
 			while (counter < transition_probabilities.size()) {
 				int max_id_i(0), max_id_j(0);
@@ -65,7 +117,7 @@ namespace debruijn_graph {
 						hide(transition_probabilities, max_id_i, max_id_j);
 						if (max_val > match_quality_threshold) {
 							pairs_of_edges.push_back(make_pair(incoming_edges_[max_id_i], outgoing_edges_[max_id_j]));
-							INFO("pair: " << max_id_i << " " << max_id_j << " " << max_val);
+							fprintf(file,"pair: %d %d %5.4f\n", max_id_i, max_id_j, max_val);
 						}
 					}
 				}
@@ -112,14 +164,15 @@ namespace debruijn_graph {
 	
 		public:
 		explicit Repeat(const graph_pack& gp, const vector<EdgeId>& incoming_edges, const vector<EdgeId>& outgoing_edges, const vector<EdgeId>& component, double repeat_length_upper_threshold,
-				const map<EdgeId, kind_of_repeat>& edge_to_kind) : gp_(gp),
+				const map<EdgeId, kind_of_repeat>& edge_to_kind, FILE* out_file) : gp_(gp),
 										incoming_edges_(incoming_edges),
 										outgoing_edges_(outgoing_edges),
 										component_(component), 
 										repeat_length_upper_threshold_(repeat_length_upper_threshold),
-										edge_to_kind_(edge_to_kind) {}
+										edge_to_kind_(edge_to_kind),
+										file(out_file) {}
 
-			        
+			      
 
 		bool IfContainsOnlyGenomicEdges( const EdgeQuality<typename graph_pack::graph_t>& quality_labeler ) const {
 			for (auto iter = component_.begin(); iter != component_.end(); ++iter) {
@@ -156,45 +209,43 @@ namespace debruijn_graph {
 
 		template <class DetailedCoverage>
 		void GetComponentInfo(const DetailedCoverage& coverage, const vector< vector <double> >& transition_probabilities, const EdgeQuality<typename graph_pack::graph_t>& quality_labeler ) const  {
-			INFO("Component: ");
+			fprintf(file,"Component: \n");
 			for ( auto iter = component_.begin(); iter != component_.end(); ++iter ) {
-				INFO( gp_.g.int_id(*iter)  << " edge length: " << gp_.g.length(*iter) <<  " average edge coverage " 
-					<< gp_.g.coverage(*iter) << " quality: " << quality_labeler.quality(*iter) << " ");
+				fprintf(file,"%lu edge length: %lu average edge coverage %5.4f quality: %5.2f",gp_.g.int_id(*iter), gp_.g.length(*iter), gp_.g.coverage(*iter),
+					quality_labeler.quality(*iter));
 				auto repeat_type = edge_to_kind_.find(*iter);
 				VERIFY(repeat_type != edge_to_kind_.end()); 
 				if ( repeat_type->second == TOPOLOGY){
-					INFO("TOPOLOGY");
+					fprintf(file,"TOPOLOGY\n");
 				}
 				else if  (repeat_type->second == LENGTH ){
-					INFO("LENGTH");
+					fprintf(file,"LENGTH\n");
 				}
 				else if (repeat_type->second == PAIREDINFO ){
-					INFO("PAIREDINFO");
+					fprintf(file,"PAIREDINFO\n");
 				}
 			 }
-			INFO("\n");
-			INFO("incoming edges: ");
+			fprintf(file, "incoming edges:\n");
 			for ( auto iter = incoming_edges_.begin(); iter != incoming_edges_.end(); ++iter ) {
-			 	INFO(gp_.g.int_id(*iter)  << " edge length: " << gp_.g.length(*iter) << " outgoing edge coverage: " << coverage.GetOutCov(*iter) << 
-					" average edge coverage " << gp_.g.coverage(*iter) << " quality: " << quality_labeler.quality(*iter));
+			 	fprintf(file, "%lu edge length: %lu outgoing edge coverage: %5.4f average edge coverage %5.4f quality: %5.2f\n", gp_.g.int_id(*iter), gp_.g.length(*iter), 
+					coverage.GetOutCov(*iter), gp_.g.coverage(*iter), quality_labeler.quality(*iter));
 			}
-			INFO("\n");
-			INFO("outgoing edges: ");
+			fprintf(file,"outgoing edges: \n");
 			for ( auto iter = outgoing_edges_.begin(); iter != outgoing_edges_.end(); ++iter ) {
-				INFO(gp_.g.int_id(*iter)  << " edge length: " << gp_.g.length(*iter) << " incoming edge coverage: " << coverage.GetInCov(*iter) <<
-					" average edge coverage " << gp_.g.coverage(*iter) << " quality: " << quality_labeler.quality(*iter));
+			 	fprintf(file, "%lu edge length: %lu incoming edge coverage: %5.4f average edge coverage %5.4f quality: %5.2f\n", gp_.g.int_id(*iter), gp_.g.length(*iter), 
+					coverage.GetInCov(*iter), gp_.g.coverage(*iter), quality_labeler.quality(*iter));
 			}
 			bool correct_component = IfRepeatByQuality( quality_labeler  );
 			if (!correct_component) {
-				INFO("repeat is detected incorrectly");
+				fprintf(file,"repeat is detected incorrectly\n");
 			}
 			if (transition_probabilities.size() > 0) {
-			 	INFO("transition probabilities:\n");
+			 	fprintf(file,"transition probabilities:\n");
 				for (auto vec = transition_probabilities.begin(); vec != transition_probabilities.end(); ++vec ) {
 					for ( auto prob = vec->begin(); prob != vec->end(); ++prob ) {
-						INFO(*prob << " ");
+						fprintf(file,"%5.4f ",*prob);
 					}
-					INFO("\n");
+					fprintf(file,"\n");
 				}
 			}
 				
@@ -265,6 +316,8 @@ namespace debruijn_graph {
 				dfs(gp_.g.EdgeEnd(in_edge), gp_.g.EdgeStart(out_edge), visited, path);
 				path.insert(path.begin(),in_edge);
 				path.push_back(out_edge);
+				if (MatchReference(path)) { fprintf(file,"match!\n"); }
+				else {fprintf(file,"does not match!\n");}
 				resolved_paths.push_back(path);
 			}
 
@@ -295,7 +348,7 @@ namespace debruijn_graph {
 				}
 			}
 			GetComponentInfo(coverage, transition_probabilities, quality_labeler );
-			double match_quality_threshold = 0.05;
+			double match_quality_threshold = 0.1;
 			ChoosePairsGreedy(transition_probabilities, pairs_of_edges, match_quality_threshold);
 			if (pairs_of_edges.size() > 0) {
 				SetPaths(pairs_of_edges, resolved_paths);

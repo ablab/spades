@@ -46,6 +46,7 @@ class CoverageBasedResolution {
 	
 	private:
 
+
 	bool IfRepeatByPairedInfo( const EdgeId& edge, PairedInfoIndexT<Graph>& clustered_index ) const {
 		io::SequencingLibrary<debruijn_config::DataSetData> lib;
 		auto improver = PairInfoImprover<Graph>(gp_.g, clustered_index,lib);
@@ -105,7 +106,7 @@ class CoverageBasedResolution {
 		}
 	}
 
-	void dfs( const VertexId& vStart, const VertexId& vEnd, const vector<EdgeId>& component,
+/*	void dfs( const VertexId& vStart, const VertexId& vEnd, const vector<EdgeId>& component,
 		set<EdgeId>& visited,  path_extend::BidirectionalPath& path) const {
 		for ( auto edge = component.begin(); edge != component.end(); ++edge ){
 			if (visited.find(*edge) != visited.end()){
@@ -125,7 +126,7 @@ class CoverageBasedResolution {
 		}
 		return;
 	}
-
+*/
 	void visit( const EdgeId& edge, set<EdgeId>& visited_edges, set<VertexId>& grey_vertices, 
 		vector<EdgeId>& path, const vector<EdgeId>& components, 
 		const vector<EdgeId>& singles, vector<EdgeId>& incoming_edges, vector<EdgeId>& outgoing_edges, bool& if_loop ) const {
@@ -283,19 +284,19 @@ class CoverageBasedResolution {
 		INFO("Processing graph...");
 		TraverseComponents( components, singles, coverage, insert_size, resolved_paths );
 		set<EdgeId> used_edges;
-		DEBUG("Paths before joining:\n");
+		INFO("Paths before joining:\n");
 		for ( auto p = resolved_paths.begin(); p != resolved_paths.end(); ++p) {
 			for ( auto iter = p->begin(); iter != p->end(); ++iter ) {
-				DEBUG(gp_.g.int_id(*iter) << " (" << gp_.g.int_id(gp_.g.EdgeStart(*iter) ) << "," << gp_.g.int_id(gp_.g.EdgeEnd(*iter) ) << ") ");
+				INFO(gp_.g.int_id(*iter) << " (" << gp_.g.int_id(gp_.g.EdgeStart(*iter) ) << "," << gp_.g.int_id(gp_.g.EdgeEnd(*iter) ) << ") ");
 			}
-			DEBUG("\n");
+			INFO("\n");
 		}
-		DEBUG("Loops before joining:\n");
+		INFO("Loops before joining:\n");
 		for ( auto p = filter.resolved_loops().begin(); p != filter.resolved_loops().end(); ++p) {
 			for ( auto iter = p->begin(); iter != p->end(); ++iter ) {
-				DEBUG(gp_.g.int_id(*iter) << "( " << gp_.g.length(*iter) << ") ");
+			INFO(gp_.g.int_id(*iter) << "( " << gp_.g.length(*iter) << ") ");
 			}
-			DEBUG("\n");
+			INFO("\n");
 		}
 		vector< vector<EdgeId> > all_paths;
 		JoinPaths(resolved_paths, filter.resolved_loops(), all_paths);
@@ -306,13 +307,14 @@ class CoverageBasedResolution {
 			}
 			DEBUG("\n");
 		}
-		DEBUG("-------------------------\n");
+/*		INFO("-------------------------\n");
 		for ( auto p = filtered_paths.begin(); p != filtered_paths.end(); ++p) {
 			for ( auto iter = p->getPath().begin(); iter != p->getPath().end(); ++iter ) {
-				DEBUG(gp_.g.int_id(*iter) << "( " << gp_.g.length(*iter) << "; " << coverage.GetInCov(*iter) << " " << coverage.GetOutCov(*iter) << ") ");
+				INFO(gp_.g.int_id(*iter) << "( " << gp_.g.length(*iter) << "; " << coverage.GetInCov(*iter) << " " << coverage.GetOutCov(*iter) << ") ");
 			}
-			DEBUG("\n");
+			INFO("\n");
 		}
+	*/
 		path_extend::PathContainer paths_output;
 		for ( auto p = filtered_paths.begin(); p != filtered_paths.end(); ++p) {
 			path_extend::BidirectionalPath* bidirectional_path = new path_extend::BidirectionalPath( gp_.g );
@@ -433,14 +435,13 @@ class CoverageBasedResolution {
 			}
 			
 		}
-		DEBUG("Number of edges identified by paired info: " << byPairedInfo << "\n");
-		DEBUG("Number of edges identified by topology: " << byTopology <<"\n");
-		DEBUG("Number of edges identified by topology confirmed by paired info: " << confirmedByPairedInfo << "\n");
+		DEBUG("Number of edges identified by paired info: " << byPairedInfo);
+		DEBUG("Number of edges identified by topology: " << byTopology);
+		DEBUG("Number of edges identified by topology confirmed by paired info: " << confirmedByPairedInfo);
 		DEBUG("SINGLES: ");
 		for (auto sit = singles.begin(); sit != singles.end(); ++sit){
 			DEBUG(gp_.g.int_id(*sit) << ", ");
 		}
-		DEBUG("\n");
 		DEBUG("COMPONENTS: ");
 		for (auto cit = components.begin(); cit != components.end(); ++cit){
 			DEBUG(gp_.g.int_id(*cit) << ", ");
@@ -548,6 +549,7 @@ class CoverageBasedResolution {
 
 		set<EdgeId> visited_edges;
 		DEBUG("Traversing components");
+		FILE *file = fopen((cfg::get().output_dir+"repeats.log").c_str(), "w");
 		//FILE* file = fopen("/home/ksenia/path_resolved.log", "w");
 		//FILE* file = fopen("/home/ksenia/probabilities_22.log", "w");
         	int number_of_buckets = 20;
@@ -564,7 +566,7 @@ class CoverageBasedResolution {
 			set<VertexId> component_vertices;
 			bool if_loop = false;
 			visit(*edge, visited_edges, component_vertices, path, components, singles, incoming_edges, outgoing_edges, if_loop);
-			Repeat<graph_pack> repeat(gp_, incoming_edges, outgoing_edges, path, repeat_length_upper_threshold_, edge_to_kind_);
+			Repeat<graph_pack> repeat(gp_, incoming_edges, outgoing_edges, path, repeat_length_upper_threshold_, edge_to_kind_,file);
 			vector<vector <double>> transition_probabilities ;
 			if (if_loop) {
 				if (incoming_edges.size() == 1 && incoming_edges.size() == outgoing_edges.size() )
@@ -588,16 +590,17 @@ class CoverageBasedResolution {
 			if (incoming_edges.size() != outgoing_edges.size()){
 				continue;
 			}
-			set<vector<EdgeId>> resolved_paths;
+			//vector<vector<EdgeId>> resolved_paths;
 			repeat.Resolve(bm, coverage, quality_labeler_, resolved_paths);
-
 		}
 		
 		DEBUG( "pure tandems: " << pure_tandem << "\nrepeats + tandems: " << repetitive_tandem << "\nordinal repeats: " << ordinal_repeat << "\n");
-		//fclose(file);
+		fclose(file);
 
 	}
 
+	//private:
+	//DECL_LOGGER("CoverageBasedRR");
 /*
 	// verify if the sequence of edges is genomic path
 	bool MatchReference( const path_extend::BidirectionalPath& path) {
