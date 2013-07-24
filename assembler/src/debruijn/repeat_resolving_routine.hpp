@@ -1047,6 +1047,7 @@ void split_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
 void AddSingleLibrary(
         conj_graph_pack& gp,
         const io::SequencingLibrary<debruijn_config::DataSetData>& reads,
+        const std::string outout_dir,
         vector<PathStorageInfo<Graph> >& long_reads_libs) {
     DEBUG("Mapping single reads from library");
     path_extend::SimpleLongReadMapper read_mapper(gp);
@@ -1054,6 +1055,9 @@ void AddSingleLibrary(
     streams->release();
     io::MultifileReader<io::SingleReadSeq> stream(streams->get(), true);
     PathStorage<Graph> long_single(gp.g);
+    //long_single.LoadFromFile("/Johnny/vasilinetc/path-extend/path_extend_4_exp/M_abscessus/single/K55/07.23_11.39.13/long_reads_paths.mpr");
+    long_single.DumpToFile(cfg::get().output_dir + "long_reads_paths.mpr",
+                                   gp.edge_pos);
     read_mapper.ProcessSingleReadLibrary(reads, long_single);
     //read_mapper.ProcessLib(stream, long_single);
     vector<PathInfo<Graph> > long_paths = long_single.GetAllPaths();
@@ -1061,10 +1065,6 @@ void AddSingleLibrary(
             long_paths, cfg::get().pe_params.long_reads.single_reads.filtering,
             cfg::get().pe_params.long_reads.single_reads.priority);
     long_reads_libs.push_back(single_storage);
-    //long_single.DumpToFile("long_reads_paths.mpr", conj_gp.edge_pos);
-    //long_single.LoadFromFile("long_reads_paths.mpr");
-    //LongReadStorage<Graph> long_read(conj_gp.g);
-    //pacbio_read.LoadFromFile("/storage/labnas/students/igorbunova/path-extend2/algorithmic-biology/assembler/pacbio.mpr");
 }
 
 void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
@@ -1078,7 +1078,8 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         io::LibraryType type = cfg::get().ds.reads[i].type();
         if (type == io::LibraryType::SingleReads) {
-            AddSingleLibrary(conj_gp, cfg::get().ds.reads[i], long_reads_libs);
+            AddSingleLibrary(conj_gp, cfg::get().ds.reads[i],
+                             cfg::get().output_dir, long_reads_libs);
         } else if (type == io::LibraryType::PairedEnd
                 || type == io::LibraryType::MatePairs) {
             pe_indexes.push_back(&clustered_indices[i]);
@@ -1113,6 +1114,7 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
                 cfg::get().pe_params.long_reads.coverage_base_rr.priority);
         long_reads_libs.push_back(single_storage);
     }
+
 
     if (cfg::get().use_scaffolder
             && cfg::get().pe_params.param_set.scaffolder_options.on) {

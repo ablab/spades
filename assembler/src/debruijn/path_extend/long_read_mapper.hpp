@@ -131,12 +131,15 @@ private:
 
     template<class SingleRead>
     vector<EdgeId> ProcessSingleRead(const SingleRead& r) {
-        MappingPath<EdgeId> path;
-        path.join(mapper_.MapSequence(r.sequence()));
-        SimpleMappingContig mc(r.sequence(), path);
-        MappingContig * dc = same_edge_corr_.Correct(&mc);
-        MappingContig * gc = gap_closer_.Correct(dc);
-        return gc->PathSeq();
+        //TODO: if we can really use following code then we should delete everything about SameEdgeDeletionCorrector and CloseGapsCorrector!!!
+        auto mapper = MapperInstance(gp_);
+        return mapper->FindReadPath(r.sequence());
+        /*MappingPath<EdgeId> path;
+         path.join(mapper_.MapSequence(r.sequence()));
+         SimpleMappingContig mc(r.sequence(), path);
+         MappingContig * dc = same_edge_corr_.Correct(&mc);
+         MappingContig * gc = gap_closer_.Correct(dc);
+         return gc->PathSeq();*/
     }
 
     conj_graph_pack& gp_;

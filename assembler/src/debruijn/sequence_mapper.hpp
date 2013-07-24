@@ -8,6 +8,7 @@
 
 #include "omni/omni_utils.hpp"
 #include "sequence/sequence_tools.hpp"
+#include "graph_read_correction.hpp"
 
 #include "runtime_k.hpp"
 
@@ -398,11 +399,13 @@ class NewExtendedSequenceMapper {
   typedef typename Index::InnerIndex KMerIndex;
   typedef KmerMapper<Graph, Kmer> KmerSubs;
   typedef typename KMerIndex::KMerIdx KMerIdx;
+  typedef MappingPathFixer<Graph> GraphMappingPathFixer;
 
  private:
   const Graph& g_;
   const Index& index_;
   const KmerSubs& kmer_mapper_;
+  const GraphMappingPathFixer path_fixer_;
   size_t k_;
   //	mutable size_t mapped_;
   //	mutable size_t unmapped_;
@@ -498,7 +501,7 @@ class NewExtendedSequenceMapper {
                             const Index& index,
                             const KmerSubs& kmer_mapper,
                             size_t k) :
-      g_(g), index_(index), kmer_mapper_(kmer_mapper), k_(k) { }
+      g_(g), index_(index), kmer_mapper_(kmer_mapper), path_fixer_(g), k_(k) { }
 
   ~NewExtendedSequenceMapper() {
     //		TRACE("In destructor of sequence mapper");
@@ -541,8 +544,28 @@ class NewExtendedSequenceMapper {
     return MapSequence(read.sequence());
   }
 
- private:
-  DECL_LOGGER("NewExtendedSequenceMapper");
+  vector<EdgeId> FindReadPath(const Sequence& read) const {
+        MappingPath<EdgeId> mapping_path = MapSequence(read);
+        if (!IsMappingPathValid(mapping_path, read.size())) {
+            DEBUG("read unmapped");
+            return vector<EdgeId>();
+        }
+
+        vector<EdgeId> fixed_path = path_fixer_ .TryFixPath(
+                mapping_path.simple_path().sequence());
+        if (!CheckContiguous(g_, fixed_path)) {
+            DEBUG("read unmapped");
+            return vector<EdgeId>();
+        }
+        return fixed_path;
+    }
+
+private:
+    bool IsMappingPathValid(const MappingPath<EdgeId>& path,
+                            size_t seq_len) const {
+        return path.size() != 0;
+    }
+    DECL_LOGGER("NewExtendedSequenceMapper");
 };
 
 template<class gp_t>
