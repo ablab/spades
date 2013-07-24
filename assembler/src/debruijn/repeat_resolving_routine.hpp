@@ -899,6 +899,7 @@ void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, s
 				EdgeQuality<Graph>& quality_labeler ) {
 
 
+
 	DeBruijnEdgeIndex<conj_graph_pack::graph_t, runtime_k::RtSeq> kmerIndex(conj_gp.index.inner_index().K(), conj_gp.g, cfg::get().output_dir);
 	if (cfg::get().developer_mode) {
 
@@ -907,12 +908,13 @@ void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, s
 			path = cfg::get().output_dir + "/saves/debruijn_kmer_index_after_construction";
 		else
 			path = cfg::get().load_from + "/debruijn_kmer_index_after_construction";
-		bool val = LoadEdgeIndex(path, kmerIndex);
+		bool val = LoadEdgeIndex(path, kmer_index);
 		VERIFY_MSG(val, "can not open file "+path+".kmidx");
 		INFO("Updating index from graph started");
-		DeBruijnEdgeIndexBuilder<runtime_k::RtSeq>().UpdateIndexFromGraph(kmerIndex, conj_gp.g);
-		SaveEdgeIndex(cfg::get().output_dir + "/saves/debruijn_kmer_index_after_construction", kmerIndex);
+		DeBruijnEdgeIndexBuilder<runtime_k::RtSeq>().UpdateIndexFromGraph(kmer_index, conj_gp.g);
+		SaveEdgeIndex(cfg::get().output_dir + "/saves/debruijn_kmer_index_after_construction", kmer_index);
 	}
+
 
 
 	/*int number_of_buckets = 10;
@@ -925,9 +927,8 @@ void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, s
 	double probability = bm.GetProbablityFromBucketToBucketForDistance (bucket_in, bucket_out, repeat_distance) ;*/
 	auto index = FlankingCoverage<Graph>(conj_gp.g, kmerIndex, 50, cfg::get().K + 1);
 	EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(conj_gp.g, conj_gp.g);
-	auto cov_rr = CoverageBasedResolution<conj_graph_pack> (conj_gp, kmerIndex, cfg::get().cbrr.coverage_threshold_one_list, cfg::get().cbrr.coverage_threshold_match, 
-			cfg::get().cbrr.coverage_threshold_global, cfg::get().cbrr.tandem_ratio_lower_threshold, cfg::get().cbrr.tandem_ratio_upper_threshold, cfg::get().cbrr.repeat_length_upper_threshold);
-	cov_rr.resolve_repeats_by_coverage(index, insert_size, labels_after, quality_labeler, clustered_index, filteredPaths);
+	auto cov_rr = CoverageBasedResolution<conj_graph_pack> (conj_gp, kmer_index, quality_labeler, cfg::get().cbrr.tandem_ratio_lower_threshold, cfg::get().cbrr.tandem_ratio_upper_threshold, cfg::get().cbrr.repeat_length_upper_threshold);
+	cov_rr.resolve_repeats_by_coverage(index, insert_size, labels_after, clustered_index, filteredPaths, cfg::get().output_dir + "resolved_by_coverage.fasta");
 
 	INFO("Repeats are resolved by coverage");
 

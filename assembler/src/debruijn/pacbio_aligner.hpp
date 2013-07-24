@@ -70,21 +70,20 @@ public:
 			INFO("Processed batch " << buffer_no);
 			++buffer_no;
 		}
-
-		long_reads.DumpToFile("long_reads_before_rep.mpr", gp_.edge_pos);
+		map<EdgeId, EdgeId> replacement;
+		long_reads.DumpToFile("long_reads_before_rep.mpr", gp_.edge_pos, replacement);
 		gaps.DumpToFile("gaps.mpr", gp_.edge_pos);
 		gaps.PadGapStrings();
 		gaps.DumpToFile("gaps_padded.mpr", gp_.edge_pos);
 		PacbioGapCloser<Graph> gap_closer(gp_.g);
 		gap_closer.ConstructConsensus(cfg::get().max_threads, gaps);
-		map<EdgeId, EdgeId> replacement;
 		gap_closer.CloseGapsInGraph(replacement);
 		long_reads.ReplaceEdges(replacement);
 //		gp_.edge_pos.clear();
 //		FillPos(gp_, gp_.genome, "10");
 //		FillPos(gp_, !gp_.genome, "11");
 
-		long_reads.DumpToFile("long_reads.mpr", gp_.edge_pos);
+		long_reads.DumpToFile("long_reads.mpr", gp_.edge_pos, replacement);
 		gap_closer.DumpToFile("gaps_closed2.fasta", gp_.edge_pos);
 		INFO("Total reads: " << n);
 		INFO("Mean read length: " << total_length * 0.1/ n)
@@ -157,7 +156,7 @@ public:
 						nongenomic_edges++;
 				}
 			}
-			omp_set_lock(&tmp_file_output);
+			/*omp_set_lock(&tmp_file_output);
 			filestr << n<<"("<< seq.size() << ")  " << location_map.size() << ": \n";
 			for (auto iter = location_map.begin(); iter != location_map.end(); ++iter) {
 				filestr << gp_.g.int_id(iter->edgeId) << "(" << gp_.g.length(iter->edgeId) << ")  " << iter->sorted_positions.size() << "\n";
@@ -184,7 +183,7 @@ public:
 			filestr << " \n";
 			filestr << " \n";
 			omp_unset_lock(&tmp_file_output);
-
+*/
 			VERBOSE_POWER(n, " reads processed");
 
 		}
