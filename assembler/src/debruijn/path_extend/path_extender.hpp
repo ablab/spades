@@ -192,11 +192,11 @@ public:
             return initial_gap;
         }
 
-        for (int l = g_.k() ; l > 0; --l) {
+        for (int l = (int) g_.k(); l > 0; --l) {
             if (g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l) == g_.EdgeNucls(source).Subseq(0, l)) {
                 DEBUG("Found correct gap length");
                 DEBUG("Inintial: " << initial_gap << ", new gap: " << g_.k() - l);
-                return g_.k() - l;
+                return (int) g_.k() - l;
             }
         }
 
@@ -267,9 +267,9 @@ public:
             return initial_gap;
         }
 
-        int start = g_.k();
+        int start = (int) g_.k();
         if (initial_gap < 0) {
-            start = g_.k() + min( -initial_gap, (int) min(g_.length(sink), g_.length(source)));
+            start = (int) g_.k() + min( -initial_gap, (int) min(g_.length(sink), g_.length(source)));
         }
 
         double max_score = minGapScore_;
@@ -277,7 +277,10 @@ public:
         bool found = false;
 
         for (int l = start; l >= shortOverlap_; --l) {
-            double score = ScoreGap(g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l), g_.EdgeNucls(source).Subseq(0, l), g_.k() - l, initial_gap);
+            double score = ScoreGap(g_.EdgeNucls(sink).Subseq((size_t) ((int) g_.length(sink) + (int) g_.k() - l)), 
+                                    g_.EdgeNucls(source).Subseq(0, (size_t) l), 
+                                    (int) g_.k() - l,
+                                    initial_gap);
             if (score > max_score) {
                 max_score = score;
                 best_gap = (int) g_.k() - l;
@@ -287,7 +290,10 @@ public:
 
         if (!found) {
             for (int l = shortOverlap_ - 1; l > 0; --l) {
-                double score = ScoreGap(g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l), g_.EdgeNucls(source).Subseq(0, l), g_.k() - l, initial_gap);
+                double score = ScoreGap(g_.EdgeNucls(sink).Subseq((size_t) ((int) g_.length(sink) + (int) g_.k() - l)),
+                                        g_.EdgeNucls(source).Subseq(0, (size_t) l), 
+                                        (int) g_.k() - l, 
+                                        initial_gap);
                 if (score > max_score) {
                     max_score = score;
                     best_gap = (int) g_.k() - l;

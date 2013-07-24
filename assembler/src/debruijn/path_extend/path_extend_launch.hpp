@@ -52,10 +52,10 @@ size_t getMinInsertSize(const vector<PairedInfoLibraries>& libs) {
 	if (index == libs.size()){
 		return 0;
 	}
-	min = libs[index][0]->insert_size_ - libs[index][0]->read_size_ / 2;
+	min = (int) (libs[index][0]->insert_size_ - libs[index][0]->read_size_ / 2);
 	for (size_t i = 0; i < libs.size(); ++i) {
 		for (size_t j = 0; j < libs[i].size(); ++j) {
-			int overlap = libs[i][j]->insert_size_ - libs[i][j]->read_size_ / 2;
+			int overlap = (int) (libs[i][j]->insert_size_ - libs[i][j]->read_size_ / 2);
 			if (overlap < min && overlap > 0) {
 				min = overlap;
 			}
@@ -183,8 +183,8 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
 
 	GapJoiner * gapJoiner = new HammingGapJoiner(gp.g,
 				pset.scaffolder_options.min_gap_score,
-				(int) (pset.scaffolder_options.max_must_overlap * gp.g.k()),
-				(int) (pset.scaffolder_options.max_can_overlap * gp.g.k()),
+				(int) (pset.scaffolder_options.max_must_overlap * (double) gp.g.k()),
+				(int) (pset.scaffolder_options.max_can_overlap * (double) gp.g.k()),
 				pset.scaffolder_options.short_overlap);
 
 	vector<ScaffoldingPathExtender*> scafPEs;
@@ -226,7 +226,7 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
     debug_output_paths(writer, gp, output_dir, paths, "final_paths");
 
 	if (broken_contigs.is_initialized()) {
-	    output_broken_scaffolds(paths, gp.g.k(), writer, output_dir + broken_contigs.get());
+	    output_broken_scaffolds(paths, (int) gp.g.k(), writer, output_dir + broken_contigs.get());
 	}
 
     if (traversLoops) {
@@ -255,8 +255,9 @@ PairedInfoLibrary* add_lib(conj_graph_pack::graph_t& g,
 	double is = cfg::get().ds.reads[indexs[index]].data().mean_insert_size;
 	double var = cfg::get().ds.reads[indexs[index]].data().insert_size_deviation;
 	bool is_mp = cfg::get().ds.reads[indexs[index]].type() == io::LibraryType::MatePairs;
-	PairedInfoLibrary* lib = new PairedInfoLibrary(cfg::get().K, g, read_length,
-			is, var, *paired_index[index], is_mp);
+	PairedInfoLibrary* lib = new PairedInfoLibrary(
+	        cfg::get().K, g, read_length,
+	        (size_t) round(is), (size_t) round(var), *paired_index[index], is_mp);
 	libs.push_back(lib);
 	return lib;
 }
@@ -267,11 +268,11 @@ void delete_libs(PairedInfoLibraries& libs){
 	}
 }
 
-void set_threshold(PairedInfoLibrary* lib, size_t index, size_t split_edge_length) {
+void set_threshold(PairedInfoLibrary* lib, size_t index, size_t /*split_edge_length*/) {
 	INFO("Searching for paired info threshold for lib #"
 						<< index << " (IS = " << lib->insert_size_ << ",  DEV = " << lib->is_variation_ << ")");
 
-	SingleThresholdFinder finder(lib->insert_size_ - 2 * lib->is_variation_, lib->insert_size_ + 2 * lib->is_variation_, lib->read_size_);
+	SingleThresholdFinder finder((int) lib->insert_size_ - 2 * (int) lib->is_variation_, (int) lib->insert_size_ + 2 * (int) lib->is_variation_, (int) lib->read_size_);
 	double threshold = finder.find_threshold(index);
 
 	INFO("Paired info threshold is " << threshold);
@@ -282,7 +283,8 @@ void find_new_threshold(conj_graph_pack& gp, PairedInfoLibrary* lib, size_t inde
 	SplitGraphPairInfo splitGraph(gp, *lib, index, 99);
 	INFO("Calculating paired info threshold");
 	splitGraph.ProcessReadPairs();
-	double threshold = splitGraph.FindThreshold(split_edge_length, lib->insert_size_ - 2 * lib->is_variation_, lib->insert_size_ + 2 * lib->is_variation_);
+	double threshold = splitGraph.FindThreshold((double) split_edge_length, (int) lib->insert_size_ - 2 * (int) lib->is_variation_,
+	                                            (int) lib->insert_size_ + 2 * (int) lib->is_variation_);
 	lib->SetSingleThreshold(threshold);
 }
 
@@ -292,8 +294,8 @@ void add_paths_to_container(conj_graph_pack& gp, const std::vector<PathInfo<Grap
 		vector<EdgeId> edges = path.getPath();
 		BidirectionalPath* new_path = new BidirectionalPath(gp.g, edges);
 		BidirectionalPath* conj_path = new BidirectionalPath(new_path->Conjugate());
-		new_path->setWeight(path.getWeight());
-		conj_path->setWeight(path.getWeight());
+		new_path->setWeight((double) path.getWeight());
+		conj_path->setWeight((double) path.getWeight());
 		supportingContigs.AddPair(new_path, conj_path);
 	}
 }

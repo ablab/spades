@@ -28,7 +28,7 @@ protected:
 
     MapDataT * empty_;
 
-    virtual void EdgeAdded(EdgeId e, BidirectionalPath * path, int gap) {
+    virtual void EdgeAdded(EdgeId e, BidirectionalPath * path, int /*gap*/) {
         auto iter = edgeCoverage_.find(e);
         if (iter == edgeCoverage_.end()) {
             edgeCoverage_.insert(std::make_pair(e, new MapDataT()));
@@ -100,7 +100,7 @@ public:
 
 
     int GetCoverage(EdgeId e) const {
-        return GetEdgePaths(e)->size();
+        return (int) GetEdgePaths(e)->size();
     }
 
 
@@ -169,11 +169,11 @@ public:
     }
 
     int GetUniqueCoverage(EdgeId e) const {
-        return GetCoveringPaths(e).size();
+        return (int) GetCoveringPaths(e).size();
     }
 
     int GetUniqueCoverage(const BidirectionalPath& path) const {
-        return GetCoveringPaths(path).size();
+        return (int) GetCoveringPaths(path).size();
     }
 
     std::map <EdgeId, MapDataT * >::const_iterator begin() const {
@@ -407,13 +407,13 @@ class DeletedEdgeMappingContig : public MappingContig{
     int new_size;
 
     void DefinePathSeq(){
-        new_size = c_->Size() - del_edges_.size();
+        new_size = (int) c_->Size() - (int) del_edges_.size();
 
         VERIFY(new_size >= 0);
 
         vector<EdgeId> old_path = c_->PathSeq();
-        for(size_t i = 0; i < old_path.size(); i++)
-            if(del_edges_.find(i) == del_edges_.end())
+        for (size_t i = 0; i < old_path.size(); i++)
+            if (del_edges_.find((int) i) == del_edges_.end())
                 path_seq.push_back(old_path[i]);
     }
 
@@ -423,7 +423,7 @@ public:
     }
 
     DeletedEdgeMappingContig(MappingContig * & c, vector<int> del_edges) : c_(c){
-        for(auto e = del_edges.begin(); e != del_edges.end(); e++)
+        for (auto e = del_edges.begin(); e != del_edges.end(); e++)
             del_edges_.insert(*e);
         new_size = -1;
     }
@@ -431,13 +431,13 @@ public:
     //Sequence Seq() { return c_->Seq(); }
 
     vector<EdgeId> PathSeq(){
-        if(new_size == -1)
+        if (new_size == -1)
             DefinePathSeq();
         return path_seq;
     }
 
     size_t Size(){
-        if(new_size == -1)
+        if (new_size == -1)
             DefinePathSeq();
         return new_size;
     }
@@ -483,14 +483,14 @@ class SimpleContigStorage : public ContigStorage{
 
     void RedefineRealIndexes(){
         for(size_t i = 0; i < stor.size(); i++)
-            if(del_index_.find(i) == del_index_.end())
-                real_index.push_back(i);
+            if(del_index_.find((int) i) == del_index_.end())
+                real_index.push_back((int) i);
     }
 
 public:
     void Add(MappingContig *new_contig) {
         stor.push_back(new_contig);
-        real_index.push_back(real_index.size());
+        real_index.push_back((int) real_index.size());
     }
 
     size_t Size() { return real_index.size(); }
@@ -552,10 +552,10 @@ class SameEdgeDeletionCorrector : public ContigCorrector{
 public:
     SameEdgeDeletionCorrector(Graph &g) : ContigCorrector(g) {}
 
-    ContigStorage * Correct(ContigStorage *contigs){
-        for(size_t i = 0; i < contigs->Size(); i++){
-            MappingContig *cur = (*contigs)[i];
-            (*contigs)[i] = Correct(cur);
+    ContigStorage * Correct(ContigStorage *contigs) {
+        for (size_t i = 0; i < contigs->Size(); i++) {
+            MappingContig *cur = (*contigs)[(int) i];
+            (*contigs)[(int) i] = Correct(cur);
         }
         return contigs;
     }
@@ -563,16 +563,16 @@ public:
     MappingContig * Correct(MappingContig *contig){
         vector<EdgeId> path = contig->PathSeq();
         set<int> red_edges;
-        if(path.size() != 0){
+        if (path.size() != 0) {
             EdgeId cur_edge = path[0];
-            for(size_t i = 1; i < path.size(); i++)
-            {
+            for (size_t i = 1; i < path.size(); i++) {
                 EdgeId e = path[i];
-                if(e != cur_edge){
+                if (e != cur_edge){
                     cur_edge = e;
                 }
-                else
-                    red_edges.insert(i);
+                else {
+                    red_edges.insert((int) i);
+                }
             }
         }
 
@@ -626,9 +626,9 @@ public:
     }
 
     ContigStorage * Correct(ContigStorage *storage){
-        for(size_t i = 0; i < storage->Size(); i++){
-            auto cur_mc = (*storage)[i];
-            (*storage)[i] = Correct(cur_mc);
+        for (size_t i = 0; i < storage->Size(); i++){
+            auto cur_mc = (*storage)[(int) i];
+            (*storage)[(int) i] = Correct(cur_mc);
         }
         return storage;
     }
@@ -636,21 +636,21 @@ public:
     MappingContig * Correct(MappingContig *contig){
         vector<EdgeId> path = contig->PathSeq();
 
-        if(path.size() <= 1)
+        if (path.size() <= 1)
             return contig;
 
         vector<size_t> gap_indexes;
 
-        for(size_t i = 0; i < path.size() - 1; i++){
+        for (size_t i = 0; i < path.size() - 1; i++){
             EdgeId e1 = path[i];
             EdgeId e2 = path[i + 1];
 
-            if(!AreEdgesConnected(e1, e2)){
+            if (!AreEdgesConnected(e1, e2)){
                 gap_indexes.push_back(i);
             }
         }
 
-        if(gap_indexes.size() != 0){
+        if (gap_indexes.size() != 0){
             vector<EdgeId> new_path = ClosePathGap(path, gap_indexes);
             return new ReplacedPathMappingContig(contig, new_path);
         }
@@ -810,10 +810,10 @@ PathContainer CreatePathsFromContigs(conj_graph_pack & gp, const string& filenam
     DEBUG("Making paths from " << storage->Size() << " contigs");
     PathContainer bidirectionalPaths;
     for (size_t i = 0; i < storage->Size(); ++i ) {
-        if ((*storage)[i]->PathSeq().size() == 0)
+        if ((*storage)[(int) i]->PathSeq().size() == 0)
             continue;
 
-        BidirectionalPath * p = new BidirectionalPath(gp.g, (*storage)[i]->PathSeq());
+        BidirectionalPath * p = new BidirectionalPath(gp.g, (*storage)[(int) i]->PathSeq());
         BidirectionalPath * cp = new BidirectionalPath(p->Conjugate());
         bidirectionalPaths.AddPair(p, cp);
     }
