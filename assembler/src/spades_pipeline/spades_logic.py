@@ -42,7 +42,7 @@ def prepare_config_spades(filename, cfg, log, prev_K, K, last_one):
 
 
 def get_read_length(output_dir, K):
-    estimated_params = load_config_from_file(os.path.join(output_dir, "K%d" % (K), "_est_params.info"))
+    estimated_params = load_config_from_file(os.path.join(output_dir, "K%d" % K, "_est_params.info"))
     lib_count = int(estimated_params.__dict__["lib_count"])
     max_read_length = 0
     for i in range(lib_count):
@@ -52,7 +52,7 @@ def get_read_length(output_dir, K):
 
 
 def run_iteration(configs_dir, execution_home, cfg, log, K, use_additional_contigs, last_one):
-    data_dir = os.path.join(cfg.output_dir, "K%d" % (K))
+    data_dir = os.path.join(cfg.output_dir, "K%d" % K)
     if os.path.exists(data_dir):
         shutil.rmtree(data_dir)
     os.makedirs(data_dir)
@@ -84,7 +84,7 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, use_additional_conti
                 new_bin_filename = cor_filename[:cor_index] + cor_filename[cor_index + 4:]
                 shutil.move(cor_filename, new_bin_filename)
 
-    log.info("\n== Running assembler: " + ("K%d" % (K)) + "\n")
+    log.info("\n== Running assembler: " + ("K%d" % K) + "\n")
     support.sys_call(command, log)
 
 
@@ -103,9 +103,11 @@ def run_spades(configs_dir, execution_home, cfg, log):
     else:
         run_iteration(configs_dir, execution_home, cfg, log, cfg.iterative_K[0], False, False)
         RL = get_read_length(cfg.output_dir, cfg.iterative_K[0])
-        if (cfg.iterative_K[1] + 1 > RL):
+        if cfg.iterative_K[1] + 1 > RL:
             if cfg.paired_mode:
-                log.info("Second value of iterative K exceeded estimated read length. Rerunning in paired mode for the first value of K")
+                support.warning("Second value of iterative K (%d) exceeded estimated read length (%d). "
+                                "Rerunning in paired mode for the first value of K (%d)" %
+                                (cfg.iterative_K[1], RL, cfg.iterative_K[0]), log)
                 run_iteration(configs_dir, execution_home, cfg, log, cfg.iterative_K[0], False, True)
                 K = cfg.iterative_K[0]
         else:
@@ -114,14 +116,15 @@ def run_spades(configs_dir, execution_home, cfg, log):
             count = 0
             for K in rest_of_iterative_K:
                 count += 1
-                last_one = count == len(cfg.iterative_K) or rest_of_iterative_K[count] > RL
+                last_one = count == len(cfg.iterative_K) or (rest_of_iterative_K[count] + 1 > RL)
                 run_iteration(configs_dir, execution_home, cfg, log, K, True, last_one)
                 if last_one:
                     break
             if count < len(cfg.iterative_K):
-                log.info("Iterations stopped. Value of K exceeded estimated read length")
+                support.warning("Iterations stopped. Value of K (%d) exceeded estimated read length (%d)" %
+                                (cfg.iterative_K[count], RL), log)
 
-    latest = os.path.join(cfg.output_dir, "K%d" % (K))
+    latest = os.path.join(cfg.output_dir, "K%d" % K)
 
     if os.path.isfile(os.path.join(latest, "before_rr.fasta")):
         shutil.copyfile(os.path.join(latest, "before_rr.fasta"), os.path.join(os.path.dirname(cfg.result_contigs), "before_rr.fasta"))
