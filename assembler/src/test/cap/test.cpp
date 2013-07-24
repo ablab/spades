@@ -79,16 +79,20 @@ void RunTests(size_t k, const string& filename, const string& output_dir,
 }
 
 BOOST_AUTO_TEST_CASE( RegenerateEtalonTest ) {
-    return;
+//    return;
     utils::TmpFolderFixture _("tmp");
-    make_dir("synthetic_tests");
     string input_dir = "./src/test/cap/tests/synthetic/";
-    RegenerateEtalon(25, input_dir + "tests.xml",
-                                "synthetic_tests/",
-                                "tmp");
+    string etalon_dir = input_dir + "etalon";
+    remove_dir(etalon_dir);
+    make_dir(etalon_dir);
+    RegenerateEtalon(25,
+                     input_dir + "tests.xml",
+                         etalon_dir,
+                         "tmp");
 }
 
 BOOST_AUTO_TEST_CASE( SyntheticExamplesTestsRtSeq ) {
+    return;
     utils::TmpFolderFixture _("tmp");
     string input_dir = "./src/test/cap/tests/synthetic/";
     RunTests<runtime_k::RtSeq> (25, input_dir + "tests.xml",
@@ -98,6 +102,7 @@ BOOST_AUTO_TEST_CASE( SyntheticExamplesTestsRtSeq ) {
 }
 
 BOOST_AUTO_TEST_CASE( SyntheticExamplesTestsLSeq ) {
+    return;
     utils::TmpFolderFixture _("tmp");
     string input_dir = "./src/test/cap/tests/synthetic/";
     RunTests<LSeq> (25, input_dir + "tests.xml",

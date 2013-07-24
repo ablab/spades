@@ -313,7 +313,7 @@ size_t CapConstructGraph(size_t k,
 }
 
 template<class gp_t>
-void FillPositions(const gp_t &gp, ContigStreams &streams, 
+void FillPositions(const gp_t &gp, ContigStreams &streams,
     CoordinatesHandler<typename gp_t::graph_t>& coordinates_handler) {
 	typedef NewExtendedSequenceMapper<typename gp_t::graph_t,
                                     typename gp_t::index_t> Mapper;
@@ -328,7 +328,7 @@ void FillPositions(const gp_t &gp, ContigStreams &streams,
     //cap::RCWrapper stream(**it);
     ContigStream &stream = *it;
     stream.reset();
-    
+
     io::SingleRead contig;
     // for forward and reverse directions
     while (!stream.eof()) {
@@ -338,10 +338,10 @@ void FillPositions(const gp_t &gp, ContigStreams &streams,
       const std::vector<EdgeId> edge_path =
           mapping_path.simple_path().sequence();
       coordinates_handler.AddGenomePath(contig_id, edge_path);
+      contig_id++;
     }
 
     stream.reset();
-    contig_id++;
   }
 }
 

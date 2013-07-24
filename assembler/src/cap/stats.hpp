@@ -1031,7 +1031,6 @@ public:
 	void ProcessContig(size_t genome_id, size_t transparent_id, const string& contig_name) {
 	    INFO("Processing contig " << transparent_id << " name " << contig_name);
 	    VertexId v = g_.EdgeStart(coords_.FindGenomeFirstEdge(transparent_id));
-	    cout << "here" << endl;
 	    size_t genome_pos = 0;
 	    size_t graph_pos = 0;
 

@@ -77,6 +77,7 @@ class SyntheticTestsRunner {
         CoordinatesHandler<GraphT> coordinates_handler;
 
         ConstructColoredGraph(gp, coloring, coordinates_handler, *streams);
+        coordinates_handler.FindGenomeFirstEdge(3);
         Save(gp, coloring, coordinates_handler, streams, output_dir_ + ToString(id));
     }
 
