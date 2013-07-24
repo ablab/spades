@@ -146,7 +146,7 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
   }
 
   void BinWrite(std::ostream& file) const {
-    u_int32_t size = mapping_.size();
+    u_int32_t size = (u_int32_t) mapping_.size();
     file.write((const char *) &size, sizeof(u_int32_t));
 
     for (auto iter = mapping_.begin(); iter != mapping_.end(); ++iter) {

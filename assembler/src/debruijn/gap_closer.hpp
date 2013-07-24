@@ -463,12 +463,17 @@ public:
   }
 
   GapCloser(Graph& g, PairedInfoIndexT<Graph>& tips_paired_idx,
-      size_t min_intersection, double weight_threshold,
-      const SequenceCheckF& sequence_check_f, size_t hamming_dist_bound = 0/*min_intersection_ / 5*/) :
-      g_(g), k_(g_.k()), tips_paired_idx_(tips_paired_idx), min_intersection_(
-          min_intersection), hamming_dist_bound_(
-          hamming_dist_bound), init_gap_val_(-10), weight_threshold_(
-          weight_threshold), sequence_check_f_(sequence_check_f) {
+            size_t min_intersection, double weight_threshold,
+            const SequenceCheckF& sequence_check_f,
+            size_t hamming_dist_bound = 0 /*min_intersection_ / 5*/)
+          : g_(g),
+            k_((int) g_.k()),
+            tips_paired_idx_(tips_paired_idx),
+            min_intersection_(min_intersection),
+            hamming_dist_bound_(hamming_dist_bound),
+            init_gap_val_(-10),
+            weight_threshold_(weight_threshold),
+            sequence_check_f_(sequence_check_f) {
     VERIFY(min_intersection_ < g_.k());
     DEBUG("weight_threshold=" << weight_threshold_);
     DEBUG("min_intersect=" << min_intersection_);

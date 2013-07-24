@@ -49,7 +49,7 @@ namespace debruijn_graph {
 
 		double CountInCoverage ( const Sequence& seq, size_t size_bound ) const {
 
-			unsigned len = seq.size();
+			unsigned len = (unsigned) seq.size();
 			double edge_coverage_in(0.0);
 
 			for (unsigned i = 0; i < size_bound; ++i) {
@@ -61,14 +61,14 @@ namespace debruijn_graph {
 				edge_coverage_in += kmer_index_[kmer_in].count;
 			}
 
-			return edge_coverage_in / size_bound;
+			return edge_coverage_in / (double) size_bound;
 
 
 		}
 
 		double CountOutCoverage ( const Sequence& seq, size_t size_bound ) const {
 
-			unsigned len = seq.size();
+			unsigned len = (unsigned) seq.size();
 			double edge_coverage_out(0.0);
 
 			for (unsigned i = 0; i < size_bound; ++i) {
@@ -82,7 +82,7 @@ namespace debruijn_graph {
 
 
 				}
-			return edge_coverage_out / size_bound;
+			return edge_coverage_out / (double) size_bound;
 
 
 		}
@@ -99,7 +99,7 @@ namespace debruijn_graph {
 				unsigned size_bound = average_const_;
 
 				if ( average_const_ > g.length(*e_iter) ){
-					size_bound = g.length(*e_iter);
+					size_bound = (unsigned) g.length(*e_iter);
 				}
 
 				auto seq = g.EdgeNucls(*e_iter);

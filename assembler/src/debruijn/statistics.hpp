@@ -308,7 +308,7 @@ private:
       Histogram v = *it;
       size_t w = 0;
       for (auto I = v.begin(); I != v.end(); ++I)
-        w += I->weight;
+        w += (size_t) I->weight;
 
       edge_pairs.insert(make_pair(make_pair(it.first(), it.second()), w));
     }
@@ -558,7 +558,8 @@ class MatePairTransformStat: public AbstractStatCounter {
           PathStorageCallback<Graph> counter(g_);
 
           PathProcessor<Graph> path_processor(g_,
-              point.d - g_.length(e1), point.d - g_.length(e1),
+              (size_t) round(point.d - (double) g_.length(e1)),
+              (size_t) round(point.d - (double) g_.length(e1)),
               g_.EdgeEnd(e1), g_.EdgeStart(e2), counter);
           path_processor.Process();
 

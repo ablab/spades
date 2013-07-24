@@ -179,9 +179,9 @@ public:
 	}
 
 	void AddStorage(PathStorage<Graph> & to_add) {
-		for(auto iter = to_add.inner_index.begin(); iter != to_add.inner_index.end(); iter++) {
-			for(auto j_iter = iter->second.begin(); j_iter != iter->second.end(); j_iter ++) {
-				this->AddPath(j_iter->path, j_iter->getWeight());
+		for (auto iter = to_add.inner_index.begin(); iter != to_add.inner_index.end(); iter++) {
+			for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); j_iter ++) {
+				this->AddPath(j_iter->path, (int) j_iter->getWeight());
 			}
 		}
 	}

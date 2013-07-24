@@ -20,7 +20,7 @@ class EdgeInfoUpdater {
         index_.PutInIndex(kmer, e, 0);
         for (size_t i = index_.k(), n = nucls.size(); i < n; ++i) {
             kmer <<= nucls[i];
-            index_.PutInIndex(kmer, e, i - index_.k() + 1);
+            index_.PutInIndex(kmer, e, (int) (i - index_.k() + 1));
         }
     }
 

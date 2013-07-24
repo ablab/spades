@@ -41,7 +41,7 @@ private:
 public:
 	MappingDescription Locate(Sequence &s);
 	PacBioMappingIndex(Graph &g, size_t k, size_t debruijn_k_) :
-			g_(g), pacbio_k(k), debruijn_k(debruijn_k_), tmp_index(pacbio_k, cfg::get().output_dir) {
+			g_(g), pacbio_k(k), debruijn_k(debruijn_k_), tmp_index((unsigned) pacbio_k, cfg::get().output_dir) {
 		typedef typename EdgeIndexHelper<DeBruijnEdgeMultiIndex<typename Graph::EdgeId>>::DeBruijnGraphKMerIndexBuilderT Builder;
 		Builder().BuildIndexFromGraph(tmp_index, g_);
 		FillBannedKmers();
@@ -51,9 +51,9 @@ public:
 
 	void FillBannedKmers() {
 		for (int i = 0; i < 4; i++) {
-			auto base = nucl(i);
+			auto base = nucl((unsigned char) i);
 			for (int j = 0; j < 4; j++) {
-				auto other = nucl(j);
+				auto other = nucl((unsigned char) j);
 				for (size_t other_pos = 0; other_pos < pacbio_k; other_pos++) {
 					string s = "";
 					for (size_t k = 0; k < pacbio_k; k++) {
@@ -85,7 +85,7 @@ public:
 			if (!used[k] && similar(iter->second[cur_ind], iter->second[k])) {
 				to_add.push_back(iter->second[k]);
 				used[k] = 1;
-				dfs_cluster(used, to_add, k, iter);
+				dfs_cluster(used, to_add, (int) k, iter);
 			}
 		}
 	}
@@ -102,7 +102,7 @@ public:
 					used[i] = 1;
 					vector<MappingInstance> to_add;
 					to_add.push_back(iter->second[i]);
-					dfs_cluster(used, to_add, i, iter);
+					dfs_cluster(used, to_add, (int) i, iter);
 					sort(to_add.begin(), to_add.end(), ReadPositionComparator());
 					size_t count = 1;
 					size_t longest_len = 0;
@@ -141,7 +141,7 @@ public:
 	//filter clusters that are too small or fully located on a vertex or dominated by some other cluster.
 	void FilterClusters(ClustersSet &clusters) {
 		for (auto i_iter = clusters.begin(); i_iter != clusters.end();) {
-			int len = g_.length(i_iter->edgeId);
+			int len = (int) g_.length(i_iter->edgeId);
 			auto sorted_by_edge = i_iter->sorted_positions;
 			sort(sorted_by_edge.begin(), sorted_by_edge.end());
 			size_t good = 0;
@@ -193,7 +193,7 @@ public:
 	inline bool dominates(const KmerCluster<Graph> &a, const KmerCluster<Graph> &b) const {
 		size_t a_size = a.size;
 		size_t b_size = b.size;
-		if (a_size < b_size * domination_cutoff || a.first_trustable_index > b.first_trustable_index || a.last_trustable_index < b.last_trustable_index) {
+		if ((double) a_size < (double) b_size * domination_cutoff || a.first_trustable_index > b.first_trustable_index || a.last_trustable_index < b.last_trustable_index) {
 			return false;
 		} else {
 			return true;
@@ -225,8 +225,8 @@ public:
 
 				if (start_v != end_v
 						|| (start_v == end_v
-								&& (cur_first_index.read_position - prev_last_index.read_position)
-										> (cur_first_index.edge_position + g_.length(prev_edge) - prev_last_index.edge_position) * 1.3)) {
+								&& (double) (cur_first_index.read_position - prev_last_index.read_position)
+										> (double) (cur_first_index.edge_position + (int) g_.length(prev_edge) - prev_last_index.edge_position) * 1.3)) {
 					DEBUG(" traversing tangled region between "<< g_.int_id(prev_edge)<< " " << g_.int_id(cur_edge));
 					DEBUG(" first pair" << cur_first_index.str() << " edge_len" << g_.length(cur_edge));
 					DEBUG(" last pair" << prev_last_index.str() << " edge_len" << g_.length(prev_edge));
@@ -238,7 +238,7 @@ public:
 					s_add = tmp.substr(prev_last_index.edge_position, g_.length(prev_edge) - prev_last_index.edge_position);
 					tmp = g_.EdgeNucls(cur_edge).str();
 					e_add = tmp.substr(0, cur_first_index.edge_position);
-					pair<int, int> limits = GetPathLimits(*(prev_iter->second), *(iter->second), s_add.length(), e_add.length());
+					pair<int, int> limits = GetPathLimits(*(prev_iter->second), *(iter->second), (int) s_add.length(), (int) e_add.length());
 					if (limits.first == -1) return vector<EdgeId> (0);
 					vector<EdgeId> intermediate_path = BestScoredPath(s, start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add,
 							debug_info);
@@ -267,7 +267,7 @@ public:
 	}
 
 	vector<int> GetColors(ClustersSet &mapping_descr, Sequence &s){
-		int len = mapping_descr.size();
+		int len = (int) mapping_descr.size();
 		vector<vector<int> > table(len);
 		for (int i = 0; i < len; i++) {
 			table[i].resize(len);
@@ -310,7 +310,7 @@ public:
 
 	OneReadMapping<Graph> GetReadAlignment(Sequence &s) {
 		ClustersSet mapping_descr = GetClusters(s);
-		int len = mapping_descr.size();
+		int len = (int) mapping_descr.size();
 		vector<int> colors = GetColors(mapping_descr, s);
 		vector<vector<EdgeId> > sortedEdges;
 		vector<typename ClustersSet::iterator> start_clusters, end_clusters;
@@ -360,7 +360,7 @@ public:
 				if (before_gap != after_gap && before_gap != g_.conjugate(after_gap)) {
 					if (i != j && TopologyGap(before_gap, after_gap, true)) {
 						if (start_clusters[j]->CanFollow(*end_clusters[i])) {
-							illumina_gaps.push_back(GapDescription<Graph>(*end_clusters[i], *start_clusters[j], s, pacbio_k));
+							illumina_gaps.push_back(GapDescription<Graph>(*end_clusters[i], *start_clusters[j], s, (int) pacbio_k));
 						}
 
 					}
@@ -377,7 +377,7 @@ public:
 		PathStorageCallback<Graph> callback(g_);
 //TODO::something more reasonable
 		int path_min_len = max(int(floor((seq_len - int(debruijn_k)) * cfg::get().pb.path_limit_pressing)), 0);
-		int path_max_len = (seq_len + int(debruijn_k)) * cfg::get().pb.path_limit_stretching;
+		int path_max_len = (int) round((double) (seq_len + (int) debruijn_k) * cfg::get().pb.path_limit_stretching);
 		if (seq_len < 0) {
 			WARN("suspicious negative seq_len " << start_pos << " " << end_pos << " " << path_min_len << " " << path_max_len);
 			return std::make_pair(-1, -1);
@@ -409,7 +409,7 @@ public:
 		for (size_t i = 0; i < result.size(); i++) {
 			for (auto a_iter = a.sorted_positions.begin(); a_iter != a.sorted_positions.end(); ++a_iter)
 				for (auto b_iter = b.sorted_positions.begin(); b_iter != b.sorted_positions.end(); ++b_iter)
-					if (similar(*a_iter, *b_iter, result[i] + addition)) {
+					if (similar(*a_iter, *b_iter, (int) (result[i] + addition))) {
 						return 1;
 					}
 		}
@@ -534,10 +534,10 @@ typename PacBioMappingIndex<Graph>::MappingDescription PacBioMappingIndex<Graph>
 		kmer <<= s[j];
 		if (tmp_index.valid_key(kmer)) {
 			for (auto iter = tmp_index[kmer].begin(); iter != tmp_index[kmer].end(); ++iter) {
-				int quality = tmp_index[kmer].size();
+				int quality = (int) tmp_index[kmer].size();
 				if (banned_kmers.find(Sequence(kmer)) == banned_kmers.end()) {
 					if (int(iter->offset) > int(debruijn_k - pacbio_k) && int(iter->offset) < int(g_.length(iter->edge_id)))
-						res[iter->edge_id].push_back(MappingInstance(iter->offset, size_t(j - pacbio_k + 1), quality));
+						res[iter->edge_id].push_back(MappingInstance((int) iter->offset, (int) (j - pacbio_k + 1), quality));
 				}
 			}
 		}

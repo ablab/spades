@@ -48,8 +48,8 @@ struct graph_pack: private boost::noncopyable {
     explicit graph_pack(size_t k, const std::string &workdir,
             Sequence const& genome = Sequence(), size_t single_gap = 0,
             bool careful_labeling = false, bool use_inner_ids = false) :
-    k_value(k), g(k), index(g, (unsigned) k + 1, workdir), 
-    int_ids(g, use_inner_ids), edge_pos(g, single_gap, careful_labeling), 
+    k_value(k), g(k), index(g, (unsigned) k + 1, workdir),
+    int_ids(g, use_inner_ids), edge_pos(g, (int) single_gap, careful_labeling),
     kmer_mapper(g, k + 1), genome(genome), mismatch_masker(g) {
     }
 };

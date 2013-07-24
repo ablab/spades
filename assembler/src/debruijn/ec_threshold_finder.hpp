@@ -38,7 +38,7 @@ class MCErroneousConnectionThresholdFinder {
     cov_model::KMerCoverageModel CovModel(cov);
     CovModel.Fit();
 
-    return CovModel.GetErrorThreshold();
+    return (double) CovModel.GetErrorThreshold();
   }
 
  private:

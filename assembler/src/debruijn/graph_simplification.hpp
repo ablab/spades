@@ -504,7 +504,7 @@ bool MaxFlowRemoveErroneousEdges(
         return false;
     INFO("Removing connections based on max flow strategy");
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
-            g.k(), mfec_config.max_ec_length_coefficient);
+            g.k(), (size_t) round(mfec_config.max_ec_length_coefficient));
     omnigraph::MaxFlowECRemover<Graph> erroneous_edge_remover(
             g, max_length, mfec_config.uniqueness_length,
             mfec_config.plausibility_length, removal_handler);
@@ -535,7 +535,7 @@ bool RemoveComplexBulges(
 template<class Graph>
 bool AllTopology(Graph &g,
                  boost::function<void(typename Graph::EdgeId)> removal_handler,
-                 size_t iteration) {
+                 size_t /*iteration*/) {
     bool res = TopologyRemoveErroneousEdges(g, cfg::get().simp.tec,
                                         removal_handler);
     res |= TopologyReliabilityRemoveErroneousEdges(g, cfg::get().simp.trec,
