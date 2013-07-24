@@ -139,7 +139,10 @@ public:
 			HiddenAddPath(rc_p, w);
 		}
 	}
-
+	void DumpToFile(const string filename, EdgesPositionHandler<Graph> &edge_pos) {
+		map <EdgeId, EdgeId> auxilary;
+		DumpToFile(filename, edge_pos, auxilary);
+	}
 	void DumpToFile(const string filename, EdgesPositionHandler<Graph> &edge_pos, map<EdgeId, EdgeId> &replacement) {
 		ofstream filestr(filename);
 		ofstream filestr2(filename + "_yana");

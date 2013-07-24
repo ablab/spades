@@ -134,8 +134,8 @@ namespace debruijn_graph {
 					resolved_loop.push_back(loopEdge2);
 					resolved_loop.push_back(loopEdge1);
 				}
-				resolvedLoop.push_back(outgoingEdge);
-				if ( resolvedLoop.size() > 5 ) canBeResolved = false;
+				resolved_loop.push_back(outgoingEdge);
+				if ( resolved_loop.size() > 5 ) can_be_resolved = false;
 			//}
 			return can_be_resolved;
 		}
@@ -193,20 +193,7 @@ namespace debruijn_graph {
 				}
 
 			}
-<<<<<<< HEAD
 
-			if (ifSimple) std::cout << "simple: " << std::endl;
-			else std::cout << "complex: " << std::endl;
-
-			/*if (ifSimple)
-			for ( auto e = path.begin(); e != path.end(); ++e) {
-				prohibitedEdges.insert(*e);
-				std::cout << graph_p.g.int_id(*e) << "  ";
-			
-			}*/
-			std::cout << std::endl;
-=======
->>>>>>> path_extend_4_exp
 			return ifSimple;
 		}
 

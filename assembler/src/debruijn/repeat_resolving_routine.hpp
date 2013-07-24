@@ -900,7 +900,7 @@ void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, s
 
 
 
-	DeBruijnEdgeIndex<conj_graph_pack::graph_t, runtime_k::RtSeq> kmerIndex(conj_gp.index.inner_index().K(), conj_gp.g, cfg::get().output_dir);
+	DeBruijnEdgeIndex<conj_graph_pack::graph_t, runtime_k::RtSeq> kmer_index(conj_gp.index.inner_index().K(), conj_gp.g, cfg::get().output_dir);
 	if (cfg::get().developer_mode) {
 
 		std::string path;
@@ -925,7 +925,7 @@ void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, s
 	int bucket_out = 0;
 	int repeat_distance = 500;
 	double probability = bm.GetProbablityFromBucketToBucketForDistance (bucket_in, bucket_out, repeat_distance) ;*/
-	auto index = FlankingCoverage<Graph>(conj_gp.g, kmerIndex, 50, cfg::get().K + 1);
+	auto index = FlankingCoverage<Graph>(conj_gp.g, kmer_index, 50, cfg::get().K + 1);
 	EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(conj_gp.g, conj_gp.g);
 	auto cov_rr = CoverageBasedResolution<conj_graph_pack> (conj_gp, kmer_index, quality_labeler, cfg::get().cbrr.tandem_ratio_lower_threshold, cfg::get().cbrr.tandem_ratio_upper_threshold, cfg::get().cbrr.repeat_length_upper_threshold);
 	cov_rr.resolve_repeats_by_coverage(index, insert_size, labels_after, clustered_index, filteredPaths, cfg::get().output_dir + "resolved_by_coverage.fasta");

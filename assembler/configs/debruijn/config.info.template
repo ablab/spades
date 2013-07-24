@@ -42,7 +42,7 @@ developer_mode true
 paired_mode true
 
 ; for long single reads
-long_single_mode true
+long_single_mode false
 
 ; The following parameters are used ONLY if developer_mode is true
 
