@@ -1115,6 +1115,20 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
         long_reads_libs.push_back(single_storage);
     }
 
+    //TODO: Delete this code
+    if (cfg::get().pacbio_test_on) {
+        PathStorage<Graph> pacbio_read(conj_gp.g);
+        INFO("creating  multiindex with k = " << cfg::get().pb.pacbio_k);
+        PacBioAligner pac_aligner(conj_gp, cfg::get().pb.pacbio_k);
+        INFO("index created");
+        pac_aligner.pacbio_test(pacbio_read, gaps);
+        vector<PathInfo<Graph> > pacbio_paths = pacbio_read.GetAllPaths();
+        PathStorageInfo<Graph> pacbio_storage(
+                pacbio_paths,
+                cfg::get().pe_params.long_reads.pacbio_reads.filtering,
+                cfg::get().pe_params.long_reads.pacbio_reads.priority);
+        long_reads_libs.push_back(pacbio_storage);
+    }
 
     if (cfg::get().use_scaffolder
             && cfg::get().pe_params.param_set.scaffolder_options.on) {
