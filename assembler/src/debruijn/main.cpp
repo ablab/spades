@@ -25,11 +25,8 @@
 #include "de/distance_estimation.hpp"
 #include "memory_limit.hpp"
 #include "read_converter.hpp"
-
 #include "perfcounter.hpp"
-
 #include "runtime_k.hpp"
-
 
 void link_output(std::string const& link_name) {
   if (!cfg::get().run_mode)

@@ -73,7 +73,7 @@ inline Sequence ReadGenome(const string& filename) {
 }
 
 void WriteGenome(const Sequence& genome, const string& filename) {
-  io::ofastastream stream(filename);
+  io::osequencestream stream(filename);
   io::SingleRead read("genome", genome.str());
   stream << read;
 }
@@ -139,7 +139,7 @@ class EdgeCoordinatesGraphLabeler: public AbstractGraphLabeler<Graph> {
 	typedef typename Graph::VertexId VertexId;
 public:
 	const CoordinatesHandler<Graph>& edge_pos_;
-  const std::vector<std::string> genome_names_;
+	const std::vector<std::string> genome_names_;
 
 	EdgeCoordinatesGraphLabeler(const Graph& g,
                               const CoordinatesHandler<Graph>& edge_pos,

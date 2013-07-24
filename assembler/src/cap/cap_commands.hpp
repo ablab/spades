@@ -363,7 +363,7 @@ class FindInversionsCommand : public LocalCommand<CapEnvironment> {
       return;
     }
 
-    const vector<string> &args = arg_list.GetAllArguments();
+//    const vector<string> &args = arg_list.GetAllArguments();?
 
     bool mask_inversions = false;
     std::string filename = curr_env.event_log_path();
@@ -382,7 +382,7 @@ class FindInversionsCommand : public LocalCommand<CapEnvironment> {
     }
     */
 
-    int code = curr_env.manager().FindInversions(mask_inversions, filename, mode);
+    /*int code = */curr_env.manager().FindInversions(mask_inversions, filename, mode);
     /*
     if (code == 1) {
       cout << "Output file could not be opened for writing. Aborting.\n";

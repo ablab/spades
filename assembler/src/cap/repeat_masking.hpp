@@ -181,7 +181,7 @@ void Clear(const string& in, const string& out) {
 	set<Seq<k>, typename Seq<k>::less2> repeats;
 	FillRepeats<k>(AllSequences(in_stream), repeats);
 	in_stream.reset();
-	io::ofastastream out_stream(out);
+	io::osequencestream out_stream(out);
 	io::SingleRead contig;
 	while (!in_stream.eof()) {
 		in_stream >> contig;

@@ -47,7 +47,7 @@ class PrintPathsCommand : public LocalCommand<DebruijnEnvironment> {
       return;
 
     TRACE("Executing `paths` command");
-    bool first_edge = false;
+//    bool first_edge = false;
     bool second_edge = false;
     size_t from = GetInt(args[1]);
     size_t to = GetInt(args[2]);
@@ -56,7 +56,7 @@ class PrintPathsCommand : public LocalCommand<DebruijnEnvironment> {
       max_length = GetInt(args[3]);
     if (arg_list["edge"]=="true") {
       // not so good, maybe do something
-      first_edge = second_edge = true;
+//      first_edge = second_edge = true;
       TRACE("Looking at edges");
       if (!CheckEdgeExists(curr_env.int_ids(), from) || !CheckEdgeExists(curr_env.int_ids(), to))
         return;

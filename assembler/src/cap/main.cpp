@@ -37,9 +37,7 @@ void create_console_logger(string const& cfg_filename) {
 
 int main(int argc, char** argv) {
     const size_t GB = 1 << 30;
-
     try {
-
         using namespace online_visualization;
 
         string cfg_filename = argv[1];

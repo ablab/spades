@@ -19,7 +19,8 @@ class SyntheticTestsRunner {
     typedef boost::property_tree::ptree XmlTreeT;
     typedef XmlTreeT::value_type XmlNodeT;
     typedef ConjugateDeBruijnGraph GraphT;
-    typedef graph_pack<GraphT, Seq, DeBruijnEdgeIndex<KmerStoringDeBruijnEdgeIndex<GraphT, Seq>>> GraphPackT;
+    typedef graph_pack<GraphT, Seq,
+            DeBruijnEdgeIndex<KmerStoringDeBruijnEdgeIndex<GraphT, Seq>>> GraphPackT;
 
     const string filename_;
     const size_t k_;
@@ -28,20 +29,46 @@ class SyntheticTestsRunner {
 
     XmlTreeT xml_tree_;
 
-    vector<string> GenomeNames(ContigStreams& streams) const {
+    size_t NumberOfContigs(ContigStream& stream) const {
+        size_t cnt = 0;
+        while(!stream.eof()) {
+            Contig c;
+            stream >> c;
+            cnt++;
+        }
+        stream.reset();
+        return cnt;
+    }
+
+    vector<string> TransparentContigNames(ContigStreams& streams) const {
         vector<string> genome_names;
         for (auto &stream : streams) {
-          stream.reset();
+            stream.reset();
 
-          io::SingleRead contig;
-          while (!stream.eof()) {
-            stream >> contig;
-            genome_names.push_back(contig.name());
-          }
+            io::SingleRead contig;
+            while (!stream.eof()) {
+                stream >> contig;
+                genome_names.push_back(contig.name());
+            }
 
-          stream.reset();
+            stream.reset();
         }
         return genome_names;
+    }
+
+    void PrintBlocks(BlockPrinter<GraphT>& block_printer, ContigStreamsPtr streams) const {
+        vector<string> contig_names = TransparentContigNames(*streams);
+
+        size_t transparent_id = 0;
+        for (size_t i = 0; i < streams->size(); ++i) {
+            io::RCRemovingWrapper<Contig> stream((*streams)[i]);
+            for (size_t j = 0,
+                    n = NumberOfContigs(stream);
+                    j < n; ++j) {
+                block_printer.ProcessContig(i + 1, transparent_id, contig_names[transparent_id]);
+                transparent_id += 2;
+            }
+        }
     }
 
     void ProcessExample(ContigStreamsPtr streams, size_t id) const {
@@ -49,36 +76,39 @@ class SyntheticTestsRunner {
         ColorHandler<GraphT> coloring(gp.g);
         CoordinatesHandler<GraphT> coordinates_handler;
 
-        ConstructColoredGraph(gp, coloring, coordinates_handler, *RCWrapStreams(*streams));
+        ConstructColoredGraph(gp, coloring, coordinates_handler, *streams);
+        coordinates_handler.FindGenomeFirstEdge(3);
         Save(gp, coloring, coordinates_handler, streams, output_dir_ + ToString(id));
     }
 
     void Save(const GraphPackT& gp, const ColorHandler<GraphT>& coloring,
-        const CoordinatesHandler<GraphT> &coordinates_handler,
-        ContigStreamsPtr streams, const string& filename) const {
+            const CoordinatesHandler<GraphT> &coordinates_handler,
+            ContigStreamsPtr streams, const string& filename) const {
         typename PrinterTraits<GraphT>::Printer printer(gp.g, gp.int_ids);
         INFO("Saving graph to " << filename);
         printer.saveGraph(filename);
         printer.saveEdgeSequences(filename);
-  //        printer.savePositions(filename, gp.edge_pos);
+        //        printer.savePositions(filename, gp.edge_pos);
         SaveColoring(gp.g, gp.int_ids, coloring, filename);
 
         ReliableSplitter<Graph> splitter(gp.g,
-                                         numeric_limits<size_t>::max(),
-                                         numeric_limits<size_t>::max());
+                numeric_limits<size_t>::max(),
+                numeric_limits<size_t>::max());
 
-        LengthGraphLabeler<Graph> length_labeler(gp.g);
-        EdgeCoordinatesGraphLabeler<Graph> pos_labeler(gp.g, coordinates_handler, GenomeNames(*streams));
-
-        CompositeLabeler<Graph> labeler(length_labeler, pos_labeler);
+//        LengthIdGraphLabeler<Graph> /*length_*/labeler(gp.g);
+        LengthGraphLabeler<Graph> /*length_*/labeler(gp.g);
+//        EdgeCoordinatesGraphLabeler<Graph> pos_labeler(gp.g,
+//                                                       coordinates_handler,
+//                                                       TransparentContigNames(*streams));
+//
+//        CompositeLabeler<Graph> labeler(length_labeler, pos_labeler);
 
         WriteComponents(gp.g, splitter, filename + ".dot",
                 *ConstructBorderColorer(gp.g, coloring), labeler);
 
-//        BlockPrinter<GraphT> block_printer(gp, filename + ".blk");
-//        for (size_t i = 0; i < streams->size(); ++i) {
-//            block_printer.ProcessGenome(i + 1, ReadSequence((*streams)[i]));
-//        }
+        BlockPrinter<GraphT> block_printer(gp.g, coordinates_handler, filename + ".blk");
+        PrintBlocks(block_printer, streams);
+        streams->reset();
     }
 
     const vector<io::SingleRead> ParseGenome(
@@ -88,7 +118,7 @@ class SyntheticTestsRunner {
         BOOST_FOREACH(const XmlNodeT& contig, genome_node) {
             contigs.push_back(
                     io::SingleRead("contig_" + ToString(contig_cnt++),
-                                   contig.second.data()));
+                            contig.second.data()));
         }
         return contigs;
     }
@@ -108,7 +138,7 @@ class SyntheticTestsRunner {
         ContigStreamsPtr streams(new ContigStreams());
         streams->push_back(new io::VectorReader<Contig>(genomes[0]));
         streams->push_back(new io::VectorReader<Contig>(genomes[1]));
-        ProcessExample(streams, id);
+        ProcessExample(RCWrapStreams(*streams), id);
     }
 
     vector<size_t> ProcessFile(const set<size_t>& ids_to_launch) const {
@@ -125,11 +155,11 @@ class SyntheticTestsRunner {
 
 public:
     SyntheticTestsRunner(const string& filename, size_t k,
-                         const string& output_dir, const string& work_dir)
-            : filename_(filename),
-              k_(k),
-              output_dir_(output_dir),
-              work_dir_(work_dir) {
+            const string& output_dir, const string& work_dir)
+    : filename_(filename),
+    k_(k),
+    output_dir_(output_dir),
+    work_dir_(work_dir) {
         read_xml(filename, xml_tree_);
     }
 

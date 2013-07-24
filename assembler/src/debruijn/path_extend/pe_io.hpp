@@ -75,7 +75,7 @@ public:
 
     void writeEdges(const string& filename) {
         INFO("Outputting edges to " << filename);
-        osequencestream_with_data_for_scaffold oss(filename);
+        io::osequencestream_with_data_for_scaffold oss(filename);
 
         set<EdgeId> included;
         for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
@@ -117,7 +117,7 @@ public:
     void writePaths(PathContainer& paths, const string& filename) {
 
         INFO("Writing contigs to " << filename);
-        osequencestream_with_data_for_scaffold oss(filename);
+        io::osequencestream_with_data_for_scaffold oss(filename);
         int i = 0;
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
         	if (iter.get()->Length() <= 0){
