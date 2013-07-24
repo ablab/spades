@@ -36,11 +36,12 @@
 
 namespace cap {
 
-inline void CheckDiffs(size_t k, const string& actual_prefix, const string& etalon_prefix,
-                       const string& work_dir, bool exact_match = true) {
+inline void CheckDiffs(size_t k, const string& actual_prefix,
+                       const string& etalon_prefix, const string& work_dir,
+                       bool exact_match = true) {
     if (exact_match) {
         INFO("Checking differences for graphs: exact match");
-        vector<string> suffixes = { "grp", "clr", "sqn" };
+        vector<string> suffixes = { "grp", "clr", "sqn", "blk" };
         FOREACH (auto suff, suffixes) {
             BOOST_CHECK_MESSAGE(
                     CheckFileDiff(actual_prefix + "." + suff, etalon_prefix + "." + suff),
@@ -48,67 +49,58 @@ inline void CheckDiffs(size_t k, const string& actual_prefix, const string& etal
         }
     } else {
         INFO("Checking differences for graphs: graph isomorphism");
+        //currently not testing coordinates handler at all
         ColoredGraphIsomorphismChecker<conj_graph_pack> checker(k, work_dir);
-        BOOST_CHECK_MESSAGE(
-                checker.Check(actual_prefix, etalon_prefix),
-                "GRAPHS DIFFER");
+        BOOST_CHECK_MESSAGE( checker.Check(actual_prefix, etalon_prefix),
+                            "GRAPHS DIFFER");
     }
 }
 
 inline void RegenerateEtalon(size_t k, const string& filename,
                              const string& etalon_root,
                              const string& work_dir) {
-    remove_dir(etalon_root);
-    make_dir(etalon_root);
-    SyntheticTestsRunner<runtime_k::RtSeq> test_runner(filename, k,
-                                                       etalon_root,
+    SyntheticTestsRunner<runtime_k::RtSeq> test_runner(filename, k, etalon_root,
                                                        work_dir);
     test_runner.Run();
 }
 
 template<class Seq>
 void RunTests(size_t k, const string& filename, const string& output_dir,
-                     const string& etalon_root, const string& work_dir,
-                     bool exact_match = true,
-                     const vector<size_t>& example_ids = vector<size_t>()) {
+              const string& etalon_root, const string& work_dir,
+              bool exact_match = true, const vector<size_t>& example_ids =
+                      vector<size_t>()) {
     SyntheticTestsRunner<Seq> test_runner(filename, k, output_dir, work_dir);
     vector<size_t> launched = test_runner.Run();
     FOREACH(size_t id, launched) {
-        CheckDiffs(k, output_dir + ToString(id), etalon_root + ToString(id), work_dir, exact_match);
+        CheckDiffs(k, output_dir + ToString(id), etalon_root + ToString(id),
+                   work_dir, exact_match);
     }
 }
 
 BOOST_AUTO_TEST_CASE( RegenerateEtalonTest ) {
-//    return;
+    return;
     utils::TmpFolderFixture _("tmp");
     string input_dir = "./src/test/cap/tests/synthetic/";
-    string etalon_dir = input_dir + "etalon";
+    string etalon_dir = input_dir + "etalon/";
     remove_dir(etalon_dir);
     make_dir(etalon_dir);
-    RegenerateEtalon(25,
-                     input_dir + "tests.xml",
-                         etalon_dir,
-                         "tmp");
+    RegenerateEtalon(25, input_dir + "tests.xml", etalon_dir, "tmp");
 }
 
 BOOST_AUTO_TEST_CASE( SyntheticExamplesTestsRtSeq ) {
-    return;
+//    return;
     utils::TmpFolderFixture _("tmp");
     string input_dir = "./src/test/cap/tests/synthetic/";
-    RunTests<runtime_k::RtSeq> (25, input_dir + "tests.xml",
-                                "tmp/",
-                                input_dir + "etalon/",
-                                "tmp", true);
+    RunTests<runtime_k::RtSeq>(25, input_dir + "tests.xml", "tmp/",
+                               input_dir + "etalon/", "tmp", true);
 }
 
 BOOST_AUTO_TEST_CASE( SyntheticExamplesTestsLSeq ) {
-    return;
+//    return;
     utils::TmpFolderFixture _("tmp");
     string input_dir = "./src/test/cap/tests/synthetic/";
-    RunTests<LSeq> (25, input_dir + "tests.xml",
-                                "tmp/",
-                                input_dir + "etalon/",
-                                "tmp", false);
+    RunTests<LSeq>(25, input_dir + "tests.xml", "tmp/", input_dir + "etalon/",
+                   "tmp", false);
 }
 
 /*

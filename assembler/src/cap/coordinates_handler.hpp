@@ -701,7 +701,6 @@ void CoordinatesHandler<Graph>::StoreGenomeThread(
 template <class Graph>
 typename CoordinatesHandler<Graph>::EdgeId
 CoordinatesHandler<Graph>::FindGenomeFirstEdge(const uint genome_id) const {
-    cout << "id " << genome_id << endl;
   std::pair<uint, size_t> pos_in_question(genome_id, 0);
 
   for (auto it = g_->SmartEdgeBegin(); !it.IsEnd(); ++it) {

@@ -1024,7 +1024,8 @@ public:
 			g_(g), coords_(coords), output_stream_(filename) , curr_id_(1) {
         output_stream_
                 << "genome_id\tcontig_name\tcanonical_id\tcontig_start_pos\tcontig_end_pos"
-                << "\trefined_start_pos\trefined_end_pos\tsign\torig_id";
+                << "\trefined_start_pos\trefined_end_pos\tsign\torig_id"
+                << endl;
 	}
 
 	//genome is supposed to perfectly correspond to some path in the graph
@@ -1054,7 +1055,8 @@ public:
                             % (graph_pos + g_.length(e))
                             % (canon.second ? "+" : "-")
                             % g_.int_id(e))
-                            .str();
+                            .str()
+                    << endl;
 
 	        graph_pos = graph_pos + g_.length(e);
 	        v = g_.EdgeEnd(e);

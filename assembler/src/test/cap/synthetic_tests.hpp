@@ -66,7 +66,7 @@ class SyntheticTestsRunner {
                     n = NumberOfContigs(stream);
                     j < n; ++j) {
                 block_printer.ProcessContig(i + 1, transparent_id, contig_names[transparent_id]);
-                transparent_id++;
+                transparent_id += 2;
             }
         }
     }
@@ -95,10 +95,13 @@ class SyntheticTestsRunner {
                 numeric_limits<size_t>::max(),
                 numeric_limits<size_t>::max());
 
-        LengthGraphLabeler<Graph> length_labeler(gp.g);
-        EdgeCoordinatesGraphLabeler<Graph> pos_labeler(gp.g, coordinates_handler, TransparentContigNames(*streams));
-
-        CompositeLabeler<Graph> labeler(length_labeler, pos_labeler);
+//        LengthIdGraphLabeler<Graph> /*length_*/labeler(gp.g);
+        LengthGraphLabeler<Graph> /*length_*/labeler(gp.g);
+//        EdgeCoordinatesGraphLabeler<Graph> pos_labeler(gp.g,
+//                                                       coordinates_handler,
+//                                                       TransparentContigNames(*streams));
+//
+//        CompositeLabeler<Graph> labeler(length_labeler, pos_labeler);
 
         WriteComponents(gp.g, splitter, filename + ".dot",
                 *ConstructBorderColorer(gp.g, coloring), labeler);
