@@ -519,7 +519,7 @@ bool RemoveComplexBulges(
     if (!cbr_config.enabled)
         return false;
     INFO("Removing complex bulges");
-    size_t max_length = g.k() * cbr_config.max_relative_length;
+    size_t max_length = (size_t) round((double) g.k() * cbr_config.max_relative_length);
     size_t max_diff = cbr_config.max_length_difference;
     string output_dir = "";
     if (cbr_config.pics_enabled) {

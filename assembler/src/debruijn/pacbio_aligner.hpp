@@ -75,8 +75,8 @@ public:
 		gap_closer.ConstructConsensus(cfg::get().max_threads, gaps);
 		gap_closer.DumpToFile("gaps_closed2.fasta", gp_.edge_pos);
 		INFO("Total reads: " << n);
-		INFO("Mean read length: " << total_length * 0.1/ n)
-		INFO("Mean subread length: " << tlen * 0.1/ (genomic_subreads + nongenomic_subreads + nongenomic_edges))
+		INFO("Mean read length: " << total_length * 0.1 / (double) n)
+		INFO("Mean subread length: " << tlen * 0.1 / (genomic_subreads + nongenomic_subreads + nongenomic_edges))
 		INFO("reads with rc edges:  " << rc_pairs);
 		INFO("Genomic/nongenomic subreads/nongenomic edges: "<<genomic_subreads <<" / " << nongenomic_subreads <<" / "<< nongenomic_edges);
 		INFO("different edges profile:")
@@ -104,9 +104,9 @@ public:
 			}
 			size_t thread_num = omp_get_thread_num();
 			Sequence seq(reads[i].sequence());
-			total_length += seq.size();
+			total_length += (int) seq.size();
 			auto location_map = pac_index.GetClusters(seq);
-			different_edges_profile[location_map.size()]++;
+			different_edges_profile[(int) location_map.size()]++;
 			n++;
 //		    if (location_map.size() <= 1){
 //		    	TRACE("No significant clusters");
@@ -164,7 +164,7 @@ public:
 				//except this point
 				for (auto j_iter = iter->begin(); j_iter != iter->end(); ++j_iter) {
 					filestr << gp_.g.int_id(*j_iter) << "(" << gp_.g.length(*j_iter) << ") ";
-					tlen += gp_.g.length(*j_iter);
+					tlen += (int) gp_.g.length(*j_iter);
 				}
 				filestr << " \n";
 			}
