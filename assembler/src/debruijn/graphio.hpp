@@ -538,19 +538,18 @@ public:
       TRACE("Vertex "<<vertex_real_id<<" ~ "<<conjugate_id<<" .");
       VERIFY(flag == 2);
 
-      if (vertex_set.find(vertex_real_id) == vertex_set.end()) {
+      if (vertex_set.find((int) vertex_real_id) == vertex_set.end()) {
         VertexId vid = this->g().AddVertex();
         VertexId conj_vid = this->g().conjugate(vid);
 
         this->id_handler().AddVertexIntId(vid, vertex_real_id);
         this->id_handler().AddVertexIntId(conj_vid, conjugate_id);
-        vertex_set.insert(conjugate_id);
-        TRACE(
-            vid<<" ( "<< this->id_handler().ReturnVertexId(vertex_real_id) <<" )   "<< conj_vid << "( "<<this->id_handler().ReturnVertexId(conjugate_id)<<" )  added");
+        vertex_set.insert((int) conjugate_id);
+        TRACE(vid<<" ( "<< this->id_handler().ReturnVertexId(vertex_real_id) <<" )   "<< conj_vid << "( "<<this->id_handler().ReturnVertexId(conjugate_id)<<" )  added");
       }
     }
 
-    char first_char = getc(sequence_file);
+    char first_char = (char) getc(sequence_file);
     VERIFY(!ferror(sequence_file));
     ungetc(first_char, sequence_file);
     bool fasta = (first_char == '>'); // if it's not fasta, then it's old .sqn
@@ -579,19 +578,18 @@ public:
         flag = fscanf(sequence_file, "%ld %s .", &e_real_id, longstring);
       }
       VERIFY(flag == 2);
-      TRACE(
-          "Edge "<<e_real_id<<" : "<<start_id<<" -> " << fin_id << " l = " << length << " ~ "<< conjugate_edge_id);
-      if (edge_set.find(e_real_id) == edge_set.end()) {
+      TRACE("Edge " << e_real_id << " : " << start_id << " -> " 
+            << fin_id << " l = " << length << " ~ " << conjugate_edge_id);
+      if (edge_set.find((int) e_real_id) == edge_set.end()) {
         Sequence tmp(longstring);
-        TRACE(
-            start_id<<" "<< fin_id <<" "<< this->id_handler().ReturnVertexId(start_id)<<" "<< this->id_handler().ReturnVertexId(fin_id));
+        TRACE(start_id << " " << fin_id << " " << this->id_handler().ReturnVertexId(start_id) 
+              << " " << this->id_handler().ReturnVertexId(fin_id));
         EdgeId eid = this->g().AddEdge(
             this->id_handler().ReturnVertexId(start_id),
             this->id_handler().ReturnVertexId(fin_id), tmp);
         this->id_handler().AddEdgeIntId(eid, e_real_id);
-        this->id_handler().AddEdgeIntId(this->g().conjugate(eid),
-            conjugate_edge_id);
-        edge_set.insert(conjugate_edge_id);
+        this->id_handler().AddEdgeIntId(this->g().conjugate(eid), conjugate_edge_id);
+        edge_set.insert((int) conjugate_edge_id);
       }
     }
     fclose(file);
@@ -695,7 +693,7 @@ void DataScanner<Graph>::loadCoverage(const string& file_name) {
     TRACE(edge_real_id<< " "<<edge_coverage <<" . ");
     EdgeId eid = id_handler_.ReturnEdgeId(edge_real_id);
     TRACE("EdgeId "<<eid);
-    g_.coverage_index().SetCoverage(eid, math::round(edge_coverage * g_.length(eid)));
+    g_.coverage_index().SetCoverage(eid, (int) math::round(edge_coverage * (double) g_.length(eid)));
   }
   fclose(file);
 }

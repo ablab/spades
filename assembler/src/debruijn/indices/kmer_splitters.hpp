@@ -133,7 +133,7 @@ DeBruijnReadKMerSplitter<Read>::FillBufferFromStream(ReadStream &stream,
 
 template<class Read>
 path::files_t DeBruijnReadKMerSplitter<Read>::Split(size_t num_files) {
-  unsigned nthreads = streams_.size();
+  unsigned nthreads = (unsigned) streams_.size();
 
   INFO("Splitting kmer instances into " << num_files << " buckets. This might take a while.");
 
@@ -158,7 +158,7 @@ path::files_t DeBruijnReadKMerSplitter<Read>::Split(size_t num_files) {
   std::vector<KMerBuffer> tmp_entries(nthreads);
   for (unsigned i = 0; i < nthreads; ++i) {
     KMerBuffer &entry = tmp_entries[i];
-    entry.resize(num_files, RtSeqKMerVector(K_, 1.25 * cell_size));
+    entry.resize(num_files, RtSeqKMerVector(K_, (size_t) (1.25 * (double) cell_size)));
   }
 
   size_t counter = 0, rl = 0, n = 15;
@@ -166,7 +166,7 @@ path::files_t DeBruijnReadKMerSplitter<Read>::Split(size_t num_files) {
   while (!streams_.eof()) {
 #   pragma omp parallel for num_threads(nthreads) reduction(+ : counter) shared(rl)
     for (size_t i = 0; i < nthreads; ++i) {
-      std::pair<size_t, size_t> stats = FillBufferFromStream(streams_[i], tmp_entries[i], num_files, cell_size);
+      std::pair<size_t, size_t> stats = FillBufferFromStream(streams_[i], tmp_entries[i], (unsigned) num_files, cell_size);
       counter += stats.first;
 
       // There is no max reduction in C/C++ OpenMP... Only in FORTRAN :(
@@ -191,7 +191,7 @@ path::files_t DeBruijnReadKMerSplitter<Read>::Split(size_t num_files) {
     size_t cnt = 0;
     contigs_->reset();
     while (!contigs_->eof()) {
-      FillBufferFromStream(*contigs_, tmp_entries[cnt], num_files, cell_size);
+      FillBufferFromStream(*contigs_, tmp_entries[cnt], (unsigned) num_files, cell_size);
       DumpBuffers(num_files, nthreads, tmp_entries, ostreams);
       if (++cnt >= nthreads)
         cnt = 0;
@@ -264,11 +264,11 @@ path::files_t DeBruijnGraphKMerSplitter<Graph>::Split(size_t num_files) {
 
   std::vector<KMerBuffer> tmp_entries(1);
   KMerBuffer &entry = tmp_entries[0];
-  entry.resize(num_files, RtSeqKMerVector(K_, 1.25 * cell_size));
+  entry.resize(num_files, RtSeqKMerVector(K_, (size_t) (1.25 * (double) cell_size)));
 
   size_t counter = 0, n = 10;
   for (auto it = g_.ConstEdgeBegin(); !it.IsEnd(); ) {
-    counter += FillBufferFromEdges(it, tmp_entries[0], num_files, cell_size);
+    counter += FillBufferFromEdges(it, tmp_entries[0], (unsigned) num_files, cell_size);
 
     DumpBuffers(num_files, 1, tmp_entries, ostreams);
 

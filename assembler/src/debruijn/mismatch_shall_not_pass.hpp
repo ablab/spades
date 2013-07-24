@@ -252,7 +252,7 @@ class MismatchShallNotPass {
         }
       }
       size_t nucl_code = s_edge[i];
-      if(nc[cur_best] > relative_threshold_ * nc[nucl_code] + 1) {
+      if ((double) nc[cur_best] > relative_threshold_ * (double) nc[nucl_code] + 1.) {
         to_correct.push_back(make_pair(i, cur_best));
         i += gp_.g.k();
       }
@@ -272,12 +272,12 @@ class MismatchShallNotPass {
         nc = statistics[len - 1 - i];
       size_t nucl_code = s_edge[i];
       size_t cur_best = 3 - nucl_code;
-      for(size_t j = 0; j < 4; j++) {
-        if(j != nucl_code && nc[j] > nc[cur_best]) {
+      for (size_t j = 0; j < 4; j++) {
+        if (j != nucl_code && nc[j] > nc[cur_best]) {
           cur_best = j;
         }
       }
-      if(nc[cur_best] > 0.00025 * nc[nucl_code] ) {
+      if ((double) nc[cur_best] > 0.00025 * (double) nc[nucl_code] ) {
         double ratio = 0;
         if (nc[nucl_code] == 0) {
           if (gp_.g.length(edge) > 200) {
@@ -285,7 +285,7 @@ class MismatchShallNotPass {
           }
           ratio = 1000;
         } else
-          ratio =  double(nc[cur_best])/nc[nucl_code];
+          ratio = (double) nc[cur_best] / (double) nc[nucl_code];
         vector<size_t> counts;
         for(size_t ii = 0; ii < 4; ii++)
           counts.push_back(nc[ii]);

@@ -626,7 +626,7 @@ class CoverageBasedResolution {
 		for ( auto e = incomingEdges.begin(); e != incomingEdges.end(); ++e) {
 
 			if ( std::find(component.begin(), component.end(), *e) != component.end() && visited_edges.find(*e) == visited_edges.end() ){
-				curLen += gp->g.length(*e);
+				curLen += (int) gp->g.length(*e);
 				if (curLen > maxPathLen) maxPathLen = curLen;
 				bfs(*e, visited_edges, component, curLen, maxPathLen);
 			}
@@ -636,7 +636,7 @@ class CoverageBasedResolution {
 		auto outgoingEdges = gp->g.OutgoingEdges(gp->g.EdgeEnd(edge));
 		for ( auto e = outgoingEdges.begin(); e != outgoingEdges.end(); ++e) {
 			if ( std::find(component.begin(), component.end(), *e) != component.end() && visited_edges.find(*e) == visited_edges.end() ){
-				curLen += gp->g.length(*e);
+				curLen += (int) gp->g.length(*e);
 				if (curLen > maxPathLen) maxPathLen = curLen;
 				bfs(*e, visited_edges, component, curLen, maxPathLen);
 			}
