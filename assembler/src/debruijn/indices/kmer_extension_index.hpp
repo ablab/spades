@@ -87,7 +87,7 @@ class DeBruijnExtensionIndex : public KmerFreeIndex<uint8_t, traits> {
         unsigned nmask = (1 << nnucl);
         if (this->operator [](idx) & nmask) {
 #           pragma omp atomic
-            this->operator [](idx) &= (unsigned char) ~nmask;
+            this->operator [](idx) &= ~nmask;
         }
     }
 
@@ -95,8 +95,8 @@ class DeBruijnExtensionIndex : public KmerFreeIndex<uint8_t, traits> {
         unsigned pmask = (1 << (pnucl + 4));
 
         if (this->operator [](idx) & pmask) {
-#           pragma omp atomic
-            this->operator [](idx) &= (unsigned char) ~pmask;
+#         pragma omp atomic
+            this->operator [](idx) &= ~pmask;
         }
     }
 
@@ -137,27 +137,27 @@ class DeBruijnExtensionIndex : public KmerFreeIndex<uint8_t, traits> {
     }
 
     bool CheckUniqueOutgoing(KMerIdx idx) const {
-        return CheckUnique((uint8_t) this->operator [](idx) & 15);
+        return CheckUnique(this->operator [](idx) & 15);
     }
 
     char GetUniqueOutgoing(KMerIdx idx) const {
-        return GetUnique((uint8_t) this->operator [](idx) & 15);
+        return GetUnique(this->operator [](idx) & 15);
     }
 
     bool CheckUniqueIncoming(KMerIdx idx) const {
-        return CheckUnique((uint8_t) (this->operator [](idx) >> 4));
+        return CheckUnique(this->operator [](idx) >> 4);
     }
 
     char GetUniqueIncoming(KMerIdx idx) const {
-        return GetUnique((uint8_t) (this->operator [](idx) >> 4));
+        return GetUnique(this->operator [](idx) >> 4);
     }
 
     size_t OutgoingEdgeCount(KMerIdx idx) const {
-        return Count((uint8_t) this->operator [](idx) & 15);
+        return Count(this->operator [](idx) & 15);
     }
 
     size_t IncomingEdgeCount(KMerIdx idx) const {
-        return Count((uint8_t) (this->operator [](idx) >> 4));
+        return Count(this->operator [](idx) >> 4);
     }
 
     ~DeBruijnExtensionIndex() {}

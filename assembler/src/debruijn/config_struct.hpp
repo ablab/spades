@@ -400,7 +400,7 @@ struct debruijn_config {
         }
     }
     size_t IS() const { return (size_t) math::round(reads[0].data().mean_insert_size); }
-    void set_IS(size_t IS) { reads[0].data().mean_insert_size = (double) IS; }
+    void set_IS(size_t IS) { reads[0].data().mean_insert_size = IS; }
     double is_var() const { return reads[0].data().insert_size_deviation; }
     void set_is_var(double is_var) { reads[0].data().insert_size_deviation = is_var; }
     double avg_coverage() const { return reads[0].data().average_coverage; }

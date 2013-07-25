@@ -339,7 +339,7 @@ public:
 			AddKmers(it, queueSize, kmers); // format a queue of junction kmers
 			CalculateSequences(kmers, sequences, finder); // in parallel
 			kmers.clear();
-			queueSize = min((size_t) ((double) queueSize * queueGrowthRate), queueMaxSize);
+			queueSize = min(size_t(queueSize * queueGrowthRate), queueMaxSize);
 		}
 		INFO("Extracting unbranching paths finished. " << sequences.size() << " sequences extracted");
 		return sequences;

@@ -341,7 +341,7 @@ void GetAllDistances(const Graph& g,
 
 template<class Graph>
 void CountAndSaveAllPaths(const Graph& g, const io::SequencingLibrary<debruijn_config::DataSetData> &lib, const IdTrackHandler<Graph>& int_ids,
-    const PairedInfoIndexT<Graph>& paired_index, const PairedInfoIndexT<Graph>& /*clustered_index*/) {
+    const PairedInfoIndexT<Graph>& paired_index, const PairedInfoIndexT<Graph>& clustered_index) {
   PairedIndexT all_paths(g);
   GetAllDistances<Graph>(paired_index,
                          all_paths,
@@ -1097,12 +1097,12 @@ size_t Nx(Graph &g, double percent) {
 		sum_edge_length += g.length(*iterator);
 	}
 	sort(lengths.begin(), lengths.end());
-	double len_perc = (1.0 - percent * 0.01) * (double) (sum_edge_length);
+	double len_perc = (1 - percent * 0.01) * (sum_edge_length);
 	for (size_t i = 0; i < lengths.size(); i++) {
 		if (lengths[i] >= len_perc)
 			return lengths[i];
 		else
-			len_perc -= (double) lengths[i];
+			len_perc -= lengths[i];
 	}
 	return 0;
 }
