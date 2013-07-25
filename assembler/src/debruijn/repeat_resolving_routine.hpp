@@ -1057,8 +1057,6 @@ void AddSingleLibrary(
     io::MultifileReader<io::SingleReadSeq> stream(streams->get(), true);
     PathStorage<Graph> long_single(gp.g);
     //long_single.LoadFromFile("/Johnny/vasilinetc/path-extend/path_extend_4_exp/M_abscessus/single/K55/07.23_11.39.13/long_reads_paths.mpr");
-    long_single.DumpToFile(cfg::get().output_dir + "long_reads_paths.mpr",
-                                   gp.edge_pos);
     read_mapper.ProcessSingleReadLibrary(reads, long_single);
     //read_mapper.ProcessLib(stream, long_single);
     vector<PathInfo<Graph> > long_paths = long_single.GetAllPaths();
@@ -1066,6 +1064,8 @@ void AddSingleLibrary(
             long_paths, cfg::get().pe_params.long_reads.single_reads.filtering,
             cfg::get().pe_params.long_reads.single_reads.priority);
     long_reads_libs.push_back(single_storage);
+    long_single.DumpToFile(cfg::get().output_dir + "long_reads_paths.mpr",
+                                           gp.edge_pos);
 }
 
 void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
