@@ -68,8 +68,8 @@ public:
 		gp.index.Attach();
 		gp.index.Refill();
 		PairedIndexT paired_index(gp.g);
-		size_t is = (size_t) round(cfg::get().ds.reads[index].data().mean_insert_size);
-		auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(cfg::get().ds.reads[index], true, (size_t) round(cfg::get().ds.reads[index].data().mean_insert_size));
+		size_t is = cfg::get().ds.reads[index].data().mean_insert_size;
+		auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(cfg::get().ds.reads[index], true, cfg::get().ds.reads[index].data().mean_insert_size);
 		SingleStreamType paired_streams(paired_stream.get());
 		paired_stream.release();
 		FillPairedIndexWithReadCountMetric(gp.g, *MapperInstance(gp), paired_index, paired_streams);
@@ -82,8 +82,8 @@ public:
 		}
 		size_t RL = cfg::get().ds.reads[index].data().read_length;
 		double var = cfg::get().ds.reads[index].data().insert_size_deviation;
-		PairedInfoLibrary* lib_not_cl = new PairedInfoLibrary(cfg::get().K, gp.g, RL, is, (size_t) round(var), paired_index);
-		PairedInfoLibrary* lib_cl = new PairedInfoLibrary(cfg::get().K, gp.g, RL, is, (size_t) round(var), clustered_index);
+		PairedInfoLibrary* lib_not_cl = new PairedInfoLibrary(cfg::get().K, gp.g, RL, is, var, paired_index);
+		PairedInfoLibrary* lib_cl = new PairedInfoLibrary(cfg::get().K, gp.g, RL, is, var, clustered_index);
 		map<PairInfo<EdgeId>, double> good_pi;
 		map<PairInfo<EdgeId>, double> bad_pi;
 		DEBUG("analyze paths begin");
@@ -111,8 +111,8 @@ private:
 		double d = pi.point.d;
 		double cov1 = gp.g.coverage(pi.first);
 		double cov2 = gp.g.coverage(pi.second);
-		double pi1 = lib->get_all_pi_count(pi.first, true) / (double) gp.g.length(pi.first);
-		double pi2 = lib->get_all_pi_count(pi.second, false) / (double) gp.g.length(pi.second);
+		double pi1 = lib->get_all_pi_count(pi.first, true) / gp.g.length(pi.first);
+		double pi2 = lib->get_all_pi_count(pi.second, false) / gp.g.length(pi.second);
 		double pi_norm1 = lib->get_all_norm_pi(pi.first, true);
 		double pi_norm2 = lib->get_all_norm_pi(pi.second, false);
 		double pi_norm1_aver = lib->get_all_norm_pi_aver(pi.first, true);
@@ -144,7 +144,7 @@ private:
 		os.close();
 	}
 
-	void get_norm_pi(conj_graph_pack& /*gp*/, map<PairInfo<EdgeId>, double>& pi, vector<double>& result){
+	void get_norm_pi(conj_graph_pack& gp, map<PairInfo<EdgeId>, double>& pi, vector<double>& result){
 		for (auto iter = pi.begin(); iter != pi.end(); ++iter) {
 			if (iter->first.point.weight > 0.0 and iter->second > 0.0 and
 					!boost::math::isnan<double>(iter->first.point.weight / iter->second) and
@@ -194,9 +194,9 @@ private:
 	void find_idel_pair_info(conj_graph_pack& gp, size_t from, BidirectionalPath* path,  PairedInfoLibrary* lib, map<EdgeId, PairInfo<EdgeId> >& idealPairInfo){
 		size_t length = 0;
 		for (size_t index = from; index < path->Size() && length < (size_t)insert_size_max; ++index){
-			double ideal_pi_w = lib->IdealPairedInfo(path->At(from), path->At(index), (int) length);
+			double ideal_pi_w = lib->IdealPairedInfo(path->At(from), path->At(index), length);
 			if (ideal_pi_w > 0){
-				PairInfo<EdgeId> ideal_pi(path->At(from), path->At(index), (double) length, ideal_pi_w, 0);
+				PairInfo<EdgeId> ideal_pi(path->At(from), path->At(index), length, ideal_pi_w, 0);
 				idealPairInfo.insert(make_pair(path->At(index), ideal_pi));
 			}
 			length += gp.g.length(path->At(index));

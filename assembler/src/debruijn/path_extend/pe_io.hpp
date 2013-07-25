@@ -42,7 +42,7 @@ protected:
 				}
 				ss << g_.EdgeNucls(path[i]).str();
 			} else {
-				int overlapLen = (int) k_ - gap;
+				int overlapLen = k_ - gap;
 				if (overlapLen >= (int) g_.length(path[i]) + (int) k_) {
 					continue;
 				}
@@ -81,7 +81,7 @@ public:
         for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
             if (included.count(*iter) == 0) {
                 oss.setCoverage(g_.coverage(*iter));
-                oss.setID((int) g_.int_id(*iter));
+                oss.setID(g_.int_id(*iter));
                 oss << g_.EdgeNucls(*iter);
 
                 included.insert(*iter);
@@ -129,7 +129,7 @@ public:
                 path = path->getConjPath();
             }
             path->Print();
-        	oss.setID((int) path->GetId());
+        	oss.setID(path->GetId());
             oss.setCoverage(path->Coverage());
             oss << ToString(*path);
         }
