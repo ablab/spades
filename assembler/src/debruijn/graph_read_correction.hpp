@@ -210,7 +210,7 @@ private:
         path_processor.Process();
 
         if (path_store.size() == 0) {
-            DEBUG("Failed to find closing path");
+            TRACE("Failed to find closing path");
             //          TRACE("Failed to close gap between v1=" << graph_.int_id(v1)
             //                          << " (conjugate "
             //                          << graph_.int_id(g_.conjugate(v1))
@@ -220,13 +220,13 @@ private:
             //          return boost::none;
             return vector<EdgeId>();
         } else if (path_store.size() == 1) {
-            DEBUG("Unique closing path found");
+            TRACE("Unique closing path found");
         } else {
-            DEBUG("Several closing paths found, first chosen");
+            TRACE("Several closing paths found, first chosen");
         }
         vector<EdgeId> answer = path_store.paths().front();
-        DEBUG("Gap closed");
-        DEBUG( "Cumulative closure length is " << CummulativeLength(g_, answer));
+        TRACE("Gap closed");
+        TRACE( "Cumulative closure length is " << CummulativeLength(g_, answer));
         return answer;
     }
     const Graph& g_;

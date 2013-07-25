@@ -547,19 +547,19 @@ class NewExtendedSequenceMapper {
   vector<EdgeId> FindReadPath(const Sequence& read) const {
         MappingPath<EdgeId> mapping_path = MapSequence(read);
         if (!IsMappingPathValid(mapping_path, read.size())) {
-            DEBUG("read unmapped");
+            TRACE("read unmapped");
             return vector<EdgeId>();
         }
         vector<EdgeId> corrected_path = path_fixer_.DeleteSameEdges(
                 mapping_path.simple_path().sequence());
         vector<EdgeId> fixed_path = path_fixer_.TryFixPath(corrected_path);
         if (!CheckContiguous(g_, fixed_path)) {
-            DEBUG("read unmapped");
+            TRACE("read unmapped");
             std::stringstream debug_stream;
             for (size_t i = 0; i < fixed_path.size(); ++i) {
                 debug_stream << g_.int_id(fixed_path[i]) << " ";
             }
-            DEBUG(debug_stream.str());
+            TRACE(debug_stream.str());
             return vector<EdgeId>();
         }
         return fixed_path;
