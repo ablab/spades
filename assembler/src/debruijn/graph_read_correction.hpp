@@ -163,37 +163,54 @@ public:
         //      VERIFY(edges.size() > 0);
         answer.push_back(edges[0]);
         for (size_t i = 1; i < edges.size(); ++i) {
-            vector<EdgeId> closure = TryCloseGap(g_.EdgeEnd(edges[i - 1]),
-                                                 g_.EdgeStart(edges[i]));
-            answer.insert(answer.end(), closure.begin(), closure.end());
-            //                  make_dir("assembly_compare/tmp");
-            //                  WriteComponentsAroundEdge(graph_,
-            //                          graph_.IncomingEdges(v1).front(),
-            //                          "assembly_compare/tmp/failed_close_gap_from.dot",
-            //                          *DefaultColorer(graph_),
-            //                          LengthIdGraphLabeler<Graph>(g_));
-            //                  WriteComponentsAroundEdge(graph_,
-            //                          g_.OutgoingEdges(v2).front(),
-            //                          "assembly_compare/tmp/failed_close_gap_to.dot",
-            //                          *DefaultColorer(g_),
-            //                          LengthIdGraphLabeler<Graph>(g_));
-            //                  VERIFY(false);
+            if (g_.EdgeEnd(edges[i - 1]) != g_.EdgeStart(edges[i])) {
+                vector<EdgeId> closure = TryCloseGap(g_.EdgeEnd(edges[i - 1]),
+                                                     g_.EdgeStart(edges[i]));
+                answer.insert(answer.end(), closure.begin(), closure.end());
+                //                  make_dir("assembly_compare/tmp");
+                //                  WriteComponentsAroundEdge(graph_,
+                //                          graph_.IncomingEdges(v1).front(),
+                //                          "assembly_compare/tmp/failed_close_gap_from.dot",
+                //                          *DefaultColorer(graph_),
+                //                          LengthIdGraphLabeler<Graph>(g_));
+                //                  WriteComponentsAroundEdge(graph_,
+                //                          g_.OutgoingEdges(v2).front(),
+                //                          "assembly_compare/tmp/failed_close_gap_to.dot",
+                //                          *DefaultColorer(g_),
+                //                          LengthIdGraphLabeler<Graph>(g_));
+                //                  VERIFY(false);
+            }
             answer.push_back(edges[i]);
         }
         return answer;
     }
+
+    vector<EdgeId> DeleteSameEdges(const vector<EdgeId>& path) const {
+        vector<EdgeId> result;
+        if (path.empty()) {
+            return result;
+        }
+        result.push_back(path[0]);
+        for (size_t i = 1; i < path.size(); ++i) {
+            if (path[i] != result[result.size() - 1]) {
+                result.push_back(path[i]);
+            }
+        }
+        return result;
+    }
 private:
     vector<EdgeId> TryCloseGap(VertexId v1, VertexId v2) const {
         if (v1 == v2)
-            return vector<EdgeId>();TRACE(
+            return vector<EdgeId>();
+        TRACE(
                 "Trying to close gap between v1=" << g_.int_id(v1) << " and v2=" << g_.int_id(v2));
         PathStorageCallback<Graph> path_store(g_);
         //todo reduce value after investigation
-        PathProcessor<Graph> path_processor(g_, 0, 50, v1, v2, path_store);
+        PathProcessor<Graph> path_processor(g_, 0, 10, v1, v2, path_store);
         path_processor.Process();
 
         if (path_store.size() == 0) {
-            TRACE("Failed to find closing path");
+            DEBUG("Failed to find closing path");
             //          TRACE("Failed to close gap between v1=" << graph_.int_id(v1)
             //                          << " (conjugate "
             //                          << graph_.int_id(g_.conjugate(v1))
@@ -203,13 +220,13 @@ private:
             //          return boost::none;
             return vector<EdgeId>();
         } else if (path_store.size() == 1) {
-            TRACE("Unique closing path found");
+            DEBUG("Unique closing path found");
         } else {
-            TRACE("Several closing paths found, first chosen");
+            DEBUG("Several closing paths found, first chosen");
         }
         vector<EdgeId> answer = path_store.paths().front();
-        TRACE("Gap closed");
-        TRACE( "Cumulative closure length is " << CummulativeLength(g_, answer));
+        DEBUG("Gap closed");
+        DEBUG( "Cumulative closure length is " << CummulativeLength(g_, answer));
         return answer;
     }
     const Graph& g_;
