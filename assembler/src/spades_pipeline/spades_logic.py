@@ -16,20 +16,20 @@ import process_cfg
 from process_cfg import bool_to_str
 from process_cfg import load_config_from_file
 
-def prepare_config_spades(filename, cfg, log, prev_K, K, last_one):
+def prepare_config_spades(filename, cfg, log, use_additional_contigs, K, last_one):
     subst_dict = dict()
 
     subst_dict["K"] = str(K)
     subst_dict["run_mode"] = "false"
-    subst_dict["dataset"] = cfg.dataset
-    subst_dict["output_base"] = cfg.output_dir
-    subst_dict["additional_contigs"] = cfg.additional_contigs
+    subst_dict["dataset"] = process_cfg.process_spaces(cfg.dataset)
+    subst_dict["output_base"] = process_cfg.process_spaces(cfg.output_dir)
+    subst_dict["additional_contigs"] = process_cfg.process_spaces(cfg.additional_contigs)
     subst_dict["entry_point"] = "construction"
     subst_dict["developer_mode"] = bool_to_str(cfg.developer_mode)
     subst_dict["gap_closer_enable"] = bool_to_str(last_one)
     subst_dict["paired_mode"] = bool_to_str(last_one and cfg.paired_mode)
     subst_dict["topology_simplif_enabled"] = bool_to_str(last_one)
-    subst_dict["use_additional_contigs"] = bool_to_str(prev_K)
+    subst_dict["use_additional_contigs"] = bool_to_str(use_additional_contigs)
     subst_dict["max_threads"] = cfg.max_threads
     subst_dict["max_memory"] = cfg.max_memory
     subst_dict["correct_mismatches"] = bool_to_str(last_one)
@@ -72,10 +72,9 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, use_additional_conti
                     os.rename(cfg_file, cfg_file.split('.template')[0])
 
     prepare_config_spades(cfg_file_name, cfg, log, use_additional_contigs, K, last_one)
-    prev_K = K
 
-    command = os.path.join(execution_home, "spades") + " " +\
-               os.path.abspath(cfg_file_name)
+    command = [os.path.join(execution_home, "spades"),
+               os.path.abspath(cfg_file_name)]
 
     if os.path.isdir(bin_reads_dir):
         if glob.glob(os.path.join(bin_reads_dir, "*_cor*")):

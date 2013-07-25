@@ -16,9 +16,9 @@ from site import addsitedir
 def prepare_config_bh(filename, cfg, log):
     subst_dict = dict()
 
-    subst_dict["dataset"] = cfg.dataset_yaml_filename
-    subst_dict["input_working_dir"] = os.path.abspath(cfg.tmp_dir)
-    subst_dict["output_dir"] = os.path.abspath(cfg.tmp_dir)  # we will move only final corrected reads to output_dir
+    subst_dict["dataset"] = process_cfg.process_spaces(cfg.dataset_yaml_filename)
+    subst_dict["input_working_dir"] = process_cfg.process_spaces(os.path.abspath(cfg.tmp_dir))
+    subst_dict["output_dir"] = process_cfg.process_spaces(os.path.abspath(cfg.tmp_dir))  # for only final corrected reads
     subst_dict["general_max_iterations"] = cfg.max_iterations
     subst_dict["general_max_nthreads"] = cfg.max_threads
     subst_dict["count_merge_nthreads"] = cfg.max_threads
@@ -54,10 +54,10 @@ def run_bh(configs_dir, execution_home, cfg, ext_python_modules_home, log):
 
     prepare_config_bh(cfg_file_name, cfg, log)
 
-    command = os.path.join(execution_home, "hammer") + " " +\
-               os.path.abspath(cfg_file_name)
+    command = [os.path.join(execution_home, "hammer"),
+               os.path.abspath(cfg_file_name)]
 
-    log.info("\n== Running read error correction tool: " + command + "\n")
+    log.info("\n== Running read error correction tool: " + ' '.join(command) + "\n")
     support.sys_call(command, log)
     corrected_dataset_yaml_filename = os.path.join(cfg.tmp_dir, "corrected.yaml")
     corrected_dataset_data = pyyaml.load(file(corrected_dataset_yaml_filename, 'r'))

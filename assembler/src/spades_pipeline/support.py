@@ -61,7 +61,10 @@ def sys_call(cmd, log, cwd=None):
     import shlex
     import subprocess
 
-    cmd_list = shlex.split(cmd)
+    if isinstance(cmd, list):
+        cmd_list = cmd
+    else:
+        cmd_list = shlex.split(cmd)
 
     proc = subprocess.Popen(cmd_list, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=cwd)
 
@@ -87,7 +90,10 @@ def universal_sys_call(cmd, log, out_filename=None, err_filename=None, cwd=None)
     import shlex
     import subprocess
 
-    cmd_list = shlex.split(cmd)
+    if isinstance(cmd, list):
+        cmd_list = cmd
+    else:
+        cmd_list = shlex.split(cmd)
 
     if out_filename:
         stdout = open(out_filename, 'w')
@@ -297,7 +303,7 @@ def move_dataset_files(dataset_data, dst, log, gzip=False):
                         shutil.move(reads_file, dst_filename)
                         if gzip:
                             #log.info('Compressing ' + dst_filename + ' into ' + dst_filename + '.gz')
-                            sys_call('gzip -f -9 ' + dst_filename, log)
+                            sys_call(['gzip', '-f', '-9', dst_filename], log)
                             dst_filename += '.gz'
                     moved_reads_files.append(dst_filename)
                 reads_library[key] = moved_reads_files

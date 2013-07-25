@@ -401,12 +401,12 @@ def main():
             import process_cfg
             dataset_file.write("single_cell" + '\t' + process_cfg.bool_to_str(cfg["dataset"].single_cell) + '\n')
             if corrected_dataset_yaml_filename:
-                dataset_file.write("reads" + '\t' + corrected_dataset_yaml_filename + '\n')
+                dataset_file.write("reads" + '\t' + process_cfg.process_spaces(corrected_dataset_yaml_filename) + '\n')
             else:
-                dataset_file.write("reads" + '\t' + cfg["dataset"].yaml_filename + '\n')
+                dataset_file.write("reads" + '\t' + process_cfg.process_spaces(cfg["dataset"].yaml_filename) + '\n')
             if spades_cfg.developer_mode and "reference" in cfg["dataset"].__dict__:
                 dataset_file.write("reference_genome" + '\t')
-                dataset_file.write(os.path.abspath(cfg["dataset"].reference) + '\n')
+                dataset_file.write(process_cfg.process_spaces(os.path.abspath(cfg["dataset"].reference)) + '\n')
             dataset_file.close()
             spades_cfg.__dict__["dataset"] = dataset_filename
 
