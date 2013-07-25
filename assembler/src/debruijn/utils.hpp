@@ -65,12 +65,12 @@ class EtalonPairedInfoCounter {
 
   void ProcessSequence(const Sequence& sequence, PairedInfoIndexT<Graph>& index)
   {
-		int mod_gap = (gap_ + (int) k_ > (int) delta_ ) ? gap_ - (int) delta_ : 0 - (int) k_;
+		int mod_gap = (gap_ + (int) k_ > (int) delta_ ) ? gap_ - (int) delta_ :int(0) -k_;
 		runtime_k::RtSeq left(k_ +1, sequence);
 		left >>= 0;
 		for (size_t left_idx = 0;
-             left_idx + 2 * (k_ + 1) + mod_gap <= sequence.size();
-             ++left_idx) {
+				left_idx + 2 * (k_ + 1) + mod_gap <= sequence.size();
+				++left_idx) {
 			left <<= sequence[left_idx + k_];
 			runtime_k::RtSeq left_upd = kmer_mapper_.Substitute(left);
 			if (!index_.contains(left_upd)) {
@@ -81,9 +81,11 @@ class EtalonPairedInfoCounter {
 			size_t right_idx = left_idx + k_ + 1 + mod_gap;
 			runtime_k::RtSeq right(k_ + 1, sequence, right_idx);
 			right >>= 0;
-			for (; 
-			     right_idx + k_ + 1 <= left_idx + insert_size_ + delta_ && right_idx + k_ + 1 <= sequence.size();
-			     ++right_idx) {
+			for (;
+					right_idx + k_ + 1 <= left_idx + insert_size_ + delta_
+							&& right_idx + k_ + 1 <= sequence.size();
+          ++right_idx)
+      {
 				right <<= sequence[right_idx + k_];
 				runtime_k::RtSeq right_upd = kmer_mapper_.Substitute(right);
 				if (!index_.contains(right_upd)) {
@@ -91,34 +93,31 @@ class EtalonPairedInfoCounter {
 				}
 				pair<EdgeId, size_t> right_pos = index_.get(right_upd);
 
-				AddEtalonInfo(index, left_pos.first, right_pos.first,
-				              0. + (double) right_idx - (double) left_idx + 
-				              (double) left_pos.second - (double) right_pos.second);
+				AddEtalonInfo(
+            index,
+						left_pos.first,
+						right_pos.first,
+            0. + right_idx - left_idx + left_pos.second - right_pos.second);
 			}
 		}
 	}
 
 public:
-    EtalonPairedInfoCounter(const Graph& g, const Index& index,
-                            const KmerMapper<Graph>& kmer_mapper,
-                            size_t insert_size, size_t read_length,
-                            size_t delta, size_t k)
-            : g_(g),
-              index_(index),
-              kmer_mapper_(kmer_mapper),
-              k_(k),
-              insert_size_(insert_size),
-              read_length_(read_length),
-              gap_((int) (insert_size_ - 2 * read_length_)),
-              delta_(delta) {
+  EtalonPairedInfoCounter(const Graph& g, const Index& index,
+			const KmerMapper<Graph>& kmer_mapper,
+			size_t insert_size,
+			size_t read_length, size_t delta, size_t k) :
+			g_(g), index_(index), kmer_mapper_(kmer_mapper), k_(k), insert_size_(
+					insert_size), read_length_(read_length), gap_(
+					insert_size_ - 2 * read_length_), delta_(delta) {
 //		VERIFY(insert_size_ >= 2 * read_length_);
-    }
+	}
 
-    void FillEtalonPairedInfo(const Sequence& genome,
-                              omnigraph::PairedInfoIndexT<Graph>& paired_info) {
-        ProcessSequence(genome, paired_info);
-        ProcessSequence(!genome, paired_info);
-    }
+  void FillEtalonPairedInfo(const Sequence& genome, omnigraph::PairedInfoIndexT<Graph>& paired_info)
+  {
+    ProcessSequence(genome, paired_info);
+    ProcessSequence(!genome, paired_info);
+	}
 };
 
 double PairedReadCountWeight(const MappingRange&, const MappingRange&) {
@@ -283,7 +282,7 @@ private:
                << " times, current limit is " << limit);
           }
           buffer_pi[i]->Clear();
-          limit = (size_t) (coeff * (double) limit);
+          limit = coeff * limit;
         }
       }
       DEBUG("Thread number " << omp_get_thread_num() << " finished");
@@ -380,7 +379,7 @@ public:
 		if (it == quality_.end())
 			return 0.;
 		else
-			return 1. * (double) it->second / (double) this->g().length(edge);
+			return 1. * it->second / this->g().length(edge);
 	}
 
 	bool IsPositiveQuality(EdgeId edge) const {

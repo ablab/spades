@@ -78,13 +78,8 @@ public:
 		}
 	}
 
-//    bool followed_by(EdgePosition& ep, int max_dist = 1,
-//            double relative_cutoff = 0) {
-//        return followed_by(ep, max_dist, relative_cutoff, 0);
-//    }
-
-	bool followed_by(EdgePosition& ep, int max_dist,
-			double /*relative_cutoff*/, int genome_end) {
+	bool followed_by(EdgePosition& ep, int max_dist = 1,
+			double relative_cutoff = 0, int genome_end = 0) {
 		if (ep.m_start() == 1 && m_end() == genome_end)
 			return true;
 		if (contigId_ != ep.contigId_)

@@ -265,15 +265,16 @@ void FillAndCorrectEtalonPairedInfo(
 
 template<class Graph>
 void GetAllDistances(const PairedInfoIndexT<Graph>& paired_index,
-                     PairedInfoIndexT<Graph>& result,
-                     const GraphDistanceFinder<Graph>& dist_finder) {
-    for (auto iter = paired_index.begin(); iter != paired_index.end(); ++iter) {
-        EdgeId e1 = iter.first();
-        EdgeId e2 = iter.second();
-        vector<size_t> forward = dist_finder.GetGraphDistancesLengths(e1, e2);
-        for (size_t i = 0; i < forward.size(); ++i)
-            result.AddPairInfo(e1, e2, (double) forward[i], -10.0, 0.0, false);
-    }
+                           PairedInfoIndexT<Graph>& result,
+                           const GraphDistanceFinder<Graph>& dist_finder)
+{
+	for (auto iter = paired_index.begin(); iter != paired_index.end(); ++iter) {
+    EdgeId e1 = iter.first();
+    EdgeId e2 = iter.second();
+    vector<size_t> forward = dist_finder.GetGraphDistancesLengths(e1, e2);
+		for (size_t i = 0; i < forward.size(); ++i)
+      result.AddPairInfo(e1, e2, forward[i], -10, 0.0, false);
+	}
 }
 
 template<class Graph>
@@ -758,7 +759,7 @@ int PrintGraphComponents(const string& file_name, graph_pack& gp,
 				component.end(), clustered_index);
 		cnt++;
 	}
-	return (int) cnt - 1;
+	return (cnt - 1);
 }
 
 template<class Graph>
@@ -779,10 +780,10 @@ double AvgCoverage(const Graph& g,
 	double total_cov = 0.;
 	size_t total_length = 0;
 	for (auto it = edges.begin(); it != edges.end(); ++it) {
-		total_cov += g.coverage(*it) * (double) g.length(*it);
+		total_cov += g.coverage(*it) * g.length(*it);
 		total_length += g.length(*it);
 	}
-	return total_cov / (double) total_length;
+	return total_cov / total_length;
 }
 
 template<class Graph>

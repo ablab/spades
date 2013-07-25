@@ -59,7 +59,7 @@ class Sequence {
     if (rc) {
         for (int i = (int) size_ - 1; i >= 0; --i) {
           //VERIFY(is_dignucl(s[i]) || is_nucl(s[i]));
-          char c = (char) complement(digit_str ? (char) s[i] : (char) dignucl(s[i]));
+          char c = complement(digit_str ? s[i] : dignucl(s[i]));
 
           data = data | (ST(c) << cnt);
           cnt += 2;
@@ -74,7 +74,7 @@ class Sequence {
     else {
         for (size_t i = 0; i < size_; ++i) {
           //VERIFY(is_dignucl(s[i]) || is_nucl(s[i]));
-          char c = digit_str ? (char) s[i] : (char) dignucl(s[i]);
+          char c = digit_str ? s[i] : dignucl(s[i]);
 
           data = data | (ST(c) << cnt);
           cnt += 2;

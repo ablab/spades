@@ -40,7 +40,7 @@ void SaveKmerMapper(const string& file_name,
   DEBUG("Saving kmer mapper, " << file_name <<" created");
   VERIFY(file.is_open());
 
-  u_int32_t k_ = (u_int32_t) mapper.get_k();
+  u_int32_t k_ = mapper.get_k();
   file.write((char *) &k_, sizeof(uint32_t));
   mapper.BinWrite(file);
 
@@ -239,7 +239,7 @@ void DataPrinter<Graph>::saveEdgeSequences(const string& file_name) {
   //fprintf(file, "%ld\n", component_.e_size());
   for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
     fprintf(file, ">%zu\n", int_ids_.ReturnIntId(*iter));
-    int len = (int) component_.g().EdgeNucls(*iter).size();
+    int len = component_.g().EdgeNucls(*iter).size();
     for (int i = 0; i < len; i++)
       fprintf(file, "%c", nucl(component_.g().EdgeNucls(*iter)[i]));
     fprintf(file, "\n");

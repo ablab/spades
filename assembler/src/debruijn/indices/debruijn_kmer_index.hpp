@@ -308,12 +308,12 @@ class KmerFreeIndex : public PerfectHashMap<typename traits::SeqType, ValueType,
 
  protected:
   template<class Writer>
-  void BinWriteKmers(Writer &/*writer*/) const {
+  void BinWriteKmers(Writer &writer) const {
       //empty
   }
 
   template<class Reader>
-  void BinReadKmers(Reader &/*reader*/, const std::string &/*FileName*/) {
+  void BinReadKmers(Reader &reader, const std::string &FileName) {
       //empty
   }
 
@@ -352,7 +352,7 @@ class DeBruijnKMerIndex : public Index {
     typedef typename Index::KMerIdx KMerIdx;
 
     DeBruijnKMerIndex(size_t K, const std::string &workdir) :
-        base((unsigned) K, workdir) {
+        base(K, workdir) {
     }
 
     KMerIdx kmer_idx_begin() const {
