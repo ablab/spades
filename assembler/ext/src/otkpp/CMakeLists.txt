@@ -16,7 +16,6 @@ SET(OTKPP_INCLUDE_DIRS "${EXT_DIR}/include/otkpp/constraints"
                        "${EXT_DIR}/include/otkpp/stopcrit")
 include_directories(${OTKPP_INCLUDE_DIRS})
 
-remove_definitions(-Wall -Wextra -Wconversion -Wno-long-long -Wwrite-strings -pedantic)
 
 set(OTKPP_SRCS "constraints/BoundConstraints.cpp"
                "objfunc/EvalCountable.cpp"

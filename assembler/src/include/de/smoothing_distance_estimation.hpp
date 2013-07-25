@@ -38,7 +38,7 @@ class SmoothingDistanceEstimator: public ExtensiveDistanceEstimator<Graph> {
         threshold_(threshold),
         range_coeff_(range_coeff),
         delta_coeff_(delta_coeff),
-        cutoff_((int) cutoff),
+        cutoff_(cutoff),
         min_peak_points_(min_peak_points),
         inv_density_(inv_density),
         percentage_(percentage),

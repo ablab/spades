@@ -97,7 +97,7 @@ class CoverageBasedResolution {
 				auto foundPath = startEdgeToPath.find( path->back() );
 				if (foundPath != startEdgeToPath.end() ) {
 					INFO("found path before");
-					for (auto e = foundPath->second.begin(); e != foundPath->second.end(); ++e){
+					for ( auto e = foundPath->second.begin(); e != foundPath->second.end(); ++e ){
 						std::cout << gp->g.int_id(*e) <<  " ";
 					}
 					std::cout << std::endl;

@@ -428,14 +428,14 @@ private:
 		}
 	}
 
-	void ProcessSource(FlowGraph<Graph> &fg, set<VertexId> /*component*/,
+	void ProcessSource(FlowGraph<Graph> &fg, set<VertexId> component,
 			EdgeId edge) {
 		if (IsPlausible(edge) || IsUnique(edge)) {
 			fg.AddSource(this->g().EdgeEnd(edge), 1);
 		}
 	}
 
-	void ProcessSink(FlowGraph<Graph> &fg, set<VertexId> /*component*/,
+	void ProcessSink(FlowGraph<Graph> &fg, set<VertexId> component,
 			EdgeId edge) {
 		if (IsPlausible(edge) || IsUnique(edge)) {
 			fg.AddSink(this->g().EdgeStart(edge), 1);

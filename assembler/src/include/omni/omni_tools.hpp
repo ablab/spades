@@ -444,13 +444,13 @@ public:
 		size_t length = 0;
 		for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
 			if (graph_.length(*it) >= min_length_) {
-				cov += graph_.coverage(*it) * (double) graph_.length(*it);
+				cov += graph_.coverage(*it) * graph_.length(*it);
 				length += graph_.length(*it);
 			}
 		}
 		if (length == 0)
 			return 0.;
-		return cov / (double) length;
+		return cov / length;
 	}
 };
 
@@ -528,7 +528,7 @@ private:
                   size_t backet_width) const {
         double result = 0;
         for (size_t i = 0; i < backet_width && value + i < histogram.size(); i++) {
-            result += (double) (getValue(value + i, histogram) * std::min(i + 1, backet_width - i));
+            result += getValue(value + i, histogram) * std::min(i + 1, backet_width - i);
         }
         return result;
     }
@@ -537,8 +537,8 @@ private:
         double cov = 0;
         double length = 0;
         for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            cov += graph_.coverage(*it) * (double) graph_.length(*it);
-            length += (double) graph_.length(*it);
+            cov += graph_.coverage(*it) * graph_.length(*it);
+            length += graph_.length(*it);
         }
         return cov / length;
     }
@@ -591,7 +591,7 @@ public:
                 cnt--;
             }
             if (2 * cnt >= backet_width)
-                return (double) i;
+                return i;
 
         }
         INFO("Proper threshold was not found. Threshold set to 0.1 of average coverage");

@@ -12,5 +12,3 @@ file(GLOB sources "[a-zA-Z]*.cpp")
 
 add_library(yaml-cpp STATIC
 	   ${sources})
-
-remove_definitions(-Wall -Wextra -Wconversion -Wno-long-long -Wwrite-strings -pedantic)

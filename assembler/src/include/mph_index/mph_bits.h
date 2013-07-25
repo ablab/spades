@@ -33,9 +33,8 @@ class dynamic_2bitset {
   }
   void set(size_t i, uint8_t v) {
     assert((i >> 2) < data_.size());
-    uint8_t o = ones();
-    data_[i >> 2] |= o ^ dynamic_2bitset::vmask[i & 3];
-    data_[i >> 2] &= ((uint8_t) ((long) v << ((i & 3) << 1)) | dynamic_2bitset::vmask[i & 3]);
+    data_[(i >> 2)] |= ones() ^ dynamic_2bitset::vmask[i & 3];
+    data_[(i >> 2)] &= (uint8_t)((v << ((i & 3) << 1)) | dynamic_2bitset::vmask[i & 3]);
     assert(v <= 3);
     assert(get(i) == v);
   }

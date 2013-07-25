@@ -205,7 +205,7 @@ void DataPrinter<Graph>::saveGraph(const string& file_name) {
   "Couldn't open file " << (file_name + ".grp") << " on write");
   size_t vertex_count = component_.v_size();
   size_t edge_count = component_.e_size();
-  fprintf(file, "%ld %ld \n", (long) vertex_count, (long) edge_count);
+  fprintf(file, "%ld %ld \n", vertex_count, edge_count);
   for (auto iter = component_.v_begin(); iter != component_.v_end(); ++iter) {
     save(file, *iter);
   }
@@ -253,7 +253,7 @@ void DataPrinter<Graph>::saveCoverage(const string& file_name) {
   FILE* file = fopen((file_name + ".cvr").c_str(), "w");
   DEBUG("Saving coverage, " << file_name <<" created");
   VERIFY(file != NULL);
-  fprintf(file, "%ld\n", (long) component_.e_size());
+  fprintf(file, "%ld\n", component_.e_size());
   for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
     fprintf(file, "%zu ", int_ids_.ReturnIntId(*iter));
     fprintf(file, "%lf .\n", component_.g().coverage(*iter));
@@ -304,7 +304,7 @@ void DataPrinter<Graph>::savePaired(const string& file_name,
     }
   }
 
-  fprintf(file, "%ld\n", (long) comp_size);
+  fprintf(file, "%ld\n", comp_size);
 
   for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
     EdgeId e1 = *I;
@@ -533,7 +533,8 @@ public:
     VERIFY(flag == 2);
     for (size_t i = 0; i < vertex_count; i++) {
       size_t vertex_real_id, conjugate_id;
-      flag = fscanf(file, "Vertex %ld ~ %ld .\n", &vertex_real_id, &conjugate_id);
+      flag = fscanf(file, "Vertex %ld ~ %ld .\n", &vertex_real_id,
+          &conjugate_id);
       TRACE("Vertex "<<vertex_real_id<<" ~ "<<conjugate_id<<" .");
       VERIFY(flag == 2);
 
@@ -566,7 +567,8 @@ public:
     for (size_t i = 0; i < edge_count; i++) {
       size_t e_real_id, start_id, fin_id, length, conjugate_edge_id;
       flag = fscanf(file, "Edge %ld : %ld -> %ld, l = %ld ~ %ld .\n",
-                    &e_real_id, &start_id, &fin_id, &length, &conjugate_edge_id);
+          &e_real_id, &start_id, &fin_id, &length,
+          &conjugate_edge_id);
       VERIFY(flag == 5);
       VERIFY(length < longstring_size);
       if (fasta) {

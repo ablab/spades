@@ -119,11 +119,11 @@ class InsertSizeHistogramCounter {
         continue;
       }
       n += iter->second;
-      sum += (double) iter->second * 1. * (double) iter->first;
-      sum2 += (double)iter->second * 1. * (double)iter->first * (double)iter->first;
+      sum += iter->second * 1. * iter->first;
+      sum2 += iter->second * 1. * iter->first * iter->first;
     }
-    mean = sum / (double) n;
-    delta = sqrt(sum2 / (double) n - mean * mean);
+    mean = sum / n;
+    delta = sqrt(sum2 / n - mean * mean);
 
     low = mean - 5 * delta;
     high = mean + 5 * delta;
@@ -140,11 +140,11 @@ class InsertSizeHistogramCounter {
         continue;
       }
       n += iter->second;
-      sum += (double) iter->second * 1. * (double) iter->first;
-      sum2 += (double) iter->second * 1. * (double) iter->first * (double) iter->first;
+      sum += iter->second * 1. * iter->first;
+      sum2 += iter->second * 1. * iter->first * iter->first;
     }
-    mean = sum / (double) n;
-    delta = sqrt(sum2 / (double) n - mean * mean);
+    mean = sum / n;
+    delta = sqrt(sum2 / n - mean * mean);
 
     DEBUG("Mean IS: " << mean);
     DEBUG("sd: " << delta);
@@ -163,7 +163,7 @@ class InsertSizeHistogramCounter {
       }
       size_t mm = m + iter->second;
       for (size_t i = 0; i < utils::array_size(q); i++) {
-        size_t scaled_q_i((size_t) ((double) q[i] / 100. * (double) n));
+        size_t scaled_q_i(q[i] / 100. * n);
         if (m < scaled_q_i && mm >= scaled_q_i) {
           percentiles[q[i]] = iter->first;
         }
@@ -220,8 +220,8 @@ class InsertSizeHistogramCounter {
     if (pos_left.first != pos_right.first || gp_.g.length(pos_left.first) < edge_length_threshold_) {
       return 0;
     }
-    int is = (int) (pos_right.second - pos_left.second - k_ - 1 - r.insert_size()
-                    + sequence_left.size() + sequence_right.size());
+    int is = pos_right.second - pos_left.second - k_ - 1 - r.insert_size()
+             + sequence_left.size() + sequence_right.size();
     if (is > 0 || !ignore_negative_)
       hist[is] += 1;
 
@@ -246,9 +246,7 @@ void refine_insert_size(io::ReadStreamVector<io::IReader<PairedRead> >& streams,
   if (hist_counter.mapped() == 0)
     return;
 
-  INFO(hist_counter.mapped() << " paired reads (" << 
-       ((double) hist_counter.mapped() * 100.0 / (double) hist_counter.total()) << 
-       "% of all) aligned to long edges");
+  INFO(hist_counter.mapped() << " paired reads (" << (hist_counter.mapped() * 100.0 / hist_counter.total()) << "% of all) aligned to long edges");
   hist_counter.FindMean(mean, delta, percentiles);
   hist_counter.FindMedian(median, mad, hist);
 }

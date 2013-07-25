@@ -149,7 +149,7 @@ struct KMerStat {
   bool isMarkedGoodForIterative() { return (status == MarkedForGoodIter); }
   bool change() const { return status == Change; }
   void set_change(hint_t kmer) {
-    changeto = kmer & (((hint_t) 1 << 48) - 1);
+    changeto = kmer;
     status = Change;
   }
   const hammer::KMer& kmer() const { return kmer_; }

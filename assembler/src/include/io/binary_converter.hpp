@@ -33,7 +33,7 @@ class ReadBinaryWriter {
 
 public:
 
-    ReadBinaryWriter(LibraryOrientation /*orientation*/ = LibraryOrientation::Undefined) {
+    ReadBinaryWriter(LibraryOrientation orientation = LibraryOrientation::Undefined) {
     }
 
     bool Write(std::ostream& file, const Read& r) const {

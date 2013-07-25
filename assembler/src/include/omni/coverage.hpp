@@ -97,7 +97,7 @@ class CoverageIndex : public GraphActionHandler<Graph> {
      * Returns average coverage of the edge
      */
     double coverage(EdgeId edge) const {
-        return (double) edge->GetRawCoverage() / (double) this->g().length(edge);
+        return (double) edge->GetRawCoverage() / this->g().length(edge);
     }
 
     /**

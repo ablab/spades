@@ -446,7 +446,7 @@ class Seq {
 
   static size_t GetHash(const DataType *data, size_t sz = DataSize, uint32_t seed = 0) {
     uint64_t res[2];
-    MurmurHash3_x64_128(data, (int) sz * (int) sizeof(DataType), 0x9E3779B9 ^ seed, res);
+    MurmurHash3_x64_128(data, (int) sz * sizeof(DataType), 0x9E3779B9 ^ seed, res);
     return res[0] ^ res[1];
   }
 

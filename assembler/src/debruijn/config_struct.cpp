@@ -90,7 +90,7 @@ void load_lib_data(const std::string& prefix) {
 
       load_param(filename, "read_length_" + ToString(i), sizet_val);
       if (sizet_val) {
-          cfg::get_writable().ds.reads[i].data().read_length = sizet_val.get();
+          cfg::get_writable().ds.reads[i].data().read_length = *sizet_val;
       }
       load_param(filename, "insert_size_" + ToString(i), double_val);
       if (double_val) {
