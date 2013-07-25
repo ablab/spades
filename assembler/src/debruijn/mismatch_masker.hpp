@@ -31,7 +31,7 @@ class MismatchMasker: public GraphActionHandler<Graph> {
   };
   map<EdgeId, vector<MismatchInfo> > mismatch_map;
 
-  MismatchMasker(Graph& g) : GraphActionHandler<Graph> (g, "Mismatch Masker"), g_(g) {
+  MismatchMasker(Graph& g) : GraphActionHandler<Graph> (g, "Mismatch Masker"), g_(g)	  {
   }
 
   virtual void HandleDelete(EdgeId edge) {
@@ -50,7 +50,7 @@ class MismatchMasker: public GraphActionHandler<Graph> {
 				  }
 				  mismatch_map[newEdge].push_back(MismatchInfo(mis_t->position + len_shift, mis_t->ratio, mis_t->counts, mis_t->cutoff));
 			  }
-		  len_shift += (int) g_.length(*it);
+		  len_shift+= g_.length(*it);
   	  }
   }
 
@@ -67,7 +67,7 @@ class MismatchMasker: public GraphActionHandler<Graph> {
 	  mismatch_map[edge].push_back(MismatchInfo(position, ratio, counts, cutoff));
 	  vector<size_t> reversed_counts(4, 0);
 	  for(size_t i = 0; i < 4; i ++)
-		  reversed_counts[complement((unsigned char) i)] = counts[i];
+		  reversed_counts[complement(i)] = counts[i];
 	  VERIFY(reversed_counts.size() == 4);
 	  mismatch_map[g_.conjugate(edge)].push_back(MismatchInfo(g_.length(edge) + g_.k() - position - 1, ratio, reversed_counts, cutoff));
 
@@ -83,7 +83,7 @@ class MismatchMasker: public GraphActionHandler<Graph> {
 
 		  if (mismatch_map[edge][i].ratio > cutoff && is_nucl(s[mismatch_map[edge][i].position])) {
 			  DEBUG(s[mismatch_map[edge][i].position]  << "  before " );
-			  VERIFY(mismatch_map[edge][i].position < s.length());
+			  VERIFY(mismatch_map[edge][i].position < s.length() && mismatch_map[edge][i].position >= 0);
 			  if (mismatch_map[edge][i].ratio > 1) {
 				  DEBUG("replacing...");
 				  for(size_t ii = 0; ii < mismatch_map[edge][i].counts.size(); ii++) {
@@ -98,7 +98,7 @@ class MismatchMasker: public GraphActionHandler<Graph> {
 						  max_i = ii;
 					  }
 				  DEBUG("max_i found: "<< max_i);
-				  s[mismatch_map[edge][i].position] = (char) nucl((unsigned char) max_i);
+				  s[mismatch_map[edge][i].position] = char(nucl(max_i)) ;
 				  DEBUG("replaced");
 			  }
 			  s[mismatch_map[edge][i].position] = char(s[mismatch_map[edge][i].position] +'a' - 'A');

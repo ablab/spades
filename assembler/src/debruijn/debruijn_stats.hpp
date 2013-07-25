@@ -81,12 +81,15 @@ public:
 					break_number++;
 				}
 			}
-		}
-		INFO("Genome mapped");
+		}INFO("Genome mapped");
 		INFO("Genome mapping results:");
-		INFO("Covered k+1-mers:" << covered_kp1mers << " of " << (genome_.size() - k_) << " which is "
-             << (100.0 * (double) covered_kp1mers / (double) (genome_.size() - k_)) << "%");
-		INFO("Covered k+1-mers form " << break_number + 1 << " contigious parts");
+		INFO(
+				"Covered k+1-mers:" << covered_kp1mers << " of "
+						<< (genome_.size() - k_) << " which is "
+						<< (100.0 * covered_kp1mers / (genome_.size() - k_))
+						<< "%");
+		INFO(
+				"Covered k+1-mers form " << break_number + 1 << " contigious parts");
 		INFO("Continuity failtures " << fail);
 	}
 };
@@ -932,7 +935,7 @@ public:
 		for (size_t i = 0; i < path.size(); i++) {
 			EdgeId ei = path[i].first;
 			MappingRange mr = path[i].second;
-			int len = (int) (mr.mapped_range.end_pos - mr.mapped_range.start_pos);
+			int len = mr.mapped_range.end_pos - mr.mapped_range.start_pos;
 			if (i > 0)
 				if (path[i - 1].first != ei)
 					if (g_.EdgeStart(ei) != g_.EdgeEnd(path[i - 1].first)) {
@@ -947,10 +950,9 @@ public:
 										<< mr.initial_range.start_pos + 1
 										<< "--" << mr.initial_range.end_pos);
 					}
-            edge_pos_.AddEdgePosition(ei, (int) mr.initial_range.start_pos + 1,
-                                      (int) mr.initial_range.end_pos, name,
-                                      (int) mr.mapped_range.start_pos + 1,
-                                      (int) mr.mapped_range.end_pos);
+			edge_pos_.AddEdgePosition(ei, mr.initial_range.start_pos + 1,
+					mr.initial_range.end_pos, name,
+					mr.mapped_range.start_pos + 1, mr.mapped_range.end_pos);
 			cur_pos += len;
 		}
 	}

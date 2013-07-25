@@ -428,8 +428,8 @@ public:
 	}
 
 	int StringDistance(string &a, string &b) {
-		int a_len = (int) a.length();
-		int b_len = (int) b.length();
+		int a_len = a.length();
+		int b_len = b.length();
 		int d = min(a_len / 3, b_len / 3);
 		d = max(d, 10);
 		DEBUG(a_len << " " << b_len << " " << d);

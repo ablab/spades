@@ -181,7 +181,7 @@ size_t ConstructGraphUsingExtentionIndex(size_t k, const debruijn_config::constr
 	// FIXME: output_dir here is damn ugly!
 	typedef DeBruijnExtensionIndex<> ExtensionIndex;
 	typedef typename ExtensionIndexHelper<ExtensionIndex>::DeBruijnExtensionIndexBuilderT ExtensionIndexBuilder;
-	ExtensionIndex ext((unsigned) k, index.inner_index().workdir());
+	ExtensionIndex ext(k, index.inner_index().workdir());
 	size_t rl = ExtensionIndexBuilder().BuildExtensionIndexFromStream(ext, streams, contigs_stream);
 
 	EarlyClipTips(k, params, rl, ext);

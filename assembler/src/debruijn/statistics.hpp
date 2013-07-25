@@ -151,10 +151,13 @@ public:
       }
     }
     if (edge_count > 0) {
-      INFO("Error edges count: " << black_count << " which is " << 100.0 * (double) black_count / (double) edge_count << "% of all edges");
-      INFO("Total length of all black edges: " << sum_length << ". While double genome length is " << (2 * cfg::get().ds.reference_genome.size()));
+      INFO(
+          "Error edges count: " << black_count << " which is " << 100.0 * black_count / edge_count << "% of all edges");
+      INFO(
+          "Total length of all black edges: " << sum_length << ". While double genome length is " << (2 * cfg::get().ds.reference_genome.size()));
     } else {
-      INFO("Error edges count: " << black_count << " which is 0% of all edges");
+      INFO(
+          "Error edges count: " << black_count << " which is 0% of all edges");
     }
   }
 };
@@ -184,7 +187,7 @@ public:
     sort(lengths.begin(), lengths.end());
     size_t sum = 0;
     size_t current = lengths.size();
-    while (current > 0 && (double) sum < (double) perc_ * 0.01 * (double) sum_all) {
+    while (current > 0 && sum < perc_ * 0.01 * sum_all) {
       current--;
       sum += lengths[current];
     }

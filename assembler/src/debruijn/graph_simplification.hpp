@@ -162,7 +162,7 @@ class ConditionParser {
         } else if (next_token_ == "icb") {
             ReadNext();
             double cov_bound = GetCoverageBound();
-            cov_bound = cov_bound / (double) iteration_count_ * (double) (iteration_ + 1);
+            cov_bound = cov_bound / iteration_count_ * (iteration_ + 1);
             DEBUG("Creating iterative coverage upper bound " << cov_bound);
             RelaxMin(min_coverage_bound, cov_bound);
             return make_shared<CoverageUpperBound<Graph>>(g_, cov_bound);

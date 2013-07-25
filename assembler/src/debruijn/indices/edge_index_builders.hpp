@@ -68,10 +68,10 @@ class CoverageFillingEdgeIndexBuilder : public Builder {
     template<class Streams>
     size_t ParallelFillCoverage(IndexT &index,
                                 Streams &streams,
-                                SingleReadStream* /*contigs_stream*/, bool check_contains) const {
+                                SingleReadStream* contigs_stream, bool check_contains) const {
         INFO("Collecting k-mer coverage information from reads, this takes a while.");
 
-        unsigned nthreads = (unsigned) streams.size();
+        unsigned nthreads = streams.size();
         size_t rl = 0;
         streams.reset();
 #pragma omp parallel for num_threads(nthreads) shared(rl)

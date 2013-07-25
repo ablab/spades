@@ -98,9 +98,10 @@ public:
         if (pair_info_used[i - 1])
           continue;
         DEBUG("SPC: pi " << cur_info);
-        vector<EdgeId> common_part = GetCommonPathsEnd(graph_, cur_edge, cur_info.second,
-                                                       (size_t) (cur_info.d() - cur_info.var()),
-                                                       (size_t) (cur_info.d() - cur_info.var()),
+        vector<EdgeId> common_part = GetCommonPathsEnd(graph_, cur_edge,
+                                                       cur_info.second,
+                                                       cur_info.d() - cur_info.var(),
+                                                       cur_info.d() + cur_info.var(),
                                                        path_processor);
         DEBUG("Found common part of size " << common_part.size());
         PathInfoClass<Graph> sub_res(cur_edge);
@@ -112,7 +113,7 @@ public:
           DEBUG("Common part " << ToString(common_part));
           for (size_t j = 0; j < common_part.size(); ++j) {
             PairInfo<EdgeId> cur_pi(cur_edge, common_part[j],
-                                    cur_info.d() - (double) total_length,
+                                    cur_info.d() - total_length,
                                     cur_info.weight(),
                                     cur_info.var());
 

@@ -49,7 +49,7 @@ public:
         }
     }
 
-    virtual std::string label(VertexId /*vertexId*/) const {
+    virtual std::string label(VertexId vertexId) const {
         return "";
     }
 

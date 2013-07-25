@@ -77,7 +77,7 @@ class KmerFreeDeBruijnEdgeIndex : public DeBruijnKMerIndex<KmerFreeIndex<EdgeInf
         // (second condition is almost always not useful)
         if (entry.offset == -1u || contains(idx, kmer)) {
             entry.edge_id = e;
-            entry.offset = (unsigned) offset;
+            entry.offset = offset;
         }
     }
 
@@ -111,7 +111,7 @@ class KmerStoringDeBruijnEdgeIndex : public DeBruijnKMerIndex<KmerStoringIndex<E
       return entry.offset != -1u;
   }
 
-  void PutInIndex(const KMer &kmer, IdType id, int offset, bool /*ignore_new_kmer*/ = false) {
+  void PutInIndex(const KMer &kmer, IdType id, int offset, bool ignore_new_kmer = false) {
     size_t idx = base::seq_idx(kmer);
     if (base::valid_key(idx, kmer)) {
       EdgeInfo<IdType> &entry = base::operator[](idx);

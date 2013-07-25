@@ -93,8 +93,10 @@ size_t GetAllPathsQuantity(const graph_pack& origin_gp,
   PathStorageCallback<typename graph_pack::graph_t> callback(origin_gp.g);
   PathProcessor<typename graph_pack::graph_t>
       path_processor(origin_gp.g,
-                     (size_t) d - origin_gp.g.length(e1) - size_t(is_var),
-                     (size_t) d - origin_gp.g.length(e1) + size_t(is_var),
+                     d - origin_gp.g.length(e1)
+                     - size_t(is_var),
+                     d - origin_gp.g.length(e1)
+                     + size_t(is_var),
                      origin_gp.g.EdgeEnd(e1), 
                      origin_gp.g.EdgeStart(e2),
                      callback);

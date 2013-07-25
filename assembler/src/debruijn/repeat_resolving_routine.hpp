@@ -179,7 +179,7 @@ void FillComponentDistances(set<EdgeId>& component,
 		for (auto iter = component.begin(); iter != component.end(); iter++) {
 			VertexId start = gp.g.EdgeStart(*iter);
 			VertexId end = gp.g.EdgeEnd(*iter);
-			int len = (int) gp.g.length(*iter);
+			int len = gp.g.length(*iter);
 			if (used.first.find(*iter) == used.first.end()) {
 				if (vertex_map[start].first >= 0
 						&& vertex_map[start].first + len
