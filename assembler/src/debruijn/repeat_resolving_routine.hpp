@@ -1056,7 +1056,7 @@ void AddSingleLibrary(
     streams->release();
     io::MultifileReader<io::SingleReadSeq> stream(streams->get(), true);
     PathStorage<Graph> long_single(gp.g);
-    //long_single.LoadFromFile("/Johnny/vasilinetc/path-extend/path_extend_4_exp/M_abscessus/single/K55/07.23_11.39.13/long_reads_paths.mpr");
+    //long_single.LoadFromFile("/Johnny/vasilinetc/path-extend/path_extend_4_exp/M_abscessus/single/K55/07.25_17.11.40/long_reads_paths.mpr");
     read_mapper.ProcessSingleReadLibrary(reads, long_single);
     //read_mapper.ProcessLib(stream, long_single);
     vector<PathInfo<Graph> > long_paths = long_single.GetAllPaths();

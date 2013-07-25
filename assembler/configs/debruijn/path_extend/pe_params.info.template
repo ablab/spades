@@ -187,8 +187,8 @@ long_reads {
 		priority 4.0
 	}
 	single_reads {
-		filtering 3.0
-		priority 2.0
+		filtering 1.5
+		priority 4.0
 	}
 	coverage_base_rr {
 		filtering 0.0

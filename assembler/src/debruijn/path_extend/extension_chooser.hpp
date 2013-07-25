@@ -516,7 +516,8 @@ public:
             : ExtensionChooser(g, 0, .0),
               filtering_threshold_(filtering_threshold),
               priority_threshold_(priority_threshold),
-              coverage_map_(g, pc) {
+              coverage_map_(g, pc),
+              unique_edges_founded_(false) {
     }
 
     /* Choose extension as correct only if we have reads that traverse a unique edge from the path and this extension.
@@ -525,6 +526,9 @@ public:
      */
     virtual EdgeContainer Filter(BidirectionalPath& path,
                                  EdgeContainer& edges) {
+        if (!unique_edges_founded_) {
+            FindAllUniqueEdges();
+        }
         if (edges.empty()) {
             return edges;
         }
@@ -543,6 +547,7 @@ public:
                         && EqualBegins(path, path.Size() - 1, **it, positions[i])) {
                     if (UniqueBackPath(**it, positions[i])) {
                         EdgeId next = (*it)->At(positions[i] + 1);
+                        DEBUG("We add weight to candidate " << g_.int_id(next));
                         weights_cands[next] += (*it)->GetWeight();
                         filtered_cands.insert(next);
                     }
@@ -555,9 +560,9 @@ public:
             DEBUG("Candidate " << g_.int_id(iter->first) << " weight " << iter->second);
         }
         vector<pair<EdgeId, double> > sort_res = MapToSortVector(weights_cands);
-        if (sort_res[0].second < filtering_threshold_) {
+        if (sort_res.size() < 1 || sort_res[0].second < filtering_threshold_) {
             filtered_cands.clear();
-        } else if ( sort_res.size() > 1
+        } else if (sort_res.size() > 1
                 && sort_res[0].second > priority_threshold_ * sort_res[1].second) {
             filtered_cands.clear();
             filtered_cands.insert(sort_res[0].first);
@@ -572,10 +577,20 @@ public:
     }
 
 private:
-    bool UniqueBackPath(const BidirectionalPath& path, size_t pos) const{
+    void FindAllUniqueEdges() {
+        for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+            if (UniqueEdge(*iter)) {
+                unique_edges_.insert(*iter);
+                unique_edges_.insert(g_.conjugate(*iter));
+            }
+        }
+        unique_edges_founded_ = true;
+    }
+
+    bool UniqueBackPath(const BidirectionalPath& path, size_t pos) const {
         int int_pos = pos;
         while (int_pos >= 0) {
-            if (UniqueEdge(path.At(int_pos)))
+            if (unique_edges_.count(path.At(int_pos)) > 0)
                 return true;
             int_pos--;
         }
@@ -586,19 +601,20 @@ private:
         auto cov_paths = coverage_map_.GetCoveringPaths(e);
         for (auto it1 = cov_paths.begin(); it1 != cov_paths.end(); ++it1) {
             auto pos1 = (*it1)->FindAll(e);
-            if (pos1.size() > 1) return false;
+            if (pos1.size() > 1)
+                return false;
             for (auto it2 = it1; it2 != cov_paths.end(); it2++) {
                 auto pos2 = (*it2)->FindAll(e);
-                if (pos2.size() > 1) return false;
+                if (pos2.size() > 1)
+                    return false;
                 double w1 = (*it1)->GetWeight();
                 double w2 = (*it2)->GetWeight();
                 if (w1 > filtering_threshold_ && w2 > filtering_threshold_
-                        && w1 / w2 < priority_threshold_
-                        && w2 / w1 < priority_threshold_
                         && !ConsistentPath(**it1, pos1[0], **it2, pos2[0]))
                     return false;
             }
         }
+        DEBUG("Edge " << g_.int_id(e) << " is unique.");
         return true;
     }
 
@@ -618,6 +634,8 @@ private:
     double filtering_threshold_;
     double priority_threshold_;
     GraphCoverageMap coverage_map_;
+    bool unique_edges_founded_;
+    std::set<EdgeId> unique_edges_;
 };
 
 

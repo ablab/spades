@@ -112,14 +112,23 @@ private:
         if (first1 == -1 || first2 == -1) {
             return;
         }
-        DEBUG("pos " << last1 << " pos " << last2);
         DEBUG("try to delete smth ");
         path1->Print();
         DEBUG("second path");
         path2->Print();
         first2 = conj2->Size() - first2 - 1;
         first1 = conj1->Size() - first1 - 1;
-        DEBUG("path1 begin " << first1 << " path1 end " << last1 << " path2_begin " << first2 << " path2_end " << last2);
+        DEBUG("path1 begin " << first1 << " path1 end " << last1 <<
+              " path2_begin " << first2 << " path2_end " << last2 <<
+              " path1_is_overlap " << path1->IsOverlap() <<
+              " path2_is_overlap " << path2->IsOverlap() <<
+              " path1 _has_overlaped_begin " << path1->HasOverlapedBegin() <<
+              " path2_has_overlaped_begin " << path2->HasOverlapedBegin() <<
+              " path1 _has_overlaped_end " << path1->HasOverlapedEnd() <<
+              " path2_has_overlaped_end " << path2->HasOverlapedEnd() <<
+              " delete_subpaths " << delete_subpaths <<
+              " delete_begins " << delete_begins <<
+              " delete_all " << delete_all);
         CutOverlaps(path1, first1, last1, path1->Size(), path2, first2, last2,
                     path2->Size(), delete_subpaths, delete_begins, delete_all);
     }
