@@ -349,7 +349,7 @@ void WriteErrors(
 		const Graph& g,
 		const GraphLabeler<Graph>& labeler,
 		const string& file_name,
-		const string& graph_name,
+		const string& /*graph_name*/,
 		const Path<typename Graph::EdgeId> &path1/* = Path<typename Graph::EdgeId> ()*/,
 		const Path<typename Graph::EdgeId> &path2/* = Path<typename Graph::EdgeId> ()*/) {
 	PathColorer<Graph> path_colorer(g, path1, path2);

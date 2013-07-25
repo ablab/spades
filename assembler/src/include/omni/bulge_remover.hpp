@@ -168,8 +168,8 @@ class BulgeRemover: private boost::noncopyable {
 		vector<size_t> bulge_prefix_lengths;
 
 		for (auto it = path.begin(); it != path.end(); ++it) {
-			prefix_length += graph_.length(*it);
-			bulge_prefix_lengths.push_back(aligner.GetPosition(prefix_length));
+			prefix_length += (double) graph_.length(*it);
+			bulge_prefix_lengths.push_back(aligner.GetPosition((size_t) round(prefix_length)));
 		}
 
 		EdgeId edge_to_split = edge;

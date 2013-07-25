@@ -336,8 +336,11 @@ size_t KMerClustering::SubClusterSingle(const std::vector<unsigned> & block, vec
     }
   }
 
-  bool cons_suspicion = false;
-  for (size_t k=0; k<bestCenters.size(); ++k) if (centersInCluster[k] == -1u) cons_suspicion = true;
+//  bool cons_suspicion = false;
+//  for (size_t k = 0; k < bestCenters.size(); ++k) 
+//      if (centersInCluster[k] == -1u) 
+//          cons_suspicion = true;
+  
   if (cfg::get().bayes_debug_output > 0) {
 #   pragma omp critical
     {

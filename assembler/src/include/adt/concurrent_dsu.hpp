@@ -35,7 +35,7 @@ class ConcurrentDSU {
 
     data = new atomic_set_t[size];
     for (size_t i = 0; i < size; i++) {
-      data[i].next = (uint32_t)i;
+      data[i].next = (uint32_t) i;
       data[i].size = 1;
       data[i].dirty = 0;
     }
@@ -64,9 +64,8 @@ class ConcurrentDSU {
           while (true) {
             atomic_set_t old = data[y];
             atomic_set_t nnew = old;
-            nnew.size += data[x].size;
-            if (__sync_bool_compare_and_swap(&data[y].raw,
-                                             old.raw, nnew.raw)) {
+            nnew.size = (uint32_t) ((nnew.size + data[x].size) & 0x7fffffff);
+            if (__sync_bool_compare_and_swap(&data[y].raw, old.raw, nnew.raw)) {
               break;
             }
           }
@@ -146,7 +145,7 @@ private:
     }
     atomic_set_t nnew = old;
     nnew.next = y;
-    nnew.size = newrank;
+    nnew.size = newrank & 0x7fffffff;
     return __sync_bool_compare_and_swap(&data[x].raw, old.raw, nnew.raw);
   }
   
