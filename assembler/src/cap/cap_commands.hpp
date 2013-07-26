@@ -400,21 +400,22 @@ class SaveBlocksCommand : public LocalCommand<CapEnvironment> {
   virtual std::string Usage() const {
     return "Command `save_blocks`\n"
            " Saves all trivial synteny blocks (aka graph edges).\n"
-           " Namely, stores refined (modified) sequences on hard drive.\n"
+           " Synteny blocks are given new ids (with edge ids also in the file).\n"
+           " All the coordinates ()\n"
            "Usage:\n"
-           "> save_genomes [force]\n"
-           " `force` is optional parameter. If `force` is /y|Y|(force)/ then\n"
-           " genomes will be written even if this combination of genomes and Ks\n"
-           " was stored before/\n";
+           "> save_blocks <file_to_save_to>\n";
   }
 
   virtual void Execute(CapEnvironment& curr_env, const ArgumentList& arg_list) const {
-      VERIFY(false);
+      BlockPrinter<Graph> printer(curr_env.graph(), curr_env.coordinates_handler(), arg_list.GetAllArguments()[0]);
+      for (size_t i = 0; i < curr_env.genome_cnt(); ++i) {
+          printer.ProcessContig(i, 2*i, curr_env.genome_names()[i]);
+      }
   }
 
  protected:
   virtual size_t MinArgNumber() const {
-    return 0;
+    return 1;
   }
 
 };

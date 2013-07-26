@@ -74,7 +74,7 @@ class OnlineVisualizer {
   }
 
  protected:
-  void AddCommand(shared_ptr<Command<Env> > command) {
+  void AddCommand(shared_ptr<Command<Env>> command) {
     command_mapping_.AddCommand(command);
   }
 
@@ -91,7 +91,7 @@ class OnlineVisualizer {
     AddCommand(shared_ptr<Command<Env> >(new ExitCommand<Env>));
     AddCommand(shared_ptr<Command<Env> >(new ListCommand<Env>));
     AddCommand(shared_ptr<Command<Env> >(new HelpCommand<Env>(&command_mapping_)));
-    
+
     AddCommand(shared_ptr<Command<Env> >(new LogCommand<Env>));
     AddCommand(shared_ptr<Command<Env> >(new SaveBatchCommand<Env>));
     AddCommand(shared_ptr<Command<Env> >(new BatchCommand<Env>(&command_mapping_)));

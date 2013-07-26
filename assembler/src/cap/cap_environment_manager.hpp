@@ -108,7 +108,7 @@ class CapEnvironmentManager {
 				io::osequencestream out_stream(output_filename);
 				DEBUG("Saving to " << output_filename);
 
-        io::SequenceReader<io::SingleRead> stream(*env_->genomes_[i], env_->genomes_names_[i]);
+        io::SequenceReader<io::SingleRead> stream(env_->genomes_[i], env_->genomes_names_[i]);
 				while (!stream.eof()) {
 					stream >> contig;
 					out_stream << contig;
@@ -119,11 +119,10 @@ class CapEnvironmentManager {
 
   template <class gp_t>
   void UpdateStreams(const gp_t &gp) {
-		for (size_t i = 0; i < env_->genomes_.size(); ++i) {
-      env_->genomes_[i] = std::make_shared<Sequence>(
-          env_->coordinates_handler_.ReconstructGenome(2 * i));
+    for (size_t i = 0; i < env_->genomes_.size(); ++i) {
+      env_->genomes_[i] = env_->coordinates_handler_.ReconstructGenome(2 * i);
       //VERIFY(env_->genomes_[i]->IsValid());
-		}
+	}
   }
 
   template <class gp_t>
@@ -202,7 +201,7 @@ class CapEnvironmentManager {
       const bool mask_indels) {
     GenomeContiguousPathsGraphTraversalConstraints<Graph> traversal_constraints(
         env_->coordinates_handler_);
-    SimpleIndelFinder<gp_t> indel_finder(gp, *env_->coloring_, 
+    SimpleIndelFinder<gp_t> indel_finder(gp, *env_->coloring_,
         env_->coordinates_handler_, traversal_constraints, out_stream,
         mask_indels);
     indel_finder.FindIndelEvents();
@@ -280,7 +279,7 @@ class CapEnvironmentManager {
     std::vector<ContigStream *> streams;
     for (size_t i = 0; i < env_->genomes_.size(); ++i) {
       streams.push_back(new io::SequenceReader<io::SingleRead>(
-                    *env_->genomes_[i], env_->genomes_names_[i]));
+                    env_->genomes_[i], env_->genomes_names_[i]));
     }
 
     ConstructGraphFromStreams(streams, k);
@@ -340,7 +339,7 @@ class CapEnvironmentManager {
     }
 
     env_->init_genomes_paths_.push_back(filename);
-    env_->genomes_.push_back(std::make_shared<Sequence>(genome.sequence()));
+    env_->genomes_.push_back(genome.sequence());
     env_->genomes_names_.push_back(name);
 
     return true;

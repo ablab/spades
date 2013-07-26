@@ -40,7 +40,7 @@ class CapEnvironment : public Environment {
   // Paths on fs
   std::vector<std::string> init_genomes_paths_;
   // Genome sequences themselves. Yes, it may be lots of GBs.
-  std::vector<std::shared_ptr<Sequence> > genomes_;
+  std::vector<Sequence> genomes_;
   std::vector<std::string> genomes_names_;
 
   std::shared_ptr<RtSeqGraphPack> gp_rtseq_;
@@ -206,6 +206,22 @@ class CapEnvironment : public Environment {
 
   LSeqGraphPack& l_seq_gp() const {
       return *gp_lseq_;
+  }
+
+  const vector<Sequence>& genomes() const {
+      return genomes_;
+  }
+
+  const vector<string>& genome_names() const {
+      return genomes_names_;
+  }
+
+  const CoordinatesHandler& coordinates_handler() const {
+      return coordinates_handler_;
+  }
+
+  size_t genome_cnt() const {
+      return genomes_names_.size();
   }
 
   const EdgesPositionHandler<Graph> &edge_pos() const {
