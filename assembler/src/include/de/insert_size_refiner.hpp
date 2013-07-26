@@ -222,10 +222,12 @@ class InsertSizeHistogramCounter {
     }
     int is = pos_right.second - pos_left.second - k_ - 1 - r.insert_size()
              + sequence_left.size() + sequence_right.size();
-    if (is > 0 || !ignore_negative_)
-      hist[is] += 1;
+    if (is > 0 || !ignore_negative_) {
+        hist[is] += 1;
+        return 1;
+    }
 
-    return 1;
+    return 0;
   }
 };
 
@@ -243,10 +245,11 @@ void refine_insert_size(io::ReadStreamVector<io::IReader<PairedRead> >& streams,
   InsertSizeHistogramCounter<graph_pack> hist_counter(gp, edge_length_threshold, /* ignore negative */ true);
   hist_counter.Count(streams, rl);
 
+  INFO(hist_counter.mapped() << " paired reads (" << (hist_counter.mapped() * 100.0 / hist_counter.total()) << "% of all) aligned to long edges");
+
   if (hist_counter.mapped() == 0)
     return;
 
-  INFO(hist_counter.mapped() << " paired reads (" << (hist_counter.mapped() * 100.0 / hist_counter.total()) << "% of all) aligned to long edges");
   hist_counter.FindMean(mean, delta, percentiles);
   hist_counter.FindMedian(median, mad, hist);
 }
