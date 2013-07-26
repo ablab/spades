@@ -547,7 +547,6 @@ public:
                         && EqualBegins(path, path.Size() - 1, **it, positions[i])) {
                     if (UniqueBackPath(**it, positions[i])) {
                         EdgeId next = (*it)->At(positions[i] + 1);
-                        DEBUG("We add weight to candidate " << g_.int_id(next));
                         weights_cands[next] += (*it)->GetWeight();
                         filtered_cands.insert(next);
                     }
