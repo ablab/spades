@@ -108,11 +108,11 @@ double GetWeightThreshold(const PairedInfoLibraries& lib,
 
 double GetSingleThreshold(const PairedInfoLibraries& lib,
                           const pe_config::ParamSetT& pset) {
-    return lib[0]->is_mate_pair_ ?
-            *cfg::get().pe_params.param_set.mate_pair_options.select_options
-                    .single_threshold :
-            *cfg::get().pe_params.param_set.extension_options.select_options
-                    .single_threshold;
+    boost::optional<double> threshold =
+            lib[0]->is_mate_pair_ ?
+                    pset.mate_pair_options.select_options.single_threshold :
+                    pset.extension_options.select_options.single_threshold;
+    return threshold.get();
 }
 
 double GetPriorityCoeff(const PairedInfoLibraries& lib,
@@ -146,24 +146,25 @@ void OutputBrokenScaffolds(PathContainer& paths, int k,
 }
 
 vector<SimpleExtender *> MakeExtenders(const conj_graph_pack& gp,
-		const pe_config::ParamSetT& pset, vector<PairedInfoLibraries>& libs,
-		bool investigateShortLoops) {
-	vector<WeightCounter*> wcs;
+                                       const pe_config::ParamSetT& pset,
+                                       vector<PairedInfoLibraries>& libs,
+                                       bool investigate_loops) {
+    vector<WeightCounter*> wcs;
     for (size_t i = 0; i < libs.size(); ++i) {
         wcs.push_back(
                 new PathCoverWeightCounter(gp.g, libs[i],
                                            GetWeightThreshold(libs[i], pset),
                                            GetSingleThreshold(libs[i], pset)));
     }
-	vector<SimpleExtender *> usualPEs;
+    vector<SimpleExtender *> usualPEs;
     for (size_t i = 0; i < libs.size(); ++i) {
         wcs[i]->setNormalizeWeight(pset.normalize_weight);
         double priory_coef = GetPriorityCoeff(libs[i], pset);
-        SimpleExtensionChooser * extensionChooser = new SimpleExtensionChooser(
+        SimpleExtensionChooser * extension = new SimpleExtensionChooser(
                 gp.g, wcs[i], priory_coef);
         usualPEs.push_back(
-                new SimpleExtender(gp.g, pset.loop_removal.max_loops,
-                                   extensionChooser, investigateShortLoops));
+                new SimpleExtender(gp.g, pset.loop_removal.max_loops, extension,
+                                   investigate_loops));
     }
     return usualPEs;
 }
