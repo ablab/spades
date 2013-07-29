@@ -95,7 +95,7 @@ namespace debruijn_graph {
 				}*/
 				if (resolved) {
 					for (auto e = resolvedLoop.begin(); e != resolvedLoop.end(); ++e ) {
-						L += graph_p->g.length(*e);
+						L += (int) graph_p->g.length(*e);
 					}
 					resolvedLoops.push_back(resolvedLoop);
 					//std::cout << "path: ";

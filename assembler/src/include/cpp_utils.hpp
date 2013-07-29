@@ -28,7 +28,7 @@ T* array_end(T (&arr)[N]) {
 }
 
 template <size_t EXPECTED_SIZE, class T, size_t N>
-void check_array_size(T (&arr)[N]) {
+void check_array_size(T (&/*arr*/)[N]) {
   static_assert(EXPECTED_SIZE == N, "Unexpected array size");
 }
 

@@ -388,11 +388,12 @@ class CoverageBasedResolution {
 	}
 
 	template<class EdgeQualityLabeler>
-	void getComponents( std::vector<EdgeId>& components, std::vector<EdgeId>& singles,
-				EdgeLabelHandler<typename GraphPack::graph_t>& labels_after,
-				const EdgeQualityLabeler& quality_labeler,
-				PairedInfoIndexT<Graph>& clustered_index,
-				std::set<EdgeId>& prohibitedEdges ){
+	void getComponents(
+	        std::vector<EdgeId>& components, std::vector<EdgeId>& singles,
+            EdgeLabelHandler<typename GraphPack::graph_t>& labels_after,
+            const EdgeQualityLabeler& /*quality_labeler*/,
+            PairedInfoIndexT<Graph>& /*clustered_index*/,
+            std::set<EdgeId>& prohibitedEdges ){
 
 		typedef int times;
 		std::map<VertexId, times> out_degree;
@@ -533,7 +534,7 @@ class CoverageBasedResolution {
 			std::vector<std::pair<EdgeId, coverage_value>>& outgoingEdgesCoverage,
 			std::vector<std::pair<EdgeId,EdgeId>>& pairsOfEdges){
 
-		int Length = min(incomingEdgesCoverage.size(),outgoingEdgesCoverage.size());
+		int Length = (int) min(incomingEdgesCoverage.size(), outgoingEdgesCoverage.size());
 
 		//TODO: Move to config
 		//double threshold_one_list_(0.80), threshold_match_(0.64);
@@ -653,7 +654,7 @@ class CoverageBasedResolution {
 		for ( auto edge = component.begin(); edge != component.end(); ++edge ){
 
 			if (visited_edges.find(*edge) != visited_edges.end()) continue;
-			int curLen = gp->g.length(*edge);
+			int curLen = (int) gp->g.length(*edge);
 			visited_edges.insert(*edge);
 			bfs(*edge, visited_edges, component, curLen, maxPathLen);
 
@@ -677,7 +678,7 @@ class CoverageBasedResolution {
 
 		int allLength = 0;
 		for (auto it = components.begin(); it != components.end(); ++it ){
-			allLength += gp->g.length(*it);
+			allLength += (int) gp->g.length(*it);
 		}
 
 		int numberOfComponents = 0;

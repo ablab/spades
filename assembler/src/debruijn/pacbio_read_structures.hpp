@@ -65,7 +65,7 @@ struct KmerCluster {
 		last_trustable_index = 0;
 		first_trustable_index = 0;
 		edgeId = e;
-		size = v.size();
+		size = (int) v.size();
 		sorted_positions = v;
 		FillTrustableIndeces();
 	}
@@ -117,7 +117,10 @@ struct GapDescription {
 	}
 
 	GapDescription<Graph> conjugate(Graph &g_, int shift) const {
-		 GapDescription<Graph> res(g_.conjugate(end), g_.conjugate(start), (!gap_seq), g_.length(end) + shift - edge_gap_end_position,  g_.length(start) + shift - edge_gap_start_position);
+        GapDescription<Graph> res(
+                g_.conjugate(end), g_.conjugate(start), (!gap_seq),
+                (int) g_.length(end) + shift - edge_gap_end_position,
+                (int) g_.length(start) + shift - edge_gap_start_position);
 		 DEBUG("conjugate created" << res.str(g_));
 		 return res;
 	}

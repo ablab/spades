@@ -60,8 +60,8 @@ public:
 	void AddGap(const GapDescription<Graph> &p, bool add_rc = false){
 		HiddenAddGap(p);
 		if (add_rc) {
-			TRACE("Addign conjugate");
-			HiddenAddGap(p.conjugate(g_, cfg::get().K));
+			TRACE("Adding conjugate");
+			HiddenAddGap(p.conjugate(g_, (int) cfg::get().K));
 		}
 	}
 
@@ -108,7 +108,7 @@ public:
 		}
 	}
 
-	void DumpToFile(const string filename, EdgesPositionHandler<Graph> &edge_pos) {
+	void DumpToFile(const string filename, EdgesPositionHandler<Graph> &/*edge_pos*/) {
 		ofstream filestr(filename);
 		for(auto iter = inner_index.begin(); iter != inner_index.end(); ++iter) {
 			filestr << g_.int_id(iter->first)<< " " <<iter->second.size() << endl;
@@ -435,14 +435,17 @@ private:
 		for(size_t i = 0; i < variants.size(); i++)
 			if (res.length() > variants[i].length())
 				res = variants[i];
-		StripedSmithWaterman::Aligner aligner(cfg::get().pb.match_value, cfg::get().pb.mismatch_penalty, cfg::get().pb.insertion_penalty, cfg::get().pb.insertion_penalty) ; //1 1 2 2
-		aligner.SetReferenceSequence(res.c_str(), res.length());
+		StripedSmithWaterman::Aligner aligner((uint8_t) cfg::get().pb.match_value, 
+		                                      (uint8_t) cfg::get().pb.mismatch_penalty,
+		                                      (uint8_t) cfg::get().pb.insertion_penalty, 
+		                                      (uint8_t) cfg::get().pb.insertion_penalty); //1 1 2 2
+		aligner.SetReferenceSequence(res.c_str(), (int) res.length());
 		int best_score = EditScore(res, variants, aligner);
 		int void_iterations = 0;
 
 		while (void_iterations < cfg:: get().pb.gap_closing_iterations ) {
 			string new_res = RandomMutation(res);
-			aligner.SetReferenceSequence(new_res.c_str(), new_res.length());
+			aligner.SetReferenceSequence(new_res.c_str(), (int) new_res.length());
 			int current_score = EditScore(new_res, variants, aligner);
 			if (current_score > best_score) {
 				best_score = current_score;
@@ -462,7 +465,7 @@ private:
 		return res;
 	}
 
-	void ConstructConsensus(EdgeId e, GapStorage<Graph> &storage, map<EdgeId, map<EdgeId, pair<size_t, string> > > &new_edges_by_thread) {
+	void ConstructConsensus(EdgeId e, GapStorage<Graph> &storage, map<EdgeId, map<EdgeId, pair<size_t, string> > > &/*new_edges_by_thread*/) {
 //		if (g_.int_id(e) !=7964945 ) return;
 		auto cl_start = storage.inner_index[e].begin();
 		auto iter = storage.inner_index[e].begin();
@@ -518,7 +521,7 @@ public:
 			}
 		}
 	}
-	void DumpToFile(const string filename, EdgesPositionHandler<Graph> &edge_pos) {
+	void DumpToFile(const string filename, EdgesPositionHandler<Graph> &/*edge_pos*/) {
 		ofstream filestr(filename);
 //		filestr << "New edges: " << endl;
 		for(auto iter = new_edges.begin(); iter != new_edges.end(); ++iter) {
