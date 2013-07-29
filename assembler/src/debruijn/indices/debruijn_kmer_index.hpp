@@ -51,7 +51,7 @@ class PerfectHashMap {
   typedef typename StorageT::iterator value_iterator;
   typedef typename StorageT::const_iterator const_value_iterator;
 
-  PerfectHashMap(size_t k, const std::string &workdir) : k_(k)
+  PerfectHashMap(size_t k, const std::string &workdir) : k_((unsigned) k)
       /*: index_(k)*/ {
     //fixme string literal
     workdir_ = path::make_temp_dir(workdir, "kmeridx");
@@ -152,8 +152,8 @@ class PerfectHashMap {
   template <class KmerCounter>
   void BuildIndex(KmerCounter& counter, size_t bucket_num, size_t thread_num, bool save_final = true) {
     KMerIndexBuilder<KMerIndexT> builder(workdir_,
-                                         bucket_num,
-                                         thread_num);
+                                         (unsigned) bucket_num,
+                                         (unsigned) thread_num);
 
     size_t sz = builder.BuildIndex(index_, counter, save_final);
     data_.resize(sz);

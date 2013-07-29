@@ -203,9 +203,9 @@ private:
 				size_t kmer_distance = read_distance
 						+ mapping_edge_2.second.initial_range.end_pos
 						- mapping_edge_1.second.initial_range.start_pos;
-				int edge_distance = kmer_distance
-						+ mapping_edge_1.second.mapped_range.start_pos
-						- mapping_edge_2.second.mapped_range.end_pos;
+				int edge_distance = (int) kmer_distance
+						+ (int) mapping_edge_1.second.mapped_range.start_pos
+						- (int) mapping_edge_2.second.mapped_range.end_pos;
 
         paired_index.AddPairInfo(mapping_edge_1.first,
                                  mapping_edge_2.first,
@@ -347,7 +347,7 @@ public:
 	virtual ~EdgeQuality() {
 	}
 
-	virtual void HandleAdd(EdgeId e) {
+	virtual void HandleAdd(EdgeId /*e*/) {
 	}
 
 	virtual void HandleDelete(EdgeId e) {
@@ -387,7 +387,7 @@ public:
 		return math::gr(quality(edge), 0.);
 	}
 
-	virtual std::string label(VertexId vertexId) const {
+	virtual std::string label(VertexId /*vertexId*/) const {
 		return "";
 	}
 
