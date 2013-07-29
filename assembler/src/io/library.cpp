@@ -21,6 +21,7 @@ struct convert<LibraryOrientation> {
       case LibraryOrientation::RR:
         return Node("rr");
       case LibraryOrientation::Undefined:
+      default:
         return Node("undefined");
     }
   }
@@ -55,6 +56,8 @@ struct convert<LibraryType> {
         return Node("mate-pairs");
       case LibraryType::PacBioReads:
         return Node("pacbio");
+      default:
+        return Node();
     }
   }
 

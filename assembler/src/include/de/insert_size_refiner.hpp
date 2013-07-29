@@ -122,11 +122,11 @@ class InsertSizeHistogramCounter {
         continue;
       }
       n += iter->second;
-      sum += iter->second * 1. * iter->first;
-      sum2 += iter->second * 1. * iter->first * iter->first;
+      sum += (double) iter->second * 1. * (double) iter->first;
+      sum2 += (double)iter->second * 1. * (double)iter->first * (double)iter->first;
     }
-    mean = sum / n;
-    delta = sqrt(sum2 / n - mean * mean);
+    mean = sum / (double) n;
+    delta = sqrt(sum2 / (double) n - mean * mean);
 
     low = mean - 5 * delta;
     high = mean + 5 * delta;
@@ -143,11 +143,11 @@ class InsertSizeHistogramCounter {
         continue;
       }
       n += iter->second;
-      sum += iter->second * 1. * iter->first;
-      sum2 += iter->second * 1. * iter->first * iter->first;
+      sum += (double) iter->second * 1. * (double) iter->first;
+      sum2 += (double) iter->second * 1. * (double) iter->first * (double) iter->first;
     }
-    mean = sum / n;
-    delta = sqrt(sum2 / n - mean * mean);
+    mean = sum / (double) n;
+    delta = sqrt(sum2 / (double) n - mean * mean);
 
     DEBUG("Mean IS: " << mean);
     DEBUG("sd: " << delta);
@@ -166,7 +166,7 @@ class InsertSizeHistogramCounter {
       }
       size_t mm = m + iter->second;
       for (size_t i = 0; i < utils::array_size(q); i++) {
-        size_t scaled_q_i(q[i] / 100. * n);
+        size_t scaled_q_i((size_t) ((double) q[i] / 100. * (double) n));
         if (m < scaled_q_i && mm >= scaled_q_i) {
           percentiles[q[i]] = iter->first;
         }
@@ -225,8 +225,8 @@ class InsertSizeHistogramCounter {
       return 0;
     }
 
-    int is = pos_right.second - pos_left.second - k_ - 1 - r.insert_size()
-             + sequence_left.size() + sequence_right.size();
+    int is = (int) (pos_right.second - pos_left.second - k_ - 1 - r.insert_size()
+             + sequence_left.size() + sequence_right.size());
     if (is > 0 || !ignore_negative_) {
         hist[is] += 1;
         return 1;

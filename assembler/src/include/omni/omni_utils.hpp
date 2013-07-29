@@ -670,8 +670,8 @@ class Path {
 
     Path(const vector<ElementId>& sequence, size_t start_pos, size_t end_pos)
             : sequence_(sequence),
-              start_pos_(start_pos),
-              end_pos_(end_pos) {
+              start_pos_((int) start_pos),
+              end_pos_((int) end_pos) {
     }
 
     Path()
@@ -1124,7 +1124,7 @@ class UniquePathFinder {
  public:
 
     //todo use length bound if needed
-    UniquePathFinder(const Graph& graph, size_t length_bound =
+    UniquePathFinder(const Graph& graph, size_t /*length_bound*/ =
                              std::numeric_limits<size_t>::max())
             : graph_(graph) {
 
@@ -1392,7 +1392,7 @@ class DominatedSetFinder {
             if (dominated_.count(g_.EdgeStart(e)) == 0)
                 continue;
             Range range = dominated_.find(g_.EdgeStart(e))->second;
-            range.shift(g_.length(e));
+            range.shift((int) g_.length(e));
             DEBUG("Edge " << g_.str(e) << " provide distance range " << range);
             if (range.start_pos < min)
                 min = range.start_pos;

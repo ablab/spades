@@ -586,7 +586,7 @@ class SkeletonTreeFinder {
 	}
 
 	void Init() {
-		current_level_ = level_heights_.size() - 1;
+		current_level_ = (int) level_heights_.size() - 1;
 		size_t end_cnt = 0;
 		FOREACH(VertexId v, component_.end_vertices()) {
 			good_vertices_.insert(v);
@@ -624,14 +624,16 @@ class SkeletonTreeFinder {
 	}
 
 public:
-	SkeletonTreeFinder(const LocalizedComponent<Graph>& component,
-			const ComponentColoring<Graph>& coloring) :
-			component_(component), coloring_(coloring), level_heights_(
-					SetAsVector<size_t>(component_.avg_distances())), current_level_(
-					level_heights_.size() - 1), current_color_partition_(
-					component_.end_vertices().size()) {
-		Init();
-	}
+    SkeletonTreeFinder(const LocalizedComponent<Graph>& component,
+            const ComponentColoring<Graph>& coloring) :
+        component_(component),
+        coloring_(coloring), 
+        level_heights_(SetAsVector<size_t>(component_.avg_distances())), 
+        current_level_((int) level_heights_.size() - 1), 
+        current_color_partition_(component_.end_vertices().size()) {
+        
+        Init();
+    }
 
 	const set<EdgeId> GetTreeEdges() const {
 		set<EdgeId> answer;
