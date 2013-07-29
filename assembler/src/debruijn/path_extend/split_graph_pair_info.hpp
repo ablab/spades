@@ -143,18 +143,18 @@ private:
 			pair_info_[index1][basket2] = PairInfo(0.0, 0);
 		}
 		PairInfo oldPairInfo = pair_info_[index1][basket2];
-		double basket_distance = GetBasketDistance(edge_distance, index1, index2);
+		double basket_distance = GetBasketDistance(edge_distance, (double) index1, (double) index2);
 		pair_info_[index1][basket2] = PairInfo(oldPairInfo.weight_ + weight,
 				CountNewDistance(oldPairInfo, basket_distance),
 				oldPairInfo.count_ + 1);
 	}
 
-	double CountNewDistance(PairInfo& oldPairInfo, double distance, size_t count = 1){
-	    return (oldPairInfo.distance_* oldPairInfo.count_ + distance * count) / (oldPairInfo.count_ + count);
+	double CountNewDistance(PairInfo& oldPairInfo, double distance, size_t count = 1) {
+	    return (oldPairInfo.distance_* (double) oldPairInfo.count_ + distance * (double) count) / (double) (oldPairInfo.count_ + count);
 	}
 
 	double GetBasketDistance(double edge_distance, double index1, double index2){
-		return edge_distance - index1 * basket_size_ + index2 * basket_size_;
+		return edge_distance - index1 * (double) basket_size_ + index2 * (double) basket_size_;
 	}
 };
 
@@ -351,7 +351,7 @@ public:
 
   	void ProcessReadPairs() {
         if (cfg::get().use_multithreading) {
-            auto paired_streams = paired_binary_readers(cfg::get().ds.reads[lib_index_], true, cfg::get().ds.reads[lib_index_].data().mean_insert_size);
+            auto paired_streams = paired_binary_readers(cfg::get().ds.reads[lib_index_], true, (size_t) round(cfg::get().ds.reads[lib_index_].data().mean_insert_size));
 
             if (paired_streams->size() == 1) {
                 ProcessReadPairs(*paired_streams);
@@ -361,7 +361,7 @@ public:
             }
         }
         else {
-            auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(cfg::get().ds.reads[lib_index_], true, cfg::get().ds.reads[lib_index_].data().mean_insert_size);
+            auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(cfg::get().ds.reads[lib_index_], true, (size_t) round(cfg::get().ds.reads[lib_index_].data().mean_insert_size));
             SingleStreamType paired_streams(paired_stream.get());
             paired_stream.release();
             ProcessReadPairs(paired_streams);
@@ -433,7 +433,7 @@ private:
 
 	double GetNormalizedWeight(PairInfo& pi){
 		//INFO("weight "<< pi.weight_ << " distance " << pi.distance_ << " " << pi.weight_ / lib_.IdealPairedInfo(basket_size_, basket_size_, pi.distance_));
-		return pi.weight_ / lib_.IdealPairedInfo(basket_size_, basket_size_, pi.distance_);
+		return pi.weight_ / (double) lib_.IdealPairedInfo(basket_size_, basket_size_, (int) round(pi.distance_));
 	}
 };
 

@@ -45,7 +45,7 @@ private:
 					if (diff_len > maxOverlap) {
 						return make_pair(-1, -1);
 					}
-					lastPos2 = poses2[pos2];
+					lastPos2 = (int) poses2[pos2];
 					lastPos1 = curPos;
 					found = true;
 					break;
@@ -154,7 +154,7 @@ public:
 			g_(g), coverageMap(cm) {
 	}
 
-	void removeSimilarPaths(PathContainer& paths, size_t maxOverlapLength, bool remove_only_equal, bool delete_subpaths, bool delete_begins, bool delete_all) {
+	void removeSimilarPaths(PathContainer& /*paths*/, size_t maxOverlapLength, bool remove_only_equal, bool delete_subpaths, bool delete_begins, bool delete_all) {
 		std::vector<EdgeId> edges = getSortedEdges();
 		for (size_t edgeId = 0; edgeId < edges.size(); ++edgeId) {
 			EdgeId edge = edges.at(edgeId);
@@ -188,8 +188,8 @@ public:
 					for (size_t index_in_posis = 0; index_in_posis < poses1.size(); ++index_in_posis) {
 						vector<size_t> poses2 = path2->FindAll(edge);
 						for (size_t index_in_posis2 = 0; index_in_posis2 < poses2.size(); ++index_in_posis2) {
-							int path2_last = poses2[index_in_posis2];
-							int path1_last = poses1[index_in_posis];
+							int path2_last = (int) poses2[index_in_posis2];
+							int path1_last = (int) poses1[index_in_posis];
 							if (path1_last >= (int)path1->Size() || path2_last >= (int)path2->Size()){
 								continue;
 							}
@@ -202,8 +202,8 @@ public:
 							}
 							BidirectionalPath* conj_current = path1->getConjPath();
 							BidirectionalPath* conj_second = path2->getConjPath();
-							int path1_first = conj_current->Size() - poses1[index_in_posis] - 1;
-							int path2_first = conj_second->Size() - poses2[index_in_posis2] - 1;
+							int path1_first = (int) conj_current->Size() - (int) poses1[index_in_posis] - 1;
+							int path2_first = (int) conj_second->Size() - (int) poses2[index_in_posis2] - 1;
 							posRes = ComparePaths(path1_first, path2_first, *conj_current, *conj_second, maxOverlapLength);
 							path1_first = posRes.first;
 							path2_first = posRes.second;
@@ -215,15 +215,15 @@ public:
 							path1->Print();
 							DEBUG("second path");
 							path2->Print();
-							path2_first = conj_second->Size() - path2_first - 1;
-							path1_first = conj_current->Size() - path1_first - 1;
+							path2_first = (int) conj_second->Size() - path2_first - 1;
+							path1_first = (int) conj_current->Size() - path1_first - 1;
 							DEBUG("path1 begin " << path1_first << " path1 end "
 									<< path1_last << " path2_begin "
 									<< path2_first << " path2_end "
 									<< path2_last);
 							cutOverlaps(path1, path1_first, path1_last,
-									path1->Size(), path2, path2_first,
-									path2_last, path2->Size(), delete_subpaths, delete_begins, delete_all);
+							            (int) path1->Size(), path2, path2_first,
+							            path2_last, (int) path2->Size(), delete_subpaths, delete_begins, delete_all);
 							covPaths = coverageMap.GetCoveringPaths(edge);
 						}
 					}
@@ -255,8 +255,8 @@ public:
 	}
 
 
-	void removePathOverlap(PathContainer& pathsContainer, BidirectionalPath* currentPath, size_t maxOverlapedSize) {
-        int last_index = currentPath->Size() - 1;
+	void removePathOverlap(PathContainer& pathsContainer, BidirectionalPath* currentPath, size_t /*maxOverlapedSize*/) {
+        int last_index = (int) currentPath->Size() - 1;
 		if (last_index <= 0
 				or coverageMap.GetCoverage(currentPath->At(last_index)) <= 1
 				or hasAlreadyOverlapedEnd(currentPath)){
@@ -382,7 +382,7 @@ protected:
     }
 
 
-    void removeOverlapsOfLength(PathContainer& paths, size_t length) {
+    void removeOverlapsOfLength(PathContainer& /*paths*/, size_t length) {
         std::vector<BidirectionalPath*> ending;
         std::vector<BidirectionalPath*> starting;
 
@@ -554,7 +554,7 @@ public:
         return paths;
     }
 
-    void removeOverlaps(PathContainer& paths, GraphCoverageMap& coverageMap, size_t maxOverlapedSize, ContigWriter& writer, string output_dir) {
+    void removeOverlaps(PathContainer& paths, GraphCoverageMap& coverageMap, size_t maxOverlapedSize, ContigWriter& /*writer*/, string /*output_dir*/) {
         SimpleOverlapRemover overlapRemover(g_, coverageMap);
         DEBUG("Removing overlaps");
         //writer.writePaths(paths, output_dir + "/before.fasta");
