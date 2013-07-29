@@ -89,6 +89,9 @@ private:
 
         size_t counter = 0;
         static const double coeff = 1.3;
+        size_t count_mapped_reads = 0;
+        size_t count_unmapped_reads = 0;
+        size_t count_mapped_reads_size_one = 0;
         #pragma omp parallel num_threads(nthreads)
         {
             #pragma omp for reduction(+ : counter)
@@ -109,6 +112,17 @@ private:
                         ++size;
                         vector<EdgeId> path = ProcessSingleRead(r);
                         buffer_storages[i]->AddPath(path, 1, true);
+                        #pragma omp critical
+                        {
+                            if (path.size() == 0) {
+                                count_unmapped_reads++;
+                            } else {
+                                count_mapped_reads++;
+                                if (path.size() == 1) {
+                                    count_mapped_reads_size_one++;
+                                }
+                            }
+                        }
                         end_of_stream = stream.eof();
                     }
 
@@ -122,11 +136,16 @@ private:
                     buffer_storages[i]->Clear();
                     limit = coeff * limit;
                 }
-            }DEBUG("Thread number " << omp_get_thread_num() << " finished");
+            }
+            DEBUG("Thread number " << omp_get_thread_num() << " finished");
         }
+        DEBUG("Count unmapped reads " << count_unmapped_reads
+                          << " mapped reads " << count_mapped_reads
+                          << " with size one " << count_mapped_reads_size_one);
         for (size_t i = 0; i < nthreads; ++i) {
             delete buffer_storages[i];
-        }DEBUG("Done");
+        }
+        DEBUG("Done");
     }
 
     template<class SingleRead>

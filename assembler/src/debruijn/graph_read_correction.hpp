@@ -206,7 +206,7 @@ private:
                 "Trying to close gap between v1=" << g_.int_id(v1) << " and v2=" << g_.int_id(v2));
         PathStorageCallback<Graph> path_store(g_);
         //todo reduce value after investigation
-        PathProcessor<Graph> path_processor(g_, 0, 10, v1, v2, path_store);
+        PathProcessor<Graph> path_processor(g_, 0, 70, v1, v2, path_store);
         path_processor.Process();
 
         if (path_store.size() == 0) {
