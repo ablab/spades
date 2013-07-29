@@ -8,58 +8,34 @@ output {
 	write_path_loc		    true
 }
 
-
 visualize {
         print_overlaped_paths 	true
         print_paths 		    true
 }
 
-
-additional_contigs ""
-
 ; none | break_gaps | break_all
 output_broken_scaffolds break_all
 
 singlecell {
-
-	improve_paired_info	true
-
 	split_edge_length	99
-
-	; metric = path_cover | read_count 
-	metric 			        path_cover
 	normalize_weight        true
-	normalize_by_coverage   false
-	
 	; extension selection
 	extension_options
 	{
-	 	read_count {
-		    weight_threshold           2
-		    priority_coeff             6
-		}
 	 	path_cover  {
 		    single_threshold	       0.001
 		    weight_threshold           0.6
 		    priority_coeff             1.5
 		}
-	    
-		try_deep_search		false
 	}
 
 	mate_pair_options
 	{
-	 	read_count {
-		    weight_threshold           0.2
-		    priority_coeff             3
-		}
 	 	path_cover  {
 		    single_threshold	       0.0001
 		    weight_threshold           0.5
 		    priority_coeff             1.5
 		}
-	    
-		try_deep_search		false
 	}
 
 	scaffolder {
@@ -80,44 +56,22 @@ singlecell {
 	    artificial_gap    10
 	}
 	
-	; loops removal
 	loop_removal
 	{
-	    inspect_short_loops true
-
 	    max_loops           30
-	    full_loop_removal   true
 	}
-	
-
-	; filter options
-	filter_options
-	{
-	    remove_overlaps     true
-	}
+	remove_overlaps     true
 }
 
 
 
 multicell {
-
-	improve_paired_info     true
-
 	split_edge_length	99
-
-	; metric = path_cover | read_count 
-	metric 			        path_cover
 	normalize_weight        false
-	normalize_by_coverage   false
-	    
 	
 	; extension selection
 	extension_options
 	{
-	 	read_count {
-		    weight_threshold           0.3
-		    priority_coeff             2
-		}
 	 	path_cover  {
 		    single_threshold	       1.83784
 ;	A.mirum threshold 0.076
@@ -126,23 +80,15 @@ multicell {
 		    weight_threshold           0.5
 		    priority_coeff             1.5
 		}
-	    
-	 	try_deep_search		false
 	}    
 
 	mate_pair_options
 	{
-	 	read_count {
-		    weight_threshold           0.2
-		    priority_coeff             3
-		}
 	 	path_cover  {
 		    single_threshold	       0.001
 		    weight_threshold           0.5
 		    priority_coeff             1.5
 		}
-	    
-		try_deep_search		false
 	}
 
 	scaffolder {
@@ -163,21 +109,12 @@ multicell {
 	    artificial_gap    10
 	}
 	
-	; loops removal
 	loop_removal
 	{
-	    inspect_short_loops true
-
 	    max_loops           30
-	    full_loop_removal   true
 	}
-	
 
-	; filter options
-	filter_options
-	{
-	    remove_overlaps     true
-	}
+	remove_overlaps     true
 }
 
 

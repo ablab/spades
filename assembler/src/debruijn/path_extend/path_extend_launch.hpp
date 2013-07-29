@@ -99,16 +99,27 @@ void DebugOutputEdges(const ContigWriter& writer, const conj_graph_pack& gp,
     }
 }
 
-double GetWeightThreshold(const PairedInfoLibraries& lib){
-	return lib[0]->is_mate_pair_ ?
-	        cfg::get().pe_params.param_set.mate_pair_options.select_options.weight_threshold :
-	        cfg::get().pe_params.param_set.extension_options.select_options.weight_threshold;
+double GetWeightThreshold(const PairedInfoLibraries& lib,
+                          const pe_config::ParamSetT& pset) {
+    return lib[0]->is_mate_pair_ ?
+            pset.mate_pair_options.select_options.weight_threshold :
+            pset.extension_options.select_options.weight_threshold;
 }
 
-double GetSingleThreshold(const PairedInfoLibraries& lib){
+double GetSingleThreshold(const PairedInfoLibraries& lib,
+                          const pe_config::ParamSetT& pset) {
     return lib[0]->is_mate_pair_ ?
-            *cfg::get().pe_params.param_set.mate_pair_options.select_options.single_threshold :
-            *cfg::get().pe_params.param_set.extension_options.select_options.single_threshold;
+            *cfg::get().pe_params.param_set.mate_pair_options.select_options
+                    .single_threshold :
+            *cfg::get().pe_params.param_set.extension_options.select_options
+                    .single_threshold;
+}
+
+double GetPriorityCoeff(const PairedInfoLibraries& lib,
+                        const pe_config::ParamSetT& pset) {
+    return lib[0]->is_mate_pair_ ?
+            pset.mate_pair_options.select_options.priority_coeff :
+            pset.extension_options.select_options.priority_coeff;
 }
 
 string MakeNewName(const std::string& contigs_name,
@@ -138,25 +149,23 @@ vector<SimpleExtender *> MakeExtenders(const conj_graph_pack& gp,
 		const pe_config::ParamSetT& pset, vector<PairedInfoLibraries>& libs,
 		bool investigateShortLoops) {
 	vector<WeightCounter*> wcs;
-	for (size_t i = 0; i < libs.size(); ++i) {
-		wcs.push_back(new PathCoverWeightCounter(gp.g, libs[i],
-				GetWeightThreshold(libs[i]), GetSingleThreshold(libs[i])));
-	}
+    for (size_t i = 0; i < libs.size(); ++i) {
+        wcs.push_back(
+                new PathCoverWeightCounter(gp.g, libs[i],
+                                           GetWeightThreshold(libs[i], pset),
+                                           GetSingleThreshold(libs[i], pset)));
+    }
 	vector<SimpleExtender *> usualPEs;
-	for (size_t i = 0; i < libs.size(); ++i) {
-		wcs[i]->setNormalizeWeight(pset.normalize_weight);
-		wcs[i]->setNormalizeWightByCoverage(pset.normalize_by_coverage);
-		double
-				priory_coef =
-						libs[i].at(0)->is_mate_pair_ ? pset.mate_pair_options.select_options.priority_coeff
-								: pset.extension_options.select_options.priority_coeff;
-		SimpleExtensionChooser * extensionChooser = new SimpleExtensionChooser(
-				gp.g, wcs[i], priory_coef);
-		usualPEs.push_back(new SimpleExtender(gp.g,
-				pset.loop_removal.max_loops, extensionChooser,
-				investigateShortLoops));
-	}
-	return usualPEs;
+    for (size_t i = 0; i < libs.size(); ++i) {
+        wcs[i]->setNormalizeWeight(pset.normalize_weight);
+        double priory_coef = GetPriorityCoeff(libs[i], pset);
+        SimpleExtensionChooser * extensionChooser = new SimpleExtensionChooser(
+                gp.g, wcs[i], priory_coef);
+        usualPEs.push_back(
+                new SimpleExtender(gp.g, pset.loop_removal.max_loops,
+                                   extensionChooser, investigateShortLoops));
+    }
+    return usualPEs;
 }
 
 void AddPathsToContainer(const conj_graph_pack& gp,
@@ -260,7 +269,7 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 
 	DebugOutputPaths(writer, gp, output_dir, paths, "overlaped_paths");
     size_t max_over = FindMaxOverlapedLen(libs);
-    if (pset.filter_options.remove_overlaps) {
+    if (pset.remove_overlaps) {
         resolver.removeOverlaps(paths, mainPE->GetCoverageMap(), max_over,
                                 writer, output_dir);
     }

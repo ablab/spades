@@ -26,44 +26,6 @@ void load(pe_config::VisualizeParamsT& o, boost::property_tree::ptree const& pt,
   load(o.print_paths,             pt, "print_paths"           );
 }
 
-void load(pe_config::UtilsT& u, boost::property_tree::ptree const& pt, bool /*complete*/)
-{
-  using config_common::load;
-  load(u.mode, pt, "mode");
-  load(u.file1, pt, "file1");
-  load(u.file2, pt, "file2");
-
-  load(u.advanced, pt, "advanced");
-  load(u.clustered, pt, "clustered");
-  load(u.insert_size, pt, "insert_size");
-  load(u.read_size, pt, "read_size");
-  load(u.dev, pt, "dev");
-}
-
-
-void load(pe_config::DatasetT::PairedLibT& pl, boost::property_tree::ptree const& pt, bool /*complete*/)
-{
-  using config_common::load;
-  load(pl.read_size  , pt, "read_size"  );
-  load(pl.insert_size, pt, "insert_size");
-  load(pl.var        , pt, "var"        );
-  load(pl.path       , pt, "path"       );
-}
-
-void load(pe_config::DatasetT& ds, boost::property_tree::ptree const& pt, bool /*complete*/)
-{
-  using config_common::load;
-
-  //ds.reference_genom = pt.get_optional<std::string>("reference_genome");
-
-  load(ds.graph_file, pt, "graph_file");
-
-  load(ds.param_set,  pt, "param_set");
-  //TODO
-  //load(ds.libs,       pt,     "libs" );
-}
-
-
 void load(pe_config::ParamSetT::ExtensionOptionsT::SelectOptionsT& so, boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
 
@@ -75,27 +37,13 @@ void load(pe_config::ParamSetT::ExtensionOptionsT::SelectOptionsT& so, boost::pr
 void load(pe_config::ParamSetT::ExtensionOptionsT& es, boost::property_tree::ptree const& pt, bool /*complete*/)
 {
   using config_common::load;
-
-  load(es.try_deep_search , pt, "try_deep_search");
-  load(es.select_options  , pt, es.metric.c_str()          );
 }
 
-void load(pe_config::ParamSetT::LoopRemovalT& lr, boost::property_tree::ptree const& pt, bool /*complete*/)
-{
-  using config_common::load;
-  load(lr.inspect_short_loops, pt,"inspect_short_loops"      );
-
-  load(lr.max_loops          , pt,"max_loops"          );
-  load(lr.full_loop_removal  , pt,"full_loop_removal"  );
+void load(pe_config::ParamSetT::LoopRemovalT& lr,
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
+    using config_common::load;
+    load(lr.max_loops, pt, "max_loops");
 }
-
-
-void load(pe_config::ParamSetT::FilterOptionsT& fo, boost::property_tree::ptree const& pt, bool /*complete*/)
-{
-  using config_common::load;
-  load(fo.remove_overlaps      , pt, "remove_overlaps"      );
-}
-
 
 void load(pe_config::ParamSetT::ScaffolderOptionsT& so, boost::property_tree::ptree const& pt, bool /*complete*/)
 {
@@ -119,23 +67,13 @@ void load(pe_config::ParamSetT::ScaffolderOptionsT& so, boost::property_tree::pt
 void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool /*complete*/) {
 
   using config_common::load;
-
-  load(p.metric, pt,  "metric");
   load(p.normalize_weight, pt,  "normalize_weight");
-  load(p.normalize_by_coverage, pt,  "normalize_by_coverage");
-
-  load(p.improve_paired_info, pt,  "improve_paired_info");
-
   load(p.split_edge_length, pt, "split_edge_length");
-
-  p.extension_options.metric = p.metric;
-  p.mate_pair_options.metric = "path_cover";
-
   load(p.extension_options, pt, "extension_options");
   load(p.mate_pair_options, pt, "mate_pair_options");
   load(p.scaffolder_options, pt, "scaffolder");
-  load(p.loop_removal,      pt, "loop_removal");
-  load(p.filter_options,    pt, "filter_options");
+    load(p.loop_removal, pt, "loop_removal");
+    load(p.remove_overlaps, pt, "remove_overlaps");
 }
 
 void load(pe_config::LongReads& p, boost::property_tree::ptree const& pt,
@@ -175,9 +113,6 @@ void load(pe_config& pe_cfg, boost::property_tree::ptree const& pt, bool /*compl
   using config_common::load;
 
   load(pe_cfg.dataset_name           , pt, "dataset"               );
-  load(pe_cfg.dataset                , pt,  pe_cfg.dataset_name.c_str()  );
-
-  pe_cfg.params.name = pe_cfg.dataset.param_set;
   load(pe_cfg.params                 , pt, "pe_params"             );
 }
 

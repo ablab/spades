@@ -332,10 +332,6 @@ protected:
 			if (normalizeWeight_) {
 				singleWeight /= iter->pi_;
 			}
-			if (normalizeWightByCoverage_) {
-				singleWeight = pairedInfoLibrary.normalizeByCoverage(
-						singleWeight) * avrageLibWeight_;
-			}
 			if (math::ge(singleWeight, threshold)) {
 				weight += iter->pi_;
 			}

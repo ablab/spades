@@ -70,22 +70,6 @@ struct pe_config {
     return it->second;
   }
 
-  struct DatasetT {
-    struct PairedLibT {
-      size_t read_size;
-      size_t insert_size;
-      size_t var;
-
-      std::string path;
-    };
-
-    std::string param_set;
-    std::string graph_file;
-
-    std::vector<PairedLibT> libs;
-    //boost::optional<std::string> reference_genome;
-  };
-
   struct OutputParamsT {
     bool write_overlaped_paths;
     bool write_paths;
@@ -109,19 +93,10 @@ struct pe_config {
   };
 
   struct ParamSetT {
-    std::string metric;
     bool normalize_weight;
-    bool normalize_by_coverage;
-
-    bool improve_paired_info;
-
     size_t split_edge_length;
 
     struct ExtensionOptionsT {
-      std::string metric;
-
-      bool try_deep_search;
-
       struct SelectOptionsT {
         boost::optional<double> single_threshold;
         double weight_threshold;
@@ -157,27 +132,10 @@ struct pe_config {
 
 
     struct LoopRemovalT {
-      bool inspect_short_loops;
-
       size_t max_loops;
-      bool full_loop_removal;
     } loop_removal;
 
-
-    struct FilterOptionsT {
-      bool remove_overlaps;
-    } filter_options;
-  };
-  struct UtilsT {
-    int mode;
-    std::string file1;
-    std::string file2;
-
-    std::string clustered;
-    std::string advanced;
-    size_t insert_size;
-    size_t read_size;
-    size_t dev;
+    bool remove_overlaps;
   };
 
   struct LongReads {
@@ -205,7 +163,6 @@ struct pe_config {
   } params;
 
   std::string dataset_name;
-  DatasetT dataset;
 };
 
 
