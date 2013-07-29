@@ -541,7 +541,7 @@ vector<typename Graph::VertexId> RepeatResolver<Graph>::MultiSplit(VertexId v) {
 				for (size_t j = 0; j < tmp.size(); j++) {
 					EdgeId right_id = tmp[j].second;
 					double d = tmp[j].d();
-					int w = (int) round(tmp[j].weight());
+					int w = (int) tmp[j].weight();
 					if (w < 1e-8)
 						continue;
 					int dif_d = 0;
@@ -1204,7 +1204,7 @@ size_t RepeatResolver<Graph>::GenerateVertexPairedInfo(Graph &new_graph,
 
 						EdgeInfo ei(tmp[j], dir, right_id, tmp[j].d() - dif_d);
 
-						int trusted_dist = (int) round(lib_.data().mean_insert_size) - (int) lib_.data().read_length;
+						int trusted_dist = (int) lib_.data().mean_insert_size - (int) lib_.data().read_length;
 						if (cheating_mode == 2 && ((tmp[j].d() - (double) dif_d + (double) old_graph.length(right_id) < (double) (trusted_dist - near_vertex)) 
 						        || (tmp[j].d() - (double) dif_d > (double) (trusted_dist + near_vertex)))) {
 							local_cheating_edges.insert(make_pair(left_id, 0));

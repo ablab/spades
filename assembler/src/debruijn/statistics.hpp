@@ -555,8 +555,8 @@ class MatePairTransformStat: public AbstractStatCounter {
           PathStorageCallback<Graph> counter(g_);
 
           PathProcessor<Graph> path_processor(g_,
-              (size_t) round(point.d - (double) g_.length(e1)),
-              (size_t) round(point.d - (double) g_.length(e1)),
+              (size_t) (point.d - (double) g_.length(e1)),
+              (size_t) (point.d - (double) g_.length(e1)),
               g_.EdgeEnd(e1), g_.EdgeStart(e2), counter);
           path_processor.Process();
 

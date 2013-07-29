@@ -851,8 +851,8 @@ void prepare_scaffolding_index(conj_graph_pack& gp,
 	size_t delta = size_t(is_var);
 	size_t linkage_distance = size_t(
 			cfg::get().de.linkage_distance_coeff * is_var);
-	GraphDistanceFinder<Graph> dist_finder(gp.g, (size_t) round(lib.data().mean_insert_size),
-	        lib.data().read_length, delta);
+	GraphDistanceFinder<Graph> dist_finder(gp.g, (size_t) math::round(lib.data().mean_insert_size),
+	                                       lib.data().read_length, delta);
 	size_t max_distance = size_t(cfg::get().de.max_distance_coeff * is_var);
 	boost::function<double(int)> weight_function;
 	INFO("Retaining insert size distribution for it");
@@ -1055,7 +1055,7 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
 	if (cfg::get().coverage_based_rr_on == true){
 		int pe_lib_index = get_first_pe_lib_index();
 		const io::SequencingLibrary<debruijn_config::DataSetData> &lib = cfg::get().ds.reads[pe_lib_index];
-		resolve_repeats_by_coverage(conj_gp, (size_t) round(lib.data().mean_insert_size), filteredPaths, clustered_indices[0], quality_labeler);
+		resolve_repeats_by_coverage(conj_gp, (size_t) lib.data().mean_insert_size, filteredPaths, clustered_indices[0], quality_labeler);
 	}
 
 

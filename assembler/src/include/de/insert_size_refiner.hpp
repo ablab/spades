@@ -252,7 +252,7 @@ void refine_insert_size(io::ReadStreamVector<io::IReader<PairedRead> >& streams,
   InsertSizeHistogramCounter<graph_pack> hist_counter(gp, edge_length_threshold, /* ignore negative */ true);
   hist_counter.Count(streams, rl);
 
-  INFO(hist_counter.mapped() << " paired reads (" << (hist_counter.mapped() * 100.0 / hist_counter.total()) << "% of all) aligned to long edges");
+  INFO(hist_counter.mapped() << " paired reads (" << ((double) hist_counter.mapped() * 100.0 / (double) hist_counter.total()) << "% of all) aligned to long edges");
   if (hist_counter.negative() > 3 * hist_counter.mapped())
       WARN("Too much reads aligned with negative insert size. Does the library orientation set properly?");
   if (hist_counter.mapped() == 0)

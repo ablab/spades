@@ -504,7 +504,7 @@ bool MaxFlowRemoveErroneousEdges(
         return false;
     INFO("Removing connections based on max flow strategy");
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
-            g.k(), (size_t) round(mfec_config.max_ec_length_coefficient));
+            g.k(), (size_t) mfec_config.max_ec_length_coefficient);
     omnigraph::MaxFlowECRemover<Graph> erroneous_edge_remover(
             g, max_length, mfec_config.uniqueness_length,
             mfec_config.plausibility_length, removal_handler);
@@ -519,7 +519,7 @@ bool RemoveComplexBulges(
     if (!cbr_config.enabled)
         return false;
     INFO("Removing complex bulges");
-    size_t max_length = (size_t) round((double) g.k() * cbr_config.max_relative_length);
+    size_t max_length = (size_t) ((double) g.k() * cbr_config.max_relative_length);
     size_t max_diff = cbr_config.max_length_difference;
     string output_dir = "";
     if (cbr_config.pics_enabled) {

@@ -257,7 +257,7 @@ PairedInfoLibrary* add_lib(conj_graph_pack::graph_t& g,
 	bool is_mp = cfg::get().ds.reads[indexs[index]].type() == io::LibraryType::MatePairs;
 	PairedInfoLibrary* lib = new PairedInfoLibrary(
 	        cfg::get().K, g, read_length,
-	        (size_t) round(is), (size_t) round(var), *paired_index[index], is_mp);
+	        (size_t) is, (size_t) var, *paired_index[index], is_mp);
 	libs.push_back(lib);
 	return lib;
 }

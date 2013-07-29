@@ -351,7 +351,7 @@ public:
 
   	void ProcessReadPairs() {
         if (cfg::get().use_multithreading) {
-            auto paired_streams = paired_binary_readers(cfg::get().ds.reads[lib_index_], true, (size_t) round(cfg::get().ds.reads[lib_index_].data().mean_insert_size));
+            auto paired_streams = paired_binary_readers(cfg::get().ds.reads[lib_index_], true, (size_t) cfg::get().ds.reads[lib_index_].data().mean_insert_size);
 
             if (paired_streams->size() == 1) {
                 ProcessReadPairs(*paired_streams);
@@ -361,7 +361,7 @@ public:
             }
         }
         else {
-            auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(cfg::get().ds.reads[lib_index_], true, (size_t) round(cfg::get().ds.reads[lib_index_].data().mean_insert_size));
+            auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(cfg::get().ds.reads[lib_index_], true, (size_t) cfg::get().ds.reads[lib_index_].data().mean_insert_size);
             SingleStreamType paired_streams(paired_stream.get());
             paired_stream.release();
             ProcessReadPairs(paired_streams);
@@ -433,7 +433,7 @@ private:
 
 	double GetNormalizedWeight(PairInfo& pi){
 		//INFO("weight "<< pi.weight_ << " distance " << pi.distance_ << " " << pi.weight_ / lib_.IdealPairedInfo(basket_size_, basket_size_, pi.distance_));
-		return pi.weight_ / (double) lib_.IdealPairedInfo(basket_size_, basket_size_, (int) round(pi.distance_));
+		return pi.weight_ / (double) lib_.IdealPairedInfo(basket_size_, basket_size_, (int) pi.distance_);
 	}
 };
 

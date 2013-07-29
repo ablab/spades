@@ -68,8 +68,8 @@ public:
 		gp.index.Attach();
 		gp.index.Refill();
 		PairedIndexT paired_index(gp.g);
-		size_t is = (size_t) round(cfg::get().ds.reads[index].data().mean_insert_size);
-		auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(cfg::get().ds.reads[index], true, (size_t) round(cfg::get().ds.reads[index].data().mean_insert_size));
+		size_t is = (size_t) cfg::get().ds.reads[index].data().mean_insert_size;
+		auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(cfg::get().ds.reads[index], true, (size_t) cfg::get().ds.reads[index].data().mean_insert_size);
 		SingleStreamType paired_streams(paired_stream.get());
 		paired_stream.release();
 		FillPairedIndexWithReadCountMetric(gp.g, *MapperInstance(gp), paired_index, paired_streams);
@@ -82,8 +82,8 @@ public:
 		}
 		size_t RL = cfg::get().ds.reads[index].data().read_length;
 		double var = cfg::get().ds.reads[index].data().insert_size_deviation;
-		PairedInfoLibrary* lib_not_cl = new PairedInfoLibrary(cfg::get().K, gp.g, RL, is, (size_t) round(var), paired_index);
-		PairedInfoLibrary* lib_cl = new PairedInfoLibrary(cfg::get().K, gp.g, RL, is, (size_t) round(var), clustered_index);
+		PairedInfoLibrary* lib_not_cl = new PairedInfoLibrary(cfg::get().K, gp.g, RL, is, (size_t) var, paired_index);
+		PairedInfoLibrary* lib_cl = new PairedInfoLibrary(cfg::get().K, gp.g, RL, is, (size_t) var, clustered_index);
 		map<PairInfo<EdgeId>, double> good_pi;
 		map<PairInfo<EdgeId>, double> bad_pi;
 		DEBUG("analyze paths begin");

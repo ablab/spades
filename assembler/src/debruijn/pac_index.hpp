@@ -377,7 +377,7 @@ public:
 		PathStorageCallback<Graph> callback(g_);
 //TODO::something more reasonable
 		int path_min_len = max(int(floor((seq_len - int(debruijn_k)) * cfg::get().pb.path_limit_pressing)), 0);
-		int path_max_len = (int) round((double) (seq_len + (int) debruijn_k) * cfg::get().pb.path_limit_stretching);
+		int path_max_len = (int) ((double) (seq_len + (int) debruijn_k) * cfg::get().pb.path_limit_stretching);
 		if (seq_len < 0) {
 			WARN("suspicious negative seq_len " << start_pos << " " << end_pos << " " << path_min_len << " " << path_max_len);
 			return std::make_pair(-1, -1);
