@@ -466,11 +466,13 @@ public:
         PathProcessor<Graph> path_processor(
             g_,
             omnigraph::PairInfoPathLengthLowerBound(g_.k(),
-                g_.length(e1), g_.length(e2), gap_,
+                g_.length(e1), g_.length(e2), (int) gap_,
                 variance_delta_),
             omnigraph::PairInfoPathLengthUpperBound(g_.k(),
-                insert_size_, variance_delta_), g_.EdgeEnd(e1),
-            g_.EdgeStart(e2), counter);
+                insert_size_, variance_delta_),
+            g_.EdgeEnd(e1),
+            g_.EdgeStart(e2), 
+            counter);
         path_processor.Process();
         if (counter.count() == 1) {
           unique_distance_cnt_++;
@@ -480,7 +482,8 @@ public:
 
         }
       }
-    }INFO("Considered " << considered_edge_pair_cnt_ << " edge pairs")INFO(
+    }
+    INFO("Considered " << considered_edge_pair_cnt_ << " edge pairs")INFO(
         unique_distance_cnt_ << " edge pairs connected with unique path of appropriate length")
     INFO(
         non_unique_distance_cnt_ << " edge pairs connected with non-unique path of appropriate length")

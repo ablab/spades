@@ -324,7 +324,7 @@ size_t DeBruijnKMerKMerSplitter::FillBufferFromKMers(kmer_iterator &kmer,
 }
 
 path::files_t DeBruijnKMerKMerSplitter::Split(size_t num_files) {
-  unsigned nthreads = kmers_.size();
+  unsigned nthreads = (unsigned) kmers_.size();
   INFO("Splitting kmer instances into " << num_files << " buckets. This might take a while.");
 
   // Determine the set of output files
@@ -347,7 +347,7 @@ path::files_t DeBruijnKMerKMerSplitter::Split(size_t num_files) {
   std::vector<KMerBuffer> tmp_entries(nthreads);
   for (unsigned i = 0; i < nthreads; ++i) {
     KMerBuffer &entry = tmp_entries[i];
-    entry.resize(num_files, RtSeqKMerVector(K_, 1.25 * cell_size));
+    entry.resize(num_files, RtSeqKMerVector(K_, (size_t) (1.25 * (double) cell_size)));
   }
 
   size_t counter = 0, n = 10;
@@ -360,7 +360,7 @@ path::files_t DeBruijnKMerKMerSplitter::Split(size_t num_files) {
   do {
 #   pragma omp parallel for num_threads(nthreads) reduction(+ : counter)
     for (size_t i = 0; i < nthreads; ++i)
-      counter += FillBufferFromKMers(its[i], tmp_entries[i], num_files, cell_size);
+      counter += FillBufferFromKMers(its[i], tmp_entries[i], (unsigned) num_files, cell_size);
 
     DumpBuffers(num_files, nthreads, tmp_entries, ostreams);
 

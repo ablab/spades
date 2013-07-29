@@ -54,10 +54,10 @@ void late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices) {
                 }
 
                 if (cfg::get().use_multithreading) {
-                    auto paired_streams = paired_binary_readers(cfg::get().ds.reads[i], true, cfg::get().ds.reads[i].data().mean_insert_size);
+                    auto paired_streams = paired_binary_readers(cfg::get().ds.reads[i], true, (size_t) cfg::get().ds.reads[i].data().mean_insert_size);
                     FillPairedIndexWithReadCountMetric(gp.g, *MapperInstance(gp), paired_indices[i], *paired_streams);
                 } else {
-                    auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(cfg::get().ds.reads[i], true, cfg::get().ds.reads[i].data().mean_insert_size);
+                    auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(cfg::get().ds.reads[i], true, (size_t) cfg::get().ds.reads[i].data().mean_insert_size);
                     SingleStreamType paired_streams(paired_stream.get());
                     paired_stream.release();
                     FillPairedIndexWithReadCountMetric(gp.g, *MapperInstance(gp), paired_indices[i], paired_streams);
