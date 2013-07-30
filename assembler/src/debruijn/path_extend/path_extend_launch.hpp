@@ -109,8 +109,8 @@ double GetWeightThreshold(const PairedInfoLibraries& lib,
 double GetSingleThreshold(const PairedInfoLibraries& lib,
                           const pe_config::ParamSetT& pset) {
     return lib[0]->is_mate_pair_ ?
-            *pset.mate_pair_options.select_options.single_threshold :
-            *pset.extension_options.select_options.single_threshold;
+            pset.mate_pair_options.select_options.single_threshold :
+            pset.extension_options.select_options.single_threshold;
 }
 
 double GetPriorityCoeff(const PairedInfoLibraries& lib,

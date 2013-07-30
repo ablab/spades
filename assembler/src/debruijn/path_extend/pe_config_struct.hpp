@@ -98,7 +98,7 @@ struct pe_config {
 
     struct ExtensionOptionsT {
       struct SelectOptionsT {
-        boost::optional<double> single_threshold;
+        double single_threshold;
         double weight_threshold;
         double priority_coeff;
 

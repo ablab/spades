@@ -26,12 +26,12 @@ void load(pe_config::VisualizeParamsT& o, boost::property_tree::ptree const& pt,
   load(o.print_paths,             pt, "print_paths"           );
 }
 
-void load(pe_config::ParamSetT::ExtensionOptionsT::SelectOptionsT& so, boost::property_tree::ptree const& pt, bool /*complete*/) {
-  using config_common::load;
-
-  load(so.priority_coeff,     pt, "priority_coeff");
-  load(so.weight_threshold,   pt, "weight_threshold");
-  so.single_threshold = pt.get_optional<double>("single_threshold");
+void load(pe_config::ParamSetT::ExtensionOptionsT::SelectOptionsT& so,
+          boost::property_tree::ptree const& pt, bool) {
+    using config_common::load;
+    load(so.priority_coeff, pt, "priority_coeff");
+    load(so.weight_threshold, pt, "weight_threshold");
+    load(so.single_threshold, pt, "single_threshold");
 }
 
 void load(pe_config::ParamSetT::ExtensionOptionsT& es, boost::property_tree::ptree const& pt, bool /*complete*/)
