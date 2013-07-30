@@ -22,20 +22,16 @@ singlecell {
 	; extension selection
 	extension_options
 	{
-	 	path_cover  {
 		    single_threshold	       0.001
 		    weight_threshold           0.6
 		    priority_coeff             1.5
-		}
 	}
 
 	mate_pair_options
 	{
-	 	path_cover  {
 		    single_threshold	       0.0001
 		    weight_threshold           0.5
 		    priority_coeff             1.5
-		}
 	}
 
 	scaffolder {
@@ -72,23 +68,19 @@ multicell {
 	; extension selection
 	extension_options
 	{
-	 	path_cover  {
 		    single_threshold	       1.83784
 ;	A.mirum threshold 0.076
 ;	E.coli RL36 threshold 0.717949
 ;	E.coli IS220 threshold 1.83784
 		    weight_threshold           0.5
 		    priority_coeff             1.5
-		}
 	}    
 
 	mate_pair_options
 	{
-	 	path_cover  {
 		    single_threshold	       0.001
 		    weight_threshold           0.5
 		    priority_coeff             1.5
-		}
 	}
 
 	scaffolder {

@@ -97,17 +97,9 @@ struct pe_config {
     size_t split_edge_length;
 
     struct ExtensionOptionsT {
-      struct SelectOptionsT {
         double single_threshold;
         double weight_threshold;
         double priority_coeff;
-
-        SelectOptionsT() {}
-        SelectOptionsT(const SelectOptionsT& so)
-            : single_threshold(so.single_threshold), weight_threshold(so.weight_threshold), priority_coeff(so.priority_coeff) {}
-      } select_options;
-
-
     } extension_options;
 
     ExtensionOptionsT mate_pair_options;

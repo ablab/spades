@@ -102,22 +102,22 @@ void DebugOutputEdges(const ContigWriter& writer, const conj_graph_pack& gp,
 double GetWeightThreshold(const PairedInfoLibraries& lib,
                           const pe_config::ParamSetT& pset) {
     return lib[0]->is_mate_pair_ ?
-            pset.mate_pair_options.select_options.weight_threshold :
-            pset.extension_options.select_options.weight_threshold;
+            pset.mate_pair_options.weight_threshold :
+            pset.extension_options.weight_threshold;
 }
 
 double GetSingleThreshold(const PairedInfoLibraries& lib,
                           const pe_config::ParamSetT& pset) {
     return lib[0]->is_mate_pair_ ?
-            pset.mate_pair_options.select_options.single_threshold :
-            pset.extension_options.select_options.single_threshold;
+            pset.mate_pair_options.single_threshold :
+            pset.extension_options.single_threshold;
 }
 
 double GetPriorityCoeff(const PairedInfoLibraries& lib,
                         const pe_config::ParamSetT& pset) {
     return lib[0]->is_mate_pair_ ?
-            pset.mate_pair_options.select_options.priority_coeff :
-            pset.extension_options.select_options.priority_coeff;
+            pset.mate_pair_options.priority_coeff :
+            pset.extension_options.priority_coeff;
 }
 
 string MakeNewName(const std::string& contigs_name,
@@ -239,9 +239,10 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	vector<ScaffoldingPathExtender*> scafPEs;
 	for (size_t i = 0; i < scafolding_libs.size(); ++i){
 		scaf_wcs.push_back(new ReadCountWeightCounter(gp.g, scafolding_libs[i]));
-		ScaffoldingExtensionChooser * scafExtensionChooser = new ScaffoldingExtensionChooser(gp.g, scaf_wcs[i],
-							scafolding_libs[i].at(0)->is_mate_pair_? pset.mate_pair_options.select_options.priority_coeff : pset.extension_options.select_options.priority_coeff);
-		scafPEs.push_back(new ScaffoldingPathExtender(gp.g, pset.loop_removal.max_loops, scafExtensionChooser, gapJoiner));
+        ScaffoldingExtensionChooser * scaff_chooser =
+                new ScaffoldingExtensionChooser(
+                        gp.g, scaf_wcs[i], GetPriorityCoeff(libs[i], pset));
+		scafPEs.push_back(new ScaffoldingPathExtender(gp.g, pset.loop_removal.max_loops, scaff_chooser, gapJoiner));
 	}
 
 	PathExtendResolver resolver(gp.g);
