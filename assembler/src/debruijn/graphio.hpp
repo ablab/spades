@@ -205,7 +205,7 @@ void DataPrinter<Graph>::saveGraph(const string& file_name) {
   "Couldn't open file " << (file_name + ".grp") << " on write");
   size_t vertex_count = component_.v_size();
   size_t edge_count = component_.e_size();
-  fprintf(file, "%ld %ld \n", (long) vertex_count, (long) edge_count);
+  fprintf(file, "%zu %zu \n", vertex_count, edge_count);
   for (auto iter = component_.v_begin(); iter != component_.v_end(); ++iter) {
     save(file, *iter);
   }
@@ -236,7 +236,7 @@ void DataPrinter<Graph>::saveEdgeSequences(const string& file_name) {
   //FILE* path_file = fopen("/home/lab42/algorithmic-biology/assembler/src/tools/coverage_based_rr")
   DEBUG("Saving sequences " << file_name <<" created");
   VERIFY(file != NULL);
-  //fprintf(file, "%ld\n", component_.e_size());
+  //fprintf(file, "%zu\n", component_.e_size());
   for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
     fprintf(file, ">%zu\n", int_ids_.ReturnIntId(*iter));
     int len = (int) component_.g().EdgeNucls(*iter).size();
@@ -253,7 +253,7 @@ void DataPrinter<Graph>::saveCoverage(const string& file_name) {
   FILE* file = fopen((file_name + ".cvr").c_str(), "w");
   DEBUG("Saving coverage, " << file_name <<" created");
   VERIFY(file != NULL);
-  fprintf(file, "%ld\n", (long) component_.e_size());
+  fprintf(file, "%zu\n", component_.e_size());
   for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
     fprintf(file, "%zu ", int_ids_.ReturnIntId(*iter));
     fprintf(file, "%lf .\n", component_.g().coverage(*iter));
@@ -304,7 +304,7 @@ void DataPrinter<Graph>::savePaired(const string& file_name,
     }
   }
 
-  fprintf(file, "%ld\n", (long) comp_size);
+  fprintf(file, "%zu\n", comp_size);
 
   for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
     EdgeId e1 = *I;
@@ -529,11 +529,11 @@ public:
     INFO("Reading conjugate de bruijn  graph from " << file_name << " started");
     size_t vertex_count;
     size_t edge_count;
-    flag = fscanf(file, "%ld %ld \n", &vertex_count, &edge_count);
+    flag = fscanf(file, "%zu %zu \n", &vertex_count, &edge_count);
     VERIFY(flag == 2);
     for (size_t i = 0; i < vertex_count; i++) {
       size_t vertex_real_id, conjugate_id;
-      flag = fscanf(file, "Vertex %ld ~ %ld .\n", &vertex_real_id, &conjugate_id);
+      flag = fscanf(file, "Vertex %zu ~ %zu .\n", &vertex_real_id, &conjugate_id);
       TRACE("Vertex "<<vertex_real_id<<" ~ "<<conjugate_id<<" .");
       VERIFY(flag == 2);
 
@@ -556,7 +556,7 @@ public:
 
     if (!fasta) {
       size_t tmp_edge_count;
-      flag = fscanf(sequence_file, "%ld", &tmp_edge_count);
+      flag = fscanf(sequence_file, "%zu", &tmp_edge_count);
       VERIFY(flag == 1);
       VERIFY(edge_count == tmp_edge_count);
     }
@@ -565,15 +565,15 @@ public:
     char longstring[longstring_size];
     for (size_t i = 0; i < edge_count; i++) {
       size_t e_real_id, start_id, fin_id, length, conjugate_edge_id;
-      flag = fscanf(file, "Edge %ld : %ld -> %ld, l = %ld ~ %ld .\n",
+      flag = fscanf(file, "Edge %zu : %zu -> %zu, l = %zu ~ %zu .\n",
                     &e_real_id, &start_id, &fin_id, &length, &conjugate_edge_id);
       VERIFY(flag == 5);
       VERIFY(length < longstring_size);
       if (fasta) {
-        flag = fscanf(sequence_file, ">%ld\n%s\n", &e_real_id, longstring);
+        flag = fscanf(sequence_file, ">%zu\n%s\n", &e_real_id, longstring);
       }
       else {
-        flag = fscanf(sequence_file, "%ld %s .", &e_real_id, longstring);
+        flag = fscanf(sequence_file, "%zu %s .", &e_real_id, longstring);
       }
       VERIFY(flag == 2);
       TRACE("Edge " << e_real_id << " : " << start_id << " -> " 

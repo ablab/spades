@@ -189,8 +189,7 @@ public:
 	}
 
 	std::string str(EdgeId edgeId) const {
-		int x = (int) ReturnIntId(edgeId);
-		return ToString(x);
+		return ToString(ReturnIntId(edgeId));
 	}
 
 };

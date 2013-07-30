@@ -97,11 +97,11 @@ FORCE_INLINE uint64_t fmix ( uint64_t k )
 
 //-----------------------------------------------------------------------------
 
-void MurmurHash3_x86_32 ( const void * key, int len,
+void MurmurHash3_x86_32 ( const void * key, const size_t len,
                           uint32_t seed, void * out )
 {
   const uint8_t * data = (const uint8_t*)key;
-  const int nblocks = len / 4;
+  const size_t nblocks = len / 4;
 
   uint32_t h1 = seed;
 
@@ -153,11 +153,11 @@ void MurmurHash3_x86_32 ( const void * key, int len,
 
 //-----------------------------------------------------------------------------
 
-void MurmurHash3_x86_128 ( const void * key, const int len,
+void MurmurHash3_x86_128 ( const void * key, const size_t len,
                            uint32_t seed, void * out )
 {
   const uint8_t * data = (const uint8_t*)key;
-  const int nblocks = len / 16;
+  const size_t nblocks = len / 16;
 
   uint32_t h1 = seed;
   uint32_t h2 = seed;
@@ -258,11 +258,11 @@ void MurmurHash3_x86_128 ( const void * key, const int len,
 
 //-----------------------------------------------------------------------------
 
-void MurmurHash3_x64_128 ( const void * key, const int len,
+void MurmurHash3_x64_128 ( const void * key, const size_t len,
                            const uint32_t seed, void * out )
 {
   const uint8_t * data = (const uint8_t*)key;
-  const int nblocks = len / 16;
+  const size_t nblocks = len / 16;
 
   uint64_t h1 = seed;
   uint64_t h2 = seed;
@@ -275,7 +275,7 @@ void MurmurHash3_x64_128 ( const void * key, const int len,
 
   const uint64_t * blocks = (const uint64_t *)(data);
 
-  for(int i = 0; i < nblocks; i++)
+  for(size_t i = 0; i < nblocks; i++)
   {
     uint64_t k1 = getblock(blocks,i*2+0);
     uint64_t k2 = getblock(blocks,i*2+1);
