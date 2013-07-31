@@ -1406,7 +1406,7 @@ private:
      * Method reads paired data from stream, maps it to genome and stores it in this PairInfoIndex.
      */
     void FillUsualIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
-        for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
             paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0., 0., 0.));
         }
 
@@ -1425,7 +1425,7 @@ private:
 
 
     void FillParallelIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
-        for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
             paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 0.0, 0.));
         }
 
@@ -1526,17 +1526,17 @@ public:
   const Point NormalizeWeight(EdgeId e1, EdgeId e2, Point point) const {
     double w = 0.;
     if (math::eq(point.d, 0.) && e1 == e2) {
-      w = 0. + g_.length(e1) - insert_size_ + 2. * read_length_ + 1. - k_;
+      w = 0. + (double) g_.length(e1) - (double) insert_size_ + 2. * (double) read_length_ + 1. - (double) k_;
     }
     else {
       if (math::ls(point.d, 0.)) {
         using std::swap;
         swap(e1, e2);
       }
-      int gap_len = abs(rounded_d(point)) - g_.length(e1);
-      int right = std::min(insert_size_, gap_len + g_.length(e2) + read_length_);
-      int left = std::max(gap_len, int(insert_size_) - int(read_length_) - int(g_.length(e1)));
-      w = 0. + right - left + 1 - k_;
+      int gap_len = abs(rounded_d(point)) - (int) g_.length(e1);
+      int right = std::min((int) insert_size_, gap_len + (int) g_.length(e2) + (int) read_length_);
+      int left = std::max(gap_len, (int) insert_size_ - (int) read_length_ - (int) g_.length(e1));
+      w = 0. + (double) (right - left + 1 - (int) k_);
     }
 
     double result_weight = point.weight;
@@ -1545,7 +1545,7 @@ public:
     } else
       result_weight = 0.;
 
-    double cov_norm_coeff = avg_coverage_ / (2. * (read_length_ - k_));
+    double cov_norm_coeff = avg_coverage_ / (2. * (double) (read_length_ - k_));
     result_weight /= cov_norm_coeff;
 
     Point result(point);
@@ -1575,7 +1575,7 @@ public:
 
   const Point operator()(EdgeId e1, EdgeId e2, Point point) const {
     return Point(point.d,
-                 point.weight * 1. / norm(e1, e2),
+                 point.weight * 1. / (double) norm(e1, e2),
                  point.var);
   }
 };

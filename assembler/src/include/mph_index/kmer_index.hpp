@@ -127,7 +127,7 @@ class KMerIndex {
   typedef KMerIndex __self;
 
  public:
-  KMerIndex(unsigned k):k_(k), index_(NULL),  num_buckets_(0) {}
+  KMerIndex(/*unsigned k*/):/*k_(k), */index_(NULL),  num_buckets_(0) {}
 
   KMerIndex(const KMerIndex&) = delete;
   KMerIndex& operator=(const KMerIndex&) = delete;
@@ -189,7 +189,7 @@ class KMerIndex {
   }
 
  private:
-  unsigned k_;
+//  unsigned k_;
   KMerDataIndex *index_;
 
   size_t num_buckets_;
@@ -210,8 +210,8 @@ class KMerSplitter {
  public:
   typedef typename Seq::hash hash_function;
 
-  KMerSplitter(const std::string &work_dir, unsigned K)
-      : work_dir_(work_dir), K_(K) {}
+  KMerSplitter(const std::string &work_dir, unsigned K, uint32_t seed = 0)
+      : work_dir_(work_dir), K_(K), seed_(seed) {}
 
   virtual path::files_t Split(size_t num_files) = 0;
 
@@ -221,12 +221,13 @@ class KMerSplitter {
   const std::string &work_dir_;
   hash_function hash_;
   unsigned K_;
+  uint32_t seed_;
 
   std::string GetRawKMersFname(unsigned suffix) const {
     return path::append_path(work_dir_, "kmers.raw." + boost::lexical_cast<std::string>(suffix));
   }
   unsigned GetFileNumForSeq(const Seq &s, unsigned total) const {
-    return (unsigned)(hash_(s) % total);
+    return (unsigned)(hash_(s, seed_) % total);
   }
 
   DECL_LOGGER("K-mer Splitting");
@@ -241,6 +242,7 @@ class KMerCounter {
   typedef typename traits::FinalKMerStorage        FinalKMerStorage;
 
   virtual size_t Count(unsigned num_buckets, unsigned num_threads) = 0;
+  virtual size_t CountAll(unsigned num_buckets, unsigned num_threads, bool merge = true) = 0;
   virtual void MergeBuckets(unsigned num_buckets) = 0;
 
   virtual void OpenBucket(size_t idx, bool unlink = true) = 0;
@@ -262,11 +264,20 @@ class KMerDiskCounter : public KMerCounter<Seq> {
     typedef KMerCounter<Seq, traits> __super;
 public:
   KMerDiskCounter(const std::string &work_dir, KMerSplitter<Seq> &splitter)
-      : work_dir_(work_dir), splitter_(splitter) { }
+      : work_dir_(work_dir), splitter_(splitter) {
+    std::string prefix = path::append_path(work_dir, "kmers_XXXXXX");
+    char *tempprefix = strcpy(new char[prefix.length() + 1], prefix.c_str());
+    VERIFY_MSG(-1 != (fd_ = ::mkstemp(tempprefix)), "Cannot create temporary file");
+    kmer_prefix_ = tempprefix;
+    delete tempprefix;
+  }
 
   ~KMerDiskCounter() {
     for (size_t i = 0; i < buckets_.size(); ++i)
       ReleaseBucket(i);
+
+    ::close(fd_);
+    ::unlink(kmer_prefix_.c_str());
   }
 
   void OpenBucket(size_t idx, bool unlink = true) {
@@ -342,27 +353,37 @@ public:
     ofs.close();
   }
 
+  size_t CountAll(unsigned num_buckets, unsigned num_threads, bool merge = true) {
+    size_t kmers = Count(num_buckets, num_threads);
+    if (merge)
+      MergeBuckets(num_buckets);
+
+    return kmers;
+  }
+
   typename __super::FinalKMerStorage *GetFinalKMers() {
     unsigned K = splitter_.K();
     return new MMappedRecordArrayReader<typename Seq::DataType>(GetFinalKMersFname(), Seq::GetDataSize(K), /* unlink */ true);
   }
 
+  std::string GetMergedKMersFname(unsigned suffix) const {
+    return kmer_prefix_ + ".merged." + boost::lexical_cast<std::string>(suffix);
+  }
+
   std::string GetFinalKMersFname() const {
-    return path::append_path(work_dir_, "kmers.final");
+    return kmer_prefix_ + ".final";
   }
 
 private:
   std::string work_dir_;
   KMerSplitter<Seq> &splitter_;
+  int fd_;
+  std::string kmer_prefix_;
 
   std::vector<MMappedRecordArrayReader<typename Seq::DataType>*> buckets_;
 
   std::string GetUniqueKMersFname(unsigned suffix) const {
-    return path::append_path(work_dir_, "kmers.unique." + boost::lexical_cast<std::string>(suffix));
-  }
-
-  std::string GetMergedKMersFname(unsigned suffix) const {
-    return path::append_path(work_dir_, "kmers.merged." + boost::lexical_cast<std::string>(suffix));
+    return kmer_prefix_ + ".unique." + boost::lexical_cast<std::string>(suffix);
   }
 
   size_t MergeKMers(const std::string &ifname, const std::string &ofname,

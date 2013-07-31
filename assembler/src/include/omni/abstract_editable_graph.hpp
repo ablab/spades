@@ -183,7 +183,7 @@ public:
 	}
 
 protected:
-	virtual bool AdditionalCompressCondition(VertexId v) const {
+	virtual bool AdditionalCompressCondition(VertexId /*v*/) const {
 		return true;
 	}
 public:

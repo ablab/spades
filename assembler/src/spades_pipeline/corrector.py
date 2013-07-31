@@ -483,12 +483,12 @@ def run_bowtie2(log):
 
     tmp_dir = os.path.join(config["work_dir"], "tmp")
     devnull = "/dev/null"
-    universal_sys_call(config["bowtie2"] + "-build " + config["contigs"] + " " + tmp_dir, log, devnull)
+    universal_sys_call([config["bowtie2"], "-build", config["contigs"], tmp_dir], log, devnull)
     #os.system(config["bowtie2"] + "-build " + config["contigs"] + " " + config["work_dir"] + "tmp > /dev/null")
 
-    universal_sys_call(config["bowtie2"] + " -x " + tmp_dir + " -1 " + config["reads1"] + " -2 " +
-                     config["reads2"] + " -S " + config["sam_file"] + " -p " + str(config["t"]) +
-                     " --local --non-deterministic", log)
+    universal_sys_call([config["bowtie2"], "-x", tmp_dir, "-1", config["reads1"], "-2",
+                     config["reads2"], "-S", config["sam_file"], "-p", str(config["t"]),
+                     "--local", "--non-deterministic"], log)
     #os.system(config["bowtie2"] + " -x" + config["work_dir"] + "tmp  -1 " + config["reads1"] + " -2 " + config["reads2"] + " -S " + config["sam_file"] + " -p " + str(config["t"])+ " --local  --non-deterministic")
 
 
@@ -500,14 +500,14 @@ def run_bwa(log):
     tmp_sam_filename = os.path.join(config["work_dir"], "tmp.sam")
     isize_txt_filename = os.path.join(config["work_dir"], "isize.txt")
 
-    universal_sys_call(config["bwa"] + " index -a is " + config["contigs"] + " 2", log)
-    universal_sys_call(config["bwa"] + " aln " + config["contigs"] + " " + config["reads1"] + " -t " +
-                     str(config["t"]) + " -O 7 -E 2 -k 3 -n 0.08 -q 15", log, tmp1_sai_filename)
-    universal_sys_call(config["bwa"] + " aln " + config["contigs"] + " " + config["reads2"] + " -t " +
-                     str(config["t"]) + " -O 7 -E 2 -k 3 -n 0.08 -q 15", log, tmp2_sai_filename)
-    universal_sys_call(config["bwa"] + " sampe " + config["contigs"] + " " + tmp1_sai_filename +
-                     " " + tmp2_sai_filename + " " + config["reads1"] + " " + config["reads2"],
-                     None, tmp_sam_filename, isize_txt_filename)
+    universal_sys_call([config["bwa"], "index", "-a", "is", config["contigs"], "2"], log)
+    universal_sys_call([config["bwa"], "aln", config["contigs"], config["reads1"], "-t",
+                       str(config["t"]), "-O", "7", "-E", "2", "-k", "3", "-n", "0.08", "-q", "15"], log, tmp1_sai_filename)
+    universal_sys_call([config["bwa"], "aln", config["contigs"], config["reads2"], "-t",
+                       str(config["t"]), "-O", "7", "-E", "2", "-k", "3", "-n", "0.08", "-q", "15"], log, tmp2_sai_filename)
+    universal_sys_call([config["bwa"], "sampe", config["contigs"], tmp1_sai_filename,
+                       tmp2_sai_filename, config["reads1"], config["reads2"]],
+                       None, tmp_sam_filename, isize_txt_filename)
 
     #os.system(config["bwa"] + " index -a is " + config["contigs"] + " 2")
     #os.system(config["bwa"] + " aln  "+ config["contigs"] +" " + config["reads1"] + " -t " + str(config["t"]) + "  -O 7 -E 2 -k 3 -n 0.08 -q 15 >"+config["work_dir"]+ "tmp1.sai" )

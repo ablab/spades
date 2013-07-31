@@ -6,6 +6,8 @@
  *      Author: anton
  */
 
+#include "io/read_stream_vector.hpp"
+
 namespace debruijn_graph {
 // used for temporary reads storage during parallel reading
 static const size_t READS_BUFFER_SIZE = 536870912; // 512 MB in bytes
@@ -25,7 +27,8 @@ class DeBruijnKMerSplitter : public RtSeqKMerSplitter {
 
  public:
   DeBruijnKMerSplitter(const std::string &work_dir,
-                       unsigned K) : RtSeqKMerSplitter(work_dir, K) {
+                       unsigned K, uint32_t seed = 0)
+      : RtSeqKMerSplitter(work_dir, K, seed) {
   }
 };
 
@@ -93,16 +96,20 @@ class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter {
                        KMerBuffer &tmp_entries,
                        unsigned num_files, size_t cell_size) const;
 
+  size_t rl_;
+
  public:
   DeBruijnReadKMerSplitter(const std::string &work_dir,
-                           unsigned K,
+                           unsigned K, uint32_t seed,
                            io::ReadStreamVector< io::IReader<Read> >& streams,
                            SingleReadStream* contigs_stream = 0)
-      : DeBruijnKMerSplitter(work_dir, K),
-        streams_(streams), contigs_(contigs_stream) {
+      : DeBruijnKMerSplitter(work_dir, K, seed),
+        streams_(streams), contigs_(contigs_stream), rl_(0) {
   }
 
   virtual path::files_t Split(size_t num_files);
+
+  size_t read_length() const { return rl_; }
 };
 
 template<class Read> template<class ReadStream>
@@ -126,7 +133,7 @@ DeBruijnReadKMerSplitter<Read>::FillBufferFromStream(ReadStream &stream,
 
 template<class Read>
 path::files_t DeBruijnReadKMerSplitter<Read>::Split(size_t num_files) {
-  unsigned nthreads = streams_.size();
+  unsigned nthreads = (unsigned) streams_.size();
 
   INFO("Splitting kmer instances into " << num_files << " buckets. This might take a while.");
 
@@ -151,7 +158,7 @@ path::files_t DeBruijnReadKMerSplitter<Read>::Split(size_t num_files) {
   std::vector<KMerBuffer> tmp_entries(nthreads);
   for (unsigned i = 0; i < nthreads; ++i) {
     KMerBuffer &entry = tmp_entries[i];
-    entry.resize(num_files, RtSeqKMerVector(K_, 1.25 * cell_size));
+    entry.resize(num_files, RtSeqKMerVector(K_, (size_t) (1.25 * (double) cell_size)));
   }
 
   size_t counter = 0, rl = 0, n = 15;
@@ -159,7 +166,7 @@ path::files_t DeBruijnReadKMerSplitter<Read>::Split(size_t num_files) {
   while (!streams_.eof()) {
 #   pragma omp parallel for num_threads(nthreads) reduction(+ : counter) shared(rl)
     for (size_t i = 0; i < nthreads; ++i) {
-      std::pair<size_t, size_t> stats = FillBufferFromStream(streams_[i], tmp_entries[i], num_files, cell_size);
+      std::pair<size_t, size_t> stats = FillBufferFromStream(streams_[i], tmp_entries[i], (unsigned) num_files, cell_size);
       counter += stats.first;
 
       // There is no max reduction in C/C++ OpenMP... Only in FORTRAN :(
@@ -184,7 +191,7 @@ path::files_t DeBruijnReadKMerSplitter<Read>::Split(size_t num_files) {
     size_t cnt = 0;
     contigs_->reset();
     while (!contigs_->eof()) {
-      FillBufferFromStream(*contigs_, tmp_entries[cnt], num_files, cell_size);
+      FillBufferFromStream(*contigs_, tmp_entries[cnt], (unsigned) num_files, cell_size);
       DumpBuffers(num_files, nthreads, tmp_entries, ostreams);
       if (++cnt >= nthreads)
         cnt = 0;
@@ -197,13 +204,14 @@ path::files_t DeBruijnReadKMerSplitter<Read>::Split(size_t num_files) {
   delete[] ostreams;
 
   INFO("Used " << counter << " reads. Maximum read length " << rl);
+  rl_ = rl;
 
   return out;
 }
 
 template<class Graph>
 class DeBruijnGraphKMerSplitter : public DeBruijnKMerSplitter {
-  typedef typename Graph::SmartEdgeIt EdgeIt;
+  typedef typename Graph::ConstEdgeIt EdgeIt;
   typedef typename Graph::EdgeId EdgeId;
 
   const Graph &g_;
@@ -256,11 +264,11 @@ path::files_t DeBruijnGraphKMerSplitter<Graph>::Split(size_t num_files) {
 
   std::vector<KMerBuffer> tmp_entries(1);
   KMerBuffer &entry = tmp_entries[0];
-  entry.resize(num_files, RtSeqKMerVector(K_, 1.25 * cell_size));
+  entry.resize(num_files, RtSeqKMerVector(K_, (size_t) (1.25 * (double) cell_size)));
 
   size_t counter = 0, n = 10;
-  for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ) {
-    counter += FillBufferFromEdges(it, tmp_entries[0], num_files, cell_size);
+  for (auto it = g_.ConstEdgeBegin(); !it.IsEnd(); ) {
+    counter += FillBufferFromEdges(it, tmp_entries[0], (unsigned) num_files, cell_size);
 
     DumpBuffers(num_files, 1, tmp_entries, ostreams);
 
@@ -279,5 +287,102 @@ path::files_t DeBruijnGraphKMerSplitter<Graph>::Split(size_t num_files) {
 
   return out;
 }
+
+class DeBruijnKMerKMerSplitter : public DeBruijnKMerSplitter {
+  typedef MMappedFileRecordArrayIterator<runtime_k::RtSeq::DataType> kmer_iterator;
+
+  unsigned K_source_;
+  std::vector<std::string> kmers_;
+
+  size_t FillBufferFromKMers(kmer_iterator &kmer,
+                             KMerBuffer &tmp_entries,
+                             unsigned num_files, size_t cell_size) const;
+
+ public:
+  DeBruijnKMerKMerSplitter(const std::string &work_dir,
+                           unsigned K_target, unsigned K_source)
+      : DeBruijnKMerSplitter(work_dir, K_target), K_source_(K_source) {}
+
+  void AddKMers(const std::string &file) {
+    kmers_.push_back(file);
+  }
+
+  virtual path::files_t Split(size_t num_files);
+};
+
+size_t DeBruijnKMerKMerSplitter::FillBufferFromKMers(kmer_iterator &kmer,
+                                                     KMerBuffer &buffer,
+                                                     unsigned num_files, size_t cell_size) const {
+  size_t seqs = 0;
+  for (size_t kmers = 0; kmer.good() && kmers < num_files * cell_size; ++kmer) {
+    Sequence nucls(runtime_k::RtSeq(K_source_, *kmer));
+    kmers += FillBufferFromSequence(nucls, buffer, num_files);
+    seqs += 1;
+  }
+
+  return seqs;
+}
+
+path::files_t DeBruijnKMerKMerSplitter::Split(size_t num_files) {
+  unsigned nthreads = (unsigned) kmers_.size();
+  INFO("Splitting kmer instances into " << num_files << " buckets. This might take a while.");
+
+  // Determine the set of output files
+  path::files_t out;
+  for (unsigned i = 0; i < num_files; ++i)
+    out.push_back(this->GetRawKMersFname(i));
+
+  FILE** ostreams = new FILE*[num_files];
+  for (unsigned i = 0; i < num_files; ++i) {
+    ostreams[i] = fopen(out[i].c_str(), "wb");
+    VERIFY_MSG(ostreams[i], "Cannot open temporary file to write");
+  }
+  size_t cell_size = READS_BUFFER_SIZE /
+                     (nthreads * num_files * runtime_k::RtSeq::GetDataSize(K_) * sizeof(runtime_k::RtSeq::DataType));
+  // Set sane minimum cell size
+  if (cell_size < 16384)
+    cell_size = 16384;
+  INFO("Using cell size of " << cell_size);
+
+  std::vector<KMerBuffer> tmp_entries(nthreads);
+  for (unsigned i = 0; i < nthreads; ++i) {
+    KMerBuffer &entry = tmp_entries[i];
+    entry.resize(num_files, RtSeqKMerVector(K_, (size_t) (1.25 * (double) cell_size)));
+  }
+
+  size_t counter = 0, n = 10;
+  std::vector<kmer_iterator> its;
+  its.reserve(nthreads);
+  for (auto it = kmers_.begin(), et = kmers_.end(); it != et; ++it)
+    its.emplace_back(*it, runtime_k::RtSeq::GetDataSize(K_source_));
+
+  bool anygood = false;
+  do {
+#   pragma omp parallel for num_threads(nthreads) reduction(+ : counter)
+    for (size_t i = 0; i < nthreads; ++i)
+      counter += FillBufferFromKMers(its[i], tmp_entries[i], (unsigned) num_files, cell_size);
+
+    DumpBuffers(num_files, nthreads, tmp_entries, ostreams);
+
+    if (counter >> n) {
+      INFO("Processed " << counter << " kmers");
+      n += 1;
+    }
+
+    anygood = false;
+    for (auto it = its.begin(), et = its.end(); it != et; ++it)
+      anygood |= it->good();
+  } while (anygood);
+
+  for (unsigned i = 0; i < num_files; ++i)
+    fclose(ostreams[i]);
+
+  delete[] ostreams;
+
+  INFO("Used " << counter << " kmers.");
+
+  return out;
+}
+
 
 }

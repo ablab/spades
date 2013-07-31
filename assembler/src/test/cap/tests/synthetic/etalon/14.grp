@@ -1,0 +1,38 @@
+16 20 
+Vertex 2 ~ 3 .
+Vertex 3 ~ 2 .
+Vertex 4 ~ 5 .
+Vertex 5 ~ 4 .
+Vertex 6 ~ 7 .
+Vertex 7 ~ 6 .
+Vertex 8 ~ 9 .
+Vertex 9 ~ 8 .
+Vertex 10 ~ 11 .
+Vertex 11 ~ 10 .
+Vertex 12 ~ 13 .
+Vertex 13 ~ 12 .
+Vertex 14 ~ 15 .
+Vertex 15 ~ 14 .
+Vertex 16 ~ 17 .
+Vertex 17 ~ 16 .
+
+Edge 2 : 2 -> 4, l = 24 ~ 3 .
+Edge 3 : 5 -> 3, l = 24 ~ 2 .
+Edge 4 : 3 -> 6, l = 76 ~ 5 .
+Edge 5 : 7 -> 2, l = 76 ~ 4 .
+Edge 6 : 8 -> 10, l = 76 ~ 7 .
+Edge 7 : 11 -> 9, l = 76 ~ 6 .
+Edge 8 : 12 -> 14, l = 76 ~ 9 .
+Edge 9 : 15 -> 13, l = 76 ~ 8 .
+Edge 10 : 4 -> 16, l = 176 ~ 11 .
+Edge 11 : 17 -> 5, l = 176 ~ 10 .
+Edge 12 : 2 -> 11, l = 24 ~ 13 .
+Edge 13 : 10 -> 3, l = 24 ~ 12 .
+Edge 14 : 5 -> 8, l = 24 ~ 15 .
+Edge 15 : 9 -> 4, l = 24 ~ 14 .
+Edge 16 : 16 -> 11, l = 24 ~ 17 .
+Edge 17 : 10 -> 17, l = 24 ~ 16 .
+Edge 18 : 14 -> 8, l = 23 ~ 19 .
+Edge 19 : 9 -> 15, l = 23 ~ 18 .
+Edge 20 : 16 -> 15, l = 23 ~ 21 .
+Edge 21 : 14 -> 17, l = 23 ~ 20 .

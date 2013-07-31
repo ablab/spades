@@ -193,7 +193,7 @@ public:
 	TipClipper(Graph &graph, size_t max_tip_length,
 			const shared_ptr<Predicate<EdgeId>>& additional_condition,
 			boost::function<void(EdgeId)> removal_handler = 0,
-			boost::function<double(EdgeId)> qual_f = 0) :
+			boost::function<double(EdgeId)> /*qual_f*/ = 0) :
 			graph_(graph), additional_condition_(additional_condition), removed_(
 					0), max_tip_length_(max_tip_length), removal_handler_(
 					removal_handler) {

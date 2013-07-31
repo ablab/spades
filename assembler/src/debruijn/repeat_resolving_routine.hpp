@@ -58,7 +58,7 @@ void WriteGraphPack(gp_t& gp, const string& file_name) {
 			new PositionsEdgeColorer<typename gp_t::graph_t>(gp.g,
 					gp.edge_pos));
 
-	EdgeQuality<typename gp_t::graph_t> edge_qual(gp.g, gp.index,
+	EdgeQuality<typename gp_t::graph_t, typename gp_t::index_t> edge_qual(gp.g, gp.index,
 			gp.kmer_mapper, gp.genome);
 	total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
 	total_labeler tot_lab(&graph_struct);
@@ -181,7 +181,7 @@ void FillComponentDistances(set<EdgeId>& component,
 		for (auto iter = component.begin(); iter != component.end(); iter++) {
 			VertexId start = gp.g.EdgeStart(*iter);
 			VertexId end = gp.g.EdgeEnd(*iter);
-			int len = gp.g.length(*iter);
+			int len = (int) gp.g.length(*iter);
 			if (used.first.find(*iter) == used.first.end()) {
 				if (vertex_map[start].first >= 0
 						&& vertex_map[start].first + len
@@ -853,13 +853,13 @@ void prepare_scaffolding_index(conj_graph_pack& gp,
 	size_t delta = size_t(is_var);
 	size_t linkage_distance = size_t(
 			cfg::get().de.linkage_distance_coeff * is_var);
-	GraphDistanceFinder<Graph> dist_finder(gp.g, (size_t)math::round(lib.data().mean_insert_size),
-	        lib.data().read_length, delta);
+	GraphDistanceFinder<Graph> dist_finder(gp.g, (size_t) math::round(lib.data().mean_insert_size),
+	                                       lib.data().read_length, delta);
 	size_t max_distance = size_t(cfg::get().de.max_distance_coeff * is_var);
 	boost::function<double(int)> weight_function;
 	INFO("Retaining insert size distribution for it");
 	map<int, size_t> insert_size_hist = cfg::get().ds.hist();
-	WeightDEWrapper wrapper(insert_size_hist, size_t(lib.data().mean_insert_size));
+	WeightDEWrapper wrapper(insert_size_hist, lib.data().mean_insert_size);
 	INFO("Weight Wrapper Done");
 	weight_function = boost::bind(&WeightDEWrapper::CountWeight, wrapper, _1);
 
@@ -894,14 +894,14 @@ void prepare_scaffolding_index(conj_graph_pack& gp,
 			clustered_index);
 }
 
-void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, std::vector< PathInfo<Graph> >& filteredPaths, 
+template<class EdgeQualityLaber>
+void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, std::vector< PathInfo<Graph> >& filteredPaths,
 				PairedIndexT& clustered_index,
-				EdgeQuality<Graph>& quality_labeler ) {
+				const EdgeQualityLaber& quality_labeler ) {
 
-
-
-	DeBruijnEdgeIndex<conj_graph_pack::graph_t, runtime_k::RtSeq> kmer_index(conj_gp.index.inner_index().K(), conj_gp.g, cfg::get().output_dir);
-	if (cfg::get().developer_mode) {
+    typedef DeBruijnEdgeIndex<KmerStoringDeBruijnEdgeIndex<conj_graph_pack::graph_t, runtime_k::RtSeq>> KmerIndex;
+		KmerIndex kmer_index((unsigned) conj_gp.g.k() + 1, conj_gp.g, cfg::get().output_dir);
+		if (cfg::get().developer_mode) {
 
 		std::string path;
 		if (cfg::get().entry_point <= ws_simplification) 
@@ -911,11 +911,12 @@ void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, s
 		bool val = LoadEdgeIndex(path, kmer_index);
 		VERIFY_MSG(val, "can not open file "+path+".kmidx");
 		INFO("Updating index from graph started");
-		DeBruijnEdgeIndexBuilder<runtime_k::RtSeq>().UpdateIndexFromGraph(kmer_index, conj_gp.g);
+
+		//DeBruijnEdgeIndexBuilder<runtime_k::RtSeq>().UpdateIndexFromGraph(kmer_index, conj_gp.g);
+		EdgeInfoUpdater<KmerIndex, Graph> updater(conj_gp.g, kmer_index);
+		updater.UpdateAll();
 		SaveEdgeIndex(cfg::get().output_dir + "/saves/debruijn_kmer_index_after_construction", kmer_index);
 	}
-
-
 
 	/*int number_of_buckets = 10;
 	auto bm = BucketMapper<conj_graph_pack::graph_t>(conj_gp.g, kmerIndex, cfg::get().K + 1, number_of_buckets);
@@ -925,9 +926,12 @@ void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, s
 	int bucket_out = 0;
 	int repeat_distance = 500;
 	double probability = bm.GetProbablityFromBucketToBucketForDistance (bucket_in, bucket_out, repeat_distance) ;*/
-	auto index = FlankingCoverage<Graph>(conj_gp.g, kmer_index, 50, cfg::get().K + 1);
+	//auto index = FlankingCoverage<Graph>(conj_gp.g, kmer_index, 50, cfg::get().K + 1);
+    FlankingCoverage<Graph, KmerIndex> index(conj_gp.g, kmer_index, 50, (int) cfg::get().K + 1);
 	EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(conj_gp.g, conj_gp.g);
-	auto cov_rr = CoverageBasedResolution<conj_graph_pack> (conj_gp, kmer_index, quality_labeler, cfg::get().cbrr.tandem_ratio_lower_threshold, cfg::get().cbrr.tandem_ratio_upper_threshold, cfg::get().cbrr.repeat_length_upper_threshold);
+	CoverageBasedResolution<conj_graph_pack, EdgeQualityLaber, KmerIndex> cov_rr
+	(conj_gp, kmer_index, quality_labeler, cfg::get().cbrr.tandem_ratio_lower_threshold,
+			cfg::get().cbrr.tandem_ratio_upper_threshold, cfg::get().cbrr.repeat_length_upper_threshold);
 	cov_rr.resolve_repeats_by_coverage(index, insert_size, labels_after, clustered_index, filteredPaths, cfg::get().output_dir + "resolved_by_coverage.fasta");
 
 	INFO("Repeats are resolved by coverage");
@@ -940,7 +944,7 @@ void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, s
 int GetFirstPELibIndex() {
 	for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
 		if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd) {
-			return i;
+			return (int) i;
 		}
 	}
 	return -1;
@@ -1070,7 +1074,7 @@ void AddSingleLibrary(
 
 void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
                   PairedIndicesT& clustered_indices,
-                  EdgeQuality<Graph>& quality_labeler) {
+                  const EdgeQuality<Graph, Index>&  quality_labeler) {
     vector<PairedIndexT*> pe_indexes;
     vector<PairedIndexT*> pe_scaf_indexes;
     vector<size_t> indexes;
@@ -1106,7 +1110,7 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
         int pe_lib_index = GetFirstPELibIndex();
         const io::SequencingLibrary<debruijn_config::DataSetData> &lib =
                 cfg::get().ds.reads[pe_lib_index];
-        resolve_repeats_by_coverage(conj_gp, lib.data().mean_insert_size,
+        resolve_repeats_by_coverage(conj_gp, (size_t) lib.data().mean_insert_size,
                                     filteredPaths, clustered_indices[0],
                                     quality_labeler);
         PathStorageInfo<Graph> single_storage(
@@ -1198,7 +1202,7 @@ void resolve_repeats() {
 	total_labeler_graph_struct graph_struct(conj_gp.g, &conj_gp.int_ids,
 			&conj_gp.edge_pos);
 	total_labeler tot_lab(&graph_struct);
-	EdgeQuality<Graph> quality_labeler(conj_gp.g, conj_gp.index,
+	EdgeQuality<Graph, Index> quality_labeler(conj_gp.g, conj_gp.index,
 			conj_gp.kmer_mapper, conj_gp.genome);
 	//	OutputWrongContigs<K>(conj_gp, 1000, "contamination.fasta");
 	CompositeLabeler<Graph> labeler(tot_lab, quality_labeler);
@@ -1239,7 +1243,7 @@ void resolve_repeats() {
 }
 
 void exec_repeat_resolving() {
-	
+
 	if (cfg::get().entry_point <= ws_repeats_resolving) {
 		resolve_repeats();
 		//todo why nothing to save???

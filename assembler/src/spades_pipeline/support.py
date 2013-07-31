@@ -61,7 +61,10 @@ def sys_call(cmd, log, cwd=None):
     import shlex
     import subprocess
 
-    cmd_list = shlex.split(cmd)
+    if isinstance(cmd, list):
+        cmd_list = cmd
+    else:
+        cmd_list = shlex.split(cmd)
 
     proc = subprocess.Popen(cmd_list, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=cwd)
 
@@ -87,7 +90,10 @@ def universal_sys_call(cmd, log, out_filename=None, err_filename=None, cwd=None)
     import shlex
     import subprocess
 
-    cmd_list = shlex.split(cmd)
+    if isinstance(cmd, list):
+        cmd_list = cmd
+    else:
+        cmd_list = shlex.split(cmd)
 
     if out_filename:
         stdout = open(out_filename, 'w')
@@ -217,6 +223,20 @@ def correct_dataset(dataset_data):
     return corrected_dataset_data
 
 
+def relative2abs_paths(dataset_data, dir_name):
+    dir_name = os.path.abspath(dir_name)
+    abs_paths_dataset_data = []
+    for reads_library in dataset_data:
+        for key, value in reads_library.items():
+            if key.endswith('reads'):
+                abs_paths_reads = []
+                for reads_file in value:
+                    abs_paths_reads.append(os.path.join(dir_name, reads_file))
+                reads_library[key] = abs_paths_reads
+        abs_paths_dataset_data.append(reads_library)
+    return abs_paths_dataset_data
+
+
 def check_dataset_reads(dataset_data, log):
     all_files = []
     for id, reads_library in enumerate(dataset_data):
@@ -225,11 +245,11 @@ def check_dataset_reads(dataset_data, log):
         for key, value in reads_library.items():
             if key.endswith('reads'):
                 for reads_file in value:
-                    check_file_existence(os.path.abspath(reads_file), key + ', library number: ' + str(id + 1) +
+                    check_file_existence(reads_file, key + ', library number: ' + str(id + 1) +
                                          ', library type: ' + reads_library['type'], log)
-                    check_reads_file_format(os.path.abspath(reads_file), key + ', library number: ' + str(id + 1) +
+                    check_reads_file_format(reads_file, key + ', library number: ' + str(id + 1) +
                                             ', library type: ' + reads_library['type'], log)
-                    all_files.append(os.path.abspath(reads_file))
+                    all_files.append(reads_file)
                 if key == 'left reads':
                     left_number = len(value)
                 elif key == 'right reads':
@@ -290,7 +310,7 @@ def move_dataset_files(dataset_data, dst, log, gzip=False):
                         shutil.move(reads_file, dst_filename)
                         if gzip:
                             #log.info('Compressing ' + dst_filename + ' into ' + dst_filename + '.gz')
-                            sys_call('gzip -f -9 ' + dst_filename, log)
+                            sys_call(['gzip', '-f', '-9', dst_filename], log)
                             dst_filename += '.gz'
                     moved_reads_files.append(dst_filename)
                 reads_library[key] = moved_reads_files
@@ -342,7 +362,7 @@ def pretty_print_reads(dataset_data, log, indent='    '):
             if reads_type not in reads_library:
                 value = 'not specified'
             else:
-                value = str(map(os.path.abspath, reads_library[reads_type]))
+                value = str(reads_library[reads_type])
             log.info(indent + '  ' + reads_type + ': ' + value)
 ### END: for processing YAML files
 

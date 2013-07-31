@@ -36,7 +36,7 @@ struct EdgeWithDistance {
 	int d_;
 
 	EdgeWithDistance(EdgeId e, size_t d) :
-			e_(e), d_(d) {
+			e_(e), d_((int) d) {
 	}
 };
 
@@ -61,14 +61,14 @@ public:
 
 		for (int i = (int) path.Size() - 1; i >= 0; --i) {
 			double w = lib_.IdealPairedInfo(path[i], candidate,
-					path.LengthAt(i));
+					(int) path.LengthAt(i));
 			if (math::gr(w, 0.)) {
 			}
 				edges.push_back(EdgeWithPairedInfo(i, w));
 		}
 	}
 
-	void FindForwardEdges(const BidirectionalPath& path, EdgeId candidate,
+	void FindForwardEdges(const BidirectionalPath& /*path*/, EdgeId candidate,
 			std::vector<EdgeWithDistance>& edges) {
 		edges.clear();
 		edges.push_back(EdgeWithDistance(candidate, 0));
@@ -116,7 +116,7 @@ public:
 			analyzers_.push_back(new ExtentionAnalyzer(g_, **iter));
 			avrageLibWeight_ += (*iter)->coverage_coeff_;
 		}
-		avrageLibWeight_ /= max(libs_.size(), (size_t) 1);
+		avrageLibWeight_ /= (double) max(libs_.size(), (size_t) 1);
 	}
 
 	virtual ~WeightCounter() {
@@ -204,12 +204,12 @@ protected:
 
 		for (auto iter = coveredEdges.begin(); iter != coveredEdges.end();
 				++iter) {
-			if (excludedEdges_.count(iter->e_) > 0) {
+			if (excludedEdges_.count((int) iter->e_) > 0) {
 				DEBUG("excluded " << iter->e_)
 				continue;
 			}
 			double w = libs_[libIndex]->CountPairedInfo(path[iter->e_], e,
-					path.LengthAt(iter->e_) + additionalGapLength);
+					(int) path.LengthAt(iter->e_) + additionalGapLength);
 
 			if (normalizeWeight_) {
 				w /= iter->pi_;
@@ -241,7 +241,7 @@ public:
 	virtual double CountIdealInfo(EdgeId e1, EdgeId e2, size_t dist) {
 		double res = 0.0;
 		for (size_t i = 0; i < libs_.size(); ++i) {
-			res += libs_[i]->IdealPairedInfo(e1, e2, dist);
+			res += libs_[i]->IdealPairedInfo(e1, e2, (int) dist);
 		}
 		return res;
 	}
@@ -265,11 +265,11 @@ public:
 				analyzers_[i]->FindForwardEdges(path, e, edges);
 
 				for (auto edge = edges.begin(); edge != edges.end(); ++edge) {
-					weight += CountSingleLib(i, path, edge->e_,
+					weight += CountSingleLib((int) i, path, edge->e_,
 							edge->d_ + gapLength);
 				}
 			} else {
-				weight += CountSingleLib(i, path, e, gapLength);
+				weight += CountSingleLib((int) i, path, e, gapLength);
 			}
 		}
 
@@ -315,8 +315,8 @@ protected:
 		std::set<int> excludedEdges(excludedEdges_);
 		for (auto iter = coveredEdges.begin(); iter != coveredEdges.end();
 				++iter) {
-			if (excludedEdges.count(iter->e_) > 0) {
-				excludedEdges.erase(excludedEdges.find(iter->e_));
+			if (excludedEdges.count((int) iter->e_) > 0) {
+				excludedEdges.erase(excludedEdges.find((int) iter->e_));
 				continue;
 			}
 
@@ -327,7 +327,7 @@ protected:
 
 			double singleWeight = libs_[libIndex]->CountPairedInfo(
 					path[iter->e_], e,
-					path.LengthAt(iter->e_) + additionalGapLength);
+					(int) path.LengthAt(iter->e_) + additionalGapLength);
 
 			if (normalizeWeight_) {
 				singleWeight /= iter->pi_;
@@ -361,7 +361,7 @@ public:
 	virtual double CountIdealInfo(EdgeId e1, EdgeId e2, size_t dist) {
 		double res = 0.0;
 		for (size_t i = 0; i < libs_.size(); ++i) {
-			res += libs_[i]->IdealPairedInfo(e1, e2, dist);
+			res += libs_[i]->IdealPairedInfo(e1, e2, (int) dist);
 		}
 		return res;
 	}
@@ -380,10 +380,10 @@ public:
 			int gapLength = 0) {
 		double weight = 0.0;
 		for (size_t i = 0; i < libs_.size(); ++i) {
-			weight += CountSingleLib(i, path, e, gapLength);
+			weight += CountSingleLib((int) i, path, e, gapLength);
 		}
 
-		return weight / max(libs_.size(), (size_t) 1);
+		return weight / (double) max(libs_.size(), (size_t) 1);
 	}
 
 	virtual bool PairInfoExist(EdgeId first, EdgeId second, int distance) {

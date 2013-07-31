@@ -36,8 +36,9 @@ inline void SaveAll(ContigStreamsPtr streams, const vector<string>& suffixes,
     for (size_t i = 0; i < streams->size(); ++i) {
         if (!suffixes[i].empty()) {
             string output_filename = out_root + suffixes[i];
-            io::ofastastream out_stream(output_filename);
-            Transfer((*streams)[i], out_stream);
+            io::RCRemovingWrapper<Contig> wrapper((*streams)[i]);
+            io::osequencestream ostream(output_filename);
+            Transfer(wrapper, ostream);
         }
     }
 }
@@ -56,13 +57,12 @@ void MakeSaves(gp_t& gp, ContigStreamsPtr streams, const string& root,
 
     make_dir(root);
 
-    using namespace debruijn_graph;
-    ContigStreamsPtr rc_contigs = io::RCWrapStreams(*streams);
+    streams->reset();
 
-    rc_contigs->reset();
-
-    ColorHandler<Graph> coloring(gp.g, rc_contigs->size());
-    SplitAndColorGraph(gp, coloring, *rc_contigs, true);
+    ColorHandler<Graph> coloring(gp.g, streams->size());
+    CoordinatesHandler<Graph> coordinates_handler;
+    SplitAndColorGraph(gp, coloring, *streams);
+    FillPositions(gp, *streams, coordinates_handler);
 
     PrintColoredGraphWithColorFilter(gp.g, coloring, gp.edge_pos,
             root + "colored_split_graph.dot");
@@ -118,85 +118,127 @@ void ConstructGPForRefinement(gp_t& gp, const ContigStreamsPtr& contigs,
     typedef typename gp_t::graph_t Graph;
     INFO("Constructing graph pack for refinement");
 
-    ContigStreamsPtr rc_streams = io::RCWrapStreams(*contigs);
-    rc_streams->reset();
-
-    ConstructGraph(gp.k_value, *rc_streams, gp.g, gp.index);
+    CapConstructGraph(gp.k_value, *contigs, gp.g, gp.index);
 
     RefineGP(gp, delta);
 }
 
 template<class gp_t>
-void ConstructGPForRefinement(gp_t& gp,
-        io::IReader<io::SingleRead>& raw_stream_1,
-        io::IReader<io::SingleRead>& raw_stream_2, size_t delta = 5) {
-    ContigStreamsPtr streams_ptr = make_shared<ContigStreams>(
-            vector<ContigStream*> { &raw_stream_1, &raw_stream_2 }, false);
-    ConstructGPForRefinement(gp, streams_ptr, delta);
+ContigStreamsPtr RefinedStreams(const ContigStreamsPtr& streams, const gp_t& gp) {
+    ContigStreamsPtr refined_streams(new ContigStreams());
+    for (size_t i = 0; i < streams->size(); ++i) {
+        refined_streams->push_back(
+                new io::ModifyingWrapper<io::SingleRead>(
+                        (*streams)[i],
+                        GraphReadCorrectorInstance(gp.g, *MapperInstance(gp))));
+    }
+    return refined_streams;
 }
 
-template<size_t k, class Seq>
-pair<Sequence, Sequence> CorrectGenomes(const Sequence& genome1,
-        const Sequence& genome2, size_t delta = 5) {
-    io::VectorReader<io::SingleRead> stream1(
-            io::SingleRead("first", genome1.str()));
-    io::VectorReader<io::SingleRead> stream2(
-            io::SingleRead("second", genome2.str()));
-
-    typedef debruijn_graph::graph_pack<debruijn_graph::ConjugateDeBruijnGraph,
-            Seq> refining_gp_t;
-    refining_gp_t refining_gp(k, "tmp");
-    ConstructGPForRefinement(refining_gp, stream1, stream2, delta);
-
-    io::ModifyingWrapper<io::SingleRead> refined_stream1(stream1,
-            GraphReadCorrectorInstance(refining_gp.g,
-                    *MapperInstance(refining_gp)));
-    io::ModifyingWrapper<io::SingleRead> refined_stream2(stream2,
-            GraphReadCorrectorInstance(refining_gp.g,
-                    *MapperInstance(refining_gp)));
-
-    pair<Sequence, Sequence> answer = make_pair(FirstSequence(refined_stream1),
-            FirstSequence(refined_stream2));
-    return answer;
-}
-
-template<size_t k>
-pair<Sequence, Sequence> CorrectGenomes(const pair<Sequence, Sequence>& genomes,
-        size_t delta = 5) {
-    return CorrectGenomes<k>(genomes.first, genomes.second, delta);
-}
-
-template<size_t k, class Seq>
-pair<Sequence, vector<Sequence>> RefineData(
-        const pair<Sequence, vector<Sequence>>& data) {
-    io::VectorReader<io::SingleRead> stream1(
-            io::SingleRead("first", data.first.str()));
-    io::VectorReader<io::SingleRead> stream2(MakeReads(data.second));
-
+template<class Seq>
+ContigStreamsPtr RefineStreams(const ContigStreamsPtr& streams,
+                               size_t k,
+                               size_t delta = 5,
+                               const std::string &workdir = "tmp") {
     typedef graph_pack<ConjugateDeBruijnGraph, Seq> refining_gp_t;
-    refining_gp_t refining_gp(k, "tmp");
-    ConstructGPForRefinement(refining_gp, stream1, stream2);
+    refining_gp_t gp(k, workdir);
 
-    io::ModifyingWrapper<io::SingleRead> refined_stream1(stream1,
-            GraphReadCorrectorInstance(refining_gp.g,
-                    *MapperInstance(refining_gp)));
-    io::ModifyingWrapper<io::SingleRead> refined_stream2(stream2,
-            GraphReadCorrectorInstance(refining_gp.g,
-                    *MapperInstance(refining_gp)));
+    CapConstructGraph(gp.k_value, *streams, gp.g, gp.index);
 
-    return make_pair(FirstSequence(refined_stream1),
-            AllSequences(refined_stream2));
+    RefineGP(gp, delta);
+
+    return RefineStreams(streams, gp);
+
 }
+
 
 inline ContigStreamsPtr OpenStreams(const string& root,
-        const vector<string>& filenames) {
+        const vector<string>& filenames, bool add_rc) {
     ContigStreamsPtr streams(new ContigStreams());
     FOREACH (auto filename, filenames) {
         DEBUG("Opening stream from " << root << filename);
-        streams->push_back(new io::Reader(root + filename));
+        ContigStream* reader = new io::Reader(root + filename);
+        if (add_rc)
+            reader = new io::CleanRCReaderWrapper<Contig>(reader);
+        streams->push_back(reader);
     }
     return streams;
 }
+
+
+template<class Seq>
+void RefineData(const string& base_path,
+                            const vector<string>& suffixes,
+                            const string& out_root,
+                            size_t k,
+                            size_t delta = 5,
+                            const std::string &workdir = "tmp") {
+    ContigStreamsPtr streams = OpenStreams(base_path, suffixes, true);
+    ContigStreamsPtr refined = RefineStreams<Seq>(streams, k, delta, workdir);
+    SaveAll(refined, suffixes, out_root);
+}
+
+//template<class gp_t>
+//void ConstructGPForRefinement(gp_t& gp,
+//        io::IReader<io::SingleRead>& raw_stream_1,
+//        io::IReader<io::SingleRead>& raw_stream_2, size_t delta = 5) {
+//    ContigStreamsPtr streams_ptr = make_shared<ContigStreams>(
+//            vector<ContigStream*> { &raw_stream_1, &raw_stream_2 }, false);
+//    ConstructGPForRefinement(gp, streams_ptr, delta);
+//}
+
+//template<size_t k, class Seq>
+//pair<Sequence, Sequence> CorrectGenomes(const Sequence& genome1,
+//        const Sequence& genome2, size_t delta = 5) {
+//    io::VectorReader<io::SingleRead> stream1(
+//            io::SingleRead("first", genome1.str()));
+//    io::VectorReader<io::SingleRead> stream2(
+//            io::SingleRead("second", genome2.str()));
+//
+//    typedef debruijn_graph::graph_pack<debruijn_graph::ConjugateDeBruijnGraph,
+//            Seq> refining_gp_t;
+//    refining_gp_t refining_gp(k, "tmp");
+//    ConstructGPForRefinement(refining_gp, stream1, stream2, delta);
+//
+//    io::ModifyingWrapper<io::SingleRead> refined_stream1(stream1,
+//            GraphReadCorrectorInstance(refining_gp.g,
+//                    *MapperInstance(refining_gp)));
+//    io::ModifyingWrapper<io::SingleRead> refined_stream2(stream2,
+//            GraphReadCorrectorInstance(refining_gp.g,
+//                    *MapperInstance(refining_gp)));
+//
+//    pair<Sequence, Sequence> answer = make_pair(FirstSequence(refined_stream1),
+//            FirstSequence(refined_stream2));
+//    return answer;
+//}
+
+//template<size_t k>
+//pair<Sequence, Sequence> CorrectGenomes(const pair<Sequence, Sequence>& genomes,
+//        size_t delta = 5) {
+//    return CorrectGenomes<k>(genomes.first, genomes.second, delta);
+//}
+
+//template<size_t k, class Seq>
+//pair<Sequence, vector<Sequence>> RefineData(
+//        const pair<Sequence, vector<Sequence>>& data) {
+//    io::VectorReader<io::SingleRead> stream1(
+//            io::SingleRead("first", data.first.str()));
+//    io::VectorReader<io::SingleRead> stream2(MakeReads(data.second));
+//
+//    typedef graph_pack<ConjugateDeBruijnGraph, Seq> refining_gp_t;
+//    refining_gp_t refining_gp(k, "tmp");
+//    ConstructGPForRefinement(refining_gp, stream1, stream2);
+//
+//    io::ModifyingWrapper<io::SingleRead> refined_stream1(stream1,
+//            GraphReadCorrectorInstance(refining_gp.g,
+//                    *MapperInstance(refining_gp)));
+//    io::ModifyingWrapper<io::SingleRead> refined_stream2(stream2,
+//            GraphReadCorrectorInstance(refining_gp.g,
+//                    *MapperInstance(refining_gp)));
+//
+//    return make_pair(FirstSequence(refined_stream1),
+//            AllSequences(refined_stream2));
+//}
 
 template<class Seq>
 void PerformRefinement(ContigStreamsPtr streams, const string& root,
@@ -212,25 +254,13 @@ void PerformRefinement(ContigStreamsPtr streams, const string& root,
     INFO("Constructing graph pack for k=" << k << " delta=" << delta);
     gp_t gp(k, "tmp");
 
-    ContigStreamsPtr rc_streams = io::RCWrapStreams(*streams);
-    rc_streams->reset();
-
-    ConstructGraph(gp.k_value, *rc_streams, gp.g, gp.index);
+    CapConstructGraph(gp.k_value, *streams, gp.g, gp.index);
 
     MakeSaves(gp, streams, root + "before_refinement/", suffixes);
 
     RefineGP(gp, delta);
 
-    ContigStreamsPtr refined_streams(new ContigStreams());
-    for (size_t i = 0; i < streams->size(); ++i) {
-        string output_filename = suffixes[i];
-        if (!output_filename.empty()) {
-            refined_streams->push_back(
-                    new io::ModifyingWrapper<io::SingleRead>((*streams)[i],
-                            GraphReadCorrectorInstance(gp.g,
-                                    *MapperInstance(gp))));
-        }
-    }
+    ContigStreamsPtr refined_streams = RefinedStreams(streams, gp);
 
     MakeSaves(gp, refined_streams, root + "after_refinement/", suffixes);
 
@@ -274,7 +304,7 @@ inline void PerformIterativeRefinement(ContigStreamsPtr streams,
     }
 
     ContigStreamsPtr corr_streams = OpenStreams(root + "after_refinement/",
-            suffixes);
+            suffixes, true);
     //recursive call
     GeneCollection updated_collection;
 
@@ -294,7 +324,7 @@ inline void PerformIterativeRefinement(const string& base_path,
         vector<size_t>& k_values, bool gene_analysis = false) {
 //	remove_dir(out_root);
     utils::MakeDirPath(out_root);
-    ContigStreamsPtr streams = OpenStreams(base_path, suffixes);
+    ContigStreamsPtr streams = OpenStreams(base_path, suffixes, true);
 
     //stab
     GeneCollection gene_collection;

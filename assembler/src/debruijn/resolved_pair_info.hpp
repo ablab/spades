@@ -38,7 +38,7 @@ public:
 //		VERIFY(labels_.edge_inclusions.find(old_edge)->second.size() > 0);
 		if (!(labels_.edge_inclusions.find(old_edge)->second.size() > 0)){
 			DEBUG("There are no current copy for old graph edge " << old_edge << " " << old_graph_.str(old_edge));
-			no_current_copies_ids.insert(old_graph_.int_id(old_edge));
+			no_current_copies_ids.insert((int) old_graph_.int_id(old_edge));
 			no_current_copies++;
 		}
 		return labels_.edge_inclusions.find(old_edge)->second.size() == 1;
@@ -75,7 +75,7 @@ public:
 			pair<EdgeId, size_t> new_pos_of_second = OldEdgePositionInNewGraph(e2);
 			for (auto it = infos.begin(); it != infos.end(); ++it) {
 				new_pair_info.AddPairInfo(new_pos_of_first.first, new_pos_of_second.first,
-								0. + it->d + new_pos_of_first.second - new_pos_of_second.second,
+								0. + it->d + (double) new_pos_of_first.second - (double) new_pos_of_second.second,
 								it->weight, it->var, false);
 			}
 		}

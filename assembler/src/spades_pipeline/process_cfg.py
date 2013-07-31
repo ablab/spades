@@ -43,6 +43,12 @@ def bool_to_str(b):
     return "false"
 
 
+def process_spaces(str):
+    if str.find(" ") != -1:
+        str = '"' + str + '"'
+    return str
+
+
 def vars_from_lines(lines):
     class var_metadata:
         def __init__(self, value, line_num, indent):

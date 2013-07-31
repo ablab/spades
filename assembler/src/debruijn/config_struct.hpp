@@ -400,7 +400,7 @@ struct debruijn_config {
         }
     }
     size_t IS() const { return (size_t) math::round(reads[0].data().mean_insert_size); }
-    void set_IS(size_t IS) { reads[0].data().mean_insert_size = IS; }
+    void set_IS(size_t IS) { reads[0].data().mean_insert_size = (double) IS; }
     double is_var() const { return reads[0].data().insert_size_deviation; }
     void set_is_var(double is_var) { reads[0].data().insert_size_deviation = is_var; }
     double avg_coverage() const { return reads[0].data().average_coverage; }
@@ -546,19 +546,10 @@ struct debruijn_config {
 };
 
 void load(debruijn_config& cfg, const std::string &filename);
-
+void load_lib_data(const std::string& prefix);
+void write_lib_data(const std::string& prefix);
 } // debruijn_graph
 
 typedef config_common::config<debruijn_graph::debruijn_config> cfg;
-
-namespace debruijn_graph {
-
-inline std::string input_file(std::string filename) {
-  if (filename[0] == '/')
-    return filename;
-  return cfg::get().input_dir + filename;
-}
-
-}
 
 #endif

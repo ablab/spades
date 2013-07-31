@@ -155,13 +155,11 @@ private:
 
     void Attach() {
         VERIFY(!attached_);
-//        g_.AddActionHandler(this);
         attached_ = true;
     }
 
     void Detach() {
         VERIFY(attached_);
-//        g_.RemoveActionHandler(this);
         attached_ = false;
     }
 };
@@ -195,7 +193,7 @@ class GraphActionHandler : public ActionHandler<typename Graph::VertexId,
     virtual ~GraphActionHandler() {
         TRACE("Removing action handler: " << this->name());
         if(this->IsAttached())
-        	this->Detach();
+            this->Detach();
         g_.RemoveActionHandler(this);
     }
 };
@@ -513,7 +511,7 @@ class ConditionedSmartSetIterator : public SmartSetIterator<Graph, ElementId> {
     true_elements_.erase(v);
   }
 
-	virtual void HandleMerge(const std::vector<ElementId>& old_edges, ElementId new_edge) {
+    virtual void HandleMerge(const std::vector<ElementId>& old_edges, ElementId new_edge) {
     TRACE("handleMer " << this->g().str(new_edge));
     if (merge_handler_(old_edges, new_edge)) {
       true_elements_.insert(new_edge);
@@ -608,6 +606,57 @@ class SmartEdgeIterator : public SmartIterator<Graph, typename Graph::EdgeId,
     }
 };
 
+template<class Graph>
+class ConstEdgeIterator :
+            public boost::iterator_facade<ConstEdgeIterator<Graph>,
+                                          typename Graph::EdgeId const,
+                                          boost::forward_traversal_tag,
+                                          typename Graph::EdgeId const> {
+  public:
+    ConstEdgeIterator(const Graph &g)
+            : graph_(g),
+              cvertex_(g.begin()), evertex_(g.end()),
+              cedge_(g.out_begin(*cvertex_)), eedge_(g.out_end(*cvertex_)) {
+        skip_empty();
+    }
+
+    bool IsEnd() const {
+        return cvertex_ == evertex_;
+    }
+
+  private:
+    friend class boost::iterator_core_access;
+
+    void skip_empty() {
+        while (cedge_ == eedge_) {
+            if (++cvertex_ == evertex_)
+                break;
+            cedge_ = graph_.out_begin(*cvertex_);
+            eedge_ = graph_.out_end(*cvertex_);
+        }
+    }
+
+    void increment() {
+        ++cedge_;
+        skip_empty();
+    }
+
+    bool equal(ConstEdgeIterator &other) const {
+        return (graph_ == other.graph_ &&
+                cvertex_ == other.cvertex_ &&
+                cedge_ == other.cedge_);
+    }
+
+    typename Graph::EdgeId const dereference() const {
+        return *cedge_;
+    }
+
+    const Graph &graph_;
+    typename Graph::VertexIt cvertex_, evertex_;
+    typename Graph::edge_const_iterator cedge_, eedge_;
+};
+
+
 /**
  * This class is a representation of how certain sequence is mapped to genome. Needs further adjustment.
  */
@@ -621,8 +670,8 @@ class Path {
 
     Path(const vector<ElementId>& sequence, size_t start_pos, size_t end_pos)
             : sequence_(sequence),
-              start_pos_(start_pos),
-              end_pos_(end_pos) {
+              start_pos_((int) start_pos),
+              end_pos_((int) end_pos) {
     }
 
     Path()
@@ -682,6 +731,12 @@ struct Range {
             : start_pos(start_pos),
               end_pos(end_pos) {
         VERIFY(end_pos >= start_pos);
+    }
+
+    inline bool operator<(const Range &other) const {
+      if (start_pos != other.start_pos)
+        return start_pos < other.start_pos;
+      return end_pos < other.end_pos;
     }
 };
 
@@ -754,11 +809,11 @@ class MappingPath {
     }
 
     void join(const MappingPath<ElementId>& that) {
-		for (size_t i = 0; i < that.size(); ++i) {
-			edges_.push_back(that.edges_[i]);
-			range_mappings_.push_back(that.range_mappings_[i]);
-		}
-	}
+        for (size_t i = 0; i < that.size(); ++i) {
+            edges_.push_back(that.edges_[i]);
+            range_mappings_.push_back(that.range_mappings_[i]);
+        }
+    }
 
  private:
     vector<ElementId> edges_;
@@ -1069,7 +1124,7 @@ class UniquePathFinder {
  public:
 
     //todo use length bound if needed
-    UniquePathFinder(const Graph& graph, size_t length_bound =
+    UniquePathFinder(const Graph& graph, size_t /*length_bound*/ =
                              std::numeric_limits<size_t>::max())
             : graph_(graph) {
 
@@ -1337,7 +1392,7 @@ class DominatedSetFinder {
             if (dominated_.count(g_.EdgeStart(e)) == 0)
                 continue;
             Range range = dominated_.find(g_.EdgeStart(e))->second;
-            range.shift(g_.length(e));
+            range.shift((int) g_.length(e));
             DEBUG("Edge " << g_.str(e) << " provide distance range " << range);
             if (range.start_pos < min)
                 min = range.start_pos;

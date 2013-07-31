@@ -9,32 +9,6 @@ using namespace io;
 
 namespace YAML {
 template<>
-struct convert<SequencingLibraryBase> {
-  static Node encode(const SequencingLibraryBase& rhs) {
-    Node node;
-
-    node["orientation"] = rhs.orientation();
-    node["type"] = rhs.type();
-    if (rhs.insert_size())
-      node["insert size"] = rhs.insert_size();
-
-    for (auto it = rhs.paired_begin(), et = rhs.paired_end(); et != it; ++it) {
-      node["left reads"].push_back(it->first);
-      node["right reads"].push_back(it->second);
-    }
-    for (auto it = rhs.single_begin(), et = rhs.single_end(); et != it; ++it)
-      node["single reads"].push_back(*it);
-
-    return node;
-  }
-
-  static bool decode(const Node& node, SequencingLibraryBase& rhs) {
-    rhs.load(node);
-    return true;
-  }
-};
-
-template<>
 struct convert<LibraryOrientation> {
   static Node encode(const LibraryOrientation &rhs) {
     switch (rhs) {
@@ -47,6 +21,7 @@ struct convert<LibraryOrientation> {
       case LibraryOrientation::RR:
         return Node("rr");
       case LibraryOrientation::Undefined:
+      default:
         return Node("undefined");
     }
   }
@@ -81,6 +56,8 @@ struct convert<LibraryType> {
         return Node("mate-pairs");
       case LibraryType::PacBioReads:
         return Node("pacbio");
+      default:
+        return Node();
     }
   }
 
@@ -101,6 +78,29 @@ struct convert<LibraryType> {
   }
 
 };
+
+Node convert<SequencingLibraryBase>::encode(const io::SequencingLibraryBase& rhs) {
+    Node node;
+
+    node["orientation"] = rhs.orientation();
+    node["type"] = rhs.type();
+    if (rhs.insert_size())
+      node["insert size"] = rhs.insert_size();
+
+    for (auto it = rhs.paired_begin(), et = rhs.paired_end(); et != it; ++it) {
+      node["left reads"].push_back(it->first);
+      node["right reads"].push_back(it->second);
+    }
+    for (auto it = rhs.single_begin(), et = rhs.single_end(); et != it; ++it)
+      node["single reads"].push_back(*it);
+
+    return node;
+}
+
+bool convert<SequencingLibraryBase>::decode(const Node& node, SequencingLibraryBase& rhs) {
+    rhs.load(node);
+    return true;
+}
 
 Node convert<io::SequencingLibrary<> >::encode(const io::SequencingLibrary<>& rhs) {
   return convert<io::SequencingLibraryBase>::encode(rhs);

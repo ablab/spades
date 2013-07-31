@@ -16,21 +16,21 @@ import process_cfg
 from process_cfg import bool_to_str
 from process_cfg import load_config_from_file
 
-def prepare_config_spades(filename, cfg, log, prev_K, K, last_one):
+def prepare_config_spades(filename, cfg, log, use_additional_contigs, K, last_one):
     subst_dict = dict()
 
     subst_dict["K"] = str(K)
     subst_dict["run_mode"] = "false"
-    subst_dict["dataset"] = cfg.dataset
-    subst_dict["output_base"] = cfg.output_dir
-    subst_dict["additional_contigs"] = cfg.additional_contigs
+    subst_dict["dataset"] = process_cfg.process_spaces(cfg.dataset)
+    subst_dict["output_base"] = process_cfg.process_spaces(cfg.output_dir)
+    subst_dict["additional_contigs"] = process_cfg.process_spaces(cfg.additional_contigs)
     subst_dict["entry_point"] = "construction"
     subst_dict["developer_mode"] = bool_to_str(cfg.developer_mode)
     subst_dict["gap_closer_enable"] = bool_to_str(last_one)
     subst_dict["paired_mode"] = bool_to_str(last_one and cfg.paired_mode)
     subst_dict["long_single_mode"] = bool_to_str(last_one and cfg.long_single_mode)
     subst_dict["topology_simplif_enabled"] = bool_to_str(last_one)
-    subst_dict["use_additional_contigs"] = bool_to_str(prev_K)
+    subst_dict["use_additional_contigs"] = bool_to_str(use_additional_contigs)
     subst_dict["max_threads"] = cfg.max_threads
     subst_dict["max_memory"] = cfg.max_memory
     subst_dict["correct_mismatches"] = bool_to_str(last_one)
@@ -43,7 +43,7 @@ def prepare_config_spades(filename, cfg, log, prev_K, K, last_one):
 
 
 def get_read_length(output_dir, K):
-    estimated_params = load_config_from_file(os.path.join(output_dir, "K%d" % (K), "_est_params.info"))
+    estimated_params = load_config_from_file(os.path.join(output_dir, "K%d" % K, "_est_params.info"))
     lib_count = int(estimated_params.__dict__["lib_count"])
     max_read_length = 0
     for i in range(lib_count):
@@ -54,7 +54,7 @@ def get_read_length(output_dir, K):
 
 
 def run_iteration(configs_dir, execution_home, cfg, log, K, use_additional_contigs, last_one):
-    data_dir = os.path.join(cfg.output_dir, "K%d" % (K))
+    data_dir = os.path.join(cfg.output_dir, "K%d" % K)
     if os.path.exists(data_dir):
         shutil.rmtree(data_dir)
     os.makedirs(data_dir)
@@ -74,10 +74,9 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, use_additional_conti
                     os.rename(cfg_file, cfg_file.split('.template')[0])
 
     prepare_config_spades(cfg_file_name, cfg, log, use_additional_contigs, K, last_one)
-    prev_K = K
 
-    command = os.path.join(execution_home, "spades") + " " +\
-               os.path.abspath(cfg_file_name)
+    command = [os.path.join(execution_home, "spades"),
+               os.path.abspath(cfg_file_name)]
 
     if os.path.isdir(bin_reads_dir):
         if glob.glob(os.path.join(bin_reads_dir, "*_cor*")):
@@ -86,7 +85,7 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, use_additional_conti
                 new_bin_filename = cor_filename[:cor_index] + cor_filename[cor_index + 4:]
                 shutil.move(cor_filename, new_bin_filename)
 
-    log.info("\n== Running assembler: " + ("K%d" % (K)) + "\n")
+    log.info("\n== Running assembler: " + ("K%d" % K) + "\n")
     support.sys_call(command, log)
 
 
@@ -105,9 +104,11 @@ def run_spades(configs_dir, execution_home, cfg, log):
     else:
         run_iteration(configs_dir, execution_home, cfg, log, cfg.iterative_K[0], False, False)
         RL = get_read_length(cfg.output_dir, cfg.iterative_K[0])
-        if (cfg.iterative_K[1] > RL):
+        if cfg.iterative_K[1] + 1 > RL:
             if cfg.paired_mode:
-                log.info("Second value of iterative K exceeded estimated read length. Rerunning in paired mode for the first value of K")
+                support.warning("Second value of iterative K (%d) exceeded estimated read length (%d). "
+                                "Rerunning in paired mode for the first value of K (%d)" %
+                                (cfg.iterative_K[1], RL, cfg.iterative_K[0]), log)
                 run_iteration(configs_dir, execution_home, cfg, log, cfg.iterative_K[0], False, True)
                 K = cfg.iterative_K[0]
         else:
@@ -116,14 +117,15 @@ def run_spades(configs_dir, execution_home, cfg, log):
             count = 0
             for K in rest_of_iterative_K:
                 count += 1
-                last_one = count == len(cfg.iterative_K) or rest_of_iterative_K[count] > RL
+                last_one = count == len(cfg.iterative_K) or (rest_of_iterative_K[count] + 1 > RL)
                 run_iteration(configs_dir, execution_home, cfg, log, K, True, last_one)
                 if last_one:
                     break
             if count < len(cfg.iterative_K):
-                log.info("Iterations stopped. Value of K exceeded estimated read length")
+                support.warning("Iterations stopped. Value of K (%d) exceeded estimated read length (%d)" %
+                                (cfg.iterative_K[count], RL), log)
 
-    latest = os.path.join(cfg.output_dir, "K%d" % (K))
+    latest = os.path.join(cfg.output_dir, "K%d" % K)
 
     if os.path.isfile(os.path.join(latest, "before_rr.fasta")):
         shutil.copyfile(os.path.join(latest, "before_rr.fasta"), os.path.join(os.path.dirname(cfg.result_contigs), "before_rr.fasta"))

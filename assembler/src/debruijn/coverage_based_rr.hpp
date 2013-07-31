@@ -18,7 +18,7 @@
 
 namespace debruijn_graph{
 
-template <class graph_pack>
+template <class graph_pack, class EdgeQualityLabeler, class KmerIndex>
 class CoverageBasedResolution {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
@@ -26,16 +26,16 @@ class CoverageBasedResolution {
 
 	const graph_pack& gp_;
 
-	const DeBruijnEdgeIndex<typename graph_pack::graph_t>& kmer_index_;
-	const EdgeQuality<typename graph_pack::graph_t>& quality_labeler_;
+	const KmerIndex& kmer_index_;
+	const EdgeQualityLabeler& quality_labeler_;
 
 	map<EdgeId, kind_of_repeat> edge_to_kind_;
 	const double tandem_lower_threshold_;
 	const double tandem_upper_threshold_;
 	const double repeat_length_upper_threshold_;
-	
+
 	public:
-	CoverageBasedResolution( const graph_pack& gpack_arg, const DeBruijnEdgeIndex<typename graph_pack::graph_t>& kmer_index, const EdgeQuality<typename graph_pack::graph_t>& quality_labeler,
+	CoverageBasedResolution( const graph_pack& gpack_arg, const KmerIndex& kmer_index, const EdgeQualityLabeler& quality_labeler,
 				double tandem_lower_threshold, double tandem_upper_threshold, double repeat_length_upper_threshold) :
 
 											gp_(gpack_arg),
@@ -255,7 +255,7 @@ class CoverageBasedResolution {
 
 	public :
 	template <class DetailedCoverage>
-	void resolve_repeats_by_coverage( DetailedCoverage& coverage, 
+	void resolve_repeats_by_coverage( DetailedCoverage& coverage,
 					size_t insert_size,
 //TODO: Do not pass reference on graph_pack members.
 //TODO: EdgeQuality to constructor
@@ -408,7 +408,7 @@ class CoverageBasedResolution {
 			else{
 				in_degree[into] = 1;
 			}
-	
+
 		}
 		int byPairedInfo = 0;
 		int byTopology = 0;
@@ -437,7 +437,7 @@ class CoverageBasedResolution {
 			else{
 				singles.push_back(*e_iter);
 			}
-			
+
 		}
 		DEBUG("Number of edges identified by paired info: " << byPairedInfo);
 		DEBUG("Number of edges identified by topology: " << byTopology);
@@ -613,14 +613,14 @@ class CoverageBasedResolution {
 			vector<pair<EdgeId, coverage_value>>& outgoingEdgesCoverage,
 			vector<pair<EdgeId,EdgeId>>& pairsOfEdges){
 
-		int Length = min(incomingEdgesCoverage.size(),outgoingEdgesCoverage.size());
+		int Length = (int) min(incomingEdgesCoverage.size(), outgoingEdgesCoverage.size());
 
 		//TODO: Move to config
 		//double threshold_one_list_(0.80), threshold_match_(0.64);
 		//double threshold_one_list_(0.80), threshold_match_(0.70);
 
 		for (int i = 0; i < Length - 1; ++i) {
-	
+
 			double valueOneListIn = min (incomingEdgesCoverage[i].second, incomingEdgesCoverage[i+1].second) / max (incomingEdgesCoverage[i].second, incomingEdgesCoverage[i+1].second) ;
 			double valueOneListOut = min (outgoingEdgesCoverage[i].second, outgoingEdgesCoverage[i+1].second) / max (outgoingEdgesCoverage[i].second, outgoingEdgesCoverage[i+1].second) ;
 			double valuePair = min (incomingEdgesCoverage[i].second, outgoingEdgesCoverage[i].second) / max (incomingEdgesCoverage[i].second, outgoingEdgesCoverage[i].second) ;
@@ -637,16 +637,16 @@ class CoverageBasedResolution {
 
 		if ( Length == (int) incomingEdgesCoverage.size() ){
 			for (unsigned i = Length - 1; i < outgoingEdgesCoverage.size() - 1; ++i){
-				double valueOneList = (double) min (outgoingEdgesCoverage[i].second, outgoingEdgesCoverage[i+1].second) / max (outgoingEdgesCoverage[i].second, outgoingEdgesCoverage[i+1].second); 
+				double valueOneList = (double) min (outgoingEdgesCoverage[i].second, outgoingEdgesCoverage[i+1].second) / max (outgoingEdgesCoverage[i].second, outgoingEdgesCoverage[i+1].second);
 				if (valueOneList > threshold_one_list_){
 					return;
 				}
 			}
 		}
 		else {
-		
+
 			for (unsigned i = Length - 1; i < incomingEdgesCoverage.size() - 1; ++i){
-				double valueOneList = (double) min (incomingEdgesCoverage[i].second, incomingEdgesCoverage[i+1].second) / max (incomingEdgesCoverage[i].second, incomingEdgesCoverage[i+1].second); 
+				double valueOneList = (double) min (incomingEdgesCoverage[i].second, incomingEdgesCoverage[i+1].second) / max (incomingEdgesCoverage[i].second, incomingEdgesCoverage[i+1].second);
 				if (valueOneList > threshold_one_list_){
 					return;
 				}
@@ -669,6 +669,7 @@ class CoverageBasedResolution {
 		if ( path.size() == 2 ) {
 
 			if (gp_.g.EdgeStart(path[0]) == gp_.g.EdgeEnd(path[1]) && gp_.g.EdgeStart(path[1]) == gp_.g.EdgeEnd(path[0]))
+
 				return true;
 		}
 
@@ -724,8 +725,8 @@ class CoverageBasedResolution {
 			if (visited_edges.find(*edge) != visited_edges.end()) continue;
 			int curLen = gp_.g.length(*edge);
 			visited_edges.insert(*edge);
-			bfs(*edge, visited_edges, component, curLen, maxPathLen);	
-			
+			bfs(*edge, visited_edges, component, curLen, maxPathLen);
+
 		}
 
 		return maxPathLen;
@@ -816,7 +817,7 @@ class CoverageBasedResolution {
 
 */
 
-
+	//todo WTF?!!!
 	template <class DetailedCoverage>
 	void TraverseComponents( const vector<EdgeId>& components, 
 				const vector<EdgeId>& singles, const DetailedCoverage& coverage, 
@@ -830,7 +831,7 @@ class CoverageBasedResolution {
 		//FILE* file = fopen("/home/ksenia/probabilities_22.log", "w");
         	int number_of_buckets = 20;
 		int K_ = cfg::get().K + 1;
-		auto bm = BucketMapper<conj_graph_pack::graph_t>(gp_.g, kmer_index_, K_, number_of_buckets);
+		BucketMapper<conj_graph_pack::graph_t, KmerIndex> bm(gp_.g, kmer_index_, K_, number_of_buckets);
 		bm.InitBuckets();
 		int pure_tandem(0), repetitive_tandem(0), ordinal_repeat(0);
 		for ( auto edge = components.begin(); edge != components.end(); ++edge ) {
@@ -872,7 +873,6 @@ class CoverageBasedResolution {
 		
 		DEBUG( "pure tandems: " << pure_tandem << "\nrepeats + tandems: " << repetitive_tandem << "\nordinal repeats: " << ordinal_repeat << "\n");
 		fclose(file);
-
 	}
 
 	//private:
@@ -887,7 +887,7 @@ class CoverageBasedResolution {
 		//VERIFY(pos_it != ref_pos.edges_positions().end();
 
 		if ( pos_it->second.size() == 1 ){
-		
+
 			auto nextStart = pos_it->second[0].end();
 			return match( path, 1, nextStart + 1, ref_pos );
 		}

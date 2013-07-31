@@ -31,120 +31,39 @@ class PairedVertex {
     typedef typename DataMaster::VertexData VertexData;
     typedef typename std::vector<EdgeId>::const_iterator edge_raw_iterator;
 
-    class conjugate_iterator : public std::iterator<std::forward_iterator_tag,
-            typename std::iterator_traits<edge_raw_iterator>::value_type> {
-        edge_raw_iterator it_;
-        const bool conjugate_;
-
-     public:
-        typedef typename std::iterator_traits<edge_raw_iterator>::difference_type difference_type;
-        typedef typename std::iterator_traits<edge_raw_iterator>::pointer pointer;
-        typedef typename std::iterator_traits<edge_raw_iterator>::value_type reference;
-        typedef typename std::iterator_traits<edge_raw_iterator>::value_type value_type;
-
+    class conjugate_iterator :
+            public boost::iterator_facade<conjugate_iterator,
+                                          EdgeId,
+                                          boost::forward_traversal_tag,
+                                          EdgeId> {
+      public:
         explicit conjugate_iterator(edge_raw_iterator it,
                                     bool conjugate = false)
-                : it_(it),
-                  conjugate_(conjugate) {
-        }
+                : it_(it), conjugate_(conjugate) {}
 
         // Should not exist. Temporary patch to write empty in_begin, out_end... methods for
         // ConcurrentGraphComponent which can not have such methods by definition
-        conjugate_iterator()
-                : conjugate_(false) {
+        conjugate_iterator() : conjugate_(false) {
             VERIFY_MSG(false, "There is no sense in using this. See comments.")
         }
 
-        reference operator*() const {
-            if (conjugate_)
-                return (*it_)->conjugate();
-            else
-                return *it_;
+      private:
+        friend class boost::iterator_core_access;
+
+        void increment() {
+            it_++;
         }
 
-        reference operator[](difference_type n) const {
-            return *(*this + n);
+        bool equal(const conjugate_iterator &other) const {
+            return other.it_ == it_ && other.conjugate_ == conjugate_;
         }
 
-        conjugate_iterator& operator++() {
-            ++it_;
-            return *this;
+        EdgeId dereference() const {
+            return (conjugate_ ? (*it_)->conjugate() : *it_);
         }
 
-        conjugate_iterator& operator--() {
-            --it_;
-            return *this;
-        }
-
-        conjugate_iterator operator++(int) {
-            conjugate_iterator res = *this;
-            ++it_;
-            return res;
-        }
-
-        conjugate_iterator operator--(int) {
-            conjugate_iterator res = *this;
-            --it_;
-            return res;
-        }
-
-        conjugate_iterator& operator+(const difference_type &n) {
-            return conjugate_iterator(it_ + n, conjugate_);
-        }
-
-        conjugate_iterator& operator-(const difference_type &n) {
-            return conjugate_iterator(it_ - n, conjugate_);
-        }
-
-        conjugate_iterator& operator+=(const difference_type &n) {
-            it_ += n;
-            return *this;
-        }
-
-        conjugate_iterator& operator-=(const difference_type &n) {
-            it_ -= n;
-            return *this;
-        }
-
-        friend bool operator==(const conjugate_iterator &r1,
-                               const conjugate_iterator &r2) {
-            return r1.it_ == r2.it_;
-        }
-
-        friend bool operator!=(const conjugate_iterator &r1,
-                               const conjugate_iterator &r2) {
-            return r1.it_ != r2.it_;
-        }
-
-        friend bool operator<(const conjugate_iterator &r1,
-                              const conjugate_iterator &r2) {
-            return r1.it_ < r2.it_;
-        }
-
-        friend bool operator<=(const conjugate_iterator &r1,
-                               const conjugate_iterator &r2) {
-            return r1.it_ <= r2.it_;
-        }
-
-        friend bool operator>=(const conjugate_iterator &r1,
-                               const conjugate_iterator &r2) {
-            return r1.it_ >= r2.it_;
-        }
-
-        friend bool operator>(const conjugate_iterator &r1,
-                              const conjugate_iterator &r2) {
-            return r1.it_ > r2.it_;
-        }
-
-        friend conjugate_iterator operator+(difference_type n,
-                                            const conjugate_iterator &i1) {
-            return i1 + n;
-        }
-
-        friend difference_type operator-(const conjugate_iterator &i1,
-                                         const conjugate_iterator &i2) {
-            return i1.it_ - i2.it_;
-        }
+        edge_raw_iterator it_;
+        bool conjugate_;
     };
 
  public:
@@ -232,7 +151,7 @@ class PairedVertex {
     }
 
     void AddOutgoingEdge(EdgeId e) {
-    	VERIFY(this != 0);
+        VERIFY(this != 0);
         outgoing_edges_.push_back(e);
     }
 
@@ -300,7 +219,7 @@ class PairedEdge : public CoveredEdge {
     }
 
     void SetEndVertex(VertexId end) {
-    	end_ = end;
+        end_ = end;
     }
 
     ~PairedEdge() {
@@ -408,7 +327,7 @@ class AbstractConjugateGraph : public AbstractGraph<
         EdgeId result = AddSingleEdge(v1, v2, data, id_distributor);
 
         if (this->master().isSelfConjugate(data) && (v1 == conjugate(v2))) {
-//      	todo why was it removed???
+//              todo why was it removed???
 //			Because of some split issues: when self-conjugate edge is split armageddon happends
 //          VERIFY(v1 == conjugate(v2));
 //          VERIFY(v1 == conjugate(v2));
@@ -485,20 +404,20 @@ class AbstractConjugateGraph : public AbstractGraph<
                          IdDistributor * idDistributor) {
         EdgeId newEdge(new PairedEdge<DataMaster>(v2, data), idDistributor);
         if(v1 != VertexId(0))
-        	v1->AddOutgoingEdge(newEdge);
+                v1->AddOutgoingEdge(newEdge);
         return newEdge;
     }
 
     virtual void LinkIncomingEdge(VertexId v, EdgeId e) {
-    	VERIFY(this->EdgeEnd(e) == VertexId(0));
-    	this->conjugate(v)->AddOutgoingEdge(this->conjugate(e));
-    	e->SetEndVertex(v);
+        VERIFY(this->EdgeEnd(e) == VertexId(0));
+        this->conjugate(v)->AddOutgoingEdge(this->conjugate(e));
+        e->SetEndVertex(v);
     }
 
     virtual void LinkOutgoingEdge(VertexId v, EdgeId e) {
-    	VERIFY(this->EdgeEnd(this->conjugate(e)) == VertexId(0));
-    	v->AddOutgoingEdge(e);
-    	this->conjugate(e)->SetEndVertex(this->conjugate(v));
+        VERIFY(this->EdgeEnd(this->conjugate(e)) == VertexId(0));
+        v->AddOutgoingEdge(e);
+        this->conjugate(e)->SetEndVertex(this->conjugate(v));
     }
 
 public:

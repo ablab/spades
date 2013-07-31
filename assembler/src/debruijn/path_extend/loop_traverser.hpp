@@ -52,7 +52,7 @@ private:
 		return result;
 	}
 
-	void TraverseLoop(EdgeId start, EdgeId end, set<VertexId>& component, PathContainer paths) {
+	void TraverseLoop(EdgeId start, EdgeId end, set<VertexId>& /*component*/, PathContainer /*paths*/) {
 		std::set<BidirectionalPath*> coveredStartPaths =
 				covMap_.GetCoveringPaths(start);
 		std::set<BidirectionalPath*> coveredEndPaths =
@@ -94,7 +94,7 @@ private:
 			}*/
 		}
 		if (commonSize < endPath->Size()){
-			startPath->PushBack(endPath->At(commonSize), nLen);
+			startPath->PushBack(endPath->At(commonSize), (int) nLen);
 		}
 		for (size_t i = commonSize + 1; i < endPath->Size(); ++i) {
 			startPath->PushBack(endPath->At(i));

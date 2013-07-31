@@ -215,7 +215,7 @@ public:
 			DEBUG("Added vertex " << new_vertex);
 			VerticesCopies.insert(make_pair(*iter, new_vertex));
 		}
-		for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+		for (auto iter = graph_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
 			EdgeId edge = *iter;
 			NewEdgeId new_edge = new_graph.AddEdge(
 					VerticesCopies[graph_.EdgeStart(edge)],
@@ -268,7 +268,7 @@ public:
 			}
 		}
 		set<EdgeId> was;
-		for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+		for (auto iter = graph_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
 			if (was.count(*iter) == 0) {
 				new_graph.AddEdge(copy[graph_.EdgeStart(*iter)],
 						copy[graph_.EdgeEnd(*iter)], graph_.data(*iter));
@@ -442,15 +442,15 @@ public:
 	double Count() const {
 		double cov = 0;
 		size_t length = 0;
-		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+		for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
 			if (graph_.length(*it) >= min_length_) {
-				cov += graph_.coverage(*it) * graph_.length(*it);
+				cov += graph_.coverage(*it) * (double) graph_.length(*it);
 				length += graph_.length(*it);
 			}
 		}
 		if (length == 0)
 			return 0.;
-		return cov / length;
+		return cov / (double) length;
 	}
 };
 
@@ -495,143 +495,124 @@ public:
 template<class Graph>
 class ErroneousConnectionThresholdFinder {
 private:
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-	const Graph &graph_;
-	size_t backet_width_;
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+    const Graph &graph_;
+    size_t backet_width_;
 
-//	vector<double> CollectWeights() const {
-//		vector<double> result;
-//		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-//			const std::vector<EdgeId> &v1 = graph_.OutgoingEdges(graph_.EdgeStart(*it));
-//			const std::vector<EdgeId> &v2 = graph_.IncomingEdges(graph_.EdgeEnd(*it));
-//			bool eq = false;
-//			if (v1.size() == 2 && v2.size() == 2)
-//				if ((v1[0] == v2[0] && v1[1] == v2[1])
-//						|| (v1[0] == v2[1] && v1[0] == v2[1]))
-//					eq = false;
-//			if (graph_.length(*it) <= graph_.k() + 1
-//					&& graph_.OutgoingEdgeCount(graph_.EdgeStart(*it)) >= 2
-//					&& graph_.IncomingEdgeCount(graph_.EdgeEnd(*it)) >= 2
-//					&& !eq)
-//				result.push_back(graph_.coverage(*it));
-//		}
-//#ifdef USE_GLIBCXX_PARALLEL
-//    // Explicitly force a call to parallel sort routine.
-//    __gnu_parallel::sort(result.begin(), result.end());
-//#else
-//    std::sort(result.begin(), result.end());
-//#endif
-//		return result;
-//	}
+    bool IsInteresting(EdgeId e) const {
+        if (graph_.length(e) > graph_.k() + 1)
+            return false;
 
-	bool CheckInteresting(EdgeId e) const {
-		const std::vector<EdgeId> v1 = graph_.OutgoingEdges(graph_.EdgeStart(e));
-		const std::vector<EdgeId> v2 = graph_.IncomingEdges(graph_.EdgeEnd(e));
-		bool eq = (v1.size() == 2 && v2.size() == 2) && ((v1[0] == v2[0] && v1[1] == v2[1])	|| (v1[0] == v2[1] && v1[0] == v2[1]));
-		return graph_.length(e) <= graph_.k() + 1 && v1.size() >= 2 && v2.size() >= 2 && !eq;
-	}
+        if (graph_.OutgoingEdgeCount(graph_.EdgeStart(e)) < 2 ||
+            graph_.IncomingEdgeCount(graph_.EdgeEnd(e)) < 2)
+            return false;
 
-	map<size_t, size_t> ConstructHistogram(/*const std::vector<double> &coverage_set*/) const {
-		map<size_t, size_t> result;
-		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			if(CheckInteresting(*it)) {
-				result[(size_t)graph_.coverage(*it)]++;
-			}
-		}
-		return result;
-	}
+        const std::vector<EdgeId> v1 = graph_.OutgoingEdges(graph_.EdgeStart(e));
+        const std::vector<EdgeId> v2 = graph_.IncomingEdges(graph_.EdgeEnd(e));
+        bool eq = (v1.size() == 2 && v2.size() == 2) && ((v1[0] == v2[0] && v1[1] == v2[1])	|| (v1[0] == v2[1] && v1[0] == v2[1]));
+        return !eq;
+    }
 
-	double weight(size_t value, const map<size_t, size_t> &histogram,
-                size_t backet_width) const {
-		double result = 0;
-		for (size_t i = 0; i < backet_width && value + i < histogram.size(); i++) {
-			result += getValue(value + i, histogram) * std::min(i + 1, backet_width - i);
-		}
-		return result;
-	}
+    map<size_t, size_t> ConstructHistogram(/*const std::vector<double> &coverage_set*/) const {
+        map<size_t, size_t> result;
+        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
+            if (IsInteresting(*it)) {
+                result[(size_t)graph_.coverage(*it)]++;
+            }
+        }
+        return result;
+    }
 
-	double AvgCoverage() const {
-		double cov = 0;
-		double length = 0;
-		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-      cov += graph_.coverage(*it) * graph_.length(*it);
-			length += graph_.length(*it);
-		}
-		return cov / length;
-	}
+    double weight(size_t value, const map<size_t, size_t> &histogram,
+                  size_t backet_width) const {
+        double result = 0;
+        for (size_t i = 0; i < backet_width && value + i < histogram.size(); i++) {
+            result += (double) (getValue(value + i, histogram) * std::min(i + 1, backet_width - i));
+        }
+        return result;
+    }
 
-	double Median(double thr = 500.0) const {
-		vector<double> coverages;
-		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			if (graph_.length(*it) > thr)
-				coverages.push_back(graph_.coverage(*it));
-		}
+    double AvgCoverage() const {
+        double cov = 0;
+        double length = 0;
+        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
+            cov += graph_.coverage(*it) * (double) graph_.length(*it);
+            length += (double) graph_.length(*it);
+        }
+        return cov / length;
+    }
+
+    double Median(double thr = 500.0) const {
+        vector<double> coverages;
+        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
+            if (graph_.length(*it) > thr)
+                coverages.push_back(graph_.coverage(*it));
+        }
 #ifdef USE_GLIBCXX_PARALLEL
-    // Explicitly force a call to parallel sort routine.
-    __gnu_parallel::sort(coverages.begin(), coverages.end());
+        // Explicitly force a call to parallel sort routine.
+        __gnu_parallel::sort(coverages.begin(), coverages.end());
 #else
-    std::sort(coverages.begin(), coverages.end());
+        std::sort(coverages.begin(), coverages.end());
 #endif
-		return coverages[coverages.size() / 2];
-	}
+        return coverages[coverages.size() / 2];
+    }
 
-	size_t getValue(size_t arg, map<size_t, size_t> ssmap) const {
-		auto it = ssmap.find(arg);
-		if(it == ssmap.end())
-			return 0;
-		else
-			return it->second;
-	}
+    size_t getValue(size_t arg, const map<size_t, size_t> &ssmap) const {
+        auto it = ssmap.find(arg);
+        if (it == ssmap.end())
+            return 0;
+        else
+            return it->second;
+    }
 
 public:
-	ErroneousConnectionThresholdFinder(const Graph &graph, size_t backet_width = 0) :
-			graph_(graph), backet_width_(backet_width) {
-	}
+    ErroneousConnectionThresholdFinder(const Graph &graph, size_t backet_width = 0) :
+            graph_(graph), backet_width_(backet_width) {
+    }
 
-	double FindThreshold(const map<size_t, size_t> &histogram) const {
-		size_t backet_width = backet_width_;
-		if (backet_width == 0) {
-			backet_width = (size_t)(0.3 * AvgCovereageCounter<Graph>(graph_).Count() + 5);
-		}
-		size_t size = 0;
-		if(histogram.size() != 0)
-			size = histogram.rbegin()->first + 1;
-		INFO("Bucket size: " << backet_width);
-		size_t cnt = 0;
-		for (size_t i = 1; i + backet_width < size; i++) {
-			if (weight(i, histogram, backet_width) > weight(i - 1, histogram, backet_width)) {
-				cnt++;
-			}
-			if (i > backet_width &&
-          weight(i - backet_width,     histogram, backet_width) >
-          weight(i - backet_width - 1, histogram, backet_width)) {
-				cnt--;
-			}
-			if (2 * cnt >= backet_width)
-				return i;
+    double FindThreshold(const map<size_t, size_t> &histogram) const {
+        size_t backet_width = backet_width_;
+        if (backet_width == 0) {
+            backet_width = (size_t)(0.3 * AvgCovereageCounter<Graph>(graph_).Count() + 5);
+        }
+        size_t size = 0;
+        if (histogram.size() != 0)
+            size = histogram.rbegin()->first + 1;
+        INFO("Bucket size: " << backet_width);
+        size_t cnt = 0;
+        for (size_t i = 1; i + backet_width < size; i++) {
+            if (weight(i, histogram, backet_width) > weight(i - 1, histogram, backet_width)) {
+                cnt++;
+            }
+            if (i > backet_width &&
+                weight(i - backet_width,     histogram, backet_width) >
+                weight(i - backet_width - 1, histogram, backet_width)) {
+                cnt--;
+            }
+            if (2 * cnt >= backet_width)
+                return (double) i;
 
-		}
-		INFO("Proper threshold was not found. Threshold set to 0.1 of average coverage");
-		return 0.1 * AvgCovereageCounter<Graph>(graph_).Count();
-	}
+        }
+        INFO("Proper threshold was not found. Threshold set to 0.1 of average coverage");
+        return 0.1 * AvgCovereageCounter<Graph>(graph_).Count();
+    }
 
-	double FindThreshold() const {
-		INFO("Finding threshold started");
-//    std::vector<double> weights = CollectWeights();
-    map<size_t, size_t> histogram = ConstructHistogram(/*weights*/);
-		for (size_t i = 0; i < histogram.size(); i++) {
-			TRACE(i << " " << histogram[i]);
-		}
-		double result = FindThreshold(histogram);
-		INFO("Average edge coverage: " << AvgCoverage());
-    INFO("Graph threshold: " << result);
-		result = std::max(AvgCoverage(), result);
-		INFO("Threshold finding finished. Threshold is set to " << result);
-		return result;
-	}
+    double FindThreshold() const {
+        INFO("Finding threshold started");
+        map<size_t, size_t> histogram = ConstructHistogram(/*weights*/);
+        for (size_t i = 0; i < histogram.size(); i++) {
+            TRACE(i << " " << histogram[i]);
+        }
+        double result = FindThreshold(histogram);
+        INFO("Average edge coverage: " << AvgCoverage());
+        INFO("Graph threshold: " << result);
+        result = std::max(AvgCoverage(), result);
+        INFO("Threshold finding finished. Threshold is set to " << result);
+        return result;
+    }
 private:
-	DECL_LOGGER("ThresholdFinder");
+    DECL_LOGGER("ThresholdFinder");
 };
 
 template<class Graph>

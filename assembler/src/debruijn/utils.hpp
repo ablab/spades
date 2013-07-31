@@ -45,12 +45,12 @@ using omnigraph::PairInfo;
 using omnigraph::GraphActionHandler;
 
 //todo rewrite with extended sequence mapper!
-template<class Graph>
+template<class Graph, class Index>
 class EtalonPairedInfoCounter {
 	typedef typename Graph::EdgeId EdgeId;
 
 	const Graph& g_;
-	const EdgeIndex<Graph>& index_;
+	const Index& index_;
 	const KmerMapper<Graph>& kmer_mapper_;
 	size_t k_;
 
@@ -65,12 +65,12 @@ class EtalonPairedInfoCounter {
 
   void ProcessSequence(const Sequence& sequence, PairedInfoIndexT<Graph>& index)
   {
-		int mod_gap = (gap_ + (int) k_ > (int) delta_ ) ? gap_ - (int) delta_ :int(0) -k_;
+		int mod_gap = (gap_ + (int) k_ > (int) delta_ ) ? gap_ - (int) delta_ : 0 - (int) k_;
 		runtime_k::RtSeq left(k_ +1, sequence);
 		left >>= 0;
 		for (size_t left_idx = 0;
-				left_idx + 2 * (k_ + 1) + mod_gap <= sequence.size();
-				++left_idx) {
+             left_idx + 2 * (k_ + 1) + mod_gap <= sequence.size();
+             ++left_idx) {
 			left <<= sequence[left_idx + k_];
 			runtime_k::RtSeq left_upd = kmer_mapper_.Substitute(left);
 			if (!index_.contains(left_upd)) {
@@ -81,11 +81,9 @@ class EtalonPairedInfoCounter {
 			size_t right_idx = left_idx + k_ + 1 + mod_gap;
 			runtime_k::RtSeq right(k_ + 1, sequence, right_idx);
 			right >>= 0;
-			for (;
-					right_idx + k_ + 1 <= left_idx + insert_size_ + delta_
-							&& right_idx + k_ + 1 <= sequence.size();
-          ++right_idx)
-      {
+			for (; 
+			     right_idx + k_ + 1 <= left_idx + insert_size_ + delta_ && right_idx + k_ + 1 <= sequence.size();
+			     ++right_idx) {
 				right <<= sequence[right_idx + k_];
 				runtime_k::RtSeq right_upd = kmer_mapper_.Substitute(right);
 				if (!index_.contains(right_upd)) {
@@ -93,31 +91,34 @@ class EtalonPairedInfoCounter {
 				}
 				pair<EdgeId, size_t> right_pos = index_.get(right_upd);
 
-				AddEtalonInfo(
-            index,
-						left_pos.first,
-						right_pos.first,
-            0. + right_idx - left_idx + left_pos.second - right_pos.second);
+				AddEtalonInfo(index, left_pos.first, right_pos.first,
+				              0. + (double) right_idx - (double) left_idx + 
+				              (double) left_pos.second - (double) right_pos.second);
 			}
 		}
 	}
 
 public:
-  EtalonPairedInfoCounter(const Graph& g, const EdgeIndex<Graph>& index,
-			const KmerMapper<Graph>& kmer_mapper,
-			size_t insert_size,
-			size_t read_length, size_t delta, size_t k) :
-			g_(g), index_(index), kmer_mapper_(kmer_mapper), k_(k), insert_size_(
-					insert_size), read_length_(read_length), gap_(
-					insert_size_ - 2 * read_length_), delta_(delta) {
+    EtalonPairedInfoCounter(const Graph& g, const Index& index,
+                            const KmerMapper<Graph>& kmer_mapper,
+                            size_t insert_size, size_t read_length,
+                            size_t delta, size_t k)
+            : g_(g),
+              index_(index),
+              kmer_mapper_(kmer_mapper),
+              k_(k),
+              insert_size_(insert_size),
+              read_length_(read_length),
+              gap_((int) (insert_size_ - 2 * read_length_)),
+              delta_(delta) {
 //		VERIFY(insert_size_ >= 2 * read_length_);
-	}
+    }
 
-  void FillEtalonPairedInfo(const Sequence& genome, omnigraph::PairedInfoIndexT<Graph>& paired_info)
-  {
-    ProcessSequence(genome, paired_info);
-    ProcessSequence(!genome, paired_info);
-	}
+    void FillEtalonPairedInfo(const Sequence& genome,
+                              omnigraph::PairedInfoIndexT<Graph>& paired_info) {
+        ProcessSequence(genome, paired_info);
+        ProcessSequence(!genome, paired_info);
+    }
 };
 
 double PairedReadCountWeight(const MappingRange&, const MappingRange&) {
@@ -202,9 +203,9 @@ private:
 				size_t kmer_distance = read_distance
 						+ mapping_edge_2.second.initial_range.end_pos
 						- mapping_edge_1.second.initial_range.start_pos;
-				int edge_distance = kmer_distance
-						+ mapping_edge_1.second.mapped_range.start_pos
-						- mapping_edge_2.second.mapped_range.end_pos;
+				int edge_distance = (int) kmer_distance
+						+ (int) mapping_edge_1.second.mapped_range.start_pos
+						- (int) mapping_edge_2.second.mapped_range.end_pos;
 
         paired_index.AddPairInfo(mapping_edge_1.first,
                                  mapping_edge_2.first,
@@ -217,7 +218,7 @@ private:
    * Method reads paired data from stream, maps it to genome and stores it in this PairInfoIndex.
    */
   void FillUsualIndex(omnigraph::PairedInfoIndexT<Graph>& paired_index) {
-    for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+    for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
       paired_index.AddPairInfo(*it, *it, 0., 0., 0.);
     }
 
@@ -235,7 +236,7 @@ private:
   }
 
   void FillParallelIndex(omnigraph::PairedInfoIndexT<Graph>& paired_index) {
-    for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+    for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
       paired_index.AddPairInfo(*it, *it, 0., 0., 0.);
     }
 
@@ -282,7 +283,7 @@ private:
                << " times, current limit is " << limit);
           }
           buffer_pi[i]->Clear();
-          limit = coeff * limit;
+          limit = (size_t) (coeff * (double) limit);
         }
       }
       DEBUG("Thread number " << omp_get_thread_num() << " finished");
@@ -309,7 +310,7 @@ private:
 	DECL_LOGGER("LatePairedIndexFiller");
 };
 
-template<class Graph>
+template<class Graph, class Index>
 class EdgeQuality: public GraphLabeler<Graph>, public GraphActionHandler<Graph> {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
@@ -318,7 +319,7 @@ class EdgeQuality: public GraphLabeler<Graph>, public GraphActionHandler<Graph> 
 
 public:
 
-	void FillQuality(const EdgeIndex<Graph> &index
+	void FillQuality(const Index &index
 			, const KmerMapper<Graph>& kmer_mapper, const Sequence &genome) {
 		if (genome.size() < k_)
 			return;
@@ -333,7 +334,7 @@ public:
 		}
 	}
 
-	EdgeQuality(const Graph &graph, const EdgeIndex<Graph> &index,
+	EdgeQuality(const Graph &graph, const Index &index,
 	const KmerMapper<Graph>& kmer_mapper,
 	const Sequence &genome) :
 
@@ -346,7 +347,7 @@ public:
 	virtual ~EdgeQuality() {
 	}
 
-	virtual void HandleAdd(EdgeId e) {
+	virtual void HandleAdd(EdgeId /*e*/) {
 	}
 
 	virtual void HandleDelete(EdgeId e) {
@@ -379,14 +380,14 @@ public:
 		if (it == quality_.end())
 			return 0.;
 		else
-			return 1. * it->second / this->g().length(edge);
+			return 1. * (double) it->second / (double) this->g().length(edge);
 	}
 
 	bool IsPositiveQuality(EdgeId edge) const {
 		return math::gr(quality(edge), 0.);
 	}
 
-	virtual std::string label(VertexId vertexId) const {
+	virtual std::string label(VertexId /*vertexId*/) const {
 		return "";
 	}
 
@@ -397,15 +398,15 @@ public:
 
 };
 
-template<class Graph>
+template<class Graph, class Index>
 class QualityLoggingRemovalHandler {
 	typedef typename Graph::EdgeId EdgeId;
 	const Graph& g_;
-	const EdgeQuality<Graph>& quality_handler_;
+	const EdgeQuality<Graph, Index>& quality_handler_;
 //	size_t black_removed_;
 //	size_t colored_removed_;
 public:
-	QualityLoggingRemovalHandler(const Graph& g, const EdgeQuality<Graph>& quality_handler) :
+	QualityLoggingRemovalHandler(const Graph& g, const EdgeQuality<Graph, Index>& quality_handler) :
 			g_(g), quality_handler_(quality_handler)/*, black_removed_(0), colored_removed_(
 	 0)*/{
 
@@ -428,16 +429,16 @@ private:
 	;
 };
 
-template<class Graph>
+template<class Graph, class Index>
 class QualityLoggingRemovalCountHandler {
 	typedef typename Graph::EdgeId EdgeId;
 	const Graph& g_;
-	const EdgeQuality<Graph>& quality_handler_;
+	const EdgeQuality<Graph, Index>& quality_handler_;
 	size_t black_removed_;
     size_t total;
 
 public:
-	QualityLoggingRemovalCountHandler(const Graph& g, const EdgeQuality<Graph>& quality_handler) :
+	QualityLoggingRemovalCountHandler(const Graph& g, const EdgeQuality<Graph, Index>& quality_handler) :
 			g_(g), quality_handler_(quality_handler)/*, black_removed_(0), colored_removed_(
 	 0)*/{
         black_removed_ = 0;
@@ -501,19 +502,19 @@ public:
 	}
 };
 
-template<class Graph>
+template<class Graph, class Index>
 class QualityEdgeLocalityPrintingRH {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 	const Graph& g_;
-	const EdgeQuality<Graph>& quality_handler_;
+	const EdgeQuality<Graph, Index>& quality_handler_;
 	const GraphLabeler<Graph>& labeler_;
 	const string& output_folder_;
 //	size_t black_removed_;
 //	size_t colored_removed_;
 public:
 	QualityEdgeLocalityPrintingRH(const Graph& g
-			, const EdgeQuality<Graph>& quality_handler
+			, const EdgeQuality<Graph, Index>& quality_handler
 			, const GraphLabeler<Graph>& labeler
 			, const string& output_folder) :
 			g_(g), quality_handler_(quality_handler),
@@ -542,14 +543,14 @@ private:
 	;
 };
 
-template<class Graph>
+template<class Graph, class Index>
 class QualityPairInfoHandler {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 	typedef omnigraph::PairInfo<EdgeId> PairInfo;
 	typedef vector<PairInfo> PairInfos;
 	const Graph& g_;
-	const EdgeQuality<Graph>& quality_handler_;
+	const EdgeQuality<Graph, Index>& quality_handler_;
 	const GraphLabeler<Graph>& labeler_;
 	const string& output_folder_;
     const PairedInfoIndex<ConjugateDeBruijnGraph>& index_;
@@ -557,7 +558,7 @@ class QualityPairInfoHandler {
 //	size_t colored_removed_;
 public:
 	QualityPairInfoHandler(const Graph& g
-			, const EdgeQuality<Graph>& quality_handler
+			, const EdgeQuality<Graph, Index>& quality_handler
 			, const GraphLabeler<Graph>& labeler
 			, const string& output_folder
             , const PairedInfoIndex<ConjugateDeBruijnGraph>& index) :

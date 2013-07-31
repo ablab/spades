@@ -156,7 +156,7 @@ private:
         }
         PairInfo oldPairInfo = pair_info_[index1][basket2];
         double basket_distance = GetBasketDistance(edge_distance, index1,
-                                                   index2);
+				index2);
         pair_info_[index1][basket2] = PairInfo(
                 oldPairInfo.weight_ + weight,
                 CountNewDistance(oldPairInfo, basket_distance),
@@ -164,15 +164,17 @@ private:
     }
 
     double CountNewDistance(PairInfo& oldPairInfo, double distance,
-                            size_t count = 1) {
-        return (oldPairInfo.distance_ * oldPairInfo.count_ + distance * count)
-                / (oldPairInfo.count_ + count);
-    }
+			size_t count = 1) {
+		return (oldPairInfo.distance_ * (double) oldPairInfo.count_
+				+ distance * (double) count)
+				/ (double) (oldPairInfo.count_ + count);
+	}
 
-    double GetBasketDistance(double edge_distance, double index1,
-                             double index2) {
-        return edge_distance - index1 * basket_size_ + index2 * basket_size_;
-    }
+    double GetBasketDistance(double edge_distance, size_t index1,
+			size_t index2) {
+		return edge_distance - (double) index1 * (double) basket_size_
+				+ (double) index2 * (double) basket_size_;
+	}
 };
 
 class BasketsPairInfoIndex {
@@ -184,7 +186,6 @@ public:
     BasketsPairInfoIndex(const conj_graph_pack& gp, size_t basket_size)
             : gp_(gp),
               basket_size_(basket_size) {
-
     }
 
     void AddPairInfo(EdgeId edgeId1, size_t pos_begin1, size_t pos_end1,
@@ -297,7 +298,7 @@ public:
                         DEBUG("Thread number " << omp_get_thread_num() << " is going to increase its limit by " << coeff << " times, current limit is " << limit);
                     }
                     buffer_pi[i]->Clear();
-                    limit = coeff * limit;
+                    limit = (size_t) (coeff * (double) limit);
                 }
             }DEBUG("Thread number " << omp_get_thread_num() << " finished");
         }DEBUG("Used " << counter << " paired reads");
@@ -313,8 +314,9 @@ public:
     void ProcessReadPairs() {
         if (cfg::get().use_multithreading) {
             auto paired_streams = paired_binary_readers(
-                    cfg::get().ds.reads[lib_index_], true,
-                    cfg::get().ds.reads[lib_index_].data().mean_insert_size);
+							cfg::get().ds.reads[lib_index_],
+							true,
+							(size_t) cfg::get().ds.reads[lib_index_].data().mean_insert_size);
 
             if (paired_streams->size() == 1) {
                 ProcessReadPairs(*paired_streams);
@@ -324,7 +326,7 @@ public:
         } else {
             auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(
                     cfg::get().ds.reads[lib_index_], true,
-                    cfg::get().ds.reads[lib_index_].data().mean_insert_size);
+                    (size_t) cfg::get().ds.reads[lib_index_].data().mean_insert_size);
             SingleStreamType paired_streams(paired_stream.get());
             paired_stream.release();
             ProcessReadPairs(paired_streams);
@@ -406,48 +408,45 @@ private:
     }
 
     double GetNormalizedWeight(PairInfo& pi) {
-        return pi.weight_
-                / lib_.IdealPairedInfo(basket_size_, basket_size_, pi.distance_);
-    }
+		return pi.weight_
+				/ (double) lib_.IdealPairedInfo(basket_size_, basket_size_,
+						(int) pi.distance_);
+	}
 
     template<class PairedRead>
     void ProcessPairedRead(BasketsPairInfoIndex& basket_index,
-                           const PairedRead& p_r) {
-        Sequence read1 = p_r.first().sequence();
-        Sequence read2 = p_r.second().sequence();
-        size_t read_distance = p_r.distance();
-        debruijn_graph::NewExtendedSequenceMapper<Graph> mapper(gp_.g,
-                                                                gp_.index,
-                                                                gp_.kmer_mapper,
-                                                                gp_.g.k() + 1);
-        MappingPath<EdgeId> path1 = mapper.MapSequence(read1);
-        MappingPath<EdgeId> path2 = mapper.MapSequence(read2);
+			const PairedRead& p_r) {
+		Sequence read1 = p_r.first().sequence();
+		Sequence read2 = p_r.second().sequence();
+		size_t read_distance = p_r.distance();
+		auto mapper = MapperInstance(gp_);
+		MappingPath<EdgeId> path1 = mapper->MapSequence(read1);
+		MappingPath<EdgeId> path2 = mapper->MapSequence(read2);
 
-        for (size_t i = 0; i < path1.size(); ++i) {
-            pair<EdgeId, MappingRange> mapping_edge_1 = path1[i];
+		for (size_t i = 0; i < path1.size(); ++i) {
+			pair<EdgeId, MappingRange> mapping_edge_1 = path1[i];
 
-            for (size_t j = 0; j < path2.size(); ++j) {
-                pair<EdgeId, MappingRange> mapping_edge_2 = path2[j];
-                double weight = PairedReadCountWeight(mapping_edge_1.second,
-                                                      mapping_edge_2.second);
-                size_t kmer_distance = read_distance
-                        + mapping_edge_2.second.initial_range.end_pos
-                        - mapping_edge_1.second.initial_range.start_pos;
-                int edge_distance = kmer_distance
-                        + mapping_edge_1.second.mapped_range.start_pos
-                        - mapping_edge_2.second.mapped_range.end_pos;
+			for (size_t j = 0; j < path2.size(); ++j) {
+				pair<EdgeId, MappingRange> mapping_edge_2 = path2[j];
+				double weight = PairedReadCountWeight(mapping_edge_1.second,
+						mapping_edge_2.second);
+				size_t kmer_distance = read_distance
+						+ mapping_edge_2.second.initial_range.end_pos
+						- mapping_edge_1.second.initial_range.start_pos;
+				int edge_distance = (int) kmer_distance
+						+ mapping_edge_1.second.mapped_range.start_pos
+						- mapping_edge_2.second.mapped_range.end_pos;
 
-                basket_index.AddPairInfo(
-                        mapping_edge_1.first,
-                        mapping_edge_1.second.mapped_range.start_pos,
-                        mapping_edge_1.second.mapped_range.end_pos,
-                        mapping_edge_2.first,
-                        mapping_edge_2.second.mapped_range.start_pos,
-                        mapping_edge_2.second.mapped_range.end_pos, weight,
-                        (double) edge_distance);
-            }
-        }
-    }
+				basket_index.AddPairInfo(mapping_edge_1.first,
+						mapping_edge_1.second.mapped_range.start_pos,
+						mapping_edge_1.second.mapped_range.end_pos,
+						mapping_edge_2.first,
+						mapping_edge_2.second.mapped_range.start_pos,
+						mapping_edge_2.second.mapped_range.end_pos, weight,
+						(double) edge_distance);
+			}
+		}
+	}
 
     const conj_graph_pack& gp_;
     const PairedInfoLibrary& lib_;

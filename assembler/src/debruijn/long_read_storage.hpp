@@ -206,7 +206,7 @@ public:
 		int noncontinued = 0;
 		int long_gapped = 0;
 		int continued = 0;
-		for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+		for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
 			if (g_.length(*iter) > 500) {
 				if (!g_.IsDeadEnd(g_.EdgeEnd(*iter))) {
 					if (continued_edges.find(*iter) == continued_edges.end()) {
@@ -270,7 +270,7 @@ public:
 		ifstream filestr(s);
 		INFO("loading from " << s);
 		map<int, EdgeId> tmp_map;
-		for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+		for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
 			tmp_map[g_.int_id(*iter)] = *iter;
 		}
 		int fl;
@@ -309,7 +309,7 @@ public:
 
 		for(auto iter = to_add.inner_index_.begin(); iter != to_add.inner_index_.end(); iter++) {
 			for(auto j_iter = iter->second.begin(); j_iter != iter->second.end(); j_iter ++) {
-				this->AddPath(j_iter->path, j_iter->getWeight());
+				this->AddPath(j_iter->path, (int) j_iter->getWeight());
 			}
 		}
 	}

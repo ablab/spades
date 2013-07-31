@@ -9,8 +9,10 @@
 #include "graphio.hpp"
 #include "simple_tools.hpp"
 #include "debruijn_graph.hpp"
+#include "coordinates_handler.hpp"
 #include "xmath.h"
 #include <iostream>
+#include <vector>
 #include "logger/logger.hpp"
 #include "io/multifile_reader.hpp"
 #include "io/splitting_wrapper.hpp"
@@ -49,19 +51,19 @@ inline Sequence ReadSequence(ContigStream& reader) {
 	return read.sequence();
 }
 
-template<size_t k, class Graph>
-void ConstructGraph(Graph& g, EdgeIndex<Graph>& index,
+template<class Graph, class Index>
+void ConstructGraph(Graph& g, Index& index,
 		ContigStream& stream) {
 	vector<ContigStream*> streams = { &stream };
-	ConstructGraph<k, Graph>(streams, g, index);
+	ConstructGraph<Graph>(streams, g, index);
 }
 
-template<size_t k, class Graph>
-void ConstructGraph(Graph& g, EdgeIndex<Graph>& index,
+template<class Graph, class Index>
+void ConstructGraph(Graph& g, Index& index,
 		ContigStream& stream1,
 		ContigStream& stream2) {
 	io::MultifileReader<io::SingleRead> composite_reader(stream1, stream2);
-	ConstructGraph<k, Graph>(g, index, composite_reader);
+	ConstructGraph<Graph, Index>(g, index, composite_reader);
 }
 
 inline Sequence ReadGenome(const string& filename) {
@@ -71,7 +73,7 @@ inline Sequence ReadGenome(const string& filename) {
 }
 
 void WriteGenome(const Sequence& genome, const string& filename) {
-  io::ofastastream stream(filename);
+  io::osequencestream stream(filename);
   io::SingleRead read("genome", genome.str());
   stream << read;
 }
@@ -131,6 +133,71 @@ inline void PrintGraphComponentContainingEdge(const string& file_name, const Gra
 	PrintBasicGraph<Graph>(file_name, printer);
 }
 
+template<class Graph>
+class EdgeCoordinatesGraphLabeler: public AbstractGraphLabeler<Graph> {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+public:
+	const CoordinatesHandler<Graph>& edge_pos_;
+	const std::vector<std::string> genome_names_;
 
+	EdgeCoordinatesGraphLabeler(const Graph& g,
+                              const CoordinatesHandler<Graph>& edge_pos,
+                              const std::vector<std::string> &genome_names)
+      : AbstractGraphLabeler<Graph>(g),
+        edge_pos_(edge_pos),
+        genome_names_(genome_names) {
+	}
+
+	virtual std::string label(EdgeId edge) const {
+    auto ranges = edge_pos_.GetRanges(edge);
+    std::sort(ranges.begin(), ranges.end());
+
+    std::stringstream ss;
+    for (const auto &entry : ranges) {
+      Range genome_range = entry.second.first;
+      Range seq_range = entry.second.second;
+      // Make inclusive
+      genome_range.end_pos--;
+      seq_range.end_pos--;
+
+      ss << genome_names_[size_t(entry.first)] << ": " <<
+        "G" << genome_range << ", Seq" << seq_range << "\\n";
+    }
+
+		return ss.str();
+	}
+};
+
+template <class Graph>
+class BulgeRemoverCallbackToCoordinatesHandlerAdapter {
+ public:
+  typedef typename CoordinatesHandler<Graph>::EdgeId EdgeId;
+
+  BulgeRemoverCallbackToCoordinatesHandlerAdapter(
+      CoordinatesHandler<Graph> &coordinates_handler)
+      : coordinates_handler_(coordinates_handler) {
+  }
+
+  void Project(const EdgeId edge_from, const std::vector<EdgeId> &to) {
+    std::vector<EdgeId> from;
+    from.push_back(edge_from);
+
+    coordinates_handler_.ProjectPath(from, to);
+
+    // Do the same for conjugate sequences as bulge reomver does not provide
+    // such functionality :)
+    from[0] = coordinates_handler_.GetGraph()->conjugate(from[0]);
+    std::vector<EdgeId> to_conj = to;
+    std::reverse(to_conj.begin(), to_conj.end());
+    for (auto &edge : to_conj)
+      edge = coordinates_handler_.GetGraph()->conjugate(edge);
+
+    coordinates_handler_.ProjectPath(from, to_conj);
+  }
+
+ private:
+  CoordinatesHandler<Graph> &coordinates_handler_;
+};
 
 }

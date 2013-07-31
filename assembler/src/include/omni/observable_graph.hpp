@@ -18,10 +18,12 @@ class ObservableGraph : private boost::noncopyable {
  public:
     typedef VertexIdT VertexId;
     typedef EdgeIdT EdgeId;
+    typedef VertexIterator VertexIt;
     typedef HandlerApplier<VertexId, EdgeId> Applier;
     typedef typename VertexId::type::edge_const_iterator edge_const_iterator;
     typedef SmartVertexIterator<ObservableGraph> SmartVertexIt;
     typedef SmartEdgeIterator<ObservableGraph> SmartEdgeIt;
+    typedef ConstEdgeIterator<ObservableGraph> ConstEdgeIt;
 
     virtual void print_handlers() const {
         FOREACH (Handler* handler_ptr, action_handler_list_) {
@@ -209,6 +211,10 @@ class ObservableGraph : private boost::noncopyable {
 
     SmartEdgeIterator<ObservableGraph> SmartEdgeBegin() const {
         return SmartEdgeIterator<ObservableGraph>(*this);
+    }
+
+    ConstEdgeIterator<ObservableGraph> ConstEdgeBegin() const {
+        return ConstEdgeIterator<ObservableGraph>(*this);
     }
 
     //Use very carefully!

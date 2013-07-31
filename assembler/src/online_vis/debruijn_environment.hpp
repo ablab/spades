@@ -29,6 +29,9 @@ class DebruijnEnvironment : public Environment {
         //CompositeLabeler<Graph> labeler_;
 
     public :
+
+        typedef debruijn_graph::Index EdgeIndexT;
+
         DebruijnEnvironment(const string& env_name, const string& env_path, size_t K = cfg::get().K)
             : Environment(env_name, env_path),
               picture_counter_(0),
@@ -119,10 +122,10 @@ class DebruijnEnvironment : public Environment {
         }
 
         const MapperClass& mapper() const {
-            return mapper_;   
+            return mapper_;
         }
 
-        const debruijn_graph::EdgeIndex<Graph>& index() const {
+        const EdgeIndexT& index() const {
             return gp_.index;   
         }
 

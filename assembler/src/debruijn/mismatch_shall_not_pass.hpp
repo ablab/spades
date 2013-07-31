@@ -98,7 +98,7 @@ class MismatchStatistics {
         }
       }
     }
-    for (auto it = gp.g.SmartEdgeBegin(); !it.IsEnd(); ++it){
+    for (auto it = gp.g.ConstEdgeBegin(); !it.IsEnd(); ++it){
       if (gp.g.length(*it) < cfg::get().rr.max_repeat_length) {
         //					INFO("edge id " <<gp.g.int_id(*it) << " added to stat" );
         //					for(size_t i = 0; i < gp.g.length(*it) + gp.g.k(); i++)
@@ -135,13 +135,13 @@ class MismatchStatistics {
   void Count(io::IReader<read_type>& stream, const graph_pack &gp) {
     stream.reset();
     DEBUG("count started");
-    NewExtendedSequenceMapper<Graph> sm(gp.g, gp.index, gp.kmer_mapper, gp.g.k() + 1);
+    auto sm = MapperInstance(gp);
     DEBUG("seq mapper created");
     while(!stream.eof()) {
       read_type read;
       stream >> read;
       const Sequence &s_read = read.sequence();
-      omnigraph::MappingPath<EdgeId> path = sm.MapSequence(s_read);
+      omnigraph::MappingPath<EdgeId> path = sm->MapSequence(s_read);
       TRACE("read mapped");
       if(path.size() == 1 && path[0].second.initial_range.size() == path[0].second.mapped_range.size()) {
         Range initial_range = path[0].second.initial_range;
@@ -252,7 +252,7 @@ class MismatchShallNotPass {
         }
       }
       size_t nucl_code = s_edge[i];
-      if(nc[cur_best] > relative_threshold_ * nc[nucl_code] + 1) {
+      if ((double) nc[cur_best] > relative_threshold_ * (double) nc[nucl_code] + 1.) {
         to_correct.push_back(make_pair(i, cur_best));
         i += gp_.g.k();
       }
@@ -272,12 +272,12 @@ class MismatchShallNotPass {
         nc = statistics[len - 1 - i];
       size_t nucl_code = s_edge[i];
       size_t cur_best = 3 - nucl_code;
-      for(size_t j = 0; j < 4; j++) {
-        if(j != nucl_code && nc[j] > nc[cur_best]) {
+      for (size_t j = 0; j < 4; j++) {
+        if (j != nucl_code && nc[j] > nc[cur_best]) {
           cur_best = j;
         }
       }
-      if(nc[cur_best] > 0.00025 * nc[nucl_code] ) {
+      if ((double) nc[cur_best] > 0.00025 * (double) nc[nucl_code] ) {
         double ratio = 0;
         if (nc[nucl_code] == 0) {
           if (gp_.g.length(edge) > 200) {
@@ -285,7 +285,7 @@ class MismatchShallNotPass {
           }
           ratio = 1000;
         } else
-          ratio =  double(nc[cur_best])/nc[nucl_code];
+          ratio = (double) nc[cur_best] / (double) nc[nucl_code];
         vector<size_t> counts;
         for(size_t ii = 0; ii < 4; ii++)
           counts.push_back(nc[ii]);
@@ -324,7 +324,7 @@ class MismatchShallNotPass {
   size_t CorrectAllEdges(const mismatches::MismatchStatistics<typename Graph::EdgeId> &statistics) {
     size_t res = 0;
     set<EdgeId> conjugate_fix;
-    for(auto it = gp_.g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+    for (auto it = gp_.g.ConstEdgeBegin(); !it.IsEnd(); ++it) {
       if (conjugate_fix.find(gp_.g.conjugate(*it)) == conjugate_fix.end()){
         conjugate_fix.insert(*it);
       }

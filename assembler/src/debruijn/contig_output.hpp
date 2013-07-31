@@ -190,7 +190,7 @@ private:
 	ContigConstructor<Graph> &constructor_;
 
 	template<class sequence_stream>
-	void ReportEdge(osequencestream_cov& oss
+	void ReportEdge(io::osequencestream_cov& oss
 			, const pair<string, double> sequence_data) {
 		oss << sequence_data.second;
 		oss << sequence_data.first;
@@ -210,7 +210,7 @@ public:
 };
 
 template<class Graph>
-void ReportEdge(osequencestream_cov& oss
+void ReportEdge(io::osequencestream_cov& oss
 		, const Graph& g
 		, typename Graph::EdgeId e
 		, bool output_unipath = false
@@ -231,7 +231,7 @@ void ReportEdge(osequencestream_cov& oss
 }
 
 template<class Graph>
-void ReportMaskedEdge(osequencestream_cov& oss
+void ReportMaskedEdge(io::osequencestream_cov& oss
 		, const Graph& g
 		, typename Graph::EdgeId e
     , MismatchMasker<Graph>& mismatch_masker
@@ -259,7 +259,7 @@ void OutputContigs(NonconjugateDeBruijnGraph& g,
 		bool output_unipath = false,
 		size_t solid_edge_length_bound = 0) {
 	INFO("Outputting contigs to " << contigs_output_filename);
-	osequencestream_cov oss(contigs_output_filename);
+	io::osequencestream_cov oss(contigs_output_filename);
 	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 		ReportEdge(oss, g, *it, output_unipath, solid_edge_length_bound);
 	}
@@ -269,11 +269,11 @@ void OutputContigs(NonconjugateDeBruijnGraph& g,
 void OutputContigs(ConjugateDeBruijnGraph& g,
 		const string& contigs_output_filename,
 		bool output_unipath = false,
-		size_t solid_edge_length_bound = 0,
+		size_t /*solid_edge_length_bound*/ = 0,
 		bool cut_bad_connections = false) {
 	INFO("Outputting contigs to " << contigs_output_filename);
 	DefaultContigCorrector<ConjugateDeBruijnGraph> corrector(g);
-	osequencestream_cov oss(contigs_output_filename);
+	io::osequencestream_cov oss(contigs_output_filename);
 	if(!output_unipath) {
 		if(!cut_bad_connections) {
 			DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
@@ -324,11 +324,11 @@ bool ShouldCut(ConjugateDeBruijnGraph& g, VertexId v) {
 
 void OutputCutContigs(ConjugateDeBruijnGraph& g,
 		const string& contigs_output_filename,
-		bool output_unipath = false,
-		size_t solid_edge_length_bound = 0) {
+		bool /*output_unipath*/ = false,
+		size_t /*solid_edge_length_bound*/ = 0) {
 	INFO("Outputting contigs to " << contigs_output_filename);
 	DefaultContigCorrector<ConjugateDeBruijnGraph> corrector(g);
-	osequencestream_cov oss(contigs_output_filename);
+	io::osequencestream_cov oss(contigs_output_filename);
 	CuttingContigConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
 	ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);
 
@@ -361,11 +361,11 @@ void OutputCutContigs(ConjugateDeBruijnGraph& g,
 void OutputMaskedContigs(ConjugateDeBruijnGraph& g,
 		const string& contigs_output_filename, MismatchMasker<ConjugateDeBruijnGraph>& masker,
 		bool output_unipath = false,
-		size_t solid_edge_length_bound = 0,
+		size_t /*solid_edge_length_bound*/ = 0,
 		bool cut_bad_connections = false) {
 	INFO("Outputting contigs with masked mismatches to " << contigs_output_filename);
 	MaskingContigCorrector<ConjugateDeBruijnGraph> corrector(g, masker);
-	osequencestream_cov oss(contigs_output_filename);
+	io::osequencestream_cov oss(contigs_output_filename);
 	if(!output_unipath) {
 		if(!cut_bad_connections) {
 			DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
@@ -399,7 +399,7 @@ void OutputSingleFileContigs(NonconjugateDeBruijnGraph& g,
 	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 		sprintf(n_str, "%d.fa", n);
 
-		osequencestream oss(contigs_output_dir + n_str);
+		io::osequencestream oss(contigs_output_dir + n_str);
 
 		//		osequencestream oss(contigs_output_dir + "tst.fasta");
 		oss << g.EdgeNucls(*it);
@@ -418,7 +418,7 @@ void OutputSingleFileContigs(ConjugateDeBruijnGraph& g,
 		if (edges.count(*it) == 0) {
 			sprintf(n_str, "%d.fa", n);
 			edges.insert(g.conjugate(*it));
-			osequencestream oss(contigs_output_dir + n_str);
+			io::osequencestream oss(contigs_output_dir + n_str);
 			oss << g.EdgeNucls(*it);
 			n++;
 		}

@@ -112,13 +112,13 @@ namespace debruijn_graph {
 
 	};
 
-	template <class Graph>
+	template <class Graph, class KmerIndex>
 	class BucketMapper {
 
 		typedef unsigned bucket_id;
 
 		const Graph& g_;
-		const DeBruijnEdgeIndex<Graph>& kmer_index_;
+		const KmerIndex & kmer_index_;
 		const unsigned K_;
 		const unsigned number_of_buckets_;
 
@@ -166,7 +166,7 @@ namespace debruijn_graph {
 					runtime_k::RtSeq kmer = seq.start<runtime_k::RtSeq>(K_);
 					for (size_t j = K_; j < seq.size(); ++j) {
 						kmer <<= seq[j];
-						int kmer_coverage = kmer_index_[kmer].count_;
+						int kmer_coverage = kmer_index_[kmer].count;
 						if (used_coverages.find(kmer_coverage) != used_coverages.end()){
 							used_coverages[kmer_coverage] += 1;
 						}
@@ -249,7 +249,9 @@ namespace debruijn_graph {
 
 		public:
 
-		BucketMapper( const Graph& g, const DeBruijnEdgeIndex<Graph>& kmer_index, unsigned K, unsigned bucketNum ) : g_(g), kmer_index_(kmer_index), K_(K), number_of_buckets_(bucketNum) {}
+		BucketMapper(const Graph& g,
+				const KmerIndex& kmer_index,
+				unsigned K, unsigned bucketNum ) : g_(g), kmer_index_(kmer_index), K_(K), number_of_buckets_(bucketNum) {}
 
 
 		~BucketMapper() {
@@ -489,7 +491,7 @@ namespace debruijn_graph {
 		}
 		
 		int GetKmerBucket( const runtime_k::RtSeq& kmer ) const {
-			 int kmer_coverage = kmer_index_[kmer].count_;
+			 int kmer_coverage = kmer_index_[kmer].count;
 			 bucket_id id = 0;
 			 while ( id < buckets.size() - 1 && buckets[id] <= kmer_coverage ) {
 				++id;

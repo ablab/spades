@@ -1,22 +1,22 @@
 digraph my_graph {
 node[fontname=<Courier>,shape=<plaintext>]
-vertex_0x1259430_0x1262cd0[label=<<TABLE bgcolor = "white">
-<TR><TD BORDER = "0" PORT = "port_0x1259430_in"></TD><TD BORDER = "0" PORT = "port_">2</TD><TD BORDER = "0" PORT = "port_0x1259430_out"></TD></TR>
-<TR><TD BORDER = "0" PORT = "port_0x1262cd0_out"></TD><TD BORDER = "0" PORT = "port_">3</TD><TD BORDER = "0" PORT = "port_0x1262cd0_in"></TD></TR>
+vertex_0x7f3991816040_0x7f3991fa7460[label=<<TABLE bgcolor = "white">
+<TR><TD BORDER = "0" PORT = "port_0x7f3991fa7460_in"></TD><TD BORDER = "0" PORT = "port_">2</TD><TD BORDER = "0" PORT = "port_0x7f3991fa7460_out"></TD></TR>
+<TR><TD BORDER = "0" PORT = "port_0x7f3991816040_out"></TD><TD BORDER = "0" PORT = "port_">3</TD><TD BORDER = "0" PORT = "port_0x7f3991816040_in"></TD></TR>
 </TABLE>>,style=<filled>,color=<black>,fillcolor=<white>]
-vertex_0x1271350_0x1271390[label=<<TABLE bgcolor = "white">
-<TR><TD BORDER = "0" PORT = "port_0x1271350_in"></TD><TD BORDER = "0" PORT = "port_">4</TD><TD BORDER = "0" PORT = "port_0x1271350_out"></TD></TR>
-<TR><TD BORDER = "0" PORT = "port_0x1271390_out"></TD><TD BORDER = "0" PORT = "port_">5</TD><TD BORDER = "0" PORT = "port_0x1271390_in"></TD></TR>
+vertex_0x7f3991f1efd0_0x7f3991fa7040[label=<<TABLE bgcolor = "white">
+<TR><TD BORDER = "0" PORT = "port_0x7f3991f1efd0_in"></TD><TD BORDER = "0" PORT = "port_">4</TD><TD BORDER = "0" PORT = "port_0x7f3991f1efd0_out"></TD></TR>
+<TR><TD BORDER = "0" PORT = "port_0x7f3991fa7040_out"></TD><TD BORDER = "0" PORT = "port_">5</TD><TD BORDER = "0" PORT = "port_0x7f3991fa7040_in"></TD></TR>
 </TABLE>>,style=<filled>,color=<black>,fillcolor=<white>]
-vertex_0x126e710_0x126e750[label=<<TABLE bgcolor = "white">
-<TR><TD BORDER = "0" PORT = "port_0x126e710_in"></TD><TD BORDER = "0" PORT = "port_">6</TD><TD BORDER = "0" PORT = "port_0x126e710_out"></TD></TR>
-<TR><TD BORDER = "0" PORT = "port_0x126e750_out"></TD><TD BORDER = "0" PORT = "port_">7</TD><TD BORDER = "0" PORT = "port_0x126e750_in"></TD></TR>
+vertex_0x7f3991fa72b0_0x7f3991fa7310[label=<<TABLE bgcolor = "white">
+<TR><TD BORDER = "0" PORT = "port_0x7f3991fa72b0_in"></TD><TD BORDER = "0" PORT = "port_">6</TD><TD BORDER = "0" PORT = "port_0x7f3991fa72b0_out"></TD></TR>
+<TR><TD BORDER = "0" PORT = "port_0x7f3991fa7310_out"></TD><TD BORDER = "0" PORT = "port_">7</TD><TD BORDER = "0" PORT = "port_0x7f3991fa7310_in"></TD></TR>
 </TABLE>>,style=<filled>,color=<black>,fillcolor=<white>]
-vertex_0x125dbc0_0x12710d0[label=<<TABLE bgcolor = "white">
-<TR><TD BORDER = "0" PORT = "port_0x125dbc0_in"></TD><TD BORDER = "0" PORT = "port_">8</TD><TD BORDER = "0" PORT = "port_0x125dbc0_out"></TD></TR>
-<TR><TD BORDER = "0" PORT = "port_0x12710d0_out"></TD><TD BORDER = "0" PORT = "port_">9</TD><TD BORDER = "0" PORT = "port_0x12710d0_in"></TD></TR>
+vertex_0x7f3991010190_0x7f3991fa7160[label=<<TABLE bgcolor = "white">
+<TR><TD BORDER = "0" PORT = "port_0x7f3991010190_in"></TD><TD BORDER = "0" PORT = "port_">8</TD><TD BORDER = "0" PORT = "port_0x7f3991010190_out"></TD></TR>
+<TR><TD BORDER = "0" PORT = "port_0x7f3991fa7160_out"></TD><TD BORDER = "0" PORT = "port_">9</TD><TD BORDER = "0" PORT = "port_0x7f3991fa7160_in"></TD></TR>
 </TABLE>>,style=<filled>,color=<black>,fillcolor=<white>]
-vertex_0x1259430_0x1262cd0:port_0x1259430_out->vertex_0x126e710_0x126e750:port_0x126e710_in[label="75 (id: 4)\nPositions: (genome_0_contig_0_RC: 1-75: 1-75)\n(genome_1_contig_1_RC: 1-75: 1-75)\n",len=<0>,K=<0>,color=<purple>]
-vertex_0x126e710_0x126e750:port_0x126e710_out->vertex_0x125dbc0_0x12710d0:port_0x125dbc0_in[label="25 (id: 8)\nPositions: (genome_0_contig_0_RC: 76-100: 1-25)\n",len=<0>,K=<0>,color=<red>]
-vertex_0x125dbc0_0x12710d0:port_0x125dbc0_out->vertex_0x1271350_0x1271390:port_0x1271350_in[label="75 (id: 10)\nPositions: (genome_0_contig_0_RC: 101-175: 1-75)\n(genome_1_contig_0_RC: 1-75: 1-75)\n",len=<0>,K=<0>,color=<purple>]
+vertex_0x7f3991816040_0x7f3991fa7460:port_0x7f3991fa7460_out->vertex_0x7f3991fa72b0_0x7f3991fa7310:port_0x7f3991fa72b0_in[label="75",len=<0>,K=<0>,color=<0 1 1:0.250 0.800 0.800>]
+vertex_0x7f3991fa72b0_0x7f3991fa7310:port_0x7f3991fa72b0_out->vertex_0x7f3991010190_0x7f3991fa7160:port_0x7f3991010190_in[label="25",len=<0>,K=<0>,color=<0 1 1>]
+vertex_0x7f3991010190_0x7f3991fa7160:port_0x7f3991010190_out->vertex_0x7f3991f1efd0_0x7f3991fa7040:port_0x7f3991f1efd0_in[label="75",len=<0>,K=<0>,color=<0 1 1:0.250 0.800 0.800>]
 }

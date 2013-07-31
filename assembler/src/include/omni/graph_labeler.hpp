@@ -149,9 +149,20 @@ public:
 		return ss.str();
 	}
 
-	/*virtual*/ ~LengthIdGraphLabeler() {
+};
 
+template<class Graph>
+class LengthGraphLabeler : public StrGraphLabeler<Graph> {
+	typedef StrGraphLabeler<Graph> base;
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+public:
+	LengthGraphLabeler(const Graph& g) : base(g) {}
+
+	/*virtual*/ std::string label(EdgeId e) const {
+		return ToString(this->graph().length(e));
 	}
+
 };
 
 template<class Graph>

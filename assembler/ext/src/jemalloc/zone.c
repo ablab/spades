@@ -27,9 +27,9 @@ static void	zone_free(malloc_zone_t *zone, void *ptr);
 static void	*zone_realloc(malloc_zone_t *zone, void *ptr, size_t size);
 #if (JEMALLOC_ZONE_VERSION >= 5)
 static void	*zone_memalign(malloc_zone_t *zone, size_t alignment,
+    size_t size);
 #endif
 #if (JEMALLOC_ZONE_VERSION >= 6)
-    size_t size);
 static void	zone_free_definite_size(malloc_zone_t *zone, void *ptr,
     size_t size);
 #endif

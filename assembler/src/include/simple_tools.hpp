@@ -92,8 +92,6 @@ inline const std::pair<T, T> ReversePair(std::pair<T, T> ep) {
  * Checks if file exists.
  * Analogs: http://www.techbytes.ca/techbyte103.html , http://www.gamedev.net/topic/211918-determining-if-a-file-exists-c/
  */
-bool FileExists(std::string filename);
-
 inline bool FileExists(std::string filename) {
     struct stat st_buf;
     return stat(filename.c_str(), &st_buf) == 0 && S_ISREG(st_buf.st_mode);

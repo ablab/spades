@@ -1,5 +1,6 @@
 // just to check that headers from include and debruijn folders are correctly included
 #include "standard.hpp"
+#include "cap_kmer_index.hpp"
 #include "cap_logger.hpp"
 
 #include "../online_vis/standard_vis.hpp"
@@ -18,7 +19,7 @@
 #include "memory_limit.hpp"
 #include "read_converter.hpp"
 
-#include "../online_vis/cap_online_visualizer.hpp"
+#include "cap_online_visualizer.hpp"
 
 void create_console_logger(string const& cfg_filename) {
 	using namespace logging;
@@ -34,13 +35,9 @@ void create_console_logger(string const& cfg_filename) {
     attach_logger(lg);
 }
 
-
-
 int main(int argc, char** argv) {
     const size_t GB = 1 << 30;
-
     try {
-
         using namespace online_visualization;
 
         string cfg_filename = argv[1];

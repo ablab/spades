@@ -1,3 +1,4 @@
+
 //***************************************************************************
 //* Copyright (c) 2011-2013 Saint-Petersburg Academic University
 //* All Rights Reserved
@@ -74,7 +75,7 @@ class PairInfoImprover {
     DEBUG("ParallelRemoveContraditional: Put infos to vector");
 
     vector<pair<EdgeId, InnerMap<Graph> > > inner_maps; // map [EdgeId -> Histogram]
-    for (auto e_iter = graph_.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
+    for (auto e_iter = graph_.ConstEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
       if (graph_.length(*e_iter) >= cfg::get().rr.max_repeat_length)
         inner_maps.push_back(make_pair(*e_iter, index_.GetEdgeInfo(*e_iter, 0)));
     }
@@ -118,7 +119,7 @@ class PairInfoImprover {
     size_t cnt = 0;
     PairedInfoIndexT<Graph> *to_remove = new PairedInfoIndexT<Graph>(graph_);
 
-    for (auto e_iter = graph_.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
+    for (auto e_iter = graph_.ConstEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
       if (graph_.length(*e_iter )>= cfg::get().rr.max_repeat_length) {
         InnerMap<Graph> inner_map = index_.GetEdgeInfo(*e_iter, 0);
         FindInconsistent(*e_iter, inner_map, to_remove);
@@ -138,7 +139,7 @@ class PairInfoImprover {
     DEBUG("Fill missing: Put infos to vector");
     vector<PairInfos> infos;
     set<EdgeId> edges;
-    for (auto e_iter = graph_.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
+    for (auto e_iter = graph_.ConstEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
       infos.push_back(index_.GetEdgeInfo(*e_iter));
     }
 
@@ -207,7 +208,7 @@ class PairInfoImprover {
     size_t cnt = 0;
     PairedInfoIndexT<Graph> to_add(graph_);
     SplitPathConstructor<Graph> spc(graph_);
-    for (auto e_iter = graph_.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
+    for (auto e_iter = graph_.ConstEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
       const PairInfos& infos = index_.GetEdgeInfo(*e_iter);
       vector<PathInfoClass<Graph>> paths = spc.ConvertPIToSplitPaths(infos, lib_.data().mean_insert_size, lib_.data().insert_size_deviation);
       for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
@@ -246,14 +247,14 @@ class PairInfoImprover {
 
 public:
 // Checking the consistency of two edge pairs (e, e_1) and (e, e_2)
-  bool IsConsistent(EdgeId e, EdgeId e1, EdgeId e2, const Point& p1, const Point& p2) const {
+  bool IsConsistent(EdgeId /*e*/, EdgeId e1, EdgeId e2, const Point& p1, const Point& p2) const {
 	  if ((math::le(p1.d, 0.)
       || math::le(p2.d, 0.))
       || math::gr(p1.d, p2.d))
     return true;
 
     double pi_dist = p2.d - p1.d;
-    int first_length = graph_.length(e1);
+    int first_length = (int) graph_.length(e1);
     double var = p1.var + p2.var;
 
     TRACE("   PI " << p1  << " tr "  << omp_get_thread_num());
@@ -265,7 +266,7 @@ public:
       if (graph_.EdgeEnd(e1) == graph_.EdgeStart(e2))
         return true;
       else {
-        auto paths = GetAllPathsBetweenEdges(graph_, e1, e2, 0, ceil(pi_dist - first_length + var));
+        auto paths = GetAllPathsBetweenEdges(graph_, e1, e2, 0, (size_t) ceil(pi_dist - first_length + var));
         return (paths.size() > 0);
       }
     }

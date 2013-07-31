@@ -34,7 +34,7 @@ public:
         }
     }
 
-    void RemoveSimilarPaths(PathContainer& paths, size_t max_overlap,
+    void RemoveSimilarPaths(size_t max_overlap,
                             bool del_only_equal, bool del_subpaths,
                             bool del_begins, bool del_all) const {
         std::vector<EdgeId> edges = GetSortedEdges();
@@ -72,9 +72,9 @@ public:
                     for (size_t i1 = 0; i1 < poses1.size(); ++i1) {
                         vector<size_t> poses2 = path2->FindAll(edge);
                         for (size_t i2 = 0; i2 < poses2.size(); ++i2) {
-                            CompareAndCut(edge, path1, poses1[i1], path2,
-                                          poses2[i2], max_overlap, del_subpaths,
-                                          del_begins, del_all);
+                            CompareAndCut(edge, path1, (int) poses1[i1], path2,
+									(int) poses2[i2], (int) max_overlap,
+									del_subpaths, del_begins, del_all);
                             cov_paths = coverage_map_.GetCoveringPaths(edge);
                         }
                     }
@@ -104,8 +104,8 @@ private:
         }
         BidirectionalPath* conj1 = path1->GetConjPath();
         BidirectionalPath* conj2 = path2->GetConjPath();
-        int first1 = conj1->Size() - pos1 - 1;
-        int first2 = conj2->Size() - pos2 - 1;
+        int first1 = (int) conj1->Size() - pos1 - 1;
+        int first2 = (int) conj2->Size() - pos2 - 1;
         posRes = ComparePaths(first1, first2, *conj1, *conj2, max_overlap);
         first1 = posRes.first;
         first2 = posRes.second;
@@ -116,8 +116,8 @@ private:
         path1->Print();
         DEBUG("second path");
         path2->Print();
-        first2 = conj2->Size() - first2 - 1;
-        first1 = conj1->Size() - first1 - 1;
+        first2 = (int) conj2->Size() - first2 - 1;
+        first1 = (int) conj1->Size() - first1 - 1;
         DEBUG("path1 begin " << first1 << " path1 end " << last1 <<
               " path2_begin " << first2 << " path2_end " << last2 <<
               " path1_is_overlap " << path1->IsOverlap() <<
@@ -129,8 +129,8 @@ private:
               " delete_subpaths " << delete_subpaths <<
               " delete_begins " << delete_begins <<
               " delete_all " << delete_all);
-        CutOverlaps(path1, first1, last1, path1->Size(), path2, first2, last2,
-                    path2->Size(), delete_subpaths, delete_begins, delete_all);
+        CutOverlaps(path1, first1, last1, (int) path1->Size(), path2, first2, last2,
+                    (int) path2->Size(), delete_subpaths, delete_begins, delete_all);
     }
 
     pair<int, int> ComparePaths(int startPos1, int startPos2,
@@ -279,7 +279,7 @@ private:
     void FindAndRemovePathOverlap(PathContainer& all_paths,
                                   BidirectionalPath* path1,
                                   size_t max_overlap) const {
-        int last = path1->Size() - 1;
+        int last = (int) path1->Size() - 1;
         if (last <= 0 or coverage_map_.GetCoverage(path1->At(last)) <= 1
                 or HasAlreadyOverlapedEnd(path1)) {
             return;
@@ -395,21 +395,21 @@ public:
     }
 
     void removeOverlaps(PathContainer& paths, GraphCoverageMap& coverage_map,
-                        size_t max_overlap, ContigWriter& writer,
-                        string output_dir) {
+                        size_t max_overlap, ContigWriter& /*writer*/,
+                        string /*output_dir*/) {
         SimpleOverlapRemover remover(g_, coverage_map);
         DEBUG("Removing overlaps");
         //writer.writePaths(paths, output_dir + "/before.fasta");
-        remover.RemoveSimilarPaths(paths, max_overlap, false, true, true, false);
+        remover.RemoveSimilarPaths(max_overlap, false, true, true, false);
         //writer.writePaths(paths, output_dir + "/remove_similar.fasta");
         remover.RemoveOverlaps(paths, max_overlap);
         //writer.writePaths(paths, output_dir + "/remove_overlaps.fasta");
-        remover.RemoveSimilarPaths(paths, max_overlap, true, false, false, false);
+        remover.RemoveSimilarPaths(max_overlap, true, false, false, false);
         //writer.writePaths(paths, output_dir + "/remove_equals.fasta");
         DEBUG("remove equals paths");
-        remover.RemoveSimilarPaths(paths, 0, false, true, true, false);
+        remover.RemoveSimilarPaths(0, false, true, true, false);
         //writer.writePaths(paths, output_dir + "/remove_begins.fasta");
-        remover.RemoveSimilarPaths(paths, max_overlap, false, true, true, true);
+        remover.RemoveSimilarPaths(max_overlap, false, true, true, true);
         //writer.writePaths(paths, output_dir + "/remove_all.fasta");
         DEBUG("end removing");
     }

@@ -82,9 +82,10 @@ def print_used_values(cfg, log):
             log.info("  Multi-cell mode (you should set '--sc' flag if input data"\
                      " was obtained with MDA (single-cell) technology")
 
-        # TODO: nice output of reads
         log.info("  Reads:")
-        support.pretty_print_reads(pyyaml.load(file(cfg["dataset"].yaml_filename, 'r')), log)
+        dataset_data = pyyaml.load(file(cfg["dataset"].yaml_filename, 'r'))
+        dataset_data = support.relative2abs_paths(dataset_data, os.path.dirname(cfg["dataset"].yaml_filename))
+        support.pretty_print_reads(dataset_data, log)
 
     # error correction
     if "error_correction" in cfg:
@@ -246,8 +247,10 @@ def main():
             dataset_data = pyyaml.load(file(options_storage.dataset_yaml_filename, 'r'))
         except pyyaml.YAMLError, exc:
             support.error('exception caught while parsing YAML file (' + options_storage.dataset_yaml_filename + '):\n' + str(exc))
+        dataset_data = support.relative2abs_paths(dataset_data, os.path.dirname(options_storage.dataset_yaml_filename))
     else:
         dataset_data = support.correct_dataset(dataset_data)
+        dataset_data = support.relative2abs_paths(dataset_data, os.getcwd())
         options_storage.dataset_yaml_filename = os.path.join(options_storage.output_dir, "input_dataset.yaml")
         pyyaml.dump(dataset_data, file(options_storage.dataset_yaml_filename, 'w'))
 
@@ -376,6 +379,7 @@ def main():
 
             if corrected_dataset_yaml_filename:
                 dataset_data = pyyaml.load(file(corrected_dataset_yaml_filename, 'r'))
+                dataset_data = support.relative2abs_paths(dataset_data, os.path.dirname(corrected_dataset_yaml_filename))
             if support.dataset_needs_paired_mode(dataset_data):
                 spades_cfg.__dict__["paired_mode"] = True
             else:
@@ -401,12 +405,12 @@ def main():
             import process_cfg
             dataset_file.write("single_cell" + '\t' + process_cfg.bool_to_str(cfg["dataset"].single_cell) + '\n')
             if corrected_dataset_yaml_filename:
-                dataset_file.write("reads" + '\t' + corrected_dataset_yaml_filename + '\n')
+                dataset_file.write("reads" + '\t' + process_cfg.process_spaces(corrected_dataset_yaml_filename) + '\n')
             else:
-                dataset_file.write("reads" + '\t' + cfg["dataset"].yaml_filename + '\n')
+                dataset_file.write("reads" + '\t' + process_cfg.process_spaces(cfg["dataset"].yaml_filename) + '\n')
             if spades_cfg.developer_mode and "reference" in cfg["dataset"].__dict__:
                 dataset_file.write("reference_genome" + '\t')
-                dataset_file.write(os.path.abspath(cfg["dataset"].reference) + '\n')
+                dataset_file.write(process_cfg.process_spaces(os.path.abspath(cfg["dataset"].reference)) + '\n')
             dataset_file.close()
             spades_cfg.__dict__["dataset"] = dataset_filename
 
@@ -464,6 +468,7 @@ def main():
 
                 # detecting paired-end library with the largest insert size
                 dataset_data = pyyaml.load(file(options_storage.dataset_yaml_filename, 'r')) ### initial dataset, i.e. before error correction
+                dataset_data = support.relative2abs_paths(dataset_data, os.path.dirname(options_storage.dataset_yaml_filename))
                 paired_end_libraries_ids = []
                 for id, reads_library in enumerate(dataset_data):
                     if reads_library['type'] == 'paired-end':
@@ -477,8 +482,11 @@ def main():
                     if float(estimated_params.__dict__["insert_size_" + str(id)]) > max_insert_size:
                         max_insert_size = float(estimated_params.__dict__["insert_size_" + str(id)])
                         target_paired_end_library_id = id
-                cfg["mismatch_corrector"].__dict__["1"] = dataset_data[target_paired_end_library_id]['left reads']
-                cfg["mismatch_corrector"].__dict__["2"] = dataset_data[target_paired_end_library_id]['right reads']
+                yaml_dirname = os.path.dirname(options_storage.dataset_yaml_filename)
+                cfg["mismatch_corrector"].__dict__["1"] = map(lambda x: os.path.join(yaml_dirname, x),
+                    dataset_data[target_paired_end_library_id]['left reads'])
+                cfg["mismatch_corrector"].__dict__["2"] = map(lambda x: os.path.join(yaml_dirname, x),
+                    dataset_data[target_paired_end_library_id]['right reads'])
                 cfg["mismatch_corrector"].__dict__["insert-size"] = round(max_insert_size)
                 #TODO: add reads orientation
 

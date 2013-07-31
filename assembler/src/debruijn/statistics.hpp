@@ -90,7 +90,7 @@ public:
   size_t edges() {
     size_t edgeNumber = 0;
     size_t sum_edge_length = 0;
-    for (auto iterator = graph_.SmartEdgeBegin(); !iterator.IsEnd();
+    for (auto iterator = graph_.ConstEdgeBegin(); !iterator.IsEnd();
         ++iterator) {
       edgeNumber++;
 //      if (graph_.coverage(*iterator) > 30) {
@@ -102,7 +102,7 @@ public:
 
   size_t edge_length() {
     size_t sum_edge_length = 0;
-    for (auto iterator = graph_.SmartEdgeBegin(); !iterator.IsEnd();
+    for (auto iterator = graph_.ConstEdgeBegin(); !iterator.IsEnd();
         ++iterator) {
       if (graph_.coverage(*iterator) > 30) {
         sum_edge_length += graph_.length(*iterator);
@@ -143,7 +143,7 @@ public:
     colored_edges.insert(path_edges1.begin(), path_edges1.end());
     colored_edges.insert(path_edges2.begin(), path_edges2.end());
     size_t sum_length = 0;
-    for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+    for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
       edge_count++;
       if (colored_edges.count(*it) == 0) {
         black_count++;
@@ -151,13 +151,10 @@ public:
       }
     }
     if (edge_count > 0) {
-      INFO(
-          "Error edges count: " << black_count << " which is " << 100.0 * black_count / edge_count << "% of all edges");
-      INFO(
-          "Total length of all black edges: " << sum_length << ". While double genome length is " << (2 * cfg::get().ds.reference_genome.size()));
+      INFO("Error edges count: " << black_count << " which is " << 100.0 * (double) black_count / (double) edge_count << "% of all edges");
+      INFO("Total length of all black edges: " << sum_length << ". While double genome length is " << (2 * cfg::get().ds.reference_genome.size()));
     } else {
-      INFO(
-          "Error edges count: " << black_count << " which is 0% of all edges");
+      INFO("Error edges count: " << black_count << " which is 0% of all edges");
     }
   }
 };
@@ -187,7 +184,7 @@ public:
     sort(lengths.begin(), lengths.end());
     size_t sum = 0;
     size_t current = lengths.size();
-    while (current > 0 && sum < perc_ * 0.01 * sum_all) {
+    while (current > 0 && (double) sum < (double) perc_ * 0.01 * (double) sum_all) {
       current--;
       sum += lengths[current];
     }
@@ -207,7 +204,7 @@ public:
   IsolatedEdgesStat(const Graph &graph, Path<EdgeId> path1,
       Path<EdgeId> path2) :
       graph_(graph) {
-    for (auto it = graph.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+    for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it) {
       black_edges_.insert(*it);
     }
     for (size_t i = 0; i < path1.size(); i++) {
@@ -223,7 +220,7 @@ public:
 
   virtual void Count() {
     lengths.clear();
-    for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+    for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
       EdgeId edge = *it;
       if (graph_.IsDeadEnd(graph_.EdgeEnd(edge))
           && graph_.IsDeadStart(graph_.EdgeStart(edge))
@@ -264,7 +261,7 @@ public:
 
   virtual void Count() {
     size_t sc_number = 0;
-    for (auto iterator = graph_.SmartEdgeBegin(); !iterator.IsEnd();
+    for (auto iterator = graph_.ConstEdgeBegin(); !iterator.IsEnd();
         ++iterator)
       if (graph_.conjugate(*iterator) == (*iterator))
         sc_number++;
@@ -308,7 +305,7 @@ private:
       Histogram v = *it;
       size_t w = 0;
       for (auto I = v.begin(); I != v.end(); ++I)
-        w += I->weight;
+        w += (size_t) I->weight;
 
       edge_pairs.insert(make_pair(make_pair(it.first(), it.second()), w));
     }
@@ -466,11 +463,13 @@ public:
         PathProcessor<Graph> path_processor(
             g_,
             omnigraph::PairInfoPathLengthLowerBound(g_.k(),
-                g_.length(e1), g_.length(e2), gap_,
+                g_.length(e1), g_.length(e2), (int) gap_,
                 variance_delta_),
             omnigraph::PairInfoPathLengthUpperBound(g_.k(),
-                insert_size_, variance_delta_), g_.EdgeEnd(e1),
-            g_.EdgeStart(e2), counter);
+                insert_size_, variance_delta_),
+            g_.EdgeEnd(e1),
+            g_.EdgeStart(e2), 
+            counter);
         path_processor.Process();
         if (counter.count() == 1) {
           unique_distance_cnt_++;
@@ -480,7 +479,8 @@ public:
 
         }
       }
-    }INFO("Considered " << considered_edge_pair_cnt_ << " edge pairs")INFO(
+    }
+    INFO("Considered " << considered_edge_pair_cnt_ << " edge pairs")INFO(
         unique_distance_cnt_ << " edge pairs connected with unique path of appropriate length")
     INFO(
         non_unique_distance_cnt_ << " edge pairs connected with non-unique path of appropriate length")
@@ -509,7 +509,7 @@ class MatePairTransformStat: public AbstractStatCounter {
 
  public:
   MatePairTransformStat(const Graph& g, const PairedInfoIndexT<Graph>& pair_info) :
-        g_(g), pair_info_(pair_info), considered_dist_cnt_(0), 
+        g_(g), pair_info_(pair_info), considered_dist_cnt_(0),
         unique_distance_cnt_(0), non_unique_distance_cnt_(0)
   {
   }
@@ -555,7 +555,8 @@ class MatePairTransformStat: public AbstractStatCounter {
           PathStorageCallback<Graph> counter(g_);
 
           PathProcessor<Graph> path_processor(g_,
-              point.d - g_.length(e1), point.d - g_.length(e1),
+              (size_t) (point.d - (double) g_.length(e1)),
+              (size_t) (point.d - (double) g_.length(e1)),
               g_.EdgeEnd(e1), g_.EdgeStart(e2), counter);
           path_processor.Process();
 
@@ -566,7 +567,7 @@ class MatePairTransformStat: public AbstractStatCounter {
             ++unique_distance_cnt_;
           if (counter.size() > 1)
             ++non_unique_distance_cnt_;
-        } 
+        }
         else
           non_unique_distance_cnt_++;
 
@@ -620,7 +621,7 @@ public:
   }
 };
 
-template<class Graph>
+template<class Graph, class Index>
 class EstimationQualityStat: public AbstractStatCounter {
 private:
   typedef typename Graph::EdgeId EdgeId;
@@ -629,7 +630,7 @@ private:
   //input fields
   const Graph &graph_;
   const IdTrackHandler<Graph>& int_ids_;
-  const EdgeQuality<Graph>& quality_;
+  const EdgeQuality<Graph, Index>& quality_;
   const PairedInfoIndex<Graph>& pair_info_;
   const PairedInfoIndex<Graph>& estimated_pair_info_;
   const PairedInfoIndex<Graph>& etalon_pair_info_;
@@ -838,7 +839,7 @@ private:
 public:
   EstimationQualityStat(const Graph &graph,
       const IdTrackHandler<Graph>& int_ids,
-      const EdgeQuality<Graph>& quality,
+      const EdgeQuality<Graph, Index>& quality,
       const PairedInfoIndex<Graph>& pair_info,
       const PairedInfoIndex<Graph>& estimated_pair_info,
       const PairedInfoIndex<Graph>& etalon_pair_info) :
@@ -1078,25 +1079,24 @@ private:
   DECL_LOGGER("EstimatedClusterStat");
 };
 
-template<class Graph>
+template<class Graph, class Index>
 class CoverageStatistics{
-    
+
 private:
     Graph& graph_;
-    EdgeQuality<Graph> & edge_qual_;
-    
-    
+    EdgeQuality<Graph, Index> & edge_qual_;
+
     bool DoesSuit(VertexId vertex){
         bool ans = true;
-        for (size_t i = 0; ans && i<graph_.OutgoingEdgeCount(vertex); i++) 
+        for (size_t i = 0; ans && i<graph_.OutgoingEdgeCount(vertex); i++)
             ans = ans & math::gr(edge_qual_.quality(graph_.OutgoingEdges(vertex)[i]), 0.);
-        for (size_t i = 0; ans && i<graph_.IncomingEdgeCount(vertex); i++) 
+        for (size_t i = 0; ans && i<graph_.IncomingEdgeCount(vertex); i++)
             ans = ans & math::gr(edge_qual_.quality(graph_.IncomingEdges(vertex)[i]), 0.);
-        return ans; 
+        return ans;
     }
-    
+
 public:
-    CoverageStatistics(Graph& graph, EdgeQuality<Graph>& edge_qual):
+    CoverageStatistics(Graph& graph, EdgeQuality<Graph, Index>& edge_qual):
     graph_(graph), edge_qual_(edge_qual){
     }
 
@@ -1112,10 +1112,10 @@ public:
         size_t area10 = 0;
         size_t area5 = 0;
         size_t area2 = 0;
-        for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter){
+        for (auto iter = graph_.ConstEdgeBegin(); !iter.IsEnd(); ++iter){
             len_map[graph_.length(*iter)]++;
         }
-        for (auto iter = graph_.begin(); iter != graph_.end(); ++iter) 
+        for (auto iter = graph_.begin(); iter != graph_.end(); ++iter)
             if (true || DoesSuit(*iter) ){
 
                 double plus_cov = 0.;
@@ -1125,14 +1125,14 @@ public:
                 bool suit_us = true;
 
                 if (graph_.IncomingEdgeCount(*iter)*graph_.OutgoingEdgeCount(*iter) == 0) continue;
-                
-                for (size_t i = 0; suit_us && i<graph_.IncomingEdgeCount(*iter); i++) 
+
+                for (size_t i = 0; suit_us && i<graph_.IncomingEdgeCount(*iter); i++)
                     if (graph_.length(graph_.IncomingEdges(*iter)[i]) < 80){
                         if (math::ge(edge_qual_.quality(graph_.IncomingEdges(*iter)[i]), 1.))
                             plus_cov += graph_.coverage(graph_.IncomingEdges(*iter)[i]);
                         plus_all_cov += graph_.coverage(graph_.IncomingEdges(*iter)[i]);
                     }else suit_us = false;
-                for (size_t i = 0; suit_us && i<graph_.OutgoingEdgeCount(*iter); i++) 
+                for (size_t i = 0; suit_us && i<graph_.OutgoingEdgeCount(*iter); i++)
                     if (graph_.length(graph_.OutgoingEdges(*iter)[i]) < 80){
                         if (math::ge(edge_qual_.quality(graph_.OutgoingEdges(*iter)[i]), 1.))
                             min_cov += graph_.coverage(graph_.OutgoingEdges(*iter)[i]);
@@ -1144,7 +1144,7 @@ public:
                 if (math::eq(min_cov, 0.) || math::eq(plus_cov, 0.)) continue;
 
                 double delta_cov = math::round(1000.*(plus_cov - min_cov)/(plus_cov + min_cov));
-                
+
                 double ratio_cov = math::round(1000.*(plus_cov + min_cov)/(plus_all_cov + min_all_cov));
 
                 if (math::ls(abs(delta_cov), 150.)) area15++;
@@ -1152,10 +1152,10 @@ public:
                 if (math::ls(abs(delta_cov), 50.)) area5++;
                 if (math::ls(abs(delta_cov), 20.)) area2++;
                 area++;
-                
+
                 cov_map[delta_cov/10.]++;
                 ratio_map[ratio_cov/10.]++;
-            
+
         }
 
         for (auto iter = ratio_map.begin(); iter != ratio_map.end(); ++iter){
@@ -1167,13 +1167,13 @@ public:
         }
 
         INFO("stats_cov "  << area << " " << area2 << " " << area5 << " " << area10 << " " << area15);
-        
+
         for (auto iter = len_map.begin(); iter != len_map.end(); ++iter){
             INFO("Len " << (*iter).first << " " << (*iter).second);
         }
-           
+
     }
-    
+
 };
 
 }

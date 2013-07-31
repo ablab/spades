@@ -34,7 +34,7 @@ public:
     }
 
     int ExcludeTrivial(const BidirectionalPath& path, std::set<int>& edges, int from = -1) {
-        int edgeIndex = (from == -1) ? path.Size() - 1 : from;
+        int edgeIndex = (from == -1) ? (int) path.Size() - 1 : from;
         if ((int) path.Size() <= from) {
             return edgeIndex;
         }
@@ -56,7 +56,7 @@ public:
             return 0;
         }
 
-        int lastEdge = path.Size() - 1;
+        int lastEdge = (int) path.Size() - 1;
         do {
             lastEdge = ExcludeTrivial(path, edges, lastEdge);
 
@@ -221,7 +221,7 @@ public:
     TrivialExtensionChooser(Graph& g): ExtensionChooser(g)  {
     }
 
-    virtual EdgeContainer Filter(BidirectionalPath& path, EdgeContainer& edges) {
+    virtual EdgeContainer Filter(BidirectionalPath& /*path*/, EdgeContainer& edges) {
         if (edges.size() == 1) {
              return edges;
         }
@@ -262,12 +262,12 @@ protected:
 		if (path.Size() == 0) {
 			return;
 		}
-		int index = path.Size() - 1;
+		int index = (int) path.Size() - 1;
 		while (index >= 0) {
 			bool common_edge = wc_->PairInfoExist(path[index], first,
-					path.LengthAt(index))
+					(int) path.LengthAt(index))
 					and wc_->PairInfoExist(path[index], second,
-							path.LengthAt(index));
+							(int) path.LengthAt(index));
 			bool ideal1 = wc_->CountIdealInfo(path[index], first,
 					path.LengthAt(index)) > 0.0;
 			bool ideal2 = wc_->CountIdealInfo(path[index], second,
@@ -379,7 +379,7 @@ public:
         for (size_t i = 0; i < histogram.size(); ++ i) {
 			 dist += (histogram[i].first * histogram[i].second / sum);
 		}
-        return round(dist);
+        return (int) round(dist);
     }
 
     int CountDev(vector< pair<int,double> >& histogram, int avg)
@@ -392,7 +392,7 @@ public:
         for (size_t i = 0; i < histogram.size(); ++ i) {
              dev += (((double) (histogram[i].first - avg)) * ((double) (histogram[i].first - avg)) * ((double) histogram[i].second));
         }
-        return round(sqrt(dev / sum));
+        return (int) round(sqrt(dev / sum));
     }
 
     vector< pair<int,double> > FilterHistogram(vector< pair<int,double> >& histogram, int start, int end, int threshold)
@@ -443,7 +443,7 @@ public:
                 int mean = CountMean(histogram);
                 int dev = CountDev(histogram, mean);
                 double cutoff = min(max_w * cfg::get().pe_params.param_set.scaffolder_options.rel_cutoff, (double) cfg::get().pe_params.param_set.scaffolder_options.cutoff);
-                histogram = FilterHistogram(histogram, mean - (5 - j)  * dev, mean + (5 - j) * dev, cutoff);
+                histogram = FilterHistogram(histogram, mean - (5 - j)  * dev, mean + (5 - j) * dev, (int) round(cutoff));
 			}
 
 			double sum = 0.0;
@@ -543,8 +543,8 @@ public:
         for (auto it = support_paths.begin(); it != support_paths.end(); ++it) {
             auto positions = (*it)->FindAll(path.Back());
             for (size_t i = 0; i < positions.size(); ++i) {
-                if (positions[i] < (*it)->Size() - 1
-                        && EqualBegins(path, path.Size() - 1, **it, positions[i])) {
+                if ((int) positions[i] < (int)(*it)->Size() - 1
+                        && EqualBegins(path, (int)path.Size() - 1, **it, positions[i])) {
                     if (UniqueBackPath(**it, positions[i])) {
                         EdgeId next = (*it)->At(positions[i] + 1);
                         weights_cands[next] += (*it)->GetWeight();

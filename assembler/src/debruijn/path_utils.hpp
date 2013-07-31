@@ -93,10 +93,8 @@ size_t GetAllPathsQuantity(const graph_pack& origin_gp,
   PathStorageCallback<typename graph_pack::graph_t> callback(origin_gp.g);
   PathProcessor<typename graph_pack::graph_t>
       path_processor(origin_gp.g,
-                     d - origin_gp.g.length(e1)
-                     - size_t(is_var),
-                     d - origin_gp.g.length(e1)
-                     + size_t(is_var),
+                     (size_t) d - origin_gp.g.length(e1) - size_t(is_var),
+                     (size_t) d - origin_gp.g.length(e1) + size_t(is_var),
                      origin_gp.g.EdgeEnd(e1), 
                      origin_gp.g.EdgeStart(e2),
                      callback);
@@ -117,7 +115,7 @@ size_t GetAllPathsQuantity(const graph_pack& origin_gp,
       typedef set<Point> Histogram;
 
       map<size_t, size_t> sizes;
-      for (auto e_iter = origin_gp.g.SmartEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
+      for (auto e_iter = origin_gp.g.ConstEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
         EdgeId e1 = *e_iter;
         const InnerMap<Graph>& pi = clustered_index.GetEdgeInfo(*e_iter, 0);
         for (auto ext_iter = pi.begin(); ext_iter != pi.end(); ++ext_iter) {

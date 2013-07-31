@@ -6,7 +6,7 @@
 #include "omni/mf_ec_remover.hpp"
 
 namespace debruijn_graph {
-	
+//todo WTF?!!!
 	template <class graph_pack, class DetailedCoverage>
 	class LoopFilter {
 		const graph_pack& gp;
@@ -35,7 +35,8 @@ namespace debruijn_graph {
 			return resolved_loops_;
 		}
 
-		void get_loopy_components( const EdgeQuality<typename graph_pack::graph_t>& quality_labeler ) {
+		template<class EdgeQualityLabeler>
+		void get_loopy_components( const EdgeQualityLabeler& quality_labeler ) {
 			INFO("Detecting loops...");
 			for ( auto v = gp.g.begin(); v != gp.g.end(); ++v ) {
 				if ( used_vertices_.find(*v) != used_vertices_.end() ) 
@@ -75,7 +76,7 @@ namespace debruijn_graph {
 				}*/
 				if (resolved) {
 					for (auto e = resolved_loop.begin(); e != resolved_loop.end(); ++e ) {
-						L += gp.g.length(*e);
+						L += (int) gp.g.length(*e);
 					}
 					resolved_loops_.push_back(resolved_loop);
 				}
@@ -193,7 +194,6 @@ namespace debruijn_graph {
 				}
 
 			}
-
 			return ifSimple;
 		}
 

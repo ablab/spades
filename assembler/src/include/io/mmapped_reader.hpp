@@ -307,7 +307,7 @@ class MMappedFileRecordArrayIterator :
         increment();
     }
     MMappedFileRecordArrayIterator(MMappedRecordReader<T> &&reader, size_t elcnt)
-            : value_(NULL), reader_(std::move(reader)),  elcnt_(elcnt), good_(true) {
+            : value_(NULL), reader_(std::move(reader)), elcnt_(elcnt), good_(true) {
         increment();
     }
 
@@ -331,6 +331,5 @@ class MMappedFileRecordArrayIterator :
     size_t elcnt_;
     bool good_;
 };
-
 
 #endif // HAMMER_MMAPPED_READER_HPP

@@ -59,8 +59,8 @@ public:
 	void AddGap(const GapDescription<Graph> &p, bool add_rc = false){
 		HiddenAddGap(p);
 		if (add_rc) {
-			TRACE("Addign conjugate");
-			HiddenAddGap(p.conjugate(g_, cfg::get().K));
+			TRACE("Adding conjugate");
+			HiddenAddGap(p.conjugate(g_, (int) cfg::get().K));
 		}
 	}
 
@@ -107,7 +107,7 @@ public:
 		}
 	}
 
-	void DumpToFile(const string filename, EdgesPositionHandler<Graph> &edge_pos) {
+	void DumpToFile(const string filename, EdgesPositionHandler<Graph> &/*edge_pos*/) {
 		ofstream filestr(filename);
 		for(auto iter = inner_index.begin(); iter != inner_index.end(); ++iter) {
 			filestr << g_.int_id(iter->first)<< " " <<iter->second.size() << endl;
@@ -279,26 +279,26 @@ public:
 private:
 
 	string RandomDeletion(string &s) {
-		int pos = rand() % s.length();
+		int pos = rand() % (int) s.length();
 		string res = s.substr(0, pos) + s.substr(pos+1);
 		TRACE("trying deletion on " <<pos );
 		return res;
 	}
 
 	char RandomNucleotide(){
-		unsigned char dig_nucl = rand() % 4;
+		unsigned char dig_nucl = (unsigned char) (rand() % 4);
 		return nucl(dig_nucl);
 	}
 
 	string RandomInsertion(string &s) {
-		int pos = rand() % (s.length() + 1);
+		int pos = rand() % ((int) s.length() + 1);
 		TRACE("trying insertion on " << pos );
 		string res = s.substr(0, pos) + RandomNucleotide() + s.substr(pos);
 		return res;
 	}
 
 	string RandomSubstitution(string &s) {
-		int pos = rand() % s.length();
+		int pos = rand() % (int) s.length();
 		string res = s;
 		res[pos] = RandomNucleotide();
 		TRACE("trying substitution on " <<pos );
@@ -319,8 +319,8 @@ private:
 
 
 	int StringDistance(string &a, string &b) {
-		int a_len = a.length();
-		int b_len = b.length();
+		int a_len = (int) a.length();
+		int b_len = (int) b.length();
 		int d = min(a_len / 3, b_len / 3);
 		d = max(d, 10);
 //		DEBUG(a_len << " " << b_len << " " << d);
@@ -398,9 +398,9 @@ private:
 
 	inline int mean_len(vector<string> & v){
 		int res = 0;
-		for(size_t i = 0; i < v.size(); i ++)
-			res +=v[i].length();
-		return (res/v.size());
+		for (size_t i = 0; i < v.size(); i ++)
+			res += (int) v[i].length();
+		return (res / (int) v.size());
 	}
 
 	int CheckValidKmers(const Kmer &kmer, KmerStorage &kmap, const vector<string> &variants) const {
@@ -408,7 +408,8 @@ private:
 		for (size_t i = 0; i < kmap.size(); i++)
 			if (kmap[i].find(kmer) != kmap[i].end())
 				if (kmap[i][kmer] != -1) {
-					if ((kmap[i][kmer] > variants[i].length() * 0.3) && (kmap[i][kmer] < variants[i].length() * 0.7)) {
+					if (((double) kmap[i][kmer] > (double) variants[i].length() * 0.3) && 
+					    ((double) kmap[i][kmer] < (double) variants[i].length() * 0.7)) {
 						res ++;
 					} else {
 						TRACE("not in tehe middle" << kmap[i][kmer] <<" of " << variants[i].length());
@@ -430,7 +431,7 @@ private:
 					kmap[i][kmer] = -1;
 					TRACE("non_unique for stirng " << i);
 				} else {
-					kmap[i][kmer] = j - cur_k;
+					kmap[i][kmer] = (int) j - cur_k;
 					TRACE("unique added for stirng " << i);
 				}
 			}
@@ -496,14 +497,17 @@ private:
 		for(size_t i = 0; i < variants.size(); i++)
 			if (res.length() > variants[i].length())
 				res = variants[i];
-		StripedSmithWaterman::Aligner aligner(cfg::get().pb.match_value, cfg::get().pb.mismatch_penalty, cfg::get().pb.insertion_penalty, cfg::get().pb.insertion_penalty) ; //1 1 2 2
-		aligner.SetReferenceSequence(res.c_str(), res.length());
+		StripedSmithWaterman::Aligner aligner((uint8_t) cfg::get().pb.match_value, 
+		                                      (uint8_t) cfg::get().pb.mismatch_penalty,
+		                                      (uint8_t) cfg::get().pb.insertion_penalty, 
+		                                      (uint8_t) cfg::get().pb.insertion_penalty); //1 1 2 2
+		aligner.SetReferenceSequence(res.c_str(), (int) res.length());
 		int best_score = EditScore(res, variants, aligner);
 		int void_iterations = 0;
 
 		while (void_iterations < cfg:: get().pb.gap_closing_iterations ) {
 			string new_res = RandomMutation(res);
-			aligner.SetReferenceSequence(new_res.c_str(), new_res.length());
+			aligner.SetReferenceSequence(new_res.c_str(), (int) new_res.length());
 			int current_score = EditScore(new_res, variants, aligner);
 			if (current_score > best_score) {
 				best_score = current_score;
@@ -523,7 +527,7 @@ private:
 		return res;
 	}
 
-	void ConstructConsensus(EdgeId e, GapStorage<Graph> &storage, map<EdgeId, map<EdgeId, pair<size_t, string> > > &new_edges_by_thread) {
+	void ConstructConsensus(EdgeId e, GapStorage<Graph> &storage, map<EdgeId, map<EdgeId, pair<size_t, string> > > &/*new_edges_by_thread*/) {
 //		if (g_.int_id(e) !=7964945 ) return;
 		auto cl_start = storage.inner_index[e].begin();
 		auto iter = storage.inner_index[e].begin();
@@ -579,7 +583,7 @@ public:
 			}
 		}
 	}
-	void DumpToFile(const string filename, EdgesPositionHandler<Graph> &edge_pos) {
+	void DumpToFile(const string filename, EdgesPositionHandler<Graph> &/*edge_pos*/) {
 		ofstream filestr(filename);
 //		filestr << "New edges: " << endl;
 		for(auto iter = new_edges.begin(); iter != new_edges.end(); ++iter) {

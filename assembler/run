@@ -103,10 +103,12 @@ else
     'dt') run_n_measure build/debug/bin/debruijn_test && run_n_measure build/debug/bin/include_test ;;
     'rv' ) build/release/bin/online_vis $cfg_debruijn/config.info ;;
     'dv' ) build/debug/bin/online_vis $cfg_debruijn/config.info ;;
-    'rc' ) run_n_measure build/release/bin/cap $cfg_debruijn/config.info $cfg_cap/gaf.info --log_level=test_suite ;;
-    'dc' ) run_n_measure build/debug/bin/cap $cfg_debruijn/config.info $cfg_cap/gaf.info --log_level=test_suite ;;
-    'rct' ) run_n_measure build/release/bin/cap_test ;;
-    'dct' ) run_n_measure build/debug/bin/cap_test ;;
+    'rc' ) run_n_measure build/release/bin/cap $cfg_debruijn/config.info $cfg_cap/gaf.info ;;
+    'dc' ) run_n_measure build/debug/bin/cap $cfg_debruijn/config.info $cfg_cap/gaf.info ;;
+    'rctls' ) run_n_measure build/release/bin/cap-tools $cfg_debruijn/config.info $cfg_cap/gaf.info --log_level=test_suite ;;
+    'dctls' ) run_n_measure build/debug/bin/cap-tools $cfg_debruijn/config.info $cfg_cap/gaf.info --log_level=test_suite ;;
+    'rct' ) ./build/release/bin/cap_test --log_level=test_suite ;;
+    'dct' ) ./build/debug/bin/cap_test --log_level=test_suite ;;
 
     * ) 
         change_config $1
