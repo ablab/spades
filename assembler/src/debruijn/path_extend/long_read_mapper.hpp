@@ -33,7 +33,7 @@ public:
         if (cfg::get().use_multithreading) {
             auto single_streams = single_binary_readers(
                     lib, false, false);
-            if (single_streams->size() == 1) {
+            if (single_streams->size() == (size_t) 1) {
                 ProcessReads(*single_streams, storage);
             } else {
                 ProcessSingleReadsParallel(*single_streams, storage);
@@ -139,7 +139,7 @@ private:
             }
             DEBUG("Thread number " << omp_get_thread_num() << " finished");
         }
-        DEBUG("Count unmapped reads " << count_unmapped_reads
+        INFO("Count unmapped reads " << count_unmapped_reads
                           << " mapped reads " << count_mapped_reads
                           << " with size one " << count_mapped_reads_size_one);
         for (size_t i = 0; i < nthreads; ++i) {
