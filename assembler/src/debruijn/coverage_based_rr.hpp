@@ -130,7 +130,7 @@ class CoverageBasedResolution {
 		return;
 	}
 */
-	void visit( const EdgeId& edge, set<EdgeId>& visited_edges, set<VertexId>& grey_vertices, 
+	void visit( const EdgeId& edge, set<EdgeId>& visited_edges, set<VertexId>& grey_vertices,
 		vector<EdgeId>& path, const vector<EdgeId>& components, 
 		const vector<EdgeId>& singles, vector<EdgeId>& incoming_edges, vector<EdgeId>& outgoing_edges, bool& if_loop ) const {
 		VertexId edgeStartVertex = gp_.g.EdgeStart(edge);
@@ -830,8 +830,8 @@ class CoverageBasedResolution {
 		//FILE* file = fopen("/home/ksenia/path_resolved.log", "w");
 		//FILE* file = fopen("/home/ksenia/probabilities_22.log", "w");
         	int number_of_buckets = 20;
-		int K_ = cfg::get().K + 1;
-		BucketMapper<conj_graph_pack::graph_t, KmerIndex> bm(gp_.g, kmer_index_, K_, number_of_buckets);
+		int K_ = (int) cfg::get().K + 1;
+		BucketMapper<conj_graph_pack::graph_t, KmerIndex> bm (gp_.g, kmer_index_, K_, number_of_buckets);
 		bm.InitBuckets();
 		int pure_tandem(0), repetitive_tandem(0), ordinal_repeat(0);
 		for ( auto edge = components.begin(); edge != components.end(); ++edge ) {
@@ -846,14 +846,14 @@ class CoverageBasedResolution {
 			Repeat<graph_pack> repeat(gp_, incoming_edges, outgoing_edges, path, repeat_length_upper_threshold_, edge_to_kind_,file);
 			vector<vector <double>> transition_probabilities ;
 			if (if_loop) {
-				if (incoming_edges.size() == 1 && incoming_edges.size() == outgoing_edges.size() )
+				if (incoming_edges.size() == (size_t) 1 && incoming_edges.size() == outgoing_edges.size() )
 					pure_tandem += 1;
 				else repetitive_tandem += 1;
 				DEBUG("loop!\n");
 				continue;
 			}
-			if (path.size() == 0 ) continue;
-			if ( incoming_edges.size() < 2 || outgoing_edges.size() < 2) continue;
+			if (path.size() == (size_t) 0 ) continue;
+			if ( incoming_edges.size() < (size_t) 2 || outgoing_edges.size() < (int) 2) continue;
 			ordinal_repeat += 1;
 			if ( repeat.IfContainsOnlyShortEdges() ) {
 				DEBUG("contains only short edges");

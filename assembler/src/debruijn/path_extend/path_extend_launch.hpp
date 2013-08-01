@@ -19,7 +19,6 @@
 #include "pe_io.hpp"
 #include "path_visualizer.hpp"
 #include "loop_traverser.hpp"
-#include "single_threshold_finder.hpp"
 #include "long_read_storage.hpp"
 #include "split_graph_pair_info.hpp"
 
@@ -319,18 +318,7 @@ void DeleteLibs(vector<PairedInfoLibraries>& libs) {
     }
 }
 
-void SetOldThreshold(PairedInfoLibrary* lib, size_t index) {
-	INFO("Searching for paired info threshold for lib #"
-						<< index << " (IS = " << lib->insert_size_ << ",  DEV = " << lib->is_variation_ << ")");
-
-	SingleThresholdFinder finder((int) lib->insert_size_ - 2 * (int) lib->is_variation_, (int) lib->insert_size_ + 2 * (int) lib->is_variation_, (int) lib->read_size_);
-	double threshold = finder.find_threshold(index);
-
-	INFO("Paired info threshold is " << threshold);
-	lib->SetSingleThreshold(threshold);
-}
-
-void SetNewThreshold(conj_graph_pack& gp, PairedInfoLibrary* lib, size_t index,
+void SetThreshold(conj_graph_pack& gp, PairedInfoLibrary* lib, size_t index,
                      size_t split_edge_length) {
     SplitGraphPairInfo split_graph(gp, *lib, index, split_edge_length);
     INFO("Calculating paired info threshold");
@@ -370,7 +358,7 @@ void ResolveRepeatsPe(conj_graph_pack& gp, vector<PairedIndexT*>& paired_index,
                         == io::LibraryType::MatePairs) {
             PairedInfoLibrary* lib = MakeNewLib(gp.g, paired_index, indexs, i);
             if (use_auto_threshold) {
-                SetNewThreshold(gp, lib, indexs[i], pset.split_edge_length);
+                SetThreshold(gp, lib, indexs[i], pset.split_edge_length);
             }
             PairedInfoLibraries libs;
             libs.push_back(lib);

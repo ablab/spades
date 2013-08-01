@@ -9,10 +9,31 @@
 #define SPLIT_GRAPH_PAIR_INFO_HPP_
 
 #include "graphio.hpp"
-#include "single_threshold_finder.hpp"
+#include "path_extend/paired_library.hpp"
+#include "late_pair_info_count.hpp"
 using namespace debruijn_graph;
 
 namespace path_extend {
+double FindIntersection(vector<double>& pi1, vector<double>& pi2) {
+	std::sort(pi1.begin(), pi1.end());
+	std::sort(pi2.begin(), pi2.end());
+	size_t iter1 = 0;
+	size_t iter2 = 0;
+	double threshold = 0.0;
+	double percent1 = 0.0;
+	double percent2 = 1.0;
+	while (percent1 < percent2 and iter1 < pi1.size() and iter2 < pi2.size()) {
+		threshold = pi1[iter1];
+		while (iter2 < pi2.size() and pi2[iter2] <= threshold) {
+			iter2++;
+		}
+		percent1 = (double) iter1 / (double) pi1.size();
+		percent2 = 1.0 - (double) iter2 / (double) pi2.size();
+		iter1 += 1;
+	}
+	return threshold;
+}
+
 class Basket {
     EdgeId edgeId_;
     size_t index_;
@@ -369,7 +390,7 @@ public:
                 }
             }
         }
-        double threshold = find_intersection(good_pi, bad_pi);
+        double threshold = FindIntersection(good_pi, bad_pi);
         INFO("Paired info threshold " << threshold);
         DEBUG(" good_pi_size " << good_pi.size() << " bad_pi_size " << bad_pi.size());
         return threshold;

@@ -251,7 +251,9 @@ namespace debruijn_graph {
 
 		BucketMapper(const Graph& g,
 				const KmerIndex& kmer_index,
-				unsigned K, unsigned bucketNum ) : g_(g), kmer_index_(kmer_index), K_(K), number_of_buckets_(bucketNum) {}
+				unsigned K, unsigned bucketNum ) : g_(g), kmer_index_(kmer_index), K_(K), number_of_buckets_(bucketNum) {
+			file_ = NULL;
+		}
 
 
 		~BucketMapper() {
