@@ -15,6 +15,7 @@ import support
 import process_cfg
 from process_cfg import bool_to_str
 from process_cfg import load_config_from_file
+import options_storage
 
 def prepare_config_spades(filename, cfg, log, use_additional_contigs, K, last_one):
     subst_dict = dict()
@@ -49,6 +50,19 @@ def get_read_length(output_dir, K):
         if int(estimated_params.__dict__["read_length_" + str(i)]) > max_read_length:
             max_read_length = int(estimated_params.__dict__["read_length_" + str(i)])
     return max_read_length
+
+
+def update_k_mers_in_special_cases(cur_k_mers, RL):
+    if not options_storage.k_mers: # kmers were set by default
+        if RL >= 250:
+            support.warning("Default k-mer sizes were set to %s because estimated "
+                            "read length (%d) is equal or great than 250" % (str(options_storage.k_mers_250), RL))
+            return options_storage.k_mers_250
+        if RL >= 150:
+            support.warning("Default k-mer sizes were set to %s because estimated "
+                            "read length (%d) is equal or great than 150" % (str(options_storage.k_mers_150), RL))
+            return options_storage.k_mers_150
+    return cur_k_mers
 
 
 def run_iteration(configs_dir, execution_home, cfg, log, K, use_additional_contigs, last_one):
@@ -102,6 +116,7 @@ def run_spades(configs_dir, execution_home, cfg, log):
     else:
         run_iteration(configs_dir, execution_home, cfg, log, cfg.iterative_K[0], False, False)
         RL = get_read_length(cfg.output_dir, cfg.iterative_K[0])
+        cfg.iterative_K = update_k_mers_in_special_cases(cfg.iterative_K, RL)
         if cfg.iterative_K[1] + 1 > RL:
             if cfg.paired_mode:
                 support.warning("Second value of iterative K (%d) exceeded estimated read length (%d). "

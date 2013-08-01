@@ -297,7 +297,10 @@ def main():
 
     # assembly
     if not options_storage.only_error_correction:
-        cfg["assembly"].__dict__["iterative_K"] = options_storage.k_mers
+        if options_storage.k_mers:
+            cfg["assembly"].__dict__["iterative_K"] = options_storage.k_mers
+        else:
+            cfg["assembly"].__dict__["iterative_K"] = options_storage.k_mers_short
         cfg["assembly"].__dict__["careful"] = options_storage.careful
         if options_storage.spades_heap_check:
             cfg["assembly"].__dict__["heap_check"] = options_storage.spades_heap_check

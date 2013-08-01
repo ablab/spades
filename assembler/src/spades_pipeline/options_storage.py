@@ -20,14 +20,17 @@ dataset_yaml_filename = ''
 threads = 16
 memory = 250
 tmp_dir = ''
-k_mers = [21,33,55]
-iterations = 1
+k_mers = None
+k_mers_short = [21,33,55]
+k_mers_150 = [21,33,55,77]
+k_mers_250 = [21,33,55,77,99,127]
 qvoffset = None # auto-detect by default
 developer_mode = False
 
 # hidden options
 mismatch_corrector = False
 reference = ''
+iterations = 1
 bh_heap_check = ''
 spades_heap_check = ''
 ### END OF DEFAULT VALUES
@@ -115,7 +118,7 @@ def usage(spades_version, show_hidden=False):
     print >> sys.stderr, "\t\t\t\t[default: <output_dir>/corrected/tmp]"
     print >> sys.stderr, "-k\t\t<int,int,...>\tcomma-separated list of k-mer sizes"\
                          " (must be odd and"
-    print >> sys.stderr, "\t\t\t\tless than 128) [default: " + ",".join(map(str, k_mers)) + "]"
+    print >> sys.stderr, "\t\t\t\tless than 128) [default: " + ",".join(map(str, k_mers_short)) + "]"
     print >> sys.stderr, "--phred-offset\t<33 or 64>\tPHRED quality offset in the"\
                          " input reads (33 or 64)"
     print >> sys.stderr, "\t\t\t\t[default: auto-detect]"
