@@ -59,6 +59,11 @@ def usage(spades_version, show_hidden=False):
     print >> sys.stderr, "-o\t<output_dir>\tdirectory to store all the resulting files (required)"
     print >> sys.stderr, "--sc\t\t\tthis flag is required for MDA (single-cell)"\
                          " data"
+    print >> sys.stderr, "--test\t\t\truns SPAdes on toy dataset"
+    print >> sys.stderr, "-h/--help\t\tprints this usage message"
+
+    print >> sys.stderr, ""
+    print >> sys.stderr, "Input data:"
     print >> sys.stderr, "--12\t<filename>\tfile with interlaced forward and reverse"\
                          " paired-end reads"
     print >> sys.stderr, "-1\t<filename>\tfile with forward paired-end reads"
@@ -84,8 +89,6 @@ def usage(spades_version, show_hidden=False):
                          " for mate-pair library number <#> (<#> = 1,2,3,4,5)"
     print >> sys.stderr, "--mp<#>-<or>\torientation of reads"\
                          " for mate-pair library number <#> (<#> = 1,2,3,4,5; <or> = fr, rf, ff)"
-    print >> sys.stderr, "--test\t\t\truns SPAdes on toy dataset"
-    print >> sys.stderr, "-h/--help\t\tprints this usage message"
 
     print >> sys.stderr, ""
     print >> sys.stderr, "Pipeline options:"
@@ -113,9 +116,6 @@ def usage(spades_version, show_hidden=False):
     print >> sys.stderr, "-k\t\t<int,int,...>\tcomma-separated list of k-mer sizes"\
                          " (must be odd and"
     print >> sys.stderr, "\t\t\t\tless than 128) [default: " + ",".join(map(str, k_mers)) + "]"
-    print >> sys.stderr, "-i/--iterations\t<int>\t\tnumber of iterations for read error"\
-                         " correction"
-    print >> sys.stderr, "\t\t\t\t[default: %s]" % iterations
     print >> sys.stderr, "--phred-offset\t<33 or 64>\tPHRED quality offset in the"\
                          " input reads (33 or 64)"
     print >> sys.stderr, "\t\t\t\t[default: auto-detect]"
@@ -128,6 +128,8 @@ def usage(spades_version, show_hidden=False):
                              " of mismatches and short indels"
         print >> sys.stderr, "--reference\t<filename>\tfile with reference for deep analysis"\
                              " (only in debug mode)"
+        print >> sys.stderr, "-i/--iterations\t<int>\t\tnumber of iterations for read error"\
+                             " correction [default: %s]" % iterations
         print >> sys.stderr, "--bh-heap-check\t\t<value>\tsets HEAPCHECK environment variable"\
                              " for BayesHammer"
         print >> sys.stderr, "--spades-heap-check\t<value>\tsets HEAPCHECK environment variable"\
