@@ -411,6 +411,7 @@ class DeBruijnGraphKMerIndexBuilder {
   void BuildIndexFromGraph(IndexT &index, const Graph &g) const {
       DeBruijnGraphKMerSplitter<Graph> splitter(index.workdir(), index.k(),
                                                 g);
+      INFO("Building index from graph");
       KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
       index.BuildIndex(counter, 16, 1);
   }

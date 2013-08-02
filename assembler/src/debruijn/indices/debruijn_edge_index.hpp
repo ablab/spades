@@ -69,6 +69,7 @@ class KmerFreeDeBruijnEdgeIndex : public DeBruijnKMerIndex<KmerFreeIndex<EdgeInf
     //can lead to funny behavior during gap closing regarding coverage of new k-mers!
     //Currently used both for filling and update
     void PutInIndex(const KMer &kmer, IdType e, size_t offset) {
+    	TRACE("Put in KmerFreeDeBruijnEdgeIndex");
         KMerIdx idx = seq_idx(kmer);
         if (!valid_idx(idx))
             return;
@@ -112,6 +113,7 @@ class KmerStoringDeBruijnEdgeIndex : public DeBruijnKMerIndex<KmerStoringIndex<E
   }
 
   void PutInIndex(const KMer &kmer, IdType id, int offset, bool /*ignore_new_kmer*/ = false) {
+	TRACE("Put in KmerStoringDeBruijnEdgeIndex");
     size_t idx = base::seq_idx(kmer);
     if (base::valid_key(idx, kmer)) {
       EdgeInfo<IdType> &entry = base::operator[](idx);

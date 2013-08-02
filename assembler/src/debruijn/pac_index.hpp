@@ -44,12 +44,12 @@ public:
 
 	PacBioMappingIndex(Graph &g, size_t k, size_t debruijn_k_) :
 			g_(g), pacbio_k(k), debruijn_k(debruijn_k_), tmp_index((unsigned) pacbio_k, cfg::get().output_dir) {
-		typedef typename EdgeIndexHelper<DeBruijnEdgeMultiIndex<typename Graph::EdgeId>>::DeBruijnGraphKMerIndexBuilderT Builder;
+		typedef typename EdgeIndexHelper<DeBruijnEdgeMultiIndex<typename Graph::EdgeId>>::GraphPositionFillingIndexBuilderT Builder;
 		Builder().BuildIndexFromGraph(tmp_index, g_);
 		FillBannedKmers();
 		compression_cutoff = cfg::get().pb.compression_cutoff;// 0.6
 		domination_cutoff = cfg::get().pb.domination_cutoff; //1.5
-
+		//INFO(tmp_index.size());
 		read_count = 0;
 	}
 
@@ -591,8 +591,10 @@ typename PacBioMappingIndex<Graph>::MappingDescription PacBioMappingIndex<Graph>
 	for (size_t j = pacbio_k; j < s.size(); ++j) {
 		kmer <<= s[j];
 		if (tmp_index.valid_key(kmer)) {
+			TRACE("Valid key, size: "<< tmp_index[kmer].size());
 			for (auto iter = tmp_index[kmer].begin(); iter != tmp_index[kmer].end(); ++iter) {
 				int quality = (int) tmp_index[kmer].size();
+				TRACE("and quality:" << quality);
 				if (banned_kmers.find(Sequence(kmer)) == banned_kmers.end()) {
 					if (int(iter->offset) > int(debruijn_k - pacbio_k) && int(iter->offset) < int(g_.length(iter->edge_id)))
 						res[iter->edge_id].push_back(MappingInstance((int) iter->offset, (int) (j - pacbio_k + 1), quality));

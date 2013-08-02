@@ -25,7 +25,9 @@ class DeBruijnEdgeMultiIndex : public DeBruijnKMerIndex<KmerStoringIndex<vector<
   //todo move this typedef up in hierarchy (need some c++ tricks)
 
   DeBruijnEdgeMultiIndex(unsigned k, const std::string &workdir)
-      : base(k, workdir) {}
+      : base(k, workdir) {
+	  INFO("DeBruijnEdgeMultiIndex constructing");
+  }
 
   ~DeBruijnEdgeMultiIndex() {}
 
@@ -39,14 +41,15 @@ class DeBruijnEdgeMultiIndex : public DeBruijnKMerIndex<KmerStoringIndex<vector<
     return base::operator[](idx);
   }
 
-  void PutInIndex(const KMer &kmer, IdType id, int offset) {
+  void PutInIndex(const KMer &kmer, IdType id, int offset,  bool /*ignore_new_kmer*/ = false) {
     size_t idx = base::seq_idx(kmer);
-    if (base::contains(idx, kmer)) {
-      std::vector<EdgeInfo<IdType> > &entry = base::operator[](idx);
-      EdgeInfo<IdType> new_entry;
-      new_entry.edge_id = id;
-      new_entry.offset = offset;
-      entry.push_back(new_entry);
+    TRACE("put in index");
+    if (base::valid_key(idx, kmer))  {
+		std::vector<EdgeInfo<IdType> > &entry = base::operator[](idx);
+		EdgeInfo<IdType> new_entry;
+		new_entry.edge_id = id;
+		new_entry.offset = offset;
+		entry.push_back(new_entry);
     }
   }
 
