@@ -22,6 +22,7 @@ singlecell {
 	; extension selection
 	extension_options
 	{
+		    recalculate_threshold     true
 		    single_threshold	       0.001
 		    weight_threshold           0.6
 		    priority_coeff             1.5
@@ -29,6 +30,7 @@ singlecell {
 
 	mate_pair_options
 	{
+    		    recalculate_threshold      true
 		    single_threshold	       0.0001
 		    weight_threshold           0.5
 		    priority_coeff             1.5
@@ -68,16 +70,18 @@ multicell {
 	; extension selection
 	extension_options
 	{
-		    single_threshold	       1.83784
+		    recalculate_threshold	true
+		    single_threshold	       1.75676
 ;	A.mirum threshold 0.076
 ;	E.coli RL36 threshold 0.717949
-;	E.coli IS220 threshold 1.83784
+;	E.coli IS220 threshold 1.75676
 		    weight_threshold           0.5
 		    priority_coeff             1.5
 	}    
 
 	mate_pair_options
 	{
+   	        	recalculate_threshold true
 		    single_threshold	       0.001
 		    weight_threshold           0.5
 		    priority_coeff             1.5

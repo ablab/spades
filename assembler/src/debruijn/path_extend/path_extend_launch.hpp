@@ -322,14 +322,17 @@ void SetThreshold(conj_graph_pack& gp, PairedInfoLibrary* lib, size_t index,
                      size_t split_edge_length) {
     SplitGraphPairInfo split_graph(gp, *lib, index, split_edge_length);
     INFO("Calculating paired info threshold");
-    split_graph.ProcessReadPairs();
-    double threshold = split_graph.FindThreshold(
-    		(double) split_edge_length, (int)lib->insert_size_ - 2 * (int)lib->is_variation_,
-            (int)lib->insert_size_ + 2 * (int) lib->is_variation_);
-    lib->SetSingleThreshold(threshold);
-    //double tr = *cfg::get().pe_params.param_set.extension_options.select_options.single_threshold;
-    //INFO("threshold taken from config - "  << tr);
-    //lib->SetSingleThreshold(tr);
+    if (cfg::get().pe_params.param_set.extension_options.recalculate_threshold) {
+        split_graph.ProcessReadPairs();
+        double threshold = split_graph.FindThreshold(
+                (double) split_edge_length, (int)lib->insert_size_ - 2 * (int)lib->is_variation_,
+                (int)lib->insert_size_ + 2 * (int) lib->is_variation_);
+        lib->SetSingleThreshold(threshold);
+    } else {
+        double tr = cfg::get().pe_params.param_set.extension_options.single_threshold;
+        INFO("threshold taken from config - "  << tr);
+        lib->SetSingleThreshold(tr);
+    }
 }
 
 bool InsertSizeCompare(const PairedInfoLibraries& lib1,

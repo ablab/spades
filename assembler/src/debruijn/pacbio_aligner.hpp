@@ -156,34 +156,35 @@ public:
 						nongenomic_edges++;
 				}
 			}
-			/*omp_set_lock(&tmp_file_output);
-			filestr << n<<"("<< seq.size() << ")  " << location_map.size() << ": \n";
-			for (auto iter = location_map.begin(); iter != location_map.end(); ++iter) {
-				filestr << gp_.g.int_id(iter->edgeId) << "(" << gp_.g.length(iter->edgeId) << ")  " << iter->sorted_positions.size() << "\n";
-				for (auto set_iter = iter->sorted_positions.begin(); set_iter != iter->sorted_positions.end(); ++set_iter)
-					filestr << set_iter->edge_position << "-" << set_iter->read_position << "   ";
-				filestr << " \n";
-			}
-			filestr << "found " << aligned_edges.size() << " aligned subreads.\n";
-			for (auto iter = aligned_edges.begin(); iter != aligned_edges.end(); ++iter) {
-				string tmp = " ";
-				if (gp_.edge_pos.IsConsistentWithGenome(*iter)) {
+			if (cfg::get().pb.additional_debug_info){
+                omp_set_lock(&tmp_file_output);
+                filestr << n<<"("<< seq.size() << ")  " << location_map.size() << ": \n";
+                for (auto iter = location_map.begin(); iter != location_map.end(); ++iter) {
+                    filestr << gp_.g.int_id(iter->edgeId) << "(" << gp_.g.length(iter->edgeId) << ")  " << iter->sorted_positions.size() << "\n";
+                    for (auto set_iter = iter->sorted_positions.begin(); set_iter != iter->sorted_positions.end(); ++set_iter)
+                        filestr << set_iter->edge_position << "-" << set_iter->read_position << "   ";
+                    filestr << " \n";
+                }
+                filestr << "found " << aligned_edges.size() << " aligned subreads.\n";
+                for (auto iter = aligned_edges.begin(); iter != aligned_edges.end(); ++iter) {
+                    string tmp = " ";
+                    if (gp_.edge_pos.IsConsistentWithGenome(*iter)) {
 
-				} else {
-					tmp = " NOT ";
-				}
-				filestr << "Alignment of " << iter->size() << " edges is" << tmp << "consistent with genome\n";
-				//except this point
-				for (auto j_iter = iter->begin(); j_iter != iter->end(); ++j_iter) {
-					filestr << gp_.g.int_id(*j_iter) << "(" << gp_.g.length(*j_iter) << ") ";
-					tlen += (int) gp_.g.length(*j_iter);
-				}
-				filestr << " \n";
-			}
-			filestr << " \n";
-			filestr << " \n";
-			omp_unset_lock(&tmp_file_output);
-*/
+                    } else {
+                        tmp = " NOT ";
+                    }
+                    filestr << "Alignment of " << iter->size() << " edges is" << tmp << "consistent with genome\n";
+                    //except this point
+                    for (auto j_iter = iter->begin(); j_iter != iter->end(); ++j_iter) {
+                        filestr << gp_.g.int_id(*j_iter) << "(" << gp_.g.length(*j_iter) << ") ";
+                        tlen += (int) gp_.g.length(*j_iter);
+                    }
+                    filestr << " \n";
+                }
+                filestr << " \n";
+                filestr << " \n";
+                omp_unset_lock(&tmp_file_output);
+		    }
 			VERBOSE_POWER(n, " reads processed");
 
 		}

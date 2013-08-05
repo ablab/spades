@@ -338,6 +338,7 @@ void load(debruijn_config::pacbio_processor& pb,
   using config_common::load;
   load(pb.pacbio_reads, pt, "pacbio_reads");
   load(pb.pacbio_k, pt, "pacbio_k");
+  load(pb.additional_debug_info, pt, "additional_debug_info");
   load(pb.pacbio_optimized_sw, pt, "pacbio_optimized_sw");
   load(pb.compression_cutoff, pt, "compression_cutoff");
   load(pb.domination_cutoff, pt, "domination_cutoff");

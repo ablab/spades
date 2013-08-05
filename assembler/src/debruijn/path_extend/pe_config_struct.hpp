@@ -97,6 +97,7 @@ struct pe_config {
     size_t split_edge_length;
 
     struct ExtensionOptionsT {
+        bool recalculate_threshold;
         double single_threshold;
         double weight_threshold;
         double priority_coeff;

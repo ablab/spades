@@ -351,7 +351,9 @@ struct debruijn_config {
   struct pacbio_processor {
 //align and traverse.
 	std::string pacbio_reads;
+
 	size_t  pacbio_k; //13
+	bool additional_debug_info; //false
 	bool pacbio_optimized_sw; //false
 	double compression_cutoff;// 0.6
 	double domination_cutoff; //1.5

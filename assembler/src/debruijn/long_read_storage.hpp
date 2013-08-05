@@ -107,7 +107,7 @@ public:
 				PathInfo<Graph> pi = *(j_iter);
 				for (size_t k = 0; k < pi.path.size(); k++)
 					if (old_to_new.find(pi.path[k]) != old_to_new.end()) {
-						INFO(g_.int_id(old_to_new[pi.path[k]]));
+//						INFO(g_.int_id(old_to_new[pi.path[k]]));
 						pi.path[k] = old_to_new[pi.path[k]];
 					}
 				DEBUG(pi.str(g_));
