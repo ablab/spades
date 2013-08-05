@@ -51,22 +51,20 @@ void resolve_repeats(PairedReadStream& stream, const Sequence& genome);
 template<class gp_t>
 void WriteGraphPack(gp_t& gp, const string& file_name) {
 	ofstream filestr(file_name);
-	omnigraph::visualization::CompositeGraphColorer<typename gp_t::graph_t> colorer(
-			make_shared<omnigraph::visualization::FixedColorer<typename gp_t::graph_t::VertexId>>("white"),
-			make_shared<omnigraph::visualization::PositionsEdgeColorer<typename gp_t::graph_t>>(gp.g, gp.edge_pos));
+	CompositeGraphColorer<typename gp_t::graph_t> colorer(
+			new FixedColorer<typename gp_t::graph_t::VertexId>("white"),
+			new PositionsEdgeColorer<typename gp_t::graph_t>(gp.g,
+					gp.edge_pos));
 
 	EdgeQuality<typename gp_t::graph_t, typename gp_t::index_t> edge_qual(gp.g, gp.index,
 			gp.kmer_mapper, gp.genome);
 	total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
 	total_labeler tot_lab(&graph_struct);
 	CompositeLabeler<Graph> labeler(tot_lab, edge_qual);
-	visualization::ComponentVisualizer<Graph> visualizer(gp.g, false);
-	omnigraph::visualization::EmptyGraphLinker<typename gp_t::graph_t> linker;
-	omnigraph::visualization::ComponentVisualizer<typename gp_t::graph_t>(gp.g, false).Visualize(filestr, labeler, colorer, linker);
-//	DotGraphPrinter<typename gp_t::graph_t> g_print(gp.g, labeler, colorer, " ",
-//			filestr);
-//	SimpleGraphVisualizer<typename gp_t::graph_t> gv(gp.g, g_print);
-//	gv.Visualize();
+	DotGraphPrinter<typename gp_t::graph_t> g_print(gp.g, labeler, colorer, " ",
+			filestr);
+	SimpleGraphVisualizer<typename gp_t::graph_t> gv(gp.g, g_print);
+	gv.Visualize();
 }
 
 void SaveResolved(conj_graph_pack& resolved_gp,
@@ -313,7 +311,8 @@ void ProduceResolvedPairedInfo(graph_pack& origin_gp,
 
 template<class graph_pack>
 void SaveResolvedPairedInfo(graph_pack& resolved_gp,
-		PairedInfoIndexT<typename graph_pack::graph_t> resolved_graph_paired_info, const string &graph_name, const string& subfolder) {
+		PairedInfoIndexT<typename graph_pack::graph_t> resolved_graph_paired_info,
+		const string& graph_name, const string& subfolder) {
 	if (cfg::get().make_saves) {
 		std::string rr_filename;
 		if (subfolder.size()) {
@@ -529,9 +528,9 @@ void process_resolve_repeats(graph_pack& origin_gp,
 			&resolved_gp.edge_pos, &labels_after);
 	total_labeler tot_labeler_after(&graph_struct_after, &graph_struct_before);
 	if (cfg::get().output_pictures) {
-		omnigraph::visualization::WriteSimple(resolved_gp.g, tot_labeler_after,
+		omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
 				cfg::get().output_dir + subfolder + graph_name
-						+ "_3_resolved.dot");
+						+ "_3_resolved.dot", "no_repeat_graph");
 	}
 
 	DEBUG("Total labeler finished");
@@ -638,26 +637,22 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	OutputCutContigs(resolved_gp.g, cfg::get().output_dir + "cut.fasta");
 
 	if (cfg::get().output_pictures) {
-		omnigraph::visualization::WriteSimple(resolved_gp.g, tot_labeler_after,
+		omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
 				cfg::get().output_dir + subfolder + graph_name
-						+ "_4_cleared.dot");
+						+ "_4_cleared.dot", "no_repeat_graph");
 		string file_str = cfg::get().output_dir + subfolder + graph_name
 				+ "_4_cleared_colored.dot";
 		ofstream filestr(file_str.c_str());
-		omnigraph::visualization::CompositeGraphColorer<typename graph_pack::graph_t> colorer(
-				make_shared<omnigraph::visualization::FixedColorer<typename graph_pack::graph_t::VertexId>>(
+		CompositeGraphColorer<typename graph_pack::graph_t> colorer(
+				new FixedColorer<typename graph_pack::graph_t::VertexId>(
 						"white"),
-				make_shared<omnigraph::visualization::PositionsEdgeColorer<typename graph_pack::graph_t>>(
+				new PositionsEdgeColorer<typename graph_pack::graph_t>(
 						resolved_gp.g, resolved_gp.edge_pos));
-		visualization::ComponentVisualizer<typename graph_pack::graph_t> visualizer(resolved_gp.g, false);
-		omnigraph::visualization::EmptyGraphLinker<typename graph_pack::graph_t> linker;
-		omnigraph::visualization::ComponentVisualizer<typename graph_pack::graph_t>(resolved_gp.g, false).Visualize(filestr, tot_labeler_after, colorer, linker);
-
-//		DotGraphPrinter<typename graph_pack::graph_t> gp(resolved_gp.g,
-//				tot_labeler_after, colorer, " ", filestr);
-//		SimpleGraphVisualizer<typename graph_pack::graph_t> gv(resolved_gp.g,
-//				gp);
-//		gv.Visualize();
+		DotGraphPrinter<typename graph_pack::graph_t> gp(resolved_gp.g,
+				tot_labeler_after, colorer, " ", filestr);
+		SimpleGraphVisualizer<typename graph_pack::graph_t> gv(resolved_gp.g,
+				gp);
+		gv.Visualize();
 		filestr.close();
 	}
 }
@@ -1140,7 +1135,8 @@ void resolve_repeats() {
 			conj_gp.kmer_mapper, conj_gp.genome);
 	//	OutputWrongContigs<K>(conj_gp, 1000, "contamination.fasta");
 	CompositeLabeler<Graph> labeler(tot_lab, quality_labeler);
-	detail_info_printer printer(conj_gp, labeler, cfg::get().output_dir);
+	detail_info_printer printer(conj_gp, labeler, cfg::get().output_dir,
+			"graph.dot");
 	printer(ipp_before_repeat_resolution);
 
 	OutputContigs(conj_gp.g, cfg::get().output_dir + "before_rr.fasta");

@@ -370,8 +370,8 @@ public:
 	void CountStats() {
 		EmptyGraphLabeler<Graph> labeler;
 		make_dir("assembly_compare");
-		shared_ptr<GraphSplitter<Graph>> splitter = LongEdgesExclusiveSplitter<Graph>(this->graph(), 1000000000);
-		WriteComponents(this->graph(), *splitter, *this,
+		LongEdgesExclusiveSplitter<Graph> splitter(this->graph(), 1000000000);
+		WriteComponents(this->graph(), splitter, *this,
 				"assembly_compare/breakpoint_graph.dot",
 				*ConstructColorer(coloring_), labeler);
 		ready_ = true;
@@ -427,10 +427,10 @@ public:
 					+ ComponentClassifier<Graph>::info_printer_pos_name(c_type)
 					+ ".dot";
 		}
-		shared_ptr<GraphSplitter<Graph>> splitter = LongEdgesExclusiveSplitter<Graph>(graph_, 1000000000);
+		LongEdgesExclusiveSplitter<Graph> splitter(graph_, 1000000000);
 		ComponentTypeFilter<Graph> stats(graph_, c_type, coloring_);
 
-		WriteComponents(this->graph_, *splitter, stats, filename,
+		WriteComponents(this->graph_, splitter, stats, filename,
 				*ConstructColorer(coloring_), labeler);
 	}
 

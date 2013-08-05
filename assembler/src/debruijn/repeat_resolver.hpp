@@ -928,15 +928,12 @@ map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents
 	vector<details::VertexCompositId<Graph>> TemporaryOrderVect;
 	map<int, typename Graph::VertexId> vertices;
 	vertices.clear();
-	shared_ptr<GraphSplitter<Graph>> splitter_ptr = LongEdgesExclusiveSplitter<Graph>(new_graph, size_t(lib_.data().mean_insert_size));
-	GraphSplitter<Graph> &splitter = *splitter_ptr;
+	LongEdgesExclusiveSplitter<Graph> splitter(new_graph, size_t(lib_.data().mean_insert_size));
 
 	vector<VertexId> comps;
 	DEBUG("comp filling started");
-	if (splitter.HasNext()) {
-	    GraphComponent<Graph> component = splitter.Next();
-		comps = vector<VertexId>(component.v_begin(), component.v_end());
-	}
+	if (!splitter.Finished())
+		comps = splitter.NextComponent();
 	int count = 0;
 	int comp_count = 0;
 
@@ -959,11 +956,10 @@ map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents
 			TemporaryOrderVect.push_back(curVertex);
 		}
 
-		if (splitter.HasNext())
+		if (splitter.Finished())
 			break;
 
-        auto component = splitter.Next();
-        comps = vector<VertexId>(component.v_begin(), component.v_end());
+		comps = splitter.NextComponent();
 		DEBUG("finished filling component " << comp_count);
 
 	}
@@ -980,15 +976,12 @@ template<class Graph>
 map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents() {
 	map<int, typename Graph::VertexId> vertices;
 	vertices.clear();
-    shared_ptr<GraphSplitter<Graph>> splitter_ptr = LongEdgesExclusiveSplitter<Graph>(new_graph, size_t(lib_.data().mean_insert_size));
-    GraphSplitter<Graph> &splitter = *splitter_ptr;
+	LongEdgesExclusiveSplitter<Graph> splitter(new_graph, size_t(lib_.data().mean_insert_size));
 
 	vector<VertexId> comps;
 	DEBUG("comp filling started");
-	if (splitter.HasNext()) {
-        auto component = splitter.Next();
-        comps = vector<VertexId>(component.v_begin(), component.v_end());
-	}
+	if (!splitter.Finished())
+		comps = splitter.NextComponent();
 	int count = 0;
 	int comp_count = 0;
 	while (comps.size() != 0) {
@@ -999,10 +992,9 @@ map<int, typename Graph::VertexId> RepeatResolver<Graph>::fillVerticesComponents
 			vertices.insert(make_pair(count, comps[i]));
 			count++;
 		}
-		if (splitter.HasNext())
+		if (splitter.Finished())
 			break;
-        auto component = splitter.Next();
-        comps = vector<VertexId>(component.v_begin(), component.v_end());
+		comps = splitter.NextComponent();
 		DEBUG("finished filling component " << comp_count);
 	}
 	return vertices;

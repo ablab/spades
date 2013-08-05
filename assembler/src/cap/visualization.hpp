@@ -74,7 +74,7 @@ public:
 template<class Graph>
 void PrintColoredGraph(const Graph& g, const ColorHandler<Graph>& coloring,
 		const EdgesPositionHandler<Graph>& pos, const string& output_filename) {
-	shared_ptr<GraphSplitter<Graph>> splitter = ReliableSplitter<Graph>(g, 1000000, 30);
+	ReliableSplitter<Graph> splitter(g, 30, 1000000);
 	LengthIdGraphLabeler<Graph> basic_labeler(g);
 	EdgePosGraphLabeler<Graph> pos_labeler(g, pos);
 
@@ -106,8 +106,8 @@ void PrintColoredGraphWithColorFilter(const Graph &g, const ColorHandler<Graph> 
   size_t colors_number = coloring.max_colors();
   TColorSet restricted_color = TColorSet::AllColorsSet(colors_number);
 
-    shared_ptr<GraphSplitter<Graph>> splitter = ReliableSplitter<Graph>(g, edge_length_bound, 30);
-	shared_ptr<ComponentSingleColorFilter<Graph>> filter = make_shared<ComponentSingleColorFilter<Graph>>(g, coloring, restricted_color, edge_length_bound, 2);
+	ReliableSplitter<Graph> splitter(g, 30, edge_length_bound);
+	ComponentSingleColorFilter<Graph> filter(g, coloring, restricted_color, edge_length_bound, 2);
 	LengthIdGraphLabeler<Graph> basic_labeler(g);
 	EdgeCoordinatesGraphLabeler<Graph> pos_labeler(g, pos, genome_names);
 

@@ -8,7 +8,7 @@
 
 #include <unordered_map>
 //#include "utils.hpp"
-#include "visualization/graph_labeler.hpp"
+#include "graph_labeler.hpp"
 #include "simple_tools.hpp"
 using namespace omnigraph;
 

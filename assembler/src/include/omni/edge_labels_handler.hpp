@@ -17,7 +17,7 @@
 #define EDGE_LABELS_HANDLER_HPP_
 
 //#include "utils.hpp"
-#include "visualization/graph_labeler.hpp"
+#include "graph_labeler.hpp"
 #include "simple_tools.hpp"
 #include <unordered_map>
 #include <boost/function.hpp>

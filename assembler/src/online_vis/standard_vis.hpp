@@ -9,7 +9,7 @@
 #include "graph_pack.hpp"
 #include "standard_base.hpp"
 #include "omni/total_labeler.hpp"
-#include "omni/visualization/graph_labeler.hpp"
+#include "omni/graph_labeler.hpp"
 
 #include <readline/readline.h>
 #include <readline/history.h>

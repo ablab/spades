@@ -666,6 +666,8 @@ void SimplifyGraph(conj_graph_pack &gp,
                    boost::function<void(EdgeId)> removal_handler,
                    omnigraph::GraphLabeler<Graph>& /*labeler*/,
                    detail_info_printer& printer, size_t iteration_count) {
+    printer(ipp_before_simplification);
+    DEBUG("Graph simplification started");
     //ec auto threshold
     double determined_coverage_threshold =
             FindErroneousConnectionsCoverageThreshold(gp.g,
@@ -674,9 +676,6 @@ void SimplifyGraph(conj_graph_pack &gp,
 
     if (cfg::get().gap_closer_enable && cfg::get().gc.before_simplify)
         CloseGaps(gp);
-
-    printer(ipp_before_simplification);
-    DEBUG("Graph simplification started");
 
     if (!cfg::get().developer_mode) {
         INFO("Detaching and clearing index");

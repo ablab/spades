@@ -13,7 +13,7 @@
 #ifndef TOTAL_LABELER_HPP_
 #define TOTAL_LABELER_HPP_
 
-#include "visualization/graph_labeler.hpp"
+#include "graph_labeler.hpp"
 #include "simple_tools.hpp"
 #include "edge_labels_handler.hpp"
 #include "id_track_handler.hpp"

@@ -16,7 +16,6 @@
 #include "xmath.h"
 #include "sequence/sequence_tools.hpp"
 #include "path_processor.hpp"
-#include "omni/visualization/visualization.hpp"
 
 namespace omnigraph {
 
@@ -708,19 +707,18 @@ void PrintComponent(const LocalizedComponent<Graph>& component,
 		const SkeletonTree<Graph>& tree, const string& file_name) {
 	typedef typename Graph::EdgeId EdgeId;
 	const set<EdgeId> tree_edges = tree.edges();
-	shared_ptr<omnigraph::visualization::ElementColorer<typename Graph::EdgeId>> edge_colorer = make_shared<omnigraph::visualization::MapColorer<EdgeId>>(
-			tree_edges.begin(), tree_edges.end(),"green", ""
-		);
-	visualization::WriteComponent(component.AsGraphComponent(), file_name,
-			*omnigraph::visualization::DefaultColorer(component.g(), edge_colorer),
+	WriteComponent(component.AsGraphComponent(), file_name,
+			*DefaultColorer(component.g(),
+					new MapColorer<EdgeId>(tree_edges.begin(), tree_edges.end(),
+							"green", "")),
 			*StrGraphLabelerInstance(component.g()));
 }
 
 template<class Graph>
 void PrintComponent(const LocalizedComponent<Graph>& component,
 		const string& file_name) {
-	visualization::WriteComponent(component.AsGraphComponent(), file_name,
-			*omnigraph::visualization::DefaultColorer(component.g()),
+	WriteComponent(component.AsGraphComponent(), file_name,
+			*DefaultColorer(component.g()),
 			*StrGraphLabelerInstance(component.g()));
 }
 

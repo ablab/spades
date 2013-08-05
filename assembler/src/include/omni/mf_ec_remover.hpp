@@ -475,9 +475,11 @@ public:
 	}
 
 	bool Process() {
-		for (shared_ptr<GraphSplitter<Graph>> splitter_ptr = LongEdgesExclusiveSplitter<Graph>(this->g(),
-				uniqueness_length_); splitter_ptr->HasNext();) {
-			set<VertexId> component = splitter_ptr->Next().vertices();
+		LongEdgesExclusiveSplitter<Graph> splitter(this->g(), uniqueness_length_);
+		for (LongEdgesExclusiveSplitter<Graph> splitter(this->g(),
+				uniqueness_length_); !splitter.Finished();) {
+			auto component_vector = splitter.NextComponent();
+			set<VertexId> component(component_vector.begin(), component_vector.end());
 			FlowGraph<Graph> fg;
 			ConstructFlowGraph(fg, component);
 //			fg.Print();

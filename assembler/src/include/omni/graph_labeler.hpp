@@ -8,8 +8,7 @@
 #define GRAPH_LABELER_HPP_
 
 #include "simple_tools.hpp"
-#include "standard_base.hpp"
-#include "omni/edges_position_handler.hpp"
+#include "edges_position_handler.hpp"
 
 namespace omnigraph {
 
@@ -33,32 +32,32 @@ public:
 
 };
 
-//template<class Graph>
-//class MapGraphLabeler {
-//	typedef typename Graph::EdgeId EdgeId;
-//	typedef typename Graph::VertexId VertexId;
-//	map<EdgeId, string> edge_map_;
-//	map<VertexId, string> vertex_map_;
-//
-//public:
-//
-//	string label(VertexId v) const {
-//		auto it = vertex_map_.find(v);
-//		if (it == vertex_map_.end())
-//			return "";
-//		else
-//			return it->second;
-//	}
-//
-//	string label(EdgeId e) const {
-//		auto it = edge_map_.find(e);
-//		if (it == edge_map_.end())
-//			return "";
-//		else
-//			return it->second;
-//	}
-//
-//};
+template<class Graph>
+class MapGraphLabeler {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+	map<EdgeId, string> edge_map_;
+	map<VertexId, string> vertex_map_;
+
+public:
+
+	virtual string label(VertexId v) const {
+		auto it = vertex_map_.find(v);
+		if (it == vertex_map_.end())
+			return "";
+		else
+			return it->second;
+	}
+
+	virtual string label(EdgeId e) const {
+		auto it = edge_map_.find(e);
+		if (it == edge_map_.end())
+			return "";
+		else
+			return it->second;
+	}
+
+};
 
 template<class Graph>
 class AbstractGraphLabeler: public GraphLabeler<Graph> {
@@ -132,8 +131,8 @@ public:
 };
 
 template <class Graph>
-shared_ptr<GraphLabeler<Graph>> StrGraphLabelerInstance(const Graph& g) {
-	return make_shared<StrGraphLabeler<Graph>>(g);
+auto_ptr<GraphLabeler<Graph>> StrGraphLabelerInstance(const Graph& g) {
+	return auto_ptr<GraphLabeler<Graph>>(new StrGraphLabeler<Graph>(g));
 }
 
 template<class Graph>
@@ -174,7 +173,7 @@ class CoverageGraphLabeler : public AbstractGraphLabeler<Graph> {
 public:
 	CoverageGraphLabeler(const Graph& g) : base(g) {}
 
-	std::string label(EdgeId e) const {
+	virtual std::string label(EdgeId e) const {
 		double coverage = this->graph().coverage(e);
 		return " {Cov:" + ToString(coverage) + "}";
 	}
@@ -259,10 +258,9 @@ public:
 	}
 
 	virtual ~EdgePosGraphLabeler() {
-//		TRACE("~EdgePosGraphLabeler");
+		TRACE("~EdgePosGraphLabeler");
 	}
-private:
-	DECL_LOGGER("EdgePosGraphLabeler")
+
 };
 
 }
