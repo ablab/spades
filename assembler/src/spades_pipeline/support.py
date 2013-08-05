@@ -12,6 +12,12 @@ import stat
 import sys
 import shutil
 
+# constants to print and detect warnings and errors in logs
+SPADES_PY_ERROR_MESSAGE = "== Error == "
+SPADES_PY_WARN_MESSAGE = "== Warning == "
+SPADES_ERROR_MESSAGE = "ERROR"
+SPADES_WARN_MESSAGE = "WARN"
+
 
 def verify(expr, log, message):
     if (not (expr)):
@@ -19,7 +25,7 @@ def verify(expr, log, message):
         sys.exit(1)
 
 
-def error(err_str, log=None, prefix="== Error == "):
+def error(err_str, log=None, prefix=SPADES_PY_ERROR_MESSAGE):
     if log:
         log.info("\n\n" + prefix + " " + err_str + "\n")
         log.info("In case you have troubles running SPAdes, you can write to spades.support@bioinf.spbau.ru")
@@ -141,6 +147,18 @@ def save_data_to_file(data, file):
     output.write(data.read())
     output.close()
     os.chmod(file, stat.S_IWRITE | stat.S_IREAD | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+
+def get_warnings(log_filename):
+    spades_py_warns = []
+    spades_warns = []
+    for line in open(log_filename, 'r'):
+        if line.find(SPADES_PY_WARN_MESSAGE) != -1:
+            line = line.replace(SPADES_PY_WARN_MESSAGE, '')
+            spades_py_warns.append(' * ' + line.strip())
+        elif line.find(SPADES_WARN_MESSAGE) != -1:
+            spades_warns.append(' * ' + line.strip())
+    return spades_py_warns, spades_warns
 
 
 ### START for processing YAML files
@@ -294,11 +312,11 @@ def move_dataset_files(dataset_data, dst, log, gzip=False):
                     # TODO: fix problem with files with the same basenames in Hammer binary!
                     if not os.path.isfile(reads_file):
                         if (not gzip and os.path.isfile(dst_filename)) or (gzip and os.path.isfile(dst_filename + '.gz')):
-                            warning('file with corrected reads (' + reads_file + ') is the same in several libraries')
+                            warning('file with corrected reads (' + reads_file + ') is the same in several libraries', log)
                             if gzip:
                                 dst_filename += '.gz'
                         else:
-                            error('something went wrong and file with corrected reads (' + reads_file + ') is missing!')
+                            error('something went wrong and file with corrected reads (' + reads_file + ') is missing!', log)
                     else:
                         shutil.move(reads_file, dst_filename)
                         if gzip:

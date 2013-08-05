@@ -532,7 +532,7 @@ def main():
         if not cfg["common"].developer_mode and os.path.isdir(tmp_configs_dir):
             shutil.rmtree(tmp_configs_dir)
 
-        log.info("")
+        #log.info("")
         if os.path.isdir(os.path.dirname(corrected_dataset_yaml_filename)):
             log.info(" * Corrected reads are in " + os.path.dirname(corrected_dataset_yaml_filename) + "/")
         if os.path.isfile(result_contigs_filename):
@@ -550,10 +550,34 @@ def main():
             support.break_scaffolds(result_scaffolds_filename, threshold, result_broken_scaffolds)
             #log.info(" * Scaffolds broken by " + str(threshold) + " Ns are in " + result_broken_scaffolds)
 
+        ### WARNINGS SUMMARY
+        spades_py_warns, spades_warns = support.get_warnings(log_filename)
+        if spades_py_warns or spades_warns:
+            log.info("\n======= SPAdes pipeline finished WITH WARNINGS!")
+            warnings_filename = os.path.join(cfg["common"].output_dir, "warnings.log")
+            warnings_handler = logging.FileHandler(warnings_filename, mode='w')
+            log.addHandler(warnings_handler)
+            #log.info("===== Warnings occurred during SPAdes run =====")
+            log.info("")
+            if spades_py_warns:
+                log.info("=== Pipeline warnings:")
+                for line in spades_py_warns:
+                    log.info(line)
+            if spades_warns:
+                log.info("=== Error correction and assembling warnings:")
+                for line in spades_warns:
+                    log.info(line)
+            log.info("======= Warnings saved to " + warnings_filename)
+            log.removeHandler(warnings_handler)
+        else:
+            log.info("\n======= SPAdes pipeline finished.")
+        ### end of WARNINGS SUMMARY
+
+        log.info("\nSPAdes log can be found here: " + log_filename)
         log.info("")
         log.info("Thank you for using SPAdes!")
+        log.removeHandler(log_handler)
 
-        log.info("\n======= SPAdes pipeline finished. Log can be found here: " + log_filename + "\n")
     except Exception, e:
         log.exception(e)
         support.error("exception caught", log)
