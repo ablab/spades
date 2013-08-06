@@ -98,12 +98,24 @@ public:
 		MappingDescription descr = Locate(s);
 		ClustersSet res;
 		bool debug_info = false;
+	    if (read_count == 75) {
+	//        debug_info = true;
+//	        INFO(read_count << " read_count");
+	    }
+	    if (debug_info) {
+	        INFO(descr.size() <<"  clusters");
+	    }
 		for (auto iter = descr.begin(); iter != descr.end(); ++iter) {
-			//int edge_id = g_.int_id(iter->first);
-
+			int edge_id = g_.int_id(iter->first);
+			if (debug_info) {
+			    INFO (edge_id);
+			}
 
 			set<vector<MappingInstance> > edge_cluster_set;
 			size_t len = iter->second.size();
+			if (debug_info) {
+			    INFO(len <<"  kmers in cluster");
+			}
 //			if (read_count == 151 && len > 50) {
 //				INFO( " edge "<< edge_id << " len " <<len);
 //				INFO(read_count);
@@ -115,6 +127,8 @@ public:
 //				INFO( " edge "<< edge_id << " len " <<len);
 //				debug_info = true;
 //			}
+
+
 			vector<int> used(len);
 			for (size_t i = 0; i < len; i++) {
 				if (!used[i]) {
@@ -123,6 +137,9 @@ public:
 					to_add.push_back(iter->second[i]);
 					dfs_cluster(used, to_add, (int) i, iter);
 					sort(to_add.begin(), to_add.end(), ReadPositionComparator());
+					if (debug_info) {
+					    INFO(to_add.size()<<" subcluster size");
+					}
 					size_t count = 1;
 					size_t longest_len = 0;
 					auto cur_start = to_add.begin();
@@ -151,7 +168,9 @@ public:
 					}
 					vector<MappingInstance> filtered(best_start, best_start + longest_len);
 					if ((count < to_add.size() && to_add.size() > min_cluster_size) ) {
-						DEBUG("in cluster size " << to_add.size() << ", " << to_add.size() - longest_len<<"were removed as trash")
+					    if (debug_info) {
+					        INFO("in cluster size " << to_add.size() << ", " << to_add.size() - longest_len<<"were removed as trash")
+					    }
 					}
 //					if (read_count == 151)
 //						INFO("adding cluster "" edge "<< edge_id << " len " <<to_add.size() )
@@ -166,12 +185,22 @@ public:
 
 	//filter clusters that are too small or fully located on a vertex or dominated by some other cluster.
 	void FilterClusters(ClustersSet &clusters) {
+	    bool debug_info = false;
 		for (auto i_iter = clusters.begin(); i_iter != clusters.end();) {
-			//int edge_id = g_.int_id(i_iter->edgeId);
+			int edge_id = g_.int_id(i_iter->edgeId);
+
 			int len = (int) g_.length(i_iter->edgeId);
 			auto sorted_by_edge = i_iter->sorted_positions;
 			sort(sorted_by_edge.begin(), sorted_by_edge.end());
-			size_t good = 0;
+			double good = 0;
+		    if (read_count == 75) {
+//		       debug_info = true;
+//		       INFO("filtering cluster of size " << sorted_by_edge.size());
+		    }
+            if (debug_info) {
+                INFO (edge_id <<" : edgeId");
+            }
+
 //			if (read_count == 151) {
 //				INFO ("filtering cluster edge "<< edge_id << " len " <<  sorted_by_edge.size());
 //				if (edge_id == 2706) {
@@ -181,6 +210,10 @@ public:
 			for (auto iter = sorted_by_edge.begin(); iter < sorted_by_edge.end(); iter++) {
 				if (iter->IsUnique())
 					good++;
+//			    good += 1.0 / (iter->quality * iter->quality);
+			}
+			if (debug_info) {
+	            INFO("good " << good);
 			}
 
 			if (good < min_cluster_size || (len < short_edge_cutoff)) {
@@ -195,7 +228,9 @@ public:
 				i_iter = tmp_iter;
 			} else {
 				if (sorted_by_edge[0].edge_position >= len || sorted_by_edge[i_iter->size - 1].edge_position <= int(debruijn_k) - int(pacbio_k)) {
-					DEBUG("All anchors in vertex");
+				    if (debug_info) {
+				        INFO("All anchors in vertex");
+				    }
 					auto tmp_iter = i_iter;
 					tmp_iter++;
 //					if (read_count == 151)
@@ -220,7 +255,9 @@ public:
 			for (auto j_iter = clusters.begin(); j_iter != clusters.end();) {
 				if (i_iter != j_iter) {
 					if (dominates(*i_iter, *j_iter)) {
-						DEBUG("cluster is dominated");
+					    if (debug_info){
+					        INFO("cluster is dominated");
+					    }
 						auto tmp_iter = j_iter;
 						tmp_iter++;
 //						if (read_count == 151) {
@@ -583,10 +620,9 @@ public:
 template<class Graph>
 typename PacBioMappingIndex<Graph>::MappingDescription PacBioMappingIndex<Graph>::Locate(Sequence &s) {
 	MappingDescription res;
-
 	read_count++;
-
 	if (s.size() < pacbio_k) return res;
+
 	runtime_k::RtSeq kmer = s.start<runtime_k::RtSeq>(pacbio_k);
 	for (size_t j = pacbio_k; j < s.size(); ++j) {
 		kmer <<= s[j];
