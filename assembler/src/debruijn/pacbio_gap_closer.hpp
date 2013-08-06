@@ -374,24 +374,27 @@ private:
 
 	int EditScore(string &consensus, vector<string> & variants, StripedSmithWaterman::Aligner &aligner) {
 		int res = 0;
-		StripedSmithWaterman::Filter filter;
-		StripedSmithWaterman::Alignment alignment;
-		filter.report_begin_position = false;
+		if (cfg::get().pb.pacbio_optimized_sw) {
+		    StripedSmithWaterman::Filter filter;
+		    StripedSmithWaterman::Alignment alignment;
+		    filter.report_begin_position = false;
+		    for(size_t i = 0; i < variants.size(); i++ ) {
+                aligner.Align(variants[i].c_str(), filter, &alignment);
+                TRACE("scpre1:" << alignment.sw_score);
+                //TRACE("next best:" << alignment.sw_score_next_best);
+                TRACE("cigar1:" << alignment.cigar_string);
+                res += alignment.sw_score;
+                alignment.Clear();
+            }
+		} else {
 //		filter.report_cigar = false;
-		for(size_t i = 0; i < variants.size(); i++ ) {
-			aligner.Align(variants[i].c_str(), filter, &alignment);
-			TRACE("scpre1:" << alignment.sw_score);
-			//TRACE("next best:" << alignment.sw_score_next_best);
-			TRACE("cigar1:" << alignment.cigar_string);
-
-			if (!cfg::get().pb.pacbio_optimized_sw) {
-				int tmp = StringDistance(variants[i], consensus);
-				TRACE("score3:" << tmp);
-				res -= tmp;
-			}
-			else
-				res += alignment.sw_score;
-			alignment.Clear();
+		    for(size_t i = 0; i < variants.size(); i++ ) {
+		        if (!cfg::get().pb.pacbio_optimized_sw) {
+                    int tmp = StringDistance(variants[i], consensus);
+                    TRACE("score3:" << tmp);
+                    res -= tmp;
+                }
+		    }
 		}
 		return res;
 	}
