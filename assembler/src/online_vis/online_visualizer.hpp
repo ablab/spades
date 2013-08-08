@@ -79,7 +79,6 @@ class OnlineVisualizer {
   }
 
   virtual void AddSpecificCommands() {
-    AddCommand(shared_ptr<Command<Env> >(new LoadCommand<Env>));
   }
 
 
@@ -87,17 +86,20 @@ class OnlineVisualizer {
   static const char* prompt;
 
   void AddBaseCommands() {
-    AddCommand(shared_ptr<Command<Env> >(new NullCommand<Env>));
-    AddCommand(shared_ptr<Command<Env> >(new ExitCommand<Env>));
-    AddCommand(shared_ptr<Command<Env> >(new ListCommand<Env>));
-    AddCommand(shared_ptr<Command<Env> >(new HelpCommand<Env>(&command_mapping_)));
+    AddCommand(mak_shared<NullCommand<Env>>());
+    AddCommand(mak_shared<ExitCommand<Env>>());
+    AddCommand(mak_shared<ListCommand<Env>>());
+    AddCommand(make_shared<HelpCommand<Env>>(&command_mapping_));
 
-    AddCommand(shared_ptr<Command<Env> >(new LogCommand<Env>));
-    AddCommand(shared_ptr<Command<Env> >(new SaveBatchCommand<Env>));
-    AddCommand(shared_ptr<Command<Env> >(new BatchCommand<Env>(&command_mapping_)));
+    AddCommand(mak_shared<LogCommand<Env>>());
+    AddCommand(mak_shared<SaveBatchCommand<Env>>());
+    AddCommand(make_shared<BatchCommand<Env>>(&command_mapping_));
 
-    AddCommand(shared_ptr<Command<Env> >(new SwitchCommand<Env>));
-    AddCommand(shared_ptr<Command<Env> >(new ReplayCommand<Env>(&command_mapping_)));
+    AddCommand(make_shared<SwitchCommand<Env>>());
+    AddCommand(make_shared<ReplayCommand<Env>>(&command_mapping_));
+
+    //todo think about why it was in the specific commands
+    AddCommand(make_shared<LoadCommand<Env>>());
   }
 
   shared_ptr<Env> current_environment_;

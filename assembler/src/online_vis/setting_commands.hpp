@@ -16,7 +16,7 @@ class LoadGenomeCommand : public LocalCommand<DebruijnEnvironment> {
 
     protected:
         size_t MinArgNumber() const {
-            return 1;    
+            return 1;
         }
 
         bool CheckCorrectness(const vector<string>& args) const {
@@ -29,16 +29,16 @@ class LoadGenomeCommand : public LocalCommand<DebruijnEnvironment> {
     public:
         string Usage() const {
             string answer;
-            answer = answer + "Command `load_genome` \n" + 
-                            " Usage:\n" + 
-                            " > load_genome <path_to_genome>\n" + 
+            answer = answer + "Command `load_genome` \n" +
+                            " Usage:\n" +
+                            " > load_genome <path_to_genome>\n" +
                             " You should specify a path to the genome you want to load from.\n" +
                             " Previously loaded genomes would be lost.";
             return answer;
         }
 
         LoadGenomeCommand() : LocalCommand<DebruijnEnvironment>("load_genome")
-        {                   
+        {
         }
 
         void Execute(DebruijnEnvironment& curr_env, const ArgumentList& arg_list) const {
@@ -66,9 +66,9 @@ class LoadGenomeCommand : public LocalCommand<DebruijnEnvironment> {
 class SetMaxVertCommand : public LocalCommand<DebruijnEnvironment> {
     protected:
         size_t MinArgNumber() const {
-            return 1;   
+            return 1;
         }
-        
+
         bool CheckCorrectness(const vector<string>& args) const {
             if (!CheckEnoughArguments(args))
                 return false;
@@ -78,9 +78,9 @@ class SetMaxVertCommand : public LocalCommand<DebruijnEnvironment> {
     public:
         string Usage() const {
             string answer;
-            answer = answer + "Command `set_max_vertices` \n" + 
-                            "Usage:\n" + 
-                            "> set_max_vertices <max_vertices> \n" + 
+            answer = answer + "Command `set_max_vertices` \n" +
+                            "Usage:\n" +
+                            "> set_max_vertices <max_vertices> \n" +
                             " You should specify an integer, which is an upper bound for the number of vertices in the picture.";
             return answer;
         }
@@ -102,9 +102,9 @@ class SetMaxVertCommand : public LocalCommand<DebruijnEnvironment> {
 class SetFolderCommand : public LocalCommand<DebruijnEnvironment> {
     protected:
         size_t MinArgNumber() const {
-            return 1;   
+            return 1;
         }
-        
+
         bool CheckCorrectness(const vector<string>& args) const {
             return CheckEnoughArguments(args);
         }
@@ -112,9 +112,9 @@ class SetFolderCommand : public LocalCommand<DebruijnEnvironment> {
     public:
         string Usage() const {
             string answer;
-            answer = answer + "Command `set_folder` \n" + 
-                            "Usage:\n" + 
-                            "> set_folder <folder_name> \n" + 
+            answer = answer + "Command `set_folder` \n" +
+                            "Usage:\n" +
+                            "> set_folder <folder_name> \n" +
                             " You should specify a string, which is a new name for a pictures' folder.";
             return answer;
         }
@@ -124,7 +124,7 @@ class SetFolderCommand : public LocalCommand<DebruijnEnvironment> {
 
         void Execute(DebruijnEnvironment& curr_env, const ArgumentList& arg_list) const {
             const vector<string>& args = arg_list.GetAllArguments();
-            if (!CheckCorrectness(args)) 
+            if (!CheckCorrectness(args))
                 return;
             string folder_name = args[1];
             curr_env.set_folder(folder_name);
@@ -134,7 +134,7 @@ class SetFolderCommand : public LocalCommand<DebruijnEnvironment> {
 class SetFileNameCommand : public LocalCommand<DebruijnEnvironment> {
     protected:
         size_t MinArgNumber() const {
-            return 1;   
+            return 1;
         }
 
         bool CheckCorrectness(const vector<string>& args) const {
@@ -144,13 +144,13 @@ class SetFileNameCommand : public LocalCommand<DebruijnEnvironment> {
     public:
         string Usage() const {
             string answer;
-            answer = answer + "Command `set_file_name` \n" + 
-                            "Usage:\n" + 
-                            "> set_file_name <file_base_name>\n" + 
+            answer = answer + "Command `set_file_name` \n" +
+                            "Usage:\n" +
+                            "> set_file_name <file_base_name>\n" +
                             " You should specify a string, which is a new base_name for all the pictures, that you generate.";
             return answer;
         }
-    
+
         SetFileNameCommand() : LocalCommand<DebruijnEnvironment>("set_file_name")
         {
         }

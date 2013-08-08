@@ -9,7 +9,6 @@ namespace online_visualization {
 class CapOnlineVisualizer : public OnlineVisualizer<CapEnvironment> {
  protected:
   void AddSpecificCommands() {
-    AddCommand(make_shared<LoadCommand<CapEnvironment>>());
     AddCommand(make_shared<AddGenomeCommand>());
     AddCommand(make_shared<BuildGraphCommand>());
     AddCommand(make_shared<RefineCommand>());
