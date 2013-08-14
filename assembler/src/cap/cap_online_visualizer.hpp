@@ -16,6 +16,7 @@ class CapOnlineVisualizer : public OnlineVisualizer<CapEnvironment> {
     AddCommand(make_shared<SaveGraphCommand>());
     AddCommand(make_shared<SaveEnvCommand>());
     AddCommand(make_shared<LoadEnvCommand>());
+    AddCommand(make_shared<DrawPicsCommand>());
     AddCommand(make_shared<FindIndelsCommand>());
     AddCommand(make_shared<FindInversionsCommand>());
     AddCommand(make_shared<SaveBlocksCommand>());

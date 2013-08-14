@@ -86,13 +86,13 @@ class OnlineVisualizer {
   static const char* prompt;
 
   void AddBaseCommands() {
-    AddCommand(mak_shared<NullCommand<Env>>());
-    AddCommand(mak_shared<ExitCommand<Env>>());
-    AddCommand(mak_shared<ListCommand<Env>>());
+    AddCommand(make_shared<NullCommand<Env>>());
+    AddCommand(make_shared<ExitCommand<Env>>());
+    AddCommand(make_shared<ListCommand<Env>>());
     AddCommand(make_shared<HelpCommand<Env>>(&command_mapping_));
 
-    AddCommand(mak_shared<LogCommand<Env>>());
-    AddCommand(mak_shared<SaveBatchCommand<Env>>());
+    AddCommand(make_shared<LogCommand<Env>>());
+    AddCommand(make_shared<SaveBatchCommand<Env>>());
     AddCommand(make_shared<BatchCommand<Env>>(&command_mapping_));
 
     AddCommand(make_shared<SwitchCommand<Env>>());

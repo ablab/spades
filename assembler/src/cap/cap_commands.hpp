@@ -340,17 +340,38 @@ class SaveGraphCommand : public LocalCommand<CapEnvironment> {
       return;
     }
 
-    const vector<string> &args = arg_list.GetAllArguments();
-
-    std::string folder;
-    if (args.size() > 1) {
-      folder = args[1];
-    } else {
-      folder = curr_env.manager().GetDirForCurrentState();
-    }
+    string folder = TryFetchFolder(curr_env, arg_list);
 
     cout << "Saving graph in " << folder << " ...";
-    curr_env.manager().SaveGraph(folder);
+    curr_env.manager().SaveGraph(folder + "saves/");
+    cout << " Done.\n";
+  }
+
+};
+
+class DrawPicsCommand : public LocalCommand<CapEnvironment> {
+ public:
+  DrawPicsCommand() : LocalCommand<CapEnvironment>("draw_pics") {
+  }
+
+  virtual std::string Usage() const {
+    return "Command `draw_pics`\n"
+           " Draws colored graph components in in specified directory.\n"
+           " If no directory is specified then default cache directory for current state is used.\n"
+           "Usage:\n"
+           "> draw_pics <directory_to_save_to>\n";
+  }
+
+  virtual void Execute(CapEnvironment& curr_env, const ArgumentList& arg_list) const {
+    if (curr_env.GetGraphK() == CapEnvironment::kNoGraphK) {
+      cout << "You should build graph prior to saving it. Aborting.\n";
+      return;
+    }
+
+    std::string folder = TryFetchFolder(curr_env, arg_list);
+
+    cout << "Drawing pics in " << folder << " ...";
+    curr_env.manager().DrawPics(folder + "pics/");
     cout << " Done.\n";
   }
 
@@ -470,7 +491,9 @@ class SaveBlocksCommand : public LocalCommand<CapEnvironment> {
   }
 
   virtual void Execute(CapEnvironment& curr_env, const ArgumentList& arg_list) const {
-      BlockPrinter<Graph> printer(curr_env.graph(), curr_env.coordinates_handler(), arg_list.GetAllArguments()[0]);
+      std::string folder = TryFetchFolder(curr_env, arg_list);
+
+      BlockPrinter<Graph> printer(curr_env.graph(), curr_env.coordinates_handler(), folder + "blocks.txt");
       for (size_t i = 0; i < curr_env.genome_cnt(); ++i) {
           printer.ProcessContig(i, 2*i, curr_env.genome_names()[i]);
       }

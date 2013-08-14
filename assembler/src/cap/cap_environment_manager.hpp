@@ -287,31 +287,32 @@ class CapEnvironmentManager {
 
   void SaveGraph(std::string folder) const {
     cap::utils::MakeDirPath(folder);
-    cap::utils::MakeDirPath(folder + "/saves");
-    cap::utils::MakeDirPath(folder + "/pics");
-
     VERIFY(cap::utils::DirExist(folder));
-    VERIFY(cap::utils::DirExist(folder + "/saves"));
-    VERIFY(cap::utils::DirExist(folder + "/pics"));
 
-    std::string filename = folder + "/saves/graph";
+    std::string filename = folder + "graph";
 
     // Saving graph
-		PrinterTraits<Graph>::Printer printer(*env_->graph_, *env_->int_ids_);
-		printer.saveGraph(filename);
-		printer.saveEdgeSequences(filename);
-		printer.savePositions(filename, *env_->edge_pos_);
+    PrinterTraits<Graph>::Printer printer(*env_->graph_, *env_->int_ids_);
+	printer.saveGraph(filename);
+	printer.saveEdgeSequences(filename);
+	printer.savePositions(filename, *env_->edge_pos_);
 
     // Saving coloring of graph
     cap::SaveColoring(*env_->graph_, *env_->int_ids_, *env_->coloring_, filename);
+  }
+
+  void DrawPics(std::string folder) const {
     // Saving pics
+    cap::utils::MakeDirPath(folder);
+    VERIFY(cap::utils::DirExist(folder));
+
     std::vector<std::string> genomes_names;
     for (const auto &gname : env_->genomes_names_) {
       genomes_names.push_back(gname);
       genomes_names.push_back(gname + "_RC");
     }
     cap::PrintColoredGraphWithColorFilter(*env_->graph_, *env_->coloring_,
-        env_->coordinates_handler_, genomes_names, folder + "/pics/");
+        env_->coordinates_handler_, genomes_names, folder + "graph.dot");
   }
 
   void SetGenomes(const std::vector<std::string> &genomes_paths,

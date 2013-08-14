@@ -75,6 +75,17 @@ class LocalCommand : public Command<Env> {
       cout << "The environment is not loaded" << endl;
   }
 
+ protected:
+
+  string TryFetchFolder(Env& curr_env, const ArgumentList& arg_list, size_t arg_nmb = 1) const {
+    const vector<string> &args = arg_list.GetAllArguments();
+
+    if (args.size() > arg_nmb) {
+      return args[arg_nmb] + "/";
+    } else {
+      return curr_env.manager().GetDirForCurrentState();
+    }
+  }
 };
 
 template <class Env>
