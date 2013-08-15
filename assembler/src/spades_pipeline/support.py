@@ -340,18 +340,26 @@ def split_interlaced_reads(dataset_data, dst, log):
                         import gzip
                         input_file = gzip.open(interlaced_reads, 'r')
                         ungzipped = os.path.splitext(interlaced_reads)[0]
-                        out_basename = os.path.splitext(os.path.basename(ungzipped))[0]
+                        out_basename, ext = os.path.splitext(os.path.basename(ungzipped))
                     else:
                         input_file = open(interlaced_reads, 'r')
-                        out_basename = os.path.splitext(os.path.basename(interlaced_reads))[0]
-                    out_left_filename = os.path.join(dst, out_basename + "_1.fastq")
-                    out_right_filename = os.path.join(dst, out_basename + "_2.fastq")
+                        out_basename, ext = os.path.splitext(os.path.basename(interlaced_reads))
+
+                    if ext.lower() == '.fa' or ext.lower() == '.fasta':
+                        is_fasta_format = True
+                    elif ext.lower() == '.fq' or ext.lower() == '.fastq':
+                        is_fasta_format = False
+                    else:
+                        error('unsupported format of interlaced reads (' + interlaced_reads + '): should be FASTA or FASTQ', log)
+
+                    out_left_filename = os.path.join(dst, out_basename + "_1" + ext)
+                    out_right_filename = os.path.join(dst, out_basename + "_2" + ext)
 
                     log.info("== Splitting " + interlaced_reads + " into left and right reads (in " + dst + " directory)")
                     out_left_file = open(out_left_filename, 'w')
                     out_right_file = open(out_right_filename, 'w')
                     for id, line in enumerate(input_file):
-                        if id % 8 < 4:
+                        if (is_fasta_format and (id % 4 < 2)) or (not is_fasta_format and (id % 8 < 4)):
                             out_left_file.write(line)
                         else:
                             out_right_file.write(line)
