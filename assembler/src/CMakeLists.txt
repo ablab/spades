@@ -71,9 +71,7 @@ add_subdirectory(spades_pipeline)
 # Main pipeline script
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../spades.py"
         DESTINATION bin
-        COMPONENT runtime
-        PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
-                    GROUP_EXECUTE GROUP_READ)
+        COMPONENT runtime)
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../spades_init.py"
         DESTINATION bin
         COMPONENT runtime)
