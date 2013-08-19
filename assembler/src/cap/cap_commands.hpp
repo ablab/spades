@@ -258,6 +258,68 @@ class LoadCommand<CapEnvironment> : public Command<CapEnvironment> {
 
 };
 
+class SaveEnvCommand : public LocalCommand<CapEnvironment> {
+ public:
+  SaveEnvCommand() : LocalCommand<CapEnvironment>("save_env") {
+  }
+
+  virtual std::string Usage() const {
+    return "Command `save_env`\n"
+           "Usage:\n"
+           "> save_graph <directory_to_save_to>\n";
+  }
+
+  virtual void Execute(CapEnvironment& curr_env, const ArgumentList& arg_list) const {
+    const vector<string> &args = arg_list.GetAllArguments();
+
+    std::string folder;
+    if (args.size() > 1) {
+      folder = args[1];
+    } else {
+      folder = curr_env.manager().GetDirForCurrentState();
+    }
+
+    cout << "Saving env in " << folder << " ...";
+
+    std::ofstream write_stream(folder + "/environment");
+    curr_env.WriteToStream(write_stream);
+    write_stream.close();
+    cout << " Done.\n";
+  }
+
+};
+
+class LoadEnvCommand : public LocalCommand<CapEnvironment> {
+ public:
+  LoadEnvCommand() : LocalCommand<CapEnvironment>("load_env") {
+  }
+
+  virtual std::string Usage() const {
+    return "Command `load_env`\n"
+           "Usage:\n"
+           "> load_env <directory with save>\n";
+  }
+
+  virtual void Execute(CapEnvironment& curr_env, const ArgumentList& arg_list) const {
+    const vector<string> &args = arg_list.GetAllArguments();
+
+    std::string folder;
+    if (args.size() > 1) {
+      folder = args[1];
+    } else {
+      folder = curr_env.manager().GetDirForCurrentState();
+    }
+
+    cout << "Load env from " << folder << " ...";
+
+    std::ifstream read_stream(folder + "/environment");
+    curr_env.ReadFromStream(read_stream);
+    read_stream.close();
+    cout << " Done.\n";
+  }
+
+};
+
 class SaveGraphCommand : public LocalCommand<CapEnvironment> {
  public:
   SaveGraphCommand() : LocalCommand<CapEnvironment>("save_graph") {
