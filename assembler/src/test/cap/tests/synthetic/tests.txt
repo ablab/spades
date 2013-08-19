@@ -111,7 +111,7 @@
    <contig>+A+B+C+D+E</contig>
   </genome>
   <genome>
-   <contig>+A+C+D+B+E</contig>
+   <contig>+A+D+C+B+E</contig>
   </genome>
  </example>
 </examples>
