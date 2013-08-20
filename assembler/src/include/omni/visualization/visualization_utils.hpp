@@ -164,6 +164,22 @@ void WriteComponentsAroundEdge(const Graph& g, typename Graph::EdgeId e,
 //}
 
 template<class Graph>
+void WriteWholeGraph(
+        const Graph& g,
+        bool paired,
+        const GraphLabeler<Graph>& labeler,
+        const string& file_name,
+        const Path<typename Graph::EdgeId> &path1 = Path<typename Graph::EdgeId>(),
+        const Path<typename Graph::EdgeId> &path2 = Path<typename Graph::EdgeId>()) {
+    typedef typename Graph::EdgeId EdgeId;
+    ofstream filestr(file_name);
+    auto colorer = DefaultColorer(g, path1, path2);
+    EmptyGraphLinker<Graph> linker;
+    visualization::ComponentVisualizer<Graph>(g ,paired).Visualize(filestr, labeler, *colorer, linker);
+    filestr.close();
+}
+
+template<class Graph>
 void WritePaired(
 		const Graph& g,
 		const GraphLabeler<Graph>& labeler,
@@ -179,22 +195,6 @@ void WriteSimple(const Graph& g, const GraphLabeler<Graph>& labeler,
 		const Path<typename Graph::EdgeId> &path1 = Path<typename Graph::EdgeId>(),
 		const Path<typename Graph::EdgeId> &path2 = Path<typename Graph::EdgeId>()) {
     WriteWholeGraph(g, false, labeler, file_name, path1, path2);
-}
-
-template<class Graph>
-void WriteWholeGraph(
-        const Graph& g,
-        bool paired,
-        const GraphLabeler<Graph>& labeler,
-        const string& file_name,
-        const Path<typename Graph::EdgeId> &path1 = Path<typename Graph::EdgeId>(),
-        const Path<typename Graph::EdgeId> &path2 = Path<typename Graph::EdgeId>()) {
-    typedef typename Graph::EdgeId EdgeId;
-    ofstream filestr(file_name);
-    auto colorer = DefaultColorer(g, path1, path2);
-    EmptyGraphLinker<Graph> linker;
-    visualization::ComponentVisualizer<Graph>(g ,paired).Visualize(filestr, labeler, *colorer, linker);
-    filestr.close();
 }
 }
 }

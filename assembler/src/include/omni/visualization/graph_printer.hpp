@@ -118,7 +118,7 @@ public:
 	}
 
 	void AddEdge(EdgeId edge) {
-		recorder_.recordEdge(CreateBaseEdge((size_t)this->graph().int_id(this->graph().EdgeStart(edge)), (size_t)this->graph().int_id(this->graph().EdgeEnd(edge)), edge));
+		recorder_.recordEdge(this->CreateBaseEdge((size_t)this->graph().int_id(this->graph().EdgeStart(edge)), (size_t)this->graph().int_id(this->graph().EdgeEnd(edge)), edge));
 	}
 };
 

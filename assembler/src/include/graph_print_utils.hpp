@@ -201,8 +201,8 @@ private:
 
 	string constructNodePairId(SingleVertexId u, SingleVertexId v) {
 		stringstream ss;
-		string u_str = IdToStr(u);
-		string v_str = IdToStr(v);
+		string u_str = this->IdToStr(u);
+		string v_str = this->IdToStr(v);
 		if (u == v)
 			ss << u;
 		else if (u_str > v_str)
