@@ -913,12 +913,12 @@ void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, s
 			path = cfg::get().load_from + "/debruijn_kmer_index_after_construction";
 		bool val = LoadEdgeIndex(path, kmer_index);
 		VERIFY_MSG(val, "can not open file "+path+".kmidx");
-		INFO("Updating index from graph started");
-        EdgeInfoUpdater<KmerIndex, Graph> updater(conj_gp.g, kmer_index);
-        updater.UpdateAll();
+//		INFO("Updating index from graph started");
+//        EdgeInfoUpdater<KmerIndex, Graph> updater(conj_gp.g, kmer_index);
+//        updater.UpdateAll();
 	}
 
-	FlankingCoverage<Graph, KmerIndex> index(conj_gp.g, kmer_index, 50, (int) cfg::get().K + 1);
+	FlankingCoverage<Graph, KmerIndex> index(conj_gp.g, kmer_index, 50);
 	EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(conj_gp.g, conj_gp.g);
 	auto cov_rr = CoverageBasedResolution<conj_graph_pack> (&conj_gp, cfg::get().cbrr.coverage_threshold_one_list, cfg::get().cbrr.coverage_threshold_match,
 			cfg::get().cbrr.coverage_threshold_global, cfg::get().cbrr.tandem_ratio_lower_threshold, cfg::get().cbrr.tandem_ratio_upper_threshold, cfg::get().cbrr.repeat_length_upper_threshold);
