@@ -100,12 +100,12 @@ protected:
 	double threshold_;
 	bool normalizeWeight_;
 
-	std::set<int> excludedEdges_;
+	std::map<size_t, double> excluded_edges_;
 
 public:
 
 	WeightCounter(const Graph& g, PairedInfoLibraries& libs, double threshold = 0.0) :
-			g_(g), libs_(libs), threshold_(threshold), normalizeWeight_(true), excludedEdges_() {
+			g_(g), libs_(libs), threshold_(threshold), normalizeWeight_(true), excluded_edges_() {
 		avrageLibWeight_ = 0.0;
 		analyzers_.reserve(libs_.size());
 		for (auto iter = libs_.begin(); iter != libs_.end(); ++iter) {
@@ -139,12 +139,12 @@ public:
 		return IsExtensionPossible(CountWeight(path, e)) ? true : false;
 	}
 
-	virtual bool IsExtensionPossible(double weight) {
+	virtual bool IsExtensionPossible(double weight) const {
 		return math::ge(weight, threshold_) ? true : false;
 	}
 
-	std::set<int> & GetExcludedEdges() {
-		return excludedEdges_;
+	std::map<size_t, double>& GetExcludedEdges() {
+		return excluded_edges_;
 	}
 
 	double getThreshold() const {
@@ -183,7 +183,7 @@ protected:
 
 		for (auto iter = coveredEdges.begin(); iter != coveredEdges.end();
 				++iter) {
-			if (excludedEdges_.count((int) iter->e_) > 0) {
+			if (excluded_edges_.find((int) iter->e_) != excluded_edges_.end()) {
 				DEBUG("excluded " << iter->e_)
 				continue;
 			}
@@ -277,37 +277,36 @@ protected:
 		double idealWeight = 0.0;
 
 		std::vector<EdgeWithPairedInfo> coveredEdges;
-
 		analyzers_[libIndex]->FindCoveredEdges(path, e, coveredEdges);
-		std::set<int> excludedEdges(excludedEdges_);
 		for (auto iter = coveredEdges.begin(); iter != coveredEdges.end();
 				++iter) {
-			if (excludedEdges.count((int) iter->e_) > 0) {
-				excludedEdges.erase(excludedEdges.find((int) iter->e_));
-				continue;
+			double ideal_weight = iter->pi_;
+			if (excluded_edges_.find(iter->e_) != excluded_edges_.end()) {
+				if (math::eq(excluded_edges_[iter->e_], 0.0)) {
+					continue;
+				} else {
+					ideal_weight = excluded_edges_[iter->e_];
+				}
 			}
-
 			double threshold =
 					pairedInfoLibrary.single_threshold_ >= 0.0 ?
 							pairedInfoLibrary.single_threshold_ :
 							singleThreshold;
-
 			double singleWeight = libs_[libIndex]->CountPairedInfo(
 					path[iter->e_], e,
 					(int) path.LengthAt(iter->e_) + additionalGapLength);
 
 			if (normalizeWeight_) {
-				singleWeight /= iter->pi_;
+				singleWeight /= ideal_weight;
 			}
 			if (math::ge(singleWeight, threshold)) {
-				weight += iter->pi_;
+				weight += ideal_weight;
 			}
-			idealWeight += iter->pi_;
+			idealWeight += ideal_weight;
 		}
 
 		return math::gr(idealWeight, 0.0) ? weight / idealWeight : 0.0;
 	}
-
 
 public:
 
