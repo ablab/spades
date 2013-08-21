@@ -525,10 +525,9 @@ public:
             path::make_dir(folder);
 			//todo magic constant
 //			map<EdgeId, string> empty_coloring;
-			shared_ptr<GraphSplitter<Graph>> splitter = EdgeNeighborhoodFinder<Graph>(g_, edge, 50, 250);
-			omnigraph::visualization::WriteComponents(g_, *splitter/*, "locality_of_edge_" + ToString(g_.int_id(edge))*/
+			omnigraph::visualization::WriteComponent(g_, omnigraph::EdgeNeighborhood<Graph>(g_, edge, 50, 250)
 					, folder + "edge_" +  ToString(g_.int_id(edge)) + "_" + ToString(quality_handler_.quality(edge)) + ".dot"
-					, *omnigraph::visualization::DefaultColorer(g_), labeler_);
+					, omnigraph::visualization::DefaultColorer(g_), labeler_);
 		} else {
 			TRACE("Deleting edge " << g_.str(edge) << " with quality " << quality_handler_.quality(edge));
 		}
@@ -575,10 +574,7 @@ public:
                 }
             }
             map<EdgeId, string> empty_coloring;
-            shared_ptr<GraphSplitter<Graph>> splitter = EdgeNeighborhoodFinder<Graph>(g_, edge, 50,
-                    250);
-
-            omnigraph::visualization::WriteComponents(g_, *splitter, TrueFilter<vector<VertexId>>(), "locality_of_edge_" + ToString(g_.int_id(edge))
+            omnigraph::visualization::WriteComponent(g_, EdgeNeighborhood<Graph>(g_, edge, 50, 250)
                     , folder + "edge_" +  ToString(g_.int_id(edge)) + "_" + ToString(quality_handler_.quality(edge)) + ".dot"
                     , empty_coloring, labeler_);
         }
@@ -616,9 +612,8 @@ public:
             path::make_dir(folder);
             //todo magic constant
             map<EdgeId, string> empty_coloring;
-            shared_ptr<GraphSplitter<Graph>> splitter = EdgeNeighborhoodFinder<Graph>(g_, edge, 50, 250);
-            omnigraph::visualization::WriteComponents(g_, *splitter, TrueFilter<vector<VertexId>>(), "locality_of_edge_" + ToString(g_.int_id(edge))
-                    , folder + "edge_" +  ToString(g_.int_id(edge)) + ".dot", empty_coloring, labeler_);
+            omnigraph::visualization::WriteComponent(g_, EdgeNeighborhood<Graph>(g_, edge, 50, 250),
+            		folder + "edge_" +  ToString(g_.int_id(edge)) + ".dot", empty_coloring, labeler_);
 	}
 
 private:

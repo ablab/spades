@@ -159,6 +159,11 @@ class GraphColorer : public ElementColorer<typename Graph::VertexId>, public Ele
 public:
 	string GetValue(typename Graph::VertexId) const = 0;
 	string GetValue(typename Graph::EdgeId) const = 0;
+
+    template<typename Iter>
+    set<typename Iter::value_type> ColoredWith(Iter begin, Iter end, const string &color) {
+    	return ElementColorer<typename Iter::value_type>::ColoredWith(begin, end, color);
+    }
 };
 
 template<typename Graph>
@@ -167,19 +172,19 @@ private:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 	const GraphComponent<Graph> &component_;
-	const shared_ptr<const ElementColorer<typename Graph::VertexId>> vertex_colorer_ptr_;
-	const shared_ptr<const ElementColorer<typename Graph::EdgeId>> edge_colorer_ptr_;
+//	const shared_ptr<const ElementColorer<typename Graph::VertexId>> vertex_colorer_ptr_;
+//	const shared_ptr<const ElementColorer<typename Graph::EdgeId>> edge_colorer_ptr_;
 	const ElementColorer<typename Graph::VertexId> &vertex_colorer_;
 	const ElementColorer<typename Graph::EdgeId> &edge_colorer_;
 	const string border_color_;
 public:
-	BorderDecorator(const GraphComponent<Graph> &component,
-			const shared_ptr<const GraphColorer<Graph>> colorer,
-			const string &border_color) :
-			component_(component), vertex_colorer_ptr_(colorer), edge_colorer_ptr_(
-					colorer), vertex_colorer_(*colorer), edge_colorer_(
-					*colorer), border_color_(border_color) {
-	}
+//	BorderDecorator(const GraphComponent<Graph> &component,
+//			const shared_ptr<const GraphColorer<Graph>> colorer,
+//			const string &border_color) :
+//			component_(component), vertex_colorer_ptr_(colorer), edge_colorer_ptr_(
+//					colorer), vertex_colorer_(*colorer), edge_colorer_(
+//					*colorer), border_color_(border_color) {
+//	}
 
 	BorderDecorator(const GraphComponent<Graph> &component,
 			const GraphColorer<Graph> &colorer, const string &border_color) :
@@ -208,16 +213,16 @@ private:
 	const shared_ptr<ElementColorer<VertexId>> vertex_colorer_;
 	const shared_ptr<ElementColorer<EdgeId>> edge_colorer_;
 public:
-	explicit CompositeGraphColorer(shared_ptr<ElementColorer<VertexId>> vertex_colorer
+	CompositeGraphColorer(shared_ptr<ElementColorer<VertexId>> vertex_colorer
 			, shared_ptr<ElementColorer<EdgeId>> edge_colorer) :
 				vertex_colorer_(vertex_colorer),
 				edge_colorer_(edge_colorer) {
 	}
 
-	explicit CompositeGraphColorer(shared_ptr<ElementColorer<EdgeId>> edge_colorer = make_shared<FixedColorer<EdgeId>>("black")) :
-				vertex_colorer_(shared_ptr<ElementColorer<VertexId>>(new FixedColorer<VertexId>("white"))),
-				edge_colorer_(edge_colorer) {
-	}
+//	explicit CompositeGraphColorer(shared_ptr<ElementColorer<EdgeId>> edge_colorer = make_shared<FixedColorer<EdgeId>>("black")) :
+//				vertex_colorer_(shared_ptr<ElementColorer<VertexId>>(new FixedColorer<VertexId>("white"))),
+//				edge_colorer_(edge_colorer) {
+//	}
 
 	string GetValue(VertexId v) const {
 		return vertex_colorer_->GetValue(v);
@@ -236,7 +241,7 @@ public:
 template <class Graph>
 shared_ptr<GraphColorer<Graph>> DefaultColorer(const Graph& g,
 		shared_ptr<ElementColorer<typename Graph::EdgeId>> edge_colorer) {
-	return shared_ptr<GraphColorer<Graph>>(new CompositeGraphColorer<Graph>(edge_colorer));
+	return shared_ptr<GraphColorer<Graph>>(new CompositeGraphColorer<Graph>(make_shared<FixedColorer<typename Graph::VertexId>>("white"), edge_colorer));
 }
 
 template <class Graph>
@@ -250,9 +255,11 @@ shared_ptr<GraphColorer<Graph>> DefaultColorer(const Graph& g,
 	return DefaultColorer(g, edge_colorer);
 }
 
-template <class Graph>
+template<class Graph>
 shared_ptr<GraphColorer<Graph>> DefaultColorer(const Graph& g) {
-	return shared_ptr<GraphColorer<Graph>>(new CompositeGraphColorer<Graph>());
+	return shared_ptr<GraphColorer<Graph>>(new CompositeGraphColorer<Graph>(
+							make_shared<FixedColorer<typename Graph::VertexId>>("white"),
+							make_shared<FixedColorer<typename Graph::EdgeId>>("black")));
 }
 
 }

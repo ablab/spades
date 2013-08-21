@@ -529,9 +529,8 @@ void process_resolve_repeats(graph_pack& origin_gp,
 			&resolved_gp.edge_pos, &labels_after);
 	total_labeler tot_labeler_after(&graph_struct_after, &graph_struct_before);
 	if (cfg::get().output_pictures) {
-		omnigraph::visualization::WriteSimple(resolved_gp.g, tot_labeler_after,
-				cfg::get().output_dir + subfolder + graph_name
-						+ "_3_resolved.dot");
+		WriteSimpleComponent(GraphComponent<Graph>(resolved_gp.g, resolved_gp.g.begin(), resolved_gp.g.end()),
+				cfg::get().output_dir + subfolder + graph_name + "_3_resolved.dot", omnigraph::visualization::DefaultColorer(resolved_gp.g), tot_labeler_after);
 	}
 
 	DEBUG("Total labeler finished");
@@ -638,9 +637,9 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	OutputCutContigs(resolved_gp.g, cfg::get().output_dir + "cut.fasta");
 
 	if (cfg::get().output_pictures) {
-		omnigraph::visualization::WriteSimple(resolved_gp.g, tot_labeler_after,
-				cfg::get().output_dir + subfolder + graph_name
-						+ "_4_cleared.dot");
+		WriteSimpleComponent(GraphComponent<Graph>(resolved_gp.g, resolved_gp.g.begin(), resolved_gp.g.end()),
+				cfg::get().output_dir + subfolder + graph_name + "_4_cleared.dot",
+				omnigraph::visualization::DefaultColorer(resolved_gp.g), tot_labeler_after);
 		string file_str = cfg::get().output_dir + subfolder + graph_name
 				+ "_4_cleared_colored.dot";
 		ofstream filestr(file_str.c_str());
@@ -652,12 +651,6 @@ void process_resolve_repeats(graph_pack& origin_gp,
 		visualization::ComponentVisualizer<typename graph_pack::graph_t> visualizer(resolved_gp.g, false);
 		omnigraph::visualization::EmptyGraphLinker<typename graph_pack::graph_t> linker;
 		omnigraph::visualization::ComponentVisualizer<typename graph_pack::graph_t>(resolved_gp.g, false).Visualize(filestr, tot_labeler_after, colorer, linker);
-
-//		DotGraphPrinter<typename graph_pack::graph_t> gp(resolved_gp.g,
-//				tot_labeler_after, colorer, " ", filestr);
-//		SimpleGraphVisualizer<typename graph_pack::graph_t> gv(resolved_gp.g,
-//				gp);
-//		gv.Visualize();
 		filestr.close();
 	}
 }
@@ -1138,7 +1131,6 @@ void resolve_repeats() {
 	total_labeler tot_lab(&graph_struct);
 	EdgeQuality<Graph, Index> quality_labeler(conj_gp.g, conj_gp.index,
 			conj_gp.kmer_mapper, conj_gp.genome);
-	//	OutputWrongContigs<K>(conj_gp, 1000, "contamination.fasta");
 	CompositeLabeler<Graph> labeler(tot_lab, quality_labeler);
 	detail_info_printer printer(conj_gp, labeler, cfg::get().output_dir);
 	printer(ipp_before_repeat_resolution);

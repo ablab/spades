@@ -16,7 +16,7 @@ namespace online_visualization {
 typedef debruijn_graph::NewExtendedSequenceMapper<Graph, Index> MapperClass;
 typedef debruijn_graph::PosFiller<Graph, MapperClass> FillerClass;
 typedef debruijn_graph::KmerMapper<Graph> KmerMapperClass;
-typedef map<EdgeId, string> ColoringClass;
+typedef shared_ptr<omnigraph::visualization::GraphColorer<Graph>> ColoringClass;
 
 class Environment : private boost::noncopyable {
  protected:

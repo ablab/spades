@@ -99,9 +99,22 @@ public:
 };
 
 template<class Graph>
+vector<typename Graph::EdgeId> Unipath(const Graph& g, typename Graph::EdgeId e) {
+	UniquePathFinder<Graph> unipath_finder(g);
+	vector<typename Graph::EdgeId> answer = unipath_finder.UniquePathBackward(e);
+	const vector<typename Graph::EdgeId>& forward = unipath_finder.UniquePathForward(e);
+	for (size_t i = 1; i < forward.size(); ++i) {
+		answer.push_back(forward[i]);
+	}
+	return answer;
+}
+
+template<class Graph>
 class UnipathConstructor : public ContigConstructor<Graph> {
 private:
 	typedef typename Graph::EdgeId EdgeId;
+
+
 
 	string MergeOverlappingSequences(std::vector<string>& ss, size_t overlap) {
 		if (ss.empty()) {
@@ -208,6 +221,12 @@ public:
 		}
 	}
 };
+
+template<class Graph>
+bool PossibleECSimpleCheck(const Graph& g
+		, typename Graph::EdgeId e) {
+	return g.OutgoingEdgeCount(g.EdgeStart(e)) > 1 && g.IncomingEdgeCount(g.EdgeEnd(e)) > 1;
+}
 
 template<class Graph>
 void ReportEdge(io::osequencestream_cov& oss

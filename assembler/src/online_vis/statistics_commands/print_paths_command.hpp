@@ -48,7 +48,7 @@ class PrintPathsCommand : public LocalCommand<DebruijnEnvironment> {
 
     TRACE("Executing `paths` command");
 //    bool first_edge = false;
-    bool second_edge = false;
+//    bool second_edge = false;
     size_t from = GetInt(args[1]);
     size_t to = GetInt(args[2]);
     size_t max_length = 100000;
