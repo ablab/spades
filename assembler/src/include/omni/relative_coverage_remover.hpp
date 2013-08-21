@@ -36,13 +36,13 @@ void VisualizeNontrivialComponentAutoInc(
 //currently works with conjugate graphs only (due to the assumption in the outer cycle)
 template<class Graph>
 class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
- public:
+public:
     typedef EdgeProcessingAlgorithm<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     typedef boost::function<double(EdgeId, VertexId)> LocalCoverageFT;
     typedef typename ComponentRemover<Graph>::HandlerF HandlerF;
- private:
+private:
 
     LocalCoverageFT local_coverage_f_;
     size_t length_bound_;
@@ -104,7 +104,7 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
         //maybe use something more sophisticated in future
         size_t component_length_;
         bool contains_deadends_;
-     public:
+    public:
         RelativelyLowCoveredComponentSearcher(
                 const RelativeCoverageComponentRemover& remover,
                 EdgeId first_edge, VertexId first_border_vertex)
@@ -115,7 +115,7 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
             component_length_ += remover_.g().length(first_edge);
             border_.insert(first_border_vertex);
         }
-        
+
         bool FindComponent() {
             while (!border_.empty() && CheckComponent()) {
                 VertexId v = *border_.begin();
@@ -157,7 +157,7 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
             return component_;
         }
 
-     private:
+    private:
 
         bool CheckComponent() const {
             if (inner_vertices_.size() > remover_.vertex_count_limit_) {
@@ -244,7 +244,7 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
                 / base_coverage;
     }
 
- public:
+public:
 //todo make some useful order and stop condition
     RelativeCoverageComponentRemover(
             Graph& g, LocalCoverageFT local_coverage_f, size_t length_bound,
@@ -267,7 +267,7 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
     }
 
     //todo change qualifiers
- protected:
+protected:
 
     /*virtual*/
     bool ProcessEdge(EdgeId e) {
@@ -288,10 +288,7 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
         //temporary
         if (edge_classifier_ && edge_classifier_(e)) {
             VertexId v2 = this->g().EdgeEnd(e);
-            INFO("Chimeric edge. Relative coverage info: "
-                    << std::min(RelativeCoverageToReport(v, LocalCoverage(e, v)), RelativeCoverageToReport(v2, LocalCoverage(e, v2)))
-                    << " "
-                    << std::max(RelativeCoverageToReport(v, LocalCoverage(e, v)), RelativeCoverageToReport(v2, LocalCoverage(e, v2))));
+            INFO("Chimeric edge. Relative coverage info: " << std::min(RelativeCoverageToReport(v, LocalCoverage(e, v)), RelativeCoverageToReport(v2, LocalCoverage(e, v2))) << " " << std::max(RelativeCoverageToReport(v, LocalCoverage(e, v)), RelativeCoverageToReport(v2, LocalCoverage(e, v2))));
         }
 
         //since min_coverage_gap_ > 1, we don't need to think about e here
@@ -316,7 +313,7 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
         }
         return false;
     }
- private:
+private:
     DECL_LOGGER("RelativeCoverageComponentRemover")
     ;
 };
