@@ -422,7 +422,7 @@ void WriteErrorLoc(const Graph &g,
 	GraphComponent<Graph> all(g, g.begin(), g.end());
 	set<EdgeId> edges = genome_colorer->ColoredWith(all.edges().begin(),
 			all.edges().end(), "black");
-	set<typename Graph::VertexId> to_draw;
+	set<Graph::VertexId> to_draw;
 	for (auto it = edges.begin(); it != edges.end(); ++it) {
 		to_draw.insert(g.EdgeEnd(*it));
 		to_draw.insert(g.EdgeStart(*it));
@@ -451,8 +451,8 @@ MappingPath<typename Graph::EdgeId> FindGenomeMappingPath(
 void WriteGraphComponentsAlongGenome(const Graph& g,
 		const GraphLabeler<Graph>& labeler,
 		const string& folder,
-		const Path<typename Graph::EdgeId>& path1,
-		const Path<typename Graph::EdgeId>& path2) {
+		const Path<Graph::EdgeId>& path1,
+		const Path<Graph::EdgeId>& path2) {
 
 	INFO("Writing graph components along genome");
 
