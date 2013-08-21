@@ -1,130 +1,134 @@
 ; output options
 
-debug_output			    false
+debug_output    false
 
 output {
-	write_overlaped_paths   true
-	write_paths             true
-	write_path_loc		    true
+    write_overlaped_paths   true
+    write_paths             true
 }
 
 visualize {
-        print_overlaped_paths 	true
-        print_paths 		    true
+    print_overlaped_paths   true
+    print_paths             true
 }
 
 ; none | break_gaps | break_all
-output_broken_scaffolds break_all
+output_broken_scaffolds     break_all
 
 singlecell {
-	split_edge_length	99
-	normalize_weight        true
-	; extension selection
-	extension_options
-	{
-		    recalculate_threshold     true
-		    single_threshold	       0.001
-		    weight_threshold           0.6
-		    priority_coeff             1.5
-	}
+    split_edge_length       99
+    normalize_weight        true
 
-	mate_pair_options
-	{
-    		    recalculate_threshold      true
-		    single_threshold	       0.0001
-		    weight_threshold           0.5
-		    priority_coeff             1.5
-	}
+    ; extension selection
+    extension_options
+    {
+        recalculate_threshold      true
+        single_threshold           0.001
+        weight_threshold           0.6
+        priority_coeff             1.5
+    }
 
-	scaffolder {
- 		on	          true
-		cutoff        2
-		rel_cutoff    0.1
-		sum_threshold 3  
+    mate_pair_options
+    {
+        recalculate_threshold      true
+        single_threshold           0.0001
+        weight_threshold           0.5
+        priority_coeff             1.5
+    }
 
-		cluster_info  true
-		cl_threshold  0
+    scaffolder {
+        on              true
+        cutoff          2
+        rel_cutoff      0.1
+        sum_threshold   3  
 
-		fix_gaps true
-        min_gap_score  0.7
+        cluster_info    true
+        cl_threshold    0
 
-		max_must_overlap  0.5
-	    max_can_overlap   0.5
-	    short_overlap     6
-	    artificial_gap    10
-	}
-	
-	loop_removal
-	{
-	    max_loops           30
-	}
-	remove_overlaps     true
+        fix_gaps        true
+        min_gap_score   0.7
+
+        max_must_overlap  0.5
+        max_can_overlap   0.5
+        short_overlap     6
+        artificial_gap    10
+    }
+    
+    loop_removal
+    {
+        max_loops       30
+    }
+
+    remove_overlaps     true
 }
 
 
 
 multicell {
-	split_edge_length	99
-	normalize_weight        false
-	
-	; extension selection
-	extension_options
-	{
-		    recalculate_threshold	true
-		    single_threshold	       1.75676
-;	A.mirum threshold 0.076
-;	E.coli RL36 threshold 0.717949
-;	E.coli IS220 threshold 1.75676
-		    weight_threshold           0.5
-		    priority_coeff             1.5
-	}    
+    split_edge_length    99
+    normalize_weight     false
+    
+    ; extension selection
+    extension_options
+    {
+        recalculate_threshold      true
+        single_threshold           1.75676
+;    A.mirum threshold 0.076
+;    E.coli RL36 threshold 0.717949
+;    E.coli IS220 threshold 1.75676
+        weight_threshold           0.5
+        priority_coeff             1.5
+    }    
 
-	mate_pair_options
-	{
-   	        	recalculate_threshold true
-		    single_threshold	       0.001
-		    weight_threshold           0.5
-		    priority_coeff             1.5
-	}
+    mate_pair_options
+    {
+        recalculate_threshold      true
+        single_threshold           0.001
+        weight_threshold           0.5
+        priority_coeff             1.5
+    }
 
-	scaffolder {
- 		on	          true
-		cutoff        2
-		rel_cutoff    0.1
-		sum_threshold 3  
+    scaffolder {
+        on            true
+        cutoff        2
+        rel_cutoff    0.1
+        sum_threshold 3  
 
-		cluster_info  true
-		cl_threshold  0
+        cluster_info  true
+        cl_threshold  0
 
-		fix_gaps true
+        fix_gaps       true
         min_gap_score  0.7
 
-		max_must_overlap  0.5
-	    max_can_overlap   0.5
-	    short_overlap     6
-	    artificial_gap    10
-	}
-	
-	loop_removal
-	{
-	    max_loops           30
-	}
+        max_must_overlap  0.5
+        max_can_overlap   0.5
+        short_overlap     6
+        artificial_gap    10
+    }
+    
+    loop_removal
+    {
+        max_loops       30
+    }
 
-	remove_overlaps     true
+    remove_overlaps     true
 }
 
 
 long_reads {
-	pacbio_reads {
-		filtering 1.5
-		priority 4.0
-	}
-	single_reads {
-		filtering 1.5
-		priority 4.0
-	}
-	coverage_base_rr {
-		filtering 0.0
-		priority 1.5
-	}
+
+    pacbio_reads {
+        filtering   1.5
+        priority    4.0
+    }
+
+    single_reads {
+        filtering   1.5
+        priority    4.0
+    }
+
+    coverage_base_rr {
+        filtering   0.0
+        priority    1.5
+    }
 }

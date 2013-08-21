@@ -17,7 +17,6 @@ void load(pe_config::OutputParamsT& o, boost::property_tree::ptree const& pt, bo
 
   load(o.write_overlaped_paths,   pt, "write_overlaped_paths" );
   load(o.write_paths,             pt, "write_paths"           );
-  load(o.write_path_loc,          pt, "write_path_loc"        );
 }
 
 void load(pe_config::VisualizeParamsT& o, boost::property_tree::ptree const& pt, bool /*complete*/) {

@@ -73,12 +73,10 @@ struct pe_config {
   struct OutputParamsT {
     bool write_overlaped_paths;
     bool write_paths;
-    bool write_path_loc;
 
     void DisableAll() {
       write_overlaped_paths = false;
       write_paths = false;
-      write_path_loc = false;
     }
   };
 
