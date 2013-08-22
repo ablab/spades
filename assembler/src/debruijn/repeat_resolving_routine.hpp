@@ -1056,9 +1056,9 @@ void AddSingleLibrary(
         vector<PathStorageInfo<Graph> >& long_reads_libs) {
     DEBUG("Mapping single reads from library");
     path_extend::SimpleLongReadMapper read_mapper(gp);
-    //auto streams = single_binary_readers(reads, false, false);
-    //streams->release();
-    //io::MultifileReader<io::SingleReadSeq> stream(streams->get(), true);
+    auto streams = single_binary_readers(reads, false, false);
+    streams->release();
+    io::MultifileReader<io::SingleReadSeq> stream(streams->get(), true);
     PathStorage<Graph> long_single(gp.g);
     //long_single.LoadFromFile("/Johnny/vasilinetc/path-extend/path_extend_4_exp/M_abscessus/single/K55/07.25_17.11.40/long_reads_paths.mpr");
     read_mapper.ProcessSingleReadLibrary(reads, long_single);
@@ -1081,31 +1081,30 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
     vector<PathStorageInfo<Graph> > long_reads_libs;
     GapStorage<Graph> gaps(conj_gp.g);
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-		io::LibraryType type = cfg::get().ds.reads[i].type();
-		if (type == io::LibraryType::SingleReads) {
-			AddSingleLibrary(conj_gp, cfg::get().ds.reads[i],
-					cfg::get().output_dir, long_reads_libs);
-		} else if (type == io::LibraryType::PairedEnd
-				|| type == io::LibraryType::MatePairs) {
-			AddSingleLibrary(conj_gp, cfg::get().ds.reads[i],
-					cfg::get().output_dir, long_reads_libs);
-			pe_indexes.push_back(&clustered_indices[i]);
-			pe_scaf_indexes.push_back(&paired_indexes[i]);
-			indexes.push_back(i);
-		} else if (type == io::LibraryType::PacBioReads) {
-			//TODO: need to read reads from stream instead of file and delete pacbio_on + pacbio reads from config
-			PathStorage<Graph> pacbio_read(conj_gp.g);
-			INFO("creating  multiindex with k = " << cfg::get().pb.pacbio_k);
-			PacBioAligner pac_aligner(conj_gp, cfg::get().pb.pacbio_k);
-			INFO("index created");
-			pac_aligner.pacbio_test(pacbio_read, gaps);
-			vector<PathInfo<Graph> > pacbio_paths = pacbio_read.GetAllPaths();
-			PathStorageInfo<Graph> pacbio_storage(pacbio_paths,
-					cfg::get().pe_params.long_reads.pacbio_reads.filtering,
-					cfg::get().pe_params.long_reads.pacbio_reads.priority);
-			long_reads_libs.push_back(pacbio_storage);
-		}
-	}
+        io::LibraryType type = cfg::get().ds.reads[i].type();
+        if (type == io::LibraryType::SingleReads) {
+            AddSingleLibrary(conj_gp, cfg::get().ds.reads[i],
+                             cfg::get().output_dir, long_reads_libs);
+        } else if (type == io::LibraryType::PairedEnd
+                || type == io::LibraryType::MatePairs) {
+            pe_indexes.push_back(&clustered_indices[i]);
+            pe_scaf_indexes.push_back(&paired_indexes[i]);
+            indexes.push_back(i);
+        } else if (type == io::LibraryType::PacBioReads) {
+            //TODO: need to read reads from stream instead of file and delete pacbio_on + pacbio reads from config
+            PathStorage<Graph> pacbio_read(conj_gp.g);
+            INFO("creating  multiindex with k = " << cfg::get().pb.pacbio_k);
+            PacBioAligner pac_aligner(conj_gp, cfg::get().pb.pacbio_k);
+            INFO("index created");
+            pac_aligner.pacbio_test(pacbio_read, gaps);
+            vector<PathInfo<Graph> > pacbio_paths = pacbio_read.GetAllPaths();
+            PathStorageInfo<Graph> pacbio_storage(
+                    pacbio_paths,
+                    cfg::get().pe_params.long_reads.pacbio_reads.filtering,
+                    cfg::get().pe_params.long_reads.pacbio_reads.priority);
+            long_reads_libs.push_back(pacbio_storage);
+        }
+    }
     if (cfg::get().coverage_based_rr_on == true) {
         std::vector<PathInfo<Graph> > filteredPaths;
         int pe_lib_index = GetFirstPELibIndex();

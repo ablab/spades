@@ -32,14 +32,14 @@ public:
             PathStorage<Graph>& storage) {
         if (cfg::get().use_multithreading) {
             auto single_streams = single_binary_readers(
-                    lib, false, true);
+                    lib, false, false);
             if (single_streams->size() == (size_t) 1) {
                 ProcessReads(*single_streams, storage);
             } else {
                 ProcessSingleReadsParallel(*single_streams, storage);
             }
         } else {
-            auto single_streams = single_binary_readers(lib, false, true);
+            auto single_streams = single_binary_readers(lib, false, false);
             single_streams->release();
             io::MultifileReader<io::SingleReadSeq> stream(single_streams->get(),
                                                           true);
