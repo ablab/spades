@@ -492,7 +492,8 @@ void WriteKmerComponent(conj_graph_pack &gp, runtime_k::RtSeq const& kp1mer, con
 	VERIFY(gp.index.contains(kp1mer));
 	auto pos = gp.index.get(kp1mer);
 	VertexId v = pos.second * 2 < gp.g.length(pos.first) ? gp.g.EdgeStart(pos.first) : gp.g.EdgeEnd(pos.first);
-	omnigraph::visualization::WriteComponent<Graph>(omnigraph::VertexNeighborhood<Graph>(gp.g, v), file, colorer, labeler);
+	GraphComponent<Graph> component = omnigraph::VertexNeighborhood<Graph>(gp.g, v);
+	omnigraph::visualization::WriteComponent<Graph>(component, file, colorer, labeler);
 }
 
 optional<runtime_k::RtSeq> FindCloseKP1mer(const conj_graph_pack &gp,
@@ -511,11 +512,13 @@ optional<runtime_k::RtSeq> FindCloseKP1mer(const conj_graph_pack &gp,
 }
 
 void ProduceDetailedInfo(conj_graph_pack &gp,
-		const omnigraph::GraphLabeler<Graph>& labeler, const string& base_folder,
+		const omnigraph::GraphLabeler<Graph>& labeler, const string& run_folder,
 		const string &pos_name,
 		info_printer_pos pos,
 		size_t k) {
-	string folder =  path::append_path(base_folder, pos_name + "/");
+	string base_folder = path::append_path(run_folder, "pictures/");
+	make_dir(base_folder);
+	string folder = path::append_path(base_folder, pos_name + "/");
 
 	auto it = cfg::get().info_printers.find(pos);
 	VERIFY(it != cfg::get().info_printers.end());
