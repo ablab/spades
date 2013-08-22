@@ -7,7 +7,7 @@
 #ifndef _EC_THRESHOLD_FINDER_HPP_
 #define _EC_THRESHOLD_FINDER_HPP_
 
-#include "debruijn_kmer_index.hpp"
+#include "indices/debruijn_kmer_index.hpp"
 #include "logger/logger.hpp"
 
 #include "smooth.hpp"
@@ -18,10 +18,10 @@
 
 namespace debruijn_graph {
 
-template<class Graph>
+template<class Graph, class KmerIndex>
 class MCErroneousConnectionThresholdFinder {
   typedef typename Graph::EdgeId EdgeId;
-  typedef DeBruijnEdgeIndex<EdgeId> DeBruijn;
+  typedef KmerIndex DeBruijn;
 
  public:
   MCErroneousConnectionThresholdFinder(const DeBruijn &index)
@@ -38,7 +38,7 @@ class MCErroneousConnectionThresholdFinder {
     cov_model::KMerCoverageModel CovModel(cov);
     CovModel.Fit();
 
-    return CovModel.GetErrorThreshold();
+    return (double) CovModel.GetErrorThreshold();
   }
 
  private:
@@ -48,7 +48,7 @@ class MCErroneousConnectionThresholdFinder {
 
     size_t maxcov = 0;
     for (auto I = index_.value_cbegin(), E = index_.value_cend(); I != E;  ++I) {
-      size_t cov = I->count_;
+      size_t cov = I->count;
       maxcov = std::max(cov, maxcov);
       tmp[cov] += 1;
     }

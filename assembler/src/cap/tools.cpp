@@ -43,88 +43,108 @@ BOOST_AUTO_TEST_CASE( TwoAssemblyComparison ) {
 					ref));
 }
 
-BOOST_AUTO_TEST_CASE( MaskDiffsForMultiple ) {
-//    return;
+BOOST_AUTO_TEST_CASE( CompareEcoli ) {
 	utils::TmpFolderFixture _("tmp");
 
-	std::string base_path = "/home/snurk/Dropbox/olga_gelf/";
+	std::string base_path = "/home/snurk/ecoli_refs/";
 
-	/*
-	 vector<std::string> paths = {
-	 "/home/valich/mrsa/more_strains/MSSA476.fasta",
-	 "/home/valich/mrsa/more_strains/MRSA252.fasta",
-	 "/home/valich/mrsa/more_strains/TW20.fasta",
-	 "/home/valich/mrsa/more_strains/USA300.fasta"
-	 };
-	 vector<std::string> suffixes = {
-	 "mssa476",
-	 "rmsa252",
-	 "tw20",
-	 "usa300"
-	 };
-
-	 base_path + "CCDC5079.fasta",
-	 base_path + "CCDC5180.fasta"
-
-	 */
-	// E.Coli
 	vector<std::string> paths = {
-//    base_path + "EDL.fasta",
-			base_path + "genomes/Escherichia coli 536.fasta",
-//    base_path + "HS.fasta",
-			base_path + "genomes/Escherichia coli 55989.fasta"
-	};
-	vector<std::string> suffices = {
-			"EC536",
-			"EC55989"
+			"H6.fasta",
+			"K12.fasta"
 	};
 
-	vector<size_t> k_sequence = { /*1001, 501, 201, 101, */55, 21, 15 };
-
-	/*
-	 std::string base_path = "/home/valich/work/human/";
-
-	 vector<std::string> paths = {
-	 base_path + "homo_sapiens_X.fasta",
-	 base_path + "pan_troglodytes_X.fasta"
-	 };
-	 vector<std::string> suffices = {
-	 "homo_sapiens_X",
-	 "pan_troglodytes_X"
-	 };
-	 vector<size_t> k_sequence = {
-	 101, 55, 21, 15
-	 };
-	 */
+	vector<size_t> k_sequence = { 5001, 1001, 501, 201, 101, 55, 21 };
 
 //	std::string files_md5 = utils::GenMD5FromFiles(paths);
 //	INFO("result is stored with md5 of " << files_md5);
 
-	MaskDifferencesAndSave(paths, suffices,
+	PerformIterativeRefinement(base_path, paths,
 			//"bp_graph_" + files_md5 +
-            base_path + "processed/", k_sequence);
+            base_path + "H6_K12_processed/", k_sequence);
 }
+
+//BOOST_AUTO_TEST_CASE( MaskDiffsForMultiple ) {
+//    return;
+//	utils::TmpFolderFixture _("tmp");
+//
+//	std::string base_path = "/home/snurk/Dropbox/olga_gelf/";
+//
+//	/*
+//	 vector<std::string> paths = {
+//	 "/home/valich/mrsa/more_strains/MSSA476.fasta",
+//	 "/home/valich/mrsa/more_strains/MRSA252.fasta",
+//	 "/home/valich/mrsa/more_strains/TW20.fasta",
+//	 "/home/valich/mrsa/more_strains/USA300.fasta"
+//	 };
+//	 vector<std::string> suffixes = {
+//	 "mssa476",
+//	 "rmsa252",
+//	 "tw20",
+//	 "usa300"
+//	 };
+//
+//	 base_path + "CCDC5079.fasta",
+//	 base_path + "CCDC5180.fasta"
+//
+//	 */
+//	// E.Coli
+//	vector<std::string> paths = {
+////    base_path + "EDL.fasta",
+//			base_path + "genomes/Escherichia coli 536.fasta",
+////    base_path + "HS.fasta",
+//			base_path + "genomes/Escherichia coli 55989.fasta"
+//	};
+//	vector<std::string> suffices = {
+//			"EC536",
+//			"EC55989"
+//	};
+//
+//	vector<size_t> k_sequence = { /*1001, 501, 201, 101, */55, 21, 15 };
+//
+//	/*
+//	 std::string base_path = "/home/valich/work/human/";
+//
+//	 vector<std::string> paths = {
+//	 base_path + "homo_sapiens_X.fasta",
+//	 base_path + "pan_troglodytes_X.fasta"
+//	 };
+//	 vector<std::string> suffices = {
+//	 "homo_sapiens_X",
+//	 "pan_troglodytes_X"
+//	 };
+//	 vector<size_t> k_sequence = {
+//	 101, 55, 21, 15
+//	 };
+//	 */
+//
+////	std::string files_md5 = utils::GenMD5FromFiles(paths);
+////	INFO("result is stored with md5 of " << files_md5);
+//
+//	MaskDifferencesAndSave(paths, suffices,
+//			//"bp_graph_" + files_md5 +
+//            base_path + "processed/", k_sequence);
+//}
 
 BOOST_AUTO_TEST_CASE( TestGeneAnalysis ) {
     return;
 	utils::TmpFolderFixture _("tmp");
-	static size_t k = 25;
-	typedef debruijn_graph::graph_pack<debruijn_graph::ConjugateDeBruijnGraph, LSeq> gp_t;
-    gp_t gp(k, "tmp", Sequence(), 200, true);
+//    gp_t gp(k, "tmp", Sequence(), 200, true);
+	vector<size_t> ks = {55, 21};
+	PerformIterativeGeneAnalysis("/home/snurk/Dropbox/olga_gelf/", "gene_out", ks);
 
-    GeneCollection gene_collection;
-    string root = "/home/snurk/Dropbox/olga_gelf/";
-    gene_collection.Load(root, "genome_list.txt",
-                         "/genomes/",
-                         "gs.25ESS_ver3_sf_TN.csv",
-                         "interesting_orthologs.txt");
-    gene_collection.Update(gp);
-
-    ColorHandler<typename gp_t::graph_t> coloring(gp.g);
-
-    make_dir(root + "out/");
-
-    WriteGeneLocality(gene_collection, gp, root + "out/", coloring);
+//    GeneCollection gene_collection;
+//    string root = "/home/snurk/Dropbox/olga_gelf/";
+//    gene_collection.Load(root, "genome_list.txt",
+//                         "/genomes/",
+//                         "gs.25ESS_ver3_sf_TN.csv",
+//                         "interesting_orthologs.txt");
+//    gene_collection.Update(gp);
+//
+//    ColorHandler<gp_t::graph_t> coloring(gp.g);
+//
+//    make_dir(root + "out/");
+//
+//    WriteGeneLocality(gene_collection, gp, root + "out/", coloring);
 }
 
 BOOST_AUTO_TEST_CASE( MultipleGenomesVisualization ) {

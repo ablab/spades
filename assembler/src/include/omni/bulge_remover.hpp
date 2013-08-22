@@ -80,9 +80,9 @@ class MostCoveredAlternativePathChooser: public PathProcessor<Graph>::Callback {
 			EdgeId edge = path[i];
 			size_t length = g_.length(edge);
 			path_length += length;
-			unnormalized_coverage += g_.coverage(edge) * length;
+			unnormalized_coverage += g_.coverage(edge) * (double) length;
 		}
-		return unnormalized_coverage / path_length;
+		return unnormalized_coverage / (double) path_length;
 	}
 
 public:
@@ -168,8 +168,8 @@ class BulgeRemover: private boost::noncopyable {
 		vector<size_t> bulge_prefix_lengths;
 
 		for (auto it = path.begin(); it != path.end(); ++it) {
-			prefix_length += graph_.length(*it);
-			bulge_prefix_lengths.push_back(aligner.GetPosition(prefix_length));
+			prefix_length += (double) graph_.length(*it);
+			bulge_prefix_lengths.push_back(aligner.GetPosition((size_t) prefix_length));
 		}
 
 		EdgeId edge_to_split = edge;
@@ -208,12 +208,13 @@ class BulgeRemover: private boost::noncopyable {
 
 public:
 
-	typedef boost::function<bool(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackF;
+	typedef boost::function<bool(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackBoolF;
+	typedef boost::function<void(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackVoidF;
 
 	BulgeRemover(Graph& graph, size_t max_length, double max_coverage,
 			double max_relative_coverage, double max_delta,
-			double max_relative_delta, BulgeCallbackF bulge_condition,
-			BulgeCallbackF opt_callback = 0,
+			double max_relative_delta, BulgeCallbackBoolF bulge_condition,
+			BulgeCallbackVoidF opt_callback = 0,
 			boost::function<void(EdgeId)> removal_handler = 0) :
 			graph_(graph), max_length_(max_length), max_coverage_(max_coverage), max_relative_coverage_(
 					max_relative_coverage), max_delta_(max_delta), max_relative_delta_(
@@ -241,8 +242,8 @@ private:
 	double max_relative_coverage_;
 	double max_delta_;
 	double max_relative_delta_;
-	BulgeCallbackF bulge_condition_;
-	BulgeCallbackF opt_callback_;
+	BulgeCallbackBoolF bulge_condition_;
+	BulgeCallbackVoidF opt_callback_;
 	boost::function<void(EdgeId)> removal_handler_;
 
 private:
@@ -278,10 +279,8 @@ bool BulgeRemover<Graph>::ProcessNext(const EdgeId& edge) {
 		return false;
 	}
 
-	size_t kplus_one_mer_coverage = math::round(
-			graph_.length(edge) * graph_.coverage(edge));
-	TRACE(
-			"Processing edge " << graph_.str(edge) << " and coverage " << kplus_one_mer_coverage);
+	size_t kplus_one_mer_coverage = (size_t) math::round((double) graph_.length(edge) * graph_.coverage(edge));
+	TRACE("Processing edge " << graph_.str(edge) << " and coverage " << kplus_one_mer_coverage);
 
 	VertexId start = graph_.EdgeStart(edge);
 	TRACE("Start " << graph_.str(start));
@@ -289,8 +288,7 @@ bool BulgeRemover<Graph>::ProcessNext(const EdgeId& edge) {
 	VertexId end = graph_.EdgeEnd(edge);
 	TRACE("End " << graph_.str(end));
 
-	size_t delta = std::floor(
-			std::max(max_relative_delta_ * graph_.length(edge), max_delta_));
+	size_t delta = (size_t) std::floor(std::max(max_relative_delta_ * (double) graph_.length(edge), max_delta_));
 
 	MostCoveredAlternativePathChooser<Graph> path_chooser(graph_, edge);
 

@@ -1,3 +1,6 @@
 paired_reads             "../../../test_dataset/ecoli_1K_1.fq.gz ../../../test_dataset/ecoli_1K_2.fq.gz"
 RL                       100
 single_cell              true
+
+reads	toy.yaml
+

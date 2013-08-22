@@ -19,7 +19,7 @@ template<class Graph>
 void VisualizeNontrivialComponentAutoInc(
         const Graph& g, const set<typename Graph::EdgeId>& edges,
         const string& folder, const GraphLabeler<Graph>& labeler,
-        const GraphColorer<Graph>& colorer) {
+        const visualization::GraphColorer<Graph>& colorer) {
     static size_t cnt = 0;
     if (edges.size() > 1) {
         set<typename Graph::VertexId> vertices;
@@ -288,7 +288,10 @@ protected:
         //temporary
         if (edge_classifier_ && edge_classifier_(e)) {
             VertexId v2 = this->g().EdgeEnd(e);
-            INFO("Chimeric edge. Relative coverage info: " << std::min(RelativeCoverageToReport(v, LocalCoverage(e, v)), RelativeCoverageToReport(v2, LocalCoverage(e, v2))) << " " << std::max(RelativeCoverageToReport(v, LocalCoverage(e, v)), RelativeCoverageToReport(v2, LocalCoverage(e, v2))));
+            INFO("Chimeric edge. Relative coverage info: "
+                    << std::min(RelativeCoverageToReport(v, LocalCoverage(e, v)), RelativeCoverageToReport(v2, LocalCoverage(e, v2)))
+                    << " "
+                    << std::max(RelativeCoverageToReport(v, LocalCoverage(e, v)), RelativeCoverageToReport(v2, LocalCoverage(e, v2))));
         }
 
         //since min_coverage_gap_ > 1, we don't need to think about e here

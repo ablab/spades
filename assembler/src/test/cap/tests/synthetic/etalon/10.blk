@@ -1,0 +1,9 @@
+genome_id	contig_name	canonical_id	contig_start_pos	contig_end_pos	refined_start_pos	refined_end_pos	sign	orig_id
+1	contig_0	1	0	100	0	100	+	5
+1	contig_0	2	100	175	100	175	+	6
+1	contig_0	3	175	275	175	275	+	2
+2	contig_0	1	0	100	0	100	+	5
+2	contig_0	2	100	175	100	175	+	6
+2	contig_0	4	175	200	175	200	+	9
+2	contig_0	2	200	275	200	275	+	6
+2	contig_0	3	275	375	275	375	+	2

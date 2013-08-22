@@ -9,12 +9,12 @@ template<class Graph>
 class ProcessingAlgorithm : private boost::noncopyable {
     Graph& g_;
 
-protected:
+ protected:
     Graph& g() const {
         return g_;
     }
 
-public:
+ public:
     ProcessingAlgorithm(Graph& g)
             : g_(g) {
 
@@ -34,11 +34,11 @@ class EdgeProcessingAlgorithm : public ProcessingAlgorithm<Graph> {
     const Comparator comp_;
     const shared_ptr<func::Predicate<EdgeId>> proceed_condition_;
 
-protected:
+ protected:
     //todo make private
     virtual bool ProcessEdge(EdgeId e) = 0;
 
-public:
+ public:
     EdgeProcessingAlgorithm(
             Graph& g,
             const Comparator& c = Comparator(),
@@ -66,7 +66,7 @@ public:
         return triggered;
     }
 
-private:
+ private:
     DECL_LOGGER("EdgeProcessingAlgorithm")
     ;
 };
@@ -89,7 +89,7 @@ class EdgeRemover {
     Graph& g_;
     HandlerF removal_handler_;
 
-public:
+ public:
     EdgeRemover(Graph& g, HandlerF removal_handler = 0)
             : g_(g),
               removal_handler_(removal_handler) {
@@ -121,7 +121,7 @@ public:
         TRACE("Start processed");
     }
 
-private:
+ private:
     DECL_LOGGER("EdgeRemover")
     ;
 };
@@ -134,7 +134,7 @@ class EdgeRemovingAlgorithm : public EdgeProcessingAlgorithm<Graph, Comparator> 
     shared_ptr<func::Predicate<EdgeId>> remove_condition_;
     EdgeRemover<Graph> edge_remover_;
 
-protected:
+ protected:
     bool ProcessEdge(EdgeId e) {
         if (remove_condition_->Check(e)) {
             edge_remover_.DeleteEdge(e);
@@ -143,7 +143,7 @@ protected:
         return false;
     }
 
-public:
+ public:
     EdgeRemovingAlgorithm(
             Graph& g,
             shared_ptr<func::Predicate<EdgeId>> remove_condition,
@@ -157,19 +157,19 @@ public:
 
     }
 
-private:
+ private:
     DECL_LOGGER("EdgeRemovingAlgorithm")
     ;
 };
 
 template<class Graph>
 class ComponentRemover {
-public:
+ public:
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     typedef boost::function<void(const set<EdgeId>&)> HandlerF;
 
-private:
+ private:
     Graph& g_;
     HandlerF removal_handler_;
 
@@ -180,7 +180,7 @@ private:
         }
     }
 
-public:
+ public:
     ComponentRemover(Graph& g, HandlerF removal_handler = 0)
             : g_(g),
               removal_handler_(removal_handler) {

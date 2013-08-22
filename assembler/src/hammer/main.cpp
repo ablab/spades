@@ -29,6 +29,8 @@
 #include "logger/logger.hpp"
 #include "logger/log_writers.hpp"
 
+#include <yaml-cpp/yaml.h>
+
 #include <algorithm>
 #include <iostream>
 #include <fstream>
@@ -40,8 +42,6 @@
 #include <cmath>
 #include <cstdlib>
 
-std::vector<std::string> Globals::input_filenames = std::vector<std::string>();
-std::vector<std::string> Globals::input_filename_bases = std::vector<std::string>();
 std::vector<uint32_t> * Globals::subKMerPositions = NULL;
 KMerData *Globals::kmer_data = NULL;
 int Globals::iteration_no = 0;
@@ -86,26 +86,10 @@ int main(int argc, char * argv[]) {
     const size_t GB = 1 << 30;
     limit_memory(cfg::get().general_hard_memory_limit * GB);
 
-    // input files with reads
-    if (cfg::get().input_paired_1 != "" && cfg::get().input_paired_2 != "") {
-      Globals::input_filenames.push_back(cfg::get().input_paired_1);
-      Globals::input_filenames.push_back(cfg::get().input_paired_2);
-    }
-    if (cfg::get().input_single != "") Globals::input_filenames.push_back(cfg::get().input_single);
-
-    VERIFY(Globals::input_filenames.size() > 0);
-
-    for (size_t iFile=0; iFile < Globals::input_filenames.size(); ++iFile) {
-      Globals::input_filename_bases.push_back(
-          path::basename(Globals::input_filenames[iFile]) +
-          path::extension(Globals::input_filenames[iFile]));
-      INFO("Input file: " << Globals::input_filename_bases[iFile]);
-    }
-
     // determine quality offset if not specified
     if (!cfg::get().input_qvoffset_opt) {
       INFO("Trying to determine PHRED offset");
-      int determined_offset = determine_offset(Globals::input_filenames.front());
+      int determined_offset = determine_offset(*cfg::get().dataset.reads_begin());
       if (determined_offset < 0) {
         ERROR("Failed to determine offset! Specify it manually and restart, please!");
         return 0;
@@ -243,7 +227,8 @@ int main(int argc, char * argv[]) {
         INFO("Starting solid k-mers expansion in " << expand_nthreads << " threads.");
         for (unsigned expand_iter_no = 0; expand_iter_no < cfg::get().expand_max_iterations; ++expand_iter_no) {
           Expander expander(*Globals::kmer_data);
-          for (auto I = Globals::input_filenames.begin(), E = Globals::input_filenames.end(); I != E; ++I) {
+          const io::DataSet<> &dataset = cfg::get().dataset;
+          for (auto I = dataset.reads_begin(), E = dataset.reads_end(); I != E; ++I) {
             ireadstream irs(*I, cfg::get().input_qvoffset);
             hammer::ReadProcessor rp(expand_nthreads);
             rp.Run(irs, expander);
@@ -296,6 +281,10 @@ int main(int argc, char * argv[]) {
       // break;
     }
 
+    std::string fname = HammerTools::getFilename(cfg::get().output_dir, "corrected.yaml");
+    INFO("Saving corrected dataset description to " << fname);
+    cfg::get().dataset.save(fname);
+
     // clean up
     Globals::subKMerPositions->clear();
     delete Globals::subKMerPositions;
@@ -303,6 +292,15 @@ int main(int argc, char * argv[]) {
     INFO("All done. Exiting.");
   } catch (std::bad_alloc const& e) {
     std::cerr << "Not enough memory to run BayesHammer. " << e.what() << std::endl;
+    return EINTR;
+  } catch (const YAML::Exception &e) {
+    std::cerr << "Error reading config file: " << e.what() << std::endl;
+    return EINTR;
+  } catch (std::exception const& e) {
+    std::cerr << "Exception caught " << e.what() << std::endl;
+    return EINTR;
+  } catch (...) {
+    std::cerr << "Unknown exception caught " << std::endl;
     return EINTR;
   }
 

@@ -40,13 +40,14 @@ template<class gp_t>
 class IDBADiffAnalyzer {
 private:
 	typedef typename gp_t::graph_t Graph;
+	typedef typename gp_t::index_t Index;
 	typedef typename gp_t::seq_t Kmer;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 	typedef io::SingleRead Contig;
 	typedef io::IReader<io::SingleRead> ContigStream;
 	typedef	io::MultifileReader<io::SingleRead> CompositeStream;
-	typedef debruijn_graph::NewExtendedSequenceMapper<Graph, Kmer> Mapper;
+	typedef debruijn_graph::NewExtendedSequenceMapper<Graph, Index> Mapper;
 
 	const gp_t& gp_;
 	const ColorHandler<Graph>& coloring_;

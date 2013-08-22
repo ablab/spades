@@ -19,7 +19,6 @@
 
 // longseq
 #include "longseq.hpp"
-#include "cap_kmer_index.hpp"
 
 // config
 #include "cap_config_struct.hpp"
@@ -30,7 +29,7 @@
 #include "io/vector_reader.hpp"
 #include "io/multifile_reader.hpp"
 #include "io/rc_reader_wrapper.hpp"
-#include "io/ofastastream.hpp"
+#include "io/osequencestream.hpp"
 
 namespace cap {
 typedef io::SingleRead Contig;
@@ -39,7 +38,7 @@ typedef	io::MultifileReader<io::SingleRead> CompositeContigStream;
 typedef	io::RCReaderWrapper<io::SingleRead> RCWrapper;
 
 typedef io::ReadStreamVector<ContigStream> ContigStreams;
-typedef boost::shared_ptr<ContigStreams> ContigStreamsPtr;
+typedef std::shared_ptr<ContigStreams> ContigStreamsPtr;
 }
 
 // debruijn

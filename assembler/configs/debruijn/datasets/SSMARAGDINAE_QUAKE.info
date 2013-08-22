@@ -10,3 +10,5 @@ jump_is                  6700
 jump_rl                  75
 single_cell              false
 reference_genome         ../../../data/input/S.smaragdinae/ref.fasta.gz
+
+reads	SSMARAGDINAE_QUAKE.yaml

@@ -70,12 +70,12 @@ public:
 
 
 	void KillAllLoops() {
-		LongEdgesExclusiveSplitter<Graph> splitter(graph_, splitting_edge_length_);
-		while(!splitter.Finished()) {
-			vector<VertexId> component = splitter.NextComponent();
-			if(component.size() > max_component_size_)
+	    shared_ptr<GraphSplitter<Graph>> splitter_ptr = LongEdgesExclusiveSplitter<Graph>(graph_, splitting_edge_length_);
+	    GraphSplitter<Graph> &splitter = *splitter_ptr;
+		while(splitter.HasNext()) {
+		    set<VertexId> component_set = splitter.Next().vertices();
+			if(component_set.size() > max_component_size_)
 				continue;
-			set<VertexId> component_set(component.begin(), component.end());
 			VertexId start = FindStart(component_set);
 			VertexId finish = FindFinish(component_set);
 			if(start == VertexId() || finish == VertexId()) {

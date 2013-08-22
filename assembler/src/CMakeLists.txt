@@ -62,6 +62,7 @@ add_subdirectory("${EXT_DIR}/tools" "${Project_BINARY_DIR}/ext_tools")
 # sub projects
 add_subdirectory(io)
 add_subdirectory(mph_index)
+add_subdirectory(ssw)
 add_subdirectory(debruijn)
 add_subdirectory(hammer)
 add_subdirectory(rectangles)
@@ -70,9 +71,7 @@ add_subdirectory(spades_pipeline)
 # Main pipeline script
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../spades.py"
         DESTINATION bin
-        COMPONENT runtime
-        PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
-                    GROUP_EXECUTE GROUP_READ)
+        COMPONENT runtime)
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../spades_init.py"
         DESTINATION bin
         COMPONENT runtime)

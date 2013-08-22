@@ -6,7 +6,10 @@
 
 project(online_vis CXX)
 
-add_executable(online_vis main.cpp)
+add_executable(online_vis 
+               ${CMAKE_SOURCE_DIR}/debruijn/config_struct.cpp
+               ${CMAKE_SOURCE_DIR}/debruijn/path_extend/pe_config_struct.cpp
+               main.cpp)
 
 if (READLINE_FOUND)
   include_directories(${READLINE_INCLUDE_DIR})

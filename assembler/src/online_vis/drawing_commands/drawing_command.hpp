@@ -10,6 +10,7 @@
 #include "../command.hpp"
 #include "../errors.hpp"
 #include "../argument_list.hpp"
+#include "../../include/omni/visualization/visualization.hpp"
 
 namespace online_visualization {
 
@@ -26,7 +27,7 @@ namespace online_visualization {
                 //linkstream  << curr_env.folder_ << "/" << curr_env.file_name_base_ << "_latest.dot";
                 VertexNeighborhoodFinder<Graph> splitter(curr_env.graph(), vertex, curr_env.max_vertices_, curr_env.edge_length_bound_);
                 //EdgePosGraphLabeler<Graph> labeler(curr_env.graph(), gp_.edge_pos);
-                WriteComponents<Graph>(curr_env.graph(), splitter, file_name, *DefaultColorer(curr_env.graph(), curr_env.coloring_), curr_env.tot_lab_);
+                omnigraph::visualization::WriteComponents<Graph>(curr_env.graph(), splitter, file_name, *DefaultColorer(curr_env.graph(), curr_env.coloring_), curr_env.tot_lab_);
                 //WriteComponents <Graph> (curr_env.graph(), splitter, linkstream.str(), *DefaultColorer(curr_env.graph(), curr_env.coloring_), curr_env.tot_lab_);
                 cout << "The picture is written to " << file_name << endl;
                 
@@ -39,7 +40,7 @@ namespace online_visualization {
                 namestream << curr_env.folder_ << "/" << curr_env.GetFormattedPictureCounter() << "_" << curr_env.file_name_base_ << "_" << label << "_" << ".dot";
                 string file_name = namestream.str();
                 ReliableSplitterAlongPath<Graph> splitter(curr_env.graph(), curr_env.max_vertices_, curr_env.edge_length_bound_, path);
-                WriteComponents<Graph>(curr_env.graph(), splitter, file_name, *DefaultColorer(curr_env.graph(), curr_env.coloring_), curr_env.tot_lab_);
+                omnigraph::visualization::WriteComponents<Graph>(curr_env.graph(), splitter, file_name, *DefaultColorer(curr_env.graph(), curr_env.coloring_), curr_env.tot_lab_);
                 cout << "The picture is written to " << file_name << endl;
                 
                 curr_env.picture_counter_++;

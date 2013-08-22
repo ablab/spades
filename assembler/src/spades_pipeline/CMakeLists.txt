@@ -7,13 +7,11 @@
 project(spades_pipeline)
 
 # SPAdes pipeline scripts
-install(FILES bh_aux.py bh_logic.py process_cfg.py spades_logic.py support.py
+install(FILES bh_logic.py process_cfg.py spades_logic.py support.py options_storage.py
         DESTINATION share/spades/spades_pipeline
         COMPONENT runtime)
 # Mismatch corrector module
 install(FILES corrector.py
         DESTINATION share/spades/spades_pipeline
-        COMPONENT runtime
-        PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
-                    GROUP_EXECUTE GROUP_READ)
+        COMPONENT runtime)
 

@@ -265,7 +265,7 @@ class ThornCondition : public EdgeCondition<Graph> {
                         this->g().OutgoingEdges(this->g().EdgeEnd(e)), e);
     }
 
-    bool CheckUniqueness(EdgeId e, bool forward) const {
+    bool CheckUniqueness(EdgeId e, bool /*forward*/) const {
         return this->g().length(e) >= uniqueness_length_;
     }
 
@@ -310,6 +310,7 @@ class ThornRemover : public ChimericEdgeRemovingAlgorithm<Graph,
     }
 };
 
+//todo rename
 template<class Graph>
 class TopologyChimericEdgeRemover : public ChimericEdgeRemovingAlgorithm<Graph,
         LengthComparator<Graph>> {

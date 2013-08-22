@@ -18,7 +18,7 @@
 #include "debruijn_graph.hpp"
 #include "debruijn_stats.hpp"
 
-#include "omni/graph_colorer.hpp"
+#include "omni/visualization/graph_colorer.hpp"
 #include "omni/omni_utils.hpp"
 #include "omni/omni_tools.hpp"
 #include "omni/tip_clipper.hpp"
@@ -29,6 +29,7 @@
 #include "omni/mf_ec_remover.hpp"
 #include "utils.hpp"
 
+#include "detail_coverage.hpp"
 #include "gap_closer.hpp"
 #include "graph_read_correction.hpp"
 #include "ec_threshold_finder.hpp"
@@ -38,7 +39,7 @@ namespace debruijn_graph {
 
 //todo move to visualization
 template<class graph_pack>
-auto_ptr<GraphColorer<typename graph_pack::graph_t>> DefaultGPColorer(
+shared_ptr<omnigraph::visualization::GraphColorer<typename graph_pack::graph_t>> DefaultGPColorer(
         const graph_pack& gp) {
     typedef typename graph_pack::graph_t Graph;
     typedef typename Graph::EdgeId EdgeId;
@@ -46,19 +47,19 @@ auto_ptr<GraphColorer<typename graph_pack::graph_t>> DefaultGPColorer(
     auto mapper = MapperInstance(gp);
     auto path1 = mapper->MapSequence(gp.genome).simple_path();
     auto path2 = mapper->MapSequence(!gp.genome).simple_path();
-    return omnigraph::DefaultColorer(gp.g, path1, path2);
+    return omnigraph::visualization::DefaultColorer(gp.g, path1, path2);
 }
 
 class LengthThresholdFinder {
 public:
     static size_t MaxTipLength(size_t read_length, size_t k, double coeff) {
-        return std::max((size_t) (std::min(k, read_length / 2) * coeff),
+        return std::max((size_t) math::round((double)std::min(k, read_length / 2) * coeff),
                         read_length);
     }
 
     static size_t MaxBulgeLength(size_t k, double coeff,
                                  size_t additive_coeff) {
-        return std::max((size_t) (k * coeff), k + additive_coeff);
+        return std::max((size_t) math::round((double)k * coeff), k + additive_coeff);
     }
 
     static size_t MaxErroneousConnectionLength(size_t k, size_t param) {
@@ -177,7 +178,7 @@ private:
         } else if (next_token_ == "icb") {
             ReadNext();
             double cov_bound = GetCoverageBound();
-            cov_bound = cov_bound / iteration_count_ * (iteration_ + 1);
+            cov_bound = cov_bound / (double) iteration_count_ * (double) (iteration_ + 1);
             DEBUG("Creating iterative coverage upper bound " << cov_bound);
             RelaxMin(min_coverage_bound, cov_bound);
             return make_shared<CoverageUpperBound<Graph>>(g_, cov_bound);
@@ -361,7 +362,7 @@ bool ClipTipsWithProjection(
 
 //todo optimize if hotspot
 template<class Graph>
-typename omnigraph::BulgeRemover<Graph>::BulgeCallbackF GetBulgeCondition(
+typename omnigraph::BulgeRemover<Graph>::BulgeCallbackBoolF GetBulgeCondition(
         ConjugateDeBruijnGraph &graph) {
     return boost::bind(
             &omnigraph::SimplePathCondition<ConjugateDeBruijnGraph>::operator(),
@@ -373,6 +374,7 @@ template<class Graph>
 bool RemoveBulges(
         Graph& g,
         const debruijn_config::simplification::bulge_remover& br_config,
+        boost::function<void(EdgeId, const std::vector<EdgeId> &)> opt_handler = 0,
         boost::function<void(EdgeId)> removal_handler = 0,
         size_t additional_length_bound = 0) {
 
@@ -391,7 +393,7 @@ bool RemoveBulges(
     BulgeRemover<Graph> br(g, max_length, br_config.max_coverage,
                            br_config.max_relative_coverage, br_config.max_delta,
                            br_config.max_relative_delta,
-                           GetBulgeCondition<Graph>(g), 0, removal_handler);
+                           GetBulgeCondition<Graph>(g), opt_handler, removal_handler);
 
     return br.RemoveBulges();
 }
@@ -439,10 +441,10 @@ void RemoveLowCoverageEdges(
 //  return changed;
 //}
 
-template<class Graph>
+template<class Graph, class FlankingCoverage>
 bool RemoveRelativelyLowCoverageComponents(
         Graph &g,
-        const FlankingCoverage<Graph>& flanking_cov,
+        const FlankingCoverage& flanking_cov,
 //    const debruijn_config::simplification::relative_coverage_ec_remover& rec_config,
         typename ComponentRemover<Graph>::HandlerF removal_handler,
         double coverage_gap, size_t read_length = 0,
@@ -453,7 +455,7 @@ bool RemoveRelativelyLowCoverageComponents(
     //todo remove magic constants
     omnigraph::RelativeCoverageComponentRemover<Graph> rel_rem(
             g,
-            boost::bind(&FlankingCoverage<Graph>::LocalCoverage,
+            boost::bind(&FlankingCoverage::LocalCoverage,
                         boost::cref(flanking_cov), _1, _2),
             200, coverage_gap, 200, std::numeric_limits<size_t>::max(),
             removal_handler, 10, edge_classifier);
@@ -538,7 +540,7 @@ bool MaxFlowRemoveErroneousEdges(
         return false;
     INFO("Removing connections based on max flow strategy");
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
-            g.k(), mfec_config.max_ec_length_coefficient);
+            g.k(), (size_t) mfec_config.max_ec_length_coefficient);
     omnigraph::MaxFlowECRemover<Graph> erroneous_edge_remover(
             g, max_length, mfec_config.uniqueness_length,
             mfec_config.plausibility_length, removal_handler);
@@ -553,7 +555,7 @@ bool RemoveComplexBulges(
     if (!cbr_config.enabled)
         return false;
     INFO("Removing complex bulges");
-    size_t max_length = g.k() * cbr_config.max_relative_length;
+    size_t max_length = (size_t) ((double) g.k() * cbr_config.max_relative_length);
     size_t max_diff = cbr_config.max_length_difference;
     string output_dir = "";
     if (cbr_config.pics_enabled) {
@@ -569,7 +571,7 @@ bool RemoveComplexBulges(
 template<class Graph>
 bool AllTopology(Graph &g,
                  boost::function<void(typename Graph::EdgeId)> removal_handler,
-                 size_t iteration) {
+                 size_t /*iteration*/) {
     bool res = TopologyRemoveErroneousEdges(g, cfg::get().simp.tec,
                                             removal_handler);
     res |= TopologyReliabilityRemoveErroneousEdges(g, cfg::get().simp.trec,
@@ -594,22 +596,22 @@ bool FinalRemoveErroneousEdges(
 }
 
 void PreSimplification(conj_graph_pack& gp,
-                       const FlankingCoverage<Graph>& flanking_cov,
+                       const FlankingCoverage<Graph, Index::InnerIndexT>& flanking_cov,
                        boost::function<void(EdgeId)> removal_handler,
-                       detail_info_printer &printer, size_t iteration_count,
+                       detail_info_printer & /*printer*/, size_t /*iteration_count*/,
                        double determined_coverage_threshold) {
     INFO("PROCEDURE == Presimplification");
     INFO("Early tip clipping");
     ClipTipsWithProjection(gp, cfg::get().simp.tc,
-                           cfg::get().graph_read_corr.enable, *cfg::get().ds.RL,
+                           cfg::get().graph_read_corr.enable, cfg::get().ds.RL(),
                            determined_coverage_threshold, removal_handler);
 
     INFO("Early bulge removal");
-    RemoveBulges(gp.g, cfg::get().simp.br, removal_handler, gp.g.k() + 1);
+    RemoveBulges(gp.g, cfg::get().simp.br, 0, removal_handler, gp.g.k() + 1);
 }
 
 void SimplificationCycle(conj_graph_pack& gp,
-                         const FlankingCoverage<Graph>& flanking_cov,
+                         const FlankingCoverage<Graph, Index::InnerIndexT>& flanking_cov,
                          boost::function<void(EdgeId)> removal_handler,
                          detail_info_printer &printer, size_t iteration_count,
                          size_t iteration, double max_coverage) {
@@ -617,7 +619,7 @@ void SimplificationCycle(conj_graph_pack& gp,
 
     DEBUG(iteration << " TipClipping");
     ClipTipsWithProjection(gp, cfg::get().simp.tc,
-                           cfg::get().graph_read_corr.enable, *cfg::get().ds.RL,
+                           cfg::get().graph_read_corr.enable, cfg::get().ds.RL(),
                            max_coverage, removal_handler);
     DEBUG(iteration << " TipClipping stats");
     printer(ipp_tip_clipping, str(format("_%d") % iteration));
@@ -625,21 +627,22 @@ void SimplificationCycle(conj_graph_pack& gp,
     //todo temporary disabled completely
     DEBUG(iteration << " ErroneousConnectionsRemoval");
     RemoveLowCoverageEdges(gp.g, cfg::get().simp.ec, /*todo return, removal_handler*/
-                           removal_handler, *cfg::get().ds.RL, max_coverage,
+                           removal_handler, cfg::get().ds.RL(), max_coverage,
                            iteration_count, iteration);
     DEBUG(iteration << " ErroneousConnectionsRemoval stats");
+    printer(ipp_err_con_removal, str(format("_%d") % iteration));
 
     //todo temporary! relative coverage remover
     auto colorer = DefaultGPColorer(gp);
 
     //todo make this procedure easier
-    EdgeQuality<Graph> edge_qual(gp.g, gp.index, gp.kmer_mapper, gp.genome);
+    EdgeQuality<Graph, Index> edge_qual(gp.g, gp.index, gp.kmer_mapper, gp.genome);
     total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
     total_labeler tot_lab(&graph_struct);
     CompositeLabeler<Graph> labeler(tot_lab, edge_qual);
 
     //  QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, edge_qual);
-    QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler(
+    QualityEdgeLocalityPrintingRH<Graph, Index> qual_removal_handler(
             gp.g, edge_qual, labeler, *colorer, cfg::get().output_dir);
 
     const string folder = cfg::get().output_dir + "low_cov_components/";
@@ -651,7 +654,7 @@ void SimplificationCycle(conj_graph_pack& gp,
 
     boost::function<void(EdgeId)> raw_removal_handler_f_2 = boost::bind(
             //            &QualityLoggingRemovalHandler<Graph>::HandleDelete,
-            &QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
+            &QualityEdgeLocalityPrintingRH<Graph, Index>::HandleDelete,
             boost::ref(qual_removal_handler), _1);
 
     boost::function<void(set<EdgeId>)> removal_handler_f_2 = boost::bind(
@@ -661,79 +664,74 @@ void SimplificationCycle(conj_graph_pack& gp,
             &func::Composition<set<EdgeId>>, _1, removal_handler_f_1,
             removal_handler_f_2);
 
-    ChimericEdgeClassifier<Graph> edge_classifier(gp.g, edge_qual);
+    ChimericEdgeClassifier<Graph, Index> edge_classifier(gp.g, edge_qual);
 
     boost::function<bool(EdgeId)> edge_classifier_f = boost::bind(
-            &ChimericEdgeClassifier<Graph>::IsTrivialChimeric, edge_classifier,
+            &ChimericEdgeClassifier<Graph, Index>::IsTrivialChimeric, edge_classifier,
             _1);
 
     RemoveRelativelyLowCoverageComponents(gp.g, flanking_cov,
                                           rel_removal_handler, 10.,
-                                          *cfg::get().ds.RL, edge_classifier_f);
+                                          cfg::get().ds.RL(), edge_classifier_f);
 
-    printer(ipp_err_con_removal, str(format("_%d") % iteration));
+    //todo end of temporary
 
     DEBUG(iteration << " BulgeRemoval");
-    RemoveBulges(gp.g, cfg::get().simp.br, removal_handler);
+    RemoveBulges(gp.g, cfg::get().simp.br, 0, removal_handler);
     DEBUG(iteration << " BulgeRemoval stats");
     printer(ipp_bulge_removal, str(format("_%d") % iteration));
 
 }
 
 void PostSimplification(conj_graph_pack& gp,
-                        const FlankingCoverage<Graph>& flanking_cov,
+                        const FlankingCoverage<Graph, Index::InnerIndexT>& flanking_cov,
                         boost::function<void(EdgeId)> &removal_handler,
-                        detail_info_printer &printer,
+                        detail_info_printer & /*printer*/,
                         double determined_coverage_threshold) {
-    INFO("PROCEDURE == Post simplification");
-    size_t iteration = 0;
-    bool enable_flag = true;
-    while (enable_flag) {
-        enable_flag = false;
+  INFO("PROCEDURE == Post simplification");
+  size_t iteration = 0;
+  bool enable_flag = true;
+  while (enable_flag) {
+    //todo was it disabled long ago?!
+    enable_flag |= false;/*RemoveRelativelyLowCoverageEdges(
+     g, cfg::get().simp.rec, removal_handler, determined_coverage_threshold);*/
 
-        INFO("Iteration " << iteration);
+    INFO("Iteration " << iteration);
+    if (cfg::get().topology_simplif_enabled) {
+      enable_flag |= TopologyClipTips(gp.g, cfg::get().simp.ttc, cfg::get().ds.RL(),
+                                      removal_handler);
 
-        //todo was it disabled long ago?!
-        enable_flag |= false;/*RemoveRelativelyLowCoverageEdges(
-         g, cfg::get().simp.rec, removal_handler, determined_coverage_threshold);*/
+      enable_flag |= FinalRemoveErroneousEdges(gp.g, removal_handler,
+                                               determined_coverage_threshold,
+                                               iteration);
+    }
 
-        if (cfg::get().topology_simplif_enabled) {
-            enable_flag |= TopologyClipTips(gp.g, cfg::get().simp.ttc,
-                                            *cfg::get().ds.RL, removal_handler);
 
-            enable_flag |= FinalRemoveErroneousEdges(
-                    gp.g, removal_handler, determined_coverage_threshold,
-                    iteration);
-        }
+    enable_flag |= ClipTipsWithProjection(gp, cfg::get().simp.tc,
+                                          cfg::get().graph_read_corr.enable,
+                                          cfg::get().ds.RL(), determined_coverage_threshold,
+                                          removal_handler);
+        //todo enable_flag |=
+    RemoveBulges(gp.g, cfg::get().simp.br, 0, removal_handler);
 
-        //todo if (enable_flag)
-        enable_flag |= ClipTipsWithProjection(gp, cfg::get().simp.tc,
-                                              cfg::get().graph_read_corr.enable,
-                                              *cfg::get().ds.RL,
-                                              determined_coverage_threshold,
-                                              removal_handler);
-        //todo faced some bug! enable_flag |=
-        RemoveBulges(gp.g, cfg::get().simp.br, removal_handler);
+    enable_flag |= RemoveComplexBulges(gp.g, cfg::get().simp.cbr, iteration);
 
-        enable_flag |= RemoveComplexBulges(gp.g, cfg::get().simp.cbr,
-                                           iteration);
-
-        iteration++;
+    iteration++;
 
 //    printer(ipp_before_final_err_con_removal);
 //        printer(ipp_final_tip_clipping, str(format("_%d") % iteration));
 //        printer(ipp_final_err_con_removal, str(format("_%d") % iteration));
 //        printer(ipp_final_bulge_removal, str(format("_%d") % iteration));
-    }
+  }
 }
 
-template<class Graph>
+template<class Graph, class KmerIndex>
 double FindErroneousConnectionsCoverageThreshold(
         const Graph &graph,
-        const DeBruijnEdgeIndex<typename Graph::EdgeId> &index) {
+        const KmerIndex &index) {
     return cfg::get().ds.single_cell ?
             ErroneousConnectionThresholdFinder<Graph>(graph).FindThreshold() :
-            MCErroneousConnectionThresholdFinder<Graph>(index).FindThreshold();
+            MCErroneousConnectionThresholdFinder<Graph, KmerIndex>(index).FindThreshold();
 }
 
 void IdealSimplification(Graph& graph, Compressor<Graph>& compressor,
@@ -748,10 +746,8 @@ void IdealSimplification(Graph& graph, Compressor<Graph>& compressor,
 
 void SimplifyGraph(conj_graph_pack &gp,
                    boost::function<void(EdgeId)> removal_handler,
-                   omnigraph::GraphLabeler<Graph>& labeler,
+                   omnigraph::GraphLabeler<Graph>& /*labeler*/,
                    detail_info_printer& printer, size_t iteration_count) {
-    printer(ipp_before_simplification);
-    DEBUG("Graph simplification started");
     //ec auto threshold
     double determined_coverage_threshold =
             FindErroneousConnectionsCoverageThreshold(gp.g,
@@ -760,6 +756,9 @@ void SimplifyGraph(conj_graph_pack &gp,
 
     if (cfg::get().gap_closer_enable && cfg::get().gc.before_simplify)
         CloseGaps(gp);
+
+    printer(ipp_before_simplification);
+    DEBUG("Graph simplification started");
 
     if (!cfg::get().developer_mode) {
         INFO("Detaching and clearing index");
@@ -770,7 +769,7 @@ void SimplifyGraph(conj_graph_pack &gp,
 //	VERIFY(gp.kmer_mapper.IsAttached());
 
 //todo remove magic constants
-    FlankingCoverage<Graph> flanking_cov(gp.g, gp.index.inner_index(), 50);
+    FlankingCoverage<Graph, Index::InnerIndexT> flanking_cov(gp.g, gp.index.inner_index(), 50);
 
 //  if (cfg::get().ds.single_cell)
 //    PreSimplification(gp, flanking_cov, removal_handler, printer,
@@ -789,9 +788,11 @@ void SimplifyGraph(conj_graph_pack &gp,
 
     PostSimplification(gp, flanking_cov, removal_handler, printer,
                        determined_coverage_threshold);
-
+//    typedef typename EdgeIndexHelper<typename conj_graph_pack::index_t>::GraphPositionFillingIndexBuilderT IndexBuilder;
+//    IndexBuilder index_builder;
     if (!cfg::get().developer_mode) {
         INFO("Refilling index");
+//        index_builder.BuildIndexFromGraph(gp.index.inner_index(), gp.g);
         gp.index.Refill();
         INFO("Index refilled");
         INFO("Attaching index");
@@ -803,12 +804,13 @@ void SimplifyGraph(conj_graph_pack &gp,
         CloseGaps(gp);
 
     INFO("Final index refill");
+    //todo second refill in ten lines!!!
+//    index_builder.BuildIndexFromGraph(gp.index.inner_index(), gp.g);
     gp.index.Refill();
     INFO("Final index refill finished");
 
     INFO("Final isolated edges removal:");
-    size_t max_length = std::max(*cfg::get().ds.RL,
-                                 cfg::get().simp.ier.max_length_any_cov);
+    size_t max_length = std::max(cfg::get().ds.RL(), cfg::get().simp.ier.max_length_any_cov);
     INFO("All edges of length smaller than " << max_length << " will be removed");
     IsolatedEdgeRemover<Graph>(gp.g, cfg::get().simp.ier.max_length,
                                cfg::get().simp.ier.max_coverage, max_length)
@@ -820,9 +822,8 @@ void SimplifyGraph(conj_graph_pack &gp,
 
     INFO("Counting average coverage");
     AvgCovereageCounter<Graph> cov_counter(gp.g);
-    cfg::get_writable().ds.avg_coverage = cov_counter.Count();
-    INFO("Average coverage = " << cfg::get().ds.avg_coverage.get());
-
+    cfg::get_writable().ds.set_avg_coverage(cov_counter.Count());
+    INFO("Average coverage = " << cfg::get().ds.avg_coverage());
 }
 
 }

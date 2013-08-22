@@ -45,7 +45,7 @@ public:
 	 * parameter when we work with SingleReads).
 	 * @param offset The offset of the read quality.
 	 */
-	MultifileReader(const vector<IReader<ReadType>*>& readers,
+	MultifileReader(const std::vector<IReader<ReadType>*>& readers,
 			bool destroy_readers = false) : /*filenames_(filenames), */
 			current_reader_index_(0), destroy_readers_(destroy_readers) {
 		for (size_t i = 0; i < readers.size(); ++i) {
@@ -149,7 +149,7 @@ private:
 	/*
 	 * @variable Internal stream readers.
 	 */
-	vector<IReader<ReadType>*> readers_;
+	std::vector<IReader<ReadType>*> readers_;
 	/*
 	 * @variable The index of the file that is currently read from.
 	 */

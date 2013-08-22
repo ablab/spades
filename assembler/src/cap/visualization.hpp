@@ -6,7 +6,7 @@
 
 #pragma once
 #include "sequence_mapper.hpp"
-#include "omni/visualization_utils.hpp"
+#include "omni/vivisualization_utils.hpp"
 
 namespace cap {
 
@@ -40,6 +40,7 @@ public:
 
 	/*virtual*/
 	bool Check(const vector<VertexId> &vertices) const {
+    return true;
         TRACE("Check component");
 		if (vertices.size() <= vertex_number_)
 			return false;
@@ -73,7 +74,7 @@ public:
 template<class Graph>
 void PrintColoredGraph(const Graph& g, const ColorHandler<Graph>& coloring,
 		const EdgesPositionHandler<Graph>& pos, const string& output_filename) {
-	ReliableSplitter<Graph> splitter(g, 30, 1000000);
+	shared_ptr<GraphSplitter<Graph>> splitter = ReliableSplitter<Graph>(g, 1000000, 30);
 	LengthIdGraphLabeler<Graph> basic_labeler(g);
 	EdgePosGraphLabeler<Graph> pos_labeler(g, pos);
 
@@ -99,20 +100,39 @@ void PrintColoredGraphAroundEdge(const Graph& g,
 
 template<class Graph>
 void PrintColoredGraphWithColorFilter(const Graph &g, const ColorHandler<Graph> &coloring,
+    const CoordinatesHandler<Graph> &pos, const vector<string> &genome_names, const string &output_filename) {
+
+  size_t edge_length_bound = 1000000;
+  size_t colors_number = coloring.max_colors();
+  TColorSet restricted_color = TColorSet::AllColorsSet(colors_number);
+
+    shared_ptr<GraphSplitter<Graph>> splitter = ReliableSplitter<Graph>(g, edge_length_bound, 30);
+	shared_ptr<ComponentSingleColorFilter<Graph>> filter = make_shared<ComponentSingleColorFilter<Graph>>(g, coloring, restricted_color, edge_length_bound, 2);
+	LengthIdGraphLabeler<Graph> basic_labeler(g);
+	EdgeCoordinatesGraphLabeler<Graph> pos_labeler(g, pos, genome_names);
+
+	CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
+	WriteComponents(g, splitter, filter, output_filename,
+			*ConstructBorderColorer(g, coloring), labeler);
+}
+
+//fixme code duplication
+template<class Graph>
+void PrintColoredGraphWithColorFilter(const Graph &g, const ColorHandler<Graph> &coloring,
     const EdgesPositionHandler<Graph> &pos, const string &output_filename) {
 
   size_t edge_length_bound = 1000000;
   size_t colors_number = coloring.max_colors();
   TColorSet restricted_color = TColorSet::AllColorsSet(colors_number);
 
-	ReliableSplitter<Graph> splitter(g, 30, edge_length_bound);
-	ComponentSingleColorFilter<Graph> filter(g, coloring, restricted_color, edge_length_bound, 2);
-	LengthIdGraphLabeler<Graph> basic_labeler(g);
-	EdgePosGraphLabeler<Graph> pos_labeler(g, pos);
+    ReliableSplitter<Graph> splitter(g, 30, edge_length_bound);
+    ComponentSingleColorFilter<Graph> filter(g, coloring, restricted_color, edge_length_bound, 2);
+    LengthIdGraphLabeler<Graph> basic_labeler(g);
+    EdgePosGraphLabeler<Graph> pos_labeler(g, pos);
 
-	CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
-	WriteComponents(g, splitter, filter, output_filename,
-			*ConstructBorderColorer(g, coloring), labeler);
+    CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
+    WriteComponents(g, splitter, filter, output_filename,
+            *ConstructBorderColorer(g, coloring), labeler);
 }
 
 //todo alert!!! magic constants!!!

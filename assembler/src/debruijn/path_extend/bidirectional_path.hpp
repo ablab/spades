@@ -75,16 +75,16 @@ public:
         Set(DEFAULT, DEFAULT);
     }
 
-    virtual void FrontEdgeAdded(EdgeId e, BidirectionalPath * path, int gap) {
+    virtual void FrontEdgeAdded(EdgeId /*e*/, BidirectionalPath * /*path*/, int /*gap*/) {
         ++start_;
         ++end_;
     }
 
-    virtual void BackEdgeAdded(EdgeId e, BidirectionalPath * path, int gap) {
+    virtual void BackEdgeAdded(EdgeId /*e*/, BidirectionalPath * /*path*/, int /*gap*/) {
 
     }
 
-    virtual void FrontEdgeRemoved(EdgeId e, BidirectionalPath * path) {
+    virtual void FrontEdgeRemoved(EdgeId /*e*/, BidirectionalPath * /*path*/) {
         --start_;
         --end_;
         if (start_ < 0) {
@@ -96,7 +96,7 @@ public:
         }
     }
 
-    virtual void BackEdgeRemoved(EdgeId e, BidirectionalPath * path) {
+    virtual void BackEdgeRemoved(EdgeId /*e*/, BidirectionalPath * /*path*/) {
 
     }
 };
@@ -117,7 +117,7 @@ public:
     LoopDetectorData(size_t i): iteration_(i), alternatives_()  {
     }
 
-    LoopDetectorData(): alternatives_()  {
+    LoopDetectorData(): alternatives_(){
     }
 
     LoopDetectorData(const LoopDetectorData& d) {
@@ -193,13 +193,15 @@ public:
 
     void SelectEdge(EdgeId e, double weight = 1);
 
-    size_t LoopEdges() const;
+    size_t LoopEdges(size_t skip_identical_edges, size_t min_cycle_appearences) const;
 
-    size_t LoopLength() const;
+    size_t LoopLength(size_t skip_identical_edges, size_t min_cycle_appearences) const;
 
-    bool PathIsLoop() const;
+    bool PathIsLoop(size_t edges) const;
 
-    size_t LastLoopCount() const;
+    size_t LastLoopCount(size_t skip_identical_edges, size_t min_cycle_appearences) const;
+
+    size_t LastLoopCount(size_t edges) const;
 
     bool LoopBecameStable() const;
 
@@ -207,22 +209,22 @@ public:
 
     size_t GetFirstExitIteration(EdgeId loopEdge, EdgeId loopExit, std::pair<size_t, size_t> iterationRange, double coeff) const;
 
-    bool IsCycled(size_t loopLimit) const;
+    bool IsCycled(size_t loopLimit, size_t& skip_identical_edges) const;
 
-    size_t EdgesToRemove(bool fullRemoval = false) const;
+    size_t EdgesToRemove(size_t skip_identical_edges, bool fullRemoval = false) const;
 
-    void RemoveLoop(bool fullRemoval = true);
+    void RemoveLoop(size_t skip_identical_edges, bool fullRemoval = true);
 
     bool EdgeInShortLoop() const;
 
     void Print() const {
-        DEBUG("== Detector data_ ==");
+        INFO("== Detector data_ ==");
         for (auto iter = data_.begin(); iter != data_.end(); ++iter) {
-            DEBUG("Edge " << g_.length(iter->first));
+            INFO("Edge " << g_.length(iter->first));
 
             const LoopDetectorData::AltenativeMap& alts = iter->second->GetAlternatives();
             for(auto alt = alts.begin(); alt != alts.end(); ++alt) {
-                DEBUG("Edge " << g_.length(alt->first) << ", weight " << alt->second);
+                INFO("Edge " << g_.length(alt->first) << ", weight " << alt->second);
             }
         }
     }
@@ -242,13 +244,19 @@ protected:
 	// Edges: e1 e2 ... eN
 	std::deque <EdgeId> data_;
 
+	set<BidirectionalPath*> overlaped_begin;
+	set<BidirectionalPath*> overlaped_end;
+	bool overlap;
+
+	BidirectionalPath* conj_path;
+
 	// Length from beginning of i-th edge to path end for forward directed path:
 	// L(e2 + ... + eN) ... L(eN), 0
 	// Length from beginning of the path to the end of i-th edge
 	// L(e1), L(e1 + e2) ... L(e1 + ... + eN)
 	std::deque <size_t> cumulativeLength_;
 
-	// e1 - gap1 - e2 - ... - gap(N-1) - eN
+	// e1 - gap2 - e2 - ... - gapN - eN
 	std::deque <int> gapLength_;
 
 	// L(e1 + ... + eN)
@@ -262,13 +270,15 @@ protected:
 	//Path listeners
 	std::vector <PathListener *> listeners_;
 
+	double weight;
+
 protected:
 	void Verify() {
 	    if (cumulativeLength_.empty() && totalLength_ != 0) {
-	        DEBUG("---" << totalLength_);
+	        INFO("---" << totalLength_);
 	    }
 	    else if (!cumulativeLength_.empty() && cumulativeLength_[0] != totalLength_) {
-	        DEBUG("|||" << totalLength_);
+	        INFO("|||" << totalLength_);
 	    }
 	}
 
@@ -332,12 +342,12 @@ protected:
         }
     }
 
-
+public:
     void PushFront(EdgeId e, int gap = 0) {
         data_.push_front(e);
         gapLength_.push_front(gap);
 
-        int length = g_.length(e);
+        int length = (int) g_.length(e);
         if (cumulativeLength_.empty()) {
             cumulativeLength_.push_front(length);
         } else {
@@ -348,7 +358,7 @@ protected:
         NotifyFrontEdgeAdded(e, gap);
         Verify();
     }
-
+protected:
     void PopFront() {
         EdgeId e = data_.front();
         data_.pop_front();
@@ -383,30 +393,185 @@ public:
     BidirectionalPath(Graph& g): g_(g), data_(), cumulativeLength_(), gapLength_(), totalLength_(0), loopDetector_(g_, this), seedCoords_(), listeners_(){
 	    Subscribe(&loopDetector_);
 	    Subscribe(&seedCoords_);
+	    overlaped_begin.clear();
+	    overlaped_end.clear();
+	    overlap = false;
+	    weight = 1;
 	}
 
 	BidirectionalPath(Graph& g, std::vector < EdgeId > path): g_(g), data_(), cumulativeLength_(), gapLength_(), totalLength_(0), loopDetector_(g_, this), seedCoords_(), listeners_() {
+
 		Subscribe(&loopDetector_);
 		Subscribe(&seedCoords_);
-		id_ = g_.int_id(path[0]);
-		for (size_t i = 0; i < path.size(); ++i) {
-			Push(path[i]);
+		overlap = false;
+		overlaped_begin.clear();
+		overlaped_end.clear();
+		if (path.size() != 0) {
+            id_ = g_.int_id(path[0]);
+            for (size_t i = 0; i < path.size(); ++i) {
+                Push(path[i]);
+            }
+            prev_ = path[path.size() - 1];
+            now_ = path[path.size() - 1];
+            RecountLengths();
 		}
-		prev_ = path[path.size() - 1];
-		now_ = path[path.size() - 1];
-		RecountLengths();
+		weight = 1;
 	}
 
 	BidirectionalPath(const BidirectionalPath& path): g_(path.g_), id_(path.id_), data_(path.data_), cumulativeLength_(path.cumulativeLength_), gapLength_(path.gapLength_), totalLength_(path.totalLength_),
 	        loopDetector_(g_, this), seedCoords_(), listeners_() {
 	    Subscribe(&loopDetector_);
 	    Subscribe(&seedCoords_);
+	    overlap = false;
+		overlaped_begin.clear();
+		overlaped_end.clear();
 	    prev_ = data_.back();
 	    now_ = data_.back();
+	    weight = path.getWeight();
 	}
+
+	void setConjPath(BidirectionalPath* path) {
+		conj_path = path;
+	}
+
+	BidirectionalPath* getConjPath() {
+		return conj_path;
+	}
+
+    void setWeight(double w){
+    	weight = w;
+    }
+
+    double getWeight() const{
+    	return weight;
+    }
+
+	void clearOverlapedEnd() {
+		overlaped_end.clear();
+		conj_path->overlaped_begin.clear();
+	}
+
+	void clearOverlapedBegin() {
+		overlaped_begin.clear();
+		conj_path->overlaped_end.clear();
+	}
+private:
+	void removeOverlapedBegin(BidirectionalPath* p) {
+		auto iter = overlaped_begin.find(p);
+		if (iter != overlaped_begin.end()) {
+			overlaped_begin.erase(iter);
+			iter = conj_path->overlaped_end.find(p->conj_path);
+			if (iter != conj_path->overlaped_end.end()){
+				conj_path->overlaped_end.erase(iter);
+			}
+		}
+	}
+
+	void changeOverlapedBegin(BidirectionalPath* from, BidirectionalPath* to) {
+		removeOverlapedBegin(from);
+		overlaped_begin.insert(to);
+		conj_path->overlaped_end.insert(to->conj_path);
+	}
+
+	void changeAllOverlapedBegin(BidirectionalPath* to) {
+		for (auto iter = overlaped_begin.begin(); iter != overlaped_begin.end(); ++iter) {
+			(*iter)->changeOverlapedEnd(this, to);
+		}
+	}
+
+public:
+	void changeOverlapedBeginTo(BidirectionalPath* to) {
+		changeAllOverlapedBegin(to);
+		to->addOverlapedBegin(getOverlapedBegin());
+		clearOverlapedBegin();
+		addOverlapedBegin(to);
+		to->addOverlapedEnd(this);
+	}
+
+	void changeOverlapedEndTo(BidirectionalPath* to) {
+		changeAllOverlapedEnd(to);
+		to->addOverlapedEnd(getOverlapedEnd());
+		clearOverlapedEnd();
+		addOverlapedEnd(to);
+		to->addOverlapedBegin(this);
+	}
+private:
+	void changeAllOverlapedEnd(BidirectionalPath* to) {
+		for (auto iter = overlaped_end.begin(); iter != overlaped_end.end(); ++iter) {
+			(*iter)->changeOverlapedBegin(this, to);
+		}
+	}
+
+	void removeOverlapedEnd(BidirectionalPath* p) {
+		auto iter = overlaped_end.find(p);
+		if (iter != overlaped_end.end()) {
+			overlaped_end.erase(iter);
+			iter = conj_path->overlaped_begin.find(p->conj_path);
+			if (iter != conj_path->overlaped_begin.end()){
+				conj_path->overlaped_begin.erase(iter);
+			}
+		}
+	}
+
+	void changeOverlapedEnd(BidirectionalPath* from, BidirectionalPath* to) {
+		removeOverlapedEnd(from);
+		overlaped_begin.insert(to);
+		conj_path->overlaped_begin.insert(to->conj_path);
+	}
+	void addOverlapedBegin(BidirectionalPath* begin) {
+		overlaped_begin.insert(begin);
+		conj_path->overlaped_end.insert(begin->conj_path);
+	}
+	void addOverlapedEnd(BidirectionalPath* end) {
+		overlaped_end.insert(end);
+		conj_path->overlaped_begin.insert(end->conj_path);
+	}
+public:
+	void addOverlapedBegin(set<BidirectionalPath*>& begin) {
+		for (auto iter = begin.begin(); iter != begin.end(); ++iter) {
+			addOverlapedBegin(*iter);
+		}
+	}
+	void addOverlapedEnd(set<BidirectionalPath*>& end) {
+		for (auto iter = end.begin(); iter != end.end(); ++iter) {
+			addOverlapedEnd(*iter);
+		}
+	}
+
+	bool hasOverlapedBegin() {
+		return getOverlapedBegin().size() != 0;
+	}
+
+	set<BidirectionalPath*>& getOverlapedBegin() {
+		return overlaped_begin;
+	}
+
+	bool hasOverlapedEnd() {
+		return getOverlapedEnd().size() != 0;
+	}
+
+	set<BidirectionalPath*>& getOverlapedEnd() {
+		return overlaped_end;
+	}
+
+	void setOverlap(bool isOverlap_ = true) {
+		overlap = isOverlap_;
+		if (conj_path->isOverlap() != isOverlap_) {
+			conj_path->setOverlap(isOverlap_);
+		}
+	}
+
+	bool isOverlap() const {
+		return overlap;
+	}
+
 
 	size_t Size() const {
 	    return data_.size();
+	}
+
+	Graph& graph() const {
+	    return g_;
 	}
 
 	bool Empty() const {
@@ -460,7 +625,7 @@ public:
 
 	//Modification methods
 	void SetCurrentPathAsSeed() {
-	    seedCoords_.Set(0, Size() - 1);
+	    seedCoords_.Set(0, (int) Size() - 1);
 	}
 
 	void PushBack(EdgeId e, int gap = 0) {
@@ -489,8 +654,14 @@ public:
 	    NotifyBackEdgeRemoved(e);
 	}
 
+	void PopBack(size_t count) {
+		for (size_t i = 0; i < count; ++i) {
+			PopBack();
+		}
+	}
+
 	void SafePopBack() {
-        if (seedCoords_.In(Size() - 1)) {
+        if (seedCoords_.In((int) Size() - 1)) {
             DEBUG("Cannot remove back edge due to seed restrictions");
             return;
         }
@@ -518,23 +689,27 @@ public:
     BidirectionalPath(Graph& g_, EdgeId startingEdge): g_(g_), data_(), cumulativeLength_(), gapLength_(), totalLength_(0), loopDetector_(g_, this), seedCoords_(0, 0), listeners_() {
         Subscribe(&loopDetector_);
         Subscribe(&seedCoords_);
+        overlap = false;
+		overlaped_begin.clear();
+		overlaped_end.clear();
         Push(startingEdge);
         id_ = g_.int_id(startingEdge);
         prev_ = data_.back();
         now_ = data_.back();
+        weight = 1;
     }
 
-    virtual void FrontEdgeAdded(EdgeId e, BidirectionalPath * path, int gap) {
+    virtual void FrontEdgeAdded(EdgeId /*e*/, BidirectionalPath * /*path*/, int /*gap*/) {
     }
 
-    virtual void BackEdgeAdded(EdgeId e, BidirectionalPath * path, int gap) {
+    virtual void BackEdgeAdded(EdgeId e, BidirectionalPath * /*path*/, int gap) {
         PushFront(g_.conjugate(e), gap);
     }
 
-    virtual void FrontEdgeRemoved(EdgeId e, BidirectionalPath * path) {
+    virtual void FrontEdgeRemoved(EdgeId /*e*/, BidirectionalPath * /*path*/) {
     }
 
-    virtual void BackEdgeRemoved(EdgeId e, BidirectionalPath * path) {
+    virtual void BackEdgeRemoved(EdgeId /*e*/, BidirectionalPath * /*path*/) {
         PopFront();
     }
 
@@ -550,6 +725,78 @@ public:
         }
         return true;
     }
+
+	size_t CommonEndSize(const BidirectionalPath& sample) const{
+		std::vector<size_t> begins;
+		for (size_t i = 0; i < Size(); ++i) {
+			if (At(i) == sample.At(0)) {
+				begins.push_back(i);
+			}
+		}
+		for (size_t i = 0; i < begins.size(); ++i) {
+			size_t it1 = begins[i];
+			size_t it2 = 0;
+			while (it2 < sample.Size() and At(it1) == sample.At(it2)) {
+				it1++;
+				it2++;
+				if (it1 == Size()) {
+					return it2;
+				}
+			}
+		}
+		return 0;
+	}
+
+    int FindFirst(EdgeId e) {
+        for (size_t i = 0; i < Size(); ++i) {
+            if (data_[i] == e) {
+                return (int) i;
+            }
+        }
+        return -1;
+    }
+
+    int FindLast(EdgeId e) {
+        for (int i = (int) Size(); i > 0; --i) {
+            if (data_[i] == e) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    vector<size_t> FindAll(EdgeId e) const{
+        vector<size_t> result;
+        for (size_t i = 0; i < Size(); ++i) {
+            if (data_[i] == e) {
+                result.push_back(i);
+            }
+        }
+        return result;
+    }
+
+	size_t OverlapEndSize(const BidirectionalPath* path2) const {
+		if (Size() == 0) {
+			return 0;
+		}
+		int last1 = (int) Size() - 1;
+		int max_over = 0;
+		vector<size_t> begins2 = path2->FindAll(At(last1));
+		for (size_t begin_i = 0; begin_i < begins2.size(); ++begin_i) {
+			int begin2 = (int) begins2[begin_i];
+			int cur1 = last1;
+			while (begin2 > 0 && cur1 > 0
+					&& path2->At(begin2 - 1) == At(cur1 - 1)) {
+				cur1--;
+				begin2--;
+			}
+			int over = last1 - cur1 + 1;
+			if (begin2 == 0 && cur1 > 0 && over > max_over) {
+				max_over = over;
+			}
+		}
+		return max_over;
+	}
 
     bool Contains(const BidirectionalPath& path) const {
         if (path.Size() > Size()) {
@@ -583,6 +830,18 @@ public:
         return !operator==(path);
     }
 
+    void CheckConjugateEnd(){
+    	size_t begin = 0;
+    	size_t end = Size() - 1;
+    	while (begin < end && At(begin) == g_.conjugate(At(end))){
+    		begin++;
+    		end--;
+    	}
+    	for (size_t i = 0; i < begin ; ++i){
+    		PopBack();
+    	}
+    }
+
     void CheckGrow()
     {
     	prev_ = data_.back();
@@ -611,9 +870,9 @@ public:
         double cov = 0.0;
 
         for (size_t i = 0; i < Size(); ++i) {
-            cov += g_.coverage(data_[i]) * g_.length(data_[i]);
+            cov += g_.coverage(data_[i]) * (double) g_.length(data_[i]);
         }
-        return cov / Length();
+        return cov / (double) Length();
     }
 
     BidirectionalPath Conjugate() const {
@@ -633,11 +892,23 @@ public:
         DEBUG("Length " << totalLength_);
         DEBUG("#, edge, length, total length");
         for(size_t i = 0; i < Size(); ++i) {
-            DEBUG(i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << LengthAt(i));
+        	DEBUG(i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << LengthAt(i));
+        }
+    }
+
+    void PrintInfo() const {
+        INFO("Path " << id_);
+        INFO("Length " << totalLength_);
+        INFO("#, edge, length, total length");
+        for(size_t i = 0; i < Size(); ++i) {
+            INFO(i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << GapAt(i));
         }
     }
 
     void Print(std::ostream& os) {
+        if (Empty()) {
+            return;
+        }
         os << "Path " << GetId() << endl;
         os << "Length " << Length() << endl;
         os << "#, edge, length, total length" << endl;
@@ -696,6 +967,10 @@ public:
 	PathContainer() {
 	}
 
+    BidirectionalPath& operator[](size_t index) const {
+        return *(data_[index].first);
+    }
+
     BidirectionalPath* Get(size_t index) const {
         return data_[index].first;
     }
@@ -716,8 +991,14 @@ public:
         data_.reserve(size);
     }
 
+    BidirectionalPath* FindConjugate(BidirectionalPath* p) {
+		return p->getConjPath();
+	}
+
     bool AddPair(BidirectionalPath* p, BidirectionalPath* cp) {
-        p->Subscribe(cp);
+    	p->setConjPath(cp);
+    	cp->setConjPath(p);
+    	p->Subscribe(cp);
         cp->Subscribe(p);
 
         data_.push_back(std::make_pair(p, cp));
@@ -728,11 +1009,11 @@ public:
         std::stable_sort(data_.begin(), data_.end(), PathPairComparator());
     }
 
-    Iterator begin() {
+    Iterator begin(){
         return Iterator(data_.begin());
     }
 
-    Iterator end() {
+    Iterator end(){
         return Iterator(data_.end());
     }
 
@@ -764,6 +1045,18 @@ public:
             }
         }
     }
+
+    void FilterEmptyPaths(){
+    	DEBUG ("try to delete empty paths");
+    	for (Iterator iter = begin(); iter != end(); ){
+    		if (iter.get()->Size() == 0){
+    			iter = erase(iter);
+    		} else {
+    			++iter;
+    		}
+    	}
+    	DEBUG("empty paths are removed");
+    }
 };
 
 
@@ -776,20 +1069,20 @@ void LoopDetector::AddAlternative(EdgeId e, double w) {
     current_->AddAlternative(e, w);
 }
 
-void LoopDetector::FrontEdgeAdded(EdgeId e, BidirectionalPath * path, int gap) {
+void LoopDetector::FrontEdgeAdded(EdgeId /*e*/, BidirectionalPath * /*path*/, int /*gap*/) {
 
 }
 
-void LoopDetector::BackEdgeAdded(EdgeId e, BidirectionalPath * path, int gap) {
+void LoopDetector::BackEdgeAdded(EdgeId e, BidirectionalPath * /*path*/, int /*gap*/) {
     current_->AddAlternative(e, 1);
     SelectEdge(e);
 }
 
-void LoopDetector::FrontEdgeRemoved(EdgeId e, BidirectionalPath * path) {
+void LoopDetector::FrontEdgeRemoved(EdgeId /*e*/, BidirectionalPath * /*path*/) {
 
 }
 
-void LoopDetector::BackEdgeRemoved(EdgeId e, BidirectionalPath * path) {
+void LoopDetector::BackEdgeRemoved(EdgeId e, BidirectionalPath * /*path*/) {
     auto iter = data_.find(e);
 
     if (iter != data_.end()) {
@@ -799,7 +1092,7 @@ void LoopDetector::BackEdgeRemoved(EdgeId e, BidirectionalPath * path) {
     }
 }
 
-void LoopDetector::SelectEdge(EdgeId e, double weight) {
+void LoopDetector::SelectEdge(EdgeId e, double /*weight*/) {
     data_.insert(std::make_pair(e, current_));
     current_ = new LoopDetectorData(++currentIteration_);
 }
@@ -821,47 +1114,44 @@ LoopDetector::~LoopDetector() {
 }
 
 
-
-size_t LoopDetector::LoopEdges() const {
+size_t LoopDetector::LoopEdges(size_t skip_identical_edges, size_t min_cycle_appearences) const {
     EdgeId e = path_->Head();
 
-    if (data_.count(e) <= 1) {
+    size_t count = data_.count(e);
+    if (count <= 1 || count < min_cycle_appearences * (skip_identical_edges + 1)) {
         return 0;
     }
 
     auto iter = data_.upper_bound(e);
     --iter;
     size_t loopSize = iter->second->GetIteration();
-    --iter;
+    for (size_t i = 0; i < skip_identical_edges + 1; ++i) {
+        --iter;
+    }
     loopSize -= iter->second->GetIteration();
 
     return loopSize;
 }
 
+//size_t LoopDetector::LoopLength(size_t skip_identical_edges, size_t min_cycle_appearences) const {
+//    if (skip_identical_edges > 0) {
+//        INFO("loop length " << skip_identical_edges);
+//    }
+//    size_t edges = LoopEdges(skip_identical_edges, min_cycle_appearences);
+//    size_t length = 0;
+//
+//    for (int i = path_->Size() - edges; i < (int) path_->Size(); ++i) {
+//        length += g_.length(path_->At(i));
+//    }
+//
+//    return length;
+//}
 
-size_t LoopDetector::LoopLength() const {
-    size_t edges = LoopEdges();
-    size_t length = 0;
 
-    for (int i = path_->Size() - edges; i < (int) path_->Size(); ++i) {
-        length += g_.length(path_->At(i));
-    }
-
-    return length;
-}
-
-
-
-bool LoopDetector::PathIsLoop() const {
-    size_t edges = LoopEdges();
-
-    if (edges <= path_->Size()) {
-        return false;
-    }
-
+bool LoopDetector::PathIsLoop(size_t edges) const {
     for (size_t i = 1; i <= edges; ++i) {
         EdgeId e = path_->operator [](path_->Size() - i);
-        for (int j = path_->Size() - i - edges; j >= 0; j -= edges) {
+        for (int j = (int) path_->Size() - (int) i - (int) edges; j >= 0; j -= (int) edges) {
             if (path_->operator [](j) != e) {
                 return false;
             }
@@ -871,31 +1161,70 @@ bool LoopDetector::PathIsLoop() const {
 }
 
 
-size_t LoopDetector::LastLoopCount() const {
-    size_t edges = LoopEdges();
+size_t LoopDetector::LastLoopCount(size_t skip_identical_edges, size_t min_cycle_appearences) const {
+    size_t edges = LoopEdges(skip_identical_edges, min_cycle_appearences);
+    return LastLoopCount(edges);
+}
 
+size_t LoopDetector::LastLoopCount(size_t edges) const {
     if (edges == 0) {
         return 0;
     }
 
     BidirectionalPath loop = path_->SubPath(path_->Size() - edges);
-    //EdgeId e = path_->head();
     size_t count = 0;
-
-    int i = path_->Size() - edges ;
-    int delta = -edges;
+    int i = (int) path_->Size() - (int) edges ;
+    int delta = - (int) edges;
 
     while (i >= 0) {
         if (!path_->CompareFrom(i, loop)) {
             break;
         }
-
         ++count;
         i += delta;
     }
 
     return count;
 }
+
+bool LoopDetector::IsCycled(size_t loopLimit, size_t& skip_identical_edges) const {
+    skip_identical_edges = 0;
+    size_t loop_count = LastLoopCount(skip_identical_edges, loopLimit);
+
+    while (loop_count > 0) {
+        if (loop_count >= loopLimit) {
+            return true;
+        }
+        loop_count = LastLoopCount(++skip_identical_edges, loopLimit);
+    }
+    return false;
+}
+
+size_t LoopDetector::EdgesToRemove(size_t skip_identical_edges, bool fullRemoval) const {
+    size_t edges = LoopEdges(skip_identical_edges, 1);
+    size_t count = LastLoopCount(edges);
+    bool onlyCycle = PathIsLoop(edges);
+    int result;
+
+    if (onlyCycle || path_->Size() <= count * edges + 1) {
+        result = (int) path_->Size() - (int) edges - 1;
+    }
+    else if (fullRemoval) {
+        result = (int) count * (int) edges - 1;
+    } else {
+        result = (int) (count - 1) * (int) edges - 1;
+    }
+
+    return result < 0 ? 0 : result;
+}
+
+void LoopDetector::RemoveLoop(size_t skip_identical_edges, bool fullRemoval) {
+    auto toRemove = EdgesToRemove(skip_identical_edges, fullRemoval);
+    for(size_t i = 0; i < toRemove; ++i) {
+        path_->SafePopBack();
+    }
+}
+
 
 bool LoopDetector::LoopBecameStable() const {
     EdgeId e = path_->Head();
@@ -941,35 +1270,6 @@ size_t LoopDetector::GetFirstExitIteration(EdgeId loopEdge, EdgeId loopExit, std
         }
     }
     return maxIter;
-}
-
-bool LoopDetector::IsCycled(size_t loopLimit) const {
-    return LastLoopCount() >= loopLimit;
-}
-
-size_t LoopDetector::EdgesToRemove(bool fullRemoval) const {
-    size_t edges = LoopEdges();
-    size_t count = LastLoopCount();
-    bool onlyCycle = PathIsLoop();
-    int result;
-
-    if (onlyCycle || path_->Size() <= count * edges + 1) {
-        result = path_->Size() - edges - 1;
-    }
-    else if (fullRemoval) {
-        result = count * edges - 1;
-    } else {
-        result = (count - 1) * edges - 1;
-    }
-
-    return result < 0 ? 0 : result;
-}
-
-void LoopDetector::RemoveLoop(bool fullRemoval) {
-    auto toRemove = EdgesToRemove(fullRemoval);
-    for(size_t i = 0; i < toRemove; ++i) {
-        path_->SafePopBack();
-    }
 }
 
 bool LoopDetector::EdgeInShortLoop() const {

@@ -8,7 +8,7 @@
 
 #include <unordered_map>
 //#include "utils.hpp"
-#include "graph_labeler.hpp"
+#include "visualization/graph_labeler.hpp"
 #include "simple_tools.hpp"
 using namespace omnigraph;
 
@@ -18,20 +18,18 @@ template<class VertexId, class EdgeId>
 class BaseIdTrackHandler: public ActionHandler<VertexId, EdgeId> {
 protected:
 	const bool use_inner_ids_;
-public:
-	typedef size_t realIdType;
 private:
-	unordered_map<VertexId, realIdType> vertex2id_;
-	unordered_map<EdgeId, realIdType> edge2id_;
-	std::unordered_map<realIdType, VertexId> id2vertex_;
-	std::unordered_map<realIdType, EdgeId> id2edge_;
-	realIdType max_v_id_;
-	realIdType max_e_id_;
+	unordered_map<VertexId, size_t> vertex2id_;
+	unordered_map<EdgeId, size_t> edge2id_;
+	std::unordered_map<size_t, VertexId> id2vertex_;
+	std::unordered_map<size_t, EdgeId> id2edge_;
+	size_t max_v_id_;
+	size_t max_e_id_;
 
 public:
-	realIdType AddVertexIntId(VertexId v) {
+	size_t AddVertexIntId(VertexId v) {
 		VERIFY(!use_inner_ids_);
-		realIdType PreviousId = ReturnIntId(v);
+		size_t PreviousId = ReturnIntId(v);
 		if (PreviousId != 0)
 			id2vertex_.erase(PreviousId);
 		max_v_id_++;
@@ -39,10 +37,10 @@ public:
 		id2vertex_[max_v_id_] = v;
 		return max_v_id_;
 	}
-	realIdType AddVertexIntId(VertexId v, realIdType int_id) {
+	size_t AddVertexIntId(VertexId v, size_t int_id) {
 		VERIFY(!use_inner_ids_);
 		TRACE("AddVertexIntId( "<< v<<", "<<int_id<<")");
-		realIdType PreviousId = ReturnIntId(v);
+		size_t PreviousId = ReturnIntId(v);
 		if (PreviousId != 0) {
 			id2vertex_.erase(PreviousId);
 		}
@@ -59,9 +57,10 @@ public:
 		return int_id;
 	}
 
-	realIdType AddEdgeIntId(EdgeId e) {
+	//fixme strange usages of PreviousId
+	size_t AddEdgeIntId(EdgeId e) {
 		VERIFY(!use_inner_ids_);
-		realIdType PreviousId = ReturnIntId(e);
+		size_t PreviousId = ReturnIntId(e);
 		if (PreviousId != 0) {
 			return PreviousId;
 		}
@@ -72,9 +71,9 @@ public:
 		return max_e_id_;
 	}
 
-	realIdType AddEdgeIntId(EdgeId e, realIdType int_id) {
+	size_t AddEdgeIntId(EdgeId e, size_t int_id) {
 		VERIFY(!use_inner_ids_);
-		realIdType PreviousId = ReturnIntId(e);
+		size_t PreviousId = ReturnIntId(e);
 		if (PreviousId != 0) {
 			//if (id2edge_[PreviousId] == NewEdgeId);
 			id2edge_.erase(PreviousId);
@@ -91,45 +90,39 @@ public:
 		return int_id;
 	}
 
-//	realIdType MaxVertexId() {
+//	size_t MaxVertexId() {
 //		return MaxVertexIntId;
 //	}
-//	realIdType MaxEdgeId() {
+//	size_t MaxEdgeId() {
 //		return MaxEdgeIntId;
 //	}
 
-	void ClearVertexId(VertexId OldVertexId) {
+	void ClearVertexId(VertexId v) {
 		VERIFY(!use_inner_ids_);
-		realIdType PreviousId = ReturnIntId(OldVertexId);
-		if (PreviousId != 0)
-			id2vertex_.erase(PreviousId);
-		vertex2id_.erase(OldVertexId);
+		size_t id = ReturnIntId(v);
+		if (id != 0)
+			id2vertex_.erase(id);
+		vertex2id_.erase(v);
 	}
-	void ClearEdgeId(EdgeId OldEdgeId) {
+
+	void ClearEdgeId(EdgeId e) {
 		VERIFY(!use_inner_ids_);
-		realIdType PreviousId = ReturnIntId(OldEdgeId);
-		if (PreviousId != 0)
-			id2edge_.erase(PreviousId);
-		edge2id_.erase(OldEdgeId);
+		size_t id = ReturnIntId(e);
+		if (id != 0)
+			id2edge_.erase(id);
+		edge2id_.erase(e);
 	}
 
 	//todo why can't we put verifies here?
-	realIdType ReturnIntId(EdgeId e) const {
+	size_t ReturnIntId(EdgeId e) const {
 		if (use_inner_ids_)
 			return e.int_id();
-
-		//todo what is this?
-		if (size_t(this) < 0x1000)
-		{
-			print_stacktrace();
-			exit(1);
-		}
 
 		auto it = edge2id_.find(e);
 		return it != edge2id_.end() ? it->second : 0;
 	}
 
-	realIdType ReturnIntId(VertexId v) const {
+	size_t ReturnIntId(VertexId v) const {
 		if (use_inner_ids_)
 			return v.int_id();
 
@@ -137,7 +130,7 @@ public:
 		return it != vertex2id_.end() ? it->second : 0;
 	}
 
-	EdgeId ReturnEdgeId(realIdType id) const {
+	EdgeId ReturnEdgeId(size_t id) const {
 		VERIFY(!use_inner_ids_);
 		auto it = id2edge_.find(id);
 		if (it != id2edge_.end())
@@ -146,7 +139,7 @@ public:
 			return EdgeId(NULL);
 	}
 
-	VertexId ReturnVertexId(realIdType id) const {
+	VertexId ReturnVertexId(size_t id) const {
 		VERIFY(!use_inner_ids_);
 		auto it = id2vertex_.find(id);
 		if (it != id2vertex_.end())
@@ -174,7 +167,7 @@ public:
 	}
 
 //	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
-//		realIdType RealEdgeId = ReturnIntId(edge1);
+//		size_t RealEdgeId = ReturnIntId(edge1);
 //		ClearEdgeId(edge1);
 //		AddEdgeIntId(new_edge, RealEdgeId);
 //	}
@@ -196,8 +189,7 @@ public:
 	}
 
 	std::string str(EdgeId edgeId) const {
-		int x = ReturnIntId(edgeId);
-		return ToString(x);
+		return ToString(ReturnIntId(edgeId));
 	}
 
 };
@@ -288,13 +280,13 @@ public:
 
 	virtual std::string label(VertexId vertexId) const {
 		TRACE("Label for vertex "<<vertexId);
-		int x = IDs.ReturnIntId(vertexId);
+		size_t x = IDs.ReturnIntId(vertexId);
 		//		DEBUG("is "<<x<<" "<<ToString(x));
 		return ToString(x) + ": " + g_.str(vertexId);
 	}
 
 	virtual std::string label(EdgeId edgeId) const {
-		int x = IDs.ReturnIntId(edgeId);
+		size_t x = IDs.ReturnIntId(edgeId);
 		return ToString(x) + ": " + g_.str(edgeId);
 	}
 

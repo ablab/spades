@@ -73,7 +73,7 @@ class MPHIndex {
   uint32_t perfect_hash(const Key& x) const;  // way faster than the minimal
   template <class SeededHashFcn, class Key>  // must agree with Reset
   uint32_t perfect_square(const Key& x) const;  // even faster but needs square=true
-  uint32_t minimal_perfect_hash_size() const { return size(); }
+  uint32_t minimal_perfect_hash_size() const { return (uint32_t) size(); }
   template <class SeededHashFcn, class Key>  // must agree with Reset
   uint32_t minimal_perfect_hash(const Key& x) const;
 
@@ -149,7 +149,7 @@ bool MPHIndex::Reset(ForwardIterator begin, ForwardIterator end, uint32_t size) 
   nest_displacement_[1] = r_;
   nest_displacement_[2] = (r_ << 1);
   for (uint32_t i = 0; i < sizeof(threebit_mod3); ++i)
-    threebit_mod3[i] = i % 3;
+    threebit_mod3[i] = (uint8_t)(i % 3);
 
   n_ = 3*r_;
   k_ = 1U << b_;

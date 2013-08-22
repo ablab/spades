@@ -125,9 +125,9 @@ struct PairInfo {
                          : lhs.first  < rhs.first;
   }
 
-  const double d() const      { return point.d;      }
-  const double weight() const { return point.weight; }
-  const double var() const    { return point.var;    }
+  double d() const      { return point.d;      }
+  double weight() const { return point.weight; }
+  double var() const    { return point.var;    }
 
   double& d()                 { return point.d;      }
   double& weight()            { return point.weight; }
@@ -182,9 +182,8 @@ inline bool ClustersIntersect(Point p1, Point p2) {
          math::le(p2.d, p1.d + p1.var + p2.var);
 }
 
-inline Point ConjugatePoint(size_t l1, size_t l2, const Point& point)
-{
-  return Point(point.d + l2 - (double) l1, point.weight, point.var);
+inline Point ConjugatePoint(size_t l1, size_t l2, const Point& point) {
+  return Point(point.d + (double) l2 - (double) l1, point.weight, point.var);
 }
 
 template<typename EdgeId>
@@ -873,7 +872,7 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
     for (size_t i = 0; i < old_edges.size(); ++i) {
       EdgeId old_edge = old_edges[i];
       TransferInfo(old_edge, new_edge, shift);
-      shift -= graph.length(old_edge);
+      shift -= (int) graph.length(old_edge);
     }
   }
 
@@ -888,9 +887,9 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
     TRACE("Handling Splitting " << int_id(old_edge) << " " << int_id(new_edge_1)
         << " " << int_id(new_edge_2));
     const Graph& graph = this->g();
-    double ratio = graph.length(new_edge_1) * 1. / graph.length(old_edge);
+    double ratio = (double) graph.length(new_edge_1) * 1. / (double) graph.length(old_edge);
     TransferInfo(old_edge, new_edge_1, 0, ratio);
-    TransferInfo(old_edge, new_edge_2, graph.length(new_edge_1), 1. - ratio);
+    TransferInfo(old_edge, new_edge_2, (int) graph.length(new_edge_1), 1. - ratio);
   }
 
  private:
@@ -1037,6 +1036,49 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
   DECL_LOGGER("PairedInfoIndexT");
 };
 
+template <class Graph>
+struct PairedInfoIndicesT {
+    typedef PairedInfoIndexT<Graph> IndexT;
+
+    vector< IndexT* > data_;
+
+    PairedInfoIndicesT(const Graph& graph, size_t lib_num) {
+        for (size_t i = 0; i < lib_num; ++i) {
+            data_.push_back(new IndexT(graph));
+        }
+    }
+
+    void Init() {
+        for (auto it = data_.begin(); it != data_.end(); ++it) {
+            (*it)->Init();
+        }
+    }
+
+    void Attach() {
+        for (auto it = data_.begin(); it != data_.end(); ++it) {
+            (*it)->Attach();
+        }
+    }
+
+    void Detach() {
+        for (auto it = data_.begin(); it != data_.end(); ++it) {
+            (*it)->Detach();
+        }
+    }
+
+    IndexT& operator[](size_t i) {
+        return *data_[i];
+    }
+
+    const IndexT& operator[](size_t i) const {
+        return *data_[i];
+    }
+
+    size_t size() const {
+        return data_.size();
+    }
+
+};
 
 /*----------------------------------------Old Index----------------------------------------------*/
 
@@ -1360,7 +1402,7 @@ private:
      * Method reads paired data from stream, maps it to genome and stores it in this PairInfoIndex.
      */
     void FillUsualIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
-        for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
             paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0., 0., 0.));
         }
 
@@ -1379,7 +1421,7 @@ private:
 
 
     void FillParallelIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
-        for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
             paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 0.0, 0.));
         }
 
@@ -1480,17 +1522,17 @@ public:
   const Point NormalizeWeight(EdgeId e1, EdgeId e2, Point point) const {
     double w = 0.;
     if (math::eq(point.d, 0.) && e1 == e2) {
-      w = 0. + g_.length(e1) - insert_size_ + 2. * read_length_ + 1. - k_;
+      w = 0. + (double) g_.length(e1) - (double) insert_size_ + 2. * (double) read_length_ + 1. - (double) k_;
     }
     else {
       if (math::ls(point.d, 0.)) {
         using std::swap;
         swap(e1, e2);
       }
-      int gap_len = abs(rounded_d(point)) - g_.length(e1);
-      int right = std::min(insert_size_, gap_len + g_.length(e2) + read_length_);
-      int left = std::max(gap_len, int(insert_size_) - int(read_length_) - int(g_.length(e1)));
-      w = 0. + right - left + 1 - k_;
+      int gap_len = abs(rounded_d(point)) - (int) g_.length(e1);
+      int right = std::min((int) insert_size_, gap_len + (int) g_.length(e2) + (int) read_length_);
+      int left = std::max(gap_len, (int) insert_size_ - (int) read_length_ - (int) g_.length(e1));
+      w = 0. + (double) (right - left + 1 - (int) k_);
     }
 
     double result_weight = point.weight;
@@ -1499,7 +1541,7 @@ public:
     } else
       result_weight = 0.;
 
-    double cov_norm_coeff = avg_coverage_ / (2. * (read_length_ - k_));
+    double cov_norm_coeff = avg_coverage_ / (2. * (double) (read_length_ - k_));
     result_weight /= cov_norm_coeff;
 
     Point result(point);
@@ -1529,7 +1571,7 @@ public:
 
   const Point operator()(EdgeId e1, EdgeId e2, Point point) const {
     return Point(point.d,
-                 point.weight * 1. / norm(e1, e2),
+                 point.weight * 1. / (double) norm(e1, e2),
                  point.var);
   }
 };

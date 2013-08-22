@@ -6,6 +6,7 @@
 
 #include "kmer_coverage_model.hpp"
 
+#include "xmath.h"
 #include "logger/logger.hpp"
 #include "smooth.hpp"
 #include "verify.hpp"
@@ -40,7 +41,7 @@ static double dzeta(double x, double p) {
 }
 
 static double perr(size_t i, double scale, double shape) {
-  return pow((1 + shape*(i-1)/scale), -1/shape) - pow((1 + shape*(i)/scale), -1/shape);
+  return pow((1 + shape*((double)(i-1))/scale), -1.0/shape) - pow((1 + shape*((double)i)/scale), -1.0/shape);
 }
 
 static double pgood(size_t i, double zp, double u, double sd, double shape,
@@ -87,7 +88,7 @@ class CovModelLogLike : public Cloneable<CovModelLogLike, FunctionEvaluator> {
 
     double res = 0;
     for (size_t i = 0; i < kmer_probs.size(); ++i)
-      res += cov[i] * log(kmer_probs[i]);
+      res += (double)(cov[i]) * log(kmer_probs[i]);
 
     return -res;
   }
@@ -144,7 +145,7 @@ class CovModelLogLikeEM : public Cloneable<CovModelLogLikeEM, FunctionEvaluator>
 
     double res = 0;
     for (size_t i = 0; i < kmer_probs.size(); ++i)
-      res += cov[i] * kmer_probs[i];
+      res += (double)(cov[i]) * kmer_probs[i];
 
     // INFO("f: " << res);
     return -res;
@@ -231,7 +232,7 @@ void KMerCoverageModel::Fit() {
       BeforeValley += cov_[i];
     Total += cov_[i];
   }
-  ErrorProb = 1.0* BeforeValley / Total;
+  ErrorProb = (double)BeforeValley / (double)Total;
   // Allow some erroneous / good kmers.
   ErrorProb = std::min(1-1e-3, ErrorProb);
   ErrorProb = std::max(1e-3, ErrorProb);
@@ -245,8 +246,8 @@ void KMerCoverageModel::Fit() {
   x0[0] = 3;
   x0[1] = ErrorProb;
   x0[2] = 3;
-  x0[3] = MaxCov_;
-  x0[4] = sqrt(2.0*MaxCov_);
+  x0[3] = (double)MaxCov_;
+  x0[4] = sqrt(2.0 * (double)MaxCov_);
   x0[5] = 0;
 
   // Trim last zeros
@@ -257,7 +258,7 @@ void KMerCoverageModel::Fit() {
   }
 
   auto GoodCov = cov_;
-  GoodCov.resize(std::min(1.25 * MaxCopy * MaxCov_, sz));
+  GoodCov.resize(std::min((size_t)math::round(1.25 * (double)(MaxCopy * MaxCov_)), sz));
   Function F(CovModelLogLike(GoodCov), Function::DERIV_FDIFF_CENTRAL_2);
   auto Results = DoglegBFGS().solve(F, x0, GradNormTest(1e-3));
 
@@ -273,8 +274,8 @@ void KMerCoverageModel::Fit() {
 
   x0[0] = 3;
   x0[1] = 3;
-  x0[2] = MaxCov_;
-  x0[3] = sqrt(5.0*MaxCov_);
+  x0[2] = (double)MaxCov_;
+  x0[3] = sqrt(5.0 * (double)MaxCov_);
   x0[4] = 1;
   x0[5] = 0;
 
@@ -293,8 +294,8 @@ void KMerCoverageModel::Fit() {
     // Recalculate the probability of error
     PrevErrProb = ErrorProb; ErrorProb = 0;
     for (size_t i=0; i < GoodCov.size(); ++i)
-      ErrorProb += z[i] * GoodCov[i];
-    ErrorProb /= 1.0 * Total;
+      ErrorProb += z[i] * (double)GoodCov[i];
+    ErrorProb /= (double)Total;
 
     bool LastIter = fabs(PrevErrProb - ErrorProb) <= ErrProbThr;
 
@@ -332,7 +333,7 @@ void KMerCoverageModel::Fit() {
   // First, check whether initial estimate of Valley was sane.
   ErrorThreshold_ = 0;
   if (Converged && Valley_ > x0[2] && x0[2] > 2) {
-    Valley_ = x0[2] / 2;;
+    Valley_ = (size_t)math::round(x0[2] / 2.0);
     WARN("Valley value was estimated improperly, reset to " << Valley_);
   }
 

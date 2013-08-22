@@ -27,21 +27,21 @@
 
 namespace  omnigraph{
 
-template <class EdgeId> 
+template <class EdgeId>
 class PeakFinder {
 
   typedef std::complex<double> complex_t;
 
  public:
-	PeakFinder(const vector<PairInfo<EdgeId> >& data, 
-             size_t begin, 
-             size_t end, 
-             size_t range, 
-             size_t delta, 
-             double percentage, 
-             double der_thr) : 
-                delta_(delta), 
-                percentage_(percentage), 
+	PeakFinder(const vector<PairInfo<EdgeId> >& data,
+             size_t begin,
+             size_t end,
+             size_t /*range*/,
+             size_t delta,
+             double percentage,
+             double der_thr) :
+                delta_(delta),
+                percentage_(percentage),
                 der_thr_(der_thr)
   {
     for (size_t i = begin; i < end; ++i) {
@@ -77,7 +77,7 @@ class PeakFinder {
 
     //      cutting off - standard parabolic filter
     for (size_t i = 0; i < data_len_ && i < Ncrit; ++i)
-      hist_[i] *= 1. - (i * i * 1.) / (Ncrit * Ncrit);
+      hist_[i] *= 1. - ((double) i * (double) i * 1.) / (double) (Ncrit * Ncrit);
 
     for (size_t i = Ncrit; i < hist_.size(); ++i)
       hist_[i] = 0.;
@@ -95,7 +95,7 @@ class PeakFinder {
   }
 
   //  looking for one maximum in the picture
-  vector<pair<int, double> > ListPeaks(int delta = 3) const {
+  vector<pair<int, double> > ListPeaks(/*int delta = 3*/) const {
     TRACE("Smoothed data");
     //size_t index_max = 0;
     //for (size_t i = 0; i < data_len_; ++i) {
@@ -111,8 +111,8 @@ class PeakFinder {
     //another data_len_
     size_t data_len_ = (size_t) (x_right_ - x_left_);
     vector<bool> was;
-    srand(time(NULL));    
-    for (size_t i = 0; i < data_len_; ++i) 
+    srand((unsigned) time(NULL));
+    for (size_t i = 0; i < data_len_; ++i)
       was.push_back(false);
 
     size_t iteration = 0;
@@ -120,7 +120,7 @@ class PeakFinder {
     //for (size_t k = 0; k < 4; ++k) {
       //size_t v = std::rand() % data_len_;
       size_t v = l;
-      if (was[v]) 
+      if (was[v])
         continue;
 
       was[v] = true;
@@ -134,7 +134,7 @@ class PeakFinder {
           index++;
           if ((iteration & 1) == 0)
             ++iteration;
-        } 
+        }
         else if (math::le(left_derivative, 0.)) {
           index--;
           if ((iteration & 1) == 1)
@@ -152,7 +152,7 @@ class PeakFinder {
       if (index < 0)
         continue;
 
-      //if (index >= x_right_ - delta || index < x_left_ + delta) 
+      //if (index >= x_right_ - delta || index < x_left_ + delta)
       //continue;
 
       TRACE("Is in range");
@@ -170,7 +170,7 @@ class PeakFinder {
           TRACE("Peaks size " << peaks_.size() << ", inserting " << tmp_pair);
           peaks_.insert(tmp_pair);
         } else {
-          TRACE("NON UNIQUE");   
+          TRACE("NON UNIQUE");
         }
       }
     }
@@ -218,7 +218,7 @@ private:
   void FFT(vector<complex_t>& vect, bool invert) {
     size_t n = vect.size();
     size_t lg_n = 0;
-    while ( (1u << lg_n) < n)  
+    while ( (1u << lg_n) < n)
       ++lg_n;
 
     while (n < (1u << lg_n)) {
@@ -231,7 +231,7 @@ private:
         swap(vect[i], vect[Rev(i, lg_n)]);
 
     for (size_t len = 2; len < 1 + n; len <<= 1) {
-      double ang = 2 * M_PI / len * (invert ? -1 : 1);
+      double ang = 2 * M_PI / (double) len * (invert ? -1 : 1);
       complex_t wlen(cos(ang), sin(ang));
       for (size_t i = 0; i < n; i += len) {
         complex_t w(1.);
@@ -247,7 +247,7 @@ private:
 
     if (invert)
       for (size_t i = 0; i < n; ++i)
-        vect[i] /= n;
+        vect[i] /= (double) n;
   }
 
 
@@ -264,10 +264,13 @@ private:
     weight_ = 0.;
     for (size_t i = 0; i < data_len_; ++i) {
       if (ind == data_size_ - 1)
-        hist.push_back(x_right_);
+        hist.push_back((double) x_right_);
       else {
         VERIFY(x_[ind + 1] > x_[ind]);
-        hist.push_back(((i + x_left_ - x_[ind]) * y_[ind + 1] + y_[ind] * (x_[ind + 1] - i - x_left_)) / (1. * (x_[ind + 1] - x_[ind])));
+        hist.push_back(((double) (i + x_left_ - x_[ind]) *
+        				y_[ind + 1] + y_[ind] *
+        				(double) (x_[ind + 1] - i - x_left_)) /
+        				(double) (1 * (x_[ind + 1] - x_[ind])));
       }
       weight_ += hist[i].real();     // filling the array on the fly
 
@@ -279,7 +282,7 @@ private:
 
 
   void InitBaseline() {
-    size_t Np = (size_t) (data_len_ * percentage_);
+    size_t Np = (size_t) ((double) data_len_ * percentage_);
     if (Np == 0) Np++; // Np <> 0 !!!!
 
     double mean_beg = 0.;
@@ -288,12 +291,12 @@ private:
       mean_beg += hist_[i].real();
       mean_end += hist_[data_len_ - i - 1].real();
     }
-    mean_beg /= 1. * Np;
-    mean_end /= 1. * Np;
+    mean_beg /= 1. * (double) Np;
+    mean_end /= 1. * (double) Np;
 
     //	two points defining the line
-    x1 = Np / 2.;
-    x2 = data_len_ - Np / 2.;
+    x1 = (double) Np / 2.;
+    x2 = (double) data_len_ - (double) Np / 2.;
     y1 = mean_beg;
     y2 = mean_end;
   }
@@ -303,13 +306,13 @@ private:
     //	it's being constructed like this: the first point is (Np/2; mean of the first percentage of data),
     //	the second point is (data_len_ - Np/2; mean of the last $percentage of data)
     for (size_t i = 0; i < data_len_; ++i) {
-      hist_[i] -= (y1 + (y2 - y1) * (i - x1) / (x2 - x1));
+      hist_[i] -= (y1 + (y2 - y1) * ((double) i - x1) / (x2 - x1));
     }
   }
 
   void AddBaseline() {
     for (size_t i = 0; i < data_len_; ++i) {
-      hist_[i] += (y1 + (y2 - y1) * (i - x1) / (x2 - x1));
+      hist_[i] += (y1 + (y2 - y1) * ((double) i - x1) / (x2 - x1));
     }
   }
 
@@ -345,13 +348,13 @@ private:
       return LeftDerivative(dist);
     else if (dist == x_left_)
       return RightDerivative(dist);
-    else 
+    else
       return MiddleDerivative(dist);
   }
 
-  bool IsLocalMaximum(int peak, size_t range, int left_bound, int right_bound, int delta) const {
+  bool IsLocalMaximum(int peak, size_t range, int left_bound, int right_bound, size_t delta) const {
 
-    DEBUG("Is local maximum :  peak " << peak << " range " << range 
+    DEBUG("Is local maximum :  peak " << peak << " range " << range
        << " bounds " << left_bound << " " << right_bound << " delta " << delta);
     int index_max = peak;
     TRACE("Looking for the maximum");
@@ -361,7 +364,7 @@ private:
       }// else if (j < i && hist_[index_max - x_left_][0] == hist_[j - x_left][0] ) index_max = j;
     TRACE("Maximum is " << index_max);
 
-    if  (abs(index_max - peak) <= delta) 
+    if  ((size_t)abs(index_max - peak) <= delta)
       return true;
 
     return false;
@@ -370,7 +373,7 @@ private:
   bool IsLocalMaximum(int peak, size_t range) const {
     return IsLocalMaximum(peak, range, x_left_, x_right_, delta_);
   }
-  
+
   DECL_LOGGER("PeakFinder");
 };
 

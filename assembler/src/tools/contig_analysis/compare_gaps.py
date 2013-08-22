@@ -12,7 +12,7 @@ import sys
 
 def parse_name(name):
       pieces = name.strip().split('_')
-      return int(pieces[len(pieces) - 1])
+      return int(pieces[1])
 
 
 def find_length(filename):

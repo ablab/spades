@@ -72,7 +72,7 @@ public:
   {
   }
 
-  vector<PathInfo> ConvertPIToSplitPaths(const vector<PairInfo<EdgeId>>& pair_infos) const
+  vector<PathInfo> ConvertPIToSplitPaths(const vector<PairInfo<EdgeId>>& pair_infos, double is, double is_var) const
   {
     vector<PathInfo> result;
     if (pair_infos.size() == 0) 
@@ -81,9 +81,7 @@ public:
       EdgeId cur_edge = pair_infos[0].first;
       vector<bool> pair_info_used(pair_infos.size());
       TRACE("Preparing path_processor for this base edge");
-      size_t path_upper_bound = PairInfoPathLengthUpperBound(graph_.k(),
-                                                             *cfg::get().ds.IS,
-                                                             size_t(*cfg::get().ds.is_var));
+      size_t path_upper_bound = PairInfoPathLengthUpperBound(graph_.k(), (size_t) is, is_var);
 
       PathStorageCallback<Graph> callback(graph_);
       PathProcessor<Graph> path_processor(graph_,
@@ -100,10 +98,9 @@ public:
         if (pair_info_used[i - 1])
           continue;
         DEBUG("SPC: pi " << cur_info);
-        vector<EdgeId> common_part = GetCommonPathsEnd(graph_, cur_edge,
-                                                       cur_info.second,
-                                                       cur_info.d() - cur_info.var(),
-                                                       cur_info.d() + cur_info.var(),
+        vector<EdgeId> common_part = GetCommonPathsEnd(graph_, cur_edge, cur_info.second,
+                                                       (size_t) (cur_info.d() - cur_info.var()),
+                                                       (size_t) (cur_info.d() - cur_info.var()),
                                                        path_processor);
         DEBUG("Found common part of size " << common_part.size());
         PathInfoClass<Graph> sub_res(cur_edge);
@@ -115,7 +112,7 @@ public:
           DEBUG("Common part " << ToString(common_part));
           for (size_t j = 0; j < common_part.size(); ++j) {
             PairInfo<EdgeId> cur_pi(cur_edge, common_part[j],
-                                    cur_info.d() - total_length,
+                                    cur_info.d() - (double) total_length,
                                     cur_info.weight(),
                                     cur_info.var());
 

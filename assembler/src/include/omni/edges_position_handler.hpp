@@ -15,7 +15,7 @@
 #define EDGES_POSITION_HANDLER_HPP_
 
 //#include "utils.hpp"
-#include "graph_labeler.hpp"
+#include "visualization/graph_labeler.hpp"
 #include "simple_tools.hpp"
 #include "omni_utils.hpp"
 using namespace omnigraph;
@@ -25,19 +25,20 @@ namespace omnigraph {
 class EdgePosition {
 public:
 	MappingRange m_range_;
+	//todo: change all from int to size_t!
 	int start_;
 	int end_;
 	int start() const {
-		return m_range_.initial_range.start_pos;
+		return (int)m_range_.initial_range.start_pos;
 	}
 	int end() const {
-		return m_range_.initial_range.end_pos;
+		return (int)m_range_.initial_range.end_pos;
 	}
 	int m_start() const {
-		return m_range_.mapped_range.start_pos;
+		return (int)m_range_.mapped_range.start_pos;
 	}
 	int m_end() const {
-		return m_range_.mapped_range.end_pos;
+		return (int)m_range_.mapped_range.end_pos;
 	}
 
 	std::string contigId_;
@@ -51,8 +52,8 @@ public:
 //	};
 	EdgePosition(MappingRange& m_range, std::string contigId = "0", int shift =
 			0) :
-			m_range_(m_range), start_(m_range.initial_range.start_pos), end_(
-					m_range.initial_range.end_pos), contigId_(contigId) {
+			m_range_(m_range), start_((int)m_range.initial_range.start_pos), end_(
+					(int)m_range.initial_range.end_pos), contigId_(contigId) {
 		m_range.mapped_range.start_pos += shift;
 		m_range.mapped_range.end_pos += shift;
 	}
@@ -63,8 +64,8 @@ public:
 //	};
 
 	EdgePosition(const EdgePosition& e_pos, int shift = 0) :
-			m_range_(e_pos.m_range_), start_(m_range_.initial_range.start_pos), end_(
-					m_range_.initial_range.end_pos), contigId_(e_pos.contigId_) {
+			m_range_(e_pos.m_range_), start_((int)m_range_.initial_range.start_pos), end_(
+					(int)m_range_.initial_range.end_pos), contigId_(e_pos.contigId_) {
 		m_range_.mapped_range.start_pos += shift;
 		m_range_.mapped_range.end_pos += shift;
 	}
@@ -77,9 +78,15 @@ public:
 		}
 	}
 
-	bool followed_by(EdgePosition& ep, int max_dist = 1,
-			double relative_cutoff = 0) {
+//    bool followed_by(EdgePosition& ep, int max_dist = 1,
+//            double relative_cutoff = 0) {
+//        return followed_by(ep, max_dist, relative_cutoff, 0);
+//    }
 
+	bool followed_by(EdgePosition& ep, int max_dist,
+			double /*relative_cutoff*/, int genome_end) {
+		if (ep.m_start() == 1 && m_end() == genome_end)
+			return true;
 		if (contigId_ != ep.contigId_)
 			return false;
 		if (end() > ep.start() + max_dist)
@@ -140,7 +147,7 @@ vector<EdgePosition> RangeGluePositionsLists(vector<EdgePosition> v1,
 	}
 	set<size_t> used_seconds;
 	for (size_t i = 0; i < v1.size(); i++) {
-		int best_fit_j = -1;
+		size_t best_fit_j = -1ULL;
 		for (size_t j = 0; j < v2.size(); j++) {
 			if (v1[i].contigId_ == v2[j].contigId_) {
 				if ((v1[i].end() + 1 == v2[j].start())
@@ -154,7 +161,7 @@ vector<EdgePosition> RangeGluePositionsLists(vector<EdgePosition> v1,
 							&& (v1[i].m_end() + max_single_gap + 1
 									>= v2[j].m_start() + shift)) {
 						//res.push_back(EdgePosition(v1[i].start_, v2[j].end_, v1[i].contigId_));
-						if (best_fit_j < 0)
+						if (best_fit_j == -1ULL)
 							best_fit_j = j;
 						else if (v2[j].start() < v2[best_fit_j].start())
 							best_fit_j = j;
@@ -163,7 +170,7 @@ vector<EdgePosition> RangeGluePositionsLists(vector<EdgePosition> v1,
 
 			}
 		}
-		if (best_fit_j != -1) {
+		if (best_fit_j != -1ULL) {
 			res.push_back(
 					EdgePosition(v1[i].start(), v2[best_fit_j].end(),
 							v1[i].contigId_, v1[i].m_start(),
@@ -208,7 +215,7 @@ vector<EdgePosition> GluePositionsLists(vector<EdgePosition> v1,
 		return res;
 	}
 	for (size_t i = 0; i < v1.size(); i++) {
-		int best_fit_j = -1;
+		size_t best_fit_j = -1ULL;
 		for (size_t j = 0; j < v2.size(); j++) {
 			if (v1[i].contigId_ == v2[j].contigId_) {
 				if (v1[i].end() + 1 == v2[j].start()) {
@@ -219,7 +226,7 @@ vector<EdgePosition> GluePositionsLists(vector<EdgePosition> v1,
 							&& (v1[i].end() + max_single_gap + 1
 									>= v2[j].start())) {
 						//res.push_back(EdgePosition(v1[i].start_, v2[j].end_, v1[i].contigId_));
-						if (best_fit_j < 0)
+						if (best_fit_j == -1ULL)
 							best_fit_j = j;
 						else if (v2[j].start() < v2[best_fit_j].start())
 							best_fit_j = j;
@@ -228,7 +235,7 @@ vector<EdgePosition> GluePositionsLists(vector<EdgePosition> v1,
 
 			}
 		}
-		if (best_fit_j != -1) {
+		if (best_fit_j != -1ULL) {
 			res.push_back(
 					EdgePosition(v1[i].start(), v2[best_fit_j].end(),
 							v1[i].contigId_));
@@ -247,13 +254,21 @@ template<class Graph>
 class EdgesPositionHandler: public GraphActionHandler<Graph> {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-	typedef int realIdType;
 
 	int max_single_gap_;
 	//todo rename
 	std::map<EdgeId, vector<EdgePosition>> EdgesPositions;
 	bool careful_ranges_;
 	size_t max_labels_;
+	int max_genome_coords;
+private:
+	void find_genome_length(){
+		for (auto iter = EdgesPositions.begin(); iter != EdgesPositions.end(); ++iter) {
+			for(size_t i =  0; i < iter->second.size(); i++)
+				max_genome_coords = max(max_genome_coords, iter->second[i].m_end());
+		}
+	}
+
 public:
 	bool is_careful() const {
 		return careful_ranges_;
@@ -271,14 +286,14 @@ public:
 		return it->second;
 	}
 
-	void FillPositionGaps(EdgeId NewEdgeId, double relative_cutoff = 0) {
+	vector<EdgePosition> FillPositionGaps(EdgeId NewEdgeId, double relative_cutoff = 0) {
 		VERIFY(this->IsAttached());
 		vector<EdgePosition> new_vec;
 		if (EdgesPositions[NewEdgeId].size() > 0) {
 			EdgePosition activePosition = EdgesPositions[NewEdgeId][0];
 			for (size_t i = 1; i < EdgesPositions[NewEdgeId].size(); i++) {
 				if (activePosition.followed_by(EdgesPositions[NewEdgeId][i],
-						max(max_single_gap_, int(relative_cutoff * this->g().length(NewEdgeId))))) {
+				        max(max_single_gap_, (int) (relative_cutoff * (double) this->g().length(NewEdgeId))), 0 , max_genome_coords)) {
 					activePosition.extend_by(EdgesPositions[NewEdgeId][i]);
 				} else {
 					new_vec.push_back(activePosition);
@@ -286,8 +301,9 @@ public:
 				}
 			}
 			new_vec.push_back(activePosition);
-			EdgesPositions[NewEdgeId] = new_vec;
+			//EdgesPositions[NewEdgeId] = new_vec;
 		}
+		return new_vec;
 	}
 
 	void AddEdgePosition(EdgeId NewEdgeId, int start, int end,
@@ -321,40 +337,41 @@ public:
 		//	TRACE("Add pos "<<NewPos.start_<<" "<<NewPos.end_<<" for edge "<<NewEdgeId<<" total positions: "<< EdgesPositions[NewEdgeId].size());
 
 		if (EdgesPositions[NewEdgeId].size() > 1) {
-			std::sort(EdgesPositions[NewEdgeId].begin(),
-					EdgesPositions[NewEdgeId].end(), PosCompare);
+			std::sort(EdgesPositions[NewEdgeId].begin(), EdgesPositions[NewEdgeId].end(), PosCompare);
 		}
 		FillPositionGaps(NewEdgeId);
 
 	}
 
-	bool IsConsistentWithGenome(vector<EdgeId> Path) {
-		for (size_t i = 0; i < Path.size(); i++) {
+	bool IsConsistentWithGenome(vector<EdgeId> path) {
+		map<EdgeId, vector<EdgePosition> > tmp_pos;
+		find_genome_length();
+		for (size_t i = 0; i < path.size(); i++) {
 //TODO: magic constants
-			FillPositionGaps(Path[i], 0.2);
+
+			tmp_pos[path[i]] = FillPositionGaps(path[i], 0.2);
 		}
-		for (size_t i = 0; i < Path.size() - 1; i++) {
-			if (this->g().EdgeStart(Path[i + 1]) != this->g().EdgeEnd(Path[i]))
+		for (size_t i = 0; i < path.size() - 1; i++) {
+			if (this->g().EdgeStart(path[i + 1]) != this->g().EdgeEnd(path[i]))
 				return false;
 		}
 
 		VERIFY(this->IsAttached());
-		if (Path.size() > 0) {
-			vector<EdgePosition> res = (EdgesPositions[Path[0]]);
+		if (path.size() > 0) {
+			vector<EdgePosition> res = (tmp_pos[path[0]]);
 
-			DEBUG(
-					this->g().int_id(Path[0]) << "  "<< res.size() << " positions");
+			DEBUG(this->g().int_id(path[0]) << "  " << res.size() << " positions");
 
-			int len = this->g().length(Path[0]);
-			for (size_t i = 1; i < Path.size(); i++) {
-				DEBUG(this->g().int_id(Path[i]) << "  "<< EdgesPositions[Path[i]].size() << " positions");
+			int len = (int) this->g().length(path[0]);
+			for (size_t i = 1; i < path.size(); i++) {
+				DEBUG(this->g().int_id(path[i]) << "  "<< tmp_pos[path[i]].size() << " positions");
 				if (is_careful())
-					res = RangeGluePositionsLists(res, EdgesPositions[Path[i]],
+					res = RangeGluePositionsLists(res, tmp_pos[path[i]],
 							max_single_gap_, len);
 				else
-					res = GluePositionsLists(res, EdgesPositions[Path[i]],
+					res = GluePositionsLists(res, tmp_pos[path[i]],
 							max_single_gap_);
-				len += this->g().length(Path[i]);
+				len += (int) this->g().length(path[i]);
 			}
 			if (res.size() > 0) {
 				if (is_careful()) {
@@ -472,36 +489,36 @@ public:
 		if (EdgesPositions.find(oldEdge) != EdgesPositions.end()) {
 			if (EdgesPositions[oldEdge].size() > 0) {
 				if (careful_ranges_) {
-					int length1 = this->g().length(newEdge1);
+					size_t length1 = this->g().length(newEdge1);
 //					int length2 = this->g().length(newEdge2);
 					for (auto iter = EdgesPositions[oldEdge].begin();
 							iter != EdgesPositions[oldEdge].end(); ++iter) {
-						if (iter->m_end() <= length1) {
+						if (iter->m_end() <= (int) length1) {
 							AddEdgePosition(newEdge1, iter->start(),
 									iter->end(), iter->contigId_,
 									iter->m_start(), iter->m_end());
-						} else if (iter->m_start() > length1) {
+						} else if (iter->m_start() > (int) length1) {
 							AddEdgePosition(newEdge2, iter->start(),
 									iter->end(), iter->contigId_,
-									iter->m_start() - length1,
-									iter->m_end() - length1);
+									iter->m_start() - (int) length1,
+									iter->m_end() - (int) length1);
 						} else {
-							int segm1len = (size_t) (iter->end() - iter->start()
-									+ 1) * (length1 - iter->m_start() + 1)
+							size_t segm1len = (size_t) (iter->end() - iter->start() + 1)
+									* ((int) length1 - iter->m_start() + 1)
 									/ (iter->m_end() - iter->m_start() + 1);
-							int segm2len = iter->m_end() - iter->m_start()
+							size_t segm2len = iter->m_end() - iter->m_start()
 									- segm1len + 1;
 							if (segm1len > 0) {
 								AddEdgePosition(newEdge1, iter->start(),
-										iter->start() + segm1len - 1,
+										iter->start() + (int) segm1len - 1,
 										iter->contigId_, iter->m_start(),
-										length1);
+										(int) length1);
 							}
 							if (segm2len > 0) {
 								AddEdgePosition(newEdge2,
-										iter->start() + segm1len, iter->end(),
+										iter->start() + (int) segm1len, iter->end(),
 										iter->contigId_, 1,
-										iter->m_end() - length1);
+										iter->m_end() - (int) length1);
 							}
 						}
 //						int end1 = iter->start_ + (length1*(iter->end_ - iter->start_))/(length1+length2);
@@ -515,16 +532,13 @@ public:
 					size_t length2 = this->g().length(newEdge2);
 					for (auto iter = EdgesPositions[oldEdge].begin();
 							iter != EdgesPositions[oldEdge].end(); ++iter) {
-						int end1 = iter->start_
-								+ (length1 * (iter->end_ - iter->start_))
-										/ (length1 + length2);
-						AddEdgePosition(newEdge1, iter->start_, end1,
-								iter->contigId_);
+						int end1 = iter->start_ + ((int) length1 * (iter->end_ - iter->start_))
+								   / (int) (length1 + length2);
+						AddEdgePosition(newEdge1, iter->start_, end1, iter->contigId_);
 						if (iter->end_ >= end1 + 1)
-							AddEdgePosition(newEdge2, end1 + 1, iter->end_,
-									iter->contigId_);
-						TRACE(
-								"Contig "<<iter->contigId_<<" Split: " << iter->start_<<"--"<<iter->end_<<" after pos "<<end1);
+							AddEdgePosition(newEdge2, end1 + 1, iter->end_, iter->contigId_);
+						TRACE("Contig " << iter->contigId_ << " Split: " << iter->start_ <<
+								"--" << iter->end_ << " after pos " << end1);
 					}
 //				 TRACE("EdgesPositionHandler not handled Split yet");
 				}
@@ -536,29 +550,24 @@ public:
 		// we assume that all edge have good ordered position labels.
 		size_t n = oldEdges.size();
 		vector<EdgePosition> res = (EdgesPositions[oldEdges[0]]);
-		int shift = this->g().length(oldEdges[0]);
+		int shift = (int) this->g().length(oldEdges[0]);
 		bool positive_size = (res.size() > 0);
 		for (size_t i = 1; i < n; i++) {
 			if (careful_ranges_) {
-				res = RangeGluePositionsLists(res, EdgesPositions[oldEdges[i]],
-						max_single_gap_, shift);
-				shift += this->g().length(oldEdges[i]);
+				res = RangeGluePositionsLists(res, EdgesPositions[oldEdges[i]], max_single_gap_, shift);
+				shift += (int) this->g().length(oldEdges[i]);
 			} else {
-				res = GluePositionsLists(res, EdgesPositions[oldEdges[i]],
-						max_single_gap_);
+				res = GluePositionsLists(res, EdgesPositions[oldEdges[i]], max_single_gap_);
 			}
 
-			positive_size = positive_size
-					|| (EdgesPositions[oldEdges[i]].size() > 0);
+			positive_size = positive_size || (EdgesPositions[oldEdges[i]].size() > 0);
 		}
 
 		if (positive_size && (res.size() == 0)) {
 			TRACE("Merge operation broke some positions:");
 			for (size_t i = 0; i < n; i++) {
-				TRACE(
-						"Size "<<EdgesPositions[oldEdges[i]].size()<<" "<<str(oldEdges[i]));
-				positive_size = positive_size
-						|| (EdgesPositions[oldEdges[i]].size() > 0);
+				TRACE("Size "<<EdgesPositions[oldEdges[i]].size()<<" "<<str(oldEdges[i]));
+				positive_size = positive_size || (EdgesPositions[oldEdges[i]].size() > 0);
 			}
 		}
 		TRACE("NEW res.size = "<< res.size());

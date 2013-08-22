@@ -38,6 +38,16 @@ std::string ToString(const T& t) {
 }
 
 template <typename T>
+std::string ToString(const T& t, size_t length) {
+	std::ostringstream ss;
+	ss << t;
+	std::string result = ss.str();
+	while(result.size() < length)
+		result = "0" + result;
+	return result;
+}
+
+template <typename T>
 std::string ToString(std::vector<T>& t) {
 	std::ostringstream ss;
 	ss << "Size "<<t.size()<<": [";
@@ -92,10 +102,7 @@ inline const std::pair<T, T> ReversePair(std::pair<T, T> ep) {
  * Checks if file exists.
  * Analogs: http://www.techbytes.ca/techbyte103.html , http://www.gamedev.net/topic/211918-determining-if-a-file-exists-c/
  */
-bool FileExists(std::string filename);
-
 inline bool FileExists(std::string filename) {
-
     struct stat st_buf;
     return stat(filename.c_str(), &st_buf) == 0 && S_ISREG(st_buf.st_mode);
 }
@@ -104,9 +111,7 @@ inline bool FileExists(std::string filename) {
  * Exit(1) if file doesn't exists, writes FATAL log message.
  */
 inline void CheckFileExistenceFATAL(std::string filename) {
-	if (!FileExists(filename)) {
-		VERIFY_MSG(false, "File " << filename << " doesn't exist or can't be read!\n");
-	}
+  VERIFY_MSG(FileExists(filename), "File " << filename << " doesn't exist or can't be read!\n");
 }
 
 template <class ContainerT1, class ContainerT2>

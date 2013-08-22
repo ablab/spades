@@ -263,16 +263,30 @@ BOOST_AUTO_TEST_CASE( BigComplexBulge ) {
        BOOST_CHECK_EQUAL(gp.g.size(), 66u);
 }
 
+template<class Graph, class InnerIndex>
+void FillKmerCoverageWithAvg(const Graph& g, InnerIndex& idx) {
+    for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+        EdgeId e = *it;
+        Sequence nucls = g.EdgeNucls(e);
+        double cov = g.coverage(e);
+        runtime_k::RtSeq kpomer(g.k() + 1, nucls);
+        kpomer >>= 0;
+        for (size_t i = 0; i < g.length(e); ++i) {
+            kpomer <<= nucls[i + g.k()];
+            idx[kpomer].count = math::floor(cov);
+        }
+    }
+}
+
 BOOST_AUTO_TEST_CASE( RelativeCoverageRemover ) {
-       conj_graph_pack gp(55, tmp_folder, Sequence(), 50, true, false);
-       ScanGraphPack("./src/test/debruijn/graph_fragments/rel_cov_ec/constructed_graph", gp);
-       INFO("Relative coverage component removal:");
-//       OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
-//       licvidator.Licvidate();
-       FlankingCoverage<Graph> flanking_cov(gp.g, gp.index.inner_index(), 50);
-       RemoveRelativelyLowCoverageComponents(gp.g, flanking_cov, 0, 5., 100);
-//       WriteGraphPack(gp, string("./src/test/debruijn/graph_fragments/big_complex_bulge/big_complex_bulge_res.dot"));
-       BOOST_CHECK_EQUAL(gp.g.size(), 12u/*28u*/);
+    typedef graph_pack<ConjugateDeBruijnGraph, runtime_k::RtSeq> gp_t;
+    gp_t gp(55, tmp_folder, Sequence(), 50, true, false);
+    ScanGraphPack("./src/test/debruijn/graph_fragments/rel_cov_ec/constructed_graph", gp);
+    INFO("Relative coverage component removal:");
+    FillKmerCoverageWithAvg(gp.g, gp.index.inner_index());
+    FlankingCoverage<gp_t::graph_t, gp_t::index_t::InnerIndexT> flanking_cov(gp.g, gp.index.inner_index(), 50);
+    RemoveRelativelyLowCoverageComponents(gp.g, flanking_cov, 0, 2., 100);
+    BOOST_CHECK_EQUAL(gp.g.size(), 12u/*28u*/);
 }
 
 BOOST_AUTO_TEST_SUITE_END()}

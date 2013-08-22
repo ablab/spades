@@ -18,7 +18,6 @@
 #include "io/vector_reader.hpp"
 #include "omni_labelers.hpp"
 #include "dataset_readers.hpp"
-//#include "online_pictures.hpp"
 
 namespace debruijn_graph {
 
@@ -33,61 +32,28 @@ namespace debruijn_graph {
 
 template<class Read>
 void construct_graph(io::ReadStreamVector< io::IReader<Read> >& streams,
-    conj_graph_pack& gp, ReadStream* contigs_stream = 0) {
+                     conj_graph_pack& gp, ReadStream* contigs_stream = 0) {
   INFO("STAGE == Constructing Graph");
-  size_t rl = ConstructGraphWithCoverage(cfg::get().K, streams, gp.g,
+
+  debruijn_config::construction params = cfg::get().con;
+  params.early_tc.enable &= !cfg::get().ds.single_cell;
+
+  //  size_t rl = ConstructGraphWithCoverage(cfg::get().K, streams, gp.g, gp.index, contigs_stream);
+  size_t rl = ConstructGraphWithCoverage(cfg::get().K, params, streams, gp.g,
       gp.index, contigs_stream);
-  if (!cfg::get().ds.RL.is_initialized()) {
+
+  if (!cfg::get().ds.RL()) {
     INFO("Figured out: read length = " << rl);
-    cfg::get_writable().ds.RL = rl;
-  } else if (*cfg::get().ds.RL != rl) {
-    WARN(
-        "In datasets.info, wrong RL is specified: " << cfg::get().ds.RL << ", not " << rl);
-  }
-}
-
-string estimated_param_filename(const string& prefix) {
-  return prefix + "_est_params.info";
-}
-
-void load_estimated_params(const string& prefix) {
-  string filename = estimated_param_filename(prefix);
-  //todo think of better architecture
-  if (FileExists(filename)) {
-    load_param(filename, "RL", cfg::get_writable().ds.RL);
-    load_param(filename, "IS", cfg::get_writable().ds.IS);
-    load_param(filename, "is_var", cfg::get_writable().ds.is_var);
-    load_param_map(filename, "perc", cfg::get_writable().ds.percentiles);
-    load_param(filename, "avg_coverage",
-        cfg::get_writable().ds.avg_coverage);
-    load_param_map(filename, "hist", cfg::get_writable().ds.hist);
-    load_param(filename, "median", cfg::get_writable().ds.median);
-    load_param(filename, "mad", cfg::get_writable().ds.mad);
-    load_param_map(filename, "hist", cfg::get_writable().ds.hist);
-  }
-}
-
-void write_estimated_params(const string& prefix) {
-  string filename = estimated_param_filename(prefix);
-  write_param(filename, "RL", cfg::get().ds.RL);
-  write_param(filename, "IS", cfg::get().ds.IS);
-  write_param(filename, "is_var", cfg::get().ds.is_var);
-  write_param_map(filename, "perc", cfg::get().ds.percentiles);
-  write_param(filename, "avg_coverage", cfg::get().ds.avg_coverage);
-  write_param(filename, "median", cfg::get().ds.median);
-  write_param(filename, "mad", cfg::get().ds.mad);
-  write_param_map(filename, "hist", cfg::get().ds.hist);
-}
-
-void return_estimated_params() {
-	write_estimated_params(cfg::get().output_dir + "/");
+    cfg::get_writable().ds.set_RL(rl);
+  } else if (cfg::get().ds.RL() != rl)
+    WARN("In datasets.info, wrong RL is specified: " << cfg::get().ds.RL() << ", not " << rl);
 }
 
 void load_construction(conj_graph_pack& gp, path::files_t* files) {
-    string p = path::append_path(cfg::get().load_from, "constructed_graph");
+  string p = path::append_path(cfg::get().load_from, "constructed_graph");
   files->push_back(p);
-    ScanGraphPack(p, gp);
-    load_estimated_params(p);
+  ScanGraphPack(p, gp);
+  load_lib_data(p);
 }
 
 void save_construction(conj_graph_pack& gp) {
@@ -95,21 +61,9 @@ void save_construction(conj_graph_pack& gp) {
     string p = path::append_path(cfg::get().output_saves, "constructed_graph");
     INFO("Saving current state to " << p);
     PrintGraphPack(p, gp);
-    write_estimated_params(p);
+    write_lib_data(p);
   }
-  return_estimated_params();
 }
-
-//boost::optional<string> single_reads_filename(
-//    const boost::optional<string>& raw_name, const string& dir) {
-//  if (raw_name) {
-//    string full_name = dir + *raw_name;
-//    if (fileExists(full_name)) {
-//      return boost::optional<string>(full_name);
-//    }
-//  }
-//  return boost::none;
-//}
 
 void exec_construction(conj_graph_pack& gp) {
   if (cfg::get().entry_point <= ws_construction) {
@@ -129,16 +83,21 @@ void exec_construction(conj_graph_pack& gp) {
           cfg::get().additional_contigs, true);
     }
 
-    if (cfg::get().use_multithreading) {
-      auto streams = single_binary_readers(true, true);
-      construct_graph<io::SingleReadSeq>(*streams, gp,
-          additional_contigs_stream);
+    std::vector<size_t> libs_for_construction;
+    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+        if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd || cfg::get().ds.reads[i].type() == io::LibraryType::SingleReads) {
+            libs_for_construction.push_back(i);
+        }
+    }
 
+    if (cfg::get().use_multithreading) {
+      auto streams = single_binary_readers_for_libs(libs_for_construction, true, true);
+      construct_graph<io::SingleReadSeq>(*streams, gp, additional_contigs_stream);
     } else {
-      auto single_stream = single_easy_reader(true, true);
+      auto single_stream = single_easy_reader_for_libs(libs_for_construction, true, true);
       io::ReadStreamVector<ReadStream> streams(single_stream.get());
-      construct_graph<io::SingleRead>(streams, gp,
-          additional_contigs_stream);
+      single_stream.release();
+      construct_graph<io::SingleRead>(streams, gp, additional_contigs_stream);
     }
 
     save_construction(gp);

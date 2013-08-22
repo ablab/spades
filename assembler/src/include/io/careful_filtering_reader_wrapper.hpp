@@ -13,7 +13,7 @@ namespace io {
 
 const size_t none = -1;
 
-pair<size_t, size_t> longestValidCoords(const SingleRead& r) {
+inline std::pair<size_t, size_t> longestValidCoords(const SingleRead& r) {
 	size_t best_len = 0;
 	size_t best_pos = none;
 	size_t pos = none;
@@ -35,19 +35,19 @@ pair<size_t, size_t> longestValidCoords(const SingleRead& r) {
 		}
 	}
 	if (best_len == 0) {
-		return make_pair(0, 0);
+		return std::make_pair(0, 0);
 	}
-	return make_pair(best_pos, best_pos + best_len);
+	return std::make_pair(best_pos, best_pos + best_len);
 }
 
-SingleRead longestValid(const SingleRead& r) {
-	pair<size_t, size_t> p = longestValidCoords(r);
+inline SingleRead longestValid(const SingleRead& r) {
+	std::pair<size_t, size_t> p = longestValidCoords(r);
 	return r.Substr(p.first, p.second);
 }
 
-PairedRead longestValid(const PairedRead& r) {
-	pair<size_t, size_t> c1 = longestValidCoords(r.first());
-	pair<size_t, size_t> c2 = longestValidCoords(r.second());
+inline PairedRead longestValid(const PairedRead& r) {
+	std::pair<size_t, size_t> c1 = longestValidCoords(r.first());
+	std::pair<size_t, size_t> c2 = longestValidCoords(r.second());
 	size_t len1 = c1.second - c1.first;
 	size_t len2 = c2.second - c2.first;
 	if (len1 == 0 || len2 == 0) {

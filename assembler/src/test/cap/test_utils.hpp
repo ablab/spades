@@ -10,12 +10,19 @@
 #include <boost/random/uniform_01.hpp>
 #include <boost/random/uniform_int.hpp>
 #include <boost/random/variate_generator.hpp>
+#include "compare_standard.hpp"
 
 namespace cap {
 
 struct EdgeData {
     std::string sequence;
     TColorSet color;
+
+    EdgeData() {}
+
+    EdgeData(const string& sequence_, const TColorSet& color_)
+            : sequence(sequence_),
+              color(color_) {}
 
     bool operator < (const EdgeData &other) const {
         return sequence < other.sequence;
@@ -114,8 +121,8 @@ vector<Sequence> RepeatGraphEdges(const Sequence& genome) {
 
 bool CheckFileDiff(const string& file1, const string& file2) {
 	INFO("Checking differences between " << file1 << " and " << file2);
-	checkFileExistenceFATAL(file1);
-	checkFileExistenceFATAL(file2);
+	CheckFileExistenceFATAL(file1);
+	CheckFileExistenceFATAL(file2);
 	ifstream f1(file1.c_str());
 	ifstream f2(file2.c_str());
 	while (!f1.eof() && !f2.eof()) {
@@ -213,37 +220,115 @@ bool MapsValueSetEquals(std::map <int, EdgeData> m1, std::map <int, EdgeData> m2
     return true;
 }
 
-// Returns true if graphs are isomorhic
-// Actually currently check consists of comparing sets of labels on the edges
-// and check for equality of colors on corresponding edges.
-bool CheckColoredGraphIsomorphism(const string &prefix1, const string &prefix2) {
-    INFO("Checking colored graphs in files " + prefix1 + ".* and " + prefix2 + ".* for isomorphic equality");
-    string color_suffix = ".clr",
-           label_suffix = ".sqn";
-
-    checkFileExistenceFATAL(prefix1 + color_suffix);
-    checkFileExistenceFATAL(prefix2 + color_suffix);
-    checkFileExistenceFATAL(prefix1 + label_suffix);
-    checkFileExistenceFATAL(prefix2 + label_suffix);
-
-    std::map <int, EdgeData> edges1, edges2;
-
-    // Do we need graph structure?
-
-    ifstream *ifs1 = new ifstream((prefix1 + label_suffix).c_str()),
-             *ifs2 = new ifstream((prefix2 + label_suffix).c_str());
-    ReadLabelsInMap(*ifs1, edges1);
-    ReadLabelsInMap(*ifs2, edges2);
-    delete ifs1,
-    delete ifs2;
-
-    ifs1 = new ifstream((prefix1 + color_suffix).c_str()),
-    ifs2 = new ifstream((prefix2 + color_suffix).c_str());
-    ReadColorsInMap(*ifs1, edges1);
-    ReadColorsInMap(*ifs2, edges2);
-    delete ifs1,
-    delete ifs2;
-    
-    return MapsValueSetEquals(edges1, edges2);
+template<class gp_t>
+inline void LoadWithColoring(gp_t& gp, ColorHandler<typename gp_t::graph_t>& coloring, const string& path) {
+    typedef typename ScannerTraits<typename gp_t::graph_t>::Scanner Scanner;
+    Scanner scanner(gp.g, gp.int_ids);
+    scanner.loadGraph(path);
+    LoadColoring(gp.g, gp.int_ids, coloring, path);
 }
+
+template<class gp_t>
+class ColoredGraphIsomorphismChecker {
+
+    typedef typename gp_t::graph_t Graph;
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+    typedef ColorHandler<Graph> Coloring;
+    typedef Sequence Kmer;
+    typedef map<Kmer, size_t> Mapping;
+
+    struct Pack {
+        gp_t gp;
+        Coloring col;
+        Mapping map;
+
+        Pack(size_t k, const string& work_dir)
+                : gp(k, work_dir),
+                  col(gp.g) {
+
+        }
+
+        void FillMapping() {
+            for (auto it = gp.g.SmartVertexBegin(); !it.IsEnd(); ++it) {
+                map[gp.g.VertexNucls(*it)] = gp.int_ids.ReturnIntId(*it);
+            }
+        }
+    };
+
+    Pack pack1_;
+    Pack pack2_;
+
+    void LoadPack(Pack& pack, const string& path) {
+        typedef typename ScannerTraits<typename gp_t::graph_t>::Scanner Scanner;
+        Scanner scanner(pack.gp.g, pack.gp.int_ids);
+        pack.gp.index.Detach();
+        scanner.loadGraph(path);
+        pack.gp.index.Refill();
+        pack.gp.index.Attach();
+        LoadColoring(pack.gp.g, pack.gp.int_ids, pack.col, path);
+        pack.FillMapping();
+    }
+
+    VertexId GetVertexId(const Pack& pack, const Kmer& kmer) const {
+        return pack.gp.int_ids.ReturnVertexId(get(pack.map, kmer));
+    }
+
+    bool CheckEdgeIsomorphism(vector<EdgeData> edges1, vector<EdgeData> edges2) const {
+        std::sort(edges1.begin(), edges1.end());
+        std::sort(edges2.begin(), edges2.end());
+        return edges1 == edges2;
+    }
+
+    vector<EdgeData> ConvertData(const vector<EdgeId>& edges, const Pack& pack) const {
+        vector<EdgeData> ans;
+        FOREACH(EdgeId e, edges) {
+            EdgeData data(pack.gp.g.EdgeNucls(e).str(), pack.col.Color(e));
+            ans.push_back(data);
+        }
+        return ans;
+    }
+
+    bool CheckVertexIsomorphism(VertexId v1, VertexId v2) const {
+        return CheckEdgeIsomorphism(
+                ConvertData(pack1_.gp.g.OutgoingEdges(v1), pack1_),
+                ConvertData(pack2_.gp.g.OutgoingEdges(v2), pack2_))
+                && CheckEdgeIsomorphism(
+                        ConvertData(pack1_.gp.g.IncomingEdges(v1), pack1_),
+                        ConvertData(pack2_.gp.g.IncomingEdges(v2), pack2_))
+                && pack1_.col.Color(v1) == pack2_.col.Color(v2);
+    }
+
+    bool CheckColoredGraphIsomorphism() const {
+        typedef typename gp_t::graph_t Graph;
+        typedef typename Graph::VertexId VertexId;
+
+        if (pack1_.map.size() != pack2_.map.size())
+            return false;
+
+        FOREACH (Kmer kmer, key_set(pack1_.map)) {
+            if (pack2_.map.count(kmer) == 0)
+                return false;
+            if (!CheckVertexIsomorphism(GetVertexId(pack1_, kmer), GetVertexId(pack2_, kmer)))
+                return false;
+        }
+        return true;
+    }
+
+public:
+    ColoredGraphIsomorphismChecker(size_t k, const string& work_dir)
+    : pack1_(k, work_dir),
+      pack2_(k, work_dir) {
+    }
+
+    bool Check(const string &prefix1, const string &prefix2) {
+        INFO("Checking colored graphs in files " + prefix1 + ".* and " + prefix2 + ".* for isomorphic equality");
+
+        LoadPack(pack1_, prefix1);
+        LoadPack(pack2_, prefix2);
+
+        return CheckColoredGraphIsomorphism();
+    }
+};
+
 }

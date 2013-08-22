@@ -14,7 +14,7 @@
 #pragma once
 
 #include "omni/total_labeler.hpp"
-#include "omni/graph_labeler.hpp"
+#include "omni/visualization/graph_labeler.hpp"
 #include "debruijn_graph.hpp"
 
 namespace debruijn_graph

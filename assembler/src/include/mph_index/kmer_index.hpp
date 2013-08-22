@@ -34,6 +34,7 @@ template<class Seq>
 struct kmer_index_traits {
   typedef Seq SeqType;
   typedef MMappedRecordArrayReader<typename Seq::DataType> RawKMerStorage;
+  typedef MMappedRecordArrayReader<typename Seq::DataType> FinalKMerStorage;
   typedef typename RawKMerStorage::iterator             raw_data_iterator;
   typedef typename RawKMerStorage::const_iterator       raw_data_const_iterator;
   typedef typename RawKMerStorage::iterator::value_type KMerRawData;
@@ -66,19 +67,19 @@ struct kmer_index_traits {
   struct seeded_hash_function {
     static cxxmph::h128 hash128(const KMerRawData &k, uint32_t seed) {
       cxxmph::h128 h;
-      MurmurHash3_x64_128(k.data(), k.data_size(), seed, &h);
+      MurmurHash3_x64_128(k.data(), (int)k.data_size(), seed, &h);
       return h;
     }
 
     static cxxmph::h128 hash128(const KMerRawReference k, uint32_t seed) {
       cxxmph::h128 h;
-      MurmurHash3_x64_128(k.data(), k.data_size(), seed, &h);
+      MurmurHash3_x64_128(k.data(), (int)k.data_size(), seed, &h);
       return h;
     }
 
     static cxxmph::h128 hash128(const Seq &k, uint32_t seed) {
       cxxmph::h128 h;
-      MurmurHash3_x64_128(k.data(), k.data_size() * sizeof(typename Seq::DataType), seed, &h);
+      MurmurHash3_x64_128(k.data(), (int)(k.data_size() * sizeof(typename Seq::DataType)), seed, &h);
       return h;
     }
   };
@@ -112,20 +113,21 @@ struct kmer_index_traits {
 
 };
 
-template<class Seq, class traits = kmer_index_traits<Seq>>
+template<class traits>
 class KMerIndex {
  public:
-  typedef Seq                               KMerSeq;
+  typedef traits kmer_index_traits;
+  typedef typename traits::SeqType          KMerSeq;
   typedef typename traits::hash_function    hash_function;
   typedef typename traits::KMerRawData      KMerRawData;
   typedef typename traits::KMerRawReference KMerRawReference;
 
  private:
-  typedef cxxmph::SimpleMPHIndex<Seq, typename traits::seeded_hash_function> KMerDataIndex;
+  typedef cxxmph::SimpleMPHIndex<KMerSeq, typename traits::seeded_hash_function> KMerDataIndex;
   typedef KMerIndex __self;
 
  public:
-  KMerIndex(unsigned k):k_(k), index_(NULL),  num_buckets_(0) {}
+  KMerIndex(/*unsigned k*/):/*k_(k), */index_(NULL),  num_buckets_(0) {}
 
   KMerIndex(const KMerIndex&) = delete;
   KMerIndex& operator=(const KMerIndex&) = delete;
@@ -152,7 +154,7 @@ class KMerIndex {
     return sz;
   }
 
-  size_t seq_idx(const Seq &s) const {
+  size_t seq_idx(const KMerSeq &s) const {
     size_t bucket = seq_bucket(s);
 
     return bucket_starts_[bucket] + index_[bucket].index(s);
@@ -187,13 +189,13 @@ class KMerIndex {
   }
 
  private:
-  unsigned k_;
+//  unsigned k_;
   KMerDataIndex *index_;
 
   size_t num_buckets_;
   std::vector<size_t> bucket_starts_;
 
-  size_t seq_bucket(const Seq &s) const {
+  size_t seq_bucket(const KMerSeq &s) const {
     return hash_function()(s) % num_buckets_;
   }
   size_t raw_seq_bucket(const KMerRawReference data) const {
@@ -208,8 +210,8 @@ class KMerSplitter {
  public:
   typedef typename Seq::hash hash_function;
 
-  KMerSplitter(const std::string &work_dir, unsigned K)
-      : work_dir_(work_dir), K_(K) {}
+  KMerSplitter(const std::string &work_dir, unsigned K, uint32_t seed = 0)
+      : work_dir_(work_dir), K_(K), seed_(seed) {}
 
   virtual path::files_t Split(size_t num_files) = 0;
 
@@ -219,12 +221,13 @@ class KMerSplitter {
   const std::string &work_dir_;
   hash_function hash_;
   unsigned K_;
+  uint32_t seed_;
 
   std::string GetRawKMersFname(unsigned suffix) const {
     return path::append_path(work_dir_, "kmers.raw." + boost::lexical_cast<std::string>(suffix));
   }
-  unsigned GetFileNumForSeq(const Seq &s, size_t total) const {
-    return hash_(s) % total;
+  unsigned GetFileNumForSeq(const Seq &s, unsigned total) const {
+    return (unsigned)(hash_(s, seed_) % total);
   }
 
   DECL_LOGGER("K-mer Splitting");
@@ -236,13 +239,16 @@ class KMerCounter {
   typedef typename traits::raw_data_iterator       iterator;
   typedef typename traits::raw_data_const_iterator const_iterator;
   typedef typename traits::RawKMerStorage          RawKMerStorage;
+  typedef typename traits::FinalKMerStorage        FinalKMerStorage;
 
   virtual size_t Count(unsigned num_buckets, unsigned num_threads) = 0;
+  virtual size_t CountAll(unsigned num_buckets, unsigned num_threads, bool merge = true) = 0;
   virtual void MergeBuckets(unsigned num_buckets) = 0;
 
   virtual void OpenBucket(size_t idx, bool unlink = true) = 0;
   virtual void ReleaseBucket(size_t idx) = 0;
   virtual RawKMerStorage* TransferBucket(size_t idx) = 0;
+  virtual FinalKMerStorage* GetFinalKMers() = 0;
 
   virtual iterator bucket_begin(size_t idx) = 0;
   virtual iterator bucket_end(size_t idx) = 0;
@@ -253,22 +259,31 @@ protected:
   DECL_LOGGER("K-mer Counting");
 };
 
-template<class Seq>
+template<class Seq, class traits = kmer_index_traits<Seq> >
 class KMerDiskCounter : public KMerCounter<Seq> {
-  typedef KMerCounter<Seq> __super;
+    typedef KMerCounter<Seq, traits> __super;
 public:
   KMerDiskCounter(const std::string &work_dir, KMerSplitter<Seq> &splitter)
-      : work_dir_(work_dir), splitter_(splitter) { }
+      : work_dir_(work_dir), splitter_(splitter) {
+    std::string prefix = path::append_path(work_dir, "kmers_XXXXXX");
+    char *tempprefix = strcpy(new char[prefix.length() + 1], prefix.c_str());
+    VERIFY_MSG(-1 != (fd_ = ::mkstemp(tempprefix)), "Cannot create temporary file");
+    kmer_prefix_ = tempprefix;
+    delete tempprefix;
+  }
 
   ~KMerDiskCounter() {
     for (size_t i = 0; i < buckets_.size(); ++i)
       ReleaseBucket(i);
+
+    ::close(fd_);
+    ::unlink(kmer_prefix_.c_str());
   }
 
   void OpenBucket(size_t idx, bool unlink = true) {
     unsigned K = splitter_.K();
 
-    buckets_[idx] = new MMappedRecordArrayReader<typename Seq::DataType>(GetMergedKMersFname(idx), Seq::GetDataSize(K), unlink);
+    buckets_[idx] = new MMappedRecordArrayReader<typename Seq::DataType>(GetMergedKMersFname((unsigned)idx), Seq::GetDataSize(K), unlink);
   }
 
   void ReleaseBucket(size_t idx) {
@@ -326,7 +341,7 @@ public:
     for (unsigned i = 0; i < num_buckets; ++i)
       VERIFY(buckets_[i] == NULL);
 
-    buckets_.resize(1);
+    buckets_.clear();
 
     MMappedRecordArrayWriter<typename Seq::DataType> os(GetFinalKMersFname(), Seq::GetDataSize(K));
     std::string ofname = GetFinalKMersFname();
@@ -336,26 +351,39 @@ public:
       ofs.write((const char*)ins.data(), ins.data_size());
     }
     ofs.close();
+  }
 
-    buckets_[0] = new MMappedRecordArrayReader<typename Seq::DataType>(GetFinalKMersFname(), Seq::GetDataSize(K), /* unlink */ true);
+  size_t CountAll(unsigned num_buckets, unsigned num_threads, bool merge = true) {
+    size_t kmers = Count(num_buckets, num_threads);
+    if (merge)
+      MergeBuckets(num_buckets);
+
+    return kmers;
+  }
+
+  typename __super::FinalKMerStorage *GetFinalKMers() {
+    unsigned K = splitter_.K();
+    return new MMappedRecordArrayReader<typename Seq::DataType>(GetFinalKMersFname(), Seq::GetDataSize(K), /* unlink */ true);
+  }
+
+  std::string GetMergedKMersFname(unsigned suffix) const {
+    return kmer_prefix_ + ".merged." + boost::lexical_cast<std::string>(suffix);
+  }
+
+  std::string GetFinalKMersFname() const {
+    return kmer_prefix_ + ".final";
   }
 
 private:
   std::string work_dir_;
   KMerSplitter<Seq> &splitter_;
+  int fd_;
+  std::string kmer_prefix_;
 
   std::vector<MMappedRecordArrayReader<typename Seq::DataType>*> buckets_;
 
   std::string GetUniqueKMersFname(unsigned suffix) const {
-    return path::append_path(work_dir_, "kmers.unique." + boost::lexical_cast<std::string>(suffix));
-  }
-
-  std::string GetMergedKMersFname(unsigned suffix) const {
-    return path::append_path(work_dir_, "kmers.merged." + boost::lexical_cast<std::string>(suffix));
-  }
-
-  std::string GetFinalKMersFname() const {
-    return path::append_path(work_dir_, "kmers.final");
+    return kmer_prefix_ + ".unique." + boost::lexical_cast<std::string>(suffix);
   }
 
   size_t MergeKMers(const std::string &ifname, const std::string &ofname,
@@ -380,6 +408,7 @@ private:
 template<class Index>
 class KMerIndexBuilder {
   typedef typename Index::KMerSeq Seq;
+  typedef typename Index::kmer_index_traits kmer_index_traits;
 
   std::string work_dir_;
   unsigned num_buckets_;
@@ -411,16 +440,16 @@ size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &count
 
   index.num_buckets_ = num_buckets_;
   index.bucket_starts_.resize(num_buckets_ + 1);
-  index.index_ = new typename KMerIndex<Seq>::KMerDataIndex[num_buckets_];
+  index.index_ = new typename KMerIndex<kmer_index_traits>::KMerDataIndex[num_buckets_];
 
   INFO("Building perfect hash indices");
 # pragma omp parallel for shared(index)
   for (unsigned iFile = 0; iFile < num_buckets_; ++iFile) {
-    typename KMerIndex<Seq>::KMerDataIndex &data_index = index.index_[iFile];
+    typename KMerIndex<kmer_index_traits>::KMerDataIndex &data_index = index.index_[iFile];
     counter.OpenBucket(iFile, !save_final);
     size_t sz = counter.bucket_end(iFile) - counter.bucket_begin(iFile);
     index.bucket_starts_[iFile + 1] = sz;
-    if (!data_index.Reset(counter.bucket_begin(iFile), counter.bucket_end(iFile), sz)) {
+    if (!data_index.Reset(counter.bucket_begin(iFile), counter.bucket_end(iFile), (unsigned)sz)) {
       INFO("Something went really wrong (read = this should not happen). Try to restart and see if the problem will be fixed.");
       exit(-1);
     }
@@ -435,7 +464,7 @@ size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &count
   if (save_final)
     counter.MergeBuckets(num_buckets_);
 
-  double bits_per_kmer = 8.0 * index.mem_size() / kmers;
+  double bits_per_kmer = 8.0 * (double)index.mem_size() / (double)kmers;
   INFO("Index built. Total " << index.mem_size() << " bytes occupied (" << bits_per_kmer << " bits per kmer).");
 
   return kmers;

@@ -7,18 +7,18 @@
 #pragma once
 
 #include "graph_pack.hpp"
-#include "omni/visualization_utils.hpp"
+#include "omni/visualization/visualization_utils.hpp"
 #include "standard_vis.hpp"
 #include "debruijn_stats.hpp"
 
 namespace online_visualization {
 
-typedef debruijn_graph::NewExtendedSequenceMapper<Graph> MapperClass;
+typedef debruijn_graph::NewExtendedSequenceMapper<Graph, Index> MapperClass;
 typedef debruijn_graph::PosFiller<Graph, MapperClass> FillerClass;
 typedef debruijn_graph::KmerMapper<Graph> KmerMapperClass;
 typedef map<EdgeId, string> ColoringClass;
 
-class Environment {
+class Environment : private boost::noncopyable {
  protected:
   const string name_;
   const string path_;
@@ -43,7 +43,7 @@ class Environment {
   virtual string str() const {
     stringstream ss;
     ss << name_ + " " + path_;
-    return ss.str();   
+    return ss.str();
   }
 
   virtual inline bool IsCorrect() const {

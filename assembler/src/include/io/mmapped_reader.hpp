@@ -12,6 +12,8 @@
 
 #include "verify.hpp"
 
+#include <boost/iterator/iterator_facade.hpp>
+
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/mman.h>
@@ -27,7 +29,6 @@ class MMappedReader {
   int StreamFile;
   bool Unlink;
   std::string FileName;
-  MMappedReader(const MMappedReader &) = delete;
 
   void remap() {
     VERIFY(BlockSize != FileSize);
@@ -51,12 +52,15 @@ class MMappedReader {
     BytesRead += amount;
   }
 
-
  protected:
   uint8_t* MappedRegion;
   size_t FileSize, BlockOffset, BytesRead, BlockSize;
 
  public:
+  MMappedReader()
+      : StreamFile(-1), Unlink(false), FileName(""), MappedRegion(0), FileSize(0), BytesRead(0)
+    {}
+
   MMappedReader(const std::string &filename, bool unlink = false,
                 size_t blocksize = 64*1024*1024, size_t off = 0, size_t sz = 0)
       : Unlink(unlink), FileName(filename), BlockSize(blocksize) {
@@ -86,8 +90,33 @@ class MMappedReader {
     BlockOffset = BytesRead = 0;
   }
 
+  MMappedReader(MMappedReader &&other) {
+    // First, copy out the stuff
+    MappedRegion = other.MappedRegion;
+    FileSize = other.FileSize;
+    BlockOffset = other.BlockOffset;
+    BytesRead = other.BytesRead;
+    BlockSize = other.BlockSize;
+    FileName = std::move(other.FileName);
+    Unlink = other.Unlink;
+    StreamFile = other.StreamFile;
+
+    // Now, zero out inside other, so we won't do crazy thing in dtor
+    StreamFile = -1;
+    Unlink = false;
+    MappedRegion = 0;
+  }
+
+  MMappedReader& operator=(MMappedReader &&other) {
+    if (this != &other) {
+      *this = std::move(other);
+    }
+    return *this;
+  }
+
   virtual ~MMappedReader() {
-    close(StreamFile);
+    if (StreamFile != -1)
+      close(StreamFile);
     if (MappedRegion)
       munmap(MappedRegion, BlockSize);
 
@@ -124,6 +153,24 @@ class MMappedReader {
     read_internal(cbuf, amount);
   }
 
+  void* skip(size_t amount) {
+    // Easy case, no remapping is needed
+    if (BytesRead + amount <= BlockOffset + BlockSize) {
+      void* out = MappedRegion + BytesRead - BlockOffset;
+      BytesRead += amount;
+
+      return out;
+    }
+
+    // Make sure data does not cross the block boundary
+    VERIFY(BytesRead  == BlockOffset + BlockSize);
+
+    // Now, remap and read from the beginning of the block
+    remap();
+
+    return skip(amount);
+  }
+
   bool good() const {
     return BytesRead < FileSize;
   }
@@ -141,7 +188,8 @@ class MMappedRecordReader : public MMappedReader {
   typedef const pointer_iterator<T> const_iterator;
 
   MMappedRecordReader(const std::string &FileName, bool unlink = true,
-                      size_t blocksize = 64*1024*1024, size_t off = 0, size_t sz = 0):
+                      size_t blocksize = 64*1024*1024 / (sizeof(T) * getpagesize()) * (sizeof(T) * getpagesize()),
+                      size_t off = 0, size_t sz = 0):
       MMappedReader(FileName, unlink, blocksize, off, sz) {
     VERIFY(FileSize % sizeof(T) == 0);
   }
@@ -161,6 +209,49 @@ class MMappedRecordReader : public MMappedReader {
   const_iterator begin() const { return const_iterator(data()); }
   iterator end() { return iterator(data()+ size()); }
   const_iterator end() const { return const_iterator(data() + size()); }
+};
+
+template<class T>
+class MMappedFileRecordIterator :
+        public boost::iterator_facade<MMappedFileRecordIterator<T>,
+                                      const T,
+                                      std::input_iterator_tag> {
+  public:
+    // Default ctor, used to implement "end" iterator
+    MMappedFileRecordIterator() : good_(false) {}
+    MMappedFileRecordIterator(const std::string &FileName)
+            : reader_(FileName, false), good_(true) {
+        reader_.read(&value_, sizeof(value_));
+    }
+    MMappedFileRecordIterator(MMappedRecordReader<T> &&reader)
+            : reader_(std::move(reader)), good_(true) {
+        reader_.read(&value_, sizeof(value_));
+    }
+    bool good() const {
+        return good_;
+    }
+
+  private:
+    friend class boost::iterator_core_access;
+
+    void increment() {
+        good_ = reader_.good();
+        if (good_)
+            reader_.read(&value_, sizeof(value_));
+    }
+    bool equal(const MMappedFileRecordIterator &other) {
+        // Iterators are equal iff:
+        //   1) They both are not good (at the end of the stream),
+        //      or
+        //   2) Has the same mapped region
+        return ((!reader_.good() && !other.reader_.good()) ||
+                reader_.data() == other.reader_.data());
+    }
+    const T dereference() const { return value_; }
+
+    T value_;
+    MMappedRecordReader<T> reader_;
+    bool good_;
 };
 
 template<typename T>
@@ -199,5 +290,46 @@ class MMappedRecordArrayReader : public MMappedReader {
   const_iterator cend() const { return const_iterator(data() + size()*elcnt_, elcnt_); }
 };
 
+template<class T>
+class MMappedFileRecordArrayIterator :
+        public boost::iterator_facade<MMappedFileRecordArrayIterator<T>,
+                                      const T*,
+                                      std::input_iterator_tag,
+                                      const T*> {
+  public:
+    // Default ctor, used to implement "end" iterator
+    MMappedFileRecordArrayIterator(): value_(NULL), reader_(), elcnt_(0), good_(false) {}
+    MMappedFileRecordArrayIterator(const std::string &FileName, size_t elcnt)
+            : value_(NULL),
+              reader_(FileName, false,
+                      64*1024*1024 / (sizeof(T) * getpagesize() * elcnt) * (sizeof(T) * getpagesize() * elcnt)),
+              elcnt_(elcnt), good_(true) {
+        increment();
+    }
+    MMappedFileRecordArrayIterator(MMappedRecordReader<T> &&reader, size_t elcnt)
+            : value_(NULL), reader_(std::move(reader)), elcnt_(elcnt), good_(true) {
+        increment();
+    }
+
+    bool good() const { return good_; }
+
+  private:
+    friend class boost::iterator_core_access;
+
+    void increment() {
+        good_ = reader_.good();
+        if (good_)
+            value_ = (T*)reader_.skip(elcnt_ * sizeof(T));
+    }
+    bool equal(const MMappedFileRecordArrayIterator &other) const {
+        return value_ == other.value_;
+    }
+    const T* dereference() const { return value_; }
+
+    T* value_;
+    MMappedRecordReader<T> reader_;
+    size_t elcnt_;
+    bool good_;
+};
 
 #endif // HAMMER_MMAPPED_READER_HPP

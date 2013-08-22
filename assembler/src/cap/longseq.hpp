@@ -11,10 +11,11 @@
 #include "polynomial_hash.hpp"
 #include "log.hpp"
 #include "sequence/sequence.hpp"
-#include "test_utils.hpp"
 #include "openmp_wrapper.h"
 
 namespace cap {
+
+typedef unsigned char uchar;
 
 template <class HashT = PolynomialHash<> >
 class LongSeq {
@@ -58,7 +59,6 @@ class LongSeq {
   static const char kNoNextNucl = char(69);
 
  private:
-  typedef unsigned char uchar;
   // Maybe SequenceData?
   Sequence sequence_;
 

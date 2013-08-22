@@ -12,6 +12,8 @@ add_executable(debruijn_test
  ${EXT_DIR}/include/teamcity_boost/teamcity_boost.cpp
  ${EXT_DIR}/include/teamcity_boost/teamcity_messages.cpp
  ${CMAKE_SOURCE_DIR}/debruijn/kmer_coverage_model.cpp
+ ${CMAKE_SOURCE_DIR}/debruijn/config_struct.cpp
+ ${CMAKE_SOURCE_DIR}/debruijn/path_extend/pe_config_struct.cpp
  test.cpp)
 
-target_link_libraries(debruijn_test ${COMMON_LIBRARIES} input mph_index otkpp)
+target_link_libraries(debruijn_test ${COMMON_LIBRARIES} input mph_index otkpp ssw ${ZLIB_LIBRARIES})

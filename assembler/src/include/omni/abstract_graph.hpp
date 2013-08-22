@@ -115,9 +115,13 @@ class AbstractGraph : public AbstractEditableGraph<VertexIdT, EdgeIdT,
         return vertices_.end();
     }
 
-    size_t size() const {
-        return vertices_.size();
-    }
+    const set<VertexId> &vertices() const {
+	    return vertices_;
+	}
+
+	size_t size() const {
+		return vertices_.size();
+	}
 
     virtual VertexId EdgeStart(EdgeId edge) const {
         return edge->start();

@@ -24,6 +24,8 @@
 #include "seq.hpp"
 #include "simple_seq.hpp"
 
+#include "mph_index/MurmurHash3.h"
+
 #include <cstring>
 #include <iostream>
 
@@ -153,7 +155,8 @@ class RuntimeSeq {
   /**
    * Default constructor, fills Seq with A's
    */
-  RuntimeSeq(size_t k): size_(k) {
+
+  explicit RuntimeSeq(size_t k): size_(k) {
     VERIFY(k <= max_size_);
     //VERIFY((T)(-1) >= (T)0);//be sure to use unsigned types
     std::fill(data_.begin(), data_.end(), 0);
@@ -165,6 +168,18 @@ class RuntimeSeq {
     init(s);
   }
 
+
+  explicit RuntimeSeq(size_t k, const T* data_array): size_(k) {
+    VERIFY(k <= max_size_);
+    std::fill(data_.begin(), data_.end(), 0);
+
+    size_t data_size = GetDataSize(size_);
+    memcpy(data_.data(), data_array, data_size * sizeof(T));
+
+    if (NuclsRemain(size_)) {
+      data_[data_size - 1] = data_[data_size - 1] & MaskForLastBucket(size_);
+    }
+  }
 
   explicit RuntimeSeq(size_t k, T* data_array): size_(k) {
     VERIFY(k <= max_size_);
@@ -223,7 +238,7 @@ class RuntimeSeq {
       //VERIFY(is_dignucl(s[i]) || is_nucl(s[i]));
 
       // we fill everything with zeros (As) by default.
-      char c = digit_str ? s[offset + i] : dignucl(s[offset + i]);
+      char c = (char) (digit_str ? s[offset + i] : dignucl(s[offset + i]));
 
       data = data | (T(c) << cnt);
       cnt += 2;
@@ -297,8 +312,8 @@ class RuntimeSeq {
   RuntimeSeq<max_size_, T> operator!() const {
     RuntimeSeq<max_size_, T> res(*this);
     for (size_t i = 0; i < (size_ >> 1); ++i) {
-      T front = complement(res[i]);
-      T end = complement(res[size_ - 1 - i]);
+      auto front = complement(res[i]);
+      auto end = complement(res[size_ - 1 - i]);
       res.set(i, end);
       res.set(size_ - 1 - i, front);
     }
@@ -331,7 +346,7 @@ class RuntimeSeq {
       data[data_size - 1] = (data[data_size - 1] >> 2) | ((T) c << lastnuclshift_);
 
       if (data_size >= 2) { // if we have at least 2 elements in data
-        for (int i = data_size - 2; i >= 0; --i){
+        for (int i = (int) data_size - 2; i >= 0; --i){
           T new_rm = data[i] & 3;
           data[i] = (data[i] >> 2) | (rm << (TBits - 2)); // we need & here because if we shift negative, it fill with ones :(
           rm = new_rm;
@@ -548,7 +563,7 @@ class RuntimeSeq {
 
   template<size_t size2_, typename T2 = T>
   Seq<size2_, T2> get_seq() const {
-    VERIFY_MSG(size2_ == size_, size2_ << " != " << size_ );
+    VERIFY(size2_ == size_);
     return Seq<size2_, T2>((T2*) data_.data());
   }
 
@@ -570,25 +585,23 @@ class RuntimeSeq {
     return operator[](0);
   }
 
-  static size_t GetHash(const DataType *data, size_t sz) {
-    size_t hash = PrimeNum;
-    for (size_t i = 0; i < sz; i++) {
-      hash = ((hash << 5) - hash) + data[i];
-    }
-    return hash;
+  static size_t GetHash(const DataType *data, size_t sz, uint32_t seed = 0) {
+    uint64_t res[2];
+    MurmurHash3_x64_128(data, sz * sizeof(DataType), 0x9E3779B9 ^ seed, res);
+    return res[0] ^ res[1];
   }
 
-  size_t GetHash() const {
-    return GetHash(data_.data(), GetDataSize(size_));
+  size_t GetHash(unsigned seed = 0) const {
+    return GetHash(data_.data(), GetDataSize(size_), seed);
   }
 
   struct hash {
-    size_t operator()(const RuntimeSeq<max_size_, T>& seq) const {
-      return seq.GetHash();
+    size_t operator()(const RuntimeSeq<max_size_, T>& seq, uint32_t seed = 0) const {
+      return seq.GetHash(seed);
     }
 
-    size_t operator()(const DataType *data, size_t sz) {
-      return GetHash(data, sz);
+    size_t operator()(const DataType *data, size_t sz, unsigned seed = 0) {
+      return GetHash(data, sz, seed);
     }
   };
 

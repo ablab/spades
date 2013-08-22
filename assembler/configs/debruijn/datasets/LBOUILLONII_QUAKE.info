@@ -3,3 +3,5 @@ single_reads             "../../../data/input/L.bouillonii/gerwick-read1.cor_sin
 RL                       100
 IS                       370
 single_cell              false
+
+reads	LBOUILLONII_QUAKE.yaml

@@ -18,11 +18,18 @@ class ObservableGraph : private boost::noncopyable {
  public:
     typedef VertexIdT VertexId;
     typedef EdgeIdT EdgeId;
+    typedef VertexIterator VertexIt;
     typedef HandlerApplier<VertexId, EdgeId> Applier;
     typedef typename VertexId::type::edge_const_iterator edge_const_iterator;
     typedef SmartVertexIterator<ObservableGraph> SmartVertexIt;
     typedef SmartEdgeIterator<ObservableGraph> SmartEdgeIt;
+    typedef ConstEdgeIterator<ObservableGraph> ConstEdgeIt;
 
+    virtual void print_handlers() const {
+        FOREACH (Handler* handler_ptr, action_handler_list_) {
+            cout << handler_ptr->name() << endl;
+        }
+    }
  private:
     typedef ActionHandler<VertexId, EdgeId> Handler;
 
@@ -31,36 +38,52 @@ class ObservableGraph : private boost::noncopyable {
     mutable vector<Handler*> action_handler_list_;
 
  protected:
+    bool VerifyAllDetached() {
+        FOREACH (Handler* handler_ptr, action_handler_list_) {
+            if(handler_ptr->IsAttached()) {
+            	return false;
+            }
+        }
+        return true;
+    }
 
     virtual void FireAddVertex(VertexId v) const {
         TRACE("FireAddVertex event of vertex inner_id=" << v.int_id() << " for " << action_handler_list_.size() << " handlers");
         FOREACH (Handler* handler_ptr, action_handler_list_) {
-            TRACE("FireAddVertex to handler " << handler_ptr->name());
-            applier_->ApplyAdd(*handler_ptr, v);
+            if(handler_ptr->IsAttached()) {
+            	TRACE("FireAddVertex to handler " << handler_ptr->name());
+            	applier_->ApplyAdd(*handler_ptr, v);
+            }
         }
     }
 
     virtual void FireAddEdge(EdgeId e) const {
         TRACE("FireAddEdge event of edge inner_id=" << e.int_id() << " for " << action_handler_list_.size() << " handlers");
         FOREACH (Handler* handler_ptr, action_handler_list_) {
-            TRACE("FireAddEdge to handler " << handler_ptr->name());
-            applier_->ApplyAdd(*handler_ptr, e);
+            if(handler_ptr->IsAttached()) {
+            	TRACE("FireAddEdge to handler " << handler_ptr->name());
+            	applier_->ApplyAdd(*handler_ptr, e);
+            }
         }
     }
 
     virtual void FireDeleteVertex(VertexId v) const {
         TRACE("FireDeleteVertex event of vertex inner_id=" << v.int_id() << " for " << action_handler_list_.size() << " handlers");
         for (auto it = action_handler_list_.rbegin(); it != action_handler_list_.rend(); ++it) {
-            TRACE("FireDeleteVertex to handler " << (*it)->name());
-            applier_->ApplyDelete(**it, v);
+            if((*it)->IsAttached()) {
+            	TRACE("FireDeleteVertex to handler " << (*it)->name());
+            	applier_->ApplyDelete(**it, v);
+            }
         }
     }
 
     virtual void FireDeleteEdge(EdgeId e) const {
         TRACE("FireDeleteEdge event of edge inner_id=" << e.int_id() << " for " << action_handler_list_.size() << " handlers");
         for (auto it = action_handler_list_.rbegin(); it != action_handler_list_.rend(); ++it) {
-            TRACE("FireDeleteEdge to handler " << (*it)->name());
-            applier_->ApplyDelete(**it, e);
+            if((*it)->IsAttached()) {
+            	TRACE("FireDeleteEdge to handler " << (*it)->name());
+            	applier_->ApplyDelete(**it, e);
+            }
         }
         TRACE("FireDeleteEdge OK");
     }
@@ -68,16 +91,20 @@ class ObservableGraph : private boost::noncopyable {
     virtual void FireMerge(vector<EdgeId> old_edges, EdgeId new_edge) const {
         TRACE("FireMerge event, new edge inner_id=" << new_edge.int_id() << " for " << action_handler_list_.size() << " handlers");
         FOREACH (Handler* handler_ptr, action_handler_list_) {
-            TRACE("FireMerge to handler " << handler_ptr->name());
-            applier_->ApplyMerge(*handler_ptr, old_edges, new_edge);
+            if(handler_ptr->IsAttached()) {
+            	TRACE("FireMerge to handler " << handler_ptr->name());
+            	applier_->ApplyMerge(*handler_ptr, old_edges, new_edge);
+            }
         }
     }
 
     virtual void FireGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) const {
         TRACE("FireGlue event, new edge inner_id=" << new_edge.int_id() << " for " << action_handler_list_.size() << " handlers");
         FOREACH (Handler* handler_ptr, action_handler_list_) {
-            TRACE("FireGlue to handler " << handler_ptr->name());
-            applier_->ApplyGlue(*handler_ptr, new_edge, edge1, edge2);
+            if(handler_ptr->IsAttached()) {
+            	TRACE("FireGlue to handler " << handler_ptr->name());
+            	applier_->ApplyGlue(*handler_ptr, new_edge, edge1, edge2);
+            }
         }
         TRACE("FireGlue OK");
     }
@@ -86,8 +113,10 @@ class ObservableGraph : private boost::noncopyable {
         TRACE("FireSplit event, new edge1 inner_id=" << new_edge1.int_id() << ", new edge2 inner_id="
               << new_edge2.int_id() << " for " << new_edge2.int_id() << action_handler_list_.size() << " handlers");
         FOREACH (Handler* handler_ptr, action_handler_list_) {
-            TRACE("FireSplit to handler " << handler_ptr->name());
-            applier_->ApplySplit(*handler_ptr, edge, new_edge1, new_edge2);
+            if(handler_ptr->IsAttached()) {
+            	TRACE("FireSplit to handler " << handler_ptr->name());
+            	applier_->ApplySplit(*handler_ptr, edge, new_edge1, new_edge2);
+            }
         }
     }
 
@@ -99,9 +128,11 @@ class ObservableGraph : private boost::noncopyable {
               << "new_vertex inner_id=" << new_vertex.int_id()
               << " for " << action_handler_list_.size() << " handlers");
         FOREACH (Handler* handler_ptr, action_handler_list_) {
-            TRACE("FireVertexSplit to handler " << handler_ptr->name());
-            applier_->ApplyVertexSplit(*handler_ptr, old_vertex, new_vertex,
+            if(handler_ptr->IsAttached()) {
+            	TRACE("FireVertexSplit to handler " << handler_ptr->name());
+            	applier_->ApplyVertexSplit(*handler_ptr, old_vertex, new_vertex,
                                        old_2_new_edges, split_coefficients);
+            }
         }
     }
 
@@ -180,6 +211,10 @@ class ObservableGraph : private boost::noncopyable {
 
     SmartEdgeIterator<ObservableGraph> SmartEdgeBegin() const {
         return SmartEdgeIterator<ObservableGraph>(*this);
+    }
+
+    ConstEdgeIterator<ObservableGraph> ConstEdgeBegin() const {
+        return ConstEdgeIterator<ObservableGraph>(*this);
     }
 
     //Use very carefully!

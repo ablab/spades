@@ -11,13 +11,13 @@
 #include "mph_index/kmer_index.hpp"
 #include <vector>
 
-typedef KMerIndex<hammer::KMer> HammerKMerIndex;
+typedef KMerIndex<kmer_index_traits<hammer::KMer> > HammerKMerIndex;
 
 class KMerData {
   typedef std::vector<KMerStat> KMerDataStorageType;
 
  public:
-  KMerData() : index_(hammer::K) {}
+  KMerData() {}
 
   size_t size() const { return data_.size() + push_back_buffer_.size(); }
   void clear() {

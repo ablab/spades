@@ -1,3 +1,5 @@
 single_cell	false
 paired_reads#1   "/storage/data/input/D.melanogaster/DGRP-892/SRR060822_1.fastq.gz /storage/data/input/D.melanogaster/DGRP-892/SRR060822_2.fastq.gz"
 reference_genome "/storage/data/input/D.melanogaster/dmel-all-chromosome-r5.47.fasta.gz"
+
+reads	DMELAGONASTER.yaml

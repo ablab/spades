@@ -43,6 +43,12 @@ def bool_to_str(b):
     return "false"
 
 
+def process_spaces(str):
+    if str.find(" ") != -1:
+        str = '"' + str + '"'
+    return str
+
+
 def vars_from_lines(lines):
     class var_metadata:
         def __init__(self, value, line_num, indent):
@@ -128,6 +134,10 @@ def load_config_from_vars(cfg_vars):
         cfg.__dict__[var] = load_value_list(meta.value)
 
     return cfg
+
+
+def empty_config():
+    return load_config_from_vars(dict())
 
 
 def load_config_from_file(filename):

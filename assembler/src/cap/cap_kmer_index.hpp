@@ -10,13 +10,15 @@
 #include "longseq.hpp"
 //#include "longseq_storage.hpp"
 #include "polynomial_hash.hpp"
-#include "debruijn_kmer_index.hpp"
+#include "adt/kmer_map.hpp"
+#include "indices/debruijn_edge_index.hpp"
 
 template<>
 struct kmer_index_traits<cap::LSeq> {
   typedef cap::LSeq SeqType;
   // FIXME: Provide implementation here
   typedef std::vector<cap::LSeq> RawKMerStorage;
+  typedef std::vector<cap::LSeq> FinalKMerStorage;
 
   typedef RawKMerStorage::iterator             raw_data_iterator;
   typedef RawKMerStorage::const_iterator       raw_data_const_iterator;
@@ -81,14 +83,6 @@ namespace cap {
 
 struct Foo {};
 
-class CapKMerIndexBuilder;
-
-/*
-class CapKMerIndex: public debruijn_graph::DeBruijnKMerIndex<Foo,
-                                      cap::LongSeq<DoublePolynomialHash<> > > {
-  friend class CapKMerIndexBuilder;
-};
-*/
 // FIXME: Implement stuff here
 template <class Read>
 class CapKMerCounter: public ::KMerCounter<LSeq> {
@@ -162,11 +156,13 @@ class CapKMerCounter: public ::KMerCounter<LSeq> {
     return storage_.size();
   }
 
+  virtual size_t CountAll(unsigned num_buckets, unsigned num_threads, bool merge = true) {
+    INFO("K-mer counting done. There are " << storage_.size() << " kmers in total. ");
+    return storage_.size();
+  }
+
   virtual void MergeBuckets(unsigned num_buckets) {
     VERIFY(bucket == NULL);
-
-    TRACE("MERGING BUckets");
-    OpenBucket(0); // great logic
   }
 
   virtual void OpenBucket(size_t idx, bool unlink = true) {
@@ -197,6 +193,16 @@ class CapKMerCounter: public ::KMerCounter<LSeq> {
     return ret;
   }
 
+  virtual RawKMerStorage* GetFinalKMers() {
+    OpenBucket(0);
+    VERIFY(bucket != NULL);
+
+    RawKMerStorage *ret = bucket;
+    bucket = NULL;
+
+    return ret;
+  }
+
   virtual typename __super::iterator bucket_begin(size_t idx) {
     return bucket->begin();
   }
@@ -210,120 +216,28 @@ class CapKMerCounter: public ::KMerCounter<LSeq> {
 
 namespace debruijn_graph {
 
-template<>
-class DeBruijnEdgeIndexBuilder<cap::LSeq> {
-
-  template <class ReadStream, class IdType>
-  size_t FillCoverageFromStream(ReadStream &stream,
-                                DeBruijnEdgeIndex<IdType, cap::LSeq> &index) const {
-    unsigned K = index.K();
-    size_t rl = 0;
-
-    while (!stream.eof()) {
-      typename ReadStream::read_type r;
-      stream >> r;
-      rl = std::max(rl, r.size());
-
-      const Sequence &seq = r.sequence();
-      if (seq.size() < K)
-        continue;
-
-      cap::LSeq kmer = seq.start<cap::LSeq>(K);
-
-      size_t idx = index.seq_idx(kmer);
-      VERIFY(index.contains(idx, kmer));
-#   pragma omp atomic
-      index.data_[idx].count_ += 1;
-      for (size_t j = K; j < seq.size(); ++j) {
-        kmer.Shift();
-        idx = index.seq_idx(kmer);
-        VERIFY(index.contains(idx, kmer));
-
-#     pragma omp atomic
-        index.data_[idx].count_ += 1;
-      }
-    }
-
-    return rl;
-  }
-
+template<class Index>
+class DeBruijnStreamKMerIndexBuilder<cap::LSeq, Index> {
  public:
-  template <class Reader, class IdType>
-  size_t BuildIndexFromStream(
-      DeBruijnEdgeIndex<IdType, cap::LSeq> &index,
-      io::ReadStreamVector<Reader> &streams,
-      SingleReadStream* contigs_stream = 0) {
-    cap::CapKMerCounter<typename Reader::read_type> counter(index.K(), streams);
-    KMerIndexBuilder<typename DeBruijnKMerIndex<IdType, cap::LSeq>::KMerIndexT> builder(index.workdir(),
-                                                                1 /* buckets */,
-                                                                1 /* threads */);
-    size_t sz = builder.BuildIndex(index.index_, counter, /* save final */ true);
+    typedef Index IndexT;
 
-    SortUniqueKMers(counter, index);
+    template <class Streams>
+    size_t BuildIndexFromStream(Index &index,
+                                Streams &streams,
+                                SingleReadStream* contigs_stream = 0) const {
+        cap::CapKMerCounter<typename Streams::ReaderType::read_type> counter(index.k(), streams);
 
-    // Now use the index to fill the coverage and EdgeId's
-    INFO("Collecting k-mer coverage information, this takes a while.");
-    index.data_.resize(sz);
-
-    // Fill coverage (do we need to?)
-    size_t rl = 0;
-    streams.reset();
-    unsigned nthreads = streams.size();
-# pragma omp parallel for num_threads(nthreads) shared(rl)
-    for (size_t i = 0; i < nthreads; ++i) {
-      size_t crl = FillCoverageFromStream(streams[i], index);
-
-      // There is no max reduction in C/C++ OpenMP... Only in FORTRAN :(
-#   pragma omp flush(rl)
-      if (crl > rl)
-#     pragma omp critical
-      {
-        rl = std::max(rl, crl);
-      }
+        index.BuildIndex(counter, 1, 1);
+        return 0;
     }
 
-    if (contigs_stream) {
-      contigs_stream->reset();
-      FillCoverageFromStream(*contigs_stream, index);
-    }
-
-    return rl;
-  }
-
- protected:
-  template <class KMerCounter, class Index>
-  void SortUniqueKMers(KMerCounter &counter, Index &index) const {
-    if (!index.kmers)
-      index.kmers = counter.TransferBucket(0);
-
-    size_t swaps = 0;
-    INFO("Arranging kmers in hash map order");
-    for (auto I = index.kmers->begin(), E = index.kmers->end(); I != E; ++I) {
-      size_t cidx = I - index.kmers->begin();
-      size_t kidx = index.raw_seq_idx(*I);
-      while (cidx != kidx) {
-        auto J = index.kmers->begin() + kidx;
-        using std::swap;
-        swap(*I, *J);
-        swaps += 1;
-
-        kidx = index.raw_seq_idx(*I);
-      }
-    }
-    INFO("Done. Total swaps: " << swaps);
-  }
-
- protected:
-  DECL_LOGGER("K-mer Index Building");
 };
-
 
 }
 
-
 namespace runtime_k {
 
-
+//todo review this class
 template <typename Value>
 class KmerMap<Value, cap::LSeq> {
  public:

@@ -64,10 +64,10 @@ class MMappedWriter {
     if (amount == 0)
       return;
     
-    int res = lseek(StreamFile, amount-1, SEEK_CUR);
+    int res = (int)lseek(StreamFile, amount-1, SEEK_CUR);
     VERIFY_MSG(res != -1,
                "lseek(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
-    res = ::write(StreamFile, "", 1);
+    res = (int)::write(StreamFile, "", 1);
     VERIFY_MSG(res != -1,
                "write(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
 

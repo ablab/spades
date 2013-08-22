@@ -15,6 +15,7 @@
 #define EXTENSION_HPP_
 
 #include "weight_counter.hpp"
+#include "pe_utils.hpp"
 #include <iostream>
 #include <fstream>
 
@@ -33,13 +34,10 @@ public:
     }
 
     int ExcludeTrivial(const BidirectionalPath& path, std::set<int>& edges, int from = -1) {
-        edges.clear();
-
-        int edgeIndex = (from == -1) ? path.Size() - 1 : from;
+        int edgeIndex = (from == -1) ? (int) path.Size() - 1 : from;
         if ((int) path.Size() <= from) {
             return edgeIndex;
         }
-
         VertexId currentVertex = g_.EdgeEnd(path[edgeIndex]);
         while (edgeIndex >= 0 && g_.CheckUniqueIncomingEdge(currentVertex)) {
             EdgeId e = g_.GetUniqueIncomingEdge(currentVertex);
@@ -48,7 +46,6 @@ public:
             edges.insert(edgeIndex);
             --edgeIndex;
         }
-
         return edgeIndex;
     }
 
@@ -59,7 +56,7 @@ public:
             return 0;
         }
 
-        int lastEdge = path.Size() - 1;
+        int lastEdge = (int) path.Size() - 1;
         do {
             lastEdge = ExcludeTrivial(path, edges, lastEdge);
 
@@ -123,7 +120,7 @@ protected:
     std::vector<ExtensionChooserListener *> listeners_;
 
 public:
-    ExtensionChooser(Graph& g_, WeightCounter * wc, double priority): g_(g_), wc_(wc), analyzer_(g_), priorityCoefficient_(priority),
+    ExtensionChooser(Graph& g, WeightCounter * wc = 0, double priority = 0.0): g_(g), wc_(wc), analyzer_(g), priorityCoefficient_(priority),
         excludeTrivial_(true), excludeTrivialWithBulges_(true), listeners_() {
     }
 
@@ -177,18 +174,42 @@ public:
         }
     }
 
+    bool WeighConterBased() const {
+        return wc_ != 0;
+    }
+
+};
+
+
+class JointExtensionChooser: public ExtensionChooser {
+
+protected:
+    ExtensionChooser * first_;
+
+    ExtensionChooser * second_;
+
+public:
+    JointExtensionChooser(Graph& g, ExtensionChooser * first, ExtensionChooser * second): ExtensionChooser(g),
+        first_(first), second_(second)
+    {
+    }
+
+    virtual EdgeContainer Filter(BidirectionalPath& path, EdgeContainer& edges) {
+        EdgeContainer e1 = first_->Filter(path, edges);
+        return second_->Filter(path, e1);
+    }
 };
 
 
 class TrivialExtensionChooser: public ExtensionChooser {
 
 public:
-    TrivialExtensionChooser(Graph& g_): ExtensionChooser(g_, 0 ,0.0)  {
+    TrivialExtensionChooser(Graph& g): ExtensionChooser(g)  {
     }
 
-    virtual EdgeContainer Filter(BidirectionalPath& path, EdgeContainer& edges) {
+    virtual EdgeContainer Filter(BidirectionalPath& /*path*/, EdgeContainer& edges) {
         if (edges.size() == 1) {
-            return edges;
+             return edges;
         }
         return EdgeContainer();
     }
@@ -198,7 +219,7 @@ public:
 class TrivialExtensionChooserWithPI: public ExtensionChooser {
 
 public:
-    TrivialExtensionChooserWithPI(Graph& g_, WeightCounter * wc): ExtensionChooser(g_, wc, 0.0) {
+    TrivialExtensionChooserWithPI(Graph& g, WeightCounter * wc): ExtensionChooser(g, wc) {
     }
 
     virtual EdgeContainer Filter(BidirectionalPath& path, EdgeContainer& edges) {
@@ -231,8 +252,63 @@ protected:
         }
     }
 
+	void RemoveTrivialAndCommon(BidirectionalPath& path, EdgeId first,
+			EdgeId second) {
+		RemoveTrivial(path);
+		if (path.Size() == 0) {
+			return;
+		}
+		int index = (int) path.Size() - 1;
+		while (index >= 0) {
+			bool common_edge = wc_->PairInfoExist(path[index], first,
+					(int) path.LengthAt(index))
+					and wc_->PairInfoExist(path[index], second,
+							(int) path.LengthAt(index));
+			bool ideal1 = wc_->CountIdealInfo(path[index], first,
+					path.LengthAt(index)) > 0.0;
+			bool ideal2 = wc_->CountIdealInfo(path[index], second,
+					path.LengthAt(index)) > 0.0;
+			if (common_edge or ideal1 != ideal2) {
+				wc_->GetExcludedEdges().insert(index);
+				DEBUG("excluded trivial and common " << index);
+			}
+			index--;
+
+		}
+	}
+
+	void find_weights(BidirectionalPath& path, EdgeContainer& edges, AlternativeConteiner& weights) {
+		for (auto iter = edges.begin(); iter != edges.end(); ++iter) {
+			double weight = wc_->CountWeight(path, iter->e_);
+			weights.insert(std::make_pair(weight, *iter));
+			DEBUG("Candidate " << g_.int_id(iter->e_) << " weight " << weight);
+			path.getLoopDetector().AddAlternative(iter->e_, weight);
+
+		}
+		NotifyAll(weights);
+	}
+
+	void find_possible_edges(AlternativeConteiner& weights, EdgeContainer& top, double maxWeight) {
+		auto possibleEdge = weights.lower_bound(maxWeight / priorityCoefficient_);
+		for (auto iter = possibleEdge; iter != weights.end(); ++iter) {
+			top.push_back(iter->second);
+		}
+	}
+
+	EdgeContainer find_result(BidirectionalPath& path, EdgeContainer& edges) {
+		AlternativeConteiner weights;
+		find_weights(path, edges, weights);
+		EdgeContainer top;
+		auto maxWeight = (--weights.end())->first;
+		find_possible_edges(weights, top, maxWeight);
+		EdgeContainer result;
+		if (top.size() >= 1 && wc_->IsExtensionPossible(maxWeight)) {
+			result = top;
+		}
+		return result;
+	}
 public:
-    SimpleExtensionChooser(Graph& g, WeightCounter * wc, double priority): ExtensionChooser(g, wc, priority) {
+    SimpleExtensionChooser(Graph& g, WeightCounter * wc, double priority): ExtensionChooser(g, wc, priority){
 
     }
 
@@ -240,62 +316,22 @@ public:
         if (edges.empty()) {
             return edges;
         }
-
         RemoveTrivial(path);
-        AlternativeConteiner weights;
-
-        for (auto iter = edges.begin(); iter != edges.end(); ++iter) {
-            double weight = wc_->CountWeight(path, iter->e_);
-            weights.insert(std::make_pair(weight, *iter));
-
-            path.getLoopDetector().AddAlternative(iter->e_, weight);
-
-        }
-        NotifyAll(weights);
-
-        EdgeContainer result;
-        auto maxWeight = (--weights.end())->first;
-        auto possibleEdge = weights.lower_bound(maxWeight / priorityCoefficient_);
-        for (auto iter = possibleEdge; iter != weights.end(); ++iter) {
-            if (wc_->IsExtensionPossible(iter->first)) {
-                result.push_back(iter->second);
-            }
+        path.Print();
+        EdgeContainer result = find_result(path, edges);
+        if (result.size() > 1){
+        	DEBUG("result size MORE 1");
+        	EdgeId first = result.at(0).e_;
+        	EdgeId second = result.at(1).e_;
+        	RemoveTrivialAndCommon(path, first, second);
+        	result = find_result(path, edges);
+        	if (result.size() == 1){
+        		DEBUG("CHANGE RESULT");
+        	}
         }
         return result;
     }
-};
 
-
-
-class MatePairExtensionChooser: public ExtensionChooser {
-
-protected:
-
-    void RemoveTrivial(BidirectionalPath& path) {
-        wc_->GetExcludedEdges().clear();
-
-        if (excludeTrivialWithBulges_) {
-            analyzer_.ExcludeTrivialWithBulges(path, wc_->GetExcludedEdges());
-        }
-        else if (excludeTrivial_) {
-            analyzer_.ExcludeTrivial(path, wc_->GetExcludedEdges());
-        }
-    }
-
-public:
-    MatePairExtensionChooser(Graph& g, WeightCounter * wc, double priority): ExtensionChooser(g, wc, priority) {
-
-    }
-
-    virtual EdgeContainer Filter(BidirectionalPath& path, EdgeContainer& edges) {
-        if (edges.empty()) {
-            return edges;
-        }
-
-        RemoveTrivial(path);
-        //TODO
-        return edges;
-    }
 };
 
 
@@ -317,7 +353,7 @@ public:
 	{
 		double mean = 0.0;
 		double sum  = 0.0;
-		
+
 		for (size_t l = 0; l < distances.size(); ++ l){
 			if (distances[l] > max(0, (int) path.LengthAt(j) - (int) g_.k()) && weights[l] >= threshold) {
                 mean += ((distances[l] - (int) path.LengthAt(j)) * weights[l]);
@@ -339,7 +375,7 @@ public:
         for (size_t i = 0; i < histogram.size(); ++ i) {
 			 dist += (histogram[i].first * histogram[i].second / sum);
 		}
-        return round(dist);
+        return (int) round(dist);
     }
 
     int CountDev(vector< pair<int,double> >& histogram, int avg)
@@ -352,7 +388,7 @@ public:
         for (size_t i = 0; i < histogram.size(); ++ i) {
              dev += (((double) (histogram[i].first - avg)) * ((double) (histogram[i].first - avg)) * ((double) histogram[i].second));
         }
-        return round(sqrt(dev / sum));
+        return (int) round(sqrt(dev / sum));
     }
 
     vector< pair<int,double> > FilterHistogram(vector< pair<int,double> >& histogram, int start, int end, int threshold)
@@ -372,12 +408,12 @@ public:
     {
 		std::vector<int> distances;
 		std::vector<double> weights;
-		
+
 		double max_weight = 0.0;
 		//bool print = true;
 		for (size_t j = 0; j < path.Size(); ++ j) {
 			wc_->GetDistances(path.At(j), e, distances, weights);
-			
+
 			for (size_t l = 0; l < weights.size(); ++ l){
 				if (weights[l] > max_weight) {
 				    max_weight = weights[l];
@@ -386,15 +422,6 @@ public:
 
 			if (distances.size() > 0) {
 				AddInfoFromEdge(distances, weights, histogram, path, j, 0);
-
-//				if (histogram.size() > 0) {
-//					if (print) {
-//						out << "\n************************" << endl;
-//						out << "New pair :" << path.GetId() << " (" << g_.length(path[j])<< ")" << " - " <<  g_.int_id(e) << " (" << g_.length(e)<< ")" << endl;
-//					}
-//					out << "Mean = " << mean << endl;
-//					print = false;
-//				}
 			}
 			distances.clear();
 		}
@@ -403,11 +430,6 @@ public:
 
     void FindBestFittedEdges(BidirectionalPath& path, EdgeContainer& edges, EdgeContainer& result)
     {
-//    	ofstream out("./scaffolder.log", ostream::app);
-//		out << "\n#########################################" << endl;
-//		out << "Another path :" << path.GetId() << endl;
-//		out << "Candidates:" << edges.size() << endl;
-
 		std::vector<pair<int,double> > histogram;
 		for (size_t i = 0; i < edges.size(); ++i){
 			histogram.clear();
@@ -416,10 +438,8 @@ public:
 			for (int j = 0; j < 2; ++j) {
                 int mean = CountMean(histogram);
                 int dev = CountDev(histogram, mean);
-                double cutoff = min(max_w * params.param_set.scaffolder_options.rel_cutoff, (double) params.param_set.scaffolder_options.cutoff);
-//                if (mean != 0)
-//                    out << "Mean: " << mean << " " << dev << endl;
-                histogram = FilterHistogram(histogram, mean - (5 - j)  * dev, mean + (5 - j) * dev, cutoff);
+                double cutoff = min(max_w * cfg::get().pe_params.param_set.scaffolder_options.rel_cutoff, (double) cfg::get().pe_params.param_set.scaffolder_options.cutoff);
+                histogram = FilterHistogram(histogram, mean - (5 - j)  * dev, mean + (5 - j) * dev, (int) round(cutoff));
 			}
 
 			double sum = 0.0;
@@ -427,27 +447,15 @@ public:
 			    sum += histogram[j].second;
 			}
 
-			if (sum > params.param_set.scaffolder_options.sum_threshold) {
+			if (sum > cfg::get().pe_params.param_set.scaffolder_options.sum_threshold) {
 				sort(histogram.begin(), histogram.end(), compare);
 				int gap = CountMean(histogram);
 
-//				out << "SUM: " << sum << endl;
-//                out << "Histogram size: " << histogram.size() << endl;
-//                out << "Avr gap value: " << gap << endl;
-//                out << "weightI: " << wc_->CountIdealInfo(path, edges[i].e_, gap) << endl;
-//                out << "weight1: " << wc_->CountWeight(path, edges[i].e_, gap) << endl;
-//                out << "Histogram: \n";
-//                for (size_t  ii = 0; ii < histogram.size(); ++ ii) {
-//                    out << histogram[ii].first << " " << histogram[ii].second << endl;
-//                }
-
-                if (wc_->CountIdealInfo(path, edges[i].e_, gap) > 0.0) {
+				if (wc_->CountIdealInfo(path, edges[i].e_, gap) > 0.0) {
 					result.push_back(EdgeWithDistance(edges[i].e_, gap));
-					//out << "Added" << endl;
                 }
 			}
 		}
-//		out.close();
     }
 
 
@@ -463,7 +471,7 @@ public:
                 sum += histogram[j].second;
             }
 
-            if (sum > params.param_set.scaffolder_options.cl_threshold) {
+            if (sum > cfg::get().pe_params.param_set.scaffolder_options.cl_threshold) {
                 sort(histogram.begin(), histogram.end(), compare);
                 int gap = CountMean(histogram);
 
@@ -487,6 +495,215 @@ public:
         }
 
         return result;
+    }
+};
+
+
+bool ReverseComparePairBySecond(const boost::tuple<EdgeId, int,int> & a, const boost::tuple<EdgeId, int, int>& b) {
+    return get<1>(a) > get<1>(b);
+}
+
+//
+//class PathsDrivenExtensionChooser: public ExtensionChooser {
+//
+//protected:
+//
+//    GraphCoverageMap coverageMap_;
+//
+//public:
+//    PathsDrivenExtensionChooser(Graph& g, PathContainer& pc): ExtensionChooser(g, 0, .0), coverageMap_(g, pc) {
+//
+//    }
+//
+//    virtual EdgeContainer Filter(BidirectionalPath& path, EdgeContainer& edges) {
+//        if (edges.empty()) {
+//            return edges;
+//        }
+//        DEBUG("We in Filter of PathsDrivenExtension");
+//        set<EdgeId> candidatesSet;
+//        for (auto it = edges.begin(); it != edges.end(); ++it) {
+//            candidatesSet.insert(it->e_);
+//        }
+//
+//        auto supportingPaths = coverageMap_.GetCoveringPaths(path.Back());
+//        vector<pair<BidirectionalPath*, size_t> > supportPathCandidates;
+//        set<EdgeId> filteredCandidatesSet;
+//        EdgeId nullEdge;
+//        for (auto it = supportingPaths.begin(); it != supportingPaths.end(); ++it) {
+//            auto positions = (*it)->FindAll(path.Back());
+//            for (size_t i = 0; i < positions.size(); ++i) {
+//                if (positions[i] < (*it)->Size() - 1 && candidatesSet.count((*it)->At(positions[i] + 1)) > 0) {
+//                    supportPathCandidates.push_back(make_pair(*it, positions[i]));
+//                    filteredCandidatesSet.insert((*it)->At(positions[i] + 1));
+//                } else if (positions[i] == (*it)->Size() - 1){
+//                	supportPathCandidates.push_back(make_pair(*it, positions[i]));
+//                	filteredCandidatesSet.insert(nullEdge);
+//
+//                }
+//            }
+//        }
+//
+//        if (filteredCandidatesSet.size() > 1) {
+//            DEBUG("Several extensions are supported, calculating scores now");
+//
+//            vector< boost::tuple<EdgeId, int, int > > trustedCandidates;
+//            for (size_t i = 0; i < supportPathCandidates.size(); ++i) {
+//                int coveredEdges = 0;
+//                BidirectionalPath * supportingPath = supportPathCandidates[i].first;
+//                int backPos =  supportPathCandidates[i].second;
+//                DEBUG("Supporting path #" << i);
+//                supportingPath->Print();
+//
+//                while ((int) path.Size() - 1 - coveredEdges >= 0 && backPos - coveredEdges  >= 0) {
+//                    if (path[(int) path.Size() - 1 - coveredEdges] != supportingPath->At(backPos - coveredEdges)) {
+//                        break;
+//                    }
+//                    ++coveredEdges;
+//                }
+//                if (backPos < (int)supportingPath->Size() - 1){
+//                	int unCoveredEdges = std::min((int)path.Size() - 1 - coveredEdges, backPos - coveredEdges);
+//                	trustedCandidates.push_back(boost::make_tuple(supportingPath->At(backPos + 1), coveredEdges, unCoveredEdges));
+//                	DEBUG("This path supports " << g_.int_id(supportingPath->At(backPos + 1)) <<
+//                        " by " << coveredEdges << " edges");
+//                } else {
+//                	trustedCandidates.push_back(boost::make_tuple(nullEdge, coveredEdges, 0));
+//                	DEBUG("This path supports end "  <<
+//                	                        " by " << coveredEdges << " edges");
+//                }
+//            }
+//
+//            sort(trustedCandidates.begin(), trustedCandidates.end(), ReverseComparePairBySecond);
+//            filteredCandidatesSet.clear();
+//            size_t i = 0;
+//            while (i < trustedCandidates.size() &&
+//                    get<1>(trustedCandidates[0]) == get<1>(trustedCandidates[i])) {
+//                filteredCandidatesSet.insert(get<0>(trustedCandidates[i]));
+//                ++i;
+//            }
+//            if (get<0>(trustedCandidates[0]).get() == 0){
+//            	filteredCandidatesSet.clear();
+//            	size_t index = 0;
+//            	while (get<0>(trustedCandidates[index]).get() == 0 or get<2>(trustedCandidates[index]) >= 0){
+//            		index++;
+//            	}//TODO: if not one variant:unCovered =0 and not null should return two ore more version
+//            	if (index < trustedCandidates.size()){
+//            		int first_good_index = index;
+//            		while (index < trustedCandidates.size() and (get<1>(trustedCandidates[index]) == get<1>(trustedCandidates[first_good_index]))){
+//            			if (get<0>(trustedCandidates[index]).get() != 0 or get<2>(trustedCandidates[index]) < 0){
+//            				filteredCandidatesSet.insert(get<0>(trustedCandidates[index]));
+//            			}
+//            			index++;
+//            		}
+//            		DEBUG("NEW filterefCandidate " << get<1>(trustedCandidates[index]) << " "<<get<2>(trustedCandidates[index]));
+//            	}
+//            	DEBUG("ONLY with END PATH, trustedCandidates "<< trustedCandidates.size());
+//            }
+//            DEBUG("Found " << filteredCandidatesSet.size() << " trusted extension(s), supported paths " << i << " best score " << get<1>(trustedCandidates[0]));
+//        } else if (filteredCandidatesSet.size() == 1){
+//            DEBUG("Only one extension is supported: " << g_.int_id(*(filteredCandidatesSet.begin())));
+//        } else {
+//            DEBUG("NO extensions is supported" );
+//        }
+//
+//        EdgeContainer result;
+//        for (auto it = edges.begin(); it != edges.end(); ++it) {
+//            if (filteredCandidatesSet.count(it->e_) > 0) {
+//                result.push_back(*it);
+//            }
+//        }
+//        DEBUG("result size " << result.size());
+//        return result;
+//    }
+//};
+
+class LongReadsExtensionChooser: public ExtensionChooser {
+
+protected:
+
+    GraphCoverageMap coverageMap_;
+
+
+public:
+    LongReadsExtensionChooser(Graph& g, PathContainer& pc): ExtensionChooser(g, 0, .0), coverageMap_(g, pc) {
+
+    }
+
+    virtual EdgeContainer Filter(BidirectionalPath& path, EdgeContainer& edges) {
+        if (edges.empty()) {
+            return edges;
+        }
+        DEBUG("We in Filter of PathsDrivenExtension");
+        map<EdgeId, double> weights_cands;
+        for (auto it = edges.begin(); it != edges.end(); ++it) {
+            weights_cands.insert(make_pair(it->e_, 0));
+        }
+        set<EdgeId> filtered_cands;
+        auto supporting_paths = coverageMap_.GetCoveringPaths(path.Back());
+        for (auto it = supporting_paths.begin(); it != supporting_paths.end(); ++it) {
+        	auto positions = (*it)->FindAll(path.Back());
+            for (size_t i = 0; i < positions.size(); ++i) {
+            	if (positions[i] < (*it)->Size() - 1 && covered_path(path, **it, positions[i])){
+            		EdgeId next = (*it)->At(positions[i] + 1);
+            		weights_cands[next] = weights_cands[next] + (*it)->getWeight();
+            		filtered_cands.insert(next);
+            	}
+            }
+        }
+
+        if (filtered_cands.size() > 1) {
+        	vector<pair<EdgeId, double> > sorted_candidates = to_vector(weights_cands);
+        	DEBUG("First extension is supported" <<g_.int_id(sorted_candidates[0].first) << " weight " << sorted_candidates[0].second);
+        	DEBUG("First extension is supported" <<g_.int_id(sorted_candidates[1].first) << " weight " << sorted_candidates[1].second);
+        	if (sorted_candidates[0].second > 1.5 * sorted_candidates[1].second){
+        		filtered_cands.clear();
+        		filtered_cands.insert(sorted_candidates[0].first);
+        	}
+        } else if (filtered_cands.size() == 1){
+        	EdgeId candidate = *(filtered_cands.begin());
+            DEBUG("Only one extension is supported: " << g_.int_id(candidate) << " with weight " << weights_cands[candidate]);
+        } else {
+            DEBUG("NO extensions is supported" );
+        }
+        EdgeContainer result;
+        for (auto it = edges.begin(); it != edges.end(); ++it) {
+            if (filtered_cands.find(it->e_) != filtered_cands.end()) {
+                result.push_back(*it);
+            }
+        }
+        DEBUG("result size " << result.size());
+        return result;
+    }
+
+private:
+    bool covered_path(BidirectionalPath& path, BidirectionalPath& cov_path, size_t pos){
+    	int cur_pos1 = (int) path.Size() - 1;
+    	int cur_pos2 = (int) pos;
+    	while (cur_pos1 >= 0 && cur_pos2 >=0){
+    		if (path.At(cur_pos1) == cov_path.At(cur_pos2)){
+    			cur_pos1--;
+    			cur_pos2--;
+    		} else {
+    			return false;
+    		}
+    	}
+    	return true;
+    }
+
+    vector<pair<EdgeId, double> > to_vector(map<EdgeId, double>& candidates){
+    	vector<pair<EdgeId, double> > result;
+    	while (candidates.size() > 0){
+    		double max = 0;
+    		EdgeId max_edge = candidates.begin()->first;
+    		for (auto iter = candidates.begin(); iter != candidates.end(); ++iter){
+    			if (iter->second > max){
+    				max = iter->second;
+    				max_edge = iter->first;
+    			}
+    		}
+    		result.push_back(make_pair(max_edge, max));
+    		candidates.erase(max_edge);
+    	}
+    	return result;
     }
 };
 

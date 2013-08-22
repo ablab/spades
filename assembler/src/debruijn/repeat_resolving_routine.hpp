@@ -27,7 +27,6 @@
 #include "de/distance_estimation.hpp"
 #include "omni/omni_utils.hpp"
 
-#include "internal_aligner.hpp"
 #include "omni/loop_killer.hpp"
 #include "path_utils.hpp"
 #include "pair_info_improver.hpp"
@@ -35,8 +34,13 @@
 #include "path_extend/path_extend_launch.hpp"
 #include "mismatch_masker.hpp"
 #include "contig_output.hpp"
+
 #include "pac_index.hpp"
 #include "long_read_storage.hpp"
+#include "loop_filter.hpp"
+#include "graphio.hpp"
+#include "coverage_based_rr.hpp"
+#include "pacbio_aligner.hpp"
 
 typedef io::CarefulFilteringReaderWrapper<io::SingleRead> CarefulFilteringStream;
 
@@ -47,19 +51,22 @@ void resolve_repeats(PairedReadStream& stream, const Sequence& genome);
 template<class gp_t>
 void WriteGraphPack(gp_t& gp, const string& file_name) {
 	ofstream filestr(file_name);
-	CompositeGraphColorer<typename gp_t::graph_t> colorer(
-			new FixedColorer<typename gp_t::graph_t::VertexId>("white"),
-			new PositionsEdgeColorer<typename gp_t::graph_t>(gp.g, gp.edge_pos));
+	omnigraph::visualization::CompositeGraphColorer<typename gp_t::graph_t> colorer(
+			make_shared<omnigraph::visualization::FixedColorer<typename gp_t::graph_t::VertexId>>("white"),
+			make_shared<omnigraph::visualization::PositionsEdgeColorer<typename gp_t::graph_t>>(gp.g, gp.edge_pos));
 
-	EdgeQuality<typename gp_t::graph_t> edge_qual(gp.g, gp.index,
+	EdgeQuality<typename gp_t::graph_t, typename gp_t::index_t> edge_qual(gp.g, gp.index,
 			gp.kmer_mapper, gp.genome);
 	total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
 	total_labeler tot_lab(&graph_struct);
 	CompositeLabeler<Graph> labeler(tot_lab, edge_qual);
-	DotGraphPrinter<typename gp_t::graph_t> g_print(gp.g, labeler, colorer, " ",
-			filestr);
-	SimpleGraphVisualizer<typename gp_t::graph_t> gv(gp.g, g_print);
-	gv.Visualize();
+	visualization::ComponentVisualizer<Graph> visualizer(gp.g, false);
+	omnigraph::visualization::EmptyGraphLinker<typename gp_t::graph_t> linker;
+	omnigraph::visualization::ComponentVisualizer<typename gp_t::graph_t>(gp.g, false).Visualize(filestr, labeler, colorer, linker);
+//	DotGraphPrinter<typename gp_t::graph_t> g_print(gp.g, labeler, colorer, " ",
+//			filestr);
+//	SimpleGraphVisualizer<typename gp_t::graph_t> gv(gp.g, g_print);
+//	gv.Visualize();
 }
 
 void SaveResolved(conj_graph_pack& resolved_gp,
@@ -71,7 +78,7 @@ void SaveResolved(conj_graph_pack& resolved_gp,
 		INFO("Saving current state to " << p);
 		PrintAll(p, resolved_gp, resolved_graph_paired_info,
 				resolved_graph_paired_info_cl);
-		write_estimated_params(p);
+		write_lib_data(p);
 	}
 }
 
@@ -88,7 +95,8 @@ void FindDistanceFromRepeats(graph_pack& gp,
 //			not_unique.insert(*iter);
 //		//Split-based repeats
 //		else
-		if (labels_after.edge_inclusions.find(*iter) != labels_after.edge_inclusions.end()
+		if (labels_after.edge_inclusions.find(*iter)
+				!= labels_after.edge_inclusions.end()
 				&& labels_after.edge_inclusions[*iter].size() > 1)
 			not_unique.insert(*iter);
 	}
@@ -173,7 +181,7 @@ void FillComponentDistances(set<EdgeId>& component,
 		for (auto iter = component.begin(); iter != component.end(); iter++) {
 			VertexId start = gp.g.EdgeStart(*iter);
 			VertexId end = gp.g.EdgeEnd(*iter);
-			int len = gp.g.length(*iter);
+			int len = (int) gp.g.length(*iter);
 			if (used.first.find(*iter) == used.first.end()) {
 				if (vertex_map[start].first >= 0
 						&& vertex_map[start].first + len
@@ -254,68 +262,6 @@ void SaveComponents(string file_name, set<set<EdgeId> >& components,
 	fclose(file);
 }
 
-void SAMAfterResolve(conj_graph_pack& conj_gp, conj_graph_pack& resolved_gp,
-		EdgeLabelHandler<conj_graph_pack::graph_t> &labels_after) {
-
-	io::OffsetType offset_type = EvaluateOffset();
-	string OutputFileName =
-			(cfg::get().run_mode) ?
-					cfg::get().output_dir + "align_after_RR.sam" :
-					cfg::get().output_base + "contigs.sam";
-
-	if (cfg::get().sw.align_original_reads) {
-//			if (cfg::get().sw.original_first && cfg::get().sw.original_second)
-		{
-			auto paired_reads = paired_easy_reader(false, 0, false, false,
-					false, offset_type);
-			auto original_paired_reads = paired_easy_reader(false, 0, false,
-					false, true, offset_type);
-//				io::PairedEasyReader original_paired_reads(
-//								make_pair(input_file(*cfg::get().sw.original_first),
-//										input_file(*cfg::get().sw.original_second)),
-//								false,
-//								0);
-			typedef NewExtendedSequenceMapper<Graph> SequenceMapper;
-			SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper,
-					conj_gp.k_value + 1);
-
-			bool print_quality = (
-					cfg::get().sw.print_quality ?
-							*cfg::get().sw.print_quality : false);
-			OriginalReadsResolvedInternalAligner<ConjugateDeBruijnGraph,
-					SequenceMapper> Aligner(resolved_gp.k_value, resolved_gp.g,
-					conj_gp.g, mapper, labels_after, cfg::get().sw.adjust_align,
-					cfg::get().sw.output_map_format,
-					cfg::get().sw.output_broken_pairs, print_quality);
-			Aligner.AlignPairedReads(*original_paired_reads, *paired_reads,
-					OutputFileName);
-		}
-	} else {
-		auto paired_reads = paired_easy_reader(false, 0, false, false, false,
-				offset_type);
-		auto single_reads = single_easy_reader(false, false, false,
-				offset_type);
-
-		typedef NewExtendedSequenceMapper<Graph> SequenceMapper;
-		SequenceMapper mapper(conj_gp.g, conj_gp.index, conj_gp.kmer_mapper,
-				conj_gp.k_value + 1);
-
-		bool print_quality = (
-				cfg::get().sw.print_quality ?
-						*cfg::get().sw.print_quality : false);
-		ResolvedInternalAligner<ConjugateDeBruijnGraph, SequenceMapper> Aligner(
-				resolved_gp.k_value, resolved_gp.g, conj_gp.g, mapper,
-				labels_after, cfg::get().sw.adjust_align,
-				cfg::get().sw.output_map_format,
-				cfg::get().sw.output_broken_pairs, print_quality);
-		if (cfg::get().sw.align_only_paired)
-			Aligner.AlignPairedReads(*paired_reads, OutputFileName);
-		else
-			Aligner.AlignReads(*paired_reads, *single_reads, OutputFileName);
-
-	}
-}
-
 template<class graph_pack>
 void CleanIsolated(graph_pack& gp) {
 	for (auto iter = gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
@@ -367,8 +313,7 @@ void ProduceResolvedPairedInfo(graph_pack& origin_gp,
 
 template<class graph_pack>
 void SaveResolvedPairedInfo(graph_pack& resolved_gp,
-		PairedInfoIndexT<typename graph_pack::graph_t> resolved_graph_paired_info,
-		const string& graph_name, const string& subfolder) {
+		PairedInfoIndexT<typename graph_pack::graph_t> resolved_graph_paired_info, const string &graph_name, const string& subfolder) {
 	if (cfg::get().make_saves) {
 		std::string rr_filename;
 		if (subfolder.size()) {
@@ -385,8 +330,31 @@ void SaveResolvedPairedInfo(graph_pack& resolved_gp,
 	}
 }
 
+bool try_load_paired_index(conj_graph_pack& gp, PairedIndexT& index,
+		const string& name, path::files_t* used_files = 0) {
+
+	string p = path::append_path(cfg::get().load_from, name);
+
+	FILE* file = fopen((p + ".prd").c_str(), "r");
+	if (file == NULL) {
+		return false;
+	}
+	fclose(file);
+
+	if (used_files != 0)
+		used_files->push_back(p);
+
+	index.Clear();
+	ScannerTraits<conj_graph_pack::graph_t>::Scanner scanner(gp.g, gp.int_ids);
+	ScanPairedIndex(p, scanner, index);
+
+	return true;
+
+}
+
 template<class graph_pack>
 void RemapMaskedMismatches(graph_pack& resolved_gp, graph_pack& origin_gp,
+        const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
 		EdgeLabelHandler<typename graph_pack::graph_t>& labels_after,
 		map<EdgeId, pair<size_t, size_t> >& distance_to_repeats_end) {
 	size_t Ncount = 0;
@@ -418,14 +386,14 @@ void RemapMaskedMismatches(graph_pack& resolved_gp, graph_pack& origin_gp,
 						labels_after.resolvedPositions(*iter,
 								mismatches[i].position);
 				double cutoff = 0.5;
-				if ((origin_gp.g.length(*iter) > *cfg::get().ds.IS
+				if ((origin_gp.g.length(*iter) > size_t(lib.data().mean_insert_size)
 						&& multiplicity > 1)
 						|| (distance_to_repeats_end[*iter].first
-								+ mismatches[i].position > *cfg::get().ds.IS
+								+ mismatches[i].position > size_t(lib.data().mean_insert_size)
 								&& distance_to_repeats_end[*iter].second
 										+ origin_gp.g.length(*iter)
 										- mismatches[i].position
-										> *cfg::get().ds.IS))
+										> size_t(lib.data().mean_insert_size)))
 					cutoff /= (4); // /cfg::get().mismatch_ratio);
 				else {
 					cutoff *= 1.5; //* cfg::get().mismatch_ratio;
@@ -433,11 +401,11 @@ void RemapMaskedMismatches(graph_pack& resolved_gp, graph_pack& origin_gp,
 				bool cfg_corrector_on = true;
 				if (cfg_corrector_on
 						&& !(distance_to_repeats_end[*iter].first
-								+ mismatches[i].position > *cfg::get().ds.IS
+								+ mismatches[i].position > size_t(lib.data().mean_insert_size)
 								&& distance_to_repeats_end[*iter].second
 										+ origin_gp.g.length(*iter)
 										- mismatches[i].position
-										> *cfg::get().ds.IS)) {
+										> size_t(lib.data().mean_insert_size))) {
 					not_masked++;
 					origin_gp.mismatch_masker.mismatch_map[*iter][i].ratio = 0;
 					continue;
@@ -498,19 +466,21 @@ void RemapMaskedMismatches(graph_pack& resolved_gp, graph_pack& origin_gp,
 
 template<class graph_pack>
 void process_resolve_repeats(graph_pack& origin_gp,
+        const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
 		const PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index,
 		graph_pack& resolved_gp, const string& graph_name,
 		EdgeLabelHandler<typename graph_pack::graph_t>& labels_after,
-		const string& subfolder = "", bool output_contigs = true, bool kill_loops = true) {
+		const string& subfolder = "", bool output_contigs = true,
+		bool kill_loops = true) {
 	typename graph_pack::graph_t &g = origin_gp.g;
 	const PairedInfoIndexT<typename graph_pack::graph_t> &pii = clustered_index;
-	if(cfg::get().cut_bad_connections)
+	if (cfg::get().cut_bad_connections)
 		BadConnectionCutter<typename graph_pack::graph_t>(g, pii).CutConnections();
 //	EdgeLabelHandler<typename graph_pack::graph_t> labels_after(resolved_gp.g,
 //			origin_gp.g);
 //	ProduceLongEdgesStat( origin_gp,  clustered_index);
 	if (cfg::get().compute_paths_number)
-		GenerateMatePairStats(origin_gp, clustered_index);
+		GenerateMatePairStats(origin_gp, clustered_index, lib.data().insert_size_deviation);
 	DEBUG("New index size: " << clustered_index.size());
 	// todo: make printGraph const to its arguments
 
@@ -535,17 +505,17 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	//+ "_2_before.dot", "no_repeat_graph");
 
 //    CleanIsolated(origin_gp);
-		ResolveRepeats(origin_gp.g, origin_gp.int_ids, clustered_index,
-				origin_gp.edge_pos, resolved_gp.g, resolved_gp.int_ids,
-				resolved_gp.edge_pos,
-				cfg::get().output_dir + subfolder + "resolve_" + graph_name
-						+ "/", labels_after, cfg::get().developer_mode);
+	ResolveRepeats(origin_gp.g, lib, origin_gp.int_ids, clustered_index,
+			origin_gp.edge_pos, resolved_gp.g, resolved_gp.int_ids,
+			resolved_gp.edge_pos,
+			cfg::get().output_dir + subfolder + "resolve_" + graph_name + "/",
+			labels_after, cfg::get().developer_mode);
 
-		//Generating paired info for resolved graph
+	//Generating paired info for resolved graph
 //    PairedInfoIndexT<typename graph_pack::graph_t> resolved_graph_paired_info(resolved_gp.g);
 //		ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp, labels_after, resolved_graph_paired_info);
 //		SaveResolvedPairedInfo(resolved_gp, resolved_graph_paired_info, graph_name + "_resolved", subfolder);
-		//Paired info for resolved graph generated
+	//Paired info for resolved graph generated
 
 	if (cfg::get().output_nonfinal_contigs && output_contigs) {
 		OutputContigs(resolved_gp.g,
@@ -559,9 +529,9 @@ void process_resolve_repeats(graph_pack& origin_gp,
 			&resolved_gp.edge_pos, &labels_after);
 	total_labeler tot_labeler_after(&graph_struct_after, &graph_struct_before);
 	if (cfg::get().output_pictures) {
-		omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
+		omnigraph::visualization::WriteSimple(resolved_gp.g, tot_labeler_after,
 				cfg::get().output_dir + subfolder + graph_name
-						+ "_3_resolved.dot", "no_repeat_graph");
+						+ "_3_resolved.dot");
 	}
 
 	DEBUG("Total labeler finished");
@@ -570,8 +540,8 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	{
 		PairedInfoIndexT<typename graph_pack::graph_t> resolved_cleared_graph_paired_info_before(
 				resolved_gp.g);
-			ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp,
-					labels_after, resolved_cleared_graph_paired_info_before);
+		ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp,
+				labels_after, resolved_cleared_graph_paired_info_before);
 	}
 
 	INFO("SUBSTAGE == Clearing resolved graph");
@@ -587,14 +557,15 @@ void process_resolve_repeats(graph_pack& origin_gp,
 
 	size_t iters = 3; // TODO Constant 3? Shouldn't it be taken from config?
 	map<EdgeId, pair<size_t, size_t> > distance_to_repeats_end;
-	FindDistanceFromRepeats(origin_gp, labels_after,
-			distance_to_repeats_end);
-	RemapMaskedMismatches(resolved_gp, origin_gp, labels_after,
+	FindDistanceFromRepeats(origin_gp, labels_after, distance_to_repeats_end);
+	RemapMaskedMismatches(resolved_gp, origin_gp, lib, labels_after,
 			distance_to_repeats_end);
 	for (size_t i = 0; i < iters; ++i) {
-		INFO("Tip clipping iteration " << i << " (0-indexed) out of " << iters << ":");
+		INFO(
+				"Tip clipping iteration " << i << " (0-indexed) out of " << iters << ":");
 //		ClipTipsForResolver(resolved_gp.g);
-		ClipTips(resolved_gp.g, cfg::get().simp.tc, *cfg::get().ds.RL, /*max_coverage*/0.);
+		ClipTips(resolved_gp.g, cfg::get().simp.tc, lib.data().read_length, /*max_coverage*/
+				0.);
 
 		//PairedInfoIndexT<typename graph_pack::graph_t> resolved_cleared_graph_paired_info_before(
 		//resolved_gp.g);
@@ -617,26 +588,28 @@ void process_resolve_repeats(graph_pack& origin_gp,
 //				"no_repeat_graph");
 	}
 
-	if (kill_loops) {
-		SimpleLoopKiller<typename graph_pack::graph_t> lk(resolved_gp.g,
-				cfg::get().rr.max_repeat_length, 6);
-		lk.KillAllLoops();
-	}
 
-	OutputMaskedContigs(origin_gp.g,
+    if (kill_loops) {
+        SimpleLoopKiller<typename graph_pack::graph_t> lk(resolved_gp.g,
+                cfg::get().rr.max_repeat_length, 6);
+        lk.KillAllLoops();
+    }
+
+    OutputMaskedContigs(origin_gp.g,
 			cfg::get().output_dir + "before_resolve_masked.fasta",
 			origin_gp.mismatch_masker);
 
 	DEBUG("Clearing resolved graph complete");
 
-	//Generating paired info for resolved graph
-		PairedInfoIndexT<typename graph_pack::graph_t> resolved_cleared_graph_paired_info(
-				resolved_gp.g);
 
-		ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp,
-				labels_after, resolved_cleared_graph_paired_info);
-		SaveResolvedPairedInfo(resolved_gp, resolved_cleared_graph_paired_info,
-				graph_name + "_resolved_cleared", subfolder);
+	//Generating paired info for resolved graph
+	PairedInfoIndexT<typename graph_pack::graph_t> resolved_cleared_graph_paired_info(
+			resolved_gp.g);
+
+	ProduceResolvedPairedInfo(origin_gp, clustered_index, resolved_gp,
+			labels_after, resolved_cleared_graph_paired_info);
+	SaveResolvedPairedInfo(resolved_gp, resolved_cleared_graph_paired_info,
+			graph_name + "_resolved_cleared", subfolder);
 	//Paired info for resolved graph generated
 
 	DEBUG("Output Contigs");
@@ -653,42 +626,45 @@ void process_resolve_repeats(graph_pack& origin_gp,
 			INFO("Outputting final masked contigs: ");
 			OutputMaskedContigs(resolved_gp.g,
 					cfg::get().output_dir + "final_contigs.fasta",
-					resolved_gp.mismatch_masker,
-					false, 0,
+					resolved_gp.mismatch_masker, false, 0,
 					cfg::get().cut_bad_connections);
 		} else {
 			INFO("Outputting final NONmasked contigs: ");
 			OutputContigs(resolved_gp.g,
-					cfg::get().output_dir + "final_contigs.fasta",
-					0,
+					cfg::get().output_dir + "final_contigs.fasta", 0,
 					cfg::get().cut_bad_connections);
 		}
 	}
 	OutputCutContigs(resolved_gp.g, cfg::get().output_dir + "cut.fasta");
 
 	if (cfg::get().output_pictures) {
-		omnigraph::WriteSimple(resolved_gp.g, tot_labeler_after,
+		omnigraph::visualization::WriteSimple(resolved_gp.g, tot_labeler_after,
 				cfg::get().output_dir + subfolder + graph_name
-						+ "_4_cleared.dot", "no_repeat_graph");
+						+ "_4_cleared.dot");
 		string file_str = cfg::get().output_dir + subfolder + graph_name
 				+ "_4_cleared_colored.dot";
 		ofstream filestr(file_str.c_str());
-		CompositeGraphColorer<typename graph_pack::graph_t> colorer(
-				new FixedColorer<typename graph_pack::graph_t::VertexId>(
+		omnigraph::visualization::CompositeGraphColorer<typename graph_pack::graph_t> colorer(
+				make_shared<omnigraph::visualization::FixedColorer<typename graph_pack::graph_t::VertexId>>(
 						"white"),
-				new PositionsEdgeColorer<typename graph_pack::graph_t>(
+				make_shared<omnigraph::visualization::PositionsEdgeColorer<typename graph_pack::graph_t>>(
 						resolved_gp.g, resolved_gp.edge_pos));
-		DotGraphPrinter<typename graph_pack::graph_t> gp(resolved_gp.g,
-				tot_labeler_after, colorer, " ", filestr);
-		SimpleGraphVisualizer<typename graph_pack::graph_t> gv(resolved_gp.g,
-				gp);
-		gv.Visualize();
+		visualization::ComponentVisualizer<typename graph_pack::graph_t> visualizer(resolved_gp.g, false);
+		omnigraph::visualization::EmptyGraphLinker<typename graph_pack::graph_t> linker;
+		omnigraph::visualization::ComponentVisualizer<typename graph_pack::graph_t>(resolved_gp.g, false).Visualize(filestr, tot_labeler_after, colorer, linker);
+
+//		DotGraphPrinter<typename graph_pack::graph_t> gp(resolved_gp.g,
+//				tot_labeler_after, colorer, " ", filestr);
+//		SimpleGraphVisualizer<typename graph_pack::graph_t> gv(resolved_gp.g,
+//				gp);
+//		gv.Visualize();
 		filestr.close();
 	}
 }
 
 template<class graph_pack>
 void process_resolve_repeats(graph_pack& origin_gp,
+        const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
 		PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index,
 		graph_pack& resolved_gp, const string& graph_name,
 		const string& subfolder = "", bool output_contigs = true) {
@@ -696,12 +672,14 @@ void process_resolve_repeats(graph_pack& origin_gp,
 	EdgeLabelHandler<typename graph_pack::graph_t> labels_after(resolved_gp.g,
 			origin_gp.g);
 
-	process_resolve_repeats(origin_gp, clustered_index, resolved_gp, graph_name,
+	process_resolve_repeats(origin_gp, lib, clustered_index, resolved_gp, graph_name,
 			labels_after, subfolder, output_contigs);
 }
 
 template<class graph_pack>
-void component_statistics(graph_pack & conj_gp, int component_id,
+void component_statistics(graph_pack & conj_gp,
+        const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
+        int component_id,
 		PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index) {
 
 	string graph_name = ConstructComponentName("graph_", component_id).c_str();
@@ -714,10 +692,10 @@ void component_statistics(graph_pack & conj_gp, int component_id,
 	set<typename graph_pack::graph_t::EdgeId> incoming_edges;
 	set<typename graph_pack::graph_t::EdgeId> outgoing_edges;
 	for (auto iter = conj_gp.g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-		typename graph_pack::graph_t::VertexId start = conj_gp.g.EdgeStart(*iter);
+		typename graph_pack::graph_t::VertexId start = conj_gp.g.EdgeStart(
+				*iter);
 		typename graph_pack::graph_t::VertexId end = conj_gp.g.EdgeEnd(*iter);
-		if (conj_gp.g.length(*iter) > *cfg::get().ds.IS + 100) {
-
+		if (conj_gp.g.length(*iter) > size_t(lib.data().mean_insert_size) + 100) {
 			if (conj_gp.g.IsDeadStart(
 					start) /*&& conj_gp.g.CheckUniqueOutgoingEdge(start)*/) {
 				incoming_edges.insert(*iter);
@@ -789,7 +767,7 @@ void component_statistics(graph_pack & conj_gp, int component_id,
 
 }
 
-void resolve_conjugate_component(int component_id, const Sequence& genome) {
+void resolve_conjugate_component(int component_id, const Sequence& genome, const io::SequencingLibrary<debruijn_config::DataSetData> &lib) {
 	conj_graph_pack conj_gp(cfg::get().K, cfg::get().output_dir, genome,
 			cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling);
 	PairedIndexT paired_index(conj_gp.g/*, 5.*/);
@@ -804,7 +782,7 @@ void resolve_conjugate_component(int component_id, const Sequence& genome) {
 
 	ScanWithClusteredIndex(component_name, conj_gp, clustered_index);
 
-	component_statistics(conj_gp, component_id, clustered_index);
+	component_statistics(conj_gp, lib, component_id, clustered_index);
 
 	conj_graph_pack resolved_gp(cfg::get().K, cfg::get().output_dir, genome,
 			cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling);
@@ -817,11 +795,11 @@ void resolve_conjugate_component(int component_id, const Sequence& genome) {
 
 	WriteGraphPack(conj_gp,
 			cfg::get().output_dir + sub_dir + graph_name + "_2_unresolved.dot");
-	process_resolve_repeats(conj_gp, clustered_index, resolved_gp, graph_name,
+	process_resolve_repeats(conj_gp, lib, clustered_index, resolved_gp, graph_name,
 			sub_dir, false);
 }
 
-void resolve_nonconjugate_component(int component_id, const Sequence& genome) {
+void resolve_nonconjugate_component(int /*component_id*/, const Sequence& /*genome*/) {
 //	nonconj_graph_pack nonconj_gp(genome);
 //  PairedInfoIndexT<nonconj_graph_pack::graph_t> clustered_index(nonconj_gp.g);
 //
@@ -845,8 +823,8 @@ void resolve_nonconjugate_component(int component_id, const Sequence& genome) {
 //			graph_name, sub_dir, false);
 }
 
-void resolve_with_jumps(conj_graph_pack& gp, PairedInfoIndexT<Graph>& index,
-		const PairedIndexT& jump_index) {
+void resolve_with_jumps(conj_graph_pack& /*gp*/, PairedInfoIndexT<Graph>& /*index*/,
+		const PairedIndexT& /*jump_index*/) {
 	WARN("Jump resolver not alailable");
 
 //	VERIFY(cfg::get().andrey_params.);
@@ -861,7 +839,7 @@ void prepare_jump_index(const Graph& g, const PairedIndexT& raw_jump_index,
 	PairedIndexT clustered_jump_index(g);
 	estimator.Estimate(clustered_jump_index);
 
-	JumpingNormalizerFunction<Graph> nf(g, *cfg::get().ds.RL, 500);
+	JumpingNormalizerFunction<Graph> nf(g, cfg::get().ds.RL(), 500);
 	PairedInfoNormalizer<Graph> normalizer(nf);
 	PairedIndexT normalized_jump_index(g);
 	normalizer.FillNormalizedIndex(clustered_jump_index, normalized_jump_index);
@@ -870,19 +848,21 @@ void prepare_jump_index(const Graph& g, const PairedIndexT& raw_jump_index,
 	filter.Filter(normalized_jump_index, jump_index);
 }
 
-void prepare_scaffolding_index(conj_graph_pack& gp, PairedIndexT& paired_index,
+void prepare_scaffolding_index(conj_graph_pack& gp,
+        const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
+        PairedIndexT& paired_index,
 		PairedIndexT& clustered_index) {
-	double is_var = *cfg::get().ds.is_var;
+	double is_var = lib.data().insert_size_deviation;
 	size_t delta = size_t(is_var);
 	size_t linkage_distance = size_t(
 			cfg::get().de.linkage_distance_coeff * is_var);
-	GraphDistanceFinder<Graph> dist_finder(gp.g, *cfg::get().ds.IS,
-			*cfg::get().ds.RL, delta);
+	GraphDistanceFinder<Graph> dist_finder(gp.g, (size_t) math::round(lib.data().mean_insert_size),
+	                                       lib.data().read_length, delta);
 	size_t max_distance = size_t(cfg::get().de.max_distance_coeff * is_var);
 	boost::function<double(int)> weight_function;
 	INFO("Retaining insert size distribution for it");
-	map<int, size_t> insert_size_hist = cfg::get().ds.hist;
-	WeightDEWrapper wrapper(insert_size_hist, *cfg::get().ds.IS);
+	map<int, size_t> insert_size_hist = cfg::get().ds.hist();
+	WeightDEWrapper wrapper(insert_size_hist, lib.data().mean_insert_size);
 	INFO("Weight Wrapper Done");
 	weight_function = boost::bind(&WeightDEWrapper::CountWeight, wrapper, _1);
 
@@ -891,9 +871,10 @@ void prepare_scaffolding_index(conj_graph_pack& gp, PairedIndexT& paired_index,
 		normalizing_f = &TrivialWeightNormalization<Graph>;
 	} else {
 		//todo reduce number of constructor params
+	    //TODO: apply new system
 		PairedInfoWeightNormalizer<Graph> weight_normalizer(gp.g,
-				*cfg::get().ds.IS, *cfg::get().ds.is_var, *cfg::get().ds.RL,
-				gp.k_value, *cfg::get().ds.avg_coverage);
+                (size_t)math::round(lib.data().mean_insert_size), lib.data().insert_size_deviation, lib.data().read_length,
+				gp.k_value, lib.data().average_coverage);
 		normalizing_f = boost::bind(
 				&PairedInfoWeightNormalizer<Graph>::NormalizeWeight,
 				weight_normalizer, _1, _2, _3);
@@ -915,103 +896,197 @@ void prepare_scaffolding_index(conj_graph_pack& gp, PairedIndexT& paired_index,
 	estimate_with_estimator(gp.g, estimator, normalizer, filter,
 			clustered_index);
 }
-void pacbio_test(conj_graph_pack& conj_gp, size_t k_test){
-	if (cfg::get().pacbio_test_on == false) return;
-    INFO("starting pacbio tests");
-	ofstream filestr("pacbio_mapped.mpr");
-	PacBioMappingIndex<Graph> pac_index(conj_gp.g, k_test);
-	ReadStream* pacbio_read_stream = new io::EasyReader(cfg::get().pacbio_reads, true);
-    size_t n = 0;
-    map<int, int> profile;
-    map<int, int> different_edges_profile;
-    int genomic_subreads = 0;
-    int nongenomic_subreads = 0;
-    LongReadStorage<Graph> long_reads(conj_gp.g);
-    int rc_pairs = 0;
-	while (!pacbio_read_stream->eof()) {
-		ReadStream::read_type read;
-		*pacbio_read_stream>>read;
-		Sequence seq(read.sequence());
-	    size_t res_count = pac_index.Count(seq);
-	    if (profile.find(res_count) == profile.end())
-	    	profile.insert(make_pair(res_count, 0));
-	    profile[res_count] ++;
-	    if (res_count != 0){
-	    	DEBUG(read.sequence());
-	    	DEBUG(res_count);
-	    }
-	    auto location_map = pac_index.GetClusters(seq);
-	    different_edges_profile[location_map.size()]++;
-	    n++;
-	    if (location_map.size() <= 1){
-	    	TRACE("No significant clusters");
-	    	continue;
-	    }
-	    for (auto iter = location_map.begin(); iter != location_map.end(); ++iter) {
-	    	bool flag = false;
-		    for (auto j_iter = location_map.begin(); j_iter != location_map.end(); ++j_iter) {
-		    	if (iter != j_iter && conj_gp.g.conjugate(iter->first) == j_iter->first) {
-		    		flag = true;
-		    		break;
-		    	}
-		    }
-	    	if (flag == true) {
-	    		rc_pairs ++;
-	    		break;
-	    	}
-	    }
-	    //continue;
-	    filestr << n << "  " << location_map.size()<< ": \n";
-	    INFO(n << "  " << location_map.size()<< ": \n");
-	    for (auto iter = location_map.begin(); iter != location_map.end(); ++iter) {
-	    	filestr << conj_gp.g.int_id(iter->first) <<"("<<conj_gp.g.length(iter->first)<<")  " << iter->second.size() <<"\n";
-	    	for (auto set_iter = iter->second.begin(); set_iter != iter->second.end(); ++ set_iter)
-				filestr << set_iter->edge_position << "-" << set_iter->read_position << "   ";
-			filestr << " \n";
-	    }
 
-	    auto aligned_edges = pac_index.GetReadAlignment(seq);
-	    filestr <<"found "<< aligned_edges.size()  <<" aligned subreads.\n";
-	    for(auto iter = aligned_edges.begin(); iter != aligned_edges.end(); ++iter) {
-	    	string tmp = " ";
-	    	if (conj_gp.edge_pos.IsConsistentWithGenome(*iter)) {
-	    		genomic_subreads ++;
-	    	}else {
-	    		tmp = " NOT ";
-	    		nongenomic_subreads ++;
-	    	}
-	    	filestr <<"Alignment of "<< iter->size()  <<" edges is" << tmp <<"consistent with genome\n";
-	    	long_reads.AddPath(*iter);
-	    	for (auto j_iter = iter->begin(); j_iter != iter->end(); ++j_iter){
-	    		filestr << conj_gp.g.int_id(*j_iter) <<"("<<conj_gp.g.length(*j_iter)<<") ";
+void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, std::vector< PathInfo<Graph> >& filteredPaths,
+				PairedIndexT& clustered_index,
+				const EdgeQuality<Graph, Index>& quality_labeler ) {
 
-	    	}
-	    	filestr << " \n";
-	    }
+    typedef DeBruijnEdgeIndex<KmerStoringDeBruijnEdgeIndex<conj_graph_pack::graph_t, runtime_k::RtSeq>> KmerIndex;
 
-	    filestr << " \n";
-	    filestr << " \n";
-	    VERBOSE_POWER(n, " reads processed");
+    KmerIndex kmer_index((unsigned) conj_gp.g.k() + 1, conj_gp.g, cfg::get().output_dir);
+	if (cfg::get().developer_mode) {
 
+		std::string path;
+		if (cfg::get().entry_point < ws_repeats_resolving)
+			path = cfg::get().output_dir + "/saves/debruijn_kmer_index_after_construction";
+		else
+			path = cfg::get().load_from + "/debruijn_kmer_index_after_construction";
+		bool val = LoadEdgeIndex(path, kmer_index);
+		VERIFY_MSG(val, "can not open file "+path+".kmidx");
+//		INFO("Updating index from graph started");
+//        EdgeInfoUpdater<KmerIndex, Graph> updater(conj_gp.g, kmer_index);
+//        updater.UpdateAll();
 	}
-	long_reads.DumpToFile("long_reads2.mpr", conj_gp.edge_pos);
-	INFO("Total reads: " << n);
-	INFO("reads with rc edges:  " << rc_pairs);
-	INFO("Genomic/nongenomic subreads: "<<genomic_subreads <<" / " << nongenomic_subreads);
-	INFO("profile:")
-	for (auto iter = profile.begin(); iter != profile.end(); ++iter)
-		if (iter->first < 100) {
-			INFO(iter->first <<" :  "<< iter->second);
+
+	FlankingCoverage<Graph, KmerIndex> index(conj_gp.g, kmer_index, 50);
+	EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(conj_gp.g, conj_gp.g);
+	auto cov_rr = CoverageBasedResolution<conj_graph_pack> (&conj_gp, cfg::get().cbrr.coverage_threshold_one_list, cfg::get().cbrr.coverage_threshold_match,
+			cfg::get().cbrr.coverage_threshold_global, cfg::get().cbrr.tandem_ratio_lower_threshold, cfg::get().cbrr.tandem_ratio_upper_threshold, cfg::get().cbrr.repeat_length_upper_threshold);
+	cov_rr.resolve_repeats_by_coverage(index, insert_size, labels_after, quality_labeler, clustered_index, filteredPaths);
+
+	INFO("Repeats are resolved by coverage");
+}
+
+int get_first_pe_lib_index() {
+	for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+		if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd) {
+			return (int) i;
 		}
-	INFO("different edges profile:")
-	for (auto iter = different_edges_profile.begin(); iter != different_edges_profile.end(); ++iter)
-		if (iter->first < 100) {
-			INFO(iter->first <<" :  "<< iter->second);
+	}
+	return -1;
+}
+
+void prepare_all_scaf_libs(conj_graph_pack& conj_gp,
+		vector<PairedIndexT*>& scaff_indexs, vector<size_t>& indexes) {
+
+	vector<PairedIndexT*> cl_scaff_indexs;
+	for (size_t i = 0; i < scaff_indexs.size(); ++i) {
+		PairedIndexT* pe = new PairedIndexT(conj_gp.g);
+		cl_scaff_indexs.push_back(pe);
+		prepare_scaffolding_index(conj_gp, cfg::get().ds.reads[indexes[i]], *scaff_indexs[i], *cl_scaff_indexs[i]);
+	}
+	scaff_indexs.clear();
+	scaff_indexs.insert(scaff_indexs.end(), cl_scaff_indexs.begin(),
+			cl_scaff_indexs.end());
+}
+
+void delete_index(vector<PairedIndexT*>& index){
+	for (size_t i = 0; i < index.size(); ++i){
+		delete index[i];
+	}
+}
+
+//Use only one pe library
+void split_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
+		PairedIndicesT& clustered_indices, Sequence& genome,
+		size_t pe_lib_index) {
+
+	PairedIndexT& paired_index = paired_indices[pe_lib_index];
+	PairedIndexT& clustered_index = clustered_indices[pe_lib_index];
+	const io::SequencingLibrary<debruijn_config::DataSetData> &lib = cfg::get().ds.reads[pe_lib_index];
+	int number_of_components = 0;
+	//TODO: do we have non symmetric_resolve? can we delete this if?
+	if (cfg::get().rr.symmetric_resolve) {
+		if (cfg::get().componential_resolve) {
+			make_dir(cfg::get().output_dir + "graph_components" + "/");
+			number_of_components = PrintGraphComponents(
+					cfg::get().output_dir + "graph_components/graph_", conj_gp,
+					size_t(lib.data().mean_insert_size) + 100, clustered_index);
+			INFO("number of components " << number_of_components);
 		}
 
+		conj_graph_pack resolved_gp(cfg::get().K, cfg::get().output_dir, genome,
+				cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling);
+		resolved_gp.index.Detach();
 
-	INFO("PacBio test finished");
+		EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(resolved_gp.g,
+				conj_gp.g);
 
+		process_resolve_repeats(conj_gp, lib, clustered_index, resolved_gp, "graph",
+				labels_after, "", true, cfg::get().rr.kill_loops);
+
+		if (cfg::get().use_scaffolder) {
+			vector<size_t> indexs;
+			indexs.push_back(pe_lib_index);
+			INFO("Transfering paired information");
+			PairedInfoIndexT<conj_graph_pack::graph_t> resolved_graph_paired_info_cl(
+					resolved_gp.g);
+			ProduceResolvedPairedInfo(conj_gp, clustered_index, resolved_gp,
+					labels_after, resolved_graph_paired_info_cl);
+			PairedInfoIndexT<conj_graph_pack::graph_t> resolved_graph_paired_info(
+					resolved_gp.g);
+			ProduceResolvedPairedInfo(conj_gp, paired_index, resolved_gp,
+					labels_after, resolved_graph_paired_info);
+			vector<PairedIndexT*> pe_indexs;
+			vector<PairedIndexT*> pe_scaf_indexs;
+			pe_indexs.push_back(&resolved_graph_paired_info_cl);
+			PairedInfoIndexT<conj_graph_pack::graph_t>* resolved_graph_scaff_clustered =
+									new PairedInfoIndexT<conj_graph_pack::graph_t>(resolved_gp.g);
+			if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
+				PairedInfoIndexT<conj_graph_pack::graph_t> scaff_clustered(
+						conj_gp.g);
+				prepare_scaffolding_index(conj_gp, lib, paired_index,
+						scaff_clustered);
+				ProduceResolvedPairedInfo(conj_gp, scaff_clustered, resolved_gp,
+						labels_after, *resolved_graph_scaff_clustered);
+				DEBUG("Resolved scaffolding index size " << resolved_graph_scaff_clustered->size());
+				pe_scaf_indexs.push_back(resolved_graph_scaff_clustered);
+			} else {
+				pe_scaf_indexs.push_back(&resolved_graph_paired_info);
+			}
+			INFO("Scaffolding");
+			path_extend::resolve_repeats_pe(resolved_gp, pe_indexs,
+					pe_scaf_indexs, indexs,  vector<PathInfo<Graph > >(), cfg::get().output_dir, "scaffolds.fasta", false, boost::none, false);
+			SaveResolved(resolved_gp, resolved_graph_paired_info,
+					resolved_graph_paired_info_cl);
+			delete resolved_graph_scaff_clustered;
+		}
+
+		if (cfg::get().componential_resolve) {
+			make_dir(cfg::get().output_dir + "resolve_components" + "/");
+			for (int i = 0; i < number_of_components; i++) {
+				resolve_conjugate_component(i + 1, genome, lib);
+			}
+		}
+	}
+}
+
+void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	PairedIndicesT& clustered_indices, const EdgeQuality<Graph, Index>& quality_labeler) {
+
+	vector<PairedIndexT*> pe_indexs;
+	vector<PairedIndexT*> pe_scaf_indexs;
+	vector<size_t> indexes;
+
+	for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+		if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd
+				|| cfg::get().ds.reads[i].type() == io::LibraryType::MatePairs) {
+			pe_indexs.push_back(&clustered_indices[i]);
+			pe_scaf_indexs.push_back(&paired_indices[i]);
+			indexes.push_back(i);
+		}
+	}
+
+    //LongReadStorage<Graph> long_read(conj_gp.g);
+     //long_read.LoadFromFile("/storage/labnas/students/igorbunova/path-extend2/algorithmic-biology/assembler/pacbio.mpr");
+
+    PathStorage<Graph> long_read(conj_gp.g);
+    GapStorage<Graph> gaps(conj_gp.g);
+
+	std::vector< PathInfo<Graph> > filteredPaths;
+	if (cfg::get().developer_mode) {
+	    OutputContigs(conj_gp.g, cfg::get().output_dir + "before_resolve.fasta");
+	}
+
+	if (cfg::get().coverage_based_rr_on == true){
+		int pe_lib_index = get_first_pe_lib_index();
+		const io::SequencingLibrary<debruijn_config::DataSetData> &lib = cfg::get().ds.reads[pe_lib_index];
+		resolve_repeats_by_coverage(conj_gp, (size_t) lib.data().mean_insert_size, filteredPaths, clustered_indices[0], quality_labeler);
+	}
+
+
+
+    //LongReadStorage<Graph> long_read(conj_gp.g);
+	if (cfg::get().pacbio_test_on == true){
+		INFO("creating  multiindex with k = " << cfg::get().pb.pacbio_k);
+		PacBioAligner pac_aligner(conj_gp, cfg::get().pb.pacbio_k);
+		INFO("index created");
+		filteredPaths = long_read.GetAllPaths();
+		pac_aligner.pacbio_test(long_read, gaps);
+	}
+
+	if (cfg::get().use_scaffolder && cfg::get().pe_params.param_set.scaffolder_options.on) {
+	    if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
+	        prepare_all_scaf_libs(conj_gp, pe_scaf_indexs, indexes);
+	    }
+        //path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "scaffolds.fasta", true, boost::optional<std::string>("final_contigs.fasta"));
+        path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, filteredPaths, cfg::get().output_dir, "scaffolds.fasta", true, boost::optional<std::string>("final_contigs.fasta"));
+        delete_index(pe_scaf_indexs);
+	}
+	else {
+		pe_scaf_indexs.clear();
+		//path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "final_contigs.fasta", false, boost::none);
+		path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, filteredPaths, cfg::get().output_dir, "final_contigs.fasta", false, boost::none);
+	}
 }
 
 void resolve_repeats() {
@@ -1021,277 +1096,103 @@ void resolve_repeats() {
 					cfg::get().ds.reference_genome : Sequence();
 
 	conj_graph_pack conj_gp(cfg::get().K, cfg::get().output_dir, genome,
-			cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling, /*use_inner_ids*/
+			cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling,
 			!cfg::get().developer_mode);
 
-	PairedIndexT paired_index(conj_gp.g);
-	PairedIndexT clustered_index(conj_gp.g);
+	PairedIndicesT paired_indices(conj_gp.g, cfg::get().ds.reads.lib_count());
+	PairedIndicesT clustered_indices(conj_gp.g,	cfg::get().ds.reads.lib_count());
+
 	if (!cfg::get().developer_mode) {
-		//Detaching edge_pos handler
 		conj_gp.edge_pos.Detach();
-		paired_index.Detach();
-		clustered_index.Detach();
+		paired_indices.Detach();
+		clustered_indices.Detach();
 		if (!cfg::get().gap_closer_enable && !cfg::get().paired_mode) {
 		    //todo ?
 //			conj_gp.kmer_mapper.Detach();
 		}
 	}
 
-	exec_distance_estimation(conj_gp, paired_index, clustered_index);
+	exec_distance_estimation(conj_gp, paired_indices, clustered_indices);
+
 	if (cfg::get().developer_mode && cfg::get().pos.late_threading) {
 		FillPos(conj_gp, conj_gp.genome, "10");
 		FillPos(conj_gp, !conj_gp.genome, "11");
 		if (!cfg::get().pos.contigs_for_threading.empty()
-			&& FileExists(cfg::get().pos.contigs_for_threading)) {
-		  FillPosWithRC(conj_gp, cfg::get().pos.contigs_for_threading, "thr_");
+				&& FileExists(cfg::get().pos.contigs_for_threading)) {
+			FillPosWithRC(conj_gp, cfg::get().pos.contigs_for_threading,
+					"thr_");
 		}
 
 		if (!cfg::get().pos.contigs_to_analyze.empty()
-			&& FileExists(cfg::get().pos.contigs_to_analyze)) {
-		  FillPosWithRC(conj_gp, cfg::get().pos.contigs_to_analyze, "anlz_");
+				&& FileExists(cfg::get().pos.contigs_to_analyze)) {
+			FillPosWithRC(conj_gp, cfg::get().pos.contigs_to_analyze, "anlz_");
 		}
 	}
 
-	pacbio_test(conj_gp, cfg::get().pacbio_k);
+
 //	RunTopologyTipClipper(conj_gp.g, 300, 2000, 1000);
 
 	//todo refactor labeler creation
 	total_labeler_graph_struct graph_struct(conj_gp.g, &conj_gp.int_ids,
 			&conj_gp.edge_pos);
 	total_labeler tot_lab(&graph_struct);
-	EdgeQuality<Graph> quality_labeler(conj_gp.g, conj_gp.index,
+	EdgeQuality<Graph, Index> quality_labeler(conj_gp.g, conj_gp.index,
 			conj_gp.kmer_mapper, conj_gp.genome);
 	//	OutputWrongContigs<K>(conj_gp, 1000, "contamination.fasta");
 	CompositeLabeler<Graph> labeler(tot_lab, quality_labeler);
-	detail_info_printer printer(conj_gp, labeler, cfg::get().output_dir,
-			"graph.dot");
+	detail_info_printer printer(conj_gp, labeler, cfg::get().output_dir);
 	printer(ipp_before_repeat_resolution);
 
-	if (cfg::get().SAM_writer_enable && cfg::get().sw.align_before_RR) {
-		SAMBeforeResolve(conj_gp);
-	}
+	OutputContigs(conj_gp.g, cfg::get().output_dir + "before_rr.fasta");
 
 	if (!cfg::get().paired_mode
 			|| cfg::get().rm == debruijn_graph::resolving_mode::rm_none) {
 		OutputContigs(conj_gp.g, cfg::get().output_dir + "final_contigs.fasta");
+		if (cfg::get().pacbio_test_on) {
+		    PathStorage<Graph> long_read(conj_gp.g);
+		    GapStorage<Graph> gaps(conj_gp.g);
+			std::vector< PathInfo<Graph> > filteredPaths;
+		    //LongReadStorage<Graph> long_read(conj_gp.g);
+			INFO("creating  multiindex with k = " << cfg::get().pb.pacbio_k);
+			PacBioAligner pac_aligner(conj_gp, cfg::get().pb.pacbio_k);
+			INFO("index created");
+			filteredPaths = long_read.GetAllPaths();
+			pac_aligner.pacbio_test(long_read, gaps);
+		}
 		return;
 	}
 
-	//tSeparatedStats(conj_gp, conj_gp.genome, clustered_index);
-
+	//Repeat resolving begins
+	int pe_lib_index = get_first_pe_lib_index();
 	INFO("STAGE == Resolving Repeats");
-	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_split) {
-		int number_of_components = 0;
-
-//		if (cfg::get().componential_resolve) {
-//			make_dir(cfg::get().output_dir + "graph_components" + "/");
-//			number_of_components = PrintGraphComponents(
-//					cfg::get().output_dir + "graph_components/graph_", conj_gp,
-//					*cfg::get().ds.IS + 100, clustered_index);
-//			INFO("number of components " << number_of_components);
-//		}
-
-		if (cfg::get().rr.symmetric_resolve) {
-
-			if (cfg::get().componential_resolve) {
-				make_dir(cfg::get().output_dir + "graph_components" + "/");
-				number_of_components = PrintGraphComponents(
-						cfg::get().output_dir + "graph_components/graph_",
-						conj_gp, *cfg::get().ds.IS + 100, clustered_index);
-				INFO("number of components " << number_of_components);
-			}
-
-			conj_graph_pack resolved_gp(cfg::get().K, cfg::get().output_dir,
-					genome, cfg::get().pos.max_single_gap,
-					cfg::get().pos.careful_labeling);
-			resolved_gp.index.Detach();
-
-			EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(
-					resolved_gp.g, conj_gp.g);
-
-			process_resolve_repeats(conj_gp, clustered_index, resolved_gp,
-					"graph", labels_after, "", true, cfg::get().rr.kill_loops);
-
-			if (cfg::get().use_scaffolder) {
-				INFO("Transfering paired information");
-				PairedInfoIndexT<conj_graph_pack::graph_t> resolved_graph_paired_info_cl(
-						resolved_gp.g);
-				ProduceResolvedPairedInfo(conj_gp, clustered_index, resolved_gp,
-						labels_after, resolved_graph_paired_info_cl);
-				PairedInfoIndexT<conj_graph_pack::graph_t> resolved_graph_paired_info(
-						resolved_gp.g);
-				ProduceResolvedPairedInfo(conj_gp, paired_index, resolved_gp,
-						labels_after, resolved_graph_paired_info);
-
-				if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
-					PairedInfoIndexT<conj_graph_pack::graph_t> scaff_clustered(
-							conj_gp.g);
-
-					prepare_scaffolding_index(conj_gp, paired_index,
-							scaff_clustered);
-
-					PairedInfoIndexT<conj_graph_pack::graph_t> resolved_graph_scaff_clustered(
-							resolved_gp.g);
-					ProduceResolvedPairedInfo(conj_gp, scaff_clustered,
-							resolved_gp, labels_after,
-							resolved_graph_scaff_clustered);
-
-					DEBUG(
-							"Resolved scaffolding index size " << resolved_graph_scaff_clustered.size());
-
-					INFO("Scaffolding");
-					resolve_repeats_pe(cfg::get().K, resolved_gp,
-							resolved_graph_paired_info_cl,
-							resolved_graph_scaff_clustered,
-							cfg::get().output_dir, "scaffolds.fasta",
-							cfg::get().pe_params);
-				} else {
-					INFO("Scaffolding");
-					resolve_repeats_pe(cfg::get().K, resolved_gp,
-							resolved_graph_paired_info_cl,
-							resolved_graph_paired_info, cfg::get().output_dir,
-							"scaffolds.fasta", cfg::get().pe_params);
-				}
-
-				SaveResolved(resolved_gp, resolved_graph_paired_info,
-						resolved_graph_paired_info_cl);
-			}
-
-			if (cfg::get().SAM_writer_enable && cfg::get().sw.align_after_RR) {
-				SAMAfterResolve(conj_gp, resolved_gp, labels_after);
-			}
-
-			if (cfg::get().componential_resolve) {
-				make_dir(cfg::get().output_dir + "resolve_components" + "/");
-				for (int i = 0; i < number_of_components; i++) {
-					resolve_conjugate_component(i + 1, genome);
-				}
-			}
-		} else {
-//			nonconj_graph_pack origin_gp(conj_gp.genome);
-//      PairedInfoIndexT<nonconj_graph_pack::graph_t> orig_clustered_idx(
-//					origin_gp.g);
-//			Convert(conj_gp, clustered_index, origin_gp, orig_clustered_idx);
-//			nonconj_graph_pack resolved_gp(conj_gp.genome);
-//			process_resolve_repeats(origin_gp, orig_clustered_idx, resolved_gp,
-//					"graph");
-//			if (cfg::get().componential_resolve) {
-//				make_dir(cfg::get().output_dir + "resolve_components" + "/");
-//				for (int i = 0; i < number_of_components; i++) {
-//					resolve_nonconjugate_component(i + 1, genome);
-//				}
-//			}
-		}
+	if (cfg::get().ds.reads.lib_count() == 1 && pe_lib_index >= 0
+			&& cfg::get().rm == debruijn_graph::resolving_mode::rm_split) {
+		INFO("Split repeat resolving");
+		split_resolving(conj_gp, paired_indices, clustered_indices, genome,
+				pe_lib_index);
 	}
-
-	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_jump) {
-		WARN("Jump resover unavailable so far");
+	else if (cfg::get().ds.reads.lib_count() > 1 || pe_lib_index == -1
+			|| cfg::get().rm
+					== debruijn_graph::resolving_mode::rm_path_extend) {
+		INFO("Path-Extend repeat resolving");
+		pe_resolving(conj_gp, paired_indices, clustered_indices, quality_labeler);
 	}
-
-	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_path_extend) {
-		//if (cfg::get().pe_params.param_set.improve_paired_info) {
-		//distance_filling(conj_gp, paired_index, clustered_index);
-		//}
-
-		if (cfg::get().pe_params.param_set.scaffolder_options.on) {
-			if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
-				PairedInfoIndexT<conj_graph_pack::graph_t> scaff_clustered(
-						conj_gp.g);
-
-				prepare_scaffolding_index(conj_gp, paired_index,
-						scaff_clustered);
-
-				DEBUG(
-						"Resolved scaffolding index size " << scaff_clustered.size());
-
-				resolve_repeats_pe(cfg::get().K, conj_gp, clustered_index,
-						scaff_clustered, cfg::get().output_dir,
-						"scaffolds.fasta", cfg::get().pe_params);
-			} else {
-				resolve_repeats_pe(cfg::get().K, conj_gp, clustered_index,
-						paired_index, cfg::get().output_dir, "scaffolds.fasta",
-						cfg::get().pe_params);
-			}
-		} else {
-			resolve_repeats_pe(cfg::get().K, conj_gp, clustered_index,
-					cfg::get().output_dir, "final_contigs.fasta",
-					cfg::get().pe_params);
-		}
-
-	}
-
-	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_combined) {
-
-		INFO("Combined resolving started");
-
-		conj_graph_pack resolved_gp(cfg::get().K, cfg::get().output_dir, genome,
-				cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling);
-
-		EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(resolved_gp.g,
-				conj_gp.g);
-
-		process_resolve_repeats(conj_gp, clustered_index, resolved_gp, "graph",
-				labels_after, "", false, false);
-
-		PairedInfoIndexT<conj_graph_pack::graph_t> resolved_graph_paired_info_cl(
-				resolved_gp.g);
-		ProduceResolvedPairedInfo(conj_gp, clustered_index, resolved_gp,
-				labels_after, resolved_graph_paired_info_cl);
-
-		PairedInfoIndexT<conj_graph_pack::graph_t> resolved_graph_paired_info(
-				resolved_gp.g);
-		if (cfg::get().pe_params.param_set.scaffolder_options.on) {
-			ProduceResolvedPairedInfo(conj_gp, paired_index, resolved_gp,
-					labels_after, resolved_graph_paired_info);
-		}
-
-		if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
-			PairedInfoIndexT<conj_graph_pack::graph_t> scaff_clustered(
-					conj_gp.g);
-
-			prepare_scaffolding_index(conj_gp, paired_index, scaff_clustered);
-
-			PairedInfoIndexT<conj_graph_pack::graph_t> resolved_graph_scaff_clustered(
-					resolved_gp.g);
-			ProduceResolvedPairedInfo(conj_gp, scaff_clustered, resolved_gp,
-					labels_after, resolved_graph_scaff_clustered);
-
-			DEBUG(
-					"Resolved scaffolding index size " << resolved_graph_scaff_clustered.size());
-
-			INFO("Scaffolding");
-			resolve_repeats_pe(cfg::get().K, resolved_gp,
-					resolved_graph_paired_info_cl,
-					resolved_graph_scaff_clustered, cfg::get().output_dir,
-					"scaffolds.fasta", cfg::get().pe_params);
-		} else {
-			ProduceResolvedPairedInfo(conj_gp, paired_index, resolved_gp,
-					labels_after, resolved_graph_paired_info);
-
-			INFO("Scaffolding");
-			resolve_repeats_pe(cfg::get().K, resolved_gp,
-					resolved_graph_paired_info_cl, resolved_graph_paired_info,
-					cfg::get().output_dir, "scaffolds.fasta",
-					cfg::get().pe_params);
-		}
-
-		if (cfg::get().run_mode) {
-			SaveResolved(resolved_gp, resolved_graph_paired_info,
-					resolved_graph_paired_info_cl);
-		}
-	}
-
-	if (cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles) {
+	else if (cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles) {
 		INFO("Ready to run rectangles repeat resolution module");
+	}
+	else {
+		INFO("Unsupported repeat resolver");
+		OutputContigs(conj_gp.g, cfg::get().output_dir + "final_contigs.fasta");
 	}
 
 }
 
 void exec_repeat_resolving() {
+
 	if (cfg::get().entry_point <= ws_repeats_resolving) {
 		resolve_repeats();
 		//todo why nothing to save???
-		// nothing to save yet
+		// nothsng to save yet
 	} else {
 		INFO("Loading Repeat Resolving");
 		INFO("Nothing to load");

@@ -51,7 +51,7 @@ namespace online_visualization {
       }
 
       protected:
-      bool CheckCorrectness(const vector<string>& args) const {
+      virtual bool CheckCorrectness(const vector<string>& args) const {
         return true;
       }
 
@@ -120,7 +120,7 @@ namespace online_visualization {
           return 2;
         }
 
-        bool CheckCorrectness(const vector<string>& args, LoadedEnvironments<Env>& loaded_environments) const 
+        virtual bool CheckCorrectness(const vector<string>& args, LoadedEnvironments<Env>& loaded_environments) const 
         {
           if (!this->CheckEnoughArguments(args))
             return false;
@@ -201,7 +201,7 @@ namespace online_visualization {
           return 1;
         }
 
-        bool CheckCorrectness(const vector<string>& args) const {
+        virtual bool CheckCorrectness(const vector<string>& args) const {
           return this->CheckEnoughArguments(args);
         }
 
@@ -252,7 +252,7 @@ namespace online_visualization {
   template <class Env>
     class ListCommand : public Command<Env> {
       protected:
-        bool CheckCorrectness() const {
+        virtual bool CheckCorrectness() const {
           return true;   
         }
 
@@ -285,7 +285,7 @@ namespace online_visualization {
   template <class Env>
     class ReplayCommand : public CommandServingCommand<Env> {
       private:
-        bool CheckCorrectness(const vector<string>& args) const {
+        virtual bool CheckCorrectness(const vector<string>& args) const {
           if (args.size() == 1)
             return true;
           return CheckIsNumber(args[1]);
@@ -347,7 +347,7 @@ namespace online_visualization {
           return 0;
         }
 
-        bool CheckCorrectness(const vector<string>& args) const {
+        virtual bool CheckCorrectness(const vector<string>& args) const {
           if (args.size() > 1) 
             return CheckIsNumber(args[1]);
           return true;
@@ -396,7 +396,7 @@ namespace online_visualization {
           return 2;
         }
 
-        bool CheckCorrectness(const vector<string>& args) const {
+        virtual bool CheckCorrectness(const vector<string>& args) const {
           if (!this->CheckEnoughArguments(args))
             return false;
           return CheckIsNumber(args[1]);
@@ -448,7 +448,7 @@ namespace online_visualization {
           return 1;    
         }
 
-        bool CheckCorrectness(const vector<string>& args) const {
+        virtual bool CheckCorrectness(const vector<string>& args) const {
           if (!this->CheckEnoughArguments(args))
             return false;
           return true;

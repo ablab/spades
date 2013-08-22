@@ -13,7 +13,7 @@
 #ifndef TOTAL_LABELER_HPP_
 #define TOTAL_LABELER_HPP_
 
-#include "graph_labeler.hpp"
+#include "visualization/graph_labeler.hpp"
 #include "simple_tools.hpp"
 #include "edge_labels_handler.hpp"
 #include "id_track_handler.hpp"
@@ -65,7 +65,7 @@ public:
 	}
 
 	virtual std::string label(VertexId vertexId) const {
-		int vId = graph_struct->IDs->ReturnIntId(vertexId);
+		size_t vId = graph_struct->IDs->ReturnIntId(vertexId);
 		return ToString(vId);
 	}
 
@@ -102,11 +102,11 @@ public:
 
 
 
-		int len = graph_struct->g_.length(edgeId);
+		size_t len = graph_struct->g_.length(edgeId);
 
 		double cov = graph_struct->g_.coverage(edgeId);
 
-		ret_label += "Len(cov): " + ToString(len)+"("+ToString(cov)+")";// + graph_struct->g_.str(edgeId);
+		ret_label += "Len(cov): " + ToString(len) + "(" + ToString(cov) + ")";  // + graph_struct->g_.str(edgeId);
 
 		return ret_label;
 	}

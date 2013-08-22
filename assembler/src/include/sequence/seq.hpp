@@ -35,6 +35,8 @@
 #include "sequence/nucl.hpp"
 #include "log.hpp"
 #include "seq_common.hpp"
+#include "mph_index/MurmurHash3.h"
+
 /**
  * @param T is max number of nucleotides, type for storage
  */
@@ -189,7 +191,7 @@ class Seq {
       //VERIFY(is_dignucl(s[i]) || is_nucl(s[i]));
 
       // we fill everything with zeros (As) by default.
-      char c = digit_str ? s[offset + i] : dignucl(s[offset + i]);
+      char c = digit_str ? s[offset + i] : (char)dignucl(s[offset + i]);
 
       data = data | (T(c) << cnt);
       cnt += 2;
@@ -230,8 +232,8 @@ class Seq {
     for (size_t i = 0; i < (size_ >> 1); ++i) {
       T front = complement(res[i]);
       T end = complement(res[size_ - 1 - i]);
-      res.set(i, end);
-      res.set(size_ - 1 - i, front);
+      res.set(i, (char)end);
+      res.set(size_ - 1 - i, (char)front);
     }
     if ((size_ & 1) == 1) {
       res.set(size_ >> 1, complement(res[size_ >> 1]));
@@ -442,25 +444,23 @@ class Seq {
     return operator[](0);
   }
 
-  static size_t GetHash(const DataType *data, size_t sz = DataSize) {
-    size_t hash = PrimeNum;
-    for (size_t i = 0; i < sz; i++) {
-      hash = ((hash << 5) - hash) + data[i];
-    }
-    return hash;
+  static size_t GetHash(const DataType *data, size_t sz = DataSize, uint32_t seed = 0) {
+    uint64_t res[2];
+    MurmurHash3_x64_128(data,  sz * sizeof(DataType), 0x9E3779B9 ^ seed, res);
+    return res[0] ^ res[1];
   }
 
-  size_t GetHash() const {
-    return GetHash(data_.data());
+  size_t GetHash(uint32_t seed = 0) const {
+    return GetHash(data_.data(), DataSize, seed);
   }
 
   struct hash {
-    size_t operator()(const Seq<size_, T>& seq) const {
-      return seq.GetHash();
+    size_t operator()(const Seq<size_, T>& seq, uint32_t seed = 0) const {
+      return seq.GetHash(seed);
     }
 
-    size_t operator()(const DataType *data, size_t sz = DataSize) {
-      return GetHash(data, sz);
+    size_t operator()(const DataType *data, size_t sz = DataSize, uint32_t seed = 0) {
+      return GetHash(data, sz, seed);
     }
   };
 

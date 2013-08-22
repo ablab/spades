@@ -8,3 +8,5 @@ RL                       75
 IS                       280
 single_cell              false
 reference_genome         ../../../data/input/P.stipitis/Pichia_stipitis_Sanger_reference.fa.gz
+
+reads	PSTIPITIS_QUAKE.yaml
