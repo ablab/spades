@@ -19,30 +19,6 @@
 
 namespace cap {
 
-BOOST_AUTO_TEST_CASE( TwoAssemblyComparison ) {
-	return;
-	utils::TmpFolderFixture _("tmp");
-	static const size_t k = 19;
-	static const size_t K = 55;
-//	static const size_t K = 57;
-//	static const size_t K = 53;
-
-//	io::Reader stream_1("/home/snurk/gingi/2.fasta");
-//	io::Reader stream_2("/home/snurk/gingi/3.fasta");
-
-	io::Reader stream_1("/home/snurk/Dropbox/lab/phep_issue/phep_master.fasta");
-	io::Reader stream_2(
-			"/home/snurk/Dropbox/lab/phep_issue/phep_param_opt.fasta");
-	string ref =
-			"/home/snurk/Dropbox/lab/phep_issue/reference_NC_013061.1.fasta";
-	string folder = "phep_issue/results/";
-	make_dir(folder);
-
-	RunBPComparison < k, K, runtime_k::RtSeq
-			> (stream_1, stream_2, "master_", "opt_", true/*refine*/, false/*untangle*/, folder, true/*detailed_output*/, 5/*delta*/, ReadGenome(
-					ref));
-}
-
 BOOST_AUTO_TEST_CASE( CompareEcoli ) {
 	utils::TmpFolderFixture _("tmp");
 

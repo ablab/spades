@@ -5,6 +5,7 @@
 
 namespace io {
 
+//todo merge with VectorReader
 template <class Read>
 class SequenceReader : public IReader<Read> {
  public:

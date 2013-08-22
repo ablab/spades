@@ -101,7 +101,7 @@ void PrintColoredGraphAroundEdge(const Graph& g,
 template<class Graph>
 void PrintColoredGraphWithColorFilter(const Graph &g, const ColorHandler<Graph> &coloring,
     const CoordinatesHandler<Graph> &pos, const vector<string> &genome_names, const string &output_folder) {
-    
+
   size_t edge_length_bound = 1000000;
   size_t colors_number = coloring.max_colors();
   TColorSet restricted_color = TColorSet::AllColorsSet(colors_number);
@@ -140,6 +140,7 @@ void PrintColoredGraphWithColorFilter(const Graph &g, const ColorHandler<Graph> 
 template<class gp_t>
 void WriteComponentsAlongSequence(
         const gp_t& gp,
+        const AbstractFilter<vector<typename gp_t::graph_t::VertexId>>& filter,
         const string& file_name,
         size_t split_edge_length, size_t component_vertex_number,
         const Sequence& s, const ColorHandler<typename gp_t::graph_t>& coloring) {
@@ -161,7 +162,7 @@ void PrintColoredGraphAlongRef(const gp_t& gp,
 //      only breakpoints
     TrivialBreakpointFinder<Graph> bp_f(gp.g, coloring, gp.edge_pos);
 
-    WriteComponentsAlongPath(gp.g, bp_f, labeler, output_filename, 1000000,
+    WriteComponentsAlongSequence(gp, bp_f, labeler, output_filename, 1000000,
             30, MapperInstance(gp)->MapSequence(gp.genome),
             *ConstructBorderColorer(gp.g, coloring)
 //              *ConstructColorer(coloring)

@@ -7,6 +7,7 @@
 #include "boost/tokenizer.hpp"
 #include "coloring.hpp"
 
+//todo deprecated
 namespace cap {
 using namespace omnigraph;
 
@@ -321,26 +322,26 @@ DECL_LOGGER("GeneCollection")
 ;
 };
 
-template<class gp_t>
-void WriteGeneLocality(const GeneCollection& gene_collection, const gp_t& gp,
-                       const string& folder,
-                       const ColorHandler<typename gp_t::graph_t>& coloring) {
-  for (auto it = gene_collection.genes.begin();
-      it != gene_collection.genes.end(); ++it) {
-//        make_dir(folder + ToString(it->first));
-    const GenePositions& gene_poss = it->second.gene_positions;
-
-    //todo improve later
-    Sequence total_gene_sequence;
-    FOREACH(GenomeId genome_id, key_set(gene_collection.genomes)) {
-      const Sequence& genome = get(gene_collection.genomes, genome_id).sequence;
-      FOREACH(Pos pos, get_all(gene_poss, genome_id)) {
-        total_gene_sequence = total_gene_sequence + genome.Subseq(pos.first.start_pos, pos.first.end_pos);
-      }
-    }
-    WriteComponentsAlongSequence(gp, folder + ToString(it->first) + "/",
-                                 100000, 50, total_gene_sequence, coloring);
-  }
-}
+//template<class gp_t>
+//void WriteGeneLocality(const GeneCollection& gene_collection, const gp_t& gp,
+//                       const string& folder,
+//                       const ColorHandler<typename gp_t::graph_t>& coloring) {
+//  for (auto it = gene_collection.genes.begin();
+//      it != gene_collection.genes.end(); ++it) {
+////        make_dir(folder + ToString(it->first));
+//    const GenePositions& gene_poss = it->second.gene_positions;
+//
+//    //todo improve later
+//    Sequence total_gene_sequence;
+//    FOREACH(GenomeId genome_id, key_set(gene_collection.genomes)) {
+//      const Sequence& genome = get(gene_collection.genomes, genome_id).sequence;
+//      FOREACH(Pos pos, get_all(gene_poss, genome_id)) {
+//        total_gene_sequence = total_gene_sequence + genome.Subseq(pos.first.start_pos, pos.first.end_pos);
+//      }
+//    }
+//    WriteComponentsAlongSequence(gp, folder + ToString(it->first) + "/",
+//                                 100000, 50, total_gene_sequence, coloring);
+//  }
+//}
 
 }

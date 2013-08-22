@@ -2,6 +2,7 @@
 
 #include "cap_environment.hpp"
 #include "cap_environment_manager.hpp"
+#include "mosaic.hpp"
 
 namespace online_visualization {
 
@@ -519,5 +520,34 @@ class LoadGraphCommand : public LocalCommand<CapEnvironment> {
 
 };
 */
+
+class MosaicAnalysisCommand : public LocalCommand<CapEnvironment> {
+ public:
+    MosaicAnalysisCommand() : LocalCommand<CapEnvironment>("mosaic") {
+  }
+
+  virtual std::string Usage() const {
+    return "Command `mosaic`";
+  }
+
+  virtual void Execute(CapEnvironment& curr_env, const ArgumentList& arg_list) const {
+      VERIFY(curr_env.genome_cnt() == 1);
+      const Sequence& genome = curr_env.genomes()[1];
+      size_t min_support_length = 100;
+      size_t max_support_mult = 20;
+      size_t max_inter_length = 500;
+      if (curr_env.LSeqIsUsed()) {
+          PerformMosaicAnalysis(curr_env.l_seq_gp(), genome, min_support_length, max_support_mult, max_inter_length);
+      } else {
+          PerformMosaicAnalysis(curr_env.rt_seq_gp(), genome, min_support_length, max_support_mult, max_inter_length);
+      }
+  }
+
+ protected:
+  virtual size_t MinArgNumber() const {
+    return 1;
+  }
+
+};
 
 }

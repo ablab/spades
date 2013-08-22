@@ -81,7 +81,7 @@ class EtalonPairedInfoCounter {
 			size_t right_idx = left_idx + k_ + 1 + mod_gap;
 			runtime_k::RtSeq right(k_ + 1, sequence, right_idx);
 			right >>= 0;
-			for (; 
+			for (;
 			     right_idx + k_ + 1 <= left_idx + insert_size_ + delta_ && right_idx + k_ + 1 <= sequence.size();
 			     ++right_idx) {
 				right <<= sequence[right_idx + k_];
@@ -92,7 +92,7 @@ class EtalonPairedInfoCounter {
 				pair<EdgeId, size_t> right_pos = index_.get(right_upd);
 
 				AddEtalonInfo(index, left_pos.first, right_pos.first,
-				              0. + (double) right_idx - (double) left_idx + 
+				              0. + (double) right_idx - (double) left_idx +
 				              (double) left_pos.second - (double) right_pos.second);
 			}
 		}
