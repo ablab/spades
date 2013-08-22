@@ -85,9 +85,14 @@ void load_lib_data(const std::string& prefix) {
   }
 
   for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+      boost::optional<bool> bool_val(0);
       boost::optional<size_t> sizet_val(0);
       boost::optional<double> double_val(0.);
 
+      load_param(filename, "valid_" + ToString(i), bool_val);
+      if (bool_val) {
+          cfg::get_writable().ds.reads[i].data().valid = *bool_val;
+      }
       load_param(filename, "read_length_" + ToString(i), sizet_val);
       if (sizet_val) {
           cfg::get_writable().ds.reads[i].data().read_length = *sizet_val;
@@ -126,6 +131,7 @@ void write_lib_data(const std::string& prefix) {
   write_param(filename, "lib_count", cfg::get().ds.reads.lib_count());
 
   for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+      write_param(filename, "valid_" + ToString(i), cfg::get().ds.reads[i].data().valid);
       write_param(filename, "read_length_" + ToString(i), cfg::get().ds.reads[i].data().read_length);
       write_param(filename, "insert_size_" + ToString(i), cfg::get().ds.reads[i].data().mean_insert_size);
       write_param(filename, "insert_size_deviation_" + ToString(i), cfg::get().ds.reads[i].data().insert_size_deviation);

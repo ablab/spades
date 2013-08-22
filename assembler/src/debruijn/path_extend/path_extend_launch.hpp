@@ -279,7 +279,7 @@ void set_threshold(PairedInfoLibrary* lib, size_t index, size_t /*split_edge_len
 
 void find_new_threshold(conj_graph_pack& gp, PairedInfoLibrary* lib, size_t index, size_t split_edge_length){
 	SplitGraphPairInfo splitGraph(gp, *lib, index, 99);
-	INFO("Calculating paired info threshold");
+	INFO("Calculating paired info threshold for lib #" << index);
 	splitGraph.ProcessReadPairs();
 	double threshold = splitGraph.FindThreshold((double) split_edge_length, (int) lib->insert_size_ - 2 * (int) lib->is_variation_,
 	                                            (int) lib->insert_size_ + 2 * (int) lib->is_variation_);

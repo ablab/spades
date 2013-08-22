@@ -175,7 +175,7 @@ void FilterIndexWithExistingPaths(PairedIndexT& scaf_clustered_index,
     }
   }
 }
-
+/*
 void FillAndCorrectEtalonPairedInfo(
     PairedIndexT&  corrected_etalon_index, const conj_graph_pack& gp,
     const PairedIndexT&  paired_index, size_t insert_size,
@@ -258,7 +258,7 @@ void FillAndCorrectEtalonPairedInfo(
         INFO("Everything saved");
 	}
 	INFO("Correction finished");
-}
+}*/
 
 template<class Graph>
 void GetAllDistances(const PairedInfoIndexT<Graph>& paired_index,
@@ -362,6 +362,7 @@ void CountAndSaveAllPaths(const Graph& g, const io::SequencingLibrary<debruijn_c
 	//printer.savePaired(dir_name + "paths_all", all_paths_2);
 }
 
+/*
 void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
     const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
     const PairedInfoIndexT<Graph> &paired_index,
@@ -409,10 +410,12 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 	//	PairInfoFilter<Graph> (g, 1000.).Filter(
   //      clustered_index[>etalon_clustered_index<], filtered_clustered_index);
 	INFO("Counting mate-pair transformation stat");
-	MatePairTransformStat<Graph>(gp.g, /*filtered_*/clustered_index).Count();
+	MatePairTransformStat<Graph>(gp.g, //filtered_
+	    clustered_index).Count();
 	INFO("Mate-pair transformation stat counted");
 	INFO("Clustered info stats counted");
 }
+*/
 
 void WriteErrorLoc(const Graph &g,
 		const string& folder_name,
@@ -688,6 +691,7 @@ double AvgCoverage(const Graph& g,
 	return total_cov / (double) total_length;
 }
 
+/*
 void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig,
 		PairedInfoIndex<conj_graph_pack::graph_t> &ind, size_t k) {
 	typedef omnigraph::PairInfo<EdgeId> PairInfo;
@@ -799,7 +803,7 @@ void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig,
 			"t-separated stats Alligneg: 1 - " << stats[1] << " 2 - " << stats[2] << " 3 - " << stats[3] << " 4 - " << stats[4] << " >4 - " << stats[5]);
 	INFO(
 			"t-separated stats Exact: 1 - " << stats_d[1] << " 2 - " << stats_d[2] << " 3 - " << stats_d[3] << " 4 - " << stats_d[4] << " >4 - " << stats[5]);
-}
+}*/
 
 template<class Graph, class Mapper>
 class PosFiller {

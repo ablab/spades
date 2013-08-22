@@ -201,15 +201,15 @@ class InsertSizeHistogramCounter {
     Sequence sequence_left = r.first().sequence();
     Sequence sequence_right = r.second().sequence();
 
-    if (sequence_left.size() <= k_ || sequence_right.size() <= k_) {
-      return 0;
-    }
-
     if (sequence_left.size() > rl) {
         rl = sequence_left.size();
     }
     if (sequence_right.size() > rl) {
         rl = sequence_right.size();
+    }
+
+    if (sequence_left.size() <= k_ || sequence_right.size() <= k_) {
+      return 0;
     }
 
     runtime_k::RtSeq left = sequence_left.end<runtime_k::RtSeq>(k_ + 1);

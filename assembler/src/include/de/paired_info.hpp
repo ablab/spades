@@ -1040,7 +1040,7 @@ template <class Graph>
 struct PairedInfoIndicesT {
     typedef PairedInfoIndexT<Graph> IndexT;
 
-    vector< IndexT* > data_;
+    vector < IndexT* > data_;
 
     PairedInfoIndicesT(const Graph& graph, size_t lib_num) {
         for (size_t i = 0; i < lib_num; ++i) {
@@ -1077,7 +1077,6 @@ struct PairedInfoIndicesT {
     size_t size() const {
         return data_.size();
     }
-
 };
 
 /*----------------------------------------Old Index----------------------------------------------*/

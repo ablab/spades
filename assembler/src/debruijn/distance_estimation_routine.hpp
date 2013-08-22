@@ -38,7 +38,7 @@ void estimate_with_estimator(const Graph& graph,
                              PairedIndexT& clustered_index)
 {
   using debruijn_graph::estimation_mode;
-  INFO("Estimating distances");
+  DEBUG("Estimating distances");
   PairedIndexT raw_clustered_index(graph);
 
   if (cfg::get().use_multithreading) {
@@ -68,7 +68,7 @@ void estimate_with_estimator(const Graph& graph,
 }
 
 void estimate_distance(conj_graph_pack& gp,
-                       io::SequencingLibrary<debruijn_config::DataSetData> &lib,
+                       const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
                        const PairedIndexT& paired_index,
                              PairedIndexT& clustered_index)
 {
@@ -97,11 +97,16 @@ void estimate_distance(conj_graph_pack& gp,
       INFO("Retaining insert size distribution for it");
 
       if (lib.data().insert_size_distribution.size() == 0) {
-        auto streams = paired_binary_readers(lib, false, 0);
-        GetInsertSizeHistogram(*streams, gp, lib.data().mean_insert_size, lib.data().insert_size_deviation, lib.data().insert_size_distribution);
+          WARN("No insert size distribution found, stopping distance estimation");
+          if (lib.data().valid) {
+              WARN("But lib is valid! Something is wrong!");
+          }
+          return;
+//        auto streams = paired_binary_readers(lib, false, 0);
+//        GetInsertSizeHistogram(*streams, gp, lib.data().mean_insert_size, lib.data().insert_size_deviation, lib.data().insert_size_distribution);
       }
       WeightDEWrapper wrapper(lib.data().insert_size_distribution, lib.data().mean_insert_size);
-      INFO("Weight Wrapper Done");
+      DEBUG("Weight Wrapper Done");
       weight_function = boost::bind(&WeightDEWrapper::CountWeight, wrapper, _1);
     }
     else
@@ -227,7 +232,9 @@ void exec_distance_estimation(conj_graph_pack& gp,
     exec_late_pair_info_count(gp, paired_indices);
     if (cfg::get().paired_mode) {
 		for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-			estimate_distance(gp, cfg::get_writable().ds.reads[i], paired_indices[i], clustered_indices[i]);
+		    if (cfg::get().ds.reads[i].data().valid) {
+		        estimate_distance(gp, cfg::get().ds.reads[i], paired_indices[i], clustered_indices[i]);
+		    }
 		}
     }
     save_distance_estimation(gp, paired_indices, clustered_indices);

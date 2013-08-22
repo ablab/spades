@@ -370,6 +370,8 @@ struct debruijn_config {
   };
 
   struct DataSetData {
+    bool valid;
+
     size_t read_length;
     double mean_insert_size;
     double insert_size_deviation;
@@ -385,7 +387,7 @@ struct debruijn_config {
     typedef io::IReader<io::SingleReadSeq> SequenceSingleReadStream;
     typedef io::IReader<io::PairedReadSeq> SequencePairedReadStream;
 
-    DataSetData(): read_length(0), mean_insert_size(0.0), insert_size_deviation(0.0), median_insert_size(0.0), insert_size_mad(0.0), average_coverage(0.0) {
+    DataSetData(): valid(true), read_length(0), mean_insert_size(0.0), insert_size_deviation(0.0), median_insert_size(0.0), insert_size_mad(0.0), average_coverage(0.0) {
     }
 
   };
@@ -399,9 +401,9 @@ struct debruijn_config {
             reads[i].data().read_length = RL;
         }
     }
-    size_t IS() const { return (size_t) math::round(reads[0].data().mean_insert_size); }
+    //size_t IS() const { return (size_t) math::round(reads[0].data().mean_insert_size); }
     void set_IS(size_t IS) { reads[0].data().mean_insert_size = (double) IS; }
-    double is_var() const { return reads[0].data().insert_size_deviation; }
+    //double is_var() const { return reads[0].data().insert_size_deviation; }
     void set_is_var(double is_var) { reads[0].data().insert_size_deviation = is_var; }
     double avg_coverage() const { return reads[0].data().average_coverage; }
     void set_avg_coverage(double avg_coverage) {
@@ -409,11 +411,11 @@ struct debruijn_config {
             reads[i].data().average_coverage = avg_coverage;
         }
     }
-    double median() const { return reads[0].data().median_insert_size; }
+    //double median() const { return reads[0].data().median_insert_size; }
     void set_median(double median) { reads[0].data().median_insert_size = median; }
-    double mad() const { return reads[0].data().insert_size_mad; }
+    //double mad() const { return reads[0].data().insert_size_mad; }
     void set_mad(double mad) { reads[0].data().insert_size_mad = mad; }
-    const std::map<int, size_t>& hist() const { return reads[0].data().insert_size_distribution; }
+    //const std::map<int, size_t>& hist() const { return reads[0].data().insert_size_distribution; }
     void set_hist(const std::map<int, size_t>& hist) {  reads[0].data().insert_size_distribution = hist; }
 
     bool single_cell;

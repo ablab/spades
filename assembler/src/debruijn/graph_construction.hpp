@@ -38,7 +38,7 @@ typedef io::MultifileReader<io::SingleRead> CompositeSingleReadStream;
 typedef io::ConvertingReaderWrapper UnitedStream;
 
 template<class PairedRead, class Graph, class Mapper>
-void FillPairedIndexWithReadCountMetric(const Graph &g,
+bool FillPairedIndexWithReadCountMetric(const Graph &g,
                                         const Mapper& mapper,
                                         PairedInfoIndexT<Graph>& paired_info_index,
                                         io::ReadStreamVector<io::IReader<PairedRead> >& streams) {
@@ -48,12 +48,13 @@ void FillPairedIndexWithReadCountMetric(const Graph &g,
 			io::IReader<PairedRead>> pif(g, mapper, streams,
 			PairedReadCountWeight);
 
-	pif.FillIndex(paired_info_index);
+	bool res = pif.FillIndex(paired_info_index);
 	DEBUG("Paired info with read count weight counted");
+	return res;
 }
 
 template<class PairedRead, class Graph, class Mapper>
-void FillPairedIndexWithProductMetric(const Graph &g,
+bool FillPairedIndexWithProductMetric(const Graph &g,
                                       const Mapper& mapper,
                                       PairedInfoIndexT<Graph>& paired_info_index,
                                       io::ReadStreamVector<io::IReader<PairedRead> >& streams) {
@@ -63,10 +64,12 @@ void FillPairedIndexWithProductMetric(const Graph &g,
 	LatePairedIndexFiller<Graph, Mapper,
 			io::IReader<PairedRead> > pif(g, mapper, streams,
 			KmerCountProductWeight);
-	pif.FillIndex(paired_info_index);
+	bool res = pif.FillIndex(paired_info_index);
 	DEBUG("Paired info with product weight counted");
+	return res;
 }
 
+/*
 template<class Graph, class Index>
 void FillEtalonPairedIndex(PairedInfoIndexT<Graph>& etalon_paired_index,
 		const Graph &g, const Index& index,
@@ -111,6 +114,7 @@ void FillEtalonPairedIndex(PairedInfoIndexT<Graph>& etalon_paired_index,
 	//////////////////DEBUG
 //	INFO("Etalon paired info counted");
 }
+*/
 
 template<class Index>
 void FillCoverageFromIndex(Index& index) {
