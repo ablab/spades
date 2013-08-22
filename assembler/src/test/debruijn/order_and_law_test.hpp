@@ -9,7 +9,7 @@
 #include "test_utils.hpp"
 #include "omni/id_track_handler.hpp"
 
-namespace omnigraph {
+namespace debruijn_graph {
 template<class Graph>
 class IteratorOrderChecker {
 private:
@@ -31,10 +31,6 @@ public:
 		return it1.IsEnd() && it2.IsEnd();
 	}
 };
-
-}
-
-namespace debruijn_graph {
 
 template<class Graph>
 class RandomGraphConstructor {
@@ -133,7 +129,7 @@ BOOST_AUTO_TEST_CASE( OrderTest ) {
 	string file_name = "src/debruijn/test_save";
 	Graph graph(55);
 	IdTrackHandler<Graph> int_ids(graph);
-	omnigraph::RandomGraphConstructor<Graph>(1000, 100, 100).Generate(graph);
+	RandomGraphConstructor<Graph>(1000, 100, 100).Generate(graph);
 	PrinterTraits<Graph>::Printer printer(graph, int_ids);
 	printer.saveGraph(file_name);
 	printer.saveEdgeSequences(file_name);
@@ -141,7 +137,7 @@ BOOST_AUTO_TEST_CASE( OrderTest ) {
 	IdTrackHandler<Graph> new_int_ids(new_graph);
 	ScannerTraits<Graph>::Scanner scanner(new_graph, new_int_ids);
 	scanner.loadGraph(file_name);
-	omnigraph::IteratorOrderChecker<Graph> checker(graph, new_graph);
+	IteratorOrderChecker<Graph> checker(graph, new_graph);
 	BOOST_CHECK(checker.CheckOrder(graph.SmartVertexBegin(), new_graph.SmartVertexBegin()));
 	BOOST_CHECK(checker.CheckOrder(graph.SmartEdgeBegin(), new_graph.SmartEdgeBegin()));
 //	BOOST_CHECK(checker.CheckOrder(graph.SmartVertexBegin(), new_graph.SmartVertexBegin()));
