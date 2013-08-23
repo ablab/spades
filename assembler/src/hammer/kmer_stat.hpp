@@ -29,9 +29,6 @@ const uint32_t M = 55;
 typedef Seq<K> KMer;
 };
 
-typedef uint64_t hint_t;
-
-
 class Read;
 class PositionRead;
 class PositionKMer;
@@ -120,7 +117,7 @@ struct KMerStat {
 
   union {
     struct {
-      hint_t changeto : 48;
+      uint64_t changeto : 48;
       unsigned status : 3;
       unsigned res    : 13;
     };
@@ -148,8 +145,8 @@ struct KMerStat {
   void markGoodForIterative() { status = MarkedForGoodIter; }
   bool isMarkedGoodForIterative() { return (status == MarkedForGoodIter); }
   bool change() const { return status == Change; }
-  void set_change(hint_t kmer) {
-    changeto = kmer & (((hint_t) 1 << 48) - 1);
+  void set_change(uint64_t kmer) {
+    changeto = kmer & (((uint64_t) 1 << 48) - 1);
     status = Change;
   }
   const hammer::KMer& kmer() const { return kmer_; }

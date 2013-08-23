@@ -224,7 +224,7 @@ std::string getLargestPrefix(const std::string &str1, const std::string &str2) {
   return substr;
 }
 
-hint_t HammerTools::CorrectAllReads() {
+size_t HammerTools::CorrectAllReads() {
   // Now for the reconstruction step; we still have the reads in rv, correcting them in place.
   size_t changedReads = 0;
   size_t changedNucleotides = 0;
