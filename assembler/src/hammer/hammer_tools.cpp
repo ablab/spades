@@ -237,14 +237,18 @@ hint_t HammerTools::CorrectAllReads() {
 
   const io::DataSet<> &dataset = cfg::get().dataset;
   io::DataSet<> outdataset;
-  for (auto it = dataset.library_begin(), et = dataset.library_end(); it != et; ++it) {
+  size_t idataset = 0;
+  for (auto it = dataset.library_begin(), et = dataset.library_end(); it != et; ++it, ++idataset) {
     const auto& lib = *it;
     auto outlib = lib;
     outlib.clear();
 
-    for (auto I = lib.paired_begin(), E = lib.paired_end(); I != E; ++I) {
+    size_t ilib = 0;
+    for (auto I = lib.paired_begin(), E = lib.paired_end(); I != E; ++I, ++ilib) {
       INFO("Correcting pair of reads: " << I->first << " and " << I->second);
-      std::string unpaired = getLargestPrefix(I->first, I->second) + "_unpaired" + path::extension(I->first);
+      std::string unpaired = getLargestPrefix(I->first, I->second) + "_unpaired_" +
+                             boost::lexical_cast<std::string>(idataset) + "_" +
+                             boost::lexical_cast<std::string>(ilib) + path::extension(I->first);
 
       std::string outcorl = HammerTools::getReadsFilename(cfg::get().output_dir, I->first,  Globals::iteration_no, "cor.fastq");
       std::string outcorr = HammerTools::getReadsFilename(cfg::get().output_dir, I->second, Globals::iteration_no, "cor.fastq");
