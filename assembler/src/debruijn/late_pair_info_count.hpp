@@ -50,7 +50,7 @@ void late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices) {
 
                     WARN("Unable to estimate insert size for paired library #" << i);
                     if (cfg::get().ds.reads[i].data().read_length <= cfg::get().K) {
-                        WARN("Maximum read length (" << cfg::get().ds.reads[i].data().read_length << ") is less than K (" << cfg::get().K << ")");
+                        WARN("Maximum read length (" << cfg::get().ds.reads[i].data().read_length << ") should be grater than K (" << cfg::get().K << ")");
                     }
                     else if (cfg::get().ds.reads[i].data().read_length <= cfg::get().K * 11 / 10) {
                         WARN("Maximum read length (" << cfg::get().ds.reads[i].data().read_length << ") is probably too close to K (" << cfg::get().K << ")");
