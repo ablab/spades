@@ -173,10 +173,6 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
 }
 
 static inline void Merge(KMerStat &lhs, const KMerStat &rhs) {
-  if (lhs.kmer() != rhs.kmer()) {
-    lhs.kmer_ = rhs.kmer_;
-  }
-
   lhs.count += rhs.count;
   lhs.totalQual *= rhs.totalQual;
   lhs.qual += rhs.qual;
@@ -184,10 +180,12 @@ static inline void Merge(KMerStat &lhs, const KMerStat &rhs) {
 
 static void PushKMer(KMerData &data,
                      KMer kmer, const unsigned char *q, double prob) {
-  KMerStat &kmc = data[kmer];
+  size_t idx = data.seq_idx(kmer);  
+  KMerStat &kmc = data[idx];
   kmc.lock();
+  data.kmer(idx) = kmer;
   Merge(kmc,
-        KMerStat(1, kmer, (float)prob, q));
+        KMerStat(1, (float)prob, q));
   kmc.unlock();
 }
 
@@ -200,10 +198,12 @@ static void PushKMerRC(KMerData &data,
   for (unsigned i = 0; i < K; ++i)
     rcq[K - i - 1] = q[i];
 
-  KMerStat &kmc = data[kmer];
+  size_t idx = data.seq_idx(kmer);
+  KMerStat &kmc = data[idx];
   kmc.lock();
+  data.kmer(idx) = kmer;
   Merge(kmc,
-        KMerStat(1, kmer, (float)prob, rcq));
+        KMerStat(1, (float)prob, rcq));
   kmc.unlock();
 }
 
@@ -250,6 +250,7 @@ void KMerDataCounter::FillKMerData(KMerData &data) {
   // Now use the index to fill the kmer quality information.
   INFO("Collecting K-mer information, this takes a while.");
   data.data_.resize(sz);
+  data.kmers_.resize(sz);
 
   KMerDataFiller filler(data);
   const auto& dataset = cfg::get().dataset;

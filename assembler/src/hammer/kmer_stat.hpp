@@ -108,7 +108,7 @@ struct KMerStat {
     MarkedForGoodIter  = 5
   } KMerStatus;
 
-  KMerStat(uint32_t cnt, hammer::KMer k, float kquality, const unsigned char *quality) : kmer_(k), totalQual(kquality), count(cnt), qual(quality), lock_(0) {
+  KMerStat(uint32_t cnt, float kquality, const unsigned char *quality) : totalQual(kquality), count(cnt), qual(quality), lock_(0) {
     __sync_lock_release(&lock_);
   }
   KMerStat() : totalQual(1.0), count(0), qual(), lock_(0) {
@@ -124,7 +124,6 @@ struct KMerStat {
     uint64_t raw_data;
   };
 
-  hammer::KMer kmer_;
   float totalQual;
   uint32_t count;
   QualBitSet qual;
@@ -149,12 +148,11 @@ struct KMerStat {
     changeto = kmer & (((uint64_t) 1 << 48) - 1);
     status = Change;
   }
-  const hammer::KMer& kmer() const { return kmer_; }
 };
 
 inline
 std::ostream& operator<<(std::ostream &os, const KMerStat &kms) {
-  os << kms.kmer().str() << " (" << std::setw(3) << kms.count << ", " << std::setprecision(6) << std::setw(8) << (1-kms.totalQual) << ')';
+  os << /* kms.kmer().str() << */ " (" << std::setw(3) << kms.count << ", " << std::setprecision(6) << std::setw(8) << (1-kms.totalQual) << ')';
 
   return os;
 }

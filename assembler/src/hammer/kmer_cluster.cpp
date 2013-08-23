@@ -52,9 +52,9 @@ std::string KMerClustering::GetBadKMersFname() const {
   return tmp.str();
 }
 
-static double logLikelihoodKMer(const KMer center, const KMerStat &x) {
+static double logLikelihoodKMer(const KMer center,
+                                const KMer kmer, const KMerStat &x) {
   double res = 0;
-  KMer kmer = x.kmer();
   for (unsigned i = 0; i < K; ++i) {
     if (center[i] != kmer[i]) {
       res += getRevProb(x, i, /* log */ true) - log(3);
@@ -71,7 +71,7 @@ KMer KMerClustering::ConsensusWithMask(const vector<unsigned> & cl, const vector
 
   // consensus of a single string is trivial
   if (blockSize == 1)
-    return data_[cl[0]].kmer();
+    return data_.kmer(cl[0]);
 
   uint64_t scores[4*K] = {0};
   for (size_t j = 0; j < blockSize; ++j) {
@@ -79,7 +79,7 @@ KMer KMerClustering::ConsensusWithMask(const vector<unsigned> & cl, const vector
       continue;
 
     const KMerStat &kms = data_[cl[j]];
-    const KMer kmer = kms.kmer();
+    const KMer kmer = data_.kmer(cl[j]);
 
     for (unsigned i = 0; i < K; ++i) {
       scores[4*i + kmer[i]] += kms.count;
@@ -99,12 +99,12 @@ KMer KMerClustering::Consensus(const vector<unsigned> & cl) const {
 
   // consensus of a single string is trivial
   if (blockSize == 1)
-    return data_[cl[0]].kmer();
+    return data_.kmer(cl[0]);
 
   uint64_t scores[4*K] = {0};
   for (size_t j = 0; j < blockSize; ++j) {
     const KMerStat &kms = data_[cl[j]];
-    const KMer kmer = kms.kmer();
+    const KMer kmer = data_.kmer(cl[j]);
 
     for (unsigned i = 0; i < K; ++i) {
       scores[4*i + kmer[i]] += kms.count;
@@ -131,8 +131,10 @@ double KMerClustering::ClusterBIC(const vector<unsigned> & cl, const vector<Stri
   unsigned total = 0;
   for (size_t i=0; i<blockSize; ++i) {
     const KMerStat &kms = data_[cl[i]];
+    KMer kmer = data_.kmer(cl[i]);
     unsigned cnt = kms.count;
-    loglik += logLikelihoodKMer(centers[indices[i]].first, kms);
+    loglik += logLikelihoodKMer(centers[indices[i]].first,
+                                kmer, kms);
     total += cnt;
   }
 
@@ -158,7 +160,7 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<unsigned> 
   // We assume that kmerinds are sorted wrt the count.
   for (unsigned j = 0; j < l; ++j) {
     const KMerStat &kms = data_[kmerinds[j]];
-    centers[j].first = kms.kmer();
+    centers[j].first = data_.kmer(kmerinds[j]);
     centers[j].second.first = kms.count;
     centers[j].second.second = kms.totalQual;
   }
@@ -177,7 +179,7 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<unsigned> 
   double totalLikelihood = 0.0;
   for (size_t i = 0; i < kmerinds.size(); ++i) {
     const KMerStat &kms = data_[kmerinds[i]];
-    const KMer &kmer = kms.kmer();
+    const KMer kmer = data_.kmer(kmerinds[i]);
     unsigned mdist = K;
     unsigned cidx = 0;
     for (unsigned j = 0; j < l; ++j) {
@@ -188,7 +190,8 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<unsigned> 
       }
     }
     indices[i] = cidx;
-    totalLikelihood += logLikelihoodKMer(centers[cidx].first, kms);
+    totalLikelihood += logLikelihoodKMer(centers[cidx].first,
+                                         kmer, kms);
   }
 
   // Main loop
@@ -211,11 +214,12 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<unsigned> 
     // E step: find which clusters we belong to
     for (size_t i = 0; i < kmerinds.size(); ++i) {
       const KMerStat &kms = data_[kmerinds[i]];
-      const KMer &kmer = kms.kmer();
+      const KMer kmer = data_.kmer(kmerinds[i]);
 
       unsigned newInd = 0;
       for (unsigned j=0; j < l; ++j)
-        loglike[j] = logLikelihoodKMer(centers[j].first, kms);
+        loglike[j] = logLikelihoodKMer(centers[j].first,
+                                       kmer, kms);
       newInd = (unsigned)(std::max_element(loglike.begin(), loglike.end()) - loglike.begin());
 
       if (cfg::get().bayes_use_hamming_dist) {
@@ -279,7 +283,7 @@ size_t KMerClustering::SubClusterSingle(const std::vector<unsigned> & block, vec
     {
       std::cout << "  kmers:\n";
       for (size_t i = 0; i < block.size(); i++) {
-        cout << data_[block[i]].kmer() << '\n';
+          cout << data_.kmer(block[i]) << '\n';
       }
     }
   }
@@ -330,7 +334,7 @@ size_t KMerClustering::SubClusterSingle(const std::vector<unsigned> & block, vec
   // find if centers are in clusters
   std::vector<unsigned> centersInCluster(bestCenters.size(), -1u);
   for (unsigned i = 0; i < origBlockSize; i++) {
-    unsigned dist = hamdistKMer(data_[block[i]].kmer(), bestCenters[bestIndices[i]].first);
+    unsigned dist = hamdistKMer(data_.kmer(block[i]), bestCenters[bestIndices[i]].first);
     if (dist == 0) {
       centersInCluster[bestIndices[i]] = i;
     }
@@ -434,10 +438,10 @@ size_t KMerClustering::SubClusterSingle(const std::vector<unsigned> & block, vec
         {
           KMer newkmer = bestCenters[k].first;
 
-          KMerStat kms(0 /* cnt */, newkmer, 1.0 /* total quality */, NULL /*quality */);
+          KMerStat kms(0 /* cnt */, 1.0 /* total quality */, NULL /*quality */);
           kms.status = KMerStat::GoodIter;
-          new_idx = (unsigned)data_.push_back(kms);
-          if (data_[newkmer].kmer() != newkmer)
+          new_idx = (unsigned)data_.push_back(newkmer, kms);
+          if (data_.kmer(data_.seq_idx(newkmer)) != newkmer)
             newkmers += 1;
         }
         v.insert(v.begin(), new_idx);
@@ -450,9 +454,7 @@ size_t KMerClustering::SubClusterSingle(const std::vector<unsigned> & block, vec
 }
 
 static void UpdateErrors(numeric::matrix<uint64_t> &m,
-                         const KMerStat &kms, const KMerStat &center) {
-  const KMer &kc = center.kmer();
-  const KMer &k = kms.kmer();
+                         const KMer k, const KMer kc) {
   for (unsigned i = 0; i < K; ++i) {
     m(kc[i], k[i]) += 1;
   }
@@ -548,6 +550,7 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes) {
 
         size_t cidx = currentBlock[0];
         KMerStat &center = data_[cidx];
+        KMer ckmer = data_.kmer(cidx);
         double center_quality = 1 - center.totalQual;
 
         // Computing the overall quality of a cluster.
@@ -602,7 +605,7 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes) {
           KMerStat &kms = data_[eidx];
 
           kms.set_change(cidx);
-          UpdateErrors(errs[omp_get_thread_num()], kms, center);
+          UpdateErrors(errs[omp_get_thread_num()], data_.kmer(eidx), ckmer);
           if (ofs_bad.good()) {
 #           pragma omp critical
             {

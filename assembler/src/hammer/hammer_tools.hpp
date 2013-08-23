@@ -36,9 +36,6 @@ public:
   /// initialize subkmer positions and log about it
   static void InitializeSubKMerPositions();
 
-  /// print out the resulting set of k-mers
-  static void PrintKMerResult(std::ostream & outf, const vector<KMerStat> & kmers );
-
   /// parallel correction of batch of reads
   static void CorrectReadsBatch(std::vector<bool> &res, std::vector<Read> &reads, size_t buf_size,
                                 size_t &changedReads, size_t &changedNucleotides, size_t &uncorrectedNucleotides, size_t &totalNucleotides,

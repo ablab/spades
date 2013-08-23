@@ -87,19 +87,6 @@ string HammerTools::getFilename( const string & dirprefix, int iter_count, const
   return tmp.str();
 }
 
-void HammerTools::PrintKMerResult(std::ostream& outf, const vector<KMerStat> & kmers ) {
-  for (auto it = kmers.begin(); it != kmers.end(); ++it) {
-    outf << it-kmers.begin() << "\t"
-         << it->kmer().str() << "\t"
-         << it->count << "\t"
-         << it->changeto << "\t"
-       << setw(8) << it->totalQual << "\t";
-    for (size_t i=0; i < K; ++i) outf << (unsigned)it->qual[i] << " ";
-    outf << "\n";
-  }
-}
-
-
 void HammerTools::CorrectReadsBatch(std::vector<bool> &res,
                                     std::vector<Read> &reads, size_t buf_size,
                                     size_t &changedReads, size_t &changedNucleotides, size_t &uncorrectedNucleotides, size_t &totalNucleotides,

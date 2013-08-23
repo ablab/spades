@@ -240,7 +240,7 @@ int main(int argc, char * argv[]) {
             for (size_t n = 0; n < Globals::kmer_data->size(); ++n) {
               const KMerStat &kmer_data = (*Globals::kmer_data)[n];
               if (kmer_data.isGoodForIterative())
-                oftmp << kmer_data.kmer().str() << "\n>" << n
+                oftmp << Globals::kmer_data->kmer(n).str() << "\n>" << n
                       << "  cnt=" << kmer_data.count << "  tql=" << (1-kmer_data.totalQual) << "\n";
             }
           }

@@ -15,6 +15,7 @@ typedef KMerIndex<kmer_index_traits<hammer::KMer> > HammerKMerIndex;
 
 class KMerData {
   typedef std::vector<KMerStat> KMerDataStorageType;
+  typedef std::vector<hammer::KMer> KMerStorageType;
 
  public:
   KMerData() {}
@@ -26,8 +27,9 @@ class KMerData {
     KMerDataStorageType().swap(data_);
     KMerDataStorageType().swap(push_back_buffer_);
   }
-  size_t push_back(const KMerStat &k) {
+  size_t push_back(const hammer::KMer kmer, const KMerStat &k) {
     push_back_buffer_.push_back(k);
+    kmer_push_back_buffer_.push_back(kmer);
 
     return data_.size() + push_back_buffer_.size() - 1;
   }
@@ -40,6 +42,15 @@ class KMerData {
     size_t dsz = data_.size();
     return (idx < dsz ? data_[idx] : push_back_buffer_[idx - dsz]);
   }
+  hammer::KMer& kmer(size_t idx) {
+    size_t dsz = kmers_.size();
+    return (idx < dsz ? kmers_[idx] : kmer_push_back_buffer_[idx - dsz]);
+  }
+  hammer::KMer kmer(size_t idx) const {
+    size_t dsz = kmers_.size();
+    return (idx < dsz ? kmers_[idx] : kmer_push_back_buffer_[idx - dsz]);
+  }
+
   KMerStat& operator[](hammer::KMer s) { return operator[](index_.seq_idx(s)); }
   const KMerStat& operator[](hammer::KMer s) const { return operator[](index_.seq_idx(s)); }
   size_t seq_idx(hammer::KMer s) const { return index_.seq_idx(s); }
@@ -52,6 +63,12 @@ class KMerData {
     sz = push_back_buffer_.size();
     os.write((char*)&sz, sizeof(sz));
     os.write((char*)&push_back_buffer_[0], sz*sizeof(push_back_buffer_[0]));
+    sz = kmers_.size();
+    os.write((char*)&sz, sizeof(sz));
+    os.write((char*)&kmers_[0], sz*sizeof(kmers_[0]));
+    sz = kmer_push_back_buffer_.size();
+    os.write((char*)&sz, sizeof(sz));
+    os.write((char*)&kmer_push_back_buffer_[0], sz*sizeof(kmer_push_back_buffer_[0]));
     index_.serialize(os);
   }
 
@@ -64,11 +81,20 @@ class KMerData {
     is.read((char*)&sz, sizeof(sz));
     push_back_buffer_.resize(sz);
     is.read((char*)&push_back_buffer_[0], sz*sizeof(push_back_buffer_[0]));
+    push_back_buffer_.resize(sz);
+    is.read((char*)&push_back_buffer_[0], sz*sizeof(push_back_buffer_[0]));
+    kmers_.resize(sz);
+    is.read((char*)&kmers_[0], sz*sizeof(kmers_[0]));
+    kmer_push_back_buffer_.resize(sz);
+    is.read((char*)&kmer_push_back_buffer_[0], sz*sizeof(kmer_push_back_buffer_[0]));
+
     index_.deserialize(is);
   }
 
  private:
+  KMerStorageType kmers_;
   KMerDataStorageType data_;
+  KMerStorageType kmer_push_back_buffer_;
   KMerDataStorageType push_back_buffer_;
   HammerKMerIndex index_;
 
