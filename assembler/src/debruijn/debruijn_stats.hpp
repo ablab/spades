@@ -175,14 +175,15 @@ void FilterIndexWithExistingPaths(PairedIndexT& scaf_clustered_index,
     }
   }
 }
-/*
+
 void FillAndCorrectEtalonPairedInfo(
     PairedIndexT&  corrected_etalon_index, const conj_graph_pack& gp,
     const PairedIndexT&  paired_index, size_t insert_size,
 		size_t read_length, size_t delta,
 		bool save_etalon_info_history = false) {
+
 	INFO("Filling etalon paired index");
-  PairedIndexT etalon_index(gp.g);
+	PairedIndexT etalon_index(gp.g);
     bool successful_load = false;
     if (cfg::get().entry_point >= ws_distance_estimation) {
         string p = path::append_path(cfg::get().load_from, "../etalon");
@@ -258,7 +259,7 @@ void FillAndCorrectEtalonPairedInfo(
         INFO("Everything saved");
 	}
 	INFO("Correction finished");
-}*/
+}
 
 template<class Graph>
 void GetAllDistances(const PairedInfoIndexT<Graph>& paired_index,
@@ -362,7 +363,7 @@ void CountAndSaveAllPaths(const Graph& g, const io::SequencingLibrary<debruijn_c
 	//printer.savePaired(dir_name + "paths_all", all_paths_2);
 }
 
-/*
+
 void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
     const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
     const PairedInfoIndexT<Graph> &paired_index,
@@ -415,7 +416,7 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 	INFO("Mate-pair transformation stat counted");
 	INFO("Clustered info stats counted");
 }
-*/
+
 
 void WriteErrorLoc(const Graph &g,
 		const string& folder_name,
@@ -691,9 +692,12 @@ double AvgCoverage(const Graph& g,
 	return total_cov / (double) total_length;
 }
 
-/*
+
 void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig,
-		PairedInfoIndex<conj_graph_pack::graph_t> &ind, size_t k) {
+		PairedInfoIndex<conj_graph_pack::graph_t> &ind,
+		const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
+		size_t k) {
+
 	typedef omnigraph::PairInfo<EdgeId> PairInfo;
 
 	MappingPath<Graph::EdgeId> m_path1 = FindGenomeMappingPath(contig, gp.g,
@@ -742,7 +746,7 @@ void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig,
 	int PosInfo = 0;
 	int AllignedPI = 0;
 	int ExactDPI = 0;
-	int OurD = (int) cfg::get().ds.IS() - (int) cfg::get().ds.RL();
+	int OurD = int(lib.data().mean_insert_size) - int(lib.data().read_length);
 	for (auto p_iter = ind.begin(), p_end_iter = ind.end();
 			p_iter != p_end_iter; ++p_iter) {
 		vector<PairInfo> pi = *p_iter;
@@ -803,7 +807,7 @@ void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig,
 			"t-separated stats Alligneg: 1 - " << stats[1] << " 2 - " << stats[2] << " 3 - " << stats[3] << " 4 - " << stats[4] << " >4 - " << stats[5]);
 	INFO(
 			"t-separated stats Exact: 1 - " << stats_d[1] << " 2 - " << stats_d[2] << " 3 - " << stats_d[3] << " 4 - " << stats_d[4] << " >4 - " << stats[5]);
-}*/
+}
 
 template<class Graph, class Mapper>
 class PosFiller {

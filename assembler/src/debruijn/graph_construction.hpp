@@ -69,7 +69,7 @@ bool FillPairedIndexWithProductMetric(const Graph &g,
 	return res;
 }
 
-/*
+
 template<class Graph, class Index>
 void FillEtalonPairedIndex(PairedInfoIndexT<Graph>& etalon_paired_index,
 		const Graph &g, const Index& index,
@@ -91,12 +91,13 @@ template<class Graph, class Index>
 void FillEtalonPairedIndex(PairedInfoIndexT<Graph>& etalon_paired_index,
 		const Graph &g, const Index& index,
 		const KmerMapper<Graph>& kmer_mapper, const Sequence& genome,
+		const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
 		size_t k) {
 
-  const auto& ds = cfg::get().ds;
 	FillEtalonPairedIndex(etalon_paired_index, g, index, kmer_mapper,
-                        ds.IS(), ds.RL(), size_t(ds.is_var()),
+                        size_t(lib.data().mean_insert_size), lib.data().read_length, size_t(lib.data().insert_size_deviation),
 			genome, k);
+
 	//////////////////DEBUG
 	//	SimpleSequenceMapper<k + 1, Graph> simple_mapper(g, index);
 	//	Path<EdgeId> path = simple_mapper.MapSequence(genome);
@@ -114,7 +115,7 @@ void FillEtalonPairedIndex(PairedInfoIndexT<Graph>& etalon_paired_index,
 	//////////////////DEBUG
 //	INFO("Etalon paired info counted");
 }
-*/
+
 
 template<class Index>
 void FillCoverageFromIndex(Index& index) {
