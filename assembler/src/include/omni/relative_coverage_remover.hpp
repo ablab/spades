@@ -6,6 +6,8 @@
 
 namespace omnigraph {
 
+namespace simplification {
+
 template<class EdgeContainer>
 void SingleEdgeAdapter(
         const EdgeContainer& edges,
@@ -32,6 +34,14 @@ void VisualizeNontrivialComponentAutoInc(
                 folder + ToString(cnt++) + ".dot", colorer, labeler);
     }
 }
+
+namespace relative_coverage {
+
+template<class Graph>
+class ComponentSearcher;
+
+template<class Graph>
+class ComponentChecker;
 
 //currently works with conjugate graphs only (due to the assumption in the outer cycle)
 template<class Graph>
@@ -90,153 +100,7 @@ private:
                         base_coverage * min_coverage_gap_);
     }
 
-    class RelativelyLowCoveredComponentSearcher;
-
-    friend class RelativelyLowCoveredComponentSearcher;
-
-    class RelativelyLowCoveredComponentSearcher {
-        const RelativeCoverageComponentRemover& remover_;
-
-        set<EdgeId> component_;
-        set<VertexId> inner_vertices_;
-        set<VertexId> border_;
-
-        //maybe use something more sophisticated in future
-        size_t component_length_;
-        bool contains_deadends_;
-    public:
-        RelativelyLowCoveredComponentSearcher(
-                const RelativeCoverageComponentRemover& remover,
-                EdgeId first_edge, VertexId first_border_vertex)
-                : remover_(remover),
-                  component_length_(0),
-                  contains_deadends_(false) {
-            component_.insert(first_edge);
-            component_length_ += remover_.g().length(first_edge);
-            border_.insert(first_border_vertex);
-        }
-
-        bool FindComponent() {
-            while (!border_.empty() && CheckComponent()) {
-                VertexId v = *border_.begin();
-                border_.erase(v);
-
-                //if encountered tip, put a flag and proceed further
-                INFO("Checking if vertex " << remover_.g().str(v) << " is tip.");
-                if (remover_.g().IsDeadEnd(v) || remover_.g().IsDeadStart(v)) {
-                    INFO("Tip, flag put");
-                    contains_deadends_ = true;
-                    continue;
-                }
-
-                INFO("Checking if vertex " << remover_.g().str(v) << " is terminating.");
-                //checking if there is a sufficient coverage gap
-                if (!IsTerminateVertex(v)) {
-                    INFO("Not terminating, adding neighbourhood");
-                    inner_vertices_.insert(v);
-                    FOREACH(EdgeId e, AdjacentEdges(v)) {
-                        //seems to correctly handle loops
-                        if (component_.count(e) == 0) {
-                            component_.insert(e);
-                            component_length_ += remover_.g().length(e);
-                            VertexId other_end = OppositeEnd(e, v);
-                            if (inner_vertices_.count(other_end) == 0) {
-                                border_.insert(other_end);
-                            }
-                        }
-                    }
-                } else {
-                    INFO("Terminating");
-                    //do nothing, we already erased v from the border
-                }
-            }
-            return CheckComponent();
-        }
-
-        const set<EdgeId>& component() const {
-            return component_;
-        }
-
-    private:
-
-        bool CheckComponent() const {
-            if (inner_vertices_.size() > remover_.vertex_count_limit_) {
-                INFO("Too many vertices! More than " << remover_.vertex_count_limit_);
-                return false;
-            }
-            if (component_length_ > remover_.length_bound_) {
-                INFO("Too long component of length " << component_length_ << "! Longer than length bound " << remover_.length_bound_);
-                return false;
-            }
-            if (contains_deadends_
-                    && component_length_
-                            > remover_.tip_allowing_length_bound_) {
-                INFO("Too long component of length " << component_length_ << "! Longer than tip allowing length bound " << remover_.tip_allowing_length_bound_);
-                return false;
-            }
-            return true;
-        }
-
-        bool IsTerminateVertex(VertexId v) const {
-            double base_coverage = remover_.MaxLocalCoverage(
-                    RetainEdgesFromComponent(AdjacentEdges(v)), v);
-            return CheckAnyFilteredHighlyCovered(remover_.g().OutgoingEdges(v),
-                                                 v, base_coverage)
-                    && CheckAnyFilteredHighlyCovered(
-                            remover_.g().IncomingEdges(v), v, base_coverage);
-        }
-
-        bool CheckAnyFilteredHighlyCovered(const vector<EdgeId>& edges,
-                                           VertexId v,
-                                           double base_coverage) const {
-            return remover_.CheckAnyHighlyCovered(
-                    FilterEdgesFromComponent(edges), v, base_coverage);
-        }
-
-        //if edge start = edge end = v returns v
-        VertexId OppositeEnd(EdgeId e, VertexId v) const {
-            VERIFY(remover_.g().EdgeStart(e) == v
-                    || remover_.g().EdgeEnd(e) == v);
-//      VERIFY(remover_.g.EdgeStart(e) != remover_.g.EdgeEnd(e));
-            if (remover_.g().EdgeStart(e) == v) {
-                return remover_.g().EdgeEnd(e);
-            } else {
-                return remover_.g().EdgeStart(e);
-            }
-        }
-
-        vector<EdgeId> AdjacentEdges(VertexId v) const {
-            vector<EdgeId> answer;
-            push_back_all(answer, remover_.g().OutgoingEdges(v));
-            push_back_all(answer, remover_.g().IncomingEdges(v));
-            return answer;
-        }
-
-        vector<EdgeId> FilterEdgesFromComponent(
-                const vector<EdgeId>& edges) const {
-            vector<EdgeId> answer;
-            FOREACH(EdgeId e, edges) {
-                if (component_.count(e) == 0) {
-                    answer.push_back(e);
-                }
-            }
-            return answer;
-        }
-
-        vector<EdgeId> RetainEdgesFromComponent(
-                const vector<EdgeId>& edges) const {
-            vector<EdgeId> answer;
-            FOREACH(EdgeId e, edges) {
-                if (component_.count(e) > 0) {
-                    answer.push_back(e);
-                }
-            }
-            return answer;
-        }
-
-        DECL_LOGGER("RelativelyLowCoveredComponentSearcher")
-        ;
-    };
+    friend class ComponentSearcher<Graph>;
 
     double RelativeCoverageToReport(VertexId v, double base_coverage) const {
         return std::min(MaxLocalCoverage(this->g().OutgoingEdges(v), v),
@@ -320,5 +184,245 @@ private:
     DECL_LOGGER("RelativeCoverageComponentRemover")
     ;
 };
+
+template<class Graph>
+class ComponentSearcher {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+
+    const RelativeCoverageComponentRemover<Graph>& remover_;
+    const Graph& g_;
+
+    set<EdgeId> component_;
+    set<VertexId> inner_vertices_;
+    set<VertexId> border_;
+
+    //maybe use something more sophisticated in future
+    size_t component_length_;
+    bool contains_deadends_;
+public:
+    ComponentSearcher(
+            const RelativeCoverageComponentRemover& remover,
+            EdgeId first_edge, VertexId first_border_vertex)
+            : remover_(remover),
+              g_(remover_.g()),
+              component_length_(0),
+              contains_deadends_(false) {
+        component_.insert(first_edge);
+        component_length_ += g_.length(first_edge);
+        border_.insert(first_border_vertex);
+    }
+
+    bool FindComponent() {
+        while (!border_.empty() && CheckComponent()) {
+            VertexId v = *border_.begin();
+            border_.erase(v);
+
+            //if encountered tip, put a flag and proceed further
+            INFO("Checking if vertex " << g_.str(v) << " is tip.");
+            if (g_.IsDeadEnd(v) || g_.IsDeadStart(v)) {
+                INFO("Tip, flag put");
+                contains_deadends_ = true;
+                continue;
+            }
+
+            INFO("Checking if vertex " << g_.str(v) << " is terminating.");
+            //checking if there is a sufficient coverage gap
+            if (!IsTerminateVertex(v)) {
+                INFO("Not terminating, adding neighbourhood");
+                inner_vertices_.insert(v);
+                FOREACH(EdgeId e, AdjacentEdges(v)) {
+                    //seems to correctly handle loops
+                    if (component_.count(e) == 0) {
+                        component_.insert(e);
+                        component_length_ += g_.length(e);
+                        VertexId other_end = OppositeEnd(e, v);
+                        if (inner_vertices_.count(other_end) == 0) {
+                            border_.insert(other_end);
+                        }
+                    }
+                }
+            } else {
+                INFO("Terminating");
+                //do nothing, we already erased v from the border
+            }
+        }
+        return CheckComponent();
+    }
+
+    const set<EdgeId>& component() const {
+        return component_;
+    }
+
+private:
+
+    bool CheckComponent() const {
+        if (inner_vertices_.size() > remover_.vertex_count_limit_) {
+            INFO("Too many vertices! More than " << remover_.vertex_count_limit_);
+            return false;
+        }
+        if (component_length_ > remover_.length_bound_) {
+            INFO("Too long component of length " << component_length_ << "! Longer than length bound " << remover_.length_bound_);
+            return false;
+        }
+        if (contains_deadends_
+                && component_length_
+                        > remover_.tip_allowing_length_bound_) {
+            INFO("Too long component of length " << component_length_ << "! Longer than tip allowing length bound " << remover_.tip_allowing_length_bound_);
+            return false;
+        }
+        return true;
+    }
+
+    bool IsTerminateVertex(VertexId v) const {
+        double base_coverage = remover_.MaxLocalCoverage(
+                RetainEdgesFromComponent(AdjacentEdges(v)), v);
+        return CheckAnyFilteredHighlyCovered(g_.OutgoingEdges(v),
+                                             v, base_coverage)
+                && CheckAnyFilteredHighlyCovered(
+                        g_.IncomingEdges(v), v, base_coverage);
+    }
+
+    bool CheckAnyFilteredHighlyCovered(const vector<EdgeId>& edges,
+                                       VertexId v,
+                                       double base_coverage) const {
+        return remover_.CheckAnyHighlyCovered(
+                FilterEdgesFromComponent(edges), v, base_coverage);
+    }
+
+    //if edge start = edge end = v returns v
+    VertexId OppositeEnd(EdgeId e, VertexId v) const {
+        VERIFY(g_.EdgeStart(e) == v
+                || g_.EdgeEnd(e) == v);
+//      VERIFY(remover_.g.EdgeStart(e) != remover_.g.EdgeEnd(e));
+        if (g_.EdgeStart(e) == v) {
+            return g_.EdgeEnd(e);
+        } else {
+            return g_.EdgeStart(e);
+        }
+    }
+
+    vector<EdgeId> AdjacentEdges(VertexId v) const {
+        vector<EdgeId> answer;
+        push_back_all(answer, g_.OutgoingEdges(v));
+        push_back_all(answer, g_.IncomingEdges(v));
+        return answer;
+    }
+
+    vector<EdgeId> FilterEdgesFromComponent(
+            const vector<EdgeId>& edges) const {
+        vector<EdgeId> answer;
+        FOREACH(EdgeId e, edges) {
+            if (component_.count(e) == 0) {
+                answer.push_back(e);
+            }
+        }
+        return answer;
+    }
+
+    vector<EdgeId> RetainEdgesFromComponent(
+            const vector<EdgeId>& edges) const {
+        vector<EdgeId> answer;
+        FOREACH(EdgeId e, edges) {
+            if (component_.count(e) > 0) {
+                answer.push_back(e);
+            }
+        }
+        return answer;
+    }
+
+    DECL_LOGGER("RelativelyLowCoveredComponentSearcher")
+    ;
+};
+
+template<class Graph>
+class ComponentChecker {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+
+    const Graph& g_;
+
+    class LongestPathFinder;
+    friend class LongestPathFinder;
+    class LongestPathFinder {
+        const ComponentChecker& checker_;
+        const set<EdgeId>& component_;
+        map<VertexId, size_t> max_distance_;
+        vector<VertexId> vertex_stack_;
+        bool cycle_detected_;
+
+        //-1u if can't be counted yet
+        size_t TryGetMaxDistance(VertexId v) {
+            if (max_distance_.count(v) > 0)
+                return max_distance_[v];
+
+            size_t answer = 0;
+            FOREACH (EdgeId e, g_.IncomingEdges(v)) {
+                VertexId start = g_.EdgeStart(e);
+                if (component_.count(e) > 0) {
+                    if (max_distance_.count(start) == 0) {
+                        if (std::find(vertex_stack_.begin(), vertex_stack_.end(), start) != vertex_stack_.end()) {
+                            cycle_detected_ = true;
+                        }
+                        vertex_stack_.push_back(start);
+                        return -1u;
+                    } else {
+                        answer = std::max(answer, max_distance_[start] + g_.length(e));
+                    }
+                }
+            }
+            return answer;
+        }
+
+        void ProcessVertex(VertexId init_v) {
+            vertex_stack_.push_back(init_v);
+            while (!vertex_stack_.empty()) {
+                if (cycle_detected_)
+                    return;
+
+                VertexId v = vertex_stack_.peek();
+                size_t max_dist = TryGetMaxDistance(v);
+                if (max_dist != -1u) {
+                    max_distance_[v] = max_dist;
+                    vertex_stack_.pop();
+                }
+            }
+        }
+
+    public:
+        LongestPathFinder(const ComponentChecker& checker, const set<EdgeId>& component)
+        : component_(component), cycle_detected_(false) {
+        }
+
+        //-1u if component contains a cycle
+        size_t Find() {
+            size_t answer = 0;
+            FOREACH(EdgeId e, component_) {
+                ProcessVertex(g_.EdgeEnd(e));
+                if (cycle_detected_)
+                    return -1u;
+                VERIFY(max_distance_.count(g_.EdgeEnd(e)) > 0);
+                answer = std::max(answer, max_distance_(g_.EdgeEnd(e)));
+            }
+            return answer;
+        }
+    };
+
+public:
+    ComponentChecker() {
+
+    }
+
+    bool Check(const set<EdgeId> component) const {
+        return InnerChecker(*this, component).Check();
+    }
+
+private:
+    DECL_LOGGER("RelativelyLowCoveredComponentSearcher")
+    ;
+};
+
+}
+}
 
 }
