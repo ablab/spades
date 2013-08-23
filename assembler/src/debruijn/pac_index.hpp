@@ -337,7 +337,23 @@ public:
 					if (intermediate_path.size() == 0) {
 						INFO("Tangled region between edgees "<< g_.int_id(prev_edge) << " " << g_.int_id(cur_edge) << " is not closed, additions from edges: "
 								<< int(g_.length(prev_edge)) - int(prev_last_index.edge_position) <<" " << int(cur_first_index.edge_position) - int(debruijn_k - pacbio_k ) << " and seq "<< - seq_start + seq_end);
-//						vector<EdgeId> intermediate_path = BestScoredPath(s, start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add,
+						if (cfg::get().pb.additional_debug_info) {
+						    INFO(" escpected gap length: "  << -int(g_.length(prev_edge)) + int(prev_last_index.edge_position) - int(cur_first_index.edge_position) + int(debruijn_k - pacbio_k )  - seq_start + seq_end);
+					        PathStorageCallback<Graph> callback(g_);
+					        PathProcessor<Graph> path_processor(g_, 0, 4000, start_v, end_v, callback);
+					        path_processor.Process();
+					        vector<vector<EdgeId> > paths = callback.paths();
+					        stringstream s_buf;
+					        for (auto p_iter = paths.begin(); p_iter != paths.end(); p_iter ++) {
+					            size_t tlen = 0;
+					            for (auto path_iter = p_iter->begin(); path_iter != p_iter->end(); path_iter ++) {
+					                tlen += g_.length(*path_iter);
+					            }
+					            s_buf << tlen << " ";
+					        }
+					        INFO (s_buf.str());
+						}
+						//						vector<EdgeId> intermediate_path = BestScoredPath(s, start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add,
 //								debug_info);
 						return intermediate_path;
 					}

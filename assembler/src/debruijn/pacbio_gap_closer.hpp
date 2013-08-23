@@ -11,6 +11,8 @@
 #include <algorithm>
 #include "pacbio_read_structures.hpp"
 #include "ssw/ssw_cpp.h"
+#include "ConsensusCore/Poa/PoaConfig.hpp"
+#include "ConsensusCore/Poa/PoaConsensus.hpp"
 
 template<class Graph>
 class PacbioGapCloser;

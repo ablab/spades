@@ -12,7 +12,8 @@ add_executable(spades
                path_extend/pe_config_struct.cpp
                main.cpp)
 
-target_link_libraries(spades  input mph_index otkpp  ${COMMON_LIBRARIES} ssw)
+target_link_libraries(spades ConsensusCore input mph_index otkpp  ${COMMON_LIBRARIES} ssw)
+include_directories(${EXT_DIR}/include/ConsensusCore)
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(spades PROPERTIES LINK_SEARCH_END_STATIC 1)
