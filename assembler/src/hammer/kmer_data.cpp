@@ -180,10 +180,9 @@ static inline void Merge(KMerStat &lhs, const KMerStat &rhs) {
 
 static void PushKMer(KMerData &data,
                      KMer kmer, const unsigned char *q, double prob) {
-  size_t idx = data.seq_idx(kmer);  
+  size_t idx = data.seq_idx(kmer);
   KMerStat &kmc = data[idx];
   kmc.lock();
-  data.kmer(idx) = kmer;
   Merge(kmc,
         KMerStat(1, (float)prob, q));
   kmc.unlock();
@@ -201,7 +200,6 @@ static void PushKMerRC(KMerData &data,
   size_t idx = data.seq_idx(kmer);
   KMerStat &kmc = data[idx];
   kmc.lock();
-  data.kmer(idx) = kmer;
   Merge(kmc,
         KMerStat(1, (float)prob, rcq));
   kmc.unlock();
@@ -245,12 +243,29 @@ void KMerDataCounter::FillKMerData(KMerData &data) {
   std::string workdir = cfg::get().input_working_dir;
   HammerKMerSplitter splitter(workdir);
   KMerDiskCounter<hammer::KMer> counter(workdir, splitter);
-  size_t sz = KMerIndexBuilder<HammerKMerIndex>(workdir, num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter);
+  size_t sz = KMerIndexBuilder<HammerKMerIndex>(workdir, num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save finall */ true);
+
+  data.kmers_ = counter.GetFinalKMers();
+
+  size_t swaps = 0;
+  INFO("Arranging kmers in hash map order");
+  for (auto I = data.kmers_->begin(), E = data.kmers_->end(); I != E; ++I) {
+    size_t cidx = I - data.kmers_->begin();
+    size_t kidx = data.index_.raw_seq_idx(*I);
+    while (cidx != kidx) {
+      auto J = data.kmers_->begin() + kidx;
+      using std::swap;
+      swap(*I, *J);
+      swaps += 1;
+
+      kidx = data.index_.raw_seq_idx(*I);
+    }
+  }
+  INFO("Done. Total swaps: " << swaps);
 
   // Now use the index to fill the kmer quality information.
   INFO("Collecting K-mer information, this takes a while.");
   data.data_.resize(sz);
-  data.kmers_.resize(sz);
 
   KMerDataFiller filler(data);
   const auto& dataset = cfg::get().dataset;

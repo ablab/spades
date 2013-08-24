@@ -141,7 +141,7 @@ int main(int argc, char * argv[]) {
         std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index");
         std::ifstream is(fname.c_str(), std::ios::binary);
         VERIFY(is.good());
-        Globals::kmer_data->binary_read(is);
+        Globals::kmer_data->binary_read(is, fname);
       }
 
       // Cluster the Hamming graph
@@ -217,7 +217,7 @@ int main(int argc, char * argv[]) {
         std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index2");
         std::ifstream is(fname.c_str(), std::ios::binary);
         VERIFY(is.good());
-        Globals::kmer_data->binary_read(is);
+        Globals::kmer_data->binary_read(is, fname);
       }
       std::vector<std::vector<unsigned>>().swap(classes);
 
@@ -262,7 +262,7 @@ int main(int argc, char * argv[]) {
         std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index3");
         std::ifstream is(fname.c_str(), std::ios::binary);
         VERIFY(is.good());
-        Globals::kmer_data->binary_read(is);
+        Globals::kmer_data->binary_read(is, fname);
       }
 
       size_t totalReads = 0;

@@ -16,17 +16,23 @@ typedef KMerIndex<kmer_index_traits<hammer::KMer> > HammerKMerIndex;
 class KMerData {
   typedef std::vector<KMerStat> KMerDataStorageType;
   typedef std::vector<hammer::KMer> KMerStorageType;
+  typedef kmer_index_traits<hammer::KMer> traits;
 
  public:
   KMerData() {}
 
-  size_t size() const { return data_.size() + push_back_buffer_.size(); }
+  size_t size() const { return kmers_->size() + push_back_buffer_.size(); }
+
   void clear() {
     data_.clear();
     push_back_buffer_.clear();
+    kmer_push_back_buffer_.clear();
     KMerDataStorageType().swap(data_);
     KMerDataStorageType().swap(push_back_buffer_);
+    delete kmers_;
+    kmers_ = NULL;
   }
+
   size_t push_back(const hammer::KMer kmer, const KMerStat &k) {
     push_back_buffer_.push_back(k);
     kmer_push_back_buffer_.push_back(kmer);
@@ -42,17 +48,19 @@ class KMerData {
     size_t dsz = data_.size();
     return (idx < dsz ? data_[idx] : push_back_buffer_[idx - dsz]);
   }
-  hammer::KMer& kmer(size_t idx) {
-    size_t dsz = kmers_.size();
-    return (idx < dsz ? kmers_[idx] : kmer_push_back_buffer_[idx - dsz]);
-  }
   hammer::KMer kmer(size_t idx) const {
-    size_t dsz = kmers_.size();
-    return (idx < dsz ? kmers_[idx] : kmer_push_back_buffer_[idx - dsz]);
+    if (idx < kmers_->size()) {
+      auto it = kmers_->begin() + idx;
+      return (typename traits::raw_create()(hammer::K, *it));
+    }
+
+    idx -= kmers_->size();
+
+    return kmer_push_back_buffer_[idx];
   }
 
-  KMerStat& operator[](hammer::KMer s) { return operator[](index_.seq_idx(s)); }
-  const KMerStat& operator[](hammer::KMer s) const { return operator[](index_.seq_idx(s)); }
+  KMerStat& operator[](hammer::KMer s) { return operator[](seq_idx(s)); }
+  const KMerStat& operator[](hammer::KMer s) const { return operator[](seq_idx(s)); }
   size_t seq_idx(hammer::KMer s) const { return index_.seq_idx(s); }
 
   template <class Writer>
@@ -60,39 +68,38 @@ class KMerData {
     size_t sz = data_.size();
     os.write((char*)&sz, sizeof(sz));
     os.write((char*)&data_[0], sz*sizeof(data_[0]));
+
     sz = push_back_buffer_.size();
     os.write((char*)&sz, sizeof(sz));
     os.write((char*)&push_back_buffer_[0], sz*sizeof(push_back_buffer_[0]));
-    sz = kmers_.size();
-    os.write((char*)&sz, sizeof(sz));
-    os.write((char*)&kmers_[0], sz*sizeof(kmers_[0]));
-    sz = kmer_push_back_buffer_.size();
-    os.write((char*)&sz, sizeof(sz));
     os.write((char*)&kmer_push_back_buffer_[0], sz*sizeof(kmer_push_back_buffer_[0]));
+
     index_.serialize(os);
+    traits::raw_serialize(os, kmers_);
   }
 
   template <class Reader>
-  void binary_read(Reader &is) {
+  void binary_read(Reader &is, const std::string &FileName) {
+    clear();
+
     size_t sz = 0;
     is.read((char*)&sz, sizeof(sz));
     data_.resize(sz);
     is.read((char*)&data_[0], sz*sizeof(data_[0]));
+
     is.read((char*)&sz, sizeof(sz));
     push_back_buffer_.resize(sz);
     is.read((char*)&push_back_buffer_[0], sz*sizeof(push_back_buffer_[0]));
-    push_back_buffer_.resize(sz);
-    is.read((char*)&push_back_buffer_[0], sz*sizeof(push_back_buffer_[0]));
-    kmers_.resize(sz);
-    is.read((char*)&kmers_[0], sz*sizeof(kmers_[0]));
     kmer_push_back_buffer_.resize(sz);
     is.read((char*)&kmer_push_back_buffer_[0], sz*sizeof(kmer_push_back_buffer_[0]));
 
     index_.deserialize(is);
+    kmers_ = traits::raw_deserialize(is, FileName);
   }
 
  private:
-  KMerStorageType kmers_;
+  typename traits::FinalKMerStorage *kmers_;
+
   KMerDataStorageType data_;
   KMerStorageType kmer_push_back_buffer_;
   KMerDataStorageType push_back_buffer_;
