@@ -114,6 +114,7 @@ class KMerDataCounter {
  public:
   KMerDataCounter(unsigned num_files) : num_files_(num_files) {}
 
+  void BuildKMerIndex(KMerData &data);
   void FillKMerData(KMerData &data);
 
  private:

@@ -238,12 +238,12 @@ class KMerDataFiller {
   }
 };
 
-void KMerDataCounter::FillKMerData(KMerData &data) {
+void KMerDataCounter::BuildKMerIndex(KMerData &data) {
   // Build the index
   std::string workdir = cfg::get().input_working_dir;
   HammerKMerSplitter splitter(workdir);
   KMerDiskCounter<hammer::KMer> counter(workdir, splitter);
-  size_t sz = KMerIndexBuilder<HammerKMerIndex>(workdir, num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save finall */ true);
+  KMerIndexBuilder<HammerKMerIndex>(workdir, num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save finall */ true);
 
   data.kmers_ = counter.GetFinalKMers();
 
@@ -262,10 +262,12 @@ void KMerDataCounter::FillKMerData(KMerData &data) {
     }
   }
   INFO("Done. Total swaps: " << swaps);
+}
 
+void KMerDataCounter::FillKMerData(KMerData &data) {
   // Now use the index to fill the kmer quality information.
   INFO("Collecting K-mer information, this takes a while.");
-  data.data_.resize(sz);
+  data.data_.resize(data.kmers_->size());
 
   KMerDataFiller filler(data);
   const auto& dataset = cfg::get().dataset;
@@ -288,6 +290,6 @@ void KMerDataCounter::FillKMerData(KMerData &data) {
       singletons += 1;
   }
 
-  INFO("Merge done. There are " << data.size() << " kmers in total. "
+  INFO("There are " << data.size() << " kmers in total. "
        "Among them " << singletons << " (" <<  100.0 * (double)singletons / (double)data.size() << "%) are singletons.");
 }

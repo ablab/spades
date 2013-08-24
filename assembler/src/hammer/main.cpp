@@ -127,8 +127,7 @@ int main(int argc, char * argv[]) {
 
       // count k-mers
       if (cfg::get().count_do || do_everything) {
-        KMerDataCounter counter(cfg::get().count_numfiles);
-        counter.FillKMerData(*Globals::kmer_data);
+        KMerDataCounter(cfg::get().count_numfiles).BuildKMerIndex(*Globals::kmer_data);
 
         if (cfg::get().general_debug) {
           INFO("Debug mode on. Dumping K-mer index");
@@ -200,6 +199,8 @@ int main(int argc, char * argv[]) {
       }
 
       if (cfg::get().bayes_do || do_everything) {
+        KMerDataCounter(cfg::get().count_numfiles).FillKMerData(*Globals::kmer_data);
+
         INFO("Subclustering Hamming graph");
         unsigned clustering_nthreads = std::min(cfg::get().general_max_nthreads, cfg::get().bayes_nthreads);
         KMerClustering kmc(*Globals::kmer_data, clustering_nthreads, cfg::get().input_working_dir);
