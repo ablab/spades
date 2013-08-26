@@ -158,7 +158,7 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<size_t> &k
   }
 
   // We assume that kmerinds are sorted wrt the count.
-  for (unsigned j = 0; j < l; ++j) {
+  for (size_t j = 0; j < l; ++j) {
     const KMerStat &kms = data_[kmerinds[j]];
     centers[j].first = data_.kmer(kmerinds[j]);
     centers[j].second.first = kms.count;
@@ -198,7 +198,7 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<size_t> &k
   bool changed = true, improved = true;
 
   // auxiliary variables
-  std::vector<unsigned> dists(l);
+  std::vector<size_t> dists(l);
   std::vector<double> loglike(l);
   std::vector<bool> changedCenter(l);
 
@@ -216,17 +216,16 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<size_t> &k
       const KMerStat &kms = data_[kmerinds[i]];
       const KMer kmer = data_.kmer(kmerinds[i]);
 
-      unsigned newInd = 0;
+      size_t newInd = 0;
       for (unsigned j=0; j < l; ++j)
-        loglike[j] = logLikelihoodKMer(centers[j].first,
-                                       kmer, kms);
-      newInd = (unsigned)(std::max_element(loglike.begin(), loglike.end()) - loglike.begin());
+        loglike[j] = logLikelihoodKMer(centers[j].first, kmer, kms);
+      newInd = std::max_element(loglike.begin(), loglike.end()) - loglike.begin();
 
       if (cfg::get().bayes_use_hamming_dist) {
         for (unsigned j=0; j < l; ++j)
           dists[j] = hamdistKMer(kmer, centers[j].first);
 
-        newInd = (unsigned)(std::min_element(dists.begin(), dists.end()) - dists.begin());
+        newInd = std::min_element(dists.begin(), dists.end()) - dists.begin();
       }
 
       curlik += loglike[newInd];
@@ -275,7 +274,7 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<size_t> &k
   return ClusterBIC(kmerinds, centers, indices);
 }
 
-size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::vector< vector<size_t> > & vec) {
+size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::vector< std::vector<size_t> > & vec) {
   size_t newkmers = 0;
 
   if (cfg::get().bayes_debug_output > 0) {
@@ -332,7 +331,7 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
   }
 
   // find if centers are in clusters
-  std::vector<unsigned> centersInCluster(bestCenters.size(), -1u);
+  std::vector<size_t> centersInCluster(bestCenters.size(), -1u);
   for (unsigned i = 0; i < origBlockSize; i++) {
     unsigned dist = hamdistKMer(data_.kmer(block[i]), bestCenters[bestIndices[i]].first);
     if (dist == 0) {
@@ -341,10 +340,10 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
   }
 
 //  bool cons_suspicion = false;
-//  for (size_t k = 0; k < bestCenters.size(); ++k) 
-//      if (centersInCluster[k] == -1u) 
+//  for (size_t k = 0; k < bestCenters.size(); ++k)
+//      if (centersInCluster[k] == -1u)
 //          cons_suspicion = true;
-  
+
   if (cfg::get().bayes_debug_output > 0) {
 #   pragma omp critical
     {
@@ -411,9 +410,9 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
   }
 
   for (size_t k = 0; k < bestCenters.size(); ++k) {
-    if (bestCenters[k].second.first == 0) {
+    if (bestCenters[k].second.first == 0)
       continue; // superfluous cluster with zero elements
-    }
+
     std::vector<size_t> v;
     if (bestCenters[k].second.first == 1) {
       for (size_t i = 0; i < origBlockSize; i++) {
@@ -432,6 +431,7 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
           }
         }
       }
+
       if (centersInCluster[k] == -1u) {
         unsigned new_idx = 0;
         #pragma omp critical
@@ -460,93 +460,58 @@ static void UpdateErrors(numeric::matrix<uint64_t> &m,
   }
 }
 
-class KMerStatCountComparator {
-  const KMerData &data_;
-public:
-  KMerStatCountComparator(const KMerData &data)
-      : data_(data) {}
-  bool operator()(unsigned a, unsigned b) {
-    return data_[a].count > data_[b].count;
-  }
-};
-
-void KMerClustering::process(std::vector<std::vector<size_t> > &classes) {
-  size_t newkmers = 0;
-  size_t gsingl = 0, tsingl = 0, tcsingl = 0, gcsingl = 0, tcls = 0, gcls = 0, tkmers = 0, tncls = 0;
-
-  std::ofstream ofs, ofs_bad;
-  if (cfg::get().bayes_write_solid_kmers)
-    ofs.open(GetGoodKMersFname());
-  if (cfg::get().bayes_write_bad_kmers)
-    ofs_bad.open(GetBadKMersFname());
-
-  // Underlying code expected classes to be sorted in count decreasing order.
-#if 0
-  // No lambdas with gcc 4.4x :(
-  std::sort(classes.begin(), classes.end(),
-            [](const std::vector<unsigned> &a, const std::vector<unsigned> &b) {
-              return a.size() > b.size();
-            });
-  for (auto I = classes.begin(), E = classes.end(); I != E; ++I) {
-    std::sort(I->begin(), I->end(),
-              [=](unsigned a, unsigned b) {
-                return data_[a].count > data_[b].count;
-              });
-  }
-#else
-  for (auto I = classes.begin(), E = classes.end(); I != E; ++I) {
-    std::sort(I->begin(), I->end(),
-              KMerStatCountComparator(data_));
-  }
-#endif
-
-  std::vector<numeric::matrix<uint64_t> > errs(nthreads_, numeric::matrix<double>(4, 4, 0.0));
-# pragma omp parallel for shared(classes, ofs, ofs_bad, errs) num_threads(nthreads_) schedule(dynamic) reduction(+:newkmers, gsingl, tsingl, tcsingl, gcsingl, tcls, gcls, tkmers, tncls)
-  for (size_t i = 0; i < classes.size(); ++i) {
-    auto cur_class = classes[i];
+size_t KMerClustering::ProcessCluster(const std::vector<size_t> &cur_class,
+                                      numeric::matrix<uint64_t> &errs,
+                                      std::ofstream &ofs, std::ofstream &ofs_bad,
+                                      size_t &gsingl, size_t &tsingl, size_t &tcsingl, size_t &gcsingl,
+                                      size_t &tcls, size_t &gcls, size_t &tkmers, size_t &tncls) {
+    size_t newkmers = 0;
 
     // No need for clustering for singletons
     if (cur_class.size() == 1) {
-      size_t idx = cur_class[0];
-      KMerStat &singl = data_[idx];
-      if ((1-singl.totalQual) > cfg::get().bayes_singleton_threshold) {
-        singl.status = KMerStat::GoodIter;
-        gsingl += 1;
-        if (ofs.good()) {
-#         pragma omp critical
-          {
-            ofs << " good singleton: " << idx << "\n  " << singl << '\n';
-          }
-        }
-      } else {
-        if (cfg::get().correct_use_threshold && (1-singl.totalQual) > cfg::get().correct_threshold)
-          singl.status = KMerStat::GoodIterBad;
-        else
-          singl.status = KMerStat::Bad;
-        if (ofs_bad.good()) {
-#         pragma omp critical
-          {
-            ofs_bad << " bad singleton: " << idx << "\n  " << singl << '\n';
-          }
-        }
-      }
-      tsingl += 1;
-    } else {
-      std::vector<std::vector<size_t> > blocksInPlace;
+        size_t idx = cur_class[0];
+        KMerStat &singl = data_[idx];
+        if ((1-singl.totalQual) > cfg::get().bayes_singleton_threshold) {
+            singl.status = KMerStat::GoodIter;
+            gsingl += 1;
 
-      if (cfg::get().bayes_debug_output) {
+            if (ofs.good()) {
+#               pragma omp critical
+                {
+                    ofs << " good singleton: " << idx << "\n  " << singl << '\n';
+                }
+            }
+        } else {
+            if (cfg::get().correct_use_threshold && (1-singl.totalQual) > cfg::get().correct_threshold)
+                singl.status = KMerStat::GoodIterBad;
+            else
+                singl.status = KMerStat::Bad;
+
+            if (ofs_bad.good()) {
+#               pragma omp critical
+                {
+                    ofs_bad << " bad singleton: " << idx << "\n  " << singl << '\n';
+                }
+            }
+        }
+        tsingl += 1;
+        return 0;
+    }
+
+    std::vector<std::vector<size_t> > blocksInPlace;
+    if (cfg::get().bayes_debug_output) {
 #       pragma omp critical
         {
-          std::cout << "process_SIN with block idx= " << i << " size=" << cur_class.size() << std::endl;
+          std::cout << "process_SIN with size=" << cur_class.size() << std::endl;
         }
       }
-      newkmers += SubClusterSingle(cur_class, blocksInPlace);
+    newkmers += SubClusterSingle(cur_class, blocksInPlace);
 
-      tncls += 1;
-      for (size_t m = 0; m < blocksInPlace.size(); ++m) {
+    tncls += 1;
+    for (size_t m = 0; m < blocksInPlace.size(); ++m) {
         const std::vector<size_t> &currentBlock = blocksInPlace[m];
         if (currentBlock.size() == 0)
-          continue;
+            continue;
 
         size_t cidx = currentBlock[0];
         KMerStat &center = data_[cidx];
@@ -556,16 +521,16 @@ void KMerClustering::process(std::vector<std::vector<size_t> > &classes) {
         // Computing the overall quality of a cluster.
         double cluster_quality = 1;
         if (currentBlock.size() > 1) {
-          for (size_t j = 1; j < currentBlock.size(); ++j) {
-            cluster_quality *= data_[currentBlock[j]].totalQual;
-          }
-          cluster_quality = 1-cluster_quality;
+            for (size_t j = 1; j < currentBlock.size(); ++j)
+                cluster_quality *= data_[currentBlock[j]].totalQual;
+
+            cluster_quality = 1-cluster_quality;
         }
 
         if (currentBlock.size() == 1)
-          tcsingl += 1;
+            tcsingl += 1;
         else
-          tcls += 1;
+            tcls += 1;
 
         if ((center_quality > cfg::get().bayes_singleton_threshold &&
              cluster_quality > cfg::get().bayes_nonsingleton_threshold) ||
@@ -573,54 +538,118 @@ void KMerClustering::process(std::vector<std::vector<size_t> > &classes) {
           center.status = KMerStat::GoodIter;
 
           if (currentBlock.size() == 1)
-            gcsingl += 1;
+              gcsingl += 1;
           else
-            gcls += 1;
+              gcls += 1;
 
           if (ofs.good()) {
-#           pragma omp critical
-            {
-              ofs << " center of good cluster (" << currentBlock.size() << ", " << cluster_quality << ")" << "\n  "
+#             pragma omp critical
+              {
+                  ofs << " center of good cluster (" << currentBlock.size() << ", " << cluster_quality << ")" << "\n  "
                   << center << '\n';
-            }
+              }
           }
         } else {
-          if (cfg::get().correct_use_threshold && center_quality > cfg::get().correct_threshold)
-            center.status = KMerStat::GoodIterBad;
-          else
-            center.status = KMerStat::Bad;
-          if (ofs_bad.good()) {
-#           pragma omp critical
-            {
-              ofs_bad << " center of bad cluster (" << currentBlock.size() << ", " << cluster_quality << ")" << "\n  "
-                      << center << '\n';
+            if (cfg::get().correct_use_threshold && center_quality > cfg::get().correct_threshold)
+                center.status = KMerStat::GoodIterBad;
+            else
+                center.status = KMerStat::Bad;
+            if (ofs_bad.good()) {
+#               pragma omp critical
+                {
+                    ofs_bad << " center of bad cluster (" << currentBlock.size() << ", " << cluster_quality << ")" << "\n  "
+                            << center << '\n';
+                }
             }
-          }
         }
 
         tkmers += currentBlock.size();
 
         for (size_t j = 1; j < currentBlock.size(); ++j) {
-          size_t eidx = currentBlock[j];
-          KMerStat &kms = data_[eidx];
+            size_t eidx = currentBlock[j];
+            KMerStat &kms = data_[eidx];
 
-          kms.set_change(cidx);
-          UpdateErrors(errs[omp_get_thread_num()], data_.kmer(eidx), ckmer);
-          if (ofs_bad.good()) {
-#           pragma omp critical
-            {
-              ofs_bad << " part of cluster (" << currentBlock.size() << ", " << cluster_quality << ")" << "\n  "
-                      << kms << '\n';
+            kms.set_change(cidx);
+            UpdateErrors(errs, data_.kmer(eidx), ckmer);
+
+            if (ofs_bad.good()) {
+#               pragma omp critical
+                {
+                    ofs_bad << " part of cluster (" << currentBlock.size() << ", " << cluster_quality << ")" << "\n  "
+                            << kms << '\n';
+                }
             }
-          }
         }
-
-      }
     }
+
+    return newkmers;
+}
+
+
+class KMerStatCountComparator {
+  const KMerData &data_;
+public:
+  KMerStatCountComparator(const KMerData &data)
+      : data_(data) {}
+  bool operator()(size_t a, size_t b) {
+    return data_[a].count > data_[b].count;
+  }
+};
+
+void KMerClustering::process(const std::string &Prefix) {
+  size_t newkmers = 0;
+  size_t gsingl = 0, tsingl = 0, tcsingl = 0, gcsingl = 0, tcls = 0, gcls = 0, tkmers = 0, tncls = 0;
+
+  std::ofstream ofs, ofs_bad;
+  if (cfg::get().bayes_write_solid_kmers)
+    ofs.open(GetGoodKMersFname());
+  if (cfg::get().bayes_write_bad_kmers)
+    ofs_bad.open(GetBadKMersFname());
+
+  // Open and read index file
+  MMappedRecordReader<size_t> findex(Prefix + ".idx",  /* unlink */ !debug_, -1ULL);
+
+  std::vector<numeric::matrix<uint64_t> > errs(nthreads_, numeric::matrix<double>(4, 4, 0.0));
+
+# pragma omp parallel for shared(ofs, ofs_bad, errs) num_threads(nthreads_) reduction(+:newkmers, gsingl, tsingl, tcsingl, gcsingl, tcls, gcls, tkmers, tncls)
+  for (size_t chunk = 0; chunk < nthreads_; ++chunk) {
+      size_t *current = findex.data() + findex.size() * chunk / nthreads_;
+      size_t *next = findex.data() + findex.size() * (chunk + 1)/ nthreads_;
+      std::ifstream is(Prefix, std::ios::in | std::ios::binary);
+
+      // Calculate how much we need to seek
+      size_t soff = 0;
+      for (size_t *csz = findex.data(); csz != current; ++csz)
+          soff += *csz;
+
+      // Now see the stream and start processing
+      is.seekg(soff * sizeof(size_t));
+
+      for (; current != next; ++current) {
+          std::vector<size_t> cluster(*current);
+          VERIFY(is.good());
+          is.read((char*)&cluster[0], *current * sizeof(cluster[0]));
+
+          // Underlying code expected classes to be sorted in count decreasing order.
+          std::sort(cluster.begin(), cluster.end(), KMerStatCountComparator(data_));
+
+          newkmers += ProcessCluster(cluster,
+                                     errs[omp_get_thread_num()],
+                                     ofs, ofs_bad,
+                                     gsingl, tsingl, tcsingl, gcsingl,
+                                     tcls, gcls, tkmers, tncls);
+      }
+  }
+
+  if (!debug_) {
+      int res = unlink(Prefix.c_str());
+      VERIFY_MSG(res == 0,
+                 "unlink(2) failed. Reason: " << strerror(errno) << ". Error code: " << errno);
   }
 
   for (unsigned i = 1; i < nthreads_; ++i)
     errs[0] += errs[i];
+
   numeric::matrix<uint64_t> rowsums = prod(errs[0], numeric::scalar_matrix<double>(4, 1, 1));
   numeric::matrix<double> err(4, 4);
   for (unsigned i = 0; i < 4; ++i)

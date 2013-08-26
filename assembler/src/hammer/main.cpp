@@ -119,7 +119,7 @@ int main(int argc, char * argv[]) {
 
     // now we can begin the iterations
     for (Globals::iteration_no = 0; Globals::iteration_no < max_iterations; ++Globals::iteration_no) {
-      cout << "\n     === ITERATION " << Globals::iteration_no << " begins ===" << endl;
+        cout << "\n     === ITERATION " << Globals::iteration_no << " begins ===" << endl;
       bool do_everything = cfg::get().general_do_everything_after_first_iteration && (Globals::iteration_no > 0);
 
       // initialize k-mer structures
@@ -151,8 +151,7 @@ int main(int argc, char * argv[]) {
         INFO("Clustering Hamming graph.");
         clusterer.cluster(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamcls"),
                           *Globals::kmer_data, uf);
-        uf.get_sets(classes);
-        size_t num_classes = classes.size();
+        size_t num_classes = uf.extract_to_file(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming"));
 
 #if 0
         std::sort(classes.begin(), classes.end(),  UfCmp());
@@ -203,8 +202,9 @@ int main(int argc, char * argv[]) {
 
         INFO("Subclustering Hamming graph");
         unsigned clustering_nthreads = std::min(cfg::get().general_max_nthreads, cfg::get().bayes_nthreads);
-        KMerClustering kmc(*Globals::kmer_data, clustering_nthreads, cfg::get().input_working_dir);
-        kmc.process(classes);
+        KMerClustering kmc(*Globals::kmer_data, clustering_nthreads,
+                           cfg::get().input_working_dir, cfg::get().general_debug);
+        kmc.process(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming"));
         INFO("Finished clustering.");
 
         if (cfg::get().general_debug) {

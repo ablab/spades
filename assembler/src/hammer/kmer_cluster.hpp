@@ -20,20 +20,20 @@
 #include <string>
 #include <vector>
 
+#include <boost/numeric/ublas/fwd.hpp>
+
 class KMerClustering {
 public:
-  KMerClustering(KMerData &data, unsigned nthreads, const std::string &workdir) :
-      data_(data), nthreads_(nthreads), workdir_(workdir) { }
+  KMerClustering(KMerData &data, unsigned nthreads, const std::string &workdir, bool debug) :
+      data_(data), nthreads_(nthreads), workdir_(workdir), debug_(debug) { }
 
-  /**
-    * perform k-mer clustering and store the results in the map and the set
-    */
-  void process(std::vector<std::vector<size_t> > &classes);
+  void process(const std::string &Prefix);
 
 private:
   KMerData &data_;
   unsigned nthreads_;
   std::string workdir_;
+  bool debug_;
 
   /// @return consensus string for a block
   hammer::KMer Consensus(const std::vector<size_t> & block) const;
@@ -54,6 +54,12 @@ private:
 
   std::string GetGoodKMersFname() const;
   std::string GetBadKMersFname() const;
+
+  size_t ProcessCluster(const std::vector<size_t> &cur_class,
+                        boost::numeric::ublas::matrix<uint64_t> &errs,
+                        std::ofstream &ofs, std::ofstream &ofs_bad,
+                        size_t &gsingl, size_t &tsingl, size_t &tcsingl, size_t &gcsingl,
+                        size_t &tcls, size_t &gcls, size_t &tkmers, size_t &tncls);
 
 private:
   DECL_LOGGER("Hamming Subclustering");
