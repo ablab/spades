@@ -216,7 +216,8 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
 
 	debug_output_paths(writer, gp, output_dir, paths, "overlaped_paths");
     size_t max_over = find_max_overlaped_len(libs);
-    resolver.removeOverlaps(paths, mainPE->GetCoverageMap(), max_over, writer, output_dir);
+    if(cfg::get().gap_closer_enable)
+    	resolver.removeOverlaps(paths, mainPE->GetCoverageMap(), max_over, writer, output_dir);
     paths.FilterEmptyPaths();
 	paths.CheckSymmetry();
     resolver.addUncoveredEdges(paths, mainPE->GetCoverageMap());
@@ -235,6 +236,7 @@ void resolve_repeats_pe_many_libs(conj_graph_pack& gp,
     }
 
     writer.writePaths(paths, output_dir + contigs_name);
+    writer.writePaths(paths, output_dir + "../tmp_contigs.fasta");
 
     INFO("Path extend repeat resolving tool finished");
 }
