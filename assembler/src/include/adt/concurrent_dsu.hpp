@@ -49,9 +49,8 @@ class ConcurrentDSU {
     while (true) {
       x = find_set(x);
       y = find_set(y);
-      if (x == y) {
+      if (x == y)
         return;
-      }
 
       unsigned x_size = data[x].size;
       unsigned y_size = data[y].size;
@@ -85,17 +84,42 @@ class ConcurrentDSU {
   }
 
   unsigned find_set(unsigned x) const {
-    unsigned ans = x;
-    while (ans != data[ans].next) {
-      unsigned t = data[ans].next;
-      atomic_set_t old = data[ans];
-      atomic_set_t nnew = old;
-      nnew.next = data[t].next;
-      __sync_bool_compare_and_swap(&data[ans].raw, old.raw, nnew.raw);
-      ans = data[t].next;
+    unsigned r = x;
+
+    // The version with full path compression
+
+    // Find the root
+    while (r != data[r].next)
+        r = data[r].next;
+
+    // Update the stuff
+    unsigned r_size = data[r].size;
+    unsigned x_size = data[x].size;
+    while (x_size < r_size || (r_size == x_size && x < r)) {
+        unsigned next = data[x].next;
+        atomic_set_t old = data[x];
+        atomic_set_t nnew = old;
+        nnew.next = r;
+        __sync_bool_compare_and_swap(&data[x].raw, old.raw, nnew.raw);
+
+        x = next;
+        x_size = data[x].size;
     }
 
-    return ans;
+    return r;
+
+ #if 0
+    // The version with path halving
+    while (x != data[x].next) {
+      unsigned next = data[x].next;
+      atomic_set_t old = data[x];
+      atomic_set_t nnew = old;
+      nnew.next = data[next].next;
+      __sync_bool_compare_and_swap(&data[x].raw, old.raw, nnew.raw);
+      x = data[next].next;
+    }
+    return x;
+#endif
   }
 
   size_t num_sets() const {
