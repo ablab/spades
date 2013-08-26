@@ -402,6 +402,10 @@ class GapCloser {
     TRACE("Processing edges " << g_.str(first) << " and " << g_.str(second));
     TRACE("first " << g_.EdgeNucls(first) << " second " << g_.EdgeNucls(second));
 
+    if (first == g_.conjugate(second)) {
+        INFO("Trying to join conjugate edges " << g_.int_id(first));
+        return false;
+    }
     //may be negative!
     int gap = max(init_gap_val_,
         -1 * (int)(min(g_.length(first), g_.length(second)) - 1));

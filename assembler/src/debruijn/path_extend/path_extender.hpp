@@ -577,6 +577,11 @@ public:
 	}
 
     virtual bool MakeGrowStep(BidirectionalPath& path) {
+        if (path.CameToInterstrandBulge() || path.IsInterstrandBulge()) {
+            DEBUG("Stoping because of interstand bulge");
+            return false;
+        }
+
         size_t current = 0;
 
         while (current < extenders_.size()) {
@@ -620,6 +625,11 @@ public:
 
 
     virtual bool MakeGrowStep(BidirectionalPath& path) {
+        if (path.CameToInterstrandBulge() || path.IsInterstrandBulge()) {
+            DEBUG("Stoping because of interstand bulge");
+            return false;
+        }
+
         ExtensionChooser::EdgeContainer candidates;
         bool result = false;
         FindFollowingEdges(path, &candidates);
