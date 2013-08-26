@@ -841,10 +841,11 @@ void prepare_jump_index(const Graph& g, const PairedIndexT& raw_jump_index,
 	filter.Filter(normalized_jump_index, jump_index);
 }
 
-void prepare_scaffolding_index(conj_graph_pack& gp,
+bool prepare_scaffolding_index(conj_graph_pack& gp,
         const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
         PairedIndexT& paired_index,
 		PairedIndexT& clustered_index) {
+
 	double is_var = lib.data().insert_size_deviation;
 	size_t delta = size_t(is_var);
 	size_t linkage_distance = size_t(
@@ -853,7 +854,12 @@ void prepare_scaffolding_index(conj_graph_pack& gp,
 	                                       lib.data().read_length, delta);
 	size_t max_distance = size_t(cfg::get().de.max_distance_coeff * is_var);
 	boost::function<double(int)> weight_function;
+
 	DEBUG("Retaining insert size distribution for it");
+	if (lib.data().insert_size_distribution.size() == 0) {
+	    return false;
+	}
+
 	WeightDEWrapper wrapper(lib.data().insert_size_distribution, lib.data().mean_insert_size);
 	DEBUG("Weight Wrapper Done");
 	weight_function = boost::bind(&WeightDEWrapper::CountWeight, wrapper, _1);
@@ -887,6 +893,8 @@ void prepare_scaffolding_index(conj_graph_pack& gp,
 					cfg::get().ade.derivative_threshold, true);
 	estimate_with_estimator(gp.g, estimator, normalizer, filter,
 			clustered_index);
+
+	return true;
 }
 
 void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, std::vector< PathInfo<Graph> >& filteredPaths,
@@ -921,7 +929,7 @@ void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, s
 
 int get_first_pe_lib_index() {
 	for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-		if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd && cfg::get().ds.reads[i].data().valid) {
+		if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd && cfg::get().ds.reads[i].data().mean_insert_size != 0.0) {
 			return (int) i;
 		}
 	}
@@ -936,7 +944,9 @@ void prepare_all_scaf_libs(conj_graph_pack& conj_gp,
 		PairedIndexT* pe = new PairedIndexT(conj_gp.g);
 		cl_scaff_indexs.push_back(pe);
 		INFO("Scaffolding distance estimating started for lib #" << indexes[i]);
-		prepare_scaffolding_index(conj_gp, cfg::get().ds.reads[indexes[i]], *scaff_indexs[i], *cl_scaff_indexs[i]);
+		if (!prepare_scaffolding_index(conj_gp, cfg::get().ds.reads[indexes[i]], *scaff_indexs[i], *cl_scaff_indexs[i])) {
+		    INFO("Lib #" << indexes[i] << " will not be used for scaffolding");
+		}
 	}
 	scaff_indexs.clear();
 	scaff_indexs.insert(scaff_indexs.end(), cl_scaff_indexs.begin(),
@@ -1031,7 +1041,8 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
 	vector<size_t> indexes;
 
 	for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-		if (cfg::get().ds.reads[i].data().valid && (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd
+		if (cfg::get().ds.reads[i].data().mean_insert_size != 0.0 &&
+		        (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd
 				|| cfg::get().ds.reads[i].type() == io::LibraryType::MatePairs)) {
 			pe_indexs.push_back(&clustered_indices[i]);
 			pe_scaf_indexs.push_back(&paired_indices[i]);
@@ -1137,7 +1148,7 @@ void resolve_repeats() {
 
 	bool no_valid_libs = true;
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        if (cfg::get().ds.reads[i].data().valid) {
+        if (cfg::get().ds.reads[i].data().mean_insert_size != 0.0) {
             no_valid_libs = false;
             break;
         }

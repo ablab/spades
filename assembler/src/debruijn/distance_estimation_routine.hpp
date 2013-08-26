@@ -94,16 +94,9 @@ void estimate_distance(conj_graph_pack& gp,
      || config.est_mode == em_smoothing                                       // to estimate graph distances in the
      || config.est_mode == em_extensive)                                      // histogram
     {
-      INFO("Retaining insert size distribution for it");
-
       if (lib.data().insert_size_distribution.size() == 0) {
           WARN("No insert size distribution found, stopping distance estimation");
-          if (lib.data().valid) {
-              WARN("But lib is valid! Something is wrong!");
-          }
           return;
-//        auto streams = paired_binary_readers(lib, false, 0);
-//        GetInsertSizeHistogram(*streams, gp, lib.data().mean_insert_size, lib.data().insert_size_deviation, lib.data().insert_size_distribution);
       }
       WeightDEWrapper wrapper(lib.data().insert_size_distribution, lib.data().mean_insert_size);
       DEBUG("Weight Wrapper Done");
@@ -232,7 +225,7 @@ void exec_distance_estimation(conj_graph_pack& gp,
     exec_late_pair_info_count(gp, paired_indices);
     if (cfg::get().paired_mode) {
 		for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-		    if (cfg::get().ds.reads[i].data().valid) {
+		    if (cfg::get().ds.reads[i].data().mean_insert_size != 0.0) {
 		        estimate_distance(gp, cfg::get().ds.reads[i], paired_indices[i], clustered_indices[i]);
 		    }
 		}

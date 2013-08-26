@@ -370,8 +370,6 @@ struct debruijn_config {
   };
 
   struct DataSetData {
-    bool valid;
-
     size_t read_length;
     double mean_insert_size;
     double insert_size_deviation;
@@ -387,7 +385,7 @@ struct debruijn_config {
     typedef io::IReader<io::SingleReadSeq> SequenceSingleReadStream;
     typedef io::IReader<io::PairedReadSeq> SequencePairedReadStream;
 
-    DataSetData(): valid(true), read_length(0), mean_insert_size(0.0), insert_size_deviation(0.0), median_insert_size(0.0), insert_size_mad(0.0), average_coverage(0.0) {
+    DataSetData(): read_length(0), mean_insert_size(0.0), insert_size_deviation(0.0), median_insert_size(0.0), insert_size_mad(0.0), average_coverage(0.0) {
     }
 
   };

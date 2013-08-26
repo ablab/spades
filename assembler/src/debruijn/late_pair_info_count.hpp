@@ -46,7 +46,7 @@ void late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices) {
                 }
 
                 if (!insert_size_success) {
-                    cfg::get_writable().ds.reads[i].data().valid = false;
+                    cfg::get_writable().ds.reads[i].data().mean_insert_size = 0.0;
 
                     WARN("Unable to estimate insert size for paired library #" << i);
                     if (cfg::get().ds.reads[i].data().read_length <= cfg::get().K) {
