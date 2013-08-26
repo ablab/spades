@@ -66,7 +66,7 @@ static double logLikelihoodKMer(const KMer center,
   return res;
 }
 
-KMer KMerClustering::ConsensusWithMask(const vector<unsigned> & cl, const vector<unsigned> & mask, unsigned maskVal) const {
+KMer KMerClustering::ConsensusWithMask(const std::vector<size_t> & cl, const std::vector<size_t> & mask, size_t maskVal) const {
   size_t blockSize = cl.size();
 
   // consensus of a single string is trivial
@@ -94,7 +94,7 @@ KMer KMerClustering::ConsensusWithMask(const vector<unsigned> & cl, const vector
   return KMer(res);
 }
 
-KMer KMerClustering::Consensus(const vector<unsigned> & cl) const {
+KMer KMerClustering::Consensus(const std::vector<size_t> & cl) const {
   size_t blockSize = cl.size();
 
   // consensus of a single string is trivial
@@ -119,7 +119,7 @@ KMer KMerClustering::Consensus(const vector<unsigned> & cl) const {
   return KMer(res);
 }
 
-double KMerClustering::ClusterBIC(const vector<unsigned> & cl, const vector<StringCount> & centers, const vector<unsigned> & indices) const {
+double KMerClustering::ClusterBIC(const std::vector<size_t> & cl, const std::vector<StringCount> & centers, const std::vector<size_t> & indices) const {
   size_t blockSize = cl.size();
   size_t clusters = centers.size();
   if (blockSize == 0)
@@ -143,8 +143,8 @@ double KMerClustering::ClusterBIC(const vector<unsigned> & cl, const vector<Stri
   return loglik - (double)nparams * log((double)blockSize) / 2.0;
 }
 
-double KMerClustering::lMeansClustering(unsigned l, const std::vector<unsigned> &kmerinds,
-                                        std::vector<unsigned> & indices, std::vector<StringCount> & centers) {
+double KMerClustering::lMeansClustering(unsigned l, const std::vector<size_t> &kmerinds,
+                                        std::vector<size_t> & indices, std::vector<StringCount> & centers) {
   centers.resize(l); // there are l centers
 
   // if l==1 then clustering is trivial
@@ -275,7 +275,7 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<unsigned> 
   return ClusterBIC(kmerinds, centers, indices);
 }
 
-size_t KMerClustering::SubClusterSingle(const std::vector<unsigned> & block, vector< vector<unsigned> > & vec) {
+size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::vector< vector<size_t> > & vec) {
   size_t newkmers = 0;
 
   if (cfg::get().bayes_debug_output > 0) {
@@ -288,16 +288,16 @@ size_t KMerClustering::SubClusterSingle(const std::vector<unsigned> & block, vec
     }
   }
 
-  unsigned origBlockSize = (unsigned)block.size();
+  size_t origBlockSize = block.size();
   if (origBlockSize == 0) return 0;
 
   // Ad-hoc max cluster limit: we start to consider only thous k-mers which
   // multiplicity differs from maximum multiplicity by 10x.
-  unsigned maxcls = 0;
-  unsigned cntthr = std::max(10u, data_[block[0]].count / 10);
+  size_t maxcls = 0;
+  size_t cntthr = std::max(10u, data_[block[0]].count / 10);
   for (size_t i = 0; i < block.size(); ++i)
     maxcls += (data_[block[i]].count > cntthr);
-  maxcls = std::max(1u, maxcls);
+  maxcls = std::max(1ul, maxcls);
 
   if (cfg::get().bayes_debug_output > 0) {
     #pragma omp critical
@@ -306,10 +306,10 @@ size_t KMerClustering::SubClusterSingle(const std::vector<unsigned> & block, vec
     }
   }
 
-  std::vector<unsigned> indices(origBlockSize);
+  std::vector<size_t> indices(origBlockSize);
   double bestLikelihood = -std::numeric_limits<double>::infinity();
   std::vector<StringCount> bestCenters;
-  std::vector<unsigned> bestIndices(block.size());
+  std::vector<size_t> bestIndices(block.size());
 
   unsigned max_l = cfg::get().bayes_hammer_mode ? 1 : origBlockSize;
   for (unsigned l = 1; l <= max_l; ++l) {
@@ -410,20 +410,20 @@ size_t KMerClustering::SubClusterSingle(const std::vector<unsigned> & block, vec
     }
   }
 
-  for (size_t k=0; k<bestCenters.size(); ++k) {
+  for (size_t k = 0; k < bestCenters.size(); ++k) {
     if (bestCenters[k].second.first == 0) {
       continue; // superfluous cluster with zero elements
     }
-    std::vector<unsigned> v;
+    std::vector<size_t> v;
     if (bestCenters[k].second.first == 1) {
-      for (unsigned i = 0; i < origBlockSize; i++) {
+      for (size_t i = 0; i < origBlockSize; i++) {
         if (indices[i] == k) {
           v.push_back(block[i]);
           break;
         }
       }
     } else { // there are several kmers in this cluster
-      for (unsigned i = 0; i < origBlockSize; i++) {
+      for (size_t i = 0; i < origBlockSize; i++) {
         if (bestIndices[i] == k) {
           if (centersInCluster[k] == i) {
             v.insert(v.begin(), block[i]);
@@ -470,7 +470,7 @@ public:
   }
 };
 
-void KMerClustering::process(std::vector<std::vector<unsigned> > classes) {
+void KMerClustering::process(std::vector<std::vector<size_t> > &classes) {
   size_t newkmers = 0;
   size_t gsingl = 0, tsingl = 0, tcsingl = 0, gcsingl = 0, tcls = 0, gcls = 0, tkmers = 0, tncls = 0;
 
@@ -532,7 +532,7 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes) {
       }
       tsingl += 1;
     } else {
-      std::vector<std::vector<unsigned> > blocksInPlace;
+      std::vector<std::vector<size_t> > blocksInPlace;
 
       if (cfg::get().bayes_debug_output) {
 #       pragma omp critical
@@ -544,7 +544,7 @@ void KMerClustering::process(std::vector<std::vector<unsigned> > classes) {
 
       tncls += 1;
       for (size_t m = 0; m < blocksInPlace.size(); ++m) {
-        const std::vector<unsigned> &currentBlock = blocksInPlace[m];
+        const std::vector<size_t> &currentBlock = blocksInPlace[m];
         if (currentBlock.size() == 0)
           continue;
 

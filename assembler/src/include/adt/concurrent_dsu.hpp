@@ -164,11 +164,11 @@ class ConcurrentDSU {
 
   }
 
-  void get_sets(std::vector<std::vector<unsigned> > &otherWay) {
+  void get_sets(std::vector<std::vector<size_t> > &otherWay) {
     otherWay.resize(size);
     for (size_t i = 0; i < size; i++) {
       unsigned set = find_set(i);
-      otherWay.at(set).push_back(i);
+      otherWay[set].push_back(i);
     }
     otherWay.erase(remove_if(otherWay.begin(), otherWay.end(), zero_size),
                    otherWay.end());
@@ -195,7 +195,7 @@ private:
     data[y].dirty = 0;
   }
 
-  static bool zero_size(const std::vector<unsigned> & v) {
+  static bool zero_size(const std::vector<size_t> & v) {
     return v.size() == 0;
   }
 

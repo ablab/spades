@@ -144,7 +144,7 @@ int main(int argc, char * argv[]) {
       }
 
       // Cluster the Hamming graph
-      std::vector<std::vector<unsigned> > classes;
+      std::vector<std::vector<size_t> > classes;
       if (cfg::get().hamming_do || do_everything) {
         ConcurrentDSU uf(Globals::kmer_data->size());
         KMerHamClusterer clusterer(cfg::get().general_tau);
@@ -220,7 +220,7 @@ int main(int argc, char * argv[]) {
         VERIFY(is.good());
         Globals::kmer_data->binary_read(is, fname);
       }
-      std::vector<std::vector<unsigned>>().swap(classes);
+      std::vector<std::vector<size_t>>().swap(classes);
 
       // expand the set of solid k-mers
       if (cfg::get().expand_do || do_everything) {
