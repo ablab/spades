@@ -65,5 +65,18 @@ void WriteComponentsAlongPath(const Graph& g, Path<typename Graph::EdgeId> path,
     shared_ptr<GraphSplitter<Graph>> splitter = ReliableSplitterAlongPath<Graph>(g, path);
     WriteComponents<Graph>(g, folder_name, splitter, resulting_colorer, labeler);
 }
+
+//static void WriteFilteredComponents(const Graph& g,
+//		const string& folder_name,
+//		shared_ptr<GraphComponentFilter<Graph>> filter,
+//		shared_ptr<GraphSplitter<Graph>> splitter,
+//		shared_ptr<GraphColorer<Graph>> colorer,
+//		const GraphLabeler<Graph> &labeler) {
+//	EmptyGraphLinker<Graph> linker;
+////	shared_ptr<GraphComponentFilter<Graph>> checker = make_shared<ComponentSizeFilter<Graph>>(g, 1500, 2, 300);
+//	omnigraph::FilteringSplitterWrapper<Graph> filtered_splitter(splitter, filter);
+//	omnigraph::visualization::SplittingGraphVisualizer<Graph>(g, labeler, *colorer, linker).SplitAndVisualize(filtered_splitter, folder_name);
+//}
+
 }
 }

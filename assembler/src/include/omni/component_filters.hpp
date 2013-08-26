@@ -62,7 +62,7 @@ public:
     }
 
     bool ContainsEdge(const GraphComponent<Graph>& component, EdgeId e) const {
-        return component.edges().count(e) != component.edges().end();
+        return component.edges().find(e) != component.edges().end();
     }
 
     bool Check(const GraphComponent<Graph> &component) const {

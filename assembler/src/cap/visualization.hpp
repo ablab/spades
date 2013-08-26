@@ -6,7 +6,7 @@
 
 #pragma once
 #include "sequence_mapper.hpp"
-#include "omni/visualization_utils.hpp"
+#include "omni/visualization/visualization_utils.hpp"
 
 namespace cap {
 
@@ -39,16 +39,17 @@ public:
 	}
 
 	/*virtual*/
-	bool Check(const vector<VertexId> &vertices) const {
-    return true;
+	bool Check(const GraphComponent<Graph> &gc) const {
+		return true;
         TRACE("Check component");
-		if (vertices.size() <= vertex_number_)
+        auto &component = gc.vertices();
+		if (component.size() <= vertex_number_)
 			return false;
 
         bool length_flag = false,
              color_flag = false;
-		set < VertexId > component(vertices.begin(), vertices.end());
-		for (auto iterator = vertices.begin(); iterator != vertices.end();
+//		set < VertexId > component(vertices.begin(), vertices.end());
+		for (auto iterator = component.begin(); iterator != component.end();
 				++iterator) {
 			vector < EdgeId > edges = this->graph().OutgoingEdges(*iterator);
 			for (auto edge_iterator = edges.begin();
@@ -93,46 +94,45 @@ void PrintColoredGraphAroundEdge(const Graph& g,
 	EdgePosGraphLabeler<Graph> pos_labeler(g, pos);
 
 	CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
-	WriteComponentsAroundEdge(g, edge, output_filename,
-//				*ConstructColorer(coloring),
-			*ConstructBorderColorer(g, coloring), labeler);
+	GraphComponent<Graph> component = omnigraph::EdgeNeighborhood(g, edge);
+	omnigraph::visualization::WriteComponent(component, output_filename, coloring.ConstructColorer(component), labeler);
 }
 
 template<class Graph>
 void PrintColoredGraphWithColorFilter(const Graph &g, const ColorHandler<Graph> &coloring,
-    const CoordinatesHandler<Graph> &pos, const vector<string> &genome_names, const string &output_filename) {
+    const CoordinatesHandler<Graph> &pos, const vector<string> &genome_names, const string &output_folder) {
     
   size_t edge_length_bound = 1000000;
   size_t colors_number = coloring.max_colors();
   TColorSet restricted_color = TColorSet::AllColorsSet(colors_number);
 
     shared_ptr<GraphSplitter<Graph>> splitter = ReliableSplitter<Graph>(g, edge_length_bound, 30);
-	shared_ptr<ComponentSingleColorFilter<Graph>> filter = make_shared<ComponentSingleColorFilter<Graph>>(g, coloring, restricted_color, edge_length_bound, 2);
+	shared_ptr<omnigraph::GraphComponentFilter<Graph>> filter = make_shared<ComponentSingleColorFilter<Graph>>(g, coloring, restricted_color, edge_length_bound, 2);
+	shared_ptr<omnigraph::GraphSplitter<Graph>> fs = make_shared<omnigraph::FilteringSplitterWrapper<Graph> >(splitter, filter);
 	LengthIdGraphLabeler<Graph> basic_labeler(g);
 	EdgeCoordinatesGraphLabeler<Graph> pos_labeler(g, pos, genome_names);
 
 	CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
-	WriteComponents(g, splitter, filter, output_filename,
-			*ConstructBorderColorer(g, coloring), labeler);
+	omnigraph::visualization::WriteComponents(g, output_folder, fs, coloring.ConstructColorer(), labeler);
 }
 
 //fixme code duplication
 template<class Graph>
 void PrintColoredGraphWithColorFilter(const Graph &g, const ColorHandler<Graph> &coloring,
-    const EdgesPositionHandler<Graph> &pos, const string &output_filename) {
+    const EdgesPositionHandler<Graph> &pos, const string &output_folder) {
 
   size_t edge_length_bound = 1000000;
   size_t colors_number = coloring.max_colors();
   TColorSet restricted_color = TColorSet::AllColorsSet(colors_number);
 
-    ReliableSplitter<Graph> splitter(g, 30, edge_length_bound);
-    ComponentSingleColorFilter<Graph> filter(g, coloring, restricted_color, edge_length_bound, 2);
+    shared_ptr<omnigraph::GraphSplitter<Graph>> splitter = ReliableSplitter<Graph>(g, edge_length_bound, 30);
+	shared_ptr<omnigraph::GraphComponentFilter<Graph>> filter = make_shared<ComponentSingleColorFilter<Graph>>(g, coloring, restricted_color, edge_length_bound, 2);
+    shared_ptr<omnigraph::GraphSplitter<Graph>> fs = make_shared<omnigraph::FilteringSplitterWrapper<Graph>>(splitter, filter);
     LengthIdGraphLabeler<Graph> basic_labeler(g);
     EdgePosGraphLabeler<Graph> pos_labeler(g, pos);
 
     CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
-    WriteComponents(g, splitter, filter, output_filename,
-            *ConstructBorderColorer(g, coloring), labeler);
+    omnigraph::visualization::WriteComponents(g, output_folder, fs, coloring.ConstructColorer(), labeler);
 }
 
 //todo alert!!! magic constants!!!
@@ -147,12 +147,6 @@ void WriteComponentsAlongSequence(
     LengthIdGraphLabeler < Graph > basic_labeler(gp.g);
     EdgePosGraphLabeler < Graph > pos_labeler(gp.g, gp.edge_pos);
     CompositeLabeler < Graph > labeler(basic_labeler, pos_labeler);
-
-    WriteComponentsAlongPath(gp.g,
-            labeler, file_name,
-            split_edge_length, component_vertex_number,
-            MapperInstance(gp)->MapSequence(s),
-            *ConstructBorderColorer(gp.g, coloring));
 }
 
 template<class gp_t>

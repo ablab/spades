@@ -150,10 +150,6 @@ public:
 	}
 };
 
-
-
-
-
 template<class Graph>
 class GraphColorer : public ElementColorer<typename Graph::VertexId>, public ElementColorer<typename Graph::EdgeId>{
 public:
@@ -164,6 +160,22 @@ public:
     set<typename Iter::value_type> ColoredWith(Iter begin, Iter end, const string &color) {
     	return ElementColorer<typename Iter::value_type>::ColoredWith(begin, end, color);
     }
+};
+
+template<class Graph>
+class DelegatingGraphColorer : public GraphColorer<Graph> {
+private:
+	const GraphColorer<Graph> &inner_colorer_;
+public:
+	DelegatingGraphColorer(const GraphColorer<Graph> &inner_colorer) : inner_colorer_(inner_colorer) {
+	}
+
+	string GetValue(typename Graph::VertexId v) const {
+		return inner_colorer_.GetValue(v);
+	}
+	string GetValue(typename Graph::EdgeId e) const {
+		return inner_colorer_.GetValue(e);
+	}
 };
 
 template<typename Graph>
@@ -187,7 +199,7 @@ public:
 //	}
 
 	BorderDecorator(const GraphComponent<Graph> &component,
-			const GraphColorer<Graph> &colorer, const string &border_color) :
+			const GraphColorer<Graph> &colorer, const string &border_color = "yellow") :
 			component_(component), vertex_colorer_(colorer), edge_colorer_(colorer), border_color_(border_color) {
 	}
 
@@ -201,6 +213,11 @@ public:
 
 	string GetValue(EdgeId e) const {
 		return edge_colorer_.GetValue(e);
+	}
+
+	static shared_ptr<BorderDecorator<Graph>> GetInstance(const GraphComponent<Graph> &component,
+			const GraphColorer<Graph> &colorer, const string &border_color = "yellow") {
+		return make_shared<BorderDecorator<Graph>>(component, colorer, border_color);
 	}
 };
 

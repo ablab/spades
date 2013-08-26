@@ -311,7 +311,7 @@ class CapEnvironmentManager {
       genomes_names.push_back(gname + "_RC");
     }
     cap::PrintColoredGraphWithColorFilter(*env_->graph_, *env_->coloring_,
-        env_->coordinates_handler_, genomes_names, folder + "/pics/graph.dot");
+        env_->coordinates_handler_, genomes_names, folder + "/pics/");
   }
 
   void SetGenomes(const std::vector<std::string> &genomes_paths,

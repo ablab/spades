@@ -65,7 +65,7 @@ void MakeSaves(gp_t& gp, ContigStreamsPtr streams, const string& root,
     FillPositions(gp, *streams, coordinates_handler);
 
     PrintColoredGraphWithColorFilter(gp.g, coloring, gp.edge_pos,
-            root + "colored_split_graph.dot");
+            root + "colored_split_graph");
 }
 
 template<class gp_t>

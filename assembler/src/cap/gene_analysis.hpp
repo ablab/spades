@@ -338,7 +338,7 @@ void WriteGeneLocality(const GeneCollection& gene_collection, const gp_t& gp,
         total_gene_sequence = total_gene_sequence + genome.Subseq(pos.first.start_pos, pos.first.end_pos);
       }
     }
-    WriteComponentsAlongSequence(gp, folder + ToString(it->first) + ".dot",
+    WriteComponentsAlongSequence(gp, folder + ToString(it->first) + "/",
                                  100000, 50, total_gene_sequence, coloring);
   }
 }

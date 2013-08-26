@@ -443,11 +443,9 @@ class SimpleInDelCorrector {
 	}
 
 	void GenPicAroundEdge(EdgeId e, size_t cnt) {
-    utils::MakeDirPath("ref_correction");
-		WriteComponentsAroundEdge(g_, e,
-				"ref_correction/" + ToString(cnt) + ".dot",
-				*ConstructColorer(coloring_), StrGraphLabeler<Graph>(g_),
-				100000, 10);
+		utils::MakeDirPath("ref_correction");
+		GraphComponent<Graph> component = omnigraph::EdgeNeighborhood(g_, e, 10, 100000);
+		omnigraph::visualization::WriteComponent(g_, "ref_correction/" + ToString(cnt) + ".dot", component, coloring_.GetInstance(), StrGraphLabeler<Graph>(g_));
 	}
 
 	void CorrectGenomePath(size_t genome_start, size_t genome_end,
