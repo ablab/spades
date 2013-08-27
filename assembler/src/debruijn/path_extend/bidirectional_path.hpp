@@ -901,7 +901,7 @@ public:
                     g_.CheckUniqueOutgoingEdge(nextVertex) &&
                     g_.OutgoingEdges(nextVertex)[0] == g_.conjugate(lastEdge)) {
 
-                INFO("Came to interstrand bulge " << g_.int_id(lastEdge));
+                DEBUG("Came to interstrand bulge " << g_.int_id(lastEdge));
                 return true;
             }
         }
@@ -921,7 +921,7 @@ public:
             EdgeId bulgeEdge = bulgeEdges[0] == lastEdge ? bulgeEdges[1] : bulgeEdges[0];
 
             if (bulgeEdge == g_.conjugate(lastEdge)) {
-                INFO("In interstrand bulge " << g_.int_id(lastEdge));
+                DEBUG("In interstrand bulge " << g_.int_id(lastEdge));
                 return true;
             }
         }

@@ -97,6 +97,8 @@ andrey_params {
 	#include "path_extend/pe_params.info"
 }
 
+avoid_rc_connections true
+
 ; Produce info for all components of graph and run repeat resolver for each component.
 componential_resolve false
 

@@ -519,6 +519,7 @@ struct debruijn_config {
 
   resolving_mode rm;
   path_extend::pe_config::MainPEParamsT pe_params;
+  bool avoid_rc_connections;
 
   construction con;
   distance_estimator de;

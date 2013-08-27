@@ -620,6 +620,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   if (!cfg.use_scaffolder) {
       cfg.pe_params.param_set.scaffolder_options.on = false;
   }
+  load(cfg.avoid_rc_connections, pt, "avoid_rc_connections");
 
   load(cfg.mask_all, pt, "mask_all");
 
