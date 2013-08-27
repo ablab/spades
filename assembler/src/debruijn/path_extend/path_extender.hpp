@@ -119,7 +119,12 @@ public:
     }
 
 	void MakeBestChoice(BidirectionalPath& path, pair<EdgeId, EdgeId>& edges) {
-		BidirectionalPath experiment(path);
+	    EdgeId last = path.At(path.Size() - 1);
+        while (path.Size() > 2 && path.At(path.Size() - 1) == last
+                && path.At(path.Size() - 2) == edges.first) {
+            path.PopBack(2);
+        }
+	    BidirectionalPath experiment(path);
 		double maxWeight = chooser_.CountWeight(experiment, edges.second);
 		double diff = maxWeight - chooser_.CountWeight(experiment, edges.first);
 		size_t maxIter = 0;
@@ -127,7 +132,6 @@ public:
 			double weight = chooser_.CountWeight(experiment, edges.first);
 			if (weight > 0) {
 				MakeCycleStep(experiment, edges.first);
-
 				weight = chooser_.CountWeight(experiment, edges.second);
 				double weight2 = chooser_.CountWeight(experiment, edges.first);
 				if (weight > maxWeight
