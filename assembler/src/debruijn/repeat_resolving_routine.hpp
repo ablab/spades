@@ -1154,7 +1154,7 @@ void resolve_repeats() {
         }
     }
 
-    if (no_valid_libs) {
+    if (cfg::get().paired_mode && no_valid_libs) {
         WARN("Insert size was not estimated for any of the paired libraries, repeat resolution module will not run.");
     }
 
