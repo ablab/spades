@@ -211,15 +211,15 @@ public:
 				if (!g_.IsDeadEnd(g_.EdgeEnd(*iter))) {
 					if (continued_edges.find(*iter) == continued_edges.end()) {
 						if ((replacement.find(*iter) != replacement.end() && continued_edges.find(replacement[*iter]) != continued_edges.end())) {
-							INFO("found in teplacement, edges "<< g_.int_id(*iter) <<" " <<g_.int_id(replacement[*iter]) <<" skipping ");
+						    TRACE("found in teplacement, edges "<< g_.int_id(*iter) <<" " <<g_.int_id(replacement[*iter]) <<" skipping ");
 							continue;
 						}
-						INFO("noncontinued end left " << g_.int_id(*iter));
+						TRACE("noncontinued end left " << g_.int_id(*iter));
 						noncontinued++;
 					} else
 						continued++;
 				} else {
-					INFO("dead end left " << g_.int_id(*iter));
+				    TRACE("dead end left " << g_.int_id(*iter));
 					long_gapped++;
 				}
 			}

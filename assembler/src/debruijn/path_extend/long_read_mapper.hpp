@@ -20,6 +20,7 @@ public:
               same_edge_corr_(gp_.g),
               ps_(gp_.g),
               gap_closer_(gp_.g, &ps_) */{
+        mapper_ = MapperInstance(gp_);
         //paths_searcher_config conf;
         //conf.depth_neigh_search = 5;  // max path len (in edges)
         //conf.max_len_path = 100000;  // max path len (in k-mers)
@@ -32,14 +33,14 @@ public:
             PathStorage<Graph>& storage) {
         if (cfg::get().use_multithreading) {
             auto single_streams = single_binary_readers(
-                    lib, false, false);
+                    lib, false, true);
             if (single_streams->size() == (size_t) 1) {
                 ProcessReads(*single_streams, storage);
             } else {
                 ProcessSingleReadsParallel(*single_streams, storage);
             }
         } else {
-            auto single_streams = single_binary_readers(lib, false, false);
+            auto single_streams = single_binary_readers(lib, false, true);
             single_streams->release();
             io::MultifileReader<io::SingleReadSeq> stream(single_streams->get(),
                                                           true);
@@ -149,10 +150,10 @@ private:
     }
 
     template<class SingleRead>
-    vector<EdgeId> ProcessSingleRead(const SingleRead& r) {
+    vector<EdgeId> ProcessSingleRead(const SingleRead& r) const {
         //TODO: if we can really use following code then we should delete everything about SameEdgeDeletionCorrector and CloseGapsCorrector!!!
-        auto mapper = MapperInstance(gp_);
-        return mapper->FindReadPath(r.sequence());
+        //auto mapper = MapperInstance(gp_);
+        return mapper_->FindReadPath(r.sequence());
         /*MappingPath<EdgeId> path;
          path.join(mapper_.MapSequence(r.sequence()));
          SimpleMappingContig mc(r.sequence(), path);
@@ -160,7 +161,7 @@ private:
          MappingContig * gc = gap_closer_.Correct(dc);
          return gc->PathSeq();*/
     }
-
+    std::shared_ptr<const NewExtendedSequenceMapper<typename conj_graph_pack::graph_t, typename conj_graph_pack::index_t> > mapper_;
     conj_graph_pack& gp_;
     //ExtendedSequenceMapper<Graph, conj_graph_pack::index_t> mapper_;
     //SameEdgeDeletionCorrector same_edge_corr_;

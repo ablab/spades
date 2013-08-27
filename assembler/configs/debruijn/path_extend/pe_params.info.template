@@ -118,13 +118,13 @@ multicell {
 long_reads {
 
     pacbio_reads {
-        filtering   1.5
+        filtering   2.5
         priority    4.0
     }
 
     single_reads {
-        filtering   1.5
-        priority    4.0
+        filtering   6.5
+        priority    5.0
     }
 
     coverage_base_rr {

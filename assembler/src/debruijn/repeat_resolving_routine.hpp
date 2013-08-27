@@ -1068,8 +1068,6 @@ void AddSingleLibrary(
             long_paths, cfg::get().pe_params.long_reads.single_reads.filtering,
             cfg::get().pe_params.long_reads.single_reads.priority);
     long_reads_libs.push_back(single_storage);
-    long_single.DumpToFile(cfg::get().output_dir + "long_reads_paths.mpr",
-                                           gp.edge_pos);
 }
 
 void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
@@ -1087,6 +1085,8 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
                              cfg::get().output_dir, long_reads_libs);
         } else if (type == io::LibraryType::PairedEnd
                 || type == io::LibraryType::MatePairs) {
+            AddSingleLibrary(conj_gp, cfg::get().ds.reads[i],
+                             cfg::get().output_dir, long_reads_libs);
             pe_indexes.push_back(&clustered_indices[i]);
             pe_scaf_indexes.push_back(&paired_indexes[i]);
             indexes.push_back(i);

@@ -330,6 +330,7 @@ public:
 
 	virtual EdgeContainer Filter(BidirectionalPath& path,
 			EdgeContainer& edges) {
+	    DEBUG("Paired-end extension chooser");
 		if (edges.empty()) {
 			return edges;
 		}
@@ -345,6 +346,9 @@ public:
 				changed = false;
 			}
 			result = new_result;
+		}
+		if (result.size() == 1){
+		    DEBUG("Paired-end extension chooser helped");
 		}
 		return result;
 	}
@@ -516,12 +520,11 @@ public:
 };
 
 bool EdgeWithWeightCompareReverse(const pair<EdgeId, double>& p1,
-                           const pair<EdgeId, double>& p2) {
+                                      const pair<EdgeId, double>& p2) {
     return p1.second > p2.second;
 }
 
 class LongReadsExtensionChooser : public ExtensionChooser {
-
 public:
     LongReadsExtensionChooser(const Graph& g, PathContainer& pc,
                               double filtering_threshold,
@@ -544,8 +547,7 @@ public:
         }
         if (edges.empty()) {
             return edges;
-        }
-        DEBUG("We in Filter of LongReadsExtensionChooser");
+        }DEBUG("We in Filter of LongReadsExtensionChooser");
         path.Print();
         map<EdgeId, double> weights_cands;
         for (auto it = edges.begin(); it != edges.end(); ++it) {
@@ -556,8 +558,9 @@ public:
         for (auto it = support_paths.begin(); it != support_paths.end(); ++it) {
             auto positions = (*it)->FindAll(path.Back());
             for (size_t i = 0; i < positions.size(); ++i) {
-                if ((int) positions[i] < (int)(*it)->Size() - 1
-                        && EqualBegins(path, (int)path.Size() - 1, **it, positions[i])) {
+                if ((int) positions[i] < (int) (*it)->Size() - 1
+                        && EqualBegins(path, (int) path.Size() - 1, **it,
+                                       positions[i])) {
                     if (UniqueBackPath(**it, positions[i])) {
                         EdgeId next = (*it)->At(positions[i] + 1);
                         weights_cands[next] += (*it)->GetWeight();
@@ -565,8 +568,7 @@ public:
                     }
                 }
             }
-        }
-        DEBUG("Candidates");
+        }DEBUG("Candidates");
         for (auto iter = weights_cands.begin(); iter != weights_cands.end();
                 ++iter) {
             DEBUG("Candidate " << g_.int_id(iter->first) << " weight " << iter->second);
@@ -610,23 +612,36 @@ private:
     }
 
     bool UniqueEdge(EdgeId e) const {
+        if (g_.length(e) > cfg::get().rr.max_repeat_length)
+            return true;DEBUG("Analyze unique edge " << g_.int_id(e));
         auto cov_paths = coverage_map_.GetCoveringPaths(e);
+        DEBUG("***start***" << cov_paths.size() <<"***");
+        for (auto it1 = cov_paths.begin(); it1 != cov_paths.end(); ++it1) {
+            (*it1)->Print();
+        }
+
         for (auto it1 = cov_paths.begin(); it1 != cov_paths.end(); ++it1) {
             auto pos1 = (*it1)->FindAll(e);
-            if (pos1.size() > 1)
+            if (pos1.size() > 1) {
+                DEBUG("***not unique " << g_.int_id(e) << " len " << g_.length(e) << "***");
                 return false;
+            }
             for (auto it2 = it1; it2 != cov_paths.end(); it2++) {
                 auto pos2 = (*it2)->FindAll(e);
-                if (pos2.size() > 1)
+                if (pos2.size() > 1) {
+                    DEBUG("***not unique " << g_.int_id(e) << " len " << g_.length(e) << "***");
                     return false;
-                double w1 = (*it1)->GetWeight();
-                double w2 = (*it2)->GetWeight();
-                if (w1 > filtering_threshold_ && w2 > filtering_threshold_
-                        && !ConsistentPath(**it1, pos1[0], **it2, pos2[0]))
-                    return false;
+                }
+                if (!ConsistentPath(**it1, pos1[0], **it2, pos2[0])) {
+                    DEBUG("Check inconsistent");
+                    if (CheckInconsistence(**it1, pos1[0], **it2, pos2[0],
+                                           cov_paths)) {
+                        DEBUG("***not unique " << g_.int_id(e) << " len " << g_.length(e) << "***");
+                        return false;
+                    }
+                }
             }
-        }
-        DEBUG("Edge " << g_.int_id(e) << " is unique.");
+        }DEBUG("Edge " << g_.int_id(e) << " is unique.");
         return true;
     }
 
@@ -634,6 +649,80 @@ private:
                         const BidirectionalPath& path2, size_t pos2) const {
         return EqualBegins(path1, pos1, path2, pos2)
                 && EqualEnds(path1, pos1, path2, pos2);
+    }
+
+    bool SignificantlyDiffWeights(double w1, double w2) const {
+        if (w1 > filtering_threshold_ and w2 > filtering_threshold_) {
+            if (w1 > w2 * priority_threshold_
+                    or w2 > w1 * priority_threshold_) {
+                return true;
+            }
+            return false;
+        }
+        return true;
+    }
+
+    bool CheckInconsistence(
+            const BidirectionalPath& path1, size_t pos1,
+            const BidirectionalPath& path2, size_t pos2,
+            const std::set<BidirectionalPath*>& cov_paths) const {
+        int first_diff_pos1 = FirstNotEqualPosition(path1, pos1, path2, pos2);
+        int first_diff_pos2 = FirstNotEqualPosition(path2, pos2, path1, pos1);
+        if (first_diff_pos1 != -1) {
+            const BidirectionalPath cand1 = path1.SubPath(first_diff_pos1,
+                                                          pos1 + 1);
+            const BidirectionalPath cand2 = path2.SubPath(first_diff_pos2,
+                                                          pos2 + 1);
+            std::pair<double, double> weights = GetSubPathsWeights(cand1, cand2,
+                                                                   cov_paths);
+            DEBUG("Not equal begin " << g_.int_id(path1.At(first_diff_pos1)) << " weight " << weights.first << "; " << g_.int_id(path2.At(first_diff_pos2)) << " weight " << weights.second);
+            if (!SignificantlyDiffWeights(weights.first, weights.second)) {
+                INFO("not significantly different");
+                return true;
+            }
+        }
+        int last_diff_pos1 = LastNotEqualPosition(path1, pos1, path2, pos2);
+        int last_diff_pos2 = LastNotEqualPosition(path2, pos2, path1, pos1);
+        if (last_diff_pos1 != -1) {
+            const BidirectionalPath cand1 = path1.SubPath(pos1,
+                                                          last_diff_pos1 + 1);
+            const BidirectionalPath cand2 = path2.SubPath(pos2,
+                                                          last_diff_pos2 + 1);
+            std::pair<double, double> weights = GetSubPathsWeights(cand1, cand2,
+                                                                   cov_paths);
+            DEBUG("Not equal end " << g_.int_id(path1.At(last_diff_pos1)) << " weight " << weights.first << "; " << g_.int_id(path2.At(last_diff_pos2)) << " weight " << weights.second);
+            if (!SignificantlyDiffWeights(weights.first, weights.second)) {
+                INFO("not significantly different");
+                return true;
+            }
+        }
+        return false;
+    }
+
+    std::pair<double, double> GetSubPathsWeights(
+            const BidirectionalPath& cand1, const BidirectionalPath& cand2,
+            const std::set<BidirectionalPath*>& cov_paths) const {
+        double weight1 = 0.0;
+        double weight2 = 0.0;
+        for (auto iter = cov_paths.begin(); iter != cov_paths.end(); ++iter) {
+            BidirectionalPath* path = *iter;
+            if (ContainSubPath(*path, cand1)) {
+                weight1 += path->GetWeight();
+            } else if (ContainSubPath(*path, cand2)) {
+                weight2 += path->GetWeight();
+            }
+        }
+        return std::make_pair(weight1, weight2);
+    }
+
+    bool ContainSubPath(const BidirectionalPath& path,
+                        const BidirectionalPath& subpath) const {
+        for (size_t i = 0; i < path.Size(); ++i) {
+            if (path.CompareFrom(i, subpath)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     vector<pair<EdgeId, double> > MapToSortVector(
@@ -650,6 +739,4 @@ private:
     std::set<EdgeId> unique_edges_;
 };
 }
-
-
 #endif /* EXTENSION_HPP_ */

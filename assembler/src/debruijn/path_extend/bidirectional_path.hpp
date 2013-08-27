@@ -787,8 +787,8 @@ private:
 
 };
 
-bool EqualBegins(const BidirectionalPath& path1, int pos1,
-                 const BidirectionalPath& path2, int pos2) {
+int FirstNotEqualPosition(const BidirectionalPath& path1, int pos1,
+                       const BidirectionalPath& path2, int pos2) {
     int cur_pos1 = pos1;
     int cur_pos2 = pos2;
     while (cur_pos1 >= 0 && cur_pos2 >= 0) {
@@ -796,14 +796,17 @@ bool EqualBegins(const BidirectionalPath& path1, int pos1,
             cur_pos1--;
             cur_pos2--;
         } else {
-            return false;
+            return cur_pos1;
         }
     }
-    return true;
+    return -1;
 }
-
-bool EqualEnds(const BidirectionalPath& path1, int pos1,
-               const BidirectionalPath& path2, int pos2) {
+bool EqualBegins(const BidirectionalPath& path1, int pos1,
+                 const BidirectionalPath& path2, int pos2) {
+    return FirstNotEqualPosition(path1, pos1, path2, pos2) == -1;
+}
+int LastNotEqualPosition(const BidirectionalPath& path1, int pos1,
+                      const BidirectionalPath& path2, int pos2) {
     int cur_pos1 = pos1;
     int cur_pos2 = pos2;
     while (cur_pos1 < (int) path1.Size() && cur_pos2 < (int) path2.Size()) {
@@ -811,16 +814,18 @@ bool EqualEnds(const BidirectionalPath& path1, int pos1,
             cur_pos1++;
             cur_pos2++;
         } else {
-            return false;
+            return cur_pos1;
         }
     }
-    return true;
+    return -1;
 }
-
+bool EqualEnds(const BidirectionalPath& path1, int pos1,
+               const BidirectionalPath& path2, int pos2) {
+    return LastNotEqualPosition(path1, pos1, path2, pos2) == -1;
+}
 bool PathIdCompare(const BidirectionalPath* p1, const BidirectionalPath* p2) {
     return p1->GetId() < p2->GetId();
 }
-
 
 class PathContainer {
 

@@ -364,11 +364,11 @@ public:
 		if (path.size() > 0) {
 			vector<EdgePosition> res = (tmp_pos[path[0]]);
 
-			DEBUG(this->g().int_id(path[0]) << "  " << res.size() << " positions");
+			TRACE(this->g().int_id(path[0]) << "  " << res.size() << " positions");
 
 			int len = (int) this->g().length(path[0]);
 			for (size_t i = 1; i < path.size(); i++) {
-				DEBUG(this->g().int_id(path[i]) << "  "<< tmp_pos[path[i]].size() << " positions");
+			    TRACE(this->g().int_id(path[i]) << "  "<< tmp_pos[path[i]].size() << " positions");
 				if (is_careful())
 					res = RangeGluePositionsLists(res, tmp_pos[path[i]],
 							max_single_gap_, len);
