@@ -338,6 +338,8 @@ public:
 
 class ScaffoldingExtensionChooser: public ExtensionChooser {
 
+    bool cluster_info_;
+
     static bool compare(pair<int,double> a, pair<int,double> b)
     {
         if (a.first < b.first) return true;
@@ -345,8 +347,7 @@ class ScaffoldingExtensionChooser: public ExtensionChooser {
     }
 
 public:
-	ScaffoldingExtensionChooser(Graph& g, WeightCounter * wc, double priority): ExtensionChooser(g, wc, priority) {
-
+	ScaffoldingExtensionChooser(Graph& g, WeightCounter * wc, double priority, bool cluster_info = true): ExtensionChooser(g, wc, priority), cluster_info_(cluster_info) {
     }
 
 	double AddInfoFromEdge(const std::vector<int>& distances, const std::vector<double>& weights, std::vector<pair<int,double> >& histogram, const BidirectionalPath& path, size_t j, double threshold)
@@ -488,7 +489,7 @@ public:
         }
         EdgeContainer result;
 
-        if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
+        if (cluster_info_) {
             FindBestFittedEdgesForClustered(path, edges, result);
         } else {
             FindBestFittedEdges(path, edges, result);

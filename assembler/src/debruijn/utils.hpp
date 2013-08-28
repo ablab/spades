@@ -176,16 +176,16 @@ public:
   {
   }
 
-  void FillIndex(omnigraph::PairedInfoIndexT<Graph>& paired_index) {
+  bool FillIndex(omnigraph::PairedInfoIndexT<Graph>& paired_index) {
     if (streams_.size() == 1) {
-      FillUsualIndex(paired_index);
+      return FillUsualIndex(paired_index);
     } else {
-      FillParallelIndex(paired_index);
+      return FillParallelIndex(paired_index);
     }
   }
 
 private:
-	template<class PairedRead>
+  template<class PairedRead>
   void ProcessPairedRead(omnigraph::PairedInfoIndexT<Graph>& paired_index, const PairedRead& p_r)
   {
 		Sequence read1 = p_r.first().sequence();
@@ -217,10 +217,11 @@ private:
   /**
    * Method reads paired data from stream, maps it to genome and stores it in this PairInfoIndex.
    */
-  void FillUsualIndex(omnigraph::PairedInfoIndexT<Graph>& paired_index) {
+  bool FillUsualIndex(omnigraph::PairedInfoIndexT<Graph>& paired_index) {
     for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
       paired_index.AddPairInfo(*it, *it, 0., 0., 0.);
     }
+    size_t initial_size = paired_index.size();
 
     INFO("Processing paired reads (takes a while)");
 
@@ -233,12 +234,15 @@ private:
       ProcessPairedRead(paired_index, p_r);
       VERBOSE_POWER(++n, " paired reads processed");
     }
+
+    return paired_index.size() > initial_size;
   }
 
-  void FillParallelIndex(omnigraph::PairedInfoIndexT<Graph>& paired_index) {
+  bool FillParallelIndex(omnigraph::PairedInfoIndexT<Graph>& paired_index) {
     for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
       paired_index.AddPairInfo(*it, *it, 0., 0., 0.);
     }
+    size_t initial_size = paired_index.size();
 
     INFO("Processing paired reads (takes a while)");
     size_t nthreads = streams_.size();
@@ -299,6 +303,8 @@ private:
     INFO("Index built");
 
     DEBUG("Size of map is " << paired_index.size());
+
+    return paired_index.size() > initial_size;
   }
 
 private:
