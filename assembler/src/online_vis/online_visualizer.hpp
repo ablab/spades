@@ -46,17 +46,28 @@ class OnlineVisualizer {
     DEBUG("Environment loaded");
   }
 
-  void run() {
-    History& history = History::GetHistory();
-    bool done = false;
-
-    while (!done) {
+  string read_line() {
       char* line = readline(prompt);
       if (!line)
         exit(1);
+      string answer(line);
+      free(line);
+      return answer;
+  }
 
-      if (*line) {
-        string command_with_args(line);
+  void run(const string& batch_file = "") {
+    History& history = History::GetHistory();
+
+    string command_with_args;
+    if (batch_file != "") {
+        command_with_args = "batch " + batch_file;
+    } else {
+        command_with_args = read_line();
+    }
+    bool done = false;
+
+    while (!done) {
+      if (!command_with_args.empty()) {
         stringstream ss(command_with_args);
         TRACE("Delegating to the ArgumentList class");
         ArgumentList arg_list(ss);
@@ -68,8 +79,8 @@ class OnlineVisualizer {
         const Command<Env>& command = command_mapping_.GetCommand(command_string);
         command.Execute(current_environment_, loaded_environments_, arg_list);
         history.AddEntry(processed_command);
-        free(line);
       }
+      command_with_args = read_line();
     }
   }
 
