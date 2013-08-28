@@ -652,6 +652,7 @@ void SimplifyGraph(conj_graph_pack &gp,
                    omnigraph::GraphLabeler<Graph>& /*labeler*/,
                    detail_info_printer& printer, size_t iteration_count) {
     //ec auto threshold
+	FlankingCoverage<Graph, Index::InnerIndexT> flanking_cov(gp.g, gp.index.inner_index(), 50);
     double determined_coverage_threshold =
             FindErroneousConnectionsCoverageThreshold(gp.g,
                                                       gp.index.inner_index());
@@ -700,6 +701,13 @@ void SimplifyGraph(conj_graph_pack &gp,
         INFO("Index attached");
     }
 
+	printer(ipp_removing_isolated_edges);
+	cout << cfg::get().simp.her.uniqueness_length << cfg::get().simp.her.unreliability_threshold << cfg::get().simp.her.relative_threshold << endl;
+
+    if (cfg::get().topology_simplif_enabled && cfg::get().simp.her.enabled)
+		HiddenECRemover<Graph>(gp.g, cfg::get().simp.her.uniqueness_length, flanking_cov,
+				cfg::get().simp.her.unreliability_threshold, determined_coverage_threshold, cfg::get().simp.her.relative_threshold).Process();
+
     if (cfg::get().gap_closer_enable && cfg::get().gc.after_simplify)
         CloseGaps(gp);
 
@@ -716,7 +724,6 @@ void SimplifyGraph(conj_graph_pack &gp,
                                cfg::get().simp.ier.max_coverage,
                                max_length)
             .RemoveIsolatedEdges();
-    printer(ipp_removing_isolated_edges);
     printer(ipp_final_simplified);
 
     DEBUG("Graph simplification finished");

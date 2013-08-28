@@ -282,6 +282,13 @@ struct debruijn_config {
       size_t max_length_difference;
     };
 
+    struct hidden_ec_remover {
+	    bool enabled;
+	    size_t uniqueness_length;
+	    double unreliability_threshold;
+	    double relative_threshold;
+    };
+
     tip_clipper tc;
     topology_tip_clipper ttc;
     bulge_remover br;
@@ -293,6 +300,7 @@ struct debruijn_config {
     max_flow_ec_remover mfec;
     isolated_edges_remover ier;
     complex_bulge_remover cbr;
+    hidden_ec_remover her;
   };
 
   struct construction {

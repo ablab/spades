@@ -401,4 +401,99 @@ class SimpleMultiplicityCountingChimericEdgeRemover :
     }
 };
 
+
+template<class Graph>
+class HiddenECRemover: public EdgeProcessingAlgorithm<Graph,
+		std::less<typename Graph::EdgeId>> {
+	typedef std::less<typename Graph::EdgeId> Comparator;
+	typedef EdgeProcessingAlgorithm<Graph, Comparator> base;
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+private:
+	size_t lentgh_bound_;
+	double unreliability_threshold_;
+	double ec_threshold_;
+	double relative_threshold_;
+	const AbstractFlankingCoverage<Graph> &flanking_coverage_;
+	EdgeRemover<Graph> edge_remover_;
+private:
+	void RemoveHiddenEC(EdgeId edge) {
+		if (this->g().length(edge) <= this->g().k())
+			edge_remover_.DeleteEdge(edge);
+		else {
+			auto split_result = this->g().SplitEdge(edge, this->g().k());
+			edge_remover_.DeleteEdge(split_result.first);
+		}
+	}
+
+	void RemoveHiddenECWithNoCompression(EdgeId edge) {
+		if (this->g().length(edge) <= this->g().k())
+			edge_remover_.DeleteEdgeWithNoCompression(edge);
+		else {
+			auto split_result = this->g().SplitEdge(edge, this->g().k());
+			edge_remover_.DeleteEdgeWithNoCompression(split_result.first);
+		}
+	}
+
+	void DisconnectEdges(VertexId v) {
+		while(!this->g().IsDeadEnd(v)) {
+			RemoveHiddenECWithNoCompression(this->g().OutgoingEdges(v)[0]);
+		}
+	}
+
+	bool FindHiddenEC(VertexId v) {
+		auto edges = this->g().OutgoingEdges(v);
+		if(flanking_coverage_.GetInCov(edges[0]) > flanking_coverage_.GetInCov(edges[1])) {
+			auto tmp = edges[0];
+			edges[0] = edges[1];
+			edges[1] = tmp;
+		}
+		cout << flanking_coverage_.GetInCov(edges[0]) << " " << flanking_coverage_.GetInCov(edges[1]) << endl;
+		if(flanking_coverage_.GetInCov(edges[1]) < unreliability_threshold_) {
+			DisconnectEdges(v);
+//			cout << "disconnected" << endl;
+			return true;
+		}
+		if(flanking_coverage_.GetInCov(edges[0]) * relative_threshold_ < flanking_coverage_.GetInCov(edges[1]) && flanking_coverage_.GetInCov(edges[0]) < ec_threshold_) {
+			RemoveHiddenEC(edges[0]);
+//			cout << "success" << endl;
+			return true;
+		}
+		return false;
+	}
+
+	bool CheckSuspicious(VertexId v) {
+		if (this->g().IncomingEdgeCount(v) != 1 || this->g().OutgoingEdgeCount(v) != 2) {
+			return false;
+		}
+		vector<EdgeId> edges = this->g().OutgoingEdges(v);
+		return (edges.size() == 2 && this->g().conjugate(edges[0]) == edges[1]) || this->g().length(this->g().GetUniqueIncomingEdge(v)) > lentgh_bound_;
+	}
+
+	bool ProcessEdge(EdgeId e) {
+		VertexId v = this->g().EdgeEnd(e);
+		if(CheckSuspicious(v)) {
+//			cout << "client: " << this->g().int_id(v) << endl;
+			return FindHiddenEC(v);
+		}
+		return false;
+	}
+
+
+public:
+	HiddenECRemover(Graph& g, size_t length_bound,
+			const AbstractFlankingCoverage<Graph> &flanking_coverage,
+			double unreliability_threshold, double ec_threshold,
+			double relative_threshold,
+			boost::function<void(EdgeId)> removal_handler = 0) :
+			base(g, Comparator(), make_shared<func::AlwaysTrue<EdgeId>>()), lentgh_bound_(
+					length_bound), unreliability_threshold_(unreliability_threshold), ec_threshold_(
+					ec_threshold), relative_threshold_(relative_threshold), flanking_coverage_(
+					flanking_coverage), edge_remover_(g, removal_handler) {
+
+	}
+
+private:
+	DECL_LOGGER("HiddenECRemover");
+};
 }

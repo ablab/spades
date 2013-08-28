@@ -2,6 +2,7 @@
 
 #include "func.hpp"
 #include "graph_component.hpp"
+#include "coverage.hpp"
 
 namespace omnigraph {
 
@@ -97,6 +98,22 @@ class EdgeRemover {
 
     //todo how is it even compiling with const?!!!
     void DeleteEdge(EdgeId e) {
+    	DeleteEdgeWithNoCompression(e);
+        TRACE("Compressing locality");
+        VertexId start = g_.EdgeStart(e);
+        VertexId end = g_.EdgeEnd(e);
+        if (!g_.RelatedVertices(start, end)) {
+            TRACE("Vertices not related");
+            TRACE("Processing end");
+            RemoveIsolatedOrCompress(g_, end);
+            TRACE("End processed");
+        }
+        TRACE("Processing start");
+        RemoveIsolatedOrCompress(g_, start);
+        TRACE("Start processed");
+    }
+
+    void DeleteEdgeWithNoCompression(EdgeId e) {
         TRACE("Deletion of edge " << g_.str(e));
         VertexId start = g_.EdgeStart(e);
         VertexId end = g_.EdgeEnd(e);
@@ -109,16 +126,6 @@ class EdgeRemover {
         }
         TRACE("Deleting edge");
         g_.DeleteEdge(e);
-        TRACE("Compressing locality");
-        if (!g_.RelatedVertices(start, end)) {
-            TRACE("Vertices not related");
-            TRACE("Processing end");
-            RemoveIsolatedOrCompress(g_, end);
-            TRACE("End processed");
-        }
-        TRACE("Processing start");
-        RemoveIsolatedOrCompress(g_, start);
-        TRACE("Start processed");
     }
 
  private:

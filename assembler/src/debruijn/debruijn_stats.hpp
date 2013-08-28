@@ -506,7 +506,6 @@ optional<runtime_k::RtSeq> FindCloseKP1mer(const conj_graph_pack &gp,
 	for (size_t diff = 0; diff < magic_const; diff++) {
 		for (int dir = -1; dir <= 1; dir += 2) {
 			size_t pos = (gp.genome.size() - k + genome_pos + dir * diff) % (gp.genome.size() - k);
-			cout << pos << endl;
 			runtime_k::RtSeq kp1mer = gp.kmer_mapper.Substitute(
 			        runtime_k::RtSeq (k + 1, gp.genome, pos));
 			cout << "oppa" << endl;

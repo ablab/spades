@@ -105,6 +105,14 @@ default
 		max_length_difference	5
 	}
 
+	; hidden ec remover
+	her
+	{
+	    enabled false
+	    uniqueness_length           1500
+	    unreliability_threshold     4
+	    relative_threshold          5     
+	}
 }
 
 sc
@@ -178,6 +186,14 @@ sc
 		max_length_difference	5
 	}
 
+	; hidden ec remover
+	her
+	{
+	    enabled true
+	    uniqueness_length           1500
+	    unreliability_threshold     4
+	    relative_threshold          5     
+	}
 }
 
 careful

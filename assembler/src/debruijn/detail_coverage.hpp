@@ -1,6 +1,7 @@
 #pragma once
 
 #include "indices/debruijn_kmer_index.hpp"
+#include "omni/coverage.hpp"
 #include "graph_pack.hpp"
 #include "verify.hpp"
 #include "graphio.hpp"
@@ -14,7 +15,7 @@
 namespace debruijn_graph {
 
 template<class Graph, class Index>
-class FlankingCoverage : public GraphActionHandler<Graph> {
+class FlankingCoverage : public GraphActionHandler<Graph>, public omnigraph::AbstractFlankingCoverage<Graph> {
   typedef GraphActionHandler<Graph> base;
   typedef typename Graph::EdgeId EdgeId;
   typedef typename Graph::VertexId VertexId;
@@ -39,8 +40,12 @@ class FlankingCoverage : public GraphActionHandler<Graph> {
     kpomer >>= 0;
     for (size_t i = 0; i < size_bound; ++i) {
       kpomer <<= seq[offset + i + k];
-      VERIFY(kmer_index_.contains(kpomer));
-      edge_coverage_in += kmer_index_[kpomer].count;
+//      VERIFY(kmer_index_.contains(kpomer));
+      if(kmer_index_.contains(kpomer))
+    	  edge_coverage_in += kmer_index_[kpomer].count;
+      else {
+//    	  cout << "warn! kmer not in index" << endl;
+      }
     }
 
     return double(edge_coverage_in) / size_bound;
