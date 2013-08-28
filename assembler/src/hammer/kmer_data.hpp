@@ -51,7 +51,7 @@ class KMerData {
   hammer::KMer kmer(size_t idx) const {
     if (idx < kmers_->size()) {
       auto it = kmers_->begin() + idx;
-      return (typename traits::raw_create()(hammer::K, *it));
+      return (traits::raw_create()(hammer::K, *it));
     }
 
     idx -= kmers_->size();
@@ -98,7 +98,7 @@ class KMerData {
   }
 
  private:
-  typename traits::FinalKMerStorage *kmers_;
+  traits::FinalKMerStorage *kmers_;
 
   KMerDataStorageType data_;
   KMerStorageType kmer_push_back_buffer_;
