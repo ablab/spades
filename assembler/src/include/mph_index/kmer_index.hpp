@@ -17,6 +17,8 @@
 #include "logger/logger.hpp"
 #include "path_helper.hpp"
 
+#include "memory_limit.hpp"
+
 #include <libcxx/sort.hpp>
 #include <boost/lexical_cast.hpp>
 
@@ -26,6 +28,12 @@
 #endif
 #include <vector>
 #include <cmath>
+
+#include "config.hpp"
+
+#ifdef SPADES_USE_JEMALLOC
+# include <jemalloc/jemalloc.h>
+#endif
 
 template<class Index>
 class KMerIndexBuilder;
@@ -443,7 +451,24 @@ size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &count
   index.index_ = new typename KMerIndex<kmer_index_traits>::KMerDataIndex[num_buckets_];
 
   INFO("Building perfect hash indices");
-# pragma omp parallel for shared(index)
+
+  // Index building requires up to 40 bytes per k-mer. Limit number of threads depending on the memory limit.
+  unsigned num_threads = num_threads_;
+# ifdef SPADES_USE_JEMALLOC
+  const size_t *cmem = 0;
+  size_t clen = sizeof(cmem);
+
+  je_mallctl("stats.cactive", &cmem, &clen, NULL, 0);
+  // Conservatively assume 32 bytes per k-mer (up to k-mer length 128).
+  size_t bucket_size = (40 * kmers + kmers * 32) / num_buckets_;
+  num_threads =  std::min<unsigned>((*cmem - get_memory_limit()) / bucket_size, num_threads);
+  if (num_threads < 1)
+    num_threads = 1;
+  if (num_threads < num_threads_)
+    WARN("Number of threads was limited down to " << num_threads << "in order to fit the memory requirements for index construction");
+# endif
+
+# pragma omp parallel for shared(index) num_threads(num_threads)
   for (unsigned iFile = 0; iFile < num_buckets_; ++iFile) {
     typename KMerIndex<kmer_index_traits>::KMerDataIndex &data_index = index.index_[iFile];
     counter.OpenBucket(iFile, !save_final);
