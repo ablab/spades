@@ -12,6 +12,8 @@
 #include "io/ireadstream.hpp"
 #include "config_struct_hammer.hpp"
 
+#include "file_limit.hpp"
+
 #include <libcxx/sort.hpp>
 
 using namespace hammer;
@@ -128,6 +130,12 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
   for (unsigned i = 0; i < num_files; ++i)
     out.push_back(GetRawKMersFname(i));
 
+  size_t file_limit = num_files + 2*nthreads;
+  size_t res = limit_file(file_limit);
+  if (res < file_limit) {
+    WARN("Failed to setup necessary limit for number of open files. The process might crash later on.");
+    WARN("Do 'ulimit -n " << file_limit << "' in the console to overcome the limit");
+  }
   MMappedRecordWriter<KMer>* ostreams = new MMappedRecordWriter<KMer>[num_files];
   for (unsigned i = 0; i < num_files; ++i)
     ostreams[i].open(out[i]);
