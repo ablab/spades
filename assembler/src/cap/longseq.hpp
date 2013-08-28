@@ -334,6 +334,23 @@ class LongSeq {
     return !(operator==(other));
   }
 
+  bool BinWrite(std::ostream& file) const {
+      VERIFY(false);
+      return false;
+  }
+  bool BinRead(std::istream& file) {
+      VERIFY(false);
+      return false;
+  }
+  static bool BinRead(std::istream& file, LongSeq<HashT> *seq) {
+      VERIFY(false);
+      return false;
+  }
+  static bool BinWrite(std::ostream& file, const LongSeq<HashT> &seq) {
+      VERIFY(false);
+      return false;
+  }
+
 
   std::string str() const {
     if (size_ > 1) {

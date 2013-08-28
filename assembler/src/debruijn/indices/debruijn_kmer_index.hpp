@@ -401,17 +401,38 @@ class DeBruijnStreamKMerIndexBuilder<runtime_k::RtSeq, Index> {
     }
 };
 
+namespace template_utils {
+
+    /*
+     *  Leave this for subtype-specialization for cap
+     *  in DeBruijnGraphKMerIndexBuilder
+     */
+template<class T1, class T2>
+struct MyEnable {
+};
+
+template<class T1>
+struct MyEnable<T1, T1> {
+    typedef void type;
+};
+
+}
+
 //fixme makes hierarchy a bit strange
+template <class Index, class Enable = void>
+class DeBruijnGraphKMerIndexBuilder;
+
 template <class Index>
-class DeBruijnGraphKMerIndexBuilder {
+class DeBruijnGraphKMerIndexBuilder<Index,
+typename template_utils::MyEnable<typename Index::KMer, runtime_k::RtSeq>::type> {
  public:
   typedef Index IndexT;
 
   template<class Graph>
   void BuildIndexFromGraph(IndexT &index, const Graph &g) const {
-      DeBruijnGraphKMerSplitter<Graph> splitter(index.workdir(), index.k(),
-                                                g);
-      KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
+      DeBruijnGraphKMerSplitter<Graph> splitter(
+              index.workdir(), index.k(), g);
+      KMerDiskCounter<typename IndexT::KMer> counter(index.workdir(), splitter);
       index.BuildIndex(counter, 16, 1);
   }
 };

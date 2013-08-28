@@ -482,7 +482,6 @@ class SaveBlocksCommand : public LocalCommand<CapEnvironment> {
 
 };
 
-/*
 class LoadGraphCommand : public LocalCommand<CapEnvironment> {
  public:
   LoadGraphCommand() : LocalCommand<CapEnvironment>("load_graph") {
@@ -495,6 +494,15 @@ class LoadGraphCommand : public LocalCommand<CapEnvironment> {
            "> load_graph <K> <path>\n"
            "For example:\n"
            "> find_indels 55 ./masked/graph\n";
+  }
+
+  virtual bool CheckCorrectness(const ArgumentList& arg_list) const {
+    const vector<std::string> &args = arg_list.GetAllArguments();
+    if (!CheckEnoughArguments(args)) {
+      std::cout << "Command takes two arguments. Aborting.\n";
+      return false;
+    }
+    return true;
   }
 
   virtual void Execute(CapEnvironment &curr_env, const ArgumentList &arg_list) const {
@@ -518,6 +526,5 @@ class LoadGraphCommand : public LocalCommand<CapEnvironment> {
   }
 
 };
-*/
 
 }

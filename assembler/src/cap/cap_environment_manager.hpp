@@ -91,10 +91,25 @@ class CapEnvironmentManager {
 
   template <class gp_t>
   shared_ptr<gp_t> BuildGPFromSaves(const size_t K, const std::string path) const {
+    typedef typename gp_t::graph_t Graph;
     shared_ptr<gp_t> result(new gp_t(K, env_->kDefaultGPWorkdir));
 
     //ScanGraphPack(path, *result);
-    // TODO
+    typename ScannerTraits<Graph>::Scanner scanner(result->g,
+        result->int_ids);
+    result->index.Detach();
+    ScanBasicGraph(path, scanner);
+    if (LoadEdgeIndex(path, result->index.inner_index())) {
+        result->index.Update();
+    } else {
+        WARN("Cannot load edge index, kmer coverages will be missed");
+        result->index.Refill();
+    }
+    result->index.Attach();
+    //  scanner.loadPaired(path + "_et", result->etalon_paired_index);
+    scanner.loadPositions(path, result->edge_pos);
+
+    env_->coloring_ = std::make_shared<ColorHandler<Graph>>(result->g);
 
     return result;
   }
@@ -297,10 +312,11 @@ class CapEnvironmentManager {
     std::string filename = folder + "/saves/graph";
 
     // Saving graph
-		PrinterTraits<Graph>::Printer printer(*env_->graph_, *env_->int_ids_);
-		printer.saveGraph(filename);
-		printer.saveEdgeSequences(filename);
-		printer.savePositions(filename, *env_->edge_pos_);
+    PrinterTraits<Graph>::Printer printer(*env_->graph_, *env_->int_ids_);
+    printer.saveGraph(filename);
+    printer.saveEdgeSequences(filename);
+    printer.saveCoverage(filename);
+    printer.savePositions(filename, *env_->edge_pos_);
 
     // Saving coloring of graph
     cap::SaveColoring(*env_->graph_, *env_->int_ids_, *env_->coloring_, filename);
@@ -436,7 +452,8 @@ class CapEnvironmentManager {
       env_->SetGraphPack(BuildGPFromSaves<RtSeqGP>(K, path));
     }
 
-    cap::SaveColoring(*env_->graph_, *env_->int_ids_, *env_->coloring_, path);
+    //cerr << "DEBUG:" << env_->graph_ << ":" << env_->int_ids_ << ":" << env_->coloring_ << endl;
+    cap::LoadColoring(*env_->graph_, *env_->int_ids_, *env_->coloring_, path);
 
     env_->CheckConsistency();
   }

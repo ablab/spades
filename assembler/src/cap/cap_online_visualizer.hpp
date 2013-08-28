@@ -20,7 +20,7 @@ class CapOnlineVisualizer : public OnlineVisualizer<CapEnvironment> {
     AddCommand(make_shared<FindIndelsCommand>());
     AddCommand(make_shared<FindInversionsCommand>());
     AddCommand(make_shared<SaveBlocksCommand>());
-    //AddCommand(make_shared<LoadGraphCommand>());
+    AddCommand(make_shared<LoadGraphCommand>());
   }
 
  public:
