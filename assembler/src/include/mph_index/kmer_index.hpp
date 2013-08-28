@@ -291,7 +291,7 @@ public:
   }
 
   size_t KMerSize() const {
-    return Seq::GetDataSize(splitter_.K());
+    return Seq::GetDataSize(splitter_.K()) * sizeof(typename Seq::DataType);
   }
 
   void OpenBucket(size_t idx, bool unlink = true) {

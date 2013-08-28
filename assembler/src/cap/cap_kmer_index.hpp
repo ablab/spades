@@ -152,7 +152,7 @@ class CapKMerCounter: public ::KMerCounter<LSeq> {
   }
 
   virtual size_t KMerSize() const {
-    return LSeq::GetDataSize(k_);
+    return LSeq::GetDataSize(k_) * sizeof(typename LSeq::DataType);
   }
 
   virtual size_t Count(unsigned num_buckets, unsigned num_threads) {
