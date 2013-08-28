@@ -249,6 +249,8 @@ class KMerCounter {
   typedef typename traits::RawKMerStorage          RawKMerStorage;
   typedef typename traits::FinalKMerStorage        FinalKMerStorage;
 
+  virtual size_t KMerSize() const = 0;
+
   virtual size_t Count(unsigned num_buckets, unsigned num_threads) = 0;
   virtual size_t CountAll(unsigned num_buckets, unsigned num_threads, bool merge = true) = 0;
   virtual void MergeBuckets(unsigned num_buckets) = 0;
@@ -286,6 +288,10 @@ public:
 
     ::close(fd_);
     ::unlink(kmer_prefix_.c_str());
+  }
+
+  size_t KMerSize() const {
+    return Seq::GetDataSize(splitter_.K());
   }
 
   void OpenBucket(size_t idx, bool unlink = true) {
@@ -459,13 +465,12 @@ size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &count
   size_t clen = sizeof(cmem);
 
   je_mallctl("stats.cactive", &cmem, &clen, NULL, 0);
-  // Conservatively assume 32 bytes per k-mer (up to k-mer length 128).
-  size_t bucket_size = (40 * kmers + kmers * 32) / num_buckets_;
-  num_threads =  std::min<unsigned>((*cmem - get_memory_limit()) / bucket_size, num_threads);
+  size_t bucket_size = (36 * kmers + kmers * counter.KMerSize()) / num_buckets_;
+  num_threads =  std::min<unsigned>((get_memory_limit() - *cmem) / bucket_size, num_threads);
   if (num_threads < 1)
     num_threads = 1;
   if (num_threads < num_threads_)
-    WARN("Number of threads was limited down to " << num_threads << "in order to fit the memory requirements for index construction");
+    WARN("Number of threads was limited down to " << num_threads << " in order to fit the memory limits during the index construction");
 # endif
 
 # pragma omp parallel for shared(index) num_threads(num_threads)

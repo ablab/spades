@@ -151,6 +151,10 @@ class CapKMerCounter: public ::KMerCounter<LSeq> {
     ReleaseBucket(0);
   }
 
+  virtual size_t KMerSize() const {
+    return LSeq::GetDataSize(k_);
+  }
+
   virtual size_t Count(unsigned num_buckets, unsigned num_threads) {
     INFO("K-mer counting done. There are " << storage_.size() << " kmers in total. ");
     return storage_.size();
