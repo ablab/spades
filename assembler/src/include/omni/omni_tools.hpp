@@ -549,11 +549,12 @@ private:
             if (graph_.length(*it) > thr)
                 coverages.push_back(graph_.coverage(*it));
         }
+
+        auto middle_it = coverages.begin() + coverages.size() / 2;
 #ifdef USE_GLIBCXX_PARALLEL
-        // Explicitly force a call to parallel sort routine.
-        __gnu_parallel::sort(coverages.begin(), coverages.end());
+        __gnu_parallel::nth_element(coverages.begin(), middle_it, coverages.end());
 #else
-        std::sort(coverages.begin(), coverages.end());
+        std::nth_element(coverages.begin(), middle_it, coverages.end());
 #endif
         return coverages[coverages.size() / 2];
     }
