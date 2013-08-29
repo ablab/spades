@@ -50,13 +50,13 @@ void late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices) {
 
                     WARN("Unable to estimate insert size for paired library #" << i);
                     if (cfg::get().ds.reads[i].data().read_length <= cfg::get().K) {
-                        WARN("Maximum read length (" << cfg::get().ds.reads[i].data().read_length << ") should be grater than K (" << cfg::get().K << ")");
+                        WARN("Maximum read length (" << cfg::get().ds.reads[i].data().read_length << ") should be greater than K (" << cfg::get().K << ")");
                     }
                     else if (cfg::get().ds.reads[i].data().read_length <= cfg::get().K * 11 / 10) {
                         WARN("Maximum read length (" << cfg::get().ds.reads[i].data().read_length << ") is probably too close to K (" << cfg::get().K << ")");
                     }
                     else {
-                        WARN("None of paired reads aligned propely. Please, check orientation of your read pairs.");
+                        WARN("None of paired reads aligned properly. Please, check orientation of your read pairs.");
                     }
                     continue;
 
@@ -80,7 +80,7 @@ void late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices) {
                 }
 
 //                if (!pair_info_success) {
-//                    WARN("None of paired reads aligned propely. Please, check orientation of your read pairs.");
+//                    WARN("None of paired reads aligned properly. Please, check orientation of your read pairs.");
 //                }
 //                else if (!insert_size_success) {
 //                    WARN("Could not estimate insert size. Try setting it manually.");

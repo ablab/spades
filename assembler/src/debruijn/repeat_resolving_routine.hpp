@@ -945,7 +945,7 @@ void prepare_all_scaf_libs(conj_graph_pack& conj_gp,
 		cl_scaff_indexs.push_back(pe);
 		INFO("Scaffolding distance estimating started for lib #" << indexes[i]);
 		if (!prepare_scaffolding_index(conj_gp, cfg::get().ds.reads[indexes[i]], *scaff_indexs[i], *cl_scaff_indexs[i])) {
-		    INFO("Lib #" << indexes[i] << " will not be used for scaffolding");
+		    WARN("Lib #" << indexes[i] << " will not be used for scaffolding");
 		}
 	}
 	scaff_indexs.clear();
