@@ -75,7 +75,8 @@ void load(pe_config::LongReads& p, boost::property_tree::ptree const& pt,
           bool) {
     using config_common::load;
     load(p.filtering, pt, "filtering");
-    load(p.priority, pt, "priority");
+    load(p.weight_priority, pt, "weight_priority");
+    load(p.unique_edge_priority, pt, "unique_edge_priority");
 }
 
 void load(pe_config::AllLongReads& p, boost::property_tree::ptree const& pt,

@@ -56,17 +56,16 @@ public:
 	}
 
 	void FindCoveredEdges(const BidirectionalPath& path, EdgeId candidate,
-			std::vector<EdgeWithPairedInfo>& edges) {
-		edges.clear();
-
-		for (int i = (int) path.Size() - 1; i >= 0; --i) {
-			double w = lib_.IdealPairedInfo(path[i], candidate,
-					(int) path.LengthAt(i));
-			if (math::gr(w, 0.)) {
-			}
-				edges.push_back(EdgeWithPairedInfo(i, w));
-		}
-	}
+                          std::vector<EdgeWithPairedInfo>& edges) {
+        edges.clear();
+        for (int i = (int) path.Size() - 1; i >= 0; --i) {
+            double w = lib_.IdealPairedInfo(path[i], candidate,
+                                            (int) path.LengthAt(i));
+            if (math::gr(w, 0.)) {
+                edges.push_back(EdgeWithPairedInfo(i, w));
+            }
+        }
+    }
 
 	void FindForwardEdges(const BidirectionalPath& /*path*/, EdgeId candidate,
 			std::vector<EdgeWithDistance>& edges) {
@@ -282,7 +281,8 @@ protected:
 				++iter) {
 			double ideal_weight = iter->pi_;
 			if (excluded_edges_.find(iter->e_) != excluded_edges_.end()) {
-				if (math::eq(excluded_edges_[iter->e_], 0.0)) {
+				if (!math::gr(excluded_edges_[iter->e_], 0.0) or !math::gr(ideal_weight, 0.0)) {
+				    DEBUG("weight: index " << iter->e_ << " exclude");
 					continue;
 				} else {
 					ideal_weight = excluded_edges_[iter->e_];
@@ -299,6 +299,13 @@ protected:
 			if (normalizeWeight_) {
 				singleWeight /= ideal_weight;
 			}
+			DEBUG("weight: index " << iter->e_ << " weight " << libs_[libIndex]->CountPairedInfo(
+                    path[iter->e_], e,
+                    (int) path.LengthAt(iter->e_) + additionalGapLength)
+                    << " ideal " << ideal_weight <<" " << iter->pi_
+                    << " normalized "  << singleWeight
+                    << " threshold " << threshold
+                    << " used " << math::ge(singleWeight, threshold));
 			if (math::ge(singleWeight, threshold)) {
 				weight += ideal_weight;
 			}
@@ -368,7 +375,6 @@ public:
 					libs_[libIndex]->single_threshold_ >= 0.0 ?
 							libs_[libIndex]->single_threshold_ :
 							singleThreshold;
-			DEBUG("pair info exsist " <<g_.int_id(first) << "  " << g_.int_id(second) << " " << w << " " << distance << " " << threshold << " " << w_ideal);
 			if (w > threshold) {
 				return true;
 			}

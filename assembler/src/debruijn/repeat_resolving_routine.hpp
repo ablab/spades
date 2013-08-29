@@ -1066,7 +1066,8 @@ void AddSingleLibrary(
     vector<PathInfo<Graph> > long_paths = long_single.GetAllPaths();
     PathStorageInfo<Graph> single_storage(
             long_paths, cfg::get().pe_params.long_reads.single_reads.filtering,
-            cfg::get().pe_params.long_reads.single_reads.priority);
+            cfg::get().pe_params.long_reads.single_reads.weight_priority,
+            cfg::get().pe_params.long_reads.single_reads.unique_edge_priority);
     long_reads_libs.push_back(single_storage);
 }
 
@@ -1085,8 +1086,8 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
                              cfg::get().output_dir, long_reads_libs);
         } else if (type == io::LibraryType::PairedEnd
                 || type == io::LibraryType::MatePairs) {
-            AddSingleLibrary(conj_gp, cfg::get().ds.reads[i],
-                             cfg::get().output_dir, long_reads_libs);
+            //AddSingleLibrary(conj_gp, cfg::get().ds.reads[i],
+            //                 cfg::get().output_dir, long_reads_libs);
             pe_indexes.push_back(&clustered_indices[i]);
             pe_scaf_indexes.push_back(&paired_indexes[i]);
             indexes.push_back(i);
@@ -1101,7 +1102,8 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
             PathStorageInfo<Graph> pacbio_storage(
                     pacbio_paths,
                     cfg::get().pe_params.long_reads.pacbio_reads.filtering,
-                    cfg::get().pe_params.long_reads.pacbio_reads.priority);
+                    cfg::get().pe_params.long_reads.pacbio_reads.weight_priority,
+                    cfg::get().pe_params.long_reads.pacbio_reads.unique_edge_priority);
             long_reads_libs.push_back(pacbio_storage);
         }
     }
@@ -1116,7 +1118,8 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
         PathStorageInfo<Graph> single_storage(
                 filteredPaths,
                 cfg::get().pe_params.long_reads.coverage_base_rr.filtering,
-                cfg::get().pe_params.long_reads.coverage_base_rr.priority);
+                cfg::get().pe_params.long_reads.coverage_base_rr.weight_priority,
+                cfg::get().pe_params.long_reads.coverage_base_rr.unique_edge_priority);
         long_reads_libs.push_back(single_storage);
     }
 
@@ -1131,7 +1134,8 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
         PathStorageInfo<Graph> pacbio_storage(
                 pacbio_paths,
                 cfg::get().pe_params.long_reads.pacbio_reads.filtering,
-                cfg::get().pe_params.long_reads.pacbio_reads.priority);
+                cfg::get().pe_params.long_reads.pacbio_reads.weight_priority,
+                cfg::get().pe_params.long_reads.pacbio_reads.unique_edge_priority);
         long_reads_libs.push_back(pacbio_storage);
     }
 

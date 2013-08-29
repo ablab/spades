@@ -198,7 +198,8 @@ vector<SimpleExtender*> MakeLongReadsExtender(const conj_graph_pack& gp,
         AddPathsToContainer(gp, long_reads[i].GetPaths(), 1, paths);
         ExtensionChooser * longReadEC = new LongReadsExtensionChooser(
                 gp.g, paths, long_reads[i].GetFilteringThreshold(),
-                long_reads[i].GetPriorityThreshold());
+                long_reads[i].GetWeightPriorityThreshold(),
+                long_reads[i].GetUniqueEdgePriorityThreshold());
         SimpleExtender * longReadPathExtender = new SimpleExtender(
                 gp.g, max_loops, longReadEC, true);
         result.push_back(longReadPathExtender);

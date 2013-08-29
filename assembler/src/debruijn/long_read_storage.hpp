@@ -341,18 +341,24 @@ template<class Graph>
 class PathStorageInfo {
 public:
     PathStorageInfo(vector<PathInfo<Graph> >& paths, double filtering_threshold,
-                    double priority_threshold)
+                    double weight_priority_threshold,
+                    double unique_edge_priority_threshold)
             : paths_(paths.begin(), paths.end()),
               filtering_threshold_(filtering_threshold),
-              priority_threshold_(priority_threshold) {
+              weight_priority_threshold_(weight_priority_threshold),
+              unique_edge_priority_threshold_(unique_edge_priority_threshold) {
     }
 
     double GetFilteringThreshold() const {
         return filtering_threshold_;
     }
 
-    double GetPriorityThreshold() const {
-        return priority_threshold_;
+    double GetWeightPriorityThreshold() const {
+        return weight_priority_threshold_;
+    }
+
+    double GetUniqueEdgePriorityThreshold() const {
+        return unique_edge_priority_threshold_;
     }
 
     const vector<PathInfo<Graph> >& GetPaths() const {
@@ -362,5 +368,6 @@ public:
 private:
     vector<PathInfo<Graph> > paths_;
     double filtering_threshold_;
-    double priority_threshold_;
+    double weight_priority_threshold_;
+    double unique_edge_priority_threshold_;
 };

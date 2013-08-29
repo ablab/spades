@@ -528,10 +528,12 @@ class LongReadsExtensionChooser : public ExtensionChooser {
 public:
     LongReadsExtensionChooser(const Graph& g, PathContainer& pc,
                               double filtering_threshold,
-                              double priority_threshold)
+                              double weight_priority_threshold,
+                              double unique_edge_priority_threshold)
             : ExtensionChooser(g, 0, .0),
               filtering_threshold_(filtering_threshold),
-              priority_threshold_(priority_threshold),
+              weight_priority_threshold_(weight_priority_threshold),
+              unique_edge_priority_threshold_(unique_edge_priority_threshold),
               coverage_map_(g, pc),
               unique_edges_founded_(false) {
     }
@@ -577,7 +579,7 @@ public:
         if (sort_res.size() < 1 || sort_res[0].second < filtering_threshold_) {
             filtered_cands.clear();
         } else if (sort_res.size() > 1
-                && sort_res[0].second > priority_threshold_ * sort_res[1].second) {
+                && sort_res[0].second > weight_priority_threshold_ * sort_res[1].second) {
             filtered_cands.clear();
             filtered_cands.insert(sort_res[0].first);
         }
@@ -653,8 +655,8 @@ private:
 
     bool SignificantlyDiffWeights(double w1, double w2) const {
         if (w1 > filtering_threshold_ and w2 > filtering_threshold_) {
-            if (w1 > w2 * priority_threshold_
-                    or w2 > w1 * priority_threshold_) {
+            if (w1 > w2 * unique_edge_priority_threshold_
+                    or w2 > w1 * unique_edge_priority_threshold_) {
                 return true;
             }
             return false;
@@ -675,9 +677,12 @@ private:
                                                           pos2 + 1);
             std::pair<double, double> weights = GetSubPathsWeights(cand1, cand2,
                                                                    cov_paths);
-            DEBUG("Not equal begin " << g_.int_id(path1.At(first_diff_pos1)) << " weight " << weights.first << "; " << g_.int_id(path2.At(first_diff_pos2)) << " weight " << weights.second);
+            DEBUG("Not equal begin " << g_.int_id(path1.At(first_diff_pos1))
+                  << " weight " << weights.first
+                  << "; " << g_.int_id(path2.At(first_diff_pos2))
+                  << " weight " << weights.second);
             if (!SignificantlyDiffWeights(weights.first, weights.second)) {
-                INFO("not significantly different");
+                DEBUG("not significantly different");
                 return true;
             }
         }
@@ -690,9 +695,12 @@ private:
                                                           last_diff_pos2 + 1);
             std::pair<double, double> weights = GetSubPathsWeights(cand1, cand2,
                                                                    cov_paths);
-            DEBUG("Not equal end " << g_.int_id(path1.At(last_diff_pos1)) << " weight " << weights.first << "; " << g_.int_id(path2.At(last_diff_pos2)) << " weight " << weights.second);
+            DEBUG("Not equal end " << g_.int_id(path1.At(last_diff_pos1))
+                  << " weight " << weights.first
+                  << "; " << g_.int_id(path2.At(last_diff_pos2))
+                  << " weight " << weights.second);
             if (!SignificantlyDiffWeights(weights.first, weights.second)) {
-                INFO("not significantly different");
+                DEBUG("not significantly different");
                 return true;
             }
         }
@@ -733,7 +741,8 @@ private:
     }
 
     double filtering_threshold_;
-    double priority_threshold_;
+    double weight_priority_threshold_;
+    double unique_edge_priority_threshold_;
     GraphCoverageMap coverage_map_;
     bool unique_edges_founded_;
     std::set<EdgeId> unique_edges_;
