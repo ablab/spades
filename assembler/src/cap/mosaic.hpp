@@ -22,6 +22,7 @@ class MosaicStructureAnalyzer {
     size_t min_support_block_length_;
     size_t max_support_block_multiplicity_;
     size_t max_inter_block_length_;
+    ostream& out_;
 
     size_t curr_block_;
 
@@ -203,13 +204,13 @@ class MosaicStructureAnalyzer {
             return ss.str();
         }
 
-        void ReportSubIntervalCount(const vector<EdgeId>& interval) const {
+        void ReportSubIntervalCount(const vector<EdgeId>& interval, ostream& out) const {
             for (size_t i = 0; i < interval.size(); ++i) {
                 for (size_t j = i; j < interval.size(); ++j) {
                     vector<EdgeId> sub_interval;
                     std::copy(interval.begin() + i, interval.begin() + j + 1,
                               std::back_inserter<vector<EdgeId>>(sub_interval));
-                    std::cout << "Support multiplicity of " << IdsConcat(sub_interval) << " is "
+                    out << "Support multiplicity of " << IdsConcat(sub_interval) << " is "
                     << struct_cnt_.mult(SupportBlockKey(sub_interval)) << std::endl;
                 }
             }
@@ -218,41 +219,40 @@ class MosaicStructureAnalyzer {
     };
 
     void Report(const vector<EdgeId>& interval) const {
-        using std::cout;
         using std::endl;
         for (EdgeId e : interval) {
-            cout << g_.int_id(e);
-            cout << " (length: " << g_.length(e);
-            cout << ", mult: " << Multiplicity(e);
-            cout << "); ";
+            out_ << g_.int_id(e);
+            out_ << " (length: " << g_.length(e);
+            out_ << ", mult: " << Multiplicity(e);
+            out_ << "); ";
         }
-        cout << endl;
+        out_ << endl;
     }
 
     void Report(const MosaicInterval& interval) const {
-        using std::cout;
         using std::endl;
-        cout << "--------------------" << endl;
-        cout << "Mosaic:" << endl;
-        cout << "Genome pos: " << interval.genome_position << endl;
-        cout << "Path pos: " << interval.path_position << endl;
-        cout << "Support blocks:" << endl;
+        out_ << "--------------------" << endl;
+        out_ << "Mosaic:" << endl;
+        out_ << "Genome pos: " << interval.genome_position << endl;
+        out_ << "Path pos: " << interval.path_position << endl;
+        out_ << "Support blocks:" << endl;
         Report(interval.support_blocks);
-        cout << "All blocks:" << endl;
+        out_ << "All blocks:" << endl;
         Report(interval.all_blocks);
     }
 
     void Report(const MosaicIntervalSet& intervals) const {
         for (const MosaicInterval& interval : intervals.final_intervals()) {
             Report(interval);
-            intervals.ReportSubIntervalCount(interval.support_blocks);
+            intervals.ReportSubIntervalCount(interval.support_blocks, out_);
         }
     }
 
 public:
     MosaicStructureAnalyzer(const gp_t& gp, const Sequence& genome,
                             size_t min_support_length, size_t max_support_mult,
-                            size_t max_inter_length)
+                            size_t max_inter_length,
+                            ostream& out)
             : genome_(genome),
               gp_(gp),
 //              gp_(k_, "tmp", genome_),
@@ -260,6 +260,7 @@ public:
               min_support_block_length_(min_support_length),
               max_support_block_multiplicity_(max_support_mult),
               max_inter_block_length_(max_inter_length),
+              out_(out),
               curr_block_(0) {
     }
 
@@ -303,8 +304,8 @@ public:
 template<class gp_t>
 void PerformMosaicAnalysis(const gp_t& gp, const Sequence& genome,
                         size_t min_support_length, size_t max_support_mult,
-                        size_t max_inter_length) {
-    MosaicStructureAnalyzer<gp_t> analyzer(gp, genome, min_support_length, max_support_mult, max_inter_length);
+                        size_t max_inter_length, ostream& out) {
+    MosaicStructureAnalyzer<gp_t> analyzer(gp, genome, min_support_length, max_support_mult, max_inter_length, out);
     analyzer.Analyze();
 }
 
