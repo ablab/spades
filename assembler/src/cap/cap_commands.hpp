@@ -555,7 +555,8 @@ class MosaicAnalysisCommand : public LocalCommand<CapEnvironment> {
 
   virtual void Execute(CapEnvironment& curr_env, const ArgumentList& arg_list) const {
       VERIFY(curr_env.genome_cnt() == 1);
-      const Sequence& genome = curr_env.genomes()[1];
+//      const Sequence& genome = curr_env.genomes()[1];
+      const Sequence& genome = curr_env.genomes()[0];
       size_t min_support_length = 100;
       size_t max_support_mult = 20;
       size_t max_inter_length = 500;

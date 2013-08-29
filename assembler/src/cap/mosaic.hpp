@@ -12,7 +12,6 @@ class MosaicStructureAnalyzer {
     typedef typename gp_t::graph_t Graph;
     typedef typename Graph::EdgeId EdgeId;
 
-    size_t k_;
     Sequence genome_;
     const gp_t& gp_;
     const Graph& g_;
@@ -49,8 +48,9 @@ class MosaicStructureAnalyzer {
     }
 
     bool CheckSupporting(EdgeId e) {
-        return g_.length(e) > min_support_block_length_
-                && Multiplicity(e) < max_support_block_multiplicity_;
+        size_t mult = Multiplicity(e);
+        return mult > 1 && g_.length(e) > min_support_block_length_
+                && mult < max_support_block_multiplicity_;
     }
 
     bool CheckSupporting() {
@@ -209,7 +209,7 @@ class MosaicStructureAnalyzer {
                     vector<EdgeId> sub_interval;
                     std::copy(interval.begin() + i, interval.begin() + j + 1,
                               std::back_inserter<vector<EdgeId>>(sub_interval));
-                    std::cout << "Multiplicity of " << IdsConcat(sub_interval) << " is "
+                    std::cout << "Support multiplicity of " << IdsConcat(sub_interval) << " is "
                     << struct_cnt_.mult(SupportBlockKey(sub_interval)) << std::endl;
                 }
             }
@@ -220,13 +220,11 @@ class MosaicStructureAnalyzer {
     void Report(const vector<EdgeId>& interval) const {
         using std::cout;
         using std::endl;
-        string delim = "";
         for (EdgeId e : interval) {
-            cout << delim;
             cout << g_.int_id(e);
-            cout << " length: " << g_.int_id(e);
-            cout << " mult: " << Multiplicity(e);
-            delim = "; ";
+            cout << " (length: " << g_.length(e);
+            cout << ", mult: " << Multiplicity(e);
+            cout << "); ";
         }
         cout << endl;
     }
@@ -255,8 +253,7 @@ public:
     MosaicStructureAnalyzer(const gp_t& gp, const Sequence& genome,
                             size_t min_support_length, size_t max_support_mult,
                             size_t max_inter_length)
-            : k_(101),
-              genome_(genome),
+            : genome_(genome),
               gp_(gp),
 //              gp_(k_, "tmp", genome_),
               g_(gp_.g),
@@ -307,7 +304,8 @@ template<class gp_t>
 void PerformMosaicAnalysis(const gp_t& gp, const Sequence& genome,
                         size_t min_support_length, size_t max_support_mult,
                         size_t max_inter_length) {
-    MosaicStructureAnalyzer<gp_t>(gp, genome, min_support_length, max_support_mult, max_inter_length).Analyze();
+    MosaicStructureAnalyzer<gp_t> analyzer(gp, genome, min_support_length, max_support_mult, max_inter_length);
+    analyzer.Analyze();
 }
 
 }

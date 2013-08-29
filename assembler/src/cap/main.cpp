@@ -40,6 +40,7 @@ int main(int argc, char** argv) {
     try {
         using namespace online_visualization;
 
+        VERIFY(argc >= 2);
         string cfg_filename = argv[1];
         string cap_cfg_filename = argv[2];
         CheckFileExistenceFATAL(cfg_filename);
@@ -54,7 +55,11 @@ int main(int argc, char** argv) {
 
         CapOnlineVisualizer online_vis;
         online_vis.init();
-        online_vis.run();
+        string batch = "";
+        if (argc > 3) {
+            batch = string(argv[3]);
+        }
+        online_vis.run(batch);
     }
     catch (std::exception const& e) {
         std::cerr << "Exception caught " << e.what() << std::endl;
