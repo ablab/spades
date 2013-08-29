@@ -237,6 +237,19 @@ class DeBruijnStreamKMerIndexBuilder<cap::LSeq, Index> {
 
 };
 
+template <class Index>
+class DeBruijnGraphKMerIndexBuilder<Index,
+typename std::enable_if<std::is_same<typename Index::KMer, cap::LSeq>::value>::type> {
+ public:
+  typedef Index IndexT;
+
+  template<class Graph>
+  void BuildIndexFromGraph(IndexT &index, const Graph &g) const {
+      cap::CapKMerGraphCounter<Graph> counter(index.k(), g);
+      index.BuildIndex(counter, 16, 1);
+  }
+};
+
 }
 
 namespace runtime_k {
