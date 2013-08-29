@@ -156,8 +156,10 @@ public:
 
     std::stringstream ss;
     for (const auto &entry : ranges) {
-      Range genome_range = entry.second.first;
-      Range seq_range = entry.second.second;
+      Range genome_range = CoordinatesHandler<Graph>::GetPrintableRange(
+              entry.second.first);
+      Range seq_range = CoordinatesHandler<Graph>::GetPrintableRange(
+              entry.second.second);
       // Make inclusive
       genome_range.end_pos--;
       seq_range.end_pos--;
