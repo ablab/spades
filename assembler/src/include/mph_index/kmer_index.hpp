@@ -296,13 +296,13 @@ public:
   }
 
   size_t KMerSize() const {
-    return Seq::GetDataSize(splitter_.K()) * sizeof(Seq::DataType);
+    return Seq::GetDataSize(splitter_.K()) * sizeof(typename Seq::DataType);
   }
 
   void OpenBucket(size_t idx, bool unlink = true) {
     unsigned K = splitter_.K();
 
-    buckets_[idx] = new MMappedRecordArrayReader<Seq::DataType>(GetMergedKMersFname((unsigned)idx), Seq::GetDataSize(K), unlink);
+    buckets_[idx] = new MMappedRecordArrayReader<typename Seq::DataType>(GetMergedKMersFname((unsigned)idx), Seq::GetDataSize(K), unlink);
   }
 
   void ReleaseBucket(size_t idx) {
@@ -310,17 +310,17 @@ public:
     buckets_[idx] = NULL;
   }
 
-  traits::RawKMerStorage* TransferBucket(size_t idx) {
-    MMappedRecordArrayReader<Seq::DataType> *res = buckets_[idx];
+  typename traits::RawKMerStorage* TransferBucket(size_t idx) {
+    MMappedRecordArrayReader<typename Seq::DataType> *res = buckets_[idx];
     buckets_[idx] = NULL;
 
     return res;
   }
 
-  __super::iterator bucket_begin(size_t idx) {
+  typename __super::iterator bucket_begin(size_t idx) {
     return buckets_[idx]->begin();
   }
-  __super::iterator bucket_end(size_t idx) {
+  typename __super::iterator bucket_end(size_t idx) {
     return buckets_[idx]->end();
   }
 
@@ -343,7 +343,7 @@ public:
       std::string ofname = GetMergedKMersFname(i);
       std::ofstream ofs(ofname.c_str(), std::ios::out | std::ios::binary);
       for (unsigned j = 0; j < num_threads; ++j) {
-        MMappedRecordArrayReader<Seq::DataType> ins(GetUniqueKMersFname(i + j * num_buckets), Seq::GetDataSize(K), /* unlink */ true);
+        MMappedRecordArrayReader<typename Seq::DataType> ins(GetUniqueKMersFname(i + j * num_buckets), Seq::GetDataSize(K), /* unlink */ true);
         ofs.write((const char*)ins.data(), ins.data_size());
       }
     }
@@ -362,11 +362,11 @@ public:
 
     buckets_.clear();
 
-    MMappedRecordArrayWriter<Seq::DataType> os(GetFinalKMersFname(), Seq::GetDataSize(K));
+    MMappedRecordArrayWriter<typename Seq::DataType> os(GetFinalKMersFname(), Seq::GetDataSize(K));
     std::string ofname = GetFinalKMersFname();
     std::ofstream ofs(ofname.c_str(), std::ios::out | std::ios::binary);
     for (unsigned j = 0; j < num_buckets; ++j) {
-      MMappedRecordArrayReader<Seq::DataType> ins(GetMergedKMersFname(j), Seq::GetDataSize(K), /* unlink */ true);
+      MMappedRecordArrayReader<typename Seq::DataType> ins(GetMergedKMersFname(j), Seq::GetDataSize(K), /* unlink */ true);
       ofs.write((const char*)ins.data(), ins.data_size());
     }
     ofs.close();
@@ -380,9 +380,9 @@ public:
     return kmers;
   }
 
-  __super::FinalKMerStorage *GetFinalKMers() {
+  typename __super::FinalKMerStorage *GetFinalKMers() {
     unsigned K = splitter_.K();
-    return new MMappedRecordArrayReader<Seq::DataType>(GetFinalKMersFname(), Seq::GetDataSize(K), /* unlink */ true);
+    return new MMappedRecordArrayReader<typename Seq::DataType>(GetFinalKMersFname(), Seq::GetDataSize(K), /* unlink */ true);
   }
 
   std::string GetMergedKMersFname(unsigned suffix) const {
@@ -399,7 +399,7 @@ private:
   int fd_;
   std::string kmer_prefix_;
 
-  std::vector<MMappedRecordArrayReader<Seq::DataType>*> buckets_;
+  std::vector<MMappedRecordArrayReader<typename Seq::DataType>*> buckets_;
 
   std::string GetUniqueKMersFname(unsigned suffix) const {
     return kmer_prefix_ + ".unique." + boost::lexical_cast<std::string>(suffix);
@@ -407,16 +407,16 @@ private:
 
   size_t MergeKMers(const std::string &ifname, const std::string &ofname,
                     unsigned K) {
-    MMappedRecordArrayReader<Seq::DataType> ins(ifname, Seq::GetDataSize(K), /* unlink */ true);
+    MMappedRecordArrayReader<typename Seq::DataType> ins(ifname, Seq::GetDataSize(K), /* unlink */ true);
 
     // Sort the stuff
-    libcxx::sort(ins.begin(), ins.end(), array_less<Seq::DataType>());
+    libcxx::sort(ins.begin(), ins.end(), array_less<typename Seq::DataType>());
 
     // FIXME: Use something like parallel version of unique_copy but with explicit
     // resizing.
-    auto it = std::unique(ins.begin(), ins.end(), array_equal_to<Seq::DataType>());
+    auto it = std::unique(ins.begin(), ins.end(), array_equal_to<typename Seq::DataType>());
 
-    MMappedRecordArrayWriter<Seq::DataType> os(ofname, Seq::GetDataSize(K));
+    MMappedRecordArrayWriter<typename Seq::DataType> os(ofname, Seq::GetDataSize(K));
     os.resize(it - ins.begin());
     std::copy(ins.begin(), it, os.begin());
 
