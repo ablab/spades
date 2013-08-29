@@ -270,12 +270,7 @@ protected:
 };
 
 template<class Seq, class traits = kmer_index_traits<Seq> >
-class KMerDiskCounter;
-
-template<>
-class KMerDiskCounter<runtime_k::RtSeq> : public KMerCounter<runtime_k::RtSeq> {
-    typedef runtime_k::RtSeq Seq;
-    typedef kmer_index_traits<Seq> traits;
+class KMerDiskCounter : public KMerCounter<Seq> {
     typedef KMerCounter<Seq, traits> __super;
 public:
   KMerDiskCounter(const std::string &work_dir, KMerSplitter<Seq> &splitter)
@@ -310,7 +305,7 @@ public:
     buckets_[idx] = NULL;
   }
 
-  typename traits::RawKMerStorage* TransferBucket(size_t idx) {
+  MMappedRecordArrayReader<typename Seq::DataType>* TransferBucket(size_t idx) {
     MMappedRecordArrayReader<typename Seq::DataType> *res = buckets_[idx];
     buckets_[idx] = NULL;
 

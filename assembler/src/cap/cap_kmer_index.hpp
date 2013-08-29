@@ -6,13 +6,12 @@
 
 #pragma once
 
-#include "adt/kmer_map.hpp"
-#include "indices/debruijn_edge_index.hpp"
-#include "io/sequence_reader.hpp"
-
 #include "compare_standard.hpp"
 #include "longseq.hpp"
+//#include "longseq_storage.hpp"
 #include "polynomial_hash.hpp"
+#include "adt/kmer_map.hpp"
+#include "indices/debruijn_edge_index.hpp"
 
 template<>
 struct kmer_index_traits<cap::LSeq> {
@@ -78,39 +77,74 @@ struct kmer_index_traits<cap::LSeq> {
       return SeqType(kmer);
     }
   };
-
-  template <class Reader>
-  static RawKMerStorage *raw_deserialize(Reader &reader, const std::string &FileName) {
-    VERIFY(false);
-    return NULL;
-  }
-
 };
 
 namespace cap {
 
+struct Foo {};
+
+// FIXME: Implement stuff here
 template <class Read>
-class CapKMerCounter : public ::KMerCounter<LSeq> {
+class CapKMerCounter: public ::KMerCounter<LSeq> {
   typedef KMerCounter<LSeq> __super;
   typedef typename __super::RawKMerStorage RawKMerStorage;
 
   unsigned k_;
-  io::ReadStreamVector<io::IReader<Read>> *streams_;
+  io::ReadStreamVector<io::IReader<Read> > &streams_;
   std::unordered_set<LSeq, LSeq::hash, LSeq::equal_to> storage_;
   RawKMerStorage *bucket;
 
-  bool has_counted_;
+  /*
+  void UpdateTransition(const LSeq &l, const LSeq &r) {
+    const LSeq &l_int = LongSeqStorage<LSeq>::Instance().Get(l),
+               &r_int = LongSeqStorage<LSeq>::Instance().Get(r);
+    VERIFY(l.GetNextNucl() != LSeq::kNoNextNucl);
+    l_int.UpdateTransition(l.GetNextNucl(), &r_int);
+  }
+  */
 
  public:
-  CapKMerCounter(const unsigned k, io::ReadStreamVector<io::IReader<Read>> *streams)
+  CapKMerCounter(unsigned k, io::ReadStreamVector<io::IReader<Read> > &streams)
       : k_(k),
         streams_(streams),
         storage_(),
-        bucket(NULL),
-        has_counted_(false) {
-  }
+        bucket(NULL) {
+    TRACE("Creating LSEQ counter");
+    //LongSeqStorage<LSeq>::Instance().clear();
+    for (size_t i = 0; i < streams_.size(); ++i) {
+      while (!streams_[i].eof()) {
+        Read r;
+        streams_[i] >> r;
+        const Sequence &seq = r.sequence();
+        if (seq.size() == 0) {
+          continue;
+        }
+        if (seq.size() < k) {
+          INFO("WARNING: too small sequence!!");
+          continue;
+        }
 
-  CapKMerCounter(const unsigned k) : CapKMerCounter(k, NULL) {
+        LSeq kmer(k, seq);
+        do {
+          storage_.insert(kmer);
+          //LongSeqStorage<LSeq>::Instance().Put(kmer);
+          kmer.Shift();
+        } while (kmer.IsValid());
+
+        // Build transitions between kmers
+        /*
+        kmer = LSeq(k, seq);
+        LSeq next_kmer(k, seq, 1);
+        do {
+          UpdateTransition(kmer, next_kmer);
+          kmer.Shift();
+          next_kmer.Shift();
+        } while (next_kmer.IsValid());
+        */
+      }
+    }
+
+    TRACE("End creating LSEQ counter");
   }
 
   virtual ~CapKMerCounter() {
@@ -122,19 +156,11 @@ class CapKMerCounter : public ::KMerCounter<LSeq> {
   }
 
   virtual size_t Count(unsigned num_buckets, unsigned num_threads) {
-    if (!has_counted_) {
-      Init();
-      has_counted_ = true;
-    }
     INFO("K-mer counting done. There are " << storage_.size() << " kmers in total. ");
     return storage_.size();
   }
 
   virtual size_t CountAll(unsigned num_buckets, unsigned num_threads, bool merge = true) {
-    if (!has_counted_) {
-      Init();
-      has_counted_ = true;
-    }
     INFO("K-mer counting done. There are " << storage_.size() << " kmers in total. ");
     return storage_.size();
   }
@@ -146,10 +172,6 @@ class CapKMerCounter : public ::KMerCounter<LSeq> {
   virtual void OpenBucket(size_t idx, bool unlink = true) {
     VERIFY(bucket == NULL);
 
-    if (!has_counted_) {
-      Init();
-      has_counted_ = true;
-    }
     TRACE("BUCKET OPEN");
     bucket = new RawKMerStorage();
     bucket->reserve(storage_.size());
@@ -192,65 +214,6 @@ class CapKMerCounter : public ::KMerCounter<LSeq> {
     return bucket->end();
   }
 
- protected:
-  virtual void Init() {
-      VERIFY(streams_ != NULL);
-      for (size_t i = 0; i < streams_->size(); ++i) {
-          while (!(*streams_)[i].eof()) {
-              Read r;
-              (*streams_)[i] >> r;
-              const Sequence &seq = r.sequence();
-              if (seq.size() == 0) {
-                  continue;
-              }
-              if (seq.size() < k_) {
-                  INFO("WARNING: too small sequence!!");
-                  continue;
-              }
-
-              LSeq kmer(k_, seq);
-              do {
-                  storage_.insert(kmer);
-                  kmer.Shift();
-              } while (kmer.IsValid());
-
-          }
-      }
-      streams_ = NULL;
-  }
-
-  void SetStreams(io::ReadStreamVector<io::IReader<Read>> *streams) {
-      streams_ = streams;
-  }
-
-};
-
-template <class Graph>
-class CapKMerGraphCounter : public CapKMerCounter<io::SingleRead> {
-    typedef io::IReader<io::SingleRead> Reader;
-
-  public:
-    CapKMerGraphCounter(const unsigned k, const Graph &g)
-        : CapKMerCounter<io::SingleRead>(k),
-          g_(g) {
-        
-    }
-
-  protected:
-    virtual void Init() {
-        io::ReadStreamVector<Reader> stream_vector(false);
-
-        for (auto it = g_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            stream_vector.push_back(new io::SequenceReader<io::SingleRead>(
-                        g_.EdgeNucls(*it)));
-        }
-
-        CapKMerCounter<io::SingleRead>::SetStreams(&stream_vector);
-        CapKMerCounter<io::SingleRead>::Init();
-    }
-
-  private:
-    const Graph &g_;
 };
 
 }
@@ -266,34 +229,12 @@ class DeBruijnStreamKMerIndexBuilder<cap::LSeq, Index> {
     size_t BuildIndexFromStream(Index &index,
                                 Streams &streams,
                                 SingleReadStream* contigs_stream = 0) const {
-        /*
-        std::vector<io::IReader<io::SingleRead> *> stream_vec(streams.size());
-        for (size_t i = 0; i < streams.size(); ++i) {
-            stream_vec.push_back(&streams[i]);
-        }
-        auto streams_ptr = std::make_shared<Streams>(
-                    new io::ReadStreamVector<io::IReader<io::SingleRead>>(stream_vec, false));
-                    */
-        cap::CapKMerCounter<typename Streams::ReaderType::read_type> counter(
-                index.k(), &streams);
+        cap::CapKMerCounter<typename Streams::ReaderType::read_type> counter(index.k(), streams);
 
         index.BuildIndex(counter, 1, 1);
         return 0;
     }
 
-};
-
-template <class Index>
-class DeBruijnGraphKMerIndexBuilder<Index,
-typename template_utils::MyEnable<typename Index::KMer, cap::LSeq>::type> {
- public:
-  typedef Index IndexT;
-
-  template<class Graph>
-  void BuildIndexFromGraph(IndexT &index, const Graph &g) const {
-      cap::CapKMerGraphCounter<Graph> counter(index.k(), g);
-      index.BuildIndex(counter, 16, 1);
-  }
 };
 
 }
@@ -534,4 +475,4 @@ class KmerMap<Value, cap::LSeq> {
 
 };
 
-}
+};

@@ -139,12 +139,12 @@ class DeBruijnEdgeIndex : public Index {
             : base(K, graph, workdir) {}
 
     //todo why do we need to check equality???!!!
-    bool DeleteIfEqual(const KMer &kmer, IdType e) {
+    bool DeleteIfEqual(const KMer &kmer, EdgeId e) {
         KMerIdx idx = this->seq_idx(kmer);
         if (!contains(idx, kmer))
             return false;
 
-        EdgeInfo<IdType> &entry = this->operator[](idx);
+        EdgeInfo<EdgeId> &entry = this->operator[](idx);
         if (entry.edge_id == e) {
             entry.offset = -1u;
             return true;
