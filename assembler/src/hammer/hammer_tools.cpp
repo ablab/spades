@@ -224,27 +224,30 @@ size_t HammerTools::CorrectAllReads() {
 
   const io::DataSet<> &dataset = cfg::get().dataset;
   io::DataSet<> outdataset;
-  size_t idataset = 0;
-  for (auto it = dataset.library_begin(), et = dataset.library_end(); it != et; ++it, ++idataset) {
+  size_t ilib = 0;
+  for (auto it = dataset.library_begin(), et = dataset.library_end(); it != et; ++it, ++ilib) {
     const auto& lib = *it;
     auto outlib = lib;
     outlib.clear();
 
-    size_t ilib = 0;
-    for (auto I = lib.paired_begin(), E = lib.paired_end(); I != E; ++I, ++ilib) {
+    size_t iread = 0;
+    for (auto I = lib.paired_begin(), E = lib.paired_end(); I != E; ++I, ++iread) {
       INFO("Correcting pair of reads: " << I->first << " and " << I->second);
-      std::string unpaired = getLargestPrefix(I->first, I->second) + "_unpaired_" +
-                             boost::lexical_cast<std::string>(idataset) + "_" +
-                             boost::lexical_cast<std::string>(ilib) + path::extension(I->first);
+      std::string usuffix =  boost::lexical_cast<std::string>(ilib) + "_" +
+                             boost::lexical_cast<std::string>(iread) + ".cor.fastq";
 
-      std::string outcorl = HammerTools::getReadsFilename(cfg::get().output_dir, I->first,  Globals::iteration_no, "cor.fastq");
-      std::string outcorr = HammerTools::getReadsFilename(cfg::get().output_dir, I->second, Globals::iteration_no, "cor.fastq");
-      std::string outcoru = HammerTools::getReadsFilename(cfg::get().output_dir, unpaired,  Globals::iteration_no, "cor.fastq");
+      std::string unpaired = getLargestPrefix(I->first, I->second) + "_unpaired";
+
+      std::string outcorl = HammerTools::getReadsFilename(cfg::get().output_dir, I->first,  Globals::iteration_no, usuffix);
+      std::string outcorr = HammerTools::getReadsFilename(cfg::get().output_dir, I->second, Globals::iteration_no, usuffix);
+      std::string outcoru = HammerTools::getReadsFilename(cfg::get().output_dir, unpaired,  Globals::iteration_no, usuffix);
 
       std::ofstream ofcorl(outcorl.c_str());
-      std::ofstream ofbadl(HammerTools::getReadsFilename(cfg::get().output_dir, I->first,  Globals::iteration_no, "bad.fastq").c_str());
+      std::ofstream ofbadl(HammerTools::getReadsFilename(cfg::get().output_dir, I->first,  Globals::iteration_no, "bad.fastq").c_str(),
+                           std::ios::out | std::ios::ate);
       std::ofstream ofcorr(outcorr.c_str());
-      std::ofstream ofbadr(HammerTools::getReadsFilename(cfg::get().output_dir, I->second, Globals::iteration_no, "bad.fastq").c_str());
+      std::ofstream ofbadr(HammerTools::getReadsFilename(cfg::get().output_dir, I->second, Globals::iteration_no, "bad.fastq").c_str(),
+                           std::ios::out | std::ios::ate);
       std::ofstream ofunp (outcoru.c_str());
 
       HammerTools::CorrectPairedReadFiles(*Globals::kmer_data,
@@ -255,11 +258,15 @@ size_t HammerTools::CorrectAllReads() {
       outlib.push_back_single(outcoru);
     }
 
-    for (auto I = dataset.single_begin(), E = dataset.single_end(); I != E; ++I) {
+    for (auto I = dataset.single_begin(), E = dataset.single_end(); I != E; ++I, ++iread) {
       INFO("Correcting single reads: " << *I);
-      std::string outcor = HammerTools::getReadsFilename(cfg::get().output_dir, *I,  Globals::iteration_no, "cor.fastq");
+      std::string usuffix =  boost::lexical_cast<std::string>(ilib) + "_" +
+                             boost::lexical_cast<std::string>(iread) + ".cor.fastq";
+
+      std::string outcor = HammerTools::getReadsFilename(cfg::get().output_dir, *I,  Globals::iteration_no, usuffix);
       std::ofstream ofgood(outcor.c_str());
-      std::ofstream ofbad(HammerTools::getReadsFilename(cfg::get().output_dir, *I,  Globals::iteration_no, "bad.fastq").c_str());
+      std::ofstream ofbad(HammerTools::getReadsFilename(cfg::get().output_dir, *I,  Globals::iteration_no, "bad.fastq").c_str(),
+                          std::ios::out | std::ios::ate);
 
       HammerTools::CorrectReadFile(*Globals::kmer_data,
                                    changedReads, changedNucleotides, uncorrectedNucleotides, totalNucleotides,
