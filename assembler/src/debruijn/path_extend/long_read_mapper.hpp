@@ -161,7 +161,7 @@ private:
          MappingContig * gc = gap_closer_.Correct(dc);
          return gc->PathSeq();*/
     }
-    std::shared_ptr<const NewExtendedSequenceMapper<typename conj_graph_pack::graph_t, typename conj_graph_pack::index_t> > mapper_;
+    std::shared_ptr<const NewExtendedSequenceMapper<conj_graph_pack::graph_t, conj_graph_pack::index_t> > mapper_;
     conj_graph_pack& gp_;
     //ExtendedSequenceMapper<Graph, conj_graph_pack::index_t> mapper_;
     //SameEdgeDeletionCorrector same_edge_corr_;
