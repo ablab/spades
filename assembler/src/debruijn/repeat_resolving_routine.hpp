@@ -1207,8 +1207,9 @@ void resolve_repeats() {
                  vector<PathInfo<Graph> > pacbio_paths = pacbio_read.GetAllPaths();
                  PathStorageInfo<Graph> pacbio_storage(
                          pacbio_paths,
-                         cfg::get().pe_params.long_reads.pacbio_reads.filtering,
-                         cfg::get().pe_params.long_reads.pacbio_reads.priority);
+                         cfg::get().pe_params.long_reads.coverage_base_rr.filtering,
+                         cfg::get().pe_params.long_reads.coverage_base_rr.weight_priority,
+                         cfg::get().pe_params.long_reads.coverage_base_rr.unique_edge_priority);
                  long_reads_libs.push_back(pacbio_storage);
              }
         }
@@ -1218,8 +1219,9 @@ void resolve_repeats() {
         vector<PathInfo<Graph> > pacbio_paths = pacbio_read.GetAllPaths();
         PathStorageInfo<Graph> pacbio_storage(
         pacbio_paths,
-        cfg::get().pe_params.long_reads.pacbio_reads.filtering,
-        cfg::get().pe_params.long_reads.pacbio_reads.priority);
+        cfg::get().pe_params.long_reads.coverage_base_rr.filtering,
+        cfg::get().pe_params.long_reads.coverage_base_rr.weight_priority,
+        cfg::get().pe_params.long_reads.coverage_base_rr.unique_edge_priority);
         long_reads_libs.push_back(pacbio_storage);
 	}
 	if (cfg::get().developer_mode && cfg::get().pos.late_threading) {
