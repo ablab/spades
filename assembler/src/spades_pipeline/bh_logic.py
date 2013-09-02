@@ -60,6 +60,8 @@ def run_bh(configs_dir, execution_home, cfg, ext_python_modules_home, log):
     log.info("\n== Running read error correction tool: " + ' '.join(command) + "\n")
     support.sys_call(command, log)
     corrected_dataset_yaml_filename = os.path.join(cfg.tmp_dir, "corrected.yaml")
+    if not os.path.isfile(corrected_dataset_yaml_filename):
+        support.error("read error correction finished abnormally: " + corrected_dataset_yaml_filename + " not found!")
     corrected_dataset_data = pyyaml.load(file(corrected_dataset_yaml_filename, 'r'))
     if cfg.gzip_output:
         log.info("\n== Compressing corrected reads (with gzip)")
