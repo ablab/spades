@@ -1073,11 +1073,13 @@ void AddSingleLibrary(
 
 void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
                   PairedIndicesT& clustered_indices,
-                  const EdgeQuality<Graph, Index>&  quality_labeler) {
+                  const EdgeQuality<Graph, Index>&  quality_labeler, vector<PathStorageInfo<Graph> > &long_reads_libs) {
+
+
     vector<PairedIndexT*> pe_indexes;
     vector<PairedIndexT*> pe_scaf_indexes;
     vector<size_t> indexes;
-    vector<PathStorageInfo<Graph> > long_reads_libs;
+//    vector<PathStorageInfo<Graph> > long_reads_libs;
     GapStorage<Graph> gaps(conj_gp.g);
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         io::LibraryType type = cfg::get().ds.reads[i].type();
@@ -1093,18 +1095,17 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
             indexes.push_back(i);
         } else if (type == io::LibraryType::PacBioReads) {
             //TODO: need to read reads from stream instead of file and delete pacbio_on + pacbio reads from config
-            PathStorage<Graph> pacbio_read(conj_gp.g);
-            INFO("creating  multiindex with k = " << cfg::get().pb.pacbio_k);
-            PacBioAligner pac_aligner(conj_gp, cfg::get().pb.pacbio_k);
-            INFO("index created");
-            pac_aligner.pacbio_test(pacbio_read, gaps);
-            vector<PathInfo<Graph> > pacbio_paths = pacbio_read.GetAllPaths();
-            PathStorageInfo<Graph> pacbio_storage(
-                    pacbio_paths,
-                    cfg::get().pe_params.long_reads.pacbio_reads.filtering,
-                    cfg::get().pe_params.long_reads.pacbio_reads.weight_priority,
-                    cfg::get().pe_params.long_reads.pacbio_reads.unique_edge_priority);
-            long_reads_libs.push_back(pacbio_storage);
+//            PathStorage<Graph> pacbio_read(conj_gp.g);
+//            INFO("creating  multiindex with k = " << cfg::get().pb.pacbio_k);
+//            PacBioAligner pac_aligner(conj_gp, paired_indexes, clustered_indices, cfg::get().pb.pacbio_k);
+//            INFO("index created");
+//            pac_aligner.pacbio_test(pacbio_read, gaps);
+//            vector<PathInfo<Graph> > pacbio_paths = pacbio_read.GetAllPaths();
+//            PathStorageInfo<Graph> pacbio_storage(
+//                    pacbio_paths,
+//                    cfg::get().pe_params.long_reads.pacbio_reads.filtering,
+//                    cfg::get().pe_params.long_reads.pacbio_reads.priority);
+//            long_reads_libs.push_back(pacbio_storage);
         }
     }
     if (cfg::get().coverage_based_rr_on == true) {
@@ -1125,18 +1126,17 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
 
     //TODO: Delete this code
     if (cfg::get().pacbio_test_on) {
-        PathStorage<Graph> pacbio_read(conj_gp.g);
-        INFO("creating  multiindex with k = " << cfg::get().pb.pacbio_k);
-        PacBioAligner pac_aligner(conj_gp, cfg::get().pb.pacbio_k);
-        INFO("index created");
-        pac_aligner.pacbio_test(pacbio_read, gaps);
-        vector<PathInfo<Graph> > pacbio_paths = pacbio_read.GetAllPaths();
-        PathStorageInfo<Graph> pacbio_storage(
-                pacbio_paths,
-                cfg::get().pe_params.long_reads.pacbio_reads.filtering,
-                cfg::get().pe_params.long_reads.pacbio_reads.weight_priority,
-                cfg::get().pe_params.long_reads.pacbio_reads.unique_edge_priority);
-        long_reads_libs.push_back(pacbio_storage);
+//        PathStorage<Graph> pacbio_read(conj_gp.g);
+//        INFO("creating  multiindex with k = " << cfg::get().pb.pacbio_k);
+//        PacBioAligner pac_aligner(conj_gp, paired_indexes, clustered_indices, cfg::get().pb.pacbio_k);
+//        INFO("index created");
+//        pac_aligner.pacbio_test(pacbio_read, gaps);
+//        vector<PathInfo<Graph> > pacbio_paths = pacbio_read.GetAllPaths();
+//        PathStorageInfo<Graph> pacbio_storage(
+//                pacbio_paths,
+//                cfg::get().pe_params.long_reads.pacbio_reads.filtering,
+//                cfg::get().pe_params.long_reads.pacbio_reads.priority);
+//        long_reads_libs.push_back(pacbio_storage);
     }
 
     if (cfg::get().use_scaffolder
@@ -1171,7 +1171,7 @@ void resolve_repeats() {
 
 	PairedIndicesT paired_indices(conj_gp.g, cfg::get().ds.reads.lib_count());
 	PairedIndicesT clustered_indices(conj_gp.g,	cfg::get().ds.reads.lib_count());
-
+    vector<PathStorageInfo<Graph> > long_reads_libs;
 	if (!cfg::get().developer_mode) {
 		conj_gp.edge_pos.Detach();
 		paired_indices.Detach();
@@ -1180,10 +1180,48 @@ void resolve_repeats() {
 		    //todo ?
 //			conj_gp.kmer_mapper.Detach();
 		}
+	 }
+     PathStorage<Graph> pacbio_read(conj_gp.g);
+
+	 exec_distance_estimation(conj_gp, paired_indices, clustered_indices, pacbio_read);
+
+	 if (cfg::get().entry_point <= ws_pacbio_aligning){
+	     INFO(" need to align pb");
+	     if (cfg::get().pacbio_test_on) {
+	         INFO("creating  multiindex with k = " << cfg::get().pb.pacbio_k);
+	         PacBioAligner pac_aligner(conj_gp, paired_indices, clustered_indices, cfg::get().pb.pacbio_k);
+	         INFO("index created");
+	         GapStorage<Graph> gaps(conj_gp.g);
+	         pac_aligner.pacbio_test(pacbio_read, gaps);
+	     }
+         for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+             io::LibraryType type = cfg::get().ds.reads[i].type();
+             if (type == io::LibraryType::PacBioReads) {
+                 //TODO: need to read reads from stream instead of file and delete pacbio_on + pacbio reads from config
+                 PathStorage<Graph> pacbio_read1(conj_gp.g);
+                 INFO("creating  multiindex with k = " << cfg::get().pb.pacbio_k);
+                 PacBioAligner pac_aligner(conj_gp, paired_indices, clustered_indices, cfg::get().pb.pacbio_k);
+                 INFO("index created");
+                 GapStorage<Graph> gaps(conj_gp.g);
+                 pac_aligner.pacbio_test(pacbio_read1, gaps);
+                 vector<PathInfo<Graph> > pacbio_paths = pacbio_read.GetAllPaths();
+                 PathStorageInfo<Graph> pacbio_storage(
+                         pacbio_paths,
+                         cfg::get().pe_params.long_reads.pacbio_reads.filtering,
+                         cfg::get().pe_params.long_reads.pacbio_reads.priority);
+                 long_reads_libs.push_back(pacbio_storage);
+             }
+        }
 	}
-
-	exec_distance_estimation(conj_gp, paired_indices, clustered_indices);
-
+	if (cfg::get().pacbio_test_on) {
+	    INFO("getting paths");
+        vector<PathInfo<Graph> > pacbio_paths = pacbio_read.GetAllPaths();
+        PathStorageInfo<Graph> pacbio_storage(
+        pacbio_paths,
+        cfg::get().pe_params.long_reads.pacbio_reads.filtering,
+        cfg::get().pe_params.long_reads.pacbio_reads.priority);
+        long_reads_libs.push_back(pacbio_storage);
+	}
 	if (cfg::get().developer_mode && cfg::get().pos.late_threading) {
 		FillPos(conj_gp, conj_gp.genome, "10");
 		FillPos(conj_gp, !conj_gp.genome, "11");
@@ -1234,7 +1272,7 @@ void resolve_repeats() {
 			|| cfg::get().rm
 					== debruijn_graph::resolving_mode::rm_path_extend) {
 		INFO("Path-Extend repeat resolving");
-		pe_resolving(conj_gp, paired_indices, clustered_indices, quality_labeler);
+		pe_resolving(conj_gp, paired_indices, clustered_indices, quality_labeler, long_reads_libs);
 	}
 	else if (cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles) {
 		INFO("Ready to run rectangles repeat resolution module");

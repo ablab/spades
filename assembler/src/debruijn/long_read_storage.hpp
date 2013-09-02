@@ -139,11 +139,11 @@ public:
 			HiddenAddPath(rc_p, w);
 		}
 	}
-	void DumpToFile(const string filename, EdgesPositionHandler<Graph> &edge_pos) {
+	void DumpToFile(const string filename,  EdgesPositionHandler<Graph> &edge_pos) const{
 		map <EdgeId, EdgeId> auxilary;
 		DumpToFile(filename, edge_pos, auxilary);
 	}
-	void DumpToFile(const string filename, EdgesPositionHandler<Graph> &edge_pos, map<EdgeId, EdgeId> &replacement) {
+	void DumpToFile(const string filename,  EdgesPositionHandler<Graph> &edge_pos, map<EdgeId, EdgeId> &replacement) const {
 		ofstream filestr(filename);
 		ofstream filestr2(filename + "_yana");
 		set<EdgeId> continued_edges;
@@ -267,6 +267,7 @@ public:
 
 
 	void LoadFromFile(const string s) {
+	    INFO("Loading long reads alignment...");
 		ifstream filestr(s);
 		INFO("loading from " << s);
 		map<int, EdgeId> tmp_map;
@@ -302,7 +303,7 @@ public:
 				AddPath(p, w);
 			}
 		}
-		INFO("loading finished");
+		INFO("Loading finished.");
 	}
 
 	void AddStorage(PathStorage<Graph> & to_add) {

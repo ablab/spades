@@ -260,9 +260,9 @@ class EdgesPositionHandler: public GraphActionHandler<Graph> {
 	std::map<EdgeId, vector<EdgePosition>> EdgesPositions;
 	bool careful_ranges_;
 	size_t max_labels_;
-	int max_genome_coords;
+	mutable int max_genome_coords;
 private:
-	void find_genome_length(){
+	void find_genome_length() const{
 		for (auto iter = EdgesPositions.begin(); iter != EdgesPositions.end(); ++iter) {
 			for(size_t i =  0; i < iter->second.size(); i++)
 				max_genome_coords = max(max_genome_coords, iter->second[i].m_end());
@@ -343,7 +343,7 @@ public:
 
 	}
 
-	bool IsConsistentWithGenome(vector<EdgeId> path) {
+	bool IsConsistentWithGenome(const vector<EdgeId> &path) {
 		map<EdgeId, vector<EdgePosition> > tmp_pos;
 		find_genome_length();
 		for (size_t i = 0; i < path.size(); i++) {
