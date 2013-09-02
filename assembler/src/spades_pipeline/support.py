@@ -11,6 +11,9 @@ import stat
 import sys
 import shutil
 import logging
+import glob
+import re
+import options_storage
 
 # constants to print and detect warnings and errors in logs
 SPADES_PY_ERROR_MESSAGE = "== Error == "
@@ -194,6 +197,23 @@ def log_warnings(log):
         log.removeHandler(warnings_handler)
         return True
     return False
+
+
+def get_latest_dir(pattern):
+    def atoi(text):
+        if text.isdigit():
+            return int(text)
+        return text
+
+    def natural_keys(text):
+        return [atoi(c) for c in re.split('(\d+)', text)]
+
+    latest_dir = None
+    for dir_to_test in sorted(glob.glob(pattern), key=natural_keys, reverse=True):
+        if os.path.isdir(dir_to_test):
+            latest_dir = dir_to_test
+            break
+    return latest_dir
 
 
 ### START for processing YAML files
@@ -390,16 +410,19 @@ def split_interlaced_reads(dataset_data, dst, log):
                     out_left_filename = os.path.join(dst, out_basename + "_1" + ext)
                     out_right_filename = os.path.join(dst, out_basename + "_2" + ext)
 
-                    log.info("== Splitting " + interlaced_reads + " into left and right reads (in " + dst + " directory)")
-                    out_left_file = open(out_left_filename, 'w')
-                    out_right_file = open(out_right_filename, 'w')
-                    for id, line in enumerate(input_file):
-                        if (is_fasta_format and (id % 4 < 2)) or (not is_fasta_format and (id % 8 < 4)):
-                            out_left_file.write(line)
-                        else:
-                            out_right_file.write(line)
-                    out_left_file.close()
-                    out_right_file.close()
+                    if not (options_storage.continue_mode and os.path.isfile(out_left_filename) and os.path.isfile(out_right_filename)):
+                        options_storage.continue_mode = False
+                        log.info("== Splitting " + interlaced_reads + " into left and right reads (in " + dst + " directory)")
+                        out_left_file = open(out_left_filename, 'w')
+                        out_right_file = open(out_right_filename, 'w')
+                        for id, line in enumerate(input_file):
+                            if (is_fasta_format and (id % 4 < 2)) or (not is_fasta_format and (id % 8 < 4)):
+                                out_left_file.write(line)
+                            else:
+                                out_right_file.write(line)
+                        out_left_file.close()
+                        out_right_file.close()
+
                     input_file.close()
                     reads_library['left reads'].append(out_left_filename)
                     reads_library['right reads'].append(out_right_filename)

@@ -33,7 +33,7 @@ def prepare_config_bh(filename, cfg, log):
     process_cfg.substitute_params(filename, subst_dict, log)
 
 
-def run_bh(configs_dir, execution_home, cfg, ext_python_modules_home, log):
+def run_bh(result_filename, configs_dir, execution_home, cfg, ext_python_modules_home, log):
     addsitedir(ext_python_modules_home)
     import pyyaml
 
@@ -66,9 +66,8 @@ def run_bh(configs_dir, execution_home, cfg, ext_python_modules_home, log):
     if cfg.gzip_output:
         log.info("\n== Compressing corrected reads (with gzip)")
     support.move_dataset_files(corrected_dataset_data, cfg.output_dir, log, cfg.gzip_output)
-    corrected_dataset_yaml_filename = os.path.join(cfg.output_dir, "corrected.yaml")
+    corrected_dataset_yaml_filename = result_filename
     pyyaml.dump(corrected_dataset_data, file(corrected_dataset_yaml_filename, 'w'))
     log.info("\n== Dataset description file created: " + corrected_dataset_yaml_filename + "\n")
 
     shutil.rmtree(cfg.tmp_dir)
-    return corrected_dataset_yaml_filename

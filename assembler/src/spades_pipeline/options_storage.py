@@ -16,6 +16,7 @@ careful = False
 rectangles = False
 
 # advanced options
+continue_mode = False
 dataset_yaml_filename = ''
 threads = 16
 memory = 250
@@ -40,7 +41,7 @@ long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\
                "only-error-correction only-assembler "\
                "disable-gzip-output help test debug reference= "\
                "bh-heap-check= spades-heap-check= help-hidden "\
-               "config-file= dataset= mismatch-correction careful rectangles".split()
+               "config-file= dataset= mismatch-correction careful rectangles continue".split()
 short_options = "o:1:2:s:k:t:m:i:h"
 
 # adding multiple paired-end and mate-pair libraries support
@@ -107,6 +108,7 @@ def usage(spades_version, show_hidden=False):
 
     print >> sys.stderr, ""
     print >> sys.stderr, "Advanced options:"
+    print >> sys.stderr, "--continue\t\t\tcontinue processing from the last available check-point"
     print >> sys.stderr, "--dataset\t<filename>\tfile with dataset description in YAML format"
     print >> sys.stderr, "-t/--threads\t<int>\t\tnumber of threads"
     print >> sys.stderr, "\t\t\t\t[default: %s]" % threads
