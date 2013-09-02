@@ -92,7 +92,7 @@ int main(int argc, char * argv[]) {
       int determined_offset = determine_offset(*cfg::get().dataset.reads_begin());
       if (determined_offset < 0) {
         ERROR("Failed to determine offset! Specify it manually and restart, please!");
-        return 0;
+        return -1;
       } else {
         INFO("Determined value is " << determined_offset);
         cfg::get_writable().input_qvoffset = determined_offset;
