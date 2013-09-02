@@ -6,11 +6,11 @@
 # See file LICENSE for details.
 ############################################################################
 
-
 import os
 import stat
 import sys
 import shutil
+import logging
 
 # constants to print and detect warnings and errors in logs
 SPADES_PY_ERROR_MESSAGE = "== Error == "
@@ -27,8 +27,9 @@ def verify(expr, log, message):
 
 def error(err_str, log=None, prefix=SPADES_PY_ERROR_MESSAGE):
     if log:
-        log.info("\n\n" + prefix + " " + err_str + "\n")
-        log.info("In case you have troubles running SPAdes, you can write to spades.support@bioinf.spbau.ru")
+        log.info("\n\n" + prefix + " " + err_str)
+        log_warnings(log)
+        log.info("\nIn case you have troubles running SPAdes, you can write to spades.support@bioinf.spbau.ru")
         log.info("Please provide us with params.txt and spades.log files from the output directory.\n")
     else:
         print >>sys.stderr, "\n\n" + prefix + " " + err_str + "\n"
@@ -159,6 +160,40 @@ def get_warnings(log_filename):
         elif line.find(SPADES_WARN_MESSAGE) != -1:
             spades_warns.append(' * ' + line.strip())
     return spades_py_warns, spades_warns
+
+
+def get_logger_filename(log):
+    log_file = None
+    for h in log.__dict__['handlers']:
+        if h.__class__.__name__ == 'FileHandler':
+            log_file = h.baseFilename
+    return log_file
+
+
+def log_warnings(log):
+    log_file = get_logger_filename(log)
+    if not log_file:
+        return False
+    spades_py_warns, spades_warns = get_warnings(log_file)
+    if spades_py_warns or spades_warns:
+        log.info("\n======= SPAdes pipeline finished WITH WARNINGS!")
+        warnings_filename = os.path.join(os.path.dirname(log_file), "warnings.log")
+        warnings_handler = logging.FileHandler(warnings_filename, mode='w')
+        log.addHandler(warnings_handler)
+        #log.info("===== Warnings occurred during SPAdes run =====")
+        log.info("")
+        if spades_py_warns:
+            log.info("=== Pipeline warnings:")
+            for line in spades_py_warns:
+                log.info(line)
+        if spades_warns:
+            log.info("=== Error correction and assembling warnings:")
+            for line in spades_warns:
+                log.info(line)
+        log.info("======= Warnings saved to " + warnings_filename)
+        log.removeHandler(warnings_handler)
+        return True
+    return False
 
 
 ### START for processing YAML files
