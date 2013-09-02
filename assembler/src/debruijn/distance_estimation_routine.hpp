@@ -68,10 +68,60 @@ void estimate_with_estimator(const Graph& graph,
   DEBUG("Info Filtered");
 }
 
+void prepare_scaffold_index(conj_graph_pack& gp,
+        io::SequencingLibrary<debruijn_config::DataSetData> &lib,
+        const PairedIndexT& paired_index,
+        PairedIndexT& clustered_index) {
+    double is_var = lib.data().insert_size_deviation;
+    size_t delta = size_t(is_var);
+    size_t linkage_distance = size_t(
+            cfg::get().de.linkage_distance_coeff * is_var);
+    GraphDistanceFinder<Graph> dist_finder(gp.g, (size_t) math::round(lib.data().mean_insert_size),
+                                           lib.data().read_length, delta);
+    size_t max_distance = size_t(cfg::get().de.max_distance_coeff * is_var);
+    boost::function<double(int)> weight_function;
+    INFO("Retaining insert size distribution for it");
+    map<int, size_t> insert_size_hist = cfg::get().ds.hist();
+    WeightDEWrapper wrapper(insert_size_hist, lib.data().mean_insert_size);
+    INFO("Weight Wrapper Done");
+    weight_function = boost::bind(&WeightDEWrapper::CountWeight, wrapper, _1);
+
+    PairedInfoNormalizer<Graph>::WeightNormalizer normalizing_f;
+    if (cfg::get().ds.single_cell) {
+        normalizing_f = &TrivialWeightNormalization<Graph>;
+    } else {
+        //todo reduce number of constructor params
+        //TODO: apply new system
+        PairedInfoWeightNormalizer<Graph> weight_normalizer(gp.g,
+                (size_t)math::round(lib.data().mean_insert_size), lib.data().insert_size_deviation, lib.data().read_length,
+                gp.k_value, lib.data().average_coverage);
+        normalizing_f = boost::bind(
+                &PairedInfoWeightNormalizer<Graph>::NormalizeWeight,
+                weight_normalizer, _1, _2, _3);
+    }
+    PairedInfoNormalizer<Graph> normalizer(normalizing_f);
+    INFO("Normalizer Done");
+
+    PairInfoWeightFilter<Graph> filter(gp.g, 0.);
+    INFO("Weight Filter Done");
+
+    const AbstractDistanceEstimator<Graph>& estimator =
+            SmoothingDistanceEstimator<Graph>(gp.g, paired_index, dist_finder,
+                    weight_function, linkage_distance, max_distance,
+                    cfg::get().ade.threshold, cfg::get().ade.range_coeff,
+                    cfg::get().ade.delta_coeff, cfg::get().ade.cutoff,
+                    cfg::get().ade.min_peak_points, cfg::get().ade.inv_density,
+                    cfg::get().ade.percentage,
+                    cfg::get().ade.derivative_threshold, true);
+    estimate_with_estimator(gp.g, estimator, normalizer, filter,
+            clustered_index);
+}
+
 void estimate_distance(conj_graph_pack& gp,
                        io::SequencingLibrary<debruijn_config::DataSetData> &lib,
                        const PairedIndexT& paired_index,
-                             PairedIndexT& clustered_index)
+                       PairedIndexT& clustered_index,
+                       PairedIndexT& scaffold_index)
 {
   using debruijn_graph::estimation_mode;
 
@@ -186,21 +236,25 @@ void estimate_distance(conj_graph_pack& gp,
     INFO("Filling paired information");
     PairInfoImprover<Graph> improver(gp.g, clustered_index, lib);
     improver.ImprovePairedInfo(config.use_multithreading, config.max_threads);
+
+    //DE for scaffolds
+    prepare_scaffold_index(gp, lib, paired_index, scaffold_index);
   }
 }
 
 void load_distance_estimation(conj_graph_pack& gp,
                               PairedIndicesT& paired_indices,
                               PairedIndicesT& clustered_indices,
-                              path::files_t* used_files, PathStorage<Graph>& long_reads)
-{
+                              PairedIndicesT& scaffold_indices,
+                              path::files_t* used_files,
+                              PathStorage<Graph>& long_reads) {
   string p;
   if (cfg::get().entry_point == ws_repeats_resolving && cfg::get().pacbio_test_on)
       p = path::append_path(cfg::get().load_from, "pacbio_aligning");
   else
       p = path::append_path(cfg::get().load_from, "distance_estimation");
   used_files->push_back(p);
-  ScanAll(p, gp, paired_indices, clustered_indices);
+  ScanAll(p, gp, paired_indices, clustered_indices, scaffold_indices);
   if (cfg::get().entry_point == ws_repeats_resolving && cfg::get().pacbio_test_on) {
       INFO(" long reads loading form " <<p);
       long_reads.LoadFromFile(p + ".mpr");
@@ -220,12 +274,13 @@ void load_distance_estimation(conj_graph_pack& gp,
 
 void save_distance_estimation(const conj_graph_pack& gp,
                               const PairedIndicesT& paired_indices,
-                              const PairedIndicesT& clustered_indices)
+                              const PairedIndicesT& clustered_indices,
+                              const PairedIndicesT& scaffold_indices)
 {
   if (cfg::get().make_saves || (cfg::get().paired_mode && cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles)) {
     string p = path::append_path(cfg::get().output_saves, "distance_estimation");
     INFO("Saving current state to " << p);
-    PrintAll(p, gp, paired_indices, clustered_indices);
+    PrintAll(p, gp, paired_indices, clustered_indices, scaffold_indices);
     write_lib_data(p);
   }
 }
@@ -239,25 +294,25 @@ void save_distance_estimation(const conj_graph_pack& gp,
 //}
 
 void exec_distance_estimation(conj_graph_pack& gp,
-        PairedIndicesT& paired_indices,
-        PairedIndicesT& clustered_indices, PathStorage<Graph>& long_reads)
-{
+                              PairedIndicesT& paired_indices,
+                              PairedIndicesT& clustered_indices,
+                              PairedIndicesT& scaffold_indices,
+                              PathStorage<Graph>& long_reads) {
   if (cfg::get().entry_point <= ws_distance_estimation) {
     exec_late_pair_info_count(gp, paired_indices);
     if (cfg::get().paired_mode) {
 		for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
 	        if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd ||  cfg::get().ds.reads[i].type() == io::LibraryType::MatePairs) {
-	            estimate_distance(gp, cfg::get_writable().ds.reads[i], paired_indices[i], clustered_indices[i]);
+	            estimate_distance(gp, cfg::get_writable().ds.reads[i], paired_indices[i], clustered_indices[i], scaffold_indices[i]);
 	        }
 		}
     }
-    save_distance_estimation(gp, paired_indices, clustered_indices);
-
+    save_distance_estimation(gp, paired_indices, clustered_indices, scaffold_indices);
   }
   else {
     INFO("Loading Distance Estimation");
     path::files_t used_files;
-    load_distance_estimation(gp, paired_indices, clustered_indices, &used_files, long_reads);
+    load_distance_estimation(gp, paired_indices, clustered_indices, scaffold_indices, &used_files, long_reads);
     link_files_by_prefix(used_files, cfg::get().output_saves);
   }
   if (cfg::get().paired_mode && cfg::get().paired_info_statistics)

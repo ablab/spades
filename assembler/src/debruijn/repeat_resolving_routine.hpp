@@ -70,14 +70,15 @@ void WriteGraphPack(gp_t& gp, const string& file_name) {
 }
 
 void SaveResolved(conj_graph_pack& resolved_gp,
-		PairedIndexT& resolved_graph_paired_info,
-		PairedIndexT& resolved_graph_paired_info_cl) {
+		const PairedIndexT& resolved_graph_paired_info,
+		const PairedIndexT& resolved_graph_paired_info_cl,
+		const PairedIndexT& resolved_graph_scaffold_paired_info) {
 
 	if (cfg::get().make_saves) {
 		string p = path::append_path(cfg::get().output_saves, "split_resolved");
 		INFO("Saving current state to " << p);
 		PrintAll(p, resolved_gp, resolved_graph_paired_info,
-				resolved_graph_paired_info_cl);
+				resolved_graph_paired_info_cl, resolved_graph_scaffold_paired_info);
 		write_lib_data(p);
 	}
 }
@@ -820,8 +821,9 @@ void resolve_nonconjugate_component(int /*component_id*/, const Sequence& /*geno
 //			graph_name, sub_dir, false);
 }
 
-void resolve_with_jumps(conj_graph_pack& /*gp*/, PairedInfoIndexT<Graph>& /*index*/,
-		const PairedIndexT& /*jump_index*/) {
+/*
+void resolve_with_jumps(conj_graph_pack& gp, PairedInfoIndexT<Graph>& index,
+		const PairedIndexT& jump_index) {
 	WARN("Jump resolver not alailable");
 
 //	VERIFY(cfg::get().andrey_params.);
@@ -844,55 +846,9 @@ void prepare_jump_index(const Graph& g, const PairedIndexT& raw_jump_index,
 	JumpingPairInfoChecker<Graph> filter(g, 300, 100, 100);
 	filter.Filter(normalized_jump_index, jump_index);
 }
+*/
 
-void prepare_scaffolding_index(conj_graph_pack& gp,
-        const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
-        PairedIndexT& paired_index,
-		PairedIndexT& clustered_index) {
-	double is_var = lib.data().insert_size_deviation;
-	size_t delta = size_t(is_var);
-	size_t linkage_distance = size_t(
-			cfg::get().de.linkage_distance_coeff * is_var);
-	GraphDistanceFinder<Graph> dist_finder(gp.g, (size_t) math::round(lib.data().mean_insert_size),
-	                                       lib.data().read_length, delta);
-	size_t max_distance = size_t(cfg::get().de.max_distance_coeff * is_var);
-	boost::function<double(int)> weight_function;
-	INFO("Retaining insert size distribution for it");
-	map<int, size_t> insert_size_hist = cfg::get().ds.hist();
-	WeightDEWrapper wrapper(insert_size_hist, lib.data().mean_insert_size);
-	INFO("Weight Wrapper Done");
-	weight_function = boost::bind(&WeightDEWrapper::CountWeight, wrapper, _1);
 
-	PairedInfoNormalizer<Graph>::WeightNormalizer normalizing_f;
-	if (cfg::get().ds.single_cell) {
-		normalizing_f = &TrivialWeightNormalization<Graph>;
-	} else {
-		//todo reduce number of constructor params
-	    //TODO: apply new system
-		PairedInfoWeightNormalizer<Graph> weight_normalizer(gp.g,
-                (size_t)math::round(lib.data().mean_insert_size), lib.data().insert_size_deviation, lib.data().read_length,
-				gp.k_value, lib.data().average_coverage);
-		normalizing_f = boost::bind(
-				&PairedInfoWeightNormalizer<Graph>::NormalizeWeight,
-				weight_normalizer, _1, _2, _3);
-	}
-	PairedInfoNormalizer<Graph> normalizer(normalizing_f);
-	INFO("Normalizer Done");
-
-	PairInfoWeightFilter<Graph> filter(gp.g, 0.);
-	INFO("Weight Filter Done");
-
-	const AbstractDistanceEstimator<Graph>& estimator =
-			SmoothingDistanceEstimator<Graph>(gp.g, paired_index, dist_finder,
-					weight_function, linkage_distance, max_distance,
-					cfg::get().ade.threshold, cfg::get().ade.range_coeff,
-					cfg::get().ade.delta_coeff, cfg::get().ade.cutoff,
-					cfg::get().ade.min_peak_points, cfg::get().ade.inv_density,
-					cfg::get().ade.percentage,
-					cfg::get().ade.derivative_threshold, true);
-	estimate_with_estimator(gp.g, estimator, normalizer, filter,
-			clustered_index);
-}
 
 template<class EdgeQualityLaber>
 void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, std::vector< PathInfo<Graph> >& filteredPaths,
@@ -950,33 +906,14 @@ int GetFirstPELibIndex() {
 	return -1;
 }
 
-void prepare_all_scaf_libs(conj_graph_pack& conj_gp,
-		vector<PairedIndexT*>& scaff_indexs, vector<size_t>& indexes) {
-
-	vector<PairedIndexT*> cl_scaff_indexs;
-	for (size_t i = 0; i < scaff_indexs.size(); ++i) {
-		PairedIndexT* pe = new PairedIndexT(conj_gp.g);
-		cl_scaff_indexs.push_back(pe);
-		prepare_scaffolding_index(conj_gp, cfg::get().ds.reads[indexes[i]], *scaff_indexs[i], *cl_scaff_indexs[i]);
-	}
-	scaff_indexs.clear();
-	scaff_indexs.insert(scaff_indexs.end(), cl_scaff_indexs.begin(),
-			cl_scaff_indexs.end());
-}
-
-void delete_index(vector<PairedIndexT*>& index){
-	for (size_t i = 0; i < index.size(); ++i){
-		delete index[i];
-	}
-}
-
 //Use only one pe library
 void split_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
-		PairedIndicesT& clustered_indices, Sequence& genome,
+		PairedIndicesT& clustered_indices, PairedIndicesT& scaffold_indices, Sequence& genome,
 		size_t pe_lib_index) {
 
 	PairedIndexT& paired_index = paired_indices[pe_lib_index];
 	PairedIndexT& clustered_index = clustered_indices[pe_lib_index];
+	PairedIndexT& scaffold_index = scaffold_indices[pe_lib_index];
 	const io::SequencingLibrary<debruijn_config::DataSetData> &lib = cfg::get().ds.reads[pe_lib_index];
 	int number_of_components = 0;
 	//TODO: do we have non symmetric_resolve? can we delete this if?
@@ -1016,18 +953,12 @@ void split_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
 			pe_indexs.push_back(&resolved_graph_paired_info_cl);
 			PairedInfoIndexT<conj_graph_pack::graph_t>* resolved_graph_scaff_clustered =
 									new PairedInfoIndexT<conj_graph_pack::graph_t>(resolved_gp.g);
-			if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
-				PairedInfoIndexT<conj_graph_pack::graph_t> scaff_clustered(
-						conj_gp.g);
-				prepare_scaffolding_index(conj_gp, lib, paired_index,
-						scaff_clustered);
-				ProduceResolvedPairedInfo(conj_gp, scaff_clustered, resolved_gp,
-						labels_after, *resolved_graph_scaff_clustered);
-				DEBUG("Resolved scaffolding index size " << resolved_graph_scaff_clustered->size());
-				pe_scaf_indexs.push_back(resolved_graph_scaff_clustered);
-			} else {
-				pe_scaf_indexs.push_back(&resolved_graph_paired_info);
-			}
+			ProduceResolvedPairedInfo(conj_gp, scaffold_index, resolved_gp,
+                                      labels_after,
+                                      *resolved_graph_scaff_clustered);
+            DEBUG("Resolved scaffolding index size " << resolved_graph_scaff_clustered->size());
+            pe_scaf_indexs.push_back(resolved_graph_scaff_clustered);
+
 			INFO("Scaffolding");
 			path_extend::ResolveRepeatsPe(resolved_gp, pe_indexs,
                                           pe_scaf_indexs, indexs,
@@ -1036,7 +967,7 @@ void split_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
                                           "scaffolds.fasta", false, boost::none,
                                           false);
 			SaveResolved(resolved_gp, resolved_graph_paired_info,
-					resolved_graph_paired_info_cl);
+					resolved_graph_paired_info_cl, *resolved_graph_scaff_clustered);
 			delete resolved_graph_scaff_clustered;
 		}
 
@@ -1073,11 +1004,11 @@ void AddSingleLibrary(
 
 void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
                   PairedIndicesT& clustered_indices,
-                  const EdgeQuality<Graph, Index>&  quality_labeler, vector<PathStorageInfo<Graph> > &long_reads_libs) {
-
-
+                  PairedIndicesT& scaffold_indices,
+                  const EdgeQuality<Graph, Index>& quality_labeler,
+                  vector<PathStorageInfo<Graph> > &long_reads_libs) {
     vector<PairedIndexT*> pe_indexes;
-    vector<PairedIndexT*> pe_scaf_indexes;
+    vector<PairedIndexT*> pe_scaf_indices;
     vector<size_t> indexes;
 //    vector<PathStorageInfo<Graph> > long_reads_libs;
     GapStorage<Graph> gaps(conj_gp.g);
@@ -1091,7 +1022,7 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
             //AddSingleLibrary(conj_gp, cfg::get().ds.reads[i],
             //                 cfg::get().output_dir, long_reads_libs);
             pe_indexes.push_back(&clustered_indices[i]);
-            pe_scaf_indexes.push_back(&paired_indexes[i]);
+            pe_scaf_indices.push_back(&scaffold_indices[i]);
             indexes.push_back(i);
         } else if (type == io::LibraryType::PacBioReads) {
             //TODO: need to read reads from stream instead of file and delete pacbio_on + pacbio reads from config
@@ -1138,25 +1069,18 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
 //                cfg::get().pe_params.long_reads.pacbio_reads.priority);
 //        long_reads_libs.push_back(pacbio_storage);
     }
-
-    if (cfg::get().use_scaffolder
-            && cfg::get().pe_params.param_set.scaffolder_options.on) {
-        if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
-            prepare_all_scaf_libs(conj_gp, pe_scaf_indexes, indexes);
-        }
-        path_extend::ResolveRepeatsPe(
-                conj_gp, pe_indexes, pe_scaf_indexes, indexes, long_reads_libs,
-                cfg::get().output_dir, "scaffolds.fasta", true,
-                boost::optional<std::string>("final_contigs.fasta"));
-        delete_index(pe_scaf_indexes);
-    } else {
-        pe_scaf_indexes.clear();
-        path_extend::ResolveRepeatsPe(conj_gp, pe_indexes, pe_scaf_indexes,
-                                      indexes, long_reads_libs,
-                                      cfg::get().output_dir,
-                                      "final_contigs.fasta", false,
-                                      boost::none);
+    std::string name = "scaffolds.fasta";
+    bool traverse_loops = true;
+    if (!(cfg::get().use_scaffolder
+            && cfg::get().pe_params.param_set.scaffolder_options.on)) {
+        name = "final_contigs.fasta";
+        pe_scaf_indices.clear();
+        traverse_loops = false;
     }
+    path_extend::ResolveRepeatsPe(
+            conj_gp, pe_indexes, pe_scaf_indices, indexes, long_reads_libs,
+            cfg::get().output_dir, name, traverse_loops,
+            boost::optional<std::string>("final_contigs.fasta"));
 }
 
 void resolve_repeats() {
@@ -1171,6 +1095,7 @@ void resolve_repeats() {
 
 	PairedIndicesT paired_indices(conj_gp.g, cfg::get().ds.reads.lib_count());
 	PairedIndicesT clustered_indices(conj_gp.g,	cfg::get().ds.reads.lib_count());
+    PairedIndicesT scaffold_indices(conj_gp.g, cfg::get().ds.reads.lib_count());
     vector<PathStorageInfo<Graph> > long_reads_libs;
 	if (!cfg::get().developer_mode) {
 		conj_gp.edge_pos.Detach();
@@ -1183,7 +1108,7 @@ void resolve_repeats() {
 	 }
      PathStorage<Graph> pacbio_read(conj_gp.g);
 
-	 exec_distance_estimation(conj_gp, paired_indices, clustered_indices, pacbio_read);
+	 exec_distance_estimation(conj_gp, paired_indices, clustered_indices, scaffold_indices, pacbio_read);
 
 	 if (cfg::get().entry_point <= ws_pacbio_aligning){
 	     INFO(" need to align pb");
@@ -1267,14 +1192,14 @@ void resolve_repeats() {
 	if (cfg::get().ds.reads.lib_count() == 1 && pe_lib_index >= 0
 			&& cfg::get().rm == debruijn_graph::resolving_mode::rm_split && !cfg::get().long_single_mode) {
 		INFO("Split repeat resolving");
-		split_resolving(conj_gp, paired_indices, clustered_indices, genome,
+		split_resolving(conj_gp, paired_indices, clustered_indices, scaffold_indices, genome,
 				pe_lib_index);
 	}
 	else if (cfg::get().long_single_mode || cfg::get().ds.reads.lib_count() > 1 || pe_lib_index == -1
 			|| cfg::get().rm
 					== debruijn_graph::resolving_mode::rm_path_extend) {
 		INFO("Path-Extend repeat resolving");
-		pe_resolving(conj_gp, paired_indices, clustered_indices, quality_labeler, long_reads_libs);
+		pe_resolving(conj_gp, paired_indices, clustered_indices,  scaffold_indices, quality_labeler, long_reads_libs);
 	}
 	else if (cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles) {
 		INFO("Ready to run rectangles repeat resolution module");
