@@ -18,8 +18,8 @@ import options_storage
 # constants to print and detect warnings and errors in logs
 SPADES_PY_ERROR_MESSAGE = "== Error == "
 SPADES_PY_WARN_MESSAGE = "== Warning == "
-SPADES_ERROR_MESSAGE = "ERROR"
-SPADES_WARN_MESSAGE = "WARN"
+SPADES_ERROR_MESSAGE = " ERROR "
+SPADES_WARN_MESSAGE = " WARN "
 
 
 def verify(expr, log, message):
