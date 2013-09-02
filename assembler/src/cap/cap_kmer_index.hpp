@@ -283,8 +283,7 @@ namespace debruijn_graph {
         };
 
     template <class Index>
-        class DeBruijnGraphKMerIndexBuilder<Index,
-              typename std::enable_if<std::is_same<typename Index::KMer, cap::LSeq>::value>::type> {
+        class DeBruijnGraphKMerIndexBuilder<Index, cap::LSeq> {
                   public:
                       typedef Index IndexT;
 
