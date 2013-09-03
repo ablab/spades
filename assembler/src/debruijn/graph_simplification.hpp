@@ -474,7 +474,7 @@ bool RemoveThorns(
         Graph &g,
         const debruijn_config::simplification::interstrand_ec_remover& isec_config,
         boost::function<void(typename Graph::EdgeId)> removal_handler) {
-    INFO("Removing interstranc connections");
+    INFO("Removing interstrand connections");
     size_t max_unr_length = LengthThresholdFinder::MaxErroneousConnectionLength(
             g.k(), isec_config.max_ec_length_coefficient);
     return ThornRemover<Graph>(g, max_unr_length, isec_config.uniqueness_length,
