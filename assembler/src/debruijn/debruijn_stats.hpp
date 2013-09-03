@@ -545,10 +545,8 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 			|| config.write_full_graph
 			|| config.write_full_nc_graph
 			|| config.write_components
-			|| !config.components_for_kmer.empty()
 			|| config.write_components_along_genome
-			|| config.write_components_along_contigs || config.save_full_graph
-			|| !config.components_for_genome_pos.empty()) {
+			|| config.write_components_along_contigs || config.save_full_graph) {
 		path1 = FindGenomeMappingPath(gp.genome, gp.g, gp.index,
 				gp.kmer_mapper).simple_path();
 		path2 = FindGenomeMappingPath(!gp.genome, gp.g, gp.index,
@@ -668,7 +666,7 @@ template<class graph_pack>
 int PrintGraphComponents(const string& file_name, graph_pack& gp,
     size_t split_edge_length, PairedInfoIndexT<Graph> &clustered_index) {
     shared_ptr<GraphSplitter<Graph>> inner_splitter = ReliableSplitter<Graph>(gp.g, split_edge_length);
-    shared_ptr<GraphComponentFilter<Graph>> checker = make_shared<ComponentSizeFilter<Graph>>(gp.g, split_edge_length, 2, 300);
+    shared_ptr<GraphComponentFilter<Graph>> checker = make_shared<SmallComponentFilter<Graph>>(gp.g, 3);
 	FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
 	size_t cnt = 1;
 	while (splitter.HasNext() && cnt <= 1000) {

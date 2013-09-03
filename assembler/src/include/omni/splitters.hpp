@@ -261,8 +261,10 @@ private:
     static vector<VertexId> ExtractVertices(const Graph &graph, const Path<EdgeId> &path) {
         vector<VertexId> result;
         for(size_t i = 0; i < path.size(); i++) {
-            result.push_back(graph.EdgeStart(path[i]));
-            result.push_back(graph.EdgeEnd(path[i]));
+        	if(i == 0 || path[i] != path[i - 1]) {
+        		result.push_back(graph.EdgeStart(path[i]));
+        		result.push_back(graph.EdgeEnd(path[i]));
+        	}
         }
         return result;
     }
@@ -590,6 +592,132 @@ public:
             }
         }
         return next_;
+    }
+private:
+    DECL_LOGGER("FilteringSplitterWrapper");
+};
+
+//TODO  split combined component into several.
+template<class Graph>
+class CollectingSplitterWrapper : public GraphSplitter<Graph> {
+private:
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+
+    shared_ptr<GraphSplitter<Graph>> inner_splitter_;
+    shared_ptr<GraphComponentFilter<Graph>> checker_;
+    boost::optional<GraphComponent<Graph>> next_;
+    set<VertexId> filtered_;
+public:
+    CollectingSplitterWrapper(
+            shared_ptr<GraphSplitter<Graph>> inner_splitter,
+            shared_ptr<GraphComponentFilter<Graph>> checker)
+            : GraphSplitter<Graph>(inner_splitter->graph()), inner_splitter_(inner_splitter),
+              checker_(checker) {
+    }
+
+    GraphComponent<Graph> Next() {
+        if (!HasNext()) {
+       		VERIFY(false);
+           	return omnigraph::GraphComponent<Graph>(this->graph());
+        } else {
+        	if(next_) {
+        		GraphComponent<Graph> result = next_.get();
+        		next_ = boost::optional<GraphComponent<Graph>>();
+        		return result;
+        	} else {
+           		GraphComponent<Graph> result(this->graph(), filtered_.begin(), filtered_.end(), "filtered");
+           		filtered_.clear();
+           		return result;
+        	}
+        }
+    }
+
+    bool HasNext() {
+        while (!next_ && inner_splitter_->HasNext()) {
+            GraphComponent<Graph> ne = inner_splitter_->Next();
+            if (checker_->Check(ne)) {
+                next_ = ne;
+            } else {
+            	filtered_.insert(ne.v_begin(), ne.v_end());
+            }
+        }
+        return next_ || !filtered_.empty();
+    }
+private:
+    DECL_LOGGER("FilteringSplitterWrapper");
+};
+
+
+template<class Graph>
+class CondensingSplitterWrapper : public GraphSplitter<Graph> {
+private:
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+
+    shared_ptr<GraphSplitter<Graph>> inner_splitter_;
+    shared_ptr<GraphComponentFilter<Graph>> checker_;
+    boost::optional<GraphComponent<Graph>> next_;
+
+    string CutName(const string &name, size_t max_length) {
+    	VERIFY(max_length >= 7);
+    	size_t length = name.size();
+    	if (length <= max_length)
+    		return name;
+    	else {
+    		return name.substr(0, (max_length - 5) / 2) + "....." + name.substr(length - (max_length - 5) / 2, (max_length - 5) / 2);
+    	}
+    }
+
+    GraphComponent<Graph> ConstructComponent() {
+    	GraphComponent<Graph> next = inner_splitter_->Next();
+    	if (checker_->Check(next)) {
+    		return next;
+    	}
+    	set<VertexId> vertices(next.v_begin(), next.v_end());
+    	string name = next.name();
+    	for(size_t i = 0; i < 10 && inner_splitter_->HasNext(); i++) {
+			next = inner_splitter_->Next();
+			if (checker_->Check(next)) {
+				next_ = next;
+				break;
+			} else {
+				vertices.insert(next.v_begin(), next.v_end());
+				name += ";";
+				name += next.name();
+			}
+		}
+		return GraphComponent<Graph>(this->graph(), vertices.begin(), vertices.end(), CutName(name, 60));
+    }
+
+public:
+    CondensingSplitterWrapper(
+            shared_ptr<GraphSplitter<Graph>> inner_splitter,
+            shared_ptr<GraphComponentFilter<Graph>> checker)
+            : GraphSplitter<Graph>(inner_splitter->graph()), inner_splitter_(inner_splitter),
+              checker_(checker) {
+    }
+
+    GraphComponent<Graph> Next() {
+        if (!HasNext()) {
+            VERIFY(false);
+            return omnigraph::GraphComponent<Graph>(this->graph());
+        }
+        if(next_) {
+        	GraphComponent<Graph> result = next_.get();
+        	next_ = boost::optional<GraphComponent<Graph>>();
+        	return result;
+        } else {
+        	return ConstructComponent();
+        }
+    }
+
+    bool HasNext() {
+    	if(next_)
+    		return true;
+    	if(!inner_splitter_->HasNext())
+    		return false;
+    	return true;
     }
 private:
     DECL_LOGGER("FilteringSplitterWrapper");

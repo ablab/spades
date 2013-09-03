@@ -652,7 +652,6 @@ void SimplifyGraph(conj_graph_pack &gp,
                    omnigraph::GraphLabeler<Graph>& /*labeler*/,
                    detail_info_printer& printer, size_t iteration_count) {
     //ec auto threshold
-	FlankingCoverage<Graph, Index::InnerIndexT> flanking_cov(gp.g, gp.index.inner_index(), 50);
     double determined_coverage_threshold =
             FindErroneousConnectionsCoverageThreshold(gp.g,
                                                       gp.index.inner_index());
@@ -689,6 +688,14 @@ void SimplifyGraph(conj_graph_pack &gp,
 
     PostSimplification(gp, removal_handler, printer,
                        determined_coverage_threshold);
+
+    //This should be put into PostSimplification when(if) flanking coverage will be rewritten.
+    if (cfg::get().topology_simplif_enabled && cfg::get().simp.her.enabled && cfg::get().developer_mode) {
+    	FlankingCoverage<Graph, Index::InnerIndexT> flanking_cov(gp.g, gp.index.inner_index(), 50);
+		HiddenECRemover<Graph>(gp.g, cfg::get().simp.her.uniqueness_length, flanking_cov,
+				cfg::get().simp.her.unreliability_threshold, determined_coverage_threshold, cfg::get().simp.her.relative_threshold,
+				removal_handler).Process();
+	}
 //    typedef typename EdgeIndexHelper<typename conj_graph_pack::index_t>::GraphPositionFillingIndexBuilderT IndexBuilder;
 //    IndexBuilder index_builder;
     if (!cfg::get().developer_mode) {
@@ -704,9 +711,6 @@ void SimplifyGraph(conj_graph_pack &gp,
 	printer(ipp_removing_isolated_edges);
 	cout << cfg::get().simp.her.uniqueness_length << cfg::get().simp.her.unreliability_threshold << cfg::get().simp.her.relative_threshold << endl;
 
-    if (cfg::get().topology_simplif_enabled && cfg::get().simp.her.enabled)
-		HiddenECRemover<Graph>(gp.g, cfg::get().simp.her.uniqueness_length, flanking_cov,
-				cfg::get().simp.her.unreliability_threshold, determined_coverage_threshold, cfg::get().simp.her.relative_threshold).Process();
 
     if (cfg::get().gap_closer_enable && cfg::get().gc.after_simplify)
         CloseGaps(gp);

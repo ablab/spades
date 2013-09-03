@@ -24,11 +24,13 @@ namespace visualization {
 template<class Graph>
 void WriteComponents(const Graph& g,
 		const string& folder_name,
-		shared_ptr<GraphSplitter<Graph>> splitter,
+		shared_ptr<GraphSplitter<Graph>> inner_splitter,
 		shared_ptr<GraphColorer<Graph>> colorer,
 		const GraphLabeler<Graph> &labeler) {
 	EmptyGraphLinker<Graph> linker;
 //	shared_ptr<GraphComponentFilter<Graph>> checker = make_shared<ComponentSizeFilter<Graph>>(g, 1500, 2, 300);
+    auto filter = make_shared<omnigraph::SmallComponentFilter<Graph>>(g, 3);
+    shared_ptr<GraphSplitter<Graph>> splitter = make_shared<omnigraph::CollectingSplitterWrapper<Graph>>(inner_splitter, filter);
 	omnigraph::visualization::SplittingGraphVisualizer<Graph>(g, labeler, *colorer, linker).SplitAndVisualize(*splitter, folder_name);
 }
 
@@ -62,7 +64,9 @@ void WriteComponentsAlongPath(const Graph& g, Path<typename Graph::EdgeId> path,
     edge_colorer->AddColorer(colorer);
     edge_colorer->AddColorer(make_shared<PathColorer<Graph>>(g, path, "green"));
     shared_ptr<GraphColorer<Graph>> resulting_colorer =  make_shared<CompositeGraphColorer<Graph>>(colorer, edge_colorer);
-    shared_ptr<GraphSplitter<Graph>> splitter = ReliableSplitterAlongPath<Graph>(g, path);
+    shared_ptr<GraphSplitter<Graph>> rs = ReliableSplitterAlongPath<Graph>(g, path);
+    auto filter = make_shared<omnigraph::SmallComponentFilter<Graph>>(g, 3);
+    shared_ptr<GraphSplitter<Graph>> splitter = make_shared<omnigraph::CondensingSplitterWrapper<Graph>>(rs, filter);
     WriteComponents<Graph>(g, folder_name, splitter, resulting_colorer, labeler);
 }
 

@@ -96,18 +96,35 @@ public:
               max_vertex_number_(max_vertex_number) {
     }
 
-    bool Check(const GraphComponent<Graph> &/*component*/) const {
-        return true;
-//        if (component.v_size() <= min_vertex_number_
-//                || component.v_size() >= max_vertex_number_)
-//            return false;
-//        for (auto iterator = component.e_begin(); iterator != component.e_end();
-//                ++iterator) {
-//            if (this->graph().length(*iterator) <= max_length_) {
-//                return true;
-//            }
-//        }
-//        return false;
+    bool Check(const GraphComponent<Graph> & component) const {
+        if (component.v_size() <= min_vertex_number_
+                || component.v_size() >= max_vertex_number_)
+            return false;
+        for (auto iterator = component.e_begin(); iterator != component.e_end();
+                ++iterator) {
+            if (this->graph().length(*iterator) <= max_length_) {
+                return true;
+            }
+        }
+        return false;
+    }
+};
+
+template<class Graph>
+class SmallComponentFilter : public GraphComponentFilter<Graph> {
+private:
+    typedef GraphComponentFilter<Graph> base;
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+
+    size_t min_vertex_number_;
+public:
+    SmallComponentFilter(const Graph &graph, size_t min_vertex_number)
+            : base(graph), min_vertex_number_(min_vertex_number) {
+    }
+
+    bool Check(const GraphComponent<Graph> &component) const {
+        return component.v_size() >= min_vertex_number_;
     }
 };
 

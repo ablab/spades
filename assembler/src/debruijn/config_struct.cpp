@@ -293,6 +293,16 @@ void load(debruijn_config::simplification::max_flow_ec_remover& mfec,
   load(mfec.uniqueness_length, pt, "uniqueness_length");
 }
 
+void load(debruijn_config::simplification::hidden_ec_remover& her,
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
+  using config_common::load;
+
+  load(her.enabled, pt, "enabled");
+  load(her.uniqueness_length, pt, "uniqueness_length");
+  load(her.unreliability_threshold, pt, "unreliability_threshold");
+  load(her.relative_threshold, pt, "relative_threshold");
+}
+
 void load(debruijn_config::distance_estimator& de,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
@@ -444,6 +454,7 @@ void load(debruijn_config::simplification& simp,
   load(simp.mfec, pt, "mfec", complete); // max flow erroneous connections remover:
   load(simp.ier, pt, "ier", complete); // isolated edges remover
   load(simp.cbr, pt, "cbr", complete); // complex bulge remover
+  load(simp.her, pt, "her", complete); // hidden ec remover
 }
 
 void load(debruijn_config::info_printer& printer,
