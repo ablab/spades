@@ -1,0 +1,15 @@
+############################################################################
+# Copyright (c) 2011-2013 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
+project(pyyaml2)
+
+install(FILES __init__.py composer.py constructor.py
+             cyaml.py dumper.py emitter.py  error.py
+             events.py loader.py nodes.py parser.py  
+             reader.py representer.py resolver.py  
+             scanner.py serializer.py tokens.py
+        DESTINATION share/spades/pyyaml2
+        COMPONENT runtime)

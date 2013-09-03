@@ -8,6 +8,7 @@
 
 
 import os
+import sys
 import shutil
 import support
 import process_cfg
@@ -42,10 +43,12 @@ def move_dataset_files(dataset_data, dst, ext_python_modules_home, max_threads, 
         if pigz_path:
             for reads_file in to_compress:
                 support.sys_call([pigz_path, '-f', '-7', '-p', str(max_threads), reads_file], log)
-                print [pigz_path, '-f', '-7', '-p', str(max_threads), reads_file]
         else:
             addsitedir(ext_python_modules_home)
-            from joblib import Parallel, delayed
+            if sys.version.startswith('2.'):
+                from joblib2 import Parallel, delayed
+            elif sys.version.startswith('3.'):
+                from joblib3 import Parallel, delayed
             n_jobs = min(len(to_compress), max_threads)
             outputs = Parallel(n_jobs=n_jobs)(delayed(support.sys_call)(['gzip', '-f', '-7', reads_file]) for reads_file in to_compress)
             for output in outputs:
@@ -75,7 +78,10 @@ def prepare_config_bh(filename, cfg, log):
 
 def run_bh(result_filename, configs_dir, execution_home, cfg, ext_python_modules_home, log):
     addsitedir(ext_python_modules_home)
-    import pyyaml
+    if sys.version.startswith('2.'):
+        import pyyaml2 as pyyaml
+    elif sys.version.startswith('3.'):
+        import pyyaml3 as pyyaml
 
     dst_configs = os.path.join(cfg.output_dir, "configs")
     if os.path.exists(dst_configs):
@@ -102,12 +108,12 @@ def run_bh(result_filename, configs_dir, execution_home, cfg, ext_python_modules
     corrected_dataset_yaml_filename = os.path.join(cfg.tmp_dir, "corrected.yaml")
     if not os.path.isfile(corrected_dataset_yaml_filename):
         support.error("read error correction finished abnormally: " + corrected_dataset_yaml_filename + " not found!")
-    corrected_dataset_data = pyyaml.load(file(corrected_dataset_yaml_filename, 'r'))
+    corrected_dataset_data = pyyaml.load(open(corrected_dataset_yaml_filename, 'r'))
     if cfg.gzip_output:
         log.info("\n== Compressing corrected reads (with gzip)")
     move_dataset_files(corrected_dataset_data, cfg.output_dir, ext_python_modules_home, cfg.max_threads, log, cfg.gzip_output)
     corrected_dataset_yaml_filename = result_filename
-    pyyaml.dump(corrected_dataset_data, file(corrected_dataset_yaml_filename, 'w'))
+    pyyaml.dump(corrected_dataset_data, open(corrected_dataset_yaml_filename, 'w'))
     log.info("\n== Dataset description file created: " + corrected_dataset_yaml_filename + "\n")
 
     shutil.rmtree(cfg.tmp_dir)

@@ -411,21 +411,22 @@ def split_contigs(filename, tmpdir):
 
 
 def usage():
-    print >> sys.stderr, 'Mismatch Corrector. Simple post processing tool'
-    print >> sys.stderr, 'Usage: python', sys.argv[0], '[options] -1 left_reads -2 right_reads -c contigs'
-    print >> sys.stderr, 'Or: python', sys.argv[0], '[options] --12 mixed_reads -c contigs'
-    print >> sys.stderr, 'Or: python', sys.argv[0], '[options] -s sam_file -c contigs'
-    print >> sys.stderr, 'Options:'
-    print >> sys.stderr, '-t/--threads  <int>   threads number'
-    print >> sys.stderr, '-o/--output-dir   <dir_name>  directory to store results'
-    print >> sys.stderr, '-m/--mate-weight  <int>   weight for paired reads aligned properly. By default, equal to single reads weight (=1)'
-    print >> sys.stderr, '--bwa <path>   path to bwa tool. Required if bwa is not in PATH'
-    print >> sys.stderr, '--bowtie2    <path>  path to bowtie2 tool. Can be used instead of bwa. It is faster but provides a bit worse results'
-    print >> sys.stderr, '  --use-quality use quality values as probabilities '
-    print >> sys.stderr, '  --debug   save all intermediate files '
-    print >> sys.stderr, '  --use-multiple-aligned  use paired reads with multiple alignment'
-    print >> sys.stderr, '  --skip-masked   do not correct single \'N\' in contigs unless significant read support provided'
-    print >> sys.stderr, '  --insert-size <int> estimation on insert size'
+    sys.stderr.write('Mismatch Corrector. Simple post processing tool\n')
+    sys.stderr.write('Usage: python' + str(sys.argv[0]) + '[options] -1 left_reads -2 right_reads -c contigs\n')
+    sys.stderr.write('Or: python' + str(sys.argv[0]) + '[options] --12 mixed_reads -c contigs\n')
+    sys.stderr.write('Or: python' + str(sys.argv[0]) + '[options] -s sam_file -c contigs\n')
+    sys.stderr.write('Options:\n')
+    sys.stderr.write('-t/--threads  <int>   threads number\n')
+    sys.stderr.write('-o/--output-dir   <dir_name>  directory to store results\n')
+    sys.stderr.write('-m/--mate-weight  <int>   weight for paired reads aligned properly. By default, equal to single reads weight (=1)\n')
+    sys.stderr.write('--bwa <path>   path to bwa tool. Required if bwa is not in PATH\n')
+    sys.stderr.write('--bowtie2    <path>  path to bowtie2 tool. Can be used instead of bwa. It is faster but provides a bit worse results\n')
+    sys.stderr.write('  --use-quality use quality values as probabilities \n')
+    sys.stderr.write('  --debug   save all intermediate files \n')
+    sys.stderr.write('  --use-multiple-aligned  use paired reads with multiple alignment\n')
+    sys.stderr.write('  --skip-masked   do not correct single \'N\' in contigs unless significant read support provided\n')
+    sys.stderr.write('  --insert-size <int> estimation on insert size\n')
+    sys.stderr.flush()
 
 
 def run_aligner(log):
@@ -1233,7 +1234,10 @@ def main(args, joblib_path, log=None):
             tmp.append(os.path.getsize(contig_file))
             pairs.append(tmp)
     pairs.sort(key=lambda x: x[-1], reverse=True)
-    from joblib import Parallel, delayed
+    if sys.version.startswith('2.'):
+        from joblib2 import Parallel, delayed
+    elif sys.version.startswith('3.'):
+        from joblib3 import Parallel, delayed
     Parallel(n_jobs=config["t"])(delayed(process_contig)(pair) for pair in pairs)
 #        inserted += loc_ins
 #        replaced += loc_rep

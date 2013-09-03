@@ -1,5 +1,6 @@
 import sys
 
+SUPPORTED_PYTHON_VERSIONS = ['2.4', '2.5', '2.6', '2.7', '3.2', '3.3']
 # we support up to MAX_LIBS_NUMBER paired-end libs and MAX_LIBS_NUMBER mate-pair libs
 MAX_LIBS_NUMBER = 5
 
@@ -46,100 +47,102 @@ short_options = "o:1:2:s:k:t:m:i:h"
 
 # adding multiple paired-end and mate-pair libraries support
 reads_options = []
-for i in xrange(MAX_LIBS_NUMBER):
+for i in range(MAX_LIBS_NUMBER):
     for type in ["pe", "mp"]:
         reads_options += ("%s%d-1= %s%d-2= %s%d-12= %s%d-s= %s%d-rf %s%d-fr %s%d-ff" % tuple([type, i + 1] * 7)).split()
 long_options += reads_options
-# for checking wether option corrseponds to reads or not
-reads_options = map(lambda x:"--" + x.split('=')[0], reads_options)
+# for checking whether option corresponds to reads or not
+reads_options = list(map(lambda x:"--" + x.split('=')[0], reads_options))
 reads_options += ["--12", "-1", "-2", "-s"]
 
 
 def usage(spades_version, show_hidden=False):
-    print >> sys.stderr, "SPAdes genome assembler v." + str(spades_version)
-    print >> sys.stderr, "Usage:", sys.argv[0], "[options] -o <output_dir>"
-    print >> sys.stderr, ""
-    print >> sys.stderr, "Basic options:"
-    print >> sys.stderr, "-o\t<output_dir>\tdirectory to store all the resulting files (required)"
-    print >> sys.stderr, "--sc\t\t\tthis flag is required for MDA (single-cell)"\
-                         " data"
-    print >> sys.stderr, "--test\t\t\truns SPAdes on toy dataset"
-    print >> sys.stderr, "-h/--help\t\tprints this usage message"
+    sys.stderr.write("SPAdes genome assembler v." + str(spades_version) + "\n")
+    sys.stderr.write("Usage: " + str(sys.argv[0]) + " [options] -o <output_dir>" + "\n")
+    sys.stderr.write("" + "\n")
+    sys.stderr.write("Basic options:" + "\n")
+    sys.stderr.write("-o\t<output_dir>\tdirectory to store all the resulting files (required)" + "\n")
+    sys.stderr.write("--sc\t\t\tthis flag is required for MDA (single-cell)"\
+                         " data" + "\n")
+    sys.stderr.write("--test\t\t\truns SPAdes on toy dataset" + "\n")
+    sys.stderr.write("-h/--help\t\tprints this usage message" + "\n")
 
-    print >> sys.stderr, ""
-    print >> sys.stderr, "Input data:"
-    print >> sys.stderr, "--12\t<filename>\tfile with interlaced forward and reverse"\
-                         " paired-end reads"
-    print >> sys.stderr, "-1\t<filename>\tfile with forward paired-end reads"
-    print >> sys.stderr, "-2\t<filename>\tfile with reverse paired-end reads"
-    print >> sys.stderr, "-s\t<filename>\tfile with unpaired reads"
-    print >> sys.stderr, "--pe<#>-12\t<filename>\tfile with interlaced"\
-                         " reads for paired-end library number <#> (<#> = 1,2,3,4,5)"
-    print >> sys.stderr, "--pe<#>-1\t<filename>\tfile with forward reads"\
-                         " for paired-end library number <#> (<#> = 1,2,3,4,5)"
-    print >> sys.stderr, "--pe<#>-2\t<filename>\tfile with reverse reads"\
-                         " for paired-end library number <#> (<#> = 1,2,3,4,5)"
-    print >> sys.stderr, "--pe<#>-s\t<filename>\tfile with unpaired reads"\
-                         " for paired-end library number <#> (<#> = 1,2,3,4,5)"
-    print >> sys.stderr, "--pe<#>-<or>\torientation of reads"\
-                         " for paired-end library number <#> (<#> = 1,2,3,4,5; <or> = fr, rf, ff)"
-    print >> sys.stderr, "--mp<#>-12\t<filename>\tfile with interlaced"\
-                         " reads for mate-pair library number <#> (<#> = 1,2,3,4,5)"
-    print >> sys.stderr, "--mp<#>-1\t<filename>\tfile with forward reads"\
-                         " for mate-pair library number <#> (<#> = 1,2,3,4,5)"
-    print >> sys.stderr, "--mp<#>-2\t<filename>\tfile with reverse reads"\
-                         " for mate-pair library number <#> (<#> = 1,2,3,4,5)"
-    print >> sys.stderr, "--mp<#>-s\t<filename>\tfile with unpaired reads"\
-                         " for mate-pair library number <#> (<#> = 1,2,3,4,5)"
-    print >> sys.stderr, "--mp<#>-<or>\torientation of reads"\
-                         " for mate-pair library number <#> (<#> = 1,2,3,4,5; <or> = fr, rf, ff)"
+    sys.stderr.write("" + "\n")
+    sys.stderr.write("Input data:" + "\n")
+    sys.stderr.write("--12\t<filename>\tfile with interlaced forward and reverse"\
+                         " paired-end reads" + "\n")
+    sys.stderr.write("-1\t<filename>\tfile with forward paired-end reads" + "\n")
+    sys.stderr.write("-2\t<filename>\tfile with reverse paired-end reads" + "\n")
+    sys.stderr.write("-s\t<filename>\tfile with unpaired reads" + "\n")
+    sys.stderr.write("--pe<#>-12\t<filename>\tfile with interlaced"\
+                         " reads for paired-end library number <#> (<#> = 1,2,3,4,5)" + "\n")
+    sys.stderr.write("--pe<#>-1\t<filename>\tfile with forward reads"\
+                         " for paired-end library number <#> (<#> = 1,2,3,4,5)" + "\n")
+    sys.stderr.write("--pe<#>-2\t<filename>\tfile with reverse reads"\
+                         " for paired-end library number <#> (<#> = 1,2,3,4,5)" + "\n")
+    sys.stderr.write("--pe<#>-s\t<filename>\tfile with unpaired reads"\
+                         " for paired-end library number <#> (<#> = 1,2,3,4,5)" + "\n")
+    sys.stderr.write("--pe<#>-<or>\torientation of reads"\
+                         " for paired-end library number <#> (<#> = 1,2,3,4,5; <or> = fr, rf, ff)" + "\n")
+    sys.stderr.write("--mp<#>-12\t<filename>\tfile with interlaced"\
+                         " reads for mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
+    sys.stderr.write("--mp<#>-1\t<filename>\tfile with forward reads"\
+                         " for mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
+    sys.stderr.write("--mp<#>-2\t<filename>\tfile with reverse reads"\
+                         " for mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
+    sys.stderr.write("--mp<#>-s\t<filename>\tfile with unpaired reads"\
+                         " for mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
+    sys.stderr.write("--mp<#>-<or>\torientation of reads"\
+                         " for mate-pair library number <#> (<#> = 1,2,3,4,5; <or> = fr, rf, ff)" + "\n")
 
-    print >> sys.stderr, ""
-    print >> sys.stderr, "Pipeline options:"
-    print >> sys.stderr, "--only-error-correction\truns only read error correction"\
-                         " (without assembling)"
-    print >> sys.stderr, "--only-assembler\truns only assembling (without read error"\
-                         " correction)"
-    print >> sys.stderr, "--disable-gzip-output\tforces error correction not to"\
-                         " compress the corrected reads"
-    print >> sys.stderr, "--careful\t\ttries to reduce number"\
-                         " of mismatches and short indels"
-    print >> sys.stderr, "--rectangles\t\tuses rectangle graph algorithm for repeat resolution"
+    sys.stderr.write("" + "\n")
+    sys.stderr.write("Pipeline options:" + "\n")
+    sys.stderr.write("--only-error-correction\truns only read error correction"\
+                         " (without assembling)" + "\n")
+    sys.stderr.write("--only-assembler\truns only assembling (without read error"\
+                         " correction)" + "\n")
+    sys.stderr.write("--disable-gzip-output\tforces error correction not to"\
+                         " compress the corrected reads" + "\n")
+    sys.stderr.write("--careful\t\ttries to reduce number"\
+                         " of mismatches and short indels" + "\n")
+    sys.stderr.write("--rectangles\t\tuses rectangle graph algorithm for repeat resolution" + "\n")
 
-    print >> sys.stderr, ""
-    print >> sys.stderr, "Advanced options:"
-    print >> sys.stderr, "--continue\t\t\tcontinue processing from the last available check-point"
-    print >> sys.stderr, "--dataset\t<filename>\tfile with dataset description in YAML format"
-    print >> sys.stderr, "-t/--threads\t<int>\t\tnumber of threads"
-    print >> sys.stderr, "\t\t\t\t[default: %s]" % threads
-    print >> sys.stderr, "-m/--memory\t<int>\t\tRAM limit for SPAdes in Gb"\
-                         " (terminates if exceeded)"
-    print >> sys.stderr, "\t\t\t\t[default: %s]" % memory
-    print >> sys.stderr, "--tmp-dir\t<dirname>\tdirectory for read error correction"\
-                         " temporary files"
-    print >> sys.stderr, "\t\t\t\t[default: <output_dir>/corrected/tmp]"
-    print >> sys.stderr, "-k\t\t<int,int,...>\tcomma-separated list of k-mer sizes"\
-                         " (must be odd and"
-    print >> sys.stderr, "\t\t\t\tless than 128) [default: " + ",".join(map(str, k_mers_short)) + "]"
-    print >> sys.stderr, "--phred-offset\t<33 or 64>\tPHRED quality offset in the"\
-                         " input reads (33 or 64)"
-    print >> sys.stderr, "\t\t\t\t[default: auto-detect]"
-    print >> sys.stderr, "--debug\t\t\t\truns SPAdes in debug mode (keeps intermediate output)"
+    sys.stderr.write("" + "\n")
+    sys.stderr.write("Advanced options:" + "\n")
+    sys.stderr.write("--continue\t\t\tcontinue processing from the last available check-point" + "\n")
+    sys.stderr.write("--dataset\t<filename>\tfile with dataset description in YAML format" + "\n")
+    sys.stderr.write("-t/--threads\t<int>\t\tnumber of threads" + "\n")
+    sys.stderr.write("\t\t\t\t[default: %s]\n" % threads)
+    sys.stderr.write("-m/--memory\t<int>\t\tRAM limit for SPAdes in Gb"\
+                         " (terminates if exceeded)" + "\n")
+    sys.stderr.write("\t\t\t\t[default: %s]\n" % memory)
+    sys.stderr.write("--tmp-dir\t<dirname>\tdirectory for read error correction"\
+                         " temporary files" + "\n")
+    sys.stderr.write("\t\t\t\t[default: <output_dir>/corrected/tmp]" + "\n")
+    sys.stderr.write("-k\t\t<int,int,...>\tcomma-separated list of k-mer sizes"\
+                         " (must be odd and" + "\n")
+    sys.stderr.write("\t\t\t\tless than 128) [default: " + ",".join(map(str, k_mers_short)) + "]" + "\n")
+    sys.stderr.write("--phred-offset\t<33 or 64>\tPHRED quality offset in the"\
+                         " input reads (33 or 64)" + "\n")
+    sys.stderr.write("\t\t\t\t[default: auto-detect]" + "\n")
+    sys.stderr.write("--debug\t\t\t\truns SPAdes in debug mode (keeps intermediate output)" + "\n")
 
     if show_hidden:
-        print >> sys.stderr, ""
-        print >> sys.stderr, "HIDDEN options:"
-        print >> sys.stderr, "--mismatch-correction\t\truns post processing correction"\
-                             " of mismatches and short indels"
-        print >> sys.stderr, "--reference\t<filename>\tfile with reference for deep analysis"\
-                             " (only in debug mode)"
-        print >> sys.stderr, "-i/--iterations\t<int>\t\tnumber of iterations for read error"\
-                             " correction [default: %s]" % iterations
-        print >> sys.stderr, "--bh-heap-check\t\t<value>\tsets HEAPCHECK environment variable"\
-                             " for BayesHammer"
-        print >> sys.stderr, "--spades-heap-check\t<value>\tsets HEAPCHECK environment variable"\
-                             " for SPAdes"
-        print >> sys.stderr, "--help-hidden\tprints this usage message with all hidden options"
+        sys.stderr.write("" + "\n")
+        sys.stderr.write("HIDDEN options:" + "\n")
+        sys.stderr.write("--mismatch-correction\t\truns post processing correction"\
+                             " of mismatches and short indels" + "\n")
+        sys.stderr.write("--reference\t<filename>\tfile with reference for deep analysis"\
+                             " (only in debug mode)" + "\n")
+        sys.stderr.write("-i/--iterations\t<int>\t\tnumber of iterations for read error"\
+                             " correction [default: %s]\n" % iterations)
+        sys.stderr.write("--bh-heap-check\t\t<value>\tsets HEAPCHECK environment variable"\
+                             " for BayesHammer" + "\n")
+        sys.stderr.write("--spades-heap-check\t<value>\tsets HEAPCHECK environment variable"\
+                             " for SPAdes" + "\n")
+        sys.stderr.write("--help-hidden\tprints this usage message with all hidden options" + "\n")
+
+    sys.stderr.flush()
 
 
 def set_test_options():

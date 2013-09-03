@@ -9,7 +9,6 @@
 import os
 import stat
 import sys
-import shutil
 import logging
 import glob
 import re
@@ -22,22 +21,17 @@ SPADES_ERROR_MESSAGE = " ERROR "
 SPADES_WARN_MESSAGE = " WARN "
 
 
-def verify(expr, log, message):
-    if (not (expr)):
-        log.info ("Assertion failed. Message: " + message)
-        sys.exit(1)
-
-
 def error(err_str, log=None, prefix=SPADES_PY_ERROR_MESSAGE):
     if log:
         log.info("\n\n" + prefix + " " + err_str)
         log_warnings(log)
         log.info("\nIn case you have troubles running SPAdes, you can write to spades.support@bioinf.spbau.ru")
-        log.info("Please provide us with params.txt and spades.log files from the output directory.\n")
+        log.info("Please provide us with params.txt and spades.log files from the output directory.")
     else:
-        print >>sys.stderr, "\n\n" + prefix + " " + err_str + "\n"
-        print >>sys.stderr, "In case you have troubles running SPAdes, you can write to spades.support@bioinf.spbau.ru"
-        print >>sys.stderr, "Please provide us with params.txt and spades.log files from the output directory.\n"
+        sys.stderr.write("\n\n" + prefix + " " + err_str + "\n\n")
+        sys.stderr.write("In case you have troubles running SPAdes, you can write to spades.support@bioinf.spbau.ru\n")
+        sys.stderr.write("Please provide us with params.txt and spades.log files from the output directory.\n")
+        sys.stderr.flush()
     sys.exit(1)
 
 
@@ -45,7 +39,14 @@ def warning(warn_str, log=None, prefix="== Warning == "):
     if log:
         log.info("\n\n" + prefix + " " + warn_str + "\n\n")
     else:
-        print "\n\n" + prefix + " " + warn_str + "\n\n"
+        sys.stdout.write("\n\n" + prefix + " " + warn_str + "\n\n\n")
+        sys.stdout.flush()
+
+
+def check_python_version():
+    if sys.version[0:3] not in options_storage.SUPPORTED_PYTHON_VERSIONS:
+        error("python version " + sys.version[0:3] + " is not supported!\n" + \
+              "Supported versions are " + ", ".join(options_storage.SUPPORTED_PYTHON_VERSIONS))
 
 
 def check_file_existence(filename, message="", log=None):
@@ -85,6 +86,13 @@ def which(program):
     return None
 
 
+def process_subprocess_output(line):
+    if sys.version.startswith('2.'):
+        return line.rstrip()
+    else: # sys.version.startswith('3.'):
+        return str(line.rstrip(), 'utf-8')
+
+
 def sys_call(cmd, log=None, cwd=None):
     import shlex
     import subprocess
@@ -98,21 +106,22 @@ def sys_call(cmd, log=None, cwd=None):
 
     output = ''
     while not proc.poll():
-        line = proc.stdout.readline()
-        if line != '':
+        line = process_subprocess_output(proc.stdout.readline())
+        if line:
             if log:
-                log.info(line.rstrip())
+                log.info(line)
             else:
-                output += line.rstrip() + "\n"
+                output += line + "\n"
         if proc.returncode is not None:
             break
 
     for line in proc.stdout.readlines():
-        if line != '':
+        line = process_subprocess_output(line)
+        if line:
             if log:
-                log.info(line.rstrip())
+                log.info(line)
             else:
-                output += line.rstrip() + "\n"
+                output += line + "\n"
 
     if proc.returncode:
         error('system call for: "%s" finished abnormally, err code: %d' % (cmd, proc.returncode), log)
@@ -145,24 +154,24 @@ def universal_sys_call(cmd, log, out_filename=None, err_filename=None, cwd=None)
     if log and (not out_filename or not err_filename):
         while not proc.poll():
             if not out_filename:
-                line = proc.stdout.readline()
-                if line != '':
-                    log.info(line.rstrip())
+                line = process_subprocess_output(proc.stdout.readline())
+                if line:
+                    log.info(line)
             if not err_filename:
-                line = proc.stderr.readline()
-                if line != '':
-                    log.info(line.rstrip())
+                line = process_subprocess_output(proc.stderr.readline())
+                if line:
+                    log.info(line)
             if proc.returncode is not None:
                 break
 
         if not out_filename:
             for line in proc.stdout.readlines():
                 if line != '':
-                    log.info(line.rstrip())
+                    log.info(process_subprocess_output(line))
         if not err_filename:
             for line in proc.stderr.readlines():
                 if line != '':
-                    log.info(line.rstrip())
+                    log.info(process_subprocess_output(line))
     else:
         proc.wait()
 
@@ -384,15 +393,19 @@ def dataset_has_interlaced_reads(dataset_data):
 
 
 def split_interlaced_reads(dataset_data, dst, log):
+    new_dataset_data = list()
     for reads_library in dataset_data:
+        new_reads_library = dict(reads_library)
         for key, value in reads_library.items():
             if key == 'interlaced reads':
-                if 'left reads' not in reads_library:
-                    reads_library['left reads'] = []
-                    reads_library['right reads'] = []
+                if 'left reads' not in new_reads_library:
+                    new_reads_library['left reads'] = []
+                    new_reads_library['right reads'] = []
                 for interlaced_reads in value:
                     ext = os.path.splitext(interlaced_reads)[1]
+                    was_compressed = False
                     if ext == '.gz':
+                        was_compressed = True
                         import gzip
                         input_file = gzip.open(interlaced_reads, 'r')
                         ungzipped = os.path.splitext(interlaced_reads)[0]
@@ -416,18 +429,27 @@ def split_interlaced_reads(dataset_data, dst, log):
                         log.info("== Splitting " + interlaced_reads + " into left and right reads (in " + dst + " directory)")
                         out_left_file = open(out_left_filename, 'w')
                         out_right_file = open(out_right_filename, 'w')
-                        for id, line in enumerate(input_file):
-                            if (is_fasta_format and (id % 4 < 2)) or (not is_fasta_format and (id % 8 < 4)):
-                                out_left_file.write(line)
-                            else:
-                                out_right_file.write(line)
+                        if sys.version.startswith('3.') and was_compressed:
+                            for id, line in enumerate(input_file):
+                                if (is_fasta_format and (id % 4 < 2)) or (not is_fasta_format and (id % 8 < 4)):
+                                    out_left_file.write(str(line, 'utf-8'))
+                                else:
+                                    out_right_file.write(str(line, 'utf-8'))
+                        else:
+                            for id, line in enumerate(input_file):
+                                if (is_fasta_format and (id % 4 < 2)) or (not is_fasta_format and (id % 8 < 4)):
+                                    out_left_file.write(line)
+                                else:
+                                    out_right_file.write(line)
                         out_left_file.close()
                         out_right_file.close()
 
                     input_file.close()
-                    reads_library['left reads'].append(out_left_filename)
-                    reads_library['right reads'].append(out_right_filename)
-                del reads_library['interlaced reads']
+                    new_reads_library['left reads'].append(out_left_filename)
+                    new_reads_library['right reads'].append(out_right_filename)
+                del new_reads_library['interlaced reads']
+        new_dataset_data.append(new_reads_library)
+    return new_dataset_data
 
 
 def pretty_print_reads(dataset_data, log, indent='    '):
@@ -472,7 +494,7 @@ def write_fasta(filename, fasta):
     outfile = open(filename, 'w')
     for name, seq in fasta:
         outfile.write(name + '\n')
-        for i in xrange(0,len(seq),60):
+        for i in range(0, len(seq), 60):
             outfile.write(seq[i : i + 60] + '\n')
     outfile.close()
 

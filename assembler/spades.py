@@ -23,13 +23,17 @@ ext_python_modules_home = spades_init.ext_python_modules_home
 spades_version = spades_init.spades_version
 
 import support
+support.check_python_version()
+
 from process_cfg import merge_configs, empty_config, load_config_from_file
 import bh_logic
 import spades_logic
 import options_storage
 addsitedir(ext_python_modules_home)
-import pyyaml
-
+if sys.version.startswith('2.'):
+    import pyyaml2 as pyyaml
+elif sys.version.startswith('3.'):
+    import pyyaml3 as pyyaml
 
 def print_used_values(cfg, log):
     def print_value(cfg, section, param, pretty_param="", margin="  "):
@@ -48,12 +52,12 @@ def print_used_values(cfg, log):
     # system info
     log.info("System information:")
     try:
-        log.info("  SPAdes version: " + str(spades_version))
-        log.info("  Python version: " + str(sys.version_info[0]) + "." + str(sys.version_info[1]) + '.' + str(sys.version_info[2]))
+        log.info("  SPAdes version: " + str(spades_version).strip())
+        log.info("  Python version: " + ".".join(map(str, sys.version_info[0:3])))
         # for more details: '[' + str(sys.version_info) + ']'
         log.info("  OS: " + platform.platform())
         # for more deatils: '[' + str(platform.uname()) + ']'
-    except:
+    except Exception:
         log.info("  Problem occurred when getting system information")
     log.info("")
 
@@ -83,7 +87,7 @@ def print_used_values(cfg, log):
                      " was obtained with MDA (single-cell) technology")
 
         log.info("  Reads:")
-        dataset_data = pyyaml.load(file(cfg["dataset"].yaml_filename, 'r'))
+        dataset_data = pyyaml.load(open(cfg["dataset"].yaml_filename, 'r'))
         dataset_data = support.relative2abs_paths(dataset_data, os.path.dirname(cfg["dataset"].yaml_filename))
         support.pretty_print_reads(dataset_data, log)
 
@@ -123,9 +127,10 @@ def check_binaries(binary_dir, log):
 def fill_cfg(options_to_parse, log):
     try:
         options, not_options = getopt.gnu_getopt(options_to_parse, options_storage.short_options, options_storage.long_options)
-    except getopt.GetoptError, err:
-        print >> sys.stderr, err
-        print >> sys.stderr
+    except getopt.GetoptError:
+        _, exc, _ = sys.exc_info()
+        sys.stderr.write(str(exc) + "\n")
+        sys.stderr.flush()
         options_storage.usage(spades_version)
         sys.exit(1)
 
@@ -153,7 +158,7 @@ def fill_cfg(options_to_parse, log):
             support.add_to_dataset(opt, arg, dataset_data)
 
         elif opt == '-k':
-            options_storage.k_mers = map(int, arg.split(","))
+            options_storage.k_mers = list(map(int, arg.split(",")))
             for k in options_storage.k_mers:
                 if k > 127:
                     support.error('wrong k value ' + str(k) + ': all k values should be less than 128', log)
@@ -235,15 +240,16 @@ def fill_cfg(options_to_parse, log):
 
     if options_storage.dataset_yaml_filename:
         try:
-            dataset_data = pyyaml.load(file(options_storage.dataset_yaml_filename, 'r'))
-        except pyyaml.YAMLError, exc:
+            dataset_data = pyyaml.load(open(options_storage.dataset_yaml_filename, 'r'))
+        except pyyaml.YAMLError:
+            _, exc, _ = sys.exc_info()
             support.error('exception caught while parsing YAML file (' + options_storage.dataset_yaml_filename + '):\n' + str(exc))
         dataset_data = support.relative2abs_paths(dataset_data, os.path.dirname(options_storage.dataset_yaml_filename))
     else:
         dataset_data = support.correct_dataset(dataset_data)
         dataset_data = support.relative2abs_paths(dataset_data, os.getcwd())
         options_storage.dataset_yaml_filename = os.path.join(options_storage.output_dir, "input_dataset.yaml")
-        pyyaml.dump(dataset_data, file(options_storage.dataset_yaml_filename, 'w'))
+        pyyaml.dump(dataset_data, open(options_storage.dataset_yaml_filename, 'w'))
 
     support.check_dataset_reads(dataset_data, log)
     if support.dataset_has_only_mate_pairs_libraries(dataset_data):
@@ -376,9 +382,9 @@ def main():
         dir_for_split_reads = os.path.join(os.path.abspath(options_storage.output_dir), 'split_reads')
         if not os.path.isdir(dir_for_split_reads):
             os.makedirs(dir_for_split_reads)
-        support.split_interlaced_reads(dataset_data, dir_for_split_reads, log)
+        dataset_data = support.split_interlaced_reads(dataset_data, dir_for_split_reads, log)
         options_storage.dataset_yaml_filename = os.path.join(options_storage.output_dir, "input_dataset.yaml")
-        pyyaml.dump(dataset_data, file(options_storage.dataset_yaml_filename, 'w'))
+        pyyaml.dump(dataset_data, open(options_storage.dataset_yaml_filename, 'w'))
         cfg["dataset"].yaml_filename = os.path.abspath(options_storage.dataset_yaml_filename)
 
     try:
@@ -438,7 +444,7 @@ def main():
                     support.error("failed to continue the previous run! Please restart from the beginning.")
             else:
                 if os.path.isfile(corrected_dataset_yaml_filename):
-                    dataset_data = pyyaml.load(file(corrected_dataset_yaml_filename, 'r'))
+                    dataset_data = pyyaml.load(open(corrected_dataset_yaml_filename, 'r'))
                     dataset_data = support.relative2abs_paths(dataset_data, os.path.dirname(corrected_dataset_yaml_filename))
                 if support.dataset_has_paired_reads(dataset_data):
                     spades_cfg.__dict__["paired_mode"] = True
@@ -535,7 +541,7 @@ def main():
                     log.info("\n===== Mismatch correction started.")
 
                     # detecting paired-end library with the largest insert size
-                    dataset_data = pyyaml.load(file(options_storage.dataset_yaml_filename, 'r')) ### initial dataset, i.e. before error correction
+                    dataset_data = pyyaml.load(open(options_storage.dataset_yaml_filename, 'r')) ### initial dataset, i.e. before error correction
                     dataset_data = support.relative2abs_paths(dataset_data, os.path.dirname(options_storage.dataset_yaml_filename))
                     paired_end_libraries_ids = []
                     for id, reads_library in enumerate(dataset_data):
@@ -551,10 +557,10 @@ def main():
                             max_insert_size = float(estimated_params.__dict__["insert_size_" + str(id)])
                             target_paired_end_library_id = id
                     yaml_dirname = os.path.dirname(options_storage.dataset_yaml_filename)
-                    cfg["mismatch_corrector"].__dict__["1"] = map(lambda x: os.path.join(yaml_dirname, x),
-                        dataset_data[target_paired_end_library_id]['left reads'])
-                    cfg["mismatch_corrector"].__dict__["2"] = map(lambda x: os.path.join(yaml_dirname, x),
-                        dataset_data[target_paired_end_library_id]['right reads'])
+                    cfg["mismatch_corrector"].__dict__["1"] = list(map(lambda x: os.path.join(yaml_dirname, x),
+                        dataset_data[target_paired_end_library_id]['left reads']))
+                    cfg["mismatch_corrector"].__dict__["2"] = list(map(lambda x: os.path.join(yaml_dirname, x),
+                        dataset_data[target_paired_end_library_id]['right reads']))
                     cfg["mismatch_corrector"].__dict__["insert-size"] = round(max_insert_size)
                     #TODO: add reads orientation
 
@@ -634,8 +640,9 @@ def main():
         log.info("Thank you for using SPAdes!")
         log.removeHandler(log_handler)
 
-    except Exception, e:
-        log.exception(e)
+    except Exception:
+        _, exc, _ = sys.exc_info()
+        log.exception(exc)
         support.error("exception caught", log)
 
 
