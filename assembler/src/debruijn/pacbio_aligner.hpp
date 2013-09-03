@@ -22,14 +22,21 @@ private:
 	conj_graph_pack &gp_;
 	PairedIndicesT& paired_indices;
 	PairedIndicesT& clustered_indices;
+	PairedIndicesT& scaffold_indices_;
 	size_t k_test_;DECL_LOGGER("PacIndex")
 
 public:
 	typedef Graph::EdgeId EdgeId;
 
-	PacBioAligner(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices, PairedIndicesT& clustered_indices, size_t k_test) :
-			gp_(conj_gp), paired_indices(paired_indices), clustered_indices(clustered_indices), k_test_(k_test) {
-	}
+	PacBioAligner(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
+                  PairedIndicesT& clustered_indices,
+                  PairedIndicesT& scaffold_indices, size_t k_test)
+            : gp_(conj_gp),
+              paired_indices(paired_indices),
+              clustered_indices(clustered_indices),
+              scaffold_indices_(scaffold_indices),
+              k_test_(k_test) {
+    }
 
 	void pacbio_test(PathStorage<Graph> &long_reads, GapStorage<Graph> &gaps) {
 	    if (cfg::get().entry_point <= ws_pacbio_aligning) {
@@ -116,7 +123,7 @@ public:
 	    string p = path::append_path(cfg::get().output_saves, "pacbio_aligning");
 	    INFO("Saving current state to " << p);
         long_reads.DumpToFile(p + ".mpr", gp_.edge_pos, replacement);
-	    PrintAll(p, gp_, paired_indices, clustered_indices);
+	    PrintAll(p, gp_, paired_indices, clustered_indices, scaffold_indices_);
 	    write_lib_data(p);
 	  }
 	}
@@ -125,7 +132,7 @@ public:
 	{
 	    string p = path::append_path(cfg::get().load_from, "pacbio_aligning");
 	    used_files->push_back(p);
-	    ScanAll(p, gp_, paired_indices, clustered_indices);
+	    ScanAll(p, gp_, paired_indices, clustered_indices, scaffold_indices_);
 	    long_reads.LoadFromFile(p + ".mpr");
 	    load_lib_data(p);
 	}

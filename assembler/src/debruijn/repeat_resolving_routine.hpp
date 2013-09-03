@@ -1114,7 +1114,7 @@ void resolve_repeats() {
 	     INFO(" need to align pb");
 	     if (cfg::get().pacbio_test_on) {
 	         INFO("creating  multiindex with k = " << cfg::get().pb.pacbio_k);
-	         PacBioAligner pac_aligner(conj_gp, paired_indices, clustered_indices, cfg::get().pb.pacbio_k);
+	         PacBioAligner pac_aligner(conj_gp, paired_indices, clustered_indices, scaffold_indices, cfg::get().pb.pacbio_k);
 	         INFO("index created");
 	         GapStorage<Graph> gaps(conj_gp.g);
 	         pac_aligner.pacbio_test(pacbio_read, gaps);
@@ -1125,7 +1125,7 @@ void resolve_repeats() {
                  //TODO: need to read reads from stream instead of file and delete pacbio_on + pacbio reads from config
                  PathStorage<Graph> pacbio_read1(conj_gp.g);
                  INFO("creating  multiindex with k = " << cfg::get().pb.pacbio_k);
-                 PacBioAligner pac_aligner(conj_gp, paired_indices, clustered_indices, cfg::get().pb.pacbio_k);
+                 PacBioAligner pac_aligner(conj_gp, paired_indices, clustered_indices, scaffold_indices, cfg::get().pb.pacbio_k);
                  INFO("index created");
                  GapStorage<Graph> gaps(conj_gp.g);
                  pac_aligner.pacbio_test(pacbio_read1, gaps);
