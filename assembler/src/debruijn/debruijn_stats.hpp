@@ -700,7 +700,7 @@ double AvgCoverage(const Graph& g,
 void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig,
 		PairedInfoIndex<conj_graph_pack::graph_t> &ind,
 		const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
-		size_t k) {
+		size_t /*k*/) {
 
 	typedef omnigraph::PairInfo<EdgeId> PairInfo;
 

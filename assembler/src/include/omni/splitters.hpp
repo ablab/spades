@@ -658,7 +658,7 @@ template<class Graph>
 shared_ptr<GraphSplitter<Graph>> ReliableSplitterAlongPath(
         const Graph &graph, const Path<typename Graph::EdgeId>& path,
                                     size_t edge_length_bound = ReliableNeighbourhoodFinder<Graph>::DEFAULT_EDGE_LENGTH_BOUND,
-                                    size_t max_size = ReliableNeighbourhoodFinder<Graph>::DEFAULT_MAX_SIZE) {
+                                    size_t /*max_size*/ = ReliableNeighbourhoodFinder<Graph>::DEFAULT_MAX_SIZE) {
     typedef typename Graph::VertexId VertexId;
     shared_ptr<RelaxingIterator<VertexId>> inner_iterator = make_shared<
             PathIterator<Graph>>(graph, path);

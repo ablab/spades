@@ -256,7 +256,7 @@ public:
 // edge_colorer management is passed here
 //TODO check all usages
 template <class Graph>
-shared_ptr<GraphColorer<Graph>> DefaultColorer(const Graph& g,
+shared_ptr<GraphColorer<Graph>> DefaultColorer(const Graph& /*g*/,
 		shared_ptr<ElementColorer<typename Graph::EdgeId>> edge_colorer) {
 	return shared_ptr<GraphColorer<Graph>>(new CompositeGraphColorer<Graph>(make_shared<FixedColorer<typename Graph::VertexId>>("white"), edge_colorer));
 }
@@ -273,7 +273,7 @@ shared_ptr<GraphColorer<Graph>> DefaultColorer(const Graph& g,
 }
 
 template<class Graph>
-shared_ptr<GraphColorer<Graph>> DefaultColorer(const Graph& g) {
+shared_ptr<GraphColorer<Graph>> DefaultColorer(const Graph& /*g*/) {
 	return shared_ptr<GraphColorer<Graph>>(new CompositeGraphColorer<Graph>(
 							make_shared<FixedColorer<typename Graph::VertexId>>("white"),
 							make_shared<FixedColorer<typename Graph::EdgeId>>("black")));

@@ -466,7 +466,7 @@ size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &count
 
   je_mallctl("stats.cactive", &cmem, &clen, NULL, 0);
   size_t bucket_size = (36 * kmers + kmers * counter.KMerSize()) / num_buckets_;
-  num_threads =  std::min<unsigned>((get_memory_limit() - *cmem) / bucket_size, num_threads);
+  num_threads = std::min<unsigned>((unsigned) ((get_memory_limit() - *cmem) / bucket_size), num_threads);
   if (num_threads < 1)
     num_threads = 1;
   if (num_threads < num_threads_)

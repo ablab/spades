@@ -30,7 +30,7 @@ class FlankingCoverage : public GraphActionHandler<Graph> {
   double CountAvgCoverage(EdgeId e, size_t offset) const {
     size_t k = this->g().k();
     VERIFY(offset == 0 || offset + averaging_range_ == this->g().length(e));
-    unsigned size_bound = std::min(averaging_range_, this->g().length(e));
+    unsigned size_bound = (unsigned) std::min(averaging_range_, this->g().length(e));
     const Sequence& seq = this->g().EdgeNucls(e);
 
     size_t edge_coverage_in = 0;

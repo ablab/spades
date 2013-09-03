@@ -132,8 +132,8 @@ public:
               current_(0) {
     }
 
-    bool CheckPutVertex(VertexId vertex, EdgeId edge,
-                                distance_t length) const {
+    bool CheckPutVertex(VertexId /*vertex*/, EdgeId edge,
+                                distance_t /*length*/) const {
         if (current_ < max_size_) {
             ++current_;
         }
@@ -143,11 +143,11 @@ public:
         return false;
     }
 
-    bool CheckProcessVertex(VertexId vertex, distance_t distance) {
+    bool CheckProcessVertex(VertexId /*vertex*/, distance_t /*distance*/) {
         return current_ < max_size_;
     }
 
-    void init(VertexId start) {
+    void init(VertexId /*start*/) {
         current_ = 0;
     }
 
@@ -213,7 +213,7 @@ public:
               bound_(bound) {
     }
 
-    bool CheckProcessVertex(VertexId vertex, distance_t distance) {
+    bool CheckProcessVertex(VertexId /*vertex*/, distance_t distance) {
         return distance == 0;
     }
 

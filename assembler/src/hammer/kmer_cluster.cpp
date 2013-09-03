@@ -310,7 +310,7 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
   std::vector<StringCount> bestCenters;
   std::vector<size_t> bestIndices(block.size());
 
-  unsigned max_l = cfg::get().bayes_hammer_mode ? 1 : origBlockSize;
+  unsigned max_l = cfg::get().bayes_hammer_mode ? 1 : (unsigned) origBlockSize;
   for (unsigned l = 1; l <= max_l; ++l) {
     std::vector<StringCount> centers(l);
     double curLikelihood = lMeansClustering(l, block, indices, centers);
