@@ -389,10 +389,11 @@ def main():
         if not os.path.isdir(tmp_configs_dir):
             shutil.copytree(os.path.join(spades_home, "configs"), tmp_configs_dir)
 
-        corrected_dataset_yaml_filename = os.path.join(cfg["common"].output_dir, "corrected.yaml")
+        corrected_dataset_yaml_filename = ''
         if "error_correction" in cfg:
             bh_cfg = merge_configs(cfg["error_correction"], cfg["common"])
             bh_cfg.__dict__["dataset_yaml_filename"] = cfg["dataset"].yaml_filename
+            corrected_dataset_yaml_filename = os.path.join(bh_cfg.output_dir, "corrected.yaml")
             if os.path.isfile(corrected_dataset_yaml_filename) and options_storage.continue_mode:
                 log.info("\n===== Skipping read error correction (already processed). \n")
             else:
