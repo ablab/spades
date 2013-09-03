@@ -67,7 +67,25 @@ def check_reads_file_format(filename, message, log):
               " .fastq, .gz are supported): %s (%s)" % (filename, message), log)
 
 
-def sys_call(cmd, log, cwd=None):
+# http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
+def which(program):
+    def is_exe(fpath):
+        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+    fpath, fname = os.path.split(program)
+    if fpath:
+        if is_exe(program):
+            return program
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            path = path.strip('"')
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+    return None
+
+
+def sys_call(cmd, log=None, cwd=None):
     import shlex
     import subprocess
 
@@ -78,19 +96,27 @@ def sys_call(cmd, log, cwd=None):
 
     proc = subprocess.Popen(cmd_list, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=cwd)
 
+    output = ''
     while not proc.poll():
         line = proc.stdout.readline()
         if line != '':
-            log.info(line.rstrip())
+            if log:
+                log.info(line.rstrip())
+            else:
+                output += line.rstrip() + "\n"
         if proc.returncode is not None:
             break
 
     for line in proc.stdout.readlines():
         if line != '':
-            log.info(line.rstrip())
+            if log:
+                log.info(line.rstrip())
+            else:
+                output += line.rstrip() + "\n"
 
     if proc.returncode:
         error('system call for: "%s" finished abnormally, err code: %d' % (cmd, proc.returncode), log)
+    return output
 
 
 def universal_sys_call(cmd, log, out_filename=None, err_filename=None, cwd=None):
@@ -355,31 +381,6 @@ def dataset_has_interlaced_reads(dataset_data):
         if 'interlaced reads' in reads_library:
             return True
     return False
-
-
-def move_dataset_files(dataset_data, dst, log, gzip=False):
-    for reads_library in dataset_data:
-        for key, value in reads_library.items():
-            if key.endswith('reads'):
-                moved_reads_files = []
-                for reads_file in value:
-                    dst_filename = os.path.join(dst, os.path.basename(reads_file))
-                    # TODO: fix problem with files with the same basenames in Hammer binary!
-                    if not os.path.isfile(reads_file):
-                        if (not gzip and os.path.isfile(dst_filename)) or (gzip and os.path.isfile(dst_filename + '.gz')):
-                            warning('file with corrected reads (' + reads_file + ') is the same in several libraries', log)
-                            if gzip:
-                                dst_filename += '.gz'
-                        else:
-                            error('something went wrong and file with corrected reads (' + reads_file + ') is missing!', log)
-                    else:
-                        shutil.move(reads_file, dst_filename)
-                        if gzip:
-                            #log.info('Compressing ' + dst_filename + ' into ' + dst_filename + '.gz')
-                            sys_call(['gzip', '-f', '-9', dst_filename], log)
-                            dst_filename += '.gz'
-                    moved_reads_files.append(dst_filename)
-                reads_library[key] = moved_reads_files
 
 
 def split_interlaced_reads(dataset_data, dst, log):
