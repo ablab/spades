@@ -502,12 +502,16 @@ void WriteKmerComponent(conj_graph_pack &gp, runtime_k::RtSeq const& kp1mer, con
 
 optional<runtime_k::RtSeq> FindCloseKP1mer(const conj_graph_pack &gp,
 		size_t genome_pos, size_t k) {
+	VERIFY(gp.genome.size() > 0);
+	VERIFY(genome_pos < gp.genome.size());
 	static const size_t magic_const = 200;
 	for (size_t diff = 0; diff < magic_const; diff++) {
 		for (int dir = -1; dir <= 1; dir += 2) {
-			size_t pos = genome_pos + dir * diff;
+			size_t pos = (gp.genome.size() - k + genome_pos + dir * diff) % (gp.genome.size() - k);
+			cout << pos << endl;
 			runtime_k::RtSeq kp1mer = gp.kmer_mapper.Substitute(
 			        runtime_k::RtSeq (k + 1, gp.genome, pos));
+			cout << "oppa" << endl;
 			if (gp.index.contains(kp1mer))
 				return optional<runtime_k::RtSeq>(kp1mer);
 		}
