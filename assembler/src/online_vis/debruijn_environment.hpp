@@ -42,7 +42,7 @@ class DebruijnEnvironment : public Environment {
               gp_(K, "./tmp", cfg::get().ds.reference_genome, cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling),
               mapper_(gp_.g, gp_.index, gp_.kmer_mapper, K + 1),
               filler_(gp_.g, mapper_, gp_.edge_pos),
-              graph_struct_(gp_.g, &gp_.int_ids, &gp_.edge_pos), 
+              graph_struct_(gp_.g, &gp_.int_ids, &gp_.edge_pos),
               tot_lab_(&graph_struct_) {
 
             DEBUG("Environment constructor");
@@ -60,7 +60,7 @@ class DebruijnEnvironment : public Environment {
             size_t K = gp_.k_value;
             if (!(K >= runtime_k::MIN_K && cfg::get().K < runtime_k::MAX_K)) {
                 LOG("K " << K << " is out of bounds");
-                    return false; 
+                    return false;
             }
             if (K % 2 == 0) {
                 LOG("K must be odd");
@@ -69,7 +69,7 @@ class DebruijnEnvironment : public Environment {
 
             return true;
         }
-        
+
         void LoadFromGP() {
             //Loading Genome and Handlers
             DEBUG("Colorer done");
@@ -97,27 +97,31 @@ class DebruijnEnvironment : public Environment {
             size_t number_of_digs = 0;
             size_t pc = picture_counter_;
 
-            do {    
+            do {
                 pc /= 10;
                 number_of_digs++;
             } while (pc > 0);
 
-            for (size_t i = 0; i < 4 - number_of_digs; ++i) 
+            for (size_t i = 0; i < 4 - number_of_digs; ++i)
                 tmpstream << '0';
             tmpstream << picture_counter_;
             return tmpstream.str();
         }
 
         size_t k_value() const {
-            return gp_.k_value;    
+            return gp_.k_value;
         }
 
         const Graph& graph() const {
             return gp_.g;
         }
 
+        Graph& graph() {
+            return gp_.g;
+        }
+
         const Sequence& genome() const {
-            return gp_.genome;   
+            return gp_.genome;
         }
 
         const MapperClass& mapper() const {
@@ -125,7 +129,7 @@ class DebruijnEnvironment : public Environment {
         }
 
         const EdgeIndexT& index() const {
-            return gp_.index;   
+            return gp_.index;
         }
 
         const KmerMapperClass& kmer_mapper() const {
@@ -153,7 +157,7 @@ class DebruijnEnvironment : public Environment {
         }
 
         total_labeler& tot_lab() {
-            return tot_lab_;   
+            return tot_lab_;
         }
 
         ColoringClass& coloring() {

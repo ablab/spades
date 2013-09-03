@@ -10,3 +10,4 @@
 #include "setting_commands.hpp"
 #include "position_commands.hpp"
 #include "statistics_commands.hpp"
+#include "processing_commands.hpp"
