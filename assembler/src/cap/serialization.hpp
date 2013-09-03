@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+#include "sequence/sequence.hpp"
+
 namespace cap {
 
 class Serializer {
@@ -33,26 +35,29 @@ class Serializer {
     template <class T>
     void SerializeToStream(const T &value, std::ostream &out) const {
         out << value;
+        out << kDelimiter;
     }
     template <class T>
     void SerializeToStream(const std::vector<T> &value, std::ostream &out) const;
+    template<class T1, class T2>
+    void SerializeToStream (const std::pair<T1, T2> &value, std::ostream &out) const;
 
     std::ostream &os_;
 };
 
 template<class T>
 void Serializer::SerializeToStream(const std::vector<T> &value, std::ostream &out) const {
-    bool first = true;
-
-    out << value.size() << kDelimiter;
+    //out << value.size() << kDelimiter;
+    SerializeToStream(value.size(), out);
     for (const auto &x : value) {
-        if (first)
-            first = false;
-        else
-            out << kDelimiter;
-
         SerializeToStream(x, out);
     }
+}
+
+template<class T1, class T2>
+void Serializer::SerializeToStream (const std::pair<T1, T2> &value, std::ostream &out) const {
+    SerializeToStream(value.first, out);
+    SerializeToStream(value.second, out);
 }
 
 class Deserializer {
@@ -66,8 +71,9 @@ class Deserializer {
             std::string value;
 
             std::getline(is_, key, kDelimiter);
-            std::getline(is_, key);
+            std::getline(is_, value);
             read_map_[key] = value;
+
         }
     }
 
@@ -94,18 +100,24 @@ class Deserializer {
     }
     template <class T>
     void DeserializeFromStream(std::istream &is, std::vector<T> &value) const;
+    template<class T1, class T2>
+    void DeserializeFromStream (std::istream &is,
+            std::pair<T1, T2> &value) const;
+    void DeserializeFromStream(std::istream &is, Sequence &s) const;
 
     std::istream &is_;
     std::unordered_map<std::string, std::string> read_map_;
 };
 
 template <>
-void Deserializer::DeserializeFromStream<std::string>(std::istream &is, std::string &value) const {
+void Deserializer::DeserializeFromStream<std::string>(std::istream &is,
+        std::string &value) const {
     std::getline(is, value, kDelimiter);
 }
 
 template <class T>
-void Deserializer::DeserializeFromStream(std::istream &is, std::vector<T> &value) const {
+void Deserializer::DeserializeFromStream(std::istream &is,
+        std::vector<T> &value) const {
     size_t size = 0;
     DeserializeFromStream(is, size);
     value.resize(size);
@@ -113,6 +125,20 @@ void Deserializer::DeserializeFromStream(std::istream &is, std::vector<T> &value
     for (size_t i = 0; i < size; ++i) {
         DeserializeFromStream(is, value[i]);
     }
+}
+
+template<class T1, class T2>
+void Deserializer::DeserializeFromStream (std::istream &is,
+        std::pair<T1, T2> &value) const {
+    DeserializeFromStream(is, value.first);
+    DeserializeFromStream(is, value.second);
+}
+
+void Deserializer::DeserializeFromStream(std::istream &is,
+        Sequence &s) const {
+    std::string str;
+    DeserializeFromStream(is, str);
+    s = Sequence(str.c_str());
 }
 
 }

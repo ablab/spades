@@ -40,7 +40,6 @@
 #include <deque>
 #include <cmath>
 #include <limits>
-#include <memory>
 
 using std::cin;
 using std::cout;

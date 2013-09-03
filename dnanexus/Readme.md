@@ -17,9 +17,8 @@ Current version of SPAdes works only with Illumina reads. Support for other
 technologies (e.g. Roche 454, IonTorrent, PacBio) is currently in progress and
 probably will be included in one of the next releases.
 
-SPAdes supports paired-end reads as well as unpaired reads. So far SPAdes takes
-as input only one paired-end library. We are currently working on mate-pairs and
-multiple libraries support – it is likely to come in the next major release.
+SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can 
+take as input several paired-end and mate-pair libraries simultaneously.
 
 Also note, that SPAdes was initially designed for single-cell and standard
 bacterial data sets and is not intended for larger genomes (e.g. mammalian size
@@ -48,16 +47,21 @@ possible to turn BayesHammer off.
 
 ## Inputs
 
-SPAdes takes as input forward-reverse paired-end reads as well as single
-(unpaired) reads in FASTA or FASTQ format. However, in order to run read error
-correction, reads should be in FASTQ format. Currently SPAdes accepts only one
-paired-end library.
+SPAdes takes as input paired-end reads, mate-pairs and single (unpaired) reads 
+in <a href="https://wiki.dnanexus.com/Types/Reads">DNAnexus Reads</a> format. 
+Reads in FASTQ formats can be converted into DNAnexus Reads using 
+<a href="https://platform.dnanexus.com/app/reads_importer">FASTQ Reads Importer</a> 
+App. Paired-end reads and mate-pairs orientation can be specified during the 
+conversion. By default, SPAdes assumes that paired-end reads have 
+forward-reverse (FR) orientation and mate-pairs have reverse-forward (RF) 
+orientation. SPAdes accepts up to five different paired-end libraries and also 
+up to five different mate-pair ones.
 
 The input dataset can be specified using the following options:
 
-* **Left paired end reads** ``left_reads``: ``file`` -  File(s) with forward reads.
-* **Right paired end reads** ``right_reads``: ``file`` - File(s) with reverse reads.
-* **Unpaired reads** ``single_reads``: ``file`` - File(s) with unpaired reads.
+* **List of paired-end reads** ``paired_reads``: ``array:gtable`` -  array of DNAnexus Reads with paired-end reads.
+* **List of mate-pairs** ``mate_pairs``: ``array:gtable`` -  array of DNAnexus Reads with mate-pairs.
+* **List of unpaired reads** ``unpaired_reads``: ``array:gtable`` -  array of DNAnexus Reads with unpaired reads.
 * **Single Cell Dataset** ``is_single_cell``: ``boolean`` - This flag is
   required for MDA (single-cell) data.
 

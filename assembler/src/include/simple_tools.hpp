@@ -38,6 +38,16 @@ std::string ToString(const T& t) {
 }
 
 template <typename T>
+std::string ToString(const T& t, size_t length) {
+	std::ostringstream ss;
+	ss << t;
+	std::string result = ss.str();
+	while(result.size() < length)
+		result = "0" + result;
+	return result;
+}
+
+template <typename T>
 std::string ToString(std::vector<T>& t) {
 	std::ostringstream ss;
 	ss << "Size "<<t.size()<<": [";

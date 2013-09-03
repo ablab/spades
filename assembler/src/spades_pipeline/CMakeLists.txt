@@ -13,7 +13,5 @@ install(FILES bh_logic.py process_cfg.py spades_logic.py support.py options_stor
 # Mismatch corrector module
 install(FILES corrector.py
         DESTINATION share/spades/spades_pipeline
-        COMPONENT runtime
-        PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
-                    GROUP_EXECUTE GROUP_READ)
+        COMPONENT runtime)
 

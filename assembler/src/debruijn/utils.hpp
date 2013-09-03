@@ -81,7 +81,7 @@ class EtalonPairedInfoCounter {
 			size_t right_idx = left_idx + k_ + 1 + mod_gap;
 			runtime_k::RtSeq right(k_ + 1, sequence, right_idx);
 			right >>= 0;
-			for (; 
+			for (;
 			     right_idx + k_ + 1 <= left_idx + insert_size_ + delta_ && right_idx + k_ + 1 <= sequence.size();
 			     ++right_idx) {
 				right <<= sequence[right_idx + k_];
@@ -92,7 +92,7 @@ class EtalonPairedInfoCounter {
 				pair<EdgeId, size_t> right_pos = index_.get(right_upd);
 
 				AddEtalonInfo(index, left_pos.first, right_pos.first,
-				              0. + (double) right_idx - (double) left_idx + 
+				              0. + (double) right_idx - (double) left_idx +
 				              (double) left_pos.second - (double) right_pos.second);
 			}
 		}
@@ -176,16 +176,16 @@ public:
   {
   }
 
-  void FillIndex(omnigraph::PairedInfoIndexT<Graph>& paired_index) {
+  bool FillIndex(omnigraph::PairedInfoIndexT<Graph>& paired_index) {
     if (streams_.size() == 1) {
-      FillUsualIndex(paired_index);
+      return FillUsualIndex(paired_index);
     } else {
-      FillParallelIndex(paired_index);
+      return FillParallelIndex(paired_index);
     }
   }
 
 private:
-	template<class PairedRead>
+  template<class PairedRead>
   void ProcessPairedRead(omnigraph::PairedInfoIndexT<Graph>& paired_index, const PairedRead& p_r)
   {
 		Sequence read1 = p_r.first().sequence();
@@ -217,10 +217,11 @@ private:
   /**
    * Method reads paired data from stream, maps it to genome and stores it in this PairInfoIndex.
    */
-  void FillUsualIndex(omnigraph::PairedInfoIndexT<Graph>& paired_index) {
+  bool FillUsualIndex(omnigraph::PairedInfoIndexT<Graph>& paired_index) {
     for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
       paired_index.AddPairInfo(*it, *it, 0., 0., 0.);
     }
+    size_t initial_size = paired_index.size();
 
     INFO("Processing paired reads (takes a while)");
 
@@ -233,12 +234,15 @@ private:
       ProcessPairedRead(paired_index, p_r);
       VERBOSE_POWER(++n, " paired reads processed");
     }
+
+    return paired_index.size() > initial_size;
   }
 
-  void FillParallelIndex(omnigraph::PairedInfoIndexT<Graph>& paired_index) {
+  bool FillParallelIndex(omnigraph::PairedInfoIndexT<Graph>& paired_index) {
     for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
       paired_index.AddPairInfo(*it, *it, 0., 0., 0.);
     }
+    size_t initial_size = paired_index.size();
 
     INFO("Processing paired reads (takes a while)");
     size_t nthreads = streams_.size();
@@ -299,6 +303,8 @@ private:
     INFO("Index built");
 
     DEBUG("Size of map is " << paired_index.size());
+
+    return paired_index.size() > initial_size;
   }
 
 private:
@@ -459,48 +465,45 @@ public:
 private:
 };
 
-template<class Graph>
-class EdgeNeighborhoodFinder: public omnigraph::GraphSplitter<Graph> {
-private:
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
-	EdgeId edge_;
-	size_t max_size_;
-	size_t edge_length_bound_;
-	bool finished_;
-public:
-	EdgeNeighborhoodFinder(const Graph &graph, EdgeId edge, size_t max_size
-			, size_t edge_length_bound) :
-			GraphSplitter<Graph>(graph), edge_(edge), max_size_(
-					max_size), edge_length_bound_(edge_length_bound), finished_(
-					false) {
-	}
-
-	/*virtual*/ vector<VertexId> NextComponent() {
-		CountingDijkstra<Graph> cf(this->graph(), max_size_,
-				edge_length_bound_);
-		set<VertexId> result_set;
-		cf.run(this->graph().EdgeStart(edge_));
-		vector<VertexId> result_start = cf.ReachedVertices();
-		result_set.insert(result_start.begin(), result_start.end());
-		cf.run(this->graph().EdgeEnd(edge_));
-		vector<VertexId> result_end = cf.ReachedVertices();
-		result_set.insert(result_end.begin(), result_end.end());
-
-		ComponentCloser<Graph> cc(this->graph(), edge_length_bound_);
-		cc.CloseComponent(result_set);
-
-		finished_ = true;
-		vector<VertexId> result;
-		for (auto it = result_set.begin(); it != result_set.end(); ++it)
-			result.push_back(*it);
-		return result;
-	}
-
-	/*virtual*/ bool Finished() {
-		return finished_;
-	}
-};
+//template<class Graph>
+//class EdgeNeighborhoodFinder: public omnigraph::GraphSplitter<Graph> {
+//private:
+//	typedef typename Graph::EdgeId EdgeId;
+//	typedef typename Graph::VertexId VertexId;
+//	EdgeId edge_;
+//	size_t max_size_;
+//	size_t edge_length_bound_;
+//	bool finished_;
+//public:
+//	EdgeNeighborhoodFinder(const Graph &graph, EdgeId edge, size_t max_size
+//			, size_t edge_length_bound) :
+//			GraphSplitter<Graph>(graph), edge_(edge), max_size_(
+//					max_size), edge_length_bound_(edge_length_bound), finished_(
+//					false) {
+//	}
+//
+//	GraphComponent<Graph> NextComponent() {
+//		CountingDijkstra<Graph> cf(this->graph(), max_size_,
+//				edge_length_bound_);
+//		set<VertexId> result_set;
+//		cf.run(this->graph().EdgeStart(edge_));
+//		vector<VertexId> result_start = cf.ReachedVertices();
+//		result_set.insert(result_start.begin(), result_start.end());
+//		cf.run(this->graph().EdgeEnd(edge_));
+//		vector<VertexId> result_end = cf.ReachedVertices();
+//		result_set.insert(result_end.begin(), result_end.end());
+//
+//		ComponentCloser<Graph> cc(this->graph(), edge_length_bound_);
+//		cc.CloseComponent(result_set);
+//
+//		finished_ = true;
+//		return GraphComponent<Graph>(this->graph(), result_set.begin(), result_set.end());
+//	}
+//
+//	/*virtual*/ bool Finished() {
+//		return finished_;
+//	}
+//};
 
 template<class Graph, class Index>
 class QualityEdgeLocalityPrintingRH {
@@ -528,11 +531,9 @@ public:
             path::make_dir(folder);
 			//todo magic constant
 //			map<EdgeId, string> empty_coloring;
-			EdgeNeighborhoodFinder<Graph> splitter(g_, edge, 50,
-					250);
-			WriteComponents(g_, splitter/*, "locality_of_edge_" + ToString(g_.int_id(edge))*/
+			omnigraph::visualization::WriteComponent(g_, omnigraph::EdgeNeighborhood<Graph>(g_, edge, 50, 250)
 					, folder + "edge_" +  ToString(g_.int_id(edge)) + "_" + ToString(quality_handler_.quality(edge)) + ".dot"
-					, *DefaultColorer(g_), labeler_);
+					, omnigraph::visualization::DefaultColorer(g_), labeler_);
 		} else {
 			TRACE("Deleting edge " << g_.str(edge) << " with quality " << quality_handler_.quality(edge));
 		}
@@ -579,10 +580,7 @@ public:
                 }
             }
             map<EdgeId, string> empty_coloring;
-            EdgeNeighborhoodFinder<Graph> splitter(g_, edge, 50,
-                    250);
-
-            WriteComponents(g_, splitter, TrueFilter<vector<VertexId>>(), "locality_of_edge_" + ToString(g_.int_id(edge))
+            omnigraph::visualization::WriteComponent(g_, EdgeNeighborhood<Graph>(g_, edge, 50, 250)
                     , folder + "edge_" +  ToString(g_.int_id(edge)) + "_" + ToString(quality_handler_.quality(edge)) + ".dot"
                     , empty_coloring, labeler_);
         }
@@ -620,11 +618,8 @@ public:
             path::make_dir(folder);
             //todo magic constant
             map<EdgeId, string> empty_coloring;
-            EdgeNeighborhoodFinder<Graph> splitter(g_, edge, 50,
-                    250);
-
-            WriteComponents(g_, splitter, TrueFilter<vector<VertexId>>(), "locality_of_edge_" + ToString(g_.int_id(edge))
-                    , folder + "edge_" +  ToString(g_.int_id(edge)) + ".dot", empty_coloring, labeler_);
+            omnigraph::visualization::WriteComponent(g_, EdgeNeighborhood<Graph>(g_, edge, 50, 250),
+            		folder + "edge_" +  ToString(g_.int_id(edge)) + ".dot", empty_coloring, labeler_);
 	}
 
 private:

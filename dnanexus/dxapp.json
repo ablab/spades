@@ -3,26 +3,29 @@
     "title": "SPAdes Assembler",
     "summary": "De Novo assembler suitable for bacterial single-cell and isolate genomes",
     "dxapi": "1.0.0",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "inputSpec": [
         {
-            "name": "left_reads",
-            "label": "Left paired end reads",
-            "class": "array:file",
+            "name": "paired_reads",
+            "label": "Paired-end reads",
+            "class": "array:gtable",
+            "type": "LetterReads",
             "optional": true
         },
         {
-            "name": "right_reads",
-            "label": "Right paired end reads",
-            "class": "array:file",
+            "name": "mate_pairs",
+            "label": "Mate-pairs",
+            "class": "array:gtable",
+            "type": "LetterReads",
             "optional": true
         },
         {
-            "name": "single_reads",
+            "name": "unpaired_reads",
             "label": "Unpaired reads",
-            "class": "array:file",
+            "class": "array:gtable",
+            "type": "LetterReads",
             "optional": true
-        },
+        },        
         {
             "name": "is_single_cell",
             "label": "Single Cell Dataset",
@@ -89,7 +92,7 @@
         "contactURL": "http://bioinf.spbau.ru/spades",
         "contactEmail": "spades.support@bioinf.spbau.ru",
         "upstreamAuthor" : "Algorithmic Biology Lab at St. Petersburg Academic University of the Russian Academy of Sciences",
-        "upstreamVersion" : "2.4.0",
+        "upstreamVersion" : "2.5.0",
         "upstreamUrl" : "http://bioinf.spbau.ru/spades",
         "upstreamLicenses" : [ "GPLv2" ],
         "citations" : [

@@ -19,31 +19,8 @@
 
 namespace cap {
 
-BOOST_AUTO_TEST_CASE( TwoAssemblyComparison ) {
-	return;
-	utils::TmpFolderFixture _("tmp");
-	static const size_t k = 19;
-	static const size_t K = 55;
-//	static const size_t K = 57;
-//	static const size_t K = 53;
-
-//	io::Reader stream_1("/home/snurk/gingi/2.fasta");
-//	io::Reader stream_2("/home/snurk/gingi/3.fasta");
-
-	io::Reader stream_1("/home/snurk/Dropbox/lab/phep_issue/phep_master.fasta");
-	io::Reader stream_2(
-			"/home/snurk/Dropbox/lab/phep_issue/phep_param_opt.fasta");
-	string ref =
-			"/home/snurk/Dropbox/lab/phep_issue/reference_NC_013061.1.fasta";
-	string folder = "phep_issue/results/";
-	make_dir(folder);
-
-	RunBPComparison < k, K, runtime_k::RtSeq
-			> (stream_1, stream_2, "master_", "opt_", true/*refine*/, false/*untangle*/, folder, true/*detailed_output*/, 5/*delta*/, ReadGenome(
-					ref));
-}
-
 BOOST_AUTO_TEST_CASE( CompareEcoli ) {
+    return;
 	utils::TmpFolderFixture _("tmp");
 
 	std::string base_path = "/home/snurk/ecoli_refs/";
@@ -125,27 +102,27 @@ BOOST_AUTO_TEST_CASE( CompareEcoli ) {
 //            base_path + "processed/", k_sequence);
 //}
 
-BOOST_AUTO_TEST_CASE( TestGeneAnalysis ) {
-    return;
-	utils::TmpFolderFixture _("tmp");
-//    gp_t gp(k, "tmp", Sequence(), 200, true);
-	vector<size_t> ks = {55, 21};
-	PerformIterativeGeneAnalysis("/home/snurk/Dropbox/olga_gelf/", "gene_out", ks);
-
-//    GeneCollection gene_collection;
-//    string root = "/home/snurk/Dropbox/olga_gelf/";
-//    gene_collection.Load(root, "genome_list.txt",
-//                         "/genomes/",
-//                         "gs.25ESS_ver3_sf_TN.csv",
-//                         "interesting_orthologs.txt");
-//    gene_collection.Update(gp);
+//BOOST_AUTO_TEST_CASE( TestGeneAnalysis ) {
+//    return;
+//	utils::TmpFolderFixture _("tmp");
+////    gp_t gp(k, "tmp", Sequence(), 200, true);
+//	vector<size_t> ks = {55, 21};
+//	PerformIterativeGeneAnalysis("/home/snurk/Dropbox/olga_gelf/", "gene_out", ks);
 //
-//    ColorHandler<gp_t::graph_t> coloring(gp.g);
-//
-//    make_dir(root + "out/");
-//
-//    WriteGeneLocality(gene_collection, gp, root + "out/", coloring);
-}
+////    GeneCollection gene_collection;
+////    string root = "/home/snurk/Dropbox/olga_gelf/";
+////    gene_collection.Load(root, "genome_list.txt",
+////                         "/genomes/",
+////                         "gs.25ESS_ver3_sf_TN.csv",
+////                         "interesting_orthologs.txt");
+////    gene_collection.Update(gp);
+////
+////    ColorHandler<gp_t::graph_t> coloring(gp.g);
+////
+////    make_dir(root + "out/");
+////
+////    WriteGeneLocality(gene_collection, gp, root + "out/", coloring);
+//}
 
 BOOST_AUTO_TEST_CASE( MultipleGenomesVisualization ) {
 	return;

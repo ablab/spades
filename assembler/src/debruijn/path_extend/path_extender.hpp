@@ -539,6 +539,11 @@ public:
 	}
 
     virtual bool MakeGrowStep(BidirectionalPath& path) {
+        if (cfg::get().avoid_rc_connections && (path.CameToInterstrandBulge() || path.IsInterstrandBulge())) {
+            DEBUG("Stoping because of interstand bulge");
+            return false;
+        }
+
         size_t current = 0;
 
         while (current < extenders_.size()) {
@@ -582,6 +587,11 @@ public:
 
 
     virtual bool MakeGrowStep(BidirectionalPath& path) {
+        if (cfg::get().avoid_rc_connections && (path.CameToInterstrandBulge() || path.IsInterstrandBulge())) {
+            DEBUG("Stoping because of interstand bulge");
+            return false;
+        }
+
         ExtensionChooser::EdgeContainer candidates;
         bool result = false;
         FindFollowingEdges(path, &candidates);
@@ -661,6 +671,9 @@ public:
 
             if (candidates.size() == 1) {
                 if (candidates[0].e_ == path.Back()) {
+                    return false;
+                }
+                if (cfg::get().avoid_rc_connections && candidates[0].e_ == g_.conjugate(path.Back())) {
                     return false;
                 }
                 DEBUG(candidates.size() << " " << g_.int_id(candidates[0].e_) << " Path id :" << path.GetId()<< "  Edge len : " << g_.length(candidates[0].e_))

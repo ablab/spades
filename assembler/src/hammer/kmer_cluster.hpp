@@ -20,27 +20,27 @@
 #include <string>
 #include <vector>
 
+#include <boost/numeric/ublas/fwd.hpp>
+
 class KMerClustering {
 public:
-  KMerClustering(KMerData &data, unsigned nthreads, const std::string &workdir) :
-      data_(data), nthreads_(nthreads), workdir_(workdir) { }
+  KMerClustering(KMerData &data, unsigned nthreads, const std::string &workdir, bool debug) :
+      data_(data), nthreads_(nthreads), workdir_(workdir), debug_(debug) { }
 
-  /**
-    * perform k-mer clustering and store the results in the map and the set
-    */
-  void process(std::vector<std::vector<unsigned> > classes);
+  void process(const std::string &Prefix);
 
 private:
   KMerData &data_;
   unsigned nthreads_;
   std::string workdir_;
+  bool debug_;
 
   /// @return consensus string for a block
-  hammer::KMer Consensus(const std::vector<unsigned> & block) const;
+  hammer::KMer Consensus(const std::vector<size_t> & block) const;
 
-  hammer::KMer ConsensusWithMask(const std::vector<unsigned> & block, const std::vector<unsigned> & mask, unsigned maskVal) const;
+  hammer::KMer ConsensusWithMask(const std::vector<size_t> & block, const std::vector<size_t> & mask, size_t maskVal) const;
 
-  double ClusterBIC(const vector<unsigned> & cl, const vector<StringCount> & centers, const vector<unsigned> & indices) const;
+  double ClusterBIC(const std::vector<size_t> & cl, const std::vector<StringCount> & centers, const std::vector<size_t> & indices) const;
 
   /**
     * perform l-means clustering on the set of k-mers with initial centers being the l most frequent k-mers here
@@ -48,12 +48,18 @@ private:
     * @param centers fill array indices with ints from 0 to l that denote which kmers belong where
     * @return the resulting likelihood of this clustering
     */
-  double lMeansClustering(unsigned l, const std::vector<unsigned> & kmerinds, std::vector<unsigned> & indices, std::vector<StringCount> & centers);
+  double lMeansClustering(unsigned l, const std::vector<size_t> & kmerinds, std::vector<size_t> & indices, std::vector<StringCount> & centers);
 
-  size_t SubClusterSingle(const std::vector<unsigned> & block, std::vector< std::vector<unsigned> > & vec);
+  size_t SubClusterSingle(const std::vector<size_t> & block, std::vector< std::vector<size_t> > & vec);
 
   std::string GetGoodKMersFname() const;
   std::string GetBadKMersFname() const;
+
+  size_t ProcessCluster(const std::vector<size_t> &cur_class,
+                        boost::numeric::ublas::matrix<uint64_t> &errs,
+                        std::ofstream &ofs, std::ofstream &ofs_bad,
+                        size_t &gsingl, size_t &tsingl, size_t &tcsingl, size_t &gcsingl,
+                        size_t &tcls, size_t &gcls, size_t &tkmers, size_t &tncls);
 
 private:
   DECL_LOGGER("Hamming Subclustering");

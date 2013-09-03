@@ -11,70 +11,9 @@
 
 #include <vector>
 #include <map>
+#include "adt/bag.hpp"
 
 namespace cap {
-
-template<class T>
-class bag {
-	std::map<T, size_t> data_;
-public:
-	typedef typename std::map<T, size_t>::const_iterator const_iterator;
-
-	void put(const T& t, size_t mult) {
-		VERIFY(mult > 0);
-		data_[t] += mult;
-	}
-
-	void put(const T& t) {
-		put(t, 1);
-	}
-
-	bool take(const T& t, size_t mult) {
-		VERIFY(mult > 0);
-		/*typename map<T, size_t>::iterator*/auto it = data_.find(t);
-		if (it == data_.end()) {
-			return false;
-		} else {
-			size_t have = it->second;
-			if (have < mult) {
-				data_.erase(it->first);
-				return false;
-			} else if (have == mult) {
-				data_.erase(it->first);
-				return true;
-			} else {
-				it->second -= mult;
-				return true;
-			}
-		}
-	}
-
-	bool take(const T& t) {
-		return take(t, 1);
-	}
-
-	size_t mult(const T& t) const {
-		auto it = data_.find(t);
-		if (it == data_.end()) {
-			return 0;
-		} else {
-			return it->second;
-		}
-	}
-
-	void clear() {
-		data_.clear();
-	}
-
-	const_iterator begin() const {
-		return data_.begin();
-	}
-
-	const_iterator end() const {
-		return data_.end();
-	}
-
-};
 
 template<class Graph>
 class GenomePath: public GraphActionHandler<Graph> {
@@ -443,11 +382,9 @@ class SimpleInDelCorrector {
 	}
 
 	void GenPicAroundEdge(EdgeId e, size_t cnt) {
-    utils::MakeDirPath("ref_correction");
-		WriteComponentsAroundEdge(g_, e,
-				"ref_correction/" + ToString(cnt) + ".dot",
-				*ConstructColorer(coloring_), StrGraphLabeler<Graph>(g_),
-				100000, 10);
+		utils::MakeDirPath("ref_correction");
+		GraphComponent<Graph> component = omnigraph::EdgeNeighborhood(g_, e, 10, 100000);
+		omnigraph::visualization::WriteComponent(g_, "ref_correction/" + ToString(cnt) + ".dot", component, coloring_.GetInstance(), StrGraphLabeler<Graph>(g_));
 	}
 
 	void CorrectGenomePath(size_t genome_start, size_t genome_end,

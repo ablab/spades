@@ -16,7 +16,7 @@
 #include "colored_graph_construction.hpp"
 #include "gene_analysis.hpp"
 
-
+//todo deprecated
 namespace cap {
 
 template<class Stream1, class Stream2>
@@ -65,7 +65,7 @@ void MakeSaves(gp_t& gp, ContigStreamsPtr streams, const string& root,
     FillPositions(gp, *streams, coordinates_handler);
 
     PrintColoredGraphWithColorFilter(gp.g, coloring, gp.edge_pos,
-            root + "colored_split_graph.dot");
+            root + "colored_split_graph");
 }
 
 template<class gp_t>
@@ -273,7 +273,7 @@ void PerformRefinement(ContigStreamsPtr streams, const string& root,
         gene_collection.Save(gene_save_dir, "genomes/", "gene_info.txt");
         string gene_pics_dir = gene_save_dir + "pics/";
         make_dir(gene_pics_dir);
-        WriteGeneLocality(gene_collection, gp, gene_pics_dir, coloring);
+//        WriteGeneLocality(gene_collection, gp, gene_pics_dir, coloring);
     }
     //end temporary
 }

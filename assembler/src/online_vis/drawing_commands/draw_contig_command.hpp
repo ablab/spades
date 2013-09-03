@@ -51,6 +51,11 @@ namespace online_visualization {
                     return;
 
                 string contig_name = args[1];
+				bool starts_with = false;
+				if (contig_name[contig_name.size() - 1] == '*') {
+					starts_with = true;
+					contig_name = contig_name.substr(0, contig_name.size() - 1);
+				}
                 string contigs_file = args[2];
                 if (!CheckFileExists(contigs_file))
                     return;
@@ -63,11 +68,13 @@ namespace online_visualization {
                     LOG("Contig " << read.name() << " is being processed now");
 
                     // if read is valid and also the name contains a given string <contig_name> as a substring.
-                    if (read.IsValid() && read.name().find(contig_name) != string::npos) {
-                        const Sequence& contig = read.sequence();
-                        const string& label = read.name();
-                        DrawPicturesAlongGenomePart(curr_env, contig, label);
-                        LOG("Contig " << read.name() << " has been drawn");
+                    if (read.IsValid()) {
+						if((starts_with && read.name().find(contig_name) != string::npos) || contig_name == read.name()) {
+	                        const Sequence& contig = read.sequence();
+    	                    const string& label = read.name();
+        	                DrawPicturesAlongGenomePart(curr_env, contig, label);
+            	            LOG("Contig " << read.name() << " has been drawn");
+						}
                     }                        
                 }
 

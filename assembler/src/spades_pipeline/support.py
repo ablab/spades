@@ -6,11 +6,20 @@
 # See file LICENSE for details.
 ############################################################################
 
-
 import os
 import stat
 import sys
 import shutil
+import logging
+import glob
+import re
+import options_storage
+
+# constants to print and detect warnings and errors in logs
+SPADES_PY_ERROR_MESSAGE = "== Error == "
+SPADES_PY_WARN_MESSAGE = "== Warning == "
+SPADES_ERROR_MESSAGE = " ERROR "
+SPADES_WARN_MESSAGE = " WARN "
 
 
 def verify(expr, log, message):
@@ -19,10 +28,11 @@ def verify(expr, log, message):
         sys.exit(1)
 
 
-def error(err_str, log=None, prefix="== Error == "):
+def error(err_str, log=None, prefix=SPADES_PY_ERROR_MESSAGE):
     if log:
-        log.info("\n\n" + prefix + " " + err_str + "\n")
-        log.info("In case you have troubles running SPAdes, you can write to spades.support@bioinf.spbau.ru")
+        log.info("\n\n" + prefix + " " + err_str)
+        log_warnings(log)
+        log.info("\nIn case you have troubles running SPAdes, you can write to spades.support@bioinf.spbau.ru")
         log.info("Please provide us with params.txt and spades.log files from the output directory.\n")
     else:
         print >>sys.stderr, "\n\n" + prefix + " " + err_str + "\n"
@@ -57,7 +67,25 @@ def check_reads_file_format(filename, message, log):
               " .fastq, .gz are supported): %s (%s)" % (filename, message), log)
 
 
-def sys_call(cmd, log, cwd=None):
+# http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
+def which(program):
+    def is_exe(fpath):
+        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+    fpath, fname = os.path.split(program)
+    if fpath:
+        if is_exe(program):
+            return program
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            path = path.strip('"')
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+    return None
+
+
+def sys_call(cmd, log=None, cwd=None):
     import shlex
     import subprocess
 
@@ -68,19 +96,27 @@ def sys_call(cmd, log, cwd=None):
 
     proc = subprocess.Popen(cmd_list, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=cwd)
 
+    output = ''
     while not proc.poll():
         line = proc.stdout.readline()
         if line != '':
-            log.info(line.rstrip())
+            if log:
+                log.info(line.rstrip())
+            else:
+                output += line.rstrip() + "\n"
         if proc.returncode is not None:
             break
 
     for line in proc.stdout.readlines():
         if line != '':
-            log.info(line.rstrip())
+            if log:
+                log.info(line.rstrip())
+            else:
+                output += line.rstrip() + "\n"
 
     if proc.returncode:
         error('system call for: "%s" finished abnormally, err code: %d' % (cmd, proc.returncode), log)
+    return output
 
 
 def universal_sys_call(cmd, log, out_filename=None, err_filename=None, cwd=None):
@@ -141,6 +177,69 @@ def save_data_to_file(data, file):
     output.write(data.read())
     output.close()
     os.chmod(file, stat.S_IWRITE | stat.S_IREAD | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+
+def get_warnings(log_filename):
+    spades_py_warns = []
+    spades_warns = []
+    for line in open(log_filename, 'r'):
+        if line.find(SPADES_PY_WARN_MESSAGE) != -1:
+            line = line.replace(SPADES_PY_WARN_MESSAGE, '')
+            spades_py_warns.append(' * ' + line.strip())
+        elif line.find(SPADES_WARN_MESSAGE) != -1:
+            spades_warns.append(' * ' + line.strip())
+    return spades_py_warns, spades_warns
+
+
+def get_logger_filename(log):
+    log_file = None
+    for h in log.__dict__['handlers']:
+        if h.__class__.__name__ == 'FileHandler':
+            log_file = h.baseFilename
+    return log_file
+
+
+def log_warnings(log):
+    log_file = get_logger_filename(log)
+    if not log_file:
+        return False
+    spades_py_warns, spades_warns = get_warnings(log_file)
+    if spades_py_warns or spades_warns:
+        log.info("\n======= SPAdes pipeline finished WITH WARNINGS!")
+        warnings_filename = os.path.join(os.path.dirname(log_file), "warnings.log")
+        warnings_handler = logging.FileHandler(warnings_filename, mode='w')
+        log.addHandler(warnings_handler)
+        #log.info("===== Warnings occurred during SPAdes run =====")
+        log.info("")
+        if spades_py_warns:
+            log.info("=== Pipeline warnings:")
+            for line in spades_py_warns:
+                log.info(line)
+        if spades_warns:
+            log.info("=== Error correction and assembling warnings:")
+            for line in spades_warns:
+                log.info(line)
+        log.info("======= Warnings saved to " + warnings_filename)
+        log.removeHandler(warnings_handler)
+        return True
+    return False
+
+
+def get_latest_dir(pattern):
+    def atoi(text):
+        if text.isdigit():
+            return int(text)
+        return text
+
+    def natural_keys(text):
+        return [atoi(c) for c in re.split('(\d+)', text)]
+
+    latest_dir = None
+    for dir_to_test in sorted(glob.glob(pattern), key=natural_keys, reverse=True):
+        if os.path.isdir(dir_to_test):
+            latest_dir = dir_to_test
+            break
+    return latest_dir
 
 
 ### START for processing YAML files
@@ -291,31 +390,6 @@ def dataset_has_interlaced_reads(dataset_data):
     return False
 
 
-def move_dataset_files(dataset_data, dst, log, gzip=False):
-    for reads_library in dataset_data:
-        for key, value in reads_library.items():
-            if key.endswith('reads'):
-                moved_reads_files = []
-                for reads_file in value:
-                    dst_filename = os.path.join(dst, os.path.basename(reads_file))
-                    # TODO: fix problem with files with the same basenames in Hammer binary!
-                    if not os.path.isfile(reads_file):
-                        if (not gzip and os.path.isfile(dst_filename)) or (gzip and os.path.isfile(dst_filename + '.gz')):
-                            warning('file with corrected reads (' + reads_file + ') is the same in several libraries')
-                            if gzip:
-                                dst_filename += '.gz'
-                        else:
-                            error('something went wrong and file with corrected reads (' + reads_file + ') is missing!')
-                    else:
-                        shutil.move(reads_file, dst_filename)
-                        if gzip:
-                            #log.info('Compressing ' + dst_filename + ' into ' + dst_filename + '.gz')
-                            sys_call(['gzip', '-f', '-9', dst_filename], log)
-                            dst_filename += '.gz'
-                    moved_reads_files.append(dst_filename)
-                reads_library[key] = moved_reads_files
-
-
 def split_interlaced_reads(dataset_data, dst, log):
     for reads_library in dataset_data:
         for key, value in reads_library.items():
@@ -329,23 +403,34 @@ def split_interlaced_reads(dataset_data, dst, log):
                         import gzip
                         input_file = gzip.open(interlaced_reads, 'r')
                         ungzipped = os.path.splitext(interlaced_reads)[0]
-                        out_basename = os.path.splitext(os.path.basename(ungzipped))[0]
+                        out_basename, ext = os.path.splitext(os.path.basename(ungzipped))
                     else:
                         input_file = open(interlaced_reads, 'r')
-                        out_basename = os.path.splitext(os.path.basename(interlaced_reads))[0]
-                    out_left_filename = os.path.join(dst, out_basename + "_1.fastq")
-                    out_right_filename = os.path.join(dst, out_basename + "_2.fastq")
+                        out_basename, ext = os.path.splitext(os.path.basename(interlaced_reads))
 
-                    log.info("== Splitting " + interlaced_reads + " into left and right reads (in " + dst + " directory)")
-                    out_left_file = open(out_left_filename, 'w')
-                    out_right_file = open(out_right_filename, 'w')
-                    for id, line in enumerate(input_file):
-                        if id % 8 < 4:
-                            out_left_file.write(line)
-                        else:
-                            out_right_file.write(line)
-                    out_left_file.close()
-                    out_right_file.close()
+                    if ext.lower() == '.fa' or ext.lower() == '.fasta':
+                        is_fasta_format = True
+                    elif ext.lower() == '.fq' or ext.lower() == '.fastq':
+                        is_fasta_format = False
+                    else:
+                        error('unsupported format of interlaced reads (' + interlaced_reads + '): should be FASTA or FASTQ', log)
+
+                    out_left_filename = os.path.join(dst, out_basename + "_1" + ext)
+                    out_right_filename = os.path.join(dst, out_basename + "_2" + ext)
+
+                    if not (options_storage.continue_mode and os.path.isfile(out_left_filename) and os.path.isfile(out_right_filename)):
+                        options_storage.continue_mode = False
+                        log.info("== Splitting " + interlaced_reads + " into left and right reads (in " + dst + " directory)")
+                        out_left_file = open(out_left_filename, 'w')
+                        out_right_file = open(out_right_filename, 'w')
+                        for id, line in enumerate(input_file):
+                            if (is_fasta_format and (id % 4 < 2)) or (not is_fasta_format and (id % 8 < 4)):
+                                out_left_file.write(line)
+                            else:
+                                out_right_file.write(line)
+                        out_left_file.close()
+                        out_right_file.close()
+
                     input_file.close()
                     reads_library['left reads'].append(out_left_filename)
                     reads_library['right reads'].append(out_right_filename)

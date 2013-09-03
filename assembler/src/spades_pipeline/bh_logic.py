@@ -13,6 +13,46 @@ import support
 import process_cfg
 from site import addsitedir
 
+
+def move_dataset_files(dataset_data, dst, ext_python_modules_home, max_threads, log, gzip=False):
+    to_compress = []
+    for reads_library in dataset_data:
+        for key, value in reads_library.items():
+            if key.endswith('reads'):
+                moved_reads_files = []
+                for reads_file in value:
+                    dst_filename = os.path.join(dst, os.path.basename(reads_file))
+                    # TODO: fix problem with files with the same basenames in Hammer binary!
+                    if not os.path.isfile(reads_file):
+                        if (not gzip and os.path.isfile(dst_filename)) or (gzip and os.path.isfile(dst_filename + '.gz')):
+                            support.warning('file with corrected reads (' + reads_file + ') is the same in several libraries', log)
+                            if gzip:
+                                dst_filename += '.gz'
+                        else:
+                            support.error('something went wrong and file with corrected reads (' + reads_file + ') is missing!', log)
+                    else:
+                        shutil.move(reads_file, dst_filename)
+                        if gzip:
+                            to_compress.append(dst_filename)
+                            dst_filename += '.gz'
+                    moved_reads_files.append(dst_filename)
+                reads_library[key] = moved_reads_files
+    if len(to_compress):
+        pigz_path = support.which('pigz')
+        if pigz_path:
+            for reads_file in to_compress:
+                support.sys_call([pigz_path, '-f', '-7', '-p', str(max_threads), reads_file], log)
+                print [pigz_path, '-f', '-7', '-p', str(max_threads), reads_file]
+        else:
+            addsitedir(ext_python_modules_home)
+            from joblib import Parallel, delayed
+            n_jobs = min(len(to_compress), max_threads)
+            outputs = Parallel(n_jobs=n_jobs)(delayed(support.sys_call)(['gzip', '-f', '-7', reads_file]) for reads_file in to_compress)
+            for output in outputs:
+                if output:
+                    log.info(output)
+
+
 def prepare_config_bh(filename, cfg, log):
     subst_dict = dict()
 
@@ -33,7 +73,7 @@ def prepare_config_bh(filename, cfg, log):
     process_cfg.substitute_params(filename, subst_dict, log)
 
 
-def run_bh(configs_dir, execution_home, cfg, ext_python_modules_home, log):
+def run_bh(result_filename, configs_dir, execution_home, cfg, ext_python_modules_home, log):
     addsitedir(ext_python_modules_home)
     import pyyaml
 
@@ -60,13 +100,14 @@ def run_bh(configs_dir, execution_home, cfg, ext_python_modules_home, log):
     log.info("\n== Running read error correction tool: " + ' '.join(command) + "\n")
     support.sys_call(command, log)
     corrected_dataset_yaml_filename = os.path.join(cfg.tmp_dir, "corrected.yaml")
+    if not os.path.isfile(corrected_dataset_yaml_filename):
+        support.error("read error correction finished abnormally: " + corrected_dataset_yaml_filename + " not found!")
     corrected_dataset_data = pyyaml.load(file(corrected_dataset_yaml_filename, 'r'))
     if cfg.gzip_output:
         log.info("\n== Compressing corrected reads (with gzip)")
-    support.move_dataset_files(corrected_dataset_data, cfg.output_dir, log, cfg.gzip_output)
-    corrected_dataset_yaml_filename = os.path.join(cfg.output_dir, "corrected.yaml")
+    move_dataset_files(corrected_dataset_data, cfg.output_dir, ext_python_modules_home, cfg.max_threads, log, cfg.gzip_output)
+    corrected_dataset_yaml_filename = result_filename
     pyyaml.dump(corrected_dataset_data, file(corrected_dataset_yaml_filename, 'w'))
     log.info("\n== Dataset description file created: " + corrected_dataset_yaml_filename + "\n")
 
     shutil.rmtree(cfg.tmp_dir)
-    return corrected_dataset_yaml_filename

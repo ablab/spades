@@ -403,22 +403,12 @@ struct debruijn_config {
             reads[i].data().read_length = RL;
         }
     }
-    size_t IS() const { return (size_t) math::round(reads[0].data().mean_insert_size); }
-    void set_IS(size_t IS) { reads[0].data().mean_insert_size = (double) IS; }
-    double is_var() const { return reads[0].data().insert_size_deviation; }
-    void set_is_var(double is_var) { reads[0].data().insert_size_deviation = is_var; }
     double avg_coverage() const { return reads[0].data().average_coverage; }
     void set_avg_coverage(double avg_coverage) {
         for (size_t i = 0; i < reads.lib_count(); ++i) {
             reads[i].data().average_coverage = avg_coverage;
         }
     }
-    double median() const { return reads[0].data().median_insert_size; }
-    void set_median(double median) { reads[0].data().median_insert_size = median; }
-    double mad() const { return reads[0].data().insert_size_mad; }
-    void set_mad(double mad) { reads[0].data().insert_size_mad = mad; }
-    const std::map<int, size_t>& hist() const { return reads[0].data().insert_size_distribution; }
-    void set_hist(const std::map<int, size_t>& hist) {  reads[0].data().insert_size_distribution = hist; }
 
     bool single_cell;
     std::string reference_genome_filename;
@@ -534,6 +524,7 @@ struct debruijn_config {
 
   resolving_mode rm;
   path_extend::pe_config::MainPEParamsT pe_params;
+  bool avoid_rc_connections;
 
   construction con;
   distance_estimator de;

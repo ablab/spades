@@ -10,14 +10,14 @@
 using namespace hammer;
 
 static bool update(const KMerData &data,
-                   size_t pos, const KMerStat & stat,
+                   size_t pos,
+                   hammer::KMer kmer, const KMerStat & stat,
                    std::vector<std::vector<unsigned> > & v,
                    int & left, int & right, bool & isGood,
                    bool correct_threshold, bool discard_singletons) {
   bool res = false;
   if (stat.isGoodForIterative() || (correct_threshold && stat.isGood())) {
     isGood = true;
-    KMer kmer = stat.kmer();
 
     for (size_t j = 0; j < K; ++j)
       v[kmer[j]][pos + j]++;
@@ -36,7 +36,7 @@ static bool update(const KMerData &data,
         left = (int)pos;
       if ((int) pos > right)
         right = (int)pos;
-      KMer newkmer = data[stat.changeto].kmer();
+      KMer newkmer = data.kmer(stat.changeto);
 
       for (size_t j = 0; j < K; ++j) {
         v[newkmer[j]][pos + j]++;
@@ -69,10 +69,12 @@ bool ReadCorrector::CorrectOneRead(Read & r,
   ValidKMerGenerator<K> gen(seq.data(), qual.data(), read_size);
   while (gen.HasMore()) {
     size_t read_pos = gen.pos() - 1;
-    const KMerStat &kmer_data = data_[gen.kmer()];
+    hammer::KMer kmer = gen.kmer();
+    const KMerStat &kmer_data = data_[kmer];
  
     changedRead = changedRead ||
-                  update(data_, read_pos, kmer_data, v,
+                  update(data_, read_pos,
+                         kmer, kmer_data, v,
                          left, right, isGood, correct_threshold, discard_singletons);
 
     gen.Next();

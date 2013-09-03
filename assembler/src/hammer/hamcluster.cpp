@@ -89,10 +89,10 @@ static void processBlockQuadratic(ConcurrentDSU  &uf,
   size_t blockSize = block.size();
   for (size_t i = 0; i < blockSize; ++i) {
     unsigned x = (unsigned)block[i];
-    hammer::KMer kmerx = data[x].kmer();
+    hammer::KMer kmerx = data.kmer(x);
     for (size_t j = i + 1; j < blockSize; j++) {
       unsigned y = (unsigned)block[j];
-      hammer::KMer kmery = data[y].kmer();
+      hammer::KMer kmery = data.kmer(y);
       if (uf.find_set(x) != uf.find_set(y) &&
           canMerge(uf, x, y) &&
           hamdistKMer(kmerx, kmery, tau) <= tau) {

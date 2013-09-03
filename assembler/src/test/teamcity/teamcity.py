@@ -223,7 +223,7 @@ exit_code = 0
 
 #reads quality
 if 'reads_quality_params' in dataset_info.__dict__:
-    corrected_reads_dataset = os.path.join(output_dir, "corrected/corrected.yaml")
+    corrected_reads_dataset = os.path.join(output_dir, "corrected.yaml")
 
     if not os.path.exists(corrected_reads_dataset):
         print("Corrected reads were not detected in " + corrected_reads_dataset)

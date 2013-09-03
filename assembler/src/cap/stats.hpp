@@ -370,8 +370,8 @@ public:
 	void CountStats() {
 		EmptyGraphLabeler<Graph> labeler;
 		make_dir("assembly_compare");
-		LongEdgesExclusiveSplitter<Graph> splitter(this->graph(), 1000000000);
-		WriteComponents(this->graph(), splitter, *this,
+		shared_ptr<GraphSplitter<Graph>> splitter = LongEdgesExclusiveSplitter<Graph>(this->graph(), 1000000000);
+		WriteComponents(this->graph(), *splitter, *this,
 				"assembly_compare/breakpoint_graph.dot",
 				*ConstructColorer(coloring_), labeler);
 		ready_ = true;
@@ -427,10 +427,10 @@ public:
 					+ ComponentClassifier<Graph>::info_printer_pos_name(c_type)
 					+ ".dot";
 		}
-		LongEdgesExclusiveSplitter<Graph> splitter(graph_, 1000000000);
+		shared_ptr<GraphSplitter<Graph>> splitter = LongEdgesExclusiveSplitter<Graph>(graph_, 1000000000);
 		ComponentTypeFilter<Graph> stats(graph_, c_type, coloring_);
 
-		WriteComponents(this->graph_, splitter, stats, filename,
+		WriteComponents(this->graph_, *splitter, stats, filename,
 				*ConstructColorer(coloring_), labeler);
 	}
 
@@ -521,9 +521,11 @@ class TrivialBreakpointFinder: public AbstractFilter<
 		CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
 		VERIFY(g_.OutgoingEdgeCount(v) > 0);
 		EdgeId e = g_.OutgoingEdges(v).front();
-		WriteComponentsAroundEdge(g_, e,
+		GraphComponent<Graph> component = omnigraph::EdgeNeighborhood(g_, e);
+		omnigraph::visualization::WriteComponent(
+				component,
 				folder + prefix + ToString(g_.int_id(v)) + "_loc.dot",
-				*ConstructBorderColorer(g_, coloring_), labeler);
+				coloring_.ConstructColorer(component), labeler);
 	}
 
 	bool CheckEdges(const vector<EdgeId>& edges) const {
@@ -843,8 +845,8 @@ private:
 		string filename = str(
 				boost::format("%s%d_%d_%d_%d.dot") % folder % count_
 						% gp_.g.int_id(e) % start_ref_pos % end_ref_pos);
-		WriteComponentsAroundEdge(gp_.g, e, filename,
-				*ConstructBorderColorer(gp_.g, coloring_), labeler);
+		GraphComponent<Graph> component = omnigraph::EdgeNeighborhood(gp_.g, e);
+		omnigraph::visualization::WriteComponent(component, filename, coloring_.ConstructColorer(component), labeler);
 		count_++;
 	}
 

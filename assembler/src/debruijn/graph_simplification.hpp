@@ -287,7 +287,7 @@ bool ClipTips(
     omnigraph::TipClipper<Graph> tc(graph, max_tip_length, condition,
                                     raw_removal_handler);
 
-    return tc.ClipTips();
+    return tc.Process();
 }
 
 template<class Graph>
@@ -453,7 +453,7 @@ bool TopologyClipTips(
     return TopologyTipClipper<Graph>(g, max_length,
                                      ttc_config.uniqueness_length,
                                      ttc_config.plausibility_length,
-                                     removal_handler).ClipTips();
+                                     removal_handler).Process();
 }
 
 template<class Graph>
@@ -629,7 +629,7 @@ void PostSimplification(conj_graph_pack& gp,
                                           cfg::get().graph_read_corr.enable,
                                           cfg::get().ds.RL(), determined_coverage_threshold,
                                           removal_handler);
-        //todo enable_flag |= 
+        //todo enable_flag |=
     RemoveBulges(gp.g, cfg::get().simp.br, 0, removal_handler);
 
     enable_flag |= RemoveComplexBulges(gp.g, cfg::get().simp.cbr, iteration);
@@ -666,8 +666,6 @@ void SimplifyGraph(conj_graph_pack &gp,
                    boost::function<void(EdgeId)> removal_handler,
                    omnigraph::GraphLabeler<Graph>& /*labeler*/,
                    detail_info_printer& printer, size_t iteration_count) {
-    printer(ipp_before_simplification);
-    DEBUG("Graph simplification started");
     //ec auto threshold
     double determined_coverage_threshold =
             FindErroneousConnectionsCoverageThreshold(gp.g,
@@ -676,6 +674,9 @@ void SimplifyGraph(conj_graph_pack &gp,
 
     if (cfg::get().gap_closer_enable && cfg::get().gc.before_simplify)
         CloseGaps(gp);
+
+    printer(ipp_before_simplification);
+    DEBUG("Graph simplification started");
 
     if (!cfg::get().developer_mode) {
         INFO("Detaching and clearing index");

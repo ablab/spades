@@ -7,13 +7,17 @@
 #ifndef CONCURRENTDSU_HPP_
 #define CONCURRENTDSU_HPP_
 
+#include "io/mmapped_writer.hpp"
+
 #include <cassert>
 #include <cmath>
 #include <cstdlib>
-#include <vector>
 #include <cstdarg>
+#include <cstdint>
+
 #include <algorithm>
-#include <stdint.h>
+#include <vector>
+#include <unordered_map>
 
 class ConcurrentDSU {
   union atomic_set_t {
@@ -45,9 +49,8 @@ class ConcurrentDSU {
     while (true) {
       x = find_set(x);
       y = find_set(y);
-      if (x == y) {
+      if (x == y)
         return;
-      }
 
       unsigned x_size = data[x].size;
       unsigned y_size = data[y].size;
@@ -81,16 +84,42 @@ class ConcurrentDSU {
   }
 
   unsigned find_set(unsigned x) const {
-    unsigned ans = x;
-    while (ans != data[ans].next) {
-      unsigned t = data[ans].next;
-      atomic_set_t old = data[ans];
-      atomic_set_t nnew = old;
-      nnew.next = data[t].next;
-      __sync_bool_compare_and_swap(&data[ans].raw, old.raw, nnew.raw);
-      ans = data[t].next;
+    unsigned r = x;
+
+    // The version with full path compression
+
+    // Find the root
+    while (r != data[r].next)
+        r = data[r].next;
+
+    // Update the stuff
+    unsigned r_size = data[r].size;
+    unsigned x_size = data[x].size;
+    while (x_size < r_size || (r_size == x_size && x < r)) {
+        unsigned next = data[x].next;
+        atomic_set_t old = data[x];
+        atomic_set_t nnew = old;
+        nnew.next = r;
+        __sync_bool_compare_and_swap(&data[x].raw, old.raw, nnew.raw);
+
+        x = next;
+        x_size = data[x].size;
     }
-    return ans;
+
+    return r;
+
+ #if 0
+    // The version with path halving
+    while (x != data[x].next) {
+      unsigned next = data[x].next;
+      atomic_set_t old = data[x];
+      atomic_set_t nnew = old;
+      nnew.next = data[next].next;
+      __sync_bool_compare_and_swap(&data[x].raw, old.raw, nnew.raw);
+      x = data[next].next;
+    }
+    return x;
+#endif
   }
 
   size_t num_sets() const {
@@ -101,12 +130,80 @@ class ConcurrentDSU {
     }
     return count;
   }
-  
-  void get_sets(std::vector<std::vector<unsigned> > &otherWay) {
+
+  size_t extract_to_file(const std::string& Prefix) {
+    // First, touch all the sets to make them directly connect to the root
+#   pragma omp parallel for
+    for (size_t x = 0; x < size; ++x)
+        (void)find_set(x);
+
+    std::unordered_map<size_t, size_t> sizes;
+
+#if 0
+    for (size_t x = 0; x < size; ++x) {
+        if (data[x].next != x) {
+            size_t t = data[x].next;
+            VERIFY(data[t].next == t)
+        }
+    }
+#endif
+
+    // Insert all the root elements into the map
+    for (size_t x = 0; x < size; ++x) {
+        if (data[x].next == x)
+            sizes[x] = 0;
+    }
+
+    // Now, calculate the counts. We can do this in parallel, because we know no
+    // insertion can occur.
+#   pragma omp parallel for
+    for (size_t x = 0; x < size; ++x) {
+        size_t& entry = sizes[data[x].next];
+#       pragma omp atomic
+        entry += 1;
+    }
+
+    // Now we know the sizes of each cluster. Go over again and calculate the
+    // file-relative (cumulative) offsets.
+    size_t off = 0;
+    for (size_t x = 0; x < size; ++x) {
+        if (data[x].next == x) {
+            size_t& entry = sizes[x];
+            size_t noff = off + entry;
+            entry = off;
+            off = noff;
+        }
+    }
+
+    // Write down the entries
+    std::vector<size_t> out(off);
+    for (size_t x = 0; x < size; ++x) {
+        size_t& entry = sizes[data[x].next];
+        out[entry++] = x;
+    }
+    std::ofstream os(Prefix, std::ios::binary | std::ios::out);
+    os.write((char*)&out[0], out.size() * sizeof(out[0]));
+    os.close();
+
+    // Write down the sizes
+    MMappedRecordWriter<size_t> index(Prefix + ".idx");
+    index.reserve(sizes.size());
+    size_t *idx = index.data();
+    for (size_t x = 0, i = 0, sz = 0; x < size; ++x) {
+        if (data[x].next == x) {
+            idx[i++] = sizes[x] - sz;
+            sz = sizes[x];
+        }
+    }
+
+    return sizes.size();
+  }
+
+  void get_sets(std::vector<std::vector<size_t> > &otherWay) {
     otherWay.resize(size);
-    for (unsigned i = 0; i < (unsigned)size; i++) {
+    for (size_t i = 0; i < size; i++) {
       unsigned set = find_set(i);
-      otherWay.at(set).push_back(i);
+      otherWay[set].push_back(i);
     }
     otherWay.erase(remove_if(otherWay.begin(), otherWay.end(), zero_size),
                    otherWay.end());
@@ -132,8 +229,8 @@ private:
   void unlock(int y) {
     data[y].dirty = 0;
   }
-  
-  static bool zero_size(const std::vector<unsigned> & v) {
+
+  static bool zero_size(const std::vector<size_t> & v) {
     return v.size() == 0;
   }
 
@@ -148,7 +245,7 @@ private:
     nnew.size = newrank & 0x7fffffff;
     return __sync_bool_compare_and_swap(&data[x].raw, old.raw, nnew.raw);
   }
-  
+
   mutable atomic_set_t *data;
   size_t size;
 };

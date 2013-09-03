@@ -88,7 +88,6 @@ void load_lib_data(const std::string& prefix) {
       boost::optional<size_t> sizet_val(0);
       boost::optional<double> double_val(0.);
 
-      load_param(filename, "read_length_" + ToString(i), sizet_val);
       if (sizet_val) {
           cfg::get_writable().ds.reads[i].data().read_length = *sizet_val;
       }
@@ -623,6 +622,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   if (!cfg.use_scaffolder) {
       cfg.pe_params.param_set.scaffolder_options.on = false;
   }
+  load(cfg.avoid_rc_connections, pt, "avoid_rc_connections");
 
   load(cfg.mask_all, pt, "mask_all");
 

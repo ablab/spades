@@ -116,16 +116,17 @@ inline vector<Sequence> ReadContigs(const string& filename) {
 inline void PrintGraphComponentContainingEdge(const string& file_name, const Graph& g,
 		size_t split_edge_length, const IdTrackHandler<Graph>& int_ids,
 		int int_edge_id) {
-	LongEdgesInclusiveSplitter<Graph> inner_splitter(g, split_edge_length);
+    shared_ptr<GraphSplitter<Graph>> inner_splitter = ReliableSplitter<Graph>(g, split_edge_length);
 
 //	VERIFY_MSG(int_ids.ReturnEdgeId(int_edge_id) != NULL,
 //			"Couldn't find edge with id = " << int_edge_id);
 
-	AnyEdgeContainFilter<Graph> filter(g, int_ids.ReturnEdgeId(int_edge_id));
+    shared_ptr<GraphComponentFilter<Graph>> filter = make_shared<AnyEdgeContainFilter<Graph>>(g, int_ids.ReturnEdgeId(int_edge_id));
 	FilteringSplitterWrapper<Graph> splitter(inner_splitter, filter);
 	vector<vector<VertexId>> components;
-	while (!splitter.Finished()) {
-		components.push_back(splitter.NextComponent());
+	while (splitter.HasNext()) {
+	    auto component = splitter.Next();
+		components.push_back(vector<VertexId>(component.vertices().begin(), component.vertices().end()));
 	}
 	VERIFY(components.size() == 1);
 	ConjugateDataPrinter<Graph> printer(g, components.front().begin(),

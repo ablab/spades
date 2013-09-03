@@ -15,6 +15,7 @@ import support
 import process_cfg
 from process_cfg import bool_to_str
 from process_cfg import load_config_from_file
+import options_storage
 
 def prepare_config_spades(filename, cfg, log, use_additional_contigs, K, last_one):
     subst_dict = dict()
@@ -52,9 +53,28 @@ def get_read_length(output_dir, K):
     return max_read_length
 
 
+def update_k_mers_in_special_cases(cur_k_mers, RL, log):
+    if not options_storage.k_mers and not options_storage.single_cell: # kmers were set by default and not SC
+        if RL >= 250:
+            support.warning("Default k-mer sizes were set to %s because estimated "
+                            "read length (%d) is equal or great than 250" % (str(options_storage.k_mers_250), RL), log)
+            return options_storage.k_mers_250
+        if RL >= 150:
+            support.warning("Default k-mer sizes were set to %s because estimated "
+                            "read length (%d) is equal or great than 150" % (str(options_storage.k_mers_150), RL), log)
+            return options_storage.k_mers_150
+    return cur_k_mers
+
 
 def run_iteration(configs_dir, execution_home, cfg, log, K, use_additional_contigs, last_one):
     data_dir = os.path.join(cfg.output_dir, "K%d" % K)
+    if options_storage.continue_mode:
+        if os.path.isfile(os.path.join(data_dir, "final_contigs.fasta")):
+            log.info("\n== Skipping assembler: " + ("K%d" % K) + " (already processed)")
+            return
+        else:
+            options_storage.continue_mode = False # continue from here
+
     if os.path.exists(data_dir):
         shutil.rmtree(data_dir)
     os.makedirs(data_dir)
@@ -95,7 +115,7 @@ def run_spades(configs_dir, execution_home, cfg, log):
     cfg.iterative_K = sorted(cfg.iterative_K)
 
     bin_reads_dir = os.path.join(cfg.output_dir, ".bin_reads")
-    if os.path.isdir(bin_reads_dir):
+    if os.path.isdir(bin_reads_dir) and not options_storage.continue_mode:
         shutil.rmtree(bin_reads_dir)
 
     if len(cfg.iterative_K) == 1:
@@ -104,6 +124,7 @@ def run_spades(configs_dir, execution_home, cfg, log):
     else:
         run_iteration(configs_dir, execution_home, cfg, log, cfg.iterative_K[0], False, False)
         RL = get_read_length(cfg.output_dir, cfg.iterative_K[0])
+        cfg.iterative_K = update_k_mers_in_special_cases(cfg.iterative_K, RL, log)
         if cfg.iterative_K[1] + 1 > RL:
             if cfg.paired_mode:
                 support.warning("Second value of iterative K (%d) exceeded estimated read length (%d). "
@@ -128,12 +149,15 @@ def run_spades(configs_dir, execution_home, cfg, log):
     latest = os.path.join(cfg.output_dir, "K%d" % K)
 
     if os.path.isfile(os.path.join(latest, "before_rr.fasta")):
-        shutil.copyfile(os.path.join(latest, "before_rr.fasta"), os.path.join(os.path.dirname(cfg.result_contigs), "before_rr.fasta"))
-    if os.path.isfile(os.path.join(latest, "final_contigs.fasta")):    
-        shutil.copyfile(os.path.join(latest, "final_contigs.fasta"), cfg.result_contigs)
+        if not os.path.isfile(os.path.join(os.path.dirname(cfg.result_contigs), "before_rr.fasta")) or not options_storage.continue_mode:
+            shutil.copyfile(os.path.join(latest, "before_rr.fasta"), os.path.join(os.path.dirname(cfg.result_contigs), "before_rr.fasta"))
+    if os.path.isfile(os.path.join(latest, "final_contigs.fasta")):
+        if not os.path.isfile(cfg.result_contigs) or not options_storage.continue_mode:
+            shutil.copyfile(os.path.join(latest, "final_contigs.fasta"), cfg.result_contigs)
     if cfg.paired_mode:
         if os.path.isfile(os.path.join(latest, "scaffolds.fasta")):
-            shutil.copyfile(os.path.join(latest, "scaffolds.fasta"), cfg.result_scaffolds)
+            if not os.path.isfile(cfg.result_scaffolds) or not options_storage.continue_mode:
+                shutil.copyfile(os.path.join(latest, "scaffolds.fasta"), cfg.result_scaffolds)
 
     if cfg.developer_mode:
         # before repeat resolver contigs
@@ -149,7 +173,5 @@ def run_spades(configs_dir, execution_home, cfg, log):
 
     if os.path.isdir(bin_reads_dir):
         shutil.rmtree(bin_reads_dir)
-    if not cfg.paired_mode:
-        return cfg.result_contigs, "", latest
 
-    return cfg.result_contigs, cfg.result_scaffolds, latest
+    return latest

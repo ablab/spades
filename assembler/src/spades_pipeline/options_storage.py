@@ -16,18 +16,22 @@ careful = False
 rectangles = False
 
 # advanced options
+continue_mode = False
 dataset_yaml_filename = ''
 threads = 16
 memory = 250
 tmp_dir = ''
-k_mers = [21,33,55]
-iterations = 1
+k_mers = None
+k_mers_short = [21,33,55]
+k_mers_150 = [21,33,55,77]
+k_mers_250 = [21,33,55,77,99,127]
 qvoffset = None # auto-detect by default
 developer_mode = False
 
 # hidden options
 mismatch_corrector = False
 reference = ''
+iterations = 1
 bh_heap_check = ''
 spades_heap_check = ''
 ### END OF DEFAULT VALUES
@@ -37,7 +41,7 @@ long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\
                "only-error-correction only-assembler "\
                "disable-gzip-output help test debug reference= "\
                "bh-heap-check= spades-heap-check= help-hidden "\
-               "config-file= dataset= mismatch-correction careful rectangles".split()
+               "config-file= dataset= mismatch-correction careful rectangles continue".split()
 short_options = "o:1:2:s:k:t:m:i:h"
 
 # adding multiple paired-end and mate-pair libraries support
@@ -59,6 +63,11 @@ def usage(spades_version, show_hidden=False):
     print >> sys.stderr, "-o\t<output_dir>\tdirectory to store all the resulting files (required)"
     print >> sys.stderr, "--sc\t\t\tthis flag is required for MDA (single-cell)"\
                          " data"
+    print >> sys.stderr, "--test\t\t\truns SPAdes on toy dataset"
+    print >> sys.stderr, "-h/--help\t\tprints this usage message"
+
+    print >> sys.stderr, ""
+    print >> sys.stderr, "Input data:"
     print >> sys.stderr, "--12\t<filename>\tfile with interlaced forward and reverse"\
                          " paired-end reads"
     print >> sys.stderr, "-1\t<filename>\tfile with forward paired-end reads"
@@ -84,8 +93,6 @@ def usage(spades_version, show_hidden=False):
                          " for mate-pair library number <#> (<#> = 1,2,3,4,5)"
     print >> sys.stderr, "--mp<#>-<or>\torientation of reads"\
                          " for mate-pair library number <#> (<#> = 1,2,3,4,5; <or> = fr, rf, ff)"
-    print >> sys.stderr, "--test\t\t\truns SPAdes on toy dataset"
-    print >> sys.stderr, "-h/--help\t\tprints this usage message"
 
     print >> sys.stderr, ""
     print >> sys.stderr, "Pipeline options:"
@@ -101,6 +108,7 @@ def usage(spades_version, show_hidden=False):
 
     print >> sys.stderr, ""
     print >> sys.stderr, "Advanced options:"
+    print >> sys.stderr, "--continue\t\t\tcontinue processing from the last available check-point"
     print >> sys.stderr, "--dataset\t<filename>\tfile with dataset description in YAML format"
     print >> sys.stderr, "-t/--threads\t<int>\t\tnumber of threads"
     print >> sys.stderr, "\t\t\t\t[default: %s]" % threads
@@ -112,10 +120,7 @@ def usage(spades_version, show_hidden=False):
     print >> sys.stderr, "\t\t\t\t[default: <output_dir>/corrected/tmp]"
     print >> sys.stderr, "-k\t\t<int,int,...>\tcomma-separated list of k-mer sizes"\
                          " (must be odd and"
-    print >> sys.stderr, "\t\t\t\tless than 128) [default: " + ",".join(map(str, k_mers)) + "]"
-    print >> sys.stderr, "-i/--iterations\t<int>\t\tnumber of iterations for read error"\
-                         " correction"
-    print >> sys.stderr, "\t\t\t\t[default: %s]" % iterations
+    print >> sys.stderr, "\t\t\t\tless than 128) [default: " + ",".join(map(str, k_mers_short)) + "]"
     print >> sys.stderr, "--phred-offset\t<33 or 64>\tPHRED quality offset in the"\
                          " input reads (33 or 64)"
     print >> sys.stderr, "\t\t\t\t[default: auto-detect]"
@@ -128,6 +133,8 @@ def usage(spades_version, show_hidden=False):
                              " of mismatches and short indels"
         print >> sys.stderr, "--reference\t<filename>\tfile with reference for deep analysis"\
                              " (only in debug mode)"
+        print >> sys.stderr, "-i/--iterations\t<int>\t\tnumber of iterations for read error"\
+                             " correction [default: %s]" % iterations
         print >> sys.stderr, "--bh-heap-check\t\t<value>\tsets HEAPCHECK environment variable"\
                              " for BayesHammer"
         print >> sys.stderr, "--spades-heap-check\t<value>\tsets HEAPCHECK environment variable"\

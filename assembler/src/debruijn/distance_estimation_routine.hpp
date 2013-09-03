@@ -39,7 +39,7 @@ void estimate_with_estimator(const Graph& graph,
                              PairedIndexT& clustered_index)
 {
   using debruijn_graph::estimation_mode;
-  INFO("Estimating distances");
+  DEBUG("Estimating distances");
   PairedIndexT raw_clustered_index(graph);
 
   if (cfg::get().use_multithreading) {
@@ -68,8 +68,8 @@ void estimate_with_estimator(const Graph& graph,
   DEBUG("Info Filtered");
 }
 
-void prepare_scaffold_index(conj_graph_pack& gp,
-        io::SequencingLibrary<debruijn_config::DataSetData> &lib,
+bool prepare_scaffold_index(conj_graph_pack& gp,
+        const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
         const PairedIndexT& paired_index,
         PairedIndexT& clustered_index) {
     double is_var = lib.data().insert_size_deviation;
@@ -80,10 +80,15 @@ void prepare_scaffold_index(conj_graph_pack& gp,
                                            lib.data().read_length, delta);
     size_t max_distance = size_t(cfg::get().de.max_distance_coeff * is_var);
     boost::function<double(int)> weight_function;
-    INFO("Retaining insert size distribution for it");
-    map<int, size_t> insert_size_hist = cfg::get().ds.hist();
-    WeightDEWrapper wrapper(insert_size_hist, lib.data().mean_insert_size);
-    INFO("Weight Wrapper Done");
+
+    DEBUG("Retaining insert size distribution for it");
+    if (lib.data().insert_size_distribution.size() == 0) {
+        return false;
+    }
+
+    WeightDEWrapper wrapper(lib.data().insert_size_distribution, lib.data().mean_insert_size);
+    DEBUG("Weight Wrapper Done");
+
     weight_function = boost::bind(&WeightDEWrapper::CountWeight, wrapper, _1);
 
     PairedInfoNormalizer<Graph>::WeightNormalizer normalizing_f;
@@ -100,10 +105,10 @@ void prepare_scaffold_index(conj_graph_pack& gp,
                 weight_normalizer, _1, _2, _3);
     }
     PairedInfoNormalizer<Graph> normalizer(normalizing_f);
-    INFO("Normalizer Done");
+    DEBUG("Normalizer Done");
 
     PairInfoWeightFilter<Graph> filter(gp.g, 0.);
-    INFO("Weight Filter Done");
+    DEBUG("Weight Filter Done");
 
     const AbstractDistanceEstimator<Graph>& estimator =
             SmoothingDistanceEstimator<Graph>(gp.g, paired_index, dist_finder,
@@ -115,10 +120,12 @@ void prepare_scaffold_index(conj_graph_pack& gp,
                     cfg::get().ade.derivative_threshold, true);
     estimate_with_estimator(gp.g, estimator, normalizer, filter,
             clustered_index);
+
+    return true;
 }
 
 void estimate_distance(conj_graph_pack& gp,
-                       io::SequencingLibrary<debruijn_config::DataSetData> &lib,
+                       const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
                        const PairedIndexT& paired_index,
                        PairedIndexT& clustered_index,
                        PairedIndexT& scaffold_index)
@@ -145,14 +152,12 @@ void estimate_distance(conj_graph_pack& gp,
      || config.est_mode == em_smoothing                                       // to estimate graph distances in the
      || config.est_mode == em_extensive)                                      // histogram
     {
-      INFO("Retaining insert size distribution for it");
-
       if (lib.data().insert_size_distribution.size() == 0) {
-        auto streams = paired_binary_readers(lib, false, 0);
-        GetInsertSizeHistogram(*streams, gp, lib.data().mean_insert_size, lib.data().insert_size_deviation, lib.data().insert_size_distribution);
+          WARN("No insert size distribution found, stopping distance estimation");
+          return;
       }
       WeightDEWrapper wrapper(lib.data().insert_size_distribution, lib.data().mean_insert_size);
-      INFO("Weight Wrapper Done");
+      DEBUG("Weight Wrapper Done");
       weight_function = boost::bind(&WeightDEWrapper::CountWeight, wrapper, _1);
     }
     else
@@ -238,7 +243,10 @@ void estimate_distance(conj_graph_pack& gp,
     improver.ImprovePairedInfo(config.use_multithreading, config.max_threads);
 
     //DE for scaffolds
-    prepare_scaffold_index(gp, lib, paired_index, scaffold_index);
+    INFO("Estimating distances for scaffolding");
+    if (!prepare_scaffold_index(gp, lib, paired_index, scaffold_index)) {
+        WARN("This lib can not be used for scaffolding");
+    }
   }
 }
 
@@ -302,7 +310,8 @@ void exec_distance_estimation(conj_graph_pack& gp,
     exec_late_pair_info_count(gp, paired_indices);
     if (cfg::get().paired_mode) {
 		for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-	        if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd ||  cfg::get().ds.reads[i].type() == io::LibraryType::MatePairs) {
+	        if (cfg::get().ds.reads[i].data().mean_insert_size != 0.0 &&
+	                (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd ||  cfg::get().ds.reads[i].type() == io::LibraryType::MatePairs)) {
 	            estimate_distance(gp, cfg::get_writable().ds.reads[i], paired_indices[i], clustered_indices[i], scaffold_indices[i]);
 	        }
 		}

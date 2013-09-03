@@ -86,21 +86,24 @@ public:
 
         CompositeLabeler<Graph> composite_labeler(str_labeler, cov_labler, path_labeler, pos_labeler);
 
-        auto_ptr<GraphColorer<Graph>> colorer;
+        shared_ptr<omnigraph::visualization::GraphColorer<Graph>> colorer;
         if (gp.index.IsAttached()) {
-             colorer = DefaultColorer(gp.g, FindGenomePath(gp.genome, gp.g, gp.index, k_)
+             colorer = omnigraph::visualization::DefaultColorer(gp.g, FindGenomePath(gp.genome, gp.g, gp.index, k_)
                  , FindGenomePath(!gp.genome, gp.g, gp.index, k_));
         } else {
             Path<EdgeId> empty;
-            colorer = DefaultColorer(gp.g, empty, empty);
+            colorer = omnigraph::visualization::DefaultColorer(gp.g, empty, empty);
         }
 
-        omnigraph::DotGraphPrinter<Graph> printer(gp.g, composite_labeler, *colorer, graph_name, filestr);
-        ColoredGraphVisualizer<Graph> gv(gp.g, printer);
-        AdapterGraphVisualizer<Graph> result_vis(gp.g, gv);
-        result_vis.Visualize();
+        omnigraph::visualization::ComponentVisualizer<Graph> visualizer(gp.g, false);
+        omnigraph::visualization::EmptyGraphLinker<Graph> linker;
+        visualizer.Visualize(filestr, composite_labeler, *colorer, linker);
+//        omnigraph::visualization::DotGraphPrinter<Graph> printer(gp.g, composite_labeler, *colorer, graph_name, filestr);
+//        ColoredGraphVisualizer<Graph> gv(gp.g, printer);
+//        AdapterGraphVisualizer<Graph> result_vis(gp.g, gv);
+//        result_vis.Visualize();
         filestr.close();
-        INFO("Visualizing graph " << graph_name << " done");
+        INFO("Visualizing graph done");
     }
 
     void writeGraphSimple(const conj_graph_pack& gp, const string& file_name, const string& graph_name) const{
@@ -113,21 +116,24 @@ public:
         CoverageGraphLabeler<Graph> cov_labler(gp.g);
         CompositeLabeler<Graph> composite_labeler(str_labeler, cov_labler, pos_labeler);
 
-        auto_ptr<GraphColorer<Graph>> colorer;
+        shared_ptr<omnigraph::visualization::GraphColorer<Graph>> colorer;
         if (gp.index.IsAttached()) {
-             colorer = DefaultColorer(gp.g, FindGenomePath(gp.genome, gp.g, gp.index, k_)
+             colorer = omnigraph::visualization::DefaultColorer(gp.g, FindGenomePath(gp.genome, gp.g, gp.index, k_)
                  , FindGenomePath(!gp.genome, gp.g, gp.index, k_));
         } else {
             Path<EdgeId> empty;
-            colorer = DefaultColorer(gp.g, empty, empty);
+            colorer = omnigraph::visualization::DefaultColorer(gp.g, empty, empty);
         }
 
-        omnigraph::DotGraphPrinter<Graph> printer(gp.g, composite_labeler, *colorer, graph_name, filestr);
-        ColoredGraphVisualizer<Graph> gv(gp.g, printer);
-        AdapterGraphVisualizer<Graph> result_vis(gp.g, gv);
-        result_vis.Visualize();
+        omnigraph::visualization::ComponentVisualizer<Graph> visualizer(gp.g, false);
+        omnigraph::visualization::EmptyGraphLinker<Graph> linker;
+        visualizer.Visualize(filestr, composite_labeler, *colorer, linker);
+//        omnigraph::DotGraphPrinter<Graph> printer(gp.g, composite_labeler, *colorer, graph_name, filestr);
+//        ColoredGraphVisualizer<Graph> gv(gp.g, printer);
+//        AdapterGraphVisualizer<Graph> result_vis(gp.g, gv);
+//        result_vis.Visualize();
         filestr.close();
-        INFO("Visualizing graph " << graph_name << " done");
+        INFO("Visualizing graph done");
     }
 
     bool isWriteLength() const

@@ -12,6 +12,8 @@
 #include "io/ireadstream.hpp"
 #include "config_struct_hammer.hpp"
 
+#include "file_limit.hpp"
+
 #include <libcxx/sort.hpp>
 
 using namespace hammer;
@@ -128,6 +130,12 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
   for (unsigned i = 0; i < num_files; ++i)
     out.push_back(GetRawKMersFname(i));
 
+  size_t file_limit = num_files + 2*nthreads;
+  size_t res = limit_file(file_limit);
+  if (res < file_limit) {
+    WARN("Failed to setup necessary limit for number of open files. The process might crash later on.");
+    WARN("Do 'ulimit -n " << file_limit << "' in the console to overcome the limit");
+  }
   MMappedRecordWriter<KMer>* ostreams = new MMappedRecordWriter<KMer>[num_files];
   for (unsigned i = 0; i < num_files; ++i)
     ostreams[i].open(out[i]);
@@ -173,10 +181,6 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
 }
 
 static inline void Merge(KMerStat &lhs, const KMerStat &rhs) {
-  if (lhs.kmer() != rhs.kmer()) {
-    lhs.kmer_ = rhs.kmer_;
-  }
-
   lhs.count += rhs.count;
   lhs.totalQual *= rhs.totalQual;
   lhs.qual += rhs.qual;
@@ -184,10 +188,11 @@ static inline void Merge(KMerStat &lhs, const KMerStat &rhs) {
 
 static void PushKMer(KMerData &data,
                      KMer kmer, const unsigned char *q, double prob) {
-  KMerStat &kmc = data[kmer];
+  size_t idx = data.seq_idx(kmer);
+  KMerStat &kmc = data[idx];
   kmc.lock();
   Merge(kmc,
-        KMerStat(1, kmer, (float)prob, q));
+        KMerStat(1, (float)prob, q));
   kmc.unlock();
 }
 
@@ -200,10 +205,11 @@ static void PushKMerRC(KMerData &data,
   for (unsigned i = 0; i < K; ++i)
     rcq[K - i - 1] = q[i];
 
-  KMerStat &kmc = data[kmer];
+  size_t idx = data.seq_idx(kmer);
+  KMerStat &kmc = data[idx];
   kmc.lock();
   Merge(kmc,
-        KMerStat(1, kmer, (float)prob, rcq));
+        KMerStat(1, (float)prob, rcq));
   kmc.unlock();
 }
 
@@ -240,16 +246,36 @@ class KMerDataFiller {
   }
 };
 
-void KMerDataCounter::FillKMerData(KMerData &data) {
+void KMerDataCounter::BuildKMerIndex(KMerData &data) {
   // Build the index
   std::string workdir = cfg::get().input_working_dir;
   HammerKMerSplitter splitter(workdir);
   KMerDiskCounter<hammer::KMer> counter(workdir, splitter);
-  size_t sz = KMerIndexBuilder<HammerKMerIndex>(workdir, num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter);
+  KMerIndexBuilder<HammerKMerIndex>(workdir, num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save finall */ true);
 
+  data.kmers_ = counter.GetFinalKMers();
+
+  size_t swaps = 0;
+  INFO("Arranging kmers in hash map order");
+  for (auto I = data.kmers_->begin(), E = data.kmers_->end(); I != E; ++I) {
+    size_t cidx = I - data.kmers_->begin();
+    size_t kidx = data.index_.raw_seq_idx(*I);
+    while (cidx != kidx) {
+      auto J = data.kmers_->begin() + kidx;
+      using std::swap;
+      swap(*I, *J);
+      swaps += 1;
+
+      kidx = data.index_.raw_seq_idx(*I);
+    }
+  }
+  INFO("Done. Total swaps: " << swaps);
+}
+
+void KMerDataCounter::FillKMerData(KMerData &data) {
   // Now use the index to fill the kmer quality information.
   INFO("Collecting K-mer information, this takes a while.");
-  data.data_.resize(sz);
+  data.data_.resize(data.kmers_->size());
 
   KMerDataFiller filler(data);
   const auto& dataset = cfg::get().dataset;
@@ -272,6 +298,6 @@ void KMerDataCounter::FillKMerData(KMerData &data) {
       singletons += 1;
   }
 
-  INFO("Merge done. There are " << data.size() << " kmers in total. "
+  INFO("There are " << data.size() << " kmers in total. "
        "Among them " << singletons << " (" <<  100.0 * (double)singletons / (double)data.size() << "%) are singletons.");
 }
