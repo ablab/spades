@@ -15,17 +15,8 @@ namespace path_extend {
 class SimpleLongReadMapper {
 public:
     SimpleLongReadMapper(conj_graph_pack& gp)
-            : gp_(gp)/*,
-              mapper_(gp_.g, gp_.index, gp_.kmer_mapper, gp_.k_value + 1),
-              same_edge_corr_(gp_.g),
-              ps_(gp_.g),
-              gap_closer_(gp_.g, &ps_) */{
+            : gp_(gp) {
         mapper_ = MapperInstance(gp_);
-        //paths_searcher_config conf;
-        //conf.depth_neigh_search = 5;  // max path len (in edges)
-        //conf.max_len_path = 100000;  // max path len (in k-mers)
-        //conf.max_num_vertices = 100;  // max number of visited vertices
-        //ps_.Initialize(conf);
     }
 
     void ProcessSingleReadLibrary(
@@ -151,22 +142,11 @@ private:
 
     template<class SingleRead>
     vector<EdgeId> ProcessSingleRead(const SingleRead& r) const {
-        //TODO: if we can really use following code then we should delete everything about SameEdgeDeletionCorrector and CloseGapsCorrector!!!
-        //auto mapper = MapperInstance(gp_);
         return mapper_->FindReadPath(r.sequence());
-        /*MappingPath<EdgeId> path;
-         path.join(mapper_.MapSequence(r.sequence()));
-         SimpleMappingContig mc(r.sequence(), path);
-         MappingContig * dc = same_edge_corr_.Correct(&mc);
-         MappingContig * gc = gap_closer_.Correct(dc);
-         return gc->PathSeq();*/
     }
-    std::shared_ptr<const NewExtendedSequenceMapper<conj_graph_pack::graph_t, conj_graph_pack::index_t> > mapper_;
+
     conj_graph_pack& gp_;
-    //ExtendedSequenceMapper<Graph, conj_graph_pack::index_t> mapper_;
-    //SameEdgeDeletionCorrector same_edge_corr_;
-    //DijkstraSearcher ps_;
-    //CloseGapsCorrector gap_closer_;
+    std::shared_ptr<const NewExtendedSequenceMapper<conj_graph_pack::graph_t, conj_graph_pack::index_t> > mapper_;
 };
 
 }/*path_extend*/

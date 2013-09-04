@@ -79,6 +79,7 @@ private:
 		size_t commonSize = startPath->CommonEndSize(*endPath);
 		size_t nLen = 0;
 		if (commonSize == 0) {
+		    //TODO: use another seacher(omnigraph::PathProcessor), delete this DijkstraSearcher
 			DijkstraSearcher pathSeacher(g_);
 			VertexId lastVertex = g_.EdgeEnd(
 					startPath->At(startPath->Size() - 1));
