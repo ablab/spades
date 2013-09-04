@@ -6,56 +6,264 @@
 
 #pragma once
 
+#include "sequence/nucl.hpp"
+#include "io/modifying_reader_wrapper.hpp"
+#include "adt/bag.hpp"
+#include <boost/random/mersenne_twister.hpp>
+#include <boost/random/uniform_01.hpp>
+#include <boost/random/uniform_int.hpp>
+#include <boost/random/variate_generator.hpp>
+//#include "indices/edge_index_builders.hpp"
+
 namespace cap {
-template<size_t k>
-void FillBagForStrand(const Sequence& strand,
-		map<Seq<k>, size_t, typename Seq<k>::less2>& bag) {
-	if (strand.size() < k)
-		return;
-	Seq<k> kmer(strand);
-	kmer >> 'A';
-	for (size_t i = k - 1; i < strand.size(); ++i) {
-		kmer = kmer << strand[i];
-		bag[kmer] += 1;
-	}
-}
 
-template<size_t k>
-void FillRepeats(const Sequence& genome,
-		set<Seq<k>, typename Seq<k>::less2>& repeats) {
-	map<Seq<k>, size_t, typename Seq<k>::less2> bag;
-
-	FillBagForStrand(genome, bag);
-	FillBagForStrand(!genome, bag);
-
-	for (auto it = bag.begin(); it != bag.end(); ++it) {
-		if (it->second > 1)
-			repeats.insert(it->first);
-	}
-}
-
-template<size_t k>
-void FillRepeats(const vector<Sequence>& assembly,
-		set<Seq<k>, typename Seq<k>::less2>& repeats) {
-	map<Seq<k>, size_t, typename Seq<k>::less2> bag;
-
-	for (auto it = assembly.begin(); it != assembly.end(); ++it) {
-		FillBagForStrand(*it, bag);
-		FillBagForStrand(!(*it), bag);
-	}
-
-	for (auto it = bag.begin(); it != bag.end(); ++it) {
-		if (it->second > 1)
-			repeats.insert(it->first);
-	}
-}
-
-//todo
-struct ClearedGenome {
-	typedef vector<MappingRange> Ranges;
-	Sequence s;
-	Ranges mapping;
+struct Count {
+    size_t count;
+    Count() : count(0) {}
 };
+
+template<class Index>
+struct CountIndexHelper {
+    typedef Index IndexT;
+    typedef typename IndexT::KMer Kmer;
+    typedef typename IndexT::KMerIdx KMerIdx;
+    typedef typename IndexT::traits_t traits_t;
+//    typedef typename IndexT::IdType IdType;
+    typedef DeBruijnStreamKMerIndexBuilder<Kmer, IndexT> DeBruijnStreamKMerIndexBuilderT;
+    typedef CoverageFillingEdgeIndexBuilder<DeBruijnStreamKMerIndexBuilderT> CoverageFillingEdgeIndexBuilderT;
+};
+
+class RepeatMasker : public io::SequenceModifier {
+private:
+    typedef runtime_k::RtSeq Kmer;
+    typedef DeBruijnKMerIndex<KmerFreeIndex<Count, kmer_index_traits<Kmer>>> KmerCountIndex;
+    typedef KmerCountIndex::KMerIdx KmerIdx;
+
+    size_t k_;
+    KmerCountIndex index_;
+    //todo maybe remove mutable? will need removing const from Modify
+    mutable boost::mt19937 rand_engine_;
+    mutable boost::uniform_int<> rand_dist_;
+    mutable boost::variate_generator<boost::mt19937&, boost::uniform_int<>> rand_nucl_;
+
+    bool IsRepeat(const Kmer& kmer) const {
+        return index_[kmer].count > 1;
+    }
+
+    const vector<Range> RepeatIntervals(const std::string& s) const {
+        vector<Range> answer;
+        answer.push_back(Range(0, 0));
+        Kmer kmer(k_, s);
+        kmer >>= 'A';
+        for (size_t i = k_ - 1; i < s.size(); ++i) {
+            kmer <<= s[i];
+            if (IsRepeat(kmer)) {
+                if (i <= answer.back().end_pos) {
+                    answer.back().end_pos = i + k_;
+                } else {
+                    answer.push_back(Range(i, i + k_));
+                }
+            }
+        }
+        return answer;
+    }
+
+    void MaskRepeat(const Range& repeat, std::string& s) const {
+        for (size_t i = repeat.start_pos; i < repeat.end_pos; ++i) {
+            s[i] = nucl((unsigned char) rand_nucl_());
+        }
+    }
+
+    void MaskRepeats(const vector<Range>& rep_int, std::string& s) const {
+        for (Range r : rep_int) {
+            MaskRepeat(r, s);
+        }
+    }
+
+public:
+    RepeatMasker(size_t k, const std::string& workdir) : k_(k), index_(k_, workdir),
+        rand_engine_(239), rand_dist_(0, 3), rand_nucl_(rand_engine_, rand_dist_) {
+    }
+
+    template<class Streams>
+    size_t FindRepeats(Streams& streams) {
+        CountIndexHelper<KmerCountIndex>::CoverageFillingEdgeIndexBuilderT().BuildIndexFromStream(index_, streams);
+        size_t rep_kmer_cnt = 0;
+        for (KmerIdx idx = index_.kmer_idx_begin(); idx < index_.kmer_idx_end(); ++idx) {
+            if (index_[idx].count > 1) {
+                rep_kmer_cnt++;
+            }
+        }
+        return rep_kmer_cnt;
+    }
+
+    /*virtual*/Sequence Modify(const Sequence& s) const {
+        VERIFY(false);
+        return Sequence();
+    }
+
+    /*virtual*/std::string Modify(const std::string& s) const {
+        if (s.size() < k_)
+            return s;
+        string str = s;
+        MaskRepeats(RepeatIntervals(s), str);
+        return str;
+    }
+};
+
+
+template<class Stream1, class Stream2>
+void Transfer(Stream1& s1, Stream2& s2) {
+    typename Stream1::read_type r;
+    while (!s1.eof()) {
+        s1 >> r;
+        s2 << r;
+    }
+}
+
+inline ContigStreamsPtr OpenStreams(const string& root,
+        const vector<string>& filenames, bool add_rc) {
+    ContigStreamsPtr streams(new ContigStreams());
+    for (auto filename : filenames) {
+        DEBUG("Opening stream from " << root << filename);
+        ContigStream* reader = new io::Reader(root + filename);
+        if (add_rc)
+            reader = new io::CleanRCReaderWrapper<Contig>(reader);
+        streams->push_back(reader);
+    }
+    return streams;
+}
+
+inline void SaveStreams(ContigStreamsPtr streams, const vector<string>& suffixes,
+        const string& out_root) {
+    make_dir(out_root);
+
+    streams->reset();
+    for (size_t i = 0; i < streams->size(); ++i) {
+        VERIFY(!suffixes[i].empty());
+        string output_filename = out_root + suffixes[i];
+        io::osequencestream ostream(output_filename);
+        Transfer((*streams)[i], ostream);
+    }
+}
+
+inline void ModifyAndSave(shared_ptr<io::SequenceModifier> modifier, ContigStreamsPtr streams, const vector<string>& suffixes,
+        const string& out_root) {
+    ContigStreamsPtr modified = make_shared<ContigStreams>();
+    for (size_t i = 0; i < streams->size(); ++i) {
+        modified->push_back(new io::ModifyingWrapper<Contig>((*streams)[i], modifier));
+    }
+    SaveStreams(modified, suffixes, out_root);
+}
+
+inline bool MaskRepeatsIteration(size_t k, const string& input_dir, const vector<string>& suffixes, const string& output_dir) {
+    shared_ptr<RepeatMasker> masker_ptr = make_shared<RepeatMasker>(k, "tmp");
+    bool repeats_found = masker_ptr->FindRepeats(*OpenStreams(input_dir, suffixes, true));
+    if (repeats_found) {
+        INFO("Repeats found");
+        INFO("Modifying and saving streams");
+        ModifyAndSave(masker_ptr, OpenStreams(input_dir, suffixes, false), suffixes, output_dir);
+    } else {
+        INFO("No repeats found");
+    }
+    return !repeats_found;
+}
+
+//inline bool MaskRepeats(const string& input_dir, const vector<string>& suffixes, size_t max_iter_count, const string& work_dir) {
+//    size_t iter = 0;
+//    bool no_repeats = false;
+//    while (iter <= max_iter_count) {
+//        string out_dir = input_dir + ToString(iter) + "/";
+//        make_dir(out_dir);
+//        no_repeats = MaskRepeatsIteration(input_dir, suffixes, out_dir);
+//        if (no_repeats) {
+//            break;
+//        }
+//        ++iter;
+//    }
+//    if (no_repeats) {
+//        string out_dir = input_dir + "masked/";
+//        make_dir(out_dir);
+//        ModifyAndSave(make_shared<io::TrivialModifier>(),
+//                      OpenStreams(input_dir + "/" + ToString(iter) + "/", suffixes,
+//                                  out_dir));
+//    } else {
+//        WARN("Failed to mask repeats in " << max_iter_count << " iterations");
+//    }
+//    return no_repeats;ContigStreamsPtr
+//}
+
+inline bool MaskRepeats(size_t k, ContigStreamsPtr input_streams, const vector<string>& suffixes, size_t max_iter_count, const string& work_dir) {
+    size_t iter = 0;
+    bool no_repeats = false;
+    string input_dir = work_dir + "init/";
+    make_dir(input_dir);
+    SaveStreams(input_streams, suffixes, input_dir);
+    while (iter <= max_iter_count) {
+        INFO("Iteration " << iter);
+        string out_dir = work_dir + ToString(iter) + "/";
+        make_dir(out_dir);
+        no_repeats = MaskRepeatsIteration(k, input_dir, suffixes, out_dir);
+        if (no_repeats) {
+            INFO("No repeats found");
+            break;
+        }
+        input_dir = out_dir;
+        ++iter;
+    }
+    if (no_repeats) {
+        INFO("Repeats succesfully masked in " << iter << " iterations");
+        string out_dir = work_dir + "masked/";
+        make_dir(out_dir);
+        SaveStreams(OpenStreams(input_dir, suffixes, false),
+                    suffixes, out_dir);
+    } else {
+        WARN("Failed to mask repeats in " << max_iter_count << " iterations");
+    }
+    return no_repeats;
+}
+
+//void FillBagForStrand(const Sequence& strand,
+//		map<Seq<k>>& bag) {
+//	if (strand.size() < k)
+//		return;
+//	Seq<k> kmer(strand);
+//	kmer >> 'A';
+//	for (size_t i = k - 1; i < strand.size(); ++i) {
+//		kmer = kmer << strand[i];
+//		bag[kmer] += 1;
+//	}
+//}
+//
+//template<size_t k>
+//void FillRepeats(const Sequence& genome,
+//		set<Seq<k>, typename Seq<k>::less2>& repeats) {
+//	map<Seq<k>, size_t, typename Seq<k>::less2> bag;
+//
+//	FillBagForStrand(genome, bag);
+//	FillBagForStrand(!genome, bag);
+//
+//	for (auto it = bag.begin(); it != bag.end(); ++it) {
+//		if (it->second > 1)
+//			repeats.insert(it->first);
+//	}
+//}
+//
+//template<size_t k>
+//void FillRepeats(const vector<Sequence>& assembly,
+//		set<Seq<k>, typename Seq<k>::less2>& repeats) {
+//	map<Seq<k>, size_t, typename Seq<k>::less2> bag;
+//
+//	for (auto it = assembly.begin(); it != assembly.end(); ++it) {
+//		FillBagForStrand(*it, bag);
+//		FillBagForStrand(!(*it), bag);
+//	}
+//
+//	for (auto it = bag.begin(); it != bag.end(); ++it) {
+//		if (it->second > 1)
+//			repeats.insert(it->first);
+//	}
+//}
 
 //template<size_t k>
 //class RepeatCleaner {
@@ -88,82 +296,82 @@ struct ClearedGenome {
 //
 //};
 
-template<size_t k>
-Sequence ClearGenome(const Sequence& genome,
-		const set<Seq<k>, typename Seq<k>::less2>& repeats) {
-	INFO("Clearing genome");
-	if (genome.size() < k)
-		return genome;
-
-	string answer;
-	for (size_t i = 0; i < k - 1; ++i) {
-		answer += nucl(genome[i]);
-	}
-	//intervals of kmers that should be resolved afterwards
-	vector<Range> repeat_intervals;
-	Seq<k> kmer(genome);
-	size_t curr_pos = 0;
-	//curr_pos + k - next nucl pos
-	bool changed = false;
-	while (curr_pos + k != genome.size()) {
-		size_t int_start = curr_pos;
-		while (repeats.count(kmer) > 0 && curr_pos + k < genome.size()) {
-			kmer = kmer << genome[curr_pos + k];
-			curr_pos++;
-			changed = true;
-		}
-		if (int_start != curr_pos)
-			repeat_intervals.push_back(Range(int_start, curr_pos));
-
-		if (curr_pos + k == genome.size())
-			break;
-
-		while (repeats.count(kmer) == 0 && curr_pos + k < genome.size()) {
-			answer += nucl(kmer[k - 1]);
-			kmer = kmer << genome[curr_pos + k];
-			curr_pos++;
-		}
-	}
-	if (changed) {
-		INFO("Genome was changed during cleaning");
-	} else {
-		INFO("Genome wasn't changed during cleaning");
-	}
-	return Sequence(answer);
-}
-
-template<size_t k>
-Sequence ClearGenome(const Sequence& genome) {
-	INFO("Clearing genome of repeats");
-
-	set<Seq<k>, typename Seq<k>::less2> repeats;
-	INFO("Filling set of repeats");
-	FillRepeats<k>(genome, repeats);
-	INFO("Clearing genome");
-	return ClearGenome<k>(genome, repeats);
-}
-
-//todo bad strategy for assembly cleaning
-template<size_t k>
-pair<Sequence, vector<Sequence>> Clear(const Sequence& genome,
-		const vector<Sequence>& assembly) {
-	INFO("Clearing genome of repeats");
-
-	set<Seq<k>, typename Seq<k>::less2> repeats;
-	INFO("Filling set of repeats");
-	FillRepeats<k>(genome, repeats);
-//	for (auto it = assembly.begin(); it != assembly.end(); ++it) {
-//		FillRepeats(*it, repeats);
+//template<size_t k>
+//Sequence ClearGenome(const Sequence& genome,
+//		const set<Seq<k>, typename Seq<k>::less2>& repeats) {
+//	INFO("Clearing genome");
+//	if (genome.size() < k)
+//		return genome;
+//
+//	string answer;
+//	for (size_t i = 0; i < k - 1; ++i) {
+//		answer += nucl(genome[i]);
 //	}
-	INFO("Clearing genome");
-	Sequence new_genome = ClearGenome<k>(genome, repeats);
-	INFO("Clearing assembly");
-	vector<Sequence> new_assembly;
-	for (auto it = assembly.begin(); it != assembly.end(); ++it) {
-		new_assembly.push_back(ClearGenome<k>(*it, repeats));
-	}
-	return make_pair(new_genome, new_assembly);
-}
+//	//intervals of kmers that should be resolved afterwards
+//	vector<Range> repeat_intervals;
+//	Seq<k> kmer(genome);
+//	size_t curr_pos = 0;
+//	//curr_pos + k - next nucl pos
+//	bool changed = false;
+//	while (curr_pos + k != genome.size()) {
+//		size_t int_start = curr_pos;
+//		while (repeats.count(kmer) > 0 && curr_pos + k < genome.size()) {
+//			kmer = kmer << genome[curr_pos + k];
+//			curr_pos++;
+//			changed = true;
+//		}
+//		if (int_start != curr_pos)
+//			repeat_intervals.push_back(Range(int_start, curr_pos));
+//
+//		if (curr_pos + k == genome.size())
+//			break;
+//
+//		while (repeats.count(kmer) == 0 && curr_pos + k < genome.size()) {
+//			answer += nucl(kmer[k - 1]);
+//			kmer = kmer << genome[curr_pos + k];
+//			curr_pos++;
+//		}
+//	}
+//	if (changed) {
+//		INFO("Genome was changed during cleaning");
+//	} else {
+//		INFO("Genome wasn't changed during cleaning");
+//	}
+//	return Sequence(answer);
+//}
+//
+//template<size_t k>
+//Sequence ClearGenome(const Sequence& genome) {
+//	INFO("Clearing genome of repeats");
+//
+//	set<Seq<k>, typename Seq<k>::less2> repeats;
+//	INFO("Filling set of repeats");
+//	FillRepeats<k>(genome, repeats);
+//	INFO("Clearing genome");
+//	return ClearGenome<k>(genome, repeats);
+//}
+//
+////todo bad strategy for assembly cleaning
+//template<size_t k>
+//pair<Sequence, vector<Sequence>> Clear(const Sequence& genome,
+//		const vector<Sequence>& assembly) {
+//	INFO("Clearing genome of repeats");
+//
+//	set<Seq<k>, typename Seq<k>::less2> repeats;
+//	INFO("Filling set of repeats");
+//	FillRepeats<k>(genome, repeats);
+////	for (auto it = assembly.begin(); it != assembly.end(); ++it) {
+////		FillRepeats(*it, repeats);
+////	}
+//	INFO("Clearing genome");
+//	Sequence new_genome = ClearGenome<k>(genome, repeats);
+//	INFO("Clearing assembly");
+//	vector<Sequence> new_assembly;
+//	for (auto it = assembly.begin(); it != assembly.end(); ++it) {
+//		new_assembly.push_back(ClearGenome<k>(*it, repeats));
+//	}
+//	return make_pair(new_genome, new_assembly);
+//}
 
 //template<size_t k>
 //void Clear(const string& genome_in, const string& genome_out
@@ -175,51 +383,53 @@ pair<Sequence, vector<Sequence>> Clear(const Sequence& genome,
 //
 //}
 
-template<size_t k>
-void Clear(const string& in, const string& out) {
-	io::Reader in_stream(in);
-	set<Seq<k>, typename Seq<k>::less2> repeats;
-	FillRepeats<k>(AllSequences(in_stream), repeats);
-	in_stream.reset();
-	io::osequencestream out_stream(out);
-	io::SingleRead contig;
-	while (!in_stream.eof()) {
-		in_stream >> contig;
-		Sequence cleared = ClearGenome<k>(contig.sequence(), repeats);
-		out_stream << io::SingleRead(contig.name(), cleared.str());
-	}
-}
+//template<size_t k>
+//void Clear(const string& in, const string& out) {
+//	io::Reader in_stream(in);
+//	set<Seq<k>, typename Seq<k>::less2> repeats;
+//	FillRepeats<k>(AllSequences(in_stream), repeats);
+//	in_stream.reset();
+//	io::osequencestream out_stream(out);
+//	io::SingleRead contig;
+//	while (!in_stream.eof()) {
+//		in_stream >> contig;
+//		Sequence cleared = ClearGenome<k>(contig.sequence(), repeats);
+//		out_stream << io::SingleRead(contig.name(), cleared.str());
+//	}
+//}
+//
+//template<size_t k>
+//pair<Sequence, Sequence> ClearGenomes(const pair<Sequence, Sequence>& genomes) {
+//	INFO("Clearing genomes from repeats");
+//
+//	set<Seq<k>, typename Seq<k>::less2> repeats;
+//	INFO("Filling set of repeats");
+//	FillRepeats<k>(genomes.first, repeats);
+//	FillRepeats<k>(genomes.second, repeats);
+//	INFO("Clearing genomes");
+//	return make_pair(ClearGenome<k>(genomes.first, repeats),
+//			ClearGenome<k>(genomes.second, repeats));
+//}
+//
+//template<size_t k>
+//pair<Sequence, Sequence> TotallyClearGenomes(
+//		const pair<Sequence, Sequence>& genomes) {
+//	static const size_t iter_count = 1;
+//	pair<Sequence, Sequence> tmp = genomes;
+//	for (size_t i = 0; i < iter_count; ++i) {
+//		INFO("Cleaning iteration " << i);
+//		tmp = ClearGenomes<k>(tmp);
+//	}
+//	return tmp;
+//}
+//
+//template<size_t k>
+//bool CheckNoRepeats(const Sequence& genome) {
+//	set<Seq<k>, typename Seq<k>::less2> repeats;
+//	FillRepeats<k>(genome, repeats);
+//	return repeats.empty();
+//}
 
-template<size_t k>
-pair<Sequence, Sequence> ClearGenomes(const pair<Sequence, Sequence>& genomes) {
-	INFO("Clearing genomes from repeats");
 
-	set<Seq<k>, typename Seq<k>::less2> repeats;
-	INFO("Filling set of repeats");
-	FillRepeats<k>(genomes.first, repeats);
-	FillRepeats<k>(genomes.second, repeats);
-	INFO("Clearing genomes");
-	return make_pair(ClearGenome<k>(genomes.first, repeats),
-			ClearGenome<k>(genomes.second, repeats));
-}
-
-template<size_t k>
-pair<Sequence, Sequence> TotallyClearGenomes(
-		const pair<Sequence, Sequence>& genomes) {
-	static const size_t iter_count = 1;
-	pair<Sequence, Sequence> tmp = genomes;
-	for (size_t i = 0; i < iter_count; ++i) {
-		INFO("Cleaning iteration " << i);
-		tmp = ClearGenomes<k>(tmp);
-	}
-	return tmp;
-}
-
-template<size_t k>
-bool CheckNoRepeats(const Sequence& genome) {
-	set<Seq<k>, typename Seq<k>::less2> repeats;
-	FillRepeats<k>(genome, repeats);
-	return repeats.empty();
-}
 
 }

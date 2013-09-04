@@ -3,6 +3,7 @@
 #include "cap_environment.hpp"
 #include "cap_environment_manager.hpp"
 #include "mosaic.hpp"
+#include "io/sequence_reader.hpp"
 
 namespace online_visualization {
 
@@ -321,9 +322,9 @@ class LoadEnvCommand : public LocalCommand<CapEnvironment> {
 
 };
 
-class SaveGraphCommand : public LocalCommand<CapEnvironment> {
+class SaveGraphCommand : public NewLocalCommand<CapEnvironment> {
  public:
-  SaveGraphCommand() : LocalCommand<CapEnvironment>("save_graph") {
+  SaveGraphCommand() : NewLocalCommand<CapEnvironment>("save_graph", 0) {
   }
 
   virtual std::string Usage() const {
@@ -334,13 +335,13 @@ class SaveGraphCommand : public LocalCommand<CapEnvironment> {
            "> save_graph <directory_to_save_to>\n";
   }
 
-  virtual void Execute(CapEnvironment& curr_env, const ArgumentList& arg_list) const {
+  virtual void InnerExecute(CapEnvironment& curr_env, const vector<string>& args) const {
     if (curr_env.GetGraphK() == CapEnvironment::kNoGraphK) {
       cout << "You should build graph prior to saving it. Aborting.\n";
       return;
     }
 
-    string folder = TryFetchFolder(curr_env, arg_list);
+    string folder = TryFetchFolder(curr_env, args);
 
     cout << "Saving graph in " << folder << " ...";
     curr_env.manager().SaveGraph(folder + "saves/");
@@ -544,23 +545,24 @@ class LoadGraphCommand : public LocalCommand<CapEnvironment> {
 };
 */
 
-class MosaicAnalysisCommand : public LocalCommand<CapEnvironment> {
+class MosaicAnalysisCommand : public NewLocalCommand<CapEnvironment> {
  public:
-    MosaicAnalysisCommand() : LocalCommand<CapEnvironment>("mosaic") {
+    MosaicAnalysisCommand() : NewLocalCommand<CapEnvironment>("mosaic", 0) {
   }
 
   virtual std::string Usage() const {
     return "Command `mosaic`";
   }
 
-  virtual void Execute(CapEnvironment& curr_env, const ArgumentList& arg_list) const {
+ private:
+  virtual void InnerExecute(CapEnvironment& curr_env, const vector<string>& args) const {
       VERIFY(curr_env.genome_cnt() == 1);
 //      const Sequence& genome = curr_env.genomes()[1];
       const Sequence& genome = curr_env.genomes()[0];
       size_t min_support_length = 100;
       size_t max_support_mult = 20;
       size_t max_inter_length = 500;
-      std::string folder = TryFetchFolder(curr_env, arg_list);
+      std::string folder = TryFetchFolder(curr_env, args);
       ofstream out(folder + "mosaic.txt");
       if (curr_env.LSeqIsUsed()) {
           PerformMosaicAnalysis(curr_env.l_seq_gp(), genome, min_support_length, max_support_mult, max_inter_length, out);
@@ -568,11 +570,81 @@ class MosaicAnalysisCommand : public LocalCommand<CapEnvironment> {
           PerformMosaicAnalysis(curr_env.rt_seq_gp(), genome, min_support_length, max_support_mult, max_inter_length, out);
       }
   }
+};
 
- protected:
-  virtual size_t MinArgNumber() const {
-    return 1;
-  }
+//todo works for finished genomes, not contigs!!!
+ContigStreamsPtr ConvertRefsToStreams(const vector<Sequence>& ss, const vector<string>& names) {
+    ContigStreamsPtr answer = make_shared<ContigStreams>();
+    VERIFY(ss.size() == names.size());
+    for (size_t i = 0; i < ss.size(); ++i) {
+        io::IReader<io::SingleRead>* ireader = new io::SequenceReader<io::SingleRead>(ss[i], names[i]);
+        answer->push_back(ireader);
+    }
+    return answer;
+}
+
+class MaskRepeatsCommand : public NewLocalCommand<CapEnvironment> {
+public:
+    MaskRepeatsCommand()
+            : NewLocalCommand<CapEnvironment>("mask_repeats", 2) {
+    }
+
+    virtual std::string Usage() const {
+        return "Command `mask_repeats <k> <max_iter_count>`";
+    }
+
+private:
+
+    vector<string> AppendFasta(const vector<string>& files) const {
+        vector<string> answer;
+        for (string s : files) {
+            answer.push_back(s + ".fasta");
+        }
+        return answer;
+    }
+
+    Sequence ReadSequence(ContigStream& reader) const {
+        VERIFY(!reader.eof());
+        io::SingleRead read;
+        reader >> read;
+        return read.sequence();
+    }
+
+    void UpdateGenomes(ContigStreamsPtr streams, CapEnvironment& curr_env) const {
+        vector<Sequence>& genomes = curr_env.mutable_genomes();
+        VERIFY(streams->size() == genomes.size());
+        for (size_t i = 0; i < streams->size(); ++i) {
+            genomes[i] = ReadSequence((*streams)[i]);
+        }
+    }
+
+    /*virtual*/
+    void InnerExecute(CapEnvironment& curr_env,
+                      const vector<string>& args) const {
+        size_t k = GetInt(args[1]);
+        size_t iteration_cnt = GetInt(args[2]);
+
+        cout << "Masking repeats for k=" << k << " in " << iteration_cnt << "iterations" << endl;
+
+        ContigStreamsPtr streams = ConvertRefsToStreams(
+                curr_env.genomes(), curr_env.genome_names());
+
+        //todo temporary hack
+        curr_env.manager().SaveGenomesToDisk(false);
+
+        string folder = this->CurrentFolder(curr_env) + "masking/";
+        make_dir(folder);
+        bool success = MaskRepeats(k, streams, AppendFasta(curr_env.genome_names()),
+                                   iteration_cnt, folder);
+        if (!success) {
+            cout << "Failed to mask repeats in " << iteration_cnt
+                    << " iterations" << endl;
+        } else {
+            cout << "Repeats successfully masked" << endl;
+            cout << "Updating genomes in environment" << endl;
+            UpdateGenomes(OpenStreams(CurrentFolder(curr_env) + "masking/masked/", AppendFasta(curr_env.genome_names()), false), curr_env);
+        }
+    }
 
 };
 

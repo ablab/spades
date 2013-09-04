@@ -7,7 +7,6 @@
 
 #include "comparison_utils.hpp"
 #include "diff_masking.hpp"
-#include "repeat_masking.hpp"
 #include "genome_correction.hpp"
 #include "assembly_compare.hpp"
 #include "simple_indel_finder.hpp"

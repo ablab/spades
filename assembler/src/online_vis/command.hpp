@@ -80,14 +80,21 @@ class LocalCommand : public Command<Env> {
 
  protected:
 
-  string TryFetchFolder(Env& curr_env, const ArgumentList& arg_list, size_t arg_nmb = 1) const {
-    const vector<string> &args = arg_list.GetAllArguments();
-
+  string TryFetchFolder(Env& curr_env, const vector<string>& args, size_t arg_nmb = 1) const {
     if (args.size() > arg_nmb) {
       return args[arg_nmb] + "/";
     } else {
-      return curr_env.manager().GetDirForCurrentState();
+      return CurrentFolder(curr_env);
     }
+  }
+
+  string TryFetchFolder(Env& curr_env, const ArgumentList& arg_list, size_t arg_nmb = 1) const {
+      const vector<string>& args = arg_list.GetAllArguments();
+      return TryFetchFolder(curr_env, args, arg_nmb);
+  }
+
+  string CurrentFolder(Env& curr_env) const {
+    return curr_env.manager().GetDirForCurrentState();
   }
 };
 
