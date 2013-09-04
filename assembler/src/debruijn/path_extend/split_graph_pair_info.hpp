@@ -11,6 +11,7 @@
 #include "graphio.hpp"
 #include "path_extend/paired_library.hpp"
 #include "late_pair_info_count.hpp"
+#include "sequence_mapper_notifier.hpp"
 using namespace debruijn_graph;
 
 namespace path_extend {
@@ -247,115 +248,69 @@ public:
 
 };
 
-class SplitGraphPairInfo {
+class SplitGraphPairInfo : public SequenceMapperListener {
 
 public:
-    SplitGraphPairInfo(conj_graph_pack& gp, PairedInfoLibrary& lib,
-                       size_t lib_index, size_t basket_size)
+    SplitGraphPairInfo(conj_graph_pack& gp, size_t is, size_t read_size,
+                       size_t is_var, size_t k, size_t basket_size)
             : gp_(gp),
-              lib_(lib),
-              lib_index_(lib_index),
+              is_(is),
+              read_size_(read_size),
+              is_var_(is_var),
+              k_(k),
               basket_size_(basket_size),
-              basket_index_(gp, basket_size) {
+              basket_index_(gp, basket_size),
+              threshold_(-1) {
 
     }
 
-    template<class PairedRead>
-    void ProcessReadPairs(
-            io::ReadStreamVector<io::IReader<PairedRead> >& streams) {
-        INFO("Processing paired reads (takes a while)");
-        io::IReader<PairedRead>& stream = streams.back();
-        stream.reset();
-
-        while (!stream.eof()) {
-            PairedRead p_r;
-            stream >> p_r;
-            ProcessPairedRead(basket_index_, p_r);
-        }
-
+    ~SplitGraphPairInfo(){
     }
 
-    template<class PairedRead>
-    void ProcessReadPairsParallel(
-            io::ReadStreamVector<io::IReader<PairedRead> >& streams) {
-        INFO("Processing paired reads (takes a while)");
-        size_t nthreads = streams.size();
-        vector<BasketsPairInfoIndex*> buffer_pi(nthreads);
-
-        for (size_t i = 0; i < nthreads; ++i) {
-            buffer_pi[i] = new BasketsPairInfoIndex(gp_, basket_size_);
-        }
-
-        size_t counter = 0;
-        static const double coeff = 1.3;
-        #pragma omp parallel num_threads(nthreads)
-        {
-            #pragma omp for reduction(+ : counter)
-            for (size_t i = 0; i < nthreads; ++i) {
-                size_t size = 0;
-                size_t limit = 1000000;
-                PairedRead r;
-                io::IReader<PairedRead>& stream = streams[i];
-                stream.reset();
-                bool end_of_stream = false;
-
-                DEBUG("Starting " << omp_get_thread_num());
-                while (!end_of_stream) {
-                    end_of_stream = stream.eof();
-
-                    while (!end_of_stream && size < limit) {
-                        stream >> r;
-                        ++counter;
-                        ++size;
-                        ProcessPairedRead(*(buffer_pi[i]), r);
-                        end_of_stream = stream.eof();
-                    }
-
-                    #pragma omp critical
-                    {
-                        DEBUG("Merging " << omp_get_thread_num() << " " << buffer_pi[i]->size());
-                        basket_index_.AddAll(*(buffer_pi[i]));
-                        DEBUG("New basket size " << basket_index_.size());
-                        DEBUG("Thread number " << omp_get_thread_num() << " is going to increase its limit by " << coeff << " times, current limit is " << limit);
-                    }
-                    buffer_pi[i]->Clear();
-                    limit = (size_t) (coeff * (double) limit);
-                }
-            }DEBUG("Thread number " << omp_get_thread_num() << " finished");
-        }DEBUG("Used " << counter << " paired reads");
-        for (size_t i = 0; i < nthreads; ++i) {
-            DEBUG("Size of " << i << "-th map is " << buffer_pi[i]->size());
-        }
-
-        for (size_t i = 0; i < nthreads; ++i) {
-            delete buffer_pi[i];
-        }DEBUG("Done");
-    }
-
-    void ProcessReadPairs() {
-        if (cfg::get().use_multithreading) {
-            auto paired_streams = paired_binary_readers(
-							cfg::get().ds.reads[lib_index_],
-							true,
-							(size_t) cfg::get().ds.reads[lib_index_].data().mean_insert_size);
-
-            if (paired_streams->size() == 1) {
-                ProcessReadPairs(*paired_streams);
-            } else {
-                ProcessReadPairsParallel(*paired_streams);
-            }
-        } else {
-            auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(
-                    cfg::get().ds.reads[lib_index_], true,
-                    (size_t) cfg::get().ds.reads[lib_index_].data().mean_insert_size);
-            SingleStreamType paired_streams(paired_stream.get());
-            paired_stream.release();
-            ProcessReadPairs(paired_streams);
+    virtual void StartProcessLibrary(size_t threads_count) {
+        baskets_buffer_.clear();
+        for (size_t i = 0; i < threads_count; ++i) {
+            baskets_buffer_.push_back(new BasketsPairInfoIndex(gp_, basket_size_));
         }
     }
 
-    double FindThreshold(double min_long_edge, int insert_size_min,
-                         int insert_size_max) {
+    virtual void ProcessPairedRead(size_t thread_index,
+                                   const MappingPath<EdgeId>& read1,
+                                   const MappingPath<EdgeId>& read2,
+                                   size_t dist) {
+        ProcessPairedRead(*baskets_buffer_[thread_index], read1, read2, dist);
+    }
+
+    virtual void ProcessSingleRead(size_t thread_index,
+                                   const MappingPath<EdgeId>& read) {
+        //only paired reads are interesting
+    }
+
+    virtual void MergeBuffer(size_t thread_index) {
+        basket_index_.AddAll(*baskets_buffer_[thread_index]);
+        baskets_buffer_[thread_index]->Clear();
+    }
+
+    virtual void StopProcessLibrary() {
+        for (size_t i = 0; i < baskets_buffer_.size(); ++i) {
+            MergeBuffer(i);
+        }
+        FindThreshold();
+        for (size_t i = 0; i < baskets_buffer_.size(); ++i){
+            delete baskets_buffer_[i];
+        }
+        baskets_buffer_.clear();
+    }
+
+    double GetThreshold() const {
+        return threshold_;
+    }
+
+private:
+    void FindThreshold() {
+        double min_long_edge = basket_size_;
+        int insert_size_min = (int) is_ - 2 * (int) is_var_;
+        int insert_size_max = (int) is_ + 2 * (int) is_var_;
         const Graph& g = gp_.g;
         vector<double> good_pi;
         vector<double> bad_pi;
@@ -390,13 +345,9 @@ public:
                 }
             }
         }
-        double threshold = FindIntersection(good_pi, bad_pi);
-        INFO("Paired info threshold " << threshold);
-        DEBUG(" good_pi_size " << good_pi.size() << " bad_pi_size " << bad_pi.size());
-        return threshold;
+        threshold_ = FindIntersection(good_pi, bad_pi);
+        INFO("Paired info threshold " << threshold_);
     }
-
-private:
 
     size_t LastBasketIndex(EdgeId edgeId, int insert_size_max,
                            EdgePairInfo& edge_pair_info) {
@@ -430,23 +381,14 @@ private:
 
     double GetNormalizedWeight(PairInfo& pi) {
 		return pi.weight_
-				/ (double) lib_.IdealPairedInfo(basket_size_, basket_size_,
-						(int) pi.distance_);
+				/ (double) IdealPairedInfo(basket_size_, basket_size_,
+						(int) pi.distance_, is_, read_size_, is_var_, k_);
 	}
 
-    template<class PairedRead>
     void ProcessPairedRead(BasketsPairInfoIndex& basket_index,
-			const PairedRead& p_r) {
-		Sequence read1 = p_r.first().sequence();
-		Sequence read2 = p_r.second().sequence();
-		size_t read_distance = p_r.distance();
-		auto mapper = MapperInstance(gp_);
-		MappingPath<EdgeId> path1 = mapper->MapSequence(read1);
-		MappingPath<EdgeId> path2 = mapper->MapSequence(read2);
-
+			const MappingPath<EdgeId>& path1, const MappingPath<EdgeId>& path2, size_t read_distance) {
 		for (size_t i = 0; i < path1.size(); ++i) {
 			pair<EdgeId, MappingRange> mapping_edge_1 = path1[i];
-
 			for (size_t j = 0; j < path2.size(); ++j) {
 				pair<EdgeId, MappingRange> mapping_edge_2 = path2[j];
 				double weight = PairedReadCountWeight(mapping_edge_1.second,
@@ -470,10 +412,14 @@ private:
 	}
 
     const conj_graph_pack& gp_;
-    const PairedInfoLibrary& lib_;
-    size_t lib_index_;
+    size_t is_;
+    size_t read_size_;
+    size_t is_var_;
+    size_t k_;
     size_t basket_size_;
     BasketsPairInfoIndex basket_index_;
+    vector<BasketsPairInfoIndex*> baskets_buffer_;
+    double threshold_;
 };
 
 } /* path_extend */

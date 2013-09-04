@@ -111,6 +111,10 @@ void load_lib_data(const std::string& prefix) {
       if (double_val) {
           cfg::get_writable().ds.reads[i].data().average_coverage = *double_val;
       }
+      load_param(filename, "pi_threshold_"+ToString(i), double_val);
+      if (double_val) {
+          cfg::get_writable().ds.reads[i].data().pi_threshold = *double_val;
+      }
 
       load_param_map(filename, "histogram_" + ToString(i), cfg::get_writable().ds.reads[i].data().insert_size_distribution);
   }
@@ -131,6 +135,7 @@ void write_lib_data(const std::string& prefix) {
       write_param(filename, "insert_size_median_" + ToString(i), cfg::get().ds.reads[i].data().median_insert_size);
       write_param(filename, "insert_size_mad_" + ToString(i), cfg::get().ds.reads[i].data().insert_size_mad);
       write_param(filename, "average_coverage_" + ToString(i), cfg::get().ds.reads[i].data().average_coverage);
+      write_param(filename, "pi_threshold_" + ToString(i), cfg::get().ds.reads[i].data().pi_threshold);
       write_param_map(filename, "histogram_" + ToString(i), cfg::get().ds.reads[i].data().insert_size_distribution);
   }
 }

@@ -616,7 +616,8 @@ private:
 
     bool UniqueEdge(EdgeId e) const {
         if (g_.length(e) > cfg::get().rr.max_repeat_length)
-            return true;DEBUG("Analyze unique edge " << g_.int_id(e));
+            return true;
+        DEBUG("Analyze unique edge " << g_.int_id(e));
         auto cov_paths = coverage_map_.GetCoveringPaths(e);
         DEBUG("***start***" << cov_paths.size() <<"***");
         for (auto it1 = cov_paths.begin(); it1 != cov_paths.end(); ++it1) {

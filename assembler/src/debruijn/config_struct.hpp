@@ -381,6 +381,7 @@ struct debruijn_config {
     double insert_size_mad;
     std::map<int, size_t> insert_size_distribution;
     double average_coverage;
+    double pi_threshold;
 
     std::string paired_read_prefix;
     std::string single_read_prefix;
@@ -389,7 +390,7 @@ struct debruijn_config {
     typedef io::IReader<io::SingleReadSeq> SequenceSingleReadStream;
     typedef io::IReader<io::PairedReadSeq> SequencePairedReadStream;
 
-    DataSetData(): read_length(0), mean_insert_size(0.0), insert_size_deviation(0.0), median_insert_size(0.0), insert_size_mad(0.0), average_coverage(0.0) {
+    DataSetData(): read_length(0), mean_insert_size(0.0), insert_size_deviation(0.0), median_insert_size(0.0), insert_size_mad(0.0), average_coverage(0.0), pi_threshold(0.0) {
     }
 
   };

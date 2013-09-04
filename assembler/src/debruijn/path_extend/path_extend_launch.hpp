@@ -319,23 +319,6 @@ void DeleteLibs(vector<PairedInfoLibraries>& libs) {
     }
 }
 
-void SetThreshold(conj_graph_pack& gp, PairedInfoLibrary* lib, size_t index,
-                     size_t split_edge_length) {
-    SplitGraphPairInfo split_graph(gp, *lib, index, split_edge_length);
-    INFO("Calculating paired info threshold");
-    if (cfg::get().pe_params.param_set.extension_options.recalculate_threshold) {
-        split_graph.ProcessReadPairs();
-        double threshold = split_graph.FindThreshold(
-                (double) split_edge_length, (int)lib->insert_size_ - 2 * (int)lib->is_variation_,
-                (int)lib->insert_size_ + 2 * (int) lib->is_variation_);
-        lib->SetSingleThreshold(threshold);
-    } else {
-        double tr = cfg::get().pe_params.param_set.extension_options.single_threshold;
-        INFO("threshold taken from config - "  << tr);
-        lib->SetSingleThreshold(tr);
-    }
-}
-
 bool InsertSizeCompare(const PairedInfoLibraries& lib1,
                        const PairedInfoLibraries& lib2) {
     if (lib1.size() < 1 or lib2.size() < 1) {
@@ -352,8 +335,6 @@ void ResolveRepeatsPe(conj_graph_pack& gp, vector<PairedIndexT*>& paired_index,
                       const std::string& contigs_name, bool traverseLoops,
                       boost::optional<std::string> broken_contigs,
                       bool use_auto_threshold = true) {
-
-    const pe_config::ParamSetT& pset = cfg::get().pe_params.param_set;
     vector<PairedInfoLibraries> rr_libs;
     vector<PairedInfoLibraries> scaff_libs;
     for (size_t i = 0; i < paired_index.size(); ++i) {
@@ -362,7 +343,8 @@ void ResolveRepeatsPe(conj_graph_pack& gp, vector<PairedIndexT*>& paired_index,
                         == io::LibraryType::MatePairs) {
             PairedInfoLibrary* lib = MakeNewLib(gp.g, paired_index, indexs, i);
             if (use_auto_threshold) {
-                SetThreshold(gp, lib, indexs[i], pset.split_edge_length);
+                lib->SetSingleThreshold(cfg::get().ds.reads[indexs[i]].data().pi_threshold);
+                INFO("Threshold for library # " << indexs[i] << " is " << cfg::get().ds.reads[indexs[i]].data().pi_threshold);
             }
             PairedInfoLibraries libs;
             libs.push_back(lib);

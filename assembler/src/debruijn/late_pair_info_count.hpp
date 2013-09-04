@@ -10,9 +10,12 @@
 #include "simplification.hpp"
 #include "graph_construction.hpp"
 #include "dataset_readers.hpp"
+#include "config_struct.hpp"
 
 #include "de/insert_size_refiner.hpp"
 #include "de/paired_info.hpp"
+#include "path_extend/split_graph_pair_info.hpp"
+#include "sequence_mapper_notifier.hpp"
 
 namespace debruijn_graph {
 typedef io::ReadStreamVector<SequencePairedReadStream> MultiStreamType;
@@ -31,15 +34,16 @@ void late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices) {
         INFO("STAGE == Counting Late Pair Info");
 
         for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-            if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd ||
-                cfg::get().ds.reads[i].type() == io::LibraryType::MatePairs) {
+            const io::SequencingLibrary<debruijn_config::DataSetData>& reads = cfg::get().ds.reads[i];
+            if (reads.type() == io::LibraryType::PairedEnd ||
+                    reads.type() == io::LibraryType::MatePairs) {
 
                 bool insert_size_success;
                 if (cfg::get().use_multithreading) {
-                    auto streams = paired_binary_readers(cfg::get().ds.reads[i], false, 0);
+                    auto streams = paired_binary_readers(reads, false, 0);
                     insert_size_success = RefineInsertSizeForLib(gp, *streams, cfg::get_writable().ds.reads[i].data(), edge_length_threshold);
                 } else {
-                    auto_ptr<PairedReadStream> stream = paired_easy_reader(cfg::get().ds.reads[i], false, 0);
+                    auto_ptr<PairedReadStream> stream = paired_easy_reader(reads, false, 0);
                     SingleStreamType streams(stream.get());
                     streams.release();
                     insert_size_success = RefineInsertSizeForLib(gp, streams, cfg::get_writable().ds.reads[i].data(), edge_length_threshold);
@@ -49,11 +53,11 @@ void late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices) {
                     cfg::get_writable().ds.reads[i].data().mean_insert_size = 0.0;
 
                     WARN("Unable to estimate insert size for paired library #" << i);
-                    if (cfg::get().ds.reads[i].data().read_length <= cfg::get().K) {
-                        WARN("Maximum read length (" << cfg::get().ds.reads[i].data().read_length << ") should be greater than K (" << cfg::get().K << ")");
+                    if (reads.data().read_length <= cfg::get().K) {
+                        WARN("Maximum read length (" << reads.data().read_length << ") should be greater than K (" << cfg::get().K << ")");
                     }
-                    else if (cfg::get().ds.reads[i].data().read_length <= cfg::get().K * 11 / 10) {
-                        WARN("Maximum read length (" << cfg::get().ds.reads[i].data().read_length << ") is probably too close to K (" << cfg::get().K << ")");
+                    else if (reads.data().read_length <= cfg::get().K * 11 / 10) {
+                        WARN("Maximum read length (" << reads.data().read_length << ") is probably too close to K (" << cfg::get().K << ")");
                     }
                     else {
                         WARN("None of paired reads aligned properly. Please, check orientation of your read pairs.");
@@ -62,23 +66,38 @@ void late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices) {
 
                 } else {
                     INFO("Estimated insert size for paired library #" << i);
-                    INFO("Insert size = " << cfg::get().ds.reads[i].data().mean_insert_size << ", deviation = " << cfg::get().ds.reads[i].data().insert_size_deviation);
-                    INFO("Read length = " << cfg::get().ds.reads[i].data().read_length)
+                    INFO("Insert size = " << reads.data().mean_insert_size << ", deviation = " << reads.data().insert_size_deviation);
+                    INFO("Read length = " << reads.data().read_length)
                 }
 
                 //bool pair_info_success;
                 if (cfg::get().use_multithreading) {
-                    auto paired_streams = paired_binary_readers(cfg::get().ds.reads[i], true, (size_t) cfg::get().ds.reads[i].data().mean_insert_size);
+                    auto paired_streams = paired_binary_readers(reads, true, (size_t) reads.data().mean_insert_size);
                     //pair_info_success =
                     FillPairedIndexWithReadCountMetric(gp.g, *MapperInstance(gp), paired_indices[i], *paired_streams);
                 } else {
-                    auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(cfg::get().ds.reads[i], true, (size_t) cfg::get().ds.reads[i].data().mean_insert_size);
+                    auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(reads, true, (size_t) reads.data().mean_insert_size);
                     SingleStreamType paired_streams(paired_stream.get());
                     paired_stream.release();
                     //pair_info_success =
                     FillPairedIndexWithReadCountMetric(gp.g, *MapperInstance(gp), paired_indices[i], paired_streams);
                 }
+                SequenceMapperNotifier notifier(gp);
+                path_extend::SplitGraphPairInfo split_graph(
+                        gp, reads.data().mean_insert_size,
+                        reads.data().read_length,
+                        reads.data().insert_size_deviation,
+                        gp.g.k(),
+                        cfg::get().pe_params.param_set.split_edge_length);
+                notifier.Subscribe(i, &split_graph);
 
+                auto paired_streams =
+                        paired_binary_readers(
+                                reads, true,
+                                (size_t) reads.data().mean_insert_size);
+
+                notifier.ProcessPairedLibrary(*paired_streams, i, paired_streams->size());
+                cfg::get_writable().ds.reads[i].data().pi_threshold = split_graph.GetThreshold();
 //                if (!pair_info_success) {
 //                    WARN("None of paired reads aligned properly. Please, check orientation of your read pairs.");
 //                }
