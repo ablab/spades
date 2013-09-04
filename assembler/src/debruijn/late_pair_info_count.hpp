@@ -106,13 +106,16 @@ void late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices) {
                     auto paired_stream = paired_easy_reader(
                             reads, true,
                             (size_t) reads.data().mean_insert_size);
+                    INFO("paired stream");
                     SingleStreamType paired_streams(paired_stream.get());
-                    notifier.ProcessLibrary(paired_streams, i, 1);
+                    notifier.ProcessLibrary(paired_streams, i, paired_streams.size());
                     cfg::get_writable().ds.reads[i].data().pi_threshold =
                             split_graph.GetThreshold();
                     auto single_stream = single_easy_reader(reads, true, false);
+                    single_stream.release();
+                    INFO("single stream");
                     SingleStreamType single_streams(single_stream.get());
-                    notifier.ProcessLibrary(single_streams, i, 1);
+                    notifier.ProcessLibrary(single_streams, i, single_streams.size());
                 }
             }
         }
