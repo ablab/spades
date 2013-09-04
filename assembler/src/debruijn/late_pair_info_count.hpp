@@ -86,24 +86,34 @@ void late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices) {
                 path_extend::SplitGraphPairInfo split_graph(
                         gp, reads.data().mean_insert_size,
                         reads.data().read_length,
-                        reads.data().insert_size_deviation,
-                        gp.g.k(),
+                        reads.data().insert_size_deviation, gp.g.k(),
                         cfg::get().pe_params.param_set.split_edge_length);
                 notifier.Subscribe(i, &split_graph);
+                if (cfg::get().use_multithreading) {
+                    auto paired_streams = paired_binary_readers(
+                            reads, true,
+                            (size_t) reads.data().mean_insert_size);
+                    notifier.ProcessLibrary(*paired_streams, i,
+                                            paired_streams->size());
+                    cfg::get_writable().ds.reads[i].data().pi_threshold =
+                            split_graph.GetThreshold();
+                    auto single_streams = single_binary_readers(reads, true,
+                                                                false);
+                    notifier.ProcessLibrary(*single_streams, i,
+                                            single_streams->size());
 
-                auto paired_streams =
-                        paired_binary_readers(
-                                reads, true,
-                                (size_t) reads.data().mean_insert_size);
-
-                notifier.ProcessPairedLibrary(*paired_streams, i, paired_streams->size());
-                cfg::get_writable().ds.reads[i].data().pi_threshold = split_graph.GetThreshold();
-//                if (!pair_info_success) {
-//                    WARN("None of paired reads aligned properly. Please, check orientation of your read pairs.");
-//                }
-//                else if (!insert_size_success) {
-//                    WARN("Could not estimate insert size. Try setting it manually.");
-//                }
+                } else {
+                    auto paired_stream = paired_easy_reader(
+                            reads, true,
+                            (size_t) reads.data().mean_insert_size);
+                    SingleStreamType paired_streams(paired_stream.get());
+                    notifier.ProcessLibrary(paired_streams, i, 1);
+                    cfg::get_writable().ds.reads[i].data().pi_threshold =
+                            split_graph.GetThreshold();
+                    auto single_stream = single_easy_reader(reads, true, false);
+                    SingleStreamType single_streams(single_stream.get());
+                    notifier.ProcessLibrary(single_streams, i, 1);
+                }
             }
         }
 
