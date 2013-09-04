@@ -294,6 +294,9 @@ public:
             if (interval.support_blocks.size() > 1) {
                 interval_set.ProcessInterval(interval);
             }
+            if (dist != -1u) {
+                genome_pos += dist;
+            }
         }
         interval_set.FinalAnalysis();
         Report(interval_set);
