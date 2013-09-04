@@ -16,19 +16,14 @@ import commands
 maxmem = 0
 
 while True:
-    status, output = commands.getstatusoutput("du -h --max-depth=0")
-    memstr = output.split()[0]
+    status, output = commands.getstatusoutput("du --max-depth=0")
+    memstr = output.split('\n')[-1].split()[0]
 
-    if memstr[-1] == "K":
-        mem = float(memstr[0:-1:1]) * 1024
-    elif memstr[-1] == "M":
-        mem = float(memstr[0:-1:1]) * 1024 * 1024
-    elif memstr[-1] == "G":
-        mem = float(memstr[0:-1:1]) * 1024 * 1024 * 1024
-    elif memstr[-1] == "T":
-        mem = float(memstr[0:-1:1]) * 1024 * 1024 * 1024 * 1024
-    else:
-        mem = float(memstr)
+    mem = 0
+    try:    
+        mem = float(memstr) * 1024
+    except ValueError:
+	pass
 
     if mem > maxmem:
         maxmem = mem
