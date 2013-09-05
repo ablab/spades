@@ -539,9 +539,8 @@ class NewExtendedSequenceMapper {
     return MapSequence(read.sequence());
   }
 
-  vector<EdgeId> FindReadPath(const Sequence& read) const {
-        MappingPath<EdgeId> mapping_path = MapSequence(read);
-        if (!IsMappingPathValid(mapping_path, read.size())) {
+  vector<EdgeId> FindReadPath(const MappingPath<EdgeId>& mapping_path) const {
+        if (!IsMappingPathValid(mapping_path)) {
             TRACE("read unmapped");
             return vector<EdgeId>();
         }
@@ -553,16 +552,14 @@ class NewExtendedSequenceMapper {
             std::stringstream debug_stream;
             for (size_t i = 0; i < fixed_path.size(); ++i) {
                 debug_stream << g_.int_id(fixed_path[i]) << " ";
-            }
-            TRACE(debug_stream.str());
+            }TRACE(debug_stream.str());
             return vector<EdgeId>();
         }
         return fixed_path;
     }
 
 private:
-    bool IsMappingPathValid(const MappingPath<EdgeId>& path,
-                            size_t seq_len) const {
+    bool IsMappingPathValid(const MappingPath<EdgeId>& path) const {
         return path.size() != 0;
     }
     DECL_LOGGER("NewExtendedSequenceMapper");

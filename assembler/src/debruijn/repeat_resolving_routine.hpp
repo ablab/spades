@@ -980,49 +980,36 @@ void split_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
 		}
 	}
 }
-
-void AddSingleLibrary(
-        conj_graph_pack& gp,
-        const io::SequencingLibrary<debruijn_config::DataSetData>& reads,
-        const std::string outout_dir,
-        vector<PathStorageInfo<Graph> >& long_reads_libs) {
-    DEBUG("Mapping single reads from library");
-    path_extend::SimpleLongReadMapper read_mapper(gp);
-    auto streams = single_binary_readers(reads, false, false);
-    streams->release();
-    io::MultifileReader<io::SingleReadSeq> stream(streams->get(), true);
-    PathStorage<Graph> long_single(gp.g);
-    //long_single.LoadFromFile("/Johnny/vasilinetc/path-extend/path_extend_4_exp/M_abscessus/single/K55/07.25_17.11.40/long_reads_paths.mpr");
-    read_mapper.ProcessSingleReadLibrary(reads, long_single);
-    //read_mapper.ProcessLib(stream, long_single);
-    vector<PathInfo<Graph> > long_paths = long_single.GetAllPaths();
-    PathStorageInfo<Graph> single_storage(
-            long_paths, cfg::get().pe_params.long_reads.single_reads.filtering,
-            cfg::get().pe_params.long_reads.single_reads.weight_priority,
-            cfg::get().pe_params.long_reads.single_reads.unique_edge_priority);
-    long_reads_libs.push_back(single_storage);
+void AddSingleLongReads(vector<PathStorageInfo<Graph> > &long_reads_libs,
+                        const vector<PathStorage<Graph> >& single_long_reads) {
+    for (size_t i = 0; i < single_long_reads.size(); ++i) {
+        PathStorage<Graph> storage = single_long_reads[i];
+        vector<PathInfo<Graph> > paths = storage.GetAllPaths();
+        PathStorageInfo<Graph> single_storage(
+                paths,
+                cfg::get().pe_params.long_reads.single_reads.filtering,
+                cfg::get().pe_params.long_reads.single_reads.weight_priority,
+                cfg::get().pe_params.long_reads.single_reads
+                        .unique_edge_priority);
+        long_reads_libs.push_back(single_storage);
+    }
 }
-
-
 void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
                   PairedIndicesT& clustered_indices,
                   PairedIndicesT& scaffold_indices,
                   const EdgeQuality<Graph, Index>& quality_labeler,
-                  vector<PathStorageInfo<Graph> > &long_reads_libs) {
+                  vector<PathStorageInfo<Graph> > &long_reads_libs,
+                  vector<PathStorage<Graph> >& single_long_reads) {
     vector<PairedIndexT*> pe_indexes;
     vector<PairedIndexT*> pe_scaf_indices;
     vector<size_t> indexes;
 //    vector<PathStorageInfo<Graph> > long_reads_libs;
     GapStorage<Graph> gaps(conj_gp.g);
+    AddSingleLongReads(long_reads_libs, single_long_reads);
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         io::LibraryType type = cfg::get().ds.reads[i].type();
-        if (type == io::LibraryType::SingleReads) {
-            AddSingleLibrary(conj_gp, cfg::get().ds.reads[i],
-                             cfg::get().output_dir, long_reads_libs);
-        } else if (type == io::LibraryType::PairedEnd
+        if (type == io::LibraryType::PairedEnd
                 || type == io::LibraryType::MatePairs) {
-            //AddSingleLibrary(conj_gp, cfg::get().ds.reads[i],
-            //                 cfg::get().output_dir, long_reads_libs);
             pe_indexes.push_back(&clustered_indices[i]);
             pe_scaf_indices.push_back(&scaffold_indices[i]);
             indexes.push_back(i);
@@ -1109,8 +1096,8 @@ void resolve_repeats() {
 		}
 	 }
      PathStorage<Graph> pacbio_read(conj_gp.g);
-
-	 exec_distance_estimation(conj_gp, paired_indices, clustered_indices, scaffold_indices, pacbio_read);
+     vector<PathStorage<Graph> > single_long_reads;
+	 exec_distance_estimation(conj_gp, paired_indices, clustered_indices, scaffold_indices, pacbio_read, single_long_reads);
 
 	 if (cfg::get().entry_point <= ws_pacbio_aligning){
 	     INFO(" need to align pb");
@@ -1193,7 +1180,7 @@ void resolve_repeats() {
 
 	if (!cfg::get().paired_mode
 	        || no_valid_libs
-			|| cfg::get().rm == debruijn_graph::resolving_mode::rm_none) {
+			|| cfg::get().rm == debruijn_graph::resolving_mode::rm_none ||  single_long_reads.size() == 0) {
 		OutputContigs(conj_gp.g, cfg::get().output_dir + "final_contigs.fasta");
 		return;
 	}
@@ -1213,7 +1200,7 @@ void resolve_repeats() {
 			|| cfg::get().rm
 					== debruijn_graph::resolving_mode::rm_path_extend) {
 		INFO("Path-Extend repeat resolving");
-		pe_resolving(conj_gp, paired_indices, clustered_indices,  scaffold_indices, quality_labeler, long_reads_libs);
+		pe_resolving(conj_gp, paired_indices, clustered_indices,  scaffold_indices, quality_labeler, long_reads_libs, single_long_reads);
 	}
 	else if (cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles) {
 		INFO("Ready to run rectangles repeat resolution module");

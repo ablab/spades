@@ -15,13 +15,14 @@
 #include "de/insert_size_refiner.hpp"
 #include "de/paired_info.hpp"
 #include "path_extend/split_graph_pair_info.hpp"
+#include "path_extend/long_read_mapper.hpp"
 #include "sequence_mapper_notifier.hpp"
 
 namespace debruijn_graph {
 typedef io::ReadStreamVector<SequencePairedReadStream> MultiStreamType;
 typedef io::ReadStreamVector<PairedReadStream> SingleStreamType;
 
-void late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices) {
+void late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices, vector<PathStorage<Graph> >& single_long_reads) {
     exec_simplification(gp);
 
     if (!cfg::get().developer_mode) {
@@ -117,6 +118,27 @@ void late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices) {
                     SingleStreamType single_streams(single_stream.get());
                     notifier.ProcessLibrary(single_streams, i, single_streams.size());
                 }
+            } else if (reads.type() == io::LibraryType::SingleReads) {
+                SequenceMapperNotifier notifier(gp);
+                //TODO: Subscribe long read mapper
+                path_extend::SimpleLongReadMapper read_mapper(gp);
+                notifier.Subscribe(i, &read_mapper);
+                if (cfg::get().use_multithreading) {
+                    auto single_streams = single_binary_readers(reads, true,
+                                                                false);
+                    notifier.ProcessLibrary(*single_streams, i,
+                                            single_streams->size());
+
+                } else {
+                    auto single_stream = single_easy_reader(reads, true, false);
+                    single_stream.release();
+                    SingleStreamType single_streams(single_stream.get());
+                    notifier.ProcessLibrary(single_streams, i,
+                                            single_streams.size());
+                }
+                PathStorage<Graph> long_reads = read_mapper.GetPaths();
+                single_long_reads.push_back(long_reads);
+                INFO("long_read size " << long_reads.size());
             }
         }
 
@@ -125,15 +147,16 @@ void late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices) {
 
 
 void load_late_pair_info_count(conj_graph_pack& gp,
-                               PairedIndicesT& paired_indices, path::files_t* used_files) {
+                               PairedIndicesT& paired_indices, vector<PathStorage<Graph> >& single_long_reads, path::files_t* used_files) {
     string p = path::append_path(cfg::get().load_from, "late_pair_info_counted");
     used_files->push_back(p);
 
     ScanWithPairedIndices(p, gp, paired_indices);
     load_lib_data(p);
+    //TODO: load single_long_reads
 }
 
-void save_late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices) {
+void save_late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices, vector<PathStorage<Graph> >& single_long_reads) {
     if (cfg::get().make_saves || (cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles && cfg::get().paired_mode)) {
         if (!cfg::get().make_saves)
             make_dir(cfg::get().output_saves);
@@ -147,16 +170,17 @@ void save_late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indic
 
     // for informing spades.py about estimated params
     write_lib_data(cfg::get().output_dir + "/");
+    //TODO: save single long_reads
 }
 
-void exec_late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices) {
+void exec_late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices, vector<PathStorage<Graph> >& single_long_reads) {
     if (cfg::get().entry_point <= ws_late_pair_info_count) {
-        late_pair_info_count(gp, paired_indices);
-        save_late_pair_info_count(gp, paired_indices);
+        late_pair_info_count(gp, paired_indices, single_long_reads);
+        save_late_pair_info_count(gp, paired_indices, single_long_reads);
     } else {
         INFO("Loading Late Pair Info Count");
         path::files_t used_files;
-        load_late_pair_info_count(gp, paired_indices, &used_files);
+        load_late_pair_info_count(gp, paired_indices, single_long_reads, &used_files);
         link_files_by_prefix(used_files, cfg::get().output_saves);
     }
 }
