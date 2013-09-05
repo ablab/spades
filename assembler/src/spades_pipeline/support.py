@@ -61,11 +61,20 @@ def check_files_duplication(filenames, log):
             error("file %s was specified at least twice" % filename, log)
 
 
-def check_reads_file_format(filename, message, log):
-    ext = os.path.splitext(filename)[1]
-    if ext.lower() not in ['.fa', '.fasta', '.fq', '.fastq', '.gz']:
-        error("file with reads has unsupported format (only .fa, .fasta, .fq,"
-              " .fastq, .gz are supported): %s (%s)" % (filename, message), log)
+def check_reads_file_format(filename, message, only_assembler, log):
+    if filename in options_storage.dict_of_prefixes:
+        ext = options_storage.dict_of_prefixes[filename]
+    else:
+        ext = os.path.splitext(filename)[1]
+        if ext.lower() == '.gz':
+            ext = os.path.splitext(filename[:-len(ext)])[1] + ext
+    if ext.lower() not in options_storage.ALLOWED_READS_EXTENSIONS:
+        error("file with reads has unsupported format (only " + ", ".join(options_storage.ALLOWED_READS_EXTENSIONS) +
+              " are supported): %s (%s)" % (filename, message), log)
+    if not only_assembler and ext.lower() not in options_storage.BH_ALLOWED_READS_EXTENSIONS:
+        error("to run read error correction, reads should be in FASTQ format (" +
+              ", ".join(options_storage.BH_ALLOWED_READS_EXTENSIONS) +
+              " are supported): %s (%s)" % (filename, message), log)
 
 
 # http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
@@ -294,6 +303,10 @@ def add_to_dataset(option, data, dataset_data):
         else:
             dataset_data[record_id]['type'] = 'mate-pairs'
     if data_type.endswith('reads'): # reads are stored as lists
+        if data.find(':') != -1 and ('.' + data[:data.find(':')]) in options_storage.ALLOWED_READS_EXTENSIONS:
+            prefix = '.' + data[:data.find(':')]
+            data = data[data.find(':') + 1:]
+            options_storage.dict_of_prefixes[data] = prefix
         if data_type in dataset_data[record_id]:
             dataset_data[record_id][data_type].append(data)
         else:
@@ -339,13 +352,17 @@ def relative2abs_paths(dataset_data, dir_name):
             if key.endswith('reads'):
                 abs_paths_reads = []
                 for reads_file in value:
-                    abs_paths_reads.append(os.path.join(dir_name, reads_file))
+                    abs_path = os.path.join(dir_name, reads_file)
+                    if reads_file in options_storage.dict_of_prefixes and abs_path != reads_file:
+                        options_storage.dict_of_prefixes[abs_path] = options_storage.dict_of_prefixes[reads_file]
+                        del options_storage.dict_of_prefixes[reads_file]
+                    abs_paths_reads.append(abs_path)
                 reads_library[key] = abs_paths_reads
         abs_paths_dataset_data.append(reads_library)
     return abs_paths_dataset_data
 
 
-def check_dataset_reads(dataset_data, log):
+def check_dataset_reads(dataset_data, only_assembler, log):
     all_files = []
     for id, reads_library in enumerate(dataset_data):
         left_number = 0
@@ -356,7 +373,7 @@ def check_dataset_reads(dataset_data, log):
                     check_file_existence(reads_file, key + ', library number: ' + str(id + 1) +
                                          ', library type: ' + reads_library['type'], log)
                     check_reads_file_format(reads_file, key + ', library number: ' + str(id + 1) +
-                                            ', library type: ' + reads_library['type'], log)
+                                            ', library type: ' + reads_library['type'], only_assembler, log)
                     all_files.append(reads_file)
                 if key == 'left reads':
                     left_number = len(value)
@@ -402,9 +419,12 @@ def split_interlaced_reads(dataset_data, dst, log):
                     new_reads_library['left reads'] = []
                     new_reads_library['right reads'] = []
                 for interlaced_reads in value:
-                    ext = os.path.splitext(interlaced_reads)[1]
+                    if interlaced_reads in options_storage.dict_of_prefixes:
+                        ext = options_storage.dict_of_prefixes[interlaced_reads]
+                    else:
+                        ext = os.path.splitext(interlaced_reads)[1]
                     was_compressed = False
-                    if ext == '.gz':
+                    if ext.endswith('.gz'):
                         was_compressed = True
                         import gzip
                         input_file = gzip.open(interlaced_reads, 'r')
@@ -414,12 +434,14 @@ def split_interlaced_reads(dataset_data, dst, log):
                         input_file = open(interlaced_reads, 'r')
                         out_basename, ext = os.path.splitext(os.path.basename(interlaced_reads))
 
-                    if ext.lower() == '.fa' or ext.lower() == '.fasta':
-                        is_fasta_format = True
-                    elif ext.lower() == '.fq' or ext.lower() == '.fastq':
+                    if interlaced_reads in options_storage.dict_of_prefixes:
+                        ext = options_storage.dict_of_prefixes[interlaced_reads]
+                    if ext.lower().startswith('.fq') or ext.lower().startswith('.fastq'):
                         is_fasta_format = False
+                        ext = '.fastq'
                     else:
-                        error('unsupported format of interlaced reads (' + interlaced_reads + '): should be FASTA or FASTQ', log)
+                        is_fasta_format = True
+                        ext = '.fasta'
 
                     out_left_filename = os.path.join(dst, out_basename + "_1" + ext)
                     out_right_filename = os.path.join(dst, out_basename + "_2" + ext)
@@ -447,6 +469,8 @@ def split_interlaced_reads(dataset_data, dst, log):
                     input_file.close()
                     new_reads_library['left reads'].append(out_left_filename)
                     new_reads_library['right reads'].append(out_right_filename)
+                    if interlaced_reads in options_storage.dict_of_prefixes:
+                        del options_storage.dict_of_prefixes[interlaced_reads]
                 del new_reads_library['interlaced reads']
         new_dataset_data.append(new_reads_library)
     return new_dataset_data

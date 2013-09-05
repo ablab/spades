@@ -1,6 +1,13 @@
 import sys
 
 SUPPORTED_PYTHON_VERSIONS = ['2.4', '2.5', '2.6', '2.7', '3.2', '3.3']
+# allowed reads extensions for BayesHammer and for thw whole SPAdes pipeline
+BH_ALLOWED_READS_EXTENSIONS = ['.fq', '.fastq']
+ALLOWED_READS_EXTENSIONS = BH_ALLOWED_READS_EXTENSIONS + ['.fa', '.fasta']
+# reads could be gzipped
+BH_ALLOWED_READS_EXTENSIONS += [x + '.gz' for x in BH_ALLOWED_READS_EXTENSIONS]
+ALLOWED_READS_EXTENSIONS += [x + '.gz' for x in ALLOWED_READS_EXTENSIONS]
+
 # we support up to MAX_LIBS_NUMBER paired-end libs and MAX_LIBS_NUMBER mate-pair libs
 MAX_LIBS_NUMBER = 5
 
@@ -36,6 +43,7 @@ iterations = 1
 bh_heap_check = ''
 spades_heap_check = ''
 ### END OF DEFAULT VALUES
+dict_of_prefixes = dict()
 
 # list of spades.py options
 long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\

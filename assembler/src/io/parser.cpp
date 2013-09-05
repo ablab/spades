@@ -64,7 +64,9 @@ std::string GetExtension(const std::string& filename) {
  */
 Parser* SelectParser(const std::string& filename, 
                      OffsetType offset_type /*= PhredOffset*/) {
-  std::string ext = GetExtension(filename);
+  return new FastaFastqGzParser(filename, offset_type);
+  /*
+  std::string ext = GetExtension(filename);  
   if ((ext == "fastq") || (ext == "fastq.gz") ||
       (ext == "fasta") || (ext == "fasta.gz") || 
       (ext == "fa") || (ext == "fq.gz") ||
@@ -73,7 +75,7 @@ Parser* SelectParser(const std::string& filename,
     return new FastaFastqGzParser(filename, offset_type);
   }
   ERROR("Unknown file extention in input!"); 
-  return NULL;
+  return NULL;*/
 }
 
 void first_fun(int) {

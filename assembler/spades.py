@@ -251,7 +251,7 @@ def fill_cfg(options_to_parse, log):
         options_storage.dataset_yaml_filename = os.path.join(options_storage.output_dir, "input_dataset.yaml")
         pyyaml.dump(dataset_data, open(options_storage.dataset_yaml_filename, 'w'))
 
-    support.check_dataset_reads(dataset_data, log)
+    support.check_dataset_reads(dataset_data, options_storage.only_assembler, log)
     if support.dataset_has_only_mate_pairs_libraries(dataset_data):
         support.error('you should specify at least one paired-end or unpaired library (only mate-pairs libraries were found)!')
     if options_storage.rectangles and (len(dataset_data) > 1):

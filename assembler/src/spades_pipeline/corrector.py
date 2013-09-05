@@ -20,6 +20,7 @@ import shutil
 
 from math import pow
 from support import universal_sys_call, error
+import options_storage
 
 #profile = []
 #insertions = {}
@@ -446,14 +447,16 @@ def run_aligner(log):
             split_reads(mixed_reads_file, left, right)
     if "reads1" in config and (len(config["reads1"]) > 1 or os.path.isfile(left)):
         for reads_file in config["reads1"]:
-            if os.path.splitext(reads_file)[1] == '.gz':
+            if os.path.splitext(reads_file)[1] == '.gz' or (reads_file in options_storage.dict_of_prefixes and
+                                                           options_storage.dict_of_prefixes[reads_file].endswith('.gz')):
                 fdscr = gzip.open(reads_file, 'r')
             else:
                 fdscr = open(reads_file, 'r')
             shutil.copyfileobj(fdscr, open(left, 'a'))
     if "reads2" in config and (len(config["reads2"]) > 1 or os.path.isfile(right)):
         for reads_file in config["reads2"]:
-            if os.path.splitext(reads_file)[1] == '.gz':
+            if os.path.splitext(reads_file)[1] == '.gz' or (reads_file in options_storage.dict_of_prefixes and
+                                                           options_storage.dict_of_prefixes[reads_file].endswith('.gz')):
                 fdscr = gzip.open(reads_file, 'r')
             else:
                 fdscr = open(reads_file, 'r')
