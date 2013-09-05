@@ -120,7 +120,8 @@ def check_binaries(binary_dir, log):
         if not os.path.isfile(binary_path):
             support.error("SPAdes binaries not found: " + binary_path +
                           "\nYou can obtain SPAdes binaries in one of two ways:" +
-                          "\n1. Download them from http://spades.bioinf.spbau.ru/release2.5.0/SPAdes-2.5.0-Linux.tar.gz" +
+                          "\n1. Download them from http://spades.bioinf.spbau.ru/release" +
+                          str(spades_version).strip() + "/SPAdes-" + str(spades_version).strip() + "-Linux.tar.gz" +
                           "\n2. Build source code with ./spades_compile.sh script", log)
 
 
