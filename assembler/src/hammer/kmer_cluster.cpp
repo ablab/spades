@@ -183,7 +183,7 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<size_t> &k
     unsigned mdist = K;
     unsigned cidx = 0;
     for (unsigned j = 0; j < l; ++j) {
-      unsigned cdist = hamdistKMer(kmer, centers[j].center_);
+      unsigned cdist = hamdistKMer(kmer, centers[j].center_, mdist);
       if (cdist < mdist) {
         mdist = cdist;
         cidx = j;
