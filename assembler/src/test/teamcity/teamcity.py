@@ -253,7 +253,7 @@ if 'reads_quality_params' in dataset_info.__dict__:
             if 'min_genome_mapped' in dataset_info.__dict__:
                 limit_map["Genome mapped"] = (float(dataset_info.min_genome_mapped), True)
             if 'min_aligned' in dataset_info.__dict__:
-                limit_map["Aligned reads"] = (float(dataset_info.min_aligned), True)
+                limit_map["Uniquely aligned reads"] = (float(dataset_info.min_aligned), True)
             
         result = assess_reads(os.path.join(rq_output_dir, "report.horizontal.tsv"), limit_map)
         if result[0] != 0:

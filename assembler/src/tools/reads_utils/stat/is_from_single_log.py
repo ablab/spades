@@ -77,12 +77,14 @@ def stat_from_log(log, max_is= 1000000000):
         if len(id2) > 1 and id2[1][0] == '2':
             if id2[0] in ids:
                 line1 = ids[id2[0]]
-                read1 = line1.split('\t', 5)
-                read2 = line.split('\t', 5)
+                read1 = line1.split('\t')
+                read2 = line.split('\t')
                 pos1 = int(read1[3])
                 pos2 = int(read2[3])
-                len1 = len(read1[4])
-                len2 = len(read2[4])
+                len1 = len(read1[9])
+                len2 = len(read2[9])
+                str1 = int(read1[1]) & 16 == 0
+                str2 = int(read2[1]) & 16 == 0
 
                 max_rl = max(max_rl, len1, len2)
                 inss = 0
@@ -91,14 +93,13 @@ def stat_from_log(log, max_is= 1000000000):
                 else:
                     inss = max(pos1 + len1 - pos2, len2)
 
-                if ((read1[1] == "+" and read2[1] == "-" and pos1 < pos2) or (read1[1] == "-" and read2[1] == "+" and pos1 > pos2)) and inss <= max_is:
-
+                if ((str1 == True and str2 == False and pos1 < pos2) or (str2 == True and str1 == False and pos1 > pos2)) and inss <= max_is:
                     stat["FR"].inc(inss)
 
-                elif ((read1[1] == "-" and read2[1] == "+" and pos1 < pos2) or (read1[1] == "+" and read2[1] == "-" and pos1 > pos2)) and inss <= max_is:
+                elif ((str2 == True and str1 == False and pos1 < pos2) or (str1 == True and str2 == False and pos1 > pos2)) and inss <= max_is:
                     stat["RF"].inc(inss)
 
-                elif read1[1] == read2[1] and inss <= max_is:
+                elif str2 == str1 and inss <= max_is:
                     stat["FF"].inc(inss)
 
                 elif inss > max_is:
