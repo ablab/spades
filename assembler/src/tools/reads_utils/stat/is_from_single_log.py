@@ -12,6 +12,36 @@ import os
 import math
 
 
+def round_to_zero(t):
+    res = round(abs(t))
+    if (t < 0.0):
+        res = -res
+    return res
+
+
+def get_median(hist):
+    S = 0.0
+    for v in hist.values():
+        S += v
+    
+    summ = S
+    for k in sorted(hist.keys()):
+        summ -= hist[k]
+        if (summ <= S / 2):
+            return k
+
+    raise Exception    
+    return 0
+
+
+def get_mad(hist, median): # median absolute deviation
+    hist2 = {}
+    for k,v in hist.items():
+        x = abs(k - round_to_zero(median))
+        hist2[x] = v
+    return get_median(hist2)
+
+
 class PairedStat:
     def __init__(self, name):
         self.name = name
@@ -29,22 +59,47 @@ class PairedStat:
 
 
     def make_stat(self):
-        if self.count == 0:
+        if (len(self.hist.keys()) == 0):
             self.mean = 0.0
             self.dev = 0.0
             return self.mean, self.dev
 
-        ttl = 0
-        for i in self.hist.iterkeys():
-            ttl += i * self.hist[i]
-        self.mean = float(ttl) / float(self.count)
+        median = get_median(self.hist)
+        mad = get_mad(self.hist, median)
+        low = median - 5. * 1.4826 * mad
+        high = median + 5. * 1.4826 * mad
 
-        self.dev = 0.0
-        for i in self.hist.iterkeys():
-           	self.dev += (i - self.mean) * (i - self.mean) * self.hist[i]
-        self.dev = math.sqrt(self.dev / self.count)
+        n = 0
+        summ = 0.0
+        sum2 = 0.0
+        for k,v in self.hist.items():
+            if (k < low or k > high):
+                continue
+            n += v
+            summ += v * 1. * k
+            sum2 += v * 1. * k * k
 
+        mean = summ / n
+        delta = math.sqrt(sum2 / n - mean * mean)
+
+        low = mean - 5 * delta
+        high = mean + 5 * delta
+
+        n = 0
+        summ = 0.
+        sum2 = 0.
+        for k,v in self.hist.items():
+            if (k < low or k > high):
+               continue
+            n += v
+            summ += v * 1. * k
+            sum2 += v * 1. * k * k
+
+        self.mean = summ / n
+        self.dev = math.sqrt(sum2 / n - mean * mean)
+        
         return self.mean, self.dev
+
 
     def write_hist(self, filename):
         outf = open(filename, "w")
