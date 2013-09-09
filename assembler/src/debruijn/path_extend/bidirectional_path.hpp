@@ -186,7 +186,7 @@ public:
         Init();
     }
 
-    BidirectionalPath(const Graph& g, std::vector<EdgeId> path)
+    BidirectionalPath(const Graph& g, const std::vector<EdgeId>& path)
             : g_(g),
               data_(),
               cumulativeLength_(),
@@ -389,6 +389,10 @@ public:
 	BidirectionalPath* GetConjPath() {
 		return conj_path;
 	}
+
+    const BidirectionalPath* GetConstConjPath() const {
+        return conj_path;
+    }
 
     void SetWeight(double w){
     	weight_ = w;

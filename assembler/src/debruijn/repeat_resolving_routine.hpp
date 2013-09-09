@@ -966,6 +966,15 @@ void delete_index(vector<PairedIndexT*>& index){
 	}
 }
 
+vector<PairedIndexT*> GetVector(PairedIndicesT& paired_indices){
+    vector<PairedIndexT*> result;
+    for (size_t i = 0; i < paired_indices.size(); ++i){
+        result.push_back(&paired_indices[i]);
+    }
+    return result;
+
+}
+
 //Use only one pe library
 void split_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
 		PairedIndicesT& clustered_indices, Sequence& genome,
@@ -1025,8 +1034,9 @@ void split_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
 				pe_scaf_indexs.push_back(&resolved_graph_paired_info);
 			}
 			INFO("Scaffolding");
+			vector<PairedIndexT*> not_clust_index = GetVector(paired_indices);
 			path_extend::ResolveRepeatsPe(resolved_gp, pe_indexs,
-                                          pe_scaf_indexs, indexs,
+                                          pe_scaf_indexs, indexs, not_clust_index,
                                           vector<PathStorageInfo<Graph> >(),
                                           cfg::get().output_dir,
                                           "scaffolds.fasta", false, boost::none,
@@ -1130,6 +1140,7 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
                 cfg::get().pe_params.long_reads.pacbio_reads.priority);
         long_reads_libs.push_back(pacbio_storage);
     }
+    vector<PairedIndexT*> not_clust_index = GetVector(paired_indexes);
 
     if (cfg::get().use_scaffolder
             && cfg::get().pe_params.param_set.scaffolder_options.on) {
@@ -1137,14 +1148,14 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
             prepare_all_scaf_libs(conj_gp, pe_scaf_indexes, indexes);
         }
         path_extend::ResolveRepeatsPe(
-                conj_gp, pe_indexes, pe_scaf_indexes, indexes, long_reads_libs,
+                conj_gp, pe_indexes, pe_scaf_indexes, indexes, not_clust_index, long_reads_libs,
                 cfg::get().output_dir, "scaffolds.fasta", true,
                 boost::optional<std::string>("final_contigs.fasta"));
         delete_index(pe_scaf_indexes);
     } else {
         pe_scaf_indexes.clear();
         path_extend::ResolveRepeatsPe(conj_gp, pe_indexes, pe_scaf_indexes,
-                                      indexes, long_reads_libs,
+                                      indexes, not_clust_index, long_reads_libs,
                                       cfg::get().output_dir,
                                       "final_contigs.fasta", false,
                                       boost::none);

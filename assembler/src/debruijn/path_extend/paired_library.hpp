@@ -15,6 +15,7 @@
 #define PAIRED_LIBRARY_HPP_
 
 #include "../debruijn_graph.hpp"
+#include "../graph_pack.hpp"
 
 //#include "../new_debruijn.hpp"
 //#include "../graph_pack.hpp"
@@ -29,7 +30,7 @@ using omnigraph::PairedInfoIndex;
 using omnigraph::PairInfo;
 
 namespace path_extend {
-
+using namespace debruijn_graph;
 struct PairedInfoLibrary {
 
 	Graph& g_;

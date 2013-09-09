@@ -22,6 +22,7 @@
 #include "single_threshold_finder.hpp"
 #include "long_read_storage.hpp"
 #include "split_graph_pair_info.hpp"
+#include "mate_pair_scaffolding.hpp"
 
 namespace path_extend {
 
@@ -207,7 +208,7 @@ vector<SimpleExtender*> MakeLongReadsExtender(const conj_graph_pack& gp,
     return result;
 }
 
-void ResolveRepeatsManyLibs(conj_graph_pack& gp,
+PathContainer ResolveRepeatsManyLibs(conj_graph_pack& gp,
 		vector<PairedInfoLibraries>& libs,
 		vector<PairedInfoLibraries>& scafolding_libs,
 		const vector<PathStorageInfo<Graph> >& long_reads,
@@ -296,16 +297,17 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
     for (size_t i = 0; i < all_libs.size(); ++i){
         delete all_libs[i];
     }
+    return paths;
 }
 
 PairedInfoLibrary* MakeNewLib(conj_graph_pack::graph_t& g,
-		vector<PairedIndexT*>& paired_index, vector<size_t>& indexs,
+		vector<PairedIndexT*>& paired_index, size_t initial_index,
 		size_t index) {
 
-	size_t read_length = cfg::get().ds.reads[indexs[index]].data().read_length;
-	double is = cfg::get().ds.reads[indexs[index]].data().mean_insert_size;
-	double var = cfg::get().ds.reads[indexs[index]].data().insert_size_deviation;
-	bool is_mp = cfg::get().ds.reads[indexs[index]].type() == io::LibraryType::MatePairs;
+	size_t read_length = cfg::get().ds.reads[initial_index].data().read_length;
+	double is = cfg::get().ds.reads[initial_index].data().mean_insert_size;
+	double var = cfg::get().ds.reads[initial_index].data().insert_size_deviation;
+	bool is_mp = cfg::get().ds.reads[initial_index].type() == io::LibraryType::MatePairs;
 	PairedInfoLibrary* lib = new PairedInfoLibrary(cfg::get().K, g, read_length,
 			is, var, *paired_index[index], is_mp);
 	return lib;
@@ -352,9 +354,14 @@ bool InsertSizeCompare(const PairedInfoLibraries& lib1,
     return lib1[0]->insert_size_ < lib2[0]->insert_size_;
 }
 
+void AnalyzeMatePairInfo(const conj_graph_pack& gp, const PairedInfoLibrary& lib, PathContainer& paths){
+    PathsPairInfoContainer container(gp, paths, lib);
+    container.FillPairInfo();
+}
+
 void ResolveRepeatsPe(conj_graph_pack& gp, vector<PairedIndexT*>& paired_index,
                       vector<PairedIndexT*>& scaff_index,
-                      vector<size_t>& indexs,
+                      vector<size_t>& indexs, vector<PairedIndexT*>& paired_indexes_not_clust,
                       const vector<PathStorageInfo<Graph> >& long_reads,
                       const std::string& output_dir,
                       const std::string& contigs_name, bool traverseLoops,
@@ -366,9 +373,9 @@ void ResolveRepeatsPe(conj_graph_pack& gp, vector<PairedIndexT*>& paired_index,
     vector<PairedInfoLibraries> scaff_libs;
     for (size_t i = 0; i < paired_index.size(); ++i) {
         if (cfg::get().ds.reads[indexs[i]].type() == io::LibraryType::PairedEnd
-                || cfg::get().ds.reads[indexs[i]].type()
-                        == io::LibraryType::MatePairs) {
-            PairedInfoLibrary* lib = MakeNewLib(gp.g, paired_index, indexs, i);
+                /*|| cfg::get().ds.reads[indexs[i]].type()
+                        == io::LibraryType::MatePairs*/) {
+            PairedInfoLibrary* lib = MakeNewLib(gp.g, paired_index, indexs[i], i);
             if (use_auto_threshold) {
                 SetNewThreshold(gp, lib, indexs[i], pset.split_edge_length);
             }
@@ -382,15 +389,23 @@ void ResolveRepeatsPe(conj_graph_pack& gp, vector<PairedIndexT*>& paired_index,
         if (cfg::get().ds.reads[indexs[i]].type() == io::LibraryType::PairedEnd
                 || cfg::get().ds.reads[indexs[i]].type()
                         == io::LibraryType::MatePairs) {
-            PairedInfoLibrary* lib = MakeNewLib(gp.g, scaff_index, indexs, i);
+            PairedInfoLibrary* lib = MakeNewLib(gp.g, scaff_index, indexs[i], i);
             PairedInfoLibraries libs;
             libs.push_back(lib);
             scaff_libs.push_back(libs);
         }
     }
     std::sort(scaff_libs.begin(), scaff_libs.end(), InsertSizeCompare);
-    ResolveRepeatsManyLibs(gp, rr_libs, scaff_libs, long_reads, output_dir,
+    PathContainer resolved_paths = ResolveRepeatsManyLibs(gp, rr_libs, scaff_libs, long_reads, output_dir,
                            contigs_name, traverseLoops, broken_contigs);
+    for (size_t i = 0; i < paired_indexes_not_clust.size(); ++i) {
+        if (cfg::get().ds.reads[i].type() == io::LibraryType::MatePairs) {
+            PairedInfoLibrary* lib = MakeNewLib(gp.g, paired_indexes_not_clust,
+                                                i, i);
+            AnalyzeMatePairInfo(gp, *lib, resolved_paths);
+            delete lib;
+        }
+    }
     DeleteLibs(rr_libs);
     DeleteLibs(scaff_libs);
 }
