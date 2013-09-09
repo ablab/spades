@@ -602,6 +602,7 @@ private:
             }
         }
         unique_edges_founded_ = true;
+        INFO("Unique edges are founded");
     }
 
     bool UniqueBackPath(const BidirectionalPath& path, size_t pos) const {
@@ -616,12 +617,13 @@ private:
 
     bool UniqueEdge(EdgeId e) const {
         if (g_.length(e) > cfg::get().rr.max_repeat_length)
-            return true;DEBUG("Analyze unique edge " << g_.int_id(e));
+            return true;
+        DEBUG("Analyze unique edge " << g_.int_id(e));
         auto cov_paths = coverage_map_.GetCoveringPaths(e);
-        DEBUG("***start***" << cov_paths.size() <<"***");
-        for (auto it1 = cov_paths.begin(); it1 != cov_paths.end(); ++it1) {
+        TRACE("***start***" << cov_paths.size() <<"***");
+        /*for (auto it1 = cov_paths.begin(); it1 != cov_paths.end(); ++it1) {
             (*it1)->Print();
-        }
+        }*/
 
         for (auto it1 = cov_paths.begin(); it1 != cov_paths.end(); ++it1) {
             auto pos1 = (*it1)->FindAll(e);
@@ -636,7 +638,7 @@ private:
                     return false;
                 }
                 if (!ConsistentPath(**it1, pos1[0], **it2, pos2[0])) {
-                    DEBUG("Check inconsistent");
+                    TRACE("Check inconsistent");
                     if (CheckInconsistence(**it1, pos1[0], **it2, pos2[0],
                                            cov_paths)) {
                         DEBUG("***not unique " << g_.int_id(e) << " len " << g_.length(e) << "***");
@@ -644,7 +646,7 @@ private:
                     }
                 }
             }
-        }DEBUG("Edge " << g_.int_id(e) << " is unique.");
+        }DEBUG("***edge " << g_.int_id(e) << " is unique.***");
         return true;
     }
 

@@ -118,35 +118,48 @@ public:
 		path.PushBack(pathEnd);
     }
 
-	void MakeBestChoice(BidirectionalPath& path, pair<EdgeId, EdgeId>& edges) {
-	    EdgeId last = path.At(path.Size() - 1);
-        while (path.Size() > 2 && path.At(path.Size() - 1) == last
-                && path.At(path.Size() - 2) == edges.first) {
-            path.PopBack(2);
+    void MakeBestChoice(BidirectionalPath& path, pair<EdgeId, EdgeId>& edges) {
+        DEBUG("Path before deleting");
+        path.Print();
+        EdgeId first_edge = path.Back();
+        EdgeId second_edge = edges.first;
+        while (path.Size() >= 2) {
+            if (path.At(path.Size() - 1) == first_edge
+                    && path.At(path.Size() - 2) == second_edge) {
+                path.PopBack(2);
+            } else {
+                break;
+            }
         }
-	    BidirectionalPath experiment(path);
-		double maxWeight = chooser_.CountWeight(experiment, edges.second);
-		double diff = maxWeight - chooser_.CountWeight(experiment, edges.first);
-		size_t maxIter = 0;
-		for (size_t i = 1; i <= iter_; ++i) {
-			double weight = chooser_.CountWeight(experiment, edges.first);
-			if (weight > 0) {
-				MakeCycleStep(experiment, edges.first);
-				weight = chooser_.CountWeight(experiment, edges.second);
-				double weight2 = chooser_.CountWeight(experiment, edges.first);
-				if (weight > maxWeight
-						|| (weight == maxWeight && weight - weight2 > diff) || (weight == maxWeight && weight - weight2 == diff && i == 1)) {
-					maxWeight = weight;
-					maxIter = i;
-					diff = weight - weight2;
-				}
-			}
-		}
-		for (size_t i = 0; i < maxIter; ++i) {
-			MakeCycleStep(path, edges.first);
-		}
-		path.PushBack(edges.second);
-	}
+        DEBUG("Path after deleting");
+        path.Print();
+        BidirectionalPath experiment(path);
+        double maxWeight = chooser_.CountWeight(experiment, edges.second);
+        double diff = maxWeight - chooser_.CountWeight(experiment, edges.first);
+        size_t maxIter = 0;
+        for (size_t i = 1; i <= iter_; ++i) {
+            double weight = chooser_.CountWeight(experiment, edges.first);
+            if (weight > 0) {
+                MakeCycleStep(experiment, edges.first);
+                weight = chooser_.CountWeight(experiment, edges.second);
+                double weight2 = chooser_.CountWeight(experiment, edges.first);
+                if (weight > maxWeight
+                        || (weight == maxWeight && weight - weight2 > diff)
+                        || (weight == maxWeight && weight - weight2 == diff
+                                && i == 1)) {
+                    maxWeight = weight;
+                    maxIter = i;
+                    diff = weight - weight2;
+                }
+            }
+        }
+        for (size_t i = 0; i < maxIter; ++i) {
+            MakeCycleStep(path, edges.first);
+        }
+        path.PushBack(edges.second);
+        DEBUG("path after resolving");
+        path.Print();
+    }
 
     virtual void ResolveShortLoop(BidirectionalPath& path) {
         pair<EdgeId, EdgeId> edges;
@@ -392,7 +405,7 @@ public:
         while (MakeGrowStep(path)) {
             size_t skip_identical_edges = 0;
             if (path.getLoopDetector().IsCycled(maxLoops_, skip_identical_edges)) {
-                path.getLoopDetector().RemoveLoop(skip_identical_edges);
+                path.getLoopDetector().RemoveLoop(skip_identical_edges, false);
                 return;
             }
         }
@@ -585,35 +598,48 @@ public:
     	CoveringPathExtender(g, max_loops, investigateShortLoops), extensionChooser_(ec), loopResolver_(g, *extensionChooser_) {
     }
 
-
     virtual bool MakeGrowStep(BidirectionalPath& path) {
-        if (cfg::get().avoid_rc_connections && (path.CameToInterstrandBulge() || path.IsInterstrandBulge())) {
-            DEBUG("Stoping because of interstand bulge");
-            return false;
-        }
-
         ExtensionChooser::EdgeContainer candidates;
         bool result = false;
         FindFollowingEdges(path, &candidates);
         candidates = extensionChooser_->Filter(path, candidates);
 
         if (candidates.size() == 1) {
+            if (!investigateShortLoops_
+                    && (path.getLoopDetector().EdgeInShortLoop(path.Back())
+                            or path.getLoopDetector().EdgeInShortLoop(
+                                    candidates.back().e_))
+                    && extensionChooser_->WeighConterBased()) {
+                return false;
+            }
             path.PushBack(candidates.back().e_, candidates.back().d_);
             result = true;
-            if (investigateShortLoops_ && path.getLoopDetector().EdgeInShortLoop() && extensionChooser_->WeighConterBased()) {
+            if (investigateShortLoops_
+                    && path.getLoopDetector().EdgeInShortLoop(path.Back())
+                    && extensionChooser_->WeighConterBased()) {
+                while (path.getLoopDetector().EdgeInShortLoop(path.Back())) {
+                    loopResolver_.ResolveShortLoop(path);
+                }
+            }
+        } else if (investigateShortLoops_
+                && path.getLoopDetector().PrevEdgeInShortLoop()
+                && extensionChooser_->WeighConterBased()) {
+            DEBUG("Prev edge in short loop");
+            path.PopBack();
+            while (path.getLoopDetector().EdgeInShortLoop(path.Back())) {
                 loopResolver_.ResolveShortLoop(path);
             }
-            if (!investigateShortLoops_ && path.getLoopDetector().EdgeInShortLoop()) {
-            	path.PopBack();
-            	result = false;
+            result = true;
+        } else if (investigateShortLoops_
+                && path.getLoopDetector().EdgeInShortLoop(path.Back())
+                && extensionChooser_->WeighConterBased()) {
+            DEBUG("Edge in short loop");
+            while (path.getLoopDetector().EdgeInShortLoop(path.Back())) {
+                loopResolver_.ResolveShortLoop(path);
             }
-        } else if (investigateShortLoops_ && path.getLoopDetector().PrevEdgeInShortLoop() && extensionChooser_->WeighConterBased()) {
-        	DEBUG("Prev edge in short loop");
-        	path.PopBack();
-        	loopResolver_.ResolveShortLoop(path);
-        	result = true;
-        } else if (candidates.size() >= 1){
-        	DEBUG("MORE 1 CANDIDATE");
+            result = true;
+        } else if (candidates.size() >= 1) {
+            DEBUG("MORE 1 CANDIDATE");
         }
         return result;
     }

@@ -154,7 +154,7 @@ public:
 
     void RemoveLoop(size_t skip_identical_edges, bool fullRemoval = true);
 
-    bool EdgeInShortLoop() const;
+    bool EdgeInShortLoop(EdgeId e) const;
     bool PrevEdgeInShortLoop() const;
 
     void Print() const {
@@ -1225,14 +1225,12 @@ size_t LoopDetector::GetFirstExitIteration(EdgeId loopEdge, EdgeId loopExit, std
     return maxIter;
 }
 
-bool LoopDetector::EdgeInShortLoop() const {
-    EdgeId e = path_->Head();
+bool LoopDetector::EdgeInShortLoop(EdgeId e) const {
     VertexId v = g_.EdgeEnd(e);
 
     if (g_.OutgoingEdgeCount(v) != 2) {
         return false;
     }
-
     auto edges = g_.OutgoingEdges(v);
     for (auto edge = edges.begin(); edge != edges.end(); ++edge) {
         if (g_.EdgeEnd(*edge) == g_.EdgeStart(e)) {
@@ -1246,7 +1244,7 @@ bool LoopDetector::PrevEdgeInShortLoop() const {
     if (path_->Size() <= 1){
     	return false;
     }
-	EdgeId e2 = path_->Head();
+	EdgeId e2 = path_->At(path_->Size() - 1);
     EdgeId e1 = path_->At(path_->Size() - 2);
     VertexId v2 = g_.EdgeEnd(e1);
     if (g_.OutgoingEdgeCount(v2) == 2 && g_.EdgeEnd(e2)== g_.EdgeStart(e1) && g_.EdgeEnd(e1)== g_.EdgeStart(e2)) {
