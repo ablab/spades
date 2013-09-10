@@ -1156,22 +1156,22 @@ bool LoopDetector::IsCycled(size_t loopLimit, size_t& skip_identical_edges) cons
 
 size_t LoopDetector::EdgesToRemove(size_t skip_identical_edges,
                                    bool fullRemoval) const {
-    INFO("Edges To Remove");
+    DEBUG("Edges To Remove");
     size_t edges = LoopEdges(skip_identical_edges, 1);
-    INFO("loop edges count " << edges);
+    DEBUG("loop edges count " << edges);
     size_t count = LastLoopCount(edges);
-    INFO("last loop count " << count);
+    DEBUG("last loop count " << count);
     bool onlyCycle = PathIsLoop(edges);
     int result;
 
     if (onlyCycle || path_->Size() <= count * edges) {
         result = (int) path_->Size() - (int) edges;
-        INFO("on cycle " << result);
+        DEBUG("on cycle " << result);
     } else if (fullRemoval) {
         result = (int) count * (int) edges;
     } else {
         result = (int) (count - 1) * (int) edges;
-        INFO("don't remove all " << result);
+        DEBUG("don't remove all " << result);
     }
 
     return result < 0 ? 0 : result;
