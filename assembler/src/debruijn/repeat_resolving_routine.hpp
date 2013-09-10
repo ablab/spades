@@ -1191,9 +1191,9 @@ void resolve_repeats() {
         WARN("Insert size was not estimated for any of the paired libraries, repeat resolution module will not run.");
     }
 
-	if (!cfg::get().paired_mode
+	if ((!cfg::get().paired_mode
 	        || no_valid_libs
-			|| cfg::get().rm == debruijn_graph::resolving_mode::rm_none) {
+			|| cfg::get().rm == debruijn_graph::resolving_mode::rm_none) && !cfg::get().long_single_mode ) {
 		OutputContigs(conj_gp.g, cfg::get().output_dir + "final_contigs.fasta");
 		return;
 	}
