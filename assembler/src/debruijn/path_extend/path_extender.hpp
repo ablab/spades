@@ -405,7 +405,12 @@ public:
         while (MakeGrowStep(path)) {
             size_t skip_identical_edges = 0;
             if (path.getLoopDetector().IsCycled(maxLoops_, skip_identical_edges)) {
+                INFO("Path is Cycled!");
+                INFO("skip identival edges = " << skip_identical_edges);
+                path.Print();
                 path.getLoopDetector().RemoveLoop(skip_identical_edges, false);
+                INFO("After delete");
+                path.Print();
                 return;
             }
         }

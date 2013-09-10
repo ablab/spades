@@ -1102,9 +1102,10 @@ size_t LoopDetector::LoopEdges(size_t skip_identical_edges, size_t min_cycle_app
 
 
 bool LoopDetector::PathIsLoop(size_t edges) const {
-    for (size_t i = 1; i <= edges; ++i) {
-        EdgeId e = path_->operator [](path_->Size() - i);
-        for (int j = (int) path_->Size() - (int) i - (int) edges; j >= 0; j -= (int) edges) {
+    for (size_t i = 0; i < edges; ++i) {
+        EdgeId e = path_->At(i);
+        for (int j = (int) path_->Size() - (edges - (int) i); j >= 0; j -=
+                (int) edges) {
             if (path_->operator [](j) != e) {
                 return false;
             }
@@ -1153,19 +1154,24 @@ bool LoopDetector::IsCycled(size_t loopLimit, size_t& skip_identical_edges) cons
     return false;
 }
 
-size_t LoopDetector::EdgesToRemove(size_t skip_identical_edges, bool fullRemoval) const {
+size_t LoopDetector::EdgesToRemove(size_t skip_identical_edges,
+                                   bool fullRemoval) const {
+    INFO("Edges To Remove");
     size_t edges = LoopEdges(skip_identical_edges, 1);
+    INFO("loop edges count " << edges);
     size_t count = LastLoopCount(edges);
+    INFO("last loop count " << count);
     bool onlyCycle = PathIsLoop(edges);
     int result;
 
-    if (onlyCycle || path_->Size() <= count * edges + 1) {
-        result = (int) path_->Size() - (int) edges - 1;
-    }
-    else if (fullRemoval) {
-        result = (int) count * (int) edges - 1;
+    if (onlyCycle || path_->Size() <= count * edges) {
+        result = (int) path_->Size() - (int) edges;
+        INFO("on cycle " << result);
+    } else if (fullRemoval) {
+        result = (int) count * (int) edges;
     } else {
-        result = (int) (count - 1) * (int) edges - 1;
+        result = (int) (count - 1) * (int) edges;
+        INFO("don't remove all " << result);
     }
 
     return result < 0 ? 0 : result;
