@@ -384,7 +384,7 @@ Note that we assume that SPAdes installation directory is added to the <code>PAT
         <li>mismatch correction is finished for contigs or scaffolds</li>
     </ul>
 For example, if specified K values are 21, 33 and 55 and SPAdes was stopped or crashed during assembly stage with K = 55, you can run SPAdes with the <code>--continue</code> option specifying the same output directory. SPAdes will continue the run starting from the assembly stage with K = 55. Error correction module and iterations for K equal to 21 and 33 will not be run again.
-Note, that all options except <code>-o &lt;output_dir> </code> are ignored if <code>--continue</code> is set.
+Note that all options except <code>-o &lt;output_dir> </code> are ignored if <code>--continue</code> is set.
 </p>
 
 <p>
@@ -394,7 +394,7 @@ Note, that all options except <code>-o &lt;output_dir> </code> are ignored if <c
 
 <p>
     <code>--rectangles</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Uses the <a href="http://bioinf.spbau.ru/en/rectangles" target="_blank">rectangle graph algorithm</a> for repeat resolution stage instead of the usual SPAdes repeat resolution module (experimental).
+    &nbsp;&nbsp;&nbsp;&nbsp;Uses the <a href="http://bioinf.spbau.ru/en/rectangles" target="_blank">rectangle graph algorithm</a> for repeat resolution stage instead of the usual SPAdes repeat resolution module (deprecated). Note that this option requires python of version 2.5, 2.6 or 2.7 to be preinstalled.
 </p>
 
 
