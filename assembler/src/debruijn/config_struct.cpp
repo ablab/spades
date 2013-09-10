@@ -120,8 +120,6 @@ void load_lib_data(const std::string& prefix) {
 void write_lib_data(const std::string& prefix) {
   std::string filename = estimated_param_filename(prefix);
 
-  cfg::get().ds.reads.save("foo.txt");
-
   write_param(filename, "lib_count", cfg::get().ds.reads.lib_count());
 
   for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
