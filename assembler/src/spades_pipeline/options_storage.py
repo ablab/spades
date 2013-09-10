@@ -109,15 +109,15 @@ def usage(spades_version, show_hidden=False):
                          " (without assembling)" + "\n")
     sys.stderr.write("--only-assembler\truns only assembling (without read error"\
                          " correction)" + "\n")
-    sys.stderr.write("--disable-gzip-output\tforces error correction not to"\
-                         " compress the corrected reads" + "\n")
     sys.stderr.write("--careful\t\ttries to reduce number"\
                          " of mismatches and short indels" + "\n")
+    sys.stderr.write("--continue\t\tcontinue run from the last available check-point" + "\n")
+    sys.stderr.write("--disable-gzip-output\tforces error correction not to"\
+                         " compress the corrected reads" + "\n")
     sys.stderr.write("--rectangles\t\tuses rectangle graph algorithm for repeat resolution" + "\n")
 
     sys.stderr.write("" + "\n")
     sys.stderr.write("Advanced options:" + "\n")
-    sys.stderr.write("--continue\t\t\tcontinue processing from the last available check-point" + "\n")
     sys.stderr.write("--dataset\t<filename>\tfile with dataset description in YAML format" + "\n")
     sys.stderr.write("-t/--threads\t<int>\t\tnumber of threads" + "\n")
     sys.stderr.write("\t\t\t\t[default: %s]\n" % threads)
