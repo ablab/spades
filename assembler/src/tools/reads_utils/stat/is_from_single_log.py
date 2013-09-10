@@ -111,7 +111,7 @@ class PairedStat:
 def stat_from_log(log, max_is= 1000000000):
     logfile = open(log, "r")
 
-    stat = {"FR" : PairedStat("FR"), "RF" : PairedStat("RF"), "FF" : PairedStat("FF"), "AU" : PairedStat("AU"), "SP" : PairedStat("SP")}
+    stat = {"FR" : PairedStat("FR"), "RF" : PairedStat("RF"), "FF" : PairedStat("FF"), "AU" : PairedStat("AU"), "UU" : PairedStat("UU"), "SP" : PairedStat("SP")}
     ids = {}
 
     is_paired = False
@@ -140,6 +140,8 @@ def stat_from_log(log, max_is= 1000000000):
                 len2 = len(read2[9])
                 str1 = int(read1[1]) & 16 == 0
                 str2 = int(read2[1]) & 16 == 0
+                al1 = int(read1[1]) & 4 == 0
+                al2 = int(read2[1]) & 4 == 0
 
                 max_rl = max(max_rl, len1, len2)
                 inss = 0
@@ -147,11 +149,17 @@ def stat_from_log(log, max_is= 1000000000):
                     inss = max(pos2 + len2 - pos1, len1)
                 else:
                     inss = max(pos1 + len1 - pos2, len2)
+                
+                if not al1 and not al2:
+                    stat["UU"].inc(0)
 
-                if ((str1 == True and str2 == False and pos1 < pos2) or (str2 == True and str1 == False and pos1 > pos2)) and inss <= max_is:
+                elif (al1 and not al2) or (al2 and not al1):
+                    stat["AU"].inc(0)
+
+                elif ((str1 and not str2 and pos1 < pos2) or (str2 and not str1 and pos1 > pos2)) and inss <= max_is:
                     stat["FR"].inc(inss)
 
-                elif ((str2 == True and str1 == False and pos1 < pos2) or (str1 == True and str2 == False and pos1 > pos2)) and inss <= max_is:
+                elif ((str2 and not str1 and pos1 < pos2) or (str1 and not str2 and pos1 > pos2)) and inss <= max_is:
                     stat["RF"].inc(inss)
 
                 elif str2 == str1 and inss <= max_is:
@@ -159,6 +167,9 @@ def stat_from_log(log, max_is= 1000000000):
 
                 elif inss > max_is:
                     stat["SP"].inc(inss)
+
+                else:
+                    print("No category...?")
                     
 
                 del ids[ id2[0] ]
