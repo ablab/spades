@@ -1112,7 +1112,7 @@ void resolve_repeats() {
 
 	 exec_distance_estimation(conj_gp, paired_indices, clustered_indices, scaffold_indices, pacbio_read);
 
-	 if (cfg::get().entry_point <= ws_pacbio_aligning){
+	 if (cfg::get().entry_point <= ws_pacbio_aligning && cfg::get().gap_closer_enable){
 	     INFO(" need to align pb");
 	     if (cfg::get().pacbio_test_on) {
 	         INFO("creating  multiindex with k = " << cfg::get().pb.pacbio_k);
@@ -1141,7 +1141,7 @@ void resolve_repeats() {
              }
         }
 	}
-	if (cfg::get().pacbio_test_on) {
+	if (cfg::get().pacbio_test_on && cfg::get().gap_closer_enable) {
 	    INFO("getting paths");
         vector<PathInfo<Graph> > pacbio_paths = pacbio_read.GetAllPaths();
         PathStorageInfo<Graph> pacbio_storage(
