@@ -19,7 +19,6 @@
 #include "omni/edge_labels_handler.hpp"
 #include "graph_construction.hpp"
 #include "graph_simplification.hpp"
-#include "repeat_resolving.hpp"
 #include "omni/omni_tools.hpp"
 #include "omni/id_track_handler.hpp"
 #include "omni/edges_position_handler.hpp"

@@ -40,16 +40,9 @@ enum estimation_mode {
 
 enum resolving_mode {
   rm_none,
-  rm_split,
   rm_path_extend,
-  rm_combined,
-  rm_split_scaff,
-  rm_jump,
   rm_rectangles
 };
-
-
-
 
 enum info_printer_pos {
   ipp_default = 0,
@@ -130,10 +123,7 @@ struct debruijn_config {
   static const resolve_mode_id_mapping FillResolveModeInfo() {
     resolve_mode_id_mapping::value_type info[] = {
       resolve_mode_id_mapping::value_type("none", rm_none),
-      resolve_mode_id_mapping::value_type("split", rm_split),
       resolve_mode_id_mapping::value_type("path_extend", rm_path_extend),
-      resolve_mode_id_mapping::value_type("combined", rm_combined),
-      resolve_mode_id_mapping::value_type("split_scaff", rm_split_scaff),
       resolve_mode_id_mapping::value_type("rectangles", rm_rectangles)
     };
 
