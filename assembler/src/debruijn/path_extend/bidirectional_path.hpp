@@ -626,16 +626,43 @@ public:
         return !operator==(path);
     }
 
-    void CheckConjugateEnd(){
-    	size_t begin = 0;
-    	size_t end = Size() - 1;
-    	while (begin < end && At(begin) == g_.conjugate(At(end))){
-    		begin++;
-    		end--;
-    	}
-    	for (size_t i = 0; i < begin ; ++i){
-    		PopBack();
-    	}
+    void CheckConjugateEnd() {
+        /*DEBUG("check conj end");
+        size_t begin = 0;
+        size_t end = Size() - 1;
+        while (begin < end && At(begin) == g_.conjugate(At(end))) {
+            begin++;
+            end--;
+        }
+        if (begin > 0) {
+            DEBUG("conjugate end " << begin);
+        }
+        PopBack(begin);*/
+        FindConjEdges();
+    }
+
+    void FindConjEdges() {
+        for (size_t i = 0; i < Size(); ++i) {
+            vector<size_t> conj_pos = FindAll(g_.conjugate(At(i)));
+            for (size_t j = 0; j < conj_pos.size(); ++j) {
+                size_t begin = i;
+                size_t end = conj_pos[j];
+                DEBUG("conj pos " << begin << " " << end );
+                if (end == i) {
+                    continue;
+                }
+                size_t conj_len = 0;
+                while (begin < end && At(begin) == g_.conjugate(At(end))) {
+                    conj_len += g_.length(At(begin));
+                    begin++;
+                    end--;
+                }
+                if (conj_len > 500) {
+                    DEBUG("conj_len " << conj_len << " pop back " << Size() - end - 1)
+                    PopBack(Size() - end - 1);
+                }
+            }
+        }
     }
 
     void CheckGrow()

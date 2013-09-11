@@ -133,16 +133,19 @@ public:
         }
         DEBUG("Path after deleting");
         path.Print();
+        chooser_.ClearExcludedEdges();
         BidirectionalPath experiment(path);
         double maxWeight = chooser_.CountWeight(experiment, edges.second);
         double diff = maxWeight - chooser_.CountWeight(experiment, edges.first);
         size_t maxIter = 0;
         for (size_t i = 1; i <= iter_; ++i) {
             double weight = chooser_.CountWeight(experiment, edges.first);
+            DEBUG("weight " << weight);
             if (weight > 0) {
                 MakeCycleStep(experiment, edges.first);
                 weight = chooser_.CountWeight(experiment, edges.second);
                 double weight2 = chooser_.CountWeight(experiment, edges.first);
+                DEBUG("iter " << i << " weight " << weight  << " maxWeight " << maxWeight << " weight 2 " <<  weight2 << " diff " << diff);
                 if (weight > maxWeight
                         || (weight == maxWeight && weight - weight2 > diff)
                         || (weight == maxWeight && weight - weight2 == diff
@@ -506,6 +509,8 @@ protected:
 //                    DEBUG("Seeds are not covered after growing");
 //                }
                 path->CheckConjugateEnd();
+                INFO("result path ");
+                path->Print();
             }
         }
     }

@@ -277,11 +277,17 @@ protected:
 
 		std::vector<EdgeWithPairedInfo> coveredEdges;
 		analyzers_[libIndex]->FindCoveredEdges(path, e, coveredEdges);
+		DEBUG("covered edges " << coveredEdges.size());
+		for (auto iter = coveredEdges.begin(); iter != coveredEdges.end();
+		                ++iter){
+		    DEBUG("cover " << iter->e_);
+		}
 		for (auto iter = coveredEdges.begin(); iter != coveredEdges.end();
 				++iter) {
 			double ideal_weight = iter->pi_;
 			if (excluded_edges_.find(iter->e_) != excluded_edges_.end()) {
 				if (!math::gr(excluded_edges_[iter->e_], 0.0) or !math::gr(ideal_weight, 0.0)) {
+				    DEBUG("exclude edge " << iter->e_);
 					continue;
 				} else {
 					ideal_weight = excluded_edges_[iter->e_];
@@ -294,6 +300,11 @@ protected:
 			double singleWeight = libs_[libIndex]->CountPairedInfo(
 					path[iter->e_], e,
 					(int) path.LengthAt(iter->e_) + additionalGapLength);
+			DEBUG("weight edge " << iter->e_ <<
+			      " weight " << singleWeight
+			      << " norm " <<singleWeight / ideal_weight
+			      <<" threshold " << threshold
+			      <<" used " << math::ge(singleWeight, threshold));
 
 			if (normalizeWeight_) {
 				singleWeight /= ideal_weight;

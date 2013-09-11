@@ -154,6 +154,10 @@ public:
         this->excludeTrivialWithBulges_ = excludeTrivialWithBulges;
     }
 
+    void ClearExcludedEdges() {
+        wc_->GetExcludedEdges().clear();
+    }
+
     PairedInfoLibraries& getLibs() {
         return wc_->getLibs();
     }
@@ -334,12 +338,15 @@ public:
 		if (edges.empty()) {
 			return edges;
 		}
-		RemoveTrivial(path);
+		//RemoveTrivial(path);
 		path.Print();
-		EdgeContainer result = FindFilteredEdges(path, edges);
+		//EdgeContainer result = FindFilteredEdges(path, edges);
+		EdgeContainer result = edges;
+		bool first_time = true;
 		bool changed = true;
-		if (result.size() > 1 && changed) {
-			DEBUG("result size MORE 1");
+		if (first_time || (result.size() > 1 && changed)) {
+		    DEBUG("result size MORE 1");
+		    first_time = false;
 			RemoveTrivialAndCommon(path, result);
 			EdgeContainer new_result = FindFilteredEdges(path, result);
 			if (new_result.size() == result.size()) {
