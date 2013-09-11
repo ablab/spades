@@ -43,13 +43,13 @@ info_printers
 ;       write_error_loc                  true
     }
 
-    before_repeat_resolution
-    {
+;    before_repeat_resolution
+;    {
        ;write_components                 true
 ;       ;write_components_along_genome    true
 ;       ;write_error_loc                  true
-	write_full_nc_graph              true
+;	write_full_nc_graph              true
 ;
-    }
+;   }
 
 }  
