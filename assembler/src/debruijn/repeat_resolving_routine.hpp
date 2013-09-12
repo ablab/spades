@@ -1134,9 +1134,9 @@ void resolve_repeats() {
                  vector<PathInfo<Graph> > pacbio_paths = pacbio_read.GetAllPaths();
                  PathStorageInfo<Graph> pacbio_storage(
                          pacbio_paths,
-                         cfg::get().pe_params.long_reads.coverage_base_rr.filtering,
-                         cfg::get().pe_params.long_reads.coverage_base_rr.weight_priority,
-                         cfg::get().pe_params.long_reads.coverage_base_rr.unique_edge_priority);
+                         cfg::get().pe_params.long_reads.pacbio_reads.filtering,
+                         cfg::get().pe_params.long_reads.pacbio_reads.weight_priority,
+                         cfg::get().pe_params.long_reads.pacbio_reads.unique_edge_priority);
                  long_reads_libs.push_back(pacbio_storage);
              }
         }
@@ -1144,16 +1144,20 @@ void resolve_repeats() {
 	if (cfg::get().pacbio_test_on && cfg::get().gap_closer_enable) {
 	    INFO("getting paths");
         vector<PathInfo<Graph> > pacbio_paths = pacbio_read.GetAllPaths();
+        INFO(cfg::get().pe_params.long_reads.pacbio_reads.filtering);
         PathStorageInfo<Graph> pacbio_storage(
         pacbio_paths,
-        cfg::get().pe_params.long_reads.coverage_base_rr.filtering,
-        cfg::get().pe_params.long_reads.coverage_base_rr.weight_priority,
-        cfg::get().pe_params.long_reads.coverage_base_rr.unique_edge_priority);
+        cfg::get().pe_params.long_reads.pacbio_reads.filtering,
+        cfg::get().pe_params.long_reads.pacbio_reads.weight_priority,
+        cfg::get().pe_params.long_reads.pacbio_reads.unique_edge_priority);
+        INFO("storage created");
         long_reads_libs.push_back(pacbio_storage);
 	}
 	if (cfg::get().developer_mode && cfg::get().pos.late_threading) {
+	    INFO("threading");
 		FillPos(conj_gp, conj_gp.genome, "10");
 		FillPos(conj_gp, !conj_gp.genome, "11");
+		INFO("and");
 		if (!cfg::get().pos.contigs_for_threading.empty()
 				&& FileExists(cfg::get().pos.contigs_for_threading)) {
 			FillPosWithRC(conj_gp, cfg::get().pos.contigs_for_threading,
@@ -1168,7 +1172,7 @@ void resolve_repeats() {
 
 
 //	RunTopologyTipClipper(conj_gp.g, 300, 2000, 1000);
-
+	INFO("threaded");
 	//todo refactor labeler creation
 	total_labeler_graph_struct graph_struct(conj_gp.g, &conj_gp.int_ids,
 			&conj_gp.edge_pos);
@@ -1176,7 +1180,9 @@ void resolve_repeats() {
 	EdgeQuality<Graph, Index> quality_labeler(conj_gp.g, conj_gp.index,
 			conj_gp.kmer_mapper, conj_gp.genome);
 	CompositeLabeler<Graph> labeler(tot_lab, quality_labeler);
+	INFO("lavelers created");
 	detail_info_printer printer(conj_gp, labeler, cfg::get().output_dir);
+	INFO("printing");
 	printer(ipp_before_repeat_resolution);
 
 	bool no_valid_libs = true;

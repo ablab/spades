@@ -528,7 +528,11 @@ private:
 				}
 			}
 		}
-		DEBUG("returning " << res);
+		INFO("returning " << res);
+		const ConsensusCore::PoaConsensus* pc =
+		ConsensusCore::PoaConsensus::FindConsensus(variants,
+		ConsensusCore::PoaConfig::GLOBAL_ALIGNMENT);
+		INFO("ConsCore: "<< pc->Sequence());
 		return res;
 	}
 
