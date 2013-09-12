@@ -1022,8 +1022,8 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
         } else if (cfg::get().ds.reads[i].data().mean_insert_size != 0.0 &&
                 (type == io::LibraryType::PairedEnd
                 || type == io::LibraryType::MatePairs)) {
-           // AddSingleLibrary(conj_gp, cfg::get().ds.reads[i],
-            //                 cfg::get().output_dir, long_reads_libs);
+            AddSingleLibrary(conj_gp, cfg::get().ds.reads[i],
+                             cfg::get().output_dir, long_reads_libs);
             pe_indexes.push_back(&clustered_indices[i]);
             pe_scaf_indices.push_back(&scaffold_indices[i]);
             indexes.push_back(i);
