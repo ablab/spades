@@ -260,45 +260,47 @@ class SimpleExtensionChooser: public ExtensionChooser {
 protected:
 
 	void RemoveTrivialAndCommon(BidirectionalPath& path, EdgeContainer& edges) {
-		RemoveTrivial(path);
-		if (edges.size() == 0) {
-			return;
-		}
-		int index = (int) path.Size() - 1;
-		std::map<size_t, double>& excluded_edges = wc_->GetExcludedEdges();
-		while (index >= 0) {
-			if (excluded_edges.find(index) != excluded_edges.end()) {
-				index--;
-				continue;
-			}
-			EdgeId path_edge = path[index];
-			double min_ideal_w = wc_->CountIdealInfo(path_edge, edges.at(0).e_,
-					path.LengthAt(index));
-			bool common = true;
-			for (size_t i = 0; i < edges.size(); ++i) {
-				double ideal_weight = wc_->CountIdealInfo(path_edge,
-						edges.at(i).e_, path.LengthAt(index));
-				min_ideal_w = std::min(min_ideal_w, ideal_weight);
-				if (!wc_->PairInfoExist(path_edge, edges.at(i).e_,
-						(int) path.LengthAt(index))) {
-					common = false;
-				}
-			}
-			if (common) {
-				excluded_edges.insert(make_pair((size_t) index, 0.0));
-			} else {
-				excluded_edges.insert(make_pair((size_t) index, min_ideal_w));
-			}
-			index--;
-		}
-	}
+        ClearExcludedEdges();
+        if (edges.size() < 2) {
+            return;
+        }
+        RemoveTrivial(path);
+        int index = (int) path.Size() - 1;
+        std::map<size_t, double>& excluded_edges = wc_->GetExcludedEdges();
+        while (index >= 0) {
+            if (excluded_edges.find(index) != excluded_edges.end()) {
+                index--;
+                continue;
+            }
+            EdgeId path_edge = path[index];
+            double min_ideal_w = wc_->CountIdealInfo(path_edge, edges.at(0).e_,
+                                                     path.LengthAt(index));
+            bool common = true;
+            for (size_t i = 0; i < edges.size(); ++i) {
+                double ideal_weight = wc_->CountIdealInfo(path_edge,
+                                                          edges.at(i).e_,
+                                                          path.LengthAt(index));
+                min_ideal_w = std::min(min_ideal_w, ideal_weight);
+                if (!wc_->PairInfoExist(path_edge, edges.at(i).e_,
+                                        (int) path.LengthAt(index))) {
+                    common = false;
+                }
+            }
+            if (common) {
+                excluded_edges.insert(make_pair((size_t) index, 0.0));
+            } else {
+                excluded_edges.insert(make_pair((size_t) index, min_ideal_w));
+            }
+            index--;
+        }
+    }
 
 	void FindWeights(BidirectionalPath& path, EdgeContainer& edges,
 			AlternativeConteiner& weights) {
 		for (auto iter = edges.begin(); iter != edges.end(); ++iter) {
 			double weight = wc_->CountWeight(path, iter->e_);
 			weights.insert(std::make_pair(weight, *iter));
-			DEBUG("Candidate " << g_.int_id(iter->e_) << " weight " << weight);
+			DEBUG("Candidate " << g_.int_id(iter->e_) << " weight " << weight << " length " << g_.length(iter->e_));
 			path.getLoopDetector().AddAlternative(iter->e_, weight);
 
 		}
@@ -338,10 +340,11 @@ public:
 		if (edges.empty()) {
 			return edges;
 		}
-		//RemoveTrivial(path);
+		RemoveTrivial(path);
 		path.Print();
-		//EdgeContainer result = FindFilteredEdges(path, edges);
-		EdgeContainer result = edges;
+		EdgeContainer result = FindFilteredEdges(path, edges);
+		size_t first_result = result.size();
+		/*EdgeContainer */result = edges;
 		bool first_time = true;
 		bool changed = true;
 		if (first_time || (result.size() > 1 && changed)) {
@@ -354,9 +357,11 @@ public:
 			}
 			result = new_result;
 		}
-		if (result.size() == 1){
-		    DEBUG("Paired-end extension chooser helped");
-		}
+		if (result.size() == 1) {
+            DEBUG("Paired-end extension chooser helped");
+        } else if (first_result == 1) {
+            DEBUG("We resolved it before");
+        }
 		return result;
 	}
 

@@ -148,12 +148,13 @@ struct PairedInfoLibrary {
             return math::gr(w, 0.0) ? w : 0.0;
     }
 
-    double IdealPairedInfo(EdgeId e1, EdgeId e2, int distance) const{
+    double IdealPairedInfo(EdgeId e1, EdgeId e2, int distance) const {
         double w = 0.;
         if (distance == 0 && e1 == e2) {
-            w = 0. + (double) (g_.length(e1) - insert_size_ + 2 * read_size_ + 1 - k_);
-        }
-        else {
+            w = 0.
+                    + (double) (g_.length(e1) - insert_size_ + 2 * read_size_
+                            + 1 - k_);
+        } else {
             if (distance < 0) {
                 EdgeId tmp = e1;
                 e1 = e2;
@@ -161,9 +162,14 @@ struct PairedInfoLibrary {
                 distance = -distance;
             }
             int gap_len = distance - (int) g_.length(e1);
-            int right = std::min((int) insert_size_, gap_len + (int) (g_.length(e2) + read_size_));
-            int left = std::max(gap_len, int(insert_size_) - int(read_size_) - int(g_.length(e1)));
-            w = 0. + (double) (right - left + 1 - (int) (k_) + (int) is_variation_);
+            int right = std::min((int) insert_size_,
+                                 gap_len + (int) (g_.length(e2) + read_size_));
+            int left = std::max(
+                    gap_len,
+                    int(insert_size_) - int(read_size_) - int(g_.length(e1)));
+            w = 0.
+                    + (double) (right - left + 1 - (int) (k_)
+                            + (int) is_variation_);
         }
         return math::gr(w, 0.0) ? w : 0.0;
     }

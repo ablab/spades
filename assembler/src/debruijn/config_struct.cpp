@@ -87,7 +87,7 @@ void load_lib_data(const std::string& prefix) {
   for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
       boost::optional<size_t> sizet_val(0);
       boost::optional<double> double_val(0.);
-
+      load_param(filename, "read_length_" + ToString(i), sizet_val);
       if (sizet_val) {
           cfg::get_writable().ds.reads[i].data().read_length = *sizet_val;
       }
