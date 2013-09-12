@@ -639,28 +639,27 @@ public:
         }
         PopBack(begin);*/
         FindConjEdges();
+        GetConjPath()->FindConjEdges();
     }
 
     void FindConjEdges() {
-        for (size_t i = 0; i < Size(); ++i) {
-            vector<size_t> conj_pos = FindAll(g_.conjugate(At(i)));
-            for (size_t j = 0; j < conj_pos.size(); ++j) {
-                size_t begin = i;
-                size_t end = conj_pos[j];
-                DEBUG("conj pos " << begin << " " << end );
-                if (end == i) {
-                    continue;
-                }
-                size_t conj_len = 0;
-                while (begin < end && At(begin) == g_.conjugate(At(end))) {
-                    conj_len += g_.length(At(begin));
-                    begin++;
-                    end--;
-                }
-                if (conj_len > 500) { //TODO: remove const 500 from code
-                    DEBUG("conj_len " << conj_len << " pop back " << Size() - end - 1)
-                    PopBack(Size() - end - 1);
-                }
+        vector<size_t> conj_pos = FindAll(g_.conjugate(At(0)));
+        for (size_t j = 0; j < conj_pos.size(); ++j) {
+            int begin = 0;
+            int end = (int) conj_pos[j];
+            DEBUG("conj pos " << begin << " " << end);
+            if (end == 0) {
+                continue;
+            }
+            size_t conj_len = 0;
+            while (begin < end && At(begin) == g_.conjugate(At(end))) {
+                conj_len += g_.length(At(begin));
+                begin++;
+                end--;
+            }
+            if (begin >= end) {
+                DEBUG("conj_len " << conj_len << " pop back " << Size() - end - 1)
+                PopBack(Size() - end - 1);
             }
         }
     }
