@@ -509,7 +509,7 @@ protected:
 //                    DEBUG("Seeds are not covered after growing");
 //                }
                 path->CheckConjugateEnd();
-                INFO("result path ");
+                DEBUG("result path ");
                 path->Print();
             }
         }
