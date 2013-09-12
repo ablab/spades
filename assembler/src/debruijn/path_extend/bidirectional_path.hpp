@@ -657,7 +657,7 @@ public:
                     begin++;
                     end--;
                 }
-                if (conj_len > 500) {
+                if (conj_len > 500) { //TODO: remove const 500 from code
                     DEBUG("conj_len " << conj_len << " pop back " << Size() - end - 1)
                     PopBack(Size() - end - 1);
                 }
