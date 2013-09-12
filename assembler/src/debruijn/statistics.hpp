@@ -385,8 +385,8 @@ public:
 
   virtual void Count() {
     typedef pair<EdgeId, EdgeId> EdgePair;
-    PairedInfoIndexT<Graph> new_index(graph_);
-    PairInfoWeightFilter<Graph>(graph_, 40).Filter(pair_info_, new_index);
+    PairedInfoIndexT<Graph> new_index = pair_info_;
+    PairInfoWeightFilter<Graph>(graph_, 40).Filter(new_index);
     map<EdgePair, double> edge_pairs;
     TrivialEdgePairChecker<Graph> checker(graph_);
     size_t nontrivial = 0;

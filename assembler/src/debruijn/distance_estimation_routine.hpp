@@ -38,16 +38,15 @@ void estimate_with_estimator(const Graph& graph,
 {
   using debruijn_graph::estimation_mode;
   DEBUG("Estimating distances");
-  PairedIndexT raw_clustered_index(graph);
 
   if (cfg::get().use_multithreading) {
-    estimator.EstimateParallel(raw_clustered_index, cfg::get().max_threads);
+    estimator.EstimateParallel(clustered_index, cfg::get().max_threads);
   } else {
-    estimator.Estimate(raw_clustered_index);
+    estimator.Estimate(clustered_index);
   }
 
   INFO("Filtering info");
-  filter.Filter(raw_clustered_index, clustered_index);
+  filter.Filter(clustered_index);
   DEBUG("Info Filtered");
 }
 

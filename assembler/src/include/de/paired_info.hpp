@@ -239,9 +239,9 @@ public:
   }
 
   void AddPairInfo(const PairInfo<EdgeId>& pair_info, bool add_reversed = 1) {
-        data_.insert(pair_info);
+    data_.insert(pair_info);
 
-    if (!IsSymmetric(pair_info) && add_reversed)
+    if (add_reversed && !IsSymmetric(pair_info))
       data_.insert(BackwardInfo(pair_info));
   }
 
@@ -652,6 +652,13 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
       TRACE("Such pair info does not exist");
       InsertPoint(e1, e2, histogram, point_to_add, add_reversed);
     }
+  }
+
+  void DeletePairInfo(EdgeId e1, EdgeId e2,
+                      Point point_to_remove) {
+    VERIFY(this->IsAttached());
+    Histogram& histogram = index_[e1][e2];
+    histogram.erase(point_to_remove);
   }
 
   // method adds paired info to the conjugate edges

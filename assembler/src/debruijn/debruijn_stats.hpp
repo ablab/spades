@@ -136,22 +136,22 @@ const Sequence& genome, size_t k) {
 }
 
 void CountPairedInfoStats(const Graph& g,
-    const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
-    const PairedInfoIndexT<Graph>& paired_index,
-    const PairedInfoIndexT<Graph>& etalon_index,
-    const string& output_folder) {
-  PairedInfoIndexT<Graph> filtered_index(g);
-	PairInfoWeightFilter<Graph>(g, 40).Filter(paired_index, filtered_index);
-	INFO("Counting paired info stats");
-	EdgePairStat<Graph>(g, paired_index, output_folder).Count();
+                          const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
+                          const PairedInfoIndexT<Graph>& paired_index,
+                          const PairedInfoIndexT<Graph>& etalon_index,
+                          const string& output_folder) {
+    PairedInfoIndexT<Graph> filtered_index = paired_index;
+    PairInfoWeightFilter<Graph>(g, 40).Filter(filtered_index);
+    INFO("Counting paired info stats");
+    EdgePairStat<Graph>(g, paired_index, output_folder).Count();
 
 	//todo remove filtration if launch on etalon info is ok
-	UniquePathStat<Graph>(g, filtered_index,
-	                    (size_t)math::round(lib.data().mean_insert_size),
-                        lib.data().read_length,
-                        0.1 * lib.data().mean_insert_size).Count();
-	UniqueDistanceStat<Graph>(etalon_index).Count();
-	INFO("Paired info stats counted");
+    UniquePathStat<Graph>(g, filtered_index,
+                          (size_t)math::round(lib.data().mean_insert_size),
+                          lib.data().read_length,
+                          0.1 * lib.data().mean_insert_size).Count();
+    UniqueDistanceStat<Graph>(etalon_index).Count();
+    INFO("Paired info stats counted");
 }
 
 // leave only those pairs, which edges have no path in the graph between them
