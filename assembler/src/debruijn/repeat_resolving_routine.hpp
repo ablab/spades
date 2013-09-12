@@ -44,18 +44,20 @@ namespace debruijn_graph {
 
 template<class gp_t>
 void WriteGraphPack(gp_t& gp, const string& file_name) {
-	ofstream filestr(file_name);
-	omnigraph::visualization::CompositeGraphColorer<typename gp_t::graph_t> colorer(
-			make_shared<omnigraph::visualization::FixedColorer<typename gp_t::graph_t::VertexId>>("white"),
-			make_shared<omnigraph::visualization::PositionsEdgeColorer<typename gp_t::graph_t>>(gp.g, gp.edge_pos));
+    using namespace omnigraph::visualization;
+
+    std::ofstream filestr(file_name);
+	CompositeGraphColorer<typename gp_t::graph_t> colorer(
+        std::make_shared<FixedColorer<typename gp_t::graph_t::VertexId>>("white"),
+        std::make_shared<PositionsEdgeColorer<typename gp_t::graph_t>>(gp.g, gp.edge_pos));
 
 	EdgeQuality<typename gp_t::graph_t, typename gp_t::index_t> edge_qual(gp.g, gp.index,
 			gp.kmer_mapper, gp.genome);
 	total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
 	total_labeler tot_lab(&graph_struct);
 	CompositeLabeler<Graph> labeler(tot_lab, edge_qual);
-	omnigraph::visualization::EmptyGraphLinker<typename gp_t::graph_t> linker;
-	omnigraph::visualization::ComponentVisualizer<typename gp_t::graph_t>(gp.g, false).Visualize(filestr, labeler, colorer, linker);
+	EmptyGraphLinker<typename gp_t::graph_t> linker;
+	ComponentVisualizer<typename gp_t::graph_t>(gp.g, false).Visualize(filestr, labeler, colorer, linker);
 //	DotGraphPrinter<typename gp_t::graph_t> g_print(gp.g, labeler, colorer, " ",
 //			filestr);
 //	SimpleGraphVisualizer<typename gp_t::graph_t> gv(gp.g, g_print);
