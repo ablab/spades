@@ -114,22 +114,6 @@ bool prepare_scaffolding_index(conj_graph_pack& gp,
 	DEBUG("Weight Wrapper Done");
 	weight_function = boost::bind(&WeightDEWrapper::CountWeight, wrapper, _1);
 
-	PairedInfoNormalizer<Graph>::WeightNormalizer normalizing_f;
-	if (cfg::get().ds.single_cell) {
-		normalizing_f = &TrivialWeightNormalization<Graph>;
-	} else {
-		//todo reduce number of constructor params
-	    //TODO: apply new system
-		PairedInfoWeightNormalizer<Graph> weight_normalizer(gp.g,
-                (size_t)math::round(lib.data().mean_insert_size), lib.data().insert_size_deviation, lib.data().read_length,
-				gp.k_value, lib.data().average_coverage);
-		normalizing_f = boost::bind(
-				&PairedInfoWeightNormalizer<Graph>::NormalizeWeight,
-				weight_normalizer, _1, _2, _3);
-	}
-	PairedInfoNormalizer<Graph> normalizer(normalizing_f);
-	DEBUG("Normalizer Done");
-
 	PairInfoWeightFilter<Graph> filter(gp.g, 0.);
 	DEBUG("Weight Filter Done");
 
@@ -141,7 +125,7 @@ bool prepare_scaffolding_index(conj_graph_pack& gp,
 					cfg::get().ade.min_peak_points, cfg::get().ade.inv_density,
 					cfg::get().ade.percentage,
 					cfg::get().ade.derivative_threshold, true);
-	estimate_with_estimator(gp.g, estimator, normalizer, filter, clustered_index);
+	estimate_with_estimator(gp.g, estimator, filter, clustered_index);
 
 	return true;
 }
