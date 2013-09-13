@@ -69,15 +69,15 @@ class PairedStat:
         low = median - 5. * 1.4826 * mad
         high = median + 5. * 1.4826 * mad
 
-        n = 0
+        n = 0.0
         summ = 0.0
         sum2 = 0.0
         for k,v in self.hist.items():
             if (k < low or k > high):
                 continue
             n += v
-            summ += v * 1. * k
-            sum2 += v * 1. * k * k
+            summ += v * k  
+            sum2 += v * k * k
 
         mean = summ / n
         delta = math.sqrt(sum2 / n - mean * mean)
@@ -85,18 +85,18 @@ class PairedStat:
         low = mean - 5 * delta
         high = mean + 5 * delta
 
-        n = 0
-        summ = 0.
-        sum2 = 0.
+        n = 0.0
+        summ = 0.0
+        sum2 = 0.0
         for k,v in self.hist.items():
             if (k < low or k > high):
                continue
             n += v
-            summ += v * 1. * k
-            sum2 += v * 1. * k * k
+            summ += v * k
+            sum2 += v * k * k
 
         self.mean = summ / n
-        self.dev = math.sqrt(sum2 / n - mean * mean)
+        self.dev = math.sqrt(sum2 / n - self.mean * self.mean)
         
         return self.mean, self.dev
 
@@ -111,7 +111,7 @@ class PairedStat:
 def stat_from_log(log, max_is= 1000000000):
     logfile = open(log, "r")
 
-    stat = {"FR" : PairedStat("FR"), "RF" : PairedStat("RF"), "FF" : PairedStat("FF"), "AU" : PairedStat("AU"), "UU" : PairedStat("UU"), "SP" : PairedStat("SP")}
+    stat = {"FR" : PairedStat("FR"), "RF" : PairedStat("RF"), "FF" : PairedStat("FF"), "AU" : PairedStat("AU"), "UU" : PairedStat("UU"),  "RL" : PairedStat("RL"), "SP" : PairedStat("SP")}
     ids = {}
 
     is_paired = False
@@ -168,8 +168,11 @@ def stat_from_log(log, max_is= 1000000000):
                 elif inss > max_is:
                     stat["SP"].inc(inss)
 
+                elif pos1 == pos2:
+                    stat["RL"].inc(inss)
+
                 else:
-                    print("No category...?")
+                    print(al1,al2,str1,str2,pos1,pos2,inss)
                     
 
                 del ids[ id2[0] ]

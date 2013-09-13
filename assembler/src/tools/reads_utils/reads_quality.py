@@ -284,7 +284,7 @@ for dataset in datasets_dict.iterkeys():
 # IS form logs    
 if paired_mode:
     print("Retaining insert size")
-    report_dict["header"] += ["Read length", "FR read pairs", "Insert size (deviation)", "RF read pairs", "Insert size (deviation)", "FF read pairs", "Insert size (deviation)", "One uniquely aligned read in pair", "Both reads unaligned", "Suppressed due to insert size limit"]
+    report_dict["header"] += ["Read length", "FR read pairs", "Insert size (deviation)", "RF read pairs", "Insert size (deviation)", "FF read pairs", "Insert size (deviation)", "One uniquely aligned read in pair", "Both reads unaligned", "Both aligned to same position", "Suppressed due to insert size limit"]
     import is_from_single_log
     for dataset in datasets_dict.iterkeys():
         print("  " + dataset + "...")
@@ -309,6 +309,7 @@ if paired_mode:
 
         report_dict[dataset].append( str(stat[1]["AU"].count) + " (" + str(round( 100.0 * float(stat[1]["AU"].count) / float(read_pairs), 2) ) + "%)" )
         report_dict[dataset].append( str(stat[1]["UU"].count) + " (" + str(round( 100.0 * float(stat[1]["UU"].count) / float(read_pairs), 2) ) + "%)" )
+        report_dict[dataset].append( str(stat[1]["RL"].count) + " (" + str(round( 100.0 * float(stat[1]["RL"].count) / float(read_pairs), 2) ) + "%)" )
         report_dict[dataset].append( str(stat[1]["SP"].count) + " (" + str(round( 100.0 * float(stat[1]["SP"].count) / float(read_pairs), 2) ) + "%)" )
 
 # total report
