@@ -256,14 +256,14 @@ void load_distance_estimation(conj_graph_pack& gp,
                               PairedIndicesT& scaffold_indices,
                               path::files_t* used_files,
                               PathStorage<Graph>& long_reads,
-                              vector<PathStorage<Graph> >& single_long_reads) {
+                              vector<PathStorage<Graph>* >& single_long_reads) {
   string p;
   if (cfg::get().entry_point == ws_repeats_resolving && cfg::get().pacbio_test_on)
       p = path::append_path(cfg::get().load_from, "pacbio_aligning");
   else
       p = path::append_path(cfg::get().load_from, "distance_estimation");
   used_files->push_back(p);
-  ScanAll(p, gp, paired_indices, clustered_indices, scaffold_indices);
+  ScanAll(p, gp, paired_indices, clustered_indices, scaffold_indices, single_long_reads);
   if (cfg::get().entry_point == ws_repeats_resolving && cfg::get().pacbio_test_on) {
       INFO(" long reads loading form " <<p);
       long_reads.LoadFromFile(p + ".mpr");
@@ -286,12 +286,12 @@ void save_distance_estimation(const conj_graph_pack& gp,
                               const PairedIndicesT& paired_indices,
                               const PairedIndicesT& clustered_indices,
                               const PairedIndicesT& scaffold_indices,
-                              vector<PathStorage<Graph> >& single_long_reads)
+                              vector<PathStorage<Graph>* >& single_long_reads)
 {
   if (cfg::get().make_saves || (cfg::get().paired_mode && cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles)) {
     string p = path::append_path(cfg::get().output_saves, "distance_estimation");
     INFO("Saving current state to " << p);
-    PrintAll(p, gp, paired_indices, clustered_indices, scaffold_indices);
+    PrintAll(p, gp, paired_indices, clustered_indices, scaffold_indices, single_long_reads);
     write_lib_data(p);
   }
   //TODO: load single long read
@@ -310,7 +310,7 @@ void exec_distance_estimation(conj_graph_pack& gp,
                               PairedIndicesT& clustered_indices,
                               PairedIndicesT& scaffold_indices,
                               PathStorage<Graph>& pacbio_reads,
-                              vector<PathStorage<Graph> >& single_long_reads) {
+                              vector<PathStorage<Graph>* >& single_long_reads) {
   if (cfg::get().entry_point <= ws_distance_estimation) {
     exec_late_pair_info_count(gp, paired_indices, single_long_reads);
     if (cfg::get().paired_mode) {

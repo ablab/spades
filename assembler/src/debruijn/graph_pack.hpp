@@ -19,9 +19,9 @@
 #include "de/paired_info.hpp"
 #include "debruijn_graph.hpp"
 #include "config_struct.hpp"
-#include "graphio.hpp"
 #include "mismatch_masker.hpp"
 #include "edge_index.hpp"
+#include "graphio.hpp"
 
 namespace debruijn_graph {
 
@@ -60,18 +60,6 @@ typedef conj_graph_pack::index_t Index;
 typedef graph_pack<NonconjugateDeBruijnGraph, runtime_k::RtSeq,
         DeBruijnEdgeIndex<KmerFreeDeBruijnEdgeIndex<NonconjugateDeBruijnGraph, runtime_k::RtSeq>>> nonconj_graph_pack;
 
-inline void Convert(const conj_graph_pack& gp1,
-		const PairedInfoIndexT<conj_graph_pack::graph_t>& clustered_index1,
-		nonconj_graph_pack& gp2,
-		PairedInfoIndexT<nonconj_graph_pack::graph_t>& clustered_index2) {
-	string conv_folder = path::append_path(cfg::get().output_root,
-			"temp_conversion");
-	make_dir(conv_folder);
-	string p = path::append_path(conv_folder, "conj_graph");
-	PrintWithClusteredIndex(p, gp1, clustered_index1);
-	ScanWithClusteredIndex(p, gp2, clustered_index2);
-	remove_dir(conv_folder);
-}
 
 typedef omnigraph::PairedInfoIndicesT<ConjugateDeBruijnGraph> PairedIndicesT;
 

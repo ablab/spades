@@ -87,6 +87,16 @@ public:
               inner_index_(),
               size_(0) {
     }
+	PathStorage(const PathStorage & p)
+            : g_(p.g_) {
+        for (auto iter = p.inner_index_.begin(); iter != p.inner_index_.end();
+                iter++) {
+            for (auto j_iter = iter->second.begin();
+                    j_iter != iter->second.end(); j_iter++) {
+                this->AddPath(j_iter->path, (int) j_iter->getWeight());
+            }
+        }
+    }
 	void ReplaceEdges(map<EdgeId, EdgeId> &old_to_new){
 		map<int, EdgeId> tmp_map;
 //		for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter ){
@@ -139,11 +149,11 @@ public:
 			HiddenAddPath(rc_p, w);
 		}
 	}
-	void DumpToFile(const string filename,  EdgesPositionHandler<Graph> &edge_pos) const{
+	void DumpToFile(const string filename,  const EdgesPositionHandler<Graph> &edge_pos) const{
 		map <EdgeId, EdgeId> auxilary;
 		DumpToFile(filename, edge_pos, auxilary);
 	}
-	void DumpToFile(const string filename,  EdgesPositionHandler<Graph> &edge_pos, map<EdgeId, EdgeId> &replacement) const {
+	void DumpToFile(const string filename,  const EdgesPositionHandler<Graph> &edge_pos, map<EdgeId, EdgeId> &replacement) const {
 		ofstream filestr(filename);
 		ofstream filestr2(filename + "_yana");
 		set<EdgeId> continued_edges;
@@ -164,14 +174,15 @@ public:
 
 					filestr << g_.int_id(*p_iter) << "(" << g_.length(*p_iter) << ") ";
 				}
-				if (edge_pos.IsConsistentWithGenome(j_iter->path))
+				//TODO: const EdgesPositionHandler<Graph> &edge_pos,
+				/*if (edge_pos.IsConsistentWithGenome(j_iter->path))
 					filestr << "  genomic";
 				else {
 					if (j_iter->getWeight() == 1)
 						filestr << " low weight ng";
 					else
 						filestr << "  nongenomic";
-				}
+				}*/
 				filestr << endl;
 			}
 			filestr << endl;

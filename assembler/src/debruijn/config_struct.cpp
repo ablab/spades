@@ -76,7 +76,11 @@ void load_lib_data(const std::string& prefix) {
   if (!FileExists(filename)) {
       WARN("Estimates params config " << prefix << " does not exist");
   }
-
+  boost::optional<size_t> single_lib_count;
+  load_param(filename, "single_lib_count", single_lib_count);
+  if (single_lib_count) {
+      cfg::get_writable().ds.count_single_libs = *single_lib_count;
+  }
   boost::optional<size_t> lib_count;
   load_param(filename, "lib_count", lib_count);
   if (!lib_count || lib_count != cfg::get().ds.reads.lib_count()) {
@@ -87,7 +91,7 @@ void load_lib_data(const std::string& prefix) {
   for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
       boost::optional<size_t> sizet_val(0);
       boost::optional<double> double_val(0.);
-
+      load_param(filename, "read_length_" + ToString(i), sizet_val);
       if (sizet_val) {
           cfg::get_writable().ds.reads[i].data().read_length = *sizet_val;
       }
@@ -115,7 +119,6 @@ void load_lib_data(const std::string& prefix) {
       if (double_val) {
           cfg::get_writable().ds.reads[i].data().pi_threshold = *double_val;
       }
-
       load_param_map(filename, "histogram_" + ToString(i), cfg::get_writable().ds.reads[i].data().insert_size_distribution);
   }
 
@@ -125,7 +128,7 @@ void write_lib_data(const std::string& prefix) {
   std::string filename = estimated_param_filename(prefix);
 
   cfg::get().ds.reads.save("foo.txt");
-
+  write_param(filename, "single_lib_count", cfg::get().ds.count_single_libs);
   write_param(filename, "lib_count", cfg::get().ds.reads.lib_count());
 
   for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {

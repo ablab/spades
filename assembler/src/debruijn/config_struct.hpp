@@ -396,6 +396,7 @@ struct debruijn_config {
   };
 
   struct dataset {
+    size_t count_single_libs;
     io::DataSet<DataSetData> reads;
 
     size_t RL() const { return reads[0].data().read_length; }

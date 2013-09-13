@@ -74,13 +74,14 @@ void WriteGraphPack(gp_t& gp, const string& file_name) {
 void SaveResolved(conj_graph_pack& resolved_gp,
 		const PairedIndexT& resolved_graph_paired_info,
 		const PairedIndexT& resolved_graph_paired_info_cl,
-		const PairedIndexT& resolved_graph_scaffold_paired_info) {
+		const PairedIndexT& resolved_graph_scaffold_paired_info,
+		vector<PathStorage<Graph>* >& single_long_reads) {
 
 	if (cfg::get().make_saves) {
 		string p = path::append_path(cfg::get().output_saves, "split_resolved");
 		INFO("Saving current state to " << p);
 		PrintAll(p, resolved_gp, resolved_graph_paired_info,
-				resolved_graph_paired_info_cl, resolved_graph_scaffold_paired_info);
+				resolved_graph_paired_info_cl, resolved_graph_scaffold_paired_info, single_long_reads);
 		write_lib_data(p);
 	}
 }
@@ -909,7 +910,8 @@ int GetFirstPELibIndex() {
 
 //Use only one pe library
 void split_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
-		PairedIndicesT& clustered_indices, PairedIndicesT& scaffold_indices, Sequence& genome,
+		PairedIndicesT& clustered_indices, PairedIndicesT& scaffold_indices,
+		Sequence& genome,
 		size_t pe_lib_index) {
 
 	PairedIndexT& paired_index = paired_indices[pe_lib_index];
@@ -967,8 +969,9 @@ void split_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
                                           cfg::get().output_dir,
                                           "scaffolds.fasta", false, boost::none,
                                           false);
+			vector<PathStorage<Graph>* > empty;
 			SaveResolved(resolved_gp, resolved_graph_paired_info,
-					resolved_graph_paired_info_cl, *resolved_graph_scaff_clustered);
+					resolved_graph_paired_info_cl, *resolved_graph_scaff_clustered, empty);
 			delete resolved_graph_scaff_clustered;
 		}
 
@@ -981,10 +984,10 @@ void split_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
 	}
 }
 void AddSingleLongReads(vector<PathStorageInfo<Graph> > &long_reads_libs,
-                        const vector<PathStorage<Graph> >& single_long_reads) {
+                        const vector<PathStorage<Graph>* >& single_long_reads) {
     for (size_t i = 0; i < single_long_reads.size(); ++i) {
-        PathStorage<Graph> storage = single_long_reads[i];
-        vector<PathInfo<Graph> > paths = storage.GetAllPaths();
+        PathStorage<Graph>* storage = single_long_reads[i];
+        vector<PathInfo<Graph> > paths = storage->GetAllPaths();
         PathStorageInfo<Graph> single_storage(
                 paths,
                 cfg::get().pe_params.long_reads.single_reads.filtering,
@@ -999,7 +1002,7 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
                   PairedIndicesT& scaffold_indices,
                   const EdgeQuality<Graph, Index>& quality_labeler,
                   vector<PathStorageInfo<Graph> > &long_reads_libs,
-                  vector<PathStorage<Graph> >& single_long_reads) {
+                  vector<PathStorage<Graph>* >& single_long_reads) {
     vector<PairedIndexT*> pe_indexes;
     vector<PairedIndexT*> pe_scaf_indices;
     vector<size_t> indexes;
@@ -1086,6 +1089,10 @@ void resolve_repeats() {
 	PairedIndicesT clustered_indices(conj_gp.g,	cfg::get().ds.reads.lib_count());
     PairedIndicesT scaffold_indices(conj_gp.g, cfg::get().ds.reads.lib_count());
     vector<PathStorageInfo<Graph> > long_reads_libs;
+    vector<PathStorage<Graph>* > single_long_reads;
+    for (size_t i = 0; i < cfg::get().ds.count_single_libs; ++i){
+        single_long_reads.push_back(new PathStorage<Graph>(conj_gp.g));
+    }
 	if (!cfg::get().developer_mode) {
 		conj_gp.edge_pos.Detach();
 		paired_indices.Detach();
@@ -1096,14 +1103,14 @@ void resolve_repeats() {
 		}
 	 }
      PathStorage<Graph> pacbio_read(conj_gp.g);
-     vector<PathStorage<Graph> > single_long_reads;
+
 	 exec_distance_estimation(conj_gp, paired_indices, clustered_indices, scaffold_indices, pacbio_read, single_long_reads);
 
 	 if (cfg::get().entry_point <= ws_pacbio_aligning){
 	     INFO(" need to align pb");
 	     if (cfg::get().pacbio_test_on) {
 	         INFO("creating  multiindex with k = " << cfg::get().pb.pacbio_k);
-	         PacBioAligner pac_aligner(conj_gp, paired_indices, clustered_indices, scaffold_indices, cfg::get().pb.pacbio_k);
+	         PacBioAligner pac_aligner(conj_gp, paired_indices, clustered_indices, scaffold_indices, single_long_reads, cfg::get().pb.pacbio_k);
 	         INFO("index created");
 	         GapStorage<Graph> gaps(conj_gp.g);
 	         pac_aligner.pacbio_test(pacbio_read, gaps);
@@ -1114,7 +1121,7 @@ void resolve_repeats() {
                  //TODO: need to read reads from stream instead of file and delete pacbio_on + pacbio reads from config
                  PathStorage<Graph> pacbio_read1(conj_gp.g);
                  INFO("creating  multiindex with k = " << cfg::get().pb.pacbio_k);
-                 PacBioAligner pac_aligner(conj_gp, paired_indices, clustered_indices, scaffold_indices, cfg::get().pb.pacbio_k);
+                 PacBioAligner pac_aligner(conj_gp, paired_indices, clustered_indices, scaffold_indices, single_long_reads, cfg::get().pb.pacbio_k);
                  INFO("index created");
                  GapStorage<Graph> gaps(conj_gp.g);
                  pac_aligner.pacbio_test(pacbio_read1, gaps);
@@ -1209,7 +1216,9 @@ void resolve_repeats() {
 		INFO("Unsupported repeat resolver");
 		OutputContigs(conj_gp.g, cfg::get().output_dir + "final_contigs.fasta");
 	}
-
+	for (size_t i = 0; i < cfg::get().ds.count_single_libs; ++i) {
+        delete single_long_reads[i];
+    }
 }
 
 void exec_repeat_resolving() {

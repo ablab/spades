@@ -26,6 +26,7 @@
 
 #include "utils.hpp"
 #include "debruijn_graph.hpp"
+#include "long_read_storage.hpp"
 
 namespace debruijn_graph {
 using namespace omnigraph;
@@ -786,6 +787,11 @@ std::string MakeScaffoldIndexName(const std::string& file_name) {
     return file_name + "_sc";
 }
 
+std::string MakeSingleReadsFileName(const std::string& file_name,
+                                    size_t index) {
+    return file_name + "_paths_" + ToString(index) + ".mrp";
+}
+
 //helper methods
 // todo think how to organize them in the most natural way
 
@@ -910,7 +916,8 @@ void PrintAll(const string& file_name, const graph_pack& gp, VertexIt begin,
     VertexIt end,
     const PairedInfoIndexT<typename graph_pack::graph_t>& paired_index,
     const PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index,
-    const PairedInfoIndexT<typename graph_pack::graph_t>& scaffold_index)
+    const PairedInfoIndexT<typename graph_pack::graph_t>& scaffold_index,
+    vector<PathStorage<typename graph_pack::graph_t>* >& single_long_reads)
 {
   typename PrinterTraits<typename graph_pack::graph_t>::Printer
                                         printer(gp.g, begin, end, gp.int_ids);
@@ -918,15 +925,17 @@ void PrintAll(const string& file_name, const graph_pack& gp, VertexIt begin,
   PrintPairedIndex(file_name, printer, paired_index);
   PrintClusteredIndex(file_name, printer, clustered_index);
   PrintScaffoldIndex(file_name, printer, scaffold_index);
+  PrintSingleLongReads(file_name, gp.edge_pos, single_long_reads);
 }
 
 template<class graph_pack>
 void PrintAll(const string& file_name, const graph_pack& gp,
     const PairedInfoIndexT<typename graph_pack::graph_t>& paired_index,
     const PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index,
-    const PairedInfoIndexT<typename graph_pack::graph_t>& scaffold_index)
+    const PairedInfoIndexT<typename graph_pack::graph_t>& scaffold_index,
+    vector<PathStorage<typename graph_pack::graph_t>* >& single_long_reads)
 {
-  PrintAll(file_name, gp, gp.g.begin(), gp.g.end(), paired_index, clustered_index, scaffold_index);
+  PrintAll(file_name, gp, gp.g.begin(), gp.g.end(), paired_index, clustered_index, scaffold_index, single_long_reads);
 }
 
 template<class graph_pack, class VertexIt>
@@ -970,11 +979,19 @@ void PrintWithClusteredIndex(const string& file_name, const graph_pack& gp,
   PrintWithPairedIndex(file_name, gp, clustered_index, true);
 }
 
+template<class Graph>
+void PrintSingleLongReads(const string& file_name, const EdgesPositionHandler<Graph> &edge_pos, vector<PathStorage<Graph>* >& single_long_reads) {
+    for (size_t i = 0; i < single_long_reads.size(); ++i){
+        single_long_reads[i]->DumpToFile(MakeSingleReadsFileName(file_name, i), edge_pos);
+    }
+}
+
 template<class graph_pack>
 void PrintAll(const string& file_name, const graph_pack& gp,
         const PairedInfoIndicesT<typename graph_pack::graph_t>& paired_indices,
         const PairedInfoIndicesT<typename graph_pack::graph_t>& clustered_indices,
-        const PairedInfoIndicesT<typename graph_pack::graph_t>& scaffold_indices)
+        const PairedInfoIndicesT<typename graph_pack::graph_t>& scaffold_indices,
+        vector<PathStorage<typename graph_pack::graph_t>* >& single_long_reads)
 {
     typename PrinterTraits<typename graph_pack::graph_t>::Printer
                                           printer(gp.g, gp.g.begin(), gp.g.end(), gp.int_ids);
@@ -983,6 +1000,7 @@ void PrintAll(const string& file_name, const graph_pack& gp,
     PrintPairedIndices(file_name, printer, paired_indices);
     PrintClusteredIndices(file_name, printer, clustered_indices);
     PrintScaffoldIndices(file_name, printer, scaffold_indices);
+    PrintSingleLongReads(file_name, gp.edge_pos, single_long_reads);
 }
 
 template<class graph_pack>
@@ -1153,30 +1171,39 @@ void ScanGraphPack(const string& file_name, graph_pack& gp) {
   ScanGraphPack(file_name, scanner, gp);
 }
 
-/*template<class graph_pack>
-void ScanAll(const string& file_name, graph_pack& gp,
-    PairedInfoIndexT<typename graph_pack::graph_t>& paired_index,
-    PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index,
-    PairedInfoIndexT<typename graph_pack::graph_t>& scaffold_index) {
-  typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(gp.g,
-      gp.int_ids);
-  ScanGraphPack(file_name, scanner, gp);
-  ScanPairedIndex(file_name, scanner, paired_index);
-  ScanClusteredIndex(file_name, scanner, clustered_index);
-}*/
+template<class Graph>
+void ScanSingleLongReads(const string& file_name, vector<PathStorage<Graph>* >& single_long_reads) {
+    for (size_t i = 0; i < single_long_reads.size(); ++i){
+        single_long_reads[i]->LoadFromFile(MakeSingleReadsFileName(file_name, i));
+    }
+}
 
 template<class graph_pack>
 void ScanAll(
         const string& file_name, graph_pack& gp,
         PairedInfoIndicesT<typename graph_pack::graph_t>& paired_indices,
         PairedInfoIndicesT<typename graph_pack::graph_t>& clustered_indices,
-        PairedInfoIndicesT<typename graph_pack::graph_t>& scaffold_indices) {
+        PairedInfoIndicesT<typename graph_pack::graph_t>& scaffold_indices,
+        vector<PathStorage<typename graph_pack::graph_t>* >& single_long_reads) {
     typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(
             gp.g, gp.int_ids);
     ScanGraphPack(file_name, scanner, gp);
     ScanPairedIndices(file_name, scanner, paired_indices);
     ScanClusteredIndices(file_name, scanner, clustered_indices);
     ScanScaffoldIndices(file_name, scanner, scaffold_indices);
+    ScanSingleLongReads(file_name, single_long_reads);
 }
 
+inline void Convert(const conj_graph_pack& gp1,
+        const PairedInfoIndexT<conj_graph_pack::graph_t>& clustered_index1,
+        nonconj_graph_pack& gp2,
+        PairedInfoIndexT<nonconj_graph_pack::graph_t>& clustered_index2) {
+    string conv_folder = path::append_path(cfg::get().output_root,
+            "temp_conversion");
+    make_dir(conv_folder);
+    string p = path::append_path(conv_folder, "conj_graph");
+    PrintWithClusteredIndex(p, gp1, clustered_index1);
+    ScanWithClusteredIndex(p, gp2, clustered_index2);
+    remove_dir(conv_folder);
+}
 }

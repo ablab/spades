@@ -23,6 +23,7 @@ private:
 	PairedIndicesT& paired_indices;
 	PairedIndicesT& clustered_indices;
 	PairedIndicesT& scaffold_indices_;
+	vector<PathStorage<Graph>* >& single_long_reads_;
 	size_t k_test_;DECL_LOGGER("PacIndex")
 
 public:
@@ -30,11 +31,14 @@ public:
 
 	PacBioAligner(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
                   PairedIndicesT& clustered_indices,
-                  PairedIndicesT& scaffold_indices, size_t k_test)
+                  PairedIndicesT& scaffold_indices,
+                  vector<PathStorage<Graph>* >& single_long_reads,
+                  size_t k_test)
             : gp_(conj_gp),
               paired_indices(paired_indices),
               clustered_indices(clustered_indices),
               scaffold_indices_(scaffold_indices),
+              single_long_reads_(single_long_reads),
               k_test_(k_test) {
     }
 
@@ -123,7 +127,7 @@ public:
 	    string p = path::append_path(cfg::get().output_saves, "pacbio_aligning");
 	    INFO("Saving current state to " << p);
         long_reads.DumpToFile(p + ".mpr", gp_.edge_pos, replacement);
-	    PrintAll(p, gp_, paired_indices, clustered_indices, scaffold_indices_);
+	    PrintAll(p, gp_, paired_indices, clustered_indices, scaffold_indices_, single_long_reads_);
 	    write_lib_data(p);
 	  }
 	}
@@ -132,7 +136,7 @@ public:
 	{
 	    string p = path::append_path(cfg::get().load_from, "pacbio_aligning");
 	    used_files->push_back(p);
-	    ScanAll(p, gp_, paired_indices, clustered_indices, scaffold_indices_);
+	    ScanAll(p, gp_, paired_indices, clustered_indices, scaffold_indices_, single_long_reads_);
 	    long_reads.LoadFromFile(p + ".mpr");
 	    load_lib_data(p);
 	}
