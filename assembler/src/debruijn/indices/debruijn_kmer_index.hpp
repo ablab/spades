@@ -160,10 +160,6 @@ class PerfectHashMap {
   }
 };
 
-struct key_storing_tag {};
-
-struct key_free_tag {};
-
 //todo rename? maybe key storing map (index)
 template<class ValueType, class traits>
 class KmerStoringIndex : public PerfectHashMap<typename traits::SeqType, ValueType, traits> {
@@ -201,7 +197,6 @@ class KmerStoringIndex : public PerfectHashMap<typename traits::SeqType, ValueTy
   }
 
  public:
-  typedef key_storing_tag key_storing_policy_tag;
   typedef typename base::traits_t traits_t;
   typedef typename base::KeyType KMer;
   typedef typename base::IdxType KMerIdx;
@@ -323,7 +318,6 @@ class KmerFreeIndex : public PerfectHashMap<typename traits::SeqType, ValueType,
   }
 
  public:
-  typedef key_free_tag key_storing_policy_tag;
   typedef typename base::traits_t traits_t;
   typedef typename base::KeyType KMer;
   typedef typename base::IdxType KMerIdx;

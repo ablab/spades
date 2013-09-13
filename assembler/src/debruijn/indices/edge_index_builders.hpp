@@ -1,5 +1,6 @@
 #pragma once
 
+#include <type_traits>
 #include "debruijn_edge_index.hpp"
 
 namespace debruijn_graph {
@@ -25,6 +26,29 @@ public:
 
 };
 
+//// Culled by SFINAE if reserve does not exist or is not accessible
+//template <typename T>
+//constexpr auto has_contains_method(T& t) -> decltype(t.contains((typename T::KMer)()), bool()) {
+//  return true;
+//}
+//
+//// Used as fallback when SFINAE culls the template method
+//template <typename T>
+//constexpr bool has_contains_method(T& t) { return false; }
+
+template<typename> struct Void { typedef void type; };
+
+template<typename T, typename Sfinae = void>
+struct has_contains: std::false_type {};
+
+template<typename T>
+struct has_contains<
+    T
+    , typename Void<
+        decltype( std::declval<T&>().contains(typename T::KMerIdx(0), typename T::KMer()) )
+    >::type
+>: std::true_type {};
+
 template <class Builder>
 class CoverageFillingEdgeIndexBuilder : public Builder {
     typedef Builder base;
@@ -35,11 +59,11 @@ class CoverageFillingEdgeIndexBuilder : public Builder {
 
  private:
 
-    bool ContainsWrap(bool check_contains, IndexT& index, KmerIdx idx, const Kmer& kmer, key_storing_tag) const {
+    bool ContainsWrap(bool check_contains, IndexT& index, KmerIdx idx, const Kmer& kmer, std::true_type) const {
         return !check_contains || index.contains(idx, kmer);
     }
 
-    bool ContainsWrap(bool check_contains, IndexT& index, KmerIdx idx, const Kmer& kmer, key_free_tag) const {
+    bool ContainsWrap(bool check_contains, IndexT& index, KmerIdx idx, const Kmer& kmer, std::false_type) const {
         VERIFY(!check_contains);
         return true;
     }
@@ -64,9 +88,8 @@ class CoverageFillingEdgeIndexBuilder : public Builder {
             for (size_t j = k - 1; j < seq.size(); ++j) {
                 kmer <<= seq[j];
                 KmerIdx idx = index.seq_idx(kmer);
-                typedef typename IndexT::key_storing_policy_tag key_storing_policy;
                 //contains is not used since index might be still empty here
-                if (index.valid_idx(idx) && ContainsWrap(check_contains, index, idx, kmer, key_storing_policy())) {
+                if (index.valid_idx(idx) && ContainsWrap(check_contains, index, idx, kmer, has_contains<IndexT>())) {
 #     pragma omp atomic
                     index[idx].count += 1;
                 }
