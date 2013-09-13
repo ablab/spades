@@ -17,6 +17,8 @@
 
 namespace omnigraph {
 
+namespace de {
+
 template<class Graph>
 class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
 
@@ -35,7 +37,6 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
  protected:
   typedef WeightedDistanceEstimator<Graph> base;
   typedef typename Graph::EdgeId EdgeId;
-  typedef set<Point> Histogram;
   typedef vector<PairInfo<EdgeId> > PairInfos;
   typedef vector<pair<int, double> > EstimHist;
   typedef vector<size_t> GraphLengths;
@@ -130,7 +131,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
       for (auto iter = what.begin(); iter != what.end(); ++iter) {
         Point to_be_added(*iter);
         to_be_added.d += shift;
-        Histogram::iterator low_bound = lower_bound(where.begin(), where.end(), to_be_added);
+        Histogram::iterator low_bound = std::lower_bound(where.begin(), where.end(), to_be_added);
         if (to_be_added == *low_bound) {
           to_be_added.weight += low_bound->weight;
           where.erase(to_be_added);
@@ -201,6 +202,8 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
 
   DECL_LOGGER("ExtensiveDistanceEstimator")
 };
+
+}
 
 }
 #endif

@@ -160,7 +160,7 @@ void FilterIndexWithExistingPaths(PairedIndexT& scaf_clustered_index,
                                   const conj_graph_pack &gp,
                                   const GraphDistanceFinder<Graph>& dist_finder) {
   for (auto it = index.begin(); it != index.end(); ++it) {
-    const std::set<Point>& histogram = *it;
+    const de::Histogram& histogram = *it;
     EdgeId e1 = it.first();
     EdgeId e2 = it.second();
     if (gp.g.OutgoingEdgeCount(gp.g.EdgeEnd(e1)) == 0 && gp.g.IncomingEdgeCount(gp.g.EdgeEnd(e1)) == 1 &&
@@ -214,7 +214,7 @@ void FillAndCorrectEtalonPairedInfo(
 	//leave only info between edges both present in paired_index
   PairedIndexT filtered_etalon_index(gp.g);
   for (auto iter = etalon_index.begin(); iter != etalon_index.end(); ++iter) {
-    const set<Point>& histogram = *iter;
+    const de::Histogram& histogram = *iter;
     EdgeId first_edge = iter.first();
     EdgeId second_edge = iter.second();
     if (paired_index.GetEdgePairInfo(first_edge, second_edge).size() > 0) {
@@ -283,7 +283,6 @@ void GetAllDistances(const Graph& g,
                      PairedInfoIndexT<Graph>& result)
 {
   typedef typename Graph::EdgeId EdgeId;
-  typedef set<Point> Histogram;
   typedef vector<EdgeId> Path;
 	for (auto iter = paired_index.begin(); iter != paired_index.end(); ++iter) {
     EdgeId first = iter.first();
@@ -310,7 +309,7 @@ void GetAllDistances(const Graph& g,
                 size_t cur_length = 0;
                 for (size_t l = j + 1; l < paths[i].size(); ++l) {
                     cur_length += g.length(paths[i][l - 1]);
-          const Histogram& infos = clustered_index.GetEdgePairInfo(paths[i][j], paths[i][l]);
+                    const de::Histogram& infos = clustered_index.GetEdgePairInfo(paths[i][j], paths[i][l]);
                     for (auto iterator = infos.begin(); iterator != infos.end(); ++iterator) {
             const Point& info = *iterator;
                         if (info.d == cur_length) {
@@ -702,7 +701,7 @@ void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig,
 		const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
 		size_t /*k*/) {
 
-	typedef omnigraph::PairInfo<EdgeId> PairInfo;
+	typedef omnigraph::de::PairInfo<EdgeId> PairInfo;
 
 	MappingPath<Graph::EdgeId> m_path1 = FindGenomeMappingPath(contig, gp.g,
 			gp.index, gp.kmer_mapper);

@@ -73,7 +73,7 @@ inline void Convert(const conj_graph_pack& gp1,
 	remove_dir(conv_folder);
 }
 
-typedef omnigraph::PairedInfoIndicesT<ConjugateDeBruijnGraph> PairedIndicesT;
+typedef omnigraph::de::PairedInfoIndicesT<ConjugateDeBruijnGraph> PairedIndicesT;
 
 
 } // namespace debruijn_graph

@@ -15,6 +15,8 @@
 
 namespace omnigraph {
 
+namespace de {
+
 template<class Graph>
 class GraphDistanceFinder {
   typedef typename Graph::EdgeId EdgeId;
@@ -151,7 +153,6 @@ class AbstractDistanceEstimator {
  protected:
   typedef typename Graph::EdgeId EdgeId;
   typedef pair<EdgeId, EdgeId> EdgePair;
-  typedef set<Point> Histogram;
   typedef vector<pair<int, double> > EstimHist;
   typedef vector<size_t> GraphLengths;
 
@@ -207,7 +208,6 @@ template<class Graph>
 class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
   typedef AbstractDistanceEstimator<Graph> base;
   typedef typename Graph::EdgeId EdgeId;
-  typedef set<Point> Histogram;
   typedef vector<size_t> GraphLengths;
   typedef vector<pair<int, double> > EstimHist;
   typedef pair<EdgeId, EdgeId> EdgePair;
@@ -411,8 +411,6 @@ template<class Graph> double DistanceEstimator<Graph>::time_clustering     = 0.;
 
 template<class Graph>
 class JumpingEstimator {
-  typedef set<Point> Histogram;
-
  public:
   JumpingEstimator(const PairedInfoIndexT<Graph>& index) : index_(index) {
   }
@@ -440,6 +438,8 @@ class JumpingEstimator {
     return my_name;
   }
 };
+
+}
 
 }
 

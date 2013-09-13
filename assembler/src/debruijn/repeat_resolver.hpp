@@ -72,8 +72,6 @@ class RepeatResolver {
 	typedef vector<PairInfo> PairInfos;
 	typedef PairInfoIndexData<EdgeId> MixedData;
 
-	typedef set<Point> Histogram;
-
 public:
 
 	class FastDistanceCounter {
@@ -359,7 +357,7 @@ public:
 				p_iter != p_end_iter; ++p_iter) {
 			EdgeId e1 = p_iter.first();
 			EdgeId e2 = p_iter.second();
-			const Histogram& hist = *p_iter;
+			const de::Histogram& hist = *p_iter;
 			paired_size += hist.size();
 			for (auto it = hist.begin(); it != hist.end(); ++it) {
 				const Point& p = *it;

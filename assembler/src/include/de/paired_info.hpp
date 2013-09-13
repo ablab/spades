@@ -17,6 +17,8 @@
 
 namespace omnigraph {
 
+namespace de {
+
 /**
  * PairInfo class represents basic data unit for paired information: edges first and second appear
  * in genome at distance d_ and this information has weight weight_.
@@ -83,6 +85,8 @@ inline int rounded_d(Point p) {
 ostream& operator<<(ostream& os, Point point) {
   return os << point.str();
 }
+
+typedef std::set<Point> Histogram;
 
 // tuple of a pair of edges @first, @second, and a @point
 template<typename EdgeId>
@@ -329,8 +333,7 @@ private:
 template<class Graph>
 class InnerMap {
   typedef typename Graph::EdgeId EdgeId;
-  typedef set<Point> Histogram;
-  typedef map<EdgeId, Histogram> base_map_t;
+  typedef std::map<EdgeId, Histogram> base_map_t;
   typedef typename base_map_t::value_type value_type;
 
  public:
@@ -476,7 +479,6 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
 
  public:
   typedef typename Graph::EdgeId EdgeId;
-  typedef set<Point> Histogram;
   typedef typename Histogram::const_iterator HistIterator;
   typedef map<EdgeId, InnerMap<Graph> > IndexDataType;     // @InnerMap is a wrapper for map<EdgeId, Histogram>
   typedef typename IndexDataType::const_iterator DataIterator;
@@ -1381,8 +1383,8 @@ private:
   }
 
   template<class PairedRead>
-  void ProcessPairedRead(omnigraph::PairedInfoIndex<Graph> &paired_index,
-      const PairedRead& p_r) {
+  void ProcessPairedRead(PairedInfoIndex<Graph> &paired_index,
+                         const PairedRead& p_r) {
     Sequence read1 = p_r.first().sequence();
     Sequence read2 = p_r.second().sequence();
     Path<EdgeId> path1 = mapper_.MapSequence(read1);
@@ -1407,7 +1409,7 @@ private:
     /**
      * Method reads paired data from stream, maps it to genome and stores it in this PairInfoIndex.
      */
-    void FillUsualIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
+    void FillUsualIndex(PairedInfoIndex<Graph> &paired_index) {
         for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
             paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0., 0., 0.));
         }
@@ -1425,8 +1427,7 @@ private:
         }
     }
 
-
-    void FillParallelIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
+    void FillParallelIndex(PairedInfoIndex<Graph> &paired_index) {
         for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
             paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 0.0, 0.));
         }
@@ -1434,11 +1435,11 @@ private:
         INFO("Processing paired reads (takes a while)");
 
         size_t nthreads = streams_.size();
-        std::vector< omnigraph::PairedInfoIndex<Graph>* > buffer_pi(nthreads);
+        std::vector< PairedInfoIndex<Graph>* > buffer_pi(nthreads);
         buffer_pi[0] = &paired_index;
 
         for (size_t i = 1; i < nthreads; ++i) {
-            buffer_pi[i] = new omnigraph::PairedInfoIndex<Graph>(graph_, paired_index.GetMaxDifference());
+            buffer_pi[i] = new PairedInfoIndex<Graph>(graph_, paired_index.GetMaxDifference());
         }
 
         size_t counter = 0;
@@ -1484,7 +1485,7 @@ public:
             graph_(graph), mapper_(mapper), streams_(streams.begin(), streams.end()) {
     }
 
-    void FillIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
+    void FillIndex(PairedInfoIndex<Graph> &paired_index) {
         if (streams_.size() == 1) {
             FillUsualIndex(paired_index);
         } else {
@@ -1593,7 +1594,6 @@ const Point TrivialWeightNormalization(typename Graph::EdgeId,
 template<class Graph>
 class PairedInfoNormalizer {
   typedef typename Graph::EdgeId EdgeId;
-  typedef set<Point> Histogram;
 
  public:
   typedef boost::function<const Point(EdgeId, EdgeId, Point)> WeightNormalizer;
@@ -1626,6 +1626,8 @@ class PairedInfoNormalizer {
  private:
   WeightNormalizer normalizing_function_;
   DECL_LOGGER("PairedInfoNormalizer");
+};
+
 };
 
 }

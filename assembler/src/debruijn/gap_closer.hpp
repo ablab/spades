@@ -60,7 +60,7 @@ private:
   }
 
   template<typename PairedRead>
-  void ProcessPairedRead(omnigraph::PairedInfoIndexT<Graph> &paired_index,
+  void ProcessPairedRead(omnigraph::de::PairedInfoIndexT<Graph> &paired_index,
       PairedRead& p_r) {
     Sequence read1 = p_r.first().sequence();
     Sequence read2 = p_r.second().sequence();
@@ -139,7 +139,7 @@ private:
   }
 
   template<class PairedStream>
-  void FillUsualIndex(omnigraph::PairedInfoIndexT<Graph> &paired_index, PairedStream& stream) {
+  void FillUsualIndex(omnigraph::de::PairedInfoIndexT<Graph> &paired_index, PairedStream& stream) {
     INFO("Processing paired reads (takes a while)");
 
     stream.reset();
@@ -153,15 +153,15 @@ private:
   }
 
   template<class Streams>
-  void FillParallelIndex(omnigraph::PairedInfoIndexT<Graph> &paired_index, Streams& streams) {
+  void FillParallelIndex(omnigraph::de::PairedInfoIndexT<Graph> &paired_index, Streams& streams) {
     INFO("Processing paired reads (takes a while)");
 
     size_t nthreads = streams.size();
-    vector<omnigraph::PairedInfoIndexT<Graph>*> buffer_pi(nthreads);
+    vector<omnigraph::de::PairedInfoIndexT<Graph>*> buffer_pi(nthreads);
     buffer_pi[0] = &paired_index;
 
     for (size_t i = 1; i < nthreads; ++i) {
-      buffer_pi[i] = new omnigraph::PairedInfoIndexT<Graph>(graph_);
+      buffer_pi[i] = new omnigraph::de::PairedInfoIndexT<Graph>(graph_);
     }
 
     size_t counter = 0;
@@ -201,7 +201,7 @@ public:
    * Method reads paired data from stream, maps it to genome and stores it in this PairInfoIndex.
    */
   template<class Streams>
-  void FillIndex(omnigraph::PairedInfoIndexT<Graph> &paired_index, Streams& streams) {
+  void FillIndex(omnigraph::de::PairedInfoIndexT<Graph> &paired_index, Streams& streams) {
     INFO("Preparing shift maps");
     PrepareShiftMaps();
 
@@ -227,7 +227,6 @@ class GapCloser {
  private:
   typedef typename Graph::EdgeId EdgeId;
   typedef typename Graph::VertexId VertexId;
-  typedef set<Point> Histogram;
 
   Graph& g_;
   int k_;

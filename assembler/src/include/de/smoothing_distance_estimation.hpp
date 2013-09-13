@@ -14,6 +14,8 @@
 
 namespace omnigraph {
 
+namespace de {
+
 template<class Graph>
 class SmoothingDistanceEstimator: public ExtensiveDistanceEstimator<Graph> {
   typedef ExtensiveDistanceEstimator<Graph> base;
@@ -55,7 +57,6 @@ class SmoothingDistanceEstimator: public ExtensiveDistanceEstimator<Graph> {
 protected:
   typedef typename Graph::EdgeId EdgeId;
   typedef pair<EdgeId, EdgeId> EdgePair;
-  typedef set<Point> Histogram;
   typedef vector<pair<int, double> > EstimHist;
   typedef vector<PairInfo<EdgeId> > PairInfos;
   typedef vector<size_t> GraphLengths;
@@ -214,6 +215,8 @@ private:
 
   DECL_LOGGER("SmoothingDistanceEstimator")
 };
+
+}
 
 }
 

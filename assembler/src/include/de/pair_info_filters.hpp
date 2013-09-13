@@ -9,6 +9,8 @@
 
 namespace omnigraph {
 
+namespace de {
+
 template<class Graph>
 class AbstractPairInfoFilter {
 
@@ -16,7 +18,6 @@ class AbstractPairInfoFilter {
   typedef typename Graph::VertexId VertexId;
   typedef typename Graph::EdgeId EdgeId;
   typedef PairInfo<EdgeId> PairInfoT;
-  typedef set<Point> Histogram;
 
  protected:
   virtual bool Check(const PairInfoT&) const {
@@ -102,6 +103,8 @@ class PairInfoWeightFilterWithCoverage: public AbstractPairInfoFilter<Graph> {
     return Check(info.first, info.second, info.point);
   }
 };
+
+}
 
 }
 

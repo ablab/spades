@@ -42,7 +42,7 @@ using omnigraph::Path;
 using omnigraph::MappingPath;
 using omnigraph::Range;
 using omnigraph::MappingRange;
-using omnigraph::PairInfo;
+using namespace omnigraph::de;
 using omnigraph::GraphActionHandler;
 
 //todo rewrite with extended sequence mapper!
@@ -116,7 +116,7 @@ public:
     }
 
     void FillEtalonPairedInfo(const Sequence& genome,
-                              omnigraph::PairedInfoIndexT<Graph>& paired_info) {
+                              omnigraph::de::PairedInfoIndexT<Graph>& paired_info) {
         ProcessSequence(genome, paired_info);
         ProcessSequence(!genome, paired_info);
     }
@@ -177,7 +177,7 @@ public:
   {
   }
 
-  bool FillIndex(omnigraph::PairedInfoIndexT<Graph>& paired_index) {
+  bool FillIndex(omnigraph::de::PairedInfoIndexT<Graph>& paired_index) {
     if (streams_.size() == 1) {
       return FillUsualIndex(paired_index);
     } else {
@@ -187,7 +187,7 @@ public:
 
 private:
   template<class PairedRead>
-  void ProcessPairedRead(omnigraph::PairedInfoIndexT<Graph>& paired_index, const PairedRead& p_r)
+  void ProcessPairedRead(omnigraph::de::PairedInfoIndexT<Graph>& paired_index, const PairedRead& p_r)
   {
 		Sequence read1 = p_r.first().sequence();
 		Sequence read2 = p_r.second().sequence();
@@ -218,7 +218,7 @@ private:
   /**
    * Method reads paired data from stream, maps it to genome and stores it in this PairInfoIndex.
    */
-  bool FillUsualIndex(omnigraph::PairedInfoIndexT<Graph>& paired_index) {
+  bool FillUsualIndex(omnigraph::de::PairedInfoIndexT<Graph>& paired_index) {
     for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
       paired_index.AddPairInfo(*it, *it, 0., 0., 0.);
     }
@@ -239,7 +239,7 @@ private:
     return paired_index.size() > initial_size;
   }
 
-  bool FillParallelIndex(omnigraph::PairedInfoIndexT<Graph>& paired_index) {
+  bool FillParallelIndex(omnigraph::de::PairedInfoIndexT<Graph>& paired_index) {
     for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
       paired_index.AddPairInfo(*it, *it, 0., 0., 0.);
     }
@@ -247,10 +247,10 @@ private:
 
     INFO("Processing paired reads (takes a while)");
     size_t nthreads = streams_.size();
-    vector<omnigraph::PairedInfoIndexT<Graph>*> buffer_pi(nthreads);
+    vector<omnigraph::de::PairedInfoIndexT<Graph>*> buffer_pi(nthreads);
 
     for (size_t i = 0; i < nthreads; ++i) {
-      buffer_pi[i] = new omnigraph::PairedInfoIndexT<Graph>(graph_);
+      buffer_pi[i] = new omnigraph::de::PairedInfoIndexT<Graph>(graph_);
     }
 
     size_t counter = 0;
@@ -525,11 +525,10 @@ double UnityFunction(int /*x*/) {
 template<class Graph>
 void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_index)
 {
-  typedef set<Point> Histogram;
   for (auto iter = clustered_index.begin(); iter != clustered_index.end(); ++iter) {
     EdgeId first_edge = iter.first();
     EdgeId second_edge = iter.second();
-    const Histogram& infos = *iter;
+    const de::Histogram& infos = *iter;
     auto prev_it = infos.begin();
     auto it = prev_it;
     ++it;

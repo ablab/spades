@@ -29,8 +29,6 @@
 
 namespace debruijn_graph {
 
-typedef set<Point> Histogram;
-
 void estimate_with_estimator(const Graph& graph,
                              const AbstractDistanceEstimator<Graph>& estimator,
                              const PairInfoWeightFilter<Graph>& filter,
