@@ -721,7 +721,7 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
     }
 
     void Init() {
-        for (auto it = this->g().SmartEdgeBegin(); !it.IsEnd(); ++it) {
+        for (auto it = this->g().ConstEdgeBegin(); !it.IsEnd(); ++it) {
             this->HandleAdd(*it);
         }
     }
@@ -1107,7 +1107,7 @@ public:
 public:
 
   void Init() {
-    for (auto it = this->g().SmartEdgeBegin(); !it.IsEnd(); ++it) {
+    for (auto it = this->g().ConstEdgeBegin(); !it.IsEnd(); ++it) {
       HandleAdd(*it);
     }
   }
