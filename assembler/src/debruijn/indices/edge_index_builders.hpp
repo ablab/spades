@@ -1,6 +1,5 @@
 #pragma once
 
-#include <type_traits>
 #include "debruijn_edge_index.hpp"
 
 namespace debruijn_graph {

@@ -565,9 +565,9 @@ class MosaicAnalysisCommand : public NewLocalCommand<CapEnvironment> {
       std::string folder = TryFetchFolder(curr_env, args);
       ofstream out(folder + "mosaic.txt");
       if (curr_env.LSeqIsUsed()) {
-          PerformMosaicAnalysis(curr_env.l_seq_gp(), genome, min_support_length, max_support_mult, max_inter_length, out);
+          mosaic::PerformMosaicAnalysis(curr_env.l_seq_gp(), genome, min_support_length, max_support_mult, max_inter_length, out);
       } else {
-          PerformMosaicAnalysis(curr_env.rt_seq_gp(), genome, min_support_length, max_support_mult, max_inter_length, out);
+          mosaic::PerformMosaicAnalysis(curr_env.rt_seq_gp(), genome, min_support_length, max_support_mult, max_inter_length, out);
       }
   }
 };
