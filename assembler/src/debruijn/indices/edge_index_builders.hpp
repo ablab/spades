@@ -26,16 +26,6 @@ public:
 
 };
 
-//// Culled by SFINAE if reserve does not exist or is not accessible
-//template <typename T>
-//constexpr auto has_contains_method(T& t) -> decltype(t.contains((typename T::KMer)()), bool()) {
-//  return true;
-//}
-//
-//// Used as fallback when SFINAE culls the template method
-//template <typename T>
-//constexpr bool has_contains_method(T& t) { return false; }
-
 template<typename> struct Void { typedef void type; };
 
 template<typename T, typename Sfinae = void>
@@ -45,7 +35,8 @@ template<typename T>
 struct has_contains<
     T
     , typename Void<
-        decltype( std::declval<T&>().contains(typename T::KMerIdx(0), typename T::KMer()) )
+        //decltype( std::declval<T&>().contains(typename T::KMerIdx(0), typename T::KMer()) )
+        decltype( ((T*)(0))->contains(typename T::KMerIdx(0), typename T::KMer()) )
     >::type
 >: std::true_type {};
 
