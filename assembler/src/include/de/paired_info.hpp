@@ -394,18 +394,11 @@ class InnerMap {
     // these two methods require a wrapper for map<EdgeId, Histogram>
     // we need them to iterate through map<EdgeId, set<Point> > in a smart way
     FastIterator Begin() const {
-        if (wrapped_map_.size() == 0)
-            return this->End();
         return FastIterator(wrapped_map_.begin(), *this);
     }
 
     FastIterator End() const {
-        if (wrapped_map_.size() == 0) {
-            static Histogram EMPTY_HISTOGRAM;
-            return FastIterator(wrapped_map_.end(), EMPTY_HISTOGRAM.end(), *this);
-        }
-        const Histogram& last_histogram = (wrapped_map_.rbegin())->second;
-        return FastIterator(wrapped_map_.end(), last_histogram.end(), *this);
+        return FastIterator(wrapped_map_.end(), Histogram::const_iterator(), *this);
     }
 
     c_iterator begin() const  { return wrapped_map_.begin(); }
@@ -557,20 +550,12 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
 
     EdgePairIterator begin() const {
         VERIFY(this->IsAttached());
-        if (index_.size() == 0)
-            return this->end();
         return EdgePairIterator(index_.begin(), *this);
     }
 
     EdgePairIterator end() const {
         VERIFY(this->IsAttached());
-        if (index_.size() == 0) {
-            static InnerMap<Graph> EMPTY_MAP; // we need this map to act somehow when the index is empty
-            return EdgePairIterator(index_.end(), EMPTY_MAP.end(), *this);
-        }
-
-        const InnerMap<Graph>& last_inner_map = (index_.rbegin())->second;
-        return EdgePairIterator(index_.end(), last_inner_map.end(), *this);
+        return EdgePairIterator(index_.end(), typename InnerMap<Graph>::c_iterator(), *this);
     }
 
     DataIterator Begin() const {
