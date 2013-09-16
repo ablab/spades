@@ -17,6 +17,7 @@ namespace omnigraph {
 
 namespace de {
 
+//todo move to some more common place
 template<class Graph>
 class GraphDistanceFinder {
   typedef typename Graph::EdgeId EdgeId;
