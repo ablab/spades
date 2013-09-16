@@ -164,13 +164,15 @@ public:
 
 					filestr << g_.int_id(*p_iter) << "(" << g_.length(*p_iter) << ") ";
 				}
-				if (edge_pos.IsConsistentWithGenome(j_iter->path))
-					filestr << "  genomic";
-				else {
-					if (j_iter->getWeight() == 1)
-						filestr << " low weight ng";
-					else
-						filestr << "  nongenomic";
+				if (cfg::get().developer_mode && cfg::get().ds.reference_genome.size() != 0) {
+                    if (edge_pos.IsConsistentWithGenome(j_iter->path))
+                        filestr << "  genomic";
+                    else {
+                        if (j_iter->getWeight() == 1)
+                            filestr << " low weight ng";
+                        else
+                            filestr << "  nongenomic";
+                    }
 				}
 				filestr << endl;
 			}
