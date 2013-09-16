@@ -274,17 +274,6 @@ class CoverageIndex : public GraphActionHandler<Graph> {
         SetCoverage(new_edge2, max(1, (int) math::round(avg_cov * (double) this->g().length(new_edge2))));
     }
 
-    void HandleVertexSplit(VertexId, VertexId,
-                           const vector<pair<EdgeId, EdgeId>>& old_2_new_edges,
-                           const vector<double>& split_coefficients) {
-        cout << old_2_new_edges.size() << " " << split_coefficients.size();
-        for (size_t j = 0; j < old_2_new_edges.size(); ++j) {
-            EdgeId old_e = old_2_new_edges[j].first;
-            EdgeId new_e = old_2_new_edges[j].second;
-            IncCoverage(new_e, (int) floor((double) KPlusOneMerCoverage(old_e) * split_coefficients[j]));
-        }
-    }
-
     /*
      * Is thread safe if edges different threads process different edges.
      */

@@ -42,57 +42,6 @@
 
 namespace debruijn_graph {
 
-template<class gp_t>
-void WriteGraphPack(gp_t& gp, const string& file_name) {
-    using namespace omnigraph::visualization;
-
-    std::ofstream filestr(file_name);
-	CompositeGraphColorer<typename gp_t::graph_t> colorer(
-        std::make_shared<FixedColorer<typename gp_t::graph_t::VertexId>>("white"),
-        std::make_shared<PositionsEdgeColorer<typename gp_t::graph_t>>(gp.g, gp.edge_pos));
-
-	EdgeQuality<typename gp_t::graph_t, typename gp_t::index_t> edge_qual(gp.g, gp.index,
-			gp.kmer_mapper, gp.genome);
-	total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
-	total_labeler tot_lab(&graph_struct);
-	CompositeLabeler<Graph> labeler(tot_lab, edge_qual);
-	EmptyGraphLinker<typename gp_t::graph_t> linker;
-	ComponentVisualizer<typename gp_t::graph_t>(gp.g, false).Visualize(filestr, labeler, colorer, linker);
-//	DotGraphPrinter<typename gp_t::graph_t> g_print(gp.g, labeler, colorer, " ",
-//			filestr);
-//	SimpleGraphVisualizer<typename gp_t::graph_t> gv(gp.g, g_print);
-//	gv.Visualize();
-}
-
-//TODO Move to graphio if saves needed;
-template<class graph_pack>
-void SaveComponents(string file_name, set<set<EdgeId> >& components,
-		graph_pack& gp) {
-	FILE* file = fopen((file_name + ".rep").c_str(), "w");
-	fprintf(file, "%zu\n", components.size());
-	for (auto iter = components.begin(); iter != components.end(); ++iter) {
-		fprintf(file, "%zu\n", iter->size());
-		for (auto j_iter = iter->begin(); j_iter != iter->end(); ++j_iter) {
-			fprintf(file, "%zu ", gp.int_ids.ReturnIntId(*j_iter));
-		}
-		fprintf(file, "\n");
-	}
-	fclose(file);
-}
-
-//		BadConnectionCutter<typename graph_pack::graph_t>(g, pii).CutConnections();
-
-//	typedef TotalLabelerGraphStruct<typename graph_pack::graph_t> total_labeler_gs;
-//	typedef TotalLabeler<typename graph_pack::graph_t> total_labeler;
-
-//	ResolveRepeats(origin_gp.g, lib, origin_gp.int_ids, clustered_index,
-//			origin_gp.edge_pos, resolved_gp.g, resolved_gp.int_ids,
-//			resolved_gp.edge_pos,
-//			cfg::get().output_dir + subfolder + "resolve_" + graph_name + "/",
-//			labels_after, cfg::get().developer_mode);
-
-// SimpleLoopKiller
-
 bool prepare_scaffolding_index(conj_graph_pack& gp,
                                const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
                                PairedIndexT& paired_index,
@@ -186,6 +135,7 @@ void prepare_all_scaf_libs(conj_graph_pack& conj_gp,
 			cl_scaff_indexs.end());
 }
 
+//todo check usages!!!
 void delete_index(vector<PairedIndexT*>& index) {
 	for (size_t i = 0; i < index.size(); ++i)
 		delete index[i];
