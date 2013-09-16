@@ -65,7 +65,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
     for (auto I = inner_map.begin(), E = inner_map.end(); I != E; ++I)
       second_edges.insert(I->first);
 
-    const vector<GraphLengths>& lens_array = this->GetGraphDistancesLengths(e1, second_edges);
+    vector<GraphLengths> lens_array = this->GetGraphDistancesLengths(e1, second_edges);
 
     size_t i = 0;
     for (auto I = inner_map.begin(), E = inner_map.end(); I != E; ++I) {
@@ -100,10 +100,12 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
   bool IsSorted(const Histogram& hist) const {
     if (hist.size() == 0)
       return true;
+
     double prev = hist.begin()->d;
     for (auto it = hist.begin(); it != hist.end(); ++it) {
       if (math::gr(prev, it->d))
         return false;
+
       prev = it->d;
     }
     return true;
@@ -113,21 +115,28 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
     // assuming they are sorted already
     if (what.size() == 0)
       return;
-    if (where.size() == 0) {
-      where = what;
-      VERIFY(IsSorted(where));
-      return;
-    }
 
-    // heuristics
-    if (math::le(where.rend()->d, what.begin()->d + shift)) {
+    if (where.size() == 0) {
       for (auto iter = what.begin(); iter != what.end(); ++iter) {
         Point to_be_added = *iter;
         to_be_added.d += shift;
         where.insert(to_be_added);
       }
+
+      VERIFY(IsSorted(where));
+      return;
     }
-    else {
+
+    // Check, whether two histograms intersect. If not, we can just merge them
+    // straightforwardly.
+    if (math::ls(where.rbegin()->d, what.begin()->d + shift) ||
+        math::gr(where.begin()->d, what.rbegin()->d + shift)) {
+      for (auto iter = what.begin(); iter != what.end(); ++iter) {
+        Point to_be_added = *iter;
+        to_be_added.d += shift;
+        where.insert(to_be_added);
+      }
+    } else {
       for (auto iter = what.begin(); iter != what.end(); ++iter) {
         Point to_be_added(*iter);
         to_be_added.d += shift;
@@ -135,8 +144,9 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
         if (to_be_added == *low_bound) {
           to_be_added.weight += low_bound->weight;
           where.erase(to_be_added);
-        }
-        where.insert(low_bound, to_be_added);
+          where.insert(to_be_added);
+        } else
+          where.insert(low_bound, to_be_added);
       }
     }
     VERIFY(IsSorted(where));
@@ -146,6 +156,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
     // assuming it is sorted
     if (hist.size() == 0)
       return hist;
+
     Histogram answer;
     for (auto iterator = hist.begin(); iterator != hist.end(); ++iterator) {
       if (math::ge(2. * iterator->d + (double) second_len, (double) first_len))
@@ -162,13 +173,14 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
       return;
     if (this->graph().OutgoingEdgeCount(start) > 1)
       return;
-    const vector<EdgeId>& InEdges = this->graph().IncomingEdges(start);
+
+    vector<EdgeId> InEdges = this->graph().IncomingEdges(start);
     for (auto iterator = InEdges.begin(); iterator != InEdges.end(); ++iterator) {
       EdgeId next = *iterator;
-      const Histogram& hist = this->index().GetEdgePairInfo(next, last);
+      Histogram hist = this->index().GetEdgePairInfo(next, last);
       if (-shift < (int) max_shift)
         ExtendLeftDFS(next, last, data, shift - (int) this->graph().length(next), max_shift);
-      const Histogram& filtered_infos = FilterPositive(hist, this->graph().length(next), this->graph().length(last));
+      Histogram filtered_infos = FilterPositive(hist, this->graph().length(next), this->graph().length(last));
       if (filtered_infos.size() > 0)
         MergeInto(filtered_infos, data, shift - (int) this->graph().length(next));
     }
@@ -182,14 +194,15 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
       return;
     if (this->graph().IncomingEdgeCount(end) > 1)
       return;
-    const vector<EdgeId>& OutEdges = this->graph().OutgoingEdges(end);
+
+    vector<EdgeId> OutEdges = this->graph().OutgoingEdges(end);
     for (auto iter = OutEdges.begin(); iter != OutEdges.end(); ++iter) {
       EdgeId next = *iter;
-      const Histogram& hist = this->index().GetEdgePairInfo(first, next);
+      Histogram hist = this->index().GetEdgePairInfo(first, next);
       if (-shift < (int) max_shift)
         ExtendRightDFS(first, next, data, shift - (int) this->graph().length(current), max_shift);
 
-      const Histogram& filtered_infos = FilterPositive(hist, this->graph().length(first), this->graph().length(next));
+      Histogram filtered_infos = FilterPositive(hist, this->graph().length(first), this->graph().length(next));
       if (filtered_infos.size() > 0)
         MergeInto(filtered_infos, data, shift - (int) this->graph().length(current));
     }

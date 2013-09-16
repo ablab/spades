@@ -41,17 +41,18 @@ class AbstractPairInfoFilter {
       const EdgeId& e1 = it.first();
       const EdgeId& e2 = it.second();
 
-      for (auto p_iter = infos.begin(); p_iter != infos.end(); ++p_iter) {
-        const Point& point = *p_iter;
+      for (auto p_iter = infos.begin(); p_iter != infos.end(); ) {
+        const Point& point = *p_iter++;
         if (!Check(e1, e2, point))
-          index.DeletePairInfo(e1, e2, point);
+            index.DeletePairInfo(e1, e2, point);
       }
     }
+
+    INFO("Pruning the index");
+    index.Prune();
   }
 
-  virtual ~AbstractPairInfoFilter()
-  {
-  }
+  virtual ~AbstractPairInfoFilter() {}
 };
 
 template<class Graph>

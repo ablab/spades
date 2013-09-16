@@ -711,6 +711,27 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
         }
     }
 
+    void Prune() {
+        VERIFY(this->IsAttached());
+
+        for (auto iter = index_.begin(); iter != index_.end(); ) {
+            // First, remove all the empty Histograms
+            InnerMap<Graph>& inner_map = iter->second;
+            for (auto it = inner_map.begin(); it != inner_map.end(); ) {
+                if (it->second.size() == 0)
+                    inner_map.erase(it++);
+                else
+                    ++it;
+            }
+
+            // Now, pretty much the same, but the outer stuff
+            if (inner_map.size() == 0)
+                index_.erase(iter++);
+            else
+                ++iter;
+        }
+    }
+
     // here we trying to insert PairInfo,
     // if there is no existing PairInfo with the same key
     // very complicated implementation, but it seems to be faster.

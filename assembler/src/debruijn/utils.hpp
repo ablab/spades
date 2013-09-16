@@ -523,19 +523,21 @@ double UnityFunction(int /*x*/) {
 
 //postprocessing, checking that clusters do not intersect
 template<class Graph>
-void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_index)
-{
+void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_index) {
   for (auto iter = clustered_index.begin(); iter != clustered_index.end(); ++iter) {
     EdgeId first_edge = iter.first();
     EdgeId second_edge = iter.second();
     const de::Histogram& infos = *iter;
+    if (infos.size() == 0)
+        continue;
+
     auto prev_it = infos.begin();
     auto it = prev_it;
     ++it;
     for (auto end_it = infos.end(); it != end_it; ++it) {
       if (math::le(abs(it->d - prev_it->d), it->var + prev_it->var)) {
         WARN("Clusters intersect, edges -- " << graph.int_id(first_edge)
-            << " " << graph.int_id(second_edge));
+             << " " << graph.int_id(second_edge));
         INFO("Trying to handle this case");
         // seeking the symmetric pair info to [i - 1]
         bool success = false;

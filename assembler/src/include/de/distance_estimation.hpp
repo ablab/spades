@@ -377,7 +377,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
     set<EdgeId> second_edges;
     for (auto I = inner_map.begin(), E = inner_map.end(); I != E; ++I)
       second_edges.insert(I->first);
-    const vector<GraphLengths>& lens_array = this->GetGraphDistancesLengths(e1, second_edges);
+    const vector<GraphLengths> lens_array = this->GetGraphDistancesLengths(e1, second_edges);
 
     size_t i = 0;
     VERIFY(second_edges.size() == lens_array.size());
