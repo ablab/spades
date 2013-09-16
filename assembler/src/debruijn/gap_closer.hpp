@@ -435,15 +435,19 @@ class GapCloser {
 
 public:
   void CloseShortGaps() {
+      typedef typename PairedInfoIndexT<Graph>::EdgeIterator EdgeIterator;
+
       INFO("Closing short gaps");
-      int gaps_filled = 0;
-      int gaps_checked = 0;
-      for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-          EdgeId first_edge = *it;
-          for (auto inner_it = tips_paired_idx_.edge_begin(first_edge),
-                    inner_et = tips_paired_idx_.edge_end(first_edge);
-               inner_it != inner_et; ++inner_it) {
-              std::pair<EdgeId, Point> entry = *inner_it;
+      size_t gaps_filled = 0;
+      size_t gaps_checked = 0;
+      for (auto edge = g_.SmartEdgeBegin(); !edge.IsEnd(); ++edge) {
+          EdgeId first_edge = *edge;
+          auto edge_info = tips_paired_idx_.GetEdgeInfo(first_edge, 0);
+
+          for (EdgeIterator it(edge_info.begin(), edge_info.end()),
+                            et(edge_info.end(), edge_info.end());
+               it != et; ++it) {
+              std::pair<EdgeId, Point> entry = *it;
               EdgeId second_edge = entry.first;
               const Point& point = entry.second;
               if (first_edge != second_edge && math::ge(point.weight, weight_threshold_)) {
