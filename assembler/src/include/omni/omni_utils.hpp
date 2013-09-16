@@ -738,6 +738,10 @@ struct Range {
         return start_pos < other.start_pos;
       return end_pos < other.end_pos;
     }
+
+    bool contains(const Range& that) {
+        return start_pos >= that.start_pos && end_pos <= that.end_pos;
+    }
 };
 
 std::ostream& operator<<(std::ostream& os, const Range& range) {
