@@ -616,41 +616,6 @@ private:
     DECL_LOGGER("ThresholdFinder");
 };
 
-template<class Graph>
-class BadConnectionCutter {
-private:
-	typedef typename Graph::EdgeId EdgeId;
-	Graph& graph_;
-	const de::PairedInfoIndexT<Graph> &index_;
-
-	bool CheckHasForwardPairInfo(EdgeId e) {
-		auto infos = index_.GetEdgeInfo(e);
-		for(auto it1 = infos.begin(); it1 != infos.end(); ++it1) {
-			de::PairInfo<EdgeId> pi = *it1;
-			if (pi.d() >= 1) {
-				return true;
-			}
-		}
-		return false;
-	}
-public:
-	BadConnectionCutter(Graph& graph, const de::PairedInfoIndexT<Graph> &index) : graph_(graph), index_(index) {
-	}
-
-	void CutConnections() {
-		for(auto it = graph_.SmartVertexBegin(); !it.IsEnd(); ++it) {
-			vector<EdgeId> edges = graph_.IncomingEdges(*it);
-			if(edges.size() > 1)
-				for(SmartSetIterator<Graph, EdgeId> eit(graph_, edges.begin(), edges.end()); !eit.IsEnd(); ++eit) {
-					if(graph_.EdgeEnd(*eit) != *it || graph_.length(*eit) <= 250 || graph_.conjugate(*eit) == *eit || CheckHasForwardPairInfo(*eit))
-						continue;
-					EdgeId end = graph_.SplitEdge(*eit, graph_.length(*eit) - graph_.k()).second;
-					graph_.DeleteEdge(end);
-				}
-		}
-	}
-};
-
 }
 
 #endif /* OMNI_TOOLS_HPP_ */

@@ -25,7 +25,6 @@
 #include "de/distance_estimation.hpp"
 #include "omni/omni_utils.hpp"
 
-#include "omni/loop_killer.hpp"
 #include "path_utils.hpp"
 #include "pair_info_improver.hpp"
 

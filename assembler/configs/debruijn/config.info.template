@@ -87,7 +87,7 @@ estimation_mode simple
 ;set it true to detach connections that are not supported by paired info before repeat resolution
 cut_bad_connections false
 
-; repeat resolving mode (none split path_extend combined rectangles)
+; repeat resolving mode (none path_extend combined rectangles)
 resolving_mode path_extend
 
 use_scaffolder  true
