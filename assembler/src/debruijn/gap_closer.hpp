@@ -435,34 +435,36 @@ class GapCloser {
 
 public:
   void CloseShortGaps() {
-    INFO("Closing short gaps");
-    int gaps_filled = 0;
-    int gaps_checked = 0;
-    for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-      EdgeId first_edge = *it;
-      const InnerMap<Graph>& inner_map = tips_paired_idx_.GetEdgeInfo(*it, 0);
-      for (auto inner_it = inner_map.Begin(); inner_it != inner_map.End(); ++inner_it) {
-        EdgeId second_edge = (*inner_it).first;
-        const Point& point = (*inner_it).second;
-          if (first_edge != second_edge && math::ge(point.weight, weight_threshold_)) {
-            if (!g_.IsDeadEnd(g_.EdgeEnd(first_edge)) || !g_.IsDeadStart(g_.EdgeStart(second_edge))) {
-              // WARN("Topologically wrong tips");
-            continue;
+      INFO("Closing short gaps");
+      int gaps_filled = 0;
+      int gaps_checked = 0;
+      for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+          EdgeId first_edge = *it;
+          for (auto inner_it = tips_paired_idx_.edge_begin(first_edge),
+                    inner_et = tips_paired_idx_.edge_end(first_edge);
+               inner_it != inner_et; ++inner_it) {
+              std::pair<EdgeId, Point> entry = *inner_it;
+              EdgeId second_edge = entry.first;
+              const Point& point = entry.second;
+              if (first_edge != second_edge && math::ge(point.weight, weight_threshold_)) {
+                  if (!g_.IsDeadEnd(g_.EdgeEnd(first_edge)) || !g_.IsDeadStart(g_.EdgeStart(second_edge))) {
+                      // WARN("Topologically wrong tips");
+                      continue;
+                  }
+                  ++gaps_checked;
+                  if (ProcessPair(first_edge, second_edge)) {
+                      ++gaps_filled;
+                      break;
+                  }
+              }
           }
-            ++gaps_checked;
-            if (ProcessPair(first_edge, second_edge)) {
-              ++gaps_filled;
-            break;
-          }
-        }
       }
-    }
 
-    INFO("Closing short gaps complete: filled " << gaps_filled
-            << " gaps after checking " << gaps_checked
-            << " candidates");
-    omnigraph::Compressor<Graph> compressor(g_);
-    compressor.CompressAllVertices();
+      INFO("Closing short gaps complete: filled " << gaps_filled
+           << " gaps after checking " << gaps_checked
+           << " candidates");
+      omnigraph::Compressor<Graph> compressor(g_);
+      compressor.CompressAllVertices();
   }
 
   GapCloser(Graph& g, PairedInfoIndexT<Graph>& tips_paired_idx,

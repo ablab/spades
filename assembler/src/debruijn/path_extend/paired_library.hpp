@@ -82,7 +82,7 @@ struct PairedInfoLibrary {
 
     set<EdgeId> GetEdges(EdgeId e) {
         set<EdgeId> res;
-        const InnerMap<Graph>& pairs = index_.GetEdgeInfo(e, 0); // map[second_edge -> histogram]
+        auto pairs = index_.GetEdgeInfo(e, 0); // map[second_edge -> histogram]
         for (auto pairIter = pairs.begin(); pairIter != pairs.end(); ++pairIter)
           res.insert(pairIter->first);
         return res;

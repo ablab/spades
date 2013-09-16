@@ -293,7 +293,7 @@ void DataPrinter<Graph>::savePaired(const string& file_name,
   size_t comp_size = 0;
   for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
     EdgeId e1 = *I;
-    const InnerMap<Graph>& inner_map = paired_index.GetEdgeInfo(e1, 0);
+    auto inner_map = paired_index.GetEdgeInfo(e1, 0);
     for (auto II = inner_map.begin(), IE = inner_map.end(); II != IE; ++II) {
       EdgeId e2 = II->first;
       const de::Histogram& hist = II->second;
@@ -307,7 +307,7 @@ void DataPrinter<Graph>::savePaired(const string& file_name,
 
   for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
     EdgeId e1 = *I;
-    const InnerMap<Graph>& inner_map = paired_index.GetEdgeInfo(e1, 0);
+    auto inner_map = paired_index.GetEdgeInfo(e1, 0);
     for (auto II = inner_map.begin(), IE = inner_map.end(); II != IE; ++II) {
       EdgeId e2 = II->first;
       const Histogram& hist = II->second;

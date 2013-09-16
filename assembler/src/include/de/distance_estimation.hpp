@@ -218,12 +218,8 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
       const GraphDistanceFinder<Graph>& distance_finder,
       size_t linkage_distance, size_t max_distance) :
         base(graph, index, distance_finder, linkage_distance), max_distance_(max_distance)
-  {
-  }
-
-  virtual ~DistanceEstimator()
-  {
-  }
+    {}
+  virtual ~DistanceEstimator() {}
 
   void Init() const {
     INFO("Starting " << this->Name() << " distance estimator");
@@ -263,7 +259,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
       for (size_t i = 0; i < edges.size(); ++i)
       {
         EdgeId edge = edges[i];
-        const InnerMap<Graph>& inner_map = index.GetEdgeInfo(edge, 0);
+        const typename PairedInfoIndexT<Graph>::InnerMap& inner_map = index.GetEdgeInfo(edge, 0);
         ProcessEdge(edge, inner_map, *buffer[omp_get_thread_num()], pc);
 
         //if (i % 10000 == 0) {
@@ -370,10 +366,9 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
 
  private:
   virtual void ProcessEdge(EdgeId e1,
-                           const InnerMap<Graph>& inner_map,
+                           const typename PairedInfoIndexT<Graph>::InnerMap& inner_map,
                            PairedInfoIndexT<Graph>& result,
-                           perf_counter& /*pc*/) const
-  {
+                           perf_counter& /*pc*/) const {
     set<EdgeId> second_edges;
     for (auto I = inner_map.begin(), E = inner_map.end(); I != E; ++I)
       second_edges.insert(I->first);

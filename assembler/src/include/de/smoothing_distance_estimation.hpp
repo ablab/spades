@@ -159,7 +159,7 @@ private:
     }
 
   virtual void ProcessEdge(EdgeId e1,
-                           const InnerMap<Graph>& inner_map,
+                           const typename PairedInfoIndexT<Graph>::InnerMap& inner_map,
                            PairedInfoIndexT<Graph>& result,
                            perf_counter& pc) const
   {
