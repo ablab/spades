@@ -383,6 +383,14 @@ def dataset_needs_long_single_mode(dataset_data):
     return False
 
 
+def get_pacbio_reads(dataset_data):
+    for reads_library in dataset_data:
+        if reads_library['type'] in ['pacbio']:
+            if reads_library['single reads']:
+                return reads_library['single reads'][0]
+    return None
+
+
 def dataset_has_interlaced_reads(dataset_data):
     for reads_library in dataset_data:
         if 'interlaced reads' in reads_library:
