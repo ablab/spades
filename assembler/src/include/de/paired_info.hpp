@@ -335,52 +335,52 @@ class InnerMap {
     typedef typename base_map_t::const_iterator c_iterator;
     typedef typename base_map_t::iterator iterator;
 
-    // we need this iterator
-    // to iterate through map<EdgeId, set<Point> > in a smart way (faster)
-    class FastIterator {
-        typedef typename Histogram::const_iterator histogram_iterator;
+
+    class FastIterator :
+            public boost::iterator_facade<FastIterator,
+                                          const std::pair<EdgeId, Point>,
+                                          boost::forward_traversal_tag,
+                                          const std::pair<EdgeId, Point> > {
 
       public:
-        FastIterator(c_iterator position, const InnerMap& map) :
-                position_(position), inner_pos_(position->second.begin()), map_(&map)
-        {}
+        FastIterator(c_iterator cedge, c_iterator eedge)
+                : cedge_(cedge), eedge_(eedge), point_() {
+            if (cedge_ == eedge_)
+                return;
 
-        FastIterator(c_iterator position,
-                     histogram_iterator inner_pos,
-                     const InnerMap& map) :
-                position_(position), inner_pos_(inner_pos), map_(&map)
-        {}
-
-        bool operator==(const FastIterator& other) const {
-            return (this->position_ == other.position_) && (this->inner_pos_ == other.inner_pos_);
-        }
-
-        bool operator!=(const FastIterator& other) const {
-            return !operator==(other);
-        }
-
-        const pair<EdgeId, Point> operator*() const {
-            return make_pair(position_->first, *inner_pos_);
-        }
-
-        FastIterator& operator++() {
-            if (position_ == (map_->wrapped_map_).end())
-                return *this;
-
-            ++inner_pos_;
-            const Histogram& hist = position_->second;
-            if (inner_pos_ == hist.end()) {
-                ++position_;
-                if (position_ != (map_->wrapped_map_).end())
-                    inner_pos_ = (position_->second).begin();
-            }
-            return *this;
+            point_ = cedge_->second.begin();
+            skip_empty();
         }
 
       private:
-        c_iterator position_;          // iterator in map<EdgeId, Histogram>
-        histogram_iterator inner_pos_; // iterator in Histogram
-        const InnerMap* map_;          // wrapper of map<EdgeId, Histogram>
+        typedef typename Histogram::const_iterator histogram_iterator;
+
+        friend class boost::iterator_core_access;
+
+        void skip_empty() {
+            while (point_ == cedge_->second.end()) {
+                ++cedge_;
+                if (cedge_ == eedge_)
+                    break;
+                point_ = cedge_->second.begin();
+            }
+        }
+
+        void increment() {
+            ++point_;
+            skip_empty();
+        }
+
+        bool equal(const FastIterator &other) const {
+            return other.cedge_ == cedge_ && (cedge_ == eedge_ || other.point_ == point_);
+        }
+
+        const std::pair<EdgeId, Point> dereference() const {
+            return std::make_pair(cedge_->first, *point_);
+        }
+
+        c_iterator cedge_, eedge_;
+        histogram_iterator point_;
     };
 
   public:
@@ -391,14 +391,12 @@ class InnerMap {
             wrapped_map_(begin, end, 10)
     {}
 
-    // these two methods require a wrapper for map<EdgeId, Histogram>
-    // we need them to iterate through map<EdgeId, set<Point> > in a smart way
     FastIterator Begin() const {
-        return FastIterator(wrapped_map_.begin(), *this);
+        return FastIterator(wrapped_map_.begin(), wrapped_map_.end());
     }
 
     FastIterator End() const {
-        return FastIterator(wrapped_map_.end(), Histogram::const_iterator(), *this);
+        return FastIterator(wrapped_map_.end(), wrapped_map_.end());
     }
 
     c_iterator begin() const  { return wrapped_map_.begin(); }
@@ -453,6 +451,7 @@ class InnerMap {
     base_map_t wrapped_map_;
 };
 
+
 // new map { EdgeId -> (EdgeId -> (d, weight, var)) }
 template<class Graph>
 class PairedInfoIndexT: public GraphActionHandler<Graph> {
@@ -462,83 +461,60 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
     typedef map<EdgeId, InnerMap<Graph> > IndexDataType;     // @InnerMap is a wrapper for map<EdgeId, Histogram>
     typedef typename IndexDataType::const_iterator DataIterator;
 
-    // This class helps us to iterate through the compound structure
-    class EdgePairIterator {
-        typedef typename InnerMap<Graph>::c_iterator InnerIterator;
+    class EdgePairIterator :
+            public boost::iterator_facade<EdgePairIterator,
+                                          const Histogram,
+                                          boost::forward_traversal_tag,
+                                          const Histogram& > {
 
       public:
-        EdgePairIterator(DataIterator position, const PairedInfoIndexT& index) :
-                position_(position), inner_pos_((position->second).begin()), index_(index)
-        {}
+        EdgePairIterator(DataIterator cedge, DataIterator eedge)
+                : cedge_(cedge), eedge_(eedge), sedge_() {
+            if (cedge_ == eedge_)
+                return;
 
-        EdgePairIterator(DataIterator position,
-                         InnerIterator inner_pos,
-                         const PairedInfoIndexT& index) :
-                position_(position), inner_pos_(inner_pos), index_(index)
-        {}
-
-        bool operator==(const EdgePairIterator& other) {
-            return this->position_ == other.position_ && this->inner_pos_ == other.inner_pos_;
+            sedge_ = cedge_->second.begin();
+            skip_empty();
         }
 
-        bool operator!=(const EdgePairIterator& other) {
-            return !operator==(other);
-        }
-
-        Histogram operator*() const {
-            VERIFY(position_ != index_.index_.end());
-            return inner_pos_->second;
-        }
-
-        const EdgeId first() const {
-            VERIFY(position_ != index_.index_.end());
-            return position_->first;
-        }
-
-        const EdgeId second() const {
-            VERIFY(position_ != index_.index_.end());
-            const auto& inner_map = position_->second;
-            VERIFY(inner_pos_ != inner_map.end());
-            return inner_pos_->first;
-        }
-
-        const Histogram* operator->() const {
-            VERIFY(position_ != index_.index_.end());
-            const Histogram& hist = inner_pos_->second;
-            return &hist;
-        }
-
-        EdgePairIterator& operator++() {
-            if (position_ == index_.index_.end())
-                return *this;
-
-            ++inner_pos_;
-            const InnerMap<Graph>& inner_map = position_->second;
-            VERIFY(inner_map.size() > 0);
-            if (inner_pos_ == inner_map.end()) {
-                ++position_;
-                if (position_ != index_.index_.end()) {
-                    inner_pos_ = (position_->second).begin();
-                    VERIFY(inner_pos_ != (position_->second).end());
-                }
-            }
-            return *this;
-        }
-
-        void operator++(int) {
-            EdgePairIterator tmp(*this);
-            this->operator++();
-            return tmp;
-        }
+        EdgeId first() const { return cedge_->first; }
+        EdgeId second() const { return sedge_->first; }
 
         friend ostream& operator<<(ostream& os, const EdgePairIterator& iter) {
             return os << iter.first() << " " << iter.second();
         }
 
       private:
-        DataIterator position_;
-        InnerIterator inner_pos_;
-        const PairedInfoIndexT& index_;
+        typedef typename InnerMap<Graph>::c_iterator InnerIterator;
+
+        friend class boost::iterator_core_access;
+
+        void skip_empty() {
+            while (sedge_ == cedge_->second.end()) {
+                ++cedge_;
+                if (cedge_ == eedge_)
+                    break;
+                sedge_ = cedge_->second.begin();
+            }
+        }
+
+        void increment() {
+            // INFO("Increment");
+            ++sedge_;
+            skip_empty();
+            // INFO("Increment " << (cedge_ == eedge_));
+        }
+
+        bool equal(const EdgePairIterator &other) const {
+            return other.cedge_ == cedge_ && (cedge_ == eedge_ || other.sedge_ == sedge_);
+        }
+
+        const Histogram& dereference() const {
+            return sedge_->second;
+        }
+
+        DataIterator cedge_, eedge_;
+        InnerIterator sedge_;
     };
 
     PairedInfoIndexT(const Graph& graph) :
@@ -550,12 +526,12 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
 
     EdgePairIterator begin() const {
         VERIFY(this->IsAttached());
-        return EdgePairIterator(index_.begin(), *this);
+        return EdgePairIterator(index_.begin(), index_.end());
     }
 
     EdgePairIterator end() const {
         VERIFY(this->IsAttached());
-        return EdgePairIterator(index_.end(), typename InnerMap<Graph>::c_iterator(), *this);
+        return EdgePairIterator(index_.end(), index_.end());
     }
 
     DataIterator Begin() const {
