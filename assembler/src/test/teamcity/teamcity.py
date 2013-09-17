@@ -174,10 +174,13 @@ if 'prepare_cfg' not in dataset_info.__dict__ or dataset_info.prepare_cfg:
         print("Preparing configuration files finished abnormally with exit code " + str(ecode))
         sys.exit(2)
 
-
 #compile
 if 'spades_compile' not in dataset_info.__dict__ or dataset_info.spades_compile:
-    ecode = os.system('./spades_compile.sh')
+    comp_params = ''
+    if 'compilation_params' in dataset_info.__dict__:
+        comp_params = dataset_info.compilation_params
+
+    ecode = os.system('./spades_compile.sh ' + comp_params)
     if ecode != 0:
         print("Compilation finished abnormally with exit code " + str(ecode))
         sys.exit(3)
