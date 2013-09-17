@@ -176,9 +176,9 @@ if 'prepare_cfg' not in dataset_info.__dict__ or dataset_info.prepare_cfg:
 
 #compile
 if 'spades_compile' not in dataset_info.__dict__ or dataset_info.spades_compile:
-    comp_params = ''
+    comp_params = ' '
     if 'compilation_params' in dataset_info.__dict__:
-        comp_params = dataset_info.compilation_params
+        comp_params = " ".join(dataset_info.compilation_params)
 
     ecode = os.system('./spades_compile.sh ' + comp_params)
     if ecode != 0:
