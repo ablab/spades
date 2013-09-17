@@ -1119,7 +1119,6 @@ void resolve_repeats() {
 	if (cfg::get().pacbio_test_on && cfg::get().gap_closer_enable) {
 	    INFO("getting paths");
         vector<PathInfo<Graph> > pacbio_paths = pacbio_read.GetAllPaths();
-        INFO(cfg::get().pe_params.long_reads.pacbio_reads.filtering);
         PathStorageInfo<Graph> pacbio_storage(
         pacbio_paths,
         cfg::get().pe_params.long_reads.pacbio_reads.filtering,
