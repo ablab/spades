@@ -1,6 +1,7 @@
 #pragma once
 
 #include "omni/visualization/visualization.hpp"
+#include "omni/basic_edge_conditions.hpp"
 
 namespace debruijn_graph {
 
@@ -94,6 +95,24 @@ public:
     }
 
 };
+
+//template<class Graph, class Index>
+//class ZeroQualityCondition : public EdgeCondition<Graph> {
+//    typedef EdgeCondition<Graph> base;
+//    const EdgeQuality<Graph, Index>& edge_qual_;
+//
+//public:
+//    ZeroQualityCondition(const Graph& g, const EdgeQuality<Graph, Index>& edge_qual)
+//            : base(g),
+//              edge_qual_(edge_qual) {
+//
+//    }
+//
+//    bool Check(EdgeId e) const {
+//        return edge_qual_.IsZeroQuality(e);
+//    }
+//
+//};
 
 template<class Graph, class Index>
 class QualityLoggingRemovalHandler {
