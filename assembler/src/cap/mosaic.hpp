@@ -103,6 +103,7 @@ public:
     }
 };
 
+//todo maybe use ranges for latter parts of analysis
 struct MosaicInterval {
     Range pos_range;
     vector<Pos> support_blocks;
@@ -179,6 +180,16 @@ class MosaicStructure {
         return answer;
     }
 
+    //todo simplify after switching to Ranges
+    vector<MosaicInterval> SubIntervals(size_t block_start, size_t block_end) const {
+        vector<MosaicInterval> answer;
+        for (const MosaicInterval& interval : occurences_) {
+            answer.push_back(interval.SubInterval(Range(interval.support_blocks[block_start],
+                                                                interval.support_blocks[block_end] + 1)));
+        }
+        return answer;
+    }
+
 public:
     explicit MosaicStructure(const vector<Block>& blocks)
     : blocks_(blocks) {
@@ -187,6 +198,10 @@ public:
     MosaicStructure(const vector<Block>& blocks, const MosaicInterval& interval) :
                         blocks_(blocks) {
         occurences_.push_back(interval);
+    }
+
+    MosaicStructure(const vector<Block>& blocks, const vector<MosaicInterval>& occurences) :
+                        blocks_(blocks), occurences_(occurences) {
     }
 
     MosaicStructure(const GenomeBlockComposition& block_composition, const MosaicInterval& interval) :
@@ -225,15 +240,13 @@ public:
 
     //block end incl
     MosaicStructure SubMosaic(size_t block_start, size_t block_end) const {
-        VERIFY(occurences_.size() == 1);
         VERIFY(block_start < blocks_.size());
         VERIFY(block_end < blocks_.size());
         VERIFY(block_start <= block_end);
 
         const MosaicInterval& interval = occurences_.front();
         return MosaicStructure(vector<Block>(blocks_.begin() + block_start, blocks_.begin() + block_end + 1),
-                               interval.SubInterval(Range(interval.support_blocks[block_start],
-                                                    interval.support_blocks[block_end] + 1)));
+            SubIntervals(block_start, block_end));
     }
 
     string Fingerprint() const {
@@ -261,6 +274,10 @@ public:
     }
 
 };
+
+ostream& operator << (ostream& out, const MosaicStructure& structure) {
+    return out << "Mosaic. size=" << structure.block_size() << " blocks=" << structure.blocks();
+}
 
 class MosaicPrintHelper {
     const GenomeBlockComposition& block_composition_;
@@ -414,6 +431,7 @@ class MosaicStructureSet {
     vector<MosaicInterval> raw_intervals_;
 
     vector<MosaicStructure> irreducible_structures_;
+    //fixme currently not used in any way!!!
     map<string, MosaicStructure> nested_structures_;
     multimap<string, size_t> different_irred_presence_;
     multimap<string, Range> all_substruct_pos_;
@@ -444,7 +462,7 @@ class MosaicStructureSet {
 
     bool CountNested(const MosaicStructure& nested, const MosaicStructure& /*outer*/) {
         string finger = nested.Fingerprint();
-        if (nested_structures_.count(finger) > 0) {
+        if (nested_structures_.count(finger) == 0) {
             nested_structures_.insert(make_pair(finger, nested));
             return true;
         } else {
@@ -454,16 +472,22 @@ class MosaicStructureSet {
     }
 
     bool AnalyzeStructure(const MosaicStructure& mosaic) {
+//        cout << "Analyzing " << mosaic << endl;
+//        cout << irreducible_structures_.size() << endl;
         for (auto& irred_struct : irreducible_structures_) {
+//            cout << "Irred " << irred_struct << endl;
             if (irred_struct.SameBlocks(mosaic)) {
+//                cout << "same" << endl;
                 irred_struct.Merge(mosaic);
                 return false;
             }
             if (mosaic.IsContainedIn(irred_struct)) {
+//                cout << "contained" << endl;
                 CountNested(mosaic, irred_struct);
                 return false;
             }
         }
+//        cout << "new_irred" << endl;
         irreducible_structures_.push_back(mosaic);
         return true;
     }
@@ -482,15 +506,18 @@ public:
     }
 
     void Analysis() {
+        INFO("Sorting raw intervals");
         std::sort(
                 raw_intervals_.begin(),
                 raw_intervals_.end(),
                 [](const MosaicInterval& a, const MosaicInterval& b) {
                     return a.support_blocks.size() > b.support_blocks.size();
                 });
+        INFO("Analyzing sorted intervals");
         for (const MosaicInterval& interval : raw_intervals_) {
             AnalyzeStructure(MosaicStructure(block_composition_, interval));
         }
+        INFO("Counting distinct irreducible");
         CountDifferentIrred();
     }
 
@@ -562,6 +589,7 @@ public:
     void Analyze() {
         MosaicStructureSet interval_set(block_composition_);
 
+        INFO("Collecting mosaic intervals");
         MoveToNextSupportBlock();
         while (curr_pos_ < block_composition_.size()) {
             MosaicInterval interval(curr_pos_);
@@ -571,7 +599,9 @@ public:
             }
             interval_set.ProcessInterval(interval);
         }
+        INFO("Analyzing intervals and forming mosaic structures");
         interval_set.Analysis();
+        INFO("Reporting mosaic structures");
         interval_set.Report(block_info_, out_);
     }
 

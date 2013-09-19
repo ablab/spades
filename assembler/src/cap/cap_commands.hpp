@@ -564,6 +564,10 @@ class MosaicAnalysisCommand : public NewLocalCommand<CapEnvironment> {
       size_t max_inter_length = 500;
       std::string folder = TryFetchFolder(curr_env, args);
       ofstream out(folder + "mosaic.txt");
+      cout << "Mosaic analysis triggered" << endl;
+      cout << "Min support block length " << min_support_length << endl;
+      cout << "Max support block multiplicity " << max_support_mult << endl;
+      cout << "Max inter-block length " << max_inter_length << endl;
       if (curr_env.LSeqIsUsed()) {
           mosaic::PerformMosaicAnalysis(curr_env.l_seq_gp(), genome, min_support_length, max_support_mult, max_inter_length, out);
       } else {
