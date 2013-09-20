@@ -376,6 +376,8 @@ struct debruijn_config {
     double median_insert_size;
     double insert_size_mad;
     std::map<int, size_t> insert_size_distribution;
+
+    uint64_t total_nucls;
     double average_coverage;
 
     std::string paired_read_prefix;
@@ -385,22 +387,24 @@ struct debruijn_config {
     typedef io::IReader<io::SingleReadSeq> SequenceSingleReadStream;
     typedef io::IReader<io::PairedReadSeq> SequencePairedReadStream;
 
-    DataSetData(): read_length(0), mean_insert_size(0.0), insert_size_deviation(0.0), median_insert_size(0.0), insert_size_mad(0.0), average_coverage(0.0) {
+    DataSetData(): read_length(0), mean_insert_size(0.0), insert_size_deviation(0.0), median_insert_size(0.0), insert_size_mad(0.0), total_nucls(0), average_coverage(0.0) {
     }
-
   };
 
   struct dataset {
     io::DataSet<DataSetData> reads;
 
-    size_t RL() const { return reads[0].data().read_length; }
+    size_t max_read_length;
+    double average_coverage;
+
+    size_t RL() const { return max_read_length; }
     void set_RL(size_t RL) {
-        for (size_t i = 0; i < reads.lib_count(); ++i) {
-            reads[i].data().read_length = RL;
-        }
+        max_read_length = RL;
     }
-    double avg_coverage() const { return reads[0].data().average_coverage; }
+
+    double avg_coverage() const { return average_coverage; }
     void set_avg_coverage(double avg_coverage) {
+        average_coverage = avg_coverage;
         for (size_t i = 0; i < reads.lib_count(); ++i) {
             reads[i].data().average_coverage = avg_coverage;
         }
@@ -411,6 +415,9 @@ struct debruijn_config {
     std::string reads_filename;
 
     Sequence reference_genome;
+
+    dataset(): max_read_length(0), average_coverage(0.0) {
+    }
   };
 
   struct position_handler {

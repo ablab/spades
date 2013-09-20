@@ -90,11 +90,16 @@ class InsertSizeHistogramCounter {
     total_ = total;
     counted_ = counted;
     negative_ = negative;
-    rl = rls[0];
-    for (size_t i = 1; i < nthreads; ++i) {
-      if (rl < rls[i]) {
+
+    if (rl == 0) {
+      rl = rls[0];
+      for (size_t i = 1; i < nthreads; ++i) {
+        if (rl < rls[i]) {
           rl = rls[i];
+        }
       }
+    }
+    for (size_t i = 1; i < nthreads; ++i) {
       for (auto it = hists[i]->begin(); it != hists[i]->end(); ++it) {
         (*hists[0])[it->first] += it->second;
       }

@@ -91,6 +91,10 @@ private:
             io::BinaryWriter single_converter(dataset[i].data().single_read_prefix, cfg::get().max_threads, cfg::get().buffer_size);
             io::ReadStat single_stat = single_converter.ToBinary(*single_reader);
             total_stat.merge(single_stat);
+
+            paired_stat.merge(single_stat);
+            dataset[i].data().read_length = paired_stat.max_len_;
+            dataset[i].data().total_nucls = paired_stat.total_len_;
         }
         info.open(cfg::get().temp_bin_reads_info.c_str(), std::ios_base::out);
         info << current_binary_format_version << " " << cfg::get().max_threads << " " << cfg::get().ds.reads.lib_count() << " " <<
