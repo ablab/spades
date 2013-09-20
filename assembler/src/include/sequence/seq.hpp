@@ -159,6 +159,9 @@ class Seq {
   explicit Seq(T * data_array) {
     memcpy(data_.data(), data_array, TotalBytes);
   }
+  explicit Seq(size_t, T * data_array) {
+    memcpy(data_.data(), data_array, TotalBytes);
+  }
 
 
   /**
@@ -497,6 +500,18 @@ std::ostream& operator<<(std::ostream& os, Seq<size_, T> seq) {
   return os;
 }
 
-
+//namespace std {
+//
+//template<size_t size_, typename T = seq_element_type>
+//struct hash<Seq<size_, T> {
+//    typedef size_t result_type;
+//    typedef Seq<size_, T> argument_type;
+//
+//    result_type operator() (const argument_type& arg) {
+//        return Seq<size_, T>::hash()(arg);
+//    }
+//};
+//
+//}
 
 #endif /* SEQ_HPP_ */

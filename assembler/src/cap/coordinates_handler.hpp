@@ -39,6 +39,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
   typedef unsigned uint;
   typedef std::vector<std::pair<uint, size_t> > PosArray;
   typedef std::vector<std::pair<uint, Range> > RangeArray;
+  typedef std::vector<std::pair<size_t, size_t> > Thread;
 
   CoordinatesHandler()
       : base("CoordinatesHandler"),
@@ -48,6 +49,12 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
         stored_threading_history_(),
         genome_first_edges_(),
         cur_genome_threads_() {
+  }
+
+  CoordinatesHandler(
+      const std::vector<std::pair<uint, std::vector<Thread>>> &stored_threads)
+      : CoordinatesHandler() {
+    SetStoredThreads(stored_threads);
   }
 
   virtual ~CoordinatesHandler() {
@@ -143,29 +150,43 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
     return result;
   }
 
+  void SetStoredThreads(
+      const std::vector<std::pair<uint, std::vector<Thread>>> &threads) {
+    for (const auto &entry : threads) {
+        stored_threading_history_[entry.first] = entry.second;
+    }
+  }
+  std::vector<std::pair<uint, std::vector<Thread>>> GetStoredThreads() const {
+      std::vector<std::pair<uint, std::vector<Thread>>> result;
+      for (const auto &entry : stored_threading_history_) {
+          result.push_back(entry);
+      }
+      return result;
+  }
+
   void StoreGenomeThreads() {
     std::vector<std::pair<std::pair<uint, Range>, EdgeId> > all_ranges;
     /*
      *  A kind of verification
      */
+    /*
     for (auto it = g_->SmartEdgeBegin(); !it.IsEnd(); ++it) {
       for (const auto &range_data : edge_ranges_[*it].GetRanges()) {
         all_ranges.push_back(make_pair(make_pair(range_data.first, range_data.second), *it));
       }
     }
     std::sort(all_ranges.begin(), all_ranges.end());
-    /*
     for (const auto &e : all_ranges) {
       INFO("genome " << int(e.first.first) << ", " << e.first.second << ": " <<
           g_->str(e.second));
     }
-    */
     for (size_t i = 1; i < all_ranges.size(); ++i) {
       if (all_ranges[i].first.first != all_ranges[i - 1].first.first) continue;
       if (all_ranges[i].first.second.start_pos != all_ranges[i - 1].first.second.end_pos) {
         INFO("!!! TORN in genome " << int(all_ranges[i].first.first) << " at position " << all_ranges[i].first.second.start_pos);
       }
     }
+    */
 
     TRACE("StoreGenomeThreads Start");
     VERIFY(g_ != NULL);
@@ -290,7 +311,6 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
  private:
   typedef std::unordered_map<std::pair<uint, size_t>, size_t,
                              utils::unordered_map_pair_hash> MapT;
-  typedef std::vector<std::pair<size_t, size_t> > Thread;
 
   class EdgeData {
    public:

@@ -663,7 +663,7 @@ shared_ptr<GraphSplitter<Graph>> ReliableSplitterAlongPath(
     shared_ptr<RelaxingIterator<VertexId>> inner_iterator = make_shared<
             PathIterator<Graph>>(graph, path);
     shared_ptr<AbstractNeighbourhoodFinder<Graph>> nf = make_shared<
-            ShortEdgeComponentFinder<Graph>>(graph, edge_length_bound);
+    		ReliableNeighbourhoodFinder<Graph>>(graph, edge_length_bound, max_size);
     return make_shared<NeighbourhoodFindingSplitter<Graph>>(graph,
                                                             inner_iterator, nf);
 }
@@ -713,22 +713,22 @@ shared_ptr<GraphSplitter<Graph>> WholeGraphSplitter(
 }
 
 template<class Graph>
-shared_ptr<GraphSplitter<Graph>> VertexNeighborhoodFinder(
-        const Graph &graph, typename Graph::VertexId vertex, size_t max_size,
-        size_t edge_length_bound) {
+GraphComponent<Graph> VertexNeighborhood(
+        const Graph &graph, typename Graph::VertexId vertex, size_t max_size = ReliableNeighbourhoodFinder<Graph>::DEFAULT_MAX_SIZE,
+        size_t edge_length_bound = ReliableNeighbourhoodFinder<Graph>::DEFAULT_EDGE_LENGTH_BOUND) {
     vector<typename Graph::VertexId> vv = {vertex};
     shared_ptr<vector<typename Graph::VertexId>> sh_vv = make_shared<vector<typename Graph::VertexId>>(vv);
-    return StandardSplitter<Graph>(graph, sh_vv, max_size, edge_length_bound);
+    return StandardSplitter<Graph>(graph, sh_vv, max_size, edge_length_bound)->Next();
 }
 
 //TODO make a method that draws a picture that contains given set of edges for sure. ? mb refactor this into just drawing instead of splitting?
 template<class Graph>
-shared_ptr<GraphSplitter<Graph>> EdgeNeighborhoodFinder(
-        const Graph &graph, typename Graph::EdgeId edge, size_t max_size,
-        size_t edge_length_bound) {
-    vector<typename Graph::VertexId> vv = {graph.EdgeStart(edge), graph.EdgeEnd(edge)};
+GraphComponent<Graph> EdgeNeighborhood(
+        const Graph &graph, typename Graph::EdgeId edge, size_t max_size = ReliableNeighbourhoodFinder<Graph>::DEFAULT_MAX_SIZE,
+        size_t edge_length_bound = ReliableNeighbourhoodFinder<Graph>::DEFAULT_EDGE_LENGTH_BOUND) {
+    vector<typename Graph::VertexId> vv = {graph.EdgeStart(edge)};
     shared_ptr<vector<typename Graph::VertexId>> sh_vv = make_shared<vector<typename Graph::VertexId>>(vv);
-    return StandardSplitter<Graph>(graph, sh_vv, max_size, edge_length_bound);
+    return StandardSplitter<Graph>(graph, sh_vv, max_size, edge_length_bound)->Next();
 }
 
 }

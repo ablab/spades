@@ -83,15 +83,15 @@ class SyntheticTestsRunner {
 
     void Save(const GraphPackT& gp, const ColorHandler<GraphT>& coloring,
             const CoordinatesHandler<GraphT> &coordinates_handler,
-            ContigStreamsPtr streams, const string& filename) const {
+            ContigStreamsPtr streams, const string& file_name) const {
         typename PrinterTraits<GraphT>::Printer printer(gp.g, gp.int_ids);
-        INFO("Saving graph to " << filename);
-        printer.saveGraph(filename);
-        printer.saveEdgeSequences(filename);
+        INFO("Saving graph to " << file_name);
+        printer.saveGraph(file_name);
+        printer.saveEdgeSequences(file_name);
         //        printer.savePositions(filename, gp.edge_pos);
-        SaveColoring(gp.g, gp.int_ids, coloring, filename);
+        SaveColoring(gp.g, gp.int_ids, coloring, file_name);
 
-        ReliableSplitter<Graph> splitter(gp.g,
+        shared_ptr<GraphSplitter<Graph>> splitter = omnigraph::ReliableSplitter(gp.g,
                 numeric_limits<size_t>::max(),
                 numeric_limits<size_t>::max());
 
@@ -103,10 +103,10 @@ class SyntheticTestsRunner {
 //
 //        CompositeLabeler<Graph> labeler(length_labeler, pos_labeler);
 
-        WriteComponents(gp.g, splitter, filename + ".dot",
-                *ConstructBorderColorer(gp.g, coloring), labeler);
+        omnigraph::visualization::WriteComponents(gp.g, file_name + "pictures/", splitter,
+                coloring.ConstructColorer(), labeler);
 
-        BlockPrinter<GraphT> block_printer(gp.g, coordinates_handler, filename + ".blk");
+        BlockPrinter<GraphT> block_printer(gp.g, coordinates_handler, file_name + ".blk");
         PrintBlocks(block_printer, streams);
         streams->reset();
     }

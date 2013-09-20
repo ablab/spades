@@ -18,6 +18,7 @@
 #include "omni_utils.hpp"
 #include "xmath.h"
 #include "basic_edge_conditions.hpp"
+#include "graph_processing_algorithm.hpp"
 
 namespace omnigraph {
 
@@ -67,175 +68,79 @@ public:
 	}
 };
 
-//todo refactor
-/**
- * This class removes tips from given graph with the following algorithm: it iterates through all edges of
- * the graph(in order defined by certain comparator) and for each edge checks if this edge is likely to be
- * a tip and if edge is judged to be one it is removed.
- * todo should extend EdgeProcessingAlgorithm
- */
 template<class Graph>
-class TipClipper: private boost::noncopyable {
-private:
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
-	typedef function<bool(EdgeId)> edge_condition_t;
+class TipCondition : public EdgeCondition<Graph> {
+    typedef EdgeCondition<Graph> base;
 
-	Graph &graph_;
-	shared_ptr<Predicate<EdgeId>> additional_condition_;
-	size_t removed_;
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+
+    /**
+     * This method checks if given vertex topologically looks like end of tip
+     * @param v vertex to be checked
+     * @return true if vertex judged to be tip and false otherwise.
+     */
+    bool IsTip(VertexId v) const {
+        return this->g().IncomingEdgeCount(v) + this->g().OutgoingEdgeCount(v) == 1;
+    }
 
 public:
-	const size_t max_tip_length_;
+    TipCondition(const Graph& g) : base(g) {
+    }
 
-private:
-	boost::function<void(EdgeId)> removal_handler_;
+    /**
+     * This method checks if given edge topologically looks like a tip.
+     * @param edge edge vertex to be checked
+     * @return true if edge judged to be tip and false otherwise.
+     */
+    /*virtual*/ bool Check(EdgeId e) const {
+        return (IsTip(this->g().EdgeEnd(e)) || IsTip(this->g().EdgeStart(e)))
+                && (this->g().OutgoingEdgeCount(this->g().EdgeStart(e))
+                        + this->g().IncomingEdgeCount(this->g().EdgeEnd(e)) > 2);
+    }
 
-protected:
+};
 
-	const Graph& graph() const {
-		return graph_;
-	}
+template<class Graph>
+class TipClipper: public EdgeRemovingAlgorithm<Graph, LengthComparator<Graph>> {
+    typedef EdgeRemovingAlgorithm<Graph, LengthComparator<Graph>> base;
 
-	Graph& graph() {
-		return graph_;
-	}
-
-	/**
-	 * This method checks if given vertex topologically looks like end of tip
-	 * @param v vertex to be checked
-	 * @return true if vertex judged to be tip and false otherwise.
-	 */
-	bool IsTip(VertexId v) const {
-		return graph_.IncomingEdgeCount(v) + graph_.OutgoingEdgeCount(v) == 1;
-	}
-
-	/**
-	 * This method checks if given edge topologically looks like a tip.
-	 * @param edge edge vertex to be checked
-	 * @return true if edge judged to be tip and false otherwise.
-	 */
-	bool IsTip(EdgeId edge) const {
-		return graph_.length(edge) <= max_tip_length_
-				&& (IsTip(graph_.EdgeEnd(edge)) || IsTip(graph_.EdgeStart(edge)))
-				&& (graph_.OutgoingEdgeCount(graph_.EdgeStart(edge))
-						+ graph_.IncomingEdgeCount(graph_.EdgeEnd(edge)) > 2);
-	}
-
-	void CompressSplitVertex(VertexId splitVertex) {
-		if (graph_.CanCompressVertex(splitVertex)) {
-			graph_.CompressVertex(splitVertex);
-		}
-	}
-
-	bool DeleteTipVertex(VertexId vertex) {
-		if (graph_.IsDeadEnd(vertex) && graph_.IsDeadStart(vertex)) {
-			graph_.DeleteVertex(vertex);
-			return true;
-		}
-		return false;
-	}
-
-	void ProcessVertex(VertexId v) {
-		if (!DeleteTipVertex(v)) {
-			CompressSplitVertex(v);
-		}
-	}
-
-	virtual void RemoveTip(EdgeId tip) {
-		VertexId start = graph_.EdgeStart(tip);
-		VertexId end = graph_.EdgeEnd(tip);
-		if (removal_handler_) {
-			removal_handler_(tip);
-		}
-		graph_.DeleteEdge(tip);
-		ProcessVertex(start);
-		ProcessVertex(end);
-	}
-
-	virtual bool TryToRemoveTip(EdgeId tip) {
-		RemoveTip(tip);
-		TRACE("Edge removed");
-		return true;
-	}
-
-	/**
-	 * Method clips tips of the graph.
-	 */
-	bool ProcessNext(const EdgeId& tip) {
-		TRACE("Checking edge for being tip " << this->graph().str(tip));
-		if (this->IsTip(tip)) {
-			TRACE("Edge " << this->graph().str(tip) << " judged to look like a tip topologically");
-			if (additional_condition_->Check(tip)) {
-				TRACE("Edge " << this->graph().str(tip) << " judged to be a tip");
-
-				if (this->TryToRemoveTip(tip)) {
-					removed_++;
-				} else {
-					return false;
-				}
-
-			} else {
-				TRACE("Edge " << this->graph().str(tip) << " judged NOT to be tip");
-			}
-		} else {
-			TRACE("Edge " << this->graph().str(tip) << " judged NOT to look like tip topologically");
-		}
-		return true;
-	}
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
 
 public:
 
-	/**
-	 * Create TipClipper with specified parameters. Those parameters could probably be replaced later with
-	 * certain generic checker class.
-	 */
-	TipClipper(Graph &graph, size_t max_tip_length,
-			const shared_ptr<Predicate<EdgeId>>& additional_condition,
-			boost::function<void(EdgeId)> removal_handler = 0,
-			boost::function<double(EdgeId)> /*qual_f*/ = 0) :
-			graph_(graph), additional_condition_(additional_condition), removed_(
-					0), max_tip_length_(max_tip_length), removal_handler_(
-					removal_handler) {
-
-	}
-
-	bool ClipTips() {
-		LengthComparator<Graph> comparator(graph_);
-		for (auto iterator = graph_.SmartEdgeBegin(comparator); !iterator.IsEnd();
-				++iterator) {
-			EdgeId e = *iterator;
-			if (graph_.length(e) > max_tip_length_)
-				break;
-			this->ProcessNext(e);
-		}
-		return removed_ > 0;
-	}
+    TipClipper(Graph& g, size_t max_tip_length,
+            const shared_ptr<Predicate<EdgeId>>& condition = make_shared<func::AlwaysTrue<EdgeId>>(),
+            boost::function<void(EdgeId)> removal_handler = 0) :
+            base(g,
+                 And<EdgeId>(make_shared<TipCondition<Graph>>(g), condition),
+                 removal_handler, LengthComparator<Graph>(g),
+                 make_shared<LengthUpperBound<Graph>>(g, max_tip_length)) {
+    }
 
 private:
-	DECL_LOGGER("AbstractTipClipper")
+    DECL_LOGGER("TipClipper")
 };
 
 template<class Graph>
 class DefaultTipClipper: public TipClipper<Graph> {
+	typedef TipClipper<Graph> base;
 
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
-	typedef TipClipper<Graph> base;
 
 public:
 
-	DefaultTipClipper(Graph &graph, size_t max_tip_length, size_t max_coverage,
+	DefaultTipClipper(Graph& g, size_t max_tip_length, size_t max_coverage,
 			double max_relative_coverage,
-			boost::function<void(EdgeId)> removal_handler = 0,
-			boost::function<double(EdgeId)> qual_f = 0) :
-			base(graph, max_tip_length,
-					And<EdgeId>(
-							make_shared<CoverageUpperBound<Graph>>(graph,
+			boost::function<void(EdgeId)> removal_handler = 0) :
+			base(g, max_tip_length,
+			     And<EdgeId>(make_shared<CoverageUpperBound<Graph>>(g,
 									max_coverage),
 							make_shared<RelativeCoverageTipCondition<Graph>>(
-									graph, max_relative_coverage)),
-					removal_handler, qual_f) {
+									g, max_relative_coverage)),
+					removal_handler) {
 	}
 
 private:
@@ -244,22 +149,39 @@ private:
 
 template<class Graph>
 class TopologyTipClipper: public TipClipper<Graph> {
-private:
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
-	typedef TipClipper<Graph> base;
+    typedef TipClipper<Graph> base;
+
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
 
 public:
-	TopologyTipClipper(Graph &graph, size_t max_tip_length,
-			size_t uniqueness_length, size_t plausibility_length,
-			boost::function<void(EdgeId)> removal_handler = 0) :
-			base(graph, max_tip_length,
-					make_shared<DefaultUniquenessPlausabilityCondition<Graph>>(graph, uniqueness_length,
-							plausibility_length), removal_handler) {
-	}
+
+    TopologyTipClipper(Graph& g, size_t max_tip_length,
+                       size_t uniqueness_length, size_t plausibility_length,
+                       boost::function<void(EdgeId)> removal_handler = 0) :
+            base(g, max_tip_length,
+                 make_shared<DefaultUniquenessPlausabilityCondition<Graph>>(g, uniqueness_length,
+                 plausibility_length),
+                 removal_handler) {
+    }
 
 private:
-	DECL_LOGGER("TopologyTipClipper")
+    DECL_LOGGER("TopologyTipClipper")
 };
+
+template<class Graph>
+bool ClipTips(
+        Graph& graph,
+        size_t max_tip_length,
+        const shared_ptr<Predicate<typename Graph::EdgeId>>& condition = make_shared<func::AlwaysTrue<typename Graph::EdgeId>>(),
+        boost::function<void(typename Graph::EdgeId)> raw_removal_handler = 0) {
+
+    DEBUG("Max tip length: " << max_tip_length);
+
+    omnigraph::TipClipper<Graph> tc(graph, max_tip_length, condition,
+                                    raw_removal_handler);
+
+    return tc.Process();
+}
 
 } // namespace omnigraph

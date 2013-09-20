@@ -46,17 +46,28 @@ class OnlineVisualizer {
     DEBUG("Environment loaded");
   }
 
-  void run() {
-    History& history = History::GetHistory();
-    bool done = false;
-
-    while (!done) {
+  string read_line() {
       char* line = readline(prompt);
       if (!line)
         exit(1);
+      string answer(line);
+      free(line);
+      return answer;
+  }
 
-      if (*line) {
-        string command_with_args(line);
+  void run(const string& batch_file = "") {
+    History& history = History::GetHistory();
+
+    string command_with_args;
+    if (batch_file != "") {
+        command_with_args = "batch " + batch_file;
+    } else {
+        command_with_args = read_line();
+    }
+    bool done = false;
+
+    while (!done) {
+      if (!command_with_args.empty()) {
         stringstream ss(command_with_args);
         TRACE("Delegating to the ArgumentList class");
         ArgumentList arg_list(ss);
@@ -68,8 +79,8 @@ class OnlineVisualizer {
         const Command<Env>& command = command_mapping_.GetCommand(command_string);
         command.Execute(current_environment_, loaded_environments_, arg_list);
         history.AddEntry(processed_command);
-        free(line);
       }
+      command_with_args = read_line();
     }
   }
 
@@ -79,7 +90,6 @@ class OnlineVisualizer {
   }
 
   virtual void AddSpecificCommands() {
-    AddCommand(shared_ptr<Command<Env> >(new LoadCommand<Env>));
   }
 
 
@@ -87,17 +97,20 @@ class OnlineVisualizer {
   static const char* prompt;
 
   void AddBaseCommands() {
-    AddCommand(shared_ptr<Command<Env> >(new NullCommand<Env>));
-    AddCommand(shared_ptr<Command<Env> >(new ExitCommand<Env>));
-    AddCommand(shared_ptr<Command<Env> >(new ListCommand<Env>));
-    AddCommand(shared_ptr<Command<Env> >(new HelpCommand<Env>(&command_mapping_)));
+    AddCommand(make_shared<NullCommand<Env>>());
+    AddCommand(make_shared<ExitCommand<Env>>());
+    AddCommand(make_shared<ListCommand<Env>>());
+    AddCommand(make_shared<HelpCommand<Env>>(&command_mapping_));
 
-    AddCommand(shared_ptr<Command<Env> >(new LogCommand<Env>));
-    AddCommand(shared_ptr<Command<Env> >(new SaveBatchCommand<Env>));
-    AddCommand(shared_ptr<Command<Env> >(new BatchCommand<Env>(&command_mapping_)));
+    AddCommand(make_shared<LogCommand<Env>>());
+    AddCommand(make_shared<SaveBatchCommand<Env>>());
+    AddCommand(make_shared<BatchCommand<Env>>(&command_mapping_));
 
-    AddCommand(shared_ptr<Command<Env> >(new SwitchCommand<Env>));
-    AddCommand(shared_ptr<Command<Env> >(new ReplayCommand<Env>(&command_mapping_)));
+    AddCommand(make_shared<SwitchCommand<Env>>());
+    AddCommand(make_shared<ReplayCommand<Env>>(&command_mapping_));
+
+    //todo think about why it was in the specific commands
+    AddCommand(make_shared<LoadCommand<Env>>());
   }
 
   shared_ptr<Env> current_environment_;

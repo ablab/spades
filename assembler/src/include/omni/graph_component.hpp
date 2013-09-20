@@ -130,7 +130,7 @@ public:
 		return edges_.end();
 	}
 
-	const std::set<EdgeId>& edges() {
+	const std::set<EdgeId>& edges() const {
 		return edges_;
 	}
 

@@ -9,7 +9,28 @@
 #include "test_utils.hpp"
 #include "omni/id_track_handler.hpp"
 
-namespace omni_graph {
+namespace debruijn_graph {
+template<class Graph>
+class IteratorOrderChecker {
+private:
+	const Graph &graph1_;
+	const Graph &graph2_;
+public:
+	IteratorOrderChecker(const Graph &graph1, const Graph &graph2) :graph1_(graph1), graph2_(graph2) {
+	}
+
+	template<typename iterator>
+	bool CheckOrder(iterator it1, iterator it2) {
+		while(!it1.IsEnd() && !it2.IsEnd()) {
+//			cout << graph1_.int_id(*it1) << " " << graph2_.int_id(*it2) << endl;
+			if(graph1_.int_id(*it1) != graph2_.int_id(*it2))
+				return false;
+			++it1;
+			++it2;
+		}
+		return it1.IsEnd() && it2.IsEnd();
+	}
+};
 
 template<class Graph>
 class RandomGraphConstructor {
@@ -102,39 +123,13 @@ public:
 	}
 };
 
-template<class Graph>
-class IteratorOrderChecker {
-private:
-	const Graph &graph1_;
-	const Graph &graph2_;
-public:
-	IteratorOrderChecker(const Graph &graph1, const Graph &graph2) :graph1_(graph1), graph2_(graph2) {
-	}
-
-	template<typename iterator>
-	bool CheckOrder(iterator it1, iterator it2) {
-		while(!it1.IsEnd() && !it2.IsEnd()) {
-//			cout << graph1_.int_id(*it1) << " " << graph2_.int_id(*it2) << endl;
-			if(graph1_.int_id(*it1) != graph2_.int_id(*it2))
-				return false;
-			++it1;
-			++it2;
-		}
-		return it1.IsEnd() && it2.IsEnd();
-	}
-};
-
-}
-
-namespace debruijn_graph {
-
 BOOST_FIXTURE_TEST_SUITE(robust_order_tests, TmpFolderFixture)
 
 BOOST_AUTO_TEST_CASE( OrderTest ) {
 	string file_name = "src/debruijn/test_save";
 	Graph graph(55);
 	IdTrackHandler<Graph> int_ids(graph);
-	omni_graph::RandomGraphConstructor<Graph>(1000, 100, 100).Generate(graph);
+	RandomGraphConstructor<Graph>(1000, 100, 100).Generate(graph);
 	PrinterTraits<Graph>::Printer printer(graph, int_ids);
 	printer.saveGraph(file_name);
 	printer.saveEdgeSequences(file_name);
@@ -142,7 +137,7 @@ BOOST_AUTO_TEST_CASE( OrderTest ) {
 	IdTrackHandler<Graph> new_int_ids(new_graph);
 	ScannerTraits<Graph>::Scanner scanner(new_graph, new_int_ids);
 	scanner.loadGraph(file_name);
-	omni_graph::IteratorOrderChecker<Graph> checker(graph, new_graph);
+	IteratorOrderChecker<Graph> checker(graph, new_graph);
 	BOOST_CHECK(checker.CheckOrder(graph.SmartVertexBegin(), new_graph.SmartVertexBegin()));
 	BOOST_CHECK(checker.CheckOrder(graph.SmartEdgeBegin(), new_graph.SmartEdgeBegin()));
 //	BOOST_CHECK(checker.CheckOrder(graph.SmartVertexBegin(), new_graph.SmartVertexBegin()));

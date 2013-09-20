@@ -712,7 +712,7 @@ void PrintComponent(const LocalizedComponent<Graph>& component,
 			tree_edges.begin(), tree_edges.end(),"green", ""
 		);
 	visualization::WriteComponent(component.AsGraphComponent(), file_name,
-			*omnigraph::visualization::DefaultColorer(component.g(), edge_colorer),
+			omnigraph::visualization::DefaultColorer(component.g(), edge_colorer),
 			*StrGraphLabelerInstance(component.g()));
 }
 
@@ -720,7 +720,7 @@ template<class Graph>
 void PrintComponent(const LocalizedComponent<Graph>& component,
 		const string& file_name) {
 	visualization::WriteComponent(component.AsGraphComponent(), file_name,
-			*omnigraph::visualization::DefaultColorer(component.g()),
+			omnigraph::visualization::DefaultColorer(component.g()),
 			*StrGraphLabelerInstance(component.g()));
 }
 

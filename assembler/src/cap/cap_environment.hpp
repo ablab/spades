@@ -114,7 +114,7 @@ class CapEnvironment : public Environment {
     cap::utils::MakeDirPath(dir_);
   }
 
-  void WriteToStream(std::ostream out) const {
+  void WriteToStream(std::ostream &out) const {
     cap::Serializer s(out);
 
     s.WriteLine("name", name_);
@@ -124,10 +124,13 @@ class CapEnvironment : public Environment {
     s.WriteLine("num_genomes_history", num_genomes_history_);
     s.WriteLine("init_genomes_paths", init_genomes_paths_);
     s.WriteLine("genomes_names", genomes_names_);
-    // TODO coordinates
+
+    s.WriteLine("genomes", genomes_);
+
+    s.WriteLine("coordinates_threads", coordinates_handler_.GetStoredThreads());
   }
 
-  void ReadFromStream(std::istream in) {
+  void ReadFromStream(std::istream &in) {
     cap::Deserializer s(in);
 
     s.ReadStream();
@@ -139,7 +142,12 @@ class CapEnvironment : public Environment {
     s.ReadValue("num_genomes_history", num_genomes_history_);
     s.ReadValue("init_genomes_paths", init_genomes_paths_);
     s.ReadValue("genomes_names", genomes_names_);
-    // TODO coordinates
+
+    s.ReadValue("genomes", genomes_);
+
+    std::vector<std::pair<uint, std::vector<CoordinatesHandler::Thread>>> coords_threads;
+    s.ReadValue("coordinates_threads", coords_threads);
+    coordinates_handler_.SetStoredThreads(coords_threads);
   }
 
   void CheckConsistency() const {
@@ -209,6 +217,10 @@ class CapEnvironment : public Environment {
   }
 
   const vector<Sequence>& genomes() const {
+      return genomes_;
+  }
+
+  vector<Sequence>& mutable_genomes() {
       return genomes_;
   }
 

@@ -25,9 +25,8 @@ import pyyaml
 sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../../spades_pipeline'))
 import support
 
-bowtie_path  = os.path.join(os.path.abspath(sys.path[0]), '../../../../external_tools/bowtie-0.12.7')
-bowtie_build = os.path.join(bowtie_path, "bowtie-build")
-bowtie       = os.path.join(bowtie_path, "bowtie")
+bowtie_build = "bowtie2-build"
+bowtie       = "bowtie2"
 
 tmp_folder = "tmp"
 output_dir = "results_" + datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
@@ -218,38 +217,37 @@ index_err.close()
 
 # bowtie-ing
 report_dict["header"] += ["Total reads"]
-if paired_mode:
-    print("Aligning (ignoring reads with multiple possible aligment)")
-    report_dict["header"] += ["Uniquely aligned reads", "Unaligned reads", "Non-niquely aligned reads"]
-    total_reads = {}
-else:
-    print("Aligning")
-    report_dict["header"] += ["Aligned reads", "Unaligned reads"]
+print("Aligning")
+report_dict["header"] += ["Unaligned reads", "Uniquely aligned reads", "Non-niquely aligned reads"]
+total_reads = {}
+
 for dataset in datasets_dict.iterkeys():
     print("  " + dataset + "...")
     align_log = open(os.path.join(output_dir, dataset + ".log"),'w')
     align_err = open(os.path.join(output_dir, dataset + ".err"),'w') 
     reads_string = reduce(lambda x, y: x + ',' + y, datasets_dict[dataset])   
     if paired_mode:    
-        subprocess.call([bowtie, '-c', '-q', '-m', '1', '--suppress', '6,7,8', index, '-p', str(thread_num), reads_string], stdout=align_log, stderr=align_err)   
+        subprocess.call([bowtie, '-q', '-k', '1', '-x', index, '-p', str(thread_num), reads_string], stdout=align_log, stderr=align_err)   
     else:
-        subprocess.call([bowtie, '-c', '-q', '--suppress', '6,7,8', index, '-p', str(thread_num), reads_string], stdout=align_log, stderr=align_err)
+        subprocess.call([bowtie, '-q', '-x', index, '-p', str(thread_num), reads_string], stdout=align_log, stderr=align_err)
     align_log.close()
     align_err.close() 
 
     align_err = open(os.path.join(output_dir, dataset + ".err"),'r') 
     suppressed_added = False
     for line in align_err:
-        if line.startswith("# reads processed") or line.startswith("# reads with at least one") or line.startswith("# reads that failed"):
-            report_dict[dataset].append( (line.split(':')[1]).strip() )
-        elif paired_mode and line.startswith("# reads with alignments suppressed due to"):
-            report_dict[dataset].append( (line.split(':')[1]).strip() )
-            suppressed_added = True
-        if paired_mode and line.startswith("# reads processed"):
-            total_reads[dataset] = int((line.split(':')[1]).strip())
+        if line.find("reads; of these") != -1:
+            report_dict[dataset].append( (line.split()[0]).strip() )
+            if paired_mode:
+                total_reads[dataset] = int( (line.split()[0]).strip() )
+        elif line.find("aligned 0 times") != -1:
+            report_dict[dataset].append( (line.split(')')[0]).strip() + ')' )
+        elif line.find("aligned exactly 1 time") != -1:
+            report_dict[dataset].append( (line.split(')')[0]).strip() + ')' )
+        elif line.find("aligned >1 times") != -1:
+            report_dict[dataset].append( (line.split(')')[0]).strip() + ')' )
+
     align_err.close() 
-    if paired_mode and not suppressed_added:
-        report_dict[dataset].append( "0 (0.00%)" )      
 
 # raw-single    
 print("Parsing Bowtie log")
@@ -286,7 +284,7 @@ for dataset in datasets_dict.iterkeys():
 # IS form logs    
 if paired_mode:
     print("Retaining insert size")
-    report_dict["header"] += ["Read length", "FR read pairs", "Insert size (deviation)", "RF read pairs", "Insert size (deviation)", "FF read pairs", "Insert size (deviation)", "One uniquely aligned read in pair", "Suppressed due to insert size limit"]
+    report_dict["header"] += ["Read length", "FR read pairs", "Insert size (deviation)", "RF read pairs", "Insert size (deviation)", "FF read pairs", "Insert size (deviation)", "One uniquely aligned read in pair", "Both reads unaligned", "Both aligned to same position", "Suppressed due to insert size limit"]
     import is_from_single_log
     for dataset in datasets_dict.iterkeys():
         print("  " + dataset + "...")
@@ -310,6 +308,8 @@ if paired_mode:
         report_dict[dataset].append( str(round(stat[1]["FF"].mean, 2)) + " (" + str(round(stat[1]["FF"].dev, 2)) + ")"  )
 
         report_dict[dataset].append( str(stat[1]["AU"].count) + " (" + str(round( 100.0 * float(stat[1]["AU"].count) / float(read_pairs), 2) ) + "%)" )
+        report_dict[dataset].append( str(stat[1]["UU"].count) + " (" + str(round( 100.0 * float(stat[1]["UU"].count) / float(read_pairs), 2) ) + "%)" )
+        report_dict[dataset].append( str(stat[1]["RL"].count) + " (" + str(round( 100.0 * float(stat[1]["RL"].count) / float(read_pairs), 2) ) + "%)" )
         report_dict[dataset].append( str(stat[1]["SP"].count) + " (" + str(round( 100.0 * float(stat[1]["SP"].count) / float(read_pairs), 2) ) + "%)" )
 
 # total report

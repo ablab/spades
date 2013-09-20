@@ -38,7 +38,7 @@ typedef io::MultifileReader<io::SingleRead> CompositeSingleReadStream;
 typedef io::ConvertingReaderWrapper UnitedStream;
 
 template<class PairedRead, class Graph, class Mapper>
-void FillPairedIndexWithReadCountMetric(const Graph &g,
+bool FillPairedIndexWithReadCountMetric(const Graph &g,
                                         const Mapper& mapper,
                                         PairedInfoIndexT<Graph>& paired_info_index,
                                         io::ReadStreamVector<io::IReader<PairedRead> >& streams) {
@@ -48,12 +48,13 @@ void FillPairedIndexWithReadCountMetric(const Graph &g,
 			io::IReader<PairedRead>> pif(g, mapper, streams,
 			PairedReadCountWeight);
 
-	pif.FillIndex(paired_info_index);
+	bool res = pif.FillIndex(paired_info_index);
 	DEBUG("Paired info with read count weight counted");
+	return res;
 }
 
 template<class PairedRead, class Graph, class Mapper>
-void FillPairedIndexWithProductMetric(const Graph &g,
+bool FillPairedIndexWithProductMetric(const Graph &g,
                                       const Mapper& mapper,
                                       PairedInfoIndexT<Graph>& paired_info_index,
                                       io::ReadStreamVector<io::IReader<PairedRead> >& streams) {
@@ -63,9 +64,11 @@ void FillPairedIndexWithProductMetric(const Graph &g,
 	LatePairedIndexFiller<Graph, Mapper,
 			io::IReader<PairedRead> > pif(g, mapper, streams,
 			KmerCountProductWeight);
-	pif.FillIndex(paired_info_index);
+	bool res = pif.FillIndex(paired_info_index);
 	DEBUG("Paired info with product weight counted");
+	return res;
 }
+
 
 template<class Graph, class Index>
 void FillEtalonPairedIndex(PairedInfoIndexT<Graph>& etalon_paired_index,
@@ -88,12 +91,13 @@ template<class Graph, class Index>
 void FillEtalonPairedIndex(PairedInfoIndexT<Graph>& etalon_paired_index,
 		const Graph &g, const Index& index,
 		const KmerMapper<Graph>& kmer_mapper, const Sequence& genome,
+		const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
 		size_t k) {
 
-  const auto& ds = cfg::get().ds;
 	FillEtalonPairedIndex(etalon_paired_index, g, index, kmer_mapper,
-                        ds.IS(), ds.RL(), size_t(ds.is_var()),
+                        size_t(lib.data().mean_insert_size), lib.data().read_length, size_t(lib.data().insert_size_deviation),
 			genome, k);
+
 	//////////////////DEBUG
 	//	SimpleSequenceMapper<k + 1, Graph> simple_mapper(g, index);
 	//	Path<EdgeId> path = simple_mapper.MapSequence(genome);
@@ -111,6 +115,7 @@ void FillEtalonPairedIndex(PairedInfoIndexT<Graph>& etalon_paired_index,
 	//////////////////DEBUG
 //	INFO("Etalon paired info counted");
 }
+
 
 template<class Index>
 void FillCoverageFromIndex(Index& index) {
@@ -195,7 +200,8 @@ size_t ConstructGraphUsingExtentionIndex(size_t k, const debruijn_config::constr
     typedef typename Index::InnerIndexT InnerIndex;
     typedef typename EdgeIndexHelper<InnerIndex>::CoverageAndGraphPositionFillingIndexBuilderT IndexBuilder;
 	INFO("Building index with coverage from graph")
-	IndexBuilder().BuildIndexWithCoverageFromGraph(g, index.inner_index(), streams, contigs_stream);
+	IndexBuilder().BuildIndexFromGraph(index.inner_index(), g);
+	IndexBuilder().ParallelFillCoverage(index.inner_index(), streams);
 	return rl;
 }
 

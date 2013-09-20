@@ -25,6 +25,20 @@ public:
 
 };
 
+template<typename> struct Void { typedef void type; };
+
+template<typename T, typename Sfinae = void>
+struct has_contains: std::false_type {};
+
+template<typename T>
+struct has_contains<
+    T
+    , typename Void<
+        //decltype( std::declval<T&>().contains(typename T::KMerIdx(0), typename T::KMer()) )
+        decltype( ((T*)(0))->contains(typename T::KMerIdx(0), typename T::KMer()) )
+    >::type
+>: std::true_type {};
+
 template <class Builder>
 class CoverageFillingEdgeIndexBuilder : public Builder {
     typedef Builder base;
@@ -32,7 +46,17 @@ class CoverageFillingEdgeIndexBuilder : public Builder {
     typedef typename Builder::IndexT IndexT;
     typedef typename IndexT::KMer Kmer;
     typedef typename IndexT::KMerIdx KmerIdx;
-    typedef typename IndexT::GraphT GraphT;
+
+ private:
+
+    bool ContainsWrap(bool check_contains, IndexT& index, KmerIdx idx, const Kmer& kmer, std::true_type) const {
+        return !check_contains || index.contains(idx, kmer);
+    }
+
+    bool ContainsWrap(bool check_contains, IndexT& index, KmerIdx idx, const Kmer& kmer, std::false_type) const {
+        VERIFY(!check_contains);
+        return true;
+    }
 
     template<class ReadStream>
     size_t FillCoverageFromStream(ReadStream &stream,
@@ -55,7 +79,7 @@ class CoverageFillingEdgeIndexBuilder : public Builder {
                 kmer <<= seq[j];
                 KmerIdx idx = index.seq_idx(kmer);
                 //contains is not used since index might be still empty here
-                if (index.valid_idx(idx) && (!check_contains || index.contains(idx, kmer))) {
+                if (index.valid_idx(idx) && ContainsWrap(check_contains, index, idx, kmer, has_contains<IndexT>())) {
 #     pragma omp atomic
                     index[idx].count += 1;
                 }
@@ -65,12 +89,13 @@ class CoverageFillingEdgeIndexBuilder : public Builder {
         return rl;
     }
 
+ public:
+
     template<class Streams>
     size_t ParallelFillCoverage(IndexT &index,
                                 Streams &streams,
-                                SingleReadStream* /*contigs_stream*/, bool check_contains) const {
+                                bool check_contains = true) const {
         INFO("Collecting k-mer coverage information from reads, this takes a while.");
-
         unsigned nthreads = (unsigned) streams.size();
         size_t rl = 0;
         streams.reset();
@@ -95,38 +120,38 @@ class CoverageFillingEdgeIndexBuilder : public Builder {
         }
 #endif
 
-#ifndef NDEBUG
-        for (auto idx = index.kmer_idx_begin(), eidx = index.kmer_idx_end();
-             idx != eidx; ++idx) {
+//todo if this verify is neede, put it outside
+//#ifndef NDEBUG
+//        for (auto idx = index.kmer_idx_begin(), eidx = index.kmer_idx_end();
+//             idx != eidx; ++idx) {
+//
+//            Kmer k = index.kmer(idx);
+//
+//            VERIFY(index[k].count == index[!k].count);
+//        }
+//#endif
 
-            Kmer k = index.kmer(idx);
-
-            VERIFY(index[k].count == index[!k].count);
-        }
-#endif
         return rl;
     }
 
- public:
-
     template<class Streams>
     size_t BuildIndexFromStream(IndexT &index,
-                                /*io::ReadStreamVector<io::IReader<Read> >*/Streams &streams,
+                                Streams &streams,
                                 SingleReadStream* contigs_stream = 0) const {
         base::BuildIndexFromStream(index, streams, contigs_stream);
 
-        return ParallelFillCoverage(index, streams, contigs_stream, false);
+        return ParallelFillCoverage(index, streams, false);
     }
 
-    template<class Streams>
-    size_t BuildIndexWithCoverageFromGraph(
-            GraphT &graph, IndexT &index,
-            /*io::ReadStreamVector<io::IReader<Read> >*/Streams &streams,
-            SingleReadStream* contigs_stream = 0) const {
-        this->BuildIndexFromGraph(index, graph);
-
-        return ParallelFillCoverage(index, streams, contigs_stream, true);
-    }
+//    template<class Streams>
+//    size_t BuildIndexWithCoverageFromGraph(
+//            GraphT &graph, IndexT &index,
+//            Streams &streams,
+//            SingleReadStream* contigs_stream = 0) const {
+//        this->BuildIndexFromGraph(index, graph);
+//
+//        return ParallelFillCoverage(index, streams, contigs_stream, true);
+//    }
 };
 
 template<class Index>

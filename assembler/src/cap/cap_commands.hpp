@@ -2,6 +2,8 @@
 
 #include "cap_environment.hpp"
 #include "cap_environment_manager.hpp"
+#include "mosaic.hpp"
+#include "io/sequence_reader.hpp"
 
 namespace online_visualization {
 
@@ -258,9 +260,71 @@ class LoadCommand<CapEnvironment> : public Command<CapEnvironment> {
 
 };
 
-class SaveGraphCommand : public LocalCommand<CapEnvironment> {
+class SaveEnvCommand : public LocalCommand<CapEnvironment> {
  public:
-  SaveGraphCommand() : LocalCommand<CapEnvironment>("save_graph") {
+  SaveEnvCommand() : LocalCommand<CapEnvironment>("save_env") {
+  }
+
+  virtual std::string Usage() const {
+    return "Command `save_env`\n"
+           "Usage:\n"
+           "> save_graph <directory_to_save_to>\n";
+  }
+
+  virtual void Execute(CapEnvironment& curr_env, const ArgumentList& arg_list) const {
+    const vector<string> &args = arg_list.GetAllArguments();
+
+    std::string folder;
+    if (args.size() > 1) {
+      folder = args[1];
+    } else {
+      folder = curr_env.manager().GetDirForCurrentState();
+    }
+
+    cout << "Saving env in " << folder << " ...";
+
+    std::ofstream write_stream(folder + "/environment");
+    curr_env.WriteToStream(write_stream);
+    write_stream.close();
+    cout << " Done.\n";
+  }
+
+};
+
+class LoadEnvCommand : public LocalCommand<CapEnvironment> {
+ public:
+  LoadEnvCommand() : LocalCommand<CapEnvironment>("load_env") {
+  }
+
+  virtual std::string Usage() const {
+    return "Command `load_env`\n"
+           "Usage:\n"
+           "> load_env <directory with save>\n";
+  }
+
+  virtual void Execute(CapEnvironment& curr_env, const ArgumentList& arg_list) const {
+    const vector<string> &args = arg_list.GetAllArguments();
+
+    std::string folder;
+    if (args.size() > 1) {
+      folder = args[1];
+    } else {
+      folder = curr_env.manager().GetDirForCurrentState();
+    }
+
+    cout << "Load env from " << folder << " ...";
+
+    std::ifstream read_stream(folder + "/environment");
+    curr_env.ReadFromStream(read_stream);
+    read_stream.close();
+    cout << " Done.\n";
+  }
+
+};
+
+class SaveGraphCommand : public NewLocalCommand<CapEnvironment> {
+ public:
+  SaveGraphCommand() : NewLocalCommand<CapEnvironment>("save_graph", 0) {
   }
 
   virtual std::string Usage() const {
@@ -271,23 +335,44 @@ class SaveGraphCommand : public LocalCommand<CapEnvironment> {
            "> save_graph <directory_to_save_to>\n";
   }
 
+  virtual void InnerExecute(CapEnvironment& curr_env, const vector<string>& args) const {
+    if (curr_env.GetGraphK() == CapEnvironment::kNoGraphK) {
+      cout << "You should build graph prior to saving it. Aborting.\n";
+      return;
+    }
+
+    string folder = TryFetchFolder(curr_env, args);
+
+    cout << "Saving graph in " << folder << " ...";
+    curr_env.manager().SaveGraph(folder + "saves/");
+    cout << " Done.\n";
+  }
+
+};
+
+class DrawPicsCommand : public LocalCommand<CapEnvironment> {
+ public:
+  DrawPicsCommand() : LocalCommand<CapEnvironment>("draw_pics") {
+  }
+
+  virtual std::string Usage() const {
+    return "Command `draw_pics`\n"
+           " Draws colored graph components in in specified directory.\n"
+           " If no directory is specified then default cache directory for current state is used.\n"
+           "Usage:\n"
+           "> draw_pics <directory_to_save_to>\n";
+  }
+
   virtual void Execute(CapEnvironment& curr_env, const ArgumentList& arg_list) const {
     if (curr_env.GetGraphK() == CapEnvironment::kNoGraphK) {
       cout << "You should build graph prior to saving it. Aborting.\n";
       return;
     }
 
-    const vector<string> &args = arg_list.GetAllArguments();
+    std::string folder = TryFetchFolder(curr_env, arg_list);
 
-    std::string folder;
-    if (args.size() > 1) {
-      folder = args[1];
-    } else {
-      folder = curr_env.manager().GetDirForCurrentState();
-    }
-
-    cout << "Saving graph in " << folder << " ...";
-    curr_env.manager().SaveGraph(folder);
+    cout << "Drawing pics in " << folder << " ...";
+    curr_env.manager().DrawPics(folder + "pics/");
     cout << " Done.\n";
   }
 
@@ -407,7 +492,9 @@ class SaveBlocksCommand : public LocalCommand<CapEnvironment> {
   }
 
   virtual void Execute(CapEnvironment& curr_env, const ArgumentList& arg_list) const {
-      BlockPrinter<Graph> printer(curr_env.graph(), curr_env.coordinates_handler(), arg_list.GetAllArguments()[0]);
+      std::string folder = TryFetchFolder(curr_env, arg_list);
+
+      BlockPrinter<Graph> printer(curr_env.graph(), curr_env.coordinates_handler(), folder + "blocks.txt");
       for (size_t i = 0; i < curr_env.genome_cnt(); ++i) {
           printer.ProcessContig(i, 2*i, curr_env.genome_names()[i]);
       }
@@ -457,5 +544,112 @@ class LoadGraphCommand : public LocalCommand<CapEnvironment> {
 
 };
 */
+
+class MosaicAnalysisCommand : public NewLocalCommand<CapEnvironment> {
+ public:
+    MosaicAnalysisCommand() : NewLocalCommand<CapEnvironment>("mosaic", 0) {
+  }
+
+  virtual std::string Usage() const {
+    return "Command `mosaic`";
+  }
+
+ private:
+  virtual void InnerExecute(CapEnvironment& curr_env, const vector<string>& args) const {
+      VERIFY(curr_env.genome_cnt() == 1);
+//      const Sequence& genome = curr_env.genomes()[1];
+      const Sequence& genome = curr_env.genomes()[0];
+      size_t min_support_length = 100;
+      size_t max_support_mult = 20;
+      size_t max_inter_length = 500;
+      std::string folder = TryFetchFolder(curr_env, args);
+      ofstream out(folder + "mosaic.txt");
+      cout << "Mosaic analysis triggered" << endl;
+      cout << "Min support block length " << min_support_length << endl;
+      cout << "Max support block multiplicity " << max_support_mult << endl;
+      cout << "Max inter-block length " << max_inter_length << endl;
+      if (curr_env.LSeqIsUsed()) {
+          mosaic::PerformMosaicAnalysis(curr_env.l_seq_gp(), genome, min_support_length, max_support_mult, max_inter_length, out);
+      } else {
+          mosaic::PerformMosaicAnalysis(curr_env.rt_seq_gp(), genome, min_support_length, max_support_mult, max_inter_length, out);
+      }
+  }
+};
+
+//todo works for finished genomes, not contigs!!!
+ContigStreamsPtr ConvertRefsToStreams(const vector<Sequence>& ss, const vector<string>& names) {
+    ContigStreamsPtr answer = make_shared<ContigStreams>();
+    VERIFY(ss.size() == names.size());
+    for (size_t i = 0; i < ss.size(); ++i) {
+        io::IReader<io::SingleRead>* ireader = new io::SequenceReader<io::SingleRead>(ss[i], names[i]);
+        answer->push_back(ireader);
+    }
+    return answer;
+}
+
+class MaskRepeatsCommand : public NewLocalCommand<CapEnvironment> {
+public:
+    MaskRepeatsCommand()
+            : NewLocalCommand<CapEnvironment>("mask_repeats", 2) {
+    }
+
+    virtual std::string Usage() const {
+        return "Command `mask_repeats <k> <max_iter_count>`";
+    }
+
+private:
+
+    vector<string> AppendFasta(const vector<string>& files) const {
+        vector<string> answer;
+        for (string s : files) {
+            answer.push_back(s + ".fasta");
+        }
+        return answer;
+    }
+
+    Sequence ReadSequence(ContigStream& reader) const {
+        VERIFY(!reader.eof());
+        io::SingleRead read;
+        reader >> read;
+        return read.sequence();
+    }
+
+    void UpdateGenomes(ContigStreamsPtr streams, CapEnvironment& curr_env) const {
+        vector<Sequence>& genomes = curr_env.mutable_genomes();
+        VERIFY(streams->size() == genomes.size());
+        for (size_t i = 0; i < streams->size(); ++i) {
+            genomes[i] = ReadSequence((*streams)[i]);
+        }
+    }
+
+    /*virtual*/
+    void InnerExecute(CapEnvironment& curr_env,
+                      const vector<string>& args) const {
+        size_t k = GetInt(args[1]);
+        size_t iteration_cnt = GetInt(args[2]);
+
+        cout << "Masking repeats for k=" << k << " in " << iteration_cnt << "iterations" << endl;
+
+        ContigStreamsPtr streams = ConvertRefsToStreams(
+                curr_env.genomes(), curr_env.genome_names());
+
+        //todo temporary hack
+        curr_env.manager().SaveGenomesToDisk(false);
+
+        string folder = this->CurrentFolder(curr_env) + "masking/";
+        make_dir(folder);
+        bool success = MaskRepeats(k, streams, AppendFasta(curr_env.genome_names()),
+                                   iteration_cnt, folder);
+        if (!success) {
+            cout << "Failed to mask repeats in " << iteration_cnt
+                    << " iterations" << endl;
+        } else {
+            cout << "Repeats successfully masked" << endl;
+            cout << "Updating genomes in environment" << endl;
+            UpdateGenomes(OpenStreams(CurrentFolder(curr_env) + "masking/masked/", AppendFasta(curr_env.genome_names()), false), curr_env);
+        }
+    }
+
+};
 
 }

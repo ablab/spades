@@ -8,6 +8,8 @@
 
 #include "io/read_stream_vector.hpp"
 
+#include "file_limit.hpp"
+
 namespace debruijn_graph {
 // used for temporary reads storage during parallel reading
 static const size_t READS_BUFFER_SIZE = 536870912; // 512 MB in bytes
@@ -142,6 +144,13 @@ path::files_t DeBruijnReadKMerSplitter<Read>::Split(size_t num_files) {
   for (unsigned i = 0; i < num_files; ++i)
     out.push_back(this->GetRawKMersFname(i));
 
+  size_t file_limit = num_files + 2*nthreads;
+  size_t res = limit_file(file_limit);
+  if (res < file_limit) {
+    WARN("Failed to setup necessary limit for number of open files. The process might crash later on.");
+    WARN("Do 'ulimit -n " << file_limit << "' in the console to overcome the limit");
+  }
+
   FILE** ostreams = new FILE*[num_files];
   for (unsigned i = 0; i < num_files; ++i) {
     ostreams[i] = fopen(out[i].c_str(), "wb");
@@ -253,6 +262,13 @@ path::files_t DeBruijnGraphKMerSplitter<Graph>::Split(size_t num_files) {
   for (unsigned i = 0; i < num_files; ++i)
     out.push_back(this->GetRawKMersFname(i));
 
+  size_t file_limit = num_files + 2*16;
+  size_t res = limit_file(file_limit);
+  if (res < file_limit) {
+    WARN("Failed to setup necessary limit for number of open files. The process might crash later on.");
+    WARN("Do 'ulimit -n " << file_limit << "' in the console to overcome the limit");
+  }
+
   FILE** ostreams = new FILE*[num_files];
   for (unsigned i = 0; i < num_files; ++i) {
     ostreams[i] = fopen(out[i].c_str(), "wb");
@@ -331,6 +347,13 @@ path::files_t DeBruijnKMerKMerSplitter::Split(size_t num_files) {
   path::files_t out;
   for (unsigned i = 0; i < num_files; ++i)
     out.push_back(this->GetRawKMersFname(i));
+
+  size_t file_limit = num_files + 2*nthreads;
+  size_t res = limit_file(file_limit);
+  if (res < file_limit) {
+    WARN("Failed to setup necessary limit for number of open files. The process might crash later on.");
+    WARN("Do 'ulimit -n " << file_limit << "' in the console to overcome the limit");
+  }
 
   FILE** ostreams = new FILE*[num_files];
   for (unsigned i = 0; i < num_files; ++i) {

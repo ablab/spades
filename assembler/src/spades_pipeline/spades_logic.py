@@ -67,6 +67,13 @@ def update_k_mers_in_special_cases(cur_k_mers, RL, log):
 
 def run_iteration(configs_dir, execution_home, cfg, log, K, use_additional_contigs, last_one):
     data_dir = os.path.join(cfg.output_dir, "K%d" % K)
+    if options_storage.continue_mode:
+        if os.path.isfile(os.path.join(data_dir, "final_contigs.fasta")):
+            log.info("\n== Skipping assembler: " + ("K%d" % K) + " (already processed)")
+            return
+        else:
+            options_storage.continue_mode = False # continue from here
+
     if os.path.exists(data_dir):
         shutil.rmtree(data_dir)
     os.makedirs(data_dir)
@@ -107,7 +114,7 @@ def run_spades(configs_dir, execution_home, cfg, log):
     cfg.iterative_K = sorted(cfg.iterative_K)
 
     bin_reads_dir = os.path.join(cfg.output_dir, ".bin_reads")
-    if os.path.isdir(bin_reads_dir):
+    if os.path.isdir(bin_reads_dir) and not options_storage.continue_mode:
         shutil.rmtree(bin_reads_dir)
 
     if len(cfg.iterative_K) == 1:
@@ -141,12 +148,15 @@ def run_spades(configs_dir, execution_home, cfg, log):
     latest = os.path.join(cfg.output_dir, "K%d" % K)
 
     if os.path.isfile(os.path.join(latest, "before_rr.fasta")):
-        shutil.copyfile(os.path.join(latest, "before_rr.fasta"), os.path.join(os.path.dirname(cfg.result_contigs), "before_rr.fasta"))
-    if os.path.isfile(os.path.join(latest, "final_contigs.fasta")):    
-        shutil.copyfile(os.path.join(latest, "final_contigs.fasta"), cfg.result_contigs)
+        if not os.path.isfile(os.path.join(os.path.dirname(cfg.result_contigs), "before_rr.fasta")) or not options_storage.continue_mode:
+            shutil.copyfile(os.path.join(latest, "before_rr.fasta"), os.path.join(os.path.dirname(cfg.result_contigs), "before_rr.fasta"))
+    if os.path.isfile(os.path.join(latest, "final_contigs.fasta")):
+        if not os.path.isfile(cfg.result_contigs) or not options_storage.continue_mode:
+            shutil.copyfile(os.path.join(latest, "final_contigs.fasta"), cfg.result_contigs)
     if cfg.paired_mode:
         if os.path.isfile(os.path.join(latest, "scaffolds.fasta")):
-            shutil.copyfile(os.path.join(latest, "scaffolds.fasta"), cfg.result_scaffolds)
+            if not os.path.isfile(cfg.result_scaffolds) or not options_storage.continue_mode:
+                shutil.copyfile(os.path.join(latest, "scaffolds.fasta"), cfg.result_scaffolds)
 
     if cfg.developer_mode:
         # before repeat resolver contigs
@@ -162,7 +172,5 @@ def run_spades(configs_dir, execution_home, cfg, log):
 
     if os.path.isdir(bin_reads_dir):
         shutil.rmtree(bin_reads_dir)
-    if not cfg.paired_mode:
-        return cfg.result_contigs, "", latest
 
-    return cfg.result_contigs, cfg.result_scaffolds, latest
+    return latest

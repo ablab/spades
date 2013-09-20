@@ -34,34 +34,57 @@ void late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices) {
             if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd ||
                 cfg::get().ds.reads[i].type() == io::LibraryType::MatePairs) {
 
-                bool success;
+                bool insert_size_success;
                 if (cfg::get().use_multithreading) {
                     auto streams = paired_binary_readers(cfg::get().ds.reads[i], false, 0);
-                    success = RefineInsertSizeForLib(gp, *streams, cfg::get_writable().ds.reads[i].data(), edge_length_threshold);
+                    insert_size_success = RefineInsertSizeForLib(gp, *streams, cfg::get_writable().ds.reads[i].data(), edge_length_threshold);
                 } else {
                     auto_ptr<PairedReadStream> stream = paired_easy_reader(cfg::get().ds.reads[i], false, 0);
                     SingleStreamType streams(stream.get());
                     streams.release();
-                    success = RefineInsertSizeForLib(gp, streams, cfg::get_writable().ds.reads[i].data(), edge_length_threshold);
+                    insert_size_success = RefineInsertSizeForLib(gp, streams, cfg::get_writable().ds.reads[i].data(), edge_length_threshold);
                 }
 
-                if (!success) {
-                    INFO("Unable to estimate insert size for paired library #" << i);
+                if (!insert_size_success) {
+                    cfg::get_writable().ds.reads[i].data().mean_insert_size = 0.0;
+
+                    WARN("Unable to estimate insert size for paired library #" << i);
+                    if (cfg::get().ds.reads[i].data().read_length <= cfg::get().K) {
+                        WARN("Maximum read length (" << cfg::get().ds.reads[i].data().read_length << ") should be greater than K (" << cfg::get().K << ")");
+                    }
+                    else if (cfg::get().ds.reads[i].data().read_length <= cfg::get().K * 11 / 10) {
+                        WARN("Maximum read length (" << cfg::get().ds.reads[i].data().read_length << ") is probably too close to K (" << cfg::get().K << ")");
+                    }
+                    else {
+                        WARN("None of paired reads aligned properly. Please, check orientation of your read pairs.");
+                    }
                     continue;
+
                 } else {
                     INFO("Estimated insert size for paired library #" << i);
                     INFO("Insert size = " << cfg::get().ds.reads[i].data().mean_insert_size << ", deviation = " << cfg::get().ds.reads[i].data().insert_size_deviation);
+                    INFO("Read length = " << cfg::get().ds.reads[i].data().read_length)
                 }
 
+                //bool pair_info_success;
                 if (cfg::get().use_multithreading) {
                     auto paired_streams = paired_binary_readers(cfg::get().ds.reads[i], true, (size_t) cfg::get().ds.reads[i].data().mean_insert_size);
+                    //pair_info_success =
                     FillPairedIndexWithReadCountMetric(gp.g, *MapperInstance(gp), paired_indices[i], *paired_streams);
                 } else {
                     auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(cfg::get().ds.reads[i], true, (size_t) cfg::get().ds.reads[i].data().mean_insert_size);
                     SingleStreamType paired_streams(paired_stream.get());
                     paired_stream.release();
+                    //pair_info_success =
                     FillPairedIndexWithReadCountMetric(gp.g, *MapperInstance(gp), paired_indices[i], paired_streams);
                 }
+
+//                if (!pair_info_success) {
+//                    WARN("None of paired reads aligned properly. Please, check orientation of your read pairs.");
+//                }
+//                else if (!insert_size_success) {
+//                    WARN("Could not estimate insert size. Try setting it manually.");
+//                }
             }
         }
 

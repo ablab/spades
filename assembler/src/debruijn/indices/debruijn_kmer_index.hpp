@@ -402,8 +402,11 @@ class DeBruijnStreamKMerIndexBuilder<runtime_k::RtSeq, Index> {
 };
 
 //fixme makes hierarchy a bit strange
+template <class Index, class Seq = typename Index::KMer>
+class DeBruijnGraphKMerIndexBuilder;
+
 template <class Index>
-class DeBruijnGraphKMerIndexBuilder {
+class DeBruijnGraphKMerIndexBuilder<Index, runtime_k::RtSeq> {
  public:
   typedef Index IndexT;
 

@@ -738,6 +738,10 @@ struct Range {
         return start_pos < other.start_pos;
       return end_pos < other.end_pos;
     }
+
+    bool contains(const Range& that) {
+        return start_pos >= that.start_pos && end_pos <= that.end_pos;
+    }
 };
 
 std::ostream& operator<<(std::ostream& os, const Range& range) {
@@ -1154,23 +1158,6 @@ class UniquePathFinder {
         return this->operator()(e, BackwardDirection<Graph>(graph_));
     }
 
-//	const vector<EdgeId> UniquePathBackward(EdgeId e) const {
-//		TRACE("UniquePathBackward from " << graph_.str(e));
-//		vector<EdgeId> answer;
-//		EdgeId curr = e;
-//		answer.push_back(curr);
-//		set<EdgeId> was;
-//		while (graph_.CheckUniqueIncomingEdge(graph_.EdgeStart(curr))) {
-//			TRACE("current " << curr);
-//			curr = graph_.GetUniqueIncomingEdge(graph_.EdgeStart(curr));
-//			if (was.count(curr) > 0)
-//				break;
-//			was.insert(curr);
-//			answer.push_back(curr);
-//		}
-//		TRACE("UniquePathBackward from " << graph_.str(e) << " finished");
-//		return vector<EdgeId>(answer.rbegin(), answer.rend());
-//	}
 };
 
 template<class Graph>

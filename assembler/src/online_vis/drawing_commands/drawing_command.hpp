@@ -25,9 +25,9 @@ namespace online_visualization {
                 string file_name = namestream.str();
                 //stringstream linkstream;
                 //linkstream  << curr_env.folder_ << "/" << curr_env.file_name_base_ << "_latest.dot";
-                VertexNeighborhoodFinder<Graph> splitter(curr_env.graph(), vertex, curr_env.max_vertices_, curr_env.edge_length_bound_);
                 //EdgePosGraphLabeler<Graph> labeler(curr_env.graph(), gp_.edge_pos);
-                omnigraph::visualization::WriteComponents<Graph>(curr_env.graph(), splitter, file_name, *DefaultColorer(curr_env.graph(), curr_env.coloring_), curr_env.tot_lab_);
+                omnigraph::GraphComponent<Graph> component = VertexNeighborhood(curr_env.graph(), vertex, curr_env.max_vertices_, curr_env.edge_length_bound_);
+                omnigraph::visualization::WriteComponent<Graph>(component, file_name, curr_env.coloring_, curr_env.tot_lab_);
                 //WriteComponents <Graph> (curr_env.graph(), splitter, linkstream.str(), *DefaultColorer(curr_env.graph(), curr_env.coloring_), curr_env.tot_lab_);
                 cout << "The picture is written to " << file_name << endl;
                 
@@ -37,11 +37,12 @@ namespace online_visualization {
             void DrawPicturesAlongPath(DebruijnEnvironment& curr_env, const MappingPath<EdgeId>& path, string label = "") const {
                 make_dir(curr_env.folder_);
                 stringstream namestream;
-                namestream << curr_env.folder_ << "/" << curr_env.GetFormattedPictureCounter() << "_" << curr_env.file_name_base_ << "_" << label << "_" << ".dot";
-                string file_name = namestream.str();
-                ReliableSplitterAlongPath<Graph> splitter(curr_env.graph(), curr_env.max_vertices_, curr_env.edge_length_bound_, path);
-                omnigraph::visualization::WriteComponents<Graph>(curr_env.graph(), splitter, file_name, *DefaultColorer(curr_env.graph(), curr_env.coloring_), curr_env.tot_lab_);
-                cout << "The picture is written to " << file_name << endl;
+                namestream << curr_env.folder_ << "/" << curr_env.GetFormattedPictureCounter() << "_" << curr_env.file_name_base_ << "/";
+                make_dir(namestream.str());
+                namestream << label;
+                make_dir(namestream.str());
+                omnigraph::visualization::WriteComponentsAlongPath<Graph>(curr_env.graph(), path.simple_path(), namestream.str(), curr_env.coloring_, curr_env.tot_lab_);
+                cout << "The pictures is written to " << namestream.str() << endl;
                 
                 curr_env.picture_counter_++;
             }

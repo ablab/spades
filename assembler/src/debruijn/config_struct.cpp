@@ -121,8 +121,6 @@ void load_lib_data(const std::string& prefix) {
 void write_lib_data(const std::string& prefix) {
   std::string filename = estimated_param_filename(prefix);
 
-  cfg::get().ds.reads.save("foo.txt");
-
   write_param(filename, "lib_count", cfg::get().ds.reads.lib_count());
 
   for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
@@ -621,6 +619,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   if (!cfg.use_scaffolder) {
       cfg.pe_params.param_set.scaffolder_options.on = false;
   }
+  load(cfg.avoid_rc_connections, pt, "avoid_rc_connections");
 
   load(cfg.mask_all, pt, "mask_all");
 

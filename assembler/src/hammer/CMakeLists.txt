@@ -18,13 +18,8 @@ add_executable(hammer
                read_corrector.cpp
                expander.cpp)
 
-if (SPADES_BUILD_INTERNAL)
-  add_subdirectory(quake_count)
-  add_subdirectory(gen_test_data)
-else()
-  add_subdirectory(quake_count EXCLUDE_FROM_ALL)
-  add_subdirectory(gen_test_data EXCLUDE_FROM_ALL)
-endif()
+#  add_subdirectory(quake_count)
+#  add_subdirectory(gen_test_data)
 
 target_link_libraries(hammer input mph_index yaml-cpp ${COMMON_LIBRARIES})
 

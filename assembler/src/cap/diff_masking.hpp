@@ -15,18 +15,10 @@
 #include "coloring.hpp"
 #include "colored_graph_construction.hpp"
 #include "gene_analysis.hpp"
+#include "repeat_masking.hpp"
 
-
+//todo deprecated
 namespace cap {
-
-template<class Stream1, class Stream2>
-void Transfer(Stream1& s1, Stream2& s2) {
-    typename Stream1::read_type r;
-    while (!s1.eof()) {
-        s1 >> r;
-        s2 << r;
-    }
-}
 
 inline void SaveAll(ContigStreamsPtr streams, const vector<string>& suffixes,
         const string& out_root) {
@@ -65,7 +57,7 @@ void MakeSaves(gp_t& gp, ContigStreamsPtr streams, const string& root,
     FillPositions(gp, *streams, coordinates_handler);
 
     PrintColoredGraphWithColorFilter(gp.g, coloring, gp.edge_pos,
-            root + "colored_split_graph.dot");
+            root + "colored_split_graph");
 }
 
 template<class gp_t>
@@ -149,20 +141,6 @@ ContigStreamsPtr RefineStreams(const ContigStreamsPtr& streams,
 
     return RefineStreams(streams, gp);
 
-}
-
-
-inline ContigStreamsPtr OpenStreams(const string& root,
-        const vector<string>& filenames, bool add_rc) {
-    ContigStreamsPtr streams(new ContigStreams());
-    FOREACH (auto filename, filenames) {
-        DEBUG("Opening stream from " << root << filename);
-        ContigStream* reader = new io::Reader(root + filename);
-        if (add_rc)
-            reader = new io::CleanRCReaderWrapper<Contig>(reader);
-        streams->push_back(reader);
-    }
-    return streams;
 }
 
 
@@ -273,7 +251,7 @@ void PerformRefinement(ContigStreamsPtr streams, const string& root,
         gene_collection.Save(gene_save_dir, "genomes/", "gene_info.txt");
         string gene_pics_dir = gene_save_dir + "pics/";
         make_dir(gene_pics_dir);
-        WriteGeneLocality(gene_collection, gp, gene_pics_dir, coloring);
+//        WriteGeneLocality(gene_collection, gp, gene_pics_dir, coloring);
     }
     //end temporary
 }

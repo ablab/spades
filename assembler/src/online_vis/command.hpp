@@ -18,12 +18,15 @@ class CommandMapping;
 
 template <class Env>
 class Command {
+ private:
+    virtual size_t MinArgNumber() const {
+      return 0;
+    }
+
+ //todo fix modifier
  protected:
   string invocation_string_;
 
-  virtual size_t MinArgNumber() const {
-    return 0;
-  }
 
   bool CheckEnoughArguments(const vector<string>& args) const {
     bool result = (args.size() > MinArgNumber());
@@ -74,6 +77,52 @@ class LocalCommand : public Command<Env> {
     else
       cout << "The environment is not loaded" << endl;
   }
+
+ protected:
+
+  string TryFetchFolder(Env& curr_env, const vector<string>& args, size_t arg_nmb = 1) const {
+    if (args.size() > arg_nmb) {
+      return args[arg_nmb] + "/";
+    } else {
+      return CurrentFolder(curr_env);
+    }
+  }
+
+  string TryFetchFolder(Env& curr_env, const ArgumentList& arg_list, size_t arg_nmb = 1) const {
+      const vector<string>& args = arg_list.GetAllArguments();
+      return TryFetchFolder(curr_env, args, arg_nmb);
+  }
+
+  string CurrentFolder(Env& curr_env) const {
+    return curr_env.manager().GetDirForCurrentState();
+  }
+};
+
+//todo integrate into basic LocalCommand (after iteratively switching to it in all commands)
+template <class Env>
+class NewLocalCommand : public LocalCommand<Env> {
+    size_t min_arg_num_;
+
+public:
+    NewLocalCommand(string invocation_string, size_t min_arg_num)
+            : LocalCommand<Env>(invocation_string), min_arg_num_(min_arg_num) {
+    }
+
+    // command for the current environment
+    /*virtual*/ void Execute(Env& curr_env, const ArgumentList& arg_list) const {
+        const vector<string>& args = arg_list.GetAllArguments();
+        if (!this->CheckEnoughArguments(args))
+            return;
+        InnerExecute(curr_env, args);
+    }
+
+private:
+
+    virtual size_t MinArgNumber() const {
+      return min_arg_num_;
+    }
+
+    virtual void InnerExecute(Env& curr_env, const vector<string>& args) const = 0;
 
 };
 

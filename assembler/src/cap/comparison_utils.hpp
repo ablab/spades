@@ -121,7 +121,7 @@ inline void PrintGraphComponentContainingEdge(const string& file_name, const Gra
 //	VERIFY_MSG(int_ids.ReturnEdgeId(int_edge_id) != NULL,
 //			"Couldn't find edge with id = " << int_edge_id);
 
-	AnyEdgeContainFilter<Graph> filter(g, int_ids.ReturnEdgeId(int_edge_id));
+    shared_ptr<GraphComponentFilter<Graph>> filter = make_shared<AnyEdgeContainFilter<Graph>>(g, int_ids.ReturnEdgeId(int_edge_id));
 	FilteringSplitterWrapper<Graph> splitter(inner_splitter, filter);
 	vector<vector<VertexId>> components;
 	while (splitter.HasNext()) {
