@@ -30,7 +30,7 @@ typedef io::IReader<io::PairedReadSeq> SequencePairedReadStream;
 class ReadConverter {
 
 private:
-    const static size_t current_binary_format_version = 6;
+    const static size_t current_binary_format_version = 7;
 
     void convert_reads_to_binary() {
 
