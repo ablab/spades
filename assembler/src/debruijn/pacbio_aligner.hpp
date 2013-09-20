@@ -82,9 +82,9 @@ public:
             }
             map<EdgeId, EdgeId> replacement;
             long_reads.DumpToFile(cfg::get().output_saves +  "long_reads_before_rep.mpr", gp_.edge_pos, replacement);
-            gaps.DumpToFile(cfg::get().output_saves + "gaps.mpr", gp_.edge_pos);
+            gaps.DumpToFile(cfg::get().output_saves + "gaps.mpr");
             gaps.PadGapStrings();
-            gaps.DumpToFile(cfg::get().output_saves +  "gaps_padded.mpr", gp_.edge_pos);
+            gaps.DumpToFile(cfg::get().output_saves +  "gaps_padded.mpr");
             PacbioGapCloser<Graph> gap_closer(gp_.g);
             gap_closer.ConstructConsensus(cfg::get().max_threads, gaps);
             gap_closer.CloseGapsInGraph(replacement);
