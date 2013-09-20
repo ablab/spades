@@ -127,14 +127,13 @@ struct GapDescription {
 
 	string str(Graph &g_) const {
 		stringstream s;
-		DEBUG("str strted");
 		s << g_.int_id(start) << " " << edge_gap_start_position <<endl << g_.int_id(end) << " " << edge_gap_end_position << endl << gap_seq.str()<< endl;
 		return s.str();
 	}
 
 	bool operator <(const GapDescription & b) const {
 		return (start < b.start || (start == b.start &&  end < b.end) ||
-				(start == b.start &&  end == b.end && edge_gap_start_position < b.edge_gap_end_position));
+				(start == b.start &&  end == b.end && edge_gap_start_position < b.edge_gap_start_position));
 	}
 
 private:
