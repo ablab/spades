@@ -127,6 +127,7 @@ struct GapDescription {
 
 	string str(Graph &g_) const {
 		stringstream s;
+		DEBUG("str strted");
 		s << g_.int_id(start) << " " << edge_gap_start_position <<endl << g_.int_id(end) << " " << edge_gap_end_position << endl << gap_seq.str()<< endl;
 		return s.str();
 	}

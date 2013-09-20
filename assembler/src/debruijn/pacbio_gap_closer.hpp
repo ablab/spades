@@ -109,9 +109,10 @@ public:
 		}
 	}
 
-	void DumpToFile(const string filename, EdgesPositionHandler<Graph> &/*edge_pos*/) {
+	void DumpToFile(const string filename) {
 		ofstream filestr(filename);
 		for(auto iter = inner_index.begin(); iter != inner_index.end(); ++iter) {
+		    DEBUG ( g_.int_id(iter->first)<< " " <<iter->second.size());
 			filestr << g_.int_id(iter->first)<< " " <<iter->second.size() << endl;
 			sort(iter->second.begin(), iter->second.end());
 			for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); ++j_iter) {
