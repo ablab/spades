@@ -201,7 +201,7 @@ public:
             path::make_dir(folder);
             //todo magic constant
 //          map<EdgeId, string> empty_coloring;
-            omnigraph::visualization::WriteComponent(g_, omnigraph::EdgeNeighborhood<Graph>(g_, edge, 50, 250)
+            omnigraph::visualization::WriteComponent(omnigraph::EdgeNeighborhood<Graph>(g_, edge, 50, 250)
                     , folder + "edge_" +  ToString(g_.int_id(edge)) + "_" + ToString(quality_handler_.quality(edge)) + ".dot"
                     , omnigraph::visualization::DefaultColorer(g_), labeler_);
         } else {

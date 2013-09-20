@@ -439,11 +439,11 @@ bool RemoveRelativelyLowCoverageComponents(
     INFO("Removing relatively low covered connections");
 
     //todo remove magic constants
-    omnigraph::RelativeCoverageComponentRemover<Graph> rel_rem(
+    omnigraph::simplification::relative_coverage::RelativeCoverageComponentRemover<Graph> rel_rem(
             g,
             boost::bind(&FlankingCoverage::LocalCoverage,
                         boost::cref(flanking_cov), _1, _2),
-            200, coverage_gap, 200, std::numeric_limits<size_t>::max(),
+            200, coverage_gap, 200, 65, std::numeric_limits<size_t>::max(),
             removal_handler, 10, edge_classifier);
     return rel_rem.Process();
 }
@@ -629,14 +629,14 @@ void SimplificationCycle(conj_graph_pack& gp,
 
     //  QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, edge_qual);
     QualityEdgeLocalityPrintingRH<Graph, Index> qual_removal_handler(
-            gp.g, edge_qual, labeler, *colorer, cfg::get().output_dir);
+            gp.g, edge_qual, boost::ref(labeler), cfg::get().output_dir);
 
     const string folder = cfg::get().output_dir + "low_cov_components/";
     make_dir(folder);
 
     boost::function<void(set<EdgeId>)> removal_handler_f_1 = boost::bind(
-            &VisualizeNontrivialComponentAutoInc<Graph>, boost::ref(gp.g), _1,
-            folder, boost::ref(labeler), boost::ref(*colorer));
+            &omnigraph::simplification::VisualizeNontrivialComponentAutoInc<Graph>, boost::ref(gp.g), _1,
+            folder, boost::ref(labeler), colorer);
 
     boost::function<void(EdgeId)> raw_removal_handler_f_2 = boost::bind(
             //            &QualityLoggingRemovalHandler<Graph>::HandleDelete,
@@ -644,7 +644,7 @@ void SimplificationCycle(conj_graph_pack& gp,
             boost::ref(qual_removal_handler), _1);
 
     boost::function<void(set<EdgeId>)> removal_handler_f_2 = boost::bind(
-            &SingleEdgeAdapter<set<EdgeId>>, _1, raw_removal_handler_f_2);
+            &omnigraph::simplification::SingleEdgeAdapter<set<EdgeId>>, _1, raw_removal_handler_f_2);
 
     boost::function<void(set<EdgeId>)> rel_removal_handler = boost::bind(
             &func::Composition<set<EdgeId>>, _1, removal_handler_f_1,
