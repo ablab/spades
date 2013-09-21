@@ -84,10 +84,19 @@ void load_lib_data(const std::string& prefix) {
       return;
   }
 
-  for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-      boost::optional<size_t> sizet_val(0);
-      boost::optional<double> double_val(0.);
+  boost::optional<size_t> sizet_val(0);
+  boost::optional<double> double_val(0.);
 
+  load_param(filename, "max_read_length", sizet_val);
+  if (sizet_val) {
+      cfg::get_writable().ds.set_RL(*sizet_val);
+  }
+  load_param(filename, "average_coverage", double_val);
+  if (double_val) {
+      cfg::get_writable().ds.set_avg_coverage(*double_val);
+  }
+
+  for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
       load_param(filename, "read_length_" + ToString(i), sizet_val);
       if (sizet_val) {
           cfg::get_writable().ds.reads[i].data().read_length = *sizet_val;
@@ -122,6 +131,8 @@ void write_lib_data(const std::string& prefix) {
   std::string filename = estimated_param_filename(prefix);
 
   write_param(filename, "lib_count", cfg::get().ds.reads.lib_count());
+  write_param(filename, "max_read_length", cfg::get().ds.RL());
+  write_param(filename, "average_coverage", cfg::get().ds.avg_coverage());
 
   for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
       write_param(filename, "read_length_" + ToString(i), cfg::get().ds.reads[i].data().read_length);
