@@ -379,6 +379,7 @@ public:
 
     void ReportSubMosaic(const MosaicStructure& mosaic, const vector<Range>& ranges) {
         string finger = mosaic.Fingerprint();
+        out_ << "------" << endl;
         out_ << "Sub_mosaic. Block cnt = " << mosaic.block_size() << endl;
         out_ << "Blocks " << finger;
         out_ << " ; Found in " << get_all(different_irred_presence_, finger).size() << " different irreducible mosaics";
@@ -400,6 +401,7 @@ public:
             out_ << ")";
             delim = "; ";
         }
+        out_ << endl;
     }
 
     void ReportSubMosaics(const MosaicStructure& mosaic) {

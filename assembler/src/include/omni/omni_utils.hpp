@@ -740,7 +740,7 @@ struct Range {
     }
 
     bool contains(const Range& that) {
-        return start_pos >= that.start_pos && end_pos <= that.end_pos;
+        return start_pos <= that.start_pos && end_pos >= that.end_pos;
     }
 };
 
