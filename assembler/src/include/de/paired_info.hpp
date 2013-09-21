@@ -40,7 +40,7 @@ struct Point {
     Point(const Point& rhs)
             : d(rhs.d), weight(rhs.weight), var(rhs.var) {}
 
-    string str() const {
+    std::string str() const {
         stringstream ss;
         ss << "Point: " << " distance = " << this->d
            << ", weight = " << this->weight
@@ -68,9 +68,8 @@ struct Point {
         return !(operator==(rhs));
     }
 
-    const Point operator-() const {
-        Point negated_this(-(this->d), this->weight, this->var);
-        return negated_this;
+    Point operator-() const {
+        return Point(-d, weight, var);
     }
 };
 
@@ -78,11 +77,20 @@ inline int rounded_d(Point p) {
     return math::round_to_zero(p.d);
 }
 
-ostream& operator<<(ostream& os, Point point) {
+ostream& operator<<(ostream& os, const Point &point) {
     return os << point.str();
 }
 
 typedef std::set<Point> Histogram;
+
+inline bool ClustersIntersect(Point p1, Point p2) {
+  return math::le(p1.d, p2.d + p1.var + p2.var) &&
+         math::le(p2.d, p1.d + p1.var + p2.var);
+}
+
+inline Point ConjugatePoint(size_t l1, size_t l2, const Point& point) {
+  return Point(point.d + (double) l2 - (double) l1, point.weight, point.var);
+}
 
 // tuple of a pair of edges @first, @second, and a @point
 template<typename EdgeId>
@@ -176,15 +184,6 @@ inline int rounded_d(PairInfo<EdgeId> const& pi) {
   return math::round_to_zero(pi.d());
 }
 
-inline bool ClustersIntersect(Point p1, Point p2) {
-  return math::le(p1.d, p2.d + p1.var + p2.var) &&
-         math::le(p2.d, p1.d + p1.var + p2.var);
-}
-
-inline Point ConjugatePoint(size_t l1, size_t l2, const Point& point) {
-  return Point(point.d + (double) l2 - (double) l1, point.weight, point.var);
-}
-
 template<typename EdgeId>
 PairInfo<EdgeId> BackwardInfo(const PairInfo<EdgeId>& pi) {
   return PairInfo<EdgeId>(pi.second, pi.first, -pi.point);
@@ -194,135 +193,6 @@ template<typename EdgeId>
 inline bool IsSymmetric(PairInfo<EdgeId> const& pi) {
   return pi.first == pi.second && math::eq(pi.d(), 0.);
 }
-
-//TODO: try storing set<PairInfo>
-template <typename EdgeId>
-class PairInfoIndexData {
-public:
-  typedef set<PairInfo<EdgeId> > Data;
-  typedef typename Data::iterator data_iterator;
-  typedef vector<PairInfo<EdgeId> > PairInfos;
-
-  //  we can not update elements in the std::set,
-  //  although we can delete element,
-  //  and then insert a modified version of it
-  //  but here we do not care about safety, and making illegal @const_cast on the std::set element
-  void UpdateSingleInfo(const PairInfo<EdgeId>& info, double new_dist, double new_weight, double new_variance) {
-    TRACE(info << " is about to be merged with " << new_dist << " " << new_weight << " " << new_variance);
-    PairInfo<EdgeId>& info_to_update = const_cast<PairInfo<EdgeId>&>(*data_.find(info));
-    using namespace math;
-    update_value_if_needed<double>(info_to_update.d(), new_dist);
-    update_value_if_needed<double>(info_to_update.weight(), new_weight);
-    update_value_if_needed<double>(info_to_update.var, new_variance);
-  }
-
-    //TODO: rename the method
-  void ReplaceFirstEdge(const PairInfo<EdgeId>& info, EdgeId newId) {
-    data_.insert(PairInfo<EdgeId>(newId, info.second, info.point));
-  }
-
-  PairInfoIndexData() :
-      data_() {
-  }
-
-  data_iterator begin() const {
-    return data_.begin();
-  }
-
-  data_iterator end() const {
-    return data_.end();
-  }
-
-  size_t size() const {
-    return data_.size();
-  }
-
-  void AddPairInfo(const PairInfo<EdgeId>& pair_info, bool add_reversed = 1) {
-    data_.insert(pair_info);
-
-    if (add_reversed && !IsSymmetric(pair_info))
-      data_.insert(BackwardInfo(pair_info));
-  }
-
-  void UpdateInfo(const PairInfo<EdgeId>& info, double new_dist, double new_weight, double new_variance, bool add_reversed) {
-        // first we update backward info in order to leave @info not modified
-    if (add_reversed && !IsSymmetric(info))
-      UpdateSingleInfo(BackwardInfo(info), -new_dist, new_weight, new_variance);
-
-    UpdateSingleInfo(info, new_dist, new_weight, new_variance);
-  }
-
-  void DeleteEdgeInfo(EdgeId e) {
-    set<PairInfo<EdgeId> > paired_edges;
-
-    for (auto lower = LowerBound(e), upper = UpperBound(e); lower != upper;
-        ++lower) {
-      paired_edges.insert(BackwardInfo(*lower));
-    }
-
-    for (auto it = paired_edges.begin(); it != paired_edges.end(); ++it) {
-      data_.erase(*it);
-    }
-
-    data_.erase(LowerBound(e), UpperBound(e));
-  }
-
-  void DeletePairInfo(const PairInfo<EdgeId>& info) {
-    VERIFY(data_.find(info) != data_.end());
-    data_.erase(info);
-  }
-
-  void DeleteEdgePairInfo(EdgeId e1, EdgeId e2) {
-    data_.erase(LowerBound(e1, e2), UpperBound(e1, e2));
-    if (e1 != e2)
-      data_.erase(LowerBound(e2, e1), UpperBound(e2, e1));
-  }
-
-  PairInfos GetEdgeInfos(EdgeId e) const {
-    return PairInfos(LowerBound(e), UpperBound(e));
-  }
-
-  PairInfos GetEdgePairInfos(EdgeId e1, EdgeId e2) const {
-    return PairInfos(LowerBound(e1, e2), UpperBound(e1, e2));
-  }
-
-  void clear() {
-    data_.clear();
-  }
-
-    data_iterator Find(const PairInfo<EdgeId>& pair_info) const {
-        return data_.find(pair_info);
-    }
-
-  data_iterator LowerBound(const PairInfo<EdgeId>& pair_info) const {
-    return data_.lower_bound(pair_info);
-  }
-
-  data_iterator UpperBound(const PairInfo<EdgeId>& pair_info) const {
-    return data_.upper_bound(pair_info);
-  }
-
-  data_iterator LowerBound(EdgeId e) const {
-    return data_.lower_bound(MinPairInfo(e));
-  }
-
-  data_iterator UpperBound(EdgeId e) const {
-    return data_.upper_bound(MaxPairInfo(e));
-  }
-
-  data_iterator LowerBound(EdgeId e1, EdgeId e2) const {
-    return data_.lower_bound(MinPairInfo(e1, e2));
-  }
-
-  data_iterator UpperBound(EdgeId e1, EdgeId e2) const {
-    return data_.upper_bound(MaxPairInfo(e1, e2));
-  }
-
-private:
-  Data data_;
-
-    DECL_LOGGER("PairedInfoIndexData");
-};
 
 // new map { EdgeId -> (EdgeId -> (d, weight, var)) }
 template<class Graph>
@@ -904,7 +774,7 @@ template <class Graph>
 struct PairedInfoIndicesT {
     typedef PairedInfoIndexT<Graph> IndexT;
 
-    vector < IndexT* > data_;
+    std::vector<IndexT*> data_;
 
     PairedInfoIndicesT(const Graph& graph, size_t lib_num) {
         for (size_t i = 0; i < lib_num; ++i) {
@@ -944,6 +814,135 @@ struct PairedInfoIndicesT {
 };
 
 /*----------------------------------------Old Index----------------------------------------------*/
+
+//TODO: try storing set<PairInfo>
+template <typename EdgeId>
+class PairInfoIndexData {
+public:
+  typedef set<PairInfo<EdgeId> > Data;
+  typedef typename Data::iterator data_iterator;
+  typedef vector<PairInfo<EdgeId> > PairInfos;
+
+  //  we can not update elements in the std::set,
+  //  although we can delete element,
+  //  and then insert a modified version of it
+  //  but here we do not care about safety, and making illegal @const_cast on the std::set element
+  void UpdateSingleInfo(const PairInfo<EdgeId>& info, double new_dist, double new_weight, double new_variance) {
+    TRACE(info << " is about to be merged with " << new_dist << " " << new_weight << " " << new_variance);
+    PairInfo<EdgeId>& info_to_update = const_cast<PairInfo<EdgeId>&>(*data_.find(info));
+    using namespace math;
+    update_value_if_needed<double>(info_to_update.d(), new_dist);
+    update_value_if_needed<double>(info_to_update.weight(), new_weight);
+    update_value_if_needed<double>(info_to_update.var, new_variance);
+  }
+
+    //TODO: rename the method
+  void ReplaceFirstEdge(const PairInfo<EdgeId>& info, EdgeId newId) {
+    data_.insert(PairInfo<EdgeId>(newId, info.second, info.point));
+  }
+
+  PairInfoIndexData() :
+      data_() {
+  }
+
+  data_iterator begin() const {
+    return data_.begin();
+  }
+
+  data_iterator end() const {
+    return data_.end();
+  }
+
+  size_t size() const {
+    return data_.size();
+  }
+
+  void AddPairInfo(const PairInfo<EdgeId>& pair_info, bool add_reversed = 1) {
+    data_.insert(pair_info);
+
+    if (add_reversed && !IsSymmetric(pair_info))
+      data_.insert(BackwardInfo(pair_info));
+  }
+
+  void UpdateInfo(const PairInfo<EdgeId>& info, double new_dist, double new_weight, double new_variance, bool add_reversed) {
+        // first we update backward info in order to leave @info not modified
+    if (add_reversed && !IsSymmetric(info))
+      UpdateSingleInfo(BackwardInfo(info), -new_dist, new_weight, new_variance);
+
+    UpdateSingleInfo(info, new_dist, new_weight, new_variance);
+  }
+
+  void DeleteEdgeInfo(EdgeId e) {
+    set<PairInfo<EdgeId> > paired_edges;
+
+    for (auto lower = LowerBound(e), upper = UpperBound(e); lower != upper;
+        ++lower) {
+      paired_edges.insert(BackwardInfo(*lower));
+    }
+
+    for (auto it = paired_edges.begin(); it != paired_edges.end(); ++it) {
+      data_.erase(*it);
+    }
+
+    data_.erase(LowerBound(e), UpperBound(e));
+  }
+
+  void DeletePairInfo(const PairInfo<EdgeId>& info) {
+    VERIFY(data_.find(info) != data_.end());
+    data_.erase(info);
+  }
+
+  void DeleteEdgePairInfo(EdgeId e1, EdgeId e2) {
+    data_.erase(LowerBound(e1, e2), UpperBound(e1, e2));
+    if (e1 != e2)
+      data_.erase(LowerBound(e2, e1), UpperBound(e2, e1));
+  }
+
+  PairInfos GetEdgeInfos(EdgeId e) const {
+    return PairInfos(LowerBound(e), UpperBound(e));
+  }
+
+  PairInfos GetEdgePairInfos(EdgeId e1, EdgeId e2) const {
+    return PairInfos(LowerBound(e1, e2), UpperBound(e1, e2));
+  }
+
+  void clear() {
+    data_.clear();
+  }
+
+    data_iterator Find(const PairInfo<EdgeId>& pair_info) const {
+        return data_.find(pair_info);
+    }
+
+  data_iterator LowerBound(const PairInfo<EdgeId>& pair_info) const {
+    return data_.lower_bound(pair_info);
+  }
+
+  data_iterator UpperBound(const PairInfo<EdgeId>& pair_info) const {
+    return data_.upper_bound(pair_info);
+  }
+
+  data_iterator LowerBound(EdgeId e) const {
+    return data_.lower_bound(MinPairInfo(e));
+  }
+
+  data_iterator UpperBound(EdgeId e) const {
+    return data_.upper_bound(MaxPairInfo(e));
+  }
+
+  data_iterator LowerBound(EdgeId e1, EdgeId e2) const {
+    return data_.lower_bound(MinPairInfo(e1, e2));
+  }
+
+  data_iterator UpperBound(EdgeId e1, EdgeId e2) const {
+    return data_.upper_bound(MaxPairInfo(e1, e2));
+  }
+
+private:
+  Data data_;
+
+    DECL_LOGGER("PairedInfoIndexData");
+};
 
 /**
  * PairedInfoIndex stores information about edges connected by paired reads
