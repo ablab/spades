@@ -417,7 +417,7 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 	INFO("Clustered info stats counted");
 }
 
-
+//todo refactor using edge quality
 void WriteErrorLoc(const Graph &g,
 		const string& folder_name,
 		shared_ptr<omnigraph::visualization::GraphColorer<Graph>> genome_colorer,

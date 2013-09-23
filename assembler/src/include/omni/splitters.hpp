@@ -116,6 +116,7 @@ public:
 
     Element Next() {
         if(!HasNext()) { //This function actually changes value of current! It is not just to verify!
+            //fixme use VERIFY_MSG instead
             VERIFY(HasNext());
         }
         Element next = *current_;

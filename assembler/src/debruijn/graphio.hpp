@@ -88,13 +88,12 @@ bool LoadEdgeIndex(const std::string& file_name,
   std::ifstream file;
   file.open((file_name + ".kmidx").c_str(),
             std::ios_base::binary | std::ios_base::in);
-  INFO("Reading kmer index, " << file_name <<" started");
+  INFO("Reading kmer index from " << file_name <<" started");
   if (!file.is_open())
     return false;
 
   uint32_t k_;
   file.read((char *) &k_, sizeof(uint32_t));
-  INFO(k_ <<" " <<  index.k());
   VERIFY_MSG(k_ == index.k(), "Cannot read edge index, different Ks:");
 
   index.BinRead(file, file_name + ".kmidx");
@@ -576,11 +575,11 @@ public:
         flag = fscanf(sequence_file, "%zu %s .", &e_real_id, longstring);
       }
       VERIFY(flag == 2);
-      TRACE("Edge " << e_real_id << " : " << start_id << " -> " 
+      TRACE("Edge " << e_real_id << " : " << start_id << " -> "
             << fin_id << " l = " << length << " ~ " << conjugate_edge_id);
       if (edge_set.find((int) e_real_id) == edge_set.end()) {
         Sequence tmp(longstring);
-        TRACE(start_id << " " << fin_id << " " << this->id_handler().ReturnVertexId(start_id) 
+        TRACE(start_id << " " << fin_id << " " << this->id_handler().ReturnVertexId(start_id)
               << " " << this->id_handler().ReturnVertexId(fin_id));
         EdgeId eid = this->g().AddEdge(
             this->id_handler().ReturnVertexId(start_id),

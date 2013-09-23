@@ -613,7 +613,7 @@ void SimplificationCycle(conj_graph_pack& gp,
     //todo temporary disabled completely
     DEBUG(iteration << " ErroneousConnectionsRemoval");
     RemoveLowCoverageEdges(gp.g, cfg::get().simp.ec, /*todo return, removal_handler*/
-                           removal_handler, cfg::get().ds.RL(), max_coverage,
+                           removal_handler, cfg::get().ds.RL(), 3.0/*max_coverage*/,
                            iteration_count, iteration);
     DEBUG(iteration << " ErroneousConnectionsRemoval stats");
     printer(ipp_err_con_removal, str(format("_%d") % iteration));
@@ -627,17 +627,18 @@ void SimplificationCycle(conj_graph_pack& gp,
     total_labeler tot_lab(&graph_struct);
     CompositeLabeler<Graph> labeler(tot_lab, edge_qual);
 
-    //  QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, edge_qual);
-    QualityEdgeLocalityPrintingRH<Graph, Index> qual_removal_handler(
-            gp.g, edge_qual, boost::ref(labeler), cfg::get().output_dir);
-
+    //nontrivial low covered components deleted (folder low_cov_components)
     const string folder = cfg::get().output_dir + "low_cov_components/";
     make_dir(folder);
-
     boost::function<void(set<EdgeId>)> removal_handler_f_1 = boost::bind(
             &omnigraph::simplification::VisualizeNontrivialComponentAutoInc<Graph>, boost::ref(gp.g), _1,
             folder, boost::ref(labeler), colorer);
 
+    //  QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, edge_qual);
+    QualityEdgeLocalityPrintingRH<Graph, Index> qual_removal_handler(
+            gp.g, edge_qual, boost::ref(labeler), cfg::get().output_dir);
+
+    //positive quality edges removed (folder colored_edges_deleted)
     boost::function<void(EdgeId)> raw_removal_handler_f_2 = boost::bind(
             //            &QualityLoggingRemovalHandler<Graph>::HandleDelete,
             &QualityEdgeLocalityPrintingRH<Graph, Index>::HandleDelete,
@@ -772,8 +773,10 @@ void SimplifyGraph(conj_graph_pack &gp,
                 str(format("_%d") % (i + iteration_count)));
     }
 
-    PostSimplification(gp, flanking_cov, removal_handler, printer,
-                       determined_coverage_threshold);
+    //todo enable for comparison with current version
+//    PostSimplification(gp, flanking_cov, removal_handler, printer,
+//                       determined_coverage_threshold);
+
 //    typedef typename EdgeIndexHelper<typename conj_graph_pack::index_t>::GraphPositionFillingIndexBuilderT IndexBuilder;
 //    IndexBuilder index_builder;
     if (!cfg::get().developer_mode) {
