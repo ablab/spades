@@ -60,7 +60,7 @@ private:
   }
 
   template<typename PairedRead>
-  void ProcessPairedRead(omnigraph::PairedInfoIndexT<Graph> &paired_index,
+  void ProcessPairedRead(omnigraph::de::PairedInfoIndexT<Graph> &paired_index,
       PairedRead& p_r) {
     Sequence read1 = p_r.first().sequence();
     Sequence read2 = p_r.second().sequence();
@@ -139,7 +139,7 @@ private:
   }
 
   template<class PairedStream>
-  void FillUsualIndex(omnigraph::PairedInfoIndexT<Graph> &paired_index, PairedStream& stream) {
+  void FillUsualIndex(omnigraph::de::PairedInfoIndexT<Graph> &paired_index, PairedStream& stream) {
     INFO("Processing paired reads (takes a while)");
 
     stream.reset();
@@ -153,15 +153,15 @@ private:
   }
 
   template<class Streams>
-  void FillParallelIndex(omnigraph::PairedInfoIndexT<Graph> &paired_index, Streams& streams) {
+  void FillParallelIndex(omnigraph::de::PairedInfoIndexT<Graph> &paired_index, Streams& streams) {
     INFO("Processing paired reads (takes a while)");
 
     size_t nthreads = streams.size();
-    vector<omnigraph::PairedInfoIndexT<Graph>*> buffer_pi(nthreads);
+    vector<omnigraph::de::PairedInfoIndexT<Graph>*> buffer_pi(nthreads);
     buffer_pi[0] = &paired_index;
 
     for (size_t i = 1; i < nthreads; ++i) {
-      buffer_pi[i] = new omnigraph::PairedInfoIndexT<Graph>(graph_);
+      buffer_pi[i] = new omnigraph::de::PairedInfoIndexT<Graph>(graph_);
     }
 
     size_t counter = 0;
@@ -201,7 +201,7 @@ public:
    * Method reads paired data from stream, maps it to genome and stores it in this PairInfoIndex.
    */
   template<class Streams>
-  void FillIndex(omnigraph::PairedInfoIndexT<Graph> &paired_index, Streams& streams) {
+  void FillIndex(omnigraph::de::PairedInfoIndexT<Graph> &paired_index, Streams& streams) {
     INFO("Preparing shift maps");
     PrepareShiftMaps();
 
@@ -227,7 +227,6 @@ class GapCloser {
  private:
   typedef typename Graph::EdgeId EdgeId;
   typedef typename Graph::VertexId VertexId;
-  typedef set<Point> Histogram;
 
   Graph& g_;
   int k_;
@@ -436,34 +435,40 @@ class GapCloser {
 
 public:
   void CloseShortGaps() {
-    INFO("Closing short gaps");
-    int gaps_filled = 0;
-    int gaps_checked = 0;
-    for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-      EdgeId first_edge = *it;
-      const InnerMap<Graph>& inner_map = tips_paired_idx_.GetEdgeInfo(*it, 0);
-      for (auto inner_it = inner_map.Begin(); inner_it != inner_map.End(); ++inner_it) {
-        EdgeId second_edge = (*inner_it).first;
-        const Point& point = (*inner_it).second;
-          if (first_edge != second_edge && math::ge(point.weight, weight_threshold_)) {
-            if (!g_.IsDeadEnd(g_.EdgeEnd(first_edge)) || !g_.IsDeadStart(g_.EdgeStart(second_edge))) {
-              // WARN("Topologically wrong tips");
-            continue;
-          }
-            ++gaps_checked;
-            if (ProcessPair(first_edge, second_edge)) {
-              ++gaps_filled;
-            break;
-          }
-        }
-      }
-    }
+      typedef typename PairedInfoIndexT<Graph>::EdgeIterator EdgeIterator;
 
-    INFO("Closing short gaps complete: filled " << gaps_filled
-            << " gaps after checking " << gaps_checked
-            << " candidates");
-    omnigraph::Compressor<Graph> compressor(g_);
-    compressor.CompressAllVertices();
+      INFO("Closing short gaps");
+      size_t gaps_filled = 0;
+      size_t gaps_checked = 0;
+      for (auto edge = g_.SmartEdgeBegin(); !edge.IsEnd(); ++edge) {
+          EdgeId first_edge = *edge;
+          auto edge_info = tips_paired_idx_.GetEdgeInfo(first_edge, 0);
+
+          for (EdgeIterator it(edge_info.begin(), edge_info.end()),
+                            et(edge_info.end(), edge_info.end());
+               it != et; ++it) {
+              std::pair<EdgeId, Point> entry = *it;
+              EdgeId second_edge = entry.first;
+              const Point& point = entry.second;
+              if (first_edge != second_edge && math::ge(point.weight, weight_threshold_)) {
+                  if (!g_.IsDeadEnd(g_.EdgeEnd(first_edge)) || !g_.IsDeadStart(g_.EdgeStart(second_edge))) {
+                      // WARN("Topologically wrong tips");
+                      continue;
+                  }
+                  ++gaps_checked;
+                  if (ProcessPair(first_edge, second_edge)) {
+                      ++gaps_filled;
+                      break;
+                  }
+              }
+          }
+      }
+
+      INFO("Closing short gaps complete: filled " << gaps_filled
+           << " gaps after checking " << gaps_checked
+           << " candidates");
+      omnigraph::Compressor<Graph> compressor(g_);
+      compressor.CompressAllVertices();
   }
 
   GapCloser(Graph& g, PairedInfoIndexT<Graph>& tips_paired_idx,

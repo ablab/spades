@@ -286,7 +286,6 @@ template<class Graph>
 void DataPrinter<Graph>::savePaired(const string& file_name,
     const PairedInfoIndexT<Graph>& paired_index)
 {
-  typedef set<Point> Histogram;
   FILE* file = fopen((file_name + ".prd").c_str(), "w");
   DEBUG("Saving paired info, " << file_name <<" created");
   VERIFY(file != NULL);
@@ -294,10 +293,10 @@ void DataPrinter<Graph>::savePaired(const string& file_name,
   size_t comp_size = 0;
   for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
     EdgeId e1 = *I;
-    const InnerMap<Graph>& inner_map = paired_index.GetEdgeInfo(e1, 0);
+    auto inner_map = paired_index.GetEdgeInfo(e1, 0);
     for (auto II = inner_map.begin(), IE = inner_map.end(); II != IE; ++II) {
       EdgeId e2 = II->first;
-      const Histogram& hist = II->second;
+      const de::Histogram& hist = II->second;
       if (component_.contains(e2)) { // if the second edge also lies in the same component
         comp_size += hist.size();
       }
@@ -308,7 +307,7 @@ void DataPrinter<Graph>::savePaired(const string& file_name,
 
   for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
     EdgeId e1 = *I;
-    const InnerMap<Graph>& inner_map = paired_index.GetEdgeInfo(e1, 0);
+    auto inner_map = paired_index.GetEdgeInfo(e1, 0);
     for (auto II = inner_map.begin(), IE = inner_map.end(); II != IE; ++II) {
       EdgeId e2 = II->first;
       const Histogram& hist = II->second;

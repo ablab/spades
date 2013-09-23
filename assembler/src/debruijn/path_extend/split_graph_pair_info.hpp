@@ -13,7 +13,7 @@
 using namespace debruijn_graph;
 
 namespace path_extend {
-class Basket{
+class Basket {
 
 public:
 	EdgeId edgeId_;

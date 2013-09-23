@@ -26,7 +26,6 @@ namespace debruijn_graph {
 template<class Graph>
 class PairInfoImprover {
   typedef typename Graph::EdgeId EdgeId;
-  typedef set<Point> Histogram;
   typedef vector<PairInfo<EdgeId> > PairInfos;
   typedef pair<EdgeId, EdgeId> EdgePair;
 
@@ -74,7 +73,7 @@ class PairInfoImprover {
     size_t cnt = 0;
     DEBUG("ParallelRemoveContraditional: Put infos to vector");
 
-    vector<pair<EdgeId, InnerMap<Graph> > > inner_maps; // map [EdgeId -> Histogram]
+    vector<pair<EdgeId, typename PairedInfoIndexT<Graph>::InnerMap > > inner_maps; // map [EdgeId -> Histogram]
     for (auto e_iter = graph_.ConstEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
       if (graph_.length(*e_iter) >= cfg::get().rr.max_repeat_length)
         inner_maps.push_back(make_pair(*e_iter, index_.GetEdgeInfo(*e_iter, 0)));
@@ -121,7 +120,7 @@ class PairInfoImprover {
 
     for (auto e_iter = graph_.ConstEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
       if (graph_.length(*e_iter )>= cfg::get().rr.max_repeat_length) {
-        InnerMap<Graph> inner_map = index_.GetEdgeInfo(*e_iter, 0);
+        auto inner_map = index_.GetEdgeInfo(*e_iter, 0);
         FindInconsistent(*e_iter, inner_map, to_remove);
       }
     }
@@ -184,7 +183,7 @@ class PairInfoImprover {
       for (size_t i = 0; i < nthreads; ++i) {
         DEBUG("Adding map #" << i << " " << j);
         for (auto I = to_add[i][j]->begin(), E = to_add[i][j]->end(); I != E; ++I) {
-          const Histogram& hist = *I;
+          const de::Histogram& hist = *I;
           EdgeId e1 = I.first();
           EdgeId e2 = I.second();
           for (auto it = hist.begin(); it != hist.end(); ++it) {
@@ -224,31 +223,36 @@ class PairInfoImprover {
   }
 
 // Checking the consitency of two edge pairs (e, e_1) and (e, e_2) for all pairs (e, <some_edge>)
-  void FindInconsistent(EdgeId base_edge, const InnerMap<Graph>& inner_map, PairedInfoIndexT<Graph>* pi)
-  {
-    for (auto I_1 = inner_map.Begin(), E = inner_map.End(); I_1 != E; ++I_1) {
-      for (auto I_2 = inner_map.Begin(); I_2 != E; ++I_2) {
-        if (I_1 == I_2)
-          continue;
-        EdgeId e1 = (*I_1).first;
-        const Point& p1 = (*I_1).second;
-        EdgeId e2 = (*I_2).first;
-        const Point& p2 = (*I_2).second;
+void FindInconsistent(EdgeId base_edge, const typename PairedInfoIndexT<Graph>::InnerMap& inner_map, PairedInfoIndexT<Graph>* pi) {
+    typedef typename PairedInfoIndexT<Graph>::EdgeIterator EdgeIterator;
 
-        if (!IsConsistent(base_edge, e1, e2, p1, p2)) {
-          if (math::le(p1.weight, p2.weight))
-            pi->AddPairInfo(base_edge, e1, p1);
-          else
-            pi->AddPairInfo(base_edge, e2, p2);
+    for (EdgeIterator I_1(inner_map.begin(), inner_map.end()), E(inner_map.end(), inner_map.end()); I_1 != E; ++I_1) {
+        for (EdgeIterator I_2(inner_map.begin(), inner_map.end()); I_2 != E; ++I_2) {
+            if (I_1 == I_2)
+                continue;
+
+            std::pair<EdgeId, Point> entry1 = *I_1;
+            std::pair<EdgeId, Point> entry2 = *I_2;
+
+            EdgeId e1 = entry1.first;
+            const Point& p1 = entry1.second;
+            EdgeId e2 = entry2.first;
+            const Point& p2 = entry2.second;
+
+            if (!IsConsistent(base_edge, e1, e2, p1, p2)) {
+                if (math::le(p1.weight, p2.weight))
+                    pi->AddPairInfo(base_edge, e1, p1);
+                else
+                    pi->AddPairInfo(base_edge, e2, p2);
+            }
         }
-      }
     }
-  }
+}
 
 //public:
 // Checking the consistency of two edge pairs (e, e_1) and (e, e_2)
   bool IsConsistent(EdgeId /*e*/, EdgeId e1, EdgeId e2, const Point& p1, const Point& p2) const {
-	  if ((math::le(p1.d, 0.)
+      if ((math::le(p1.d, 0.)
       || math::le(p2.d, 0.))
       || math::gr(p1.d, p2.d))
     return true;
@@ -260,17 +264,15 @@ class PairInfoImprover {
     TRACE("   PI " << p1  << " tr "  << omp_get_thread_num());
     TRACE("vs PI " << p2  << " tr "  << omp_get_thread_num());
 
-    if (math::le(pi_dist, double(first_length) + var)
-     && math::le(double(first_length), pi_dist + var))
-    {
+    if (math::le(pi_dist, double(first_length) + var) &&
+        math::le(double(first_length), pi_dist + var)) {
       if (graph_.EdgeEnd(e1) == graph_.EdgeStart(e2))
         return true;
       else {
         auto paths = GetAllPathsBetweenEdges(graph_, e1, e2, 0, (size_t) ceil(pi_dist - first_length + var));
         return (paths.size() > 0);
       }
-    }
-    else {
+    } else {
       if (math::gr(p2.d, p1.d + first_length)) {
         auto paths = GetAllPathsBetweenEdges(graph_, e1, e2,
                               (size_t) floor(pi_dist - first_length - var),
@@ -282,9 +284,9 @@ class PairInfoImprover {
   }
 
 //private:
-  size_t DeleteIfExist(EdgeId e1, EdgeId e2, const Histogram& infos) {
+  size_t DeleteIfExist(EdgeId e1, EdgeId e2, const de::Histogram& infos) {
     size_t cnt = 0;
-    const Histogram& histogram = index_.GetEdgePairInfo(e1, e2);
+    const de::Histogram histogram = index_.GetEdgePairInfo(e1, e2);
     for (auto I = infos.begin(), E = infos.end(); I != E; ++I) {
       const Point& point = *I;
       for (auto p_iter = histogram.begin(); p_iter != histogram.end(); ++p_iter) {
@@ -301,11 +303,11 @@ class PairInfoImprover {
     return cnt;
   }
 
-  size_t DeleteConjugateIfExist(EdgeId e1, EdgeId e2, const Histogram& infos) {
+  size_t DeleteConjugateIfExist(EdgeId e1, EdgeId e2, const de::Histogram& infos) {
     size_t cnt = 0;
     EdgeId rc_e1 = graph_.conjugate(e2);
     EdgeId rc_e2 = graph_.conjugate(e1);
-    const Histogram& histogram = index_.GetEdgePairInfo(rc_e1, rc_e2);
+    const de::Histogram& histogram = index_.GetEdgePairInfo(rc_e1, rc_e2);
     for (auto I = infos.begin(), E = infos.end(); I != E; ++I) {
       const Point& point = ConjugatePoint(graph_.length(e1), graph_.length(e2), *I);
       for (auto p_iter = histogram.begin(); p_iter != histogram.end(); ++p_iter) {
@@ -335,11 +337,10 @@ class PairInfoImprover {
                         EdgeId e1,
                         EdgeId e2,
                         const Point& p,
-                        bool reflected = true)
-  {
+                        bool reflected = true) {
     const Point& point_to_add = p;
 
-    const Histogram& histogram = clustered_index.GetEdgePairInfo(e1, e2);
+    const de::Histogram histogram = clustered_index.GetEdgePairInfo(e1, e2);
     bool already_exist = false;
     for (auto it = histogram.begin(); it != histogram.end(); ++it) {
       const Point& cur_point = *it;

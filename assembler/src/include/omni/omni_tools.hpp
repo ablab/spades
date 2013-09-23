@@ -363,7 +363,7 @@ public:
 					second_bound) {
 	}
 
-	void Check(const PairedInfoIndex<Graph> &paired_index) {
+	void Check(const de::PairedInfoIndex<Graph> &paired_index) {
 		for (auto it = paired_index.begin(); it != paired_index.end(); ++it) {
 			auto vec = *it;
 			for (auto vec_it = vec.begin(); vec_it != vec.end(); ++vec_it) {
@@ -381,7 +381,7 @@ public:
 		}
 	}
 
-	size_t CheckSingleInfo(PairInfo<EdgeId> info) {
+	size_t CheckSingleInfo(de::PairInfo<EdgeId> info) {
 		const vector<EdgePosition> &pos1 = positions_.GetEdgePositions(
 				info.first);
 		const vector<EdgePosition> &pos2 = positions_.GetEdgePositions(
@@ -458,14 +458,14 @@ template <class Graph>
 class PairInfoStatsEstimator {
 private:
 	const Graph &graph_;
-	const PairedInfoIndex<Graph>& paired_index_;
+	const de::PairedInfoIndex<Graph>& paired_index_;
 	const size_t enough_edge_length_;
 
 	double mean_;
 	double deviation_;
 	map<size_t, double> percentiles_;
 public:
-	PairInfoStatsEstimator(const Graph &graph, const PairedInfoIndex<Graph>& paired_index, size_t enough_edge_length)
+	PairInfoStatsEstimator(const Graph &graph, const de::PairedInfoIndex<Graph>& paired_index, size_t enough_edge_length)
       : graph_(graph), enough_edge_length_(enough_edge_length), mean_(0.), deviation_(0.) {
 	}
 
@@ -614,41 +614,6 @@ public:
     }
 private:
     DECL_LOGGER("ThresholdFinder");
-};
-
-template<class Graph>
-class BadConnectionCutter {
-private:
-	typedef typename Graph::EdgeId EdgeId;
-	Graph& graph_;
-	const PairedInfoIndexT<Graph> &index_;
-
-	bool CheckHasForwardPairInfo(EdgeId e) {
-		auto infos = index_.GetEdgeInfo(e);
-		for(auto it1 = infos.begin(); it1 != infos.end(); ++it1) {
-			PairInfo<EdgeId> pi = *it1;
-			if(pi.d() >= 1) {
-				return true;
-			}
-		}
-		return false;
-	}
-public:
-	BadConnectionCutter(Graph& graph, const PairedInfoIndexT<Graph> &index) : graph_(graph), index_(index) {
-	}
-
-	void CutConnections() {
-		for(auto it = graph_.SmartVertexBegin(); !it.IsEnd(); ++it) {
-			vector<EdgeId> edges = graph_.IncomingEdges(*it);
-			if(edges.size() > 1)
-				for(SmartSetIterator<Graph, EdgeId> eit(graph_, edges.begin(), edges.end()); !eit.IsEnd(); ++eit) {
-					if(graph_.EdgeEnd(*eit) != *it || graph_.length(*eit) <= 250 || graph_.conjugate(*eit) == *eit || CheckHasForwardPairInfo(*eit))
-						continue;
-					EdgeId end = graph_.SplitEdge(*eit, graph_.length(*eit) - graph_.k()).second;
-					graph_.DeleteEdge(end);
-				}
-		}
-	}
 };
 
 }

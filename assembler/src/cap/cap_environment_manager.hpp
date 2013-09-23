@@ -16,7 +16,6 @@
 
 #include "cap_environment.hpp"
 #include "io/sequence_reader.hpp"
-#include "omni/loop_killer.hpp"
 #include "config_struct.hpp"
 
 namespace online_visualization {
@@ -174,16 +173,6 @@ class CapEnvironmentManager {
 
     ClipTipsWithProjection(gp, tc_config, true);
     */
-
-    //INFO("Killing loops");
-
-    //SimpleLoopKiller<typename gp_t::graph_t> loop_killer(gp.g, /*splitting_edge_len*/ env_->GetGraphK() * 3, /*max_component_size*/ 10);
-    //loop_killer.KillAllLoops();
-
-    //INFO("Killing loops");
-
-    //SimpleLoopKiller<typename gp_t::graph_t> loop_killer(gp.g, /*splitting_edge_len*/ env_->GetGraphK() * 3, /*max_component_size*/ 10);
-    //loop_killer.KillAllLoops();
 
     INFO("Remapped " << gp.kmer_mapper.size() << " k-mers");
 

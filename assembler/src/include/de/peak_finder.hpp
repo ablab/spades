@@ -24,8 +24,9 @@
 #include <complex>
 #include <cmath>
 
-
 namespace  omnigraph{
+
+namespace de {
 
 template <class EdgeId>
 class PeakFinder {
@@ -376,6 +377,8 @@ private:
 
   DECL_LOGGER("PeakFinder");
 };
+
+}
 
 }
 

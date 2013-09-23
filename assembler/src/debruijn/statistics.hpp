@@ -24,6 +24,7 @@
 namespace debruijn_graph {
 using namespace math;
 using namespace omnigraph;
+using namespace omnigraph::de;
 
 class AbstractStatCounter {
 public:
@@ -274,7 +275,6 @@ template<class Graph>
 class EdgePairStat: public AbstractStatCounter {
 
 private:
-  typedef set<Point> Histogram;
   typedef typename Graph::EdgeId EdgeId;
   typedef pair<EdgeId, EdgeId> EdgePair;
   const Graph& graph_;
@@ -302,7 +302,7 @@ private:
 
   void GetPairInfo(map<EdgePair, double> &edge_pairs, PairedInfoIndexT<Graph>& index) {
     for (auto it = index.begin(); it != index.end(); ++it) {
-      Histogram v = *it;
+      de::Histogram v = *it;
       size_t w = 0;
       for (auto I = v.begin(); I != v.end(); ++I)
         w += (size_t) I->weight;
@@ -385,8 +385,8 @@ public:
 
   virtual void Count() {
     typedef pair<EdgeId, EdgeId> EdgePair;
-    PairedInfoIndexT<Graph> new_index(graph_);
-    PairInfoWeightFilter<Graph>(graph_, 40).Filter(pair_info_, new_index);
+    PairedInfoIndexT<Graph> new_index = pair_info_;
+    PairInfoWeightFilter<Graph>(graph_, 40).Filter(new_index);
     map<EdgePair, double> edge_pairs;
     TrivialEdgePairChecker<Graph> checker(graph_);
     size_t nontrivial = 0;
@@ -410,7 +410,6 @@ public:
 template<class Graph>
 class UniquePathStat: public AbstractStatCounter {
 
-  typedef set<Point> Histogram;
   typedef typename Graph::EdgeId EdgeId;
   const Graph& g_;
   const PairedInfoIndexT<Graph>& filtered_index_;
@@ -423,7 +422,7 @@ class UniquePathStat: public AbstractStatCounter {
   size_t unique_distance_cnt_;
   size_t non_unique_distance_cnt_;
 
-  bool ContainsPositiveDistance(EdgeId e1, const Histogram& infos) const {
+  bool ContainsPositiveDistance(EdgeId e1, const de::Histogram& infos) const {
     int first_len = int(g_.length(e1));
     for (auto it = infos.begin(); it != infos.end(); ++it) {
       if (rounded_d(*it) > first_len)
@@ -505,7 +504,6 @@ template<class Graph>
 class MatePairTransformStat: public AbstractStatCounter {
 
   typedef typename Graph::EdgeId EdgeId;
-  typedef set<Point> Histogram;
 
  public:
   MatePairTransformStat(const Graph& g, const PairedInfoIndexT<Graph>& pair_info) :
@@ -516,7 +514,7 @@ class MatePairTransformStat: public AbstractStatCounter {
 
   virtual void Count() {
     for (auto it = pair_info_.begin(); it != pair_info_.end(); ++it) {
-      Histogram infos = *it;
+      de::Histogram infos = *it;
       EdgeId e1 = it.first();
       EdgeId e2 = it.second();
       ProcessInfos(e1, e2, infos);
@@ -581,7 +579,7 @@ class MatePairTransformStat: public AbstractStatCounter {
 
 template<class Graph>
 class UniqueDistanceStat: public AbstractStatCounter {
-  typedef omnigraph::PairedInfoIndexT<Graph> PairedIndex;
+  typedef omnigraph::de::PairedInfoIndexT<Graph> PairedIndex;
 
   const PairedIndex& paired_info_;
   size_t unique_;
@@ -1032,7 +1030,6 @@ template<class Graph>
 class ClusterStat: public AbstractStatCounter {
 
   typedef typename Graph::EdgeId EdgeId;
-  typedef set<Point> Histogram;
   typedef pair<double, double> DoublePair;
 
  public:
@@ -1047,7 +1044,7 @@ class ClusterStat: public AbstractStatCounter {
 
   virtual void Count() {
     for (auto it = estimated_pair_info_.begin(); it != estimated_pair_info_.end(); ++it) {
-      Histogram infos = *it;
+      de::Histogram infos = *it;
       for (auto it2 = infos.begin(); it2 != infos.end(); ++it2) {
         Point point = *it2;
         if (gr(point.var, 0.))

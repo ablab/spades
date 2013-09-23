@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "de/distance_estimation.hpp"
 #include "../environment.hpp"
 #include "../command.hpp"
 #include "../errors.hpp"
@@ -16,7 +17,7 @@
 namespace online_visualization {
     class DrawPartOfGenomeCommand : public DrawingCommand {
         private:
-            void CheckPathIntegrity(const GraphDistanceFinder<Graph>& dist_finder, EdgeId first_edge, EdgeId second_edge) const {
+            void CheckPathIntegrity(const omnigraph::de::GraphDistanceFinder<Graph>& dist_finder, EdgeId first_edge, EdgeId second_edge) const {
                 const vector<size_t>& distances = dist_finder.GetGraphDistancesLengths(first_edge, second_edge);
                 if (distances[0] == 0) {
                     INFO("Edges " << first_edge << " and " << second_edge << " are neighbouring");
@@ -33,7 +34,7 @@ namespace online_visualization {
             void CountStatsAlongGenomePart(DebruijnEnvironment& curr_env, Sequence& piece_of_genome,
                     const io::SequencingLibrary<debruijn_graph::debruijn_config::DataSetData> &lib, string label = "") const {
 
-                GraphDistanceFinder<Graph> dist_finder(curr_env.graph(), size_t(lib.data().mean_insert_size), lib.data().read_length,
+                omnigraph::de::GraphDistanceFinder<Graph> dist_finder(curr_env.graph(), size_t(lib.data().mean_insert_size), lib.data().read_length,
                         size_t(lib.data().insert_size_deviation));
                 cout << "Statistics for the part of genome :" << endl;
                 const MappingPath<EdgeId>& mapping_path = curr_env.mapper().MapSequence(piece_of_genome);
