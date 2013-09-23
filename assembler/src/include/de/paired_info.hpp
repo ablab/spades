@@ -71,6 +71,18 @@ struct Point {
     Point operator-() const {
         return Point(-d, weight, var);
     }
+
+    Point operator+(const Point &rhs) const {
+      double weight_rhs = rhs.weight;
+      // counting new bounds in the case, when we are merging pair infos with var != 0
+      double left_bound = std::min(d - var, rhs.d - rhs.var);
+      double right_bound = std::max(d + var, rhs.d + rhs.var);
+      double new_dist = (left_bound + right_bound) * 0.5;
+      double new_weight = weight + weight_rhs;
+      double new_variance = (right_bound - left_bound) * 0.5;
+
+      return Point(new_dist, new_weight, new_variance);
+    }
 };
 
 inline int rounded_d(Point p) {
@@ -242,10 +254,8 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
         }
 
         void increment() {
-            // INFO("Increment");
             ++sedge_;
             skip_empty();
-            // INFO("Increment " << (cedge_ == eedge_));
         }
 
         bool equal(const EdgePairIterator &other) const {
@@ -354,25 +364,25 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
     // adding pair infos
     void AddPairInfo(const pair<EdgeId, EdgeId>& edge_pair,
                      Point point_to_add,
-                     bool add_reversed = 1) {
-        this->AddPairInfo(edge_pair.first, edge_pair.second, point_to_add, add_reversed);
+                     bool add_reversed = true) {
+        AddPairInfo(edge_pair.first, edge_pair.second, point_to_add, add_reversed);
     }
 
     void AddPairInfo(const pair<EdgeId, EdgeId>& edge_pair,
                      double d, double weight, double var,
-                     bool add_reversed = 1) {
-        this->AddPairInfo(edge_pair.first, edge_pair.second, Point(d, weight, var), add_reversed);
+                     bool add_reversed = true) {
+        AddPairInfo(edge_pair.first, edge_pair.second, Point(d, weight, var), add_reversed);
     }
 
     void AddPairInfo(EdgeId e1, EdgeId e2,
                      double d, double weight, double var,
-                     bool add_reversed = 1) {
-        this->AddPairInfo(e1, e2, Point(d, weight, var), add_reversed);
+                     bool add_reversed = true) {
+        AddPairInfo(e1, e2, Point(d, weight, var), add_reversed);
     }
 
     void AddPairInfo(EdgeId e1, EdgeId e2,
                      Point point_to_add,
-                     bool add_reversed = 1) {
+                     bool add_reversed = true) {
         VERIFY(this->IsAttached());
         Histogram& histogram = index_[e1][e2];
         HistIterator iterator_to_point = histogram.find(point_to_add);
@@ -382,9 +392,7 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
 
         if (iterator_to_point != histogram.end()) {
             TRACE("Such pair info exists, merging now");
-            const Point& existing_point = *iterator_to_point;
-            VERIFY(existing_point == point_to_add);
-            MergeData(e1, e2, existing_point, point_to_add, add_reversed);
+            MergeData(e1, e2, *iterator_to_point, point_to_add, add_reversed);
         } else {
             TRACE("Such pair info does not exist");
             InsertPoint(e1, e2, histogram, point_to_add, add_reversed);
@@ -526,12 +534,11 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
         for (auto AddI = index.begin(), E = index.end(); AddI != E; ++AddI) {
             EdgeId e1_to_add = AddI->first;
             const InnerMap& map_to_add = AddI->second;
-            const pair<data_iterator, bool>& result = base_index.insert(*AddI);
+            const std::pair<data_iterator, bool>& result = base_index.insert(*AddI);
             if (!result.second) {
                 InnerMap& map_already_exists = (result.first)->second; // data_iterator points to <EdgeId, InnerMap>
-                this->MergeInnerMaps(e1_to_add, map_to_add, map_already_exists);
-            }
-            else
+                MergeInnerMaps(e1_to_add, map_to_add, map_already_exists);
+            } else
                 size_ += map_to_add.size();
         }
     }
@@ -666,50 +673,33 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
       ++size_;
   }
 
-  //  we can not update elements in the std::set,
-  //  although we can delete element,
-  //  and then insert a modified version of it.
-  //  But here we do not care about the safety,
-  //  and make an illegal @const_cast on the std::set element
-  void UpdateSinglePoint(const Point& point_to_update, Point new_point) {
-      Point& point_we_can_update = const_cast<Point&>(point_to_update);
-      point_we_can_update = new_point;
-  }
-
-  void UpdateInfo(EdgeId e1, EdgeId e2,
-                  const Point& existing_point,
-                  Point new_point,
-                  bool add_reversed) {
-      // first we update backward info in order to leave @existing_point not modified
-      if (add_reversed && !IsSymmetric(e1, e2, new_point)) {
-          Point new_point_negated = -new_point;
-          const Histogram& histogram = index_[e2][e1];
-          const Point& existing_point_negated = *histogram.find(new_point_negated);
-          UpdateSinglePoint(existing_point_negated, new_point_negated);
-      }
-      UpdateSinglePoint(existing_point, new_point);
+  void UpdateSinglePoint(Histogram &hist, Histogram::iterator point_to_update, Point new_point) {
+      // FIXME: Just grab the hint out of erase with gcc 4.5+
+      Histogram::iterator to_remove = point_to_update++;
+      hist.erase(to_remove);
+      hist.insert(point_to_update, new_point);
   }
 
   void MergeData(EdgeId e1, EdgeId e2,
-                 const Point& point_to_update,
+                 Point point_to_update,
                  Point point_to_add,
                  bool add_reversed) {
-      double weight_to_add = point_to_add.weight;
-      // counting new bounds in the case, when we are merging pair infos with var != 0
-      double left_bound = min(point_to_update.d - point_to_update.var,
-                              point_to_add.d - point_to_add.var);
-      double right_bound = max(point_to_update.d + point_to_update.var,
-                               point_to_add.d + point_to_add.var);
-      double new_dist = (left_bound + right_bound) * 0.5;
-      double new_weight = point_to_update.weight + weight_to_add;
-      double new_variance = (right_bound - left_bound) * 0.5;
+      if (add_reversed) {
+          Histogram& histogram = index_[e2][e1];
+          UpdateSinglePoint(histogram, histogram.find(-point_to_update), -(point_to_update + point_to_add));
+      }
 
-      Point new_point(new_dist, new_weight, new_variance);
-      this->UpdateInfo(e1, e2, point_to_update, new_point, add_reversed);
+      Histogram& histogram = index_[e1][e2];
+      UpdateSinglePoint(histogram, histogram.find(point_to_update), point_to_update + point_to_add);
   }
 
-  void TransferInfo(EdgeId old_edge,
-                    EdgeId new_edge,
+  void MergeData(Histogram& hist,
+                 Histogram::iterator to_update,
+                 Point point_to_add) {
+      UpdateSinglePoint(hist, to_update, *to_update + point_to_add);
+  }
+
+  void TransferInfo(EdgeId old_edge, EdgeId new_edge,
                     int shift = 0,
                     double weight_scale = 1.) {
       const InnerMap& inner_map = this->GetEdgeInfo(old_edge, 0);
@@ -744,7 +734,6 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
       typedef typename Histogram::iterator hist_iterator;
       typedef typename InnerMap::iterator map_iterator;
       for (auto I = map_to_add.begin(), E = map_to_add.end(); I != E; ++I) {
-          EdgeId e2_to_add = I->first;
           const Histogram& hist_to_add = I->second;
           const pair<map_iterator, bool>& result = map.insert(*I);
           if (!result.second) { // in this case we need to merge two hists
@@ -754,8 +743,7 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
                   Point new_point = *p_it;
                   const pair<hist_iterator, bool>& result = hist_exists.insert(new_point);
                   if (!result.second) { // in this case we need to merge two points
-                      const Point& point_exists = *result.first;
-                      this->MergeData(e1_to_add, e2_to_add, point_exists, new_point, false);
+                      MergeData(hist_exists, result.first, new_point);
                   } else
                       ++size_;
               }
