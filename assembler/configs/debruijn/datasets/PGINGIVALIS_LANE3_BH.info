@@ -2,5 +2,5 @@ reads	PGINGIVALIS_LANE3_BH.yaml
 single_cell	true
 reference_genome	../../../data/input/P.gingivalis/TDC60.fasta.gz
 
-#RL	100
-#IS	270
+; RL	100
+; IS	270

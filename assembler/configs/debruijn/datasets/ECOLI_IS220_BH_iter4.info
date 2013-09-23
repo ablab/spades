@@ -2,5 +2,5 @@ reads	ECOLI_IS220_BH_iter4.yaml
 single_cell	true
 reference_genome	../../../data/input/E.coli/MG1655-K12.fasta.gz
 
-#RL	100
-#IS	270
+; RL	100
+; IS	270

@@ -81,7 +81,7 @@ for info_file in info_files:
         new_info.write("\n")
         for info_field in ["RL", "IS", "delta", "jump_rl", "jump_is", "jump_delta"]:
             if info_field in content:
-                new_info.write("#" + info_field + "\t" + content[info_field] + "\n")
+                new_info.write("; " + info_field + "\t" + content[info_field] + "\n")
         new_info.close()
     else:
         print "\nSkipping", info_file, "because it doesn't contains link to a .yaml file!\n"

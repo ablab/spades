@@ -1,5 +1,5 @@
 reads	AFUMIGATUS_AF1163_QUAKE.yaml
 single_cell	false
 
-#RL	100
-#IS	185
+; RL	100
+; IS	185

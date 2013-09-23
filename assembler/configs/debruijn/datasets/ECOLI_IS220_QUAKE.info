@@ -2,5 +2,5 @@ reads	ECOLI_IS220_QUAKE.yaml
 single_cell	false
 reference_genome	../../../data/input/E.coli/MG1655-K12.fasta.gz
 
-#RL	100
-#IS	220
+; RL	100
+; IS	220
