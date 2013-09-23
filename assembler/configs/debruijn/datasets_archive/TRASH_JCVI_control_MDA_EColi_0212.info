@@ -1,8 +1,6 @@
-paired_reads             "../../../data/input/E.coli/SC/correted_0211/00.reads_right.corrected.fastq ../../../data/input/E.coli/SC/correted_0211/00.reads_left.corrected.fastq "
-single_reads             "../../../data/input/E.coli/SC/correted_0211/00.reads_single_left.corrected.fastq ../../../data/input/E.coli/SC/correted_0211/00.reads_single_right.corrected.fastq "
-RL                       100
-IS                       210
-single_cell              true
-reference_genome         ../../../data/input/E.coli/MG1655-K12.fasta.gz
-
 reads	TRASH_JCVI_control_MDA_EColi_0212.yaml
+single_cell	true
+reference_genome	../../../data/input/E.coli/MG1655-K12.fasta.gz
+
+#RL	100
+#IS	210

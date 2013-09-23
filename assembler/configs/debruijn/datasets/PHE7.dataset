@@ -1,6 +1,0 @@
-single_cell	true
-paired_reads	"//smallnas/jgi_new/spades_output/PHE7/corrected/Phe_no7_1.fastq.01.cor.fastq.gz  //smallnas/jgi_new/spades_output/PHE7/corrected/Phe_no7_2.fastq.01.cor.fastq.gz  "
-original_paired_reads  "//smallnas/jgi_new/input/Phe_no7.fastq "
-single_reads	"//smallnas/jgi_new/spades_output/PHE7/corrected/Phe_no7_unpaired.01.cor.fastq.gz  "
-reference_genome   ../../../data/input/P.heparinus/reference_NC_013061.1.fasta
-

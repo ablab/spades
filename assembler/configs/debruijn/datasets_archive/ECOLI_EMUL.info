@@ -1,7 +1,6 @@
-paired_reads             "../../../data/input/E.coli/emul/MG1655-K12_emul2.fastq.gz ../../../data/input/E.coli/emul/MG1655-K12_emul1.fastq.gz "
-RL                       100
-IS                       400
-single_cell              false
-reference_genome         ../../../data/input/E.coli/MG1655-K12.fasta.gz
-
 reads	ECOLI_EMUL.yaml
+single_cell	false
+reference_genome	../../../data/input/E.coli/MG1655-K12.fasta.gz
+
+#RL	100
+#IS	400

@@ -1,8 +1,6 @@
-paired_reads             "../../../data/input/E.coli/SC_cor/hammer_human_filtered/filtered_paired_2_filtered.fastq ../../../data/input/E.coli/SC_cor/hammer_human_filtered/filtered_paired_1_filtered.fastq "
-single_reads             "../../../data/input/E.coli/SC_cor/hammer_human_filtered/filtered_single_1.fastq ../../../data/input/E.coli/SC_cor/hammer_human_filtered/filtered_single_2.fastq "
-RL                       100
-IS                       270
-single_cell              true
-reference_genome         ../../../data/input/E.coli/MG1655-K12.fasta.gz
-
 reads	TRASH_SC_NEW_1_FILTERED.yaml
+single_cell	true
+reference_genome	../../../data/input/E.coli/MG1655-K12.fasta.gz
+
+#RL	100
+#IS	270

@@ -1,8 +1,6 @@
-paired_reads             "../../../data/input/P.gingivalis/lane_6/04.reads.0.right.corrected.fastq.gz ../../../data/input/P.gingivalis/lane_6/04.reads.0.left.corrected.fastq.gz "
-single_reads             "../../../data/input/P.gingivalis/lane_6/04.reads.0.left.unpaired.fastq.gz ../../../data/input/P.gingivalis/lane_6/04.reads.0.right.unpaired.fastq.gz "
-RL                       100
-IS                       270
-single_cell              true
-reference_genome         ../../../data/input/P.gingivalis/TDC60.fasta.gz
-
 reads	PGINGIVALIS_LANE6_BH.yaml
+single_cell	true
+reference_genome	../../../data/input/P.gingivalis/TDC60.fasta.gz
+
+#RL	100
+#IS	270

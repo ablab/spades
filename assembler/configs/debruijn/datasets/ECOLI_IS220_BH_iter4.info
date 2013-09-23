@@ -1,8 +1,6 @@
-paired_reads             "../../../data/input/E.coli/is220_bh/04.reads.0.right.corrected.fastq.gz ../../../data/input/E.coli/is220_bh/04.reads.0.left.corrected.fastq.gz "
-single_reads             "../../../data/input/E.coli/is220_bh/04.reads.0.left.unpaired.fastq.gz ../../../data/input/E.coli/is220_bh/04.reads.0.right.unpaired.fastq.gz "
-RL                       100
-IS                       270
-single_cell              true
-reference_genome         ../../../data/input/E.coli/MG1655-K12.fasta.gz
-
 reads	ECOLI_IS220_BH_iter4.yaml
+single_cell	true
+reference_genome	../../../data/input/E.coli/MG1655-K12.fasta.gz
+
+#RL	100
+#IS	270

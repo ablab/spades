@@ -1,9 +1,5 @@
-paired_reads             "../../../data/input/HMP/lane_2_jumping/bh20111202/00.reads.right.short.corrected.fastq.gz ../../../data/input/HMP/lane_2_jumping/bh20111202/00.reads.left.short.corrected.fastq.gz "
-single_reads             "../../../data/input/HMP/lane_2_jumping/bh20111202/00.reads.left.short.unpaired.fastq.gz ../../../data/input/HMP/lane_2_jumping/bh20111202/00.reads.right.short,unpaired.fastq.gz "
-jumping_first            ../../../data/input/HMP/lane_2_jumping/bh20111202/00.reads.left.long.corrected.fastq.gz
-jumping_second           ../../../data/input/HMP/lane_2_jumping/bh20111202/00.reads.right.long.corrected.fastq.gz
-RL                       100
-IS                       210
-single_cell              true
-
 reads	HMP_LANE_2_JUMPING_BH.yaml
+single_cell	true
+
+#RL	100
+#IS	210

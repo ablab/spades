@@ -1,7 +1,6 @@
-paired_reads             "../../../data/input/E.coli/is220/MG1655-K12_IDEAL_2.fastq.gz ../../../data/input/E.coli/is220/MG1655-K12_IDEAL_1.fastq.gz "
-RL                       100
-IS                       220
-single_cell              false
-reference_genome         ../../../data/input/E.coli/MG1655-K12.fasta.gz
-
 reads	ECOLI_IS220_IDEAL.yaml
+single_cell	false
+reference_genome	../../../data/input/E.coli/MG1655-K12.fasta.gz
+
+#RL	100
+#IS	220

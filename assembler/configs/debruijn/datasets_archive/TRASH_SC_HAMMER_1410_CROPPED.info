@@ -1,7 +1,6 @@
-paired_reads             "../../../data/input/E.coli/SC_cor/cropped/E.Coli.400K.from_2M.cor.2.fastq ../../../data/input/E.coli/SC_cor/cropped/E.Coli.400K.from_2M.cor.1.fastq "
-RL                       100
-IS                       270
-single_cell              true
-reference_genome         ../../../data/input/E.coli/MG1655-K12.first1K.fasta.gz
-
 reads	TRASH_SC_HAMMER_1410_CROPPED.yaml
+single_cell	true
+reference_genome	../../../data/input/E.coli/MG1655-K12.first1K.fasta.gz
+
+#RL	100
+#IS	270
