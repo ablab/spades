@@ -11,7 +11,6 @@
 #include "graph_construction.hpp"
 #include "graphio.hpp"
 #include "graph_read_correction.hpp"
-#include "mismatch_masker.hpp"
 
 #include "omni/visualization/visualization.hpp"
 #include "omni/edges_position_handler.hpp"

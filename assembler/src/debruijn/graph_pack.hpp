@@ -20,7 +20,6 @@
 #include "debruijn_graph.hpp"
 #include "config_struct.hpp"
 #include "graphio.hpp"
-#include "mismatch_masker.hpp"
 #include "edge_index.hpp"
 
 namespace debruijn_graph {
@@ -43,14 +42,13 @@ struct graph_pack: private boost::noncopyable {
 //	PairedInfoIndex<graph_t> etalon_paired_index;
 	KmerMapper<graph_t, seq_t> kmer_mapper;
 	Sequence genome;
-	MismatchMasker<graph_t> mismatch_masker;
 
     explicit graph_pack(size_t k, const std::string &workdir,
                         Sequence const& genome = Sequence(), size_t single_gap = 0,
                         bool careful_labeling = false, bool use_inner_ids = false)
             : k_value(k), g(k), index(g, (unsigned) k + 1, workdir),
               int_ids(g, use_inner_ids), edge_pos(g, (int) single_gap, careful_labeling),
-              kmer_mapper(g, k + 1), genome(genome), mismatch_masker(g)
+              kmer_mapper(g, k + 1), genome(genome)
     { }
 };
 

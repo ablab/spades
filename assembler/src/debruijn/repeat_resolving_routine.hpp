@@ -29,7 +29,6 @@
 #include "pair_info_improver.hpp"
 
 #include "path_extend/path_extend_launch.hpp"
-#include "mismatch_masker.hpp"
 #include "contig_output.hpp"
 
 #include "pac_index.hpp"
