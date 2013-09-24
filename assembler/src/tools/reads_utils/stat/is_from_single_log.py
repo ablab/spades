@@ -114,71 +114,80 @@ def stat_from_log(log, max_is= 1000000000):
     stat = {"FR" : PairedStat("FR"), "RF" : PairedStat("RF"), "FF" : PairedStat("FF"), "AU" : PairedStat("AU"), "UU" : PairedStat("UU"),  "RL" : PairedStat("RL"), "SP" : PairedStat("SP")}
     ids = {}
 
-    is_paired = False
     for line in logfile:
         id1 = line.split('/', 1)
-        if len(id1) > 1 and id1[1][0] == '1':
+        if len(id1) > 1:
+            if id1[1][0] == '1':
+                ids[id1[0]] = line
+        else:
+            id1 = line.split()
             ids[id1[0]] = line
-        elif len(id1) > 1 and id1[1][0] == '2':
-            is_paired = True
-
-    if not is_paired:
-        print("No paired reads found.")
 
     max_rl = 0
     logfile = open(log, "r")
     for line in logfile:
-        id2 = line.split('/', 1)
-        if len(id2) > 1 and id2[1][0] == '2':
-            if id2[0] in ids:
-                line1 = ids[id2[0]]
-                read1 = line1.split('\t')
-                read2 = line.split('\t')
-                pos1 = int(read1[3])
-                pos2 = int(read2[3])
-                len1 = len(read1[9])
-                len2 = len(read2[9])
-                str1 = int(read1[1]) & 16 == 0
-                str2 = int(read2[1]) & 16 == 0
-                al1 = int(read1[1]) & 4 == 0
-                al2 = int(read2[1]) & 4 == 0
+        id2 = " "
+        l2 = line.split('/', 1)
+        if len(l2) > 1:
+            if l2[1][0] == '2':
+                id2 = l2[0]
+        else:
+            id2 = line.split()[0]
+ 
 
-                max_rl = max(max_rl, len1, len2)
-                inss = 0
-                if pos2 > pos1:
-                    inss = max(pos2 + len2 - pos1, len1)
-                else:
-                    inss = max(pos1 + len1 - pos2, len2)
-                
-                if not al1 and not al2:
-                    stat["UU"].inc(0)
+        if id2 in ids:
+            line1 = ids[id2]
+            read1 = line1.split('\t')
+            read2 = line.split('\t')
+            if len(read1) < 10 or len(read2) < 10:
+                print(read1, read2)
+                continue
 
-                elif (al1 and not al2) or (al2 and not al1):
-                    stat["AU"].inc(0)
+            pos1 = int(read1[3])
+            pos2 = int(read2[3])
+            len1 = len(read1[9])
+            len2 = len(read2[9])
+            str1 = int(read1[1]) & 16 == 0
+            str2 = int(read2[1]) & 16 == 0
+            al1 = int(read1[1]) & 4 == 0
+            al2 = int(read2[1]) & 4 == 0
 
-                elif ((str1 and not str2 and pos1 < pos2) or (str2 and not str1 and pos1 > pos2)) and inss <= max_is:
-                    stat["FR"].inc(inss)
+            max_rl = max(max_rl, len1, len2)
+            inss = 0
+            if pos2 > pos1:
+                inss = max(pos2 + len2 - pos1, len1)
+            else:
+                inss = max(pos1 + len1 - pos2, len2)
+             
+            if not al1 and not al2:
+                stat["UU"].inc(0)
 
-                elif ((str2 and not str1 and pos1 < pos2) or (str1 and not str2 and pos1 > pos2)) and inss <= max_is:
-                    stat["RF"].inc(inss)
+            elif (al1 and not al2) or (al2 and not al1):
+                stat["AU"].inc(0)
 
-                elif str2 == str1 and inss <= max_is:
-                    stat["FF"].inc(inss)
+            elif ((str1 and not str2 and pos1 < pos2) or (str2 and not str1 and pos1 > pos2)) and inss <= max_is:
+                stat["FR"].inc(inss)
 
-                elif inss > max_is:
-                    stat["SP"].inc(inss)
+            elif ((str2 and not str1 and pos1 < pos2) or (str1 and not str2 and pos1 > pos2)) and inss <= max_is:
+                stat["RF"].inc(inss)
 
-                elif pos1 == pos2:
-                    stat["RL"].inc(inss)
+            elif str2 == str1 and inss <= max_is:
+                stat["FF"].inc(inss)
 
-                else:
-                    print(al1,al2,str1,str2,pos1,pos2,inss)
-                    
+            elif inss > max_is:
+                stat["SP"].inc(inss)
 
-                del ids[ id2[0] ]
+            elif pos1 == pos2:
+                stat["RL"].inc(inss)
 
             else:
-                stat["AU"].inc(0)
+                print(al1,al2,str1,str2,pos1,pos2,inss)
+                    
+
+            del ids[ id2 ]
+
+        else:
+            stat["AU"].inc(0)
 
     logfile.close()
 
