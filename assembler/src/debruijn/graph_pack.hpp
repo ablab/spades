@@ -19,12 +19,10 @@
 #include "de/paired_info.hpp"
 #include "debruijn_graph.hpp"
 #include "config_struct.hpp"
-#include "graphio.hpp"
 #include "edge_index.hpp"
+#include "sequence_mapper.hpp"
 
 namespace debruijn_graph {
-
-typedef PairedInfoIndexT<ConjugateDeBruijnGraph> PairedIndexT;
 
 /*KmerFree*//*KmerStoring*/
 template<class Graph, class SeqType, class KmerEdgeIndex = DeBruijnEdgeIndex<KmerStoringDeBruijnEdgeIndex<Graph, SeqType>>>
@@ -62,5 +60,6 @@ typedef graph_pack<ConjugateDeBruijnGraph, runtime_k::RtSeq,
                    DeBruijnEdgeIndex<KmerFreeDeBruijnEdgeIndex<ConjugateDeBruijnGraph, runtime_k::RtSeq>>> conj_graph_pack;
 typedef conj_graph_pack::index_t Index;
 typedef conj_graph_pack::PairedInfoIndicesT PairedIndicesT;
+typedef omnigraph::de::PairedInfoIndexT<ConjugateDeBruijnGraph> PairedIndexT;
 
 } // namespace debruijn_graph

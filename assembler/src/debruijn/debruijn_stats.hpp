@@ -8,9 +8,9 @@
 
 #include "statistics.hpp"
 #include "debruijn_graph.hpp"
-#include "graph_construction.hpp"
 #include "graphio.hpp"
-#include "graph_read_correction.hpp"
+
+#include "graph_pack.hpp"
 
 #include "omni/visualization/visualization.hpp"
 #include "omni/edges_position_handler.hpp"
@@ -21,6 +21,7 @@
 #include "io/splitting_wrapper.hpp"
 #include "io/wrapper_collection.hpp"
 #include "io/osequencestream.hpp"
+#include "dataset_readers.hpp"
 
 #include "de/distance_estimation.hpp"
 #include "de/pair_info_filters.hpp"
@@ -134,6 +135,7 @@ const Sequence& genome, size_t k) {
 	INFO("Stats counted");
 }
 
+template<class Graph>
 void CountPairedInfoStats(const Graph& g,
                           const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
                           const PairedInfoIndexT<Graph>& paired_index,
@@ -154,6 +156,7 @@ void CountPairedInfoStats(const Graph& g,
 }
 
 // leave only those pairs, which edges have no path in the graph between them
+template<class Graph>
 void FilterIndexWithExistingPaths(PairedIndexT& scaf_clustered_index,
                                   const PairedIndexT& index,
                                   const conj_graph_pack &gp,
@@ -175,12 +178,58 @@ void FilterIndexWithExistingPaths(PairedIndexT& scaf_clustered_index,
   }
 }
 
-void FillAndCorrectEtalonPairedInfo(
-    PairedIndexT&  corrected_etalon_index, const conj_graph_pack& gp,
-    const PairedIndexT&  paired_index, size_t insert_size,
-		size_t read_length, size_t delta,
-		bool save_etalon_info_history = false) {
+template<class Graph, class Index>
+void FillEtalonPairedIndex(PairedInfoIndexT<Graph>& etalon_paired_index,
+		const Graph &g, const Index& index,
+		const KmerMapper<Graph>& kmer_mapper, size_t is, size_t rs,
+		size_t delta, const Sequence& genome, size_t k)
+{
+	VERIFY_MSG(genome.size() > 0,
+			"The genome seems not to be loaded, program will exit");
+	INFO((string) (FormattedString("Counting etalon paired info for genome of length=%i, k=%i, is=%i, rs=%i, delta=%i")
+	        << genome.size() << k << is << rs << delta));
 
+	EtalonPairedInfoCounter<Graph, Index> etalon_paired_info_counter(g, index, kmer_mapper, is, rs, delta, k);
+	etalon_paired_info_counter.FillEtalonPairedInfo(genome, etalon_paired_index);
+
+	DEBUG("Etalon paired info counted");
+}
+
+template<class Graph, class Index>
+void FillEtalonPairedIndex(PairedInfoIndexT<Graph>& etalon_paired_index,
+		const Graph &g, const Index& index,
+		const KmerMapper<Graph>& kmer_mapper, const Sequence& genome,
+		const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
+		size_t k) {
+
+	FillEtalonPairedIndex(etalon_paired_index, g, index, kmer_mapper,
+                        size_t(lib.data().mean_insert_size), lib.data().read_length, size_t(lib.data().insert_size_deviation),
+			genome, k);
+
+	//////////////////DEBUG
+	//	SimpleSequenceMapper<k + 1, Graph> simple_mapper(g, index);
+	//	Path<EdgeId> path = simple_mapper.MapSequence(genome);
+	//	SequenceBuilder sequence_builder;
+	//	sequence_builder.append(Seq<k>(g.EdgeNucls(path[0])));
+	//	for (auto it = path.begin(); it != path.end(); ++it) {
+	//		sequence_builder.append(g.EdgeNucls(*it).Subseq(k));
+	//	}
+	//	Sequence new_genome = sequence_builder.BuildSequence();
+	//	NewEtalonPairedInfoCounter<k, Graph> new_etalon_paired_info_counter(g, index,
+	//			insert_size, read_length, insert_size * 0.1);
+	//	PairedInfoIndexT<Graph> new_paired_info_index(g);
+	//	new_etalon_paired_info_counter.FillEtalonPairedInfo(new_genome, new_paired_info_index);
+	//	CheckInfoEquality(etalon_paired_index, new_paired_info_index);
+	//////////////////DEBUG
+//	INFO("Etalon paired info counted");
+}
+
+inline
+void FillAndCorrectEtalonPairedInfo(PairedIndexT&  corrected_etalon_index,
+                                    const conj_graph_pack& gp,
+                                    const PairedIndexT&  paired_index, size_t insert_size,
+                                    size_t read_length, size_t delta,
+                                    bool save_etalon_info_history = false) {
 	INFO("Filling etalon paired index");
 	PairedIndexT etalon_index(gp.g);
     bool successful_load = false;
@@ -336,7 +385,7 @@ void GetAllDistances(const Graph& g,
 
 template<class Graph>
 void CountAndSaveAllPaths(const Graph& g, const io::SequencingLibrary<debruijn_config::DataSetData> &lib, const IdTrackHandler<Graph>& int_ids,
-    const PairedInfoIndexT<Graph>& paired_index, const PairedInfoIndexT<Graph>& /*clustered_index*/) {
+                          const PairedInfoIndexT<Graph>& paired_index, const PairedInfoIndexT<Graph>& /*clustered_index*/) {
   PairedIndexT all_paths(g);
   GetAllDistances<Graph>(paired_index,
                          all_paths,
@@ -362,11 +411,13 @@ void CountAndSaveAllPaths(const Graph& g, const io::SequencingLibrary<debruijn_c
 }
 
 
+
+inline
 void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
-    const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
-    const PairedInfoIndexT<Graph> &paired_index,
-    const PairedInfoIndexT<Graph> &clustered_index) {
-  PairedIndexT etalon_index(gp.g);
+                                   const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
+                                   const PairedInfoIndexT<Graph> &paired_index,
+                                   const PairedInfoIndexT<Graph> &clustered_index) {
+    PairedIndexT etalon_index(gp.g);
 
   FillAndCorrectEtalonPairedInfo(etalon_index, gp, paired_index,
                                  (size_t)math::round(lib.data().mean_insert_size),
@@ -416,15 +467,16 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 }
 
 
+template<class Graph>
 void WriteErrorLoc(const Graph &g,
-		const string& folder_name,
-		shared_ptr<omnigraph::visualization::GraphColorer<Graph>> genome_colorer,
-		const omnigraph::GraphLabeler<Graph>& labeler) {
+                   const string& folder_name,
+                   std::shared_ptr<omnigraph::visualization::GraphColorer<Graph>> genome_colorer,
+                   const omnigraph::GraphLabeler<Graph>& labeler) {
 	INFO("Writing error localities for graph to folder " << folder_name);
 	GraphComponent<Graph> all(g, g.begin(), g.end());
 	set<EdgeId> edges = genome_colorer->ColoredWith(all.edges().begin(),
 			all.edges().end(), "black");
-	set<Graph::VertexId> to_draw;
+	set<typename Graph::VertexId> to_draw;
 	for (auto it = edges.begin(); it != edges.end(); ++it) {
 		to_draw.insert(g.EdgeEnd(*it));
 		to_draw.insert(g.EdgeStart(*it));
@@ -450,12 +502,12 @@ MappingPath<typename Graph::EdgeId> FindGenomeMappingPath(
 	return srt.MapSequence(genome);
 }
 
+template<class Graph>
 void WriteGraphComponentsAlongGenome(const Graph& g,
-		const GraphLabeler<Graph>& labeler,
-		const string& folder,
-		const Path<Graph::EdgeId>& path1,
-		const Path<Graph::EdgeId>& path2) {
-
+                                     const GraphLabeler<Graph>& labeler,
+                                     const string& folder,
+                                     const Path<typename Graph::EdgeId>& path1,
+                                     const Path<typename Graph::EdgeId>& path2) {
 	INFO("Writing graph components along genome");
 
 	make_dir(folder);
@@ -467,10 +519,10 @@ void WriteGraphComponentsAlongGenome(const Graph& g,
 //todo refactoring needed: use graph pack instead!!!
 template<class Graph, class Mapper>
 void WriteGraphComponentsAlongContigs(const Graph& g,
-		Mapper &mapper,
-		const string& folder,
-		shared_ptr<omnigraph::visualization::GraphColorer<Graph>> colorer,
-		const GraphLabeler<Graph>& labeler) {
+                                      Mapper &mapper,
+                                      const std::string& folder,
+                                      std::shared_ptr<omnigraph::visualization::GraphColorer<Graph>> colorer,
+                                      const GraphLabeler<Graph>& labeler) {
 	INFO("Writing graph components along contigs");
 	io::EasyReader contigs_to_thread(cfg::get().pos.contigs_to_analyze, false/*true*/);
 	contigs_to_thread.reset();
@@ -484,9 +536,10 @@ void WriteGraphComponentsAlongContigs(const Graph& g,
 	INFO("Writing graph components along contigs finished");
 }
 
-void WriteKmerComponent(conj_graph_pack &gp, runtime_k::RtSeq const& kp1mer, const string& file,
-		shared_ptr<omnigraph::visualization::GraphColorer<Graph>> colorer,
-		const omnigraph::GraphLabeler<Graph>& labeler) {
+template<class Graph>
+void WriteKmerComponent(conj_graph_pack &gp, runtime_k::RtSeq const& kp1mer, const std::string& file,
+                        std::shared_ptr<omnigraph::visualization::GraphColorer<Graph>> colorer,
+                        const omnigraph::GraphLabeler<Graph>& labeler) {
 	if(!gp.index.contains(kp1mer)) {
 		WARN("no such kmer in the graph");
 		return;
@@ -498,8 +551,9 @@ void WriteKmerComponent(conj_graph_pack &gp, runtime_k::RtSeq const& kp1mer, con
 	omnigraph::visualization::WriteComponent<Graph>(component, file, colorer, labeler);
 }
 
+inline
 optional<runtime_k::RtSeq> FindCloseKP1mer(const conj_graph_pack &gp,
-		size_t genome_pos, size_t k) {
+                                           size_t genome_pos, size_t k) {
 	VERIFY(gp.genome.size() > 0);
 	VERIFY(genome_pos < gp.genome.size());
 	static const size_t magic_const = 200;
@@ -517,11 +571,12 @@ optional<runtime_k::RtSeq> FindCloseKP1mer(const conj_graph_pack &gp,
 	return none;
 }
 
+template<class Graph>
 void ProduceDetailedInfo(conj_graph_pack &gp,
-		const omnigraph::GraphLabeler<Graph>& labeler, const string& run_folder,
-		const string &pos_name,
-		info_printer_pos pos,
-		size_t k) {
+                         const omnigraph::GraphLabeler<Graph>& labeler, const string& run_folder,
+                         const string &pos_name,
+                         info_printer_pos pos,
+                         size_t k) {
 	string base_folder = path::append_path(run_folder, "pictures/");
 	make_dir(base_folder);
 	string folder = path::append_path(base_folder, pos_name + "/");
@@ -537,7 +592,7 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 		CountStats(gp.g, gp.index, gp.genome, k);
 	}
 
-	typedef Path<Graph::EdgeId> path_t;
+	typedef Path<typename Graph::EdgeId> path_t;
 	path_t path1;
 	path_t path2;
 	shared_ptr<omnigraph::visualization::GraphColorer<Graph>> colorer = omnigraph::visualization::DefaultColorer(gp.g);
@@ -628,11 +683,10 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 struct detail_info_printer {
 	detail_info_printer(conj_graph_pack &gp,
 			const omnigraph::GraphLabeler<Graph>& labeler, const string& folder)
-
 	:
 			folder_(folder), func_(
-					bind(&ProduceDetailedInfo, boost::ref(gp),
-							boost::ref(labeler), _3, _2, _1, gp.k_value)), graph_(
+                bind(&ProduceDetailedInfo<conj_graph_pack::graph_t>, boost::ref(gp),
+                     boost::ref(labeler), _3, _2, _1, gp.k_value)), graph_(
 					gp.g), cnt(0) {
 	}
 
@@ -657,7 +711,8 @@ private:
 	size_t cnt;
 };
 
-string ConstructComponentName(string file_name, size_t cnt) {
+inline
+std::string ConstructComponentName(std::string file_name, size_t cnt) {
 	stringstream ss;
 	ss << cnt;
 	string res = file_name;
@@ -684,7 +739,7 @@ int PrintGraphComponents(const string& file_name, graph_pack& gp,
 
 template<class Graph>
 double AvgCoverage(const Graph& g,
-		const vector<typename Graph::EdgeId>& edges) {
+                   const std::vector<typename Graph::EdgeId>& edges) {
 	double total_cov = 0.;
 	size_t total_length = 0;
 	for (auto it = edges.begin(); it != edges.end(); ++it) {
@@ -695,11 +750,11 @@ double AvgCoverage(const Graph& g,
 }
 
 
+inline
 void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig,
-		PairedInfoIndex<conj_graph_pack::graph_t> &ind,
-		const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
-		size_t /*k*/) {
-
+                     PairedInfoIndex<conj_graph_pack::graph_t> &ind,
+                     const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
+                     size_t /*k*/) {
 	typedef omnigraph::de::PairInfo<EdgeId> PairInfo;
 
 	MappingPath<Graph::EdgeId> m_path1 = FindGenomeMappingPath(contig, gp.g,

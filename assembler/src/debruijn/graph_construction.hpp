@@ -69,54 +69,6 @@ bool FillPairedIndexWithProductMetric(const Graph &g,
 	return res;
 }
 
-
-template<class Graph, class Index>
-void FillEtalonPairedIndex(PairedInfoIndexT<Graph>& etalon_paired_index,
-		const Graph &g, const Index& index,
-		const KmerMapper<Graph>& kmer_mapper, size_t is, size_t rs,
-		size_t delta, const Sequence& genome, size_t k)
-{
-	VERIFY_MSG(genome.size() > 0,
-			"The genome seems not to be loaded, program will exit");
-	INFO((string) (FormattedString("Counting etalon paired info for genome of length=%i, k=%i, is=%i, rs=%i, delta=%i")
-	        << genome.size() << k << is << rs << delta));
-
-	EtalonPairedInfoCounter<Graph, Index> etalon_paired_info_counter(g, index, kmer_mapper, is, rs, delta, k);
-	etalon_paired_info_counter.FillEtalonPairedInfo(genome, etalon_paired_index);
-
-	DEBUG("Etalon paired info counted");
-}
-
-template<class Graph, class Index>
-void FillEtalonPairedIndex(PairedInfoIndexT<Graph>& etalon_paired_index,
-		const Graph &g, const Index& index,
-		const KmerMapper<Graph>& kmer_mapper, const Sequence& genome,
-		const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
-		size_t k) {
-
-	FillEtalonPairedIndex(etalon_paired_index, g, index, kmer_mapper,
-                        size_t(lib.data().mean_insert_size), lib.data().read_length, size_t(lib.data().insert_size_deviation),
-			genome, k);
-
-	//////////////////DEBUG
-	//	SimpleSequenceMapper<k + 1, Graph> simple_mapper(g, index);
-	//	Path<EdgeId> path = simple_mapper.MapSequence(genome);
-	//	SequenceBuilder sequence_builder;
-	//	sequence_builder.append(Seq<k>(g.EdgeNucls(path[0])));
-	//	for (auto it = path.begin(); it != path.end(); ++it) {
-	//		sequence_builder.append(g.EdgeNucls(*it).Subseq(k));
-	//	}
-	//	Sequence new_genome = sequence_builder.BuildSequence();
-	//	NewEtalonPairedInfoCounter<k, Graph> new_etalon_paired_info_counter(g, index,
-	//			insert_size, read_length, insert_size * 0.1);
-	//	PairedInfoIndexT<Graph> new_paired_info_index(g);
-	//	new_etalon_paired_info_counter.FillEtalonPairedInfo(new_genome, new_paired_info_index);
-	//	CheckInfoEquality(etalon_paired_index, new_paired_info_index);
-	//////////////////DEBUG
-//	INFO("Etalon paired info counted");
-}
-
-
 template<class Index>
 void FillCoverageFromIndex(Index& index) {
 	const auto& inner_index = index.inner_index();

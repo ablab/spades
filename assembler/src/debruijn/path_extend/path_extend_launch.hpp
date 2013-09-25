@@ -267,17 +267,6 @@ void delete_libs(PairedInfoLibraries& libs){
 	}
 }
 
-void set_threshold(PairedInfoLibrary* lib, size_t index, size_t /*split_edge_length*/) {
-	INFO("Searching for paired info threshold for lib #"
-						<< index << " (IS = " << lib->insert_size_ << ",  DEV = " << lib->is_variation_ << ")");
-
-	SingleThresholdFinder finder((int) lib->insert_size_ - 2 * (int) lib->is_variation_, (int) lib->insert_size_ + 2 * (int) lib->is_variation_, (int) lib->read_size_);
-	double threshold = finder.find_threshold(index);
-
-	INFO("Paired info threshold is " << threshold);
-	lib->SetSingleThreshold(threshold);
-}
-
 void find_new_threshold(conj_graph_pack& gp, PairedInfoLibrary* lib, size_t index, size_t split_edge_length){
 	SplitGraphPairInfo splitGraph(gp, *lib, index, 99);
 	INFO("Calculating paired info threshold for lib #" << index);

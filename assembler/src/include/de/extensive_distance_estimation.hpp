@@ -11,6 +11,8 @@
 #include "paired_info.hpp"
 #include "omni/omni_utils.hpp"
 #include "distance_estimation.hpp"
+#include "weighted_distance_estimation.hpp"
+
 #include <algorithm>
 
 // No variation support in the original data

@@ -9,24 +9,20 @@
  */
 #include "standard.hpp"
 #include "logger/log_writers.hpp"
+
 #include "segfault_handler.hpp"
 #include "stacktrace.hpp"
-#include "config_struct.hpp"
-#include "io/easy_reader.hpp"
-#include "io/rc_reader_wrapper.hpp"
-#include "io/cutting_reader_wrapper.hpp"
-#include "io/multifile_reader.hpp"
-#include "io/careful_filtering_reader_wrapper.hpp"
 #include "launch.hpp"
-#include "simple_tools.hpp"
+#include "memory_limit.hpp"
+#include "copy_file.hpp"
+#include "perfcounter.hpp"
+#include "runtime_k.hpp"
+
+#include "config_struct.hpp"
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "de/distance_estimation.hpp"
-#include "memory_limit.hpp"
-#include "read_converter.hpp"
-#include "perfcounter.hpp"
-#include "runtime_k.hpp"
 
 void link_output(std::string const& link_name) {
   if (!cfg::get().run_mode)
@@ -149,13 +145,9 @@ int main(int /*argc*/, char** argv) {
     // assemble it!
     INFO("Assembling dataset (" << cfg::get().dataset_file << ") with K=" << cfg::get().K);
 
-    debruijn_graph::assemble_genome();
+    spades::assemble_genome();
 
-    link_output("latest_success");
-
-    //INFO("Assembling " << cfg::get().dataset_name << " dataset with K=" << cfg::get().K << " finished");
-   
-
+    link_output("latest_success");   
   } catch (std::bad_alloc const& e) {
     std::cerr << "Not enough memory to run SPAdes. " << e.what() << std::endl;
     return EINTR;

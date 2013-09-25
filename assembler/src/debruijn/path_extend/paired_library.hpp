@@ -14,10 +14,9 @@
 #ifndef PAIRED_LIBRARY_HPP_
 #define PAIRED_LIBRARY_HPP_
 
-#include "../debruijn_graph.hpp"
-
-//#include "../new_debruijn.hpp"
-//#include "../graph_pack.hpp"
+#include "debruijn_graph.hpp"
+#include "graph_pack.hpp"
+#include "de/paired_info.hpp"
 
 #include "xmath.h"
 
@@ -26,7 +25,9 @@ using debruijn_graph::EdgeId;
 using debruijn_graph::VertexId;
 
 using omnigraph::de::PairedInfoIndex;
+using omnigraph::de::PairedInfoIndexT;
 using omnigraph::de::PairInfo;
+using omnigraph::de::Point;
 
 namespace path_extend {
 

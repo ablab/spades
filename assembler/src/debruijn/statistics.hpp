@@ -16,6 +16,7 @@
 #include "graphio.hpp"
 #include "simple_tools.hpp"
 #include "xmath.h"
+#include "config_struct.hpp"
 
 #include <iostream>
 #include <fstream>

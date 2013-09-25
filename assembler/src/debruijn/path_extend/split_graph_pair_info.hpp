@@ -10,6 +10,8 @@
 
 #include "graphio.hpp"
 #include "single_threshold_finder.hpp"
+#include "read_converter.hpp"
+
 using namespace debruijn_graph;
 
 namespace path_extend {
@@ -362,7 +364,7 @@ public:
         }
         else {
             auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(cfg::get().ds.reads[lib_index_], true, (size_t) cfg::get().ds.reads[lib_index_].data().mean_insert_size);
-            SingleStreamType paired_streams(paired_stream.get());
+            io::ReadStreamVector<PairedReadStream> paired_streams(paired_stream.get());
             paired_stream.release();
             ProcessReadPairs(paired_streams);
         }

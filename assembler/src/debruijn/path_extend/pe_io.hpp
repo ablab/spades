@@ -16,6 +16,7 @@
 
 
 #include "bidirectional_path.hpp"
+#include "io/osequencestream.hpp"
 
 namespace path_extend {
 

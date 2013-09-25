@@ -122,34 +122,34 @@ public:
     }
 };
 
-double PairedReadCountWeight(const MappingRange&, const MappingRange&) {
+inline double PairedReadCountWeight(const MappingRange&, const MappingRange&) {
 	return 1.;
 }
 
-double KmerCountProductWeight(const MappingRange& mr1,
-        const MappingRange& mr2) {
+inline double KmerCountProductWeight(const MappingRange& mr1,
+                              const MappingRange& mr2) {
     return (double)(mr1.initial_range.size() * mr2.initial_range.size());
 }
 
-ConjugateDeBruijnGraph::EdgeId conj_wrap(ConjugateDeBruijnGraph& g,
-		ConjugateDeBruijnGraph::EdgeId e) {
+inline ConjugateDeBruijnGraph::EdgeId conj_wrap(ConjugateDeBruijnGraph& g,
+                                         ConjugateDeBruijnGraph::EdgeId e) {
 	return g.conjugate(e);
 }
 
-NonconjugateDeBruijnGraph::EdgeId conj_wrap(NonconjugateDeBruijnGraph& /*g*/,
-		NonconjugateDeBruijnGraph::EdgeId e) {
+inline NonconjugateDeBruijnGraph::EdgeId conj_wrap(NonconjugateDeBruijnGraph& /*g*/,
+                                                   NonconjugateDeBruijnGraph::EdgeId e) {
 	VERIFY(0);
 	return e;
 }
 
-void WrappedSetCoverage(ConjugateDeBruijnGraph& g,
-		ConjugateDeBruijnGraph::EdgeId e, int cov) {
-		g.coverage_index().SetCoverage(e, cov);
-		g.coverage_index().SetCoverage(g.conjugate(e), cov);
+inline void WrappedSetCoverage(ConjugateDeBruijnGraph& g,
+                               ConjugateDeBruijnGraph::EdgeId e, int cov) {
+    g.coverage_index().SetCoverage(e, cov);
+    g.coverage_index().SetCoverage(g.conjugate(e), cov);
 }
 
-void WrappedSetCoverage(NonconjugateDeBruijnGraph& g,
-		NonconjugateDeBruijnGraph::EdgeId e, int cov) {
+inline void WrappedSetCoverage(NonconjugateDeBruijnGraph& g,
+                               NonconjugateDeBruijnGraph::EdgeId e, int cov) {
 	g.coverage_index().SetCoverage(e, cov);
 }
 
@@ -517,7 +517,7 @@ bool RefineInsertSizeForLib(const graph_pack& gp,
   return true;
 }
 
-double UnityFunction(int /*x*/) {
+inline double UnityFunction(int /*x*/) {
     return 1.;
 }
 
@@ -568,6 +568,20 @@ void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_ind
       }
     }
   }
+}
+
+template<class Graph>
+Sequence MergeSequences(const Graph& g,
+		const vector<typename Graph::EdgeId>& continuous_path) {
+	vector < Sequence > path_sequences;
+	path_sequences.push_back(g.EdgeNucls(continuous_path[0]));
+	for (size_t i = 1; i < continuous_path.size(); ++i) {
+		VERIFY(
+				g.EdgeEnd(continuous_path[i - 1])
+						== g.EdgeStart(continuous_path[i]));
+		path_sequences.push_back(g.EdgeNucls(continuous_path[i]));
+	}
+	return MergeOverlappingSequences(path_sequences, g.k());
 }
 
 }

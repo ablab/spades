@@ -104,25 +104,22 @@ bool LoadEdgeIndex(const std::string& file_name,
   return true;
 }
 
+inline
 void SaveMapCoverage( const std::string& path, const std::map<int, int>& data ) {
-
 	std::ofstream outFile;
 	outFile.open(path.c_str());
 
 	INFO("Saving detailed coverage in file " << path <<" started");
 	outFile << data.size() << "\n";
 	for (auto dataIterator = data.begin(); dataIterator != data.end(); ++dataIterator){
-
 		 outFile << dataIterator->first << " " << dataIterator->second << " .\n";
 	}
 }
 
 template<class KmerIndex>
 void SaveDetailCoverage(const std::string& pathInCov, const std::string& pathOutCov, const KmerIndex& index ) {
-
 	SaveMapCoverage(pathInCov, index.inCoverage);
 	SaveMapCoverage(pathOutCov, index.outCoverage);
-
 }
 
 

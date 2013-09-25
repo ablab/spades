@@ -48,7 +48,8 @@ namespace debruijn_graph {
 ////	cout << "Count was " << count << endl;
 //}
 
-void CheckPairInfo(const vector<PairInfo<EdgeId>>& infos1, const vector<PairInfo<EdgeId>>& infos2) {
+template<typename EdgeId>
+void CheckPairInfo(const std::vector<omnigraph::de::PairInfo<EdgeId>>& infos1, const vector<omnigraph::de::PairInfo<EdgeId>>& infos2) {
   using omnigraph::operator<<;
 
 	for (auto it = infos1.begin(); it != infos1.end(); ++it) {
@@ -64,13 +65,13 @@ void CheckPairInfo(const vector<PairInfo<EdgeId>>& infos1, const vector<PairInfo
 
 }
 
-void CheckInfoEquality(PairedInfoIndex<Graph>& paired_index1, PairedInfoIndex<Graph>& paired_index2) 
-{
+template<class Graph>
+void CheckInfoEquality(omnigraph::de::PairedInfoIndex<Graph>& paired_index1, omnigraph::de::PairedInfoIndex<Graph>& paired_index2) {
 	for (auto it = paired_index1.begin(); it != paired_index1.end(); ++it) {
-		const vector<PairInfo<EdgeId>> infos1 = *it;
+		const vector<omnigraph::de::PairInfo<EdgeId>> infos1 = *it;
 		EdgeId first = infos1.front().first;
 		EdgeId second = infos1.front().second;
-		const vector<PairInfo<EdgeId>> infos2 = paired_index2.GetEdgePairInfo(first, second);
+		const vector<omnigraph::de::PairInfo<EdgeId>> infos2 = paired_index2.GetEdgePairInfo(first, second);
 		CheckPairInfo(infos1, infos2);
 		CheckPairInfo(infos2, infos1);
 	}
@@ -88,6 +89,7 @@ void CheckInfoEquality(PairedInfoIndex<Graph>& paired_index1, PairedInfoIndex<Gr
 //	}
 }
 
+inline
 bool CheckContains(const runtime_k::RtSeq& pattern, const Sequence& s, size_t k) {
 	if (s.size() < k)
 		return false;
@@ -102,6 +104,7 @@ bool CheckContains(const runtime_k::RtSeq& pattern, const Sequence& s, size_t k)
 	return false;
 }
 
+inline
 bool CheckContainsSubKmer(const Sequence& pattern, const Sequence& s, size_t k) {
 	if (pattern.size() < k || s.size() < k)
 		return false;
@@ -118,6 +121,7 @@ bool CheckContainsSubKmer(const Sequence& pattern, const Sequence& s, size_t k) 
 	return false;
 }
 
+inline
 size_t ThreadedPairedReadCount(const Sequence& s1, const Sequence& s2, io::IReader<io::PairedRead>& stream, size_t k) {
 	size_t count = 0;
 	io::PairedRead paired_read;
@@ -138,12 +142,14 @@ size_t ThreadedPairedReadCount(const Sequence& s1, const Sequence& s2, io::IRead
 	return count;
 }
 
+inline
 size_t ThreadedPairedReadCount(const conj_graph_pack& gp, int e1, int e2, io::IReader<io::PairedRead>& stream, size_t k) {
 	return ThreadedPairedReadCount(gp.g.EdgeNucls(gp.int_ids.ReturnEdgeId(e1)), gp.g.EdgeNucls(gp.int_ids.ReturnEdgeId(e2)), stream, k);
 }
 
-double TotalPositiveWeight(const conj_graph_pack& gp, PairedInfoIndex<Graph> paired_index, int e1, int e2) {
-	vector<PairInfo<EdgeId>> infos = paired_index.GetEdgePairInfo(gp.int_ids.ReturnEdgeId(e1), gp.int_ids.ReturnEdgeId(e2));
+template<class Graph>
+double TotalPositiveWeight(const conj_graph_pack& gp, omnigraph::de::PairedInfoIndex<Graph> paired_index, int e1, int e2) {
+	vector<omnigraph::de::PairInfo<EdgeId>> infos = paired_index.GetEdgePairInfo(gp.int_ids.ReturnEdgeId(e1), gp.int_ids.ReturnEdgeId(e2));
 	double s = 0.;
 	for (auto it = infos.begin(); it != infos.end(); ++it) {
 		double weight = it->weight();
