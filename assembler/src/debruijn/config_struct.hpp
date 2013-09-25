@@ -395,7 +395,6 @@ struct debruijn_config {
     };
 
   struct dataset {
-    size_t count_single_libs;
     io::DataSet<DataSetData> reads;
 
     size_t max_read_length;

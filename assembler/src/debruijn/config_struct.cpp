@@ -76,11 +76,6 @@ void load_lib_data(const std::string& prefix) {
   if (!FileExists(filename)) {
       WARN("Estimates params config " << prefix << " does not exist");
   }
-  boost::optional<size_t> single_lib_count;
-  load_param(filename, "single_lib_count", single_lib_count);
-  if (single_lib_count) {
-      cfg::get_writable().ds.count_single_libs = *single_lib_count;
-  }
   boost::optional<size_t> lib_count;
   load_param(filename, "lib_count", lib_count);
   if (!lib_count || lib_count != cfg::get().ds.reads.lib_count()) {
@@ -138,7 +133,6 @@ void write_lib_data(const std::string& prefix) {
   std::string filename = estimated_param_filename(prefix);
 
   cfg::get().ds.reads.save("foo.txt");
-  write_param(filename, "single_lib_count", cfg::get().ds.count_single_libs);
   write_param(filename, "lib_count", cfg::get().ds.reads.lib_count());
   write_param(filename, "max_read_length", cfg::get().ds.RL());
   write_param(filename, "average_coverage", cfg::get().ds.avg_coverage());

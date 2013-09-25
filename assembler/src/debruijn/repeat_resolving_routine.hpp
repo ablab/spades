@@ -168,16 +168,17 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
 
 void resolve_repeats() {
 	Sequence genome = cfg::get().developer_mode ? cfg::get().ds.reference_genome : Sequence();
-
 	conj_graph_pack conj_gp(cfg::get().K, cfg::get().output_dir, genome,
 			cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling,
 			!cfg::get().developer_mode);
-
 	PairedIndicesT paired_indices(conj_gp.g, cfg::get().ds.reads.lib_count());
 	PairedIndicesT clustered_indices(conj_gp.g,	cfg::get().ds.reads.lib_count());
     PairedIndicesT scaffold_indices(conj_gp.g, cfg::get().ds.reads.lib_count());
     vector<PathStorageInfo<Graph> > long_reads_libs;
     vector<PathStorage<Graph> > single_long_reads;
+    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+        single_long_reads.push_back(PathStorage<Graph>(conj_gp.g));
+    }
 	if (!cfg::get().developer_mode) {
 		conj_gp.edge_pos.Detach();
 		paired_indices.Detach();

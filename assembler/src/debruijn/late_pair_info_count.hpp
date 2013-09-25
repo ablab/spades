@@ -32,7 +32,6 @@ void late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices, v
     if (cfg::get().paired_mode) {
         size_t edge_length_threshold = Nx(gp.g, 50);
         INFO("STAGE == Counting Late Pair Info");
-        cfg::get_writable().ds.count_single_libs = 0;
         for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
             const io::SequencingLibrary<debruijn_config::DataSetData>& reads = cfg::get().ds.reads[i];
             if (reads.type() == io::LibraryType::PairedEnd ||
@@ -129,11 +128,9 @@ void late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices, v
                                             single_streams.size());
                 }
                 single_long_reads.push_back(PathStorage<Graph>(gp.g));
-                single_long_reads[cfg::get().ds.count_single_libs].AddStorage(
+                single_long_reads[i].AddStorage(
                         read_mapper.GetPaths());
-                INFO("long_read size " << single_long_reads[cfg::get().ds.count_single_libs ].size() << " read mapper " << read_mapper.GetPaths().size());
-                cfg::get_writable().ds.count_single_libs = cfg::get().ds
-                        .count_single_libs + 1;
+                INFO("long_read size " << single_long_reads[i ].size() << " read mapper " << read_mapper.GetPaths().size());
             }
         }
     }
