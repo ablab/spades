@@ -126,7 +126,7 @@ class CapEnvironment : public Environment {
     s.WriteLine("genomes_names", genomes_names_);
 
     s.WriteLine("genomes", genomes_);
-    
+
     s.WriteLine("coordinates_threads", coordinates_handler_.GetStoredThreads());
   }
 
@@ -217,6 +217,10 @@ class CapEnvironment : public Environment {
   }
 
   const vector<Sequence>& genomes() const {
+      return genomes_;
+  }
+
+  vector<Sequence>& mutable_genomes() {
       return genomes_;
   }
 

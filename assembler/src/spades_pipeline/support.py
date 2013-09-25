@@ -9,7 +9,6 @@
 import os
 import stat
 import sys
-import shutil
 import logging
 import glob
 import re
@@ -22,22 +21,17 @@ SPADES_ERROR_MESSAGE = " ERROR "
 SPADES_WARN_MESSAGE = " WARN "
 
 
-def verify(expr, log, message):
-    if (not (expr)):
-        log.info ("Assertion failed. Message: " + message)
-        sys.exit(1)
-
-
 def error(err_str, log=None, prefix=SPADES_PY_ERROR_MESSAGE):
     if log:
         log.info("\n\n" + prefix + " " + err_str)
         log_warnings(log)
         log.info("\nIn case you have troubles running SPAdes, you can write to spades.support@bioinf.spbau.ru")
-        log.info("Please provide us with params.txt and spades.log files from the output directory.\n")
+        log.info("Please provide us with params.txt and spades.log files from the output directory.")
     else:
-        print >>sys.stderr, "\n\n" + prefix + " " + err_str + "\n"
-        print >>sys.stderr, "In case you have troubles running SPAdes, you can write to spades.support@bioinf.spbau.ru"
-        print >>sys.stderr, "Please provide us with params.txt and spades.log files from the output directory.\n"
+        sys.stderr.write("\n\n" + prefix + " " + err_str + "\n\n")
+        sys.stderr.write("In case you have troubles running SPAdes, you can write to spades.support@bioinf.spbau.ru\n")
+        sys.stderr.write("Please provide us with params.txt and spades.log files from the output directory.\n")
+        sys.stderr.flush()
     sys.exit(1)
 
 
@@ -45,7 +39,14 @@ def warning(warn_str, log=None, prefix="== Warning == "):
     if log:
         log.info("\n\n" + prefix + " " + warn_str + "\n\n")
     else:
-        print "\n\n" + prefix + " " + warn_str + "\n\n"
+        sys.stdout.write("\n\n" + prefix + " " + warn_str + "\n\n\n")
+        sys.stdout.flush()
+
+
+def check_python_version():
+    if sys.version[0:3] not in options_storage.SUPPORTED_PYTHON_VERSIONS:
+        error("python version " + sys.version[0:3] + " is not supported!\n" + \
+              "Supported versions are " + ", ".join(options_storage.SUPPORTED_PYTHON_VERSIONS))
 
 
 def check_file_existence(filename, message="", log=None):
@@ -60,11 +61,20 @@ def check_files_duplication(filenames, log):
             error("file %s was specified at least twice" % filename, log)
 
 
-def check_reads_file_format(filename, message, log):
-    ext = os.path.splitext(filename)[1]
-    if ext.lower() not in ['.fa', '.fasta', '.fq', '.fastq', '.gz']:
-        error("file with reads has unsupported format (only .fa, .fasta, .fq,"
-              " .fastq, .gz are supported): %s (%s)" % (filename, message), log)
+def check_reads_file_format(filename, message, only_assembler, log):
+    if filename in options_storage.dict_of_prefixes:
+        ext = options_storage.dict_of_prefixes[filename]
+    else:
+        ext = os.path.splitext(filename)[1]
+        if ext.lower() == '.gz':
+            ext = os.path.splitext(filename[:-len(ext)])[1] + ext
+    if ext.lower() not in options_storage.ALLOWED_READS_EXTENSIONS:
+        error("file with reads has unsupported format (only " + ", ".join(options_storage.ALLOWED_READS_EXTENSIONS) +
+              " are supported): %s (%s)" % (filename, message), log)
+    if not only_assembler and ext.lower() not in options_storage.BH_ALLOWED_READS_EXTENSIONS:
+        error("to run read error correction, reads should be in FASTQ format (" +
+              ", ".join(options_storage.BH_ALLOWED_READS_EXTENSIONS) +
+              " are supported): %s (%s)" % (filename, message), log)
 
 
 # http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
@@ -85,6 +95,13 @@ def which(program):
     return None
 
 
+def process_subprocess_output(line):
+    if sys.version.startswith('2.'):
+        return line.rstrip()
+    else: # sys.version.startswith('3.'):
+        return str(line.rstrip(), 'utf-8')
+
+
 def sys_call(cmd, log=None, cwd=None):
     import shlex
     import subprocess
@@ -98,21 +115,22 @@ def sys_call(cmd, log=None, cwd=None):
 
     output = ''
     while not proc.poll():
-        line = proc.stdout.readline()
-        if line != '':
+        line = process_subprocess_output(proc.stdout.readline())
+        if line:
             if log:
-                log.info(line.rstrip())
+                log.info(line)
             else:
-                output += line.rstrip() + "\n"
+                output += line + "\n"
         if proc.returncode is not None:
             break
 
     for line in proc.stdout.readlines():
-        if line != '':
+        line = process_subprocess_output(line)
+        if line:
             if log:
-                log.info(line.rstrip())
+                log.info(line)
             else:
-                output += line.rstrip() + "\n"
+                output += line + "\n"
 
     if proc.returncode:
         error('system call for: "%s" finished abnormally, err code: %d' % (cmd, proc.returncode), log)
@@ -145,24 +163,24 @@ def universal_sys_call(cmd, log, out_filename=None, err_filename=None, cwd=None)
     if log and (not out_filename or not err_filename):
         while not proc.poll():
             if not out_filename:
-                line = proc.stdout.readline()
-                if line != '':
-                    log.info(line.rstrip())
+                line = process_subprocess_output(proc.stdout.readline())
+                if line:
+                    log.info(line)
             if not err_filename:
-                line = proc.stderr.readline()
-                if line != '':
-                    log.info(line.rstrip())
+                line = process_subprocess_output(proc.stderr.readline())
+                if line:
+                    log.info(line)
             if proc.returncode is not None:
                 break
 
         if not out_filename:
             for line in proc.stdout.readlines():
                 if line != '':
-                    log.info(line.rstrip())
+                    log.info(process_subprocess_output(line))
         if not err_filename:
             for line in proc.stderr.readlines():
                 if line != '':
-                    log.info(line.rstrip())
+                    log.info(process_subprocess_output(line))
     else:
         proc.wait()
 
@@ -285,6 +303,10 @@ def add_to_dataset(option, data, dataset_data):
         else:
             dataset_data[record_id]['type'] = 'mate-pairs'
     if data_type.endswith('reads'): # reads are stored as lists
+        if data.find(':') != -1 and ('.' + data[:data.find(':')]) in options_storage.ALLOWED_READS_EXTENSIONS:
+            prefix = '.' + data[:data.find(':')]
+            data = data[data.find(':') + 1:]
+            options_storage.dict_of_prefixes[data] = prefix
         if data_type in dataset_data[record_id]:
             dataset_data[record_id][data_type].append(data)
         else:
@@ -330,13 +352,17 @@ def relative2abs_paths(dataset_data, dir_name):
             if key.endswith('reads'):
                 abs_paths_reads = []
                 for reads_file in value:
-                    abs_paths_reads.append(os.path.join(dir_name, reads_file))
+                    abs_path = os.path.join(dir_name, reads_file)
+                    if reads_file in options_storage.dict_of_prefixes and abs_path != reads_file:
+                        options_storage.dict_of_prefixes[abs_path] = options_storage.dict_of_prefixes[reads_file]
+                        del options_storage.dict_of_prefixes[reads_file]
+                    abs_paths_reads.append(abs_path)
                 reads_library[key] = abs_paths_reads
         abs_paths_dataset_data.append(reads_library)
     return abs_paths_dataset_data
 
 
-def check_dataset_reads(dataset_data, log):
+def check_dataset_reads(dataset_data, only_assembler, log):
     all_files = []
     for id, reads_library in enumerate(dataset_data):
         left_number = 0
@@ -347,7 +373,7 @@ def check_dataset_reads(dataset_data, log):
                     check_file_existence(reads_file, key + ', library number: ' + str(id + 1) +
                                          ', library type: ' + reads_library['type'], log)
                     check_reads_file_format(reads_file, key + ', library number: ' + str(id + 1) +
-                                            ', library type: ' + reads_library['type'], log)
+                                            ', library type: ' + reads_library['type'], only_assembler, log)
                     all_files.append(reads_file)
                 if key == 'left reads':
                     left_number = len(value)
@@ -391,15 +417,22 @@ def dataset_has_interlaced_reads(dataset_data):
 
 
 def split_interlaced_reads(dataset_data, dst, log):
+    new_dataset_data = list()
     for reads_library in dataset_data:
+        new_reads_library = dict(reads_library)
         for key, value in reads_library.items():
             if key == 'interlaced reads':
-                if 'left reads' not in reads_library:
-                    reads_library['left reads'] = []
-                    reads_library['right reads'] = []
+                if 'left reads' not in new_reads_library:
+                    new_reads_library['left reads'] = []
+                    new_reads_library['right reads'] = []
                 for interlaced_reads in value:
-                    ext = os.path.splitext(interlaced_reads)[1]
-                    if ext == '.gz':
+                    if interlaced_reads in options_storage.dict_of_prefixes:
+                        ext = options_storage.dict_of_prefixes[interlaced_reads]
+                    else:
+                        ext = os.path.splitext(interlaced_reads)[1]
+                    was_compressed = False
+                    if ext.endswith('.gz'):
+                        was_compressed = True
                         import gzip
                         input_file = gzip.open(interlaced_reads, 'r')
                         ungzipped = os.path.splitext(interlaced_reads)[0]
@@ -408,12 +441,14 @@ def split_interlaced_reads(dataset_data, dst, log):
                         input_file = open(interlaced_reads, 'r')
                         out_basename, ext = os.path.splitext(os.path.basename(interlaced_reads))
 
-                    if ext.lower() == '.fa' or ext.lower() == '.fasta':
-                        is_fasta_format = True
-                    elif ext.lower() == '.fq' or ext.lower() == '.fastq':
+                    if interlaced_reads in options_storage.dict_of_prefixes:
+                        ext = options_storage.dict_of_prefixes[interlaced_reads]
+                    if ext.lower().startswith('.fq') or ext.lower().startswith('.fastq'):
                         is_fasta_format = False
+                        ext = '.fastq'
                     else:
-                        error('unsupported format of interlaced reads (' + interlaced_reads + '): should be FASTA or FASTQ', log)
+                        is_fasta_format = True
+                        ext = '.fasta'
 
                     out_left_filename = os.path.join(dst, out_basename + "_1" + ext)
                     out_right_filename = os.path.join(dst, out_basename + "_2" + ext)
@@ -423,18 +458,29 @@ def split_interlaced_reads(dataset_data, dst, log):
                         log.info("== Splitting " + interlaced_reads + " into left and right reads (in " + dst + " directory)")
                         out_left_file = open(out_left_filename, 'w')
                         out_right_file = open(out_right_filename, 'w')
-                        for id, line in enumerate(input_file):
-                            if (is_fasta_format and (id % 4 < 2)) or (not is_fasta_format and (id % 8 < 4)):
-                                out_left_file.write(line)
-                            else:
-                                out_right_file.write(line)
+                        if sys.version.startswith('3.') and was_compressed:
+                            for id, line in enumerate(input_file):
+                                if (is_fasta_format and (id % 4 < 2)) or (not is_fasta_format and (id % 8 < 4)):
+                                    out_left_file.write(str(line, 'utf-8'))
+                                else:
+                                    out_right_file.write(str(line, 'utf-8'))
+                        else:
+                            for id, line in enumerate(input_file):
+                                if (is_fasta_format and (id % 4 < 2)) or (not is_fasta_format and (id % 8 < 4)):
+                                    out_left_file.write(line)
+                                else:
+                                    out_right_file.write(line)
                         out_left_file.close()
                         out_right_file.close()
 
                     input_file.close()
-                    reads_library['left reads'].append(out_left_filename)
-                    reads_library['right reads'].append(out_right_filename)
-                del reads_library['interlaced reads']
+                    new_reads_library['left reads'].append(out_left_filename)
+                    new_reads_library['right reads'].append(out_right_filename)
+                    if interlaced_reads in options_storage.dict_of_prefixes:
+                        del options_storage.dict_of_prefixes[interlaced_reads]
+                del new_reads_library['interlaced reads']
+        new_dataset_data.append(new_reads_library)
+    return new_dataset_data
 
 
 def pretty_print_reads(dataset_data, log, indent='    '):
@@ -479,7 +525,7 @@ def write_fasta(filename, fasta):
     outfile = open(filename, 'w')
     for name, seq in fasta:
         outfile.write(name + '\n')
-        for i in xrange(0,len(seq),60):
+        for i in range(0, len(seq), 60):
             outfile.write(seq[i : i + 60] + '\n')
     outfile.close()
 

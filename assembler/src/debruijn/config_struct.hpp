@@ -41,16 +41,9 @@ enum estimation_mode {
 
 enum resolving_mode {
   rm_none,
-  rm_split,
   rm_path_extend,
-  rm_combined,
-  rm_split_scaff,
-  rm_jump,
   rm_rectangles
 };
-
-
-
 
 enum info_printer_pos {
   ipp_default = 0,
@@ -132,10 +125,7 @@ struct debruijn_config {
   static const resolve_mode_id_mapping FillResolveModeInfo() {
     resolve_mode_id_mapping::value_type info[] = {
       resolve_mode_id_mapping::value_type("none", rm_none),
-      resolve_mode_id_mapping::value_type("split", rm_split),
       resolve_mode_id_mapping::value_type("path_extend", rm_path_extend),
-      resolve_mode_id_mapping::value_type("combined", rm_combined),
-      resolve_mode_id_mapping::value_type("split_scaff", rm_split_scaff),
       resolve_mode_id_mapping::value_type("rectangles", rm_rectangles)
     };
 
@@ -380,6 +370,8 @@ struct debruijn_config {
     double median_insert_size;
     double insert_size_mad;
     std::map<int, size_t> insert_size_distribution;
+
+    uint64_t total_nucls;
     double average_coverage;
     double pi_threshold;
 
@@ -390,23 +382,33 @@ struct debruijn_config {
     typedef io::IReader<io::SingleReadSeq> SequenceSingleReadStream;
     typedef io::IReader<io::PairedReadSeq> SequencePairedReadStream;
 
-    DataSetData(): read_length(0), mean_insert_size(0.0), insert_size_deviation(0.0), median_insert_size(0.0), insert_size_mad(0.0), average_coverage(0.0), pi_threshold(0.0) {
-    }
-
-  };
+    DataSetData()
+                : read_length(0),
+                  mean_insert_size(0.0),
+                  insert_size_deviation(0.0),
+                  median_insert_size(0.0),
+                  insert_size_mad(0.0),
+                  total_nucls(0),
+                  average_coverage(0.0),
+                  pi_threshold(0.0) {
+        }
+    };
 
   struct dataset {
     size_t count_single_libs;
     io::DataSet<DataSetData> reads;
 
-    size_t RL() const { return reads[0].data().read_length; }
+    size_t max_read_length;
+    double average_coverage;
+
+    size_t RL() const { return max_read_length; }
     void set_RL(size_t RL) {
-        for (size_t i = 0; i < reads.lib_count(); ++i) {
-            reads[i].data().read_length = RL;
-        }
+        max_read_length = RL;
     }
-    double avg_coverage() const { return reads[0].data().average_coverage; }
+
+    double avg_coverage() const { return average_coverage; }
     void set_avg_coverage(double avg_coverage) {
+        average_coverage = avg_coverage;
         for (size_t i = 0; i < reads.lib_count(); ++i) {
             reads[i].data().average_coverage = avg_coverage;
         }
@@ -417,6 +419,9 @@ struct debruijn_config {
     std::string reads_filename;
 
     Sequence reference_genome;
+
+    dataset(): max_read_length(0), average_coverage(0.0) {
+    }
   };
 
   struct position_handler {

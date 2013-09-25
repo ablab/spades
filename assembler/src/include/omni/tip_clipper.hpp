@@ -111,7 +111,7 @@ class TipClipper: public EdgeRemovingAlgorithm<Graph, LengthComparator<Graph>> {
 public:
 
     TipClipper(Graph& g, size_t max_tip_length,
-            const shared_ptr<Predicate<EdgeId>>& condition,
+            const shared_ptr<Predicate<EdgeId>>& condition = make_shared<func::AlwaysTrue<EdgeId>>(),
             boost::function<void(EdgeId)> removal_handler = 0) :
             base(g,
                  And<EdgeId>(make_shared<TipCondition<Graph>>(g), condition),
@@ -168,5 +168,20 @@ public:
 private:
     DECL_LOGGER("TopologyTipClipper")
 };
+
+template<class Graph>
+bool ClipTips(
+        Graph& graph,
+        size_t max_tip_length,
+        const shared_ptr<Predicate<typename Graph::EdgeId>>& condition = make_shared<func::AlwaysTrue<typename Graph::EdgeId>>(),
+        boost::function<void(typename Graph::EdgeId)> raw_removal_handler = 0) {
+
+    DEBUG("Max tip length: " << max_tip_length);
+
+    omnigraph::TipClipper<Graph> tc(graph, max_tip_length, condition,
+                                    raw_removal_handler);
+
+    return tc.Process();
+}
 
 } // namespace omnigraph

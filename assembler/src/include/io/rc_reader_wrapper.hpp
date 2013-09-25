@@ -310,5 +310,13 @@ public:
 
 };
 
+template<class Reader>
+std::shared_ptr<ReadStreamVector<Reader>> UnRCWrapStreams(ReadStreamVector<Reader>& streams) {
+    auto un_rc_streams = std::make_shared<ReadStreamVector<Reader>>();
+    BOOST_FOREACH(Reader& stream, streams) {
+        un_rc_streams->push_back(new RCRemovingWrapper<typename Reader::read_type>(stream));
+    }
+    return un_rc_streams;
+}
 
 }

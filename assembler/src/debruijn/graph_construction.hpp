@@ -200,7 +200,8 @@ size_t ConstructGraphUsingExtentionIndex(size_t k, const debruijn_config::constr
     typedef typename Index::InnerIndexT InnerIndex;
     typedef typename EdgeIndexHelper<InnerIndex>::CoverageAndGraphPositionFillingIndexBuilderT IndexBuilder;
 	INFO("Building index with coverage from graph")
-	IndexBuilder().BuildIndexWithCoverageFromGraph(g, index.inner_index(), streams, contigs_stream);
+	IndexBuilder().BuildIndexFromGraph(index.inner_index(), g);
+	IndexBuilder().ParallelFillCoverage(index.inner_index(), streams);
 	return rl;
 }
 

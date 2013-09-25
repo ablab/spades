@@ -30,48 +30,30 @@
 
 namespace debruijn_graph {
 
-typedef set<Point> Histogram;
-
 void estimate_with_estimator(const Graph& graph,
                              const AbstractDistanceEstimator<Graph>& estimator,
-                             const PairedInfoNormalizer<Graph>& normalizer,
                              const PairInfoWeightFilter<Graph>& filter,
                              PairedIndexT& clustered_index)
 {
   using debruijn_graph::estimation_mode;
   DEBUG("Estimating distances");
-  PairedIndexT raw_clustered_index(graph);
 
   if (cfg::get().use_multithreading) {
-    estimator.EstimateParallel(raw_clustered_index, cfg::get().max_threads);
+    estimator.EstimateParallel(clustered_index, cfg::get().max_threads);
   } else {
-    estimator.Estimate(raw_clustered_index);
+    estimator.Estimate(clustered_index);
   }
-
-  INFO("Normalizing Weights");
-  PairedIndexT normalized_index(graph);
-
-    // temporary fix for scaffolding (I hope) due to absolute thresholds in path_extend
-  if (cfg::get().est_mode == em_weighted
-   || cfg::get().est_mode == em_smoothing
-   || cfg::get().est_mode == em_extensive)
-  {
-    //TODO: add to config
-    double coeff = (cfg::get().ds.single_cell ? (10. / 80.) : (0.2 / 3.00) );
-    normalizer.FillNormalizedIndex(raw_clustered_index, normalized_index, coeff);
-  }
-  else
-    normalizer.FillNormalizedIndex(raw_clustered_index, normalized_index);
 
   INFO("Filtering info");
-  filter.Filter(normalized_index, clustered_index);
+  filter.Filter(clustered_index);
   DEBUG("Info Filtered");
 }
 
 bool prepare_scaffold_index(conj_graph_pack& gp,
-        const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
-        const PairedIndexT& paired_index,
-        PairedIndexT& clustered_index) {
+                               const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
+                               const PairedIndexT& paired_index,
+                               PairedIndexT& clustered_index) {
+
     double is_var = lib.data().insert_size_deviation;
     size_t delta = size_t(is_var);
     size_t linkage_distance = size_t(
@@ -88,24 +70,7 @@ bool prepare_scaffold_index(conj_graph_pack& gp,
 
     WeightDEWrapper wrapper(lib.data().insert_size_distribution, lib.data().mean_insert_size);
     DEBUG("Weight Wrapper Done");
-
     weight_function = boost::bind(&WeightDEWrapper::CountWeight, wrapper, _1);
-
-    PairedInfoNormalizer<Graph>::WeightNormalizer normalizing_f;
-    if (cfg::get().ds.single_cell) {
-        normalizing_f = &TrivialWeightNormalization<Graph>;
-    } else {
-        //todo reduce number of constructor params
-        //TODO: apply new system
-        PairedInfoWeightNormalizer<Graph> weight_normalizer(gp.g,
-                (size_t)math::round(lib.data().mean_insert_size), lib.data().insert_size_deviation, lib.data().read_length,
-                gp.k_value, lib.data().average_coverage);
-        normalizing_f = boost::bind(
-                &PairedInfoWeightNormalizer<Graph>::NormalizeWeight,
-                weight_normalizer, _1, _2, _3);
-    }
-    PairedInfoNormalizer<Graph> normalizer(normalizing_f);
-    DEBUG("Normalizer Done");
 
     PairInfoWeightFilter<Graph> filter(gp.g, 0.);
     DEBUG("Weight Filter Done");
@@ -118,8 +83,7 @@ bool prepare_scaffold_index(conj_graph_pack& gp,
                     cfg::get().ade.min_peak_points, cfg::get().ade.inv_density,
                     cfg::get().ade.percentage,
                     cfg::get().ade.derivative_threshold, true);
-    estimate_with_estimator(gp.g, estimator, normalizer, filter,
-            clustered_index);
+    estimate_with_estimator(gp.g, estimator, filter, clustered_index);
 
     return true;
 }
@@ -163,23 +127,6 @@ void estimate_distance(conj_graph_pack& gp,
     else
       weight_function = UnityFunction;
 
-    PairedInfoNormalizer<Graph>::WeightNormalizer normalizing_f;
-    if (config.ds.single_cell ||
-    		cfg::get().rm == debruijn_graph::resolving_mode::rm_path_extend) {  // paired info normalization
-    	INFO("Trivial weight normalizer");
-    	normalizing_f = &TrivialWeightNormalization<Graph>;                     // only in the single-cell case,
-    } else {                                                                  // in the case of ``multi-cell''
-      // todo reduce number of constructor params                             // we use a trivial weight (equal to 1.)
-    	INFO("Not Trivial Weight normalizer");
-    	PairedInfoWeightNormalizer<Graph> weight_normalizer(gp.g,
-    	        (size_t)math::round(lib.data().mean_insert_size), lib.data().insert_size_deviation, lib.data().read_length,
-                                                          gp.k_value, config.ds.avg_coverage());
-      normalizing_f = boost::bind(&PairedInfoWeightNormalizer<Graph>::NormalizeWeight,
-                                  weight_normalizer, _1, _2, _3);
-    }
-    PairedInfoNormalizer<Graph> normalizer(normalizing_f);
-    INFO("Normalizer Done");
-
     PairInfoWeightFilter<Graph> filter(gp.g, config.de.filter_threshold);
     INFO("Weight Filter Done");
 
@@ -192,7 +139,7 @@ void estimate_distance(conj_graph_pack& gp,
                   DistanceEstimator<Graph>(gp.g, paired_index, dist_finder,
                                               linkage_distance, max_distance);
 
-          estimate_with_estimator(gp.g, estimator, normalizer, filter, clustered_index);
+          estimate_with_estimator(gp.g, estimator, filter, clustered_index);
           break;
         }
       case em_weighted :
@@ -202,7 +149,7 @@ void estimate_distance(conj_graph_pack& gp,
                   WeightedDistanceEstimator<Graph>(gp.g, paired_index,
                       dist_finder, weight_function, linkage_distance, max_distance);
 
-          estimate_with_estimator(gp.g, estimator, normalizer, filter, clustered_index);
+          estimate_with_estimator(gp.g, estimator, filter, clustered_index);
           break;
         }
       case em_extensive :
@@ -212,7 +159,7 @@ void estimate_distance(conj_graph_pack& gp,
                   ExtensiveDistanceEstimator<Graph>(gp.g, paired_index,
                       dist_finder, weight_function, linkage_distance, max_distance);
 
-          estimate_with_estimator(gp.g, estimator, normalizer, filter, clustered_index);
+          estimate_with_estimator(gp.g, estimator, filter, clustered_index);
           break;
         }
       case em_smoothing :
@@ -229,7 +176,7 @@ void estimate_distance(conj_graph_pack& gp,
                       config.ade.percentage,
                       config.ade.derivative_threshold);
 
-          estimate_with_estimator(gp.g, estimator, normalizer, filter, clustered_index);
+          estimate_with_estimator(gp.g, estimator, filter, clustered_index);
           break;
         }
     }

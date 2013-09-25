@@ -85,18 +85,6 @@ inline double lMultinomial(const vector<KMerStat> & x) {
 }
 
 /**
-  * @return log({a_1+...+a_n \choose a_1, ..., a_n})
-  */
-inline double lMultinomial(const vector<StringCount> & x) {
-	double res = 0.0, sum = 0.0;
-	for (size_t i=0; i<x.size(); ++i) {
-		res += lgamma(x[i].second.first+1);
-		sum += x[i].second.first;
-	}
-	return (lgamma(sum+1) - res);
-}
-
-/**
   * @return log({a_1+...+a_n \choose a_1, ..., a_n}) for reads corresponding to the mask
   */
 inline double lMultinomialWithMask(const vector<unsigned> & x, const KMerData &data_, const vector<int> & mask, int maskval) {

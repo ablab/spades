@@ -1,8 +1,6 @@
-paired_reads             "../../../data/input/JCVI/JCVI_control_MDA_Saureus_cleared_0412/00.reads.right.corrected.fastq ../../../data/input/JCVI/JCVI_control_MDA_Saureus_cleared_0412/00.reads.left.corrected.fastq "
-single_reads             "../../../data/input/JCVI/JCVI_control_MDA_Saureus_cleared_0412/00.reads.left.unpaired.fastq ../../../data/input/JCVI/JCVI_control_MDA_Saureus_cleared_0412/00.reads.right.unpaired.fastq "
-RL                       100
-IS                       208
-single_cell              true
-reference_genome         ../../../data/input/S.aureus/USA300_FPR3757.fasta.gz
-
 reads	TRASH_SAUREUS_JCVI_0412_it2.yaml
+single_cell	true
+reference_genome	../../../data/input/S.aureus/USA300_FPR3757.fasta.gz
+
+; RL	100
+; IS	208

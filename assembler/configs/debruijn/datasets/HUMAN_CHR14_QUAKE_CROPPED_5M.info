@@ -1,6 +1,5 @@
-paired_reads             "../../../data/input/H.sapiens/chr14/cropped/frag_20M-25M_2.fastq ../../../data/input/H.sapiens/chr14/cropped/frag_20M-25M_1.fastq "
-RL                       101
-IS                       155
-single_cell              false
-
 reads	HUMAN_CHR14_QUAKE_CROPPED_5M.yaml
+single_cell	false
+
+; RL	101
+; IS	155

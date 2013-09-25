@@ -276,21 +276,6 @@ class EditDistanceTrackingCallback {
 };
 
 template<class Graph>
-bool ClipTips(
-        Graph& graph,
-        size_t max_tip_length,
-        const shared_ptr<Predicate<typename Graph::EdgeId>>& condition,
-        boost::function<void(typename Graph::EdgeId)> raw_removal_handler = 0) {
-
-    DEBUG("Max tip length: " << max_tip_length);
-
-    omnigraph::TipClipper<Graph> tc(graph, max_tip_length, condition,
-                                    raw_removal_handler);
-
-    return tc.Process();
-}
-
-template<class Graph>
 bool ClipTips(Graph& g,
               const debruijn_config::simplification::tip_clipper& tc_config,
               size_t read_length = 0, double detected_coverage_threshold = 0.,
@@ -474,7 +459,7 @@ bool RemoveThorns(
         Graph &g,
         const debruijn_config::simplification::interstrand_ec_remover& isec_config,
         boost::function<void(typename Graph::EdgeId)> removal_handler) {
-    INFO("Removing interstranc connections");
+    INFO("Removing interstrand connections");
     size_t max_unr_length = LengthThresholdFinder::MaxErroneousConnectionLength(
             g.k(), isec_config.max_ec_length_coefficient);
     return ThornRemover<Graph>(g, max_unr_length, isec_config.uniqueness_length,

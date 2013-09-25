@@ -135,7 +135,7 @@ class ConcurrentDSU {
     // First, touch all the sets to make them directly connect to the root
 #   pragma omp parallel for
     for (size_t x = 0; x < size; ++x)
-        (void)find_set(x);
+        (void) find_set((unsigned) x);
 
     std::unordered_map<size_t, size_t> sizes;
 
@@ -202,7 +202,7 @@ class ConcurrentDSU {
   void get_sets(std::vector<std::vector<size_t> > &otherWay) {
     otherWay.resize(size);
     for (size_t i = 0; i < size; i++) {
-      unsigned set = find_set(i);
+      unsigned set = find_set((unsigned) i);
       otherWay[set].push_back(i);
     }
     otherWay.erase(remove_if(otherWay.begin(), otherWay.end(), zero_size),

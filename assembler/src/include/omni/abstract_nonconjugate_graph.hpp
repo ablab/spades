@@ -313,10 +313,6 @@ public:
 		return v1 == v2;
 	}
 
-    virtual bool SplitCondition(VertexId vertex, const vector<EdgeId> &splittingEdges) const {
-        return true;
-    }
-
 private:
 	DECL_LOGGER("AbstractNonconjugateGraph")
 };

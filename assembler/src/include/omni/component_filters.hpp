@@ -96,7 +96,7 @@ public:
               max_vertex_number_(max_vertex_number) {
     }
 
-    bool Check(const GraphComponent<Graph> &component) const {
+    bool Check(const GraphComponent<Graph> &/*component*/) const {
         return true;
 //        if (component.v_size() <= min_vertex_number_
 //                || component.v_size() >= max_vertex_number_)

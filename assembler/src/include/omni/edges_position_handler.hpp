@@ -590,15 +590,6 @@ public:
 		EdgesPositions.erase(e);
 	}
 
-	void HandleVertexSplit(VertexId, VertexId,
-			const vector<pair<EdgeId, EdgeId>>& old_2_new_edges,
-			const vector<double>&) {
-FOREACH	(auto cur_edges_pair, old_2_new_edges) {
-		AddEdgePosition(cur_edges_pair.second,
-				EdgesPositions[cur_edges_pair.first]);
-	}
-}
-
 void clear() {
 	EdgesPositions.clear();
 }

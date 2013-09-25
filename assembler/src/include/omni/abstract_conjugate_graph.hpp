@@ -455,15 +455,6 @@ public:
         return v1 == v2 || v1 == conjugate(v2);
     }
 
-    virtual bool SplitCondition(VertexId /*vertex*/,
-                                const vector<EdgeId> &splitting_dges) const {
-        FOREACH (EdgeId e, splitting_dges) {
-            if (this->EdgeStart(e) == conjugate(this->EdgeEnd(e)))
-                return false;
-        }
-        return true;
-    }
-
  private:
     DECL_LOGGER("AbstractConjugateGraph")
 };

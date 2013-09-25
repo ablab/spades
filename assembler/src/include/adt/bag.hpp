@@ -1,10 +1,11 @@
 #pragma once
 
-template<class T>
+template<class T, class hash = std::hash<T>>
 class bag {
-    std::map<T, size_t> data_;
+    typedef std::unordered_map<T, size_t, hash> Data;
+    Data data_;
 public:
-    typedef typename std::map<T, size_t>::const_iterator const_iterator;
+    typedef typename Data::const_iterator const_iterator;
 
     void put(const T& t, size_t mult) {
         VERIFY(mult > 0);

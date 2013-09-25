@@ -39,17 +39,17 @@ class ReadStreamVector : boost::noncopyable {
 
   typedef Reader ReaderType;
 
-  ReadStreamVector(const std::vector<Reader*>& streams, bool destroy_readers = true): streams_(streams.size()), destroy_readers_(destroy_readers) {
+  explicit ReadStreamVector(const std::vector<Reader*>& streams, bool destroy_readers = true): streams_(streams.size()), destroy_readers_(destroy_readers) {
     std::copy(streams.begin(), streams.end(), streams_.begin());
   }
 
-  ReadStreamVector(bool destroy_readers = true): destroy_readers_(destroy_readers) {
+  explicit ReadStreamVector(bool destroy_readers = true): destroy_readers_(destroy_readers) {
   }
 
-  ReadStreamVector(Reader* stream): streams_(1, stream), destroy_readers_(true) {
+  explicit ReadStreamVector(Reader* stream): streams_(1, stream), destroy_readers_(true) {
   }
 
-  ReadStreamVector(Reader& stream): streams_(1, &stream), destroy_readers_(false) {
+  explicit ReadStreamVector(Reader& stream): streams_(1, &stream), destroy_readers_(false) {
   }
 
   std::vector<Reader*>& get() {

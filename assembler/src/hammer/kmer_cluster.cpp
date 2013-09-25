@@ -119,7 +119,7 @@ KMer KMerClustering::Consensus(const std::vector<size_t> & cl) const {
   return KMer(res);
 }
 
-double KMerClustering::ClusterBIC(const std::vector<size_t> & cl, const std::vector<StringCount> & centers, const std::vector<size_t> & indices) const {
+double KMerClustering::ClusterBIC(const std::vector<size_t> & cl, const std::vector<Center> & centers, const std::vector<size_t> & indices) const {
   size_t blockSize = cl.size();
   size_t clusters = centers.size();
   if (blockSize == 0)
@@ -133,7 +133,7 @@ double KMerClustering::ClusterBIC(const std::vector<size_t> & cl, const std::vec
     const KMerStat &kms = data_[cl[i]];
     KMer kmer = data_.kmer(cl[i]);
     unsigned cnt = kms.count;
-    loglik += logLikelihoodKMer(centers[indices[i]].first,
+    loglik += logLikelihoodKMer(centers[indices[i]].center_,
                                 kmer, kms);
     total += cnt;
   }
@@ -144,14 +144,14 @@ double KMerClustering::ClusterBIC(const std::vector<size_t> & cl, const std::vec
 }
 
 double KMerClustering::lMeansClustering(unsigned l, const std::vector<size_t> &kmerinds,
-                                        std::vector<size_t> & indices, std::vector<StringCount> & centers) {
+                                        std::vector<size_t> & indices, std::vector<Center> & centers) {
   centers.resize(l); // there are l centers
 
   // if l==1 then clustering is trivial
   if (l == 1) {
-    centers[0].first = Consensus(kmerinds);
-    centers[0].second.first = (uint32_t)kmerinds.size();
-    centers[0].second.second = 1;
+    centers[0].center_ = Consensus(kmerinds);
+    centers[0].count_ = (uint32_t)kmerinds.size();
+    centers[0].quality_ = 1.0;
     for (size_t i = 0; i < kmerinds.size(); ++i)
       indices[i] = 0;
     return ClusterBIC(kmerinds, centers, indices);
@@ -160,9 +160,9 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<size_t> &k
   // We assume that kmerinds are sorted wrt the count.
   for (size_t j = 0; j < l; ++j) {
     const KMerStat &kms = data_[kmerinds[j]];
-    centers[j].first = data_.kmer(kmerinds[j]);
-    centers[j].second.first = kms.count;
-    centers[j].second.second = kms.totalQual;
+    centers[j].center_ = data_.kmer(kmerinds[j]);
+    centers[j].count_ = kms.count;
+    centers[j].quality_ = kms.totalQual;
   }
 
   if (cfg::get().bayes_debug_output > 1) {
@@ -170,7 +170,7 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<size_t> &k
     {
       std::cout << "    centers:\n";
       for (size_t i=0; i < centers.size(); ++i) {
-        std::cout << "    " << centers[i].first << "\n";
+        std::cout << "    " << centers[i].center_ << "\n";
       }
     }
   }
@@ -183,14 +183,14 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<size_t> &k
     unsigned mdist = K;
     unsigned cidx = 0;
     for (unsigned j = 0; j < l; ++j) {
-      unsigned cdist = hamdistKMer(kmer, centers[j].first);
+      unsigned cdist = hamdistKMer(kmer, centers[j].center_, mdist);
       if (cdist < mdist) {
         mdist = cdist;
         cidx = j;
       }
     }
     indices[i] = cidx;
-    totalLikelihood += logLikelihoodKMer(centers[cidx].first,
+    totalLikelihood += logLikelihoodKMer(centers[cidx].center_,
                                          kmer, kms);
   }
 
@@ -207,7 +207,7 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<size_t> &k
     changed = false;
     std::fill(changedCenter.begin(), changedCenter.end(), false);
     for (unsigned j = 0; j < l; ++j)
-      centers[j].second.first = 0;
+      centers[j].count_ = 0;
 
     double curlik = 0;
 
@@ -218,12 +218,12 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<size_t> &k
 
       size_t newInd = 0;
       for (unsigned j=0; j < l; ++j)
-        loglike[j] = logLikelihoodKMer(centers[j].first, kmer, kms);
+        loglike[j] = logLikelihoodKMer(centers[j].center_, kmer, kms);
       newInd = std::max_element(loglike.begin(), loglike.end()) - loglike.begin();
 
       if (cfg::get().bayes_use_hamming_dist) {
         for (unsigned j=0; j < l; ++j)
-          dists[j] = hamdistKMer(kmer, centers[j].first);
+          dists[j] = hamdistKMer(kmer, centers[j].center_);
 
         newInd = std::min_element(dists.begin(), dists.end()) - dists.begin();
       }
@@ -235,7 +235,7 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<size_t> &k
         changedCenter[newInd] = true;
         indices[i] = newInd;
       }
-      ++centers[indices[i]].second.first;
+      ++centers[indices[i]].count_;
     }
 
     if (cfg::get().bayes_debug_output > 1) {
@@ -252,21 +252,21 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<size_t> &k
     for (unsigned j=0; j < l; ++j) {
       if (!changedCenter[j])
         continue; // nothing has changed
-      centers[j].first = ConsensusWithMask(kmerinds, indices, j);
+
+      centers[j].center_ = ConsensusWithMask(kmerinds, indices, j);
     }
   }
 
   // last M step
-  for (unsigned j=0; j < l; ++j) {
-    centers[j].first = ConsensusWithMask(kmerinds, indices, j);
-  }
+  for (unsigned j=0; j < l; ++j)
+    centers[j].center_ = ConsensusWithMask(kmerinds, indices, j);
 
   if (cfg::get().bayes_debug_output > 1) {
 #   pragma omp critical
     {
       std::cout << "    final centers:\n";
       for (size_t i=0; i < centers.size(); ++i) {
-        std::cout << "    " << centers[i].first << "\n";
+        std::cout << "    " << centers[i].center_ << "\n";
       }
     }
   }
@@ -307,12 +307,12 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
 
   std::vector<size_t> indices(origBlockSize);
   double bestLikelihood = -std::numeric_limits<double>::infinity();
-  std::vector<StringCount> bestCenters;
+  std::vector<Center> bestCenters;
   std::vector<size_t> bestIndices(block.size());
 
-  unsigned max_l = cfg::get().bayes_hammer_mode ? 1 : origBlockSize;
+  unsigned max_l = cfg::get().bayes_hammer_mode ? 1 : (unsigned) origBlockSize;
   for (unsigned l = 1; l <= max_l; ++l) {
-    std::vector<StringCount> centers(l);
+    std::vector<Center> centers(l);
     double curLikelihood = lMeansClustering(l, block, indices, centers);
     if (cfg::get().bayes_debug_output > 0) {
       #pragma omp critical
@@ -333,28 +333,23 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
   // find if centers are in clusters
   std::vector<size_t> centersInCluster(bestCenters.size(), -1u);
   for (unsigned i = 0; i < origBlockSize; i++) {
-    unsigned dist = hamdistKMer(data_.kmer(block[i]), bestCenters[bestIndices[i]].first);
+    unsigned dist = hamdistKMer(data_.kmer(block[i]), bestCenters[bestIndices[i]].center_);
     if (dist == 0) {
       centersInCluster[bestIndices[i]] = i;
     }
   }
-
-//  bool cons_suspicion = false;
-//  for (size_t k = 0; k < bestCenters.size(); ++k)
-//      if (centersInCluster[k] == -1u)
-//          cons_suspicion = true;
 
   if (cfg::get().bayes_debug_output > 0) {
 #   pragma omp critical
     {
       std::cout << "Centers: \n";
       for (size_t k=0; k<bestCenters.size(); ++k) {
-        std::cout << "  " << std::setw(4) << bestCenters[k].second.first << ": ";
+        std::cout << "  " << std::setw(4) << bestCenters[k].count_ << ": ";
         if (centersInCluster[k] != -1u) {
           const KMerStat &kms = data_[block[centersInCluster[k]]];
           std::cout << kms << " " << setw(8) << block[centersInCluster[k]] << "  ";
         } else {
-          std::cout << bestCenters[k].first;
+          std::cout << bestCenters[k].center_;
         }
         std::cout << '\n';
       }
@@ -375,20 +370,20 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
     foundBadCenter = false;
     for (size_t k=0; k<bestCenters.size(); ++k) {
       if (foundBadCenter) break; // restart if found one bad center
-      if (bestCenters[k].second.first == 0) continue;
+      if (bestCenters[k].count_ == 0) continue;
       if (centersInCluster[k] != -1u) continue;
-      for (size_t s = 0; s<bestCenters.size(); ++s) {
+      for (size_t s = 0; s< bestCenters.size(); ++s) {
         if (s == k || centersInCluster[s] == -1u) continue;
-        unsigned dist = hamdistKMer(bestCenters[k].first, bestCenters[s].first);
+        unsigned dist = hamdistKMer(bestCenters[k].center_, bestCenters[s].center_);
         if (dist == 0) {
           // OK, that's the situation, cluster k should be added to cluster s
           for (uint32_t i = 0; i < origBlockSize; i++) {
             if (indices[i] == k) {
               indices[i] = (unsigned)s;
-              bestCenters[s].second.first++;
+              bestCenters[s].count_++;
             }
           }
-          bestCenters[k].second.first = 0; // it will be skipped now
+          bestCenters[k].count_ = 0; // it will be skipped now
           foundBadCenter = true;
           break;
         }
@@ -401,7 +396,7 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
     {
       cout << "\nAfter the check we got centers: \n";
       for (size_t k=0; k<bestCenters.size(); ++k) {
-        cout << "  " << bestCenters[k].first.str() << " " << bestCenters[k].second << " ";
+        cout << "  " << bestCenters[k].center_ << " (" << bestCenters[k].count_ << ", " << bestCenters[k].quality_ << ") ";
         if (centersInCluster[k] != -1u) cout << block[centersInCluster[k]];
         cout << "\n";
       }
@@ -410,11 +405,11 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
   }
 
   for (size_t k = 0; k < bestCenters.size(); ++k) {
-    if (bestCenters[k].second.first == 0)
+    if (bestCenters[k].count_ == 0)
       continue; // superfluous cluster with zero elements
 
     std::vector<size_t> v;
-    if (bestCenters[k].second.first == 1) {
+    if (bestCenters[k].count_ == 1) {
       for (size_t i = 0; i < origBlockSize; i++) {
         if (indices[i] == k) {
           v.push_back(block[i]);
@@ -436,7 +431,7 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
         unsigned new_idx = 0;
         #pragma omp critical
         {
-          KMer newkmer = bestCenters[k].first;
+          KMer newkmer = bestCenters[k].center_;
 
           KMerStat kms(0 /* cnt */, 1.0 /* total quality */, NULL /*quality */);
           kms.status = KMerStat::GoodIter;

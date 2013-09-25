@@ -46,7 +46,6 @@ static inline unsigned hamdistKMer(const hammer::KMer &x, const hammer::KMer &y,
 }
 
 typedef std::map<PositionKMer, KMerStat> KMerStatMap;
-typedef std::pair<hammer::KMer, std::pair<uint32_t, double> > StringCount;
 
 struct QualBitSet {
   unsigned char q_[hammer::K];

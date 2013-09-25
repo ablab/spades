@@ -15,6 +15,7 @@
 #define PAIRED_LIBRARY_HPP_
 
 #include "../debruijn_graph.hpp"
+#include "../../include/de/paired_info.hpp"
 
 //#include "../new_debruijn.hpp"
 //#include "../graph_pack.hpp"
@@ -26,8 +27,10 @@ using debruijn_graph::EdgeId;
 using debruijn_graph::VertexId;
 using debruijn_graph::PairedIndexT;
 
-using omnigraph::PairedInfoIndex;
-using omnigraph::PairInfo;
+using omnigraph::de::PairedInfoIndex;
+using omnigraph::de::PairInfo;
+using omnigraph::de::PairedInfoIndexT;
+using omnigraph::de::Point;
 
 namespace path_extend {
 
@@ -89,17 +92,15 @@ struct PairedInfoLibrary {
 
     set<EdgeId> GetEdges(EdgeId e) {
         set<EdgeId> res;
-        typedef set<Point> Histogram;
-        const InnerMap<Graph>& pairs = index_.GetEdgeInfo(e, 0); // map[second_edge -> histogram]
+        auto pairs = index_.GetEdgeInfo(e, 0); // map[second_edge -> histogram]
         for (auto pairIter = pairs.begin(); pairIter != pairs.end(); ++pairIter)
           res.insert(pairIter->first);
         return res;
     }
 
     void CountDistances(EdgeId e1, EdgeId e2, vector<int>& dist, vector<double>& w) {
-      typedef set<Point> Histogram;
     	if (e1 != e2) {
-        Histogram histogram = index_.GetEdgePairInfo(e1, e2);
+        de::Histogram histogram = index_.GetEdgePairInfo(e1, e2);
         for (auto pointIter = histogram.begin(); pointIter != histogram.end(); ++pointIter) {
           int pairedDistance = rounded_d(*pointIter);
           if (pairedDistance >= 0) {
@@ -111,9 +112,8 @@ struct PairedInfoLibrary {
 	}
 
     double CountPairedInfo(EdgeId e1, EdgeId e2, int distance) {
-      typedef set<Point> Histogram;
       double weight = 0.0;
-      Histogram pairs =  index_.GetEdgePairInfo(e1, e2);
+      de::Histogram pairs =  index_.GetEdgePairInfo(e1, e2);
 
       for (auto pointIter = pairs.begin(); pointIter != pairs.end(); ++pointIter) {
         int pairedDistance = rounded_d(*pointIter);

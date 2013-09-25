@@ -663,7 +663,7 @@ shared_ptr<GraphSplitter<Graph>> ReliableSplitterAlongPath(
     shared_ptr<RelaxingIterator<VertexId>> inner_iterator = make_shared<
             PathIterator<Graph>>(graph, path);
     shared_ptr<AbstractNeighbourhoodFinder<Graph>> nf = make_shared<
-            ShortEdgeComponentFinder<Graph>>(graph, edge_length_bound);
+    		ReliableNeighbourhoodFinder<Graph>>(graph, edge_length_bound, max_size);
     return make_shared<NeighbourhoodFindingSplitter<Graph>>(graph,
                                                             inner_iterator, nf);
 }

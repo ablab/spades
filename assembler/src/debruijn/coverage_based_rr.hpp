@@ -53,14 +53,15 @@ class CoverageBasedResolution {
 	bool IfRepeatByPairedInfo( const EdgeId& edge, PairedInfoIndexT<Graph>& clustered_index ) const {
 		io::SequencingLibrary<debruijn_config::DataSetData> lib;
 		auto improver = PairInfoImprover<Graph>(gp_.g, clustered_index,lib);
-		InnerMap<Graph> inner_map = clustered_index.GetEdgeInfo(edge, 0);
-		for (auto I_1 = inner_map.Begin(), E = inner_map.End(); I_1 != E; ++I_1) {
-			for (auto I_2 = inner_map.Begin(); I_2 != E; ++I_2) {
+		auto inner_map = clustered_index.GetEdgeInfo(edge, 0);
+		for (auto I_1 = inner_map.begin(), E = inner_map.end(); I_1 != E; ++I_1) {
+			for (auto I_2 = inner_map.begin(); I_2 != E; ++I_2) {
 				if (I_1 == I_2) continue;
 				EdgeId e1 = (*I_1).first;
-				const Point& p1 = (*I_1).second;
+				const Point& p1 =
+				        *(*I_1).second.begin();//TODO: was const Point& p1 = (*I_1).second, change it
 				EdgeId e2 = (*I_2).first;
-				const Point& p2 = (*I_2).second;
+				const Point& p2 = *(*I_2).second.begin();
 				if ( p1.d * p2.d < 0 || p2.d > p1.d ) continue;
 				if (!improver.IsConsistent(edge, e1, e2, p1, p2)) {
 					return true;
@@ -382,6 +383,32 @@ class CoverageBasedResolution {
 		for (auto e = outgoingFromStart.begin(); e != outgoingFromStart.end(); ++e){
 			if (*e == edge) continue;
 			if (gp_.g.EdgeEnd(*e) == edgeEnd) return true;
+
+		}
+
+		return false;
+	}
+
+	template< class Graph>
+	bool checkIfComponentByPairedInfo( EdgeId edge, PairedInfoIndexT<Graph>& clustered_index, std::set<EdgeId>& prohibitedEdges ) {
+
+//		auto improver = PairInfoImprover<Graph>(gp->g, clustered_index);
+		auto inner_map = clustered_index.GetEdgeInfo(edge, 0);
+		for (auto I_1 = inner_map.Begin(), E = inner_map.End(); I_1 != E; ++I_1) {
+			for (auto I_2 = inner_map.Begin(); I_2 != E; ++I_2) {
+				if (I_1 == I_2) continue;
+				EdgeId e1 = (*I_1).first;
+				const Point& p1 = (*I_1).second;
+				EdgeId e2 = (*I_2).first;
+				const Point& p2 = (*I_2).second;
+
+				if (prohibitedEdges.find(e1) != prohibitedEdges.end() || prohibitedEdges.find(e2) != prohibitedEdges.end() ) continue;
+				if ( p1.d * p2.d < 0 || p2.d > p1.d ) continue;
+//				if (!improver.IsConsistent(edge, e1, e2, p1, p2)) {
+//					std::cout << "Inconsistent for " << gp->g.int_id(edge) << ": " << gp->g.int_id(e1) << " " << gp->g.int_id(e2) << std::endl;
+//					return true;
+//				}
+			}
 		}
 		return false;
 	}

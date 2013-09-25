@@ -27,6 +27,8 @@
 
 namespace omnigraph {
 
+namespace de {
+
 template<class EdgeId>
 class DataDivider {
   typedef pair<size_t, size_t> Interval;
@@ -128,6 +130,10 @@ class DataDivider {
 
   DECL_LOGGER("DataDivider");
 };
+
+}
+
+
 }
 
 #endif /* DATA_DIVIDER_HPP_ */

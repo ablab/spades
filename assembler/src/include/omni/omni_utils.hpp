@@ -128,21 +128,6 @@ private:
     }
 
     /**
-     * High level event which is triggered when vertex split operation is performed on graph, which is when
-     * vertex is split into several vertices, possibly doubling edges.
-     * Since this is high level operation events of creation of new edges and vertex
-     * should not have been triggered yet when this event was triggered.
-     * @param old_vertex vertex to be split
-     * @param old_2_new_edges edges which are results of split, paired with their preimage (<preimage, new_edge>)
-     * @param newVertex - resulting vertex
-     */
-    virtual void HandleVertexSplit(
-            VertexId /*old_vertex*/, VertexId /*new_vertex*/,
-            const vector<pair<EdgeId, EdgeId>>& /*old_2_new_edges*/,
-            const vector<double>& /*split_coefficients*/) {
-    }
-
-    /**
      * Every thread safe descendant should override this method for correct concurrent graph processing.
      */
     virtual bool IsThreadSafe() const {
@@ -232,11 +217,6 @@ class HandlerApplier {
     virtual void ApplySplit(Handler& handler, EdgeId old_edge,
                             EdgeId new_edge_1, EdgeId new_edge2) const = 0;
 
-    virtual void ApplyVertexSplit(
-            Handler& handler, VertexId old_vertex, VertexId new_vertex,
-            const vector<pair<EdgeId, EdgeId>>& old_2_new_edges,
-            const vector<double>& split_coefficients) const = 0;
-
     virtual ~HandlerApplier() {
     }
 };
@@ -281,14 +261,6 @@ class SimpleHandlerApplier : public HandlerApplier<typename Graph::VertexId,
     virtual void ApplySplit(Handler& handler, EdgeId old_edge, EdgeId new_edge1,
                             EdgeId new_edge2) const {
         handler.HandleSplit(old_edge, new_edge1, new_edge2);
-    }
-
-    virtual void ApplyVertexSplit(
-            Handler& handler, VertexId old_vertex, VertexId new_vertex,
-            const vector<pair<EdgeId, EdgeId>>& old_2_new_edges,
-            const vector<double>& split_coefficients) const {
-        handler.HandleVertexSplit(old_vertex, new_vertex, old_2_new_edges,
-                                   split_coefficients);
     }
 
 };
@@ -379,31 +351,6 @@ class PairedHandlerApplier : public HandlerApplier<typename Graph::VertexId,
             handler.HandleSplit(rce, graph_.conjugate(new_edge2),
                                  graph_.conjugate(new_edge_1));
         }
-    }
-
-    virtual void ApplyVertexSplit(
-            Handler& handler, VertexId old_vertex, VertexId new_vertex,
-            const vector<pair<EdgeId, EdgeId>>& old_2_new_edges,
-            const vector<double>& split_coefficients) const {
-
-        //todo add checks that there are no edges and conjugate
-
-        VERIFY(old_2_new_edges.size() == split_coefficients.size());
-        handler.HandleVertexSplit(old_vertex, new_vertex, old_2_new_edges,
-                                   split_coefficients);
-
-        vector<pair<EdgeId, EdgeId>> rc_old_2_new_edges;
-        FOREACH (auto old_2_new_edge, old_2_new_edges) {
-            //not reversing order
-            rc_old_2_new_edges.push_back(
-                    make_pair(graph_.conjugate(old_2_new_edge.first),
-                              graph_.conjugate(old_2_new_edge.second)));
-        }
-
-        VERIFY(rc_old_2_new_edges.size() == split_coefficients.size());
-        handler.HandleVertexSplit(graph_.conjugate(old_vertex),
-                                   graph_.conjugate(new_vertex),
-                                   rc_old_2_new_edges, split_coefficients);
     }
 
  private:
@@ -737,6 +684,10 @@ struct Range {
       if (start_pos != other.start_pos)
         return start_pos < other.start_pos;
       return end_pos < other.end_pos;
+    }
+
+    bool contains(const Range& that) {
+        return start_pos <= that.start_pos && end_pos >= that.end_pos;
     }
 };
 

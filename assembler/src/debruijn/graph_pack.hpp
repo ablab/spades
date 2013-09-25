@@ -19,7 +19,6 @@
 #include "de/paired_info.hpp"
 #include "debruijn_graph.hpp"
 #include "config_struct.hpp"
-#include "mismatch_masker.hpp"
 #include "edge_index.hpp"
 #include "graphio.hpp"
 
@@ -43,26 +42,20 @@ struct graph_pack: private boost::noncopyable {
 //	PairedInfoIndex<graph_t> etalon_paired_index;
 	KmerMapper<graph_t, seq_t> kmer_mapper;
 	Sequence genome;
-	MismatchMasker<graph_t> mismatch_masker;
 
     explicit graph_pack(size_t k, const std::string &workdir,
-            Sequence const& genome = Sequence(), size_t single_gap = 0,
-            bool careful_labeling = false, bool use_inner_ids = false) :
-    k_value(k), g(k), index(g, (unsigned) k + 1, workdir),
-    int_ids(g, use_inner_ids), edge_pos(g, (int) single_gap, careful_labeling),
-    kmer_mapper(g, k + 1), genome(genome), mismatch_masker(g) {
-    }
+                        Sequence const& genome = Sequence(), size_t single_gap = 0,
+                        bool careful_labeling = false, bool use_inner_ids = false)
+            : k_value(k), g(k), index(g, (unsigned) k + 1, workdir),
+              int_ids(g, use_inner_ids), edge_pos(g, (int) single_gap, careful_labeling),
+              kmer_mapper(g, k + 1), genome(genome)
+    { }
 };
 
 typedef graph_pack<ConjugateDeBruijnGraph, runtime_k::RtSeq,
         DeBruijnEdgeIndex<KmerFreeDeBruijnEdgeIndex<ConjugateDeBruijnGraph, runtime_k::RtSeq>>> conj_graph_pack;
 typedef conj_graph_pack::index_t Index;
-typedef graph_pack<NonconjugateDeBruijnGraph, runtime_k::RtSeq,
-        DeBruijnEdgeIndex<KmerFreeDeBruijnEdgeIndex<NonconjugateDeBruijnGraph, runtime_k::RtSeq>>> nonconj_graph_pack;
-
-
-typedef omnigraph::PairedInfoIndicesT<ConjugateDeBruijnGraph> PairedIndicesT;
-
+typedef omnigraph::de::PairedInfoIndicesT<ConjugateDeBruijnGraph> PairedIndicesT;
 
 } // namespace debruijn_graph
 

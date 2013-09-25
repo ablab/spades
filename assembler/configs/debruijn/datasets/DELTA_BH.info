@@ -1,7 +1,5 @@
-paired_reads             "../../../data/input/Delta.Bacteria/hammer/it4/04.reads_right.corrected.fastq.gz ../../../data/input/Delta.Bacteria/hammer/it4/04.reads_left.corrected.fastq.gz "
-single_reads             "../../../data/input/Delta.Bacteria/hammer/it4/04.reads_single_left.corrected.fastq.gz ../../../data/input/Delta.Bacteria/hammer/it4/04.reads_single_right.corrected.fastq.gz "
-RL                       100
-IS                       250
-single_cell              true
-
 reads	DELTA_BH.yaml
+single_cell	true
+
+; RL	100
+; IS	250

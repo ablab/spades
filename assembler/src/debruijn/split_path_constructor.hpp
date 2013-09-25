@@ -25,7 +25,7 @@ template<class Graph>
 class PathInfoClass {
 public:
   typedef typename Graph::EdgeId EdgeId;
-  typedef omnigraph::PairInfo<EdgeId> PairInfo;
+  typedef omnigraph::de::PairInfo<EdgeId> PairInfo;
 
   EdgeId base_edge;
   vector<PairInfo> path;
