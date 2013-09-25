@@ -88,7 +88,9 @@ public:
               size_(0) {
     }
 	PathStorage(const PathStorage & p)
-            : g_(p.g_) {
+            : g_(p.g_),
+              inner_index_(),
+              size_(0) {
         for (auto iter = p.inner_index_.begin(); iter != p.inner_index_.end();
                 iter++) {
             for (auto j_iter = iter->second.begin();

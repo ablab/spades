@@ -141,7 +141,7 @@ void late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices, v
                 }
                 PathStorage<Graph>* long_reads = new PathStorage<Graph>(read_mapper.GetPaths());
                 single_long_reads.push_back(long_reads);
-                INFO("long_read size " << long_reads->size());
+                INFO("long_read size " << long_reads->size() << " read mapper " << read_mapper.GetPaths().size());
                 cfg::get_writable().ds.count_single_libs = cfg::get().ds.count_single_libs + 1;
             }
         }

@@ -40,7 +40,10 @@ public:
         buffer_storages_.clear();
     }
     virtual void MergeBuffer(size_t thread_index) {
+        DEBUG("Merge buffer " << thread_index << " with size " << buffer_storages_[thread_index]->size());
         storage_.AddStorage(*buffer_storages_[thread_index]);
+        buffer_storages_[thread_index]->Clear();
+        DEBUG("Now size " << storage_.size());
     }
     virtual void ProcessPairedRead(size_t thread_index,
                                    const MappingPath<EdgeId>& read1,
