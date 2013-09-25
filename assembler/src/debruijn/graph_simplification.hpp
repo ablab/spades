@@ -439,12 +439,13 @@ bool RemoveRelativelyLowCoverageComponents(
     INFO("Removing relatively low covered connections");
 
     //todo remove magic constants
-    omnigraph::simplification::relative_coverage::RelativeCoverageComponentRemover<Graph> rel_rem(
+    omnigraph::simplification::relative_coverage::RelativeCoverageComponentRemover<
+            Graph> rel_rem(
             g,
             boost::bind(&FlankingCoverage::LocalCoverage,
                         boost::cref(flanking_cov), _1, _2),
-            200, coverage_gap, 200, 65, std::numeric_limits<size_t>::max(),
-            removal_handler, 10, edge_classifier);
+            coverage_gap, 200, 200, 65, std::numeric_limits<size_t>::max(),
+            removal_handler, 10);
     return rel_rem.Process();
 }
 

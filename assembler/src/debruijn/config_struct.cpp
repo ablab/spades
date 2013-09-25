@@ -220,6 +220,17 @@ void load(debruijn_config::simplification::relative_coverage_ec_remover& rec,
   load(rec.coverage_gap, pt, "coverage_gap");
 }
 
+void load(debruijn_config::simplification::relative_coverage_comp_remover& rcc,
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
+  using config_common::load;
+  load(rcc.coverage_gap, pt, "coverage_gap");
+  load(rcc.length_bound, pt, "max_length");
+  load(rcc.tip_allowing_length_bound, pt, "max_length_with_tips");
+  load(rcc.vertex_count_limit, pt, "max_vertex_cnt");
+  load(rcc.longest_connecting_path_bound, pt, "longest_path_length");
+  load(rcc.max_coverage, pt, "max_coverage");
+}
+
 void load(debruijn_config::simplification::isolated_edges_remover& ier,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
@@ -427,6 +438,7 @@ void load(debruijn_config::simplification& simp,
   load(simp.br, pt, "br", complete); // bulge remover:
   load(simp.ec, pt, "ec", complete); // erroneous connections remover:
   load(simp.rec, pt, "rec", complete); // relative coverage erroneous connections remover:
+  load(simp.rcc, pt, "rcc", complete); // relative coverage component remover:
   load(simp.tec, pt, "tec", complete); // topology aware erroneous connections remover:
   load(simp.trec, pt, "trec", complete); // topology and reliability based erroneous connections remover:
   load(simp.isec, pt, "isec", complete); // interstrand erroneous connections remover (thorn remover):

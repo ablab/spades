@@ -105,7 +105,7 @@ void simplify_graph(conj_graph_pack& gp) {
 //			&QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
 			boost::ref(qual_removal_handler), _1);
 
-	SimplifyGraph(gp, /*boost::function<void(EdgeId)>(0)*/removal_handler_f, labeler, printer, 10
+	SimplifyGraph(gp, /*boost::function<void(EdgeId)>(0)*/removal_handler_f, labeler, printer, /*iteration count*/3
 	/*, etalon_paired_index*/);
 
 
