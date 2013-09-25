@@ -18,12 +18,12 @@ namespace debruijn_graph {
 typedef io::ReadStreamVector<SequencePairedReadStream> MultiStreamType;
 typedef io::ReadStreamVector<PairedReadStream> SingleStreamType;
 
-void late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices) {
+void late_pair_info_count(conj_graph_pack& gp) {
     exec_simplification(gp);
 
     if (!cfg::get().developer_mode) {
-        paired_indices.Attach();
-        paired_indices.Init();
+        gp.paired_indices.Attach();
+        gp.paired_indices.Init();
     }
 
     if (cfg::get().paired_mode) {
@@ -64,27 +64,27 @@ void late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices) {
                     INFO("Estimated insert size for paired library #" << i);
                     INFO("Insert size = " << cfg::get().ds.reads[i].data().mean_insert_size << ", deviation = " << cfg::get().ds.reads[i].data().insert_size_deviation);
                     INFO("Read length = " << cfg::get().ds.reads[i].data().read_length)
-                }
+                            }
 
                 //bool pair_info_success;
                 if (cfg::get().use_multithreading) {
                     auto paired_streams = paired_binary_readers(cfg::get().ds.reads[i], true, (size_t) cfg::get().ds.reads[i].data().mean_insert_size);
                     //pair_info_success =
-                    FillPairedIndexWithReadCountMetric(gp.g, *MapperInstance(gp), paired_indices[i], *paired_streams);
+                    FillPairedIndexWithReadCountMetric(gp.g, *MapperInstance(gp), gp.paired_indices[i], *paired_streams);
                 } else {
                     auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(cfg::get().ds.reads[i], true, (size_t) cfg::get().ds.reads[i].data().mean_insert_size);
                     SingleStreamType paired_streams(paired_stream.get());
                     paired_stream.release();
                     //pair_info_success =
-                    FillPairedIndexWithReadCountMetric(gp.g, *MapperInstance(gp), paired_indices[i], paired_streams);
+                    FillPairedIndexWithReadCountMetric(gp.g, *MapperInstance(gp), gp.paired_indices[i], paired_streams);
                 }
 
-//                if (!pair_info_success) {
-//                    WARN("None of paired reads aligned properly. Please, check orientation of your read pairs.");
-//                }
-//                else if (!insert_size_success) {
-//                    WARN("Could not estimate insert size. Try setting it manually.");
-//                }
+                //                if (!pair_info_success) {
+                //                    WARN("None of paired reads aligned properly. Please, check orientation of your read pairs.");
+                //                }
+                //                else if (!insert_size_success) {
+                //                    WARN("Could not estimate insert size. Try setting it manually.");
+                //                }
             }
         }
 
@@ -93,23 +93,23 @@ void late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices) {
 
 
 void load_late_pair_info_count(conj_graph_pack& gp,
-                               PairedIndicesT& paired_indices, path::files_t* used_files) {
+                               path::files_t* used_files) {
     string p = path::append_path(cfg::get().load_from, "late_pair_info_counted");
     used_files->push_back(p);
 
-    ScanWithPairedIndices(p, gp, paired_indices);
+    ScanWithPairedIndices(p, gp, gp.paired_indices);
     load_lib_data(p);
 }
 
-void save_late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices) {
+void save_late_pair_info_count(conj_graph_pack& gp) {
     if (cfg::get().make_saves || (cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles && cfg::get().paired_mode)) {
         if (!cfg::get().make_saves)
             make_dir(cfg::get().output_saves);
 
-        string p = path::append_path(cfg::get().output_saves, "late_pair_info_counted");
+        std::string p = path::append_path(cfg::get().output_saves, "late_pair_info_counted");
         INFO("Saving current state to " << p);
 
-        PrintWithPairedIndices(p, gp, paired_indices);
+        PrintWithPairedIndices(p, gp, gp.paired_indices);
         write_lib_data(p);
     }
 
@@ -117,15 +117,16 @@ void save_late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indic
     write_lib_data(cfg::get().output_dir + "/");
 }
 
-void exec_late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices) {
+void exec_late_pair_info_count(conj_graph_pack& gp) {
     if (cfg::get().entry_point <= ws_late_pair_info_count) {
-        late_pair_info_count(gp, paired_indices);
-        save_late_pair_info_count(gp, paired_indices);
+        late_pair_info_count(gp);
+        save_late_pair_info_count(gp);
     } else {
         INFO("Loading Late Pair Info Count");
         path::files_t used_files;
-        load_late_pair_info_count(gp, paired_indices, &used_files);
+        load_late_pair_info_count(gp, &used_files);
         link_files_by_prefix(used_files, cfg::get().output_saves);
     }
 }
+
 }
