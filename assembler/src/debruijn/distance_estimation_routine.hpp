@@ -203,7 +203,7 @@ void load_distance_estimation(conj_graph_pack& gp,
                               PairedIndicesT& scaffold_indices,
                               path::files_t* used_files,
                               PathStorage<Graph>& long_reads,
-                              vector<PathStorage<Graph>* >& single_long_reads) {
+                              vector<PathStorage<Graph> >& single_long_reads) {
   string p;
   if (cfg::get().entry_point == ws_repeats_resolving && cfg::get().pacbio_test_on)
       p = path::append_path(cfg::get().load_from, "pacbio_aligning");
@@ -233,7 +233,7 @@ void save_distance_estimation(const conj_graph_pack& gp,
                               const PairedIndicesT& paired_indices,
                               const PairedIndicesT& clustered_indices,
                               const PairedIndicesT& scaffold_indices,
-                              vector<PathStorage<Graph>* >& single_long_reads)
+                              vector<PathStorage<Graph> >& single_long_reads)
 {
   if (cfg::get().make_saves || (cfg::get().paired_mode && cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles)) {
     string p = path::append_path(cfg::get().output_saves, "distance_estimation");
@@ -257,7 +257,7 @@ void exec_distance_estimation(conj_graph_pack& gp,
                               PairedIndicesT& clustered_indices,
                               PairedIndicesT& scaffold_indices,
                               PathStorage<Graph>& pacbio_reads,
-                              vector<PathStorage<Graph>* >& single_long_reads) {
+                              vector<PathStorage<Graph> >& single_long_reads) {
   if (cfg::get().entry_point <= ws_distance_estimation) {
     exec_late_pair_info_count(gp, paired_indices, single_long_reads);
     if (cfg::get().paired_mode) {

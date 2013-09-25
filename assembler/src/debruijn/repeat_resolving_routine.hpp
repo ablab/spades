@@ -98,10 +98,10 @@ size_t get_first_pe_lib_index() {
 }
 
 void AddSingleLongReads(vector<PathStorageInfo<Graph> > &long_reads_libs,
-                        const vector<PathStorage<Graph>* >& single_long_reads) {
+                        const vector<PathStorage<Graph> >& single_long_reads) {
     for (size_t i = 0; i < single_long_reads.size(); ++i) {
-        PathStorage<Graph>* storage = single_long_reads[i];
-        vector<PathInfo<Graph> > paths = storage->GetAllPaths();
+        PathStorage<Graph> storage = single_long_reads[i];
+        vector<PathInfo<Graph> > paths = storage.GetAllPaths();
         PathStorageInfo<Graph> single_storage(
                 paths,
                 cfg::get().pe_params.long_reads.single_reads.filtering,
@@ -117,8 +117,7 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
                   PairedIndicesT& scaffold_indices,
                   const EdgeQuality<Graph, Index>& quality_labeler,
                   vector<PathStorageInfo<Graph> > &long_reads_libs,
-                  vector<PathStorage<Graph>* >& single_long_reads) {
-
+                  vector<PathStorage<Graph> >& single_long_reads) {
     vector<PairedIndexT*> pe_indexes;
     vector<PairedIndexT*> pe_scaf_indices;
     vector<size_t> indexes;
@@ -178,11 +177,7 @@ void resolve_repeats() {
 	PairedIndicesT clustered_indices(conj_gp.g,	cfg::get().ds.reads.lib_count());
     PairedIndicesT scaffold_indices(conj_gp.g, cfg::get().ds.reads.lib_count());
     vector<PathStorageInfo<Graph> > long_reads_libs;
-    vector<PathStorage<Graph>* > single_long_reads;
-
-    for (size_t i = 0; i < cfg::get().ds.count_single_libs; ++i) {
-        single_long_reads.push_back(new PathStorage<Graph>(conj_gp.g));
-    }
+    vector<PathStorage<Graph> > single_long_reads;
 	if (!cfg::get().developer_mode) {
 		conj_gp.edge_pos.Detach();
 		paired_indices.Detach();
@@ -304,9 +299,6 @@ void resolve_repeats() {
 		INFO("Unsupported repeat resolver");
 		OutputContigs(conj_gp.g, cfg::get().output_dir + "final_contigs.fasta");
 	}
-	for (size_t i = 0; i < cfg::get().ds.count_single_libs; ++i) {
-        delete single_long_reads[i];
-    }
 }
 
 void exec_repeat_resolving() {
