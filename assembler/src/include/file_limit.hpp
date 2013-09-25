@@ -12,7 +12,7 @@
 
 #include "verify.hpp"
 
-rlim_t limit_file(size_t limit) {
+inline rlim_t limit_file(size_t limit) {
   struct rlimit rl;
 
   int res = getrlimit(RLIMIT_NOFILE, &rl);
