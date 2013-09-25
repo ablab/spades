@@ -154,6 +154,10 @@ public:
         this->excludeTrivialWithBulges_ = excludeTrivialWithBulges;
     }
 
+    void ClearExcludedEdges() {
+        wc_->GetExcludedEdges().clear();
+    }
+
     PairedInfoLibraries& getLibs() {
         return wc_->getLibs();
     }
@@ -256,45 +260,47 @@ class SimpleExtensionChooser: public ExtensionChooser {
 protected:
 
 	void RemoveTrivialAndCommon(BidirectionalPath& path, EdgeContainer& edges) {
-		RemoveTrivial(path);
-		if (edges.size() == 0) {
-			return;
-		}
-		int index = (int) path.Size() - 1;
-		std::map<size_t, double>& excluded_edges = wc_->GetExcludedEdges();
-		while (index >= 0) {
-			if (excluded_edges.find(index) != excluded_edges.end()) {
-				index--;
-				continue;
-			}
-			EdgeId path_edge = path[index];
-			double min_ideal_w = wc_->CountIdealInfo(path_edge, edges.at(0).e_,
-					path.LengthAt(index));
-			bool common = true;
-			for (size_t i = 0; i < edges.size(); ++i) {
-				double ideal_weight = wc_->CountIdealInfo(path_edge,
-						edges.at(i).e_, path.LengthAt(index));
-				min_ideal_w = std::min(min_ideal_w, ideal_weight);
-				if (!wc_->PairInfoExist(path_edge, edges.at(i).e_,
-						(int) path.LengthAt(index))) {
-					common = false;
-				}
-			}
-			if (common) {
-				excluded_edges.insert(make_pair((size_t) index, 0.0));
-			} else {
-				excluded_edges.insert(make_pair((size_t) index, min_ideal_w));
-			}
-			index--;
-		}
-	}
+        ClearExcludedEdges();
+        if (edges.size() < 2) {
+            return;
+        }
+        RemoveTrivial(path);
+        int index = (int) path.Size() - 1;
+        std::map<size_t, double>& excluded_edges = wc_->GetExcludedEdges();
+        while (index >= 0) {
+            if (excluded_edges.find(index) != excluded_edges.end()) {
+                index--;
+                continue;
+            }
+            EdgeId path_edge = path[index];
+            double min_ideal_w = wc_->CountIdealInfo(path_edge, edges.at(0).e_,
+                                                     path.LengthAt(index));
+            bool common = true;
+            for (size_t i = 0; i < edges.size(); ++i) {
+                double ideal_weight = wc_->CountIdealInfo(path_edge,
+                                                          edges.at(i).e_,
+                                                          path.LengthAt(index));
+                min_ideal_w = std::min(min_ideal_w, ideal_weight);
+                if (!wc_->PairInfoExist(path_edge, edges.at(i).e_,
+                                        (int) path.LengthAt(index))) {
+                    common = false;
+                }
+            }
+            if (common) {
+                excluded_edges.insert(make_pair((size_t) index, 0.0));
+            } else {
+                excluded_edges.insert(make_pair((size_t) index, min_ideal_w));
+            }
+            index--;
+        }
+    }
 
 	void FindWeights(BidirectionalPath& path, EdgeContainer& edges,
 			AlternativeConteiner& weights) {
 		for (auto iter = edges.begin(); iter != edges.end(); ++iter) {
 			double weight = wc_->CountWeight(path, iter->e_);
 			weights.insert(std::make_pair(weight, *iter));
-			DEBUG("Candidate " << g_.int_id(iter->e_) << " weight " << weight);
+			DEBUG("Candidate " << g_.int_id(iter->e_) << " weight " << weight << " length " << g_.length(iter->e_));
 			path.getLoopDetector().AddAlternative(iter->e_, weight);
 
 		}
@@ -337,9 +343,13 @@ public:
 		RemoveTrivial(path);
 		path.Print();
 		EdgeContainer result = FindFilteredEdges(path, edges);
+		size_t first_result = result.size();
+		/*EdgeContainer */result = edges;
+		bool first_time = true;
 		bool changed = true;
-		if (result.size() > 1 && changed) {
-			DEBUG("result size MORE 1");
+		if (first_time || (result.size() > 1 && changed)) {
+		    DEBUG("result size MORE 1");
+		    first_time = false;
 			RemoveTrivialAndCommon(path, result);
 			EdgeContainer new_result = FindFilteredEdges(path, result);
 			if (new_result.size() == result.size()) {
@@ -347,9 +357,11 @@ public:
 			}
 			result = new_result;
 		}
-		if (result.size() == 1){
-		    DEBUG("Paired-end extension chooser helped");
-		}
+		if (result.size() == 1) {
+            DEBUG("Paired-end extension chooser helped");
+        } else if (first_result == 1) {
+            DEBUG("We resolved it before");
+        }
 		return result;
 	}
 
@@ -602,6 +614,7 @@ private:
             }
         }
         unique_edges_founded_ = true;
+        INFO("Unique edges are founded");
     }
 
     bool UniqueBackPath(const BidirectionalPath& path, size_t pos) const {
@@ -619,10 +632,10 @@ private:
             return true;
         DEBUG("Analyze unique edge " << g_.int_id(e));
         auto cov_paths = coverage_map_.GetCoveringPaths(e);
-        DEBUG("***start***" << cov_paths.size() <<"***");
-        for (auto it1 = cov_paths.begin(); it1 != cov_paths.end(); ++it1) {
+        TRACE("***start***" << cov_paths.size() <<"***");
+        /*for (auto it1 = cov_paths.begin(); it1 != cov_paths.end(); ++it1) {
             (*it1)->Print();
-        }
+        }*/
 
         for (auto it1 = cov_paths.begin(); it1 != cov_paths.end(); ++it1) {
             auto pos1 = (*it1)->FindAll(e);
@@ -637,7 +650,7 @@ private:
                     return false;
                 }
                 if (!ConsistentPath(**it1, pos1[0], **it2, pos2[0])) {
-                    DEBUG("Check inconsistent");
+                    TRACE("Check inconsistent");
                     if (CheckInconsistence(**it1, pos1[0], **it2, pos2[0],
                                            cov_paths)) {
                         DEBUG("***not unique " << g_.int_id(e) << " len " << g_.length(e) << "***");
@@ -645,7 +658,7 @@ private:
                     }
                 }
             }
-        }DEBUG("Edge " << g_.int_id(e) << " is unique.");
+        }DEBUG("***edge " << g_.int_id(e) << " is unique.***");
         return true;
     }
 

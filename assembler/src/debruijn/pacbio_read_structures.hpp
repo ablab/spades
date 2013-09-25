@@ -133,7 +133,7 @@ struct GapDescription {
 
 	bool operator <(const GapDescription & b) const {
 		return (start < b.start || (start == b.start &&  end < b.end) ||
-				(start == b.start &&  end == b.end && edge_gap_start_position < b.edge_gap_end_position));
+				(start == b.start &&  end == b.end && edge_gap_start_position < b.edge_gap_start_position));
 	}
 
 private:

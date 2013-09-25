@@ -86,9 +86,9 @@ public:
             }
             map<EdgeId, EdgeId> replacement;
             long_reads.DumpToFile(cfg::get().output_saves +  "long_reads_before_rep.mpr", gp_.edge_pos, replacement);
-            gaps.DumpToFile(cfg::get().output_saves + "gaps.mpr", gp_.edge_pos);
+            gaps.DumpToFile(cfg::get().output_saves + "gaps.mpr");
             gaps.PadGapStrings();
-            gaps.DumpToFile(cfg::get().output_saves +  "gaps_padded.mpr", gp_.edge_pos);
+            gaps.DumpToFile(cfg::get().output_saves +  "gaps_padded.mpr");
             PacbioGapCloser<Graph> gap_closer(gp_.g);
             gap_closer.ConstructConsensus(cfg::get().max_threads, gaps);
             gap_closer.CloseGapsInGraph(replacement);
@@ -189,16 +189,18 @@ public:
 			}
 			for (auto iter = aligned_edges.begin(); iter != aligned_edges.end(); ++iter) {
 				long_reads_by_thread[thread_num].AddPath(*iter, 1, true);
-				if (gp_.edge_pos.IsConsistentWithGenome(*iter)) {
-					genomic_subreads++;
-				} else {
-					if (iter->size() > 1)
-						nongenomic_subreads++;
-					else
-						nongenomic_edges++;
+				if (cfg::get().developer_mode && cfg::get().ds.reference_genome.size() != 0) {
+                    if (gp_.edge_pos.IsConsistentWithGenome(*iter)) {
+                        genomic_subreads++;
+                    } else {
+                        if (iter->size() > 1)
+                            nongenomic_subreads++;
+                        else
+                            nongenomic_edges++;
+                    }
 				}
 			}
-			if (cfg::get().pb.additional_debug_info){
+			if (cfg::get().pb.additional_debug_info ){
                 omp_set_lock(&tmp_file_output);
                 filestr << n<<"("<< seq.size() << ")  " << location_map.size() << ": \n";
                 for (auto iter = location_map.begin(); iter != location_map.end(); ++iter) {
@@ -208,12 +210,15 @@ public:
                     filestr << " \n";
                 }
                 filestr << "found " << aligned_edges.size() << " aligned subreads.\n";
+
                 for (auto iter = aligned_edges.begin(); iter != aligned_edges.end(); ++iter) {
                     string tmp = " ";
-                    if (gp_.edge_pos.IsConsistentWithGenome(*iter)) {
+                    if (cfg::get().developer_mode && cfg::get().ds.reference_genome.size() != 0) {
+                        if (gp_.edge_pos.IsConsistentWithGenome(*iter)) {
 
-                    } else {
-                        tmp = " NOT ";
+                        } else {
+                            tmp = " NOT ";
+                        }
                     }
                     filestr << "Alignment of " << iter->size() << " edges is" << tmp << "consistent with genome\n";
                     //except this point

@@ -154,7 +154,7 @@ public:
 
     void RemoveLoop(size_t skip_identical_edges, bool fullRemoval = true);
 
-    bool EdgeInShortLoop() const;
+    bool EdgeInShortLoop(EdgeId e) const;
     bool PrevEdgeInShortLoop() const;
 
     void Print() const {
@@ -626,16 +626,42 @@ public:
         return !operator==(path);
     }
 
-    void CheckConjugateEnd(){
-    	size_t begin = 0;
-    	size_t end = Size() - 1;
-    	while (begin < end && At(begin) == g_.conjugate(At(end))){
-    		begin++;
-    		end--;
-    	}
-    	for (size_t i = 0; i < begin ; ++i){
-    		PopBack();
-    	}
+    void CheckConjugateEnd() {
+        /*DEBUG("check conj end");
+        size_t begin = 0;
+        size_t end = Size() - 1;
+        while (begin < end && At(begin) == g_.conjugate(At(end))) {
+            begin++;
+            end--;
+        }
+        if (begin > 0) {
+            DEBUG("conjugate end " << begin);
+        }
+        PopBack(begin);*/
+        FindConjEdges();
+        GetConjPath()->FindConjEdges();
+    }
+
+    void FindConjEdges() {
+        vector<size_t> conj_pos = FindAll(g_.conjugate(At(0)));
+        for (size_t j = 0; j < conj_pos.size(); ++j) {
+            int begin = 0;
+            int end = (int) conj_pos[j];
+            DEBUG("conj pos " << begin << " " << end);
+            if (end == 0) {
+                continue;
+            }
+            size_t conj_len = 0;
+            while (begin < end && At(begin) == g_.conjugate(At(end))) {
+                conj_len += g_.length(At(begin));
+                begin++;
+                end--;
+            }
+            if (begin >= end) {
+                DEBUG("conj_len " << conj_len << " pop back " << Size() - end - 1)
+                PopBack(Size() - end - 1);
+            }
+        }
     }
 
     void CheckGrow()
@@ -1102,9 +1128,10 @@ size_t LoopDetector::LoopEdges(size_t skip_identical_edges, size_t min_cycle_app
 
 
 bool LoopDetector::PathIsLoop(size_t edges) const {
-    for (size_t i = 1; i <= edges; ++i) {
-        EdgeId e = path_->operator [](path_->Size() - i);
-        for (int j = (int) path_->Size() - (int) i - (int) edges; j >= 0; j -= (int) edges) {
+    for (size_t i = 0; i < edges; ++i) {
+        EdgeId e = path_->At(i);
+        for (int j = (int) path_->Size() - (edges - (int) i); j >= 0; j -=
+                (int) edges) {
             if (path_->operator [](j) != e) {
                 return false;
             }
@@ -1153,19 +1180,24 @@ bool LoopDetector::IsCycled(size_t loopLimit, size_t& skip_identical_edges) cons
     return false;
 }
 
-size_t LoopDetector::EdgesToRemove(size_t skip_identical_edges, bool fullRemoval) const {
+size_t LoopDetector::EdgesToRemove(size_t skip_identical_edges,
+                                   bool fullRemoval) const {
+    DEBUG("Edges To Remove");
     size_t edges = LoopEdges(skip_identical_edges, 1);
+    DEBUG("loop edges count " << edges);
     size_t count = LastLoopCount(edges);
+    DEBUG("last loop count " << count);
     bool onlyCycle = PathIsLoop(edges);
     int result;
 
-    if (onlyCycle || path_->Size() <= count * edges + 1) {
-        result = (int) path_->Size() - (int) edges - 1;
-    }
-    else if (fullRemoval) {
-        result = (int) count * (int) edges - 1;
+    if (onlyCycle || path_->Size() <= count * edges) {
+        result = (int) path_->Size() - (int) edges;
+        DEBUG("on cycle " << result);
+    } else if (fullRemoval) {
+        result = (int) count * (int) edges;
     } else {
-        result = (int) (count - 1) * (int) edges - 1;
+        result = (int) (count - 1) * (int) edges;
+        DEBUG("don't remove all " << result);
     }
 
     return result < 0 ? 0 : result;
@@ -1225,14 +1257,12 @@ size_t LoopDetector::GetFirstExitIteration(EdgeId loopEdge, EdgeId loopExit, std
     return maxIter;
 }
 
-bool LoopDetector::EdgeInShortLoop() const {
-    EdgeId e = path_->Head();
+bool LoopDetector::EdgeInShortLoop(EdgeId e) const {
     VertexId v = g_.EdgeEnd(e);
 
     if (g_.OutgoingEdgeCount(v) != 2) {
         return false;
     }
-
     auto edges = g_.OutgoingEdges(v);
     for (auto edge = edges.begin(); edge != edges.end(); ++edge) {
         if (g_.EdgeEnd(*edge) == g_.EdgeStart(e)) {
@@ -1246,7 +1276,7 @@ bool LoopDetector::PrevEdgeInShortLoop() const {
     if (path_->Size() <= 1){
     	return false;
     }
-	EdgeId e2 = path_->Head();
+	EdgeId e2 = path_->At(path_->Size() - 1);
     EdgeId e1 = path_->At(path_->Size() - 2);
     VertexId v2 = g_.EdgeEnd(e1);
     if (g_.OutgoingEdgeCount(v2) == 2 && g_.EdgeEnd(e2)== g_.EdgeStart(e1) && g_.EdgeEnd(e1)== g_.EdgeStart(e2)) {

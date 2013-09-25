@@ -39,6 +39,9 @@ def prepare_config_spades(filename, cfg, log, use_additional_contigs, K, last_on
         subst_dict["resolving_mode"] = cfg.resolving_mode
     if "careful" in cfg.__dict__:
         subst_dict["mismatch_careful"] = bool_to_str(cfg.careful)
+    if "pacbio_mode" in cfg.__dict__:
+        subst_dict["pacbio_test_on"] = bool_to_str(cfg.pacbio_mode)
+        subst_dict["pacbio_reads"] = process_cfg.process_spaces(cfg.pacbio_reads)
 
     process_cfg.substitute_params(filename, subst_dict, log)
 

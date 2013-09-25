@@ -89,12 +89,13 @@ void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, s
 /*
  * Return index of first paired-end library or -1 if there is no paired end library
  */
-int GetFirstPELibIndex() {
-        for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i)
-            if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd && cfg::get().ds.reads[i].data().mean_insert_size != 0.0)
-                return i;
-        return -1UL;
-    }
+size_t get_first_pe_lib_index() {
+    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i)
+        if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd && cfg::get().ds.reads[i].data().mean_insert_size != 0.0)
+            return i;
+
+    return -1UL;
+}
 
 void AddSingleLongReads(vector<PathStorageInfo<Graph> > &long_reads_libs,
                         const vector<PathStorage<Graph>* >& single_long_reads) {
@@ -110,32 +111,35 @@ void AddSingleLongReads(vector<PathStorageInfo<Graph> > &long_reads_libs,
         long_reads_libs.push_back(single_storage);
     }
 }
+
 void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
                   PairedIndicesT& clustered_indices,
                   PairedIndicesT& scaffold_indices,
                   const EdgeQuality<Graph, Index>& quality_labeler,
                   vector<PathStorageInfo<Graph> > &long_reads_libs,
                   vector<PathStorage<Graph>* >& single_long_reads) {
+
     vector<PairedIndexT*> pe_indexes;
     vector<PairedIndexT*> pe_scaf_indices;
     vector<size_t> indexes;
-//    vector<PathStorageInfo<Graph> > long_reads_libs;
     GapStorage<Graph> gaps(conj_gp.g);
     AddSingleLongReads(long_reads_libs, single_long_reads);
+
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         io::LibraryType type = cfg::get().ds.reads[i].type();
-        if (type == io::LibraryType::PairedEnd
-                || type == io::LibraryType::MatePairs) {
+        if (cfg::get().ds.reads[i].data().mean_insert_size != 0.0 &&
+                (type == io::LibraryType::PairedEnd
+                || type == io::LibraryType::MatePairs)) {
+
             pe_indexes.push_back(&clustered_indices[i]);
             pe_scaf_indices.push_back(&scaffold_indices[i]);
             indexes.push_back(i);
-        } else if (type == io::LibraryType::PacBioReads) {
-            //??
         }
     }
+
     if (cfg::get().coverage_based_rr_on == true) {
         std::vector<PathInfo<Graph> > filteredPaths;
-        int pe_lib_index = GetFirstPELibIndex();
+        size_t pe_lib_index = get_first_pe_lib_index();
         const io::SequencingLibrary<debruijn_config::DataSetData> &lib =
                 cfg::get().ds.reads[pe_lib_index];
         resolve_repeats_by_coverage(conj_gp, (size_t) lib.data().mean_insert_size,
@@ -175,7 +179,8 @@ void resolve_repeats() {
     PairedIndicesT scaffold_indices(conj_gp.g, cfg::get().ds.reads.lib_count());
     vector<PathStorageInfo<Graph> > long_reads_libs;
     vector<PathStorage<Graph>* > single_long_reads;
-    for (size_t i = 0; i < cfg::get().ds.count_single_libs; ++i){
+
+    for (size_t i = 0; i < cfg::get().ds.count_single_libs; ++i) {
         single_long_reads.push_back(new PathStorage<Graph>(conj_gp.g));
     }
 	if (!cfg::get().developer_mode) {
@@ -191,7 +196,7 @@ void resolve_repeats() {
 
 	 exec_distance_estimation(conj_gp, paired_indices, clustered_indices, scaffold_indices, pacbio_read, single_long_reads);
 
-	 if (cfg::get().entry_point <= ws_pacbio_aligning){
+	 if (cfg::get().entry_point <= ws_pacbio_aligning && cfg::get().gap_closer_enable){
 	     INFO(" need to align pb");
 	     if (cfg::get().pacbio_test_on) {
 	         INFO("creating  multiindex with k = " << cfg::get().pb.pacbio_k);
@@ -213,26 +218,29 @@ void resolve_repeats() {
                  vector<PathInfo<Graph> > pacbio_paths = pacbio_read.GetAllPaths();
                  PathStorageInfo<Graph> pacbio_storage(
                          pacbio_paths,
-                         cfg::get().pe_params.long_reads.coverage_base_rr.filtering,
-                         cfg::get().pe_params.long_reads.coverage_base_rr.weight_priority,
-                         cfg::get().pe_params.long_reads.coverage_base_rr.unique_edge_priority);
+                         cfg::get().pe_params.long_reads.pacbio_reads.filtering,
+                         cfg::get().pe_params.long_reads.pacbio_reads.weight_priority,
+                         cfg::get().pe_params.long_reads.pacbio_reads.unique_edge_priority);
                  long_reads_libs.push_back(pacbio_storage);
              }
         }
 	}
-	if (cfg::get().pacbio_test_on) {
+	if (cfg::get().pacbio_test_on && cfg::get().gap_closer_enable) {
 	    INFO("getting paths");
         vector<PathInfo<Graph> > pacbio_paths = pacbio_read.GetAllPaths();
         PathStorageInfo<Graph> pacbio_storage(
         pacbio_paths,
-        cfg::get().pe_params.long_reads.coverage_base_rr.filtering,
-        cfg::get().pe_params.long_reads.coverage_base_rr.weight_priority,
-        cfg::get().pe_params.long_reads.coverage_base_rr.unique_edge_priority);
+        cfg::get().pe_params.long_reads.pacbio_reads.filtering,
+        cfg::get().pe_params.long_reads.pacbio_reads.weight_priority,
+        cfg::get().pe_params.long_reads.pacbio_reads.unique_edge_priority);
+        INFO("storage created");
         long_reads_libs.push_back(pacbio_storage);
 	}
 	if (cfg::get().developer_mode && cfg::get().pos.late_threading) {
+	    INFO("threading");
 		FillPos(conj_gp, conj_gp.genome, "10");
 		FillPos(conj_gp, !conj_gp.genome, "11");
+		INFO("and");
 		if (!cfg::get().pos.contigs_for_threading.empty()
 				&& FileExists(cfg::get().pos.contigs_for_threading)) {
 			FillPosWithRC(conj_gp, cfg::get().pos.contigs_for_threading,
@@ -247,7 +255,7 @@ void resolve_repeats() {
 
 
 //	RunTopologyTipClipper(conj_gp.g, 300, 2000, 1000);
-
+	INFO("threaded");
 	//todo refactor labeler creation
 	total_labeler_graph_struct graph_struct(conj_gp.g, &conj_gp.int_ids,
 			&conj_gp.edge_pos);
@@ -255,7 +263,9 @@ void resolve_repeats() {
 	EdgeQuality<Graph, Index> quality_labeler(conj_gp.g, conj_gp.index,
 			conj_gp.kmer_mapper, conj_gp.genome);
 	CompositeLabeler<Graph> labeler(tot_lab, quality_labeler);
+	INFO("lavelers created");
 	detail_info_printer printer(conj_gp, labeler, cfg::get().output_dir);
+	INFO("printing");
 	printer(ipp_before_repeat_resolution);
 
 	bool no_valid_libs = true;
@@ -266,22 +276,23 @@ void resolve_repeats() {
         }
     }
 
-    if (cfg::get().paired_mode && no_valid_libs)
+    if (cfg::get().paired_mode && no_valid_libs && !cfg::get().long_single_mode && !cfg::get().pacbio_test_on) {
         WARN("Insert size was not estimated for any of the paired libraries, repeat resolution module will not run.");
-
-	if (!cfg::get().paired_mode
-            || (no_valid_libs && single_long_reads.size() == 0)
-            || cfg::get().rm == debruijn_graph::resolving_mode::rm_none) {
-        OutputContigs(conj_gp.g, cfg::get().output_dir + "final_contigs.fasta");
-        return;
     }
+
+	if ((!cfg::get().paired_mode
+	        || no_valid_libs
+			|| cfg::get().rm == debruijn_graph::resolving_mode::rm_none) && !cfg::get().long_single_mode && !cfg::get().pacbio_test_on) {
+		OutputContigs(conj_gp.g, cfg::get().output_dir + "final_contigs.fasta");
+		return;
+	}
 
     OutputContigs(conj_gp.g, cfg::get().output_dir + "before_rr.fasta");
 
 	//Repeat resolving begins
-	int pe_lib_index = GetFirstPELibIndex();
+	size_t pe_lib_index = get_first_pe_lib_index();
 	INFO("STAGE == Resolving Repeats");
-	if (cfg::get().long_single_mode || cfg::get().ds.reads.lib_count() > 1 || pe_lib_index == -1
+	if (cfg::get().long_single_mode || cfg::get().ds.reads.lib_count() > 1 || pe_lib_index == -1UL
 			|| cfg::get().rm
 					== debruijn_graph::resolving_mode::rm_path_extend) {
 		INFO("Path-Extend repeat resolving");

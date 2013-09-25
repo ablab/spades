@@ -109,9 +109,10 @@ public:
 		}
 	}
 
-	void DumpToFile(const string filename, EdgesPositionHandler<Graph> &/*edge_pos*/) {
+	void DumpToFile(const string filename) {
 		ofstream filestr(filename);
 		for(auto iter = inner_index.begin(); iter != inner_index.end(); ++iter) {
+		    DEBUG ( g_.int_id(iter->first)<< " " <<iter->second.size());
 			filestr << g_.int_id(iter->first)<< " " <<iter->second.size() << endl;
 			sort(iter->second.begin(), iter->second.end());
 			for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); ++j_iter) {
@@ -376,19 +377,20 @@ private:
 
 	int EditScore(string &consensus, vector<string> & variants, StripedSmithWaterman::Aligner &aligner) {
 		int res = 0;
-		if (cfg::get().pb.pacbio_optimized_sw) {
-		    StripedSmithWaterman::Filter filter;
-		    StripedSmithWaterman::Alignment alignment;
-		    filter.report_begin_position = false;
-		    for(size_t i = 0; i < variants.size(); i++ ) {
-                aligner.Align(variants[i].c_str(), filter, &alignment);
-                TRACE("scpre1:" << alignment.sw_score);
-                //TRACE("next best:" << alignment.sw_score_next_best);
-                TRACE("cigar1:" << alignment.cigar_string);
-                res += alignment.sw_score;
-                alignment.Clear();
-            }
-		} else {
+//		if (cfg::get().pb.pacbio_optimized_sw) {
+//		    StripedSmithWaterman::Filter filter;
+//		    StripedSmithWaterman::Alignment alignment;
+//		    filter.report_begin_position = false;
+//		    for(size_t i = 0; i < variants.size(); i++ ) {
+//                aligner.Align(variants[i].c_str(), filter, &alignment);
+//                TRACE("scpre1:" << alignment.sw_score);
+//                //TRACE("next best:" << alignment.sw_score_next_best);
+//                TRACE("cigar1:" << alignment.cigar_string);
+//                res += alignment.sw_score;
+//                alignment.Clear();
+//            }
+//		} else {
+		{
 //		filter.report_cigar = false;
 		    for(size_t i = 0; i < variants.size(); i++ ) {
 		        if (!cfg::get().pb.pacbio_optimized_sw) {
@@ -466,70 +468,84 @@ private:
 	}
 
 	string ConstructStringConsenus(vector<string> &variants){
-		int ml = mean_len(variants);
-		if (ml > cfg::get().pb.split_cutoff) {  //100
-			DEBUG("mean length too long " << ml <<" in thread  " << omp_get_thread_num() );
-			vector<int> kvals = {17, 15, 13, 11, 9};
-			for (size_t cur_k_ind = 0; cur_k_ind < kvals.size(); ++cur_k_ind) {
-				int cur_k = kvals[cur_k_ind];
-				DEBUG(" splitting with k = " << cur_k);
-				vector<int> middle_kmers = FindCommonKmer(variants, cur_k);
-				if (middle_kmers.size() > 0) {
-					DEBUG(" splitting with k = " << cur_k << "  win!!! in thread  " << omp_get_thread_num() );
-					vector<string> left;
-					vector<string> right;
-					string left_res;
-					string right_res;
-					string middle_kmer;
-					for(size_t i = 0 ; i < middle_kmers.size(); ++ i) {
-						if (middle_kmers[i] != -1) {
-							int middle = middle_kmers[i] + cur_k/2;
-							left.push_back(variants[i].substr(0, middle));
-							right.push_back(variants[i].substr(middle, string::npos));
+	    if (cfg::get().pb.pacbio_optimized_sw) {
+	        const ConsensusCore::PoaConsensus* pc =
+	        ConsensusCore::PoaConsensus::FindConsensus(variants,
+	        ConsensusCore::PoaConfig::GLOBAL_ALIGNMENT);
+	        string tmp_res = pc->Sequence();
+	        INFO("ConsCore: "<< tmp_res);
+	        return tmp_res;
+	    } else {
+            int ml = mean_len(variants);
+            if (ml > cfg::get().pb.split_cutoff) {  //100
+                DEBUG("mean length too long " << ml <<" in thread  " << omp_get_thread_num() );
+                vector<int> kvals = {17, 15, 13, 11, 9};
+                for (size_t cur_k_ind = 0; cur_k_ind < kvals.size(); ++cur_k_ind) {
+                    int cur_k = kvals[cur_k_ind];
+                    DEBUG(" splitting with k = " << cur_k);
+                    vector<int> middle_kmers = FindCommonKmer(variants, cur_k);
+                    if (middle_kmers.size() > 0) {
+                        DEBUG(" splitting with k = " << cur_k << "  win!!! in thread  " << omp_get_thread_num() );
+                        vector<string> left;
+                        vector<string> right;
+                        string left_res;
+                        string right_res;
+                        string middle_kmer;
+                        for(size_t i = 0 ; i < middle_kmers.size(); ++ i) {
+                            if (middle_kmers[i] != -1) {
+                                int middle = middle_kmers[i] + cur_k/2;
+                                left.push_back(variants[i].substr(0, middle));
+                                right.push_back(variants[i].substr(middle, string::npos));
 
-						}
-					}
-					left_res = ConstructStringConsenus(left);
-					right_res = ConstructStringConsenus(right);
-					return (left_res  + right_res);
-				} else {
-					DEBUG(" splitting with k = " << cur_k << "  failed, decreasing K in thread  " << omp_get_thread_num());
-				}
-			}
-		}
-		DEBUG(" with mean length  " << ml <<" in thread  " << omp_get_thread_num()<< " starting to modify gap_closed");
-		string res = variants[0];
-		for(size_t i = 0; i < variants.size(); i++)
-			if (res.length() > variants[i].length())
-				res = variants[i];
-		StripedSmithWaterman::Aligner aligner((uint8_t) cfg::get().pb.match_value, 
-		                                      (uint8_t) cfg::get().pb.mismatch_penalty,
-		                                      (uint8_t) cfg::get().pb.insertion_penalty, 
-		                                      (uint8_t) cfg::get().pb.insertion_penalty); //1 1 2 2
-		aligner.SetReferenceSequence(res.c_str(), (int) res.length());
-		int best_score = EditScore(res, variants, aligner);
-		int void_iterations = 0;
+                            }
+                        }
+                        left_res = ConstructStringConsenus(left);
+                        right_res = ConstructStringConsenus(right);
+                        return (left_res  + right_res);
+                    } else {
+                        DEBUG(" splitting with k = " << cur_k << "  failed, decreasing K in thread  " << omp_get_thread_num());
+                    }
+                }
+            }
+            DEBUG(" with mean length  " << ml <<" in thread  " << omp_get_thread_num()<< " starting to modify gap_closed");
+            string res = variants[0];
+            for(size_t i = 0; i < variants.size(); i++)
+                if (res.length() > variants[i].length())
+                    res = variants[i];
+            StripedSmithWaterman::Aligner aligner((uint8_t) cfg::get().pb.match_value,
+                                                  (uint8_t) cfg::get().pb.mismatch_penalty,
+                                                  (uint8_t) cfg::get().pb.insertion_penalty,
+                                                  (uint8_t) cfg::get().pb.insertion_penalty); //1 1 2 2
+            aligner.SetReferenceSequence(res.c_str(), (int) res.length());
+            int best_score = EditScore(res, variants, aligner);
+            int void_iterations = 0;
 
-		while (void_iterations < cfg:: get().pb.gap_closing_iterations ) {
-			string new_res = RandomMutation(res);
-			aligner.SetReferenceSequence(new_res.c_str(), (int) new_res.length());
-			int current_score = EditScore(new_res, variants, aligner);
-			if (current_score > best_score) {
-				best_score = current_score;
-				TRACE("cool mutation in thread " << omp_get_thread_num());
-				TRACE(new_res);
-				void_iterations = 0;
-				res = new_res;
-			} else {
-				TRACE("void mutation:(");
-				void_iterations ++;
-				if (void_iterations % 500 == 0) {
-					INFO(" random change " << void_iterations <<" failed in thread  " << omp_get_thread_num() );
-				}
-			}
-		}
-		DEBUG("returning " << res);
-		return res;
+            while (void_iterations < cfg:: get().pb.gap_closing_iterations ) {
+                string new_res = RandomMutation(res);
+                aligner.SetReferenceSequence(new_res.c_str(), (int) new_res.length());
+                int current_score = EditScore(new_res, variants, aligner);
+                if (current_score > best_score) {
+                    best_score = current_score;
+                    TRACE("cool mutation in thread " << omp_get_thread_num());
+                    TRACE(new_res);
+                    void_iterations = 0;
+                    res = new_res;
+                } else {
+                    TRACE("void mutation:(");
+                    void_iterations ++;
+                    if (void_iterations % 500 == 0) {
+                        INFO(" random change " << void_iterations <<" failed in thread  " << omp_get_thread_num() );
+                    }
+                }
+            }
+
+            INFO("returning " << res);
+//            const ConsensusCore::PoaConsensus* pc =
+//            ConsensusCore::PoaConsensus::FindConsensus(variants,
+//            ConsensusCore::PoaConfig::GLOBAL_ALIGNMENT);
+//            INFO("ConsCore: "<< pc->Sequence());
+            return res;
+	    }
 	}
 
 	void ConstructConsensus(EdgeId e, GapStorage<Graph> &storage, map<EdgeId, map<EdgeId, pair<size_t, string> > > &/*new_edges_by_thread*/) {

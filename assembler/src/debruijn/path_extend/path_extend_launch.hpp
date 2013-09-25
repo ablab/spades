@@ -183,10 +183,10 @@ void AddPathsToContainer(const conj_graph_pack& gp,
         result.AddPair(new_path, conj_path);
     }
     INFO("== Long reads paths " << result.size() << " == ");
-    for (size_t index = 0; index < result.size(); ++index) {
+    /*for (size_t index = 0; index < result.size(); ++index) {
         DEBUG("Long contig " << index);
         result.Get(index)->Print();
-    }INFO("==== ");
+    }INFO("==== ");*/
 }
 
 vector<SimpleExtender*> MakeLongReadsExtender(const conj_graph_pack& gp,

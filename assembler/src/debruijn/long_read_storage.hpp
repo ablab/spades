@@ -151,11 +151,11 @@ public:
 			HiddenAddPath(rc_p, w);
 		}
 	}
-	void DumpToFile(const string filename,  const EdgesPositionHandler<Graph> &edge_pos) const{
+	void DumpToFile(const string filename, const EdgesPositionHandler<Graph> &edge_pos) const{
 		map <EdgeId, EdgeId> auxilary;
 		DumpToFile(filename, edge_pos, auxilary);
 	}
-	void DumpToFile(const string filename,  const EdgesPositionHandler<Graph> &edge_pos, map<EdgeId, EdgeId> &replacement) const {
+	void DumpToFile(const string filename, const EdgesPositionHandler<Graph> &edge_pos, map<EdgeId, EdgeId> &replacement) const {
 		ofstream filestr(filename);
 		ofstream filestr2(filename + "_yana");
 		set<EdgeId> continued_edges;
@@ -176,15 +176,18 @@ public:
 
 					filestr << g_.int_id(*p_iter) << "(" << g_.length(*p_iter) << ") ";
 				}
-				//TODO: const EdgesPositionHandler<Graph> &edge_pos,
-				/*if (edge_pos.IsConsistentWithGenome(j_iter->path))
-					filestr << "  genomic";
-				else {
-					if (j_iter->getWeight() == 1)
-						filestr << " low weight ng";
-					else
-						filestr << "  nongenomic";
-				}*/
+				if (cfg::get().developer_mode && cfg::get().ds.reference_genome.size() != 0) {
+				    //TODO: remove this
+
+                    if (const_cast< EdgesPositionHandler<Graph>& >(edge_pos).IsConsistentWithGenome(j_iter->path))
+                        filestr << "  genomic";
+                    else {
+                        if (j_iter->getWeight() == 1)
+                            filestr << " low weight ng";
+                        else
+                            filestr << "  nongenomic";
+                    }
+				}
 				filestr << endl;
 			}
 			filestr << endl;
