@@ -614,7 +614,7 @@ void SimplificationCycle(conj_graph_pack& gp,
     //todo temporary disabled completely
     DEBUG(iteration << " ErroneousConnectionsRemoval");
     RemoveLowCoverageEdges(gp.g, cfg::get().simp.ec, /*todo return, removal_handler*/
-                           removal_handler, cfg::get().ds.RL(), 3.0/*max_coverage*/,
+                           removal_handler, cfg::get().ds.RL(), max_coverage,
                            iteration_count, iteration);
     DEBUG(iteration << " ErroneousConnectionsRemoval stats");
     printer(ipp_err_con_removal, str(format("_%d") % iteration));
@@ -658,9 +658,9 @@ void SimplificationCycle(conj_graph_pack& gp,
             &ChimericEdgeClassifier<Graph, Index>::IsTrivialChimeric, edge_classifier,
             _1);
 
-    RemoveRelativelyLowCoverageComponents(gp.g, flanking_cov,
-                                          rel_removal_handler, 10.,
-                                          cfg::get().ds.RL(), edge_classifier_f);
+//    RemoveRelativelyLowCoverageComponents(gp.g, flanking_cov,
+//                                          rel_removal_handler, 10.,
+//                                          cfg::get().ds.RL(), edge_classifier_f);
 
     //todo end of temporary
 
