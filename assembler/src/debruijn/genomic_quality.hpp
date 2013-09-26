@@ -40,7 +40,7 @@ public:
 
     EdgeQuality(const Graph &graph) :
             GraphActionHandler<Graph>(graph, "EdgeQualityLabeler"),
-            k_(graph.k()) {
+            k_(graph.k() + 1) {
     }
 
     virtual ~EdgeQuality() {
