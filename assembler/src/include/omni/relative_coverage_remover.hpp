@@ -423,11 +423,10 @@ class ChimeraCoverageStats {
 public:
     ChimeraCoverageStats(const Graph& g,
                          boost::function<bool(EdgeId)> edge_classifier,
-                         LocalCoverageFT local_coverage_f,
-                         double min_coverage_gap)
+                         LocalCoverageFT local_coverage_f)
             : g_(g),
               edge_classifier_(edge_classifier),
-              rel_helper_(g, local_coverage_f, min_coverage_gap) {
+              rel_helper_(g, local_coverage_f, 2.0/*any value works here*/) {
     }
 
     void operator()() const {

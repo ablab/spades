@@ -774,6 +774,17 @@ void SimplifyGraph(conj_graph_pack &gp,
                 str(format("_%d") % (i + iteration_count)));
     }
 
+    EdgeQuality<Graph, Index> edge_qual(gp.g, gp.index, gp.kmer_mapper, gp.genome);
+    ChimericEdgeClassifier<Graph, Index> edge_classifier(gp.g, edge_qual);
+    boost::function<bool(EdgeId)> edge_classifier_f = boost::bind(
+                    &ChimericEdgeClassifier<Graph, Index>::IsTrivialChimeric, edge_classifier,
+                                _1);
+    simplification::relative_coverage::ChimeraCoverageStats<Graph> chim_cov_stats(gp.g, 
+        edge_classifier_f,         
+        boost::bind(&FlankingCoverage<Graph, Index::InnerIndexT>::LocalCoverage,
+                        boost::cref(flanking_cov), _1, _2));
+    chim_cov_stats();
+
     //todo enable for comparison with current version
 //    PostSimplification(gp, flanking_cov, removal_handler, printer,
 //                       determined_coverage_threshold);
