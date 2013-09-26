@@ -388,3 +388,44 @@ private:
     double weight_priority_threshold_;
     double unique_edge_priority_threshold_;
 };
+
+
+template<class Graph>
+class LongReadContainer {
+
+private:
+    Graph& g_;
+
+    vector< PathStorage<Graph>* > data;
+
+
+public:
+
+    LongReadContainer(Graph& g): g_(g), data() {
+    }
+
+    ~LongReadContainer() {
+        for (size_t i = 0; i < data.size(); ++i) {
+            delete data[i];
+        }
+    }
+
+    void AddPath() {
+        data.push_back(new PathStorage<Graph>(g_));
+    }
+
+    PathStorage<Graph>& operator[](size_t index) {
+        return *(data[index]);
+    }
+
+    const PathStorage<Graph>& operator[](size_t index) const {
+        return *(data[index]);
+    }
+
+    size_t size() const {
+        return data.size();
+    }
+
+};
+
+

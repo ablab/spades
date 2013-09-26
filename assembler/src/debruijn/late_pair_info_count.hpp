@@ -21,6 +21,9 @@
 namespace debruijn_graph {
 typedef io::ReadStreamVector<SequencePairedReadStream> MultiStreamType;
 typedef io::ReadStreamVector<PairedReadStream> SingleStreamType;
+
+
+
 void ISWarninigs(size_t lib_index) {
     const io::SequencingLibrary<debruijn_config::DataSetData>& reads = cfg::get().ds.reads[lib_index];
     WARN("Unable to estimate insert size for paired library #" << lib_index);
@@ -33,8 +36,9 @@ void ISWarninigs(size_t lib_index) {
     }
 }
 
+
 void ProcessSingleReads(conj_graph_pack& gp, size_t ilib,
-                        vector<PathStorage<Graph> >& single_long_reads, path_extend::SimpleLongReadMapper& read_mapper) {
+        LongReadContainerT& single_long_reads, path_extend::SimpleLongReadMapper& read_mapper) {
     const io::SequencingLibrary<debruijn_config::DataSetData>& reads =
             cfg::get().ds.reads[ilib];
     SequenceMapperNotifier notifier(gp);
@@ -49,11 +53,11 @@ void ProcessSingleReads(conj_graph_pack& gp, size_t ilib,
         SingleStreamType single_streams(single_stream.get());
         notifier.ProcessLibrary(single_streams, ilib, single_streams.size());
     }
-    single_long_reads.push_back(PathStorage<Graph>(gp.g));
+    single_long_reads.AddPath();
     single_long_reads[ilib].AddStorage(read_mapper.GetPaths());
 }
 void ProcessPairedReads(conj_graph_pack& gp, size_t ilib,
-                        PairedIndicesT& paired_indices, vector<PathStorage<Graph> >& single_long_reads) {
+                        PairedIndicesT& paired_indices, LongReadContainerT& single_long_reads) {
     SequenceMapperNotifier notifier(gp);
     const io::SequencingLibrary<debruijn_config::DataSetData>& reads =
             cfg::get().ds.reads[ilib];
@@ -82,7 +86,7 @@ void ProcessPairedReads(conj_graph_pack& gp, size_t ilib,
     }
     //ProcessSingleReads(gp, ilib, single_long_reads, read_mapper);
 }
-void late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices, vector<PathStorage<Graph> >& single_long_reads) {
+void late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices, LongReadContainerT& single_long_reads) {
     exec_simplification(gp);
 
     if (!cfg::get().developer_mode) {
@@ -128,7 +132,7 @@ void late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices, v
 
 
 void load_late_pair_info_count(conj_graph_pack& gp,
-                               PairedIndicesT& paired_indices, vector<PathStorage<Graph> >& single_long_reads, path::files_t* used_files) {
+                               PairedIndicesT& paired_indices, LongReadContainerT& single_long_reads, path::files_t* used_files) {
     string p = path::append_path(cfg::get().load_from, "late_pair_info_counted");
     used_files->push_back(p);
     ScanWithPairedIndices(p, gp, paired_indices);
@@ -137,7 +141,7 @@ void load_late_pair_info_count(conj_graph_pack& gp,
     //TODO: load single_long_reads
 }
 
-void save_late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices, vector<PathStorage<Graph> >& single_long_reads) {
+void save_late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices, LongReadContainerT& single_long_reads) {
     if (cfg::get().make_saves || (cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles && cfg::get().paired_mode)) {
         if (!cfg::get().make_saves)
             make_dir(cfg::get().output_saves);
@@ -155,7 +159,7 @@ void save_late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indic
     //TODO: save single long_reads
 }
 
-void exec_late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices, vector<PathStorage<Graph> >& single_long_reads) {
+void exec_late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices, LongReadContainer<Graph>& single_long_reads) {
     if (cfg::get().entry_point <= ws_late_pair_info_count) {
         late_pair_info_count(gp, paired_indices, single_long_reads);
         save_late_pair_info_count(gp, paired_indices, single_long_reads);

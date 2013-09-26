@@ -56,6 +56,7 @@ typedef graph_pack<ConjugateDeBruijnGraph, runtime_k::RtSeq,
         DeBruijnEdgeIndex<KmerFreeDeBruijnEdgeIndex<ConjugateDeBruijnGraph, runtime_k::RtSeq>>> conj_graph_pack;
 typedef conj_graph_pack::index_t Index;
 typedef omnigraph::de::PairedInfoIndicesT<ConjugateDeBruijnGraph> PairedIndicesT;
+typedef LongReadContainer<ConjugateDeBruijnGraph> LongReadContainerT;
 
 } // namespace debruijn_graph
 

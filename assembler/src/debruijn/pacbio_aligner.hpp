@@ -23,7 +23,7 @@ private:
 	PairedIndicesT& paired_indices;
 	PairedIndicesT& clustered_indices;
 	PairedIndicesT& scaffold_indices_;
-	vector<PathStorage<Graph> >& single_long_reads_;
+	LongReadContainerT& single_long_reads_;
 	size_t k_test_;DECL_LOGGER("PacIndex")
 
 public:
@@ -32,7 +32,7 @@ public:
 	PacBioAligner(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
                   PairedIndicesT& clustered_indices,
                   PairedIndicesT& scaffold_indices,
-                  vector<PathStorage<Graph> >& single_long_reads,
+                  LongReadContainerT& single_long_reads,
                   size_t k_test)
             : gp_(conj_gp),
               paired_indices(paired_indices),
