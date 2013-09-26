@@ -189,20 +189,24 @@ void AddPathsToContainer(const conj_graph_pack& gp,
     }INFO("==== ");*/
 }
 
-vector<SimpleExtender*> MakeLongReadsExtender(const conj_graph_pack& gp,
-                           const vector<PathStorageInfo<Graph> >& long_reads,
-                           size_t max_loops) {
+vector<SimpleExtender*> MakeLongReadsExtender(
+        const conj_graph_pack& gp,
+        const vector<PathStorageInfo<Graph> >& long_reads, size_t max_loops) {
     vector<SimpleExtender*> result;
     for (size_t i = 0; i < long_reads.size(); ++i) {
+        if (long_reads[i].GetPaths().size() == 0) {
+            continue;
+        }
         PathContainer paths;
         AddPathsToContainer(gp, long_reads[i].GetPaths(), 1, paths);
         ExtensionChooser * longReadEC = new LongReadsExtensionChooser(
                 gp.g, paths, long_reads[i].GetFilteringThreshold(),
                 long_reads[i].GetWeightPriorityThreshold(),
                 long_reads[i].GetUniqueEdgePriorityThreshold());
-        SimpleExtender * longReadPathExtender = new SimpleExtender(
-                gp.g, max_loops, longReadEC, true);
-        result.push_back(longReadPathExtender);
+        SimpleExtender * longReadExtender = new SimpleExtender(gp.g, max_loops,
+                                                               longReadEC,
+                                                               true);
+        result.push_back(longReadExtender);
     }
     return result;
 }
