@@ -313,6 +313,7 @@ struct debruijn_config {
     max_flow_ec_remover mfec;
     isolated_edges_remover ier;
     complex_bulge_remover cbr;
+    bool stats_mode;
   };
 
   struct construction {

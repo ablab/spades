@@ -579,15 +579,14 @@ bool FinalRemoveErroneousEdges(
     bool changed = false;
 
     changed |= AllTopology(g, removal_handler, iteration);
-    changed |= MaxFlowRemoveErroneousEdges(g, cfg::get().simp.mfec,
-                                           removal_handler);
+//    changed |= MaxFlowRemoveErroneousEdges(g, cfg::get().simp.mfec,
+//                                           removal_handler);
     return changed;
 }
 
 void PreSimplification(conj_graph_pack& gp,
                        const FlankingCoverage<Graph, Index::InnerIndexT>& flanking_cov,
                        boost::function<void(EdgeId)> removal_handler,
-                       detail_info_printer & /*printer*/, size_t /*iteration_count*/,
                        double determined_coverage_threshold) {
     INFO("PROCEDURE == Presimplification");
     INFO("Early tip clipping");
@@ -603,7 +602,7 @@ void SimplificationCycle(conj_graph_pack& gp,
                          const FlankingCoverage<Graph, Index::InnerIndexT>& flanking_cov,
                          boost::function<void(EdgeId)> removal_handler,
                          detail_info_printer &printer, size_t iteration_count,
-                         size_t iteration, double max_coverage, bool stats_mode = false) {
+                         size_t iteration, double max_coverage) {
     INFO("PROCEDURE == Simplification cycle, iteration " << (iteration + 1));
 
     DEBUG(iteration << " TipClipping");
@@ -621,7 +620,7 @@ void SimplificationCycle(conj_graph_pack& gp,
     DEBUG(iteration << " ErroneousConnectionsRemoval stats");
     printer(ipp_err_con_removal, str(format("_%d") % iteration));
 
-    if (!stats_mode) {
+    if (!cfg::get().simp.stats_mode) {
     //todo temporary! relative coverage remover
     auto colorer = DefaultGPColorer(gp);
 
@@ -737,7 +736,7 @@ void IdealSimplification(Graph& graph, Compressor<Graph>& compressor,
 void SimplifyGraph(conj_graph_pack &gp,
                    boost::function<void(EdgeId)> removal_handler,
                    omnigraph::GraphLabeler<Graph>& /*labeler*/,
-                   detail_info_printer& printer, size_t iteration_count, bool stats_mode = false) {
+                   detail_info_printer& printer, size_t iteration_count) {
     //ec auto threshold
     double determined_coverage_threshold =
             FindErroneousConnectionsCoverageThreshold(gp.g,
@@ -763,8 +762,7 @@ void SimplifyGraph(conj_graph_pack &gp,
     FlankCovT flanking_cov(gp.g, gp.index.inner_index(), 50);
 
 //  if (cfg::get().ds.single_cell)
-//    PreSimplification(gp, flanking_cov, removal_handler, printer,
-//                      iteration_count, determined_coverage_threshold);
+//    PreSimplification(gp, flanking_cov, removal_handler, determined_coverage_threshold);
 
     for (size_t i = 0; i < iteration_count; i++) {
         if ((cfg::get().gap_closer_enable) && (cfg::get().gc.in_simplify)) {
@@ -772,12 +770,12 @@ void SimplifyGraph(conj_graph_pack &gp,
         }
 
         SimplificationCycle(gp, flanking_cov, removal_handler, printer,
-                            iteration_count, i, determined_coverage_threshold, stats_mode);
+                            iteration_count, i, determined_coverage_threshold);
         printer(ipp_err_con_removal,
                 str(format("_%d") % (i + iteration_count)));
     }
 
-    if (!stats_mode) {
+    if (!cfg::get().simp.stats_mode) {
         printer(ipp_before_post_simplification);
         //todo enable for comparison with current version
         PostSimplification(gp, flanking_cov, removal_handler, printer,

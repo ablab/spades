@@ -445,6 +445,8 @@ void load(debruijn_config::simplification& simp,
   load(simp.mfec, pt, "mfec", complete); // max flow erroneous connections remover:
   load(simp.ier, pt, "ier", complete); // isolated edges remover
   load(simp.cbr, pt, "cbr", complete); // complex bulge remover
+  //fixme
+  load(simp.stats_mode, pt, "stats_mode", complete); // temporary stats counting mode
 }
 
 void load(debruijn_config::info_printer& printer,

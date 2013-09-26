@@ -2,6 +2,8 @@
 
 default
 {
+    stats_mode 0
+
 	; tip clipper:
 	tc
 	{
