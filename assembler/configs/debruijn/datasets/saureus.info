@@ -1,0 +1,3 @@
+single_cell	true
+reference_genome         /home/data/input/S.aureus/USA300_FPR3757.fasta.gz
+reads   saureus.yaml
