@@ -51,7 +51,6 @@ void ProcessSingleReads(conj_graph_pack& gp, size_t ilib,
     }
     single_long_reads.push_back(PathStorage<Graph>(gp.g));
     single_long_reads[ilib].AddStorage(read_mapper.GetPaths());
-    INFO("long_read size " << single_long_reads[ilib ].size() << " read mapper " << read_mapper.GetPaths().size());
 }
 void ProcessPairedReads(conj_graph_pack& gp, size_t ilib,
                         PairedIndicesT& paired_indices, vector<PathStorage<Graph> >& single_long_reads) {
@@ -76,7 +75,6 @@ void ProcessPairedReads(conj_graph_pack& gp, size_t ilib,
     } else {
         auto paired_stream = paired_easy_reader(
                 reads, true, (size_t) reads.data().mean_insert_size);
-        INFO("paired stream");
         SingleStreamType paired_streams(paired_stream.get());
         notifier.ProcessLibrary(paired_streams, ilib, paired_streams.size());
         cfg::get_writable().ds.reads[ilib].data().pi_threshold = split_graph
