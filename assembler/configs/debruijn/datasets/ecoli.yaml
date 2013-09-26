@@ -1,5 +1,0 @@
-- left reads: [/home/data/input/E.coli/sc_lane_1/corrected/ecoli_mda_lane1_left.fastq.00.cor.fastq.gz]
-  orientation: fr
-  right reads: [/home/data/input/E.coli/sc_lane_1/corrected/ecoli_mda_lane1_right.fastq.00.cor.fastq.gz]
-  single reads: [/home/data/input/E.coli/sc_lane_1/corrected/ecoli_mda_lane1_unpaired.00.cor.fastq.gz]
-  type: paired-end

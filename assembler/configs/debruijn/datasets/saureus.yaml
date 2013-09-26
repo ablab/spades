@@ -1,5 +1,0 @@
-- left reads: [/johnny/snurk/saureus/corrected/bacteria_mda_lane7_1.fastq.00.cor.fastq.gz]
-  orientation: fr
-  right reads: [/johnny/snurk/saureus/corrected/bacteria_mda_lane7_2.fastq.00.cor.fastq.gz]
-  single reads: [/johnny/snurk/saureus/corrected/bacteria_mda_lane7_unpaired.00.cor.fastq.gz]
-  type: paired-end
