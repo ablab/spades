@@ -24,6 +24,7 @@
 #include "omni_labelers.hpp"
 #include "io/easy_reader.hpp"
 #include "dataset_readers.hpp"
+#include "read_converter.hpp"
 
 #include "de/paired_info.hpp"
 
