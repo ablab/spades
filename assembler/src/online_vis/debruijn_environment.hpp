@@ -116,6 +116,10 @@ class DebruijnEnvironment : public Environment {
             return gp_.g;
         }
 
+        GraphPack& graph_pack() {
+            return gp_;
+        }
+
         Graph& graph() {
             return gp_.g;
         }

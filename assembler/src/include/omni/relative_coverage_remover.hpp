@@ -410,47 +410,6 @@ private:
     ;
 };
 
-template<class Graph>
-class ChimeraCoverageStats {
-    typedef typename Graph::EdgeId EdgeId;
-    typedef typename Graph::VertexId VertexId;
-    typedef boost::function<double(EdgeId, VertexId)> LocalCoverageFT;
-
-    const Graph& g_;
-    boost::function<bool(EdgeId)> edge_classifier_;
-    RelativeCoverageHelper<Graph> rel_helper_;
-
-public:
-    ChimeraCoverageStats(const Graph& g,
-                         boost::function<bool(EdgeId)> edge_classifier,
-                         LocalCoverageFT local_coverage_f)
-            : g_(g),
-              edge_classifier_(edge_classifier),
-              rel_helper_(g, local_coverage_f, 2.0/*any value works here*/) {
-    }
-
-    void operator()() const {
-        set<EdgeId> visited;
-        for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-            EdgeId e = *it;
-            if (visited.count(e) > 0)
-                continue;
-            visited.insert(e);
-            visited.insert(g_.conjugate(e));
-            if (edge_classifier_(e)) {
-                VertexId v = g_.EdgeStart(e);
-                VertexId v2 = g_.EdgeEnd(e);
-                INFO("Chimeric edge. Relative coverage info: "
-                        << std::min(rel_helper_.RelativeCoverageToReport(v, rel_helper_.LocalCoverage(e, v)),
-                                    rel_helper_.RelativeCoverageToReport(v2, rel_helper_.LocalCoverage(e, v2)))
-                        << " "
-                        << std::max(rel_helper_.RelativeCoverageToReport(v, rel_helper_.LocalCoverage(e, v)),
-                                    rel_helper_.RelativeCoverageToReport(v2, rel_helper_.LocalCoverage(e, v2))));
-            }
-        }
-    }
-};
-
 //currently works with conjugate graphs only (due to the assumption in the outer cycle)
 template<class Graph>
 class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
@@ -478,7 +437,7 @@ public:
             size_t length_bound,
             size_t tip_allowing_length_bound,
             size_t longest_connecting_path_bound,
-            double max_coverage = std::numeric_limits<size_t>::max(),
+            double max_coverage = std::numeric_limits<double>::max(),
             HandlerF handler_function = 0, size_t vertex_count_limit = 10)
             : base(g),
               rel_helper_(g, local_coverage_f, min_coverage_gap),

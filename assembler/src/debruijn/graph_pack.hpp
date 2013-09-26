@@ -22,6 +22,7 @@
 #include "graphio.hpp"
 #include "mismatch_masker.hpp"
 #include "edge_index.hpp"
+#include "genomic_quality.hpp"
 
 namespace debruijn_graph {
 
@@ -44,6 +45,7 @@ struct graph_pack: private boost::noncopyable {
 	KmerMapper<graph_t, seq_t> kmer_mapper;
 	Sequence genome;
 	MismatchMasker<graph_t> mismatch_masker;
+	EdgeQuality<Graph> edge_qual;
 
 	//todo review params
     explicit graph_pack(size_t k, const std::string &workdir,
@@ -51,7 +53,16 @@ struct graph_pack: private boost::noncopyable {
             bool careful_labeling = false, bool use_inner_ids = false) :
     k_value(k), g(k), index(g, (unsigned) k + 1, workdir),
     int_ids(g, use_inner_ids), edge_pos(g, (int) single_gap, careful_labeling),
-    kmer_mapper(g, k + 1), genome(genome), mismatch_masker(g) {
+    kmer_mapper(g, k + 1), genome(genome), mismatch_masker(g), edge_qual(g) {
+    }
+
+    void FillQuality() {
+        edge_qual.Fill(index, kmer_mapper, genome);
+    }
+
+    //todo remove with usages after checking
+    void ClearQuality() {
+        edge_qual.clear();
     }
 };
 

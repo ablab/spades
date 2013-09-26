@@ -378,8 +378,7 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 	CountAndSaveAllPaths(gp.g, lib, gp.int_ids, paired_index, clustered_index);
 
 	INFO("Counting clustered info stats");
-	EdgeQuality<Graph, Index> edge_qual(gp.g, gp.index, gp.kmer_mapper, gp.genome);
-  //EstimationQualityStat<Graph> estimation_stat(gp.g, gp.int_ids, edge_qual,
+  //EstimationQualityStat<Graph> estimation_stat(gp.g, gp.int_ids, gp.edge_qual,
                                               //paired_index, clustered_index, etalon_index);
   //estimation_stat.Count();
   //estimation_stat.SaveStats(cfg::get().output_dir + "estimation_qual/");

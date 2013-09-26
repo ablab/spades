@@ -55,11 +55,9 @@ void WriteGraphPack(gp_t& gp, const string& file_name) {
 			make_shared<omnigraph::visualization::FixedColorer<typename gp_t::graph_t::VertexId>>("white"),
 			make_shared<omnigraph::visualization::PositionsEdgeColorer<typename gp_t::graph_t>>(gp.g, gp.edge_pos));
 
-	EdgeQuality<typename gp_t::graph_t, typename gp_t::index_t> edge_qual(gp.g, gp.index,
-			gp.kmer_mapper, gp.genome);
 	total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
 	total_labeler tot_lab(&graph_struct);
-	CompositeLabeler<Graph> labeler(tot_lab, edge_qual);
+	CompositeLabeler<Graph> labeler(tot_lab, gp.edge_qual);
 	visualization::ComponentVisualizer<Graph> visualizer(gp.g, false);
 	omnigraph::visualization::EmptyGraphLinker<typename gp_t::graph_t> linker;
 	omnigraph::visualization::ComponentVisualizer<typename gp_t::graph_t>(gp.g, false).Visualize(filestr, labeler, colorer, linker);
@@ -898,8 +896,7 @@ bool prepare_scaffolding_index(conj_graph_pack& gp,
 }
 
 void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, std::vector< PathInfo<Graph> >& filteredPaths,
-				PairedIndexT& clustered_index,
-				const EdgeQuality<Graph, Index>& quality_labeler ) {
+				PairedIndexT& clustered_index) {
 
     typedef DeBruijnEdgeIndex<KmerStoringDeBruijnEdgeIndex<conj_graph_pack::graph_t, runtime_k::RtSeq>> KmerIndex;
 
@@ -922,7 +919,7 @@ void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, s
 	EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(conj_gp.g, conj_gp.g);
 	auto cov_rr = CoverageBasedResolution<conj_graph_pack> (&conj_gp, cfg::get().cbrr.coverage_threshold_one_list, cfg::get().cbrr.coverage_threshold_match,
 			cfg::get().cbrr.coverage_threshold_global, cfg::get().cbrr.tandem_ratio_lower_threshold, cfg::get().cbrr.tandem_ratio_upper_threshold, cfg::get().cbrr.repeat_length_upper_threshold);
-	cov_rr.resolve_repeats_by_coverage(index, insert_size, labels_after, quality_labeler, clustered_index, filteredPaths);
+	cov_rr.resolve_repeats_by_coverage(index, insert_size, labels_after, conj_gp.edge_qual, clustered_index, filteredPaths);
 
 	INFO("Repeats are resolved by coverage");
 }
@@ -1034,7 +1031,7 @@ void split_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
 	}
 }
 
-void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	PairedIndicesT& clustered_indices, const EdgeQuality<Graph, Index>& quality_labeler) {
+void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	PairedIndicesT& clustered_indices) {
 
 	vector<PairedIndexT*> pe_indexs;
 	vector<PairedIndexT*> pe_scaf_indexs;
@@ -1064,7 +1061,7 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,	Pair
 	if (cfg::get().coverage_based_rr_on == true){
 		int pe_lib_index = get_first_pe_lib_index();
 		const io::SequencingLibrary<debruijn_config::DataSetData> &lib = cfg::get().ds.reads[pe_lib_index];
-		resolve_repeats_by_coverage(conj_gp, (size_t) lib.data().mean_insert_size, filteredPaths, clustered_indices[0], quality_labeler);
+		resolve_repeats_by_coverage(conj_gp, (size_t) lib.data().mean_insert_size, filteredPaths, clustered_indices[0]);
 	}
 
 
@@ -1108,6 +1105,7 @@ void resolve_repeats() {
 
 	if (!cfg::get().developer_mode) {
 		conj_gp.edge_pos.Detach();
+		conj_gp.edge_qual.Detach();
 		paired_indices.Detach();
 		clustered_indices.Detach();
 		if (!cfg::get().gap_closer_enable && !cfg::get().paired_mode) {
@@ -1140,9 +1138,7 @@ void resolve_repeats() {
 	total_labeler_graph_struct graph_struct(conj_gp.g, &conj_gp.int_ids,
 			&conj_gp.edge_pos);
 	total_labeler tot_lab(&graph_struct);
-	EdgeQuality<Graph, Index> quality_labeler(conj_gp.g, conj_gp.index,
-			conj_gp.kmer_mapper, conj_gp.genome);
-	CompositeLabeler<Graph> labeler(tot_lab, quality_labeler);
+	CompositeLabeler<Graph> labeler(tot_lab, conj_gp.edge_qual);
 	detail_info_printer printer(conj_gp, labeler, cfg::get().output_dir);
 	printer(ipp_before_repeat_resolution);
 
@@ -1191,7 +1187,7 @@ void resolve_repeats() {
 			|| cfg::get().rm
 					== debruijn_graph::resolving_mode::rm_path_extend) {
 		INFO("Path-Extend repeat resolving");
-		pe_resolving(conj_gp, paired_indices, clustered_indices, quality_labeler);
+		pe_resolving(conj_gp, paired_indices, clustered_indices);
 	}
 	else if (cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles) {
 		INFO("Ready to run rectangles repeat resolution module");

@@ -5,15 +5,14 @@
 
 namespace debruijn_graph {
 
-template<class Graph, class Index>
+template<class Graph>
 class EdgeQuality: public GraphLabeler<Graph>, public GraphActionHandler<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     map<EdgeId, size_t> quality_;
     size_t k_;
 
-public:
-
+    template<class Index>
     void FillQuality(const Index &index
             , const KmerMapper<Graph>& kmer_mapper, const Sequence &genome) {
         if (genome.size() < k_)
@@ -29,13 +28,19 @@ public:
         }
     }
 
-    EdgeQuality(const Graph &graph, const Index &index,
-    const KmerMapper<Graph>& kmer_mapper,
-    const Sequence &genome) :
-            GraphActionHandler<Graph>(graph, "EdgeQualityLabeler"),
-            k_(kmer_mapper.get_k()) {
+public:
+
+    template<class Index>
+    void Fill(const Index &index
+            , const KmerMapper<Graph>& kmer_mapper
+            , const Sequence &genome) {
         FillQuality(index, kmer_mapper, genome);
         FillQuality(index, kmer_mapper, !genome);
+    }
+
+    EdgeQuality(const Graph &graph) :
+            GraphActionHandler<Graph>(graph, "EdgeQualityLabeler"),
+            k_(graph.k()) {
     }
 
     virtual ~EdgeQuality() {
@@ -94,6 +99,10 @@ public:
         return (q == 0) ? "" : "quality: " + ToString(q);
     }
 
+    void clear() {
+        quality_.clear();
+    }
+
 };
 
 //template<class Graph, class Index>
@@ -114,80 +123,51 @@ public:
 //
 //};
 
-template<class Graph, class Index>
+template<class Graph>
 class QualityLoggingRemovalHandler {
     typedef typename Graph::EdgeId EdgeId;
     const Graph& g_;
-    const EdgeQuality<Graph, Index>& quality_handler_;
-//  size_t black_removed_;
-//  size_t colored_removed_;
-public:
-    QualityLoggingRemovalHandler(const Graph& g, const EdgeQuality<Graph, Index>& quality_handler) :
-            g_(g), quality_handler_(quality_handler)/*, black_removed_(0), colored_removed_(
-     0)*/{
-
-    }
-
-    void HandleDelete(EdgeId edge) {
-        if (math::gr(quality_handler_.quality(edge), 0.)) {
-            TRACE("Deleting edge " << g_.str(edge) << " with quality " << quality_handler_.quality(edge));
-        } else {
-//          TRACE("Deleting edge " << g_.int_id(edge) << " with zero quality");
-        }
-//      if (math::gr(quality_handler_.quality(edge), 0.))
-//          colored_removed_++;
-//      else
-//          black_removed_++;
-    }
-
-private:
-    DECL_LOGGER("QualityLoggingRemovalHandler")
-    ;
-};
-
-template<class Graph, class Index>
-class QualityLoggingRemovalCountHandler {
-    typedef typename Graph::EdgeId EdgeId;
-    const Graph& g_;
-    const EdgeQuality<Graph, Index>& quality_handler_;
+    const EdgeQuality<Graph>& quality_handler_;
     size_t black_removed_;
-    size_t total;
+    size_t total_;
 
 public:
-    QualityLoggingRemovalCountHandler(const Graph& g, const EdgeQuality<Graph, Index>& quality_handler) :
-            g_(g), quality_handler_(quality_handler)/*, black_removed_(0), colored_removed_(
-     0)*/{
-        black_removed_ = 0;
-        total = 0;
+    QualityLoggingRemovalHandler(const Graph& g, const EdgeQuality<Graph>& quality_handler) :
+            g_(g), quality_handler_(quality_handler), black_removed_(0), total_(0) {
     }
 
     void HandleDelete(EdgeId edge) {
-        total++;
+        total_++;
         if (math::gr(quality_handler_.quality(edge), 0.)) {
-            TRACE("Deleting good edge " << g_.int_id(edge) << " with quality " << quality_handler_.quality(edge) << " cov " << g_.coverage(edge) << " length " << g_.length(edge));
-        }else{
+            TRACE("Deleting good edge id = " << g_.int_id(edge)
+                  << "; length = " << g_.length(edge)
+                  << "; quality = " << quality_handler_.quality(edge)
+                  << "; cov = " << g_.coverage(edge));
+        } else {
             black_removed_++;
         }
-        if ((total % (1<<10)) != 0)
-            TRACE("Removed still " << black_removed_ << " " << total);
+        TRACE("Overall stats: total removed = " << total_
+              << "; bad removed = " << black_removed_
+              << "; good removed = " << total_ - black_removed_);
     }
 
 private:
+    DECL_LOGGER("QualityLoggingRemovalHandler");
 };
 
-template<class Graph, class Index>
+template<class Graph>
 class QualityEdgeLocalityPrintingRH {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     const Graph& g_;
-    const EdgeQuality<Graph, Index>& quality_handler_;
+    const EdgeQuality<Graph>& quality_handler_;
     const GraphLabeler<Graph>& labeler_;
     const string& output_folder_;
 //  size_t black_removed_;
 //  size_t colored_removed_;
 public:
     QualityEdgeLocalityPrintingRH(const Graph& g
-            , const EdgeQuality<Graph, Index>& quality_handler
+            , const EdgeQuality<Graph>& quality_handler
             , const GraphLabeler<Graph>& labeler
             , const string& output_folder) :
             g_(g), quality_handler_(quality_handler),

@@ -84,6 +84,18 @@ debruijn_config::simplification::tip_clipper standard_tc_config() {
 	return tc_config;
 }
 
+debruijn_config::simplification::relative_coverage_comp_remover standard_rcc_config() {
+    debruijn_config::simplification::relative_coverage_comp_remover rcc;
+    //rather unrealistic value =)
+    rcc.coverage_gap = 2.;
+    rcc.length_bound = 200;
+    rcc.tip_allowing_length_bound = 200;
+    rcc.longest_connecting_path_bound = 65;
+    rcc.max_coverage = std::numeric_limits<double>::max();
+    rcc.vertex_count_limit = 10;
+    return rcc;
+}
+
 void PrintGraph(const Graph & g) {
 	for(auto it = g.begin(); it != g.end(); ++it) {
 		auto v = g.OutgoingEdges(*it);
@@ -285,7 +297,7 @@ BOOST_AUTO_TEST_CASE( RelativeCoverageRemover ) {
     INFO("Relative coverage component removal:");
     FillKmerCoverageWithAvg(gp.g, gp.index.inner_index());
     FlankingCoverage<gp_t::graph_t, gp_t::index_t::InnerIndexT> flanking_cov(gp.g, gp.index.inner_index(), 50);
-    RemoveRelativelyLowCoverageComponents(gp.g, flanking_cov, 0, 2., 100);
+    RemoveRelativelyLowCoverageComponents(gp.g, flanking_cov, standard_rcc_config());
     BOOST_CHECK_EQUAL(gp.g.size(), 12u/*28u*/);
 }
 

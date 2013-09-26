@@ -20,7 +20,7 @@ info_printers
 ;	tip_clipping
 ;	bulge_removal
 ;	err_con_removal
-;	before_final_err_con_removal
+;	before_post_simplification
 ;	final_err_con_removal
 ;	final_tip_clipping
 ;	final_bulge_removal
@@ -34,6 +34,13 @@ info_printers
 ;       write_components                 true
 ;       write_components_along_genome    true
 ;       ;detailed_dot_write		true
+    }
+
+    before_post_simplification    
+    {
+       write_components                 true
+       write_components_along_genome    true
+       write_error_loc                  true
     }
 
     final_simplified

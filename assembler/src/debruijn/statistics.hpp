@@ -11,6 +11,7 @@
 #include "de/paired_info.hpp"
 #include "de/distance_estimation.hpp"
 #include "de/pair_info_filters.hpp"
+#include "omni/relative_coverage_remover.hpp"
 
 #include "graphio.hpp"
 #include "simple_tools.hpp"
@@ -629,7 +630,7 @@ private:
   //input fields
   const Graph &graph_;
   const IdTrackHandler<Graph>& int_ids_;
-  const EdgeQuality<Graph, Index>& quality_;
+  const EdgeQuality<Graph>& quality_;
   const PairedInfoIndex<Graph>& pair_info_;
   const PairedInfoIndex<Graph>& estimated_pair_info_;
   const PairedInfoIndex<Graph>& etalon_pair_info_;
@@ -838,7 +839,7 @@ private:
 public:
   EstimationQualityStat(const Graph &graph,
       const IdTrackHandler<Graph>& int_ids,
-      const EdgeQuality<Graph, Index>& quality,
+      const EdgeQuality<Graph>& quality,
       const PairedInfoIndex<Graph>& pair_info,
       const PairedInfoIndex<Graph>& estimated_pair_info,
       const PairedInfoIndex<Graph>& etalon_pair_info) :
@@ -1078,12 +1079,12 @@ private:
   DECL_LOGGER("EstimatedClusterStat");
 };
 
-template<class Graph, class Index>
+template<class Graph>
 class CoverageStatistics{
 
 private:
     Graph& graph_;
-    EdgeQuality<Graph, Index> & edge_qual_;
+    EdgeQuality<Graph> & edge_qual_;
 
     bool DoesSuit(VertexId vertex){
         bool ans = true;
@@ -1095,7 +1096,7 @@ private:
     }
 
 public:
-    CoverageStatistics(Graph& graph, EdgeQuality<Graph, Index>& edge_qual):
+    CoverageStatistics(Graph& graph, EdgeQuality<Graph>& edge_qual):
     graph_(graph), edge_qual_(edge_qual){
     }
 
@@ -1175,13 +1176,13 @@ public:
 
 };
 
-template<class Graph, class Index>
+template<class Graph>
 class ChimericEdgeClassifier {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
 
     const Graph& g_;
-    const EdgeQuality<Graph, Index>& edge_qual_;
+    const EdgeQuality<Graph>& edge_qual_;
 
     vector<EdgeId> FilterNotEqual(const vector<EdgeId>& edges,
             EdgeId edge) const {
@@ -1211,12 +1212,12 @@ class ChimericEdgeClassifier {
     }
 
 public:
-    ChimericEdgeClassifier(const Graph& g, const EdgeQuality<Graph, Index>& edge_qual)
+    ChimericEdgeClassifier(const Graph& g, const EdgeQuality<Graph>& edge_qual)
     : g_(g),
       edge_qual_(edge_qual) {
     }
 
-    bool IsTrivialChimeric(EdgeId e) {
+    bool IsTrivialChimeric(EdgeId e) const {
         return !edge_qual_.IsPositiveQuality(e)
                 && TopologyAndQualCheck(e);
     }
@@ -1230,10 +1231,10 @@ class ChimericEdgesLengthStats {
     typedef typename Graph::VertexId VertexId;
 
     const Graph& g_;
-    const EdgeQuality<Graph, Index>& edge_qual_;
+    const EdgeQuality<Graph>& edge_qual_;
     const MappingPath<EdgeId> genome_path_;
     size_t thorn_dist_bound_;
-    const ChimericEdgeClassifier<Graph, Index> chimeric_edge_classifier_;
+    const ChimericEdgeClassifier<Graph> chimeric_edge_classifier_;
 
     bool Relax(size_t& a, size_t b) const {
         if (b < a) {
@@ -1287,7 +1288,7 @@ class ChimericEdgesLengthStats {
 
 public:
     ChimericEdgesLengthStats(const Graph& g,
-            const EdgeQuality<Graph, Index>& edge_qual,
+            const EdgeQuality<Graph>& edge_qual,
             const MappingPath<EdgeId>& genome_path, size_t thorn_dist_bound) :
             g_(g), edge_qual_(edge_qual), genome_path_(genome_path), thorn_dist_bound_(
                     thorn_dist_bound), chimeric_edge_classifier_(g, edge_qual) {
@@ -1320,6 +1321,47 @@ public:
                 if (edge_qual_.IsPositiveQuality(*it)) {
                     cerr << "real: " << g_.int_id(*it) << " length: " << g_.length(*it) << " coverage: " << g_.coverage(*it) << endl;
                 }
+            }
+        }
+    }
+};
+
+template<class Graph>
+class ChimeraCoverageStats {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    typedef boost::function<double(EdgeId, VertexId)> LocalCoverageFT;
+
+    const Graph& g_;
+    const ChimericEdgeClassifier<Graph>& edge_classifier_;
+    simplification::relative_coverage::RelativeCoverageHelper<Graph> rel_helper_;
+
+public:
+    ChimeraCoverageStats(const Graph& g,
+                         const ChimericEdgeClassifier<Graph>& edge_classifier,
+                         LocalCoverageFT local_coverage_f)
+            : g_(g),
+              edge_classifier_(edge_classifier),
+              rel_helper_(g, local_coverage_f, 2.0/*any value works here*/) {
+    }
+
+    void operator()() const {
+        set<EdgeId> visited;
+        for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+            EdgeId e = *it;
+            if (visited.count(e) > 0)
+                continue;
+            visited.insert(e);
+            visited.insert(g_.conjugate(e));
+            if (edge_classifier_.IsTrivialChimeric(e)) {
+                VertexId v = g_.EdgeStart(e);
+                VertexId v2 = g_.EdgeEnd(e);
+                INFO("Chimeric edge. Relative coverage info: "
+                        << std::min(rel_helper_.RelativeCoverageToReport(v, rel_helper_.LocalCoverage(e, v)),
+                                    rel_helper_.RelativeCoverageToReport(v2, rel_helper_.LocalCoverage(e, v2)))
+                        << " "
+                        << std::max(rel_helper_.RelativeCoverageToReport(v, rel_helper_.LocalCoverage(e, v)),
+                                    rel_helper_.RelativeCoverageToReport(v2, rel_helper_.LocalCoverage(e, v2))));
             }
         }
     }
