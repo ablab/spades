@@ -11,6 +11,7 @@
 #include <vector>
 #include "sequence_mapper.hpp"
 #include "io/paired_read.hpp"
+#include "graph_pack.hpp"
 
 namespace debruijn_graph {
 
@@ -53,7 +54,6 @@ public:
         {
             #pragma omp for reduction(+: counter)
             for (size_t ithread = 0; ithread < threads_count; ++ithread) {
-                INFO("thread " << ithread << " streams size " <<streams.size());
                 size_t size = 0;
                 size_t limit = 1000000;
                 Read r;
@@ -68,8 +68,8 @@ public:
                         counter++;
                         NotifyProcessRead(mapper, lib_index, ithread, r);
                         end_of_stream = stream.eof();
-                        if (size % 1000000 == 0) {
-                            INFO("process " << counter << " reads");
+                        if (counter % 1000000 == 0) {
+                            DEBUG("process " << counter << " reads");
                         }
                     }
                     #pragma omp critical

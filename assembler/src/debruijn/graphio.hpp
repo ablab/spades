@@ -30,6 +30,7 @@
 
 namespace debruijn_graph {
 using namespace omnigraph;
+using namespace omnigraph::de;
 //todo think of inner namespace
 
 template<class KmerMapper>
@@ -136,7 +137,7 @@ public:
   void saveEdgeSequences(const string& file_name);
   void saveCoverage(const string& file_name);
   void savePaired(const string& file_name,
-      PairedInfoIndexT<Graph> const& paired_index);
+                  PairedInfoIndexT<Graph> const& paired_index);
   void savePositions(const string& file_name,
       EdgesPositionHandler<Graph> const& ref_pos);
 

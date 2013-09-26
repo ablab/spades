@@ -33,8 +33,6 @@ public:
     virtual void StopProcessLibrary() {
         for (size_t i = 0; i < buffer_storages_.size(); ++i) {
             MergeBuffer(i);
-        }
-        for (size_t i = 0; i < buffer_storages_.size(); ++i) {
             delete buffer_storages_[i];
         }
         buffer_storages_.clear();
