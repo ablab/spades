@@ -116,9 +116,8 @@ void late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices, L
                     ISWarninigs(i);
                     continue;
                 } else {
-                    INFO("Estimated insert size for paired library #" << i);
-                    INFO("Insert size = " << reads.data().mean_insert_size << ", deviation = " << reads.data().insert_size_deviation);
-                    INFO("Read length = " << reads.data().read_length)
+                    INFO("  Estimated insert size for paired library #" << i);
+                    INFO("  Insert size = " << reads.data().mean_insert_size << ", deviation = " << reads.data().insert_size_deviation << ", read length = " << reads.data().read_length);
                 }
                 ProcessPairedReads(gp, i, paired_indices, single_long_reads);
             }

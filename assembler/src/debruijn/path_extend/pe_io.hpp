@@ -88,7 +88,7 @@ public:
                 included.insert(g_.conjugate(*iter));
             }
         }
-        INFO("Contigs written");
+        DEBUG("Contigs written");
     }
 
 
@@ -111,7 +111,7 @@ public:
             oss << endl;
 		}
 		oss.close();
-		INFO("Edges written");
+		DEBUG("Edges written");
 	}
 
     void writePaths(PathContainer& paths, const string& filename) const {
@@ -133,7 +133,7 @@ public:
             oss.setCoverage(path->Coverage());
             oss << ToString(*path);
         }
-        INFO("Contigs written");
+        DEBUG("Contigs written");
     }
 
 

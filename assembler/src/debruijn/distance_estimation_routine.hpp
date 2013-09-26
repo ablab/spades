@@ -103,9 +103,8 @@ void estimate_distance(conj_graph_pack& gp,
 
   const debruijn_config& config = cfg::get();
   if (config.paired_mode) {
-    INFO("STAGE == Estimating Distance");
 
-    size_t delta = size_t(lib.data().insert_size_deviation);
+      size_t delta = size_t(lib.data().insert_size_deviation);
     size_t linkage_distance = size_t(config.de.linkage_distance_coeff * lib.data().insert_size_deviation);
     GraphDistanceFinder<Graph> dist_finder(gp.g,  (size_t)math::round(lib.data().mean_insert_size), lib.data().read_length, delta);
     size_t max_distance = size_t(config.de.max_distance_coeff * lib.data().insert_size_deviation);
@@ -128,7 +127,7 @@ void estimate_distance(conj_graph_pack& gp,
       weight_function = UnityFunction;
 
     PairInfoWeightFilter<Graph> filter(gp.g, config.de.filter_threshold);
-    INFO("Weight Filter Done");
+    DEBUG("Weight Filter Done");
 
     switch (config.est_mode)
     {
@@ -183,7 +182,7 @@ void estimate_distance(conj_graph_pack& gp,
 
     INFO("Refining clustered pair information ");                              // this procedure checks, whether index
     RefinePairedInfo(gp.g, clustered_index);                                  // contains intersecting paired info clusters,
-    INFO("The refining of clustered pair information has been finished ");    // if so, it resolves such conflicts.
+    DEBUG("The refining of clustered pair information has been finished ");    // if so, it resolves such conflicts.
 
     INFO("Filling paired information");
     PairInfoImprover<Graph> improver(gp.g, clustered_index, lib);
@@ -261,6 +260,7 @@ void exec_distance_estimation(conj_graph_pack& gp,
   if (cfg::get().entry_point <= ws_distance_estimation) {
     exec_late_pair_info_count(gp, paired_indices, single_long_reads);
     if (cfg::get().paired_mode) {
+        INFO("STAGE == Estimating Distance");
 		for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
 	        if (cfg::get().ds.reads[i].data().mean_insert_size != 0.0 &&
 	                (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd ||  cfg::get().ds.reads[i].type() == io::LibraryType::MatePairs)) {

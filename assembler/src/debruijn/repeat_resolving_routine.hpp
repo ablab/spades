@@ -58,7 +58,7 @@ void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, s
 			path = cfg::get().load_from + "/debruijn_kmer_index_after_construction";
 		bool val = LoadEdgeIndex(path, kmer_index);
 		VERIFY_MSG(val, "can not open file "+path+".kmidx");
-		INFO("Updating index from graph started");
+		INFO("Updating index from graph");
 
 		//DeBruijnEdgeIndexBuilder<runtime_k::RtSeq>().UpdateIndexFromGraph(kmer_index, conj_gp.g);
 		EdgeInfoUpdater<KmerIndex, Graph> updater(conj_gp.g, kmer_index);
@@ -193,11 +193,10 @@ void resolve_repeats() {
 	 exec_distance_estimation(conj_gp, paired_indices, clustered_indices, scaffold_indices, pacbio_read, single_long_reads);
 
 	 if (cfg::get().entry_point <= ws_pacbio_aligning && cfg::get().gap_closer_enable){
-	     INFO(" need to align pb");
 	     if (cfg::get().pacbio_test_on) {
-	         INFO("creating  multiindex with k = " << cfg::get().pb.pacbio_k);
+	         INFO("Creating  multiindex with k = " << cfg::get().pb.pacbio_k);
 	         PacBioAligner pac_aligner(conj_gp, paired_indices, clustered_indices, scaffold_indices, single_long_reads, cfg::get().pb.pacbio_k);
-	         INFO("index created");
+	         INFO("Index created");
 	         GapStorage<Graph> gaps(conj_gp.g);
 	         pac_aligner.pacbio_test(pacbio_read, gaps);
 	     }
@@ -206,9 +205,9 @@ void resolve_repeats() {
              if (type == io::LibraryType::PacBioReads) {
                  //TODO: need to read reads from stream instead of file and delete pacbio_on + pacbio reads from config
                  PathStorage<Graph> pacbio_read1(conj_gp.g);
-                 INFO("creating  multiindex with k = " << cfg::get().pb.pacbio_k);
+                 INFO("Creating  multiindex with k = " << cfg::get().pb.pacbio_k);
                  PacBioAligner pac_aligner(conj_gp, paired_indices, clustered_indices, scaffold_indices, single_long_reads, cfg::get().pb.pacbio_k);
-                 INFO("index created");
+                 INFO("Index created");
                  GapStorage<Graph> gaps(conj_gp.g);
                  pac_aligner.pacbio_test(pacbio_read1, gaps);
                  vector<PathInfo<Graph> > pacbio_paths = pacbio_read.GetAllPaths();
@@ -222,14 +221,14 @@ void resolve_repeats() {
         }
 	}
 	if (cfg::get().pacbio_test_on && cfg::get().gap_closer_enable) {
-	    INFO("getting paths");
+	    INFO("Obtaining PacBio paths");
         vector<PathInfo<Graph> > pacbio_paths = pacbio_read.GetAllPaths();
         PathStorageInfo<Graph> pacbio_storage(
         pacbio_paths,
         cfg::get().pe_params.long_reads.pacbio_reads.filtering,
         cfg::get().pe_params.long_reads.pacbio_reads.weight_priority,
         cfg::get().pe_params.long_reads.pacbio_reads.unique_edge_priority);
-        INFO("storage created");
+        INFO("Path storage created");
         long_reads_libs.push_back(pacbio_storage);
 	}
 	if (cfg::get().developer_mode && cfg::get().pos.late_threading) {
@@ -247,11 +246,12 @@ void resolve_repeats() {
 				&& FileExists(cfg::get().pos.contigs_to_analyze)) {
 			FillPosWithRC(conj_gp, cfg::get().pos.contigs_to_analyze, "anlz_");
 		}
+		INFO("threaded");
 	}
 
 
 //	RunTopologyTipClipper(conj_gp.g, 300, 2000, 1000);
-	INFO("threaded");
+
 	//todo refactor labeler creation
 	total_labeler_graph_struct graph_struct(conj_gp.g, &conj_gp.int_ids,
 			&conj_gp.edge_pos);
@@ -259,9 +259,9 @@ void resolve_repeats() {
 	EdgeQuality<Graph, Index> quality_labeler(conj_gp.g, conj_gp.index,
 			conj_gp.kmer_mapper, conj_gp.genome);
 	CompositeLabeler<Graph> labeler(tot_lab, quality_labeler);
-	INFO("lavelers created");
+	DEBUG("lavelers created");
 	detail_info_printer printer(conj_gp, labeler, cfg::get().output_dir);
-	INFO("printing");
+	DEBUG("printing");
 	printer(ipp_before_repeat_resolution);
 
 	bool no_valid_libs = true;

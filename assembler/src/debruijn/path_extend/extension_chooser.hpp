@@ -607,6 +607,7 @@ public:
 
 private:
     void FindAllUniqueEdges() {
+        DEBUG("Looking for unique edges");
         for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
             if (UniqueEdge(*iter)) {
                 unique_edges_.insert(*iter);
@@ -614,7 +615,7 @@ private:
             }
         }
         unique_edges_founded_ = true;
-        INFO("Unique edges are founded");
+        DEBUG("Unique edges are found");
     }
 
     bool UniqueBackPath(const BidirectionalPath& path, size_t pos) const {
