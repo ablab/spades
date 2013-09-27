@@ -176,17 +176,12 @@ void AddPathsToContainer(const conj_graph_pack& gp,
         }
         vector<EdgeId> edges = path.getPath();
         BidirectionalPath* new_path = new BidirectionalPath(gp.g, edges);
-        BidirectionalPath* conj_path = new BidirectionalPath(
-                new_path->Conjugate());
+        BidirectionalPath* conj_path = new BidirectionalPath(new_path->Conjugate());
         new_path->SetWeight(path.getWeight());
         conj_path->SetWeight(path.getWeight());
         result.AddPair(new_path, conj_path);
     }
     DEBUG("Long reads paths " << result.size() << " == ");
-    /*for (size_t index = 0; index < result.size(); ++index) {
-        DEBUG("Long contig " << index);
-        result.Get(index)->Print();
-    }INFO("==== ");*/
 }
 
 vector<SimpleExtender*> MakeLongReadsExtender(

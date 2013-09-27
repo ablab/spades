@@ -89,11 +89,11 @@ void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, s
 /*
  * Return index of first paired-end library or -1 if there is no paired end library
  */
-size_t get_first_pe_lib_index() {
+size_t GetFirstPELibIndex() {
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i)
-        if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd && cfg::get().ds.reads[i].data().mean_insert_size != 0.0)
+        if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd
+                && cfg::get().ds.reads[i].data().mean_insert_size != 0.0)
             return i;
-
     return -1UL;
 }
 
@@ -138,7 +138,7 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
 
     if (cfg::get().coverage_based_rr_on == true) {
         std::vector<PathInfo<Graph> > filteredPaths;
-        size_t pe_lib_index = get_first_pe_lib_index();
+        size_t pe_lib_index = GetFirstPELibIndex();
         const io::SequencingLibrary<debruijn_config::DataSetData> &lib =
                 cfg::get().ds.reads[pe_lib_index];
         resolve_repeats_by_coverage(conj_gp, (size_t) lib.data().mean_insert_size,
@@ -286,7 +286,7 @@ void resolve_repeats() {
     OutputContigs(conj_gp.g, cfg::get().output_dir + "before_rr.fasta");
 
 	//Repeat resolving begins
-	size_t pe_lib_index = get_first_pe_lib_index();
+	size_t pe_lib_index = GetFirstPELibIndex();
 	INFO("STAGE == Resolving Repeats");
 	if (cfg::get().long_single_mode || cfg::get().ds.reads.lib_count() > 1 || pe_lib_index == -1UL
 			|| cfg::get().rm
