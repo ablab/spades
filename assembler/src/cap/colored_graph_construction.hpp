@@ -7,9 +7,9 @@
 #pragma once
 
 #include "runtime_k.hpp"
+#include "compare_standard.hpp"
 #include "cap_kmer_index.hpp"
 #include "graph_construction.hpp"
-#include "compare_standard.hpp"
 
 namespace cap {
 
@@ -292,40 +292,71 @@ void SimplifyGraph(Graph& g, size_t br_delta) {
 template<class gp_t>
 void SplitAndColorGraph(gp_t& gp,
 		ColorHandler<typename gp_t::graph_t>& coloring,
-		ContigStreams& streams, bool fill_pos = true) {
+		ContigStreams& streams) {
 
     typedef typename gp_t::graph_t Graph;
-	typedef NewExtendedSequenceMapper<Graph, typename gp_t::seq_t> Mapper;
+    typedef typename gp_t::index_t Index;
+	typedef NewExtendedSequenceMapper<Graph, Index> Mapper;
 
-	ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp.g, // MAPPER K+1!!
+	ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(gp.g,
 			coloring, *MapperInstance<gp_t>(gp));
 
 
 	colored_graph_constructor.ConstructGraph(streams);
+}
 
-	if (fill_pos) {
-		INFO("Filling contig positions");
-		for (auto it = streams.begin(); it != streams.end(); ++it) {
-			ContigStream& stream = *it;
-			stream.reset();
+template<class Graph, class Index, class Streams>
+size_t CapConstructGraph(size_t k,
+        Streams& streams, Graph& g,
+        Index& index) {
+    return ConstructGraphUsingOldIndex(k, streams, g, index);
+}
 
-			FillPos(gp, stream);
-		}
-	}
+template<class gp_t>
+void FillPositions(const gp_t &gp, ContigStreams &streams,
+    CoordinatesHandler<typename gp_t::graph_t>& coordinates_handler) {
+	typedef NewExtendedSequenceMapper<typename gp_t::graph_t,
+                                    typename gp_t::index_t> Mapper;
+
+  VERIFY(coordinates_handler.GetGraph() == NULL);
+  coordinates_handler.SetGraph(&(gp.g));
+
+  unsigned contig_id = 0;
+  std::shared_ptr<const Mapper> mapper = MapperInstance<gp_t>(gp);
+
+  for (auto it = streams.begin(); it != streams.end(); ++it) {
+    //cap::RCWrapper stream(**it);
+    ContigStream &stream = *it;
+    stream.reset();
+
+    io::SingleRead contig;
+    // for forward and reverse directions
+    while (!stream.eof()) {
+      stream >> contig;
+
+      MappingPath<EdgeId> mapping_path = mapper->MapRead(contig);
+      const std::vector<EdgeId> edge_path =
+          mapping_path.simple_path().sequence();
+      coordinates_handler.AddGenomePath(contig_id, edge_path);
+      contig_id++;
+    }
+
+    stream.reset();
+  }
 }
 
 template<class gp_t>
 void ConstructColoredGraph(gp_t& gp,
 		ColorHandler<typename gp_t::graph_t>& coloring,
-		ContigStreams& streams, bool fill_pos = true) {
+    CoordinatesHandler<typename gp_t::graph_t>& coordinates_handler,
+		ContigStreams& streams) {
 
-    INFO("Constructing de Bruijn graph for k=" << gp.k_value);
+  INFO("Constructing de Bruijn graph for k=" << gp.k_value);
 
-	// false: do not delete streams after usage
-	debruijn_graph::ConstructGraph(gp.k_value, streams,
+	CapConstructGraph(gp.k_value, streams,
 			gp.g, gp.index);
-
-	SplitAndColorGraph(gp, coloring, streams, fill_pos);
+	SplitAndColorGraph(gp, coloring, streams);
+  FillPositions(gp, streams, coordinates_handler);
 }
 
 //template<class gp_t>

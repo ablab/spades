@@ -15,26 +15,25 @@ namespace online_visualization {
 class DebruijnOnlineVisualizer : public OnlineVisualizer<DebruijnEnvironment> {
  protected:
   void AddSpecificCommands() {
-    AddCommand(shared_ptr<Command<DebruijnEnvironment> >(new LoadCommand<DebruijnEnvironment>));
+    AddCommand(make_shared<LoadGenomeCommand>());
+    AddCommand(make_shared<SetMaxVertCommand>());
+    AddCommand(make_shared<SetFolderCommand>());
+    AddCommand(make_shared<SetFileNameCommand>());
 
-    AddCommand(shared_ptr<Command<DebruijnEnvironment> >(new LoadGenomeCommand));
+    AddCommand(make_shared<FillPositionCommand>());
+    AddCommand(make_shared<ClearPositionCommand>());
 
-    AddCommand(shared_ptr<Command<DebruijnEnvironment> >(new SetMaxVertCommand));
-    AddCommand(shared_ptr<Command<DebruijnEnvironment> >(new SetFolderCommand));
-    AddCommand(shared_ptr<Command<DebruijnEnvironment> >(new SetFileNameCommand));
+    AddCommand(make_shared<DrawVertexCommand>());
+    AddCommand(make_shared<DrawEdgeCommand>());
+    AddCommand(make_shared<DrawPositionCommand>());
+    AddCommand(make_shared<DrawPartOfGenomeCommand>());
+    AddCommand(make_shared<DrawContigCommand>());
+    AddCommand(make_shared<ShowPositionCommand>());
 
-    AddCommand(shared_ptr<Command<DebruijnEnvironment> >(new FillPositionCommand));
-    AddCommand(shared_ptr<Command<DebruijnEnvironment> >(new ClearPositionCommand));
+    AddCommand(make_shared<PrintPathsCommand>());
+    AddCommand(make_shared<PrintContigsStatsCommand>());
 
-    AddCommand(shared_ptr<Command<DebruijnEnvironment> >(new DrawVertexCommand));
-    AddCommand(shared_ptr<Command<DebruijnEnvironment> >(new DrawEdgeCommand));
-    AddCommand(shared_ptr<Command<DebruijnEnvironment> >(new DrawPositionCommand));
-    AddCommand(shared_ptr<Command<DebruijnEnvironment> >(new DrawPartOfGenomeCommand));
-    AddCommand(shared_ptr<Command<DebruijnEnvironment> >(new DrawContigCommand));
-    AddCommand(shared_ptr<Command<DebruijnEnvironment> >(new ShowPositionCommand));
-
-    AddCommand(shared_ptr<Command<DebruijnEnvironment> >(new PrintPathsCommand));
-    AddCommand(shared_ptr<Command<DebruijnEnvironment> >(new PrintContigsStatsCommand));
+    AddCommand(make_shared<ClipTipsCommand>());
   }
 
  public:

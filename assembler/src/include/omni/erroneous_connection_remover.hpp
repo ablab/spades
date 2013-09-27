@@ -48,8 +48,8 @@ class ChimericEdgeRemovingAlgorithm : public EdgeRemovingAlgorithm<Graph,
     typedef EdgeRemovingAlgorithm<Graph, Comparator> base;
     typedef typename Graph::EdgeId EdgeId;
 
-    shared_ptr<func::Predicate<EdgeId>> remove_condition_;
-    boost::function<void(EdgeId)> removal_handler_;
+//    shared_ptr<func::Predicate<EdgeId>> remove_condition_;
+//    boost::function<void(EdgeId)> removal_handler_;
 
  public:
 
@@ -310,6 +310,7 @@ class ThornRemover : public ChimericEdgeRemovingAlgorithm<Graph,
     }
 };
 
+//todo rename
 template<class Graph>
 class TopologyChimericEdgeRemover : public ChimericEdgeRemovingAlgorithm<Graph,
         LengthComparator<Graph>> {

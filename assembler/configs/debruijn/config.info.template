@@ -34,6 +34,7 @@ entry_point construction
 ;entry_point simplification
 ;entry_point late_pair_info_count
 ;entry_point distance_estimation
+;entry_point pacbio_aligning
 ;entry_point repeats_resolving
 
 developer_mode true
@@ -90,7 +91,7 @@ estimation_mode simple
 ;set it true to detach connections that are not supported by paired info before repeat resolution
 cut_bad_connections false
 
-; repeat resolving mode (none split path_extend combined rectangles)
+; repeat resolving mode (none path_extend combined rectangles)
 resolving_mode path_extend
 
 use_scaffolder  true
@@ -99,6 +100,8 @@ mask_all	true
 andrey_params {
 	#include "path_extend/pe_params.info"
 }
+
+avoid_rc_connections true
 
 ; Produce info for all components of graph and run repeat resolver for each component.
 componential_resolve false
@@ -156,8 +159,9 @@ pacbio_processor
 {
 ;align and traverse.
 	pacbio_reads /home/lab42/algorithmic-biology/assembler/data/input/E.coli/pacbio/e-coli-k12-mg1655-raw-reads-1.3.0/2590338/0006/Analysis_Results/filtered_subreads.fastq
+	additional_debug_info	false
 	pacbio_k 13
-	pacbio_optimized_sw false
+	pacbio_optimized_sw true
 	compression_cutoff 0.6
 	domination_cutoff 1.5
 	path_limit_stretching 1.3

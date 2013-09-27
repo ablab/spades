@@ -52,7 +52,7 @@ private:
 		return result;
 	}
 
-	void TraverseLoop(EdgeId start, EdgeId end, set<VertexId>& component, PathContainer paths) {
+	void TraverseLoop(EdgeId start, EdgeId end, set<VertexId>& /*component*/, PathContainer /*paths*/) {
 		std::set<BidirectionalPath*> coveredStartPaths =
 				covMap_.GetCoveringPaths(start);
 		std::set<BidirectionalPath*> coveredEndPaths =
@@ -79,6 +79,7 @@ private:
 		size_t commonSize = startPath->CommonEndSize(*endPath);
 		size_t nLen = 0;
 		if (commonSize == 0) {
+		    //TODO: use another seacher(omnigraph::PathProcessor), delete this DijkstraSearcher
 			DijkstraSearcher pathSeacher(g_);
 			VertexId lastVertex = g_.EdgeEnd(
 					startPath->At(startPath->Size() - 1));
@@ -94,7 +95,7 @@ private:
 			}*/
 		}
 		if (commonSize < endPath->Size()){
-			startPath->PushBack(endPath->At(commonSize), nLen);
+			startPath->PushBack(endPath->At(commonSize), (int) nLen);
 		}
 		for (size_t i = commonSize + 1; i < endPath->Size(); ++i) {
 			startPath->PushBack(endPath->At(i));
@@ -109,12 +110,12 @@ public:
 
 	void TraverseAllLoops() {
 		DEBUG("TraverseAllLoops");
-		LongEdgesExclusiveSplitter<Graph> splitter(g_, 1000);
-		while (!splitter.Finished()) {
-			vector<VertexId> component = splitter.NextComponent();
-			if (component.size() > 10)
+		shared_ptr<GraphSplitter<Graph>> splitter = LongEdgesExclusiveSplitter<Graph>(g_, 1000);
+		while (splitter->HasNext()) {
+			GraphComponent<Graph> component = splitter->Next();
+			if (component.v_size() > 10)
 				continue;
-			set<VertexId> component_set(component.begin(), component.end());
+			set<VertexId> component_set(component.v_begin(), component.v_end());
 			EdgeId start = FindStart(component_set);
 			EdgeId finish = FindFinish(component_set);
 			if (start == EdgeId() || finish == EdgeId()) {

@@ -20,6 +20,7 @@ import shutil
 
 from math import pow
 from support import universal_sys_call, error
+import options_storage
 
 #profile = []
 #insertions = {}
@@ -411,21 +412,22 @@ def split_contigs(filename, tmpdir):
 
 
 def usage():
-    print >> sys.stderr, 'Mismatch Corrector. Simple post processing tool'
-    print >> sys.stderr, 'Usage: python', sys.argv[0], '[options] -1 left_reads -2 right_reads -c contigs'
-    print >> sys.stderr, 'Or: python', sys.argv[0], '[options] --12 mixed_reads -c contigs'
-    print >> sys.stderr, 'Or: python', sys.argv[0], '[options] -s sam_file -c contigs'
-    print >> sys.stderr, 'Options:'
-    print >> sys.stderr, '-t/--threads  <int>   threads number'
-    print >> sys.stderr, '-o/--output-dir   <dir_name>  directory to store results'
-    print >> sys.stderr, '-m/--mate-weight  <int>   weight for paired reads aligned properly. By default, equal to single reads weight (=1)'
-    print >> sys.stderr, '--bwa <path>   path to bwa tool. Required if bwa is not in PATH'
-    print >> sys.stderr, '--bowtie2    <path>  path to bowtie2 tool. Can be used instead of bwa. It is faster but provides a bit worse results'
-    print >> sys.stderr, '  --use-quality use quality values as probabilities '
-    print >> sys.stderr, '  --debug   save all intermediate files '
-    print >> sys.stderr, '  --use-multiple-aligned  use paired reads with multiple alignment'
-    print >> sys.stderr, '  --skip-masked   do not correct single \'N\' in contigs unless significant read support provided'
-    print >> sys.stderr, '  --insert-size <int> estimation on insert size'
+    sys.stderr.write('Mismatch Corrector. Simple post processing tool\n')
+    sys.stderr.write('Usage: python' + str(sys.argv[0]) + '[options] -1 left_reads -2 right_reads -c contigs\n')
+    sys.stderr.write('Or: python' + str(sys.argv[0]) + '[options] --12 mixed_reads -c contigs\n')
+    sys.stderr.write('Or: python' + str(sys.argv[0]) + '[options] -s sam_file -c contigs\n')
+    sys.stderr.write('Options:\n')
+    sys.stderr.write('-t/--threads  <int>   threads number\n')
+    sys.stderr.write('-o/--output-dir   <dir_name>  directory to store results\n')
+    sys.stderr.write('-m/--mate-weight  <int>   weight for paired reads aligned properly. By default, equal to single reads weight (=1)\n')
+    sys.stderr.write('--bwa <path>   path to bwa tool. Required if bwa is not in PATH\n')
+    sys.stderr.write('--bowtie2    <path>  path to bowtie2 tool. Can be used instead of bwa. It is faster but provides a bit worse results\n')
+    sys.stderr.write('  --use-quality use quality values as probabilities \n')
+    sys.stderr.write('  --debug   save all intermediate files \n')
+    sys.stderr.write('  --use-multiple-aligned  use paired reads with multiple alignment\n')
+    sys.stderr.write('  --skip-masked   do not correct single \'N\' in contigs unless significant read support provided\n')
+    sys.stderr.write('  --insert-size <int> estimation on insert size\n')
+    sys.stderr.flush()
 
 
 def run_aligner(log):
@@ -445,14 +447,16 @@ def run_aligner(log):
             split_reads(mixed_reads_file, left, right)
     if "reads1" in config and (len(config["reads1"]) > 1 or os.path.isfile(left)):
         for reads_file in config["reads1"]:
-            if os.path.splitext(reads_file)[1] == '.gz':
+            if os.path.splitext(reads_file)[1] == '.gz' or (reads_file in options_storage.dict_of_prefixes and
+                                                           options_storage.dict_of_prefixes[reads_file].endswith('.gz')):
                 fdscr = gzip.open(reads_file, 'r')
             else:
                 fdscr = open(reads_file, 'r')
             shutil.copyfileobj(fdscr, open(left, 'a'))
     if "reads2" in config and (len(config["reads2"]) > 1 or os.path.isfile(right)):
         for reads_file in config["reads2"]:
-            if os.path.splitext(reads_file)[1] == '.gz':
+            if os.path.splitext(reads_file)[1] == '.gz' or (reads_file in options_storage.dict_of_prefixes and
+                                                           options_storage.dict_of_prefixes[reads_file].endswith('.gz')):
                 fdscr = gzip.open(reads_file, 'r')
             else:
                 fdscr = open(reads_file, 'r')
@@ -483,12 +487,12 @@ def run_bowtie2(log):
 
     tmp_dir = os.path.join(config["work_dir"], "tmp")
     devnull = "/dev/null"
-    universal_sys_call(config["bowtie2"] + "-build " + config["contigs"] + " " + tmp_dir, log, devnull)
+    universal_sys_call([config["bowtie2"], "-build", config["contigs"], tmp_dir], log, devnull)
     #os.system(config["bowtie2"] + "-build " + config["contigs"] + " " + config["work_dir"] + "tmp > /dev/null")
 
-    universal_sys_call(config["bowtie2"] + " -x " + tmp_dir + " -1 " + config["reads1"] + " -2 " +
-                     config["reads2"] + " -S " + config["sam_file"] + " -p " + str(config["t"]) +
-                     " --local --non-deterministic", log)
+    universal_sys_call([config["bowtie2"], "-x", tmp_dir, "-1", config["reads1"], "-2",
+                     config["reads2"], "-S", config["sam_file"], "-p", str(config["t"]),
+                     "--local", "--non-deterministic"], log)
     #os.system(config["bowtie2"] + " -x" + config["work_dir"] + "tmp  -1 " + config["reads1"] + " -2 " + config["reads2"] + " -S " + config["sam_file"] + " -p " + str(config["t"])+ " --local  --non-deterministic")
 
 
@@ -500,14 +504,14 @@ def run_bwa(log):
     tmp_sam_filename = os.path.join(config["work_dir"], "tmp.sam")
     isize_txt_filename = os.path.join(config["work_dir"], "isize.txt")
 
-    universal_sys_call(config["bwa"] + " index -a is " + config["contigs"] + " 2", log)
-    universal_sys_call(config["bwa"] + " aln " + config["contigs"] + " " + config["reads1"] + " -t " +
-                     str(config["t"]) + " -O 7 -E 2 -k 3 -n 0.08 -q 15", log, tmp1_sai_filename)
-    universal_sys_call(config["bwa"] + " aln " + config["contigs"] + " " + config["reads2"] + " -t " +
-                     str(config["t"]) + " -O 7 -E 2 -k 3 -n 0.08 -q 15", log, tmp2_sai_filename)
-    universal_sys_call(config["bwa"] + " sampe " + config["contigs"] + " " + tmp1_sai_filename +
-                     " " + tmp2_sai_filename + " " + config["reads1"] + " " + config["reads2"],
-                     None, tmp_sam_filename, isize_txt_filename)
+    universal_sys_call([config["bwa"], "index", "-a", "is", config["contigs"], "2"], log)
+    universal_sys_call([config["bwa"], "aln", config["contigs"], config["reads1"], "-t",
+                       str(config["t"]), "-O", "7", "-E", "2", "-k", "3", "-n", "0.08", "-q", "15"], log, tmp1_sai_filename)
+    universal_sys_call([config["bwa"], "aln", config["contigs"], config["reads2"], "-t",
+                       str(config["t"]), "-O", "7", "-E", "2", "-k", "3", "-n", "0.08", "-q", "15"], log, tmp2_sai_filename)
+    universal_sys_call([config["bwa"], "sampe", config["contigs"], tmp1_sai_filename,
+                       tmp2_sai_filename, config["reads1"], config["reads2"]],
+                       None, tmp_sam_filename, isize_txt_filename)
 
     #os.system(config["bwa"] + " index -a is " + config["contigs"] + " 2")
     #os.system(config["bwa"] + " aln  "+ config["contigs"] +" " + config["reads1"] + " -t " + str(config["t"]) + "  -O 7 -E 2 -k 3 -n 0.08 -q 15 >"+config["work_dir"]+ "tmp1.sai" )
@@ -1233,7 +1237,10 @@ def main(args, joblib_path, log=None):
             tmp.append(os.path.getsize(contig_file))
             pairs.append(tmp)
     pairs.sort(key=lambda x: x[-1], reverse=True)
-    from joblib import Parallel, delayed
+    if sys.version.startswith('2.'):
+        from joblib2 import Parallel, delayed
+    elif sys.version.startswith('3.'):
+        from joblib3 import Parallel, delayed
     Parallel(n_jobs=config["t"])(delayed(process_contig)(pair) for pair in pairs)
 #        inserted += loc_ins
 #        replaced += loc_rep

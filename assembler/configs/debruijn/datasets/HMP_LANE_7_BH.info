@@ -1,7 +1,5 @@
-paired_reads             "../../../data/input/HMP/lane_7/bh20120701/00.reads.0.right.corrected.fastq ../../../data/input/HMP/lane_7/bh20120701/00.reads.0.left.corrected.fastq "
-single_reads             "../../../data/input/HMP/lane_7/bh20120701/00.reads.0.left.unpaired.fastq ../../../data/input/HMP/lane_7/bh20120701/00.reads.0.right.unpaired.fastq "
-RL                       100
-IS                       210
-single_cell              true
-
 reads	HMP_LANE_7_BH.yaml
+single_cell	true
+
+; RL	100
+; IS	210

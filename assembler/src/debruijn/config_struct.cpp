@@ -5,22 +5,50 @@
 
 #include "io/reader.hpp"
 
+#include "logger/logger.hpp"
+
 #include <string>
 #include <vector>
 
 namespace YAML {
 template<>
 struct convert<io::SequencingLibrary<debruijn_graph::debruijn_config::DataSetData> > {
-  static Node encode(const io::SequencingLibrary<debruijn_graph::debruijn_config::DataSetData> &rhs);
+  static Node encode(const io::SequencingLibrary<debruijn_graph::debruijn_config::DataSetData> &rhs) {
+      // First, save the "common" stuff
+      Node node = convert<io::SequencingLibraryBase>::encode(rhs);
+
+      // Now, save the remaining stuff
+      auto const& data = rhs.data();
+      node["read length"] = data.read_length;
+      node["mean insert size"] = data.mean_insert_size;
+      node["insert size deviation"] = data.insert_size_deviation;
+      node["median insert size"] = data.median_insert_size;
+      node["insert size mad"] = data.insert_size_mad;
+      node["average coverage"] = data.average_coverage;
+      node["insert size distribution"] = data.insert_size_distribution;
+
+      return node;
+  }
+
   static bool decode(const Node& node, io::SequencingLibrary<debruijn_graph::debruijn_config::DataSetData> &rhs) {
-    // First, load the "common stuff"
-    rhs.load(node);
+      // First, load the "common stuff"
+      rhs.load(node);
 
-    // Now load the remaining stuff
-    rhs.data().read_length = node["RL"].as<size_t>(0);
-    rhs.data().mean_insert_size = node["IS"].as<size_t>(0);
+      // Now load the remaining stuff
+      auto& data = rhs.data();
+      data.read_length = node["RL"].as<size_t>(0);
+      if (data.read_length == 0)
+          data.read_length = node["read length"].as<size_t>(0);
+      data.mean_insert_size = (double) node["IS"].as<size_t>(0);
+      if (data.mean_insert_size == 0.0)
+          data.mean_insert_size = node["mean insert size"].as<double>(0);
+      data.insert_size_deviation = node["insert size deviation"].as<double>(0.0);
+      data.median_insert_size = node["median insert size"].as<double>(0.0);
+      data.insert_size_mad = node["insert size mad"].as<double>(0.0);
+      data.average_coverage = node["average_coverage"].as<double>(0.0);
+      data.insert_size_distribution = node["insert size distribution"].as<decltype(data.insert_size_distribution)>(decltype(data.insert_size_distribution)());
 
-    return true;
+      return true;
   }
 };
 }
@@ -38,8 +66,92 @@ static std::string MakeLaunchTimeDirName() {
   return std::string(buffer);
 }
 
+std::string estimated_param_filename(const std::string& prefix) {
+  return prefix + "_est_params.info";
+}
+
+void load_lib_data(const std::string& prefix) {
+  std::string filename = estimated_param_filename(prefix);
+
+  if (!FileExists(filename)) {
+      WARN("Estimates params config " << prefix << " does not exist");
+  }
+  boost::optional<size_t> lib_count;
+  load_param(filename, "lib_count", lib_count);
+  if (!lib_count || lib_count != cfg::get().ds.reads.lib_count()) {
+      WARN("Estimated params file seems to be incorrect");
+      return;
+  }
+
+  boost::optional<size_t> sizet_val(0);
+  boost::optional<double> double_val(0.);
+
+  load_param(filename, "max_read_length", sizet_val);
+  if (sizet_val) {
+      cfg::get_writable().ds.set_RL(*sizet_val);
+  }
+  load_param(filename, "average_coverage", double_val);
+  if (double_val) {
+      cfg::get_writable().ds.set_avg_coverage(*double_val);
+  }
+
+  for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+      load_param(filename, "read_length_" + ToString(i), sizet_val);
+      if (sizet_val) {
+          cfg::get_writable().ds.reads[i].data().read_length = *sizet_val;
+      }
+      load_param(filename, "insert_size_" + ToString(i), double_val);
+      if (double_val) {
+          cfg::get_writable().ds.reads[i].data().mean_insert_size = *double_val;
+      }
+      load_param(filename, "insert_size_deviation_" + ToString(i), double_val);
+      if (double_val) {
+          cfg::get_writable().ds.reads[i].data().insert_size_deviation = *double_val;
+      }
+      load_param(filename, "insert_size_median_" + ToString(i), double_val);
+      if (double_val) {
+          cfg::get_writable().ds.reads[i].data().median_insert_size = *double_val;
+      }
+      load_param(filename, "insert_size_mad_" + ToString(i), double_val);
+      if (double_val) {
+          cfg::get_writable().ds.reads[i].data().insert_size_mad = *double_val;
+      }
+      load_param(filename, "average_coverage_" + ToString(i), double_val);
+      if (double_val) {
+          cfg::get_writable().ds.reads[i].data().average_coverage = *double_val;
+      }
+      load_param(filename, "pi_threshold_"+ToString(i), double_val);
+      if (double_val) {
+          cfg::get_writable().ds.reads[i].data().pi_threshold = *double_val;
+      }
+      load_param_map(filename, "histogram_" + ToString(i), cfg::get_writable().ds.reads[i].data().insert_size_distribution);
+  }
+
+}
+
+void write_lib_data(const std::string& prefix) {
+  std::string filename = estimated_param_filename(prefix);
+
+  cfg::get().ds.reads.save("foo.txt");
+  write_param(filename, "lib_count", cfg::get().ds.reads.lib_count());
+  write_param(filename, "max_read_length", cfg::get().ds.RL());
+  write_param(filename, "average_coverage", cfg::get().ds.avg_coverage());
+
+  for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+      write_param(filename, "read_length_" + ToString(i), cfg::get().ds.reads[i].data().read_length);
+      write_param(filename, "insert_size_" + ToString(i), cfg::get().ds.reads[i].data().mean_insert_size);
+      write_param(filename, "insert_size_deviation_" + ToString(i), cfg::get().ds.reads[i].data().insert_size_deviation);
+      write_param(filename, "insert_size_median_" + ToString(i), cfg::get().ds.reads[i].data().median_insert_size);
+      write_param(filename, "insert_size_mad_" + ToString(i), cfg::get().ds.reads[i].data().insert_size_mad);
+      write_param(filename, "average_coverage_" + ToString(i), cfg::get().ds.reads[i].data().average_coverage);
+      write_param(filename, "pi_threshold_" + ToString(i), cfg::get().ds.reads[i].data().pi_threshold);
+      write_param_map(filename, "histogram_" + ToString(i), cfg::get().ds.reads[i].data().insert_size_distribution);
+  }
+}
+
+
 void load(debruijn_config::simplification::tip_clipper& tc,
-          boost::property_tree::ptree const& pt, bool complete) {
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
   load(tc.condition, pt, "condition");
 }
@@ -95,7 +207,7 @@ void load(estimation_mode& est_mode,
 }
 
 void load(debruijn_config::simplification::bulge_remover& br,
-          boost::property_tree::ptree const& pt, bool complete) {
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
 
   load(br.max_bulge_length_coefficient, pt, "max_bulge_length_coefficient");
@@ -108,7 +220,7 @@ void load(debruijn_config::simplification::bulge_remover& br,
 }
 
 void load(debruijn_config::simplification::topology_tip_clipper& ttc,
-          boost::property_tree::ptree const& pt, bool complete) {
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
   load(ttc.length_coeff, pt, "length_coeff");
   load(ttc.plausibility_length, pt, "plausibility_length");
@@ -116,7 +228,7 @@ void load(debruijn_config::simplification::topology_tip_clipper& ttc,
 }
 
 void load(debruijn_config::simplification::relative_coverage_ec_remover& rec,
-          boost::property_tree::ptree const& pt, bool complete) {
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
   load(rec.max_ec_length_coefficient, pt, "max_ec_length_coefficient");
   load(rec.max_coverage_coeff, pt, "max_coverage_coeff");
@@ -124,7 +236,7 @@ void load(debruijn_config::simplification::relative_coverage_ec_remover& rec,
 }
 
 void load(debruijn_config::simplification::isolated_edges_remover& ier,
-          boost::property_tree::ptree const& pt, bool complete) {
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
 
   load(ier.max_length, pt, "max_length");
@@ -133,7 +245,7 @@ void load(debruijn_config::simplification::isolated_edges_remover& ier,
 }
 
 void load(debruijn_config::simplification::complex_bulge_remover& cbr,
-          boost::property_tree::ptree const& pt, bool complete) {
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
 
   load(cbr.enabled, pt, "enabled");
@@ -144,14 +256,14 @@ void load(debruijn_config::simplification::complex_bulge_remover& cbr,
 }
 
 void load(debruijn_config::simplification::erroneous_connections_remover& ec,
-          boost::property_tree::ptree const& pt, bool complete) {
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
 
   load(ec.condition, pt, "condition");
 }
 
 void load(debruijn_config::simplification::topology_based_ec_remover& tec,
-          boost::property_tree::ptree const& pt, bool complete) {
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
 
   load(tec.max_ec_length_coefficient, pt, "max_ec_length_coefficient");
@@ -160,7 +272,7 @@ void load(debruijn_config::simplification::topology_based_ec_remover& tec,
 }
 
 void load(debruijn_config::simplification::interstrand_ec_remover &isec,
-          boost::property_tree::ptree const &pt, bool complete) {
+          boost::property_tree::ptree const &pt, bool /*complete*/) {
   using config_common::load;
   load(isec.max_ec_length_coefficient, pt, "max_ec_length_coefficient");
   load(isec.uniqueness_length, pt, "uniqueness_length");
@@ -168,7 +280,7 @@ void load(debruijn_config::simplification::interstrand_ec_remover &isec,
 }
 
 void load(debruijn_config::simplification::tr_based_ec_remover &trec,
-          boost::property_tree::ptree const &pt, bool complete) {
+          boost::property_tree::ptree const &pt, bool /*complete*/) {
   using config_common::load;
   load(trec.max_ec_length_coefficient, pt, "max_ec_length_coefficient");
   load(trec.unreliable_coverage, pt, "unreliable_coverage");
@@ -176,7 +288,7 @@ void load(debruijn_config::simplification::tr_based_ec_remover &trec,
 }
 
 void load(debruijn_config::simplification::max_flow_ec_remover& mfec,
-          boost::property_tree::ptree const& pt, bool complete) {
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
 
   load(mfec.enabled, pt, "enabled");
@@ -186,7 +298,7 @@ void load(debruijn_config::simplification::max_flow_ec_remover& mfec,
 }
 
 void load(debruijn_config::distance_estimator& de,
-          boost::property_tree::ptree const& pt, bool complete) {
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
 
   load(de.linkage_distance_coeff, pt, "linkage_distance_coeff");
@@ -195,7 +307,7 @@ void load(debruijn_config::distance_estimator& de,
 }
 
 void load(debruijn_config::smoothing_distance_estimator& ade,
-          boost::property_tree::ptree const& pt, bool complete) {
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
 
   load(ade.threshold, pt, "threshold");
@@ -209,7 +321,7 @@ void load(debruijn_config::smoothing_distance_estimator& ade,
 }
 
 void load(debruijn_config::repeat_resolver& rr,
-          boost::property_tree::ptree const& pt, bool complete) {
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
 
   load(rr.symmetric_resolve, pt, "symmetric_resolve");
@@ -222,23 +334,24 @@ void load(debruijn_config::repeat_resolver& rr,
 }
 
 void load(debruijn_config::coverage_based_rr& cbrr,
-          boost::property_tree::ptree const& pt, bool complete) {
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
- 
+
     load(cbrr.coverage_threshold_one_list, pt, "coverage_threshold_one_list");
     load(cbrr.coverage_threshold_match, pt, "coverage_threshold_match");
     load(cbrr.coverage_threshold_global, pt, "coverage_threshold_global");
     load(cbrr.tandem_ratio_lower_threshold, pt, "tandem_ratio_lower_threshold");
     load(cbrr.tandem_ratio_upper_threshold, pt, "tandem_ratio_upper_threshold");
     load(cbrr.repeat_length_upper_threshold, pt, "repeat_length_upper_threshold");
- 
+
 }
 
 void load(debruijn_config::pacbio_processor& pb,
-          boost::property_tree::ptree const& pt, bool complete) {
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
   load(pb.pacbio_reads, pt, "pacbio_reads");
   load(pb.pacbio_k, pt, "pacbio_k");
+  load(pb.additional_debug_info, pt, "additional_debug_info");
   load(pb.pacbio_optimized_sw, pt, "pacbio_optimized_sw");
   load(pb.compression_cutoff, pt, "compression_cutoff");
   load(pb.domination_cutoff, pt, "domination_cutoff");
@@ -255,7 +368,7 @@ void load(debruijn_config::pacbio_processor& pb,
 
 
 void load(debruijn_config::position_handler& pos,
-          boost::property_tree::ptree const& pt, bool complete) {
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
   load(pos.max_single_gap, pt, "max_single_gap");
   load(pos.contigs_for_threading, pt, "contigs_for_threading");
@@ -265,7 +378,7 @@ void load(debruijn_config::position_handler& pos,
 }
 
 void load(debruijn_config::gap_closer& gc,
-          boost::property_tree::ptree const& pt, bool complete) {
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
   load(gc.minimal_intersection, pt, "minimal_intersection");
   load(gc.before_simplify, pt, "before_simplify");
@@ -275,7 +388,7 @@ void load(debruijn_config::gap_closer& gc,
 }
 
 void load(debruijn_config::graph_read_corr_cfg& graph_read_corr,
-          boost::property_tree::ptree const& pt, bool complete) {
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
   load(graph_read_corr.enable, pt, "enable");
   load(graph_read_corr.output_dir, pt, "output_dir");
@@ -283,7 +396,7 @@ void load(debruijn_config::graph_read_corr_cfg& graph_read_corr,
 }
 
 void load(debruijn_config::dataset& ds,
-          boost::property_tree::ptree const& pt, bool complete) {
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
 
   load(ds.reads_filename, pt, "reads");
@@ -341,7 +454,6 @@ void load(debruijn_config::simplification& simp,
 void load(debruijn_config::info_printer& printer,
           boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
-
   load(printer.print_stats, pt, "print_stats", complete);
   load(printer.write_components, pt, "write_components", complete);
   load(printer.components_for_kmer, pt, "components_for_kmer", complete);
@@ -357,8 +469,21 @@ void load(debruijn_config::info_printer& printer,
   load(printer.write_error_loc, pt, "write_error_loc", complete);
 }
 
+void clear(debruijn_config::info_printer& printer) {
+    printer.print_stats = false;
+    printer.write_components = false;
+    printer.components_for_kmer = "";
+    printer.components_for_genome_pos = "";
+    printer.write_components_along_genome = false;
+    printer.save_full_graph = false;
+    printer.write_full_graph = false;
+    printer.write_full_nc_graph = false;
+    printer.write_error_loc = false;
+}
+
+
 void load(debruijn_config::info_printers_t& printers,
-          boost::property_tree::ptree const& pt, bool complete) {
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
   using details::info_printer_pos_name;
 
@@ -375,7 +500,7 @@ void load(debruijn_config::info_printers_t& printers,
 
 // main debruijn config load function
 void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
-          bool complete) {
+          bool /*complete*/) {
   using config_common::load;
 
   load(cfg.K, pt, "K");
@@ -449,7 +574,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
     load (cfg.cbrr, pt, "coverage_based_rr");
 }
   if (cfg.pacbio_test_on) {
-	load(cfg.pb, pt, "pacbio_processor");
+    load(cfg.pb, pt, "pacbio_processor");
   } else {
   }
 
@@ -488,7 +613,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   // Fix number of threads according to OMP capabilities.
   cfg.max_threads = std::min(cfg.max_threads, (size_t) omp_get_max_threads());
   // Inform OpenMP runtime about this :)
-  omp_set_num_threads(cfg.max_threads);
+  omp_set_num_threads((int) cfg.max_threads);
 
   load(cfg.max_memory, pt, "max_memory");
 
@@ -523,6 +648,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   if (!cfg.use_scaffolder) {
       cfg.pe_params.param_set.scaffolder_options.on = false;
   }
+  load(cfg.avoid_rc_connections, pt, "avoid_rc_connections");
 
   load(cfg.mask_all, pt, "mask_all");
 
@@ -542,9 +668,12 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
     load(cfg.simp, pt, "careful", false);
 
   cfg.simp.cbr.folder = cfg.output_dir + cfg.simp.cbr.folder + "/";
-
   load(cfg.info_printers, pt, "info_printers");
-
+  if (!cfg.developer_mode) {
+      for (auto iter = cfg.info_printers.begin(); iter != cfg.info_printers.end(); ++iter) {
+          clear(iter->second);
+      }
+  }
   load_reads(cfg.ds, cfg.input_dir);
   load_reference_genome(cfg.ds, cfg.input_dir);
 }

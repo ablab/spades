@@ -7,6 +7,7 @@
 #pragma once
 
 #include "openmp_wrapper.h"
+#include "standard.hpp"
 
 #include "io/paired_read.hpp"
 #include "omni/omni_utils.hpp"
@@ -31,7 +32,8 @@
 #include "indices/debruijn_kmer_index.hpp"
 #include "edge_index.hpp"
 #include "sequence_mapper.hpp"
-#include "standard.hpp"
+#include "genomic_quality.hpp"
+#include "sequence_mapper_notifier.hpp"
 
 #include <iostream>
 
@@ -41,16 +43,16 @@ using omnigraph::Path;
 using omnigraph::MappingPath;
 using omnigraph::Range;
 using omnigraph::MappingRange;
-using omnigraph::PairInfo;
+using namespace omnigraph::de;
 using omnigraph::GraphActionHandler;
 
 //todo rewrite with extended sequence mapper!
-template<class Graph>
+template<class Graph, class Index>
 class EtalonPairedInfoCounter {
 	typedef typename Graph::EdgeId EdgeId;
 
 	const Graph& g_;
-	const EdgeIndex<Graph>& index_;
+	const Index& index_;
 	const KmerMapper<Graph>& kmer_mapper_;
 	size_t k_;
 
@@ -65,12 +67,12 @@ class EtalonPairedInfoCounter {
 
   void ProcessSequence(const Sequence& sequence, PairedInfoIndexT<Graph>& index)
   {
-		int mod_gap = (gap_ + (int) k_ > (int) delta_ ) ? gap_ - (int) delta_ :int(0) -k_;
+		int mod_gap = (gap_ + (int) k_ > (int) delta_ ) ? gap_ - (int) delta_ : 0 - (int) k_;
 		runtime_k::RtSeq left(k_ +1, sequence);
 		left >>= 0;
 		for (size_t left_idx = 0;
-				left_idx + 2 * (k_ + 1) + mod_gap <= sequence.size();
-				++left_idx) {
+             left_idx + 2 * (k_ + 1) + mod_gap <= sequence.size();
+             ++left_idx) {
 			left <<= sequence[left_idx + k_];
 			runtime_k::RtSeq left_upd = kmer_mapper_.Substitute(left);
 			if (!index_.contains(left_upd)) {
@@ -82,10 +84,8 @@ class EtalonPairedInfoCounter {
 			runtime_k::RtSeq right(k_ + 1, sequence, right_idx);
 			right >>= 0;
 			for (;
-					right_idx + k_ + 1 <= left_idx + insert_size_ + delta_
-							&& right_idx + k_ + 1 <= sequence.size();
-          ++right_idx)
-      {
+			     right_idx + k_ + 1 <= left_idx + insert_size_ + delta_ && right_idx + k_ + 1 <= sequence.size();
+			     ++right_idx) {
 				right <<= sequence[right_idx + k_];
 				runtime_k::RtSeq right_upd = kmer_mapper_.Substitute(right);
 				if (!index_.contains(right_upd)) {
@@ -93,31 +93,34 @@ class EtalonPairedInfoCounter {
 				}
 				pair<EdgeId, size_t> right_pos = index_.get(right_upd);
 
-				AddEtalonInfo(
-            index,
-						left_pos.first,
-						right_pos.first,
-            0. + right_idx - left_idx + left_pos.second - right_pos.second);
+				AddEtalonInfo(index, left_pos.first, right_pos.first,
+				              0. + (double) right_idx - (double) left_idx +
+				              (double) left_pos.second - (double) right_pos.second);
 			}
 		}
 	}
 
 public:
-  EtalonPairedInfoCounter(const Graph& g, const EdgeIndex<Graph>& index,
-			const KmerMapper<Graph>& kmer_mapper,
-			size_t insert_size,
-			size_t read_length, size_t delta, size_t k) :
-			g_(g), index_(index), kmer_mapper_(kmer_mapper), k_(k), insert_size_(
-					insert_size), read_length_(read_length), gap_(
-					insert_size_ - 2 * read_length_), delta_(delta) {
+    EtalonPairedInfoCounter(const Graph& g, const Index& index,
+                            const KmerMapper<Graph>& kmer_mapper,
+                            size_t insert_size, size_t read_length,
+                            size_t delta, size_t k)
+            : g_(g),
+              index_(index),
+              kmer_mapper_(kmer_mapper),
+              k_(k),
+              insert_size_(insert_size),
+              read_length_(read_length),
+              gap_((int) (insert_size_ - 2 * read_length_)),
+              delta_(delta) {
 //		VERIFY(insert_size_ >= 2 * read_length_);
-	}
+    }
 
-  void FillEtalonPairedInfo(const Sequence& genome, omnigraph::PairedInfoIndexT<Graph>& paired_info)
-  {
-    ProcessSequence(genome, paired_info);
-    ProcessSequence(!genome, paired_info);
-	}
+    void FillEtalonPairedInfo(const Sequence& genome,
+                              omnigraph::de::PairedInfoIndexT<Graph>& paired_info) {
+        ProcessSequence(genome, paired_info);
+        ProcessSequence(!genome, paired_info);
+    }
 };
 
 double PairedReadCountWeight(const MappingRange&, const MappingRange&) {
@@ -157,478 +160,81 @@ void WrappedSetCoverage(NonconjugateDeBruijnGraph& g,
  *
  * todo talk with Anton about simplification and speed-up of procedure with little quality loss
  */
-template<class Graph, class SequenceMapper, class PairedStream>
-class LatePairedIndexFiller {
+class LatePairedIndexFiller : public SequenceMapperListener {
 
-	typedef typename Graph::EdgeId EdgeId;
-	typedef runtime_k::RtSeq Kmer;
-	typedef boost::function<double(MappingRange, MappingRange)> WeightF;
+    typedef boost::function<double(MappingRange, MappingRange)> WeightF;
 
 public:
-	LatePairedIndexFiller(const Graph &graph, const SequenceMapper& mapper, PairedStream& stream, WeightF weight_f) :
-			graph_(graph), mapper_(mapper), streams_(stream), weight_f_(weight_f)
-	{
-	}
-
-  LatePairedIndexFiller(const Graph &graph, const SequenceMapper& mapper, io::ReadStreamVector< PairedStream >& streams, WeightF weight_f) :
-    graph_(graph), mapper_(mapper), streams_(streams), weight_f_(weight_f)
-  {
-  }
-
-  void FillIndex(omnigraph::PairedInfoIndexT<Graph>& paired_index) {
-    if (streams_.size() == 1) {
-      FillUsualIndex(paired_index);
-    } else {
-      FillParallelIndex(paired_index);
-    }
-  }
-
-private:
-	template<class PairedRead>
-  void ProcessPairedRead(omnigraph::PairedInfoIndexT<Graph>& paired_index, const PairedRead& p_r)
-  {
-		Sequence read1 = p_r.first().sequence();
-		Sequence read2 = p_r.second().sequence();
-
-		MappingPath<EdgeId> path1 = mapper_.MapSequence(read1);
-		MappingPath<EdgeId> path2 = mapper_.MapSequence(read2);
-		size_t read_distance = p_r.distance();
-		for (size_t i = 0; i < path1.size(); ++i) {
-			pair<EdgeId, MappingRange> mapping_edge_1 = path1[i];
-			for (size_t j = 0; j < path2.size(); ++j) {
-				pair<EdgeId, MappingRange> mapping_edge_2 = path2[j];
-				double weight = weight_f_(mapping_edge_1.second,
-						mapping_edge_2.second);
-				size_t kmer_distance = read_distance
-						+ mapping_edge_2.second.initial_range.end_pos
-						- mapping_edge_1.second.initial_range.start_pos;
-				int edge_distance = kmer_distance
-						+ mapping_edge_1.second.mapped_range.start_pos
-						- mapping_edge_2.second.mapped_range.end_pos;
-
-        paired_index.AddPairInfo(mapping_edge_1.first,
-                                 mapping_edge_2.first,
-                                 (double) edge_distance, weight, 0.);
-			}
-		}
-	}
-
-  /**
-   * Method reads paired data from stream, maps it to genome and stores it in this PairInfoIndex.
-   */
-  void FillUsualIndex(omnigraph::PairedInfoIndexT<Graph>& paired_index) {
-    for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-      paired_index.AddPairInfo(*it, *it, 0., 0., 0.);
+    LatePairedIndexFiller(const Graph &graph, WeightF weight_f, omnigraph::de::PairedInfoIndexT<Graph>& paired_index)
+            : graph_(graph),
+              weight_f_(weight_f),
+              paired_index_(paired_index) {
     }
 
-    INFO("Processing paired reads (takes a while)");
-
-    PairedStream& stream = streams_.back();
-    stream.reset();
-    size_t n = 0;
-    while (!stream.eof()) {
-      typename PairedStream::read_type p_r;
-      stream >> p_r;
-      ProcessPairedRead(paired_index, p_r);
-      VERBOSE_POWER(++n, " paired reads processed");
-    }
-  }
-
-  void FillParallelIndex(omnigraph::PairedInfoIndexT<Graph>& paired_index) {
-    for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-      paired_index.AddPairInfo(*it, *it, 0., 0., 0.);
-    }
-
-    INFO("Processing paired reads (takes a while)");
-    size_t nthreads = streams_.size();
-    vector<omnigraph::PairedInfoIndexT<Graph>*> buffer_pi(nthreads);
-
-    for (size_t i = 0; i < nthreads; ++i) {
-      buffer_pi[i] = new omnigraph::PairedInfoIndexT<Graph>(graph_);
-    }
-
-    size_t counter = 0;
-    static const double coeff = 1.3;
-    #pragma omp parallel num_threads(nthreads)
-    {
-      #pragma omp for reduction(+ : counter)
-      for (size_t i = 0; i < nthreads; ++i)
-      {
-        size_t size = 0;
-        size_t limit = 1000000;
-        typename PairedStream::read_type r;
-        PairedStream& stream = streams_[i];
-        stream.reset();
-        bool end_of_stream = false;
-
-        //DEBUG("Starting " << omp_get_thread_num());
-        while (!end_of_stream) {
-          end_of_stream = stream.eof();
-          while (!end_of_stream && size < limit) {
-            stream >> r;
-            ++counter;
-            ++size;
-            //DEBUG("Processing paired read " << omp_get_thread_num());
-            ProcessPairedRead(*(buffer_pi[i]), r);
-            end_of_stream = stream.eof();
-          }
-
-          #pragma omp critical
-          {
-            DEBUG("Merging " << omp_get_thread_num());
-            paired_index.AddAll(*(buffer_pi[i]));
-            DEBUG("Thread number " << omp_get_thread_num()
-               << " is going to increase its limit by " << coeff
-               << " times, current limit is " << limit);
-          }
-          buffer_pi[i]->Clear();
-          limit = coeff * limit;
+    virtual void StartProcessLibrary(size_t threads_count) {
+        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
+            paired_index_.AddPairInfo(*it, *it, 0., 0., 0.);
         }
-      }
-      DEBUG("Thread number " << omp_get_thread_num() << " finished");
-    }
-    INFO("Used " << counter << " paired reads");
-
-    for (size_t i = 0; i < nthreads; ++i)
-      DEBUG("Size of " << i << "-th map is " << buffer_pi[i]->size());
-
-    for (size_t i = 0; i < nthreads; ++i) {
-      delete buffer_pi[i];
-    }
-    INFO("Index built");
-
-    DEBUG("Size of map is " << paired_index.size());
-  }
-
-private:
-	const Graph& graph_;
-	const SequenceMapper& mapper_;
-	io::ReadStreamVector<PairedStream>& streams_;
-	WeightF weight_f_;
-
-	DECL_LOGGER("LatePairedIndexFiller");
-};
-
-template<class Graph>
-class EdgeQuality: public GraphLabeler<Graph>, public GraphActionHandler<Graph> {
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
-	map<EdgeId, size_t> quality_;
-	size_t k_;
-
-public:
-
-	void FillQuality(const EdgeIndex<Graph> &index
-			, const KmerMapper<Graph>& kmer_mapper, const Sequence &genome) {
-		if (genome.size() < k_)
-			return;
-		runtime_k::RtSeq cur = genome.start<runtime_k::RtSeq>(k_);
-		cur >>= 0;
-		for (size_t i = 0; i + k_ - 1 < genome.size(); i++) {
-			cur <<= genome[i + k_ - 1];
-			auto corr_cur = kmer_mapper.Substitute(cur);
-			if (index.contains(corr_cur)) {
-				quality_[index.get(corr_cur).first]++;
-			}
-		}
-	}
-
-	EdgeQuality(const Graph &graph, const EdgeIndex<Graph> &index,
-	const KmerMapper<Graph>& kmer_mapper,
-	const Sequence &genome) :
-
-			GraphActionHandler<Graph>(graph, "EdgeQualityLabeler"),
-			k_(kmer_mapper.get_k()) {
-		FillQuality(index, kmer_mapper, genome);
-		FillQuality(index, kmer_mapper, !genome);
-	}
-
-	virtual ~EdgeQuality() {
-	}
-
-	virtual void HandleAdd(EdgeId e) {
-	}
-
-	virtual void HandleDelete(EdgeId e) {
-		quality_.erase(e);
-	}
-
-	virtual void HandleMerge(const vector<EdgeId>& old_edges, EdgeId new_edge) {
-		size_t res = 0;
-		for (size_t i = 0; i < old_edges.size(); i++) {
-			res += quality_[old_edges[i]];
-		}
-		quality_[new_edge] += res;
-	}
-
-	virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
-		quality_[new_edge] += quality_[edge2];
-		quality_[new_edge] += quality_[edge1];
-	}
-
-	virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge1,
-			EdgeId new_edge2) {
-		quality_[new_edge1] = quality_[old_edge] * this->g().length(new_edge1)
-				/ (this->g().length(new_edge1) + this->g().length(new_edge2));
-		quality_[new_edge2] = quality_[old_edge] * this->g().length(new_edge2)
-				/ (this->g().length(new_edge1) + this->g().length(new_edge2));
-	}
-
-	double quality(EdgeId edge) const {
-		auto it = quality_.find(edge);
-		if (it == quality_.end())
-			return 0.;
-		else
-			return 1. * it->second / this->g().length(edge);
-	}
-
-	bool IsPositiveQuality(EdgeId edge) const {
-		return math::gr(quality(edge), 0.);
-	}
-
-	virtual std::string label(VertexId vertexId) const {
-		return "";
-	}
-
-	virtual std::string label(EdgeId edge) const {
-		double q = quality(edge);
-		return (q == 0) ? "" : "quality: " + ToString(q);
-	}
-
-};
-
-template<class Graph>
-class QualityLoggingRemovalHandler {
-	typedef typename Graph::EdgeId EdgeId;
-	const Graph& g_;
-	const EdgeQuality<Graph>& quality_handler_;
-//	size_t black_removed_;
-//	size_t colored_removed_;
-public:
-	QualityLoggingRemovalHandler(const Graph& g, const EdgeQuality<Graph>& quality_handler) :
-			g_(g), quality_handler_(quality_handler)/*, black_removed_(0), colored_removed_(
-	 0)*/{
-
-	}
-
-	void HandleDelete(EdgeId edge) {
-		if (math::gr(quality_handler_.quality(edge), 0.)) {
-			TRACE("Deleting edge " << g_.int_id(edge) << " with quality " << quality_handler_.quality(edge));
-		} else {
-//			TRACE("Deleting edge " << g_.int_id(edge) << " with zero quality");
-		}
-//		if (math::gr(quality_handler_.quality(edge), 0.))
-//			colored_removed_++;
-//		else
-//			black_removed_++;
-	}
-
-private:
-	DECL_LOGGER("QualityLoggingRemovalHandler")
-	;
-};
-
-template<class Graph>
-class QualityLoggingRemovalCountHandler {
-	typedef typename Graph::EdgeId EdgeId;
-	const Graph& g_;
-	const EdgeQuality<Graph>& quality_handler_;
-	size_t black_removed_;
-    size_t total;
-
-public:
-	QualityLoggingRemovalCountHandler(const Graph& g, const EdgeQuality<Graph>& quality_handler) :
-			g_(g), quality_handler_(quality_handler)/*, black_removed_(0), colored_removed_(
-	 0)*/{
-        black_removed_ = 0;
-        total = 0;
-	}
-
-	void HandleDelete(EdgeId edge) {
-        total++;
-		if (math::gr(quality_handler_.quality(edge), 0.)) {
-            TRACE("Deleting good edge " << g_.int_id(edge) << " with quality " << quality_handler_.quality(edge) << " cov " << g_.coverage(edge) << " length " << g_.length(edge));
-		}else{
-            black_removed_++;
+        for (size_t i = 0; i < threads_count; ++i) {
+            buffer_pi_.push_back(
+                    new omnigraph::de::PairedInfoIndexT<Graph>(graph_));
         }
-        if ((total % (1<<10)) != 0)
-            TRACE("Removed still " << black_removed_ << " " << total);
-	}
+    }
+    virtual void StopProcessLibrary() {
+        for (size_t i = 0; i < buffer_pi_.size(); ++i) {
+            MergeBuffer(i);
+            delete buffer_pi_[i];
+        }
+        buffer_pi_.clear();
+    }
+    virtual void ProcessPairedRead(size_t thread_index,
+                                   const MappingPath<EdgeId>& read1,
+                                   const MappingPath<EdgeId>& read2,
+                                   size_t dist) {
+        ProcessPairedRead(*(buffer_pi_[thread_index]), read1, read2, dist);
+    }
+    virtual void ProcessSingleRead(size_t thread_index,
+                                   const MappingPath<EdgeId>& read) {
+    }
+    virtual void MergeBuffer(size_t thread_index) {
+        paired_index_.AddAll(*(buffer_pi_[thread_index]));
+        buffer_pi_[thread_index]->Clear();
+    }
+    virtual ~LatePairedIndexFiller() {
+    }
 
 private:
-};
+    void ProcessPairedRead(omnigraph::de::PairedInfoIndexT<Graph>& paired_index,
+                           const MappingPath<EdgeId>& path1,
+                           const MappingPath<EdgeId>& path2, size_t read_distance) {
+        for (size_t i = 0; i < path1.size(); ++i) {
+            pair<EdgeId, MappingRange> mapping_edge_1 = path1[i];
+            for (size_t j = 0; j < path2.size(); ++j) {
+                pair<EdgeId, MappingRange> mapping_edge_2 = path2[j];
+                double weight = weight_f_(mapping_edge_1.second,
+                                          mapping_edge_2.second);
+                size_t kmer_distance = read_distance
+                        + mapping_edge_2.second.initial_range.end_pos
+                        - mapping_edge_1.second.initial_range.start_pos;
+                int edge_distance = (int) kmer_distance
+                        + (int) mapping_edge_1.second.mapped_range.start_pos
+                        - (int) mapping_edge_2.second.mapped_range.end_pos;
 
-template<class Graph>
-class EdgeNeighborhoodFinder: public omnigraph::GraphSplitter<Graph> {
-private:
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
-	EdgeId edge_;
-	size_t max_size_;
-	size_t edge_length_bound_;
-	bool finished_;
-public:
-	EdgeNeighborhoodFinder(const Graph &graph, EdgeId edge, size_t max_size
-			, size_t edge_length_bound) :
-			GraphSplitter<Graph>(graph), edge_(edge), max_size_(
-					max_size), edge_length_bound_(edge_length_bound), finished_(
-					false) {
-	}
-
-	/*virtual*/ vector<VertexId> NextComponent() {
-		CountingDijkstra<Graph> cf(this->graph(), max_size_,
-				edge_length_bound_);
-		set<VertexId> result_set;
-		cf.run(this->graph().EdgeStart(edge_));
-		vector<VertexId> result_start = cf.ReachedVertices();
-		result_set.insert(result_start.begin(), result_start.end());
-		cf.run(this->graph().EdgeEnd(edge_));
-		vector<VertexId> result_end = cf.ReachedVertices();
-		result_set.insert(result_end.begin(), result_end.end());
-
-		ComponentCloser<Graph> cc(this->graph(), edge_length_bound_);
-		cc.CloseComponent(result_set);
-
-		finished_ = true;
-		vector<VertexId> result;
-		for (auto it = result_set.begin(); it != result_set.end(); ++it)
-			result.push_back(*it);
-		return result;
-	}
-
-	/*virtual*/ bool Finished() {
-		return finished_;
-	}
-};
-
-template<class Graph>
-class QualityEdgeLocalityPrintingRH {
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
-	const Graph& g_;
-	const EdgeQuality<Graph>& quality_handler_;
-	const GraphLabeler<Graph>& labeler_;
-	const string& output_folder_;
-//	size_t black_removed_;
-//	size_t colored_removed_;
-public:
-	QualityEdgeLocalityPrintingRH(const Graph& g
-			, const EdgeQuality<Graph>& quality_handler
-			, const GraphLabeler<Graph>& labeler
-			, const string& output_folder) :
-			g_(g), quality_handler_(quality_handler),
-			labeler_(labeler), output_folder_(output_folder){
-	}
-
-	void HandleDelete(EdgeId edge) {
-        if (quality_handler_.IsPositiveQuality(edge)) {
-			DEBUG("Deleting edge " << g_.str(edge) << " with quality " << quality_handler_.quality(edge));
-			string folder = output_folder_ + "colored_edges_deleted/";
-            path::make_dir(folder);
-			//todo magic constant
-//			map<EdgeId, string> empty_coloring;
-			EdgeNeighborhoodFinder<Graph> splitter(g_, edge, 50,
-					250);
-			WriteComponents(g_, splitter/*, "locality_of_edge_" + ToString(g_.int_id(edge))*/
-					, folder + "edge_" +  ToString(g_.int_id(edge)) + "_" + ToString(quality_handler_.quality(edge)) + ".dot"
-					, *DefaultColorer(g_), labeler_);
-		} else {
-			TRACE("Deleting edge " << g_.str(edge) << " with quality " << quality_handler_.quality(edge));
-		}
-	}
-
-private:
-	DECL_LOGGER("QualityEdgeLocalityPrintingRH")
-	;
-};
-
-template<class Graph>
-class QualityPairInfoHandler {
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
-	typedef omnigraph::PairInfo<EdgeId> PairInfo;
-	typedef vector<PairInfo> PairInfos;
-	const Graph& g_;
-	const EdgeQuality<Graph>& quality_handler_;
-	const GraphLabeler<Graph>& labeler_;
-	const string& output_folder_;
-    const PairedInfoIndex<ConjugateDeBruijnGraph>& index_;
-//	size_t black_removed_;
-//	size_t colored_removed_;
-public:
-	QualityPairInfoHandler(const Graph& g
-			, const EdgeQuality<Graph>& quality_handler
-			, const GraphLabeler<Graph>& labeler
-			, const string& output_folder
-            , const PairedInfoIndex<ConjugateDeBruijnGraph>& index) :
-			g_(g), quality_handler_(quality_handler),
-			labeler_(labeler), output_folder_(output_folder), index_(index) {
-	}
-
-	void HandleDelete(EdgeId edge) {
-        if (quality_handler_.IsPositiveQuality(edge)) {
-            cout << "Deleting edge " << g_.str(edge) << " with quality " << quality_handler_.quality(edge) << endl;
-            string folder = output_folder_ + "colored_edges_deleted/";
-            path::make_dir(folder);
-            //todo magic constant
-            PairInfos infos = index_.GetEdgeInfo(edge);
-            if (infos.size() > 0){
-                for (size_t i = 0; i<infos.size(); i++){
-                    cout << "Tip Info " << g_.int_id(infos[i].first) << " " << g_.int_id(infos[i].second) << " " << infos[i].d << " " << infos[i].weight << " " << infos[i].variance << endl;
-                }
+                paired_index.AddPairInfo(mapping_edge_1.first,
+                                         mapping_edge_2.first,
+                                         (double) edge_distance, weight, 0.);
             }
-            map<EdgeId, string> empty_coloring;
-            EdgeNeighborhoodFinder<Graph> splitter(g_, edge, 50,
-                    250);
-
-            WriteComponents(g_, splitter, TrueFilter<vector<VertexId>>(), "locality_of_edge_" + ToString(g_.int_id(edge))
-                    , folder + "edge_" +  ToString(g_.int_id(edge)) + "_" + ToString(quality_handler_.quality(edge)) + ".dot"
-                    , empty_coloring, labeler_);
         }
-	}
+    }
 
 private:
-};
+    const Graph& graph_;
+    WeightF weight_f_;
+    omnigraph::de::PairedInfoIndexT<Graph>& paired_index_;
+    vector<omnigraph::de::PairedInfoIndexT<Graph>*> buffer_pi_;
 
-template<class Graph>
-class EdgeLocalityPrintingRH {
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
-	const Graph& g_;
-	const GraphLabeler<Graph>& labeler_;
-	const string& output_folder_;
-    boost::function<double (EdgeId)>& quality_f_;
-//	size_t black_removed_;
-//	size_t colored_removed_;
-public:
-	EdgeLocalityPrintingRH(const Graph& g
-			, const GraphLabeler<Graph>& labeler
-			, const string& output_folder
-            , boost::function<double (EdgeId)> quality_f = 0) :
-			g_(g),
-			labeler_(labeler), output_folder_(output_folder),
-            quality_f_(quality_f){
-	}
-
-	void HandleDelete(EdgeId edge) {
-            TRACE("Deleting edge " << g_.str(edge));
-            if (quality_f_ && math::gr(quality_f_(edge), 0.))
-                INFO("EdgeLocalityPrintRH handling the edge with positive quality : " << quality_f_(edge) << " " << g_.str(edge));
-
-            string folder = output_folder_ + "edges_deleted/";
-            path::make_dir(folder);
-            //todo magic constant
-            map<EdgeId, string> empty_coloring;
-            EdgeNeighborhoodFinder<Graph> splitter(g_, edge, 50,
-                    250);
-
-            WriteComponents(g_, splitter, TrueFilter<vector<VertexId>>(), "locality_of_edge_" + ToString(g_.int_id(edge))
-                    , folder + "edge_" +  ToString(g_.int_id(edge)) + ".dot", empty_coloring, labeler_);
-	}
-
-private:
-	DECL_LOGGER("QualityEdgeLocalityPrintingRH")
-	;
+    DECL_LOGGER("LatePairedIndexFiller")
+    ;
 };
 
 class WeightDEWrapper {
@@ -691,7 +297,6 @@ public:
         return 1000. * new_hist[xx];
     }
 };
-
 
 template<class graph_pack, class PairedRead, class ConfigType>
 bool RefineInsertSize(const graph_pack& gp,
@@ -760,20 +365,21 @@ double UnityFunction(int /*x*/) {
 
 //postprocessing, checking that clusters do not intersect
 template<class Graph>
-void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_index)
-{
-  typedef set<Point> Histogram;
+void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_index) {
   for (auto iter = clustered_index.begin(); iter != clustered_index.end(); ++iter) {
     EdgeId first_edge = iter.first();
     EdgeId second_edge = iter.second();
-    const Histogram& infos = *iter;
+    const de::Histogram& infos = *iter;
+    if (infos.size() == 0)
+        continue;
+
     auto prev_it = infos.begin();
     auto it = prev_it;
     ++it;
     for (auto end_it = infos.end(); it != end_it; ++it) {
       if (math::le(abs(it->d - prev_it->d), it->var + prev_it->var)) {
         WARN("Clusters intersect, edges -- " << graph.int_id(first_edge)
-            << " " << graph.int_id(second_edge));
+             << " " << graph.int_id(second_edge));
         INFO("Trying to handle this case");
         // seeking the symmetric pair info to [i - 1]
         bool success = false;

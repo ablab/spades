@@ -174,10 +174,13 @@ if 'prepare_cfg' not in dataset_info.__dict__ or dataset_info.prepare_cfg:
         print("Preparing configuration files finished abnormally with exit code " + str(ecode))
         sys.exit(2)
 
-
 #compile
 if 'spades_compile' not in dataset_info.__dict__ or dataset_info.spades_compile:
-    ecode = os.system('./spades_compile.sh')
+    comp_params = ' '
+    if 'compilation_params' in dataset_info.__dict__:
+        comp_params = " ".join(dataset_info.compilation_params)
+
+    ecode = os.system('./spades_compile.sh ' + comp_params)
     if ecode != 0:
         print("Compilation finished abnormally with exit code " + str(ecode))
         sys.exit(3)
@@ -253,7 +256,7 @@ if 'reads_quality_params' in dataset_info.__dict__:
             if 'min_genome_mapped' in dataset_info.__dict__:
                 limit_map["Genome mapped"] = (float(dataset_info.min_genome_mapped), True)
             if 'min_aligned' in dataset_info.__dict__:
-                limit_map["Aligned reads"] = (float(dataset_info.min_aligned), True)
+                limit_map["Uniquely aligned reads"] = (float(dataset_info.min_aligned), True)
             
         result = assess_reads(os.path.join(rq_output_dir, "report.horizontal.tsv"), limit_map)
         if result[0] != 0:

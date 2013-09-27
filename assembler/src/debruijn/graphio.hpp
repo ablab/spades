@@ -26,9 +26,11 @@
 
 #include "utils.hpp"
 #include "debruijn_graph.hpp"
+#include "long_read_storage.hpp"
 
 namespace debruijn_graph {
 using namespace omnigraph;
+using namespace omnigraph::de;
 //todo think of inner namespace
 
 template<class KmerMapper>
@@ -40,7 +42,7 @@ void SaveKmerMapper(const string& file_name,
   DEBUG("Saving kmer mapper, " << file_name <<" created");
   VERIFY(file.is_open());
 
-  u_int32_t k_ = mapper.get_k();
+  u_int32_t k_ = (u_int32_t) mapper.get_k();
   file.write((char *) &k_, sizeof(uint32_t));
   mapper.BinWrite(file);
 
@@ -75,7 +77,7 @@ void SaveEdgeIndex(const std::string& file_name,
   DEBUG("Saving kmer index, " << file_name <<" created");
   VERIFY(file.is_open());
 
-  uint32_t k_ = index.K();
+  uint32_t k_ = index.k();
   file.write((char *) &k_, sizeof(uint32_t));
   index.BinWrite(file);
 
@@ -94,8 +96,8 @@ bool LoadEdgeIndex(const std::string& file_name,
 
   uint32_t k_;
   file.read((char *) &k_, sizeof(uint32_t));
-  INFO(k_ <<" " <<  index.K());
-  VERIFY_MSG(k_ == index.K(), "Cannot read edge index, different Ks:");
+  INFO(k_ <<" " <<  index.k());
+  VERIFY_MSG(k_ == index.k(), "Cannot read edge index, different Ks:");
 
   index.BinRead(file, file_name + ".kmidx");
 
@@ -135,7 +137,7 @@ public:
   void saveEdgeSequences(const string& file_name);
   void saveCoverage(const string& file_name);
   void savePaired(const string& file_name,
-      PairedInfoIndexT<Graph> const& paired_index);
+                  PairedInfoIndexT<Graph> const& paired_index);
   void savePositions(const string& file_name,
       EdgesPositionHandler<Graph> const& ref_pos);
 
@@ -205,7 +207,7 @@ void DataPrinter<Graph>::saveGraph(const string& file_name) {
   "Couldn't open file " << (file_name + ".grp") << " on write");
   size_t vertex_count = component_.v_size();
   size_t edge_count = component_.e_size();
-  fprintf(file, "%ld %ld \n", vertex_count, edge_count);
+  fprintf(file, "%zu %zu \n", vertex_count, edge_count);
   for (auto iter = component_.v_begin(); iter != component_.v_end(); ++iter) {
     save(file, *iter);
   }
@@ -236,10 +238,10 @@ void DataPrinter<Graph>::saveEdgeSequences(const string& file_name) {
   //FILE* path_file = fopen("/home/lab42/algorithmic-biology/assembler/src/tools/coverage_based_rr")
   DEBUG("Saving sequences " << file_name <<" created");
   VERIFY(file != NULL);
-  //fprintf(file, "%ld\n", component_.e_size());
+  //fprintf(file, "%zu\n", component_.e_size());
   for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
     fprintf(file, ">%zu\n", int_ids_.ReturnIntId(*iter));
-    int len = component_.g().EdgeNucls(*iter).size();
+    int len = (int) component_.g().EdgeNucls(*iter).size();
     for (int i = 0; i < len; i++)
       fprintf(file, "%c", nucl(component_.g().EdgeNucls(*iter)[i]));
     fprintf(file, "\n");
@@ -253,7 +255,7 @@ void DataPrinter<Graph>::saveCoverage(const string& file_name) {
   FILE* file = fopen((file_name + ".cvr").c_str(), "w");
   DEBUG("Saving coverage, " << file_name <<" created");
   VERIFY(file != NULL);
-  fprintf(file, "%ld\n", component_.e_size());
+  fprintf(file, "%zu\n", component_.e_size());
   for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
     fprintf(file, "%zu ", int_ids_.ReturnIntId(*iter));
     fprintf(file, "%lf .\n", component_.g().coverage(*iter));
@@ -286,7 +288,6 @@ template<class Graph>
 void DataPrinter<Graph>::savePaired(const string& file_name,
     const PairedInfoIndexT<Graph>& paired_index)
 {
-  typedef set<Point> Histogram;
   FILE* file = fopen((file_name + ".prd").c_str(), "w");
   DEBUG("Saving paired info, " << file_name <<" created");
   VERIFY(file != NULL);
@@ -294,21 +295,21 @@ void DataPrinter<Graph>::savePaired(const string& file_name,
   size_t comp_size = 0;
   for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
     EdgeId e1 = *I;
-    const InnerMap<Graph>& inner_map = paired_index.GetEdgeInfo(e1, 0);
+    auto inner_map = paired_index.GetEdgeInfo(e1, 0);
     for (auto II = inner_map.begin(), IE = inner_map.end(); II != IE; ++II) {
       EdgeId e2 = II->first;
-      const Histogram& hist = II->second;
+      const de::Histogram& hist = II->second;
       if (component_.contains(e2)) { // if the second edge also lies in the same component
         comp_size += hist.size();
       }
     }
   }
 
-  fprintf(file, "%ld\n", comp_size);
+  fprintf(file, "%zu\n", comp_size);
 
   for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
     EdgeId e1 = *I;
-    const InnerMap<Graph>& inner_map = paired_index.GetEdgeInfo(e1, 0);
+    auto inner_map = paired_index.GetEdgeInfo(e1, 0);
     for (auto II = inner_map.begin(), IE = inner_map.end(); II != IE; ++II) {
       EdgeId e2 = II->first;
       const Histogram& hist = II->second;
@@ -529,28 +530,26 @@ public:
     INFO("Reading conjugate de bruijn  graph from " << file_name << " started");
     size_t vertex_count;
     size_t edge_count;
-    flag = fscanf(file, "%ld %ld \n", &vertex_count, &edge_count);
+    flag = fscanf(file, "%zu %zu \n", &vertex_count, &edge_count);
     VERIFY(flag == 2);
     for (size_t i = 0; i < vertex_count; i++) {
       size_t vertex_real_id, conjugate_id;
-      flag = fscanf(file, "Vertex %ld ~ %ld .\n", &vertex_real_id,
-          &conjugate_id);
+      flag = fscanf(file, "Vertex %zu ~ %zu .\n", &vertex_real_id, &conjugate_id);
       TRACE("Vertex "<<vertex_real_id<<" ~ "<<conjugate_id<<" .");
       VERIFY(flag == 2);
 
-      if (vertex_set.find(vertex_real_id) == vertex_set.end()) {
+      if (vertex_set.find((int) vertex_real_id) == vertex_set.end()) {
         VertexId vid = this->g().AddVertex();
         VertexId conj_vid = this->g().conjugate(vid);
 
         this->id_handler().AddVertexIntId(vid, vertex_real_id);
         this->id_handler().AddVertexIntId(conj_vid, conjugate_id);
-        vertex_set.insert(conjugate_id);
-        TRACE(
-            vid<<" ( "<< this->id_handler().ReturnVertexId(vertex_real_id) <<" )   "<< conj_vid << "( "<<this->id_handler().ReturnVertexId(conjugate_id)<<" )  added");
+        vertex_set.insert((int) conjugate_id);
+        TRACE(vid<<" ( "<< this->id_handler().ReturnVertexId(vertex_real_id) <<" )   "<< conj_vid << "( "<<this->id_handler().ReturnVertexId(conjugate_id)<<" )  added");
       }
     }
 
-    char first_char = getc(sequence_file);
+    char first_char = (char) getc(sequence_file);
     VERIFY(!ferror(sequence_file));
     ungetc(first_char, sequence_file);
     bool fasta = (first_char == '>'); // if it's not fasta, then it's old .sqn
@@ -558,7 +557,7 @@ public:
 
     if (!fasta) {
       size_t tmp_edge_count;
-      flag = fscanf(sequence_file, "%ld", &tmp_edge_count);
+      flag = fscanf(sequence_file, "%zu", &tmp_edge_count);
       VERIFY(flag == 1);
       VERIFY(edge_count == tmp_edge_count);
     }
@@ -567,31 +566,29 @@ public:
     char longstring[longstring_size];
     for (size_t i = 0; i < edge_count; i++) {
       size_t e_real_id, start_id, fin_id, length, conjugate_edge_id;
-      flag = fscanf(file, "Edge %ld : %ld -> %ld, l = %ld ~ %ld .\n",
-          &e_real_id, &start_id, &fin_id, &length,
-          &conjugate_edge_id);
+      flag = fscanf(file, "Edge %zu : %zu -> %zu, l = %zu ~ %zu .\n",
+                    &e_real_id, &start_id, &fin_id, &length, &conjugate_edge_id);
       VERIFY(flag == 5);
       VERIFY(length < longstring_size);
       if (fasta) {
-        flag = fscanf(sequence_file, ">%ld\n%s\n", &e_real_id, longstring);
+        flag = fscanf(sequence_file, ">%zu\n%s\n", &e_real_id, longstring);
       }
       else {
-        flag = fscanf(sequence_file, "%ld %s .", &e_real_id, longstring);
+        flag = fscanf(sequence_file, "%zu %s .", &e_real_id, longstring);
       }
       VERIFY(flag == 2);
-      TRACE(
-          "Edge "<<e_real_id<<" : "<<start_id<<" -> " << fin_id << " l = " << length << " ~ "<< conjugate_edge_id);
-      if (edge_set.find(e_real_id) == edge_set.end()) {
+      TRACE("Edge " << e_real_id << " : " << start_id << " -> " 
+            << fin_id << " l = " << length << " ~ " << conjugate_edge_id);
+      if (edge_set.find((int) e_real_id) == edge_set.end()) {
         Sequence tmp(longstring);
-        TRACE(
-            start_id<<" "<< fin_id <<" "<< this->id_handler().ReturnVertexId(start_id)<<" "<< this->id_handler().ReturnVertexId(fin_id));
+        TRACE(start_id << " " << fin_id << " " << this->id_handler().ReturnVertexId(start_id) 
+              << " " << this->id_handler().ReturnVertexId(fin_id));
         EdgeId eid = this->g().AddEdge(
             this->id_handler().ReturnVertexId(start_id),
             this->id_handler().ReturnVertexId(fin_id), tmp);
         this->id_handler().AddEdgeIntId(eid, e_real_id);
-        this->id_handler().AddEdgeIntId(this->g().conjugate(eid),
-            conjugate_edge_id);
-        edge_set.insert(conjugate_edge_id);
+        this->id_handler().AddEdgeIntId(this->g().conjugate(eid), conjugate_edge_id);
+        edge_set.insert((int) conjugate_edge_id);
       }
     }
     fclose(file);
@@ -695,7 +692,7 @@ void DataScanner<Graph>::loadCoverage(const string& file_name) {
     TRACE(edge_real_id<< " "<<edge_coverage <<" . ");
     EdgeId eid = id_handler_.ReturnEdgeId(edge_real_id);
     TRACE("EdgeId "<<eid);
-    g_.coverage_index().SetCoverage(eid, math::round(edge_coverage * g_.length(eid)));
+    g_.coverage_index().SetCoverage(eid, (int) math::round(edge_coverage * (double) g_.length(eid)));
   }
   fclose(file);
 }
@@ -786,6 +783,15 @@ struct ScannerTraits<NonconjugateDeBruijnGraph> {
   typedef NonconjugateDataScanner<NonconjugateDeBruijnGraph> Scanner;
 };
 
+std::string MakeScaffoldIndexName(const std::string& file_name) {
+    return file_name + "_sc";
+}
+
+std::string MakeSingleReadsFileName(const std::string& file_name,
+                                    size_t index) {
+    return file_name + "_paths_" + ToString(index) + ".mrp";
+}
+
 //helper methods
 // todo think how to organize them in the most natural way
 
@@ -830,6 +836,12 @@ void PrintClusteredIndex(const string& file_name, DataPrinter<Graph>& printer,
 }
 
 template<class Graph>
+void PrintScaffoldIndex(const string& file_name, DataPrinter<Graph>& printer,
+    const PairedInfoIndexT<Graph>& scaffold_index) {
+  PrintPairedIndex(MakeScaffoldIndexName(file_name), printer, scaffold_index);
+}
+
+template<class Graph>
 void PrintPairedIndices(const string& file_name, DataPrinter<Graph>& printer,
     const PairedInfoIndicesT<Graph>& paired_indices) {
     for (size_t i = 0; i < paired_indices.size(); ++i) {
@@ -842,6 +854,14 @@ void PrintClusteredIndices(const string& file_name, DataPrinter<Graph>& printer,
     const PairedInfoIndicesT<Graph>& paired_indices) {
     for (size_t i = 0; i < paired_indices.size(); ++i) {
         PrintClusteredIndex(file_name  + "_" + ToString(i), printer, paired_indices[i]);
+    }
+}
+
+template<class Graph>
+void PrintScaffoldIndices(const string& file_name, DataPrinter<Graph>& printer,
+    const PairedInfoIndicesT<Graph>& scaffold_indices) {
+    for (size_t i = 0; i < scaffold_indices.size(); ++i) {
+        PrintScaffoldIndex(file_name  + "_" + ToString(i), printer, scaffold_indices[i]);
     }
 }
 
@@ -895,21 +915,27 @@ template<class graph_pack, class VertexIt>
 void PrintAll(const string& file_name, const graph_pack& gp, VertexIt begin,
     VertexIt end,
     const PairedInfoIndexT<typename graph_pack::graph_t>& paired_index,
-    const PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index)
+    const PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index,
+    const PairedInfoIndexT<typename graph_pack::graph_t>& scaffold_index,
+    const LongReadContainer<typename graph_pack::graph_t>& single_long_reads)
 {
   typename PrinterTraits<typename graph_pack::graph_t>::Printer
                                         printer(gp.g, begin, end, gp.int_ids);
   PrintGraphPack(file_name, printer, gp);
   PrintPairedIndex(file_name, printer, paired_index);
   PrintClusteredIndex(file_name, printer, clustered_index);
+  PrintScaffoldIndex(file_name, printer, scaffold_index);
+  PrintSingleLongReads(file_name, gp.edge_pos, single_long_reads);
 }
 
 template<class graph_pack>
 void PrintAll(const string& file_name, const graph_pack& gp,
     const PairedInfoIndexT<typename graph_pack::graph_t>& paired_index,
-    const PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index)
+    const PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index,
+    const PairedInfoIndexT<typename graph_pack::graph_t>& scaffold_index,
+    const LongReadContainer<typename graph_pack::graph_t>& single_long_reads)
 {
-  PrintAll(file_name, gp, gp.g.begin(), gp.g.end(), paired_index, clustered_index);
+  PrintAll(file_name, gp, gp.g.begin(), gp.g.end(), paired_index, clustered_index, scaffold_index, single_long_reads);
 }
 
 template<class graph_pack, class VertexIt>
@@ -953,10 +979,19 @@ void PrintWithClusteredIndex(const string& file_name, const graph_pack& gp,
   PrintWithPairedIndex(file_name, gp, clustered_index, true);
 }
 
+template<class Graph>
+void PrintSingleLongReads(const string& file_name, const EdgesPositionHandler<Graph> &edge_pos, const LongReadContainer<Graph>& single_long_reads) {
+    for (size_t i = 0; i < single_long_reads.size(); ++i){
+        single_long_reads[i].DumpToFile(MakeSingleReadsFileName(file_name, i), edge_pos);
+    }
+}
+
 template<class graph_pack>
 void PrintAll(const string& file_name, const graph_pack& gp,
         const PairedInfoIndicesT<typename graph_pack::graph_t>& paired_indices,
-        const PairedInfoIndicesT<typename graph_pack::graph_t>& clustered_indices)
+        const PairedInfoIndicesT<typename graph_pack::graph_t>& clustered_indices,
+        const PairedInfoIndicesT<typename graph_pack::graph_t>& scaffold_indices,
+        const LongReadContainer<Graph>& single_long_reads)
 {
     typename PrinterTraits<typename graph_pack::graph_t>::Printer
                                           printer(gp.g, gp.g.begin(), gp.g.end(), gp.int_ids);
@@ -964,6 +999,8 @@ void PrintAll(const string& file_name, const graph_pack& gp,
     PrintGraphPack(file_name, printer, gp);
     PrintPairedIndices(file_name, printer, paired_indices);
     PrintClusteredIndices(file_name, printer, clustered_indices);
+    PrintScaffoldIndices(file_name, printer, scaffold_indices);
+    PrintSingleLongReads(file_name, gp.edge_pos, single_long_reads);
 }
 
 template<class graph_pack>
@@ -982,7 +1019,6 @@ void PrintWithClusteredIndices(const string& file_name, const graph_pack& gp,
     const PairedInfoIndicesT<typename graph_pack::graph_t>& paired_indices) {
   PrintWithPairedIndices(file_name, gp, paired_indices, true);
 }
-
 
 template<class Graph>
 void ScanBasicGraph(const string& file_name, DataScanner<Graph>& scanner) {
@@ -1020,6 +1056,12 @@ void ScanClusteredIndex(const string& file_name, DataScanner<Graph>& scanner,
 }
 
 template<class Graph>
+void ScanScaffoldIndex(const string& file_name, DataScanner<Graph>& scanner,
+    PairedInfoIndexT<Graph>& scaffold_index) {
+  scanner.loadPaired(MakeScaffoldIndexName(file_name), scaffold_index);
+}
+
+template<class Graph>
 void ScanPairedIndices(const string& file_name, DataScanner<Graph>& scanner,
         PairedInfoIndicesT<Graph>& paired_indices) {
     for (size_t i = 0; i < paired_indices.size(); ++i) {
@@ -1033,6 +1075,15 @@ void ScanClusteredIndices(const string& file_name, DataScanner<Graph>& scanner,
 
     for (size_t i = 0; i < paired_indices.size(); ++i) {
         ScanClusteredIndex(file_name  + "_" + ToString(i), scanner, paired_indices[i]);
+    }
+}
+
+template<class Graph>
+void ScanScaffoldIndices(const string& file_name, DataScanner<Graph>& scanner,
+        PairedInfoIndicesT<Graph>& scaffold_indices) {
+
+    for (size_t i = 0; i < scaffold_indices.size(); ++i) {
+        ScanScaffoldIndex(file_name  + "_" + ToString(i), scanner, scaffold_indices[i]);
     }
 }
 
@@ -1120,26 +1171,26 @@ void ScanGraphPack(const string& file_name, graph_pack& gp) {
   ScanGraphPack(file_name, scanner, gp);
 }
 
-template<class graph_pack>
-void ScanAll(const string& file_name, graph_pack& gp,
-    PairedInfoIndexT<typename graph_pack::graph_t>& paired_index,
-    PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index) {
-  typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(gp.g,
-      gp.int_ids);
-  ScanGraphPack(file_name, scanner, gp);
-  ScanPairedIndex(file_name, scanner, paired_index);
-  ScanClusteredIndex(file_name, scanner, clustered_index);
+template<class Graph>
+void ScanSingleLongReads(const string& file_name, LongReadContainer<Graph>& single_long_reads) {
+    for (size_t i = 0; i < single_long_reads.size(); ++i){
+        single_long_reads[i].LoadFromFile(MakeSingleReadsFileName(file_name, i));
+    }
 }
 
 template<class graph_pack>
-void ScanAll(const string& file_name, graph_pack& gp,
+void ScanAll(
+        const string& file_name, graph_pack& gp,
         PairedInfoIndicesT<typename graph_pack::graph_t>& paired_indices,
-        PairedInfoIndicesT<typename graph_pack::graph_t>& clustered_indices) {
-  typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(gp.g,
-      gp.int_ids);
-  ScanGraphPack(file_name, scanner, gp);
-  ScanPairedIndices(file_name, scanner, paired_indices);
-  ScanClusteredIndices(file_name, scanner, clustered_indices);
+        PairedInfoIndicesT<typename graph_pack::graph_t>& clustered_indices,
+        PairedInfoIndicesT<typename graph_pack::graph_t>& scaffold_indices,
+        LongReadContainer<typename graph_pack::graph_t>& single_long_reads) {
+    typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(
+            gp.g, gp.int_ids);
+    ScanGraphPack(file_name, scanner, gp);
+    ScanPairedIndices(file_name, scanner, paired_indices);
+    ScanClusteredIndices(file_name, scanner, clustered_indices);
+    ScanScaffoldIndices(file_name, scanner, scaffold_indices);
+    ScanSingleLongReads(file_name, single_long_reads);
 }
-
 }

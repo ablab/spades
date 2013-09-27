@@ -15,6 +15,9 @@
 
 namespace omnigraph {
 
+namespace de {
+
+//todo move to some more common place
 template<class Graph>
 class GraphDistanceFinder {
   typedef typename Graph::EdgeId EdgeId;
@@ -151,7 +154,6 @@ class AbstractDistanceEstimator {
  protected:
   typedef typename Graph::EdgeId EdgeId;
   typedef pair<EdgeId, EdgeId> EdgePair;
-  typedef set<Point> Histogram;
   typedef vector<pair<int, double> > EstimHist;
   typedef vector<size_t> GraphLengths;
 
@@ -207,7 +209,6 @@ template<class Graph>
 class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
   typedef AbstractDistanceEstimator<Graph> base;
   typedef typename Graph::EdgeId EdgeId;
-  typedef set<Point> Histogram;
   typedef vector<size_t> GraphLengths;
   typedef vector<pair<int, double> > EstimHist;
   typedef pair<EdgeId, EdgeId> EdgePair;
@@ -218,15 +219,11 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
       const GraphDistanceFinder<Graph>& distance_finder,
       size_t linkage_distance, size_t max_distance) :
         base(graph, index, distance_finder, linkage_distance), max_distance_(max_distance)
-  {
-  }
-
-  virtual ~DistanceEstimator()
-  {
-  }
+    {}
+  virtual ~DistanceEstimator() {}
 
   void Init() const {
-    INFO("Starting " << this->Name() << " distance estimator");
+    INFO("Using " << this->Name() << " distance estimator");
   }
 
   virtual void Estimate(PairedInfoIndexT<Graph>& result) const {
@@ -240,7 +237,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
     this->Init();
     const PairedInfoIndexT<Graph>& index = this->index();
 
-    INFO("Collecting edge infos");
+    DEBUG("Collecting edge infos");
     vector<EdgeId> edges;
     for (auto I = index.Begin(), E = index.End(); I != E; ++I) {
       edges.push_back(I->first);
@@ -255,7 +252,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
     time_path_processor = 0.;
     time_estimating = 0.;
     time_clustering = 0.;
-    INFO("Processing");
+    DEBUG("Processing");
     #pragma omp parallel num_threads(nthreads)
     {
       perf_counter pc;
@@ -263,7 +260,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
       for (size_t i = 0; i < edges.size(); ++i)
       {
         EdgeId edge = edges[i];
-        const InnerMap<Graph>& inner_map = index.GetEdgeInfo(edge, 0);
+        const typename PairedInfoIndexT<Graph>::InnerMap& inner_map = index.GetEdgeInfo(edge, 0);
         ProcessEdge(edge, inner_map, *buffer[omp_get_thread_num()], pc);
 
         //if (i % 10000 == 0) {
@@ -276,7 +273,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
       TRACE("Thread number " << omp_get_thread_num() << " is finished");
     }
 
-    INFO("Merging maps");
+    DEBUG("Merging maps");
     for (size_t i = 1; i < nthreads; ++i) {
       buffer[0]->AddAll(*(buffer[i]));
       delete buffer[i];
@@ -370,14 +367,13 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
 
  private:
   virtual void ProcessEdge(EdgeId e1,
-                           const InnerMap<Graph>& inner_map,
+                           const typename PairedInfoIndexT<Graph>::InnerMap& inner_map,
                            PairedInfoIndexT<Graph>& result,
-                           perf_counter& /*pc*/) const
-  {
+                           perf_counter& /*pc*/) const {
     set<EdgeId> second_edges;
     for (auto I = inner_map.begin(), E = inner_map.end(); I != E; ++I)
       second_edges.insert(I->first);
-    const vector<GraphLengths>& lens_array = this->GetGraphDistancesLengths(e1, second_edges);
+    const vector<GraphLengths> lens_array = this->GetGraphDistancesLengths(e1, second_edges);
 
     size_t i = 0;
     VERIFY(second_edges.size() == lens_array.size());
@@ -411,8 +407,6 @@ template<class Graph> double DistanceEstimator<Graph>::time_clustering     = 0.;
 
 template<class Graph>
 class JumpingEstimator {
-  typedef set<Point> Histogram;
-
  public:
   JumpingEstimator(const PairedInfoIndexT<Graph>& index) : index_(index) {
   }
@@ -440,6 +434,8 @@ class JumpingEstimator {
     return my_name;
   }
 };
+
+}
 
 }
 

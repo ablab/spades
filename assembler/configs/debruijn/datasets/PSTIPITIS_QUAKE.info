@@ -1,12 +1,6 @@
-paired_reads             "../../../data/input/P.stipitis/HCT10499_s_7_2.cor.fastq.gz ../../../data/input/P.stipitis/HCT10499_s_7_1.cor.fastq.gz "
-single_reads             "../../../data/input/P.stipitis/HCT10499_s_7_1.cor_single.fastq.gz ../../../data/input/P.stipitis/HCT10499_s_7_2.cor_single.fastq.gz "
-jumping_first            ../../../data/input/P.stipitis/HCT10508_s_8_1.cor.fastq.gz
-jumping_second           ../../../data/input/P.stipitis/HCT10508_s_8_2.cor.fastq.gz
-jumping_single_first     ../../../data/input/P.stipitis/HCT10508_s_8_1.cor_single.fastq.gz
-jumping_single_second    ../../../data/input/P.stipitis/HCT10508_s_8_2.cor_single.fastq.gz
-RL                       75
-IS                       280
-single_cell              false
-reference_genome         ../../../data/input/P.stipitis/Pichia_stipitis_Sanger_reference.fa.gz
-
 reads	PSTIPITIS_QUAKE.yaml
+single_cell	false
+reference_genome	../../../data/input/P.stipitis/Pichia_stipitis_Sanger_reference.fa.gz
+
+; RL	75
+; IS	280

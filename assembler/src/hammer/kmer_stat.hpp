@@ -29,9 +29,6 @@ const uint32_t M = 55;
 typedef Seq<K> KMer;
 };
 
-typedef uint64_t hint_t;
-
-
 class Read;
 class PositionRead;
 class PositionKMer;
@@ -49,7 +46,6 @@ static inline unsigned hamdistKMer(const hammer::KMer &x, const hammer::KMer &y,
 }
 
 typedef std::map<PositionKMer, KMerStat> KMerStatMap;
-typedef std::pair<hammer::KMer, std::pair<uint32_t, double> > StringCount;
 
 struct QualBitSet {
   unsigned char q_[hammer::K];
@@ -111,7 +107,7 @@ struct KMerStat {
     MarkedForGoodIter  = 5
   } KMerStatus;
 
-  KMerStat(uint32_t cnt, hammer::KMer k, float kquality, const unsigned char *quality) : kmer_(k), totalQual(kquality), count(cnt), qual(quality), lock_(0) {
+  KMerStat(uint32_t cnt, float kquality, const unsigned char *quality) : totalQual(kquality), count(cnt), qual(quality), lock_(0) {
     __sync_lock_release(&lock_);
   }
   KMerStat() : totalQual(1.0), count(0), qual(), lock_(0) {
@@ -120,14 +116,13 @@ struct KMerStat {
 
   union {
     struct {
-      hint_t changeto : 48;
+      uint64_t changeto : 48;
       unsigned status : 3;
       unsigned res    : 13;
     };
     uint64_t raw_data;
   };
 
-  hammer::KMer kmer_;
   float totalQual;
   uint32_t count;
   QualBitSet qual;
@@ -148,16 +143,15 @@ struct KMerStat {
   void markGoodForIterative() { status = MarkedForGoodIter; }
   bool isMarkedGoodForIterative() { return (status == MarkedForGoodIter); }
   bool change() const { return status == Change; }
-  void set_change(hint_t kmer) {
-    changeto = kmer;
+  void set_change(uint64_t kmer) {
+    changeto = kmer & (((uint64_t) 1 << 48) - 1);
     status = Change;
   }
-  const hammer::KMer& kmer() const { return kmer_; }
 };
 
 inline
 std::ostream& operator<<(std::ostream &os, const KMerStat &kms) {
-  os << kms.kmer().str() << " (" << std::setw(3) << kms.count << ", " << std::setprecision(6) << std::setw(8) << (1-kms.totalQual) << ')';
+  os << /* kms.kmer().str() << */ " (" << std::setw(3) << kms.count << ", " << std::setprecision(6) << std::setw(8) << (1-kms.totalQual) << ')';
 
   return os;
 }

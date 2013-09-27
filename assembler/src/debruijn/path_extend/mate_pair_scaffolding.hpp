@@ -351,7 +351,7 @@ public:
             for (int i = (int) path->Size() - 1;
                     i >= 0 && end_length < max_dist_; i--) {
                 EdgeId edge1 = path->At(i);
-                std::vector<omnigraph::PairInfo<EdgeId> > edge_pair_infos = lib_
+                std::vector<omnigraph::de::PairInfo<EdgeId> > edge_pair_infos = lib_
                         .index_.GetEdgeInfo(edge1);
                 for (size_t pi_i = 0; pi_i < edge_pair_infos.size(); ++pi_i) {
                     AnalyzeTwoEdges(path, edge1, i,
@@ -366,7 +366,7 @@ public:
 
 private:
     void AnalyzeTwoEdges(BidirectionalPath* path, EdgeId e1, size_t index1,
-                         EdgeId e2, const omnigraph::PairInfo<EdgeId>& pi) {
+                         EdgeId e2, const omnigraph::de::PairInfo<EdgeId>& pi) {
         std::set<BidirectionalPath*> paths2 = coverage_map_.GetCoveringPaths(
                 e2);
         for (auto iter = paths2.begin(); iter != paths2.end(); ++iter) {
@@ -380,7 +380,7 @@ private:
 
     void AnalyzeTwoPaths(BidirectionalPath* path1, EdgeId e1, size_t index1,
                          BidirectionalPath* path2, EdgeId e2, size_t index2,
-                         const omnigraph::PairInfo<EdgeId>& pi) {
+                         const omnigraph::de::PairInfo<EdgeId>& pi) {
         if (path1 == path2 || path1->GetConjPath() == path2) {
             return;
         }

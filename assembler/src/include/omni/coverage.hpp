@@ -97,7 +97,7 @@ class CoverageIndex : public GraphActionHandler<Graph> {
      * Returns average coverage of the edge
      */
     double coverage(EdgeId edge) const {
-        return (double) edge->GetRawCoverage() / this->g().length(edge);
+        return (double) edge->GetRawCoverage() / (double) this->g().length(edge);
     }
 
     /**
@@ -272,17 +272,6 @@ class CoverageIndex : public GraphActionHandler<Graph> {
         double avg_cov = coverage(old_edge);
         SetCoverage(new_edge1, max(1, (int) math::round(avg_cov * (double) this->g().length(new_edge1))));
         SetCoverage(new_edge2, max(1, (int) math::round(avg_cov * (double) this->g().length(new_edge2))));
-    }
-
-    void HandleVertexSplit(VertexId, VertexId,
-                           const vector<pair<EdgeId, EdgeId>>& old_2_new_edges,
-                           const vector<double>& split_coefficients) {
-        cout << old_2_new_edges.size() << " " << split_coefficients.size();
-        for (size_t j = 0; j < old_2_new_edges.size(); ++j) {
-            EdgeId old_e = old_2_new_edges[j].first;
-            EdgeId new_e = old_2_new_edges[j].second;
-            IncCoverage(new_e, (int) floor((double) KPlusOneMerCoverage(old_e) * split_coefficients[j]));
-        }
     }
 
     /*

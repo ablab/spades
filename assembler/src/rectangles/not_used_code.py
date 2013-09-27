@@ -152,78 +152,78 @@ def build_missing_rectangles(self, K, rectangles):
             count_miss_rect) + " count miss path " + str(count_miss_path) + " true miss path " + str(true_miss_path))
 
 
-    def choose_best_path(self, paired_paths, rectangeles_set, diag1, diag2, d, added_paths):
-        best_support = 0
-        best_len = 10000
-        best_rectangles = []
-        best_diags = []
-        best_path = paired_paths[0]
-        best_not_supported = 0
+def choose_best_path(self, paired_paths, rectangeles_set, diag1, diag2, d, added_paths):
+    best_support = 0
+    best_len = 10000
+    best_rectangles = []
+    best_diags = []
+    best_path = paired_paths[0]
+    best_not_supported = 0
 
-        for paired_path in paired_paths:
-            (path1, path2, path_len) = paired_path
-            if paired_path in added_paths:
-                continue
-            first_shift = diag1.offseta
-            second_shift = diag1.offsetb
-            path1.append(diag2.rectangle.e1)
-            path2.append(diag2.rectangle.e2)
-            rectangles = []
-            diags = []
-            not_supported = []
-            path_support = 0
-            pos_first_path = 0
-            pos_second_path = 0
-            first_len = first_shift
-            make_less_N50 = False
-            while not make_less_N50 and first_len < path_len + diag2.offseta:
-                ed1 = path1[pos_first_path]
-                ed2 = path2[pos_second_path]
-                rectangle = Rectangle(ed1, ed2)
-                rectangle.add_diagonal(d, d + first_shift - second_shift)
-                rect_diag = rectangle.get_closest_diagonal(d + first_shift - second_shift)
-                if (not (rect_diag.key1 == diag1.key1 and rect_diag.key2 == diag1.key2) and not(
-                rect_diag.key1 == diag2.key1 and rect_diag.key2 == diag2.key2)):
-                    can_use = [diag1.key1, diag1.key2, diag2.key1, diag2.key2]
-                    if (rect_diag.key1 in self.vs and rect_diag.key1 not in can_use) or  (
-                    rect_diag.key2 in self.vs and rect_diag.key2 not in can_use):
-                        make_less_N50 = True
-                        continue
-                diags.append(rect_diag)
-                rectangles.append(rectangle)
-                rectangeles_set.use_prd_diag(rect_diag)
-                #if rect_diag.prd_support < 0.00001 and (ed2.len > 10 and ed1.len > 10):
-                #  make_less_N50 = True
-                #  continue
-                path_support += rect_diag.prd_support
-                if ed2.len - second_shift < ed1.len - first_shift:
-                    pos_second_path += 1
-                    first_shift += ed2.len - second_shift
-                    first_len += ed2.len - second_shift
-                    if rect_diag.prd_support < 0.000000001:
-                        not_supported.append(ed2.len - second_shift)
-                    second_shift = 0
-                elif ed1.len - first_shift < ed2.len - second_shift:
-                    pos_first_path += 1
-                    first_len += ed1.len - first_shift
-                    second_shift += ed1.len - first_shift
-                    if rect_diag.prd_support < 0.000000001:
-                        not_supported.append(ed1.len - first_shift)
-                    first_shift = 0
-                else:
-                    first_len += ed1.len - first_shift
-                    pos_second_path += 1
-                    pos_first_path += 1
-                    first_shift = 0
-                    second_shift = 0
-            if not make_less_N50 and path_len > 1 and  path_support / path_len < 1000 and  path_support / path_len > best_support:
-                best_support = path_support
-                best_len = path_len
-                best_rectangles = rectangles
-                best_diags = diags
-                best_path = (path1, path2, path_len)
-                best_not_supported = not_supported
-        return (best_support, best_len, best_rectangles, best_diags, best_path)
+    for paired_path in paired_paths:
+        (path1, path2, path_len) = paired_path
+        if paired_path in added_paths:
+            continue
+        first_shift = diag1.offseta
+        second_shift = diag1.offsetb
+        path1.append(diag2.rectangle.e1)
+        path2.append(diag2.rectangle.e2)
+        rectangles = []
+        diags = []
+        not_supported = []
+        path_support = 0
+        pos_first_path = 0
+        pos_second_path = 0
+        first_len = first_shift
+        make_less_N50 = False
+        while not make_less_N50 and first_len < path_len + diag2.offseta:
+            ed1 = path1[pos_first_path]
+            ed2 = path2[pos_second_path]
+            rectangle = Rectangle(ed1, ed2)
+            rectangle.add_diagonal(d, d + first_shift - second_shift)
+            rect_diag = rectangle.get_closest_diagonal(d + first_shift - second_shift)
+            if (not (rect_diag.key1 == diag1.key1 and rect_diag.key2 == diag1.key2) and not(
+            rect_diag.key1 == diag2.key1 and rect_diag.key2 == diag2.key2)):
+                can_use = [diag1.key1, diag1.key2, diag2.key1, diag2.key2]
+                if (rect_diag.key1 in self.vs and rect_diag.key1 not in can_use) or  (
+                rect_diag.key2 in self.vs and rect_diag.key2 not in can_use):
+                    make_less_N50 = True
+                    continue
+            diags.append(rect_diag)
+            rectangles.append(rectangle)
+            rectangeles_set.use_prd_diag(rect_diag)
+            #if rect_diag.prd_support < 0.00001 and (ed2.len > 10 and ed1.len > 10):
+            #  make_less_N50 = True
+            #  continue
+            path_support += rect_diag.prd_support
+            if ed2.len - second_shift < ed1.len - first_shift:
+                pos_second_path += 1
+                first_shift += ed2.len - second_shift
+                first_len += ed2.len - second_shift
+                if rect_diag.prd_support < 0.000000001:
+                    not_supported.append(ed2.len - second_shift)
+                second_shift = 0
+            elif ed1.len - first_shift < ed2.len - second_shift:
+                pos_first_path += 1
+                first_len += ed1.len - first_shift
+                second_shift += ed1.len - first_shift
+                if rect_diag.prd_support < 0.000000001:
+                    not_supported.append(ed1.len - first_shift)
+                first_shift = 0
+            else:
+                first_len += ed1.len - first_shift
+                pos_second_path += 1
+                pos_first_path += 1
+                first_shift = 0
+                second_shift = 0
+        if not make_less_N50 and path_len > 1 and  path_support / path_len < 1000 and  path_support / path_len > best_support:
+            best_support = path_support
+            best_len = path_len
+            best_rectangles = rectangles
+            best_diags = diags
+            best_path = (path1, path2, path_len)
+            best_not_supported = not_supported
+    return (best_support, best_len, best_rectangles, best_diags, best_path)
 
 
 def find_pair_paths(paths1, paths2, diag1, diag2):
@@ -238,72 +238,72 @@ def find_pair_paths(paths1, paths2, diag1, diag2):
   
   
 ### from graph.py
-    def make_graph(self, genome, k):
-        self.K = k
-        kmers = self.__get_kmers_pos(genome, k)
-        visit = set()
-        vid = 0
-        eid = 0
-        edges = set()
-        verts = dict()
-        for key in kmers:
-            if key in visit:
-                continue
-            body = [key[-1]]
-            end_vertex = key[1:]
-            while True:
-                next_kmer = extend_forward(end_vertex, kmers)
-                if next_kmer == None:
-                    break
-                body.append(next_kmer[-1])
-                end_vertex = next_kmer[1:]
-                visit.add(next_kmer)
-                visit.add(utils.rc(next_kmer))
+def make_graph(self, genome, k):
+    self.K = k
+    kmers = self.__get_kmers_pos(genome, k)
+    visit = set()
+    vid = 0
+    eid = 0
+    edges = set()
+    verts = dict()
+    for key in kmers:
+        if key in visit:
+            continue
+        body = [key[-1]]
+        end_vertex = key[1:]
+        while True:
+            next_kmer = extend_forward(end_vertex, kmers)
+            if next_kmer == None:
+                break
+            body.append(next_kmer[-1])
+            end_vertex = next_kmer[1:]
+            visit.add(next_kmer)
+            visit.add(utils.rc(next_kmer))
 
-            begin_vertex = key[:-1]
-            while True:
-                next_kmer = extend_backward(begin_vertex, kmers)
-                if next_kmer == None:
-                    break
-                body.insert(0, next_kmer[-1])
-                begin_vertex = next_kmer[0:-1]
-                visit.add(next_kmer)
-                visit.add(utils.rc(next_kmer))
+        begin_vertex = key[:-1]
+        while True:
+            next_kmer = extend_backward(begin_vertex, kmers)
+            if next_kmer == None:
+                break
+            body.insert(0, next_kmer[-1])
+            begin_vertex = next_kmer[0:-1]
+            visit.add(next_kmer)
+            visit.add(utils.rc(next_kmer))
 
-            body = begin_vertex + ''.join(body)
-            if begin_vertex not in verts:
-                begin_ref = self.add_vertex(vid, vid + 1)
-                r_end_ref = self.add_vertex(vid + 1, vid)
-                verts[begin_vertex] = begin_ref.vid
-                verts[utils.rc(begin_vertex)] = r_end_ref.vid
-                vid += 2
-            if end_vertex not in verts:
-                end_ref = self.add_vertex(vid, vid + 1)
-                r_begin_ref = self.add_vertex(vid + 1, vid)
-                verts[end_vertex] = end_ref.vid
-                verts[utils.rc(end_vertex)] = r_begin_ref.vid
-                vid += 2
-            bv = verts[begin_vertex]
-            ev = verts[end_vertex]
-            rbv = verts[utils.rc(end_vertex)]
-            rev = verts[utils.rc(begin_vertex)]
-            if (bv, ev) not in edges:
-                if (bv, ev) == (rbv, rev) and body == utils.rc(body):
-                    self.add_edge(eid, bv, ev, len(body) - k + 1, eid)
-                    edges.add((bv, ev))
-                    self.add_seq(eid, body)
-                    self.etalon_dist[eid] = kmers[body[:k]] + kmers[utils.rc(body)[:k]]
-                    eid += 1
-                else:
-                    self.add_edge(eid, bv, ev, len(body) - k + 1, eid + 1)
-                    self.add_edge(eid + 1, rbv, rev, len(body) - k + 1, eid)
-                    edges.add((bv, ev))
-                    edges.add((rbv, rev))
-                    self.add_seq(eid, body)
-                    self.add_seq(eid + 1, utils.rc(body))
-                    self.etalon_dist[eid] = kmers[body[:k]]
-                    self.etalon_dist[eid + 1] = kmers[utils.rc(body)[:k]]
-                    eid += 2
+        body = begin_vertex + ''.join(body)
+        if begin_vertex not in verts:
+            begin_ref = self.add_vertex(vid, vid + 1)
+            r_end_ref = self.add_vertex(vid + 1, vid)
+            verts[begin_vertex] = begin_ref.vid
+            verts[utils.rc(begin_vertex)] = r_end_ref.vid
+            vid += 2
+        if end_vertex not in verts:
+            end_ref = self.add_vertex(vid, vid + 1)
+            r_begin_ref = self.add_vertex(vid + 1, vid)
+            verts[end_vertex] = end_ref.vid
+            verts[utils.rc(end_vertex)] = r_begin_ref.vid
+            vid += 2
+        bv = verts[begin_vertex]
+        ev = verts[end_vertex]
+        rbv = verts[utils.rc(end_vertex)]
+        rev = verts[utils.rc(begin_vertex)]
+        if (bv, ev) not in edges:
+            if (bv, ev) == (rbv, rev) and body == utils.rc(body):
+                self.add_edge(eid, bv, ev, len(body) - k + 1, eid)
+                edges.add((bv, ev))
+                self.add_seq(eid, body)
+                self.etalon_dist[eid] = kmers[body[:k]] + kmers[utils.rc(body)[:k]]
+                eid += 1
+            else:
+                self.add_edge(eid, bv, ev, len(body) - k + 1, eid + 1)
+                self.add_edge(eid + 1, rbv, rev, len(body) - k + 1, eid)
+                edges.add((bv, ev))
+                edges.add((rbv, rev))
+                self.add_seq(eid, body)
+                self.add_seq(eid + 1, utils.rc(body))
+                self.etalon_dist[eid] = kmers[body[:k]]
+                self.etalon_dist[eid + 1] = kmers[utils.rc(body)[:k]]
+                eid += 2
 
 alphabet = "ACGT"
 
@@ -331,61 +331,62 @@ def extend_in_direction(vertex_body, kmer_map, direction_forward):
         return res[0]
     return None
 
-    def dfs(self, e, d):
-        limit1 = d - e.len
-        limit2 = d
-        if e.len > d:
-            yield e, 0
-        ls = [set() for _ in xrange(limit2)]
-        ls[0].add(e.v2)
-        all_dist = dict()
-        if self.__from_genome():
-            all_dist[(0, e.v2.vid)] = (e, self.etalon_dist[e.eid])
-        for pos in xrange(limit2):
-            for v in ls[pos]:
+def dfs(self, e, d):
+    limit1 = d - e.len
+    limit2 = d
+    if e.len > d:
+        yield e, 0
+    ls = [set() for _ in xrange(limit2)]
+    ls[0].add(e.v2)
+    all_dist = dict()
+    if self.__from_genome():
+        all_dist[(0, e.v2.vid)] = (e, self.etalon_dist[e.eid])
+    for pos in xrange(limit2):
+        for v in ls[pos]:
+            if self.__from_genome():
+                (prev_e, dists) = all_dist[(pos, v.vid)]
+            for e2 in v.out:
                 if self.__from_genome():
-                    (prev_e, dists) = all_dist[(pos, v.vid)]
-                for e2 in v.out:
+                    new_dists = []
+                    for dist in dists:
+                        if dist >= 0 and dist + prev_e.len + 1 in self.etalon_dist[e2.eid]:
+                            new_dists.append(dist + prev_e.len + 1)
+                        elif dist <= 0 and -(-dist + prev_e.len + 1) in self.etalon_dist[e2.eid]:
+                            new_dists.append(dist - prev_e.len - 1)
+                    if len(new_dists) == 0:
+                        continue
+                pos2 = pos + e2.len
+                if pos2 < limit2:
+                    ls[pos2].add(e2.v2)
                     if self.__from_genome():
-                        new_dists = []
-                        for dist in dists:
-                            if dist >= 0 and dist + prev_e.len + 1 in self.etalon_dist[e2.eid]:
-                                new_dists.append(dist + prev_e.len + 1)
-                            elif dist <= 0 and -(-dist + prev_e.len + 1) in self.etalon_dist[e2.eid]:
-                                new_dists.append(dist - prev_e.len - 1)
-                        if len(new_dists) == 0:
-                            continue
-                    pos2 = pos + e2.len
-                    if pos2 < limit2:
-                        ls[pos2].add(e2.v2)
-                        if self.__from_genome():
-                            if (pos2, e2.v2.vid) in all_dist:
-                                new_dists += all_dist[(pos2, e2.v2.vid)][1]
-                            all_dist[(pos2, e2.v2.vid)] = (e2, new_dists)
-                    if pos + e2.len > limit1:
-                        yield e2, pos + e.len
-    def __from_genome(self):
-        return len(self.etalon_dist.keys()) > 0
+                        if (pos2, e2.v2.vid) in all_dist:
+                            new_dists += all_dist[(pos2, e2.v2.vid)][1]
+                        all_dist[(pos2, e2.v2.vid)] = (e2, new_dists)
+                if pos + e2.len > limit1:
+                    yield e2, pos + e.len
+
+def __from_genome(self):
+    return len(self.etalon_dist.keys()) > 0
 
 #from rectangle_set.py
-    def filter_without_prd(self):
-        self.__build_from_graph()
-        self.__conjugate()
-    
-    def percentiles(self):
-        percentiles = [utils.quantile(self.ranking, percentile).support() for percentile in xrange(101)]
-        return percentiles
+def filter_without_prd(self):
+    self.__build_from_graph()
+    self.__conjugate()
 
-    def bgraph_from_genome(self):
-        bg = BGraph(self.graph, self.d, self.test_utils)
-        for key, rect in self.rectangles.items():
-            for key, diag in rect.diagonals.items():
-                bg.add_diagonal(diag)
-        return bg
+def percentiles(self):
+    percentiles = [utils.quantile(self.ranking, percentile).support() for percentile in xrange(101)]
+    return percentiles
 
-    def get_support(self, e1, e2):
-        if (e1, e2) in self.rectangles:
-            rectangle = self.rectangles[(e1, e2)]
-            return max([diag.support() for diag in rectangle.diagonals.itervalues()])
-        return 0
+def bgraph_from_genome(self):
+    bg = BGraph(self.graph, self.d, self.test_utils)
+    for key, rect in self.rectangles.items():
+        for key, diag in rect.diagonals.items():
+            bg.add_diagonal(diag)
+    return bg
+
+def get_support(self, e1, e2):
+    if (e1, e2) in self.rectangles:
+        rectangle = self.rectangles[(e1, e2)]
+        return max([diag.support() for diag in rectangle.diagonals.itervalues()])
+    return 0
 

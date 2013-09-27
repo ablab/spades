@@ -159,6 +159,9 @@ class Seq {
   explicit Seq(T * data_array) {
     memcpy(data_.data(), data_array, TotalBytes);
   }
+  explicit Seq(size_t, T * data_array) {
+    memcpy(data_.data(), data_array, TotalBytes);
+  }
 
 
   /**
@@ -444,23 +447,23 @@ class Seq {
     return operator[](0);
   }
 
-  static size_t GetHash(const DataType *data, size_t sz = DataSize) {
+  static size_t GetHash(const DataType *data, size_t sz = DataSize, uint32_t seed = 0) {
     uint64_t res[2];
-    MurmurHash3_x64_128(data, sz * sizeof(DataType), 0x9E3779B9, res);
+    MurmurHash3_x64_128(data,  sz * sizeof(DataType), 0x9E3779B9 ^ seed, res);
     return res[0] ^ res[1];
   }
 
-  size_t GetHash() const {
-    return GetHash(data_.data());
+  size_t GetHash(uint32_t seed = 0) const {
+    return GetHash(data_.data(), DataSize, seed);
   }
 
   struct hash {
-    size_t operator()(const Seq<size_, T>& seq) const {
-      return seq.GetHash();
+    size_t operator()(const Seq<size_, T>& seq, uint32_t seed = 0) const {
+      return seq.GetHash(seed);
     }
 
-    size_t operator()(const DataType *data, size_t sz = DataSize) {
-      return GetHash(data, sz);
+    size_t operator()(const DataType *data, size_t sz = DataSize, uint32_t seed = 0) {
+      return GetHash(data, sz, seed);
     }
   };
 
@@ -497,6 +500,18 @@ std::ostream& operator<<(std::ostream& os, Seq<size_, T> seq) {
   return os;
 }
 
-
+//namespace std {
+//
+//template<size_t size_, typename T = seq_element_type>
+//struct hash<Seq<size_, T> {
+//    typedef size_t result_type;
+//    typedef Seq<size_, T> argument_type;
+//
+//    result_type operator() (const argument_type& arg) {
+//        return Seq<size_, T>::hash()(arg);
+//    }
+//};
+//
+//}
 
 #endif /* SEQ_HPP_ */

@@ -1,0 +1,7 @@
+paired_reads             "../../../data/input/TM6/BH1/09.reads.0.right.corrected.fastq ../../../data/input/TM6/BH1/09.reads.0.left.corrected.fastq "
+single_reads             "../../../data/input/TM6/BH1/09.reads.0.left.unpaired.fastq ../../../data/input/TM6/BH1/09.reads.0.right.unpaired.fastq "
+RL                       100
+IS                       270
+single_cell              true
+
+reads	TM6_1_PB_amp40.yaml

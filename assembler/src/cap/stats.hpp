@@ -269,10 +269,12 @@ private:
 	ComponentClassifier<Graph> cc_;
 
 public:
-	ComponentTypeFilter(const Graph &g, component_type to_draw,
-			const ColorHandler<Graph> &coloring) :
-			base(g), to_draw_(to_draw), cc_(g, coloring) {
-	}
+    ComponentTypeFilter(const Graph &g, component_type to_draw,
+                        const ColorHandler<Graph> &coloring)
+            : base(g),
+              to_draw_(to_draw),
+              cc_(g, coloring) {
+    }
 
 	/*virtual*/
 	bool Check(const vector<VertexId>& component) const {
@@ -368,8 +370,8 @@ public:
 	void CountStats() {
 		EmptyGraphLabeler<Graph> labeler;
 		make_dir("assembly_compare");
-		LongEdgesExclusiveSplitter<Graph> splitter(this->graph(), 1000000000);
-		WriteComponents(this->graph(), splitter, *this,
+		shared_ptr<GraphSplitter<Graph>> splitter = LongEdgesExclusiveSplitter<Graph>(this->graph(), 1000000000);
+		WriteComponents(this->graph(), *splitter, *this,
 				"assembly_compare/breakpoint_graph.dot",
 				*ConstructColorer(coloring_), labeler);
 		ready_ = true;
@@ -425,10 +427,10 @@ public:
 					+ ComponentClassifier<Graph>::info_printer_pos_name(c_type)
 					+ ".dot";
 		}
-		LongEdgesExclusiveSplitter<Graph> splitter(graph_, 1000000000);
+		shared_ptr<GraphSplitter<Graph>> splitter = LongEdgesExclusiveSplitter<Graph>(graph_, 1000000000);
 		ComponentTypeFilter<Graph> stats(graph_, c_type, coloring_);
 
-		WriteComponents(this->graph_, splitter, stats, filename,
+		WriteComponents(this->graph_, *splitter, stats, filename,
 				*ConstructColorer(coloring_), labeler);
 	}
 
@@ -519,9 +521,11 @@ class TrivialBreakpointFinder: public AbstractFilter<
 		CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
 		VERIFY(g_.OutgoingEdgeCount(v) > 0);
 		EdgeId e = g_.OutgoingEdges(v).front();
-		WriteComponentsAroundEdge(g_, e,
+		GraphComponent<Graph> component = omnigraph::EdgeNeighborhood(g_, e);
+		omnigraph::visualization::WriteComponent(
+				component,
 				folder + prefix + ToString(g_.int_id(v)) + "_loc.dot",
-				*ConstructBorderColorer(g_, coloring_), labeler);
+				coloring_.ConstructColorer(component), labeler);
 	}
 
 	bool CheckEdges(const vector<EdgeId>& edges) const {
@@ -841,8 +845,8 @@ private:
 		string filename = str(
 				boost::format("%s%d_%d_%d_%d.dot") % folder % count_
 						% gp_.g.int_id(e) % start_ref_pos % end_ref_pos);
-		WriteComponentsAroundEdge(gp_.g, e, filename,
-				*ConstructBorderColorer(gp_.g, coloring_), labeler);
+		GraphComponent<Graph> component = omnigraph::EdgeNeighborhood(gp_.g, e);
+		omnigraph::visualization::WriteComponent(component, filename, coloring_.ConstructColorer(component), labeler);
 		count_++;
 	}
 
@@ -952,170 +956,206 @@ public:
 //	virtual map<EdgeId, string> Enumerate() const;
 //};
 
+//template<class Graph>
+//class ThreadedGenomeEnumerator/*: public GraphEdgeEnumerator<Graph>*/{
+////	typedef GraphEdgeEnumerator<Graph> base;
+//	typedef typename Graph::EdgeId EdgeId;
+//	const Graph& g_;
+//	const vector<EdgeId> genome_path_;
+//public:
+//	ThreadedGenomeEnumerator(const Graph& g, const vector<EdgeId>& genome_path) :
+//			g_(g), genome_path_(genome_path) {
+//	}
+//
+//	/*virtual */
+//	map<EdgeId, string> Enumerate() const {
+//		map<EdgeId, string> answer;
+//		//numerating genome path
+//		int curr = 0;
+//		for (auto it = genome_path_.begin(); it != genome_path_.end(); ++it) {
+//			if (answer.find(*it) == answer.end()) {
+//				curr++;
+//				answer[*it] = ToString(curr);
+//				answer[g_.conjugate(*it)] = ToString(-curr);
+//			}
+//		}
+//		curr = 1000000;
+//		for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+//			if (answer.find(*it) == answer.end()) {
+//				curr++;
+//				answer[*it] = ToString(curr);
+//				answer[g_.conjugate(*it)] = ToString(-curr);
+//			}
+//		}
+//		return answer;
+//	}
+//};
+
+//todo fixme use exact coordinates!
 template<class Graph>
-class ThreadedGenomeEnumerator/*: public GraphEdgeEnumerator<Graph>*/{
-//	typedef GraphEdgeEnumerator<Graph> base;
-	typedef typename Graph::EdgeId EdgeId;
-	const Graph& g_;
-	const vector<EdgeId> genome_path_;
-public:
-	ThreadedGenomeEnumerator(const Graph& g, const vector<EdgeId>& genome_path) :
-			g_(g), genome_path_(genome_path) {
-	}
-
-	/*virtual */
-	map<EdgeId, string> Enumerate() const {
-		map<EdgeId, string> answer;
-		//numerating genome path
-		int curr = 0;
-		for (auto it = genome_path_.begin(); it != genome_path_.end(); ++it) {
-			if (answer.find(*it) == answer.end()) {
-				curr++;
-				answer[*it] = ToString(curr);
-				answer[g_.conjugate(*it)] = ToString(-curr);
-			}
-		}
-		curr = 1000000;
-		for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-			if (answer.find(*it) == answer.end()) {
-				curr++;
-				answer[*it] = ToString(curr);
-				answer[g_.conjugate(*it)] = ToString(-curr);
-			}
-		}
-		return answer;
-	}
-};
-
-template<class gp_t>
 class BlockPrinter {
-    typedef typename gp_t::graph_t Graph;
 	typedef typename Graph::EdgeId EdgeId;
-	const gp_t& gp_;
+	typedef typename Graph::VertexId VertexId;
+	const Graph& g_;
+	const CoordinatesHandler<Graph>& coords_;
+	ofstream output_stream_;
 	int curr_id_;
-	ofstream output_stream;
-	map<EdgeId, string> block_id_;
+	map<EdgeId, size_t> block_id_;
 
-	pair<size_t, bool> CanonicalRepresentation(EdgeId e) {
-	    size_t id = gp_.g.int_id(e);
-	    size_t conj_id = gp_.g.int_id(gp_.g.conjugate(e));
-	    if (id <= conj_id)
-	        return make_pair(id, true);
-	    else
-	        return make_pair(conj_id, false);
-	}
+	pair<size_t, bool> CanonicalId(EdgeId e) {
+//	    size_t id = gp_.g.int_id(e);
+//	    size_t conj_id = gp_.g.int_id(gp_.g.conjugate(e));
+//	    if (id <= conj_id)
+//	        return make_pair(id, true);
+//	    else
+//	        return make_pair(conj_id, false);
 
-public:
-
-	BlockPrinter(const gp_t& gp, const string& filename) :
-			gp_(gp), output_stream(filename) , curr_id_(1) {
-	}
-
-	//genome is supposed to perfectly correspond to some path in the graph
-	void ProcessGenome(string genome_id, const Sequence& genome) {
-	    MappingPath<EdgeId> genome_path = MapperInstance(gp_)->MapSequnce(genome);
-	    for (size_t i = 0; i < genome_path.size(); ++i) {
-	        EdgeId e = genome_path[i].first;
-	        MappingRange range = genome_path[i].second;
-	        auto canon = CanonicalRepresentation(e);
-	        output_stream << std::string(format("%s\t%l\t%l\t%l\t%s") % genome_id % canon.first % range.initial_range.start_pos % range.initial_range.end_pos % (canon.second) ? "+" : "-");
-//	        if (block_id_.count(e) == 0) {
-//	            block_id_[e] = ToString(curr_id_);
-//	            block_id_[gp_.g.conjugate(e)] = ToString(-curr_id_);
-//	            curr_id_++;
-//	        }
+	    if (block_id_.count(e) > 0) {
+	        return make_pair(get(block_id_, e), true);
+	    } else if (block_id_.count(g_.conjugate(e)) > 0) {
+	        return make_pair(get(block_id_, g_.conjugate(e)), false);
+	    } else {
+	        block_id_[e] = curr_id_++;
+	        return make_pair(get(block_id_, e), true);
 	    }
 	}
 
-};
-
-
-template<class Graph, class Mapper>
-class ContigBlockStats {
-	typedef ThreadedGenomeEnumerator<Graph> Enumerator;
-	const Graph& g_;
-	const EdgesPositionHandler<Graph>& edge_pos_;
-	const Mapper mapper_;
-	const vector<EdgeId> genome_path_;
-	ContigStream& contigs_;
-	const map<EdgeId, string> labels_;
-
-	const string& get(const map<EdgeId, string>& from, EdgeId key) const {
-		auto it = from.find(key);
-		VERIFY(it != from.end());
-		return it->second;
-	}
-
-	void ReportGenomeBlocks() const {
-		set < EdgeId > visited;
-//		cerr << "Genome blocks started" << endl;
-		for (auto it = genome_path_.begin(); it != genome_path_.end(); ++it) {
-			if (visited.count(*it) > 0)
-				continue;
-			cerr << get(labels_, *it) << " $ "
-					<< g_.int_id(*it)
-					<< " $ "
-					<< g_.length(*it)
-					/*<< " positions: " << edge_pos_.GetEdgePositions(*it) */<< endl;
-			visited.insert(*it);
-			visited.insert(g_.conjugate(*it));
-		}
-//		cerr << "Genome blocks ended" << endl;
-	}
-
-	void ReportOtherBlocks() const {
-//		cerr << "Other blocks started" << endl;
-		for (auto it = labels_.begin(); it != labels_.end(); ++it) {
-			if (boost::lexical_cast<int>(it->second) > (int) 1000000) {
-				cerr << get(labels_, it->first) << " $ "
-						<< g_.int_id(it->first)
-						<< " $ "
-						<< g_.length(it->first)
-						/*<< " positions: " << edge_pos_.GetEdgePositions(it->first) */<< endl;
-			}
-		}
-//		cerr << "Other blocks ended" << endl;
-	}
-
-	void ReportContigs() const {
-		contigs_.reset();
-		Contig contig;
-		cerr << "Contigs started" << endl;
-		while (!contigs_.eof()) {
-			contigs_ >> contig;
-			vector < EdgeId > path =
-					mapper_.MapSequence(contig.sequence()).simple_path().sequence();
-			cerr << contig.name() << " $ ";
-			string delim = "";
-			for (auto it = path.begin(); it != path.end(); ++it) {
-				cerr << delim << get(labels_, *it);
-				delim = ";";
-			}
-			cerr << endl;
-		}
-		cerr << "Contigs ended" << endl;
-	}
-
 public:
-	ContigBlockStats(const Graph& g,
-			const EdgesPositionHandler<Graph>& edge_pos, const Mapper& mapper,
-			const Sequence& genome, ContigStream& contigs) :
-			g_(g), edge_pos_(edge_pos), mapper_(mapper), genome_path_(
-					mapper_.MapSequence(genome).simple_path().sequence()), contigs_(
-					contigs), labels_(Enumerator(g_, genome_path_).Enumerate()) {
+
+	BlockPrinter(const Graph& g, const CoordinatesHandler<Graph>& coords, const string& filename) :
+			g_(g), coords_(coords), output_stream_(filename) , curr_id_(1) {
+        output_stream_
+                << "genome_id\tcontig_name\tcanonical_id\tcontig_start_pos\tcontig_end_pos"
+                << "\trefined_start_pos\trefined_end_pos\tsign\torig_id"
+                << endl;
 	}
 
-	void Count() const {
-		cerr << "Block id $ Graph edge id $ (for debug) $ Length (in 201-mers)"
-				<< endl;
+	//genome is supposed to perfectly correspond to some path in the graph
+	void ProcessContig(size_t genome_id, size_t transparent_id, const string& contig_name) {
+	    INFO("Processing contig " << transparent_id << " name " << contig_name);
+	    VertexId v = g_.EdgeStart(coords_.FindGenomeFirstEdge(transparent_id));
+	    size_t genome_pos = 0;
+	    size_t graph_pos = 0;
 
-		ReportGenomeBlocks();
-		ReportOtherBlocks();
+	    while (true) {
+	        auto step = coords_.StepForward(v, transparent_id, genome_pos);
+	        if (step.second == -1u)
+	            break;
 
-		cerr << "Contig id $ Block ids" << endl;
-		ReportContigs();
+	        EdgeId e = step.first;
+
+	        auto canon = CanonicalId(e);
+
+            output_stream_
+                    << (format("%d\t%s\t%d\t%d\t%d\t%d\t%d\t%s\t%d")
+                            % genome_id
+                            % contig_name
+                            % canon.first
+                            % coords_.GetOriginalPos(transparent_id, graph_pos)
+                            % coords_.GetOriginalPos(transparent_id, graph_pos + g_.length(e))
+                            % graph_pos
+                            % (graph_pos + g_.length(e))
+                            % (canon.second ? "+" : "-")
+                            % g_.int_id(e))
+                            .str()
+                    << endl;
+
+	        graph_pos = graph_pos + g_.length(e);
+	        v = g_.EdgeEnd(e);
+	        genome_pos = step.second;
+	    }
 	}
+
+private:
+	DECL_LOGGER("BlockPrinter");
 };
+
+//template<class Graph, class Mapper>
+//class ContigBlockStats {
+//	typedef ThreadedGenomeEnumerator<Graph> Enumerator;
+//	const Graph& g_;
+//	const EdgesPositionHandler<Graph>& edge_pos_;
+//	const Mapper mapper_;
+//	const vector<EdgeId> genome_path_;
+//	ContigStream& contigs_;
+//	const map<EdgeId, string> labels_;
+//
+//	const string& get(const map<EdgeId, string>& from, EdgeId key) const {
+//		auto it = from.find(key);
+//		VERIFY(it != from.end());
+//		return it->second;
+//	}
+//
+//	void ReportGenomeBlocks() const {
+//		set < EdgeId > visited;
+////		cerr << "Genome blocks started" << endl;
+//		for (auto it = genome_path_.begin(); it != genome_path_.end(); ++it) {
+//			if (visited.count(*it) > 0)
+//				continue;
+//			cerr << get(labels_, *it) << " $ "
+//					<< g_.int_id(*it)
+//					<< " $ "
+//					<< g_.length(*it)
+//					/*<< " positions: " << edge_pos_.GetEdgePositions(*it) */<< endl;
+//			visited.insert(*it);
+//			visited.insert(g_.conjugate(*it));
+//		}
+////		cerr << "Genome blocks ended" << endl;
+//	}
+//
+//	void ReportOtherBlocks() const {
+////		cerr << "Other blocks started" << endl;
+//		for (auto it = labels_.begin(); it != labels_.end(); ++it) {
+//			if (boost::lexical_cast<int>(it->second) > (int) 1000000) {
+//				cerr << get(labels_, it->first) << " $ "
+//						<< g_.int_id(it->first)
+//						<< " $ "
+//						<< g_.length(it->first)
+//						/*<< " positions: " << edge_pos_.GetEdgePositions(it->first) */<< endl;
+//			}
+//		}
+////		cerr << "Other blocks ended" << endl;
+//	}
+//
+//	void ReportContigs() const {
+//		contigs_.reset();
+//		Contig contig;
+//		cerr << "Contigs started" << endl;
+//		while (!contigs_.eof()) {
+//			contigs_ >> contig;
+//			vector < EdgeId > path =
+//					mapper_.MapSequence(contig.sequence()).simple_path().sequence();
+//			cerr << contig.name() << " $ ";
+//			string delim = "";
+//			for (auto it = path.begin(); it != path.end(); ++it) {
+//				cerr << delim << get(labels_, *it);
+//				delim = ";";
+//			}
+//			cerr << endl;
+//		}
+//		cerr << "Contigs ended" << endl;
+//	}
+//
+//public:
+//	ContigBlockStats(const Graph& g,
+//			const EdgesPositionHandler<Graph>& edge_pos, const Mapper& mapper,
+//			const Sequence& genome, ContigStream& contigs) :
+//			g_(g), edge_pos_(edge_pos), mapper_(mapper), genome_path_(
+//					mapper_.MapSequence(genome).simple_path().sequence()), contigs_(
+//					contigs), labels_(Enumerator(g_, genome_path_).Enumerate()) {
+//	}
+//
+//	void Count() const {
+//		cerr << "Block id $ Graph edge id $ (for debug) $ Length (in 201-mers)"
+//				<< endl;
+//
+//		ReportGenomeBlocks();
+//		ReportOtherBlocks();
+//
+//		cerr << "Contig id $ Block ids" << endl;
+//		ReportContigs();
+//	}
+//};
 
 template<class Graph>
 class AlternatingPathsCounter {

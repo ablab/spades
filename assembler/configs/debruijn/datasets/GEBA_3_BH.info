@@ -1,7 +1,5 @@
-paired_reads             "../../../data/input/GEBA/0003/bh20120117/04.reads.0.right.corrected.fastq.gz ../../../data/input/GEBA/0003/bh20120117/04.reads.0.left.corrected.fastq.gz "
-single_reads             "../../../data/input/GEBA/0003/bh20120117/04.reads.0.left.unpaired.fastq.gz ../../../data/input/GEBA/0003/bh20120117/04.reads.0.right.unpaired.fastq.gz "
-RL                       150
-IS                       300
-single_cell              true
-
 reads	GEBA_3_BH.yaml
+single_cell	true
+
+; RL	150
+; IS	300

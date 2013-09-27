@@ -15,7 +15,7 @@
 #define EDGES_POSITION_HANDLER_HPP_
 
 //#include "utils.hpp"
-#include "graph_labeler.hpp"
+#include "visualization/graph_labeler.hpp"
 #include "simple_tools.hpp"
 #include "omni_utils.hpp"
 using namespace omnigraph;
@@ -78,8 +78,13 @@ public:
 		}
 	}
 
-	bool followed_by(EdgePosition& ep, int max_dist = 1,
-			double relative_cutoff = 0, int genome_end = 0) {
+//    bool followed_by(EdgePosition& ep, int max_dist = 1,
+//            double relative_cutoff = 0) {
+//        return followed_by(ep, max_dist, relative_cutoff, 0);
+//    }
+
+	bool followed_by(EdgePosition& ep, int max_dist,
+			double /*relative_cutoff*/, int genome_end) {
 		if (ep.m_start() == 1 && m_end() == genome_end)
 			return true;
 		if (contigId_ != ep.contigId_)
@@ -255,9 +260,9 @@ class EdgesPositionHandler: public GraphActionHandler<Graph> {
 	std::map<EdgeId, vector<EdgePosition>> EdgesPositions;
 	bool careful_ranges_;
 	size_t max_labels_;
-	int max_genome_coords;
+	mutable int max_genome_coords;
 private:
-	void find_genome_length(){
+	void find_genome_length() const{
 		for (auto iter = EdgesPositions.begin(); iter != EdgesPositions.end(); ++iter) {
 			for(size_t i =  0; i < iter->second.size(); i++)
 				max_genome_coords = max(max_genome_coords, iter->second[i].m_end());
@@ -338,7 +343,7 @@ public:
 
 	}
 
-	bool IsConsistentWithGenome(vector<EdgeId> path) {
+	bool IsConsistentWithGenome(const vector<EdgeId> &path) {
 		map<EdgeId, vector<EdgePosition> > tmp_pos;
 		find_genome_length();
 		for (size_t i = 0; i < path.size(); i++) {
@@ -359,19 +364,18 @@ public:
 		if (path.size() > 0) {
 			vector<EdgePosition> res = (tmp_pos[path[0]]);
 
-			DEBUG(
-					this->g().int_id(path[0]) << "  "<< res.size() << " positions");
+			TRACE(this->g().int_id(path[0]) << "  " << res.size() << " positions");
 
-			int len = this->g().length(path[0]);
+			int len = (int) this->g().length(path[0]);
 			for (size_t i = 1; i < path.size(); i++) {
-				DEBUG(this->g().int_id(path[i]) << "  "<< tmp_pos[path[i]].size() << " positions");
+			    TRACE(this->g().int_id(path[i]) << "  "<< tmp_pos[path[i]].size() << " positions");
 				if (is_careful())
 					res = RangeGluePositionsLists(res, tmp_pos[path[i]],
 							max_single_gap_, len);
 				else
 					res = GluePositionsLists(res, tmp_pos[path[i]],
 							max_single_gap_);
-				len += this->g().length(path[i]);
+				len += (int) this->g().length(path[i]);
 			}
 			if (res.size() > 0) {
 				if (is_careful()) {
@@ -585,15 +589,6 @@ public:
 	virtual void HandleDelete(EdgeId e) {
 		EdgesPositions.erase(e);
 	}
-
-	void HandleVertexSplit(VertexId, VertexId,
-			const vector<pair<EdgeId, EdgeId>>& old_2_new_edges,
-			const vector<double>&) {
-FOREACH	(auto cur_edges_pair, old_2_new_edges) {
-		AddEdgePosition(cur_edges_pair.second,
-				EdgesPositions[cur_edges_pair.first]);
-	}
-}
 
 void clear() {
 	EdgesPositions.clear();

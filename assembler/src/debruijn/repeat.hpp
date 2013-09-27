@@ -173,8 +173,8 @@ namespace debruijn_graph {
 										file(out_file) {}
 
 			      
-
-		bool IfContainsOnlyGenomicEdges( const EdgeQuality<typename graph_pack::graph_t>& quality_labeler ) const {
+		template<class EdgeQualityLabeler>
+		bool IfContainsOnlyGenomicEdges( const EdgeQualityLabeler& quality_labeler ) const {
 			for (auto iter = component_.begin(); iter != component_.end(); ++iter) {
 		;		if (quality_labeler.quality(*iter) < 0.5) {
 					return false;
@@ -193,7 +193,8 @@ namespace debruijn_graph {
 			return true;
 		}
 			
-		bool IfRepeatByQuality( const EdgeQuality<typename graph_pack::graph_t>& quality_labeler ) const {
+		template<class EdgeQualityLabeler>
+		bool IfRepeatByQuality( const EdgeQualityLabeler& quality_labeler ) const {
 
 			for ( auto e = component_.begin(); e != component_.end(); ++e ) {
 				if ( quality_labeler.quality(*e) <= 1.5 ) return false;
@@ -207,8 +208,8 @@ namespace debruijn_graph {
 			return true;
 		}
 
-		template <class DetailedCoverage>
-		void GetComponentInfo(const DetailedCoverage& coverage, const vector< vector <double> >& transition_probabilities, const EdgeQuality<typename graph_pack::graph_t>& quality_labeler ) const  {
+		template <class DetailedCoverage, class EdgeQualityLabeler>
+		void GetComponentInfo(const DetailedCoverage& coverage, const vector< vector <double> >& transition_probabilities, const EdgeQualityLabeler& quality_labeler ) const  {
 			fprintf(file,"Component: \n");
 			for ( auto iter = component_.begin(); iter != component_.end(); ++iter ) {
 				fprintf(file,"%lu edge length: %lu average edge coverage %5.4f quality: %5.2f",gp_.g.int_id(*iter), gp_.g.length(*iter), gp_.g.coverage(*iter),
@@ -323,9 +324,9 @@ namespace debruijn_graph {
 
 		}
 
-		template <class DetailedCoverage>
-		bool Resolve( BucketMapper<Graph> &bm, const DetailedCoverage& coverage,
-							const EdgeQuality<typename graph_pack::graph_t>& quality_labeler,
+		template <class DetailedCoverage, class EdgeQualityLabeler, class KmerIndex>
+		bool Resolve( BucketMapper<Graph, KmerIndex> &bm, const DetailedCoverage& coverage,
+							const EdgeQualityLabeler& quality_labeler,
 							vector<vector<EdgeId>>& resolved_paths) { 
 			vector<pair<EdgeId,EdgeId>> pairs_of_edges;
 			vector< vector <double> > transition_probabilities ;

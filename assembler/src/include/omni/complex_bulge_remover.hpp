@@ -16,6 +16,7 @@
 #include "xmath.h"
 #include "sequence/sequence_tools.hpp"
 #include "path_processor.hpp"
+#include "omni/visualization/visualization.hpp"
 
 namespace omnigraph {
 
@@ -586,7 +587,7 @@ class SkeletonTreeFinder {
 	}
 
 	void Init() {
-		current_level_ = level_heights_.size() - 1;
+		current_level_ = (int) level_heights_.size() - 1;
 		size_t end_cnt = 0;
 		FOREACH(VertexId v, component_.end_vertices()) {
 			good_vertices_.insert(v);
@@ -624,14 +625,16 @@ class SkeletonTreeFinder {
 	}
 
 public:
-	SkeletonTreeFinder(const LocalizedComponent<Graph>& component,
-			const ComponentColoring<Graph>& coloring) :
-			component_(component), coloring_(coloring), level_heights_(
-					SetAsVector<size_t>(component_.avg_distances())), current_level_(
-					level_heights_.size() - 1), current_color_partition_(
-					component_.end_vertices().size()) {
-		Init();
-	}
+    SkeletonTreeFinder(const LocalizedComponent<Graph>& component,
+            const ComponentColoring<Graph>& coloring) :
+        component_(component),
+        coloring_(coloring), 
+        level_heights_(SetAsVector<size_t>(component_.avg_distances())), 
+        current_level_((int) level_heights_.size() - 1), 
+        current_color_partition_(component_.end_vertices().size()) {
+        
+        Init();
+    }
 
 	const set<EdgeId> GetTreeEdges() const {
 		set<EdgeId> answer;
@@ -705,18 +708,19 @@ void PrintComponent(const LocalizedComponent<Graph>& component,
 		const SkeletonTree<Graph>& tree, const string& file_name) {
 	typedef typename Graph::EdgeId EdgeId;
 	const set<EdgeId> tree_edges = tree.edges();
-	WriteComponent(component.AsGraphComponent(), file_name,
-			*DefaultColorer(component.g(),
-					new MapColorer<EdgeId>(tree_edges.begin(), tree_edges.end(),
-							"green", "")),
+	shared_ptr<omnigraph::visualization::ElementColorer<typename Graph::EdgeId>> edge_colorer = make_shared<omnigraph::visualization::MapColorer<EdgeId>>(
+			tree_edges.begin(), tree_edges.end(),"green", ""
+		);
+	visualization::WriteComponent(component.AsGraphComponent(), file_name,
+			omnigraph::visualization::DefaultColorer(component.g(), edge_colorer),
 			*StrGraphLabelerInstance(component.g()));
 }
 
 template<class Graph>
 void PrintComponent(const LocalizedComponent<Graph>& component,
 		const string& file_name) {
-	WriteComponent(component.AsGraphComponent(), file_name,
-			*DefaultColorer(component.g()),
+	visualization::WriteComponent(component.AsGraphComponent(), file_name,
+			omnigraph::visualization::DefaultColorer(component.g()),
 			*StrGraphLabelerInstance(component.g()));
 }
 

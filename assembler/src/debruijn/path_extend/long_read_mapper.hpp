@@ -10,165 +10,67 @@
 
 #include "pe_utils.hpp"
 #include "graphio.hpp"
+#include "long_read_storage.hpp"
+
 namespace path_extend {
 
-class SimpleLongReadMapper {
+class SimpleLongReadMapper : public SequenceMapperListener {
 public:
     SimpleLongReadMapper(conj_graph_pack& gp)
             : gp_(gp),
-              mapper_(gp_.g, gp_.index, gp_.kmer_mapper, gp_.k_value + 1),
-              same_edge_corr_(gp_.g),
-              ps_(gp_.g),
-              gap_closer_(gp_.g, &ps_) {
-        paths_searcher_config conf;
-        conf.depth_neigh_search = 5;  // max path len (in edges)
-        conf.max_len_path = 100000;  // max path len (in k-mers)
-        conf.max_num_vertices = 100;  // max number of visited vertices
-        ps_.Initialize(conf);
+              storage_(gp.g) {
+        mapper_ = MapperInstance(gp_);
     }
 
-    void ProcessSingleReadLibrary(
-            const io::SequencingLibrary<debruijn_config::DataSetData>& lib,
-            PathStorage<Graph>& storage) {
-        if (cfg::get().use_multithreading) {
-            auto single_streams = single_binary_readers(
-                    lib, false, false);
-            if (single_streams->size() == 1) {
-                ProcessReads(*single_streams, storage);
-            } else {
-                ProcessSingleReadsParallel(*single_streams, storage);
-            }
-        } else {
-            auto single_streams = single_binary_readers(lib, false, false);
-            single_streams->release();
-            io::MultifileReader<io::SingleReadSeq> stream(single_streams->get(),
-                                                          true);
-            ProcessLib(stream, storage);
+    virtual ~SimpleLongReadMapper() {
+
+    }
+    virtual void StartProcessLibrary(size_t threads_count) {
+        for (size_t i = 0; i < threads_count; ++i) {
+            buffer_storages_.push_back(new PathStorage<conj_graph_pack::graph_t>(gp_.g));
         }
+    }
+    virtual void StopProcessLibrary() {
+        for (size_t i = 0; i < buffer_storages_.size(); ++i) {
+            MergeBuffer(i);
+            delete buffer_storages_[i];
+        }
+        buffer_storages_.clear();
+    }
+    virtual void MergeBuffer(size_t thread_index) {
+        DEBUG("Merge buffer " << thread_index << " with size " << buffer_storages_[thread_index]->size());
+        storage_.AddStorage(*buffer_storages_[thread_index]);
+        buffer_storages_[thread_index]->Clear();
+        DEBUG("Now size " << storage_.size());
+    }
+    virtual void ProcessPairedRead(size_t thread_index,
+                                   const MappingPath<EdgeId>& read1,
+                                   const MappingPath<EdgeId>& read2,
+                                   size_t dist) {
+        //nothing to do
+    }
+    virtual void ProcessSingleRead(size_t thread_index,
+                                   const MappingPath<EdgeId>& read) {
+        vector<EdgeId> path = ProcessSingleRead(read);
+        buffer_storages_[thread_index]->AddPath(path, 1, true);
     }
 
-    template<class SingleRead>
-    void ProcessLib(io::IReader<SingleRead>& stream,
-                    PathStorage<Graph>& storage) {
-        INFO("Processing single reads (takes a while)");
-        while (!stream.eof()) {
-            SingleRead r;
-            stream >> r;
-            vector<EdgeId> path = ProcessSingleRead(r);
-            storage.AddPath(path, 1, true);
-        }
+    PathStorage<conj_graph_pack::graph_t>& GetPaths() {
+        return storage_;
     }
+
 private:
-    template<class SingleRead>
-    void ProcessReads(
-            io::ReadStreamVector<io::IReader<SingleRead> >& streams,
-            PathStorage<Graph>& storage) {
-        INFO("Mapping single reads (takes a while)");
-        io::IReader<SingleRead>& stream = streams.back();
-        stream.reset();
-        while (!stream.eof()) {
-            SingleRead r;
-            stream >> r;
-            vector<EdgeId> path = ProcessSingleRead(r);
-            storage.AddPath(path, 1, true);
-        }
-
-    }
-
-    template<class SingleRead>
-    void ProcessSingleReadsParallel(
-            io::ReadStreamVector<io::IReader<SingleRead> >& streams,
-            PathStorage<Graph>& storage) {
-        INFO("Mapping single reads (takes a while)");
-        size_t nthreads = streams.size();
-        vector<PathStorage<Graph>*> buffer_storages(nthreads);
-
-        for (size_t i = 0; i < nthreads; ++i) {
-            buffer_storages[i] = new PathStorage<Graph>(gp_.g);
-        }
-
-        size_t counter = 0;
-        static const double coeff = 1.3;
-        size_t count_mapped_reads = 0;
-        size_t count_unmapped_reads = 0;
-        size_t count_mapped_reads_size_one = 0;
-        #pragma omp parallel num_threads(nthreads)
-        {
-            #pragma omp for reduction(+ : counter)
-            for (size_t i = 0; i < nthreads; ++i) {
-                size_t size = 0;
-                size_t limit = 1000000;
-                SingleRead r;
-                io::IReader<SingleRead>& stream = streams[i];
-                stream.reset();
-                bool end_of_stream = false;
-                DEBUG("Starting " << omp_get_thread_num());
-                while (!end_of_stream) {
-                    end_of_stream = stream.eof();
-
-                    while (!end_of_stream && size < limit) {
-                        stream >> r;
-                        ++counter;
-                        ++size;
-                        vector<EdgeId> path = ProcessSingleRead(r);
-                        buffer_storages[i]->AddPath(path, 1, true);
-                        #pragma omp critical
-                        {
-                            if (path.size() == 0) {
-                                count_unmapped_reads++;
-                            } else {
-                                count_mapped_reads++;
-                                if (path.size() == 1) {
-                                    count_mapped_reads_size_one++;
-                                }
-                            }
-                        }
-                        end_of_stream = stream.eof();
-                    }
-
-                    #pragma omp critical
-                    {
-                        DEBUG("Merging " << omp_get_thread_num() << " " << buffer_storages[i]->size());
-                        storage.AddStorage(*(buffer_storages[i]));
-                        DEBUG("New basket size " << storage.size());
-                        DEBUG("Thread number " << omp_get_thread_num() << " is going to increase its limit by " << coeff << " times, current limit is " << limit);
-                    }
-                    buffer_storages[i]->Clear();
-                    limit = coeff * limit;
-                }
-            }
-            DEBUG("Thread number " << omp_get_thread_num() << " finished");
-        }
-        DEBUG("Count unmapped reads " << count_unmapped_reads
-                          << " mapped reads " << count_mapped_reads
-                          << " with size one " << count_mapped_reads_size_one);
-        for (size_t i = 0; i < nthreads; ++i) {
-            delete buffer_storages[i];
-        }
-        DEBUG("Done");
-    }
-
-    template<class SingleRead>
-    vector<EdgeId> ProcessSingleRead(const SingleRead& r) {
-        //TODO: if we can really use following code then we should delete everything about SameEdgeDeletionCorrector and CloseGapsCorrector!!!
-        auto mapper = MapperInstance(gp_);
-        return mapper->FindReadPath(r.sequence());
-        /*MappingPath<EdgeId> path;
-         path.join(mapper_.MapSequence(r.sequence()));
-         SimpleMappingContig mc(r.sequence(), path);
-         MappingContig * dc = same_edge_corr_.Correct(&mc);
-         MappingContig * gc = gap_closer_.Correct(dc);
-         return gc->PathSeq();*/
+    vector<EdgeId> ProcessSingleRead(const MappingPath<EdgeId>& path) const {
+        return mapper_->FindReadPath(path);
     }
 
     conj_graph_pack& gp_;
-    ExtendedSequenceMapper<Graph> mapper_;
-    SameEdgeDeletionCorrector same_edge_corr_;
-    DijkstraSearcher ps_;
-    CloseGapsCorrector gap_closer_;
+    PathStorage<conj_graph_pack::graph_t> storage_;
+    std::shared_ptr<const NewExtendedSequenceMapper<conj_graph_pack::graph_t,
+                    conj_graph_pack::index_t> > mapper_;
+    vector<PathStorage<conj_graph_pack::graph_t>*> buffer_storages_;
 };
 
 }/*path_extend*/
-
 
 #endif /* LONG_READ_MAPPER_HPP_ */

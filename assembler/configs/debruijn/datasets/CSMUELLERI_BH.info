@@ -1,7 +1,6 @@
-paired_reads             "../../../data/input/C.S.muelleri/bh20111221/09.reads.corrected.fastq.gz ../../../data/input/C.S.muelleri/bh20111221/09.reads.corrected.fastq.gz "
-RL                       36
-IS                       36
-single_cell              false
-reference_genome         ../../../data/input/C.S.muelleri/4085179.chromosome1.final.fasta.gz
-
 reads	CSMUELLERI_BH.yaml
+single_cell	false
+reference_genome	../../../data/input/C.S.muelleri/4085179.chromosome1.final.fasta.gz
+
+; RL	36
+; IS	36

@@ -27,6 +27,7 @@ enum working_stage {
   ws_simplification,
   ws_late_pair_info_count,
   ws_distance_estimation,
+  ws_pacbio_aligning,
   ws_repeats_resolving
 };
 
@@ -40,16 +41,9 @@ enum estimation_mode {
 
 enum resolving_mode {
   rm_none,
-  rm_split,
   rm_path_extend,
-  rm_combined,
-  rm_split_scaff,
-  rm_jump,
   rm_rectangles
 };
-
-
-
 
 enum info_printer_pos {
   ipp_default = 0,
@@ -104,6 +98,7 @@ struct debruijn_config {
       stage_name_id_mapping::value_type("simplification", ws_simplification),
       stage_name_id_mapping::value_type("late_pair_info_count", ws_late_pair_info_count),
       stage_name_id_mapping::value_type("distance_estimation",  ws_distance_estimation),
+      stage_name_id_mapping::value_type("pacbio_aligning",  ws_pacbio_aligning),
       stage_name_id_mapping::value_type("repeats_resolving", ws_repeats_resolving)
     };
 
@@ -130,10 +125,7 @@ struct debruijn_config {
   static const resolve_mode_id_mapping FillResolveModeInfo() {
     resolve_mode_id_mapping::value_type info[] = {
       resolve_mode_id_mapping::value_type("none", rm_none),
-      resolve_mode_id_mapping::value_type("split", rm_split),
       resolve_mode_id_mapping::value_type("path_extend", rm_path_extend),
-      resolve_mode_id_mapping::value_type("combined", rm_combined),
-      resolve_mode_id_mapping::value_type("split_scaff", rm_split_scaff),
       resolve_mode_id_mapping::value_type("rectangles", rm_rectangles)
     };
 
@@ -351,7 +343,9 @@ struct debruijn_config {
   struct pacbio_processor {
 //align and traverse.
 	std::string pacbio_reads;
+
 	size_t  pacbio_k; //13
+	bool additional_debug_info; //false
 	bool pacbio_optimized_sw; //false
 	double compression_cutoff;// 0.6
 	double domination_cutoff; //1.5
@@ -376,7 +370,10 @@ struct debruijn_config {
     double median_insert_size;
     double insert_size_mad;
     std::map<int, size_t> insert_size_distribution;
+
+    uint64_t total_nucls;
     double average_coverage;
+    double pi_threshold;
 
     std::string paired_read_prefix;
     std::string single_read_prefix;
@@ -385,42 +382,45 @@ struct debruijn_config {
     typedef io::IReader<io::SingleReadSeq> SequenceSingleReadStream;
     typedef io::IReader<io::PairedReadSeq> SequencePairedReadStream;
 
-    DataSetData(): read_length(0), mean_insert_size(0.0), insert_size_deviation(0.0), median_insert_size(0.0), insert_size_mad(0.0), average_coverage(0.0) {
-    }
-
-  };
+    DataSetData()
+                : read_length(0),
+                  mean_insert_size(0.0),
+                  insert_size_deviation(0.0),
+                  median_insert_size(0.0),
+                  insert_size_mad(0.0),
+                  total_nucls(0),
+                  average_coverage(0.0),
+                  pi_threshold(0.0) {
+        }
+    };
 
   struct dataset {
     io::DataSet<DataSetData> reads;
 
-    size_t RL() const { return reads[0].data().read_length; }
+    size_t max_read_length;
+    double average_coverage;
+
+    size_t RL() const { return max_read_length; }
     void set_RL(size_t RL) {
-        for (size_t i = 0; i < reads.lib_count(); ++i) {
-            reads[i].data().read_length = RL;
-        }
+        max_read_length = RL;
     }
-    size_t IS() const { return (size_t) math::round(reads[0].data().mean_insert_size); }
-    void set_IS(size_t IS) { reads[0].data().mean_insert_size = IS; }
-    double is_var() const { return reads[0].data().insert_size_deviation; }
-    void set_is_var(double is_var) { reads[0].data().insert_size_deviation = is_var; }
-    double avg_coverage() const { return reads[0].data().average_coverage; }
+
+    double avg_coverage() const { return average_coverage; }
     void set_avg_coverage(double avg_coverage) {
+        average_coverage = avg_coverage;
         for (size_t i = 0; i < reads.lib_count(); ++i) {
             reads[i].data().average_coverage = avg_coverage;
         }
     }
-    double median() const { return reads[0].data().median_insert_size; }
-    void set_median(double median) { reads[0].data().median_insert_size = median; }
-    double mad() const { return reads[0].data().insert_size_mad; }
-    void set_mad(double mad) { reads[0].data().insert_size_mad = mad; }
-    const std::map<int, size_t>& hist() const { return reads[0].data().insert_size_distribution; }
-    void set_hist(const std::map<int, size_t>& hist) {  reads[0].data().insert_size_distribution = hist; }
 
     bool single_cell;
     std::string reference_genome_filename;
     std::string reads_filename;
 
     Sequence reference_genome;
+
+    dataset(): max_read_length(0), average_coverage(0.0) {
+    }
   };
 
   struct position_handler {
@@ -530,6 +530,7 @@ struct debruijn_config {
 
   resolving_mode rm;
   path_extend::pe_config::MainPEParamsT pe_params;
+  bool avoid_rc_connections;
 
   construction con;
   distance_estimator de;
@@ -546,19 +547,10 @@ struct debruijn_config {
 };
 
 void load(debruijn_config& cfg, const std::string &filename);
-
+void load_lib_data(const std::string& prefix);
+void write_lib_data(const std::string& prefix);
 } // debruijn_graph
 
 typedef config_common::config<debruijn_graph::debruijn_config> cfg;
-
-namespace debruijn_graph {
-
-inline std::string input_file(std::string filename) {
-  if (filename[0] == '/')
-    return filename;
-  return cfg::get().input_dir + filename;
-}
-
-}
 
 #endif

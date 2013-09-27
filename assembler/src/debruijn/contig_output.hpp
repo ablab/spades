@@ -43,20 +43,6 @@ public:
 	}
 };
 
-template<class Graph>
-class MaskingContigCorrector : public ContigCorrector<Graph> {
-private:
-	typedef typename Graph::EdgeId EdgeId;
-	MismatchMasker<Graph>& mismatch_masker_;
-public:
-	MaskingContigCorrector(const Graph &graph, MismatchMasker<Graph>& mismatch_masker) : ContigCorrector<Graph>(graph), mismatch_masker_(mismatch_masker) {
-	}
-
-	string correct(EdgeId e) {
-	    return mismatch_masker_.MaskedEdgeNucls(e, 0.00001);
-	}
-};
-
 //This class uses corrected sequences to construct contig (just return as is, find unipath, trim contig)
 template<class Graph>
 class ContigConstructor {
@@ -99,9 +85,22 @@ public:
 };
 
 template<class Graph>
+vector<typename Graph::EdgeId> Unipath(const Graph& g, typename Graph::EdgeId e) {
+	UniquePathFinder<Graph> unipath_finder(g);
+	vector<typename Graph::EdgeId> answer = unipath_finder.UniquePathBackward(e);
+	const vector<typename Graph::EdgeId>& forward = unipath_finder.UniquePathForward(e);
+	for (size_t i = 1; i < forward.size(); ++i) {
+		answer.push_back(forward[i]);
+	}
+	return answer;
+}
+
+template<class Graph>
 class UnipathConstructor : public ContigConstructor<Graph> {
 private:
 	typedef typename Graph::EdgeId EdgeId;
+
+
 
 	string MergeOverlappingSequences(std::vector<string>& ss, size_t overlap) {
 		if (ss.empty()) {
@@ -190,7 +189,7 @@ private:
 	ContigConstructor<Graph> &constructor_;
 
 	template<class sequence_stream>
-	void ReportEdge(osequencestream_cov& oss
+	void ReportEdge(io::osequencestream_cov& oss
 			, const pair<string, double> sequence_data) {
 		oss << sequence_data.second;
 		oss << sequence_data.first;
@@ -210,7 +209,13 @@ public:
 };
 
 template<class Graph>
-void ReportEdge(osequencestream_cov& oss
+bool PossibleECSimpleCheck(const Graph& g
+		, typename Graph::EdgeId e) {
+	return g.OutgoingEdgeCount(g.EdgeStart(e)) > 1 && g.IncomingEdgeCount(g.EdgeEnd(e)) > 1;
+}
+
+template<class Graph>
+void ReportEdge(io::osequencestream_cov& oss
 		, const Graph& g
 		, typename Graph::EdgeId e
 		, bool output_unipath = false
@@ -230,36 +235,12 @@ void ReportEdge(osequencestream_cov& oss
 	}
 }
 
-template<class Graph>
-void ReportMaskedEdge(osequencestream_cov& oss
-		, const Graph& g
-		, typename Graph::EdgeId e
-    , MismatchMasker<Graph>& mismatch_masker
-		, bool output_unipath = false
-		, size_t solid_edge_length_bound = 0) {
-	typedef typename Graph::EdgeId EdgeId;
-	if (!output_unipath || (PossibleECSimpleCheck(g, e) && g.length(e) <= solid_edge_length_bound)) {
-		TRACE("Outputting edge " << g.str(e) << " as single edge");
-		oss << g.coverage(e);
-    const string& s = mismatch_masker.MaskedEdgeNucls(e, 0.00001);
-		oss << s;
-	} else {
-		//support unipath
-		TRACE("Outputting edge " << g.str(e) << " as part of unipath");
-    const vector<EdgeId>& unipath = Unipath(g, e);
-		TRACE("Unipath is " << g.str(unipath));
-		oss << AvgCoverage(g, unipath);
-		TRACE("Merged sequence is of length " << MergeSequences(g, unipath).size());
-		oss << MergeSequences(g, unipath);
-	}
-}
-
 void OutputContigs(NonconjugateDeBruijnGraph& g,
 		const string& contigs_output_filename,
 		bool output_unipath = false,
 		size_t solid_edge_length_bound = 0) {
 	INFO("Outputting contigs to " << contigs_output_filename);
-	osequencestream_cov oss(contigs_output_filename);
+	io::osequencestream_cov oss(contigs_output_filename);
 	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 		ReportEdge(oss, g, *it, output_unipath, solid_edge_length_bound);
 	}
@@ -269,11 +250,11 @@ void OutputContigs(NonconjugateDeBruijnGraph& g,
 void OutputContigs(ConjugateDeBruijnGraph& g,
 		const string& contigs_output_filename,
 		bool output_unipath = false,
-		size_t solid_edge_length_bound = 0,
+		size_t /*solid_edge_length_bound*/ = 0,
 		bool cut_bad_connections = false) {
 	INFO("Outputting contigs to " << contigs_output_filename);
 	DefaultContigCorrector<ConjugateDeBruijnGraph> corrector(g);
-	osequencestream_cov oss(contigs_output_filename);
+	io::osequencestream_cov oss(contigs_output_filename);
 	if(!output_unipath) {
 		if(!cut_bad_connections) {
 			DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
@@ -324,11 +305,11 @@ bool ShouldCut(ConjugateDeBruijnGraph& g, VertexId v) {
 
 void OutputCutContigs(ConjugateDeBruijnGraph& g,
 		const string& contigs_output_filename,
-		bool output_unipath = false,
-		size_t solid_edge_length_bound = 0) {
+		bool /*output_unipath*/ = false,
+		size_t /*solid_edge_length_bound*/ = 0) {
 	INFO("Outputting contigs to " << contigs_output_filename);
 	DefaultContigCorrector<ConjugateDeBruijnGraph> corrector(g);
-	osequencestream_cov oss(contigs_output_filename);
+	io::osequencestream_cov oss(contigs_output_filename);
 	CuttingContigConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
 	ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);
 
@@ -358,38 +339,6 @@ void OutputCutContigs(ConjugateDeBruijnGraph& g,
 //	}
 }
 
-void OutputMaskedContigs(ConjugateDeBruijnGraph& g,
-		const string& contigs_output_filename, MismatchMasker<ConjugateDeBruijnGraph>& masker,
-		bool output_unipath = false,
-		size_t solid_edge_length_bound = 0,
-		bool cut_bad_connections = false) {
-	INFO("Outputting contigs with masked mismatches to " << contigs_output_filename);
-	MaskingContigCorrector<ConjugateDeBruijnGraph> corrector(g, masker);
-	osequencestream_cov oss(contigs_output_filename);
-	if(!output_unipath) {
-		if(!cut_bad_connections) {
-			DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
-			ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);
-		} else {
-			CuttingContigConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
-			ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);
-		}
-	} else {
-		UnipathConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
-		ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);
-	}
-//	osequencestream_cov oss(contigs_output_filename);
-//	set<ConjugateDeBruijnGraph::EdgeId> edges;
-//	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-//		if (edges.count(*it) == 0) {
-//			ReportMaskedEdge(oss, g, *it, masker, output_unipath, solid_edge_length_bound);
-//			edges.insert(g.conjugate(*it));
-//		}
-//		//		oss << g.EdgeNucls(*it);
-//	}
-	DEBUG("Contigs written");
-}
-
 void OutputSingleFileContigs(NonconjugateDeBruijnGraph& g,
 		const string& contigs_output_dir) {
 	INFO("Outputting contigs to " << contigs_output_dir);
@@ -399,7 +348,7 @@ void OutputSingleFileContigs(NonconjugateDeBruijnGraph& g,
 	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 		sprintf(n_str, "%d.fa", n);
 
-		osequencestream oss(contigs_output_dir + n_str);
+		io::osequencestream oss(contigs_output_dir + n_str);
 
 		//		osequencestream oss(contigs_output_dir + "tst.fasta");
 		oss << g.EdgeNucls(*it);
@@ -418,7 +367,7 @@ void OutputSingleFileContigs(ConjugateDeBruijnGraph& g,
 		if (edges.count(*it) == 0) {
 			sprintf(n_str, "%d.fa", n);
 			edges.insert(g.conjugate(*it));
-			osequencestream oss(contigs_output_dir + n_str);
+			io::osequencestream oss(contigs_output_dir + n_str);
 			oss << g.EdgeNucls(*it);
 			n++;
 		}

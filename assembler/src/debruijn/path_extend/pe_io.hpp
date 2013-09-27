@@ -42,7 +42,7 @@ protected:
 				}
 				ss << g_.EdgeNucls(path[i]).str();
 			} else {
-				int overlapLen = k_ - gap;
+				int overlapLen = (int) k_ - gap;
 				if (overlapLen >= (int) g_.length(path[i]) + (int) k_) {
 					continue;
 				}
@@ -75,26 +75,26 @@ public:
 
     void writeEdges(const string& filename) const {
         INFO("Outputting edges to " << filename);
-        osequencestream_with_data_for_scaffold oss(filename);
+        io::osequencestream_with_data_for_scaffold oss(filename);
 
         set<EdgeId> included;
         for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
             if (included.count(*iter) == 0) {
                 oss.setCoverage(g_.coverage(*iter));
-                oss.setID(g_.int_id(*iter));
+                oss.setID((int) g_.int_id(*iter));
                 oss << g_.EdgeNucls(*iter);
 
                 included.insert(*iter);
                 included.insert(g_.conjugate(*iter));
             }
         }
-        INFO("Contigs written");
+        DEBUG("Contigs written");
     }
 
 
     void writePathEdges(PathContainer& paths, const string& filename) const {
 		INFO("Outputting path data to " << filename);
-		ofstream oss;
+		std::ofstream oss;
         oss.open(filename.c_str());
         int i = 1;
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
@@ -111,13 +111,13 @@ public:
             oss << endl;
 		}
 		oss.close();
-		INFO("Edges written");
+		DEBUG("Edges written");
 	}
 
     void writePaths(PathContainer& paths, const string& filename) const {
 
         INFO("Writing contigs to " << filename);
-        osequencestream_with_data_for_scaffold oss(filename);
+        io::osequencestream_with_data_for_scaffold oss(filename);
         int i = 0;
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
         	if (iter.get()->Length() <= 0){
@@ -129,11 +129,11 @@ public:
                 path = path->GetConjPath();
             }
             path->Print();
-        	oss.setID(path->GetId());
+        	oss.setID((int) path->GetId());
             oss.setCoverage(path->Coverage());
             oss << ToString(*path);
         }
-        INFO("Contigs written");
+        DEBUG("Contigs written");
     }
 
 
@@ -146,7 +146,7 @@ class PathInfoWriter {
 public:
 
     void writePaths(PathContainer& paths, const string& filename){
-        ofstream oss(filename);
+        std::ofstream oss(filename.c_str());
 
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
             iter.get()->Print(oss);

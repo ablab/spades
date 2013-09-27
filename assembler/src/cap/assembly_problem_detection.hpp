@@ -40,13 +40,14 @@ template<class gp_t>
 class IDBADiffAnalyzer {
 private:
 	typedef typename gp_t::graph_t Graph;
+	typedef typename gp_t::index_t Index;
 	typedef typename gp_t::seq_t Kmer;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 	typedef io::SingleRead Contig;
 	typedef io::IReader<io::SingleRead> ContigStream;
 	typedef	io::MultifileReader<io::SingleRead> CompositeStream;
-	typedef debruijn_graph::NewExtendedSequenceMapper<Graph, Kmer> Mapper;
+	typedef debruijn_graph::NewExtendedSequenceMapper<Graph, Index> Mapper;
 
 	const gp_t& gp_;
 	const ColorHandler<Graph>& coloring_;
@@ -203,6 +204,7 @@ private:
 	}
 
 	void ReportLocality(VertexId v, const vector<EdgeId>& good_contig_path, const string& best_contig, const Contig& c, const string& folder) {
+		using namespace omnigraph::visualization;
 		make_dir(folder);
 		LengthIdGraphLabeler<Graph> basic_labeler(gp_.g);
 		EdgePosGraphLabeler<Graph> pos_labeler(gp_.g, gp_.edge_pos);
@@ -210,9 +212,12 @@ private:
 		CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
 
 		LabelFilter<typename gp_t::graph_t> lf(gp_.g, gp_.edge_pos);
-		WriteComponentsAroundEdge(gp_.g, lf, AdjacentEdgesInPath(v, good_contig_path).front(),
-						folder + c.name() + "_|_" + best_contig + ".dot",
-						*ConstructBorderColorer(gp_.g, coloring_), labeler);
+		string file_name = folder + c.name() + "_|_" + best_contig + ".dot";
+		EdgeId edge = AdjacentEdgesInPath(v, good_contig_path).front();
+		GraphComponent<Graph> component = omnigraph::EdgeNeighborhood(gp_.g, edge);
+		if(lf.Check(vector<VertexId>(component.v_begin(), component.v_end()))) {
+			WriteComponent(component, file_name, BorderDecorator<Graph>::GetInstance(component, coloring_.GetInstance()), labeler);
+		}
 	}
 
 	size_t LengthForward(EdgeId e, const vector<EdgeId>& good_contig_path) {
@@ -393,15 +398,16 @@ class GapComparativeAnalyzer {
 	}
 
 	void ReportEdge(EdgeId e, const string& folder) {
+		using namespace omnigraph::visualization;
 		INFO(
 				"Can close gap between edges " << g_.str(g_.GetUniqueIncomingEdge(g_.EdgeStart(e))) << " and " << g_.str(g_.GetUniqueOutgoingEdge(g_.EdgeEnd(e))) << " with edge " << g_.str(e));
 		LengthIdGraphLabeler<Graph> basic_labeler(g_);
 		EdgePosGraphLabeler<Graph> pos_labeler(g_, pos_);
 
 		CompositeLabeler<Graph> labeler(basic_labeler, pos_labeler);
-		WriteComponentsAroundEdge(g_, e,
-				folder + ToString(g_.int_id(e)) + "_loc.dot",
-				*ConstructColorer(coloring_), labeler);
+		GraphComponent<Graph> component = omnigraph::EdgeNeighborhood(g_, e);
+		auto colorer = coloring_.ConstructColorer(component);
+		omnigraph::visualization::WriteComponent(component, folder + ToString(g_.int_id(e)) + "_loc.dot", colorer, labeler);
 	}
 
 //	bool CheckEdges(const vector<EdgeId>& edges) {

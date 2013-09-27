@@ -11,14 +11,14 @@
  *      Author: vyahhi
  */
 
-#ifndef OSEQUENCESTREAM_HPP_
-#define OSEQUENCESTREAM_HPP_
+#pragma once
 
 #include <fstream>
 
 using std::string;
 using std::endl;
 
+namespace io {
 
 class osequencestream {
 
@@ -26,7 +26,6 @@ protected:
 	std::ofstream ofstream_;
 
 	int id_;
-
 
 	void write_str(const string& s) {
         size_t cur = 0;
@@ -60,6 +59,21 @@ public:
 	    std::string s = seq.str();
 		return operator <<(s);
 	}
+
+	/**
+	 * Has different way of making headers
+	 * Doesn't increase counters, don't mix with other methods!
+	 */
+    osequencestream& operator<<(const SingleRead& read) {
+        ofstream_ << ">" << read.name() << endl;
+        size_t cur = 0;
+        string s = read.GetSequenceString();
+        while (cur < s.size()) {
+            ofstream_ << s.substr(cur, 60) << endl;
+            cur += 60;
+        }
+        return *this;
+    }
 };
 
 
@@ -181,4 +195,4 @@ public:
 
 };
 
-#endif /* OSEQUENCESTREAM_HPP_ */
+}

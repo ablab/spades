@@ -18,10 +18,12 @@ class ObservableGraph : private boost::noncopyable {
  public:
     typedef VertexIdT VertexId;
     typedef EdgeIdT EdgeId;
+    typedef VertexIterator VertexIt;
     typedef HandlerApplier<VertexId, EdgeId> Applier;
     typedef typename VertexId::type::edge_const_iterator edge_const_iterator;
     typedef SmartVertexIterator<ObservableGraph> SmartVertexIt;
     typedef SmartEdgeIterator<ObservableGraph> SmartEdgeIt;
+    typedef ConstEdgeIterator<ObservableGraph> ConstEdgeIt;
 
     virtual void print_handlers() const {
         FOREACH (Handler* handler_ptr, action_handler_list_) {
@@ -118,22 +120,6 @@ class ObservableGraph : private boost::noncopyable {
         }
     }
 
-    virtual void FireVertexSplit(
-            VertexId old_vertex, VertexId new_vertex,
-            const vector<pair<EdgeId, EdgeId>>& old_2_new_edges,
-            const vector<double>& split_coefficients) const {
-        TRACE("FireVertexSplit event old_vertex inner_id=" << old_vertex.int_id()
-              << "new_vertex inner_id=" << new_vertex.int_id()
-              << " for " << action_handler_list_.size() << " handlers");
-        FOREACH (Handler* handler_ptr, action_handler_list_) {
-            if(handler_ptr->IsAttached()) {
-            	TRACE("FireVertexSplit to handler " << handler_ptr->name());
-            	applier_->ApplyVertexSplit(*handler_ptr, old_vertex, new_vertex,
-                                       old_2_new_edges, split_coefficients);
-            }
-        }
-    }
-
  public:
 
     ObservableGraph(HandlerApplier<VertexId, EdgeId> *applier)
@@ -209,6 +195,10 @@ class ObservableGraph : private boost::noncopyable {
 
     SmartEdgeIterator<ObservableGraph> SmartEdgeBegin() const {
         return SmartEdgeIterator<ObservableGraph>(*this);
+    }
+
+    ConstEdgeIterator<ObservableGraph> ConstEdgeBegin() const {
+        return ConstEdgeIterator<ObservableGraph>(*this);
     }
 
     //Use very carefully!

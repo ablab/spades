@@ -74,7 +74,6 @@ public:
 
 class SubKMerStridedSerializer{
   size_t from_;
-  size_t to_;
   size_t stride_;
 
 public:
@@ -140,7 +139,7 @@ void serialize(Writer &os,
   os.write((char*)&sz, sizeof(sz));
   for (size_t i = 0, e = sz; i != e; ++i) {
     size_t idx = (block == NULL ? i : (*block)[i]);
-    SubKMerData s = serializer.serialize(data[idx].kmer(), idx);
+    SubKMerData s = serializer.serialize(data.kmer(idx), idx);
     binary_write(os, s);
   }
 }

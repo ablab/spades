@@ -30,7 +30,7 @@ typedef io::IReader<io::PairedReadSeq> SequencePairedReadStream;
 class ReadConverter {
 
 private:
-    const static size_t current_binary_format_version = 6;
+    const static size_t current_binary_format_version = 8;
 
     void convert_reads_to_binary() {
 
@@ -50,19 +50,27 @@ private:
                 info >> lib_count;
             }
 
-            info.close();
-
             if (thread_num == cfg::get().max_threads && format == current_binary_format_version  && lib_count == cfg::get().ds.reads.lib_count()) {
                 INFO("Binary reads detected");
 
+                io::ReadStat stat;
+                info >> stat.read_count_;
+                info >> stat.max_len_;
+                info >> stat.total_len_;
+
                 auto &dataset = cfg::get_writable().ds.reads;
                 for (size_t i = 0; i < dataset.lib_count(); ++i) {
+                    info >> dataset[i].data().read_length;
+                    info >> dataset[i].data().total_nucls;
+
                     dataset[i].data().thread_num = cfg::get().max_threads;
                     dataset[i].data().paired_read_prefix = cfg::get().paired_read_prefix + "_" + ToString(i);
                     dataset[i].data().single_read_prefix = cfg::get().single_read_prefix + "_" + ToString(i);
                 }
+                info.close();
                 return;
             }
+            info.close();
         }
 
         std::ofstream info;
@@ -91,10 +99,18 @@ private:
             io::BinaryWriter single_converter(dataset[i].data().single_read_prefix, cfg::get().max_threads, cfg::get().buffer_size);
             io::ReadStat single_stat = single_converter.ToBinary(*single_reader);
             total_stat.merge(single_stat);
+
+            paired_stat.merge(single_stat);
+            dataset[i].data().read_length = paired_stat.max_len_;
+            dataset[i].data().total_nucls = paired_stat.total_len_;
         }
         info.open(cfg::get().temp_bin_reads_info.c_str(), std::ios_base::out);
         info << current_binary_format_version << " " << cfg::get().max_threads << " " << cfg::get().ds.reads.lib_count() << " " <<
-                total_stat.read_count_ << " " << total_stat.max_len_ << " " << total_stat.total_len_;
+                total_stat.read_count_ << " " << total_stat.max_len_ << " " << total_stat.total_len_ << "\n";
+
+        for (size_t i = 0; i < dataset.lib_count(); ++i) {
+            info << dataset[i].data().read_length << " " << dataset[i].data().total_nucls << "\n";
+        }
         info.close();
     }
 

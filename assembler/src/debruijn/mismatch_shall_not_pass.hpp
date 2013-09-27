@@ -98,7 +98,7 @@ class MismatchStatistics {
         }
       }
     }
-    for (auto it = gp.g.SmartEdgeBegin(); !it.IsEnd(); ++it){
+    for (auto it = gp.g.ConstEdgeBegin(); !it.IsEnd(); ++it){
       if (gp.g.length(*it) < cfg::get().rr.max_repeat_length) {
         //					INFO("edge id " <<gp.g.int_id(*it) << " added to stat" );
         //					for(size_t i = 0; i < gp.g.length(*it) + gp.g.k(); i++)
@@ -135,13 +135,13 @@ class MismatchStatistics {
   void Count(io::IReader<read_type>& stream, const graph_pack &gp) {
     stream.reset();
     DEBUG("count started");
-    NewExtendedSequenceMapper<Graph> sm(gp.g, gp.index, gp.kmer_mapper, gp.g.k() + 1);
+    auto sm = MapperInstance(gp);
     DEBUG("seq mapper created");
     while(!stream.eof()) {
       read_type read;
       stream >> read;
       const Sequence &s_read = read.sequence();
-      omnigraph::MappingPath<EdgeId> path = sm.MapSequence(s_read);
+      omnigraph::MappingPath<EdgeId> path = sm->MapSequence(s_read);
       TRACE("read mapped");
       if(path.size() == 1 && path[0].second.initial_range.size() == path[0].second.mapped_range.size()) {
         Range initial_range = path[0].second.initial_range;
@@ -252,7 +252,7 @@ class MismatchShallNotPass {
         }
       }
       size_t nucl_code = s_edge[i];
-      if(nc[cur_best] > relative_threshold_ * nc[nucl_code] + 1) {
+      if ((double) nc[cur_best] > relative_threshold_ * (double) nc[nucl_code] + 1.) {
         to_correct.push_back(make_pair(i, cur_best));
         i += gp_.g.k();
       }
@@ -261,70 +261,19 @@ class MismatchShallNotPass {
     return to_correct;
   }
 
-  int FindMaskingPositions(EdgeId edge, const mismatches::MismatchEdgeInfo &statistics, int rc = 0) {
-    const Sequence& s_edge = gp_.g.EdgeNucls(edge);
-
-    int changed = 0;
-    size_t len = gp_.g.length(edge) + gp_.g.k() ;
-    for (size_t i = 0; i < len; i++) {
-      mismatches::NuclCount nc = statistics[i];
-      if (rc)
-        nc = statistics[len - 1 - i];
-      size_t nucl_code = s_edge[i];
-      size_t cur_best = 3 - nucl_code;
-      for(size_t j = 0; j < 4; j++) {
-        if(j != nucl_code && nc[j] > nc[cur_best]) {
-          cur_best = j;
-        }
-      }
-      if(nc[cur_best] > 0.00025 * nc[nucl_code] ) {
-        double ratio = 0;
-        if (nc[nucl_code] == 0) {
-          if (gp_.g.length(edge) > 200) {
-            DEBUG("Zero confirmed nucleotide at " << gp_.g.int_id(edge)<<" " << i);
-          }
-          ratio = 1000;
-        } else
-          ratio =  double(nc[cur_best])/nc[nucl_code];
-        vector<size_t> counts;
-        for(size_t ii = 0; ii < 4; ii++)
-          counts.push_back(nc[ii]);
-
-        gp_.mismatch_masker.insert(edge, i, ratio , counts);
-        if (ratio > 0.1) {
-          DEBUG(gp_.g.int_id(edge)<<" " << i <<" " << ratio);
-          changed ++;
-        } else {
-          DEBUG(gp_.g.int_id(edge)<<" " << i <<" " << ratio);
-        }
-
-      }
-    }
-    if (changed != 0) {
-      DEBUG("On edge " << gp_.g.int_id(edge) << " len: "<< gp_.g.length(edge)  <<" to mask : " << changed << " nucls");
-    }
-
-    return changed;
-  }
-
   size_t CorrectEdge(EdgeId edge, const mismatches::MismatchEdgeInfo &statistics) {
     vector<pair<size_t, char>> to_correct = FindMismatches(edge, statistics);
     EdgeId new_edge = CorrectNucls(edge, to_correct);
     if (new_edge == EdgeId(0))
       new_edge = edge;
-    //	for(auto it = statistics.info_.begin();it != statistics.info_.end(); it);
-    //	INFO("masking corrected edge" << gp_.g.int_id(new_edge) << " old version: "  << gp_.g.int_id(edge));
 
-    FindMaskingPositions(new_edge, statistics);
-
-    ///	FindMaskingPositions(gp_.g.conjugate(new_edge), statistics, 1);
     return to_correct.size();
   }
 
   size_t CorrectAllEdges(const mismatches::MismatchStatistics<typename Graph::EdgeId> &statistics) {
     size_t res = 0;
     set<EdgeId> conjugate_fix;
-    for(auto it = gp_.g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+    for (auto it = gp_.g.ConstEdgeBegin(); !it.IsEnd(); ++it) {
       if (conjugate_fix.find(gp_.g.conjugate(*it)) == conjugate_fix.end()){
         conjugate_fix.insert(*it);
       }
@@ -333,12 +282,8 @@ class MismatchShallNotPass {
       DEBUG("processing edge" << gp_.g.int_id(*it));
 
       if (statistics.find(*it) != statistics.end()) {
-        if(!gp_.g.RelatedVertices(gp_.g.EdgeStart(*it), gp_.g.EdgeEnd(*it))) {
+        if (!gp_.g.RelatedVertices(gp_.g.EdgeStart(*it), gp_.g.EdgeEnd(*it)))
           res += CorrectEdge(*it, statistics.find(*it)->second);
-        } else {
-          //				INFO("masking without correction" << gp_.g.int_id(*it));
-          FindMaskingPositions(*it, statistics.find(*it)->second);
-        }
       }
     }
     INFO("All edges processed");

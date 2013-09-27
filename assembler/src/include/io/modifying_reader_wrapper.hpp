@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "verify.hpp"
 #include "io/delegating_reader_wrapper.hpp"
 
 #include <memory>
@@ -15,7 +16,25 @@ namespace io {
 class SequenceModifier {
 public:
 	virtual ~SequenceModifier() {}
+
+	virtual std::string Modify(const std::string& s) const {
+	    return Modify(Sequence(s)).str();
+    }
+
 	virtual Sequence Modify(const Sequence& s) const = 0;
+};
+
+class TrivialModifier : public SequenceModifier {
+public:
+
+	virtual std::string Modify(const std::string& s) const {
+	    return s;
+    }
+
+	virtual Sequence Modify(const Sequence& s) const {
+	    VERIFY(false);
+	    return Sequence();
+	}
 };
 
 /**
@@ -34,7 +53,7 @@ public:
 
 	ModifyingWrapper& operator>>(io::SingleRead& read) {
 		this->reader() >> read;
-		read = io::SingleRead(read.name(), modifier_->Modify(read.sequence()).str());
+		read = io::SingleRead(read.name(), modifier_->Modify(read.GetSequenceString()));
 		return *this;
 	}
 };

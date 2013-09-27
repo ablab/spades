@@ -17,7 +17,7 @@
 #define EDGE_LABELS_HANDLER_HPP_
 
 //#include "utils.hpp"
-#include "graph_labeler.hpp"
+#include "visualization/graph_labeler.hpp"
 #include "simple_tools.hpp"
 #include <unordered_map>
 #include <boost/function.hpp>
@@ -138,22 +138,6 @@ class EdgeLabelHandler : public GraphActionHandler<Graph> {
         };
         edge_labels[newEdge] = tmp;
 
-    }
-
-    void HandleVertexSplit(VertexId, VertexId,
-                           const vector<pair<EdgeId, EdgeId>>& old_2_new_edges,
-                           const vector<double>&) {
-        TRACE("HandleMerge by edge labels handler");
-        size_t n = old_2_new_edges.size();
-        for (size_t j = 0; j < n; j++) {
-            EdgeId old_e = old_2_new_edges[j].first;
-            EdgeId new_e = old_2_new_edges[j].second;
-            vector<EdgeId> tmp_vec(edge_labels[old_e]);
-            edge_labels[new_e] = tmp_vec;
-            for (size_t i = 0; i < edge_labels[new_e].size(); i++) {
-                edge_inclusions[edge_labels[new_e][i]].insert(new_e);
-            }
-        }
     }
 
     /*

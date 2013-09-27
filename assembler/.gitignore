@@ -1,4 +1,6 @@
+bin/
 build/
+build_spades/
 logs/
 output/
 spades_output/
@@ -6,6 +8,7 @@ spades_test/
 teamcity_precompiled/
 CMakeFiles/
 scripts/
+share/
 *.launch
 *.ebwt
 *.pyc

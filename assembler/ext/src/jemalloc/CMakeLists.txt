@@ -71,6 +71,13 @@ if (JEMALLOC_TLS_MODEL_SUPPORTED)
   set(JEMALLOC_TLS_MODEL "__attribute__((tls_model(\"initial-exec\")))")
 endif()
 
+check_type_size(void* JEMALLOC_SIZEOF_PTR)
+if (JEMALLOC_SIZEOF_PTR EQUAL 8)
+  set(JEMALLOC_LG_SIZEOF_PTR 3)
+else()
+  message(FATAL_ERROR "Unsupported pointer size")
+endif()
+
 set(JEMALLOC_USABLE_SIZE_CONST "const")
 set(JEMALLOC_TCACHE ON)
 set(JEMALLOC_MUNMAP ON)
@@ -86,12 +93,38 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   set(JEMALLOC_PURGE_MADVISE_FREE ON)
   set(JEMALLOC_ZONE ON)
-  set(JEMALLOC_ZONE_VERSION "8")
+
+  set(CMAKE_EXTRA_INCLUDE_FILES "malloc/malloc.h")
+  check_type_size(malloc_zone_t JEMALLOC_MZONE_SIZE)
+  check_type_size(malloc_introspection_t JEMALLOC_MINT_SIZE)
+  set(CMAKE_EXTRA_INCLUDE_FILES)
+
+  if (JEMALLOC_MZONE_SIZE EQUAL 112)
+    set(JEMALLOC_ZONE_VERSION "3")
+  elseif(JEMALLOC_MZONE_SIZE EQUAL 120)
+    set(JEMALLOC_ZONE_VERSION "5")
+  elseif(JEMALLOC_MZONE_SIZE EQUAL 128)
+    if (JEMALLOC_MINT_SIZE EQUAL 72)
+      set(JEMALLOC_ZONE_VERSION "6")
+    elseif (JEMALLOC_MINT_SIZE EQUAL 112)
+      set(JEMALLOC_ZONE_VERSION "7")
+    else()
+      message(FATAL_ERROR "Unsupported malloc zone version")
+    endif()
+  elseif(JEMALLOC_MZONE_SIZE EQUAL 136)
+    set(JEMALLOC_ZONE_VERSION "8")
+  elseif(JEMALLOC_MZONE_SIZE GREATER 136)
+    set(JEMALLOC_ZONE_VERSION "8")
+  else()
+    message(FATAL_ERROR "Unsupported malloc zone version")
+  endif()
   set(JEMALLOC_IVSALLOC ON)
 endif()
 
 add_definitions(-D_REENTRANT)
 add_definitions(-O3 -funroll-loops)
+
+remove_definitions(-Wall -Wextra -Wconversion -Wno-long-long -Wwrite-strings -pedantic)
 
 # TLS on Darwin is "fake". We cannot use it with jemalloc, because
 # emulated tls wants to use calloc() and friends
@@ -104,15 +137,6 @@ else()
 endif()
 check_function_exists(memalign JEMALLOC_OVERRIDE_MEMALIGN)
 check_function_exists(valloc JEMALLOC_OVERRIDE_VALLOC)
-
-check_type_size(void* JEMALLOC_SIZEOF_PTR)
-if (JEMALLOC_SIZEOF_PTR EQUAL 8)
-  set(JEMALLOC_LG_SIZEOF_PTR 3)
-elseif (JEMALLOC_SIZEOF_PTR EQUAL 4)
-  set(JEMALLOC_LG_SIZEOF_PTR 2)
-else()
-  message(FATAL_ERROR "Unsupported pointer size")
-endif()
 
 check_type_size(int JEMALLOC_SIZEOF_INT)
 if (JEMALLOC_SIZEOF_INT EQUAL 8)
@@ -144,7 +168,7 @@ else()
 endif()
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/CheckPageSize.c.in"
-               "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/CheckPageSize.c" 
+               "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/CheckPageSize.c"
                 IMMEDIATE @ONLY)
 try_run(JEMALLOC_CHECK_PAGE_SIZE JEMALLOC_HAVE_PAGE_SIZE
         ${CMAKE_BINARY_DIR}

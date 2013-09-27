@@ -19,7 +19,6 @@
 #include "pe_io.hpp"
 #include "path_visualizer.hpp"
 #include "loop_traverser.hpp"
-#include "single_threshold_finder.hpp"
 #include "long_read_storage.hpp"
 #include "split_graph_pair_info.hpp"
 #include "mate_pair_scaffolding.hpp"
@@ -51,10 +50,10 @@ size_t GetMinInsertSize(const vector<PairedInfoLibraries>& libs) {
     if (index == libs.size()) {
         return 0;
     }
-    min = libs[index][0]->insert_size_ - libs[index][0]->read_size_ / 2;
+    min = (int) libs[index][0]->insert_size_ - libs[index][0]->read_size_ / 2;
     for (size_t i = 0; i < libs.size(); ++i) {
         for (size_t j = 0; j < libs[i].size(); ++j) {
-            int overlap = libs[i][j]->insert_size_ - libs[i][j]->read_size_ / 2;
+            int overlap = (int) libs[i][j]->insert_size_ - libs[i][j]->read_size_ / 2;
             if (overlap < min && overlap > 0) {
                 min = overlap;
             }
@@ -178,32 +177,32 @@ void AddPathsToContainer(const conj_graph_pack& gp,
         }
         vector<EdgeId> edges = path.getPath();
         BidirectionalPath* new_path = new BidirectionalPath(gp.g, edges);
-        BidirectionalPath* conj_path = new BidirectionalPath(
-                new_path->Conjugate());
+        BidirectionalPath* conj_path = new BidirectionalPath(new_path->Conjugate());
         new_path->SetWeight(path.getWeight());
         conj_path->SetWeight(path.getWeight());
         result.AddPair(new_path, conj_path);
     }
-    INFO("== Long reads paths " << result.size() << " == ");
-    for (size_t index = 0; index < result.size(); ++index) {
-        DEBUG("Long contig " << index);
-        result.Get(index)->Print();
-    }INFO("==== ");
+    DEBUG("Long reads paths " << result.size() << " == ");
 }
 
-vector<SimpleExtender*> MakeLongReadsExtender(const conj_graph_pack& gp,
-                           const vector<PathStorageInfo<Graph> >& long_reads,
-                           size_t max_loops) {
+vector<SimpleExtender*> MakeLongReadsExtender(
+        const conj_graph_pack& gp,
+        const vector<PathStorageInfo<Graph> >& long_reads, size_t max_loops) {
     vector<SimpleExtender*> result;
     for (size_t i = 0; i < long_reads.size(); ++i) {
+        if (long_reads[i].GetPaths().size() == 0) {
+            continue;
+        }
         PathContainer paths;
         AddPathsToContainer(gp, long_reads[i].GetPaths(), 1, paths);
         ExtensionChooser * longReadEC = new LongReadsExtensionChooser(
                 gp.g, paths, long_reads[i].GetFilteringThreshold(),
-                long_reads[i].GetPriorityThreshold());
-        SimpleExtender * longReadPathExtender = new SimpleExtender(
-                gp.g, max_loops, longReadEC, true);
-        result.push_back(longReadPathExtender);
+                long_reads[i].GetWeightPriorityThreshold(),
+                long_reads[i].GetUniqueEdgePriorityThreshold());
+        SimpleExtender * longReadExtender = new SimpleExtender(gp.g, max_loops,
+                                                               longReadEC,
+                                                               true);
+        result.push_back(longReadExtender);
     }
     return result;
 }
@@ -233,8 +232,8 @@ PathContainer ResolveRepeatsManyLibs(conj_graph_pack& gp,
     vector<WeightCounter*> scaf_wcs;
     GapJoiner * gapJoiner = new HammingGapJoiner(gp.g,
 				pset.scaffolder_options.min_gap_score,
-				(int) (pset.scaffolder_options.max_must_overlap * gp.g.k()),
-				(int) (pset.scaffolder_options.max_can_overlap * gp.g.k()),
+				(int) (pset.scaffolder_options.max_must_overlap * (double) gp.g.k()),
+				(int) (pset.scaffolder_options.max_can_overlap * (double) gp.g.k()),
 				pset.scaffolder_options.short_overlap);
 
 	vector<ScaffoldingPathExtender*> scafPEs;
@@ -262,7 +261,7 @@ PathContainer ResolveRepeatsManyLibs(conj_graph_pack& gp,
 
 	seeds.SortByLength();
 	seeds.ResetPathsId();
-	INFO("Extending seeds");
+	INFO("Growing paths");
 	auto paths = resolver.extendSeeds(seeds, *mainPE);
 	if (cfg::get().pe_params.output.write_overlaped_paths) {
 		writer.writePaths(paths, GetEtcDir(output_dir) + "overlaped_paths.fasta");
@@ -281,7 +280,7 @@ PathContainer ResolveRepeatsManyLibs(conj_graph_pack& gp,
     DebugOutputPaths(writer, gp, output_dir, paths, "final_paths");
 
 	if (broken_contigs.is_initialized()) {
-	    OutputBrokenScaffolds(paths, gp.g.k(), writer, output_dir + broken_contigs.get());
+	    OutputBrokenScaffolds(paths, (int) gp.g.k(), writer, output_dir + broken_contigs.get());
 	}
 
     if (traversLoops) {
@@ -309,7 +308,7 @@ PairedInfoLibrary* MakeNewLib(conj_graph_pack::graph_t& g,
 	double var = cfg::get().ds.reads[initial_index].data().insert_size_deviation;
 	bool is_mp = cfg::get().ds.reads[initial_index].type() == io::LibraryType::MatePairs;
 	PairedInfoLibrary* lib = new PairedInfoLibrary(cfg::get().K, g, read_length,
-			is, var, *paired_index[index], is_mp);
+			(size_t) is, (size_t) var, *paired_index[index], is_mp);
 	return lib;
 }
 
@@ -319,31 +318,6 @@ void DeleteLibs(vector<PairedInfoLibraries>& libs) {
             delete libs[j].at(i);
         }
     }
-}
-
-void SetOldThreshold(PairedInfoLibrary* lib, size_t index, size_t split_edge_length) {
-	INFO("Searching for paired info threshold for lib #"
-						<< index << " (IS = " << lib->insert_size_ << ",  DEV = " << lib->is_variation_ << ")");
-
-	SingleThresholdFinder finder(lib->insert_size_ - 2 * lib->is_variation_, lib->insert_size_ + 2 * lib->is_variation_, lib->read_size_);
-	double threshold = finder.find_threshold(index);
-
-	INFO("Paired info threshold is " << threshold);
-	lib->SetSingleThreshold(threshold);
-}
-
-void SetNewThreshold(conj_graph_pack& gp, PairedInfoLibrary* lib, size_t index,
-                     size_t split_edge_length) {
-    SplitGraphPairInfo split_graph(gp, *lib, index, split_edge_length);
-    INFO("Calculating paired info threshold");
-    split_graph.ProcessReadPairs();
-    double threshold = split_graph.FindThreshold(
-            split_edge_length, lib->insert_size_ - 2 * lib->is_variation_,
-            lib->insert_size_ + 2 * lib->is_variation_);
-    lib->SetSingleThreshold(threshold);
-    //double tr = *cfg::get().pe_params.param_set.extension_options.select_options.single_threshold;
-    //INFO("threshold taken from config - "  << tr);
-    //lib->SetSingleThreshold(tr);
 }
 
 bool InsertSizeCompare(const PairedInfoLibraries& lib1,
@@ -367,8 +341,6 @@ void ResolveRepeatsPe(conj_graph_pack& gp, vector<PairedIndexT*>& paired_index,
                       const std::string& contigs_name, bool traverseLoops,
                       boost::optional<std::string> broken_contigs,
                       bool use_auto_threshold = true) {
-
-    const pe_config::ParamSetT& pset = cfg::get().pe_params.param_set;
     vector<PairedInfoLibraries> rr_libs;
     vector<PairedInfoLibraries> scaff_libs;
     for (size_t i = 0; i < paired_index.size(); ++i) {
@@ -377,7 +349,8 @@ void ResolveRepeatsPe(conj_graph_pack& gp, vector<PairedIndexT*>& paired_index,
                         == io::LibraryType::MatePairs*/) {
             PairedInfoLibrary* lib = MakeNewLib(gp.g, paired_index, indexs[i], i);
             if (use_auto_threshold) {
-                SetNewThreshold(gp, lib, indexs[i], pset.split_edge_length);
+                lib->SetSingleThreshold(cfg::get().ds.reads[indexs[i]].data().pi_threshold);
+                INFO("Threshold for library # " << indexs[i] << " is " << cfg::get().ds.reads[indexs[i]].data().pi_threshold);
             }
             PairedInfoLibraries libs;
             libs.push_back(lib);

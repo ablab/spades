@@ -17,7 +17,6 @@ void load(pe_config::OutputParamsT& o, boost::property_tree::ptree const& pt, bo
 
   load(o.write_overlaped_paths,   pt, "write_overlaped_paths" );
   load(o.write_paths,             pt, "write_paths"           );
-  load(o.write_path_loc,          pt, "write_path_loc"        );
 }
 
 void load(pe_config::VisualizeParamsT& o, boost::property_tree::ptree const& pt, bool /*complete*/) {
@@ -29,6 +28,7 @@ void load(pe_config::VisualizeParamsT& o, boost::property_tree::ptree const& pt,
 void load(pe_config::ParamSetT::ExtensionOptionsT& es,
           boost::property_tree::ptree const& pt, bool ) {
     using config_common::load;
+    load(es.recalculate_threshold, pt, "recalculate_threshold");
     load(es.priority_coeff, pt, "priority_coeff");
     load(es.weight_threshold, pt, "weight_threshold");
     load(es.single_threshold, pt, "single_threshold");
@@ -75,7 +75,8 @@ void load(pe_config::LongReads& p, boost::property_tree::ptree const& pt,
           bool) {
     using config_common::load;
     load(p.filtering, pt, "filtering");
-    load(p.priority, pt, "priority");
+    load(p.weight_priority, pt, "weight_priority");
+    load(p.unique_edge_priority, pt, "unique_edge_priority");
 }
 
 void load(pe_config::AllLongReads& p, boost::property_tree::ptree const& pt,

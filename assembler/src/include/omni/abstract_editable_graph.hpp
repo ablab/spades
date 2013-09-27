@@ -183,7 +183,7 @@ public:
 	}
 
 protected:
-	virtual bool AdditionalCompressCondition(VertexId v) const {
+	virtual bool AdditionalCompressCondition(VertexId /*v*/) const {
 		return true;
 	}
 public:
@@ -214,8 +214,6 @@ public:
 	virtual VertexId EdgeEnd(EdgeId edge) const = 0;
 
 	virtual bool RelatedVertices(VertexId v1, VertexId v2) const = 0;
-
-    virtual bool SplitCondition(VertexId vertex, const vector<EdgeId> &splitting_edges) const = 0;
 
 	bool CheckUniqueOutgoingEdge(VertexId v) const {
 		return OutgoingEdgeCount(v) == 1;
@@ -503,41 +501,6 @@ public:
 				"Edges glued into " << str(new_edge));
 		return new_edge;
 	}
-
-    pair<VertexId, vector<pair<EdgeId, EdgeId>>> SplitVertex(VertexId v, const vector<EdgeId> &splitting_edges, const vector<double> &split_coefficients) {
-        //TODO:: check whether we handle loops correctly!
-        VERIFY(splitting_edges.size() == split_coefficients.size());
-        VertexId new_vertex = HiddenAddVertex(data(v));
-        vector<pair<EdgeId, EdgeId>> old_2_new_edges;
-
-        FOREACH (EdgeId e, splitting_edges) {
-            VertexId start = this->EdgeStart(e);
-            VertexId end = this->EdgeEnd(e);
-            if (start == v) {
-                start = new_vertex;
-            } else if (end == v) {
-                end = new_vertex;
-            } else {
-                VERIFY(false);
-            }
-            EdgeId new_e = HiddenAddEdge(start, end, this->data(e));
-            old_2_new_edges.push_back(make_pair(e, new_e));
-        }
-
-        //firing events
-        this->FireVertexSplit(v, new_vertex, old_2_new_edges, split_coefficients);
-        this->FireAddVertex(new_vertex);
-        FOREACH(auto old_new_edge, old_2_new_edges) {
-            this->FireAddEdge(old_new_edge.second);
-        }
-
-        return make_pair(new_vertex, old_2_new_edges);
-    }
-
-    pair<VertexId, vector<pair<EdgeId, EdgeId>>> SplitVertex(VertexId vertex, const vector<EdgeId>& splitting_edges) {
-        vector<double> split_coefficients(splitting_edges.size(), 1);
-        return SplitVertex(vertex, splitting_edges, split_coefficients);
-    }
 
 private:
 	DECL_LOGGER("AbstractEditableGraph")

@@ -118,31 +118,51 @@ public:
 		path.PushBack(pathEnd);
     }
 
-	void MakeBestChoice(BidirectionalPath& path, pair<EdgeId, EdgeId>& edges) {
-		BidirectionalPath experiment(path);
-		double maxWeight = chooser_.CountWeight(experiment, edges.second);
-		double diff = maxWeight - chooser_.CountWeight(experiment, edges.first);
-		size_t maxIter = 0;
-		for (size_t i = 1; i <= iter_; ++i) {
-			double weight = chooser_.CountWeight(experiment, edges.first);
-			if (weight > 0) {
-				MakeCycleStep(experiment, edges.first);
-
-				weight = chooser_.CountWeight(experiment, edges.second);
-				double weight2 = chooser_.CountWeight(experiment, edges.first);
-				if (weight > maxWeight
-						|| (weight == maxWeight && weight - weight2 > diff) || (weight == maxWeight && weight - weight2 == diff && i == 1)) {
-					maxWeight = weight;
-					maxIter = i;
-					diff = weight - weight2;
-				}
-			}
-		}
-		for (size_t i = 0; i < maxIter; ++i) {
-			MakeCycleStep(path, edges.first);
-		}
-		path.PushBack(edges.second);
-	}
+    void MakeBestChoice(BidirectionalPath& path, pair<EdgeId, EdgeId>& edges) {
+        DEBUG("Path before deleting");
+        path.Print();
+        EdgeId first_edge = path.Back();
+        EdgeId second_edge = edges.first;
+        while (path.Size() >= 2) {
+            if (path.At(path.Size() - 1) == first_edge
+                    && path.At(path.Size() - 2) == second_edge) {
+                path.PopBack(2);
+            } else {
+                break;
+            }
+        }
+        DEBUG("Path after deleting");
+        path.Print();
+        chooser_.ClearExcludedEdges();
+        BidirectionalPath experiment(path);
+        double maxWeight = chooser_.CountWeight(experiment, edges.second);
+        double diff = maxWeight - chooser_.CountWeight(experiment, edges.first);
+        size_t maxIter = 0;
+        for (size_t i = 1; i <= iter_; ++i) {
+            double weight = chooser_.CountWeight(experiment, edges.first);
+            DEBUG("weight " << weight);
+            if (weight > 0) {
+                MakeCycleStep(experiment, edges.first);
+                weight = chooser_.CountWeight(experiment, edges.second);
+                double weight2 = chooser_.CountWeight(experiment, edges.first);
+                DEBUG("iter " << i << " weight " << weight  << " maxWeight " << maxWeight << " weight 2 " <<  weight2 << " diff " << diff);
+                if (weight > maxWeight
+                        || (weight == maxWeight && weight - weight2 > diff)
+                        || (weight == maxWeight && weight - weight2 == diff
+                                && i == 1)) {
+                    maxWeight = weight;
+                    maxIter = i;
+                    diff = weight - weight2;
+                }
+            }
+        }
+        for (size_t i = 0; i < maxIter; ++i) {
+            MakeCycleStep(path, edges.first);
+        }
+        path.PushBack(edges.second);
+        DEBUG("path after resolving");
+        path.Print();
+    }
 
     virtual void ResolveShortLoop(BidirectionalPath& path) {
         pair<EdgeId, EdgeId> edges;
@@ -192,11 +212,11 @@ public:
             return initial_gap;
         }
 
-        for (int l = g_.k() ; l > 0; --l) {
+        for (int l = (int) g_.k(); l > 0; --l) {
             if (g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l) == g_.EdgeNucls(source).Subseq(0, l)) {
                 DEBUG("Found correct gap length");
                 DEBUG("Inintial: " << initial_gap << ", new gap: " << g_.k() - l);
-                return g_.k() - l;
+                return (int) g_.k() - l;
             }
         }
 
@@ -267,9 +287,9 @@ public:
             return initial_gap;
         }
 
-        int start = g_.k();
+        int start = (int) g_.k();
         if (initial_gap < 0) {
-            start = g_.k() + min( -initial_gap, (int) min(g_.length(sink), g_.length(source)));
+            start = (int) g_.k() + min( -initial_gap, (int) min(g_.length(sink), g_.length(source)));
         }
 
         double max_score = minGapScore_;
@@ -277,7 +297,10 @@ public:
         bool found = false;
 
         for (int l = start; l >= shortOverlap_; --l) {
-            double score = ScoreGap(g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l), g_.EdgeNucls(source).Subseq(0, l), g_.k() - l, initial_gap);
+            double score = ScoreGap(g_.EdgeNucls(sink).Subseq((size_t) ((int) g_.length(sink) + (int) g_.k() - l)), 
+                                    g_.EdgeNucls(source).Subseq(0, (size_t) l), 
+                                    (int) g_.k() - l,
+                                    initial_gap);
             if (score > max_score) {
                 max_score = score;
                 best_gap = (int) g_.k() - l;
@@ -287,7 +310,10 @@ public:
 
         if (!found) {
             for (int l = shortOverlap_ - 1; l > 0; --l) {
-                double score = ScoreGap(g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l), g_.EdgeNucls(source).Subseq(0, l), g_.k() - l, initial_gap);
+                double score = ScoreGap(g_.EdgeNucls(sink).Subseq((size_t) ((int) g_.length(sink) + (int) g_.k() - l)),
+                                        g_.EdgeNucls(source).Subseq(0, (size_t) l), 
+                                        (int) g_.k() - l, 
+                                        initial_gap);
                 if (score > max_score) {
                     max_score = score;
                     best_gap = (int) g_.k() - l;
@@ -382,7 +408,12 @@ public:
         while (MakeGrowStep(path)) {
             size_t skip_identical_edges = 0;
             if (path.getLoopDetector().IsCycled(maxLoops_, skip_identical_edges)) {
-                path.getLoopDetector().RemoveLoop(skip_identical_edges);
+                DEBUG("Path is Cycled!");
+                DEBUG("skip identival edges = " << skip_identical_edges);
+                path.Print();
+                path.getLoopDetector().RemoveLoop(skip_identical_edges, false);
+                DEBUG("After delete");
+                path.Print();
                 return;
             }
         }
@@ -478,6 +509,8 @@ protected:
 //                    DEBUG("Seeds are not covered after growing");
 //                }
                 path->CheckConjugateEnd();
+                DEBUG("result path ");
+                path->Print();
             }
         }
     }
@@ -529,6 +562,11 @@ public:
 	}
 
     virtual bool MakeGrowStep(BidirectionalPath& path) {
+        if (cfg::get().avoid_rc_connections && (path.CameToInterstrandBulge() || path.IsInterstrandBulge())) {
+            DEBUG("Stoping because of interstand bulge");
+            return false;
+        }
+
         size_t current = 0;
 
         while (current < extenders_.size()) {
@@ -570,7 +608,6 @@ public:
     	CoveringPathExtender(g, max_loops, investigateShortLoops), extensionChooser_(ec), loopResolver_(g, *extensionChooser_) {
     }
 
-
     virtual bool MakeGrowStep(BidirectionalPath& path) {
         ExtensionChooser::EdgeContainer candidates;
         bool result = false;
@@ -578,22 +615,41 @@ public:
         candidates = extensionChooser_->Filter(path, candidates);
 
         if (candidates.size() == 1) {
+            if (!investigateShortLoops_
+                    && (path.getLoopDetector().EdgeInShortLoop(path.Back())
+                            or path.getLoopDetector().EdgeInShortLoop(
+                                    candidates.back().e_))
+                    && extensionChooser_->WeighConterBased()) {
+                return false;
+            }
             path.PushBack(candidates.back().e_, candidates.back().d_);
             result = true;
-            if (investigateShortLoops_ && path.getLoopDetector().EdgeInShortLoop() && extensionChooser_->WeighConterBased()) {
+            if (investigateShortLoops_
+                    && path.getLoopDetector().EdgeInShortLoop(path.Back())
+                    && extensionChooser_->WeighConterBased()) {
+                while (path.getLoopDetector().EdgeInShortLoop(path.Back())) {
+                    loopResolver_.ResolveShortLoop(path);
+                }
+            }
+        } else if (investigateShortLoops_
+                && path.getLoopDetector().PrevEdgeInShortLoop()
+                && extensionChooser_->WeighConterBased()) {
+            DEBUG("Prev edge in short loop");
+            path.PopBack();
+            while (path.getLoopDetector().EdgeInShortLoop(path.Back())) {
                 loopResolver_.ResolveShortLoop(path);
             }
-            if (!investigateShortLoops_ && path.getLoopDetector().EdgeInShortLoop()) {
-            	path.PopBack();
-            	result = false;
+            result = true;
+        } else if (investigateShortLoops_
+                && path.getLoopDetector().EdgeInShortLoop(path.Back())
+                && extensionChooser_->WeighConterBased()) {
+            DEBUG("Edge in short loop");
+            while (path.getLoopDetector().EdgeInShortLoop(path.Back())) {
+                loopResolver_.ResolveShortLoop(path);
             }
-        } else if (investigateShortLoops_ && path.getLoopDetector().PrevEdgeInShortLoop() && extensionChooser_->WeighConterBased()) {
-        	DEBUG("Prev edge in short loop");
-        	path.PopBack();
-        	loopResolver_.ResolveShortLoop(path);
-        	result = true;
-        } else if (candidates.size() >= 1){
-        	DEBUG("MORE 1 CANDIDATE");
+            result = true;
+        } else if (candidates.size() >= 1) {
+            DEBUG("MORE 1 CANDIDATE");
         }
         return result;
     }
@@ -651,6 +707,9 @@ public:
 
             if (candidates.size() == 1) {
                 if (candidates[0].e_ == path.Back()) {
+                    return false;
+                }
+                if (cfg::get().avoid_rc_connections && candidates[0].e_ == g_.conjugate(path.Back())) {
                     return false;
                 }
                 DEBUG(candidates.size() << " " << g_.int_id(candidates[0].e_) << " Path id :" << path.GetId()<< "  Edge len : " << g_.length(candidates[0].e_))

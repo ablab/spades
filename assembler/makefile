@@ -34,10 +34,17 @@ dv:
 	make -C build/debug/online_vis
 
 rc:
-	make -C build/release/cap
+	make -C build/release/cap cap
 
 dc:
-	make -C build/debug/cap
+	make -C build/debug/cap cap
+
+rctls:
+	make -C build/release/cap cap-tools
+
+dctls:
+	make -C build/debug/cap cap-tools
+
 
 rct:
 	make -C build/release/test/cap

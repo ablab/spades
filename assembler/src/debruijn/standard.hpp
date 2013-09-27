@@ -27,6 +27,7 @@
 
 // omni
 #include "omni/total_labeler.hpp"
+#include "omni/visualization/visualization.hpp"
 
 #include "runtime_k.hpp"
 // common typedefs

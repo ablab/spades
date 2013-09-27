@@ -1,6 +1,7 @@
 #pragma once
 
 #include "config_common.hpp"
+#include "config_singl.hpp"
 
 namespace cap {
 
@@ -18,6 +19,13 @@ inline void load(cap_config &cfg, boost::property_tree::ptree const& pt, bool co
   load(cfg.desc_file_name, pt, "desc_file_name");
   load(cfg.default_log_filename, pt, "default_log_filename");
   load(cfg.default_log_file_mode, pt, "default_log_file_mode");
+}
+
+void load(cap_config& cfg, const std::string &filename) {
+  boost::property_tree::ptree pt;
+  boost::property_tree::read_info(filename, pt);
+
+  load(cfg, pt, true);
 }
 
 }

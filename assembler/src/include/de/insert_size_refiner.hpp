@@ -30,7 +30,7 @@ double get_median(const std::map<int, size_t> &hist) {
 double get_mad(const std::map<int, size_t> &hist, double median) { // median absolute deviation
   std::map<int, size_t> hist2;
   for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
-	int x = abs(iter->first - math::round_to_zero(median));
+      int x = abs(iter->first - math::round_to_zero(median));
     hist2[x] = iter->second;
   }
   return get_median(hist2);
@@ -57,6 +57,7 @@ class InsertSizeHistogramCounter {
   HistType hist() { return hist_; }
   size_t total() const { return total_; }
   size_t mapped() const { return counted_; }
+  size_t negative() const { return negative_; }
 
   template<class PairedRead>
   void Count(io::ReadStreamVector< io::IReader<PairedRead> >& streams, size_t& rl) {
@@ -70,9 +71,8 @@ class InsertSizeHistogramCounter {
       hists[i] = new HistType();
 
     INFO("Processing paired reads (takes a while)");
-    size_t counted = 0;
-    size_t total = 0;
-#pragma omp parallel for num_threads(nthreads) reduction(+ : counted, total)
+    size_t counted = 0, total = 0, negative = 0;
+#pragma omp parallel for num_threads(nthreads) reduction(+ : counted, total, negative)
     for (size_t i = 0; i < nthreads; ++i) {
       PairedRead r;
       io::IReader<PairedRead>& stream = streams[i];
@@ -80,18 +80,26 @@ class InsertSizeHistogramCounter {
 
       while (!stream.eof()) {
         stream >> r;
-        counted += ProcessPairedRead(r, *hists[i], rls[i]);
+        int res = ProcessPairedRead(r, *hists[i], rls[i]);
+        counted += (res > 0);
+        negative += (res < 0);
         ++total;
       }
     }
 
     total_ = total;
     counted_ = counted;
-    rl = rls[0];
-    for (size_t i = 1; i < nthreads; ++i) {
-      if (rl < rls[i]) {
+    negative_ = negative;
+
+    if (rl == 0) {
+      rl = rls[0];
+      for (size_t i = 1; i < nthreads; ++i) {
+        if (rl < rls[i]) {
           rl = rls[i];
+        }
       }
+    }
+    for (size_t i = 1; i < nthreads; ++i) {
       for (auto it = hists[i]->begin(); it != hists[i]->end(); ++it) {
         (*hists[0])[it->first] += it->second;
       }
@@ -119,11 +127,11 @@ class InsertSizeHistogramCounter {
         continue;
       }
       n += iter->second;
-      sum += iter->second * 1. * iter->first;
-      sum2 += iter->second * 1. * iter->first * iter->first;
+      sum += (double) iter->second * 1. * (double) iter->first;
+      sum2 += (double)iter->second * 1. * (double)iter->first * (double)iter->first;
     }
-    mean = sum / n;
-    delta = sqrt(sum2 / n - mean * mean);
+    mean = sum / (double) n;
+    delta = sqrt(sum2 / (double) n - mean * mean);
 
     low = mean - 5 * delta;
     high = mean + 5 * delta;
@@ -140,11 +148,11 @@ class InsertSizeHistogramCounter {
         continue;
       }
       n += iter->second;
-      sum += iter->second * 1. * iter->first;
-      sum2 += iter->second * 1. * iter->first * iter->first;
+      sum += (double) iter->second * 1. * (double) iter->first;
+      sum2 += (double) iter->second * 1. * (double) iter->first * (double) iter->first;
     }
-    mean = sum / n;
-    delta = sqrt(sum2 / n - mean * mean);
+    mean = sum / (double) n;
+    delta = sqrt(sum2 / (double) n - mean * mean);
 
     DEBUG("Mean IS: " << mean);
     DEBUG("sd: " << delta);
@@ -163,7 +171,7 @@ class InsertSizeHistogramCounter {
       }
       size_t mm = m + iter->second;
       for (size_t i = 0; i < utils::array_size(q); i++) {
-        size_t scaled_q_i(q[i] / 100. * n);
+        size_t scaled_q_i((size_t) ((double) q[i] / 100. * (double) n));
         if (m < scaled_q_i && mm >= scaled_q_i) {
           percentiles[q[i]] = iter->first;
         }
@@ -189,23 +197,24 @@ class InsertSizeHistogramCounter {
   size_t edge_length_threshold_;
   size_t total_;
   size_t counted_;
+  size_t negative_;
   size_t k_;
   bool ignore_negative_;
 
   template<class PairedRead>
-  size_t ProcessPairedRead(const PairedRead& r, HistType& hist, size_t& rl) {
+  int ProcessPairedRead(const PairedRead& r, HistType& hist, size_t& rl) {
     Sequence sequence_left = r.first().sequence();
     Sequence sequence_right = r.second().sequence();
-
-    if (sequence_left.size() <= k_ || sequence_right.size() <= k_) {
-      return 0;
-    }
 
     if (sequence_left.size() > rl) {
         rl = sequence_left.size();
     }
     if (sequence_right.size() > rl) {
         rl = sequence_right.size();
+    }
+
+    if (sequence_left.size() <= k_ || sequence_right.size() <= k_) {
+      return 0;
     }
 
     runtime_k::RtSeq left = sequence_left.end<runtime_k::RtSeq>(k_ + 1);
@@ -220,12 +229,17 @@ class InsertSizeHistogramCounter {
     if (pos_left.first != pos_right.first || gp_.g.length(pos_left.first) < edge_length_threshold_) {
       return 0;
     }
-    int is = pos_right.second - pos_left.second - k_ - 1 - r.insert_size()
-             + sequence_left.size() + sequence_right.size();
-    if (is > 0 || !ignore_negative_)
-      hist[is] += 1;
 
-    return 1;
+    int is = (int) (pos_right.second - pos_left.second - k_ - 1 - r.insert_size()
+             + sequence_left.size() + sequence_right.size());
+    if (is > 0 || !ignore_negative_) {
+        hist[is] += 1;
+        return 1;
+    } else {
+        return -1;
+    }
+
+    return 0;
   }
 };
 
@@ -243,10 +257,12 @@ void refine_insert_size(io::ReadStreamVector<io::IReader<PairedRead> >& streams,
   InsertSizeHistogramCounter<graph_pack> hist_counter(gp, edge_length_threshold, /* ignore negative */ true);
   hist_counter.Count(streams, rl);
 
+  INFO(hist_counter.mapped() << " paired reads (" << ((double) hist_counter.mapped() * 100.0 / (double) hist_counter.total()) << "% of all) aligned to long edges");
+  if (hist_counter.negative() > 3 * hist_counter.mapped())
+      WARN("Too much reads aligned with negative insert size. Does the library orientation set properly?");
   if (hist_counter.mapped() == 0)
     return;
 
-  INFO(hist_counter.mapped() << " paired reads (" << (hist_counter.mapped() * 100.0 / hist_counter.total()) << "% of all) aligned to long edges");
   hist_counter.FindMean(mean, delta, percentiles);
   hist_counter.FindMedian(median, mad, hist);
 }

@@ -24,8 +24,9 @@
 #include <complex>
 #include <cmath>
 
-
 namespace  omnigraph{
+
+namespace de {
 
 template <class EdgeId>
 class PeakFinder {
@@ -364,7 +365,7 @@ private:
       }// else if (j < i && hist_[index_max - x_left_][0] == hist_[j - x_left][0] ) index_max = j;
     TRACE("Maximum is " << index_max);
 
-    if  (abs(index_max - peak) <= delta)
+    if  ((size_t)abs(index_max - peak) <= delta)
       return true;
 
     return false;
@@ -376,6 +377,8 @@ private:
 
   DECL_LOGGER("PeakFinder");
 };
+
+}
 
 }
 

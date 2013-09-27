@@ -93,8 +93,7 @@ void simplify_graph(conj_graph_pack& gp) {
 	total_labeler labeler/*tot_lab*/(&graph_struct);
 //	CompositeLabeler<Graph> labeler(tot_lab, edge_qual);
 
-	detail_info_printer printer(gp, labeler, cfg::get().output_dir,
-			"graph.dot");
+	detail_info_printer printer(gp, labeler, cfg::get().output_dir);
 	printer(ipp_before_first_gap_closer);
 ;
 //	QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, edge_qual);
@@ -114,24 +113,6 @@ void simplify_graph(conj_graph_pack& gp) {
 	AvgCovereageCounter<Graph> cov_counter(gp.g);
   cfg::get_writable().ds.set_avg_coverage(cov_counter.Count());
 
-	//  ProduceInfo<k>(g, index, *totLab, genome, output_folder + "simplified_graph.dot", "simplified_graph");
-
-	//experimental
-//	if (cfg::get().paired_mode) {
-//		INFO("Pair info aware ErroneousConnectionsRemoval");
-//		RemoveEroneousEdgesUsingPairedInfo(gp.g, paired_index);
-//		INFO("Pair info aware ErroneousConnectionsRemoval stats");
-//		CountStats<K>(gp.g, gp.index, gp.genome);
-//	}
-	//experimental
-
-	//	ProduceDetailedInfo<k>(g, index, labeler, genome, output_folder + "with_pair_info_edges_removed/",	"graph.dot", "no_erroneous_edges_graph");
-
-	//  WriteGraphComponents<k>(g, index, *totLab, genome, output_folder + "graph_components" + "/", "graph.dot",
-	//            "graph_component", cfg::get().ds.IS);
-
-	//  number_of_components = PrintGraphComponents(output_folder + "graph_components/graph", g,
-	//            cfg::get().ds.IS, int_ids, paired_index, EdgePos);
 }
 
 void load_simplification(conj_graph_pack& gp, path::files_t* used_files) {

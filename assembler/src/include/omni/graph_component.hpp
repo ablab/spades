@@ -15,9 +15,10 @@ class GraphComponent {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename std::set<VertexId>::const_iterator vertex_iterator;
 	typedef typename std::set<EdgeId>::const_iterator edge_iterator;
-	const Graph& g_;
+	const Graph& graph_;
 	std::set<VertexId> vertices_;
 	std::set<EdgeId> edges_;
+	string name_;
 
 
 	template<class VertexIt>
@@ -32,17 +33,17 @@ class GraphComponent {
 		for (auto it = begin; it != end; ++it) {
 			vertices_.insert(*it);
 			if (add_conjugate)
-				vertices_.insert(g_.conjugate(*it));
+				vertices_.insert(graph_.conjugate(*it));
 		}
 	}
 
 	void FillEdges() {
 		for (auto v_it = vertices_.begin(); v_it != vertices_.end(); ++v_it) {
-			const vector<EdgeId> edges = g_.OutgoingEdges(*v_it);
-			TRACE("working with vertex " << g_.str(*v_it));
+			const vector<EdgeId> edges = graph_.OutgoingEdges(*v_it);
+			TRACE("working with vertex " << graph_.str(*v_it));
 			for (auto e_it = edges.begin(); e_it != edges.end(); ++e_it) {
-				VertexId edge_end = g_.EdgeEnd(*e_it);
-				TRACE(g_.coverage(*e_it) << " " << g_.length(*e_it));
+				VertexId edge_end = graph_.EdgeEnd(*e_it);
+				TRACE(graph_.coverage(*e_it) << " " << graph_.length(*e_it));
 				if (vertices_.count(edge_end) > 0) {
 					edges_.insert(*e_it);
 					TRACE("Edge added");
@@ -65,33 +66,45 @@ class GraphComponent {
 
 public:
 	template<class VertexIt>
-	GraphComponent(const Graph &g, VertexIt begin, VertexIt end) :
-			g_(g) {
+	GraphComponent(const Graph &g, VertexIt begin, VertexIt end, const string &name = "") :
+		graph_(g), name_(name) {
 		Fill(begin, end);
 	}
 
 	//todo refactor and get rid of hack
 	template<class VertexIt>
 	GraphComponent(const Graph &g, VertexIt begin, VertexIt end,
-			bool add_conjugate) : g_(g) {
+			bool add_conjugate, const string &name = "") : graph_(g), name_(name) {
 		Fill(begin, end, add_conjugate);
 	}
 
 	//Full graph component
-	GraphComponent(const Graph &g) : g_(g) {
+	GraphComponent(const Graph &g, const string &name = "") : graph_(g), name_(name) {
 		Fill(g.begin(), g.end());
 	}
 
 	//may be used for conjugate closure
-	GraphComponent(const GraphComponent& component, bool add_conjugate) : g_(component.g_)
+	GraphComponent(const GraphComponent& component, bool add_conjugate, const string &name = "") : graph_(component.graph_), name_(name)
 //		vertices_(component.vertices_.begin(), component.vertices_.end()),
 //		edges_(component.edges_.begin(), component.edges_.end())
 	{
 		Fill(component.v_begin(), component.v_end(), add_conjugate);
 	}
 
+	GraphComponent<Graph> &operator=(const GraphComponent<Graph> &that) {
+	    VERIFY(&this->graph_ == &that.graph_);
+	    this->vertices_ = that.vertices_;
+        this->edges_ = that.edges_;
+	    this->name_ = that.name_;
+	    return *this;
+	}
+
 	const Graph& g() const {
-		return g_;
+		return graph_;
+	}
+
+	string name() const {
+	    return name_;
 	}
 
 	size_t v_size() const {
@@ -121,7 +134,7 @@ public:
 		return edges_.end();
 	}
 
-	const std::set<EdgeId>& edges() {
+	const std::set<EdgeId>& edges() const {
 		return edges_;
 	}
 
@@ -134,6 +147,24 @@ public:
 	}
 	vertex_iterator v_end() const {
 		return vertices_.end();
+	}
+
+	bool IsBorder(VertexId v) const {
+		if(vertices_.count(v) == 0)
+			return false;
+		const vector<EdgeId> outgoing_edges = graph_.OutgoingEdges(v);
+		const vector<EdgeId> incoming_edges = graph_.IncomingEdges(v);
+		set<EdgeId> adjacent_edges;
+		adjacent_edges.insert(outgoing_edges.begin(), outgoing_edges.end());
+		adjacent_edges.insert(incoming_edges.begin(), incoming_edges.end());
+		for (auto e_it = adjacent_edges.begin(); e_it != adjacent_edges.end();
+				++e_it) {
+			if (vertices_.count(graph_.EdgeStart(*e_it)) == 0
+					|| vertices_.count(graph_.EdgeEnd(*e_it)) == 0) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 };

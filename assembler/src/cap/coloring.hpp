@@ -192,11 +192,11 @@ public:
 };
 
 template<class Graph, class Element>
-class ElementColorHandler: public GraphActionHandler<Graph> {
+class ElementColorHandler: public GraphActionHandler<Graph>, public visualization::ElementColorer<Element> {
 	typedef GraphActionHandler<Graph> base;
 
 	// For each element will store a bitmask of used there colors.
-	restricted::map<Element, TColorSet > data_;
+	std::unordered_map<Element, TColorSet > data_;
 
 	// Maximum number of different colors that may be used in coloring
 	size_t max_colors_;
@@ -263,10 +263,14 @@ public:
 	void Erase(Element e) {
 		data_.erase(e);
 	}
+
+	string GetValue(Element e) const {
+		return ColorStr(e);
+	}
 };
 
 template<class Graph>
-class ColorHandler: public GraphActionHandler<Graph> {
+class ColorHandler: public visualization::GraphColorer<Graph>, public GraphActionHandler<Graph> {
 	typedef GraphActionHandler<Graph> base;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
@@ -290,6 +294,14 @@ public:
 
 	void PaintVertex(VertexId v, const TColorSet &color_set) {
 		vertex_color_.PaintElement(v, color_set);
+	}
+
+	string GetValue(EdgeId e) const {
+		return edge_color_.GetValue(e);
+	}
+
+	string GetValue(VertexId v) const {
+		return vertex_color_.GetValue(v);
 	}
 
 	TColorSet Color(EdgeId e) const {
@@ -352,6 +364,18 @@ public:
 		PaintEdge(new_edge_2, Color(old_edge));
 	}
 
+	//This is a bad unsafe code! The right way is to use shared_ptr of this class in all interfaces.
+	//Then one can easily draw with this colorer without any delegation
+	shared_ptr<omnigraph::visualization::GraphColorer<Graph>> ConstructColorer() const {
+		using namespace omnigraph::visualization;
+		return shared_ptr<GraphColorer<Graph>>(new omnigraph::visualization::DelegatingGraphColorer<Graph>(*this));
+	}
+
+	shared_ptr<omnigraph::visualization::GraphColorer<Graph>> ConstructColorer(GraphComponent<Graph> gc) const {
+		shared_ptr<omnigraph::visualization::GraphColorer<Graph>> colorer = ConstructColorer();
+		return omnigraph::visualization::BorderDecorator<Graph>::GetInstance(gc, colorer);
+	}
+
   size_t max_colors() const {
     return max_colors_;
   }
@@ -404,24 +428,23 @@ void LoadColoring(const Graph& g
 
 
 template<class Graph>
-auto_ptr<GraphColorer<Graph>> ConstructColorer(
+auto_ptr<omnigraph::visualization::GraphColorer<Graph>> ConstructColorer(
 		const ColorHandler<Graph>& coloring) {
+	using namespace omnigraph::visualization;
 	return auto_ptr<GraphColorer<Graph>>(
 			new CompositeGraphColorer<Graph>(
-					new MapColorer<typename Graph::VertexId>(
-							coloring.VertexColorMap()),
-					new MapColorer<typename Graph::EdgeId>(
-							coloring.EdgeColorMap())));
+					make_shared<MapColorer<typename Graph::VertexId>>(coloring.VertexColorMap()),
+					make_shared<MapColorer<typename Graph::EdgeId>>(coloring.EdgeColorMap())));
 }
 
 template<class Graph>
-auto_ptr<GraphColorer<Graph>> ConstructBorderColorer(const Graph& g,
+auto_ptr<omnigraph::visualization::GraphColorer<Graph>> ConstructBorderColorer(const Graph& g,
 		const ColorHandler<Graph>& coloring) {
+	using namespace omnigraph::visualization;
 	return auto_ptr<GraphColorer<Graph>>(
 			new CompositeGraphColorer<Graph>(
-					new BorderVertexColorer<Graph>(g),
-					new MapColorer<typename Graph::EdgeId>(
-							coloring.EdgeColorMap())));
+					make_shared<FixedColorer<Graph>>("white"),
+					make_shared<MapColorer<typename Graph::EdgeId>>(coloring.EdgeColorMap())));
 }
 
 // Temporary while have only two colors

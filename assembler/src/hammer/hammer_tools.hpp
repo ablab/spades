@@ -28,11 +28,6 @@
 
 using namespace std;
 
-namespace hammer_tools {
-/// estimate total read size in input read files
-size_t EstimateTotalReadSize(const std::vector<std::string> &fnames);
-};
-
 /**
  * a container class for all general procedures in BayesHammer
  */
@@ -40,14 +35,6 @@ class HammerTools {
 public:
   /// initialize subkmer positions and log about it
   static void InitializeSubKMerPositions();
-
-  /// read one input file into the blob and output current position and read number
-  static std::pair<size_t, size_t> ReadFileIntoBlob(const string & readsFilename, hint_t & curpos, hint_t & cur_read);
-  /// read all input files into the blob
-  static void ReadAllFilesIntoBlob();
-
-  /// print out the resulting set of k-mers
-  static void PrintKMerResult(std::ostream & outf, const vector<KMerStat> & kmers );
 
   /// parallel correction of batch of reads
   static void CorrectReadsBatch(std::vector<bool> &res, std::vector<Read> &reads, size_t buf_size,
@@ -64,7 +51,7 @@ public:
                                      const std::string &fnamel, const std::string &fnamer,
                                      ofstream * ofbadl, ofstream * ofcorl, ofstream * ofbadr, ofstream * ofcorr, ofstream * ofunp);
   /// correct all reads
-  static hint_t CorrectAllReads();
+  static size_t CorrectAllReads();
 
   static string getFilename( const string & dirprefix, const string & suffix );
   static string getFilename( const string & dirprefix, unsigned iter_count, const string & suffix );

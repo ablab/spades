@@ -73,12 +73,10 @@ struct pe_config {
   struct OutputParamsT {
     bool write_overlaped_paths;
     bool write_paths;
-    bool write_path_loc;
 
     void DisableAll() {
       write_overlaped_paths = false;
       write_paths = false;
-      write_path_loc = false;
     }
   };
 
@@ -97,6 +95,7 @@ struct pe_config {
     size_t split_edge_length;
 
     struct ExtensionOptionsT {
+        bool recalculate_threshold;
         double single_threshold;
         double weight_threshold;
         double priority_coeff;
@@ -132,7 +131,8 @@ struct pe_config {
 
   struct LongReads {
 	  double filtering;
-	  double priority;
+	  double weight_priority;
+	  double unique_edge_priority;
   };
 
   struct AllLongReads{

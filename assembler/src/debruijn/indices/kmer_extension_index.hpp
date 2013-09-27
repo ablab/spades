@@ -11,98 +11,102 @@
 namespace debruijn_graph {
 
 template<class Seq>
-class DeBruijnExtensionIndexBuilder;
-
-template<class Seq>
 struct slim_kmer_index_traits : public kmer_index_traits<Seq> {
-  typedef kmer_index_traits<Seq> __super;
+    typedef kmer_index_traits<Seq> __super;
 
-  typedef MMappedRecordReader<typename Seq::DataType> FinalKMerStorage;
+    typedef MMappedRecordReader<typename Seq::DataType> FinalKMerStorage;
 
-  template<class Writer>
-  static void raw_serialize(Writer&, typename __super::RawKMerStorage*) {
-    VERIFY(false && "Cannot save extension index");
-  }
+    template<class Writer>
+    static void raw_serialize(Writer&, typename __super::RawKMerStorage*) {
+        VERIFY(false && "Cannot save extension index");
+    }
 
-  template<class Reader>
-  static typename __super::RawKMerStorage *raw_deserialize(Reader&, const std::string &) {
-    VERIFY(false && "Cannot load extension index");
-    return NULL;
-  }
+    template<class Reader>
+    static typename __super::RawKMerStorage *raw_deserialize(
+            Reader&, const std::string &) {
+        VERIFY(false && "Cannot load extension index");
+        return NULL;
+    }
 
 };
 
-template<class Seq = runtime_k::RtSeq, class traits = slim_kmer_index_traits<Seq> >
-class DeBruijnExtensionIndex : public DeBruijnKMerIndex<uint8_t, traits> {
-  private:
-    typedef DeBruijnKMerIndex<uint8_t, traits> base;
+template<class Seq>
+struct KmerWithHash {
+    typedef size_t KMerIdx;
+    Seq kmer;
+    KMerIdx idx;
+
+    KmerWithHash(Seq kmer_, KMerIdx idx_)
+            : kmer(kmer_),
+              idx(idx_) {
+    }
+};
+
+template<class traits = slim_kmer_index_traits<runtime_k::RtSeq>>
+class DeBruijnExtensionIndex : public KmerFreeIndex<uint8_t, traits> {
+    typedef KmerFreeIndex<uint8_t, traits> base;
 
     bool CheckUnique(uint8_t mask) const {
-        static bool unique[] = {0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0};
+        static bool unique[] =
+                { 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0 };
         return unique[mask];
     }
 
     char GetUnique(uint8_t mask) const {
-        static char next[] = {-1, 0, 1, -1, 2, -1, -1, -1, 3, -1, -1, -1, -1, -1, -1, -1};
+        static char next[] = { -1, 0, 1, -1, 2, -1, -1, -1, 3, -1, -1, -1, -1,
+                -1, -1, -1 };
         return next[mask];
     }
 
     size_t Count(uint8_t mask) const {
-        static char count[] = {0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4};
+        static char count[] = { 0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4 };
         return count[mask];
     }
 
-    std::string KMersFilename_;
-
-  public:
-    typedef typename traits::SeqType KMer;
-    typedef traits                   kmer_index_traits;
-    typedef KMerIndex<traits>        KMerIndexT;
-
-    typedef MMappedFileRecordArrayIterator<typename KMer::DataType> kmer_iterator;
-
-    kmer_iterator kmer_begin() const {
-        return kmer_iterator(KMersFilename_, KMer::GetDataSize(base::K()));
-    }
+public:
+    typedef typename base::traits_t traits_t;
+    typedef typename base::KeyType KMer;
+    typedef typename base::IdxType KMerIdx;
 
     DeBruijnExtensionIndex(unsigned K, const std::string &workdir)
-            : base(K, workdir), KMersFilename_("") {}
+            : base((size_t) K, workdir) {
+    }
 
-    void AddOutgoing(size_t idx, char nnucl) {
-        unsigned nmask = (1 << nnucl);
+    void AddOutgoing(KMerIdx idx, char nnucl) {
+        unsigned nmask = (unsigned) (1 << nnucl);
         if (!(this->operator [](idx) & nmask)) {
 #           pragma omp atomic
-            this->operator [](idx) |= nmask;
+            this->operator [](idx) |= (unsigned char) nmask;
         }
     }
 
-    void AddIncoming(size_t idx, char pnucl) {
-        unsigned pmask = (1 << (pnucl + 4));
+    void AddIncoming(KMerIdx idx, char pnucl) {
+        unsigned pmask = (unsigned) (1 << (pnucl + 4));
 
         if (!(this->operator [](idx) & pmask)) {
 #           pragma omp atomic
-            this->operator [](idx) |= pmask;
+            this->operator [](idx) |= (unsigned char) pmask;
         }
     }
 
-    void DeleteOutgoing(size_t idx, char nnucl) {
+    void DeleteOutgoing(KMerIdx idx, char nnucl) {
         unsigned nmask = (1 << nnucl);
         if (this->operator [](idx) & nmask) {
 #           pragma omp atomic
-            this->operator [](idx) &= ~nmask;
+            this->operator [](idx) &= (unsigned char) ~nmask;
         }
     }
 
-    void DeleteIncoming(size_t idx, char pnucl) {
+    void DeleteIncoming(KMerIdx idx, char pnucl) {
         unsigned pmask = (1 << (pnucl + 4));
 
         if (this->operator [](idx) & pmask) {
-#         pragma omp atomic
-            this->operator [](idx) &= ~pmask;
+#           pragma omp atomic
+            this->operator [](idx) &= (unsigned char) ~pmask;
         }
     }
 
-    void IsolateVertex(size_t idx) {
+    void IsolateVertex(KMerIdx idx) {
         this->operator [](idx) = 0;
     }
 
@@ -122,110 +126,64 @@ class DeBruijnExtensionIndex : public DeBruijnKMerIndex<uint8_t, traits> {
         DeleteIncoming(this->seq_idx(kmer), pnucl);
     }
 
-    bool CheckOutgoing(size_t idx, size_t nucl) {
+    bool CheckOutgoing(KMerIdx idx, size_t nucl) {
         return (this->operator [](idx)) & (1 << nucl);
     }
 
-    bool CheckIncoming(size_t idx, size_t nucl) {
+    bool CheckIncoming(KMerIdx idx, size_t nucl) {
         return (this->operator [](idx)) & (16 << nucl);
     }
 
-    bool IsDeadEnd(size_t idx) const {
+    bool IsDeadEnd(KMerIdx idx) const {
         return !(this->operator [](idx) & 15);
     }
 
-    bool IsDeadStart(size_t idx) const {
+    bool IsDeadStart(KMerIdx idx) const {
         return !(this->operator [](idx) >> 4);
     }
 
-    bool CheckUniqueOutgoing(size_t idx) const {
-        return CheckUnique(this->operator [](idx) & 15);
+    bool CheckUniqueOutgoing(KMerIdx idx) const {
+        return CheckUnique((uint8_t) this->operator [](idx) & 15);
     }
 
-    char GetUniqueOutgoing(size_t idx) const {
-        return GetUnique(this->operator [](idx) & 15);
+    char GetUniqueOutgoing(KMerIdx idx) const {
+        return GetUnique((uint8_t) this->operator [](idx) & 15);
     }
 
-    bool CheckUniqueIncoming(size_t idx) const {
-        return CheckUnique(this->operator [](idx) >> 4);
+    bool CheckUniqueIncoming(KMerIdx idx) const {
+        return CheckUnique((uint8_t) (this->operator [](idx) >> 4));
     }
 
-    char GetUniqueIncoming(size_t idx) const {
-        return GetUnique(this->operator [](idx) >> 4);
+    char GetUniqueIncoming(KMerIdx idx) const {
+        return GetUnique((uint8_t) (this->operator [](idx) >> 4));
     }
 
-    size_t OutgoingEdgeCount(size_t idx) const {
-        return Count(this->operator [](idx) & 15);
+    size_t OutgoingEdgeCount(KMerIdx idx) const {
+        return Count((uint8_t) this->operator [](idx) & 15);
     }
 
-    size_t IncomingEdgeCount(size_t idx) const {
-        return Count(this->operator [](idx) >> 4);
+    size_t IncomingEdgeCount(KMerIdx idx) const {
+        return Count((uint8_t) (this->operator [](idx) >> 4));
     }
 
-    ~DeBruijnExtensionIndex() {}
-
-
-    struct KmerWithHash {
-        KMer kmer;
-        size_t idx;
-
-        KmerWithHash(KMer _kmer,
-                     const DeBruijnExtensionIndex<Seq, traits> &index) :
-                kmer(_kmer), idx(index.seq_idx(kmer)) { }
-    };
-
-    KmerWithHash CreateKmerWithHash(KMer kmer) const {
-        return KmerWithHash(kmer, *this);
+    ~DeBruijnExtensionIndex() {
     }
 
-    friend class DeBruijnExtensionIndexBuilder<Seq>;
+    KmerWithHash<KMer> CreateKmerWithHash(KMer kmer) const {
+        return KmerWithHash<KMer>(kmer, this->seq_idx(kmer));
+    }
+
 };
 
-template <>
-class DeBruijnKMerIndexBuilder<slim_kmer_index_traits<runtime_k::RtSeq>> {
- public:
-  template <class IdType, class Read>
-  std::string BuildIndexFromStream(DeBruijnKMerIndex<IdType, slim_kmer_index_traits<runtime_k::RtSeq>> &index,
-                                   io::ReadStreamVector<io::IReader<Read> > &streams,
-                                   SingleReadStream* contigs_stream = 0) const {
-    DeBruijnReadKMerSplitter<Read> splitter(index.workdir(),
-                                            index.K(),
-                                            streams, contigs_stream);
-    KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
-    KMerIndexBuilder<typename DeBruijnKMerIndex<IdType, slim_kmer_index_traits<runtime_k::RtSeq>>::KMerIndexT> builder(index.workdir(), 16, streams.size());
+template<class Builder>
+class DeBruijnExtensionIndexBuilder : public Builder {
+    typedef Builder base;
+public:
+    typedef typename Builder::IndexT IndexT;
 
-    size_t sz = builder.BuildIndex(index.index_, counter, /* save final */ true);
-    index.data_.resize(sz);
-    index.kmers = NULL;
-
-    return counter.GetFinalKMersFname();
-  }
-
- protected:
-  DECL_LOGGER("K-mer Index Building");
-};
-
-template <class Seq>
-class DeBruijnExtensionIndexBuilder : public DeBruijnKMerIndexBuilder<typename DeBruijnExtensionIndex<Seq>::kmer_index_traits> {
-  public:
-    template <class Read>
-    size_t BuildIndexFromStream(DeBruijnExtensionIndex<Seq> &index,
-                                io::ReadStreamVector<io::IReader<Read> > &streams,
-                                SingleReadStream* contigs_stream = 0) const;
-
-  protected:
-    DECL_LOGGER("Extension Index Building");
-};
-
-template <>
-class DeBruijnExtensionIndexBuilder<runtime_k::RtSeq> :
-            public DeBruijnKMerIndexBuilder<DeBruijnExtensionIndex<runtime_k::RtSeq>::kmer_index_traits> {
-    typedef DeBruijnKMerIndexBuilder<DeBruijnExtensionIndex<runtime_k::RtSeq>::kmer_index_traits> base;
-
-    template <class ReadStream>
-    size_t FillExtensionsFromStream(ReadStream &stream,
-                                    DeBruijnExtensionIndex<runtime_k::RtSeq> &index) const {
-        unsigned K = index.K();
+    template<class ReadStream>
+    size_t FillExtensionsFromStream(ReadStream &stream, IndexT &index) const {
+        unsigned k = index.k();
         size_t rl = 0;
 
         while (!stream.eof()) {
@@ -234,11 +192,11 @@ class DeBruijnExtensionIndexBuilder<runtime_k::RtSeq> :
             rl = std::max(rl, r.size());
 
             const Sequence &seq = r.sequence();
-            if (seq.size() < K + 1)
+            if (seq.size() < k + 1)
                 continue;
 
-            runtime_k::RtSeq kmer = seq.start<runtime_k::RtSeq>(K);
-            for (size_t j = K; j < seq.size(); ++j) {
+            runtime_k::RtSeq kmer = seq.start<runtime_k::RtSeq>(k);
+            for (size_t j = k; j < seq.size(); ++j) {
                 char nnucl = seq[j], pnucl = kmer[0];
                 index.AddOutgoing(kmer, nnucl);
                 kmer <<= nnucl;
@@ -249,44 +207,68 @@ class DeBruijnExtensionIndexBuilder<runtime_k::RtSeq> :
         return rl;
     }
 
-  public:
-    template <class Read>
-    size_t BuildIndexFromStream(DeBruijnExtensionIndex<runtime_k::RtSeq> &index,
-                                io::ReadStreamVector<io::IReader<Read> > &streams,
-                                SingleReadStream* contigs_stream = 0) const {
-        unsigned nthreads = streams.size();
+    void FillExtensionsFromIndex(const std::string &KPlusOneMersFilename,
+                                 IndexT &index) const {
+        unsigned KPlusOne = index.k() + 1;
 
-        index.KMersFilename_ = base::BuildIndexFromStream(index, streams, contigs_stream);
+        typename IndexT::kmer_iterator it(
+                KPlusOneMersFilename, runtime_k::RtSeq::GetDataSize(KPlusOne));
+        for (; it.good(); ++it) {
+            runtime_k::RtSeq kpomer(KPlusOne, *it);
 
-        // Now use the index to fill the coverage and EdgeId's
-        INFO("Building k-mer extensions from reads, this takes a while.");
-
-        size_t rl = 0;
-        streams.reset();
-# pragma omp parallel for num_threads(nthreads) shared(rl)
-        for (size_t i = 0; i < nthreads; ++i) {
-            size_t crl = FillExtensionsFromStream(streams[i], index);
-
-            // There is no max reduction in C/C++ OpenMP... Only in FORTRAN :(
-#   pragma omp flush(rl)
-            if (crl > rl)
-#     pragma omp critical
-            {
-                rl = std::max(rl, crl);
-            }
+            char pnucl = kpomer[0], nnucl = kpomer[KPlusOne - 1];
+            index.AddOutgoing(runtime_k::RtSeq(KPlusOne - 1, kpomer), nnucl);
+            // FIXME: This is extremely ugly. Needs to add start / end methods to extract first / last N symbols...
+            index.AddIncoming(runtime_k::RtSeq(KPlusOne - 1, kpomer << 0),
+                              pnucl);
         }
-
-        if (contigs_stream) {
-            contigs_stream->reset();
-            FillExtensionsFromStream(*contigs_stream, index);
-        }
-        INFO("Building k-mer extensions from reads finished.");
-
-        return rl;
     }
 
-  protected:
-    DECL_LOGGER("Extension Index Building");
+public:
+    template<class Streams>
+    size_t BuildExtensionIndexFromStream(
+            IndexT &index, Streams &streams, SingleReadStream* contigs_stream =
+                    0) const {
+        unsigned nthreads = (unsigned) streams.size();
+
+        // First, build a k+1-mer index
+        DeBruijnReadKMerSplitter<typename Streams::ReaderType::read_type> splitter(
+                index.workdir(), index.k() + 1, 0xDEADBEEF, streams,
+                contigs_stream);
+        KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
+        counter.CountAll(nthreads, nthreads, /* merge */false);
+
+        // Now, count unique k-mers from k+1-mers
+        DeBruijnKMerKMerSplitter splitter2(index.workdir(), index.k(),
+                                           index.k() + 1);
+        for (unsigned i = 0; i < nthreads; ++i)
+            splitter2.AddKMers(counter.GetMergedKMersFname(i));
+        KMerDiskCounter<runtime_k::RtSeq> counter2(index.workdir(), splitter2);
+
+        index.BuildIndex(counter2, 16, nthreads);
+
+        // Build the kmer extensions
+        INFO("Building k-mer extensions from k+1-mers");
+#       pragma omp parallel for num_threads(nthreads)
+        for (unsigned i = 0; i < nthreads; ++i)
+            FillExtensionsFromIndex(counter.GetMergedKMersFname(i), index);
+        INFO("Building k-mer extensions from k+1-mers finished.");
+
+        return splitter.read_length();
+    }
+
+private:
+    DECL_LOGGER("DeBruijnExtensionIndexBuilder");
+};
+
+template<class Index>
+struct ExtensionIndexHelper {
+    typedef Index IndexT;
+    typedef typename IndexT::traits_t traits_t;
+    typedef typename IndexT::KMer Kmer;
+    typedef typename IndexT::KMerIdx KMerIdx;
+    typedef DeBruijnStreamKMerIndexBuilder<Kmer, IndexT> DeBruijnStreamKMerIndexBuilderT;
+    typedef DeBruijnExtensionIndexBuilder<DeBruijnStreamKMerIndexBuilderT> DeBruijnExtensionIndexBuilderT;
 };
 
 }
