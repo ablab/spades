@@ -148,6 +148,10 @@ public:
         write_str(s);
         return *this;
     }
+	osequencestream_with_id& operator<<(double coverage) {
+		cov_ = coverage;
+		return *this;
+	}
 
 	osequencestream_with_id& operator<<(const Sequence& seq) {
         std::string s = seq.str();

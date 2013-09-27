@@ -74,11 +74,12 @@ private:
 			return;
 		}
 		extender_->GrowPath(*startPath);
-		extender_->GrowPath(*endPath->getConjPath());
+		extender_->GrowPath(*endPath->GetConjPath());
 
 		size_t commonSize = startPath->CommonEndSize(*endPath);
 		size_t nLen = 0;
 		if (commonSize == 0) {
+		    //TODO: use another seacher(omnigraph::PathProcessor), delete this DijkstraSearcher
 			DijkstraSearcher pathSeacher(g_);
 			VertexId lastVertex = g_.EdgeEnd(
 					startPath->At(startPath->Size() - 1));
@@ -99,8 +100,6 @@ private:
 		for (size_t i = commonSize + 1; i < endPath->Size(); ++i) {
 			startPath->PushBack(endPath->At(i));
 		}
-
-		startPath->clearOverlapedEnd();
 		endPath->Clear();
 	}
 

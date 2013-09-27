@@ -26,9 +26,11 @@
 
 #include "utils.hpp"
 #include "debruijn_graph.hpp"
+#include "long_read_storage.hpp"
 
 namespace debruijn_graph {
 using namespace omnigraph;
+using namespace omnigraph::de;
 //todo think of inner namespace
 
 template<class KmerMapper>
@@ -135,7 +137,7 @@ public:
   void saveEdgeSequences(const string& file_name);
   void saveCoverage(const string& file_name);
   void savePaired(const string& file_name,
-      PairedInfoIndexT<Graph> const& paired_index);
+                  PairedInfoIndexT<Graph> const& paired_index);
   void savePositions(const string& file_name,
       EdgesPositionHandler<Graph> const& ref_pos);
 
@@ -781,6 +783,15 @@ struct ScannerTraits<NonconjugateDeBruijnGraph> {
   typedef NonconjugateDataScanner<NonconjugateDeBruijnGraph> Scanner;
 };
 
+std::string MakeScaffoldIndexName(const std::string& file_name) {
+    return file_name + "_sc";
+}
+
+std::string MakeSingleReadsFileName(const std::string& file_name,
+                                    size_t index) {
+    return file_name + "_paths_" + ToString(index) + ".mrp";
+}
+
 //helper methods
 // todo think how to organize them in the most natural way
 
@@ -825,6 +836,12 @@ void PrintClusteredIndex(const string& file_name, DataPrinter<Graph>& printer,
 }
 
 template<class Graph>
+void PrintScaffoldIndex(const string& file_name, DataPrinter<Graph>& printer,
+    const PairedInfoIndexT<Graph>& scaffold_index) {
+  PrintPairedIndex(MakeScaffoldIndexName(file_name), printer, scaffold_index);
+}
+
+template<class Graph>
 void PrintPairedIndices(const string& file_name, DataPrinter<Graph>& printer,
     const PairedInfoIndicesT<Graph>& paired_indices) {
     for (size_t i = 0; i < paired_indices.size(); ++i) {
@@ -837,6 +854,14 @@ void PrintClusteredIndices(const string& file_name, DataPrinter<Graph>& printer,
     const PairedInfoIndicesT<Graph>& paired_indices) {
     for (size_t i = 0; i < paired_indices.size(); ++i) {
         PrintClusteredIndex(file_name  + "_" + ToString(i), printer, paired_indices[i]);
+    }
+}
+
+template<class Graph>
+void PrintScaffoldIndices(const string& file_name, DataPrinter<Graph>& printer,
+    const PairedInfoIndicesT<Graph>& scaffold_indices) {
+    for (size_t i = 0; i < scaffold_indices.size(); ++i) {
+        PrintScaffoldIndex(file_name  + "_" + ToString(i), printer, scaffold_indices[i]);
     }
 }
 
@@ -890,21 +915,27 @@ template<class graph_pack, class VertexIt>
 void PrintAll(const string& file_name, const graph_pack& gp, VertexIt begin,
     VertexIt end,
     const PairedInfoIndexT<typename graph_pack::graph_t>& paired_index,
-    const PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index)
+    const PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index,
+    const PairedInfoIndexT<typename graph_pack::graph_t>& scaffold_index,
+    const LongReadContainer<typename graph_pack::graph_t>& single_long_reads)
 {
   typename PrinterTraits<typename graph_pack::graph_t>::Printer
                                         printer(gp.g, begin, end, gp.int_ids);
   PrintGraphPack(file_name, printer, gp);
   PrintPairedIndex(file_name, printer, paired_index);
   PrintClusteredIndex(file_name, printer, clustered_index);
+  PrintScaffoldIndex(file_name, printer, scaffold_index);
+  PrintSingleLongReads(file_name, gp.edge_pos, single_long_reads);
 }
 
 template<class graph_pack>
 void PrintAll(const string& file_name, const graph_pack& gp,
     const PairedInfoIndexT<typename graph_pack::graph_t>& paired_index,
-    const PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index)
+    const PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index,
+    const PairedInfoIndexT<typename graph_pack::graph_t>& scaffold_index,
+    const LongReadContainer<typename graph_pack::graph_t>& single_long_reads)
 {
-  PrintAll(file_name, gp, gp.g.begin(), gp.g.end(), paired_index, clustered_index);
+  PrintAll(file_name, gp, gp.g.begin(), gp.g.end(), paired_index, clustered_index, scaffold_index, single_long_reads);
 }
 
 template<class graph_pack, class VertexIt>
@@ -948,10 +979,19 @@ void PrintWithClusteredIndex(const string& file_name, const graph_pack& gp,
   PrintWithPairedIndex(file_name, gp, clustered_index, true);
 }
 
+template<class Graph>
+void PrintSingleLongReads(const string& file_name, const EdgesPositionHandler<Graph> &edge_pos, const LongReadContainer<Graph>& single_long_reads) {
+    for (size_t i = 0; i < single_long_reads.size(); ++i){
+        single_long_reads[i].DumpToFile(MakeSingleReadsFileName(file_name, i), edge_pos);
+    }
+}
+
 template<class graph_pack>
 void PrintAll(const string& file_name, const graph_pack& gp,
         const PairedInfoIndicesT<typename graph_pack::graph_t>& paired_indices,
-        const PairedInfoIndicesT<typename graph_pack::graph_t>& clustered_indices)
+        const PairedInfoIndicesT<typename graph_pack::graph_t>& clustered_indices,
+        const PairedInfoIndicesT<typename graph_pack::graph_t>& scaffold_indices,
+        const LongReadContainer<Graph>& single_long_reads)
 {
     typename PrinterTraits<typename graph_pack::graph_t>::Printer
                                           printer(gp.g, gp.g.begin(), gp.g.end(), gp.int_ids);
@@ -959,6 +999,8 @@ void PrintAll(const string& file_name, const graph_pack& gp,
     PrintGraphPack(file_name, printer, gp);
     PrintPairedIndices(file_name, printer, paired_indices);
     PrintClusteredIndices(file_name, printer, clustered_indices);
+    PrintScaffoldIndices(file_name, printer, scaffold_indices);
+    PrintSingleLongReads(file_name, gp.edge_pos, single_long_reads);
 }
 
 template<class graph_pack>
@@ -1014,6 +1056,12 @@ void ScanClusteredIndex(const string& file_name, DataScanner<Graph>& scanner,
 }
 
 template<class Graph>
+void ScanScaffoldIndex(const string& file_name, DataScanner<Graph>& scanner,
+    PairedInfoIndexT<Graph>& scaffold_index) {
+  scanner.loadPaired(MakeScaffoldIndexName(file_name), scaffold_index);
+}
+
+template<class Graph>
 void ScanPairedIndices(const string& file_name, DataScanner<Graph>& scanner,
         PairedInfoIndicesT<Graph>& paired_indices) {
     for (size_t i = 0; i < paired_indices.size(); ++i) {
@@ -1027,6 +1075,15 @@ void ScanClusteredIndices(const string& file_name, DataScanner<Graph>& scanner,
 
     for (size_t i = 0; i < paired_indices.size(); ++i) {
         ScanClusteredIndex(file_name  + "_" + ToString(i), scanner, paired_indices[i]);
+    }
+}
+
+template<class Graph>
+void ScanScaffoldIndices(const string& file_name, DataScanner<Graph>& scanner,
+        PairedInfoIndicesT<Graph>& scaffold_indices) {
+
+    for (size_t i = 0; i < scaffold_indices.size(); ++i) {
+        ScanScaffoldIndex(file_name  + "_" + ToString(i), scanner, scaffold_indices[i]);
     }
 }
 
@@ -1114,26 +1171,26 @@ void ScanGraphPack(const string& file_name, graph_pack& gp) {
   ScanGraphPack(file_name, scanner, gp);
 }
 
-template<class graph_pack>
-void ScanAll(const string& file_name, graph_pack& gp,
-    PairedInfoIndexT<typename graph_pack::graph_t>& paired_index,
-    PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index) {
-  typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(gp.g,
-      gp.int_ids);
-  ScanGraphPack(file_name, scanner, gp);
-  ScanPairedIndex(file_name, scanner, paired_index);
-  ScanClusteredIndex(file_name, scanner, clustered_index);
+template<class Graph>
+void ScanSingleLongReads(const string& file_name, LongReadContainer<Graph>& single_long_reads) {
+    for (size_t i = 0; i < single_long_reads.size(); ++i){
+        single_long_reads[i].LoadFromFile(MakeSingleReadsFileName(file_name, i));
+    }
 }
 
 template<class graph_pack>
-void ScanAll(const string& file_name, graph_pack& gp,
+void ScanAll(
+        const string& file_name, graph_pack& gp,
         PairedInfoIndicesT<typename graph_pack::graph_t>& paired_indices,
-        PairedInfoIndicesT<typename graph_pack::graph_t>& clustered_indices) {
-  typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(gp.g,
-      gp.int_ids);
-  ScanGraphPack(file_name, scanner, gp);
-  ScanPairedIndices(file_name, scanner, paired_indices);
-  ScanClusteredIndices(file_name, scanner, clustered_indices);
+        PairedInfoIndicesT<typename graph_pack::graph_t>& clustered_indices,
+        PairedInfoIndicesT<typename graph_pack::graph_t>& scaffold_indices,
+        LongReadContainer<typename graph_pack::graph_t>& single_long_reads) {
+    typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(
+            gp.g, gp.int_ids);
+    ScanGraphPack(file_name, scanner, gp);
+    ScanPairedIndices(file_name, scanner, paired_indices);
+    ScanClusteredIndices(file_name, scanner, clustered_indices);
+    ScanScaffoldIndices(file_name, scanner, scaffold_indices);
+    ScanSingleLongReads(file_name, single_long_reads);
 }
-
 }

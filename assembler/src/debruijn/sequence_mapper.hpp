@@ -8,6 +8,7 @@
 
 #include "omni/omni_utils.hpp"
 #include "sequence/sequence_tools.hpp"
+#include "graph_read_correction.hpp"
 
 #include "runtime_k.hpp"
 
@@ -121,10 +122,11 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
       Kmer new_kmer(k_, new_s, new_kmer_offest);
       auto it = mapping_.find(new_kmer);
       if (it != mapping_.end()) {
-        VERIFY(Substitute(new_kmer) == old_kmer);
+//        VERIFY(Substitute(new_kmer) == old_kmer);
         mapping_.erase(it);
       }
-      mapping_[old_kmer] = new_kmer;
+      if(old_kmer.str() != new_kmer.str())
+            mapping_[old_kmer] = new_kmer;
     }
   }
 
@@ -393,11 +395,13 @@ class NewExtendedSequenceMapper {
   typedef std::vector<MappingRange> RangeMappings;
   typedef typename Index::KMer Kmer;
   typedef KmerMapper<Graph, Kmer> KmerSubs;
+  typedef MappingPathFixer<Graph> GraphMappingPathFixer;
 
  private:
   const Graph& g_;
   const Index& index_;
   const KmerSubs& kmer_mapper_;
+  const GraphMappingPathFixer path_fixer_;
   size_t k_;
   //	mutable size_t mapped_;
   //	mutable size_t unmapped_;
@@ -492,7 +496,7 @@ class NewExtendedSequenceMapper {
                             const Index& index,
                             const KmerSubs& kmer_mapper,
                             size_t k) :
-      g_(g), index_(index), kmer_mapper_(kmer_mapper), k_(k) { }
+      g_(g), index_(index), kmer_mapper_(kmer_mapper), path_fixer_(g), k_(k) { }
 
   ~NewExtendedSequenceMapper() {
     //		TRACE("In destructor of sequence mapper");
@@ -535,8 +539,30 @@ class NewExtendedSequenceMapper {
     return MapSequence(read.sequence());
   }
 
- private:
-  DECL_LOGGER("NewExtendedSequenceMapper");
+  vector<EdgeId> FindReadPath(const MappingPath<EdgeId>& mapping_path) const {
+        if (!IsMappingPathValid(mapping_path)) {
+            TRACE("read unmapped");
+            return vector<EdgeId>();
+        }
+        vector<EdgeId> corrected_path = path_fixer_.DeleteSameEdges(
+                mapping_path.simple_path().sequence());
+        vector<EdgeId> fixed_path = path_fixer_.TryFixPath(corrected_path);
+        if (!CheckContiguous(g_, fixed_path)) {
+            TRACE("read unmapped");
+            std::stringstream debug_stream;
+            for (size_t i = 0; i < fixed_path.size(); ++i) {
+                debug_stream << g_.int_id(fixed_path[i]) << " ";
+            }TRACE(debug_stream.str());
+            return vector<EdgeId>();
+        }
+        return fixed_path;
+    }
+
+private:
+    bool IsMappingPathValid(const MappingPath<EdgeId>& path) const {
+        return path.size() != 0;
+    }
+    DECL_LOGGER("NewExtendedSequenceMapper");
 };
 
 template<class gp_t>

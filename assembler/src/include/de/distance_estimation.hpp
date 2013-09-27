@@ -223,7 +223,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
   virtual ~DistanceEstimator() {}
 
   void Init() const {
-    INFO("Starting " << this->Name() << " distance estimator");
+    INFO("Using " << this->Name() << " distance estimator");
   }
 
   virtual void Estimate(PairedInfoIndexT<Graph>& result) const {
@@ -237,7 +237,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
     this->Init();
     const PairedInfoIndexT<Graph>& index = this->index();
 
-    INFO("Collecting edge infos");
+    DEBUG("Collecting edge infos");
     vector<EdgeId> edges;
     for (auto I = index.Begin(), E = index.End(); I != E; ++I) {
       edges.push_back(I->first);
@@ -252,7 +252,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
     time_path_processor = 0.;
     time_estimating = 0.;
     time_clustering = 0.;
-    INFO("Processing");
+    DEBUG("Processing");
     #pragma omp parallel num_threads(nthreads)
     {
       perf_counter pc;
@@ -273,7 +273,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
       TRACE("Thread number " << omp_get_thread_num() << " is finished");
     }
 
-    INFO("Merging maps");
+    DEBUG("Merging maps");
     for (size_t i = 1; i < nthreads; ++i) {
       buffer[0]->AddAll(*(buffer[i]));
       delete buffer[i];

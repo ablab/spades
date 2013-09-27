@@ -27,6 +27,7 @@ enum working_stage {
   ws_simplification,
   ws_late_pair_info_count,
   ws_distance_estimation,
+  ws_pacbio_aligning,
   ws_repeats_resolving
 };
 
@@ -97,6 +98,7 @@ struct debruijn_config {
       stage_name_id_mapping::value_type("simplification", ws_simplification),
       stage_name_id_mapping::value_type("late_pair_info_count", ws_late_pair_info_count),
       stage_name_id_mapping::value_type("distance_estimation",  ws_distance_estimation),
+      stage_name_id_mapping::value_type("pacbio_aligning",  ws_pacbio_aligning),
       stage_name_id_mapping::value_type("repeats_resolving", ws_repeats_resolving)
     };
 
@@ -341,7 +343,9 @@ struct debruijn_config {
   struct pacbio_processor {
 //align and traverse.
 	std::string pacbio_reads;
+
 	size_t  pacbio_k; //13
+	bool additional_debug_info; //false
 	bool pacbio_optimized_sw; //false
 	double compression_cutoff;// 0.6
 	double domination_cutoff; //1.5
@@ -369,6 +373,7 @@ struct debruijn_config {
 
     uint64_t total_nucls;
     double average_coverage;
+    double pi_threshold;
 
     std::string paired_read_prefix;
     std::string single_read_prefix;
@@ -377,9 +382,17 @@ struct debruijn_config {
     typedef io::IReader<io::SingleReadSeq> SequenceSingleReadStream;
     typedef io::IReader<io::PairedReadSeq> SequencePairedReadStream;
 
-    DataSetData(): read_length(0), mean_insert_size(0.0), insert_size_deviation(0.0), median_insert_size(0.0), insert_size_mad(0.0), total_nucls(0), average_coverage(0.0) {
-    }
-  };
+    DataSetData()
+                : read_length(0),
+                  mean_insert_size(0.0),
+                  insert_size_deviation(0.0),
+                  median_insert_size(0.0),
+                  insert_size_mad(0.0),
+                  total_nucls(0),
+                  average_coverage(0.0),
+                  pi_threshold(0.0) {
+        }
+    };
 
   struct dataset {
     io::DataSet<DataSetData> reads;
@@ -488,6 +501,7 @@ struct debruijn_config {
   working_stage entry_point;
 
   bool paired_mode;
+  bool long_single_mode;
   bool divide_clusters;
 
   bool mismatch_careful;

@@ -37,39 +37,6 @@ typedef io::IReader<io::PairedRead> PairedReadStream;
 typedef io::MultifileReader<io::SingleRead> CompositeSingleReadStream;
 typedef io::ConvertingReaderWrapper UnitedStream;
 
-template<class PairedRead, class Graph, class Mapper>
-bool FillPairedIndexWithReadCountMetric(const Graph &g,
-                                        const Mapper& mapper,
-                                        PairedInfoIndexT<Graph>& paired_info_index,
-                                        io::ReadStreamVector<io::IReader<PairedRead> >& streams) {
-
-	INFO("Counting paired info with read count weight");
-	LatePairedIndexFiller<Graph, Mapper,
-			io::IReader<PairedRead>> pif(g, mapper, streams,
-			PairedReadCountWeight);
-
-	bool res = pif.FillIndex(paired_info_index);
-	DEBUG("Paired info with read count weight counted");
-	return res;
-}
-
-template<class PairedRead, class Graph, class Mapper>
-bool FillPairedIndexWithProductMetric(const Graph &g,
-                                      const Mapper& mapper,
-                                      PairedInfoIndexT<Graph>& paired_info_index,
-                                      io::ReadStreamVector<io::IReader<PairedRead> >& streams) {
-
-	INFO("Counting paired info with product weight");
-
-	LatePairedIndexFiller<Graph, Mapper,
-			io::IReader<PairedRead> > pif(g, mapper, streams,
-			KmerCountProductWeight);
-	bool res = pif.FillIndex(paired_info_index);
-	DEBUG("Paired info with product weight counted");
-	return res;
-}
-
-
 template<class Graph, class Index>
 void FillEtalonPairedIndex(PairedInfoIndexT<Graph>& etalon_paired_index,
 		const Graph &g, const Index& index,

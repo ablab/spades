@@ -24,7 +24,7 @@ using namespace debruijn_graph;
 class ContigWriter {
 
 protected:
-	Graph& g_;
+	const Graph& g_;
     size_t k_;
 
 
@@ -69,11 +69,11 @@ protected:
 
 
 public:
-    ContigWriter(Graph& g): g_(g), k_(g.k()){
+    ContigWriter(const Graph& g): g_(g), k_(g.k()){
 
     }
 
-    void writeEdges(const string& filename) {
+    void writeEdges(const string& filename) const {
         INFO("Outputting edges to " << filename);
         io::osequencestream_with_data_for_scaffold oss(filename);
 
@@ -88,11 +88,11 @@ public:
                 included.insert(g_.conjugate(*iter));
             }
         }
-        INFO("Contigs written");
+        DEBUG("Contigs written");
     }
 
 
-    void writePathEdges(PathContainer& paths, const string& filename){
+    void writePathEdges(PathContainer& paths, const string& filename) const {
 		INFO("Outputting path data to " << filename);
 		std::ofstream oss;
         oss.open(filename.c_str());
@@ -102,7 +102,7 @@ public:
 			i++;
             BidirectionalPath* path = iter.get();
             if (path->GetId() % 2 != 0) {
-                path = path->getConjPath();
+                path = path->GetConjPath();
             }
             oss << "PATH " << path->GetId() << " " << path->Size() << " " << path->Length() + k_ << endl;
             for (size_t j = 0; j < path->Size(); ++j) {
@@ -111,10 +111,10 @@ public:
             oss << endl;
 		}
 		oss.close();
-		INFO("Edges written");
+		DEBUG("Edges written");
 	}
 
-    void writePaths(PathContainer& paths, const string& filename) {
+    void writePaths(PathContainer& paths, const string& filename) const {
 
         INFO("Writing contigs to " << filename);
         io::osequencestream_with_data_for_scaffold oss(filename);
@@ -126,14 +126,14 @@ public:
         	DEBUG("NODE " << ++i);
             BidirectionalPath* path = iter.get();
             if (path->GetId() % 2 != 0) {
-                path = path->getConjPath();
+                path = path->GetConjPath();
             }
             path->Print();
         	oss.setID((int) path->GetId());
             oss.setCoverage(path->Coverage());
             oss << ToString(*path);
         }
-        INFO("Contigs written");
+        DEBUG("Contigs written");
     }
 
 
