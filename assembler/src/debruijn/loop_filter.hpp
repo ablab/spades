@@ -3,10 +3,6 @@
 
 #include <algorithm>
 #include "graph_pack.hpp"
-#include "omni/mf_ec_remover.hpp"
-
-using omnigraph::StroglyConnectedComponentFinder;
-using omnigraph::FlowGraph;
 
 namespace debruijn_graph {
 	//todo WTF?!!!
