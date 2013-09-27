@@ -106,7 +106,7 @@ void TeamcityMessages::testStarted(string name, string flowid) {
     closeMsg();
 }
 
-void TeamcityMessages::testFinished(string name, int durationMs, string flowid) {
+void TeamcityMessages::testFinished(string name, unsigned long durationMs, string flowid) {
     openMsg("testFinished");
 
     writeProperty("name", name);
@@ -115,7 +115,7 @@ void TeamcityMessages::testFinished(string name, int durationMs, string flowid) 
         writeProperty("flowId", flowid);
     }
 
-    if(durationMs >= 0) {
+    if(durationMs != -1UL) {
         stringstream out;
         out << durationMs;
         writeProperty("duration", out.str());

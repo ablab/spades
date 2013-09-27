@@ -22,20 +22,20 @@
 
 //////////////////////////////////////////////////////////////////////////////
 //
-// process_mem_usage(double &, double &) - takes two doubles by reference,
+// process_mem_usage(unsigned long &, long &) - takes two longs by reference,
 // attempts to read the system-dependent data for a process' virtual memory
 // size and resident set size, and return the results in KB.
 //
-// On failure, returns 0.0, 0.0
+// On failure, returns 0, 0
 
-void process_mem_usage(double& vm_usage, double& resident_set)
+void process_mem_usage(unsigned long& vm_usage, long& resident_set)
 {
    using std::ios_base;
    using std::ifstream;
    using std::string;
 
-   vm_usage     = 0.0;
-   resident_set = 0.0;
+   vm_usage     = 0;
+   resident_set = 0;
 
    // 'file' stat seems to give the most reliable results
    //
@@ -61,7 +61,7 @@ void process_mem_usage(double& vm_usage, double& resident_set)
    stat_stream.close();
 
    long page_size_kb = sysconf(_SC_PAGE_SIZE) / 1024; // in case x86-64 is configured to use 2MB pages
-   vm_usage     = vsize / 1024.0;
+   vm_usage     = vsize / 1024;
    resident_set = rss * page_size_kb;
 }
 

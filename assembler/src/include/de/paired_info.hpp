@@ -728,7 +728,7 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
       }
   }
 
-  void MergeInnerMaps(EdgeId e1_to_add,
+  void MergeInnerMaps(EdgeId /*e1_to_add*/,
                       const InnerMap& map_to_add,
                       InnerMap& map) {
       typedef typename Histogram::iterator hist_iterator;

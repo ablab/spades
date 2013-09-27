@@ -89,13 +89,13 @@ TeamcityBoostLogFormatter::TeamcityBoostLogFormatter()
 : flowId(getFlowIdFromEnvironment())
 {}
 
-void TeamcityBoostLogFormatter::log_start(ostream &out, counter_t test_cases_amount)
+void TeamcityBoostLogFormatter::log_start(ostream & /*out*/, counter_t /*test_cases_amount*/)
 {}
 
-void TeamcityBoostLogFormatter::log_finish(ostream &out)
+void TeamcityBoostLogFormatter::log_finish(ostream & /*out*/)
 {}
 
-void TeamcityBoostLogFormatter::log_build_info(ostream &out)
+void TeamcityBoostLogFormatter::log_build_info(ostream & /*out*/)
 {}
 
 void TeamcityBoostLogFormatter::test_unit_start(ostream &out, test_unit const& tu) {
@@ -131,7 +131,7 @@ void TeamcityBoostLogFormatter::test_unit_finish(ostream &out, test_unit const& 
     }
 }
 
-void TeamcityBoostLogFormatter::test_unit_skipped(ostream &out, test_unit const& tu)
+void TeamcityBoostLogFormatter::test_unit_skipped(ostream & /*out*/, test_unit const& /*tu*/)
 {}
 
 void TeamcityBoostLogFormatter::log_exception(ostream &out, log_checkpoint_data const&, const_string explanation) {
@@ -141,7 +141,7 @@ void TeamcityBoostLogFormatter::log_exception(ostream &out, log_checkpoint_data 
     currentDetails += what + "\n";
 }
 
-void TeamcityBoostLogFormatter::log_entry_start(ostream&, log_entry_data const&, log_entry_types let)
+void TeamcityBoostLogFormatter::log_entry_start(ostream&, log_entry_data const&, log_entry_types /*let*/)
 {}
 
 void TeamcityBoostLogFormatter::log_entry_value(ostream &out, const_string value) {

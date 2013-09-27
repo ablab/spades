@@ -40,7 +40,7 @@ private:
 
 	size_t iteration_number_;
 	size_t max_size_;
-	size_t rand_seed_;
+	unsigned rand_seed_;
 
 	Sequence GenerateRandomSequence(size_t length) {
 		string result(length, 'A');
@@ -111,7 +111,7 @@ private:
 	}
 
 public:
-	RandomGraphConstructor(size_t iteration_number, size_t max_size, size_t rand_seed = 100) :
+	RandomGraphConstructor(size_t iteration_number, size_t max_size, unsigned rand_seed = 100) :
 			iteration_number_(iteration_number), max_size_(max_size), rand_seed_(rand_seed) {
 	}
 

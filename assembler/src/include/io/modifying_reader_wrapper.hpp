@@ -31,7 +31,7 @@ public:
 	    return s;
     }
 
-	virtual Sequence Modify(const Sequence& s) const {
+	virtual Sequence Modify(const Sequence& /*s*/) const {
 	    VERIFY(false);
 	    return Sequence();
 	}

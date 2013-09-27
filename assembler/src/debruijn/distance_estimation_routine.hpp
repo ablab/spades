@@ -29,7 +29,7 @@
 
 namespace debruijn_graph {
 
-void estimate_with_estimator(const Graph& graph,
+void estimate_with_estimator(const Graph& /*graph*/,
                              const AbstractDistanceEstimator<Graph>& estimator,
                              const PairInfoWeightFilter<Graph>& filter,
                              PairedIndexT& clustered_index)
