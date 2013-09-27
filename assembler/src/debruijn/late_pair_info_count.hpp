@@ -23,20 +23,6 @@ typedef io::ReadStreamVector<SequencePairedReadStream> MultiStreamType;
 typedef io::ReadStreamVector<PairedReadStream> SingleStreamType;
 
 
-
-void ISWarninigs(size_t lib_index) {
-    const io::SequencingLibrary<debruijn_config::DataSetData>& reads = cfg::get().ds.reads[lib_index];
-    WARN("Unable to estimate insert size for paired library #" << lib_index);
-    if (reads.data().read_length <= cfg::get().K) {
-        WARN("Maximum read length (" << reads.data().read_length << ") should be greater than K (" << cfg::get().K << ")");
-    } else if (reads.data().read_length <= cfg::get().K * 11 / 10) {
-        WARN("Maximum read length (" << reads.data().read_length << ") is probably too close to K (" << cfg::get().K << ")");
-    } else {
-        WARN("None of paired reads aligned properly. Please, check orientation of your read pairs.");
-    }
-}
-
-
 void ProcessSingleReads(conj_graph_pack& gp, size_t ilib,
         LongReadContainerT& single_long_reads, path_extend::SimpleLongReadMapper& read_mapper) {
     const io::SequencingLibrary<debruijn_config::DataSetData>& reads =
@@ -98,6 +84,14 @@ void late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices, L
         INFO("STAGE == Counting Late Pair Info");
         for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
             const io::SequencingLibrary<debruijn_config::DataSetData>& reads = cfg::get().ds.reads[i];
+
+            if (reads.data().read_length > 0 && reads.data().read_length <= cfg::get().K) {
+                WARN("Unable to estimate insert size for paired library #" << i);
+                WARN("Maximum read length (" << reads.data().read_length << ") should be greater than K (" << cfg::get().K << ")");
+                //TODO: run short read aligner in this case
+                continue;
+            }
+
             if (reads.type() == io::LibraryType::PairedEnd ||
                     reads.type() == io::LibraryType::MatePairs) {
 
@@ -113,7 +107,12 @@ void late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices, L
                 }
                 if (!insert_size_success) {
                     cfg::get_writable().ds.reads[i].data().mean_insert_size = 0.0;
-                    ISWarninigs(i);
+                    WARN("Unable to estimate insert size for paired library #" << i);
+                    if (reads.data().read_length <= cfg::get().K * 11 / 10) {
+                        WARN("Maximum read length (" << reads.data().read_length << ") is probably too close to K (" << cfg::get().K << ")");
+                    } else {
+                        WARN("None of paired reads aligned properly. Please, check orientation of your read pairs.");
+                    }
                     continue;
                 } else {
                     INFO("  Estimated insert size for paired library #" << i);
