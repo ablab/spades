@@ -683,7 +683,7 @@ void PostSimplification(conj_graph_pack& gp,
   bool enable_flag = true;
   while (enable_flag) {
     //todo was it disabled long ago?!
-    enable_flag |= false;/*RemoveRelativelyLowCoverageEdges(
+    enable_flag = false;/*RemoveRelativelyLowCoverageEdges(
      g, cfg::get().simp.rec, removal_handler, determined_coverage_threshold);*/
 
     INFO("Iteration " << iteration);
@@ -695,7 +695,6 @@ void PostSimplification(conj_graph_pack& gp,
                                                determined_coverage_threshold,
                                                iteration);
     }
-
 
     enable_flag |= ClipTipsWithProjection(gp, cfg::get().simp.tc,
                                           cfg::get().graph_read_corr.enable,
