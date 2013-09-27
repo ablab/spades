@@ -184,7 +184,7 @@ public:
     //  }
 
     double LocalCoverage(EdgeId e, VertexId v) const {
-        INFO("Local coverage of edge " << g_.str(e) << " around vertex " << g_.str(v) << " was " << local_coverage_f_(e, v));
+//        TRACE("Local coverage of edge " << g_.str(e) << " around vertex " << g_.str(v) << " was " << local_coverage_f_(e, v));
         return local_coverage_f_(e, v);
     }
 
