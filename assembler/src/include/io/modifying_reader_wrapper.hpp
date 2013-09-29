@@ -17,8 +17,12 @@ class SequenceModifier {
 public:
 	virtual ~SequenceModifier() {}
 
-	virtual std::string Modify(const std::string& s) const {
-	    return Modify(Sequence(s)).str();
+    io::SingleRead Modify(const io::SingleRead& read) const {
+        return io::SingleRead(read.name(), Modify(read.sequence()).str());
+    }
+
+    io::SingleReadSeq Modify(const io::SingleReadSeq& read) const {
+        return io::SingleReadSeq(Modify(read.sequence()));
     }
 
 	virtual Sequence Modify(const Sequence& s) const = 0;
@@ -27,13 +31,8 @@ public:
 class TrivialModifier : public SequenceModifier {
 public:
 
-	virtual std::string Modify(const std::string& s) const {
+	virtual Sequence Modify(const Sequence& s) const {
 	    return s;
-    }
-
-	virtual Sequence Modify(const Sequence& /*s*/) const {
-	    VERIFY(false);
-	    return Sequence();
 	}
 };
 
@@ -53,7 +52,7 @@ public:
 
 	ModifyingWrapper& operator>>(io::SingleRead& read) {
 		this->reader() >> read;
-		read = io::SingleRead(read.name(), modifier_->Modify(read.GetSequenceString()));
+		read = modifier_->Modify(read);
 		return *this;
 	}
 };
@@ -68,8 +67,9 @@ public:
 
 	ModifyingWrapper& operator>>(io::PairedRead& read) {
 		this->reader() >> read;
-		read = io::PairedRead(io::SingleRead(read.first().name(), modifier_->Modify(read.first().sequence()).str())
-				, io::SingleRead(read.first().name(), modifier_->Modify(read.second().sequence()).str()), read.insert_size());
+		read = io::PairedRead(modifier_->Modify(read.first()),
+		                      modifier_->Modify(read.second()),
+		                      read.insert_size());
 		return *this;
 	}
 };
@@ -84,7 +84,7 @@ public:
 
     ModifyingWrapper& operator>>(io::SingleReadSeq& read) {
         this->reader() >> read;
-        read = io::SingleReadSeq(modifier_->Modify(read.sequence()));
+        read = modifier_->Modify(read.sequence());
         return *this;
     }
 };
@@ -99,8 +99,8 @@ public:
 
     ModifyingWrapper& operator>>(io::PairedReadSeq& read) {
         this->reader() >> read;
-        read = io::PairedReadSeq(io::SingleReadSeq(modifier_->Modify(read.first().sequence()))
-            , io::SingleReadSeq(modifier_->Modify(read.second().sequence())), read.insert_size());
+        read = io::PairedReadSeq(modifier_->Modify(read.first().sequence())
+            , io::SingleReadSeq(modifier_->Modify(read.second())), read.insert_size());
         return *this;
     }
 };

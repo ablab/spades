@@ -50,7 +50,8 @@ private:
         return index_[kmer].count > 1;
     }
 
-    const vector<Range> RepeatIntervals(const std::string& s) const {
+    template<class S>
+    const vector<Range> RepeatIntervals(const S& s) const {
         vector<Range> answer;
         answer.push_back(Range(0, 0));
         Kmer kmer(k_, s);
@@ -69,12 +70,16 @@ private:
     }
 
     void MaskRepeat(const Range& repeat, std::string& s) const {
+        TRACE("Masking repeat of size " << repeat.size() << " " << repeat);
+        TRACE("Old sequence " << s.substr(repeat.start_pos, repeat.size()));
         for (size_t i = repeat.start_pos; i < repeat.end_pos; ++i) {
             s[i] = nucl((unsigned char) rand_nucl_());
         }
+        TRACE("New sequence " << s.substr(repeat.start_pos, repeat.size()));
     }
 
     void MaskRepeats(const vector<Range>& rep_int, std::string& s) const {
+        TRACE("Masking " << rep_int.size() << "repeat ranges in sequence of length " << s.size());
         for (Range r : rep_int) {
             MaskRepeat(r, s);
         }
@@ -87,6 +92,7 @@ public:
 
     template<class Streams>
     size_t FindRepeats(Streams& streams) {
+        INFO("Looking for repetitive " << k_ << "-mers");
         CountIndexHelper<KmerCountIndex>::CoverageFillingEdgeIndexBuilderT().BuildIndexFromStream(index_, streams);
         size_t rep_kmer_cnt = 0;
         for (KmerIdx idx = index_.kmer_idx_begin(); idx < index_.kmer_idx_end(); ++idx) {
@@ -94,23 +100,21 @@ public:
                 rep_kmer_cnt++;
             }
         }
+        INFO("Found " << rep_kmer_cnt << "repetitive " << k_ << "-mers");
         return rep_kmer_cnt;
     }
 
     /*virtual*/Sequence Modify(const Sequence& s) const {
-        VERIFY(false);
-        return Sequence();
-    }
-
-    /*virtual*/std::string Modify(const std::string& s) const {
         if (s.size() < k_)
             return s;
-        string str = s;
+        string str = s.str();
         MaskRepeats(RepeatIntervals(s), str);
-        return str;
+        return Sequence(str);
     }
-};
 
+private:
+    DECL_LOGGER("RepeatMasker")
+};
 
 template<class Stream1, class Stream2>
 void Transfer(Stream1& s1, Stream2& s2) {
@@ -200,6 +204,7 @@ inline bool MaskRepeats(size_t k, ContigStreamsPtr input_streams, const vector<s
     make_dir(input_dir);
     SaveStreams(input_streams, suffixes, input_dir);
     while (iter <= max_iter_count) {
+        INFO("------------------------");
         INFO("Iteration " << iter);
         string out_dir = work_dir + ToString(iter) + "/";
         make_dir(out_dir);
