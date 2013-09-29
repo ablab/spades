@@ -13,6 +13,7 @@ add_executable(spades
                stage.cpp
                construction.cpp
                simplification.cpp
+               mismatch_correction.cpp
                pair_info_count.cpp
                distance_estimation.cpp
                repeat_resolving.cpp

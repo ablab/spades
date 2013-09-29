@@ -13,6 +13,7 @@
 #include "graph_pack.hpp"
 #include "construction.hpp"
 #include "simplification.hpp"
+#include "mismatch_correction.hpp"
 #include "pair_info_count.hpp"
 #include "repeat_resolving.hpp"
 #include "distance_estimation.hpp"
@@ -44,6 +45,8 @@ void assemble_genome() {
 
     SPAdes.add(new debruijn_graph::Construction());
     SPAdes.add(new debruijn_graph::Simplification());
+    if (cfg::get().correct_mismatches)
+        SPAdes.add(new debruijn_graph::MismatchCorrection());
     if (cfg::get().paired_mode) {
         SPAdes.add(new debruijn_graph::PairInfoCount());
         SPAdes.add(new debruijn_graph::DistanceEstimation());

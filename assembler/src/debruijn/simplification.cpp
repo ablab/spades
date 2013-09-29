@@ -8,7 +8,6 @@
 #include "graph_simplification.hpp"
 #include "omni_labelers.hpp"
 #include "io/single_read.hpp"
-#include "mismatch_shall_not_pass.hpp"
 
 #include "simplification.hpp"
 
@@ -28,13 +27,6 @@ void Simplification::run(conj_graph_pack &gp) {
 
     AvgCovereageCounter<Graph> cov_counter(gp.g);
     cfg::get_writable().ds.set_avg_coverage(cov_counter.Count());
-
-    if (cfg::get().correct_mismatches) {
-        INFO("Correcting mismatches");
-        auto streams = single_binary_readers(true,  true);
-        size_t corrected = MismatchShallNotPass<conj_graph_pack, io::SingleReadSeq>(gp, 2).ParallelStopAllMismatches(*streams, 1);
-        INFO("Corrected " << corrected << " nucleotides");
-    }
 }
 
 #if 0
