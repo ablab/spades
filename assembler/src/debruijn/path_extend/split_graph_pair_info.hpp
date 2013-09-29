@@ -8,9 +8,9 @@
 #ifndef SPLIT_GRAPH_PAIR_INFO_HPP_
 #define SPLIT_GRAPH_PAIR_INFO_HPP_
 
-#include "graphio.hpp"
 #include "single_threshold_finder.hpp"
 #include "read_converter.hpp"
+#include "utils.hpp"
 
 using namespace debruijn_graph;
 
@@ -210,8 +210,7 @@ public:
 
 };
 
-class SplitGraphPairInfo{
-
+class SplitGraphPairInfo {
 private:
 	conj_graph_pack& gp_;
 

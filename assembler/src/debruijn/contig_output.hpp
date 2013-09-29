@@ -7,6 +7,8 @@
 #pragma once
 
 #include "standard.hpp"
+#include "utils.hpp"
+
 namespace debruijn_graph {
 
 //This class corrects mismatches or masks repeat differences or other such things with the sequence of an edge

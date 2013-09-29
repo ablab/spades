@@ -1,5 +1,82 @@
 // FIXME: Refactor and turn into stage
 
+//todo rewrite with extended sequence mapper!
+template<class Graph, class Index>
+class EtalonPairedInfoCounter {
+	typedef typename Graph::EdgeId EdgeId;
+
+	const Graph& g_;
+	const Index& index_;
+	const KmerMapper<Graph>& kmer_mapper_;
+	size_t k_;
+
+	size_t insert_size_;
+	size_t read_length_;
+	int gap_;
+	size_t delta_;
+
+  void AddEtalonInfo(PairedInfoIndexT<Graph>& index, EdgeId e1, EdgeId e2, double d) {
+    index.AddPairInfo(e1, e2, d, 1000., 0.);
+	}
+
+  void ProcessSequence(const Sequence& sequence, PairedInfoIndexT<Graph>& index)
+  {
+		int mod_gap = (gap_ + (int) k_ > (int) delta_ ) ? gap_ - (int) delta_ : 0 - (int) k_;
+		runtime_k::RtSeq left(k_ +1, sequence);
+		left >>= 0;
+		for (size_t left_idx = 0;
+             left_idx + 2 * (k_ + 1) + mod_gap <= sequence.size();
+             ++left_idx) {
+			left <<= sequence[left_idx + k_];
+			runtime_k::RtSeq left_upd = kmer_mapper_.Substitute(left);
+			if (!index_.contains(left_upd)) {
+				continue;
+			}
+			pair<EdgeId, size_t> left_pos = index_.get(left_upd);
+
+			size_t right_idx = left_idx + k_ + 1 + mod_gap;
+			runtime_k::RtSeq right(k_ + 1, sequence, right_idx);
+			right >>= 0;
+			for (;
+			     right_idx + k_ + 1 <= left_idx + insert_size_ + delta_ && right_idx + k_ + 1 <= sequence.size();
+			     ++right_idx) {
+				right <<= sequence[right_idx + k_];
+				runtime_k::RtSeq right_upd = kmer_mapper_.Substitute(right);
+				if (!index_.contains(right_upd)) {
+					continue;
+				}
+				pair<EdgeId, size_t> right_pos = index_.get(right_upd);
+
+				AddEtalonInfo(index, left_pos.first, right_pos.first,
+				              0. + (double) right_idx - (double) left_idx +
+				              (double) left_pos.second - (double) right_pos.second);
+			}
+		}
+	}
+
+public:
+    EtalonPairedInfoCounter(const Graph& g, const Index& index,
+                            const KmerMapper<Graph>& kmer_mapper,
+                            size_t insert_size, size_t read_length,
+                            size_t delta, size_t k)
+            : g_(g),
+              index_(index),
+              kmer_mapper_(kmer_mapper),
+              k_(k),
+              insert_size_(insert_size),
+              read_length_(read_length),
+              gap_((int) (insert_size_ - 2 * read_length_)),
+              delta_(delta) {
+//		VERIFY(insert_size_ >= 2 * read_length_);
+    }
+
+    void FillEtalonPairedInfo(const Sequence& genome,
+                              omnigraph::de::PairedInfoIndexT<Graph>& paired_info) {
+        ProcessSequence(genome, paired_info);
+        ProcessSequence(!genome, paired_info);
+    }
+};
+
 template<class Graph>
 void GetAllDistances(const PairedInfoIndexT<Graph>& paired_index,
                      PairedInfoIndexT<Graph>& result,
