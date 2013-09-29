@@ -10,6 +10,7 @@
 #include "graph_pack.hpp"
 
 #include <vector>
+#include <memory>
 
 namespace spades {
 
@@ -35,13 +36,13 @@ class AssemblyStage {
 
 class StageManager {
   public:
-    void add(AssemblyStage* stage) {
-        stages_.push_back(stage);
+    void add(AssemblyStage *stage) {
+        stages_.push_back(std::unique_ptr<AssemblyStage>(stage));
     }
     void run(debruijn_graph::conj_graph_pack& g,
              const char* start_from = NULL);
   private:
-    std::vector<AssemblyStage*> stages_;
+    std::vector<std::unique_ptr<AssemblyStage> > stages_;
 
     DECL_LOGGER("StageManager");
 };

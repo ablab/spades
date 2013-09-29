@@ -35,7 +35,7 @@ class StageIdComparator {
     StageIdComparator(const char* id)
             : id_(id) {}
 
-    bool operator()(const AssemblyStage *stage) const {
+    bool operator()(const std::unique_ptr<AssemblyStage> &stage) const {
         return 0 == strcmp(id_, stage->id());
     }
 
@@ -57,7 +57,7 @@ void StageManager::run(debruijn_graph::conj_graph_pack& g,
     }
 
     for (auto et = stages_.end(); start_stage != et; ++start_stage) {
-        AssemblyStage *stage = *start_stage;
+        AssemblyStage *stage = start_stage->get();
 
         INFO("STAGE == " << stage->name());
         stage->run(g);
