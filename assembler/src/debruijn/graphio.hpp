@@ -94,7 +94,6 @@ bool LoadEdgeIndex(const std::string& file_name,
 
     uint32_t k_;
     file.read((char *) &k_, sizeof(uint32_t));
-    INFO(k_ <<" " <<  index.k());
     VERIFY_MSG(k_ == index.k(), "Cannot read edge index, different Ks:");
 
     index.BinRead(file, file_name + ".kmidx");
@@ -105,7 +104,7 @@ bool LoadEdgeIndex(const std::string& file_name,
 }
 
 inline
-void SaveMapCoverage( const std::string& path, const std::map<int, int>& data ) {
+void SaveMapCoverage(const std::string& path, const std::map<int, int>& data ) {
     std::ofstream outFile;
     outFile.open(path.c_str());
 
@@ -195,7 +194,6 @@ class DataPrinter {
 
 template<class Graph>
 void DataPrinter<Graph>::saveGraph(const string& file_name) {
-
     FILE* file = fopen((file_name + ".grp").c_str(), "w");
     DEBUG("Graph saving to " << file_name << " started");
     VERIFY_MSG(file != NULL,
@@ -211,7 +209,8 @@ void DataPrinter<Graph>::saveGraph(const string& file_name) {
 
     for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
         save(file, *iter);
-    }DEBUG("Graph saving to " << file_name << " finished");
+    }
+    DEBUG("Graph saving to " << file_name << " finished");
 
     fclose(file);
 }
@@ -257,32 +256,10 @@ void DataPrinter<Graph>::saveCoverage(const string& file_name) {
     }
     fclose(file);
 }
-/*
-  template<class Graph>
-  void DataPrinter<Graph>::saveIndex(const string& file_name) {
-  FILE* file = fopen((file_name + ".ind").c_str(), "w");
-  DEBUG("Saving index, " << file_name <<" created");
-  VERIFY(file != NULL);
-  fprintf(file, "%d\n", edge_count_);
-  if (filter_ == NULL) {
-  for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-  fprintf(file, "%d ", IdHandler_.ReturnIntId(*iter));
-  fprintf(file, "%f .\n", graph_.coverage(*iter));
-  }
-  } else {
-  for (auto iter = filter_->EdgesBegin(); iter != filter_->EdgesEnd(); ++iter) {
-  fprintf(file, "%d ", IdHandler_.ReturnIntId(*iter));
-  fprintf(file, "%f .\n", graph_.coverage(*iter));
-  }
-  }
-  fclose(file);
-  }
-*/
 
 template<class Graph>
 void DataPrinter<Graph>::savePaired(const string& file_name,
-                                    const PairedInfoIndexT<Graph>& paired_index)
-{
+                                    const PairedInfoIndexT<Graph>& paired_index) {
     FILE* file = fopen((file_name + ".prd").c_str(), "w");
     DEBUG("Saving paired info, " << file_name <<" created");
     VERIFY(file != NULL);
@@ -476,7 +453,8 @@ class DataScanner {
     virtual void loadGraph(const string& file_name) = 0;
     void loadCoverage(const string& file_name);
     void loadPaired(const string& file_name,
-                    PairedInfoIndexT<Graph>& paired_index);
+                    PairedInfoIndexT<Graph>& paired_index,
+                    bool force_exists = true);
     void loadPositions(const string& file_name,
                        EdgesPositionHandler<Graph>& edge_pos);
 
@@ -515,7 +493,7 @@ class ConjugateDataScanner: public DataScanner<Graph> {
     /*virtual*/
     void loadGraph(const string& file_name) {
         int flag;
-        INFO("Trying to read conjugate de bruijn  graph from " << file_name << ".grp");
+        INFO("Trying to read conjugate de bruijn graph from " << file_name << ".grp");
         FILE* file = fopen((file_name + ".grp").c_str(), "r");
         VERIFY_MSG(file != NULL, "Couldn't find file " << (file_name + ".grp"));
         FILE* sequence_file = fopen((file_name + ".sqn").c_str(), "r");
@@ -675,11 +653,11 @@ void DataScanner<Graph>::loadCoverage(const string& file_name) {
     FILE* file = fopen((file_name + ".cvr").c_str(), "r");
     VERIFY(file != NULL);
     INFO("Reading coverage from " << file_name << " started");
-    int edge_count;
-    read_count = fscanf(file, "%d \n", &edge_count);
+    size_t edge_count;
+    read_count = fscanf(file, "%zu \n", &edge_count);
     VERIFY(read_count == 1);
     //  VERIFY(edge_count == edge_count_);
-    for (int i = 0; i < edge_count; i++) {
+    for (size_t i = 0; i < edge_count; i++) {
         int edge_real_id;
         double edge_coverage;
         read_count = fscanf(file, "%d %lf .\n", &edge_real_id, &edge_coverage);
@@ -694,17 +672,24 @@ void DataScanner<Graph>::loadCoverage(const string& file_name) {
 
 template<class Graph>
 void DataScanner<Graph>::loadPaired(const string& file_name,
-                                    PairedInfoIndexT<Graph>& paired_index) {
+                                    PairedInfoIndexT<Graph>& paired_index,
+                                    bool force_exists) {
     typedef typename Graph::EdgeId EdgeId;
     int read_count;
     FILE* file = fopen((file_name + ".prd").c_str(), "r");
     INFO((file_name + ".prd"));
-    VERIFY(file != NULL);
+    if (force_exists) {
+        VERIFY(file != NULL);
+    } else if (file == NULL) {
+        INFO("Paired info not found, skipping");
+        return;
+    }
     INFO("Reading paired info from " << file_name << " started");
-    int paired_count;
-    read_count = fscanf(file, "%d \n", &paired_count);
+
+    size_t paired_count;
+    read_count = fscanf(file, "%zu \n", &paired_count);
     VERIFY(read_count == 1);
-    for (int i = 0; i < paired_count; i++) {
+    for (size_t i = 0; i < paired_count; i++) {
         int first_real_id, second_real_id;
         double w, d, v;
         read_count = fscanf(file, "%d %d %lf %lf %lf .\n", &first_real_id,
@@ -989,31 +974,32 @@ void ScanGraphPack(const string& file_name,
 
 template<class Graph>
 void ScanPairedIndex(const string& file_name, DataScanner<Graph>& scanner,
-                     PairedInfoIndexT<Graph>& paired_index) {
-    scanner.loadPaired(file_name, paired_index);
+                     PairedInfoIndexT<Graph>& paired_index,
+                     bool force_exists = true) {
+    scanner.loadPaired(file_name, paired_index, force_exists);
 }
 
 template<class Graph>
 void ScanClusteredIndex(const string& file_name, DataScanner<Graph>& scanner,
-                        PairedInfoIndexT<Graph>& clustered_index) {
-    scanner.loadPaired(file_name + "_cl", clustered_index);
+                        PairedInfoIndexT<Graph>& clustered_index,
+                        bool force_exists = true) {
+    scanner.loadPaired(file_name + "_cl", clustered_index, force_exists);
 }
 
 template<class Graph>
-void ScanPairedIndices(const string& file_name, DataScanner<Graph>& scanner,
-                       PairedInfoIndicesT<Graph>& paired_indices) {
-    for (size_t i = 0; i < paired_indices.size(); ++i) {
-        ScanPairedIndex(file_name  + "_" + ToString(i), scanner, paired_indices[i]);
-    }
+void ScanPairedIndices(const std::string& file_name, DataScanner<Graph>& scanner,
+                       PairedInfoIndicesT<Graph>& paired_indices,
+                       bool force_exists = true) {
+    for (size_t i = 0; i < paired_indices.size(); ++i)
+        ScanPairedIndex(file_name  + "_" + ToString(i), scanner, paired_indices[i], force_exists);
 }
 
 template<class Graph>
-void ScanClusteredIndices(const string& file_name, DataScanner<Graph>& scanner,
-                          PairedInfoIndicesT<Graph>& paired_indices) {
-
-    for (size_t i = 0; i < paired_indices.size(); ++i) {
-        ScanClusteredIndex(file_name  + "_" + ToString(i), scanner, paired_indices[i]);
-    }
+void ScanClusteredIndices(const std:: string& file_name, DataScanner<Graph>& scanner,
+                          PairedInfoIndicesT<Graph>& paired_indices,
+                          bool force_exists = true) {
+    for (size_t i = 0; i < paired_indices.size(); ++i)
+        ScanClusteredIndex(file_name  + "_" + ToString(i), scanner, paired_indices[i], force_exists);
 }
 
 template<class graph_pack>
@@ -1101,12 +1087,13 @@ void ScanGraphPack(const string& file_name, graph_pack& gp) {
 }
 
 template<class graph_pack>
-void ScanAll(const std::string& file_name, graph_pack& gp) {
+void ScanAll(const std::string& file_name, graph_pack& gp,
+             bool force_exists = true) {
     typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(gp.g,
                                                                           gp.int_ids);
     ScanGraphPack(file_name, scanner, gp);
-    ScanPairedIndices(file_name, scanner, gp.paired_indices);
-    ScanClusteredIndices(file_name, scanner, gp.clustered_indices);
+    ScanPairedIndices(file_name, scanner, gp.paired_indices, force_exists);
+    ScanClusteredIndices(file_name, scanner, gp.clustered_indices, force_exists);
 }
 
 }

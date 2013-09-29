@@ -10,9 +10,15 @@ add_executable(spades
                kmer_coverage_model.cpp
                config_struct.cpp
                path_extend/pe_config_struct.cpp
+               stage.cpp
+               construction.cpp
+               simplification.cpp
+               pair_info_count.cpp
+               distance_estimation.cpp
+               repeat_resolving.cpp
                main.cpp)
 
-target_link_libraries(spades  input mph_index otkpp  ${COMMON_LIBRARIES} ssw)
+target_link_libraries(spades input mph_index otkpp  ${COMMON_LIBRARIES} ssw)
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(spades PROPERTIES LINK_SEARCH_END_STATIC 1)

@@ -4,128 +4,251 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-#pragma once
-
 #include "standard.hpp"
-#include "simplification.hpp"
-#include "graph_construction.hpp"
 #include "dataset_readers.hpp"
+#include "read_converter.hpp"
 
 #include "de/insert_size_refiner.hpp"
 #include "de/paired_info.hpp"
 
+#include "pair_info_count.hpp"
+
 namespace debruijn_graph {
-typedef io::ReadStreamVector<SequencePairedReadStream> MultiStreamType;
-typedef io::ReadStreamVector<PairedReadStream> SingleStreamType;
+typedef io::ReadStreamVector<io::SequencePairedReadStream> MultiStreamType;
+typedef io::ReadStreamVector<io::PairedReadStream> SingleStreamType;
 
-void late_pair_info_count(conj_graph_pack& gp) {
-    exec_simplification(gp);
+/**
+ * As for now it ignores sophisticated case of repeated consecutive
+ * occurrence of edge in path due to gaps in mapping
+ *
+ * todo talk with Anton about simplification and speed-up of procedure with little quality loss
+ */
+template<class Graph, class SequenceMapper, class PairedStream>
+class LatePairedIndexFiller {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef runtime_k::RtSeq Kmer;
+    typedef boost::function<double(MappingRange, MappingRange)> WeightF;
 
+  public:
+    LatePairedIndexFiller(const Graph &graph, const SequenceMapper& mapper, PairedStream& stream, WeightF weight_f) :
+            graph_(graph), mapper_(mapper), streams_(stream), weight_f_(weight_f)
+    {}
+
+    LatePairedIndexFiller(const Graph &graph, const SequenceMapper& mapper, io::ReadStreamVector< PairedStream >& streams, WeightF weight_f) :
+            graph_(graph), mapper_(mapper), streams_(streams), weight_f_(weight_f)
+    {}
+
+    bool FillIndex(omnigraph::de::PairedInfoIndexT<Graph>& paired_index) {
+        return (streams_.size() == 1 ? FillUsualIndex(paired_index) :  FillParallelIndex(paired_index));
+    }
+
+  private:
+    template<class PairedRead>
+    void ProcessPairedRead(omnigraph::de::PairedInfoIndexT<Graph>& paired_index, const PairedRead& p_r) {
+        Sequence read1 = p_r.first().sequence();
+        Sequence read2 = p_r.second().sequence();
+
+        MappingPath<EdgeId> path1 = mapper_.MapSequence(read1);
+        MappingPath<EdgeId> path2 = mapper_.MapSequence(read2);
+        size_t read_distance = p_r.distance();
+        for (size_t i = 0; i < path1.size(); ++i) {
+            std::pair<EdgeId, MappingRange> mapping_edge_1 = path1[i];
+            for (size_t j = 0; j < path2.size(); ++j) {
+                std::pair<EdgeId, MappingRange> mapping_edge_2 = path2[j];
+                double weight = weight_f_(mapping_edge_1.second,
+                                          mapping_edge_2.second);
+                size_t kmer_distance = read_distance
+                                       + mapping_edge_2.second.initial_range.end_pos
+                                       - mapping_edge_1.second.initial_range.start_pos;
+                int edge_distance = (int) kmer_distance
+                                    + (int) mapping_edge_1.second.mapped_range.start_pos
+                                    - (int) mapping_edge_2.second.mapped_range.end_pos;
+
+                paired_index.AddPairInfo(mapping_edge_1.first,
+                                         mapping_edge_2.first,
+                                         (double) edge_distance, weight, 0.);
+            }
+        }
+    }
+
+    /**
+     * Method reads paired data from stream, maps it to genome and stores it in this PairInfoIndex.
+     */
+    bool FillUsualIndex(omnigraph::de::PairedInfoIndexT<Graph>& paired_index) {
+        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it)
+            paired_index.AddPairInfo(*it, *it, 0., 0., 0.);
+
+        size_t initial_size = paired_index.size();
+        INFO("Processing paired reads (takes a while)");
+        PairedStream& stream = streams_.back();
+        stream.reset();
+        size_t n = 0;
+        while (!stream.eof()) {
+            typename PairedStream::read_type p_r;
+            stream >> p_r;
+            ProcessPairedRead(paired_index, p_r);
+            VERBOSE_POWER(++n, " paired reads processed");
+        }
+
+        return paired_index.size() > initial_size;
+    }
+
+    bool FillParallelIndex(omnigraph::de::PairedInfoIndexT<Graph>& paired_index) {
+        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it)
+            paired_index.AddPairInfo(*it, *it, 0., 0., 0.);
+        size_t initial_size = paired_index.size();
+
+        INFO("Processing paired reads (takes a while)");
+        size_t nthreads = streams_.size();
+        std::vector<omnigraph::de::PairedInfoIndexT<Graph>*> buffer_pi(nthreads);
+
+        for (size_t i = 0; i < nthreads; ++i)
+            buffer_pi[i] = new omnigraph::de::PairedInfoIndexT<Graph>(graph_);
+
+        size_t counter = 0;
+        static const double coeff = 1.3;
+#pragma omp parallel num_threads(nthreads)
+        {
+#pragma omp for reduction(+ : counter)
+            for (size_t i = 0; i < nthreads; ++i)
+            {
+                size_t size = 0;
+                size_t limit = 1000000;
+                typename PairedStream::read_type r;
+                PairedStream& stream = streams_[i];
+                stream.reset();
+                bool end_of_stream = false;
+
+                //DEBUG("Starting " << omp_get_thread_num());
+                while (!end_of_stream) {
+                    end_of_stream = stream.eof();
+                    while (!end_of_stream && size < limit) {
+                        stream >> r;
+                        ++counter;
+                        ++size;
+                        //DEBUG("Processing paired read " << omp_get_thread_num());
+                        ProcessPairedRead(*(buffer_pi[i]), r);
+                        end_of_stream = stream.eof();
+                    }
+
+#pragma omp critical
+                    {
+                        DEBUG("Merging " << omp_get_thread_num());
+                        paired_index.AddAll(*(buffer_pi[i]));
+                        DEBUG("Thread number " << omp_get_thread_num()
+                              << " is going to increase its limit by " << coeff
+                              << " times, current limit is " << limit);
+                    }
+                    buffer_pi[i]->Clear();
+                    limit = (size_t) (coeff * (double) limit);
+                }
+            }
+            DEBUG("Thread number " << omp_get_thread_num() << " finished");
+        }
+        INFO("Used " << counter << " paired reads");
+
+        for (size_t i = 0; i < nthreads; ++i)
+            DEBUG("Size of " << i << "-th map is " << buffer_pi[i]->size());
+
+        for (size_t i = 0; i < nthreads; ++i)
+            delete buffer_pi[i];
+        INFO("Index built");
+
+        DEBUG("Size of map is " << paired_index.size());
+
+        return paired_index.size() > initial_size;
+    }
+
+  private:
+    const Graph& graph_;
+    const SequenceMapper& mapper_;
+    io::ReadStreamVector<PairedStream>& streams_;
+    WeightF weight_f_;
+
+    DECL_LOGGER("LatePairedIndexFiller");
+};
+
+template<class PairedRead, class Graph, class Mapper>
+bool FillPairedIndexWithReadCountMetric(const Graph &g,
+                                        const Mapper& mapper,
+                                        PairedInfoIndexT<Graph>& paired_info_index,
+                                        io::ReadStreamVector<io::IReader<PairedRead> >& streams) {
+
+    INFO("Counting paired info with read count weight");
+    LatePairedIndexFiller<Graph, Mapper, io::IReader<PairedRead>>
+            pif(g, mapper, streams, PairedReadCountWeight);
+
+    bool res = pif.FillIndex(paired_info_index);
+    DEBUG("Paired info with read count weight counted");
+    return res;
+}
+
+template<class PairedRead, class Graph, class Mapper>
+bool FillPairedIndexWithProductMetric(const Graph &g,
+                                      const Mapper& mapper,
+                                      PairedInfoIndexT<Graph>& paired_info_index,
+                                      io::ReadStreamVector<io::IReader<PairedRead> >& streams) {
+
+    INFO("Counting paired info with product weight");
+
+    LatePairedIndexFiller<Graph, Mapper, io::IReader<PairedRead> >
+            pif(g, mapper, streams, KmerCountProductWeight);
+    bool res = pif.FillIndex(paired_info_index);
+    DEBUG("Paired info with product weight counted");
+    return res;
+}
+
+void PairInfoCount::run(conj_graph_pack &gp) {
     if (!cfg::get().developer_mode) {
         gp.paired_indices.Attach();
         gp.paired_indices.Init();
     }
 
-    if (cfg::get().paired_mode) {
-        size_t edge_length_threshold = Nx(gp.g, 50);
-        INFO("STAGE == Counting Late Pair Info");
+    size_t edge_length_threshold = Nx(gp.g, 50);
+    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+        if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd ||
+            cfg::get().ds.reads[i].type() == io::LibraryType::MatePairs) {
 
-        for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-            if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd ||
-                cfg::get().ds.reads[i].type() == io::LibraryType::MatePairs) {
+            bool insert_size_refined;
+            if (cfg::get().use_multithreading) {
+                auto streams = paired_binary_readers(cfg::get().ds.reads[i], false, 0);
+                insert_size_refined = RefineInsertSizeForLib(gp, *streams, cfg::get_writable().ds.reads[i].data(), edge_length_threshold);
+            } else {
+                auto_ptr<PairedReadStream> stream = paired_easy_reader(cfg::get().ds.reads[i], false, 0);
+                SingleStreamType streams(stream.get());
+                streams.release();
+                insert_size_refined = RefineInsertSizeForLib(gp, streams, cfg::get_writable().ds.reads[i].data(), edge_length_threshold);
+            }
 
-                bool insert_size_success;
-                if (cfg::get().use_multithreading) {
-                    auto streams = paired_binary_readers(cfg::get().ds.reads[i], false, 0);
-                    insert_size_success = RefineInsertSizeForLib(gp, *streams, cfg::get_writable().ds.reads[i].data(), edge_length_threshold);
+            if (!insert_size_refined) {
+                cfg::get_writable().ds.reads[i].data().mean_insert_size = 0.0;
+
+                WARN("Unable to estimate insert size for paired library #" << i);
+                if (cfg::get().ds.reads[i].data().read_length <= cfg::get().K) {
+                    WARN("Maximum read length (" << cfg::get().ds.reads[i].data().read_length << ") should be greater than K (" << cfg::get().K << ")");
+                } else if (cfg::get().ds.reads[i].data().read_length <= cfg::get().K * 11 / 10) {
+                    WARN("Maximum read length (" << cfg::get().ds.reads[i].data().read_length << ") is probably too close to K (" << cfg::get().K << ")");
                 } else {
-                    auto_ptr<PairedReadStream> stream = paired_easy_reader(cfg::get().ds.reads[i], false, 0);
-                    SingleStreamType streams(stream.get());
-                    streams.release();
-                    insert_size_success = RefineInsertSizeForLib(gp, streams, cfg::get_writable().ds.reads[i].data(), edge_length_threshold);
+                    WARN("None of paired reads aligned properly. Please, check orientation of your read pairs.");
                 }
 
-                if (!insert_size_success) {
-                    cfg::get_writable().ds.reads[i].data().mean_insert_size = 0.0;
+                continue;
+            } else {
+                INFO("Estimated insert size for paired library #" << i);
+                INFO("Insert size = " << cfg::get().ds.reads[i].data().mean_insert_size << ", deviation = " << cfg::get().ds.reads[i].data().insert_size_deviation);
+                INFO("Read length = " << cfg::get().ds.reads[i].data().read_length);
+            }
 
-                    WARN("Unable to estimate insert size for paired library #" << i);
-                    if (cfg::get().ds.reads[i].data().read_length <= cfg::get().K) {
-                        WARN("Maximum read length (" << cfg::get().ds.reads[i].data().read_length << ") should be greater than K (" << cfg::get().K << ")");
-                    }
-                    else if (cfg::get().ds.reads[i].data().read_length <= cfg::get().K * 11 / 10) {
-                        WARN("Maximum read length (" << cfg::get().ds.reads[i].data().read_length << ") is probably too close to K (" << cfg::get().K << ")");
-                    }
-                    else {
-                        WARN("None of paired reads aligned properly. Please, check orientation of your read pairs.");
-                    }
-                    continue;
-
-                } else {
-                    INFO("Estimated insert size for paired library #" << i);
-                    INFO("Insert size = " << cfg::get().ds.reads[i].data().mean_insert_size << ", deviation = " << cfg::get().ds.reads[i].data().insert_size_deviation);
-                    INFO("Read length = " << cfg::get().ds.reads[i].data().read_length)
-                            }
-
-                //bool pair_info_success;
-                if (cfg::get().use_multithreading) {
-                    auto paired_streams = paired_binary_readers(cfg::get().ds.reads[i], true, (size_t) cfg::get().ds.reads[i].data().mean_insert_size);
-                    //pair_info_success =
-                    FillPairedIndexWithReadCountMetric(gp.g, *MapperInstance(gp), gp.paired_indices[i], *paired_streams);
-                } else {
-                    auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(cfg::get().ds.reads[i], true, (size_t) cfg::get().ds.reads[i].data().mean_insert_size);
-                    SingleStreamType paired_streams(paired_stream.get());
-                    paired_stream.release();
-                    //pair_info_success =
-                    FillPairedIndexWithReadCountMetric(gp.g, *MapperInstance(gp), gp.paired_indices[i], paired_streams);
-                }
-
-                //                if (!pair_info_success) {
-                //                    WARN("None of paired reads aligned properly. Please, check orientation of your read pairs.");
-                //                }
-                //                else if (!insert_size_success) {
-                //                    WARN("Could not estimate insert size. Try setting it manually.");
-                //                }
+            if (cfg::get().use_multithreading) {
+                auto paired_streams = paired_binary_readers(cfg::get().ds.reads[i], true, (size_t) cfg::get().ds.reads[i].data().mean_insert_size);
+                FillPairedIndexWithReadCountMetric(gp.g, *MapperInstance(gp), gp.paired_indices[i], *paired_streams);
+            } else {
+                auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(cfg::get().ds.reads[i], true, (size_t) cfg::get().ds.reads[i].data().mean_insert_size);
+                SingleStreamType paired_streams(paired_stream.get());
+                paired_stream.release();
+                FillPairedIndexWithReadCountMetric(gp.g, *MapperInstance(gp), gp.paired_indices[i], paired_streams);
             }
         }
-
-    }
-}
-
-
-void load_late_pair_info_count(conj_graph_pack& gp,
-                               path::files_t* used_files) {
-    string p = path::append_path(cfg::get().load_from, "late_pair_info_counted");
-    used_files->push_back(p);
-
-    ScanWithPairedIndices(p, gp, gp.paired_indices);
-    load_lib_data(p);
-}
-
-void save_late_pair_info_count(conj_graph_pack& gp) {
-    if (cfg::get().make_saves || (cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles && cfg::get().paired_mode)) {
-        if (!cfg::get().make_saves)
-            make_dir(cfg::get().output_saves);
-
-        std::string p = path::append_path(cfg::get().output_saves, "late_pair_info_counted");
-        INFO("Saving current state to " << p);
-
-        PrintWithPairedIndices(p, gp, gp.paired_indices);
-        write_lib_data(p);
-    }
-
-    // for informing spades.py about estimated params
-    write_lib_data(cfg::get().output_dir + "/");
-}
-
-void exec_late_pair_info_count(conj_graph_pack& gp) {
-    if (cfg::get().entry_point <= ws_late_pair_info_count) {
-        late_pair_info_count(gp);
-        save_late_pair_info_count(gp);
-    } else {
-        INFO("Loading Late Pair Info Count");
-        path::files_t used_files;
-        load_late_pair_info_count(gp, &used_files);
-        link_files_by_prefix(used_files, cfg::get().output_saves);
     }
 }
 

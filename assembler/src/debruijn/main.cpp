@@ -77,7 +77,7 @@ void copy_configs(string cfg_filename, string to) {
   if (!make_dir(to)) {
     WARN("Could not create files use in /tmp directory");
   }
-  copy_files_by_ext(path::parent_path(cfg_filename), to, ".info", true);
+  path::copy_files_by_ext(path::parent_path(cfg_filename), to, ".info", true);
 }
 
 void load_config(string cfg_filename) {

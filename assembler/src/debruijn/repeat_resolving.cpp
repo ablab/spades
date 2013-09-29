@@ -4,31 +4,29 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-#pragma once
-
 #include "standard.hpp"
 
 #include "logger/logger.hpp"
-#include "distance_estimation_routine.hpp"
-#include "io/careful_filtering_reader_wrapper.hpp"
-#include "io/is_corrupting_wrapper.hpp"
-#include "graph_construction.hpp"
 #include "debruijn_stats.hpp"
-#include "de/distance_estimation.hpp"
-#include "omni/omni_utils.hpp"
+#include "omni_labelers.hpp"
 
-#include "path_utils.hpp"
-#include "pair_info_improver.hpp"
+#include "de/distance_estimation.hpp"
+#include "de/smoothing_distance_estimation.hpp"
+
+#include "omni/omni_utils.hpp"
 
 #include "path_extend/path_extend_launch.hpp"
 #include "contig_output.hpp"
 
+#include "distance_estimation.hpp"
+
 #include "pac_index.hpp"
 #include "long_read_storage.hpp"
 #include "loop_filter.hpp"
-#include "graphio.hpp"
 #include "coverage_based_rr.hpp"
 #include "pacbio_aligner.hpp"
+
+#include "repeat_resolving.hpp"
 
 namespace debruijn_graph {
 
@@ -68,6 +66,7 @@ bool prepare_scaffolding_index(conj_graph_pack& gp,
     return true;
 }
 
+#if 0
 void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, std::vector< PathInfo<Graph> >& filteredPaths,
                                  const EdgeQuality<Graph, Index>& quality_labeler) {
 
@@ -88,7 +87,7 @@ void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, s
         //        updater.UpdateAll();
     }
 
-    FlankingCoverage<Graph, KmerIndex> index(conj_gp.g, kmer_index, 50);
+    FlankingCoverage<conj_graph_pack::graph_t, conj_graph_pack::index_t> index(conj_gp.g, kmer_index, 50);
     EdgeLabelHandler<conj_graph_pack::graph_t> labels_after(conj_gp.g, conj_gp.g);
     auto cov_rr = CoverageBasedResolution<conj_graph_pack> (&conj_gp, cfg::get().cbrr.coverage_threshold_one_list, cfg::get().cbrr.coverage_threshold_match,
                                                             cfg::get().cbrr.coverage_threshold_global, cfg::get().cbrr.tandem_ratio_lower_threshold, cfg::get().cbrr.tandem_ratio_upper_threshold, cfg::get().cbrr.repeat_length_upper_threshold);
@@ -96,6 +95,7 @@ void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, s
 
     INFO("Repeats are resolved by coverage");
 }
+#endif
 
 size_t get_first_pe_lib_index() {
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i)
@@ -154,10 +154,12 @@ void pe_resolving(conj_graph_pack& conj_gp, const EdgeQuality<Graph, Index>& qua
         OutputContigs(conj_gp.g, cfg::get().output_dir + "before_resolve.fasta");
     }
 
-    if (cfg::get().coverage_based_rr_on == true){
+    if (cfg::get().coverage_based_rr_on) {
         size_t pe_lib_index = get_first_pe_lib_index();
         const io::SequencingLibrary<debruijn_config::DataSetData> &lib = cfg::get().ds.reads[pe_lib_index];
+#if 0
         resolve_repeats_by_coverage(conj_gp, (size_t) lib.data().mean_insert_size, filteredPaths, quality_labeler);
+#endif
     }
 
     //LongReadStorage<Graph> long_read(conj_gp.g);
@@ -170,9 +172,9 @@ void pe_resolving(conj_graph_pack& conj_gp, const EdgeQuality<Graph, Index>& qua
     }
 
     if (cfg::get().use_scaffolder && cfg::get().pe_params.param_set.scaffolder_options.on) {
-        if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
+        if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info)
             prepare_all_scaf_libs(conj_gp, pe_scaf_indexs, indexes);
-        }
+
         //path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "scaffolds.fasta", true, boost::optional<std::string>("final_contigs.fasta"));
         path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, filteredPaths, cfg::get().output_dir, "scaffolds.fasta", true, boost::optional<std::string>("final_contigs.fasta"));
         delete_index(pe_scaf_indexs);
@@ -183,60 +185,35 @@ void pe_resolving(conj_graph_pack& conj_gp, const EdgeQuality<Graph, Index>& qua
     }
 }
 
-void resolve_repeats() {
-    conj_graph_pack conj_gp(cfg::get().K,
-                            cfg::get().output_dir,
-                            cfg::get().ds.reference_genome,
-                            cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling,
-                            !cfg::get().developer_mode);
-
-    if (!cfg::get().developer_mode) {
-        conj_gp.edge_pos.Detach();
-        conj_gp.paired_indices.Detach();
-        conj_gp.clustered_indices.Detach();
-        if (!cfg::get().gap_closer_enable && !cfg::get().paired_mode) {
-            //todo ?
-            //			conj_gp.kmer_mapper.Detach();
-        }
-    }
-
-    exec_distance_estimation(conj_gp);
-
+void RepeatResolution::run(conj_graph_pack &gp) {
     if (cfg::get().developer_mode && cfg::get().pos.late_threading) {
-        FillPos(conj_gp, conj_gp.genome, "10");
-        FillPos(conj_gp, !conj_gp.genome, "11");
-        if (!cfg::get().pos.contigs_for_threading.empty()
-            && FileExists(cfg::get().pos.contigs_for_threading)) {
-            FillPosWithRC(conj_gp, cfg::get().pos.contigs_for_threading,
-                          "thr_");
-        }
+        FillPos(gp, gp.genome, "10");
+        FillPos(gp, !gp.genome, "11");
+        if (!cfg::get().pos.contigs_for_threading.empty() &&
+            FileExists(cfg::get().pos.contigs_for_threading))
+          FillPosWithRC(gp, cfg::get().pos.contigs_for_threading, "thr_");
 
-        if (!cfg::get().pos.contigs_to_analyze.empty()
-            && FileExists(cfg::get().pos.contigs_to_analyze)) {
-            FillPosWithRC(conj_gp, cfg::get().pos.contigs_to_analyze, "anlz_");
-        }
+        if (!cfg::get().pos.contigs_to_analyze.empty() &&
+            FileExists(cfg::get().pos.contigs_to_analyze))
+          FillPosWithRC(gp, cfg::get().pos.contigs_to_analyze, "anlz_");
     }
-
-
-    //	RunTopologyTipClipper(conj_gp.g, 300, 2000, 1000);
 
     //todo refactor labeler creation
-    total_labeler_graph_struct graph_struct(conj_gp.g, &conj_gp.int_ids,
-                                            &conj_gp.edge_pos);
+    total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids,
+                                            &gp.edge_pos);
     total_labeler tot_lab(&graph_struct);
-    EdgeQuality<Graph, Index> quality_labeler(conj_gp.g, conj_gp.index,
-                                              conj_gp.kmer_mapper, conj_gp.genome);
+    EdgeQuality<Graph, Index> quality_labeler(gp.g, gp.index,
+                                              gp.kmer_mapper, gp.genome);
     CompositeLabeler<Graph> labeler(tot_lab, quality_labeler);
-    detail_info_printer printer(conj_gp, labeler, cfg::get().output_dir);
+    detail_info_printer printer(gp, labeler, cfg::get().output_dir);
     printer(ipp_before_repeat_resolution);
 
     bool no_valid_libs = true;
-    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i)
         if (cfg::get().ds.reads[i].data().mean_insert_size != 0.0) {
             no_valid_libs = false;
             break;
         }
-    }
 
     if (cfg::get().paired_mode && no_valid_libs)
         WARN("Insert size was not estimated for any of the paired libraries, repeat resolution module will not run.");
@@ -244,15 +221,15 @@ void resolve_repeats() {
     if (!cfg::get().paired_mode ||
         no_valid_libs ||
         cfg::get().rm == debruijn_graph::resolving_mode::rm_none) {
-        OutputContigs(conj_gp.g, cfg::get().output_dir + "final_contigs.fasta");
+        OutputContigs(gp.g, cfg::get().output_dir + "final_contigs.fasta");
 
         if (cfg::get().pacbio_test_on) {
-            PathStorage<Graph> long_read(conj_gp.g);
-            GapStorage<Graph> gaps(conj_gp.g);
+            PathStorage<Graph> long_read(gp.g);
+            GapStorage<Graph> gaps(gp.g);
             std::vector< PathInfo<Graph> > filteredPaths;
-            //LongReadStorage<Graph> long_read(conj_gp.g);
+            //LongReadStorage<Graph> long_read(gp.g);
             INFO("creating  multiindex with k = " << cfg::get().pb.pacbio_k);
-            PacBioAligner pac_aligner(conj_gp, cfg::get().pb.pacbio_k);
+            PacBioAligner pac_aligner(gp, cfg::get().pb.pacbio_k);
             INFO("index created");
             filteredPaths = long_read.GetAllPaths();
             pac_aligner.pacbio_test(long_read, gaps);
@@ -260,33 +237,21 @@ void resolve_repeats() {
         return;
     }
 
-    OutputContigs(conj_gp.g, cfg::get().output_dir + "before_rr.fasta");
+    OutputContigs(gp.g, cfg::get().output_dir + "before_rr.fasta");
 
     // Repeat resolving begins
     size_t pe_lib_index = get_first_pe_lib_index();
-    INFO("STAGE == Resolving Repeats");
     if (cfg::get().ds.reads.lib_count() > 1 || pe_lib_index == -1UL ||
         cfg::get().rm == debruijn_graph::resolving_mode::rm_path_extend) {
         INFO("Path-Extend repeat resolving");
-        pe_resolving(conj_gp, quality_labeler);
+        pe_resolving(gp, quality_labeler);
     } else if (cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles) {
         INFO("Ready to run rectangles repeat resolution module");
     } else {
         INFO("Unsupported repeat resolver");
-        OutputContigs(conj_gp.g, cfg::get().output_dir + "final_contigs.fasta");
+        OutputContigs(gp.g, cfg::get().output_dir + "final_contigs.fasta");
     }
 }
 
-void exec_repeat_resolving() {
-    if (cfg::get().entry_point <= ws_repeats_resolving) {
-        resolve_repeats();
-        //todo why nothing to save???
-        // nothsng to save yet
-    } else {
-        INFO("Loading Repeat Resolving");
-        INFO("Nothing to load");
-        // nothing to load
-    }
-}
 
 } // debruijn_graph
