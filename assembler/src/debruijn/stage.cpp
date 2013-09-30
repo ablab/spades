@@ -64,6 +64,9 @@ void StageManager::run(debruijn_graph::conj_graph_pack& g,
         if (cfg::get().developer_mode && cfg::get().make_saves)
             stage->save(g);
     }
+
+    // For informing spades.py about estimated params
+    debruijn_graph::write_lib_data(cfg::get().output_dir);
 }
 
 }
