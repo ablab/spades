@@ -225,7 +225,7 @@ class GraphReadCorrector: public io::SequenceModifier {
 
 public:
 	/*virtual*/
-	Sequence Modify(const Sequence& s) const {
+	Sequence Modify(const Sequence& s) {
 //		if(s < !s)
 //			return !Refine(!s);
 		MappingPath<EdgeId> mapping_path = mapper_.MapSequence(s);
@@ -285,7 +285,7 @@ private:
 };
 
 template<class Graph, class Mapper>
-shared_ptr<const GraphReadCorrector<Graph, Mapper>> GraphReadCorrectorInstance(
+shared_ptr<GraphReadCorrector<Graph, Mapper>> GraphReadCorrectorInstance(
 		const Graph& graph, const Mapper& mapper) {
 	return std::make_shared<GraphReadCorrector<Graph, Mapper>>(graph, mapper);
 }
