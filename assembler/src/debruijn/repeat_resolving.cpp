@@ -90,8 +90,7 @@ void pe_resolving(conj_graph_pack& conj_gp, const EdgeQuality<Graph, Index>& qua
     GapStorage<Graph> gaps(conj_gp.g);
 
     std::vector< PathInfo<Graph> > filteredPaths;
-    if (cfg::get().developer_mode)
-        OutputContigs(conj_gp.g, cfg::get().output_dir + "before_resolve.fasta");
+    OutputContigs(conj_gp.g, cfg::get().output_dir + "before_resolve.fasta");
 
 #if 0
     if (cfg::get().coverage_based_rr_on) {
@@ -153,8 +152,7 @@ void RepeatResolution::run(conj_graph_pack &gp) {
     if (cfg::get().paired_mode && no_valid_libs)
         WARN("Insert size was not estimated for any of the paired libraries, repeat resolution module will not run.");
 
-    if (!cfg::get().paired_mode ||
-        no_valid_libs ||
+    if (no_valid_libs ||
         cfg::get().rm == debruijn_graph::resolving_mode::rm_none) {
         OutputContigs(gp.g, cfg::get().output_dir + "final_contigs.fasta");
 
@@ -172,20 +170,20 @@ void RepeatResolution::run(conj_graph_pack &gp) {
         return;
     }
 
-    OutputContigs(gp.g, cfg::get().output_dir + "before_rr.fasta");
-
     // Repeat resolving begins
     size_t pe_lib_index = get_first_pe_lib_index();
     if (cfg::get().ds.reads.lib_count() > 1 || pe_lib_index == -1UL ||
         cfg::get().rm == debruijn_graph::resolving_mode::rm_path_extend) {
         INFO("Path-Extend repeat resolving");
         pe_resolving(gp, quality_labeler);
-    } else if (cfg::get().rm == debruijn_graph::resolving_mode::rm_rectangles) {
-        INFO("Ready to run rectangles repeat resolution module");
     } else {
         INFO("Unsupported repeat resolver");
         OutputContigs(gp.g, cfg::get().output_dir + "final_contigs.fasta");
     }
+}
+
+void ContigOutput::run(conj_graph_pack &gp) {
+    OutputContigs(gp.g, cfg::get().output_dir + "final_contigs.fasta");
 }
 
 

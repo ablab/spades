@@ -18,5 +18,13 @@ class RepeatResolution : public spades::AssemblyStage {
     void run(conj_graph_pack &gp);
 };
 
+class ContigOutput : public spades::AssemblyStage {
+  public:
+    ContigOutput()
+        : AssemblyStage("Contig Output", "contig_output") {}
+
+    void run(conj_graph_pack &gp);
+};
+
 }
 

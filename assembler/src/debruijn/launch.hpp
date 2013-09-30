@@ -44,6 +44,7 @@ void assemble_genome() {
         }
     }
 
+    // Build the pipeline
     SPAdes.add(new debruijn_graph::Construction());
     SPAdes.add(new debruijn_graph::Simplification());
     if (cfg::get().correct_mismatches)
@@ -52,7 +53,10 @@ void assemble_genome() {
         SPAdes.add(new debruijn_graph::PairInfoCount());
         SPAdes.add(new debruijn_graph::DistanceEstimation());
         SPAdes.add(new debruijn_graph::RepeatResolution());
+    } else {
+        SPAdes.add(new debruijn_graph::ContigOutput());
     }
+
     SPAdes.run(conj_gp, cfg::get().entry_point.c_str());
 
     INFO("SPAdes finished");
