@@ -540,7 +540,7 @@ class NewExtendedSequenceMapper {
 };
 
 template<class gp_t>
-std::shared_ptr<const NewExtendedSequenceMapper<typename gp_t::graph_t, typename gp_t::index_t> > MapperInstance(const gp_t& gp) {
+std::shared_ptr<NewExtendedSequenceMapper<typename gp_t::graph_t, typename gp_t::index_t> > MapperInstance(const gp_t& gp) {
   size_t k_plus_1 = gp.k_value + 1;
   return std::make_shared<NewExtendedSequenceMapper<typename gp_t::graph_t, typename gp_t::index_t> >(gp.g, gp.index, gp.kmer_mapper, k_plus_1);
 }

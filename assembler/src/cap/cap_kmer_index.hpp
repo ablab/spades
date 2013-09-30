@@ -73,7 +73,7 @@ struct kmer_index_traits<cap::LSeq> {
     };
 
     struct raw_create {
-        inline SeqType operator()(unsigned K, const KMerRawReference kmer) {
+        inline SeqType operator()(unsigned /*K*/, const KMerRawReference kmer) {
             return SeqType(kmer);
         }
     };

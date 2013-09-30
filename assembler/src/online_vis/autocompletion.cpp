@@ -1,49 +1,44 @@
 #include <vector>
 #include <string>
-#include "autocompletion.hpp"
+#include <queue>
+#include <readline/readline.h>
 
-namespace online_vis{
+namespace online_visualization {
 
-  std::vector<std::string> commands;
+std::vector<std::string> commands;
 
-  char* command_generator(const char* text, int state) {
-    static queue<string> list_possible_matches;
+char* CommandGenerator(const char* text, int state) {
+    static std::queue<std::string> list_possible_matches;
 
     if (state != 0) {
-      if (!list_possible_matches.empty()) {
-        char* answer = strdup(list_possible_matches.front().c_str());
-        list_possible_matches.pop();
-        return answer;
-      }
-      else
-        return NULL;
-    }
-    else {
-      for (size_t i = 0; i < commands.size(); ++i) {
-        string name = commands[i];
-        if (!name.compare(0, strlen(text), text))
-          list_possible_matches.push(name);
-      }
-      return command_generator(text, 1);
+        if (!list_possible_matches.empty()) {
+            char* answer = strdup(list_possible_matches.front().c_str());
+            list_possible_matches.pop();
+            return answer;
+        } else
+            return NULL;
+    } else {
+        for (size_t i = 0; i < commands.size(); ++i) {
+            std::string name = commands[i];
+            if (!name.compare(0, strlen(text), text))
+                list_possible_matches.push(name);
+        }
+        return CommandGenerator(text, 1);
     }
     return NULL;
-  }
+}
 
-  char** gaf_completion(const char* text, int start, int /*end*/) {
+char** GafCompletion(const char* text, int start, int /*end*/) {
     if (start == 0) {
-      typedef char* (*func_ptr)(const char*, int);
-      func_ptr func = command_generator;
-      return rl_completion_matches(text, func);
-    }
-    else
-      return NULL;
-  }
+        return rl_completion_matches(text, CommandGenerator);
+    } else
+        return NULL;
+}
 
-  void Init(const vector<string>& available_commands) {
+void InitAutocompletion(const std::vector<std::string>& available_commands) {
     commands = available_commands;
-//    typedef char** (*func_ptr)(const char*, int, int);
-//    func_ptr func = gaf_completion;
-    rl_attempted_completion_function = gaf_completion/*func*/;
-  }
+    rl_attempted_completion_function = GafCompletion;
+}
+
 }
 

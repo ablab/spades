@@ -22,9 +22,9 @@ namespace online_visualization {
       {
       }
 
-      void Execute(shared_ptr<Env>& curr_env,
-                   LoadedEnvironments<Env>& loaded_environments,
-                   const ArgumentList& args) const
+      void Execute(shared_ptr<Env>& /*curr_env*/,
+                   LoadedEnvironments<Env>& /*loaded_environments*/,
+                   const ArgumentList& /*args*/) const
       {
       }
 
@@ -36,7 +36,7 @@ namespace online_visualization {
   template <class Env>
     class HelpCommand : public CommandServingCommand<Env> {
       std::string GetCommonUsageString() const {
-        std::string answer = 
+        std::string answer =
           " Welcome to GAF (Graph Analysis Framework). This framework allows to work with the de Bruijn Graph interactively.\n "
           " You can see the list of command names below. To see a command's help message just type\n"
           "> help <command_name>\n"
@@ -48,11 +48,6 @@ namespace online_visualization {
           answer += '\n';
         }
         return answer;
-      }
-
-      protected:
-      virtual bool CheckCorrectness(const vector<string>& args) const {
-        return true;
       }
 
       public:
@@ -69,13 +64,11 @@ namespace online_visualization {
         : CommandServingCommand<Env>("help", command_mapping) {
         }
 
-      void Execute(shared_ptr<Env>& curr_env, LoadedEnvironments<Env>& loaded_environments, const ArgumentList& arg_list) const {
+      void Execute(shared_ptr<Env>& /*curr_env*/, LoadedEnvironments<Env>& /*loaded_environments*/, const ArgumentList& arg_list) const {
         const vector<string>& args = arg_list.GetAllArguments();
         if (args.size() == 1) {
           cout << GetCommonUsageString() << endl;
         } else {
-          if (!CheckCorrectness(args))
-            return;
           string command_name = args[1];
           const Command<Env>& command = this->command_container_->GetCommand(command_name);
           if (command.invocation_string() == "null")
@@ -93,12 +86,12 @@ namespace online_visualization {
           return "The command `exit` allows you to exit this application.";
         }
 
-        ExitCommand() : 
+        ExitCommand() :
           Command<Env>("exit")
       {
       }
 
-        void Execute(shared_ptr<Env>& curr_env, LoadedEnvironments<Env>& loaded_environments, const ArgumentList& args) const {
+        void Execute(shared_ptr<Env>& /*curr_env*/, LoadedEnvironments<Env>& /*loaded_environments*/, const ArgumentList& /*args*/) const {
           cout << "Exiting" << endl;
           exit(0);
         }
@@ -120,7 +113,7 @@ namespace online_visualization {
           return 2;
         }
 
-        virtual bool CheckCorrectness(const vector<string>& args, LoadedEnvironments<Env>& loaded_environments) const 
+        virtual bool CheckCorrectness(const vector<string>& args, LoadedEnvironments<Env>& loaded_environments) const
         {
           if (!this->CheckEnoughArguments(args))
             return false;
@@ -132,7 +125,7 @@ namespace online_visualization {
               return false;
             K = GetInt(args[3]);
           } else {
-            K = cfg::get().K;   
+            K = cfg::get().K;
           }
           if (!CheckEnvIsCorrect(path, K))
             return false;
@@ -152,14 +145,14 @@ namespace online_visualization {
       public:
         string Usage() const {
           string answer;
-          answer = answer + "Command `load` \n" + 
-            "Usage:\n" + 
-            "> load <environment_name> <path_to_saves> [<k-value>]\n" + 
+          answer = answer + "Command `load` \n" +
+            "Usage:\n" +
+            "> load <environment_name> <path_to_saves> [<k-value>]\n" +
             " You should specify the name of the new environment as well as a path to the graph saves. Optionally, \n" +
             " you can provide a k-value for these saves. \n: " +
             " For example:\n" +
-            "> load GraphSimplified data/saves/simplified_graph\n" + 
-            " would load a new environment with the name `GraphSimplified` from the files\n" + 
+            "> load GraphSimplified data/saves/simplified_graph\n" +
+            " would load a new environment with the name `GraphSimplified` from the files\n" +
             " in the folder `data/saves/` with the basename `simplified_graph` (simplified_graph.grp, simplified_graph.sqn, e.t.c).";
           return answer;
         }
@@ -170,16 +163,16 @@ namespace online_visualization {
 
         void Execute(shared_ptr<Env>& curr_env,
             LoadedEnvironments<Env>& loaded_environments,
-            const ArgumentList& arg_list) const 
+            const ArgumentList& arg_list) const
         {
           vector<string> args = arg_list.GetAllArguments();
-          string name  = args[1]; 
+          string name  = args[1];
           string saves = args[2];
           size_t K;
           if (args.size() > 3) {
             K = GetInt(args[3]);
           } else {
-            K = cfg::get().K;   
+            K = cfg::get().K;
           }
 
           cout << "Loading " << name << " " << saves << endl;
@@ -208,17 +201,17 @@ namespace online_visualization {
       public:
         string Usage() const {
           string answer;
-          answer = answer + "Command `switch` \n" + 
-            "Usage:\n" + 
-            " switch <environment_name>\n" + 
+          answer = answer + "Command `switch` \n" +
+            "Usage:\n" +
+            " switch <environment_name>\n" +
             " You should specify the name of the environment you want to switch to. For example:\n" +
-            "> switch GraphSimplified \n" + 
-            " would switch you to the environment with the name `GraphSimplified`.\n" + 
+            "> switch GraphSimplified \n" +
+            " would switch you to the environment with the name `GraphSimplified`.\n" +
             " Of course this environment must be loaded first. To see all loaded environments, run command `list`.";
           return answer;
         }
 
-        SwitchCommand() : 
+        SwitchCommand() :
           Command<Env>("switch_env")
       {
       }
@@ -229,7 +222,7 @@ namespace online_visualization {
           if (!CheckCorrectness(args))
             return;
 
-          string name = args[1]; 
+          string name = args[1];
 
           bool okay = false;
           for (auto iterator = loaded_environments.begin(); iterator != loaded_environments.end(); ++iterator) {
@@ -253,7 +246,7 @@ namespace online_visualization {
     class ListCommand : public Command<Env> {
       protected:
         virtual bool CheckCorrectness() const {
-          return true;   
+          return true;
         }
 
       public:
@@ -261,7 +254,7 @@ namespace online_visualization {
           string answer;
           answer = answer + "Command `list` \n" +
             "Usage:\n" +
-            "> list\n" + 
+            "> list\n" +
             " This command lists all loaded environments.";
           return answer;
         }
@@ -270,14 +263,14 @@ namespace online_visualization {
       {
       }
 
-        void Execute(shared_ptr<Env>& curr_env, LoadedEnvironments<Env>& loaded_environments, const ArgumentList& arg_list) const {
+        void Execute(shared_ptr<Env>& curr_env, LoadedEnvironments<Env>& loaded_environments, const ArgumentList& /*arg_list*/) const {
           cout << "Environments :" << endl;
           for (auto iter = loaded_environments.begin(); iter != loaded_environments.end(); ++iter) {
             cout << " " << iter->first << endl;
           }
-          if (curr_env) 
+          if (curr_env)
             cout << "Current environment is " << curr_env->str() << endl;
-          else 
+          else
             cout << "Current environment was not set" << endl;
         }
     };
@@ -294,12 +287,12 @@ namespace online_visualization {
       public:
         string Usage() const {
           string answer;
-          answer = answer + "Command `replay` \n" + 
-            " Usage:\n" + 
-            " > rep <command_number>\n" + 
+          answer = answer + "Command `replay` \n" +
+            " Usage:\n" +
+            " > rep <command_number>\n" +
             " Runs the command <command_number> commands before. For example:\n" +
-            " > rep 1 \n" + 
-            " would run the previous command.\n" + 
+            " > rep 1 \n" +
+            " would run the previous command.\n" +
             " It is still under development.";
           return answer;
         }
@@ -348,7 +341,7 @@ namespace online_visualization {
         }
 
         virtual bool CheckCorrectness(const vector<string>& args) const {
-          if (args.size() > 1) 
+          if (args.size() > 1)
             return CheckIsNumber(args[1]);
           return true;
         }
@@ -356,9 +349,9 @@ namespace online_visualization {
       public:
         string Usage() const {
           string answer;
-          answer = answer + "Command `log` \n" + 
-            " Usage:\n" + 
-            " > log [<number_of_commands>]\n" + 
+          answer = answer + "Command `log` \n" +
+            " Usage:\n" +
+            " > log [<number_of_commands>]\n" +
             " Shows last <number_of_commands> in the history. Shows the whole log by default.";
           return answer;
         }
@@ -367,7 +360,7 @@ namespace online_visualization {
       {
       }
 
-        void Execute(shared_ptr<Env>& curr_env, LoadedEnvironments<Env>& loaded_environments, const ArgumentList& arg_list) const {
+        void Execute(shared_ptr<Env>& /*curr_env*/, LoadedEnvironments<Env>& /*loaded_environments*/, const ArgumentList& arg_list) const {
           vector<string> args = arg_list.GetAllArguments();
 
           if (!CheckCorrectness(args))
@@ -377,13 +370,13 @@ namespace online_visualization {
 
           if (args.size() > 1) {
             size_t number = GetInt(args[1]);
-            if (number > history.size()) 
+            if (number > history.size())
               number = history.size();
-            for (size_t i = 0; i < number; ++i) 
+            for (size_t i = 0; i < number; ++i)
               cout << " " << history[history.size() - int(number) + i] << endl;
           }
           else {
-            for (size_t i = 0; i < history.size(); ++i) 
+            for (size_t i = 0; i < history.size(); ++i)
               cout << history[i] << endl;
           }
         }
@@ -405,9 +398,9 @@ namespace online_visualization {
       public:
         string Usage() const {
           string answer;
-          answer = answer + "Command `save` \n" + 
-            " Usage:\n" + 
-            " > save <number_of_commands> <file_name>\n" + 
+          answer = answer + "Command `save` \n" +
+            " Usage:\n" +
+            " > save <number_of_commands> <file_name>\n" +
             " Saves last <number_of_commands> of the history in the file filename.";
           return answer;
         }
@@ -416,7 +409,7 @@ namespace online_visualization {
       {
       }
 
-        void Execute(shared_ptr<Env>& curr_env, LoadedEnvironments<Env>& loaded_environments, const ArgumentList& arg_list) const {
+        void Execute(shared_ptr<Env>& /*curr_env*/, LoadedEnvironments<Env>& /*loaded_environments*/, const ArgumentList& arg_list) const {
           const vector<string>& args = arg_list.GetAllArguments();
 
           if (!CheckCorrectness(args))
@@ -435,7 +428,7 @@ namespace online_visualization {
           for (size_t i = 0; i < number; ++i) {
             outfile << history[history.size() - number + i];
             if (i < number - 1)
-              outfile << endl;    
+              outfile << endl;
           }
           outfile.close();
         }
@@ -445,7 +438,7 @@ namespace online_visualization {
     class BatchCommand : public CommandServingCommand<Env> {
       private:
         size_t MinArgNumber() const {
-          return 1;    
+          return 1;
         }
 
         virtual bool CheckCorrectness(const vector<string>& args) const {
@@ -457,9 +450,9 @@ namespace online_visualization {
       public:
         string Usage() const {
           string answer;
-          answer = answer + "Command `batch` \n" + 
-            "Usage:\n" + 
-            "> batch <batch_filename>\n" + 
+          answer = answer + "Command `batch` \n" +
+            "Usage:\n" +
+            "> batch <batch_filename>\n" +
             " Runs the commands from the file <batch_filename>.";
           return answer;
         }
