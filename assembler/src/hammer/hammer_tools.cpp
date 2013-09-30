@@ -258,7 +258,7 @@ size_t HammerTools::CorrectAllReads() {
       outlib.push_back_single(outcoru);
     }
 
-    for (auto I = dataset.single_begin(), E = dataset.single_end(); I != E; ++I, ++iread) {
+    for (auto I = lib.single_begin(), E = lib.single_end(); I != E; ++I, ++iread) {
       INFO("Correcting single reads: " << *I);
       std::string usuffix =  boost::lexical_cast<std::string>(ilib) + "_" +
                              boost::lexical_cast<std::string>(iread) + ".cor.fastq";
