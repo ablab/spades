@@ -18,8 +18,6 @@
 #include "path_extend/path_extend_launch.hpp"
 #include "contig_output.hpp"
 
-#include "distance_estimation.hpp"
-
 #include "pac_index.hpp"
 #include "long_read_storage.hpp"
 #include "loop_filter.hpp"
@@ -29,42 +27,6 @@
 #include "repeat_resolving.hpp"
 
 namespace debruijn_graph {
-
-bool prepare_scaffolding_index(conj_graph_pack& gp,
-                               const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
-                               PairedIndexT& paired_index,
-                               PairedIndexT& clustered_index) {
-    double is_var = lib.data().insert_size_deviation;
-    size_t delta = size_t(is_var);
-    size_t linkage_distance = size_t(cfg::get().de.linkage_distance_coeff * is_var);
-    GraphDistanceFinder<Graph> dist_finder(gp.g, (size_t) math::round(lib.data().mean_insert_size),
-                                           lib.data().read_length, delta);
-    size_t max_distance = size_t(cfg::get().de.max_distance_coeff * is_var);
-    boost::function<double(int)> weight_function;
-
-    DEBUG("Retaining insert size distribution for it");
-    if (lib.data().insert_size_distribution.size() == 0)
-        return false;
-
-    WeightDEWrapper wrapper(lib.data().insert_size_distribution, lib.data().mean_insert_size);
-    DEBUG("Weight Wrapper Done");
-    weight_function = boost::bind(&WeightDEWrapper::CountWeight, wrapper, _1);
-
-    PairInfoWeightFilter<Graph> filter(gp.g, 0.);
-    DEBUG("Weight Filter Done");
-
-    const AbstractDistanceEstimator<Graph>& estimator =
-            SmoothingDistanceEstimator<Graph>(gp.g, paired_index, dist_finder,
-                                              weight_function, linkage_distance, max_distance,
-                                              cfg::get().ade.threshold, cfg::get().ade.range_coeff,
-                                              cfg::get().ade.delta_coeff, cfg::get().ade.cutoff,
-                                              cfg::get().ade.min_peak_points, cfg::get().ade.inv_density,
-                                              cfg::get().ade.percentage,
-                                              cfg::get().ade.derivative_threshold, true);
-    estimate_with_estimator(gp.g, estimator, filter, clustered_index);
-
-    return true;
-}
 
 #if 0
 void resolve_repeats_by_coverage(conj_graph_pack& conj_gp, size_t insert_size, std::vector< PathInfo<Graph> >& filteredPaths,
@@ -105,28 +67,6 @@ size_t get_first_pe_lib_index() {
     return -1UL;
 }
 
-void prepare_all_scaf_libs(conj_graph_pack& conj_gp,
-                           std::vector<PairedIndexT*>& scaff_indexs, std::vector<size_t>& indexes) {
-    std::vector<PairedIndexT*> cl_scaff_indexs;
-    for (size_t i = 0; i < scaff_indexs.size(); ++i) {
-        PairedIndexT* pe = new PairedIndexT(conj_gp.g);
-        cl_scaff_indexs.push_back(pe);
-        INFO("Scaffolding distance estimating started for lib #" << indexes[i]);
-        if (!prepare_scaffolding_index(conj_gp, cfg::get().ds.reads[indexes[i]], *scaff_indexs[i], *cl_scaff_indexs[i])) {
-            WARN("Lib #" << indexes[i] << " will not be used for scaffolding");
-        }
-    }
-    scaff_indexs.clear();
-    scaff_indexs.insert(scaff_indexs.end(), cl_scaff_indexs.begin(),
-                        cl_scaff_indexs.end());
-}
-
-//todo check usages!!!
-void delete_index(std::vector<PairedIndexT*>& index) {
-    for (size_t i = 0; i < index.size(); ++i)
-        delete index[i];
-}
-
 void pe_resolving(conj_graph_pack& conj_gp, const EdgeQuality<Graph, Index>& quality_labeler) {
     std::vector<PairedIndexT*> pe_indexs;
     std::vector<PairedIndexT*> pe_scaf_indexs;
@@ -138,7 +78,7 @@ void pe_resolving(conj_graph_pack& conj_gp, const EdgeQuality<Graph, Index>& qua
             (lib.type() == io::LibraryType::PairedEnd ||
              lib.type() == io::LibraryType::MatePairs)) {
             pe_indexs.push_back(&conj_gp.clustered_indices[i]);
-            pe_scaf_indexs.push_back(&conj_gp.paired_indices[i]);
+            pe_scaf_indexs.push_back(&conj_gp.scaffolding_indices[i]);
             indexes.push_back(i);
         }
     }
@@ -150,17 +90,16 @@ void pe_resolving(conj_graph_pack& conj_gp, const EdgeQuality<Graph, Index>& qua
     GapStorage<Graph> gaps(conj_gp.g);
 
     std::vector< PathInfo<Graph> > filteredPaths;
-    if (cfg::get().developer_mode) {
+    if (cfg::get().developer_mode)
         OutputContigs(conj_gp.g, cfg::get().output_dir + "before_resolve.fasta");
-    }
 
+#if 0
     if (cfg::get().coverage_based_rr_on) {
         size_t pe_lib_index = get_first_pe_lib_index();
         const io::SequencingLibrary<debruijn_config::DataSetData> &lib = cfg::get().ds.reads[pe_lib_index];
-#if 0
         resolve_repeats_by_coverage(conj_gp, (size_t) lib.data().mean_insert_size, filteredPaths, quality_labeler);
-#endif
     }
+#endif
 
     //LongReadStorage<Graph> long_read(conj_gp.g);
     if (cfg::get().pacbio_test_on) {
@@ -172,12 +111,8 @@ void pe_resolving(conj_graph_pack& conj_gp, const EdgeQuality<Graph, Index>& qua
     }
 
     if (cfg::get().use_scaffolder && cfg::get().pe_params.param_set.scaffolder_options.on) {
-        if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info)
-            prepare_all_scaf_libs(conj_gp, pe_scaf_indexs, indexes);
-
         //path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "scaffolds.fasta", true, boost::optional<std::string>("final_contigs.fasta"));
         path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, filteredPaths, cfg::get().output_dir, "scaffolds.fasta", true, boost::optional<std::string>("final_contigs.fasta"));
-        delete_index(pe_scaf_indexs);
     } else {
         pe_scaf_indexs.clear();
         //path_extend::resolve_repeats_pe(conj_gp, pe_indexs, pe_scaf_indexs, indexes, long_read.GetAllPaths(), cfg::get().output_dir, "final_contigs.fasta", false, boost::none);

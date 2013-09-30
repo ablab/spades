@@ -42,6 +42,7 @@ struct graph_pack: private boost::noncopyable {
     KmerMapper<graph_t, seq_t> kmer_mapper;
     PairedInfoIndicesT paired_indices;
     PairedInfoIndicesT clustered_indices;
+    PairedInfoIndicesT scaffolding_indices;
 
     Sequence genome;
 
@@ -51,7 +52,9 @@ struct graph_pack: private boost::noncopyable {
             : k_value(k), g(k), index(g, k + 1, workdir),
               int_ids(g, use_inner_ids), edge_pos(g, (int) single_gap, careful_labeling),
               kmer_mapper(g, k + 1),
-              paired_indices(g, cfg::get().ds.reads.lib_count()), clustered_indices(g, cfg::get().ds.reads.lib_count()),
+              paired_indices(g, cfg::get().ds.reads.lib_count()),
+              clustered_indices(g, cfg::get().ds.reads.lib_count()),
+              scaffolding_indices(g, cfg::get().ds.reads.lib_count()),              
               genome(genome)
     { }
 };

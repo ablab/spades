@@ -37,6 +37,7 @@ void assemble_genome() {
         conj_gp.edge_pos.Detach();
         conj_gp.paired_indices.Detach();
         conj_gp.clustered_indices.Detach();
+        conj_gp.scaffolding_indices.Detach();
         if (!cfg::get().gap_closer_enable && !cfg::get().paired_mode) {
             //todo ?
             //			conj_gp.kmer_mapper.Detach();

@@ -810,6 +810,12 @@ void PrintClusteredIndex(const string& file_name, DataPrinter<Graph>& printer,
 }
 
 template<class Graph>
+void PrintScaffoldingIndex(const string& file_name, DataPrinter<Graph>& printer,
+                         const PairedInfoIndexT<Graph>& clustered_index) {
+    PrintPairedIndex(file_name + "_scf", printer, clustered_index);
+}
+
+template<class Graph>
 void PrintPairedIndices(const string& file_name, DataPrinter<Graph>& printer,
                         const PairedInfoIndicesT<Graph>& paired_indices) {
     for (size_t i = 0; i < paired_indices.size(); ++i) {
@@ -823,6 +829,13 @@ void PrintClusteredIndices(const string& file_name, DataPrinter<Graph>& printer,
     for (size_t i = 0; i < paired_indices.size(); ++i) {
         PrintClusteredIndex(file_name  + "_" + ToString(i), printer, paired_indices[i]);
     }
+}
+
+template<class Graph>
+void PrintScaffoldingIndices(const string& file_name, DataPrinter<Graph>& printer,
+                           const PairedInfoIndicesT<Graph>& paired_indices) {
+    for (size_t i = 0; i < paired_indices.size(); ++i)
+        PrintScaffoldingIndex(file_name  + "_" + ToString(i), printer, paired_indices[i]);
 }
 
 template<class graph_pack>
@@ -875,8 +888,7 @@ template<class graph_pack, class VertexIt>
 void PrintAll(const string& file_name, const graph_pack& gp, VertexIt begin,
               VertexIt end,
               const PairedInfoIndexT<typename graph_pack::graph_t>& paired_index,
-              const PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index)
-{
+              const PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index) {
     typename PrinterTraits<typename graph_pack::graph_t>::Printer
             printer(gp.g, begin, end, gp.int_ids);
     PrintGraphPack(file_name, printer, gp);
@@ -933,6 +945,7 @@ void PrintAll(const string& file_name, const graph_pack& gp) {
     PrintGraphPack(file_name, printer, gp);
     PrintPairedIndices(file_name, printer, gp.paired_indices);
     PrintClusteredIndices(file_name, printer, gp.clustered_indices);
+    PrintScaffoldingIndices(file_name, printer, gp.clustered_indices);
 }
 
 template<class graph_pack>
@@ -990,6 +1003,13 @@ void ScanClusteredIndex(const string& file_name, DataScanner<Graph>& scanner,
 }
 
 template<class Graph>
+void ScanScaffoldingIndex(const string& file_name, DataScanner<Graph>& scanner,
+                          PairedInfoIndexT<Graph>& clustered_index,
+                          bool force_exists = true) {
+    scanner.loadPaired(file_name + "_scf", clustered_index, force_exists);
+}
+
+template<class Graph>
 void ScanPairedIndices(const std::string& file_name, DataScanner<Graph>& scanner,
                        PairedInfoIndicesT<Graph>& paired_indices,
                        bool force_exists = true) {
@@ -1003,6 +1023,14 @@ void ScanClusteredIndices(const std:: string& file_name, DataScanner<Graph>& sca
                           bool force_exists = true) {
     for (size_t i = 0; i < paired_indices.size(); ++i)
         ScanClusteredIndex(file_name  + "_" + ToString(i), scanner, paired_indices[i], force_exists);
+}
+
+template<class Graph>
+void ScanScaffoldingIndices(const std:: string& file_name, DataScanner<Graph>& scanner,
+                            PairedInfoIndicesT<Graph>& paired_indices,
+                            bool force_exists = true) {
+    for (size_t i = 0; i < paired_indices.size(); ++i)
+        ScanScaffoldingIndex(file_name  + "_" + ToString(i), scanner, paired_indices[i], force_exists);
 }
 
 template<class graph_pack>
@@ -1097,6 +1125,7 @@ void ScanAll(const std::string& file_name, graph_pack& gp,
     ScanGraphPack(file_name, scanner, gp);
     ScanPairedIndices(file_name, scanner, gp.paired_indices, force_exists);
     ScanClusteredIndices(file_name, scanner, gp.clustered_indices, force_exists);
+    ScanScaffoldingIndices(file_name, scanner, gp.scaffolding_indices, force_exists);
 }
 
 }
