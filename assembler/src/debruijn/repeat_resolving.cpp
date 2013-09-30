@@ -90,8 +90,6 @@ void pe_resolving(conj_graph_pack& conj_gp, const EdgeQuality<Graph, Index>& qua
     GapStorage<Graph> gaps(conj_gp.g);
 
     std::vector< PathInfo<Graph> > filteredPaths;
-    OutputContigs(conj_gp.g, cfg::get().output_dir + "before_resolve.fasta");
-
 #if 0
     if (cfg::get().coverage_based_rr_on) {
         size_t pe_lib_index = get_first_pe_lib_index();
@@ -120,6 +118,10 @@ void pe_resolving(conj_graph_pack& conj_gp, const EdgeQuality<Graph, Index>& qua
 }
 
 void RepeatResolution::run(conj_graph_pack &gp) {
+    OutputContigs(gp.g, cfg::get().additional_contigs, cfg::get().use_unipaths,
+                  cfg::get().simp.tec.plausibility_length);
+    OutputContigs(gp.g, cfg::get().output_dir + "before_rr.fasta");
+
     if (cfg::get().developer_mode && cfg::get().pos.late_threading) {
         FillPos(gp, gp.genome, "10");
         FillPos(gp, !gp.genome, "11");
@@ -183,6 +185,9 @@ void RepeatResolution::run(conj_graph_pack &gp) {
 }
 
 void ContigOutput::run(conj_graph_pack &gp) {
+    OutputContigs(gp.g, cfg::get().additional_contigs, cfg::get().use_unipaths,
+                  cfg::get().simp.tec.plausibility_length);
+    OutputContigs(gp.g, cfg::get().output_dir + "before_rr.fasta");
     OutputContigs(gp.g, cfg::get().output_dir + "final_contigs.fasta");
 }
 
