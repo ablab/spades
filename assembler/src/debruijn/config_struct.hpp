@@ -33,7 +33,6 @@ enum estimation_mode {
 enum resolving_mode {
     rm_none,
     rm_path_extend,
-    rm_rectangles
 };
 
 enum info_printer_pos {
@@ -102,7 +101,6 @@ struct debruijn_config {
         resolve_mode_id_mapping::value_type info[] = {
             resolve_mode_id_mapping::value_type("none", rm_none),
             resolve_mode_id_mapping::value_type("path_extend", rm_path_extend),
-            resolve_mode_id_mapping::value_type("rectangles", rm_rectangles)
         };
 
         return resolve_mode_id_mapping(info, utils::array_end(info));

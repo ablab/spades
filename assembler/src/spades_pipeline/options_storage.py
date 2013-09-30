@@ -21,7 +21,6 @@ only_error_correction = False
 only_assembler = False
 disable_gzip_output = False
 careful = False
-rectangles = False
 
 # advanced options
 continue_mode = False
@@ -50,7 +49,7 @@ long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\
                "only-error-correction only-assembler "\
                "disable-gzip-output help test debug reference= "\
                "bh-heap-check= spades-heap-check= help-hidden "\
-               "config-file= dataset= mismatch-correction careful rectangles continue".split()
+               "config-file= dataset= mismatch-correction careful continue".split()
 short_options = "o:1:2:s:k:t:m:i:h"
 
 # adding multiple paired-end and mate-pair libraries support
@@ -114,7 +113,6 @@ def usage(spades_version, show_hidden=False):
     sys.stderr.write("--continue\t\tcontinue run from the last available check-point" + "\n")
     sys.stderr.write("--disable-gzip-output\tforces error correction not to"\
                          " compress the corrected reads" + "\n")
-    sys.stderr.write("--rectangles\t\tuses rectangle graph algorithm for repeat resolution" + "\n")
 
     sys.stderr.write("" + "\n")
     sys.stderr.write("Advanced options:" + "\n")
