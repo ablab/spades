@@ -79,7 +79,7 @@ private:
     }
 
     void MaskRepeats(const vector<Range>& rep_int, std::string& s) const {
-        TRACE("Masking " << rep_int.size() << "repeat ranges in sequence of length " << s.size());
+        TRACE("Masking " << rep_int.size() << " repeat ranges in sequence of length " << s.size());
         for (Range r : rep_int) {
             MaskRepeat(r, s);
         }
