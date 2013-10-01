@@ -152,15 +152,6 @@ void load(debruijn_config::simplification::tip_clipper& tc,
   load(tc.condition, pt, "condition");
 }
 
-void load(working_stage& entry_point,
-          boost::property_tree::ptree const& pt, std::string const& key,
-          bool complete) {
-  if (complete || pt.find(key) != pt.not_found()) {
-    std::string ep = pt.get<std::string>(key);
-    entry_point = debruijn_config::working_stage_id(ep);
-  }
-}
-
 void load(resolving_mode& rm, boost::property_tree::ptree const& pt,
           std::string const& key, bool complete) {
   if (complete || pt.find(key) != pt.not_found()) {

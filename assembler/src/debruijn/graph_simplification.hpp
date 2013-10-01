@@ -549,6 +549,7 @@ bool FinalRemoveErroneousEdges(
     return changed;
 }
 
+inline
 void PreSimplification(conj_graph_pack& gp,
                        boost::function<void(EdgeId)> removal_handler,
                        detail_info_printer & /*printer*/, size_t /*iteration_count*/,
@@ -563,6 +564,7 @@ void PreSimplification(conj_graph_pack& gp,
     RemoveBulges(gp.g, cfg::get().simp.br, 0, removal_handler, gp.g.k() + 1);
 }
 
+inline
 void SimplificationCycle(conj_graph_pack& gp,
                          boost::function<void(EdgeId)> removal_handler,
                          detail_info_printer &printer, size_t iteration_count,
@@ -590,6 +592,7 @@ void SimplificationCycle(conj_graph_pack& gp,
 
 }
 
+inline
 void PostSimplification(conj_graph_pack& gp,
                         boost::function<void(EdgeId)> &removal_handler,
                         detail_info_printer & /*printer*/,
@@ -637,6 +640,7 @@ double FindErroneousConnectionsCoverageThreshold(
             MCErroneousConnectionThresholdFinder<Graph, KmerIndex>(index).FindThreshold();
 }
 
+inline
 void IdealSimplification(Graph& graph, Compressor<Graph>& compressor,
                          boost::function<double(EdgeId)> quality_handler_f) {
     for (auto iterator = graph.SmartEdgeBegin(); !iterator.IsEnd();
@@ -647,6 +651,7 @@ void IdealSimplification(Graph& graph, Compressor<Graph>& compressor,
     compressor.CompressAllVertices();
 }
 
+inline
 void SimplifyGraph(conj_graph_pack &gp,
                    boost::function<void(EdgeId)> removal_handler,
                    omnigraph::GraphLabeler<Graph>& /*labeler*/,

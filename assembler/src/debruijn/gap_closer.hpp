@@ -24,6 +24,7 @@
 #include "omni_labelers.hpp"
 #include "io/easy_reader.hpp"
 #include "dataset_readers.hpp"
+#include "read_converter.hpp"
 
 #include "de/paired_info.hpp"
 
@@ -514,6 +515,7 @@ void CloseGaps(conj_graph_pack& gp, Streams& streams) {
   gap_closer.CloseShortGaps();
 }
 
+inline
 void CloseGaps(conj_graph_pack& gp) {
   INFO("SUBSTAGE == Closing gaps");
 

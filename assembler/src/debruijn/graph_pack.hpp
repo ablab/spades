@@ -19,43 +19,50 @@
 #include "de/paired_info.hpp"
 #include "debruijn_graph.hpp"
 #include "config_struct.hpp"
-#include "graphio.hpp"
 #include "edge_index.hpp"
+#include "sequence_mapper.hpp"
 
 namespace debruijn_graph {
-
-typedef PairedInfoIndexT<ConjugateDeBruijnGraph> PairedIndexT;
 
 /*KmerFree*//*KmerStoring*/
 template<class Graph, class SeqType, class KmerEdgeIndex = DeBruijnEdgeIndex<KmerStoringDeBruijnEdgeIndex<Graph, SeqType>>>
 struct graph_pack: private boost::noncopyable {
-	typedef Graph graph_t;
-	typedef SeqType seq_t;
-	typedef EdgeIndex<graph_t, seq_t, KmerEdgeIndex> index_t;
+    typedef Graph graph_t;
+    typedef SeqType seq_t;
+    typedef EdgeIndex<graph_t, seq_t, KmerEdgeIndex> index_t;
+    typedef omnigraph::de::PairedInfoIndicesT<Graph> PairedInfoIndicesT;
 
-	size_t k_value;
+    size_t k_value;
 
     graph_t g;
-	index_t index;
-	IdTrackHandler<graph_t> int_ids;
-	EdgesPositionHandler<graph_t> edge_pos;
+    index_t index;
+    IdTrackHandler<graph_t> int_ids;
+    EdgesPositionHandler<graph_t> edge_pos;
 //	PairedInfoIndex<graph_t> etalon_paired_index;
-	KmerMapper<graph_t, seq_t> kmer_mapper;
-	Sequence genome;
+    KmerMapper<graph_t, seq_t> kmer_mapper;
+    PairedInfoIndicesT paired_indices;
+    PairedInfoIndicesT clustered_indices;
+    PairedInfoIndicesT scaffolding_indices;
 
-    explicit graph_pack(size_t k, const std::string &workdir,
-                        Sequence const& genome = Sequence(), size_t single_gap = 0,
+    Sequence genome;
+
+    explicit graph_pack(unsigned k, const std::string &workdir,
+                        Sequence genome = Sequence(), size_t single_gap = 0,
                         bool careful_labeling = false, bool use_inner_ids = false)
-            : k_value(k), g(k), index(g, (unsigned) k + 1, workdir),
+            : k_value(k), g(k), index(g, k + 1, workdir),
               int_ids(g, use_inner_ids), edge_pos(g, (int) single_gap, careful_labeling),
-              kmer_mapper(g, k + 1), genome(genome)
+              kmer_mapper(g, k + 1),
+              paired_indices(g, cfg::get().ds.reads.lib_count()),
+              clustered_indices(g, cfg::get().ds.reads.lib_count()),
+              scaffolding_indices(g, cfg::get().ds.reads.lib_count()),              
+              genome(genome)
     { }
 };
 
 typedef graph_pack<ConjugateDeBruijnGraph, runtime_k::RtSeq,
-        DeBruijnEdgeIndex<KmerFreeDeBruijnEdgeIndex<ConjugateDeBruijnGraph, runtime_k::RtSeq>>> conj_graph_pack;
+                   DeBruijnEdgeIndex<KmerFreeDeBruijnEdgeIndex<ConjugateDeBruijnGraph, runtime_k::RtSeq>>> conj_graph_pack;
 typedef conj_graph_pack::index_t Index;
-typedef omnigraph::de::PairedInfoIndicesT<ConjugateDeBruijnGraph> PairedIndicesT;
+typedef conj_graph_pack::PairedInfoIndicesT PairedIndicesT;
+typedef omnigraph::de::PairedInfoIndexT<ConjugateDeBruijnGraph> PairedIndexT;
 
 } // namespace debruijn_graph
-

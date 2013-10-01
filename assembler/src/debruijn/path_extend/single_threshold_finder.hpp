@@ -7,10 +7,13 @@
 
 #ifndef SINGLE_THRESHOLD_FINDER_HPP_
 #define SINGLE_THRESHOLD_FINDER_HPP_
+
 #include "path_extend/path_extend_launch.hpp"
 #include "path_extend/paired_library.hpp"
-#include "late_pair_info_count.hpp"
 #include "graphio.hpp"
+
+#include <vector>
+
 using namespace debruijn_graph;
 
 
@@ -51,55 +54,6 @@ public:
 	bool is_mp_;
 	SingleThresholdFinder(int insert_size_min1, int insert_size_max1, int length_to_split1, bool is_mp = false):insert_size_min(insert_size_min1),
 			insert_size_max(insert_size_max1), length_to_split(length_to_split1), is_mp_(is_mp) {
-	}
-
-	//todo WTF?!!!
-	double find_threshold(size_t index) {
-		Sequence genome = cfg::get().developer_mode ? cfg::get().ds.reference_genome : Sequence();
-		conj_graph_pack gp(cfg::get().K, cfg::get().output_dir, genome,
-				cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling,
-				!cfg::get().developer_mode);
-
-		DEBUG("Searching for paired info threshold");
-		exec_simplification(gp);
-		gp.index.Detach();
-		set<BidirectionalPath*> goodPaths;
-		split_long_edges(gp, length_to_split, goodPaths);
-		gp.index.Attach();
-		gp.index.Refill();
-		PairedIndexT paired_index(gp.g);
-		size_t is = (size_t) cfg::get().ds.reads[index].data().mean_insert_size;
-		auto_ptr<PairedReadStream> paired_stream = paired_easy_reader(cfg::get().ds.reads[index], true, (size_t) cfg::get().ds.reads[index].data().mean_insert_size);
-		SingleStreamType paired_streams(paired_stream.get());
-		paired_stream.release();
-		FillPairedIndexWithReadCountMetric(gp.g, *MapperInstance(gp), paired_index, paired_streams);
-		//io::ReadStreamVector<io::IReader<io::PairedReadSeq>> paired_streams = paired_binary_readers(true, is);
-		//FillPairedIndexWithReadCountMetric(gp.g, gp.int_ids, gp.index,
-		//		gp.kmer_mapper, paired_index, paired_streams, gp.k_value);
-		PairedIndexT clustered_index(gp.g);
-		if (!is_mp_){
-			estimate_distance(gp, cfg::get_writable().ds.reads[index], paired_index, clustered_index);
-		}
-		size_t RL = cfg::get().ds.reads[index].data().read_length;
-		double var = cfg::get().ds.reads[index].data().insert_size_deviation;
-		PairedInfoLibrary* lib_not_cl = new PairedInfoLibrary(cfg::get().K, gp.g, RL, is, (size_t) var, paired_index);
-		PairedInfoLibrary* lib_cl = new PairedInfoLibrary(cfg::get().K, gp.g, RL, is, (size_t) var, clustered_index);
-		map<PairInfo<EdgeId>, double> good_pi;
-		map<PairInfo<EdgeId>, double> bad_pi;
-		DEBUG("analyze paths begin");
-		for (auto iter = goodPaths.begin(); iter != goodPaths.end(); ++iter) {
-			analyze_one_path(gp, *iter, lib_not_cl, lib_cl, good_pi, bad_pi);
-		}
-		DEBUG("analyze paths end");
-		writeToFile(gp, good_pi, bad_pi, lib_not_cl);
-		deletePaths(goodPaths);
-		vector<double> good_pi_val;
-		get_norm_pi(gp, good_pi, good_pi_val);
-		vector<double> bad_pi_val;
-		get_norm_pi(gp, bad_pi, bad_pi_val);
-		double threshold = find_intersection(good_pi_val, bad_pi_val);
-		INFO("WE FOUND THRESHOLD " << threshold <<" good_pi_size " << good_pi.size() << " bad_pi_size " << bad_pi.size());
-		return threshold;;
 	}
 
 private:

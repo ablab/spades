@@ -123,20 +123,6 @@ private:
 };
 
 template<class Graph>
-Sequence MergeSequences(const Graph& g,
-		const vector<typename Graph::EdgeId>& continuous_path) {
-	vector < Sequence > path_sequences;
-	path_sequences.push_back(g.EdgeNucls(continuous_path[0]));
-	for (size_t i = 1; i < continuous_path.size(); ++i) {
-		VERIFY(
-				g.EdgeEnd(continuous_path[i - 1])
-						== g.EdgeStart(continuous_path[i]));
-		path_sequences.push_back(g.EdgeNucls(continuous_path[i]));
-	}
-	return MergeOverlappingSequences(path_sequences, g.k());
-}
-
-template<class Graph>
 bool CheckContiguous(const Graph& g, const vector<typename Graph::EdgeId>& path) {
 	for (size_t i = 1; i < path.size(); ++i) {
 		if (g.EdgeEnd(path[i - 1]) != g.EdgeStart(path[i]))

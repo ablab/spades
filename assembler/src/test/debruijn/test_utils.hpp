@@ -233,16 +233,21 @@ void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t inse
 	io::ReadStreamVector<io::IReader<io::SingleRead>> single_stream_vector({new SingleStream(paired_read_stream)});
 	ConstructGraphWithCoverage(k, CreateDefaultConstructionConfig(), single_stream_vector, gp.g, gp.index);
 
+        // FIXME: Restor
+#if 0
 	FillPairedIndexWithReadCountMetric(gp.g,
 	                                   *MapperInstance(gp),
 	                                   paired_index,
 	                                   paired_stream_vector);
+#endif
 
 	AssertEdges(gp.g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
 
 	AssertCoverage(gp.g, AddComplement(etalon_coverage));
 
+#if 0
 	AssertPairInfo(gp.g, paired_index, AddComplement(AddBackward(etalon_pair_info)));
+#endif
 }
 
 struct TmpFolderFixture

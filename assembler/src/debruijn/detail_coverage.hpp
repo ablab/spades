@@ -4,7 +4,6 @@
 #include "omni/coverage.hpp"
 #include "graph_pack.hpp"
 #include "verify.hpp"
-#include "graphio.hpp"
 #include <vector>
 #include <map>
 #include <set>

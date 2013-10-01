@@ -7,6 +7,7 @@
 #pragma once
 
 #include "omni/omni_utils.hpp"
+#include "omni/omni_tools.hpp"
 #include "omni/id_track_handler.hpp"
 #include "logger/logger.hpp"
 
