@@ -238,8 +238,8 @@ void DataPrinter<Graph>::saveEdgeSequences(const string& file_name) {
     //fprintf(file, "%zu\n", component_.e_size());
     for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
         fprintf(file, ">%zu\n", int_ids_.ReturnIntId(*iter));
-        int len = (int) component_.g().EdgeNucls(*iter).size();
-        for (int i = 0; i < len; i++)
+        size_t len = component_.g().EdgeNucls(*iter).size();
+        for (size_t i = 0; i < len; i++)
             fprintf(file, "%c", nucl(component_.g().EdgeNucls(*iter)[i]));
         fprintf(file, "\n");
         //    fprintf(file, "%s .\n", graph_.EdgeNucls(*iter).str().c_str());
@@ -693,10 +693,10 @@ void DataScanner<Graph>::loadPaired(const string& file_name,
     read_count = fscanf(file, "%zu \n", &paired_count);
     VERIFY(read_count == 1);
     for (size_t i = 0; i < paired_count; i++) {
-        int first_real_id, second_real_id;
+        size_t first_real_id, second_real_id;
         double w, d, v;
-        read_count = fscanf(file, "%d %d %lf %lf %lf .\n", &first_real_id,
-                            &second_real_id, &d, &w, &v);
+        read_count = fscanf(file, "%zu %zu %lf %lf %lf .\n",
+                            &first_real_id, &second_real_id, &d, &w, &v);
         VERIFY(read_count == 5);
         TRACE(first_real_id<< " " << second_real_id << " " << d << " " << w << " " << v);
         if (id_handler_.ReturnEdgeId(first_real_id) == EdgeId(NULL) || id_handler_.ReturnEdgeId(second_real_id) == EdgeId(NULL))
@@ -720,23 +720,23 @@ void DataScanner<Graph>::loadPositions(const string& file_name,
     VERIFY(file != NULL);
     DEBUG("Reading edges positions, " << file_name <<" started");
     VERIFY(file != NULL);
-    int pos_count;
-    read_count = fscanf(file, "%d\n", &pos_count);
+    size_t pos_count;
+    read_count = fscanf(file, "%zu\n", &pos_count);
     VERIFY(read_count == 1);
     for (int i = 0; i < pos_count; i++) {
-        int edge_real_id, pos_info_count;
+        size_t edge_real_id, pos_info_count;
         char contigId[500];
         char cur_str[500];
-        read_count = fscanf(file, "%d %d\n", &edge_real_id, &pos_info_count);
+        read_count = fscanf(file, "%zu %zu\n", &edge_real_id, &pos_info_count);
         VERIFY(read_count == 2);
         //    INFO(  edge_real_id);
-        for (int j = 0; j < pos_info_count; j++) {
-            int start_pos, end_pos;
-            int m_start_pos, m_end_pos;
+        for (size_t j = 0; j < pos_info_count; j++) {
+            size_t start_pos, end_pos;
+            size_t m_start_pos, m_end_pos;
             read_count = fscanf(file, "%[^\n]s", cur_str);
             read_count = fscanf(file, "\n");
-            read_count = sscanf(cur_str, "%s %d - %d %d %d", contigId, &start_pos,
-                                &end_pos, &m_start_pos, &m_end_pos);
+            read_count = sscanf(cur_str, "%s %zu - %zu %zu %zu", contigId,
+                                &start_pos, &end_pos, &m_start_pos, &m_end_pos);
             //      INFO(cur_str);
             //      INFO (contigId<<" "<< start_pos<<" "<<end_pos);
             //      VERIFY(read_count == 3);
@@ -747,8 +747,6 @@ void DataScanner<Graph>::loadPositions(const string& file_name,
         }
     }
     fclose(file);
-
-
 }
 
 template<class Graph>

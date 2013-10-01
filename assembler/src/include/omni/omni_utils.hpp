@@ -1349,8 +1349,8 @@ class DominatedSetFinder {
     }
 
  public:
-    DominatedSetFinder(const Graph& g, VertexId v, size_t max_length = -1,
-                       size_t max_count = -1)
+    DominatedSetFinder(const Graph& g, VertexId v, size_t max_length = -1ul,
+                       size_t max_count = -1ul)
             : g_(g),
               start_vertex_(v),
               max_length_(max_length),

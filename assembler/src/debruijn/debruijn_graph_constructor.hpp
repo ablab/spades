@@ -406,7 +406,7 @@ private:
 		}
 
 		LinkRecord() :
-				hash_and_mask_(-1), edge_(0) {
+				hash_and_mask_(-1ul), edge_(0) {
 		}
 
 		bool IsInvalid() {
