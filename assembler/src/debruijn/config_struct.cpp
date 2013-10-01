@@ -132,7 +132,6 @@ void load_lib_data(const std::string& prefix) {
 void write_lib_data(const std::string& prefix) {
   std::string filename = estimated_param_filename(prefix);
 
-  cfg::get().ds.reads.save("foo.txt");
   write_param(filename, "lib_count", cfg::get().ds.reads.lib_count());
   write_param(filename, "max_read_length", cfg::get().ds.RL());
   write_param(filename, "average_coverage", cfg::get().ds.avg_coverage());

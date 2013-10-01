@@ -66,8 +66,7 @@ public:
                         cov_paths = coverage_map_.GetCoveringPaths(edge);
                         continue;
                     }
-                    if (g_.length(edge) <= max_overlap || path1->IsOverlap()
-                            || path2->IsOverlap() || del_only_equal) {
+                    if (g_.length(edge) <= max_overlap || path1->IsOverlap() || path2->IsOverlap() || del_only_equal) {
                         continue;
                     }
                     CompareAndCut(edge, path1, path2, (int) max_overlap,
@@ -297,17 +296,15 @@ private:
         size_t overlap_size = 0;
         for (auto path_iter = paths.begin(); path_iter != paths.end();
                 ++path_iter) {
-            if (IsSamePath(*path_iter, path1)
-                    || HasAlreadyOverlapedBegin(*path_iter)) {
+            if (IsSamePath(*path_iter, path1) || HasAlreadyOverlapedBegin(*path_iter)) {
                 continue;
             }
             size_t over_size = path1->OverlapEndSize(*path_iter);
             if (over_size > overlap_size) {
                 overlap_size = over_size;
                 overlap_path = *path_iter;
-            } else if (over_size == overlap_size
-                    && (overlap_path == NULL
-                            || (*path_iter)->GetId() < overlap_path->GetId())) {
+            } else if (over_size == overlap_size &&
+                    (overlap_path == NULL || (*path_iter)->GetId() < overlap_path->GetId())) {
                 overlap_path = *path_iter;
             }
         }

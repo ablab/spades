@@ -8,7 +8,7 @@
 
 #include "omni/omni_utils.hpp"
 #include "sequence/sequence_tools.hpp"
-#include "graph_read_correction.hpp"
+#include "omni/path_processor.hpp"
 
 #include "runtime_k.hpp"
 

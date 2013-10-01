@@ -8,8 +8,6 @@
 #ifndef LONG_READ_MAPPER_HPP_
 #define LONG_READ_MAPPER_HPP_
 
-#include "pe_utils.hpp"
-#include "graphio.hpp"
 #include "long_read_storage.hpp"
 
 namespace path_extend {

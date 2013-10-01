@@ -46,6 +46,8 @@ using omnigraph::MappingRange;
 using namespace omnigraph::de;
 using omnigraph::GraphActionHandler;
 
+
+
 //todo rewrite with extended sequence mapper!
 template<class Graph, class Index>
 class EtalonPairedInfoCounter {
@@ -411,5 +413,6 @@ void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_ind
     }
   }
 }
+
 
 }

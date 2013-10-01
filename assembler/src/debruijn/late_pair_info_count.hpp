@@ -15,7 +15,7 @@
 #include "de/insert_size_refiner.hpp"
 #include "de/paired_info.hpp"
 #include "path_extend/split_graph_pair_info.hpp"
-#include "path_extend/long_read_mapper.hpp"
+#include "long_read_mapper.hpp"
 #include "sequence_mapper_notifier.hpp"
 
 namespace debruijn_graph {

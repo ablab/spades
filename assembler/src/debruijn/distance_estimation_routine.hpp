@@ -204,10 +204,7 @@ void load_distance_estimation(conj_graph_pack& gp,
                               PathStorage<Graph>& long_reads,
                               LongReadContainerT& single_long_reads) {
   string p;
-  if (cfg::get().entry_point == ws_repeats_resolving && cfg::get().pacbio_test_on)
-      p = path::append_path(cfg::get().load_from, "pacbio_aligning");
-  else
-      p = path::append_path(cfg::get().load_from, "distance_estimation");
+  p = path::append_path(cfg::get().load_from, "distance_estimation");
   used_files->push_back(p);
   ScanAll(p, gp, paired_indices, clustered_indices, scaffold_indices, single_long_reads);
   if (cfg::get().entry_point == ws_repeats_resolving && cfg::get().pacbio_test_on) {

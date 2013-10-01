@@ -146,10 +146,9 @@ public:
                 weight = chooser_.CountWeight(experiment, edges.second);
                 double weight2 = chooser_.CountWeight(experiment, edges.first);
                 DEBUG("iter " << i << " weight " << weight  << " maxWeight " << maxWeight << " weight 2 " <<  weight2 << " diff " << diff);
-                if (weight > maxWeight
-                        || (weight == maxWeight && weight - weight2 > diff)
-                        || (weight == maxWeight && weight - weight2 == diff
-                                && i == 1)) {
+                if (weight > maxWeight ||
+                        (weight == maxWeight && weight - weight2 > diff) ||
+                        (weight == maxWeight && weight - weight2 == diff  && i == 1)) {
                     maxWeight = weight;
                     maxIter = i;
                     diff = weight - weight2;

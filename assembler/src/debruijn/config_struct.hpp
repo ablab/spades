@@ -27,7 +27,6 @@ enum working_stage {
   ws_simplification,
   ws_late_pair_info_count,
   ws_distance_estimation,
-  ws_pacbio_aligning,
   ws_repeats_resolving
 };
 
@@ -98,7 +97,6 @@ struct debruijn_config {
       stage_name_id_mapping::value_type("simplification", ws_simplification),
       stage_name_id_mapping::value_type("late_pair_info_count", ws_late_pair_info_count),
       stage_name_id_mapping::value_type("distance_estimation",  ws_distance_estimation),
-      stage_name_id_mapping::value_type("pacbio_aligning",  ws_pacbio_aligning),
       stage_name_id_mapping::value_type("repeats_resolving", ws_repeats_resolving)
     };
 

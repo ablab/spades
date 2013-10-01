@@ -37,8 +37,7 @@
 #include "graphio.hpp"
 #include "coverage_based_rr.hpp"
 #include "pacbio_aligner.hpp"
-#include "bucket_mapper.hpp"
-#include "path_extend/long_read_mapper.hpp"
+#include "long_read_mapper.hpp"
 
 namespace debruijn_graph {
 
@@ -127,8 +126,8 @@ void pe_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indexes,
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         io::LibraryType type = cfg::get().ds.reads[i].type();
         if (cfg::get().ds.reads[i].data().mean_insert_size != 0.0 &&
-                (type == io::LibraryType::PairedEnd
-                || type == io::LibraryType::MatePairs)) {
+                (type == io::LibraryType::PairedEnd ||
+                 type == io::LibraryType::MatePairs)) {
 
             pe_indexes.push_back(&clustered_indices[i]);
             pe_scaf_indices.push_back(&scaffold_indices[i]);
@@ -279,9 +278,9 @@ void resolve_repeats() {
         WARN("Insert size was not estimated for any of the paired libraries, repeat resolution module will not run.");
     }
 
-	if ((!cfg::get().paired_mode
-	        || no_valid_libs
-			|| cfg::get().rm == debruijn_graph::resolving_mode::rm_none) && !cfg::get().long_single_mode && !cfg::get().pacbio_test_on) {
+	if ((!cfg::get().paired_mode || no_valid_libs || cfg::get().rm == debruijn_graph::resolving_mode::rm_none) &&
+	        !cfg::get().long_single_mode &&
+	        !cfg::get().pacbio_test_on) {
 		OutputContigs(conj_gp.g, cfg::get().output_dir + "final_contigs.fasta");
 		return;
 	}
@@ -291,9 +290,8 @@ void resolve_repeats() {
 	//Repeat resolving begins
 	size_t pe_lib_index = GetFirstPELibIndex();
 	INFO("STAGE == Resolving Repeats");
-	if (cfg::get().long_single_mode || cfg::get().ds.reads.lib_count() > 1 || pe_lib_index == -1UL
-			|| cfg::get().rm
-					== debruijn_graph::resolving_mode::rm_path_extend) {
+	if (cfg::get().long_single_mode || cfg::get().ds.reads.lib_count() > 1 || pe_lib_index == -1UL ||
+	        cfg::get().rm == debruijn_graph::resolving_mode::rm_path_extend) {
 		INFO("Path-Extend repeat resolving");
 		pe_resolving(conj_gp, paired_indices, clustered_indices,  scaffold_indices, quality_labeler, long_reads_libs, single_long_reads);
 	}
