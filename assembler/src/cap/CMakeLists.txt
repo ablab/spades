@@ -17,12 +17,14 @@ include_directories(${CMAKE_SOURCE_DIR}/debruijn
 add_executable(cap-tools
   ${EXT_DIR}/include/teamcity_boost/teamcity_boost.cpp
   ${EXT_DIR}/include/teamcity_boost/teamcity_messages.cpp
+  ${CMAKE_SOURCE_DIR}/online_vis/autocompletion.cpp
   ${CMAKE_SOURCE_DIR}/debruijn/kmer_coverage_model.cpp
   tools.cpp)
 
 add_executable(cap
   ${CMAKE_SOURCE_DIR}/debruijn/kmer_coverage_model.cpp
   ${CMAKE_SOURCE_DIR}/debruijn/config_struct.cpp
+  ${CMAKE_SOURCE_DIR}/online_vis/autocompletion.cpp
   ${CMAKE_SOURCE_DIR}/debruijn/path_extend/pe_config_struct.cpp
   main.cpp)
 
