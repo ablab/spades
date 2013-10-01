@@ -35,9 +35,9 @@ struct CountIndexHelper {
 
 class RandNucl {
     size_t seed_;
-    mutable boost::mt19937 rand_engine_;
-    mutable boost::uniform_int<> rand_dist_;
-    mutable boost::variate_generator<boost::mt19937&, boost::uniform_int<>> rand_nucl_;
+    boost::mt19937 rand_engine_;
+    boost::uniform_int<> rand_dist_;
+    boost::variate_generator<boost::mt19937&, boost::uniform_int<>> rand_nucl_;
 
 public:
 
@@ -50,7 +50,7 @@ public:
     }
 
     char operator()() {
-        return nucl((unsigned char) rand_nucl_());
+        return nucl((char) rand_nucl_());
     }
 };
 
@@ -107,7 +107,7 @@ private:
     }
 
 public:
-    RepeatMasker(size_t k, RandNucl rand_nucl, const std::string& workdir) :
+    RepeatMasker(size_t k, RandNucl& rand_nucl, const std::string& workdir) :
         k_(k),
         rand_nucl_(rand_nucl),
         index_(k_, workdir) {
