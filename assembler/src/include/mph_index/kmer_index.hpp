@@ -1,11 +1,9 @@
+#pragma once
 //***************************************************************************
 //* Copyright (c) 2011-2013 Saint-Petersburg Academic University
 //* All Rights Reserved
 //* See file LICENSE for details.
 //****************************************************************************
-
-#ifndef _HAMMER_KMERINDEX_HPP_
-#define _HAMMER_KMERINDEX_HPP_
 
 #include "mph_index.h"
 #include "io/mmapped_reader.hpp"
@@ -129,6 +127,7 @@ class KMerIndex {
   typedef typename traits::hash_function    hash_function;
   typedef typename traits::KMerRawData      KMerRawData;
   typedef typename traits::KMerRawReference KMerRawReference;
+  typedef size_t IdxType;
 
  private:
   typedef cxxmph::SimpleMPHIndex<KMerSeq, typename traits::seeded_hash_function> KMerDataIndex;
@@ -160,6 +159,14 @@ class KMerIndex {
       sz += index_[i].mem_size();
 
     return sz;
+  }
+
+  void set_size(size_t size) {
+	  size_ = size;
+  }
+
+  size_t size() const {
+	  return size_;
   }
 
   size_t seq_idx(const KMerSeq &s) const {
@@ -199,6 +206,7 @@ class KMerIndex {
  private:
 //  unsigned k_;
   KMerDataIndex *index_;
+  size_t size_;
 
   size_t num_buckets_;
   std::vector<size_t> bucket_starts_;
@@ -221,6 +229,9 @@ class KMerSplitter {
   KMerSplitter(const std::string &work_dir, unsigned K, uint32_t seed = 0)
       : work_dir_(work_dir), K_(K), seed_(seed) {}
 
+  virtual ~KMerSplitter() {
+  }
+
   virtual path::files_t Split(size_t num_files) = 0;
 
   unsigned K() const { return K_; }
@@ -234,6 +245,7 @@ class KMerSplitter {
   std::string GetRawKMersFname(unsigned suffix) const {
     return path::append_path(work_dir_, "kmers.raw." + boost::lexical_cast<std::string>(suffix));
   }
+
   unsigned GetFileNumForSeq(const Seq &s, unsigned total) const {
     return (unsigned)(hash_(s, seed_) % total);
   }
@@ -496,8 +508,6 @@ size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &count
 
   double bits_per_kmer = 8.0 * (double)index.mem_size() / (double)kmers;
   INFO("Index built. Total " << index.mem_size() << " bytes occupied (" << bits_per_kmer << " bits per kmer).");
-
+  index.set_size(kmers);
   return kmers;
 }
-
-#endif // _HAMMER_KMERINDEX_HPP_

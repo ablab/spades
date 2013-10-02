@@ -1,6 +1,6 @@
 #pragma once
 #include "standard.hpp"
-#include "indices/debruijn_kmer_index.hpp"
+#include "indices/perfect_hash_map.hpp"
 #include "runtime_k.hpp"
 #include "mph_index/kmer_index.hpp"
 
@@ -10,22 +10,23 @@ class LinkCleaner {
 private:
 	typedef DeBruijnExtensionIndex<> Index;
 	typedef Index::KMer Kmer;
+	typedef typename Index::KeyWithHash KeyWithHash;
 	Index &index_;
 
-	void CleanForwardLinks(KmerWithHash<Kmer> &kh, char i) {
-		if(index_.CheckOutgoing(kh.idx, i)) {
-		    KmerWithHash<Kmer> next_kh = index_.CreateKmerWithHash(kh.kmer << i);
-			if(!index_.CheckIncoming(next_kh.idx, kh.kmer[0])) {
-				index_.DeleteOutgoing(kh.idx, i);
+	void CleanForwardLinks(KeyWithHash &kh, char i) {
+		if(index_.CheckOutgoing(kh, i)) {
+		    KeyWithHash next_kh = index_.GetOutgoing(kh, i);
+			if(!index_.CheckIncoming(next_kh, kh[0])) {
+				index_.DeleteOutgoing(kh, i);
 			}
 		}
 	}
 
-	void CleanBackwardLinks(KmerWithHash<Kmer> &kh, char i) {
-		if(index_.CheckIncoming(kh.idx, i)) {
-		    KmerWithHash<Kmer> prev_kh = index_.CreateKmerWithHash(kh.kmer >> i);
-			if(!index_.CheckOutgoing(prev_kh.idx, kh.kmer[index_.k() - 1])) {
-				index_.DeleteIncoming(kh.idx, i);
+	void CleanBackwardLinks(KeyWithHash &kh, char i) {
+		if(index_.CheckIncoming(kh, i)) {
+		    KeyWithHash prev_kh = index_.GetIncoming(kh, i);
+			if(!index_.CheckOutgoing(prev_kh, kh[index_.k() - 1])) {
+				index_.DeleteIncoming(kh, i);
 			}
 		}
 	}
@@ -36,7 +37,7 @@ public:
 	//TODO make parallel
 	void CleanLinks() {
 		for (auto it  = index_.kmer_begin(); it.good(); ++it) {
-		    KmerWithHash<Kmer> kh = index_.CreateKmerWithHash(runtime_k::RtSeq(index_.k(), *it));
+		    KeyWithHash kh = index_.ConstructKWH(runtime_k::RtSeq(index_.k(), *it));
 			for(char i = 0; i < 4; i++) {
 				CleanForwardLinks(kh, i);
 				CleanBackwardLinks(kh, i);
@@ -50,20 +51,21 @@ class EarlyTipClipper {
 private:
 	typedef DeBruijnExtensionIndex<> Index;
 	typedef Index::KMer Kmer;
+	typedef typename Index::KeyWithHash KeyWithHash;
 	Index &index_;
 	size_t length_bound_;
 
 //Not optimal with respect to the number of large array queries (the one that contains adjacency masks). Should be ok though in case cash works the way I think it does
-	size_t RemoveForward(KmerWithHash<Kmer> kh) {
-        std::vector<KmerWithHash<Kmer>> tip;
+	size_t RemoveForward(KeyWithHash kh) {
+        std::vector<KeyWithHash> tip;
 		do {
 			tip.push_back(kh);
-			kh = index_.CreateKmerWithHash(kh.kmer << index_.GetUniqueOutgoing(kh.idx));
-		} while (tip.size() < length_bound_ && index_.CheckUniqueIncoming(kh.idx) && index_.CheckUniqueOutgoing(kh.idx));
+			kh = index_.GetUniqueOutgoing(kh);
+		} while (tip.size() < length_bound_ && index_.CheckUniqueIncoming(kh) && index_.CheckUniqueOutgoing(kh));
 
-        if (!index_.CheckUniqueIncoming(kh.idx)) {
+        if (!index_.CheckUniqueIncoming(kh)) {
 			for (size_t i = 0; i < tip.size(); i++) {
-				index_.IsolateVertex(tip[i].idx);
+				index_.IsolateVertex(tip[i]);
 			}
 			return tip.size();
 		}
@@ -71,16 +73,16 @@ private:
 		return 0;
 	}
 
-	size_t RemoveBackward(KmerWithHash<Kmer> kh) {
-        std::vector<KmerWithHash<Kmer>> tip;
+	size_t RemoveBackward(KeyWithHash kh) {
+        std::vector<KeyWithHash> tip;
 		do {
 			tip.push_back(kh);
-			kh = index_.CreateKmerWithHash(kh.kmer >> index_.GetUniqueIncoming(kh.idx));
-		} while(tip.size() < length_bound_ && index_.CheckUniqueIncoming(kh.idx) && index_.CheckUniqueOutgoing(kh.idx));
+			kh = index_.GetUniqueIncoming(kh);
+		} while(tip.size() < length_bound_ && index_.CheckUniqueIncoming(kh) && index_.CheckUniqueOutgoing(kh));
 
-        if (!index_.CheckUniqueOutgoing(kh.idx)) {
+        if (!index_.CheckUniqueOutgoing(kh)) {
 			for (size_t i = 0; i < tip.size(); i++) {
-				index_.IsolateVertex(tip[i].idx);
+				index_.IsolateVertex(tip[i]);
 			}
 			return tip.size();
 		}
@@ -91,10 +93,10 @@ private:
 	size_t RoughClipTips() {
 		size_t result = 0;
 		for (auto it  = index_.kmer_begin(); it.good(); ++it) {
-		    KmerWithHash<Kmer> kh = index_.CreateKmerWithHash(runtime_k::RtSeq(index_.k(), *it));
-			if (index_.IsDeadEnd(kh.idx) && index_.CheckUniqueIncoming(kh.idx)) {
+		    KeyWithHash kh = index_.ConstructKWH(runtime_k::RtSeq(index_.k(), *it));
+			if (index_.IsDeadEnd(kh) && index_.CheckUniqueIncoming(kh)) {
 				result += RemoveBackward(kh);
-			} else if(index_.IsDeadStart(kh.idx) && index_.CheckUniqueOutgoing(kh.idx)) {
+			} else if(index_.IsDeadStart(kh) && index_.CheckUniqueOutgoing(kh)) {
 				result += RemoveForward(kh);
 			}
 		}
@@ -125,6 +127,7 @@ class AlternativeEarlyTipClipper {
 private:
 	typedef DeBruijnExtensionIndex<> Index;
     typedef Index::KMer Kmer;
+	typedef typename Index::KeyWithHash KeyWithHash;
 	Index &index_;
 	size_t length_bound_;
 
@@ -134,39 +137,39 @@ private:
 	 * In case it did not end as a tip or if it was too long tip vector is cleared and infinite length is returned.
 	 * Thus tip vector contains only kmers to be removed while returned length value gives reasonable information of what happend.
 	 */
-	size_t FindForward(KmerWithHash<Kmer> kh, vector<KmerWithHash<Kmer>> &tip) {
-		while(tip.size() < length_bound_ && index_.CheckUniqueIncoming(kh.idx) && index_.CheckUniqueOutgoing(kh.idx)) {
+	size_t FindForward(KeyWithHash kh, vector<KeyWithHash> &tip) {
+		while(tip.size() < length_bound_ && index_.CheckUniqueIncoming(kh) && index_.CheckUniqueOutgoing(kh)) {
 			tip.push_back(kh);
-			kh = index_.CreateKmerWithHash(kh.kmer << index_.GetUniqueOutgoing(kh.idx));
+			kh = index_.GetUniqueOutgoing(kh);
 		}
 		tip.push_back(kh);
-		if(index_.CheckUniqueIncoming(kh.idx) && index_.IsDeadEnd(kh.idx)) {
+		if(index_.CheckUniqueIncoming(kh) && index_.IsDeadEnd(kh)) {
 			return tip.size();
 		}
 		tip.clear();
 		return -1;
 	}
 
-	size_t FindBackward(KmerWithHash<Kmer> kh, vector<KmerWithHash<Kmer>> &tip) {
-		while(tip.size() < length_bound_ && index_.CheckUniqueOutgoing(kh.idx) && index_.CheckUniqueIncoming(kh.idx)) {
+	size_t FindBackward(KeyWithHash kh, vector<KeyWithHash> &tip) {
+		while(tip.size() < length_bound_ && index_.CheckUniqueOutgoing(kh) && index_.CheckUniqueIncoming(kh)) {
 			tip.push_back(kh);
-			kh = index_.CreateKmerWithHash(kh.kmer >> index_.GetUniqueIncoming(kh.idx));
+			kh = index_.GetUniqueIncoming(kh);
 		}
 		tip.push_back(kh);
-		if(index_.CheckUniqueOutgoing(kh.idx) && index_.IsDeadStart(kh.idx)) {
+		if(index_.CheckUniqueOutgoing(kh) && index_.IsDeadStart(kh)) {
 			return tip.size();
 		}
 		tip.clear();
 		return -1;
 	}
 
-    size_t RemoveTip(vector<KmerWithHash<Kmer> > &tip) {
+    size_t RemoveTip(vector<KeyWithHash > &tip) {
 		for(size_t i = 0; i < tip.size(); i++)
-			index_.IsolateVertex(tip[i].idx);
+			index_.IsolateVertex(tip[i]);
 		return tip.size();
 	}
 
-    size_t RemoveTips(vector<vector<KmerWithHash<Kmer> > > tips, size_t max) {
+    size_t RemoveTips(vector<vector<KeyWithHash > > tips, size_t max) {
 		size_t result = 0;
 		for(char c = 0; c < 4; c++) {
 			if(tips[c].size() < max) {
@@ -176,13 +179,13 @@ private:
 		return result;
 	}
 
-	size_t RemoveForward(KmerWithHash<Kmer> kh) {
-		vector<vector<KmerWithHash<Kmer> >> tips;
+	size_t RemoveForward(KeyWithHash kh) {
+		vector<vector<KeyWithHash >> tips;
 		tips.resize(4);
 		size_t max = 0;
 		for(char c = 0; c < 4; c++) {
-			if(index_.CheckOutgoing(kh.idx, c)) {
-				KmerWithHash<Kmer> khc = index_.CreateKmerWithHash(kh.kmer << c);
+			if(index_.CheckOutgoing(kh, c)) {
+				KeyWithHash khc = index_.GetOutgoing(kh, c);
 				size_t len = FindForward(khc, tips[c]);
 				if(len > max)
 					max = len;
@@ -191,13 +194,13 @@ private:
 		return RemoveTips(tips, max);
 	}
 
-	size_t RemoveBackward(KmerWithHash<Kmer> kh) {
-		vector<vector<KmerWithHash<Kmer> >> tips;
+	size_t RemoveBackward(KeyWithHash kh) {
+		vector<vector<KeyWithHash >> tips;
 		tips.resize(4);
 		size_t max = 0;
 		for(char c = 0; c < 4; c++) {
-			if(index_.CheckIncoming(kh.idx, c)) {
-				KmerWithHash<Kmer> khc = index_.CreateKmerWithHash(kh.kmer >> c);
+			if(index_.CheckIncoming(kh, c)) {
+				KeyWithHash khc = index_.GetIncoming(kh, c);
 				size_t len = FindBackward(khc, tips[c]);
 				if(len > max)
 					max = len;
@@ -210,11 +213,11 @@ private:
 	size_t RoughClipTips() {
 		size_t result = 0;
 		for (auto it  = index_.kmer_begin(); it.good(); ++it) {
-			KmerWithHash<Kmer> kh = index_.CreateKmerWithHash(runtime_k::RtSeq(index_.k(), *it));
-			if(index_.OutgoingEdgeCount(kh.idx)  >= 2) {
+			KeyWithHash kh = index_.ConstructKWH(runtime_k::RtSeq(index_.k(), *it));
+			if(index_.OutgoingEdgeCount(kh)  >= 2) {
 				result += RemoveForward(kh);
 			}
-			if(index_.IncomingEdgeCount(kh.idx)  >= 2) {
+			if(index_.IncomingEdgeCount(kh)  >= 2) {
 				result += RemoveBackward(kh);
 			}
 		}

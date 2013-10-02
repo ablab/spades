@@ -25,6 +25,8 @@ public:
 	typedef set<KmerCluster<Graph> > ClustersSet;
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
+	typedef DeBruijnEdgeMultiIndex<typename Graph::EdgeId> Index;
+	typedef typename Index::KeyWithHash KeyWithHash;
 
 private:
 	Graph &g_;
@@ -35,7 +37,7 @@ private:
 	double compression_cutoff;
 	double domination_cutoff;
 	set<Sequence> banned_kmers;
-	DeBruijnEdgeMultiIndex<typename Graph::EdgeId> tmp_index;
+	Index tmp_index;
 	map<pair<VertexId, VertexId>, vector<size_t> > distance_cashed;DECL_LOGGER("PacIndex")
 
 public:
@@ -143,7 +145,7 @@ public:
 		for (auto i_iter = clusters.begin(); i_iter != clusters.end();) {
 			int len = (int) g_.length(i_iter->edgeId);
 			auto sorted_by_edge = i_iter->sorted_positions;
-			sort(sorted_by_edge.begin(), sorted_by_edge.end());
+			std::sort(sorted_by_edge.begin(), sorted_by_edge.end());
 			size_t good = 0;
 			for (auto iter = sorted_by_edge.begin(); iter < sorted_by_edge.end(); iter++) {
 				if (iter->IsUnique())
@@ -529,13 +531,13 @@ template<class Graph>
 typename PacBioMappingIndex<Graph>::MappingDescription PacBioMappingIndex<Graph>::Locate(Sequence &s) {
 	MappingDescription res;
 	if (s.size() < pacbio_k) return res;
-	runtime_k::RtSeq kmer = s.start<runtime_k::RtSeq>(pacbio_k);
+	KeyWithHash kwh = tmp_index.ConstructKWH(s.start<runtime_k::RtSeq>(pacbio_k));
 	for (size_t j = pacbio_k; j < s.size(); ++j) {
-		kmer <<= s[j];
-		if (tmp_index.valid_key(kmer)) {
-			for (auto iter = tmp_index[kmer].begin(); iter != tmp_index[kmer].end(); ++iter) {
-				int quality = (int) tmp_index[kmer].size();
-				if (banned_kmers.find(Sequence(kmer)) == banned_kmers.end()) {
+		kwh = kwh << s[j];
+		if (tmp_index.valid(kwh)) {
+			for (auto iter = tmp_index[kwh].begin(); iter != tmp_index[kwh].end(); ++iter) {
+				int quality = (int) tmp_index[kwh].size();
+				if (banned_kmers.find(Sequence(kwh.key())) == banned_kmers.end()) {
 					if (int(iter->offset) > int(debruijn_k - pacbio_k) && int(iter->offset) < int(g_.length(iter->edge_id)))
 						res[iter->edge_id].push_back(MappingInstance((int) iter->offset, (int) (j - pacbio_k + 1), quality));
 				}
@@ -543,7 +545,7 @@ typename PacBioMappingIndex<Graph>::MappingDescription PacBioMappingIndex<Graph>
 		}
 	}
 	for (auto iter = res.begin(); iter != res.end(); ++iter) {
-		sort(iter->second.begin(), iter->second.end());
+		std::sort(iter->second.begin(), iter->second.end());
 	}
 	return res;
 }

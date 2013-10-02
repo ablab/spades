@@ -458,6 +458,10 @@ class LongSeq {
     }
   };
    */
+
+  bool IsMinimal() const {
+      return true;
+  }
 };
 
 typedef LongSeq<MultiPolynomialHash<3, uint64_t> > LSeq;

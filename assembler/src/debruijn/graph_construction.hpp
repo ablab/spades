@@ -27,8 +27,45 @@
 
 #include "read_converter.hpp"
 #include "detail_coverage.hpp"
+#include "indices/storing_traits.hpp"
 
 namespace debruijn_graph {
+
+template<class StoringType>
+struct CoverageCollector {
+};
+
+template<>
+struct CoverageCollector<SimpleStoring> {
+    template<class Info>
+    static void CollectCoverage(Info edge_info) {
+        edge_info.edge_id->IncCoverage(edge_info.count);
+    }
+};
+
+template<>
+struct CoverageCollector<InvertableStoring> {
+    template<class Info>
+    static void CollectCoverage(Info edge_info) {
+        edge_info.edge_id->IncCoverage(edge_info.count);
+        edge_info.edge_id->conjugate()->IncCoverage(edge_info.count);
+    }
+};
+
+
+template<class Index>
+void FillCoverageFromIndex(const Index &index) {
+    for (auto I = index.value_cbegin(), E = index.value_cend();
+            I != E; ++I) {
+        const auto& edge_info = *I;
+        VERIFY(edge_info.offset != -1u);
+//      VERIFY(edge_info.edge_id.get() != NULL);
+        if(edge_info.offset != -1u) {
+            CoverageCollector<typename Index::storing_type>::CollectCoverage(edge_info);
+        }
+    }
+    DEBUG("Coverage counted");
+}
 
 template<class Graph, class Readers, class Index>
 size_t ConstructGraphUsingOldIndex(size_t k,
@@ -56,7 +93,7 @@ size_t ConstructGraphUsingOldIndex(size_t k,
 	DeBruijnGraphConstructor<Graph, InnerIndex> g_c(g, debruijn, k);
 	TRACE("Constructor ok");
 	g_c.ConstructGraph(100, 10000, 1.2); // TODO: move magic constants to config
-	TRACE("Graph condensed");
+	INFO("Graph condensed");
 
 	return rl;
 }
@@ -130,7 +167,6 @@ size_t ConstructGraphWithCoverage(size_t k, const debruijn_config::construction 
 
 	INFO("Filling coverage and flanking coverage from index");
 	FillCoverageAndFlanking(index.inner_index(), g, flanking_cov);
-
 	return rl;
 }
 

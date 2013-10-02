@@ -7,30 +7,51 @@ namespace debruijn_graph {
 template<typename Index, typename Graph>
 class EdgeInfoUpdater {
     typedef typename Index::KMer Kmer;
-//    typedef typename Index::GraphT Graph;
     typedef typename Graph::EdgeId EdgeId;
+    typedef typename Index::KeyWithHash KeyWithHash;
+    typedef typename Index::Value EdgeInfo;
 
     const Graph &g_;
     Index &index_;
 
+
+    void PutInIndex(const KeyWithHash &kwh, EdgeId id, size_t offset) {
+        if (index_.valid(kwh)) {
+            auto &entry = index_.get_raw_value_reference(kwh);
+            if (!entry.valid() || index_.contains(kwh)) {
+                index_.put_value(kwh, EdgeInfo(id, (unsigned)offset, entry.count));
+            }
+        }
+    }
+
+  	//todo why do we need to check equality???!!!
+  	bool DeleteIfEqual(const KeyWithHash &kwh, EdgeId e) {
+  		if (!index_.contains(kwh))
+  			return false;
+  		if (index_.get_value(kwh).edge_id == e) {
+  		    index_.get_raw_value_reference(kwh).invalidate();
+  			return true;
+  		}
+  		return false;
+  	}
+
     void UpdateKMers(const Sequence &nucls, EdgeId e) {
         VERIFY(nucls.size() >= index_.k());
-        Kmer kmer(index_.k(), nucls);
-
-        index_.PutInIndex(kmer, e, 0);
+        KeyWithHash kwh = index_.ConstructKWH(Kmer(index_.k(), nucls));
+        PutInIndex(kwh, e, 0);
         for (size_t i = index_.k(), n = nucls.size(); i < n; ++i) {
-            kmer <<= nucls[i];
-            index_.PutInIndex(kmer, e, unsigned(i - index_.k()) + 1);
+        	kwh <<= nucls[i];
+            PutInIndex(kwh, e, i - index_.k() + 1);
         }
     }
 
     void DeleteKMers(const Sequence &nucls, EdgeId e) {
         VERIFY(nucls.size() >= index_.k());
-        Kmer kmer(index_.k(), nucls);
-        index_.DeleteIfEqual(kmer, e);
+        KeyWithHash kwh = index_.ConstructKWH(Kmer(index_.k(), nucls));
+        DeleteIfEqual(kwh, e);
         for (size_t i = index_.k(), n = nucls.size(); i < n; ++i) {
-            kmer <<= nucls[i];
-            index_.DeleteIfEqual(kmer, e);
+            kwh <<= nucls[i];
+            DeleteIfEqual(kwh, e);
         }
     }
 

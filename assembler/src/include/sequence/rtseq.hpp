@@ -326,6 +326,21 @@ class RuntimeSeq {
   }
 
   /**
+   * Is the kmer minimal among this and !this.
+   *
+   * @return True if kmer < !kmer and false otherwise.
+   */
+  bool IsMinimal() const {
+    for (size_t i = 0; (i << 1) + 1 <= size_; ++i) {
+      auto front = this->operator[](i);
+      auto end = complement(this->operator[](size_ - 1 - i));
+      if(front != end)
+    	  return front < end;
+    }
+    return true;
+  }
+
+  /**
    * Shift left
    *
    * @param c New 0123 char which should be added to the right.

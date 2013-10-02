@@ -6,7 +6,7 @@
  */
 #pragma once
 
-#include "indices/debruijn_kmer_index.hpp"
+#include "indices/perfect_hash_map.hpp"
 #include "graph_pack.hpp"
 #include <algorithm>
 

@@ -315,7 +315,7 @@ public:
 		EdgeId e = HiddenAddEdge(data);
 		this->FireAddEdge(e);
 		TRACE("Added unlinked edge " << str(e) << " connecting ");
-		return e;
+        return e;
 	}
 
 public:

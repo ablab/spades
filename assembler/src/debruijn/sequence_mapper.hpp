@@ -97,7 +97,6 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
 
   void RemapKmers(const Sequence& old_s, const Sequence& new_s) {
     VERIFY(this->IsAttached());
-    //		cout << endl << "Mapping " << old_s << " to " << new_s << endl;
     size_t old_length = old_s.size() - k_ + 1;
     size_t new_length = new_s.size() - k_ + 1;
     UniformPositionAligner aligner(old_s.size() - k_ + 1,

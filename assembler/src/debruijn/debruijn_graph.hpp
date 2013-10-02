@@ -66,6 +66,10 @@ public:
     unsigned flanking_coverage() const {
         return flanking_cov_.coverage();
     }
+
+    size_t size() const {
+		return nucls_.size();
+	}
 };
 
 class DeBruijnMaster {

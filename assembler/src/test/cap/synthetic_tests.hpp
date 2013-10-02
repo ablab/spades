@@ -19,8 +19,7 @@ class SyntheticTestsRunner {
     typedef boost::property_tree::ptree XmlTreeT;
     typedef XmlTreeT::value_type XmlNodeT;
     typedef ConjugateDeBruijnGraph GraphT;
-    typedef graph_pack<GraphT, Seq,
-            DeBruijnEdgeIndex<KmerStoringDeBruijnEdgeIndex<GraphT, Seq>>> GraphPackT;
+    typedef graph_pack<GraphT, Seq, KmerStoringEdgeIndex<GraphT, Seq, kmer_index_traits<Seq>, SimpleStoring>> GraphPackT;
 
     const string filename_;
     const size_t k_;
