@@ -626,7 +626,7 @@ public:
         		next_ = boost::optional<GraphComponent<Graph>>();
         		return result;
         	} else {
-           		GraphComponent<Graph> result(this->graph(), filtered_.begin(), filtered_.end(), "filtered");
+           		GraphComponent<Graph> result(this->graph(), filtered_.begin(), filtered_.end(), false, "filtered");
            		filtered_.clear();
            		return result;
         	}
