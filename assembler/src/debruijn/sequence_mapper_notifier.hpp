@@ -30,6 +30,7 @@ class SequenceMapperNotifier {
 public:
     typedef std::shared_ptr<
             const NewExtendedSequenceMapper<conj_graph_pack::graph_t, conj_graph_pack::index_t> > Mapper;
+
     SequenceMapperNotifier(const conj_graph_pack& gp)
             : gp_(gp) {
     }

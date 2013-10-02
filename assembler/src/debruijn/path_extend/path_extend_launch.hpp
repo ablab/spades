@@ -20,7 +20,6 @@
 #include "path_visualizer.hpp"
 #include "loop_traverser.hpp"
 #include "long_read_storage.hpp"
-#include "split_graph_pair_info.hpp"
 
 namespace path_extend {
 
@@ -326,6 +325,7 @@ bool InsertSizeCompare(const PairedInfoLibraries& lib1,
     return lib1[0]->insert_size_ < lib2[0]->insert_size_;
 }
 
+//TODO: reduce number of params
 void ResolveRepeatsPe(conj_graph_pack& gp, vector<PairedIndexT*>& paired_index,
                       vector<PairedIndexT*>& scaff_index,
                       vector<size_t>& indexs,

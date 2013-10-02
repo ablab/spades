@@ -11,6 +11,7 @@
 #include "omni/omni_utils.hpp"
 #include "data_divider.hpp"
 #include "peak_finder.hpp"
+#include "extensive_distance_estimation.hpp"
 
 namespace omnigraph {
 

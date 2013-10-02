@@ -368,6 +368,14 @@ public:
             : g_(graph) {
     }
 
+    bool CheckContiguous(const vector<typename Graph::EdgeId>& path) const {
+        for (size_t i = 1; i < path.size(); ++i) {
+            if (g_.EdgeEnd(path[i - 1]) != g_.EdgeStart(path[i]))
+                return false;
+        }
+        return true;
+    }
+
     //todo seems that we don't need optional here any more
     vector<EdgeId> TryFixPath(const vector<EdgeId>& edges) const {
         vector<EdgeId> answer;
@@ -446,5 +454,7 @@ private:
     }
     const Graph& g_;
 };
+
+
 
 }

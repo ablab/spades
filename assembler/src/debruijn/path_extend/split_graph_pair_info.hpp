@@ -8,13 +8,35 @@
 #ifndef SPLIT_GRAPH_PAIR_INFO_HPP_
 #define SPLIT_GRAPH_PAIR_INFO_HPP_
 
-#include "graphio.hpp"
-#include "path_extend/paired_library.hpp"
-#include "late_pair_info_count.hpp"
 #include "sequence_mapper_notifier.hpp"
+#include "read_converter.hpp"
+#include "utils.hpp"
+
 using namespace debruijn_graph;
 
 namespace path_extend {
+
+double IdealPairedInfo(size_t len1, size_t len2, int dist, size_t is,
+                       size_t read_size, size_t is_var, size_t k) {
+    double w = 0.;
+    if (dist == 0) {
+        w = 0. + (double) (len1 - is + 2 * read_size + 1 - k);
+    } else {
+        if (dist < 0) {
+            size_t tmp = len1;
+            len1 = len2;
+            len2 = tmp;
+            dist = -dist;
+        }
+        int gap_len = dist - (int) len1;
+        int right = std::min((int) is, gap_len + (int) (len2 + read_size));
+        int left = std::max(gap_len, int(is) - int(read_size) - int(len1));
+        w = 0. + (double) (right - left + 1 - k + is_var);
+    }
+    return math::gr(w, 0.0) ? w : 0.0;
+}
+
+
 double FindIntersection(vector<double>& pi1, vector<double>& pi2) {
 	std::sort(pi1.begin(), pi1.end());
 	std::sort(pi2.begin(), pi2.end());

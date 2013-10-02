@@ -133,7 +133,7 @@ private:
                          delete_begins, delete_all)) {
             size_t common_length = path1->LengthAt(first1)
                     - path1->LengthAt(last1) + g_.length(path1->At(last1));
-            if (common_length > cfg::get().rr.max_repeat_length) {
+            if (common_length > cfg::get().max_repeat_length) {
                 DEBUG("Similar paths were not deleted " << common_length);
             }
         }

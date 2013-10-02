@@ -9,6 +9,7 @@ project(input CXX)
 add_library(input STATIC
             parser.cpp
             path_helper.cpp
+            copy_file.cpp
             library.cpp)
 
 target_link_libraries(input yaml-cpp)

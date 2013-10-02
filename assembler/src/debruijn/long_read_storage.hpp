@@ -7,11 +7,9 @@
 
 #pragma once
 
-#include "indices/debruijn_kmer_index.hpp"
-#include "graph_pack.hpp"
 #include <algorithm>
-#include "pacbio_read_structures.hpp"
-#include "pacbio_gap_closer.hpp"
+
+namespace debruijn_graph {
 
 template<class Graph>
 class PathInfo {
@@ -282,7 +280,16 @@ public:
     }
 
 
-	void LoadFromFile(const string s) {
+	void LoadFromFile(const string s, bool force_exists = true) {
+	    FILE* file = fopen(s.c_str(), "r");
+	    if (force_exists) {
+	        VERIFY(file != NULL);
+	    } else if (file == NULL) {
+	        INFO("Long reads not found, skipping");
+	        return;
+	    }
+	    fclose(file);
+
 	    INFO("Loading long reads alignment...");
 		ifstream filestr(s);
 		INFO("loading from " << s);
@@ -291,7 +298,8 @@ public:
 			tmp_map[g_.int_id(*iter)] = *iter;
 		}
 		int fl;
-		FILE* file = fopen((s).c_str(), "r");
+
+		file = fopen((s).c_str(), "r");
 		char ss[14];
 		while (!feof(file)) {
 			int n;
@@ -410,7 +418,7 @@ public:
         }
     }
 
-    void AddPath() {
+    void AddPathStorage() {
         data.push_back(new PathStorage<Graph>(g_));
     }
 
@@ -427,5 +435,8 @@ public:
     }
 
 };
+
+
+}
 
 

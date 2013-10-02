@@ -547,7 +547,7 @@ class NewExtendedSequenceMapper {
         vector<EdgeId> corrected_path = path_fixer_.DeleteSameEdges(
                 mapping_path.simple_path().sequence());
         vector<EdgeId> fixed_path = path_fixer_.TryFixPath(corrected_path);
-        if (!CheckContiguous(g_, fixed_path)) {
+        if (!path_fixer_.CheckContiguous(fixed_path)) {
             TRACE("read unmapped");
             std::stringstream debug_stream;
             for (size_t i = 0; i < fixed_path.size(); ++i) {

@@ -680,7 +680,7 @@ struct Range {
         VERIFY(end_pos >= start_pos);
     }
 
-    inline bool operator<(const Range &other) const {
+    bool operator<(const Range &other) const {
       if (start_pos != other.start_pos)
         return start_pos < other.start_pos;
       return end_pos < other.end_pos;
@@ -691,7 +691,7 @@ struct Range {
     }
 };
 
-std::ostream& operator<<(std::ostream& os, const Range& range) {
+inline std::ostream& operator<<(std::ostream& os, const Range& range) {
     os << "[" << range.start_pos << ", " << range.end_pos << "]";
     return os;
 }
@@ -706,7 +706,7 @@ struct MappingRange {
     }
 };
 
-std::ostream& operator<<(std::ostream& os, const MappingRange& map_range) {
+inline std::ostream& operator<<(std::ostream& os, const MappingRange& map_range) {
     os << map_range.initial_range << " --> " << map_range.mapped_range;
     return os;
 }

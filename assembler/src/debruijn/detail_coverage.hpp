@@ -3,7 +3,6 @@
 #include "indices/debruijn_kmer_index.hpp"
 #include "graph_pack.hpp"
 #include "verify.hpp"
-#include "graphio.hpp"
 #include <vector>
 #include <map>
 #include <set>

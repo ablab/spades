@@ -9,14 +9,15 @@
 #define LONG_READ_MAPPER_HPP_
 
 #include "long_read_storage.hpp"
+#include "sequence_mapper_notifier.hpp"
 
-namespace path_extend {
+namespace debruijn_graph {
 
-class SimpleLongReadMapper : public SequenceMapperListener {
+class SimpleLongReadMapper: public SequenceMapperListener {
+
 public:
-    SimpleLongReadMapper(conj_graph_pack& gp)
-            : gp_(gp),
-              storage_(gp.g) {
+
+    SimpleLongReadMapper(conj_graph_pack& gp): gp_(gp), storage_(gp.g) {
         mapper_ = MapperInstance(gp_);
     }
 
@@ -69,6 +70,6 @@ private:
     vector<PathStorage<conj_graph_pack::graph_t>*> buffer_storages_;
 };
 
-}/*path_extend*/
+}/*longreads*/
 
 #endif /* LONG_READ_MAPPER_HPP_ */

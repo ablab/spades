@@ -203,9 +203,6 @@ def fill_cfg(options_to_parse, log):
         elif opt == "--debug":
             options_storage.developer_mode = True
 
-        elif opt == "--rectangles":
-            options_storage.rectangles = True
-
         #corrector
         elif opt == "--mismatch-correction":
             options_storage.mismatch_corrector = True
@@ -255,8 +252,6 @@ def fill_cfg(options_to_parse, log):
     support.check_dataset_reads(dataset_data, options_storage.only_assembler, log)
     if support.dataset_has_only_mate_pairs_libraries(dataset_data):
         support.error('you should specify at least one paired-end or unpaired library (only mate-pairs libraries were found)!')
-    if options_storage.rectangles and (len(dataset_data) > 1):
-        support.error('rectangle graph algorithm for repeat resolution cannot work with multiple libraries!')
 
     ### FILLING cfg
     cfg["common"] = empty_config()
@@ -459,9 +454,6 @@ def main():
                     spades_cfg.__dict__["pacbio_mode"] = True
                     spades_cfg.__dict__["pacbio_reads"] = support.get_pacbio_reads(dataset_data)
 
-                if options_storage.rectangles:
-                    spades_cfg.__dict__["resolving_mode"] = "rectangles"
-
                 if "HEAPCHECK" in os.environ:
                     del os.environ["HEAPCHECK"]
                 if "heap_check" in spades_cfg.__dict__:
@@ -486,37 +478,6 @@ def main():
                 spades_cfg.__dict__["dataset"] = dataset_filename
 
                 latest_dir = spades_logic.run_spades(tmp_configs_dir, bin_home, spades_cfg, log)
-
-                #rectangles
-                if spades_cfg.paired_mode and options_storage.rectangles:
-                    if options_storage.continue_mode: # TODO: continue mode
-                        support.warning("sorry, --continue doesn't work with --rectangles yet. Skipping repeat resolving.")
-                    else:
-                        sys.path.append(os.path.join(python_modules_home, "rectangles"))
-                        import rrr
-
-                        rrr_input_dir = os.path.join(latest_dir, "saves")
-                        rrr_outpath = os.path.join(spades_cfg.output_dir, "rectangles")
-                        if not os.path.exists(rrr_outpath):
-                            os.mkdir(rrr_outpath)
-
-                        rrr_reference_information_file = os.path.join(rrr_input_dir,
-                            "late_pair_info_counted_etalon_distance.txt")
-                        rrr_test_util = rrr.TestUtils(rrr_reference_information_file,
-                            os.path.join(rrr_outpath, "rectangles.log"))
-                        rrr.resolve(rrr_input_dir, rrr_outpath, rrr_test_util, "", cfg["dataset"].single_cell, spades_cfg.careful)
-
-                        shutil.copyfile(os.path.join(rrr_outpath, "rectangles_extend_before_scaffold.fasta"), spades_cfg.result_contigs)
-                        shutil.copyfile(os.path.join(rrr_outpath, "rectangles_extend.fasta"), spades_cfg.result_scaffolds)
-
-                        if not spades_cfg.developer_mode:
-                            if os.path.exists(rrr_input_dir):
-                                shutil.rmtree(rrr_input_dir)
-                            if os.path.exists(rrr_outpath):
-                                shutil.rmtree(rrr_outpath, True)
-                            if os.path.exists(rrr_outpath):
-                                os.system('rm -r ' + rrr_outpath)
-                                #EOR
 
                 if os.path.isdir(misc_dir) and not options_storage.continue_mode:
                     shutil.rmtree(misc_dir)

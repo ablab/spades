@@ -15,8 +15,8 @@
 #pragma once
 
 #include "standard.hpp"
-#include "path_utils.hpp"
 #include "graph_pack.hpp"
+#include "path_utils.hpp"
 #include "split_path_constructor.hpp"
 #include <math.h>
 
@@ -26,11 +26,11 @@ namespace debruijn_graph {
 template<class Graph>
 class PairInfoImprover {
   typedef typename Graph::EdgeId EdgeId;
-  typedef vector<PairInfo<EdgeId> > PairInfos;
-  typedef pair<EdgeId, EdgeId> EdgePair;
+  typedef vector<omnigraph::de::PairInfo<EdgeId> > PairInfos;
+  typedef std::pair<EdgeId, EdgeId> EdgePair;
 
  public:
-  PairInfoImprover(const Graph& g, PairedInfoIndexT<Graph>& clustered_index, const io::SequencingLibrary<debruijn_config::DataSetData> &lib) :
+  PairInfoImprover(const Graph& g, omnigraph::de::PairedInfoIndexT<Graph>& clustered_index, const io::SequencingLibrary<debruijn_config::DataSetData> &lib) :
                    graph_(g), index_(clustered_index), lib_(lib)
   {
   }
@@ -73,15 +73,15 @@ class PairInfoImprover {
     size_t cnt = 0;
     DEBUG("ParallelRemoveContraditional: Put infos to vector");
 
-    vector<pair<EdgeId, typename PairedInfoIndexT<Graph>::InnerMap > > inner_maps; // map [EdgeId -> Histogram]
+    vector<pair<EdgeId, typename omnigraph::de::PairedInfoIndexT<Graph>::InnerMap > > inner_maps; // map [EdgeId -> Histogram]
     for (auto e_iter = graph_.ConstEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
-      if (graph_.length(*e_iter) >= cfg::get().rr.max_repeat_length)
+      if (graph_.length(*e_iter) >= cfg::get().max_repeat_length)
         inner_maps.push_back(make_pair(*e_iter, index_.GetEdgeInfo(*e_iter, 0)));
     }
 
-    vector<PairedInfoIndexT<Graph>*> to_remove(nthreads);
+    vector<omnigraph::de::PairedInfoIndexT<Graph>*> to_remove(nthreads);
     for (size_t i = 0; i < nthreads; ++i)
-      to_remove[i] = new PairedInfoIndexT<Graph>(graph_);
+      to_remove[i] = new omnigraph::de::PairedInfoIndexT<Graph>(graph_);
 
     DEBUG("ParallelRemoveContraditional: Start threads");
     #pragma omp parallel num_threads(nthreads)
@@ -116,10 +116,10 @@ class PairInfoImprover {
 
   size_t NonParallelRemoveContraditional() {
     size_t cnt = 0;
-    PairedInfoIndexT<Graph> *to_remove = new PairedInfoIndexT<Graph>(graph_);
+    omnigraph::de::PairedInfoIndexT<Graph> *to_remove = new omnigraph::de::PairedInfoIndexT<Graph>(graph_);
 
     for (auto e_iter = graph_.ConstEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
-      if (graph_.length(*e_iter )>= cfg::get().rr.max_repeat_length) {
+      if (graph_.length(*e_iter )>= cfg::get().max_repeat_length) {
         auto inner_map = index_.GetEdgeInfo(*e_iter, 0);
         FindInconsistent(*e_iter, inner_map, to_remove);
       }
@@ -143,10 +143,10 @@ class PairInfoImprover {
     }
 
     TRACE("Fill missing: Creating indexes");
-    vector<vector<PairedInfoIndexT<Graph>*> > to_add(nthreads);
+    vector<vector<omnigraph::de::PairedInfoIndexT<Graph>*> > to_add(nthreads);
     for (size_t j = 0; j < 2; ++j)
       for (size_t i = 0; i < nthreads; ++i)
-        to_add[i].push_back(new PairedInfoIndexT<Graph>(graph_));
+        to_add[i].push_back(new omnigraph::de::PairedInfoIndexT<Graph>(graph_));
 
     SplitPathConstructor<Graph> spc(graph_);
     DEBUG("Fill missing: Start threads");
@@ -163,7 +163,7 @@ class PairInfoImprover {
 
           const PathInfoClass<Graph>& path = *iter;
           for (auto pi_iter = path.begin(); pi_iter != path.end(); ++pi_iter) {
-            const PairInfo<EdgeId>& pi = *pi_iter;
+            const auto& pi = *pi_iter;
             EdgeId e1 = pi.first;
             EdgeId e2 = pi.second;
             pair<EdgeId, EdgeId> ep = make_pair(e1, e2);
@@ -205,7 +205,7 @@ class PairInfoImprover {
 
   size_t NonParallelFillMissing() {
     size_t cnt = 0;
-    PairedInfoIndexT<Graph> to_add(graph_);
+    omnigraph::de::PairedInfoIndexT<Graph> to_add(graph_);
     SplitPathConstructor<Graph> spc(graph_);
     for (auto e_iter = graph_.ConstEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
       const PairInfos& infos = index_.GetEdgeInfo(*e_iter);
@@ -213,7 +213,7 @@ class PairInfoImprover {
       for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
         TRACE("Path " << iter->PrintPath(graph_));
         for (auto pi_iter = iter->begin(); pi_iter != iter->end(); ++pi_iter) {
-          const PairInfo<EdgeId>& pi = *pi_iter;
+          const auto& pi = *pi_iter;
           cnt += TryToAddPairInfo(index_, pi.first, pi.second, pi.point);
         }
       }
@@ -223,21 +223,21 @@ class PairInfoImprover {
   }
 
 // Checking the consitency of two edge pairs (e, e_1) and (e, e_2) for all pairs (e, <some_edge>)
-void FindInconsistent(EdgeId base_edge, const typename PairedInfoIndexT<Graph>::InnerMap& inner_map, PairedInfoIndexT<Graph>* pi) {
-    typedef typename PairedInfoIndexT<Graph>::EdgeIterator EdgeIterator;
+void FindInconsistent(EdgeId base_edge, const typename omnigraph::de::PairedInfoIndexT<Graph>::InnerMap& inner_map, omnigraph::de::PairedInfoIndexT<Graph>* pi) {
+    typedef typename omnigraph::de::PairedInfoIndexT<Graph>::EdgeIterator EdgeIterator;
 
     for (EdgeIterator I_1(inner_map.begin(), inner_map.end()), E(inner_map.end(), inner_map.end()); I_1 != E; ++I_1) {
         for (EdgeIterator I_2(inner_map.begin(), inner_map.end()); I_2 != E; ++I_2) {
             if (I_1 == I_2)
                 continue;
 
-            std::pair<EdgeId, Point> entry1 = *I_1;
-            std::pair<EdgeId, Point> entry2 = *I_2;
+            std::pair<EdgeId, omnigraph::de::Point> entry1 = *I_1;
+            std::pair<EdgeId, omnigraph::de::Point> entry2 = *I_2;
 
             EdgeId e1 = entry1.first;
-            const Point& p1 = entry1.second;
+            const omnigraph::de::Point& p1 = entry1.second;
             EdgeId e2 = entry2.first;
-            const Point& p2 = entry2.second;
+            const omnigraph::de::Point& p2 = entry2.second;
 
             if (!IsConsistent(base_edge, e1, e2, p1, p2)) {
                 if (math::le(p1.weight, p2.weight))
@@ -251,11 +251,9 @@ void FindInconsistent(EdgeId base_edge, const typename PairedInfoIndexT<Graph>::
 
 //public:
 // Checking the consistency of two edge pairs (e, e_1) and (e, e_2)
-  bool IsConsistent(EdgeId /*e*/, EdgeId e1, EdgeId e2, const Point& p1, const Point& p2) const {
-      if ((math::le(p1.d, 0.)
-      || math::le(p2.d, 0.))
-      || math::gr(p1.d, p2.d))
-    return true;
+  bool IsConsistent(EdgeId /*e*/, EdgeId e1, EdgeId e2, const omnigraph::de::Point& p1, const omnigraph::de::Point& p2) const {
+    if (math::le(p1.d, 0.) || math::le(p2.d, 0.) || math::gr(p1.d, p2.d))
+      return true;
 
     double pi_dist = p2.d - p1.d;
     int first_length = (int) graph_.length(e1);
@@ -288,7 +286,7 @@ void FindInconsistent(EdgeId base_edge, const typename PairedInfoIndexT<Graph>::
     size_t cnt = 0;
     const de::Histogram histogram = index_.GetEdgePairInfo(e1, e2);
     for (auto I = infos.begin(), E = infos.end(); I != E; ++I) {
-      const Point& point = *I;
+      const omnigraph::de::Point& point = *I;
       for (auto p_iter = histogram.begin(); p_iter != histogram.end(); ++p_iter) {
         if (math::eq(p_iter->d, point.d)) {
           cnt += index_.RemovePairInfo(e1, e2, *p_iter);
@@ -309,7 +307,7 @@ void FindInconsistent(EdgeId base_edge, const typename PairedInfoIndexT<Graph>::
     EdgeId rc_e2 = graph_.conjugate(e1);
     const de::Histogram& histogram = index_.GetEdgePairInfo(rc_e1, rc_e2);
     for (auto I = infos.begin(), E = infos.end(); I != E; ++I) {
-      const Point& point = ConjugatePoint(graph_.length(e1), graph_.length(e2), *I);
+      const omnigraph::de::Point& point = ConjugatePoint(graph_.length(e1), graph_.length(e2), *I);
       for (auto p_iter = histogram.begin(); p_iter != histogram.end(); ++p_iter) {
         if (math::eq(p_iter->d, point.d)) {
           cnt += index_.RemovePairInfo(rc_e1, rc_e2, *p_iter);
@@ -324,7 +322,7 @@ void FindInconsistent(EdgeId base_edge, const typename PairedInfoIndexT<Graph>::
     return cnt;
   }
 
-  bool ComparePriority(EdgeId e1, EdgeId e2, Point p1, Point p2) {
+  bool ComparePriority(EdgeId e1, EdgeId e2, omnigraph::de::Point p1, omnigraph::de::Point p2) {
     using namespace math;
     VERIFY(ge(p1.d, 0.));
     VERIFY(ge(p2.d, 0.));
@@ -333,17 +331,17 @@ void FindInconsistent(EdgeId base_edge, const typename PairedInfoIndexT<Graph>::
     return ls(p1.var, p2.var) || (eq(p1.var, p2.var) && distance_priority);
   }
 
-  bool TryToAddPairInfo(PairedInfoIndexT<Graph>& clustered_index,
+  bool TryToAddPairInfo(omnigraph::de::PairedInfoIndexT<Graph>& clustered_index,
                         EdgeId e1,
                         EdgeId e2,
-                        const Point& p,
+                        const omnigraph::de::Point& p,
                         bool reflected = true) {
-    const Point& point_to_add = p;
+    const omnigraph::de::Point& point_to_add = p;
 
     const de::Histogram histogram = clustered_index.GetEdgePairInfo(e1, e2);
     bool already_exist = false;
     for (auto it = histogram.begin(); it != histogram.end(); ++it) {
-      const Point& cur_point = *it;
+      const omnigraph::de::Point& cur_point = *it;
       if (ClustersIntersect(cur_point, point_to_add)) {
         already_exist = true;
         return false;
@@ -361,11 +359,11 @@ void FindInconsistent(EdgeId base_edge, const typename PairedInfoIndexT<Graph>::
   }
 
   EdgePair ConjugatePair(EdgePair ep) const {
-    return make_pair(graph_.conjugate(ep.second), graph_.conjugate(ep.first));
+    return std::make_pair(graph_.conjugate(ep.second), graph_.conjugate(ep.first));
   }
 
   const Graph& graph_;
-  PairedInfoIndexT<Graph>& index_;
+  omnigraph::de::PairedInfoIndexT<Graph>& index_;
   const io::SequencingLibrary<debruijn_config::DataSetData>& lib_;
 
   DECL_LOGGER("PairInfoImprover")

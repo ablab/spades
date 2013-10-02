@@ -8,6 +8,7 @@
 
 #include "xmath.h"
 #include "omni/omni_utils.hpp"
+#include "sequence/sequence.hpp"
 
 #include <boost/iterator/iterator_facade.hpp>
 
@@ -89,7 +90,7 @@ inline int rounded_d(Point p) {
     return math::round_to_zero(p.d);
 }
 
-ostream& operator<<(ostream& os, const Point &point) {
+inline std::ostream& operator<<(std::ostream& os, const Point &point) {
     return os << point.str();
 }
 

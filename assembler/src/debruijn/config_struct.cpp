@@ -155,15 +155,6 @@ void load(debruijn_config::simplification::tip_clipper& tc,
   load(tc.condition, pt, "condition");
 }
 
-void load(working_stage& entry_point,
-          boost::property_tree::ptree const& pt, std::string const& key,
-          bool complete) {
-  if (complete || pt.find(key) != pt.not_found()) {
-    std::string ep = pt.get<std::string>(key);
-    entry_point = debruijn_config::working_stage_id(ep);
-  }
-}
-
 void load(resolving_mode& rm, boost::property_tree::ptree const& pt,
           std::string const& key, bool complete) {
   if (complete || pt.find(key) != pt.not_found()) {
@@ -319,19 +310,6 @@ void load(debruijn_config::smoothing_distance_estimator& ade,
   load(ade.derivative_threshold, pt, "derivative_threshold");
 }
 
-void load(debruijn_config::repeat_resolver& rr,
-          boost::property_tree::ptree const& pt, bool /*complete*/) {
-  using config_common::load;
-
-  load(rr.symmetric_resolve, pt, "symmetric_resolve");
-  load(rr.mode, pt, "mode");
-  load(rr.inresolve_cutoff_proportion, pt, "inresolve_cutoff_proportion");
-  load(rr.near_vertex, pt, "near_vertex");
-  load(rr.max_distance, pt, "max_distance");
-  load(rr.max_repeat_length, pt, "max_repeat_length");
-  load(rr.kill_loops, pt, "kill_loops");
-}
-
 void load(debruijn_config::coverage_based_rr& cbrr,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
@@ -344,6 +322,7 @@ void load(debruijn_config::coverage_based_rr& cbrr,
     load(cbrr.repeat_length_upper_threshold, pt, "repeat_length_upper_threshold");
 
 }
+
 
 void load(debruijn_config::pacbio_processor& pb,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
@@ -587,8 +566,9 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   load(cfg.paired_info_statistics, pt, "paired_info_statistics");
   load(cfg.paired_info_scaffolder, pt, "paired_info_scaffolder");
   load(cfg.cut_bad_connections, pt, "cut_bad_connections");
-  load(cfg.componential_resolve, pt, "componential_resolve");
   load(cfg.gap_closer_enable, pt, "gap_closer_enable");
+
+  load(cfg.max_repeat_length, pt, (cfg.ds.single_cell ? "max_repeat_length_sc" : "max_repeat_length"));
 
   load(cfg.buffer_size, pt, "buffer_size");
   cfg.buffer_size <<= 20; //turn MB to bytes
@@ -622,7 +602,6 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   load(cfg.ds, ds_pt, true);
 
   load(cfg.ade, pt, (cfg.ds.single_cell ? "sc_ade" : "usual_ade")); // advanced distance estimator:
-  load(cfg.rr, pt, (cfg.ds.single_cell ? "sc_rr" : "usual_rr")); // repeat resolver:
   load(cfg.pos, pt, "pos"); // position handler:
 
   load(cfg.est_mode, pt, "estimation_mode");

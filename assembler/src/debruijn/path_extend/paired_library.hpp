@@ -14,8 +14,9 @@
 #ifndef PAIRED_LIBRARY_HPP_
 #define PAIRED_LIBRARY_HPP_
 
-#include "debruijn_graph.hpp"
+#include "graph_pack.hpp"
 #include "de/paired_info.hpp"
+
 #include "xmath.h"
 
 using debruijn_graph::Graph;
@@ -24,8 +25,8 @@ using debruijn_graph::VertexId;
 using debruijn_graph::PairedIndexT;
 
 using omnigraph::de::PairedInfoIndex;
-using omnigraph::de::PairInfo;
 using omnigraph::de::PairedInfoIndexT;
+using omnigraph::de::PairInfo;
 using omnigraph::de::Point;
 
 namespace path_extend {
@@ -303,25 +304,7 @@ struct PairedInfoLibrary {
 		return w;
 	}
 };
-double IdealPairedInfo(size_t len1, size_t len2, int dist, size_t is,
-                       size_t read_size, size_t is_var, size_t k) {
-    double w = 0.;
-    if (dist == 0) {
-        w = 0. + (double) (len1 - is + 2 * read_size + 1 - k);
-    } else {
-        if (dist < 0) {
-            size_t tmp = len1;
-            len1 = len2;
-            len2 = tmp;
-            dist = -dist;
-        }
-        int gap_len = dist - (int) len1;
-        int right = std::min((int) is, gap_len + (int) (len2 + read_size));
-        int left = std::max(gap_len, int(is) - int(read_size) - int(len1));
-        w = 0. + (double) (right - left + 1 - k + is_var);
-    }
-    return math::gr(w, 0.0) ? w : 0.0;
-}
+
 typedef std::vector<PairedInfoLibrary *> PairedInfoLibraries;
 
 } // path extend

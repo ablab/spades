@@ -91,7 +91,11 @@ estimation_mode simple
 ;set it true to detach connections that are not supported by paired info before repeat resolution
 cut_bad_connections false
 
-; repeat resolving mode (none path_extend combined rectangles)
+;the only option left fomr repeat resolving -- WHY DO THEY DIFFER?
+max_repeat_length 4000
+max_repeat_length_sc 8000
+
+; repeat resolving mode (none path_extend)
 resolving_mode path_extend
 
 use_scaffolder  true
@@ -102,34 +106,6 @@ andrey_params {
 }
 
 avoid_rc_connections true
-
-; Produce info for all components of graph and run repeat resolver for each component.
-componential_resolve false
-
-;repeat_resolving 
-
-
-sc_rr
-{
-	symmetric_resolve true
-	mode		1 ; Additional resolve cheats, don't change if you are not sure
-	inresolve_cutoff_proportion 0.1
-	near_vertex  30
-	max_distance 50
-	max_repeat_length 8000
-    kill_loops true
-}
-
-usual_rr
-{
-	symmetric_resolve true
-	mode		1; Additional resolve cheats, don't change if you are not sure
-	inresolve_cutoff_proportion 0.5
-	near_vertex  30
-	max_distance 50
-	max_repeat_length 4000
-	kill_loops true
-}
 
 
 ;position handling

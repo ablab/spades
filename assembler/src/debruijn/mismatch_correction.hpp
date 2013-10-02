@@ -10,10 +10,10 @@
 
 namespace debruijn_graph {
 
-class Construction : public spades::AssemblyStage {
+class MismatchCorrection : public spades::AssemblyStage {
   public:
-    Construction()
-        : AssemblyStage("Construction", "construction") {}
+    MismatchCorrection()
+        : AssemblyStage("Mismatch Correction", "mismatch_correction") {}
 
     void run(conj_graph_pack &gp);
 };

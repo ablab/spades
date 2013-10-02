@@ -122,29 +122,6 @@ private:
 	;
 };
 
-template<class Graph>
-Sequence MergeSequences(const Graph& g,
-		const vector<typename Graph::EdgeId>& continuous_path) {
-	vector < Sequence > path_sequences;
-	path_sequences.push_back(g.EdgeNucls(continuous_path[0]));
-	for (size_t i = 1; i < continuous_path.size(); ++i) {
-		VERIFY(
-				g.EdgeEnd(continuous_path[i - 1])
-						== g.EdgeStart(continuous_path[i]));
-		path_sequences.push_back(g.EdgeNucls(continuous_path[i]));
-	}
-	return MergeOverlappingSequences(path_sequences, g.k());
-}
-
-template<class Graph>
-bool CheckContiguous(const Graph& g, const vector<typename Graph::EdgeId>& path) {
-	for (size_t i = 1; i < path.size(); ++i) {
-		if (g.EdgeEnd(path[i - 1]) != g.EdgeStart(path[i]))
-			return false;
-	}
-	return true;
-}
-
 
 //todo improve logging
 template<class Graph, class Mapper>
@@ -183,7 +160,7 @@ public:
 		Path<EdgeId> path = TryFixPath(mapping_path.simple_path());
 //		TRACE("Mapped sequence to path " << graph_.str(path.sequence()));
 
-		if (!CheckContiguous(graph_, path.sequence())) {
+		if (!path_fixer_.CheckContiguous(path.sequence())) {
 			TRACE("Even fixed path wasn't contiguous");
 			return s;
 		} else {

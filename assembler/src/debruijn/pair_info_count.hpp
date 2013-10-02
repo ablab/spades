@@ -10,10 +10,10 @@
 
 namespace debruijn_graph {
 
-class Construction : public spades::AssemblyStage {
+class PairInfoCount : public spades::AssemblyStage {
   public:
-    Construction()
-        : AssemblyStage("Construction", "construction") {}
+    PairInfoCount()
+        : AssemblyStage("Paired Information Counting", "late_pair_info_count") {}
 
     void run(conj_graph_pack &gp);
 };
