@@ -146,6 +146,9 @@ public:
         } else {
             black_removed_++;
         }
+    }
+
+    ~QualityLoggingRemovalHandler() {
         TRACE("Overall stats: total removed = " << total_
               << "; bad removed = " << black_removed_
               << "; good removed = " << total_ - black_removed_);
