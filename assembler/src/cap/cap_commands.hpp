@@ -628,7 +628,7 @@ private:
         size_t k = GetInt(args[1]);
         size_t iteration_cnt = GetInt(args[2]);
 
-        cout << "Masking repeats for k=" << k << " in " << iteration_cnt << "iterations" << endl;
+        cout << "Masking repeats for k=" << k << " in " << iteration_cnt << " iterations" << endl;
 
         ContigStreamsPtr streams = ConvertRefsToStreams(
                 curr_env.genomes(), curr_env.genome_names());

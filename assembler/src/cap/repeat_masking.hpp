@@ -123,7 +123,7 @@ public:
                 rep_kmer_cnt++;
             }
         }
-        INFO("Found " << rep_kmer_cnt << "repetitive " << k_ << "-mers");
+        INFO("Found " << rep_kmer_cnt << " repetitive " << k_ << "-mers");
         return rep_kmer_cnt;
     }
 
