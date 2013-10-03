@@ -694,35 +694,27 @@ void SimplifyGraph(conj_graph_pack &gp,
     PostSimplification(gp, removal_handler, printer,
                        determined_coverage_threshold);
 
-    //This should be put into PostSimplification when(if) flanking coverage will be rewritten.
+    // This should be put into PostSimplification when(if) flanking coverage will be rewritten.
     if (cfg::get().topology_simplif_enabled && cfg::get().simp.her.enabled && cfg::get().developer_mode) {
         FlankingCoverage<Graph, Index::InnerIndexT> flanking_cov(gp.g, gp.index.inner_index(), 50);
         HiddenECRemover<Graph>(gp.g, cfg::get().simp.her.uniqueness_length, flanking_cov,
                                cfg::get().simp.her.unreliability_threshold, determined_coverage_threshold, cfg::get().simp.her.relative_threshold,
                                removal_handler).Process();
     }
-    //    typedef typename EdgeIndexHelper<typename conj_graph_pack::index_t>::GraphPositionFillingIndexBuilderT IndexBuilder;
-    //    IndexBuilder index_builder;
-    if (!cfg::get().developer_mode) {
-        INFO("Refilling index");
-        //        index_builder.BuildIndexFromGraph(gp.index.inner_index(), gp.g);
-        gp.index.Refill();
-        INFO("Index refilled");
-        INFO("Attaching index");
-        gp.index.Attach();
-        INFO("Index attached");
+
+    if (cfg::get().gap_closer_enable && cfg::get().gc.after_simplify) {
+        if (!gp.index.IsAttached()) {
+            INFO("Refilling index");
+            gp.index.Refill();
+            INFO("Index refilled");
+            INFO("Attaching index");
+            gp.index.Attach();
+            INFO("Index attached");
+        }
+        CloseGaps(gp);
     }
 
     printer(ipp_removing_isolated_edges);
-
-    if (cfg::get().gap_closer_enable && cfg::get().gc.after_simplify)
-        CloseGaps(gp);
-
-    INFO("Final index refill");
-    //todo second refill in ten lines!!!
-    //    index_builder.BuildIndexFromGraph(gp.index.inner_index(), gp.g);
-    gp.index.Refill();
-    INFO("Final index refill finished");
 
     INFO("Final isolated edges removal:");
     size_t max_length = std::max(cfg::get().ds.RL(), cfg::get().simp.ier.max_length_any_cov);
@@ -731,7 +723,14 @@ void SimplifyGraph(conj_graph_pack &gp,
                                cfg::get().simp.ier.max_coverage,
                                max_length)
             .RemoveIsolatedEdges();
+
     printer(ipp_final_simplified);
+
+    if (cfg::get().correct_mismatches || cfg::get().paired_mode) {
+        INFO("Final index refill");
+        gp.index.Refill();
+        INFO("Final index refill finished");
+    }
 
     DEBUG("Graph simplification finished");
 
