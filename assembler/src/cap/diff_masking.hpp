@@ -71,7 +71,7 @@ void RefineGP(gp_t& gp, size_t delta = 5) {
     br_config.max_bulge_length_coefficient = 3;
     br_config.max_coverage = 1000.;
     br_config.max_relative_coverage = 1.2;
-    br_config.max_delta = delta;
+    br_config.max_delta = double(delta);
     br_config.max_relative_delta = 0.1;
 
     INFO("Removing bulges");
@@ -299,7 +299,7 @@ inline void PerformIterativeRefinement(ContigStreamsPtr streams,
 
 inline void PerformIterativeRefinement(const string& base_path,
         const vector<string>& suffixes, const string& out_root,
-        vector<size_t>& k_values, bool gene_analysis = false) {
+        vector<size_t>& k_values, bool /* gene_analysis  */= false) {
 //	remove_dir(out_root);
     utils::MakeDirPath(out_root);
     ContigStreamsPtr streams = OpenStreams(base_path, suffixes, true);

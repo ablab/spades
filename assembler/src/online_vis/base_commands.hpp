@@ -22,9 +22,9 @@ namespace online_visualization {
       {
       }
 
-      void Execute(shared_ptr<Env>& /*curr_env*/,
-                   LoadedEnvironments<Env>& /*loaded_environments*/,
-                   const ArgumentList& /*args*/) const
+      void Execute(shared_ptr<Env>& /* curr_env */,
+                   LoadedEnvironments<Env>& /* loaded_environments */,
+                   const ArgumentList& /* args */) const
       {
       }
 
@@ -64,7 +64,7 @@ namespace online_visualization {
         : CommandServingCommand<Env>("help", command_mapping) {
         }
 
-      void Execute(shared_ptr<Env>& /*curr_env*/, LoadedEnvironments<Env>& /*loaded_environments*/, const ArgumentList& arg_list) const {
+      void Execute(shared_ptr<Env>& /* curr_env */, LoadedEnvironments<Env>& /* loaded_environments */, const ArgumentList& arg_list) const {
         const vector<string>& args = arg_list.GetAllArguments();
         if (args.size() == 1) {
           cout << GetCommonUsageString() << endl;
@@ -91,7 +91,7 @@ namespace online_visualization {
       {
       }
 
-        void Execute(shared_ptr<Env>& /*curr_env*/, LoadedEnvironments<Env>& /*loaded_environments*/, const ArgumentList& /*args*/) const {
+        void Execute(shared_ptr<Env>& /* curr_env */, LoadedEnvironments<Env>& /* loaded_environments */, const ArgumentList& /* args */) const {
           cout << "Exiting" << endl;
           exit(0);
         }
@@ -263,7 +263,7 @@ namespace online_visualization {
       {
       }
 
-        void Execute(shared_ptr<Env>& curr_env, LoadedEnvironments<Env>& loaded_environments, const ArgumentList& /*arg_list*/) const {
+        void Execute(shared_ptr<Env>& curr_env, LoadedEnvironments<Env>& loaded_environments, const ArgumentList& /* arg_list */) const {
           cout << "Environments :" << endl;
           for (auto iter = loaded_environments.begin(); iter != loaded_environments.end(); ++iter) {
             cout << " " << iter->first << endl;
@@ -315,10 +315,10 @@ namespace online_visualization {
           History& history = History::GetHistory();
 
           cout << "Executing the command " << number << " command(s) before... " << endl;
-          string command_with_args = history[history.size() - number];
+          string command_with_args = history[int(history.size() - number)];
           cout << command_with_args << endl;
           //inserting a command, which is to be repeated
-          history.SetEntry(history.size() - 1, command_with_args);
+          history.SetEntry(int(history.size() - 1), command_with_args);
 
           stringstream ss(command_with_args);
           TRACE("Delegating to the ArgumentList class");
@@ -360,7 +360,7 @@ namespace online_visualization {
       {
       }
 
-        void Execute(shared_ptr<Env>& /*curr_env*/, LoadedEnvironments<Env>& /*loaded_environments*/, const ArgumentList& arg_list) const {
+        void Execute(shared_ptr<Env>& /* curr_env */, LoadedEnvironments<Env>& /* loaded_environments */, const ArgumentList& arg_list) const {
           vector<string> args = arg_list.GetAllArguments();
 
           if (!CheckCorrectness(args))
@@ -409,7 +409,7 @@ namespace online_visualization {
       {
       }
 
-        void Execute(shared_ptr<Env>& /*curr_env*/, LoadedEnvironments<Env>& /*loaded_environments*/, const ArgumentList& arg_list) const {
+        void Execute(shared_ptr<Env>& /* curr_env */, LoadedEnvironments<Env>& /* loaded_environments */, const ArgumentList& arg_list) const {
           const vector<string>& args = arg_list.GetAllArguments();
 
           if (!CheckCorrectness(args))
@@ -426,7 +426,7 @@ namespace online_visualization {
             number = history.size();
 
           for (size_t i = 0; i < number; ++i) {
-            outfile << history[history.size() - number + i];
+            outfile << history[int(history.size() - number + i)];
             if (i < number - 1)
               outfile << endl;
           }

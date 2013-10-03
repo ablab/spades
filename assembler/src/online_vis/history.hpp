@@ -22,15 +22,15 @@ namespace online_visualization {
       VERIFY(int(size_) == history_get_history_state()->length);
     }
 
-    const char* operator[](size_t k) const {
-      VERIFY(k < size_);
+    const char* operator[](int k) const {
+      VERIFY(k < int(size_));
       //EntryT** my_history = history_list();
       EntryT* entry = history_get(int(k));
       return entry->line;
     }
 
-    void SetEntry(size_t k, const string& entry) const {
-      VERIFY(k < size_);
+    void SetEntry(int k, const string& entry) const {
+      VERIFY(k < int(size_));
       //replace_history_entry(k, entry.c_str(), history_list()[k]->data);
       replace_history_entry(int(k), entry.c_str(), history_get(int(k))->data);
     }
@@ -44,7 +44,7 @@ namespace online_visualization {
     }
 
     const char* back() const {
-      return this->operator[](this->size() - 1);
+      return this->operator[](int(this->size() - 1));
     }
 
     static History& GetHistory() {

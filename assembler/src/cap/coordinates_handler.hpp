@@ -310,6 +310,17 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
           return res;
       }
 
+      std::vector<std::pair<uint, Range> > GetRawRanges(const EdgeId e) const {
+          if (g_ == NULL)
+              return {};
+
+          const auto edge_data_it = edge_ranges_.find(e);
+          VERIFY(edge_data_it != edge_ranges_.end());
+
+          return edge_data_it->second.GetRanges();
+      }
+          
+
       static Range GetPrintableRange(const Range &r) {
           return Range(r.start_pos >> kShiftValue, r.end_pos >> kShiftValue);
       }
@@ -344,7 +355,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
           return edge_it->second.GetForwardPos(make_pair(genome_id, start_pos));
       }
 
-      pair<EdgeId, size_t> StepForward(const VertexId v, const uchar genome_id,
+      pair<EdgeId, size_t> StepForward(const VertexId v, const uint genome_id,
                                        const size_t pos) const {
           for (EdgeId e : g_->OutgoingEdges(v)) {
               if (HasForwardLink(e, genome_id, pos)) {
@@ -354,7 +365,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
           return make_pair(EdgeId(0), -1u);
       }
 
-      pair<EdgeId, size_t> StepForwardPos(const EdgeId last_edge, const uchar genome_id,
+      pair<EdgeId, size_t> StepForwardPos(const EdgeId last_edge, const uint genome_id,
                                           const size_t last_pos) const {
           return StepForwardPos(g_->EdgeEnd(last_edge), genome_id, last_pos);
       }
@@ -628,12 +639,12 @@ bool CoordinatesHandler<Graph>::ProjectPath(const Path &from, const Path &to,
             VERIFY(it2 != p2.end());
             const bool second_edge_is_last = (*it2 == p2.back());
             size_t taken_len_1 = min(cur_1_edge_len,
-                                     size_t(ceil(cur_2_edge_len / lratio - EPS)));
+                                     size_t(ceil(double(cur_2_edge_len / lratio - EPS))));
             if (second_edge_is_last) {
                 taken_len_1 = cur_1_edge_len;
             }
             const size_t taken_len_2 = min(cur_2_edge_len,
-                                           size_t(ceil(taken_len_1 * lratio - EPS)));
+                                           size_t(ceil(double(taken_len_1 * lratio - EPS))));
             const long double edge_1_percentage = (cur_1_edge_len == 0) ? 0 :
                 (long double)taken_len_1 / cur_1_edge_len;
 
@@ -645,7 +656,7 @@ bool CoordinatesHandler<Graph>::ProjectPath(const Path &from, const Path &to,
                 Range &range = ranges.second;
                 const size_t range_size = GetPrintableRange(range).size();
                 const size_t taken_length =
-                    size_t(ceil(range_size * edge_1_percentage - EPS));
+                    size_t(ceil(double(range_size * edge_1_percentage - EPS)));
 
                 if (taken_length == 0) {
                     zero_sequences[i].push_back(*it2);
@@ -1147,8 +1158,8 @@ void CoordinatesHandler<Graph>::HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId
 }
 
 template <class Graph>
-void CoordinatesHandler<Graph>::HandleSplit(EdgeId old_edge, EdgeId new_edge_1,
-                                            EdgeId new_edge_2) {
+void CoordinatesHandler<Graph>::HandleSplit(EdgeId old_edge, EdgeId /* new_edge_1 */,
+                                            EdgeId /* new_edge_2 */) {
     //DEBUG("HandleSplit " << g_->str(old_edge) << " -> " << g_->str(new_edge_1) << " + " << g_->str(new_edge_2));
     VERIFY(!HasEdgeData(old_edge));
     /*

@@ -121,7 +121,7 @@ class SimpleIndelFinder {
     OrVertexColor(vertex, color_mask);
     size_t cur_dist = RelaxVertexDist(vertex, path_length);
 
-    if (__builtin_popcount(GetVertexColor(vertex)) >= 2) {
+    if (__builtin_popcountll(GetVertexColor(vertex)) >= 2) {
       TRACE("checking vertex from edge " << g_.str(edge) << " of dist " << cur_dist);
       if (!found_merge_point_) {
         best_vertex_ = vertex;

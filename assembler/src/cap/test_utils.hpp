@@ -52,7 +52,7 @@ class TmpFolderFixture {
 int add_time(double &time, int multiplier = 1, int ret = 0) {
   timeval curtime;
   gettimeofday(&curtime, 0);
-  time += multiplier * (curtime.tv_sec + curtime.tv_usec * 1e-6);
+  time += multiplier * (double(curtime.tv_sec) + double(curtime.tv_usec) * 1e-6);
   return ret;
 }
 
@@ -95,14 +95,14 @@ std::string GetMD5CommandString() {
   FILE *output;
   char buf[40];
   output = popen("echo a | md5sum 2> /dev/null", "r");
-  fscanf(output, "%s", buf);
+  VERIFY(1 == fscanf(output, "%s", buf));
   if (strcmp(buf, "60b725f10c9c85c70d97880dfe8191b3") == 0) {
     return answer = "md5sum ";
   }
   pclose(output);
 
   output = popen("echo a | md5 2> /dev/null", "r");
-  fscanf(output, "%s", buf);
+  VERIFY(1 == fscanf(output, "%s", buf));
   if (strcmp(buf, "60b725f10c9c85c70d97880dfe8191b3") == 0) {
     return answer = "md5 ";
   }
@@ -130,13 +130,13 @@ std::string GenMD5FromFiles(const std::vector<std::string> &paths,
   VERIFY(md5_output != NULL);
 
   char buf[40];
-  fscanf(md5_output, "%s", buf);
+  VERIFY(1 == fscanf(md5_output, "%s", buf));
   pclose(md5_output);
 
   return std::string(buf);
 }
 
-bool NeedToUseLongSeq(unsigned k) {
+bool NeedToUseLongSeq(size_t k) {
   return k > 99;
 }
 

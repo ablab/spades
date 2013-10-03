@@ -128,7 +128,7 @@ class RefineCommand : public LocalCommand<CapEnvironment> {
            "> refine\n";
   }
 
-  virtual void Execute(CapEnvironment& curr_env, const ArgumentList& arg_list) const {
+  virtual void Execute(CapEnvironment& curr_env, const ArgumentList& /* arg_list */) const {
     if (curr_env.GetGraphK() == CapEnvironment::kNoGraphK) {
       cout << "Graph has not yet been constructed, aborting.\n";
       return;
@@ -165,7 +165,7 @@ class BuildGraphCommand : public LocalCommand<CapEnvironment> {
     if (!CheckEnoughArguments(args)) {
       return;
     }
-    size_t k;
+    unsigned k;
 
     std::stringstream ss(args[1]);
     ss >> k;
@@ -442,7 +442,7 @@ class FindInversionsCommand : public LocalCommand<CapEnvironment> {
            "> find_inversions\n";
   }
 
-  virtual void Execute(CapEnvironment &curr_env, const ArgumentList &arg_list) const {
+  virtual void Execute(CapEnvironment &curr_env, const ArgumentList &/* arg_list */) const {
     if (curr_env.GetGraphK() == CapEnvironment::kNoGraphK) {
       cout << "You should build graph prior to saving it. Aborting.\n";
       return;
@@ -488,21 +488,54 @@ class SaveBlocksCommand : public LocalCommand<CapEnvironment> {
            " Synteny blocks are given new ids (with edge ids also in the file).\n"
            " All the coordinates ()\n"
            "Usage:\n"
-           "> save_blocks <file_to_save_to>\n";
+           "> save_blocks <file_to_save_to> [unique]\n"
+           "Where\n"
+           " [unique] if set and equals to (unique|Y|y) then only blocks\n"
+           " that appear exactly once in the contigs will be reported.\n";
   }
 
   virtual void Execute(CapEnvironment& curr_env, const ArgumentList& arg_list) const {
-      std::string folder = TryFetchFolder(curr_env, arg_list);
+      const vector<string> &args = arg_list.GetAllArguments();
+      const std::string folder = TryFetchFolder(curr_env, arg_list);
 
-      BlockPrinter<Graph> printer(curr_env.graph(), curr_env.coordinates_handler(), folder + "blocks.txt");
-      for (size_t i = 0; i < curr_env.genome_cnt(); ++i) {
-          printer.ProcessContig(i, 2*i, curr_env.genome_names()[i]);
+      bool unique = false;
+      if (args.size() > 2 && (args[2] == "y" || args[2] == "Y" || args[2] == "unique")) {
+          unique = true;
       }
+
+      BlockPrinter<Graph> *printer;
+      
+      if (!unique) {
+        printer = new BlockPrinter<Graph>(curr_env.graph(),
+          curr_env.coordinates_handler(), folder + "blocks.txt");
+      } else {
+        vector<pair<size_t, size_t>> rc_pairs = PrepareRCContigPairs(curr_env);
+        printer = new UniqueBlockPrinter<Graph>(curr_env.graph(),
+          curr_env.coordinates_handler(), folder + "blocks.txt", rc_pairs);
+      }
+
+      for (unsigned i = 0; i < curr_env.genome_cnt(); ++i) {
+          printer->ProcessContig(i, 2*i, curr_env.genome_names()[i]);
+      }
+
+      delete printer;
   }
 
  protected:
   virtual size_t MinArgNumber() const {
     return 1;
+  }
+
+ private:
+  vector<pair<size_t, size_t>> PrepareRCContigPairs(const CapEnvironment &curr_env) const {
+    size_t num_contigs = curr_env.genome_cnt();
+
+    vector<pair<size_t, size_t>> res;
+    for (size_t i = 0; i < num_contigs; ++i) {
+      res.push_back(make_pair(2 * i, 2 * i + 1));
+    }
+
+    return res;
   }
 
 };

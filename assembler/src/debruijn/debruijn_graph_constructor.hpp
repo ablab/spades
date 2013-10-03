@@ -148,7 +148,7 @@ private:
 	void AddKmers(kmer_iterator &it, kmer_iterator &end, size_t queueSize,
                   std::vector<KPlusOneMer>& kmers) {
 		for (; kmers.size() != queueSize && it != end; ++it) {
-			KPlusOneMer kmer(kmer_size_ + 1, (*it).data());
+			KPlusOneMer kmer(unsigned(kmer_size_ + 1), (*it).data());
 
 			if (!origin_.contains(kmer))
 				kmers.push_back(kmer);
@@ -185,7 +185,7 @@ public:
 			CalculateSequences(kmers, sequences); // in parallel
 			ConstructPart(kmers, sequences);
 			kmers.clear();
-			queueSize = min(size_t(queueSize * queueGrowthRate), queueMaxSize);
+			queueSize = min(size_t(double(queueSize) * queueGrowthRate), queueMaxSize);
 		}
 	}
 

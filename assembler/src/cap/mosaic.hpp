@@ -244,7 +244,7 @@ public:
         VERIFY(block_end < blocks_.size());
         VERIFY(block_start <= block_end);
 
-        const MosaicInterval& interval = occurences_.front();
+        // const MosaicInterval& interval = occurences_.front();
         return MosaicStructure(vector<Block>(blocks_.begin() + block_start, blocks_.begin() + block_end + 1),
             SubIntervals(block_start, block_end));
     }
@@ -303,30 +303,31 @@ public:
     double AvgSpan(const MosaicStructure& mosaic) {
         double avg = 0.;
         for (Range r : mosaic.occurence_ranges()) {
-            avg += r.size();
+            avg += double(r.size());
         }
-        return avg / mosaic.mult();
+        return avg / double(mosaic.mult());
     }
 
     double AvgGenomicSpan(const MosaicStructure& mosaic) {
         double avg = 0.;
         for (Range r : mosaic.occurence_ranges()) {
             Range genomic_range = block_composition_.genome_coords(r);
-            avg += genomic_range.size();
+            avg += double(genomic_range.size());
         }
-        return avg / mosaic.mult();
+        return avg / double(mosaic.mult());
     }
 
     vector<double> AvgGenomicInterLengths(const MosaicStructure& mosaic) {
         vector<double> answer(mosaic.block_size() - 1, 0.);
         for (const MosaicInterval& interval : mosaic.occurences()) {
             for (size_t i = 1; i < interval.support_size(); ++i) {
-                answer[i - 1] += block_composition_.genome_coords(Range(interval.support_blocks[i - 1] + 1,
-                                                                        interval.support_blocks[i])).size();
+                answer[i - 1] += double(block_composition_.genome_coords(Range(
+                                          interval.support_blocks[i - 1] + 1,
+                                          interval.support_blocks[i])).size());
             }
         }
         for (size_t i = 0; i < answer.size(); ++i) {
-            answer[i] /= mosaic.mult();
+            answer[i] /= double(mosaic.mult());
         }
         return answer;
     }

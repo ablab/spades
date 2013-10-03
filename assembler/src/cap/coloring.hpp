@@ -144,7 +144,7 @@ class ColorGenerator {
 			}
 		}
 
-        hue_value = (1.0 + 2 * (color_number ^ (1 << high_bit))) / (1 << (high_bit + 1));
+        hue_value = (1.0 + 2 * double(color_number ^ (1 << high_bit))) / (1 << (high_bit + 1));
 
 		return hue_value;
 	}
@@ -384,7 +384,7 @@ public:
 
 template<class Graph>
 void SaveColoring(const Graph& g
-		, const IdTrackHandler<Graph>& int_ids
+		, const IdTrackHandler<Graph>& /* int_ids */
 		, const ColorHandler<Graph>& coloring
 		, const string& filename) {
 	GraphComponent<Graph> whole_graph(g);

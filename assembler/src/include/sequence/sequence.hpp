@@ -299,12 +299,12 @@ Seq<size2_> Sequence::end() const {
 
 template<class Seq>
 Seq Sequence::start(size_t k) const {
-  return Seq(k, *this);
+  return Seq(unsigned(k), *this);
 }
 
 template<class Seq>
 Seq Sequence::end(size_t k) const {
-  return Seq(k, *this, size_ - k);
+  return Seq(unsigned(k), *this, size_ - k);
 }
 
 

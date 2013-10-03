@@ -113,12 +113,12 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
       size_t old_kmer_offset = i - k_ + 1;
       size_t new_kmer_offest = aligner.GetPosition(old_kmer_offset);
       if(old_kmer_offset * 2 + 1 == old_length && new_length % 2 == 0) {
-        Kmer middle(k_ - 1, new_s, new_length / 2);
+        Kmer middle(unsigned(k_ - 1), new_s, new_length / 2);
         if(typename Kmer::less2()(middle, !middle)) {
           new_kmer_offest = new_length - 1 - new_kmer_offest;
         }
       }
-      Kmer new_kmer(k_, new_s, new_kmer_offest);
+      Kmer new_kmer(unsigned(k_), new_s, new_kmer_offest);
       auto it = mapping_.find(new_kmer);
       if (it != mapping_.end()) {
         VERIFY(Substitute(new_kmer) == old_kmer);

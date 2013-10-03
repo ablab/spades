@@ -996,10 +996,10 @@ template<class Graph>
 class BlockPrinter {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
+
 	const Graph& g_;
-	const CoordinatesHandler<Graph>& coords_;
 	ofstream output_stream_;
-	int curr_id_;
+	size_t curr_id_;
 	map<EdgeId, size_t> block_id_;
 
 	pair<size_t, bool> CanonicalId(EdgeId e) {
@@ -1022,16 +1022,23 @@ class BlockPrinter {
 
 public:
 
-	BlockPrinter(const Graph& g, const CoordinatesHandler<Graph>& coords, const string& filename) :
-			g_(g), coords_(coords), output_stream_(filename) , curr_id_(1) {
-        output_stream_
-                << "genome_id\tcontig_name\tcanonical_id\tcontig_start_pos\tcontig_end_pos"
-                << "\trefined_start_pos\trefined_end_pos\tsign\torig_id"
-                << endl;
+	BlockPrinter(const Graph& g, const CoordinatesHandler<Graph>& coords,
+               const string& filename)
+      : g_(g),
+        output_stream_(filename),
+        curr_id_(1),
+        coords_(coords) {
+      output_stream_
+              << "genome_id\tcontig_name\tcanonical_id\tcontig_start_pos\tcontig_end_pos"
+              << "\trefined_start_pos\trefined_end_pos\tsign\torig_id"
+              << endl;
 	}
 
+  virtual ~BlockPrinter() {
+  }
+
 	//genome is supposed to perfectly correspond to some path in the graph
-	void ProcessContig(size_t genome_id, size_t transparent_id, const string& contig_name) {
+	void ProcessContig(unsigned genome_id, unsigned transparent_id, const string& contig_name) {
 	    INFO("Processing contig " << transparent_id << " name " << contig_name);
 	    VertexId v = g_.EdgeStart(coords_.FindGenomeFirstEdge(transparent_id));
 	    size_t genome_pos = 0;
@@ -1043,6 +1050,9 @@ public:
 	            break;
 
 	        EdgeId e = step.first;
+
+          if (!CheckPatternMatch(e))
+            continue;
 
 	        auto canon = CanonicalId(e);
 
@@ -1066,8 +1076,68 @@ public:
 	    }
 	}
 
+protected:
+  virtual bool CheckPatternMatch(const EdgeId /* e */) const {
+    return true;
+  }
+
+	const CoordinatesHandler<Graph>& coords_;
+
 private:
 	DECL_LOGGER("BlockPrinter");
+};
+
+template<class Graph>
+class UniqueBlockPrinter : public BlockPrinter<Graph> {
+ public:
+  UniqueBlockPrinter(const Graph &g, const CoordinatesHandler<Graph> &coords,
+            const string &filename, const vector<pair<size_t, size_t>> rc_pairs)
+      : BlockPrinter<Graph>(g, coords, filename),
+        rc_pairs_(rc_pairs),
+        contig_map_(),
+        cur_time_(rc_pairs_.size()),
+        glob_time_(0) {
+    PrepareContigMap(rc_pairs);
+  }
+
+  // virtual ~UniqueBlockPrinter() {
+  // }
+
+ protected:
+  virtual bool CheckPatternMatch(const EdgeId e) {
+    glob_time_++;
+
+    const auto &ranges = this->coords_.GetRawRanges(e);
+    if (ranges.size() != rc_pairs_.size())
+      return false;
+
+    for (const auto &e : ranges) {
+      size_t my_id = contig_map_.at(e.first);
+      if (cur_time_[my_id] == glob_time_)
+        return false;
+      cur_time_[my_id] = glob_time_;
+    }
+
+    // By the Dirichlet priciple..
+    return true;
+  }
+
+ private:
+  void PrepareContigMap(const vector<pair<size_t, size_t>> rc_pairs) {
+    for (size_t i = 0; i < rc_pairs.size(); ++i) {
+      const auto &p = rc_pairs[i];
+
+      contig_map_[p.first] = i;
+      contig_map_[p.second] = i;
+    }
+  }
+
+  vector<pair<size_t, size_t>> rc_pairs_;
+  unordered_map<size_t, size_t> contig_map_;
+  vector<size_t> cur_time_;
+  size_t glob_time_;
+
+  DECL_LOGGER("UniqueBlockPrinter");
 };
 
 //template<class Graph, class Mapper>

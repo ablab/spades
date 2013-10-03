@@ -113,10 +113,10 @@ class LongSeq {
     return last_char_ & 7;
   }
   inline void SetFirstChar(uchar c) {
-    last_char_ = (last_char_ & 0xF0) | c;
+    last_char_ = uchar((last_char_ & 0xF0) | c);
   }
   inline void SetLastChar(uchar c) {
-    last_char_ = (last_char_ & 0x0F) | (c << 4);
+    last_char_ = uchar((last_char_ & 0x0F) | (c << 4));
   }
 
  public:
@@ -145,7 +145,7 @@ class LongSeq {
   }
 
   // Weird constructor for constructing from `data' origined from another LongSeq
-  LongSeq(unsigned size, const LongSeq<HashT> &other)
+  LongSeq(unsigned /* size */, const LongSeq<HashT> &other)
       : sequence_(other.sequence_),
         size_(other.size_),
         pos_(other.pos_),
