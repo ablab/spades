@@ -631,15 +631,6 @@ void PostSimplification(conj_graph_pack& gp,
     }
 }
 
-template<class Graph, class KmerIndex>
-double FindErroneousConnectionsCoverageThreshold(
-    const Graph &graph,
-    const KmerIndex &index) {
-    return cfg::get().ds.single_cell ?
-            ErroneousConnectionThresholdFinder<Graph>(graph).FindThreshold() :
-            MCErroneousConnectionThresholdFinder<Graph, KmerIndex>(index).FindThreshold();
-}
-
 inline
 void IdealSimplification(Graph& graph, Compressor<Graph>& compressor,
                          boost::function<double(EdgeId)> quality_handler_f) {
@@ -656,11 +647,19 @@ void SimplifyGraph(conj_graph_pack &gp,
                    boost::function<void(EdgeId)> removal_handler,
                    omnigraph::GraphLabeler<Graph>& /*labeler*/,
                    detail_info_printer& printer, size_t iteration_count) {
-    //ec auto threshold
-    double determined_coverage_threshold =
-            FindErroneousConnectionsCoverageThreshold(gp.g,
-                                                      gp.index.inner_index());
-    INFO( "Coverage threshold value was calculated as " << determined_coverage_threshold);
+    // EC auto threshold
+    unsigned low_threshold = 0;
+    double determined_coverage_threshold;
+    if (cfg::get().ds.single_cell) {
+      determined_coverage_threshold = ErroneousConnectionThresholdFinder<Graph>(gp.g).FindThreshold();
+    } else {
+      MCErroneousConnectionThresholdFinder<Graph, decltype(gp.index.inner_index())> finder(gp.index.inner_index());
+      finder.FindThresholds();
+      determined_coverage_threshold = finder.ec_threshold();
+      // low_threshold = finder.low_cov_threshold();
+      low_threshold = 0;
+    }
+    INFO("EC coverage threshold value was calculated as " << determined_coverage_threshold);
 
     if (cfg::get().gap_closer_enable && cfg::get().gc.before_simplify)
         CloseGaps(gp);
@@ -681,9 +680,8 @@ void SimplifyGraph(conj_graph_pack &gp,
                           determined_coverage_threshold);
 
     for (size_t i = 0; i < iteration_count; i++) {
-        if ((cfg::get().gap_closer_enable) && (cfg::get().gc.in_simplify)) {
+        if (cfg::get().gap_closer_enable && cfg::get().gc.in_simplify)
             CloseGaps(gp);
-        }
 
         SimplificationCycle(gp, removal_handler, printer, iteration_count, i,
                             determined_coverage_threshold);
@@ -723,6 +721,18 @@ void SimplifyGraph(conj_graph_pack &gp,
                                cfg::get().simp.ier.max_coverage,
                                max_length)
             .RemoveIsolatedEdges();
+
+    if (low_threshold) {
+      EdgeRemover<Graph> remover(gp.g, removal_handler);
+      INFO("Removing all the edges having coverage " << low_threshold << " and less");
+      size_t cnt = 0;
+      for (auto it = gp.g.SmartEdgeBegin(); !it.IsEnd(); ++it)
+        if (gp.g.coverage(*it) <= low_threshold) {
+          remover.DeleteEdge(*it);
+          cnt += 1;
+        }
+      INFO("Deleted " << cnt << " edges");
+    }
 
     printer(ipp_final_simplified);
 
