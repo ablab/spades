@@ -601,6 +601,7 @@ void PreSimplification(conj_graph_pack& gp,
 void SimplificationCycle(conj_graph_pack& gp,
                          const FlankingCoverage<Graph, Index::InnerIndexT>& flanking_cov,
                          boost::function<void(EdgeId)> removal_handler,
+                         GraphLabeler<Graph>& labeler,
                          detail_info_printer &printer, size_t iteration_count,
                          size_t iteration, double max_coverage) {
     INFO("PROCEDURE == Simplification cycle, iteration " << (iteration + 1));
@@ -608,7 +609,7 @@ void SimplificationCycle(conj_graph_pack& gp,
     DEBUG(iteration << " TipClipping");
     ClipTipsWithProjection(gp, cfg::get().simp.tc,
                            cfg::get().graph_read_corr.enable, cfg::get().ds.RL(),
-                           max_coverage, removal_handler);
+                           max_coverage, boost::function<void(EdgeId)>(0)/*removal_handler*/);
     DEBUG(iteration << " TipClipping stats");
     printer(ipp_tip_clipping, str(format("_%d") % iteration));
 
@@ -624,11 +625,6 @@ void SimplificationCycle(conj_graph_pack& gp,
     //todo temporary! relative coverage remover
     auto colorer = DefaultGPColorer(gp);
 
-    //todo make this procedure easier
-    total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
-    total_labeler tot_lab(&graph_struct);
-    CompositeLabeler<Graph> labeler(tot_lab, gp.edge_qual);
-
     //nontrivial low covered components deleted (folder low_cov_components)
     const string folder = cfg::get().output_dir + "low_cov_components/";
     make_dir(folder);
@@ -636,18 +632,8 @@ void SimplificationCycle(conj_graph_pack& gp,
             &omnigraph::simplification::VisualizeNontrivialComponentAutoInc<Graph>, boost::ref(gp.g), _1,
             folder, boost::ref(labeler), colorer);
 
-    //  QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, edge_qual);
-    QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler(
-            gp.g, gp.edge_qual, boost::ref(labeler), cfg::get().output_dir);
-
-    //positive quality edges removed (folder colored_edges_deleted)
-    boost::function<void(EdgeId)> raw_removal_handler_f_2 = boost::bind(
-            //            &QualityLoggingRemovalHandler<Graph>::HandleDelete,
-            &QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
-            boost::ref(qual_removal_handler), _1);
-
     boost::function<void(set<EdgeId>)> removal_handler_f_2 = boost::bind(
-            &omnigraph::simplification::SingleEdgeAdapter<set<EdgeId>>, _1, raw_removal_handler_f_2);
+            &omnigraph::simplification::SingleEdgeAdapter<set<EdgeId>>, _1, removal_handler);
 
     boost::function<void(set<EdgeId>)> rel_removal_handler = boost::bind(
             &func::Composition<set<EdgeId>>, _1, removal_handler_f_1,
@@ -667,7 +653,7 @@ void SimplificationCycle(conj_graph_pack& gp,
     }
 
     DEBUG(iteration << " BulgeRemoval");
-    RemoveBulges(gp.g, cfg::get().simp.br, 0, removal_handler);
+    RemoveBulges(gp.g, cfg::get().simp.br, 0, boost::function<void(EdgeId)>(0)/*removal_handler*/);
     DEBUG(iteration << " BulgeRemoval stats");
     printer(ipp_bulge_removal, str(format("_%d") % iteration));
 
@@ -734,7 +720,7 @@ void IdealSimplification(Graph& graph, Compressor<Graph>& compressor,
 
 void SimplifyGraph(conj_graph_pack &gp,
                    boost::function<void(EdgeId)> removal_handler,
-                   omnigraph::GraphLabeler<Graph>& /*labeler*/,
+                   GraphLabeler<Graph>& labeler,
                    detail_info_printer& printer, size_t iteration_count) {
     //ec auto threshold
     double determined_coverage_threshold =
@@ -768,7 +754,7 @@ void SimplifyGraph(conj_graph_pack &gp,
             CloseGaps(gp);
         }
 
-        SimplificationCycle(gp, flanking_cov, removal_handler, printer,
+        SimplificationCycle(gp, flanking_cov, removal_handler, labeler, printer,
                             iteration_count, i, determined_coverage_threshold);
         printer(ipp_err_con_removal,
                 str(format("_%d") % (i + iteration_count)));

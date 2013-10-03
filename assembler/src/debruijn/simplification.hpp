@@ -93,24 +93,25 @@ void simplify_graph(conj_graph_pack& gp) {
 	gp.ClearQuality();
 	gp.FillQuality();
 	total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
-	total_labeler labeler/*tot_lab*/(&graph_struct);
-//	CompositeLabeler<Graph> labeler(tot_lab, edge_qual);
+	total_labeler tot_lab(&graph_struct);
+
+    CompositeLabeler<Graph> labeler(tot_lab, gp.edge_qual);
 
 	detail_info_printer printer(gp, labeler, cfg::get().output_dir);
 	printer(ipp_before_first_gap_closer);
 
-	QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, gp.edge_qual);
-//	QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler(gp.g, edge_qual,
-//			labeler, cfg::get().output_dir);
-//
-	boost::function<void(EdgeId)> removal_handler_f = boost::bind(
-			&QualityLoggingRemovalHandler<Graph>::HandleDelete,
-//			&QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
-			boost::ref(qual_removal_handler), _1);
+    //  QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, edge_qual);
+    QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler(
+            gp.g, gp.edge_qual, boost::ref(labeler), cfg::get().output_dir);
+
+    //positive quality edges removed (folder colored_edges_deleted)
+    boost::function<void(EdgeId)> removal_handler_f = boost::bind(
+            //            &QualityLoggingRemovalHandler<Graph>::HandleDelete,
+            &QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
+            boost::ref(qual_removal_handler), _1);
 
 	SimplifyGraph(gp, /*boost::function<void(EdgeId)>(0)*/removal_handler_f, labeler, printer, /*iteration count*/3
 	/*, etalon_paired_index*/);
-
 
 	AvgCovereageCounter<Graph> cov_counter(gp.g);
     cfg::get_writable().ds.set_avg_coverage(cov_counter.Count());

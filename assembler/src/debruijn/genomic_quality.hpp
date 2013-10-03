@@ -131,24 +131,37 @@ class QualityLoggingRemovalHandler {
     size_t black_removed_;
     size_t total_;
 
+    virtual void HandlePositiveQuality(EdgeId e) {
+
+    }
+
 public:
     QualityLoggingRemovalHandler(const Graph& g, const EdgeQuality<Graph>& quality_handler) :
             g_(g), quality_handler_(quality_handler), black_removed_(0), total_(0) {
     }
 
-    void HandleDelete(EdgeId edge) {
+    void HandleDelete(EdgeId e) {
         total_++;
-        if (math::gr(quality_handler_.quality(edge), 0.)) {
-            TRACE("Deleting good edge id = " << g_.int_id(edge)
-                  << "; length = " << g_.length(edge)
-                  << "; quality = " << quality_handler_.quality(edge)
-                  << "; cov = " << g_.coverage(edge));
+        if (math::gr(quality_handler_.quality(e), 0.)) {
+            TRACE("Deleting good edge id = " << g_.int_id(e)
+                  << "; length = " << g_.length(e)
+                  << "; quality = " << quality_handler_.quality(e)
+                  << "; cov = " << g_.coverage(e));
+            HandlePositiveQuality(e);
         } else {
             black_removed_++;
         }
     }
 
-    ~QualityLoggingRemovalHandler() {
+    const Graph& g() const {
+        return g_;
+    }
+
+    const EdgeQuality<Graph>& quality_handler() const {
+        return quality_handler_;
+    }
+
+    virtual ~QualityLoggingRemovalHandler() {
         TRACE("Overall stats: total removed = " << total_
               << "; bad removed = " << black_removed_
               << "; good removed = " << total_ - black_removed_);
@@ -159,11 +172,10 @@ private:
 };
 
 template<class Graph>
-class QualityEdgeLocalityPrintingRH {
+class QualityEdgeLocalityPrintingRH : public QualityLoggingRemovalHandler<Graph> {
+    typedef QualityLoggingRemovalHandler<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    const Graph& g_;
-    const EdgeQuality<Graph>& quality_handler_;
     const GraphLabeler<Graph>& labeler_;
     const string& output_folder_;
 //  size_t black_removed_;
@@ -173,23 +185,18 @@ public:
             , const EdgeQuality<Graph>& quality_handler
             , const GraphLabeler<Graph>& labeler
             , const string& output_folder) :
-            g_(g), quality_handler_(quality_handler),
+            base(g, quality_handler),
             labeler_(labeler), output_folder_(output_folder){
     }
 
-    void HandleDelete(EdgeId edge) {
-        if (quality_handler_.IsPositiveQuality(edge)) {
-            DEBUG("Deleting edge " << g_.str(edge) << " with quality " << quality_handler_.quality(edge));
-            string folder = output_folder_ + "colored_edges_deleted/";
-            path::make_dir(folder);
-            //todo magic constant
+    virtual void HandlePositiveQuality(EdgeId e) {
+        string folder = output_folder_ + "colored_edges_deleted/";
+        path::make_dir(folder);
+        //todo magic constant
 //          map<EdgeId, string> empty_coloring;
-            omnigraph::visualization::WriteComponent(omnigraph::EdgeNeighborhood<Graph>(g_, edge, 50, 250)
-                    , folder + "edge_" +  ToString(g_.int_id(edge)) + "_" + ToString(quality_handler_.quality(edge)) + ".dot"
-                    , omnigraph::visualization::DefaultColorer(g_), labeler_);
-        } else {
-            TRACE("Deleting edge " << g_.str(edge) << " with quality " << quality_handler_.quality(edge));
-        }
+        omnigraph::visualization::WriteComponent(omnigraph::EdgeNeighborhood<Graph>(this->g(), e, 50, 250)
+                , folder + "edge_" +  ToString(this->g().int_id(e)) + "_" + ToString(this->quality_handler().quality(e)) + ".dot"
+                , omnigraph::visualization::DefaultColorer(this->g()), labeler_);
     }
 
 private:
