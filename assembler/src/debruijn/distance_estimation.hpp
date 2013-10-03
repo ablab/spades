@@ -15,8 +15,7 @@ namespace debruijn_graph {
 
 // FIXME: Get rid of this here and corresponding includes
 template<class Graph>
-void estimate_with_estimator(const Graph& graph,
-                             const omnigraph::de::AbstractDistanceEstimator<Graph>& estimator,
+void estimate_with_estimator(const omnigraph::de::AbstractDistanceEstimator<Graph>& estimator,
                              const omnigraph::de::PairInfoWeightFilter<Graph>& filter,
                              PairedIndexT& clustered_index) {
     using debruijn_graph::estimation_mode;

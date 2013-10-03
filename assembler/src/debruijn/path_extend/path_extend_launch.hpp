@@ -40,7 +40,7 @@ size_t FindMaxOverlapedLen(const vector<PairedInfoLibraries>& libes) {
 }
 
 size_t GetMinInsertSize(const vector<PairedInfoLibraries>& libs) {
-    int min = 0;
+    size_t min = 0;
     size_t index = 0;
     while (index < libs.size() && libs[index].size() == 0) {
         index++;
@@ -48,16 +48,16 @@ size_t GetMinInsertSize(const vector<PairedInfoLibraries>& libs) {
     if (index == libs.size()) {
         return 0;
     }
-    min = (int) libs[index][0]->insert_size_ - libs[index][0]->read_size_ / 2;
+    min = libs[index][0]->insert_size_;
     for (size_t i = 0; i < libs.size(); ++i) {
         for (size_t j = 0; j < libs[i].size(); ++j) {
-            int overlap = (int) libs[i][j]->insert_size_ - libs[i][j]->read_size_ / 2;
-            if (overlap < min && overlap > 0) {
-                min = overlap;
+            int overlap = (int) libs[i][j]->insert_size_ - (int) libs[i][j]->read_size_ / 2;
+            if (overlap < (int) min && overlap > 0) {
+                min = (size_t) overlap;
             }
         }
     }
-    return (size_t) min;
+    return min;
 }
 
 string GetEtcDir(const std::string& output_dir) {
@@ -176,8 +176,10 @@ void AddPathsToContainer(const conj_graph_pack& gp,
         vector<EdgeId> edges = path.getPath();
         BidirectionalPath* new_path = new BidirectionalPath(gp.g, edges);
         BidirectionalPath* conj_path = new BidirectionalPath(new_path->Conjugate());
-        new_path->SetWeight(path.getWeight());
-        conj_path->SetWeight(path.getWeight());
+
+        //FIXME: why weights are int/double in different path structures?
+        new_path->SetWeight((double) path.getWeight());
+        conj_path->SetWeight((double) path.getWeight());
         result.AddPair(new_path, conj_path);
     }
     DEBUG("Long reads paths " << result.size() << " == ");

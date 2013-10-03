@@ -119,7 +119,7 @@ void estimate_distance(conj_graph_pack& gp,
                     DistanceEstimator<Graph>(gp.g, paired_index, dist_finder,
                                              linkage_distance, max_distance);
 
-            estimate_with_estimator(gp.g, estimator, filter, clustered_index);
+            estimate_with_estimator<Graph>(estimator, filter, clustered_index);
             break;
         }
         case em_weighted: {
@@ -128,7 +128,7 @@ void estimate_distance(conj_graph_pack& gp,
                     WeightedDistanceEstimator<Graph>(gp.g, paired_index,
                                                      dist_finder, weight_function, linkage_distance, max_distance);
 
-            estimate_with_estimator(gp.g, estimator, filter, clustered_index);
+            estimate_with_estimator<Graph>(estimator, filter, clustered_index);
             break;
         }
         case em_extensive: {
@@ -137,7 +137,7 @@ void estimate_distance(conj_graph_pack& gp,
                     ExtensiveDistanceEstimator<Graph>(gp.g, paired_index,
                                                       dist_finder, weight_function, linkage_distance, max_distance);
 
-            estimate_with_estimator(gp.g, estimator, filter, clustered_index);
+            estimate_with_estimator<Graph>(estimator, filter, clustered_index);
             break;
         }
         case em_smoothing: {
@@ -153,7 +153,7 @@ void estimate_distance(conj_graph_pack& gp,
                                                       config.ade.percentage,
                                                       config.ade.derivative_threshold);
 
-            estimate_with_estimator(gp.g, estimator, filter, clustered_index);
+            estimate_with_estimator<Graph>(estimator, filter, clustered_index);
             break;
         }
     }
@@ -199,7 +199,7 @@ void estimate_distance(conj_graph_pack& gp,
                                                   cfg::get().ade.min_peak_points, cfg::get().ade.inv_density,
                                                   cfg::get().ade.percentage,
                                                   cfg::get().ade.derivative_threshold, true);
-        estimate_with_estimator(gp.g, estimator, filter, scaffolding_index);
+        estimate_with_estimator<Graph>(estimator, filter, scaffolding_index);
     }
 }
 

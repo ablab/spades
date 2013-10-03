@@ -47,7 +47,7 @@ public:
     void ProcessLibrary(io::ReadStreamVector<io::IReader<Read> >& streams,
             size_t lib_index, size_t threads_count) {
         streams.release();
-        INFO("Processing reads (takes a while) " <<  threads_count);
+        INFO("Processing reads (takes a while) ");
         NotifyStartProcessLibrary(lib_index, threads_count);
         const Mapper mapper = MapperInstance(gp_);
         size_t counter = 0;
@@ -95,6 +95,7 @@ private:
             listeners_[ilib][ilistener]->StartProcessLibrary(thread_count);
         }
     }
+
     void NotifyStopProcessLibrary(size_t ilib) const {
         for (size_t ilistener = 0; ilistener < listeners_[ilib].size();
                 ++ilistener) {
@@ -113,7 +114,7 @@ private:
 };
 
 template<>
-void SequenceMapperNotifier::NotifyProcessRead(const Mapper mapper,
+inline void SequenceMapperNotifier::NotifyProcessRead(const Mapper mapper,
                                                size_t ilib,
                                                size_t ithread,
                                                const io::PairedReadSeq& r) const {
@@ -130,7 +131,7 @@ void SequenceMapperNotifier::NotifyProcessRead(const Mapper mapper,
 }
 //TODO:delete it
 template<>
-void SequenceMapperNotifier::NotifyProcessRead(const Mapper mapper,
+inline void SequenceMapperNotifier::NotifyProcessRead(const Mapper mapper,
                                                size_t ilib,
                                                size_t ithread,
                                                const io::PairedRead& r) const {
@@ -147,7 +148,7 @@ void SequenceMapperNotifier::NotifyProcessRead(const Mapper mapper,
 }
 
 template<>
-void SequenceMapperNotifier::NotifyProcessRead(const Mapper mapper,
+inline void SequenceMapperNotifier::NotifyProcessRead(const Mapper mapper,
                                                size_t ilib,
                                                size_t ithread,
                                                const io::SingleReadSeq& r) const {
@@ -161,7 +162,7 @@ void SequenceMapperNotifier::NotifyProcessRead(const Mapper mapper,
 
 //TODO:delete it
 template<>
-void SequenceMapperNotifier::NotifyProcessRead(const Mapper mapper,
+inline void SequenceMapperNotifier::NotifyProcessRead(const Mapper mapper,
                                                size_t ilib,
                                                size_t ithread,
                                                const io::SingleRead& r) const {

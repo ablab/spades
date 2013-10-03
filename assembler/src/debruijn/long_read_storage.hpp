@@ -149,11 +149,11 @@ public:
 			HiddenAddPath(rc_p, w);
 		}
 	}
-	void DumpToFile(const string filename, const EdgesPositionHandler<Graph> &edge_pos) const{
+	void DumpToFile(const string filename) const{
 		map <EdgeId, EdgeId> auxilary;
-		DumpToFile(filename, edge_pos, auxilary);
+		DumpToFile(filename, auxilary);
 	}
-	void DumpToFile(const string filename, const EdgesPositionHandler<Graph> &edge_pos, map<EdgeId, EdgeId> &replacement) const {
+	void DumpToFile(const string filename, map<EdgeId, EdgeId> &replacement) const {
 		ofstream filestr(filename);
 		ofstream filestr2(filename + "_yana");
 		set<EdgeId> continued_edges;
@@ -173,18 +173,6 @@ public:
 					}
 
 					filestr << g_.int_id(*p_iter) << "(" << g_.length(*p_iter) << ") ";
-				}
-				if (cfg::get().developer_mode && cfg::get().ds.reference_genome.size() != 0) {
-				    //TODO: remove this
-
-                    if (const_cast< EdgesPositionHandler<Graph>& >(edge_pos).IsConsistentWithGenome(j_iter->path))
-                        filestr << "  genomic";
-                    else {
-                        if (j_iter->getWeight() == 1)
-                            filestr << " low weight ng";
-                        else
-                            filestr << "  nongenomic";
-                    }
 				}
 				filestr << endl;
 			}
@@ -293,7 +281,7 @@ public:
 	    INFO("Loading long reads alignment...");
 		ifstream filestr(s);
 		INFO("loading from " << s);
-		map<int, EdgeId> tmp_map;
+		map<size_t, EdgeId> tmp_map;
 		for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
 			tmp_map[g_.int_id(*iter)] = *iter;
 		}
@@ -316,8 +304,9 @@ public:
 				VERIFY(fl == 2);
 				vector<EdgeId> p;
 				for (int j = 0; j < l; j++) {
-					int e, x;
-					fl = fscanf(file, "%d(%d)", &e, &x);
+				    size_t e;
+				    int x;
+					fl = fscanf(file, "%zu(%d)", &e, &x);
 					VERIFY(fl == 2);
 					VERIFY(tmp_map.find(e) != tmp_map.end());
 					p.push_back(tmp_map[e]);
@@ -404,34 +393,34 @@ class LongReadContainer {
 private:
     Graph& g_;
 
-    vector< PathStorage<Graph>* > data;
+    vector< PathStorage<Graph>* > data_;
 
 
 public:
 
-    LongReadContainer(Graph& g): g_(g), data() {
-    }
-
-    ~LongReadContainer() {
-        for (size_t i = 0; i < data.size(); ++i) {
-            delete data[i];
+    LongReadContainer(Graph& g, size_t count = 0): g_(g), data_(count) {
+        for (size_t i = 0; i < count; ++i) {
+            data_[i] = new PathStorage<Graph>(g_);
         }
     }
 
-    void AddPathStorage() {
-        data.push_back(new PathStorage<Graph>(g_));
+    ~LongReadContainer() {
+        for (size_t i = 0; i < data_.size(); ++i) {
+            delete data_[i];
+        }
     }
 
+
     PathStorage<Graph>& operator[](size_t index) {
-        return *(data[index]);
+        return *(data_[index]);
     }
 
     const PathStorage<Graph>& operator[](size_t index) const {
-        return *(data[index]);
+        return *(data_[index]);
     }
 
     size_t size() const {
-        return data.size();
+        return data_.size();
     }
 
 };

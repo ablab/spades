@@ -303,8 +303,8 @@ public:
         ProcessPairedRead(*baskets_buffer_[thread_index], read1, read2, dist);
     }
 
-    virtual void ProcessSingleRead(size_t thread_index,
-                                   const MappingPath<EdgeId>& read) {
+    virtual void ProcessSingleRead(size_t ,
+                                   const MappingPath<EdgeId>& ) {
         //only paired reads are interesting
     }
 
@@ -330,7 +330,7 @@ public:
 
 private:
     void FindThreshold() {
-        double min_long_edge = basket_size_;
+        size_t min_long_edge =  basket_size_;
         int insert_size_min = (int) is_ - 2 * (int) is_var_;
         int insert_size_max = (int) is_ + 2 * (int) is_var_;
         const Graph& g = gp_.g;
@@ -419,8 +419,8 @@ private:
 						+ mapping_edge_2.second.initial_range.end_pos
 						- mapping_edge_1.second.initial_range.start_pos;
 				int edge_distance = (int) kmer_distance
-						+ mapping_edge_1.second.mapped_range.start_pos
-						- mapping_edge_2.second.mapped_range.end_pos;
+						+ (int) mapping_edge_1.second.mapped_range.start_pos
+						- (int) mapping_edge_2.second.mapped_range.end_pos;
 
 				basket_index.AddPairInfo(mapping_edge_1.first,
 						mapping_edge_1.second.mapped_range.start_pos,

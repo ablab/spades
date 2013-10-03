@@ -573,9 +573,9 @@ public:
         for (auto it = support_paths.begin(); it != support_paths.end(); ++it) {
             auto positions = (*it)->FindAll(path.Back());
             for (size_t i = 0; i < positions.size(); ++i) {
-                if ((int) positions[i] < (int) (*it)->Size() - 1
-                        && EqualBegins(path, (int) path.Size() - 1, **it,
-                                       positions[i])) {
+                if ((int) positions[i] < (int) (*it)->Size() - 1 &&
+                        EqualBegins(path, (int) path.Size() - 1, **it, positions[i])) {
+
                     if (UniqueBackPath(**it, positions[i])) {
                         EdgeId next = (*it)->At(positions[i] + 1);
                         weights_cands[next] += (*it)->GetWeight();
@@ -619,7 +619,7 @@ private:
     }
 
     bool UniqueBackPath(const BidirectionalPath& path, size_t pos) const {
-        int int_pos = pos;
+        int int_pos = (int) pos;
         while (int_pos >= 0) {
             if (unique_edges_.count(path.At(int_pos)) > 0)
                 return true;
@@ -702,15 +702,13 @@ private:
                 return true;
             }
         }
-        int last_diff_pos1 = LastNotEqualPosition(path1, pos1, path2, pos2);
-        int last_diff_pos2 = LastNotEqualPosition(path2, pos2, path1, pos1);
-        if (last_diff_pos1 != -1) {
-            const BidirectionalPath cand1 = path1.SubPath(pos1,
-                                                          last_diff_pos1 + 1);
-            const BidirectionalPath cand2 = path2.SubPath(pos2,
-                                                          last_diff_pos2 + 1);
-            std::pair<double, double> weights = GetSubPathsWeights(cand1, cand2,
-                                                                   cov_paths);
+        size_t last_diff_pos1 = LastNotEqualPosition(path1, pos1, path2, pos2);
+        size_t last_diff_pos2 = LastNotEqualPosition(path2, pos2, path1, pos1);
+        if (last_diff_pos1 != -1UL) {
+            const BidirectionalPath cand1 = path1.SubPath(pos1, last_diff_pos1 + 1);
+            const BidirectionalPath cand2 = path2.SubPath(pos2, last_diff_pos2 + 1);
+            std::pair<double, double> weights = GetSubPathsWeights(cand1, cand2, cov_paths);
+
             DEBUG("Not equal end " << g_.int_id(path1.At(last_diff_pos1))
                   << " weight " << weights.first
                   << "; " << g_.int_id(path2.At(last_diff_pos2))

@@ -515,6 +515,7 @@ void CloseGaps(conj_graph_pack& gp, Streams& streams) {
   gap_closer.CloseShortGaps();
 }
 
+inline
 void CloseGaps(conj_graph_pack& gp) {
   INFO("SUBSTAGE == Closing gaps");
 

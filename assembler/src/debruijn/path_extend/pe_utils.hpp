@@ -9,7 +9,6 @@
 #define PE_UTILS_HPP_
 
 #include "bidirectional_path.hpp"
-#include "graph_pack.hpp"
 
 using namespace debruijn_graph;
 

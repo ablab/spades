@@ -895,23 +895,6 @@ void PrintWithClusteredIndices(const string& file_name,
     PrintWithPairedIndices(file_name, printer, gp, paired_indices, true);
 }
 
-template<class graph_pack, class VertexIt>
-void PrintAll(const string& file_name, const graph_pack& gp, VertexIt begin,
-              VertexIt end,
-              const PairedInfoIndexT<typename graph_pack::graph_t>& paired_index,
-              const PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index,
-              const PairedInfoIndexT<typename graph_pack::graph_t>& scaffold_index,
-              const LongReadContainer<typename graph_pack::graph_t>& single_long_reads)
-{
-    typename PrinterTraits<typename graph_pack::graph_t>::Printer
-            printer(gp.g, begin, end, gp.int_ids);
-    PrintGraphPack(file_name, printer, gp);
-    PrintPairedIndex(file_name, printer, paired_index);
-    PrintClusteredIndex(file_name, printer, clustered_index);
-    PrintScaffoldIndex(file_name, printer, scaffold_index);
-    PrintSingleLongReads(file_name, gp.edge_pos, single_long_reads);
-}
-
 
 template<class graph_pack>
 void PrintAll(const string& file_name, const graph_pack& gp) {
@@ -921,7 +904,7 @@ void PrintAll(const string& file_name, const graph_pack& gp) {
     PrintPairedIndices(file_name, printer, gp.paired_indices);
     PrintClusteredIndices(file_name, printer, gp.clustered_indices);
     PrintScaffoldingIndices(file_name, printer, gp.clustered_indices);
-    PrintSingleLongReads(file_name, gp.edge_pos, gp.single_long_reads);
+    PrintSingleLongReads(file_name, gp.single_long_reads);
 }
 
 template<class graph_pack, class VertexIt>
@@ -966,9 +949,9 @@ void PrintWithClusteredIndex(const string& file_name, const graph_pack& gp,
 }
 
 template<class Graph>
-void PrintSingleLongReads(const string& file_name, const EdgesPositionHandler<Graph> &edge_pos, const LongReadContainer<Graph>& single_long_reads) {
+void PrintSingleLongReads(const string& file_name, const LongReadContainer<Graph>& single_long_reads) {
     for (size_t i = 0; i < single_long_reads.size(); ++i){
-        single_long_reads[i].DumpToFile(MakeSingleReadsFileName(file_name, i), edge_pos);
+        single_long_reads[i].DumpToFile(MakeSingleReadsFileName(file_name, i));
     }
 }
 

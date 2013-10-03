@@ -49,7 +49,7 @@ struct graph_pack: private boost::noncopyable {
 
     Sequence genome;
 
-    explicit graph_pack(unsigned k, const std::string &workdir,
+    explicit graph_pack(size_t k, const std::string &workdir,
                         Sequence genome = Sequence(), size_t single_gap = 0,
                         bool careful_labeling = false, bool use_inner_ids = false)
             : k_value(k), g(k), index(g, k + 1, workdir),
@@ -58,7 +58,7 @@ struct graph_pack: private boost::noncopyable {
               paired_indices(g, cfg::get().ds.reads.lib_count()),
               clustered_indices(g, cfg::get().ds.reads.lib_count()),
               scaffolding_indices(g, cfg::get().ds.reads.lib_count()),
-              single_long_reads(g),
+              single_long_reads(g, cfg::get().ds.reads.lib_count()),
               genome(genome)
     { }
 };

@@ -91,7 +91,7 @@ estimation_mode simple
 ;set it true to detach connections that are not supported by paired info before repeat resolution
 cut_bad_connections false
 
-;the only option left fomr repeat resolving -- WHY DO THEY DIFFER?
+;the only option left from repeat resolving -- WHY DO THEY DIFFER?
 max_repeat_length 4000
 max_repeat_length_sc 8000
 
