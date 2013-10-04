@@ -34,14 +34,14 @@ struct CountIndexHelper {
 };
 
 class RandNucl {
-    size_t seed_;
+    unsigned seed_;
     boost::mt19937 rand_engine_;
     boost::uniform_int<> rand_dist_;
     boost::variate_generator<boost::mt19937&, boost::uniform_int<>> rand_nucl_;
 
 public:
 
-    RandNucl(size_t seed) :
+    RandNucl(unsigned seed) :
         seed_(seed),
         rand_engine_(seed_),
         rand_dist_(0, 3),
@@ -60,9 +60,10 @@ private:
     typedef DeBruijnKMerIndex<KmerFreeIndex<Count, kmer_index_traits<Kmer>>> KmerCountIndex;
     typedef KmerCountIndex::KMerIdx KmerIdx;
 
+    size_t k_;
+
     RandNucl& rand_nucl_;
 
-    size_t k_;
     KmerCountIndex index_;
     //todo maybe remove mutable? will need removing const from Modify
 

@@ -230,7 +230,7 @@ void PerformRefinement(ContigStreamsPtr streams, const string& root,
 
     make_dir(root);
     INFO("Constructing graph pack for k=" << k << " delta=" << delta);
-    gp_t gp(k, "tmp");
+    gp_t gp(unsigned(k), "tmp");
 
     CapConstructGraph(gp.k_value, *streams, gp.g, gp.index);
 

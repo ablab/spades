@@ -89,7 +89,7 @@ class CapEnvironmentManager {
 
   template <class gp_t>
   shared_ptr<gp_t> BuildGPFromSaves(const size_t K, const std::string &/* path */) const {
-    shared_ptr<gp_t> result(new gp_t(K, env_->kDefaultGPWorkdir));
+    shared_ptr<gp_t> result(new gp_t(unsigned(K), env_->kDefaultGPWorkdir));
 
     //ScanGraphPack(path, *result);
     // TODO
