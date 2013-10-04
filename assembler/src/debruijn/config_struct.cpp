@@ -76,7 +76,6 @@ void load_lib_data(const std::string& prefix) {
   if (!FileExists(filename)) {
       WARN("Estimates params config " << prefix << " does not exist");
   }
-
   boost::optional<size_t> lib_count;
   load_param(filename, "lib_count", lib_count);
   if (!lib_count || lib_count != cfg::get().ds.reads.lib_count()) {
@@ -121,7 +120,10 @@ void load_lib_data(const std::string& prefix) {
       if (double_val) {
           cfg::get_writable().ds.reads[i].data().average_coverage = *double_val;
       }
-
+      load_param(filename, "pi_threshold_"+ToString(i), double_val);
+      if (double_val) {
+          cfg::get_writable().ds.reads[i].data().pi_threshold = *double_val;
+      }
       load_param_map(filename, "histogram_" + ToString(i), cfg::get_writable().ds.reads[i].data().insert_size_distribution);
   }
 
@@ -141,6 +143,7 @@ void write_lib_data(const std::string& prefix) {
       write_param(filename, "insert_size_median_" + ToString(i), cfg::get().ds.reads[i].data().median_insert_size);
       write_param(filename, "insert_size_mad_" + ToString(i), cfg::get().ds.reads[i].data().insert_size_mad);
       write_param(filename, "average_coverage_" + ToString(i), cfg::get().ds.reads[i].data().average_coverage);
+      write_param(filename, "pi_threshold_" + ToString(i), cfg::get().ds.reads[i].data().pi_threshold);
       write_param_map(filename, "histogram_" + ToString(i), cfg::get().ds.reads[i].data().insert_size_distribution);
   }
 }
@@ -317,19 +320,6 @@ void load(debruijn_config::smoothing_distance_estimator& ade,
   load(ade.derivative_threshold, pt, "derivative_threshold");
 }
 
-void load(debruijn_config::repeat_resolver& rr,
-          boost::property_tree::ptree const& pt, bool /*complete*/) {
-  using config_common::load;
-
-  load(rr.symmetric_resolve, pt, "symmetric_resolve");
-  load(rr.mode, pt, "mode");
-  load(rr.inresolve_cutoff_proportion, pt, "inresolve_cutoff_proportion");
-  load(rr.near_vertex, pt, "near_vertex");
-  load(rr.max_distance, pt, "max_distance");
-  load(rr.max_repeat_length, pt, "max_repeat_length");
-  load(rr.kill_loops, pt, "kill_loops");
-}
-
 void load(debruijn_config::coverage_based_rr& cbrr,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
@@ -343,11 +333,13 @@ void load(debruijn_config::coverage_based_rr& cbrr,
 
 }
 
+
 void load(debruijn_config::pacbio_processor& pb,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
   load(pb.pacbio_reads, pt, "pacbio_reads");
   load(pb.pacbio_k, pt, "pacbio_k");
+  load(pb.additional_debug_info, pt, "additional_debug_info");
   load(pb.pacbio_optimized_sw, pt, "pacbio_optimized_sw");
   load(pb.compression_cutoff, pt, "compression_cutoff");
   load(pb.domination_cutoff, pt, "domination_cutoff");
@@ -451,7 +443,6 @@ void load(debruijn_config::simplification& simp,
 void load(debruijn_config::info_printer& printer,
           boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
-
   load(printer.print_stats, pt, "print_stats", complete);
   load(printer.write_components, pt, "write_components", complete);
   load(printer.components_for_kmer, pt, "components_for_kmer", complete);
@@ -466,6 +457,19 @@ void load(debruijn_config::info_printer& printer,
   load(printer.write_full_nc_graph, pt, "write_full_nc_graph", complete);
   load(printer.write_error_loc, pt, "write_error_loc", complete);
 }
+
+void clear(debruijn_config::info_printer& printer) {
+    printer.print_stats = false;
+    printer.write_components = false;
+    printer.components_for_kmer = "";
+    printer.components_for_genome_pos = "";
+    printer.write_components_along_genome = false;
+    printer.save_full_graph = false;
+    printer.write_full_graph = false;
+    printer.write_full_nc_graph = false;
+    printer.write_error_loc = false;
+}
+
 
 void load(debruijn_config::info_printers_t& printers,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
@@ -566,14 +570,16 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   load(cfg.additional_contigs, pt, "additional_contigs");
 
   load(cfg.paired_mode, pt, "paired_mode");
+  load(cfg.long_single_mode, pt, "long_single_mode");
   load(cfg.divide_clusters, pt, "divide_clusters");
   load(cfg.mismatch_careful, pt, "mismatch_careful");
   load(cfg.correct_mismatches, pt, "correct_mismatches");
   load(cfg.paired_info_statistics, pt, "paired_info_statistics");
   load(cfg.paired_info_scaffolder, pt, "paired_info_scaffolder");
   load(cfg.cut_bad_connections, pt, "cut_bad_connections");
-  load(cfg.componential_resolve, pt, "componential_resolve");
   load(cfg.gap_closer_enable, pt, "gap_closer_enable");
+
+  load(cfg.max_repeat_length, pt, (cfg.ds.single_cell ? "max_repeat_length_sc" : "max_repeat_length"));
 
   load(cfg.buffer_size, pt, "buffer_size");
   cfg.buffer_size <<= 20; //turn MB to bytes
@@ -607,7 +613,6 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   load(cfg.ds, ds_pt, true);
 
   load(cfg.ade, pt, (cfg.ds.single_cell ? "sc_ade" : "usual_ade")); // advanced distance estimator:
-  load(cfg.rr, pt, (cfg.ds.single_cell ? "sc_rr" : "usual_rr")); // repeat resolver:
   load(cfg.pos, pt, "pos"); // position handler:
 
   load(cfg.est_mode, pt, "estimation_mode");
@@ -652,9 +657,12 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
     load(cfg.simp, pt, "careful", false);
 
   cfg.simp.cbr.folder = cfg.output_dir + cfg.simp.cbr.folder + "/";
-
   load(cfg.info_printers, pt, "info_printers");
-
+  if (!cfg.developer_mode) {
+      for (auto iter = cfg.info_printers.begin(); iter != cfg.info_printers.end(); ++iter) {
+          clear(iter->second);
+      }
+  }
   load_reads(cfg.ds, cfg.input_dir);
   load_reference_genome(cfg.ds, cfg.input_dir);
 }

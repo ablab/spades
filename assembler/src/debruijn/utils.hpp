@@ -146,4 +146,5 @@ Sequence MergeSequences(const Graph& g,
 	return MergeOverlappingSequences(path_sequences, g.k());
 }
 
+
 }

@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <boost/test/unit_test.hpp>
+
 #include "launch.hpp"
 #include "graph_construction.hpp"
 #include "graph_pack.hpp"
@@ -15,6 +15,11 @@
 #include "io/converting_reader_wrapper.hpp"
 #include "io/read_stream_vector.hpp"
 #include "simple_tools.hpp"
+
+#include "sequence_mapper_notifier.hpp"
+#include "pair_info_filler.hpp"
+
+#include <boost/test/unit_test.hpp>
 #include <unordered_set>
 
 namespace debruijn_graph {
@@ -225,7 +230,7 @@ void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t inse
 	io::ReadStreamVector<io::IReader<io::PairedRead>> paired_stream_vector(paired_read_stream);
 	DEBUG("Streams initialized");
 
-	graph_pack<Graph, runtime_k::RtSeq> gp(k, tmp_folder, (Sequence()));
+	conj_graph_pack gp(k, tmp_folder, (Sequence()));
 	DEBUG("Graph pack created");
 
 	PairedInfoIndexT<Graph> paired_index(gp.g);
@@ -233,21 +238,16 @@ void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t inse
 	io::ReadStreamVector<io::IReader<io::SingleRead>> single_stream_vector({new SingleStream(paired_read_stream)});
 	ConstructGraphWithCoverage(k, CreateDefaultConstructionConfig(), single_stream_vector, gp.g, gp.index);
 
-        // FIXME: Restor
-#if 0
-	FillPairedIndexWithReadCountMetric(gp.g,
-	                                   *MapperInstance(gp),
-	                                   paired_index,
-	                                   paired_stream_vector);
-#endif
+    SequenceMapperNotifier notifier(gp);
+    LatePairedIndexFiller pif(gp.g, PairedReadCountWeight, paired_index);
+    notifier.Subscribe(0, &pif);
+    notifier.ProcessLibrary(paired_stream_vector, 0, paired_stream_vector.size());
 
 	AssertEdges(gp.g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
 
 	AssertCoverage(gp.g, AddComplement(etalon_coverage));
 
-#if 0
 	AssertPairInfo(gp.g, paired_index, AddComplement(AddBackward(etalon_pair_info)));
-#endif
 }
 
 struct TmpFolderFixture

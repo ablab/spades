@@ -29,6 +29,7 @@ def prepare_config_spades(filename, cfg, log, use_additional_contigs, K, last_on
     subst_dict["developer_mode"] = bool_to_str(cfg.developer_mode)
     subst_dict["gap_closer_enable"] = bool_to_str(last_one)
     subst_dict["paired_mode"] = bool_to_str(last_one and cfg.paired_mode)
+    subst_dict["long_single_mode"] = bool_to_str(last_one and cfg.long_single_mode)
     subst_dict["topology_simplif_enabled"] = bool_to_str(last_one)
     subst_dict["use_additional_contigs"] = bool_to_str(use_additional_contigs)
     subst_dict["max_threads"] = cfg.max_threads
@@ -38,6 +39,9 @@ def prepare_config_spades(filename, cfg, log, use_additional_contigs, K, last_on
         subst_dict["resolving_mode"] = cfg.resolving_mode
     if "careful" in cfg.__dict__:
         subst_dict["mismatch_careful"] = bool_to_str(cfg.careful)
+    if "pacbio_mode" in cfg.__dict__:
+        subst_dict["pacbio_test_on"] = bool_to_str(cfg.pacbio_mode)
+        subst_dict["pacbio_reads"] = process_cfg.process_spaces(cfg.pacbio_reads)
 
     process_cfg.substitute_params(filename, subst_dict, log)
 

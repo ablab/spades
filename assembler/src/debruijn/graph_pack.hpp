@@ -21,6 +21,7 @@
 #include "config_struct.hpp"
 #include "edge_index.hpp"
 #include "sequence_mapper.hpp"
+#include "long_read_storage.hpp"
 
 namespace debruijn_graph {
 
@@ -31,6 +32,7 @@ struct graph_pack: private boost::noncopyable {
     typedef SeqType seq_t;
     typedef EdgeIndex<graph_t, seq_t, KmerEdgeIndex> index_t;
     typedef omnigraph::de::PairedInfoIndicesT<Graph> PairedInfoIndicesT;
+    typedef LongReadContainer<Graph> LongReadContainerT;
 
     size_t k_value;
 
@@ -43,10 +45,11 @@ struct graph_pack: private boost::noncopyable {
     PairedInfoIndicesT paired_indices;
     PairedInfoIndicesT clustered_indices;
     PairedInfoIndicesT scaffolding_indices;
+    LongReadContainerT single_long_reads;
 
     Sequence genome;
 
-    explicit graph_pack(unsigned k, const std::string &workdir,
+    explicit graph_pack(size_t k, const std::string &workdir,
                         Sequence genome = Sequence(), size_t single_gap = 0,
                         bool careful_labeling = false, bool use_inner_ids = false)
             : k_value(k), g(k), index(g, k + 1, workdir),
@@ -54,7 +57,8 @@ struct graph_pack: private boost::noncopyable {
               kmer_mapper(g, k + 1),
               paired_indices(g, cfg::get().ds.reads.lib_count()),
               clustered_indices(g, cfg::get().ds.reads.lib_count()),
-              scaffolding_indices(g, cfg::get().ds.reads.lib_count()),              
+              scaffolding_indices(g, cfg::get().ds.reads.lib_count()),
+              single_long_reads(g, cfg::get().ds.reads.lib_count()),
               genome(genome)
     { }
 };
@@ -62,7 +66,10 @@ struct graph_pack: private boost::noncopyable {
 typedef graph_pack<ConjugateDeBruijnGraph, runtime_k::RtSeq,
                    DeBruijnEdgeIndex<KmerFreeDeBruijnEdgeIndex<ConjugateDeBruijnGraph, runtime_k::RtSeq>>> conj_graph_pack;
 typedef conj_graph_pack::index_t Index;
+
 typedef conj_graph_pack::PairedInfoIndicesT PairedIndicesT;
+typedef conj_graph_pack::LongReadContainerT LongReadContainerT;
 typedef omnigraph::de::PairedInfoIndexT<ConjugateDeBruijnGraph> PairedIndexT;
+
 
 } // namespace debruijn_graph

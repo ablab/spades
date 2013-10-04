@@ -274,16 +274,6 @@ struct debruijn_config {
     double mismatch_ratio;
     simplification simp;
 
-    struct repeat_resolver {
-        bool symmetric_resolve;
-        int mode;
-        double inresolve_cutoff_proportion;
-        int near_vertex;
-        int max_distance;
-        size_t max_repeat_length;
-        bool kill_loops;
-    };
-
     struct distance_estimator {
         double linkage_distance_coeff;
         double max_distance_coeff;
@@ -302,24 +292,26 @@ struct debruijn_config {
     };
 
     struct pacbio_processor {
-        //align and traverse.
-        std::string pacbio_reads;
-        size_t  pacbio_k; //13
-        bool pacbio_optimized_sw; //false
-        double compression_cutoff;// 0.6
-        double domination_cutoff; //1.5
-        double path_limit_stretching; //1.3
-        double path_limit_pressing;//0.7
-        //	double gap_closing_relative_iterations; // 20.0
-        int gap_closing_iterations; //5000;
+  //align and traverse.
+      std::string pacbio_reads;
 
-        //gap_closer
-        size_t long_seq_limit; //400
-        int split_cutoff; //100
-        int match_value; // 1
-        int mismatch_penalty; //1
-        int insertion_penalty; //2
-        int deletion_penalty; //2
+      size_t  pacbio_k; //13
+      bool additional_debug_info; //false
+      bool pacbio_optimized_sw; //false
+      double compression_cutoff;// 0.6
+      double domination_cutoff; //1.5
+      double path_limit_stretching; //1.3
+      double path_limit_pressing;//0.7
+  //  double gap_closing_relative_iterations; // 20.0
+      int gap_closing_iterations; //5000;
+
+  //gap_closer
+      size_t long_seq_limit; //400
+      int split_cutoff; //100
+      int match_value; // 1
+      int mismatch_penalty; //1
+      int insertion_penalty; //2
+      int deletion_penalty; //2
     };
 
     struct DataSetData {
@@ -332,6 +324,7 @@ struct debruijn_config {
 
         uint64_t total_nucls;
         double average_coverage;
+        double pi_threshold;
 
         std::string paired_read_prefix;
         std::string single_read_prefix;
@@ -340,7 +333,7 @@ struct debruijn_config {
         typedef io::IReader<io::SingleReadSeq> SequenceSingleReadStream;
         typedef io::IReader<io::PairedReadSeq> SequencePairedReadStream;
 
-        DataSetData(): read_length(0), mean_insert_size(0.0), insert_size_deviation(0.0), median_insert_size(0.0), insert_size_mad(0.0), total_nucls(0), average_coverage(0.0) {
+        DataSetData(): read_length(0), mean_insert_size(0.0), insert_size_deviation(0.0), median_insert_size(0.0), insert_size_mad(0.0), total_nucls(0), average_coverage(0.0), pi_threshold(0.0) {
         }
     };
 
@@ -410,7 +403,7 @@ struct debruijn_config {
 
     typedef std::map<info_printer_pos, info_printer> info_printers_t;
 
-  public:
+public:
     std::string dataset_file;
     std::string project_name;
     std::string input_dir;
@@ -450,6 +443,7 @@ struct debruijn_config {
     std::string entry_point;
 
     bool paired_mode;
+    bool long_single_mode;
     bool divide_clusters;
 
     bool mismatch_careful;
@@ -457,8 +451,9 @@ struct debruijn_config {
     bool paired_info_statistics;
     bool paired_info_scaffolder;
     bool cut_bad_connections;
-    bool componential_resolve;
     bool gap_closer_enable;
+
+    size_t max_repeat_length;
 
     //Convertion options
     size_t buffer_size;
@@ -483,7 +478,6 @@ struct debruijn_config {
     construction con;
     distance_estimator de;
     smoothing_distance_estimator ade;
-    repeat_resolver rr;
     pacbio_processor pb;
     bool use_scaffolder;
     bool mask_all;

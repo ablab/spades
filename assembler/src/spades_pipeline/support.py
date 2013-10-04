@@ -395,11 +395,26 @@ def dataset_has_only_mate_pairs_libraries(dataset_data):
     return True
 
 
-def dataset_has_paired_reads(dataset_data):
+def dataset_needs_paired_mode(dataset_data):
     for reads_library in dataset_data:
         if reads_library['type'] in ['paired-end', 'mate-pairs']:
             return True
     return False
+
+
+def dataset_needs_long_single_mode(dataset_data):
+    for reads_library in dataset_data:
+        if reads_library['type'] in ['single']:
+            return True
+    return False
+
+
+def get_pacbio_reads(dataset_data):
+    for reads_library in dataset_data:
+        if reads_library['type'] in ['pacbio']:
+            if reads_library['single reads']:
+                return reads_library['single reads'][0]
+    return None
 
 
 def dataset_has_interlaced_reads(dataset_data):

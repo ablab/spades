@@ -15,8 +15,8 @@ class RepeatResolution : public spades::AssemblyStage {
     RepeatResolution()
         : AssemblyStage("Repeat Resolving", "repeat_resolving") {}
 
-    void load(conj_graph_pack& gp) {}
-    void save(const conj_graph_pack& gp) const {}
+    void load(conj_graph_pack& /* gp */) {}
+    void save(const conj_graph_pack& /* gp */) const {}
 
     void run(conj_graph_pack &gp);
 };
@@ -26,8 +26,8 @@ class ContigOutput : public spades::AssemblyStage {
     ContigOutput()
         : AssemblyStage("Contig Output", "contig_output") {}
 
-    void load(conj_graph_pack& gp) {}
-    void save(const conj_graph_pack& gp) const {}
+    void load(conj_graph_pack& /* gp */) {}
+    void save(const conj_graph_pack& /* gp */) const {}
 
     void run(conj_graph_pack &gp);
 };

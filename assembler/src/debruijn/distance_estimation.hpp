@@ -10,7 +10,6 @@
 
 namespace debruijn_graph {
 
-
 class DistanceEstimation : public spades::AssemblyStage {
   public:
     DistanceEstimation()

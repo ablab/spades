@@ -248,12 +248,14 @@ std::shared_ptr< io::ReadStreamVector< SequenceSingleReadStream > > single_binar
 inline
 std::auto_ptr<SequenceSingleReadStream> single_binary_multireader(bool followed_by_rc, bool including_paired_reads) {
     auto readers = single_binary_readers(followed_by_rc, including_paired_reads);
+    readers->release();
     return auto_ptr<SequenceSingleReadStream>(new io::MultifileReader<io::SingleReadSeq>(readers->get(), true));
 }
 
 inline
 std::auto_ptr<SequencePairedReadStream> paired_binary_multireader(bool followed_by_rc, size_t insert_size = 0) {
     auto readers = paired_binary_readers(followed_by_rc, insert_size);
+    readers->release();
     return auto_ptr<SequencePairedReadStream>(new io::MultifileReader<io::PairedReadSeq>(readers->get(), true));
 }
 

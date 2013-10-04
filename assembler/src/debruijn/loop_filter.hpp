@@ -291,7 +291,7 @@ namespace debruijn_graph {
 
 			for ( auto incidentEdge = graph_p->g.out_begin(v); incidentEdge != graph_p->g.out_end(v); ++incidentEdge ){
 
-				if ( graph_p->g.length(*incidentEdge) > cfg::get().rr.max_repeat_length  ) continue;
+				if ( graph_p->g.length(*incidentEdge) > cfg::get().max_repeat_length  ) continue;
 
 				VertexId vOut = graph_p->g.EdgeEnd(*incidentEdge);
 				if (usedVertices.find(vOut) != usedVertices.end())
@@ -310,7 +310,7 @@ namespace debruijn_graph {
 
 			for ( auto incidentEdge = graph_p->g.in_begin(v); incidentEdge != graph_p->g.in_end(v); ++incidentEdge ) {
 
-				if ( graph_p->g.length(*incidentEdge) > cfg::get().rr.max_repeat_length  ) continue;
+				if ( graph_p->g.length(*incidentEdge) > cfg::get().max_repeat_length  ) continue;
 
 				VertexId vIn = graph_p->g.EdgeStart(*incidentEdge);
 				if (usedVertices.find(vIn) != usedVertices.end())

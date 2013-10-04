@@ -444,7 +444,7 @@ class CoverageBasedResolution {
 			VertexId into = gp->g.EdgeEnd(*e_iter);
 
 			//std::cout << e_iter->int_id() << std::endl;
-			if ( gp->g.length(*e_iter) >= cfg::get().rr.max_repeat_length ) {
+			if ( gp->g.length(*e_iter) >= cfg::get().max_repeat_length ) {
 				singles.push_back(*e_iter);
 			}
 			else if (! ( ((in_degree.find(from) == in_degree.end()) || out_degree[from] > 1) && ((out_degree.find(into) == out_degree.end()) || in_degree[into] > 1) )

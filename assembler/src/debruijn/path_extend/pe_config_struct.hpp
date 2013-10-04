@@ -70,98 +70,35 @@ struct pe_config {
     return it->second;
   }
 
-  struct DatasetT {
-    struct PairedLibT {
-      size_t read_size;
-      size_t insert_size;
-      size_t var;
-
-      std::string path;
-    };
-
-    std::string param_set;
-    std::string graph_file;
-
-    std::vector<PairedLibT> libs;
-    //boost::optional<std::string> reference_genome;
-  };
-
   struct OutputParamsT {
-    bool write_seeds;
     bool write_overlaped_paths;
     bool write_paths;
-    bool write_path_loc;
 
     void DisableAll() {
-      write_seeds = false;
       write_overlaped_paths = false;
       write_paths = false;
-      write_path_loc = false;
     }
   };
 
   struct VisualizeParamsT {
-    bool print_seeds;
     bool print_overlaped_paths;
     bool print_paths;
 
     void DisableAll() {
-      print_seeds = false;
       print_overlaped_paths = false;
       print_paths = false;
     }
   };
 
-  struct ResearchT {
-    bool on;
-
-    bool count_seed_weight;
-    bool count_path_weight;
-
-    bool fiter_seeds_by_id;
-    std::vector<size_t> seed_ids;
-  };
-
   struct ParamSetT {
-    std::string metric;
     bool normalize_weight;
-    bool normalize_by_coverage;
-
-    bool improve_paired_info;
-
     size_t split_edge_length;
 
-    struct SeedSelectionT {
-      std::string metric;
-
-      double min_coverage;
-      double start_egde_coverage;
-      size_t max_cycles;
-
-      bool exclude_chimeric;
-      //int chimeric_delta;
-
-      bool check_trusted;
-      double threshold;
-    } seed_selection;
-
-
     struct ExtensionOptionsT {
-      std::string metric;
-
-      bool try_deep_search;
-
-      struct SelectOptionsT {
-        boost::optional<double> single_threshold;
+        bool recalculate_threshold;
+        double single_threshold;
         double weight_threshold;
         double priority_coeff;
-
-        SelectOptionsT() {}
-        SelectOptionsT(const SelectOptionsT& so)
-            : single_threshold(so.single_threshold), weight_threshold(so.weight_threshold), priority_coeff(so.priority_coeff) {}
-      } select_options;
-
-
     } extension_options;
 
     ExtensionOptionsT mate_pair_options;
@@ -186,34 +123,26 @@ struct pe_config {
 
 
     struct LoopRemovalT {
-      bool inspect_short_loops;
-
       size_t max_loops;
-      bool full_loop_removal;
     } loop_removal;
 
-
-    struct FilterOptionsT {
-      bool remove_overlaps;
-    } filter_options;
+    bool remove_overlaps;
   };
-  struct UtilsT {
-    int mode;
-    std::string file1;
-    std::string file2;
 
-    std::string clustered;
-    std::string advanced;
-    size_t insert_size;
-    size_t read_size;
-    size_t dev;
+  struct LongReads {
+	  double filtering;
+	  double weight_priority;
+	  double unique_edge_priority;
+  };
+
+  struct AllLongReads{
+      LongReads single_reads;
+      LongReads pacbio_reads;
+      LongReads coverage_base_rr;
   };
 
   struct MainPEParamsT {
     std::string name;
-
-    std::string additional_contigs;
-
     output_broken_scaffolds obs;
 
     bool debug_output;
@@ -222,11 +151,13 @@ struct pe_config {
     OutputParamsT output;
     VisualizeParamsT viz;
     ParamSetT param_set;
+    AllLongReads long_reads;
   } params;
 
   std::string dataset_name;
-  DatasetT dataset;
 };
+
+
 
 void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt, bool complete);
 void load(pe_config& pe_cfg, boost::property_tree::ptree const& pt, bool complete);

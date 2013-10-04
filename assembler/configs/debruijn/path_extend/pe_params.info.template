@@ -1,230 +1,137 @@
 ; output options
 
-debug_output			    false
+debug_output    false
 
 output {
-	write_seeds             true
-	write_overlaped_paths   true
-	write_paths             true
-	write_path_loc		    true
+    write_overlaped_paths   true
+    write_paths             true
 }
-
 
 visualize {
-        print_seeds  		    true
-        print_overlaped_paths 	true
-        print_paths 		    true
+    print_overlaped_paths   true
+    print_paths             true
 }
-
-
-research {
-	on		    false
-	
-	count_seed_weight   true
-	count_path_weight   true
-
-	fiter_seeds_by_id   true
-	seed_ids {
-		count 0
-		id_0  
-		id_1
-		id_2
-		id_3
-	}
-}
-
-additional_contigs ""
 
 ; none | break_gaps | break_all
-output_broken_scaffolds break_all
+output_broken_scaffolds     break_all
 
 singlecell {
+    split_edge_length       99
+    normalize_weight        true
 
-	improve_paired_info	true
+    ; extension selection
+    extension_options
+    {
+        recalculate_threshold      true
+        single_threshold           0.001
+        weight_threshold           0.6
+        priority_coeff             1.5
+    }
 
-	split_edge_length	99
+    mate_pair_options
+    {
+        recalculate_threshold      true
+        single_threshold           0.0001
+        weight_threshold           0.5
+        priority_coeff             1.5
+    }
 
-	; metric = path_cover | read_count 
-	metric 			        path_cover
-	normalize_weight        true
-	normalize_by_coverage   false
-	    
-	; seed selection
-	seed_selection
-	{
-	    min_coverage   		    0
-	    start_egde_coverage 	0
-	    max_cycles     		    1
+    scaffolder {
+        on              true
+        cutoff          2
+        rel_cutoff      0.1
+        sum_threshold   3  
 
-	    exclude_chimeric  false
-        chimeric_delta    10
-	    min_len           0
-        max_len           -1 ; -a = a * K
-	    check_trusted     true
+        cluster_info    true
+        cl_threshold    0
 
-	    read_count_trusted_threshold 2
-	    path_cover_trusted_threshold 0.6
-	    
-	}
-	
-	; extension selection
-	extension_options
-	{
-	 	read_count {
-		    weight_threshold           2
-		    priority_coeff             6
-		}
-	 	path_cover  {
-		    single_threshold	       0.001
-		    weight_threshold           0.6
-		    priority_coeff             1.5
-		}
-	    
-		try_deep_search		false
-	}
+        fix_gaps        true
+        min_gap_score   0.7
 
-	mate_pair_options
-	{
-	 	read_count {
-		    weight_threshold           0.2
-		    priority_coeff             3
-		}
-	 	path_cover  {
-		    single_threshold	       0.0001
-		    weight_threshold           0.5
-		    priority_coeff             1.5
-		}
-	    
-		try_deep_search		false
-	}
+        max_must_overlap  0.5
+        max_can_overlap   0.5
+        short_overlap     6
+        artificial_gap    10
+    }
+    
+    loop_removal
+    {
+        max_loops       30
+    }
 
-	scaffolder {
- 		on	          true
-		cutoff        2
-		rel_cutoff    0.1
-		sum_threshold 3  
-
-		cluster_info  true
-		cl_threshold  0
-
-		fix_gaps true
-        min_gap_score  0.7
-
-		max_must_overlap  0.5
-	    max_can_overlap   0.5
-	    short_overlap     6
-	    artificial_gap    10
-	}
-	
-	; loops removal
-	loop_removal
-	{
-	    inspect_short_loops true
-
-	    max_loops           30
-	    full_loop_removal   true
-	}
-	
-
-	; filter options
-	filter_options
-	{
-	    remove_overlaps     true
-	}
+    remove_overlaps     true
 }
 
 
 
 multicell {
+    split_edge_length    99
+    normalize_weight     false
+    
+    ; extension selection
+    extension_options
+    {
+        recalculate_threshold      true
+        single_threshold           1.75676
+;    A.mirum threshold 0.076
+;    E.coli RL36 threshold 0.717949
+;    E.coli IS220 threshold 1.75676
+        weight_threshold           0.5
+        priority_coeff             1.5
+    }    
 
-	improve_paired_info     true
+    mate_pair_options
+    {
+        recalculate_threshold      true
+        single_threshold           0.001
+        weight_threshold           0.5
+        priority_coeff             1.5
+    }
 
-	split_edge_length	99
+    scaffolder {
+        on            true
+        cutoff        2
+        rel_cutoff    0.1
+        sum_threshold 3  
 
-	; metric = path_cover | read_count 
-	metric 			        path_cover
-	normalize_weight        false
-	normalize_by_coverage   false
-	    
-	; seed selection
-	seed_selection
-	{
-	    min_coverage   		        0
-	    start_egde_coverage         0
-	    max_cycles     		        1
+        cluster_info  true
+        cl_threshold  0
 
-	    exclude_chimeric  false
-        chimeric_delta    10
-        min_len           0
-        max_len           -1 ; -a = a * K
-	    check_trusted     true
-
-	    read_count_trusted_threshold 0.3
-	    path_cover_trusted_threshold 0.5
-	}
-	
-	; extension selection
-	extension_options
-	{
-	 	read_count {
-		    weight_threshold           0.3
-		    priority_coeff             2
-		}
-	 	path_cover  {
-		    single_threshold	       0.01
-		    weight_threshold           0.5
-		    priority_coeff             1.5
-		}
-	    
-	 	try_deep_search		false
-	}    
-
-	mate_pair_options
-	{
-	 	read_count {
-		    weight_threshold           0.2
-		    priority_coeff             3
-		}
-	 	path_cover  {
-		    single_threshold	       0.001
-		    weight_threshold           0.5
-		    priority_coeff             1.5
-		}
-	    
-		try_deep_search		false
-	}
-
-	scaffolder {
- 		on	          true
-		cutoff        2
-		rel_cutoff    0.1
-		sum_threshold 3  
-
-		cluster_info  true
-		cl_threshold  0
-
-		fix_gaps true
+        fix_gaps       true
         min_gap_score  0.7
 
-		max_must_overlap  0.5
-	    max_can_overlap   0.5
-	    short_overlap     6
-	    artificial_gap    10
-	}
-	
-	; loops removal
-	loop_removal
-	{
-	    inspect_short_loops true
+        max_must_overlap  0.5
+        max_can_overlap   0.5
+        short_overlap     6
+        artificial_gap    10
+    }
+    
+    loop_removal
+    {
+        max_loops       30
+    }
 
-	    max_loops           30
-	    full_loop_removal   true
-	}
-	
+    remove_overlaps     true
+}
 
-	; filter options
-	filter_options
-	{
-	    remove_overlaps     true
-	}
+
+long_reads {
+
+    pacbio_reads {
+        filtering   2.5
+        weight_priority    4.0
+        unique_edge_priority 5.0
+    }
+
+    single_reads {
+        filtering   2.5
+        weight_priority    5.0
+        unique_edge_priority 1000.0
+    }
+
+    coverage_base_rr {
+        filtering   0.0
+        weight_priority    1.5
+        unique_edge_priority 2.0
+    }
 }

@@ -75,7 +75,7 @@ class PairInfoImprover {
 
     vector<pair<EdgeId, typename omnigraph::de::PairedInfoIndexT<Graph>::InnerMap > > inner_maps; // map [EdgeId -> Histogram]
     for (auto e_iter = graph_.ConstEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
-      if (graph_.length(*e_iter) >= cfg::get().rr.max_repeat_length)
+      if (graph_.length(*e_iter) >= cfg::get().max_repeat_length)
         inner_maps.push_back(make_pair(*e_iter, index_.GetEdgeInfo(*e_iter, 0)));
     }
 
@@ -119,7 +119,7 @@ class PairInfoImprover {
     omnigraph::de::PairedInfoIndexT<Graph> *to_remove = new omnigraph::de::PairedInfoIndexT<Graph>(graph_);
 
     for (auto e_iter = graph_.ConstEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
-      if (graph_.length(*e_iter )>= cfg::get().rr.max_repeat_length) {
+      if (graph_.length(*e_iter )>= cfg::get().max_repeat_length) {
         auto inner_map = index_.GetEdgeInfo(*e_iter, 0);
         FindInconsistent(*e_iter, inner_map, to_remove);
       }
