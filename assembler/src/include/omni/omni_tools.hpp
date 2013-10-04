@@ -179,17 +179,22 @@ public:
 			g_(g), max_length_(max_length), max_coverage_(max_coverage), max_length_any_cov_(max_length_any_cov) {
 	}
 
-	void RemoveIsolatedEdges() {
+	size_t RemoveIsolatedEdges() {
+        size_t cnt = 0;
 		for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			if (IsTerminalVertex(g_.EdgeStart(*it))
 					&& IsTerminalVertex(g_.EdgeEnd(*it))
 					&& ((g_.length(*it) <= max_length_ && g_.coverage(*it) <= max_coverage_)
 					|| g_.length(*it) <=max_length_any_cov_)) {
 				g_.DeleteEdge(*it);
+                cnt += 1;
+                
 			}
 		}
 		Cleaner<Graph> cleaner(g_);
 		cleaner.Clean();
+
+        return cnt;
 	}
 
 };

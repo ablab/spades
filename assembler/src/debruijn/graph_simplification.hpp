@@ -714,13 +714,16 @@ void SimplifyGraph(conj_graph_pack &gp,
 
     printer(ipp_removing_isolated_edges);
 
-    INFO("Final isolated edges removal:");
-    size_t max_length = std::max(cfg::get().ds.RL(), cfg::get().simp.ier.max_length_any_cov);
-    INFO("All edges of length smaller than " << max_length << " will be removed");
-    IsolatedEdgeRemover<Graph>(gp.g, cfg::get().simp.ier.max_length,
-                               cfg::get().simp.ier.max_coverage,
-                               max_length)
-            .RemoveIsolatedEdges();
+    {
+        INFO("Final isolated edges removal:");
+        size_t max_length = std::max(cfg::get().ds.RL(), cfg::get().simp.ier.max_length_any_cov);
+        INFO("All edges of length smaller than " << max_length << " will be removed");
+        size_t removed = IsolatedEdgeRemover<Graph>(gp.g, cfg::get().simp.ier.max_length,
+                                                    cfg::get().simp.ier.max_coverage,
+                                                    max_length)
+                         .RemoveIsolatedEdges();
+        INFO("Removed " << removed << " edges");
+    }
 
     if (low_threshold) {
       EdgeRemover<Graph> remover(gp.g, removal_handler);
