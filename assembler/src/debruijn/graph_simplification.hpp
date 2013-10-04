@@ -710,6 +710,13 @@ void SimplifyGraph(conj_graph_pack &gp,
             INFO("Index attached");
         }
         CloseGaps(gp);
+
+        if (!cfg::get().developer_mode) {
+            INFO("Detaching and clearing index");
+            gp.index.Detach();
+            gp.index.clear();
+            INFO("Index clearing finished");
+        }
     }
 
     printer(ipp_removing_isolated_edges);
@@ -743,6 +750,8 @@ void SimplifyGraph(conj_graph_pack &gp,
         INFO("Final index refill");
         gp.index.Refill();
         INFO("Final index refill finished");
+        if (!gp.index.IsAttached())
+            gp.index.Attach();
     }
 
     DEBUG("Graph simplification finished");
