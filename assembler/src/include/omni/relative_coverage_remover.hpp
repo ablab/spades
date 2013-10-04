@@ -461,9 +461,12 @@ protected:
 
         //here we use that the graph is conjugate!
         VertexId v = this->g().EdgeStart(e);
-
+        if (this->g().IsDeadEnd(v) && this->g().IsDeadStart(v)) {
+            INFO("Isolated");
+            return false;
+        }
         if (this->g().IsDeadEnd(v) || this->g().IsDeadStart(v)) {
-            INFO("Tip or isolated");
+            INFO("Tip");
             return false;
         }
 
