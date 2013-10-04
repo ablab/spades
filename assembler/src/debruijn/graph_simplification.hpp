@@ -655,7 +655,7 @@ void SimplifyGraph(conj_graph_pack &gp,
     } else {
       MCErroneousConnectionThresholdFinder<Graph, decltype(gp.index.inner_index())> finder(gp.index.inner_index());
       finder.FindThresholds();
-      determined_coverage_threshold = finder.ec_threshold();
+      determined_coverage_threshold = (double)finder.ec_threshold();
       // low_threshold = finder.low_cov_threshold();
       low_threshold = 0;
     }
@@ -730,7 +730,7 @@ void SimplifyGraph(conj_graph_pack &gp,
       INFO("Removing all the edges having coverage " << low_threshold << " and less");
       size_t cnt = 0;
       for (auto it = gp.g.SmartEdgeBegin(); !it.IsEnd(); ++it)
-        if (gp.g.coverage(*it) <= low_threshold) {
+        if (math::le(gp.g.coverage(*it), (double)low_threshold)) {
           remover.DeleteEdge(*it);
           cnt += 1;
         }

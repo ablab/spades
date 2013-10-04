@@ -43,15 +43,15 @@ class MCErroneousConnectionThresholdFinder {
     low_cov_threshold_ = CovModel.GetLowThreshold();
   }
 
-  double ec_threshold() const { return ec_threshold_; }
-  double low_cov_threshold() const { return low_cov_threshold_; }
-  double genome_size() const { return genome_size_; }
+  size_t ec_threshold() const { return ec_threshold_; }
+  size_t low_cov_threshold() const { return low_cov_threshold_; }
+  size_t genome_size() const { return genome_size_; }
 
  private:
   const DeBruijn &index_;
-  double ec_threshold_;
-  double low_cov_threshold_;
-  double genome_size_;
+  size_t ec_threshold_;
+  size_t low_cov_threshold_;
+  size_t genome_size_;
 
   std::vector<size_t> CalculateKMerCoverageHistogram() const {
     std::map<size_t, size_t> tmp;
