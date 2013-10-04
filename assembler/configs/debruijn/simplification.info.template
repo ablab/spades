@@ -135,7 +135,7 @@ sc
 	{
        ; ec_lb: max_ec_length = k + ec_lb
        ; icb: iterative coverage bound
-        condition               "{ ec_lb 29, icb auto }"
+        condition               "{ ec_lb 29, icb 2.0 }"
        ; condition               "{ ec_lb 29, icb 20.0 }"
 	}
 	
