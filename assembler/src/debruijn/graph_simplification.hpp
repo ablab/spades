@@ -307,6 +307,7 @@ bool ClipTips(Graph& g,
     auto condition = parser();
 
     INFO("Clipping tips");
+    INFO("Tip bound " << parser.max_length_bound());
     return ClipTips(g, parser.max_length_bound(), condition, removal_handler);
 }
 
@@ -330,7 +331,7 @@ template<class gp_t>
 bool ClipTipsWithProjection(
         gp_t& gp,
         const debruijn_config::simplification::tip_clipper& tc_config,
-        bool enable_projection = true,
+        bool enable_projection = false,
         size_t read_length = 0,
         double detected_coverage_threshold = 0.,
         boost::function<void(typename gp_t::graph_t::EdgeId)> removal_handler_f =
@@ -749,6 +750,13 @@ void SimplifyGraph(conj_graph_pack &gp,
 //  if (cfg::get().ds.single_cell)
 //    PreSimplification(gp, flanking_cov, removal_handler, determined_coverage_threshold);
 
+    INFO("ISOLATED EDGE REMOVER!!!");
+    size_t max_length = std::max(cfg::get().ds.RL(), cfg::get().simp.ier.max_length_any_cov);
+    INFO("All edges of length smaller than " << max_length << " will be removed");
+    IsolatedEdgeRemover<Graph>(gp.g, cfg::get().simp.ier.max_length,
+                               cfg::get().simp.ier.max_coverage, max_length)
+            .RemoveIsolatedEdges();
+
     for (size_t i = 0; i < iteration_count; i++) {
         if ((cfg::get().gap_closer_enable) && (cfg::get().gc.in_simplify)) {
             CloseGaps(gp);
@@ -796,7 +804,7 @@ void SimplifyGraph(conj_graph_pack &gp,
     INFO("Final index refill finished");
 
     INFO("Final isolated edges removal:");
-    size_t max_length = std::max(cfg::get().ds.RL(), cfg::get().simp.ier.max_length_any_cov);
+    max_length = std::max(cfg::get().ds.RL(), cfg::get().simp.ier.max_length_any_cov);
     INFO("All edges of length smaller than " << max_length << " will be removed");
     IsolatedEdgeRemover<Graph>(gp.g, cfg::get().simp.ier.max_length,
                                cfg::get().simp.ier.max_coverage, max_length)
