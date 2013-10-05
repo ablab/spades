@@ -1114,12 +1114,12 @@ class TrivialPathFinder {
 
  public:
 
-    TrivialPathFinder(const Graph&, size_t stub = 0) {
+    TrivialPathFinder(const Graph&, size_t = 0) {
 
     }
 
     const vector<EdgeId> operator()(
-            EdgeId e, const AbstractDirection<Graph> &direction) const {
+            EdgeId e, const AbstractDirection<Graph> &) const {
         return {e};
     }
 

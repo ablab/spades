@@ -20,7 +20,7 @@ public:
 template<class Element>
 class TrueFilter : public AbstractFilter<Element> {
 
-    bool Check(const Element &element) const {
+    bool Check(const Element &) const {
         return true;
     }
 };

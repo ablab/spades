@@ -386,8 +386,8 @@ public:
 //    else
 //      return 1;
 //  }
-    void AddNewVertices(vector<EdgeId> possible_long_edges,
-                        set<VertexId> &additional_vertices) {
+    void AddNewVertices(vector<EdgeId>,
+                        set<VertexId> &) {
     }
 
     void CloseComponent(set<VertexId> &component) {

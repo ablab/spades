@@ -188,7 +188,7 @@ class MMappedRecordReader : public MMappedReader {
   typedef const pointer_iterator<T> const_iterator;
 
   MMappedRecordReader(const std::string &FileName, bool unlink = true,
-                      size_t blocksize = 64*1024*1024 / (sizeof(T) * (unsigned)getpagesize()) * (sizeof(T) * getpagesize()),
+                      size_t blocksize = 64*1024*1024 / (sizeof(T) * (unsigned)getpagesize()) * (sizeof(T) * (unsigned)getpagesize()),
                       size_t off = 0, size_t sz = 0):
       MMappedReader(FileName, unlink, blocksize, off, sz) {
     VERIFY(FileSize % sizeof(T) == 0);
@@ -302,7 +302,7 @@ class MMappedFileRecordArrayIterator :
     MMappedFileRecordArrayIterator(const std::string &FileName, size_t elcnt)
             : value_(NULL),
               reader_(FileName, false,
-                      64*1024*1024 / (sizeof(T) * (unsigned)getpagesize() * elcnt) * (sizeof(T) * getpagesize() * elcnt)),
+                      64*1024*1024 / (sizeof(T) * (unsigned)getpagesize() * elcnt) * (sizeof(T) * (unsigned)getpagesize() * elcnt)),
               elcnt_(elcnt), good_(true) {
         increment();
     }
