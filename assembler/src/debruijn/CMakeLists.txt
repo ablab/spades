@@ -21,7 +21,10 @@ add_executable(spades
                genomic_info_filler.cpp
                main.cpp)
 
-target_link_libraries(spades input mph_index otkpp  ${COMMON_LIBRARIES} ssw)
+# We have to do this to minimize changes in ConsensusCore itself
+include_directories(${EXT_DIR}/include/ConsensusCore)
+
+target_link_libraries(spades ConsensusCore input mph_index otkpp ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(spades PROPERTIES LINK_SEARCH_END_STATIC 1)
