@@ -294,8 +294,8 @@ class SimpleSequenceMapper<Graph, runtime_k::RtSeq> {
 
     Kmer kmer = read.start<Kmer>(k_);
     //DEBUG("started " << kmer.str() << omp_get_thread_num() );
-    size_t startPosition = -1;
-    size_t endPosition = -1;
+    size_t startPosition = -1ul;
+    size_t endPosition = -1ul;
     bool valid = ProcessKmer(kmer, passed, startPosition, endPosition,
                              false);
     for (size_t i = k_; i < read.size(); ++i) {
