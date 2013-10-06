@@ -428,20 +428,20 @@ void LoadColoring(const Graph& g
 
 
 template<class Graph>
-auto_ptr<omnigraph::visualization::GraphColorer<Graph>> ConstructColorer(
+std::auto_ptr<omnigraph::visualization::GraphColorer<Graph>> ConstructColorer(
 		const ColorHandler<Graph>& coloring) {
 	using namespace omnigraph::visualization;
-	return auto_ptr<GraphColorer<Graph>>(
+	return std::auto_ptr<GraphColorer<Graph>>(
 			new CompositeGraphColorer<Graph>(
 					make_shared<MapColorer<typename Graph::VertexId>>(coloring.VertexColorMap()),
 					make_shared<MapColorer<typename Graph::EdgeId>>(coloring.EdgeColorMap())));
 }
 
 template<class Graph>
-auto_ptr<omnigraph::visualization::GraphColorer<Graph>> ConstructBorderColorer(const Graph& g,
+std::auto_ptr<omnigraph::visualization::GraphColorer<Graph>> ConstructBorderColorer(const Graph& g,
 		const ColorHandler<Graph>& coloring) {
 	using namespace omnigraph::visualization;
-	return auto_ptr<GraphColorer<Graph>>(
+	return std::auto_ptr<GraphColorer<Graph>>(
 			new CompositeGraphColorer<Graph>(
 					make_shared<FixedColorer<Graph>>("white"),
 					make_shared<MapColorer<typename Graph::EdgeId>>(coloring.EdgeColorMap())));
