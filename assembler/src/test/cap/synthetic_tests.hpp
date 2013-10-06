@@ -72,7 +72,7 @@ class SyntheticTestsRunner {
     }
 
     void ProcessExample(ContigStreamsPtr streams, size_t id) const {
-        GraphPackT gp(k_, work_dir_);
+        GraphPackT gp(k_, work_dir_, 0);
         ColorHandler<GraphT> coloring(gp.g);
         CoordinatesHandler<GraphT> coordinates_handler;
 

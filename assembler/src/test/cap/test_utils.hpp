@@ -244,7 +244,7 @@ class ColoredGraphIsomorphismChecker {
         Mapping map;
 
         Pack(size_t k, const string& work_dir)
-                : gp(k, work_dir),
+                : gp(k, work_dir, 0),
                   col(gp.g) {
 
         }
