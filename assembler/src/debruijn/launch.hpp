@@ -29,7 +29,7 @@ void assemble_genome() {
     StageManager SPAdes;
 
     debruijn_graph::conj_graph_pack conj_gp(cfg::get().K,
-                                            cfg::get().output_dir,
+                                            cfg::get().output_dir, cfg::get().ds.reads.lib_count(),
                                             cfg::get().ds.reference_genome,
                                             cfg::get().pos.max_single_gap, cfg::get().pos.careful_labeling,
                                             !cfg::get().developer_mode);

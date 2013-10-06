@@ -49,16 +49,16 @@ struct graph_pack: private boost::noncopyable {
 
     Sequence genome;
 
-    explicit graph_pack(size_t k, const std::string &workdir,
+    explicit graph_pack(size_t k, const std::string &workdir, size_t lib_count,
                         Sequence genome = Sequence(), size_t single_gap = 0,
                         bool careful_labeling = false, bool use_inner_ids = false)
             : k_value(k), g(k), index(g, k + 1, workdir),
               int_ids(g, use_inner_ids), edge_pos(g, (int) single_gap, careful_labeling),
               kmer_mapper(g, k + 1),
-              paired_indices(g, cfg::get().ds.reads.lib_count()),
-              clustered_indices(g, cfg::get().ds.reads.lib_count()),
-              scaffolding_indices(g, cfg::get().ds.reads.lib_count()),
-              single_long_reads(g, cfg::get().ds.reads.lib_count()),
+              paired_indices(g, lib_count),
+              clustered_indices(g, lib_count),
+              scaffolding_indices(g, lib_count),
+              single_long_reads(g, lib_count),
               genome(genome)
     { }
 };

@@ -230,16 +230,14 @@ void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t inse
 	io::ReadStreamVector<io::IReader<io::PairedRead>> paired_stream_vector(paired_read_stream);
 	DEBUG("Streams initialized");
 
-	conj_graph_pack gp(k, tmp_folder, (Sequence()));
+	conj_graph_pack gp(k, tmp_folder, 1);
 	DEBUG("Graph pack created");
-
-	PairedInfoIndexT<Graph> paired_index(gp.g);
 
 	io::ReadStreamVector<io::IReader<io::SingleRead>> single_stream_vector({new SingleStream(paired_read_stream)});
 	ConstructGraphWithCoverage(k, CreateDefaultConstructionConfig(), single_stream_vector, gp.g, gp.index);
 
     SequenceMapperNotifier notifier(gp);
-    LatePairedIndexFiller pif(gp.g, PairedReadCountWeight, paired_index);
+    LatePairedIndexFiller pif(gp.g, PairedReadCountWeight, gp.paired_indices[0]);
     notifier.Subscribe(0, &pif);
     notifier.ProcessLibrary(paired_stream_vector, 0, paired_stream_vector.size());
 
@@ -247,7 +245,7 @@ void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t inse
 
 	AssertCoverage(gp.g, AddComplement(etalon_coverage));
 
-	AssertPairInfo(gp.g, paired_index, AddComplement(AddBackward(etalon_pair_info)));
+	AssertPairInfo(gp.g, gp.paired_indices[0], AddComplement(AddBackward(etalon_pair_info)));
 }
 
 struct TmpFolderFixture

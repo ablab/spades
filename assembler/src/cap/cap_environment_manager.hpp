@@ -62,7 +62,7 @@ class CapEnvironmentManager {
                                       unsigned k) const {
     typedef NewExtendedSequenceMapper<Graph, typename gp_t::index_t> Mapper;
 
-    shared_ptr<gp_t> result(new gp_t(k, env_->kDefaultGPWorkdir));
+    shared_ptr<gp_t> result(new gp_t(k, env_->kDefaultGPWorkdir, 0));
 
     //fixme use rc_wrapper
     vector<ContigStream*> rc_contigs;
@@ -89,7 +89,7 @@ class CapEnvironmentManager {
 
   template <class gp_t>
   shared_ptr<gp_t> BuildGPFromSaves(const size_t K, const std::string &/* path */) const {
-    shared_ptr<gp_t> result(new gp_t(unsigned(K), env_->kDefaultGPWorkdir));
+    shared_ptr<gp_t> result(new gp_t(unsigned(K), env_->kDefaultGPWorkdir, 0));
 
     //ScanGraphPack(path, *result);
     // TODO
