@@ -9,767 +9,17 @@
 
 #include "standard_base.hpp"
 #include "simple_tools.hpp"
-#include "adt/queue_iterator.hpp"
-#include "logger/logger.hpp"
-#include "simple_tools.hpp"
-#include "dijkstra.hpp"
 #include "xmath.h"
+
+#include "omni/action_handlers.hpp"
+#include "omni/graph_iterators.hpp"
+#include "omni/dijkstra.hpp"
+#include "omni/mapping_path.hpp"
+
 #include <cmath>
-#include <ostream>
-#include <boost/function.hpp>
-#include "perfcounter.hpp"
 #include <ctime>
-#include "order_and_law.hpp"
 
 namespace omnigraph {
-using std::auto_ptr;
-using std::vector;
-using std::string;
-using std::pair;
-using std::set;
-
-/**
- * ActionHandler is base listening class for graph events. All structures and information storages
- * which are meant to synchronize with graph should use this structure. In order to make handler listen
- * to graph events one should add it to graph listeners.
- * Normally structure itself extends ActionHandler and overrides several handling methods. In
- * constructor it adds itself to graph handler list and removes itself form this list in destructor.
- * All events are divided into two levels: low level events and high level events.
- * Low level events are addition/deletion of vertices/edges. These events should be triggered only after
- * high level events when all data was already transferred and graph structure is consistent.
- * High level events should be used to keep external data synchronized with graph and keep internal data
- * consistent. Now high level events are merge, glue and split. This list can be extended in near future.
- */
-template<typename VertexId, typename EdgeId>
-class ActionHandler : boost::noncopyable {
-    const string handler_name_;
-private:
-    bool attached_;
- public:
-    /**
-     * Create action handler with given name. With this name one can find out what tipe of handler is it.
-     */
-    ActionHandler(const string& name)
-            : handler_name_(name), attached_(true) {
-    }
-
-    virtual ~ActionHandler() {
-        TRACE("~ActionHandler " << handler_name_);
-    }
-
-    /**
-     * Method returns name of this handler
-     */
-    const string& name() const {
-        return handler_name_;
-    }
-
-    /**
-     * Low level event which is triggered when vertex is added to graph.
-     * @param v new vertex
-     */
-    virtual void HandleAdd(VertexId /*v*/) {
-    }
-
-    /**
-     * Low level event which is triggered when edge is added to graph.
-     * @param e new edge
-     */
-    virtual void HandleAdd(EdgeId /*e*/) {
-    }
-
-    /**
-     * Low level event which is triggered when vertex is deleted from graph.
-     * @param v vertex to delete
-     */
-    virtual void HandleDelete(VertexId /*v*/) {
-    }
-
-    /**
-     * Low level event which is triggered when edge is deleted from graph.
-     * @param e edge to delete
-     */
-    virtual void HandleDelete(EdgeId /*e*/) {
-    }
-
-    /**
-     * High level event which is triggered when merge operation is performed on graph, which is when
-     * path of edges with all inner vertices having exactly one incoming and one outgoing edge is
-     * replaced with a single edge. Since this is high level operation event of creation of new edge
-     * and events of deletion of old edges should not have been triggered yet when this event was triggered.
-     * @param old_edges path of edges to be replaced with single edge
-     * @param new_edge new edge that was added to be a replacement of path
-     */
-    virtual void HandleMerge(const vector<EdgeId>& /*old_edges*/, EdgeId /*new_edge*/) {
-    }
-
-    /**
-     * High level event which is triggered when glue operation is performed on graph, which is when
-     * edge is completely replaced with other edge. This operation is widely used in bulge removal
-     * when alternative path is glued to main path. Since this is high level operation event of deletion
-     * of old edge should not have been triggered yet when this event was triggered.
-     * @param new_edge edge glue result
-     * @param edge1 edge to be glued to edge2
-     * @param edge2 edge edge1 should be glued with
-     */
-    virtual void HandleGlue(EdgeId /*new_edge*/, EdgeId /*edge1*/, EdgeId /*edge2*/) {
-    }
-
-    /**
-     * High level event which is triggered when split operation is performed on graph, which is when
-     * edge is split into several shorter edges. Split operation is reverse to merge operation.
-     * Since this is high level operation event of deletion of old edge and events of creation of new edges
-     * should not have been triggered yet when this event was triggered.
-     * @param old_edge edge to be split
-     * @param new_edges edges which are results of split
-     */
-    virtual void HandleSplit(EdgeId /*old_edge*/, EdgeId /*new_edge_1*/,
-                             EdgeId /*new_edge_2*/) {
-    }
-
-    /**
-     * Every thread safe descendant should override this method for correct concurrent graph processing.
-     */
-    virtual bool IsThreadSafe() const {
-        return false;
-    }
-
-    bool IsAttached() const {
-        return attached_;
-    }
-
-    void Attach() {
-        VERIFY(!attached_);
-        attached_ = true;
-    }
-
-    void Detach() {
-        VERIFY(attached_);
-        attached_ = false;
-    }
-};
-
-template<class Graph>
-class GraphActionHandler : public ActionHandler<typename Graph::VertexId,
-        typename Graph::EdgeId> {
-    typedef ActionHandler<typename Graph::VertexId, typename Graph::EdgeId> base;
-
-    const Graph& g_;
- protected:
-    const Graph& g() const {
-        return g_;
-    }
-
- public:
-    GraphActionHandler(const Graph& g, const string& name)
-            : base(name),
-              g_(g) {
-        TRACE("Adding new action handler: " << this->name());
-        g_.AddActionHandler(this);
-    }
-
-    GraphActionHandler(const GraphActionHandler<Graph> &other)
-            : base(other.name()),
-              g_(other.g_) {
-        TRACE("Adding new action handler: " << this->name());
-        g_.AddActionHandler(this);
-    }
-
-    virtual ~GraphActionHandler() {
-        TRACE("Removing action handler: " << this->name());
-        if(this->IsAttached())
-            this->Detach();
-        g_.RemoveActionHandler(this);
-    }
-};
-
-/**
- * In order to support various types of graphs and make handler structure more flexible HandlerApplier
- * structure was introduced. If certain implementation of graph requires special handler triggering scheme
- * one can store certain extension of HandlerApplier in graph and trigger HandlerApplier methods instead
- * of GraphHandler methods.
- * HandlerApplier contains one method for each of graph events which define the exact way this event
- * should be triggered.
- */
-template<typename VertexId, typename EdgeId>
-class HandlerApplier {
-    typedef ActionHandler<VertexId, EdgeId> Handler;
- public:
-
-    virtual void
-    ApplyAdd(Handler& handler, VertexId v) const = 0;
-
-    virtual void
-    ApplyAdd(Handler& handler, EdgeId e) const = 0;
-
-    virtual void
-    ApplyDelete(Handler& handler, VertexId v) const = 0;
-
-    virtual void
-    ApplyDelete(Handler& handler, EdgeId e) const = 0;
-
-    virtual void ApplyMerge(Handler& handler, vector<EdgeId> old_edges,
-                            EdgeId new_edge) const = 0;
-
-    virtual void ApplyGlue(Handler& handler, EdgeId new_edge, EdgeId edge1,
-                           EdgeId edge2) const = 0;
-
-    virtual void ApplySplit(Handler& handler, EdgeId old_edge,
-                            EdgeId new_edge_1, EdgeId new_edge2) const = 0;
-
-    virtual ~HandlerApplier() {
-    }
-};
-
-/**
- * SimpleHandlerApplier is simple implementation of handler applier with no special filtering.
- */
-template<class Graph>
-class SimpleHandlerApplier : public HandlerApplier<typename Graph::VertexId,
-        typename Graph::EdgeId> {
- public:
-    typedef typename Graph::VertexId VertexId;
-    typedef typename Graph::EdgeId EdgeId;
-    typedef ActionHandler<VertexId, EdgeId> Handler;
-
-    virtual void ApplyAdd(Handler& handler, VertexId v) const {
-        handler.HandleAdd(v);
-    }
-
-    virtual void ApplyAdd(Handler& handler, EdgeId e) const {
-        handler.HandleAdd(e);
-    }
-
-    virtual void ApplyDelete(Handler& handler, VertexId v) const {
-        handler.HandleDelete(v);
-    }
-
-    virtual void ApplyDelete(Handler& handler, EdgeId e) const {
-        handler.HandleDelete(e);
-    }
-
-    virtual void ApplyMerge(Handler& handler, vector<EdgeId> old_edges,
-                            EdgeId new_edge) const {
-        handler.HandleMerge(old_edges, new_edge);
-    }
-
-    virtual void ApplyGlue(Handler& handler, EdgeId new_edge, EdgeId edge1,
-                           EdgeId edge2) const {
-        handler.HandleGlue(new_edge, edge1, edge2);
-    }
-
-    virtual void ApplySplit(Handler& handler, EdgeId old_edge, EdgeId new_edge1,
-                            EdgeId new_edge2) const {
-        handler.HandleSplit(old_edge, new_edge1, new_edge2);
-    }
-
-};
-
-/**
- * PairedHandlerApplier is implementation of HandlerApplier for graph with synchronization of actions
- * performed with vertices/edges and its reverse-complement analogues. Thus while corresponding
- * method was called only once event should be triggered twice: for the parameters with which method
- * was called and for reverse-complement parameters. Also certain assertions were added for bad cases.
- */
-template<class Graph>
-class PairedHandlerApplier : public HandlerApplier<typename Graph::VertexId,
-        typename Graph::EdgeId> {
- private:
-    Graph &graph_;
- public:
-    typedef typename Graph::VertexId VertexId;
-    typedef typename Graph::EdgeId EdgeId;
-    typedef ActionHandler<VertexId, EdgeId> Handler;
-
-    PairedHandlerApplier(Graph &graph)
-            : graph_(graph) {
-    }
-
-    virtual void ApplyAdd(Handler& handler, VertexId v) const {
-        VertexId rcv = graph_.conjugate(v);
-        handler.HandleAdd(v);
-        if (v != rcv) {
-            handler.HandleAdd(rcv);
-        }
-    }
-
-    virtual void ApplyAdd(Handler& handler, EdgeId e) const {
-        EdgeId rce = graph_.conjugate(e);
-        handler.HandleAdd(e);
-        if (e != rce) {
-            handler.HandleAdd(rce);
-        }
-    }
-
-    virtual void ApplyDelete(Handler& handler, VertexId v) const {
-        VertexId rcv = graph_.conjugate(v);
-        handler.HandleDelete(v);
-        if (v != rcv) {
-            handler.HandleDelete(rcv);
-        }
-    }
-
-    virtual void ApplyDelete(Handler& handler, EdgeId e) const {
-        EdgeId rce = graph_.conjugate(e);
-        handler.HandleDelete(e);
-        if (e != rce) {
-            handler.HandleDelete(rce);
-        }
-    }
-
-    virtual void ApplyMerge(Handler& handler, vector<EdgeId> old_edges,
-                            EdgeId new_edge) const {
-        EdgeId rce = graph_.conjugate(new_edge);
-        handler.HandleMerge(old_edges, new_edge);
-        if (new_edge != rce) {
-            vector<EdgeId> rc_old_edges;
-            for (int i = (int) old_edges.size() - 1; i >= 0; i--) {
-                rc_old_edges.push_back(graph_.conjugate(old_edges[i]));
-            }
-            handler.HandleMerge(rc_old_edges, rce);
-        }
-    }
-
-    virtual void ApplyGlue(Handler& handler, EdgeId new_edge, EdgeId edge1,
-                           EdgeId edge2) const {
-        EdgeId rc_edge1 = graph_.conjugate(edge1);
-        EdgeId rc_edge2 = graph_.conjugate(edge2);
-        VERIFY(edge1 != edge2);
-        VERIFY(edge2 != rc_edge2);
-        handler.HandleGlue(new_edge, edge1, edge2);
-        if (edge1 != rc_edge1) {
-            handler.HandleGlue(graph_.conjugate(new_edge), rc_edge1, rc_edge2);
-        }
-    }
-
-    virtual void ApplySplit(Handler& handler, EdgeId old_edge,
-                            EdgeId new_edge_1, EdgeId new_edge2) const {
-        EdgeId rce = graph_.conjugate(old_edge);
-        //VERIFY(old_edge != rce);
-        handler.HandleSplit(old_edge, new_edge_1, new_edge2);
-        if (old_edge != rce) {
-            handler.HandleSplit(rce, graph_.conjugate(new_edge2),
-                                 graph_.conjugate(new_edge_1));
-        }
-    }
-
- private:
-    DECL_LOGGER("PairedHandlerApplier")
-};
-
-/**
- * SmartIterator is abstract class which acts both as QueueIterator and GraphActionHandler. As QueueIterator
- * SmartIterator is able to iterate through collection content of which can be changed in process of
- * iteration. And as GraphActionHandler SmartIterator can change collection contents with respect to the
- * way graph is changed. Also one can define order of iteration by specifying Comparator.
- */
-template<class Graph, typename ElementId, typename Comparator = std::less<
-        ElementId> >
-class SmartIterator : public GraphActionHandler<Graph>, public QueueIterator<
-        ElementId, Comparator> {
- public:
-    typedef typename Graph::VertexId VertexId;
-    typedef typename Graph::EdgeId EdgeId;
- private:
-    bool add_new_;
- public:
-    SmartIterator(const Graph &graph, const string &name, bool add_new,
-                  const Comparator& comparator = Comparator())
-            : GraphActionHandler<Graph>(graph, name),
-              QueueIterator<ElementId, Comparator>(comparator),
-              add_new_(add_new) {
-    }
-
-    virtual ~SmartIterator() {
-    }
-
-    virtual void HandleAdd(ElementId v) {
-        if (add_new_)
-            this->push(v);
-    }
-
-    virtual void HandleDelete(ElementId v) {
-        this->erase(v);
-    }
-};
-
-/**
- * SmartIterator is abstract class which acts both as QueueIterator and GraphActionHandler. As QueueIterator
- * SmartIterator is able to iterate through collection content of which can be changed in process of
- * iteration. And as GraphActionHandler SmartIterator can change collection contents with respect to the
- * way graph is changed. Also one can define order of iteration by specifying Comparator.
- */
-template<class Graph, typename ElementId, typename Comparator = std::less<
-        ElementId>>
-class SmartSetIterator : public SmartIterator<Graph, ElementId, Comparator> {
- public:
-    typedef typename Graph::VertexId VertexId;
-    typedef typename Graph::EdgeId EdgeId;
- public:
-    template<class Iterator>
-    SmartSetIterator(const Graph &graph, Iterator begin, Iterator end,
-                     const Comparator& comparator = Comparator())
-            : SmartIterator<Graph, ElementId, Comparator>(
-                    graph, "SmartSet " + ToString(this), false, comparator) {
-        this->insert(begin, end);
-    }
-
-    virtual ~SmartSetIterator() {
-    }
-};
-
-/*
- * ConditionedSmartSetIterator acts much like SmartSetIterator, but, unlike the above case,
- * one can (and must) provide merge handler that will decide whether to add merged edge to
- * the set being iterated or not (extending add_new_ parameter logic of SmartIterator)
- * Also has the ability to be `reset` (i.e. start from the begin-iterator with respect to
- * added and deleted values)
- * MergeHandler class/struct must provide:
- *  bool operator()(const std::vector<ElementId> &, ElementId)
- */
-template<class Graph, typename ElementId, class MergeHandler>
-class ConditionedSmartSetIterator : public SmartSetIterator<Graph, ElementId> {
- public:
-  template <class Iterator>
-  ConditionedSmartSetIterator(const Graph &graph, Iterator begin, Iterator end,
-                              MergeHandler &merge_handler)
-      : SmartSetIterator<Graph, ElementId>(graph, begin, end),
-        merge_handler_(merge_handler),
-        true_elements_() {
-
-    for (auto it = begin; it != end; ++it) {
-      true_elements_.insert(*it);
-    }
-  }
-
-  virtual ~ConditionedSmartSetIterator() {
-  }
-
-  virtual void HandleAdd(ElementId v) {
-    TRACE("handleAdd " << this->g().str(v));
-    if (true_elements_.count(v)) {
-      this->push(v);
-    }
-  }
-
-  virtual void HandleDelete(ElementId v) {
-    TRACE("handleDel " << this->g().str(v));
-    super::HandleDelete(v);
-    true_elements_.erase(v);
-  }
-
-    virtual void HandleMerge(const std::vector<ElementId>& old_edges, ElementId new_edge) {
-    TRACE("handleMer " << this->g().str(new_edge));
-    if (merge_handler_(old_edges, new_edge)) {
-      true_elements_.insert(new_edge);
-    }
-  }
-
-  virtual void reset() {
-    TRACE("reset");
-    this->operator++();
-    this->insert(true_elements_.begin(), true_elements_.end());
-  }
-
- private:
-  typedef SmartSetIterator<Graph, ElementId> super;
-
-  MergeHandler &merge_handler_;
-  std::unordered_set<ElementId> true_elements_;
-
-  DECL_LOGGER("ConditionedSmartSetIterator")
-  ;
-};
-
-/**
- * SmartVertexIterator iterates through vertices of graph. It listens to AddVertex/DeleteVertex graph events
- * and correspondingly edits the set of vertices to iterate through. Note: high level event handlers are
- * triggered before low level event handlers like H>andleAdd/HandleDelete. Thus if Comparator uses certain
- * structure which is also updated with handlers make sure that all information is updated in high level
- * event handlers.
- */
-template<class Graph, typename Comparator = std::less<typename Graph::VertexId> >
-class SmartVertexIterator : public SmartIterator<Graph,
-        typename Graph::VertexId, Comparator> {
- public:
-    typedef typename Graph::VertexId VertexId;
-    typedef typename Graph::EdgeId EdgeId;
-
-    static size_t get_id() {
-        static size_t id = 0;
-        return id++;
-    }
-
- public:
-    SmartVertexIterator(const Graph &graph, const Comparator& comparator =
-                                Comparator())
-            : SmartIterator<Graph, VertexId, Comparator>(
-                    graph, "SmartVertexIterator " + ToString(get_id()), true,
-                    comparator) {
-        this->insert(graph.begin(), graph.end());
-    }
-
-    virtual ~SmartVertexIterator() {
-    }
-
-};
-
-/**
- * SmartEdgeIterator iterates through edges of graph. It listens to AddEdge/DeleteEdge graph events
- * and correspondingly edits the set of edges to iterate through. Note: high level event handlers are
- * triggered before low level event handlers like HandleAdd/HandleDelete. Thus if Comparator uses certain
- * structure which is also updated with handlers make sure that all information is updated in high level
- * event handlers.
- */
-template<class Graph, typename Comparator = std::less<typename Graph::EdgeId> >
-class SmartEdgeIterator : public SmartIterator<Graph, typename Graph::EdgeId,
-        Comparator> {
- public:
-    typedef QueueIterator<typename Graph::EdgeId, Comparator> base;
-    typedef typename Graph::VertexId VertexId;
-    typedef typename Graph::EdgeId EdgeId;
-
-    static size_t get_id() {
-        static size_t id = 0;
-        return id++;
-    }
- public:
-    SmartEdgeIterator(const Graph &graph, Comparator comparator = Comparator(),
-                      vector<EdgeId>* edges = 0)
-            : SmartIterator<Graph, EdgeId, Comparator>(
-                    graph, "SmartEdgeIterator " + ToString(get_id()), true,
-                    comparator) {
-        if (edges == 0) {
-            for (auto it = graph.begin(); it != graph.end(); ++it) {
-                //todo: this solution doesn't work with parallel simplification
-                this->base::insert(graph.out_begin(*it), graph.out_end(*it));
-                //this does
-                //auto out = graph.OutgoingEdges(*it);
-                //this->base::insert(out.begin(), out.end());
-            }
-        } else {
-            this->base::insert(edges->begin(), edges->end());
-        }
-    }
-};
-
-template<class Graph>
-class ConstEdgeIterator :
-            public boost::iterator_facade<ConstEdgeIterator<Graph>,
-                                          typename Graph::EdgeId const,
-                                          boost::forward_traversal_tag,
-                                          typename Graph::EdgeId const> {
-  public:
-    ConstEdgeIterator(const Graph &g)
-            : graph_(g),
-              cvertex_(g.begin()), evertex_(g.end()),
-              cedge_(g.out_begin(*cvertex_)), eedge_(g.out_end(*cvertex_)) {
-        skip_empty();
-    }
-
-    bool IsEnd() const {
-        return cvertex_ == evertex_;
-    }
-
-  private:
-    friend class boost::iterator_core_access;
-
-    void skip_empty() {
-        while (cedge_ == eedge_) {
-            if (++cvertex_ == evertex_)
-                break;
-            cedge_ = graph_.out_begin(*cvertex_);
-            eedge_ = graph_.out_end(*cvertex_);
-        }
-    }
-
-    void increment() {
-        ++cedge_;
-        skip_empty();
-    }
-
-    bool equal(ConstEdgeIterator &other) const {
-        return (graph_ == other.graph_ &&
-                cvertex_ == other.cvertex_ &&
-                cedge_ == other.cedge_);
-    }
-
-    typename Graph::EdgeId const dereference() const {
-        return *cedge_;
-    }
-
-    const Graph &graph_;
-    typename Graph::VertexIt cvertex_, evertex_;
-    typename Graph::edge_const_iterator cedge_, eedge_;
-};
-
-
-/**
- * This class is a representation of how certain sequence is mapped to genome. Needs further adjustment.
- */
-template<typename ElementId>
-class Path {
-    vector<ElementId> sequence_;
-    int start_pos_;
-    int end_pos_;
- public:
-    typedef typename vector<ElementId>::const_iterator iterator;
-
-    Path(const vector<ElementId>& sequence, size_t start_pos, size_t end_pos)
-            : sequence_(sequence),
-              start_pos_((int) start_pos),
-              end_pos_((int) end_pos) {
-    }
-
-    Path()
-            : sequence_(),
-              start_pos_(-1),
-              end_pos_(-1) {
-    }
-
-    size_t start_pos() const {
-        return start_pos_;
-    }
-
-    size_t end_pos() const {
-        return end_pos_;
-    }
-
-    size_t size() const {
-        return sequence_.size();
-    }
-
-    const vector<ElementId>& sequence() const {
-        return sequence_;
-    }
-
-    ElementId operator[](size_t index) const {
-        return sequence_[index];
-    }
-
-    iterator begin() const {
-        return sequence_.begin();
-    }
-
-    iterator end() const {
-        return sequence_.end();
-    }
-
-};
-
-struct Range {
-    //inclusive
-    size_t start_pos;
-    //exclusive
-    size_t end_pos;
-
-    size_t size() const {
-        VERIFY(end_pos >= start_pos);
-        return end_pos - start_pos;
-    }
-
-    void shift(int shift) {
-        VERIFY(shift > 0 || size_t(-shift) <= start_pos);
-        start_pos += shift;
-        end_pos += shift;
-    }
-
-    Range(size_t start_pos, size_t end_pos)
-            : start_pos(start_pos),
-              end_pos(end_pos) {
-        VERIFY(end_pos >= start_pos);
-    }
-
-    bool operator<(const Range &other) const {
-      if (start_pos != other.start_pos)
-        return start_pos < other.start_pos;
-      return end_pos < other.end_pos;
-    }
-
-    bool contains(const Range& that) {
-        return start_pos <= that.start_pos && end_pos >= that.end_pos;
-    }
-};
-
-inline std::ostream& operator<<(std::ostream& os, const Range& range) {
-    os << "[" << range.start_pos << ", " << range.end_pos << "]";
-    return os;
-}
-
-struct MappingRange {
-    Range initial_range;
-    Range mapped_range;
-
-    MappingRange(Range initial_range, Range mapped_range)
-            : initial_range(initial_range),
-              mapped_range(mapped_range) {
-    }
-};
-
-inline std::ostream& operator<<(std::ostream& os, const MappingRange& map_range) {
-    os << map_range.initial_range << " --> " << map_range.mapped_range;
-    return os;
-}
-
-template<typename ElementId>
-class MappingPath {
- public:
-
-    MappingPath() {
-    }
-
-    MappingPath(const vector<ElementId>& edges,
-                const vector<MappingRange> range_mappings)
-            : edges_(edges),
-              range_mappings_(range_mappings) {
-    }
-
-    size_t size() const {
-        return edges_.size();
-    }
-
-    pair<const ElementId, const MappingRange> operator[](size_t idx) const {
-        return make_pair(edges_[idx], range_mappings_[idx]);
-    }
-
-    pair<const ElementId, const MappingRange> front() const {
-        return make_pair(edges_.front(), range_mappings_.front());
-    }
-
-    pair<const ElementId, const MappingRange> back() const {
-        return make_pair(edges_.back(), range_mappings_.back());
-    }
-
-    size_t start_pos() const {
-        return range_mappings_.front().mapped_range.start_pos;
-    }
-
-    size_t end_pos() const {
-        return range_mappings_.back().mapped_range.end_pos;
-    }
-
-    Path<ElementId> simple_path() const {
-        if (edges_.size() != 0)
-            return Path<ElementId>(
-                    edges_,
-                    range_mappings_[0].mapped_range.start_pos,
-                    range_mappings_[range_mappings_.size() - 1].mapped_range
-                            .end_pos);
-        else
-            return Path<ElementId>();
-    }
-
-    void join(const MappingPath<ElementId>& that) {
-        for (size_t i = 0; i < that.size(); ++i) {
-            edges_.push_back(that.edges_[i]);
-            range_mappings_.push_back(that.range_mappings_[i]);
-        }
-    }
-
- private:
-    vector<ElementId> edges_;
-    vector<MappingRange> range_mappings_;
-};
 
 template<class Graph>
 class BackwardBoundedDijkstra : public BackwardDijkstra<Graph> {
@@ -781,9 +31,7 @@ class BackwardBoundedDijkstra : public BackwardDijkstra<Graph> {
 
  public:
     BackwardBoundedDijkstra(const Graph &g, size_t bound)
-            : base(g),
-              bound_(bound) {
-    }
+            : base(g), bound_(bound) {}
 
     virtual bool CheckProcessVertex(VertexId /*vertex*/, size_t distance) {
         return distance <= bound_;
@@ -793,7 +41,6 @@ class BackwardBoundedDijkstra : public BackwardDijkstra<Graph> {
 
 template<class Graph>
 class BackwardReliableBoundedDijkstra : public BackwardDijkstra<Graph> {
-
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
     typedef BackwardDijkstra<Graph> base;
@@ -830,7 +77,6 @@ class BackwardReliableBoundedDijkstra : public BackwardDijkstra<Graph> {
 
 template<class Graph>
 class ReliableBoundedDijkstra : public Dijkstra<Graph> {
-
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
     typedef Dijkstra<Graph> base;
@@ -925,17 +171,16 @@ struct LengthComparator {
 };
 
 template<class Graph>
-size_t CummulativeLength(const Graph& g,
-                         const vector<typename Graph::EdgeId>& path) {
+size_t CumulativeLength(const Graph& g,
+                        const std::vector<typename Graph::EdgeId>& path) {
     size_t s = 0;
-    for (auto it = path.begin(); it != path.end(); ++it) {
+    for (auto it = path.begin(); it != path.end(); ++it)
         s += g.length(*it);
-    }
+
     return s;
 }
 
 template<class Graph>
-
 class AbstractDirection {
  private:
     typedef typename Graph::EdgeId EdgeId;
@@ -950,22 +195,17 @@ class AbstractDirection {
 
  public:
     AbstractDirection(const Graph& graph)
-            : graph_(graph) {
-    }
+            : graph_(graph) {}
 
-    virtual ~AbstractDirection() {
-    }
+    virtual ~AbstractDirection() {}
 
-    virtual const vector<EdgeId> OutgoingEdges(VertexId v) const = 0;
-
-    virtual const vector<EdgeId> IncomingEdges(VertexId v) const = 0;
+    virtual const std::vector<EdgeId> OutgoingEdges(VertexId v) const = 0;
+    virtual const std::vector<EdgeId> IncomingEdges(VertexId v) const = 0;
 
     virtual size_t OutgoingEdgeCount(VertexId v) const = 0;
-
     virtual size_t IncomingEdgeCount(VertexId v) const = 0;
 
     virtual VertexId EdgeStart(EdgeId edge) const = 0;
-
     virtual VertexId EdgeEnd(EdgeId edge) const = 0;
 
     bool CheckUniqueOutgoingEdge(VertexId v) const {
@@ -997,11 +237,11 @@ class ForwardDirection : public AbstractDirection<Graph> {
             : AbstractDirection<Graph>(graph) {
     }
 
-    virtual const vector<EdgeId> OutgoingEdges(VertexId v) const {
+    virtual const std::vector<EdgeId> OutgoingEdges(VertexId v) const {
         return this->graph().OutgoingEdges(v);
     }
 
-    virtual const vector<EdgeId> IncomingEdges(VertexId v) const {
+    virtual const std::vector<EdgeId> IncomingEdges(VertexId v) const {
         return this->graph().IncomingEdges(v);
     }
 
@@ -1036,11 +276,11 @@ class BackwardDirection : public AbstractDirection<Graph> {
             : AbstractDirection<Graph>(graph) {
     }
 
-    virtual const vector<EdgeId> OutgoingEdges(VertexId v) const {
+    virtual const std::vector<EdgeId> OutgoingEdges(VertexId v) const {
         return this->graph().IncomingEdges(v);
     }
 
-    virtual const vector<EdgeId> IncomingEdges(VertexId v) const {
+    virtual const std::vector<EdgeId> IncomingEdges(VertexId v) const {
         return this->graph().OutgoingEdges(v);
     }
 
@@ -1073,20 +313,17 @@ class UniquePathFinder {
 
     const Graph& graph_;
  public:
-
     //todo use length bound if needed
     UniquePathFinder(const Graph& graph, size_t /*length_bound*/ =
                              std::numeric_limits<size_t>::max())
-            : graph_(graph) {
+            : graph_(graph) {}
 
-    }
-
-    const vector<EdgeId> operator()(
-            EdgeId e, const AbstractDirection<Graph> &direction) const {
-        vector<EdgeId> answer;
+    std::vector<EdgeId> operator()(EdgeId e,
+                                   const AbstractDirection<Graph> &direction) const {
+        std::vector<EdgeId> answer;
         EdgeId curr = e;
         answer.push_back(curr);
-        set<EdgeId> was;
+        std::set<EdgeId> was;
         while (direction.CheckUniqueOutgoingEdge(direction.EdgeEnd(curr))) {
             curr = direction.GetUniqueOutgoingEdge(direction.EdgeEnd(curr));
             if (was.count(curr) > 0)
@@ -1097,11 +334,11 @@ class UniquePathFinder {
         return answer;
     }
 
-    const vector<EdgeId> UniquePathForward(EdgeId e) const {
+    std::vector<EdgeId> UniquePathForward(EdgeId e) const {
         return this->operator()(e, ForwardDirection<Graph>(graph_));
     }
 
-    const vector<EdgeId> UniquePathBackward(EdgeId e) const {
+    std::vector<EdgeId> UniquePathBackward(EdgeId e) const {
         return this->operator()(e, BackwardDirection<Graph>(graph_));
     }
 
@@ -1113,13 +350,9 @@ class TrivialPathFinder {
     typedef typename Graph::VertexId VertexId;
 
  public:
+    TrivialPathFinder(const Graph&, size_t = 0) {}
 
-    TrivialPathFinder(const Graph&, size_t = 0) {
-
-    }
-
-    const vector<EdgeId> operator()(
-            EdgeId e, const AbstractDirection<Graph> &) const {
+    std::vector<EdgeId> operator()(EdgeId e, const AbstractDirection<Graph> &) const {
         return {e};
     }
 
@@ -1140,13 +373,13 @@ class PlausiblePathFinder {
         const AbstractDirection<Graph> &direction_;
         const size_t length_bound_;
 
-        pair<size_t, EdgeId> find(EdgeId edge, size_t length) {
+        std::pair<size_t, EdgeId> find(EdgeId edge, size_t length) {
             length += graph_.length(edge);
             VertexId cross = direction_.EdgeEnd(edge);
             auto result = make_pair(length, edge);
             if (length < length_bound_
                     && direction_.CheckUniqueIncomingEdge(cross)) {
-                vector<EdgeId> outgoing = direction_.OutgoingEdges(cross);
+                std::vector<EdgeId> outgoing = direction_.OutgoingEdges(cross);
                 for (auto it = outgoing.begin(); it != outgoing.end(); ++it) {
                     auto candidate = find(*it, length);
                     if (candidate.first > result.first)
@@ -1156,15 +389,14 @@ class PlausiblePathFinder {
             return result;
         }
 
-        vector<EdgeId> RestoreAnswer(EdgeId start, EdgeId end) {
-            vector<EdgeId> result;
+        std::vector<EdgeId> RestoreAnswer(EdgeId start, EdgeId end) {
+            std::vector<EdgeId> result;
             while (end != start) {
                 result.push_back(end);
-                end = direction_.GetUniqueIncomingEdge(
-                        direction_.EdgeStart(end));
+                end = direction_.GetUniqueIncomingEdge(direction_.EdgeStart(end));
             }
             result.push_back(start);
-            return vector<EdgeId>(result.rbegin(), result.rend());
+            return std::vector<EdgeId>(result.rbegin(), result.rend());
         }
 
      public:
@@ -1175,21 +407,18 @@ class PlausiblePathFinder {
                   length_bound_(length_bound) {
         }
 
-        vector<EdgeId> find(EdgeId edge) {
-            vector<EdgeId> result = RestoreAnswer(edge, find(edge, 0).second);
-            return result;
+        std::vector<EdgeId> find(EdgeId edge) {
+            return RestoreAnswer(edge, find(edge, 0).second);
         }
     };
 
  public:
     PlausiblePathFinder(const Graph& graph, size_t length_bound)
             : graph_(graph),
-              length_bound_(length_bound) {
-    }
+              length_bound_(length_bound) {}
 
-    const vector<EdgeId> operator()(
-            EdgeId e, const AbstractDirection<Graph> &direction) const {
-        vector<EdgeId> answer;
+    std::vector<EdgeId> operator()(EdgeId e,
+                                   const AbstractDirection<Graph> &direction) const {
         return DFS(graph_, direction, length_bound_).find(e);
     }
 
@@ -1205,7 +434,7 @@ class MultiplicityCounter {
     size_t max_depth_;
 
     bool search(VertexId a, VertexId start, EdgeId e, size_t depth,
-                set<VertexId> &was, pair<size_t, size_t> &result) const {
+                std::set<VertexId> &was, pair<size_t, size_t> &result) const {
         if (depth > max_depth_)
             return false;
         if (was.count(a) == 1)
@@ -1229,7 +458,7 @@ class MultiplicityCounter {
                 }
             }
         }
-        vector<EdgeId> in = graph_.IncomingEdges(a);
+        std::vector<EdgeId> in = graph_.IncomingEdges(a);
         for (auto it = in.begin(); it != in.end(); ++it) {
             if (*it == e) {
                 if (a != start) {
@@ -1257,8 +486,8 @@ class MultiplicityCounter {
     }
 
     size_t count(EdgeId e, VertexId start) const {
-        pair<size_t, size_t> result;
-        set<VertexId> was;
+        std::pair<size_t, size_t> result;
+        std::set<VertexId> was;
         bool valid = search(start, start, e, 0, was, result);
         if (!valid) {
             return (size_t) (-1);
@@ -1288,7 +517,7 @@ class DominatedSetFinder {
     size_t max_count_;
 
     size_t cnt_;
-    map<VertexId, Range> dominated_;
+    std::map<VertexId, Range> dominated_;
 
     bool CheckCanBeProcessed(VertexId v) const {
         DEBUG( "Check if vertex " << g_.str(v) << " is dominated close neighbour");

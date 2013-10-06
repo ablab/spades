@@ -163,7 +163,7 @@ void PairInfoCount::run(conj_graph_pack &gp) {
                 auto streams = paired_binary_readers(cfg::get().ds.reads[i], false, 0);
                 insert_size_refined = RefineInsertSizeForLib(gp, *streams, cfg::get_writable().ds.reads[i].data(), edge_length_threshold);
             } else {
-                auto_ptr<PairedReadStream> stream = paired_easy_reader(cfg::get().ds.reads[i], false, 0);
+                std::auto_ptr<PairedReadStream> stream = paired_easy_reader(cfg::get().ds.reads[i], false, 0);
                 SingleStreamType streams(stream.get());
                 streams.release();
                 insert_size_refined = RefineInsertSizeForLib(gp, streams, cfg::get_writable().ds.reads[i].data(), edge_length_threshold);

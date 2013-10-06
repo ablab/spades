@@ -72,7 +72,7 @@ std::auto_ptr<PairedReadStream> paired_easy_reader_for_libs(std::vector<size_t> 
     streams.push_back(reader.get());
     reader.release();
   }
-  return auto_ptr<PairedReadStream>(new MultiPairedStream(streams, true));
+  return std::auto_ptr<PairedReadStream>(new MultiPairedStream(streams, true));
 }
 
 
@@ -105,7 +105,7 @@ std::auto_ptr<ReadStream> single_easy_reader_for_libs(vector<size_t> libs,
     streams.push_back(reader.get());
     reader.release();
   }
-  return auto_ptr<ReadStream>(new MultiSingleStream(streams, true));
+  return std::auto_ptr<ReadStream>(new MultiSingleStream(streams, true));
 }
 
 

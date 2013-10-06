@@ -533,7 +533,7 @@ void CloseGaps(conj_graph_pack& gp) {
     CloseGaps(gp, *streams);
 
   } else {
-    auto_ptr<PairedReadStream> stream = paired_easy_reader(cfg::get().ds.reads[lib_index], true, 0);
+    std::auto_ptr<PairedReadStream> stream = paired_easy_reader(cfg::get().ds.reads[lib_index], true, 0);
     io::ReadStreamVector <PairedReadStream> streams(stream.get());
     //todo WTF what does it mean?
     streams.release();

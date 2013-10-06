@@ -449,7 +449,7 @@ private:
         }
         vector<EdgeId> answer = path_store.paths().front();
         TRACE("Gap closed");
-        TRACE( "Cumulative closure length is " << CummulativeLength(g_, answer));
+        TRACE( "Cumulative closure length is " << CumulativeLength(g_, answer));
         return answer;
     }
     const Graph& g_;
