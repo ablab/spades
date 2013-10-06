@@ -30,7 +30,7 @@ public:
   template<typename T2>
   pointer_iterator(const pointer_iterator<T2> &r) : data_(&(*r)) {}
 
-  pointer_iterator(pointer data, size_t stride = 1) : data_(data) {}
+  pointer_iterator(pointer data) : data_(data) {}
 
   template<typename T2>
   pointer_iterator& operator=(const pointer_iterator<T2> &r) {

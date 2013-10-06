@@ -1,6 +1,91 @@
 #pragma once
 
 template<class Graph>
+class PairInfoChecker {
+private:
+	typedef typename Graph::EdgeId EdgeId;
+	const EdgesPositionHandler<Graph> &positions_;
+	size_t first_bound_;
+	const size_t second_bound_;
+	vector<double> perfect_matches_;
+	vector<double> good_matches_;
+	vector<double> mismatches_;
+	vector<double> imperfect_matches_;
+
+public:
+	PairInfoChecker(const EdgesPositionHandler<Graph> &positions,
+			size_t first_bound, size_t second_bound) :
+			positions_(positions), first_bound_(first_bound), second_bound_(
+					second_bound) {
+	}
+
+	void Check(const de::PairedInfoIndex<Graph> &paired_index) {
+		for (auto it = paired_index.begin(); it != paired_index.end(); ++it) {
+			auto vec = *it;
+			for (auto vec_it = vec.begin(); vec_it != vec.end(); ++vec_it) {
+				size_t code = CheckSingleInfo(*vec_it);
+				if (code == 0) {
+					perfect_matches_.push_back(vec_it->weight);
+				} else if (code == 1) {
+					good_matches_.push_back(vec_it->weight);
+				} else if (code == 2) {
+					mismatches_.push_back(vec_it->weight);
+				} else if (code == 3) {
+					imperfect_matches_.push_back(vec_it->weight);
+				}
+			}
+		}
+	}
+
+	size_t CheckSingleInfo(de::PairInfo<EdgeId> info) {
+		const vector<EdgePosition> &pos1 = positions_.GetEdgePositions(
+				info.first);
+		const vector<EdgePosition> &pos2 = positions_.GetEdgePositions(
+				info.second);
+		bool good_match_found = false;
+		for (size_t i = 0; i < pos1.size(); i++)
+			for (size_t j = 0; j < pos2.size(); j++) {
+				if (abs(pos1[i].start_ + info.d - pos2[j].start_)
+						<= first_bound_ + info.variance) {
+					if (info.variance == 0) {
+						return 0;
+					} else {
+						return 3;
+					}
+				} else if (abs(pos1[i].start_ + info.d - pos2[j].start_)
+						<= second_bound_) {
+					good_match_found = true;
+				}
+			}
+		if (good_match_found) {
+			return 1;
+		} else {
+			return 2;
+		}
+	}
+
+	void WriteResultsToFile(vector<double> results, const string &file_name) {
+		sort(results.begin(), results.end());
+		ofstream os;
+		os.open(file_name.c_str());
+		for (size_t i = 0; i < results.size(); i++) {
+			os << results[i] << endl;
+		}
+		os.close();
+	}
+
+	void WriteResults(const string &folder_name) {
+        path::make_dir(folder_name);
+		WriteResultsToFile(perfect_matches_,
+				folder_name + "/perfect_matches.txt");
+		WriteResultsToFile(good_matches_, folder_name + "/good_matches.txt");
+		WriteResultsToFile(mismatches_, folder_name + "/mismatches.txt");
+		WriteResultsToFile(imperfect_matches_,
+				folder_name + "/imperfect_matches.txt");
+	}
+};
+
+template<class Graph>
 class EdgePairStat: public AbstractStatCounter {
 
 private:
