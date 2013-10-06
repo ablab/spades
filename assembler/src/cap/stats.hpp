@@ -705,7 +705,7 @@ class SimpleInDelAnalyzer {
 		Sequence edge_nucls = g_.EdgeNucls(e);
 		Sequence path_nucls = MergeSequences(g_, genome_path);
 		size_t edge_length = g_.length(e);
-		size_t path_length = CummulativeLength(g_, genome_path);
+		size_t path_length = CumulativeLength(g_, genome_path);
 		DEBUG(
 				"Diff length " << abs((int) edge_length - (int) path_length)
 						<< "; genome path length " << path_length

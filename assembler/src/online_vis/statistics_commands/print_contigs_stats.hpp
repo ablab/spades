@@ -39,7 +39,7 @@ namespace online_visualization {
                 vector<EdgeId> answer = path_storage.paths().front();
                 TRACE("Gap closed");
                 TRACE("Cumulative closure length is " 
-                        << CummulativeLength(graph, answer));
+                        << CumulativeLength(graph, answer));
                 return answer;
             }
 
