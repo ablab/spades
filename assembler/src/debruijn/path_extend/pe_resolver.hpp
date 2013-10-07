@@ -397,21 +397,21 @@ public:
     }
 
     void removeOverlaps(PathContainer& paths, GraphCoverageMap& coverage_map,
-                        size_t max_overlap, ContigWriter& writer,
-                        string output_dir) {
+                        size_t max_overlap, ContigWriter& /*writer*/,
+                        string /*output_dir*/) {
         SimpleOverlapRemover remover(g_, coverage_map);
-        writer.writePaths(paths, output_dir + "/before.fasta");
-        DEBUG("Removing subpaths");
+        //writer.writePaths(paths, output_dir + "/before.fasta");
+        //DEBUG("Removing subpaths");
         remover.RemoveSimilarPaths(max_overlap, false, true, true, false);
-        writer.writePaths(paths, output_dir + "/remove_similar.fasta");
-        DEBUG("Remove overlaps")
+        //writer.writePaths(paths, output_dir + "/remove_similar.fasta");
+        //DEBUG("Remove overlaps")
         remover.RemoveOverlaps(paths);
-        writer.writePaths(paths, output_dir + "/after_remove_overlaps.fasta");
+        //writer.writePaths(paths, output_dir + "/after_remove_overlaps.fasta");
         remover.RemoveSimilarPaths(max_overlap, true, false, false, false);
-        writer.writePaths(paths, output_dir + "/remove_equal.fasta");
-        DEBUG("remove similar path. Max difference " << max_overlap);
+        //writer.writePaths(paths, output_dir + "/remove_equal.fasta");
+        //DEBUG("remove similar path. Max difference " << max_overlap);
         remover.RemoveSimilarPaths(max_overlap, false, true, true, true);
-        writer.writePaths(paths, output_dir + "/remove_all.fasta");
+        //writer.writePaths(paths, output_dir + "/remove_all.fasta");
         DEBUG("end removing");
     }
 
