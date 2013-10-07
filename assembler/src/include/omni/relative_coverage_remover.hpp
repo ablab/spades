@@ -210,7 +210,6 @@ public:
 
 };
 
-
 template<class Graph>
 class LongestPathFinder {
     typedef typename Graph::EdgeId EdgeId;

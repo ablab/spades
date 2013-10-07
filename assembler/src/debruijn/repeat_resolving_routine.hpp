@@ -23,7 +23,7 @@
 #include "io/is_corrupting_wrapper.hpp"
 #include "resolved_pair_info.hpp"
 #include "graph_construction.hpp"
-#include "debruijn_stats.hpp"
+#include "stats/debruijn_stats.hpp"
 #include "de/distance_estimation.hpp"
 #include "omni/omni_utils.hpp"
 
@@ -673,7 +673,7 @@ void component_statistics(graph_pack & conj_gp,
         int component_id,
 		PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index) {
 
-	string graph_name = ConstructComponentName("graph_", component_id).c_str();
+	string graph_name = stats::ConstructComponentName("graph_", component_id).c_str();
 	string component_name = cfg::get().output_dir + "graph_components/"
 			+ graph_name;
 	//component output
@@ -766,7 +766,7 @@ void resolve_conjugate_component(int component_id, const Sequence& genome, const
 
 	INFO("Resolve component " << component_id);
 
-	string graph_name = ConstructComponentName("graph_", component_id).c_str();
+	string graph_name = stats::ConstructComponentName("graph_", component_id).c_str();
 	// FIXME: Use path_utils
 	string component_name = cfg::get().output_dir + "graph_components/"
 			+ graph_name;
@@ -969,7 +969,7 @@ void split_resolving(conj_graph_pack& conj_gp, PairedIndicesT& paired_indices,
 	if (cfg::get().rr.symmetric_resolve) {
 		if (cfg::get().componential_resolve) {
 			make_dir(cfg::get().output_dir + "graph_components" + "/");
-			number_of_components = PrintGraphComponents(
+			number_of_components = stats::PrintGraphComponents(
 					cfg::get().output_dir + "graph_components/graph_", conj_gp,
 					size_t(lib.data().mean_insert_size) + 100, clustered_index);
 			INFO("number of components " << number_of_components);
@@ -1139,7 +1139,7 @@ void resolve_repeats() {
 			&conj_gp.edge_pos);
 	total_labeler tot_lab(&graph_struct);
 	CompositeLabeler<Graph> labeler(tot_lab, conj_gp.edge_qual);
-	detail_info_printer printer(conj_gp, labeler, cfg::get().output_dir);
+	stats::detail_info_printer printer(conj_gp, labeler, cfg::get().output_dir);
 	printer(ipp_before_repeat_resolution);
 
 	bool no_valid_libs = true;

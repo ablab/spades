@@ -27,7 +27,7 @@ void late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices) {
     }
 
     if (cfg::get().paired_mode) {
-        size_t edge_length_threshold = Nx(gp.g, 50);
+        size_t edge_length_threshold = stats::Nx(gp.g, 50);
         INFO("STAGE == Counting Late Pair Info");
 
         for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {

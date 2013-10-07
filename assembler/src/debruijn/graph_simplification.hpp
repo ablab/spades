@@ -16,7 +16,7 @@
 #include "standard_base.hpp"
 #include "config_struct.hpp"
 #include "debruijn_graph.hpp"
-#include "debruijn_stats.hpp"
+#include "stats/debruijn_stats.hpp"
 
 #include "omni/visualization/graph_colorer.hpp"
 #include "omni/omni_utils.hpp"
@@ -34,6 +34,8 @@
 #include "graph_read_correction.hpp"
 #include "ec_threshold_finder.hpp"
 #include "detail_coverage.hpp"
+
+#include "stats/chimera_stats.hpp"
 
 namespace debruijn_graph {
 
@@ -591,7 +593,7 @@ void PreSimplification(conj_graph_pack& gp,
                        double determined_coverage_threshold) {
     INFO("PROCEDURE == Presimplification");
     INFO("ISOLATED EDGE REMOVER!!!");
-    
+
     size_t max_length = std::max(cfg::get().ds.RL(), cfg::get().simp.ier.max_length_any_cov);
     INFO("All edges of length smaller than " << max_length << " will be removed");
     IsolatedEdgeRemover<Graph>(gp.g, cfg::get().simp.ier.max_length,
@@ -621,7 +623,7 @@ void SimplificationCycle(conj_graph_pack& gp,
                          const FlankingCoverage<Graph, Index::InnerIndexT>& flanking_cov,
                          boost::function<void(EdgeId)> removal_handler,
                          GraphLabeler<Graph>& labeler,
-                         detail_info_printer &printer, size_t iteration_count,
+                         stats::detail_info_printer &printer, size_t iteration_count,
                          size_t iteration, double max_coverage) {
     INFO("PROCEDURE == Simplification cycle, iteration " << (iteration + 1));
 
@@ -673,7 +675,6 @@ void SimplificationCycle(conj_graph_pack& gp,
 void PostSimplification(conj_graph_pack& gp,
                         const FlankingCoverage<Graph, Index::InnerIndexT>& flanking_cov,
                         boost::function<void(EdgeId)> &removal_handler,
-                        detail_info_printer & /*printer*/,
                         double determined_coverage_threshold) {
   INFO("PROCEDURE == Post simplification");
   size_t iteration = 0;
@@ -732,12 +733,12 @@ void IdealSimplification(Graph& graph, Compressor<Graph>& compressor,
 void SimplifyGraph(conj_graph_pack &gp,
                    boost::function<void(EdgeId)> removal_handler,
                    GraphLabeler<Graph>& labeler,
-                   detail_info_printer& printer, size_t iteration_count) {
+                   stats::detail_info_printer& printer, size_t iteration_count) {
     //ec auto threshold
     double determined_coverage_threshold =
             FindErroneousConnectionsCoverageThreshold(gp.g,
                                                       gp.index.inner_index());
-    INFO( "Coverage threshold value was calculated as " << determined_coverage_threshold);
+    INFO("Coverage threshold value was calculated as " << determined_coverage_threshold);
 
     if (cfg::get().gap_closer_enable && cfg::get().gc.before_simplify)
         CloseGaps(gp);
@@ -774,14 +775,20 @@ void SimplifyGraph(conj_graph_pack &gp,
     if (!cfg::get().simp.stats_mode) {
         printer(ipp_before_post_simplification);
         //todo enable for comparison with current version
-        PostSimplification(gp, flanking_cov, removal_handler, printer,
+        PostSimplification(gp, flanking_cov, removal_handler,
                            determined_coverage_threshold);
     } else {
-        ChimericEdgeClassifier<Graph> edge_classifier(gp.g, gp.edge_qual);
-        ChimeraCoverageStats<Graph> chim_cov_stats(gp.g,
+        ofstream chimera_stats_out(cfg::get().output_dir + "chimera_stats.tsv");
+        stats::ChimericEdgeClassifier<Graph> edge_classifier(gp.g, /*length_bound*/gp.g.k() + 40,
+                                                             gp.edge_qual, /*real_edges_mode*/false);
+        stats::InterstrandAnalyzer<Graph> interstrand_analyzer(gp.g, /*dist_bound*/100000, MapperInstance(gp)->MapSequence(gp.genome));
+
+        stats::ChimeraRelativeCoverageStats<Graph> chim_cov_stats(gp.g,
             edge_classifier,
+            interstrand_analyzer,
             boost::bind(&FlankCovT::LocalCoverage,
-                            boost::cref(flanking_cov), _1, _2));
+                            boost::cref(flanking_cov), _1, _2),
+                            chimera_stats_out);
         chim_cov_stats();
     }
 

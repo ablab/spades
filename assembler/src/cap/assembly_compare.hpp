@@ -11,7 +11,7 @@
 #include "graph_pack.hpp"
 #include "simple_tools.hpp"
 #include "omni/omni_utils.hpp"
-#include "debruijn_stats.hpp"
+#include "stats/debruijn_stats.hpp"
 #include "io/splitting_wrapper.hpp"
 #include "io/multifile_reader.hpp"
 #include <boost/algorithm/string/predicate.hpp>

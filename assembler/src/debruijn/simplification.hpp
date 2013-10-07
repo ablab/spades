@@ -97,7 +97,7 @@ void simplify_graph(conj_graph_pack& gp) {
 
     CompositeLabeler<Graph> labeler(tot_lab, gp.edge_qual);
 
-	detail_info_printer printer(gp, labeler, cfg::get().output_dir);
+	stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
 	printer(ipp_before_first_gap_closer);
 
     //  QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, edge_qual);

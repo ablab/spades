@@ -29,7 +29,6 @@
 
 #include "debruijn_graph.hpp"
 #include "config_struct.hpp"
-#include "debruijn_stats.hpp"
 #include "graphio.hpp"
 #include "omni/loop_resolver.hpp"
 #include "check_tools.hpp"
