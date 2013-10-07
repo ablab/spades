@@ -16,6 +16,7 @@ add_executable(debruijn_test
  ${CMAKE_SOURCE_DIR}/debruijn/construction.cpp
  ${CMAKE_SOURCE_DIR}/debruijn/stage.cpp
  ${CMAKE_SOURCE_DIR}/debruijn/mismatch_correction.cpp
+ ${CMAKE_SOURCE_DIR}/debruijn/genomic_info_filler.cpp
  ${CMAKE_SOURCE_DIR}/debruijn/pair_info_count.cpp
  ${CMAKE_SOURCE_DIR}/debruijn/distance_estimation.cpp
  ${CMAKE_SOURCE_DIR}/debruijn/repeat_resolving.cpp
