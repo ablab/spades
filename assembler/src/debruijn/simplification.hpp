@@ -18,5 +18,13 @@ class Simplification : public spades::AssemblyStage {
     void run(conj_graph_pack &gp);
 };
 
+class SimplificationCleanup : public spades::AssemblyStage {
+  public:
+    SimplificationCleanup()
+        : AssemblyStage("Simplification Cleanup", "simplification_cleanup") {}
+
+    void run(conj_graph_pack &gp);
+};
+
 }
 

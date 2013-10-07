@@ -29,6 +29,57 @@ void Simplification::run(conj_graph_pack &gp) {
     cfg::get_writable().ds.set_avg_coverage(cov_counter.Count());
 }
 
+void SimplificationCleanup::run(conj_graph_pack &gp) {
+    total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
+    total_labeler labeler/*tot_lab*/(&graph_struct);
+
+    detail_info_printer printer(gp, labeler, cfg::get().output_dir);
+
+    printer(ipp_removing_isolated_edges);
+
+    {
+        INFO("Final isolated edges removal:");
+        size_t max_length = std::max(cfg::get().ds.RL(), cfg::get().simp.ier.max_length_any_cov);
+        INFO("All edges of length smaller than " << max_length << " will be removed");
+        size_t removed = IsolatedEdgeRemover<Graph>(gp.g, cfg::get().simp.ier.max_length,
+                                                    cfg::get().simp.ier.max_coverage,
+                                                    max_length).RemoveIsolatedEdges();
+        INFO("Removed " << removed << " edges");
+    }
+
+    size_t low_threshold = gp.ginfo.trusted_bound();
+    if (low_threshold) {
+      EdgeRemover<Graph> remover(gp.g);
+      INFO("Removing all the edges having coverage " << low_threshold << " and less");
+      size_t cnt = 0;
+      for (auto it = gp.g.SmartEdgeBegin(); !it.IsEnd(); ++it)
+        if (math::le(gp.g.coverage(*it), (double)low_threshold)) {
+          remover.DeleteEdge(*it);
+          cnt += 1;
+        }
+      INFO("Deleted " << cnt << " edges");
+    }
+
+    printer(ipp_final_simplified);
+
+    // FIXME: Get rid of this
+    if (cfg::get().correct_mismatches || cfg::get().paired_mode) {
+        INFO("Final index refill");
+        gp.index.Refill();
+        INFO("Final index refill finished");
+        if (!gp.index.IsAttached())
+            gp.index.Attach();
+    }
+
+    DEBUG("Graph simplification finished");
+
+    INFO("Counting average coverage");
+    AvgCovereageCounter<Graph> cov_counter(gp.g);
+    cfg::get_writable().ds.set_avg_coverage(cov_counter.Count());
+    INFO("Average coverage = " << cfg::get().ds.avg_coverage());
+}
+
+
 #if 0
 void corrected_and_save_reads(const conj_graph_pack& gp) {
     //saving corrected reads

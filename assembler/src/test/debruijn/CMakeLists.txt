@@ -12,6 +12,7 @@ add_executable(debruijn_test
  ${EXT_DIR}/include/teamcity_boost/teamcity_boost.cpp
  ${EXT_DIR}/include/teamcity_boost/teamcity_messages.cpp
  ${CMAKE_SOURCE_DIR}/debruijn/kmer_coverage_model.cpp
+ ${CMAKE_SOURCE_DIR}/debruijn/gap_closer.cpp
  ${CMAKE_SOURCE_DIR}/debruijn/simplification.cpp
  ${CMAKE_SOURCE_DIR}/debruijn/construction.cpp
  ${CMAKE_SOURCE_DIR}/debruijn/stage.cpp

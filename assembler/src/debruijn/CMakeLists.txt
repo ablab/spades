@@ -12,6 +12,7 @@ add_executable(spades
                path_extend/pe_config_struct.cpp
                stage.cpp
                construction.cpp
+               gap_closer.cpp
                simplification.cpp
                mismatch_correction.cpp
                pair_info_count.cpp

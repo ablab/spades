@@ -13,6 +13,7 @@
 #include "graph_pack.hpp"
 #include "construction.hpp"
 #include "genomic_info_filler.hpp"
+#include "gap_closer.hpp"
 #include "simplification.hpp"
 #include "mismatch_correction.hpp"
 #include "pair_info_count.hpp"
@@ -48,7 +49,12 @@ void assemble_genome() {
     // Build the pipeline
     SPAdes.add(new debruijn_graph::Construction());
     SPAdes.add(new debruijn_graph::GenomicInfoFiller());
+    if (cfg::get().gap_closer_enable && cfg::get().gc.before_simplify)
+        SPAdes.add(new debruijn_graph::GapClosing("early_gapcloser"));
     SPAdes.add(new debruijn_graph::Simplification());
+    if (cfg::get().gap_closer_enable && cfg::get().gc.after_simplify)
+        SPAdes.add(new debruijn_graph::GapClosing("late_gapcloser"));
+    SPAdes.add(new debruijn_graph::SimplificationCleanup());
     if (cfg::get().correct_mismatches)
         SPAdes.add(new debruijn_graph::MismatchCorrection());
     if (cfg::get().paired_mode) {

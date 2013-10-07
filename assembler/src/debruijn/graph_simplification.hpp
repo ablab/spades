@@ -28,9 +28,7 @@
 #include "utils.hpp"
 
 #include "detail_coverage.hpp"
-#include "gap_closer.hpp"
 #include "graph_read_correction.hpp"
-#include "ec_threshold_finder.hpp"
 
 namespace debruijn_graph {
 
@@ -648,30 +646,15 @@ void SimplifyGraph(conj_graph_pack &gp,
                    omnigraph::GraphLabeler<Graph>& /*labeler*/,
                    detail_info_printer& printer, size_t iteration_count) {
     double determined_coverage_threshold = gp.ginfo.ec_bound();
-    size_t low_threshold = gp.ginfo.trusted_bound();
-
-    if (cfg::get().gap_closer_enable && cfg::get().gc.before_simplify)
-        CloseGaps(gp);
 
     printer(ipp_before_simplification);
     DEBUG("Graph simplification started");
-
-    if (!cfg::get().developer_mode) {
-        INFO("Detaching and clearing index");
-        gp.index.Detach();
-        gp.index.clear();
-        INFO("Index clearing finished");
-    }
-    //	VERIFY(gp.kmer_mapper.IsAttached());
 
     if (cfg::get().ds.single_cell)
         PreSimplification(gp, removal_handler, printer, iteration_count,
                           determined_coverage_threshold);
 
     for (size_t i = 0; i < iteration_count; i++) {
-        if (cfg::get().gap_closer_enable && cfg::get().gc.in_simplify)
-            CloseGaps(gp);
-
         SimplificationCycle(gp, removal_handler, printer, iteration_count, i,
                             determined_coverage_threshold);
         printer(ipp_err_con_removal,
@@ -688,67 +671,6 @@ void SimplifyGraph(conj_graph_pack &gp,
                                cfg::get().simp.her.unreliability_threshold, determined_coverage_threshold, cfg::get().simp.her.relative_threshold,
                                removal_handler).Process();
     }
-
-    if (cfg::get().gap_closer_enable && cfg::get().gc.after_simplify) {
-        if (!gp.index.IsAttached()) {
-            INFO("Refilling index");
-            gp.index.Refill();
-            INFO("Index refilled");
-            INFO("Attaching index");
-            gp.index.Attach();
-            INFO("Index attached");
-        }
-        CloseGaps(gp);
-
-        if (!cfg::get().developer_mode) {
-            INFO("Detaching and clearing index");
-            gp.index.Detach();
-            gp.index.clear();
-            INFO("Index clearing finished");
-        }
-    }
-
-    printer(ipp_removing_isolated_edges);
-
-    {
-        INFO("Final isolated edges removal:");
-        size_t max_length = std::max(cfg::get().ds.RL(), cfg::get().simp.ier.max_length_any_cov);
-        INFO("All edges of length smaller than " << max_length << " will be removed");
-        size_t removed = IsolatedEdgeRemover<Graph>(gp.g, cfg::get().simp.ier.max_length,
-                                                    cfg::get().simp.ier.max_coverage,
-                                                    max_length)
-                         .RemoveIsolatedEdges();
-        INFO("Removed " << removed << " edges");
-    }
-
-    if (low_threshold) {
-      EdgeRemover<Graph> remover(gp.g, removal_handler);
-      INFO("Removing all the edges having coverage " << low_threshold << " and less");
-      size_t cnt = 0;
-      for (auto it = gp.g.SmartEdgeBegin(); !it.IsEnd(); ++it)
-        if (math::le(gp.g.coverage(*it), (double)low_threshold)) {
-          remover.DeleteEdge(*it);
-          cnt += 1;
-        }
-      INFO("Deleted " << cnt << " edges");
-    }
-
-    printer(ipp_final_simplified);
-
-    if (cfg::get().correct_mismatches || cfg::get().paired_mode) {
-        INFO("Final index refill");
-        gp.index.Refill();
-        INFO("Final index refill finished");
-        if (!gp.index.IsAttached())
-            gp.index.Attach();
-    }
-
-    DEBUG("Graph simplification finished");
-
-    INFO("Counting average coverage");
-    AvgCovereageCounter<Graph> cov_counter(gp.g);
-    cfg::get_writable().ds.set_avg_coverage(cov_counter.Count());
-    INFO("Average coverage = " << cfg::get().ds.avg_coverage());
 }
 
 }
