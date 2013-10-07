@@ -878,11 +878,10 @@ void PrintWithPairedIndices(const string& file_name,
                             bool clustered_index = false) {
 
     PrintGraphPack(file_name, printer, gp);
-    if (!clustered_index) {
+    if (!clustered_index)
         PrintPairedIndices(file_name, printer, paired_indices);
-    } else {
+    else
         PrintClusteredIndices(file_name, printer, paired_indices);
-    }
 }
 
 template<class graph_pack>
@@ -903,6 +902,7 @@ void PrintAll(const string& file_name, const graph_pack& gp) {
     PrintClusteredIndices(file_name, printer, gp.clustered_indices);
     PrintScaffoldingIndices(file_name, printer, gp.clustered_indices);
     PrintSingleLongReads(file_name, gp.single_long_reads);
+    gp.ginfo.save(file_name + ".ginfo");
 }
 
 template<class graph_pack, class VertexIt>
@@ -952,7 +952,6 @@ void PrintSingleLongReads(const string& file_name, const LongReadContainer<Graph
         single_long_reads[i].DumpToFile(MakeSingleReadsFileName(file_name, i));
     }
 }
-
 
 template<class graph_pack>
 void PrintWithPairedIndices(const string& file_name, const graph_pack& gp,
@@ -1149,5 +1148,6 @@ void ScanAll(const std::string& file_name, graph_pack& gp,
     ScanClusteredIndices(file_name, scanner, gp.clustered_indices, force_exists);
     ScanScaffoldingIndices(file_name, scanner, gp.scaffolding_indices, force_exists);
     ScanSingleLongReads(file_name,  gp.single_long_reads);
+    gp.ginfo.load(file_name + ".ginfo");
 }
 }

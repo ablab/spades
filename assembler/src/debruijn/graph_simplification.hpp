@@ -647,19 +647,8 @@ void SimplifyGraph(conj_graph_pack &gp,
                    boost::function<void(EdgeId)> removal_handler,
                    omnigraph::GraphLabeler<Graph>& /*labeler*/,
                    detail_info_printer& printer, size_t iteration_count) {
-    // EC auto threshold
-    unsigned low_threshold = 0;
-    double determined_coverage_threshold;
-    if (cfg::get().ds.single_cell) {
-      determined_coverage_threshold = ErroneousConnectionThresholdFinder<Graph>(gp.g).FindThreshold();
-    } else {
-      MCErroneousConnectionThresholdFinder<Graph, decltype(gp.index.inner_index())> finder(gp.index.inner_index());
-      finder.FindThresholds();
-      determined_coverage_threshold = (double)finder.ec_threshold();
-      // low_threshold = finder.low_cov_threshold();
-      low_threshold = 0;
-    }
-    INFO("EC coverage threshold value was calculated as " << determined_coverage_threshold);
+    double determined_coverage_threshold = gp.ginfo.ec_bound();
+    size_t low_threshold = gp.ginfo.trusted_bound();
 
     if (cfg::get().gap_closer_enable && cfg::get().gc.before_simplify)
         CloseGaps(gp);

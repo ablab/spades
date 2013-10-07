@@ -21,6 +21,7 @@
 #include "config_struct.hpp"
 #include "edge_index.hpp"
 #include "sequence_mapper.hpp"
+#include "genomic_info.hpp"
 #include "long_read_storage.hpp"
 
 namespace debruijn_graph {
@@ -47,6 +48,7 @@ struct graph_pack: private boost::noncopyable {
     PairedInfoIndicesT scaffolding_indices;
     LongReadContainerT single_long_reads;
 
+    GenomicInfo ginfo;
     Sequence genome;
 
     explicit graph_pack(size_t k, const std::string &workdir, size_t lib_count,

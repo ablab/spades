@@ -394,16 +394,6 @@ private:
         return !eq;
     }
 
-    map<size_t, size_t> ConstructHistogram(/*const std::vector<double> &coverage_set*/) const {
-        map<size_t, size_t> result;
-        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            if (IsInteresting(*it)) {
-                result[(size_t)graph_.coverage(*it)]++;
-            }
-        }
-        return result;
-    }
-
     double weight(size_t value, const map<size_t, size_t> &histogram,
                   size_t backet_width) const {
         double result = 0;
@@ -411,16 +401,6 @@ private:
             result += (double) (getValue(value + i, histogram) * std::min(i + 1, backet_width - i));
         }
         return result;
-    }
-
-    double AvgCoverage() const {
-        double cov = 0;
-        double length = 0;
-        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            cov += graph_.coverage(*it) * (double) graph_.length(*it);
-            length += (double) graph_.length(*it);
-        }
-        return cov / length;
     }
 
     double Median(double thr = 500.0) const {
@@ -452,6 +432,25 @@ public:
             graph_(graph), backet_width_(backet_width) {
     }
 
+    double AvgCoverage() const {
+        double cov = 0;
+        double length = 0;
+        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
+            cov += graph_.coverage(*it) * (double) graph_.length(*it);
+            length += (double) graph_.length(*it);
+        }
+        return cov / length;
+    }
+
+    std::map<size_t, size_t> ConstructHistogram() const {
+        std::map<size_t, size_t> result;
+        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
+            if (IsInteresting(*it))
+                result[(size_t)graph_.coverage(*it)]++;
+        }
+        return result;
+    }
+
     double FindThreshold(const map<size_t, size_t> &histogram) const {
         size_t backet_width = backet_width_;
         if (backet_width == 0) {
@@ -463,9 +462,9 @@ public:
         INFO("Bucket size: " << backet_width);
         size_t cnt = 0;
         for (size_t i = 1; i + backet_width < size; i++) {
-            if (weight(i, histogram, backet_width) > weight(i - 1, histogram, backet_width)) {
+            if (weight(i, histogram, backet_width) > weight(i - 1, histogram, backet_width))
                 cnt++;
-            }
+
             if (i > backet_width &&
                 weight(i - backet_width,     histogram, backet_width) >
                 weight(i - backet_width - 1, histogram, backet_width)) {
@@ -481,7 +480,7 @@ public:
 
     double FindThreshold() const {
         INFO("Finding threshold started");
-        map<size_t, size_t> histogram = ConstructHistogram(/*weights*/);
+        std::map<size_t, size_t> histogram = ConstructHistogram(/*weights*/);
         for (size_t i = 0; i < histogram.size(); i++) {
             TRACE(i << " " << histogram[i]);
         }

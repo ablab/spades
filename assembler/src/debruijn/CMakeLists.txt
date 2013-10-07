@@ -17,6 +17,7 @@ add_executable(spades
                pair_info_count.cpp
                distance_estimation.cpp
                repeat_resolving.cpp
+               genomic_info_filler.cpp
                main.cpp)
 
 target_link_libraries(spades input mph_index otkpp  ${COMMON_LIBRARIES} ssw)

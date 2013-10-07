@@ -15,7 +15,7 @@
 namespace spades {
 
 void AssemblyStage::load(debruijn_graph::conj_graph_pack& gp) {
-    std::string p = path::append_path(cfg::get().output_saves, id_);
+    std::string p = path::append_path(cfg::get().load_from, id_);
     INFO("Loading current state from " << p);
 
     ScanAll(p, gp, false);

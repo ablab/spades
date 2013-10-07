@@ -12,6 +12,7 @@
 
 #include "graph_pack.hpp"
 #include "construction.hpp"
+#include "genomic_info_filler.hpp"
 #include "simplification.hpp"
 #include "mismatch_correction.hpp"
 #include "pair_info_count.hpp"
@@ -46,6 +47,7 @@ void assemble_genome() {
 
     // Build the pipeline
     SPAdes.add(new debruijn_graph::Construction());
+    SPAdes.add(new debruijn_graph::GenomicInfoFiller());
     SPAdes.add(new debruijn_graph::Simplification());
     if (cfg::get().correct_mismatches)
         SPAdes.add(new debruijn_graph::MismatchCorrection());
