@@ -351,11 +351,11 @@ class LongSeq {
     }
     //if (size_ == 1)
     if (HasExtraFrontChar()) {
-      return "" + nucl(FirstChar());
+      return std::string("") + nucl(FirstChar());
     } else if (HasExtraLastChar()) {
-      return "" + nucl(LastChar());
+      return std::string("") + nucl(LastChar());
     } else {
-      return "" + nucl(operator[](0));
+      return std::string("") + nucl(operator[](0));
     }
   }
   std::string err() const {
