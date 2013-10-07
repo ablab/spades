@@ -994,40 +994,17 @@ public:
 //todo fixme use exact coordinates!
 template<class Graph>
 class BlockPrinter {
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
-
-	const Graph& g_;
-	ofstream output_stream_;
-	size_t curr_id_;
-	map<EdgeId, size_t> block_id_;
-
-	pair<size_t, bool> CanonicalId(EdgeId e) {
-//	    size_t id = gp_.g.int_id(e);
-//	    size_t conj_id = gp_.g.int_id(gp_.g.conjugate(e));
-//	    if (id <= conj_id)
-//	        return make_pair(id, true);
-//	    else
-//	        return make_pair(conj_id, false);
-
-	    if (block_id_.count(e) > 0) {
-	        return make_pair(get(block_id_, e), true);
-	    } else if (block_id_.count(g_.conjugate(e)) > 0) {
-	        return make_pair(get(block_id_, g_.conjugate(e)), false);
-	    } else {
-	        block_id_[e] = curr_id_++;
-	        return make_pair(get(block_id_, e), true);
-	    }
-	}
 
 public:
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
 
 	BlockPrinter(const Graph& g, const CoordinatesHandler<Graph>& coords,
                const string& filename)
       : g_(g),
+        coords_(coords),
         output_stream_(filename),
-        curr_id_(1),
-        coords_(coords) {
+        curr_id_(1) {
       output_stream_
               << "genome_id\tcontig_name\tcanonical_id\tcontig_start_pos\tcontig_end_pos"
               << "\trefined_start_pos\trefined_end_pos\tsign\torig_id"
@@ -1051,24 +1028,23 @@ public:
 
 	        EdgeId e = step.first;
 
-          if (!CheckPatternMatch(e))
-            continue;
+          if (CheckPatternMatch(e)) {
+            auto canon = CanonicalId(e);
 
-	        auto canon = CanonicalId(e);
-
-            output_stream_
-                    << (format("%d\t%s\t%d\t%d\t%d\t%d\t%d\t%s\t%d")
-                            % genome_id
-                            % contig_name
-                            % canon.first
-                            % coords_.GetOriginalPos(transparent_id, graph_pos)
-                            % coords_.GetOriginalPos(transparent_id, graph_pos + g_.length(e))
-                            % graph_pos
-                            % (graph_pos + g_.length(e))
-                            % (canon.second ? "+" : "-")
-                            % g_.int_id(e))
-                            .str()
-                    << endl;
+              output_stream_
+                      << (format("%d\t%s\t%d\t%d\t%d\t%d\t%d\t%s\t%d")
+                              % genome_id
+                              % contig_name
+                              % canon.first
+                              % coords_.GetOriginalPos(transparent_id, graph_pos)
+                              % coords_.GetOriginalPos(transparent_id, graph_pos + g_.length(e))
+                              % graph_pos
+                              % (graph_pos + g_.length(e))
+                              % (canon.second ? "+" : "-")
+                              % g_.int_id(e))
+                              .str()
+                      << endl;
+          }
 
 	        graph_pos = graph_pos + g_.length(e);
 	        v = g_.EdgeEnd(e);
@@ -1077,13 +1053,36 @@ public:
 	}
 
 protected:
-  virtual bool CheckPatternMatch(const EdgeId /* e */) const {
+  virtual bool CheckPatternMatch(const EdgeId /* e */) {
     return true;
   }
 
+	const Graph& g_;
 	const CoordinatesHandler<Graph>& coords_;
 
 private:
+	ofstream output_stream_;
+	size_t curr_id_;
+	map<EdgeId, size_t> block_id_;
+
+	pair<size_t, bool> CanonicalId(EdgeId e) {
+//	    size_t id = gp_.g.int_id(e);
+//	    size_t conj_id = gp_.g.int_id(gp_.g.conjugate(e));
+//	    if (id <= conj_id)
+//	        return make_pair(id, true);
+//	    else
+//	        return make_pair(conj_id, false);
+
+	    if (block_id_.count(e) > 0) {
+	        return make_pair(get(block_id_, e), true);
+	    } else if (block_id_.count(g_.conjugate(e)) > 0) {
+	        return make_pair(get(block_id_, g_.conjugate(e)), false);
+	    } else {
+	        block_id_[e] = curr_id_++;
+	        return make_pair(get(block_id_, e), true);
+	    }
+	}
+
 	DECL_LOGGER("BlockPrinter");
 };
 

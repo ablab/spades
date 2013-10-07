@@ -502,6 +502,7 @@ class SaveBlocksCommand : public LocalCommand<CapEnvironment> {
       if (args.size() > 2 && (args[2] == "y" || args[2] == "Y" || args[2] == "unique")) {
           unique = true;
       }
+      INFO("unique = " << unique << ", args[2] = " << args[2]);
 
       BlockPrinter<Graph> *printer;
       
