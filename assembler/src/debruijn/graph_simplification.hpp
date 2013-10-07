@@ -590,13 +590,31 @@ void PreSimplification(conj_graph_pack& gp,
                        boost::function<void(EdgeId)> removal_handler,
                        double determined_coverage_threshold) {
     INFO("PROCEDURE == Presimplification");
+    INFO("ISOLATED EDGE REMOVER!!!");
+    
+    size_t max_length = std::max(cfg::get().ds.RL(), cfg::get().simp.ier.max_length_any_cov);
+    INFO("All edges of length smaller than " << max_length << " will be removed");
+    IsolatedEdgeRemover<Graph>(gp.g, cfg::get().simp.ier.max_length,
+                               cfg::get().simp.ier.max_coverage, max_length)
+            .RemoveIsolatedEdges();
+
     INFO("Early tip clipping");
+
     ClipTipsWithProjection(gp, cfg::get().simp.tc,
                            cfg::get().graph_read_corr.enable, cfg::get().ds.RL(),
-                           determined_coverage_threshold, removal_handler);
+                           determined_coverage_threshold, boost::function<void(EdgeId)>(0));
+
+    //todo temporary disabled completely
+    INFO("ErroneousConnectionsRemoval");
+    RemoveLowCoverageEdges(gp.g, cfg::get().simp.ec, /*todo return, removal_handler*/
+                           removal_handler, cfg::get().ds.RL(), determined_coverage_threshold,
+                           /*iteration_count*/1, /*iteration*/0);
+
+    DEBUG("ErroneousConnectionsRemoval stats");
+//    printer(ipp_err_con_removal);
 
     INFO("Early bulge removal");
-    RemoveBulges(gp.g, cfg::get().simp.br, 0, removal_handler, gp.g.k() + 1);
+    RemoveBulges(gp.g, cfg::get().simp.br, 0, boost::function<void(EdgeId)>(0), gp.g.k() + 1);
 }
 
 void SimplificationCycle(conj_graph_pack& gp,
@@ -613,14 +631,6 @@ void SimplificationCycle(conj_graph_pack& gp,
                            max_coverage, boost::function<void(EdgeId)>(0)/*removal_handler*/);
     DEBUG(iteration << " TipClipping stats");
     printer(ipp_tip_clipping, str(format("_%d") % iteration));
-
-    //todo temporary disabled completely
-    DEBUG(iteration << " ErroneousConnectionsRemoval");
-    RemoveLowCoverageEdges(gp.g, cfg::get().simp.ec, /*todo return, removal_handler*/
-                           removal_handler, cfg::get().ds.RL(), max_coverage,
-                           iteration_count, iteration);
-    DEBUG(iteration << " ErroneousConnectionsRemoval stats");
-    printer(ipp_err_con_removal, str(format("_%d") % iteration));
 
     if (!cfg::get().simp.stats_mode) {
     //todo temporary! relative coverage remover
@@ -747,15 +757,8 @@ void SimplifyGraph(conj_graph_pack &gp,
     typedef FlankingCoverage<Graph, Index::InnerIndexT> FlankCovT;
     FlankCovT flanking_cov(gp.g, gp.index.inner_index(), 50);
 
-//  if (cfg::get().ds.single_cell)
-//    PreSimplification(gp, flanking_cov, removal_handler, determined_coverage_threshold);
-
-    INFO("ISOLATED EDGE REMOVER!!!");
-    size_t max_length = std::max(cfg::get().ds.RL(), cfg::get().simp.ier.max_length_any_cov);
-    INFO("All edges of length smaller than " << max_length << " will be removed");
-    IsolatedEdgeRemover<Graph>(gp.g, cfg::get().simp.ier.max_length,
-                               cfg::get().simp.ier.max_coverage, max_length)
-            .RemoveIsolatedEdges();
+    if (cfg::get().ds.single_cell)
+        PreSimplification(gp, flanking_cov, removal_handler, determined_coverage_threshold);
 
     for (size_t i = 0; i < iteration_count; i++) {
         if ((cfg::get().gap_closer_enable) && (cfg::get().gc.in_simplify)) {
@@ -804,7 +807,7 @@ void SimplifyGraph(conj_graph_pack &gp,
     INFO("Final index refill finished");
 
     INFO("Final isolated edges removal:");
-    max_length = std::max(cfg::get().ds.RL(), cfg::get().simp.ier.max_length_any_cov);
+    size_t max_length = std::max(cfg::get().ds.RL(), cfg::get().simp.ier.max_length_any_cov);
     INFO("All edges of length smaller than " << max_length << " will be removed");
     IsolatedEdgeRemover<Graph>(gp.g, cfg::get().simp.ier.max_length,
                                cfg::get().simp.ier.max_coverage, max_length)
