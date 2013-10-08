@@ -139,7 +139,7 @@ bool RefineInsertSizeForLib(const graph_pack& gp,
   return true;
 }
 
-void PairInfoCount::run(conj_graph_pack &gp) {
+void PairInfoCount::run(conj_graph_pack &gp, const char*) {
     if (!cfg::get().developer_mode) {
         gp.paired_indices.Attach();
         gp.paired_indices.Init();
@@ -147,7 +147,6 @@ void PairInfoCount::run(conj_graph_pack &gp) {
 
     size_t edge_length_threshold = Nx(gp.g, 50);
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-
         if (cfg::get().ds.reads[i].data().read_length > 0 && cfg::get().ds.reads[i].data().read_length <= cfg::get().K) {
             WARN("Unable to estimate insert size for paired library #" << i);
             WARN("Maximum read length (" << cfg::get().ds.reads[i].data().read_length << ") should be greater than K (" << cfg::get().K << ")");
@@ -157,7 +156,6 @@ void PairInfoCount::run(conj_graph_pack &gp) {
 
         if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd ||
             cfg::get().ds.reads[i].type() == io::LibraryType::MatePairs) {
-
             bool insert_size_refined;
             if (cfg::get().use_multithreading) {
                 auto streams = paired_binary_readers(cfg::get().ds.reads[i], false, 0);
@@ -187,9 +185,8 @@ void PairInfoCount::run(conj_graph_pack &gp) {
             ProcessPairedReads(gp, i);
         }
 
-        if (cfg::get().ds.reads[i].type() == io::LibraryType::SingleReads) {
+        if (cfg::get().ds.reads[i].type() == io::LibraryType::SingleReads)
             ProcessSingleReads(gp, i);
-        }
     }
 }
 

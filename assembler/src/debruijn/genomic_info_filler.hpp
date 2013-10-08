@@ -15,7 +15,7 @@ class GenomicInfoFiller : public spades::AssemblyStage {
     GenomicInfoFiller()
         : AssemblyStage("EC Threshold Finding", "ec_threshold_finder") {}
 
-    void run(conj_graph_pack &gp);
+    void run(conj_graph_pack &gp, const char*);
 };
 
 }

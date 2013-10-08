@@ -15,7 +15,7 @@ class Construction : public spades::AssemblyStage {
     Construction()
         : AssemblyStage("Construction", "construction") {}
 
-    void run(conj_graph_pack &gp);
+    void run(conj_graph_pack &gp, const char*);
 };
 
 }

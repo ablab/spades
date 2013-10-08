@@ -15,7 +15,7 @@ class PairInfoCount : public spades::AssemblyStage {
     PairInfoCount()
         : AssemblyStage("Paired Information Counting", "late_pair_info_count") {}
 
-    void run(conj_graph_pack &gp);
+    void run(conj_graph_pack &gp, const char*);
 };
 
 }

@@ -63,7 +63,7 @@ void GenomicInfo::save(const std::string &filename) const {
     ofs << node;
 }
 
-void GenomicInfoFiller::run(conj_graph_pack &gp) {
+void GenomicInfoFiller::run(conj_graph_pack &gp, const char*) {
     if (cfg::get().ds.single_cell) {
         ErroneousConnectionThresholdFinder<decltype(gp.g)> finder(gp.g);
         std::map<size_t, size_t> hist = finder.ConstructHistogram();

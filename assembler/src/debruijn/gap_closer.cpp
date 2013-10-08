@@ -481,7 +481,7 @@ void CloseGaps(conj_graph_pack& gp, Streams& streams) {
     gap_closer.CloseShortGaps();
 }
 
-void GapClosing::run(conj_graph_pack &gp) {
+void GapClosing::run(conj_graph_pack &gp, const char*) {
     // FIXME
     size_t lib_index = 0;
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {

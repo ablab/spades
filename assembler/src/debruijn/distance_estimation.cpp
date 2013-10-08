@@ -221,7 +221,7 @@ void estimate_distance(conj_graph_pack& gp,
     }
 }
 
-void DistanceEstimation::run(conj_graph_pack &gp) {
+void DistanceEstimation::run(conj_graph_pack &gp, const char*) {
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i)
         if (cfg::get().ds.reads[i].data().mean_insert_size != 0.0) {
             INFO("Processing library #" << i);

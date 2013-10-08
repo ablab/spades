@@ -13,7 +13,7 @@
 
 namespace debruijn_graph {
 
-void Simplification::run(conj_graph_pack &gp) {
+void Simplification::run(conj_graph_pack &gp, const char*) {
     using namespace omnigraph;
 
     total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
@@ -29,7 +29,7 @@ void Simplification::run(conj_graph_pack &gp) {
     cfg::get_writable().ds.set_avg_coverage(cov_counter.Count());
 }
 
-void SimplificationCleanup::run(conj_graph_pack &gp) {
+void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
     total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
     total_labeler labeler/*tot_lab*/(&graph_struct);
 

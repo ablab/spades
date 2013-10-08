@@ -15,7 +15,7 @@ class DistanceEstimation : public spades::AssemblyStage {
     DistanceEstimation()
         : AssemblyStage("Distance Estimation", "distance_estimation") {}
 
-    void run(conj_graph_pack &gp);
+    void run(conj_graph_pack &gp, const char*);
 };
 
 }

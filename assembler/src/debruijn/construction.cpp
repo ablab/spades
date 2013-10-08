@@ -34,7 +34,7 @@ void construct_graph(io::ReadStreamVector< io::IReader<Read> >& streams,
         WARN("In datasets.info, wrong RL is specified: " << cfg::get().ds.RL() << ", not " << rl);
 }
 
-void Construction::run(conj_graph_pack &gp) {
+void Construction::run(conj_graph_pack &gp, const char*) {
     //    if (cfg::get().etalon_graph_mode) {
     //      typedef io::VectorReader<io::SingleRead> GenomeStream;
     //      GenomeStream genome_stream(io::SingleRead("genome", gp.genome.str()));

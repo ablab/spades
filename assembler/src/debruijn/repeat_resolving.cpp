@@ -153,7 +153,7 @@ void pe_resolving(conj_graph_pack& gp, const EdgeQuality<Graph, Index>& /* quali
             boost::optional<std::string>("final_contigs.fasta"));
 }
 
-void RepeatResolution::run(conj_graph_pack &gp) {
+void RepeatResolution::run(conj_graph_pack &gp, const char*) {
     OutputContigs(gp.g, cfg::get().additional_contigs, cfg::get().use_unipaths,
                   cfg::get().simp.tec.plausibility_length);
     OutputContigs(gp.g, cfg::get().output_dir + "before_rr.fasta");
@@ -207,7 +207,7 @@ void RepeatResolution::run(conj_graph_pack &gp) {
     }
 }
 
-void ContigOutput::run(conj_graph_pack &gp) {
+void ContigOutput::run(conj_graph_pack &gp, const char*) {
     OutputContigs(gp.g, cfg::get().additional_contigs, cfg::get().use_unipaths,
                   cfg::get().simp.tec.plausibility_length);
     OutputContigs(gp.g, cfg::get().output_dir + "before_rr.fasta");

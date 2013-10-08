@@ -15,7 +15,7 @@ class MismatchCorrection : public spades::AssemblyStage {
     MismatchCorrection()
         : AssemblyStage("Mismatch Correction", "mismatch_correction") {}
 
-    void run(conj_graph_pack &gp);
+    void run(conj_graph_pack &gp, const char*);
 };
 
 }

@@ -21,7 +21,7 @@ class GapClosing : public spades::AssemblyStage {
     GapClosing(const char* id)
         : AssemblyStage("Gap Closer", id) {}
 
-    void run(conj_graph_pack &gp);
+    void run(conj_graph_pack &gp, const char*);
 };
 
 }
