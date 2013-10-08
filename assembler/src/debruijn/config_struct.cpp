@@ -337,7 +337,6 @@ void load(debruijn_config::coverage_based_rr& cbrr,
 void load(debruijn_config::pacbio_processor& pb,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
-  load(pb.pacbio_reads, pt, "pacbio_reads");
   load(pb.pacbio_k, pt, "pacbio_k");
   load(pb.additional_debug_info, pt, "additional_debug_info");
   load(pb.pacbio_optimized_sw, pt, "pacbio_optimized_sw");
@@ -557,15 +556,11 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   load(cfg.topology_simplif_enabled, pt, "topology_simplif_enabled");
   load(cfg.use_unipaths, pt, "use_unipaths");
 
-  load(cfg.pacbio_test_on, pt, "pacbio_test_on");
   load(cfg.coverage_based_rr_on, pt, "coverage_based_rr_on");
   if (cfg.coverage_based_rr_on) {
     load (cfg.cbrr, pt, "coverage_based_rr");
-}
-  if (cfg.pacbio_test_on) {
-    load(cfg.pb, pt, "pacbio_processor");
-  } else {
   }
+  load(cfg.pb, pt, "pacbio_processor");
 
   load(cfg.additional_contigs, pt, "additional_contigs");
 

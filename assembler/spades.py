@@ -513,9 +513,6 @@ def main():
 #                    spades_cfg.__dict__["long_single_mode"] = True
 #                else:
 #                    spades_cfg.__dict__["long_single_mode"] = False
-                if support.get_pacbio_reads(dataset_data):
-                    spades_cfg.__dict__["pacbio_mode"] = True
-                    spades_cfg.__dict__["pacbio_reads"] = support.get_pacbio_reads(dataset_data)
 
                 if "HEAPCHECK" in os.environ:
                     del os.environ["HEAPCHECK"]

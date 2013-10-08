@@ -19,7 +19,7 @@
 #include "pair_info_count.hpp"
 #include "repeat_resolving.hpp"
 #include "distance_estimation.hpp"
-
+#include "pacbio_aligning.hpp"
 #include "stage.hpp"
 
 namespace spades {
@@ -55,6 +55,7 @@ void assemble_genome() {
     if (cfg::get().correct_mismatches)
         SPAdes.add(new debruijn_graph::MismatchCorrection());
     if (cfg::get().rr_enable) {
+        SPAdes.add(new debruijn_graph::PacBioAligning());
         SPAdes.add(new debruijn_graph::PairInfoCount());
         SPAdes.add(new debruijn_graph::DistanceEstimation());
         SPAdes.add(new debruijn_graph::RepeatResolution());

@@ -19,6 +19,7 @@ add_executable(spades
                distance_estimation.cpp
                repeat_resolving.cpp
                genomic_info_filler.cpp
+	       pacbio_aligning.cpp
                main.cpp)
 
 # We have to do this to minimize changes in ConsensusCore itself

@@ -755,7 +755,7 @@ struct ScannerTraits<NonconjugateDeBruijnGraph> {
 
 inline std::string MakeSingleReadsFileName(const std::string& file_name,
                                     size_t index) {
-    return file_name + "_paths_" + ToString(index) + ".mrp";
+    return file_name + "_paths_" + ToString(index) + ".mpr";
 }
 
 //helper methods

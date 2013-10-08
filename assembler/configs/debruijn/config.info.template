@@ -18,7 +18,6 @@ output_base	      ./data/debruijn/
 
 additional_contigs	tmp_contigs.fasta
 coverage_based_rr_on	false
-pacbio_test_on		false
 load_from         latest/saves/ ; tmp or latest 
 
 
@@ -32,6 +31,7 @@ buffer_size	      	512; in Megabytes
 
 entry_point construction
 ;entry_point simplification
+;entry_point pacbio_aligning
 ;entry_point late_pair_info_count
 ;entry_point distance_estimation
 ;entry_point repeat_resolving
@@ -134,10 +134,9 @@ gap_closer
 pacbio_processor
 {
 ;align and traverse.
-	pacbio_reads /home/lab42/algorithmic-biology/assembler/data/input/E.coli/pacbio/e-coli-k12-mg1655-raw-reads-1.3.0/2590338/0006/Analysis_Results/filtered_subreads.fastq
 	pacbio_k 13
-        additional_debug_info false
-	pacbio_optimized_sw false
+	additional_debug_info false
+	pacbio_optimized_sw true
 	compression_cutoff 0.6
 	domination_cutoff 1.5
 	path_limit_stretching 1.3

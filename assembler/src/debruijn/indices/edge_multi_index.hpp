@@ -14,7 +14,7 @@ namespace debruijn_graph {
 template<class IdType>
 class EdgeInfoStorage {
 public:
-	typedef typename vector<EdgeInfo<IdType>> Content;
+	typedef vector<EdgeInfo<IdType>> Content;
 	typedef typename Content::iterator iterator;
 	typedef typename Content::const_iterator const_iterator;
 	Content content_;
@@ -68,9 +68,9 @@ public:
 
 //todo it is not handling graph events!!!
 template<class IdType, class Seq = runtime_k::RtSeq,
-    class traits = kmer_index_traits<Seq> >
-class DeBruijnEdgeMultiIndex : public KeyStoringMap<PerfectHashMap<Seq, EdgeInfoStorage<IdType>, traits>> {
-  typedef KeyStoringMap<vector<EdgeInfo<IdType>>, traits> base;
+    class traits = kmer_index_traits<Seq>,  class StoringType = DefaultStoring >
+class DeBruijnEdgeMultiIndex : public KeyStoringMap<Seq, EdgeInfoStorage<IdType>, traits, StoringType > {
+  typedef KeyStoringMap<Seq, EdgeInfoStorage<IdType>, traits, StoringType > base;
  public:
   typedef typename base::traits_t traits_t;
   typedef typename base::KMer KMer;
@@ -85,11 +85,12 @@ class DeBruijnEdgeMultiIndex : public KeyStoringMap<PerfectHashMap<Seq, EdgeInfo
 
   ~DeBruijnEdgeMultiIndex() {}
 
+
   std::vector<EdgePosition> get(const KeyWithHash &kwh) const {
     VERIFY(contains(kwh));
     return base::operator[](kwh);
   }
-//
+
 //  std::vector<EdgePosition> get(KMerIdx idx) const {
 //    VERIFY(valid_idx(idx));
 //    return base::operator[](idx);
