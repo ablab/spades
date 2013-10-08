@@ -342,7 +342,9 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
       bool HasForwardLink(const EdgeId edge, const uint genome_id,
                           const size_t start_pos) const {
           auto edge_it = edge_ranges_.find(edge);
-          VERIFY(edge_it != edge_ranges_.end());
+          // VERIFY(edge_it != edge_ranges_.end());
+          if (edge_it == edge_ranges_.end())
+            return false;
 
           return edge_it->second.HasForwardLink(make_pair(genome_id, start_pos));
       }

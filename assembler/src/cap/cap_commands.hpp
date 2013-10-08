@@ -4,6 +4,7 @@
 #include "cap_environment_manager.hpp"
 #include "mosaic.hpp"
 #include "io/sequence_reader.hpp"
+#include "path_helper.hpp"
 
 namespace online_visualization {
 
@@ -475,6 +476,39 @@ class FindInversionsCommand : public LocalCommand<CapEnvironment> {
     */
   }
 
+};
+
+class BlocksToGRIMMFormat : public LocalCommand<CapEnvironment> {
+  public:
+    BlocksToGRIMMFormat() : LocalCommand<CapEnvironment>("blocks_to_grimm") {
+    }
+
+    virtual std::string Usage() const {
+        return "Command `block_to_grimm`\n"
+               " Converts blocks output by `save_blocks' to GRIMM format.\n"
+               "Usage:\n"
+               "> block_to_grimm <blocks_file> <grimm_file>\n";
+    }
+
+    virtual void Execute(CapEnvironment &/* curr_env */, const ArgumentList &arg_list) const {
+      const vector<string> &args = arg_list.GetAllArguments();
+
+      if (args.size() <= 2) {
+        cerr << "Not emough arguments" << endl;
+        return;
+      }
+
+      std::string file_from = args[1],
+                  file_to = args[2];
+
+      path::make_full_path(file_from);
+      path::make_full_path(file_to);
+
+      std::string dir = path::parent_path(file_to);
+      cap::utils::MakeDirPath(dir);
+
+      BlockPrinter<Graph>::ConvertBlocksToGRIMM(file_from, file_to);
+    }
 };
 
 class SaveBlocksCommand : public LocalCommand<CapEnvironment> {

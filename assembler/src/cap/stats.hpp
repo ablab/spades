@@ -1052,6 +1052,61 @@ public:
 	    }
 	}
 
+  static void ConvertBlocksToGRIMM(const string &file_from, const string &file_to) {
+    ifstream in(file_from);
+    ofstream out(file_to);
+
+    size_t id = 0;
+    int last_genome_id = -1;
+    size_t num_in_line = 0;
+    while (!in.eof()) {
+      ++id;
+
+      string line;
+      std::getline(in, line);
+      if (id == 1)
+        continue;
+
+      if (line == "")
+        continue;
+
+      std::stringstream ss(line);
+
+      int genome_id;
+      string genome_name;
+      string sign;
+      size_t contig_id;
+
+      string tmp;
+      ss >> genome_id >> genome_name >> contig_id >> tmp >> tmp >> tmp >> tmp >> sign >> tmp;
+      if (genome_id != last_genome_id) {
+        if (last_genome_id != -1)
+          out << "\n";
+        out << "> " << genome_name << "\n";
+
+        last_genome_id = genome_id;
+        num_in_line = 0;
+      }
+
+      if (num_in_line > 10) {
+        out << "\n";
+        num_in_line = 0;
+      }
+
+      if (num_in_line != 0)
+        out << " ";
+
+      if (sign == "-")
+        out << sign;
+      out << contig_id;
+
+      num_in_line++;
+    }
+
+    in.close();
+    out.close();
+  }
+
 protected:
   virtual bool CheckPatternMatch(const EdgeId /* e */) {
     return true;
