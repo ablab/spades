@@ -56,6 +56,13 @@ class CompositeStageBase : public AssemblyStage {
         return this;
     }
 
+    CompositeStageBase* add(std::initializer_list<PhaseBase*> phases) {
+        for (auto it = phases.begin(), et = phases.end(); it != et; ++it)
+            add(*it);
+
+        return this;
+    }
+
     void run(debruijn_graph::conj_graph_pack& gp, const char* = NULL);
 
   private:
@@ -92,6 +99,11 @@ class StageManager {
     void add(AssemblyStage *stage) {
         stages_.push_back(std::unique_ptr<AssemblyStage>(stage));
     }
+    void add(std::initializer_list<AssemblyStage*> stages) {
+        for (auto it = stages.begin(), et = stages.end(); it != et; ++it)
+            add(*it);
+    }
+
     void run(debruijn_graph::conj_graph_pack& g,
              const char* start_from = NULL);
   private:
