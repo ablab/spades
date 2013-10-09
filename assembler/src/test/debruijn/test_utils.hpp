@@ -181,17 +181,18 @@ void AssertCoverage(Graph& g, const CoverageInfo& etalon_coverage) {
 	}
 }
 
-typedef PairedInfoIndexT<Graph> PairedIndex;
-typedef vector<PairInfo<EdgeId>> PairInfos;
+typedef omnigraph::de::PairedInfoIndexT<Graph> PairedIndex;
+typedef omnigraph::de::PairInfo<EdgeId> PairInfo;
+typedef vector<PairInfo> PairInfos;
 
 void AssertPairInfo(const Graph& g, /*todo const */PairedIndex& paired_index, const EdgePairInfo& etalon_pair_info) {
 	for (auto it = paired_index.begin(); it != paired_index.end(); ++it) {
 		PairInfos infos;
     infos.reserve(it->size());
     for (auto set_it = it->begin(); set_it != it->end(); ++set_it)
-      infos.push_back(PairInfo<EdgeId>(it.first(), it.second(), *set_it));
+      infos.push_back(PairInfo(it.first(), it.second(), *set_it));
 		for (auto info_it = infos.begin(); info_it != infos.end(); ++info_it) {
-			PairInfo<EdgeId> pair_info = *info_it;
+			PairInfo pair_info = *info_it;
 			if (pair_info.first == pair_info.second && rounded_d(pair_info) == 0) {
 				continue;
 			}
@@ -234,7 +235,7 @@ void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t inse
 	DEBUG("Graph pack created");
 
 	io::ReadStreamVector<io::IReader<io::SingleRead>> single_stream_vector({new SingleStream(paired_read_stream)});
-	ConstructGraphWithCoverage(k, CreateDefaultConstructionConfig(), single_stream_vector, gp.g, gp.index);
+	ConstructGraphWithCoverage(k, CreateDefaultConstructionConfig(), single_stream_vector, gp.g, gp.index, gp.flanking_cov);
 
     SequenceMapperNotifier notifier(gp);
     LatePairedIndexFiller pif(gp.g, PairedReadCountWeight, gp.paired_indices[0]);

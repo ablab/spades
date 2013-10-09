@@ -648,6 +648,8 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   load(cfg.uncorrected_reads, pt, "uncorrected_reads");
   load(cfg.mismatch_ratio, pt, "mismatch_ratio");
 
+  load(cfg.flanking_range, pt, "flanking_range");
+
   load(cfg.simp, pt, "default");
 
   if (cfg.ds.single_cell)

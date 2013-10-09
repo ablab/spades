@@ -130,13 +130,13 @@ BOOST_AUTO_TEST_CASE( OrderTest ) {
 	Graph graph(55);
 	IdTrackHandler<Graph> int_ids(graph);
 	RandomGraphConstructor<Graph>(1000, 100, 100).Generate(graph);
-	PrinterTraits<Graph>::Printer printer(graph, int_ids);
-	printer.saveGraph(file_name);
-	printer.saveEdgeSequences(file_name);
+	graphio::PrinterTraits<Graph>::Printer printer(graph, int_ids);
+	printer.SaveGraph(file_name);
+	printer.SaveEdgeSequences(file_name);
 	Graph new_graph(55);
 	IdTrackHandler<Graph> new_int_ids(new_graph);
-	ScannerTraits<Graph>::Scanner scanner(new_graph, new_int_ids);
-	scanner.loadGraph(file_name);
+	graphio::ScannerTraits<Graph>::Scanner scanner(new_graph, new_int_ids);
+	scanner.LoadGraph(file_name);
 	IteratorOrderChecker<Graph> checker(graph, new_graph);
 	BOOST_CHECK(checker.CheckOrder(graph.SmartVertexBegin(), new_graph.SmartVertexBegin()));
 	BOOST_CHECK(checker.CheckOrder(graph.SmartEdgeBegin(), new_graph.SmartEdgeBegin()));

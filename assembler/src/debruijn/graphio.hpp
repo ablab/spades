@@ -20,6 +20,7 @@
 #include "de/paired_info.hpp"
 
 #include "debruijn_graph.hpp"
+#include "detail_coverage.hpp"
 #include "long_read_storage.hpp"
 
 #include <cmath>
@@ -30,6 +31,9 @@
 #include <cstdio>
 
 namespace debruijn_graph {
+
+namespace graphio {
+
 using namespace omnigraph;
 using namespace omnigraph::de;
 //todo think of inner namespace
@@ -129,54 +133,180 @@ template<class Graph>
 class DataPrinter {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-  public:
-    void saveGraph(const string& file_name);
-    void saveEdgeSequences(const string& file_name);
-    void saveCoverage(const string& file_name);
-    void savePaired(const string& file_name,
-                    PairedInfoIndexT<Graph> const& paired_index);
-    void savePositions(const string& file_name,
-                       EdgesPositionHandler<Graph> const& ref_pos);
 
+    //todo reduce duplication
+    template<class T>
+    void SaveEdgeAssociatedInfo(boost::function<T (EdgeId)> access_f, ostream& out) const {
+        for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
+            EdgeId e = *iter;
+            //todo fixme currently matches old format .cvr format
+            out << int_ids_.ReturnIntId(e)/* << endl*/;
+            out << " " << access_f(e) << " ." << endl;
+        }
+    }
+
+//    template<class C>
+//    void SaveEdgeAssociatedInfo(const C& c, ostream& out) const {
+//        SaveEdgeAssociatedInfo<decltype(C::operator[])>(boost::bind(&C::operator[], c, _1), out);
+//    }
+
+    template<class C>
+    void SaveEdgeAssociatedInfo(const C& c, ostream& out) const {
+        for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
+            EdgeId e = *iter;
+            //todo fixme currently matches old format .cvr format
+            out << int_ids_.ReturnIntId(e)/* << endl*/;
+            out << " ";
+            c.Save(e, out);
+            out << " ." << endl;
+        }
+    }
+
+  public:
+
+    void SaveGraph(const string& file_name) const {
+        FILE* file = fopen((file_name + ".grp").c_str(), "w");
+        DEBUG("Graph saving to " << file_name << " started");
+        VERIFY_MSG(file != NULL,
+                   "Couldn't open file " << (file_name + ".grp") << " on write");
+        size_t vertex_count = component_.v_size();
+        size_t edge_count = component_.e_size();
+        fprintf(file, "%zu %zu \n", vertex_count, edge_count);
+        for (auto iter = component_.v_begin(); iter != component_.v_end(); ++iter) {
+            Save(file, *iter);
+        }
+
+        fprintf(file, "\n");
+
+        for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
+            Save(file, *iter);
+        }
+        DEBUG("Graph saving to " << file_name << " finished");
+
+        fclose(file);
+    }
+
+    void SaveEdgeSequences(const string& file_name) const {
+        ofstream out(file_name + ".sqn");
+        //todo switch to general function after its switching to fasta
+        //SaveEdgeAssociatedInfo<Sequence>(boost::bind(&Graph::EdgeNucls, component_.g(), _1), out);
+        DEBUG("Saving sequences, " << file_name <<" created");
+        for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
+            EdgeId e = *iter;
+            out << ">" << int_ids_.ReturnIntId(e) << endl;
+            out << component_.g().EdgeNucls(e) << endl;
+        }
+    }
+
+    void SaveCoverage(const string& file_name) const {
+        ofstream out(file_name + ".cvr");
+        DEBUG("Saving coverage, " << file_name <<" created");
+        out << component_.e_size();
+        SaveEdgeAssociatedInfo(component_.g().coverage_index(), out);
+    }
+
+    void SaveFlankingCoverage(const string& file_name, const NewFlankingCoverage<Graph> flanking_cov) const {
+        ofstream out(file_name + ".flcvr");
+        DEBUG("Saving flanking coverage, " << file_name <<" created");
+        out << component_.e_size();
+        SaveEdgeAssociatedInfo(flanking_cov, out);
+    }
+
+    void SavePaired(const string& file_name,
+                    PairedInfoIndexT<Graph> const& paired_index) const {
+        FILE* file = fopen((file_name + ".prd").c_str(), "w");
+        DEBUG("Saving paired info, " << file_name <<" created");
+        VERIFY(file != NULL);
+
+        size_t comp_size = 0;
+        for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
+            EdgeId e1 = *I;
+            auto inner_map = paired_index.GetEdgeInfo(e1, 0);
+            for (auto II = inner_map.begin(), IE = inner_map.end(); II != IE; ++II) {
+                EdgeId e2 = II->first;
+                const de::Histogram& hist = II->second;
+                if (component_.contains(e2)) { // if the second edge also lies in the same component
+                    comp_size += hist.size();
+                }
+            }
+        }
+
+        fprintf(file, "%zu\n", comp_size);
+
+        for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
+            EdgeId e1 = *I;
+            auto inner_map = paired_index.GetEdgeInfo(e1, 0);
+            for (auto II = inner_map.begin(), IE = inner_map.end(); II != IE; ++II) {
+                EdgeId e2 = II->first;
+                const Histogram& hist = II->second;
+                if (component_.contains(e2))
+                    for (auto hist_it = hist.begin(); hist_it != hist.end(); ++hist_it) {
+                        Point point = *hist_it;
+                        fprintf(file, "%zu %zu %.2f %.2f %.2f .\n",
+                                int_ids_.ReturnIntId(e1),
+                                int_ids_.ReturnIntId(e2),
+                                point.d, point.weight, point.var);
+                    }
+            }
+        }
+
+        fclose(file);
+    }
+
+    void SavePositions(const string& file_name,
+                       EdgesPositionHandler<Graph> const& ref_pos) const {
+        ofstream file((file_name + ".pos").c_str());
+
+        DEBUG("Saving edges positions, " << file_name << " created");
+        VERIFY(file.is_open());
+
+        file << component_.e_size() << endl;
+        bool careful = ref_pos.is_careful();
+
+        for (auto it = component_.e_begin(); it != component_.e_end(); ++it) {
+
+            auto pos_it = ref_pos.edges_positions().find(*it);
+            VERIFY(pos_it != ref_pos.edges_positions().end());
+
+            file << id_handler().ReturnIntId(*it) << " " << pos_it->second.size()
+                 << endl;
+
+            for (size_t i = 0; i < pos_it->second.size(); i++) {
+                file << "    " << pos_it->second[i].contigId_ << " "
+                     << pos_it->second[i].start() << " - "
+                     << pos_it->second[i].end();
+                if (careful) {
+                    file<<" "<<pos_it->second[i].m_start()<<" "<<pos_it->second[i].m_end()<<endl;
+                }
+                else {
+                    file<<endl;
+                }
+            }
+        }
+    }
 
   private:
-    void save(FILE* file, EdgeId eid);
-    void save(FILE* file, VertexId vid);
+    void Save(FILE* file, EdgeId eid) const {
+        fprintf(file, "%s\n", ToPrint(eid).c_str());
+    }
+
+    void Save(FILE* file, VertexId vid) const {
+        fprintf(file, "%s\n", ToPrint(vid).c_str());
+    }
 
     const GraphComponent<Graph> component_;
     const BaseIdTrackHandler<VertexId, EdgeId>& int_ids_;
 
-    virtual std::string toPrint(VertexId v) const = 0;
-    virtual std::string toPrint(EdgeId e) const = 0;
+    virtual std::string ToPrint(VertexId v) const = 0;
+    virtual std::string ToPrint(EdgeId e) const = 0;
 
   protected:
-    //  DataPrinter(Graph const& g, IdTrackHandler<Graph> const& int_ids) :
-    //      component_(g), int_ids_(int_ids) {
-    //    DEBUG("Creating of saver started");
-    //    edge_count_ = 0;
-    //    if (graph_component) {
-    //      for (auto iter = graph_component_->EdgesBegin();
-    //          iter != graph_component_->EdgesEnd(); ++iter) {
-    //        edge_count_++;
-    //      }
-    //    } else {
-    //      for (auto iter = graph_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-    //        edge_count_++;
-    //      }
-    //    }
-    //  }
 
     //todo optimize component copy
     DataPrinter(const GraphComponent<Graph>& component,
                 BaseIdTrackHandler<VertexId, EdgeId> const& int_ids) :
             component_(component), int_ids_(int_ids) {
     }
-
-    //  template<class VertexIt>
-    //  DataPrinter(const Graph& g, VertexIt begin, VertexIt end,
-    //      IdTrackHandler<Graph> const& int_ids, bool conjugate) :
-    //      component_(g, begin, end, conjugate), int_ids_(int_ids) {
-    //  }
 
     const GraphComponent<Graph>& component() const {
         return component_;
@@ -192,149 +322,6 @@ class DataPrinter {
 
     }
 };
-
-
-
-template<class Graph>
-void DataPrinter<Graph>::saveGraph(const string& file_name) {
-    FILE* file = fopen((file_name + ".grp").c_str(), "w");
-    DEBUG("Graph saving to " << file_name << " started");
-    VERIFY_MSG(file != NULL,
-               "Couldn't open file " << (file_name + ".grp") << " on write");
-    size_t vertex_count = component_.v_size();
-    size_t edge_count = component_.e_size();
-    fprintf(file, "%zu %zu \n", vertex_count, edge_count);
-    for (auto iter = component_.v_begin(); iter != component_.v_end(); ++iter) {
-        save(file, *iter);
-    }
-
-    fprintf(file, "\n");
-
-    for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
-        save(file, *iter);
-    }
-    DEBUG("Graph saving to " << file_name << " finished");
-
-    fclose(file);
-}
-
-template<class Graph>
-void DataPrinter<Graph>::save(FILE* file, VertexId vid) {
-    fprintf(file, "%s\n", toPrint(vid).c_str());
-}
-
-template<class Graph>
-void DataPrinter<Graph>::save(FILE* file, EdgeId eid) {
-    fprintf(file, "%s\n", toPrint(eid).c_str());
-}
-
-
-template<class Graph>
-void DataPrinter<Graph>::saveEdgeSequences(const string& file_name) {
-    FILE* file = fopen((file_name + ".sqn").c_str(), "w");
-    //FILE* path_file = fopen("/home/lab42/algorithmic-biology/assembler/src/tools/coverage_based_rr")
-    DEBUG("Saving sequences " << file_name <<" created");
-    VERIFY(file != NULL);
-    //fprintf(file, "%zu\n", component_.e_size());
-    for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
-        fprintf(file, ">%zu\n", int_ids_.ReturnIntId(*iter));
-        size_t len = component_.g().EdgeNucls(*iter).size();
-        for (size_t i = 0; i < len; i++)
-            fprintf(file, "%c", nucl(component_.g().EdgeNucls(*iter)[i]));
-        fprintf(file, "\n");
-        //    fprintf(file, "%s .\n", graph_.EdgeNucls(*iter).str().c_str());
-    }
-    fclose(file);
-}
-
-template<class Graph>
-void DataPrinter<Graph>::saveCoverage(const string& file_name) {
-    FILE* file = fopen((file_name + ".cvr").c_str(), "w");
-    DEBUG("Saving coverage, " << file_name <<" created");
-    VERIFY(file != NULL);
-    fprintf(file, "%zu\n", component_.e_size());
-    for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
-        fprintf(file, "%zu ", int_ids_.ReturnIntId(*iter));
-        fprintf(file, "%lf .\n", component_.g().coverage(*iter));
-    }
-    fclose(file);
-}
-
-template<class Graph>
-void DataPrinter<Graph>::savePaired(const string& file_name,
-                                    const PairedInfoIndexT<Graph>& paired_index) {
-    FILE* file = fopen((file_name + ".prd").c_str(), "w");
-    DEBUG("Saving paired info, " << file_name <<" created");
-    VERIFY(file != NULL);
-
-    size_t comp_size = 0;
-    for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
-        EdgeId e1 = *I;
-        auto inner_map = paired_index.GetEdgeInfo(e1, 0);
-        for (auto II = inner_map.begin(), IE = inner_map.end(); II != IE; ++II) {
-            EdgeId e2 = II->first;
-            const de::Histogram& hist = II->second;
-            if (component_.contains(e2)) { // if the second edge also lies in the same component
-                comp_size += hist.size();
-            }
-        }
-    }
-
-    fprintf(file, "%zu\n", comp_size);
-
-    for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
-        EdgeId e1 = *I;
-        auto inner_map = paired_index.GetEdgeInfo(e1, 0);
-        for (auto II = inner_map.begin(), IE = inner_map.end(); II != IE; ++II) {
-            EdgeId e2 = II->first;
-            const Histogram& hist = II->second;
-            if (component_.contains(e2))
-                for (auto hist_it = hist.begin(); hist_it != hist.end(); ++hist_it) {
-                    Point point = *hist_it;
-                    fprintf(file, "%zu %zu %.2f %.2f %.2f .\n",
-                            int_ids_.ReturnIntId(e1),
-                            int_ids_.ReturnIntId(e2),
-                            point.d, point.weight, point.var);
-                }
-        }
-    }
-
-    fclose(file);
-}
-
-template<class Graph>
-void DataPrinter<Graph>::savePositions(const string& file_name,
-                                       EdgesPositionHandler<Graph> const& ref_pos) {
-
-    ofstream file((file_name + ".pos").c_str());
-
-    DEBUG("Saving edges positions, " << file_name << " created");
-    VERIFY(file.is_open());
-
-    file << component_.e_size() << endl;
-    bool careful = ref_pos.is_careful();
-
-    for (auto it = component_.e_begin(); it != component_.e_end(); ++it) {
-
-        auto pos_it = ref_pos.edges_positions().find(*it);
-        VERIFY(pos_it != ref_pos.edges_positions().end());
-
-        file << id_handler().ReturnIntId(*it) << " " << pos_it->second.size()
-             << endl;
-
-        for (size_t i = 0; i < pos_it->second.size(); i++) {
-            file << "    " << pos_it->second[i].contigId_ << " "
-                 << pos_it->second[i].start() << " - "
-                 << pos_it->second[i].end();
-            if (careful) {
-                file<<" "<<pos_it->second[i].m_start()<<" "<<pos_it->second[i].m_end()<<endl;
-            }
-            else {
-                file<<endl;
-            }
-        }
-    }
-}
 
 template<class Graph>
 class ConjugateDataPrinter: public DataPrinter<Graph> {
@@ -357,7 +344,7 @@ class ConjugateDataPrinter: public DataPrinter<Graph> {
             base(GraphComponent<Graph>(g, begin, end, true), int_ids) {
     }
 
-    std::string toPrint(VertexId v) const {
+    std::string ToPrint(VertexId v) const {
         stringstream ss;
         ss
                 << "Vertex "
@@ -368,7 +355,7 @@ class ConjugateDataPrinter: public DataPrinter<Graph> {
         return ss.str();
     }
 
-    std::string toPrint(EdgeId e) const {
+    std::string ToPrint(EdgeId e) const {
         stringstream ss;
         ss
                 << "Edge "
@@ -411,13 +398,13 @@ class NonconjugateDataPrinter: public DataPrinter<Graph> {
             base(GraphComponent<Graph>(g, begin, end), int_ids) {
     }
 
-    std::string toPrint(VertexId v) const {
+    std::string ToPrint(VertexId v) const {
         stringstream ss;
         ss << "Vertex " << this->id_handler().ReturnIntId(v) << " .";
         return ss.str();
     }
 
-    std::string toPrint(EdgeId e) const {
+    std::string ToPrint(EdgeId e) const {
         stringstream ss;
         ss
                 << "Edge "
@@ -452,14 +439,131 @@ template<class Graph>
 class DataScanner {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
+
+    template<class T>
+    void LoadEdgeAssociatedInfo(boost::function<void (EdgeId, T)> setting_f, istream& in) const {
+        size_t cnt;
+        in >> cnt;
+        for (size_t i = 0; i < cnt; ++i) {
+            size_t edge_id;
+            T t;
+            string delim;
+            in >> edge_id;
+            in >> t;
+            in >> delim;
+            VERIFY(delim == ".");
+            setting_f(id_handler_.ReturnEdgeId(edge_id), t);
+        }
+    }
+
+    template<class T>
+    void LoadEdgeAssociatedInfo(T& t, istream& in) const {
+        size_t cnt;
+        in >> cnt;
+        for (size_t i = 0; i < cnt; ++i) {
+            size_t edge_id;
+            in >> edge_id;
+            t.Load(id_handler_.ReturnEdgeId(edge_id), in);
+            string delim;
+            in >> delim;
+            VERIFY(delim == ".");
+        }
+    }
+
+//    template<class C>
+//    void LoadEdgeAssociatedInfo(const C& c, ostream& out) const {
+//        SaveEdgeAssociatedInfo<decltype(C::operator[])>(boost::bind(&C::operator[], c, _1), out);
+//    }
+
   public:
-    virtual void loadGraph(const string& file_name) = 0;
-    void loadCoverage(const string& file_name);
-    void loadPaired(const string& file_name,
+    virtual void LoadGraph(const string& file_name) = 0;
+
+    void LoadCoverage(const string& file_name) {
+        ifstream in(file_name + ".cvr");
+        LoadEdgeAssociatedInfo(g_.coverage_index(), in);
+    }
+
+    bool LoadFlankingCoverage(const string& file_name, NewFlankingCoverage<Graph>& flanking_cov) {
+        if (!FileExists(file_name + ".flcvr"))
+            return false;
+        ifstream in(file_name + ".flcvr");
+        LoadEdgeAssociatedInfo(flanking_cov, in);
+        return true;
+    }
+
+    void LoadPaired(const string& file_name,
                     PairedInfoIndexT<Graph>& paired_index,
-                    bool force_exists = true);
-    void loadPositions(const string& file_name,
-                       EdgesPositionHandler<Graph>& edge_pos);
+                    bool force_exists = true) {
+        typedef typename Graph::EdgeId EdgeId;
+        int read_count;
+        FILE* file = fopen((file_name + ".prd").c_str(), "r");
+        INFO((file_name + ".prd"));
+        if (force_exists) {
+            VERIFY(file != NULL);
+        } else if (file == NULL) {
+            INFO("Paired info not found, skipping");
+            return;
+        }
+        INFO("Reading paired info from " << file_name << " started");
+
+        size_t paired_count;
+        read_count = fscanf(file, "%zu \n", &paired_count);
+        VERIFY(read_count == 1);
+        for (size_t i = 0; i < paired_count; i++) {
+            size_t first_real_id, second_real_id;
+            double w, d, v;
+            read_count = fscanf(file, "%zu %zu %lf %lf %lf .\n",
+                                &first_real_id, &second_real_id, &d, &w, &v);
+            VERIFY(read_count == 5);
+            TRACE(first_real_id<< " " << second_real_id << " " << d << " " << w << " " << v);
+            if (id_handler_.ReturnEdgeId(first_real_id) == EdgeId(NULL) || id_handler_.ReturnEdgeId(second_real_id) == EdgeId(NULL))
+                continue;
+            TRACE(id_handler_.ReturnEdgeId(first_real_id) << " "
+                  << id_handler_.ReturnEdgeId(second_real_id)
+                  << " " << d << " " << w);
+            paired_index.AddPairInfo(
+                id_handler_.ReturnEdgeId(first_real_id),
+                id_handler_.ReturnEdgeId(second_real_id), d, w, v, false);
+        }
+        DEBUG("PII SIZE " << paired_index.size());
+        fclose(file);
+    }
+
+    void LoadPositions(const string& file_name,
+                       EdgesPositionHandler<Graph>& edge_pos) {
+        int read_count;
+        FILE* file = fopen((file_name + ".pos").c_str(), "r");
+        VERIFY(file != NULL);
+        DEBUG("Reading edges positions, " << file_name <<" started");
+        VERIFY(file != NULL);
+        size_t pos_count;
+        read_count = fscanf(file, "%zu\n", &pos_count);
+        VERIFY(read_count == 1);
+        for (size_t i = 0; i < pos_count; i++) {
+            size_t edge_real_id, pos_info_count;
+            char contigId[500];
+            char cur_str[500];
+            read_count = fscanf(file, "%zu %zu\n", &edge_real_id, &pos_info_count);
+            VERIFY(read_count == 2);
+            //    INFO(  edge_real_id);
+            for (size_t j = 0; j < pos_info_count; j++) {
+                int start_pos, end_pos;
+                int m_start_pos, m_end_pos;
+                read_count = fscanf(file, "%[^\n]s", cur_str);
+                read_count = fscanf(file, "\n");
+                read_count = sscanf(cur_str, "%s %d - %d %d %d", contigId,
+                                    &start_pos, &end_pos, &m_start_pos, &m_end_pos);
+                //      INFO(cur_str);
+                //      INFO (contigId<<" "<< start_pos<<" "<<end_pos);
+                //      VERIFY(read_count == 3);
+                VERIFY(read_count == 3 || read_count == 5 );
+                EdgeId eid = id_handler_.ReturnEdgeId(edge_real_id);
+                if (read_count == 3) {edge_pos.AddEdgePosition(eid, start_pos, end_pos, string(contigId));}
+                else  {edge_pos.AddEdgePosition(eid, start_pos, end_pos, string(contigId), m_start_pos, m_end_pos);}
+            }
+        }
+        fclose(file);
+    }
 
   private:
     Graph& g_;
@@ -494,7 +598,7 @@ class ConjugateDataScanner: public DataScanner<Graph> {
     typedef typename Graph::VertexId VertexId;
   public:
     /*virtual*/
-    void loadGraph(const string& file_name) {
+    void LoadGraph(const string& file_name) {
         int flag;
         INFO("Trying to read conjugate de bruijn graph from " << file_name << ".grp");
         FILE* file = fopen((file_name + ".grp").c_str(), "r");
@@ -583,7 +687,7 @@ class NonconjugateDataScanner: public DataScanner<Graph> {
     typedef typename Graph::VertexId VertexId;
   public:
     /*virtual*/
-    void loadGraph(const string& file_name) {
+    void LoadGraph(const string& file_name) {
         int flag;
         FILE* file = fopen((file_name + ".grp").c_str(), "r");
         VERIFY_MSG(file != NULL, "Couldn't find file " << (file_name + ".grp"));
@@ -651,105 +755,6 @@ class NonconjugateDataScanner: public DataScanner<Graph> {
 };
 
 template<class Graph>
-void DataScanner<Graph>::loadCoverage(const string& file_name) {
-    int read_count;
-    FILE* file = fopen((file_name + ".cvr").c_str(), "r");
-    VERIFY(file != NULL);
-    INFO("Reading coverage from " << file_name << " started");
-    size_t edge_count;
-    read_count = fscanf(file, "%zu \n", &edge_count);
-    VERIFY(read_count == 1);
-    //  VERIFY(edge_count == edge_count_);
-    for (size_t i = 0; i < edge_count; i++) {
-        int edge_real_id;
-        double edge_coverage;
-        read_count = fscanf(file, "%d %lf .\n", &edge_real_id, &edge_coverage);
-        VERIFY(read_count == 2);
-        TRACE(edge_real_id<< " "<<edge_coverage <<" . ");
-        EdgeId eid = id_handler_.ReturnEdgeId(edge_real_id);
-        TRACE("EdgeId "<<eid);
-        g_.coverage_index().SetCoverage(eid, (int) math::round(edge_coverage * (double) g_.length(eid)));
-    }
-    fclose(file);
-}
-
-template<class Graph>
-void DataScanner<Graph>::loadPaired(const string& file_name,
-                                    PairedInfoIndexT<Graph>& paired_index,
-                                    bool force_exists) {
-    typedef typename Graph::EdgeId EdgeId;
-    int read_count;
-    FILE* file = fopen((file_name + ".prd").c_str(), "r");
-    INFO((file_name + ".prd"));
-    if (force_exists) {
-        VERIFY(file != NULL);
-    } else if (file == NULL) {
-        INFO("Paired info not found, skipping");
-        return;
-    }
-    INFO("Reading paired info from " << file_name << " started");
-
-    size_t paired_count;
-    read_count = fscanf(file, "%zu \n", &paired_count);
-    VERIFY(read_count == 1);
-    for (size_t i = 0; i < paired_count; i++) {
-        size_t first_real_id, second_real_id;
-        double w, d, v;
-        read_count = fscanf(file, "%zu %zu %lf %lf %lf .\n",
-                            &first_real_id, &second_real_id, &d, &w, &v);
-        VERIFY(read_count == 5);
-        TRACE(first_real_id<< " " << second_real_id << " " << d << " " << w << " " << v);
-        if (id_handler_.ReturnEdgeId(first_real_id) == EdgeId(NULL) || id_handler_.ReturnEdgeId(second_real_id) == EdgeId(NULL))
-            continue;
-        TRACE(id_handler_.ReturnEdgeId(first_real_id) << " "
-              << id_handler_.ReturnEdgeId(second_real_id)
-              << " " << d << " " << w);
-        paired_index.AddPairInfo(
-            id_handler_.ReturnEdgeId(first_real_id),
-            id_handler_.ReturnEdgeId(second_real_id), d, w, v, false);
-    }
-    DEBUG("PII SIZE " << paired_index.size());
-    fclose(file);
-}
-
-template<class Graph>
-void DataScanner<Graph>::loadPositions(const string& file_name,
-                                       EdgesPositionHandler<Graph>& edge_pos) {
-    int read_count;
-    FILE* file = fopen((file_name + ".pos").c_str(), "r");
-    VERIFY(file != NULL);
-    DEBUG("Reading edges positions, " << file_name <<" started");
-    VERIFY(file != NULL);
-    size_t pos_count;
-    read_count = fscanf(file, "%zu\n", &pos_count);
-    VERIFY(read_count == 1);
-    for (size_t i = 0; i < pos_count; i++) {
-        size_t edge_real_id, pos_info_count;
-        char contigId[500];
-        char cur_str[500];
-        read_count = fscanf(file, "%zu %zu\n", &edge_real_id, &pos_info_count);
-        VERIFY(read_count == 2);
-        //    INFO(  edge_real_id);
-        for (size_t j = 0; j < pos_info_count; j++) {
-            int start_pos, end_pos;
-            int m_start_pos, m_end_pos;
-            read_count = fscanf(file, "%[^\n]s", cur_str);
-            read_count = fscanf(file, "\n");
-            read_count = sscanf(cur_str, "%s %d - %d %d %d", contigId,
-                                &start_pos, &end_pos, &m_start_pos, &m_end_pos);
-            //      INFO(cur_str);
-            //      INFO (contigId<<" "<< start_pos<<" "<<end_pos);
-            //      VERIFY(read_count == 3);
-            VERIFY(read_count == 3 || read_count == 5 );
-            EdgeId eid = id_handler_.ReturnEdgeId(edge_real_id);
-            if (read_count == 3) {edge_pos.AddEdgePosition(eid, start_pos, end_pos, string(contigId));}
-            else  {edge_pos.AddEdgePosition(eid, start_pos, end_pos, string(contigId), m_start_pos, m_end_pos);}
-        }
-    }
-    fclose(file);
-}
-
-template<class Graph>
 struct ScannerTraits {
     typedef DataScanner<Graph> Scanner;
 };
@@ -774,9 +779,9 @@ inline std::string MakeSingleReadsFileName(const std::string& file_name,
 
 template<class Graph>
 void PrintBasicGraph(const string& file_name, DataPrinter<Graph>& printer) {
-    printer.saveGraph(file_name);
-    printer.saveEdgeSequences(file_name);
-    printer.saveCoverage(file_name);
+    printer.SaveGraph(file_name);
+    printer.SaveEdgeSequences(file_name);
+    printer.SaveCoverage(file_name);
 }
 
 template<class graph_pack>
@@ -784,13 +789,15 @@ void PrintGraphPack(const string& file_name,
                     DataPrinter<typename graph_pack::graph_t>& printer,
                     const graph_pack& gp) {
     PrintBasicGraph(file_name, printer);
-    //  printer.savePaired(file_name + "_et", gp.etalon_paired_index);
+    //  printer.SavePaired(file_name + "_et", gp.etalon_paired_index);
     if (gp.edge_pos.IsAttached())
-        printer.savePositions(file_name, gp.edge_pos);
+        printer.SavePositions(file_name, gp.edge_pos);
     if (gp.index.IsAttached())
         SaveEdgeIndex(file_name, gp.index.inner_index());
     if (gp.kmer_mapper.IsAttached())
         SaveKmerMapper(file_name, gp.kmer_mapper);
+    if (gp.flanking_cov.IsAttached())
+        printer.SaveFlankingCoverage(file_name, gp.flanking_cov);
 }
 
 template<class graph_pack>
@@ -803,7 +810,7 @@ void PrintGraphPack(const string& file_name, const graph_pack& gp) {
 template<class Graph>
 void PrintPairedIndex(const string& file_name, DataPrinter<Graph>& printer,
                       const PairedInfoIndexT<Graph>& paired_index) {
-    printer.savePaired(file_name, paired_index);
+    printer.SavePaired(file_name, paired_index);
 }
 
 template<class Graph>
@@ -902,7 +909,7 @@ void PrintAll(const string& file_name, const graph_pack& gp) {
     PrintClusteredIndices(file_name, printer, gp.clustered_indices);
     PrintScaffoldingIndices(file_name, printer, gp.clustered_indices);
     PrintSingleLongReads(file_name, gp.single_long_reads);
-    gp.ginfo.save(file_name + ".ginfo");
+    gp.ginfo.Save(file_name + ".ginfo");
 }
 
 template<class graph_pack, class VertexIt>
@@ -972,8 +979,8 @@ void PrintWithClusteredIndices(const string& file_name, const graph_pack& gp,
 
 template<class Graph>
 void ScanBasicGraph(const string& file_name, DataScanner<Graph>& scanner) {
-    scanner.loadGraph(file_name);
-    scanner.loadCoverage(file_name);
+    scanner.LoadGraph(file_name);
+    scanner.LoadCoverage(file_name);
 }
 
 template<class graph_pack>
@@ -988,30 +995,33 @@ void ScanGraphPack(const string& file_name,
         gp.index.Refill();
     }
     gp.index.Attach();
-    //  scanner.loadPaired(file_name + "_et", gp.etalon_paired_index);
-    scanner.loadPositions(file_name, gp.edge_pos);
+    //  scanner.LoadPaired(file_name + "_et", gp.etalon_paired_index);
+    scanner.LoadPositions(file_name, gp.edge_pos);
     LoadKmerMapper(file_name, gp.kmer_mapper);
+    if (!scanner.LoadFlankingCoverage(file_name, gp.flanking_cov)) {
+        gp.flanking_cov.Fill(gp.index.inner_index());
+    }
 }
 
 template<class Graph>
 void ScanPairedIndex(const string& file_name, DataScanner<Graph>& scanner,
                      PairedInfoIndexT<Graph>& paired_index,
                      bool force_exists = true) {
-    scanner.loadPaired(file_name, paired_index, force_exists);
+    scanner.LoadPaired(file_name, paired_index, force_exists);
 }
 
 template<class Graph>
 void ScanClusteredIndex(const string& file_name, DataScanner<Graph>& scanner,
                         PairedInfoIndexT<Graph>& clustered_index,
                         bool force_exists = true) {
-    scanner.loadPaired(file_name + "_cl", clustered_index, force_exists);
+    scanner.LoadPaired(file_name + "_cl", clustered_index, force_exists);
 }
 
 template<class Graph>
 void ScanScaffoldingIndex(const string& file_name, DataScanner<Graph>& scanner,
                           PairedInfoIndexT<Graph>& clustered_index,
                           bool force_exists = true) {
-    scanner.loadPaired(file_name + "_scf", clustered_index, force_exists);
+    scanner.LoadPaired(file_name + "_scf", clustered_index, force_exists);
 }
 
 template<class Graph>
@@ -1148,6 +1158,7 @@ void ScanAll(const std::string& file_name, graph_pack& gp,
     ScanClusteredIndices(file_name, scanner, gp.clustered_indices, force_exists);
     ScanScaffoldingIndices(file_name, scanner, gp.scaffolding_indices, force_exists);
     ScanSingleLongReads(file_name,  gp.single_long_reads);
-    gp.ginfo.load(file_name + ".ginfo");
+    gp.ginfo.Load(file_name + ".ginfo");
+}
 }
 }

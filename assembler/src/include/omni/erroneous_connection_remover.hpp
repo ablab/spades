@@ -401,7 +401,6 @@ class SimpleMultiplicityCountingChimericEdgeRemover :
     }
 };
 
-
 template<class Graph>
 class HiddenECRemover: public EdgeProcessingAlgorithm<Graph,
 		std::less<typename Graph::EdgeId>> {
@@ -478,7 +477,6 @@ private:
 		}
 		return false;
 	}
-
 
 public:
 	HiddenECRemover(Graph& g, size_t length_bound,

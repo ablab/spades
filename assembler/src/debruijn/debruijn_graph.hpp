@@ -116,6 +116,10 @@ public:
 		return coverage_index_;
 	}
 
+	const CoverageIndex<DeBruijnGraph>& coverage_index() const {
+		return coverage_index_;
+	}
+
 	/**
 	 * Method returns average coverage of the edge
 	 */

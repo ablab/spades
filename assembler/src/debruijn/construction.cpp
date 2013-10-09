@@ -25,7 +25,7 @@ void construct_graph(io::ReadStreamVector< io::IReader<Read> >& streams,
     params.early_tc.enable &= !cfg::get().ds.single_cell;
 
     size_t rl = ConstructGraphWithCoverage(cfg::get().K, params, streams, gp.g,
-                                           gp.index, contigs_stream);
+                                           gp.index, gp.flanking_cov, contigs_stream);
 
     if (!cfg::get().ds.RL()) {
         INFO("Figured out: read length = " << rl);

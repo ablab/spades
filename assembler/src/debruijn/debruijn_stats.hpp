@@ -318,8 +318,7 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 
     if (config.save_full_graph) {
         make_dir(folder + "full_graph_save/");
-        ConjugateDataPrinter<Graph> printer(gp.g, gp.int_ids);
-        PrintGraphPack(folder + "full_graph_save/graph", printer, gp);
+        graphio::PrintGraphPack(folder + "full_graph_save/graph", gp);
     }
 
     if (!config.components_for_genome_pos.empty()) {
@@ -380,23 +379,6 @@ std::string ConstructComponentName(std::string file_name, size_t cnt) {
     string res = file_name;
     res.insert(res.length(), ss.str());
     return res;
-}
-
-template<class graph_pack>
-int PrintGraphComponents(const string& file_name, graph_pack& gp,
-                         size_t split_edge_length, PairedInfoIndexT<Graph> &clustered_index) {
-    shared_ptr<GraphSplitter<Graph>> inner_splitter = ReliableSplitter<Graph>(gp.g, split_edge_length);
-    shared_ptr<GraphComponentFilter<Graph>> checker = make_shared<ComponentSizeFilter<Graph>>(gp.g, split_edge_length, 2, 300);
-    FilteringSplitterWrapper<Graph> splitter(inner_splitter, checker);
-    size_t cnt = 1;
-    while (splitter.HasNext() && cnt <= 1000) {
-        string component_name = ConstructComponentName(file_name, cnt).c_str();
-        auto component = splitter.Next();
-        PrintWithClusteredIndex(component_name, gp, component.vertices().begin(),
-                                component.vertices().end(), clustered_index);
-        cnt++;
-    }
-    return (int) cnt - 1;
 }
 
 template<class Graph>

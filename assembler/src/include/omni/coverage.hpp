@@ -32,53 +32,57 @@ class CoverageIndex : public GraphActionHandler<Graph> {
 
 //	map_type storage_;
 
-    size_t KPlusOneMerCoverage(EdgeId edge) const {
-        return (size_t) math::round(coverage(edge) * (double) this->g().length(edge));
+    unsigned RawCoverage(EdgeId edge) const {
+        return edge->GetRawCoverage();
     }
 
-    template<class ReadThreader>
-    Path<EdgeId> ProcessSequence(const ReadThreader& threader,
-                                 const Sequence& sequence) const {
-        return threader.MapSequence(sequence);
-    }
+//    size_t KPlusOneMerCoverage(EdgeId edge) const {
+//        return (size_t) math::round(coverage(edge) * (double) this->g().length(edge));
+//    }
 
-    void AddPathsToGraph(const Path<EdgeId>& path) {
+//    template<class ReadThreader>
+//    Path<EdgeId> ProcessSequence(const ReadThreader& threader,
+//                                 const Sequence& sequence) const {
+//        return threader.MapSequence(sequence);
+//    }
 
-        if (path.sequence().size() == 0)
-            return;
+//    void AddPathsToGraph(const Path<EdgeId>& path) {
+//
+//        if (path.sequence().size() == 0)
+//            return;
+//
+//        const vector<EdgeId>& edges_list = path.sequence();
+//
+//        for (auto it = edges_list.cbegin(); it != edges_list.cend(); ++it) {
+//            IncCoverage(*it, this->g().length(*it));
+//        }
+//        IncCoverage(edges_list[0], -int(path.start_pos()));
+//        EdgeId last = edges_list[edges_list.size() - 1];
+//        IncCoverage(last, int(path.end_pos()) - int(this->g().length(last)));
+//    }
 
-        const vector<EdgeId>& edges_list = path.sequence();
-
-        for (auto it = edges_list.cbegin(); it != edges_list.cend(); ++it) {
-            IncCoverage(*it, this->g().length(*it));
-        }
-        IncCoverage(edges_list[0], -int(path.start_pos()));
-        EdgeId last = edges_list[edges_list.size() - 1];
-        IncCoverage(last, int(path.end_pos()) - int(this->g().length(last)));
-    }
-
-    void IncCoverageInMap(EdgeId edge, int toAdd, map_type& map) {
-        //VERIFY(toAdd >= 0);
-        map[edge] += toAdd;
-        VERIFY(map[edge] >= 0);
-    }
-
-    void AddPathsToMap(const Path<EdgeId>& path, map_type& map) {
-
-        if (path.sequence().size() == 0)
-            return;
-
-        const vector<EdgeId>& edges_list = path.sequence();
-
-        for (auto it = edges_list.cbegin(); it != edges_list.cend(); ++it) {
-            IncCoverageInMap(*it, this->g().length(*it), map);
-        }
-        IncCoverageInMap(edges_list[0], -int(path.start_pos()), map);
-        EdgeId last = edges_list[edges_list.size() - 1];
-        IncCoverageInMap(last,
-                         int(path.end_pos()) - int(this->g().length(last)),
-                         map);
-    }
+//    void IncCoverageInMap(EdgeId edge, int toAdd, map_type& map) {
+//        //VERIFY(toAdd >= 0);
+//        map[edge] += toAdd;
+//        VERIFY(map[edge] >= 0);
+//    }
+//
+//    void AddPathsToMap(const Path<EdgeId>& path, map_type& map) {
+//
+//        if (path.sequence().size() == 0)
+//            return;
+//
+//        const vector<EdgeId>& edges_list = path.sequence();
+//
+//        for (auto it = edges_list.cbegin(); it != edges_list.cend(); ++it) {
+//            IncCoverageInMap(*it, this->g().length(*it), map);
+//        }
+//        IncCoverageInMap(edges_list[0], -int(path.start_pos()), map);
+//        EdgeId last = edges_list[edges_list.size() - 1];
+//        IncCoverageInMap(last,
+//                         int(path.end_pos()) - int(this->g().length(last)),
+//                         map);
+//    }
 
  public:
     CoverageIndex(Graph &g)
@@ -88,156 +92,182 @@ class CoverageIndex : public GraphActionHandler<Graph> {
     virtual ~CoverageIndex() {
     }
 
-    void SetCoverage(EdgeId edge, int cov) {
-        VERIFY(cov >= 0);
+    /**
+     * In NON averaged units
+     */
+    void SetCoverage(EdgeId edge, unsigned cov) {
         edge->SetCoverage(cov);
+    }
+
+    void SetAvgCoverage(EdgeId e, double cov) {
+        e->SetCoverage((int) math::round(cov * (double) this->g().length(e)));
     }
 
     /**
      * Returns average coverage of the edge
      */
     double coverage(EdgeId edge) const {
-        return (double) edge->GetRawCoverage() / (double) this->g().length(edge);
+        return (double) RawCoverage(edge) / (double) this->g().length(edge);
     }
 
-    /**
-     * Method increases coverage value
-     */
-    void IncCoverage(EdgeId edge, int to_add) {
-        edge->IncCoverage(to_add);
-        VERIFY(edge->GetRawCoverage() >= 0);
-    }
+//    /**
+//     * Returns average coverage of the edge
+//     */
+//    double operator[](EdgeId e) const {
+//        return coverage(e);
+//    }
 
-    /**
-     * Method increases coverage value by 1
-     */
-    void IncCoverage(EdgeId edge) {
-        IncCoverage(edge, 1);
-    }
-
-    template<class ReadThreader, class Read>
-    void FillIndex(io::IReader<Read>& stream, const ReadThreader& threader) {
-
-        INFO("Processing reads (takes a while)");
-        size_t counter = 0;
-        stream.reset();
-
-        while (!stream.eof()) {
-            Read r;
-            stream >> r;
-            Path<EdgeId> path = ProcessSequence(threader, r.sequence());
-            AddPathsToGraph(path);
-
-            VERBOSE_POWER(++counter, " reads processed");
-        }
-
-        INFO("DeBruijn graph coverage counted, reads used: " << counter);
-    }
-
-    template<class ReadThreader, class Read>
-    void FillParallelIndex(io::ReadStreamVector<io::IReader<Read> >& streams,
-                           const ReadThreader& threader, size_t buffer_size) {
-
-        INFO("Processing reads (takes a while)");
-        perf_counter pc;
-        size_t counter = 0;
-
-        size_t nthreads = streams.size();
-        size_t buf_size = buffer_size
-                / (nthreads * (sizeof(Path<EdgeId> ) + 32));
-
-#pragma omp parallel num_threads(nthreads)
-        {
-#pragma omp for reduction(+ : counter)
-            for (size_t i = 0; i < nthreads; ++i) {
-
-                Read r;
-                io::IReader<Read>& stream = streams[i];
-                stream.reset();
-                std::vector<Path<EdgeId> > buffer(buf_size);
-
-                size_t j = 0;
-                while (!stream.eof()) {
-                    stream >> r;
-                    ++counter;
-                    buffer[j++] = ProcessSequence(threader, r.sequence());
-
-                    if (j == buf_size) {
-                        j = 0;
-
-#pragma omp critical
-                        {
-                            for (size_t l = 0; l < buf_size; ++l) {
-                                AddPathsToGraph(buffer[l]);
-                            }
-                        }
-                    }
-                }
-
-#pragma omp critical
-                {
-                    for (size_t l = 0; l < j; ++l) {
-                        AddPathsToGraph(buffer[l]);
-                    }
-                }
-            }
-
-        }
-
-        INFO("DeBruijn graph coverage counted, reads used: " << counter);
-
-        INFO("Elapsed time: " << pc.time_ms());
-    }
-
-    template<class ReadThreader, class Read>
-    void FillFastParallelIndex(
-            io::ReadStreamVector<io::IReader<Read> >& streams,
-            const ReadThreader& threader) {
-
-        INFO("Processing reads (takes a while)");
-        perf_counter pc;
-        size_t counter = 0;
-
-        size_t nthreads = streams.size();
+//    /**
+//     * Method increases coverage value
+//     */
+//    void IncCoverage(EdgeId edge, int to_add) {
+//        edge->IncCoverage(to_add);
+//        VERIFY(edge->GetRawCoverage() >= 0);
+//    }
 //
-        std::vector<map_type*> maps(nthreads);
-//        maps[0] = &storage_;
+//    /**
+//     * Method increases coverage value by 1
+//     */
+//    void IncCoverage(EdgeId edge) {
+//        IncCoverage(edge, 1);
+//    }
 
-        for (size_t i = 0; i < nthreads; ++i) {
-            maps[i] = new map_type();
+//    template<class ReadThreader, class Read>
+//    void Fill(io::IReader<Read>& stream, const ReadThreader& threader) {
+//
+//        INFO("Processing reads (takes a while)");
+//        size_t counter = 0;
+//        stream.reset();
+//
+//        while (!stream.eof()) {
+//            Read r;
+//            stream >> r;
+//            Path<EdgeId> path = ProcessSequence(threader, r.sequence());
+//            AddPathsToGraph(path);
+//
+//            VERBOSE_POWER(++counter, " reads processed");
+//        }
+//
+//        INFO("DeBruijn graph coverage counted, reads used: " << counter);
+//    }
+//
+//    template<class ReadThreader, class Read>
+//    void FillParallel(io::ReadStreamVector<io::IReader<Read> >& streams,
+//                           const ReadThreader& threader, size_t buffer_size) {
+//
+//        INFO("Processing reads (takes a while)");
+//        perf_counter pc;
+//        size_t counter = 0;
+//
+//        size_t nthreads = streams.size();
+//        size_t buf_size = buffer_size
+//                / (nthreads * (sizeof(Path<EdgeId> ) + 32));
+//
+//#pragma omp parallel num_threads(nthreads)
+//        {
+//#pragma omp for reduction(+ : counter)
+//            for (size_t i = 0; i < nthreads; ++i) {
+//
+//                Read r;
+//                io::IReader<Read>& stream = streams[i];
+//                stream.reset();
+//                std::vector<Path<EdgeId> > buffer(buf_size);
+//
+//                size_t j = 0;
+//                while (!stream.eof()) {
+//                    stream >> r;
+//                    ++counter;
+//                    buffer[j++] = ProcessSequence(threader, r.sequence());
+//
+//                    if (j == buf_size) {
+//                        j = 0;
+//
+//#pragma omp critical
+//                        {
+//                            for (size_t l = 0; l < buf_size; ++l) {
+//                                AddPathsToGraph(buffer[l]);
+//                            }
+//                        }
+//                    }
+//                }
+//
+//#pragma omp critical
+//                {
+//                    for (size_t l = 0; l < j; ++l) {
+//                        AddPathsToGraph(buffer[l]);
+//                    }
+//                }
+//            }
+//
+//        }
+//
+//        INFO("DeBruijn graph coverage counted, reads used: " << counter);
+//
+//        INFO("Elapsed time: " << pc.time_ms());
+//    }
+//
+//    template<class ReadThreader, class Read>
+//    void FillFastParallel(
+//            io::ReadStreamVector<io::IReader<Read> >& streams,
+//            const ReadThreader& threader) {
+//
+//        INFO("Processing reads (takes a while)");
+//        perf_counter pc;
+//        size_t counter = 0;
+//
+//        size_t nthreads = streams.size();
+////
+//        std::vector<map_type*> maps(nthreads);
+////        maps[0] = &storage_;
+//
+//        for (size_t i = 0; i < nthreads; ++i) {
+//            maps[i] = new map_type();
+//        }
+//
+//#pragma omp parallel num_threads(nthreads)
+//        {
+//#pragma omp for reduction(+ : counter)
+//            for (size_t i = 0; i < nthreads; ++i) {
+//
+//                Read r;
+//                io::IReader<Read>& stream = streams[i];
+//                stream.reset();
+//                Path<EdgeId> path;
+//
+//                while (!stream.eof()) {
+//                    stream >> r;
+//                    ++counter;
+//                    path = ProcessSequence(threader, r.sequence());
+//
+//                    AddPathsToMap(path, *maps[i]);
+//                }
+//            }
+//        }
+//
+//        INFO("Merging maps");
+//        for (size_t i = 0; i < nthreads; ++i) {
+//            for (auto it = maps[i]->begin(); it != maps[i]->end(); ++it) {
+//                it->first->IncCoverage(it->second);
+//            }
+//            delete maps[i];
+//        }
+//
+//        INFO("DeBruijn graph coverage counted, reads used: " << counter);
+//
+//        INFO("Elapsed time: " << pc.time_ms());
+//    }
+
+    template<class Index>
+    void FillFromIndex(Index& index) {
+        for (auto I = index.value_cbegin(), E = index.value_cend();
+                I != E; ++I) {
+            const auto& edge_info = *I;
+            VERIFY(edge_info.offset != -1u);
+            VERIFY(edge_info.edge_id.get() != NULL);
+            edge_info.edge_id->IncCoverage(edge_info.count);
         }
 
-#pragma omp parallel num_threads(nthreads)
-        {
-#pragma omp for reduction(+ : counter)
-            for (size_t i = 0; i < nthreads; ++i) {
-
-                Read r;
-                io::IReader<Read>& stream = streams[i];
-                stream.reset();
-                Path<EdgeId> path;
-
-                while (!stream.eof()) {
-                    stream >> r;
-                    ++counter;
-                    path = ProcessSequence(threader, r.sequence());
-
-                    AddPathsToMap(path, *maps[i]);
-                }
-            }
-        }
-
-        INFO("Merging maps");
-        for (size_t i = 0; i < nthreads; ++i) {
-            for (auto it = maps[i]->begin(); it != maps[i]->end(); ++it) {
-                it->first->IncCoverage(it->second);
-            }
-            delete maps[i];
-        }
-
-        INFO("DeBruijn graph coverage counted, reads used: " << counter);
-
-        INFO("Elapsed time: " << pc.time_ms());
+        DEBUG("Coverage counted");
     }
 
     virtual void HandleDelete(EdgeId edge) {
@@ -245,16 +275,15 @@ class CoverageIndex : public GraphActionHandler<Graph> {
     }
 
     virtual void HandleMerge(const vector<EdgeId>& old_edges, EdgeId new_edge) {
-        int coverage = 0;
+        unsigned coverage = 0;
         for (auto it = old_edges.begin(); it != old_edges.end(); ++it) {
-            coverage += (int) KPlusOneMerCoverage(*it);
+            coverage += RawCoverage(*it);
         }
         SetCoverage(new_edge, coverage);
     }
 
     virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
-        IncCoverage(new_edge, (int) KPlusOneMerCoverage(edge2));
-        IncCoverage(new_edge, (int) KPlusOneMerCoverage(edge1));
+        SetCoverage(new_edge, RawCoverage(edge1) + RawCoverage(edge2));
     }
 
     virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge1, EdgeId new_edge2) {
@@ -274,6 +303,16 @@ class CoverageIndex : public GraphActionHandler<Graph> {
         SetCoverage(new_edge2, max(1, (int) math::round(avg_cov * (double) this->g().length(new_edge2))));
     }
 
+    void Save(EdgeId e, ostream& out) const {
+        out << coverage(e);
+    }
+
+    void Load(EdgeId e, istream& in) {
+        double cov;
+        in >> cov;
+        SetAvgCoverage(e, cov);
+    }
+
     /*
      * Is thread safe if edges different threads process different edges.
      */
@@ -282,6 +321,7 @@ class CoverageIndex : public GraphActionHandler<Graph> {
     }
 };
 
+//todo discuss with Anton
 template<class Graph>
 class AbstractFlankingCoverage {
 public:

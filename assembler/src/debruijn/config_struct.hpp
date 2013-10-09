@@ -486,6 +486,8 @@ public:
     gap_closer gc;
     graph_read_corr_cfg graph_read_corr;
     info_printers_t info_printers;
+
+    size_t flanking_range;
 };
 
 void load(debruijn_config& cfg, const std::string &filename);

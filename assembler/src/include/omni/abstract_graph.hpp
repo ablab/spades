@@ -13,23 +13,24 @@ namespace omnigraph {
 
 class CoveredEdge {
  private:
-    int coverage_;
+    unsigned coverage_;
 
  public:
     CoveredEdge()
             : coverage_(0) {
     }
 
-    void SetCoverage(int coveradge) {
-        coverage_ = coveradge;
+    void SetCoverage(unsigned coverage) {
+        coverage_ = coverage;
     }
 
     void IncCoverage(int value) {
+        VERIFY(value >= 0 || coverage_ > unsigned(-value));
         coverage_ += value;
     }
 
     //not length normalized
-    int GetRawCoverage() const {
+    unsigned GetRawCoverage() const {
         return coverage_;
     }
 };

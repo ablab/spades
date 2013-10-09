@@ -36,11 +36,11 @@ static std::vector<size_t> extract(const std::map<size_t, size_t> &hist) {
     return res;
 }
 
-bool GenomicInfo::load(const std::string &filename) {
+bool GenomicInfo::Load(const std::string &filename) {
     std::ifstream ifs(filename.c_str());
     if (!ifs)
         return false;
-    
+
     YAML::Node node = YAML::Load(ifs);
 
     ec_bound_ = node["ec bound"].as<double>(0);
@@ -51,7 +51,7 @@ bool GenomicInfo::load(const std::string &filename) {
     return true;
 }
 
-void GenomicInfo::save(const std::string &filename) const {
+void GenomicInfo::Save(const std::string &filename) const {
     std::ofstream ofs(filename.c_str());
 
     YAML::Node node;

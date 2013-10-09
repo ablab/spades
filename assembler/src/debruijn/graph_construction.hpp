@@ -28,6 +28,7 @@
 #include "early_simplification.hpp"
 
 #include "read_converter.hpp"
+#include "detail_coverage.hpp"
 
 namespace debruijn_graph {
 
@@ -35,21 +36,6 @@ typedef io::IReader<io::SingleRead> SingleReadStream;
 typedef io::IReader<io::PairedRead> PairedReadStream;
 typedef io::MultifileReader<io::SingleRead> CompositeSingleReadStream;
 typedef io::ConvertingReaderWrapper UnitedStream;
-
-template<class Index>
-void FillCoverageFromIndex(Index& index) {
-	const auto& inner_index = index.inner_index();
-
-	for (auto I = inner_index.value_cbegin(), E = inner_index.value_cend();
-			I != E; ++I) {
-		const auto& edge_info = *I;
-        VERIFY(edge_info.offset != -1u);
-		VERIFY(edge_info.edge_id.get() != NULL);
-		edge_info.edge_id->IncCoverage(edge_info.count);
-	}
-
-	DEBUG("Coverage counted");
-}
 
 template<class Graph, class Readers, class Index>
 size_t ConstructGraphUsingOldIndex(size_t k,
@@ -142,11 +128,13 @@ size_t ConstructGraph(size_t k, const debruijn_config::construction &params,
 template<class Graph, class Index, class Streams>
 size_t ConstructGraphWithCoverage(size_t k, const debruijn_config::construction &params,
                                   Streams& streams, Graph& g,
-                                  Index& index, SingleReadStream* contigs_stream = 0) {
+                                  Index& index, NewFlankingCoverage<Graph>& flanking_cov,
+                                  SingleReadStream* contigs_stream = 0) {
 	size_t rl = ConstructGraph(k, params, streams, g, index, contigs_stream);
 
 	INFO("Filling coverage from index")
-	FillCoverageFromIndex(index);
+	g.coverage_index().FillFromIndex(index.inner_index());
+	flanking_cov.Fill(index.inner_index());
 
 	return rl;
 }

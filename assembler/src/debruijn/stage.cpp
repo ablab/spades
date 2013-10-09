@@ -18,7 +18,7 @@ void AssemblyStage::load(debruijn_graph::conj_graph_pack& gp, const char* prefix
     std::string p = path::append_path(cfg::get().load_from, prefix == NULL ? id_ : prefix);
     INFO("Loading current state from " << p);
 
-    ScanAll(p, gp, false);
+    debruijn_graph::graphio::ScanAll(p, gp, false);
     debruijn_graph::load_lib_data(p);
 }
 
@@ -26,7 +26,7 @@ void AssemblyStage::save(const debruijn_graph::conj_graph_pack& gp, const char* 
     std::string p = path::append_path(cfg::get().output_saves, prefix == NULL ? id_ : prefix);
     INFO("Saving current state to " << p);
 
-    PrintAll(p, gp);
+    debruijn_graph::graphio::PrintAll(p, gp);
     debruijn_graph::write_lib_data(p);
 }
 
