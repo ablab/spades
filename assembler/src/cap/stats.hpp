@@ -1019,7 +1019,6 @@ public:
 	    INFO("Processing contig " << transparent_id << " name " << contig_name);
 	    VertexId v = g_.EdgeStart(coords_.FindGenomeFirstEdge(transparent_id));
 	    size_t genome_pos = 0;
-	    size_t graph_pos = 0;
 
 	    while (true) {
 	        auto step = coords_.StepForward(v, transparent_id, genome_pos);
@@ -1027,6 +1026,15 @@ public:
 	            break;
 
 	        EdgeId e = step.first;
+
+          Range graph_pos(
+              coords_.GetNewestPos(transparent_id, genome_pos),
+              coords_.GetNewestPos(transparent_id, step.second));
+          Range contig_pos(
+              coords_.GetOriginalPos(transparent_id, graph_pos.start_pos),
+              coords_.GetOriginalPos(transparent_id, graph_pos.end_pos));
+          Range graph_pos_printable = coords_.GetPrintableRange(graph_pos);
+          Range contig_pos_printable = coords_.GetPrintableRange(contig_pos);
 
           if (CheckPatternMatch(e)) {
             auto canon = CanonicalId(e);
@@ -1036,17 +1044,16 @@ public:
                               % genome_id
                               % contig_name
                               % canon.first
-                              % coords_.GetOriginalPos(transparent_id, graph_pos)
-                              % coords_.GetOriginalPos(transparent_id, graph_pos + g_.length(e))
-                              % graph_pos
-                              % (graph_pos + g_.length(e))
+                              % contig_pos_printable.start_pos
+                              % contig_pos_printable.end_pos
+                              % graph_pos_printable.start_pos
+                              % graph_pos_printable.end_pos
                               % (canon.second ? "+" : "-")
                               % g_.int_id(e))
                               .str()
                       << endl;
           }
 
-	        graph_pos = graph_pos + g_.length(e);
 	        v = g_.EdgeEnd(e);
 	        genome_pos = step.second;
 	    }
