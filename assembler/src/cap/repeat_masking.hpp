@@ -22,6 +22,78 @@ struct Count {
     Count() : count(0) {}
 };
 
+template <class Builder>
+class RepeatSearchingIndexBuilder : public Builder {
+    typedef Builder base;
+ public:
+    typedef typename Builder::IndexT IndexT;
+    typedef typename IndexT::KMer Kmer;
+    typedef typename IndexT::KMerIdx KmerIdx;
+
+ private:
+    template<class ReadStream>
+    size_t FillCoverageFromStream(ReadStream &stream,
+                                  IndexT &index) const {
+        unsigned k = index.k();
+        while (!stream.eof()) {
+            typename ReadStream::read_type r;
+            stream >> r;
+
+            const Sequence &seq = r.sequence();
+            if (seq.size() < k)
+                continue;
+
+            Kmer kmer = seq.start<Kmer>(k);
+            kmer >>= 'A';
+            for (size_t j = k - 1; j < seq.size(); ++j) {
+                kmer <<= seq[j];
+                KmerIdx idx = index.seq_idx(kmer);
+                VERIFY(index.valid_idx(idx));
+                if (index[idx].count != -1u) {
+                    index[idx].count += 1;
+                }
+            }
+        }
+
+        return 0;
+    }
+
+    void ProcessCounts(IndexT &index) const {
+        for (KmerIdx idx = index.kmer_idx_begin(); idx < index.kmer_idx_end(); ++idx) {
+            if (index[idx].count > 1) {
+                index[idx].count = -1u;
+            } else {
+                index[idx].count = 0;
+            }
+        }
+    }
+
+    template<class Streams>
+    size_t FindRepeats(IndexT &index, Streams &streams) const {
+        INFO("Collecting k-mer coverage information from reads, this takes a while.");
+        unsigned nthreads = (unsigned) streams.size();
+        streams.reset();
+        for (size_t i = 0; i < nthreads; ++i) {
+            FillCoverageFromStream(streams[i], index);
+            ProcessCounts(index);
+        }
+
+        return 0;
+    }
+
+ public:
+
+    template<class Streams>
+    size_t BuildIndexFromStream(IndexT &index,
+                                Streams &streams,
+                                SingleReadStream* contigs_stream = 0) const {
+        base::BuildIndexFromStream(index, streams, contigs_stream);
+
+        return FindRepeats(index, streams);
+    }
+
+};
+
 template<class Index>
 struct CountIndexHelper {
     typedef Index IndexT;
@@ -30,7 +102,7 @@ struct CountIndexHelper {
     typedef typename IndexT::traits_t traits_t;
 //    typedef typename IndexT::IdType IdType;
     typedef DeBruijnStreamKMerIndexBuilder<Kmer, IndexT> DeBruijnStreamKMerIndexBuilderT;
-    typedef CoverageFillingEdgeIndexBuilder<DeBruijnStreamKMerIndexBuilderT> CoverageFillingEdgeIndexBuilderT;
+    typedef RepeatSearchingIndexBuilder<DeBruijnStreamKMerIndexBuilderT> RepeatSearchingIndexBuilderT;
 };
 
 class RandNucl {
@@ -69,7 +141,7 @@ private:
 
 
     bool IsRepeat(const Kmer& kmer) const {
-        return index_[kmer].count > 1;
+        return index_[kmer].count == -1u;
     }
 
     template<class S>
@@ -117,11 +189,13 @@ public:
     template<class Streams>
     size_t FindRepeats(Streams& streams) {
         INFO("Looking for repetitive " << k_ << "-mers");
-        CountIndexHelper<KmerCountIndex>::CoverageFillingEdgeIndexBuilderT().BuildIndexFromStream(index_, streams);
+        CountIndexHelper<KmerCountIndex>::RepeatSearchingIndexBuilderT().BuildIndexFromStream(index_, streams);
         size_t rep_kmer_cnt = 0;
         for (KmerIdx idx = index_.kmer_idx_begin(); idx < index_.kmer_idx_end(); ++idx) {
-            if (index_[idx].count > 1) {
+            if (index_[idx].count == -1u) {
                 rep_kmer_cnt++;
+            } else {
+                VERIFY(index_[idx].count == 0);
             }
         }
         INFO("Found " << rep_kmer_cnt << " repetitive " << k_ << "-mers");
