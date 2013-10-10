@@ -70,7 +70,6 @@ class InsertSizeHistogramCounter {
     for (size_t i = 1; i < nthreads; ++i)
       hists[i] = new HistType();
 
-    INFO("Processing paired reads (takes a while)");
     size_t counted = 0, total = 0, negative = 0;
 #pragma omp parallel for num_threads(nthreads) reduction(+ : counted, total, negative)
     for (size_t i = 0; i < nthreads; ++i) {
@@ -253,7 +252,7 @@ void refine_insert_size(io::ReadStreamVector<io::IReader<PairedRead> >& streams,
                         double& median, double& mad,
                         std::map<size_t, size_t>& percentiles,
                         HistType& hist) {
-  INFO("SUBSTAGE == Refining insert size and its distribution");
+  INFO("Estimating insert size (takes a while)");
   InsertSizeHistogramCounter<graph_pack> hist_counter(gp, edge_length_threshold, /* ignore negative */ true);
   hist_counter.Count(streams, rl);
 

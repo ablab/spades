@@ -69,7 +69,7 @@ private:
     }
 
     conj_graph_pack& gp_;
-    PathStorage<conj_graph_pack::graph_t> storage_;
+    PathStorage<conj_graph_pack::graph_t>& storage_;
     std::shared_ptr<const NewExtendedSequenceMapper<conj_graph_pack::graph_t,
                     conj_graph_pack::index_t> > mapper_;
     vector<PathStorage<conj_graph_pack::graph_t>*> buffer_storages_;

@@ -47,7 +47,6 @@ public:
     void ProcessLibrary(io::ReadStreamVector<io::IReader<Read> >& streams,
             size_t lib_index, size_t threads_count) {
         streams.release();
-        INFO("Processing reads (takes a while) ");
         NotifyStartProcessLibrary(lib_index, threads_count);
         const Mapper mapper = MapperInstance(gp_);
         size_t counter = 0;

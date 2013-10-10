@@ -154,8 +154,10 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
             continue;
         }
 
+        INFO("Processing library #" << i);
         if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd ||
             cfg::get().ds.reads[i].type() == io::LibraryType::MatePairs) {
+
             bool insert_size_refined;
             if (cfg::get().use_multithreading) {
                 auto streams = paired_binary_readers(cfg::get().ds.reads[i], false, 0);
@@ -182,11 +184,18 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
                         ", deviation = " << cfg::get().ds.reads[i].data().insert_size_deviation <<
                         ", read length = " << cfg::get().ds.reads[i].data().read_length);
             }
+            INFO("Mapping paired reads (takes a while) ");
             ProcessPairedReads(gp, i);
         }
 
-        if (cfg::get().ds.reads[i].type() == io::LibraryType::SingleReads)
+        if (cfg::get().ds.reads[i].type() == io::LibraryType::SingleReads && cfg::get().long_single_mode) {
+            INFO("Mapping single reads (takes a while) ");
             ProcessSingleReads(gp, i);
+        }
+
+        if (cfg::get().long_single_mode) {
+            INFO("Total paths obtained from single reads: " << gp.single_long_reads[i].size());
+        }
     }
 }
 
