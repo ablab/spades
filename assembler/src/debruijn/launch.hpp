@@ -55,7 +55,7 @@ void assemble_genome() {
     SPAdes.add(new debruijn_graph::SimplificationCleanup());
     if (cfg::get().correct_mismatches)
         SPAdes.add(new debruijn_graph::MismatchCorrection());
-    if (cfg::get().paired_mode) {
+    if (cfg::get().paired_mode || cfg::get().long_single_mode) {
         SPAdes.add(new debruijn_graph::PairInfoCount());
         SPAdes.add(new debruijn_graph::DistanceEstimation());
         SPAdes.add(new debruijn_graph::RepeatResolution());
