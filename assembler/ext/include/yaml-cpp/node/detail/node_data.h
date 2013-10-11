@@ -22,6 +22,10 @@ namespace YAML
 	{
 		class node_data: private boost::noncopyable
 		{
+            struct node_cmp {
+                bool operator()(const node *lhs, const node *rhs) const;
+            };
+
 		public:
 			node_data();
 			
@@ -97,7 +101,7 @@ namespace YAML
 			mutable std::size_t m_seqSize;
 			
 			// map
-			typedef std::map<node *, node *> node_map;
+			typedef std::map<node *, node *, node_cmp> node_map;
 			node_map m_map;
 			
 			typedef std::pair<node *, node *> kv_pair;

@@ -10,6 +10,13 @@ namespace YAML
 	{
 		std::string node_data::empty_scalar;
 
+        bool node_data::node_cmp::operator()(const node *lhs, const node *rhs) const {
+            if (lhs->is_defined() && rhs->is_defined())
+                return lhs->scalar() < rhs->scalar();
+
+            return lhs < rhs;
+        }
+
 		node_data::node_data(): m_isDefined(false), m_type(NodeType::Null), m_seqSize(0)
 		{
 		}
