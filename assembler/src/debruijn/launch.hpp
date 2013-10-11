@@ -40,7 +40,7 @@ void assemble_genome() {
         conj_gp.paired_indices.Detach();
         conj_gp.clustered_indices.Detach();
         conj_gp.scaffolding_indices.Detach();
-        if (!cfg::get().gap_closer_enable && !cfg::get().paired_mode)
+        if (!cfg::get().gap_closer_enable && !cfg::get().paired_mode && !cfg::get().long_single_mode)
             conj_gp.kmer_mapper.Detach();
     }
 
