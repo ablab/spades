@@ -564,11 +564,11 @@ bool AllTopology(Graph &g,
                  boost::function<void(typename Graph::EdgeId)> removal_handler,
                  size_t /*iteration*/) {
     bool res = false;
-//    TopologyRemoveErroneousEdges(g, cfg::get().simp.tec,
-//                                            removal_handler);
+    TopologyRemoveErroneousEdges(g, cfg::get().simp.tec,
+                                            removal_handler);
 //    res |= TopologyReliabilityRemoveErroneousEdges(g, cfg::get().simp.trec,
 //                                                   removal_handler);
-    res |= RemoveThorns(g, cfg::get().simp.isec, removal_handler);
+//    res |= RemoveThorns(g, cfg::get().simp.isec, removal_handler);
 //    res |= MultiplicityCountingRemoveErroneousEdges(g, cfg::get().simp.tec,
 //                                                    removal_handler);
     return res;
