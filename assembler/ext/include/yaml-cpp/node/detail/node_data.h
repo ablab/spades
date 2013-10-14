@@ -22,10 +22,6 @@ namespace YAML
 	{
 		class node_data: private boost::noncopyable
 		{
-            struct node_cmp {
-                bool operator()(const node *lhs, const node *rhs) const;
-            };
-
 		public:
 			node_data();
 			
