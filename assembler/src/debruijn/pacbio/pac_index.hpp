@@ -8,7 +8,6 @@
 
 #include "indices/edge_multi_index.hpp"
 #include "indices/edge_index_builders.hpp"
-#include "graph_pack.hpp"
 #include <algorithm>
 #include "pacbio_read_structures.hpp"
 
@@ -46,7 +45,7 @@ private:
     size_t read_count;
 
 public:
-    MappingDescription Locate(const Sequence &s);
+    MappingDescription Locate(const Sequence &s) const;
 
     PacBioMappingIndex(const Graph &g, size_t k, size_t debruijn_k_)
             : g_(g),
@@ -55,8 +54,8 @@ public:
               tmp_index((unsigned) pacbio_k, cfg::get().output_dir) {
         DEBUG("PB Mapping Index construction started");
 
-
         typedef typename debruijn_graph::EdgeIndexHelper<debruijn_graph::DeBruijnEdgeMultiIndex<typename Graph::EdgeId>>::GraphPositionFillingIndexBuilderT Builder;
+
         Builder().BuildIndexFromGraph(tmp_index, g_);
         FillBannedKmers();
         compression_cutoff = cfg::get().pb.compression_cutoff;  // 0.6
@@ -112,7 +111,7 @@ public:
         }
     }
 
-    ClustersSet GetClusters(const Sequence &s) {
+    ClustersSet GetClusters(const Sequence &s) const {
         MappingDescription descr = Locate(s);
         ClustersSet res;
         TRACE(read_count << " read_count");
@@ -174,7 +173,7 @@ public:
     }
 
     //filter clusters that are too small or fully located on a vertex or dominated by some other cluster.
-    void FilterClusters(ClustersSet &clusters) {
+    void FilterClusters(ClustersSet &clusters) const {
         for (auto i_iter = clusters.begin(); i_iter != clusters.end();) {
             size_t edge_id = g_.int_id(i_iter->edgeId);
 
@@ -584,13 +583,59 @@ public:
         }
         return paths[best_path_ind];
     }
+
+    // Short read alignment
+    MappingPath<EdgeId> GetShortReadAlignment(const Sequence &s) const {
+        ClustersSet mapping_descr = GetClusters(s);
+        map<EdgeId, KmerCluster<Graph> > largest_clusters;
+
+        //Selecting the biggest cluster for each edge
+        for (auto iter = mapping_descr.begin(); iter != mapping_descr.end(); ++iter) {
+            auto edge_cluster = largest_clusters.find(iter->edgeId);
+            if (edge_cluster != largest_clusters.end()) {
+                if (edge_cluster->second.last_trustable_index - edge_cluster->second.first_trustable_index
+                        > iter->last_trustable_index - iter->first_trustable_index) {
+
+                    edge_cluster->second = *iter;
+                }
+            }
+            else {
+                largest_clusters.insert(make_pair(iter->edgeId, *iter));
+            }
+        }
+
+        MappingPath<EdgeId> result;
+        for (auto iter = largest_clusters.begin(); iter != largest_clusters.end(); ++iter) {
+            MappingRange range(Range(iter->second.sorted_positions[iter->second.first_trustable_index].read_position, iter->second.sorted_positions[iter->second.last_trustable_index].read_position),
+                    Range(iter->second.sorted_positions[iter->second.first_trustable_index].edge_position, iter->second.sorted_positions[iter->second.last_trustable_index].edge_position));
+
+            result.join(MappingPath<EdgeId>(vector<EdgeId>(1, iter->second.edgeId), vector<MappingRange>(1, range)));
+        }
+
+        return result;
+    }
+
+    pair<EdgeId, size_t> GetUniqueKmerPos(const runtime_k::RtSeq& kmer) const {
+        KeyWithHash kwh = tmp_index.ConstructKWH(kmer);
+
+        if (tmp_index.valid(kwh.key())) {
+            auto keys = tmp_index.get(kwh);
+            if (keys.size() == 1) {
+                return make_pair(keys[0].edge_id, keys[0].offset);
+            }
+        }
+        return make_pair(EdgeId(0), -1u);
+    }
+
+
 };
 
 template<class Graph>
-typename PacBioMappingIndex<Graph>::MappingDescription
-PacBioMappingIndex<Graph>::Locate(const Sequence &s) {
+typename PacBioMappingIndex<Graph>::MappingDescription PacBioMappingIndex<Graph>::Locate(const Sequence &s) const {
     MappingDescription res;
-    read_count++;
+    //WARNING: removed read_count from here to make const methods
+    int local_read_count = 0;
+    ++local_read_count;
     if (s.size() < pacbio_k)
         return res;
 
@@ -621,7 +666,7 @@ PacBioMappingIndex<Graph>::Locate(const Sequence &s) {
 
     for (auto iter = res.begin(); iter != res.end(); ++iter) {
         sort(iter->second.begin(), iter->second.end());
-        DEBUG("read count "<< read_count);
+        DEBUG("read count "<< local_read_count);
         DEBUG("edge: " << g_.int_id(iter->first) << "size: " << iter->second.size());
         for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); j_iter++) {
             DEBUG(j_iter->str());

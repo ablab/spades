@@ -19,7 +19,7 @@
 #include "debruijn_graph.hpp"
 #include "config_struct.hpp"
 #include "edge_index.hpp"
-#include "sequence_mapper.hpp"
+#include "kmer_mapper.hpp"
 #include "genomic_info.hpp"
 #include "long_read_storage.hpp"
 #include "detail_coverage.hpp"

@@ -7,8 +7,6 @@
 #pragma once
 
 #include "cpp_utils.hpp"
-#include "debruijn_stats.hpp"
-
 
 namespace omnigraph {
 
@@ -92,15 +90,12 @@ inline void ISInterval(double quant, double is,
 template<class graph_pack>
 class InsertSizeHistogramCounter {
   typedef std::map<int, size_t> HistType;
-  typedef typename graph_pack::graph_t::EdgeId EdgeId;
 
  public:
   InsertSizeHistogramCounter(const graph_pack& gp,
-          size_t edge_length_threshold,
           bool ignore_negative = false)
-      : gp_(gp), edge_length_threshold_(edge_length_threshold), hist_(), tmp_hists_(),
+      : gp_(gp), hist_(), tmp_hists_(),
         total_(), counted_(), negative_(), k_(gp.k_value), ignore_negative_(ignore_negative) {
-
   }
 
   HistType hist() { return hist_; }
@@ -132,15 +127,11 @@ class InsertSizeHistogramCounter {
     negative_.merge();
   }
 
-  template<class PairedRead>
-  void ProcessPairedRead(size_t thread_index, const PairedRead& r, const pair<EdgeId, size_t>& pos_left, const pair<EdgeId, size_t>& pos_right) {
+  void ProcessPairedRead(size_t thread_index, bool correctly_aligned, int is) {
     ++total_.arr_[thread_index];
-    if (pos_left.second == -1u || pos_right.second == -1u || pos_left.first != pos_right.first || gp_.g.length(pos_left.first) < edge_length_threshold_) {
+    if (!correctly_aligned) {
       return;
     }
-
-    int is = (int) (pos_right.second - pos_left.second - k_ - 1 - r.insert_size()
-             + r.first().size() + r.second().size());
 
     if (is > 0 || !ignore_negative_) {
       (*tmp_hists_[thread_index])[is] += 1;
@@ -234,26 +225,24 @@ class InsertSizeHistogramCounter {
   }
 
  private:
-
   struct count_data {
-      size_t total_;
-      vector<size_t> arr_;
-      count_data(): total_(0) {
+    size_t total_;
+    vector<size_t> arr_;
+    count_data(): total_(0) {
+    }
+    count_data(size_t nthreads): total_(0), arr_(nthreads, 0) {
+    }
+    void inc(size_t i) {
+      ++arr_[i];
+    }
+    void merge() {
+      for (size_t i = 0; i < arr_.size(); ++i) {
+        total_ += arr_[i];
       }
-      count_data(size_t nthreads): total_(0), arr_(nthreads, 0) {
-      }
-      void inc(size_t i) {
-        ++arr_[i];
-      }
-      void merge() {
-        for (size_t i = 0; i < arr_.size(); ++i) {
-          total_ += arr_[i];
-        }
-      }
+    }
   };
 
   const graph_pack& gp_;
-  size_t edge_length_threshold_;
 
   HistType hist_;
   vector<HistType*> tmp_hists_;
@@ -264,6 +253,8 @@ class InsertSizeHistogramCounter {
 
   size_t k_;
   bool ignore_negative_;
+
+
 };
 
 

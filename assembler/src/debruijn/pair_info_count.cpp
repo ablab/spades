@@ -12,8 +12,11 @@
 #include "de/paired_info.hpp"
 
 #include "utils.hpp"
+#include "debruijn_stats.hpp"
 
 #include "pair_info_count.hpp"
+#include "sequence_mapper.hpp"
+#include "short_read_mapper.hpp"
 #include "long_read_mapper.hpp"
 #include "pair_info_filler.hpp"
 #include "path_extend/split_graph_pair_info.hpp"
@@ -24,6 +27,7 @@ template<class graph_pack, class PairedReadType>
 void RefineInsertSizeParallel(const graph_pack& gp,
         io::ReadStreamList<PairedReadType>& streams,
         InsertSizeHistogramCounter<graph_pack>& counter,
+        size_t edge_length_threshold,
         size_t& rl) {
 
   debruijn_graph::MapperFactory<graph_pack> mapper_factory(gp);
@@ -45,14 +49,14 @@ void RefineInsertSizeParallel(const graph_pack& gp,
       Sequence sequence_right = r.second().sequence();
 
       if (sequence_left.size() > rls[i]) {
-          rls[i] = sequence_left.size();
+        rls[i] = sequence_left.size();
       }
       if (sequence_right.size() > rls[i]) {
-          rls[i] = sequence_right.size();
+        rls[i] = sequence_right.size();
       }
-      auto pos_left = mapper->GetLastKmerPos(sequence_left);
-      auto pos_right = mapper->GetFirstKmerPos(sequence_right);
-      counter.ProcessPairedRead(i, r, pos_left, pos_right);
+
+      auto is = mapper->GetISFromLongEdge(sequence_left, sequence_right, r.insert_size(), edge_length_threshold);
+      counter.ProcessPairedRead(i, is.first, is.second);
     }
   }
   counter.Finalize();
@@ -75,8 +79,8 @@ bool RefineInsertSizeForLib(const graph_pack& gp,
                       size_t edge_length_threshold) {
 
   INFO("Estimating insert size (takes a while)");
-  InsertSizeHistogramCounter<graph_pack> hist_counter(gp, edge_length_threshold, /* ignore negative */ true);
-  RefineInsertSizeParallel<graph_pack, PairedReadType>(gp, streams, hist_counter, data.read_length);
+  InsertSizeHistogramCounter<graph_pack> hist_counter(gp, /* ignore negative */ true);
+  RefineInsertSizeParallel<graph_pack, PairedReadType>(gp, streams, hist_counter, edge_length_threshold,data.read_length);
 
   INFO(hist_counter.mapped() << " paired reads (" << ((double) hist_counter.mapped() * 100.0 / (double) hist_counter.total()) << "% of all) aligned to long edges");
   if (hist_counter.negative() > 3 * hist_counter.mapped())

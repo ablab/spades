@@ -7,6 +7,8 @@
 #include "omni_labelers.hpp"
 #include "dataset_readers.hpp"
 #include "read_converter.hpp"
+#include "sequence_mapper.hpp"
+#include "short_read_mapper.hpp"
 
 #include "de/paired_info.hpp"
 

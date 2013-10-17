@@ -111,7 +111,7 @@ class DeBruijnEdgeMultiIndex : public KeyStoringMap<Seq, EdgeInfoStorage<IdType>
       return this->get_raw_value_reference(kwh).valid();
   }
 
-  bool valid(const KMer &kmer){
+  bool valid(const KMer &kmer) const {
       KeyWithHash kwh = base::ConstructKWH(kmer);
       return base::valid(kwh);
   }

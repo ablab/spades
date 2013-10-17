@@ -10,6 +10,7 @@
 #include "debruijn_graph.hpp"
 
 #include "graph_pack.hpp"
+#include "sequence_mapper.hpp"
 #include "graphio.hpp"
 
 #include "omni/visualization/visualization.hpp"
