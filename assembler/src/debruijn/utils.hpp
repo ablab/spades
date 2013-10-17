@@ -45,28 +45,6 @@ inline double KmerCountProductWeight(const MappingRange& mr1,
     return (double)(mr1.initial_range.size() * mr2.initial_range.size());
 }
 
-inline ConjugateDeBruijnGraph::EdgeId conj_wrap(ConjugateDeBruijnGraph& g,
-                                                ConjugateDeBruijnGraph::EdgeId e) {
-	return g.conjugate(e);
-}
-
-inline NonconjugateDeBruijnGraph::EdgeId conj_wrap(NonconjugateDeBruijnGraph& /*g*/,
-                                                   NonconjugateDeBruijnGraph::EdgeId e) {
-	VERIFY(0);
-	return e;
-}
-
-inline void WrappedSetCoverage(ConjugateDeBruijnGraph& g,
-                               ConjugateDeBruijnGraph::EdgeId e, int cov) {
-    g.coverage_index().SetCoverage(e, cov);
-    g.coverage_index().SetCoverage(g.conjugate(e), cov);
-}
-
-inline void WrappedSetCoverage(NonconjugateDeBruijnGraph& g,
-                               NonconjugateDeBruijnGraph::EdgeId e, int cov) {
-	g.coverage_index().SetCoverage(e, cov);
-}
-
 class WeightDEWrapper {
 private:
 

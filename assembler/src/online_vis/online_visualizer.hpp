@@ -30,7 +30,7 @@ class OnlineVisualizer {
   }
 
   inline void init() {
-    string p = path::append_path(cfg::get().load_from, "simplified_graph"); // just for default
+    string p = path::append_path(cfg::get().load_from, "simplification"); // just for default
 
     path::make_dir("tmp");
     stringstream ss("load default " + p);

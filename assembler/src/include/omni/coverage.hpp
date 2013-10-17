@@ -22,18 +22,42 @@
 
 namespace omnigraph {
 
+class CoveredEdgeData {
+ private:
+    unsigned coverage_;
+
+ public:
+    CoveredEdgeData()
+            : coverage_(0) {
+    }
+
+    void inc_coverage(int value) {
+        VERIFY(value >= 0 || coverage_ > unsigned(-value));
+        coverage_ += value;
+    }
+
+    void set_coverage(unsigned coverage) {
+        coverage_ = coverage;
+    }
+
+    //not length normalized
+    unsigned coverage() const {
+        return coverage_;
+    }
+};
+
+//todo save/load absolute coverage
 template<class Graph>
 class CoverageIndex : public GraphActionHandler<Graph> {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
     typedef unordered_map<EdgeId, int> map_type;
 
- private:
-
+    Graph& g_;
 //	map_type storage_;
 
     unsigned RawCoverage(EdgeId edge) const {
-        return edge->GetRawCoverage();
+        return g_.data(edge).coverage();
     }
 
 //    size_t KPlusOneMerCoverage(EdgeId edge) const {
@@ -86,7 +110,7 @@ class CoverageIndex : public GraphActionHandler<Graph> {
 
  public:
     CoverageIndex(Graph &g)
-            : GraphActionHandler<Graph>(g, "CoverageIndex") {
+            : GraphActionHandler<Graph>(g, "CoverageIndex"), g_(g) {
     }
 
     virtual ~CoverageIndex() {
@@ -95,12 +119,12 @@ class CoverageIndex : public GraphActionHandler<Graph> {
     /**
      * In NON averaged units
      */
-    void SetCoverage(EdgeId edge, unsigned cov) {
-        edge->SetCoverage(cov);
+    void SetRawCoverage(EdgeId e, unsigned cov) {
+        g_.data(e).set_coverage(cov);
     }
 
     void SetAvgCoverage(EdgeId e, double cov) {
-        e->SetCoverage((int) math::round(cov * (double) this->g().length(e)));
+        g_.data(e).set_coverage((int) math::round(cov * (double) this->g().length(e)));
     }
 
     /**
@@ -264,14 +288,14 @@ class CoverageIndex : public GraphActionHandler<Graph> {
             const auto& edge_info = *I;
             VERIFY(edge_info.offset != -1u);
             VERIFY(edge_info.edge_id.get() != NULL);
-            edge_info.edge_id->IncCoverage(edge_info.count);
+            g_.data(edge_info.edge_id).inc_coverage(edge_info.count);
         }
 
         DEBUG("Coverage counted");
     }
 
     virtual void HandleDelete(EdgeId edge) {
-        SetCoverage(edge, 0);
+        SetRawCoverage(edge, 0);
     }
 
     virtual void HandleMerge(const vector<EdgeId>& old_edges, EdgeId new_edge) {
@@ -279,11 +303,11 @@ class CoverageIndex : public GraphActionHandler<Graph> {
         for (auto it = old_edges.begin(); it != old_edges.end(); ++it) {
             coverage += RawCoverage(*it);
         }
-        SetCoverage(new_edge, coverage);
+        SetRawCoverage(new_edge, coverage);
     }
 
     virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
-        SetCoverage(new_edge, RawCoverage(edge1) + RawCoverage(edge2));
+        SetRawCoverage(new_edge, RawCoverage(edge1) + RawCoverage(edge2));
     }
 
     virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge1, EdgeId new_edge2) {
@@ -299,8 +323,8 @@ class CoverageIndex : public GraphActionHandler<Graph> {
 //		SetCoverage(newEdge1, coverage1);
 //		SetCoverage(newEdge2, coverage2);
         double avg_cov = coverage(old_edge);
-        SetCoverage(new_edge1, max(1, (int) math::round(avg_cov * (double) this->g().length(new_edge1))));
-        SetCoverage(new_edge2, max(1, (int) math::round(avg_cov * (double) this->g().length(new_edge2))));
+        SetRawCoverage(new_edge1, max(1, (int) math::round(avg_cov * (double) this->g().length(new_edge1))));
+        SetRawCoverage(new_edge2, max(1, (int) math::round(avg_cov * (double) this->g().length(new_edge2))));
     }
 
     void Save(EdgeId e, ostream& out) const {

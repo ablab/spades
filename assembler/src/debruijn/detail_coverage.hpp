@@ -224,7 +224,7 @@ public:
 
     virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge_1,
                              EdgeId new_edge_2) {
-        local_start_coverage_[new_edge_1] = get(local_start_coverage_, old_edge);
+        local_start_coverage_[new_edge_1] = local_start_coverage_[old_edge];
         local_start_coverage_[new_edge_2] = 0;
     }
 

@@ -151,9 +151,9 @@ namespace online_visualization {
             " You should specify the name of the new environment as well as a path to the graph saves. Optionally, \n" +
             " you can provide a k-value for these saves. \n: " +
             " For example:\n" +
-            "> load GraphSimplified data/saves/simplified_graph\n" +
+            "> load GraphSimplified data/saves/simplification\n" +
             " would load a new environment with the name `GraphSimplified` from the files\n" +
-            " in the folder `data/saves/` with the basename `simplified_graph` (simplified_graph.grp, simplified_graph.sqn, e.t.c).";
+            " in the folder `data/saves/` with the basename `simplification` (simplification.grp, simplification.sqn, e.t.c).";
           return answer;
         }
 

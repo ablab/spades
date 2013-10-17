@@ -280,10 +280,10 @@ class CapEnvironmentManager {
     std::string filename = folder + "graph";
 
     // Saving graph
-    PrinterTraits<Graph>::Printer printer(*env_->graph_, *env_->int_ids_);
-	printer.saveGraph(filename);
-	printer.saveEdgeSequences(filename);
-	printer.savePositions(filename, *env_->edge_pos_);
+    debruijn_graph::graphio::PrinterTraits<Graph>::Printer printer(*env_->graph_, *env_->int_ids_);
+	printer.SaveGraph(filename);
+	printer.SaveEdgeSequences(filename);
+	printer.SavePositions(filename, *env_->edge_pos_);
 
     // Saving coloring of graph
     cap::SaveColoring(*env_->graph_, *env_->int_ids_, *env_->coloring_, filename);

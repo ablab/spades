@@ -191,6 +191,10 @@ public:
 
 	virtual const VertexData& data(VertexId v) const = 0;
 
+	virtual EdgeData& data(EdgeId edge) = 0;
+
+	virtual VertexData& data(VertexId v) = 0;
+
 	virtual const vector<EdgeId> OutgoingEdges(VertexId v) const = 0;
 
 	virtual edge_const_iterator out_begin(VertexId v) const = 0;

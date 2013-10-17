@@ -46,7 +46,7 @@ class DebruijnEnvironment : public Environment {
               tot_lab_(&graph_struct_) {
 
             DEBUG("Environment constructor");
-            ScanGraphPack(path_, gp_);
+            debruijn_graph::graphio::ScanGraphPack(path_, gp_);
             DEBUG("Graph pack created")
             LoadFromGP();
         }

@@ -26,7 +26,7 @@ public:
 	}
 };
 
-class DeBruijnEdgeData {
+class DeBruijnEdgeData : public CoveredEdgeData {
 	friend class NewDeBruijnGraph;
 	friend class DeBruinMaster;
 	Sequence nucls_;

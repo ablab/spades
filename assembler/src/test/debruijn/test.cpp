@@ -14,10 +14,9 @@
 #include "debruijn_graph_test.hpp"
 #include "simplification_test.hpp"
 #include "order_and_law_test.hpp"
-#include "detail_coverage_test.hpp"
+//#include "detail_coverage_test.hpp"
 //fixme why is it disabled
 //#include "pair_info_test.hpp"
-
 
 ::boost::unit_test::test_suite*	init_unit_test_suite( int, char* [] )
 {

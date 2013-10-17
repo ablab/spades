@@ -137,6 +137,7 @@ class DataPrinter {
     //todo reduce duplication
     template<class T>
     void SaveEdgeAssociatedInfo(boost::function<T (EdgeId)> access_f, ostream& out) const {
+        out << component_.e_size() << endl;
         for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
             EdgeId e = *iter;
             //todo fixme currently matches old format .cvr format
@@ -152,6 +153,7 @@ class DataPrinter {
 
     template<class C>
     void SaveEdgeAssociatedInfo(const C& c, ostream& out) const {
+        out << component_.e_size() << endl;
         for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
             EdgeId e = *iter;
             //todo fixme currently matches old format .cvr format
@@ -201,14 +203,12 @@ class DataPrinter {
     void SaveCoverage(const string& file_name) const {
         ofstream out(file_name + ".cvr");
         DEBUG("Saving coverage, " << file_name <<" created");
-        out << component_.e_size();
         SaveEdgeAssociatedInfo(component_.g().coverage_index(), out);
     }
 
     void SaveFlankingCoverage(const string& file_name, const NewFlankingCoverage<Graph> flanking_cov) const {
         ofstream out(file_name + ".flcvr");
         DEBUG("Saving flanking coverage, " << file_name <<" created");
-        out << component_.e_size();
         SaveEdgeAssociatedInfo(flanking_cov, out);
     }
 
@@ -444,7 +444,7 @@ class DataScanner {
     void LoadEdgeAssociatedInfo(boost::function<void (EdgeId, T)> setting_f, istream& in) const {
         size_t cnt;
         in >> cnt;
-        for (size_t i = 0; i < cnt; ++i) {
+        for (size_t i = 0 ; i < cnt; ++i) {
             size_t edge_id;
             T t;
             string delim;
@@ -460,7 +460,7 @@ class DataScanner {
     void LoadEdgeAssociatedInfo(T& t, istream& in) const {
         size_t cnt;
         in >> cnt;
-        for (size_t i = 0; i < cnt; ++i) {
+        for (size_t i = 0 ; i < cnt; ++i) {
             size_t edge_id;
             in >> edge_id;
             t.Load(id_handler_.ReturnEdgeId(edge_id), in);
@@ -479,13 +479,17 @@ class DataScanner {
     virtual void LoadGraph(const string& file_name) = 0;
 
     void LoadCoverage(const string& file_name) {
+        INFO("Reading coverage from " << file_name);
         ifstream in(file_name + ".cvr");
         LoadEdgeAssociatedInfo(g_.coverage_index(), in);
     }
 
     bool LoadFlankingCoverage(const string& file_name, NewFlankingCoverage<Graph>& flanking_cov) {
-        if (!FileExists(file_name + ".flcvr"))
+        if (!FileExists(file_name + ".flcvr")) {
+            INFO("Flanking coverage saves are absent");
             return false;
+        }
+        INFO("Reading flanking coverage from " << file_name);
         ifstream in(file_name + ".flcvr");
         LoadEdgeAssociatedInfo(flanking_cov, in);
         return true;
