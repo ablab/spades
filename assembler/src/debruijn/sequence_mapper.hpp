@@ -11,7 +11,6 @@
 #include "omni/path_processor.hpp"
 
 #include "runtime_k.hpp"
-
 #include "edge_index.hpp"
 
 #include <cstdlib>
@@ -387,18 +386,47 @@ class SimpleSequenceMapper<Graph, runtime_k::RtSeq> {
 //  }
 //};
 
+
+
+template<class Graph>
+class SequenceMapper {
+public:
+    typedef typename Graph::EdgeId EdgeId;
+
+protected:
+    const Graph& g_;
+
+public:
+    SequenceMapper(const Graph& g): g_(g) {
+
+    }
+
+    virtual ~SequenceMapper() {
+
+    }
+
+    virtual MappingPath<EdgeId> MapSequence(const Sequence &sequence) const = 0;
+
+    virtual MappingPath<EdgeId> MapRead(const io::SingleRead &read) const = 0;
+
+    virtual pair<EdgeId, size_t> GetFirstKmerPos(const Sequence &sequence) const = 0;
+
+    virtual pair<EdgeId, size_t> GetLastKmerPos(const Sequence &sequence) const = 0;
+};
+
 //todo compare performance
 template<class Graph, class Index>
-class NewExtendedSequenceMapper {
+class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
+
+ using SequenceMapper<Graph>::g_;
+
  public:
-  typedef typename Graph::EdgeId EdgeId;
   typedef std::vector<MappingRange> RangeMappings;
   typedef typename Index::KMer Kmer;
   typedef KmerMapper<Graph, Kmer> KmerSubs;
   typedef MappingPathFixer<Graph> GraphMappingPathFixer;
 
  private:
-  const Graph& g_;
   const Index& index_;
   const KmerSubs& kmer_mapper_;
   const GraphMappingPathFixer path_fixer_;
@@ -496,7 +524,7 @@ class NewExtendedSequenceMapper {
                             const Index& index,
                             const KmerSubs& kmer_mapper,
                             size_t k) :
-      g_(g), index_(index), kmer_mapper_(kmer_mapper), path_fixer_(g), k_(k) { }
+      SequenceMapper<Graph>(g), index_(index), kmer_mapper_(kmer_mapper), path_fixer_(g), k_(k) { }
 
   ~NewExtendedSequenceMapper() {
     //		TRACE("In destructor of sequence mapper");
@@ -539,6 +567,28 @@ class NewExtendedSequenceMapper {
     return MapSequence(read.sequence());
   }
 
+  pair<EdgeId, size_t> GetFirstKmerPos(const Sequence &sequence) const {
+    if (sequence.size() < k_) {
+      return make_pair(EdgeId(0), -1u);
+    }
+
+    runtime_k::RtSeq left = sequence.start<runtime_k::RtSeq>(k_);
+    left = kmer_mapper_.Substitute(left);
+
+    return index_.get(left);
+  }
+
+  pair<EdgeId, size_t> GetLastKmerPos(const Sequence &sequence) const {
+    if (sequence.size() < k_) {
+      return make_pair(EdgeId(0), -1u);
+    }
+
+    runtime_k::RtSeq right = sequence.end<runtime_k::RtSeq>(k_);
+    right = kmer_mapper_.Substitute(right);
+
+    return index_.get(right);
+  }
+
   vector<EdgeId> FindReadPath(const MappingPath<EdgeId>& mapping_path) const {
         if (!IsMappingPathValid(mapping_path)) {
             TRACE("read unmapped");
@@ -570,5 +620,37 @@ std::shared_ptr<NewExtendedSequenceMapper<typename gp_t::graph_t, typename gp_t:
   size_t k_plus_1 = gp.k_value + 1;
   return std::make_shared<NewExtendedSequenceMapper<typename gp_t::graph_t, typename gp_t::index_t> >(gp.g, gp.index, gp.kmer_mapper, k_plus_1);
 }
+
+
+
+template<class graph_pack>
+class MapperFactory {
+
+private:
+    const graph_pack& gp_;
+
+public:
+    typedef SequenceMapper<typename graph_pack::graph_t> SequenceMapperT;
+
+    MapperFactory(const graph_pack& gp):gp_(gp) {
+    }
+
+    std::shared_ptr<SequenceMapperT> GetSequenceMapper(size_t read_length) {
+        if (read_length > gp_.k_value) {
+            INFO("Read length = " << read_length << ", selecting usual mapper");
+            size_t k_plus_1 = gp_.k_value + 1;
+            return std::make_shared<NewExtendedSequenceMapper<typename graph_pack::graph_t, typename graph_pack::index_t> >(gp_.g, gp_.index, gp_.kmer_mapper, k_plus_1);
+        }
+        else {
+            //TODO
+            INFO("Read length = " << read_length << ", selecting short read mapper");
+            size_t k_plus_1 = gp_.k_value + 1;
+            return std::make_shared<NewExtendedSequenceMapper<typename graph_pack::graph_t, typename graph_pack::index_t> >(gp_.g, gp_.index, gp_.kmer_mapper, k_plus_1);
+
+        }
+    }
+
+
+};
 
 }
