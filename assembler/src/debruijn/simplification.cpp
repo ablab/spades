@@ -63,7 +63,7 @@ void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
     printer(ipp_final_simplified);
 
     // FIXME: Get rid of this
-    if (cfg::get().correct_mismatches || cfg::get().paired_mode) {
+    if (cfg::get().correct_mismatches || cfg::get().rr_enable) {
         INFO("Final index refill");
         gp.index.Refill();
         INFO("Final index refill finished");

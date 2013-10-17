@@ -28,7 +28,7 @@ def prepare_config_spades(filename, cfg, log, use_additional_contigs, K, last_on
     subst_dict["entry_point"] = "construction"
     subst_dict["developer_mode"] = bool_to_str(cfg.developer_mode)
     subst_dict["gap_closer_enable"] = bool_to_str(last_one)
-    subst_dict["paired_mode"] = bool_to_str(last_one and cfg.paired_mode)
+    subst_dict["rr_enable"] = bool_to_str(last_one and cfg.rr_enable)
 #    subst_dict["long_single_mode"] = bool_to_str(last_one and cfg.long_single_mode)
     subst_dict["topology_simplif_enabled"] = bool_to_str(last_one)
     subst_dict["use_additional_contigs"] = bool_to_str(use_additional_contigs)
@@ -129,9 +129,9 @@ def run_spades(configs_dir, execution_home, cfg, log):
         RL = get_read_length(cfg.output_dir, cfg.iterative_K[0])
         cfg.iterative_K = update_k_mers_in_special_cases(cfg.iterative_K, RL, log)
         if cfg.iterative_K[1] + 1 > RL:
-            if cfg.paired_mode:
+            if cfg.rr_enable:
                 support.warning("Second value of iterative K (%d) exceeded estimated read length (%d). "
-                                "Rerunning in paired mode for the first value of K (%d)" %
+                                "Rerunning for the first value of K (%d) with Repeat Resolving" %
                                 (cfg.iterative_K[1], RL, cfg.iterative_K[0]), log)
                 run_iteration(configs_dir, execution_home, cfg, log, cfg.iterative_K[0], False, True)
                 K = cfg.iterative_K[0]
@@ -157,7 +157,7 @@ def run_spades(configs_dir, execution_home, cfg, log):
     if os.path.isfile(os.path.join(latest, "final_contigs.fasta")):
         if not os.path.isfile(cfg.result_contigs) or not options_storage.continue_mode:
             shutil.copyfile(os.path.join(latest, "final_contigs.fasta"), cfg.result_contigs)
-    if cfg.paired_mode:
+    if cfg.rr_enable:
         if os.path.isfile(os.path.join(latest, "scaffolds.fasta")):
             if not os.path.isfile(cfg.result_scaffolds) or not options_storage.continue_mode:
                 shutil.copyfile(os.path.join(latest, "scaffolds.fasta"), cfg.result_scaffolds)

@@ -78,6 +78,7 @@ void ProcessPairedReads(conj_graph_pack& gp, size_t ilib) {
     }
 }
 
+/*** DEPRECATED use of config (config.paired_mode, config.ds.set_... don't exist anymore
 template<class graph_pack, class PairedRead, class ConfigType>
 bool RefineInsertSize(const graph_pack& gp,
                       io::ReadStreamVector<io::IReader<PairedRead> >& streams,
@@ -113,6 +114,7 @@ bool RefineInsertSize(const graph_pack& gp,
 
   return true;
 }
+***/
 
 template<class graph_pack, class PairedRead, class DataSet>
 bool RefineInsertSizeForLib(const graph_pack& gp,

@@ -20,6 +20,7 @@ single_cell = False
 only_error_correction = False
 only_assembler = False
 disable_gzip_output = False
+disable_rr = False
 careful = False
 
 # advanced options
@@ -47,7 +48,7 @@ dict_of_prefixes = dict()
 # list of spades.py options
 long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\
                "only-error-correction only-assembler "\
-               "disable-gzip-output help test debug reference= "\
+               "disable-gzip-output disable-rr help test debug reference= "\
                "bh-heap-check= spades-heap-check= help-hidden "\
                "config-file= dataset= mismatch-correction careful continue".split()
 short_options = "o:1:2:s:k:t:m:i:h"
@@ -113,6 +114,8 @@ def usage(spades_version, show_hidden=False):
     sys.stderr.write("--continue\t\tcontinue run from the last available check-point" + "\n")
     sys.stderr.write("--disable-gzip-output\tforces error correction not to"\
                          " compress the corrected reads" + "\n")
+    sys.stderr.write("--disable-rr\t\tdisables repeat resolution stage"\
+                     " of assembling" + "\n")
 
     sys.stderr.write("" + "\n")
     sys.stderr.write("Advanced options:" + "\n")

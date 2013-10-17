@@ -71,9 +71,9 @@ def print_used_values(cfg, log):
         log.info("Mode: read error correction and assembling")
     if ("common" in cfg) and ("developer_mode" in cfg["common"].__dict__):
         if cfg["common"].developer_mode:
-            log.info("Debug mode turned ON")
+            log.info("Debug mode is turned ON")
         else:
-            log.info("Debug mode turned OFF")
+            log.info("Debug mode is turned OFF")
     log.info("")
 
     # dataset
@@ -107,6 +107,14 @@ def print_used_values(cfg, log):
     if "assembly" in cfg:
         log.info("Assembly parameters:")
         print_value(cfg, "assembly", "iterative_K", "k")
+        if cfg["assembly"].careful:
+            log.info("  MismatchCorrector will be used")
+        else:
+            log.info("  MismatchCorrector will be SKIPPED")
+        if cfg["assembly"].disable_rr:
+            log.info("  Repeat resolution is DISABLED")
+        else:
+            log.info("  Repeat resolution is enabled")
 
     log.info("Other parameters:")
     print_value(cfg, "common", "max_threads", "Threads")
@@ -170,6 +178,8 @@ def fill_cfg(options_to_parse, log):
             options_storage.single_cell = True
         elif opt == "--disable-gzip-output":
             options_storage.disable_gzip_output = True
+        elif opt == "--disable-rr":
+            options_storage.disable_rr = True
 
         elif opt == "--only-error-correction":
             if options_storage.only_assembler:
@@ -295,6 +305,7 @@ def fill_cfg(options_to_parse, log):
         else:
             cfg["assembly"].__dict__["iterative_K"] = options_storage.k_mers_short
         cfg["assembly"].__dict__["careful"] = options_storage.careful
+        cfg["assembly"].__dict__["disable_rr"] = options_storage.disable_rr
         if options_storage.spades_heap_check:
             cfg["assembly"].__dict__["heap_check"] = options_storage.spades_heap_check
 
@@ -442,10 +453,10 @@ def main():
                 if os.path.isfile(corrected_dataset_yaml_filename):
                     dataset_data = pyyaml.load(open(corrected_dataset_yaml_filename, 'r'))
                     dataset_data = support.relative2abs_paths(dataset_data, os.path.dirname(corrected_dataset_yaml_filename))
-                if support.dataset_needs_paired_mode(dataset_data):
-                    spades_cfg.__dict__["paired_mode"] = True
+                if not spades_cfg.disable_rr and support.dataset_allows_repeat_resolving(dataset_data):
+                    spades_cfg.__dict__["rr_enable"] = True
                 else:
-                    spades_cfg.__dict__["paired_mode"] = False
+                    spades_cfg.__dict__["rr_enable"] = False
 #                if support.dataset_needs_long_single_mode(dataset_data):
 #                    spades_cfg.__dict__["long_single_mode"] = True
 #                else:

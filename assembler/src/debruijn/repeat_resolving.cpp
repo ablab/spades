@@ -188,7 +188,7 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
             break;
         }
 
-    if (cfg::get().paired_mode && no_valid_libs && !cfg::get().long_single_mode)
+    if (cfg::get().rr_enable && no_valid_libs && !cfg::get().long_single_mode)
         WARN("Insert size was not estimated for any of the paired libraries, repeat resolution module will not run.");
 
     if ((no_valid_libs ||

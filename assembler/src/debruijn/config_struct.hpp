@@ -442,7 +442,7 @@ public:
 
     std::string entry_point;
 
-    bool paired_mode;
+    bool rr_enable;
     bool long_single_mode;
     bool divide_clusters;
 
