@@ -1,68 +1,68 @@
 .PHONY: dd rd
 
 rd:
-	make -C build/release/debruijn ${MAKEFLAGS}
+	$(MAKE) -C build/release/debruijn
 
 dd:
-	make -C build/debug/debruijn ${MAKEFLAGS}
+	$(MAKE) -C build/debug/debruijn
 
 rdt:
-	make -C build/release/test/debruijn ${MAKEFLAGS}
+	$(MAKE) -C build/release/test/debruijn
 
 ddt:
-	make -C build/debug/test/debruijn ${MAKEFLAGS}
+	$(MAKE) -C build/debug/test/debruijn
 
 rdtls:
-	make -C build/release/test/debruijn_tools ${MAKEFLAGS}
+	$(MAKE) -C build/release/test/debruijn_tools
 
 ddtls:
-	make -C build/debug/test/debruijn_tools ${MAKEFLAGS}
+	$(MAKE) -C build/debug/test/debruijn_tools
 
 dit:
-	make -C build/debug/test/include_test ${MAKEFLAGS}
+	$(MAKE) -C build/debug/test/include_test
 
 rh:
-	make -C build/release/hammer hammer ${MAKEFLAGS}
+	$(MAKE) -C build/release/hammer hammer
 
 dh:
-	make -C build/debug/hammer hammer ${MAKEFLAGS}
+	$(MAKE) -C build/debug/hammer hammer
 
 rv:
-	make -C build/release/online_vis ${MAKEFLAGS}
+	$(MAKE) -C build/release/online_vis
 
 dv:
-	make -C build/debug/online_vis ${MAKEFLAGS}
+	$(MAKE) -C build/debug/online_vis
 
 rc:
-	make -C build/release/cap cap ${MAKEFLAGS}
+	$(MAKE) -C build/release/cap cap
 
 dc:
-	make -C build/debug/cap cap ${MAKEFLAGS}
+	$(MAKE) -C build/debug/cap cap
 
 rctls:
-	make -C build/release/cap cap-tools ${MAKEFLAGS}
+	$(MAKE) -C build/release/cap cap-tools
 
 dctls:
-	make -C build/debug/cap cap-tools ${MAKEFLAGS}
+	$(MAKE) -C build/debug/cap cap-tools
 
 
 rct:
-	make -C build/release/test/cap ${MAKEFLAGS}
+	$(MAKE) -C build/release/test/cap
 
 dct:
-	make -C build/debug/test/cap ${MAKEFLAGS}
+	$(MAKE) -C build/debug/test/cap
 
 dt:
-	make ddt ${MAKEFLAGS}
-	make dit ${MAKEFLAGS}
+	$(MAKE) ddt
+	$(MAKE) dit
 
 clean:
-	make -C build/debug clean
-	make -C build/release clean
+	$(MAKE) -C build/debug clean
+	$(MAKE) -C build/release clean
 
 all:
-	make -C build/release all ${MAKEFLAGS}
-	make -C build/debug all ${MAKEFLAGS}
+	$(MAKE) -C build/release all
+	$(MAKE) -C build/debug all
 
 #temporary fix
-#all: make -C build/release all
+#all: $(MAKE) -C build/release all
