@@ -22,12 +22,12 @@
 
 namespace omnigraph {
 
-class CoveredEdgeData {
+class CoverageData {
  private:
     unsigned coverage_;
 
  public:
-    CoveredEdgeData()
+    CoverageData()
             : coverage_(0) {
     }
 
@@ -57,7 +57,7 @@ class CoverageIndex : public GraphActionHandler<Graph> {
 //	map_type storage_;
 
     unsigned RawCoverage(EdgeId edge) const {
-        return g_.data(edge).coverage();
+        return g_.data(edge).raw_coverage();
     }
 
 //    size_t KPlusOneMerCoverage(EdgeId edge) const {
@@ -120,11 +120,15 @@ class CoverageIndex : public GraphActionHandler<Graph> {
      * In NON averaged units
      */
     void SetRawCoverage(EdgeId e, unsigned cov) {
-        g_.data(e).set_coverage(cov);
+        g_.data(e).set_raw_coverage(cov);
+    }
+
+    void IncRawCoverage(EdgeId e, unsigned count) {
+        g_.data(e).inc_raw_coverage((int)count);
     }
 
     void SetAvgCoverage(EdgeId e, double cov) {
-        g_.data(e).set_coverage((int) math::round(cov * (double) this->g().length(e)));
+        g_.data(e).set_raw_coverage((int) math::round(cov * (double) this->g().length(e)));
     }
 
     /**
@@ -288,7 +292,7 @@ class CoverageIndex : public GraphActionHandler<Graph> {
             const auto& edge_info = *I;
             VERIFY(edge_info.offset != -1u);
             VERIFY(edge_info.edge_id.get() != NULL);
-            g_.data(edge_info.edge_id).inc_coverage(edge_info.count);
+            IncRawCoverage(edge_info.edge_id, edge_info.count);
         }
 
         DEBUG("Coverage counted");

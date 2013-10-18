@@ -26,9 +26,11 @@ public:
 	}
 };
 
-class DeBruijnEdgeData : public CoveredEdgeData {
+class DeBruijnEdgeData {
 	friend class NewDeBruijnGraph;
 	friend class DeBruinMaster;
+	CoverageData coverage_;
+	CoverageData flanking_cov_;
 	Sequence nucls_;
 public:
 
@@ -39,6 +41,31 @@ public:
 	const Sequence& nucls() const {
 		return nucls_;
 	}
+
+    void inc_raw_coverage(int value) {
+        coverage_.inc_coverage(value);
+    }
+
+    void set_raw_coverage(unsigned coverage) {
+        coverage_.set_coverage(coverage);
+    }
+
+    unsigned raw_coverage() const {
+        return coverage_.coverage();
+    }
+
+    void inc_flanking_coverage(int value) {
+        flanking_cov_.inc_coverage(value);
+    }
+
+    void set_flanking_coverage(unsigned flanking_coverage) {
+        flanking_cov_.set_coverage(flanking_coverage);
+    }
+
+    //not length normalized
+    unsigned flanking_coverage() const {
+        return flanking_cov_.coverage();
+    }
 };
 
 class DeBruijnMaster {

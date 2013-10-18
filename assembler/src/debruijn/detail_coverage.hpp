@@ -116,7 +116,8 @@ class NewFlankingCoverage : public GraphActionHandler<Graph>,
     typedef typename Graph::VertexId VertexId;
     typedef pair<EdgeId, unsigned> Pos;
 
-    std::map<EdgeId, size_t> local_start_coverage_;
+//    std::map<EdgeId, size_t> local_start_coverage_;
+    Graph& g_;
     const size_t averaging_range_;
 
     template<class CoverageIndex>
@@ -131,7 +132,7 @@ class NewFlankingCoverage : public GraphActionHandler<Graph>,
     }
 
     template<class CoverageIndex>
-    pair<Pos, size_t> Next(const Pos& curr, const CoverageIndex& index) const {
+    pair<Pos, unsigned> Next(const Pos& curr, const CoverageIndex& index) const {
         const Graph& g = this->g();
         if (curr.second == g.length(curr.first) - 1) {
             EdgeId best(0);
@@ -158,12 +159,12 @@ class NewFlankingCoverage : public GraphActionHandler<Graph>,
 
     //todo maybe use second answer field later
     template<class CoverageIndex>
-    pair<size_t, size_t> ForwardAccCoverageOfStart(
+    pair<unsigned, size_t> ForwardAccCoverageOfStart(
             EdgeId e, const CoverageIndex& index) const {
-        size_t acc = 0;
+        unsigned acc = 0;
         Pos pos(e, -1u);
         for (size_t i = 0; i < averaging_range_; ++i) {
-            pair<Pos, size_t> next_info = Next(pos, index);
+            pair<Pos, unsigned> next_info = Next(pos, index);
             if (next_info.first.second != -1u) {
                 pos = next_info.first;
                 acc += next_info.second;
@@ -178,11 +179,19 @@ class NewFlankingCoverage : public GraphActionHandler<Graph>,
         return CountAvgCoverage(e, 0);
     }
 
+    void SetRawCoverage(EdgeId e, unsigned cov) {
+        g_.data(e).set_flanking_coverage(cov);
+    }
+
+    unsigned RawCoverage(EdgeId e) const {
+        return g_.data(e).flanking_coverage();
+    }
+
 public:
 
     //todo think about interactions with gap closer
-    NewFlankingCoverage(const Graph& g, size_t averaging_range)
-            : base(g, "NewFlankingCoverage"),
+    NewFlankingCoverage(Graph& g, size_t averaging_range)
+            : base(g, "NewFlankingCoverage"), g_(g),
               averaging_range_(averaging_range) {
     }
 
@@ -190,16 +199,15 @@ public:
     void Fill(const CoverageIndex& index) {
         for (auto it = this->g().ConstEdgeBegin(); !it.IsEnd(); ++it) {
             EdgeId e = *it;
-            local_start_coverage_.insert(
-                    std::make_pair(e, ForwardAccCoverageOfStart(e, index).first));
+            SetRawCoverage(e, ForwardAccCoverageOfStart(e, index).first);
         }
     }
 
     double CoverageOfStart(EdgeId e) const {
         if (this->g().length(e) < averaging_range_) {
-            return this->g().coverage(e);
+            return g_.coverage(e);
         } else {
-            return double(get(local_start_coverage_, e)) / double(averaging_range_);
+            return double(RawCoverage(e)) / double(averaging_range_);
         }
     }
 
@@ -215,21 +223,20 @@ public:
     }
 
     virtual void HandleMerge(const vector<EdgeId>& old_edges, EdgeId new_edge) {
-        local_start_coverage_[new_edge] = get(local_start_coverage_, old_edges.front());
+        SetRawCoverage(new_edge, RawCoverage(old_edges.front()));
     }
 
     virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
-        local_start_coverage_[new_edge] = get(local_start_coverage_, edge1) + get(local_start_coverage_, edge2);
+        SetRawCoverage(new_edge, RawCoverage(edge1) + RawCoverage(edge2));
     }
 
     virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge_1,
-                             EdgeId new_edge_2) {
-        local_start_coverage_[new_edge_1] = local_start_coverage_[old_edge];
-        local_start_coverage_[new_edge_2] = 0;
+                             EdgeId /*new_edge_2*/) {
+        SetRawCoverage(new_edge_1, RawCoverage(old_edge));
     }
 
     virtual void HandleDelete(EdgeId e) {
-        local_start_coverage_.erase(e);
+        SetRawCoverage(e, 0);
     }
 
     double LocalCoverage(EdgeId e, VertexId v) const {
@@ -257,13 +264,13 @@ public:
     //////////////////////////
 
     void Save(EdgeId e, ostream& out) const {
-        out << get(local_start_coverage_, e);
+        out << RawCoverage(e);
     }
 
     void Load(EdgeId e, istream& in) {
-        size_t cov;
+        unsigned cov;
         in >> cov;
-        local_start_coverage_[e] = cov;
+        SetRawCoverage(e, cov);
     }
 
 private:
