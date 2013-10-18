@@ -903,6 +903,12 @@ void PrintWithClusteredIndices(const string& file_name,
     PrintWithPairedIndices(file_name, printer, gp, paired_indices, true);
 }
 
+template<class Graph>
+void PrintSingleLongReads(const string& file_name, const LongReadContainer<Graph>& single_long_reads) {
+    for (size_t i = 0; i < single_long_reads.size(); ++i){
+        single_long_reads[i].DumpToFile(MakeSingleReadsFileName(file_name, i));
+    }
+}
 
 template<class graph_pack>
 void PrintAll(const string& file_name, const graph_pack& gp) {
@@ -955,13 +961,6 @@ template<class graph_pack>
 void PrintWithClusteredIndex(const string& file_name, const graph_pack& gp,
                              const PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index) {
     PrintWithPairedIndex(file_name, gp, clustered_index, true);
-}
-
-template<class Graph>
-void PrintSingleLongReads(const string& file_name, const LongReadContainer<Graph>& single_long_reads) {
-    for (size_t i = 0; i < single_long_reads.size(); ++i){
-        single_long_reads[i].DumpToFile(MakeSingleReadsFileName(file_name, i));
-    }
 }
 
 template<class graph_pack>

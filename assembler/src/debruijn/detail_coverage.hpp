@@ -121,7 +121,7 @@ class NewFlankingCoverage : public GraphActionHandler<Graph>,
     const size_t averaging_range_;
 
     template<class CoverageIndex>
-    size_t Count(const runtime_k::RtSeq& kpomer,
+    unsigned Count(const runtime_k::RtSeq& kpomer,
                    const CoverageIndex& index) const {
         //todo optimize
         if (index.contains(kpomer)) {
