@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <cstdlib>
 #include "indices/debruijn_kmer_index.hpp"
 #include "graph_pack.hpp"
 #include <algorithm>
@@ -151,7 +152,7 @@ public:
 		vector <PathStorage<Graph > > long_reads_by_thread(cfg::get().max_threads, PathStorage<Graph>(gp_.g));
 		vector <GapStorage<Graph > > gaps_by_thread(cfg::get().max_threads, GapStorage<Graph>(gp_.g));
 
-# pragma omp parallel for shared(reads, long_reads_by_thread, pac_index, n,  different_edges_profile) num_threads(cfg::get().max_threads)
+		# pragma omp parallel for shared(reads, long_reads_by_thread, pac_index, n,  different_edges_profile) num_threads(cfg::get().max_threads)
 		for (size_t i = 0; i < buf_size; ++i) {
 			if (i % 1000 == 0) {
 				DEBUG("thread number " << omp_get_thread_num());

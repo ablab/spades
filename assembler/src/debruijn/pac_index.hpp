@@ -10,13 +10,12 @@
 #include "graph_pack.hpp"
 #include <algorithm>
 #include "pacbio_read_structures.hpp"
-
+using namespace debruijn_graph;
 
 template<class Graph>
 struct MappingDescription {
 
 };
-
 template<class Graph>
 class PacBioMappingIndex {
 public:

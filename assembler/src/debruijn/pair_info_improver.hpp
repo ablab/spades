@@ -51,7 +51,9 @@ class PairInfoImprover {
   void ParallelCorrectPairedInfo(size_t nthreads) {
     size_t missing_paired_info_count = 0;
     size_t extra_paired_info_count = 0;
-    extra_paired_info_count = ParallelRemoveContraditional(nthreads);
+  //  if (lib_.type() != io::LibraryType::MatePairs) {
+			extra_paired_info_count = ParallelRemoveContraditional(nthreads);
+	//	}
     missing_paired_info_count = ParallelFillMissing(nthreads);
 
     INFO("Paired info stats: missing = " << missing_paired_info_count
@@ -238,12 +240,27 @@ void FindInconsistent(EdgeId base_edge, const typename PairedInfoIndexT<Graph>::
             const Point& p1 = entry1.second;
             EdgeId e2 = entry2.first;
             const Point& p2 = entry2.second;
-
+            stringstream str;
+            str << "Is Consistent will check " << graph_.int_id(base_edge) << " "
+            			<< graph_.int_id(e1) << " " << graph_.int_id(e2)
+            			<<" with weights " << p1.weight <<  " " <<p2.weight << " dists " << p1.d << " " << p2.d;
+            bool will_delete = false;
             if (!IsConsistent(base_edge, e1, e2, p1, p2)) {
-                if (math::le(p1.weight, p2.weight))
+                if (math::le(p1.weight, p2.weight)){
                     pi->AddPairInfo(base_edge, e1, p1);
-                else
+                    str << " Will delete " <<  graph_.int_id(base_edge) << " " << graph_.int_id(e1) ;
+                    will_delete = true;
+                }
+                else{
                     pi->AddPairInfo(base_edge, e2, p2);
+                    str << " Will delete " <<  graph_.int_id(base_edge) << " " << graph_.int_id(e2);
+                    will_delete = true;
+                }
+            }
+            if (will_delete && graph_.int_id(base_edge) == 39414
+                       		and ((graph_.int_id(e1) == 38951 or graph_.int_id(e2)== 38951 )
+                       				or(graph_.int_id(e1) == 39427 or graph_.int_id(e2)== 39427))) {
+            	INFO(str.str());
             }
         }
     }

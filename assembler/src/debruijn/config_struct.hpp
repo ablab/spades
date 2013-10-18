@@ -367,6 +367,8 @@ struct debruijn_config {
     size_t read_length;
     double mean_insert_size;
     double insert_size_deviation;
+    double insert_size_left_quantile;
+    double insert_size_right_quantile;
     double median_insert_size;
     double insert_size_mad;
     std::map<int, size_t> insert_size_distribution;

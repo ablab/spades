@@ -47,10 +47,15 @@ void ProcessPairedReads(conj_graph_pack& gp, size_t ilib,
     SequenceMapperNotifier notifier(gp);
     const io::SequencingLibrary<debruijn_config::DataSetData>& reads =
             cfg::get().ds.reads[ilib];
+    INFO("left qauntile " << reads.data().insert_size_left_quantile << " right " << reads.data().insert_size_right_quantile);
     path_extend::SplitGraphPairInfo split_graph(
-            gp, reads.data().mean_insert_size, reads.data().read_length,
-            reads.data().insert_size_deviation, gp.g.k(),
-            cfg::get().pe_params.param_set.split_edge_length);
+            gp, (size_t) reads.data().median_insert_size,
+            (size_t) reads.data().insert_size_deviation,
+            (size_t) reads.data().insert_size_left_quantile,
+            (size_t) reads.data().insert_size_right_quantile,
+            reads.data().read_length, gp.g.k(),
+            cfg::get().pe_params.param_set.split_edge_length,
+            reads.data().insert_size_distribution);
     LatePairedIndexFiller pif(gp.g, PairedReadCountWeight, paired_indices[ilib]);
     //path_extend::SimpleLongReadMapper read_mapper(gp);
     //notifier.Subscribe(ilib, &read_mapper);
@@ -72,6 +77,51 @@ void ProcessPairedReads(conj_graph_pack& gp, size_t ilib,
     }
     //ProcessSingleReads(gp, ilib, single_long_reads, read_mapper);
 }
+void NormalizeDistribution(const std::map<int, size_t>& is_hist,
+                           std::map<int, double>& is_distrib) {
+    size_t sum = 0;
+    for (auto iter = is_hist.begin(); iter != is_hist.end();
+            ++iter) {
+        sum += iter->second;
+    }
+    for (auto iter = is_hist.begin(); iter != is_hist.end();
+            ++iter) {
+        is_distrib[iter->first] = (double) iter->second / (double) sum;
+    }
+}
+void ISInterval(double quant, double is, double is_var,
+                const std::map<int, size_t>& insert_size_hist,
+                double& is_min, double& is_max) {
+    std::map<int, double> insert_size_distrib;
+    NormalizeDistribution(insert_size_hist, insert_size_distrib);
+    int ileft = (int) is - 1;
+    int iright = (int)is + 1;
+    double cur_percent = insert_size_distrib.at((int)is);
+    while (cur_percent < quant) {
+        double vleft = -1.;
+        if (insert_size_distrib.find(ileft) != insert_size_distrib.end()) {
+            vleft = insert_size_distrib.at(ileft);
+        }
+        double vright = -1.;
+        if (insert_size_distrib.find(iright) != insert_size_distrib.end()) {
+            vright = insert_size_distrib.at(iright);
+        }
+        if (vleft >= 0.0 && (vright < 0.0 || vleft > vright)) {
+            cur_percent += vleft;
+            ileft -= 1;
+        } else if (vright >= 0.0 && (vleft < 0.0 || vright >= vleft)) {
+            cur_percent += vright;
+            iright += 1;
+        } else {
+            break;
+        }
+    }
+    is_min = (double) ileft;
+    is_max = (double) iright;
+    INFO("quantile = " << quant << " d_min  = " << ileft << " d_max = " << iright);
+}
+
+
 void late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices, LongReadContainerT& single_long_reads) {
     exec_simplification(gp);
 
@@ -115,6 +165,12 @@ void late_pair_info_count(conj_graph_pack& gp, PairedIndicesT& paired_indices, L
                     }
                     continue;
                 } else {
+                	auto& data = cfg::get().ds.reads[i].data();
+                	auto& writable_data = cfg::get_writable().ds.reads[i].data();
+                	ISInterval(0.8, data.mean_insert_size, data.insert_size_deviation,
+                			data.insert_size_distribution,
+                			writable_data.insert_size_left_quantile,
+                			writable_data.insert_size_right_quantile);
                     INFO("  Estimated insert size for paired library #" << i);
                     INFO("  Insert size = " << reads.data().mean_insert_size << ", deviation = " << reads.data().insert_size_deviation << ", read length = " << reads.data().read_length);
                 }

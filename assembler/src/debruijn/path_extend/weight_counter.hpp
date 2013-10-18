@@ -77,7 +77,7 @@ public:
 			size_t currentDistance = edges[i].d_ + g_.length(edges[i].e_);
 			auto nextEdges = g_.OutgoingEdges(g_.EdgeEnd(edges[i].e_));
 
-			if (edges[i].d_ < (int) lib_.insert_size_) {
+			if (edges[i].d_ < (int) lib_.GetISMax()) {
 				for (auto edge = nextEdges.begin(); edge != nextEdges.end();
 						++edge) {
 					edges.push_back(EdgeWithDistance(*edge, currentDistance));
@@ -109,7 +109,7 @@ public:
 		analyzers_.reserve(libs_.size());
 		for (auto iter = libs_.begin(); iter != libs_.end(); ++iter) {
 			analyzers_.push_back(new ExtentionAnalyzer(g_, **iter));
-			avrageLibWeight_ += (*iter)->coverage_coeff_;
+			avrageLibWeight_ += (*iter)->GetCoverageCoeff();
 		}
 		avrageLibWeight_ /= (double) max(libs_.size(), (size_t) 1);
 	}
@@ -183,7 +183,6 @@ protected:
 		for (auto iter = coveredEdges.begin(); iter != coveredEdges.end();
 				++iter) {
 			if (excluded_edges_.find((int) iter->e_) != excluded_edges_.end()) {
-				DEBUG("excluded " << iter->e_)
 				continue;
 			}
 			double w = libs_[libIndex]->CountPairedInfo(path[iter->e_], e,
@@ -277,34 +276,28 @@ protected:
 
 		std::vector<EdgeWithPairedInfo> coveredEdges;
 		analyzers_[libIndex]->FindCoveredEdges(path, e, coveredEdges);
-		DEBUG("covered edges " << coveredEdges.size());
-		for (auto iter = coveredEdges.begin(); iter != coveredEdges.end();
-		                ++iter){
-		    DEBUG("cover " << iter->e_);
-		}
 		for (auto iter = coveredEdges.begin(); iter != coveredEdges.end();
 				++iter) {
 			double ideal_weight = iter->pi_;
 			if (excluded_edges_.find(iter->e_) != excluded_edges_.end()) {
 				if (!math::gr(excluded_edges_[iter->e_], 0.0) or !math::gr(ideal_weight, 0.0)) {
-				    DEBUG("exclude edge " << iter->e_);
 					continue;
 				} else {
 					ideal_weight = excluded_edges_[iter->e_];
 				}
 			}
 			double threshold =
-					pairedInfoLibrary.single_threshold_ >= 0.0 ?
-							pairedInfoLibrary.single_threshold_ :
+					pairedInfoLibrary.GetSingleThreshold() >= 0.0 ?
+							pairedInfoLibrary.GetSingleThreshold() :
 							singleThreshold;
 			double singleWeight = libs_[libIndex]->CountPairedInfo(
 					path[iter->e_], e,
 					(int) path.LengthAt(iter->e_) + additionalGapLength);
-			DEBUG("weight edge " << iter->e_ <<
+			/*DEBUG("weight edge " << iter->e_ <<
 			      " weight " << singleWeight
 			      << " norm " <<singleWeight / ideal_weight
 			      <<" threshold " << threshold
-			      <<" used " << math::ge(singleWeight, threshold));
+			      <<" used " << math::ge(singleWeight, threshold));*/
 
 			if (normalizeWeight_) {
 				singleWeight /= ideal_weight;
@@ -375,8 +368,8 @@ public:
 				w /= w_ideal;
 			}
 			double threshold =
-					libs_[libIndex]->single_threshold_ >= 0.0 ?
-							libs_[libIndex]->single_threshold_ :
+					libs_[libIndex]->GetSingleThreshold() >= 0.0 ?
+							libs_[libIndex]->GetSingleThreshold() :
 							singleThreshold;
 			if (w > threshold) {
 				return true;
@@ -386,7 +379,111 @@ public:
 	}
 
 };
+struct PathsPairIndexInfo {
+    PathsPairIndexInfo(size_t edge1_, size_t edge2_, double w_, double dist_)
+            : edge1(edge1_),
+              edge2(edge2_),
+              w(w_),
+              dist(dist_) {
+
+    }
+    size_t edge1;
+    size_t edge2;
+    double w;
+    double dist;
+};
+class PathsWeightCounter {
+public:
+	PathsWeightCounter(const Graph& g, PairedInfoLibrary& lib);
+	map<size_t, double> FindPairInfoFromPath(const BidirectionalPath& path1, const BidirectionalPath& path2) const;
+	double CountPairInfo(const BidirectionalPath& path1, size_t from1, size_t to1, const BidirectionalPath& path2, size_t from2, size_t to2) const;
+	void SetCommonWeightFrom(size_t iedge, double weight);
+	void ClearCommonWeight();
+private:
+	void FindPairInfo(const BidirectionalPath& path1, size_t from1, size_t to1,
+                      const BidirectionalPath& path2, size_t from2, size_t to2,
+                      map<size_t, double>& pi, double& ideal_pi) const;
+	const Graph& g_;
+	PairedInfoLibrary& lib_;
+	std::map<size_t, double> common_w_;
+};
+PathsWeightCounter::PathsWeightCounter(const Graph& g, PairedInfoLibrary& lib):g_(g), lib_(lib){
 
 }
+double PathsWeightCounter::CountPairInfo(const BidirectionalPath& path1,
+                                         size_t from1, size_t to1,
+                                         const BidirectionalPath& path2,
+                                         size_t from2, size_t to2) const {
+    map<size_t, double> pi;
+    double ideal_pi = 0;
+    FindPairInfo(path1, from1, to1, path2, from2, to2,
+                                          pi, ideal_pi);
+    double result = 0;
+    double all_common = 0;
+    for (size_t i = from1; i < to1; ++i) {
+        double common = 0;
+        if (common_w_.find(i) != common_w_.end()) {
+            common = common_w_.at(i);
+            all_common += common;
+        }
+        result += pi[i] - common;
+    }
+    DEBUG("ideal _pi " << ideal_pi << " common " << all_common << " result " << result);
+    ideal_pi -= all_common;
+    return math::ge(ideal_pi, 0.0) ? result / ideal_pi : 0.0;
+}
+
+void PathsWeightCounter::FindPairInfo(
+        const BidirectionalPath& path1, size_t from1, size_t to1,
+        const BidirectionalPath& path2, size_t from2, size_t to2,
+        map<size_t, double>& pi, double& ideal_pi) const {
+    //set<PathsPairIndexInfo> pi_result;
+    stringstream str;
+    for (size_t i = 0; i < path2.Size(); ++i) {
+        str << g_.int_id(path2.At(i)) << " ";
+    }
+    DEBUG("pair info for path " << str.str());
+    for (size_t i1 = from1; i1 < to1; ++i1) {
+        for (size_t i2 = from2; i2 < to2; ++i2) {
+            size_t dist = path1.LengthAt(i1) + path2.Length()
+                    - path2.LengthAt(i2);
+            double ideal_w = lib_.IdealPairedInfo(path1.At(i1), path2.At(i2),
+                                                  dist);
+            if (ideal_w == 0.0) {
+                continue;
+            }
+            double w = lib_.CountPairedInfo(path1.At(i1), path2.At(i2), dist,
+                                            true);
+            ideal_pi += ideal_w;
+            DEBUG("path2 " << path2.GetId() << " i1 " << i1 << " i2 " << i2
+             <<" w " << w << " ideal " << ideal_w
+             << " e1 " << g_.int_id (path1.At(i1))
+             << " e2 " << g_.int_id(path2.At(i2))
+             << " dist " << dist);
+            if (w > 10.0) {
+                //pi_result.insert(PathsPairIndexInfo(i1, i2, ideal_w, dist));
+                if (pi.find(i1) == pi.end()) {
+                    pi[i1] = 0;
+                }
+                pi[i1] += ideal_w;
+            }
+
+        }
+    }
+}
+map<size_t, double> PathsWeightCounter::FindPairInfoFromPath(
+        const BidirectionalPath& path1, const BidirectionalPath& path2) const {
+    map<size_t, double> pi;
+    double ideal_pi = 0;
+    FindPairInfo(path1, 0, path1.Size(), path2, 0, path2.Size(), pi, ideal_pi);
+    return pi;
+}
+void PathsWeightCounter::SetCommonWeightFrom(size_t iedge, double weight) {
+	common_w_[iedge] = weight;
+}
+void PathsWeightCounter::ClearCommonWeight() {
+	common_w_.clear();
+}
+};
 
 #endif /* WEIGHT_COUNTER_HPP_ */

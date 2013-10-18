@@ -329,10 +329,8 @@ public:
             : gp_(gp),
               paths_(paths),
               lib_(lib),
-              max_dist_(lib.insert_size_ + lib.is_variation_),
-              min_dist_(
-                      lib.insert_size_ > lib.is_variation_ ?
-                              lib.insert_size_ - lib.is_variation_ : 0),
+              max_dist_(lib.GetISMax()),
+              min_dist_(lib.GetISMin()),
               coverage_map_(gp.g, paths) {
 
     }
@@ -384,7 +382,7 @@ private:
         if (path1 == path2 || path1->GetConjPath() == path2) {
             return;
         }
-        if (pi.d() + (double) lib_.is_variation_
+        if (pi.d()
                 >= path1->LengthAt(index1) + path2->Length()
                         - path2->LengthAt(index2)) {
             if (pair_info_.find(path1) == pair_info_.end()) {

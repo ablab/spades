@@ -107,6 +107,14 @@ void load_lib_data(const std::string& prefix) {
       load_param(filename, "insert_size_deviation_" + ToString(i), double_val);
       if (double_val) {
           cfg::get_writable().ds.reads[i].data().insert_size_deviation = *double_val;
+      }      
+      load_param(filename, "insert_size_left_quantile_" + ToString(i), double_val);
+      if(double_val) {
+          cfg::get_writable().ds.reads[i].data().insert_size_left_quantile = *double_val;
+      }
+      load_param(filename, "insert_size_right_quantile_" + ToString(i), double_val);
+        if (double_val) {
+            cfg::get_writable().ds.reads[i].data().insert_size_right_quantile = *double_val;
       }
       load_param(filename, "insert_size_median_" + ToString(i), double_val);
       if (double_val) {
@@ -141,6 +149,8 @@ void write_lib_data(const std::string& prefix) {
       write_param(filename, "read_length_" + ToString(i), cfg::get().ds.reads[i].data().read_length);
       write_param(filename, "insert_size_" + ToString(i), cfg::get().ds.reads[i].data().mean_insert_size);
       write_param(filename, "insert_size_deviation_" + ToString(i), cfg::get().ds.reads[i].data().insert_size_deviation);
+      write_param(filename, "insert_size_left_quantile_" + ToString(i), cfg::get().ds.reads[i].data().insert_size_left_quantile);
+      write_param(filename, "insert_size_right_quantile_" + ToString(i), cfg::get().ds.reads[i].data().insert_size_right_quantile);
       write_param(filename, "insert_size_median_" + ToString(i), cfg::get().ds.reads[i].data().median_insert_size);
       write_param(filename, "insert_size_mad_" + ToString(i), cfg::get().ds.reads[i].data().insert_size_mad);
       write_param(filename, "average_coverage_" + ToString(i), cfg::get().ds.reads[i].data().average_coverage);
