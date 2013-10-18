@@ -40,7 +40,7 @@ void assemble_genome() {
         conj_gp.paired_indices.Detach();
         conj_gp.clustered_indices.Detach();
         conj_gp.scaffolding_indices.Detach();
-        if (!cfg::get().gap_closer_enable && !cfg::get().rr_enable && !cfg::get().long_single_mode)
+        if (!cfg::get().gap_closer_enable && !cfg::get().rr_enable)
             conj_gp.kmer_mapper.Detach();
     }
 
@@ -55,7 +55,7 @@ void assemble_genome() {
     SPAdes.add(new debruijn_graph::SimplificationCleanup());
     if (cfg::get().correct_mismatches)
         SPAdes.add(new debruijn_graph::MismatchCorrection());
-    if (cfg::get().rr_enable || cfg::get().long_single_mode) {
+    if (cfg::get().rr_enable) {
         SPAdes.add(new debruijn_graph::PairInfoCount());
         SPAdes.add(new debruijn_graph::DistanceEstimation());
         SPAdes.add(new debruijn_graph::RepeatResolution());

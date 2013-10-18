@@ -395,13 +395,6 @@ def dataset_has_only_mate_pairs_libraries(dataset_data):
     return True
 
 
-def dataset_allows_repeat_resolving(dataset_data):
-    for reads_library in dataset_data:
-        if reads_library['type'] in ['paired-end', 'mate-pairs']:
-            return True
-    return False
-
-
 def dataset_needs_long_single_mode(dataset_data):
     for reads_library in dataset_data:
         if reads_library['type'] in ['single']:

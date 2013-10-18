@@ -195,6 +195,7 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
             cfg::get().rm == debruijn_graph::resolving_mode::rm_none) &&
             !cfg::get().long_single_mode) {
         OutputContigs(gp.g, cfg::get().output_dir + "final_contigs.fasta");
+        return;
     }
 
     // Repeat resolving begins

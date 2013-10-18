@@ -453,10 +453,10 @@ def main():
                 if os.path.isfile(corrected_dataset_yaml_filename):
                     dataset_data = pyyaml.load(open(corrected_dataset_yaml_filename, 'r'))
                     dataset_data = support.relative2abs_paths(dataset_data, os.path.dirname(corrected_dataset_yaml_filename))
-                if not spades_cfg.disable_rr and support.dataset_allows_repeat_resolving(dataset_data):
-                    spades_cfg.__dict__["rr_enable"] = True
-                else:
+                if spades_cfg.disable_rr:
                     spades_cfg.__dict__["rr_enable"] = False
+                else:
+                    spades_cfg.__dict__["rr_enable"] = True
 #                if support.dataset_needs_long_single_mode(dataset_data):
 #                    spades_cfg.__dict__["long_single_mode"] = True
 #                else:
