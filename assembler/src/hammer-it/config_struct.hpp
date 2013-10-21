@@ -14,7 +14,7 @@ enum class HammerStage {
 };
 
 struct hammer_config {
-  io::DataSet dataset;
+  io::DataSet<> dataset;
 
   unsigned max_nthreads;
   unsigned tau;

@@ -133,7 +133,7 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
     }
   }
 
-  const io::DataSet &dataset = cfg::get().dataset;
+  const auto& dataset = cfg::get().dataset;
   for (auto it = dataset.reads_begin(), et = dataset.reads_end(); it != et; ++it) {
     io::Reader irs(*it, io::PhredOffset);
     hammer::ReadProcessor rp(nthreads);
@@ -208,7 +208,7 @@ void KMerDataCounter::FillKMerData(KMerData &data) {
   INFO("Collecting K-mer information, this takes a while.");
   data.data_.resize(sz);
 
-  const io::DataSet &dataset = cfg::get().dataset;
+  const auto& dataset = cfg::get().dataset;
   for (auto it = dataset.reads_begin(), et = dataset.reads_end(); it != et; ++it) {
     io::Reader irs(*it, io::PhredOffset);
     KMerDataFiller filler(data);

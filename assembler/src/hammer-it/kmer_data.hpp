@@ -32,13 +32,13 @@ struct KMerStat {
   
 };
 
-typedef KMerIndex<hammer::HKMer> HammerKMerIndex;
+typedef KMerIndex<kmer_index_traits<hammer::HKMer> > HammerKMerIndex;
 
 class KMerData {
   typedef std::vector<hammer::KMerStat> KMerDataStorageType;
 
  public:
-  KMerData() : index_(hammer::K) {}
+  KMerData() {}
 
   size_t size() const { return data_.size(); }
   size_t capacity() const { return data_.capacity(); }

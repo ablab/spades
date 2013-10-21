@@ -1,7 +1,7 @@
 #include "logger/log_writers.hpp"
 
 #include "io/reader.hpp"
-#include "io/ofastastream.hpp"
+#include "io/osequencestream.hpp"
 #include "io/read_processor.hpp"
 
 #include "adt/concurrent_dsu.hpp"
@@ -52,7 +52,7 @@ struct CountCmp {
 };
 
 
-hammer::HKMer center(const KMerData &data, const std::vector<unsigned>& kmers) {
+hammer::HKMer center(const KMerData &data, const std::vector<size_t>& kmers) {
   hammer::HKMer res;
   namespace numeric = boost::numeric::ublas;
 
@@ -77,7 +77,7 @@ hammer::HKMer center(const KMerData &data, const std::vector<unsigned>& kmers) {
   return res;
 }
 
-bool assign(KMerData &kmer_data, const std::vector<unsigned> &cluster) {
+bool assign(KMerData &kmer_data, const std::vector<size_t> &cluster) {
   hammer::HKMer c = center(kmer_data, cluster);
   bool nonread = false;
 
@@ -96,7 +96,7 @@ bool assign(KMerData &kmer_data, const std::vector<unsigned> &cluster) {
   return nonread;
 }
 
-void dump(const KMerData &kmer_data, const std::vector<unsigned> &cluster) {
+void dump(const KMerData &kmer_data, const std::vector<size_t> &cluster) {
   std::cerr << "{ \n\"kmers\": {";
   for (size_t j = 0; j < cluster.size(); ++j) {
     if (j > 0) std::cerr << ", ";
@@ -116,7 +116,7 @@ void dump(const KMerData &kmer_data, const std::vector<unsigned> &cluster) {
   std::cerr << "}" << std::endl;
 }
 
-size_t subcluster(KMerData &kmer_data, std::vector<unsigned> &cluster) {
+size_t subcluster(KMerData &kmer_data, std::vector<size_t> &cluster) {
   size_t nonread = 0;
 
   // First, sort the kmer indicies wrt count
@@ -135,7 +135,7 @@ size_t subcluster(KMerData &kmer_data, std::vector<unsigned> &cluster) {
   }
 
   // Find the closest center
-  std::vector<std::vector<unsigned> > idx(k, std::vector<unsigned>());
+  std::vector<std::vector<size_t> > idx(k, std::vector<size_t>());
   for (size_t i = 0; i < k; ++i)
     idx[i].push_back(cluster[i]);
   for (size_t i = k; i < cluster.size(); ++i) {
@@ -156,7 +156,7 @@ size_t subcluster(KMerData &kmer_data, std::vector<unsigned> &cluster) {
   }
 
   for (auto it = idx.begin(), et = idx.end(); it != et; ++it) {
-    const std::vector<unsigned> &subcluster = *it;
+    const std::vector<size_t> &subcluster = *it;
 
     if (assign(kmer_data, subcluster)) {
       nonread += 1;
@@ -220,7 +220,7 @@ int main(int argc, char** argv) {
       kmer_data.binary_read(ifs);
     }
 
-    std::vector<std::vector<unsigned> > classes;
+    std::vector<std::vector<size_t> > classes;
     if (stage(cfg::get().start_stage, hammer_config::HammerStage::HammingClustering)) {
       ConcurrentDSU uf(kmer_data.size());
       KMerHamClusterer clusterer(cfg::get().tau);
@@ -320,11 +320,11 @@ int main(int argc, char** argv) {
 #endif
 
     INFO("Correcting reads.");
-    const io::DataSet &dataset = cfg::get().dataset;
+    const auto& dataset = cfg::get().dataset;
     for (auto it = dataset.reads_begin(), et = dataset.reads_end(); it != et; ++it) {
       INFO("Correcting " << *it);
       io::Reader irs(*it, io::PhredOffset);
-      io::ofastastream ors(path::append_path(path::parent_path(*it), path::basename(*it) + ".fasta")); // FIXME: Proper filename
+      io::osequencestream ors(path::append_path(path::parent_path(*it), path::basename(*it) + ".fasta")); // FIXME: Proper filename
 
       using namespace hammer::correction;
       SingleReadCorrector read_corrector(kmer_data);
