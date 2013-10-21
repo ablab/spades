@@ -281,9 +281,8 @@ public:
                 bool is_defined = false;
 
                 // defining of depth
-                vector<EdgeId> in_edges = g_.IncomingEdges(cur_v);
-                for(auto e = in_edges.begin(); e!= in_edges.end(); e++){
-                    VertexId w = g_.EdgeStart(*e);
+                FOREACH (EdgeId e, g_.IncomingEdges(cur_v)) {
+                    VertexId w = g_.EdgeStart(e);
                     if(v_depth.find(w) != v_depth.end())
                         if(min_depth > v_depth[w]){
                             min_depth = v_depth[w];
@@ -301,13 +300,11 @@ public:
             }
 
             if((cur_depth <= conf_.depth_neigh_search)){
-                vector<EdgeId> out_edges = g_.OutgoingEdges(cur_v);
-
-                for(auto e = out_edges.begin(); e != out_edges.end(); e++){
-                    VertexId cur_neigh = g_.EdgeEnd(*e);
+                FOREACH (EdgeId e, g_.OutgoingEdges(cur_v)) {
+                    VertexId cur_neigh = g_.EdgeEnd(e);
 
                     if(visited.find(cur_neigh) == visited.end()){
-                        size_t new_neigh_dist = g_.length(*e) + cur_dist;
+                        size_t new_neigh_dist = g_.length(e) + cur_dist;
                         bool is_replaced = false;
                         if(v_dist.find(cur_neigh) != v_dist.end()){
                             size_t old_neigh_dist = v_dist[cur_neigh];
@@ -331,7 +328,7 @@ public:
                             v_dist[cur_neigh] = new_neigh_dist;
 
                             short_paths[cur_neigh] = short_paths[cur_v];
-                            short_paths[cur_neigh].push_back(*e);
+                            short_paths[cur_neigh].push_back(e);
                         }
                     }
                 }

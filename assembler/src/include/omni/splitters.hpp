@@ -393,22 +393,14 @@ public:
     void CloseComponent(set<VertexId> &component) {
         set<VertexId> additional_vertices;
         for (auto it = component.begin(); it != component.end(); ++it) {
-            {
-                vector<EdgeId> possible_long_edges = graph_.OutgoingEdges(*it);
-                for (auto it = possible_long_edges.begin();
-                        it != possible_long_edges.end(); ++it) {
-                    if (graph_.length(*it) >= edge_length_bound_) {
-                        additional_vertices.insert(graph_.EdgeEnd(*it));
-                    }
+            FOREACH (EdgeId e, graph_.OutgoingEdges(*it)) {
+                if (graph_.length(e) >= edge_length_bound_) {
+                    additional_vertices.insert(graph_.EdgeEnd(e));
                 }
             }
-            {
-                vector<EdgeId> possible_long_edges = graph_.IncomingEdges(*it);
-                for (auto it = possible_long_edges.begin();
-                        it != possible_long_edges.end(); ++it) {
-                    if (graph_.length(*it) >= edge_length_bound_) {
-                        additional_vertices.insert(graph_.EdgeStart(*it));
-                    }
+            FOREACH (EdgeId e, graph_.IncomingEdges(*it)) {
+                if (graph_.length(e) >= edge_length_bound_) {
+                    additional_vertices.insert(graph_.EdgeStart(e));
                 }
             }
         }
@@ -427,14 +419,11 @@ private:
 
     set<VertexId> FindNeighbours(const set<VertexId> &s) {
         set<VertexId> result(s.begin(), s.end());
-        for(auto it = s.begin(); it != s.end(); ++it) {
-            vector<EdgeId> fn = this->graph().OutgoingEdges(*it);
-            vector<EdgeId> bn = this->graph().IncomingEdges(*it);
-            fn.insert(fn.end(), bn.begin(), bn.end());
-            for(auto it1 = fn.begin(); it1 != fn.end(); ++it1) {
-                if(this->graph().length(*it1) <= edge_length_bound_) {
-                    result.insert(this->graph().EdgeEnd(*it1));
-                    result.insert(this->graph().EdgeStart(*it1));
+        FOREACH (VertexId v, result) {
+            FOREACH (EdgeId e, this->graph().AdjacentEdges(v)) {
+                if(this->graph().length(e) <= edge_length_bound_) {
+                    result.insert(this->graph().EdgeEnd(e));
+                    result.insert(this->graph().EdgeStart(e));
                 }
             }
         }

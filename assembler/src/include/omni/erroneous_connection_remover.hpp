@@ -119,22 +119,16 @@ class RelativeCoverageCondition : public EdgeCondition<Graph> {
 
  public:
 
-    RelativeCoverageCondition(Graph& g, double min_coverage_gap)
+    RelativeCoverageCondition(const Graph& g, double min_coverage_gap)
             : base(g),
               min_coverage_gap_(min_coverage_gap) {
 
     }
 
     bool Check(EdgeId e) const {
-        vector<EdgeId> adjacent_edges;
         const Graph& g = this->g();
-        VertexId start = g.EdgeStart(e);
-        VertexId end = g.EdgeEnd(e);
-        push_back_all(adjacent_edges, g.OutgoingEdges(start));
-        push_back_all(adjacent_edges, g.IncomingEdges(start));
-        push_back_all(adjacent_edges, g.OutgoingEdges(end));
-        push_back_all(adjacent_edges, g.IncomingEdges(end));
-        return CheckAdjacent(adjacent_edges, e);
+        return CheckAdjacent(g.AdjacentEdges(g.EdgeStart(e)), e)
+                && CheckAdjacent(g.AdjacentEdges(g.EdgeEnd(e)), e);
     }
 
  private:
@@ -212,8 +206,8 @@ class ThornCondition : public EdgeCondition<Graph> {
 
     bool CheckUnique(EdgeId e) const {
         TRACE("Checking conditions for edge start");
-        return Unique(this->g().IncomingEdges(this->g().EdgeStart(e)), false)
-                || Unique(this->g().OutgoingEdges(this->g().EdgeEnd(e)), true);
+        return Unique(vector<EdgeId>(this->g().in_begin(this->g().EdgeStart(e)), this->g().in_end(this->g().EdgeStart(e))), false)
+                || Unique(vector<EdgeId>(this->g().out_begin(this->g().EdgeEnd(e)), this->g().out_end(this->g().EdgeEnd(e))), true);
     }
 
     bool CheckThorn(EdgeId e) const {
@@ -244,10 +238,11 @@ class ThornCondition : public EdgeCondition<Graph> {
         return false;
     }
 
-    bool CheckAlternativeCoverage(const vector<EdgeId>& edges, EdgeId e) const {
-        for (auto it = edges.begin(); it != edges.end(); ++it) {
-            if (*it != e && this->g().length(*it) < 400
-                    && this->g().coverage(*it) < 15 * this->g().coverage(e)) {
+    template<class EdgeContainer>
+    bool CheckAlternativeCoverage(const EdgeContainer& edges, EdgeId base) const {
+        FOREACH (EdgeId e, edges) {
+            if (e != base && this->g().length(e) < 400
+                    && this->g().coverage(e) < 15 * this->g().coverage(base)) {
                 return false;
             }
         }
@@ -256,13 +251,9 @@ class ThornCondition : public EdgeCondition<Graph> {
 
     bool CheckCoverageAround(EdgeId e) const {
         return CheckAlternativeCoverage(
-                this->g().IncomingEdges(this->g().EdgeStart(e)), e)
+                this->g().AdjacentEdges(this->g().EdgeStart(e)), e)
                 && CheckAlternativeCoverage(
-                        this->g().OutgoingEdges(this->g().EdgeStart(e)), e)
-                && CheckAlternativeCoverage(
-                        this->g().IncomingEdges(this->g().EdgeEnd(e)), e)
-                && CheckAlternativeCoverage(
-                        this->g().OutgoingEdges(this->g().EdgeEnd(e)), e);
+                        this->g().AdjacentEdges(this->g().EdgeEnd(e)), e);
     }
 
     bool CheckUniqueness(EdgeId e, bool /*forward*/) const {
@@ -409,7 +400,7 @@ class HiddenECRemover: public EdgeProcessingAlgorithm<Graph,
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 private:
-	size_t lentgh_bound_;
+	size_t length_bound_;
 	double unreliability_threshold_;
 	double ec_threshold_;
 	double relative_threshold_;
@@ -436,12 +427,12 @@ private:
 
 	void DisconnectEdges(VertexId v) {
 		while(!this->g().IsDeadEnd(v)) {
-			RemoveHiddenECWithNoCompression(this->g().OutgoingEdges(v)[0]);
+			RemoveHiddenECWithNoCompression(*(this->g().out_begin(v)));
 		}
 	}
 
 	bool FindHiddenEC(VertexId v) {
-		auto edges = this->g().OutgoingEdges(v);
+		vector<EdgeId> edges(this->g().out_begin(v), this->g().out_end(v));
 		if(flanking_coverage_.GetInCov(edges[0]) > flanking_coverage_.GetInCov(edges[1])) {
 			auto tmp = edges[0];
 			edges[0] = edges[1];
@@ -465,8 +456,8 @@ private:
 		if (this->g().IncomingEdgeCount(v) != 1 || this->g().OutgoingEdgeCount(v) != 2) {
 			return false;
 		}
-		vector<EdgeId> edges = this->g().OutgoingEdges(v);
-		return (edges.size() == 2 && this->g().conjugate(edges[0]) == edges[1]) || this->g().length(this->g().GetUniqueIncomingEdge(v)) > lentgh_bound_;
+		vector<EdgeId> edges(this->g().out_begin(v), this->g().out_end(v));
+		return (edges.size() == 2 && this->g().conjugate(edges[0]) == edges[1]) || this->g().length(this->g().GetUniqueIncomingEdge(v)) > length_bound_;
 	}
 
 	bool ProcessEdge(EdgeId e) {
@@ -484,7 +475,7 @@ public:
 			double unreliability_threshold, double ec_threshold,
 			double relative_threshold,
 			boost::function<void(EdgeId)> removal_handler = 0) :
-			base(g, Comparator(), make_shared<func::AlwaysTrue<EdgeId>>()), lentgh_bound_(
+			base(g, Comparator(), make_shared<func::AlwaysTrue<EdgeId>>()), length_bound_(
 					length_bound), unreliability_threshold_(unreliability_threshold), ec_threshold_(
 					ec_threshold), relative_threshold_(relative_threshold), flanking_coverage_(
 					flanking_coverage), edge_remover_(g, removal_handler) {

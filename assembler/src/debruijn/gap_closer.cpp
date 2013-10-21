@@ -101,14 +101,12 @@ class GapCloserPairedIndexFiller {
                     edge_stack.pop();
                     if (graph_.OutgoingEdgeCount(graph_.EdgeStart(checking_pair.first)) == 1) {
                         if (graph_.IncomingEdgeCount(graph_.EdgeStart(checking_pair.first))) {
-                            std::vector<EdgeId> vec = graph_.IncomingEdges(graph_.EdgeStart(checking_pair.first));
-                            for (size_t i = 0; i < vec.size(); i++) {
-                                EdgeId Cur_edge = vec[i];
-                                OutTipMap.insert(std::make_pair(Cur_edge,
+                            FOREACH (EdgeId e, graph_.IncomingEdges(graph_.EdgeStart(checking_pair.first))) {
+                                OutTipMap.insert(std::make_pair(e,
                                                                 std::make_pair(edge,
-                                                                               graph_.length(Cur_edge) + checking_pair.second)));
-                                edge_stack.push(std::make_pair(Cur_edge,
-                                                               graph_.length(Cur_edge) + checking_pair.second));
+                                                                               graph_.length(e) + checking_pair.second)));
+                                edge_stack.push(std::make_pair(e,
+                                                               graph_.length(e) + checking_pair.second));
                             }
                         }
                     }

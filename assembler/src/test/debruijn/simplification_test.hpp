@@ -85,10 +85,9 @@ debruijn_config::simplification::tip_clipper standard_tc_config() {
 }
 
 void PrintGraph(const Graph & g) {
-	for(auto it = g.begin(); it != g.end(); ++it) {
-		auto v = g.OutgoingEdges(*it);
-		for(size_t i = 0; i < v.size(); i++) {
-			cout << g.int_id(v[i]) << ":" << g.int_id(g.EdgeStart(v[i])) << " " << g.int_id(g.EdgeEnd(v[i])) << endl;
+	FOREACH(VertexId v, g.vertices()) {
+		FOREACH(EdgeId e, g.OutgoingEdges(v)) {
+			cout << g.int_id(e) << ":" << g.int_id(g.EdgeStart(e)) << " " << g.int_id(g.EdgeEnd(e)) << endl;
 		}
 	}
 	cout << endl;

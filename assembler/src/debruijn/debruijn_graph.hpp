@@ -179,10 +179,10 @@ public:
 
 	const Sequence VertexNucls(VertexId v) const {
 	    //todo add verify on vertex nucls consistency
-		if (this->OutgoingEdges(v).size() > 0) {
-			return EdgeNucls(this->OutgoingEdges(v)[0]).Subseq(0, k_);
-		} else if (this->IncomingEdges(v).size() > 0) {
-			EdgeId inc = this->IncomingEdges(v)[0];
+		if (this->OutgoingEdgeCount(v) > 0) {
+			return EdgeNucls(*(this->out_begin(v))).Subseq(0, k_);
+		} else if (this->IncomingEdgeCount(v) > 0) {
+			EdgeId inc = *(this->in_begin(v));
 			size_t length = EdgeNucls(inc).size();
 			return EdgeNucls(inc).Subseq(length - k_, length);
 		}

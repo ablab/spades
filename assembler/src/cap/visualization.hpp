@@ -51,15 +51,13 @@ public:
 //		set < VertexId > component(vertices.begin(), vertices.end());
 		for (auto iterator = component.begin(); iterator != component.end();
 				++iterator) {
-			vector < EdgeId > edges = this->graph().OutgoingEdges(*iterator);
-			for (auto edge_iterator = edges.begin();
-					edge_iterator != edges.end(); edge_iterator++) {
-				if (component.count(this->graph().EdgeEnd(*edge_iterator)) == 1) {
-                    if (this->graph().length(*edge_iterator) <= max_length_) {
+			for (EdgeId e : this->graph().OutgoingEdges(*iterator)) {
+				if (component.count(this->graph().EdgeEnd(e)) == 1) {
+                    if (this->graph().length(e) <= max_length_) {
                         length_flag = true;
                     }
-                    if (color_handler_.Color(*edge_iterator) != restricted_color_) {
-                        TRACE("Found good color " << color_handler_.Color(*edge_iterator).ToString());
+                    if (color_handler_.Color(e) != restricted_color_) {
+                        TRACE("Found good color " << color_handler_.Color(e).ToString());
                         color_flag = true;
                     }
                     if (length_flag && color_flag) {

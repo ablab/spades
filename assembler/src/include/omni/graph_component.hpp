@@ -39,13 +39,12 @@ class GraphComponent {
 
 	void FillEdges() {
 		for (auto v_it = vertices_.begin(); v_it != vertices_.end(); ++v_it) {
-			const vector<EdgeId> edges = graph_.OutgoingEdges(*v_it);
 			TRACE("working with vertex " << graph_.str(*v_it));
-			for (auto e_it = edges.begin(); e_it != edges.end(); ++e_it) {
-				VertexId edge_end = graph_.EdgeEnd(*e_it);
-				TRACE(graph_.coverage(*e_it) << " " << graph_.length(*e_it));
+			FOREACH (EdgeId e,  graph_.OutgoingEdges(*v_it)) {
+				VertexId edge_end = graph_.EdgeEnd(e);
+				TRACE(graph_.coverage(e) << " " << graph_.length(e));
 				if (vertices_.count(edge_end) > 0) {
-					edges_.insert(*e_it);
+					edges_.insert(e);
 					TRACE("Edge added");
 				}
 			}
@@ -152,15 +151,9 @@ public:
 	bool IsBorder(VertexId v) const {
 		if(vertices_.count(v) == 0)
 			return false;
-		const vector<EdgeId> outgoing_edges = graph_.OutgoingEdges(v);
-		const vector<EdgeId> incoming_edges = graph_.IncomingEdges(v);
-		set<EdgeId> adjacent_edges;
-		adjacent_edges.insert(outgoing_edges.begin(), outgoing_edges.end());
-		adjacent_edges.insert(incoming_edges.begin(), incoming_edges.end());
-		for (auto e_it = adjacent_edges.begin(); e_it != adjacent_edges.end();
-				++e_it) {
-			if (vertices_.count(graph_.EdgeStart(*e_it)) == 0
-					|| vertices_.count(graph_.EdgeEnd(*e_it)) == 0) {
+		FOREACH (EdgeId e, graph_.AdjacentEdges(v)) {
+			if (vertices_.count(graph_.EdgeStart(e)) == 0
+					|| vertices_.count(graph_.EdgeEnd(e)) == 0) {
 				return true;
 			}
 		}

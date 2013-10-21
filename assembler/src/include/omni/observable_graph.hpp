@@ -169,9 +169,6 @@ class ObservableGraph : private boost::noncopyable {
 
     virtual VertexIterator end() const = 0;
 
-    //todo think of moving to AbstractGraph
-    virtual const vector<EdgeId> OutgoingEdges(VertexId vertex) const = 0;
-
     virtual edge_const_iterator out_begin(VertexId v) const = 0;
 
     virtual edge_const_iterator out_end(VertexId v) const = 0;

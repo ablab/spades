@@ -238,11 +238,11 @@ class ForwardDirection : public AbstractDirection<Graph> {
     }
 
     virtual const std::vector<EdgeId> OutgoingEdges(VertexId v) const {
-        return this->graph().OutgoingEdges(v);
+        return std::vector<EdgeId>(this->graph().out_begin(v), this->graph().out_end(v));
     }
 
     virtual const std::vector<EdgeId> IncomingEdges(VertexId v) const {
-        return this->graph().IncomingEdges(v);
+        return std::vector<EdgeId>(this->graph().in_begin(v), this->graph().in_end(v));
     }
 
     virtual size_t OutgoingEdgeCount(VertexId v) const {
@@ -277,11 +277,11 @@ class BackwardDirection : public AbstractDirection<Graph> {
     }
 
     virtual const std::vector<EdgeId> OutgoingEdges(VertexId v) const {
-        return this->graph().IncomingEdges(v);
+        return std::vector<EdgeId>(this->graph().in_begin(v), this->graph().in_end(v));
     }
 
     virtual const std::vector<EdgeId> IncomingEdges(VertexId v) const {
-        return this->graph().OutgoingEdges(v);
+        return std::vector<EdgeId>(this->graph().out_begin(v), this->graph().out_end(v));
     }
 
     virtual size_t OutgoingEdgeCount(VertexId v) const {
@@ -458,17 +458,16 @@ class MultiplicityCounter {
                 }
             }
         }
-        std::vector<EdgeId> in = graph_.IncomingEdges(a);
-        for (auto it = in.begin(); it != in.end(); ++it) {
-            if (*it == e) {
+        FOREACH (EdgeId in_e, graph_.IncomingEdges(a)) {
+            if (in_e == e) {
                 if (a != start) {
                     return false;
                 }
             } else {
-                if (graph_.length(*it) >= uniqueness_length_) {
+                if (graph_.length(in_e) >= uniqueness_length_) {
                     result.first++;
                 } else {
-                    if (!search(graph_.EdgeStart(*it), start, e,
+                    if (!search(graph_.EdgeStart(in_e), start, e,
                                 depth + 1 /*graph_.length(*it)*/, was, result))
                         return false;
                 }

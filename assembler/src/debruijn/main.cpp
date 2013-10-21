@@ -147,7 +147,7 @@ int main(int /*argc*/, char** argv) {
 
     spades::assemble_genome();
 
-    link_output("latest_success");   
+    link_output("latest_success");
   } catch (std::bad_alloc const& e) {
     std::cerr << "Not enough memory to run SPAdes. " << e.what() << std::endl;
     return EINTR;

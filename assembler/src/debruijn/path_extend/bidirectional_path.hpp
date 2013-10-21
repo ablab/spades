@@ -720,13 +720,13 @@ public:
         VertexId lastVertex = g_.EdgeEnd(lastEdge);
 
         if (g_.OutgoingEdgeCount(lastVertex) == 2) {
-            auto bulgeEdges = g_.OutgoingEdges(lastVertex);
+            vector<EdgeId> bulgeEdges(g_.out_begin(lastVertex), g_.out_end(lastVertex));
             VertexId nextVertex = g_.EdgeEnd(bulgeEdges[0]);
 
             if (bulgeEdges[0] == g_.conjugate(bulgeEdges[1]) &&
                     nextVertex == g_.EdgeEnd(bulgeEdges[1]) &&
                     g_.CheckUniqueOutgoingEdge(nextVertex) &&
-                    g_.OutgoingEdges(nextVertex)[0] == g_.conjugate(lastEdge)) {
+                    *(g_.out_begin(nextVertex)) == g_.conjugate(lastEdge)) {
 
                 DEBUG("Came to interstrand bulge " << g_.int_id(lastEdge));
                 return true;
@@ -742,9 +742,9 @@ public:
 
         if (g_.OutgoingEdgeCount(prevVertex) == 2 && g_.IncomingEdgeCount(lastVertex) == 2 &&
                 g_.CheckUniqueOutgoingEdge(lastVertex) && g_.CheckUniqueIncomingEdge(prevVertex) &&
-                g_.IncomingEdges(prevVertex)[0] == g_.conjugate(g_.OutgoingEdges(lastVertex)[0])) {
+                *(g_.in_begin(prevVertex)) == g_.conjugate(*(g_.out_begin(lastVertex)))) {
 
-            auto bulgeEdges = g_.OutgoingEdges(prevVertex);
+            vector<EdgeId> bulgeEdges(g_.out_begin(prevVertex), g_.out_end(prevVertex));
             EdgeId bulgeEdge = bulgeEdges[0] == lastEdge ? bulgeEdges[1] : bulgeEdges[0];
 
             if (bulgeEdge == g_.conjugate(lastEdge)) {

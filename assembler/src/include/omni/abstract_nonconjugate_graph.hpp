@@ -47,33 +47,25 @@ private:
 		return outgoing_edges_.size();
 	}
 
-	const vector<EdgeId> OutgoingEdges() const {
-		return outgoing_edges_;
-	}
+    edge_const_iterator out_begin() const {
+        return outgoing_edges_.cbegin();
+    }
 
-  edge_const_iterator out_begin() const {
-    return outgoing_edges_.cbegin();
-  }
+    edge_const_iterator out_end() const {
+        return outgoing_edges_.cend();
+    }
 
-  edge_const_iterator out_end() const {
-    return outgoing_edges_.cend();
-  }
+    size_t IncomingEdgeCount() const {
+        return incoming_edges_.size();
+    }
 
-	size_t IncomingEdgeCount() const {
-		return incoming_edges_.size();
-	}
+    edge_const_iterator in_begin() const {
+        return incoming_edges_.cbegin();
+    }
 
-	const vector<EdgeId> IncomingEdges() const {
-		return incoming_edges_;
-	}
-
-  edge_const_iterator in_begin() const {
-    return incoming_edges_.cbegin();
-  }
-
-  edge_const_iterator in_end() const {
-    return incoming_edges_.cend();
-  }
+    edge_const_iterator in_end() const {
+        return incoming_edges_.cend();
+    }
 
 	SingleVertex(VertexData data) :
 			data_(data) {

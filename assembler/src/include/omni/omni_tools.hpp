@@ -186,7 +186,7 @@ public:
 					|| g_.length(*it) <=max_length_any_cov_)) {
 				g_.DeleteEdge(*it);
                 cnt += 1;
-                
+
 			}
 		}
 		Cleaner<Graph> cleaner(g_);
@@ -388,8 +388,10 @@ private:
             graph_.IncomingEdgeCount(graph_.EdgeEnd(e)) < 2)
             return false;
 
-        const std::vector<EdgeId> v1 = graph_.OutgoingEdges(graph_.EdgeStart(e));
-        const std::vector<EdgeId> v2 = graph_.IncomingEdges(graph_.EdgeEnd(e));
+        std::vector<EdgeId> v1;
+        push_back_all(v1, graph_.OutgoingEdges(graph_.EdgeStart(e)));
+        std::vector<EdgeId> v2;
+        push_back_all(v2, graph_.IncomingEdges(graph_.EdgeEnd(e)));
         bool eq = (v1.size() == 2 && v2.size() == 2) && ((v1[0] == v2[0] && v1[1] == v2[1])	|| (v1[0] == v2[1] && v1[0] == v2[1]));
         return !eq;
     }

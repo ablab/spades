@@ -40,20 +40,12 @@ class AbstractGraph : public AbstractEditableGraph<VertexIdT, EdgeIdT,
         TRACE("~AbstractGraph");
     }
 
-    virtual const vector<EdgeId> OutgoingEdges(VertexId v) const {
-        return v->OutgoingEdges();
-    }
-
     virtual edge_const_iterator out_begin(VertexId v) const {
         return v->out_begin();
     }
 
     virtual edge_const_iterator out_end(VertexId v) const {
         return v->out_end();
-    }
-
-    virtual const vector<EdgeId> IncomingEdges(VertexId v) const {
-        return v->IncomingEdges();
     }
 
     virtual edge_const_iterator in_begin(VertexId v) const {

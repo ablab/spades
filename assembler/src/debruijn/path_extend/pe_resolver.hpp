@@ -350,14 +350,11 @@ public:
 
     bool InCycle(EdgeId e)
     {
-    	auto edges = g_.OutgoingEdges(g_.EdgeEnd(e));
-    	if (edges.size() >= 1) {
-			for (auto it = edges.begin(); it != edges.end();  ++ it) {
-				if (g_.EdgeStart(e) == g_.EdgeEnd(*it)) {
-				   return true;
-				}
+		FOREACH (EdgeId out_e, g_.OutgoingEdges(g_.EdgeEnd(e))) {
+			if (g_.EdgeStart(e) == g_.EdgeEnd(out_e)) {
+			   return true;
 			}
-    	}
+		}
     	return false;
     }
 

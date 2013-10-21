@@ -176,7 +176,8 @@ class SimpleInversionFinder {
     found_lengths_.push_back(length);
   }
 
-  std::vector<EdgeList> GetSoloColoredEdgeLists(const EdgeList &all_edges) const {
+  template<class EdgeContainer>
+  std::vector<EdgeList> GetSoloColoredEdgeLists(const EdgeContainer &all_edges) const {
     std::vector<EdgeList> result(coloring_.max_colors());
 
     for (auto it = all_edges.begin(); it != all_edges.end(); ++it) {
@@ -323,7 +324,7 @@ class GenomePathsFinder {
   typedef typename Graph::EdgeId EdgeId;
   typedef std::vector<EdgeId> Path;
   typedef typename CoordinatesHandler<Graph>::PosArray PosArray;
-  
+
   GenomePathsFinder(const Graph &g, const CoordinatesHandler<Graph> &crd)
       : g_(g),
         crd_(crd) {
@@ -365,10 +366,9 @@ class GenomePathsFinder {
       path_seq.pop_back();
       return;
     }
-      
 
-    std::vector<EdgeId> further_edges = g_.OutgoingEdges(vertex);
-    for (const auto e : further_edges) {
+
+    for (EdgeId e : g_.OutgoingEdges(vertex)) {
       const PosArray further_array = crd_.FilterPosArray(cur_pos, e);
       if (further_array.size() == 0)
         continue;
