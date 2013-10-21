@@ -16,6 +16,9 @@ enum class HammerStage {
 struct hammer_config {
   io::DataSet<> dataset;
 
+  std::string working_dir;
+  std::string output_dir;
+
   unsigned max_nthreads;
   unsigned tau;
   unsigned hard_memory_limit;

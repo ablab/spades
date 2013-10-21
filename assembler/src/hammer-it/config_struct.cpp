@@ -37,6 +37,9 @@ void load(hammer_config::hammer_config& cfg, const std::string &filename) {
 
   cfg.dataset.load(config["dataset"].as<std::string>());
 
+  cfg.working_dir = config["working_dir"].as<std::string>(".");
+  cfg.output_dir = config["output_dir"].as<std::string>(".");
+
   // FIXME: Make trivial deserialization trivial
   cfg.hard_memory_limit = config["hard_memory_limit"].as<unsigned>();
 

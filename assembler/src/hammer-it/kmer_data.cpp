@@ -26,7 +26,7 @@ class HammerKMerSplitter : public KMerSplitter<hammer::HKMer> {
                    MMappedRecordWriter<HKMer> *ostreams) const;
 
  public:
-  HammerKMerSplitter(std::string &work_dir)
+  HammerKMerSplitter(const std::string &work_dir)
       : KMerSplitter<hammer::HKMer>(work_dir, hammer::K) {}
 
   virtual path::files_t Split(size_t num_files);
@@ -198,11 +198,9 @@ class KMerDataFiller {
 };
 
 void KMerDataCounter::FillKMerData(KMerData &data) {
-  std::string workdir("."); // cfg
-
-  HammerKMerSplitter splitter(workdir);
-  KMerDiskCounter<hammer::HKMer> counter(workdir, splitter);
-  size_t sz = KMerIndexBuilder<HammerKMerIndex>(workdir, num_files_, cfg::get().max_nthreads).BuildIndex(data.index_, counter);
+  HammerKMerSplitter splitter(cfg::get().working_dir);
+  KMerDiskCounter<hammer::HKMer> counter(cfg::get().working_dir, splitter);
+  size_t sz = KMerIndexBuilder<HammerKMerIndex>(cfg::get().working_dir, num_files_, cfg::get().max_nthreads).BuildIndex(data.index_, counter);
 
   // Now use the index to fill the kmer quality information.
   INFO("Collecting K-mer information, this takes a while.");

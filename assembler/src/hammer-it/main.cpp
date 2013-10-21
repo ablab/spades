@@ -210,12 +210,12 @@ int main(int argc, char** argv) {
       KMerDataCounter(32).FillKMerData(kmer_data);
       if (cfg::get().debug_mode) {
         INFO("Debug mode on. Saving K-mer index.");
-        std::ofstream ofs("count.kmdata", std::ios::binary);
+        std::ofstream ofs(path::append_path(cfg::get().working_dir, "count.kmdata"), std::ios::binary);
         kmer_data.binary_write(ofs);
       }
     } else {
       INFO("Loading K-mer index.");
-      std::ifstream ifs("count.kmdata", std::ios::binary);
+      std::ifstream ifs(path::append_path(cfg::get().working_dir, "count.kmdata"), std::ios::binary);
       VERIFY(ifs.good());
       kmer_data.binary_read(ifs);
     }
@@ -225,14 +225,14 @@ int main(int argc, char** argv) {
       ConcurrentDSU uf(kmer_data.size());
       KMerHamClusterer clusterer(cfg::get().tau);
       INFO("Clustering Hamming graph.");
-      clusterer.cluster("kmers.hamcls", kmer_data, uf);
+      clusterer.cluster(path::append_path(cfg::get().working_dir, "kmers.hamcls"), kmer_data, uf);
       uf.get_sets(classes);
       size_t num_classes = classes.size();
       INFO("Clustering done. Total clusters: " << num_classes);
 
       if (cfg::get().debug_mode) {
         INFO("Debug mode on. Writing down clusters.");
-        std::ofstream ofs("hamming.cls", std::ios::binary);
+        std::ofstream ofs(path::append_path(cfg::get().working_dir, "hamming.cls"), std::ios::binary);
 
         ofs.write((char*)&num_classes, sizeof(num_classes));
         for (size_t i=0; i < classes.size(); ++i) {
@@ -243,7 +243,7 @@ int main(int argc, char** argv) {
       }
     } else {
       INFO("Loading clusters.");
-      std::ifstream ifs("hamming.cls", std::ios::binary);
+      std::ifstream ifs(path::append_path(cfg::get().working_dir, "hamming.cls"), std::ios::binary);
       VERIFY(ifs.good());
 
       size_t num_classes = 0;
@@ -288,12 +288,12 @@ int main(int argc, char** argv) {
 
       if (cfg::get().debug_mode) {
         INFO("Debug mode on. Saving K-mer index.");
-        std::ofstream ofs("cluster.kmdata", std::ios::binary);
+        std::ofstream ofs(path::append_path(cfg::get().working_dir, "cluster.kmdata"), std::ios::binary);
         kmer_data.binary_write(ofs);
       }
     } else {
       INFO("Loading K-mer index.");
-      std::ifstream ifs("cluster.kmdata", std::ios::binary);
+      std::ifstream ifs(path::append_path(cfg::get().working_dir, "cluster.kmdata"), std::ios::binary);
       VERIFY(ifs.good());
       kmer_data.binary_read(ifs);
     }
@@ -324,7 +324,7 @@ int main(int argc, char** argv) {
     for (auto it = dataset.reads_begin(), et = dataset.reads_end(); it != et; ++it) {
       INFO("Correcting " << *it);
       io::Reader irs(*it, io::PhredOffset);
-      io::osequencestream ors(path::append_path(path::parent_path(*it), path::basename(*it) + ".fasta")); // FIXME: Proper filename
+      io::osequencestream ors(path::append_path(cfg::get().output_dir, path::basename(*it) + ".fasta")); // FIXME: Proper filename
 
       using namespace hammer::correction;
       SingleReadCorrector read_corrector(kmer_data);
