@@ -429,6 +429,27 @@ public:
 
 };
 
+class TandemFilter {
+public:
+    TandemFilter() {
+
+    }
+
+    bool operator() (const MosaicStructure& mosaic) {
+        bag<Block> block_cnts;
+        for (Block b : mosaic.blocks()) {
+            block_cnts.put(b);
+        }
+        size_t approx_tandem_occur = 0;
+        for (pair<Block, size_t> block_cnt : block_cnts) {
+            if (block_cnt.second > 1)
+                approx_tandem_occur += block_cnt.second;
+        }
+        return approx_tandem_occur * 2 > mosaic.block_size();
+    }
+
+};
+
 class MosaicStructureSet {
     const GenomeBlockComposition& block_composition_;
     vector<MosaicInterval> raw_intervals_;
@@ -475,6 +496,10 @@ class MosaicStructureSet {
     }
 
     bool AnalyzeStructure(const MosaicStructure& mosaic) {
+        if (TandemFilter()(mosaic)) {
+            //mosaic probably represents tandem duplication and totally ignored
+            return false;
+        }
 //        cout << "Analyzing " << mosaic << endl;
 //        cout << irreducible_structures_.size() << endl;
         for (auto& irred_struct : irreducible_structures_) {
