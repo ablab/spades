@@ -15,6 +15,7 @@
 #define COVERAGE_HPP_
 
 #include <unordered_map>
+#include <iomanip>
 #include "logger/logger.hpp"
 #include "io/reader.hpp"
 #include "io/read_stream_vector.hpp"
@@ -332,7 +333,7 @@ class CoverageIndex : public GraphActionHandler<Graph> {
     }
 
     void Save(EdgeId e, ostream& out) const {
-        out << coverage(e);
+        out << (boost::format("%.6f") % coverage(e)).str();
     }
 
     void Load(EdgeId e, istream& in) {
