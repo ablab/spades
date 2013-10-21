@@ -13,6 +13,7 @@ import sys
 import getopt
 import logging
 import platform
+import errno
 
 import spades_init
 spades_init.init()
@@ -122,15 +123,17 @@ def print_used_values(cfg, log):
     log.info("")
 
 
+def get_spades_binaries_info_message():
+    return "You can obtain SPAdes binaries in one of two ways:" + \
+           "\n1. Download them from http://bioinf.spbau.ru/content/spades-download" + \
+           "\n2. Build source code with ./spades_compile.sh script"
+
+
 def check_binaries(binary_dir, log):
     for binary in ["hammer", "spades", "bwa-spades"]:
         binary_path = os.path.join(binary_dir, binary)
         if not os.path.isfile(binary_path):
-            support.error("SPAdes binaries not found: " + binary_path +
-                          "\nYou can obtain SPAdes binaries in one of two ways:" +
-                          "\n1. Download them from http://spades.bioinf.spbau.ru/release" +
-                          str(spades_version).strip() + "/SPAdes-" + str(spades_version).strip() + "-Linux.tar.gz" +
-                          "\n2. Build source code with ./spades_compile.sh script", log)
+            support.error("SPAdes binaries not found: " + binary_path + "\n" + get_spades_binaries_info_message(), log)
 
 
 def fill_cfg(options_to_parse, log):
@@ -621,9 +624,12 @@ def main():
         log.removeHandler(log_handler)
 
     except Exception:
-        _, exc, _ = sys.exc_info()
-        log.exception(exc)
-        support.error("exception caught", log)
+        exc_type, exc_value, _ = sys.exc_info()
+        if exc_type == OSError and exc_value.errno == errno.ENOEXEC: # Exec format error
+            support.error("It looks like you are using SPAdes binaries for another platform.\n" + get_spades_binaries_info_message())
+        else:
+            log.exception(exc_value)
+            support.error("exception caught", log)
 
 
 if __name__ == '__main__':
