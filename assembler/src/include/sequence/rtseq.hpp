@@ -81,7 +81,7 @@ class RuntimeSeq {
   // useful mask to fill the last element of the data_ array
   static size_t MaskForLastBucket(size_t size) {
     size_t nr = NuclsRemain(size);
-    return nr != 0 ? (((T) 1) << (nr << 1) ) - 1 : -1;
+    return nr != 0 ? (((T) 1) << (nr << 1) ) - 1 : -1ul;
   }
 
 
@@ -496,7 +496,7 @@ class RuntimeSeq {
 
     size_t data_size = GetDataSize(size_);
 
-    T rm = c;
+    T rm = (T)c;
     for (size_t i = 0; i < data_size; ++i) {
       T new_rm = (data_[i] >> (TBits - 2)) & 3;
       data_[i] = (data_[i] << 2) | rm;

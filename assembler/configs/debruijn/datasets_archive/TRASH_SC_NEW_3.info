@@ -1,7 +1,6 @@
-paired_reads             "../../../data/input/E.coli/SC/3008_tau1_095_02_right.fastq.gz ../../../data/input/E.coli/SC/3008_tau1_095_02_left.fastq.gz "
-RL                       100
-IS                       270
-single_cell              true
-reference_genome         ../../../data/input/E.coli/MG1655-K12.fasta.gz
-
 reads	TRASH_SC_NEW_3.yaml
+single_cell	true
+reference_genome	../../../data/input/E.coli/MG1655-K12.fasta.gz
+
+; RL	100
+; IS	270

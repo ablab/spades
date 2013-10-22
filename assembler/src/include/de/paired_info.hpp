@@ -8,6 +8,9 @@
 
 #include "xmath.h"
 #include "omni/omni_utils.hpp"
+#include "sequence/sequence.hpp"
+
+#include <boost/iterator/iterator_facade.hpp>
 
 #include <cmath>
 #include <map>
@@ -17,121 +20,138 @@
 
 namespace omnigraph {
 
+namespace de {
+
 /**
  * PairInfo class represents basic data unit for paired information: edges first and second appear
  * in genome at distance d_ and this information has weight weight_.
  */
 struct Point {
+  public:
+    double d;
+    double weight;
+    double var;
 
- public:
-  double d;
-  double weight;
-  double var;
+    Point()
+            : d(0), weight(0), var(0) {}
 
-  explicit Point(double distance, double weight, double variance)
-  : d(distance),
-    weight(weight),
-    var(variance)
-  {
-  }
+    explicit Point(double distance, double weight, double variance)
+            : d(distance), weight(weight), var(variance) {}
 
-  Point(const Point& rhs)
-  : d(rhs.d),
-    weight(rhs.weight),
-    var(rhs.var)
-  {
-  }
+    Point(const Point& rhs)
+            : d(rhs.d), weight(rhs.weight), var(rhs.var) {}
 
-  string str() const {
-    stringstream ss;
-    ss << "Point: " << " distance = " << this->d
-      << ", weight = " << this->weight
-      << ", variance = " << this->var;
-    return ss.str();
-  }
+    std::string str() const {
+        stringstream ss;
+        ss << "Point: " << " distance = " << this->d
+           << ", weight = " << this->weight
+           << ", variance = " << this->var;
+        return ss.str();
+    }
 
-  Point& operator=(const Point& rhs) {
-    using namespace math;
-    update_value_if_needed<double>(d, rhs.d);
-    update_value_if_needed<double>(weight, rhs.weight);
-    update_value_if_needed<double>(var, rhs.var);
-    return *this;
-  }
+    Point& operator=(const Point& rhs) {
+        using namespace math;
+        update_value_if_needed<double>(d, rhs.d);
+        update_value_if_needed<double>(weight, rhs.weight);
+        update_value_if_needed<double>(var, rhs.var);
+        return *this;
+    }
 
-  bool operator<(const Point& rhs) const {
-    return math::ls(this->d, rhs.d);
-  }
+    bool operator<(const Point& rhs) const {
+        return math::ls(this->d, rhs.d);
+    }
 
-  bool operator==(const Point& rhs) const {
-    return math::eq(this->d, rhs.d);
-  }
+    bool operator==(const Point& rhs) const {
+        return math::eq(this->d, rhs.d);
+    }
 
-  bool operator!=(const Point& rhs) const {
-    return !(operator==(rhs));
-  }
+    bool operator!=(const Point& rhs) const {
+        return !(operator==(rhs));
+    }
 
-  const Point operator-() const {
-    Point negated_this(-(this->d), this->weight, this->var);
-    return negated_this;
-  }
+    Point operator-() const {
+        return Point(-d, weight, var);
+    }
+
+    Point operator+(const Point &rhs) const {
+      double weight_rhs = rhs.weight;
+      // counting new bounds in the case, when we are merging pair infos with var != 0
+      double left_bound = std::min(d - var, rhs.d - rhs.var);
+      double right_bound = std::max(d + var, rhs.d + rhs.var);
+      double new_dist = (left_bound + right_bound) * 0.5;
+      double new_weight = weight + weight_rhs;
+      double new_variance = (right_bound - left_bound) * 0.5;
+
+      return Point(new_dist, new_weight, new_variance);
+    }
 };
 
 inline int rounded_d(Point p) {
-  return math::round_to_zero(p.d);
+    return math::round_to_zero(p.d);
 }
 
-ostream& operator<<(ostream& os, Point point) {
-  return os << point.str();
+inline std::ostream& operator<<(std::ostream& os, const Point &point) {
+    return os << point.str();
+}
+
+typedef std::set<Point> Histogram;
+
+inline bool ClustersIntersect(Point p1, Point p2) {
+  return math::le(p1.d, p2.d + p1.var + p2.var) &&
+         math::le(p2.d, p1.d + p1.var + p2.var);
+}
+
+inline Point ConjugatePoint(size_t l1, size_t l2, const Point& point) {
+  return Point(point.d + (double) l2 - (double) l1, point.weight, point.var);
 }
 
 // tuple of a pair of edges @first, @second, and a @point
 template<typename EdgeId>
 struct PairInfo {
-  EdgeId first;
-  EdgeId second;
-  Point point;
+    EdgeId first;
+    EdgeId second;
+    Point point;
 
-  PairInfo(const PairInfo& pair_info) :
-      first(pair_info.first), second(pair_info.second), point(pair_info.point)
-  {
-  }
+    PairInfo()
+            : first(), second(), point() {}
 
-  PairInfo(EdgeId first, EdgeId second, double d, double weight, double var) :
-      first(first), second(second), point(d, weight, var)
-  {
-  }
 
-  PairInfo(EdgeId first, EdgeId second, Point point) :
-      first(first), second(second), point(point)
-  {
-  }
+    PairInfo(const PairInfo& pair_info)
+            : first(pair_info.first), second(pair_info.second), point(pair_info.point)
+    {}
 
-  // Two paired infos are considered equal
-  // if they coinside in all parameters except for weight and variance.
-  bool operator==(const PairInfo& rhs) const {
-    const PairInfo &lhs = *this;
-    return lhs.first == rhs.first && lhs.second == rhs.second && lhs.point == rhs.point;
-  }
+    PairInfo(EdgeId first, EdgeId second, double d, double weight, double var)
+            : first(first), second(second), point(d, weight, var)
+    {}
 
-  bool operator!=(const PairInfo& rhs) const {
-    return !(*this == rhs);
-  }
+    PairInfo(EdgeId first, EdgeId second, Point point)
+            : first(first), second(second), point(point) {}
 
-  bool operator<(const PairInfo<EdgeId>& rhs) const {
-    const PairInfo<EdgeId>& lhs = *this;
-    return lhs.first == rhs.first ?
-           lhs.second == rhs.second ?
-           lhs.point < rhs.point : lhs.second < rhs.second
-                         : lhs.first  < rhs.first;
-  }
+    // Two paired infos are considered equal
+    // if they coinside in all parameters except for weight and variance.
+    bool operator==(const PairInfo& rhs) const {
+        const PairInfo &lhs = *this;
+        return lhs.first == rhs.first && lhs.second == rhs.second && lhs.point == rhs.point;
+    }
 
-  double d() const      { return point.d;      }
-  double weight() const { return point.weight; }
-  double var() const    { return point.var;    }
+    bool operator!=(const PairInfo& rhs) const {
+        return !(*this == rhs);
+    }
 
-  double& d()                 { return point.d;      }
-  double& weight()            { return point.weight; }
-  double& var()               { return point.var;    }
+    bool operator<(const PairInfo<EdgeId>& rhs) const {
+        const PairInfo<EdgeId>& lhs = *this;
+        return (lhs.first == rhs.first ?
+                (lhs.second == rhs.second ? lhs.point < rhs.point : lhs.second < rhs.second)
+                : lhs.first  < rhs.first);
+    }
+
+    double d() const      { return point.d;      }
+    double weight() const { return point.weight; }
+    double var() const    { return point.var;    }
+
+    double& d()           { return point.d;      }
+    double& weight()      { return point.weight; }
+    double& var()         { return point.var;    }
 };
 
 template<typename EdgeId>
@@ -177,15 +197,6 @@ inline int rounded_d(PairInfo<EdgeId> const& pi) {
   return math::round_to_zero(pi.d());
 }
 
-inline bool ClustersIntersect(Point p1, Point p2) {
-  return math::le(p1.d, p2.d + p1.var + p2.var) &&
-         math::le(p2.d, p1.d + p1.var + p2.var);
-}
-
-inline Point ConjugatePoint(size_t l1, size_t l2, const Point& point) {
-  return Point(point.d + (double) l2 - (double) l1, point.weight, point.var);
-}
-
 template<typename EdgeId>
 PairInfo<EdgeId> BackwardInfo(const PairInfo<EdgeId>& pi) {
   return PairInfo<EdgeId>(pi.second, pi.first, -pi.point);
@@ -195,6 +206,603 @@ template<typename EdgeId>
 inline bool IsSymmetric(PairInfo<EdgeId> const& pi) {
   return pi.first == pi.second && math::eq(pi.d(), 0.);
 }
+
+// new map { EdgeId -> (EdgeId -> (d, weight, var)) }
+template<class Graph>
+class PairedInfoIndexT: public GraphActionHandler<Graph> {
+ public:
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Histogram::const_iterator HistIterator;
+    typedef std::map<EdgeId, Histogram> InnerMap;
+    typedef std::map<EdgeId, InnerMap>  IndexDataType;     // @InnerMap is a wrapper for map<EdgeId, Histogram>
+    typedef typename IndexDataType::const_iterator DataIterator;
+
+    class EdgePairIterator :
+            public boost::iterator_facade<EdgePairIterator,
+                                          const Histogram,
+                                          boost::forward_traversal_tag,
+                                          const Histogram& > {
+
+      public:
+        EdgePairIterator(DataIterator cedge, DataIterator eedge)
+                : cedge_(cedge), eedge_(eedge), sedge_() {
+            if (cedge_ == eedge_)
+                return;
+
+            sedge_ = cedge_->second.begin();
+            skip_empty();
+        }
+
+        EdgeId first() const { return cedge_->first; }
+        EdgeId second() const { return sedge_->first; }
+
+        friend ostream& operator<<(ostream& os, const EdgePairIterator& iter) {
+            return os << iter.first() << " " << iter.second();
+        }
+
+      private:
+        typedef typename InnerMap::const_iterator InnerIterator;
+
+        friend class boost::iterator_core_access;
+
+        void skip_empty() {
+            while (sedge_ == cedge_->second.end()) {
+                ++cedge_;
+                if (cedge_ == eedge_)
+                    break;
+                sedge_ = cedge_->second.begin();
+            }
+        }
+
+        void increment() {
+            ++sedge_;
+            skip_empty();
+        }
+
+        bool equal(const EdgePairIterator &other) const {
+            return other.cedge_ == cedge_ && (cedge_ == eedge_ || other.sedge_ == sedge_);
+        }
+
+        const Histogram& dereference() const {
+            return sedge_->second;
+        }
+
+        DataIterator cedge_, eedge_;
+        InnerIterator sedge_;
+    };
+
+    class EdgeIterator :
+            public boost::iterator_facade<EdgeIterator,
+                                          const std::pair<EdgeId, Point>,
+                                          boost::forward_traversal_tag,
+                                          const std::pair<EdgeId, Point> > {
+        typedef typename Histogram::const_iterator histogram_iterator;
+        typedef typename InnerMap::const_iterator InnerIterator;
+
+      public:
+        EdgeIterator(InnerIterator cedge, InnerIterator eedge)
+                : cedge_(cedge), eedge_(eedge), point_() {
+            if (cedge_ == eedge_)
+                return;
+
+            point_ = cedge_->second.begin();
+            skip_empty();
+        }
+
+      private:
+        friend class boost::iterator_core_access;
+
+        void skip_empty() {
+            while (point_ == cedge_->second.end()) {
+                ++cedge_;
+                if (cedge_ == eedge_)
+                    break;
+                point_ = cedge_->second.begin();
+            }
+        }
+
+        void increment() {
+            ++point_;
+            skip_empty();
+        }
+
+        bool equal(const EdgeIterator &other) const {
+            return other.cedge_ == cedge_ && (cedge_ == eedge_ || other.point_ == point_);
+        }
+
+        const std::pair<EdgeId, Point> dereference() const {
+            return std::make_pair(cedge_->first, *point_);
+        }
+
+        InnerIterator cedge_, eedge_;
+        histogram_iterator point_;
+    };
+
+    PairedInfoIndexT(const Graph& graph) :
+            GraphActionHandler<Graph>(graph, "PairedInfoIndexT"), size_(0) {}
+
+    ~PairedInfoIndexT() {
+        TRACE("~PairedInfoIndexT ok");
+    }
+
+    EdgePairIterator begin() const {
+        VERIFY(this->IsAttached());
+        return EdgePairIterator(index_.begin(), index_.end());
+    }
+
+    EdgePairIterator end() const {
+        VERIFY(this->IsAttached());
+        return EdgePairIterator(index_.end(), index_.end());
+    }
+
+    DataIterator Begin() const {
+        VERIFY(this->IsAttached());
+        return index_.begin();
+    }
+
+    DataIterator End() const {
+        VERIFY(this->IsAttached());
+        return index_.end();
+    }
+
+    EdgeIterator edge_begin(EdgeId edge) const {
+        return edge_begin(index_.find(edge));
+    }
+
+    EdgeIterator edge_end(EdgeId edge) const {
+        return edge_end(index_.find(edge));
+    }
+
+    // FIXME: Make these private
+    EdgeIterator edge_begin(typename IndexDataType::const_iterator entry) const {
+        return EdgeIterator(entry->second.begin(), entry->second.end());
+    }
+
+    EdgeIterator edge_end(typename IndexDataType::const_iterator entry) const {
+        return EdgeIterator(entry->second.end(), entry->second.end());
+    }
+
+    // adding pair infos
+    void AddPairInfo(const pair<EdgeId, EdgeId>& edge_pair,
+                     Point point_to_add,
+                     bool add_reversed = true) {
+        AddPairInfo(edge_pair.first, edge_pair.second, point_to_add, add_reversed);
+    }
+
+    void AddPairInfo(const pair<EdgeId, EdgeId>& edge_pair,
+                     double d, double weight, double var,
+                     bool add_reversed = true) {
+        AddPairInfo(edge_pair.first, edge_pair.second, Point(d, weight, var), add_reversed);
+    }
+
+    void AddPairInfo(EdgeId e1, EdgeId e2,
+                     double d, double weight, double var,
+                     bool add_reversed = true) {
+        AddPairInfo(e1, e2, Point(d, weight, var), add_reversed);
+    }
+
+    void AddPairInfo(EdgeId e1, EdgeId e2,
+                     Point point_to_add,
+                     bool add_reversed = true) {
+        VERIFY(this->IsAttached());
+        Histogram& histogram = index_[e1][e2];
+        HistIterator iterator_to_point = histogram.find(point_to_add);
+        TRACE("Adding info " << this->g().int_id(e1)
+              << " " << this->g().int_id(e2)
+              << " " << point_to_add.str());
+
+        if (iterator_to_point != histogram.end()) {
+            TRACE("Such pair info exists, merging now");
+            MergeData(e1, e2, *iterator_to_point, point_to_add, add_reversed);
+        } else {
+            TRACE("Such pair info does not exist");
+            InsertPoint(e1, e2, histogram, point_to_add, add_reversed);
+        }
+    }
+
+    void DeletePairInfo(EdgeId e1, EdgeId e2,
+                        Point point_to_remove) {
+        VERIFY(this->IsAttached());
+        Histogram& histogram = index_[e1][e2];
+        histogram.erase(point_to_remove);
+    }
+
+    // method adds paired info to the conjugate edges
+    void AddConjPairInfo(EdgeId e1, EdgeId e2,
+                         Point point_to_add,
+                         bool add_reversed = 1) {
+        const Graph& g = this->g();
+        this->AddPairInfo(g.conjugate(e2),
+                          g.conjugate(e1),
+                          ConjugatePoint(g.length(e1), g.length(e2), point_to_add),
+                          add_reversed);
+    }
+
+    // erasing specific entry from the index
+    size_t RemovePairInfo(EdgeId e1, EdgeId e2, const Point& point_to_remove) {
+        VERIFY(this->IsAttached());
+        auto iter = index_.find(e1);
+        if (iter != index_.end()) {
+            InnerMap& map = iter->second;
+            auto iter2 = map.find(e2);
+            if (iter2 != map.end()) {
+                Histogram& hist = iter2->second;
+                size_t success = hist.erase(point_to_remove);
+                if (success == 1)
+                    --size_;
+                if (hist.empty())
+                    map.erase(iter2);
+                if (map.empty())
+                    index_.erase(iter);
+
+                return success;
+            }
+        }
+        return 0;
+    }
+
+    // method adds paired info to the conjugate edges
+    void RemoveConjPairInfo(EdgeId e1, EdgeId e2,
+                            Point point_to_remove) {
+        const Graph& g = this->g();
+        this->RemovePairInfo(g.conjugate(e2),
+                             g.conjugate(e1),
+                             ConjugatePoint(g.length(e1), g.length(e2), point_to_remove));
+    }
+
+    void RemovePairInfo(const PairInfo<EdgeId>& info) {
+        this->RemovePairInfo(info.first, info.second, info.point);
+    }
+
+    // removing all points from @e1, @e2 histogram,
+    // returns 1 if operation was successful, 0 if not
+    size_t RemoveEdgePairInfo(EdgeId e1, EdgeId e2) {
+        VERIFY(this->IsAttached());
+        auto iter = index_.find(e1);
+        if (iter != index_.end()) {
+            InnerMap& map = iter->second;
+            auto iter2 = map.find(e2);
+            if (iter2 != map.end()) {
+                Histogram& hist = iter2->second;
+                size_t size_decrease = hist.size();
+                map.erase(iter2);
+                size_ -= size_decrease;
+                if (map.empty())
+                    index_.erase(iter);
+
+                return 1;
+            }
+        }
+        return 0;
+    }
+
+    // removes all points, which refer to this edge
+    // also removes all backward information
+    void RemoveEdgeInfo(EdgeId edge) {
+        VERIFY(this->IsAttached());
+        InnerMap& inner_map = index_[edge];
+        for (auto iter = inner_map.begin(); iter != inner_map.end(); ++iter) {
+            EdgeId e2 = iter->first;
+            if (edge != e2) {
+                this->RemoveEdgePairInfo(e2, edge);
+            }
+        }
+        size_t size_of_removed = inner_map.size();
+        index_.erase(edge);
+        size_ -= size_of_removed;
+    }
+
+    void Clear() {
+        index_.clear();
+        size_ = 0;
+    }
+
+    void Init() {
+        for (auto it = this->g().ConstEdgeBegin(); !it.IsEnd(); ++it) {
+            this->HandleAdd(*it);
+        }
+    }
+
+    void Prune() {
+        VERIFY(this->IsAttached());
+
+        for (auto iter = index_.begin(); iter != index_.end(); ) {
+            // First, remove all the empty Histograms
+            InnerMap& inner_map = iter->second;
+            for (auto it = inner_map.begin(); it != inner_map.end(); ) {
+                if (it->second.size() == 0)
+                    inner_map.erase(it++);
+                else
+                    ++it;
+            }
+
+            // Now, pretty much the same, but the outer stuff
+            if (inner_map.size() == 0)
+                index_.erase(iter++);
+            else
+                ++iter;
+        }
+    }
+
+    // here we trying to insert PairInfo,
+    // if there is no existing PairInfo with the same key
+    // very complicated implementation, but it seems to be faster.
+    void AddAll(const PairedInfoIndexT& index_to_add) {
+        typedef typename IndexDataType::iterator data_iterator;
+        VERIFY(this->IsAttached());
+        IndexDataType& base_index = this->index_;
+        const IndexDataType& index = index_to_add.index_;
+        for (auto AddI = index.begin(), E = index.end(); AddI != E; ++AddI) {
+            EdgeId e1_to_add = AddI->first;
+            const InnerMap& map_to_add = AddI->second;
+            const std::pair<data_iterator, bool>& result = base_index.insert(*AddI);
+            if (!result.second) {
+                InnerMap& map_already_exists = (result.first)->second; // data_iterator points to <EdgeId, InnerMap>
+                MergeInnerMaps(e1_to_add, map_to_add, map_already_exists);
+            } else
+                size_ += map_to_add.size();
+        }
+    }
+
+    // prints the contents of index
+    void PrintAll() const {
+        size_t size = 0;
+        for (auto I = this->begin(), E = this->end(); I != E; ++I) {
+            EdgeId e1 = I.first();
+            EdgeId e2 = I.second();
+            const Histogram& histogram = *I;
+            size += histogram.size();
+            INFO("Histogram for edges "
+                 << this->g().int_id(e1) << " "
+                 << this->g().int_id(e2));
+            for (auto it = histogram.begin(); it != histogram.end(); ++it) {
+                INFO("    Entry " << it->str());
+            }
+        }
+        VERIFY_MSG(size_ == size, "Size " << size << " must have been equal to " << size_);
+    }
+
+    // Usual implementation, the same as in the old paired index
+    vector<PairInfo<EdgeId> > GetEdgeInfo(EdgeId edge) const {
+        VERIFY(this->IsAttached());
+        typename IndexDataType::const_iterator iter = index_.find(edge);
+        TRACE("Getting edge info");
+        if (iter == index_.end())
+            return vector<PairInfo<EdgeId> >();
+
+        vector<PairInfo<EdgeId> > result;
+        result.reserve(iter->second.size());
+        for (auto I = edge_begin(iter), E = edge_end(iter); I != E; ++I) {
+            std::pair<EdgeId, Point> entry = *I;
+            result.push_back(PairInfo<EdgeId>(edge, entry.first, entry.second));
+        }
+        return result;
+    }
+
+    // faster implementation, but less resolver-friendly
+    // returns InnerMap instead of vector<>,
+    // one can iterate it using FastIterator class
+    const InnerMap GetEdgeInfo(EdgeId edge, int) const {
+        VERIFY(this->IsAttached());
+        typename IndexDataType::const_iterator iter = index_.find(edge);
+        if (iter == index_.end())
+            return InnerMap();
+        else
+            return iter->second;
+    }
+
+    const Histogram GetEdgePairInfo(EdgeId e1, EdgeId e2) const {
+        VERIFY(this->IsAttached());
+        typename IndexDataType::const_iterator iter = index_.find(e1);
+        if (iter == index_.end())
+            return Histogram();
+        else {
+            const InnerMap& inner_map = iter->second;
+            typename InnerMap::const_iterator iter2 = inner_map.find(e2);
+            if (iter2 == inner_map.end())
+                return Histogram();
+            else
+                return iter2->second;
+        }
+    }
+
+    size_t size() const {
+        return size_;
+    }
+
+    size_t int_id(EdgeId edge) const {
+        return this->g().int_id(edge);
+    }
+
+    // Handlers
+    virtual void HandleAdd(EdgeId edge) {
+        TRACE("Handling Addition " << int_id(edge));
+        this->AddPairInfo(edge, edge, 0., 0., 0.);
+    }
+
+    virtual void HandleDelete(EdgeId edge) {
+        TRACE("Handling Deleting " << int_id(edge));
+        this->RemoveEdgeInfo(edge);
+    }
+
+    virtual void HandleMerge(const vector<EdgeId>& old_edges, EdgeId new_edge) {
+        TRACE("Handling Merging");
+        this->AddPairInfo(new_edge, new_edge, 0., 0., 0.);
+        int shift = 0;
+        const Graph& graph = this->g();
+        for (size_t i = 0; i < old_edges.size(); ++i) {
+            EdgeId old_edge = old_edges[i];
+            TransferInfo(old_edge, new_edge, shift);
+            shift -= (int) graph.length(old_edge);
+        }
+    }
+
+    virtual void HandleGlue(EdgeId new_edge, EdgeId e1, EdgeId e2) {
+        TRACE("Handling Glueing " << int_id(new_edge) << " " << int_id(e1) << " "
+              << int_id(e2));
+        TransferInfo(e2, new_edge);
+        TransferInfo(e1, new_edge);
+    }
+
+    virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge_1, EdgeId new_edge_2) {
+        TRACE("Handling Splitting " << int_id(old_edge) << " " << int_id(new_edge_1)
+              << " " << int_id(new_edge_2));
+        const Graph& graph = this->g();
+        double ratio = (double) graph.length(new_edge_1) * 1. / (double) graph.length(old_edge);
+        TransferInfo(old_edge, new_edge_1, 0, ratio);
+        TransferInfo(old_edge, new_edge_2, (int) graph.length(new_edge_1), 1. - ratio);
+    }
+
+ private:
+    bool IsSymmetric(EdgeId e1, EdgeId e2,
+                     Point point) const {
+        return (e1 == e2) && math::eq(point.d, 0.);
+    }
+
+  // modifying the histogram
+  void InsertPoint(EdgeId e1, EdgeId e2,
+                   Histogram& histogram,
+                   Point new_point,
+                   bool add_reversed) {
+      // first backwards
+      if (add_reversed && !IsSymmetric(e1, e2, new_point)) {
+          index_[e2][e1].insert(-new_point);
+          ++size_;
+      }
+
+      histogram.insert(new_point);
+      ++size_;
+  }
+
+  void UpdateSinglePoint(Histogram &hist, Histogram::iterator point_to_update, Point new_point) {
+      // FIXME: Just grab the hint out of erase with gcc 4.5+
+      Histogram::iterator to_remove = point_to_update++;
+      hist.erase(to_remove);
+      hist.insert(point_to_update, new_point);
+  }
+
+  void MergeData(EdgeId e1, EdgeId e2,
+                 Point point_to_update,
+                 Point point_to_add,
+                 bool add_reversed) {
+      if (add_reversed) {
+          Histogram& histogram = index_[e2][e1];
+          UpdateSinglePoint(histogram, histogram.find(-point_to_update), -(point_to_update + point_to_add));
+      }
+
+      Histogram& histogram = index_[e1][e2];
+      UpdateSinglePoint(histogram, histogram.find(point_to_update), point_to_update + point_to_add);
+  }
+
+  void MergeData(Histogram& hist,
+                 Histogram::iterator to_update,
+                 Point point_to_add) {
+      UpdateSinglePoint(hist, to_update, *to_update + point_to_add);
+  }
+
+  void TransferInfo(EdgeId old_edge, EdgeId new_edge,
+                    int shift = 0,
+                    double weight_scale = 1.) {
+      const InnerMap& inner_map = this->GetEdgeInfo(old_edge, 0);
+      for (auto iter = inner_map.begin(); iter != inner_map.end(); ++iter) {
+          EdgeId e2 = iter->first;
+          const Histogram& histogram = iter->second;
+          for (auto point_iter = histogram.begin(); point_iter != histogram.end(); ++point_iter) {
+              Point cur_point = *point_iter;
+              if (old_edge != e2) {
+                  AddPairInfo(new_edge, e2,
+                              cur_point.d - shift,
+                              weight_scale * cur_point.weight,
+                              cur_point.var);
+              } else if (!math::eq(cur_point.d, 0.)) {
+                  AddPairInfo(new_edge, new_edge,
+                              cur_point.d,
+                              weight_scale * 0.5 * cur_point.weight,
+                              cur_point.var);
+              } else {
+                  AddPairInfo(new_edge, new_edge,
+                              cur_point.d,
+                              weight_scale * cur_point.weight,
+                              cur_point.var);
+              }
+          }
+      }
+  }
+
+  void MergeInnerMaps(EdgeId /*e1_to_add*/,
+                      const InnerMap& map_to_add,
+                      InnerMap& map) {
+      typedef typename Histogram::iterator hist_iterator;
+      typedef typename InnerMap::iterator map_iterator;
+      for (auto I = map_to_add.begin(), E = map_to_add.end(); I != E; ++I) {
+          const Histogram& hist_to_add = I->second;
+          const pair<map_iterator, bool>& result = map.insert(*I);
+          if (!result.second) { // in this case we need to merge two hists
+              Histogram& hist_exists = (result.first)->second;
+              // pretty much the same
+              for (auto p_it = hist_to_add.begin(), E = hist_to_add.end(); p_it != E; ++p_it) {
+                  Point new_point = *p_it;
+                  const pair<hist_iterator, bool>& result = hist_exists.insert(new_point);
+                  if (!result.second) { // in this case we need to merge two points
+                      MergeData(hist_exists, result.first, new_point);
+                  } else
+                      ++size_;
+              }
+          } else
+              size_ += hist_to_add.size();
+      }
+  }
+
+  IndexDataType index_;
+  size_t size_;
+
+  DECL_LOGGER("PairedInfoIndexT");
+};
+
+template <class Graph>
+struct PairedInfoIndicesT {
+    typedef PairedInfoIndexT<Graph> IndexT;
+
+    std::vector<IndexT*> data_;
+
+    PairedInfoIndicesT(const Graph& graph, size_t lib_num) {
+        for (size_t i = 0; i < lib_num; ++i) {
+            data_.push_back(new IndexT(graph));
+        }
+    }
+
+    void Init() {
+        for (auto it = data_.begin(); it != data_.end(); ++it) {
+            (*it)->Init();
+        }
+    }
+
+    void Attach() {
+        for (auto it = data_.begin(); it != data_.end(); ++it) {
+            (*it)->Attach();
+        }
+    }
+
+    void Detach() {
+        for (auto it = data_.begin(); it != data_.end(); ++it) {
+            (*it)->Detach();
+        }
+    }
+
+    IndexT& operator[](size_t i) {
+        return *data_[i];
+    }
+
+    const IndexT& operator[](size_t i) const {
+        return *data_[i];
+    }
+
+    size_t size() const {
+        return data_.size();
+    }
+};
+
+/*----------------------------------------Old Index----------------------------------------------*/
 
 //TODO: try storing set<PairInfo>
 template <typename EdgeId>
@@ -239,9 +847,9 @@ public:
   }
 
   void AddPairInfo(const PairInfo<EdgeId>& pair_info, bool add_reversed = 1) {
-        data_.insert(pair_info);
+    data_.insert(pair_info);
 
-    if (!IsSymmetric(pair_info) && add_reversed)
+    if (add_reversed && !IsSymmetric(pair_info))
       data_.insert(BackwardInfo(pair_info));
   }
 
@@ -325,762 +933,6 @@ private:
     DECL_LOGGER("PairedInfoIndexData");
 };
 
-// wrapper for a map { (EdgeId -> (d, weight, var)) }
-template<class Graph>
-class InnerMap {
-  typedef typename Graph::EdgeId EdgeId;
-  typedef set<Point> Histogram;
-  typedef map<EdgeId, Histogram> base_map_t;
-  typedef typename base_map_t::value_type value_type;
-
- public:
-  typedef typename base_map_t::const_iterator c_iterator;
-  typedef typename base_map_t::iterator iterator;
-
-  // we need this iterator
-  // to iterate through map<EdgeId, set<Point> > in a smart way (faster)
-  class FastIterator {
-    typedef typename Histogram::const_iterator histogram_iterator;
-
-   public:
-    FastIterator(c_iterator position, const InnerMap& map) :
-      position_(position), inner_pos_(position->second.begin()), map_(&map)
-    {
-    }
-
-    FastIterator(c_iterator position,
-                 histogram_iterator inner_pos,
-                 const InnerMap& map) :
-      position_(position), inner_pos_(inner_pos), map_(&map)
-    {
-    }
-
-    bool operator==(const FastIterator& other) const {
-      return (this->position_ == other.position_) && (this->inner_pos_ == other.inner_pos_);
-    }
-
-    bool operator!=(const FastIterator& other) const {
-      return !operator==(other);
-    }
-
-    const pair<EdgeId, Point> operator*() const {
-      return make_pair(position_->first, *inner_pos_);
-    }
-
-    FastIterator& operator++() {
-      if (position_ == (map_->wrapped_map_).end())
-        return *this;
-
-      ++inner_pos_;
-      const Histogram& hist = position_->second;
-      if (inner_pos_ == hist.end()) {
-        ++position_;
-        if (position_ != (map_->wrapped_map_).end())
-          inner_pos_ = (position_->second).begin();
-      }
-      return *this;
-    }
-
-   private:
-    c_iterator position_;          // iterator in map<EdgeId, Histogram>
-    histogram_iterator inner_pos_; // iterator in Histogram
-    const InnerMap* map_;          // wrapper of map<EdgeId, Histogram>
-  };
-
- public:
-  InnerMap()
-  {
-  }
-
-  template<class Iterator>
-  InnerMap(Iterator begin, Iterator end) :
-    wrapped_map_(begin, end, 10)
-  {
-  }
-
-  // these two methods require a wrapper for map<EdgeId, Histogram>
-  // we need them to iterate through map<EdgeId, set<Point> > in a smart way
-  FastIterator Begin() const {
-    if (wrapped_map_.size() == 0)
-      return this->End();
-    return FastIterator(wrapped_map_.begin(), *this);
-  }
-
-  FastIterator End() const {
-    if (wrapped_map_.size() == 0) {
-      static Histogram EMPTY_HISTOGRAM;
-      return FastIterator(wrapped_map_.end(), EMPTY_HISTOGRAM.end(), *this);
-    }
-    const Histogram& last_histogram = (wrapped_map_.rbegin())->second;
-    return FastIterator(wrapped_map_.end(), last_histogram.end(), *this);
-  }
-
-  c_iterator begin() const  { return wrapped_map_.begin(); }
-  c_iterator end()   const  { return wrapped_map_.end();   }
-
-  iterator begin()     { return wrapped_map_.begin(); }
-  iterator end  ()     { return wrapped_map_.end  (); }
-
-  c_iterator find(EdgeId edge) const { return wrapped_map_.find(edge); }
-
-  iterator find(EdgeId edge) { return wrapped_map_.find(edge); }
-
-  size_t count(EdgeId item) const { return wrapped_map_.count(item); }
-
-  Histogram& operator[](EdgeId x) { return wrapped_map_[x]; }
-
-  pair<iterator, bool> insert(const value_type& value) { return wrapped_map_.insert(value); }
-
-  size_t erase(EdgeId x) { return wrapped_map_.erase(x); }
-
-  void erase(iterator position) { wrapped_map_.erase(position); }
-
-  bool empty() const { return wrapped_map_.empty(); }
-
-  void clear() { wrapped_map_.clear(); }
-
-  size_t size() const {
-    size_t size = 0;
-    for (auto I = wrapped_map_.begin(), E = wrapped_map_.end(); I != E; ++I)
-      size += I->second.size();
-    return size;
-  }
-
-  bool operator==(const map<EdgeId, Histogram>& rhs) const
-  {
-    if (size() != rhs.size())
-      return false;
-
-    for (auto i = wrapped_map_.begin(), j = rhs.wrapped_map_.begin();
-        i != wrapped_map_.end() && j != rhs.wrapped_map_.end();
-        ++i, ++j)
-    {
-      if(*i != *j)
-        return false;
-    }
-    return true;
-  }
-
-  bool operator!=(const map<EdgeId, Histogram>& rhs) const
-  {
-    return !(*this == rhs);
-  }
-
- private:
-  base_map_t wrapped_map_;
-};
-
-// new map { EdgeId -> (EdgeId -> (d, weight, var)) }
-template<class Graph>
-class PairedInfoIndexT: public GraphActionHandler<Graph> {
-
- public:
-  typedef typename Graph::EdgeId EdgeId;
-  typedef set<Point> Histogram;
-  typedef typename Histogram::const_iterator HistIterator;
-  typedef map<EdgeId, InnerMap<Graph> > IndexDataType;     // @InnerMap is a wrapper for map<EdgeId, Histogram>
-  typedef typename IndexDataType::const_iterator DataIterator;
-
-  // This class helps us to iterate through the compound structure
-  class EdgePairIterator {
-    typedef typename InnerMap<Graph>::c_iterator InnerIterator;
-
-   public:
-    EdgePairIterator(DataIterator position, const PairedInfoIndexT& index) :
-      position_(position), inner_pos_((position->second).begin()), index_(index)
-    {
-    }
-
-    EdgePairIterator(DataIterator position,
-                     InnerIterator inner_pos,
-                     const PairedInfoIndexT& index) :
-      position_(position), inner_pos_(inner_pos), index_(index)
-    {
-    }
-
-    bool operator==(const EdgePairIterator& other) {
-      return this->position_ == other.position_ && this->inner_pos_ == other.inner_pos_;
-    }
-
-    bool operator!=(const EdgePairIterator& other) {
-      return !operator==(other);
-    }
-
-    Histogram operator*() const {
-      VERIFY(position_ != index_.index_.end());
-      return inner_pos_->second;
-    }
-
-    const EdgeId first() const {
-      VERIFY(position_ != index_.index_.end());
-      return position_->first;
-    }
-
-    const EdgeId second() const {
-      VERIFY(position_ != index_.index_.end());
-      const auto& inner_map = position_->second;
-      VERIFY(inner_pos_ != inner_map.end());
-      return inner_pos_->first;
-    }
-
-    const Histogram* operator->() const {
-      VERIFY(position_ != index_.index_.end());
-      const Histogram& hist = inner_pos_->second;
-      return &hist;
-    }
-
-    EdgePairIterator& operator++() {
-      if (position_ == index_.index_.end())
-        return *this;
-
-      ++inner_pos_;
-      const InnerMap<Graph>& inner_map = position_->second;
-      VERIFY(inner_map.size() > 0);
-      if (inner_pos_ == inner_map.end()) {
-        ++position_;
-        if (position_ != index_.index_.end()) {
-          inner_pos_ = (position_->second).begin();
-          VERIFY(inner_pos_ != (position_->second).end());
-        }
-      }
-      return *this;
-    }
-
-    void operator++(int) {
-      EdgePairIterator tmp(*this);
-      this->operator++();
-      return tmp;
-    }
-
-    friend ostream& operator<<(ostream& os, const EdgePairIterator& iter) {
-      return os << iter.first() << " " << iter.second();
-    }
-
-   private:
-    DataIterator position_;
-    InnerIterator inner_pos_;
-    const PairedInfoIndexT& index_;
-  };
-
-  PairedInfoIndexT(const Graph& graph) :
-    GraphActionHandler<Graph>(graph, "PairedInfoIndexT"), size_(0)
-  {
-  }
-
-  ~PairedInfoIndexT()
-  {
-    TRACE("~PairedInfoIndexT ok");
-  }
-
-  EdgePairIterator begin() const {
-    VERIFY(this->IsAttached());
-    if (index_.size() == 0)
-      return this->end();
-    return EdgePairIterator(index_.begin(), *this);
-  }
-
-  EdgePairIterator end() const {
-    VERIFY(this->IsAttached());
-    if (index_.size() == 0) {
-      static InnerMap<Graph> EMPTY_MAP; // we need this map to act somehow when the index is empty
-      return EdgePairIterator(index_.end(), EMPTY_MAP.end(), *this);
-    }
-
-    const InnerMap<Graph>& last_inner_map = (index_.rbegin())->second;
-    return EdgePairIterator(index_.end(), last_inner_map.end(), *this);
-  }
-
-  DataIterator Begin() const {
-    VERIFY(this->IsAttached());
-    return index_.begin();
-  }
-
-  DataIterator End() const {
-    VERIFY(this->IsAttached());
-    return index_.end();
-  }
-
-  // adding pair infos
-  void AddPairInfo(
-      const pair<EdgeId, EdgeId>& edge_pair,
-      Point point_to_add,
-      bool add_reversed = 1)
-  {
-    this->AddPairInfo(edge_pair.first, edge_pair.second, point_to_add, add_reversed);
-  }
-
-  void AddPairInfo(
-      const pair<EdgeId, EdgeId>& edge_pair,
-      double d,
-      double weight,
-      double var,
-      bool add_reversed = 1)
-  {
-    this->AddPairInfo(edge_pair.first, edge_pair.second, Point(d, weight, var), add_reversed);
-  }
-
-  void AddPairInfo(EdgeId e1,
-      EdgeId e2,
-      double d,
-      double weight,
-      double var,
-      bool add_reversed = 1)
-  {
-    this->AddPairInfo(e1, e2, Point(d, weight, var), add_reversed);
-  }
-
-  void AddPairInfo(EdgeId e1,
-                   EdgeId e2,
-                   Point point_to_add,
-                   bool add_reversed = 1)
-  {
-    VERIFY(this->IsAttached());
-    Histogram& histogram = index_[e1][e2];
-    HistIterator iterator_to_point = histogram.find(point_to_add);
-    TRACE("Adding info " << this->g().int_id(e1)
-                  << " " << this->g().int_id(e2)
-                  << " " << point_to_add.str());
-
-    if (iterator_to_point != histogram.end())
-    {
-      TRACE("Such pair info exists, merging now");
-      const Point& existing_point = *iterator_to_point;
-      VERIFY(existing_point == point_to_add);
-      MergeData(e1, e2, existing_point, point_to_add, add_reversed);
-    }
-    else {
-      TRACE("Such pair info does not exist");
-      InsertPoint(e1, e2, histogram, point_to_add, add_reversed);
-    }
-  }
-
-  // method adds paired info to the conjugate edges
-  void AddConjPairInfo(EdgeId e1,
-                       EdgeId e2,
-                       Point point_to_add,
-                       bool add_reversed = 1)
-  {
-    const Graph& g = this->g();
-    this->AddPairInfo(g.conjugate(e2),
-                      g.conjugate(e1),
-                      ConjugatePoint(g.length(e1), g.length(e2), point_to_add),
-                      add_reversed);
-  }
-
-  // erasing specific entry from the index
-  size_t RemovePairInfo(EdgeId e1, EdgeId e2, const Point& point_to_remove) {
-    VERIFY(this->IsAttached());
-    auto iter = index_.find(e1);
-    if (iter != index_.end())
-    {
-      InnerMap<Graph>& map = iter->second;
-      auto iter2 = map.find(e2);
-      if (iter2 != map.end())
-      {
-        Histogram& hist = iter2->second;
-        size_t success = hist.erase(point_to_remove);
-        if (success == 1)
-          --size_;
-        if (hist.empty())
-          map.erase(iter2);
-        if (map.empty())
-          index_.erase(iter);
-
-        return success;
-      }
-    }
-    return 0;
-  }
-
-  // method adds paired info to the conjugate edges
-  void RemoveConjPairInfo(EdgeId e1,
-                          EdgeId e2,
-                          Point point_to_remove)
-  {
-    const Graph& g = this->g();
-    this->RemovePairInfo(g.conjugate(e2),
-                         g.conjugate(e1),
-                         ConjugatePoint(g.length(e1), g.length(e2), point_to_remove));
-  }
-
-  void RemovePairInfo(const PairInfo<EdgeId>& info) {
-    this->RemovePairInfo(info.first, info.second, info.point);
-  }
-
-  // removing all points from @e1, @e2 histogram,
-  // returns 1 if operation was successful, 0 if not
-  size_t RemoveEdgePairInfo(EdgeId e1, EdgeId e2) {
-    VERIFY(this->IsAttached());
-    auto iter = index_.find(e1);
-    if (iter != index_.end())
-    {
-      InnerMap<Graph>& map = iter->second;
-      auto iter2 = map.find(e2);
-      if (iter2 != map.end())
-      {
-        Histogram& hist = iter2->second;
-        size_t size_decrease = hist.size();
-        map.erase(iter2);
-        size_ -= size_decrease;
-        if (map.empty())
-          index_.erase(iter);
-
-        return 1;
-      }
-    }
-    return 0;
-  }
-
-  // removes all points, which refer to this edge
-  // also removes all backward information
-  void RemoveEdgeInfo(EdgeId edge) {
-    VERIFY(this->IsAttached());
-    InnerMap<Graph>& inner_map = index_[edge];
-    for (auto iter = inner_map.begin(); iter != inner_map.end(); ++iter) {
-      EdgeId e2 = iter->first;
-      if (edge != e2) {
-        this->RemoveEdgePairInfo(e2, edge);
-      }
-    }
-    size_t size_of_removed = inner_map.size();
-    index_.erase(edge);
-    size_ -= size_of_removed;
-  }
-
-  void Clear() {
-    index_.clear();
-    size_ = 0;
-  }
-
-  void Init() {
-    for (auto it = this->g().SmartEdgeBegin(); !it.IsEnd(); ++it) {
-      this->HandleAdd(*it);
-    }
-  }
-
-  // here we trying to insert PairInfo,
-  // if there is no existing PairInfo with the same key
-  // very complicated implementation, but it seems to be faster.
-  void AddAll(const PairedInfoIndexT& index_to_add) {
-    typedef typename IndexDataType::iterator data_iterator;
-    VERIFY(this->IsAttached());
-    IndexDataType& base_index = this->index_;
-    const IndexDataType& index = index_to_add.index_;
-    for (auto AddI = index.begin(), E = index.end(); AddI != E; ++AddI) {
-      EdgeId e1_to_add = AddI->first;
-      const InnerMap<Graph>& map_to_add = AddI->second;
-      const pair<data_iterator, bool>& result = base_index.insert(*AddI);
-      if (!result.second) {
-        InnerMap<Graph>& map_already_exists = (result.first)->second; // data_iterator points to <EdgeId, InnerMap>
-        this->MergeInnerMaps(e1_to_add, map_to_add, map_already_exists);
-      }
-      else
-        size_ += map_to_add.size();
-    }
-  }
-
-  // prints the contents of index
-  void PrintAll() const {
-    size_t size = 0;
-    for (auto I = this->begin(), E = this->end(); I != E; ++I) {
-      EdgeId e1 = I.first();
-      EdgeId e2 = I.second();
-      const Histogram& histogram = *I;
-      size += histogram.size();
-      INFO("Histogram for edges "
-          << this->g().int_id(e1) << " "
-          << this->g().int_id(e2));
-      for (auto it = histogram.begin(); it != histogram.end(); ++it) {
-        INFO("    Entry " << it->str());
-      }
-    }
-    VERIFY_MSG(size_ == size, "Size " << size << " must have been equal to " << size_);
-  }
-
-  // usual implementation, the same as in the old paired index
-  vector<PairInfo<EdgeId> > GetEdgeInfo(EdgeId edge) const {
-    VERIFY(this->IsAttached());
-    typename IndexDataType::const_iterator iter = index_.find(edge);
-    TRACE("Getting edge info");
-    if (iter == index_.end())
-      return vector<PairInfo<EdgeId> >();
-    else {
-      const InnerMap<Graph>& i_map= iter->second;
-      vector<PairInfo<EdgeId> > result;
-      result.reserve(i_map.size());
-      for (auto I = i_map.Begin(), E = i_map.End(); I != E; ++I) {
-        EdgeId e2 = (*I).first;
-        Point point = (*I).second;
-        result.push_back(PairInfo<EdgeId>(edge, e2, point));
-      }
-      return result;
-    }
-  }
-
-  // faster implementation, but less resolver-friendly
-  // returns InnerMap instead of vector<>,
-  // one can iterate it using FastIterator class
-  const InnerMap<Graph> GetEdgeInfo(EdgeId edge, int) const {
-    VERIFY(this->IsAttached());
-    typename IndexDataType::const_iterator iter = index_.find(edge);
-    if (iter == index_.end())
-      return InnerMap<Graph>();
-    else
-      return iter->second;
-  }
-
-  const Histogram GetEdgePairInfo(EdgeId e1, EdgeId e2) const
-  {
-    VERIFY(this->IsAttached());
-    typename IndexDataType::const_iterator iter = index_.find(e1);
-    if (iter == index_.end())
-      return Histogram();
-    else
-    {
-      const InnerMap<Graph>& inner_map = iter->second;
-      typename InnerMap<Graph>::c_iterator iter2 = inner_map.find(e2);
-      if (iter2 == inner_map.end())
-        return Histogram();
-      else
-        return iter2->second;
-    }
-  }
-
-  size_t size() const {
-    return size_;
-  }
-
-  size_t int_id(EdgeId edge) const {
-    return this->g().int_id(edge);
-  }
-  // Handlers
-  virtual void HandleAdd(EdgeId edge) {
-    TRACE("Handling Addition " << int_id(edge));
-    this->AddPairInfo(edge, edge, 0., 0., 0.);
-  }
-
-  virtual void HandleDelete(EdgeId edge) {
-    TRACE("Handling Deleting " << int_id(edge));
-    this->RemoveEdgeInfo(edge);
-  }
-
-  virtual void HandleMerge(const vector<EdgeId>& old_edges, EdgeId new_edge) {
-    TRACE("Handling Merging");
-    this->AddPairInfo(new_edge, new_edge, 0., 0., 0.);
-    int shift = 0;
-    const Graph& graph = this->g();
-    for (size_t i = 0; i < old_edges.size(); ++i) {
-      EdgeId old_edge = old_edges[i];
-      TransferInfo(old_edge, new_edge, shift);
-      shift -= (int) graph.length(old_edge);
-    }
-  }
-
-  virtual void HandleGlue(EdgeId new_edge, EdgeId e1, EdgeId e2) {
-    TRACE("Handling Glueing " << int_id(new_edge) << " " << int_id(e1) << " "
-        << int_id(e2));
-    TransferInfo(e2, new_edge);
-    TransferInfo(e1, new_edge);
-  }
-
-  virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge_1, EdgeId new_edge_2) {
-    TRACE("Handling Splitting " << int_id(old_edge) << " " << int_id(new_edge_1)
-        << " " << int_id(new_edge_2));
-    const Graph& graph = this->g();
-    double ratio = (double) graph.length(new_edge_1) * 1. / (double) graph.length(old_edge);
-    TransferInfo(old_edge, new_edge_1, 0, ratio);
-    TransferInfo(old_edge, new_edge_2, (int) graph.length(new_edge_1), 1. - ratio);
-  }
-
- private:
-  inline bool IsSymmetric(EdgeId e1,
-                          EdgeId e2,
-                          Point point) const
-  {
-    return (e1 == e2) && math::eq(point.d, 0.);
-  }
-
-  // modifying the histogram
-  void InsertPoint(EdgeId e1,
-                   EdgeId e2,
-                   Histogram& histogram,
-                   Point new_point,
-                   bool add_reversed)
-  {
-    // first backwards
-    if (add_reversed && !IsSymmetric(e1, e2, new_point))
-    {
-      index_[e2][e1].insert(-new_point);
-      ++size_;
-    }
-
-    histogram.insert(new_point);
-    ++size_;
-  }
-
-  //  we can not update elements in the std::set,
-  //  although we can delete element,
-  //  and then insert a modified version of it.
-  //  But here we do not care about the safety,
-  //  and make an illegal @const_cast on the std::set element
-  void UpdateSinglePoint(const Point& point_to_update, Point new_point)
-  {
-    Point& point_we_can_update = const_cast<Point&>(point_to_update);
-    point_we_can_update = new_point;
-  }
-
-  void UpdateInfo(EdgeId e1,
-      EdgeId e2,
-      const Point& existing_point,
-      Point new_point,
-      bool add_reversed)
-  {
-    // first we update backward info in order to leave @existing_point not modified
-    if (add_reversed && !IsSymmetric(e1, e2, new_point))
-    {
-      Point new_point_negated = -new_point;
-      const Histogram& histogram = index_[e2][e1];
-      const Point& existing_point_negated = *histogram.find(new_point_negated);
-      UpdateSinglePoint(existing_point_negated, new_point_negated);
-    }
-    UpdateSinglePoint(existing_point, new_point);
-  }
-
-  void MergeData(EdgeId e1,
-                 EdgeId e2,
-                 const Point& point_to_update,
-                 Point point_to_add,
-                 bool add_reversed)
-  {
-    double weight_to_add = point_to_add.weight;
-    // counting new bounds in the case, when we are merging pair infos with var != 0
-    double left_bound = min(point_to_update.d - point_to_update.var,
-        point_to_add.d - point_to_add.var);
-    double right_bound = max(point_to_update.d + point_to_update.var,
-        point_to_add.d + point_to_add.var);
-    double new_dist = (left_bound + right_bound) * 0.5;
-    double new_weight = point_to_update.weight + weight_to_add;
-    double new_variance = (right_bound - left_bound) * 0.5;
-
-    Point new_point(new_dist, new_weight, new_variance);
-    this->UpdateInfo(e1, e2, point_to_update, new_point, add_reversed);
-  }
-
-  void TransferInfo(EdgeId old_edge,
-                    EdgeId new_edge,
-                    int shift = 0,
-                    double weight_scale = 1.)
-  {
-    const InnerMap<Graph>& inner_map = this->GetEdgeInfo(old_edge, 0);
-    for (auto iter = inner_map.begin(); iter != inner_map.end(); ++iter)
-    {
-      EdgeId e2 = iter->first;
-      const Histogram& histogram = iter->second;
-      for (auto point_iter = histogram.begin(); point_iter != histogram.end(); ++point_iter)
-      {
-        Point cur_point = *point_iter;
-        if (old_edge != e2) {
-          AddPairInfo(new_edge, e2,
-              cur_point.d - shift,
-              weight_scale * cur_point.weight,
-              cur_point.var);
-        }
-        else if (!math::eq(cur_point.d, 0.))
-        {
-          AddPairInfo(new_edge, new_edge,
-              cur_point.d,
-              weight_scale * 0.5 * cur_point.weight,
-              cur_point.var);
-        }
-        else {
-          AddPairInfo(new_edge, new_edge,
-              cur_point.d,
-              weight_scale * cur_point.weight,
-              cur_point.var);
-        }
-      }
-    }
-  }
-
-  void MergeInnerMaps(EdgeId e1_to_add,
-                      const InnerMap<Graph>& map_to_add,
-                            InnerMap<Graph>& map)
-  {
-    typedef typename Histogram::iterator hist_iterator;
-    typedef typename InnerMap<Graph>::iterator map_iterator;
-    for (auto I = map_to_add.begin(), E = map_to_add.end(); I != E; ++I) {
-      EdgeId e2_to_add = I->first;
-      const Histogram& hist_to_add = I->second;
-      const pair<map_iterator, bool>& result = map.insert(*I);
-      if (!result.second) { // in this case we need to merge two hists
-        Histogram& hist_exists = (result.first)->second;
-        // pretty much the same
-        for (auto p_it = hist_to_add.begin(), E = hist_to_add.end(); p_it != E; ++p_it) {
-          Point new_point = *p_it;
-          const pair<hist_iterator, bool>& result = hist_exists.insert(new_point);
-          if (!result.second) // in this case we need to merge two points
-          {
-            const Point& point_exists = *result.first;
-            this->MergeData(e1_to_add, e2_to_add, point_exists, new_point, false);
-          } else
-            ++size_;
-        }
-      } else
-        size_ += hist_to_add.size();
-    }
-  }
-
-  IndexDataType index_;
-  size_t size_;
-
-  DECL_LOGGER("PairedInfoIndexT");
-};
-
-template <class Graph>
-struct PairedInfoIndicesT {
-    typedef PairedInfoIndexT<Graph> IndexT;
-
-    vector < IndexT* > data_;
-
-    PairedInfoIndicesT(const Graph& graph, size_t lib_num) {
-        for (size_t i = 0; i < lib_num; ++i) {
-            data_.push_back(new IndexT(graph));
-        }
-    }
-
-    void Init() {
-        for (auto it = data_.begin(); it != data_.end(); ++it) {
-            (*it)->Init();
-        }
-    }
-
-    void Attach() {
-        for (auto it = data_.begin(); it != data_.end(); ++it) {
-            (*it)->Attach();
-        }
-    }
-
-    void Detach() {
-        for (auto it = data_.begin(); it != data_.end(); ++it) {
-            (*it)->Detach();
-        }
-    }
-
-    IndexT& operator[](size_t i) {
-        return *data_[i];
-    }
-
-    const IndexT& operator[](size_t i) const {
-        return *data_[i];
-    }
-
-    size_t size() const {
-        return data_.size();
-    }
-};
-
-/*----------------------------------------Old Index----------------------------------------------*/
-
 /**
  * PairedInfoIndex stores information about edges connected by paired reads
  * and synchronizes this info with the graph.
@@ -1159,7 +1011,7 @@ public:
 public:
 
   void Init() {
-    for (auto it = this->g().SmartEdgeBegin(); !it.IsEnd(); ++it) {
+    for (auto it = this->g().ConstEdgeBegin(); !it.IsEnd(); ++it) {
       HandleAdd(*it);
     }
   }
@@ -1311,6 +1163,10 @@ private:
   //        }
   //        min = vec[next].d();
   //      }
+  //          VERIFY(false);
+  //        }
+  //        min = vec[next].d();
+  //      }
   //    }
   //  }
 
@@ -1374,8 +1230,8 @@ private:
   }
 
   template<class PairedRead>
-  void ProcessPairedRead(omnigraph::PairedInfoIndex<Graph> &paired_index,
-      const PairedRead& p_r) {
+  void ProcessPairedRead(PairedInfoIndex<Graph> &paired_index,
+                         const PairedRead& p_r) {
     Sequence read1 = p_r.first().sequence();
     Sequence read2 = p_r.second().sequence();
     Path<EdgeId> path1 = mapper_.MapSequence(read1);
@@ -1400,7 +1256,7 @@ private:
     /**
      * Method reads paired data from stream, maps it to genome and stores it in this PairInfoIndex.
      */
-    void FillUsualIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
+    void FillUsualIndex(PairedInfoIndex<Graph> &paired_index) {
         for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
             paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0., 0., 0.));
         }
@@ -1418,8 +1274,7 @@ private:
         }
     }
 
-
-    void FillParallelIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
+    void FillParallelIndex(PairedInfoIndex<Graph> &paired_index) {
         for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
             paired_index.AddPairInfo(PairInfo<EdgeId>(*it, *it, 0, 0.0, 0.));
         }
@@ -1427,11 +1282,11 @@ private:
         INFO("Processing paired reads (takes a while)");
 
         size_t nthreads = streams_.size();
-        std::vector< omnigraph::PairedInfoIndex<Graph>* > buffer_pi(nthreads);
+        std::vector< PairedInfoIndex<Graph>* > buffer_pi(nthreads);
         buffer_pi[0] = &paired_index;
 
         for (size_t i = 1; i < nthreads; ++i) {
-            buffer_pi[i] = new omnigraph::PairedInfoIndex<Graph>(graph_, paired_index.GetMaxDifference());
+            buffer_pi[i] = new PairedInfoIndex<Graph>(graph_, paired_index.GetMaxDifference());
         }
 
         size_t counter = 0;
@@ -1477,7 +1332,7 @@ public:
             graph_(graph), mapper_(mapper), streams_(streams.begin(), streams.end()) {
     }
 
-    void FillIndex(omnigraph::PairedInfoIndex<Graph> &paired_index) {
+    void FillIndex(PairedInfoIndex<Graph> &paired_index) {
         if (streams_.size() == 1) {
             FillUsualIndex(paired_index);
         } else {
@@ -1586,7 +1441,6 @@ const Point TrivialWeightNormalization(typename Graph::EdgeId,
 template<class Graph>
 class PairedInfoNormalizer {
   typedef typename Graph::EdgeId EdgeId;
-  typedef set<Point> Histogram;
 
  public:
   typedef boost::function<const Point(EdgeId, EdgeId, Point)> WeightNormalizer;
@@ -1619,6 +1473,8 @@ class PairedInfoNormalizer {
  private:
   WeightNormalizer normalizing_function_;
   DECL_LOGGER("PairedInfoNormalizer");
+};
+
 };
 
 }

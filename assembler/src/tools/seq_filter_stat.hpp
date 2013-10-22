@@ -32,8 +32,8 @@ class seq_filter_stat {
 public:
 	static void filter(const std::string& in, 
                      const std::string& label = "") {
-    double vm1 = 0;
-    double rss1 = 0;
+    unsigned long vm1 = 0;
+    long rss1 = 0;
     process_mem_usage(vm1, rss1);
     timeval tim;
     gettimeofday(&tim, NULL);
@@ -42,8 +42,8 @@ public:
     hm map;
 		add_seqs_from_file_to_map(in, map);
 
-    double vm2 = 0;
-    double rss2 = 0;
+    unsigned long vm2 = 0;
+    long rss2 = 0;
     process_mem_usage(vm2, rss2);
     gettimeofday(&tim, NULL);
     double t2 = tim.tv_sec + ((float)tim.tv_usec/1e6);

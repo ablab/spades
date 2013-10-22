@@ -106,14 +106,14 @@ public:
 	}
 };
 
-bool PosCompare(const EdgePosition &a, const EdgePosition &b) {
+inline bool PosCompare(const EdgePosition &a, const EdgePosition &b) {
 	int aend = a.end();
 	int bend = b.end();
 	return ((a.contigId_ < b.contigId_)
 			|| ((a.contigId_ == b.contigId_) && (aend < bend)));
 }
 
-vector<EdgePosition> RangeGluePositionsLists(vector<EdgePosition> v1,
+inline vector<EdgePosition> RangeGluePositionsLists(vector<EdgePosition> v1,
 		vector<EdgePosition> v2, int max_single_gap = 0, int shift = 0) {
 	TRACE(
 			"RangeGluePositionsLists: v1.size = "<<v1.size()<<" v2.size = "<< v2.size());
@@ -193,7 +193,7 @@ vector<EdgePosition> RangeGluePositionsLists(vector<EdgePosition> v1,
 	return res;
 }
 
-vector<EdgePosition> GluePositionsLists(vector<EdgePosition> v1,
+inline vector<EdgePosition> GluePositionsLists(vector<EdgePosition> v1,
 		vector<EdgePosition> v2, int max_single_gap = 0) {
 	vector<EdgePosition> res;
 	if (v1.size() == 0 && v2.size() == 0)
@@ -585,15 +585,6 @@ public:
 	virtual void HandleDelete(EdgeId e) {
 		EdgesPositions.erase(e);
 	}
-
-	void HandleVertexSplit(VertexId, VertexId,
-			const vector<pair<EdgeId, EdgeId>>& old_2_new_edges,
-			const vector<double>&) {
-FOREACH	(auto cur_edges_pair, old_2_new_edges) {
-		AddEdgePosition(cur_edges_pair.second,
-				EdgesPositions[cur_edges_pair.first]);
-	}
-}
 
 void clear() {
 	EdgesPositions.clear();

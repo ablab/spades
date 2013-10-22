@@ -11,29 +11,6 @@
 
 namespace omnigraph {
 
-class CoveredEdge {
- private:
-    int coverage_;
-
- public:
-    CoveredEdge()
-            : coverage_(0) {
-    }
-
-    void SetCoverage(int coveradge) {
-        coverage_ = coveradge;
-    }
-
-    void IncCoverage(int value) {
-        coverage_ += value;
-    }
-
-    //not length normalized
-    int GetRawCoverage() const {
-        return coverage_;
-    }
-};
-
 template<typename VertexIdT, typename EdgeIdT, class DataMasterT>
 class AbstractGraph : public AbstractEditableGraph<VertexIdT, EdgeIdT,
         DataMasterT, typename set<VertexIdT>::const_iterator> {
@@ -63,20 +40,12 @@ class AbstractGraph : public AbstractEditableGraph<VertexIdT, EdgeIdT,
         TRACE("~AbstractGraph");
     }
 
-    virtual const vector<EdgeId> OutgoingEdges(VertexId v) const {
-        return v->OutgoingEdges();
-    }
-
     virtual edge_const_iterator out_begin(VertexId v) const {
         return v->out_begin();
     }
 
     virtual edge_const_iterator out_end(VertexId v) const {
         return v->out_end();
-    }
-
-    virtual const vector<EdgeId> IncomingEdges(VertexId v) const {
-        return v->IncomingEdges();
     }
 
     virtual edge_const_iterator in_begin(VertexId v) const {
@@ -104,6 +73,14 @@ class AbstractGraph : public AbstractEditableGraph<VertexIdT, EdgeIdT,
     }
 
     virtual const VertexData& data(VertexId v) const {
+        return v->data();
+    }
+
+    virtual EdgeData& data(EdgeId edge) {
+        return edge->data();
+    }
+
+    virtual VertexData& data(VertexId v) {
         return v->data();
     }
 

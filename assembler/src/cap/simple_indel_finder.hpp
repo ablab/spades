@@ -106,7 +106,7 @@ class SimpleIndelFinder {
     } else {
       if (it->second > dist) {
         it->second = dist;
-      } 
+      }
       return it->second;
     }
   }
@@ -121,7 +121,7 @@ class SimpleIndelFinder {
     OrVertexColor(vertex, color_mask);
     size_t cur_dist = RelaxVertexDist(vertex, path_length);
 
-    if (__builtin_popcount(GetVertexColor(vertex)) >= 2) {
+    if (__builtin_popcountll(GetVertexColor(vertex)) >= 2) {
       TRACE("checking vertex from edge " << g_.str(edge) << " of dist " << cur_dist);
       if (!found_merge_point_) {
         best_vertex_ = vertex;
@@ -140,12 +140,11 @@ class SimpleIndelFinder {
     if (depth >= kDfsDepthThreshold) {
       return;
     }
-    vector<EdgeId> further_edges = g_.OutgoingEdges(vertex);
-    for (auto it = further_edges.begin(); it != further_edges.end(); ++it) {
-      graph_traversal_constraints_.PushEdge(*it);
+    for (EdgeId e : g_.OutgoingEdges(vertex)) {
+      graph_traversal_constraints_.PushEdge(e);
       if (graph_traversal_constraints_.PathIsCorrect())
-        ColoringDfs(*it, color_mask,
-            path_length + g_.length(*it), depth + 1);
+        ColoringDfs(e, color_mask,
+            path_length + g_.length(e), depth + 1);
       graph_traversal_constraints_.PopEdge();
     }
   }
@@ -184,11 +183,10 @@ class SimpleIndelFinder {
       return false;
     }
 
-    vector<EdgeId> further_edges = g_.OutgoingEdges(vertex);
-    for (auto it = further_edges.begin(); it != further_edges.end(); ++it) {
-      graph_traversal_constraints_.PushEdge(*it);
+    for (EdgeId e : g_.OutgoingEdges(vertex)) {
+      graph_traversal_constraints_.PushEdge(e);
       if (graph_traversal_constraints_.PathIsCorrect())
-        GatheringDfs(*it,
+        GatheringDfs(e,
             /*color_mask_needed,*/ depth + 1, path_seq);
       graph_traversal_constraints_.PopEdge();
     }
@@ -285,7 +283,7 @@ class SimpleIndelFinder {
       thread_lengths.push_back(GetPathLength(path));
     }
     bool is_simple_snp = true;
-    bool is_simple_indel = false; 
+    bool is_simple_indel = false;
     bool equal_lengths = true;
 
     size_t prev = 0;
@@ -309,7 +307,7 @@ class SimpleIndelFinder {
       snps_++;
     else if (is_simple_indel)
       indels_++;
-    else 
+    else
     if (equal_lengths) {
       snps_++;
       unknown_snp_ += EstimateSNPNumber(prev) - 1;
@@ -320,12 +318,10 @@ class SimpleIndelFinder {
   }
 
   void CheckForIndelEvent(const VertexId starting_vertex) {
-    const vector<EdgeId> &outgoing_edges = g_.OutgoingEdges(starting_vertex);
-
     TRACE("New indel event");
 
     // Check that is is interesting
-    size_t outgoing_edges_number = outgoing_edges.size();
+    size_t outgoing_edges_number = g_.OutgoingEdgeCount(starting_vertex);
     if (outgoing_edges_number <= 1 || outgoing_edges_number > kOutgingEdgesNumberThreshold) {
       // Nothing to do here
       return;
@@ -341,15 +337,15 @@ class SimpleIndelFinder {
       return;
     }
     */
- 
+
     // Dfs and try to resolve all splits
     ++coloring_version_;
     found_merge_point_ = false;
     restricted_vertex_ = starting_vertex;
     size_t branch_num = 0;
-    for (auto it = outgoing_edges.begin(); it != outgoing_edges.end(); ++it) {
-      graph_traversal_constraints_.PushEdge(*it);
-      ColoringDfs(*it, 1 << branch_num, g_.length(*it), 0);
+    for (EdgeId e : g_.OutgoingEdges(starting_vertex)) {
+      graph_traversal_constraints_.PushEdge(e);
+      ColoringDfs(e, 1 << branch_num, g_.length(e), 0);
       branch_num++;
       graph_traversal_constraints_.PopEdge();
     }
@@ -358,9 +354,9 @@ class SimpleIndelFinder {
 
     if (found_merge_point_) {
       vector<EdgeId> edge_seq_vector;
-      for (auto it = outgoing_edges.begin(); it != outgoing_edges.end(); ++it) {
-        graph_traversal_constraints_.PushEdge(*it);
-        GatheringDfs(*it,
+      for (EdgeId e : g_.OutgoingEdges(starting_vertex)) {
+        graph_traversal_constraints_.PushEdge(e);
+        GatheringDfs(e,
             /*(1 << outgoing_edges_number) - 1,*/ 0, edge_seq_vector);
         graph_traversal_constraints_.PopEdge();
       }

@@ -76,7 +76,7 @@ static bool Smooth3(const T *x, T *y, size_t n, unsigned end_rule) {
 
   for (size_t i = 1; i < n-1; i++) {
     int j = IndexOfMedianOf3(x[i-1], x[i], x[i+1]);
-    y[i] = x[i + j];
+    y[i] = x[(int)i + j];
     chg = chg || j;
   }
 

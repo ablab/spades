@@ -97,10 +97,9 @@ debruijn_config::simplification::relative_coverage_comp_remover standard_rcc_con
 }
 
 void PrintGraph(const Graph & g) {
-	for(auto it = g.begin(); it != g.end(); ++it) {
-		auto v = g.OutgoingEdges(*it);
-		for(size_t i = 0; i < v.size(); i++) {
-			cout << g.int_id(v[i]) << ":" << g.int_id(g.EdgeStart(v[i])) << " " << g.int_id(g.EdgeEnd(v[i])) << endl;
+	FOREACH(VertexId v, g.vertices()) {
+		FOREACH(EdgeId e, g.OutgoingEdges(v)) {
+			cout << g.int_id(e) << ":" << g.int_id(g.EdgeStart(e)) << " " << g.int_id(g.EdgeEnd(e)) << endl;
 		}
 	}
 	cout << endl;
@@ -119,7 +118,7 @@ void DefaultRemoveBulges(Graph& graph) {
 BOOST_AUTO_TEST_CASE( SimpleTipClipperTest ) {
 	Graph g(55);
 	IdTrackHandler<Graph> int_ids(g);
-	ScanBasicGraph("./src/test/debruijn/graph_fragments/simpliest_tip/simpliest_tip", g, int_ids);
+	graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/simpliest_tip/simpliest_tip", g, int_ids);
 
 	DefaultClipTips(g);
 
@@ -129,7 +128,7 @@ BOOST_AUTO_TEST_CASE( SimpleTipClipperTest ) {
 BOOST_AUTO_TEST_CASE( SimpleBulgeRemovalTest ) {
 	Graph g(55);
 	IdTrackHandler<Graph> int_ids(g);
-	ScanBasicGraph("./src/test/debruijn/graph_fragments/simpliest_bulge/simpliest_bulge", g, int_ids);
+	graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/simpliest_bulge/simpliest_bulge", g, int_ids);
 
 	RemoveBulges(g, standard_br_config());
 
@@ -139,7 +138,7 @@ BOOST_AUTO_TEST_CASE( SimpleBulgeRemovalTest ) {
 BOOST_AUTO_TEST_CASE( TipobulgeTest ) {
 	Graph g(55);
 	IdTrackHandler<Graph> int_ids(g);
-	ScanBasicGraph("./src/test/debruijn/graph_fragments/tipobulge/tipobulge", g, int_ids);
+	graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/tipobulge/tipobulge", g, int_ids);
 
 	DefaultClipTips(g);
 
@@ -151,7 +150,7 @@ BOOST_AUTO_TEST_CASE( TipobulgeTest ) {
 BOOST_AUTO_TEST_CASE( SimpleECTest ) {
 	Graph g(55);
 	IdTrackHandler<Graph> int_ids(g);
-	ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g, int_ids);
+	graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g, int_ids);
 
 	debruijn_config::simplification::erroneous_connections_remover ec_config;
 	ec_config.condition = "{ icb 7000 , ec_lb 20 }";
@@ -164,7 +163,7 @@ BOOST_AUTO_TEST_CASE( SimpleECTest ) {
 BOOST_AUTO_TEST_CASE( IterECTest ) {
 	Graph g(55);
 	IdTrackHandler<Graph> int_ids(g);
-	ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g, int_ids);
+	graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g, int_ids);
 
 	debruijn_config::simplification::erroneous_connections_remover ec_config;
 	ec_config.condition = "{ icb 7000 , ec_lb 20 }";
@@ -181,7 +180,7 @@ BOOST_AUTO_TEST_CASE( IterECTest ) {
 BOOST_AUTO_TEST_CASE( IterUniquePath ) {
 	Graph g(55);
 	IdTrackHandler<Graph> int_ids(g);
-	ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g, int_ids);
+	graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g, int_ids);
 
 	debruijn_config::simplification::topology_based_ec_remover tec_config = standard_tec_config();
 	while(TopologyRemoveErroneousEdges<Graph>(g, tec_config, 0)) {
@@ -193,7 +192,7 @@ BOOST_AUTO_TEST_CASE( IterUniquePath ) {
 BOOST_AUTO_TEST_CASE( MFIterUniquePath ) {
 	Graph g(55);
 	IdTrackHandler<Graph> int_ids(g);
-	ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g, int_ids);
+	graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g, int_ids);
 
 	debruijn_config::simplification::max_flow_ec_remover mfec_config = standard_mfec_config();
 	mfec_config.uniqueness_length = 500;
@@ -206,7 +205,7 @@ BOOST_AUTO_TEST_CASE( MFIterUniquePath ) {
 BOOST_AUTO_TEST_CASE( MFUniquePath ) {
 	Graph g(55);
 	IdTrackHandler<Graph> int_ids(g);
-	ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/unique_path", g, int_ids);
+	graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/unique_path", g, int_ids);
 	debruijn_config::simplification::max_flow_ec_remover mfec_config = standard_mfec_config();
 	mfec_config.uniqueness_length = 400;
 	MaxFlowRemoveErroneousEdges<Graph>(g, mfec_config);
@@ -217,7 +216,7 @@ BOOST_AUTO_TEST_CASE( MFUniquePath ) {
 //BOOST_AUTO_TEST_CASE( TopologyTC ) {
 //	Graph g(55);
 //	IdTrackHandler<Graph> int_ids(g);
-//	ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/unique_path", g, int_ids);
+//	graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/unique_path", g, int_ids);
 //	debruijn_config::simplification::max_flow_ec_remover tec_config = standard_mfec_config();
 //	tec_config.uniqueness_length = 400;
 //
@@ -229,7 +228,7 @@ BOOST_AUTO_TEST_CASE( MFUniquePath ) {
 BOOST_AUTO_TEST_CASE( SelfComp ) {
        Graph g(55);
        IdTrackHandler<Graph> int_ids(g);
-       ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/self_comp", g, int_ids);
+       graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/self_comp", g, int_ids);
        debruijn_config::simplification::max_flow_ec_remover mfec_config = standard_mfec_config();
        mfec_config.uniqueness_length = 1500;
        MaxFlowRemoveErroneousEdges<Graph>(g, mfec_config);
@@ -240,19 +239,20 @@ BOOST_AUTO_TEST_CASE( SelfComp ) {
 BOOST_AUTO_TEST_CASE( ComplexBulgeRemoverOnSimpleBulge ) {
        Graph g(55);
        IdTrackHandler<Graph> int_ids(g);
-       ScanBasicGraph("./src/test/debruijn/graph_fragments/simpliest_bulge/simpliest_bulge", g, int_ids);
+       graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/simpliest_bulge/simpliest_bulge", g, int_ids);
 //       OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
 //       licvidator.Licvidate();
        omnigraph::complex_br::ComplexBulgeRemover<Graph> remover(g, g.k() * 5, 5);
        remover.Run();
+       INFO("Done");
+
 //       WriteGraphPack(gp, string("./src/test/debruijn/graph_fragments/complex_bulge/complex_bulge_res.dot"));
        BOOST_CHECK_EQUAL(g.size(), 4u);
 }
 
 BOOST_AUTO_TEST_CASE( ComplexBulge ) {
-       conj_graph_pack gp(55, tmp_folder, Sequence(), 50, true, false);
-       ScanGraphPack("./src/test/debruijn/graph_fragments/complex_bulge/complex_bulge", gp);
-       INFO("Complex bulge removal:");
+    conj_graph_pack gp(55, tmp_folder, 0, Sequence(), 50, true, false);
+       graphio::ScanGraphPack("./src/test/debruijn/graph_fragments/complex_bulge/complex_bulge", gp);
 //       OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
 //       licvidator.Licvidate();
 
@@ -264,9 +264,8 @@ BOOST_AUTO_TEST_CASE( ComplexBulge ) {
 }
 
 BOOST_AUTO_TEST_CASE( BigComplexBulge ) {
-       conj_graph_pack gp(55, tmp_folder, Sequence(), 50, true, false);
-       ScanGraphPack("./src/test/debruijn/graph_fragments/big_complex_bulge/big_complex_bulge", gp);
-       INFO("Complex bulge removal:");
+    conj_graph_pack gp(55, tmp_folder, 0,  Sequence(), 50, true, false);
+       graphio::ScanGraphPack("./src/test/debruijn/graph_fragments/big_complex_bulge/big_complex_bulge", gp);
 //       OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
 //       licvidator.Licvidate();
        omnigraph::complex_br::ComplexBulgeRemover<Graph> remover(gp.g, gp.g.k() * 5, 5);

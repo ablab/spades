@@ -81,9 +81,8 @@ class PathLengthLowerBound : public EdgeCondition<Graph> {
     ForwardDirection<Graph> forward_;
     BackwardDirection<Graph> backward_;
 
-    size_t CummulativePathLength(
-            EdgeId e, const AbstractDirection<Graph>& direction) const {
-        return CummulativeLength(this->g(), path_finder_(e, direction));
+    size_t CumulativePathLength(EdgeId e, const AbstractDirection<Graph>& direction) const {
+        return CumulativeLength(this->g(), path_finder_(e, direction));
     }
 
  public:
@@ -98,8 +97,8 @@ class PathLengthLowerBound : public EdgeCondition<Graph> {
     }
 
     bool Check(EdgeId e) const {
-        size_t forward = CummulativePathLength(e, forward_);
-        size_t backward = CummulativePathLength(e, backward_);
+        size_t forward = CumulativePathLength(e, forward_);
+        size_t backward = CumulativePathLength(e, backward_);
         //checking that path was trivial in one of directions
         VERIFY(forward == this->g().length(e) || backward == this->g().length(e));
         return std::max(forward, backward) >= min_length_;
@@ -107,9 +106,9 @@ class PathLengthLowerBound : public EdgeCondition<Graph> {
 };
 
 template<class Graph, class PathFinder>
-shared_ptr<PathLengthLowerBound<Graph, PathFinder>> MakePathLengthLowerBound(
-        const Graph& g, const PathFinder& path_finder, size_t min_length) {
-    return make_shared<PathLengthLowerBound<Graph, PathFinder>>(g, path_finder,
+std::shared_ptr<PathLengthLowerBound<Graph, PathFinder> >
+MakePathLengthLowerBound(const Graph& g, const PathFinder& path_finder, size_t min_length) {
+    return std::make_shared<PathLengthLowerBound<Graph, PathFinder>>(g, path_finder,
                                                                 min_length);
 }
 

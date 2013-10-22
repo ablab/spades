@@ -14,13 +14,13 @@
 #ifndef READ_CONVERTER_HPP_
 #define READ_CONVERTER_HPP_
 
-#include <fstream>
-
 #include "io/binary_converter.hpp"
 #include "io/rc_reader_wrapper.hpp"
 #include "io/read_stream_vector.hpp"
 #include "dataset_readers.hpp"
 #include "simple_tools.hpp"
+
+#include <fstream>
 
 namespace debruijn_graph {
 
@@ -30,7 +30,7 @@ typedef io::IReader<io::PairedReadSeq> SequencePairedReadStream;
 class ReadConverter {
 
 private:
-    const static size_t current_binary_format_version = 6;
+    const static size_t current_binary_format_version = 8;
 
     void convert_reads_to_binary() {
 
@@ -50,19 +50,27 @@ private:
                 info >> lib_count;
             }
 
-            info.close();
-
             if (thread_num == cfg::get().max_threads && format == current_binary_format_version  && lib_count == cfg::get().ds.reads.lib_count()) {
                 INFO("Binary reads detected");
 
+                io::ReadStat stat;
+                info >> stat.read_count_;
+                info >> stat.max_len_;
+                info >> stat.total_len_;
+
                 auto &dataset = cfg::get_writable().ds.reads;
                 for (size_t i = 0; i < dataset.lib_count(); ++i) {
+                    info >> dataset[i].data().read_length;
+                    info >> dataset[i].data().total_nucls;
+
                     dataset[i].data().thread_num = cfg::get().max_threads;
                     dataset[i].data().paired_read_prefix = cfg::get().paired_read_prefix + "_" + ToString(i);
                     dataset[i].data().single_read_prefix = cfg::get().single_read_prefix + "_" + ToString(i);
                 }
+                info.close();
                 return;
             }
+            info.close();
         }
 
         std::ofstream info;
@@ -79,7 +87,7 @@ private:
             dataset[i].data().thread_num = cfg::get().max_threads;
             dataset[i].data().paired_read_prefix = cfg::get().paired_read_prefix + "_" + ToString(i);
 
-            auto_ptr<PairedReadStream> paired_reader = paired_easy_reader(dataset[i], false, 0, false, false);
+            std::auto_ptr<PairedReadStream> paired_reader = paired_easy_reader(dataset[i], false, 0, false, false);
             io::BinaryWriter paired_converter(dataset[i].data().paired_read_prefix, cfg::get().max_threads, cfg::get().buffer_size);
             io::ReadStat paired_stat = paired_converter.ToBinary(*paired_reader, dataset[i].orientation());
             paired_stat.read_count_ *= 2;
@@ -87,14 +95,22 @@ private:
 
             INFO("Single reads for library #" << i);
             dataset[i].data().single_read_prefix = cfg::get().single_read_prefix + "_" + ToString(i);
-            auto_ptr<SingleReadStream> single_reader = single_easy_reader(dataset[i], false, false);
+            std::auto_ptr<SingleReadStream> single_reader = single_easy_reader(dataset[i], false, false);
             io::BinaryWriter single_converter(dataset[i].data().single_read_prefix, cfg::get().max_threads, cfg::get().buffer_size);
             io::ReadStat single_stat = single_converter.ToBinary(*single_reader);
             total_stat.merge(single_stat);
+
+            paired_stat.merge(single_stat);
+            dataset[i].data().read_length = paired_stat.max_len_;
+            dataset[i].data().total_nucls = paired_stat.total_len_;
         }
         info.open(cfg::get().temp_bin_reads_info.c_str(), std::ios_base::out);
         info << current_binary_format_version << " " << cfg::get().max_threads << " " << cfg::get().ds.reads.lib_count() << " " <<
-                total_stat.read_count_ << " " << total_stat.max_len_ << " " << total_stat.total_len_;
+                total_stat.read_count_ << " " << total_stat.max_len_ << " " << total_stat.total_len_ << "\n";
+
+        for (size_t i = 0; i < dataset.lib_count(); ++i) {
+            info << dataset[i].data().read_length << " " << dataset[i].data().total_nucls << "\n";
+        }
         info.close();
     }
 
@@ -105,10 +121,12 @@ public:
 };
 
 
+inline
 void convert_if_needed() {
     static ReadConverter converter;
 }
 
+inline
 std::vector< SequencePairedReadStream* > raw_paired_binary_readers(const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
                                                                    bool followed_by_rc,
                                                                    size_t insert_size = 0) {
@@ -121,6 +139,7 @@ std::vector< SequencePairedReadStream* > raw_paired_binary_readers(const io::Seq
     return io::apply_paired_wrappers(followed_by_rc, paired_streams);
 }
 
+inline
 std::vector< SequenceSingleReadStream* > raw_single_binary_readers(const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
                                                                    bool followed_by_rc,
                                                                    bool including_paired_reads) {
@@ -144,6 +163,7 @@ std::vector< SequenceSingleReadStream* > raw_single_binary_readers(const io::Seq
 }
 
 
+inline
 std::shared_ptr< io::ReadStreamVector< SequencePairedReadStream > > paired_binary_readers(const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
                                                                        bool followed_by_rc,
                                                                        size_t insert_size = 0) {
@@ -152,6 +172,7 @@ std::shared_ptr< io::ReadStreamVector< SequencePairedReadStream > > paired_binar
 }
 
 
+inline
 std::shared_ptr< io::ReadStreamVector< SequenceSingleReadStream > > single_binary_readers(const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
                                                                        bool followed_by_rc,
                                                                        bool including_paired_reads) {
@@ -160,6 +181,7 @@ std::shared_ptr< io::ReadStreamVector< SequenceSingleReadStream > > single_binar
 }
 
 
+inline
 std::shared_ptr< io::ReadStreamVector< SequencePairedReadStream > > paired_binary_readers_for_libs(const std::vector<size_t>& libs,
                                                    bool followed_by_rc,
                                                    size_t insert_size = 0) {
@@ -181,7 +203,7 @@ std::shared_ptr< io::ReadStreamVector< SequencePairedReadStream > > paired_binar
     return std::make_shared<io::ReadStreamVector<SequencePairedReadStream> > (joint_streams);
 }
 
-
+inline
 std::shared_ptr<io::ReadStreamVector< SequenceSingleReadStream > > single_binary_readers_for_libs(const std::vector<size_t>& libs,
                                                    bool followed_by_rc,
                                                    bool including_paired_reads) {
@@ -203,7 +225,7 @@ std::shared_ptr<io::ReadStreamVector< SequenceSingleReadStream > > single_binary
     return std::make_shared<io::ReadStreamVector<SequenceSingleReadStream> > (joint_streams);
 }
 
-
+inline
 std::shared_ptr< io::ReadStreamVector< SequencePairedReadStream > >  paired_binary_readers(bool followed_by_rc,
                                                    size_t insert_size = 0) {
   std::vector<size_t> all_libs(cfg::get().ds.reads.lib_count());
@@ -213,7 +235,7 @@ std::shared_ptr< io::ReadStreamVector< SequencePairedReadStream > >  paired_bina
   return paired_binary_readers_for_libs(all_libs, followed_by_rc, insert_size);
 }
 
-
+inline
 std::shared_ptr< io::ReadStreamVector< SequenceSingleReadStream > > single_binary_readers(bool followed_by_rc,
                                                    bool including_paired_reads) {
   std::vector<size_t> all_libs(cfg::get().ds.reads.lib_count());
@@ -223,15 +245,18 @@ std::shared_ptr< io::ReadStreamVector< SequenceSingleReadStream > > single_binar
   return single_binary_readers_for_libs(all_libs, followed_by_rc, including_paired_reads);
 }
 
-
-auto_ptr<SequenceSingleReadStream> single_binary_multireader(bool followed_by_rc, bool including_paired_reads) {
+inline
+std::auto_ptr<SequenceSingleReadStream> single_binary_multireader(bool followed_by_rc, bool including_paired_reads) {
     auto readers = single_binary_readers(followed_by_rc, including_paired_reads);
-    return auto_ptr<SequenceSingleReadStream>(new io::MultifileReader<io::SingleReadSeq>(readers->get(), true));
+    readers->release();
+    return std::auto_ptr<SequenceSingleReadStream>(new io::MultifileReader<io::SingleReadSeq>(readers->get(), true));
 }
 
-auto_ptr<SequencePairedReadStream> paired_binary_multireader(bool followed_by_rc, size_t insert_size = 0) {
+inline
+std::auto_ptr<SequencePairedReadStream> paired_binary_multireader(bool followed_by_rc, size_t insert_size = 0) {
     auto readers = paired_binary_readers(followed_by_rc, insert_size);
-    return auto_ptr<SequencePairedReadStream>(new io::MultifileReader<io::PairedReadSeq>(readers->get(), true));
+    readers->release();
+    return std::auto_ptr<SequencePairedReadStream>(new io::MultifileReader<io::PairedReadSeq>(readers->get(), true));
 }
 
 

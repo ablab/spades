@@ -29,6 +29,8 @@ public:
 class DeBruijnEdgeData {
 	friend class NewDeBruijnGraph;
 	friend class DeBruinMaster;
+	CoverageData coverage_;
+	CoverageData flanking_cov_;
 	Sequence nucls_;
 public:
 
@@ -39,6 +41,31 @@ public:
 	const Sequence& nucls() const {
 		return nucls_;
 	}
+
+    void inc_raw_coverage(int value) {
+        coverage_.inc_coverage(value);
+    }
+
+    void set_raw_coverage(unsigned coverage) {
+        coverage_.set_coverage(coverage);
+    }
+
+    unsigned raw_coverage() const {
+        return coverage_.coverage();
+    }
+
+    void inc_flanking_coverage(int value) {
+        flanking_cov_.inc_coverage(value);
+    }
+
+    void set_flanking_coverage(unsigned flanking_coverage) {
+        flanking_cov_.set_coverage(flanking_coverage);
+    }
+
+    //not length normalized
+    unsigned flanking_coverage() const {
+        return flanking_cov_.coverage();
+    }
 };
 
 class DeBruijnMaster {
@@ -116,6 +143,10 @@ public:
 		return coverage_index_;
 	}
 
+	const CoverageIndex<DeBruijnGraph>& coverage_index() const {
+		return coverage_index_;
+	}
+
 	/**
 	 * Method returns average coverage of the edge
 	 */
@@ -148,10 +179,10 @@ public:
 
 	const Sequence VertexNucls(VertexId v) const {
 	    //todo add verify on vertex nucls consistency
-		if (this->OutgoingEdges(v).size() > 0) {
-			return EdgeNucls(this->OutgoingEdges(v)[0]).Subseq(0, k_);
-		} else if (this->IncomingEdges(v).size() > 0) {
-			EdgeId inc = this->IncomingEdges(v)[0];
+		if (this->OutgoingEdgeCount(v) > 0) {
+			return EdgeNucls(*(this->out_begin(v))).Subseq(0, k_);
+		} else if (this->IncomingEdgeCount(v) > 0) {
+			EdgeId inc = *(this->in_begin(v));
 			size_t length = EdgeNucls(inc).size();
 			return EdgeNucls(inc).Subseq(length - k_, length);
 		}

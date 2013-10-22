@@ -129,9 +129,9 @@ inline void PrintGraphComponentContainingEdge(const string& file_name, const Gra
 		components.push_back(vector<VertexId>(component.vertices().begin(), component.vertices().end()));
 	}
 	VERIFY(components.size() == 1);
-	ConjugateDataPrinter<Graph> printer(g, components.front().begin(),
+	debruijn_graph::graphio::ConjugateDataPrinter<Graph> printer(g, components.front().begin(),
 			components.front().end(), int_ids);
-	PrintBasicGraph<Graph>(file_name, printer);
+	debruijn_graph::graphio::PrintBasicGraph<Graph>(file_name, printer);
 }
 
 template<class Graph>
@@ -156,8 +156,10 @@ public:
 
     std::stringstream ss;
     for (const auto &entry : ranges) {
-      Range genome_range = entry.second.first;
-      Range seq_range = entry.second.second;
+      Range genome_range = CoordinatesHandler<Graph>::GetPrintableRange(
+              entry.second.first);
+      Range seq_range = CoordinatesHandler<Graph>::GetPrintableRange(
+              entry.second.second);
       // Make inclusive
       genome_range.end_pos--;
       seq_range.end_pos--;

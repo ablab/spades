@@ -16,7 +16,6 @@
 
 #include "cap_environment.hpp"
 #include "io/sequence_reader.hpp"
-#include "omni/loop_killer.hpp"
 #include "config_struct.hpp"
 
 namespace online_visualization {
@@ -46,7 +45,7 @@ class CapEnvironmentManager {
       if (i != 0) {
         fputs(" -> ", fd);
       }
-      fprintf(fd, "%d (#%d)", env_->k_history_[i], env_->num_genomes_history_[i]);
+      fprintf(fd, "%d (#%ld)", env_->k_history_[i], env_->num_genomes_history_[i]);
     }
     fputs("\n", fd);
 
@@ -63,7 +62,7 @@ class CapEnvironmentManager {
                                       unsigned k) const {
     typedef NewExtendedSequenceMapper<Graph, typename gp_t::index_t> Mapper;
 
-    shared_ptr<gp_t> result(new gp_t(k, env_->kDefaultGPWorkdir));
+    shared_ptr<gp_t> result(new gp_t(k, env_->kDefaultGPWorkdir, 0));
 
     //fixme use rc_wrapper
     vector<ContigStream*> rc_contigs;
@@ -89,8 +88,8 @@ class CapEnvironmentManager {
   }
 
   template <class gp_t>
-  shared_ptr<gp_t> BuildGPFromSaves(const size_t K, const std::string path) const {
-    shared_ptr<gp_t> result(new gp_t(K, env_->kDefaultGPWorkdir));
+  shared_ptr<gp_t> BuildGPFromSaves(const size_t K, const std::string &/* path */) const {
+    shared_ptr<gp_t> result(new gp_t(unsigned(K), env_->kDefaultGPWorkdir, 0));
 
     //ScanGraphPack(path, *result);
     // TODO
@@ -99,7 +98,7 @@ class CapEnvironmentManager {
   }
 
   template <class gp_t>
-  void SaveCurrentStreams(const gp_t &gp, const std::string &dir) const {
+  void SaveCurrentStreams(const gp_t &/* gp */, const std::string &dir) const {
 		for (size_t i = 0; i < env_->genomes_.size(); ++i) {
       std::string output_filename = dir + path::filename(env_->init_genomes_paths_[i]);
 			if (!output_filename.empty()) {
@@ -117,11 +116,11 @@ class CapEnvironmentManager {
   }
 
   template <class gp_t>
-  void UpdateStreams(const gp_t &gp) {
-    for (size_t i = 0; i < env_->genomes_.size(); ++i) {
+  void UpdateStreams(const gp_t &/* gp */) {
+    for (unsigned i = 0; i < env_->genomes_.size(); ++i) {
       env_->genomes_[i] = env_->coordinates_handler_.ReconstructGenome(2 * i);
       //VERIFY(env_->genomes_[i]->IsValid());
-	}
+    }
   }
 
   template <class gp_t>
@@ -129,7 +128,7 @@ class CapEnvironmentManager {
     INFO("Store threads");
     //env_->coordinates_handler_.StoreGenomeThreads();
     INFO("Store threads ended");
-    size_t delta = 5;
+    double delta = 5.;
 
     debruijn_config::simplification::bulge_remover br_config;
     br_config.max_bulge_length_coefficient = 3;
@@ -174,16 +173,6 @@ class CapEnvironmentManager {
 
     ClipTipsWithProjection(gp, tc_config, true);
     */
-
-    //INFO("Killing loops");
-
-    //SimpleLoopKiller<typename gp_t::graph_t> loop_killer(gp.g, /*splitting_edge_len*/ env_->GetGraphK() * 3, /*max_component_size*/ 10);
-    //loop_killer.KillAllLoops();
-
-    //INFO("Killing loops");
-
-    //SimpleLoopKiller<typename gp_t::graph_t> loop_killer(gp.g, /*splitting_edge_len*/ env_->GetGraphK() * 3, /*max_component_size*/ 10);
-    //loop_killer.KillAllLoops();
 
     INFO("Remapped " << gp.kmer_mapper.size() << " k-mers");
 
@@ -291,10 +280,10 @@ class CapEnvironmentManager {
     std::string filename = folder + "graph";
 
     // Saving graph
-    PrinterTraits<Graph>::Printer printer(*env_->graph_, *env_->int_ids_);
-	printer.saveGraph(filename);
-	printer.saveEdgeSequences(filename);
-	printer.savePositions(filename, *env_->edge_pos_);
+    debruijn_graph::graphio::PrinterTraits<Graph>::Printer printer(*env_->graph_, *env_->int_ids_);
+	printer.SaveGraph(filename);
+	printer.SaveEdgeSequences(filename);
+	printer.SavePositions(filename, *env_->edge_pos_);
 
     // Saving coloring of graph
     cap::SaveColoring(*env_->graph_, *env_->int_ids_, *env_->coloring_, filename);
@@ -315,7 +304,7 @@ class CapEnvironmentManager {
   }
 
   void SetGenomes(const std::vector<std::string> &genomes_paths,
-                  const std::vector<std::string> &genomes_names) const {
+                  const std::vector<std::string> &/* genomes_names */) const {
     VERIFY(env_->init_genomes_paths_.size() == 0);
 
     env_->init_genomes_paths_ = genomes_paths;
@@ -395,7 +384,7 @@ class CapEnvironmentManager {
     return 0;
   }
 
-  int FindInversions(const bool mask_inversions, const std::string &output_file, const std::string &output_mode) const {
+  int FindInversions(const bool mask_inversions, const std::string &/* output_file */, const std::string &/* output_mode */) const {
     const std::string &dir = GetDirForCurrentState();
     const std::string &base_pic_dir = dir + "/inversions";
     const std::string &base_pic_file_name = base_pic_dir + "/inv";
@@ -424,7 +413,7 @@ class CapEnvironmentManager {
     return 0;
   }
 
-  void LoadGraphFromSaves(const size_t K, const std::string &path) {
+  void LoadGraphFromSaves(const unsigned K, const std::string &path) {
     ClearEnvironment();
     env_->CheckConsistency();
     //last_streams_used_ = streams;

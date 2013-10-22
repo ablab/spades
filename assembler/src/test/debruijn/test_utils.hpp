@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <boost/test/unit_test.hpp>
+
 #include "launch.hpp"
 #include "graph_construction.hpp"
 #include "graph_pack.hpp"
@@ -15,6 +15,11 @@
 #include "io/converting_reader_wrapper.hpp"
 #include "io/read_stream_vector.hpp"
 #include "simple_tools.hpp"
+
+#include "sequence_mapper_notifier.hpp"
+#include "pair_info_filler.hpp"
+
+#include <boost/test/unit_test.hpp>
 #include <unordered_set>
 
 namespace debruijn_graph {
@@ -176,17 +181,18 @@ void AssertCoverage(Graph& g, const CoverageInfo& etalon_coverage) {
 	}
 }
 
-typedef PairedInfoIndexT<Graph> PairedIndex;
-typedef vector<PairInfo<EdgeId>> PairInfos;
+typedef omnigraph::de::PairedInfoIndexT<Graph> PairedIndex;
+typedef omnigraph::de::PairInfo<EdgeId> PairInfo;
+typedef vector<PairInfo> PairInfos;
 
 void AssertPairInfo(const Graph& g, /*todo const */PairedIndex& paired_index, const EdgePairInfo& etalon_pair_info) {
 	for (auto it = paired_index.begin(); it != paired_index.end(); ++it) {
 		PairInfos infos;
     infos.reserve(it->size());
     for (auto set_it = it->begin(); set_it != it->end(); ++set_it)
-      infos.push_back(PairInfo<EdgeId>(it.first(), it.second(), *set_it));
+      infos.push_back(PairInfo(it.first(), it.second(), *set_it));
 		for (auto info_it = infos.begin(); info_it != infos.end(); ++info_it) {
-			PairInfo<EdgeId> pair_info = *info_it;
+			PairInfo pair_info = *info_it;
 			if (pair_info.first == pair_info.second && rounded_d(pair_info) == 0) {
 				continue;
 			}
@@ -225,24 +231,22 @@ void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t inse
 	io::ReadStreamVector<io::IReader<io::PairedRead>> paired_stream_vector(paired_read_stream);
 	DEBUG("Streams initialized");
 
-	graph_pack<Graph, runtime_k::RtSeq> gp(k, tmp_folder, (Sequence()));
+	conj_graph_pack gp(k, tmp_folder, 1);
 	DEBUG("Graph pack created");
 
-	PairedInfoIndexT<Graph> paired_index(gp.g);
-
 	io::ReadStreamVector<io::IReader<io::SingleRead>> single_stream_vector({new SingleStream(paired_read_stream)});
-	ConstructGraphWithCoverage(k, CreateDefaultConstructionConfig(), single_stream_vector, gp.g, gp.index);
+	ConstructGraphWithCoverage(k, CreateDefaultConstructionConfig(), single_stream_vector, gp.g, gp.index, gp.flanking_cov);
 
-	FillPairedIndexWithReadCountMetric(gp.g,
-	                                   *MapperInstance(gp),
-	                                   paired_index,
-	                                   paired_stream_vector);
+    SequenceMapperNotifier notifier(gp);
+    LatePairedIndexFiller pif(gp.g, PairedReadCountWeight, gp.paired_indices[0]);
+    notifier.Subscribe(0, &pif);
+    notifier.ProcessLibrary(paired_stream_vector, 0, paired_stream_vector.size());
 
 	AssertEdges(gp.g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
 
 	AssertCoverage(gp.g, AddComplement(etalon_coverage));
 
-	AssertPairInfo(gp.g, paired_index, AddComplement(AddBackward(etalon_pair_info)));
+	AssertPairInfo(gp.g, gp.paired_indices[0], AddComplement(AddBackward(etalon_pair_info)));
 }
 
 struct TmpFolderFixture

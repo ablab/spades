@@ -47,7 +47,7 @@ class SimpleInversionFinder {
         base_pic_file_name_(base_pic_file_name),
         num_cycles_found_(0),
         found_lengths_(),
-        mask_inversed_(false) {
+        mask_inversed_(mask_inversed) {
   }
 
   void FindInversionEvents() {
@@ -153,10 +153,10 @@ class SimpleInversionFinder {
         edge_pic_name);
         */
 
-    int length = -1;
-    int l1 = FindAndPrintPath(cycle[0], g_.conjugate(cycle[1]), cycle[2], cycle[3]);
+    ssize_t length = -1;
+    ssize_t l1 = FindAndPrintPath(cycle[0], g_.conjugate(cycle[1]), cycle[2], cycle[3]);
     //int l2 = FindAndPrintPath(g_.conjugate(cycle[1]), cycle[0], cycle[2], cycle[3]);
-    int l2 = FindAndPrintPath(g_.conjugate(cycle[2]), cycle[3], g_.conjugate(cycle[0]), g_.conjugate(cycle[1]));
+    ssize_t l2 = FindAndPrintPath(g_.conjugate(cycle[2]), cycle[3], g_.conjugate(cycle[0]), g_.conjugate(cycle[1]));
     if (l1 > 0 && (length < 0 || length > l1))
       length = l1;
     if (l2 > 0 && (length < 0 || length > l2))
@@ -176,7 +176,8 @@ class SimpleInversionFinder {
     found_lengths_.push_back(length);
   }
 
-  std::vector<EdgeList> GetSoloColoredEdgeLists(const EdgeList &all_edges) const {
+  template<class EdgeContainer>
+  std::vector<EdgeList> GetSoloColoredEdgeLists(const EdgeContainer &all_edges) const {
     std::vector<EdgeList> result(coloring_.max_colors());
 
     for (auto it = all_edges.begin(); it != all_edges.end(); ++it) {
@@ -193,7 +194,7 @@ class SimpleInversionFinder {
   int GetEdgeSoloColor(const EdgeId edge) const {
     const TColorSet &color = coloring_.Color(edge);
     int result = 0;
-    for (size_t i = 0; i < coloring_.max_colors(); ++i) {
+    for (unsigned i = 0; i < coloring_.max_colors(); ++i) {
       if (!color[i])
         continue;
 
@@ -245,7 +246,7 @@ class SimpleInversionFinder {
     return result;
   }
 
-  inline int FindAndPrintPath(const VertexId v1, const VertexId v2, const VertexId v3, const VertexId v4) const {
+  inline ssize_t FindAndPrintPath(const VertexId v1, const VertexId v2, const VertexId v3, const VertexId v4) const {
     TRACE("Finding paths from " << g_.str(v1) << " to " << g_.str(v2));
     const static size_t max_length = 800000;
 
@@ -264,8 +265,9 @@ class SimpleInversionFinder {
     GenomePathsFinder<Graph> dfs(g_, coordinates_handler_);
     std::vector<Path> paths = dfs.FindGenomePaths(out_edges, v2, max_length);
     if (paths.size() > 0) {
-      if (paths.size() == 1)
-        ;//INFO("found only one path, strange");
+      if (paths.size() == 1) {
+        //INFO("found only one path, strange");
+      }
       return GetPathLength(paths[0]);
     }
     //INFO("could not find any path :(");
@@ -322,7 +324,7 @@ class GenomePathsFinder {
   typedef typename Graph::EdgeId EdgeId;
   typedef std::vector<EdgeId> Path;
   typedef typename CoordinatesHandler<Graph>::PosArray PosArray;
-  
+
   GenomePathsFinder(const Graph &g, const CoordinatesHandler<Graph> &crd)
       : g_(g),
         crd_(crd) {
@@ -364,10 +366,9 @@ class GenomePathsFinder {
       path_seq.pop_back();
       return;
     }
-      
 
-    std::vector<EdgeId> further_edges = g_.OutgoingEdges(vertex);
-    for (const auto e : further_edges) {
+
+    for (EdgeId e : g_.OutgoingEdges(vertex)) {
       const PosArray further_array = crd_.FilterPosArray(cur_pos, e);
       if (further_array.size() == 0)
         continue;

@@ -22,6 +22,78 @@ struct Count {
     Count() : count(0) {}
 };
 
+template <class Builder>
+class RepeatSearchingIndexBuilder : public Builder {
+    typedef Builder base;
+ public:
+    typedef typename Builder::IndexT IndexT;
+    typedef typename IndexT::KMer Kmer;
+    typedef typename IndexT::KMerIdx KmerIdx;
+
+ private:
+    template<class ReadStream>
+    size_t FillCoverageFromStream(ReadStream &stream,
+                                  IndexT &index) const {
+        unsigned k = index.k();
+        while (!stream.eof()) {
+            typename ReadStream::read_type r;
+            stream >> r;
+
+            const Sequence &seq = r.sequence();
+            if (seq.size() < k)
+                continue;
+
+            Kmer kmer = seq.start<Kmer>(k);
+            kmer >>= 'A';
+            for (size_t j = k - 1; j < seq.size(); ++j) {
+                kmer <<= seq[j];
+                KmerIdx idx = index.seq_idx(kmer);
+                VERIFY(index.valid_idx(idx));
+                if (index[idx].count != -1u) {
+                    index[idx].count += 1;
+                }
+            }
+        }
+
+        return 0;
+    }
+
+    void ProcessCounts(IndexT &index) const {
+        for (KmerIdx idx = index.kmer_idx_begin(); idx < index.kmer_idx_end(); ++idx) {
+            if (index[idx].count > 1) {
+                index[idx].count = -1u;
+            } else {
+                index[idx].count = 0;
+            }
+        }
+    }
+
+    template<class Streams>
+    size_t FindRepeats(IndexT &index, Streams &streams) const {
+        INFO("Collecting k-mer coverage information from reads, this takes a while.");
+        unsigned nthreads = (unsigned) streams.size();
+        streams.reset();
+        for (size_t i = 0; i < nthreads; ++i) {
+            FillCoverageFromStream(streams[i], index);
+            ProcessCounts(index);
+        }
+
+        return 0;
+    }
+
+ public:
+
+    template<class Streams>
+    size_t BuildIndexFromStream(IndexT &index,
+                                Streams &streams,
+                                SingleReadStream* contigs_stream = 0) const {
+        base::BuildIndexFromStream(index, streams, contigs_stream);
+
+        return FindRepeats(index, streams);
+    }
+
+};
+
 template<class Index>
 struct CountIndexHelper {
     typedef Index IndexT;
@@ -30,7 +102,28 @@ struct CountIndexHelper {
     typedef typename IndexT::traits_t traits_t;
 //    typedef typename IndexT::IdType IdType;
     typedef DeBruijnStreamKMerIndexBuilder<Kmer, IndexT> DeBruijnStreamKMerIndexBuilderT;
-    typedef CoverageFillingEdgeIndexBuilder<DeBruijnStreamKMerIndexBuilderT> CoverageFillingEdgeIndexBuilderT;
+    typedef RepeatSearchingIndexBuilder<DeBruijnStreamKMerIndexBuilderT> RepeatSearchingIndexBuilderT;
+};
+
+class RandNucl {
+    unsigned seed_;
+    boost::mt19937 rand_engine_;
+    boost::uniform_int<> rand_dist_;
+    boost::variate_generator<boost::mt19937&, boost::uniform_int<>> rand_nucl_;
+
+public:
+
+    RandNucl(unsigned seed) :
+        seed_(seed),
+        rand_engine_(seed_),
+        rand_dist_(0, 3),
+        rand_nucl_(rand_engine_, rand_dist_) {
+
+    }
+
+    char operator()() {
+        return nucl((char) rand_nucl_());
+    }
 };
 
 class RepeatMasker : public io::SequenceModifier {
@@ -40,17 +133,19 @@ private:
     typedef KmerCountIndex::KMerIdx KmerIdx;
 
     size_t k_;
+
+    RandNucl& rand_nucl_;
+
     KmerCountIndex index_;
     //todo maybe remove mutable? will need removing const from Modify
-    mutable boost::mt19937 rand_engine_;
-    mutable boost::uniform_int<> rand_dist_;
-    mutable boost::variate_generator<boost::mt19937&, boost::uniform_int<>> rand_nucl_;
+
 
     bool IsRepeat(const Kmer& kmer) const {
-        return index_[kmer].count > 1;
+        return index_[kmer].count == -1u;
     }
 
-    const vector<Range> RepeatIntervals(const std::string& s) const {
+    template<class S>
+    const vector<Range> RepeatIntervals(const S& s) const {
         vector<Range> answer;
         answer.push_back(Range(0, 0));
         Kmer kmer(k_, s);
@@ -69,48 +164,55 @@ private:
     }
 
     void MaskRepeat(const Range& repeat, std::string& s) const {
+        TRACE("Masking repeat of size " << repeat.size() << " " << repeat);
+        TRACE("Old sequence " << s.substr(repeat.start_pos, repeat.size()));
         for (size_t i = repeat.start_pos; i < repeat.end_pos; ++i) {
-            s[i] = nucl((unsigned char) rand_nucl_());
+            s[i] = rand_nucl_();
         }
+        TRACE("New sequence " << s.substr(repeat.start_pos, repeat.size()));
     }
 
     void MaskRepeats(const vector<Range>& rep_int, std::string& s) const {
+        TRACE("Masking " << rep_int.size() << " repeat ranges in sequence of length " << s.size());
         for (Range r : rep_int) {
             MaskRepeat(r, s);
         }
     }
 
 public:
-    RepeatMasker(size_t k, const std::string& workdir) : k_(k), index_(k_, workdir),
-        rand_engine_(239), rand_dist_(0, 3), rand_nucl_(rand_engine_, rand_dist_) {
+    RepeatMasker(size_t k, RandNucl& rand_nucl, const std::string& workdir) :
+        k_(k),
+        rand_nucl_(rand_nucl),
+        index_(k_, workdir) {
     }
 
     template<class Streams>
     size_t FindRepeats(Streams& streams) {
-        CountIndexHelper<KmerCountIndex>::CoverageFillingEdgeIndexBuilderT().BuildIndexFromStream(index_, streams);
+        INFO("Looking for repetitive " << k_ << "-mers");
+        CountIndexHelper<KmerCountIndex>::RepeatSearchingIndexBuilderT().BuildIndexFromStream(index_, streams);
         size_t rep_kmer_cnt = 0;
         for (KmerIdx idx = index_.kmer_idx_begin(); idx < index_.kmer_idx_end(); ++idx) {
-            if (index_[idx].count > 1) {
+            if (index_[idx].count == -1u) {
                 rep_kmer_cnt++;
+            } else {
+                VERIFY(index_[idx].count == 0);
             }
         }
+        INFO("Found " << rep_kmer_cnt << " repetitive " << k_ << "-mers");
         return rep_kmer_cnt;
     }
 
-    /*virtual*/Sequence Modify(const Sequence& s) const {
-        VERIFY(false);
-        return Sequence();
-    }
-
-    /*virtual*/std::string Modify(const std::string& s) const {
+    /*virtual*/Sequence Modify(const Sequence& s) {
         if (s.size() < k_)
             return s;
-        string str = s;
+        string str = s.str();
         MaskRepeats(RepeatIntervals(s), str);
-        return str;
+        return Sequence(str);
     }
-};
 
+private:
+    DECL_LOGGER("RepeatMasker")
+};
 
 template<class Stream1, class Stream2>
 void Transfer(Stream1& s1, Stream2& s2) {
@@ -156,12 +258,13 @@ inline void ModifyAndSave(shared_ptr<io::SequenceModifier> modifier, ContigStrea
     SaveStreams(modified, suffixes, out_root);
 }
 
-inline bool MaskRepeatsIteration(size_t k, const string& input_dir, const vector<string>& suffixes, const string& output_dir) {
-    shared_ptr<RepeatMasker> masker_ptr = make_shared<RepeatMasker>(k, "tmp");
+inline bool MaskRepeatsIteration(size_t k, const string& input_dir, const vector<string>& suffixes, const string& output_dir, RandNucl& rand_nucl) {
+    shared_ptr<RepeatMasker> masker_ptr = make_shared<RepeatMasker>(k, rand_nucl, "tmp");
+    INFO("Opening streams in " << input_dir);
     bool repeats_found = masker_ptr->FindRepeats(*OpenStreams(input_dir, suffixes, true));
     if (repeats_found) {
         INFO("Repeats found");
-        INFO("Modifying and saving streams");
+        INFO("Modifying and saving streams to " << output_dir);
         ModifyAndSave(masker_ptr, OpenStreams(input_dir, suffixes, false), suffixes, output_dir);
     } else {
         INFO("No repeats found");
@@ -195,15 +298,17 @@ inline bool MaskRepeatsIteration(size_t k, const string& input_dir, const vector
 
 inline bool MaskRepeats(size_t k, ContigStreamsPtr input_streams, const vector<string>& suffixes, size_t max_iter_count, const string& work_dir) {
     size_t iter = 0;
+    RandNucl rand_nucl(239);
     bool no_repeats = false;
     string input_dir = work_dir + "init/";
     make_dir(input_dir);
     SaveStreams(input_streams, suffixes, input_dir);
     while (iter <= max_iter_count) {
+        INFO("------------------------");
         INFO("Iteration " << iter);
         string out_dir = work_dir + ToString(iter) + "/";
         make_dir(out_dir);
-        no_repeats = MaskRepeatsIteration(k, input_dir, suffixes, out_dir);
+        no_repeats = MaskRepeatsIteration(k, input_dir, suffixes, out_dir, rand_nucl);
         if (no_repeats) {
             INFO("No repeats found");
             break;

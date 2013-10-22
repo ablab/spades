@@ -7,6 +7,8 @@
 #pragma once
 
 #include "standard.hpp"
+#include "utils.hpp"
+
 namespace debruijn_graph {
 
 //This class corrects mismatches or masks repeat differences or other such things with the sequence of an edge
@@ -40,20 +42,6 @@ public:
 
 	string correct(EdgeId e) {
 		return this->graph().EdgeNucls(e).str();
-	}
-};
-
-template<class Graph>
-class MaskingContigCorrector : public ContigCorrector<Graph> {
-private:
-	typedef typename Graph::EdgeId EdgeId;
-	MismatchMasker<Graph>& mismatch_masker_;
-public:
-	MaskingContigCorrector(const Graph &graph, MismatchMasker<Graph>& mismatch_masker) : ContigCorrector<Graph>(graph), mismatch_masker_(mismatch_masker) {
-	}
-
-	string correct(EdgeId e) {
-	    return mismatch_masker_.MaskedEdgeNucls(e, 0.00001);
 	}
 };
 
@@ -163,14 +151,16 @@ private:
 
 	bool ShouldCut(VertexId v) const {
 		const Graph &g = this->graph();
-		vector<EdgeId> edges = g.OutgoingEdges(v);
+		vector<EdgeId> edges;
+		push_back_all(edges, g.OutgoingEdges(v));
 		if(edges.size() == 0)
 			return false;
 		for(size_t i = 1; i < edges.size(); i++) {
 			if(g.EdgeNucls(edges[i])[g.k()] != g.EdgeNucls(edges[0])[g.k()])
 				return false;
 		}
-		edges = g.IncomingEdges(v);
+		edges.clear();
+		push_back_all(edges, g.IncomingEdges(v));
 		for(size_t i = 0; i < edges.size(); i++)
 			for(size_t j = i + 1; j < edges.size(); j++) {
 				if(g.EdgeNucls(edges[i])[g.length(edges[i]) - 1] != g.EdgeNucls(edges[j])[g.length(edges[j]) - 1])
@@ -249,30 +239,6 @@ void ReportEdge(io::osequencestream_cov& oss
 	}
 }
 
-template<class Graph>
-void ReportMaskedEdge(io::osequencestream_cov& oss
-		, const Graph& g
-		, typename Graph::EdgeId e
-    , MismatchMasker<Graph>& mismatch_masker
-		, bool output_unipath = false
-		, size_t solid_edge_length_bound = 0) {
-	typedef typename Graph::EdgeId EdgeId;
-	if (!output_unipath || (PossibleECSimpleCheck(g, e) && g.length(e) <= solid_edge_length_bound)) {
-		TRACE("Outputting edge " << g.str(e) << " as single edge");
-		oss << g.coverage(e);
-    const string& s = mismatch_masker.MaskedEdgeNucls(e, 0.00001);
-		oss << s;
-	} else {
-		//support unipath
-		TRACE("Outputting edge " << g.str(e) << " as part of unipath");
-    const vector<EdgeId>& unipath = Unipath(g, e);
-		TRACE("Unipath is " << g.str(unipath));
-		oss << AvgCoverage(g, unipath);
-		TRACE("Merged sequence is of length " << MergeSequences(g, unipath).size());
-		oss << MergeSequences(g, unipath);
-	}
-}
-
 void OutputContigs(NonconjugateDeBruijnGraph& g,
 		const string& contigs_output_filename,
 		bool output_unipath = false,
@@ -323,14 +289,17 @@ void OutputContigs(ConjugateDeBruijnGraph& g,
 }
 
 bool ShouldCut(ConjugateDeBruijnGraph& g, VertexId v) {
-	vector<EdgeId> edges = g.OutgoingEdges(v);
+	vector<EdgeId> edges;
+	push_back_all(edges, g.OutgoingEdges(v));
+
 	if(edges.size() == 0)
 		return false;
 	for(size_t i = 1; i < edges.size(); i++) {
 		if(g.EdgeNucls(edges[i])[g.k()] != g.EdgeNucls(edges[0])[g.k()])
 			return false;
 	}
-	edges = g.IncomingEdges(v);
+	edges.clear();
+	push_back_all(edges, g.IncomingEdges(v));
 	for(size_t i = 0; i < edges.size(); i++)
 		for(size_t j = i + 1; j < edges.size(); j++) {
 			if(g.EdgeNucls(edges[i])[g.length(edges[i]) - 1] != g.EdgeNucls(edges[j])[g.length(edges[j]) - 1])
@@ -373,38 +342,6 @@ void OutputCutContigs(ConjugateDeBruijnGraph& g,
 //		}
 //		//		oss << g.EdgeNucls(*it);
 //	}
-}
-
-void OutputMaskedContigs(ConjugateDeBruijnGraph& g,
-		const string& contigs_output_filename, MismatchMasker<ConjugateDeBruijnGraph>& masker,
-		bool output_unipath = false,
-		size_t /*solid_edge_length_bound*/ = 0,
-		bool cut_bad_connections = false) {
-	INFO("Outputting contigs with masked mismatches to " << contigs_output_filename);
-	MaskingContigCorrector<ConjugateDeBruijnGraph> corrector(g, masker);
-	io::osequencestream_cov oss(contigs_output_filename);
-	if(!output_unipath) {
-		if(!cut_bad_connections) {
-			DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
-			ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);
-		} else {
-			CuttingContigConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
-			ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);
-		}
-	} else {
-		UnipathConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
-		ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);
-	}
-//	osequencestream_cov oss(contigs_output_filename);
-//	set<ConjugateDeBruijnGraph::EdgeId> edges;
-//	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-//		if (edges.count(*it) == 0) {
-//			ReportMaskedEdge(oss, g, *it, masker, output_unipath, solid_edge_length_bound);
-//			edges.insert(g.conjugate(*it));
-//		}
-//		//		oss << g.EdgeNucls(*it);
-//	}
-	DEBUG("Contigs written");
 }
 
 void OutputSingleFileContigs(NonconjugateDeBruijnGraph& g,

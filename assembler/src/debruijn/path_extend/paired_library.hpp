@@ -14,19 +14,20 @@
 #ifndef PAIRED_LIBRARY_HPP_
 #define PAIRED_LIBRARY_HPP_
 
-#include "../debruijn_graph.hpp"
-
-//#include "../new_debruijn.hpp"
-//#include "../graph_pack.hpp"
+#include "graph_pack.hpp"
+#include "de/paired_info.hpp"
 
 #include "xmath.h"
 
 using debruijn_graph::Graph;
 using debruijn_graph::EdgeId;
 using debruijn_graph::VertexId;
+using debruijn_graph::PairedIndexT;
 
-using omnigraph::PairedInfoIndex;
-using omnigraph::PairInfo;
+using omnigraph::de::PairedInfoIndex;
+using omnigraph::de::PairedInfoIndexT;
+using omnigraph::de::PairInfo;
+using omnigraph::de::Point;
 
 namespace path_extend {
 
@@ -47,11 +48,17 @@ struct PairedInfoLibrary {
 	PairedInfoIndexT<Graph>& index_not_cl_;
 
 	PairedInfoLibrary(size_t k, Graph& g, size_t readS, size_t insS, size_t var,
-			PairedIndexT& index,  bool is_mate_pair_ = false) :
-			g_(g), k_(k), read_size_(readS), insert_size_(insS), is_variation_(var),
-			is_mate_pair_(is_mate_pair_), index_(index), index_not_cl_(index_) {
-		setDefault();
-	}
+                      PairedIndexT& index, bool is_mate_pair_ = false)
+            : g_(g),
+              k_(k),
+              read_size_(readS),
+              insert_size_(insS),
+              is_variation_(var),
+              is_mate_pair_(is_mate_pair_),
+              index_(index),
+              index_not_cl_(index_) {
+        setDefault();
+    }
 
 	PairedInfoLibrary(size_t k, Graph& g, size_t readS, size_t insS, size_t var,
 			PairedIndexT& index, PairedIndexT& index_not_cl, bool is_mate_pair_ = false) :
@@ -82,17 +89,15 @@ struct PairedInfoLibrary {
 
     set<EdgeId> GetEdges(EdgeId e) {
         set<EdgeId> res;
-        typedef set<Point> Histogram;
-        const InnerMap<Graph>& pairs = index_.GetEdgeInfo(e, 0); // map[second_edge -> histogram]
+        auto pairs = index_.GetEdgeInfo(e, 0); // map[second_edge -> histogram]
         for (auto pairIter = pairs.begin(); pairIter != pairs.end(); ++pairIter)
           res.insert(pairIter->first);
         return res;
     }
 
     void CountDistances(EdgeId e1, EdgeId e2, vector<int>& dist, vector<double>& w) {
-      typedef set<Point> Histogram;
     	if (e1 != e2) {
-        Histogram histogram = index_.GetEdgePairInfo(e1, e2);
+        de::Histogram histogram = index_.GetEdgePairInfo(e1, e2);
         for (auto pointIter = histogram.begin(); pointIter != histogram.end(); ++pointIter) {
           int pairedDistance = rounded_d(*pointIter);
           if (pairedDistance >= 0) {
@@ -104,9 +109,8 @@ struct PairedInfoLibrary {
 	}
 
     double CountPairedInfo(EdgeId e1, EdgeId e2, int distance) {
-      typedef set<Point> Histogram;
       double weight = 0.0;
-      Histogram pairs =  index_.GetEdgePairInfo(e1, e2);
+      de::Histogram pairs =  index_.GetEdgePairInfo(e1, e2);
 
       for (auto pointIter = pairs.begin(); pointIter != pairs.end(); ++pointIter) {
         int pairedDistance = rounded_d(*pointIter);
@@ -123,7 +127,7 @@ struct PairedInfoLibrary {
     }
 
 
-    double IdealPairedInfo2(EdgeId e1, EdgeId e2, int distance) {
+    double IdealPairedInfo2(EdgeId e1, EdgeId e2, int distance) const{
             double w = 0.;
             if (distance == 0 && e1 == e2) {
                 w = 0. + (double) (g_.length(e1) - insert_size_ + 2 * read_size_ + 1 - k_);
@@ -148,12 +152,13 @@ struct PairedInfoLibrary {
             return math::gr(w, 0.0) ? w : 0.0;
     }
 
-    double IdealPairedInfo(EdgeId e1, EdgeId e2, int distance) {
+    double IdealPairedInfo(EdgeId e1, EdgeId e2, int distance) const {
         double w = 0.;
         if (distance == 0 && e1 == e2) {
-            w = 0. + (double) (g_.length(e1) - insert_size_ + 2 * read_size_ + 1 - k_);
-        }
-        else {
+            w = 0.
+                    + (double) (g_.length(e1) - insert_size_ + 2 * read_size_
+                            + 1 - k_);
+        } else {
             if (distance < 0) {
                 EdgeId tmp = e1;
                 e1 = e2;
@@ -161,9 +166,14 @@ struct PairedInfoLibrary {
                 distance = -distance;
             }
             int gap_len = distance - (int) g_.length(e1);
-            int right = std::min((int) insert_size_, gap_len + (int) (g_.length(e2) + read_size_));
-            int left = std::max(gap_len, int(insert_size_) - int(read_size_) - int(g_.length(e1)));
-            w = 0. + (double) (right - left + 1 - (int) (k_) + (int) is_variation_);
+            int right = std::min((int) insert_size_,
+                                 gap_len + (int) (g_.length(e2) + read_size_));
+            int left = std::max(
+                    gap_len,
+                    int(insert_size_) - int(read_size_) - int(g_.length(e1)));
+            w = 0.
+                    + (double) (right - left + 1 - (int) (k_)
+                            + (int) is_variation_);
         }
         return math::gr(w, 0.0) ? w : 0.0;
     }
@@ -193,24 +203,7 @@ struct PairedInfoLibrary {
             return math::gr(w, 0.0) ? w : 0.0;
     }
 
-    double IdealPairedInfo(size_t length1, size_t length2, int distance) {
-		double w = 0.;
-		if (distance == 0) {
-			w = 0. + (double) (length1 - insert_size_ + 2 * read_size_ + 1 - k_);
-		} else {
-			if (distance < 0) {
-				size_t tmp = length1;
-				length1 = length2;
-				length2 = tmp;
-				distance = -distance;
-			}
-			int gap_len = distance - (int) length1;
-			int right = std::min((int) insert_size_, gap_len + (int) (length2 + read_size_));
-			int left = std::max(gap_len, int (insert_size_) - int (read_size_) - int (length1));
-			w = 0. + (double) (right - left + 1 - k_ + is_variation_);
-		}
-		return math::gr(w, 0.0) ? w : 0.0;
-     }
+
 
     double NormalizeWeight(const PairInfo<EdgeId>& pair_info) {
         double w = IdealPairedInfo(pair_info.first, pair_info.second, rounded_d(pair_info));

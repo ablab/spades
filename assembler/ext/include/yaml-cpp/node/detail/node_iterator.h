@@ -18,6 +18,10 @@ namespace YAML
 {
 	namespace detail
 	{
+        struct node_cmp {
+            bool operator()(const node *lhs, const node *rhs) const;
+        };
+
 		struct iterator_type { enum value { None, Sequence, Map }; };
 		
 		template<typename V>
@@ -35,7 +39,7 @@ namespace YAML
 		};
 		
 		typedef std::vector<node *> node_seq;
-		typedef std::map<node *, node *> node_map;
+		typedef std::map<node *, node *, node_cmp> node_map;
 		
 		template<typename V>
 		struct node_iterator_type {

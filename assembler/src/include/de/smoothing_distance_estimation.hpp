@@ -11,8 +11,11 @@
 #include "omni/omni_utils.hpp"
 #include "data_divider.hpp"
 #include "peak_finder.hpp"
+#include "extensive_distance_estimation.hpp"
 
 namespace omnigraph {
+
+namespace de {
 
 template<class Graph>
 class SmoothingDistanceEstimator: public ExtensiveDistanceEstimator<Graph> {
@@ -55,7 +58,6 @@ class SmoothingDistanceEstimator: public ExtensiveDistanceEstimator<Graph> {
 protected:
   typedef typename Graph::EdgeId EdgeId;
   typedef pair<EdgeId, EdgeId> EdgePair;
-  typedef set<Point> Histogram;
   typedef vector<pair<int, double> > EstimHist;
   typedef vector<PairInfo<EdgeId> > PairInfos;
   typedef vector<size_t> GraphLengths;
@@ -158,7 +160,7 @@ private:
     }
 
   virtual void ProcessEdge(EdgeId e1,
-                           const InnerMap<Graph>& inner_map,
+                           const typename PairedInfoIndexT<Graph>::InnerMap& inner_map,
                            PairedInfoIndexT<Graph>& result,
                            perf_counter& pc) const
   {
@@ -167,7 +169,7 @@ private:
     for (auto I = inner_map.begin(), E = inner_map.end(); I != E; ++I)
       second_edges.insert(I->first);
 
-    const vector<GraphLengths>& lens_array = this->GetGraphDistancesLengths(e1, second_edges);
+    vector<GraphLengths> lens_array = this->GetGraphDistancesLengths(e1, second_edges);
 
     size_t i = 0;
     for (auto I = inner_map.begin(), E = inner_map.end(); I != E; ++I) {
@@ -214,6 +216,8 @@ private:
 
   DECL_LOGGER("SmoothingDistanceEstimator")
 };
+
+}
 
 }
 

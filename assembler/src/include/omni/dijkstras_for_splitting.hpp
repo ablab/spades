@@ -25,7 +25,7 @@ public:
               edges_(edges) {
     }
 
-    bool CheckPutVertex(VertexId vertex, EdgeId edge, size_t length) const {
+    bool CheckPutVertex(VertexId, EdgeId edge, size_t) const {
         return edges_.count(edge) != 0;
     }
 };
@@ -46,7 +46,7 @@ public:
               bound_(bound) {
     }
 
-    bool CheckProcessVertex(VertexId vertex, size_t distance) {
+    bool CheckProcessVertex(VertexId, size_t distance) {
         return distance <= bound_;
     }
 
@@ -73,8 +73,7 @@ public:
               subgraph_(subgraph) {
     }
 
-    bool CheckPutVertex(VertexId vertex, EdgeId edge,
-                                size_t length) const {
+    bool CheckPutVertex(VertexId vertex, EdgeId, size_t) const {
         return subgraph_.count(vertex) != 0;
     }
 
@@ -96,7 +95,7 @@ public:
               bound_(bound) {
     }
 
-    bool CheckProcessVertex(VertexId vertex, distance_t distance) {
+    bool CheckProcessVertex(VertexId, distance_t distance) {
         return distance == 0;
     }
 

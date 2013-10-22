@@ -366,7 +366,7 @@ class CoverageBasedResolution {
 	bool checkIfComponentByPairedInfo( EdgeId edge, PairedInfoIndexT<Graph>& clustered_index, std::set<EdgeId>& prohibitedEdges ) {
 
 //		auto improver = PairInfoImprover<Graph>(gp->g, clustered_index);
-		InnerMap<Graph> inner_map = clustered_index.GetEdgeInfo(edge, 0);
+		auto inner_map = clustered_index.GetEdgeInfo(edge, 0);
 		for (auto I_1 = inner_map.Begin(), E = inner_map.End(); I_1 != E; ++I_1) {
 			for (auto I_2 = inner_map.Begin(); I_2 != E; ++I_2) {
 				if (I_1 == I_2) continue;
@@ -444,7 +444,7 @@ class CoverageBasedResolution {
 			VertexId into = gp->g.EdgeEnd(*e_iter);
 
 			//std::cout << e_iter->int_id() << std::endl;
-			if ( gp->g.length(*e_iter) >= cfg::get().rr.max_repeat_length ) {
+			if ( gp->g.length(*e_iter) >= cfg::get().max_repeat_length ) {
 				singles.push_back(*e_iter);
 			}
 			else if (! ( ((in_degree.find(from) == in_degree.end()) || out_degree[from] > 1) && ((out_degree.find(into) == out_degree.end()) || in_degree[into] > 1) )

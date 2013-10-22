@@ -302,30 +302,31 @@ public:
     double AvgSpan(const MosaicStructure& mosaic) {
         double avg = 0.;
         for (Range r : mosaic.occurence_ranges()) {
-            avg += r.size();
+            avg += double(r.size());
         }
-        return avg / mosaic.mult();
+        return avg / double(mosaic.mult());
     }
 
     double AvgGenomicSpan(const MosaicStructure& mosaic) {
         double avg = 0.;
         for (Range r : mosaic.occurence_ranges()) {
             Range genomic_range = block_composition_.genome_coords(r);
-            avg += genomic_range.size();
+            avg += double(genomic_range.size());
         }
-        return avg / mosaic.mult();
+        return avg / double(mosaic.mult());
     }
 
     vector<double> AvgGenomicInterLengths(const MosaicStructure& mosaic) {
         vector<double> answer(mosaic.block_size() - 1, 0.);
         for (const MosaicInterval& interval : mosaic.occurences()) {
             for (size_t i = 1; i < interval.support_size(); ++i) {
-                answer[i - 1] += block_composition_.genome_coords(Range(interval.support_blocks[i - 1] + 1,
-                                                                        interval.support_blocks[i])).size();
+                answer[i - 1] += double(block_composition_.genome_coords(Range(
+                                          interval.support_blocks[i - 1] + 1,
+                                          interval.support_blocks[i])).size());
             }
         }
         for (size_t i = 0; i < answer.size(); ++i) {
-            answer[i] /= mosaic.mult();
+            answer[i] /= double(mosaic.mult());
         }
         return answer;
     }
@@ -378,6 +379,7 @@ public:
 
     void ReportSubMosaic(const MosaicStructure& mosaic, const vector<Range>& ranges) {
         string finger = mosaic.Fingerprint();
+        out_ << "------" << endl;
         out_ << "Sub_mosaic. Block cnt = " << mosaic.block_size() << endl;
         out_ << "Blocks " << finger;
         out_ << " ; Found in " << get_all(different_irred_presence_, finger).size() << " different irreducible mosaics";
@@ -399,6 +401,7 @@ public:
             out_ << ")";
             delim = "; ";
         }
+        out_ << endl;
     }
 
     void ReportSubMosaics(const MosaicStructure& mosaic) {
@@ -421,6 +424,27 @@ public:
         ReportBasicInfo(mosaic);
         ReportSubMosaics(mosaic);
         out_ << "..................................." << endl;
+    }
+
+};
+
+class TandemFilter {
+public:
+    TandemFilter() {
+
+    }
+
+    bool operator() (const MosaicStructure& mosaic) {
+        bag<Block> block_cnts;
+        for (Block b : mosaic.blocks()) {
+            block_cnts.put(b);
+        }
+        size_t approx_tandem_occur = 0;
+        for (pair<Block, size_t> block_cnt : block_cnts) {
+            if (block_cnt.second > 1)
+                approx_tandem_occur += block_cnt.second;
+        }
+        return approx_tandem_occur * 2 > mosaic.block_size();
     }
 
 };
@@ -471,6 +495,10 @@ class MosaicStructureSet {
     }
 
     bool AnalyzeStructure(const MosaicStructure& mosaic) {
+        if (TandemFilter()(mosaic)) {
+            //mosaic probably represents tandem duplication and totally ignored
+            return false;
+        }
 //        cout << "Analyzing " << mosaic << endl;
 //        cout << irreducible_structures_.size() << endl;
         for (auto& irred_struct : irreducible_structures_) {

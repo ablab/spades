@@ -1,8 +1,6 @@
-paired_reads             "../../../data/input/E.coli/sc_lane_1/bh20130116/ecoli_mda_lane1_left.fastq.00.cor.fastq.gz ../../../data/input/E.coli/sc_lane_1/bh20130116/ecoli_mda_lane1_right.fastq.00.cor.fastq.gz "
-single_reads             "../../../data/input/E.coli/sc_lane_1/bh20130116/ecoli_mda_lane1_unpaired.00.cor.fastq.gz "
-RL                       100
-IS                       270
-single_cell              true
-reference_genome         ../../../data/input/E.coli/MG1655-K12.fasta.gz
-
 reads	ECOLI_SC_LANE_1_BH.yaml
+single_cell	true
+reference_genome	../../../data/input/E.coli/MG1655-K12.fasta.gz
+
+; RL	100
+; IS	270

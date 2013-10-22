@@ -67,10 +67,10 @@ public:
 class ErasingPathFilter {
 
 protected:
-    Graph& g;
+    const Graph& g;
 
 public:
-    ErasingPathFilter(Graph& g_): g(g_) {
+    ErasingPathFilter(const Graph& g_): g(g_) {
     }
 
     virtual bool predicate(BidirectionalPath& path) = 0;
@@ -120,7 +120,7 @@ protected:
     size_t minLength;
 
 public:
-    LengthPathFilter(Graph& g_, size_t len): ErasingPathFilter(g_), minLength(len) {
+    LengthPathFilter(const Graph& g_, size_t len): ErasingPathFilter(g_), minLength(len) {
     }
 
     virtual bool predicate(BidirectionalPath& path) {

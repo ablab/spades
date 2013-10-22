@@ -134,7 +134,7 @@ class PerfectHashMap {
   }
 
   template<class Reader>
-  void BinRead(Reader &reader, const std::string &FileName) {
+  void BinRead(Reader &reader, const std::string &) {
     clear();
     index_.deserialize(reader);
     size_t sz = 0;

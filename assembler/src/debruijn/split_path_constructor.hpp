@@ -15,8 +15,8 @@
 
 #include "standard.hpp"
 #include "logger/logger.hpp"
-#include "path_utils.hpp"
-
+#include "de/paired_info.hpp"
+#include "omni/path_processor.hpp"
 
 namespace debruijn_graph {
 
@@ -25,7 +25,7 @@ template<class Graph>
 class PathInfoClass {
 public:
   typedef typename Graph::EdgeId EdgeId;
-  typedef omnigraph::PairInfo<EdgeId> PairInfo;
+  typedef omnigraph::de::PairInfo<EdgeId> PairInfo;
 
   EdgeId base_edge;
   vector<PairInfo> path;
@@ -66,13 +66,14 @@ template<class Graph>
 class SplitPathConstructor {
   typedef typename Graph::EdgeId EdgeId;
   typedef PathInfoClass<Graph> PathInfo;
+  typedef omnigraph::de::PairInfo<EdgeId> PairInfo;
 
 public:
   SplitPathConstructor(const Graph &graph): graph_(graph)
   {
   }
 
-  vector<PathInfo> ConvertPIToSplitPaths(const vector<PairInfo<EdgeId>>& pair_infos, double is, double is_var) const
+    vector<PathInfo> ConvertPIToSplitPaths(const std::vector<PairInfo>& pair_infos, double is, double is_var) const
   {
     vector<PathInfo> result;
     if (pair_infos.size() == 0) 
@@ -92,7 +93,7 @@ public:
       TRACE("Path_processor is done");
 
       for (size_t i = pair_infos.size(); i > 0; --i) {
-        const PairInfo<EdgeId>& cur_info = pair_infos[i - 1];
+        const PairInfo& cur_info = pair_infos[i - 1];
         if (math::le(cur_info.d(), 0.))
             continue;
         if (pair_info_used[i - 1])
@@ -111,10 +112,10 @@ public:
           
           DEBUG("Common part " << ToString(common_part));
           for (size_t j = 0; j < common_part.size(); ++j) {
-            PairInfo<EdgeId> cur_pi(cur_edge, common_part[j],
-                                    cur_info.d() - (double) total_length,
-                                    cur_info.weight(),
-                                    cur_info.var());
+            PairInfo cur_pi(cur_edge, common_part[j],
+                            cur_info.d() - (double) total_length,
+                            cur_info.weight(),
+                            cur_info.var());
 
             sub_res.push_back(cur_pi);
             total_length -= graph_.length(common_part[j]);

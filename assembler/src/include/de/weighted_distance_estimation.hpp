@@ -10,8 +10,11 @@
 #include "xmath.h"
 #include "paired_info.hpp"
 #include "omni/omni_utils.hpp"
+#include "distance_estimation.hpp"
 
 namespace omnigraph {
+
+namespace de {
 
 template<class Graph>
 class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
@@ -33,7 +36,6 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
   typedef DistanceEstimator<Graph> base;
   typedef typename Graph::EdgeId EdgeId;
 
-  typedef set<Point> Histogram;
   typedef vector<pair<int, double> > EstimHist;
   typedef pair<EdgeId, EdgeId> EdgePair;
   typedef vector<size_t> GraphLengths;
@@ -106,6 +108,8 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
   }
 
 };
+
+}
 
 }
 #endif

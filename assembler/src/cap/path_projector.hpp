@@ -60,21 +60,23 @@ class PathProjector {
     TRACE("CollapsePaths Begin");
 
     const std::vector<Path> &paths = FilterPaths(paths_to_collapse);
+    if (CheckPresenceOfSelfContiguousEdges(paths))
+      return false;
+
     std::vector<PosArray> threads_to_delete =
         GetThreadsToDelete(paths);
     size_t chosen_path = ChooseBasePath(paths, threads_to_delete);
 
     // RC paths
     std::vector<Path> rc_paths;
-    std::vector<std::vector<std::pair<uint, size_t> > > rc_threads;
     for (const auto &path : paths) {
       Path rc_path;
       for (auto it = path.rbegin(); it != path.rend(); ++it) {
         rc_path.push_back(g_.conjugate(*it));
       }
       rc_paths.push_back(rc_path);
-      rc_threads.push_back(coordinates_handler_.GetContiguousThreads(rc_path));
     }
+    auto rc_threads = GetThreadsToDelete(rc_paths);
 
     // We restrict merging RC and original genome threads
     if (!CheckForRCAbsence(threads_to_delete))
@@ -105,7 +107,34 @@ class PathProjector {
       VERIFY(false);
     }
 
+    DEBUG("Collapsing paths:");
+    for (size_t i = 0; i < paths.size(); ++i) {
+        if (i == chosen_path)
+            continue;
+
+        DEBUG(debug::Debug(g_, paths[i]));
+        for (const auto &t : threads_to_delete[i]) {
+            DEBUG("" << int(t.first) << " " << debug::PrintComplexPosition(t.second));
+        }
+        DEBUG(debug::Debug(g_, rc_paths[i]));
+        for (const auto &t : rc_threads[i]) {
+            DEBUG("" << int(t.first) << " " << debug::PrintComplexPosition(t.second));
+        }
+    }
+    {
+        size_t i = chosen_path;
+        DEBUG(debug::Debug(g_, paths[i]));
+        for (const auto &t : threads_to_delete[i]) {
+            DEBUG("" << int(t.first) << " " << debug::PrintComplexPosition(t.second));
+        }
+        DEBUG(debug::Debug(g_, rc_paths[i]));
+        for (const auto &t : rc_threads[i]) {
+            DEBUG("" << int(t.first) << " " << debug::PrintComplexPosition(t.second));
+        }
+    }
+
     LockDelete();
+    coordinates_handler_.LockChanges();
     for (size_t i = 0; i < paths.size(); ++i) {
       /*
       if (threads_to_delete[i].size() != rc_threads[i].size()) {
@@ -131,30 +160,45 @@ class PathProjector {
         TRACE("nothin to delete!");
         continue;
       }
-      ProjectPath(paths[i], paths[chosen_path], threads_to_delete[i]);
-      ProjectPath(rc_paths[i], rc_paths[chosen_path], rc_threads[i]);
+      bool success = true;
+
+      success &= ProjectPath(paths[i], paths[chosen_path], threads_to_delete[i]);
+      success &= ProjectPath(rc_paths[i], rc_paths[chosen_path], rc_threads[i]);
+
+      if (!success) {
+          ClearDeleteList();
+          coordinates_handler_.UnrollChanges();
+          break;
+      }
     }
+    coordinates_handler_.ReleaseChanges();
     ReleaseDelete();
 
     TRACE("CollapsePaths End");
     return true;
   }
 
-  void ProjectPath(const Path &from, const Path &to,
-      const std::vector<std::pair<uint, size_t> > &threads_to_delete) {
-    coordinates_handler_.ProjectPath(from, to, threads_to_delete);
+  bool ProjectPath(const Path &from, const Path &to,
+      const PosArray &threads_to_delete) {
+    const bool success = coordinates_handler_.ProjectPath(
+            from, to, threads_to_delete);
+
+    if (!success)
+        return false;
 
     for (const auto e : from) {
       if (coordinates_handler_.GetMultiplicity(e) == 0) {
         DeleteEdge(e);
       }
     }
+
+    return true;
   }
 
-  inline void ProjectPath(const Path &from, const Path &to) {
+  bool ProjectPath(const Path &from, const Path &to) {
     const std::vector<std::pair<uint, size_t> > threads_to_delete =
         coordinates_handler_.GetContiguousThreads(from);
-    ProjectPath(from, to, threads_to_delete);
+    return ProjectPath(from, to, threads_to_delete);
   }
 
 
@@ -235,8 +279,8 @@ class PathProjector {
   }
 
   bool CheckDeletionOfIntouchables(const std::vector<Path> &paths,
-      const std::vector<std::vector<std::pair<uint, size_t> > > del_threads,
-      const size_t chosen_path) {
+      const std::vector<std::vector<std::pair<uint, size_t> > > &del_threads,
+      const size_t chosen_path) const {
     std::unordered_set<EdgeId> intouchable_edges;
     for (const auto e : paths[chosen_path]) {
       intouchable_edges.insert(e);
@@ -257,6 +301,17 @@ class PathProjector {
     }
 
     return true;
+  }
+
+  bool CheckPresenceOfSelfContiguousEdges(const std::vector<Path> &paths) const {
+      for (const auto &path : paths) {
+          for (const auto e : path) {
+              if (g_.conjugate(e) == e)
+                  return true;
+          }
+      }
+
+      return false;
   }
 
   size_t CalcBridges(const Path &path, const size_t thin_multiplicity) const {
@@ -301,6 +356,9 @@ class PathProjector {
   void ReleaseDelete() {
     is_deleting_locked_ = false;
     ForceDeleteEdges(edges_to_delete_);
+    ClearDeleteList();
+  }
+  void ClearDeleteList() {
     edges_to_delete_.clear();
   }
   template<class T>

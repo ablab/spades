@@ -7,10 +7,13 @@
 #pragma once
 
 #include "logger/logger.hpp"
-#include <simple_tools.hpp>
-#include <io/easy_reader.hpp>
-#include <io/single_read.hpp>
+#include "simple_tools.hpp"
+#include "io/easy_reader.hpp"
+#include "io/multifile_reader.hpp"
+#include "io/single_read.hpp"
 #include "io/library.hpp"
+
+#include "config_struct.hpp"
 
 namespace debruijn_graph {
 
@@ -19,6 +22,7 @@ typedef io::IReader<io::PairedRead> PairedReadStream;
 typedef io::MultifileReader<io::PairedRead> MultiPairedStream;
 typedef io::MultifileReader<io::SingleRead> MultiSingleStream;
 
+inline
 std::auto_ptr<PairedReadStream> paired_easy_reader(const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
                                                    bool followed_by_rc,
                                                    size_t insert_size,
@@ -34,6 +38,7 @@ std::auto_ptr<PairedReadStream> paired_easy_reader(const io::SequencingLibrary<d
 }
 
 
+inline
 std::auto_ptr<ReadStream> single_easy_reader(const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
                                              bool followed_by_rc,
                                              bool including_paired_reads,
@@ -53,6 +58,7 @@ std::auto_ptr<ReadStream> single_easy_reader(const io::SequencingLibrary<debruij
   return std::auto_ptr<ReadStream>(new MultiSingleStream(streams, true));
 }
 
+inline
 std::auto_ptr<PairedReadStream> paired_easy_reader_for_libs(std::vector<size_t> libs,
                                                             bool followed_by_rc,
                                                             size_t insert_size,
@@ -66,10 +72,11 @@ std::auto_ptr<PairedReadStream> paired_easy_reader_for_libs(std::vector<size_t> 
     streams.push_back(reader.get());
     reader.release();
   }
-  return auto_ptr<PairedReadStream>(new MultiPairedStream(streams, true));
+  return std::auto_ptr<PairedReadStream>(new MultiPairedStream(streams, true));
 }
 
 
+inline
 std::auto_ptr<PairedReadStream> paired_easy_reader(bool followed_by_rc,
                                                    size_t insert_size,
                                                    bool change_read_order = false,
@@ -86,6 +93,7 @@ std::auto_ptr<PairedReadStream> paired_easy_reader(bool followed_by_rc,
 }
 
 
+inline
 std::auto_ptr<ReadStream> single_easy_reader_for_libs(vector<size_t> libs,
                                                       bool followed_by_rc,
                                                       bool including_paired_reads,
@@ -97,10 +105,11 @@ std::auto_ptr<ReadStream> single_easy_reader_for_libs(vector<size_t> libs,
     streams.push_back(reader.get());
     reader.release();
   }
-  return auto_ptr<ReadStream>(new MultiSingleStream(streams, true));
+  return std::auto_ptr<ReadStream>(new MultiSingleStream(streams, true));
 }
 
 
+inline
 std::auto_ptr<ReadStream> single_easy_reader(bool followed_by_rc,
                                              bool including_paired_reads,
                                              io::OffsetType offset_type = io::PhredOffset) {

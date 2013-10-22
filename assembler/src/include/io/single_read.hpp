@@ -241,33 +241,6 @@ class SingleRead {
     return SubstrStrict(from, to);
   }
 
-  std::string original_name() const {
-    size_t len = name_.length();
-    for (size_t i = 0; i < len; ++i) {
-      if (name_[i] != '_') {
-        continue;
-      }
-      if (name_.substr(i, 3) == "_RC" || name_.substr(i, 8) == "_SUBSTR(") {
-        return name_.substr(0, i);
-      }
-    }
-    return name_;
-  }
-
-  std::pair<size_t, size_t> position_in_original() const {
-    for (int i = (int)name_.length() - 1; i >= 0; --i) {
-      if (name_[i] != '_') {
-        continue;
-      }
-      if (name_.substr(i, 8) == "_SUBSTR(") {
-        int from, to;
-        sscanf(name_.substr(i + 8).c_str(), "%d,%d)", &from, &to);
-        return std::make_pair((size_t) from, (size_t) to);
-      }
-    }
-    return std::make_pair(0, size());
-  }
-
   /*
    * Check whether two SingleReads are equal.
    *

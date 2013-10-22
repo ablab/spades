@@ -109,9 +109,9 @@ class Seq {
     T data = 0;
     size_t cnt = 0;
     int cur = 0;
-    for (size_t pos = 0; pos < size_; ++pos, ++s) { // unsafe!
+    for (size_t pos = 0; pos != size_; ++pos, ++s) { // unsafe!
       // VERIFY(is_nucl(*s)); // for performance
-      data = data | ((T) dignucl(*s) << cnt);
+      data = data | (T)((T) dignucl(*s) << cnt);
       cnt += 2;
       if (cnt == TBits) {
         this->data_[cur++] = data;
@@ -210,7 +210,7 @@ class Seq {
       this->data_[cur++] = data;
     }
 
-    for (; cur < DataSize; ++cur)
+    for (; cur != DataSize; ++cur)
       this->data_[cur] = 0;
   }
 
@@ -366,7 +366,7 @@ class Seq {
    */
   std::string str() const {
     std::string res(size_, '-');
-    for (size_t i = 0; i < size_; ++i) {
+    for (size_t i = 0; i != size_; ++i) {
       res[i] = nucl(operator[](i));
     }
     return res;

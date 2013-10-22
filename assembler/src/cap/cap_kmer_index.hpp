@@ -73,7 +73,7 @@ struct kmer_index_traits<cap::LSeq> {
     };
 
     struct raw_create {
-        inline SeqType operator()(unsigned K, const KMerRawReference kmer) {
+        inline SeqType operator()(unsigned /*K*/, const KMerRawReference kmer) {
             return SeqType(kmer);
         }
     };
@@ -120,7 +120,7 @@ namespace cap {
                 return LSeq::GetDataSize(k_) * sizeof(typename LSeq::DataType);
             }
 
-            virtual size_t Count(unsigned num_buckets, unsigned num_threads) {
+            virtual size_t Count(unsigned /* num_buckets */, unsigned /* num_threads */) {
                 if (!has_counted_) {
                     Init();
                     has_counted_ = true;
@@ -129,7 +129,7 @@ namespace cap {
                 return storage_.size();
             }
 
-            virtual size_t CountAll(unsigned num_buckets, unsigned num_threads, bool merge = true) {
+            virtual size_t CountAll(unsigned /* num_buckets */, unsigned /* num_threads */, bool /* merge  */= true) {
                 if (!has_counted_) {
                     Init();
                     has_counted_ = true;
@@ -138,11 +138,11 @@ namespace cap {
                 return storage_.size();
             }
 
-            virtual void MergeBuckets(unsigned num_buckets) {
+            virtual void MergeBuckets(unsigned /* num_buckets */) {
                 VERIFY(bucket == NULL);
             }
 
-            virtual void OpenBucket(size_t idx, bool unlink = true) {
+            virtual void OpenBucket(size_t /* idx */, bool /* unlink  */= true) {
                 VERIFY(bucket == NULL);
 
                 if (!has_counted_) {
@@ -157,13 +157,13 @@ namespace cap {
                 }
             }
 
-            virtual void ReleaseBucket(size_t idx) {
+            virtual void ReleaseBucket(size_t /* idx */) {
                 TRACE("RELEASE BUCKET");
                 delete bucket;
                 bucket = NULL;
             }
 
-            virtual RawKMerStorage* TransferBucket(size_t idx) {
+            virtual RawKMerStorage* TransferBucket(size_t /* idx */) {
                 VERIFY(bucket != NULL);
                 TRACE("TRANSFERRING BUCKET" <<
                         "BUCKET size=" << bucket->size());
@@ -184,10 +184,10 @@ namespace cap {
                 return ret;
             }
 
-            virtual typename __super::iterator bucket_begin(size_t idx) {
+            virtual typename __super::iterator bucket_begin(size_t /* idx */) {
                 return bucket->begin();
             }
-            virtual typename __super::iterator bucket_end(size_t idx) {
+            virtual typename __super::iterator bucket_end(size_t /* idx */) {
                 return bucket->end();
             }
 
@@ -264,7 +264,7 @@ namespace debruijn_graph {
                 template <class Streams>
                     size_t BuildIndexFromStream(Index &index,
                             Streams &streams,
-                            SingleReadStream* contigs_stream = 0) const {
+                            SingleReadStream* /* contigs_stream  */= 0) const {
                         /*
                            std::vector<io::IReader<io::SingleRead> *> stream_vec(streams.size());
                            for (size_t i = 0; i < streams.size(); ++i) {
@@ -398,7 +398,7 @@ namespace runtime_k {
                 typedef InnerIterator iterator;
                 typedef InnerConstIterator const_iterator;
 
-                KmerMap(size_t k) {
+                KmerMap(size_t /* k */) {
                     data_ = new int_map_type();
                 }
 

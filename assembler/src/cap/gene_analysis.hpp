@@ -204,7 +204,7 @@ void LoadGenomes(const string& file_with_genomes,
   LoadGenomes(genome_names, genomes_folder);
 }
 
-void SaveGenomes(const string& folder) const {
+void SaveGenomes(const string& /* folder */) const {
   for (auto it = genomes.begin(); it != genomes.end(); ++it) {
     WriteGenome(it->second.sequence, it->second.name);
   }
@@ -227,7 +227,7 @@ set<int> LoadGeneIDs(const string& file_with_ids) {
   CheckFileExistenceFATAL(file_with_ids);
   ifstream stream(file_with_ids);
   set<int> gene_ids;
-  size_t id;
+  int id;
   while (!stream.eof()) {
     stream >> id;
     gene_ids.insert(id);
@@ -261,7 +261,7 @@ void LoadGeneInfo(const string& filename, set<int> gene_ids) {
     //4 - forward/reverse
     VERIFY(record.size() == 8);
     VERIFY(record[4] == "reverse" || record[4] == "forward");
-    size_t gene_id = lexical_cast<size_t>(record[0]);
+    int gene_id = lexical_cast<int>(record[0]);
     if (gene_ids.count(gene_id) > 0) {
       AddGeneInfo(gene_id, genome_id(record[1]),
           Range(lexical_cast<size_t>(record[2]), lexical_cast<size_t>(record[3]))

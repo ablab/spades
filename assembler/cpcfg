@@ -32,7 +32,6 @@ case $arg in
   'dip') $cmd configs/debruijn/detail_info_printer.info.template configs/debruijn/detail_info_printer.info;;
   'log') $cmd configs/debruijn/log.properties.template configs/debruijn/log.properties ;;
   'sp')  $cmd spades_config.info.template spades_config.info;;
-  'pec') $cmd configs/debruijn/path_extend/pe_config.info.template   configs/debruijn/path_extend/pe_config.info;;
   'pep') $cmd configs/debruijn/path_extend/pe_params.info.template   configs/debruijn/path_extend/pe_params.info;;
   'con') $cmd configs/debruijn/construction.info.template   configs/debruijn/construction.info;;
   'cov') $cmd configs/debruijn/coverage_based_rr.info.template   configs/debruijn/coverage_based_rr.info;;
@@ -51,8 +50,6 @@ case $arg in
         $cmd configs/debruijn/detail_info_printer.info.template     configs/debruijn/detail_info_printer.info
 		echo ----------------configs/debruijn/log.properties-----------------
         $cmd configs/debruijn/log.properties.template               configs/debruijn/log.properties
-		echo ----------configs/debruijn/path_extend/pe_config.info-----------
-        $cmd configs/debruijn/path_extend/pe_config.info.template   configs/debruijn/path_extend/pe_config.info
 		echo ----------configs/debruijn/path_extend/pe_config.info-----------
         $cmd configs/debruijn/path_extend/pe_params.info.template   configs/debruijn/path_extend/pe_params.info
 		echo --------------configs/debruijn/construction.info----------------

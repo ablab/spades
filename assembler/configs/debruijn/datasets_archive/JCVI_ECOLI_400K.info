@@ -1,11 +1,7 @@
-paired_reads             "../../../data/input/_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/reads400000_right.fastq ../../../data/input/_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/reads400000_left.fastq "
-single_reads             "../../../data/input/_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/reads400000_single_left.fastq ../../../data/input/_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/reads400000_single_right.fastq "
-jumping_first            ../../../data/input/_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/shearjump400000_left.fastq
-jumping_second           ../../../data/input/_deprecated_JCVI/JCVI_control_MDA_Ecoli_0512/hammer_cropped/shearjump400000_right.fastq
-RL                       100
-IS                       210
-jump_is                  3000
-single_cell              true
-reference_genome         ../../../data/input/E.coli/MG1655-K12.first400K.fasta.gz
-
 reads	JCVI_ECOLI_400K.yaml
+single_cell	true
+reference_genome	../../../data/input/E.coli/MG1655-K12.first400K.fasta.gz
+
+; RL	100
+; IS	210
+; jump_is	3000

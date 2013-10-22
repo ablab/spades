@@ -91,10 +91,6 @@ class PairedVertex {
         return outgoing_edges_.size();
     }
 
-    const vector<EdgeId>& OutgoingEdges() const {
-        return outgoing_edges_;
-    }
-
     edge_const_iterator out_begin() const {
         return edge_const_iterator(outgoing_edges_.cbegin(), false);
     }
@@ -116,14 +112,6 @@ class PairedVertex {
 
     size_t IncomingEdgeCount() const {
         return conjugate_->OutgoingEdgeCount();
-    }
-
-    const vector<EdgeId> IncomingEdges() const {
-        vector<EdgeId> result = conjugate_->OutgoingEdges();
-        for (size_t i = 0; i < result.size(); i++) {
-            result[i] = result[i]->conjugate();
-        }
-        return result;
     }
 
     size_t IncomingEdgesCount() const {
@@ -176,7 +164,7 @@ class PairedVertex {
 };
 
 template<class DataMaster>
-class PairedEdge : public CoveredEdge {
+class PairedEdge {
  private:
     typedef restricted::pure_pointer<PairedVertex<DataMaster>> VertexId;
     typedef restricted::pure_pointer<PairedEdge<DataMaster>> EdgeId;
@@ -453,15 +441,6 @@ public:
     /*virtual*/
     bool RelatedVertices(VertexId v1, VertexId v2) const {
         return v1 == v2 || v1 == conjugate(v2);
-    }
-
-    virtual bool SplitCondition(VertexId /*vertex*/,
-                                const vector<EdgeId> &splitting_dges) const {
-        FOREACH (EdgeId e, splitting_dges) {
-            if (this->EdgeStart(e) == conjugate(this->EdgeEnd(e)))
-                return false;
-        }
-        return true;
     }
 
  private:

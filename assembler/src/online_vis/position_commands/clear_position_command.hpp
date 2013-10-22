@@ -15,20 +15,20 @@ namespace online_visualization {
         public:
             string Usage() const {
                 string answer;
-                answer = answer + "Command `clear_pos` \n" + 
-                                "Usage:\n" + 
-                                "> clear_pos\n" + 
+                answer = answer + "Command `clear_pos` \n" +
+                                "Usage:\n" +
+                                "> clear_pos\n" +
                                 " This command resets the graph and clears all the labels you previously filled in.\n";
                 return answer;
             }
 
-            ClearPositionCommand() : LocalCommand<DebruijnEnvironment>("clear_pos") 
+            ClearPositionCommand() : LocalCommand<DebruijnEnvironment>("clear_pos")
             {
             }
 
-            void Execute(DebruijnEnvironment& curr_env, const ArgumentList& args) const {
+            void Execute(DebruijnEnvironment& curr_env, const ArgumentList&) const {
                 curr_env.ResetPositions();
             }
-        
+
     };
 }

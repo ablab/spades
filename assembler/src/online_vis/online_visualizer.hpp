@@ -30,7 +30,7 @@ class OnlineVisualizer {
   }
 
   inline void init() {
-    string p = path::append_path(cfg::get().load_from, "simplified_graph"); // just for default
+    string p = path::append_path(cfg::get().load_from, "simplification"); // just for default
 
     path::make_dir("tmp");
     stringstream ss("load default " + p);
@@ -39,7 +39,7 @@ class OnlineVisualizer {
     AddSpecificCommands();
     DEBUG("Commands added");
     DEBUG("Adding auto-completion option");
-    online_vis_autocompletion::Init(command_mapping_.GetCommandNamesList());
+    InitAutocompletion(command_mapping_.GetCommandNamesList());
     const Command<Env>& load_command = command_mapping_.GetCommand("load");
     DEBUG("Loading current environment");
     load_command.Execute(current_environment_, loaded_environments_, ss);

@@ -11,6 +11,7 @@
 #include "graph_pack.hpp"
 #include <algorithm>
 #include "pac_index.hpp"
+#include "pacbio_gap_closer.hpp"
 #include "long_read_storage.hpp"
 
 class PacBioAligner {

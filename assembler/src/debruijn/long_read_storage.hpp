@@ -7,11 +7,9 @@
 
 #pragma once
 
-#include "indices/debruijn_kmer_index.hpp"
-#include "graph_pack.hpp"
 #include <algorithm>
-#include "pacbio_read_structures.hpp"
-#include "pacbio_gap_closer.hpp"
+
+namespace debruijn_graph {
 
 template<class Graph>
 class PathInfo {
@@ -39,99 +37,179 @@ public:
 		return path < other.path;
 	}
 
-	PathInfo(const vector<EdgeId> &p, size_t weight = 0):path(p), w(weight){ }
+	PathInfo(const vector<EdgeId> &p, size_t weight = 0) :
+			path(p), w(weight) {
+	}
 	PathInfo(const PathInfo<Graph> &other) {
 		path = other.path;
 		w = other.w;
 	}
+
+	string str(Graph &g_) {
+		stringstream s;
+		for(auto iter = path.begin(); iter != path.end(); iter ++ ){
+			s << g_.int_id(*iter) << " ";
+		}
+		return s.str();
+	}
+
 };
 
 template<class Graph>
 class PathStorage {
-	friend class PathInfo<Graph>;
+	friend class PathInfo<Graph> ;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef map<EdgeId, set<PathInfo<Graph> > > InnerIndex;
 private:
 	Graph &g_;
-	InnerIndex inner_index;
+	InnerIndex inner_index_;
+
 
 	void HiddenAddPath(const vector<EdgeId> &p, int w){
 		if (p.size() == 0 ) return;
-		for (typename set<PathInfo<Graph> >::iterator iter = inner_index[p[0]].begin(); iter != inner_index[p[0]].end(); ++iter) {
+		for (typename set<PathInfo<Graph> >::iterator iter = inner_index_[p[0]].begin(); iter != inner_index_[p[0]].end(); ++iter) {
+
 			if (iter->path == p) {
 				iter->increaseWeight(w);
 				return;
 			}
 		}
-		inner_index[p[0]].insert(PathInfo<Graph>(p, w));
+		inner_index_[p[0]].insert(PathInfo<Graph>(p, w));
+		size_++;
 	}
 
 public:
-	PathStorage(Graph &g):g_(g), inner_index(){}
 
-	void AddPath(const vector<EdgeId> &p, int w, bool add_rc = false){
+	PathStorage(Graph &g)
+            : g_(g),
+              inner_index_(),
+              size_(0) {
+    }
+	PathStorage(const PathStorage & p)
+            : g_(p.g_),
+              inner_index_(),
+              size_(0) {
+        for (auto iter = p.inner_index_.begin(); iter != p.inner_index_.end();
+                iter++) {
+            for (auto j_iter = iter->second.begin();
+                    j_iter != iter->second.end(); j_iter++) {
+                this->AddPath(j_iter->path, (int) j_iter->getWeight());
+            }
+        }
+    }
+	void ReplaceEdges(map<EdgeId, EdgeId> &old_to_new){
+		map<int, EdgeId> tmp_map;
+//		for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter ){
+//	    	tmp_map[g_.int_id(*iter)] = *iter;
+//	    }
+		InnerIndex new_index;
+		for (auto iter = inner_index_.begin(); iter != inner_index_.end(); iter++) {
+			auto tmp = iter->second;
+			EdgeId new_first;
+			if (old_to_new.find(iter->first) == old_to_new.end())
+				new_first = iter->first;
+			else {
+				DEBUG("new first edge: "<< g_.int_id(old_to_new[iter->first]) << " with " << tmp.size() << " edges ");
+				new_first = old_to_new[iter->first];
+			}
+			set<PathInfo<Graph> > new_tmp;
+			for (auto j_iter = tmp.begin(); j_iter != tmp.end(); j_iter++) {
+				PathInfo<Graph> pi = *(j_iter);
+				for (size_t k = 0; k < pi.path.size(); k++)
+					if (old_to_new.find(pi.path[k]) != old_to_new.end()) {
+//						INFO(g_.int_id(old_to_new[pi.path[k]]));
+						pi.path[k] = old_to_new[pi.path[k]];
+					}
+				DEBUG(pi.str(g_));
+				new_tmp.insert(pi);
+
+			}
+			if (new_first != iter->first) {
+				TRACE("and mmew_tmp.size: "<< new_tmp.size());
+			}
+			if (new_index.find(new_first) == new_index.end()) {
+				new_index[new_first] = new_tmp;
+			} else {
+				for (auto j_iter = new_tmp.begin(); j_iter != new_tmp.end(); j_iter++) {
+					new_index[new_first].insert(*j_iter);
+				}
+			}
+
+		}
+
+		inner_index_ = new_index;
+	}
+
+	void AddPath(const vector<EdgeId> &p, int w, bool add_rc = false) {
 		HiddenAddPath(p, w);
 		if (add_rc) {
-			vector<EdgeId> rc_p(p.size()) ;
+			vector<EdgeId> rc_p(p.size());
 			for (size_t i = 0; i < p.size(); i++)
 				rc_p[i] = g_.conjugate(p[p.size() - 1 - i]);
 			HiddenAddPath(rc_p, w);
 		}
 	}
-
-	void DumpToFile(const string filename, EdgesPositionHandler<Graph> &edge_pos){
+	void DumpToFile(const string filename) const{
+		map <EdgeId, EdgeId> auxilary;
+		DumpToFile(filename, auxilary);
+	}
+	void DumpToFile(const string filename, map<EdgeId, EdgeId> &replacement) const {
 		ofstream filestr(filename);
-		for(auto iter = inner_index.begin(); iter != inner_index.end(); ++iter){
+		set<EdgeId> continued_edges;
+
+		for(auto iter = inner_index_.begin(); iter != inner_index_.end(); ++iter){
 			filestr<< iter->second.size() << endl;
+			int non1 = 0;
 			for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); ++j_iter) {
-				filestr<<"Weight: " << j_iter->getWeight();
-				filestr<< " length: " << j_iter->path.size() <<" ";
-				for (auto p_iter = j_iter->path.begin(); p_iter != j_iter->path.end(); ++ p_iter) {
-					filestr << g_.int_id(*p_iter) <<"("<<g_.length(*p_iter)<<") ";
-				}
-				if (edge_pos.IsConsistentWithGenome(j_iter->path))
-					filestr << "  genomic";
-				else {
-					if (j_iter->getWeight() == 1)
-						filestr<< " low weight ng";
-					else
-						filestr << "  nongenomic";
+				filestr << " Weight: " << j_iter->getWeight();
+				if (j_iter->getWeight() > 1)
+					non1++;
+
+				filestr << " length: " << j_iter->path.size() << " ";
+				for (auto p_iter = j_iter->path.begin(); p_iter != j_iter->path.end(); ++p_iter) {
+					if (p_iter != j_iter->path.end() - 1 && j_iter->getWeight() > 1) {
+						continued_edges.insert(*p_iter);
+					}
+
+					filestr << g_.int_id(*p_iter) << "(" << g_.length(*p_iter) << ") ";
 				}
 				filestr << endl;
 			}
-			filestr<< endl;
+			filestr << endl;
 		}
+
 		int noncontinued = 0;
-		int long_nongapped = 0;
-		for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter ){
-			if (g_.length(*iter) > 500 && !g_.IsDeadEnd(g_.EdgeEnd(*iter))){
-				long_nongapped ++;
-				if (inner_index.find(*iter) == inner_index.end()) {
-					filestr << "bad  " << g_.int_id(*iter);
-					noncontinued ++;
-					continue;
-				}
-				bool flag = true;
-				for(auto j_iter= inner_index[*iter].begin(); j_iter != inner_index[*iter].end(); ++j_iter)
-					if (j_iter->path.size() > 1) {
-						flag = false;
-						break;
-					}
-				if (flag) {
-					filestr << "bad  " << g_.int_id(*iter);
-					noncontinued ++;
+		int long_gapped = 0;
+		int continued = 0;
+		for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
+			if (g_.length(*iter) > 500) {
+				if (!g_.IsDeadEnd(g_.EdgeEnd(*iter))) {
+					if (continued_edges.find(*iter) == continued_edges.end()) {
+						if ((replacement.find(*iter) != replacement.end() && continued_edges.find(replacement[*iter]) != continued_edges.end())) {
+						    TRACE("found in teplacement, edges "<< g_.int_id(*iter) <<" " <<g_.int_id(replacement[*iter]) <<" skipping ");
+							continue;
+						}
+						TRACE("noncontinued end left " << g_.int_id(*iter));
+						noncontinued++;
+					} else
+						continued++;
+				} else {
+				    TRACE("dead end left " << g_.int_id(*iter));
+					long_gapped++;
 				}
 			}
-			filestr <<"long not dead end: " << long_nongapped << " noncontinued: " << noncontinued << endl;
+			//filestr <<"long not dead end: " << long_nongapped << " noncontinued: " << noncontinued << endl;
 		}
+		DEBUG("noncontinued/total long:" << noncontinued <<"/" << noncontinued + continued);
 	}
 
 	vector<PathInfo<Graph> > GetAllPaths() {
 		vector<PathInfo<Graph> > res;
-		for (auto iter = inner_index.begin(); iter != inner_index.end();
+		for (auto iter = inner_index_.begin(); iter != inner_index_.end();
 				++iter) {
 			for (auto j_iter = iter->second.begin();
 					j_iter != iter->second.end(); ++j_iter) {
+
 				res.push_back(*j_iter);
 			}
 		}
@@ -139,52 +217,98 @@ public:
 	}
 
 
-	void LoadFromFile(const string s){
-	ifstream filestr(s);
-    	INFO("loading from " << s);
-    	map<int, EdgeId> tmp_map;
-        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter ){
-    		tmp_map[g_.int_id(*iter)] = *iter;
-    	}
-    	int fl;
-    	FILE* file = fopen((s).c_str(), "r");
-    	char ss[14];
-	    while (!feof(file)){
+    vector<PathInfo<Graph> > GetAllPathsNoConjugate() {
+        vector<PathInfo<Graph> > res;
 
-	    	int n;
+        std::set< PathInfo<Graph> > added;
+        for (auto iter = inner_index_.begin(); iter != inner_index_.end();  ++iter) {
+            for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); ++j_iter) {
+                if (added.count(*j_iter) > 0) {
+                    continue;
+                }
 
-	    	fl = fscanf(file, "%d\n", &n);
-	    	if (fl != 1) break;
-	    	TRACE(n);
-	    	for (int i = 0; i < n; i ++ ){
+                added.insert(*j_iter);
+                vector<EdgeId> rc_p(j_iter->path.size()) ;
+                for (size_t i = 0; i < j_iter->path.size(); i++) {
+                    rc_p[i] = g_.conjugate(j_iter->path[j_iter->path.size() - 1 - i]);
+                }
+                added.insert(PathInfo<Graph>(rc_p, j_iter->getWeight()));
 
-	    		int w = -1, l = -1;
-	    		fl = fscanf(file, "Weight: %d length: %d", &w, &l);
-	    		TRACE(w << " " << l);
-	    		VERIFY(fl == 2);
-	    		vector<EdgeId> p;
-	    		for(int j = 0; j  < l; j++) {
-	    			int e, x;
-	    			fl = fscanf(file, "%d(%d)", &e, &x);
-	    			VERIFY(fl == 2);
-	    			VERIFY(tmp_map.find(e) != tmp_map.end());
-	    			p.push_back(tmp_map[e]);
-	    		}
-	    		fl = fscanf(file, "%[^\n]\n", ss);
-	    		TRACE(ss[0]);
-	    		AddPath(p, w);
-	    	}
+                res.push_back(*j_iter);
+            }
+        }
+        return res;
+    }
+
+
+	void LoadFromFile(const string s, bool force_exists = true) {
+	    FILE* file = fopen(s.c_str(), "r");
+	    if (force_exists) {
+	        VERIFY(file != NULL);
+	    } else if (file == NULL) {
+	        INFO("Long reads not found, skipping");
+	        return;
 	    }
-	    INFO("loading finished");
+	    fclose(file);
+
+	    INFO("Loading long reads alignment...");
+		ifstream filestr(s);
+		INFO("loading from " << s);
+		map<size_t, EdgeId> tmp_map;
+		for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
+			tmp_map[g_.int_id(*iter)] = *iter;
+		}
+		int fl;
+
+		file = fopen((s).c_str(), "r");
+		char ss[14];
+		while (!feof(file)) {
+			int n;
+
+			fl = fscanf(file, "%d\n", &n);
+			if (fl != 1)
+				break;
+			TRACE(n);
+			for (int i = 0; i < n; i++) {
+
+				int w = -1, l = -1;
+				fl = fscanf(file, "Weight: %d length: %d", &w, &l);
+				TRACE(w << " " << l);
+				VERIFY(fl == 2);
+				vector<EdgeId> p;
+				for (int j = 0; j < l; j++) {
+				    size_t e;
+				    int x;
+					fl = fscanf(file, "%zu(%d)", &e, &x);
+					VERIFY(fl == 2);
+					VERIFY(tmp_map.find(e) != tmp_map.end());
+					p.push_back(tmp_map[e]);
+				}
+				fl = fscanf(file, "%[^\n]\n", ss);
+				TRACE(ss[0]);
+				AddPath(p, w);
+			}
+		}
+		INFO("Loading finished.");
 	}
 
 	void AddStorage(PathStorage<Graph> & to_add) {
-		for (auto iter = to_add.inner_index.begin(); iter != to_add.inner_index.end(); iter++) {
-			for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); j_iter ++) {
+
+		for(auto iter = to_add.inner_index_.begin(); iter != to_add.inner_index_.end(); iter++) {
+			for(auto j_iter = iter->second.begin(); j_iter != iter->second.end(); j_iter ++) {
 				this->AddPath(j_iter->path, (int) j_iter->getWeight());
 			}
 		}
 	}
+
+	void Clear() {
+        inner_index_.clear();
+        size_ = 0;
+    }
+
+	size_t size() {
+        return size_;
+    }
 
 //	typename InnerIndex::iterator begin() const {
 //		return inner_index.begin();
@@ -196,5 +320,85 @@ public:
 //	typename InnerIndex::iterator operator*(){
 //		return this->first;
 //	}
+private:
+    size_t size_;
 };
+
+template<class Graph>
+class PathStorageInfo {
+public:
+    PathStorageInfo(vector<PathInfo<Graph> >& paths, double filtering_threshold,
+                    double weight_priority_threshold,
+                    double unique_edge_priority_threshold)
+            : paths_(paths.begin(), paths.end()),
+              filtering_threshold_(filtering_threshold),
+              weight_priority_threshold_(weight_priority_threshold),
+              unique_edge_priority_threshold_(unique_edge_priority_threshold) {
+    }
+
+    double GetFilteringThreshold() const {
+        return filtering_threshold_;
+    }
+
+    double GetWeightPriorityThreshold() const {
+        return weight_priority_threshold_;
+    }
+
+    double GetUniqueEdgePriorityThreshold() const {
+        return unique_edge_priority_threshold_;
+    }
+
+    const vector<PathInfo<Graph> >& GetPaths() const {
+        return paths_;
+    }
+
+private:
+    vector<PathInfo<Graph> > paths_;
+    double filtering_threshold_;
+    double weight_priority_threshold_;
+    double unique_edge_priority_threshold_;
+};
+
+
+template<class Graph>
+class LongReadContainer {
+
+private:
+    Graph& g_;
+
+    vector< PathStorage<Graph>* > data_;
+
+
+public:
+
+    LongReadContainer(Graph& g, size_t count = 0): g_(g), data_(count) {
+        for (size_t i = 0; i < count; ++i) {
+            data_[i] = new PathStorage<Graph>(g_);
+        }
+    }
+
+    ~LongReadContainer() {
+        for (size_t i = 0; i < data_.size(); ++i) {
+            delete data_[i];
+        }
+    }
+
+
+    PathStorage<Graph>& operator[](size_t index) {
+        return *(data_[index]);
+    }
+
+    const PathStorage<Graph>& operator[](size_t index) const {
+        return *(data_[index]);
+    }
+
+    size_t size() const {
+        return data_.size();
+    }
+
+};
+
+
+}
+
 

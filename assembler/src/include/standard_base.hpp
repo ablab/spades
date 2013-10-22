@@ -125,9 +125,9 @@ inline void assertion_failed(char const * expr, char const * function,
   std::cerr << "Aborted by assert: " << std::endl;
   print_stacktrace();
 #if __DARWIN_UNIX03
-  __assert_rtn (expr, file, (unsigned)line, function);
+  __assert_rtn (expr, file, (int)line, function);
 #elif __DARWIN
-  __assert (expr, file, (unsigned)line, function);
+  __assert (expr, file, (int)line, function);
 #else
   __assert_fail (expr, file, (unsigned)line, function);
 #endif
@@ -139,9 +139,9 @@ inline void assertion_failed_msg(char const * expr, char const * msg,
   std::cerr << "Aborted by assert: " << msg << std::endl;
   print_stacktrace();
 #if __DARWIN_UNIX03
-  __assert_rtn (expr, file, (unsigned)line, function);
+  __assert_rtn (expr, file, (int)line, function);
 #elif __DARWIN
-  __assert (expr, file, (unsigned)line, function);
+  __assert (expr, file, (int)line, function);
 #else
   __assert_fail (expr, file, (unsigned)line, function);
 #endif
