@@ -491,7 +491,7 @@ def main():
                     dataset_file.close()
                 spades_cfg.__dict__["dataset"] = dataset_filename
 
-                latest_dir = spades_logic.run_spades(tmp_configs_dir, bin_home, spades_cfg, log)
+                latest_dir = spades_logic.run_spades(tmp_configs_dir, bin_home, spades_cfg, dataset_data, log)
 
                 if os.path.isdir(misc_dir) and not options_storage.continue_mode:
                     shutil.rmtree(misc_dir)

@@ -19,6 +19,8 @@ SPADES_PY_ERROR_MESSAGE = "== Error == "
 SPADES_PY_WARN_MESSAGE = "== Warning == "
 SPADES_ERROR_MESSAGE = " ERROR "
 SPADES_WARN_MESSAGE = " WARN "
+# constants of reads types
+READS_TYPES_NOT_USED_IN_CONSTRUCTION = "pacbio"
 
 
 def error(err_str, log=None, prefix=SPADES_PY_ERROR_MESSAGE):
@@ -388,6 +390,16 @@ def check_dataset_reads(dataset_data, only_assembler, log):
     check_files_duplication(all_files, log)
 
 
+def get_lib_ids_by_type(dataset_data, types):
+    if type(types) is not list:
+        types = [types]
+    lib_ids = []
+    for id, reads_library in enumerate(dataset_data):
+        if reads_library['type'] in types:
+            lib_ids.append(id)
+    return lib_ids
+
+
 def dataset_has_only_mate_pairs_libraries(dataset_data):
     for reads_library in dataset_data:
         if reads_library['type'] != 'mate-pairs':
@@ -396,10 +408,7 @@ def dataset_has_only_mate_pairs_libraries(dataset_data):
 
 
 def dataset_needs_long_single_mode(dataset_data):
-    for reads_library in dataset_data:
-        if reads_library['type'] in ['single']:
-            return True
-    return False
+    return bool(get_lib_ids_by_type(dataset_data, 'single'))
 
 
 def get_pacbio_reads(dataset_data):
