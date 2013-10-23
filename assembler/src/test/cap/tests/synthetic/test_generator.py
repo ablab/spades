@@ -37,11 +37,14 @@ def generateRandomSequence(seqLen):
         seq += nucl[i]
     return seq
 
-def getChunkSequences(shortChunkLen, longChuncLen, chunkNames):
+def getChunkSequences(longChunkLen, shortChunkLen, chunkNames):
     seqs = {}
     for name in chunkNames:
         assert len(name) == 1
-        seqs[name] = generateRandomSequence(chunkLen)
+        lenToGen = longChunkLen
+        if name.islower():
+            lenToGen = shortChunkLen
+        seqs[name] = generateRandomSequence(lenToGen)
     return seqs
 
 def getReverseComplement(seq):
@@ -73,14 +76,17 @@ def getAllContigData(contigNodes):
 if __name__ == "__main__":
     random.seed(239)
     if len(sys.argv) < 4:
-        print("Usage: " + sys.argv[0] + " <name of input file> <name of output file> <length of chunk>")
+        print("Usage: " + sys.argv[0] + " <name of input file> <name of output file> <length of chunk> (<length of chunk for lower case>)")
         sys.exit()
     #random.seed()
     chunkLen = int(sys.argv[3])
+    shortChunkLen = chunkLen
+    if len(sys.argv) > 4 
+        shortChunkLen = int(sys.argv[4])
     dom = parse(sys.argv[1])
     contigNodes = dom.getElementsByTagName("contig")
     chunkNames = getAllChunkNames(getAllContigData(contigNodes))
-    chunkSeqs = getChunkSequences(chunkLen, chunkNames)
+    chunkSeqs = getChunkSequences(chunkLen, shortChunkLen, chunkNames)
     for node in contigNodes:
         for child in node.childNodes:
             child.data = getSequenceByChunkString(child.data, chunkSeqs)

@@ -472,7 +472,7 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
                                    const PairedInfoIndexT<Graph> &clustered_index) {
     PairedIndexT etalon_index(gp.g);
 
-  FillAndCorrectEtalonPairedInfo(etalon_index, gp, paired_index,
+    FillAndCorrectEtalonPairedInfo(etalon_index, gp, paired_index,
                                  (size_t)math::round(lib.data().mean_insert_size),
                                  lib.data().read_length,
                                  (size_t)math::round(lib.data().insert_size_deviation), true);
@@ -480,7 +480,6 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 	CountAndSaveAllPaths(gp.g, lib, gp.int_ids, paired_index, clustered_index);
 
 	INFO("Counting clustered info stats");
-	EdgeQuality<Graph, Index> edge_qual(gp.g, gp.index, gp.kmer_mapper, gp.genome);
   //EstimationQualityStat<Graph> estimation_stat(gp.g, gp.int_ids, edge_qual,
                                               //paired_index, clustered_index, etalon_index);
   //estimation_stat.Count();

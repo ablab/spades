@@ -104,7 +104,7 @@ void ConvertLongReads(LongReadContainerT& single_long_reads, vector<PathStorageI
     }
 }
 
-void pe_resolving(conj_graph_pack& gp, const EdgeQuality<Graph>& /* quality_labeler */) {
+void pe_resolving(conj_graph_pack& gp) {
     vector<PairedIndexT*> pe_indexes;
     vector<PairedIndexT*> pe_scaf_indices;
     vector<size_t> indexes;
@@ -173,12 +173,13 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
     }
 
     //todo refactor labeler creation -- and what's that?
+    //fixme all this only to draw pictures that might be disabled!!!
     total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids,
                                             &gp.edge_pos);
     total_labeler tot_lab(&graph_struct);
-    EdgeQuality<Graph> quality_labeler(gp.g);
-    quality_labeler.Fill(gp.index, gp.kmer_mapper, gp.genome);
-    CompositeLabeler<Graph> labeler(tot_lab, quality_labeler);
+    gp.ClearQuality();
+    gp.FillQuality();
+    CompositeLabeler<Graph> labeler(tot_lab, gp.edge_qual);
     stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
     printer(ipp_before_repeat_resolution);
 
@@ -202,7 +203,7 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
     // Repeat resolving begins
     if (cfg::get().rm == debruijn_graph::resolving_mode::rm_path_extend) {
         INFO("Path-Extend repeat resolving");
-        pe_resolving(gp, quality_labeler);
+        pe_resolving(gp);
     } else {
         INFO("Unsupported repeat resolver");
         OutputContigs(gp.g, cfg::get().output_dir + "final_contigs.fasta");
