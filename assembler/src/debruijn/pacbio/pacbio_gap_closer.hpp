@@ -316,202 +316,9 @@ public:
     }
 private:
 
-    string RandomDeletion(string &s) {
-        int pos = rand() % (int) s.length();
-        string res = s.substr(0, pos) + s.substr(pos + 1);
-        TRACE("trying deletion on " <<pos);
-        return res;
-    }
-
-    char RandomNucleotide() {
-        unsigned char dig_nucl = (unsigned char) (rand() % 4);
-        return nucl(dig_nucl);
-    }
-
-    string RandomInsertion(string &s) {
-        int pos = rand() % ((int) s.length() + 1);
-        TRACE("trying insertion on " << pos);
-        string res = s.substr(0, pos) + RandomNucleotide() + s.substr(pos);
-        return res;
-    }
-
-    string RandomSubstitution(string &s) {
-        int pos = rand() % (int) s.length();
-        string res = s;
-        res[pos] = RandomNucleotide();
-        TRACE("trying substitution on " <<pos);
-        return res;
-    }
-
-    string RandomMutation(string &s) {
-        int sd = (rand() % 100);
-        if (sd < 40) {
-            return RandomDeletion(s);
-        } else if (sd < 80) {
-            return RandomInsertion(s);
-        } else {
-            return RandomSubstitution(s);
-        }
-        return s;
-    }
-
-    int EditScore(string &consensus, vector<string> & variants) {
-        int res = 0;
-        for (size_t i = 0; i < variants.size(); i++) {
-            if (!cfg::get().pb.pacbio_optimized_sw) {
-                int tmp = StringDistance(variants[i], consensus);
-                TRACE("score3:" << tmp);
-                res -= tmp;
-            }
-        }
-        return res;
-    }
-
-    inline int mean_len(vector<string> & v) {
-        int res = 0;
-        for (size_t i = 0; i < v.size(); i++)
-            res += (int) v[i].length();
-        return (res / (int) v.size());
-    }
-
-    int CheckValidKmers(const Kmer &kmer, KmerStorage &kmap,
-                        const vector<string> &variants) const {
-        int res = 0;
-        for (size_t i = 0; i < kmap.size(); i++)
-            if (kmap[i].find(kmer) != kmap[i].end())
-                if (kmap[i][kmer] != -1) {
-                    if (((double) kmap[i][kmer]
-                            > (double) variants[i].length() * 0.3)
-                            && ((double) kmap[i][kmer]
-                                    < (double) variants[i].length() * 0.7)) {
-                        res++;
-                    } else {
-                        TRACE("not in tehe middle" << kmap[i][kmer] <<" of " << variants[i].length());
-                    }
-                }
-        return res;
-    }
-
-    vector<int> FindCommonKmer(const vector<string> &variants, int cur_k) {
-        KmerStorage kmap(variants.size());
-        vector<int> res;
-        for (size_t i = 0; i < variants.size(); i++) {
-            Kmer kmer(cur_k, variants[i].substr(0, cur_k).c_str());
-            for (size_t j = cur_k; j < variants[i].length(); ++j) {
-                kmer <<= variants[i][j];
-                if (kmap[i].find(kmer) != kmap[i].end()) {
-                    kmap[i][kmer] = -1;
-                    TRACE("non_unique for stirng " << i);
-                } else {
-                    kmap[i][kmer] = (int) j - cur_k;
-                    TRACE("unique added for stirng " << i);
-                }
-            }
-        }
-        int best_number = 0;
-        Kmer best_kmer(cur_k);
-        for (size_t i = 0; i < variants.size(); i++) {
-            for (auto iter = kmap[i].begin(); iter != kmap[i].end(); ++iter) {
-                if (iter->second != -1) {
-                    int tres = CheckValidKmers(iter->first, kmap, variants);
-                    if (tres > best_number) {
-                        best_number = tres;
-                        best_kmer = iter->first;
-                    }
-                    if (best_number == int(variants.size()))
-                        break;
-                }
-            }
-        }
-        if (best_number == int(variants.size()))
-            for (size_t i = 0; i < kmap.size(); i++)
-                if (kmap[i].find(best_kmer) != kmap[i].end())
-                    res.push_back(kmap[i][best_kmer]);
-                else
-                    res.push_back(-1);
-        DEBUG("splitting supported with " << best_number << " of " << variants.size());
-        return res;
-    }
-
-    string ConstructStringConsenus(vector<string> &variants) {
-        if (cfg::get().pb.pacbio_optimized_sw) {
-            const ConsensusCore::PoaConsensus* pc =
-                    ConsensusCore::PoaConsensus::FindConsensus(
-                            variants,
-                            ConsensusCore::PoaConfig::GLOBAL_ALIGNMENT);
-            string tmp_res = pc->Sequence();
-            INFO("ConsCore: "<< tmp_res);
-            return tmp_res;
-        } else {
-            int ml = mean_len(variants);
-            if (ml > cfg::get().pb.split_cutoff) {  //100
-                DEBUG("mean length too long " << ml <<" in thread  " << omp_get_thread_num());
-                vector<int> kvals = { 17, 15, 13, 11, 9 };
-                for (size_t cur_k_ind = 0; cur_k_ind < kvals.size();
-                        ++cur_k_ind) {
-                    int cur_k = kvals[cur_k_ind];
-                    DEBUG(" splitting with k = " << cur_k);
-                    vector<int> middle_kmers = FindCommonKmer(variants, cur_k);
-                    if (middle_kmers.size() > 0) {
-                        DEBUG(" splitting with k = " << cur_k << "  win!!! in thread  " << omp_get_thread_num());
-                        vector<string> left;
-                        vector<string> right;
-                        string left_res;
-                        string right_res;
-                        string middle_kmer;
-                        for (size_t i = 0; i < middle_kmers.size(); ++i) {
-                            if (middle_kmers[i] != -1) {
-                                int middle = middle_kmers[i] + cur_k / 2;
-                                left.push_back(variants[i].substr(0, middle));
-                                right.push_back(
-                                        variants[i].substr(middle, string::npos));
-
-                            }
-                        }
-                        left_res = ConstructStringConsenus(left);
-                        right_res = ConstructStringConsenus(right);
-                        return (left_res + right_res);
-                    } else {
-                        DEBUG(" splitting with k = " << cur_k << "  failed, decreasing K in thread  " << omp_get_thread_num());
-                    }
-                }
-            }
-            DEBUG(" with mean length  " << ml <<" in thread  " << omp_get_thread_num()<< " starting to modify gap_closed");
-            string res = variants[0];
-            for (size_t i = 0; i < variants.size(); i++)
-                if (res.length() > variants[i].length())
-                    res = variants[i];
-            int best_score = EditScore(res, variants);
-            int void_iterations = 0;
-
-            while (void_iterations < cfg::get().pb.gap_closing_iterations) {
-                string new_res = RandomMutation(res);
-                int current_score = EditScore(new_res, variants);
-                if (current_score > best_score) {
-                    best_score = current_score;
-                    TRACE("cool mutation in thread " << omp_get_thread_num());
-                    TRACE(new_res);
-                    void_iterations = 0;
-                    res = new_res;
-                } else {
-                    TRACE("void mutation:(");
-                    void_iterations++;
-                    if (void_iterations % 500 == 0) {
-                        INFO(" random change " << void_iterations <<" failed in thread  " << omp_get_thread_num());
-                    }
-                }
-            }
-
-            INFO("returning " << res);
-            return res;
-        }
-    }
-
-    void ConstructConsensus(
-            EdgeId e,
-            GapStorage<Graph> &storage,
-            map<EdgeId, map<EdgeId, pair<size_t, string> > > &/*new_edges_by_thread*/) {
-//		if (g_.int_id(e) !=7964945 ) return;
+    void ConstructConsensus(EdgeId e,
+                            GapStorage<Graph> &storage,
+                            map<EdgeId, map<EdgeId, pair<size_t, string> > > &/*new_edges_by_thread*/) {
         auto cl_start = storage.inner_index[e].begin();
         auto iter = storage.inner_index[e].begin();
         size_t cur_len = 0;
@@ -531,15 +338,17 @@ private:
                         gap_variants.push_back(s);
                     }
                     map<EdgeId, pair<size_t, string> > tmp;
-                    string s = g_.EdgeNucls(cl_start->start).Subseq(
-                            0, cl_start->edge_gap_start_position).str();
-                    string tmp_string = ConstructStringConsenus(gap_variants);
+                    string s = g_.EdgeNucls(cl_start->start).Subseq(0, cl_start->edge_gap_start_position).str();
+
+                    const ConsensusCore::PoaConsensus* pc =
+                            ConsensusCore::PoaConsensus::FindConsensus(gap_variants,
+                                                                       ConsensusCore::PoaConfig::GLOBAL_ALIGNMENT);
+                    string tmp_string = pc->Sequence();
                     DEBUG("consenus for " << g_.int_id(cl_start->start) << " and " << g_.int_id(cl_start->end) << "found: ");
                     DEBUG(tmp_string);
                     s += tmp_string;
-                    s += g_.EdgeNucls(cl_start->end).Subseq(
-                            cl_start->edge_gap_end_position,
-                            g_.length(cl_start->end) + g_.k()).str();
+                    s += g_.EdgeNucls(cl_start->end).Subseq(cl_start->edge_gap_end_position,
+                                                            g_.length(cl_start->end) + g_.k()).str();
                     tmp.insert(make_pair(cl_start->end, make_pair(cur_len, s)));
                     new_edges[cl_start->start] = tmp;
 
