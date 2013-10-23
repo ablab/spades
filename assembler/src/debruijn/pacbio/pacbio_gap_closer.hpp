@@ -365,7 +365,6 @@ public:
     }
 
     void ConstructConsensus(size_t nthreads, GapStorage<Graph> &storage) {
-        srand(239);
         vector<map<EdgeId, map<EdgeId, pair<size_t, string> > > > new_edges_by_thread;
         new_edges_by_thread.resize(nthreads);
         size_t storage_size = storage.FillIndex();

@@ -339,18 +339,11 @@ void load(debruijn_config::pacbio_processor& pb,
   using config_common::load;
   load(pb.pacbio_k, pt, "pacbio_k");
   load(pb.additional_debug_info, pt, "additional_debug_info");
-  load(pb.pacbio_optimized_sw, pt, "pacbio_optimized_sw");
   load(pb.compression_cutoff, pt, "compression_cutoff");
   load(pb.domination_cutoff, pt, "domination_cutoff");
   load(pb.path_limit_stretching, pt, "path_limit_stretching");
   load(pb.path_limit_pressing, pt, "path_limit_pressing");
-  load(pb.gap_closing_iterations, pt, "gap_closing_iterations");
   load(pb.long_seq_limit, pt, "long_seq_limit");
-  load(pb.split_cutoff, pt, "split_cutoff");
-  load(pb.match_value, pt, "match_value");
-  load(pb.mismatch_penalty, pt, "mismatch_penalty");
-  load(pb.insertion_penalty, pt, "insertion_penalty");
-  load(pb.deletion_penalty, pt, "deletion_penalty");
 }
 
 
