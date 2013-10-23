@@ -13,7 +13,8 @@
 #include "read_converter.hpp"
 
 #include "graph_construction.hpp"
-#include "debruijn_stats.hpp"
+#include "stats/debruijn_stats.hpp"
+#include "positions.hpp"
 #include "construction.hpp"
 
 namespace debruijn_graph {

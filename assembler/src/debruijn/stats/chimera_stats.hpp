@@ -16,7 +16,8 @@ class ChimericEdgeClassifier {
     const EdgeQuality<Graph>& edge_qual_;
     bool real_edges_mode_;
 
-    vector<EdgeId> FilterNotEqual(const vector<EdgeId>& edges,
+    template<class EdgeContainer>
+    vector<EdgeId> FilterNotEqual(const EdgeContainer& edges,
             EdgeId edge) const {
         vector<EdgeId> answer;
         FOREACH(EdgeId e, edges) {
@@ -33,14 +34,14 @@ class ChimericEdgeClassifier {
 
     bool TopologyAndQualCheck(VertexId v, EdgeId e) const {
         return TopologyAndQualCheck(
-                FilterNotEqual(g_.OutgoingEdges(g_.EdgeStart(e)), e))
+                FilterNotEqual(g_.OutgoingEdges(v), e))
                 && TopologyAndQualCheck(
-                        FilterNotEqual(g_.IncomingEdges(g_.EdgeEnd(e)), e));
+                        FilterNotEqual(g_.IncomingEdges(v), e));
     }
 
     bool TopologyAndQualCheck(EdgeId e) const {
         return TopologyAndQualCheck(g_.EdgeStart(e), e)
-                && TopologyAndQualCheck(g_.EdgeEnd(e), e) && g_.CheckUniqueIncomingEdge(g_.EdgeStart(e)) && g_.CheckUniqueOutgoingEdge(g_.EdgeEnd(e));
+                && TopologyAndQualCheck(g_.EdgeEnd(e), e);
     }
 
 public:
@@ -83,8 +84,8 @@ class InterstrandAnalyzer {
             size_t distance_bound) const {
         for (size_t i = genome_path_pos + 1; i < genome_path_.size(); ++i) {
             int gap =
-                    genome_path_[i].second.initial_range.start_pos
-                            - genome_path_[genome_path_pos].second.initial_range.end_pos;
+                    (int)(genome_path_[i].second.initial_range.start_pos
+                            - genome_path_[genome_path_pos].second.initial_range.end_pos);
             VERIFY(gap >= 0);
             if (size_t(gap) > distance_bound)
                 return infinity;

@@ -7,6 +7,7 @@
 #pragma once
 
 #include "environment.hpp"
+#include "graphio.hpp"
 
 namespace online_visualization {
 

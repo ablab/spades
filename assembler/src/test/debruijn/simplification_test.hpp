@@ -291,8 +291,8 @@ void FillKmerCoverageWithAvg(const Graph& g, InnerIndex& idx) {
 
 BOOST_AUTO_TEST_CASE( RelativeCoverageRemover ) {
     typedef graph_pack<ConjugateDeBruijnGraph, runtime_k::RtSeq> gp_t;
-    gp_t gp(55, tmp_folder, Sequence(), 50, true, false);
-    ScanGraphPack("./src/test/debruijn/graph_fragments/rel_cov_ec/constructed_graph", gp);
+    gp_t gp(55, tmp_folder, 0, Sequence(), 50, true, false);
+    graphio::ScanGraphPack("./src/test/debruijn/graph_fragments/rel_cov_ec/constructed_graph", gp);
     INFO("Relative coverage component removal:");
     FillKmerCoverageWithAvg(gp.g, gp.index.inner_index());
     FlankingCoverage<gp_t::graph_t, gp_t::index_t::InnerIndexT> flanking_cov(gp.g, gp.index.inner_index(), 50);

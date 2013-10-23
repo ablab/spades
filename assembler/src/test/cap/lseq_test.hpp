@@ -691,12 +691,12 @@ BOOST_AUTO_TEST_CASE( TestLSeqNull ) {
 }
 
 
-BOOST_AUTO_TEST_CASE( TestLSeqAddSymbolForNullValue ) {
-    LSeq s1 = GenLSeq(1, "G");
-    LSeq s2 = (s1 << 'A');
-    LSeq s3 = GenLSeq(1, "A");
-	BOOST_CHECK_EQUAL(s3, s2);
-}
+//BOOST_AUTO_TEST_CASE( TestLSeqAddSymbolForNullValue ) {
+//    LSeq s1 = GenLSeq(1, "G");
+//    LSeq s2 = (s1 << 'A');
+//    LSeq s3 = GenLSeq(1, "A");
+//	BOOST_CHECK_EQUAL(s3, s2);
+//}
 
 
 BOOST_AUTO_TEST_CASE( TestLSeqComplex ) {

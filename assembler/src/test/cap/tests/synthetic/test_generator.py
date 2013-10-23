@@ -37,9 +37,10 @@ def generateRandomSequence(seqLen):
         seq += nucl[i]
     return seq
 
-def getChunkSequences(chunkLen, chunkNames):
+def getChunkSequences(shortChunkLen, longChuncLen, chunkNames):
     seqs = {}
     for name in chunkNames:
+        assert len(name) == 1
         seqs[name] = generateRandomSequence(chunkLen)
     return seqs
 

@@ -103,7 +103,7 @@ class SyntheticTestsRunner {
 //
 //        CompositeLabeler<Graph> labeler(length_labeler, pos_labeler);
 
-        omnigraph::visualization::WriteComponents(gp.g, file_name + "pictures/", splitter,
+        omnigraph::visualization::WriteComponents(gp.g, file_name, splitter,
                 coloring.ConstructColorer(), labeler);
 
         BlockPrinter<GraphT> block_printer(gp.g, coordinates_handler, file_name + ".blk");

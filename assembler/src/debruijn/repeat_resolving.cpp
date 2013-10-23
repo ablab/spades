@@ -7,7 +7,7 @@
 #include "standard.hpp"
 
 #include "logger/logger.hpp"
-#include "debruijn_stats.hpp"
+#include "stats/debruijn_stats.hpp"
 #include "omni_labelers.hpp"
 
 #include "de/distance_estimation.hpp"
@@ -17,6 +17,7 @@
 
 #include "path_extend/path_extend_launch.hpp"
 #include "contig_output.hpp"
+#include "positions.hpp"
 
 #include "long_read_storage.hpp"
 
@@ -103,7 +104,7 @@ void ConvertLongReads(LongReadContainerT& single_long_reads, vector<PathStorageI
     }
 }
 
-void pe_resolving(conj_graph_pack& gp, const EdgeQuality<Graph, Index>& /* quality_labeler */) {
+void pe_resolving(conj_graph_pack& gp, const EdgeQuality<Graph>& /* quality_labeler */) {
     vector<PairedIndexT*> pe_indexes;
     vector<PairedIndexT*> pe_scaf_indices;
     vector<size_t> indexes;
@@ -175,10 +176,10 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
     total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids,
                                             &gp.edge_pos);
     total_labeler tot_lab(&graph_struct);
-    EdgeQuality<Graph, Index> quality_labeler(gp.g, gp.index,
-                                              gp.kmer_mapper, gp.genome);
+    EdgeQuality<Graph> quality_labeler(gp.g);
+    quality_labeler.Fill(gp.index, gp.kmer_mapper, gp.genome);
     CompositeLabeler<Graph> labeler(tot_lab, quality_labeler);
-    detail_info_printer printer(gp, labeler, cfg::get().output_dir);
+    stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
     printer(ipp_before_repeat_resolution);
 
     bool no_valid_libs = true;

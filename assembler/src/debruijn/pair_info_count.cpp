@@ -16,6 +16,7 @@
 #include "pair_info_count.hpp"
 #include "long_read_mapper.hpp"
 #include "pair_info_filler.hpp"
+#include "stats/debruijn_stats.hpp"
 #include "path_extend/split_graph_pair_info.hpp"
 
 namespace debruijn_graph {
@@ -147,7 +148,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
         gp.paired_indices.Init();
     }
 
-    size_t edge_length_threshold = Nx(gp.g, 50);
+    size_t edge_length_threshold = stats::Nx(gp.g, 50);
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         if (cfg::get().ds.reads[i].data().read_length > 0 && cfg::get().ds.reads[i].data().read_length <= cfg::get().K) {
             WARN("Unable to estimate insert size for paired library #" << i);

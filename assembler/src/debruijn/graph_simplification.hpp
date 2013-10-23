@@ -576,7 +576,7 @@ bool AllTopology(Graph &g,
 template<class Graph>
 bool FinalRemoveErroneousEdges(
     Graph &g, boost::function<void(typename Graph::EdgeId)> removal_handler,
-    double determined_coverage_threshold, size_t iteration) {
+    double /*determined_coverage_threshold*/, size_t iteration) {
 
     bool changed = false;
 
@@ -588,7 +588,7 @@ bool FinalRemoveErroneousEdges(
 
 inline
 void PreSimplification(conj_graph_pack& gp,
-                       const FlankingCoverage<Graph, Index::InnerIndexT>& flanking_cov,
+                       const FlankingCoverage<Graph, Index::InnerIndexT>& /*flanking_cov*/,
                        boost::function<void(EdgeId)> removal_handler,
                        double determined_coverage_threshold) {
     INFO("PROCEDURE == Presimplification");
@@ -624,7 +624,7 @@ void SimplificationCycle(conj_graph_pack& gp,
                          const FlankingCoverage<Graph, Index::InnerIndexT>& flanking_cov,
                          boost::function<void(EdgeId)> removal_handler,
                          GraphLabeler<Graph>& labeler,
-                         stats::detail_info_printer &printer, size_t iteration_count,
+                         stats::detail_info_printer &printer, size_t /*iteration_count*/,
                          size_t iteration, double max_coverage) {
     INFO("PROCEDURE == Simplification cycle, iteration " << (iteration + 1));
 
@@ -675,7 +675,7 @@ void SimplificationCycle(conj_graph_pack& gp,
 
 inline
 void PostSimplification(conj_graph_pack& gp,
-                        const FlankingCoverage<Graph, Index::InnerIndexT>& flanking_cov,
+                        const FlankingCoverage<Graph, Index::InnerIndexT>& /*flanking_cov*/,
                         boost::function<void(EdgeId)> &removal_handler,
                         double determined_coverage_threshold) {
 
@@ -728,7 +728,7 @@ inline
 void SimplifyGraph(conj_graph_pack &gp,
                    boost::function<void(EdgeId)> removal_handler,
                    omnigraph::GraphLabeler<Graph>& labeler,
-                   detail_info_printer& printer, size_t iteration_count) {
+                   stats::detail_info_printer& printer, size_t iteration_count) {
     double determined_coverage_threshold = gp.ginfo.ec_bound();
 
     printer(ipp_before_simplification);

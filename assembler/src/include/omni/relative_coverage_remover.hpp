@@ -188,7 +188,8 @@ public:
         return local_coverage_f_(e, v);
     }
 
-    double MaxLocalCoverage(const vector<EdgeId>& edges, VertexId v) const {
+    template<class EdgeContainer>
+    double MaxLocalCoverage(const EdgeContainer& edges, VertexId v) const {
         double answer = 0.0;
         FOREACH(EdgeId e, edges) {
             answer = max(answer, LocalCoverage(e, v));
@@ -196,7 +197,8 @@ public:
         return answer;
     }
 
-    bool CheckAnyHighlyCovered(const vector<EdgeId>& edges, VertexId v,
+    template<class EdgeContainer>
+    bool CheckAnyHighlyCovered(const EdgeContainer& edges, VertexId v,
                                double base_coverage) const {
         return math::gr(MaxLocalCoverage(edges, v),
                         base_coverage * min_coverage_gap_);
@@ -376,15 +378,17 @@ private:
                         g_.IncomingEdges(v), v, base_coverage);
     }
 
-    bool CheckAnyFilteredHighlyCovered(const vector<EdgeId>& edges,
+    template<class EdgeContainer>
+    bool CheckAnyFilteredHighlyCovered(const EdgeContainer& edges,
                                        VertexId v,
                                        double base_coverage) const {
         return rel_helper_.CheckAnyHighlyCovered(
                 FilterEdgesFromComponent(edges), v, base_coverage);
     }
 
+    template<class EdgeContainer>
     vector<EdgeId> FilterEdgesFromComponent(
-            const vector<EdgeId>& edges) const {
+            const EdgeContainer& edges) const {
         vector<EdgeId> answer;
         FOREACH(EdgeId e, edges) {
             if (!component_.contains(e)) {
@@ -394,8 +398,9 @@ private:
         return answer;
     }
 
+    template<class EdgeContainer>
     vector<EdgeId> RetainEdgesFromComponent(
-            const vector<EdgeId>& edges) const {
+            const EdgeContainer& edges) const {
         vector<EdgeId> answer;
         FOREACH(EdgeId e, edges) {
             if (component_.contains(e)) {

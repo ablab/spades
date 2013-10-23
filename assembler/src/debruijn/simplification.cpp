@@ -13,84 +13,36 @@
 
 namespace debruijn_graph {
 
-//void simplify_graph(conj_graph_pack& gp) {
-//    using namespace omnigraph;
-//
-//    exec_construction(gp);
-//
-//    //auto index = detail_coverage::FlankingKMers<DeBruijnEdgeIndex<EdgeId>,EdgeId>(gp.index.inner_index());
-//    //index.save("/home/ksenia/detail_in.cvr","/home/ksenia/detail_out.cvr");
-//
-//    /*for ( auto index_iterator = gp.index.inner_index().value_begin(); index_iterator < gp.index.inner_index().value_end(); ++index_iterator ){
-//             std::cout << index_iterator->edgeId_ << " " << index_iterator->offset_ << " " << index_iterator->count_ << std::endl;
-//    }*/
-//    INFO("STAGE == Simplifying graph");
-///*
-//#if 0
-//    if (contigs_stream) {
-//        contigs_stream->reset();
-//        FillCoverageFromStream(*contigs_stream, index);
-//    }
-//#endif
-//
-//    // Check sanity in developer mode
-//    if (cfg::get().developer_mode) {
-//        for (auto idx = gp.index.inner_index().kmer_idx_begin(), eidx = gp.index.inner_index().kmer_idx_end(); idx != eidx; ++idx) {
-//            runtime_k::RtSeq k = gp.index.inner_index().kmer(idx);
-//            INFO("" << gp.index.inner_index()[k].count_ << ":" << gp.index.inner_index()[!k].count_);
-//
-//            VERIFY(gp.index.inner_index()[k].count_ == gp.index.inner_index()[!k].count_);
-//        }
-//    }
-//*/
-//
-//    if (cfg::get().developer_mode) {
-//        INFO("developer mode - save edge index");
-//        SaveEdgeIndex(cfg::get().output_dir + "/saves/debruijn_kmer_index_after_construction",gp.index.inner_index());
-//    }
-////  PrintWeightDistribution<K>(gp.g, "distribution.txt");
-//
-//    //fixme carefully think about quality
-//    VERIFY(cfg::get().developer_mode);
-//    gp.ClearQuality();
-//    gp.FillQuality();
-//    total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
-//    total_labeler tot_lab(&graph_struct);
-//
-//    CompositeLabeler<Graph> labeler(tot_lab, gp.edge_qual);
-//
-//    stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
-//    printer(ipp_before_first_gap_closer);
-//
-//    //  QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, edge_qual);
-//    QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler(
-//            gp.g, gp.edge_qual, boost::ref(labeler), cfg::get().output_dir);
-//
-//    //positive quality edges removed (folder colored_edges_deleted)
-//    boost::function<void(EdgeId)> removal_handler_f = boost::bind(
-//            //            &QualityLoggingRemovalHandler<Graph>::HandleDelete,
-//            &QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
-//            boost::ref(qual_removal_handler), _1);
-//
-//    SimplifyGraph(gp, /*boost::function<void(EdgeId)>(0)*/removal_handler_f, labeler, printer, /*iteration count*/3
-//    /*, etalon_paired_index*/);
-//
-//    AvgCovereageCounter<Graph> cov_counter(gp.g);
-//    cfg::get_writable().ds.set_avg_coverage(cov_counter.Count());
-//
-//}
-
 void Simplification::run(conj_graph_pack &gp, const char*) {
     using namespace omnigraph;
 
+    //fixme carefully think about quality
+    VERIFY(cfg::get().developer_mode);
+    gp.ClearQuality();
+    gp.FillQuality();
     total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
-    total_labeler labeler/*tot_lab*/(&graph_struct);
+    total_labeler tot_lab(&graph_struct);
 
-    detail_info_printer printer(gp, labeler, cfg::get().output_dir);
+    CompositeLabeler<Graph> labeler(tot_lab, gp.edge_qual);
+
+    stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
     printer(ipp_before_first_gap_closer);
 
-    SimplifyGraph(gp, 0/*removal_handler_f*/, labeler, printer, 10
+    //  QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, edge_qual);
+    QualityEdgeLocalityPrintingRH < Graph
+            > qual_removal_handler(gp.g, gp.edge_qual, boost::ref(labeler),
+                                   cfg::get().output_dir);
+
+    //positive quality edges removed (folder colored_edges_deleted)
+    boost::function<void(EdgeId)> removal_handler_f = boost::bind(
+            //            &QualityLoggingRemovalHandler<Graph>::HandleDelete,
+            &QualityEdgeLocalityPrintingRH < Graph > ::HandleDelete,
+            boost::ref(qual_removal_handler), _1);
+
+    SimplifyGraph(gp, /*boost::function<void(EdgeId)>(0)*/removal_handler_f,
+                  labeler, printer, /*iteration count*/3
                   /*, etalon_paired_index*/);
+
 
     AvgCovereageCounter<Graph> cov_counter(gp.g);
     cfg::get_writable().ds.set_avg_coverage(cov_counter.Count());
@@ -100,7 +52,7 @@ void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
     total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
     total_labeler labeler/*tot_lab*/(&graph_struct);
 
-    detail_info_printer printer(gp, labeler, cfg::get().output_dir);
+    stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
 
     printer(ipp_removing_isolated_edges);
 
