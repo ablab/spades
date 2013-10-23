@@ -74,16 +74,15 @@ class GapStorage {
     }
 
     void AddStorage(const GapStorage<Graph> & to_add) {
-        for (auto iter = to_add.inner_index.begin();
-             iter != to_add.inner_index.end(); ++iter) {
-            for (auto j_iter = iter->second.begin();
-                 j_iter != iter->second.end(); ++j_iter)
-                inner_index[iter->first].push_back(*j_iter);
-        }
+        const auto& idx = to_add.inner_index;
+        for (auto iter = idx.begin(); iter != idx.end(); ++iter)
+            inner_index[iter->first].insert(inner_index[iter->first].end(),
+                                            iter->second.begin(), iter->second.end());
     }
 
     void PostProcess() {
         FillIndex();
+
         for (auto j_iter = index.begin(); j_iter != index.end(); j_iter++) {
             EdgeId e = *j_iter;
             auto cl_start = inner_index[e].begin();
@@ -91,8 +90,8 @@ class GapStorage {
             vector<GapDescription<Graph> > padded_gaps;
             while (iter != inner_index[e].end()) {
                 auto next_iter = ++iter;
-                if (next_iter == inner_index[e].end()
-                    || next_iter->end != cl_start->end) {
+                if (next_iter == inner_index[e].end() ||
+                    next_iter->end != cl_start->end) {
                     size_t len = next_iter - cl_start;
                     if (len > 1) {
                         nonempty_pairs.insert(
@@ -102,37 +101,31 @@ class GapStorage {
                 }
             }
         }
+
         set<pair<EdgeId, EdgeId> > used_rc_pairs;
-        for (auto iter = nonempty_pairs.begin(); iter != nonempty_pairs.end();
-             ++iter) {
+        for (auto iter = nonempty_pairs.begin(); iter != nonempty_pairs.end(); ++iter) {
             if (used_rc_pairs.find(*iter) != used_rc_pairs.end()) {
                 DEBUG("skipping pair " << g_.int_id(iter->first) << "," << g_.int_id(iter->second));
-                symmetrically_ignored_pairs.insert(
-                    make_pair(iter->first, iter->second));
+                symmetrically_ignored_pairs.insert(make_pair(iter->first, iter->second));
             } else {
                 DEBUG("Using pair" << g_.int_id(iter->first) << "," << g_.int_id(iter->second));
             }
+
             for (size_t i = 0; i < index.size(); i++) {
-                if (nonempty_pairs.find(make_pair(iter->first, index[i]))
-                    != nonempty_pairs.end()
-                    && nonempty_pairs.find(
-                        make_pair(index[i], iter->second))
-                    != nonempty_pairs.end()) {
+                if (nonempty_pairs.find(make_pair(iter->first, index[i])) != nonempty_pairs.end() &&
+                    nonempty_pairs.find(make_pair(index[i], iter->second)) != nonempty_pairs.end()) {
                     INFO("pair " << g_.int_id(iter->first) << "," << g_.int_id(iter->second) << " is ignored because of edge between " << g_.int_id(index[i]));
-                    transitively_ignored_pairs.insert(
-                        make_pair(iter->first, iter->second));
+                    transitively_ignored_pairs.insert(make_pair(iter->first, iter->second));
                 }
             }
-            used_rc_pairs.insert(
-                make_pair(g_.conjugate(iter->second),
-                          g_.conjugate(iter->first)));
+            used_rc_pairs.insert(make_pair(g_.conjugate(iter->second),
+                                           g_.conjugate(iter->first)));
         }
     }
 
     void DumpToFile(const string filename) {
         ofstream filestr(filename);
-        for (auto iter = inner_index.begin(); iter != inner_index.end();
-             ++iter) {
+        for (auto iter = inner_index.begin(); iter != inner_index.end(); ++iter) {
             DEBUG( g_.int_id(iter->first)<< " " <<iter->second.size());
             filestr << g_.int_id(iter->first) << " " << iter->second.size()
                     << endl;
@@ -179,8 +172,7 @@ class GapStorage {
         vector<GapDescription<Graph> > padded_gaps;
         while (iter != inner_index[e].end()) {
             auto next_iter = ++iter;
-            if (next_iter == inner_index[e].end()
-                || next_iter->end != cl_start->end) {
+            if (next_iter == inner_index[e].end() || next_iter->end != cl_start->end) {
                 int start_min = 1000000000;
                 int end_max = 0;
                 int long_seqs = 0;
@@ -188,12 +180,12 @@ class GapStorage {
                 size_t long_seq_limit = cfg::get().pb.long_seq_limit;  //400
                 bool exclude_long_seqs = false;
                 for (auto j_iter = cl_start; j_iter != next_iter; j_iter++) {
-                    if (g_.length(j_iter->start)
-                        - j_iter->edge_gap_start_position > 500
-                        || j_iter->edge_gap_end_position > 500) {
+                    if (g_.length(j_iter->start) - j_iter->edge_gap_start_position > 500 ||
+                        j_iter->edge_gap_end_position > 500) {
                         INFO("ignoring alingment to the middle of edge");
                         continue;
                     }
+
                     if (j_iter->gap_seq.size() > long_seq_limit)
                         long_seqs++;
                     else
@@ -204,26 +196,24 @@ class GapStorage {
                     if (j_iter->edge_gap_end_position > end_max)
                         end_max = j_iter->edge_gap_end_position;
                 }
+
                 if (short_seqs >= 2 && short_seqs > long_seqs)
                     exclude_long_seqs = true;
+
                 for (auto j_iter = cl_start; j_iter != next_iter; j_iter++) {
-                    if (g_.length(j_iter->start)
-                        - j_iter->edge_gap_start_position > 500
-                        || j_iter->edge_gap_end_position > 500) {
+                    if (g_.length(j_iter->start) - j_iter->edge_gap_start_position > 500 ||
+                        j_iter->edge_gap_end_position > 500)
                         continue;
-                    }
-                    if (exclude_long_seqs
-                        && j_iter->gap_seq.size() > long_seq_limit)
+
+                    if (exclude_long_seqs && j_iter->gap_seq.size() > long_seq_limit)
                         continue;
-                    string s = g_.EdgeNucls(j_iter->start).Subseq(
-                        start_min, j_iter->edge_gap_start_position).str();
+
+                    string s = g_.EdgeNucls(j_iter->start).Subseq(start_min, j_iter->edge_gap_start_position).str();
                     s += j_iter->gap_seq.str();
-                    s += g_.EdgeNucls(j_iter->end).Subseq(
-                        j_iter->edge_gap_end_position, end_max).str();
-                    padded_gaps.push_back(
-                        GapDescription<Graph>(j_iter->start, j_iter->end,
-                                              Sequence(s), start_min,
-                                              end_max));
+                    s += g_.EdgeNucls(j_iter->end).Subseq(j_iter->edge_gap_end_position, end_max).str();
+                    padded_gaps.push_back(GapDescription<Graph>(j_iter->start, j_iter->end,
+                                                                Sequence(s), start_min,
+                                                                end_max));
                 }
                 cl_start = next_iter;
             }
@@ -232,8 +222,7 @@ class GapStorage {
     }
 
     void PadGapStrings() {
-        for (auto iter = inner_index.begin(); iter != inner_index.end();
-             ++iter) {
+        for (auto iter = inner_index.begin(); iter != inner_index.end(); ++iter) {
             INFO("Padding gaps for first edge " << g_.int_id(iter->first));
             PadGapStrings(iter->first);
         }
