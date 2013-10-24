@@ -21,8 +21,9 @@ template<class Graph>
 class GapStorage {
     friend class PacbioGapCloser<Graph> ;
     typedef typename Graph::EdgeId EdgeId;
-  private:
-    DECL_LOGGER("PacbioGaps");
+private:
+    DECL_LOGGER("PacbioGaps")
+    ;
     Graph &g_;
     map<EdgeId, vector<GapDescription<Graph> > > inner_index;
     void HiddenAddGap(const GapDescription<Graph> &p) {
@@ -32,16 +33,16 @@ class GapStorage {
     set<pair<EdgeId, EdgeId> > nonempty_pairs;
     set<pair<EdgeId, EdgeId> > transitively_ignored_pairs;
     set<pair<EdgeId, EdgeId> > symmetrically_ignored_pairs;
-  public:
+public:
     GapStorage(Graph &g)
-            : g_(g), inner_index() {
+            : g_(g),
+              inner_index() {
     }
 
     size_t FillIndex() {
         index.resize(0);
         set<EdgeId> tmp;
-        for (auto iter = inner_index.begin(); iter != inner_index.end();
-             iter++) {
+        for (auto iter = inner_index.begin(); iter != inner_index.end(); iter++) {
             index.push_back(iter->first);
         }
         return index.size();
@@ -76,8 +77,7 @@ class GapStorage {
     void AddStorage(const GapStorage<Graph> & to_add) {
         const auto& idx = to_add.inner_index;
         for (auto iter = idx.begin(); iter != idx.end(); ++iter)
-            inner_index[iter->first].insert(inner_index[iter->first].end(),
-                                            iter->second.begin(), iter->second.end());
+            inner_index[iter->first].insert(inner_index[iter->first].end(), iter->second.begin(), iter->second.end());
     }
 
     void PostProcess() {
@@ -90,12 +90,10 @@ class GapStorage {
             vector<GapDescription<Graph> > padded_gaps;
             while (iter != inner_index[e].end()) {
                 auto next_iter = ++iter;
-                if (next_iter == inner_index[e].end() ||
-                    next_iter->end != cl_start->end) {
+                if (next_iter == inner_index[e].end() || next_iter->end != cl_start->end) {
                     size_t len = next_iter - cl_start;
                     if (len > 1) {
-                        nonempty_pairs.insert(
-                            make_pair(cl_start->start, cl_start->end));
+                        nonempty_pairs.insert(make_pair(cl_start->start, cl_start->end));
                     }
                     cl_start = next_iter;
                 }
@@ -112,14 +110,13 @@ class GapStorage {
             }
 
             for (size_t i = 0; i < index.size(); i++) {
-                if (nonempty_pairs.find(make_pair(iter->first, index[i])) != nonempty_pairs.end() &&
-                    nonempty_pairs.find(make_pair(index[i], iter->second)) != nonempty_pairs.end()) {
+                if (nonempty_pairs.find(make_pair(iter->first, index[i])) != nonempty_pairs.end()
+                        && nonempty_pairs.find(make_pair(index[i], iter->second)) != nonempty_pairs.end()) {
                     INFO("pair " << g_.int_id(iter->first) << "," << g_.int_id(iter->second) << " is ignored because of edge between " << g_.int_id(index[i]));
                     transitively_ignored_pairs.insert(make_pair(iter->first, iter->second));
                 }
             }
-            used_rc_pairs.insert(make_pair(g_.conjugate(iter->second),
-                                           g_.conjugate(iter->first)));
+            used_rc_pairs.insert(make_pair(g_.conjugate(iter->second), g_.conjugate(iter->first)));
         }
     }
 
@@ -127,11 +124,9 @@ class GapStorage {
         ofstream filestr(filename);
         for (auto iter = inner_index.begin(); iter != inner_index.end(); ++iter) {
             DEBUG( g_.int_id(iter->first)<< " " <<iter->second.size());
-            filestr << g_.int_id(iter->first) << " " << iter->second.size()
-                    << endl;
+            filestr << g_.int_id(iter->first) << " " << iter->second.size() << endl;
             sort(iter->second.begin(), iter->second.end());
-            for (auto j_iter = iter->second.begin();
-                 j_iter != iter->second.end(); ++j_iter) {
+            for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); ++j_iter) {
                 filestr << j_iter->str(g_);
             }
             filestr << endl;
@@ -158,8 +153,7 @@ class GapStorage {
                 VERIFY(res == 2);
                 res = fscanf(file, "%s\n", ss);
                 VERIFY(res == 1);
-                GapDescription<Graph> gap(tmp_map[first_id], tmp_map[second_id],
-                                          Sequence(ss), first_ind, second_ind);
+                GapDescription<Graph> gap(tmp_map[first_id], tmp_map[second_id], Sequence(ss), first_ind, second_ind);
                 this->AddGap(gap);
             }
         }
@@ -180,12 +174,10 @@ class GapStorage {
                 size_t long_seq_limit = cfg::get().pb.long_seq_limit;  //400
                 bool exclude_long_seqs = false;
                 for (auto j_iter = cl_start; j_iter != next_iter; j_iter++) {
-                    if (g_.length(j_iter->start) - j_iter->edge_gap_start_position > 500 ||
-                        j_iter->edge_gap_end_position > 500) {
+                    if (g_.length(j_iter->start) - j_iter->edge_gap_start_position > 500 || j_iter->edge_gap_end_position > 500) {
                         INFO("ignoring alingment to the middle of edge");
                         continue;
                     }
-
                     if (j_iter->gap_seq.size() > long_seq_limit)
                         long_seqs++;
                     else
@@ -201,8 +193,7 @@ class GapStorage {
                     exclude_long_seqs = true;
 
                 for (auto j_iter = cl_start; j_iter != next_iter; j_iter++) {
-                    if (g_.length(j_iter->start) - j_iter->edge_gap_start_position > 500 ||
-                        j_iter->edge_gap_end_position > 500)
+                    if (g_.length(j_iter->start) - j_iter->edge_gap_start_position > 500 || j_iter->edge_gap_end_position > 500)
                         continue;
 
                     if (exclude_long_seqs && j_iter->gap_seq.size() > long_seq_limit)
@@ -211,9 +202,7 @@ class GapStorage {
                     string s = g_.EdgeNucls(j_iter->start).Subseq(start_min, j_iter->edge_gap_start_position).str();
                     s += j_iter->gap_seq.str();
                     s += g_.EdgeNucls(j_iter->end).Subseq(j_iter->edge_gap_end_position, end_max).str();
-                    padded_gaps.push_back(GapDescription<Graph>(j_iter->start, j_iter->end,
-                                                                Sequence(s), start_min,
-                                                                end_max));
+                    padded_gaps.push_back(GapDescription<Graph>(j_iter->start, j_iter->end, Sequence(s), start_min, end_max));
                 }
                 cl_start = next_iter;
             }
@@ -235,32 +224,29 @@ class PacbioGapCloser {
     typedef typename Graph::EdgeId EdgeId;
     typedef runtime_k::RtSeq Kmer;
     typedef vector<map<Kmer, int> > KmerStorage;
-  private:
+private:
     DECL_LOGGER("PacbioGaps")
     ;
     Graph &g_;
     //first edge, second edge, weight, seq
     map<EdgeId, map<EdgeId, pair<size_t, string> > > new_edges_;
 
-  public:
+public:
     void CloseGapsInGraph(map<EdgeId, EdgeId> &replacement) {
         for (auto iter = new_edges_.begin(); iter != new_edges_.end(); ++iter) {
             if (iter->second.size() != 1) {
                 WARN("non-unique gap!!");
                 continue;
             }
-
             EdgeId first = iter->first;
             EdgeId second = (iter->second.begin()->first);
-            if (replacement.find(first) != replacement.end() ||
-                replacement.find(second) != replacement.end()) {
+            if (replacement.find(first) != replacement.end() || replacement.find(second) != replacement.end()) {
                 INFO("sorry, gap chains are not supported yet");
                 continue;
             }
 
             EdgeId first_conj = g_.conjugate(first);
             EdgeId second_conj = g_.conjugate(second);
-
             size_t first_id = g_.int_id(first);
             size_t second_id = g_.int_id(second);
             size_t first_id_conj = g_.int_id(g_.conjugate(first));
@@ -269,29 +255,20 @@ class PacbioGapCloser {
             size_t len_f = g_.length(first);
             size_t len_s = g_.length(second);
             size_t len_sum = iter->second.begin()->second.second.length();
-            EdgeId newEdge = g_.AddEdge(g_.EdgeStart(first), g_.EdgeEnd(second),
-                                        Sequence(iter->second.begin()->second.second));
+            EdgeId newEdge = g_.AddEdge(g_.EdgeStart(first), g_.EdgeEnd(second), Sequence(iter->second.begin()->second.second));
             TRACE(g_.int_id(newEdge));
-            // FIXME: Handle split better here: use start / end positions of the cluster.
-            int len_split = int(((double)len_f * (double)len_sum) / (len_s + len_f));
+            int len_split = int(((double) len_f * (double) len_sum) / (len_s + len_f));
             if (len_split == 0) {
                 WARN(" zero split length, length are:" << len_f <<" " << len_sum <<" " << len_s);
                 len_split = 1;
             }
-
-            pair<EdgeId, EdgeId> split_result = g_.SplitEdge(newEdge,
-                                                             len_split);
+            pair<EdgeId, EdgeId> split_result = g_.SplitEdge(newEdge, len_split);
             TRACE("GlueEdges " << g_.str(split_result.first));
-            //				g_.GlueEdges(first, split_result.first);
-            //				g_.GlueEdges(second, split_result.second);
-            TRACE(g_.int_id(split_result.first));
-            TRACE(g_.int_id(split_result.second));
+            TRACE(g_.int_id(split_result.first) << " " << g_.int_id(split_result.second));
             vector<EdgeId> to_merge;
             EdgeId tmp1 = g_.GlueEdges(first, split_result.first);
             EdgeId tmp2 = g_.GlueEdges(second, split_result.second);
-            TRACE(g_.int_id(tmp1));
-            TRACE(g_.int_id(tmp2));
-
+            TRACE(g_.int_id(tmp1)<< " " << g_.int_id(tmp2));
             to_merge.push_back(tmp1);
             to_merge.push_back(tmp2);
             newEdge = g_.MergePath(to_merge);
@@ -305,25 +282,19 @@ class PacbioGapCloser {
         }
         //TODO: chains of gaps!
     }
-  private:
+private:
 
-    void ConstructConsensus(EdgeId e,
-                            GapStorage<Graph> &storage,
-                            map<EdgeId, map<EdgeId, pair<size_t, string> > > & new_edges) {
+    void ConstructConsensus(EdgeId e, GapStorage<Graph> &storage, map<EdgeId, map<EdgeId, pair<size_t, string> > > & new_edges) {
         auto cl_start = storage.inner_index[e].begin();
         auto iter = storage.inner_index[e].begin();
         size_t cur_len = 0;
         while (iter != storage.inner_index[e].end()) {
             auto next_iter = ++iter;
             cur_len++;
-            if (next_iter == storage.inner_index[e].end() ||
-                next_iter->end != cl_start->end) {
-                if (cur_len > 1 &&
-                    !storage.IsIgnored(
-                        make_pair(cl_start->start, cl_start->end))) {
+            if (next_iter == storage.inner_index[e].end() || next_iter->end != cl_start->end) {
+                if (cur_len > 1 && !storage.IsIgnored(make_pair(cl_start->start, cl_start->end))) {
                     vector<string> gap_variants;
-                    for (auto j_iter = cl_start; j_iter != next_iter;
-                         j_iter++) {
+                    for (auto j_iter = cl_start; j_iter != next_iter; j_iter++) {
                         string s = j_iter->gap_seq.str();
                         transform(s.begin(), s.end(), s.begin(), ::toupper);
                         gap_variants.push_back(s);
@@ -331,15 +302,13 @@ class PacbioGapCloser {
                     map<EdgeId, pair<size_t, string> > tmp;
                     string s = g_.EdgeNucls(cl_start->start).Subseq(0, cl_start->edge_gap_start_position).str();
 
-                    const ConsensusCore::PoaConsensus* pc =
-                            ConsensusCore::PoaConsensus::FindConsensus(gap_variants,
-                                                                       ConsensusCore::PoaConfig::GLOBAL_ALIGNMENT);
+                    const ConsensusCore::PoaConsensus* pc = ConsensusCore::PoaConsensus::FindConsensus(gap_variants,
+                                                                                                       ConsensusCore::PoaConfig::GLOBAL_ALIGNMENT);
                     string tmp_string = pc->Sequence();
                     DEBUG("consenus for " << g_.int_id(cl_start->start) << " and " << g_.int_id(cl_start->end) << "found: ");
                     DEBUG(tmp_string);
                     s += tmp_string;
-                    s += g_.EdgeNucls(cl_start->end).Subseq(cl_start->edge_gap_end_position,
-                                                            g_.length(cl_start->end) + g_.k()).str();
+                    s += g_.EdgeNucls(cl_start->end).Subseq(cl_start->edge_gap_end_position, g_.length(cl_start->end) + g_.k()).str();
                     tmp.insert(make_pair(cl_start->end, make_pair(cur_len, s)));
                     new_edges[cl_start->start] = tmp;
 
@@ -350,7 +319,7 @@ class PacbioGapCloser {
         }
     }
 
-  public:
+public:
     PacbioGapCloser(Graph &g)
             : g_(g) {
     }
@@ -367,8 +336,7 @@ class PacbioGapCloser {
             ConstructConsensus(e, storage, new_edges_by_thread[thread_num]);
         }
         for (size_t i = 0; i < nthreads; i++) {
-            for (auto iter = new_edges_by_thread[i].begin();
-                 iter != new_edges_by_thread[i].end(); ++iter) {
+            for (auto iter = new_edges_by_thread[i].begin(); iter != new_edges_by_thread[i].end(); ++iter) {
                 new_edges_.insert(*iter);
             }
         }
@@ -379,12 +347,8 @@ class PacbioGapCloser {
             if (iter->second.size() > 1) {
                 WARN("nontrivial gap closing for edge" <<g_.int_id(iter->first));
             }
-            for (auto j_iter = iter->second.begin();
-                 j_iter != iter->second.end(); ++j_iter) {
-                filestr << ">" << g_.int_id(iter->first) << "_"
-                        << iter->second.size() << "_"
-                        << g_.int_id(j_iter->first) << "_"
-                        << j_iter->second.first << endl;
+            for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); ++j_iter) {
+                filestr << ">" << g_.int_id(iter->first) << "_" << iter->second.size() << "_" << g_.int_id(j_iter->first) << "_" << j_iter->second.first << endl;
                 filestr << j_iter->second.second << endl;
             }
         }

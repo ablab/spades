@@ -183,7 +183,7 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
 
     bool no_valid_libs = true;
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i)
-        if (cfg::get().ds.reads[i].data().mean_insert_size != 0.0) {
+        if (cfg::get().ds.reads[i].data().mean_insert_size != 0.0 || cfg::get().ds.reads[i].type()== io::LibraryType::PacBioReads) {
             no_valid_libs = false;
             break;
         }
