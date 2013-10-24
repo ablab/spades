@@ -38,7 +38,7 @@ mira_base = '/acestorage/software/mira-4.0rc1/build/bin/'
 mira_config = os.path.join(runner_dirpath, 'MIRA_config.txt')
 
 # IMPORTANT CONSTANTS
-long_options = "min-k= max-k= step-k= threads= is= dev= assemblers= mira-tmp-dir= corrected".split()
+long_options = "min-k= max-k= step-k= threads= is= dev= assemblers= mira-tmp-dir= corrected sc".split()
 short_options = "o:1:2:r:t:"
 
 # options
@@ -52,6 +52,7 @@ is_dev = None
 max_threads = 8
 reference = None
 corrected = False
+single_cell = False
 
 k_2level_selection = True
 min_k_rough = 35
@@ -440,9 +441,9 @@ def iterate_K(name, run_tool_function):
                 warning("QUAST did NOT report results for ALL assemblies!")
             if not assemblies_results:
                 if assemblies_aux_results:
+                    warning("QUAST did NOT report results for metric " + key_metric + ", using " + aux_metric)
                     assemblies_results = assemblies_aux_results
                     key_metric = aux_metric
-                    warning("QUAST did NOT report results for metric " + key_metric + ", using " + aux_metric)
                 else:
                     warning("QUAST failed to evaluates assemblies, ABORTING with " + name + ", see details in: " + quast_out_dir)
                     return
@@ -488,7 +489,10 @@ def run_K_independent_assembler(name, run_tool_function):
     cwd = os.getcwd()
     os.chdir(out_dir)
     log_filename = os.path.join(out_dir, name + LOG_SUFF)
-    return_code, contigs_path, scaffolds_path = run_tool_function(log_filename)
+    if name == 'sga': # in corrected mode, SGA is K independent de facto
+        return_code, contigs_path, scaffolds_path = run_tool_function(0, log_filename)
+    else:
+        return_code, contigs_path, scaffolds_path = run_tool_function(log_filename)
     if return_code:
         warning(name + " returned non-zero code!")
     result = None
@@ -525,6 +529,8 @@ def run_spades(log_filename):
     cmd_line = os.path.join(spades_base, "spades.py") + " --careful -o . -1 %s -2 %s -t %d" % (left, right, max_threads)
     if corrected:
         cmd_line += " --only-assembler"
+    if single_cell:
+        cmd_line += " --sc"
     #cmd_line = os.path.join(spades_base, "spades.py") + " --sc -o . -1 %s -2 %s -t %d" % (left, right, max_threads)
     cmd_line += " >>%s 2>>%s" % (log_filename, log_filename)
     log_file.write("Started: " + cmd_line + "\n\n")
@@ -633,8 +639,14 @@ def run_mira(log_filename):
     shutil.copy(mira_config, cur_mira_config)
     cropped_left, cropped_right = crop_read_names_if_needed(left, right, os.path.dirname(log_filename))
     params_subst_dict = dict(common_params_subst_dict)
-    if not os.path.isdir(mira_tmp_dir):
-        os.makedirs(mira_tmp_dir)
+
+    global mira_tmp_dir
+    original_mira_tmp_dir = mira_tmp_dir
+    i = 1
+    while os.path.isdir(mira_tmp_dir):
+        mira_tmp_dir = original_mira_tmp_dir + "_" + str(i)
+        i += 1
+    os.makedirs(mira_tmp_dir)
     params_subst_dict['MIRA_TMP_DIR'] = mira_tmp_dir
     params_subst_dict['MIRA_MIN'] = str(max(0, insert_size - 9 * is_dev / 2)) # TODO: check this
     params_subst_dict['MIRA_MAX'] = str(min(insert_size + 9 * is_dev / 2, 2 * insert_size)) # TODO: check this
@@ -655,6 +667,7 @@ def run_mira(log_filename):
 
     log_file.write("Finished, log is %s\n" % log_filename)
     log_file.close()
+    shutil.rmtree(mira_tmp_dir)
     contigs_path = "MyFirstAssembly_assembly/MyFirstAssembly_d_results/MyFirstAssembly_out.unpadded.fasta"
     scaffolds_path = None # mira doesn't have a scaffolder
     return return_code, contigs_path, scaffolds_path
@@ -676,6 +689,7 @@ def main():
     global assemblers_to_run
     global mira_tmp_dir
     global corrected
+    global single_cell
 
     if len(sys.argv) == 1:
         print("Assemblers runner v.1.1")
@@ -696,6 +710,7 @@ def main():
         print("--step-k\t<int>\tstep for K changing (default is auto, first %s and than %s)" % (str(step_k_rough), str(step_k_accurate)))
         print("--mira-tmp-dir\t<dir>\ttemporary dir for MIRA assembler (default is %s)" % mira_tmp_dir)
         print("--corrected\t\t\treads are corrected (disable error correction if it is configurable)")
+        print("--sc\t\t\t\tdataset is single-cell")
         print("--assemblers\t<str,str>\tlist of assemblers to run (default is %s)" % assemblers_to_run)
         sys.exit(0)
 
@@ -733,6 +748,8 @@ def main():
             mira_tmp_dir = arg
         elif opt == '--corrected':
             corrected = True
+        elif opt == '--sc':
+            single_cell = True
         elif opt == '--assemblers':
             new_assemblers_to_run = arg.split(',')
             for name in new_assemblers_to_run:
@@ -774,6 +791,8 @@ def main():
         ('velvet', run_velvet), ('sga', run_sga), ('ray', run_ray)]:
         if not name in assemblers_to_run:
             continue
+        if corrected and name == 'sga':
+            continue
         cur_tool_log_filename = os.path.join(archive_dir, name + LOG_SUFF)
         cur_tool_log_handler = logging.FileHandler(cur_tool_log_filename, mode='a')
         log.addHandler(cur_tool_log_handler)
@@ -781,9 +800,11 @@ def main():
         log.removeHandler(cur_tool_log_handler)
 
     # run independent on K assemblers
-    for (name, run_tool_function) in [('spades', run_spades), ('idba', run_idba), ('cabog', run_cabog),
+    for (name, run_tool_function) in [('spades', run_spades), ('idba', run_idba), ('sga', run_sga), ('cabog', run_cabog),
         ('mira', run_mira)]:
         if not name in assemblers_to_run:
+            continue
+        if not corrected and name == 'sga':
             continue
         cur_tool_log_filename = os.path.join(archive_dir, name + LOG_SUFF)
         cur_tool_log_handler = logging.FileHandler(cur_tool_log_filename, mode='a')
