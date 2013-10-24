@@ -59,7 +59,7 @@ def get_read_length(output_dir, K, dataset_data):
 
 
 def update_k_mers_in_special_cases(cur_k_mers, RL, log):
-    if not options_storage.k_mers and not options_storage.single_cell: # kmers were set by default and not SC
+    if options_storage.auto_K_allowed():
         if RL >= 250:
             support.warning("Default k-mer sizes were set to %s because estimated "
                             "read length (%d) is equal or great than 250" % (str(options_storage.k_mers_250), RL), log)

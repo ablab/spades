@@ -107,7 +107,10 @@ def print_used_values(cfg, log):
     # assembly
     if "assembly" in cfg:
         log.info("Assembly parameters:")
-        print_value(cfg, "assembly", "iterative_K", "k")
+        if options_storage.auto_K_allowed():
+            log.info("  k: automatic selection based on read length")
+        else:
+            print_value(cfg, "assembly", "iterative_K", "k")
         if cfg["assembly"].careful:
             log.info("  MismatchCorrector will be used")
         else:
