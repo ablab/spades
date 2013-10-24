@@ -284,7 +284,7 @@ void FillKmerCoverageWithAvg(const Graph& g, InnerIndex& idx) {
         kpomer >>= 0;
         for (size_t i = 0; i < g.length(e); ++i) {
             kpomer <<= nucls[i + g.k()];
-            idx[kpomer].count = math::floor(cov);
+            idx[kpomer].count = unsigned(math::floor(cov));
         }
     }
 }
@@ -295,8 +295,8 @@ BOOST_AUTO_TEST_CASE( RelativeCoverageRemover ) {
     graphio::ScanGraphPack("./src/test/debruijn/graph_fragments/rel_cov_ec/constructed_graph", gp);
     INFO("Relative coverage component removal:");
     FillKmerCoverageWithAvg(gp.g, gp.index.inner_index());
-    FlankingCoverage<gp_t::graph_t, gp_t::index_t::InnerIndexT> flanking_cov(gp.g, gp.index.inner_index(), 50);
-    RemoveRelativelyLowCoverageComponents(gp.g, flanking_cov, standard_rcc_config());
+    gp.flanking_cov.Fill(gp.index.inner_index());
+    RemoveRelativelyLowCoverageComponents(gp.g, gp.flanking_cov, standard_rcc_config());
     BOOST_CHECK_EQUAL(gp.g.size(), 12u/*28u*/);
 }
 

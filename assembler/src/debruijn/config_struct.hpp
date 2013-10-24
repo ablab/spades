@@ -43,7 +43,6 @@ enum info_printer_pos {
     ipp_bulge_removal,
     ipp_err_con_removal,
     ipp_before_post_simplification,
-//    ipp_before_final_err_con_removal,
     ipp_final_err_con_removal,
     ipp_final_tip_clipping,
     ipp_final_bulge_removal,

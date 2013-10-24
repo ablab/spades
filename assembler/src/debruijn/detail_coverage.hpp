@@ -12,7 +12,7 @@
 namespace debruijn_graph {
 
 template<class Graph, class Index>
-class FlankingCoverage : public GraphActionHandler<Graph>, public omnigraph::AbstractFlankingCoverage<Graph> {
+class OldFlankingCoverage : public GraphActionHandler<Graph>, public omnigraph::AbstractFlankingCoverage<Graph> {
   typedef GraphActionHandler<Graph> base;
   typedef typename Graph::EdgeId EdgeId;
   typedef typename Graph::VertexId VertexId;
@@ -58,7 +58,7 @@ class FlankingCoverage : public GraphActionHandler<Graph>, public omnigraph::Abs
 
  public:
 
-  FlankingCoverage(const Graph& g, const Index& kmer_index,
+  OldFlankingCoverage(const Graph& g, const Index& kmer_index,
                    unsigned averaging_range)
       : base(g, "FlankingCoverage"),
         kmer_index_(kmer_index),
@@ -109,7 +109,7 @@ class FlankingCoverage : public GraphActionHandler<Graph>, public omnigraph::Abs
 };
 
 template<class Graph>
-class NewFlankingCoverage : public GraphActionHandler<Graph>,
+class FlankingCoverage : public GraphActionHandler<Graph>,
         public omnigraph::AbstractFlankingCoverage<Graph> {
     typedef GraphActionHandler<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
@@ -190,7 +190,7 @@ class NewFlankingCoverage : public GraphActionHandler<Graph>,
 public:
 
     //todo think about interactions with gap closer
-    NewFlankingCoverage(Graph& g, size_t averaging_range)
+    FlankingCoverage(Graph& g, size_t averaging_range)
             : base(g, "NewFlankingCoverage"), g_(g),
               averaging_range_(averaging_range) {
     }

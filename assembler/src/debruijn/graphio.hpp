@@ -206,7 +206,7 @@ class DataPrinter {
         SaveEdgeAssociatedInfo(component_.g().coverage_index(), out);
     }
 
-    void SaveFlankingCoverage(const string& file_name, const NewFlankingCoverage<Graph> flanking_cov) const {
+    void SaveFlankingCoverage(const string& file_name, const FlankingCoverage<Graph>& flanking_cov) const {
         ofstream out(file_name + ".flcvr");
         DEBUG("Saving flanking coverage, " << file_name <<" created");
         SaveEdgeAssociatedInfo(flanking_cov, out);
@@ -484,7 +484,7 @@ class DataScanner {
         LoadEdgeAssociatedInfo(g_.coverage_index(), in);
     }
 
-    bool LoadFlankingCoverage(const string& file_name, NewFlankingCoverage<Graph>& flanking_cov) {
+    bool LoadFlankingCoverage(const string& file_name, FlankingCoverage<Graph>& flanking_cov) {
         if (!FileExists(file_name + ".flcvr")) {
             INFO("Flanking coverage saves are absent");
             return false;

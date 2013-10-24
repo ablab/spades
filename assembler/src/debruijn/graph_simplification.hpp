@@ -588,7 +588,6 @@ bool FinalRemoveErroneousEdges(
 
 inline
 void PreSimplification(conj_graph_pack& gp,
-                       const FlankingCoverage<Graph, Index::InnerIndexT>& /*flanking_cov*/,
                        boost::function<void(EdgeId)> removal_handler,
                        double determined_coverage_threshold) {
     INFO("PROCEDURE == Presimplification");
@@ -621,7 +620,6 @@ void PreSimplification(conj_graph_pack& gp,
 
 inline
 void SimplificationCycle(conj_graph_pack& gp,
-                         const FlankingCoverage<Graph, Index::InnerIndexT>& flanking_cov,
                          boost::function<void(EdgeId)> removal_handler,
                          GraphLabeler<Graph>& labeler,
                          stats::detail_info_printer &printer, size_t /*iteration_count*/,
@@ -661,7 +659,7 @@ void SimplificationCycle(conj_graph_pack& gp,
     rcc.max_coverage = std::numeric_limits<double>::max();
     rcc.vertex_count_limit = 10;
 
-    RemoveRelativelyLowCoverageComponents(gp.g, flanking_cov,
+    RemoveRelativelyLowCoverageComponents(gp.g, gp.flanking_cov,
                                           rcc, rel_removal_handler);
     //todo end of temporary
     }
@@ -675,7 +673,6 @@ void SimplificationCycle(conj_graph_pack& gp,
 
 inline
 void PostSimplification(conj_graph_pack& gp,
-                        const FlankingCoverage<Graph, Index::InnerIndexT>& /*flanking_cov*/,
                         boost::function<void(EdgeId)> &removal_handler,
                         double determined_coverage_threshold) {
 
@@ -744,14 +741,11 @@ void SimplifyGraph(conj_graph_pack &gp,
 //	VERIFY(gp.kmer_mapper.IsAttached());
 
 //todo remove magic constants
-    typedef FlankingCoverage<Graph, Index::InnerIndexT> FlankCovT;
-    FlankCovT flanking_cov(gp.g, gp.index.inner_index(), 50);
-
     if (cfg::get().ds.single_cell)
-        PreSimplification(gp, flanking_cov, removal_handler, determined_coverage_threshold);
+        PreSimplification(gp, removal_handler, determined_coverage_threshold);
 
     for (size_t i = 0; i < iteration_count; i++) {
-        SimplificationCycle(gp, flanking_cov, removal_handler, labeler, printer,
+        SimplificationCycle(gp, removal_handler, labeler, printer,
                             iteration_count, i, determined_coverage_threshold);
         printer(ipp_err_con_removal,
                 str(format("_%d") % (i + iteration_count)));
@@ -760,7 +754,7 @@ void SimplifyGraph(conj_graph_pack &gp,
     if (!cfg::get().simp.stats_mode) {
         printer(ipp_before_post_simplification);
         //todo enable for comparison with current version
-        PostSimplification(gp, flanking_cov, removal_handler,
+        PostSimplification(gp, removal_handler,
                            determined_coverage_threshold);
     } else {
         ofstream chimera_stats_out(cfg::get().output_dir + "chimera_stats.tsv");
@@ -771,16 +765,15 @@ void SimplifyGraph(conj_graph_pack &gp,
         stats::ChimeraRelativeCoverageStats<Graph> chim_cov_stats(gp.g,
             edge_classifier,
             interstrand_analyzer,
-            boost::bind(&FlankCovT::LocalCoverage,
-                            boost::cref(flanking_cov), _1, _2),
+            boost::bind(&FlankingCoverage<Graph>::LocalCoverage,
+                            boost::cref(gp.flanking_cov), _1, _2),
                             chimera_stats_out);
         chim_cov_stats();
     }
 
     // This should be put into PostSimplification when(if) flanking coverage will be rewritten.
     if (cfg::get().topology_simplif_enabled && cfg::get().simp.her.enabled && cfg::get().developer_mode) {
-        FlankingCoverage<Graph, Index::InnerIndexT> flanking_cov(gp.g, gp.index.inner_index(), 50);
-        HiddenECRemover<Graph>(gp.g, cfg::get().simp.her.uniqueness_length, flanking_cov,
+        HiddenECRemover<Graph>(gp.g, cfg::get().simp.her.uniqueness_length, gp.flanking_cov,
                                cfg::get().simp.her.unreliability_threshold, determined_coverage_threshold, cfg::get().simp.her.relative_threshold,
                                removal_handler).Process();
     }

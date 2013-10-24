@@ -45,7 +45,7 @@ struct graph_pack: private boost::noncopyable {
     EdgesPositionHandler<graph_t> edge_pos;
 //	PairedInfoIndex<graph_t> etalon_paired_index;
     KmerMapper<graph_t, seq_t> kmer_mapper;
-    NewFlankingCoverage<graph_t> flanking_cov;
+    FlankingCoverage<graph_t> flanking_cov;
     PairedInfoIndicesT paired_indices;
     PairedInfoIndicesT clustered_indices;
     PairedInfoIndicesT scaffolding_indices;

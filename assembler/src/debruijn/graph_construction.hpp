@@ -128,7 +128,7 @@ size_t ConstructGraph(size_t k, const debruijn_config::construction &params,
 template<class Graph, class Index, class Streams>
 size_t ConstructGraphWithCoverage(size_t k, const debruijn_config::construction &params,
                                   Streams& streams, Graph& g,
-                                  Index& index, NewFlankingCoverage<Graph>& flanking_cov,
+                                  Index& index, FlankingCoverage<Graph>& flanking_cov,
                                   SingleReadStream* contigs_stream = 0) {
 	size_t rl = ConstructGraph(k, params, streams, g, index, contigs_stream);
 

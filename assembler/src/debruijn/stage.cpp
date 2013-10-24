@@ -114,7 +114,7 @@ void StageManager::run(debruijn_graph::conj_graph_pack& g,
             (*std::prev(start_stage))->load(g);
     }
 
-    for (auto et = stages_.end(); start_stage != et; ++start_stage) {
+    for (; start_stage != stages_.end(); ++start_stage) {
         AssemblyStage *stage = start_stage->get();
 
         INFO("STAGE == " << stage->name());
