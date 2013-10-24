@@ -408,7 +408,6 @@ def main():
         corrected_dataset_yaml_filename = ''
         if "error_correction" in cfg:
             bh_cfg = merge_configs(cfg["error_correction"], cfg["common"])
-            bh_cfg.__dict__["dataset_yaml_filename"] = cfg["dataset"].yaml_filename
             corrected_dataset_yaml_filename = os.path.join(bh_cfg.output_dir, "corrected.yaml")
             if os.path.isfile(corrected_dataset_yaml_filename) and options_storage.continue_mode:
                 log.info("\n===== Skipping read error correction (already processed). \n")
@@ -427,8 +426,18 @@ def main():
                 if not os.path.exists(bh_cfg.tmp_dir):
                     os.makedirs(bh_cfg.tmp_dir)
 
+                if support.get_lib_ids_by_type(dataset_data, support.READS_TYPES_NOT_USED_IN_HAMMER):
+                    not_used_dataset_data = support.get_libs_by_type(dataset_data, support.READS_TYPES_NOT_USED_IN_HAMMER)
+                    to_correct_dataset_data = support.rm_libs_by_type(dataset_data, support.READS_TYPES_NOT_USED_IN_HAMMER)
+                    to_correct_dataset_yaml_filename = os.path.join(bh_cfg.output_dir, "to_correct.yaml")
+                    pyyaml.dump(to_correct_dataset_data, open(to_correct_dataset_yaml_filename, 'w'))
+                    bh_cfg.__dict__["dataset_yaml_filename"] = to_correct_dataset_yaml_filename
+                else:
+                    not_used_dataset_data = None
+                    bh_cfg.__dict__["dataset_yaml_filename"] = cfg["dataset"].yaml_filename
+
                 log.info("\n===== Read error correction started. \n")
-                bh_logic.run_bh(corrected_dataset_yaml_filename, tmp_configs_dir, bin_home, bh_cfg,
+                bh_logic.run_bh(corrected_dataset_yaml_filename, tmp_configs_dir, bin_home, bh_cfg, not_used_dataset_data,
                     ext_python_modules_home, log)
                 log.info("\n===== Read error correction finished. \n")
 

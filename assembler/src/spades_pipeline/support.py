@@ -21,6 +21,7 @@ SPADES_ERROR_MESSAGE = " ERROR "
 SPADES_WARN_MESSAGE = " WARN "
 # constants of reads types
 READS_TYPES_NOT_USED_IN_CONSTRUCTION = "pacbio"
+READS_TYPES_NOT_USED_IN_HAMMER = "pacbio"
 
 
 def error(err_str, log=None, prefix=SPADES_PY_ERROR_MESSAGE):
@@ -398,6 +399,21 @@ def get_lib_ids_by_type(dataset_data, types):
         if reads_library['type'] in types:
             lib_ids.append(id)
     return lib_ids
+
+
+def get_libs_by_type(dataset_data, types):
+    ids = get_lib_ids_by_type(dataset_data, types)
+    result = []
+    for id in ids:
+        result.append(dataset_data[id])
+    return result
+
+
+def rm_libs_by_type(dataset_data, types):
+    ids = get_lib_ids_by_type(dataset_data, types)
+    for id in sorted(ids, reverse=True):
+        del dataset_data[id]
+    return dataset_data
 
 
 def dataset_has_only_mate_pairs_libraries(dataset_data):
