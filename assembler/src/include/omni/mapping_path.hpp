@@ -251,6 +251,11 @@ class MappingPath {
         }
     }
 
+    void push_back(ElementId id, MappingRange range) {
+        edges_.push_back(id);
+        range_mappings_.push_back(range);
+    }
+
  private:
     std::vector<ElementId> edges_;
     std::vector<MappingRange> range_mappings_;

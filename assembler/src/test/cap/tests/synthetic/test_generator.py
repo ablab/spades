@@ -8,6 +8,7 @@
 
 
 import sys
+import os
 import random
 from xml.dom.minidom import parse, getDOMImplementation
 
@@ -75,14 +76,14 @@ def getAllContigData(contigNodes):
 
 if __name__ == "__main__":
     random.seed(239)
-    if len(sys.argv) < 4:
-        print("Usage: " + sys.argv[0] + " <name of input file> <name of output file> <length of chunk> (<length of chunk for lower case>)")
+    if len(sys.argv) < 5:
+        print("Usage: " + sys.argv[0] + " <name of input file> <output format xml/fasta> <name of output file> <length of chunk> (<length of chunk for lower case>)")
         sys.exit()
     #random.seed()
-    chunkLen = int(sys.argv[3])
+    chunkLen = int(sys.argv[4])
     shortChunkLen = chunkLen
-    if len(sys.argv) > 4 
-        shortChunkLen = int(sys.argv[4])
+    if len(sys.argv) > 5:
+        shortChunkLen = int(sys.argv[5])
     dom = parse(sys.argv[1])
     contigNodes = dom.getElementsByTagName("contig")
     chunkNames = getAllChunkNames(getAllContigData(contigNodes))
@@ -90,6 +91,30 @@ if __name__ == "__main__":
     for node in contigNodes:
         for child in node.childNodes:
             child.data = getSequenceByChunkString(child.data, chunkSeqs)
-    fout = open(sys.argv[2], "w")
-    dom.writexml(fout)
-    fout.close()   
+
+    assert sys.argv[2] == "xml" or sys.argv[2] == "fasta";
+    if sys.argv[2] == "xml":
+        fout = open(sys.argv[3], "w")
+        dom.writexml(fout+".xml")
+        fout.close()   
+    else:
+        if not os.path.exists(sys.argv[3]):
+            os.makedirs(sys.argv[3])
+        exampleNodes = dom.getElementsByTagName("example")
+        for example in exampleNodes:
+            folder = sys.argv[3] + "/example_" + example.attributes["n"].value + "/"
+            if not os.path.exists(folder):
+                os.makedirs(folder)
+            genome_cnt = 1
+            for genome in example.getElementsByTagName("genome"):
+                filename = folder + "genome_" + str(genome_cnt) + ".fasta"
+                fout = open(filename, "w")
+                contig_cnt = 1
+                for contig in genome.getElementsByTagName("contig"):
+                    fout.write(">contig_" + str(contig_cnt) + "\n")
+                    for node in contig.childNodes:
+                        fout.write(node.data + "\n")
+                    contig_cnt = contig_cnt + 1
+                fout.close()
+                genome_cnt = genome_cnt + 1;
+

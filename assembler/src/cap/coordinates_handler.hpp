@@ -319,7 +319,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
 
           return edge_data_it->second.GetRanges();
       }
-          
+
 
       static Range GetPrintableRange(const Range &r) {
           return Range(r.start_pos >> kShiftValue, r.end_pos >> kShiftValue);
@@ -386,6 +386,34 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
               DEBUG("edge " << g_->str(e) << " empty");
           }
       }
+
+    MappingPath<EdgeId> AsMappingPath(unsigned genome_id) const {
+        MappingPath<EdgeId> answer;
+        VertexId v = g_->EdgeStart(FindGenomeFirstEdge(genome_id));
+        size_t genome_pos = 0;
+
+        while (true) {
+            auto step = StepForward(v, genome_id, genome_pos);
+            if (step.second == -1u)
+                break;
+
+            EdgeId e = step.first;
+
+            Range graph_pos(GetNewestPos(genome_id, genome_pos),
+                    GetNewestPos(genome_id, step.second));
+            Range contig_pos(
+                    GetOriginalPos(genome_id, graph_pos.start_pos),
+                    GetOriginalPos(genome_id, graph_pos.end_pos));
+            Range graph_pos_printable = GetPrintableRange(graph_pos);
+            Range contig_pos_printable = GetPrintableRange(contig_pos);
+
+            answer.push_back(e, MappingRange(contig_pos_printable, graph_pos_printable));
+
+            v = g_->EdgeEnd(e);
+            genome_pos = step.second;
+        }
+        return answer;
+    }
 
      private:
       typedef std::unordered_map<std::pair<uint, size_t>, size_t,
@@ -668,7 +696,7 @@ bool CoordinatesHandler<Graph>::ProjectPath(const Path &from, const Path &to,
                 }
 
                 if (!zero_sequences[i].empty()) {
-                    range.start_pos = FlushZeroSequence(zero_sequences[i], 
+                    range.start_pos = FlushZeroSequence(zero_sequences[i],
                             ranges.first, range, false);//, taken_length == 0 && finalize_range);
                     zero_sequences[i].clear();
                 }
@@ -712,7 +740,7 @@ bool CoordinatesHandler<Graph>::ProjectPath(const Path &from, const Path &to,
             Range &range = genome_ranges_to_copy[i].second;
 
             if (!zero_sequences[i].empty()) {
-                range.start_pos = FlushZeroSequence(zero_sequences[i], 
+                range.start_pos = FlushZeroSequence(zero_sequences[i],
                         genome_id, range, true);//, taken_length == 0 && finalize_range);
                 zero_sequences[i].clear();
             }
@@ -796,7 +824,7 @@ size_t CoordinatesHandler<Graph>::FlushZeroSequence(const std::vector<EdgeId> &t
     VERIFY(step != 0);
 
     size_t cur_pos = from_range.start_pos;
-    
+
     for (size_t i = 0; i < N; ++i) {
         size_t next_pos = cur_pos + step;
         if (i + 1 == N)

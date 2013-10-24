@@ -1015,49 +1015,65 @@ public:
   }
 
 	//genome is supposed to perfectly correspond to some path in the graph
-	void ProcessContig(unsigned genome_id, unsigned transparent_id, const string& contig_name) {
-	    INFO("Processing contig " << transparent_id << " name " << contig_name);
-	    VertexId v = g_.EdgeStart(coords_.FindGenomeFirstEdge(transparent_id));
-	    size_t genome_pos = 0;
+    void ProcessContig(unsigned genome_id, unsigned transparent_id,
+                       const string& contig_name) {
+        INFO("Processing contig " << transparent_id << " name " << contig_name);
+        MappingPath<EdgeId> mapping_path = coords_.AsMappingPath(transparent_id);
 
-	    while (true) {
-	        auto step = coords_.StepForward(v, transparent_id, genome_pos);
-	        if (step.second == -1u)
-	            break;
+        for (size_t i = 0; i < mapping_path.size(); ++i) {
+            EdgeId e = mapping_path[i].first;
+            MappingRange mapping = mapping_path[i].second;
+            if (CheckPatternMatch(e)) {
+                auto canon = CanonicalId(e);
 
-	        EdgeId e = step.first;
+                output_stream_
+                        << (format("%d\t%s\t%d\t%d\t%d\t%d\t%d\t%s\t%d")
+                                % genome_id % contig_name % canon.first
+                                % mapping.initial_range.start_pos
+                                % mapping.initial_range.end_pos
+                                % mapping.mapped_range.start_pos
+                                % mapping.mapped_range.end_pos
+                                % (canon.second ? "+" : "-") % g_.int_id(e)).str()
+                        << endl;
+            }
+        }
 
-          Range graph_pos(
-              coords_.GetNewestPos(transparent_id, genome_pos),
-              coords_.GetNewestPos(transparent_id, step.second));
-          Range contig_pos(
-              coords_.GetOriginalPos(transparent_id, graph_pos.start_pos),
-              coords_.GetOriginalPos(transparent_id, graph_pos.end_pos));
-          Range graph_pos_printable = coords_.GetPrintableRange(graph_pos);
-          Range contig_pos_printable = coords_.GetPrintableRange(contig_pos);
-
-          if (CheckPatternMatch(e)) {
-            auto canon = CanonicalId(e);
-
-              output_stream_
-                      << (format("%d\t%s\t%d\t%d\t%d\t%d\t%d\t%s\t%d")
-                              % genome_id
-                              % contig_name
-                              % canon.first
-                              % contig_pos_printable.start_pos
-                              % contig_pos_printable.end_pos
-                              % graph_pos_printable.start_pos
-                              % graph_pos_printable.end_pos
-                              % (canon.second ? "+" : "-")
-                              % g_.int_id(e))
-                              .str()
-                      << endl;
-          }
-
-	        v = g_.EdgeEnd(e);
-	        genome_pos = step.second;
-	    }
-	}
+//        VertexId v = g_.EdgeStart(coords_.FindGenomeFirstEdge(transparent_id));
+//        size_t genome_pos = 0;
+//
+//        while (true) {
+//            auto step = coords_.StepForward(v, transparent_id, genome_pos);
+//            if (step.second == -1u)
+//                break;
+//
+//            EdgeId e = step.first;
+//
+//            Range graph_pos(coords_.GetNewestPos(transparent_id, genome_pos),
+//                            coords_.GetNewestPos(transparent_id, step.second));
+//            Range contig_pos(
+//                    coords_.GetOriginalPos(transparent_id, graph_pos.start_pos),
+//                    coords_.GetOriginalPos(transparent_id, graph_pos.end_pos));
+//            Range graph_pos_printable = coords_.GetPrintableRange(graph_pos);
+//            Range contig_pos_printable = coords_.GetPrintableRange(contig_pos);
+//
+//            if (CheckPatternMatch(e)) {
+//                auto canon = CanonicalId(e);
+//
+//                output_stream_
+//                        << (format("%d\t%s\t%d\t%d\t%d\t%d\t%d\t%s\t%d")
+//                                % genome_id % contig_name % canon.first
+//                                % contig_pos_printable.start_pos
+//                                % contig_pos_printable.end_pos
+//                                % graph_pos_printable.start_pos
+//                                % graph_pos_printable.end_pos
+//                                % (canon.second ? "+" : "-") % g_.int_id(e)).str()
+//                        << endl;
+//            }
+//
+//            v = g_.EdgeEnd(e);
+//            genome_pos = step.second;
+//        }
+    }
 
   static void ConvertBlocksToGRIMM(const string &file_from, const string &file_to) {
     ifstream in(file_from);
