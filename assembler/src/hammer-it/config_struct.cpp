@@ -32,7 +32,7 @@ struct convert<hammer_config::HammerStage> {
 
 
 namespace hammer_config {
-void load(hammer_config::hammer_config& cfg, const std::string &filename) {
+void load(hammer_config& cfg, const std::string &filename) {
   YAML::Node config = YAML::LoadFile(filename);
 
   cfg.dataset.load(config["dataset"].as<std::string>());
