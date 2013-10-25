@@ -11,6 +11,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 add_executable(hammer-it
                kmer_data.cpp
                hamcluster.cpp
+               subcluster.cpp
                err_helper_table.cpp
                config_struct.cpp
                main.cpp)

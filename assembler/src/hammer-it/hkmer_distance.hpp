@@ -168,9 +168,9 @@ template <int kMismatchCost=1,
           int kBaseInsertionCost=1, int kRunInsertionCost=1,
           int kBaseDeletionCost=1, int kRunDeletionCost=1,
           typename It1, typename It2>
-inline size_t distanceHKMer(const It1 &x_begin, const It1 &x_end,
-                            const It2 &y_begin, const It2 &y_end,
-                            unsigned tau = -1) {
+inline unsigned distanceHKMer(const It1 &x_begin, const It1 &x_end,
+                              const It2 &y_begin, const It2 &y_end,
+                              unsigned tau = -1) {
   unsigned dist = 0;
 
   IonPairAligner<It1, It2> aligner(x_begin, x_end, y_begin, y_end);

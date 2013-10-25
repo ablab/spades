@@ -69,7 +69,7 @@ void HammerKMerSplitter::DumpBuffers(size_t num_files, size_t nthreads,
 
 class BufferFiller {
   std::vector<HammerKMerSplitter::KMerBuffer> &tmp_entries_;
-  size_t num_files_;
+  unsigned num_files_;
   size_t cell_size_;
   const HammerKMerSplitter &splitter_;
 

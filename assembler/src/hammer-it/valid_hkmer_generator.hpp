@@ -28,7 +28,7 @@ class ValidHKMerGenerator {
    */
   // FIXME: Switch to delegating ctor.
   explicit ValidHKMerGenerator(const io::SingleRead &read,
-                               uint32_t bad_quality_threshold = 2) {
+                               unsigned bad_quality_threshold = 2) {
     Reset(read.GetSequenceString().data(),
           read.GetQualityString().data(),
           read.GetSequenceString().size(),
@@ -44,7 +44,7 @@ class ValidHKMerGenerator {
    */
   explicit ValidHKMerGenerator(const char *seq, const char *qual,
                                size_t len,
-                               uint32_t bad_quality_threshold = 2) {
+                               unsigned bad_quality_threshold = 2) {
     Reset(seq, qual, len, bad_quality_threshold);
   }
 
@@ -124,12 +124,12 @@ class ValidHKMerGenerator {
  private:
   void TrimBadQuality();
 
-  double Prob(uint8_t qual) {
+  double Prob(unsigned qual) {
     return (qual < 3 ? 0.25 : 1 - pow(10.0, -(qual / 10.0)));
     // return Globals::quality_probs[qual];
   }
 
-  uint32_t GetQual(uint32_t pos) {
+  unsigned GetQual(size_t pos) {
     if (pos >= len_) {
       return 2;
     } else {

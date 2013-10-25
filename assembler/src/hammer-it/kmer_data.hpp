@@ -91,6 +91,17 @@ class KMerData {
   friend class KMerDataCounter;
 };
 
+struct CountCmp {
+  const KMerData &kmer_data_;
+
+  CountCmp(const KMerData &kmer_data)
+      : kmer_data_(kmer_data) {}
+
+  bool operator()(unsigned lhs, unsigned rhs) {
+    return kmer_data_[lhs].count > kmer_data_[rhs].count;
+  }
+};
+
 class KMerDataCounter {
   unsigned num_files_;
 

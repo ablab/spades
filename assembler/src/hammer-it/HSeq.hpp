@@ -269,7 +269,7 @@ std::ostream& operator<<(std::ostream& os, const HSeq<N> &seq) {
 
 namespace internal {
   template <size_t N>
-  inline size_t getSize(const hammer::HSeq<N> &a) {
+  inline size_t getSize(const hammer::HSeq<N> &) {
     return N;
   }
 
