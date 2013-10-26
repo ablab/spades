@@ -239,7 +239,7 @@ BOOST_AUTO_TEST_CASE( ComplexBulgeRemoverOnSimpleBulge ) {
 }
 
 BOOST_AUTO_TEST_CASE( ComplexBulge ) {
-    conj_graph_pack gp(55, tmp_folder, 0, Sequence(), 50, true, false);
+    conj_graph_pack gp(55, tmp_folder, 0);
        graphio::ScanGraphPack("./src/test/debruijn/graph_fragments/complex_bulge/complex_bulge", gp);
 //       OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
 //       licvidator.Licvidate();
@@ -252,7 +252,7 @@ BOOST_AUTO_TEST_CASE( ComplexBulge ) {
 }
 
 BOOST_AUTO_TEST_CASE( BigComplexBulge ) {
-    conj_graph_pack gp(55, tmp_folder, 0,  Sequence(), 50, true, false);
+    conj_graph_pack gp(55, tmp_folder, 0);
        graphio::ScanGraphPack("./src/test/debruijn/graph_fragments/big_complex_bulge/big_complex_bulge", gp);
 //       OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
 //       licvidator.Licvidate();

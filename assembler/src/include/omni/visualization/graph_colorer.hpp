@@ -76,28 +76,28 @@ public:
     PathColorer(const Graph &graph, const Path<EdgeId> &path1, const string &color) : MapColorer<typename Graph::EdgeId>(ConstructColorMap(path1, color), "black"), graph_(graph) {
     }
 };
-
-template<class Graph>
-class PositionsEdgeColorer: public ElementColorer<typename Graph::EdgeId> {
-private:
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-	const Graph &graph_;
-	EdgesPositionHandler<Graph> &positions_;
-public:
-	PositionsEdgeColorer(const Graph &graph, EdgesPositionHandler<Graph> &positions):
-			graph_(graph), positions_(positions)  {
-	}
-	string GetValue(EdgeId element) const {
-		std::vector<EdgeId> path;
-		path.push_back(element);
-		if (positions_.GetEdgePositions(element).size() == 0) return "black";
-		else {
-			if (positions_.IsConsistentWithGenome(path)) return "green";
-			else return "orange";
-		}
-	}
-};
+//
+//template<class Graph>
+//class PositionsEdgeColorer: public ElementColorer<typename Graph::EdgeId> {
+//private:
+//	typedef typename Graph::VertexId VertexId;
+//	typedef typename Graph::EdgeId EdgeId;
+//	const Graph &graph_;
+//	EdgesPositionHandler<Graph> &positions_;
+//public:
+//	PositionsEdgeColorer(const Graph &graph, EdgesPositionHandler<Graph> &positions):
+//			graph_(graph), positions_(positions)  {
+//	}
+//	string GetValue(EdgeId element) const {
+//		std::vector<EdgeId> path;
+//		path.push_back(element);
+//		if (positions_.GetEdgePositions(element).size() == 0) return "black";
+//		else {
+//			if (positions_.IsConsistentWithGenome(path)) return "green";
+//			else return "orange";
+//		}
+//	}
+//};
 
 
 template<class Graph>

@@ -25,7 +25,7 @@ public:
 				if(cset.count(this->graph().EdgeEnd(*eit)) > 0) {
 					auto labels = edge_pos_.GetEdgePositions(*eit);
 					for(auto it = labels.begin(); it != labels.end(); ++it) {
-						if(it->contigId_ == "ref_0" || it->contigId_ == "ref_1")
+						if(it->first == "ref_0" || it->first == "ref_1")
 							return true;
 					}
 				}
@@ -79,7 +79,7 @@ private:
 		for (auto it = path.begin(); it != path.end(); ++it) {
 			vector<EdgePosition> positions = gp_.edge_pos.GetEdgePositions(*it);
 			for (auto pos_it = positions.begin(); pos_it != positions.end(); ++pos_it) {
-				string id = pos_it->contigId_;
+				string id = pos_it->contigId;
 				if (StartsWith(id, bad_assembly_prefix_)) {
 					answer.insert(id);
 				}
@@ -165,7 +165,7 @@ private:
 	bool SingleAssemblyEdge(EdgeId e, const string& prefix) {
 		vector<EdgePosition> positions = gp_.edge_pos.GetEdgePositions(e);
 		for (auto it = positions.begin(); it != positions.end(); ++it) {
-			if (!StartsWith(it->contigId_, prefix)) {
+			if (!StartsWith(it->contigId, prefix)) {
 				return false;
 			}
 		}

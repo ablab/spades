@@ -682,7 +682,7 @@ class SimpleInDelAnalyzer {
 			return make_pair("", make_pair(0, 0));
 		}
 		EdgePosition pos = poss.front();
-		return make_pair(pos.contigId_, make_pair(pos.start(), pos.end()));
+		return make_pair(pos.contigId, make_pair(pos.mr.initial_range.start_pos, pos.mr.initial_range.end_pos));
 	}
 
 	void WriteAltPath(EdgeId e, const vector<EdgeId>& genome_path) {
@@ -870,8 +870,8 @@ private:
 	int GetRefPosition(EdgeId e, bool start_position) const {
 		EdgePosition pos =
 				RefPositions(gp_.edge_pos.GetEdgePositions(e)).front();
-		int coeff = boost::ends_with(pos.contigId_, "_RC") ? -1 : 1;
-		Range range = pos.m_range_.initial_range;
+		int coeff = boost::ends_with(pos.contigId, "_RC") ? -1 : 1;
+		Range range = pos.mr.initial_range;
 		return coeff * (start_position ? range.start_pos : range.end_pos);
 	}
 
@@ -882,7 +882,7 @@ private:
 	vector<EdgePosition> RefPositions(const vector<EdgePosition>& poss) const {
 		vector < EdgePosition > answer;
 		for (auto it = poss.begin(); it != poss.end(); ++it) {
-			if (boost::starts_with(it->contigId_, ref_prefix_)) {
+			if (boost::starts_with(it->contigId, ref_prefix_)) {
 				answer.push_back(*it);
 			}
 		}

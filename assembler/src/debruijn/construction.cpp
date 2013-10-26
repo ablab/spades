@@ -65,21 +65,6 @@ void Construction::run(conj_graph_pack &gp, const char*) {
         single_stream.release();
         construct_graph<io::SingleRead>(streams, gp, additional_contigs_stream);
     }
-
-    if (cfg::get().developer_mode) {
-        if (gp.genome.size() > 0) {
-            FillPos(gp, gp.genome, "ref0");
-            FillPos(gp, !gp.genome, "ref1");
-        }
-
-        if (!cfg::get().pos.contigs_for_threading.empty() &&
-            FileExists(cfg::get().pos.contigs_for_threading))
-          FillPosWithRC(gp, cfg::get().pos.contigs_for_threading, "thr_");
-
-        if (!cfg::get().pos.contigs_to_analyze.empty() &&
-            FileExists(cfg::get().pos.contigs_to_analyze))
-          FillPosWithRC(gp, cfg::get().pos.contigs_to_analyze, "anlz_");
-    }
 }
 
 } //namespace debruijn_graph

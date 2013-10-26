@@ -256,31 +256,15 @@ class DataPrinter {
     void SavePositions(const string& file_name,
                        EdgesPositionHandler<Graph> const& ref_pos) const {
         ofstream file((file_name + ".pos").c_str());
-
         DEBUG("Saving edges positions, " << file_name << " created");
         VERIFY(file.is_open());
-
         file << component_.e_size() << endl;
-        bool careful = ref_pos.is_careful();
-
         for (auto it = component_.e_begin(); it != component_.e_end(); ++it) {
-
-            auto pos_it = ref_pos.edges_positions().find(*it);
-            VERIFY(pos_it != ref_pos.edges_positions().end());
-
-            file << id_handler().ReturnIntId(*it) << " " << pos_it->second.size()
+            vector<omnigraph::EdgePosition> pos_it = ref_pos.GetEdgePositions(*it);
+            file << id_handler().ReturnIntId(*it) << " " << pos_it.size()
                  << endl;
-
-            for (size_t i = 0; i < pos_it->second.size(); i++) {
-                file << "    " << pos_it->second[i].contigId_ << " "
-                     << pos_it->second[i].start() << " - "
-                     << pos_it->second[i].end();
-                if (careful) {
-                    file<<" "<<pos_it->second[i].m_start()<<" "<<pos_it->second[i].m_end()<<endl;
-                }
-                else {
-                    file<<endl;
-                }
+            for (size_t i = 0; i < pos_it.size(); i++) {
+                file << "    " << pos_it[i].contigId << " " << pos_it[i].mr << endl;
             }
         }
     }
@@ -319,7 +303,6 @@ class DataPrinter {
   public:
 
     virtual ~DataPrinter() {
-
     }
 };
 
@@ -555,15 +538,14 @@ class DataScanner {
                 int m_start_pos, m_end_pos;
                 read_count = fscanf(file, "%[^\n]s", cur_str);
                 read_count = fscanf(file, "\n");
-                read_count = sscanf(cur_str, "%s %d - %d %d %d", contigId,
+                read_count = sscanf(cur_str, "%s [%d - %d] ---> [%d - %d]", contigId,
                                     &start_pos, &end_pos, &m_start_pos, &m_end_pos);
                 //      INFO(cur_str);
                 //      INFO (contigId<<" "<< start_pos<<" "<<end_pos);
                 //      VERIFY(read_count == 3);
-                VERIFY(read_count == 3 || read_count == 5 );
+                VERIFY(read_count == 5);
                 EdgeId eid = id_handler_.ReturnEdgeId(edge_real_id);
-                if (read_count == 3) {edge_pos.AddEdgePosition(eid, start_pos, end_pos, string(contigId));}
-                else  {edge_pos.AddEdgePosition(eid, start_pos, end_pos, string(contigId), m_start_pos, m_end_pos);}
+                edge_pos.AddEdgePosition(eid, string(contigId), start_pos, end_pos, m_start_pos, m_end_pos);
             }
         }
         fclose(file);

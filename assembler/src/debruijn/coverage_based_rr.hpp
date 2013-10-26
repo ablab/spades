@@ -13,6 +13,7 @@
 #include "path_extend/bidirectional_path.hpp"
 #include "graphio.hpp"
 #include "long_read_storage.hpp"
+#include "genome_consistance_checker.hpp"
 
 namespace debruijn_graph{
 
@@ -237,6 +238,7 @@ class CoverageBasedResolution {
 				std::vector< PathInfo<typename GraphPack::graph_t> >& filteredPaths) {
 
 
+		GenomeConsistenceChecker<typename GraphPack::graph_t> checker(gp, 10, 0.2);
 		INFO("filtering conjugate edges");
 		for ( auto path = paths.begin(); path != paths.end(); ++path) {
 
@@ -252,13 +254,13 @@ class CoverageBasedResolution {
 			}
 			if (ifInsert) {
 				INFO("inserting");
-				if (! gp->edge_pos.IsConsistentWithGenome(*path)) {
+				if (!checker.IsConsistentWithGenome(*path)) {
 					std::cout << "not consistent with genome: ";
 					for (auto iter = path->begin(); iter != path->end(); ++iter) {
 						auto positions = gp->edge_pos.GetEdgePositions(*iter);
 						std::cout << gp->g.int_id(*iter) << " (";
 						for (auto pos = positions.begin(); pos != positions.end(); ++pos) {
-							std::cout << pos->start() << " - " << pos->end() << " ";
+							std::cout << pos->mr.initial_range.start_pos << " - " << pos->mr.initial_range.end_pos << " ";
 						}
 						std::cout << ") ";
 					}
