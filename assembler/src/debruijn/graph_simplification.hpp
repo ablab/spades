@@ -443,7 +443,7 @@ bool RemoveRelativelyLowCoverageComponents(
     omnigraph::simplification::relative_coverage::RelativeCoverageComponentRemover<
             Graph> rel_rem(
             g,
-            boost::bind(&FlankingCoverage::LocalCoverage,
+            boost::bind(&FlankingCoverage<Graph>::LocalCoverage,
                         boost::cref(flanking_cov), _1, _2),
                         rcc_config.coverage_gap, rcc_config.length_bound,
                         rcc_config.tip_allowing_length_bound,
