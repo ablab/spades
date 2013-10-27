@@ -665,9 +665,8 @@ void SimplifyGraph(conj_graph_pack &gp,
                        determined_coverage_threshold);
 
     // This should be put into PostSimplification when(if) flanking coverage will be rewritten.
-    if (cfg::get().topology_simplif_enabled && cfg::get().simp.her.enabled && cfg::get().developer_mode) {
-        FlankingCoverage<Graph, Index::InnerIndexT> flanking_cov(gp.g, gp.index.inner_index(), 50);
-        HiddenECRemover<Graph>(gp.g, cfg::get().simp.her.uniqueness_length, flanking_cov,
+    if (cfg::get().topology_simplif_enabled && cfg::get().simp.her.enabled) {
+        HiddenECRemover<Graph>(gp.g, cfg::get().simp.her.uniqueness_length, gp.flanking_cov,
                                cfg::get().simp.her.unreliability_threshold, determined_coverage_threshold, cfg::get().simp.her.relative_threshold,
                                removal_handler).Process();
     }
