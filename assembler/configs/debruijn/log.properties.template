@@ -2,6 +2,7 @@ default=INFO
 
 RelativeCoverageHelper=TRACE
 RelativelyLowCoveredComponentSearcher=TRACE
+RelativelyLowCoveredComponentChecker=TRACE
 RelativeCoverageComponentRemover=TRACE
 #FlankingCoverage=TRACE
 #DeBruijnGraphConstructor=TRACE

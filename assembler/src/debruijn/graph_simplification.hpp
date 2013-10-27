@@ -429,10 +429,10 @@ void RemoveLowCoverageEdges(
 //  return changed;
 //}
 
-template<class Graph, class FlankingCoverage>
+template<class Graph>
 bool RemoveRelativelyLowCoverageComponents(
         Graph &g,
-        const FlankingCoverage& flanking_cov,
+        const FlankingCoverage<Graph>& flanking_cov,
        const debruijn_config::simplification::relative_coverage_comp_remover& rcc_config,
         typename ComponentRemover<Graph>::HandlerF removal_handler = 0) {
     //todo use iteration numbers

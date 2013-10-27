@@ -184,7 +184,7 @@ public:
     //  }
 
     double LocalCoverage(EdgeId e, VertexId v) const {
-//        TRACE("Local coverage of edge " << g_.str(e) << " around vertex " << g_.str(v) << " was " << local_coverage_f_(e, v));
+        TRACE("Local coverage of edge " << g_.str(e) << " around vertex " << g_.str(v) << " was " << local_coverage_f_(e, v));
         return local_coverage_f_(e, v);
     }
 
@@ -210,6 +210,8 @@ public:
                 / base_coverage;
     }
 
+private:
+    DECL_LOGGER("RelativeCoverageHelper");
 };
 
 template<class Graph>
@@ -302,24 +304,32 @@ public:
 
     bool SizeCheck(const Component<Graph>& component) const {
         if (component.inner_vertex_cnt() > vertex_count_limit_) {
-            INFO("Too many vertices! More than " << vertex_count_limit_);
+            DEBUG("Too many vertices! More than " << vertex_count_limit_);
             return false;
         }
         if (!component.contains_deadends()
                 && component.length() > length_bound_) {
-            INFO("Too long component of length " << component.length() << "! Longer than length bound " << length_bound_);
+            DEBUG("Too long component of length " << component.length() << "! Longer than length bound " << length_bound_);
             return false;
         }
         if (component.length() > tip_allowing_length_bound_) {
-            INFO("Too long component of length " << component.length() << "! Longer than tip allowing length bound " << tip_allowing_length_bound_);
+            DEBUG("Too long component of length " << component.length() << "! Longer than tip allowing length bound " << tip_allowing_length_bound_);
             return false;
         }
         return true;
     }
 
     bool FullCheck(const Component<Graph>& component) const {
+        DEBUG("Performing full check of the component");
         size_t longest_connecting_path = LongestPathFinder<Graph>(component).Find();
-        return SizeCheck(component) && (longest_connecting_path == -1u || longest_connecting_path < longest_connecting_path_bound_);
+        bool answer = true;
+        if (longest_connecting_path == -1u) {
+            DEBUG("Failed to find longest connecting path (check for cycles)");
+        } else {
+            DEBUG("Length of longest path: " << longest_connecting_path << "; threshold: " << longest_connecting_path_bound_);
+            answer &= longest_connecting_path < longest_connecting_path_bound_;
+        }
+        return answer && SizeCheck(component);
     }
 
 private:
@@ -347,7 +357,10 @@ public:
     }
 
     bool FindComponent() {
-        while (!component_.IsBorderEmpty() && checker_.SizeCheck(component_)) {
+        while (!component_.IsBorderEmpty()) {
+            if (!checker_.SizeCheck(component_))
+                return false;
+
             VertexId v = component_.NextBorderVertex();
 
             INFO("Checking if vertex " << g_.str(v) << " is terminating.");
