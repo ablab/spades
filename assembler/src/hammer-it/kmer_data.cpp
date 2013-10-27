@@ -71,15 +71,21 @@ class BufferFiller {
   std::vector<HammerKMerSplitter::KMerBuffer> &tmp_entries_;
   unsigned num_files_;
   size_t cell_size_;
+  size_t processed_;
   const HammerKMerSplitter &splitter_;
 
  public:
   BufferFiller(std::vector<HammerKMerSplitter::KMerBuffer> &tmp_entries, size_t cell_size, const HammerKMerSplitter &splitter):
       tmp_entries_(tmp_entries), num_files_(tmp_entries[0].size()), cell_size_(cell_size), splitter_(splitter) {}
 
+  size_t processed() const { return processed_; }
+
   bool operator()(const io::SingleRead &r) {
     ValidHKMerGenerator<hammer::K> gen(r);
     HammerKMerSplitter::KMerBuffer &entry = tmp_entries_[omp_get_thread_num()];
+
+#   pragma omp atomic
+    processed_ += 1;
 
     bool stop = false;
     while (gen.HasMore()) {
@@ -133,16 +139,24 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
     }
   }
 
+  size_t n = 15;
   const auto& dataset = cfg::get().dataset;
+  BufferFiller filler(tmp_entries, cell_size, *this);
   for (auto it = dataset.reads_begin(), et = dataset.reads_end(); it != et; ++it) {
     io::Reader irs(*it, io::PhredOffset);
     hammer::ReadProcessor rp(nthreads);
     while (!irs.eof()) {
-      BufferFiller filler(tmp_entries, cell_size, *this);
       rp.Run(irs, filler);
       DumpBuffers(num_files, nthreads, tmp_entries, ostreams);
+      VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
+
+      if (filler.processed() >> n) {
+        INFO("Processed " << filler.processed() << " reads");
+        n += 1;
+      }
     }
   }
+  INFO("Processed " << filler.processed() << " reads");
 
   delete[] ostreams;
 
