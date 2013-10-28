@@ -2,7 +2,7 @@
 #define __OMNI_GRAPH_ITERATORS_HPP__
 
 #include "adt/queue_iterator.hpp"
-
+#include "io/read_processor.hpp"
 #include "omni/action_handlers.hpp"
 
 #include <boost/iterator/iterator_facade.hpp>
@@ -247,6 +247,41 @@ class ConstEdgeIterator :
     const Graph &graph_;
     typename Graph::VertexIt cvertex_, evertex_;
     typename Graph::edge_const_iterator cedge_, eedge_;
+};
+
+template<class Graph>
+class ParallelEdgeProcessor {
+    class ConstEdgeIteratorWrapper {
+      public:
+        typedef typename Graph::EdgeId read_type;
+
+        ConstEdgeIteratorWrapper(const Graph &g)
+                : it_(g) {}
+
+        bool eof() const { return it_.IsEnd(); }
+
+        ConstEdgeIteratorWrapper& operator>>(typename Graph::EdgeIt &val) {
+            val = *(it_++);
+            return *this;
+        }
+
+      private:
+        ConstEdgeIterator<Graph> it_;
+    };
+
+  public:
+    ParallelEdgeProcessor(const Graph &g, unsigned nthreads)
+            : rp_(nthreads), it_(g) {}
+
+    template <class Processor>
+    bool Run(Processor &op) { return rp_.Run(it_, op); }
+
+    bool IsEnd() const { return it_.IsEnd(); }
+    size_t processed() const { return it_.processed(); }
+
+  private:
+    hammer::ReadProcessor rp_;
+    ConstEdgeIteratorWrapper it_;
 };
 
 }
