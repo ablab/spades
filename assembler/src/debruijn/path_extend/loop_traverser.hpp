@@ -17,7 +17,6 @@ namespace path_extend {
 class LoopTraverser {
 
 	Graph& g_;
-	PathContainer& paths_;
 	GraphCoverageMap& covMap_;
 	PathExtender* extender_;
 private:
@@ -52,7 +51,8 @@ private:
 		return result;
 	}
 
-	void TraverseLoop(EdgeId start, EdgeId end, set<VertexId>& /*component*/, PathContainer /*paths*/) {
+	void TraverseLoop(EdgeId start, EdgeId end) {
+	    DEBUG("start " << g_.int_id(start) << " end " << g_.int_id(end));
 		std::set<BidirectionalPath*> coveredStartPaths =
 				covMap_.GetCoveringPaths(start);
 		std::set<BidirectionalPath*> coveredEndPaths =
@@ -64,8 +64,7 @@ private:
 			}
 		}
 		if (coveredStartPaths.size() < 1 or coveredEndPaths.size() < 1) {
-			DEBUG(
-					"TraverseLoop STRANGE SITUATION: start " << coveredStartPaths.size() << " end " << coveredEndPaths.size());
+			DEBUG("TraverseLoop STRANGE SITUATION: start " << coveredStartPaths.size() << " end " << coveredEndPaths.size());
 			return;
 		}
 		BidirectionalPath* startPath = *coveredStartPaths.begin();
@@ -100,12 +99,19 @@ private:
 		for (size_t i = commonSize + 1; i < endPath->Size(); ++i) {
 			startPath->PushBack(endPath->At(i));
 		}
+		DEBUG("travers");
+		startPath->Print();
+		endPath->Print();
+		DEBUG("conj");
+		endPath->GetConjPath()->Print();
+		DEBUG("hear1");
 		endPath->Clear();
+		DEBUG("hear2");
 	}
 
 public:
-	LoopTraverser(Graph& g, PathContainer& paths, GraphCoverageMap& coverageMap, PathExtender* extender) :
-			g_(g), paths_(paths), covMap_(coverageMap), extender_(extender) {
+	LoopTraverser(Graph& g, GraphCoverageMap& coverageMap, PathExtender* extender) :
+			g_(g), covMap_(coverageMap), extender_(extender) {
 	}
 
 	void TraverseAllLoops() {
@@ -121,7 +127,7 @@ public:
 			if (start == EdgeId() || finish == EdgeId()) {
 				continue;
 			}
-			TraverseLoop(start, finish, component_set, paths_);
+			TraverseLoop(start, finish);
 		}
 
 	}

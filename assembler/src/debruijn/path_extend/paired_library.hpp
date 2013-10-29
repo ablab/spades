@@ -81,14 +81,18 @@ struct PairedInfoLibrary {
             int d_min = distance - distanceDev;
             int d_max = distance + distanceDev;
             if (from_interval) {
-                d_min = (int) is_min_;
-                d_max = (int) is_max_;
+                d_min -= (int) is_min_;
+                d_max += (int) is_max_;
             }
             if (pairedDistance >= d_min && pairedDistance <= d_max) {
                 weight += pointIter->weight;
             }
         }
         return weight;
+    }
+
+    double CountPairedInfo(EdgeId e1, EdgeId e2, set<int> dists) const {
+        return 0.0;
     }
 
     double IdealPairedInfo(EdgeId e1, EdgeId e2, int distance) {

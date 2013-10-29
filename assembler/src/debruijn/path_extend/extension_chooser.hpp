@@ -771,22 +771,28 @@ public:
               g_(g),
               lib_(lib),
               search_dist_(lib.GetISMax()),
-              path_searcher_(g_, cov_map, lib_.GetISMax()),
-              weight_counter_(g, lib) {
+              weight_counter_(g, lib),
+              path_searcher_(g_, cov_map, lib_.GetISMax(), weight_counter_) {
     }
     virtual EdgeContainer Filter(BidirectionalPath& path,
                                  EdgeContainer& edges) {
-        if (edges.size() == 0) {
+        if (edges.size() == 0 || path.Length() < lib_.GetISMin()) {
             return EdgeContainer();
         }
         map<EdgeId, BidirectionalPath*> best_paths;
         for (size_t iedge = 0; iedge < edges.size(); ++iedge) {
             set<BidirectionalPath*> following_paths = path_searcher_
                     .FindNextPaths(path, edges[iedge].e_);
-            INFO("following paths found for edge " << g_.int_id(edges[iedge].e_));
-            best_paths[edges[iedge].e_] = new BidirectionalPath(
-                    **(MaxWeightedPath(path, following_paths).begin()));
-            INFO("best paths found");
+            DEBUG("following paths found for edge " << g_.int_id(edges[iedge].e_));
+
+            vector<BidirectionalPath*> bests_path_for_edge = MaxWeightedPath(path, following_paths);
+            DEBUG("bests path for edge found");
+            BidirectionalPath* best_one = bests_path_for_edge[0];
+            DEBUG("edge best");
+            best_one->Print();
+            DEBUG("printed");
+            best_paths[edges[iedge].e_] = new BidirectionalPath(*best_one);
+            DEBUG("best paths found");
             for (auto iter = following_paths.begin();
                     iter != following_paths.end(); ++iter) {
                 delete (*iter);
@@ -797,8 +803,8 @@ public:
             following_paths.insert(best_paths[edges[iedge].e_]);
         }
         DEBUG("Try to choose from best paths...");
-        set<BidirectionalPath*> best_path = MaxWeightedPath(path,
-                                                            following_paths);
+        vector<BidirectionalPath*> best_path = MaxWeightedPath(path,
+                                                               following_paths);
         for (auto iter = best_path.begin(); iter != best_path.end(); ++iter) {
             (*iter)->Print();
         }
@@ -807,7 +813,9 @@ public:
             result.push_back(
                     EdgeWithDistance((*best_path.begin())->At(0), 0.0));
         } else if (best_path.size() > 1) {
-            result = TryToScaffold(path, best_path);
+            set<BidirectionalPath*> best_set(best_path.begin(),
+                                             best_path.end());
+            result = TryToScaffold(path, best_set);
         }
         for (auto iter = following_paths.begin(); iter != following_paths.end();
                 ++iter) {
@@ -824,22 +832,24 @@ private:
             max_weight = max(max_weight, iter->second);
         }
         for (auto iter = weights.begin(); iter != weights.end(); ++iter) {
-            if (iter->second * 1.5 < max_weight) {
+            if (math::gr(max_weight, iter->second * 1.5)) {
                 stringstream str;
                 for (size_t i = 0; i < iter->first->Size(); ++i) {
                     str << g_.int_id(iter->first->At(i)) << " ";
                 }
                 DEBUG("pair info for path " << str.str());
                 paths.erase(iter->first);
-                INFO("delete w " << iter->second <<" max weight " << max_weight);
+                DEBUG("delete w " << iter->second <<" max weight " << max_weight);
             }
         }
     }
 
-    void DeleteCommonPi(
-            const BidirectionalPath& path,
+    void DeleteCommonPi(const BidirectionalPath& path,
             const std::map<BidirectionalPath*, map<size_t, double> >& all_pair_info) {
         weight_counter_.ClearCommonWeight();
+        if (all_pair_info.size() <= 1) {
+            return;
+        }
         for (size_t i = 0; i < path.Size(); ++i) {
             double common = DBL_MAX;
             for (auto iter = all_pair_info.begin(); iter != all_pair_info.end();
@@ -859,6 +869,7 @@ private:
             const BidirectionalPath& path,
             const set<BidirectionalPath*>& following_paths,
             std::map<BidirectionalPath*, map<size_t, double> >& result) const {
+        result.clear();
         for (auto iter = following_paths.begin(); iter != following_paths.end();
                 ++iter) {
             result[*iter] = weight_counter_.FindPairInfoFromPath(path, **iter);
@@ -878,8 +889,65 @@ private:
         return result;
     }
 
+    vector<BidirectionalPath*> SortResult(const BidirectionalPath& path, const set<BidirectionalPath*>& result) {
+        std::map<BidirectionalPath*, map<size_t, double> > all_pair_info;
+
+        CountAllPairInfo(path, result, all_pair_info);
+        DeleteCommonPi(path, all_pair_info);
+        map<BidirectionalPath*, double> weights = CountAllWeights(path, result);
+        DEBUG("counted good paths " << weights.size());
+        vector<BidirectionalPath*> vector_result;
+        DEBUG("try find max path");
+        while (weights.size() > 0) {
+            DEBUG("weights.size() " << weights.size());
+            auto max_iter = weights.begin();
+            for (auto iter = weights.begin(); iter != weights.end(); ++iter) {
+                if (iter->second > max_iter->second) {
+                    max_iter = iter;
+                    continue;
+                }
+                if (max_iter->second > iter->second) {
+                    continue;
+                }
+                const BidirectionalPath& path1 = *iter->first;
+                const BidirectionalPath& path2 = *max_iter->first;
+                if (path1.Length() > path2.Length()) {
+                    max_iter = iter;
+                    continue;
+                }
+                if (path2.Length() > path1.Length()) {
+                    continue;
+                }
+                if (path1.Size() > path2.Size()) {
+                    max_iter = iter;
+                    continue;
+                }
+                if (path2.Size() > path1.Size()) {
+                    continue;
+                }
+                for (size_t i = 0; i < path1.Size(); ++i) {
+                    if (path1.graph().int_id(path1.At(i))
+                            < path1.graph().int_id(path2.At(i))) {
+                        max_iter = iter;
+                        continue;
+                    }
+                    if (path1.graph().int_id(path2.At(i))
+                            < path1.graph().int_id(path1.At(i))) {
+                        continue;
+                    }
+                }
+            }
+            DEBUG("max path with weight " << max_iter->second);
+            max_iter->first->Print();
+            vector_result.push_back(max_iter->first);
+            weights.erase(max_iter);
+        }
+        DEBUG("resulted vector " << vector_result.size());
+        return vector_result;
+    }
+
     //TODO: do it in weight counter
-    set<BidirectionalPath*> MaxWeightedPath(
+    vector<BidirectionalPath*> MaxWeightedPath(
             const BidirectionalPath& path,
             const set<BidirectionalPath*>& following_paths) {
         std::map<BidirectionalPath*, map<size_t, double> > all_pair_info;
@@ -889,8 +957,7 @@ private:
         while (first_time || changed) {
             CountAllPairInfo(path, result, all_pair_info);
             first_time = false;
-            INFO("iteration");
-            all_pair_info.size();
+            DEBUG("iteration with paths " << result.size());
             DeleteCommonPi(path, all_pair_info);
             map<BidirectionalPath*, double> weights = CountAllWeights(path,
                                                                       result);
@@ -907,7 +974,7 @@ private:
         if (result.size() == 0) {
             INFO("bad case");
         }
-        return result;
+        return SortResult(path, result);
     }
     EdgeContainer TryToScaffold(const BidirectionalPath& path,
                                 const set<BidirectionalPath*>& paths) {
@@ -916,49 +983,51 @@ private:
         }
         weight_counter_.ClearCommonWeight();
         size_t max_common_end = 0;
-        BidirectionalPath* max_path = NULL;
+        BidirectionalPath max_path(g_);
         for (auto iter1 = paths.begin(); iter1 != paths.end(); ++iter1) {
             BidirectionalPath* path1 = *iter1;
-            for (size_t i = 1; i < path1->Size() - 1; ++i) {
+            for (size_t i = 1; i < path1->Size(); ++i) {
+                const BidirectionalPath subpath = path1->SubPath(path1->Size() - i);
                 bool contain_all = true;
                 for (auto iter2 = paths.begin(); iter2 != paths.end();
                         ++iter2) {
+                    if (iter2 == iter1) {
+                        continue;
+                    }
                     BidirectionalPath* path2 = *iter2;
-                    if (!path2->Contains(path1->SubPath(path1->Size() - i))) {
+                    if (!path2->Contains(subpath)) {
                         contain_all = false;
                         break;
                     }
                 }
                 if (contain_all && i >= max_common_end) {
-                    max_common_end = i + 1;
-                    max_path = path1;
-                } else {
+                    max_common_end = i;
+                    max_path.Clear();
+                    max_path.PushBack(*path1);
+                } else if (!contain_all){
                     break;
                 }
             }
         }
-        if (max_path == NULL) {
+        if (max_path.Size() == 0) {
             return EdgeContainer();
         }
         std::map<BidirectionalPath*, map<size_t, double> > all_pair_info;
         CountAllPairInfo(path, paths, all_pair_info);
         double common = weight_counter_.CountPairInfo(
-                path, 0, path.Size(), *max_path,
-                max_path->Size() - max_common_end, max_path->Size());
+                path, 0, path.Size(), max_path,
+                max_path.Size() - max_common_end, max_path.Size());
         double not_common = weight_counter_.CountPairInfo(
-                path, 0, path.Size(), *max_path, 0,
-                max_path->Size() - max_common_end);
+                path, 0, path.Size(), max_path, 0,
+                max_path.Size() - max_common_end);
         DEBUG("common " << common << " not common " << not_common << " max common end " << max_common_end);
-        max_path->Print();
+        max_path.Print();
         EdgeContainer result;
-        if (common > 1.5 * not_common) {
-            DEBUG(" edge to add " << g_.int_id(max_path->At(max_path->Size() - max_common_end)) << " with length " << max_path->Length() - max_path->LengthAt(max_path->Size() - max_common_end));
-            result.push_back(
-                    EdgeWithDistance(
-                            max_path->At(max_path->Size() - max_common_end),
-                            path.Length()
-                                    - max_path->LengthAt(
-                                            max_path->Size() - max_common_end)));
+        if (common > not_common) {
+            size_t to_add = max_path.Size() - max_common_end;
+            size_t gap_length = max_path.Length() - max_path.LengthAt(to_add);
+            DEBUG(" edge to add " << g_.int_id(max_path.At(to_add)) << " with length " << gap_length);
+            result.push_back(EdgeWithDistance(max_path.At(to_add), gap_length));
         }
         return result;
     }
@@ -966,8 +1035,8 @@ private:
     const Graph& g_;
     PairedInfoLibrary& lib_;
     size_t search_dist_;
-    NextPathSearcher path_searcher_;
     PathsWeightCounter weight_counter_;
+    NextPathSearcher path_searcher_;
 };
 }
 #endif /* EXTENSION_HPP_ */

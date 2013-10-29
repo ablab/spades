@@ -140,37 +140,43 @@ private:
         }
     }
 
-    pair<int, int> ComparePaths(int startPos1, int startPos2,
+    pair<int, int> ComparePaths(int start_pos1, int start_pos2,
                                 const BidirectionalPath& path1,
-                                const BidirectionalPath& path2, size_t maxOverlap) const{
-        int curPos = startPos1;
-        int lastPos2 = startPos2;
-        int lastPos1 = curPos;
-        curPos++;
+                                const BidirectionalPath& path2, size_t max_overlap) const{
+        int cur_pos = start_pos1;
+        int last_pos2 = start_pos2;
+        int last_pos1 = cur_pos;
+        cur_pos++;
         size_t diff_len = 0;
-        while (curPos < (int) path1.Size()) {
-            if (diff_len > maxOverlap) {
-                return make_pair(lastPos1, lastPos2);
+        size_t diff_len2 = 0;
+        while (cur_pos < (int) path1.Size()) {
+            if (diff_len > max_overlap) {
+                return make_pair(last_pos1, last_pos2);
             }
-            EdgeId currentEdge = path1[curPos];
+            EdgeId currentEdge = path1[cur_pos];
             vector<size_t> poses2 = path2.FindAll(currentEdge);
             bool found = false;
             for (size_t pos2 = 0; pos2 < poses2.size(); ++pos2) {
-                if ((int) poses2[pos2] > lastPos2) {
-                    lastPos2 = poses2[pos2];
-                    lastPos1 = curPos;
+                if ((int) poses2[pos2] > last_pos2) {
+                    diff_len2 = path2.LengthAt(last_pos2) - path2.LengthAt(poses2[pos2]) - g_.length(path2.At(last_pos2));
+                    DEBUG ("cur pos " << cur_pos << "  pos 2 " << poses2[pos2] << " last pos2 " << last_pos2 << " diff_len " <<diff_len2);
+                    if (diff_len2 > max_overlap) {
+                        break;
+                    }
+                    last_pos2 = poses2[pos2];
+                    last_pos1 = cur_pos;
                     found = true;
                     break;
                 }
             }
             if (!found) {
-                diff_len += g_.length(currentEdge);
+                diff_len += g_.length(currentEdge) + path1.GapAt(cur_pos);
             } else {
                 diff_len = 0;
             }
-            curPos++;
+            cur_pos++;
         }
-        return make_pair(lastPos1, lastPos2);
+        return make_pair(last_pos1, last_pos2);
     }
 
 
@@ -186,7 +192,7 @@ private:
             DEBUG("delete path 2");
             path2->Clear();
         } else if (first2 == 0 && first1 == 0 && del_begins) {
-            if (size1 < size2 && !path1->HasOverlapedBegin()) {
+            if (path1->Length() < path2->Length() && !path1->HasOverlapedBegin()) {
                 DEBUG("delete begin path 1");
                 path1->GetConjPath()->PopBack(last1 + 1);
             } else if (!path2->HasOverlapedBegin()) {
@@ -194,7 +200,7 @@ private:
                 path2->GetConjPath()->PopBack(last2 + 1);
             }
         } else if ((last1 == size1 - 1 && last2 == size2 - 1) && del_begins) {
-            if (size1 < size2 && !path1->HasOverlapedEnd()) {
+            if (path1->Length() < path2->Length() && !path1->HasOverlapedEnd()) {
                 DEBUG("delete end path 1");
                 path1->PopBack(last1 + 1 - first1);
             } else if (!path2->HasOverlapedEnd()) {
@@ -269,7 +275,7 @@ private:
             path1->PopBack();
             conj2->PopBack();
             for (size_t i = 1; i < overlap_size; ++i) {
-                conj_overlap->Push(g_.conjugate(path1->Head()));
+                conj_overlap->PushBack(g_.conjugate(path1->Head()));
                 path1->PopBack();
                 conj2->PopBack();
             }
@@ -342,7 +348,6 @@ private:
 
 };
 
-
 class PathExtendResolver {
 
 protected:
@@ -353,36 +358,11 @@ public:
     PathExtendResolver(const Graph& g): g_(g), k_(g.k()) {
     }
 
-    bool InCycle(EdgeId e)
-    {
-    	auto edges = g_.OutgoingEdges(g_.EdgeEnd(e));
-    	if (edges.size() >= 1) {
-			for (auto it = edges.begin(); it != edges.end();  ++ it) {
-				if (g_.EdgeStart(e) == g_.EdgeEnd(*it)) {
-				   return true;
-				}
-			}
-    	}
-    	return false;
-    }
-
-    bool InBuble(EdgeId e){
-    	auto edges = g_.OutgoingEdges(g_.EdgeStart(e));
-    	auto endVertex = g_.EdgeEnd(e);
-    	for (auto it = edges.begin(); it != edges.end(); ++it){
-    		if ((g_.EdgeEnd(*it) == endVertex) and (*it != e)){
-    			return true;
-    		}
-    	}
-    	return false;
-    }
-
-
     PathContainer makeSimpleSeeds() {
 		std::set<EdgeId> included;
 		PathContainer edges;
 		for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-			if (g_.int_id(*iter) <= 0 or InCycle(*iter)) {
+			if (g_.int_id(*iter) <= 0 or InCycle(*iter, g_)) {
 				continue;
 			}
 			if (included.count(*iter) == 0) {
@@ -402,22 +382,30 @@ public:
     }
 
     void removeOverlaps(PathContainer& paths, GraphCoverageMap& coverage_map,
-                        size_t max_overlap, ContigWriter& /*writer*/,
-                        string /*output_dir*/) {
+                        size_t max_overlap, ContigWriter& writer,
+                        string output_dir) {
         SimpleOverlapRemover remover(g_, coverage_map);
-        //writer.writePaths(paths, output_dir + "/before.fasta");
+        writer.writePaths(paths, output_dir + "/before.fasta");
         DEBUG("Removing subpaths");
         remover.RemoveSimilarPaths(max_overlap, false, true, true, false);
-        //writer.writePaths(paths, output_dir + "/remove_similar.fasta");
+        writer.writePaths(paths, output_dir + "/remove_similar.fasta");
         DEBUG("Remove overlaps")
         remover.RemoveOverlaps(paths, max_overlap);
-        //writer.writePaths(paths, output_dir + "/after_remove_overlaps.fasta");
+        writer.writePaths(paths, output_dir + "/after_remove_overlaps.fasta");
         remover.RemoveSimilarPaths(max_overlap, true, false, false, false);
-        //writer.writePaths(paths, output_dir + "/remove_equal.fasta");
+        writer.writePaths(paths, output_dir + "/remove_equal.fasta");
         DEBUG("remove similar path. Max difference " << max_overlap);
         remover.RemoveSimilarPaths(max_overlap, false, true, true, true);
-        //writer.writePaths(paths, output_dir + "/remove_all.fasta");
         DEBUG("end removing");
+        writer.writePaths(paths, output_dir + "/remove_all.fasta");
+    }
+
+    void RemoveMatePairEnds(PathContainer& paths, size_t min_edge_len) const {
+        DEBUG("remove mp ends");
+        for (size_t i = 0; i < paths.size(); ++i) {
+            RemoveMatePairEnd(*paths.Get(i), min_edge_len);
+            RemoveMatePairEnd(*paths.GetConjugate(i), min_edge_len);
+        }
     }
 
     void addUncoveredEdges(PathContainer& paths, GraphCoverageMap& coverageMap) {
@@ -428,6 +416,15 @@ public:
                 included.insert(*iter);
                 included.insert(g_.conjugate(*iter));
             }
+        }
+    }
+
+private:
+    void RemoveMatePairEnd(BidirectionalPath& path, size_t min_edge_len) const {
+        int pos = int(path.Size()) - 1;
+        while (pos > 0 and g_.length(path.At(pos)) < min_edge_len) {
+            path.PopBack();
+            pos--;
         }
     }
 

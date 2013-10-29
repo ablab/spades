@@ -198,7 +198,7 @@ public:
         Init();
         if (path.size() != 0) {
             for (size_t i = 0; i < path.size(); ++i) {
-                Push(path[i]);
+                PushBack(path[i]);
             }
             prev_ = path[path.size() - 1];
             now_ = path[path.size() - 1];
@@ -216,7 +216,7 @@ public:
               listeners_(),
               weight_(1.0) {
         Init();
-        Push(startingEdge);
+        PushBack(startingEdge);
         prev_ = data_.back();
         now_ = data_.back();
     }
@@ -265,7 +265,7 @@ protected:
 	LoopDetector loopDetector_;
 
 	//Path listeners
-	std::vector <PathListener *> listeners_;
+	std::set <PathListener *> listeners_;
     size_t id_;//Unique ID in PathContainer
 	double weight_;
 
@@ -280,10 +280,8 @@ protected:
 	}
 
     void RecountLengths() {
-
         cumulativeLength_.clear();
         size_t currentLength = 0;
-
         for(auto iter = data_.rbegin(); iter != data_.rend(); ++iter) {
             currentLength += g_.length((EdgeId)*iter);
             cumulativeLength_.push_front(currentLength);
@@ -305,7 +303,7 @@ protected:
     }
 
     void DecreaseLengths() {
-        size_t length = g_.length(data_.back());
+        size_t length = g_.length(data_.back()) + gapLength_.back();
         for(auto iter = cumulativeLength_.begin(); iter != cumulativeLength_.end(); ++iter) {
             *iter -= length;
         }
@@ -316,26 +314,26 @@ protected:
     }
 
     void NotifyFrontEdgeAdded(EdgeId e, int gap) {
-        for (size_t i = 0; i < listeners_.size(); ++i) {
-            listeners_[i]->FrontEdgeAdded(e, this, gap);
+        for (auto i = listeners_.begin(); i != listeners_.end(); ++i) {
+            (*i)->FrontEdgeAdded(e, this, gap);
         }
     }
 
     void NotifyBackEdgeAdded(EdgeId e, int gap) {
-        for (size_t i = 0; i < listeners_.size(); ++i) {
-            listeners_[i]->BackEdgeAdded(e, this, gap);
+        for (auto i = listeners_.begin(); i != listeners_.end(); ++i) {
+            (*i)->BackEdgeAdded(e, this, gap);
         }
     }
 
     void NotifyFrontEdgeRemoved(EdgeId e) {
-        for (size_t i = 0; i < listeners_.size(); ++i) {
-            listeners_[i]->FrontEdgeRemoved(e, this);
+        for (auto i = listeners_.begin(); i != listeners_.end(); ++i) {
+            (*i)->FrontEdgeRemoved(e, this);
         }
     }
 
     void NotifyBackEdgeRemoved(EdgeId e) {
-        for (size_t i = 0; i < listeners_.size(); ++i) {
-            listeners_[i]->BackEdgeRemoved(e, this);
+        for (auto i = listeners_.begin(); i != listeners_.end(); ++i) {
+            (*i)->BackEdgeRemoved(e, this);
         }
     }
 
@@ -344,7 +342,7 @@ public:
         data_.push_front(e);
         gapLength_.push_front(gap);
 
-        int length = (int) g_.length(e);
+        int length = (int) g_.length(e) + gap;
         if (cumulativeLength_.empty()) {
             cumulativeLength_.push_front(length);
         } else {
@@ -358,12 +356,12 @@ public:
 protected:
     void PopFront() {
         EdgeId e = data_.front();
+        int cur_gap = gapLength_.front();
         data_.pop_front();
         gapLength_.pop_front();
 
         cumulativeLength_.pop_front();
-        totalLength_ -= g_.length(e);
-
+        totalLength_ -= (g_.length(e) + cur_gap);
         if (data_.size() > 0) {
 			now_ = data_.back();
 		}else{
@@ -379,7 +377,7 @@ protected:
 
 public:
     void Subscribe(PathListener * listener) {
-        listeners_.push_back(listener);
+        listeners_.insert(listener);
     }
 
 	void SetConjPath(BidirectionalPath* path) {
@@ -424,6 +422,9 @@ public:
 	}
 
 	EdgeId At(size_t index) const {
+	    if (index >= data_.size()) {
+	        INFO("no data for position " << index << " size " << data_.size());
+	    }
 	    return data_[index];
 	}
 
@@ -432,10 +433,16 @@ public:
     }
 
 	size_t LengthAt(size_t index) const {
+	    if (index >= cumulativeLength_.size()){
+	        INFO("no length for position " << index <<" size " << cumulativeLength_.size());
+	    }
 	    return cumulativeLength_[index];
 	}
 
 	int GapAt(size_t index) const {
+	    if (index >= gapLength_.size()) {
+	        INFO("no gap for position " << index << " size " << gapLength_.size());
+	    }
 	    return gapLength_[index];
 	}
 
@@ -462,7 +469,7 @@ public:
 	void PushBack(EdgeId e, int gap = 0) {
 	    data_.push_back(e);
 	    gapLength_.push_back(gap);
-	    IncreaseLengths(g_.length(e));
+	    IncreaseLengths(g_.length(e) + gap);
         now_ = e;
 	    NotifyBackEdgeAdded(e, gap);
 	}
@@ -491,6 +498,12 @@ public:
 		}
 	}
 
+	void PushBack(const BidirectionalPath& path) {
+	    for (size_t i = 0; i < path.Size(); ++i) {
+	        PushBack(path.At(i));
+	    }
+	}
+
 	void SafePopBack() {
 	    PopBack();
 	}
@@ -500,11 +513,6 @@ public:
 	    while (!Empty()) {
 	        PopBack();
 	    }
-	}
-
-
-	void Push(EdgeId e, int gap = 0) {
-        PushBack(e, gap);
 	}
 
 	void SetId(size_t uid) {
@@ -619,7 +627,11 @@ public:
                 return true;
             }
         }
-        return true;
+        return false;
+    }
+
+    bool Equal(const BidirectionalPath& path) const {
+        return operator==(path);
     }
 
     bool operator==(const BidirectionalPath& path) const {
@@ -681,9 +693,8 @@ public:
 
     BidirectionalPath SubPath(size_t from, size_t to) const {
         BidirectionalPath result(g_);
-
         for (size_t i = from; i < to; ++i) {
-            result.Push(data_[i], gapLength_[i]);
+            result.PushBack(data_[i], gapLength_[i]);
         }
         return result;
     }
@@ -763,10 +774,10 @@ public:
         DEBUG("Path " << id_);
         DEBUG("Length " << totalLength_);
         DEBUG("Weight " << weight_);
-        DEBUG("#, edge, length, total length");
+        DEBUG("#, edge, length, gap length, total length");
 
         for(size_t i = 0; i < Size(); ++i) {
-        	DEBUG(i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << LengthAt(i));
+        	DEBUG(i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << GapAt(i) << ", " << LengthAt(i));
         }
     }
 
@@ -774,9 +785,9 @@ public:
         INFO("Path " << id_);
         INFO("Length " << totalLength_);
         INFO("Weight " << weight_);
-        INFO("#, edge, length, total length");
+        INFO("#, edge, length, gap length, total length");
         for(size_t i = 0; i < Size(); ++i) {
-            INFO(i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << GapAt(i));
+            INFO(i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << GapAt(i) << ", " << LengthAt(i));
         }
     }
 
@@ -794,18 +805,18 @@ public:
 
     void SetOverlapedBeginTo(BidirectionalPath* to) {
         if (has_overlaped_begin_) {
-            to->set_overlap_begin();
+            to->SetOverlapBegin();
         }
-        set_overlap_begin();
-        to->set_overlap_end();
+        SetOverlapBegin();
+        to->SetOverlapEnd();
     }
 
     void SetOverlapedEndTo(BidirectionalPath* to) {
         if (has_overlaped_end_) {
-            to->set_overlap_end();
+            to->SetOverlapEnd();
         }
-        set_overlap_end();
-        to->set_overlap_begin();
+        SetOverlapEnd();
+        to->SetOverlapBegin();
     }
 
     void SetOverlap(bool overlap = true) {
@@ -827,7 +838,7 @@ public:
 
 private:
 
-    void set_overlap_begin(bool overlap = true) {
+    void SetOverlapBegin(bool overlap = true) {
         if (has_overlaped_begin_ != overlap) {
             has_overlaped_begin_ = overlap;
         }
@@ -836,8 +847,8 @@ private:
         }
     }
 
-    void set_overlap_end(bool overlap = true) {
-        GetConjPath()->set_overlap_begin(overlap);
+    void SetOverlapEnd(bool overlap = true) {
+        GetConjPath()->SetOverlapBegin(overlap);
     }
 
     void Init() {
@@ -977,14 +988,6 @@ public:
     Iterator erase(Iterator iter) {
         return Iterator(data_.erase(iter));
     }
-
-    void SubscribeAll(PathListener * listener) {
-        for (auto iter = begin(); iter != end(); ++iter) {
-            iter.get()->Subscribe(listener);
-            iter.getConjugate()->Subscribe(listener);
-        }
-    }
-
 
     void print() const {
         for (size_t i = 0; i < size(); ++i) {

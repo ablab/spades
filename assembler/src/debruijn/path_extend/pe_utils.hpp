@@ -13,7 +13,28 @@
 using namespace debruijn_graph;
 
 namespace path_extend {
+bool InCycle(EdgeId e, const Graph& g) {
+    auto edges = g.OutgoingEdges(g.EdgeEnd(e));
+    if (edges.size() >= 1) {
+        for (auto it = edges.begin(); it != edges.end(); ++it) {
+            if (g.EdgeStart(e) == g.EdgeEnd(*it)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
 
+bool InBuble(EdgeId e, const Graph& g) {
+    auto edges = g.OutgoingEdges(g.EdgeStart(e));
+    auto endVertex = g.EdgeEnd(e);
+    for (auto it = edges.begin(); it != edges.end(); ++it) {
+        if ((g.EdgeEnd(*it) == endVertex) and (*it != e)) {
+            return true;
+        }
+    }
+    return false;
+}
 
 class GraphCoverageMap: public PathListener {
 
@@ -110,6 +131,9 @@ public:
 
     bool IsCovered(const BidirectionalPath& path) const {
         for (size_t i = 0; i < path.Size(); ++i) {
+            if (g_.int_id(path[i]) == 39171 or g_.int_id(path[i]) == 39170) {
+                continue;
+            }
             if (!IsCovered(path[i])) {
                 return false;
             }
@@ -210,6 +234,10 @@ public:
                 INFO("=====");
             }
         }
+    }
+
+    size_t size() const {
+        return edgeCoverage_.size();
     }
 };
 

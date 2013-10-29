@@ -1,5 +1,5 @@
 //***************************************************************************
-//* Copyright (c) 2011-2013 Saint-Petersburg Academic University
+///* Copyright (c) 2011-2013 Saint-Petersburg Academic University
 //* All Rights Reserved
 //* See file LICENSE for details.
 //****************************************************************************
@@ -123,7 +123,7 @@ public:
         path.Print();
         EdgeId first_edge = path.Back();
         EdgeId second_edge = edges.first;
-        while (path.Size() >= 2) {
+        while (path.Size() > 2) {
             if (path.At(path.Size() - 1) == first_edge
                     && path.At(path.Size() - 2) == second_edge) {
                 path.PopBack(2);
@@ -155,6 +155,9 @@ public:
                     diff = weight - weight2;
                 }
             }
+        }
+        if (g_.int_id(edges.first) == 39171 or g_.int_id(edges.first) == 39170) {
+            maxIter = 0;
         }
         for (size_t i = 0; i < maxIter; ++i) {
             MakeCycleStep(path, edges.first);
@@ -609,10 +612,19 @@ public:
     }
 
     virtual bool MakeGrowStep(BidirectionalPath& path) {
+        if (g_.int_id(path.Back()) == 28132) {
+            INFO("not extand g_.int_id(path.Back()) == 28132");
+            return false;
+        }
         ExtensionChooser::EdgeContainer candidates;
         bool result = false;
         FindFollowingEdges(path, &candidates);
         candidates = extensionChooser_->Filter(path, candidates);
+
+        if ((candidates.size() == 1 && g_.int_id(candidates[0].e_) == 28133)
+                or g_.int_id(path.Back()) == 28132){
+            return false;
+        }
 
         if (candidates.size() == 1) {
             if (!investigateShortLoops_

@@ -208,6 +208,30 @@ vector<SimpleExtender*> MakeLongReadsExtender(
     return result;
 }
 
+void TestIdealInfo(conj_graph_pack& gp) {
+    std::map<int, size_t> distr;
+    distr[220] = 1;
+    IdealPairInfoCounter counter(gp.g, 220, 221, 100, distr);
+    /*for (int i = 0; i < 220; ++i){
+        size_t edge_len = 100;
+        counter.IdealPairedInfo(edge_len, edge_len, edge_len + i);
+    }*/
+    size_t edge_len = 100;
+    double w1 = counter.IdealPairedInfo(edge_len, edge_len, edge_len);
+    size_t edge_len1_1 = 50;
+    size_t edge_len1_2 = 50;
+    double w2_1 = counter.IdealPairedInfo(edge_len, edge_len1_1, edge_len);
+    double w2_2 = counter.IdealPairedInfo(edge_len, edge_len1_2, edge_len + edge_len1_2);
+    size_t edge_len2_1 = 20;
+    size_t edge_len2_2 = 30;
+    size_t edge_len2_3 = 50;
+    double w3_1 = counter.IdealPairedInfo(edge_len, edge_len2_1, edge_len);
+    double w3_2 = counter.IdealPairedInfo(edge_len, edge_len2_2, edge_len + edge_len2_1);
+    double w3_3 = counter.IdealPairedInfo(edge_len, edge_len2_3, edge_len + edge_len2_1 + edge_len2_2);
+    DEBUG("TEST " << w1 << " " << w2_1 + w2_2 << " " << w3_1 + w3_2 + w3_3);
+
+
+}
 void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 		vector<PairedInfoLibraries>& libs,
 		vector<PairedInfoLibraries>& scafolding_libs,
@@ -219,6 +243,7 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 		boost::optional<std::string> broken_contigs) {
 
 	INFO("Path extend repeat resolving tool started");
+	TestIdealInfo(gp);
 	make_dir(output_dir);
 	if (cfg::get().developer_mode) {
 	    make_dir(GetEtcDir(output_dir));
@@ -286,6 +311,12 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	paths.SortByLength();
     DebugOutputPaths(writer, gp, output_dir, paths, "final_paths");
 
+    if (broken_contigs.is_initialized()) {
+        OutputBrokenScaffolds(paths, (int) gp.g.k(), writer, output_dir + broken_contigs.get());
+    }
+    writer.writePaths(paths, output_dir + "final_paths.fasta");
+
+
     //MP
     vector<SimpleExtender *> mpPEs;
 	for (size_t i = 0; i < mp_libs.size(); ++i) {
@@ -313,37 +344,42 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	all_libs.insert(all_libs.end(), scafPEs.begin(), scafPEs.end());
 	all_libs.insert(all_libs.end(), mpPEs.begin(), mpPEs.end());
 	CompositeExtender* mp_main_pe = new CompositeExtender(gp.g, pset.loop_removal.max_loops, all_libs);
+	DEBUG(" cov map1 = " << mp_main_pe->GetCoverageMap().size());
 	INFO("Growing mp paths");
+
 	auto result_paths = resolver.extendSeeds(paths, *mp_main_pe);
+	DEBUG(" cov map2 = " << mp_main_pe->GetCoverageMap().size());
+
 	if (pset.remove_overlaps) {
 		resolver.removeOverlaps(result_paths, mp_main_pe->GetCoverageMap(), max_over,
 				writer, output_dir);
+		resolver.RemoveMatePairEnds(result_paths, max_over);
 	}
 	result_paths.FilterEmptyPaths();
 	result_paths.CheckSymmetry();
 	resolver.addUncoveredEdges(result_paths, mp_main_pe->GetCoverageMap());
 	result_paths.SortByLength();
 	DebugOutputPaths(writer, gp, output_dir, result_paths, "mp_final_paths");
-	delete mp_main_pe;
-	//MP end
 
-	if (broken_contigs.is_initialized()) {
-	    OutputBrokenScaffolds(paths, (int) gp.g.k(), writer, output_dir + broken_contigs.get());
-	}
+	//MP end
+	INFO("End mp libs");
+	writer.writePaths(result_paths, output_dir + "final_paths_with_mp.fasta");
+	DEBUG("mp_main_pe " << result_paths.size() << " cov map " << mp_main_pe->GetCoverageMap().size());
 
     if (traversLoops) {
         INFO("Traversing tandem repeats");
-        LoopTraverser loopTraverser(gp.g, paths, mainPE->GetCoverageMap(), mainPE);
+        LoopTraverser loopTraverser(gp.g, mp_main_pe->GetCoverageMap(), mp_main_pe);
         loopTraverser.TraverseAllLoops();
-        paths.SortByLength();
+        result_paths.SortByLength();
     }
 
-    writer.writePaths(paths, output_dir + contigs_name);
+    writer.writePaths(result_paths, output_dir + contigs_name + "_mp.fasta");
 
     INFO("Path extend repeat resolving tool finished");
     for (size_t i = 0; i < all_libs.size(); ++i){
         delete all_libs[i];
     }
+    delete mp_main_pe;
 }
 
 PairedInfoLibrary* MakeNewLib(conj_graph_pack::graph_t& g,
