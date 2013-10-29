@@ -57,10 +57,6 @@ class CoverageIndex : public GraphActionHandler<Graph> {
     Graph& g_;
 //	map_type storage_;
 
-    unsigned RawCoverage(EdgeId edge) const {
-        return g_.data(edge).raw_coverage();
-    }
-
 //    size_t KPlusOneMerCoverage(EdgeId edge) const {
 //        return (size_t) math::round(coverage(edge) * (double) this->g().length(edge));
 //    }
@@ -139,6 +135,9 @@ class CoverageIndex : public GraphActionHandler<Graph> {
         return (double) RawCoverage(edge) / (double) this->g().length(edge);
     }
 
+    unsigned RawCoverage(EdgeId edge) const {
+        return g_.data(edge).raw_coverage();
+    }
 //    /**
 //     * Returns average coverage of the edge
 //     */
@@ -286,18 +285,18 @@ class CoverageIndex : public GraphActionHandler<Graph> {
 //        INFO("Elapsed time: " << pc.time_ms());
 //    }
 
-    template<class Index>
-    void FillFromIndex(Index& index) {
-        for (auto I = index.value_cbegin(), E = index.value_cend();
-                I != E; ++I) {
-            const auto& edge_info = *I;
-            VERIFY(edge_info.offset != -1u);
-            VERIFY(edge_info.edge_id.get() != NULL);
-            IncRawCoverage(edge_info.edge_id, edge_info.count);
-        }
-
-        DEBUG("Coverage counted");
-    }
+//    template<class Index>
+//    void FillFromIndex(Index& index) {
+//        for (auto I = index.value_cbegin(), E = index.value_cend();
+//                I != E; ++I) {
+//            const auto& edge_info = *I;
+//            VERIFY(edge_info.offset != -1u);
+//            VERIFY(edge_info.edge_id.get() != NULL);
+//            IncRawCoverage(edge_info.edge_id, edge_info.count);
+//        }
+//
+//        DEBUG("Coverage counted");
+//    }
 
     virtual void HandleDelete(EdgeId edge) {
         SetRawCoverage(edge, 0);

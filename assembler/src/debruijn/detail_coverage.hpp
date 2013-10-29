@@ -116,7 +116,6 @@ class NewFlankingCoverage : public GraphActionHandler<Graph>,
     typedef typename Graph::VertexId VertexId;
     typedef pair<EdgeId, unsigned> Pos;
 
-//    std::map<EdgeId, size_t> local_start_coverage_;
     Graph& g_;
     const size_t averaging_range_;
 
@@ -157,24 +156,6 @@ class NewFlankingCoverage : public GraphActionHandler<Graph>,
         }
     }
 
-    //todo maybe use second answer field later
-    template<class CoverageIndex>
-    pair<unsigned, size_t> ForwardAccCoverageOfStart(
-            EdgeId e, const CoverageIndex& index) const {
-        unsigned acc = 0;
-        Pos pos(e, -1u);
-        for (size_t i = 0; i < averaging_range_; ++i) {
-            pair<Pos, unsigned> next_info = Next(pos, index);
-            if (next_info.first.second != -1u) {
-                pos = next_info.first;
-                acc += next_info.second;
-            } else {
-                return make_pair(acc, i);
-            }
-        }
-        return make_pair(acc, averaging_range_);
-    }
-
     double CountInCoverage(EdgeId e) const {
         return CountAvgCoverage(e, 0);
     }
@@ -187,6 +168,12 @@ class NewFlankingCoverage : public GraphActionHandler<Graph>,
         return g_.data(e).flanking_coverage();
     }
 
+    unsigned InterpolateCoverage(EdgeId e, size_t l) const {
+        VERIFY(l <= averaging_range_);
+        VERIFY(l < g_.length(e));
+        return unsigned(math::round(double(RawCoverage(e)) / double(averaging_range_) * double(l)));
+    }
+
 public:
 
     //todo think about interactions with gap closer
@@ -195,20 +182,36 @@ public:
               averaging_range_(averaging_range) {
     }
 
+    size_t averaging_range() const {
+        return averaging_range_;
+    }
+
+    //todo currently left for saves compatibility! remove later!
     template<class CoverageIndex>
-    void Fill(const CoverageIndex& index) {
-        for (auto it = this->g().ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            EdgeId e = *it;
-            SetRawCoverage(e, ForwardAccCoverageOfStart(e, index).first);
+    void Fill(const CoverageIndex& count_index) {
+        TRACE("Filling flanking coverage from index");
+
+        for (auto I = count_index.value_cbegin(), E = count_index.value_cend();
+                I != E; ++I) {
+            const auto& edge_info = *I;
+            EdgeId e = edge_info.edge_id;
+            unsigned offset = edge_info.offset;
+            unsigned count = edge_info.count;
+            VERIFY(offset != -1u);
+            VERIFY(e.get() != NULL);
+            if (offset < averaging_range_) {
+                IncRawCoverage(e, count);
+            }
         }
     }
 
+    void IncRawCoverage(EdgeId e, unsigned count) {
+        g_.data(e).inc_flanking_coverage(count);
+    }
+
     double CoverageOfStart(EdgeId e) const {
-        if (this->g().length(e) < averaging_range_) {
-            return g_.coverage(e);
-        } else {
-            return double(RawCoverage(e)) / double(averaging_range_);
-        }
+        size_t averaging = std::min(this->g().length(e), averaging_range_);
+        return double(RawCoverage(e)) / double(averaging);
     }
 
 //    double operator[](EdgeId e) const {
@@ -223,7 +226,20 @@ public:
     }
 
     virtual void HandleMerge(const vector<EdgeId>& old_edges, EdgeId new_edge) {
-        SetRawCoverage(new_edge, RawCoverage(old_edges.front()));
+//        SetRawCoverage(new_edge, RawCoverage(old_edges.front()));
+        size_t kpomers_left = averaging_range_;
+        unsigned acc = 0;
+        FOREACH(EdgeId e, old_edges) {
+            if (kpomers_left >= g_.length(e)) {
+                acc += RawCoverage(e);
+                kpomers_left -= g_.length(e);
+            } else {
+                if (kpomers_left != 0)
+                    acc += InterpolateCoverage(e, kpomers_left);
+                break;
+            }
+        }
+        SetRawCoverage(new_edge, acc);
     }
 
     virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
@@ -232,6 +248,7 @@ public:
 
     virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge_1,
                              EdgeId /*new_edge_2*/) {
+        //hard to think of any other solution
         SetRawCoverage(new_edge_1, RawCoverage(old_edge));
     }
 
@@ -277,5 +294,48 @@ private:
     DECL_LOGGER("NewFlankingCoverage")
     ;
 };
+
+
+template<class Graph, class CountIndex>
+class SimultaneousCoverageFiller {
+    const Graph& g_;
+    const CountIndex& count_index_;
+    NewFlankingCoverage<Graph>& flanking_coverage_;
+    CoverageIndex<Graph>& coverage_index_;
+
+public:
+    SimultaneousCoverageFiller(const Graph& g, const CountIndex& count_index,
+                               NewFlankingCoverage<Graph>& flanking_coverage,
+                               CoverageIndex<Graph>& coverage_index) :
+                                   g_(g),
+                                   count_index_(count_index),
+                                   flanking_coverage_(flanking_coverage),
+                                   coverage_index_(coverage_index) {
+    }
+
+    void Fill() {
+        for (auto I = count_index_.value_cbegin(), E = count_index_.value_cend();
+                I != E; ++I) {
+            const auto& edge_info = *I;
+            EdgeId e = edge_info.edge_id;
+            unsigned offset = edge_info.offset;
+            unsigned count = edge_info.count;
+            VERIFY(offset != -1u);
+            VERIFY(e.get() != NULL);
+            coverage_index_.IncRawCoverage(e, count);
+            if (offset < flanking_coverage_.averaging_range()) {
+                flanking_coverage_.IncRawCoverage(e, count);
+            }
+        }
+    }
+
+};
+
+template<class Graph, class CountIndex>
+void FillCoverageAndFlanking(const CountIndex& count_index, Graph& g,
+                             NewFlankingCoverage<Graph>& flanking_coverage) {
+    SimultaneousCoverageFiller<Graph, CountIndex> filler(g, count_index, flanking_coverage, g.coverage_index());
+    filler.Fill();
+}
 
 }

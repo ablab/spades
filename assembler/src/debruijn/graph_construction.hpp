@@ -132,10 +132,8 @@ size_t ConstructGraphWithCoverage(size_t k, const debruijn_config::construction 
                                   SingleReadStream* contigs_stream = 0) {
 	size_t rl = ConstructGraph(k, params, streams, g, index, contigs_stream);
 
-	INFO("Filling coverage from index");
-	g.coverage_index().FillFromIndex(index.inner_index());
-	INFO("Filling flanking coverage from index");
-	flanking_cov.Fill(index.inner_index());
+	INFO("Filling coverage and flanking coverage from index");
+	FillCoverageAndFlanking(index.inner_index(), g, flanking_cov);
 
 	return rl;
 }
