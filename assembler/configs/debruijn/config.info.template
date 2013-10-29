@@ -105,7 +105,7 @@ andrey_params {
 	#include "path_extend/pe_params.info"
 }
 
-avoid_rc_connections true
+avoid_rc_connections false
 
 
 ;position handling
