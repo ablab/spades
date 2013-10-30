@@ -207,7 +207,7 @@ BOOST_AUTO_TEST_CASE( SimpleTestEarlyPairedInfo ) {
 		, {{"CCCA", "CCAC"}, {1, 1.0}}, {{"ACCA", "CCAC"}, {1, 1.0}}
 		, {{"CCAC", "CACG"}, {1, 1.0}}, {{"CCAC", "CACA"}, {1, 1.0}}};
 
-	AssertGraph(3, paired_reads, 6, edges, coverage_info, edge_pair_info);
+	AssertGraph(3, paired_reads, 5, 6, edges, coverage_info, edge_pair_info);
 }
 
 BOOST_AUTO_TEST_CASE( TestSelfRCEdgeMerge ) {

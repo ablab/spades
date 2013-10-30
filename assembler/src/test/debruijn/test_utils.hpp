@@ -218,7 +218,7 @@ void AssertPairInfo(const Graph& g, /*todo const */PairedIndex& paired_index, co
 	}
 }
 
-void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t insert_size, const vector<MyEdge>& etalon_edges
+void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t rl, size_t insert_size, const vector<MyEdge>& etalon_edges
 		, const CoverageInfo& etalon_coverage, const EdgePairInfo& etalon_pair_info) {
 	typedef io::VectorReader<PairedRead> RawStream;
 	typedef io::RCReaderWrapper<PairedRead> PairedStream;
@@ -240,7 +240,7 @@ void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t inse
     SequenceMapperNotifier notifier(gp);
     LatePairedIndexFiller pif(gp.g, PairedReadCountWeight, gp.paired_indices[0]);
     notifier.Subscribe(0, &pif);
-    notifier.ProcessLibrary(paired_stream_vector, 0, paired_stream_vector.size());
+    notifier.ProcessLibrary(paired_stream_vector, 0, rl, paired_stream_vector.size());
 
 	AssertEdges(gp.g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
 

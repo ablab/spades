@@ -8,7 +8,7 @@
 
 #include "cpp_utils.hpp"
 #include "debruijn_stats.hpp"
-#include "sequence_mapper.hpp"
+
 
 namespace omnigraph {
 
@@ -49,67 +49,63 @@ void hist_crop(const map<int, size_t> &hist, double low, double high, map<int, s
 template<class graph_pack>
 class InsertSizeHistogramCounter {
   typedef std::map<int, size_t> HistType;
-  typedef typename debruijn_graph::MapperFactory<graph_pack>::SequenceMapperT SequenceMapperT;
+  typedef typename graph_pack::graph_t::EdgeId EdgeId;
 
  public:
-  InsertSizeHistogramCounter(const graph_pack& gp, size_t edge_length_threshold, bool ignore_negative = false)
-      : gp_(gp), hist_(), edge_length_threshold_(edge_length_threshold),
-        total_(0), counted_(0), k_(gp.k_value), ignore_negative_(ignore_negative) { }
+  InsertSizeHistogramCounter(const graph_pack& gp,
+          size_t edge_length_threshold,
+          bool ignore_negative = false)
+      : gp_(gp), edge_length_threshold_(edge_length_threshold), hist_(), tmp_hists_(),
+        total_(), counted_(), negative_(), k_(gp.k_value), ignore_negative_(ignore_negative) {
 
-  HistType hist() { return hist_; }
-  size_t total() const { return total_; }
-  size_t mapped() const { return counted_; }
-  size_t negative() const { return negative_; }
-
-  template<class PairedRead>
-  void Count(io::ReadStreamVector< io::IReader<PairedRead> >& streams, size_t& rl) {
-    hist_.clear();
-    debruijn_graph::MapperFactory<graph_pack> mapper_factory(gp_);
-    std::shared_ptr<SequenceMapperT> mapper = mapper_factory.GetSequenceMapper(rl == 0 ? gp_.k_value + 1 : rl);
-
-    size_t nthreads = streams.size();
-    std::vector<size_t> rls(nthreads, 0);
-    std::vector<HistType*> hists(nthreads);
-    hists[0] = &hist_;
-    for (size_t i = 1; i < nthreads; ++i)
-      hists[i] = new HistType();
-
-    size_t counted = 0, total = 0, negative = 0;
-#pragma omp parallel for num_threads(nthreads) reduction(+ : counted, total, negative)
-    for (size_t i = 0; i < nthreads; ++i) {
-      PairedRead r;
-      io::IReader<PairedRead>& stream = streams[i];
-      stream.reset();
-
-      while (!stream.eof()) {
-        stream >> r;
-        int res = ProcessPairedRead(r, *mapper, *hists[i], rls[i]);
-        counted += (res > 0);
-        negative += (res < 0);
-        ++total;
-      }
-    }
-
-    total_ = total;
-    counted_ = counted;
-    negative_ = negative;
-
-    if (rl == 0) {
-      rl = rls[0];
-      for (size_t i = 1; i < nthreads; ++i) {
-        if (rl < rls[i]) {
-          rl = rls[i];
-        }
-      }
-    }
-    for (size_t i = 1; i < nthreads; ++i) {
-      for (auto it = hists[i]->begin(); it != hists[i]->end(); ++it) {
-        (*hists[0])[it->first] += it->second;
-      }
-      delete hists[i];
-    }
   }
 
+  HistType hist() { return hist_; }
+  size_t total() const { return total_.total_; }
+  size_t mapped() const { return counted_.total_; }
+  size_t negative() const { return negative_.total_; }
+
+  void Init(size_t nthreads) {
+    hist_.clear();
+    tmp_hists_ = vector<HistType*>(nthreads);
+    tmp_hists_[0] = &hist_;
+    for (size_t i = 1; i < nthreads; ++i)
+      tmp_hists_[i] = new HistType();
+
+    total_ = count_data(nthreads);
+    counted_ = count_data(nthreads);
+    negative_ = count_data(nthreads);
+  }
+
+  void Finalize() {
+    for (size_t i = 1; i < tmp_hists_.size(); ++i) {
+      for (auto it = tmp_hists_[i]->begin(); it != tmp_hists_[i]->end(); ++it) {
+        (*tmp_hists_[0])[it->first] += it->second;
+      }
+      delete tmp_hists_[i];
+    }
+    total_.merge();
+    counted_.merge();
+    negative_.merge();
+  }
+
+  template<class PairedRead>
+  void ProcessPairedRead(size_t thread_index, const PairedRead& r, const pair<EdgeId, size_t>& pos_left, const pair<EdgeId, size_t>& pos_right) {
+    ++total_.arr_[thread_index];
+    if (pos_left.second == -1u || pos_right.second == -1u || pos_left.first != pos_right.first || gp_.g.length(pos_left.first) < edge_length_threshold_) {
+      return;
+    }
+
+    int is = (int) (pos_right.second - pos_left.second - k_ - 1 - r.insert_size()
+             + r.first().size() + r.second().size());
+
+    if (is > 0 || !ignore_negative_) {
+      (*tmp_hists_[thread_index])[is] += 1;
+      ++counted_.arr_[thread_index];
+    } else {
+      ++negative_.arr_[thread_index];
+    }
+  }
 
   void FindMean(double& mean, double& delta, std::map<size_t, size_t>& percentiles) const {
     double median = get_median(hist_);
@@ -195,85 +191,37 @@ class InsertSizeHistogramCounter {
   }
 
  private:
+
+  struct count_data {
+      size_t total_;
+      vector<size_t> arr_;
+      count_data(): total_(0) {
+      }
+      count_data(size_t nthreads): total_(0), arr_(nthreads, 0) {
+      }
+      void inc(size_t i) {
+        ++arr_[i];
+      }
+      void merge() {
+        for (size_t i = 0; i < arr_.size(); ++i) {
+          total_ += arr_[i];
+        }
+      }
+  };
+
   const graph_pack& gp_;
-  HistType hist_;
   size_t edge_length_threshold_;
-  size_t total_;
-  size_t counted_;
-  size_t negative_;
+
+  HistType hist_;
+  vector<HistType*> tmp_hists_;
+
+  count_data total_;
+  count_data counted_;
+  count_data negative_;
+
   size_t k_;
   bool ignore_negative_;
-
-  template<class PairedRead>
-  int ProcessPairedRead(const PairedRead& r, const SequenceMapperT& mapper, HistType& hist, size_t& rl) {
-    Sequence sequence_left = r.first().sequence();
-    Sequence sequence_right = r.second().sequence();
-
-    if (sequence_left.size() > rl) {
-        rl = sequence_left.size();
-    }
-    if (sequence_right.size() > rl) {
-        rl = sequence_right.size();
-    }
-
-    auto pos_left = mapper.GetLastKmerPos(sequence_left);
-    auto pos_right = mapper.GetFirstKmerPos(sequence_right);
-    if (pos_left.second == -1u || pos_right.second == -1u || pos_left.first != pos_right.first || gp_.g.length(pos_left.first) < edge_length_threshold_) {
-      return 0;
-    }
-
-    int is = (int) (pos_right.second - pos_left.second - k_ - 1 - r.insert_size()
-             + sequence_left.size() + sequence_right.size());
-    if (is > 0 || !ignore_negative_) {
-        hist[is] += 1;
-        return 1;
-    } else {
-        return -1;
-    }
-
-    return 0;
-  }
 };
 
-typedef std::map<int, size_t> HistType;
-
-template<class graph_pack, class PairedRead>
-void refine_insert_size(io::ReadStreamVector<io::IReader<PairedRead> >& streams, graph_pack& gp,
-                        size_t edge_length_threshold,
-                        size_t& rl,
-                        double& mean, double& delta,
-                        double& median, double& mad,
-                        std::map<size_t, size_t>& percentiles,
-                        HistType& hist) {
-  INFO("Estimating insert size (takes a while)");
-  InsertSizeHistogramCounter<graph_pack> hist_counter(gp, edge_length_threshold, /* ignore negative */ true);
-  hist_counter.Count(streams, rl);
-
-  INFO(hist_counter.mapped() << " paired reads (" << ((double) hist_counter.mapped() * 100.0 / (double) hist_counter.total()) << "% of all) aligned to long edges");
-  if (hist_counter.negative() > 3 * hist_counter.mapped())
-      WARN("Too much reads aligned with negative insert size. Does the library orientation set properly?");
-  if (hist_counter.mapped() == 0)
-    return;
-
-  hist_counter.FindMean(mean, delta, percentiles);
-  hist_counter.FindMedian(median, mad, hist);
-}
-
-template<class graph_pack, class PairedRead>
-void GetInsertSizeHistogram(io::ReadStreamVector< io::IReader<PairedRead> >& streams,
-                            graph_pack& gp,
-                            double insert_size, double delta,
-                            HistType& hist) {
-  size_t edge_length_threshold = Nx(gp.g, 50); //500;
-  size_t rl;
-  InsertSizeHistogramCounter<graph_pack> hist_counter(gp, edge_length_threshold);
-  hist_counter.Count(streams, rl);
-
-  double low = insert_size - 5. * delta;
-  double high = insert_size + 5. * delta;
-
-  INFO("Cropping the histogram");
-  hist_crop(hist_counter.hist(), low, high, hist);
-}
 
 }
