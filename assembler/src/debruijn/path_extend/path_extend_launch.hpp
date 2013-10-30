@@ -361,29 +361,34 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	result_paths.SortByLength();
 	DebugOutputPaths(writer, gp, output_dir, result_paths, "mp_final_paths");
 
+
+    INFO("End mp libs");
+    writer.writePaths(result_paths, output_dir + "final_paths_with_mp.fasta");
+    DEBUG("mp_main_pe " << result_paths.size() << " cov map " << mp_main_pe->GetCoverageMap().size());
 	//MP end
-	INFO("End mp libs");
-	writer.writePaths(result_paths, output_dir + "final_paths_with_mp.fasta");
-	DEBUG("mp_main_pe " << result_paths.size() << " cov map " << mp_main_pe->GetCoverageMap().size());
+
+    //pe again
+    all_libs.clear();
+    all_libs.push_back(longReadExtender);
+    all_libs.insert(all_libs.end(), long_reads_extenders.begin(),
+                    long_reads_extenders.end());
+    all_libs.insert(all_libs.end(), shortLoopPEs.begin(), shortLoopPEs.end());
+    all_libs.insert(all_libs.end(), scafPEs.begin(), scafPEs.end());
+    CompositeExtender* last_extender = new CompositeExtender(gp.g, pset.loop_removal.max_loops, all_libs);
+    auto last_paths = resolver.extendSeeds(result_paths, *last_extender);
+    resolver.removeOverlaps(last_paths, last_extender->GetCoverageMap(), max_over,
+                    writer, output_dir);
+    last_paths.FilterEmptyPaths();
+    resolver.addUncoveredEdges(last_paths, last_extender->GetCoverageMap());
+    last_paths.SortByLength();
 
     if (traversLoops) {
         INFO("Traversing tandem repeats");
-        LoopTraverser loopTraverser(gp.g, mp_main_pe->GetCoverageMap(), mp_main_pe);
+        LoopTraverser loopTraverser(gp.g, last_extender->GetCoverageMap(), last_extender);
         loopTraverser.TraverseAllLoops();
-        result_paths.SortByLength();
+        last_paths.SortByLength();
     }
-
-    writer.writePaths(result_paths, output_dir + contigs_name + "_mp.fasta");
-
-
-    //pe again
-    paths = resolver.extendSeeds(result_paths, *mainPE);
-    resolver.removeOverlaps(paths, mainPE->GetCoverageMap(), max_over,
-                    writer, output_dir);
-    paths.FilterEmptyPaths();
-    resolver.addUncoveredEdges(paths, mainPE->GetCoverageMap());
-    paths.SortByLength();
-    writer.writePaths(paths, output_dir + contigs_name + "last_contigs.fasta");
+    writer.writePaths(last_paths, output_dir + contigs_name + "last_contigs.fasta");
 
 
     INFO("Path extend repeat resolving tool finished");
