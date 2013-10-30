@@ -156,9 +156,6 @@ public:
                 }
             }
         }
-        if (g_.int_id(edges.first) == 39171 or g_.int_id(edges.first) == 39170) {
-            maxIter = 0;
-        }
         for (size_t i = 0; i < maxIter; ++i) {
             MakeCycleStep(path, edges.first);
         }
@@ -612,20 +609,10 @@ public:
     }
 
     virtual bool MakeGrowStep(BidirectionalPath& path) {
-        if (g_.int_id(path.Back()) == 28132) {
-            INFO("not extand g_.int_id(path.Back()) == 28132");
-            return false;
-        }
         ExtensionChooser::EdgeContainer candidates;
         bool result = false;
         FindFollowingEdges(path, &candidates);
         candidates = extensionChooser_->Filter(path, candidates);
-
-        if ((candidates.size() == 1 && g_.int_id(candidates[0].e_) == 28133)
-                or g_.int_id(path.Back()) == 28132){
-            return false;
-        }
-
         if (candidates.size() == 1) {
             if (!investigateShortLoops_
                     && (path.getLoopDetector().EdgeInShortLoop(path.Back())

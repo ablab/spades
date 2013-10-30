@@ -3,7 +3,7 @@
 sc_de
 {
     linkage_distance_coeff  0.0
-    max_distance_coeff  	2000.0
+    max_distance_coeff  	2.0
     filter_threshold        2.0 ;bigger than in non-single cell because normalization is disabled
 }
 
@@ -11,7 +11,7 @@ sc_de
 usual_de
 {
     linkage_distance_coeff    0.0
-    max_distance_coeff        2000.0
+    max_distance_coeff        2.0
     filter_threshold          2.0
 }
 

@@ -388,7 +388,8 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
         loopTraverser.TraverseAllLoops();
         last_paths.SortByLength();
     }
-    writer.writePaths(last_paths, output_dir + contigs_name + "last_contigs.fasta");
+    DebugOutputPaths(writer, gp, output_dir, last_paths, "last_paths");
+    writer.writePaths(last_paths, output_dir + contigs_name);
 
 
     INFO("Path extend repeat resolving tool finished");
