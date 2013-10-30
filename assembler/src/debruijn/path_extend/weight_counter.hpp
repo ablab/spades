@@ -473,15 +473,13 @@ void PathsWeightCounter::FindPairInfo(const BidirectionalPath& path1,
             double ideal_w, w;
             FindPairInfo(path1.At(i1), path2.At(i2), dist, ideal_w, w);
             ideal_pi += ideal_w;
-            DEBUG("path2 " << path2.GetId() << " i1 " << i1 << " i2 " << i2 <<" w " << w
-                  << " ideal " << ideal_w << " e1 " << g_.int_id (path1.At(i1)) << " e2 " << g_.int_id(path2.At(i2)) << " dist " << dist);
-            if (w > 0.0) {
-                //pi_result.insert(PathsPairIndexInfo(i1, i2, ideal_w, dist));
-                if (pi.find(i1) == pi.end()) {
-                    pi[i1] = 0;
-                }
-                pi[i1] += ideal_w;
+            if (ideal_w > 0.0 && w < ideal_w) {
+                DEBUG("path2 " << path2.GetId() << " i1 " << i1 << " i2 " << i2 <<" w " << w << " ideal " << ideal_w << " e1 " << g_.int_id (path1.At(i1)) << " e2 " << g_.int_id(path2.At(i2)) << " dist " << dist);
             }
+            if (pi.find(i1) == pi.end()) {
+                pi[i1] = 0;
+            }
+            pi[i1] += w;
         }
     }
 }
@@ -489,8 +487,8 @@ void PathsWeightCounter::FindPairInfo(const BidirectionalPath& path1,
 void PathsWeightCounter::FindPairInfo(EdgeId e1, EdgeId e2, size_t dist,
                                       double& ideal_w, double& result_w) const {
     ideal_w = lib_.IdealPairedInfo(e1, e2, dist);
+    result_w = 0.0;
     if (ideal_w == 0.0) {
-        result_w = 0.0;
         return;
     }
     double w = lib_.CountPairedInfo(e1, e2, dist, true);

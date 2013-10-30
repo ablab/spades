@@ -159,7 +159,6 @@ private:
             for (size_t pos2 = 0; pos2 < poses2.size(); ++pos2) {
                 if ((int) poses2[pos2] > last_pos2) {
                     diff_len2 = path2.LengthAt(last_pos2) - path2.LengthAt(poses2[pos2]) - g_.length(path2.At(last_pos2));
-                    DEBUG ("cur pos " << cur_pos << "  pos 2 " << poses2[pos2] << " last pos2 " << last_pos2 << " diff_len " <<diff_len2);
                     if (diff_len2 > max_overlap) {
                         break;
                     }

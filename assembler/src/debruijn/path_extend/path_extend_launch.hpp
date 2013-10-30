@@ -375,6 +375,17 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 
     writer.writePaths(result_paths, output_dir + contigs_name + "_mp.fasta");
 
+
+    //pe again
+    paths = resolver.extendSeeds(result_paths, *mainPE);
+    resolver.removeOverlaps(paths, mainPE->GetCoverageMap(), max_over,
+                    writer, output_dir);
+    paths.FilterEmptyPaths();
+    resolver.addUncoveredEdges(paths, mainPE->GetCoverageMap());
+    paths.SortByLength();
+    writer.writePaths(paths, output_dir + contigs_name + "last_contigs.fasta");
+
+
     INFO("Path extend repeat resolving tool finished");
     for (size_t i = 0; i < all_libs.size(); ++i){
         delete all_libs[i];

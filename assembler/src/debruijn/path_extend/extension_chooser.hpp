@@ -839,6 +839,7 @@ private:
                 }
                 DEBUG("pair info for path " << str.str());
                 paths.erase(iter->first);
+                weights.erase(iter->first);
                 DEBUG("delete w " << iter->second <<" max weight " << max_weight);
             }
         }
@@ -968,6 +969,9 @@ private:
             }
             if (result.size() == 0) {
                 result = prev_result;
+                break;
+            }
+            if (result.size() == 1) {
                 break;
             }
         }

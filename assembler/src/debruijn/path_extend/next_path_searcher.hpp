@@ -144,7 +144,7 @@ private:
     Edge* AddPath(const BidirectionalPath& init_path, Edge* prev_edge,
                   size_t max_path_length, const BidirectionalPath& path,
                   size_t start_pos);
-    Edge* AnalyzeBuble(const BidirectionalPath& init_path, EdgeId buldge_edge,
+    Edge* AnalyzeBubble(const BidirectionalPath& init_path, EdgeId buldge_edge,
                        size_t gap, Edge* prev_edge);
     const Graph& g_;
     const GraphCoverageMap& cover_map_;
@@ -223,14 +223,14 @@ set<BidirectionalPath*> NextPathSearcher::FindNextPaths(
     return result_paths;
 }
 
-Edge* NextPathSearcher::AnalyzeBuble(const BidirectionalPath& init_path,
+Edge* NextPathSearcher::AnalyzeBubble(const BidirectionalPath& init_path,
                                      EdgeId buldge_edge, size_t gap,
                                      Edge* prev_edge) {
     auto edges = g_.OutgoingEdges(g_.EdgeStart(buldge_edge));
     EdgeId max_edge = buldge_edge;
     double max_w = 0.0;
     for (size_t i = 0; i < edges.size(); ++i) {
-        DEBUG("edge in buldge " << g_.int_id(buldge_edge));
+        DEBUG("edge in bubble " << g_.int_id(edges[i]));
         if (prev_edge->GetIncorrectEdgeIndex(buldge_edge) != -1) {
             continue;
         }
@@ -279,8 +279,7 @@ Edge* NextPathSearcher::AddPath(const BidirectionalPath& init_path,
             }
         }
         if (InBuble(path.At(iedge), g_)) {
-            DEBUG("this edge in bubble");
-            next_edge = AnalyzeBuble(init_path, path.At(iedge),
+            next_edge = AnalyzeBubble(init_path, path.At(iedge),
                                      path.Length() - path.LengthAt(iedge),
                                      curr_edge);
             if (next_edge == NULL and !change) {
@@ -319,7 +318,6 @@ void NextPathSearcher::GrowPath(const BidirectionalPath& init_path,
         for (auto iter = cov_paths.begin(); iter != cov_paths.end(); ++iter) {
             BidirectionalPath* next_path = *iter;
             DEBUG("next path ");
-            next_path->Print();
             vector<size_t> positions = next_path->FindAll(next_edge);
             for (size_t ipos = 0; ipos < positions.size(); ++ipos) {
                 if (positions[ipos] == 0
@@ -343,7 +341,7 @@ void NextPathSearcher::GrowPath(const BidirectionalPath& init_path,
     if (curr_edge->OutSize() == 0) {
         for (size_t iedge = 0; iedge < out_edges.size(); ++iedge) {
             if (InBuble(out_edges[iedge], g_)) {
-                Edge* next_edge = AnalyzeBuble(init_path, out_edges[iedge], 0,
+                Edge* next_edge = AnalyzeBubble(init_path, out_edges[iedge], 0,
                                                curr_edge);
                 if (next_edge != NULL) {
                     edges_to_add.push_back(next_edge);
