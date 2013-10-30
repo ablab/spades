@@ -572,7 +572,7 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
       return make_pair(EdgeId(0), -1u);
     }
 
-    runtime_k::RtSeq left = sequence.start<runtime_k::RtSeq>(k_);
+    Kmer left = sequence.start<Kmer>(k_);
     left = kmer_mapper_.Substitute(left);
 
     return index_.get(left);
@@ -583,7 +583,7 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
       return make_pair(EdgeId(0), -1u);
     }
 
-    runtime_k::RtSeq right = sequence.end<runtime_k::RtSeq>(k_);
+    Kmer right = sequence.end<Kmer>(k_);
     right = kmer_mapper_.Substitute(right);
 
     return index_.get(right);
