@@ -251,6 +251,10 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
           TRACE("StoreGenomeThreads End");
       }
 
+      void StoreGenomeThreadManual(const GenomeId genome_id, const Thread &thread) {
+        stored_threading_history_[genome_id].push_back(std::move(thread));
+      }
+
       /*
        * `from` is meant to have needed range data
        */
