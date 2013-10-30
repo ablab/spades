@@ -190,6 +190,10 @@ struct MosaicInterval {
         return MosaicInterval(strand, pos_range_, sub_support_blocks);
     }
 
+    StrandRange strand_range() const {
+        return make_pair(pos_range, strand);
+    }
+
     size_t support_size() const {
         return support_blocks.size();
     }
@@ -365,6 +369,7 @@ class MosaicPrintHelper {
             }
             VERIFY(i < r.end_pos);
             answer.push_back(i);
+            ++i;
         }
         VERIFY(answer.front() == r.start_pos && answer.back() == r.end_pos - 1);
         return answer;
@@ -555,16 +560,16 @@ class MosaicStructureSet {
     multimap<string, StrandRange> all_substruct_pos_;
 
     void IndexSubIntervals(const MosaicInterval& interval) {
-        size_t start = interval.pos_range.start_pos;
-        size_t end = interval.pos_range.end_pos;
-        for (size_t i = start; i < end; ++i) {
-            for (size_t j = i + 1; j <= end; ++j) {
-                MosaicInterval sub_interval = interval.SubInterval(Range(i, j));
+        VERIFY(interval.support_blocks.front() == interval.pos_range.start_pos);
+        VERIFY(interval.support_blocks.back() + 1 == interval.pos_range.end_pos);
+        vector<Pos> support = interval.support_blocks;
+        for (size_t i = 0; i < support.size(); ++i) {
+            for (size_t j = i; j < support.size(); ++j) {
+                MosaicInterval sub_interval = interval.SubInterval(Range(support[i], support[j] + 1));
                 MosaicStructure sub_mosaic(block_composition_, sub_interval);
-                StrandRange r = make_pair(Range(i, j), interval.strand);
-                all_substruct_pos_.insert(make_pair(sub_mosaic.Fingerprint(), r));
+                all_substruct_pos_.insert(make_pair(sub_mosaic.Fingerprint(), sub_interval.strand_range()));
                 all_substruct_pos_.insert(make_pair(sub_mosaic.conjugate(block_info_).Fingerprint(),
-                                                    block_composition_.ConjStrandRange(r)));
+                                                    block_composition_.ConjStrandRange(sub_interval.strand_range())));
             }
         }
     }
