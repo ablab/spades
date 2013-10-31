@@ -27,18 +27,27 @@ public:
               dist_from_start_(dist_from_start) {
 
     }
-    Edge* AddOutEdge(EdgeId edge, std::set<Edge*>& all_edges) {
-        return AddIfNotExist(edge, out_edges_, all_edges);
+    ~Edge() {
+    	for (size_t i = 0; i < out_edges_.size(); ++i){
+    		delete out_edges_[i];
+    	}
+    	for (size_t i = 0; i < not_out_edges_.size(); ++i) {
+    		delete not_out_edges_[i];
+    	}
     }
-    Edge* AddIncorrectOutEdge(EdgeId edge, std::set<Edge*>& all_edges) {
+    Edge* AddOutEdge(EdgeId edge) {
+        return AddIfNotExist(edge, out_edges_);
+    }
+    Edge* AddIncorrectOutEdge(EdgeId edge) {
         for (size_t i = 0; i < out_edges_.size(); ++i) {
             if (out_edges_[i]->GetId() == edge) {
                 not_out_edges_.push_back(out_edges_[i]);
+                delete out_edges_[i];
                 out_edges_.erase(out_edges_.begin() + i);
                 break;
             }
         }
-        return AddIfNotExist(edge, not_out_edges_, all_edges);
+        return AddIfNotExist(edge, not_out_edges_);
     }
     int GetOutEdgeIndex(EdgeId edge) {
         return GetEdgeIndex(edge, out_edges_);
@@ -96,8 +105,7 @@ public:
         return id_;
     }
 private:
-    Edge* AddIfNotExist(EdgeId edge, vector<Edge*>& vect,
-                        std::set<Edge*>& all_edges) {
+    Edge* AddIfNotExist(EdgeId edge, vector<Edge*>& vect) {
         int pos = -1;
         for (size_t i = 0; i < vect.size(); ++i) {
             if (vect[i]->GetId() == edge) {
@@ -111,7 +119,6 @@ private:
             vect.push_back(
                     new Edge(g_, edge, this,
                              dist_from_start_ + g_.length(edge)));
-            all_edges.insert(vect.back());
             return vect.back();
         }
     }
@@ -150,7 +157,6 @@ private:
     const GraphCoverageMap& cover_map_;
     size_t search_dist_;
     PathsWeightCounter& weight_counter_;
-    std::set<Edge*> all_edges_;
 };
 NextPathSearcher::NextPathSearcher(const Graph& g,
                                    const GraphCoverageMap& cover_map,
@@ -171,9 +177,9 @@ set<BidirectionalPath*> NextPathSearcher::FindNextPaths(
     Edge* start_edge = new Edge(g_, path.At(0), NULL, g_.length(path.At(0)));
     Edge* curr_edge = start_edge;
     for (size_t i = 1; i < path.Size(); ++i) {
-        curr_edge = curr_edge->AddOutEdge(path.At(i), all_edges_);
+        curr_edge = curr_edge->AddOutEdge(path.At(i));
     }
-    curr_edge = curr_edge->AddOutEdge(begin_edge, all_edges_);
+    curr_edge = curr_edge->AddOutEdge(begin_edge);
     growing_paths.push_back(curr_edge);
     DEBUG("Try to find next path for path with edge " << g_.int_id(begin_edge));
     path.Print();
@@ -202,11 +208,15 @@ set<BidirectionalPath*> NextPathSearcher::FindNextPaths(
             stopped_paths.push_back(growing_paths[ipaths]);
         } else {
             for (size_t i = 0; i < paths_to_add.size(); ++i) {
-                growing_paths.insert(growing_paths.end(), paths_to_add.begin(),
-                                     paths_to_add.end());
+            	if (used_edges.find(paths_to_add[i]) == used_edges.end()){
+            		growing_paths.push_back(paths_to_add[i]);
+            	}
             }
         }
         ipaths++;
+        if (growing_paths.size() > 5000) {
+        	return  std::set<BidirectionalPath*>();
+        }
     }
     std::set<BidirectionalPath*> result_paths;
     for (size_t i = 0; i < result_edge.size(); ++i) {
@@ -215,11 +225,8 @@ set<BidirectionalPath*> NextPathSearcher::FindNextPaths(
         DEBUG("We add path with length " << result_path->Length());
         result_path->Print();
     }
+    delete start_edge;
     DEBUG("for path " << path.GetId() << " several extension " << result_paths.size());
-    for (auto iter = all_edges_.begin(); iter != all_edges_.end(); ++iter) {
-        delete *iter;
-    }
-    all_edges_.clear();
     return result_paths;
 }
 
@@ -244,9 +251,9 @@ Edge* NextPathSearcher::AnalyzeBubble(const BidirectionalPath& init_path,
     Edge* next_edge = NULL;
     for (size_t i = 0; i < edges.size(); ++i) {
         if (edges[i] == max_edge && edges[i] == buldge_edge) {
-            next_edge = prev_edge->AddOutEdge(edges[i], all_edges_);
+            next_edge = prev_edge->AddOutEdge(edges[i]);
         } else if (edges[i] != max_edge) {
-            prev_edge->AddIncorrectOutEdge(edges[i], all_edges_);
+            prev_edge->AddIncorrectOutEdge(edges[i]);
         }
     }
     return next_edge;
@@ -292,7 +299,7 @@ Edge* NextPathSearcher::AddPath(const BidirectionalPath& init_path,
         } else {
             change = true;
             DEBUG("add this edge " << iedge);
-            curr_edge = curr_edge->AddOutEdge(path.At(iedge), all_edges_);
+            curr_edge = curr_edge->AddOutEdge(path.At(iedge));
         }
     }
     if (change)
@@ -347,8 +354,7 @@ void NextPathSearcher::GrowPath(const BidirectionalPath& init_path,
                     edges_to_add.push_back(next_edge);
                 }
             } else {
-                Edge* next_edge = curr_edge->AddOutEdge(out_edges[iedge],
-                                                        all_edges_);
+                Edge* next_edge = curr_edge->AddOutEdge(out_edges[iedge]);
                 edges_to_add.push_back(next_edge);
             }
         }

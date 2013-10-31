@@ -784,6 +784,10 @@ public:
             DEBUG("following paths found for edge " << g_.int_id(edges[iedge].e_));
 
             vector<BidirectionalPath*> bests_path_for_edge = MaxWeightedPath(path, following_paths);
+            if (bests_path_for_edge.size() == 0) {
+            	//TODO: delete all information
+            	return EdgeContainer();
+            }
             DEBUG("bests path for edge found");
             BidirectionalPath* best_one = bests_path_for_edge[0];
             DEBUG("edge best");
@@ -878,11 +882,13 @@ private:
             const BidirectionalPath& path,
             const set<BidirectionalPath*>& following_paths) const {
         map<BidirectionalPath*, double> result;
+        DEBUG("count all weights");
         for (auto iter = following_paths.begin(); iter != following_paths.end();
                 ++iter) {
+        	DEBUG("count weight for path ");
+        	(*iter)->Print();
             result[*iter] = weight_counter_.CountPairInfo(path, 0, path.Size(),
-                                                          **iter, 0,
-                                                          (*iter)->Size());
+					**iter, 0, (*iter)->Size());
         }
         return result;
     }
@@ -897,8 +903,9 @@ private:
         vector<BidirectionalPath*> vector_result;
         DEBUG("try find max path");
         while (weights.size() > 0) {
-            DEBUG("weights.size() " << weights.size());
+            DEBUG("1");
             auto max_iter = weights.begin();
+            DEBUG("2");
             for (auto iter = weights.begin(); iter != weights.end(); ++iter) {
                 if (iter->second > max_iter->second) {
                     max_iter = iter;
