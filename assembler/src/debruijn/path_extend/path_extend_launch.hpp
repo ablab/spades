@@ -310,7 +310,6 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
     resolver.addUncoveredEdges(paths, mainPE->GetCoverageMap());
 	paths.SortByLength();
     DebugOutputPaths(writer, gp, output_dir, paths, "final_paths");
-
     if (broken_contigs.is_initialized()) {
         OutputBrokenScaffolds(paths, (int) gp.g.k(), writer, output_dir + broken_contigs.get());
     }
@@ -318,6 +317,7 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 
 
     //MP
+    DEBUG("mate pair path-extend started");
     vector<SimpleExtender *> mpPEs;
 	for (size_t i = 0; i < mp_libs.size(); ++i) {
 		MatePairExtensionChooser* chooser = new MatePairExtensionChooser(gp.g,
@@ -326,7 +326,6 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 				pset.loop_removal.max_loops, chooser);
 		mpPEs.push_back(mp_extender);
 	}
-
 	ExtensionChooser * longReadEC =
 			new LongReadsExtensionChooser(
 					gp.g,
@@ -334,7 +333,7 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 					cfg::get().pe_params.long_reads.coverage_base_rr.filtering,
 					cfg::get().pe_params.long_reads.coverage_base_rr.weight_priority,
 					cfg::get().pe_params.long_reads.coverage_base_rr.unique_edge_priority);
-	SimpleExtender * longReadExtender = new SimpleExtender(gp.g,
+    SimpleExtender * longReadExtender = new SimpleExtender(gp.g,
 			pset.loop_removal.max_loops, longReadEC, true);
 	all_libs.clear();
 	all_libs.push_back(longReadExtender);
@@ -344,12 +343,9 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	all_libs.insert(all_libs.end(), scafPEs.begin(), scafPEs.end());
 	all_libs.insert(all_libs.end(), mpPEs.begin(), mpPEs.end());
 	CompositeExtender* mp_main_pe = new CompositeExtender(gp.g, pset.loop_removal.max_loops, all_libs);
-	DEBUG(" cov map1 = " << mp_main_pe->GetCoverageMap().size());
 	INFO("Growing mp paths");
 
 	auto result_paths = resolver.extendSeeds(paths, *mp_main_pe);
-	DEBUG(" cov map2 = " << mp_main_pe->GetCoverageMap().size());
-
 	if (pset.remove_overlaps) {
 		resolver.removeOverlaps(result_paths, mp_main_pe->GetCoverageMap(), max_over,
 				writer, output_dir);
@@ -364,7 +360,6 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 
     INFO("End mp libs");
     writer.writePaths(result_paths, output_dir + "final_paths_with_mp.fasta");
-    DEBUG("mp_main_pe " << result_paths.size() << " cov map " << mp_main_pe->GetCoverageMap().size());
 	//MP end
 
     //pe again

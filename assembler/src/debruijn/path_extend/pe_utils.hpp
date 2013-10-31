@@ -76,13 +76,12 @@ public:
 
     GraphCoverageMap(const Graph& g, PathContainer& paths) : g_(g), edgeCoverage_() {
         empty_ = new MapDataT();
-
         for (size_t i = 0; i < paths.size(); ++i) {
             for (size_t j = 0; j < paths.Get(i)->Size(); ++j) {
-                EdgeAdded(paths.Get(i)->At(j), paths.Get(i), paths.Get(i)->GapAt(i));
+                EdgeAdded(paths.Get(i)->At(j), paths.Get(i), paths.Get(i)->GapAt(j));
             }
             for (size_t j = 0; j < paths.GetConjugate(i)->Size(); ++j) {
-                EdgeAdded(paths.GetConjugate(i)->At(j), paths.GetConjugate(i), paths.GetConjugate(i)->GapAt(i));
+                EdgeAdded(paths.GetConjugate(i)->At(j), paths.GetConjugate(i), paths.GetConjugate(i)->GapAt(j));
             }
         }
     }
