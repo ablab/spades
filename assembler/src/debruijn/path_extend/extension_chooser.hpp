@@ -348,7 +348,6 @@ public:
 		bool first_time = true;
 		bool changed = true;
 		if (first_time || (result.size() > 1 && changed)) {
-		    DEBUG("result size MORE 1");
 		    first_time = false;
 			RemoveTrivialAndCommon(path, result);
 			EdgeContainer new_result = FindFilteredEdges(path, result);
@@ -649,7 +648,6 @@ private:
                     return false;
                 }
                 if (!ConsistentPath(**it1, pos1[0], **it2, pos2[0])) {
-                    TRACE("Check inconsistent");
                     if (CheckInconsistence(**it1, pos1[0], **it2, pos2[0],
                                            cov_paths)) {
                         DEBUG("***not unique " << g_.int_id(e) << " len " << g_.length(e) << "***");

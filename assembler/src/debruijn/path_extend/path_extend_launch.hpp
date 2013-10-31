@@ -331,7 +331,7 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 					gp.g,
 					paths,
 					cfg::get().pe_params.long_reads.coverage_base_rr.filtering,
-					cfg::get().pe_params.long_reads.coverage_base_rr.weight_priority,
+					cfg::get().pe_params.long_reads.single_reads.weight_priority,
 					cfg::get().pe_params.long_reads.coverage_base_rr.unique_edge_priority);
     SimpleExtender * longReadExtender = new SimpleExtender(gp.g,
 			pset.loop_removal.max_loops, longReadEC, true);

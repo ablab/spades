@@ -127,7 +127,7 @@ usual_rr
 	inresolve_cutoff_proportion 0.5
 	near_vertex  30
 	max_distance 50
-	max_repeat_length 4000
+	max_repeat_length 8000
 	kill_loops true
 }
 
