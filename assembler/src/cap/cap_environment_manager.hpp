@@ -17,6 +17,7 @@
 #include "cap_environment.hpp"
 #include "io/sequence_reader.hpp"
 #include "config_struct.hpp"
+#include "repeat_cropping_reader.hpp"
 
 namespace online_visualization {
 
@@ -314,22 +315,40 @@ class CapEnvironmentManager {
    * Returns true if added successfully
    */
   bool AddGenomeFromFile(const std::string &filename,
-                         const std::string &name) const {
+                         const std::string &name,
+                         bool crop_repeats = false) const {
     if (!CheckFileExists(filename)) {
       return false;
     }
 
-    io::Reader reader(filename);
-    io::SingleRead genome;
-    reader >> genome;
+    if (crop_repeats) {
+        io::Reader raw_reader(filename);
+        RepeatCroppingReader reader(raw_reader);
+        io::SingleRead genome;
+        reader >> genome;
 
-    if (!genome.IsValid()) {
-      return false;
+        if (!genome.IsValid()) {
+            return false;
+        }
+
+        env_->init_genomes_paths_.push_back(filename);
+        env_->genomes_.push_back(genome.sequence());
+        env_->genomes_names_.push_back(name);
+        env_->coordinates_handler_.StoreGenomeThreadManual(env_->genomes_.size() - 1, reader.coordinates_ladder());
+    } else {
+        io::Reader reader(filename);
+        io::SingleRead genome;
+        reader >> genome;
+
+        if (!genome.IsValid()) {
+          return false;
+        }
+
+        env_->init_genomes_paths_.push_back(filename);
+        env_->genomes_.push_back(genome.sequence());
+        env_->genomes_names_.push_back(name);
     }
 
-    env_->init_genomes_paths_.push_back(filename);
-    env_->genomes_.push_back(genome.sequence());
-    env_->genomes_names_.push_back(name);
 
     return true;
   }
