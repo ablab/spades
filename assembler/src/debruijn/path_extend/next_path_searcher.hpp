@@ -42,7 +42,6 @@ public:
         for (size_t i = 0; i < out_edges_.size(); ++i) {
             if (out_edges_[i]->GetId() == edge) {
                 not_out_edges_.push_back(out_edges_[i]);
-                delete out_edges_[i];
                 out_edges_.erase(out_edges_.begin() + i);
                 break;
             }

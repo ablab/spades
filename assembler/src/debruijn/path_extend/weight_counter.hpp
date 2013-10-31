@@ -406,8 +406,8 @@ public:
     void SetCommonWeightFrom(size_t iedge, double weight);
     void ClearCommonWeight();
 private:
-    void FindPairInfo(const BidirectionalPath path1, size_t from1, size_t to1,
-                      const BidirectionalPath path2, size_t from2, size_t to2,
+    void FindPairInfo(const BidirectionalPath& path1, size_t from1, size_t to1,
+                      const BidirectionalPath& path2, size_t from2, size_t to2,
                       map<size_t, double>& pi, double& ideal_pi) const;
     void FindPairInfo(EdgeId e1, EdgeId e2, size_t dist, double& ideal_w,
                       double& result_w) const;
@@ -455,9 +455,9 @@ double PathsWeightCounter::CountPairInfo(const BidirectionalPath& path1,
     return result;
 }
 
-void PathsWeightCounter::FindPairInfo(const BidirectionalPath path1,
+void PathsWeightCounter::FindPairInfo(const BidirectionalPath& path1,
                                       size_t from1, size_t to1,
-                                      const BidirectionalPath path2,
+                                      const BidirectionalPath& path2,
                                       size_t from2, size_t to2,
                                       map<size_t, double>& pi,
                                       double& ideal_pi) const {
@@ -465,50 +465,37 @@ void PathsWeightCounter::FindPairInfo(const BidirectionalPath path1,
     for (size_t i = 0; i < path2.Size(); ++i) {
         str << g_.int_id(path2.At(i)) << " ";
     }DEBUG("pair info for path " << str.str());
-    DEBUG("from2 " << from2 << " to2 " << to2);
-    path1.Print();
-    DEBUG("from1 " << from1 << " to1 " << to1);
     for (size_t i1 = from1; i1 < to1; ++i1) {
         for (size_t i2 = from2; i2 < to2; ++i2) {
             size_t dist = path1.LengthAt(i1) + path2.Length()
                     - path2.LengthAt(i2);
             double ideal_w = 0.0;
             double w = 0.0;
-            DEBUG("find pi for " << i1 << " " << i2);
             FindPairInfo(path1.At(i1), path2.At(i2), dist, ideal_w, w);
-            DEBUG("pi found " << ideal_w << " " <<w);
             ideal_pi += ideal_w;
-            DEBUG("ideal_pi " << ideal_pi);
             if (math::gr(ideal_w, 0.0) && math::ls(w, ideal_w)) {
-            	DEBUG("pi exist");
                 DEBUG("i1 " << i1 << " i2 " << i2
                 		<<" w " << w
                 		<< " ideal " << ideal_w
                 		<< " e1 " << g_.int_id (path1.At(i1))
                 		<< " e2 " << g_.int_id(path2.At(i2)) << " dist " << dist);
             }
-            DEBUG("try find " << i1);
             if (pi.find(i1) == pi.end()) {
                 pi[i1] = 0;
             }
             pi[i1] += w;
-            DEBUG("end");
         }
     }
 }
 
 void PathsWeightCounter::FindPairInfo(EdgeId e1, EdgeId e2, size_t dist,
                                       double& ideal_w, double& result_w) const {
-    DEBUG("1 " << g_.int_id(e1) << " " << g_.int_id(e2) << " dist " << dist);
 	ideal_w = lib_.IdealPairedInfo(e1, e2, dist);
-    DEBUG("2");
 	result_w = 0.0;
     if (ideal_w == 0.0) {
         return;
     }
-    DEBUG("4");
     double w = lib_.CountPairedInfo(e1, e2, dist, true);
-    DEBUG("5");
     if (w > 10.0) {
         result_w = ideal_w;
     }

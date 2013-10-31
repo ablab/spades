@@ -882,11 +882,8 @@ private:
             const BidirectionalPath& path,
             const set<BidirectionalPath*>& following_paths) const {
         map<BidirectionalPath*, double> result;
-        DEBUG("count all weights");
         for (auto iter = following_paths.begin(); iter != following_paths.end();
                 ++iter) {
-        	DEBUG("count weight for path ");
-        	(*iter)->Print();
             result[*iter] = weight_counter_.CountPairInfo(path, 0, path.Size(),
 					**iter, 0, (*iter)->Size());
         }
@@ -901,11 +898,8 @@ private:
         map<BidirectionalPath*, double> weights = CountAllWeights(path, result);
         DEBUG("counted good paths " << weights.size());
         vector<BidirectionalPath*> vector_result;
-        DEBUG("try find max path");
         while (weights.size() > 0) {
-            DEBUG("1");
             auto max_iter = weights.begin();
-            DEBUG("2");
             for (auto iter = weights.begin(); iter != weights.end(); ++iter) {
                 if (iter->second > max_iter->second) {
                     max_iter = iter;
@@ -981,6 +975,7 @@ private:
         }
         if (result.size() == 0) {
             INFO("bad case");
+            return vector<BidirectionalPath*>();
         }
         return SortResult(path, result);
     }
