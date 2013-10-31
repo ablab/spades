@@ -191,9 +191,9 @@ sc
 	; hidden ec remover
 	her
 	{
-	    enabled false
+	    enabled                     true
 	    uniqueness_length           1500
-	    unreliability_threshold     4
+	    unreliability_threshold     0.2
 	    relative_threshold          5     
 	}
 }

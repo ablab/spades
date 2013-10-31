@@ -33,13 +33,13 @@ void ProcessSingleReads(conj_graph_pack& gp, size_t ilib) {
 
     if (cfg::get().use_multithreading) {
         auto single_streams = single_binary_readers(reads, true, false);
-        notifier.ProcessLibrary(*single_streams, ilib, single_streams->size());
+        notifier.ProcessLibrary(*single_streams, ilib, reads.data().read_length, single_streams->size());
     }
     else {
         auto single_stream = single_easy_reader(reads, true, false);
         single_stream.release();
         SingleStreamType single_streams(single_stream.get());
-        notifier.ProcessLibrary(single_streams, ilib, single_streams.size());
+        notifier.ProcessLibrary(single_streams, ilib, reads.data().read_length, single_streams.size());
     }
 }
 
@@ -64,13 +64,13 @@ void ProcessPairedReads(conj_graph_pack& gp, size_t ilib) {
 
     if (cfg::get().use_multithreading) {
         auto paired_streams = paired_binary_readers(reads, true, (size_t) reads.data().mean_insert_size);
-        notifier.ProcessLibrary(*paired_streams, ilib, paired_streams->size());
+        notifier.ProcessLibrary(*paired_streams, ilib, reads.data().read_length, paired_streams->size());
         cfg::get_writable().ds.reads[ilib].data().pi_threshold = split_graph.GetThreshold();
     }
     else {
         auto paired_stream = paired_easy_reader(reads, true, (size_t) reads.data().mean_insert_size);
         SingleStreamType paired_streams(paired_stream.get());
-        notifier.ProcessLibrary(paired_streams, ilib, paired_streams.size());
+        notifier.ProcessLibrary(paired_streams, ilib, reads.data().read_length, paired_streams.size());
         cfg::get_writable().ds.reads[ilib].data().pi_threshold = split_graph.GetThreshold();
     }
 
@@ -150,13 +150,6 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
 
     size_t edge_length_threshold = stats::Nx(gp.g, 50);
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        if (cfg::get().ds.reads[i].data().read_length > 0 && cfg::get().ds.reads[i].data().read_length <= cfg::get().K) {
-            WARN("Unable to estimate insert size for paired library #" << i);
-            WARN("Maximum read length (" << cfg::get().ds.reads[i].data().read_length << ") should be greater than K (" << cfg::get().K << ")");
-            //TODO: run short read aligner in this case
-            continue;
-        }
-
         INFO("Processing library #" << i);
         if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd ||
             cfg::get().ds.reads[i].type() == io::LibraryType::MatePairs) {
@@ -175,7 +168,10 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
             if (!insert_size_refined) {
                 cfg::get_writable().ds.reads[i].data().mean_insert_size = 0.0;
                 WARN("Unable to estimate insert size for paired library #" << i);
-                if (cfg::get().ds.reads[i].data().read_length <= cfg::get().K * 11 / 10) {
+                if (cfg::get().ds.reads[i].data().read_length > 0 && cfg::get().ds.reads[i].data().read_length <= cfg::get().K) {
+                    WARN("Maximum read length (" << cfg::get().ds.reads[i].data().read_length << ") should be greater than K (" << cfg::get().K << ")");
+                }
+                else if (cfg::get().ds.reads[i].data().read_length <= cfg::get().K * 11 / 10) {
                     WARN("Maximum read length (" << cfg::get().ds.reads[i].data().read_length << ") is probably too close to K (" << cfg::get().K << ")");
                 } else {
                     WARN("None of paired reads aligned properly. Please, check orientation of your read pairs.");

@@ -740,18 +740,18 @@ void SimplifyGraph(conj_graph_pack &gp,
 //    }
 //	VERIFY(gp.kmer_mapper.IsAttached());
 
-//todo remove magic constants
-    if (cfg::get().ds.single_cell)
-        PreSimplification(gp, removal_handler, determined_coverage_threshold);
-
-    for (size_t i = 0; i < iteration_count; i++) {
-        SimplificationCycle(gp, removal_handler, labeler, printer,
-                            iteration_count, i, determined_coverage_threshold);
-        printer(ipp_err_con_removal,
-                str(format("_%d") % (i + iteration_count)));
-    }
-
     if (!cfg::get().simp.stats_mode) {
+//todo remove magic constants
+        if (cfg::get().ds.single_cell)
+            PreSimplification(gp, removal_handler, determined_coverage_threshold);
+
+        for (size_t i = 0; i < iteration_count; i++) {
+            SimplificationCycle(gp, removal_handler, labeler, printer,
+                                iteration_count, i, determined_coverage_threshold);
+            printer(ipp_err_con_removal,
+                    str(format("_%d") % (i + iteration_count)));
+        }
+
         printer(ipp_before_post_simplification);
         //todo enable for comparison with current version
         PostSimplification(gp, removal_handler,
@@ -772,7 +772,7 @@ void SimplifyGraph(conj_graph_pack &gp,
     }
 
     // This should be put into PostSimplification when(if) flanking coverage will be rewritten.
-    if (cfg::get().topology_simplif_enabled && cfg::get().simp.her.enabled && cfg::get().developer_mode) {
+    if (cfg::get().topology_simplif_enabled && cfg::get().simp.her.enabled) {
         HiddenECRemover<Graph>(gp.g, cfg::get().simp.her.uniqueness_length, gp.flanking_cov,
                                cfg::get().simp.her.unreliability_threshold, determined_coverage_threshold, cfg::get().simp.her.relative_threshold,
                                removal_handler).Process();

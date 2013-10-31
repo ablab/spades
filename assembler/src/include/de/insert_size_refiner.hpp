@@ -7,6 +7,8 @@
 #pragma once
 
 #include "cpp_utils.hpp"
+#include "stats/debruijn_stats.hpp"
+#include "sequence_mapper.hpp"
 
 namespace omnigraph {
 
@@ -47,6 +49,7 @@ void hist_crop(const map<int, size_t> &hist, double low, double high, map<int, s
 template<class graph_pack>
 class InsertSizeHistogramCounter {
   typedef std::map<int, size_t> HistType;
+  typedef typename debruijn_graph::MapperFactory<graph_pack>::SequenceMapperT SequenceMapperT;
 
  public:
   InsertSizeHistogramCounter(const graph_pack& gp, size_t edge_length_threshold, bool ignore_negative = false)
@@ -61,6 +64,8 @@ class InsertSizeHistogramCounter {
   template<class PairedRead>
   void Count(io::ReadStreamVector< io::IReader<PairedRead> >& streams, size_t& rl) {
     hist_.clear();
+    debruijn_graph::MapperFactory<graph_pack> mapper_factory(gp_);
+    std::shared_ptr<SequenceMapperT> mapper = mapper_factory.GetSequenceMapper(rl == 0 ? gp_.k_value + 1 : rl);
 
     size_t nthreads = streams.size();
     std::vector<size_t> rls(nthreads, 0);
@@ -78,7 +83,7 @@ class InsertSizeHistogramCounter {
 
       while (!stream.eof()) {
         stream >> r;
-        int res = ProcessPairedRead(r, *hists[i], rls[i]);
+        int res = ProcessPairedRead(r, *mapper, *hists[i], rls[i]);
         counted += (res > 0);
         negative += (res < 0);
         ++total;
@@ -200,7 +205,7 @@ class InsertSizeHistogramCounter {
   bool ignore_negative_;
 
   template<class PairedRead>
-  int ProcessPairedRead(const PairedRead& r, HistType& hist, size_t& rl) {
+  int ProcessPairedRead(const PairedRead& r, const SequenceMapperT& mapper, HistType& hist, size_t& rl) {
     Sequence sequence_left = r.first().sequence();
     Sequence sequence_right = r.second().sequence();
 
@@ -211,20 +216,9 @@ class InsertSizeHistogramCounter {
         rl = sequence_right.size();
     }
 
-    if (sequence_left.size() <= k_ || sequence_right.size() <= k_) {
-      return 0;
-    }
-
-    runtime_k::RtSeq left = sequence_left.end<runtime_k::RtSeq>(k_ + 1);
-    runtime_k::RtSeq right = sequence_right.start<runtime_k::RtSeq>(k_ + 1);
-    left = gp_.kmer_mapper.Substitute(left);
-    right = gp_.kmer_mapper.Substitute(right);
-    if (!gp_.index.contains(left) || !gp_.index.contains(right))
-      return 0;
-
-    auto pos_left = gp_.index.get(left);
-    auto pos_right = gp_.index.get(right);
-    if (pos_left.first != pos_right.first || gp_.g.length(pos_left.first) < edge_length_threshold_) {
+    auto pos_left = mapper.GetLastKmerPos(sequence_left);
+    auto pos_right = mapper.GetFirstKmerPos(sequence_right);
+    if (pos_left.second == -1u || pos_right.second == -1u || pos_left.first != pos_right.first || gp_.g.length(pos_left.first) < edge_length_threshold_) {
       return 0;
     }
 

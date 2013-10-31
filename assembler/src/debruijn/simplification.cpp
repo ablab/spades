@@ -8,6 +8,7 @@
 #include "graph_simplification.hpp"
 #include "omni_labelers.hpp"
 #include "io/single_read.hpp"
+#include "positions.hpp"
 
 #include "simplification.hpp"
 
@@ -20,6 +21,23 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
     VERIFY(cfg::get().developer_mode);
     gp.ClearQuality();
     gp.FillQuality();
+
+    if (cfg::get().developer_mode) {
+        gp.edge_pos.clear();
+        if (gp.genome.size() > 0) {
+            FillPos(gp, gp.genome, "ref0");
+            FillPos(gp, !gp.genome, "ref1");
+        }
+
+        if (!cfg::get().pos.contigs_for_threading.empty() &&
+            FileExists(cfg::get().pos.contigs_for_threading))
+          FillPosWithRC(gp, cfg::get().pos.contigs_for_threading, "thr_");
+
+        if (!cfg::get().pos.contigs_to_analyze.empty() &&
+            FileExists(cfg::get().pos.contigs_to_analyze))
+          FillPosWithRC(gp, cfg::get().pos.contigs_to_analyze, "anlz_");
+    }
+
     total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
     total_labeler tot_lab(&graph_struct);
 

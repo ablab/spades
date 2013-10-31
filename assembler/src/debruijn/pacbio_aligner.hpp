@@ -97,6 +97,7 @@ public:
 		ofstream filestr("pacbio_mapped.mpr", ofstream::app);
 		vector <PathStorage<Graph > > long_reads_by_thread(cfg::get().max_threads, PathStorage<Graph>(gp_.g));
 		vector <GapStorage<Graph > > gaps_by_thread(cfg::get().max_threads, GapStorage<Graph>(gp_.g));
+		GenomeConsistenceChecker<typename GraphPack::graph_t> checker(gp, 10, 0.2);
 
 # pragma omp parallel for shared(reads, long_reads_by_thread, pac_index, n,  different_edges_profile) num_threads(cfg::get().max_threads)
 		for (size_t i = 0; i < buf_size; ++i) {
@@ -135,7 +136,7 @@ public:
 			}
 			for (auto iter = aligned_edges.begin(); iter != aligned_edges.end(); ++iter) {
 				long_reads_by_thread[thread_num].AddPath(*iter, 1, true);
-				if (gp_.edge_pos.IsConsistentWithGenome(*iter)) {
+				if (checker.IsConsistentWithGenome(*iter)) {
 					genomic_subreads++;
 				} else {
 					if (iter->size() > 1)
@@ -156,7 +157,7 @@ public:
 			filestr << "found " << aligned_edges.size() << " aligned subreads.\n";
 			for (auto iter = aligned_edges.begin(); iter != aligned_edges.end(); ++iter) {
 				string tmp = " ";
-				if (gp_.edge_pos.IsConsistentWithGenome(*iter)) {
+				if (checker.IsConsistentWithGenome(*iter)) {
 
 				} else {
 					tmp = " NOT ";

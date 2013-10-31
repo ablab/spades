@@ -46,18 +46,20 @@ def prepare_config_spades(filename, cfg, log, use_additional_contigs, K, last_on
     process_cfg.substitute_params(filename, subst_dict, log)
 
 
-def get_read_length(output_dir, K):
+def get_read_length(output_dir, K, dataset_data):
     estimated_params = load_config_from_file(os.path.join(output_dir, "K%d" % K, "_est_params.info"))
     lib_count = int(estimated_params.__dict__["lib_count"])
     max_read_length = 0
     for i in range(lib_count):
+        if i in support.get_lib_ids_by_type(dataset_data, support.READS_TYPES_NOT_USED_IN_CONSTRUCTION):
+            continue
         if int(estimated_params.__dict__["read_length_" + str(i)]) > max_read_length:
             max_read_length = int(estimated_params.__dict__["read_length_" + str(i)])
     return max_read_length
 
 
 def update_k_mers_in_special_cases(cur_k_mers, RL, log):
-    if not options_storage.k_mers and not options_storage.single_cell: # kmers were set by default and not SC
+    if options_storage.auto_K_allowed():
         if RL >= 250:
             support.warning("Default k-mer sizes were set to %s because estimated "
                             "read length (%d) is equal or great than 250" % (str(options_storage.k_mers_250), RL), log)
@@ -112,7 +114,7 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, use_additional_conti
     support.sys_call(command, log)
 
 
-def run_spades(configs_dir, execution_home, cfg, log):
+def run_spades(configs_dir, execution_home, cfg, dataset_data, log):
     if not isinstance(cfg.iterative_K, list):
         cfg.iterative_K = [cfg.iterative_K]
     cfg.iterative_K = sorted(cfg.iterative_K)
@@ -126,7 +128,7 @@ def run_spades(configs_dir, execution_home, cfg, log):
         K = cfg.iterative_K[0]
     else:
         run_iteration(configs_dir, execution_home, cfg, log, cfg.iterative_K[0], False, False)
-        RL = get_read_length(cfg.output_dir, cfg.iterative_K[0])
+        RL = get_read_length(cfg.output_dir, cfg.iterative_K[0], dataset_data)
         cfg.iterative_K = update_k_mers_in_special_cases(cfg.iterative_K, RL, log)
         if cfg.iterative_K[1] + 1 > RL:
             if cfg.rr_enable:

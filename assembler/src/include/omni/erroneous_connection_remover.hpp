@@ -334,6 +334,7 @@ class MultiplicityCountingCondition : public UniquenessPlausabilityCondition<
     MultiplicityCounter<Graph> multiplicity_counter_;
     EdgePredicate plausiblity_condition_;
 
+public:
     bool CheckUniqueness(EdgeId e, bool forward) const {
         TRACE( "Checking " << this->g().int_id(e) << " for uniqueness in " << (forward ? "forward" : "backward") << " direction");
         VertexId start =
@@ -346,8 +347,6 @@ class MultiplicityCountingCondition : public UniquenessPlausabilityCondition<
     bool CheckPlausibility(EdgeId e, bool) const {
         return plausiblity_condition_->Check(e);
     }
-
- public:
 
     MultiplicityCountingCondition(const Graph& g, size_t uniqueness_length,
                                   EdgePredicate plausiblity_condition)
@@ -400,12 +399,13 @@ class HiddenECRemover: public EdgeProcessingAlgorithm<Graph,
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 private:
-	size_t length_bound_;
+	size_t uniqueness_length_;
 	double unreliability_threshold_;
 	double ec_threshold_;
 	double relative_threshold_;
 	const AbstractFlankingCoverage<Graph> &flanking_coverage_;
 	EdgeRemover<Graph> edge_remover_;
+	shared_ptr<MultiplicityCountingCondition<Graph>> condition_;
 private:
 	void RemoveHiddenEC(EdgeId edge) {
 		if (this->g().length(edge) <= this->g().k())
@@ -457,7 +457,7 @@ private:
 			return false;
 		}
 		vector<EdgeId> edges(this->g().out_begin(v), this->g().out_end(v));
-		return (edges.size() == 2 && this->g().conjugate(edges[0]) == edges[1]) || this->g().length(this->g().GetUniqueIncomingEdge(v)) > length_bound_;
+		return (edges.size() == 2 && this->g().conjugate(edges[0]) == edges[1] && condition_->CheckUniqueness(this->g().GetUniqueIncomingEdge(v), false)) || this->g().length(this->g().GetUniqueIncomingEdge(v)) >= uniqueness_length_;
 	}
 
 	bool ProcessEdge(EdgeId e) {
@@ -470,17 +470,19 @@ private:
 	}
 
 public:
-	HiddenECRemover(Graph& g, size_t length_bound,
-			const AbstractFlankingCoverage<Graph> &flanking_coverage,
-			double unreliability_threshold, double ec_threshold,
-			double relative_threshold,
-			boost::function<void(EdgeId)> removal_handler = 0) :
-			base(g, Comparator(), make_shared<func::AlwaysTrue<EdgeId>>()), length_bound_(
-					length_bound), unreliability_threshold_(unreliability_threshold), ec_threshold_(
-					ec_threshold), relative_threshold_(relative_threshold), flanking_coverage_(
-					flanking_coverage), edge_remover_(g, removal_handler) {
+    HiddenECRemover(Graph& g, size_t uniqueness_length,
+                    const AbstractFlankingCoverage<Graph> &flanking_coverage,
+                    double unreliability_threshold, double ec_threshold,
+                    double relative_threshold,
+                    boost::function<void(EdgeId)> removal_handler = 0)
+            : base(g, Comparator(), make_shared<func::AlwaysTrue<EdgeId>>()), uniqueness_length_(uniqueness_length),
+              unreliability_threshold_(unreliability_threshold * ec_threshold), ec_threshold_(ec_threshold),
+              relative_threshold_(relative_threshold), flanking_coverage_(flanking_coverage),
+              edge_remover_(g, removal_handler),
+              condition_(new MultiplicityCountingCondition<Graph>(g, uniqueness_length,
+                              make_shared<func::AlwaysTrue<EdgeId>>())) {
 
-	}
+    }
 
 private:
 	DECL_LOGGER("HiddenECRemover");

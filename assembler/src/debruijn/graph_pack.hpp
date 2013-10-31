@@ -56,11 +56,10 @@ struct graph_pack: private boost::noncopyable {
 	EdgeQuality<Graph> edge_qual;
 
     graph_pack(size_t k, const std::string &workdir, size_t lib_count,
-                        Sequence genome = Sequence(), size_t single_gap = 0,
-                        bool careful_labeling = false, bool use_inner_ids = false,
+                        Sequence genome = Sequence(), bool use_inner_ids = false,
                         size_t flanking_range = 50)
             : k_value(k), g(k), index(g, k + 1, workdir),
-              int_ids(g, use_inner_ids), edge_pos(g, (int) single_gap, careful_labeling),
+              int_ids(g, use_inner_ids), edge_pos(g),
               kmer_mapper(g, k + 1),
               flanking_cov(g, flanking_range),
               paired_indices(g, lib_count),

@@ -45,14 +45,14 @@ public:
 		bool good_match_found = false;
 		for (size_t i = 0; i < pos1.size(); i++)
 			for (size_t j = 0; j < pos2.size(); j++) {
-				if (abs(pos1[i].start_ + info.d - pos2[j].start_)
+				if (abs(pos1[i].mr.initial_range.start_pos + info.d - pos2[j].mr.initial_range.start_pos)
 						<= first_bound_ + info.variance) {
 					if (info.variance == 0) {
 						return 0;
 					} else {
 						return 3;
 					}
-				} else if (abs(pos1[i].start_ + info.d - pos2[j].start_)
+				} else if (abs(pos1[i].mr.initial_range.start_pos + info.d - pos2[j].mr.initial_range.start_pos)
 						<= second_bound_) {
 					good_match_found = true;
 				}

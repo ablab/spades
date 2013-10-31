@@ -160,17 +160,17 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
     OutputContigs(gp.g, cfg::get().output_dir + "before_rr.fasta");
 
     //What is this?
-    if (cfg::get().developer_mode && cfg::get().pos.late_threading) {
-        FillPos(gp, gp.genome, "10");
-        FillPos(gp, !gp.genome, "11");
-        if (!cfg::get().pos.contigs_for_threading.empty() &&
-            FileExists(cfg::get().pos.contigs_for_threading))
-          FillPosWithRC(gp, cfg::get().pos.contigs_for_threading, "thr_");
-
-        if (!cfg::get().pos.contigs_to_analyze.empty() &&
-            FileExists(cfg::get().pos.contigs_to_analyze))
-          FillPosWithRC(gp, cfg::get().pos.contigs_to_analyze, "anlz_");
-    }
+//    if (cfg::get().developer_mode && cfg::get().pos.late_threading) {
+//        FillPos(gp, gp.genome, "10");
+//        FillPos(gp, !gp.genome, "11");
+//        if (!cfg::get().pos.contigs_for_threading.empty() &&
+//            FileExists(cfg::get().pos.contigs_for_threading))
+//          FillPosWithRC(gp, cfg::get().pos.contigs_for_threading, "thr_");
+//
+//        if (!cfg::get().pos.contigs_to_analyze.empty() &&
+//            FileExists(cfg::get().pos.contigs_to_analyze))
+//          FillPosWithRC(gp, cfg::get().pos.contigs_to_analyze, "anlz_");
+//    }
 
     //todo refactor labeler creation -- and what's that?
     //fixme all this only to draw pictures that might be disabled!!!

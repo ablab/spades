@@ -37,6 +37,12 @@ class Path {
 };
 
 struct Range {
+private:
+	bool inside(size_t left, size_t right, size_t point) const {
+		return left <= point && point <= right;
+	}
+
+public:
     //inclusive
     size_t start_pos;
     //exclusive
@@ -53,6 +59,10 @@ struct Range {
         end_pos += shift;
     }
 
+    Range(): start_pos(0), end_pos(0) {
+        VERIFY(end_pos >= start_pos);
+    }
+
     Range(size_t start_pos, size_t end_pos)
             : start_pos(start_pos),
               end_pos(end_pos) {
@@ -65,13 +75,38 @@ struct Range {
       return end_pos < other.end_pos;
     }
 
-    bool contains(const Range& that) {
+    bool contains(const Range& that) const {
         return start_pos <= that.start_pos && end_pos >= that.end_pos;
+    }
+
+    Range Merge(const Range &other) const {
+    	return Range(this->start_pos, other.end_pos);
+    }
+
+    bool empty() const {
+    	return start_pos == end_pos;
+    }
+
+    bool Intersect(const Range &other) const {
+    	return inside(start_pos, end_pos, other.start_pos) || inside(start_pos, end_pos, other.end_pos) ||
+    			inside(other.start_pos, other.end_pos, start_pos);
+    }
+
+    bool IntersectLeftOf(const Range &other) const {
+    	return inside(start_pos, end_pos, other.start_pos) && inside(other.start_pos, other.end_pos, end_pos);
+    }
+
+    bool operator==(const Range &that) const {
+    	return start_pos == that.start_pos || end_pos == that.end_pos;
+    }
+
+    bool operator!=(const Range &that) const {
+    	return !(*this == that);
     }
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Range& range) {
-    os << "[" << range.start_pos << ", " << range.end_pos << "]";
+    os << "[" << range.start_pos << " - " << range.end_pos << "]";
     return os;
 }
 
@@ -79,8 +114,88 @@ struct MappingRange {
     Range initial_range;
     Range mapped_range;
 
+    MappingRange() {
+    }
+
     MappingRange(Range initial_range, Range mapped_range)
             : initial_range(initial_range), mapped_range(mapped_range) {}
+
+    MappingRange(size_t i_start, size_t i_end, size_t m_start, size_t m_end)
+            : initial_range(i_start, i_end), mapped_range(m_start, m_end) {}
+
+    MappingRange Merge(const MappingRange &other) const {
+    	return MappingRange(initial_range.Merge(other.initial_range), mapped_range.Merge(other.mapped_range));
+    }
+
+    MappingRange Shift(int shift) const {
+    	VERIFY(initial_range.end_pos >= initial_range.start_pos);
+    	if(empty())
+    		return MappingRange();
+    	MappingRange result(*this);
+    	if(int(result.mapped_range.end_pos) <= -shift)
+    		return MappingRange();
+    	result.mapped_range.end_pos += shift;
+    	if(int(result.mapped_range.start_pos) <= -shift) {
+    		result.initial_range.start_pos -= result.mapped_range.start_pos + shift;
+    		if(result.initial_range.start_pos >= result.initial_range.end_pos)
+    			result.initial_range.start_pos = result.initial_range.end_pos - 1;
+    		result.mapped_range.start_pos = 0;
+    	} else {
+    		result.mapped_range.start_pos += shift;
+    	}
+    	return result;
+    }
+
+    MappingRange Fit(size_t length) const {
+    	VERIFY(initial_range.end_pos >= initial_range.start_pos);
+    	if(empty())
+    		return MappingRange();
+    	MappingRange result(*this);
+    	if(result.mapped_range.start_pos >= length)
+    		return MappingRange();
+    	if(result.mapped_range.end_pos >= length) {
+    		if(result.initial_range.end_pos + length < result.mapped_range.end_pos)
+        		return MappingRange();
+    		result.initial_range.end_pos -= result.mapped_range.end_pos - length;
+    		result.mapped_range.end_pos = length;
+    	}
+    	return result;
+    }
+
+    bool empty() const {
+    	return initial_range.empty() || mapped_range.empty();
+    }
+
+    bool operator<(const MappingRange &other) const {
+    	if(this->initial_range != other.initial_range)
+    		return this->initial_range < other.initial_range;
+    	return this->mapped_range < other.mapped_range;
+    }
+
+    bool Intersect(const MappingRange &other) {
+    	return initial_range.Intersect(other.initial_range) && mapped_range.Intersect(other.mapped_range);
+    }
+
+    bool IntersectLeftOf(const MappingRange &other) const {
+    	return initial_range.IntersectLeftOf(other.initial_range) && mapped_range.IntersectLeftOf(other.mapped_range);
+    }
+
+    bool StrictlyContinuesWith(const MappingRange &other, size_t k) const {
+        return this->initial_range.end_pos <= other.initial_range.start_pos &&
+                this->mapped_range.end_pos <= other.mapped_range.start_pos &&
+                other.initial_range.start_pos - this->initial_range.end_pos ==
+                        other.mapped_range.start_pos - this->mapped_range.end_pos &&
+                        other.initial_range.start_pos - this->initial_range.end_pos <= k;
+    }
+
+    bool operator==(const MappingRange &that) const {
+    	return initial_range == that.initial_range || mapped_range == that.mapped_range;
+    }
+
+    bool operator!=(const MappingRange &that) const {
+    	return !(*this == that);
+    }
+
 };
 
 inline std::ostream& operator<<(std::ostream& os, const MappingRange& map_range) {
@@ -134,6 +249,11 @@ class MappingPath {
             edges_.push_back(that.edges_[i]);
             range_mappings_.push_back(that.range_mappings_[i]);
         }
+    }
+
+    void push_back(ElementId id, MappingRange range) {
+        edges_.push_back(id);
+        range_mappings_.push_back(range);
     }
 
  private:

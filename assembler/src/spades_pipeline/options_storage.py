@@ -154,6 +154,10 @@ def usage(spades_version, show_hidden=False):
     sys.stderr.flush()
 
 
+def auto_K_allowed():
+    return not k_mers and not single_cell  # kmers were set by default and not SC
+
+
 def set_test_options():
     global output_dir
     global single_cell
