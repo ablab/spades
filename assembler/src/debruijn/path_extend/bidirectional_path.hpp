@@ -1265,18 +1265,21 @@ size_t LoopDetector::GetFirstExitIteration(EdgeId loopEdge, EdgeId loopExit, std
 }
 
 bool LoopDetector::EdgeInShortLoop(EdgeId e) const {
-    VertexId v = g_.EdgeEnd(e);
-
-    if (g_.OutgoingEdgeCount(v) != 2) {
-        return false;
-    }
-    auto edges = g_.OutgoingEdges(v);
-    for (auto edge = edges.begin(); edge != edges.end(); ++edge) {
-        if (g_.EdgeEnd(*edge) == g_.EdgeStart(e)) {
-            return true;
-        }
-    }
-    return false;
+	VertexId v = g_.EdgeEnd(e);
+	if (g_.OutgoingEdgeCount(v) != 2) {
+		return false;
+	}
+	auto edges = g_.OutgoingEdges(v);
+	bool loop_found = false;
+	bool exit_found = false;
+	for (auto edge = edges.begin(); edge != edges.end(); ++edge) {
+		if (g_.EdgeEnd(*edge) == g_.EdgeStart(e)) {
+			loop_found = true;
+		} else {
+			exit_found = true;
+		}
+	}
+	return loop_found && exit_found;
 }
 
 bool LoopDetector::PrevEdgeInShortLoop() const {
@@ -1287,7 +1290,7 @@ bool LoopDetector::PrevEdgeInShortLoop() const {
     EdgeId e1 = path_->At(path_->Size() - 2);
     VertexId v2 = g_.EdgeEnd(e1);
     if (g_.OutgoingEdgeCount(v2) == 2 && g_.EdgeEnd(e2)== g_.EdgeStart(e1) && g_.EdgeEnd(e1)== g_.EdgeStart(e2)) {
-        return true;
+        return EdgeInShortLoop(e1);
     }
     return false;
 }

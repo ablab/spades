@@ -27,32 +27,28 @@ protected:
 
     const Graph& g_;
 
-    bool GetLoopAndExit(BidirectionalPath& path, pair<EdgeId, EdgeId>& result) const {
+    bool GetLoopAndExit(BidirectionalPath& path,
+                        pair<EdgeId, EdgeId>& result) const {
         EdgeId e = path.Head();
         VertexId v = g_.EdgeEnd(e);
 
         if (g_.OutgoingEdgeCount(v) != 2) {
             return false;
         }
-
         EdgeId loop;
         EdgeId exit;
         bool loop_found = false;
         bool exit_found = false;
-
         auto edges = g_.OutgoingEdges(v);
         for (auto edge = edges.begin(); edge != edges.end(); ++edge) {
             if (g_.EdgeEnd(*edge) == g_.EdgeStart(e)) {
                 loop = *edge;
                 loop_found = true;
-            }
-            else {
+            } else {
                 exit = *edge;
                 exit_found = true;
             }
         }
-
-
         result = make_pair(loop, exit);
         return exit_found && loop_found;
     }
@@ -166,13 +162,10 @@ public:
 
     virtual void ResolveShortLoop(BidirectionalPath& path) {
         pair<EdgeId, EdgeId> edges;
-
         if (GetLoopAndExit(path, edges)) {
         	DEBUG("Resolving short loop...");
-            //path.Print();
             MakeBestChoice(path, edges);
             DEBUG("Resolving short loop done");
-            //path.Print();
         }
     }
 };
