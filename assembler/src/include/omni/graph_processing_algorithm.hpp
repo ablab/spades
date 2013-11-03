@@ -169,6 +169,7 @@ class EdgeRemovingAlgorithm : public EdgeProcessingAlgorithm<Graph, Comparator> 
     ;
 };
 
+//todo rewrite with SmartSetIterator
 template<class Graph>
 class ComponentRemover {
  public:
@@ -194,7 +195,7 @@ class ComponentRemover {
     }
 
     template<class EdgeIt>
-    void DeleteComponent(EdgeIt begin, EdgeIt end) {
+    void DeleteComponent(EdgeIt begin, EdgeIt end, bool alter_vertices = true) {
         set<EdgeId> edges;
         set<VertexId> vertices;
 
@@ -214,14 +215,16 @@ class ComponentRemover {
             g_.DeleteEdge(e);
         }
 
-        FOREACH (VertexId v, vertices) {
-            RemoveIsolatedOrCompress(g_, v);
+        if (alter_vertices) {
+            FOREACH (VertexId v, vertices) {
+                RemoveIsolatedOrCompress(g_, v);
+            }
         }
     }
 
     template<class Container>
-    void DeleteComponent(const Container& container) {
-        DeleteComponent(container.begin(), container.end());
+    void DeleteComponent(const Container& container, bool alter_vertices = true) {
+        DeleteComponent(container.begin(), container.end(), alter_vertices);
     }
 
 };

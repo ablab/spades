@@ -749,9 +749,9 @@ public:
     GraphComponent<Graph> Next() {
         VertexId next_vertex = inner_iterator_->Next();
         GraphComponent<Graph> result = neighbourhood_finder_->Find(next_vertex);
-        vector<VertexId> toRelax = neighbourhood_finder_->InnerVertices(result);
-        toRelax.push_back(next_vertex);
-        inner_iterator_->Relax(toRelax);
+        vector<VertexId> to_relax = neighbourhood_finder_->InnerVertices(result);
+        to_relax.push_back(next_vertex);
+        inner_iterator_->Relax(to_relax);
         return result;
     }
 
