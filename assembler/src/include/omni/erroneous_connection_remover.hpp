@@ -438,7 +438,7 @@ private:
 			edges[0] = edges[1];
 			edges[1] = tmp;
 		}
-		cout << flanking_coverage_.GetInCov(edges[0]) << " " << flanking_coverage_.GetInCov(edges[1]) << endl;
+//		cout << flanking_coverage_.GetInCov(edges[0]) << " " << flanking_coverage_.GetInCov(edges[1]) << endl;
 		if(flanking_coverage_.GetInCov(edges[1]) < unreliability_threshold_) {
 			DisconnectEdges(v);
 //			cout << "disconnected" << endl;
