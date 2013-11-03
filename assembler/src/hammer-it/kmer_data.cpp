@@ -76,7 +76,7 @@ class BufferFiller {
 
  public:
   BufferFiller(std::vector<HammerKMerSplitter::KMerBuffer> &tmp_entries, size_t cell_size, const HammerKMerSplitter &splitter):
-      tmp_entries_(tmp_entries), num_files_(tmp_entries[0].size()), cell_size_(cell_size), splitter_(splitter) {}
+      tmp_entries_(tmp_entries), num_files_(tmp_entries[0].size()), cell_size_(cell_size), processed_(0), splitter_(splitter) {}
 
   size_t processed() const { return processed_; }
 

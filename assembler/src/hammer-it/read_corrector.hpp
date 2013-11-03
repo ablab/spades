@@ -361,6 +361,7 @@ static const double kLowScoreThreshold = 1.0;
 class CorrectedRead {
   FlowSpaceRead raw_read_; // Uncorrected read
   const KMerData& kmer_data_;
+  bool debug_mode_;
 
   // Stores runs after joining chunks
   std::vector<hammer::HomopolymerRun> corrected_runs_;
@@ -378,6 +379,7 @@ class CorrectedRead {
     const FlowSpaceRead& raw_read;
     size_t trimmed_left;
     size_t trimmed_right;
+    bool debug_mode;
 
     std::vector<hammer::HomopolymerRun> consensus;
     std::vector<double> consensus_scores;
@@ -385,10 +387,11 @@ class CorrectedRead {
     ConsensusChunk(int approximate_read_offset,
                    const ScoreStorage &scores,
                    const FlowSpaceRead &read,
+                   bool debug_mode,
                    double trim_threshold=1.0)
         : approx_read_offset(approximate_read_offset), 
           alignment(kChunkNotAligned), raw_read(read),
-          trimmed_left(0), trimmed_right(0)
+          trimmed_left(0), trimmed_right(0), debug_mode(debug_mode)
     {
       bool left_trim = true;
       for (size_t i = 0; i < scores.size(); ++i) {
@@ -428,13 +431,13 @@ class CorrectedRead {
       int offset = alignH(data.begin(), data.end(),
                           consensus.begin(), consensus.end(),
                           approx_read_offset, skip);
-#if 0
-      std::cerr << "[approx. read offset (left)] before: " << approx_read_offset << "; after: ";
-#endif
+
+      if (debug_mode) {
+        std::cerr << "[approx. read offset (left)] before: " << approx_read_offset << "; after: "
+                  << approx_read_offset + offset << std::endl;
+      }
+
       approx_read_offset += offset;
-#if 0
-      std::cerr << approx_read_offset << std::endl;
-#endif
       alignment = kChunkLeftAligned;
     }
 
@@ -444,13 +447,11 @@ class CorrectedRead {
       int offset = alignH(data.rbegin(), data.rend(),
                           consensus.rbegin(), consensus.rend(),
                           data.size() - 1 - position_on_read, skip);
-#if 0
-      std::cerr << "[approx. read offset (right)] before: " << approx_read_offset << "; after: ";
-#endif
+      if (debug_mode) {
+        std::cerr << "[approx. read offset (right)] before: " << approx_read_offset << "; after: "
+                  << approx_read_offset - offset << std::endl;
+      }
       approx_read_offset -= offset;
-#if 0
-      std::cerr << approx_read_offset << std::endl;
-#endif
       alignment = kChunkRightAligned;
     }
 
@@ -466,27 +467,27 @@ class CorrectedRead {
     bool DoMerge(ConsensusChunk& chunk) {
       int right_end_offset = approx_end_read_offset();
 
-#if 0
-      std::cerr << "============== Merging chunks ===============" << std::endl;
+      if (debug_mode) {
+        std::cerr << "============== Merging chunks ===============" << std::endl;
 
-      int white_l = 0;
-      for (int i = right_end_offset - 1; i >= 0; --i)
-        white_l += raw_read[i].len;
-      for (int i = 0; i < consensus.size(); ++i)
-        white_l -= consensus[i].len;
-      for (int i = 0; i < white_l; ++i)
-        std::cerr << ' ';
-      for (int i = std::max(-white_l, 0); i < consensus.size(); ++i)
-        std::cerr << consensus[i].str();
-      std::cerr << std::endl;
-
-      for (int i = 0; i < chunk.approx_read_offset; ++i)
-        for (int j = 0; j < raw_read[i].len; ++j)
+        int white_l = 0;
+        for (int i = right_end_offset - 1; i >= 0; --i)
+          white_l += raw_read[i].len;
+        for (int i = 0; i < consensus.size(); ++i)
+          white_l -= consensus[i].len;
+        for (int i = 0; i < white_l; ++i)
           std::cerr << ' ';
-      for (int i = 0; i < chunk.consensus.size(); ++i)
-        std::cerr << chunk.consensus[i].str();
-      std::cerr << std::endl;
-#endif
+        for (int i = std::max(-white_l, 0); i < consensus.size(); ++i)
+          std::cerr << consensus[i].str();
+        std::cerr << std::endl;
+
+        for (int i = 0; i < chunk.approx_read_offset; ++i)
+          for (int j = 0; j < raw_read[i].len; ++j)
+            std::cerr << ' ';
+        for (int i = 0; i < chunk.consensus.size(); ++i)
+          std::cerr << chunk.consensus[i].str();
+        std::cerr << std::endl;
+      }
 
       if (right_end_offset <= chunk.approx_read_offset) {
 
@@ -590,7 +591,8 @@ class CorrectedRead {
   std::list<ConsensusChunk> chunks_;
 
   void PushChunk(const ScoreStorage &scores, int approx_read_offset) {
-    chunks_.push_back(ConsensusChunk(approx_read_offset, scores, raw_read_));
+    chunks_.push_back(ConsensusChunk(approx_read_offset, scores,
+                                     raw_read_, debug_mode_));
     chunks_.back().AlignLeftEndAgainstRead();
   }
 
@@ -722,9 +724,11 @@ process_next_kmer: ;
   }
   
  public:
-  CorrectedRead(const io::SingleRead& read, const KMerData& kmer_data) :
+  CorrectedRead(const io::SingleRead& read, const KMerData& kmer_data,
+                bool debug_mode = false) :
     raw_read_(read), 
-    kmer_data_(kmer_data)
+    kmer_data_(kmer_data),
+    debug_mode_(debug_mode)
   {
     CollectChunks(read);
   }
@@ -736,17 +740,17 @@ process_next_kmer: ;
     auto iter = chunks_.begin();
     ConsensusChunk& merged = *iter;
 
-#if 0
-    if (chunks_.size() == 1) {
-      iter->AlignLeftEndAgainstRead();
-      for (int i = 0; i < iter->approx_read_offset; ++i)
-        for (int j = 0; j < raw_read_[i].len; ++j)
-          std::cerr << ' ';
-      for (int i = 0; i < iter->consensus.size(); ++i)
-        std::cerr << iter->consensus[i].str();
-      std::cerr << std::endl;
+    if (debug_mode_) {
+      if (chunks_.size() == 1) {
+        iter->AlignLeftEndAgainstRead();
+        for (int i = 0; i < iter->approx_read_offset; ++i)
+          for (int j = 0; j < raw_read_[i].len; ++j)
+            std::cerr << ' ';
+        for (int i = 0; i < iter->consensus.size(); ++i)
+          std::cerr << iter->consensus[i].str();
+        std::cerr << std::endl;
+      }
     }
-#endif
 
     ++iter;
     while (iter != chunks_.end()) {
@@ -802,22 +806,62 @@ class SingleReadCorrector {
   const KMerData &kmer_data_;
 
  public:
-  SingleReadCorrector(const KMerData &kmer_data) :
-    kmer_data_(kmer_data) {}
+
+  struct DebugOutputPredicate {
+    virtual bool operator()(const io::SingleRead &read) = 0;
+  };
+
+  struct NoDebug : public DebugOutputPredicate {
+    virtual bool operator()(const io::SingleRead &read) {
+      return false;
+    }
+  };
+
+  class DebugIfContains : public DebugOutputPredicate {
+    Sequence needle_;
+    Sequence needle_rc_;
+  public:
+    DebugIfContains(const Sequence &seq) :
+      needle_(seq), needle_rc_(!seq) {}
+
+    virtual bool operator()(const io::SingleRead &read) {
+      auto read_seq = read.sequence();
+      if (read_seq.size() < needle_.size())
+          return false;
+      if (read_seq.find(needle_, 0) != -1ULL)
+        return true;
+      if (read_seq.find(needle_rc_, 0) != -1ULL)
+        return true;
+      return false;
+    }
+  };
+
+private:
+  DebugOutputPredicate &debug_pred_;
+
+public:
+  SingleReadCorrector(const KMerData &kmer_data,
+                      DebugOutputPredicate &debug) :
+    kmer_data_(kmer_data), debug_pred_(debug) {}
 
   boost::optional<io::SingleRead> operator()(const io::SingleRead &r) {
 
-#if 0
-    std::cerr << "=============================================" << std::endl;
+    bool debug_mode = debug_pred_(r);
+    if (debug_mode) {
+      std::cerr << "=============================================" << std::endl;
 
-    std::cerr << '>' << r.name() << '\n'
-              << r.GetSequenceString() << std::endl;
-#endif
+      std::cerr << '>' << r.name() << '\n'
+                << r.GetSequenceString() << std::endl;
+    }
 
-    CorrectedRead read(r, kmer_data_);
+    CorrectedRead read(r, kmer_data_, debug_mode);
     read.MergeChunks();
     if (cfg::get().keep_uncorrected_ends)
       read.AttachUncorrectedRuns();
+
+    if (debug_mode) {
+        std::cerr << "final result: " << read.GetSequenceString() << std::endl;
+    }
 
     auto seq = read.GetSequenceString();
     if (seq.empty())

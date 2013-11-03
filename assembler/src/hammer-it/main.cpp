@@ -187,14 +187,15 @@ int main(int argc, char** argv) {
 #endif
 
     INFO("Correcting reads.");
+    using namespace hammer::correction;
+    SingleReadCorrector::NoDebug pred;
     const auto& dataset = cfg::get().dataset;
     for (auto it = dataset.reads_begin(), et = dataset.reads_end(); it != et; ++it) {
       INFO("Correcting " << *it);
       io::Reader irs(*it, io::PhredOffset);
       io::osequencestream ors(path::append_path(cfg::get().output_dir, path::basename(*it) + ".fasta")); // FIXME: Proper filename
 
-      using namespace hammer::correction;
-      SingleReadCorrector read_corrector(kmer_data);
+      SingleReadCorrector read_corrector(kmer_data, pred);
       hammer::ReadProcessor(cfg::get().max_nthreads).Run(irs, read_corrector, ors);
     }
 

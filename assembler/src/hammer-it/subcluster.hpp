@@ -2,6 +2,7 @@
 #define __SUBCLUSTER_HPP__
 
 #include <vector>
+#include <cstddef>
 
 class KMerData;
 
