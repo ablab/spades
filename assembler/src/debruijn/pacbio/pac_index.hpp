@@ -127,8 +127,7 @@ public:
                     vector<MappingInstance> to_add;
                     to_add.push_back(iter->second[i]);
                     dfs_cluster(used, to_add, (int) i, iter);
-                    sort(to_add.begin(), to_add.end(),
-                         ReadPositionComparator());
+                    sort(to_add.begin(), to_add.end(), ReadPositionComparator());
                     DEBUG(to_add.size()<<" subcluster size");
                     size_t count = 1;
                     size_t longest_len = 0;
@@ -139,9 +138,8 @@ public:
                     for (auto j_iter = to_add.begin();
                             j_iter < to_add.end() - 1; j_iter++, j++) {
 //Do not spilt clusters in the middle, only beginning is interesting.
-                        if ((j * 5 < to_add.size()
-                                || (j + 1) * 5 > to_add.size() * 4)
-                                && !similar(*j_iter, *(j_iter + 1))) {
+                        if ((j * 5 < to_add.size() || (j + 1) * 5 > to_add.size() * 4) &&
+                            !similar(*j_iter, *(j_iter + 1))) {
                             if (longest_len < count) {
                                 longest_len = count;
                                 best_start = cur_start;
@@ -282,15 +280,10 @@ public:
                         ->sorted_positions[prev_iter->second
                         ->last_trustable_index];
 
-                if (start_v != end_v
-                        || (start_v == end_v
-                                && (double) (cur_first_index.read_position
-                                        - prev_last_index.read_position)
-                                        > (double) (cur_first_index
-                                                .edge_position
-                                                + (int) g_.length(prev_edge)
-                                                - prev_last_index.edge_position)
-                                                * 1.3)) {
+                if (start_v != end_v ||
+                    (start_v == end_v &&
+                     (double) (cur_first_index.read_position - prev_last_index.read_position) >
+                     (double) (cur_first_index.edge_position + (int) g_.length(prev_edge) - prev_last_index.edge_position) * 1.3)) {
                     DEBUG(" traversing tangled region between "<< g_.int_id(prev_edge)<< " " << g_.int_id(cur_edge));
                     DEBUG(" first pair" << cur_first_index.str() << " edge_len" << g_.length(cur_edge));
                     DEBUG(" last pair" << prev_last_index.str() << " edge_len" << g_.length(prev_edge));
@@ -299,10 +292,8 @@ public:
                     int seq_end = cur_first_index.read_position;
                     int seq_start = prev_last_index.read_position;
                     string tmp = g_.EdgeNucls(prev_edge).str();
-                    s_add = tmp.substr(
-                            prev_last_index.edge_position,
-                            g_.length(prev_edge)
-                                    - prev_last_index.edge_position);
+                    s_add = tmp.substr(prev_last_index.edge_position,
+                                       g_.length(prev_edge) - prev_last_index.edge_position);
                     tmp = g_.EdgeNucls(cur_edge).str();
                     e_add = tmp.substr(0, cur_first_index.edge_position);
                     pair<int, int> limits = GetPathLimits(*(prev_iter->second),
@@ -311,9 +302,8 @@ public:
                                                           (int) e_add.length());
                     if (limits.first == -1)
                         return vector<EdgeId>(0);
-                    vector<EdgeId> intermediate_path = BestScoredPath(
-                            s, start_v, end_v, limits.first, limits.second,
-                            seq_start, seq_end, s_add, e_add);
+
+                    vector<EdgeId> intermediate_path = BestScoredPath(s, start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add);
                     if (intermediate_path.size() == 0) {
                         DEBUG("Tangled region between edgees "<< g_.int_id(prev_edge) << " " << g_.int_id(cur_edge) << " is not closed, additions from edges: " << int(g_.length(prev_edge)) - int(prev_last_index.edge_position) <<" " << int(cur_first_index.edge_position) - int(debruijn_k - pacbio_k ) << " and seq "<< - seq_start + seq_end);
                         if (cfg::get().pb.additional_debug_info) {
@@ -339,8 +329,7 @@ public:
                         }
                         return intermediate_path;
                     }
-                    for (auto j_iter = intermediate_path.begin();
-                            j_iter != intermediate_path.end(); j_iter++) {
+                    for (auto j_iter = intermediate_path.begin(); j_iter != intermediate_path.end(); j_iter++) {
                         cur_sorted.push_back(*j_iter);
                     }
                 }
@@ -352,11 +341,9 @@ public:
     }
 
     bool TopologyGap(EdgeId first, EdgeId second, bool oriented) const {
-        bool res = (g_.IsDeadStart(g_.EdgeStart(first))
-                && g_.IsDeadEnd(g_.EdgeEnd(second)));
+        bool res = (g_.IsDeadStart(g_.EdgeStart(first)) && g_.IsDeadEnd(g_.EdgeEnd(second)));
         if (!oriented)
-            res |= g_.IsDeadEnd(g_.EdgeEnd(first))
-                    && g_.IsDeadStart(g_.EdgeStart(second));
+            res |= g_.IsDeadEnd(g_.EdgeEnd(first)) && g_.IsDeadStart(g_.EdgeStart(second));
         return res;
     }
 
