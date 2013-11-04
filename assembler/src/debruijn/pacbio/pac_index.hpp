@@ -113,7 +113,7 @@ public:
 
         DEBUG(descr.size() <<"  clusters");
         for (auto iter = descr.begin(); iter != descr.end(); ++iter) {
-            int edge_id = g_.int_id(iter->first);
+            size_t edge_id = g_.int_id(iter->first);
             DEBUG(edge_id);
             set<vector<MappingInstance> > edge_cluster_set;
             size_t len = iter->second.size();
