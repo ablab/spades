@@ -22,37 +22,39 @@ void ProcessReadsBatch(conj_graph_pack &gp,
                        pacbio::PacBioMappingIndex<ConjugateDeBruijnGraph>& pac_index,
                        PathStorage<Graph>& long_reads, pacbio::GapStorage<Graph>& gaps,
                        size_t buf_size, int n) {
-    ofstream filestr("pacbio_mapped.mpr", ofstream::app);
     vector<PathStorage<Graph> > long_reads_by_thread(cfg::get().max_threads,
                                                      PathStorage<Graph>(gp.g));
     vector<pacbio::GapStorage<Graph> > gaps_by_thread(cfg::get().max_threads,
                                               pacbio::GapStorage<Graph>(gp.g));
 
-# pragma omp parallel for shared(reads, long_reads_by_thread, pac_index, n) num_threads(cfg::get().max_threads)
+#   pragma omp parallel for shared(reads, long_reads_by_thread, pac_index, n)
     for (size_t i = 0; i < buf_size; ++i) {
         if (i % 1000 == 0) {
             DEBUG("thread number " << omp_get_thread_num());
         }
         size_t thread_num = omp_get_thread_num();
         Sequence seq(reads[i].sequence());
+#       pragma omp atomic
         n++;
         auto current_read_mapping = pac_index.GetReadAlignment(seq);
         auto aligned_edges = current_read_mapping.main_storage;
         auto gaps = current_read_mapping.gaps;
-        for (auto iter = gaps.begin(); iter != gaps.end(); ++iter) {
+        for (auto iter = gaps.begin(); iter != gaps.end(); ++iter)
             gaps_by_thread[thread_num].AddGap(*iter, true);
-        }
-        for (auto iter = aligned_edges.begin(); iter != aligned_edges.end();
-                ++iter) {
+
+        for (auto iter = aligned_edges.begin(); iter != aligned_edges.end(); ++iter)
             long_reads_by_thread[thread_num].AddPath(*iter, 1, true);
+
+#       pragma omp critical
+        {
+            VERBOSE_POWER(n, " reads processed");
         }
-        VERBOSE_POWER(n, " reads processed");
     }
+
     for (size_t i = 0; i < cfg::get().max_threads; i++) {
         long_reads.AddStorage(long_reads_by_thread[i]);
         gaps.AddStorage(gaps_by_thread[i]);
     }
-    filestr.close();
 }
 
 void align_pacbio(conj_graph_pack &gp, int lib_id) {
@@ -79,19 +81,17 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
 //    ofstream filestr("pacbio_mapped.mpr");
 //    filestr.close();
     for (auto iter = streams.begin(); iter != streams.end(); ++iter) {
-        INFO("new readstream");
-        while (!(*iter).eof()) {
+        auto &stream = *iter;
+        while (!stream.eof()) {
             size_t buf_size = 0;
-            for (; buf_size < read_buffer_size && !(*iter).eof(); ++buf_size) {
-                (*iter) >> reads[buf_size];
-            }
+            for (; buf_size < read_buffer_size && !stream.eof(); ++buf_size)
+                stream >> reads[buf_size];
             INFO("Prepared batch " << buffer_no << " of " << buf_size << " reads.");
             DEBUG("master thread number " << omp_get_thread_num());
             ProcessReadsBatch(gp, reads, pac_index, long_reads, gaps, buf_size, n);
             INFO("Processed batch " << buffer_no);
             ++buffer_no;
         }
-
     }
     map<EdgeId, EdgeId> replacement;
     long_reads.DumpToFile(cfg::get().output_saves + "long_reads_before_rep.mpr",
