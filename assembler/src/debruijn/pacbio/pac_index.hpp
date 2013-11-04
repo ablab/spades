@@ -80,7 +80,7 @@ public:
         }
     }
 
-    inline bool similar(const MappingInstance &a, const MappingInstance &b,
+    bool similar(const MappingInstance &a, const MappingInstance &b,
                         int shift = 0) const {
         if (b.read_position + shift < a.read_position) {
             return similar(b, a, -shift);
@@ -255,9 +255,8 @@ public:
         }
     }
 
-    vector<EdgeId> FillGapsInCluster(
-            vector<pair<size_t, typename ClustersSet::iterator> > &cur_cluster,
-            Sequence &s) {
+    vector<EdgeId> FillGapsInCluster(vector<pair<size_t, typename ClustersSet::iterator> > &cur_cluster,
+                                     const Sequence &s) {
         vector<EdgeId> cur_sorted;
         EdgeId prev_edge = EdgeId(0);
         if (read_count == 151) {
@@ -491,10 +490,8 @@ public:
         int seq_len = -start_pos + end_pos;
         PathStorageCallback<Graph> callback(g_);
 //TODO::something more reasonable
-        int path_min_len = max(
-                int(floor((seq_len - int(debruijn_k)) * cfg::get().pb.path_limit_pressing)), 0);
-        int path_max_len = (int) ((double) (seq_len + (int) debruijn_k)
-                * cfg::get().pb.path_limit_stretching);
+        int path_min_len = max(int(floor((seq_len - int(debruijn_k)) * cfg::get().pb.path_limit_pressing)), 0);
+        int path_max_len = (int) ((double) (seq_len + (int) debruijn_k) * cfg::get().pb.path_limit_stretching);
         if (seq_len < 0) {
             DEBUG("suspicious negative seq_len " << start_pos << " " << end_pos << " " << path_min_len << " " << path_max_len);
             return std::make_pair(-1, -1);
@@ -549,14 +546,15 @@ public:
         return res;
     }
 
-    vector<EdgeId> BestScoredPath(Sequence &s, VertexId start_v, VertexId end_v,
+    vector<EdgeId> BestScoredPath(const Sequence &s, VertexId start_v, VertexId end_v,
                                   int path_min_length, int path_max_length,
                                   int start_pos, int end_pos, string &s_add,
                                   string &e_add) {
         DEBUG(" Traversing tangled region. Start and end vertices resp: " << g_.int_id(start_v) <<" " << g_.int_id(end_v));
         PathStorageCallback<Graph> callback(g_);
-        PathProcessor<Graph> path_processor(g_, path_min_length,
-                                            path_max_length, start_v, end_v,
+        PathProcessor<Graph> path_processor(g_,
+                                            path_min_length, path_max_length,
+                                            start_v, end_v,
                                             callback);
         path_processor.Process();
         vector<vector<EdgeId> > paths = callback.paths();
