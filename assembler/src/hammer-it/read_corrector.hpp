@@ -22,7 +22,7 @@
 #include <string>
 #include <algorithm>
 
-#if 0
+#if 1
 #include "sequence/nucl.hpp"
 #include <iostream>
 #include <iomanip>
@@ -94,7 +94,7 @@ struct Score {
   Score(short v, short d) : value(v), dir(d) {}
 };
 
-#if 0
+#if 1
 template <typename It1, typename It2>
 static void dump(boost::numeric::ublas::matrix<Score> &scores,
                  It1 x_begin, It1 x_end, It2 y_begin, It2 y_end) {
@@ -552,6 +552,8 @@ class CorrectedRead {
     }
 
     bool MergeWithDisjointChunk(ConsensusChunk& chunk) {
+      if (debug_mode)
+        std::cerr << "[MergeWithDisjointChunk]" << std::endl;
       AlignRightEndAgainstRead();
       if (chunk.alignment != kChunkLeftAligned)
         chunk.AlignLeftEndAgainstRead();
@@ -559,6 +561,8 @@ class CorrectedRead {
     }
 
     bool MergeWithOverlappingChunk(ConsensusChunk& chunk) {
+      if (debug_mode)
+        std::cerr << "[MergeWithOverlappingChunk]" << std::endl;
       int right_end_offset = approx_read_offset + consensus.size();
       size_t overlap = right_end_offset - chunk.approx_read_offset;
       if (overlap > chunk.consensus_scores.size())
@@ -593,6 +597,16 @@ class CorrectedRead {
   void PushChunk(const ScoreStorage &scores, int approx_read_offset) {
     chunks_.push_back(ConsensusChunk(approx_read_offset, scores,
                                      raw_read_, debug_mode_));
+    if (debug_mode_) {
+      auto &consensus = chunks_.back().consensus;
+      size_t len = consensus.size();
+      size_t nucl_len = 0;
+      for (size_t i = 0; i < len; ++i)
+        nucl_len += consensus[i].len;
+      std::cerr << "[PushChunk] (length = "
+                << len << "/" << nucl_len << ")" << std::endl;
+    }
+
     chunks_.back().AlignLeftEndAgainstRead();
   }
 
@@ -600,111 +614,98 @@ class CorrectedRead {
     return chunks_.back();
   }
 
-  void CollectChunks(const io::SingleRead& r) {
-    ScoreStorage scores;
+  class ChunkCollector {
+    const io::SingleRead &r;
+    CorrectedRead &cread_;
+    const KMerData &kmer_data_;
+    bool debug_mode_;
 
-    ValidHKMerGenerator<hammer::K> gen(r);
-    int pos = gen.trimmed_left(); // current position
-    int chunk_pos = 0;
-    int skipped = 0; // number of skipped centers of low quality
+    ValidHKMerGenerator<hammer::K> gen;
+    int pos;
+    int skipped;
+
     hammer::HKMer last_good_center;
-    bool last_good_center_is_defined = false;
-    bool start_new_chunk = true;
-    bool need_to_align = false;
-    int approx_read_offset = 0;
+    bool last_good_center_is_defined;
 
-    // approximate number of insertions in the current chunk
-    unsigned approx_n_insertions = 0;
+    bool need_to_align;
 
-    while (gen.HasMore()) {
-      hammer::HKMer seq = gen.kmer();
-      gen.Next();
+    int approx_read_offset;
+    ScoreStorage scores;
+    int chunk_pos;
 
+    unsigned approx_n_insertions;
+
+    hammer::HKMer GetCenterOfCluster(const hammer::HKMer &seq) const {
       hammer::KMerStat k1 = kmer_data_[kmer_data_[seq].changeto];
       hammer::KMerStat k2 = kmer_data_[kmer_data_[!seq].changeto];
+      return k1.qual < k2.qual ? k1.kmer : !k2.kmer;
+    }
 
-      hammer::KMerStat k;
-      hammer::HKMer center;
-      if (k1.qual < k2.qual) {
-        k = k1;
-        center = k.kmer;
+    bool IsInconsistent(const hammer::HKMer &center) const {
+      if (!last_good_center_is_defined)
+        return false;
+      
+      for (size_t i = 0; i < hammer::K - skipped - 1; ++i)
+        if (last_good_center[i + skipped + 1].nucl != center[i].nucl)
+          return true;
+
+      return false;
+    }
+
+    void FlushCurrentChunk() {
+      if (scores.size() > hammer::K) {
+        cread_.PushChunk(scores, approx_read_offset);
+        pos = cread_.LastChunk().approx_end_read_offset_untrimmed() - hammer::K;
+        pos += skipped;
       } else {
-        k = k2;
-        center = !k.kmer;
+        pos -= approx_n_insertions;
+      }
+      
+      scores.clear();
+      need_to_align = false;
+      chunk_pos = 0;
+      skipped = 0;
+      approx_n_insertions = 0;
+      approx_read_offset = pos;
+      
+      last_good_center_is_defined = false;
+    }
+
+    // side effect: changes chunk_pos, pos, and approx_n_insertions
+    // !!!! FIXME: BUGGY !!!!
+    bool TryToAlignCurrentCenter(const hammer::HKMer &center) {
+      if (!last_good_center_is_defined)
+        return true;
+
+      int offset;
+      bool aligned = exactAlignH(last_good_center.begin(),
+                                 last_good_center.begin() + skipped + 1,
+                                 last_good_center.end(),
+                                 center.begin(), center.end(), 3, 5, &offset);
+
+      offset += skipped;
+
+      bool result = aligned && chunk_pos + offset > 0;
+      if (result) {
+        if (debug_mode_)
+          std::cerr << "[TryToAlignCurrentCenter] offset = " << offset << std::endl;
+        if (offset < 0)
+          approx_n_insertions -= offset;
+        pos += offset;
+        chunk_pos += offset;
       }
 
-      double lowQualThreshold = cfg::get().kmer_qual_threshold;
+      return result;
+    }
 
-      bool low_qual = k.qual > lowQualThreshold;
-
-      // if too many centers are skipped, start new chunk
-      if (skipped > 4) {
-        if (!start_new_chunk) {
-          start_new_chunk = true;
-          if (scores.size() > hammer::K) {
-            PushChunk(scores, approx_read_offset);
-            pos = LastChunk().approx_end_read_offset_untrimmed() - hammer::K;
-          }
-        }
-        pos += skipped + 1;
-        skipped = 0;
-        last_good_center_is_defined = false;
-      } else {
-        // otherwise, compare current center with the last 'good' center.
-        // if they differ too much or the center has low quality, skip it.
-        if (last_good_center_is_defined && !low_qual) {
-          for (size_t i = 0; i < hammer::K - skipped - 1; ++i) {
-            if (last_good_center[i + skipped + 1].nucl != center[i].nucl) {
-              low_qual = true;
-              break;
-            }
-          }
-        }
-      }
-
-      if (low_qual) {
-        need_to_align = true;
-        skipped += 1;
-        goto process_next_kmer;
-      }
-
-      if (need_to_align && last_good_center_is_defined) {
-        int offset;
-        bool aligned = exactAlignH(last_good_center.begin(),
-                                   last_good_center.begin() + skipped + 1,
-                                   last_good_center.end(),
-                                   center.begin(), center.end(), 3, 5, &offset);
-        if (!aligned || chunk_pos + skipped + offset < 0) {
-          if (!start_new_chunk) {
-            if (scores.size() > hammer::K) {
-              PushChunk(scores, approx_read_offset);
-              pos = LastChunk().approx_end_read_offset_untrimmed() - hammer::K;
-            }
-          }
-          pos += skipped + 1;
-          skipped = 0;
-          start_new_chunk = true;
-        } else {
-          if (offset < 0)
-            approx_n_insertions -= offset;
-          pos += skipped + offset;
-          chunk_pos += skipped + offset;
-        }
-      }
-
-      if (start_new_chunk) {
-        chunk_pos = 0;
-        approx_read_offset = pos + approx_n_insertions;
-        scores.clear();
-        approx_n_insertions = 0;
-        start_new_chunk = false;
-      }
-
+    void IncludeIntoConsensus(const hammer::HKMer &center) {
       VERIFY(chunk_pos >= 0);
       VERIFY(chunk_pos < (1 << 16));
 
       if (chunk_pos + hammer::K > scores.size())
         scores.resize(chunk_pos + hammer::K, ScoreMatrix(4, 64, 0));
+
+      auto k = kmer_data_[center];
 
       for (size_t i = 0; i < hammer::K; ++i)
         scores[chunk_pos + i](center[i].nucl, center[i].len) += k.count * (1.0 - k.qual);
@@ -713,16 +714,59 @@ class CorrectedRead {
       last_good_center_is_defined = true;
       need_to_align = false;
       skipped = 0;
-      ++pos;
-      ++chunk_pos;
-
-process_next_kmer: ;
+    }
+    
+  public:
+    ChunkCollector(const io::SingleRead& r, CorrectedRead &cread,
+                   const KMerData &kmer_data, bool debug_mode) :
+      r(r), cread_(cread), kmer_data_(kmer_data), debug_mode_(debug_mode),
+      gen(r), pos(gen.trimmed_left()), skipped(0),
+      last_good_center(), last_good_center_is_defined(false),
+      need_to_align(false), approx_read_offset(0), scores(), chunk_pos(0),
+      approx_n_insertions(0)
+    {
+      --pos;
+      --chunk_pos;
     }
 
-    if (!start_new_chunk)
-      PushChunk(scores, approx_read_offset);
+    void Run() {
+      while (gen.HasMore()) {
+        auto seq = gen.kmer();
+        gen.Next();
+        ++pos;
+        ++chunk_pos;
+        
+        auto center = GetCenterOfCluster(seq);
+        auto qual = kmer_data_[center].qual;
+
+        double lowQualThreshold = cfg::get().kmer_qual_threshold;
+        bool low_qual = qual > lowQualThreshold || IsInconsistent(center);
+
+        if (low_qual)
+          ++skipped;
+
+        if (skipped > hammer::K / 4) {
+          FlushCurrentChunk();
+        } else if (skipped > 0 && !low_qual) {
+          if (!TryToAlignCurrentCenter(center)) {
+            low_qual = true;
+            ++skipped;
+          }
+        }
+
+        if (!low_qual)
+          IncludeIntoConsensus(center);
+      }
+
+      FlushCurrentChunk();
+    }
+  };
+
+  void CollectChunks(const io::SingleRead& r) {
+    ChunkCollector chunk_collector(r, *this, kmer_data_, debug_mode_);
+    chunk_collector.Run();
   }
-  
+
  public:
   CorrectedRead(const io::SingleRead& read, const KMerData& kmer_data,
                 bool debug_mode = false) :
@@ -814,6 +858,12 @@ class SingleReadCorrector {
   struct NoDebug : public DebugOutputPredicate {
     virtual bool operator()(const io::SingleRead &read) {
       return false;
+    }
+  };
+
+  struct FullDebug : public DebugOutputPredicate {
+    virtual bool operator()(const io::SingleRead &read) {
+      return true;
     }
   };
 

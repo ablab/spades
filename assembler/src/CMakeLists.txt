@@ -70,6 +70,8 @@ add_subdirectory(hammer-it)
 add_subdirectory(spades_pipeline)
 add_subdirectory(dipspades)
 
+add_subdirectory(tools/correctionEvaluatorIon/cgce)
+
 # Main pipeline script
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../spades.py"
         DESTINATION bin
