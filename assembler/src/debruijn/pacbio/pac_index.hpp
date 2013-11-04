@@ -29,7 +29,9 @@ public:
     typedef typename Graph::EdgeId EdgeId;
 
 private:
-    Graph &g_;
+    DECL_LOGGER("PacIndex")
+
+    const Graph &g_;
     size_t pacbio_k;
     size_t debruijn_k;
     const static int short_edge_cutoff = 0;
@@ -38,13 +40,13 @@ private:
     double domination_cutoff;
     set<Sequence> banned_kmers;
     debruijn_graph::DeBruijnEdgeMultiIndex<typename Graph::EdgeId> tmp_index;
-    map<pair<VertexId, VertexId>, vector<size_t> > distance_cashed;DECL_LOGGER("PacIndex")
-    int read_count;
+    map<pair<VertexId, VertexId>, vector<size_t> > distance_cashed;
+    size_t read_count;
 
 public:
-    MappingDescription Locate(Sequence &s);
+    MappingDescription Locate(const Sequence &s);
 
-    PacBioMappingIndex(Graph &g, size_t k, size_t debruijn_k_)
+    PacBioMappingIndex(const Graph &g, size_t k, size_t debruijn_k_)
             : g_(g),
               pacbio_k(k),
               debruijn_k(debruijn_k_),
@@ -106,7 +108,7 @@ public:
         }
     }
 
-    ClustersSet GetClusters(Sequence &s) {
+    ClustersSet GetClusters(const Sequence &s) {
         MappingDescription descr = Locate(s);
         ClustersSet res;
         TRACE(read_count << " read_count");
@@ -596,8 +598,8 @@ public:
 };
 
 template<class Graph>
-typename PacBioMappingIndex<Graph>::MappingDescription PacBioMappingIndex<Graph>::Locate(
-        Sequence &s) {
+typename PacBioMappingIndex<Graph>::MappingDescription
+PacBioMappingIndex<Graph>::Locate(const Sequence &s) {
     MappingDescription res;
     read_count++;
     if (s.size() < pacbio_k)
@@ -606,19 +608,20 @@ typename PacBioMappingIndex<Graph>::MappingDescription PacBioMappingIndex<Graph>
     runtime_k::RtSeq kmer = s.start<runtime_k::RtSeq>(pacbio_k);
     for (size_t j = pacbio_k; j < s.size(); ++j) {
         kmer <<= s[j];
-        if (tmp_index.valid_key(kmer)) {
-            TRACE("Valid key, size: "<< tmp_index[kmer].size());
-            for (auto iter = tmp_index[kmer].begin();
-                    iter != tmp_index[kmer].end(); ++iter) {
-                int quality = (int) tmp_index[kmer].size();
-                TRACE("and quality:" << quality);
-                if (banned_kmers.find(Sequence(kmer)) == banned_kmers.end()) {
-                    if (int(iter->offset) > int(debruijn_k - pacbio_k)
-                            && int(iter->offset) < int(g_.length(iter->edge_id)))
-                        res[iter->edge_id].push_back(
-                                MappingInstance((int) iter->offset, (int) (j - pacbio_k + 1),quality));
-                }
-            }
+
+        if (!tmp_index.valid_key(kmer))
+            continue;
+
+        TRACE("Valid key, size: "<< tmp_index[kmer].size());
+        for (auto iter = tmp_index[kmer].begin(); iter != tmp_index[kmer].end(); ++iter) {
+            int quality = (int) tmp_index[kmer].size();
+            TRACE("and quality:" << quality);
+            if (banned_kmers.find(Sequence(kmer)) != banned_kmers.end())
+                continue;
+
+            if (int(iter->offset) > int(debruijn_k - pacbio_k) &&
+                int(iter->offset) < int(g_.length(iter->edge_id)))
+                res[iter->edge_id].push_back(MappingInstance((int) iter->offset, (int) (j - pacbio_k + 1), quality));
         }
     }
 
@@ -626,11 +629,11 @@ typename PacBioMappingIndex<Graph>::MappingDescription PacBioMappingIndex<Graph>
         sort(iter->second.begin(), iter->second.end());
         DEBUG("read count "<< read_count);
         DEBUG("edge: " << g_.int_id(iter->first) << "size: " << iter->second.size());
-        for (auto j_iter = iter->second.begin(); j_iter != iter->second.end();
-                j_iter++) {
+        for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); j_iter++) {
             DEBUG(j_iter->str());
         }
     }
+
     return res;
 }
 
