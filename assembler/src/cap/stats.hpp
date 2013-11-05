@@ -682,7 +682,7 @@ class SimpleInDelAnalyzer {
 			return make_pair("", make_pair(0, 0));
 		}
 		EdgePosition pos = poss.front();
-		return make_pair(pos.contigId_, make_pair(pos.start(), pos.end()));
+		return make_pair(pos.contigId, make_pair(pos.mr.initial_range.start_pos, pos.mr.initial_range.end_pos));
 	}
 
 	void WriteAltPath(EdgeId e, const vector<EdgeId>& genome_path) {
@@ -705,7 +705,7 @@ class SimpleInDelAnalyzer {
 		Sequence edge_nucls = g_.EdgeNucls(e);
 		Sequence path_nucls = MergeSequences(g_, genome_path);
 		size_t edge_length = g_.length(e);
-		size_t path_length = CummulativeLength(g_, genome_path);
+		size_t path_length = CumulativeLength(g_, genome_path);
 		DEBUG(
 				"Diff length " << abs((int) edge_length - (int) path_length)
 						<< "; genome path length " << path_length
@@ -870,8 +870,8 @@ private:
 	int GetRefPosition(EdgeId e, bool start_position) const {
 		EdgePosition pos =
 				RefPositions(gp_.edge_pos.GetEdgePositions(e)).front();
-		int coeff = boost::ends_with(pos.contigId_, "_RC") ? -1 : 1;
-		Range range = pos.m_range_.initial_range;
+		int coeff = boost::ends_with(pos.contigId, "_RC") ? -1 : 1;
+		Range range = pos.mr.initial_range;
 		return coeff * (start_position ? range.start_pos : range.end_pos);
 	}
 
@@ -882,7 +882,7 @@ private:
 	vector<EdgePosition> RefPositions(const vector<EdgePosition>& poss) const {
 		vector < EdgePosition > answer;
 		for (auto it = poss.begin(); it != poss.end(); ++it) {
-			if (boost::starts_with(it->contigId_, ref_prefix_)) {
+			if (boost::starts_with(it->contigId, ref_prefix_)) {
 				answer.push_back(*it);
 			}
 		}
@@ -994,12 +994,153 @@ public:
 //todo fixme use exact coordinates!
 template<class Graph>
 class BlockPrinter {
+
+public:
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
+
+	BlockPrinter(const Graph& g, const CoordinatesHandler<Graph>& coords,
+               const string& filename)
+      : g_(g),
+        coords_(coords),
+        output_stream_(filename),
+        curr_id_(1) {
+      output_stream_
+              << "genome_id\tcontig_name\tcanonical_id\tcontig_start_pos\tcontig_end_pos"
+              << "\trefined_start_pos\trefined_end_pos\tsign\torig_id"
+              << endl;
+	}
+
+  virtual ~BlockPrinter() {
+  }
+
+	//genome is supposed to perfectly correspond to some path in the graph
+    void ProcessContig(unsigned genome_id, unsigned transparent_id,
+                       const string& contig_name) {
+        INFO("Processing contig " << transparent_id << " name " << contig_name);
+        MappingPath<EdgeId> mapping_path = coords_.AsMappingPath(transparent_id);
+
+        for (size_t i = 0; i < mapping_path.size(); ++i) {
+            EdgeId e = mapping_path[i].first;
+            MappingRange mapping = mapping_path[i].second;
+            if (CheckPatternMatch(e)) {
+                auto canon = CanonicalId(e);
+
+                output_stream_
+                        << (format("%d\t%s\t%d\t%d\t%d\t%d\t%d\t%s\t%d")
+                                % genome_id % contig_name % canon.first
+                                % mapping.initial_range.start_pos
+                                % mapping.initial_range.end_pos
+                                % mapping.mapped_range.start_pos
+                                % mapping.mapped_range.end_pos
+                                % (canon.second ? "+" : "-") % g_.int_id(e)).str()
+                        << endl;
+            }
+        }
+
+//        VertexId v = g_.EdgeStart(coords_.FindGenomeFirstEdge(transparent_id));
+//        size_t genome_pos = 0;
+//
+//        while (true) {
+//            auto step = coords_.StepForward(v, transparent_id, genome_pos);
+//            if (step.second == -1u)
+//                break;
+//
+//            EdgeId e = step.first;
+//
+//            Range graph_pos(coords_.GetNewestPos(transparent_id, genome_pos),
+//                            coords_.GetNewestPos(transparent_id, step.second));
+//            Range contig_pos(
+//                    coords_.GetOriginalPos(transparent_id, graph_pos.start_pos),
+//                    coords_.GetOriginalPos(transparent_id, graph_pos.end_pos));
+//            Range graph_pos_printable = coords_.GetPrintableRange(graph_pos);
+//            Range contig_pos_printable = coords_.GetPrintableRange(contig_pos);
+//
+//            if (CheckPatternMatch(e)) {
+//                auto canon = CanonicalId(e);
+//
+//                output_stream_
+//                        << (format("%d\t%s\t%d\t%d\t%d\t%d\t%d\t%s\t%d")
+//                                % genome_id % contig_name % canon.first
+//                                % contig_pos_printable.start_pos
+//                                % contig_pos_printable.end_pos
+//                                % graph_pos_printable.start_pos
+//                                % graph_pos_printable.end_pos
+//                                % (canon.second ? "+" : "-") % g_.int_id(e)).str()
+//                        << endl;
+//            }
+//
+//            v = g_.EdgeEnd(e);
+//            genome_pos = step.second;
+//        }
+    }
+
+  static void ConvertBlocksToGRIMM(const string &file_from, const string &file_to) {
+    ifstream in(file_from);
+    ofstream out(file_to);
+
+    size_t id = 0;
+    int last_genome_id = -1;
+    size_t num_in_line = 0;
+    while (!in.eof()) {
+      ++id;
+
+      string line;
+      std::getline(in, line);
+      if (id == 1)
+        continue;
+
+      if (line == "")
+        continue;
+
+      std::stringstream ss(line);
+
+      int genome_id;
+      string genome_name;
+      string sign;
+      size_t contig_id;
+
+      string tmp;
+      ss >> genome_id >> genome_name >> contig_id >> tmp >> tmp >> tmp >> tmp >> sign >> tmp;
+      if (genome_id != last_genome_id) {
+        if (last_genome_id != -1)
+          out << "\n";
+        out << "> " << genome_name << "\n";
+
+        last_genome_id = genome_id;
+        num_in_line = 0;
+      }
+
+      if (num_in_line > 10) {
+        out << "\n";
+        num_in_line = 0;
+      }
+
+      if (num_in_line != 0)
+        out << " ";
+
+      if (sign == "-")
+        out << sign;
+      out << contig_id;
+
+      num_in_line++;
+    }
+
+    in.close();
+    out.close();
+  }
+
+protected:
+  virtual bool CheckPatternMatch(const EdgeId /* e */) {
+    return true;
+  }
+
 	const Graph& g_;
 	const CoordinatesHandler<Graph>& coords_;
+
+private:
 	ofstream output_stream_;
-	int curr_id_;
+	size_t curr_id_;
 	map<EdgeId, size_t> block_id_;
 
 	pair<size_t, bool> CanonicalId(EdgeId e) {
@@ -1020,54 +1161,60 @@ class BlockPrinter {
 	    }
 	}
 
-public:
-
-	BlockPrinter(const Graph& g, const CoordinatesHandler<Graph>& coords, const string& filename) :
-			g_(g), coords_(coords), output_stream_(filename) , curr_id_(1) {
-        output_stream_
-                << "genome_id\tcontig_name\tcanonical_id\tcontig_start_pos\tcontig_end_pos"
-                << "\trefined_start_pos\trefined_end_pos\tsign\torig_id"
-                << endl;
-	}
-
-	//genome is supposed to perfectly correspond to some path in the graph
-	void ProcessContig(size_t genome_id, size_t transparent_id, const string& contig_name) {
-	    INFO("Processing contig " << transparent_id << " name " << contig_name);
-	    VertexId v = g_.EdgeStart(coords_.FindGenomeFirstEdge(transparent_id));
-	    size_t genome_pos = 0;
-	    size_t graph_pos = 0;
-
-	    while (true) {
-	        auto step = coords_.StepForward(v, transparent_id, genome_pos);
-	        if (step.second == -1u)
-	            break;
-
-	        EdgeId e = step.first;
-
-	        auto canon = CanonicalId(e);
-
-            output_stream_
-                    << (format("%d\t%s\t%d\t%d\t%d\t%d\t%d\t%s\t%d")
-                            % genome_id
-                            % contig_name
-                            % canon.first
-                            % coords_.GetOriginalPos(transparent_id, graph_pos)
-                            % coords_.GetOriginalPos(transparent_id, graph_pos + g_.length(e))
-                            % graph_pos
-                            % (graph_pos + g_.length(e))
-                            % (canon.second ? "+" : "-")
-                            % g_.int_id(e))
-                            .str()
-                    << endl;
-
-	        graph_pos = graph_pos + g_.length(e);
-	        v = g_.EdgeEnd(e);
-	        genome_pos = step.second;
-	    }
-	}
-
-private:
 	DECL_LOGGER("BlockPrinter");
+};
+
+template<class Graph>
+class UniqueBlockPrinter : public BlockPrinter<Graph> {
+ public:
+  UniqueBlockPrinter(const Graph &g, const CoordinatesHandler<Graph> &coords,
+            const string &filename, const vector<pair<size_t, size_t>> rc_pairs)
+      : BlockPrinter<Graph>(g, coords, filename),
+        rc_pairs_(rc_pairs),
+        contig_map_(),
+        cur_time_(rc_pairs_.size()),
+        glob_time_(0) {
+    PrepareContigMap(rc_pairs);
+  }
+
+  // virtual ~UniqueBlockPrinter() {
+  // }
+
+ protected:
+  virtual bool CheckPatternMatch(const EdgeId e) {
+    glob_time_++;
+
+    const auto &ranges = this->coords_.GetRawRanges(e);
+    if (ranges.size() != rc_pairs_.size())
+      return false;
+
+    for (const auto &e : ranges) {
+      size_t my_id = contig_map_.at(e.first);
+      if (cur_time_[my_id] == glob_time_)
+        return false;
+      cur_time_[my_id] = glob_time_;
+    }
+
+    // By the Dirichlet priciple..
+    return true;
+  }
+
+ private:
+  void PrepareContigMap(const vector<pair<size_t, size_t>> rc_pairs) {
+    for (size_t i = 0; i < rc_pairs.size(); ++i) {
+      const auto &p = rc_pairs[i];
+
+      contig_map_[p.first] = i;
+      contig_map_[p.second] = i;
+    }
+  }
+
+  vector<pair<size_t, size_t>> rc_pairs_;
+  unordered_map<size_t, size_t> contig_map_;
+  vector<size_t> cur_time_;
+  size_t glob_time_;
+
+  DECL_LOGGER("UniqueBlockPrinter");
 };
 
 //template<class Graph, class Mapper>

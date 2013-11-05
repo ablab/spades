@@ -9,6 +9,7 @@
 #include "cpp_utils.hpp"
 #include "debruijn_stats.hpp"
 
+
 namespace omnigraph {
 
 double get_median(const std::map<int, size_t> &hist) {
@@ -45,68 +46,109 @@ void hist_crop(const map<int, size_t> &hist, double low, double high, map<int, s
   }
 }
 
+void normalize_distribution(const std::map<int, size_t>& is_hist,  std::map<int, double>& is_distrib) {
+  size_t sum = 0;
+  for (auto iter = is_hist.begin(); iter != is_hist.end(); ++iter) {
+    sum += iter->second;
+  }
+  for (auto iter = is_hist.begin(); iter != is_hist.end(); ++iter) {
+    is_distrib[iter->first] = (double) iter->second / (double) sum;
+  }
+}
+
+void ISInterval(double quant, double is, double is_var,
+                const std::map<int, size_t>& insert_size_hist,
+                double& is_min, double& is_max) {
+
+  std::map<int, double> insert_size_distrib;
+  normalize_distribution(insert_size_hist, insert_size_distrib);
+  int ileft = (int) is - 1;
+  int iright = (int)is + 1;
+  double cur_percent = insert_size_distrib.at((int)is);
+  while (cur_percent < quant) {
+    double vleft = -1.;
+    if (insert_size_distrib.find(ileft) != insert_size_distrib.end()) {
+      vleft = insert_size_distrib.at(ileft);
+    }
+    double vright = -1.;
+    if (insert_size_distrib.find(iright) != insert_size_distrib.end()) {
+      vright = insert_size_distrib.at(iright);
+    }
+    if (vleft >= 0.0 && (vright < 0.0 || vleft > vright)) {
+      cur_percent += vleft;
+      ileft -= 1;
+    } else if (vright >= 0.0 && (vleft < 0.0 || vright >= vleft)) {
+      cur_percent += vright;
+      iright += 1;
+    } else {
+      break;
+    }
+  }
+  is_min = (double) ileft;
+  is_max = (double) iright;
+  DEBUG("quantile = " << quant << " d_min  = " << ileft << " d_max = " << iright);
+}
+
 template<class graph_pack>
 class InsertSizeHistogramCounter {
   typedef std::map<int, size_t> HistType;
+  typedef typename graph_pack::graph_t::EdgeId EdgeId;
 
  public:
-  InsertSizeHistogramCounter(const graph_pack& gp, size_t edge_length_threshold, bool ignore_negative = false)
-      : gp_(gp), hist_(), edge_length_threshold_(edge_length_threshold),
-        total_(0), counted_(0), k_(gp.k_value), ignore_negative_(ignore_negative) { }
+  InsertSizeHistogramCounter(const graph_pack& gp,
+          size_t edge_length_threshold,
+          bool ignore_negative = false)
+      : gp_(gp), edge_length_threshold_(edge_length_threshold), hist_(), tmp_hists_(),
+        total_(), counted_(), negative_(), k_(gp.k_value), ignore_negative_(ignore_negative) {
 
-  HistType hist() { return hist_; }
-  size_t total() const { return total_; }
-  size_t mapped() const { return counted_; }
-  size_t negative() const { return negative_; }
-
-  template<class PairedRead>
-  void Count(io::ReadStreamVector< io::IReader<PairedRead> >& streams, size_t& rl) {
-    hist_.clear();
-
-    size_t nthreads = streams.size();
-    std::vector<size_t> rls(nthreads, 0);
-    std::vector<HistType*> hists(nthreads);
-    hists[0] = &hist_;
-    for (size_t i = 1; i < nthreads; ++i)
-      hists[i] = new HistType();
-
-    INFO("Processing paired reads (takes a while)");
-    size_t counted = 0, total = 0, negative = 0;
-#pragma omp parallel for num_threads(nthreads) reduction(+ : counted, total, negative)
-    for (size_t i = 0; i < nthreads; ++i) {
-      PairedRead r;
-      io::IReader<PairedRead>& stream = streams[i];
-      stream.reset();
-
-      while (!stream.eof()) {
-        stream >> r;
-        int res = ProcessPairedRead(r, *hists[i], rls[i]);
-        counted += (res > 0);
-        negative += (res < 0);
-        ++total;
-      }
-    }
-
-    total_ = total;
-    counted_ = counted;
-    negative_ = negative;
-
-    if (rl == 0) {
-      rl = rls[0];
-      for (size_t i = 1; i < nthreads; ++i) {
-        if (rl < rls[i]) {
-          rl = rls[i];
-        }
-      }
-    }
-    for (size_t i = 1; i < nthreads; ++i) {
-      for (auto it = hists[i]->begin(); it != hists[i]->end(); ++it) {
-        (*hists[0])[it->first] += it->second;
-      }
-      delete hists[i];
-    }
   }
 
+  HistType hist() { return hist_; }
+  size_t total() const { return total_.total_; }
+  size_t mapped() const { return counted_.total_; }
+  size_t negative() const { return negative_.total_; }
+
+  void Init(size_t nthreads) {
+    hist_.clear();
+    tmp_hists_ = vector<HistType*>(nthreads);
+    tmp_hists_[0] = &hist_;
+    for (size_t i = 1; i < nthreads; ++i)
+      tmp_hists_[i] = new HistType();
+
+    total_ = count_data(nthreads);
+    counted_ = count_data(nthreads);
+    negative_ = count_data(nthreads);
+  }
+
+  void Finalize() {
+    for (size_t i = 1; i < tmp_hists_.size(); ++i) {
+      for (auto it = tmp_hists_[i]->begin(); it != tmp_hists_[i]->end(); ++it) {
+        (*tmp_hists_[0])[it->first] += it->second;
+      }
+      delete tmp_hists_[i];
+    }
+    total_.merge();
+    counted_.merge();
+    negative_.merge();
+  }
+
+  template<class PairedRead>
+  void ProcessPairedRead(size_t thread_index, const PairedRead& r, const pair<EdgeId, size_t>& pos_left, const pair<EdgeId, size_t>& pos_right) {
+    ++total_.arr_[thread_index];
+    if (pos_left.second == -1u || pos_right.second == -1u || pos_left.first != pos_right.first || gp_.g.length(pos_left.first) < edge_length_threshold_) {
+      return;
+    }
+
+    int is = (int) (pos_right.second - pos_left.second - k_ - 1 - r.insert_size()
+             + r.first().size() + r.second().size());
+
+    if (is > 0 || !ignore_negative_) {
+      (*tmp_hists_[thread_index])[is] += 1;
+      ++counted_.arr_[thread_index];
+    } else {
+      ++negative_.arr_[thread_index];
+    }
+  }
 
   void FindMean(double& mean, double& delta, std::map<size_t, size_t>& percentiles) const {
     double median = get_median(hist_);
@@ -192,96 +234,37 @@ class InsertSizeHistogramCounter {
   }
 
  private:
+
+  struct count_data {
+      size_t total_;
+      vector<size_t> arr_;
+      count_data(): total_(0) {
+      }
+      count_data(size_t nthreads): total_(0), arr_(nthreads, 0) {
+      }
+      void inc(size_t i) {
+        ++arr_[i];
+      }
+      void merge() {
+        for (size_t i = 0; i < arr_.size(); ++i) {
+          total_ += arr_[i];
+        }
+      }
+  };
+
   const graph_pack& gp_;
-  HistType hist_;
   size_t edge_length_threshold_;
-  size_t total_;
-  size_t counted_;
-  size_t negative_;
+
+  HistType hist_;
+  vector<HistType*> tmp_hists_;
+
+  count_data total_;
+  count_data counted_;
+  count_data negative_;
+
   size_t k_;
   bool ignore_negative_;
-
-  template<class PairedRead>
-  int ProcessPairedRead(const PairedRead& r, HistType& hist, size_t& rl) {
-    Sequence sequence_left = r.first().sequence();
-    Sequence sequence_right = r.second().sequence();
-
-    if (sequence_left.size() > rl) {
-        rl = sequence_left.size();
-    }
-    if (sequence_right.size() > rl) {
-        rl = sequence_right.size();
-    }
-
-    if (sequence_left.size() <= k_ || sequence_right.size() <= k_) {
-      return 0;
-    }
-
-    runtime_k::RtSeq left = sequence_left.end<runtime_k::RtSeq>(k_ + 1);
-    runtime_k::RtSeq right = sequence_right.start<runtime_k::RtSeq>(k_ + 1);
-    left = gp_.kmer_mapper.Substitute(left);
-    right = gp_.kmer_mapper.Substitute(right);
-    if (!gp_.index.contains(left) || !gp_.index.contains(right))
-      return 0;
-
-    auto pos_left = gp_.index.get(left);
-    auto pos_right = gp_.index.get(right);
-    if (pos_left.first != pos_right.first || gp_.g.length(pos_left.first) < edge_length_threshold_) {
-      return 0;
-    }
-
-    int is = (int) (pos_right.second - pos_left.second - k_ - 1 - r.insert_size()
-             + sequence_left.size() + sequence_right.size());
-    if (is > 0 || !ignore_negative_) {
-        hist[is] += 1;
-        return 1;
-    } else {
-        return -1;
-    }
-
-    return 0;
-  }
 };
 
-typedef std::map<int, size_t> HistType;
-
-template<class graph_pack, class PairedRead>
-void refine_insert_size(io::ReadStreamVector<io::IReader<PairedRead> >& streams, graph_pack& gp,
-                        size_t edge_length_threshold,
-                        size_t& rl,
-                        double& mean, double& delta,
-                        double& median, double& mad,
-                        std::map<size_t, size_t>& percentiles,
-                        HistType& hist) {
-  INFO("SUBSTAGE == Refining insert size and its distribution");
-  InsertSizeHistogramCounter<graph_pack> hist_counter(gp, edge_length_threshold, /* ignore negative */ true);
-  hist_counter.Count(streams, rl);
-
-  INFO(hist_counter.mapped() << " paired reads (" << ((double) hist_counter.mapped() * 100.0 / (double) hist_counter.total()) << "% of all) aligned to long edges");
-  if (hist_counter.negative() > 3 * hist_counter.mapped())
-      WARN("Too much reads aligned with negative insert size. Does the library orientation set properly?");
-  if (hist_counter.mapped() == 0)
-    return;
-
-  hist_counter.FindMean(mean, delta, percentiles);
-  hist_counter.FindMedian(median, mad, hist);
-}
-
-template<class graph_pack, class PairedRead>
-void GetInsertSizeHistogram(io::ReadStreamVector< io::IReader<PairedRead> >& streams,
-                            graph_pack& gp,
-                            double insert_size, double delta,
-                            HistType& hist) {
-  size_t edge_length_threshold = Nx(gp.g, 50); //500;
-  size_t rl;
-  InsertSizeHistogramCounter<graph_pack> hist_counter(gp, edge_length_threshold);
-  hist_counter.Count(streams, rl);
-
-  double low = insert_size - 5. * delta;
-  double high = insert_size + 5. * delta;
-
-  INFO("Cropping the histogram");
-  hist_crop(hist_counter.hist(), low, high, hist);
-}
 
 }

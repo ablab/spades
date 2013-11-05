@@ -10,8 +10,6 @@
 #include "omni_utils.hpp"
 #include "simple_tools.hpp"
 
-#include "de/paired_info.hpp"
-
 #include "path_helper.hpp"
 
 #ifdef USE_GLIBCXX_PARALLEL
@@ -179,17 +177,22 @@ public:
 			g_(g), max_length_(max_length), max_coverage_(max_coverage), max_length_any_cov_(max_length_any_cov) {
 	}
 
-	void RemoveIsolatedEdges() {
+	size_t RemoveIsolatedEdges() {
+        size_t cnt = 0;
 		for (auto it = g_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 			if (IsTerminalVertex(g_.EdgeStart(*it))
 					&& IsTerminalVertex(g_.EdgeEnd(*it))
 					&& ((g_.length(*it) <= max_length_ && g_.coverage(*it) <= max_coverage_)
 					|| g_.length(*it) <=max_length_any_cov_)) {
 				g_.DeleteEdge(*it);
+                cnt += 1;
+
 			}
 		}
 		Cleaner<Graph> cleaner(g_);
 		cleaner.Clean();
+
+        return cnt;
 	}
 
 };
@@ -345,91 +348,6 @@ public:
 };
 
 template<class Graph>
-class PairInfoChecker {
-private:
-	typedef typename Graph::EdgeId EdgeId;
-	const EdgesPositionHandler<Graph> &positions_;
-	size_t first_bound_;
-	const size_t second_bound_;
-	vector<double> perfect_matches_;
-	vector<double> good_matches_;
-	vector<double> mismatches_;
-	vector<double> imperfect_matches_;
-
-public:
-	PairInfoChecker(const EdgesPositionHandler<Graph> &positions,
-			size_t first_bound, size_t second_bound) :
-			positions_(positions), first_bound_(first_bound), second_bound_(
-					second_bound) {
-	}
-
-	void Check(const de::PairedInfoIndex<Graph> &paired_index) {
-		for (auto it = paired_index.begin(); it != paired_index.end(); ++it) {
-			auto vec = *it;
-			for (auto vec_it = vec.begin(); vec_it != vec.end(); ++vec_it) {
-				size_t code = CheckSingleInfo(*vec_it);
-				if (code == 0) {
-					perfect_matches_.push_back(vec_it->weight);
-				} else if (code == 1) {
-					good_matches_.push_back(vec_it->weight);
-				} else if (code == 2) {
-					mismatches_.push_back(vec_it->weight);
-				} else if (code == 3) {
-					imperfect_matches_.push_back(vec_it->weight);
-				}
-			}
-		}
-	}
-
-	size_t CheckSingleInfo(de::PairInfo<EdgeId> info) {
-		const vector<EdgePosition> &pos1 = positions_.GetEdgePositions(
-				info.first);
-		const vector<EdgePosition> &pos2 = positions_.GetEdgePositions(
-				info.second);
-		bool good_match_found = false;
-		for (size_t i = 0; i < pos1.size(); i++)
-			for (size_t j = 0; j < pos2.size(); j++) {
-				if (abs(pos1[i].start_ + info.d - pos2[j].start_)
-						<= first_bound_ + info.variance) {
-					if (info.variance == 0) {
-						return 0;
-					} else {
-						return 3;
-					}
-				} else if (abs(pos1[i].start_ + info.d - pos2[j].start_)
-						<= second_bound_) {
-					good_match_found = true;
-				}
-			}
-		if (good_match_found) {
-			return 1;
-		} else {
-			return 2;
-		}
-	}
-
-	void WriteResultsToFile(vector<double> results, const string &file_name) {
-		sort(results.begin(), results.end());
-		ofstream os;
-		os.open(file_name.c_str());
-		for (size_t i = 0; i < results.size(); i++) {
-			os << results[i] << endl;
-		}
-		os.close();
-	}
-
-	void WriteResults(const string &folder_name) {
-        path::make_dir(folder_name);
-		WriteResultsToFile(perfect_matches_,
-				folder_name + "/perfect_matches.txt");
-		WriteResultsToFile(good_matches_, folder_name + "/good_matches.txt");
-		WriteResultsToFile(mismatches_, folder_name + "/mismatches.txt");
-		WriteResultsToFile(imperfect_matches_,
-				folder_name + "/imperfect_matches.txt");
-	}
-};
-
-template<class Graph>
 class AvgCovereageCounter {
 private:
 	const Graph &graph_;
@@ -454,44 +372,6 @@ public:
 	}
 };
 
-template <class Graph>
-class PairInfoStatsEstimator {
-private:
-	const Graph &graph_;
-	const de::PairedInfoIndex<Graph>& paired_index_;
-	const size_t enough_edge_length_;
-
-	double mean_;
-	double deviation_;
-	map<size_t, double> percentiles_;
-public:
-	PairInfoStatsEstimator(const Graph &graph, const de::PairedInfoIndex<Graph>& paired_index, size_t enough_edge_length)
-      : graph_(graph), enough_edge_length_(enough_edge_length), mean_(0.), deviation_(0.) {
-	}
-
-	void EstimateStats() {
-		//todo implement
-		VERIFY(false);
-	}
-
-	double mean() {
-		return mean_;
-	}
-
-	double deviation() {
-		return deviation_;
-	}
-
-	double percentile(size_t perc) {
-		VERIFY(percentiles_.find(perc) != percentiles_.end());
-		return percentiles_[perc];
-	}
-
-	const map<size_t, double>& percentiles() {
-		return percentiles_;
-	}
-};
-
 template<class Graph>
 class ErroneousConnectionThresholdFinder {
 private:
@@ -508,20 +388,12 @@ private:
             graph_.IncomingEdgeCount(graph_.EdgeEnd(e)) < 2)
             return false;
 
-        const std::vector<EdgeId> v1 = graph_.OutgoingEdges(graph_.EdgeStart(e));
-        const std::vector<EdgeId> v2 = graph_.IncomingEdges(graph_.EdgeEnd(e));
+        std::vector<EdgeId> v1;
+        push_back_all(v1, graph_.OutgoingEdges(graph_.EdgeStart(e)));
+        std::vector<EdgeId> v2;
+        push_back_all(v2, graph_.IncomingEdges(graph_.EdgeEnd(e)));
         bool eq = (v1.size() == 2 && v2.size() == 2) && ((v1[0] == v2[0] && v1[1] == v2[1])	|| (v1[0] == v2[1] && v1[0] == v2[1]));
         return !eq;
-    }
-
-    map<size_t, size_t> ConstructHistogram(/*const std::vector<double> &coverage_set*/) const {
-        map<size_t, size_t> result;
-        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            if (IsInteresting(*it)) {
-                result[(size_t)graph_.coverage(*it)]++;
-            }
-        }
-        return result;
     }
 
     double weight(size_t value, const map<size_t, size_t> &histogram,
@@ -531,16 +403,6 @@ private:
             result += (double) (getValue(value + i, histogram) * std::min(i + 1, backet_width - i));
         }
         return result;
-    }
-
-    double AvgCoverage() const {
-        double cov = 0;
-        double length = 0;
-        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            cov += graph_.coverage(*it) * (double) graph_.length(*it);
-            length += (double) graph_.length(*it);
-        }
-        return cov / length;
     }
 
     double Median(double thr = 500.0) const {
@@ -572,6 +434,25 @@ public:
             graph_(graph), backet_width_(backet_width) {
     }
 
+    double AvgCoverage() const {
+        double cov = 0;
+        double length = 0;
+        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
+            cov += graph_.coverage(*it) * (double) graph_.length(*it);
+            length += (double) graph_.length(*it);
+        }
+        return cov / length;
+    }
+
+    std::map<size_t, size_t> ConstructHistogram() const {
+        std::map<size_t, size_t> result;
+        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
+            if (IsInteresting(*it))
+                result[(size_t)graph_.coverage(*it)]++;
+        }
+        return result;
+    }
+
     double FindThreshold(const map<size_t, size_t> &histogram) const {
         size_t backet_width = backet_width_;
         if (backet_width == 0) {
@@ -583,9 +464,9 @@ public:
         INFO("Bucket size: " << backet_width);
         size_t cnt = 0;
         for (size_t i = 1; i + backet_width < size; i++) {
-            if (weight(i, histogram, backet_width) > weight(i - 1, histogram, backet_width)) {
+            if (weight(i, histogram, backet_width) > weight(i - 1, histogram, backet_width))
                 cnt++;
-            }
+
             if (i > backet_width &&
                 weight(i - backet_width,     histogram, backet_width) >
                 weight(i - backet_width - 1, histogram, backet_width)) {
@@ -601,7 +482,7 @@ public:
 
     double FindThreshold() const {
         INFO("Finding threshold started");
-        map<size_t, size_t> histogram = ConstructHistogram(/*weights*/);
+        std::map<size_t, size_t> histogram = ConstructHistogram(/*weights*/);
         for (size_t i = 0; i < histogram.size(); i++) {
             TRACE(i << " " << histogram[i]);
         }

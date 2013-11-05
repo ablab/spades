@@ -7,11 +7,9 @@
 
 #pragma once
 
-#include "indices/debruijn_kmer_index.hpp"
-#include "graph_pack.hpp"
 #include <algorithm>
-#include "pacbio_read_structures.hpp"
-#include "pacbio_gap_closer.hpp"
+
+namespace debruijn_graph {
 
 template<class Graph>
 class PathInfo {
@@ -151,13 +149,12 @@ public:
 			HiddenAddPath(rc_p, w);
 		}
 	}
-	void DumpToFile(const string filename, const EdgesPositionHandler<Graph> &edge_pos) const{
+	void DumpToFile(const string filename) const{
 		map <EdgeId, EdgeId> auxilary;
-		DumpToFile(filename, edge_pos, auxilary);
+		DumpToFile(filename, auxilary);
 	}
-	void DumpToFile(const string filename, const EdgesPositionHandler<Graph> &edge_pos, map<EdgeId, EdgeId> &replacement) const {
+	void DumpToFile(const string filename, map<EdgeId, EdgeId> &replacement) const {
 		ofstream filestr(filename);
-		ofstream filestr2(filename + "_yana");
 		set<EdgeId> continued_edges;
 
 		for(auto iter = inner_index_.begin(); iter != inner_index_.end(); ++iter){
@@ -176,49 +173,11 @@ public:
 
 					filestr << g_.int_id(*p_iter) << "(" << g_.length(*p_iter) << ") ";
 				}
-				if (cfg::get().developer_mode && cfg::get().ds.reference_genome.size() != 0) {
-				    //TODO: remove this
-
-                    if (const_cast< EdgesPositionHandler<Graph>& >(edge_pos).IsConsistentWithGenome(j_iter->path))
-                        filestr << "  genomic";
-                    else {
-                        if (j_iter->getWeight() == 1)
-                            filestr << " low weight ng";
-                        else
-                            filestr << "  nongenomic";
-                    }
-				}
 				filestr << endl;
 			}
 			filestr << endl;
-//to Yana's OLC assembler:
-			filestr2 << non1 << endl;
-			for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); ++j_iter) {
-				if (j_iter->getWeight() == 1)
-					continue;
-				filestr2 << " Weight: " << j_iter->getWeight();
-				filestr2 << " length: " << j_iter->path.size() << " ";
-				for (auto p_iter = j_iter->path.begin(); p_iter != j_iter->path.end(); ++p_iter) {
-					if (p_iter != j_iter->path.end() - 1) {
-						continued_edges.insert(*p_iter);
-					}
-
-					filestr2 << g_.int_id(*p_iter) << " ";
-				}
-				/*				if (edge_pos.IsConsistentWithGenome(j_iter->path))
-				 filestr2 << "  genomic";
-				 else {
-				 if (j_iter->getWeight() == 1)
-				 filestr2<< " low weight ng";
-				 else
-				 filestr2 << "  nongenomic";
-				 }
-				 */
-				filestr2 << endl;
-
-			}
-			filestr2 << endl;
 		}
+
 		int noncontinued = 0;
 		int long_gapped = 0;
 		int continued = 0;
@@ -241,7 +200,7 @@ public:
 			}
 			//filestr <<"long not dead end: " << long_nongapped << " noncontinued: " << noncontinued << endl;
 		}
-		INFO("noncontinued/total long:" << noncontinued <<"/" << noncontinued + continued);
+		DEBUG("noncontinued/total long:" << noncontinued <<"/" << noncontinued + continued);
 	}
 
 	vector<PathInfo<Graph> > GetAllPaths() {
@@ -282,16 +241,26 @@ public:
     }
 
 
-	void LoadFromFile(const string s) {
+	void LoadFromFile(const string s, bool force_exists = true) {
+	    FILE* file = fopen(s.c_str(), "r");
+	    if (force_exists) {
+	        VERIFY(file != NULL);
+	    } else if (file == NULL) {
+	        INFO("Long reads not found, skipping");
+	        return;
+	    }
+	    fclose(file);
+
 	    INFO("Loading long reads alignment...");
 		ifstream filestr(s);
 		INFO("loading from " << s);
-		map<int, EdgeId> tmp_map;
+		map<size_t, EdgeId> tmp_map;
 		for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
 			tmp_map[g_.int_id(*iter)] = *iter;
 		}
 		int fl;
-		FILE* file = fopen((s).c_str(), "r");
+
+		file = fopen((s).c_str(), "r");
 		char ss[14];
 		while (!feof(file)) {
 			int n;
@@ -308,8 +277,9 @@ public:
 				VERIFY(fl == 2);
 				vector<EdgeId> p;
 				for (int j = 0; j < l; j++) {
-					int e, x;
-					fl = fscanf(file, "%d(%d)", &e, &x);
+				    size_t e;
+				    int x;
+					fl = fscanf(file, "%zu(%d)", &e, &x);
 					VERIFY(fl == 2);
 					VERIFY(tmp_map.find(e) != tmp_map.end());
 					p.push_back(tmp_map[e]);
@@ -396,36 +366,39 @@ class LongReadContainer {
 private:
     Graph& g_;
 
-    vector< PathStorage<Graph>* > data;
+    vector< PathStorage<Graph>* > data_;
 
 
 public:
 
-    LongReadContainer(Graph& g): g_(g), data() {
-    }
-
-    ~LongReadContainer() {
-        for (size_t i = 0; i < data.size(); ++i) {
-            delete data[i];
+    LongReadContainer(Graph& g, size_t count = 0): g_(g), data_(count) {
+        for (size_t i = 0; i < count; ++i) {
+            data_[i] = new PathStorage<Graph>(g_);
         }
     }
 
-    void AddPath() {
-        data.push_back(new PathStorage<Graph>(g_));
+    ~LongReadContainer() {
+        for (size_t i = 0; i < data_.size(); ++i) {
+            delete data_[i];
+        }
     }
 
+
     PathStorage<Graph>& operator[](size_t index) {
-        return *(data[index]);
+        return *(data_[index]);
     }
 
     const PathStorage<Graph>& operator[](size_t index) const {
-        return *(data[index]);
+        return *(data_[index]);
     }
 
     size_t size() const {
-        return data.size();
+        return data_.size();
     }
 
 };
+
+
+}
 
 

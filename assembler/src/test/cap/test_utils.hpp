@@ -222,7 +222,7 @@ bool MapsValueSetEquals(std::map <int, EdgeData> m1, std::map <int, EdgeData> m2
 
 template<class gp_t>
 inline void LoadWithColoring(gp_t& gp, ColorHandler<typename gp_t::graph_t>& coloring, const string& path) {
-    typedef typename ScannerTraits<typename gp_t::graph_t>::Scanner Scanner;
+    typedef typename debruijn_graph::graphio::ScannerTraits<typename gp_t::graph_t>::Scanner Scanner;
     Scanner scanner(gp.g, gp.int_ids);
     scanner.loadGraph(path);
     LoadColoring(gp.g, gp.int_ids, coloring, path);
@@ -244,7 +244,7 @@ class ColoredGraphIsomorphismChecker {
         Mapping map;
 
         Pack(size_t k, const string& work_dir)
-                : gp(k, work_dir),
+                : gp(k, work_dir, 0),
                   col(gp.g) {
 
         }
@@ -260,10 +260,10 @@ class ColoredGraphIsomorphismChecker {
     Pack pack2_;
 
     void LoadPack(Pack& pack, const string& path) {
-        typedef typename ScannerTraits<typename gp_t::graph_t>::Scanner Scanner;
+        typedef typename debruijn_graph::graphio::ScannerTraits<typename gp_t::graph_t>::Scanner Scanner;
         Scanner scanner(pack.gp.g, pack.gp.int_ids);
         pack.gp.index.Detach();
-        scanner.loadGraph(path);
+        scanner.LoadGraph(path);
         pack.gp.index.Refill();
         pack.gp.index.Attach();
         LoadColoring(pack.gp.g, pack.gp.int_ids, pack.col, path);
@@ -280,7 +280,8 @@ class ColoredGraphIsomorphismChecker {
         return edges1 == edges2;
     }
 
-    vector<EdgeData> ConvertData(const vector<EdgeId>& edges, const Pack& pack) const {
+    template<class EdgeContainer>
+    vector<EdgeData> ConvertData(const EdgeContainer& edges, const Pack& pack) const {
         vector<EdgeData> ans;
         FOREACH(EdgeId e, edges) {
             EdgeData data(pack.gp.g.EdgeNucls(e).str(), pack.col.Color(e));

@@ -11,6 +11,8 @@
 #include "paired_info.hpp"
 #include "omni/omni_utils.hpp"
 #include "distance_estimation.hpp"
+#include "weighted_distance_estimation.hpp"
+
 #include <algorithm>
 
 // No variation support in the original data
@@ -174,9 +176,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
     if (this->graph().OutgoingEdgeCount(start) > 1)
       return;
 
-    vector<EdgeId> InEdges = this->graph().IncomingEdges(start);
-    for (auto iterator = InEdges.begin(); iterator != InEdges.end(); ++iterator) {
-      EdgeId next = *iterator;
+    FOREACH (EdgeId next, this->graph().IncomingEdges(start)) {
       Histogram hist = this->index().GetEdgePairInfo(next, last);
       if (-shift < (int) max_shift)
         ExtendLeftDFS(next, last, data, shift - (int) this->graph().length(next), max_shift);
@@ -195,9 +195,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
     if (this->graph().IncomingEdgeCount(end) > 1)
       return;
 
-    vector<EdgeId> OutEdges = this->graph().OutgoingEdges(end);
-    for (auto iter = OutEdges.begin(); iter != OutEdges.end(); ++iter) {
-      EdgeId next = *iter;
+    FOREACH (EdgeId next, this->graph().OutgoingEdges(end)) {
       Histogram hist = this->index().GetEdgePairInfo(first, next);
       if (-shift < (int) max_shift)
         ExtendRightDFS(first, next, data, shift - (int) this->graph().length(current), max_shift);

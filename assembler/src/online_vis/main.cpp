@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
     const size_t GB = 1 << 30;
 
     try {
-
+        VERIFY(argc > 1)
         using namespace online_visualization;
         string cfg_filename = argv[1];
         CheckFileExistenceFATAL(cfg_filename);

@@ -35,7 +35,7 @@ class CapEnvironment : public Environment {
   // Sequence of Ks which were used to refine current genome
   std::vector<unsigned> k_history_;
   // History of number of studied genomes (for case of adding genomes in the middle of pipeline)
-  std::vector<unsigned> num_genomes_history_;
+  std::vector<size_t> num_genomes_history_;
 
   // Paths on fs
   std::vector<std::string> init_genomes_paths_;
@@ -88,7 +88,7 @@ class CapEnvironment : public Environment {
   }
 
  public:
-  static const size_t kNoGraphK = -1;
+  static const unsigned kNoGraphK = -1;
   const std::string kDefaultGPWorkdir;
 
   CapEnvironment(const std::string &name, /*const std::string base_path, */const std::string &description = "")
@@ -182,12 +182,12 @@ class CapEnvironment : public Environment {
     CheckConsistency();
   }
 
-  size_t GetGraphK() const {
+  unsigned GetGraphK() const {
     if (gp_rtseq_ == NULL && gp_lseq_ == NULL) {
       return kNoGraphK;
     }
 
-    return graph_->k();
+    return unsigned(graph_->k());
   }
   bool LSeqIsUsed() const {
     return gp_lseq_ != NULL;
@@ -232,8 +232,8 @@ class CapEnvironment : public Environment {
       return coordinates_handler_;
   }
 
-  size_t genome_cnt() const {
-      return genomes_names_.size();
+  unsigned genome_cnt() const {
+      return unsigned(genomes_names_.size());
   }
 
   const EdgesPositionHandler<Graph> &edge_pos() const {

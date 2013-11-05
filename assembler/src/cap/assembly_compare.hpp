@@ -498,7 +498,7 @@ void RunMultipleGenomesVisualization(size_t k_visualize,
 
 	utils::MakeDirPath(output_folder);
 
-	gp_t gp(k_visualize, "tmp", Sequence(), 200, true);
+	gp_t gp(k_visualize, "tmp", 0, Sequence(), 200, true);
 	ColorHandler<Graph> coloring(gp.g, genomes_paths.size());
   CoordinatesHandler<Graph> coordinates_handler;
 

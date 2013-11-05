@@ -842,7 +842,7 @@ class LocalizedComponentFinder {
 	typedef typename Graph::EdgeId EdgeId;
 
 	static const size_t exit_bound = 32;
-	static const size_t inf = -1;
+	static const size_t inf = -1ul;
 
 	Graph& g_;
 	size_t max_length_;

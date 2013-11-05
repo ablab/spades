@@ -29,27 +29,27 @@
 #include "verify.hpp"
 #include <iostream>
 
-const unsigned char dignucl_map['T' + 1] = {
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3};
+const char dignucl_map['T' + 1] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3};
 
 const bool isnucl_map[256] = {
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
 
 const char nucl_map[4] = {'A', 'C', 'G', 'T'};
 
-const unsigned char nucl_complement_map['T' + 1] = {
-0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-'T', 0, 'G', 0, 0, 0, 'C', 0, 0, 0, 0, 0, 0, 'N', 0, 0, 0, 0, 0, 'A'};
+const  char nucl_complement_map['T' + 1] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    'T', 0, 'G', 0, 0, 0, 'C', 0, 0, 0, 0, 0, 0, 'N', 0, 0, 0, 0, 0, 'A'};
 
 /**
  * ACGT -> true
  * @param char c
  * @return true if c is 'A', 'C', 'G' or 'T'.
  */
-inline bool is_nucl(unsigned char c) { // is ACGT
-	return isnucl_map[c];
+inline bool is_nucl(char c) { // is ACGT
+	return isnucl_map[(unsigned)c];
 }
 
 /**
@@ -57,7 +57,7 @@ inline bool is_nucl(unsigned char c) { // is ACGT
  * @param char c
  * @return true if c is 0, 1, 2 or 3.
  */
-inline bool is_dignucl(unsigned char c) { // is 0123
+inline bool is_dignucl(char c) { // is 0123
 	return (c < 4);
 }
 
@@ -66,8 +66,8 @@ inline bool is_dignucl(unsigned char c) { // is 0123
  * @param char c
  * @return c ^ 3
  */
-inline unsigned char complement(unsigned char c) {
-	VERIFY(is_dignucl(c));
+inline char complement(char c) {
+	// VERIFY(is_dignucl(c));
 	return c ^ 3;
 }
 
@@ -78,15 +78,15 @@ inline unsigned char complement(unsigned char c) {
  */
 
 struct nucl_complement_functor { // still unused
-	inline bool operator() (unsigned char c) const {
-		return nucl_complement_map[c];
+	inline bool operator() (char c) const {
+		return nucl_complement_map[(unsigned)c];
 	}
 };
 
-inline unsigned char nucl_complement(unsigned char c){
+inline char nucl_complement(char c){
     // TODO: deal with 'N' case
 	//VERIFY(is_nucl(c));
-	return nucl_complement_map[c];
+	return nucl_complement_map[(unsigned)c];
 }
 
 /**
@@ -94,8 +94,8 @@ inline unsigned char nucl_complement(unsigned char c){
  * @param char c is 0, 1, 2 or 3
  * @return 0 => 'A', 1 => 'C', 2 => 'G', 3 => 'T'
  */
-inline unsigned char nucl(unsigned char c) {
-	return nucl_map[c];
+inline char nucl(char c) {
+	return nucl_map[(unsigned)c];
 }
 
 /**
@@ -111,9 +111,9 @@ struct dignucl : public unary_function<int,bool> {
 	}	
 };*/
 
-inline unsigned char dignucl(unsigned char c) {
-	VERIFY(is_nucl(c));
-	return dignucl_map[c];
+inline char dignucl(char c) {
+	// VERIFY(is_nucl(c));
+	return dignucl_map[(unsigned)c];
 }
 
 

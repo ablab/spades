@@ -26,7 +26,7 @@ namespace online_visualization {
   }
 
   void FireNoCorrespondingGraphLocation(string location) {
-    cout << "No corresponding graph location " << location << endl;   
+    cout << "No corresponding graph location " << location << endl;
   }
 
   void FireNotEnoughArguments() {
@@ -40,10 +40,10 @@ namespace online_visualization {
   }
 
   void FireBadArgument(const string& arg) {
-    cout << "Bad word specifier: `" << arg << "'" << endl; 
+    cout << "Bad word specifier: `" << arg << "'" << endl;
     cout << "Please try again" << endl;
   }
-  
+
   void FireNumberOutOfBounds(int num_of_command) {
     cout << "The command number parameter " << num_of_command
          << " must be positive and not exceed the size of history" << endl;
@@ -58,10 +58,10 @@ namespace online_visualization {
     return true;
   }
 
-  bool CheckPositionBounds(int position, size_t total_size, size_t K) {
+  bool CheckPositionBounds(size_t position, size_t total_size, size_t K) {
     bool result = (position + K + 1) <= total_size;
     if (!result) {
-      cout << "Ignoring the request. Position is out of range : required position is " 
+      cout << "Ignoring the request. Position is out of range : required position is "
         << position << " while length of the sequence is "
         << total_size << endl;
       cout << "Please try again" << endl;
@@ -72,7 +72,7 @@ namespace online_visualization {
   bool CheckIsNumber(const string& str) {
     if (!IsNumber(str)) {
       cout << "The argument `" << str << "' is not a number" << endl;
-      cout << "Please try again" << endl;   
+      cout << "Please try again" << endl;
       return false;
     }
     return true;
@@ -86,7 +86,7 @@ namespace online_visualization {
 
     if (!(K >= runtime_k::MIN_K && cfg::get().K < runtime_k::MAX_K)) {
       LOG("K " << K << " is out of bounds");
-      return false; 
+      return false;
     }
     if (K % 2 == 0) {
       LOG("K must be odd");
@@ -101,7 +101,7 @@ namespace online_visualization {
     if (vertex == VertexId(NULL)) {
       FireVertexDoesNotExist(vertex_id);
       return false;
-    } 
+    }
     else {
       return true;
     }
@@ -111,7 +111,7 @@ namespace online_visualization {
     EdgeId edge = int_ids.ReturnEdgeId(edge_id);
     if (edge == EdgeId(NULL)) {
       FireEdgeDoesNotExist(edge_id);
-      return false;   
+      return false;
     }
     else {
       return true;

@@ -8,6 +8,7 @@
 
 #include "xmath.h"
 #include "omni/omni_utils.hpp"
+#include "sequence/sequence.hpp"
 
 #include <boost/iterator/iterator_facade.hpp>
 
@@ -89,7 +90,7 @@ inline int rounded_d(Point p) {
     return math::round_to_zero(p.d);
 }
 
-ostream& operator<<(ostream& os, const Point &point) {
+inline std::ostream& operator<<(std::ostream& os, const Point &point) {
     return os << point.str();
 }
 
@@ -728,7 +729,7 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
       }
   }
 
-  void MergeInnerMaps(EdgeId e1_to_add,
+  void MergeInnerMaps(EdgeId /*e1_to_add*/,
                       const InnerMap& map_to_add,
                       InnerMap& map) {
       typedef typename Histogram::iterator hist_iterator;

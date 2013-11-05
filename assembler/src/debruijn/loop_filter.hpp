@@ -3,7 +3,6 @@
 
 #include <algorithm>
 #include "graph_pack.hpp"
-#include "omni/mf_ec_remover.hpp"
 
 namespace debruijn_graph {
 //todo WTF?!!!
@@ -197,12 +196,17 @@ namespace debruijn_graph {
 			return ifSimple;
 		}
 
-		void dfs_down( const VertexId& v ){
-			used_vertices_.insert(v);
-			for ( auto incidentEdge = gp.g.out_begin(v); incidentEdge != gp.g.out_end(v); ++incidentEdge ){
-				if ( gp.g.length(*incidentEdge) > cfg::get().rr.max_repeat_length  ) continue;
-				VertexId vOut = gp.g.EdgeEnd(*incidentEdge);
-				if (used_vertices_.find(vOut) != used_vertices_.end())
+
+		void dfs1( const VertexId& v ){
+
+			usedVertices.insert(v);
+
+			for ( auto incidentEdge = graph_p->g.out_begin(v); incidentEdge != graph_p->g.out_end(v); ++incidentEdge ){
+
+				if ( graph_p->g.length(*incidentEdge) > cfg::get().max_repeat_length  ) continue;
+
+				VertexId vOut = graph_p->g.EdgeEnd(*incidentEdge);
+				if (usedVertices.find(vOut) != usedVertices.end())
 					continue;
 				dfs_down( vOut );
 			}
@@ -212,10 +216,13 @@ namespace debruijn_graph {
 		void dfs_up( const VertexId& v, vector<VertexId>& loop ){
 			used_vertices_.insert( v );
 			loop.push_back( v );
-			for ( auto incidentEdge = gp.g.in_begin(v); incidentEdge != gp.g.in_end(v); ++incidentEdge ) {
-				if ( gp.g.length(*incidentEdge) > cfg::get().rr.max_repeat_length  ) continue;
-				VertexId vIn = gp.g.EdgeStart(*incidentEdge);
-				if (used_vertices_.find(vIn) != used_vertices_.end()) 
+
+			for ( auto incidentEdge = graph_p->g.in_begin(v); incidentEdge != graph_p->g.in_end(v); ++incidentEdge ) {
+
+				if ( graph_p->g.length(*incidentEdge) > cfg::get().max_repeat_length  ) continue;
+
+				VertexId vIn = graph_p->g.EdgeStart(*incidentEdge);
+				if (usedVertices.find(vIn) != usedVertices.end())
 					continue;
 				dfs_up( vIn, loop );
 			}

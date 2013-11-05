@@ -570,9 +570,9 @@ public:
         for (auto it = support_paths.begin(); it != support_paths.end(); ++it) {
             auto positions = (*it)->FindAll(path.Back());
             for (size_t i = 0; i < positions.size(); ++i) {
-                if ((int) positions[i] < (int) (*it)->Size() - 1
-                        && EqualBegins(path, (int) path.Size() - 1, **it,
-                                       positions[i])) {
+                if ((int) positions[i] < (int) (*it)->Size() - 1 &&
+                        EqualBegins(path, (int) path.Size() - 1, **it, positions[i])) {
+
                     if (UniqueBackPath(**it, positions[i])) {
                         EdgeId next = (*it)->At(positions[i] + 1);
                         weights_cands[next] += (*it)->GetWeight();
@@ -626,7 +626,7 @@ private:
     }
 
     bool UniqueEdge(EdgeId e) const {
-        if (g_.length(e) > cfg::get().rr.max_repeat_length)
+        if (g_.length(e) > cfg::get().max_repeat_length)
             return true;
         DEBUG("Analyze unique edge " << g_.int_id(e));
         auto cov_paths = coverage_map_.GetCoveringPaths(e);
@@ -759,7 +759,6 @@ private:
     bool unique_edges_founded_;
     std::set<EdgeId> unique_edges_;
 };
-
 
 class MatePairExtensionChooser : public ExtensionChooser {
 public:

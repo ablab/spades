@@ -7,6 +7,8 @@
 #pragma once
 
 #include "standard.hpp"
+#include "utils.hpp"
+
 namespace debruijn_graph {
 
 //This class corrects mismatches or masks repeat differences or other such things with the sequence of an edge
@@ -149,14 +151,16 @@ private:
 
 	bool ShouldCut(VertexId v) const {
 		const Graph &g = this->graph();
-		vector<EdgeId> edges = g.OutgoingEdges(v);
+		vector<EdgeId> edges;
+		push_back_all(edges, g.OutgoingEdges(v));
 		if(edges.size() == 0)
 			return false;
 		for(size_t i = 1; i < edges.size(); i++) {
 			if(g.EdgeNucls(edges[i])[g.k()] != g.EdgeNucls(edges[0])[g.k()])
 				return false;
 		}
-		edges = g.IncomingEdges(v);
+		edges.clear();
+		push_back_all(edges, g.IncomingEdges(v));
 		for(size_t i = 0; i < edges.size(); i++)
 			for(size_t j = i + 1; j < edges.size(); j++) {
 				if(g.EdgeNucls(edges[i])[g.length(edges[i]) - 1] != g.EdgeNucls(edges[j])[g.length(edges[j]) - 1])
@@ -287,14 +291,17 @@ void OutputContigs(ConjugateDeBruijnGraph& g,
 
 
 bool ShouldCut(ConjugateDeBruijnGraph& g, VertexId v) {
-	vector<EdgeId> edges = g.OutgoingEdges(v);
+	vector<EdgeId> edges;
+	push_back_all(edges, g.OutgoingEdges(v));
+
 	if(edges.size() == 0)
 		return false;
 	for(size_t i = 1; i < edges.size(); i++) {
 		if(g.EdgeNucls(edges[i])[g.k()] != g.EdgeNucls(edges[0])[g.k()])
 			return false;
 	}
-	edges = g.IncomingEdges(v);
+	edges.clear();
+	push_back_all(edges, g.IncomingEdges(v));
 	for(size_t i = 0; i < edges.size(); i++)
 		for(size_t j = i + 1; j < edges.size(); j++) {
 			if(g.EdgeNucls(edges[i])[g.length(edges[i]) - 1] != g.EdgeNucls(edges[j])[g.length(edges[j]) - 1])

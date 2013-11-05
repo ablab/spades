@@ -76,7 +76,7 @@ def prepare_config_bh(filename, cfg, log):
     process_cfg.substitute_params(filename, subst_dict, log)
 
 
-def run_bh(result_filename, configs_dir, execution_home, cfg, ext_python_modules_home, log):
+def run_bh(result_filename, configs_dir, execution_home, cfg, not_used_dataset_data, ext_python_modules_home, log):
     addsitedir(ext_python_modules_home)
     if sys.version.startswith('2.'):
         import pyyaml2 as pyyaml
@@ -112,6 +112,8 @@ def run_bh(result_filename, configs_dir, execution_home, cfg, ext_python_modules
     if cfg.gzip_output:
         log.info("\n== Compressing corrected reads (with gzip)")
     move_dataset_files(corrected_dataset_data, cfg.output_dir, ext_python_modules_home, cfg.max_threads, log, cfg.gzip_output)
+    if not_used_dataset_data:
+        corrected_dataset_data += not_used_dataset_data
     corrected_dataset_yaml_filename = result_filename
     pyyaml.dump(corrected_dataset_data, open(corrected_dataset_yaml_filename, 'w'))
     log.info("\n== Dataset description file created: " + corrected_dataset_yaml_filename + "\n")

@@ -36,7 +36,7 @@ class DeBruijnKMerSplitter : public RtSeqKMerSplitter {
 
 
 
-size_t
+inline size_t
 DeBruijnKMerSplitter::FillBufferFromSequence(const Sequence &seq,
                                              KMerBuffer &buffer, unsigned num_files) const {
   size_t kmers = 0;
@@ -56,6 +56,7 @@ DeBruijnKMerSplitter::FillBufferFromSequence(const Sequence &seq,
   return kmers;
 }
 
+inline
 void DeBruijnKMerSplitter::DumpBuffers(size_t num_files, size_t nthreads,
                                        std::vector<KMerBuffer> &buffers,
                                        FILE **ostreams) const {
@@ -326,6 +327,7 @@ class DeBruijnKMerKMerSplitter : public DeBruijnKMerSplitter {
   virtual path::files_t Split(size_t num_files);
 };
 
+inline
 size_t DeBruijnKMerKMerSplitter::FillBufferFromKMers(kmer_iterator &kmer,
                                                      KMerBuffer &buffer,
                                                      unsigned num_files, size_t cell_size) const {
@@ -339,6 +341,7 @@ size_t DeBruijnKMerKMerSplitter::FillBufferFromKMers(kmer_iterator &kmer,
   return seqs;
 }
 
+inline
 path::files_t DeBruijnKMerKMerSplitter::Split(size_t num_files) {
   unsigned nthreads = (unsigned) kmers_.size();
   INFO("Splitting kmer instances into " << num_files << " buckets. This might take a while.");

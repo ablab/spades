@@ -47,7 +47,7 @@ public:
     void testStarted(std::string name, std::string flowid = "");
     void testFailed(std::string name, std::string message, std::string details, std::string flowid = "");
     void testIgnored(std::string name, std::string message, std::string flowid = "");
-    void testFinished(std::string name, int durationMs = -1, std::string flowid = "");    
+    void testFinished(std::string name, unsigned long durationMs = -1UL, std::string flowid = "");    
 };
 
 }

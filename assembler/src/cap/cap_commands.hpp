@@ -4,6 +4,7 @@
 #include "cap_environment_manager.hpp"
 #include "mosaic.hpp"
 #include "io/sequence_reader.hpp"
+#include "path_helper.hpp"
 
 namespace online_visualization {
 
@@ -128,7 +129,7 @@ class RefineCommand : public LocalCommand<CapEnvironment> {
            "> refine\n";
   }
 
-  virtual void Execute(CapEnvironment& curr_env, const ArgumentList& arg_list) const {
+  virtual void Execute(CapEnvironment& curr_env, const ArgumentList& /* arg_list */) const {
     if (curr_env.GetGraphK() == CapEnvironment::kNoGraphK) {
       cout << "Graph has not yet been constructed, aborting.\n";
       return;
@@ -165,7 +166,7 @@ class BuildGraphCommand : public LocalCommand<CapEnvironment> {
     if (!CheckEnoughArguments(args)) {
       return;
     }
-    size_t k;
+    unsigned k;
 
     std::stringstream ss(args[1]);
     ss >> k;
@@ -442,7 +443,7 @@ class FindInversionsCommand : public LocalCommand<CapEnvironment> {
            "> find_inversions\n";
   }
 
-  virtual void Execute(CapEnvironment &curr_env, const ArgumentList &arg_list) const {
+  virtual void Execute(CapEnvironment &curr_env, const ArgumentList &/* arg_list */) const {
     if (curr_env.GetGraphK() == CapEnvironment::kNoGraphK) {
       cout << "You should build graph prior to saving it. Aborting.\n";
       return;
@@ -477,6 +478,39 @@ class FindInversionsCommand : public LocalCommand<CapEnvironment> {
 
 };
 
+class BlocksToGRIMMFormat : public LocalCommand<CapEnvironment> {
+  public:
+    BlocksToGRIMMFormat() : LocalCommand<CapEnvironment>("blocks_to_grimm") {
+    }
+
+    virtual std::string Usage() const {
+        return "Command `block_to_grimm`\n"
+               " Converts blocks output by `save_blocks' to GRIMM format.\n"
+               "Usage:\n"
+               "> block_to_grimm <blocks_file> <grimm_file>\n";
+    }
+
+    virtual void Execute(CapEnvironment &/* curr_env */, const ArgumentList &arg_list) const {
+      const vector<string> &args = arg_list.GetAllArguments();
+
+      if (args.size() <= 2) {
+        cerr << "Not emough arguments" << endl;
+        return;
+      }
+
+      std::string file_from = args[1],
+                  file_to = args[2];
+
+      path::make_full_path(file_from);
+      path::make_full_path(file_to);
+
+      std::string dir = path::parent_path(file_to);
+      cap::utils::MakeDirPath(dir);
+
+      BlockPrinter<Graph>::ConvertBlocksToGRIMM(file_from, file_to);
+    }
+};
+
 class SaveBlocksCommand : public LocalCommand<CapEnvironment> {
  public:
     SaveBlocksCommand() : LocalCommand<CapEnvironment>("save_blocks") {
@@ -488,21 +522,55 @@ class SaveBlocksCommand : public LocalCommand<CapEnvironment> {
            " Synteny blocks are given new ids (with edge ids also in the file).\n"
            " All the coordinates ()\n"
            "Usage:\n"
-           "> save_blocks <file_to_save_to>\n";
+           "> save_blocks <file_to_save_to> [unique]\n"
+           "Where\n"
+           " [unique] if set and equals to (unique|Y|y) then only blocks\n"
+           " that appear exactly once in the contigs will be reported.\n";
   }
 
   virtual void Execute(CapEnvironment& curr_env, const ArgumentList& arg_list) const {
-      std::string folder = TryFetchFolder(curr_env, arg_list);
+      const vector<string> &args = arg_list.GetAllArguments();
+      const std::string folder = TryFetchFolder(curr_env, arg_list);
 
-      BlockPrinter<Graph> printer(curr_env.graph(), curr_env.coordinates_handler(), folder + "blocks.txt");
-      for (size_t i = 0; i < curr_env.genome_cnt(); ++i) {
-          printer.ProcessContig(i, 2*i, curr_env.genome_names()[i]);
+      bool unique = false;
+      if (args.size() > 2 && (args[2] == "y" || args[2] == "Y" || args[2] == "unique")) {
+          unique = true;
       }
+      INFO("unique = " << unique << ", args[2] = " << args[2]);
+
+      BlockPrinter<Graph> *printer;
+
+      if (!unique) {
+        printer = new BlockPrinter<Graph>(curr_env.graph(),
+          curr_env.coordinates_handler(), folder + "blocks.txt");
+      } else {
+        vector<pair<size_t, size_t>> rc_pairs = PrepareRCContigPairs(curr_env);
+        printer = new UniqueBlockPrinter<Graph>(curr_env.graph(),
+          curr_env.coordinates_handler(), folder + "blocks.txt", rc_pairs);
+      }
+
+      for (unsigned i = 0; i < curr_env.genome_cnt(); ++i) {
+          printer->ProcessContig(i, 2*i, curr_env.genome_names()[i]);
+      }
+
+      delete printer;
   }
 
  protected:
   virtual size_t MinArgNumber() const {
     return 1;
+  }
+
+ private:
+  vector<pair<size_t, size_t>> PrepareRCContigPairs(const CapEnvironment &curr_env) const {
+    size_t num_contigs = curr_env.genome_cnt();
+
+    vector<pair<size_t, size_t>> res;
+    for (size_t i = 0; i < num_contigs; ++i) {
+      res.push_back(make_pair(2 * i, 2 * i + 1));
+    }
+
+    return res;
   }
 
 };
@@ -559,9 +627,9 @@ class MosaicAnalysisCommand : public NewLocalCommand<CapEnvironment> {
       VERIFY(curr_env.genome_cnt() == 1);
 //      const Sequence& genome = curr_env.genomes()[1];
       const Sequence& genome = curr_env.genomes()[0];
-      size_t min_support_length = 100;
-      size_t max_support_mult = 20;
-      size_t max_inter_length = 500;
+      size_t min_support_length = 1;
+      size_t max_support_mult = 10;
+      size_t max_inter_length = 200;
       std::string folder = TryFetchFolder(curr_env, args);
       ofstream out(folder + "mosaic.txt");
       cout << "Mosaic analysis triggered" << endl;
@@ -569,9 +637,11 @@ class MosaicAnalysisCommand : public NewLocalCommand<CapEnvironment> {
       cout << "Max support block multiplicity " << max_support_mult << endl;
       cout << "Max inter-block length " << max_inter_length << endl;
       if (curr_env.LSeqIsUsed()) {
-          mosaic::PerformMosaicAnalysis(curr_env.l_seq_gp(), genome, min_support_length, max_support_mult, max_inter_length, out);
+          mosaic::PerformMosaicAnalysis(curr_env.l_seq_gp(), curr_env.coordinates_handler().AsMappingPath(0),
+                                        genome, min_support_length, max_support_mult, max_inter_length, out);
       } else {
-          mosaic::PerformMosaicAnalysis(curr_env.rt_seq_gp(), genome, min_support_length, max_support_mult, max_inter_length, out);
+          mosaic::PerformMosaicAnalysis(curr_env.rt_seq_gp(), curr_env.coordinates_handler().AsMappingPath(0),
+                                        genome, min_support_length, max_support_mult, max_inter_length, out);
       }
   }
 };
@@ -628,7 +698,7 @@ private:
         size_t k = GetInt(args[1]);
         size_t iteration_cnt = GetInt(args[2]);
 
-        cout << "Masking repeats for k=" << k << " in " << iteration_cnt << "iterations" << endl;
+        cout << "Masking repeats for k=" << k << " in " << iteration_cnt << " iterations" << endl;
 
         ContigStreamsPtr streams = ConvertRefsToStreams(
                 curr_env.genomes(), curr_env.genome_names());

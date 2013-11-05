@@ -12,7 +12,7 @@ struct cap_config {
   std::string default_log_file_mode;
 };
 
-inline void load(cap_config &cfg, boost::property_tree::ptree const& pt, bool complete) {
+inline void load(cap_config &cfg, boost::property_tree::ptree const& pt, bool /*complete*/) {
 	using config_common::load;
 
   load(cfg.cache_root, pt, "cache_root");

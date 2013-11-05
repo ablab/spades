@@ -14,15 +14,16 @@ namespace cov_model {
 
 class KMerCoverageModel {
   const std::vector<size_t> &cov_;
-  size_t MaxCov_, Valley_, ErrorThreshold_, GenomeSize_;
-  
+  size_t MaxCov_, Valley_, ErrorThreshold_, LowThreshold_, GenomeSize_;
+
  public:
   KMerCoverageModel(const std::vector<size_t> &cov)
-      : cov_(cov) {}
+      : cov_(cov), LowThreshold_(0){}
 
   void Fit();
 
   size_t GetErrorThreshold() const { return ErrorThreshold_; }
+  size_t GetLowThreshold() const { return LowThreshold_; }
   size_t GetGenomeSize() const { return GenomeSize_; }
 
  private:

@@ -22,13 +22,13 @@
 #include "debruijn_graph_constructor.hpp"
 #include "indices/edge_index_builders.hpp"
 #include "debruijn_graph.hpp"
-#include "graphio.hpp"
 #include "graph_pack.hpp"
 #include "utils.hpp"
 #include "perfcounter.hpp"
 #include "early_simplification.hpp"
 
 #include "read_converter.hpp"
+#include "detail_coverage.hpp"
 
 namespace debruijn_graph {
 
@@ -36,68 +36,6 @@ typedef io::IReader<io::SingleRead> SingleReadStream;
 typedef io::IReader<io::PairedRead> PairedReadStream;
 typedef io::MultifileReader<io::SingleRead> CompositeSingleReadStream;
 typedef io::ConvertingReaderWrapper UnitedStream;
-
-template<class Graph, class Index>
-void FillEtalonPairedIndex(PairedInfoIndexT<Graph>& etalon_paired_index,
-		const Graph &g, const Index& index,
-		const KmerMapper<Graph>& kmer_mapper, size_t is, size_t rs,
-		size_t delta, const Sequence& genome, size_t k)
-{
-	VERIFY_MSG(genome.size() > 0,
-			"The genome seems not to be loaded, program will exit");
-	INFO((string) (FormattedString("Counting etalon paired info for genome of length=%i, k=%i, is=%i, rs=%i, delta=%i")
-	        << genome.size() << k << is << rs << delta));
-
-	EtalonPairedInfoCounter<Graph, Index> etalon_paired_info_counter(g, index, kmer_mapper, is, rs, delta, k);
-	etalon_paired_info_counter.FillEtalonPairedInfo(genome, etalon_paired_index);
-
-	DEBUG("Etalon paired info counted");
-}
-
-template<class Graph, class Index>
-void FillEtalonPairedIndex(PairedInfoIndexT<Graph>& etalon_paired_index,
-		const Graph &g, const Index& index,
-		const KmerMapper<Graph>& kmer_mapper, const Sequence& genome,
-		const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
-		size_t k) {
-
-	FillEtalonPairedIndex(etalon_paired_index, g, index, kmer_mapper,
-                        size_t(lib.data().mean_insert_size), lib.data().read_length, size_t(lib.data().insert_size_deviation),
-			genome, k);
-
-	//////////////////DEBUG
-	//	SimpleSequenceMapper<k + 1, Graph> simple_mapper(g, index);
-	//	Path<EdgeId> path = simple_mapper.MapSequence(genome);
-	//	SequenceBuilder sequence_builder;
-	//	sequence_builder.append(Seq<k>(g.EdgeNucls(path[0])));
-	//	for (auto it = path.begin(); it != path.end(); ++it) {
-	//		sequence_builder.append(g.EdgeNucls(*it).Subseq(k));
-	//	}
-	//	Sequence new_genome = sequence_builder.BuildSequence();
-	//	NewEtalonPairedInfoCounter<k, Graph> new_etalon_paired_info_counter(g, index,
-	//			insert_size, read_length, insert_size * 0.1);
-	//	PairedInfoIndexT<Graph> new_paired_info_index(g);
-	//	new_etalon_paired_info_counter.FillEtalonPairedInfo(new_genome, new_paired_info_index);
-	//	CheckInfoEquality(etalon_paired_index, new_paired_info_index);
-	//////////////////DEBUG
-//	INFO("Etalon paired info counted");
-}
-
-
-template<class Index>
-void FillCoverageFromIndex(Index& index) {
-	const auto& inner_index = index.inner_index();
-
-	for (auto I = inner_index.value_cbegin(), E = inner_index.value_cend();
-			I != E; ++I) {
-		const auto& edge_info = *I;
-        VERIFY(edge_info.offset != -1u);
-		VERIFY(edge_info.edge_id.get() != NULL);
-		edge_info.edge_id->IncCoverage(edge_info.count);
-	}
-
-	DEBUG("Coverage counted");
-}
 
 template<class Graph, class Readers, class Index>
 size_t ConstructGraphUsingOldIndex(size_t k,
@@ -190,11 +128,12 @@ size_t ConstructGraph(size_t k, const debruijn_config::construction &params,
 template<class Graph, class Index, class Streams>
 size_t ConstructGraphWithCoverage(size_t k, const debruijn_config::construction &params,
                                   Streams& streams, Graph& g,
-                                  Index& index, SingleReadStream* contigs_stream = 0) {
+                                  Index& index, NewFlankingCoverage<Graph>& flanking_cov,
+                                  SingleReadStream* contigs_stream = 0) {
 	size_t rl = ConstructGraph(k, params, streams, g, index, contigs_stream);
 
-	INFO("Filling coverage from index")
-	FillCoverageFromIndex(index);
+	INFO("Filling coverage and flanking coverage from index");
+	FillCoverageAndFlanking(index.inner_index(), g, flanking_cov);
 
 	return rl;
 }

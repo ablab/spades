@@ -27,7 +27,7 @@ class MCErroneousConnectionThresholdFinder {
   MCErroneousConnectionThresholdFinder(const DeBruijn &index)
       : index_(index) {}
 
-  double FindThreshold() const {
+  void FindThresholds() {
     // First, get k-mer coverage histogram
     std::vector<size_t> cov = CalculateKMerCoverageHistogram();
 
@@ -38,11 +38,21 @@ class MCErroneousConnectionThresholdFinder {
     cov_model::KMerCoverageModel CovModel(cov);
     CovModel.Fit();
 
-    return (double) CovModel.GetErrorThreshold();
+    genome_size_ = CovModel.GetGenomeSize();
+    ec_threshold_ = CovModel.GetErrorThreshold();
+    low_cov_threshold_ = CovModel.GetLowThreshold();
   }
+
+  size_t ec_threshold() const { return ec_threshold_; }
+  size_t low_cov_threshold() const { return low_cov_threshold_; }
+  size_t genome_size() const { return genome_size_; }
 
  private:
   const DeBruijn &index_;
+  size_t ec_threshold_;
+  size_t low_cov_threshold_;
+  size_t genome_size_;
+
   std::vector<size_t> CalculateKMerCoverageHistogram() const {
     std::map<size_t, size_t> tmp;
 

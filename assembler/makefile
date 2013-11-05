@@ -1,68 +1,68 @@
 .PHONY: dd rd
 
 rd:
-	make -C build/release/debruijn
+	$(MAKE) -C build/release/debruijn
 
 dd:
-	make -C build/debug/debruijn
+	$(MAKE) -C build/debug/debruijn
 
 rdt:
-	make -C build/release/test/debruijn
+	$(MAKE) -C build/release/test/debruijn
 
 ddt:
-	make -C build/debug/test/debruijn
+	$(MAKE) -C build/debug/test/debruijn
 
 rdtls:
-	make -C build/release/test/debruijn_tools
+	$(MAKE) -C build/release/test/debruijn_tools
 
 ddtls:
-	make -C build/debug/test/debruijn_tools
+	$(MAKE) -C build/debug/test/debruijn_tools
 
 dit:
-	make -C build/debug/test/include_test
+	$(MAKE) -C build/debug/test/include_test
 
 rh:
-	make -C build/release/hammer hammer
+	$(MAKE) -C build/release/hammer hammer
 
 dh:
-	make -C build/debug/hammer hammer
+	$(MAKE) -C build/debug/hammer hammer
 
 rv:
-	make -C build/release/online_vis
+	$(MAKE) -C build/release/online_vis
 
 dv:
-	make -C build/debug/online_vis
+	$(MAKE) -C build/debug/online_vis
 
 rc:
-	make -C build/release/cap cap
+	$(MAKE) -C build/release/cap cap
 
 dc:
-	make -C build/debug/cap cap
+	$(MAKE) -C build/debug/cap cap
 
 rctls:
-	make -C build/release/cap cap-tools
+	$(MAKE) -C build/release/cap cap-tools
 
 dctls:
-	make -C build/debug/cap cap-tools
+	$(MAKE) -C build/debug/cap cap-tools
 
 
 rct:
-	make -C build/release/test/cap
+	$(MAKE) -C build/release/test/cap
 
 dct:
-	make -C build/debug/test/cap
+	$(MAKE) -C build/debug/test/cap
 
 dt:
-	make ddt
-	make dit
+	$(MAKE) ddt
+	$(MAKE) dit
 
 clean:
-	make -C build/debug clean
-	make -C build/release clean
+	$(MAKE) -C build/debug clean
+	$(MAKE) -C build/release clean
 
 all:
-	make -C build/release all
-	make -C build/debug all
+	$(MAKE) -C build/release all
+	$(MAKE) -C build/debug all
 
 #temporary fix
-#all: make -C build/release all
+#all: $(MAKE) -C build/release all

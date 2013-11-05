@@ -13,7 +13,7 @@ class GraphTraversalConstraints {
   GraphTraversalConstraints() {
   }
 
-  virtual void PushEdge(const EdgeId edge) {
+  virtual void PushEdge(const EdgeId /* edge */) {
     // do nothing
   }
 

@@ -13,8 +13,7 @@
 #include "path_extend/bidirectional_path.hpp"
 #include "graphio.hpp"
 #include "long_read_storage.hpp"
-#include "bucket_mapper.hpp"
-#include "repeat.hpp"
+#include "genome_consistance_checker.hpp"
 
 namespace debruijn_graph{
 
@@ -336,9 +335,12 @@ class CoverageBasedResolution {
 
 	private:
 
-	void FilterConjugate( set<EdgeId>& used_edges,
-			const vector<vector<EdgeId>> & paths,
-			vector<PathInfo<typename graph_pack::graph_t>>& filtered_paths) {
+	void filterConjugate( std::set<EdgeId>& usedEdges,
+				const std::vector< std::vector<EdgeId> > & paths,
+				std::vector< PathInfo<typename GraphPack::graph_t> >& filteredPaths) {
+
+
+		GenomeConsistenceChecker<typename GraphPack::graph_t> checker(gp, 10, 0.2);
 		INFO("filtering conjugate edges");
 		for ( auto path = paths.begin(); path != paths.end(); ++path) {
 			bool ifInsert = true;
@@ -351,9 +353,23 @@ class CoverageBasedResolution {
 				}
 			}
 			if (ifInsert) {
-				filtered_paths.push_back(PathInfo<typename graph_pack::graph_t>(*path));
-				for (auto e = path->begin(); e != path->end(); ++e) 
-					used_edges.insert(*e);
+				INFO("inserting");
+				if (!checker.IsConsistentWithGenome(*path)) {
+					std::cout << "not consistent with genome: ";
+					for (auto iter = path->begin(); iter != path->end(); ++iter) {
+						auto positions = gp->edge_pos.GetEdgePositions(*iter);
+						std::cout << gp->g.int_id(*iter) << " (";
+						for (auto pos = positions.begin(); pos != positions.end(); ++pos) {
+							std::cout << pos->mr.initial_range.start_pos << " - " << pos->mr.initial_range.end_pos << " ";
+						}
+						std::cout << ") ";
+					}
+					std::cout << std::endl;
+				}
+
+				filteredPaths.push_back(PathInfo<typename GraphPack::graph_t>(*path));
+				for (auto e = path->begin(); e != path->end(); ++e)
+					usedEdges.insert(*e);
 				}
 		}
 		for ( auto path = filtered_paths.begin(); path != filtered_paths.end(); ++path ) {
@@ -508,12 +524,12 @@ class CoverageBasedResolution {
 		DEBUG("\n");
 		sort(probabilities.begin(), probabilities.end());
 
-		DEBUG(probabilities[0] << " 0\n");
-		double pred(probabilities[0]);
-		unsigned i(1);
-		for ( auto it = probabilities.begin() + 1; it != probabilities.end(); ++it, ++i ) {
-			if ( fabs(*it - pred) > 0.00000000001 ) {
-				DEBUG(*it << " " << (double) i / (double) probabilities.size() << "\n");
+			VertexId from = gp->g.EdgeStart(*e_iter);
+			VertexId into = gp->g.EdgeEnd(*e_iter);
+
+			//std::cout << e_iter->int_id() << std::endl;
+			if ( gp->g.length(*e_iter) >= cfg::get().max_repeat_length ) {
+				singles.push_back(*e_iter);
 			}
 			pred = *it;
 		}

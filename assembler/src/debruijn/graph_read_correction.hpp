@@ -7,7 +7,7 @@
 #pragma once
 
 #include "standard.hpp"
-#include "utils.hpp"
+#include "omni/path_processor.hpp"
 #include "io/modifying_reader_wrapper.hpp"
 
 namespace debruijn_graph {
@@ -24,9 +24,9 @@ class TipsProjector {
 	optional<EdgeId> UniqueAlternativeEdge(EdgeId tip, bool outgoing_tip) {
 		vector<EdgeId> edges;
 		if (outgoing_tip) {
-			edges = gp_.g.OutgoingEdges(gp_.g.EdgeStart(tip));
+			push_back_all(edges, gp_.g.OutgoingEdges(gp_.g.EdgeStart(tip)));
 		} else {
-			edges = gp_.g.IncomingEdges(gp_.g.EdgeEnd(tip));
+			push_back_all(edges, gp_.g.IncomingEdges(gp_.g.EdgeEnd(tip)));
 		}
 		restricted::set<EdgeId> edges_set(edges.begin(), edges.end());
 		edges_set.erase(tip);
@@ -82,7 +82,7 @@ class TipsProjector {
 	}
 
 	void AlignAndProject(
-			const AbstractNonconjugateGraph<typename Graph::DataMaster>& graph,
+			const AbstractNonconjugateGraph<typename Graph::DataMaster>&,
 			const Sequence& tip_seq, const Sequence& alt_seq,
 			bool outgoing_tip) {
 		AlignAndProject(tip_seq, alt_seq, outgoing_tip);
@@ -122,28 +122,6 @@ private:
 	;
 };
 
-template<class Graph>
-Sequence MergeSequences(const Graph& g,
-		const vector<typename Graph::EdgeId>& continuous_path) {
-	vector < Sequence > path_sequences;
-	path_sequences.push_back(g.EdgeNucls(continuous_path[0]));
-	for (size_t i = 1; i < continuous_path.size(); ++i) {
-		VERIFY(
-				g.EdgeEnd(continuous_path[i - 1])
-						== g.EdgeStart(continuous_path[i]));
-		path_sequences.push_back(g.EdgeNucls(continuous_path[i]));
-	}
-	return MergeOverlappingSequences(path_sequences, g.k());
-}
-
-template<class Graph>
-bool CheckContiguous(const Graph& g, const vector<typename Graph::EdgeId>& path) {
-	for (size_t i = 1; i < path.size(); ++i) {
-		if (g.EdgeEnd(path[i - 1]) != g.EdgeStart(path[i]))
-			return false;
-	}
-	return true;
-}
 
 //todo improve logging
 template<class Graph>
@@ -247,7 +225,7 @@ class GraphReadCorrector: public io::SequenceModifier {
 
 public:
 	/*virtual*/
-	Sequence Modify(const Sequence& s) const {
+	Sequence Modify(const Sequence& s) {
 //		if(s < !s)
 //			return !Refine(!s);
 		MappingPath<EdgeId> mapping_path = mapper_.MapSequence(s);
@@ -269,7 +247,7 @@ public:
 		Path<EdgeId> path = TryFixPath(mapping_path.simple_path());
 //		TRACE("Mapped sequence to path " << graph_.str(path.sequence()));
 
-		if (!CheckContiguous(graph_, path.sequence())) {
+		if (!path_fixer_.CheckContiguous(path.sequence())) {
 			TRACE("Even fixed path wasn't contiguous");
 			return s;
 		} else {
@@ -307,7 +285,7 @@ private:
 };
 
 template<class Graph, class Mapper>
-shared_ptr<const GraphReadCorrector<Graph, Mapper>> GraphReadCorrectorInstance(
+shared_ptr<GraphReadCorrector<Graph, Mapper>> GraphReadCorrectorInstance(
 		const Graph& graph, const Mapper& mapper) {
 	return std::make_shared<GraphReadCorrector<Graph, Mapper>>(graph, mapper);
 }

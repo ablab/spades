@@ -735,13 +735,13 @@ public:
         VertexId lastVertex = g_.EdgeEnd(lastEdge);
 
         if (g_.OutgoingEdgeCount(lastVertex) == 2) {
-            auto bulgeEdges = g_.OutgoingEdges(lastVertex);
+            vector<EdgeId> bulgeEdges(g_.out_begin(lastVertex), g_.out_end(lastVertex));
             VertexId nextVertex = g_.EdgeEnd(bulgeEdges[0]);
 
             if (bulgeEdges[0] == g_.conjugate(bulgeEdges[1]) &&
                     nextVertex == g_.EdgeEnd(bulgeEdges[1]) &&
                     g_.CheckUniqueOutgoingEdge(nextVertex) &&
-                    g_.OutgoingEdges(nextVertex)[0] == g_.conjugate(lastEdge)) {
+                    *(g_.out_begin(nextVertex)) == g_.conjugate(lastEdge)) {
 
                 DEBUG("Came to interstrand bulge " << g_.int_id(lastEdge));
                 return true;
@@ -757,9 +757,9 @@ public:
 
         if (g_.OutgoingEdgeCount(prevVertex) == 2 && g_.IncomingEdgeCount(lastVertex) == 2 &&
                 g_.CheckUniqueOutgoingEdge(lastVertex) && g_.CheckUniqueIncomingEdge(prevVertex) &&
-                g_.IncomingEdges(prevVertex)[0] == g_.conjugate(g_.OutgoingEdges(lastVertex)[0])) {
+                *(g_.in_begin(prevVertex)) == g_.conjugate(*(g_.out_begin(lastVertex)))) {
 
-            auto bulgeEdges = g_.OutgoingEdges(prevVertex);
+            vector<EdgeId> bulgeEdges(g_.out_begin(prevVertex), g_.out_end(prevVertex));
             EdgeId bulgeEdge = bulgeEdges[0] == lastEdge ? bulgeEdges[1] : bulgeEdges[0];
 
             if (bulgeEdge == g_.conjugate(lastEdge)) {
@@ -869,10 +869,10 @@ private:
 
 };
 
-int FirstNotEqualPosition(const BidirectionalPath& path1, int pos1,
-                       const BidirectionalPath& path2, int pos2) {
-    int cur_pos1 = pos1;
-    int cur_pos2 = pos2;
+int FirstNotEqualPosition(const BidirectionalPath& path1, size_t pos1,
+                       const BidirectionalPath& path2, size_t pos2) {
+    int cur_pos1 = (int) pos1;
+    int cur_pos2 = (int) pos2;
     while (cur_pos1 >= 0 && cur_pos2 >= 0) {
         if (path1.At(cur_pos1) == path2.At(cur_pos2)) {
             cur_pos1--;
@@ -883,15 +883,16 @@ int FirstNotEqualPosition(const BidirectionalPath& path1, int pos1,
     }
     return -1;
 }
-bool EqualBegins(const BidirectionalPath& path1, int pos1,
-                 const BidirectionalPath& path2, int pos2) {
+bool EqualBegins(const BidirectionalPath& path1, size_t pos1,
+                 const BidirectionalPath& path2, size_t pos2) {
     return FirstNotEqualPosition(path1, pos1, path2, pos2) == -1;
 }
-int LastNotEqualPosition(const BidirectionalPath& path1, int pos1,
-                      const BidirectionalPath& path2, int pos2) {
-    int cur_pos1 = pos1;
-    int cur_pos2 = pos2;
-    while (cur_pos1 < (int) path1.Size() && cur_pos2 < (int) path2.Size()) {
+
+size_t LastNotEqualPosition(const BidirectionalPath& path1, size_t pos1,
+                      const BidirectionalPath& path2, size_t pos2) {
+    size_t cur_pos1 = pos1;
+    size_t cur_pos2 = pos2;
+    while (cur_pos1 < path1.Size() && cur_pos2 < path2.Size()) {
         if (path1.At(cur_pos1) == path2.At(cur_pos2)) {
             cur_pos1++;
             cur_pos2++;
@@ -899,11 +900,11 @@ int LastNotEqualPosition(const BidirectionalPath& path1, int pos1,
             return cur_pos1;
         }
     }
-    return -1;
+    return -1UL;
 }
-bool EqualEnds(const BidirectionalPath& path1, int pos1,
-               const BidirectionalPath& path2, int pos2) {
-    return LastNotEqualPosition(path1, pos1, path2, pos2) == -1;
+bool EqualEnds(const BidirectionalPath& path1, size_t pos1,
+               const BidirectionalPath& path2, size_t pos2) {
+    return LastNotEqualPosition(path1, pos1, path2, pos2) == -1UL;
 }
 bool PathIdCompare(const BidirectionalPath* p1, const BidirectionalPath* p2) {
     return p1->GetId() < p2->GetId();
@@ -1137,8 +1138,7 @@ size_t LoopDetector::LoopEdges(size_t skip_identical_edges, size_t min_cycle_app
 bool LoopDetector::PathIsLoop(size_t edges) const {
     for (size_t i = 0; i < edges; ++i) {
         EdgeId e = path_->At(i);
-        for (int j = (int) path_->Size() - (edges - (int) i); j >= 0; j -=
-                (int) edges) {
+        for (int j = (int) path_->Size() - ((int) edges - (int) i); j >= 0; j -= (int) edges) {
             if (path_->operator [](j) != e) {
                 return false;
             }

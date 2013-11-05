@@ -16,6 +16,7 @@ fi
 diffs=0
     for f in $etalons_folder/*/saves/*
     do
+        echo "Checking diffs in " $f
         set +e
         diff $f $target_folder/${f#$etalons_folder} >> diff_with_etalon.txt
         errlvl=$?

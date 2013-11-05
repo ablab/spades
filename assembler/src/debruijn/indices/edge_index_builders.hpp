@@ -53,7 +53,7 @@ class CoverageFillingEdgeIndexBuilder : public Builder {
         return !check_contains || index.contains(idx, kmer);
     }
 
-    bool ContainsWrap(bool check_contains, IndexT& index, KmerIdx idx, const Kmer& kmer, std::false_type) const {
+    bool ContainsWrap(bool check_contains, IndexT& /* index */, KmerIdx /* idx */, const Kmer& /* kmer */, std::false_type) const {
         VERIFY(!check_contains);
         return true;
     }

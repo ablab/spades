@@ -75,9 +75,8 @@ BOOST_AUTO_TEST_CASE( TestSequenceRefCount2 ) {
 //	int N = 1000;
 //	int SIZE = 300;
 //	vector<Sequence*> vs(N);
-//	double vm1, rss1;
-//	double vm2, rss2;
-//	double vm3, rss3;
+//	unsigned long vm1, vm2, vm3;
+//      long rss1, rss2, rss3;
 //	process_mem_usage(vm1, rss1);
 //	for (int i = 0; i < N; ++i) {
 //		string s(SIZE,'-');

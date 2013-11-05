@@ -1,0 +1,8 @@
+max_rd_len=301
+[LIB]
+avg_ins=RUNNER_PARAM_INSERT_SIZE
+reverse_seq=0
+asm_flags=3
+rank=1
+q1=RUNNER_PARAM_LEFT
+q2=RUNNER_PARAM_RIGHT

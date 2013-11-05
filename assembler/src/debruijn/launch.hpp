@@ -4,52 +4,67 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-/*
- * launch.hpp
- *
- *  Created on: May 6, 2011
- *      Author: sergey
- */
-
 #pragma once
 
 #include "standard.hpp"
-#include "omni/visualization/visualization_utils.hpp"
 
-#include "omni/edge_labels_handler.hpp"
-#include "graph_construction.hpp"
-#include "graph_simplification.hpp"
-#include "omni/omni_tools.hpp"
-#include "omni/id_track_handler.hpp"
-#include "omni/edges_position_handler.hpp"
-
-#include "de/paired_info.hpp"
-#include "de/distance_estimation.hpp"
-
-#include "debruijn_graph.hpp"
 #include "config_struct.hpp"
-#include "debruijn_stats.hpp"
-#include "graphio.hpp"
-#include "omni/loop_resolver.hpp"
-#include "check_tools.hpp"
-#include "copy_file.hpp"
 
 #include "graph_pack.hpp"
-#include "repeat_resolving_routine.hpp"
+#include "construction.hpp"
+#include "genomic_info_filler.hpp"
+#include "gap_closer.hpp"
+#include "simplification.hpp"
+#include "mismatch_correction.hpp"
+#include "pair_info_count.hpp"
+#include "repeat_resolving.hpp"
+#include "distance_estimation.hpp"
 
-#include "omni_labelers.hpp"
+#include "stage.hpp"
 
-namespace debruijn_graph
-{
+namespace spades {
 
-void assemble_genome()
-{
+void assemble_genome() {
     INFO("SPAdes started");
-    INFO("Starting from stage: " << debruijn_config::working_stage_name(cfg::get().entry_point));
+    INFO("Starting from stage: " << cfg::get().entry_point);
 
-    exec_repeat_resolving();
+    StageManager SPAdes;
+
+    debruijn_graph::conj_graph_pack conj_gp(cfg::get().K,
+                                            cfg::get().output_dir, cfg::get().ds.reads.lib_count(),
+                                            cfg::get().ds.reference_genome,
+                                            !cfg::get().developer_mode, cfg::get().flanking_range);
+    if (!cfg::get().developer_mode) {
+        conj_gp.edge_pos.Detach();
+        conj_gp.paired_indices.Detach();
+        conj_gp.clustered_indices.Detach();
+        conj_gp.scaffolding_indices.Detach();
+        if (!cfg::get().gap_closer_enable && !cfg::get().rr_enable)
+            conj_gp.kmer_mapper.Detach();
+    }
+
+    // Build the pipeline
+    SPAdes.add(new debruijn_graph::Construction());
+    SPAdes.add(new debruijn_graph::GenomicInfoFiller());
+    if (cfg::get().gap_closer_enable && cfg::get().gc.before_simplify)
+        SPAdes.add(new debruijn_graph::GapClosing("early_gapcloser"));
+    SPAdes.add(new debruijn_graph::Simplification());
+    if (cfg::get().gap_closer_enable && cfg::get().gc.after_simplify)
+        SPAdes.add(new debruijn_graph::GapClosing("late_gapcloser"));
+    SPAdes.add(new debruijn_graph::SimplificationCleanup());
+    if (cfg::get().correct_mismatches)
+        SPAdes.add(new debruijn_graph::MismatchCorrection());
+    if (cfg::get().rr_enable) {
+        SPAdes.add(new debruijn_graph::PairInfoCount());
+        SPAdes.add(new debruijn_graph::DistanceEstimation());
+        SPAdes.add(new debruijn_graph::RepeatResolution());
+    } else {
+        SPAdes.add(new debruijn_graph::ContigOutput());
+    }
+
+    SPAdes.run(conj_gp, cfg::get().entry_point.c_str());
 
     INFO("SPAdes finished");
-
 }
+
 }

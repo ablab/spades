@@ -17,7 +17,7 @@ using namespace debruijn_graph;
 
 namespace path_extend {
 
-double FindIntersection(vector<double>& pi1, vector<double>& pi2) {
+inline double FindIntersection(vector<double>& pi1, vector<double>& pi2) {
     std::sort(pi1.begin(), pi1.end());
     std::sort(pi2.begin(), pi2.end());
     size_t iter1 = 0;

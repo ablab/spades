@@ -13,6 +13,7 @@ import sys
 import getopt
 import logging
 import platform
+import errno
 
 import spades_init
 spades_init.init()
@@ -71,9 +72,9 @@ def print_used_values(cfg, log):
         log.info("Mode: read error correction and assembling")
     if ("common" in cfg) and ("developer_mode" in cfg["common"].__dict__):
         if cfg["common"].developer_mode:
-            log.info("Debug mode turned ON")
+            log.info("Debug mode is turned ON")
         else:
-            log.info("Debug mode turned OFF")
+            log.info("Debug mode is turned OFF")
     log.info("")
 
     # dataset
@@ -106,7 +107,18 @@ def print_used_values(cfg, log):
     # assembly
     if "assembly" in cfg:
         log.info("Assembly parameters:")
-        print_value(cfg, "assembly", "iterative_K", "k")
+        if options_storage.auto_K_allowed():
+            log.info("  k: automatic selection based on read length")
+        else:
+            print_value(cfg, "assembly", "iterative_K", "k")
+        if cfg["assembly"].careful:
+            log.info("  MismatchCorrector will be used")
+        else:
+            log.info("  MismatchCorrector will be SKIPPED")
+        if cfg["assembly"].disable_rr:
+            log.info("  Repeat resolution is DISABLED")
+        else:
+            log.info("  Repeat resolution is enabled")
 
     log.info("Other parameters:")
     print_value(cfg, "common", "max_threads", "Threads")
@@ -114,15 +126,17 @@ def print_used_values(cfg, log):
     log.info("")
 
 
+def get_spades_binaries_info_message():
+    return "You can obtain SPAdes binaries in one of two ways:" + \
+           "\n1. Download them from http://bioinf.spbau.ru/content/spades-download" + \
+           "\n2. Build source code with ./spades_compile.sh script"
+
+
 def check_binaries(binary_dir, log):
     for binary in ["hammer", "spades", "bwa-spades"]:
         binary_path = os.path.join(binary_dir, binary)
         if not os.path.isfile(binary_path):
-            support.error("SPAdes binaries not found: " + binary_path +
-                          "\nYou can obtain SPAdes binaries in one of two ways:" +
-                          "\n1. Download them from http://spades.bioinf.spbau.ru/release" +
-                          str(spades_version).strip() + "/SPAdes-" + str(spades_version).strip() + "-Linux.tar.gz" +
-                          "\n2. Build source code with ./spades_compile.sh script", log)
+            support.error("SPAdes binaries not found: " + binary_path + "\n" + get_spades_binaries_info_message(), log)
 
 
 def fill_cfg(options_to_parse, log):
@@ -170,6 +184,8 @@ def fill_cfg(options_to_parse, log):
             options_storage.single_cell = True
         elif opt == "--disable-gzip-output":
             options_storage.disable_gzip_output = True
+        elif opt == "--disable-rr":
+            options_storage.disable_rr = True
 
         elif opt == "--only-error-correction":
             if options_storage.only_assembler:
@@ -202,9 +218,6 @@ def fill_cfg(options_to_parse, log):
 
         elif opt == "--debug":
             options_storage.developer_mode = True
-
-        elif opt == "--rectangles":
-            options_storage.rectangles = True
 
         #corrector
         elif opt == "--mismatch-correction":
@@ -255,8 +268,6 @@ def fill_cfg(options_to_parse, log):
     support.check_dataset_reads(dataset_data, options_storage.only_assembler, log)
     if support.dataset_has_only_mate_pairs_libraries(dataset_data):
         support.error('you should specify at least one paired-end or unpaired library (only mate-pairs libraries were found)!')
-    if options_storage.rectangles and (len(dataset_data) > 1):
-        support.error('rectangle graph algorithm for repeat resolution cannot work with multiple libraries!')
 
     ### FILLING cfg
     cfg["common"] = empty_config()
@@ -300,6 +311,7 @@ def fill_cfg(options_to_parse, log):
         else:
             cfg["assembly"].__dict__["iterative_K"] = options_storage.k_mers_short
         cfg["assembly"].__dict__["careful"] = options_storage.careful
+        cfg["assembly"].__dict__["disable_rr"] = options_storage.disable_rr
         if options_storage.spades_heap_check:
             cfg["assembly"].__dict__["heap_check"] = options_storage.spades_heap_check
 
@@ -399,7 +411,6 @@ def main():
         corrected_dataset_yaml_filename = ''
         if "error_correction" in cfg:
             bh_cfg = merge_configs(cfg["error_correction"], cfg["common"])
-            bh_cfg.__dict__["dataset_yaml_filename"] = cfg["dataset"].yaml_filename
             corrected_dataset_yaml_filename = os.path.join(bh_cfg.output_dir, "corrected.yaml")
             if os.path.isfile(corrected_dataset_yaml_filename) and options_storage.continue_mode:
                 log.info("\n===== Skipping read error correction (already processed). \n")
@@ -418,8 +429,18 @@ def main():
                 if not os.path.exists(bh_cfg.tmp_dir):
                     os.makedirs(bh_cfg.tmp_dir)
 
+                if support.get_lib_ids_by_type(dataset_data, support.READS_TYPES_NOT_USED_IN_HAMMER):
+                    not_used_dataset_data = support.get_libs_by_type(dataset_data, support.READS_TYPES_NOT_USED_IN_HAMMER)
+                    to_correct_dataset_data = support.rm_libs_by_type(dataset_data, support.READS_TYPES_NOT_USED_IN_HAMMER)
+                    to_correct_dataset_yaml_filename = os.path.join(bh_cfg.output_dir, "to_correct.yaml")
+                    pyyaml.dump(to_correct_dataset_data, open(to_correct_dataset_yaml_filename, 'w'))
+                    bh_cfg.__dict__["dataset_yaml_filename"] = to_correct_dataset_yaml_filename
+                else:
+                    not_used_dataset_data = None
+                    bh_cfg.__dict__["dataset_yaml_filename"] = cfg["dataset"].yaml_filename
+
                 log.info("\n===== Read error correction started. \n")
-                bh_logic.run_bh(corrected_dataset_yaml_filename, tmp_configs_dir, bin_home, bh_cfg,
+                bh_logic.run_bh(corrected_dataset_yaml_filename, tmp_configs_dir, bin_home, bh_cfg, not_used_dataset_data,
                     ext_python_modules_home, log)
                 log.info("\n===== Read error correction finished. \n")
 
@@ -447,20 +468,17 @@ def main():
                 if os.path.isfile(corrected_dataset_yaml_filename):
                     dataset_data = pyyaml.load(open(corrected_dataset_yaml_filename, 'r'))
                     dataset_data = support.relative2abs_paths(dataset_data, os.path.dirname(corrected_dataset_yaml_filename))
-                if support.dataset_needs_paired_mode(dataset_data):
-                    spades_cfg.__dict__["paired_mode"] = True
+                if spades_cfg.disable_rr:
+                    spades_cfg.__dict__["rr_enable"] = False
                 else:
-                    spades_cfg.__dict__["paired_mode"] = False
-                if support.dataset_needs_long_single_mode(dataset_data):
-                    spades_cfg.__dict__["long_single_mode"] = True
-                else:
-                    spades_cfg.__dict__["long_single_mode"] = False
+                    spades_cfg.__dict__["rr_enable"] = True
+#                if support.dataset_needs_long_single_mode(dataset_data):
+#                    spades_cfg.__dict__["long_single_mode"] = True
+#                else:
+#                    spades_cfg.__dict__["long_single_mode"] = False
                 if support.get_pacbio_reads(dataset_data):
                     spades_cfg.__dict__["pacbio_mode"] = True
                     spades_cfg.__dict__["pacbio_reads"] = support.get_pacbio_reads(dataset_data)
-
-                if options_storage.rectangles:
-                    spades_cfg.__dict__["resolving_mode"] = "rectangles"
 
                 if "HEAPCHECK" in os.environ:
                     del os.environ["HEAPCHECK"]
@@ -485,38 +503,7 @@ def main():
                     dataset_file.close()
                 spades_cfg.__dict__["dataset"] = dataset_filename
 
-                latest_dir = spades_logic.run_spades(tmp_configs_dir, bin_home, spades_cfg, log)
-
-                #rectangles
-                if spades_cfg.paired_mode and options_storage.rectangles:
-                    if options_storage.continue_mode: # TODO: continue mode
-                        support.warning("sorry, --continue doesn't work with --rectangles yet. Skipping repeat resolving.")
-                    else:
-                        sys.path.append(os.path.join(python_modules_home, "rectangles"))
-                        import rrr
-
-                        rrr_input_dir = os.path.join(latest_dir, "saves")
-                        rrr_outpath = os.path.join(spades_cfg.output_dir, "rectangles")
-                        if not os.path.exists(rrr_outpath):
-                            os.mkdir(rrr_outpath)
-
-                        rrr_reference_information_file = os.path.join(rrr_input_dir,
-                            "late_pair_info_counted_etalon_distance.txt")
-                        rrr_test_util = rrr.TestUtils(rrr_reference_information_file,
-                            os.path.join(rrr_outpath, "rectangles.log"))
-                        rrr.resolve(rrr_input_dir, rrr_outpath, rrr_test_util, "", cfg["dataset"].single_cell, spades_cfg.careful)
-
-                        shutil.copyfile(os.path.join(rrr_outpath, "rectangles_extend_before_scaffold.fasta"), spades_cfg.result_contigs)
-                        shutil.copyfile(os.path.join(rrr_outpath, "rectangles_extend.fasta"), spades_cfg.result_scaffolds)
-
-                        if not spades_cfg.developer_mode:
-                            if os.path.exists(rrr_input_dir):
-                                shutil.rmtree(rrr_input_dir)
-                            if os.path.exists(rrr_outpath):
-                                shutil.rmtree(rrr_outpath, True)
-                            if os.path.exists(rrr_outpath):
-                                os.system('rm -r ' + rrr_outpath)
-                                #EOR
+                latest_dir = spades_logic.run_spades(tmp_configs_dir, bin_home, spades_cfg, dataset_data, log)
 
                 if os.path.isdir(misc_dir) and not options_storage.continue_mode:
                     shutil.rmtree(misc_dir)
@@ -649,9 +636,12 @@ def main():
         log.removeHandler(log_handler)
 
     except Exception:
-        _, exc, _ = sys.exc_info()
-        log.exception(exc)
-        support.error("exception caught", log)
+        exc_type, exc_value, _ = sys.exc_info()
+        if exc_type == OSError and exc_value.errno == errno.ENOEXEC: # Exec format error
+            support.error("It looks like you are using SPAdes binaries for another platform.\n" + get_spades_binaries_info_message())
+        else:
+            log.exception(exc_value)
+            support.error("exception caught", log)
 
 
 if __name__ == '__main__':

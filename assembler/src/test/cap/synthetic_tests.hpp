@@ -72,7 +72,7 @@ class SyntheticTestsRunner {
     }
 
     void ProcessExample(ContigStreamsPtr streams, size_t id) const {
-        GraphPackT gp(k_, work_dir_);
+        GraphPackT gp(k_, work_dir_, 0);
         ColorHandler<GraphT> coloring(gp.g);
         CoordinatesHandler<GraphT> coordinates_handler;
 
@@ -84,10 +84,10 @@ class SyntheticTestsRunner {
     void Save(const GraphPackT& gp, const ColorHandler<GraphT>& coloring,
             const CoordinatesHandler<GraphT> &coordinates_handler,
             ContigStreamsPtr streams, const string& file_name) const {
-        typename PrinterTraits<GraphT>::Printer printer(gp.g, gp.int_ids);
+        typename debruijn_graph::graphio::PrinterTraits<GraphT>::Printer printer(gp.g, gp.int_ids);
         INFO("Saving graph to " << file_name);
-        printer.saveGraph(file_name);
-        printer.saveEdgeSequences(file_name);
+        printer.SaveGraph(file_name);
+        printer.SaveEdgeSequences(file_name);
         //        printer.savePositions(filename, gp.edge_pos);
         SaveColoring(gp.g, gp.int_ids, coloring, file_name);
 

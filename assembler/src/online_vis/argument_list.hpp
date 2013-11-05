@@ -90,7 +90,7 @@ namespace online_visualization {
                   FireNumberOutOfBounds(command_num);
                   return "";
                 }
-                stringstream ss(history[history.size() - GetInt(num_of_command)]);
+                stringstream ss(history[int(history.size()) - GetInt(num_of_command)]);
                 TRACE("Got the command " << ss.str());
                 ArgumentList arg_list(ss);
                 string new_arg;

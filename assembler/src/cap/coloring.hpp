@@ -144,7 +144,7 @@ class ColorGenerator {
 			}
 		}
 
-        hue_value = (1.0 + 2 * (color_number ^ (1 << high_bit))) / (1 << (high_bit + 1));
+        hue_value = (1.0 + 2 * double(color_number ^ (1 << high_bit))) / (1 << (high_bit + 1));
 
 		return hue_value;
 	}
@@ -384,7 +384,7 @@ public:
 
 template<class Graph>
 void SaveColoring(const Graph& g
-		, const IdTrackHandler<Graph>& int_ids
+		, const IdTrackHandler<Graph>& /* int_ids */
 		, const ColorHandler<Graph>& coloring
 		, const string& filename) {
 	GraphComponent<Graph> whole_graph(g);
@@ -428,20 +428,20 @@ void LoadColoring(const Graph& g
 
 
 template<class Graph>
-auto_ptr<omnigraph::visualization::GraphColorer<Graph>> ConstructColorer(
+std::auto_ptr<omnigraph::visualization::GraphColorer<Graph>> ConstructColorer(
 		const ColorHandler<Graph>& coloring) {
 	using namespace omnigraph::visualization;
-	return auto_ptr<GraphColorer<Graph>>(
+	return std::auto_ptr<GraphColorer<Graph>>(
 			new CompositeGraphColorer<Graph>(
 					make_shared<MapColorer<typename Graph::VertexId>>(coloring.VertexColorMap()),
 					make_shared<MapColorer<typename Graph::EdgeId>>(coloring.EdgeColorMap())));
 }
 
 template<class Graph>
-auto_ptr<omnigraph::visualization::GraphColorer<Graph>> ConstructBorderColorer(const Graph& g,
+std::auto_ptr<omnigraph::visualization::GraphColorer<Graph>> ConstructBorderColorer(const Graph& g,
 		const ColorHandler<Graph>& coloring) {
 	using namespace omnigraph::visualization;
-	return auto_ptr<GraphColorer<Graph>>(
+	return std::auto_ptr<GraphColorer<Graph>>(
 			new CompositeGraphColorer<Graph>(
 					make_shared<FixedColorer<Graph>>("white"),
 					make_shared<MapColorer<typename Graph::EdgeId>>(coloring.EdgeColorMap())));

@@ -39,8 +39,12 @@ entry_point construction
 
 developer_mode true
 
-; paired (1) or unpaired (0, for quick debug and algorithms testing) mode
-paired_mode true
+; enabled (1) or disabled (0) repeat resolution (former "paired_mode")
+rr_enable true
+
+; for long single reads
+long_single_mode false
+
 
 ; for long single reads
 long_single_mode false
@@ -91,7 +95,11 @@ estimation_mode simple
 ;set it true to detach connections that are not supported by paired info before repeat resolution
 cut_bad_connections false
 
-; repeat resolving mode (none path_extend combined rectangles)
+;the only option left from repeat resolving -- WHY DO THEY DIFFER?
+max_repeat_length 4000
+max_repeat_length_sc 8000
+
+; repeat resolving mode (none path_extend)
 resolving_mode path_extend
 
 use_scaffolder  true
@@ -101,36 +109,7 @@ andrey_params {
 	#include "path_extend/pe_params.info"
 }
 
-avoid_rc_connections true
-
-; Produce info for all components of graph and run repeat resolver for each component.
-componential_resolve false
-
-;repeat_resolving 
-
-
-sc_rr
-{
-	symmetric_resolve true
-	mode		1 ; Additional resolve cheats, don't change if you are not sure
-	inresolve_cutoff_proportion 0.1
-	near_vertex  30
-	max_distance 50
-	max_repeat_length 8000
-    kill_loops true
-}
-
-usual_rr
-{
-	symmetric_resolve true
-	mode		1; Additional resolve cheats, don't change if you are not sure
-	inresolve_cutoff_proportion 0.5
-	near_vertex  30
-	max_distance 50
-	max_repeat_length 8000
-	kill_loops true
-}
-
+avoid_rc_connections false
 
 ;position handling
 
@@ -161,7 +140,12 @@ pacbio_processor
 	pacbio_reads /home/lab42/algorithmic-biology/assembler/data/input/E.coli/pacbio/e-coli-k12-mg1655-raw-reads-1.3.0/2590338/0006/Analysis_Results/filtered_subreads.fastq
 	additional_debug_info	false
 	pacbio_k 13
+<<<<<<< HEAD
 	pacbio_optimized_sw true
+=======
+        additional_debug_info false
+	pacbio_optimized_sw false
+>>>>>>> master
 	compression_cutoff 0.6
 	domination_cutoff 1.5
 	path_limit_stretching 1.3
@@ -193,4 +177,5 @@ graph_read_corr
 ;temporary flag to generate saves even in non-developer mode
 force_make_saves false
 
-
+;flanking coverage range
+flanking_range 50

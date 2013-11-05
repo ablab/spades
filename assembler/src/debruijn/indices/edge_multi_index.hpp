@@ -41,7 +41,7 @@ class DeBruijnEdgeMultiIndex : public DeBruijnKMerIndex<KmerStoringIndex<vector<
     return base::operator[](idx);
   }
 
-  void PutInIndex(const KMer &kmer, IdType id, int offset,  bool /*ignore_new_kmer*/ = false) {
+  void PutInIndex(const KMer &kmer, IdType id, size_t offset) {
     size_t idx = base::seq_idx(kmer);
     TRACE("put in index");
     if (base::valid_key(idx, kmer))  {

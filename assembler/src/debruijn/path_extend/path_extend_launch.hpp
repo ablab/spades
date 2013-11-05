@@ -179,8 +179,10 @@ void AddPathsToContainer(const conj_graph_pack& gp,
         vector<EdgeId> edges = path.getPath();
         BidirectionalPath* new_path = new BidirectionalPath(gp.g, edges);
         BidirectionalPath* conj_path = new BidirectionalPath(new_path->Conjugate());
-        new_path->SetWeight(path.getWeight());
-        conj_path->SetWeight(path.getWeight());
+
+        //FIXME: why weights are int/double in different path structures?
+        new_path->SetWeight((double) path.getWeight());
+        conj_path->SetWeight((double) path.getWeight());
         result.AddPair(new_path, conj_path);
     }
     DEBUG("Long reads paths " << result.size() << " == ");
@@ -207,9 +209,8 @@ vector<SimpleExtender*> MakeLongReadsExtender(
     }
     return result;
 }
-
 void TestIdealInfo(conj_graph_pack& gp) {
-    std::map<int, size_t> distr;
+    map<int, size_t> distr;
     distr[220] = 1;
     IdealPairInfoCounter counter(gp.g, 220, 221, 100, distr);
     /*for (int i = 0; i < 220; ++i){
@@ -229,8 +230,6 @@ void TestIdealInfo(conj_graph_pack& gp) {
     double w3_2 = counter.IdealPairedInfo(edge_len, edge_len2_2, edge_len + edge_len2_1);
     double w3_3 = counter.IdealPairedInfo(edge_len, edge_len2_3, edge_len + edge_len2_1 + edge_len2_2);
     DEBUG("TEST " << w1 << " " << w2_1 + w2_2 << " " << w3_1 + w3_2 + w3_3);
-
-
 }
 void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 		vector<PairedInfoLibraries>& libs,
@@ -278,7 +277,6 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
     vector<SimpleExtender*> long_reads_extenders = MakeLongReadsExtender(
             gp, long_reads, pset.loop_removal.max_loops);
     vector<SimpleExtender *> shortLoopPEs = MakeExtenders(gp, pset, libs, true);
-
     vector<PathExtender *> all_libs(usualPEs.begin(), usualPEs.end());
     all_libs.insert(all_libs.end(), long_reads_extenders.begin(),
                     long_reads_extenders.end());

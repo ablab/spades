@@ -11,7 +11,7 @@
 
 namespace io {
 
-const size_t none = -1;
+const size_t none = -1ul;
 
 inline std::pair<size_t, size_t> longestValidCoords(const SingleRead& r) {
 	size_t best_len = 0;

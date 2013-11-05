@@ -142,10 +142,9 @@ public:
                 weight = chooser_.CountWeight(experiment, edges.second);
                 double weight2 = chooser_.CountWeight(experiment, edges.first);
                 DEBUG("iter " << i << " weight " << weight  << " maxWeight " << maxWeight << " weight 2 " <<  weight2 << " diff " << diff);
-                if (weight > maxWeight
-                        || (weight == maxWeight && weight - weight2 > diff)
-                        || (weight == maxWeight && weight - weight2 == diff
-                                && i == 1)) {
+                if (weight > maxWeight ||
+                        (weight == maxWeight && weight - weight2 > diff) ||
+                        (weight == maxWeight && weight - weight2 == diff  && i == 1)) {
                     maxWeight = weight;
                     maxIter = i;
                     diff = weight - weight2;
@@ -290,8 +289,8 @@ public:
         bool found = false;
 
         for (int l = start; l >= shortOverlap_; --l) {
-            double score = ScoreGap(g_.EdgeNucls(sink).Subseq((size_t) ((int) g_.length(sink) + (int) g_.k() - l)), 
-                                    g_.EdgeNucls(source).Subseq(0, (size_t) l), 
+            double score = ScoreGap(g_.EdgeNucls(sink).Subseq((size_t) ((int) g_.length(sink) + (int) g_.k() - l)),
+                                    g_.EdgeNucls(source).Subseq(0, (size_t) l),
                                     (int) g_.k() - l,
                                     initial_gap);
             if (score > max_score) {
@@ -304,8 +303,8 @@ public:
         if (!found) {
             for (int l = shortOverlap_ - 1; l > 0; --l) {
                 double score = ScoreGap(g_.EdgeNucls(sink).Subseq((size_t) ((int) g_.length(sink) + (int) g_.k() - l)),
-                                        g_.EdgeNucls(source).Subseq(0, (size_t) l), 
-                                        (int) g_.k() - l, 
+                                        g_.EdgeNucls(source).Subseq(0, (size_t) l),
+                                        (int) g_.k() - l,
                                         initial_gap);
                 if (score > max_score) {
                     max_score = score;
@@ -587,7 +586,8 @@ protected:
 
     void FindFollowingEdges(BidirectionalPath& path, ExtensionChooser::EdgeContainer * result) {
         result->clear();
-        auto edges = g_.OutgoingEdges(g_.EdgeEnd(path.Back()));
+        vector<EdgeId> edges;
+        push_back_all(edges, g_.OutgoingEdges(g_.EdgeEnd(path.Back())));
         result->reserve(edges.size());
         for (auto iter = edges.begin(); iter != edges.end(); ++iter) {
             result->push_back(EdgeWithDistance(*iter, 0));
