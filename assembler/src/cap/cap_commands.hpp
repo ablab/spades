@@ -653,12 +653,11 @@ class MosaicAnalysisCommand : public NewLocalCommand<CapEnvironment> {
 };
 
 //todo works for finished genomes, not contigs!!!
-ContigStreamsPtr ConvertRefsToStreams(const vector<Sequence>& ss, const vector<string>& names) {
-    ContigStreamsPtr answer = make_shared<ContigStreams>();
+ContigStreams ConvertRefsToStreams(const vector<Sequence>& ss, const vector<string>& names) {
+    ContigStreams answer;
     VERIFY(ss.size() == names.size());
     for (size_t i = 0; i < ss.size(); ++i) {
-        io::IReader<io::SingleRead>* ireader = new io::SequenceReader<io::SingleRead>(ss[i], names[i]);
-        answer->push_back(ireader);
+        answer.push_back(make_shared<io::SequenceReadStream<Contig>>(ss[i], names[i]));
     }
     return answer;
 }
@@ -690,11 +689,11 @@ private:
         return read.sequence();
     }
 
-    void UpdateGenomes(ContigStreamsPtr streams, CapEnvironment& curr_env) const {
+    void UpdateGenomes(ContigStreams streams, CapEnvironment& curr_env) const {
         vector<Sequence>& genomes = curr_env.mutable_genomes();
-        VERIFY(streams->size() == genomes.size());
-        for (size_t i = 0; i < streams->size(); ++i) {
-            genomes[i] = ReadSequence((*streams)[i]);
+        VERIFY(streams.size() == genomes.size());
+        for (size_t i = 0; i < streams.size(); ++i) {
+            genomes[i] = ReadSequence(streams[i]);
         }
     }
 
@@ -706,7 +705,7 @@ private:
 
         cout << "Masking repeats for k=" << k << " in " << iteration_cnt << " iterations" << endl;
 
-        ContigStreamsPtr streams = ConvertRefsToStreams(
+        ContigStreams streams = ConvertRefsToStreams(
                 curr_env.genomes(), curr_env.genome_names());
 
         //todo temporary hack

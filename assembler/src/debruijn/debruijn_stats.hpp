@@ -17,8 +17,7 @@
 #include "omni/graph_component.hpp"
 #include "io/rc_reader_wrapper.hpp"
 #include "io/delegating_reader_wrapper.hpp"
-#include "io/easy_reader.hpp"
-#include "io/splitting_wrapper.hpp"
+#include "io/io_helper.hpp"
 #include "io/wrapper_collection.hpp"
 #include "io/osequencestream.hpp"
 #include "dataset_readers.hpp"
@@ -188,11 +187,11 @@ void WriteGraphComponentsAlongContigs(const Graph& g,
                                       std::shared_ptr<omnigraph::visualization::GraphColorer<Graph>> colorer,
                                       const GraphLabeler<Graph>& labeler) {
     INFO("Writing graph components along contigs");
-    io::EasyReader contigs_to_thread(cfg::get().pos.contigs_to_analyze, false/*true*/);
-    contigs_to_thread.reset();
+    auto contigs_to_thread = io::EasyStream(cfg::get().pos.contigs_to_analyze, false/*true*/);
+    contigs_to_thread->reset();
     io::SingleRead read;
-    while (!contigs_to_thread.eof()) {
-        contigs_to_thread >> read;
+    while (!contigs_to_thread->eof()) {
+        (*contigs_to_thread) >> read;
         make_dir(folder + read.name());
         omnigraph::visualization::WriteComponentsAlongPath(g, mapper.MapSequence(read.sequence()).simple_path(), folder + read.name() + "/",
                                                            colorer, labeler);
@@ -454,7 +453,7 @@ class PosFiller {
 template<class Graph, class Mapper>
 void FillPos(const Graph& g, const Mapper& mapper,
              EdgesPositionHandler<Graph>& edge_pos,
-             io::IReader<io::SingleRead>& stream) {
+             io::SingleStream& stream) {
     PosFiller<Graph, Mapper> filler(g, mapper, edge_pos);
     io::SingleRead read;
     while (!stream.eof()) {
@@ -464,7 +463,7 @@ void FillPos(const Graph& g, const Mapper& mapper,
 }
 
 template<class gp_t>
-void FillPos(gp_t& gp, io::IReader<io::SingleRead>& stream) {
+void FillPos(gp_t& gp, io::SingleStream& stream) {
     FillPos(gp.g, *MapperInstance(gp), gp.edge_pos, stream);
 }
 
@@ -483,7 +482,7 @@ template<class gp_t>
 void FillPos(gp_t& gp, const string& contig_file, string prefix) {
     //	typedef typename gp_t::Graph::EdgeId EdgeId;
     INFO("Threading large contigs");
-    io::Reader irs(contig_file);
+    io::FileReadStream irs(contig_file);
     while(!irs.eof()) {
         io::SingleRead read;
         irs >> read;
@@ -504,10 +503,10 @@ template<class gp_t>
 void FillPosWithRC(gp_t& gp, const string& contig_file, string prefix) {
     //  typedef typename gp_t::Graph::EdgeId EdgeId;
     INFO("Threading large contigs");
-    io::EasySplittingReader irs(contig_file, true);
-    while(!irs.eof()) {
+    auto irs = io::EasyStream(contig_file, true, true);
+    while(!irs->eof()) {
         io::SingleRead read;
-        irs >> read;
+        (*irs) >> read;
         DEBUG("Contig " << read.name() << ", length: " << read.size());
         if (!read.IsValid()) {
             WARN("Attention: contig " << read.name()

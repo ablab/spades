@@ -4,44 +4,21 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-/**
- * @file    paired_read.hpp
- * @author  Mariya Fomkina
- * @version 1.0
- *
- * @section LICENSE
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * @section DESCRIPTION
- *
- * PairedRead is a structure, where information from input files is
- * stored.
- * It includes 2 SingleRead elements and the insert size.
- */
+#pragma once
 
-#ifndef COMMON_IO_PAIREDREAD_HPP_
-#define COMMON_IO_PAIREDREAD_HPP_
-
-#include "io/single_read.hpp"
+#include "single_read.hpp"
 
 #include <string>
 #include <utility>
 
 namespace io {
 
+/**
+ * It includes 2 SingleRead elements and the insert size.
+ */
 class PairedRead {
  public:
-  /*
-   * Type of variables which will store file names for reading from
-   * Reader stream.
-   */
-  typedef std::pair<std::string, std::string> FilenamesType;
-
-
+  typedef SingleRead SingleReadT;
   typedef int16_t size_type;
 
   /*
@@ -203,9 +180,9 @@ inline std::ostream& operator<<(std::ostream& os, const PairedRead& read) {
 }
 
 class PairedReadSeq {
-
+ public:
+  typedef SingleReadSeq SingleReadT;
  private:
-
   SingleReadSeq first_;
   SingleReadSeq second_;
   size_t insert_size_;
@@ -288,10 +265,6 @@ class PairedReadSeq {
     return PairedReadSeq(!second_, !first_, insert_size_);
   }
 
-  void inc_insert_size(size_t val) {
-    insert_size_ += val;
-  }
-
 };
 
 inline std::ostream& operator<<(std::ostream& os, const PairedReadSeq& read) {
@@ -300,5 +273,3 @@ inline std::ostream& operator<<(std::ostream& os, const PairedReadSeq& read) {
 }
 
 }
-
-#endif /* COMMON_IO_PAIREDREAD_HPP_ */

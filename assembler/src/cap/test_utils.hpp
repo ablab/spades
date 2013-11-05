@@ -16,13 +16,6 @@
 #include "compare_standard.hpp"
 
 namespace cap {
-typedef io::SingleRead Contig;
-typedef io::IReader<Contig> ContigStream;
-typedef	io::MultifileReader<io::SingleRead> CompositeContigStream;
-typedef	io::RCReaderWrapper<io::SingleRead> RCWrapper;
-}
-
-namespace cap {
 
 namespace utils {
 
@@ -76,11 +69,11 @@ bool DirExist(std::string path) {
   return (stat(path.c_str(), &st) == 0) && (S_ISDIR(st.st_mode));
 }
 
-vector<cap::ContigStream*> OpenStreams(const vector<string>& filenames) {
-  vector<ContigStream*> streams;
+ContigStreams OpenStreams(const vector<string>& filenames) {
+  ContigStreams streams;
   for (auto it = filenames.begin(); it != filenames.end(); ++it) {
     DEBUG("Opening stream from " << *it);
-    streams.push_back(new io::Reader(*it));
+    streams.push_back(make_shared<io::FileReadStream>(*it));
   }
   return streams;
 }

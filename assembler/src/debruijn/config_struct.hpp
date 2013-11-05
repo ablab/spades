@@ -330,9 +330,6 @@ struct debruijn_config {
         std::string single_read_prefix;
         size_t thread_num;
 
-        typedef io::IReader<io::SingleReadSeq> SequenceSingleReadStream;
-        typedef io::IReader<io::PairedReadSeq> SequencePairedReadStream;
-
         DataSetData(): read_length(0), mean_insert_size(0.0), insert_size_deviation(0.0), median_insert_size(0.0), insert_size_mad(0.0), total_nucls(0), average_coverage(0.0), pi_threshold(0.0) {
         }
     };

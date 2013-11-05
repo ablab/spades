@@ -117,12 +117,12 @@ BOOST_AUTO_TEST_CASE( SyntheticExamplesTestsLSeq ) {
  */
 
 BOOST_AUTO_TEST_CASE( RepeatCroppingReaderTest ) {
-    io::VectorReader<io::SingleRead> raw_reader(MakeReads(vector<string>{
+    ContigStreamPtr raw_reader = make_shared<io::VectorReadStream<io::SingleRead>>(MakeReads(vector<string>{
         "ACGTCacgtcTTGCA"}));
     io::SingleRead read;
-    raw_reader >> read;
+    (*raw_reader) >> read;
     BOOST_CHECK_EQUAL("ACGTCacgtcTTGCA", read.GetSequenceString());
-    JunkCroppingReader reader(raw_reader);
+    JunkCroppingWrapper reader(raw_reader);
     reader.reset();
     reader >> read;
     BOOST_CHECK_EQUAL("ACGTCTTGCA", read.sequence().str());
@@ -131,12 +131,12 @@ BOOST_AUTO_TEST_CASE( RepeatCroppingReaderTest ) {
 }
 
 BOOST_AUTO_TEST_CASE( RepeatCroppingReaderTest2 ) {
-    io::VectorReader<io::SingleRead> raw_reader(MakeReads(vector<string>{
+    ContigStreamPtr raw_reader = make_shared<io::VectorReadStream<io::SingleRead>>(MakeReads(vector<string>{
         "acgtcACGTCNNNNNTTGCADMYNY"}));
     io::SingleRead read;
-    raw_reader >> read;
+    (*raw_reader) >> read;
     BOOST_CHECK_EQUAL("acgtcACGTCNNNNNTTGCADMYNY", read.GetSequenceString());
-    JunkCroppingReader reader(raw_reader);
+    JunkCroppingWrapper reader(raw_reader);
     reader.reset();
     reader >> read;
     BOOST_CHECK_EQUAL("ACGTCTTGCA", read.sequence().str());

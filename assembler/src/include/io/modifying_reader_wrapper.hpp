@@ -17,12 +17,12 @@ class SequenceModifier {
 public:
 	virtual ~SequenceModifier() {}
 
-    io::SingleRead Modify(const io::SingleRead& read) {
-        return io::SingleRead(read.name(), Modify(read.sequence()).str());
+    SingleRead Modify(const SingleRead& read) {
+        return SingleRead(read.name(), Modify(read.sequence()).str());
     }
 
-    io::SingleReadSeq Modify(const io::SingleReadSeq& read) {
-        return io::SingleReadSeq(Modify(read.sequence()));
+    SingleReadSeq Modify(const SingleReadSeq& read) {
+        return SingleReadSeq(Modify(read.sequence()));
     }
 
 	virtual Sequence Modify(const Sequence& s) = 0;
@@ -43,14 +43,15 @@ template<class ReadType>
 class ModifyingWrapper;
 
 template<>
-class ModifyingWrapper<io::SingleRead>: public io::DelegatingReaderWrapper<io::SingleRead> {
+class ModifyingWrapper<SingleRead>: public DelegatingWrapper<SingleRead> {
+  typedef DelegatingWrapper<SingleRead> base;
   std::shared_ptr<SequenceModifier> modifier_;
 
 public:
-	ModifyingWrapper(io::IReader<io::SingleRead>& reader, std::shared_ptr<SequenceModifier> modifier) :
-			io::DelegatingReaderWrapper<io::SingleRead>(reader), modifier_(modifier) {}
+	ModifyingWrapper(base::ReadStreamPtrT reader, std::shared_ptr<SequenceModifier> modifier) :
+			base(reader), modifier_(modifier) {}
 
-	ModifyingWrapper& operator>>(io::SingleRead& read) {
+	ModifyingWrapper& operator>>(SingleRead& read) {
 		this->reader() >> read;
 		read = modifier_->Modify(read);
 		return *this;
@@ -58,16 +59,17 @@ public:
 };
 
 template<>
-class ModifyingWrapper<io::PairedRead>: public io::DelegatingReaderWrapper<io::PairedRead> {
+class ModifyingWrapper<PairedRead>: public DelegatingWrapper<PairedRead> {
+  typedef DelegatingWrapper<PairedRead> base;
   std::shared_ptr<SequenceModifier> modifier_;
 
 public:
-	ModifyingWrapper(io::IReader<io::PairedRead>& reader, std::shared_ptr<SequenceModifier> modifier) :
-			io::DelegatingReaderWrapper<io::PairedRead>(reader), modifier_(modifier) {}
+	ModifyingWrapper(base::ReadStreamPtrT reader, std::shared_ptr<SequenceModifier> modifier) :
+			base(reader), modifier_(modifier) {}
 
-	ModifyingWrapper& operator>>(io::PairedRead& read) {
+	ModifyingWrapper& operator>>(PairedRead& read) {
 		this->reader() >> read;
-		read = io::PairedRead(modifier_->Modify(read.first()),
+		read = PairedRead(modifier_->Modify(read.first()),
 		                      modifier_->Modify(read.second()),
 		                      read.insert_size());
 		return *this;
@@ -75,14 +77,15 @@ public:
 };
 
 template<>
-class ModifyingWrapper<io::SingleReadSeq>: public io::DelegatingReaderWrapper<io::SingleReadSeq> {
+class ModifyingWrapper<SingleReadSeq>: public DelegatingWrapper<SingleReadSeq> {
+  typedef DelegatingWrapper<SingleReadSeq> base;
   std::shared_ptr<SequenceModifier> modifier_;
 
 public:
-  ModifyingWrapper(io::IReader<io::SingleReadSeq>& reader, std::shared_ptr<SequenceModifier> modifier) :
-      io::DelegatingReaderWrapper<io::SingleReadSeq>(reader), modifier_(modifier) {}
+  ModifyingWrapper(base::ReadStreamPtrT reader, std::shared_ptr<SequenceModifier> modifier) :
+      base(reader), modifier_(modifier) {}
 
-    ModifyingWrapper& operator>>(io::SingleReadSeq& read) {
+    ModifyingWrapper& operator>>(SingleReadSeq& read) {
         this->reader() >> read;
         read = modifier_->Modify(read.sequence());
         return *this;
@@ -90,17 +93,18 @@ public:
 };
 
 template<>
-class ModifyingWrapper<io::PairedReadSeq>: public io::DelegatingReaderWrapper<io::PairedReadSeq> {
+class ModifyingWrapper<PairedReadSeq>: public DelegatingWrapper<PairedReadSeq> {
+  typedef DelegatingWrapper<PairedReadSeq> base;
   std::shared_ptr<SequenceModifier> modifier_;
 
 public:
-  ModifyingWrapper(io::IReader<io::PairedReadSeq>& reader, std::shared_ptr<SequenceModifier> modifier) :
-            io::DelegatingReaderWrapper<io::PairedReadSeq>(reader), modifier_(modifier) {}
+  ModifyingWrapper(base::ReadStreamPtrT reader, std::shared_ptr<SequenceModifier> modifier) :
+            base(reader), modifier_(modifier) {}
 
-    ModifyingWrapper& operator>>(io::PairedReadSeq& read) {
+    ModifyingWrapper& operator>>(PairedReadSeq& read) {
         this->reader() >> read;
-        read = io::PairedReadSeq(modifier_->Modify(read.first().sequence())
-            , io::SingleReadSeq(modifier_->Modify(read.second())), read.insert_size());
+        read = PairedReadSeq(modifier_->Modify(read.first().sequence())
+            , SingleReadSeq(modifier_->Modify(read.second())), read.insert_size());
         return *this;
     }
 };

@@ -24,10 +24,6 @@
 
 namespace io {
 
-typedef io::IReader<io::SingleRead> SingleReadStream;
-typedef io::IReader<io::PairedRead> PairedReadStream;
-
-
 template<class Read>
 class ReadBinaryWriter {
 
@@ -113,7 +109,7 @@ private:
     }
 
     template<class Read>
-    ReadStat ToBinary(io::IReader<Read>& stream, size_t buf_size,
+    ReadStreamStat ToBinary(io::ReadStream<Read>& stream, size_t buf_size,
             LibraryOrientation orientation) {
 
         ReadBinaryWriter<Read> read_writer(orientation);
@@ -121,7 +117,7 @@ private:
         size_t reads_to_flush = buffer_reads * file_num_;
 
         std::vector< std::vector<Read> > buf(file_num_, std::vector<Read>(buffer_reads) );
-        std::vector< ReadStat > read_stats(file_num_);
+        std::vector< ReadStreamStat > read_stats(file_num_);
         std::vector< size_t > current_buf_sizes(file_num_, 0);
         size_t read_count = 0;
 
@@ -149,7 +145,7 @@ private:
             }
         }
 
-        ReadStat result;
+        ReadStreamStat result;
         for (size_t i = 0; i < file_num_; ++i) {
             buf[i].resize(current_buf_sizes[i]);
             FlushBuffer(buf[i], read_writer, *file_ds_[i]);
@@ -165,14 +161,14 @@ private:
 
 
     template<class Read>
-    ReadStat ToBinaryForThread(io::IReader<Read>& stream, size_t buf_size,
+    ReadStreamStat ToBinaryForThread(io::ReadStream<Read>& stream, size_t buf_size,
             size_t thread_num, LibraryOrientation orientation) {
 
         ReadBinaryWriter<Read> read_writer(orientation);
         size_t buffer_reads = buf_size / (sizeof (Read) * 4);
         std::vector<Read> buf(buffer_reads);
 
-        ReadStat stat;
+        ReadStreamStat stat;
         file_ds_[thread_num]->seekp(0);
         stat.write(*file_ds_[thread_num]);
 
@@ -224,35 +220,35 @@ public:
     }
 
 
-    ReadStat ToBinary(io::IReader<io::SingleReadSeq>& stream) {
+    ReadStreamStat ToBinary(io::ReadStream<io::SingleReadSeq>& stream) {
         return ToBinary(stream, buf_size_ / file_num_, LibraryOrientation::Undefined);
     }
 
-    ReadStat ToBinary(io::IReader<io::SingleRead>& stream) {
+    ReadStreamStat ToBinary(io::ReadStream<io::SingleRead>& stream) {
         return ToBinary(stream, buf_size_ / file_num_, LibraryOrientation::Undefined);
     }
 
-    ReadStat ToBinary(io::IReader<io::PairedReadSeq>& stream) {
+    ReadStreamStat ToBinary(io::ReadStream<io::PairedReadSeq>& stream) {
         return ToBinary(stream, buf_size_ / (2 * file_num_), LibraryOrientation::Undefined);
     }
 
-    ReadStat ToBinary(io::IReader<io::PairedRead>& stream, LibraryOrientation orientation) {
+    ReadStreamStat ToBinary(io::ReadStream<io::PairedRead>& stream, LibraryOrientation orientation) {
         return ToBinary(stream, buf_size_ / (2 * file_num_), orientation);
     }
 
-    ReadStat ToBinaryForThread(io::IReader<io::SingleReadSeq>& stream, size_t thread_num) {
+    ReadStreamStat ToBinaryForThread(io::ReadStream<io::SingleReadSeq>& stream, size_t thread_num) {
         return ToBinaryForThread(stream, buf_size_ / file_num_, thread_num, LibraryOrientation::Undefined);
     }
 
-    ReadStat ToBinaryForThread(io::IReader<io::SingleRead>& stream, size_t thread_num) {
+    ReadStreamStat ToBinaryForThread(io::ReadStream<io::SingleRead>& stream, size_t thread_num) {
         return ToBinaryForThread(stream, buf_size_ / file_num_, thread_num, LibraryOrientation::Undefined);
     }
 
-    ReadStat ToBinaryForThread(io::IReader<io::PairedReadSeq>& stream, size_t thread_num) {
+    ReadStreamStat ToBinaryForThread(io::ReadStream<io::PairedReadSeq>& stream, size_t thread_num) {
         return ToBinaryForThread(stream, buf_size_ / (2 * file_num_), thread_num, LibraryOrientation::Undefined);
     }
 
-    ReadStat ToBinaryForThread(io::IReader<io::PairedRead>& stream, size_t thread_num, LibraryOrientation orientation) {
+    ReadStreamStat ToBinaryForThread(io::ReadStream<io::PairedRead>& stream, size_t thread_num, LibraryOrientation orientation) {
         return ToBinaryForThread(stream, buf_size_ / (2 * file_num_), thread_num, orientation);
     }
 

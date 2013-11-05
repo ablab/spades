@@ -10,13 +10,11 @@
  *  Created on: Aug 12, 2011
  *      Author: sergey
  */
-
-#ifndef GRAPH_CONSTRUCTION_HPP_
-#define GRAPH_CONSTRUCTION_HPP_
+#pragma once
 
 #include "openmp_wrapper.h"
 
-#include "io/multifile_reader.hpp"
+#include "io/io_helper.hpp"
 #include "omni/edges_position_handler.hpp"
 
 #include "debruijn_graph_constructor.hpp"
@@ -32,15 +30,10 @@
 
 namespace debruijn_graph {
 
-typedef io::IReader<io::SingleRead> SingleReadStream;
-typedef io::IReader<io::PairedRead> PairedReadStream;
-typedef io::MultifileReader<io::SingleRead> CompositeSingleReadStream;
-typedef io::ConvertingReaderWrapper UnitedStream;
-
 template<class Graph, class Readers, class Index>
 size_t ConstructGraphUsingOldIndex(size_t k,
 		Readers& streams, Graph& g,
-		Index& index, SingleReadStream* contigs_stream = 0) {
+		Index& index, io::SingleStreamPtr contigs_stream = 0) {
 	INFO("Constructing DeBruijn graph");
 
 	TRACE("Filling indices");
@@ -51,7 +44,8 @@ size_t ConstructGraphUsingOldIndex(size_t k,
 	typedef typename Index::InnerIndexT InnerIndex;
 	typedef typename EdgeIndexHelper<InnerIndex>::CoverageFillingEdgeIndexBuilderT IndexBuilder;
 	InnerIndex& debruijn = index.inner_index();
-	rl = IndexBuilder().BuildIndexFromStream(debruijn, streams, contigs_stream);
+	//fixme hack
+	rl = IndexBuilder().BuildIndexFromStream(debruijn, streams, (contigs_stream == 0) ? 0 : &(*contigs_stream));
 
 	VERIFY(k + 1== debruijn.k());
 	// FIXME: output_dir here is damn ugly!
@@ -79,8 +73,8 @@ void EarlyClipTips(size_t k, const debruijn_config::construction params, size_t 
 
 template<class Graph, class Read, class Index>
 size_t ConstructGraphUsingExtentionIndex(size_t k, const debruijn_config::construction params,
-		io::ReadStreamVector<io::IReader<Read> >& streams, Graph& g,
-		Index& index, SingleReadStream* contigs_stream = 0) {
+		io::ReadStreamList<Read>& streams, Graph& g,
+		Index& index, io::SingleStreamPtr contigs_stream = 0) {
 
 	INFO("Constructing DeBruijn graph");
 
@@ -92,7 +86,9 @@ size_t ConstructGraphUsingExtentionIndex(size_t k, const debruijn_config::constr
 	typedef DeBruijnExtensionIndex<> ExtensionIndex;
 	typedef typename ExtensionIndexHelper<ExtensionIndex>::DeBruijnExtensionIndexBuilderT ExtensionIndexBuilder;
 	ExtensionIndex ext((unsigned) k, index.inner_index().workdir());
-	size_t rl = ExtensionIndexBuilder().BuildExtensionIndexFromStream(ext, streams, contigs_stream);
+
+	//fixme hack
+	size_t rl = ExtensionIndexBuilder().BuildExtensionIndexFromStream(ext, streams, (contigs_stream == 0) ? 0 : &(*contigs_stream));
 
 	EarlyClipTips(k, params, rl, ext);
 
@@ -113,7 +109,7 @@ size_t ConstructGraphUsingExtentionIndex(size_t k, const debruijn_config::constr
 template<class Graph, class Index, class Streams>
 size_t ConstructGraph(size_t k, const debruijn_config::construction &params,
                       Streams& streams, Graph& g,
-		 Index& index, SingleReadStream* contigs_stream = 0) {
+		 Index& index, io::SingleStreamPtr contigs_stream = 0) {
 	if(params.con_mode == construction_mode::con_extention) {
 		return ConstructGraphUsingExtentionIndex(k, params, streams, g, index, contigs_stream);
 //	} else if(params.con_mode == construction_mode::con_old){
@@ -129,7 +125,7 @@ template<class Graph, class Index, class Streams>
 size_t ConstructGraphWithCoverage(size_t k, const debruijn_config::construction &params,
                                   Streams& streams, Graph& g,
                                   Index& index, NewFlankingCoverage<Graph>& flanking_cov,
-                                  SingleReadStream* contigs_stream = 0) {
+                                  io::SingleStreamPtr contigs_stream = 0) {
 	size_t rl = ConstructGraph(k, params, streams, g, index, contigs_stream);
 
 	INFO("Filling coverage and flanking coverage from index");
@@ -147,5 +143,3 @@ size_t ConstructGraphWithCoverage(size_t k, const debruijn_config::construction 
 //}
 
 }
-
-#endif /* GRAPH_CONSTRUCTION_HPP_ */

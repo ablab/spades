@@ -3,8 +3,8 @@
 #include "standard.hpp"
 
 #include "omni/omni_tools.hpp"
+#include "io/io_helper.hpp"
 #include "omni_labelers.hpp"
-#include "io/easy_reader.hpp"
 #include "dataset_readers.hpp"
 #include "read_converter.hpp"
 
@@ -124,7 +124,7 @@ class GapCloserPairedIndexFiller {
         stream.reset();
         size_t n = 0;
         while (!stream.eof()) {
-            typename PairedStream::read_type p_r;
+            typename PairedStream::ReadT p_r;
             stream >> p_r;
             ProcessPairedRead(paired_index, p_r);
             VERBOSE_POWER(++n, " paired reads processed");
@@ -148,9 +148,8 @@ class GapCloserPairedIndexFiller {
         {
 #pragma omp for reduction(+ : counter)
             for (size_t i = 0; i < nthreads; ++i) {
-                typedef typename Streams::ReaderType PairedStream;
-                typename PairedStream::read_type r;
-                PairedStream& stream = streams[i];
+                typename Streams::ReadT r;
+                auto& stream = streams[i];
                 stream.reset();
 
                 while (!stream.eof()) {
@@ -500,12 +499,9 @@ void GapClosing::run(conj_graph_pack &gp, const char*) {
 
     if (cfg::get().use_multithreading) {
         auto streams = paired_binary_readers(cfg::get().ds.reads[lib_index], true, 0);
-        CloseGaps(gp, *streams);
+        CloseGaps(gp, streams);
     } else {
-        std::auto_ptr<PairedReadStream> stream = paired_easy_reader(cfg::get().ds.reads[lib_index], true, 0);
-        io::ReadStreamVector <PairedReadStream> streams(stream.get());
-        //todo WTF what does it mean?
-        streams.release();
+        io::PairedStreams streams(paired_easy_reader(cfg::get().ds.reads[lib_index], true, 0));
         CloseGaps(gp, streams);
     }
 

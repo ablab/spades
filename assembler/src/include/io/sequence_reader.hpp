@@ -6,17 +6,17 @@
 namespace io {
 
 //todo merge with VectorReader
-template <class Read>
-class SequenceReader : public IReader<Read> {
+template <class ReadType>
+class SequenceReadStream : public ReadStream<ReadType> {
  public:
-  explicit SequenceReader(const Sequence &sequence, const std::string &name = "")
+  explicit SequenceReadStream(const Sequence &sequence, const std::string &name = "")
       : sequence_(sequence),
         name_(name),
         opened_(true),
         eof_(false) {
   }
 
-  virtual ~SequenceReader() {
+  virtual ~SequenceReadStream() {
   }
 
   virtual bool is_open() {
@@ -36,11 +36,11 @@ class SequenceReader : public IReader<Read> {
     opened_ = true;
   }
 
-  ReadStat get_stat() const {
-        return ReadStat();
+  ReadStreamStat get_stat() const {
+        return ReadStreamStat();
   }
 
-  SequenceReader<Read> &operator>>(Read &read);
+  SequenceReadStream& operator>>(ReadType &read);
 
  private:
   Sequence sequence_;
@@ -50,7 +50,7 @@ class SequenceReader : public IReader<Read> {
 };
 
 template <>
-SequenceReader<SingleRead> &SequenceReader<SingleRead>::operator>>(SingleRead &read) {
+SequenceReadStream<SingleRead> &SequenceReadStream<SingleRead>::operator>>(SingleRead &read) {
   if (!eof_) {
     read = SingleRead(name_, sequence_.str());
     eof_ = true;
@@ -59,7 +59,7 @@ SequenceReader<SingleRead> &SequenceReader<SingleRead>::operator>>(SingleRead &r
 }
 
 template <>
-SequenceReader<SingleReadSeq> &SequenceReader<SingleReadSeq>::operator>>(SingleReadSeq &read) {
+SequenceReadStream<SingleReadSeq> &SequenceReadStream<SingleReadSeq>::operator>>(SingleReadSeq &read) {
   if (!eof_) {
     read = SingleReadSeq(sequence_);
     eof_ = true;

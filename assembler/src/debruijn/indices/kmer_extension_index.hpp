@@ -227,12 +227,12 @@ public:
 public:
     template<class Streams>
     size_t BuildExtensionIndexFromStream(
-            IndexT &index, Streams &streams, SingleReadStream* contigs_stream =
+            IndexT &index, Streams &streams, io::SingleStream* contigs_stream =
                     0) const {
         unsigned nthreads = (unsigned) streams.size();
 
         // First, build a k+1-mer index
-        DeBruijnReadKMerSplitter<typename Streams::ReaderType::read_type> splitter(
+        DeBruijnReadKMerSplitter<typename Streams::ReadT> splitter(
                 index.workdir(), index.k() + 1, 0xDEADBEEF, streams,
                 contigs_stream);
         KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);

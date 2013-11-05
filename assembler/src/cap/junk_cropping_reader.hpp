@@ -4,8 +4,8 @@
 
 namespace cap {
 
-class JunkCroppingReader : public io::DelegatingReaderWrapper<io::SingleRead> {
-    typedef io::DelegatingReaderWrapper<io::SingleRead> base;
+class JunkCroppingWrapper : public io::DelegatingWrapper<io::SingleRead> {
+    typedef io::DelegatingWrapper<io::SingleRead> base;
     vector<pair<size_t, size_t>> coordinates_ladder_;
 
     bool IsGoodSymbol(char c) {
@@ -13,11 +13,11 @@ class JunkCroppingReader : public io::DelegatingReaderWrapper<io::SingleRead> {
     }
 
 public:
-    JunkCroppingReader(io::IReader<io::SingleRead>& reader) : base(reader) {
+    JunkCroppingWrapper(base::ReadStreamPtrT reader) : base(reader) {
 
     }
 
-    JunkCroppingReader& operator>>(io::SingleRead& read) {
+    JunkCroppingWrapper& operator>>(io::SingleRead& read) {
         base::operator >>(read);
         coordinates_ladder_.clear();
         string orig_string = read.GetSequenceString();

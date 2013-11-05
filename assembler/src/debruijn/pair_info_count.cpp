@@ -20,12 +20,9 @@
 
 namespace debruijn_graph {
 
-typedef io::ReadStreamVector<io::SequencePairedReadStream> MultiStreamType;
-typedef io::ReadStreamVector<io::PairedReadStream> SingleStreamType;
-
-template<class graph_pack, class PairedRead>
+template<class graph_pack, class PairedReadType>
 void RefineInsertSizeParallel(const graph_pack& gp,
-        io::ReadStreamVector< io::IReader<PairedRead> >& streams,
+        io::ReadStreamList<PairedReadType>& streams,
         InsertSizeHistogramCounter<graph_pack>& counter,
         size_t& rl) {
 
@@ -38,8 +35,8 @@ void RefineInsertSizeParallel(const graph_pack& gp,
 
 #pragma omp parallel for num_threads(nthreads)
   for (size_t i = 0; i < nthreads; ++i) {
-    PairedRead r;
-    io::IReader<PairedRead>& stream = streams[i];
+    PairedReadType r;
+    auto& stream = streams[i];
     stream.reset();
 
     while (!stream.eof()) {
@@ -71,15 +68,15 @@ void RefineInsertSizeParallel(const graph_pack& gp,
 }
 
 
-template<class graph_pack, class PairedRead, class DataSet>
+template<class graph_pack, class PairedReadType, class DataSet>
 bool RefineInsertSizeForLib(const graph_pack& gp,
-                      io::ReadStreamVector<io::IReader<PairedRead> >& streams,
+                      io::ReadStreamList<PairedReadType>& streams,
                       DataSet& data,
                       size_t edge_length_threshold) {
 
   INFO("Estimating insert size (takes a while)");
   InsertSizeHistogramCounter<graph_pack> hist_counter(gp, edge_length_threshold, /* ignore negative */ true);
-  RefineInsertSizeParallel<graph_pack, PairedRead>(gp, streams, hist_counter, data.read_length);
+  RefineInsertSizeParallel<graph_pack, PairedReadType>(gp, streams, hist_counter, data.read_length);
 
   INFO(hist_counter.mapped() << " paired reads (" << ((double) hist_counter.mapped() * 100.0 / (double) hist_counter.total()) << "% of all) aligned to long edges");
   if (hist_counter.negative() > 3 * hist_counter.mapped())
@@ -105,12 +102,10 @@ void ProcessSingleReads(conj_graph_pack& gp, size_t ilib) {
 
     if (cfg::get().use_multithreading) {
         auto single_streams = single_binary_readers(reads, true, false);
-        notifier.ProcessLibrary(*single_streams, ilib, reads.data().read_length, single_streams->size());
+        notifier.ProcessLibrary(single_streams, ilib, reads.data().read_length, single_streams.size());
     }
     else {
-        auto single_stream = single_easy_reader(reads, true, false);
-        single_stream.release();
-        SingleStreamType single_streams(single_stream.get());
+        io::SingleStreams single_streams(single_easy_reader(reads, true, false));
         notifier.ProcessLibrary(single_streams, ilib, reads.data().read_length, single_streams.size());
     }
 }
@@ -136,12 +131,11 @@ void ProcessPairedReads(conj_graph_pack& gp, size_t ilib) {
 
     if (cfg::get().use_multithreading) {
         auto paired_streams = paired_binary_readers(reads, true, (size_t) reads.data().mean_insert_size);
-        notifier.ProcessLibrary(*paired_streams, ilib, reads.data().read_length, paired_streams->size());
+        notifier.ProcessLibrary(paired_streams, ilib, reads.data().read_length, paired_streams.size());
         cfg::get_writable().ds.reads[ilib].data().pi_threshold = split_graph.GetThreshold();
     }
     else {
-        auto paired_stream = paired_easy_reader(reads, true, (size_t) reads.data().mean_insert_size);
-        SingleStreamType paired_streams(paired_stream.get());
+        io::PairedStreams paired_streams(paired_easy_reader(reads, true, (size_t) reads.data().mean_insert_size));
         notifier.ProcessLibrary(paired_streams, ilib, reads.data().read_length, paired_streams.size());
         cfg::get_writable().ds.reads[ilib].data().pi_threshold = split_graph.GetThreshold();
     }
@@ -167,11 +161,9 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
             bool insert_size_refined;
             if (cfg::get().use_multithreading) {
                 auto streams = paired_binary_readers(cfg::get().ds.reads[i], false, 0);
-                insert_size_refined = RefineInsertSizeForLib(gp, *streams, cfg::get_writable().ds.reads[i].data(), edge_length_threshold);
+                insert_size_refined = RefineInsertSizeForLib(gp, streams, cfg::get_writable().ds.reads[i].data(), edge_length_threshold);
             } else {
-                std::auto_ptr<PairedReadStream> stream = paired_easy_reader(cfg::get().ds.reads[i], false, 0);
-                SingleStreamType streams(stream.get());
-                streams.release();
+                io::PairedStreams streams(paired_easy_reader(cfg::get().ds.reads[i], false, 0));
                 insert_size_refined = RefineInsertSizeForLib(gp, streams, cfg::get_writable().ds.reads[i].data(), edge_length_threshold);
             }
 

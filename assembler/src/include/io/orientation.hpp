@@ -1,17 +1,8 @@
-/*
- * orientation.hpp
- *
- *  Created on: May 16, 2013
- *      Author: andrey
- */
-
-#ifndef ORIENTATION_HPP_
-#define ORIENTATION_HPP_
+#pragma once
 
 #include "library.hpp"
 
 namespace io {
-
 
 template<typename ReadType>
 class OrientationChanger {
@@ -32,7 +23,6 @@ public:
     virtual ReadType Perform(const ReadType& r) const {
         return r;
     }
-
 };
 
 template<typename ReadType>
@@ -44,9 +34,6 @@ public:
         return ReadType(r.first(), !r.second(), r.insert_size());
     }
 };
-
-
-
 
 template<typename ReadType>
 class ReverseFirstChanger : public OrientationChanger<ReadType> {
@@ -69,7 +56,7 @@ public:
 };
 
 template<typename ReadType>
-OrientationChanger<ReadType> * GetOrientationChanger(LibraryOrientation orientation) {
+std::unique_ptr<OrientationChanger<ReadType>> GetOrientationChanger(LibraryOrientation orientation) {
     OrientationChanger<ReadType> * result;
     switch (orientation) {
     case LibraryOrientation::FF:  {
@@ -93,10 +80,7 @@ OrientationChanger<ReadType> * GetOrientationChanger(LibraryOrientation orientat
         break;
     }
     }
-    return result;
+    return std::unique_ptr<OrientationChanger<ReadType>>(result);
 }
 
 }
-
-
-#endif /* ORIENTATION_HPP_ */

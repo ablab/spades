@@ -50,7 +50,7 @@ class LoadGenomeCommand : public LocalCommand<DebruijnEnvironment> {
                 cout << "Warning: loading empty genome" << endl;
                 return;
             }
-            io::Reader genome_stream(file);
+            io::FileReadStream genome_stream(file);
             io::SingleRead genome;
             genome_stream >> genome;
             if (genome.IsValid()) {

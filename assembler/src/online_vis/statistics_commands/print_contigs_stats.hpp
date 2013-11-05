@@ -192,7 +192,7 @@ namespace online_visualization {
                 
                 TRACE("Printing stats " << ext_output);
                 
-                io::Reader irs(file);
+                io::FileReadStream irs(file);
                 
                 const Sequence& genome = curr_env.genome();
 

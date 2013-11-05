@@ -3,17 +3,15 @@
 //* All Rights Reserved
 //* See file LICENSE for details.
 //****************************************************************************
-
-#ifndef COMMON_IO_CAREFULFILTERINGREADERWRAPPER_HPP_
-#define COMMON_IO_CAREFULFILTERINGREADERWRAPPER_HPP_
-
-#include "io/ireader.hpp"
+#pragma once
+//todo rename file
+#include "io/delegating_reader_wrapper.hpp"
 
 namespace io {
 
 const size_t none = -1ul;
 
-inline std::pair<size_t, size_t> longestValidCoords(const SingleRead& r) {
+inline std::pair<size_t, size_t> LongestValidCoords(const SingleRead& r) {
 	size_t best_len = 0;
 	size_t best_pos = none;
 	size_t pos = none;
@@ -40,14 +38,14 @@ inline std::pair<size_t, size_t> longestValidCoords(const SingleRead& r) {
 	return std::make_pair(best_pos, best_pos + best_len);
 }
 
-inline SingleRead longestValid(const SingleRead& r) {
-	std::pair<size_t, size_t> p = longestValidCoords(r);
+inline SingleRead LongestValid(const SingleRead& r) {
+	std::pair<size_t, size_t> p = LongestValidCoords(r);
 	return r.Substr(p.first, p.second);
 }
 
-inline PairedRead longestValid(const PairedRead& r) {
-	std::pair<size_t, size_t> c1 = longestValidCoords(r.first());
-	std::pair<size_t, size_t> c2 = longestValidCoords(r.second());
+inline PairedRead LongestValid(const PairedRead& r) {
+	std::pair<size_t, size_t> c1 = LongestValidCoords(r.first());
+	std::pair<size_t, size_t> c2 = LongestValidCoords(r.second());
 	size_t len1 = c1.second - c1.first;
 	size_t len2 = c2.second - c2.first;
 	if (len1 == 0 || len2 == 0) {
@@ -61,45 +59,21 @@ inline PairedRead longestValid(const PairedRead& r) {
 	return PairedRead(r.first().Substr(c1.first, c1.second), r.second().Substr(c2.first, c2.second), is);
 }
 
+//todo rewrite without eof
 template<typename ReadType>
-class CarefulFilteringReaderWrapper : public IReader<ReadType> {
-};
-
-template<>
-class CarefulFilteringReaderWrapper<SingleRead> : public IReader<SingleRead> {
+class CarefulFilteringWrapper : public DelegatingWrapper<ReadType> {
+    typedef DelegatingWrapper<ReadType> base;
 public:
   /*
    * Default constructor.
    *
    * @param reader Reference to any other reader (child of IReader).
    */
-	explicit CarefulFilteringReaderWrapper(IReader<SingleRead>& reader) :
-			reader_(reader), eof_(false) {
+	explicit CarefulFilteringWrapper(typename base::ReadStreamPtrT reader_ptr) :
+			base(reader_ptr), eof_(false) {
 		StepForward();
 	}
 
-  /* 
-   * Default destructor.
-   */
-	/* virtual */ ~CarefulFilteringReaderWrapper() {
-		close();
-	}
-
-  /* 
-   * Check whether the stream is opened.
-   *
-   * @return true of the stream is opened and false otherwise.
-   */
-	/* virtual */ bool is_open() {
-		return reader_.is_open();
-	}
-
-  /* 
-   * Check whether we've reached the end of stream.
-   *
-   * @return true if the end of stream is reached and false
-   * otherwise.
-   */
 	/* virtual */ bool eof() {
 		return eof_;
 	}
@@ -111,188 +85,50 @@ public:
    *
    * @return Reference to this stream.
    */
-	/* virtual */ CarefulFilteringReaderWrapper& operator>>(SingleRead& read) {
+	/* virtual */ CarefulFilteringWrapper& operator>>(SingleRead& read) {
 		read = next_read_;
 		StepForward();
 		return *this;
 	}
 
-	/*
-	 * Close the stream.
-	 */
-	/* virtual */
-	void close() {
-		reader_.close();
-	}
-
-	/*
-	 * Close the stream and open it again.
-	 */
 	/* virtual */
 	void reset() {
-		reader_.reset();
+		base::reset();
 		eof_ = false;
 		StepForward();
 	}
 
-	ReadStat get_stat() const {
-        return reader_.get_stat();
-    }
-
 private:
-  /*
-   * @variable Internal stream readers.
-   */
-	IReader<SingleRead>& reader_;
-  /*
-   * @variable Flag that shows whether the end of stream reached.
-   */
 	bool eof_;
-  /*
-   * @variable Next read to be outputted by stream.
-   */
-	SingleRead next_read_;
+	ReadType next_read_;
 
   /*
    * Read next valid read in the stream.
    */
 	void StepForward() {
-		while (!reader_.eof()) {
-			reader_ >> next_read_;
-			next_read_ = longestValid(next_read_);
+		while (!base::eof()) {
+			base::operator >>(next_read_);
+			next_read_ = LongestValid(next_read_);
 			if (next_read_.IsValid()) {
 				return;
 			}
-			
 		}
 		eof_ = true;
 	}
-
-	/*
-	 * Hidden copy constructor.
-	 */
-	explicit CarefulFilteringReaderWrapper(
-			const CarefulFilteringReaderWrapper<SingleRead>& reader);
-	/*
-	 * Hidden assign operator.
-	 */
-	void operator=(const CarefulFilteringReaderWrapper<SingleRead>& reader);
 };
 
-template<>
-class CarefulFilteringReaderWrapper<PairedRead>: public IReader<PairedRead> {
-public:
-  /*
-   * Default constructor.
-   *
-   * @param reader Reference to any other reader (child of IReader).
-   */
-	explicit CarefulFilteringReaderWrapper(IReader<PairedRead>& reader) :
-			reader_(reader), eof_(false) {
-		StepForward();
-	}
+template<class ReadType>
+std::shared_ptr<ReadStream<ReadType>> CarefulFilteringWrap(std::shared_ptr<ReadStream<ReadType>> reader_ptr) {
+    return std::make_shared<CarefulFilteringWrapper<ReadType>>(reader_ptr);
+}
 
-  /* 
-   * Default destructor.
-   */
-	/* virtual */ ~CarefulFilteringReaderWrapper() {
-		close();
-	}
-
-  /* 
-   * Check whether the stream is opened.
-   *
-   * @return true of the stream is opened and false otherwise.
-   */
-	/* virtual */ bool is_open() {
-		return reader_.is_open();
-	}
-
-  /* 
-   * Check whether we've reached the end of stream.
-   *
-   * @return true if the end of stream is reached and false
-   * otherwise.
-   */
-	/* virtual */ bool eof() {
-		return eof_;
-	}
-
-  /*
-   * Read PairedRead from stream.
-   *
-   * @param read The PairedRead that will store read * data.
-   *
-   * @return Reference to this stream.
-   */
-	/* virtual */ CarefulFilteringReaderWrapper& operator>>(PairedRead& read) {
-		read = next_read_;
-		StepForward();
-		return *this;
-	}
-
-	/*
-	 * Close the stream.
-	 */
-	/* virtual */
-	void close() {
-		reader_.close();
-	}
-
-	/*
-	 * Close the stream and open it again.
-	 */
-	/* virtual */
-	void reset() {
-		reader_.reset();
-		eof_ = false;
-		StepForward();
-	}
-
-	ReadStat get_stat() const {
-        return reader_.get_stat();
+template<class ReadType>
+ReadStreamList<ReadType> CarefulFilteringWrap(const ReadStreamList<ReadType>& readers) {
+    ReadStreamList<ReadType> answer;
+    for (size_t i = 0; i < readers.size(); ++i) {
+        answer.push_back(CarefulFilteringWrap<ReadType>(readers.ptr_at(i)));
     }
+    return answer;
+}
 
-private:
-  /*
-   * @variable Internal stream readers.
-   */
-	IReader<PairedRead>& reader_;
-  /*
-   * @variable Flag that shows whether the end of stream reached.
-   */
-	bool eof_;
-  /*
-   * @variable Next read to be outputted by stream.
-   */
-	PairedRead next_read_;
-
-  /*
-   * Read next valid read in the stream.
-   */
-	void StepForward() {
-		while (!reader_.eof()) {
-			reader_ >> next_read_;
-			next_read_ = longestValid(next_read_);
-			if (next_read_.IsValid()) {
-				return;
-			}
-			
-		}
-		eof_ = true;
-	}
-
-	/*
-	 * Hidden copy constructor.
-	 */
-	explicit CarefulFilteringReaderWrapper(
-			const CarefulFilteringReaderWrapper<PairedRead>& reader);
-	/*
-	 * Hidden assign operator.
-	 */
-	void operator=(const CarefulFilteringReaderWrapper<PairedRead>& reader);
-};
-
-} // namespace io
-
-#endif /* COMMON_IO_CAREFULFILTERINGREADERWRAPPER_HPP_ */
+}

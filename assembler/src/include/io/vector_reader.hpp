@@ -11,20 +11,16 @@ namespace io {
  * Use vector<T> as input-stream with operator>>(T& t)
  */
 template <typename T>
-class VectorReader : public io::IReader<T> {
+class VectorReadStream : public ReadStream<T> {
        std::vector<T> data_;
        size_t pos_;
        bool closed_;
 public:
-       VectorReader(const std::vector<T>& data) : data_(data), pos_(0), closed_(false) {
+       VectorReadStream(const std::vector<T>& data) : data_(data), pos_(0), closed_(false) {
 
        }
 
-       VectorReader(const T& item) : data_({item}), pos_(0), closed_(false) {
-
-       }
-
-       virtual ~VectorReader() {
+       VectorReadStream(const T& item) : data_({item}), pos_(0), closed_(false) {
 
        }
 
@@ -32,7 +28,7 @@ public:
                return pos_ == data_.size();
        }
 
-       VectorReader<T>& operator>>(T& t) {
+       VectorReadStream<T>& operator>>(T& t) {
     	   VERIFY(!eof());
            t = data_[pos_++];
            return *this;
@@ -50,9 +46,9 @@ public:
                pos_ = 0;
        }
 
-       ReadStat get_stat() const {
+       ReadStreamStat get_stat() const {
            //todo
-           ReadStat stat;
+           ReadStreamStat stat;
            stat.read_count_ = data_.size();
 
            return stat;

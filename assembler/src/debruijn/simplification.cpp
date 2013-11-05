@@ -20,11 +20,11 @@ void CollectPositions(conj_graph_pack &gp) {
     }
 
     if (!cfg::get().pos.contigs_for_threading.empty() &&
-        FileExists(cfg::get().pos.contigs_for_threading))
+        path::FileExists(cfg::get().pos.contigs_for_threading))
       FillPosWithRC(gp, cfg::get().pos.contigs_for_threading, "thr_");
 
     if (!cfg::get().pos.contigs_to_analyze.empty() &&
-        FileExists(cfg::get().pos.contigs_to_analyze))
+        path::FileExists(cfg::get().pos.contigs_to_analyze))
       FillPosWithRC(gp, cfg::get().pos.contigs_to_analyze, "anlz_");
 }
 

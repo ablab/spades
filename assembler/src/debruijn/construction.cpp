@@ -19,8 +19,8 @@
 namespace debruijn_graph {
 
 template<class Read>
-void construct_graph(io::ReadStreamVector< io::IReader<Read> >& streams,
-                     conj_graph_pack& gp, ReadStream* contigs_stream = 0) {
+void construct_graph(io::ReadStreamList<Read>& streams,
+                     conj_graph_pack& gp, io::SingleStreamPtr contigs_stream = 0) {
     debruijn_config::construction params = cfg::get().con;
     params.early_tc.enable &= !cfg::get().ds.single_cell;
 
@@ -35,11 +35,12 @@ void construct_graph(io::ReadStreamVector< io::IReader<Read> >& streams,
 }
 
 void Construction::run(conj_graph_pack &gp, const char*) {
-    ReadStream* additional_contigs_stream = 0;
+    // Has to be separate stream for not counting it in coverage
+    io::SingleStreamPtr additional_contigs_stream = 0;
     if (cfg::get().use_additional_contigs) {
         INFO("Contigs from previous K will be used");
         additional_contigs_stream =
-                new io::EasyReader(cfg::get().additional_contigs, true);
+                io::EasyStream(cfg::get().additional_contigs, true);
     }
 
     std::vector<size_t> libs_for_construction;
@@ -50,12 +51,11 @@ void Construction::run(conj_graph_pack &gp, const char*) {
 
     if (cfg::get().use_multithreading) {
         auto streams = single_binary_readers_for_libs(libs_for_construction, true, true);
-        construct_graph<io::SingleReadSeq>(*streams, gp, additional_contigs_stream);
+        construct_graph<io::SingleReadSeq>(streams, gp, additional_contigs_stream);
     } else {
-        auto single_stream = single_easy_reader_for_libs(libs_for_construction, true, true);
-        io::ReadStreamVector<ReadStream> streams(single_stream.get());
-        single_stream.release();
-        construct_graph<io::SingleRead>(streams, gp, additional_contigs_stream);
+        io::ReadStreamList<io::SingleRead> streams(single_easy_reader_for_libs(libs_for_construction, true, true));
+        construct_graph<io::SingleRead>(streams,
+                                        gp, additional_contigs_stream);
     }
 }
 

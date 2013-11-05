@@ -8,7 +8,7 @@
 #include "openmp_wrapper.h"
 #include "standard.hpp"
 
-#include "io/multifile_reader.hpp"
+#include "io/io_helper.hpp"
 
 #include "mph_index/kmer_index.hpp"
 #include "adt/kmer_vector.hpp"
@@ -391,8 +391,8 @@ class DeBruijnStreamKMerIndexBuilder<runtime_k::RtSeq, Index> {
     template <class Streams>
     size_t BuildIndexFromStream(IndexT &index,
                                 Streams &streams,
-                                SingleReadStream* contigs_stream = 0) const {
-        DeBruijnReadKMerSplitter<typename Streams::ReaderType::read_type>
+                                io::SingleStream* contigs_stream = 0) const {
+        DeBruijnReadKMerSplitter<typename Streams::ReadT>
                 splitter(index.workdir(), index.k(), 0, streams, contigs_stream);
         KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
 

@@ -11,15 +11,9 @@
  *      Author: sergey
  */
 
-#ifndef COVERAGE_HPP_
-#define COVERAGE_HPP_
+#pragma once
 
-#include <unordered_map>
-#include <iomanip>
 #include "logger/logger.hpp"
-#include "io/reader.hpp"
-#include "io/read_stream_vector.hpp"
-#include "perfcounter.hpp"
 
 namespace omnigraph {
 
@@ -52,7 +46,7 @@ template<class Graph>
 class CoverageIndex : public GraphActionHandler<Graph> {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
-    typedef unordered_map<EdgeId, int> map_type;
+    //typedef unordered_map<EdgeId, int> map_type;
 
     Graph& g_;
 //	map_type storage_;
@@ -358,5 +352,3 @@ public:
 };
 
 }
-
-#endif /* COVERAGE_HPP_ */

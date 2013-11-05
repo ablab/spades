@@ -59,30 +59,25 @@ class CapEnvironmentManager {
   }
 
   template <class gp_t>
-  shared_ptr<gp_t> BuildGPFromStreams(std::vector<ContigStream*> &streams,
+  shared_ptr<gp_t> BuildGPFromStreams(ContigStreams &streams,
                                       unsigned k) const {
     typedef NewExtendedSequenceMapper<Graph, typename gp_t::index_t> Mapper;
 
     shared_ptr<gp_t> result(new gp_t(k, env_->kDefaultGPWorkdir, 0));
 
     //fixme use rc_wrapper
-    vector<ContigStream*> rc_contigs;
-    for (auto it = streams.begin(); it != streams.end(); ++it) {
-      rc_contigs.push_back(new RCWrapper(**it));
-      rc_contigs.back()->reset();
-    }
+    ContigStreams rc_contigs = io::RCWrap(streams);
+    rc_contigs.reset();
 
-    io::ReadStreamVector<ContigStream> rc_read_stream_vector(rc_contigs, true);
-
-    debruijn_graph::ConstructGraphUsingOldIndex(result->k_value, rc_read_stream_vector, result->g, result->index);
+    debruijn_graph::ConstructGraphUsingOldIndex(result->k_value, rc_contigs, result->g, result->index);
 
     env_->coloring_ = std::make_shared<ColorHandler<Graph> >(result->g, streams.size());
     ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(result->g,
         *(env_->coloring_), *MapperInstance<gp_t>(*result));
-    colored_graph_constructor.ConstructGraph(rc_read_stream_vector);
+    colored_graph_constructor.ConstructGraph(rc_contigs);
 
     INFO("Filling positions");
-    FillPositions(*result, rc_read_stream_vector, env_->coordinates_handler_);
+    FillPositions(*result, rc_contigs, env_->coordinates_handler_);
     INFO("Filling positions done.");
 
     return result;
@@ -107,7 +102,7 @@ class CapEnvironmentManager {
 				io::osequencestream out_stream(output_filename);
 				DEBUG("Saving to " << output_filename);
 
-        io::SequenceReader<io::SingleRead> stream(env_->genomes_[i], env_->genomes_names_[i]);
+        io::SequenceReadStream<io::SingleRead> stream(env_->genomes_[i], env_->genomes_names_[i]);
 				while (!stream.eof()) {
 					stream >> contig;
 					out_stream << contig;
@@ -249,7 +244,7 @@ class CapEnvironmentManager {
     return env_dir + "/" + cache_dir + "/";
   }
 
-  void ConstructGraphFromStreams(std::vector<ContigStream *> &streams, unsigned k) {
+  void ConstructGraphFromStreams(ContigStreams &streams, unsigned k) {
     ClearEnvironment();
     env_->CheckConsistency();
     //last_streams_used_ = streams;
@@ -265,9 +260,9 @@ class CapEnvironmentManager {
   }
 
   void ConstructGraph(unsigned k) {
-    std::vector<ContigStream *> streams;
+    ContigStreams streams;
     for (size_t i = 0; i < env_->genomes_.size(); ++i) {
-      streams.push_back(new io::SequenceReader<io::SingleRead>(
+      streams.push_back(make_shared<io::SequenceReadStream<Contig>>(
                     env_->genomes_[i], env_->genomes_names_[i]));
     }
 
@@ -320,10 +315,9 @@ class CapEnvironmentManager {
     if (!CheckFileExists(filename)) {
       return false;
     }
-
+    
     if (crop_repeats) {
-        io::Reader raw_reader(filename);
-        JunkCroppingReader reader(raw_reader);
+        JunkCroppingWrapper reader(make_shared<io::FileReadStream>(filename));
         io::SingleRead genome;
         reader >> genome;
 
@@ -334,10 +328,10 @@ class CapEnvironmentManager {
         env_->init_genomes_paths_.push_back(filename);
         env_->genomes_.push_back(genome.sequence());
         env_->genomes_names_.push_back(name);
-        env_->coordinates_handler_.StoreGenomeThreadManual(env_->genomes_.size() - 1,
-                                                           reader.coordinates_ladder());
+        env_->coordinates_handler_.StoreGenomeThreadManual(uint(env_->genomes_.size() - 1), 
+                                                            reader.coordinates_ladder());
     } else {
-        io::Reader reader(filename);
+        io::FileReadStream reader(filename);
         io::SingleRead genome;
         reader >> genome;
 

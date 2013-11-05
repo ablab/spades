@@ -26,11 +26,12 @@ KSEQ_INIT(gzFile, gzread)
 /*
  * Read name, seq and qual strings from FASTQ data (one by one)
  */
+//fixme deprecated!!! remove usages!
 class ireadstream {
 
 public:
   typedef Read read_type;
-  
+
 	ireadstream(const std::string& filename) : offset_(Read::PHRED_OFFSET) {
 		filename_ = filename;
 		is_open_ = open(filename);
@@ -83,7 +84,7 @@ public:
 		}
 		irs.close();
 	}
-	
+
 	ireadstream& operator>>(Read &r) {
 		VERIFY(is_open());
 		VERIFY(!eof());

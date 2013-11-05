@@ -6,7 +6,7 @@
  *      Author: anton
  */
 
-#include "io/read_stream_vector.hpp"
+#include "io/io_helper.hpp"
 
 #include "file_limit.hpp"
 
@@ -33,8 +33,6 @@ class DeBruijnKMerSplitter : public RtSeqKMerSplitter {
       : RtSeqKMerSplitter(work_dir, K, seed) {
   }
 };
-
-
 
 inline size_t
 DeBruijnKMerSplitter::FillBufferFromSequence(const Sequence &seq,
@@ -88,10 +86,10 @@ void DeBruijnKMerSplitter::DumpBuffers(size_t num_files, size_t nthreads,
   }
 }
 
-template<class Read>
+template<class ReadType>
 class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter {
-  io::ReadStreamVector<io::IReader<Read>> &streams_;
-  SingleReadStream *contigs_;
+  io::ReadStreamList<ReadType> &streams_;
+  io::SingleStream *contigs_;
 
   template<class ReadStream>
   std::pair<size_t, size_t>
@@ -104,8 +102,8 @@ class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter {
  public:
   DeBruijnReadKMerSplitter(const std::string &work_dir,
                            unsigned K, uint32_t seed,
-                           io::ReadStreamVector< io::IReader<Read> >& streams,
-                           SingleReadStream* contigs_stream = 0)
+                           io::ReadStreamList<ReadType>& streams,
+                           io::SingleStream* contigs_stream = 0)
       : DeBruijnKMerSplitter(work_dir, K, seed),
         streams_(streams), contigs_(contigs_stream), rl_(0) {
   }
@@ -115,12 +113,12 @@ class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter {
   size_t read_length() const { return rl_; }
 };
 
-template<class Read> template<class ReadStream>
+template<class ReadType> template<class ReadStream>
 std::pair<size_t, size_t>
-DeBruijnReadKMerSplitter<Read>::FillBufferFromStream(ReadStream &stream,
+DeBruijnReadKMerSplitter<ReadType>::FillBufferFromStream(ReadStream &stream,
                                                      KMerBuffer &buffer,
                                                      unsigned num_files, size_t cell_size) const {
-  typename ReadStream::read_type r;
+  typename ReadStream::ReadT r;
   size_t reads = 0, kmers = 0, rl = 0;
 
   while (!stream.eof() && kmers < num_files * cell_size) {
@@ -134,8 +132,8 @@ DeBruijnReadKMerSplitter<Read>::FillBufferFromStream(ReadStream &stream,
   return std::make_pair(reads, rl);
 }
 
-template<class Read>
-path::files_t DeBruijnReadKMerSplitter<Read>::Split(size_t num_files) {
+template<class ReadType>
+path::files_t DeBruijnReadKMerSplitter<ReadType>::Split(size_t num_files) {
   unsigned nthreads = (unsigned) streams_.size();
 
   INFO("Splitting kmer instances into " << num_files << " buckets. This might take a while.");
