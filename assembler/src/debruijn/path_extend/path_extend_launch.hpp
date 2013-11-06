@@ -35,34 +35,10 @@ size_t FindMaxOverlapedLen(const vector<PairedInfoLibraries>& libes) {
     size_t max = 0;
     for (size_t i = 0; i < libes.size(); ++i) {
         for (size_t j = 0; j < libes[i].size(); ++j) {
-            size_t overlap = libes[i].at(j)->GetISMax();
-            if (overlap > max) {
-                max = overlap;
-            }
+            max = std::max(libes[i].at(j)->GetISMax(), max);
         }
     }
     return max;
-}
-
-size_t GetMinInsertSize(const vector<PairedInfoLibraries>& libs) {
-    size_t min = 0;
-    size_t index = 0;
-    while (index < libs.size() && libs[index].size() == 0) {
-        index++;
-    }
-    if (index == libs.size()) {
-        return 0;
-    }
-    min = libs[index][0]->GetISMax();
-    for (size_t i = 0; i < libs.size(); ++i) {
-        for (size_t j = 0; j < libs[i].size(); ++j) {
-            int overlap = (int) libs[i][j]->GetISMax() - (int) libs[i][j]->GetReadSize() / 2;
-            if (overlap < (int) min && overlap > 0) {
-                min = (size_t) overlap;
-            }
-        }
-    }
-    return min;
 }
 
 string GetEtcDir(const std::string& output_dir) {
@@ -85,20 +61,6 @@ void DebugOutputPaths(const ContigWriter& writer, const conj_graph_pack& gp,
         visualizer.writeGraphWithPathsSimple(gp, etcDir + name + ".dot", name,
                                              paths);
         path_writer.writePaths(paths, etcDir + name + ".data");
-    }
-}
-
-void DebugOutputEdges(const ContigWriter& writer, const conj_graph_pack& gp,
-                      const std::string& output_dir, const string& name) {
-    if (!cfg::get().pe_params.debug_output) {
-        return;
-    }
-    PathVisualizer visualizer(gp.g.k());
-    string etcDir = GetEtcDir(output_dir);
-    DEBUG("debug_output " << cfg::get().pe_params.debug_output);
-    if (cfg::get().pe_params.viz.print_paths) {
-        writer.writeEdges(etcDir + name + ".fasta");
-        visualizer.writeGraphSimple(gp, etcDir + name + ".dot", name);
     }
 }
 
@@ -128,7 +90,6 @@ string MakeNewName(const std::string& contigs_name,
 	return contigs_name.substr(0, contigs_name.rfind(".fasta")) + "_" + subname + ".fasta";
 }
 
-
 void OutputBrokenScaffolds(PathContainer& paths, int k,
                            const ContigWriter& writer,
                            const std::string& filename) {
@@ -157,8 +118,6 @@ void AddPathsToContainer(const conj_graph_pack& gp,
         vector<EdgeId> edges = path.getPath();
         BidirectionalPath* new_path = new BidirectionalPath(gp.g, edges);
         BidirectionalPath* conj_path = new BidirectionalPath(new_path->Conjugate());
-
-        //FIXME: why weights are int/double in different path structures?
         new_path->SetWeight((double) path.getWeight());
         conj_path->SetWeight((double) path.getWeight());
         result.AddPair(new_path, conj_path);
@@ -186,25 +145,25 @@ vector<SimpleExtender *> MakePEExtenders(const conj_graph_pack& gp,
 }
 
 vector<SimpleExtender*> MakeLongReadsExtender(
-        const conj_graph_pack& gp,
-        const vector<PathStorageInfo<Graph> >& long_reads, size_t max_loops) {
-    vector<SimpleExtender*> result;
-    for (size_t i = 0; i < long_reads.size(); ++i) {
-        if (long_reads[i].GetPaths().size() == 0) {
+        const conj_graph_pack& gp, const vector<PathStorageInfo<Graph> >& reads,
+        size_t max_loops) {
+    vector<SimpleExtender*> extends;
+    for (size_t i = 0; i < reads.size(); ++i) {
+        if (reads[i].GetPaths().size() == 0) {
             continue;
         }
         PathContainer paths;
-        AddPathsToContainer(gp, long_reads[i].GetPaths(), 1, paths);
+        AddPathsToContainer(gp, reads[i].GetPaths(), 1, paths);
         ExtensionChooser * longReadEC = new LongReadsExtensionChooser(
-                gp.g, paths, long_reads[i].GetFilteringThreshold(),
-                long_reads[i].GetWeightPriorityThreshold(),
-                long_reads[i].GetUniqueEdgePriorityThreshold());
+                gp.g, paths, reads[i].GetFilteringThreshold(),
+                reads[i].GetWeightPriorityThreshold(),
+                reads[i].GetUniqueEdgePriorityThreshold());
         SimpleExtender * longReadExtender = new SimpleExtender(gp.g, max_loops,
                                                                longReadEC,
                                                                true);
-        result.push_back(longReadExtender);
+        extends.push_back(longReadExtender);
     }
-    return result;
+    return extends;
 }
 vector<ScaffoldingPathExtender*> MakeScaffoldingExtender(
         const conj_graph_pack& gp, const pe_config::ParamSetT& pset,
@@ -213,10 +172,8 @@ vector<ScaffoldingPathExtender*> MakeScaffoldingExtender(
             new HammingGapJoiner(
                     gp.g,
                     pset.scaffolder_options.min_gap_score,
-                    (int) (pset.scaffolder_options.max_must_overlap
-                            * (double) gp.g.k()),
-                    (int) (pset.scaffolder_options.max_can_overlap
-                            * (double) gp.g.k()),
+                    (int) (pset.scaffolder_options.max_must_overlap * (double) gp.g.k()),
+                    (int) (pset.scaffolder_options.max_can_overlap * (double) gp.g.k()),
                     pset.scaffolder_options.short_overlap);
     vector<ScaffoldingPathExtender*> scafPEs;
     for (size_t i = 0; i < libs.size(); ++i) {
@@ -246,6 +203,7 @@ vector<SimpleExtender *> MakeMPExtenders(const conj_graph_pack& gp,
     return mpPEs;
 }
 
+//TODO: delete
 void TestIdealInfo(conj_graph_pack& gp) {
     map<int, size_t> distr;
     distr[220] = 1;
@@ -294,7 +252,6 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	INFO("Scaffolder is " << (pset.scaffolder_options.on ? "on" : "off"));
 
 	ContigWriter writer(gp.g);
-	DebugOutputEdges(writer, gp, output_dir, "before_resolve");
 
 //make pe + long reads extenders
     vector<SimpleExtender *> usualPEs = MakePEExtenders(gp, pset, libs, false);
