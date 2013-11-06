@@ -284,7 +284,13 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
     resolver.addUncoveredEdges(paths, mainPE->GetCoverageMap());
 	paths.SortByLength();
 
-	if (mp_libs.size() == 0) {
+    if (mp_libs.size() == 0) {
+        resolver.removeOverlaps(paths, mainPE->GetCoverageMap(), max_over,
+                                writer, output_dir);
+        paths.FilterEmptyPaths();
+        paths.CheckSymmetry();
+        resolver.addUncoveredEdges(paths, mainPE->GetCoverageMap());
+        paths.SortByLength();
         if (traversLoops) {
             INFO("Traversing tandem repeats");
             LoopTraverser loopTraverser(gp.g, mainPE->GetCoverageMap(), mainPE);
