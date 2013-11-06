@@ -19,7 +19,7 @@
 
 namespace path_extend {
 
-using debruijn_graph::EdgeId;
+/*using debruijn_graph::EdgeId;
 
 struct IndexPair {
     size_t index1_;
@@ -302,8 +302,8 @@ public:
         for (auto iter = neighbors_.begin(); iter != neighbors_.end(); ++iter) {
             if (iter->second->weight() > 3
                     && iter->second->CanBeValid(max_dist_, min_dist_)
-                    /*&& path_->Length() > max_dist_
-                     && iter->first->Length() > max_dist_*/) {
+                    && path_->Length() > max_dist_
+                     && iter->first->Length() > max_dist_) {
                 good_size++;
                 DEBUG("\t index " << iter->first->GetId() << " its length "<< iter->first->Length()<<" distance " << iter->second->d() << " weight " << iter->second->weight());
                 iter->second->AnalyzeAndPrint(max_dist_, min_dist_);
@@ -407,7 +407,7 @@ private:
     size_t min_dist_;
     std::map<const BidirectionalPath*, PathAllPairInfo*> pair_info_;
     GraphCoverageMap coverage_map_;
-};
+};*/
 
 }  // namespace path_extend
 

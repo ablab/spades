@@ -56,7 +56,7 @@ void normalize_distribution(const std::map<int, size_t>& is_hist,  std::map<int,
   }
 }
 
-void ISInterval(double quant, double is, double is_var,
+void ISInterval(double quant, double is,
                 const std::map<int, size_t>& insert_size_hist,
                 double& is_min, double& is_max) {
 

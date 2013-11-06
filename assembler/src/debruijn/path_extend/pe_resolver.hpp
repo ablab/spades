@@ -27,10 +27,10 @@ public:
             : g_(g), coverage_map_(cm) {
     }
 
-    void RemoveOverlaps(PathContainer& paths, size_t max_overlaped) const {
+    void RemoveOverlaps(PathContainer& paths) const {
         for (size_t i = 0; i < paths.size(); i++) {
-            FindAndRemovePathOverlap(paths, paths.Get(i), max_overlaped);
-            FindAndRemovePathOverlap(paths, paths.GetConjugate(i), max_overlaped);
+            FindAndRemovePathOverlap(paths, paths.Get(i));
+            FindAndRemovePathOverlap(paths, paths.GetConjugate(i));
         }
     }
 
@@ -86,13 +86,13 @@ private:
         for (size_t i1 = 0; i1 < poses1.size(); ++i1) {
             vector<size_t> poses2 = path2->FindAll(edge);
             for (size_t i2 = 0; i2 < poses2.size(); ++i2) {
-                CompareAndCutFromPos(edge, path1, poses1[i1], path2,
-                                     poses2[i2], max_overlap,
+                CompareAndCutFromPos(path1, (int) poses1[i1], path2,
+                                     (int) poses2[i2], (int) max_overlap,
                                      del_subpaths, del_begins, del_all);
             }
         }
     }
-    void CompareAndCutFromPos(EdgeId edge, BidirectionalPath* path1, int pos1,
+    void CompareAndCutFromPos(BidirectionalPath* path1, int pos1,
                        BidirectionalPath* path2, int pos2, int max_overlap,
                        bool delete_subpaths, bool delete_begins,
                        bool delete_all) const {
@@ -148,7 +148,7 @@ private:
         cur_pos++;
         size_t diff_len = 0;
         size_t diff_len2 = 0;
-        while (cur_pos < (int) path1.Size()) {
+        while (cur_pos < path1.Size()) {
             if (diff_len > max_overlap) {
                 return make_pair(last_pos1, last_pos2);
             }
@@ -288,8 +288,7 @@ private:
     }
 
     void FindAndRemovePathOverlap(PathContainer& all_paths,
-                                  BidirectionalPath* path1,
-                                  size_t max_overlap) const {
+                                  BidirectionalPath* path1) const {
         int last = (int) path1->Size() - 1;
         if (last <= 0 or coverage_map_.GetCoverage(path1->At(last)) <= 1
                 or HasAlreadyOverlapedEnd(path1)) {
@@ -386,7 +385,7 @@ public:
         remover.RemoveSimilarPaths(max_overlap, false, true, true, false);
         writer.writePaths(paths, output_dir + "/remove_similar.fasta");
         DEBUG("Remove overlaps")
-        remover.RemoveOverlaps(paths, max_overlap);
+        remover.RemoveOverlaps(paths);
         writer.writePaths(paths, output_dir + "/after_remove_overlaps.fasta");
         remover.RemoveSimilarPaths(max_overlap, true, false, false, false);
         writer.writePaths(paths, output_dir + "/remove_equal.fasta");

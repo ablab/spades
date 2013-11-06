@@ -616,7 +616,7 @@ private:
     }
 
     bool UniqueBackPath(const BidirectionalPath& path, size_t pos) const {
-        int int_pos = pos;
+        int int_pos = (int) pos;
         while (int_pos >= 0) {
             if (unique_edges_.count(path.At(int_pos)) > 0)
                 return true;
@@ -698,9 +698,9 @@ private:
                 return true;
             }
         }
-        int last_diff_pos1 = LastNotEqualPosition(path1, pos1, path2, pos2);
-        int last_diff_pos2 = LastNotEqualPosition(path2, pos2, path1, pos1);
-        if (last_diff_pos1 != -1) {
+        size_t last_diff_pos1 = LastNotEqualPosition(path1, pos1, path2, pos2);
+        size_t last_diff_pos2 = LastNotEqualPosition(path2, pos2, path1, pos1);
+        if (last_diff_pos1 != -1UL) {
             const BidirectionalPath cand1 = path1.SubPath(pos1,
                                                           last_diff_pos1 + 1);
             const BidirectionalPath cand2 = path2.SubPath(pos2,

@@ -333,13 +333,13 @@ private:
                 if (edge_pi.size() == 0) {
                     continue;
                 }
-                size_t count_backets = LastBasketIndex(*edge, insert_size_max,
+                size_t count_backets = LastBasketIndex(*edge, (int) insert_size_max,
                                                        edge_pi);
                 for (size_t index = 0; index <= count_backets; ++index) {
                     map<Basket, PairInfo>& basket_info = edge_pi.GetInfo(index);
                     set<size_t> pair_baskets = GetBaskets(index,
-                                                          insert_size_min,
-                                                          insert_size_max,
+                                                          (int) insert_size_min,
+                                                          (int) insert_size_max,
                                                           edge_pi);
                     for (auto iter = basket_info.begin();
                             iter != basket_info.end(); ++iter) {

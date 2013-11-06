@@ -490,12 +490,12 @@ void PathsWeightCounter::FindPairInfo(const BidirectionalPath& path1,
 
 void PathsWeightCounter::FindPairInfo(EdgeId e1, EdgeId e2, size_t dist,
                                       double& ideal_w, double& result_w) const {
-	ideal_w = lib_.IdealPairedInfo(e1, e2, dist);
+	ideal_w = lib_.IdealPairedInfo(e1, e2, (int) dist);
 	result_w = 0.0;
     if (ideal_w == 0.0) {
         return;
     }
-    double w = lib_.CountPairedInfo(e1, e2, dist, true);
+    double w = lib_.CountPairedInfo(e1, e2, (int) dist, true);
     if (w > 10.0) {
         result_w = ideal_w;
     }

@@ -218,17 +218,17 @@ void TestIdealInfo(conj_graph_pack& gp) {
         counter.IdealPairedInfo(edge_len, edge_len, edge_len + i);
     }*/
     size_t edge_len = 100;
-    double w1 = counter.IdealPairedInfo(edge_len, edge_len, edge_len);
+    double w1 = counter.IdealPairedInfo(edge_len, edge_len, (int) edge_len);
     size_t edge_len1_1 = 50;
     size_t edge_len1_2 = 50;
-    double w2_1 = counter.IdealPairedInfo(edge_len, edge_len1_1, edge_len);
-    double w2_2 = counter.IdealPairedInfo(edge_len, edge_len1_2, edge_len + edge_len1_2);
+    double w2_1 = counter.IdealPairedInfo(edge_len, edge_len1_1, (int) edge_len);
+    double w2_2 = counter.IdealPairedInfo(edge_len, edge_len1_2, (int) (edge_len + edge_len1_2));
     size_t edge_len2_1 = 20;
     size_t edge_len2_2 = 30;
     size_t edge_len2_3 = 50;
-    double w3_1 = counter.IdealPairedInfo(edge_len, edge_len2_1, edge_len);
-    double w3_2 = counter.IdealPairedInfo(edge_len, edge_len2_2, edge_len + edge_len2_1);
-    double w3_3 = counter.IdealPairedInfo(edge_len, edge_len2_3, edge_len + edge_len2_1 + edge_len2_2);
+    double w3_1 = counter.IdealPairedInfo(edge_len, edge_len2_1, (int)edge_len);
+    double w3_2 = counter.IdealPairedInfo(edge_len, edge_len2_2, (int)(edge_len + edge_len2_1));
+    double w3_3 = counter.IdealPairedInfo(edge_len, edge_len2_3, (int)(edge_len + edge_len2_1 + edge_len2_2));
     DEBUG("TEST " << w1 << " " << w2_1 + w2_2 << " " << w3_1 + w3_2 + w3_3);
 }
 void ResolveRepeatsManyLibs(conj_graph_pack& gp,
@@ -397,9 +397,12 @@ PairedInfoLibrary* MakeNewLib(conj_graph_pack::graph_t& g,
 		size_t index) {
 
 	size_t read_length = cfg::get().ds.reads[initial_index].data().read_length;
-	double is_min = cfg::get().ds.reads[initial_index].data().insert_size_left_quantile;
-	double is_max = cfg::get().ds.reads[initial_index].data().insert_size_right_quantile;
-	double var =  cfg::get().ds.reads[initial_index].data().insert_size_deviation;
+    size_t is_min = (size_t) cfg::get().ds.reads[initial_index].data()
+            .insert_size_left_quantile;
+    size_t is_max = (size_t) cfg::get().ds.reads[initial_index].data()
+            .insert_size_right_quantile;
+    size_t var = (size_t) cfg::get().ds.reads[initial_index].data()
+            .insert_size_deviation;
 	bool is_mp = cfg::get().ds.reads[initial_index].type() == io::LibraryType::MatePairs;
 	PairedInfoLibrary* lib =new PairedInfoLibrary(
 			cfg::get().K, g, read_length, is_min > 0.0 ? size_t(is_min) : 0,
@@ -426,10 +429,10 @@ bool InsertSizeCompare(const PairedInfoLibraries& lib1,
     return lib1[0]->GetISMax() < lib2[0]->GetISMax();
 }
 
-void AnalyzeMatePairInfo(const conj_graph_pack& gp, const PairedInfoLibrary& lib, PathContainer& paths){
+/*void AnalyzeMatePairInfo(const conj_graph_pack& gp, const PairedInfoLibrary& lib, PathContainer& paths){
     PathsPairInfoContainer container(gp, paths, lib);
     container.FillPairInfo();
-}
+}*/
 
 void ResolveRepeatsPe(conj_graph_pack& gp, vector<PairedIndexT*>& paired_index,
                       vector<PairedIndexT*>& scaff_index,

@@ -91,7 +91,7 @@ bool RefineInsertSizeForLib(const graph_pack& gp,
   hist_counter.FindMean(data.mean_insert_size,  data.insert_size_deviation, percentiles);
   hist_counter.FindMedian(data.median_insert_size, data.insert_size_mad, data.insert_size_distribution);
 
-  omnigraph::ISInterval(0.8, data.mean_insert_size, data.insert_size_deviation,
+  omnigraph::ISInterval(0.8, data.mean_insert_size,
           data.insert_size_distribution,
           data.insert_size_left_quantile,
           data.insert_size_right_quantile);
