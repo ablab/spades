@@ -35,14 +35,6 @@ void construct_graph(io::ReadStreamVector< io::IReader<Read> >& streams,
 }
 
 void Construction::run(conj_graph_pack &gp, const char*) {
-    //    if (cfg::get().etalon_graph_mode) {
-    //      typedef io::VectorReader<io::SingleRead> GenomeStream;
-    //      GenomeStream genome_stream(io::SingleRead("genome", gp.genome.str()));
-    //      std::vector <ReadStream*> streams(1, &genome_stream);
-    //      construct_graph(streams, gp);
-    //    } else
-
-    // Has to be separate stream for not counting it in coverage
     ReadStream* additional_contigs_stream = 0;
     if (cfg::get().use_additional_contigs) {
         INFO("Contigs from previous K will be used");

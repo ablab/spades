@@ -12,25 +12,26 @@
 #include "simplification.hpp"
 
 namespace debruijn_graph {
+void CollectPositions(conj_graph_pack &gp) {
+    gp.edge_pos.clear();
+    if (gp.genome.size() > 0) {
+        FillPos(gp, gp.genome, "ref0");
+        FillPos(gp, !gp.genome, "ref1");
+    }
+
+    if (!cfg::get().pos.contigs_for_threading.empty() &&
+        FileExists(cfg::get().pos.contigs_for_threading))
+      FillPosWithRC(gp, cfg::get().pos.contigs_for_threading, "thr_");
+
+    if (!cfg::get().pos.contigs_to_analyze.empty() &&
+        FileExists(cfg::get().pos.contigs_to_analyze))
+      FillPosWithRC(gp, cfg::get().pos.contigs_to_analyze, "anlz_");
+}
 
 void Simplification::run(conj_graph_pack &gp, const char*) {
     using namespace omnigraph;
-
-
     if (cfg::get().developer_mode) {
-        gp.edge_pos.clear();
-        if (gp.genome.size() > 0) {
-            FillPos(gp, gp.genome, "ref0");
-            FillPos(gp, !gp.genome, "ref1");
-        }
-
-        if (!cfg::get().pos.contigs_for_threading.empty() &&
-            FileExists(cfg::get().pos.contigs_for_threading))
-          FillPosWithRC(gp, cfg::get().pos.contigs_for_threading, "thr_");
-
-        if (!cfg::get().pos.contigs_to_analyze.empty() &&
-            FileExists(cfg::get().pos.contigs_to_analyze))
-          FillPosWithRC(gp, cfg::get().pos.contigs_to_analyze, "anlz_");
+        CollectPositions(gp);
     }
 
     total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
