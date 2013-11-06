@@ -284,8 +284,19 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
     resolver.addUncoveredEdges(paths, mainPE->GetCoverageMap());
 	paths.SortByLength();
 
-    if (broken_contigs.is_initialized()) {
-        OutputBrokenScaffolds(paths, (int) gp.g.k(), writer, output_dir + broken_contigs.get());
+	if (mp_libs.size() == 0) {
+        if (traversLoops) {
+            INFO("Traversing tandem repeats");
+            LoopTraverser loopTraverser(gp.g, mainPE->GetCoverageMap(), mainPE);
+            loopTraverser.TraverseAllLoops();
+            paths.SortByLength();
+        }
+        if (broken_contigs.is_initialized()) {
+            OutputBrokenScaffolds(paths, (int) gp.g.k(), writer,
+                                  output_dir + broken_contigs.get());
+        }
+        writer.writePaths(paths, output_dir + contigs_name);
+        return;
     }
     writer.writePaths(paths, output_dir + "pe_paths.fasta");
 
@@ -313,9 +324,9 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	CompositeExtender* mp_main_pe = new CompositeExtender(gp.g, pset.loop_removal.max_loops, all_libs);
 	INFO("Growing mp paths");
 	auto mp_paths = resolver.extendSeeds(paths, *mp_main_pe);
-    resolver.RemoveMatePairEnds(mp_paths, max_over);
     resolver.removeOverlaps(mp_paths, mp_main_pe->GetCoverageMap(), max_over,
                             writer, output_dir);
+    resolver.RemoveMatePairEnds(mp_paths, max_over);
 	mp_paths.FilterEmptyPaths();
 	mp_paths.CheckSymmetry();
 	resolver.addUncoveredEdges(mp_paths, mp_main_pe->GetCoverageMap());
