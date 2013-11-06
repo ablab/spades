@@ -367,7 +367,7 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 
 //result
     if (broken_contigs.is_initialized()) {
-        OutputBrokenScaffolds(paths, (int) gp.g.k(), writer,
+        OutputBrokenScaffolds(last_paths, (int) gp.g.k(), writer,
                               output_dir + broken_contigs.get());
     }
     DebugOutputPaths(writer, gp, output_dir, last_paths, "last_paths");
