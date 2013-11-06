@@ -377,7 +377,7 @@ class ScaffoldingExtensionChooser: public ExtensionChooser {
     }
 
 public:
-	ScaffoldingExtensionChooser(Graph& g, WeightCounter * wc, double priority, bool cluster_info = true): ExtensionChooser(g, wc, priority), cluster_info_(cluster_info) {
+	ScaffoldingExtensionChooser(const Graph& g, WeightCounter * wc, double priority, bool cluster_info = true): ExtensionChooser(g, wc, priority), cluster_info_(cluster_info) {
     }
 
 	double AddInfoFromEdge(const std::vector<int>& distances, const std::vector<double>& weights, std::vector<pair<int,double> >& histogram, const BidirectionalPath& path, size_t j, double threshold)

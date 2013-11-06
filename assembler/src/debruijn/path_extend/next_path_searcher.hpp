@@ -194,9 +194,7 @@ set<BidirectionalPath*> NextPathSearcher::FindNextPaths(
         if (to_add.size() == 0) {
             stopped_paths.push_back(grow_path);
         } else {
-            for (size_t i = 0; i < to_add.size(); ++i) {
-                grow_paths.push_back(to_add[i]);
-            }
+            grow_paths.insert(grow_paths.end(), to_add.begin(), to_add.end());
         }
         if (grow_paths.size() > 5000) {
             return std::set<BidirectionalPath*>();
@@ -274,32 +272,30 @@ Edge* NextPathSearcher::AddPath(const BidirectionalPath& init_path,
 
 void NextPathSearcher::GrowPath(const BidirectionalPath& init_path, Edge* e,
                                 size_t max_len, vector<Edge*>& to_add) {
-    if (!e->IsCorrect()) {
+    if (!e->IsCorrect())
         return;
-    }
     auto out_edges = g_.OutgoingEdges(g_.EdgeEnd(e->GetId()));
     for (auto it = out_edges.begin(); it != out_edges.end(); ++it) {
         EdgeId next_edge = *it;
         set<BidirectionalPath*> cov_paths = cover_map_.GetCoveringPaths(
                 next_edge);
         DEBUG("out edge " << g_.int_id(*it) << " cov paths "<< cov_paths.size());
-        for (auto iter = cov_paths.begin(); iter != cov_paths.end(); ++iter) {
-            BidirectionalPath* next_path = *iter;
-            DEBUG("next path ");
-            vector<size_t> positions = next_path->FindAll(next_edge);
+        for (auto inext_path = cov_paths.begin(); inext_path != cov_paths.end();
+                ++inext_path) {
+            vector<size_t> positions = (*inext_path)->FindAll(next_edge);
             for (size_t ipos = 0; ipos < positions.size(); ++ipos) {
-                if (positions[ipos] == 0
-                        || e->EqualBegins(*next_path, (int) positions[ipos] - 1)) {
-                    Edge* next_edge = AddPath(init_path, e, max_len, *next_path,
-                                              positions[ipos]);
+                size_t pos = positions[ipos];
+                if (pos == 0 || e->EqualBegins(**inext_path, (int) pos - 1)) {
+                    Edge* next_edge = AddPath(init_path, e, max_len,
+                                              **inext_path, pos);
                     if (next_edge != NULL) {
                         DEBUG("next edge not null");
                         to_add.push_back(next_edge);
                     } else {
                         DEBUG("next edge null");
-                    }DEBUG("path consist " << positions[ipos]);
+                    }
                 } else {
-                    DEBUG("path doesn't consist " << positions[ipos]);
+                    DEBUG("path doesn't consist " << pos);
                 }
             }
         }
@@ -307,12 +303,10 @@ void NextPathSearcher::GrowPath(const BidirectionalPath& init_path, Edge* e,
                 && e->GetIncorrectEdgeIndex(next_edge) == -1) {
             if (InBuble(next_edge, g_)) {
                 Edge* next = AnalyzeBubble(init_path, next_edge, 0, e);
-                if (next != NULL) {
+                if (next != NULL)
                     to_add.push_back(next);
-                }
             } else {
-                Edge* next = e->AddOutEdge(next_edge);
-                to_add.push_back(next);
+                to_add.push_back(e->AddOutEdge(next_edge));
             }
         }
     }

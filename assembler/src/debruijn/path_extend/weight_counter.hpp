@@ -200,7 +200,7 @@ protected:
 
 public:
 
-	ReadCountWeightCounter(Graph& g_, PairedInfoLibraries& libs_,
+	ReadCountWeightCounter(const Graph& g_, PairedInfoLibraries& libs_,
 			double threshold_ = 0.0) :
 			WeightCounter(g_, libs_, threshold_) {
 	}

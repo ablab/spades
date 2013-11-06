@@ -174,11 +174,11 @@ class GapJoiner {
 
 protected:
 
-    Graph& g_;
+    const Graph& g_;
 
 public:
 
-    GapJoiner(Graph& g): g_(g) {
+    GapJoiner(const Graph& g): g_(g) {
     }
 
     virtual int FixGap(EdgeId sink, EdgeId source, int initial_gap) const = 0;
@@ -196,7 +196,7 @@ class SimpleGapJoiner: public GapJoiner {
 
 public:
 
-    SimpleGapJoiner(Graph& g): GapJoiner(g) {
+    SimpleGapJoiner(const Graph& g): GapJoiner(g) {
     }
 
     virtual int FixGap(EdgeId sink, EdgeId source, int initial_gap) const {
@@ -261,7 +261,7 @@ private:
 
 public:
 
-    HammingGapJoiner(Graph& g,
+    HammingGapJoiner(const Graph& g,
             double minGapScore,
             int mustHaveOverlap,
             int canHaveOverlap,
@@ -681,7 +681,7 @@ protected:
 
 public:
 
-    ScaffoldingPathExtender(Graph& g, size_t max_loops, ExtensionChooser * scaffoldingEC, GapJoiner * gapJoiner, bool investigateShortLoops = true):
+    ScaffoldingPathExtender(const Graph& g, size_t max_loops, ExtensionChooser * scaffoldingEC, GapJoiner * gapJoiner, bool investigateShortLoops = true):
     	CoveringPathExtender(g, max_loops, investigateShortLoops),
             scaffoldingExtensionChooser_(scaffoldingEC),
             gapJoiner_(gapJoiner)

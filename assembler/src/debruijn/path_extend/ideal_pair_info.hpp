@@ -76,17 +76,15 @@ private:
         int gap_len = dist - len1;
         int right_long = is - rs - 1;
         int right_short = gap_len + len2 - 1;
-        int left_long1 = gap_len + k + 1 - rs;
-        int left_short = is - rs - len1 - rs + (k + 1);
+        int left_short = gap_len + k + 1 - rs;
+        int left_long = is - rs - len1 - rs + (k + 1);
         int right = std::min(right_long, right_short);
-        int left = std::max(left_long1, left_short);
+        int left = std::max(left_short, left_long);
         int result = std::max(right - left + 1, 0);
         int right_e2 = std::min(gap_len + len2 - rs + k, right_long);
-        int left_e2 = std::max(left_short, gap_len);
-        int right_not_full = 0;
-        int left_not_full = 0;
-        right_not_full = std::max(right - right_e2, 0);
-        left_not_full = std::max(left_e2 - left, 0);
+        int left_e2 = std::max(left_long, gap_len);
+        int right_not_full = std::max(right - right_e2, 0);
+        int left_not_full = std::max(left_e2 - left, 0);
         w = result - not_total_weights_right_[right_not_full]
                 - not_total_weights_left_[left_not_full];
         return w > 0 ? w : 0;
