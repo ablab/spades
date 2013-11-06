@@ -231,7 +231,7 @@ static int alignH(It1 read_begin, It1 read_end,
         int approx_offset = i - j - left_offset;
         int offset_penalty = std::abs(approx_offset) * kOffset;
         if (best_score - offset_penalty > highest_entry) {
-          highest_entry = best_score;
+          highest_entry = best_score - offset_penalty;
           highest_x = i;
           highest_y = j;
         }
@@ -746,6 +746,15 @@ class CorrectedRead {
 
         double lowQualThreshold = cfg::get().kmer_qual_threshold;
         bool low_qual = qual > lowQualThreshold || IsInconsistent(center);
+
+        if (debug_mode_ && !low_qual && seq != center) {
+          std::cerr << "replaced " << seq.str()
+                    << " with " << center.str() << std::endl;
+        }
+
+        if (debug_mode_) {
+          std::cerr << "quality of " << center.str() << " is " << qual << std::endl;
+        }
 
         if (low_qual)
           ++skipped;

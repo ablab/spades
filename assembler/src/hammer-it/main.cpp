@@ -32,8 +32,8 @@ void create_console_logger() {
 }
 
 struct UfCmp {
-  bool operator()(const std::vector<unsigned> &lhs, const std::vector<unsigned> &rhs) {
-    //return (lhs[0] < rhs[0]);
+  bool operator()(const std::vector<unsigned long> &lhs,
+                  const std::vector<unsigned long> &rhs) {
     return lhs.size() > rhs.size();
   }
 };
