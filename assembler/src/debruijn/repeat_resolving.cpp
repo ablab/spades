@@ -103,7 +103,7 @@ void ConvertLongReads(LongReadContainerT& single_long_reads, vector<PathStorageI
     }
 }
 
-void pe_resolving(conj_graph_pack& gp, const EdgeQuality<Graph, Index>& /* quality_labeler */) {
+void PEResolving(conj_graph_pack& gp, const EdgeQuality<Graph, Index>& /* quality_labeler */) {
     vector<size_t> indexes;
     vector<PathStorageInfo<Graph> > long_reads_libs;
     ConvertLongReads(gp.single_long_reads, long_reads_libs);
@@ -186,7 +186,7 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
     // Repeat resolving begins
     if (cfg::get().rm == debruijn_graph::resolving_mode::rm_path_extend) {
         INFO("Path-Extend repeat resolving");
-        pe_resolving(gp, quality_labeler);
+        PEResolving(gp, quality_labeler);
     } else {
         INFO("Unsupported repeat resolver");
         OutputContigs(gp.g, cfg::get().output_dir + "final_contigs.fasta");
