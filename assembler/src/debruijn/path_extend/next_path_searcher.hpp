@@ -48,9 +48,9 @@ public:
         }
         return AddIfNotExist(edge, not_out_edges_);
     }
-    Edge* AddPath(const BidirectionalPath& path) {
+    Edge* AddPath(const BidirectionalPath& path, size_t from) {
         Edge* e = this;
-        for (size_t i = 1; i < path.Size(); ++i) {
+        for (size_t i = from; i < path.Size(); ++i) {
             e = e->AddOutEdge(path.At(i));
         }
         return e;
@@ -72,7 +72,7 @@ public:
         vector<EdgeId> edges;
         const Edge* e = this;
         edges.push_back(e->GetId());
-        while (e->prev_edge_ != NULL) {
+        while (e->prev_edge_) {
             e = e->prev_edge_;
             edges.push_back(e->GetId());
         }
@@ -83,7 +83,7 @@ public:
     }
     bool IsCorrect() {
         Edge* e = this;
-        while (e->prev_edge_ != NULL) {
+        while (e->prev_edge_) {
             if (e->prev_edge_->GetOutEdgeIndex(e->GetId()) == -1)
                 return false;
             e = e->prev_edge_;
@@ -93,7 +93,7 @@ public:
     bool EqualBegins(const BidirectionalPath& path, int pos) {
         Edge* curr_edge = this;
         while (pos >= 0 && curr_edge->GetId() == path.At(pos)
-                && curr_edge->prev_edge_ != NULL) {
+                && curr_edge->prev_edge_) {
             pos--;
             curr_edge = curr_edge->prev_edge_;
         }
@@ -109,7 +109,8 @@ public:
     }
 private:
     Edge* AddIfNotExist(EdgeId e, vector<Edge*>& vect) {
-        if (size_t i = GetEdgeIndex(e, vect) != -1) {
+        int i = GetEdgeIndex(e, vect);
+        if (i != -1) {
             return vect[i];
         }
         size_t dist = dist_ + g_.length(e);
@@ -173,10 +174,9 @@ set<BidirectionalPath*> NextPathSearcher::FindNextPaths(
     std::set<Edge*> used_edges;
 
     Edge* start_e = new Edge(g_, path.At(0), NULL, g_.length(path.At(0)));
-    Edge* e = start_e->AddPath(path);
+    Edge* e = start_e->AddPath(path, 1);
     e = e->AddOutEdge(begin_edge);
     grow_paths.push_back(e);
-
     DEBUG("Try to find next path for path with edge " << g_.int_id(begin_edge));
     size_t ipath = 0;
     while (ipath < grow_paths.size()) {
@@ -200,7 +200,6 @@ set<BidirectionalPath*> NextPathSearcher::FindNextPaths(
             return std::set<BidirectionalPath*>();
         }
     }
-
     std::set<BidirectionalPath*> result_paths;
     for (size_t i = 0; i < result_edges.size(); ++i) {
         result_paths.insert(result_edges[i]->GetPrevPath(path.Size()));
@@ -213,22 +212,21 @@ set<BidirectionalPath*> NextPathSearcher::FindNextPaths(
 Edge* NextPathSearcher::AnalyzeBubble(const BidirectionalPath& p,
                                       EdgeId buldge_edge, size_t gap,
                                       Edge* prev_edge) {
-    auto edges = g_.OutgoingEdges(g_.EdgeStart(buldge_edge));
     EdgeId max_edge = buldge_edge;
     double max_w = 0.0;
-    for (auto it = edges.begin(); it != edges.end(); ++it) {
-        DEBUG("edge in bubble " << g_.int_id(*it));
-        double w = weight_counter_.CountPairInfo(p, 0, p.Size(), *it, gap);
+    for (EdgeId e : g_.OutgoingEdges(g_.EdgeStart(buldge_edge))) {
+        DEBUG("edge in bubble " << g_.int_id(e));
+        double w = weight_counter_.CountPairInfo(p, 0, p.Size(), e, gap);
         if (math::gr(w, max_w)) {
             max_w = w;
-            max_edge = *it;
+            max_edge = e;
         }
     }
-    for (auto it = edges.begin(); it != edges.end(); ++it) {
-        if (*it == max_edge) {
-            prev_edge->AddOutEdge(*it);
+    for (EdgeId e : g_.OutgoingEdges(g_.EdgeStart(buldge_edge))) {
+        if (e == max_edge) {
+            prev_edge->AddOutEdge(e);
         } else {
-            prev_edge->AddIncorrectOutEdge(*it);
+            prev_edge->AddIncorrectOutEdge(e);
         }
     }
     if (max_edge == buldge_edge) {
@@ -254,19 +252,20 @@ Edge* NextPathSearcher::AddPath(const BidirectionalPath& init_path,
         }
         if (e->GetIncorrectEdgeIndex(path.At(ie)) != -1) {
             DEBUG("this edge incorrect " << ie);
-            return e;
+            break;
         }
         if (InBuble(path.At(ie), g_)) {
             size_t gap = path.Length() - path.LengthAt(ie);
             Edge* next_edge = AnalyzeBubble(init_path, path.At(ie), gap, e);
             if (!next_edge)
-                return e;
+                break;
             e = next_edge;
         } else {
             DEBUG("add this edge " << ie);
             e = e->AddOutEdge(path.At(ie));
         }
     }
+    DEBUG("e " << g_.int_id(e->GetId()));
     return e;
 }
 
@@ -274,12 +273,10 @@ void NextPathSearcher::GrowPath(const BidirectionalPath& init_path, Edge* e,
                                 size_t max_len, vector<Edge*>& to_add) {
     if (!e->IsCorrect())
         return;
-    auto out_edges = g_.OutgoingEdges(g_.EdgeEnd(e->GetId()));
-    for (auto it = out_edges.begin(); it != out_edges.end(); ++it) {
-        EdgeId next_edge = *it;
+    for (EdgeId next_edge : g_.OutgoingEdges(g_.EdgeEnd(e->GetId()))) {
         set<BidirectionalPath*> cov_paths = cover_map_.GetCoveringPaths(
                 next_edge);
-        DEBUG("out edge " << g_.int_id(*it) << " cov paths "<< cov_paths.size());
+        DEBUG("out edge " << g_.int_id(next_edge) << " cov paths "<< cov_paths.size());
         for (auto inext_path = cov_paths.begin(); inext_path != cov_paths.end();
                 ++inext_path) {
             vector<size_t> positions = (*inext_path)->FindAll(next_edge);
@@ -288,7 +285,7 @@ void NextPathSearcher::GrowPath(const BidirectionalPath& init_path, Edge* e,
                 if (pos == 0 || e->EqualBegins(**inext_path, (int) pos - 1)) {
                     Edge* next_edge = AddPath(init_path, e, max_len,
                                               **inext_path, pos);
-                    if (next_edge != NULL) {
+                    if (next_edge) {
                         DEBUG("next edge not null");
                         to_add.push_back(next_edge);
                     } else {
@@ -301,13 +298,9 @@ void NextPathSearcher::GrowPath(const BidirectionalPath& init_path, Edge* e,
         }
         if (e->GetOutEdgeIndex(next_edge) == -1
                 && e->GetIncorrectEdgeIndex(next_edge) == -1) {
-            if (InBuble(next_edge, g_)) {
-                Edge* next = AnalyzeBubble(init_path, next_edge, 0, e);
-                if (next != NULL)
-                    to_add.push_back(next);
-            } else {
+            if (!InBuble(next_edge, g_)
+                    || !AnalyzeBubble(init_path, next_edge, 0, e))
                 to_add.push_back(e->AddOutEdge(next_edge));
-            }
         }
     }
 }
