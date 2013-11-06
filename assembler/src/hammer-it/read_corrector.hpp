@@ -672,20 +672,25 @@ class CorrectedRead {
     }
 
     // side effect: changes chunk_pos, pos, and approx_n_insertions
-    // !!!! FIXME: BUGGY !!!!
     bool TryToAlignCurrentCenter(const hammer::HKMer &center) {
       if (!last_good_center_is_defined)
         return true;
 
+      if (debug_mode_) {
+        std::cerr << "[TryToAlignCurrentCenter] " << center.str()
+                  << " (previous good center is " << last_good_center.str() << ","
+                  << " skipped " << skipped << " centers)" << std::endl;
+      }
+
+      // offset is how many positions the center should be shifted
+      // in order to agree with last_good_center
       int offset;
       bool aligned = exactAlignH(last_good_center.begin(),
                                  last_good_center.begin() + skipped + 1,
                                  last_good_center.end(),
                                  center.begin(), center.end(), 3, 5, &offset);
 
-      offset += skipped;
-
-      bool result = aligned && chunk_pos + offset > 0;
+      bool result = aligned && chunk_pos + offset >= 0;
       if (result) {
         if (debug_mode_)
           std::cerr << "[TryToAlignCurrentCenter] offset = " << offset << std::endl;
