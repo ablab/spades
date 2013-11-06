@@ -34,7 +34,7 @@ entry_point construction
 ;entry_point simplification
 ;entry_point late_pair_info_count
 ;entry_point distance_estimation
-;entry_point repeats_resolving
+;entry_point repeat_resolving
 
 developer_mode true
 
