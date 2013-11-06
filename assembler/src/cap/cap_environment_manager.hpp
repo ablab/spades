@@ -334,7 +334,8 @@ class CapEnvironmentManager {
         env_->init_genomes_paths_.push_back(filename);
         env_->genomes_.push_back(genome.sequence());
         env_->genomes_names_.push_back(name);
-        env_->coordinates_handler_.StoreGenomeThreadManual(env_->genomes_.size() - 1, reader.coordinates_ladder());
+        env_->coordinates_handler_.StoreGenomeThreadManual(env_->genomes_.size() - 1,
+                                                           reader.coordinates_ladder());
     } else {
         io::Reader reader(filename);
         io::SingleRead genome;

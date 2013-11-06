@@ -15,6 +15,7 @@
 #include "repeat_masking.hpp"
 #include "assembly_compare.hpp"
 #include "test_utils.hpp"
+#include "repeat_cropping_reader.hpp"
 
 ::boost::unit_test::test_suite* init_unit_test_suite(int, char*[]) {
     //logging::create_logger("", logging::L_DEBUG);
@@ -114,4 +115,19 @@ BOOST_AUTO_TEST_CASE( SyntheticExamplesTestsLSeq ) {
  remove_dir("bp_graph_test");
  }
  */
+
+BOOST_AUTO_TEST_CASE( RepeatCroppingReaderTest ) {
+    io::VectorReader<io::SingleRead> raw_reader(MakeReads(vector<string>{
+        "ACGTCacgtcTTGCA"}));
+    io::SingleRead read;
+    raw_reader >> read;
+    BOOST_CHECK_EQUAL("ACGTCacgtcTTGCA", read.GetSequenceString());
+    RepeatCroppingReader reader(raw_reader);
+    reader.reset();
+    reader >> read;
+    BOOST_CHECK_EQUAL("ACGTCTTGCA", read.sequence().str());
+    vector<pair<size_t, size_t>> etalon_ladder = {{0, 0}, {4, 4}, {9, 4}, {15, 10}};
+    BOOST_CHECK_EQUAL(reader.coordinates_ladder(), etalon_ladder);
+}
+
 }

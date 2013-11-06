@@ -19,14 +19,16 @@ class AddGenomeCommand : public LocalCommand<CapEnvironment> {
            "  * further tracking of genome (incl. refinement, searching for diffs, drawing pics, etc.\n"
            "  * storing all genome sequence in RAM throughout usage of current environment\n"
            "Usage:\n"
-           "> add_genome <path_to_file> [<genome_name> = <path_to_file>]\n"
+           "> add_genome <path_to_file> <genome_name> [<crop_repeats> (Yy)] \n"
            " You should specify path to file in which genome data is stored "
-           "(.fasta, .gb, etc.). Also you can provide optional name for genome"
+           "(.fasta, .gb, etc.). Also you should provide name for genome"
            "to display in future output.\n"
            "For example:\n"
            "> add_genome /home/puperuser/genomes/my_genome.fasta my_genome\n"
            " would add to the environment genome stored in file "
-           "`my_genome.fasta` located in folder `/home/puperuser/genomes`\n";
+           "`my_genome.fasta` located in folder `/home/puperuser/genomes`\n"
+           "Optionally repeat families marked by programs s.a. RepeatMasker (written in small letters)"
+           " can be ommited without loss of original coordinates\n";
   }
 
   virtual void Execute(CapEnvironment& curr_env, const ArgumentList& arg_list) const {
@@ -36,11 +38,15 @@ class AddGenomeCommand : public LocalCommand<CapEnvironment> {
     const vector<string>& args = arg_list.GetAllArguments();
     const std::string &filename = args[1];
     std::string name = filename;
-    if (args.size() > 2) {
-      name = args[2];
+    name = args[2];
+    bool crop_repeats = false;
+    if (args.size() > 3) {
+        VERIFY(args[3] == "Y" || args[3] == "y");
+        crop_repeats = true;
+        std::cout << "Repeat crop enabled! All small letters will be ignored with coordinated preserved\n";
     }
 
-    bool success = curr_env.manager().AddGenomeFromFile(filename, name);
+    bool success = curr_env.manager().AddGenomeFromFile(filename, name, crop_repeats);
     if (!success) {
       std::cout << "Failed. Genome is not valid. Please check input.\n";
     }
@@ -48,7 +54,7 @@ class AddGenomeCommand : public LocalCommand<CapEnvironment> {
 
  protected:
   virtual size_t MinArgNumber() const {
-    return 1;
+    return 2;
   }
 
   virtual bool CheckCorrectness(const ArgumentList& arg_list) const {

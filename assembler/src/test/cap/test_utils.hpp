@@ -332,4 +332,19 @@ public:
     }
 };
 
+const io::SingleRead MakeRead(const string& read) {
+    //todo fill with good quality
+    std::string qual;
+    qual.resize(read.size());
+    return io::SingleRead("", read, qual);
+}
+
+const vector<io::SingleRead> MakeReads(const vector<string>& reads) {
+    vector<io::SingleRead> ans;
+    for (size_t i = 0; i < reads.size(); ++i) {
+        ans.push_back(MakeRead(reads[i]));
+    }
+    return ans;
+}
+
 }
