@@ -19,17 +19,6 @@
 
 namespace debruijn_graph {
 
-/*
- * Return index of first paired-end library or -1 if there is no paired end library
- */
-size_t GetFirstPELibIndex() {
-    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i)
-        if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd &&
-                cfg::get().ds.reads[i].data().mean_insert_size != 0.0)
-            return i;
-    return -1UL;
-}
-
 //TODO: get rid of this conversion
 void ConvertLongReads(LongReadContainerT& single_long_reads, vector<PathStorageInfo<Graph> > &long_reads_libs) {
     for (size_t i = 0; i < single_long_reads.size(); ++i) {
@@ -49,7 +38,6 @@ void PEResolving(conj_graph_pack& gp) {
     vector<size_t> indexes;
     vector<PathStorageInfo<Graph> > long_reads_libs;
     ConvertLongReads(gp.single_long_reads, long_reads_libs);
-
     std::string name = "scaffolds.fasta";
     bool traverse_loops = true;
     if (!(cfg::get().use_scaffolder && cfg::get().pe_params.param_set.scaffolder_options.on)) {
