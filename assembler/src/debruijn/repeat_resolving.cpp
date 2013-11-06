@@ -102,32 +102,12 @@ void ConvertLongReads(LongReadContainerT& single_long_reads, vector<PathStorageI
         DEBUG("done " << i)
     }
 }
-vector<PairedIndexT*> GetVector(PairedIndicesT& paired_indices){
-    vector<PairedIndexT*> result;
-    for (size_t i = 0; i < paired_indices.size(); ++i){
-        result.push_back(&paired_indices[i]);
-    }
-    return result;
 
-}
 void pe_resolving(conj_graph_pack& gp, const EdgeQuality<Graph, Index>& /* quality_labeler */) {
-    vector<PairedIndexT*> pe_indexes;
-    vector<PairedIndexT*> pe_scaf_indices;
     vector<size_t> indexes;
     vector<PathStorageInfo<Graph> > long_reads_libs;
     ConvertLongReads(gp.single_long_reads, long_reads_libs);
 
-    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        io::LibraryType type = cfg::get().ds.reads[i].type();
-        if (cfg::get().ds.reads[i].data().mean_insert_size != 0.0 &&
-                (type == io::LibraryType::PairedEnd ||
-                 type == io::LibraryType::MatePairs)) {
-
-            pe_indexes.push_back(&gp.clustered_indices[i]);
-            pe_scaf_indices.push_back(&gp.scaffolding_indices[i]);
-            indexes.push_back(i);
-        }
-    }
 
 #if 0
     if (cfg::get().coverage_based_rr_on == true) {
@@ -151,14 +131,11 @@ void pe_resolving(conj_graph_pack& gp, const EdgeQuality<Graph, Index>& /* quali
     bool traverse_loops = true;
     if (!(cfg::get().use_scaffolder && cfg::get().pe_params.param_set.scaffolder_options.on)) {
         name = "final_contigs.fasta";
-        pe_scaf_indices.clear();
         traverse_loops = false;
     }
-    vector<PairedIndexT*> not_clust_index = GetVector(gp.paired_indices);
     path_extend::ResolveRepeatsPe(
-            gp, pe_indexes, pe_scaf_indices, indexes,  not_clust_index, long_reads_libs,
-            cfg::get().output_dir, name, traverse_loops,
-            boost::optional<std::string>("final_coGetVectorntigs.fasta"));
+            gp, long_reads_libs, cfg::get().output_dir, name, traverse_loops,
+            boost::optional<std::string>("final_contigs.fasta"));
 }
 
 void RepeatResolution::run(conj_graph_pack &gp, const char*) {

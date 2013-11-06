@@ -29,6 +29,7 @@
 namespace path_extend {
 
 using namespace debruijn_graph;
+typedef omnigraph::de::PairedInfoIndicesT<Graph> PairedInfoIndicesT;
 
 size_t FindMaxOverlapedLen(const vector<PairedInfoLibraries>& libes) {
     size_t max = 0;
@@ -382,7 +383,7 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
     resolver.addUncoveredEdges(last_paths, last_extender->GetCoverageMap());
     last_paths.SortByLength();
 
-//travers loops
+//Traverse loops
     if (traversLoops) {
         INFO("Traversing tandem repeats");
         LoopTraverser loopTraverser(gp.g, last_extender->GetCoverageMap(), last_extender);
@@ -403,24 +404,18 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 }
 
 PairedInfoLibrary* MakeNewLib(conj_graph_pack::graph_t& g,
-		vector<PairedIndexT*>& paired_index, size_t initial_index,
-		size_t index) {
-
-	size_t read_length = cfg::get().ds.reads[initial_index].data().read_length;
-    size_t is_min = (size_t) cfg::get().ds.reads[initial_index].data()
-            .insert_size_left_quantile;
-    size_t is_max = (size_t) cfg::get().ds.reads[initial_index].data()
-            .insert_size_right_quantile;
-    size_t var = (size_t) cfg::get().ds.reads[initial_index].data()
-            .insert_size_deviation;
-	bool is_mp = cfg::get().ds.reads[initial_index].type() == io::LibraryType::MatePairs;
-	PairedInfoLibrary* lib =new PairedInfoLibrary(
-			cfg::get().K, g, read_length, is_min > 0.0 ? size_t(is_min) : 0,
-					is_max > 0.0 ? size_t(is_max) : 0, var, *paired_index[index],
-							is_mp,
-							cfg::get().ds.reads[initial_index].data().insert_size_distribution);
-
-	return lib;
+                              const PairedInfoIndicesT& paired_index,
+                              size_t index) {
+    size_t read_length = cfg::get().ds.reads[index].data().read_length;
+    size_t is_min = (size_t) cfg::get().ds.reads[index].data().insert_size_left_quantile;
+    size_t is_max = (size_t) cfg::get().ds.reads[index].data().insert_size_right_quantile;
+    size_t var = (size_t) cfg::get().ds.reads[index].data().insert_size_deviation;
+    bool is_mp = cfg::get().ds.reads[index].type() == io::LibraryType::MatePairs;
+    PairedInfoLibrary* lib = new PairedInfoLibrary(
+            cfg::get().K, g, read_length, is_min > 0.0 ? size_t(is_min) : 0,
+            is_max > 0.0 ? size_t(is_max) : 0, var, paired_index[index], is_mp,
+            cfg::get().ds.reads[index].data().insert_size_distribution);
+    return lib;
 }
 
 void DeleteLibs(vector<PairedInfoLibraries>& libs) {
@@ -439,9 +434,7 @@ bool InsertSizeCompare(const PairedInfoLibraries& lib1,
     return lib1[0]->GetISMax() < lib2[0]->GetISMax();
 }
 
-void ResolveRepeatsPe(conj_graph_pack& gp, vector<PairedIndexT*>& paired_index,
-                      vector<PairedIndexT*>& scaff_index,
-                      vector<size_t>& indexs, vector<PairedIndexT*>& paired_indexes_not_clust,
+void ResolveRepeatsPe(conj_graph_pack& gp,
                       const vector<PathStorageInfo<Graph> >& long_reads,
                       const std::string& output_dir,
                       const std::string& contigs_name, bool traverseLoops,
@@ -450,39 +443,41 @@ void ResolveRepeatsPe(conj_graph_pack& gp, vector<PairedIndexT*>& paired_index,
     vector<PairedInfoLibraries> rr_libs;
     vector<PairedInfoLibraries> mp_libs;
     vector<PairedInfoLibraries> scaff_libs;
-    for (size_t i = 0; i < paired_index.size(); ++i) {
-        if (cfg::get().ds.reads[indexs[i]].type() == io::LibraryType::PairedEnd
+    for (size_t i = 0; i < gp.clustered_indices.size(); ++i) {
+        if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd
                 /*|| cfg::get().ds.reads[indexs[i]].type()
                         == io::LibraryType::MatePairs*/) {
-            PairedInfoLibrary* lib = MakeNewLib(gp.g, paired_index, indexs[i], i);
+            PairedInfoLibrary* lib = MakeNewLib(gp.g, gp.clustered_indices, i);
             if (use_auto_threshold) {
-                lib->SetSingleThreshold(cfg::get().ds.reads[indexs[i]].data().pi_threshold);
-                INFO("Threshold for library # " << indexs[i] << " is " << cfg::get().ds.reads[indexs[i]].data().pi_threshold);
+                lib->SetSingleThreshold(cfg::get().ds.reads[i].data().pi_threshold);
+                INFO("Threshold for library # " << i << " is " << cfg::get().ds.reads[i].data().pi_threshold);
             }
             PairedInfoLibraries libs;
             libs.push_back(lib);
             rr_libs.push_back(libs);
         }
     }
-    for (size_t i = 0; i < paired_index.size(); ++i) {
-		if (cfg::get().ds.reads[indexs[i]].type()
+    for (size_t i = 0; i < gp.paired_indices.size(); ++i) {
+		if (cfg::get().ds.reads[i].type()
 				== io::LibraryType::MatePairs) {
-			PairedInfoLibrary* lib = MakeNewLib(gp.g, paired_indexes_not_clust/*paired_index*/,
-					indexs[i], i);
+			PairedInfoLibrary* lib = MakeNewLib(gp.g, gp.paired_indices/*paired_index*/, i);
 			PairedInfoLibraries libs;
 			libs.push_back(lib);
 			mp_libs.push_back(libs);
 		}
 	}
     std::sort(rr_libs.begin(), rr_libs.end(), InsertSizeCompare);
-    for (size_t i = 0; i < scaff_index.size(); ++i) {
-        if (cfg::get().ds.reads[indexs[i]].type() == io::LibraryType::PairedEnd
-               /* || cfg::get().ds.reads[indexs[i]].type()
-                        == io::LibraryType::MatePairs*/) {
-            PairedInfoLibrary* lib = MakeNewLib(gp.g, scaff_index, indexs[i], i);
-            PairedInfoLibraries libs;
-            libs.push_back(lib);
-            scaff_libs.push_back(libs);
+    if (cfg::get().use_scaffolder
+            && cfg::get().pe_params.param_set.scaffolder_options.on) {
+        for (size_t i = 0; i < gp.scaffolding_indices.size(); ++i) {
+            if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd
+            /* || cfg::get().ds.reads[indexs[i]].type()
+             == io::LibraryType::MatePairs*/) {
+                PairedInfoLibrary* lib = MakeNewLib(gp.g, gp.scaffolding_indices, i);
+                PairedInfoLibraries libs;
+                libs.push_back(lib);
+                scaff_libs.push_back(libs);
+            }
         }
     }
     std::sort(scaff_libs.begin(), scaff_libs.end(), InsertSizeCompare);
