@@ -816,22 +816,17 @@ private:
             max_weight = max(max_weight, iter->second);
         }
         for (auto iter = weights.begin(); iter != weights.end(); ++iter) {
-            if (math::gr(max_weight, iter->second * 1.5)) {
+            if (math::gr(max_weight, iter->second * 1.5))
                 paths.erase(iter->first);
-            }
         }
     }
 
     void DeleteCommonPi(const BidirectionalPath& path,
-            const std::map<BidirectionalPath*, map<size_t, double> >& all_pair_info) {
+            const std::map<BidirectionalPath*, map<size_t, double> >& all_pi) {
         weight_counter_.ClearCommonWeight();
-        if (all_pair_info.size() <= 1) {
-            return;
-        }
         for (size_t i = 0; i < path.Size(); ++i) {
             double common = DBL_MAX;
-            for (auto iter = all_pair_info.begin(); iter != all_pair_info.end();
-                    ++iter) {
+            for (auto iter = all_pi.begin(); iter != all_pi.end(); ++iter) {
                 if (iter->second.count(i) == 0) {
                     common = 0.0;
                     break;
@@ -848,8 +843,8 @@ private:
             const set<BidirectionalPath*>& next_paths,
             std::map<BidirectionalPath*, map<size_t, double> >& result) const {
         result.clear();
-        for (auto iter = next_paths.begin(); iter != next_paths.end(); ++iter) {
-            result[*iter] = weight_counter_.FindPairInfoFromPath(path, **iter);
+        for (BidirectionalPath* next : next_paths) {
+            result[next] = weight_counter_.FindPairInfoFromPath(path, *next);
         }
     }
 
@@ -860,10 +855,10 @@ private:
         CountAllPairInfo(path, next_paths, all_pi);
         DeleteCommonPi(path, all_pi);
         map<BidirectionalPath*, double> result;
-        for (auto iter = next_paths.begin(); iter != next_paths.end(); ++iter) {
-            result[*iter] = weight_counter_.CountPairInfo(path, 0, path.Size(),
-                                                          **iter, 0,
-                                                          (*iter)->Size());
+        for (BidirectionalPath* next : next_paths) {
+            result[next] = weight_counter_.CountPairInfo(path, 0, path.Size(),
+                                                         *next, 0,
+                                                         next->Size());
         }
         return result;
     }
@@ -875,15 +870,12 @@ private:
         while (weights.size() > 0) {
             auto max_iter = weights.begin();
             for (auto iter = weights.begin(); iter != weights.end(); ++iter) {
-                if (iter->second > max_iter->second) {
+                if (iter->second > max_iter->second)
                     max_iter = iter;
-                }
-                if (max_iter->second != iter->second) {
+                if (max_iter->second != iter->second)
                     continue;
-                }
-                if (!PathCompare(iter->first, max_iter->first)) {
+                if (!PathCompare(iter->first, max_iter->first))
                     max_iter = iter;
-                }
             }
             result.push_back(max_iter->first);
             weights.erase(max_iter);
@@ -891,30 +883,21 @@ private:
         return result;
     }
 
-    //TODO: do it in weight counter
     vector<BidirectionalPath*> MaxWeightedPath(
             const BidirectionalPath& path,
             const set<BidirectionalPath*>& following_paths) {
         set<BidirectionalPath*> result(following_paths);
-        bool first_time = true;
-        bool changed = true;
-        while (first_time || changed) {
-            first_time = false;
+        set<BidirectionalPath*> prev_result;
+        while (prev_result.size() != result.size()) {
+            prev_result = result;
             DEBUG("iteration with paths " << result.size());
             map<BidirectionalPath*, double> weights = CountAllWeights(path,
                                                                       result);
-            set<BidirectionalPath*> prev_result(result);
             DeleteSmallWeights(weights, result);
-            if (result.size() == prev_result.size()) {
-                changed = false;
-            }
-            if (result.size() == 0) {
+            if (result.size() == 0)
                 result = prev_result;
+            if (result.size() == 1)
                 break;
-            }
-            if (result.size() == 1) {
-                break;
-            }
         }
         if (result.size() == 0) {
             INFO("bad case");
@@ -922,6 +905,7 @@ private:
         }
         return SortResult(path, result);
     }
+
     EdgeContainer TryToScaffold(const BidirectionalPath& path,
                                 const set<BidirectionalPath*>& paths) {
         if (paths.size() == 0) {
@@ -930,16 +914,14 @@ private:
         weight_counter_.ClearCommonWeight();
         size_t max_common_end = 0;
         BidirectionalPath max_path(g_);
-        for (auto iter1 = paths.begin(); iter1 != paths.end(); ++iter1) {
-            BidirectionalPath* path1 = *iter1;
+        for (auto it1 = paths.begin(); it1 != paths.end(); ++it1) {
+            BidirectionalPath* path1 = *it1;
             bool contain_all = true;
             for (size_t i = 1; i < path1->Size() && contain_all; ++i) {
-                const BidirectionalPath subpath = path1->SubPath(path1->Size() - i);
-                for (auto iter2 = paths.begin(); iter2 != paths.end() && contain_all;
-                        ++iter2) {
-                    if (!(*iter2)->Contains(subpath)) {
+                BidirectionalPath subpath = path1->SubPath(path1->Size() - i);
+                for (auto it2 = paths.begin(); it2 != paths.end() && contain_all; ++it2) {
+                    if (!(*it2)->Contains(subpath))
                         contain_all = false;
-                    }
                 }
                 if (contain_all && i >= max_common_end) {
                     max_common_end = i;
