@@ -240,27 +240,12 @@ void FindInconsistent(EdgeId base_edge, const typename omnigraph::de::PairedInfo
             const omnigraph::de::Point& p1 = entry1.second;
             EdgeId e2 = entry2.first;
             const omnigraph::de::Point& p2 = entry2.second;
-            stringstream str;
-            str << "Is Consistent will check " << graph_.int_id(base_edge) << " "
-            			<< graph_.int_id(e1) << " " << graph_.int_id(e2)
-            			<<" with weights " << p1.weight <<  " " <<p2.weight << " dists " << p1.d << " " << p2.d;
-            bool will_delete = false;
             if (!IsConsistent(base_edge, e1, e2, p1, p2)) {
-                if (math::le(p1.weight, p2.weight)){
+                if (math::le(p1.weight, p2.weight)) {
                     pi->AddPairInfo(base_edge, e1, p1);
-                    str << " Will delete " <<  graph_.int_id(base_edge) << " " << graph_.int_id(e1) ;
-                    will_delete = true;
-                }
-                else{
+                } else {
                     pi->AddPairInfo(base_edge, e2, p2);
-                    str << " Will delete " <<  graph_.int_id(base_edge) << " " << graph_.int_id(e2);
-                    will_delete = true;
                 }
-            }
-            if (will_delete && graph_.int_id(base_edge) == 39414
-                       		and ((graph_.int_id(e1) == 38951 or graph_.int_id(e2)== 38951 )
-                       				or(graph_.int_id(e1) == 39427 or graph_.int_id(e2)== 39427))) {
-            	INFO(str.str());
             }
         }
     }
