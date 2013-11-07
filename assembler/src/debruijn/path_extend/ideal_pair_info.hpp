@@ -34,22 +34,22 @@ public:
         PreCalculateNotTotalReadsWeight();
     }
 
-    double IdealPairedInfo(EdgeId e1, EdgeId e2, int dist) {
+    double IdealPairedInfo(EdgeId e1, EdgeId e2, int dist, bool additive = false) {
         std::pair<size_t, size_t> lengths = make_pair(g_.length(e1), g_.length(e2));
         if (pi_.find(lengths) == pi_.end()) {
             pi_[lengths] = std::map<int, double>();
         }
         std::map<int, double>& weights = pi_[lengths];
         if (weights.find(dist) == weights.end()) {
-            weights[dist] = IdealPairedInfo(g_.length(e1), g_.length(e2), dist);
+            weights[dist] = IdealPairedInfo(g_.length(e1), g_.length(e2), dist, additive);
         }
         return weights[dist];
     }
-    double IdealPairedInfo(size_t len1, size_t len2, int dist) const {
+    double IdealPairedInfo(size_t len1, size_t len2, int dist, bool additive = false) const {
         double result = 0.0;
         for (int d = max(d_min_, 0); d < d_max_; ++d) {
             double weight = insert_size_distrib_.at(d);
-            result += weight * (double) IdealReads(len1, len2, dist, d);
+            result += weight * (double) IdealReads(len1, len2, dist, d, additive);
         }
         return result;
     }
@@ -57,7 +57,7 @@ public:
 private:
 
     double IdealReads(size_t len1_1, size_t len2_1, int dist,
-                      size_t is_1) const {
+                      size_t is_1, bool additive) const {
         int len1 = (int) len1_1;
         int len2 = (int) len2_1;
         int is = (int) is_1;
@@ -65,7 +65,7 @@ private:
         int rs = (int) read_size_;
         double w = 0.0;
         if (dist == 0) {
-            w = len1 - is + 2 * rs - 2 - k + 1;
+            return len1 - is + 2 * rs - 2 - k + 1;
         }
         if (dist < 0) {
             int tmp = len1;
@@ -85,9 +85,11 @@ private:
         int left_e2 = std::max(left_long, gap_len);
         int right_not_full = std::max(right - right_e2, 0);
         int left_not_full = std::max(left_e2 - left, 0);
-        w = result - not_total_weights_right_[right_not_full]
-                - not_total_weights_left_[left_not_full];
-        return w > 0 ? w : 0;
+        w = result;
+        if (additive){
+            w = w - not_total_weights_right_[right_not_full]- not_total_weights_left_[left_not_full];
+        }
+        return w > 0.0 ? w : 0.0;
     }
 
     void PreCalculateNotTotalReadsWeight() {

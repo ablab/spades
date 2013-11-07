@@ -91,8 +91,8 @@ struct PairedInfoLibrary {
         return weight;
     }
 
-    double IdealPairedInfo(EdgeId e1, EdgeId e2, int distance) {
-        return ideal_pi_counter_.IdealPairedInfo(e1, e2, distance);
+    double IdealPairedInfo(EdgeId e1, EdgeId e2, int distance, bool additive = false) {
+        return ideal_pi_counter_.IdealPairedInfo(e1, e2, distance, additive);
     }
 
     double NormalizeWeight(const DePairInfo& pair_info) {
