@@ -192,7 +192,7 @@ void estimate_distance(conj_graph_pack& gp,
         size_t linkage_distance = size_t(cfg::get().de.linkage_distance_coeff * is_var);
         GraphDistanceFinder<Graph> dist_finder(gp.g, (size_t) math::round(lib.data().mean_insert_size),
                                                lib.data().read_length, delta);
-        size_t max_distance = size_t(cfg::get().de.max_distance_coeff * is_var);
+        size_t max_distance = size_t(cfg::get().de.max_distance_coeff_scaff * is_var);
         boost::function<double(int)> weight_function;
 
         DEBUG("Retaining insert size distribution for it");

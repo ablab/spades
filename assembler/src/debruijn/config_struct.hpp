@@ -277,6 +277,7 @@ struct debruijn_config {
     struct distance_estimator {
         double linkage_distance_coeff;
         double max_distance_coeff;
+        double max_distance_coeff_scaff;
         double filter_threshold;
     };
 

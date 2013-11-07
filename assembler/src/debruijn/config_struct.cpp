@@ -314,6 +314,7 @@ void load(debruijn_config::distance_estimator& de,
 
   load(de.linkage_distance_coeff, pt, "linkage_distance_coeff");
   load(de.max_distance_coeff, pt, "max_distance_coeff");
+  load(de.max_distance_coeff_scaff, pt, "max_distance_coeff_scaff");
   load(de.filter_threshold, pt, "filter_threshold");
 }
 

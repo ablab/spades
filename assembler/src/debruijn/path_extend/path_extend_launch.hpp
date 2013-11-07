@@ -213,17 +213,17 @@ void TestIdealInfo(conj_graph_pack& gp) {
         counter.IdealPairedInfo(edge_len, edge_len, edge_len + i);
     }*/
     size_t edge_len = 100;
-    double w1 = counter.IdealPairedInfo(edge_len, edge_len, (int) edge_len);
+    double w1 = counter.IdealPairedInfo(edge_len, edge_len, (int) edge_len, true);
     size_t edge_len1_1 = 50;
     size_t edge_len1_2 = 50;
-    double w2_1 = counter.IdealPairedInfo(edge_len, edge_len1_1, (int) edge_len);
-    double w2_2 = counter.IdealPairedInfo(edge_len, edge_len1_2, (int) (edge_len + edge_len1_2));
+    double w2_1 = counter.IdealPairedInfo(edge_len, edge_len1_1, (int) edge_len, true);
+    double w2_2 = counter.IdealPairedInfo(edge_len, edge_len1_2, (int) (edge_len + edge_len1_2), true);
     size_t edge_len2_1 = 20;
     size_t edge_len2_2 = 30;
     size_t edge_len2_3 = 50;
-    double w3_1 = counter.IdealPairedInfo(edge_len, edge_len2_1, (int)edge_len);
-    double w3_2 = counter.IdealPairedInfo(edge_len, edge_len2_2, (int)(edge_len + edge_len2_1));
-    double w3_3 = counter.IdealPairedInfo(edge_len, edge_len2_3, (int)(edge_len + edge_len2_1 + edge_len2_2));
+    double w3_1 = counter.IdealPairedInfo(edge_len, edge_len2_1, (int)edge_len, true);
+    double w3_2 = counter.IdealPairedInfo(edge_len, edge_len2_2, (int)(edge_len + edge_len2_1), true);
+    double w3_3 = counter.IdealPairedInfo(edge_len, edge_len2_3, (int)(edge_len + edge_len2_1 + edge_len2_2), true);
     DEBUG("TEST " << w1 << " " << w2_1 + w2_2 << " " << w3_1 + w3_2 + w3_3);
 }
 void ResolveRepeatsManyLibs(conj_graph_pack& gp,
@@ -274,14 +274,8 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	seeds.ResetPathsId();
 	INFO("Growing paths");
 	auto paths = resolver.extendSeeds(seeds, *mainPE);
-	if (cfg::get().pe_params.output.write_overlaped_paths) {
-		writer.writePaths(paths, GetEtcDir(output_dir) + "overlaped_paths.fasta");
-	}
 	DebugOutputPaths(writer, gp, output_dir, paths, "pe_overlaped_paths");
     size_t max_over = FindMaxOverlapedLen(libs);
-    paths.FilterEmptyPaths();
-	paths.CheckSymmetry();
-    resolver.addUncoveredEdges(paths, mainPE->GetCoverageMap());
 	paths.SortByLength();
 
     if (mp_libs.size() == 0) {
@@ -291,15 +285,15 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
         paths.CheckSymmetry();
         resolver.addUncoveredEdges(paths, mainPE->GetCoverageMap());
         paths.SortByLength();
+        if (broken_contigs.is_initialized()) {
+            OutputBrokenScaffolds(paths, (int) gp.g.k(), writer,
+                                  output_dir + broken_contigs.get());
+        }
         if (traversLoops) {
             INFO("Traversing tandem repeats");
             LoopTraverser loopTraverser(gp.g, mainPE->GetCoverageMap(), mainPE);
             loopTraverser.TraverseAllLoops();
             paths.SortByLength();
-        }
-        if (broken_contigs.is_initialized()) {
-            OutputBrokenScaffolds(paths, (int) gp.g.k(), writer,
-                                  output_dir + broken_contigs.get());
         }
         writer.writePaths(paths, output_dir + contigs_name);
         return;
