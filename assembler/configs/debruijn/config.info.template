@@ -108,7 +108,7 @@ andrey_params {
 	#include "path_extend/pe_params.info"
 }
 
-avoid_rc_connections false
+avoid_rc_connections true
 
 ;position handling
 
@@ -139,12 +139,8 @@ pacbio_processor
 	pacbio_reads /home/lab42/algorithmic-biology/assembler/data/input/E.coli/pacbio/e-coli-k12-mg1655-raw-reads-1.3.0/2590338/0006/Analysis_Results/filtered_subreads.fastq
 	additional_debug_info	false
 	pacbio_k 13
-<<<<<<< HEAD
-	pacbio_optimized_sw true
-=======
         additional_debug_info false
 	pacbio_optimized_sw false
->>>>>>> master
 	compression_cutoff 0.6
 	domination_cutoff 1.5
 	path_limit_stretching 1.3
