@@ -228,7 +228,7 @@ void TestIdealInfo(conj_graph_pack& gp) {
 }
 void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 		vector<PairedInfoLibraries>& libs,
-		vector<PairedInfoLibraries>& scafolding_libs,
+		vector<PairedInfoLibraries>& scaff_libs,
 		vector<PairedInfoLibraries>& mp_libs,
 		const vector<PathStorageInfo<Graph> >& long_reads,
 		const std::string& output_dir,
@@ -248,7 +248,7 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	const pe_config::ParamSetT& pset = cfg::get().pe_params.param_set;
 
 	INFO("Using " << libs.size() << " paired lib(s)");
-	INFO("Using " << scafolding_libs.size() << " scaffolding libs");
+	INFO("Using " << scaff_libs.size() << " scaffolding libs");
 	INFO("Scaffolder is " << (pset.scaffolder_options.on ? "on" : "off"));
 
 	ContigWriter writer(gp.g);
@@ -258,7 +258,7 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
     vector<SimpleExtender*> long_reads_extenders = MakeLongReadsExtender(
             gp, long_reads, pset.loop_removal.max_loops);
     vector<SimpleExtender *> shortLoopPEs = MakePEExtenders(gp, pset, libs, true);
-    vector<ScaffoldingPathExtender*> scafPEs = MakeScaffoldingExtender(gp, pset, scafolding_libs);
+    vector<ScaffoldingPathExtender*> scafPEs = MakeScaffoldingExtender(gp, pset, scaff_libs);
     vector<PathExtender *> all_libs(usualPEs.begin(), usualPEs.end());
     all_libs.insert(all_libs.end(), long_reads_extenders.begin(),
                     long_reads_extenders.end());

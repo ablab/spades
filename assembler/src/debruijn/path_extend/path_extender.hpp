@@ -319,10 +319,6 @@ public:
                 DEBUG("Gap looks like unrealiable: " << initial_gap);
                 best_gap = INVALID_GAP;
             }
-//            else if (initial_gap < (int) g_.k()) {
-//                best_gap = (int) g_.k() + noOverlapGap_;
-//                DEBUG("Overlap is not found, initial gap: " << initial_gap << ", changing to " << best_gap);
-//            }
             else {
                 DEBUG("Overlap is not found, initial gap: " << initial_gap << ", not changing.");
                 best_gap = initial_gap;
