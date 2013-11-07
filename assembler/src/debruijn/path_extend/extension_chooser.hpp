@@ -855,7 +855,10 @@ private:
 
     map<BidirectionalPath*, double> CountAllWeights(
             const BidirectionalPath& path,
-            const set<BidirectionalPath*>& next_paths) const {
+            const set<BidirectionalPath*>& next_paths) {
+        std::map<BidirectionalPath*, map<size_t, double> > all_pi;
+        CountAllPairInfo(path, next_paths, all_pi);
+        DeleteCommonPi(path, all_pi);
         map<BidirectionalPath*, double> result;
         for (auto iter = next_paths.begin(); iter != next_paths.end(); ++iter) {
             result[*iter] = weight_counter_.CountPairInfo(path, 0, path.Size(),
@@ -864,70 +867,40 @@ private:
         }
         return result;
     }
-    //TODO: keep it simple
-    vector<BidirectionalPath*> SortResult(const BidirectionalPath& path, const set<BidirectionalPath*>& result) {
-        std::map<BidirectionalPath*, map<size_t, double> > all_pi;
-        CountAllPairInfo(path, result, all_pi);
-        DeleteCommonPi(path, all_pi);
-        map<BidirectionalPath*, double> weights = CountAllWeights(path, result);
-        vector<BidirectionalPath*> vector_result;
+
+    vector<BidirectionalPath*> SortResult(const BidirectionalPath& path,
+            const set<BidirectionalPath*>& next_paths) {
+        map<BidirectionalPath*, double> weights = CountAllWeights(path, next_paths);
+        vector<BidirectionalPath*> result;
         while (weights.size() > 0) {
             auto max_iter = weights.begin();
             for (auto iter = weights.begin(); iter != weights.end(); ++iter) {
                 if (iter->second > max_iter->second) {
                     max_iter = iter;
+                }
+                if (max_iter->second != iter->second) {
                     continue;
                 }
-                if (max_iter->second > iter->second) {
-                    continue;
-                }
-                const BidirectionalPath& path1 = *iter->first;
-                const BidirectionalPath& path2 = *max_iter->first;
-                if (path1.Length() > path2.Length()) {
+                if (!PathCompare(iter->first, max_iter->first)) {
                     max_iter = iter;
-                    continue;
-                }
-                if (path2.Length() > path1.Length()) {
-                    continue;
-                }
-                if (path1.Size() > path2.Size()) {
-                    max_iter = iter;
-                    continue;
-                }
-                if (path2.Size() > path1.Size()) {
-                    continue;
-                }
-                for (size_t i = 0; i < path1.Size(); ++i) {
-                    if (path1.graph().int_id(path1.At(i))
-                            < path1.graph().int_id(path2.At(i))) {
-                        max_iter = iter;
-                        continue;
-                    }
-                    if (path1.graph().int_id(path2.At(i))
-                            < path1.graph().int_id(path1.At(i))) {
-                        continue;
-                    }
                 }
             }
-            vector_result.push_back(max_iter->first);
+            result.push_back(max_iter->first);
             weights.erase(max_iter);
         }
-        return vector_result;
+        return result;
     }
 
     //TODO: do it in weight counter
     vector<BidirectionalPath*> MaxWeightedPath(
             const BidirectionalPath& path,
             const set<BidirectionalPath*>& following_paths) {
-        std::map<BidirectionalPath*, map<size_t, double> > all_pair_info;
         set<BidirectionalPath*> result(following_paths);
         bool first_time = true;
         bool changed = true;
         while (first_time || changed) {
-            CountAllPairInfo(path, result, all_pair_info);
             first_time = false;
             DEBUG("iteration with paths " << result.size());
-            DeleteCommonPi(path, all_pair_info);
             map<BidirectionalPath*, double> weights = CountAllWeights(path,
                                                                       result);
             set<BidirectionalPath*> prev_result(result);
