@@ -545,7 +545,7 @@ class DataScanner {
                 //      VERIFY(read_count == 3);
                 VERIFY(read_count == 5);
                 EdgeId eid = id_handler_.ReturnEdgeId(edge_real_id);
-                edge_pos.AddEdgePosition(eid, string(contigId), start_pos, end_pos, m_start_pos, m_end_pos);
+                edge_pos.AddEdgePosition(eid, string(contigId), start_pos - 1, end_pos, m_start_pos - 1, m_end_pos);
             }
         }
         fclose(file);

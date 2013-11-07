@@ -438,11 +438,10 @@ class PosFiller {
                             << mr.initial_range.start_pos + 1
                             << "--" << mr.initial_range.end_pos);
                     }
-            edge_pos_.AddEdgePosition(ei, name, mr.initial_range.start_pos + 1,
+            edge_pos_.AddEdgePosition(ei, name, mr.initial_range.start_pos,
                                       mr.initial_range.end_pos,
-                                      mr.mapped_range.start_pos + 1,
+                                      mr.mapped_range.start_pos,
                                       mr.mapped_range.end_pos);
-            //TODO start kmer counting from 0!!!
             cur_pos += len;
         }
     }
