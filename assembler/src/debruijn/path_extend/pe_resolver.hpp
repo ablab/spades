@@ -377,8 +377,8 @@ public:
     }
 
     void removeOverlaps(PathContainer& paths, GraphCoverageMap& coverage_map,
-                        size_t max_overlap, ContigWriter& /*writer*/,
-                        string /*output_dir*/) {
+                        size_t max_overlap, ContigWriter& writer,
+                        string output_dir) {
         SimpleOverlapRemover remover(g_, coverage_map);
         //writer.writePaths(paths, output_dir + "/before.fasta");
         //DEBUG("Removing subpaths");
@@ -391,8 +391,8 @@ public:
         //writer.writePaths(paths, output_dir + "/remove_equal.fasta");
         //DEBUG("remove similar path. Max difference " << max_overlap);
         remover.RemoveSimilarPaths(max_overlap, false, true, true, true);
-        //DEBUG("end removing");
-        //writer.writePaths(paths, output_dir + "/remove_all.fasta");
+        DEBUG("end removing");
+        writer.writePaths(paths, output_dir + "/remove_all.fasta");
     }
 
     void RemoveMatePairEnds(PathContainer& paths, size_t min_edge_len) const {

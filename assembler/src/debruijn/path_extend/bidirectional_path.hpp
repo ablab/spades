@@ -291,14 +291,14 @@ protected:
         Verify();
     }
 
-    void IncreaseLengths(size_t length) {
+    void IncreaseLengths(size_t length, size_t gap) {
         Verify();
         for(auto iter = cumulativeLength_.begin(); iter != cumulativeLength_.end(); ++iter) {
-            *iter += length;
+            *iter += length + gap;
         }
 
         cumulativeLength_.push_back(length);
-        totalLength_ += length;
+        totalLength_ += length + gap;
         Verify();
     }
 
@@ -340,15 +340,17 @@ protected:
 public:
     void PushFront(EdgeId e, int gap = 0) {
         data_.push_front(e);
-        gapLength_.push_front(gap);
-
-        int length = (int) g_.length(e) + gap;
+        if (gapLength_.size() > 0) {
+            gapLength_[0] += gap;
+        }
+        gapLength_.push_front(0);
+        int length = (int) g_.length(e);
         if (cumulativeLength_.empty()) {
             cumulativeLength_.push_front(length);
         } else {
-            cumulativeLength_.push_front(length + cumulativeLength_.front());
+            cumulativeLength_.push_front(length + gap + cumulativeLength_.front());
         }
-        totalLength_ += length;
+        totalLength_ += length + gap;
         now_ = data_.back();
         NotifyFrontEdgeAdded(e, gap);
         Verify();
@@ -469,7 +471,7 @@ public:
 	void PushBack(EdgeId e, int gap = 0) {
 	    data_.push_back(e);
 	    gapLength_.push_back(gap);
-	    IncreaseLengths(g_.length(e) + gap);
+	    IncreaseLengths(g_.length(e), gap);
         now_ = e;
 	    NotifyBackEdgeAdded(e, gap);
 	}

@@ -445,7 +445,7 @@ public:
 		for (size_t j = 0; j < path.Size(); ++ j) {
 			wc_->GetDistances(path.At(j), e, distances, weights);
 
-			for (size_t l = 0; l < weights.size(); ++ l){
+			for (size_t l = 0; l < weights.size(); ++l){
 				if (weights[l] > max_weight) {
 				    max_weight = weights[l];
 				}
@@ -501,11 +501,9 @@ public:
             for (size_t j = 0; j < histogram.size(); ++j) {
                 sum += histogram[j].second;
             }
-
             if (sum > cfg::get().pe_params.param_set.scaffolder_options.cl_threshold) {
                 sort(histogram.begin(), histogram.end(), compare);
                 int gap = CountMean(histogram);
-
                 if (wc_->CountIdealInfo(path, edges[i].e_, gap) > 0.0) {
                     result.push_back(EdgeWithDistance(edges[i].e_, gap));
                 }

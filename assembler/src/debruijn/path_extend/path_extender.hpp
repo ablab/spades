@@ -287,7 +287,6 @@ public:
         double max_score = minGapScore_;
         int best_gap = initial_gap;
         bool found = false;
-
         for (int l = start; l >= shortOverlap_; --l) {
             double score = ScoreGap(g_.EdgeNucls(sink).Subseq((size_t) ((int) g_.length(sink) + (int) g_.k() - l)),
                                     g_.EdgeNucls(source).Subseq(0, (size_t) l),
@@ -481,10 +480,6 @@ protected:
                 SubscribeCoverageMap(path);
                 SubscribeCoverageMap(conjugatePath);
 
-//                if (!coverageMap_.IsCovered(*path) || !coverageMap_.IsCovered(*conjugatePath)) {
-//                    DEBUG("Paths are not covered after subsciption");
-//                }
-
                 do {
 					path->CheckGrow();
 					GrowPath(*path);
@@ -492,10 +487,6 @@ protected:
 					GrowPath(*conjugatePath);
                 }
                 while (conjugatePath->CheckPrevious() || path->CheckPrevious());
-
-//                if (!coverageMap_.IsCovered(*paths.Get(i)) || !coverageMap_.IsCovered(*paths.GetConjugate(i))) {
-//                    DEBUG("Seeds are not covered after growing");
-//                }
                 path->CheckConjugateEnd();
                 DEBUG("result path ");
                 path->Print();
@@ -700,7 +691,6 @@ public:
                 if (cfg::get().avoid_rc_connections && candidates[0].e_ == g_.conjugate(path.Back())) {
                     return false;
                 }
-                DEBUG(candidates.size() << " " << g_.int_id(candidates[0].e_) << " Path id :" << path.GetId()<< "  Edge len : " << g_.length(candidates[0].e_))
 
                 int gap = cfg::get().pe_params.param_set.scaffolder_options.fix_gaps ?
                      gapJoiner_->FixGap(path.Back(), candidates.back().e_, candidates.back().d_) :
