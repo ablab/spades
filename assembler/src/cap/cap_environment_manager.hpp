@@ -17,7 +17,7 @@
 #include "cap_environment.hpp"
 #include "io/sequence_reader.hpp"
 #include "config_struct.hpp"
-#include "repeat_cropping_reader.hpp"
+#include "junk_cropping_reader.hpp"
 
 namespace online_visualization {
 

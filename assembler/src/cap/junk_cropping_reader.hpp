@@ -29,7 +29,7 @@ public:
             if (coord > 0 && (IsGoodSymbol(orig_string[coord - 1]) ^ IsGoodSymbol(orig_string[coord]))) {
                 coordinates_ladder_.push_back(make_pair(coord, cropped.size()));
             }
-            if (isupper(orig_string[coord])) {
+            if (IsGoodSymbol(orig_string[coord])) {
                 cropped += orig_string[coord];
                 cropped_qual += orig_qual[coord];
             }

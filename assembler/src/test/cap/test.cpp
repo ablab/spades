@@ -15,7 +15,7 @@
 #include "repeat_masking.hpp"
 #include "assembly_compare.hpp"
 #include "test_utils.hpp"
-#include "repeat_cropping_reader.hpp"
+#include "junk_cropping_reader.hpp"
 
 ::boost::unit_test::test_suite* init_unit_test_suite(int, char*[]) {
     //logging::create_logger("", logging::L_DEBUG);
@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE( RepeatCroppingReaderTest ) {
 
 BOOST_AUTO_TEST_CASE( RepeatCroppingReaderTest2 ) {
     io::VectorReader<io::SingleRead> raw_reader(MakeReads(vector<string>{
-        "acgtcACGTCacgtcTTGCAacgtc"}));
+        "acgtcACGTCNNNNNTTGCADMYNY"}));
     io::SingleRead read;
     raw_reader >> read;
     BOOST_CHECK_EQUAL("acgtcACGTCNNNNNTTGCADMYNY", read.GetSequenceString());
