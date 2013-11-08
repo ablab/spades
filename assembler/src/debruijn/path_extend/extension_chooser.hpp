@@ -505,6 +505,7 @@ public:
                 sort(histogram.begin(), histogram.end(), compare);
                 int gap = CountMean(histogram);
                 if (wc_->CountIdealInfo(path, edges[i].e_, gap) > 0.0) {
+                    DEBUG("scaffolding " << g_.int_id(edges[i].e_) << " gap " << gap);
                     result.push_back(EdgeWithDistance(edges[i].e_, gap));
                 }
             }

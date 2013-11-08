@@ -13,7 +13,7 @@ visualize {
 }
 
 ; none | break_gaps | break_all
-output_broken_scaffolds     break_all
+output_broken_scaffolds     break_gaps
 
 singlecell {
     split_edge_length       99

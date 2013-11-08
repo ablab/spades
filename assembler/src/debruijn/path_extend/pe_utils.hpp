@@ -402,6 +402,10 @@ private:
                 p->PushBack(path[i], path.GapAt(i));
                 ++i;
             }
+            if (i < path.Size()) {
+                DEBUG("split path " << i << " gap " << path.GapAt(i));
+                p->Print();
+            }
 
             BidirectionalPath * cp = new BidirectionalPath(p->Conjugate());
             cp->SetId(rc_id);
