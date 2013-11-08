@@ -52,9 +52,9 @@ public:
               averaging_range_(averaging_range) {
     }
 
-//    size_t averaging_range() const {
-//        return averaging_range_;
-//    }
+    size_t averaging_range() const {
+        return averaging_range_;
+    }
 
     //todo currently left for saves compatibility! remove later!
     template<class CoverageIndex>
@@ -80,7 +80,7 @@ public:
     }
 
     double CoverageOfStart(EdgeId e) const {
-        return double(RawCoverage(e)) / double(averaging);
+        return AverageFlankingCoverage(e);
     }
 
     double CoverageOfEnd(EdgeId e) const {

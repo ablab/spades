@@ -118,10 +118,10 @@ BOOST_AUTO_TEST_CASE( SyntheticExamplesTestsLSeq ) {
 
 BOOST_AUTO_TEST_CASE( RepeatCroppingReaderTest ) {
     io::VectorReader<io::SingleRead> raw_reader(MakeReads(vector<string>{
-        "ACGTCacgtcTTGCA"}));
+        "acgtcACGTCacgtcTTGCAacgtc"}));
     io::SingleRead read;
     raw_reader >> read;
-    BOOST_CHECK_EQUAL("ACGTCacgtcTTGCA", read.GetSequenceString());
+    BOOST_CHECK_EQUAL("acgtcACGTCacgtcTTGCAacgtc", read.GetSequenceString());
     RepeatCroppingReader reader(raw_reader);
     reader.reset();
     reader >> read;
