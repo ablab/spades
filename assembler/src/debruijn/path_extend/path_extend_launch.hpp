@@ -197,7 +197,7 @@ vector<SimpleExtender *> MakeMPExtenders(const conj_graph_pack& gp,
         MatePairExtensionChooser* chooser = new MatePairExtensionChooser(
                 gp.g, *libs[i][0], cover_map);
         SimpleExtender* mp_extender = new SimpleExtender(
-                gp.g, pset.loop_removal.max_loops, chooser);
+                gp.g, pset.loop_removal.mp_max_loops, chooser);
         mpPEs.push_back(mp_extender);
     }
     return mpPEs;

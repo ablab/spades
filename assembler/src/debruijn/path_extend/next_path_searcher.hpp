@@ -90,6 +90,15 @@ public:
         }
         return true;
     }
+    //TODO:too much time
+    bool IsCycled() {
+        BidirectionalPath* path = GetPrevPath(0);
+        size_t identical_edges = 0;
+        bool is_cycled = path->getLoopDetector().IsCycled(5, identical_edges); //TODO: 5 - why ??
+        delete path;
+        return is_cycled;
+    }
+
     bool EqualBegins(const BidirectionalPath& path, int pos) {
         Edge* curr_edge = this;
         while (pos >= 0 && curr_edge->GetId() == path.At(pos)
@@ -181,7 +190,8 @@ set<BidirectionalPath*> NextPathSearcher::FindNextPaths(
     size_t ipath = 0;
     while (ipath < grow_paths.size()) {
         Edge* grow_path = grow_paths[ipath++];
-        if (!grow_path->IsCorrect() || used_edges.count(grow_path) > 0) {
+        if (!grow_path->IsCorrect()  || grow_path->IsCycled() || used_edges.count(grow_path) > 0) {
+            used_edges.insert(grow_path);
             continue;
         }
         used_edges.insert(grow_path);
@@ -196,7 +206,7 @@ set<BidirectionalPath*> NextPathSearcher::FindNextPaths(
         } else {
             grow_paths.insert(grow_paths.end(), to_add.begin(), to_add.end());
         }
-        if (grow_paths.size() > 5000) {
+        if (grow_paths.size() > 1000) { //TODO:move to config
             return std::set<BidirectionalPath*>();
         }
     }

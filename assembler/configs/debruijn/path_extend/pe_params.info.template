@@ -57,6 +57,7 @@ singlecell {
     loop_removal
     {
         max_loops       30
+        mp_max_loops    3
     }
 
     remove_overlaps     true
@@ -109,6 +110,7 @@ multicell {
     loop_removal
     {
         max_loops       30
+        mp_max_loops    3
     }
 
     remove_overlaps     true

@@ -163,29 +163,30 @@ public:
 
     }
 
-    std::set<BidirectionalPath*> GetCoveringPaths(const BidirectionalPath& path) const {
+    std::set<BidirectionalPath*> GetCoveringPaths(
+            const BidirectionalPath& path) const {
         std::set<BidirectionalPath*> result;
+        if (path.Empty()) {
+            return result;
+        }
+        MapDataT * data;
+        data = GetEdgePaths(path.Front());
 
-        if (!path.Empty()) {
-            MapDataT * data;
-            data = GetEdgePaths(path.Front());
+        result.insert(data->begin(), data->end());
 
-            result.insert(data->begin(), data->end());
+        for (size_t i = 1; i < path.Size(); ++i) {
+            data = GetEdgePaths(path[i]);
 
-            for (size_t i = 1; i < path.Size(); ++i) {
-                data = GetEdgePaths(path[i]);
+            std::set<BidirectionalPath*> dataSet;
+            dataSet.insert(data->begin(), data->end());
 
-                std::set<BidirectionalPath*> dataSet;
-                dataSet.insert(data->begin(), data->end());
-
-                for (auto iter = result.begin(); iter != result.end(); ) {
-                    auto next = iter;
-                    ++next;
-                    if (dataSet.count(*iter) == 0) {
-                        result.erase(iter);
-                    }
-                    iter = next;
+            for (auto iter = result.begin(); iter != result.end();) {
+                auto next = iter;
+                ++next;
+                if (dataSet.count(*iter) == 0) {
+                    result.erase(iter);
                 }
+                iter = next;
             }
         }
 

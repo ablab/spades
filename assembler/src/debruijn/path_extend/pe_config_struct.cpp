@@ -38,6 +38,7 @@ void load(pe_config::ParamSetT::LoopRemovalT& lr,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
     using config_common::load;
     load(lr.max_loops, pt, "max_loops");
+    load(lr.mp_max_loops, pt, "mp_max_loops");
 }
 
 void load(pe_config::ParamSetT::ScaffolderOptionsT& so, boost::property_tree::ptree const& pt, bool /*complete*/)

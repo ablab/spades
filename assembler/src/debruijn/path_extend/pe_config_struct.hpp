@@ -124,6 +124,7 @@ struct pe_config {
 
     struct LoopRemovalT {
       size_t max_loops;
+      size_t mp_max_loops;
     } loop_removal;
 
     bool remove_overlaps;
