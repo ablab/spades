@@ -27,7 +27,7 @@ class AddGenomeCommand : public LocalCommand<CapEnvironment> {
            "> add_genome /home/puperuser/genomes/my_genome.fasta my_genome\n"
            " would add to the environment genome stored in file "
            "`my_genome.fasta` located in folder `/home/puperuser/genomes`\n"
-           "Optionally repeat families marked by programs s.a. RepeatMasker (written in small letters)"
+           "Optionally N's other strange symbols and repeat families marked by programs s.a. RepeatMasker (written in small letters)"
            " can be ommited without loss of original coordinates\n";
   }
 

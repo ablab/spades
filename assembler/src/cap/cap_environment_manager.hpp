@@ -323,7 +323,7 @@ class CapEnvironmentManager {
 
     if (crop_repeats) {
         io::Reader raw_reader(filename);
-        RepeatCroppingReader reader(raw_reader);
+        JunkCroppingReader reader(raw_reader);
         io::SingleRead genome;
         reader >> genome;
 

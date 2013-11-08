@@ -118,15 +118,29 @@ BOOST_AUTO_TEST_CASE( SyntheticExamplesTestsLSeq ) {
 
 BOOST_AUTO_TEST_CASE( RepeatCroppingReaderTest ) {
     io::VectorReader<io::SingleRead> raw_reader(MakeReads(vector<string>{
-        "acgtcACGTCacgtcTTGCAacgtc"}));
+        "ACGTCacgtcTTGCA"}));
     io::SingleRead read;
     raw_reader >> read;
-    BOOST_CHECK_EQUAL("acgtcACGTCacgtcTTGCAacgtc", read.GetSequenceString());
-    RepeatCroppingReader reader(raw_reader);
+    BOOST_CHECK_EQUAL("ACGTCacgtcTTGCA", read.GetSequenceString());
+    JunkCroppingReader reader(raw_reader);
     reader.reset();
     reader >> read;
     BOOST_CHECK_EQUAL("ACGTCTTGCA", read.sequence().str());
-    vector<pair<size_t, size_t>> etalon_ladder = {{0, 0}, {4, 4}, {9, 4}, {15, 10}};
+    vector<pair<size_t, size_t>> etalon_ladder = {{0, 0}, {5, 5}, {10, 5}, {15, 10}};
+    BOOST_CHECK_EQUAL(reader.coordinates_ladder(), etalon_ladder);
+}
+
+BOOST_AUTO_TEST_CASE( RepeatCroppingReaderTest2 ) {
+    io::VectorReader<io::SingleRead> raw_reader(MakeReads(vector<string>{
+        "acgtcACGTCacgtcTTGCAacgtc"}));
+    io::SingleRead read;
+    raw_reader >> read;
+    BOOST_CHECK_EQUAL("acgtcACGTCNNNNNTTGCADMYNY", read.GetSequenceString());
+    JunkCroppingReader reader(raw_reader);
+    reader.reset();
+    reader >> read;
+    BOOST_CHECK_EQUAL("ACGTCTTGCA", read.sequence().str());
+    vector<pair<size_t, size_t>> etalon_ladder = {{0, 0}, {5, 0}, {10, 5}, {15, 5}, {20, 10}, {25, 10}};
     BOOST_CHECK_EQUAL(reader.coordinates_ladder(), etalon_ladder);
 }
 
