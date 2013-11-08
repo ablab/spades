@@ -808,14 +808,48 @@ public:
         return result;
     }
 private:
-    void DeleteSmallWeights(map<BidirectionalPath*, double>& weights,
-                            set<BidirectionalPath*>& paths) const {
+    bool SignificallyDifferentEdges(const BidirectionalPath& path,
+                                    const map<size_t, double>& pi1,
+                                    const map<size_t, double>& pi2) const {
+        size_t not_common_length = 0;
+        size_t common_length = 0;
+        double not_common_w = 0.0;
+        double common_w = 0.0;
+        for (auto iter = pi1.begin(); iter != pi1.end(); ++iter) {
+            auto iter2 = pi2.find(iter->first);
+            double w = 0.0;
+            if (iter2 == pi2.end() || math::eq(iter2->second, 0.0)) {
+                not_common_length += g_.length(path.At(iter->first));
+            } else {
+                w = min(iter2->second, iter->second);
+                common_length += g_.length(path.At(iter->first));
+            }
+            not_common_w += iter->second -w;
+            common_w += w;
+        }
+        if(common_w < 0.8*(not_common_w + common_w)){
+            return true;
+        } else {
+           DEBUG("common pi more then 0.8");
+           return false;
+        }
+    }
+
+    void DeleteSmallWeights(const BidirectionalPath& path, map<BidirectionalPath*, double>& weights,
+                            set<BidirectionalPath*>& paths,
+                            const std::map<BidirectionalPath*, map<size_t, double> >& all_pi) const {
         double max_weight = 0.0;
+        BidirectionalPath* max_path;
         for (auto iter = weights.begin(); iter != weights.end(); ++iter) {
-            max_weight = max(max_weight, iter->second);
+            if (iter->second > max_weight) {
+                max_weight = max(max_weight, iter->second);
+                max_path = iter->first;
+            }
         }
         for (auto iter = weights.begin(); iter != weights.end(); ++iter) {
-            if (math::gr(max_weight, iter->second * 1.5))
+            if (math::gr(max_weight, iter->second * 1.5) &&
+                    SignificallyDifferentEdges(path, all_pi.find(max_path)->second,
+                                               all_pi.find(iter->first)->second))
                 paths.erase(iter->first);
         }
     }
@@ -847,9 +881,9 @@ private:
         }
     }
 
-    map<BidirectionalPath*, double> CountAllWeights(
+    map<BidirectionalPath*, double> CountWeightsAndFilter(
             const BidirectionalPath& path,
-            const set<BidirectionalPath*>& next_paths) {
+            set<BidirectionalPath*>& next_paths, bool delete_small_w) {
         std::map<BidirectionalPath*, map<size_t, double> > all_pi;
         CountAllPairInfo(path, next_paths, all_pi);
         DeleteCommonPi(path, all_pi);
@@ -859,12 +893,15 @@ private:
                                                          *next, 0,
                                                          next->Size());
         }
+        if (delete_small_w) {
+            DeleteSmallWeights(path, result, next_paths, all_pi);
+        }
         return result;
     }
 
     vector<BidirectionalPath*> SortResult(const BidirectionalPath& path,
-            const set<BidirectionalPath*>& next_paths) {
-        map<BidirectionalPath*, double> weights = CountAllWeights(path, next_paths);
+            set<BidirectionalPath*>& next_paths) {
+        map<BidirectionalPath*, double> weights = CountWeightsAndFilter(path, next_paths, false);
         vector<BidirectionalPath*> result;
         while (weights.size() > 0) {
             auto max_iter = weights.begin();
@@ -890,9 +927,7 @@ private:
         while (prev_result.size() != result.size()) {
             prev_result = result;
             DEBUG("iteration with paths " << result.size());
-            map<BidirectionalPath*, double> weights = CountAllWeights(path,
-                                                                      result);
-            DeleteSmallWeights(weights, result);
+            map<BidirectionalPath*, double> weights = CountWeightsAndFilter(path, result, true);
             if (result.size() == 0)
                 result = prev_result;
             if (result.size() == 1)
