@@ -83,7 +83,7 @@ size_t subcluster(KMerData &kmer_data, std::vector<size_t> &cluster) {
   // The number of subclusters for now is really dumb: we assume that the quality should be 1.
   size_t k = 0;
   for (size_t i = 0; i < cluster.size(); ++i)
-      k += kmer_data[cluster[i]].qual < 1 - cfg::get().center_qual_threshold;
+      k += kmer_data[cluster[i]].qual < cfg::get().center_qual_threshold;
 
   if (k <= 1) {
 #if 0
