@@ -587,15 +587,16 @@ public:
         return -1;
     }
 
-    vector<size_t> FindAll(EdgeId e) const{
+    vector<size_t> FindAll(EdgeId e, size_t start = 0) const{
         vector<size_t> result;
-        for (size_t i = 0; i < Size(); ++i) {
+        for (size_t i = start; i < Size(); ++i) {
             if (data_[i] == e) {
                 result.push_back(i);
             }
         }
         return result;
     }
+
 
 	size_t OverlapEndSize(const BidirectionalPath* path2) const {
 		if (Size() == 0) {
@@ -645,39 +646,59 @@ public:
     }
 
     void CheckConjugateEnd() {
-        /*DEBUG("check conj end");
-        size_t begin = 0;
-        size_t end = Size() - 1;
-        while (begin < end && At(begin) == g_.conjugate(At(end))) {
-            begin++;
-            end--;
+        size_t prev_size = 0;
+        while (prev_size != Size()) {
+            prev_size = Size();
+            FindConjEdges();
         }
-        if (begin > 0) {
-            DEBUG("conjugate end " << begin);
-        }
-        PopBack(begin);*/
-        FindConjEdges();
-        GetConjPath()->FindConjEdges();
     }
 
     void FindConjEdges() {
-        vector<size_t> conj_pos = FindAll(g_.conjugate(At(0)));
-        for (size_t j = 0; j < conj_pos.size(); ++j) {
-            int begin = 0;
-            int end = (int) conj_pos[j];
-            DEBUG("conj pos " << begin << " " << end);
-            if (end == 0) {
-                continue;
-            }
-            size_t conj_len = 0;
-            while (begin < end && At(begin) == g_.conjugate(At(end))) {
-                conj_len += g_.length(At(begin));
-                begin++;
-                end--;
-            }
-            if (begin >= end) {
-                DEBUG("conj_len " << conj_len << " pop back " << Size() - end - 1)
-                PopBack(Size() - end - 1);
+        for (size_t begin_pos = 0; begin_pos < Size(); ++begin_pos) {
+            size_t begin = begin_pos;
+
+            vector<size_t> conj_pos = FindAll(g_.conjugate(At(begin_pos)), begin + 1);
+            for (auto end_pos = conj_pos.rbegin(); end_pos != conj_pos.rend(); ++end_pos) {
+                VERIFY(*end_pos < Size());
+                size_t end = *end_pos;
+
+                DEBUG("conj pos " << begin << " " << end);
+                if (end <= begin) {
+                    continue;
+                }
+
+                while (begin < end && At(begin) == g_.conjugate(At(end))) {
+                    begin++;
+                    end--;
+                }
+
+                if (begin >= end) {
+                    DEBUG("Found palindromic fragment from " << begin_pos << " to " << *end_pos);
+
+                    VERIFY(*end_pos < Size());
+                    size_t tail_size = Size() - *end_pos - 1;
+                    size_t head_size = begin_pos;
+                    size_t palindrom_half_size = begin - begin_pos;
+
+                    bool delete_tail = tail_size < head_size;
+                    if (tail_size == head_size) {
+                        size_t tail_len = 0;
+                        for (size_t i = *end_pos + 1; i < Size(); ++i) {
+                            tail_len += LengthAt(i);
+                        }
+                        size_t head_len = 0;
+                        for (size_t i = 0; i < begin_pos; ++i) {
+                            head_len += LengthAt(i);
+                        }
+                        delete_tail = tail_len < head_len;
+                    }
+
+                    if (delete_tail) {
+                        PopBack(tail_size + palindrom_half_size);
+                    } else {
+                        GetConjPath()->PopBack(head_size + palindrom_half_size);
+                    }
+                }
             }
         }
     }
