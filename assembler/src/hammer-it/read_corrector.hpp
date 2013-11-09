@@ -663,9 +663,26 @@ class CorrectedRead {
     unsigned approx_n_insertions;
 
     hammer::HKMer GetCenterOfCluster(const hammer::HKMer &seq) const {
-      hammer::KMerStat k1 = kmer_data_[kmer_data_[seq].changeto];
-      hammer::KMerStat k2 = kmer_data_[kmer_data_[!seq].changeto];
-      return k1.qual < k2.qual ? k1.kmer : !k2.kmer;
+      hammer::KMerStat k[2];
+      k[0] = kmer_data_[kmer_data_[seq].changeto];
+      k[1] = kmer_data_[kmer_data_[!seq].changeto];
+      k[1].kmer = !k[1].kmer;
+
+      if (k[0].qual > k[2].qual)
+        std::swap(k[0], k[1]);
+      using namespace hammer;
+      for (size_t i = 0; i < 2; ++i) {
+        auto &kmer = k[i].kmer;
+        auto dist = distanceHKMer(kmer.begin(), kmer.end(), seq.begin(), seq.end(), 3);
+        if (debug_mode_) {
+          std::cerr << "[GetCenterOfCluster] distance("
+                    << seq << ", " << kmer << ") = " << dist << std::endl;
+
+        }
+        if (dist <= 2)
+          return kmer;
+      }
+      return seq;
     }
 
     bool IsInconsistent(const hammer::HKMer &center) const {
