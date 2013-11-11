@@ -305,8 +305,6 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
     vector<SimpleExtender*> mpPEs = MakeMPExtenders(gp, pset,
                                                     mainPE->GetCoverageMap(),
                                                     mp_libs);
-    SimpleExtender* longReadExtender = new SimpleExtender(gp.g,
-			pset.loop_removal.max_loops, pe_paths_ec, true);
 	all_libs.clear();
 	all_libs.insert(all_libs.end(), long_reads_extenders.begin(),
 			long_reads_extenders.end());
