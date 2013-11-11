@@ -21,6 +21,9 @@ ddtls:
 dit:
 	$(MAKE) -C build/debug/test/include_test
 
+rit:
+	$(MAKE) -C build/release/test/include_test
+
 rh:
 	$(MAKE) -C build/release/hammer hammer
 

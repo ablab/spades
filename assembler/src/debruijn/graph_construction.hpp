@@ -33,7 +33,7 @@ namespace debruijn_graph {
 template<class Graph, class Readers, class Index>
 size_t ConstructGraphUsingOldIndex(size_t k,
 		Readers& streams, Graph& g,
-		Index& index, io::SingleStreamPtr contigs_stream = 0) {
+		Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
 	INFO("Constructing DeBruijn graph");
 
 	TRACE("Filling indices");
@@ -74,7 +74,7 @@ void EarlyClipTips(size_t k, const debruijn_config::construction params, size_t 
 template<class Graph, class Read, class Index>
 size_t ConstructGraphUsingExtentionIndex(size_t k, const debruijn_config::construction params,
 		io::ReadStreamList<Read>& streams, Graph& g,
-		Index& index, io::SingleStreamPtr contigs_stream = 0) {
+		Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
 
 	INFO("Constructing DeBruijn graph");
 
@@ -109,7 +109,7 @@ size_t ConstructGraphUsingExtentionIndex(size_t k, const debruijn_config::constr
 template<class Graph, class Index, class Streams>
 size_t ConstructGraph(size_t k, const debruijn_config::construction &params,
                       Streams& streams, Graph& g,
-		 Index& index, io::SingleStreamPtr contigs_stream = 0) {
+		 Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
 	if(params.con_mode == construction_mode::con_extention) {
 		return ConstructGraphUsingExtentionIndex(k, params, streams, g, index, contigs_stream);
 //	} else if(params.con_mode == construction_mode::con_old){
@@ -125,7 +125,7 @@ template<class Graph, class Index, class Streams>
 size_t ConstructGraphWithCoverage(size_t k, const debruijn_config::construction &params,
                                   Streams& streams, Graph& g,
                                   Index& index, NewFlankingCoverage<Graph>& flanking_cov,
-                                  io::SingleStreamPtr contigs_stream = 0) {
+                                  io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
 	size_t rl = ConstructGraph(k, params, streams, g, index, contigs_stream);
 
 	INFO("Filling coverage and flanking coverage from index");

@@ -20,7 +20,7 @@ namespace debruijn_graph {
 
 template<class Read>
 void construct_graph(io::ReadStreamList<Read>& streams,
-                     conj_graph_pack& gp, io::SingleStreamPtr contigs_stream = 0) {
+                     conj_graph_pack& gp, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
     debruijn_config::construction params = cfg::get().con;
     params.early_tc.enable &= !cfg::get().ds.single_cell;
 
@@ -36,7 +36,7 @@ void construct_graph(io::ReadStreamList<Read>& streams,
 
 void Construction::run(conj_graph_pack &gp, const char*) {
     // Has to be separate stream for not counting it in coverage
-    io::SingleStreamPtr additional_contigs_stream = 0;
+    io::SingleStreamPtr additional_contigs_stream;
     if (cfg::get().use_additional_contigs) {
         INFO("Contigs from previous K will be used");
         additional_contigs_stream =
