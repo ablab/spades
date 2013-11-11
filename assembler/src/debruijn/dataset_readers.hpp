@@ -24,7 +24,8 @@ io::PairedStreamPtr paired_easy_reader(const io::SequencingLibrary<debruijn_conf
                                        io::OffsetType offset_type = io::PhredOffset) {
   io::ReadStreamList<io::PairedRead> streams;
   for (auto it = lib.paired_begin(); it != lib.paired_end(); ++it) {
-      streams.push_back(io::PairedEasyStream(it->first, it->second, followed_by_rc, insert_size, change_read_order, use_orientation, lib.orientation(), offset_type));
+      streams.push_back(io::PairedEasyStream(it->first, it->second, followed_by_rc, insert_size, change_read_order,
+                                             use_orientation, lib.orientation(), offset_type));
   }
   return io::MultifileWrap<io::PairedRead>(streams);
 }

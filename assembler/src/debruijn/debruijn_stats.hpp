@@ -187,7 +187,7 @@ void WriteGraphComponentsAlongContigs(const Graph& g,
                                       std::shared_ptr<omnigraph::visualization::GraphColorer<Graph>> colorer,
                                       const GraphLabeler<Graph>& labeler) {
     INFO("Writing graph components along contigs");
-    auto contigs_to_thread = io::EasyStream(cfg::get().pos.contigs_to_analyze, false/*true*/);
+    auto contigs_to_thread = io::EasyStream(cfg::get().pos.contigs_to_analyze, false);
     contigs_to_thread->reset();
     io::SingleRead read;
     while (!contigs_to_thread->eof()) {
@@ -503,7 +503,7 @@ template<class gp_t>
 void FillPosWithRC(gp_t& gp, const string& contig_file, string prefix) {
     //  typedef typename gp_t::Graph::EdgeId EdgeId;
     INFO("Threading large contigs");
-    auto irs = io::EasyStream(contig_file, true, true);
+    auto irs = io::EasyStream(contig_file, true, io::OffsetType::UnknownOffset, true);
     while(!irs->eof()) {
         io::SingleRead read;
         (*irs) >> read;

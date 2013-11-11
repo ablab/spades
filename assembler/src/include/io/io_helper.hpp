@@ -65,7 +65,7 @@ namespace io {
     }
     
     inline SingleStreamPtr EasyStream(const std::string& filename, bool followed_by_rc,
-                               bool split = false, OffsetType offset_type = PhredOffset) {
+                                      OffsetType offset_type = PhredOffset, bool split = false) {
         SingleStreamPtr reader = make_shared<FileReadStream>(filename, offset_type);
         if (split) {
             reader = SplittingWrap(reader);
