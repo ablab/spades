@@ -42,10 +42,10 @@ inline bool event_happened(double rate) {
 	return ls(uniform_01(), rate);
 }
 
-inline int rand_int(size_t min, size_t max) {
+inline size_t rand_int(size_t min, size_t max) {
 	static boost::mt19937 rng(43);
-	boost::uniform_int<> un_int(min, max);
-	boost::variate_generator<boost::mt19937&, boost::uniform_int<> > die(rng,
+	boost::uniform_int<size_t> un_int(min, max);
+	boost::variate_generator<boost::mt19937&, boost::uniform_int<size_t> > die(rng,
 			un_int);
 	return die();
 }

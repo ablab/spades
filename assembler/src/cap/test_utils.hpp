@@ -14,6 +14,7 @@
 #include <iostream>
 
 #include "compare_standard.hpp"
+#include "graphio.hpp"
 
 namespace cap {
 

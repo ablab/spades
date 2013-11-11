@@ -19,7 +19,7 @@ struct Power {
 };
 template <uint64_t base, uint64_t degree>
 struct Power<base, degree, typename boost::enable_if_c<degree % 2 == 1>::type > {
-  enum { value = Power<base, degree - 1>::value * base };
+  enum { value = Power<base * base, degree / 2>::value * base };
 };
 template <uint64_t base, uint64_t degree>
 struct Power<base, degree, typename boost::enable_if_c<degree % 2 == 0>::type > {
@@ -29,6 +29,11 @@ struct Power<base, degree, typename boost::enable_if_c<degree % 2 == 0>::type > 
 template <uint64_t base>
 struct Power<base, 0, void> {
   enum { value = 1 };
+};
+
+template <uint64_t base>
+struct Power<base, 1, void> {
+  enum { value = base };
 };
 
 }
@@ -139,7 +144,7 @@ class PolynomialHash : private boost::noncopyable {
   inline HashT GetHash() const {
     return hash_;
   }
-  inline HashT GetHash(HashT seed) const {
+  inline HashT GetHash(HashT /*seed*/) const {
     return hash_;// + last_chars_ * seed * kHashPDeg * kHashP;
   }
 

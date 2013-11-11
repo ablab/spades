@@ -79,7 +79,7 @@ struct kmer_index_traits<cap::LSeq> {
     };
 
     template <class Reader>
-        static RawKMerStorage *raw_deserialize(Reader &reader, const std::string &FileName) {
+        static RawKMerStorage *raw_deserialize(Reader &/*reader*/, const std::string &/*FileName*/) {
             VERIFY(false);
             return NULL;
         }

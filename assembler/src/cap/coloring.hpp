@@ -400,7 +400,7 @@ void SaveColoring(const Graph& g
 }
 
 template<class Graph>
-void LoadColoring(const Graph& g
+void LoadColoring(const Graph& /*g*/
 		, const IdTrackHandler<Graph>& int_ids
 		, ColorHandler<Graph>& coloring
 		, const string& filename) {
@@ -438,7 +438,7 @@ std::auto_ptr<omnigraph::visualization::GraphColorer<Graph>> ConstructColorer(
 }
 
 template<class Graph>
-std::auto_ptr<omnigraph::visualization::GraphColorer<Graph>> ConstructBorderColorer(const Graph& g,
+std::auto_ptr<omnigraph::visualization::GraphColorer<Graph>> ConstructBorderColorer(const Graph& /*g*/,
 		const ColorHandler<Graph>& coloring) {
 	using namespace omnigraph::visualization;
 	return std::auto_ptr<GraphColorer<Graph>>(

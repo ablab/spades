@@ -83,12 +83,15 @@ class CapEnvironmentManager {
     return result;
   }
 
-  template <class gp_t>
-  shared_ptr<gp_t> BuildGPFromSaves(const size_t K, const std::string &/* path */) const {
+  //template <class gp_t>
+  //shared_ptr<gp_t> BuildGPFromSaves(const size_t K, const std::string &/* path */) const;
+
+  shared_ptr<RtSeqGP> BuildGPFromSaves(const size_t K, const std::string &path) const {
+    typedef RtSeqGP gp_t;
+
     shared_ptr<gp_t> result(new gp_t(unsigned(K), env_->kDefaultGPWorkdir, 0));
 
-    //ScanGraphPack(path, *result);
-    // TODO
+    debruijn_graph::graphio::ScanGraphPack(path, *result);
 
     return result;
   }
@@ -276,10 +279,17 @@ class CapEnvironmentManager {
     std::string filename = folder + "graph";
 
     // Saving graph
+    /*
     debruijn_graph::graphio::PrinterTraits<Graph>::Printer printer(*env_->graph_, *env_->int_ids_);
 	printer.SaveGraph(filename);
 	printer.SaveEdgeSequences(filename);
 	printer.SavePositions(filename, *env_->edge_pos_);
+  */
+    if (env_->LSeqIsUsed()) {
+      //PrintGraphPack(filename, env_->gp_lseq_);
+    } else {
+      debruijn_graph::graphio::PrintGraphPack(filename, *env_->gp_rtseq_);
+    }
 
     // Saving coloring of graph
     cap::SaveColoring(*env_->graph_, *env_->int_ids_, *env_->coloring_, filename);
@@ -434,12 +444,13 @@ class CapEnvironmentManager {
 
     VERIFY(env_->gp_rtseq_ == NULL && env_->gp_lseq_ == NULL);
     if (env_->UseLSeqForThisK(K)) {
-      env_->SetGraphPack(BuildGPFromSaves<LSeqGP>(K, path));
+      //env_->SetGraphPack(BuildGPFromSaves<LSeqGP>(K, path));
     } else {
-      env_->SetGraphPack(BuildGPFromSaves<RtSeqGP>(K, path));
+      env_->SetGraphPack(BuildGPFromSaves(K, path));
     }
 
-    cap::SaveColoring(*env_->graph_, *env_->int_ids_, *env_->coloring_, path);
+    env_->coloring_ = std::make_shared<ColorHandler<Graph> >(env_->graph(), env_->genome_cnt());
+    cap::LoadColoring(*env_->graph_, *env_->int_ids_, *env_->coloring_, path);
 
     env_->CheckConsistency();
   }

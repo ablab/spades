@@ -68,7 +68,7 @@ inline void RegenerateEtalon(size_t k, const string& filename,
 template<class Seq>
 void RunTests(size_t k, const string& filename, const string& output_dir,
               const string& etalon_root, const string& work_dir,
-              bool exact_match = true, const vector<size_t>& example_ids =
+              bool exact_match = true, const vector<size_t>& /*example_ids*/ =
                       vector<size_t>()) {
     SyntheticTestsRunner<Seq> test_runner(filename, k, output_dir, work_dir);
     vector<size_t> launched = test_runner.Run();

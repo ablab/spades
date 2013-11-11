@@ -575,7 +575,6 @@ class SaveBlocksCommand : public LocalCommand<CapEnvironment> {
 
 };
 
-/*
 class LoadGraphCommand : public LocalCommand<CapEnvironment> {
  public:
   LoadGraphCommand() : LocalCommand<CapEnvironment>("load_graph") {
@@ -591,10 +590,6 @@ class LoadGraphCommand : public LocalCommand<CapEnvironment> {
   }
 
   virtual void Execute(CapEnvironment &curr_env, const ArgumentList &arg_list) const {
-    if (!CheckCorrectness(arg_list)) {
-      return;
-    }
-
     const vector<string> &args = arg_list.GetAllArguments();
 
     size_t K = 21;
@@ -611,7 +606,6 @@ class LoadGraphCommand : public LocalCommand<CapEnvironment> {
   }
 
 };
-*/
 
 class MosaicAnalysisCommand : public NewLocalCommand<CapEnvironment> {
  public:
