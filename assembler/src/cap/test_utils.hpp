@@ -107,6 +107,7 @@ std::string GetMD5CommandString() {
 
 std::string GenMD5FromFiles(const std::vector<std::string> &paths,
                             const std::string &salt = "") {
+  VERIFY(!paths.empty());
   std::vector<std::string> paths_s = paths;
   //std::sort(paths_s.begin(), paths_s.end());
 

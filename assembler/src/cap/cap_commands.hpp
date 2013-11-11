@@ -267,9 +267,9 @@ class LoadCommand<CapEnvironment> : public Command<CapEnvironment> {
 
 };
 
-class SaveEnvCommand : public LocalCommand<CapEnvironment> {
+class SaveEnvCommand : public NewLocalCommand<CapEnvironment> {
  public:
-  SaveEnvCommand() : LocalCommand<CapEnvironment>("save_env") {
+  SaveEnvCommand() : NewLocalCommand<CapEnvironment>("save_env", 1) {
   }
 
   virtual std::string Usage() const {
@@ -278,19 +278,17 @@ class SaveEnvCommand : public LocalCommand<CapEnvironment> {
            "> save_graph <directory_to_save_to>\n";
   }
 
-  virtual void Execute(CapEnvironment& curr_env, const ArgumentList& arg_list) const {
-    const vector<string> &args = arg_list.GetAllArguments();
-
+ private:
+  virtual void InnerExecute(CapEnvironment& curr_env, const vector<string>& args) const {
     std::string folder;
-    if (args.size() > 1) {
-      folder = args[1];
-    } else {
-      folder = curr_env.manager().GetDirForCurrentState();
-    }
+    folder = args[1] + "/";
 
     cout << "Saving env in " << folder << " ...";
 
-    std::ofstream write_stream(folder + "/environment");
+    cap::utils::MakeDirPath(folder);
+    VERIFY(cap::utils::DirExist(folder));
+
+    std::ofstream write_stream(folder + "environment");
     curr_env.WriteToStream(write_stream);
     write_stream.close();
     cout << " Done.\n";
@@ -298,9 +296,9 @@ class SaveEnvCommand : public LocalCommand<CapEnvironment> {
 
 };
 
-class LoadEnvCommand : public LocalCommand<CapEnvironment> {
+class LoadEnvCommand : public NewLocalCommand<CapEnvironment> {
  public:
-  LoadEnvCommand() : LocalCommand<CapEnvironment>("load_env") {
+  LoadEnvCommand() : NewLocalCommand<CapEnvironment>("load_env", 1) {
   }
 
   virtual std::string Usage() const {
@@ -309,19 +307,15 @@ class LoadEnvCommand : public LocalCommand<CapEnvironment> {
            "> load_env <directory with save>\n";
   }
 
-  virtual void Execute(CapEnvironment& curr_env, const ArgumentList& arg_list) const {
-    const vector<string> &args = arg_list.GetAllArguments();
-
+private:
+  virtual void InnerExecute(CapEnvironment& curr_env, const vector<string>& args) const {
     std::string folder;
-    if (args.size() > 1) {
-      folder = args[1];
-    } else {
-      folder = curr_env.manager().GetDirForCurrentState();
-    }
+    VERIFY(args.size() > 1);
+    folder = args[1] + "/";
 
     cout << "Load env from " << folder << " ...";
 
-    std::ifstream read_stream(folder + "/environment");
+    std::ifstream read_stream(folder + "environment");
     curr_env.ReadFromStream(read_stream);
     read_stream.close();
     cout << " Done.\n";

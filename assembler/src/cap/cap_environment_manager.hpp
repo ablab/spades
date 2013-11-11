@@ -315,7 +315,7 @@ class CapEnvironmentManager {
     if (!CheckFileExists(filename)) {
       return false;
     }
-    
+
     if (crop_repeats) {
         JunkCroppingWrapper reader(make_shared<io::FileReadStream>(filename));
         io::SingleRead genome;
@@ -328,7 +328,7 @@ class CapEnvironmentManager {
         env_->init_genomes_paths_.push_back(filename);
         env_->genomes_.push_back(genome.sequence());
         env_->genomes_names_.push_back(name);
-        env_->coordinates_handler_.StoreGenomeThreadManual(uint(env_->genomes_.size() - 1), 
+        env_->coordinates_handler_.StoreGenomeThreadManual(uint(env_->genomes_.size() - 1),
                                                             reader.coordinates_ladder());
     } else {
         io::FileReadStream reader(filename);
