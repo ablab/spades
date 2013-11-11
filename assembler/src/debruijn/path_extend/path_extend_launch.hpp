@@ -305,17 +305,9 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
     vector<SimpleExtender*> mpPEs = MakeMPExtenders(gp, pset,
                                                     mainPE->GetCoverageMap(),
                                                     mp_libs);
-    ExtensionChooser * pe_paths_ec = new LongReadsExtensionChooser(
-            gp.g,
-            paths,
-            cfg::get().pe_params.long_reads.coverage_base_rr.filtering,
-            cfg::get().pe_params.long_reads.single_reads.weight_priority,
-            cfg::get().pe_params.long_reads.coverage_base_rr
-                    .unique_edge_priority);
     SimpleExtender* longReadExtender = new SimpleExtender(gp.g,
 			pset.loop_removal.max_loops, pe_paths_ec, true);
 	all_libs.clear();
-	all_libs.push_back(longReadExtender);
 	all_libs.insert(all_libs.end(), long_reads_extenders.begin(),
 			long_reads_extenders.end());
 	all_libs.insert(all_libs.end(), shortLoopPEs.begin(), shortLoopPEs.end());
@@ -338,7 +330,6 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 
 //pe again
     all_libs.clear();
-    all_libs.push_back(longReadExtender);
     all_libs.insert(all_libs.end(), long_reads_extenders.begin(),
                     long_reads_extenders.end());
     all_libs.insert(all_libs.end(), shortLoopPEs.begin(), shortLoopPEs.end());
