@@ -85,7 +85,7 @@ public:
    *
    * @return Reference to this stream.
    */
-	/* virtual */ CarefulFilteringWrapper& operator>>(SingleRead& read) {
+	/* virtual */ CarefulFilteringWrapper& operator>>(ReadType& read) {
 		read = next_read_;
 		StepForward();
 		return *this;
