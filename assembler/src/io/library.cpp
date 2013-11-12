@@ -84,8 +84,6 @@ Node convert<SequencingLibraryBase>::encode(const io::SequencingLibraryBase& rhs
 
     node["orientation"] = rhs.orientation();
     node["type"] = rhs.type();
-    if (rhs.insert_size())
-      node["insert size"] = rhs.insert_size();
 
     for (auto it = rhs.paired_begin(), et = rhs.paired_end(); et != it; ++it) {
       node["left reads"].push_back(it->first);
@@ -128,8 +126,6 @@ void SequencingLibraryBase::load(const YAML::Node &node) {
 
       if (orientation_ == LibraryOrientation::Undefined)
         throw("Orientation for paired reads should be specified");
-
-      insert_size_ = node["insert size"].as<unsigned>(0);
 
       // FALLTHROUGH in case of single reads present!
       if (!node["single reads"])
