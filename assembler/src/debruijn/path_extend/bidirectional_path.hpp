@@ -661,8 +661,6 @@ public:
             for (auto end_pos = conj_pos.rbegin(); end_pos != conj_pos.rend(); ++end_pos) {
                 VERIFY(*end_pos < Size());
                 size_t end = *end_pos;
-
-                DEBUG("conj pos " << begin << " " << end);
                 if (end <= begin) {
                     continue;
                 }

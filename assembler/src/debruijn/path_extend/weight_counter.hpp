@@ -400,7 +400,7 @@ public:
             const BidirectionalPath& path2) const;
     double CountPairInfo(const BidirectionalPath& path1, size_t from1,
                          size_t to1, const BidirectionalPath& path2,
-                         size_t from2, size_t to2) const;
+                         size_t from2, size_t to2, bool normalize = true) const;
     double CountPairInfo(const BidirectionalPath& path1, size_t from1,
                          size_t to1, EdgeId edge, size_t gap) const;
     void SetCommonWeightFrom(size_t iedge, double weight);
@@ -421,7 +421,7 @@ PathsWeightCounter::PathsWeightCounter(const Graph& g, PairedInfoLibrary& lib):g
 double PathsWeightCounter::CountPairInfo(const BidirectionalPath& path1,
                                          size_t from1, size_t to1,
                                          const BidirectionalPath& path2,
-                                         size_t from2, size_t to2) const {
+                                         size_t from2, size_t to2, bool normalize) const {
     map<size_t, double> pi;
     double ideal_pi = 0.0;
     FindPairInfo(path1, from1, to1, path2, from2, to2,
@@ -437,10 +437,10 @@ double PathsWeightCounter::CountPairInfo(const BidirectionalPath& path1,
     DEBUG("ideal _pi " << ideal_pi << " common " << all_common << " result " << result);
     ideal_pi -= all_common;
     result -= all_common;
-    double total_result = math::ge(ideal_pi, 0.0) ? result / ideal_pi : 0.0;
-    total_result = math::ge(total_result, 0.0) ? total_result : 0.0;
+    double total_result = math::gr(ideal_pi, 0.0) ? result / ideal_pi : 0.0;
+    total_result = math::gr(total_result, 0.0) ? total_result : 0.0;
     DEBUG("ideal _pi " << ideal_pi << " result " << result << " total_result " << total_result);
-    return total_result;
+    return normalize ? total_result : result;
 }
 
 double PathsWeightCounter::CountPairInfo(const BidirectionalPath& path1,

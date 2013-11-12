@@ -810,10 +810,12 @@ public:
 private:
     bool SignificallyDifferentEdges(const BidirectionalPath& path,
                                     const map<size_t, double>& pi1,
-                                    const map<size_t, double>& pi2) const {
+                                    double w1,
+                                    const map<size_t, double>& pi2,
+                                    double w2) const {
         size_t not_common_length = 0;
         size_t common_length = 0;
-        double not_common_w = 0.0;
+        double not_common_w1 = 0.0;
         double common_w = 0.0;
         for (auto iter = pi1.begin(); iter != pi1.end(); ++iter) {
             auto iter2 = pi2.find(iter->first);
@@ -824,13 +826,13 @@ private:
                 w = min(iter2->second, iter->second);
                 common_length += g_.length(path.At(iter->first));
             }
-            not_common_w += iter->second -w;
+            not_common_w1 += iter->second -w;
             common_w += w;
         }
-        if(common_w < 0.8*(not_common_w + common_w)){
+        if(common_w < 0.9*(not_common_w1 + common_w) || math::eq(w2, 0.0)){
             return true;
         } else {
-           DEBUG("common pi more then 0.8");
+           DEBUG("common pi more then 0.9");
            return false;
         }
     }
@@ -848,8 +850,8 @@ private:
         }
         for (auto iter = weights.begin(); iter != weights.end(); ++iter) {
             if (math::gr(max_weight, iter->second * 1.5) &&
-                    SignificallyDifferentEdges(path, all_pi.find(max_path)->second,
-                                               all_pi.find(iter->first)->second))
+                    SignificallyDifferentEdges(path, all_pi.find(max_path)->second, weights.find(max_path)->second,
+                                               all_pi.find(iter->first)->second, weights.find(iter->first)->second))
                 paths.erase(iter->first);
         }
     }
@@ -945,7 +947,7 @@ private:
         if (paths.size() == 0) {
             return EdgeContainer();
         }
-        weight_counter_.ClearCommonWeight();
+
         size_t max_common_end = 0;
         BidirectionalPath max_path(g_);
         for (auto it1 = paths.begin(); it1 != paths.end(); ++it1) {
@@ -967,12 +969,13 @@ private:
         if (max_path.Size() == 0) {
             return EdgeContainer();
         }
+        weight_counter_.ClearCommonWeight();
         double common = weight_counter_.CountPairInfo(
                 path, 0, path.Size(), max_path,
-                max_path.Size() - max_common_end, max_path.Size());
+                max_path.Size() - max_common_end, max_path.Size(), false);
         double not_common = weight_counter_.CountPairInfo(
                 path, 0, path.Size(), max_path, 0,
-                max_path.Size() - max_common_end);
+                max_path.Size() - max_common_end, false);
         DEBUG("common " << common << " not common " << not_common << " max common end " << max_common_end);
         max_path.Print();
         EdgeContainer result;
