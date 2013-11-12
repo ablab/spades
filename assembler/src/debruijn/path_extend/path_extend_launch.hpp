@@ -364,13 +364,14 @@ PairedInfoLibrary* MakeNewLib(conj_graph_pack::graph_t& g,
                               const PairedInfoIndicesT& paired_index,
                               size_t index) {
     size_t read_length = cfg::get().ds.reads[index].data().read_length;
-    size_t is_min = (size_t) cfg::get().ds.reads[index].data().insert_size_left_quantile;
-    size_t is_max = (size_t) cfg::get().ds.reads[index].data().insert_size_right_quantile;
-    size_t var = (size_t) cfg::get().ds.reads[index].data().insert_size_deviation;
+    size_t is = (size_t) cfg::get().ds.reads[index].data().mean_insert_size;
+    int is_min = (int) cfg::get().ds.reads[index].data().insert_size_left_quantile;
+    int is_max = (int) cfg::get().ds.reads[index].data().insert_size_right_quantile;
+    int var = (int) cfg::get().ds.reads[index].data().insert_size_deviation;
     bool is_mp = cfg::get().ds.reads[index].type() == io::LibraryType::MatePairs;
     PairedInfoLibrary* lib = new PairedInfoLibrary(
-            cfg::get().K, g, read_length, is_min > 0.0 ? size_t(is_min) : 0,
-            is_max > 0.0 ? size_t(is_max) : 0, var, paired_index[index], is_mp,
+            cfg::get().K, g, read_length, is, is_min > 0.0 ? size_t(is_min) : 0,
+            is_max > 0.0 ? size_t(is_max) : 0, size_t(var), paired_index[index], is_mp,
             cfg::get().ds.reads[index].data().insert_size_distribution);
     return lib;
 }
@@ -428,8 +429,7 @@ void ResolveRepeatsPe(conj_graph_pack& gp,
             && cfg::get().pe_params.param_set.scaffolder_options.on) {
         for (size_t i = 0; i < gp.scaffolding_indices.size(); ++i) {
             if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd
-            /* || cfg::get().ds.reads[indexs[i]].type()
-             == io::LibraryType::MatePairs*/) {
+             || cfg::get().ds.reads[i].type() == io::LibraryType::MatePairs) {
                 PairedInfoLibrary* lib = MakeNewLib(gp.g, gp.scaffolding_indices, i);
                 PairedInfoLibraries libs;
                 libs.push_back(lib);

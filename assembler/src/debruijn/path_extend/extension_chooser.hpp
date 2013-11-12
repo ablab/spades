@@ -810,9 +810,9 @@ public:
 private:
     bool SignificallyDifferentEdges(const BidirectionalPath& path,
                                     const map<size_t, double>& pi1,
-                                    double w1,
+                                    double /*w1*/,
                                     const map<size_t, double>& pi2,
-                                    double w2) const {
+                                    double /*w2*/) const {
         size_t not_common_length = 0;
         size_t common_length = 0;
         double not_common_w1 = 0.0;
@@ -829,10 +829,10 @@ private:
             not_common_w1 += iter->second -w;
             common_w += w;
         }
-        if(common_w < 0.9*(not_common_w1 + common_w) || math::eq(w2, 0.0)){
+        if(common_w < 0.8 *(not_common_w1 + common_w)){
             return true;
         } else {
-           DEBUG("common pi more then 0.9");
+           DEBUG("common pi more then 0.8");
            return false;
         }
     }
