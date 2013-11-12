@@ -202,11 +202,13 @@ set<BidirectionalPath*> NextPathSearcher::FindNextPaths(
         vector<Edge*> to_add;
         GrowPath(path, grow_path, max_len, to_add);
         if (to_add.size() == 0) {
+            //TODO: jump forward when tip
             stopped_paths.push_back(grow_path);
         } else {
             grow_paths.insert(grow_paths.end(), to_add.begin(), to_add.end());
         }
         if (grow_paths.size() > 1000) { //TODO:move to config
+            //TODO: jump forward when too much paths
             return std::set<BidirectionalPath*>();
         }
     }
