@@ -85,11 +85,9 @@ public:
         EdgePosGraphLabeler<Graph> pos_labeler(gp.g, gp.edge_pos);
 
         CompositeLabeler<Graph> composite_labeler(str_labeler, cov_labler, path_labeler, pos_labeler);
-
         shared_ptr<omnigraph::visualization::GraphColorer<Graph>> colorer;
         if (gp.index.IsAttached()) {
-             colorer = omnigraph::visualization::DefaultColorer(gp.g, FindGenomePath(gp.genome, gp.g, gp.index, k_)
-                 , FindGenomePath(!gp.genome, gp.g, gp.index, k_));
+             colorer = omnigraph::visualization::DefaultColorer(gp.g, FindGenomePath(gp.genome, gp.g, gp.index, k_), FindGenomePath(!gp.genome, gp.g, gp.index, k_));
         } else {
             Path<EdgeId> empty;
             colorer = omnigraph::visualization::DefaultColorer(gp.g, empty, empty);
@@ -98,10 +96,6 @@ public:
         omnigraph::visualization::ComponentVisualizer<Graph> visualizer(gp.g, false);
         omnigraph::visualization::EmptyGraphLinker<Graph> linker;
         visualizer.Visualize(filestr, composite_labeler, *colorer, linker);
-//        omnigraph::visualization::DotGraphPrinter<Graph> printer(gp.g, composite_labeler, *colorer, graph_name, filestr);
-//        ColoredGraphVisualizer<Graph> gv(gp.g, printer);
-//        AdapterGraphVisualizer<Graph> result_vis(gp.g, gv);
-//        result_vis.Visualize();
         filestr.close();
         INFO("Visualizing graph done");
     }
@@ -117,9 +111,10 @@ public:
         CompositeLabeler<Graph> composite_labeler(str_labeler, cov_labler, pos_labeler);
 
         shared_ptr<omnigraph::visualization::GraphColorer<Graph>> colorer;
+
         if (gp.index.IsAttached()) {
-             colorer = omnigraph::visualization::DefaultColorer(gp.g, FindGenomePath(gp.genome, gp.g, gp.index, k_)
-                 , FindGenomePath(!gp.genome, gp.g, gp.index, k_));
+             colorer = omnigraph::visualization::DefaultColorer(gp.g, FindGenomePath(gp.genome, gp.g, gp.index, k_),
+                                                                FindGenomePath(!gp.genome, gp.g, gp.index, k_));
         } else {
             Path<EdgeId> empty;
             colorer = omnigraph::visualization::DefaultColorer(gp.g, empty, empty);
@@ -128,10 +123,6 @@ public:
         omnigraph::visualization::ComponentVisualizer<Graph> visualizer(gp.g, false);
         omnigraph::visualization::EmptyGraphLinker<Graph> linker;
         visualizer.Visualize(filestr, composite_labeler, *colorer, linker);
-//        omnigraph::DotGraphPrinter<Graph> printer(gp.g, composite_labeler, *colorer, graph_name, filestr);
-//        ColoredGraphVisualizer<Graph> gv(gp.g, printer);
-//        AdapterGraphVisualizer<Graph> result_vis(gp.g, gv);
-//        result_vis.Visualize();
         filestr.close();
         INFO("Visualizing graph done");
     }

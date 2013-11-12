@@ -53,6 +53,10 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
     OutputContigs(gp.g, cfg::get().additional_contigs, cfg::get().use_unipaths,
                   cfg::get().simp.tec.plausibility_length);
     OutputContigs(gp.g, cfg::get().output_dir + "before_rr.fasta");
+    if (cfg::get().developer_mode) {
+        FillPos(gp, gp.genome, "ref0");
+        FillPos(gp, !gp.genome, "ref1");
+    }
 
     bool no_valid_libs = true;
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i)
