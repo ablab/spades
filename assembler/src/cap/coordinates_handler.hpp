@@ -256,7 +256,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
        */
       void StoreGenomeThreadManual(const uint genome_id, const Thread &ladder) {
         stored_threading_history_[genome_id].push_back(PreprocessCoordinates(ladder));
-        stored_threading_history_[genome_id ^ 1].push_back(PreprocessCoordinates(Conjugate(ladder)));
+        stored_threading_history_[genome_id ^ 1].push_back(PreprocessCoordinates(ConjugateThread(ladder)));
       }
 
       /*
@@ -561,7 +561,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
 
       Thread PreprocessCoordinates(const Thread& ladder) const {
           Thread answer;
-          for (pair<size_t, size_t> point : thread) {
+          for (pair<size_t, size_t> point : ladder) {
               answer.push_back(PreprocessCoordinates(point));
           }
           return answer;
