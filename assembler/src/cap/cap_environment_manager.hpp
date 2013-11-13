@@ -93,6 +93,18 @@ class CapEnvironmentManager {
 
     debruijn_graph::graphio::ScanGraphPack(path, *result);
 
+    ContigStreams streams;
+    for (size_t i = 0; i < env_->genomes_.size(); ++i) {
+      streams.push_back(make_shared<io::SequenceReadStream<Contig>>(
+                    env_->genomes_[i], env_->genomes_names_[i]));
+    }
+    ContigStreams rc_contigs = io::RCWrap(streams);
+    rc_contigs.reset();
+
+    INFO("Filling positions");
+    FillPositions(*result, rc_contigs, env_->coordinates_handler_);
+    INFO("Filling positions done.");
+
     return result;
   }
 

@@ -58,6 +58,7 @@ void ConstructGraph(Graph& g, Index& index,
 	ConstructGraph<Graph>(streams, g, index);
 }
 
+/*
 template<class Graph, class Index>
 void ConstructGraph(Graph& g, Index& index,
 		ContigStream& stream1,
@@ -65,6 +66,7 @@ void ConstructGraph(Graph& g, Index& index,
 	io::MultifileStream<io::SingleRead> composite_reader(stream1, stream2);
 	ConstructGraph<Graph, Index>(g, index, composite_reader);
 }
+*/
 
 inline Sequence ReadGenome(const string& filename) {
 	path::CheckFileExistenceFATAL(filename);
