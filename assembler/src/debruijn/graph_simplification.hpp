@@ -560,7 +560,7 @@ bool RemoveComplexBulges(
 
 template<class Graph>
 bool RemoveHiddenEC(Graph& g,
-                    const NewFlankingCoverage<Graph>& flanking_cov,
+                    const FlankingCoverage<Graph>& flanking_cov,
                     double determined_coverage_threshold,
                     debruijn_config::simplification::hidden_ec_remover her_config,
                     boost::function<void(EdgeId)> removal_handler) {
