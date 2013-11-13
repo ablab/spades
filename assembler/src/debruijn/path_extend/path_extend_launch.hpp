@@ -259,7 +259,7 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
             gp, long_reads, pset.loop_removal.max_loops);
     vector<SimpleExtender *> shortLoopPEs = MakePEExtenders(gp, pset, libs, true);
     vector<ScaffoldingPathExtender*> scafPEs = MakeScaffoldingExtender(gp, pset, scaff_libs);
-    vector<PathExtender *> all_libs(usualPEs.begin(), usualPEs.end());
+    vector<LoopDetectingPathExtender *> all_libs(usualPEs.begin(), usualPEs.end());
     all_libs.insert(all_libs.end(), long_reads_extenders.begin(),
                     long_reads_extenders.end());
     all_libs.insert(all_libs.end(), shortLoopPEs.begin(), shortLoopPEs.end());
