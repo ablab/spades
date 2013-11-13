@@ -6,21 +6,18 @@
 
 #pragma once
 
-#include "io/ireader.hpp"
+#include "ireader.hpp"
 
 namespace io {
 
+//todo rename file
 template<typename ReadType>
-class DelegatingReaderWrapper: public IReader<ReadType> {
+class DelegatingWrapper: public ReadStream<ReadType> {
 public:
+    typedef std::shared_ptr<ReadStream<ReadType>> ReadStreamPtrT;
 
-	explicit DelegatingReaderWrapper(IReader<ReadType>& reader) {
-		Init(reader);
-	}
+	explicit DelegatingWrapper(ReadStreamPtrT reader) : reader_(reader) {}
 
-
-	/* virtual */ ~DelegatingReaderWrapper() {
-	}
 
 	/* virtual */ bool is_open() {
 		return reader_->is_open();
@@ -30,7 +27,7 @@ public:
 		return reader_->eof();
 	}
 
-	/* virtual */ DelegatingReaderWrapper& operator>>(ReadType& read) {
+	/* virtual */ DelegatingWrapper& operator>>(ReadType& read) {
 		(*reader_) >> read;
 		return *this;
 	}
@@ -48,32 +45,19 @@ public:
 		reader_->reset();
 	}
 
-    ReadStat get_stat() const {
-            return reader_->get_stat();
+	/* virtual */
+    ReadStreamStat get_stat() const {
+        return reader_->get_stat();
     }
 
 protected:
-	DelegatingReaderWrapper() {
-
-	}
-
-	IReader<ReadType>& reader() {
+	ReadStream<ReadType>& reader() {
 		return *reader_;
 	}
 
-	void Init(IReader<ReadType>& reader) {
-		reader_ = &reader;
-	}
-
 private:
-	IReader<ReadType>* reader_;
+	ReadStreamPtrT reader_;
 
-	explicit DelegatingReaderWrapper(
-			const DelegatingReaderWrapper& reader);
-	/*
-	 * Hidden assign operator.
-	 */
-	void operator=(const DelegatingReaderWrapper& reader);
 };
 
 }

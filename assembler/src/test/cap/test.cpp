@@ -15,6 +15,7 @@
 #include "repeat_masking.hpp"
 #include "assembly_compare.hpp"
 #include "test_utils.hpp"
+#include "junk_cropping_reader.hpp"
 
 ::boost::unit_test::test_suite* init_unit_test_suite(int, char*[]) {
     //logging::create_logger("", logging::L_DEBUG);
@@ -67,7 +68,7 @@ inline void RegenerateEtalon(size_t k, const string& filename,
 template<class Seq>
 void RunTests(size_t k, const string& filename, const string& output_dir,
               const string& etalon_root, const string& work_dir,
-              bool exact_match = true, const vector<size_t>& example_ids =
+              bool exact_match = true, const vector<size_t>& /*example_ids*/ =
                       vector<size_t>()) {
     SyntheticTestsRunner<Seq> test_runner(filename, k, output_dir, work_dir);
     vector<size_t> launched = test_runner.Run();
@@ -114,4 +115,33 @@ BOOST_AUTO_TEST_CASE( SyntheticExamplesTestsLSeq ) {
  remove_dir("bp_graph_test");
  }
  */
+
+BOOST_AUTO_TEST_CASE( RepeatCroppingReaderTest ) {
+    ContigStreamPtr raw_reader = make_shared<io::VectorReadStream<io::SingleRead>>(MakeReads(vector<string>{
+        "ACGTCacgtcTTGCA"}));
+    io::SingleRead read;
+    (*raw_reader) >> read;
+    BOOST_CHECK_EQUAL("ACGTCacgtcTTGCA", read.GetSequenceString());
+    JunkCroppingWrapper reader(raw_reader);
+    reader.reset();
+    reader >> read;
+    BOOST_CHECK_EQUAL("ACGTCTTGCA", read.sequence().str());
+    vector<pair<size_t, size_t>> etalon_ladder = {{0, 0}, {5, 5}, {10, 5}, {15, 10}};
+    BOOST_CHECK_EQUAL(reader.coordinates_ladder(), etalon_ladder);
+}
+
+BOOST_AUTO_TEST_CASE( RepeatCroppingReaderTest2 ) {
+    ContigStreamPtr raw_reader = make_shared<io::VectorReadStream<io::SingleRead>>(MakeReads(vector<string>{
+        "acgtcACGTCNNNNNTTGCADMYNY"}));
+    io::SingleRead read;
+    (*raw_reader) >> read;
+    BOOST_CHECK_EQUAL("acgtcACGTCNNNNNTTGCADMYNY", read.GetSequenceString());
+    JunkCroppingWrapper reader(raw_reader);
+    reader.reset();
+    reader >> read;
+    BOOST_CHECK_EQUAL("ACGTCTTGCA", read.sequence().str());
+    vector<pair<size_t, size_t>> etalon_ladder = {{0, 0}, {5, 0}, {10, 5}, {15, 5}, {20, 10}, {25, 10}};
+    BOOST_CHECK_EQUAL(reader.coordinates_ladder(), etalon_ladder);
+}
+
 }

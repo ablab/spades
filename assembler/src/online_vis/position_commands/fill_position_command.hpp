@@ -54,7 +54,7 @@ namespace online_visualization {
                 string name = args[1];
                 string file = args[2];
 
-                io::Reader irs(file);
+                io::FileReadStream irs(file);
                 
                 FillerClass& filler = curr_env.filler();
                 while (!irs.eof()) {

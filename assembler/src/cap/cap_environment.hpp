@@ -195,7 +195,7 @@ class CapEnvironment : public Environment {
 
   // Method defining of we use RtSeq or LSeq for particular K
   bool UseLSeqForThisK(unsigned k) const {
-    return k > 99;
+    return k > 201;
   }
 
   const std::string &name() const {

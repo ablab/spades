@@ -30,10 +30,18 @@ class FlankingCoverage : public GraphActionHandler<Graph>,
         return g_.data(e).flanking_coverage();
     }
 
+    size_t EdgeAveragingRange(EdgeId e) const {
+        return std::min(this->g().length(e), averaging_range_);
+    }
+
+    double AverageFlankingCoverage(EdgeId e) const {
+        return double(RawCoverage(e)) / double(EdgeAveragingRange(e));
+    }
+
     unsigned InterpolateCoverage(EdgeId e, size_t l) const {
         VERIFY(l <= averaging_range_);
         VERIFY(l < g_.length(e));
-        return unsigned(math::round(double(RawCoverage(e)) / double(averaging_range_) * double(l)));
+        return unsigned(math::round(AverageFlankingCoverage(e) * double(l)));
     }
 
 public:
@@ -72,8 +80,7 @@ public:
     }
 
     double CoverageOfStart(EdgeId e) const {
-        size_t averaging = std::min(this->g().length(e), averaging_range_);
-        return double(RawCoverage(e)) / double(averaging);
+        return AverageFlankingCoverage(e);
     }
 
     double CoverageOfEnd(EdgeId e) const {

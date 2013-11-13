@@ -363,7 +363,7 @@ private:
 	size_t max_length_;
 	size_t uniqueness_length_;
 	size_t plausibility_length_;
-	EdgeRemover<Graph> edge_remover_;
+	ComponentRemover<Graph> component_remover_;
 
 	bool IsTerminal(VertexId vertex) {
 		return this->g().OutgoingEdgeCount(vertex)
@@ -466,10 +466,11 @@ private:
 
 public:
 	MaxFlowECRemover(Graph& g, size_t max_length, size_t uniqueness_length,
-			size_t plausibility_length, boost::function<void (EdgeId)> removal_handler) :
+			size_t plausibility_length, boost::function<void (EdgeId)>
+	/*fixme ignored, fix after merge with relative coverage branch!!! removal_handler*/) :
 			base(g), max_length_(max_length), uniqueness_length_(
 					uniqueness_length), plausibility_length_(
-					plausibility_length), edge_remover_(g, removal_handler) {
+					plausibility_length), component_remover_(g, (boost::function<void (set<EdgeId>)>) 0) {
 		VERIFY(uniqueness_length >= plausibility_length);
 		VERIFY(plausibility_length > max_length);
 	}
@@ -493,13 +494,11 @@ public:
 					component_finder.ColourComponents();
 			set<EdgeId> to_remove = CollectUnusedEdges(component, fg,
 					colouring);
-			for (SmartSetIterator<Graph, EdgeId> it(this->g(), to_remove.begin(), to_remove.end()); !it.IsEnd(); ++it) {
-				TRACE("Removing Edge");
-				edge_remover_.DeleteEdge(*it);
-			}
+			component_remover_.DeleteComponent(to_remove.begin(), to_remove.end(), false);
 		}
-		Compressor<Graph>(this->g()).CompressAllVertices();
-		Cleaner<Graph>(this->g()).Clean();
+        Compressor<Graph>(this->g()).CompressAllVertices();
+        Cleaner<Graph>(this->g()).Clean();
+
 		return false;
 	}
 private:

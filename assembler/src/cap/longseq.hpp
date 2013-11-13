@@ -414,7 +414,7 @@ class LongSeq {
       return seq.hash_.GetHashInt();
     }
 
-    size_t operator()(const DataType *data, size_t sz = DataSize) {
+    size_t operator()(const DataType * /*data*/, size_t /*sz*/ = DataSize) {
       VERIFY(false);
       return 0;
     }

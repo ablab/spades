@@ -506,12 +506,12 @@ void RunMultipleGenomesVisualization(size_t k_visualize,
 
   ContigStreams streams;
   for (auto it = genomes_paths.begin(); it != genomes_paths.end(); ++it) {
-    streams.push_back(new io::Reader(it->second));
+    streams.push_back(make_shared<io::FileReadStream>(it->second));
   }
 
-  ContigStreamsPtr rc_wrapped = RCWrapStreams(streams);
+  ContigStreams rc_wrapped = io::RCWrap(streams);
 
-  ConstructColoredGraph(gp, coloring, coordinates_handler, *rc_wrapped);
+  ConstructColoredGraph(gp, coloring, coordinates_handler, rc_wrapped);
 
 	ofstream indel_event_logger(output_folder + "/indel_events");
 

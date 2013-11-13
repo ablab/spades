@@ -65,7 +65,7 @@ class CoverageFillingEdgeIndexBuilder : public Builder {
         size_t rl = 0;
 
         while (!stream.eof()) {
-            typename ReadStream::read_type r;
+            typename ReadStream::ReadT r;
             stream >> r;
             rl = std::max(rl, r.size());
 
@@ -137,7 +137,7 @@ class CoverageFillingEdgeIndexBuilder : public Builder {
     template<class Streams>
     size_t BuildIndexFromStream(IndexT &index,
                                 Streams &streams,
-                                SingleReadStream* contigs_stream = 0) const {
+                                io::SingleStream* contigs_stream = 0) const {
         base::BuildIndexFromStream(index, streams, contigs_stream);
 
         return ParallelFillCoverage(index, streams, false);

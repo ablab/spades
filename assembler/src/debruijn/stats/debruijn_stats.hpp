@@ -17,8 +17,7 @@
 #include "omni/graph_component.hpp"
 #include "io/rc_reader_wrapper.hpp"
 #include "io/delegating_reader_wrapper.hpp"
-#include "io/easy_reader.hpp"
-#include "io/splitting_wrapper.hpp"
+#include "io/io_helper.hpp"
 #include "io/wrapper_collection.hpp"
 #include "io/osequencestream.hpp"
 #include "dataset_readers.hpp"
@@ -190,11 +189,11 @@ void WriteGraphComponentsAlongContigs(const Graph& g,
                                       std::shared_ptr<omnigraph::visualization::GraphColorer<Graph>> colorer,
                                       const GraphLabeler<Graph>& labeler) {
     INFO("Writing graph components along contigs");
-    io::EasyReader contigs_to_thread(cfg::get().pos.contigs_to_analyze, false/*true*/);
-    contigs_to_thread.reset();
+    auto contigs_to_thread = io::EasyStream(cfg::get().pos.contigs_to_analyze, false);
+    contigs_to_thread->reset();
     io::SingleRead read;
-    while (!contigs_to_thread.eof()) {
-        contigs_to_thread >> read;
+    while (!contigs_to_thread->eof()) {
+        (*contigs_to_thread) >> read;
         make_dir(folder + read.name());
         omnigraph::visualization::WriteComponentsAlongPath(g, mapper.MapSequence(read.sequence()).simple_path(), folder + read.name() + "/",
                                                            colorer, labeler);

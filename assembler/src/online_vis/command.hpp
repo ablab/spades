@@ -56,6 +56,27 @@ class Command {
 
 };
 
+//todo reduce code duplication in cap's test_utils
+void MakeDirPath(const std::string& path) {
+  if (path.size() == 0) {
+    TRACE("Somewhat delirium: trying to create directory ``");
+    return;
+  }
+
+  size_t slash_pos = 0;
+  while ((slash_pos = path.find_first_of('/', slash_pos + 1)) != std::string::npos) {
+    make_dir(path.substr(0, slash_pos));
+  }
+  if (path[path.size() - 1] != '/') {
+    make_dir(path);
+  }
+}
+
+bool DirExist(std::string path) {
+  struct stat st;
+  return (stat(path.c_str(), &st) == 0) && (S_ISDIR(st.st_mode));
+}
+
 template <class Env>
 class LocalCommand : public Command<Env> {
 
@@ -82,9 +103,9 @@ class LocalCommand : public Command<Env> {
 
   string TryFetchFolder(Env& curr_env, const vector<string>& args, size_t arg_nmb = 1) const {
     if (args.size() > arg_nmb) {
-      return args[arg_nmb] + "/";
+      return MakeDirIfAbsent(args[arg_nmb] + "/");
     } else {
-      return CurrentFolder(curr_env);
+      return MakeDirIfAbsent(CurrentFolder(curr_env));
     }
   }
 
@@ -96,6 +117,14 @@ class LocalCommand : public Command<Env> {
   string CurrentFolder(Env& curr_env) const {
     return curr_env.manager().GetDirForCurrentState();
   }
+
+private:
+  string MakeDirIfAbsent(const string& folder) const {
+      if (!DirExist(folder))
+          MakeDirPath(folder);
+      return folder;
+  }
+
 };
 
 //todo integrate into basic LocalCommand (after iteratively switching to it in all commands)

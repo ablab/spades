@@ -56,34 +56,34 @@ class SyntheticTestsRunner {
         return genome_names;
     }
 
-    void PrintBlocks(BlockPrinter<GraphT>& block_printer, ContigStreamsPtr streams) const {
-        vector<string> contig_names = TransparentContigNames(*streams);
+    void PrintBlocks(BlockPrinter<GraphT>& block_printer, ContigStreams& streams) const {
+        vector<string> contig_names = TransparentContigNames(streams);
 
         size_t transparent_id = 0;
-        for (size_t i = 0; i < streams->size(); ++i) {
-            io::RCRemovingWrapper<Contig> stream((*streams)[i]);
+        for (size_t i = 0; i < streams.size(); ++i) {
+            io::RCRemovingWrapper<Contig> stream(streams.ptr_at(i));
             for (size_t j = 0,
                     n = NumberOfContigs(stream);
                     j < n; ++j) {
-                block_printer.ProcessContig(i + 1, transparent_id, contig_names[transparent_id]);
+                block_printer.ProcessContig(unsigned(i + 1), transparent_id, contig_names[transparent_id]);
                 transparent_id += 2;
             }
         }
     }
 
-    void ProcessExample(ContigStreamsPtr streams, size_t id) const {
+    void ProcessExample(ContigStreams streams, size_t id) const {
         GraphPackT gp(k_, work_dir_, 0);
         ColorHandler<GraphT> coloring(gp.g);
         CoordinatesHandler<GraphT> coordinates_handler;
 
-        ConstructColoredGraph(gp, coloring, coordinates_handler, *streams);
+        ConstructColoredGraph(gp, coloring, coordinates_handler, streams);
         coordinates_handler.FindGenomeFirstEdge(3);
         Save(gp, coloring, coordinates_handler, streams, output_dir_ + ToString(id));
     }
 
     void Save(const GraphPackT& gp, const ColorHandler<GraphT>& coloring,
             const CoordinatesHandler<GraphT> &coordinates_handler,
-            ContigStreamsPtr streams, const string& file_name) const {
+            ContigStreams& streams, const string& file_name) const {
         typename debruijn_graph::graphio::PrinterTraits<GraphT>::Printer printer(gp.g, gp.int_ids);
         INFO("Saving graph to " << file_name);
         printer.SaveGraph(file_name);
@@ -108,7 +108,7 @@ class SyntheticTestsRunner {
 
         BlockPrinter<GraphT> block_printer(gp.g, coordinates_handler, file_name + ".blk");
         PrintBlocks(block_printer, streams);
-        streams->reset();
+        streams.reset();
     }
 
     const vector<io::SingleRead> ParseGenome(
@@ -135,10 +135,10 @@ class SyntheticTestsRunner {
         INFO("--------------------------------------------");
         INFO("Processing example " << id);
         VERIFY(genomes.size() == 2);
-        ContigStreamsPtr streams(new ContigStreams());
-        streams->push_back(new io::VectorReader<Contig>(genomes[0]));
-        streams->push_back(new io::VectorReader<Contig>(genomes[1]));
-        ProcessExample(RCWrapStreams(*streams), id);
+        ContigStreams streams;
+        streams.push_back(make_shared<io::VectorReadStream<Contig>>(genomes[0]));
+        streams.push_back(make_shared<io::VectorReadStream<Contig>>(genomes[1]));
+        ProcessExample(io::RCWrap(streams), id);
     }
 
     vector<size_t> ProcessFile(const set<size_t>& ids_to_launch) const {
@@ -167,7 +167,6 @@ public:
         return ProcessFile(set<size_t>(test_numbers.begin(), test_numbers.end()));
     }
 
-}
-;
+};
 
 }

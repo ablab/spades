@@ -20,24 +20,24 @@
 //todo deprecated
 namespace cap {
 
-inline void SaveAll(ContigStreamsPtr streams, const vector<string>& suffixes,
+inline void SaveAll(ContigStreams& streams, const vector<string>& suffixes,
         const string& out_root) {
     make_dir(out_root);
 
-    streams->reset();
-    for (size_t i = 0; i < streams->size(); ++i) {
+    streams.reset();
+    for (size_t i = 0; i < streams.size(); ++i) {
         if (!suffixes[i].empty()) {
             string output_filename = out_root + suffixes[i];
-            io::RCRemovingWrapper<Contig> wrapper((*streams)[i]);
+            auto rc_wrapped = io::RCWrap<Contig>(streams.ptr_at(i));
             io::osequencestream ostream(output_filename);
-            Transfer(wrapper, ostream);
+            Transfer(*rc_wrapped, ostream);
         }
     }
 }
 
 //todo changes the graph!!! color edge splitting!!!
 template<class gp_t>
-void MakeSaves(gp_t& gp, ContigStreamsPtr streams, const string& root,
+void MakeSaves(gp_t& gp, ContigStreams streams, const string& root,
         const vector<string>& suffixes, bool optional = true) {
 
     SaveAll(streams, suffixes, root);
@@ -49,12 +49,12 @@ void MakeSaves(gp_t& gp, ContigStreamsPtr streams, const string& root,
 
     make_dir(root);
 
-    streams->reset();
+    streams.reset();
 
-    ColorHandler<Graph> coloring(gp.g, streams->size());
+    ColorHandler<Graph> coloring(gp.g, streams.size());
     CoordinatesHandler<Graph> coordinates_handler;
-    SplitAndColorGraph(gp, coloring, *streams);
-    FillPositions(gp, *streams, coordinates_handler);
+    SplitAndColorGraph(gp, coloring, streams);
+    FillPositions(gp, streams, coordinates_handler);
 
     PrintColoredGraphWithColorFilter(gp.g, coloring, gp.edge_pos,
             root + "colored_split_graph");
@@ -104,38 +104,38 @@ void RefineGP(gp_t& gp, size_t delta = 5) {
 }
 
 template<class gp_t>
-void ConstructGPForRefinement(gp_t& gp, const ContigStreamsPtr& contigs,
+void ConstructGPForRefinement(gp_t& gp, ContigStreams& contigs,
         size_t delta = 5) {
     using namespace debruijn_graph;
     typedef typename gp_t::graph_t Graph;
     INFO("Constructing graph pack for refinement");
 
-    CapConstructGraph(gp.k_value, *contigs, gp.g, gp.index);
+    CapConstructGraph(gp.k_value, contigs, gp.g, gp.index);
 
     RefineGP(gp, delta);
 }
 
 template<class gp_t>
-ContigStreamsPtr RefinedStreams(const ContigStreamsPtr& streams, const gp_t& gp) {
-    ContigStreamsPtr refined_streams(new ContigStreams());
-    for (size_t i = 0; i < streams->size(); ++i) {
-        refined_streams->push_back(
-                new io::ModifyingWrapper<io::SingleRead>(
-                        (*streams)[i],
+ContigStreams RefinedStreams(ContigStreams& streams, const gp_t& gp) {
+    ContigStreams refined_streams;
+    for (size_t i = 0; i < streams.size(); ++i) {
+        refined_streams.push_back(
+                make_shared<io::ModifyingWrapper<Contig>>(
+                        streams.ptr_at(i),
                         GraphReadCorrectorInstance(gp.g, *MapperInstance(gp))));
     }
     return refined_streams;
 }
 
 template<class Seq>
-ContigStreamsPtr RefineStreams(const ContigStreamsPtr& streams,
+ContigStreams RefineStreams(ContigStreams& streams,
                                size_t k,
                                size_t delta = 5,
                                const std::string &workdir = "tmp") {
     typedef graph_pack<ConjugateDeBruijnGraph, Seq> refining_gp_t;
     refining_gp_t gp(k, workdir);
 
-    CapConstructGraph(gp.k_value, *streams, gp.g, gp.index);
+    CapConstructGraph(gp.k_value, streams, gp.g, gp.index);
 
     RefineGP(gp, delta);
 
@@ -151,8 +151,8 @@ void RefineData(const string& base_path,
                             size_t k,
                             size_t delta = 5,
                             const std::string &workdir = "tmp") {
-    ContigStreamsPtr streams = OpenStreams(base_path, suffixes, true);
-    ContigStreamsPtr refined = RefineStreams<Seq>(streams, k, delta, workdir);
+    ContigStreams streams = OpenStreams(base_path, suffixes, true);
+    ContigStreams refined = RefineStreams<Seq>(streams, k, delta, workdir);
     SaveAll(refined, suffixes, out_root);
 }
 
@@ -219,10 +219,10 @@ void RefineData(const string& base_path,
 //}
 
 template<class Seq>
-void PerformRefinement(ContigStreamsPtr streams, const string& root,
+void PerformRefinement(ContigStreams& streams, const string& root,
         const vector<string>& suffixes, size_t k, const string& gene_root,
         GeneCollection& gene_collection) {
-    VERIFY(streams->size() == suffixes.size());
+    VERIFY(streams.size() == suffixes.size());
 
     const size_t delta = std::max(size_t(5), k /*/ 5*/);
     typedef graph_pack<ConjugateDeBruijnGraph, Seq> gp_t;
@@ -232,13 +232,13 @@ void PerformRefinement(ContigStreamsPtr streams, const string& root,
     INFO("Constructing graph pack for k=" << k << " delta=" << delta);
     gp_t gp(unsigned(k), "tmp", 0);
 
-    CapConstructGraph(gp.k_value, *streams, gp.g, gp.index);
+    CapConstructGraph(gp.k_value, streams, gp.g, gp.index);
 
     MakeSaves(gp, streams, root + "before_refinement/", suffixes);
 
     RefineGP(gp, delta);
 
-    ContigStreamsPtr refined_streams = RefinedStreams(streams, gp);
+    ContigStreams refined_streams = RefinedStreams(streams, gp);
 
     MakeSaves(gp, refined_streams, root + "after_refinement/", suffixes);
 
@@ -256,7 +256,7 @@ void PerformRefinement(ContigStreamsPtr streams, const string& root,
     //end temporary
 }
 
-inline void PerformIterativeRefinement(ContigStreamsPtr streams,
+inline void PerformIterativeRefinement(ContigStreams& streams,
         const vector<string>& suffixes, const string& out_root,
         vector<size_t> &k_values, const string& gene_root,
         GeneCollection& gene_collection) {
@@ -281,7 +281,7 @@ inline void PerformIterativeRefinement(ContigStreamsPtr streams,
                 gene_root, gene_collection);
     }
 
-    ContigStreamsPtr corr_streams = OpenStreams(root + "after_refinement/",
+    ContigStreams corr_streams = OpenStreams(root + "after_refinement/",
             suffixes, true);
     //recursive call
     GeneCollection updated_collection;
@@ -302,7 +302,7 @@ inline void PerformIterativeRefinement(const string& base_path,
         vector<size_t>& k_values, bool /* gene_analysis  */= false) {
 //	remove_dir(out_root);
     utils::MakeDirPath(out_root);
-    ContigStreamsPtr streams = OpenStreams(base_path, suffixes, true);
+    ContigStreams streams = OpenStreams(base_path, suffixes, true);
 
     //stab
     GeneCollection gene_collection;
@@ -318,10 +318,10 @@ inline void PerformIterativeGeneAnalysis(const string& base_path,
     gene_collection.Load(base_path + "genome_list.txt", base_path + "/genomes/",
             base_path + "gene_info.txt",
             base_path + "interesting_orthologs.txt");
-    ContigStreamsPtr streams = make_shared<ContigStreams>(true);
+    ContigStreams streams;
     vector<string> suffixes;
     for (auto it = gene_collection.genomes.begin(); it != gene_collection.genomes.end(); ++it) {
-        streams->push_back(new io::VectorReader<Contig>(Contig(it->second.name, it->second.sequence.str())));
+        streams.push_back(make_shared<io::VectorReadStream<Contig>>(Contig(it->second.name, it->second.sequence.str())));
         suffixes.push_back(it->second.name);
     }
     PerformIterativeRefinement(streams, suffixes, out_root, k_values, base_path,

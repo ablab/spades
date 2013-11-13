@@ -32,11 +32,11 @@
 #include "runtime_k.hpp"
 // common typedefs
 
-namespace debruijn_graph
-{
-    // todo: rename
-    typedef io::IReader<io::SingleRead> SingleReadStream;
-    typedef io::IReader<io::PairedRead> PairedReadStream;
-    typedef io::ConvertingReaderWrapper UnitedStream;
-} // namespace debruijn_graph
+//namespace debruijn_graph
+//{
+//    // todo: rename
+//    typedef io::IReader<io::SingleRead> SingleReadStream;
+//    typedef io::IReader<io::PairedRead> PairedReadStream;
+//    typedef io::ConvertingReaderWrapper UnitedStream;
+//} // namespace debruijn_graph
 

@@ -561,10 +561,10 @@ public:
 	}
 
     virtual bool MakeGrowStep(BidirectionalPath& path) {
-        if (cfg::get().avoid_rc_connections && (path.CameToInterstrandBulge() || path.IsInterstrandBulge())) {
-            DEBUG("Stoping because of interstand bulge");
-            return false;
-        }
+//        if (cfg::get().avoid_rc_connections && (path.CameToInterstrandBulge() || path.IsInterstrandBulge())) {
+//            DEBUG("Stoping because of interstand bulge");
+//            return false;
+//        }
 
         size_t current = 0;
 

@@ -7,11 +7,7 @@
 #include "segfault_handler.hpp"
 #include "stacktrace.hpp"
 #include "config_struct.hpp"
-#include "io/easy_reader.hpp"
-#include "io/rc_reader_wrapper.hpp"
-#include "io/cutting_reader_wrapper.hpp"
-#include "io/multifile_reader.hpp"
-#include "io/careful_filtering_reader_wrapper.hpp"
+#include "io/io_helper.hpp"
 #include "simple_tools.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -26,10 +22,10 @@ void create_console_logger(string const& cfg_filename) {
 
     string log_props_file = cfg::get().log_filename;
 
-    if (!FileExists(log_props_file))
+    if (!path::FileExists(log_props_file))
         log_props_file = path::append_path(path::parent_path(cfg_filename), cfg::get().log_filename);
 
-    logger *lg = create_logger(FileExists(log_props_file) ? log_props_file : "");
+    logger *lg = create_logger(path::FileExists(log_props_file) ? log_props_file : "");
     lg->add_writer(std::make_shared<console_writer>());
 
     attach_logger(lg);
@@ -43,7 +39,7 @@ int main(int argc, char** argv) {
         VERIFY(argc >= 2);
         string cfg_filename = argv[1];
         string cap_cfg_filename = argv[2];
-        CheckFileExistenceFATAL(cfg_filename);
+        path::CheckFileExistenceFATAL(cfg_filename);
 
         cfg::create_instance(cfg_filename);
         cap_cfg::create_instance(cap_cfg_filename);

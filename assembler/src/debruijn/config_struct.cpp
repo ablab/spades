@@ -3,9 +3,9 @@
 #include "config_common.hpp"
 #include "openmp_wrapper.h"
 
-#include "io/reader.hpp"
-
 #include "logger/logger.hpp"
+
+#include "io/file_reader.hpp"
 
 #include <string>
 #include <vector>
@@ -73,7 +73,7 @@ std::string estimated_param_filename(const std::string& prefix) {
 void load_lib_data(const std::string& prefix) {
   std::string filename = estimated_param_filename(prefix);
 
-  if (!FileExists(filename)) {
+  if (!path::FileExists(filename)) {
       WARN("Estimates params config " << prefix << " does not exist");
   }
   boost::optional<size_t> lib_count;
@@ -413,7 +413,7 @@ void load_reads(debruijn_config::dataset& ds,
         std::string input_dir) {
   if (ds.reads_filename[0] != '/')
     ds.reads_filename = input_dir + ds.reads_filename;
-  CheckFileExistenceFATAL(ds.reads_filename);
+  path::CheckFileExistenceFATAL(ds.reads_filename);
   ds.reads.load(ds.reads_filename);
 }
 
@@ -425,8 +425,8 @@ void load_reference_genome(debruijn_config::dataset& ds,
   }
   if (ds.reference_genome_filename[0] != '/')
     ds.reference_genome_filename = input_dir + ds.reference_genome_filename;
-  CheckFileExistenceFATAL(ds.reference_genome_filename);
-  io::Reader genome_stream(ds.reference_genome_filename);
+  path::CheckFileExistenceFATAL(ds.reference_genome_filename);
+  io::FileReadStream genome_stream(ds.reference_genome_filename);
   io::SingleRead genome;
   genome_stream >> genome;
   VERIFY(genome.IsValid());
@@ -621,7 +621,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 
   load(cfg.max_memory, pt, "max_memory");
 
-  CheckFileExistenceFATAL(cfg.dataset_file);
+  path::CheckFileExistenceFATAL(cfg.dataset_file);
   boost::property_tree::ptree ds_pt;
   boost::property_tree::read_info(cfg.dataset_file, ds_pt);
   load(cfg.ds, ds_pt, true);

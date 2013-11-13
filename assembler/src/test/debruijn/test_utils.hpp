@@ -145,24 +145,14 @@ void AssertEdges(Graph& g, const Edges& etalon_edges) {
 	EdgesEqual(edges, etalon_edges);
 }
 
-template<class Graph, class Reader, class Index>
-size_t ConstructGraphFromStream(size_t k, const debruijn_config::construction params,
-        Reader& stream, Graph& g,
-        Index& index, SingleReadStream* contigs_stream = 0) {
-    io::ReadStreamVector<io::IReader<typename Reader::read_type>> streams(stream);
-    return ConstructGraph(k, params, streams, g, index, contigs_stream);
-}
-
 void AssertGraph(size_t k, const vector<string>& reads, const vector<string>& etalon_edges) {
 	DEBUG("Asserting graph");
-	typedef io::VectorReader<SingleRead> RawStream;
-	typedef io::RCReaderWrapper<SingleRead> Stream;
-	RawStream raw_stream(MakeReads(reads));
-	Stream read_stream(raw_stream);
+	typedef io::VectorReadStream<io::SingleRead> RawStream;
 	Graph g(k);
 	graph_pack<Graph, runtime_k::RtSeq>::index_t index(g, k + 1, tmp_folder);
 
-	ConstructGraphFromStream(k, CreateDefaultConstructionConfig(), read_stream, g, index);
+    io::ReadStreamList<io::SingleRead> streams(io::RCWrap<io::SingleRead>(make_shared<RawStream>(MakeReads(reads))));
+	ConstructGraph(k, CreateDefaultConstructionConfig(), streams, g, index);
 
 	AssertEdges(g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
 }
@@ -218,29 +208,25 @@ void AssertPairInfo(const Graph& g, /*todo const */PairedIndex& paired_index, co
 	}
 }
 
-void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t insert_size, const vector<MyEdge>& etalon_edges
+void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t rl, size_t insert_size, const vector<MyEdge>& etalon_edges
 		, const CoverageInfo& etalon_coverage, const EdgePairInfo& etalon_pair_info) {
-	typedef io::VectorReader<PairedRead> RawStream;
-	typedef io::RCReaderWrapper<PairedRead> PairedStream;
-	typedef io::ConvertingReaderWrapper SingleStream;
+	typedef io::VectorReadStream<io::PairedRead> RawStream;
 
 	DEBUG("Asserting graph with etalon data");
 
-	RawStream raw_stream(MakePairedReads(paired_reads, insert_size));
-	PairedStream paired_read_stream(raw_stream);
-	io::ReadStreamVector<io::IReader<io::PairedRead>> paired_stream_vector(paired_read_stream);
+	io::ReadStreamList<io::PairedRead> paired_streams(io::RCWrap<io::PairedRead>(make_shared<RawStream>(MakePairedReads(paired_reads, insert_size))));
 	DEBUG("Streams initialized");
 
 	conj_graph_pack gp(k, tmp_folder, 1);
 	DEBUG("Graph pack created");
 
-	io::ReadStreamVector<io::IReader<io::SingleRead>> single_stream_vector({new SingleStream(paired_read_stream)});
+	io::ReadStreamList<io::SingleRead> single_stream_vector = io::SquashingWrap<io::PairedRead>(paired_streams);
 	ConstructGraphWithCoverage(k, CreateDefaultConstructionConfig(), single_stream_vector, gp.g, gp.index, gp.flanking_cov);
 
     SequenceMapperNotifier notifier(gp);
     LatePairedIndexFiller pif(gp.g, PairedReadCountWeight, gp.paired_indices[0]);
     notifier.Subscribe(0, &pif);
-    notifier.ProcessLibrary(paired_stream_vector, 0, paired_stream_vector.size());
+    notifier.ProcessLibrary(paired_streams, 0, rl, paired_streams.size());
 
 	AssertEdges(gp.g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
 

@@ -38,7 +38,7 @@ mira_base = '/acestorage/software/mira-4.0rc1/build/bin/'
 mira_config = os.path.join(runner_dirpath, 'MIRA_config.txt')
 
 # IMPORTANT CONSTANTS
-long_options = "min-k= max-k= step-k= threads= is= dev= assemblers= mira-tmp-dir= corrected sc".split()
+long_options = "min-k= max-k= step-k= threads= is= dev= assemblers= mira-tmp-dir= corrected sc mp1= mp2= mp-orient=".split()
 short_options = "o:1:2:r:t:"
 
 # options
@@ -47,6 +47,9 @@ output_dir = None
 mira_tmp_dir = os.path.abspath(os.path.expanduser('~/mira_tmp'))
 left = None
 right = None
+mate_left = None
+mate_right = None
+mate_orient = 'rf'
 insert_size = None
 is_dev = None
 max_threads = 8
@@ -217,6 +220,8 @@ def run_abyss(K, log_filename):
     log_file = open(log_filename, 'a')
     cmd_line = os.path.join(abyss_base, "abyss-pe") + " k=%d n=5 s=100 name=asm lib='reads' reads='%s %s'" % \
         (K, left, right) + " -j " + str(max_threads)
+    if mate_left and mate_right:
+        cmd_line += " mp_lib='mp_reads' mp_reads='%s %s' " % (mate_left, mate_right)
     cmd_line += " >>%s 2>>%s" % (log_filename, log_filename)
     log_file.write("Started: " + cmd_line + "\n\n")
     log_file.flush()
@@ -531,6 +536,8 @@ def run_spades(log_filename):
         cmd_line += " --only-assembler"
     if single_cell:
         cmd_line += " --sc"
+    if mate_left and mate_right:
+        cmd_line += " --mp1-1 %s --mp1-2 %s --mp1-%s " % (mate_left, mate_right, mate_orient)
     #cmd_line = os.path.join(spades_base, "spades.py") + " --sc -o . -1 %s -2 %s -t %d" % (left, right, max_threads)
     cmd_line += " >>%s 2>>%s" % (log_filename, log_filename)
     log_file.write("Started: " + cmd_line + "\n\n")
@@ -690,6 +697,9 @@ def main():
     global mira_tmp_dir
     global corrected
     global single_cell
+    global mate_left
+    global mate_right
+    global mate_orient
 
     if len(sys.argv) == 1:
         print("Assemblers runner v.1.1")
@@ -701,6 +711,10 @@ def main():
         print("-2\t<file>\t\tright reads (in FASTQ)")
         print("--is\t<int>\t\tinsert size mean")
         print("--dev\t<int>\t\tinsert size standard deviation")
+        print("Mate-pairs options:")
+        print("--mp-orient\t<rf,fr>\tmate-pairs orientation (RF -- default or FR)")
+        print("--mp1\t<file>\t\tleft mate-pairs reads (in FASTQ)")
+        print("--mp2\t<file>\t\tright mate-pairs reads (in FASTQ)")
         print("\nRecommended options:")
         print("-r\t\t<file>\treference (in FASTA)")
         print("--threads\t<int>\tmax threads number (default is %d)" % max_threads)
@@ -735,6 +749,15 @@ def main():
             insert_size = int(arg)
         elif opt == '--dev':
             is_dev = int(arg)
+        elif opt == '--mp1':
+            mate_left = arg
+        elif opt == '--mp2':
+            mate_right = arg
+        elif opt == '--mp-orient':
+            if arg == "fr" or arg == "rf":
+                mate_orient = arg
+            else:
+                error("wrong value for --mp-orient option. Should be 'rf' or 'fr'")
         elif opt == '--min-k':
             min_k_rough = int(arg)
             k_2level_selection = False

@@ -122,7 +122,7 @@ BOOST_AUTO_TEST_CASE( TestLSeqShiftLeftThis ) {
     s0 <<= 'T';
     BOOST_CHECK_EQUAL(GenLSeq(5, "CACGT"), s0);
 
-    size_t l;
+    unsigned l;
     LSeq s = GenLSeq(10, "ACGTACGTACACGT");
     l = 10;
     s <<= 'A';
@@ -219,7 +219,7 @@ BOOST_AUTO_TEST_CASE( TestLSeqShiftRight ) {
 
 
 BOOST_AUTO_TEST_CASE( TestLSeqShiftRightThis ) {
-    size_t l;
+    unsigned l;
     LSeq s = GenLSeq(5, "TGCACACAC", 4);
     l = 5;
     s >>= ('A');
@@ -316,7 +316,7 @@ BOOST_AUTO_TEST_CASE( TestLSeqStr ) {
 }
 
 BOOST_AUTO_TEST_CASE( TestLSeqHeadAndTail ) {
-    size_t l;
+    unsigned l;
 
     l = 5;
     LSeq s = GenLSeq(l, "GCATC");

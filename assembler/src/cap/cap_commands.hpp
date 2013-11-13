@@ -19,14 +19,16 @@ class AddGenomeCommand : public LocalCommand<CapEnvironment> {
            "  * further tracking of genome (incl. refinement, searching for diffs, drawing pics, etc.\n"
            "  * storing all genome sequence in RAM throughout usage of current environment\n"
            "Usage:\n"
-           "> add_genome <path_to_file> [<genome_name> = <path_to_file>]\n"
+           "> add_genome <path_to_file> <genome_name> [<crop_repeats> (Yy)] \n"
            " You should specify path to file in which genome data is stored "
-           "(.fasta, .gb, etc.). Also you can provide optional name for genome"
+           "(.fasta, .gb, etc.). Also you should provide name for genome"
            "to display in future output.\n"
            "For example:\n"
            "> add_genome /home/puperuser/genomes/my_genome.fasta my_genome\n"
            " would add to the environment genome stored in file "
-           "`my_genome.fasta` located in folder `/home/puperuser/genomes`\n";
+           "`my_genome.fasta` located in folder `/home/puperuser/genomes`\n"
+           "Optionally N's other strange symbols and repeat families marked by programs s.a. RepeatMasker (written in small letters)"
+           " can be ommited without loss of original coordinates\n";
   }
 
   virtual void Execute(CapEnvironment& curr_env, const ArgumentList& arg_list) const {
@@ -36,11 +38,15 @@ class AddGenomeCommand : public LocalCommand<CapEnvironment> {
     const vector<string>& args = arg_list.GetAllArguments();
     const std::string &filename = args[1];
     std::string name = filename;
-    if (args.size() > 2) {
-      name = args[2];
+    name = args[2];
+    bool crop_repeats = false;
+    if (args.size() > 3) {
+        VERIFY(args[3] == "Y" || args[3] == "y");
+        crop_repeats = true;
+        std::cout << "Repeat crop enabled! All small letters will be ignored with coordinated preserved\n";
     }
 
-    bool success = curr_env.manager().AddGenomeFromFile(filename, name);
+    bool success = curr_env.manager().AddGenomeFromFile(filename, name, crop_repeats);
     if (!success) {
       std::cout << "Failed. Genome is not valid. Please check input.\n";
     }
@@ -48,7 +54,7 @@ class AddGenomeCommand : public LocalCommand<CapEnvironment> {
 
  protected:
   virtual size_t MinArgNumber() const {
-    return 1;
+    return 2;
   }
 
   virtual bool CheckCorrectness(const ArgumentList& arg_list) const {
@@ -261,9 +267,9 @@ class LoadCommand<CapEnvironment> : public Command<CapEnvironment> {
 
 };
 
-class SaveEnvCommand : public LocalCommand<CapEnvironment> {
+class SaveEnvCommand : public NewLocalCommand<CapEnvironment> {
  public:
-  SaveEnvCommand() : LocalCommand<CapEnvironment>("save_env") {
+  SaveEnvCommand() : NewLocalCommand<CapEnvironment>("save_env", 1) {
   }
 
   virtual std::string Usage() const {
@@ -272,19 +278,17 @@ class SaveEnvCommand : public LocalCommand<CapEnvironment> {
            "> save_graph <directory_to_save_to>\n";
   }
 
-  virtual void Execute(CapEnvironment& curr_env, const ArgumentList& arg_list) const {
-    const vector<string> &args = arg_list.GetAllArguments();
-
+ private:
+  virtual void InnerExecute(CapEnvironment& curr_env, const vector<string>& args) const {
     std::string folder;
-    if (args.size() > 1) {
-      folder = args[1];
-    } else {
-      folder = curr_env.manager().GetDirForCurrentState();
-    }
+    folder = args[1] + "/";
 
     cout << "Saving env in " << folder << " ...";
 
-    std::ofstream write_stream(folder + "/environment");
+    cap::utils::MakeDirPath(folder);
+    VERIFY(cap::utils::DirExist(folder));
+
+    std::ofstream write_stream(folder + "environment");
     curr_env.WriteToStream(write_stream);
     write_stream.close();
     cout << " Done.\n";
@@ -292,9 +296,9 @@ class SaveEnvCommand : public LocalCommand<CapEnvironment> {
 
 };
 
-class LoadEnvCommand : public LocalCommand<CapEnvironment> {
+class LoadEnvCommand : public NewLocalCommand<CapEnvironment> {
  public:
-  LoadEnvCommand() : LocalCommand<CapEnvironment>("load_env") {
+  LoadEnvCommand() : NewLocalCommand<CapEnvironment>("load_env", 1) {
   }
 
   virtual std::string Usage() const {
@@ -303,19 +307,15 @@ class LoadEnvCommand : public LocalCommand<CapEnvironment> {
            "> load_env <directory with save>\n";
   }
 
-  virtual void Execute(CapEnvironment& curr_env, const ArgumentList& arg_list) const {
-    const vector<string> &args = arg_list.GetAllArguments();
-
+private:
+  virtual void InnerExecute(CapEnvironment& curr_env, const vector<string>& args) const {
     std::string folder;
-    if (args.size() > 1) {
-      folder = args[1];
-    } else {
-      folder = curr_env.manager().GetDirForCurrentState();
-    }
+    VERIFY(args.size() > 1);
+    folder = args[1] + "/";
 
     cout << "Load env from " << folder << " ...";
 
-    std::ifstream read_stream(folder + "/environment");
+    std::ifstream read_stream(folder + "environment");
     curr_env.ReadFromStream(read_stream);
     read_stream.close();
     cout << " Done.\n";
@@ -575,7 +575,6 @@ class SaveBlocksCommand : public LocalCommand<CapEnvironment> {
 
 };
 
-/*
 class LoadGraphCommand : public LocalCommand<CapEnvironment> {
  public:
   LoadGraphCommand() : LocalCommand<CapEnvironment>("load_graph") {
@@ -591,10 +590,6 @@ class LoadGraphCommand : public LocalCommand<CapEnvironment> {
   }
 
   virtual void Execute(CapEnvironment &curr_env, const ArgumentList &arg_list) const {
-    if (!CheckCorrectness(arg_list)) {
-      return;
-    }
-
     const vector<string> &args = arg_list.GetAllArguments();
 
     size_t K = 21;
@@ -611,7 +606,6 @@ class LoadGraphCommand : public LocalCommand<CapEnvironment> {
   }
 
 };
-*/
 
 class MosaicAnalysisCommand : public NewLocalCommand<CapEnvironment> {
  public:
@@ -647,12 +641,11 @@ class MosaicAnalysisCommand : public NewLocalCommand<CapEnvironment> {
 };
 
 //todo works for finished genomes, not contigs!!!
-ContigStreamsPtr ConvertRefsToStreams(const vector<Sequence>& ss, const vector<string>& names) {
-    ContigStreamsPtr answer = make_shared<ContigStreams>();
+ContigStreams ConvertRefsToStreams(const vector<Sequence>& ss, const vector<string>& names) {
+    ContigStreams answer;
     VERIFY(ss.size() == names.size());
     for (size_t i = 0; i < ss.size(); ++i) {
-        io::IReader<io::SingleRead>* ireader = new io::SequenceReader<io::SingleRead>(ss[i], names[i]);
-        answer->push_back(ireader);
+        answer.push_back(make_shared<io::SequenceReadStream<Contig>>(ss[i], names[i]));
     }
     return answer;
 }
@@ -684,11 +677,11 @@ private:
         return read.sequence();
     }
 
-    void UpdateGenomes(ContigStreamsPtr streams, CapEnvironment& curr_env) const {
+    void UpdateGenomes(ContigStreams streams, CapEnvironment& curr_env) const {
         vector<Sequence>& genomes = curr_env.mutable_genomes();
-        VERIFY(streams->size() == genomes.size());
-        for (size_t i = 0; i < streams->size(); ++i) {
-            genomes[i] = ReadSequence((*streams)[i]);
+        VERIFY(streams.size() == genomes.size());
+        for (size_t i = 0; i < streams.size(); ++i) {
+            genomes[i] = ReadSequence(streams[i]);
         }
     }
 
@@ -700,7 +693,7 @@ private:
 
         cout << "Masking repeats for k=" << k << " in " << iteration_cnt << " iterations" << endl;
 
-        ContigStreamsPtr streams = ConvertRefsToStreams(
+        ContigStreams streams = ConvertRefsToStreams(
                 curr_env.genomes(), curr_env.genome_names());
 
         //todo temporary hack

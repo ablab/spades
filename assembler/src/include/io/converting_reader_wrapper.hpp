@@ -4,41 +4,24 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-/**
- * @file    converting_reader_wrapper.hpp
- * @author  Mariya Fomkina
- * @version 1.0
- *
- * @section LICENSE
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * @section DESCRIPTION
- *
- * ConvertingReaderWrapper is the class-wrapper that reads SingleReads
- * from IReader<PairedRead> (first and second single reads in a pair
- * one by one).
- */
-
 #pragma once
 
-#include "io/single_read.hpp"
-#include "io/paired_read.hpp"
-#include "io/ireader.hpp"
+#include "read_stream_vector.hpp"
 
 namespace io {
 
-class ConvertingReaderWrapper : public IReader<SingleRead> {
+/**
+ * SquashingWrapper is the class-wrapper that reads SingleReads
+ * from Reader<PairedRead> (first and second single reads in a pair
+ * one by one).
+ */
+template <class PairedReadType>
+class SquashingWrapper : public ReadStream<typename PairedReadType::SingleReadT> {
+  typedef typename PairedReadType::SingleReadT SingleReadT;
+  typedef std::shared_ptr<ReadStream<PairedReadType>> PairedReaderPtrT;
  public:
-  /*
-   * Default constructor.
-   *
-   * @param reader Reference to any other reader (child of IReader).
-   */
-  explicit ConvertingReaderWrapper(IReader<PairedRead>& reader)
+
+  explicit SquashingWrapper(PairedReaderPtrT reader)
       : reader_(reader), pairedread_(), index_(0) {
   }
 
@@ -48,7 +31,7 @@ class ConvertingReaderWrapper : public IReader<SingleRead> {
    * @return true if the stream is opened and false otherwise.
    */
   /* virtual */ bool is_open() {
-    return reader_.is_open();
+    return reader_->is_open();
   }
 
   /*
@@ -58,7 +41,7 @@ class ConvertingReaderWrapper : public IReader<SingleRead> {
    * otherwise.
    */
   /* virtual */ bool eof() {
-    return (index_ == 0) && (reader_.eof());
+    return (index_ == 0) && (reader_->eof());
   }
 
   /*
@@ -69,10 +52,10 @@ class ConvertingReaderWrapper : public IReader<SingleRead> {
    *
    * @return Reference to this stream.
    */
-  /* virtual */ ConvertingReaderWrapper& operator>>(
-      SingleRead& singleread) {
+  /* virtual */ SquashingWrapper& operator>>(
+      SingleReadT& singleread) {
     if (index_ == 0) {
-      reader_ >> pairedread_;
+      (*reader_) >> pairedread_;
     }
     singleread = pairedread_[index_];
     index_ = 1 - index_;
@@ -83,7 +66,7 @@ class ConvertingReaderWrapper : public IReader<SingleRead> {
    * Close the stream.
    */
   /* virtual */ void close() {
-    reader_.close();
+    reader_->close();
   }
 
   /*
@@ -91,37 +74,46 @@ class ConvertingReaderWrapper : public IReader<SingleRead> {
    */
   /* virtual */ void reset() {
     index_ = 0;
-    reader_.reset();
+    reader_->reset();
   }
 
-  ReadStat get_stat() const {
-        return reader_.get_stat();
+  ReadStreamStat get_stat() const {
+    return reader_->get_stat();
   }
 
  private:
   /*
    * @variable Internal stream reader.
    */
-  IReader<PairedRead>& reader_;
+  PairedReaderPtrT reader_;
   /*
    * @variable Element that stores the last read PairedRead from
    * stream.
    */
-  PairedRead pairedread_;
+  PairedReadType pairedread_;
   /*
    * @variable Index of current part of PairedRead.
    */
   size_t index_;
 
-  /*
-   * Hidden copy constructor.
-   */
-  explicit ConvertingReaderWrapper(const ConvertingReaderWrapper&
-                                   reader);
-  /*
-   * Hidden assign operator.
-   */
-  void operator=(const ConvertingReaderWrapper& reader);
 };
 
+template<class PairedReadType>
+std::shared_ptr<ReadStream<typename PairedReadType::SingleReadT>> SquashingWrap(std::shared_ptr<ReadStream<PairedReadType>> reader_ptr) {
+    return std::make_shared<SquashingWrapper<PairedReadType>>(reader_ptr);
+}
+
+template<class PairedReadType>
+ReadStreamList<typename PairedReadType::SingleReadT> SquashingWrap(ReadStreamList<PairedReadType>& readers) {
+    ReadStreamList<typename PairedReadType::SingleReadT> answer;
+    for (size_t i = 0; i < readers.size(); ++i) {
+        answer.push_back(SquashingWrap<PairedReadType>(readers.ptr_at(i)));
+    }
+    return answer;
+}
+
+//template<class ReaderPtrType>
+//std::shared_ptr<Reader<typename ReaderPtrType::element_type::ReadT::SingleReadT>> SquashingWrap(ReaderPtrType reader_ptr) {
+//    return std::make_shared<SquashingWrapper<typename ReaderPtrType::element_type::ReadT>>(reader_ptr);
+//}
 }

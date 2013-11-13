@@ -4,72 +4,49 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-/*
- * read_stream_vector.hpp
- *
- *  Created on: Jul 24, 2012
- *      Author: andrey
- */
-
 #pragma once
+#include "ireader.hpp"
+#include <vector>
 
 namespace io {
-
-template <class Reader>
-bool ParallelStreamEOF(const std::vector< Reader* >& streams) {
-  for (size_t i = 0; i < streams.size(); ++i) {
-    if (!streams[i]->eof()) {
-      return false;
-    }
-  }
-  return true;
-}
+//todo rename file
 
 //todo check destroy_readers logic and usages
-template <class Reader>
-class ReadStreamVector : boost::noncopyable {
+template <class ReadType>
+class ReadStreamList {
+public:
+  typedef ReadType ReadT;
+  typedef ReadStream<ReadType> ReaderT;
+  typedef std::shared_ptr<ReaderT> ReaderPtrT;
 
  private:
-  mutable std::vector<Reader*> streams_;
-  bool destroy_readers_;
-
-  ReadStreamVector& operator=(const ReadStreamVector& that);
+  std::vector<ReaderPtrT> readers_;
 
  public:
 
-  typedef Reader ReaderType;
-
-  explicit ReadStreamVector(const std::vector<Reader*>& streams, bool destroy_readers = true): streams_(streams.size()), destroy_readers_(destroy_readers) {
-    std::copy(streams.begin(), streams.end(), streams_.begin());
+  explicit ReadStreamList(const std::vector<ReaderPtrT>& readers): readers_(readers) {
   }
 
-  explicit ReadStreamVector(bool destroy_readers = true): destroy_readers_(destroy_readers) {
+  ReadStreamList() {
   }
 
-  explicit ReadStreamVector(Reader* stream): streams_(1, stream), destroy_readers_(true) {
+  explicit ReadStreamList(ReaderT* reader_ptr): readers_(1, ReaderPtrT(reader_ptr)) {
   }
 
-  explicit ReadStreamVector(Reader& stream): streams_(1, &stream), destroy_readers_(false) {
+  explicit ReadStreamList(ReaderPtrT reader_ptr): readers_(1, reader_ptr) {
   }
 
-  std::vector<Reader*>& get() {
-      destroy_readers_ = false;
-      return streams_;
+  explicit ReadStreamList(size_t size): readers_(size) {
   }
 
-//  ReadStreamVector(const ReadStreamVector& that): streams_(that.streams_), destroy_readers_(false) {
+//  std::vector<Reader*>& get() {
+//      destroy_readers_ = false;
+//      return streams_;
 //  }
 
-  ~ReadStreamVector() {
-    if (destroy_readers_) {
-      for (size_t i = 0; i < streams_.size(); ++i) {
-        delete streams_[i];
-      }
-    }
-  }
-
-  class iterator: public std::iterator<std::input_iterator_tag, Reader> {
-    typedef typename std::vector<Reader*>::iterator vec_it;
+  //todo use boost iterator facade
+  class iterator: public std::iterator<std::input_iterator_tag, ReaderT> {
+    typedef typename std::vector<ReaderPtrT>::iterator vec_it;
     vec_it it_;
    public:
 
@@ -88,84 +65,116 @@ class ReadStreamVector : boost::noncopyable {
         return it_ != that.it_;
     }
 
-    Reader& operator*() {
+    ReaderT& operator*() {
         return *(*it_);
     }
   };
 
-  class const_iterator: public std::iterator<std::input_iterator_tag, Reader> {
-    typedef typename std::vector<Reader*>::iterator vec_it;
-    vec_it it_;
-   public:
+//  class const_iterator: public std::iterator<std::input_iterator_tag, Reader> {
+//    typedef typename std::vector<Reader*>::iterator vec_it;
+//    vec_it it_;
+//   public:
+//
+//    const_iterator(vec_it it) : it_(it) {
+//    }
+//
+//    void operator++ () {
+//        ++it_;
+//    }
+//
+//    bool operator== (const const_iterator& that) {
+//        return it_ == that.it_;
+//    }
+//
+//    bool operator!= (const const_iterator& that) {
+//        return it_ != that.it_;
+//    }
+//
+//    ReaderT& operator*() {
+//        return *(*it_);
+//    }
+//  };
 
-    const_iterator(vec_it it) : it_(it) {
-    }
-
-    void operator++ () {
-        ++it_;
-    }
-
-    bool operator== (const const_iterator& that) {
-        return it_ == that.it_;
-    }
-
-    bool operator!= (const const_iterator& that) {
-        return it_ != that.it_;
-    }
-
-    Reader& operator*() {
-        return *(*it_);
-    }
-  };
-
-  Reader& operator[](size_t i) {
-    return *streams_.at(i);
+  ReaderT& operator[](size_t i) {
+    return *readers_.at(i);
   }
 
-  Reader& back() {
-    return *streams_.back();
+  ReaderPtrT& ptr_at(size_t i) {
+    return readers_.at(i);
+  }
+
+  ReaderT& back() {
+    return *readers_.back();
   }
 
   size_t size() const {
-    return streams_.size();
+    return readers_.size();
   }
 
   bool eof() const {
-    return ParallelStreamEOF(streams_);
+    for (size_t i = 0; i < readers_.size(); ++i) {
+      if (!readers_[i]->eof()) {
+        return false;
+      }
+    }
+    return true;
   }
 
   iterator begin() {
-    return iterator(streams_.begin());
+    return iterator(readers_.begin());
   }
 
   iterator end() {
-    return iterator(streams_.end());
+    return iterator(readers_.end());
   }
 
-  const_iterator begin() const {
-    return iterator(streams_.begin());
+//  const_iterator begin() const {
+//    return iterator(streams_.begin());
+//  }
+//
+//  const_iterator end() const {
+//    return iterator(streams_.end());
+//  }
+
+  void push_back(ReaderT* reader_ptr) {
+      readers_.push_back(ReaderPtrT(reader_ptr));
   }
 
-  const_iterator end() const {
-    return iterator(streams_.end());
-  }
-
-  void push_back(Reader* stream) {
-      streams_.push_back(stream);
+  void push_back(ReaderPtrT reader_ptr) {
+      readers_.push_back(reader_ptr);
   }
 
   void reset() {
-    for (auto I = streams_.begin(), E = streams_.end(); I != E; ++I)
-      (*I)->reset();
+    for (size_t i = 0; i < readers_.size(); ++i) {
+      readers_[i]->reset();
+    }
   }
 
-  void release() {
-      destroy_readers_ = false;
+  void close() {
+    for (size_t i = 0; i < readers_.size(); ++i) {
+      readers_[i]->close();
+    }
   }
 
-  const std::vector< Reader * >& get() const {
-      return streams_;
+  void clear() {
+    readers_.clear();
   }
+
+  ReadStreamStat get_stat() const {
+    ReadStreamStat stat;
+    for (size_t i = 0; i < readers_.size(); ++i) {
+        stat.merge(readers_[i]->get_stat());
+    }
+    return stat;
+  }
+
+//  void release() {
+//      destroy_readers_ = false;
+//  }
+
+//  const std::vector< Reader * >& get() const {
+//      return streams_;
+//  }
 
 };
 

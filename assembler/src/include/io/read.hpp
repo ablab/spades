@@ -24,7 +24,7 @@
 #include "sequence/sequence_tools.hpp"
 #include "simple_tools.hpp"
 
-
+//fixme deprecated!!! used in hammer!
 class Read {
 public:
   static const int PHRED_OFFSET = 33;
@@ -169,7 +169,7 @@ public:
   void set_ltrim(unsigned val) { ltrim_ = val; };
   int rtrim() const { return rtrim_; }
   int initial_size() const { return initial_size_; }
-  
+
 private:
   std::string name_;
   std::string seq_;

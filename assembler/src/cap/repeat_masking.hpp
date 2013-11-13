@@ -36,7 +36,7 @@ class RepeatSearchingIndexBuilder : public Builder {
                                   IndexT &index) const {
         unsigned k = index.k();
         while (!stream.eof()) {
-            typename ReadStream::read_type r;
+            typename ReadStream::ReadT r;
             stream >> r;
 
             const Sequence &seq = r.sequence();
@@ -86,7 +86,7 @@ class RepeatSearchingIndexBuilder : public Builder {
     template<class Streams>
     size_t BuildIndexFromStream(IndexT &index,
                                 Streams &streams,
-                                SingleReadStream* contigs_stream = 0) const {
+                                io::SingleStream* contigs_stream = 0) const {
         base::BuildIndexFromStream(index, streams, contigs_stream);
 
         return FindRepeats(index, streams);
@@ -187,7 +187,7 @@ public:
     }
 
     template<class Streams>
-    size_t FindRepeats(Streams& streams) {
+    size_t FindRepeats(Streams streams) {
         INFO("Looking for repetitive " << k_ << "-mers");
         CountIndexHelper<KmerCountIndex>::RepeatSearchingIndexBuilderT().BuildIndexFromStream(index_, streams);
         size_t rep_kmer_cnt = 0;
@@ -216,44 +216,44 @@ private:
 
 template<class Stream1, class Stream2>
 void Transfer(Stream1& s1, Stream2& s2) {
-    typename Stream1::read_type r;
+    typename Stream1::ReadT r;
     while (!s1.eof()) {
         s1 >> r;
         s2 << r;
     }
 }
 
-inline ContigStreamsPtr OpenStreams(const string& root,
+inline ContigStreams OpenStreams(const string& root,
         const vector<string>& filenames, bool add_rc) {
-    ContigStreamsPtr streams(new ContigStreams());
+    ContigStreams streams;
     for (auto filename : filenames) {
         DEBUG("Opening stream from " << root << filename);
-        ContigStream* reader = new io::Reader(root + filename);
+        ContigStreamPtr reader = make_shared<io::FileReadStream>(root + filename);
         if (add_rc)
-            reader = new io::CleanRCReaderWrapper<Contig>(reader);
-        streams->push_back(reader);
+            reader = io::RCWrap<Contig>(reader);
+        streams.push_back(reader);
     }
     return streams;
 }
 
-inline void SaveStreams(ContigStreamsPtr streams, const vector<string>& suffixes,
+inline void SaveStreams(ContigStreams streams, const vector<string>& suffixes,
         const string& out_root) {
     make_dir(out_root);
 
-    streams->reset();
-    for (size_t i = 0; i < streams->size(); ++i) {
+    streams.reset();
+    for (size_t i = 0; i < streams.size(); ++i) {
         VERIFY(!suffixes[i].empty());
         string output_filename = out_root + suffixes[i];
         io::osequencestream ostream(output_filename);
-        Transfer((*streams)[i], ostream);
+        Transfer(streams[i], ostream);
     }
 }
 
-inline void ModifyAndSave(shared_ptr<io::SequenceModifier> modifier, ContigStreamsPtr streams, const vector<string>& suffixes,
+inline void ModifyAndSave(shared_ptr<io::SequenceModifier> modifier, ContigStreams streams, const vector<string>& suffixes,
         const string& out_root) {
-    ContigStreamsPtr modified = make_shared<ContigStreams>();
-    for (size_t i = 0; i < streams->size(); ++i) {
-        modified->push_back(new io::ModifyingWrapper<Contig>((*streams)[i], modifier));
+    ContigStreams modified;
+    for (size_t i = 0; i < streams.size(); ++i) {
+        modified.push_back(make_shared<io::ModifyingWrapper<Contig>>(streams.ptr_at(i), modifier));
     }
     SaveStreams(modified, suffixes, out_root);
 }
@@ -261,7 +261,7 @@ inline void ModifyAndSave(shared_ptr<io::SequenceModifier> modifier, ContigStrea
 inline bool MaskRepeatsIteration(size_t k, const string& input_dir, const vector<string>& suffixes, const string& output_dir, RandNucl& rand_nucl) {
     shared_ptr<RepeatMasker> masker_ptr = make_shared<RepeatMasker>(k, rand_nucl, "tmp");
     INFO("Opening streams in " << input_dir);
-    bool repeats_found = masker_ptr->FindRepeats(*OpenStreams(input_dir, suffixes, true));
+    bool repeats_found = masker_ptr->FindRepeats(OpenStreams(input_dir, suffixes, true));
     if (repeats_found) {
         INFO("Repeats found");
         INFO("Modifying and saving streams to " << output_dir);
@@ -296,7 +296,7 @@ inline bool MaskRepeatsIteration(size_t k, const string& input_dir, const vector
 //    return no_repeats;ContigStreamsPtr
 //}
 
-inline bool MaskRepeats(size_t k, ContigStreamsPtr input_streams, const vector<string>& suffixes, size_t max_iter_count, const string& work_dir) {
+inline bool MaskRepeats(size_t k, ContigStreams input_streams, const vector<string>& suffixes, size_t max_iter_count, const string& work_dir) {
     size_t iter = 0;
     RandNucl rand_nucl(239);
     bool no_repeats = false;

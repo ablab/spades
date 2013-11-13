@@ -133,7 +133,7 @@ class MismatchStatistics {
   }
 
   template<class graph_pack, class read_type>
-  void Count(io::IReader<read_type>& stream, const graph_pack &gp) {
+  void Count(io::ReadStream<read_type>& stream, const graph_pack &gp) {
     stream.reset();
     DEBUG("count started");
     auto sm = MapperInstance(gp);
@@ -173,7 +173,7 @@ class MismatchStatistics {
   }
 
   template<class graph_pack, class read_type>
-  void ParallelCount(io::ReadStreamVector<io::IReader<read_type>> &streams, const graph_pack &gp) {
+  void ParallelCount(io::ReadStreamList<read_type> &streams, const graph_pack &gp) {
     size_t nthreads = streams.size();
     std::vector<MismatchStatistics<EdgeId>*> statistics(nthreads);
 #pragma omp parallel for num_threads(nthreads) shared(streams, statistics)
@@ -291,13 +291,13 @@ class MismatchShallNotPass {
     return res;
   }
 
-  size_t StopMismatchIteration(io::IReader<read_type>& stream) {
+  size_t StopMismatchIteration(io::ReadStream<read_type>& stream) {
     mismatches::MismatchStatistics<typename Graph::EdgeId> statistics(gp_);
     statistics.Count(stream, gp_);
     return CorrectAllEdges(statistics);
   }
 
-  size_t ParallelStopMismatchIteration(io::ReadStreamVector<io::IReader<read_type>> &streams) {
+  size_t ParallelStopMismatchIteration(io::ReadStreamList<read_type> &streams) {
     mismatches::MismatchStatistics<typename Graph::EdgeId> statistics(gp_);
     statistics.ParallelCount(streams, gp_);
     return CorrectAllEdges(statistics);
@@ -309,7 +309,7 @@ class MismatchShallNotPass {
   }
 
 
-  size_t StopAllMismatches(io::IReader<read_type>& stream, size_t max_iterations = 1) {
+  size_t StopAllMismatches(io::ReadStream<read_type>& stream, size_t max_iterations = 1) {
     size_t res = 0;
     while(max_iterations > 0) {
       size_t last = StopMismatchIteration(stream);
@@ -321,7 +321,7 @@ class MismatchShallNotPass {
     return res;
   }
 
-  size_t ParallelStopAllMismatches(io::ReadStreamVector<io::IReader<read_type>> &streams, size_t max_iterations = 1) {
+  size_t ParallelStopAllMismatches(io::ReadStreamList<read_type> &streams, size_t max_iterations = 1) {
     size_t res = 0;
     while(max_iterations > 0) {
       size_t last = ParallelStopMismatchIteration(streams);
