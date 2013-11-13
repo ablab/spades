@@ -949,20 +949,27 @@ private:
         }
 
         size_t max_common_end = 0;
+        size_t max_begin = 0;
+        size_t max_end = 0;
         BidirectionalPath max_path(g_);
         for (auto it1 = paths.begin(); it1 != paths.end(); ++it1) {
             BidirectionalPath* path1 = *it1;
-            bool contain_all = true;
-            for (size_t i = 1; i < path1->Size() && contain_all; ++i) {
-                BidirectionalPath subpath = path1->SubPath(path1->Size() - i);
-                for (auto it2 = paths.begin(); it2 != paths.end() && contain_all; ++it2) {
-                    if (!(*it2)->Contains(subpath))
-                        contain_all = false;
-                }
-                if (contain_all && i >= max_common_end) {
-                    max_common_end = i;
-                    max_path.Clear();
-                    max_path.PushBack(*path1);
+            for (size_t i = 1; i < path1->Size(); ++i) {
+                for (size_t i1 = i + 1; i1 <= path1->Size(); ++i1) {
+                    BidirectionalPath subpath = path1->SubPath(i, i1);
+                    bool contain_all = true;
+                    for (auto it2 = paths.begin();
+                            it2 != paths.end() && contain_all; ++it2) {
+                        if (!(*it2)->Contains(subpath))
+                            contain_all = false;
+                    }
+                    if (contain_all && (i1 - i) >= max_common_end) {
+                        max_common_end = i1 - i;
+                        max_begin = i;
+                        max_end = i1 - 1;
+                        max_path.Clear();
+                        max_path.PushBack(*path1);
+                    }
                 }
             }
         }
@@ -972,15 +979,15 @@ private:
         weight_counter_.ClearCommonWeight();
         double common = weight_counter_.CountPairInfo(
                 path, 0, path.Size(), max_path,
-                max_path.Size() - max_common_end, max_path.Size(), false);
+                max_begin, max_end, false);
         double not_common = weight_counter_.CountPairInfo(
                 path, 0, path.Size(), max_path, 0,
-                max_path.Size() - max_common_end, false);
-        DEBUG("common " << common << " not common " << not_common << " max common end " << max_common_end);
+                max_begin, false);
+        DEBUG("common " << common << " not common " << not_common << " max common end " << max_begin);
         max_path.Print();
         EdgeContainer result;
         if (common > not_common) {
-            size_t to_add = max_path.Size() - max_common_end;
+            size_t to_add = max_begin;
             size_t gap_length = max_path.Length() - max_path.LengthAt(to_add);
             DEBUG(" edge to add " << g_.int_id(max_path.At(to_add)) << " with length " << gap_length);
             result.push_back(EdgeWithDistance(max_path.At(to_add), gap_length));
