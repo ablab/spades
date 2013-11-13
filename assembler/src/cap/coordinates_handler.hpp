@@ -251,8 +251,12 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
           TRACE("StoreGenomeThreads End");
       }
 
-      void StoreGenomeThreadManual(const uint genome_id, const Thread &thread) {
-        stored_threading_history_[genome_id].push_back(std::move(thread));
+      /**
+       * Automatically adds conjugate strand!!!
+       */
+      void StoreGenomeThreadManual(const uint genome_id, const Thread &ladder) {
+        stored_threading_history_[genome_id].push_back(PreprocessCoordinates(ladder));
+        stored_threading_history_[genome_id ^ 1].push_back(PreprocessCoordinates(Conjugate(ladder)));
       }
 
       /*
@@ -550,6 +554,29 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
       };
 
       constexpr static long double EPS = 1e-9;
+
+      pair<size_t, size_t> PreprocessCoordinates(const pair<size_t, size_t>& point) const {
+          return make_pair(point.first << kShiftValue | kHalfMask, point.second << kShiftValue | kHalfMask);
+      }
+
+      Thread PreprocessCoordinates(const Thread& ladder) const {
+          Thread answer;
+          for (pair<size_t, size_t> point : thread) {
+              answer.push_back(PreprocessCoordinates(point));
+          }
+          return answer;
+      }
+
+      Thread ConjugateThread(const Thread& ladder) const {
+          Thread answer;
+          size_t first_length = ladder.back().first;
+          size_t second_length = ladder.back().second;
+          for (auto it = ladder.rbegin(); it != ladder.rend(); ++it) {
+              answer.push_back(make_pair(first_length - it->first,
+                                         second_length - it->second));
+          }
+          return answer;
+      }
 
       void StoreGenomeThread(const uint genome_id, Thread &thread);
 
