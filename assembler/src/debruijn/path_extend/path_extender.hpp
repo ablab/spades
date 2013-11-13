@@ -373,8 +373,8 @@ class LoopDetectingPathExtender: public PathExtender {
 
 protected:
     size_t maxLoops_;
-
     bool investigateShortLoops_;
+    set<EdgeId> cycled_edges_;
 
 public:
     LoopDetectingPathExtender(const Graph & g, size_t max_loops, bool investigateShortLoops): PathExtender(g), maxLoops_(max_loops), investigateShortLoops_(investigateShortLoops)
@@ -401,6 +401,25 @@ public:
         if (maxLoops != 0) {
             this->maxLoops_ = maxLoops;
         }
+    }
+
+    bool LastEdgeCycled(const BidirectionalPath& path) {
+    	if (cycled_edges_.count(path.Back()) > 0) {
+    		return true;
+    	} else {
+    		cycled_edges_.clear();
+    		return false;
+    	}
+    }
+
+    void AddCycledEdges(const BidirectionalPath& path, size_t count) {
+        for (int i = (int) path.Size() - 1; i >= 0 && i >= (int) path.Size() - (int) count - 1; --i) {
+            cycled_edges_.insert(path.At(i));
+        }
+    }
+
+    void ClearCycledEdges() {
+        cycled_edges_.clear();
     }
 
     virtual void GrowPath(BidirectionalPath& path) {
@@ -544,18 +563,18 @@ class CompositeExtender: public CoveringPathExtender {
 
 protected:
 
-    vector<PathExtender* > extenders_;
+    vector<LoopDetectingPathExtender* > extenders_;
 
 public:
 
     CompositeExtender(Graph & g, size_t max_loops, bool investigateShortLoops): CoveringPathExtender(g, max_loops, investigateShortLoops), extenders_() {
     }
 
-    void AddExender(PathExtender* pe) {
+    void AddExender(LoopDetectingPathExtender* pe) {
         extenders_.push_back(pe);
     }
 
-    CompositeExtender(Graph & g, size_t max_loops, vector<PathExtender*> pes, bool investigateShortLoops = true) :
+    CompositeExtender(Graph & g, size_t max_loops, vector<LoopDetectingPathExtender*> pes, bool investigateShortLoops = true) :
 			CoveringPathExtender(g, max_loops, investigateShortLoops), extenders_() {
 		extenders_ = pes;
 	}
@@ -574,6 +593,9 @@ public:
                 return true;
             }
             ++current;
+        }
+        for (size_t i = 0; i < extenders_.size(); ++i) {
+            extenders_[i]->ClearCycledEdges();
         }
         return false;
     }
@@ -609,6 +631,15 @@ public:
     }
 
     virtual bool MakeGrowStep(BidirectionalPath& path) {
+        if (LastEdgeCycled(path)) {
+            return false;
+        }
+        size_t skip_identical_edges = 0;
+        if (path.getLoopDetector().IsCycled(maxLoops_ - 1, skip_identical_edges)) {
+            AddCycledEdges(path, path.getLoopDetector().LoopEdges(skip_identical_edges, 1));
+            path.getLoopDetector().RemoveLoop(skip_identical_edges, false);
+            return false;
+        }
         ExtensionChooser::EdgeContainer candidates;
         bool result = false;
         FindFollowingEdges(path, &candidates);

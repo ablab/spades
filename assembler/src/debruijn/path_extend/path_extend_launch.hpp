@@ -251,7 +251,7 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
     vector<SimpleExtender*> long_reads_extenders = MakeLongReadsExtender(
             gp, long_reads, pset.loop_removal.max_loops);
     vector<SimpleExtender *> shortLoopPEs = MakeExtenders(gp, pset, libs, true);
-    vector<PathExtender *> all_libs(usualPEs.begin(), usualPEs.end());
+    vector<LoopDetectingPathExtender *> all_libs(usualPEs.begin(), usualPEs.end());
     all_libs.insert(all_libs.end(), long_reads_extenders.begin(),
                     long_reads_extenders.end());
     all_libs.insert(all_libs.end(), shortLoopPEs.begin(), shortLoopPEs.end());
