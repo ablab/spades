@@ -812,7 +812,7 @@ private:
                                     const map<size_t, double>& pi1,
                                     double /*w1*/,
                                     const map<size_t, double>& pi2,
-                                    double /*w2*/) const {
+                                    double w2) const {
         size_t not_common_length = 0;
         size_t common_length = 0;
         double not_common_w1 = 0.0;
@@ -829,7 +829,7 @@ private:
             not_common_w1 += iter->second -w;
             common_w += w;
         }
-        if(common_w < 0.8 *(not_common_w1 + common_w)){
+        if(common_w < 0.8 *(not_common_w1 + common_w) || math::eq(w2, 0.0)){
             return true;
         } else {
            DEBUG("common pi more then 0.8");
@@ -948,23 +948,23 @@ private:
             return EdgeContainer();
         }
 
-        size_t max_common_end = 0;
+        size_t max_common_size = 0;
         size_t max_begin = 0;
         size_t max_end = 0;
         BidirectionalPath max_path(g_);
         for (auto it1 = paths.begin(); it1 != paths.end(); ++it1) {
             BidirectionalPath* path1 = *it1;
             for (size_t i = 1; i < path1->Size(); ++i) {
-                for (size_t i1 = i + 1; i1 <= path1->Size(); ++i1) {
+                bool contain_all = true;
+                for (size_t i1 = i + 1; i1 <= path1->Size() && contain_all; ++i1) {
                     BidirectionalPath subpath = path1->SubPath(i, i1);
-                    bool contain_all = true;
                     for (auto it2 = paths.begin();
                             it2 != paths.end() && contain_all; ++it2) {
                         if (!(*it2)->Contains(subpath))
                             contain_all = false;
                     }
-                    if (contain_all && (i1 - i) >= max_common_end) {
-                        max_common_end = i1 - i;
+                    if (contain_all && (i1 - i) >= max_common_size) {
+                        max_common_size = i1 - i;
                         max_begin = i;
                         max_end = i1 - 1;
                         max_path.Clear();
@@ -983,7 +983,7 @@ private:
         double not_common = weight_counter_.CountPairInfo(
                 path, 0, path.Size(), max_path, 0,
                 max_begin, false);
-        DEBUG("common " << common << " not common " << not_common << " max common end " << max_begin);
+        DEBUG("common " << common << " not common " << not_common << " max common " << max_begin << " " << max_end);
         max_path.Print();
         EdgeContainer result;
         if (common > not_common) {
