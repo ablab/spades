@@ -667,12 +667,12 @@ void SimplificationCycle(conj_graph_pack& gp,
             removal_handler_f_2);
 
     debruijn_config::simplification::relative_coverage_comp_remover rcc;
-    rcc.coverage_gap = 10.;
+    rcc.coverage_gap = 8.;
     rcc.length_bound = 200;
     rcc.tip_allowing_length_bound = 200;
-    rcc.longest_connecting_path_bound = 65;
+    rcc.longest_connecting_path_bound = 150;
     rcc.max_coverage = std::numeric_limits<double>::max();
-    rcc.vertex_count_limit = 10;
+    rcc.vertex_count_limit = 20;
 
     RemoveRelativelyLowCoverageComponents(gp.g, gp.flanking_cov,
                                           rcc, rel_removal_handler);
