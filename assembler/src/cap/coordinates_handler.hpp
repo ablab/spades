@@ -350,23 +350,22 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
     MappingPath<EdgeId> AsMappingPath(unsigned genome_id) const {
         MappingPath<EdgeId> answer;
         VertexId v = g_->EdgeStart(FindGenomeFirstEdge(genome_id));
-        size_t graph_pos = 0;
         size_t genome_pos = 0;
 
         while (true) {
             auto step = StepForward(v, genome_id, genome_pos);
             if (step.second == -1u)
                 break;
-
             EdgeId e = step.first;
 
-            size_t next_graph_pos = graph_pos + g_->length(e);
             size_t next_genome_pos = step.second;
 
             Range original_pos(
                     GetOriginalPos(genome_id, genome_pos),
                     GetOriginalPos(genome_id, next_genome_pos));
-            Range graph_pos_printable(graph_pos, next_graph_pos);
+
+            //todo fix possible troubles with cyclic genomes etc later
+            Range graph_pos_printable(0, g_->length(e));
             Range original_pos_printable = GetPrintableRange(original_pos);
 
             answer.push_back(e, MappingRange(original_pos_printable, graph_pos_printable));

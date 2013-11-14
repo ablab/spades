@@ -1011,8 +1011,8 @@ public:
               << endl;
 	}
 
-  virtual ~BlockPrinter() {
-  }
+	virtual ~BlockPrinter() {
+	}
 
 	//genome is supposed to perfectly correspond to some path in the graph
     void ProcessContig(unsigned genome_id, unsigned transparent_id,
@@ -1020,21 +1020,25 @@ public:
         INFO("Processing contig " << transparent_id << " name " << contig_name);
         MappingPath<EdgeId> mapping_path = coords_.AsMappingPath(transparent_id);
 
+        size_t graph_pos = 0;
         for (size_t i = 0; i < mapping_path.size(); ++i) {
             EdgeId e = mapping_path[i].first;
             MappingRange mapping = mapping_path[i].second;
             if (CheckPatternMatch(e)) {
                 auto canon = CanonicalId(e);
+                size_t next_graph_pos = graph_pos + g_.length(e);
 
                 output_stream_
                         << (format("%d\t%s\t%d\t%d\t%d\t%d\t%d\t%s\t%d")
                                 % genome_id % contig_name % canon.first
                                 % mapping.initial_range.start_pos
                                 % mapping.initial_range.end_pos
-                                % mapping.mapped_range.start_pos
-                                % mapping.mapped_range.end_pos
+                                % graph_pos
+                                % next_graph_pos
                                 % (canon.second ? "+" : "-") % g_.int_id(e)).str()
                         << endl;
+
+                graph_pos = next_graph_pos;
             }
         }
 
@@ -1075,65 +1079,67 @@ public:
 //        }
     }
 
-  static void ConvertBlocksToGRIMM(const string &file_from, const string &file_to) {
-    ifstream in(file_from);
-    ofstream out(file_to);
+    static void ConvertBlocksToGRIMM(const string &file_from,
+                                     const string &file_to) {
+        ifstream in(file_from);
+        ofstream out(file_to);
 
-    size_t id = 0;
-    int last_genome_id = -1;
-    size_t num_in_line = 0;
-    while (!in.eof()) {
-      ++id;
+        size_t id = 0;
+        int last_genome_id = -1;
+        size_t num_in_line = 0;
+        while (!in.eof()) {
+            ++id;
 
-      string line;
-      std::getline(in, line);
-      if (id == 1)
-        continue;
+            string line;
+            std::getline(in, line);
+            if (id == 1)
+                continue;
 
-      if (line == "")
-        continue;
+            if (line == "")
+                continue;
 
-      std::stringstream ss(line);
+            std::stringstream ss(line);
 
-      int genome_id;
-      string genome_name;
-      string sign;
-      size_t contig_id;
+            int genome_id;
+            string genome_name;
+            string sign;
+            size_t contig_id;
 
-      string tmp;
-      ss >> genome_id >> genome_name >> contig_id >> tmp >> tmp >> tmp >> tmp >> sign >> tmp;
-      if (genome_id != last_genome_id) {
-        if (last_genome_id != -1)
-          out << "\n";
-        out << "> " << genome_name << "\n";
+            string tmp;
+            ss >> genome_id >> genome_name >> contig_id >> tmp >> tmp >> tmp
+                    >> tmp >> sign >> tmp;
+            if (genome_id != last_genome_id) {
+                if (last_genome_id != -1)
+                    out << "\n";
+                out << "> " << genome_name << "\n";
 
-        last_genome_id = genome_id;
-        num_in_line = 0;
-      }
+                last_genome_id = genome_id;
+                num_in_line = 0;
+            }
 
-      if (num_in_line > 10) {
-        out << "\n";
-        num_in_line = 0;
-      }
+            if (num_in_line > 10) {
+                out << "\n";
+                num_in_line = 0;
+            }
 
-      if (num_in_line != 0)
-        out << " ";
+            if (num_in_line != 0)
+                out << " ";
 
-      if (sign == "-")
-        out << sign;
-      out << contig_id;
+            if (sign == "-")
+                out << sign;
+            out << contig_id;
 
-      num_in_line++;
+            num_in_line++;
+        }
+
+        in.close();
+        out.close();
     }
 
-    in.close();
-    out.close();
-  }
-
 protected:
-  virtual bool CheckPatternMatch(const EdgeId /* e */) {
-    return true;
-  }
+    virtual bool CheckPatternMatch(const EdgeId /* e */) {
+        return true;
+    }
 
 	const Graph& g_;
 	const CoordinatesHandler<Graph>& coords_;

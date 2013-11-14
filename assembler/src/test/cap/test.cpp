@@ -126,7 +126,7 @@ BOOST_AUTO_TEST_CASE( RepeatCroppingReaderTest ) {
     reader.reset();
     reader >> read;
     BOOST_CHECK_EQUAL("ACGTCTTGCA", read.sequence().str());
-    vector<pair<size_t, size_t>> etalon_ladder = {{0, 0}, {5, 5}, {10, 5}, {15, 10}};
+    vector<pair<size_t, size_t>> etalon_ladder = {{0, 0}, {5, 5}, {5, 10}, {10, 15}};
     BOOST_CHECK_EQUAL(reader.coordinates_ladder(), etalon_ladder);
 }
 
@@ -140,7 +140,7 @@ BOOST_AUTO_TEST_CASE( RepeatCroppingReaderTest2 ) {
     reader.reset();
     reader >> read;
     BOOST_CHECK_EQUAL("ACGTCTTGCA", read.sequence().str());
-    vector<pair<size_t, size_t>> etalon_ladder = {{0, 0}, {5, 0}, {10, 5}, {15, 5}, {20, 10}, {25, 10}};
+    vector<pair<size_t, size_t>> etalon_ladder = {{0, 0}, {0, 5}, {5, 10}, {5, 15}, {10, 20}, {10, 25}};
     BOOST_CHECK_EQUAL(reader.coordinates_ladder(), etalon_ladder);
 }
 
