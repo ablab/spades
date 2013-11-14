@@ -250,9 +250,7 @@ protected:
 	BidirectionalPath* conj_path;
 
 	// Length from beginning of i-th edge to path end for forward directed path:
-	// L(e2 + ... + eN) ... L(eN), 0
-	// Length from beginning of the path to the end of i-th edge
-	// L(e1), L(e1 + e2) ... L(e1 + ... + eN)
+	// L(e1 + e2 + ... + eN) ... L(eN)
 	std::deque <size_t> cumulativeLength_;
 
 	// e1 - gap2 - e2 - ... - gapN - eN

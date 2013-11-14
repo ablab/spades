@@ -21,6 +21,31 @@
 
 namespace path_extend {
 
+int median(const vector<int>& dist, const vector<double>& w, int min, int max) {
+    VERIFY(dist.size() == w.size());
+    double S = 0;
+    for (size_t i = 0; i < w.size(); ++i) {
+        if (dist[i] >= min && dist[i] <= max)
+            S += w[i];
+    }
+    if (S == 0) {
+        WARN("Empty histogram");
+        return 0;
+    }
+
+    double sum = S;
+    for (size_t i = 0; i < w.size(); ++i) {
+        if (dist[i] >= min && dist[i] <= max) {
+            sum -= w[i];
+            if (sum <= S / 2) {
+                return dist[i];
+            }
+        }
+    }
+    assert(false);
+    return -1;
+}
+
 struct EdgeWithPairedInfo {
 	size_t e_;
 	double pi_;
@@ -38,6 +63,14 @@ struct EdgeWithDistance {
 	EdgeWithDistance(EdgeId e, size_t d) :
 			e_(e), d_((int) d) {
 	}
+
+	struct DistanceComparator {
+	    bool operator()(const EdgeWithDistance& e1, const EdgeWithDistance& e2) {
+	        return e1.d_ > e2.d_;
+	    }
+	};
+
+	static DistanceComparator comparator;
 };
 
 class ExtentionAnalyzer {
@@ -405,17 +438,21 @@ public:
                          size_t to1, EdgeId edge, size_t gap) const;
     void SetCommonWeightFrom(size_t iedge, double weight);
     void ClearCommonWeight();
+    size_t FindJumpEdges(EdgeId e, int min_dist, int max_dist, size_t min_len, vector<EdgeWithDistance>& result);
 private:
     void FindPairInfo(const BidirectionalPath& path1, size_t from1, size_t to1,
                       const BidirectionalPath& path2, size_t from2, size_t to2,
                       map<size_t, double>& pi, double& ideal_pi) const;
     void FindPairInfo(EdgeId e1, EdgeId e2, size_t dist, double& ideal_w,
                       double& result_w) const;
+
     const Graph& g_;
     PairedInfoLibrary& lib_;
     std::map<size_t, double> common_w_;
+    //FIXME: move to config
+    double min_read_count_;
 };
-PathsWeightCounter::PathsWeightCounter(const Graph& g, PairedInfoLibrary& lib):g_(g), lib_(lib){
+PathsWeightCounter::PathsWeightCounter(const Graph& g, PairedInfoLibrary& lib):g_(g), lib_(lib), min_read_count_(10.0){
 
 }
 double PathsWeightCounter::CountPairInfo(const BidirectionalPath& path1,
@@ -495,7 +532,7 @@ void PathsWeightCounter::FindPairInfo(EdgeId e1, EdgeId e2, size_t dist,
     if (ideal_w == 0.0) {
         return;
     }
-    if (lib_.CountPairedInfo(e1, e2, (int) dist, true) > 10.0) {
+    if (lib_.CountPairedInfo(e1, e2, (int) dist, true) > min_read_count_) {
         result_w = ideal_w;
     }
 }
@@ -505,6 +542,23 @@ map<size_t, double> PathsWeightCounter::FindPairInfoFromPath(
     double ideal_pi = 0;
     FindPairInfo(path1, 0, path1.Size(), path2, 0, path2.Size(), pi, ideal_pi);
     return pi;
+}
+size_t PathsWeightCounter::FindJumpEdges(EdgeId e, int min_dist, int max_dist, size_t min_len, vector<EdgeWithDistance>& result) {
+    result.clear();
+    set<EdgeId> edges;
+    lib_.FindJumpEdges(e, edges, min_dist, max_dist, min_len);
+
+    for (auto e2 = edges.begin(); e2 != edges.end(); ++e2) {
+        vector<int> distances;
+        vector<double> weights;
+        lib_.CountDistances(e, *e2, distances, weights);
+        int median_distance = median(distances, weights, min_dist, max_dist);
+
+        if (lib_.CountPairedInfo(e, *e2, median_distance, true) > min_read_count_) {
+            result.push_back(EdgeWithDistance(*e2, median_distance));
+        }
+    }
+    return result.size();
 }
 void PathsWeightCounter::SetCommonWeightFrom(size_t iedge, double weight) {
 	common_w_[iedge] = weight;

@@ -55,6 +55,20 @@ struct PairedInfoLibrary {
         single_threshold_ = threshold;
     }
 
+    size_t FindJumpEdges(EdgeId e, set<EdgeId>& result, int min_dist = 0, int max_dist = 100000000, size_t min_len = 0) {
+        result.clear();
+
+        for (auto it = index_.edge_begin(e); it != index_.edge_end(e); ++it) {
+            if (it->first != e && g_.length(it->first) >= min_len &&
+                    math::le(it->second.d, (double) max_dist) && math::ge(it->second.d, (double) min_dist)) {
+                result.insert(it->first);
+
+            }
+        }
+
+        return result.size();
+    }
+
     void CountDistances(EdgeId e1, EdgeId e2, vector<int>& dist,
                         vector<double>& w) const {
         if (e1 != e2) {
