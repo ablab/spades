@@ -462,6 +462,7 @@ class CapEnvironmentManager {
     }
 
     env_->coloring_ = std::make_shared<ColorHandler<Graph> >(env_->graph(), env_->genome_cnt());
+    INFO("Loading coloring from " << path);
     cap::LoadColoring(*env_->graph_, *env_->int_ids_, *env_->coloring_, path);
 
     env_->CheckConsistency();

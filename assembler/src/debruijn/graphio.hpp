@@ -61,7 +61,7 @@ void LoadKmerMapper(const string& file_name,
     std::ifstream file;
     file.open((file_name + ".kmm").c_str(),
               std::ios_base::binary | std::ios_base::in);
-    DEBUG("Reading kmer mapper, " << file_name <<" started");
+    INFO("Reading kmer mapper, " << file_name <<" started");
     VERIFY(file.is_open());
 
     uint32_t k_;
@@ -521,7 +521,7 @@ class DataScanner {
         int read_count;
         FILE* file = fopen((file_name + ".pos").c_str(), "r");
         VERIFY(file != NULL);
-        DEBUG("Reading edges positions, " << file_name <<" started");
+        INFO("Reading edges positions, " << file_name <<" started");
         VERIFY(file != NULL);
         size_t pos_count;
         read_count = fscanf(file, "%zu\n", &pos_count);
