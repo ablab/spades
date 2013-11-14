@@ -373,6 +373,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
             v = g_->EdgeEnd(e);
             genome_pos = next_genome_pos;
         }
+        //todo can we verify total length somehow
         return answer;
     }
 

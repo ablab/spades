@@ -94,7 +94,7 @@ public:
     }
 
     StrandPos ConjStrandPos(StrandPos pos) const {
-        return make_pair(ConjPos(pos.first), pos.second);
+        return make_pair(ConjPos(pos.first), !pos.second);
     }
 
     Range ConjCoordsRange(Range r) const {
