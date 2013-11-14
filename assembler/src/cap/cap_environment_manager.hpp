@@ -126,8 +126,7 @@ class CapEnvironmentManager {
 		}
   }
 
-  template <class gp_t>
-  void UpdateStreams(const gp_t &/* gp */) {
+  void UpdateStreams() {
     for (unsigned i = 0; i < env_->genomes_.size(); ++i) {
       env_->genomes_[i] = env_->coordinates_handler_.ReconstructGenome(2 * i);
       //VERIFY(env_->genomes_[i]->IsValid());
@@ -190,9 +189,9 @@ class CapEnvironmentManager {
 
     env_->k_history_.push_back(env_->GetGraphK());
     env_->num_genomes_history_.push_back(env_->init_genomes_paths_.size());
-    env_->coordinates_handler_.StoreGenomeThreads();
+    env_->coordinates_handler_.DumpRanges();
 
-    UpdateStreams(gp);
+    UpdateStreams();
   }
 
   template <class gp_t>
@@ -208,8 +207,9 @@ class CapEnvironmentManager {
     if (mask_indels) {
       env_->k_history_.push_back(env_->GetGraphK());
       env_->num_genomes_history_.push_back(env_->init_genomes_paths_.size());
-      env_->coordinates_handler_.StoreGenomeThreads();
-      UpdateStreams(gp);
+      env_->coordinates_handler_.DumpRanges();
+      UpdateStreams();
+
     }
 
     //SimpleInDelCorrector<Graph> corrector(gp.g, *env_->coloring_,
@@ -224,6 +224,21 @@ class CapEnvironmentManager {
     SimpleInversionFinder<gp_t> finder(gp, *env_->coloring_, env_->coordinates_handler_,
         base_pic_file_name, mask_inversions);
     finder.FindInversionEvents();
+  }
+
+  template<class gp_t>
+  void RefillPositions(const gp_t &gp) {
+    ContigStreams streams;
+    for (size_t i = 0; i < env_->genomes_.size(); ++i) {
+      streams.push_back(make_shared<io::SequenceReadStream<Contig>>(
+                    env_->genomes_[i], env_->genomes_names_[i]));
+    }
+    ContigStreams rc_contigs = io::RCWrap(streams);
+    rc_contigs.reset();
+
+    INFO("Filling positions");
+    FillPositions(gp, rc_contigs, env_->coordinates_handler_);
+    INFO("Filling positions done.");
   }
 
  public:
