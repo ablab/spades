@@ -5,16 +5,15 @@
 ############################################################################
 
 project(cclean CXX)
-
+aux_source_directory(. SRC_LIST)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-
-add_executable(cclean
-               running_modes.cpp
-               job_wrappers.cpp
-               output.cpp
-               config_struct_cclean.cpp
-               adapter_index.cpp
-               main.cpp)
+file(GLOB ${CMAKE_CURRENT_SOURCE_DIR}
+    "*.hh"
+    "*.h"
+    "*.hpp"
+    "*.cpp"
+)
+add_executable(${PROJECT_NAME} ${SRC_LIST})
 
 target_link_libraries(cclean ssw input mph_index ${COMMON_LIBRARIES})
 

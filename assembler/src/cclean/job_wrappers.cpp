@@ -3,17 +3,22 @@
 #include "adapter_index.hpp"
 #include "valid_kmer_generator.hpp"
 #include "adapter_index.hpp"
-
+#include "output.hpp"
 #include "ssw/ssw_cpp.h"
 
 #include <set>
 
-static bool is_alignment_good(const StripedSmithWaterman::Alignment& a, const std::string& sequence, const std::string& query, double aligned_part_fraction) {
-  return (std::min(a.query_end - a.query_begin + 1, a.ref_end - a.ref_begin + 1) / (double) query.size() > aligned_part_fraction) &&
-		  (a.ref_begin == 0 || a.ref_end == sequence.size() - 1); //check that query adjoins or even overlaps the sequence edge
+static inline bool is_alignment_good(const StripedSmithWaterman::Alignment& a,
+                              const std::string& sequence,
+                              const std::string& query,
+                              double aligned_part_fraction) {
+  // Сheck that query adjoins or even overlaps the sequence edge
+  return (std::min(a.query_end - a.query_begin + 1, a.ref_end - a.ref_begin + 1)
+         / (double) query.size() > aligned_part_fraction) &&
+         (a.ref_begin == 0 || a.ref_end == sequence.size() - 1);
 }
 
-bool ExactAndAlignJobWrapper::operator()(const Read &r) {
+bool SimpleClean::operator()(const Read &r) {
   try {
     const std::string& name = r.getName();
     const std::string& sequence = r.getSequenceString();
@@ -39,14 +44,13 @@ bool ExactAndAlignJobWrapper::operator()(const Read &r) {
       const std::string& query = index_.seq(*it);
       aligner.Align(query.c_str(), filter, &alignment);
 
-      // FIXME
-      std::string database_name = "foo";
-
-      if (alignment.mismatches < mismatch_threshold && is_alignment_good(alignment, sequence, query, aligned_part_fraction)) {
+      if (alignment.mismatches < mismatch_threshold &&
+          is_alignment_good(alignment, sequence, query,
+                            aligned_part_fraction)) {
 #       pragma omp critical
         {
           aligned_ += 1;
-          print_alignment(output, alignment, sequence, query, name, database_name);
+          print_alignment(output, alignment, sequence, query, name, db_);
           print_bed(bed, name, alignment.ref_begin, alignment.ref_end);
         }
       }

@@ -10,20 +10,22 @@ namespace cclean {
 class AdapterIndex;
 }
 
-class ExactAndAlignJobWrapper {
+class SimpleClean {
 public:
-  ExactAndAlignJobWrapper(std::ostream& output, std::ostream& bed,
-                          const cclean::AdapterIndex &index)
+  SimpleClean(std::ostream& output, std::ostream& bed, const std::string &db,
+              const cclean::AdapterIndex &index)
       : output(output), bed(bed),
-        mismatch_threshold(cfg::get().mismatch_threshold), aligned_part_fraction(cfg::get().aligned_part_fraction),
-        aligned_(0), index_(index) {};
+        mismatch_threshold(cfg::get().mismatch_threshold),
+        aligned_part_fraction(cfg::get().aligned_part_fraction),
+        aligned_(0), index_(index), db_(db) {}
 
   bool operator()(const Read &r);
-  size_t aligned() const { return aligned_; }
+  inline size_t aligned() const { return aligned_; }
 
 private:
   std::ostream& output;
   std::ostream& bed;
+  const std::string& db_;
   unsigned mismatch_threshold;
   double aligned_part_fraction;
   size_t aligned_;

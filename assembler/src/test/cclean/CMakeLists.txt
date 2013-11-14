@@ -1,0 +1,19 @@
+############################################################################
+# Copyright (c) 2011-2013 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
+project(cclean_test CXX)
+
+aux_source_directory(. SRC_LIST)
+include_directories("${CMAKE_SOURCE_DIR}/cclean")
+file(GLOB ${CMAKE_CURRENT_SOURCE_DIR}
+    "*.hh"
+    "*.h"
+    "*.hpp"
+    "*.cpp"
+)
+add_executable(${PROJECT_NAME} ${SRC_LIST})
+
+target_link_libraries(cclean_test ${COMMON_LIBRARIES} input mph_index otkpp ssw ${ZLIB_LIBRARIES})
