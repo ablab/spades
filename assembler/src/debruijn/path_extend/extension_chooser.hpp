@@ -857,19 +857,14 @@ private:
                                     double /*w1*/,
                                     const BidirectionalPath& path2,
                                     const map<size_t, double>& pi2,
-                                    double w2) {
-        size_t not_common_length = 0;
-        size_t common_length = 0;
+                                    double /*w2*/) {
         double not_common_w1 = 0.0;
         double common_w = 0.0;
         for (auto iter = pi1.begin(); iter != pi1.end(); ++iter) {
             auto iter2 = pi2.find(iter->first);
             double w = 0.0;
-            if (iter2 == pi2.end() || math::eq(iter2->second, 0.0)) {
-                not_common_length += g_.length(init_path.At(iter->first));
-            } else {
+            if (iter2 != pi2.end() && !math::eq(iter2->second, 0.0)) {
                 w = min(iter2->second, iter->second);
-                common_length += g_.length(init_path.At(iter->first));
             }
             not_common_w1 += iter->second - w;
             common_w += w;
@@ -891,7 +886,7 @@ private:
                             set<BidirectionalPath*>& paths,
                             const std::map<BidirectionalPath*, map<size_t, double> >& all_pi) {
         double max_weight = 0.0;
-        BidirectionalPath* max_path;
+        BidirectionalPath* max_path = weights.begin()->first;
         for (auto iter = weights.begin(); iter != weights.end(); ++iter) {
             if (iter->second > max_weight) {
                 max_weight = max(max_weight, iter->second);
