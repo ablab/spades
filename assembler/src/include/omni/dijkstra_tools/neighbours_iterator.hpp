@@ -81,7 +81,7 @@ public:
 	}
 
 	vertex_neighbour<Graph> Next() {
-		vertex_neighbour<Graph> res(this->graph_.EdgeEnd(*in_edges_.first), *in_edges_.first);
+		vertex_neighbour<Graph> res(this->graph_.EdgeStart(*in_edges_.first), *in_edges_.first);
 		in_edges_.first++;
 		return res;
 	}
@@ -104,19 +104,19 @@ public:
 				graph.OutgoingEdges(vertex).end())) { }
 
 	bool HasNext(){
-		return out_edges_.first != out_edges_.second;
+		return in_edges_.first != in_edges_.second;
 	}
 
-	// first all incoming edges are visited
-	// then all outgoing
+	// first all outgoing edges are visited
+	// then all incoming
 	vertex_neighbour<Graph> Next() {
-		if(in_edges_.first != in_edges_.second){
-			vertex_neighbour<Graph> res(this->graph_.EdgeStart(*in_edges_.first), *in_edges_.first);
-			in_edges_.first++;
+		if(out_edges_.first != out_edges_.second){
+			vertex_neighbour<Graph> res(this->graph_.EdgeEnd(*out_edges_.first), *out_edges_.first);
+			out_edges_.first++;
 			return res;
 		}
-		vertex_neighbour<Graph> res(this->graph_.EdgeEnd(*out_edges_.first), *out_edges_.first);
-		out_edges_.first++;
+		vertex_neighbour<Graph> res(this->graph_.EdgeStart(*in_edges_.first), *in_edges_.first);
+		in_edges_.first++;
 		return res;
 	}
 };

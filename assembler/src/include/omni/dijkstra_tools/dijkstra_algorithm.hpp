@@ -124,7 +124,7 @@ public:
             vertex_limit_exceeded_ = true;
             return false;
         }
-        return settings_.CheckProcessVertex(vertex, distance);
+        return (vertex_number_ < max_vertex_number_) && settings_.CheckProcessVertex(vertex, distance);
 	}
 
 	distance_t GetLength(EdgeId edge) const {
@@ -159,7 +159,8 @@ public:
 			if (!DistanceCounted(cur_pair.vertex)) {
 				distance_t new_dist = GetLength(cur_pair.edge) + cur_dist;
 				if (CheckPutVertex(cur_pair.vertex, cur_pair.edge, new_dist)) {
-					queue.push(element_t<Graph, distance_t>(new_dist, cur_pair.vertex, cur_vertex, cur_pair.edge));
+					queue.push(element_t<Graph, distance_t>(new_dist, cur_pair.vertex,
+							cur_vertex, cur_pair.edge));
 				}
 			}
 		}
