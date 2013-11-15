@@ -439,6 +439,9 @@ public:
     void SetCommonWeightFrom(size_t iedge, double weight);
     void ClearCommonWeight();
     size_t FindJumpEdges(EdgeId e, int min_dist, int max_dist, size_t min_len, vector<EdgeWithDistance>& result);
+    const PairedInfoLibrary& GetLib() const {
+        return lib_;
+    }
 private:
     void FindPairInfo(const BidirectionalPath& path1, size_t from1, size_t to1,
                       const BidirectionalPath& path2, size_t from2, size_t to2,

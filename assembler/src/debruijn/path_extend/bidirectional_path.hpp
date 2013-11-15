@@ -206,7 +206,7 @@ public:
         }
     }
 
-    BidirectionalPath(const Graph& g_, EdgeId startingEdge)
+    BidirectionalPath(const Graph& g_, EdgeId startingEdge, int gap = 0)
             : g_(g_),
               data_(),
               cumulativeLength_(),
@@ -216,7 +216,7 @@ public:
               listeners_(),
               weight_(1.0) {
         Init();
-        PushBack(startingEdge);
+        PushBack(startingEdge, gap);
         prev_ = data_.back();
         now_ = data_.back();
     }
@@ -272,8 +272,9 @@ protected:
 	    if (cumulativeLength_.empty() && totalLength_ != 0) {
 	        INFO("---" << totalLength_);
 	    }
-	    else if (!cumulativeLength_.empty() && cumulativeLength_[0] != totalLength_) {
-	        INFO("|||" << totalLength_);
+	    else if (!cumulativeLength_.empty() && cumulativeLength_[0] + gapLength_[0] != totalLength_) {
+	        INFO("||| " << totalLength_ << " !=  " << cumulativeLength_[0] << " + " << gapLength_[0]);
+	        PrintInfo();
 	    }
 	}
 
