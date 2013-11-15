@@ -73,8 +73,8 @@ class DebruijnEnvironment : public Environment {
         void LoadFromGP() {
             //Loading Genome and Handlers
             DEBUG("Colorer done");
-            Path<EdgeId> path1 = mapper_.MapSequence(gp_.genome).simple_path();
-            Path<EdgeId> path2 = mapper_.MapSequence(!gp_.genome).simple_path();
+            Path<EdgeId> path1 = mapper_.MapSequence(gp_.genome).path();
+            Path<EdgeId> path2 = mapper_.MapSequence(!gp_.genome).path();
         	coloring_ = omnigraph::visualization::DefaultColorer(gp_.g, path1, path2);
             ResetPositions();
         }

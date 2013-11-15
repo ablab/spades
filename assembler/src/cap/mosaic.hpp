@@ -74,7 +74,7 @@ public:
     GenomeBlockComposition(const Graph& g, const MappingPath<EdgeId>& mapping_path, size_t genome_length, const BlockInfoProvider& block_info)
     : genome_length_(genome_length), block_info_(block_info) {
         VERIFY(CheckPath(mapping_path));
-        for (EdgeId e : mapping_path.simple_path().sequence()) {
+        for (EdgeId e : mapping_path.simple_path()) {
             blocks_.push_back(g.int_id(e));
         }
         for (Pos i = 0; i < blocks_.size(); ++i) {

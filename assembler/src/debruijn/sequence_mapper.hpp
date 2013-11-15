@@ -595,7 +595,7 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
             return vector<EdgeId>();
         }
         vector<EdgeId> corrected_path = path_fixer_.DeleteSameEdges(
-                mapping_path.simple_path().sequence());
+                mapping_path.simple_path());
         vector<EdgeId> fixed_path = path_fixer_.TryFixPath(corrected_path);
         if (!path_fixer_.CheckContiguous(fixed_path)) {
             TRACE("read unmapped");

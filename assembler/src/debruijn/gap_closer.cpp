@@ -17,12 +17,6 @@
 
 namespace debruijn_graph {
 
-template<typename EdgeId>
-Path<EdgeId> ConvertToPath(MappingPath<EdgeId> mp) { return mp.simple_path(); }
-
-template<typename EdgeId>
-Path<EdgeId> ConvertToPath(Path<EdgeId> mp) { return mp; }
-
 template<class Graph, class SequenceMapper>
 class GapCloserPairedIndexFiller {
   private:
@@ -50,8 +44,8 @@ class GapCloserPairedIndexFiller {
         Sequence read1 = p_r.first().sequence();
         Sequence read2 = p_r.second().sequence();
 
-        Path<EdgeId> path1 = ConvertToPath(mapper_.MapSequence(read1));
-        Path<EdgeId> path2 = ConvertToPath(mapper_.MapSequence(read2));
+        Path<EdgeId> path1 = mapper_.MapSequence(read1).path();
+        Path<EdgeId> path2 = mapper_.MapSequence(read2).path();
         for (size_t i = 0; i < path1.size(); ++i) {
             auto OutTipIter = OutTipMap.find(path1[i]);
             if (OutTipIter != OutTipMap.end()) {
@@ -193,7 +187,7 @@ class GapCloserPairedIndexFiller {
 
 template<class Mapper>
 bool CheckNoKmerClash(const Sequence& s, const Mapper& mapper) {
-    std::vector<EdgeId> path = mapper.MapSequence(s).simple_path().sequence();
+    std::vector<EdgeId> path = mapper.MapSequence(s).simple_path();
     return path.empty();
 }
 

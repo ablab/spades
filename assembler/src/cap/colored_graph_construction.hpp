@@ -194,7 +194,7 @@ class ColoredGraphConstructor {
 		stream.reset();
 		while (!stream.eof()) {
 			stream >> read;
-			PaintPath(mapper_.MapSequence(read.sequence()).simple_path(),
+			PaintPath(mapper_.MapSequence(read.sequence()).path(),
 					color);
 		}
 	}
@@ -336,7 +336,7 @@ void FillPositions(const gp_t &gp, ContigStreams &streams,
 
       MappingPath<EdgeId> mapping_path = mapper->MapRead(contig);
       const std::vector<EdgeId> edge_path =
-          mapping_path.simple_path().sequence();
+          mapping_path.simple_path();
       coordinates_handler.AddGenomePath(contig_id, edge_path);
       contig_id++;
     }

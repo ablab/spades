@@ -131,7 +131,7 @@
 //	void Untangle(const Sequence& contig, const string& name, TColorSet color) {
 //		VERIFY(color == kRedColorSet || color == kBlueColorSet);
 //		DEBUG("Untangling contig " << name);
-//		Path<EdgeId> path = MapperInstance(old_gp_).MapSequence(contig).simple_path();
+//		Path<EdgeId> path = MapperInstance(old_gp_).MapSequence(contig).path();
 //		vector<EdgeId> new_path;
 //		DEBUG("Mapped contig" << name);
 //		for (size_t i = 0; i < path.size(); i++) {

@@ -157,7 +157,7 @@ public:
 //			return Sequence();
 		}
 
-		Path<EdgeId> path = TryFixPath(mapping_path.simple_path());
+		Path<EdgeId> path = TryFixPath(mapping_path.path());
 //		TRACE("Mapped sequence to path " << graph_.str(path.sequence()));
 
 		if (!path_fixer_.CheckContiguous(path.sequence())) {

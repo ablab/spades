@@ -193,7 +193,7 @@ void WriteGraphComponentsAlongContigs(const Graph& g,
     while (!contigs_to_thread->eof()) {
         (*contigs_to_thread) >> read;
         make_dir(folder + read.name());
-        omnigraph::visualization::WriteComponentsAlongPath(g, mapper.MapSequence(read.sequence()).simple_path(), folder + read.name() + "/",
+        omnigraph::visualization::WriteComponentsAlongPath(g, mapper.MapSequence(read.sequence()).path(), folder + read.name() + "/",
                                                            colorer, labeler);
     }
     INFO("Writing graph components along contigs finished");
@@ -269,9 +269,9 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
         config.write_components_along_contigs || config.save_full_graph ||
         !config.components_for_genome_pos.empty()) {
         path1 = FindGenomeMappingPath(gp.genome, gp.g, gp.index,
-                                      gp.kmer_mapper).simple_path();
+                                      gp.kmer_mapper).path();
         path2 = FindGenomeMappingPath(!gp.genome, gp.g, gp.index,
-                                      gp.kmer_mapper).simple_path();
+                                      gp.kmer_mapper).path();
         colorer = omnigraph::visualization::DefaultColorer(gp.g, path1, path2);
         //		path1 = FindGenomePath<K>(gp.genome, gp.g, gp.index);
         //		path2 = FindGenomePath<K>(!gp.genome, gp.g, gp.index);

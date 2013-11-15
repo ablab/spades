@@ -1277,7 +1277,7 @@ class UniqueBlockPrinter : public BlockPrinter<Graph> {
 //		while (!contigs_.eof()) {
 //			contigs_ >> contig;
 //			vector < EdgeId > path =
-//					mapper_.MapSequence(contig.sequence()).simple_path().sequence();
+//					mapper_.MapSequence(contig.sequence()).simple_path();
 //			cerr << contig.name() << " $ ";
 //			string delim = "";
 //			for (auto it = path.begin(); it != path.end(); ++it) {
@@ -1294,7 +1294,7 @@ class UniqueBlockPrinter : public BlockPrinter<Graph> {
 //			const EdgesPositionHandler<Graph>& edge_pos, const Mapper& mapper,
 //			const Sequence& genome, ContigStream& contigs) :
 //			g_(g), edge_pos_(edge_pos), mapper_(mapper), genome_path_(
-//					mapper_.MapSequence(genome).simple_path().sequence()), contigs_(
+//					mapper_.MapSequence(genome).simple_path()), contigs_(
 //					contigs), labels_(Enumerator(g_, genome_path_).Enumerate()) {
 //	}
 //

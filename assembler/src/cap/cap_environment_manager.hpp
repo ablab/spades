@@ -212,10 +212,6 @@ class CapEnvironmentManager {
 
     }
 
-    //SimpleInDelCorrector<Graph> corrector(gp.g, *env_->coloring_,
-    //    (*MapperInstance(gp)).MapSequence(*env_->genomes_[0]).simple_path().sequence(), /*genome_color*/
-    //    kRedColorSet, /*assembly_color*/kBlueColorSet);
-    //corrector.Analyze();
   }
 
   template <class gp_t>
