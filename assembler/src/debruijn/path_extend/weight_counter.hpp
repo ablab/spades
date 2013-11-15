@@ -442,6 +442,8 @@ public:
     const PairedInfoLibrary& GetLib() const {
         return lib_;
     }
+    bool HasPI(EdgeId e1, EdgeId e2, int dist) const;
+
 private:
     void FindPairInfo(const BidirectionalPath& path1, size_t from1, size_t to1,
                       const BidirectionalPath& path2, size_t from2, size_t to2,
@@ -535,7 +537,7 @@ void PathsWeightCounter::FindPairInfo(EdgeId e1, EdgeId e2, size_t dist,
     if (ideal_w == 0.0) {
         return;
     }
-    if (lib_.CountPairedInfo(e1, e2, (int) dist, true) > min_read_count_) {
+    if (HasPI(e1, e2, (int) dist)) {
         result_w = ideal_w;
     }
 }
@@ -557,7 +559,7 @@ size_t PathsWeightCounter::FindJumpEdges(EdgeId e, int min_dist, int max_dist, s
         lib_.CountDistances(e, *e2, distances, weights);
         int median_distance = median(distances, weights, min_dist, max_dist);
 
-        if (lib_.CountPairedInfo(e, *e2, median_distance, true) > min_read_count_) {
+        if (HasPI(e, *e2, median_distance)) {
             result.push_back(EdgeWithDistance(*e2, median_distance));
         }
     }
@@ -568,6 +570,10 @@ void PathsWeightCounter::SetCommonWeightFrom(size_t iedge, double weight) {
 }
 void PathsWeightCounter::ClearCommonWeight() {
 	common_w_.clear();
+}
+
+bool PathsWeightCounter::HasPI(EdgeId e1, EdgeId e2, int dist) const {
+    return lib_.CountPairedInfo(e1, e2, dist, true) > min_read_count_;
 }
 };
 

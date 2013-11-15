@@ -889,7 +889,7 @@ private:
 
 };
 
-int FirstNotEqualPosition(const BidirectionalPath& path1, size_t pos1,
+size_t FirstNotEqualPosition(const BidirectionalPath& path1, size_t pos1,
                        const BidirectionalPath& path2, size_t pos2) {
     int cur_pos1 = (int) pos1;
     int cur_pos2 = (int) pos2;
@@ -901,11 +901,11 @@ int FirstNotEqualPosition(const BidirectionalPath& path1, size_t pos1,
             return cur_pos1;
         }
     }
-    return -1;
+    return -1UL;
 }
 bool EqualBegins(const BidirectionalPath& path1, size_t pos1,
                  const BidirectionalPath& path2, size_t pos2) {
-    return FirstNotEqualPosition(path1, pos1, path2, pos2) == -1;
+    return FirstNotEqualPosition(path1, pos1, path2, pos2) == -1UL;
 }
 
 size_t LastNotEqualPosition(const BidirectionalPath& path1, size_t pos1,
