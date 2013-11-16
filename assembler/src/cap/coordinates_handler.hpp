@@ -164,7 +164,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
 
       Sequence ReconstructGenome(const uint genome_id) const {
           const std::vector<EdgeId> genome_path =
-              AsMappingPath(genome_id).simple_path().sequence();
+              AsMappingPath(genome_id).simple_path();
 
           std::vector<Sequence> path_sequences;
           for (const auto &e : genome_path)
@@ -384,7 +384,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
             const uint genome_id = genome_i.first;
 
             genome_paths[genome_id] = AsMappingPath(genome_id).
-                simple_path().sequence();
+                simple_path();
         }
 
         StoreGenomeThreads();
