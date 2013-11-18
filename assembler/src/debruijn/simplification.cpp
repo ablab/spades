@@ -33,6 +33,8 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
     using namespace omnigraph;
     if (cfg::get().developer_mode) {
         CollectPositions(gp);
+        gp.ClearQuality();
+        gp.FillQuality();
     }
 
     total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
