@@ -622,8 +622,8 @@ class MosaicAnalysisCommand : public NewLocalCommand<CapEnvironment> {
 //      const Sequence& genome = curr_env.genomes()[1];
       const Sequence& genome = curr_env.genomes()[0];
       size_t min_support_length = 1;
-      size_t max_support_mult = 10;
-      size_t max_inter_length = 200;
+      size_t max_support_mult = 20;
+      size_t max_inter_length = 1000;
       std::string folder = TryFetchFolder(curr_env, args);
       ofstream out(folder + "mosaic.txt");
       cout << "Mosaic analysis triggered" << endl;
