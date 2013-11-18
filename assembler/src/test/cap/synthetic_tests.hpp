@@ -65,7 +65,7 @@ class SyntheticTestsRunner {
             for (size_t j = 0,
                     n = NumberOfContigs(stream);
                     j < n; ++j) {
-                block_printer.ProcessContig(unsigned(i + 1), transparent_id, contig_names[transparent_id]);
+                block_printer.ProcessContig(unsigned(i + 1), unsigned(transparent_id), contig_names[transparent_id]);
                 transparent_id += 2;
             }
         }

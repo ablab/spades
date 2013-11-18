@@ -9,6 +9,12 @@ namespace cap {
 
 namespace mosaic {
 
+/*
+ * todo
+ * 1. Somehow report information on single edges
+ * 2. Show multiplicity information
+ */
+
 //todo temporary for correct eclipse highlight
 using std::make_pair;
 
@@ -87,6 +93,10 @@ public:
 
     Block ConjBlock(Block b) const {
         return block_info_.conjugate(b);
+    }
+
+    const BlockInfoProvider& block_info() const {
+        return block_info_;
     }
 
     Pos ConjPos(Pos pos) const {
@@ -262,40 +272,9 @@ public:
     : blocks_(blocks) {
     }
 
-//    MosaicStructure(const vector<Block>& blocks/*, const MosaicInterval& interval*/) :
-//                        blocks_(blocks) {
-////        occurences_.push_back(interval);
-//    }
-
-//    MosaicStructure(const vector<Block>& blocks, const vector<MosaicInterval>& occurences) :
-//                        blocks_(blocks), occurences_(occurences) {
-//    }
-
     MosaicStructure(const GenomeBlockComposition& block_composition, const MosaicInterval& interval) :
                         blocks_(ToBlocks(block_composition, interval)) {
-//        occurences_.push_back(interval);
     }
-
-//    void AddOccurence(const MosaicInterval& interval) {
-//        VERIFY(blocks_ == PosToBlocks(interval.support_blocks));
-//        occurences_.push_back(interval);
-//    }
-
-//    size_t mult() const {
-//        return occurences_.size();
-//    }
-
-//    const vector<MosaicInterval>& occurences() const {
-//        return occurences_;
-//    }
-//
-//    const vector<Range> occurence_ranges() const {
-//        vector<Range> answer;
-//        for (const auto& interval : occurences_) {
-//            answer.push_back(interval.pos_range);
-//        }
-//        return answer;
-//    }
 
     const vector<Block>& blocks() const {
         return blocks_;
@@ -315,6 +294,17 @@ public:
             SubIntervals(block_start, block_end)*/);
     }
 
+    //sorted by length in decreasing order
+    vector<MosaicStructure> SubMosaics() const {
+        vector<MosaicStructure> answer;
+        for (size_t d = block_size(); d > 0; --d) {
+            for (size_t i = 0; i + d < block_size(); ++i) {
+                answer.push_back(SubMosaic(i, i + d));
+            }
+        }
+        return answer;
+    }
+
     string Fingerprint() const {
         std::stringstream ss;
         string delim = "";
@@ -329,11 +319,6 @@ public:
     bool SameBlocks(const MosaicStructure& that) const {
         return blocks_ == that.blocks_;
     }
-
-//    void Merge(const MosaicStructure& that) {
-//        VERIFY(SameBlocks(that));
-//        push_back_all(occurences_, that.occurences_);
-//    }
 
     bool IsContainedIn(const MosaicStructure& that) const {
         return Find(blocks_, that.blocks_) != -1u;
@@ -353,12 +338,59 @@ ostream& operator << (ostream& out, const MosaicStructure& structure) {
     return out << "Mosaic. size=" << structure.block_size() << " blocks=" << structure.blocks();
 }
 
-class MosaicPrintHelper {
+class IntervalIndex {
+    multimap<string, StrandRange> all_substruct_pos_;
     const GenomeBlockComposition& block_composition_;
+
+    bool Reported(StrandRange range, const set<StrandRange>& reported) const {
+        for (auto r : reported)
+            if (r.second == range.second && r.first.contains(range.first))
+                return true;
+        return false;
+    }
+
+public:
+    IntervalIndex(const GenomeBlockComposition& block_composition)
+    : block_composition_(block_composition) {
+
+    }
+
+    void IndexSubIntervals(const MosaicInterval& interval) {
+        VERIFY(interval.support_blocks.front() == interval.pos_range.start_pos);
+        VERIFY(interval.support_blocks.back() + 1 == interval.pos_range.end_pos);
+        vector<Pos> support = interval.support_blocks;
+        for (size_t i = 0; i < support.size(); ++i) {
+            for (size_t j = i; j < support.size(); ++j) {
+                MosaicInterval sub_interval = interval.SubInterval(Range(support[i], support[j] + 1));
+                MosaicStructure sub_mosaic(block_composition_, sub_interval);
+                all_substruct_pos_.insert(make_pair(sub_mosaic.Fingerprint(), sub_interval.strand_range()));
+                all_substruct_pos_.insert(make_pair(sub_mosaic.conjugate(block_composition_.block_info()).Fingerprint(),
+                                                    block_composition_.ConjStrandRange(sub_interval.strand_range())));
+            }
+        }
+    }
+
+    vector<StrandRange> Occurences(const MosaicStructure& mosaic) const {
+        return get_all(all_substruct_pos_, mosaic.Fingerprint());
+    }
+
+    size_t Mult(const MosaicStructure& mosaic) const {
+        return all_substruct_pos_.count(mosaic.Fingerprint());
+    }
+
+    vector<StrandRange> UnReportedOccurences(const MosaicStructure& mosaic, const set<StrandRange>& reported) const {
+        vector<StrandRange> answer;
+        for (StrandRange range : Occurences(mosaic))
+            if (!Reported(range, reported) && !Reported(block_composition_.ConjStrandRange(range), reported))
+                answer.push_back(range);
+        return answer;
+    }
+};
+
+class MosaicHelper {
     const BlockInfoProvider& block_info_;
-    const multimap<string, size_t>& different_irred_presence_;
-    const multimap<string, StrandRange>& all_substruct_pos_;
-    ostream& out_;
+    const GenomeBlockComposition& block_composition_;
+    const IntervalIndex& interval_index_;
 
     vector<Pos> FindSupportBlocks(Range r, bool strand, const MosaicStructure& mosaic) const {
         vector<Pos> answer;
@@ -375,48 +407,38 @@ class MosaicPrintHelper {
         return answer;
     }
 
-    vector<StrandRange> Occurences(const MosaicStructure& mosaic) const {
-        return get_all(all_substruct_pos_, mosaic.Fingerprint());
+public:
+    MosaicHelper(const GenomeBlockComposition& block_composition,
+                 const IntervalIndex& interval_index)
+    : block_info_(block_composition.block_info()),
+      block_composition_(block_composition),
+      interval_index_(interval_index) {
     }
 
     size_t Mult(const MosaicStructure& mosaic) const {
-        return all_substruct_pos_.count(mosaic.Fingerprint());
+        return interval_index_.Mult(mosaic);
     }
 
-public:
-    MosaicPrintHelper(const GenomeBlockComposition& block_composition,
-                      const BlockInfoProvider& block_info,
-                      const multimap<string, size_t>& different_irred_presence,
-                      const multimap<string, StrandRange>& all_substruct_pos,
-                      ostream& out)
-    : block_composition_(block_composition), block_info_(block_info), different_irred_presence_(different_irred_presence),
-      all_substruct_pos_(all_substruct_pos), out_(out) {
-    }
-
-    void BlockInfo(Block b) {
-        out_ << b << " (" << block_info_.length(b) << ")";
-    }
-
-    double AvgSpan(const MosaicStructure& mosaic) {
+    double AvgSpan(const MosaicStructure& mosaic) const {
         double avg = 0.;
-        for (StrandRange r : Occurences(mosaic)) {
+        for (StrandRange r : interval_index_.Occurences(mosaic)) {
             avg += double(r.first.size());
         }
         return avg / double(Mult(mosaic));
     }
 
-    double AvgGenomicSpan(const MosaicStructure& mosaic) {
+    double AvgGenomicSpan(const MosaicStructure& mosaic) const {
         double avg = 0.;
-        for (StrandRange r : Occurences(mosaic)) {
+        for (StrandRange r : interval_index_.Occurences(mosaic)) {
             Range genomic_range = block_composition_.genome_coords(r);
             avg += double(genomic_range.size());
         }
-        return avg / double(Mult(mosaic));
+        return avg / double(interval_index_.Mult(mosaic));
     }
 
-    vector<double> AvgGenomicInterLengths(const MosaicStructure& mosaic) {
+    vector<double> AvgGenomicInterLengths(const MosaicStructure& mosaic) const {
         vector<double> answer(mosaic.block_size() - 1, 0.);
-        for (StrandRange r : Occurences(mosaic)) {
+        for (StrandRange r : interval_index_.Occurences(mosaic)) {
             bool strand = r.second;
             vector<Pos> support = FindSupportBlocks(r.first, strand, mosaic);
             for (size_t i = 1; i < support.size(); ++i) {
@@ -426,32 +448,84 @@ public:
             }
         }
         for (size_t i = 0; i < answer.size(); ++i) {
-            answer[i] /= double(all_substruct_pos_.count(mosaic.Fingerprint()));
+            answer[i] /= double(interval_index_.Mult(mosaic));
         }
         return answer;
     }
 
-    size_t TotalBlockLength(const MosaicStructure& mosaic) {
+    size_t length(Block b) const {
+        return block_info_.length(b);
+    }
+
+    size_t TotalBlockLength(const MosaicStructure& mosaic) const {
         size_t block_length = 0;
         for (Block b : mosaic.blocks()) {
-            block_length += block_info_.length(b);
+            block_length += length(b);
         }
         return block_length;
     }
 
-    void ReportBasicInfo(const MosaicStructure& mosaic) {
+    MosaicStructure GetStructure(const MosaicInterval& interval) const {
+        return MosaicStructure(block_composition_, interval);
+    }
+
+    const BlockInfoProvider& block_info() const {
+        return block_info_;
+    }
+
+    const GenomeBlockComposition& genome_composition() const {
+        return block_composition_;
+    }
+
+};
+
+class MosaicPrinter {
+public:
+    virtual void StartRecord(const MosaicStructure& /*mosaic*/) = 0;
+
+    virtual void ReportSubMosaic(const MosaicStructure& /*mosaic*/, const vector<StrandRange>& /*ranges*/) = 0;
+
+    virtual void EndRecord() = 0;
+
+    virtual ~MosaicPrinter() {}
+};
+
+class TxtFileMosaicPrinter : public MosaicPrinter {
+    size_t cnt_;
+    const MosaicHelper& helper_;
+    const multimap<string, size_t>& different_irred_presence_;
+    ostream& out_;
+
+    void BlockInfo(Block b) {
+        out_ << b << " (" << helper_.length(b) << ")";
+    }
+
+public:
+
+    TxtFileMosaicPrinter(const MosaicHelper& helper,
+                         const multimap<string, size_t>& different_irred_presence,
+                         ostream& out) :
+                             cnt_(0),
+                             helper_(helper),
+                             different_irred_presence_(different_irred_presence),
+                             out_(out) {
+
+    }
+
+    virtual void StartRecord(const MosaicStructure& mosaic) {
+        out_ << "Irreducible Mosaic " << cnt_++ << endl;
         out_ << "Support block cnt = " << mosaic.block_size();
-        out_ << "; Total support block length = " << TotalBlockLength(mosaic);
-        out_ << "; Full mosaic multiplicity = " << Mult(mosaic);
-        out_ << "; Avg block span = " << AvgSpan(mosaic);
-        out_ << "; Avg genome span = " << AvgGenomicSpan(mosaic);
+        out_ << "; Total support block length = " << helper_.TotalBlockLength(mosaic);
+        out_ << "; Full mosaic multiplicity = " << helper_.Mult(mosaic);
+        out_ << "; Avg block span = " << helper_.AvgSpan(mosaic);
+        out_ << "; Avg genome span = " << helper_.AvgGenomicSpan(mosaic);
         out_ << endl;
-        if (Occurences(mosaic).size() > 1) {
-            out_ << "WARN! Full mosaic multiplicity = " << Mult(mosaic);
+        if (helper_.Mult(mosaic) > 1) {
+            out_ << "WARN! Full mosaic multiplicity = " << helper_.Mult(mosaic);
             out_ << endl;
         }
         out_ << "Structure: ";
-        vector<double> inter_lengths = AvgGenomicInterLengths(mosaic);
+        vector<double> inter_lengths = helper_.AvgGenomicInterLengths(mosaic);
         BlockInfo(mosaic.blocks().front());
         for (size_t i = 1; i < mosaic.block_size(); ++i) {
             out_ << " |...";
@@ -460,24 +534,14 @@ public:
             BlockInfo(mosaic.blocks()[i]);
         }
         out_ << endl;
+        out_ << "Sub_mosaics" << endl;
     }
 
-    bool Reported(StrandRange range, const set<StrandRange>& reported) const {
-        for (auto r : reported)
-            if (r.second == range.second && r.first.contains(range.first))
-                return true;
-        return false;
+    virtual void EndRecord() {
+        out_ << "............................" << endl;
     }
 
-    vector<StrandRange> FilterReported(const vector<StrandRange>& ranges, const set<StrandRange>& reported) const {
-        vector<StrandRange> answer;
-        for (StrandRange range : ranges)
-            if (!Reported(range, reported) && !Reported(block_composition_.ConjStrandRange(range), reported))
-                answer.push_back(range);
-        return answer;
-    }
-
-    void ReportSubMosaic(const MosaicStructure& mosaic, const vector<StrandRange>& ranges) {
+    virtual void ReportSubMosaic(const MosaicStructure& mosaic, const vector<StrandRange>& ranges) {
         string finger = mosaic.Fingerprint();
         out_ << "------" << endl;
         out_ << "Sub_mosaic. Block cnt = " << mosaic.block_size() << endl;
@@ -496,42 +560,22 @@ public:
         for (StrandRange r : ranges) {
             out_ << delim;
             out_ << "strand: " << (r.second ? "+" : "-") << " ";
-            out_ << block_composition_.genome_coords(r);
+            out_ << helper_.genome_composition().genome_coords(r);
             out_ << " (Pos: ";
-            out_ << (r.second ? r.first : block_composition_.ConjStrandRange(r).first);
+            out_ << (r.second ? r.first : helper_.genome_composition().ConjStrandRange(r).first);
             out_ << ")";
             delim = "; ";
         }
         out_ << endl;
     }
 
-    void ReportSubMosaics(const MosaicStructure& mosaic) {
-        out_ << "Sub_mosaics" << endl;
-        set<StrandRange> reported_ranges;
-        for (size_t d = mosaic.block_size(); d > 0; --d) {
-            for (size_t i = 0; i + d < mosaic.block_size(); ++i) {
-                MosaicStructure sub_mosaic = mosaic.SubMosaic(i, i + d);
-                vector<StrandRange> ranges = FilterReported(get_all(all_substruct_pos_, sub_mosaic.Fingerprint()), reported_ranges);
-                if (!ranges.empty()) {
-                    ReportSubMosaic(sub_mosaic, ranges);
-                    insert_all(reported_ranges, ranges);
-                }
-            }
-        }
-    }
-
-    void ReportIrredMosaic(const MosaicStructure& mosaic, size_t idx) {
-        out_ << "Irreducible Mosaic " << idx << endl;
-        ReportBasicInfo(mosaic);
-        ReportSubMosaics(mosaic);
-        out_ << "..................................." << endl;
-    }
-
 };
 
-class TandemFilter {
+class NotTandemFilter {
+    const BlockInfoProvider& block_info_;
 public:
-    TandemFilter() {
+    NotTandemFilter(const BlockInfoProvider& block_info) :
+        block_info_(block_info) {
 
     }
 
@@ -539,39 +583,30 @@ public:
         bag<Block> block_cnts;
         for (Block b : mosaic.blocks()) {
             block_cnts.put(b);
+            block_cnts.put(block_info_.conjugate(b));
         }
-        size_t approx_tandem_occur = 0;
-        for (pair<Block, size_t> block_cnt : block_cnts) {
-            if (block_cnt.second > 1)
-                approx_tandem_occur += block_cnt.second;
+        size_t tandem_block_cnt = 0;
+        for (Block b : mosaic.blocks()) {
+            if (block_cnts.mult(b) > 1)
+                tandem_block_cnt += 1;
         }
-        return approx_tandem_occur * 2 > mosaic.block_size();
+        return tandem_block_cnt * 2 <= mosaic.block_size();
     }
 
 };
 
 class MosaicStructureSet {
-    const BlockInfoProvider& block_info_;
-    const GenomeBlockComposition& block_composition_;
-    vector<MosaicInterval> raw_intervals_;
+    typedef function<bool (MosaicStructure)> FilterFT;
 
+    const GenomeBlockComposition& block_composition_;
+    IntervalIndex& interval_index_;
+
+    vector<MosaicInterval> raw_intervals_;
     vector<MosaicStructure> irreducible_structures_;
     multimap<string, size_t> different_irred_presence_;
-    multimap<string, StrandRange> all_substruct_pos_;
 
-    void IndexSubIntervals(const MosaicInterval& interval) {
-        VERIFY(interval.support_blocks.front() == interval.pos_range.start_pos);
-        VERIFY(interval.support_blocks.back() + 1 == interval.pos_range.end_pos);
-        vector<Pos> support = interval.support_blocks;
-        for (size_t i = 0; i < support.size(); ++i) {
-            for (size_t j = i; j < support.size(); ++j) {
-                MosaicInterval sub_interval = interval.SubInterval(Range(support[i], support[j] + 1));
-                MosaicStructure sub_mosaic(block_composition_, sub_interval);
-                all_substruct_pos_.insert(make_pair(sub_mosaic.Fingerprint(), sub_interval.strand_range()));
-                all_substruct_pos_.insert(make_pair(sub_mosaic.conjugate(block_info_).Fingerprint(),
-                                                    block_composition_.ConjStrandRange(sub_interval.strand_range())));
-            }
-        }
+    MosaicStructure ConjugateMosaic(const MosaicStructure mosaic) const {
+        return mosaic.conjugate(block_composition_.block_info());
     }
 
     void CountDifferentIrred(const MosaicStructure& mosaic, size_t idx) {
@@ -579,6 +614,8 @@ class MosaicStructureSet {
             for (size_t j = i; j < mosaic.block_size(); ++j) {
                 MosaicStructure sub_mosaic = mosaic.SubMosaic(i, j);
                 different_irred_presence_.insert(make_pair(sub_mosaic.Fingerprint(), idx));
+                different_irred_presence_.insert(
+                        make_pair(ConjugateMosaic(sub_mosaic).Fingerprint(), idx));
             }
         }
     }
@@ -589,64 +626,38 @@ class MosaicStructureSet {
         }
     }
 
-//    bool CountNested(const MosaicStructure& nested, const MosaicStructure& /*outer*/) {
-//        string finger = nested.Fingerprint();
-//        if (nested_structures_.count(finger) == 0) {
-//            nested_structures_.insert(make_pair(finger, nested));
-//            return true;
-//        } else {
-//            get(nested_structures_, finger).Merge(nested);
-//            return false;
-//        }
-//    }
-
     bool AnalyzeStructure(const MosaicStructure& mosaic) {
-        if (TandemFilter()(mosaic)) {
-            //mosaic probably represents tandem duplication and totally ignored
-            return false;
-        }
-//        cout << "Analyzing " << mosaic << endl;
-//        cout << irreducible_structures_.size() << endl;
         for (auto& irred_struct : irreducible_structures_) {
-//            cout << "Irred " << irred_struct << endl;
-//            if (irred_struct.SameBlocks(mosaic)) {
-//                cout << "same" << endl;
-//                irred_struct.Merge(mosaic);
-//                return false;
-//            }
-//            if (mosaic.IsContainedIn(irred_struct)) {
-//                cout << "contained" << endl;
-//                CountNested(mosaic, irred_struct);
-//                return false;
-//            }
             if (mosaic.IsContainedIn(irred_struct)) {
                 DEBUG("Contained in some irred structure");
                 return false;
             }
-            if (mosaic.IsContainedIn(irred_struct.conjugate(block_info_))) {
+            if (mosaic.IsContainedIn(ConjugateMosaic(irred_struct))) {
                 DEBUG("Contained in conjugate of some irred structure");
                 return false;
             }
-
         }
-//        cout << "new_irred" << endl;
         irreducible_structures_.push_back(mosaic);
         return true;
     }
 
 public:
-    MosaicStructureSet(const BlockInfoProvider& block_info, const GenomeBlockComposition& block_composition)
-    : block_info_(block_info),
-      block_composition_(block_composition) {
+    MosaicStructureSet(const GenomeBlockComposition& block_composition,
+                       IntervalIndex& interval_index) :
+                           block_composition_(block_composition),
+                           interval_index_(interval_index) {
 
     }
 
     void ProcessInterval(const MosaicInterval& interval) {
-        //todo fix two conversions
-        IndexSubIntervals(interval);
+        interval_index_.IndexSubIntervals(interval);
         if (interval.support_size() > 1) {
             raw_intervals_.push_back(interval);
         }
+    }
+
+    const multimap<string, size_t> different_irred_presence() const {
+        return different_irred_presence_;
     }
 
     void Analysis() {
@@ -665,23 +676,27 @@ public:
         CountDifferentIrred();
     }
 
-    void Report(BlockInfoProvider& block_info, ostream& out) {
-        MosaicPrintHelper printer(block_composition_, block_info,
-                                  different_irred_presence_, all_substruct_pos_, out);
+    void Report(MosaicPrinter& printer, FilterFT filter) {
         for (size_t i = 0; i < irreducible_structures_.size(); ++i) {
-            printer.ReportIrredMosaic(irreducible_structures_[i], i);
+            MosaicStructure mosaic = irreducible_structures_[i];
+            if (!filter || filter(mosaic)) {
+                printer.StartRecord(mosaic);
+                set<StrandRange> reported_ranges;
+                for (const MosaicStructure& submosaic: mosaic.SubMosaics()) {
+                    vector<StrandRange> ranges = interval_index_
+                            .UnReportedOccurences(submosaic, reported_ranges);
+                    printer.ReportSubMosaic(submosaic, ranges);
+                    insert_all(reported_ranges, ranges);
+                }
+            }
         }
     }
 
 };
 
-template<class gp_t>
 class MosaicStructureAnalyzer {
-    typedef typename gp_t::graph_t Graph;
-    typedef typename Graph::EdgeId EdgeId;
-
-    BlockInfoProvider block_info_;
-    GenomeBlockComposition block_composition_;
+    const BlockInfoProvider& block_info_;
+    const GenomeBlockComposition& block_composition_;
 
     size_t min_support_block_length_;
     size_t max_support_block_multiplicity_;
@@ -717,22 +732,25 @@ class MosaicStructureAnalyzer {
     }
 
 public:
-    MosaicStructureAnalyzer(const gp_t& gp, const MappingPath<EdgeId>& mapping_path,
-                            const Sequence& genome, size_t min_support_length, size_t max_support_mult,
+    MosaicStructureAnalyzer(const GenomeBlockComposition& block_composition,
+                            size_t min_support_length, size_t max_support_mult,
                             size_t max_inter_length,
                             ostream& out)
-             : block_info_(gp.g),
-              block_composition_(gp.g, mapping_path, genome.size() - gp.g.k(), block_info_),
-              min_support_block_length_(min_support_length),
-              max_support_block_multiplicity_(max_support_mult),
-              max_inter_block_length_(max_inter_length),
-              out_(out),
-              curr_pos_(0) {
+             : block_info_(block_composition.block_info()),
+               block_composition_(block_composition),
+               min_support_block_length_(min_support_length),
+               max_support_block_multiplicity_(max_support_mult),
+               max_inter_block_length_(max_inter_length),
+               out_(out),
+               curr_pos_(0) {
     }
 
     void Analyze() {
-        MosaicStructureSet interval_set(block_info_, block_composition_);
+        IntervalIndex interval_index(block_composition_);
+        MosaicHelper helper(block_composition_,
+                            interval_index);
 
+        MosaicStructureSet interval_set(block_composition_, interval_index);
         INFO("Collecting mosaic intervals");
         MoveToNextSupportBlock();
         while (curr_pos_ < block_composition_.size()) {
@@ -746,7 +764,11 @@ public:
         INFO("Analyzing intervals and forming mosaic structures");
         interval_set.Analysis();
         INFO("Reporting mosaic structures");
-        interval_set.Report(block_info_, out_);
+        TxtFileMosaicPrinter printer(helper, interval_set.different_irred_presence(), out_);
+
+        //might have problems if only largest occurence is tandem making whole mosaic invalid
+        NotTandemFilter filter(block_info_);
+        interval_set.Report(printer, bind(&NotTandemFilter::operator(), ref(filter), _1));
     }
 
 };
@@ -755,7 +777,10 @@ template<class gp_t>
 void PerformMosaicAnalysis(const gp_t& gp, const MappingPath<EdgeId> mapping_path, const Sequence& genome,
                            size_t min_support_length, size_t max_support_mult,
                            size_t max_inter_length, ostream& out) {
-    MosaicStructureAnalyzer<gp_t> analyzer(gp, mapping_path, genome, min_support_length, max_support_mult, max_inter_length, out);
+    BlockInfoProvider block_info(gp.g);
+    GenomeBlockComposition block_composition(gp.g, mapping_path, genome.size() - gp.g.k(), block_info);
+
+    MosaicStructureAnalyzer analyzer(block_composition, min_support_length, max_support_mult, max_inter_length, out);
     analyzer.Analyze();
 }
 

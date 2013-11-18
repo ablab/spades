@@ -347,6 +347,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
           }
       }
 
+    //todo some usages do not need original pos, optimize if needed
     MappingPath<EdgeId> AsMappingPath(unsigned genome_id) const {
         MappingPath<EdgeId> answer;
         VertexId v = g_->EdgeStart(FindGenomeFirstEdge(genome_id));
@@ -365,8 +366,8 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
                     GetOriginalPos(genome_id, next_genome_pos));
 
             //todo fix possible troubles with cyclic genomes etc later
-            Range graph_pos_printable(0, g_->length(e));
             Range original_pos_printable = GetPrintableRange(original_pos);
+            Range graph_pos_printable(0, g_->length(e));
 
             answer.push_back(e, MappingRange(original_pos_printable, graph_pos_printable));
 

@@ -592,7 +592,7 @@ class LoadGraphCommand : public LocalCommand<CapEnvironment> {
   virtual void Execute(CapEnvironment &curr_env, const ArgumentList &arg_list) const {
     const vector<string> &args = arg_list.GetAllArguments();
 
-    size_t K = 21;
+    uint K = 21;
     stringstream ss(args[1]);
     ss >> K;
     const std::string &path = args[2];
