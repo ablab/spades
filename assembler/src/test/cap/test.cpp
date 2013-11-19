@@ -142,6 +142,19 @@ BOOST_AUTO_TEST_CASE( RepeatCroppingReaderTest2 ) {
     BOOST_CHECK_EQUAL("ACGTCTTGCA", read.sequence().str());
     vector<pair<size_t, size_t>> etalon_ladder = {{0, 0}, {0, 5}, {5, 10}, {5, 15}, {10, 20}, {10, 25}};
     BOOST_CHECK_EQUAL(reader.coordinates_ladder(), etalon_ladder);
+
+    CoordinatesHandler<cap::Graph> coords;
+    coords.StoreGenomeThreadManual(0, reader.coordinates_ladder());
+    for (size_t i = 0; i < etalon_ladder.size(); ++i) {
+        const auto &p = etalon_ladder[i];
+        if (i > 0 && p.first == etalon_ladder[i - 1].first)
+            continue;
+
+        size_t orig_pos = coords.GetOriginalPos(0, coords.PreprocessCoordinates(p.first));
+        size_t etalon_pos = coords.PreprocessCoordinates(p.second);
+        DEBUG("get " << debug::PrintComplexPosition(orig_pos) << " etalon " << debug::PrintComplexPosition(etalon_pos));
+        BOOST_CHECK_EQUAL(orig_pos, etalon_pos);
+    }
 }
 
 }
