@@ -37,14 +37,17 @@ class AbstractPairInfoFilter {
   void Filter(PairedInfoIndexT<Graph>& index) const {
     TRACE("index size: " << index.size());
     for (auto it = index.begin(); it != index.end(); ++it) {
-      const Histogram& infos = *it;
+      // This is dirty hack, but it's safe here
+      Histogram& infos = const_cast<Histogram&>(*it);
       const EdgeId& e1 = it.first();
       const EdgeId& e2 = it.second();
 
       for (auto p_iter = infos.begin(); p_iter != infos.end(); ) {
-        const Point& point = *p_iter++;
+        const Point& point = *p_iter;
         if (!Check(e1, e2, point))
-            index.DeletePairInfo(e1, e2, point);
+            p_iter = infos.erase(p_iter);
+        else
+            ++p_iter;
       }
     }
 
