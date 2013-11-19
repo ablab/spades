@@ -30,14 +30,16 @@ namespace de {
  */
 struct Point {
   public:
-    double d;
-    double weight;
-    double var;
+    typedef double value_type;
+
+    value_type d;
+    value_type weight;
+    value_type var;
 
     Point()
             : d(0), weight(0), var(0) {}
 
-    explicit Point(double distance, double weight, double variance)
+    explicit Point(value_type distance, value_type weight, value_type variance)
             : d(distance), weight(weight), var(variance) {}
 
     Point(const Point& rhs)
@@ -53,9 +55,9 @@ struct Point {
 
     Point& operator=(const Point& rhs) {
         using namespace math;
-        update_value_if_needed<double>(d, rhs.d);
-        update_value_if_needed<double>(weight, rhs.weight);
-        update_value_if_needed<double>(var, rhs.var);
+        update_value_if_needed<value_type>(d, rhs.d);
+        update_value_if_needed<value_type>(weight, rhs.weight);
+        update_value_if_needed<value_type>(var, rhs.var);
         return *this;
     }
 
@@ -76,15 +78,15 @@ struct Point {
     }
 
     Point operator+(const Point &rhs) const {
-      double weight_rhs = rhs.weight;
-      // counting new bounds in the case, when we are merging pair infos with var != 0
-      double left_bound = std::min(d - var, rhs.d - rhs.var);
-      double right_bound = std::max(d + var, rhs.d + rhs.var);
-      double new_dist = (left_bound + right_bound) * 0.5;
-      double new_weight = weight + weight_rhs;
-      double new_variance = (right_bound - left_bound) * 0.5;
+        value_type weight_rhs = rhs.weight;
+        // counting new bounds in the case, when we are merging pair infos with var != 0
+        value_type left_bound = std::min(d - var, rhs.d - rhs.var);
+        value_type right_bound = std::max(d + var, rhs.d + rhs.var);
+        value_type new_dist = (left_bound + right_bound) * 0.5;
+        value_type new_weight = weight + weight_rhs;
+        value_type new_variance = (right_bound - left_bound) * 0.5;
 
-      return Point(new_dist, new_weight, new_variance);
+        return Point(new_dist, new_weight, new_variance);
     }
 };
 
@@ -216,6 +218,7 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
  public:
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Histogram::const_iterator HistIterator;
+    typedef typename Point::value_type PointValueType;
     typedef std::map<EdgeId, Histogram> InnerMap;
     typedef std::map<EdgeId, InnerMap>  IndexDataType;     // @InnerMap is a wrapper for map<EdgeId, Histogram>
     typedef typename IndexDataType::const_iterator DataIterator;
@@ -373,13 +376,13 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
     }
 
     void AddPairInfo(const pair<EdgeId, EdgeId>& edge_pair,
-                     double d, double weight, double var,
+                     PointValueType d, PointValueType weight, PointValueType var,
                      bool add_reversed = true) {
         AddPairInfo(edge_pair.first, edge_pair.second, Point(d, weight, var), add_reversed);
     }
 
     void AddPairInfo(EdgeId e1, EdgeId e2,
-                     double d, double weight, double var,
+                     PointValueType d, PointValueType weight, PointValueType var,
                      bool add_reversed = true) {
         AddPairInfo(e1, e2, Point(d, weight, var), add_reversed);
     }
