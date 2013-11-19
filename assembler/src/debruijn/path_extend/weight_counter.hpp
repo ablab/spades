@@ -66,6 +66,8 @@ struct EdgeWithDistance {
 
 	struct DistanceComparator {
 	    bool operator()(const EdgeWithDistance& e1, const EdgeWithDistance& e2) {
+	        if (e1.d_ == e2.d_)
+	            return e1.e_ < e2.e_;
 	        return e1.d_ > e2.d_;
 	    }
 	};
@@ -438,7 +440,8 @@ public:
                          size_t to1, EdgeId edge, size_t gap) const;
     void SetCommonWeightFrom(size_t iedge, double weight);
     void ClearCommonWeight();
-    size_t FindJumpEdges(EdgeId e, int min_dist, int max_dist, size_t min_len, vector<EdgeWithDistance>& result);
+    void FindJumpCandidates(EdgeId e, int min_dist, int max_dist, size_t min_len, set<EdgeId>& result);
+    void FindJumpEdges(EdgeId e, set<EdgeId>& candidates, int min_dist, int max_dist, vector<EdgeWithDistance>& result);
     const PairedInfoLibrary& GetLib() const {
         return lib_;
     }
@@ -548,10 +551,12 @@ map<size_t, double> PathsWeightCounter::FindPairInfoFromPath(
     FindPairInfo(path1, 0, path1.Size(), path2, 0, path2.Size(), pi, ideal_pi);
     return pi;
 }
-size_t PathsWeightCounter::FindJumpEdges(EdgeId e, int min_dist, int max_dist, size_t min_len, vector<EdgeWithDistance>& result) {
+void PathsWeightCounter::FindJumpCandidates(EdgeId e, int min_dist, int max_dist, size_t min_len, set<EdgeId>& result) {
     result.clear();
-    set<EdgeId> edges;
-    lib_.FindJumpEdges(e, edges, min_dist, max_dist, min_len);
+    lib_.FindJumpEdges(e, result, min_dist, max_dist, min_len);
+}
+void PathsWeightCounter::FindJumpEdges(EdgeId e, set<EdgeId>& edges, int min_dist, int max_dist, vector<EdgeWithDistance>& result) {
+    result.clear();
 
     for (auto e2 = edges.begin(); e2 != edges.end(); ++e2) {
         vector<int> distances;
@@ -563,7 +568,6 @@ size_t PathsWeightCounter::FindJumpEdges(EdgeId e, int min_dist, int max_dist, s
             result.push_back(EdgeWithDistance(*e2, median_distance));
         }
     }
-    return result.size();
 }
 void PathsWeightCounter::SetCommonWeightFrom(size_t iedge, double weight) {
 	common_w_[iedge] = weight;
