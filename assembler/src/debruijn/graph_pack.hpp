@@ -13,7 +13,6 @@
 
 #pragma once
 
-#include "omni/edge_labels_handler.hpp"
 #include "omni/id_track_handler.hpp"
 #include "omni/edges_position_handler.hpp"
 #include "de/paired_info.hpp"

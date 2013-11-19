@@ -6,8 +6,8 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-//#include "dijkstras_for_splitting.hpp"
 #include "dijkstra_tools/dijkstra_helper.hpp"
+#include "graph_component.hpp"
 #include "component_filters.hpp"
 
 namespace omnigraph {

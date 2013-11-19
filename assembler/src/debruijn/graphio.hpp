@@ -503,14 +503,12 @@ class DataScanner {
                                 &first_real_id, &second_real_id, &d, &w, &v);
             VERIFY(read_count == 5);
             TRACE(first_real_id<< " " << second_real_id << " " << d << " " << w << " " << v);
-            if (id_handler_.ReturnEdgeId(first_real_id) == EdgeId(NULL) || id_handler_.ReturnEdgeId(second_real_id) == EdgeId(NULL))
+            EdgeId e1 = id_handler_.ReturnEdgeId(first_real_id);
+            EdgeId e2 = id_handler_.ReturnEdgeId(second_real_id);
+            if (e1 == EdgeId(NULL) || e2 == EdgeId(NULL))
                 continue;
-            TRACE(id_handler_.ReturnEdgeId(first_real_id) << " "
-                  << id_handler_.ReturnEdgeId(second_real_id)
-                  << " " << d << " " << w);
-            paired_index.AddPairInfo(
-                id_handler_.ReturnEdgeId(first_real_id),
-                id_handler_.ReturnEdgeId(second_real_id), d, w, v, false);
+            TRACE(e1 << " " << e2 << " " << d << " " << w);
+            paired_index.AddPairInfo(e1, e2, d, w, v, false);
         }
         DEBUG("PII SIZE " << paired_index.size());
         fclose(file);

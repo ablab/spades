@@ -369,13 +369,13 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
     }
 
     // adding pair infos
-    void AddPairInfo(const pair<EdgeId, EdgeId>& edge_pair,
+    void AddPairInfo(const std::pair<EdgeId, EdgeId>& edge_pair,
                      Point point_to_add,
                      bool add_reversed = true) {
         AddPairInfo(edge_pair.first, edge_pair.second, point_to_add, add_reversed);
     }
 
-    void AddPairInfo(const pair<EdgeId, EdgeId>& edge_pair,
+    void AddPairInfo(const std::pair<EdgeId, EdgeId>& edge_pair,
                      PointValueType d, PointValueType weight, PointValueType var,
                      bool add_reversed = true) {
         AddPairInfo(edge_pair.first, edge_pair.second, Point(d, weight, var), add_reversed);
@@ -447,15 +447,6 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
         return 0;
     }
 
-    // method adds paired info to the conjugate edges
-    void RemoveConjPairInfo(EdgeId e1, EdgeId e2,
-                            Point point_to_remove) {
-        const Graph& g = this->g();
-        this->RemovePairInfo(g.conjugate(e2),
-                             g.conjugate(e1),
-                             ConjugatePoint(g.length(e1), g.length(e2), point_to_remove));
-    }
-
     void RemovePairInfo(const PairInfo<EdgeId>& info) {
         this->RemovePairInfo(info.first, info.second, info.point);
     }
@@ -516,14 +507,14 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
             // First, remove all the empty Histograms
             InnerMap& inner_map = iter->second;
             for (auto it = inner_map.begin(); it != inner_map.end(); ) {
-                if (it->second.size() == 0)
+                if (it->second.empty())
                     inner_map.erase(it++);
                 else
                     ++it;
             }
 
             // Now, pretty much the same, but the outer stuff
-            if (inner_map.size() == 0)
+            if (inner_map.empty())
                 index_.erase(iter++);
             else
                 ++iter;
