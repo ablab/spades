@@ -239,6 +239,7 @@ public:
         now_ = data_.back();
     }
 
+
 protected:
 	const Graph& g_;
 

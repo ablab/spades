@@ -105,7 +105,17 @@ struct PairedInfoLibrary {
         }
         return weight;
     }
-
+    double CountPairedInfo(EdgeId e1, EdgeId e2, size_t dist_min, size_t dist_max) const {
+        double weight = 0.0;
+        de::Histogram pairs = index_.GetEdgePairInfo(e1, e2);
+        for (auto pointIter = pairs.begin(); pointIter != pairs.end();
+                ++pointIter) {
+            int dist = rounded_d(*pointIter);
+            if (dist > 0 and (size_t)dist >= dist_min and (size_t)dist <= dist_max)
+                weight += pointIter->weight;
+        }
+        return weight;
+    }
     double IdealPairedInfo(EdgeId e1, EdgeId e2, int distance, bool additive = false) {
         return ideal_pi_counter_.IdealPairedInfo(e1, e2, distance, additive);
     }

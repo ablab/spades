@@ -429,7 +429,7 @@ struct PathsPairIndexInfo {
 };
 class PathsWeightCounter {
 public:
-    PathsWeightCounter(const Graph& g, PairedInfoLibrary& lib);
+    PathsWeightCounter(const Graph& g, PairedInfoLibrary& lib, size_t min_read_count);
     map<size_t, double> FindPairInfoFromPath(
             const BidirectionalPath& path1,
             const BidirectionalPath& path2) const;
@@ -446,6 +446,7 @@ public:
         return lib_;
     }
     bool HasPI(EdgeId e1, EdgeId e2, int dist) const;
+    bool HasPI(EdgeId e1, EdgeId e2, size_t dist_min, size_t dist_max) const;
 
 private:
     void FindPairInfo(const BidirectionalPath& path1, size_t from1, size_t to1,
@@ -458,9 +459,9 @@ private:
     PairedInfoLibrary& lib_;
     std::map<size_t, double> common_w_;
     //FIXME: move to config
-    double min_read_count_;
+    size_t min_read_count_;
 };
-PathsWeightCounter::PathsWeightCounter(const Graph& g, PairedInfoLibrary& lib):g_(g), lib_(lib), min_read_count_(10.0){
+PathsWeightCounter::PathsWeightCounter(const Graph& g, PairedInfoLibrary& lib, size_t min_read_count):g_(g), lib_(lib), min_read_count_(min_read_count){
 
 }
 double PathsWeightCounter::CountPairInfo(const BidirectionalPath& path1,
@@ -577,7 +578,11 @@ void PathsWeightCounter::ClearCommonWeight() {
 }
 
 bool PathsWeightCounter::HasPI(EdgeId e1, EdgeId e2, int dist) const {
-    return lib_.CountPairedInfo(e1, e2, dist, true) > min_read_count_;
+    return lib_.CountPairedInfo(e1, e2, dist, true) > (double)  min_read_count_;
+}
+
+bool PathsWeightCounter::HasPI(EdgeId e1, EdgeId e2, size_t dist_min, size_t dist_max) const {
+    return lib_.CountPairedInfo(e1, e2, dist_min, dist_max) > min_read_count_;
 }
 };
 

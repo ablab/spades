@@ -149,7 +149,7 @@ private:
 class NextPathSearcher {
 public:
     NextPathSearcher(const Graph& g, const GraphCoverageMap& cover_map,
-                     size_t search_dist, PathsWeightCounter& weight_counter);
+                     size_t search_dist, PathsWeightCounter weight_counter);
 
     set<BidirectionalPath*> FindNextPaths(const BidirectionalPath& path,
                                           EdgeId begin_edge, bool jump = true);
@@ -172,7 +172,7 @@ private:
     const Graph& g_;
     const GraphCoverageMap& cover_map_;
     size_t search_dist_;
-    PathsWeightCounter& weight_counter_;
+    PathsWeightCounter weight_counter_;
     size_t long_edge_len_;
     size_t max_paths_;
 };
@@ -180,7 +180,7 @@ private:
 NextPathSearcher::NextPathSearcher(const Graph& g,
                                    const GraphCoverageMap& cover_map,
                                    size_t search_dist,
-                                   PathsWeightCounter& weight_counter)
+                                   PathsWeightCounter weight_counter)
         : g_(g),
           cover_map_(cover_map),
           search_dist_(search_dist),
@@ -461,7 +461,6 @@ void NextPathSearcher::OrderScaffoldingCandidates(set<EdgeWithDistance, EdgeWith
             //No back paths -- just scaffold
             INFO("Added edge with no back path " << g_.int_id(e.e_) << " (" << g_.length(e.e_) << ")" << ", distance " << e.d_);
             visited_egdes.insert(make_pair(e.e_, current_path->AddOutEdge(e.e_, e.d_)));
-
             continue;
         }
         else {
@@ -547,7 +546,6 @@ void NextPathSearcher::TryJoinCandidates(set<EdgeWithDistance, EdgeWithDistance:
     for (EdgeWithDistance e: candidate_set) {
       result_paths.insert(e);
     }
-
     for (EdgeWithDistance edge1 : candidate_set){
         if (result_paths.find(edge1) == result_paths.end()){
             continue;
@@ -559,7 +557,7 @@ void NextPathSearcher::TryJoinCandidates(set<EdgeWithDistance, EdgeWithDistance:
             PathStorageCallback<Graph> path_store(g_);
                 PathProcessor<Graph> path_processor(g_, 0, search_dist_, g_.EdgeEnd(edge1.e_), g_.EdgeStart(edge2.e_), path_store);
                 path_processor.Process();
-                if (path_store.size() > 0) {
+                if (path_store.size() > 0 or weight_counter_.HasPI(edge1.e_, edge2.e_, 0, 10000)) {
                     result_paths.erase(edge2);
                     DEBUG("edge " << g_.int_id(edge1.e_) << " before " << g_.int_id(edge2.e_))
                 }

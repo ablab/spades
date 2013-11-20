@@ -362,7 +362,7 @@ class LoopDetectingPathExtender: public PathExtender {
 protected:
     size_t maxLoops_;
     bool investigateShortLoops_;
-    set<EdgeId> cycled_edges_;
+    vector<BidirectionalPath*> cycled_edges_;
 
 public:
     LoopDetectingPathExtender(const Graph & g, size_t max_loops, bool investigateShortLoops): PathExtender(g), maxLoops_(max_loops), investigateShortLoops_(investigateShortLoops)
@@ -392,22 +392,33 @@ public:
     }
 
     bool LastEdgeCycled(const BidirectionalPath& path) {
-    	if (cycled_edges_.count(path.Back()) > 0) {
-    		return true;
-    	} else {
-    		cycled_edges_.clear();
-    		return false;
-    	}
+        for (BidirectionalPath* cycle : cycled_edges_){
+            for (int i = (int)path.Size() - (int)cycle->Size();
+                    i >= (int)path.Size() - 2 * (int)cycle->Size() - 1 && i >= 0; --i) {
+                if (path.CompareFrom((size_t)i, *cycle)) {
+                    size_t begin = i + cycle->Size();
+                    INFO("find cycle from "<< i << " with size " << cycle->Size());
+                    bool cycled = true;
+                    for (size_t j = 0; begin + j < path.Size(); ++j){
+                        if (path.At(begin + j) != cycle->At(j % cycle->Size())) {
+                            cycled = false;
+                        }
+                    }
+                    if (cycled) {
+                        INFO("cycled");
+                        return true;
+                    }
+                    INFO("not cycled");
+                }
+            }
+        }
+        return false;
     }
 
     void AddCycledEdges(const BidirectionalPath& path, size_t count) {
-        for (int i = (int) path.Size() - 1; i >= 0 && i >= (int) path.Size() - (int) count - 1; --i) {
-            cycled_edges_.insert(path.At(i));
-        }
-    }
-
-    void ClearCycledEdges() {
-        cycled_edges_.clear();
+        cycled_edges_.push_back(new BidirectionalPath(path.SubPath((size_t)((int) path.Size() - (int) count))));
+        INFO("add cycle");
+        path.SubPath((size_t)((int) path.Size() - (int) count)).Print();
     }
 
     virtual void GrowPath(BidirectionalPath& path) {
@@ -574,9 +585,9 @@ public:
             }
             ++current;
         }
-        for (size_t i = 0; i < extenders_.size(); ++i) {
+        /*for (size_t i = 0; i < extenders_.size(); ++i) {
             extenders_[i]->ClearCycledEdges();
-        }
+        }*/
         return false;
     }
 
