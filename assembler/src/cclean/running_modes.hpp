@@ -10,10 +10,8 @@ namespace cclean {
 class AdapterIndex;
 }
 
-using additional::WORK_MODE_TYPE;
-
-void exactAndAlign(std::ostream &output, std::ostream &bed, ireadstream *input,
+void ExactAndAlign(std::ostream &output, std::ostream &bed, ireadstream *input,
                    const std::string &db, const cclean::AdapterIndex &index,
-                   const WORK_MODE_TYPE &brute);
+                   const additional::WorkModeType &brute);
 
 #endif /* RUNNING_MODES_H_ */

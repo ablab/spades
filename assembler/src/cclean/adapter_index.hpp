@@ -54,6 +54,7 @@ class AdapterIndexBuilder {
   DECL_LOGGER("Index Building");
 };
 
+  // end of namespace
 }
 
 #endif // __CCLEAN__ADAPTERINDEX_HPP__

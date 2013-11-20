@@ -20,18 +20,18 @@ using logging::logger;
 using logging::create_logger;
 using logging::console_writer;
 using std::string;
-using additional::WORK_MODE_TYPE;
+using additional::WorkModeType;
 using additional::SIMPLE;
 using additional::BRUTE_SIMPLE;
 using additional::BRUTE_DEEP;
 
 // Terminal args constants, say no magic numbers
-constexpr int ARG_CONFIG_FILE = 2;
-constexpr int ARG_DB_FILE = 4;
-constexpr int ARG_INPUT_FILE = 3;
-constexpr int ARG_MODE = 1;
-constexpr int ARGS_MIN = 4;
-constexpr int ARGS_MAX = 5;
+constexpr int ArgConfigFile = 2;
+constexpr int ArgDbFile = 4;
+constexpr int ArgInputFile = 3;
+constexpr int ArgMode = 1;
+constexpr int ArgsMin = 4;
+constexpr int ArgsMax = 5;
 
 void usage() {
   std::cout << "usage: cclean <mode> <config-file> <database> <input-file>"
@@ -64,13 +64,13 @@ void create_console_logger() {
 
 int main(int argc, char *argv[]) {
   try {
-    if (argc < ARGS_MIN || argc > ARGS_MAX) {
+    if (argc < ArgsMin || argc > ArgsMax) {
       usage();
       return EXIT_SUCCESS;
     }
 
-    string mode_string = argv[ARG_MODE];
-    WORK_MODE_TYPE mode;
+    string mode_string = argv[ArgMode];
+    WorkModeType mode;
     // Brutforce mode enabled?
     if (mode_string == "simple")
       mode = SIMPLE;
@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
     create_console_logger();
     clock_t start = clock();
 
-    std::string config_file = argv[ARG_CONFIG_FILE];
+    std::string config_file = argv[ArgConfigFile];
     INFO("Loading config from " << config_file.c_str());
     if (!FileExists(config_file)) {
         ERROR("File " + config_file + " doesn't exists.");
@@ -98,12 +98,12 @@ int main(int argc, char *argv[]) {
     // const size_t GB = 1 << 30;
     // limit_memory(cfg::get().general_hard_memory_limit * GB);
 
-    const std::string data_base(argv[ARG_DB_FILE]);
+    const std::string data_base(argv[ArgDbFile]);
     if (!FileExists(data_base)) {
         ERROR("File " + data_base + " doesn't exists.");
         return EXIT_SUCCESS;
     }
-    const std::string input_file(argv[ARG_INPUT_FILE]);
+    const std::string input_file(argv[ArgInputFile]);
     if (!FileExists(input_file)) {
         ERROR("File " + input_file + " doesn't exists.");
         return EXIT_SUCCESS;
@@ -126,7 +126,7 @@ int main(int argc, char *argv[]) {
       return EXIT_SUCCESS;
     }
     // Main work wrapper
-    exactAndAlign(output, bed, input, data_base, index, mode);
+    ExactAndAlign(output, bed, input, data_base, index, mode);
 
     output.close();
     bed.close();

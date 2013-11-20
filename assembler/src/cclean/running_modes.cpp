@@ -10,15 +10,16 @@
 #include "additional.cpp"
 #include "brute_force_clean.hpp"
 
-using additional::WORK_MODE_TYPE;
+using additional::WorkModeType;
 using additional::NONE;
 using additional::SIMPLE;
 using additional::BRUTE_SIMPLE;
 using additional::BRUTE_DEEP;
+using std::string;
 
-void exactAndAlign(std::ostream &output, std::ostream &bed, ireadstream *input,
+void ExactAndAlign(std::ostream &output, std::ostream &bed, ireadstream *input,
                    const string &db, const cclean::AdapterIndex &index,
-                   const WORK_MODE_TYPE &mode) {
+                   const WorkModeType &mode) {
   if (mode == SIMPLE) {
     SimpleClean filler(output, bed, db, index);
     hammer::ReadProcessor rp(cfg::get().nthreads);
@@ -28,7 +29,7 @@ void exactAndAlign(std::ostream &output, std::ostream &bed, ireadstream *input,
          << filler.aligned());
   }
   else {  // Now only two modes, thats because else
-    BruteForceClean filler(output, bed, db, index, mode);
+    BruteForceClean filler(output, bed, db, index.GetSeqs(), mode);
     hammer::ReadProcessor rp(cfg::get().nthreads);
     rp.Run(*input, filler);
     VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
