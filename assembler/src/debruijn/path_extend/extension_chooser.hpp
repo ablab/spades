@@ -778,7 +778,7 @@ public:
               lib_(lib),
               search_dist_(lib.GetISMax()),
               weight_counter_(g, lib, 10),
-              path_searcher_(g_, cov_map, lib_.GetISMax(), PathsWeightCounter(g, lib, 100)),
+              path_searcher_(g_, cov_map, lib_.GetISMax(), PathsWeightCounter(g, lib, 30)),
               unique_edge_analyzer(g, cov_map, 0., 1000.){
     }
     virtual EdgeContainer Filter(BidirectionalPath& path,
@@ -1014,7 +1014,7 @@ private:
                     if (contain_all && (i1 - i) >= max_common_size) {
                         max_common_size = i1 - i;
                         max_begin = i;
-                        max_end = i1 - 1;
+                        max_end = i1;
                         max_path.Clear();
                         max_path.PushBack(*path1);
                     }
