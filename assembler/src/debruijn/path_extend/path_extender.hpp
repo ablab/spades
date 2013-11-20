@@ -611,13 +611,16 @@ public:
     }
 
     virtual bool MakeGrowStep(BidirectionalPath& path) {
+        DEBUG("make grow step");
         if (LastEdgeCycled(path)) {
+            DEBUG("cycled");
             return false;
         }
         size_t skip_identical_edges = 0;
         if (path.getLoopDetector().IsCycled(maxLoops_ - 1, skip_identical_edges)) {
             AddCycledEdges(path, path.getLoopDetector().LoopEdges(skip_identical_edges, 1));
             path.getLoopDetector().RemoveLoop(skip_identical_edges, false);
+            DEBUG("cycled");
             return false;
         }
         ExtensionChooser::EdgeContainer candidates;
@@ -709,6 +712,7 @@ public:
 
 
     virtual bool MakeGrowStep(BidirectionalPath& path) {
+        DEBUG("scaffolding");
         ExtensionChooser::EdgeContainer candidates;
         bool result = false;
 

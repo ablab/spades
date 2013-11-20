@@ -783,7 +783,9 @@ public:
     }
     virtual EdgeContainer Filter(BidirectionalPath& path,
                                  EdgeContainer& edges) {
+        DEBUG("mp chooser");
         if (path.Length() < lib_.GetISMin()) {
+            DEBUG("small path");
             return EdgeContainer();
         }
 
@@ -803,6 +805,7 @@ public:
                 vector<BidirectionalPath*> max_weighted = MaxWeightedPath(path, following_paths);
                 if (max_weighted.size() == 0) {
                     //TODO: delete all information
+                    DEBUG("too much paths or tip");
                     return EdgeContainer();
                 }
                 best_paths[edges[iedge].e_] = new BidirectionalPath( *max_weighted[0]);

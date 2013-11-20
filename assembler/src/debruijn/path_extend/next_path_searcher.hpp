@@ -166,7 +166,8 @@ private:
     void OrderScaffoldingCandidates(set<EdgeWithDistance, EdgeWithDistance::DistanceComparator>& candidate_set,
             const BidirectionalPath& init_path, Edge* current_path, vector<Edge*>& to_add);
     void FilterBackPaths(set<BidirectionalPath*>& back_paths, EdgeId edge_to_reach, set<BidirectionalPath*>& reached_paths);
-
+    void TryJoinCandidates(set<EdgeWithDistance, EdgeWithDistance::DistanceComparator>& candidate_set,
+            const BidirectionalPath& init_path, Edge* current_path, vector<Edge*>& to_add);
 
     const Graph& g_;
     const GraphCoverageMap& cover_map_;
@@ -419,6 +420,15 @@ void NextPathSearcher::OrderScaffoldingCandidates(set<EdgeWithDistance, EdgeWith
         const BidirectionalPath& init_path, Edge* current_path, vector<Edge*>& to_add) {
 
     map<EdgeId, Edge*> visited_egdes;
+    if (candidate_set.size() > 1) {
+        INFO("I like it");
+        TryJoinCandidates(candidate_set,  init_path, current_path, to_add);
+        if (candidate_set.size() > 1) {
+            return;
+        }
+    }
+
+
     for (EdgeWithDistance e : candidate_set) {
         if (visited_egdes.count(e.e_) > 0) {
             continue;
@@ -530,6 +540,36 @@ void NextPathSearcher::FilterBackPaths(set<BidirectionalPath*>& back_paths, Edge
         }
     }
 
+}
+void NextPathSearcher::TryJoinCandidates(set<EdgeWithDistance, EdgeWithDistance::DistanceComparator>& candidate_set,
+        const BidirectionalPath& init_path, Edge* current_path, vector<Edge*>& to_add) {
+    set<EdgeWithDistance, EdgeWithDistance::DistanceComparator> result_paths(candidate_set);
+    for (EdgeWithDistance e: candidate_set) {
+      result_paths.insert(e);
+    }
+
+    for (EdgeWithDistance edge1 : candidate_set){
+        if (result_paths.find(edge1) == result_paths.end()){
+            continue;
+        }
+        for (EdgeWithDistance edge2: candidate_set) {
+            if (edge1.e_ == edge2.e_){
+                continue;
+            }
+            PathStorageCallback<Graph> path_store(g_);
+                PathProcessor<Graph> path_processor(g_, 0, search_dist_, g_.EdgeEnd(edge1.e_), g_.EdgeStart(edge2.e_), path_store);
+                path_processor.Process();
+                if (path_store.size() > 0) {
+                    result_paths.erase(edge2);
+                    DEBUG("edge " << g_.int_id(edge1.e_) << " before " << g_.int_id(edge2.e_))
+                }
+        }
+    }
+    DEBUG("from " << candidate_set.size() << " only " << result_paths.size() << " are real extensions");
+    candidate_set.clear();
+    for (EdgeWithDistance e: result_paths) {
+        candidate_set.insert(e);
+    }
 }
 
 }  // namespace path_extend
