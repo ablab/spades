@@ -79,7 +79,7 @@ public:
         io::osequencestream_with_data_for_scaffold oss(filename);
 
         set<EdgeId> included;
-        for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
             if (included.count(*iter) == 0) {
                 oss.setCoverage(g_.coverage(*iter));
                 oss.setID((int) g_.int_id(*iter));

@@ -608,7 +608,7 @@ public:
 private:
     void FindAllUniqueEdges() {
         DEBUG("Looking for unique edges");
-        for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
             if (UniqueEdge(*iter)) {
                 unique_edges_.insert(*iter);
                 unique_edges_.insert(g_.conjugate(*iter));

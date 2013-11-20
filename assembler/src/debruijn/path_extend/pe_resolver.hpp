@@ -219,7 +219,7 @@ private:
 
     std::vector<EdgeId> GetSortedEdges() const {
         std::set<EdgeId> edges_set;
-        for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
             edges_set.insert(*iter);
             edges_set.insert(g_.conjugate(*iter));
         }
@@ -373,13 +373,13 @@ public:
     PathContainer makeSimpleSeeds() {
 		std::set<EdgeId> included;
 		PathContainer edges;
-		for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
-			if (g_.int_id(*iter) <= 0 or InCycle(*iter)) {
+		for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
+			if (g_.int_id(*iter) <= 0 or InCycle(*iter))
 				continue;
-			}
-			if (included.count(*iter) == 0) {
+
+            if (included.count(*iter) == 0) {
 				edges.AddPair(new BidirectionalPath(g_, *iter),
-						new BidirectionalPath(g_, g_.conjugate(*iter)));
+                              new BidirectionalPath(g_, g_.conjugate(*iter)));
 				included.insert(*iter);
 				included.insert(g_.conjugate(*iter));
 			}
@@ -414,7 +414,7 @@ public:
 
     void addUncoveredEdges(PathContainer& paths, GraphCoverageMap& coverageMap) {
         std::set<EdgeId> included;
-        for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
             if (included.count(*iter) == 0 && !coverageMap.IsCovered(*iter)) {
                 paths.AddPair(new BidirectionalPath(g_, *iter), new BidirectionalPath(g_, g_.conjugate(*iter)));
                 included.insert(*iter);
