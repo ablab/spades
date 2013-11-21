@@ -448,6 +448,11 @@ public:
 	    return gapLength_[index];
 	}
 
+	void SetFrontGap(int gap) {
+	    if (Size() > 0)
+	        gapLength_[0] = gap;
+	}
+
 	size_t GetId() const {
 	    return id_;
 	}
@@ -569,7 +574,7 @@ public:
 		return 0;
 	}
 
-    int FindFirst(EdgeId e) {
+    int FindFirst(EdgeId e) const {
         for (size_t i = 0; i < Size(); ++i) {
             if (data_[i] == e) {
                 return (int) i;
@@ -578,7 +583,7 @@ public:
         return -1;
     }
 
-    int FindLast(EdgeId e) {
+    int FindLast(EdgeId e) const {
         for (int i = (int) Size() - 1; i >= 0; --i) {
             if (data_[i] == e) {
                 return i;
@@ -587,7 +592,7 @@ public:
         return -1;
     }
 
-    vector<size_t> FindAll(EdgeId e, size_t start = 0) const{
+    vector<size_t> FindAll(EdgeId e, size_t start = 0) const {
         vector<size_t> result;
         for (size_t i = start; i < Size(); ++i) {
             if (data_[i] == e) {
@@ -743,9 +748,14 @@ public:
         } else {
             result.SetId(id);
         }
-        for (size_t i = 0; i < Size(); ++i) {
-            result.PushFront(g_.conjugate(data_[i]));
+        if (Empty()) {
+            return result;
         }
+        result.PushBack(g_.conjugate(Back()), 0);
+        for (int i = ((int) Size()) - 2; i >= 0; --i) {
+            result.PushBack(g_.conjugate(data_[i]), gapLength_[i + 1]);
+        }
+
         return result;
     }
 
