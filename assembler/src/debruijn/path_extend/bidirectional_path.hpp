@@ -659,7 +659,6 @@ public:
 
             vector<size_t> conj_pos = FindAll(g_.conjugate(At(begin_pos)), begin + 1);
             for (auto end_pos = conj_pos.rbegin(); end_pos != conj_pos.rend(); ++end_pos) {
-                INFO("end pos " << *end_pos << " size " <<Size())
                 VERIFY(*end_pos < Size());
                 size_t end = *end_pos;
                 if (end <= begin) {
@@ -673,7 +672,6 @@ public:
 
                 if (begin >= end) {
                     DEBUG("Found palindromic fragment from " << begin_pos << " to " << *end_pos);
-                    INFO("1end pos " << *end_pos << " size " <<Size())
                     VERIFY(*end_pos < Size());
                     size_t tail_size = Size() - *end_pos - 1;
                     size_t head_size = begin_pos;

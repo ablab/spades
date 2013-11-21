@@ -788,55 +788,61 @@ public:
             DEBUG("small path");
             return EdgeContainer();
         }
-
+        map<EdgeId, BidirectionalPath*> best_paths;
+        for (size_t iedge = 0; iedge < edges.size(); ++iedge) {
+            set<BidirectionalPath*> following_paths = path_searcher_.FindNextPaths(path, edges[iedge].e_);
+            vector<BidirectionalPath*> max_weighted = MaxWeightedPath(path, following_paths);
+            if (max_weighted.size() == 0) {
+                DEBUG("too much paths or tip");
+                DeleteMapWithPaths(best_paths);
+                DeleteNextPaths(following_paths);
+                best_paths.clear();
+                break;
+            } else {
+                best_paths[edges[iedge].e_] = new BidirectionalPath(*max_weighted[0]);
+            }
+            DeleteNextPaths(following_paths);
+        }
         set<BidirectionalPath*> next_paths;
-        if (edges.size() == 0) {
-            next_paths = path_searcher_.FindNextPaths(path, path.Back());
-            INFO("Found " << next_paths.size() << " paths");
-            for (BidirectionalPath* p : next_paths) {
-                p->PrintInfo();
-            }
-
-            //return EdgeContainer();
-        } else {
-            map<EdgeId, BidirectionalPath*> best_paths;
-            for (size_t iedge = 0; iedge < edges.size(); ++iedge) {
-                set<BidirectionalPath*> following_paths = path_searcher_.FindNextPaths(path, edges[iedge].e_);
-                vector<BidirectionalPath*> max_weighted = MaxWeightedPath(path, following_paths);
-                if (max_weighted.size() == 0) {
-                    //TODO: delete all information
-                    DEBUG("too much paths or tip");
-                    return EdgeContainer();
-                }
-                best_paths[edges[iedge].e_] = new BidirectionalPath( *max_weighted[0]);
-                for (auto iter = following_paths.begin(); iter != following_paths.end(); ++iter) {
-                    delete (*iter);
-                }
-            }
-
+        if (best_paths.size() == edges.size()) {
             for (size_t iedge = 0; iedge < edges.size(); ++iedge) {
                 next_paths.insert(best_paths[edges[iedge].e_]);
             }
         }
-
-        DEBUG("Try to choose from best paths...");
-        vector<BidirectionalPath*> best_path = MaxWeightedPath(path, next_paths);
-        EdgeContainer result;
-        if (best_path.size() == 1) {
-            INFO("Path is good!");
-            result.push_back(EdgeWithDistance((*best_path.begin())->At(0), (*best_path.begin())->GapAt(0)));
-        } else if (best_path.size() > 1) {
-            set<BidirectionalPath*> best_set(best_path.begin(), best_path.end());
-            result = TryToScaffold(path, best_set);
+        EdgeContainer result = ChooseBest(path, next_paths);
+        if (result.size() != 1) {
+            next_paths = path_searcher_.FindNextPaths(path, path.Back());
+            result = ChooseBest(path, next_paths);
         }
-        for (auto iter = next_paths.begin(); iter != next_paths.end();
-                ++iter) {
-            delete (*iter);
-        }
+        DeleteNextPaths(next_paths);
         return result;
-
     }
 private:
+    void DeleteNextPaths(set<BidirectionalPath*>& paths) {
+        for (auto i = paths.begin(); i != paths.end(); ++i) {
+            delete (*i);
+        }
+    }
+    void DeleteMapWithPaths(map<EdgeId, BidirectionalPath*> m) {
+        for (auto i = m.begin(); i != m.end(); ++i){
+            delete i->second;
+        }
+    }
+    EdgeContainer ChooseBest(const BidirectionalPath& path,
+                             set<BidirectionalPath*>& next_paths) {
+        DEBUG("Try to choose from best paths...");
+        vector<BidirectionalPath*> best_path = MaxWeightedPath(path,
+                                                               next_paths);
+        EdgeContainer result;
+        if (best_path.size() == 1) {
+            DEBUG("result is good");
+            result.push_back(EdgeWithDistance((*best_path.begin())->At(0),
+                                     (*best_path.begin())->GapAt(0)));
+        } else if (best_path.size() > 1) {
+            result = TryToScaffold(path, best_path);
+        }
+        return result;
+    }
     bool HasUniqueEdges(const BidirectionalPath& init_path,
                         const BidirectionalPath& path) {
         for (size_t i1 = 0; i1 < init_path.Size(); ++i1) {
@@ -991,7 +997,7 @@ private:
     }
 
     EdgeContainer TryToScaffold(const BidirectionalPath& path,
-                                const set<BidirectionalPath*>& paths) {
+                                const vector<BidirectionalPath*>& paths) {
         if (paths.size() == 0) {
             return EdgeContainer();
         }
