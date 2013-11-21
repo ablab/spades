@@ -226,8 +226,10 @@ class LongestPathFinder {
 
     //distance is changed!
     bool TryGetMaxDistance(VertexId v, int& distance) {
-        if (max_distance_.count(v) > 0)
-            return max_distance_[v];
+        if (max_distance_.count(v) > 0) {
+            distance = max_distance_[v];
+            return true;
+        }
 
         //minus infinity for incoming tips
         distance = std::numeric_limits<int>::min();
@@ -257,7 +259,7 @@ class LongestPathFinder {
                 return;
 
             VertexId v = vertex_stack_.back();
-            int max_dist;
+            int max_dist = 0;
             if (TryGetMaxDistance(v, max_dist)) {
                 max_distance_[v] = max_dist;
                 vertex_stack_.pop_back();
