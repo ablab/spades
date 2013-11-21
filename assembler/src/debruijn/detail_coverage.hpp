@@ -44,6 +44,14 @@ class FlankingCoverage : public GraphActionHandler<Graph>,
         return unsigned(math::round(AverageFlankingCoverage(e) * double(l)));
     }
 
+    void SetCoverageSimilarToAverageFlanking(EdgeId target, EdgeId source) {
+        SetRawCoverage(target, unsigned(math::round(AverageFlankingCoverage(source) * double(g_.length(target)))));
+    }
+
+    void SetCoverageSimilarToAverageGlobal(EdgeId target, EdgeId source) {
+        SetRawCoverage(target, unsigned(math::round(g_.coverage(source) * double(g_.length(target)))));
+    }
+
 public:
 
     //todo think about interactions with gap closer
@@ -112,9 +120,10 @@ public:
     }
 
     virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge_1,
-                             EdgeId /*new_edge_2*/) {
-        //hard to think of any other solution
-        SetRawCoverage(new_edge_1, RawCoverage(old_edge));
+                             EdgeId new_edge_2) {
+        //todo maybe improve later
+        SetCoverageSimilarToAverageFlanking(new_edge_1, old_edge);
+        SetCoverageSimilarToAverageGlobal(new_edge_2, old_edge);
     }
 
     virtual void HandleDelete(EdgeId e) {
@@ -159,7 +168,6 @@ private:
     DECL_LOGGER("FlankingCoverage")
     ;
 };
-
 
 template<class Graph, class CountIndex>
 class SimultaneousCoverageFiller {

@@ -220,16 +220,17 @@ class LongestPathFinder {
     typedef typename Graph::VertexId VertexId;
     const Component<Graph>& component_;
     const Graph& g_;
-    map<VertexId, size_t> max_distance_;
+    map<VertexId, int> max_distance_;
     vector<VertexId> vertex_stack_;
     bool cycle_detected_;
 
-    //-1u if can't be counted yet
-    size_t TryGetMaxDistance(VertexId v) {
+    //distance is changed!
+    bool TryGetMaxDistance(VertexId v, int& distance) {
         if (max_distance_.count(v) > 0)
             return max_distance_[v];
 
-        size_t answer = 0;
+        //minus infinity for incoming tips
+        distance = std::numeric_limits<int>::min();
         FOREACH (EdgeId e, g_.IncomingEdges(v)) {
             VertexId start = g_.EdgeStart(e);
             if (component_.contains(e)) {
@@ -238,13 +239,15 @@ class LongestPathFinder {
                         cycle_detected_ = true;
                     }
                     vertex_stack_.push_back(start);
-                    return -1u;
+                    return false;
                 } else {
-                    answer = std::max(answer, max_distance_[start] + g_.length(e));
+                    distance = std::max(distance, max_distance_[start] + int(g_.length(e)));
                 }
+            } else {
+                distance = std::max(distance, 0);
             }
         }
-        return answer;
+        return true;
     }
 
     void ProcessVertex(VertexId init_v) {
@@ -254,8 +257,8 @@ class LongestPathFinder {
                 return;
 
             VertexId v = vertex_stack_.back();
-            size_t max_dist = TryGetMaxDistance(v);
-            if (max_dist != -1u) {
+            int max_dist;
+            if (TryGetMaxDistance(v, max_dist)) {
                 max_distance_[v] = max_dist;
                 vertex_stack_.pop_back();
             }
@@ -269,7 +272,7 @@ public:
 
     //-1u if component contains a cycle
     size_t Find() {
-        size_t answer = 0;
+        int answer = 0;
         FOREACH(VertexId v, component_.terminating_vertices()) {
             ProcessVertex(v);
             if (cycle_detected_)
@@ -277,7 +280,8 @@ public:
             VERIFY(max_distance_.count(v) > 0);
             answer = std::max(answer, get(max_distance_, v));
         }
-        return answer;
+        VERIFY(answer > 0);
+        return size_t(answer);
     }
 };
 
@@ -291,29 +295,34 @@ class ComponentChecker {
     size_t length_bound_;
     size_t tip_allowing_length_bound_;
     size_t longest_connecting_path_bound_;
+    double max_coverage_;
+
+    bool CoverageCheck(const Component<Graph>& component) const {
+        FOREACH(EdgeId e, component.edges()) {
+            DEBUG("Too high coverage! Component contains highly covered edge " << g_.str(e)
+                  << " while threshold was " << max_coverage_);
+            if (math::gr(g_.coverage(e), max_coverage_)) {
+                return false;
+            }
+        }
+        return true;
+    }
 
 public:
     ComponentChecker(const Graph& g, size_t vertex_count_limit, size_t length_bound,
                      size_t tip_allowing_length_bound,
-                     size_t longest_connecting_path_bound)
+                     size_t longest_connecting_path_bound,
+                     double max_coverage)
             : g_(g), vertex_count_limit_(vertex_count_limit),
               length_bound_(length_bound),
               tip_allowing_length_bound_(tip_allowing_length_bound),
-              longest_connecting_path_bound_(longest_connecting_path_bound) {
+              longest_connecting_path_bound_(longest_connecting_path_bound),
+              max_coverage_(max_coverage) {
     }
 
     bool SizeCheck(const Component<Graph>& component) const {
         if (component.inner_vertex_cnt() > vertex_count_limit_) {
             DEBUG("Too many vertices! More than " << vertex_count_limit_);
-            return false;
-        }
-        if (!component.contains_deadends()
-                && component.length() > length_bound_) {
-            DEBUG("Too long component of length " << component.length() << "! Longer than length bound " << length_bound_);
-            return false;
-        }
-        if (component.length() > tip_allowing_length_bound_) {
-            DEBUG("Too long component of length " << component.length() << "! Longer than tip allowing length bound " << tip_allowing_length_bound_);
             return false;
         }
         return true;
@@ -323,18 +332,27 @@ public:
         DEBUG("Performing full check of the component");
         size_t longest_connecting_path = LongestPathFinder<Graph>(component).Find();
         bool answer = true;
+        //todo add check on tip length in both cases!
         if (longest_connecting_path == -1u) {
             DEBUG("Failed to find longest connecting path (check for cycles)");
+            if (!component.contains_deadends()
+                    && component.length() > length_bound_) {
+                DEBUG("Too long component of length " << component.length() << "! Longer than length bound " << length_bound_);
+                return false;
+            }
+            if (component.length() > tip_allowing_length_bound_) {
+                DEBUG("Too long component of length " << component.length() << "! Longer than tip allowing length bound " << tip_allowing_length_bound_);
+                return false;
+            }
         } else {
             DEBUG("Length of longest path: " << longest_connecting_path << "; threshold: " << longest_connecting_path_bound_);
             answer &= longest_connecting_path < longest_connecting_path_bound_;
         }
-        return answer && SizeCheck(component);
+        return answer && SizeCheck(component) && CoverageCheck(component);
     }
 
 private:
-    DECL_LOGGER("RelativelyLowCoveredComponentChecker")
-    ;
+    DECL_LOGGER("RelativelyLowCoveredComponentChecker");
 };
 
 template<class Graph>
@@ -440,7 +458,6 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
     size_t length_bound_;
     size_t tip_allowing_length_bound_;
     size_t longest_connecting_path_bound_;
-    //todo use it as guarding threshold?
     double max_coverage_;
     //bound on the number of inner vertices
     size_t vertex_count_limit_;
@@ -499,7 +516,7 @@ protected:
             INFO("Looking for component");
             ComponentChecker<Graph> checker(this->g(), vertex_count_limit_, length_bound_,
                                             tip_allowing_length_bound_,
-                                            longest_connecting_path_bound_);
+                                            longest_connecting_path_bound_, max_coverage_);
             //case of e being loop is handled implicitly!
             ComponentSearcher<Graph> component_searcher(
                     this->g(), rel_helper_, checker, e);

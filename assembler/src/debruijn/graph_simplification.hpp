@@ -671,7 +671,7 @@ void SimplificationCycle(conj_graph_pack& gp,
     rcc.length_bound = 200;
     rcc.tip_allowing_length_bound = 200;
     rcc.longest_connecting_path_bound = 150;
-    rcc.max_coverage = std::numeric_limits<double>::max();
+    rcc.max_coverage = 400.;
     rcc.vertex_count_limit = 20;
 
     RemoveRelativelyLowCoverageComponents(gp.g, gp.flanking_cov,
