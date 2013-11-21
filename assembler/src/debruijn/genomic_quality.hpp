@@ -202,7 +202,7 @@ public:
         auto edge_colorer = make_shared<visualization::CompositeEdgeColorer<Graph>>("black");
         edge_colorer->AddColorer(colorer_);
         edge_colorer->AddColorer(make_shared<visualization::SetColorer<Graph>>(this->g(), vector<EdgeId>(1, e), "green"));
-        auto resulting_colorer = make_shared<visualization::CompositeGraphColorer<Graph>>(colorer_, edge_colorer);
+        shared_ptr<visualization::GraphColorer<Graph>> resulting_colorer = make_shared<visualization::CompositeGraphColorer<Graph>>(colorer_, edge_colorer);
 
         omnigraph::visualization::WriteComponent(omnigraph::EdgeNeighborhood<Graph>(this->g(), e, 50, 250)
                 , output_folder_ + "edge_" +  ToString(this->g().int_id(e))

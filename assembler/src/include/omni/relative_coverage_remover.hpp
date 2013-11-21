@@ -2,7 +2,7 @@
 
 #include "standard_base.hpp"
 #include "graph_component.hpp"
-#include "graph_colorer.hpp"
+#include "omni/visualization/graph_colorer.hpp"
 #include "graph_processing_algorithm.hpp"
 
 namespace omnigraph {
