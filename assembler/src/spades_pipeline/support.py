@@ -22,6 +22,8 @@ SPADES_WARN_MESSAGE = " WARN "
 # constants of reads types
 READS_TYPES_NOT_USED_IN_CONSTRUCTION = "pacbio"
 READS_TYPES_NOT_USED_IN_HAMMER = "pacbio"
+# for correct warnings detection in case of continue_mode
+continue_logfile_offset = None
 
 
 def error(err_str, log=None, prefix=SPADES_PY_ERROR_MESSAGE):
@@ -201,14 +203,44 @@ def save_data_to_file(data, file):
 
 
 def get_warnings(log_filename):
+    def already_saved(list_to_check, suffix): # for excluding duplicates (--continue-from may cause them)
+        for item in list_to_check:
+            if item.endswith(suffix):
+                return True
+        return False
+
+    ### for capturing correct warnings in case of continue_mode
+    if continue_logfile_offset:
+        continued_log = open(log_filename, 'r')
+        continued_log.seek(continue_logfile_offset)
+        continued_stage_phrase = continued_log.readline()
+        while not continued_stage_phrase.strip():
+            continued_stage_phrase = continued_log.readline()
+        lines_to_check = continued_log.readlines()
+        continued_log.close()
+
+        all_lines = open(log_filename, 'r').readlines()
+        failed_stage_index = all_lines.index(continued_stage_phrase)
+        lines_to_check = all_lines[:failed_stage_index] + lines_to_check
+    else:
+        lines_to_check = open(log_filename, 'r').readlines()
+
     spades_py_warns = []
     spades_warns = []
-    for line in open(log_filename, 'r'):
+    WARN_SUMMARY_PREFIX = ' * '
+    for line in lines_to_check:
+        if line.startswith(WARN_SUMMARY_PREFIX):
+            continue
         if line.find(SPADES_PY_WARN_MESSAGE) != -1:
-            line = line.replace(SPADES_PY_WARN_MESSAGE, '')
-            spades_py_warns.append(' * ' + line.strip())
+            suffix = line[line.find(SPADES_PY_WARN_MESSAGE) + len(SPADES_PY_WARN_MESSAGE):].strip()
+            line = line.replace(SPADES_PY_WARN_MESSAGE, '').strip()
+            if not already_saved(spades_py_warns, suffix):
+                spades_py_warns.append(WARN_SUMMARY_PREFIX + line)
         elif line.find(SPADES_WARN_MESSAGE) != -1:
-            spades_warns.append(' * ' + line.strip())
+            suffix = line[line.find(SPADES_WARN_MESSAGE) + len(SPADES_WARN_MESSAGE):].strip()
+            line = line.strip()
+            if not already_saved(spades_warns, suffix):
+                spades_warns.append(WARN_SUMMARY_PREFIX + line)
     return spades_py_warns, spades_warns
 
 
@@ -224,6 +256,8 @@ def log_warnings(log):
     log_file = get_logger_filename(log)
     if not log_file:
         return False
+    for h in log.__dict__['handlers']:
+        h.flush()
     spades_py_warns, spades_warns = get_warnings(log_file)
     if spades_py_warns or spades_warns:
         log.info("\n======= SPAdes pipeline finished WITH WARNINGS!")
@@ -244,6 +278,17 @@ def log_warnings(log):
         log.removeHandler(warnings_handler)
         return True
     return False
+
+
+def continue_from_here(log):
+    if options_storage.continue_mode:
+        options_storage.continue_mode = False
+        log_filename = get_logger_filename(log)
+        if log_filename:
+            log_file = open(log_filename, 'r')
+            log_file.seek(0, 2) # seek to the end of file
+            global continue_logfile_offset
+            continue_logfile_offset = log_file.tell()
 
 
 def get_latest_dir(pattern):

@@ -203,6 +203,11 @@ def fill_cfg(options_to_parse, log):
 
         elif opt == "--continue":
             options_storage.continue_mode = True
+        elif opt == "--continue-from":
+            if arg not in ['ec', 'as', 'mc'] and not arg.startswith('k'):
+                support.error("wrong value for --continue-from option: " + arg + " (only 'ec', 'as', 'k<int>', 'mc' are available)", log)
+            options_storage.continue_mode = True
+            options_storage.continue_from = arg
 
         elif opt == '-t' or opt == "--threads":
             options_storage.threads = int(arg)
@@ -318,12 +323,34 @@ def fill_cfg(options_to_parse, log):
     #corrector can work only if contigs exist (not only error correction)
     if (not options_storage.only_error_correction) and options_storage.mismatch_corrector:
         cfg["mismatch_corrector"] = empty_config()
-        cfg["mismatch_corrector"].__dict__["skip-masked"] = ""
+        cfg["mismatch_corrector"].__dict__["skip-masked"] = None
         cfg["mismatch_corrector"].__dict__["bwa"] = os.path.join(bin_home, "bwa-spades")
         cfg["mismatch_corrector"].__dict__["threads"] = options_storage.threads
         cfg["mismatch_corrector"].__dict__["output-dir"] = options_storage.output_dir
 
     return cfg, dataset_data
+
+
+def check_cfg_for_continue_from(cfg):
+    if options_storage.continue_from == 'ec' and ("error_correction" not in cfg):
+        support.error("failed to continue from read error correction because this stage was not specified in the original run!")
+    if options_storage.continue_from == 'mc' and ("mismatch_corrector" not in cfg):
+        support.error("failed to continue from mismatch correction because this stage was not specified in the original run!")
+    if options_storage.continue_from == 'as' or options_storage.continue_from.startswith('k'):
+        if "assembly" not in cfg:
+            support.error("failed to continue from assembling because this stage was not specified in the original run!")
+        if options_storage.continue_from.startswith('k'):
+            correct_k = False
+            k_to_check = options_storage.k_mers
+            if not k_to_check:
+                k_to_check = list(set(options_storage.k_mers_short + options_storage.k_mers_150 + options_storage.k_mers_250))
+            for k in k_to_check:
+                if "k%d" % k == options_storage.continue_from:
+                    correct_k = True
+                    break
+            if not correct_k:
+                support.error("failed to continue from K=%s because this K was not specified in the original run "
+                              "and could not be set automatically!" % options_storage.continue_from[1:])
 
 
 def get_options_from_params(params_filename):
@@ -363,6 +390,8 @@ def main():
         if not options:
             support.error("failed to parse command line of the previous run! Please restart from the beginning.")
         cfg, dataset_data = fill_cfg(options, log)
+        if options_storage.continue_from:
+            check_cfg_for_continue_from(cfg)
         options_storage.continue_mode = True
 
     log_filename = os.path.join(cfg["common"].output_dir, "spades.log")
@@ -410,12 +439,14 @@ def main():
 
         corrected_dataset_yaml_filename = ''
         if "error_correction" in cfg:
+            STAGE_NAME = "Read error correction"
             bh_cfg = merge_configs(cfg["error_correction"], cfg["common"])
             corrected_dataset_yaml_filename = os.path.join(bh_cfg.output_dir, "corrected.yaml")
-            if os.path.isfile(corrected_dataset_yaml_filename) and options_storage.continue_mode:
-                log.info("\n===== Skipping read error correction (already processed). \n")
+            if os.path.isfile(corrected_dataset_yaml_filename) and options_storage.continue_mode \
+                and not options_storage.continue_from == "ec":
+                log.info("\n===== Skipping %s (already processed). \n" % STAGE_NAME)
             else:
-                options_storage.continue_mode = False # continue from here
+                support.continue_from_here(log)
 
                 if "HEAPCHECK" in os.environ:
                     del os.environ["HEAPCHECK"]
@@ -439,10 +470,10 @@ def main():
                     not_used_dataset_data = None
                     bh_cfg.__dict__["dataset_yaml_filename"] = cfg["dataset"].yaml_filename
 
-                log.info("\n===== Read error correction started. \n")
+                log.info("\n===== %s started. \n" % STAGE_NAME)
                 bh_logic.run_bh(corrected_dataset_yaml_filename, tmp_configs_dir, bin_home, bh_cfg, not_used_dataset_data,
                     ext_python_modules_home, log)
-                log.info("\n===== Read error correction finished. \n")
+                log.info("\n===== %s finished. \n" % STAGE_NAME)
 
         result_contigs_filename = os.path.join(cfg["common"].output_dir, "contigs.fasta")
         result_scaffolds_filename = os.path.join(cfg["common"].output_dir, "scaffolds.fasta")
@@ -451,6 +482,7 @@ def main():
         assembled_contigs_filename = os.path.join(misc_dir, "assembled_contigs.fasta")
         assembled_scaffolds_filename = os.path.join(misc_dir, "assembled_scaffolds.fasta")
         if "assembly" in cfg:
+            STAGE_NAME = "Assembling"
             spades_cfg = merge_configs(cfg["assembly"], cfg["common"])
             spades_cfg.__dict__["result_contigs"] = result_contigs_filename
             spades_cfg.__dict__["result_scaffolds"] = result_scaffolds_filename
@@ -458,13 +490,19 @@ def main():
 
             if options_storage.continue_mode and (os.path.isfile(spades_cfg.result_contigs)
                                                   or ("mismatch_corrector" in cfg and
-                                                      os.path.isfile(assembled_contigs_filename))):
-                log.info("\n===== Skipping assembling (already processed). \n")
+                                                      os.path.isfile(assembled_contigs_filename)))\
+                and not options_storage.continue_from == 'as' \
+                and not (options_storage.continue_from and options_storage.continue_from.startswith('k')):
+
+                log.info("\n===== Skipping %s (already processed). \n" % STAGE_NAME)
                 # calculating latest_dir for the next stages
                 latest_dir = support.get_latest_dir(os.path.join(spades_cfg.output_dir, "K*"))
                 if not latest_dir:
-                    support.error("failed to continue the previous run! Please restart from the beginning.")
+                    support.error("failed to continue the previous run! Please restart from previous stages or from the beginning.", log)
             else:
+                if options_storage.continue_from == 'as':
+                    support.continue_from_here(log)
+
                 if os.path.isfile(corrected_dataset_yaml_filename):
                     dataset_data = pyyaml.load(open(corrected_dataset_yaml_filename, 'r'))
                     dataset_data = support.relative2abs_paths(dataset_data, os.path.dirname(corrected_dataset_yaml_filename))
@@ -485,7 +523,7 @@ def main():
                 if "heap_check" in spades_cfg.__dict__:
                     os.environ["HEAPCHECK"] = spades_cfg.heap_check
 
-                log.info("\n===== Assembling started.\n")
+                log.info("\n===== %s started.\n" % STAGE_NAME)
 
                 # creating dataset
                 dataset_filename = os.path.join(spades_cfg.output_dir, "dataset.info")
@@ -512,11 +550,15 @@ def main():
                     if os.path.isfile(spades_cfg.additional_contigs):
                         shutil.move(spades_cfg.additional_contigs, misc_dir)
 
-                log.info("\n===== Assembling finished. \n")
+                if options_storage.continue_mode and options_storage.continue_from and options_storage.continue_from.startswith('k'):
+                    support.error("failed to continue from K=%s because this K was not processed in the original run!"
+                                  % options_storage.continue_from[1:], log)
+                log.info("\n===== %s finished. \n" % STAGE_NAME)
 
             #corrector
             if "mismatch_corrector" in cfg and (os.path.isfile(result_contigs_filename) or
                                                 (options_storage.continue_mode and os.path.isfile(assembled_contigs_filename))):
+                STAGE_NAME = "Mismatch correction"
                 to_correct = dict()
                 to_correct["contigs"] = (result_contigs_filename, assembled_contigs_filename)
                 if os.path.isfile(result_scaffolds_filename) or (options_storage.continue_mode and
@@ -530,11 +572,14 @@ def main():
                     shutil.move(old, new)
 
                 if options_storage.continue_mode and os.path.isfile(result_contigs_filename) and \
-                    (os.path.isfile(result_scaffolds_filename) or not os.path.isfile(assembled_scaffolds_filename)):
-                    log.info("\n===== Skipping mismatch correction (already processed). \n")
+                    (os.path.isfile(result_scaffolds_filename) or not os.path.isfile(assembled_scaffolds_filename)) \
+                    and not options_storage.continue_from == 'mc':
+                    log.info("\n===== Skipping %s (already processed). \n" % STAGE_NAME)
                 else:
-                    log.info("\n===== Mismatch correction started.")
+                    if options_storage.continue_from == 'mc':
+                        support.continue_from_here(log)
 
+                    log.info("\n===== %s started." % STAGE_NAME)
                     # detecting paired-end library with the largest insert size
                     dataset_data = pyyaml.load(open(options_storage.dataset_yaml_filename, 'r')) ### initial dataset, i.e. before error correction
                     dataset_data = support.relative2abs_paths(dataset_data, os.path.dirname(options_storage.dataset_yaml_filename))
@@ -543,14 +588,19 @@ def main():
                         if reads_library['type'] == 'paired-end':
                             paired_end_libraries_ids.append(id)
                     if not len(paired_end_libraries_ids):
-                        support.error('Mismatch correction cannot be performed without at least one paired-end library!')
+                        support.error('Mismatch correction cannot be performed without at least one paired-end library!', log)
                     estimated_params = load_config_from_file(os.path.join(latest_dir, "_est_params.info"))
-                    max_insert_size = -1
+                    max_insert_size = 0.0
                     target_paired_end_library_id = -1
                     for id in paired_end_libraries_ids:
                         if float(estimated_params.__dict__["insert_size_" + str(id)]) > max_insert_size:
                             max_insert_size = float(estimated_params.__dict__["insert_size_" + str(id)])
                             target_paired_end_library_id = id
+                    if max_insert_size == 0.0:
+                        if options_storage.continue_mode or options_storage.continue_from == 'mc':
+                            support.error("failed to continue the previous run! Please restart from previous stages or from the beginning.", log)
+                        support.error('Mismatch correction cannot be performed without at least one '
+                                      'paired-end library (estimated insert size is 0.0 for all libraries)!', log)
                     yaml_dirname = os.path.dirname(options_storage.dataset_yaml_filename)
                     cfg["mismatch_corrector"].__dict__["1"] = list(map(lambda x: os.path.join(yaml_dirname, x),
                         dataset_data[target_paired_end_library_id]['left reads']))
@@ -574,7 +624,7 @@ def main():
                                 args.append('-' + key)
                             else:
                                 args.append('--' + key)
-                            if value:
+                            if value is not None:
                                 args.append(value)
 
                     # processing contigs and scaffolds (or only contigs)
@@ -583,7 +633,7 @@ def main():
                             log.info("\n== Skipping processing of " + k + " (already processed)\n")
                             continue
 
-                        options_storage.continue_mode = False
+                        support.continue_from_here(log)
                         log.info("\n== Processing of " + k + "\n")
 
                         cur_args = args[:]
@@ -602,7 +652,7 @@ def main():
                         if os.path.isdir(tmp_dir_for_corrector):
                             shutil.rmtree(tmp_dir_for_corrector)
 
-                    log.info("\n===== Mismatch correction finished.\n")
+                    log.info("\n===== %s finished.\n" % STAGE_NAME)
 
         if not cfg["common"].developer_mode and os.path.isdir(tmp_configs_dir):
             shutil.rmtree(tmp_configs_dir)

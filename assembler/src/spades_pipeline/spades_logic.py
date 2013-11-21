@@ -71,14 +71,21 @@ def update_k_mers_in_special_cases(cur_k_mers, RL, log):
     return cur_k_mers
 
 
-def run_iteration(configs_dir, execution_home, cfg, log, K, use_additional_contigs, last_one):
+def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, use_additional_contigs, last_one):
     data_dir = os.path.join(cfg.output_dir, "K%d" % K)
     if options_storage.continue_mode:
-        if os.path.isfile(os.path.join(data_dir, "final_contigs.fasta")):
+        if options_storage.continue_from == "k%d" % K:
+            if use_additional_contigs:
+                additional_contigs_fname = os.path.join(cfg.output_dir, "K%d" % prev_K, "before_rr.fasta")
+                if os.path.isfile(additional_contigs_fname):
+                    shutil.copyfile(additional_contigs_fname, os.path.join(cfg.output_dir, "simplified_contigs.fasta"))
+                else:
+                    support.error("failed to continue the previous run from K=%d! "
+                                  "Please restart from previous stages or from the beginning." % K, log)
+        elif os.path.isfile(os.path.join(data_dir, "final_contigs.fasta")):
             log.info("\n== Skipping assembler: " + ("K%d" % K) + " (already processed)")
             return
-        else:
-            options_storage.continue_mode = False # continue from here
+        support.continue_from_here(log)
 
     if os.path.exists(data_dir):
         shutil.rmtree(data_dir)
@@ -118,16 +125,18 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, log):
     if not isinstance(cfg.iterative_K, list):
         cfg.iterative_K = [cfg.iterative_K]
     cfg.iterative_K = sorted(cfg.iterative_K)
+    prev_K = None
 
     bin_reads_dir = os.path.join(cfg.output_dir, ".bin_reads")
     if os.path.isdir(bin_reads_dir) and not options_storage.continue_mode:
         shutil.rmtree(bin_reads_dir)
 
     if len(cfg.iterative_K) == 1:
-        run_iteration(configs_dir, execution_home, cfg, log, cfg.iterative_K[0], False, True)
+        run_iteration(configs_dir, execution_home, cfg, log, cfg.iterative_K[0], prev_K, False, True)
         K = cfg.iterative_K[0]
     else:
-        run_iteration(configs_dir, execution_home, cfg, log, cfg.iterative_K[0], False, False)
+        run_iteration(configs_dir, execution_home, cfg, log, cfg.iterative_K[0], prev_K, False, False)
+        prev_K = cfg.iterative_K[0]
         RL = get_read_length(cfg.output_dir, cfg.iterative_K[0], dataset_data)
         cfg.iterative_K = update_k_mers_in_special_cases(cfg.iterative_K, RL, log)
         if cfg.iterative_K[1] + 1 > RL:
@@ -135,7 +144,7 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, log):
                 support.warning("Second value of iterative K (%d) exceeded estimated read length (%d). "
                                 "Rerunning for the first value of K (%d) with Repeat Resolving" %
                                 (cfg.iterative_K[1], RL, cfg.iterative_K[0]), log)
-                run_iteration(configs_dir, execution_home, cfg, log, cfg.iterative_K[0], False, True)
+                run_iteration(configs_dir, execution_home, cfg, log, cfg.iterative_K[0], prev_K, False, True)
                 K = cfg.iterative_K[0]
         else:
             rest_of_iterative_K = cfg.iterative_K
@@ -144,7 +153,8 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, log):
             for K in rest_of_iterative_K:
                 count += 1
                 last_one = count == len(cfg.iterative_K) or (rest_of_iterative_K[count] + 1 > RL)
-                run_iteration(configs_dir, execution_home, cfg, log, K, True, last_one)
+                run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, True, last_one)
+                prev_K = K
                 if last_one:
                     break
             if count < len(cfg.iterative_K):
