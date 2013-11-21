@@ -659,6 +659,7 @@ public:
 
             vector<size_t> conj_pos = FindAll(g_.conjugate(At(begin_pos)), begin + 1);
             for (auto end_pos = conj_pos.rbegin(); end_pos != conj_pos.rend(); ++end_pos) {
+                INFO("end pos " << *end_pos << " size " <<Size())
                 VERIFY(*end_pos < Size());
                 size_t end = *end_pos;
                 if (end <= begin) {
@@ -672,7 +673,7 @@ public:
 
                 if (begin >= end) {
                     DEBUG("Found palindromic fragment from " << begin_pos << " to " << *end_pos);
-
+                    INFO("1end pos " << *end_pos << " size " <<Size())
                     VERIFY(*end_pos < Size());
                     size_t tail_size = Size() - *end_pos - 1;
                     size_t head_size = begin_pos;
@@ -693,8 +694,12 @@ public:
 
                     if (delete_tail) {
                         PopBack(tail_size + palindrom_half_size);
+                        FindConjEdges();
+                        return;
                     } else {
                         GetConjPath()->PopBack(head_size + palindrom_half_size);
+                        FindConjEdges();
+                        return;
                     }
                 }
             }
@@ -748,27 +753,6 @@ public:
 
     vector<EdgeId> ToVector() const {
         return vector<EdgeId>(data_.begin(), data_.end());
-    }
-
-    //Poor fix
-    bool CameToInterstrandBulge() const {
-        EdgeId lastEdge = Back();
-        VertexId lastVertex = g_.EdgeEnd(lastEdge);
-
-        if (g_.OutgoingEdgeCount(lastVertex) == 2) {
-            vector<EdgeId> bulgeEdges(g_.out_begin(lastVertex), g_.out_end(lastVertex));
-            VertexId nextVertex = g_.EdgeEnd(bulgeEdges[0]);
-
-            if (bulgeEdges[0] == g_.conjugate(bulgeEdges[1]) &&
-                    nextVertex == g_.EdgeEnd(bulgeEdges[1]) &&
-                    g_.CheckUniqueOutgoingEdge(nextVertex) &&
-                    *(g_.out_begin(nextVertex)) == g_.conjugate(lastEdge)) {
-
-                DEBUG("Came to interstrand bulge " << g_.int_id(lastEdge));
-                return true;
-            }
-        }
-        return false;
     }
 
     bool IsInterstrandBulge() const {
