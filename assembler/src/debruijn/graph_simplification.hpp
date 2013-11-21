@@ -653,8 +653,8 @@ void SimplificationCycle(conj_graph_pack& gp,
     auto colorer = DefaultGPColorer(gp);
 
     //nontrivial low covered components deleted (folder low_cov_components)
-    const string folder = cfg::get().output_dir + "low_cov_components/";
-    make_dir(folder);
+    const string folder = cfg::get().output_dir + "pictures/low_cov_components/";
+    path::make_dirs(folder);
     boost::function<void(set<EdgeId>)> removal_handler_f_1 = boost::bind(
             &omnigraph::simplification::VisualizeNontrivialComponentAutoInc<Graph>, boost::ref(gp.g), _1,
             folder, boost::ref(labeler), colorer);

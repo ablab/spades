@@ -178,6 +178,7 @@ class QualityEdgeLocalityPrintingRH : public QualityLoggingRemovalHandler<Graph>
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     const GraphLabeler<Graph>& labeler_;
+    std::shared_ptr<visualization::GraphColorer<Graph>> colorer_;
     const string& output_folder_;
 //  size_t black_removed_;
 //  size_t colored_removed_;
@@ -185,19 +186,28 @@ public:
     QualityEdgeLocalityPrintingRH(const Graph& g
             , const EdgeQuality<Graph>& quality_handler
             , const GraphLabeler<Graph>& labeler
+            , std::shared_ptr<visualization::GraphColorer<Graph>> colorer
             , const string& output_folder) :
             base(g, quality_handler),
-            labeler_(labeler), output_folder_(output_folder){
+            labeler_(labeler),
+            colorer_(colorer),
+            output_folder_(output_folder) {
+        path::make_dirs(output_folder_);
     }
 
     virtual void HandlePositiveQuality(EdgeId e) {
-        string folder = output_folder_ + "colored_edges_deleted/";
-        path::make_dir(folder);
         //todo magic constant
 //          map<EdgeId, string> empty_coloring;
+
+        auto edge_colorer = make_shared<visualization::CompositeEdgeColorer<Graph>>("black");
+        edge_colorer->AddColorer(colorer_);
+        edge_colorer->AddColorer(make_shared<visualization::SetColorer<Graph>>(this->g(), vector<EdgeId>(1, e), "green"));
+        auto resulting_colorer = make_shared<visualization::CompositeGraphColorer<Graph>>(colorer_, edge_colorer);
+
         omnigraph::visualization::WriteComponent(omnigraph::EdgeNeighborhood<Graph>(this->g(), e, 50, 250)
-                , folder + "edge_" +  ToString(this->g().int_id(e)) + "_" + ToString(this->quality_handler().quality(e)) + ".dot"
-                , omnigraph::visualization::DefaultColorer(this->g()), labeler_);
+                , output_folder_ + "edge_" +  ToString(this->g().int_id(e))
+                    + "_" + ToString(this->quality_handler().quality(e)) + ".dot"
+                , resulting_colorer, labeler_);
     }
 
 private:

@@ -16,6 +16,7 @@
 #include "verify.hpp"
 
 namespace path {
+//todo review and make names consistent!
 
 typedef std::vector<std::string> files_t;
 
@@ -25,6 +26,8 @@ void remove_dir(std::string const& folder);
 bool is_regular_file(std::string const& path);
 std::string append_path(std::string const& prefix, std::string const& suffix);
 std::string current_dir();
+
+//todo why non-cons argument?!
 void make_full_path(std::string& path);
 std::string filename(std::string const& path);
 std::string basename(std::string const& path);
@@ -50,6 +53,17 @@ inline void CheckFileExistenceFATAL(std::string filename) {
   VERIFY_MSG(FileExists(filename), "File " << filename << " doesn't exist or can't be read!\n");
 }
 
+inline void make_dirs(const std::string& path) {
+  VERIFY(!path.empty());
+
+  size_t slash_pos = 0;
+  while ((slash_pos = path.find_first_of('/', slash_pos + 1)) != std::string::npos) {
+    make_dir(path.substr(0, slash_pos));
+  }
+  if (path[path.size() - 1] != '/') {
+    make_dir(path);
+  }
+}
 
 // doesn't support symlinks
 std::string resolve(std::string const& path);

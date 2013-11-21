@@ -2,6 +2,7 @@
 
 #include "standard_base.hpp"
 #include "graph_component.hpp"
+#include "graph_colorer.hpp"
 #include "graph_processing_algorithm.hpp"
 
 namespace omnigraph {
@@ -23,14 +24,21 @@ void VisualizeNontrivialComponentAutoInc(
         const string& folder, const GraphLabeler<Graph>& labeler,
         shared_ptr<visualization::GraphColorer<Graph>> colorer) {
     static size_t cnt = 0;
+
+    auto edge_colorer = make_shared<visualization::CompositeEdgeColorer<Graph>>("black");
+    edge_colorer->AddColorer(colorer);
+    edge_colorer->AddColorer(make_shared<visualization::SetColorer<Graph>>(g, edges, "green"));
+//    shared_ptr<visualization::GraphColorer<Graph>>
+    auto resulting_colorer = make_shared<visualization::CompositeGraphColorer<Graph>>(colorer, edge_colorer);
     if (edges.size() > 1) {
         set<typename Graph::VertexId> vertices;
         FOREACH(auto e, edges) {
             vertices.insert(g.EdgeStart(e));
             vertices.insert(g.EdgeEnd(e));
         }
+
         visualization::WriteComponent(
-                GraphComponent<Graph>(g, vertices.begin(), vertices.end()),
+                ComponentCloser<Graph>(g, 0).CloseComponent(GraphComponent<Graph>(g, vertices.begin(), vertices.end())),
                 folder + ToString(cnt++) + ".dot", colorer, labeler);
     }
 }
