@@ -467,7 +467,6 @@ void NextPathSearcher::OrderScaffoldingCandidates(set<EdgeWithDistance, EdgeWith
             INFO("Found several back paths");
             set<BidirectionalPath*> reached_paths;
             FilterBackPaths(back_paths, g_.conjugate(current_path->GetId()), reached_paths);
-
             //Found a path back to the init path
             if (reached_paths.size() > 0) {
                 INFO("Found " << reached_paths.size() << " direct path(s) back");

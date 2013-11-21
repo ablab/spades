@@ -579,7 +579,7 @@ public:
     }
 
     int FindLast(EdgeId e) {
-        for (int i = (int) Size(); i > 0; --i) {
+        for (int i = (int) Size() - 1; i >= 0; --i) {
             if (data_[i] == e) {
                 return i;
             }
