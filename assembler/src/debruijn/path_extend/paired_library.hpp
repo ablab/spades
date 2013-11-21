@@ -154,6 +154,14 @@ struct PairedInfoLibrary {
     	return is_div_;
     }
 
+    size_t GetLeftVar() const {
+        return is_ - is_min_;
+    }
+
+    size_t GetRightVar() const {
+        return is_max_ - is_;
+    }
+
     size_t GetReadSize() const {
         return read_size_;
     }
