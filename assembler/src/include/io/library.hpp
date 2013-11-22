@@ -82,7 +82,9 @@ class SequencingLibraryBase {
   void load(const YAML::Node &node);
 
   LibraryType type() const { return type_; }
+  void set_type(LibraryType type) { type_ = type; }
   LibraryOrientation orientation() const { return orientation_; }
+  void set_orientation(LibraryOrientation orientation) { orientation_ = orientation; }
 
   void clear() {
     left_paired_reads_.clear();

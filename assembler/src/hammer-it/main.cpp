@@ -190,14 +190,36 @@ int main(int argc, char** argv) {
     using namespace hammer::correction;
     SingleReadCorrector::NoDebug pred;
     const auto& dataset = cfg::get().dataset;
-    for (auto it = dataset.reads_begin(), et = dataset.reads_end(); it != et; ++it) {
-      INFO("Correcting " << *it);
-      io::Reader irs(*it, io::PhredOffset);
-      io::osequencestream ors(path::append_path(cfg::get().output_dir, path::basename(*it) + ".fasta")); // FIXME: Proper filename
+    io::DataSet<> outdataset;
+    size_t ilib = 0;
+    for (auto it = dataset.library_begin(), et = dataset.library_end(); it != et; ++it, ++ilib) {
+      const auto& lib = *it;
+      auto outlib = lib;
+      outlib.clear();
+      outlib.set_type(io::LibraryType::SingleReads);
 
-      SingleReadCorrector read_corrector(kmer_data, pred);
-      hammer::ReadProcessor(cfg::get().max_nthreads).Run(irs, read_corrector, ors);
+      size_t iread = 0;
+      for (auto I = lib.reads_begin(), E = lib.reads_end(); I != E; ++I, ++iread) {
+          INFO("Correcting " << *I);
+
+          std::string usuffix = boost::lexical_cast<std::string>(ilib) + "_" +
+                                boost::lexical_cast<std::string>(iread) + ".cor.fasta";
+          std::string outcor = path::append_path(cfg::get().output_dir, path::basename(*I) + usuffix);
+
+          io::Reader irs(*I, io::PhredOffset);
+          io::osequencestream ors(outcor);
+
+          SingleReadCorrector read_corrector(kmer_data, pred);
+          hammer::ReadProcessor(cfg::get().max_nthreads).Run(irs, read_corrector, ors);
+          outlib.push_back_single(outcor);
+      }
+      outdataset.push_back(outlib);
     }
+    cfg::get_writable().dataset = outdataset;
+
+    std::string fname = path::append_path(cfg::get().output_dir, "corrected.yaml");
+    INFO("Saving corrected dataset description to " << fname);
+    cfg::get().dataset.save(fname);
 
 #if 0
     std::sort(classes.begin(), classes.end(),  UfCmp());
