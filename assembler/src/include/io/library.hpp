@@ -93,9 +93,9 @@ class SequencingLibraryBase {
   }
 
   void update_relative_reads_filenames(const std::string &input_dir) {
-	  std::transform(left_paired_reads_.begin(), left_paired_reads_.end(), left_paired_reads_.begin(), std::bind2nd(update_relative_filename(), input_dir));
-	  std::transform(right_paired_reads_.begin(), right_paired_reads_.end(), right_paired_reads_.begin(), std::bind2nd(update_relative_filename(), input_dir));
-	  std::transform(single_reads_.begin(), single_reads_.end(), single_reads_.begin(), std::bind2nd(update_relative_filename(), input_dir));
+      std::transform(left_paired_reads_.begin(), left_paired_reads_.end(), left_paired_reads_.begin(), std::bind2nd(update_relative_filename(), input_dir));
+      std::transform(right_paired_reads_.begin(), right_paired_reads_.end(), right_paired_reads_.begin(), std::bind2nd(update_relative_filename(), input_dir));
+      std::transform(single_reads_.begin(), single_reads_.end(), single_reads_.begin(), std::bind2nd(update_relative_filename(), input_dir));
   }
 
   void push_back_single(const std::string &reads) {
@@ -208,7 +208,7 @@ class DataSet {
 
     std::string input_dir = path::parent_path(filename);
     if (input_dir[input_dir.length() - 1] != '/')
-    	input_dir += '/';
+        input_dir += '/';
 
     load(config);
 
