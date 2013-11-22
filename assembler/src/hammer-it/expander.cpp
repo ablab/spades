@@ -35,11 +35,10 @@ bool Expander::operator()(const io::SingleRead &r) {
         if (!covered_by_solid[j] || kmer_indices[j] == -1ull)
             continue;
 
-        // FIXME: Do not lock everything
         size_t idx = kmer_indices[j];
         auto &kmer_data = data_[idx];
         if (kmer_data.changeto != idx) {
-#     pragma omp atomic
+#           pragma omp atomic
             changed_ += 1;
 
             kmer_data.lock();
