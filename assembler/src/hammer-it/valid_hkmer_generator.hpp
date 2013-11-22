@@ -50,7 +50,7 @@ class ValidHKMerGenerator {
 
   ValidHKMerGenerator()
       : kmer_(), seq_(0), qual_(0),
-        pos_(-1), end_(-1), len_(0),
+        pos_(-1), nlen_(-1), end_(-1), len_(0),
         correct_probability_(1), bad_quality_threshold_(2),
         has_more_(false), first_(true) {}
 
@@ -61,6 +61,7 @@ class ValidHKMerGenerator {
     seq_ = seq;
     qual_ = qual;
     pos_ = -1;
+    nlen_ = -1;
     end_ = -1;
     len_ = len;
     correct_probability_ = 1.0;
@@ -93,6 +94,10 @@ class ValidHKMerGenerator {
    */
   size_t pos() const {
     return pos_;
+  }
+
+  size_t nlen() const {
+    return nlen_;
   }
 
   /**
@@ -141,6 +146,7 @@ class ValidHKMerGenerator {
   const char* seq_;
   const char* qual_;
   size_t pos_;
+  size_t nlen_;
   size_t beg_;
   size_t end_;
   size_t len_;
@@ -174,10 +180,11 @@ void ValidHKMerGenerator<kK>::TrimBadQuality() {
 
 template<size_t kK>
 void ValidHKMerGenerator<kK>::Next() {
-  size_t toadd = (first_ ? kK : 1), nlen = 0;
+  size_t toadd = (first_ ? kK : 1);
   char pnucl = -1;
   double cprob = 1.0;
-  // Builf the flow-space kmer looking over homopolymer streches.
+  nlen_ = 0;
+  // Build the flow-space kmer looking over homopolymer streches.
   while (toadd) {
     // If we went past the end, then there are no new kmers anymore.
     // The current one is incomplete.
@@ -187,18 +194,18 @@ void ValidHKMerGenerator<kK>::Next() {
     }
 
     // Check, whether the current nucl is good (not 'N')
-    char cnucl = seq_[pos_ + nlen];
+    char cnucl = seq_[pos_ + nlen_];
     if (!is_nucl(cnucl)) {
       toadd = kK;
       pnucl = -1;
-      pos_ += nlen + 1;
-      nlen = 0;
+      pos_ += nlen_ + 1;
+      nlen_ = 0;
       correct_probability_ = 1.0;
       probs_.resize(0);
       continue;
     }
     if (qual_)
-      cprob *= Prob(GetQual(pos_ + nlen));
+      cprob *= Prob(GetQual(pos_ + nlen_));
 
     // If current nucl differs from previous nucl then either we're starting the
     // k-mer or just finished the homopolymer run.
@@ -221,11 +228,11 @@ void ValidHKMerGenerator<kK>::Next() {
     // If we have something to add to flowspace kmer - do it now.
     if (toadd) {
       kmer_ <<= cnucl;
-      nlen += 1;
+      nlen_ += 1;
     }
   }
 
-  pos_ += nlen;
+  pos_ += nlen_;
   first_ = false;
 }
 #endif  // HAMMER_VALIDHKMERGENERATOR_HPP__

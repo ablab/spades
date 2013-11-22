@@ -14,6 +14,7 @@ add_executable(hammer-it
                subcluster.cpp
                err_helper_table.cpp
                config_struct.cpp
+               expander.cpp
                main.cpp)
 
 target_link_libraries(hammer-it input mph_index yaml-cpp ${COMMON_LIBRARIES})

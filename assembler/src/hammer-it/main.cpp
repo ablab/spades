@@ -15,6 +15,7 @@
 #include "subcluster.hpp"
 #include "err_helper_table.hpp"
 #include "read_corrector.hpp"
+#include "expander.hpp"
 #include "config_struct.hpp"
 
 #include "openmp_wrapper.h"
@@ -85,6 +86,7 @@ int main(int argc, char** argv) {
       std::ifstream ifs(path::append_path(cfg::get().working_dir, "count.kmdata"), std::ios::binary);
       VERIFY(ifs.good());
       kmer_data.binary_read(ifs);
+      INFO("Total " << kmer_data.size() << " entries were loader");
     }
 
     std::vector<std::vector<size_t> > classes;
@@ -163,7 +165,25 @@ int main(int argc, char** argv) {
       std::ifstream ifs(path::append_path(cfg::get().working_dir, "cluster.kmdata"), std::ios::binary);
       VERIFY(ifs.good());
       kmer_data.binary_read(ifs);
+      INFO("Total " << kmer_data.size() << " entries were loader");
     }
+
+#if 1
+    INFO("Starting solid k-mers expansion in " << cfg::get().max_nthreads << " threads.");
+    while (true) {
+        Expander expander(kmer_data);
+        const io::DataSet<> &dataset = cfg::get().dataset;
+        for (auto I = dataset.reads_begin(), E = dataset.reads_end(); I != E; ++I) {
+            io::Reader irs(*I, io::PhredOffset);
+            hammer::ReadProcessor rp(cfg::get().max_nthreads);
+            rp.Run(irs, expander);
+            VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
+        }
+        INFO("" << expander.changed() << " solid k-mers were generated");
+        if (expander.changed() == 0)
+            break;
+    }
+#endif
 
 #if 0
     std::ofstream fasta_ofs("centers.fasta");
