@@ -668,7 +668,7 @@ class CorrectedRead {
       k[1] = kmer_data_[kmer_data_[!seq].changeto];
       k[1].kmer = !k[1].kmer;
 
-      if (k[0].qual > k[2].qual)
+      if (k[0].qual > k[1].qual)
         std::swap(k[0], k[1]);
       using namespace hammer;
       for (size_t i = 0; i < 2; ++i) {
