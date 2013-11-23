@@ -150,6 +150,16 @@ class IonPairAligner {
         break;
     }
 
+    if (!checkForZeroLengthRuns()) {
+      empty_ = true;
+      return;
+    }
+
+    VERIFY(cx_.len > 0);
+    VERIFY(cy_.len > 0);
+    VERIFY(x_it_ < x_end_);
+    VERIFY(y_it_ < y_end_);
+
     if (cx_.nucl == cy_.nucl) {
 
       if (cx_.len >= 4 && cy_.len >= 4) {
