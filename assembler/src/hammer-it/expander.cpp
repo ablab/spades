@@ -16,26 +16,20 @@ bool Expander::operator()(const io::SingleRead &r) {
     std::vector<size_t> kmer_indices(sz, -1ull);
 
     ValidHKMerGenerator<hammer::K> gen(r);
-    size_t read_pos = gen.trimmed_left();
-
     while (gen.HasMore()) {
         hammer::HKMer kmer = gen.kmer();
-        size_t idx = data_.seq_idx(kmer);
+        size_t idx = data_.seq_idx(kmer), kl = kmer.size();
+        size_t read_pos = gen.pos() - kl;
 
         kmer_indices[read_pos] = idx;
         if (data_[idx].changeto == idx &&
             data_[idx].qual < cfg::get().center_qual_threshold) {
-            for (size_t j = read_pos, l = kmer.size(); j < read_pos + l; ++j) {
-                if( j >= r.size()) {
-                    INFO("read_pos == " << read_pos << ", r.size() == " << r.size() << ", kmer: " << kmer << ", read: " << r.GetSequenceString());
-                    VERIFY(false);
-                }
-
+            for (size_t j = read_pos; j < read_pos + kl; ++j) {
+                VERIFY_MSG(j < sz, "read_pos == " << read_pos << ", r.size() == " << r.size() << ", kmer: " << kmer << ", read: " << r.GetSequenceString());
                 covered_by_solid[j] = true;
             }
         }
 
-        read_pos += kmer[0].len;
         gen.Next();
     }
 
