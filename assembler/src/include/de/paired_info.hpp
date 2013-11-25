@@ -12,6 +12,8 @@
 
 #include <boost/iterator/iterator_facade.hpp>
 
+#include <btree/btree_set.h>
+
 #include <cmath>
 #include <map>
 #include <limits>
@@ -94,7 +96,8 @@ inline std::ostream& operator<<(std::ostream& os, const Point &point) {
     return os << point.str();
 }
 
-typedef std::set<Point> Histogram;
+//typedef std::set<Point> Histogram;
+typedef btree::btree_set<Point> Histogram;
 
 inline bool ClustersIntersect(Point p1, Point p2) {
   return math::le(p1.d, p2.d + p1.var + p2.var) &&
@@ -675,10 +678,8 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
   }
 
   void UpdateSinglePoint(Histogram &hist, Histogram::iterator point_to_update, Point new_point) {
-      // FIXME: Just grab the hint out of erase with gcc 4.5+
-      Histogram::iterator to_remove = point_to_update++;
-      hist.erase(to_remove);
-      hist.insert(point_to_update, new_point);
+      Histogram::iterator after_removed = hist.erase(point_to_update);
+      hist.insert(after_removed, new_point);
   }
 
   void MergeData(EdgeId e1, EdgeId e2,
