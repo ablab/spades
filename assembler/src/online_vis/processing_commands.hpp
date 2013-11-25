@@ -21,9 +21,10 @@ public:
     string Usage() const {
         string answer;
         answer = answer + "Command `clip_tips` \n" + "Usage:\n"
-                + "> clip_tips <length>\n" + " This command clips tips.\n"
+                + "> clip_tips <length>\n (Y/y)" + " This command clips tips.\n"
                 + " If length is not specified, "
-                + "it will be counted from global settings ";
+                + "it will be counted from global settings. "
+                + "If second argument Y/y is specified then genomic edges will be retained.";
         return answer;
     }
 
@@ -41,7 +42,7 @@ private:
                                                             curr_env.genome());
 
         shared_ptr<func::Predicate<EdgeId>> condition = make_shared<AlwaysTrue<EdgeId>>();
-        if (args.size() > 1 && (args[1] == "Y" || args[1] == "y")) {
+        if (args.size() > 2 && (args[2] == "Y" || args[2] == "y")) {
             cout << "Trying to activate genome quality condition" << endl;
             if (curr_env.genome().size() == 0) {
                 cout << "No reference was provided!!!" << endl;
