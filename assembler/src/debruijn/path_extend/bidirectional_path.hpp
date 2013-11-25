@@ -1131,21 +1131,6 @@ size_t LoopDetector::LoopEdges(size_t skip_identical_edges, size_t min_cycle_app
     return loopSize;
 }
 
-//size_t LoopDetector::LoopLength(size_t skip_identical_edges, size_t min_cycle_appearences) const {
-//    if (skip_identical_edges > 0) {
-//        INFO("loop length " << skip_identical_edges);
-//    }
-//    size_t edges = LoopEdges(skip_identical_edges, min_cycle_appearences);
-//    size_t length = 0;
-//
-//    for (int i = path_->Size() - edges; i < (int) path_->Size(); ++i) {
-//        length += g_.length(path_->At(i));
-//    }
-//
-//    return length;
-//}
-
-
 bool LoopDetector::PathIsLoop(size_t edges) const {
     for (size_t i = 0; i < edges; ++i) {
         EdgeId e = path_->At(i);

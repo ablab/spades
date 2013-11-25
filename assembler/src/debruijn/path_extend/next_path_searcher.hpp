@@ -95,7 +95,7 @@ public:
     bool IsCycled() {
         BidirectionalPath* path = GetPrevPath(0);
         size_t identical_edges = 0;
-        bool is_cycled = path->getLoopDetector().IsCycled(5, identical_edges); //TODO: 5 - why ??
+        bool is_cycled = path->getLoopDetector().IsCycled(cfg::get().pe_params.param_set.loop_removal.mp_max_loops, identical_edges); //TODO: 5 - why ??
         delete path;
         return is_cycled;
     }
