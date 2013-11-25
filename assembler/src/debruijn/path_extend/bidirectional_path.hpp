@@ -95,6 +95,9 @@ public:
 
         return true;
     }
+
+protected:
+    DECL_LOGGER("BidirectionalPath")
 };
 
 
@@ -169,9 +172,17 @@ public:
         }
     }
 
+protected:
+    DECL_LOGGER("BidirectionalPath")
+
 };
 
+
 class BidirectionalPath: public PathListener {
+
+protected:
+    DECL_LOGGER("BidirectionalPath")
+
 
 public:
     BidirectionalPath(const Graph& g)
@@ -380,6 +391,10 @@ protected:
 public:
     void Subscribe(PathListener * listener) {
         listeners_.insert(listener);
+    }
+
+    void Unsubscribe(PathListener * listener) {
+        listeners_.erase(listener);
     }
 
 	void SetConjPath(BidirectionalPath* path) {
@@ -626,16 +641,33 @@ public:
 		return max_over;
 	}
 
-    bool Contains(const BidirectionalPath& path) const {
+    int FindFirst(const BidirectionalPath& path) const {
         if (path.Size() > Size()) {
-            return false;
+            return -1;
         }
         for (size_t i = 0; i <= Size() - path.Size(); ++i) {
             if (CompareFrom(i, path)) {
-                return true;
+                return (int) i;
             }
         }
-        return false;
+        return -1;
+    }
+
+    int FindLast(const BidirectionalPath& path) const {
+        if (path.Size() > Size()) {
+            return -1;
+        }
+        for (int i = (int) (Size() - path.Size()); i >= 0; --i) {
+            if (CompareFrom((size_t) i, path)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+
+    bool Contains(const BidirectionalPath& path) const {
+        return FindFirst(path) != 0;
     }
 
     bool Equal(const BidirectionalPath& path) const {
@@ -1117,6 +1149,9 @@ private:
     std::vector<PathPair> data_;
     size_t path_id_;
 
+protected:
+    DECL_LOGGER("BidirectionalPath")
+
 };
 
 
@@ -1269,7 +1304,7 @@ size_t LoopDetector::EdgesToRemove(size_t skip_identical_edges,
 }
 
 void LoopDetector::RemoveLoop(size_t skip_identical_edges, bool fullRemoval) {
-    auto toRemove = EdgesToRemove(skip_identical_edges, fullRemoval);
+    size_t toRemove = EdgesToRemove(skip_identical_edges, fullRemoval);
     for(size_t i = 0; i < toRemove; ++i) {
         path_->SafePopBack();
     }

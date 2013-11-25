@@ -138,8 +138,7 @@ vector<SimpleExtender *> MakePEExtenders(const conj_graph_pack& gp,
         SimpleExtensionChooser * extension = new SimpleExtensionChooser(
                 gp.g, wc, GetPriorityCoeff(libs[i], pset));
         extends.push_back(
-                new SimpleExtender(gp.g, pset.loop_removal.max_loops, extension,
-                                   investigate_loops));
+                new SimpleExtender(gp.g, extension, libs[i][0]->GetISMax(), pset.loop_removal.max_loops, investigate_loops));
     }
     return extends;
 }
@@ -158,8 +157,10 @@ vector<SimpleExtender*> MakeLongReadsExtender(
                 gp.g, paths, reads[i].GetFilteringThreshold(),
                 reads[i].GetWeightPriorityThreshold(),
                 reads[i].GetUniqueEdgePriorityThreshold());
-        SimpleExtender * longReadExtender = new SimpleExtender(gp.g, max_loops,
+        SimpleExtender * longReadExtender = new SimpleExtender(gp.g,
                                                                longReadEC,
+                                                               10000, //FIXME
+                                                               max_loops,
                                                                true);
         extends.push_back(longReadExtender);
     }
@@ -182,8 +183,9 @@ vector<ScaffoldingPathExtender*> MakeScaffoldingExtender(
         ScaffoldingExtensionChooser * scaff_chooser =
                 new ScaffoldingExtensionChooser(gp.g, counter, prior_coef);
         scafPEs.push_back(
-                new ScaffoldingPathExtender(gp.g, pset.loop_removal.max_loops,
-                                            scaff_chooser, gapJoiner));
+                new ScaffoldingPathExtender(gp.g,
+                                            scaff_chooser, gapJoiner,
+                                            libs[i][0]->GetISMax(), pset.loop_removal.max_loops, false));
     }
     return scafPEs;
 }
@@ -197,7 +199,8 @@ vector<SimpleExtender *> MakeMPExtenders(const conj_graph_pack& gp,
         MatePairExtensionChooser* chooser = new MatePairExtensionChooser(
                 gp.g, *libs[i][0], cover_map);
         SimpleExtender* mp_extender = new SimpleExtender(
-                gp.g, pset.loop_removal.mp_max_loops, chooser);
+                gp.g, chooser, libs[i][0]->GetISMax(),
+                pset.loop_removal.mp_max_loops, false);
         mpPEs.push_back(mp_extender);
     }
     return mpPEs;
@@ -259,13 +262,13 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
             gp, long_reads, pset.loop_removal.max_loops);
     vector<SimpleExtender *> shortLoopPEs = MakePEExtenders(gp, pset, libs, true);
     vector<ScaffoldingPathExtender*> scafPEs = MakeScaffoldingExtender(gp, pset, scaff_libs);
-    vector<LoopDetectingPathExtender *> all_libs(usualPEs.begin(), usualPEs.end());
+    vector<CoveringPathExtender *> all_libs(usualPEs.begin(), usualPEs.end());
     all_libs.insert(all_libs.end(), long_reads_extenders.begin(),
                     long_reads_extenders.end());
     all_libs.insert(all_libs.end(), shortLoopPEs.begin(), shortLoopPEs.end());
     all_libs.insert(all_libs.end(), scafPEs.begin(), scafPEs.end());
     CoveringPathExtender * mainPE = new CompositeExtender(
-            gp.g, pset.loop_removal.max_loops, all_libs);
+            gp.g, all_libs);
 
 //extend pe + long reads
     PathExtendResolver resolver(gp.g);
@@ -311,7 +314,7 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	all_libs.insert(all_libs.end(), shortLoopPEs.begin(), shortLoopPEs.end());
 	all_libs.insert(all_libs.end(), scafPEs.begin(), scafPEs.end());
 	all_libs.insert(all_libs.end(), mpPEs.begin(), mpPEs.end());
-	CompositeExtender* mp_main_pe = new CompositeExtender(gp.g, pset.loop_removal.max_loops, all_libs);
+	CompositeExtender* mp_main_pe = new CompositeExtender(gp.g, all_libs);
 	INFO("Growing mp paths");
 	auto mp_paths = resolver.extendSeeds(paths, *mp_main_pe);
     resolver.removeOverlaps(mp_paths, mp_main_pe->GetCoverageMap(), max_over,
@@ -332,7 +335,7 @@ void ResolveRepeatsManyLibs(conj_graph_pack& gp,
                     long_reads_extenders.end());
     all_libs.insert(all_libs.end(), shortLoopPEs.begin(), shortLoopPEs.end());
     all_libs.insert(all_libs.end(), scafPEs.begin(), scafPEs.end());
-    CompositeExtender* last_extender = new CompositeExtender(gp.g, pset.loop_removal.max_loops, all_libs);
+    CompositeExtender* last_extender = new CompositeExtender(gp.g, all_libs);
     auto last_paths = resolver.extendSeeds(mp_paths, *last_extender);
     resolver.removeOverlaps(last_paths, last_extender->GetCoverageMap(), max_over,
                     writer, output_dir);

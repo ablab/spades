@@ -65,6 +65,9 @@ public:
 
     virtual void ResolveShortLoop(BidirectionalPath& path) = 0;
 
+protected:
+    DECL_LOGGER("PathExtender")
+
 };
 
 
@@ -93,6 +96,10 @@ public:
             path.Print();
         }
     }
+
+protected:
+    DECL_LOGGER("PathExtender")
+
 };
 
 
@@ -167,6 +174,7 @@ public:
             DEBUG("Resolving short loop done");
         }
     }
+
 };
 
 
@@ -188,6 +196,10 @@ public:
     }
 
     static const int INVALID_GAP = -1000000;
+
+protected:
+    DECL_LOGGER("PathExtender")
+
 
 };
 
@@ -353,123 +365,13 @@ public:
     virtual void GrowPath(BidirectionalPath& path) = 0;
 
     virtual void GrowAll(PathContainer & paths, PathContainer * result) = 0;
-};
-
-
-
-class LoopDetectingPathExtender: public PathExtender {
 
 protected:
-    size_t maxLoops_;
-    bool investigateShortLoops_;
-    vector<BidirectionalPath*> cycled_edges_;
-
-public:
-    LoopDetectingPathExtender(const Graph & g, size_t max_loops, bool investigateShortLoops): PathExtender(g), maxLoops_(max_loops), investigateShortLoops_(investigateShortLoops)
-    {
-    }
-
-    size_t getMaxLoops() const
-    {
-        return maxLoops_;
-    }
-
-    bool isInvestigateShortLoops() const
-    {
-        return investigateShortLoops_;
-    }
-
-    void setInvestigateShortLoops(bool investigateShortLoops)
-    {
-        this->investigateShortLoops_ = investigateShortLoops;
-    }
-
-    void setMaxLoops(size_t maxLoops)
-    {
-        if (maxLoops != 0) {
-            this->maxLoops_ = maxLoops;
-        }
-    }
-
-    bool LastEdgeCycled(const BidirectionalPath& path) {
-        for (BidirectionalPath* cycle : cycled_edges_){
-            for (int i = (int)path.Size() - (int)cycle->Size();
-                    i >= (int)path.Size() - 2 * (int)cycle->Size() - 1 && i >= 0; --i) {
-                if (path.CompareFrom((size_t)i, *cycle)) {
-                    size_t begin = i + cycle->Size();
-                    INFO("find cycle from "<< i << " with size " << cycle->Size());
-                    bool cycled = true;
-                    for (size_t j = 0; begin + j < path.Size(); ++j){
-                        if (path.At(begin + j) != cycle->At(j % cycle->Size())) {
-                            cycled = false;
-                        }
-                    }
-                    if (cycled) {
-                        INFO("cycled");
-                        return true;
-                    }
-                    INFO("not cycled");
-                }
-            }
-        }
-        return false;
-    }
-
-    void AddCycledEdges(const BidirectionalPath& path, size_t count) {
-        cycled_edges_.push_back(new BidirectionalPath(path.SubPath((size_t)((int) path.Size() - (int) count))));
-        INFO("add cycle");
-        path.SubPath((size_t)((int) path.Size() - (int) count)).Print();
-    }
-
-    virtual void GrowPath(BidirectionalPath& path) {
-        while (MakeGrowStep(path)) {
-            size_t skip_identical_edges = 0;
-            if (path.getLoopDetector().IsCycled(maxLoops_,
-                                                skip_identical_edges)) {
-                DEBUG("Path is Cycled!");
-                DEBUG("skip identival edges = " << skip_identical_edges);
-                path.Print();
-                path.getLoopDetector().RemoveLoop(skip_identical_edges, false);
-                DEBUG("After delete");
-                path.Print();
-                return;
-            }
-        }
-        size_t skip_identical_edges = 0;
-        if (path.getLoopDetector().IsCycled(maxLoops_ - 1, skip_identical_edges)) {
-            DEBUG("Path is Cycled!");
-            DEBUG("skip identival edges = " << skip_identical_edges);
-            path.Print();
-            path.getLoopDetector().RemoveLoop(skip_identical_edges, false);
-            DEBUG("After delete");
-            path.Print();
-            return;
-        }
-
-    }
-
-    virtual void GrowAll(PathContainer& paths, PathContainer * result) {
-        result->clear();
-
-        for (size_t i = 0; i < paths.size(); i ++) {
-            BidirectionalPath * path = new BidirectionalPath(*paths.Get(i));
-            BidirectionalPath * conjugatePath = new BidirectionalPath(*paths.GetConjugate(i));
-            result->AddPair(path, conjugatePath);
-
-            do {
-                path->CheckGrow();
-                GrowPath(*path);
-                conjugatePath->CheckGrow();
-                GrowPath(*conjugatePath);
-            }
-            while (conjugatePath->CheckPrevious() || path->CheckPrevious());
-        }
-    }
-
+    DECL_LOGGER("PathExtender")
 };
 
 
-class CoveringPathExtender: public LoopDetectingPathExtender {
+class CoveringPathExtender: public PathExtender {
 
 protected:
 
@@ -523,10 +425,10 @@ protected:
                 SubscribeCoverageMap(conjugatePath);
 
                 do {
-					path->CheckGrow();
-					GrowPath(*path);
-					conjugatePath->CheckGrow();
-					GrowPath(*conjugatePath);
+                    path->CheckGrow();
+                    GrowPath(*path);
+                    conjugatePath->CheckGrow();
+                    GrowPath(*conjugatePath);
                 }
                 while (conjugatePath->CheckPrevious() || path->CheckPrevious());
                 path->CheckConjugateEnd();
@@ -538,16 +440,20 @@ protected:
 
 public:
 
-    CoveringPathExtender(const Graph& g_, size_t max_loops, bool investigateShortLoops): LoopDetectingPathExtender(g_, max_loops, investigateShortLoops), coverageMap_(g_) {
+    CoveringPathExtender(const Graph& g_): PathExtender(g_), coverageMap_(g_) {
     }
 
+    virtual void GrowPath(BidirectionalPath& path) {
+        while (MakeGrowStep(path)) {
+        }
+    }
 
     virtual void GrowAll(PathContainer& paths, PathContainer * result) {
         result->clear();
         PathContainer usedPaths;
 
         for (size_t i = 0; i < paths.size() && !AllPathsCovered(paths); i ++) {
-		    GrowAll(paths, usedPaths, result);
+            GrowAll(paths, usedPaths, result);
         }
 
         LengthPathFilter filter(g_, 0);
@@ -561,33 +467,239 @@ public:
 };
 
 
-class CompositeExtender: public CoveringPathExtender {
+class InsertSizeLoopDetector {
+protected:
+    const Graph& g_;
 
+    size_t min_cycle_len_;
+
+public:
+    InsertSizeLoopDetector(const Graph& g, size_t is): g_(g), min_cycle_len_(is) {
+    }
+
+    size_t GetMinCycleLenth() const {
+        return min_cycle_len_;
+    }
+
+    bool CheckCycled(const BidirectionalPath& path) const {
+        return FindCycleStart(path) != -1;
+    }
+
+    int FindCycleStart(const BidirectionalPath& path) const {
+        BidirectionalPath last(g_);
+        int i = (int) path.Size() - 1;
+        DEBUG("Looking for IS cycle " << min_cycle_len_);
+        while (i >= 0 && last.Length() < min_cycle_len_) {
+            last.PushFront(path.At(i));
+            --i;
+        }
+        last.Print();
+        DEBUG("looking for 1sr IS cycle")
+        return path.SubPath(0, i + 1).FindFirst(last);
+    }
+
+    int RemoveCycle(BidirectionalPath& path) const {
+        int pos = FindCycleStart(path);
+        DEBUG("Found IS cycle " << pos);
+        if (pos == -1) {
+            return -1;
+        }
+        int last_edge_pos = path.FindLast(path[pos]);
+        DEBUG("last edge pos " << last_edge_pos);
+        path.Print();
+        VERIFY(last_edge_pos > pos);
+        for (int i = (int) path.Size() - 1; i >= last_edge_pos; --i) {
+            path.PopBack();
+        }
+        path.Print();
+        VERIFY((int) path.Size() == last_edge_pos);
+
+        size_t skip_identical_edges = 0;
+        if (path.getLoopDetector().IsCycled(2, skip_identical_edges)) {
+            DEBUG("Path is cycled after found IS loop, skip identival edges = " << skip_identical_edges);
+            path.Print();
+            path.getLoopDetector().RemoveLoop(skip_identical_edges, false);
+            DEBUG("After removing");
+            path.Print();
+        }
+        VERIFY(pos < (int) path.Size());
+        return pos;
+    }
+};
+
+class LoopDetectingPathExtender: public CoveringPathExtender {
+
+protected:
+    size_t maxLoops_;
+    bool investigateShortLoops_;
+    vector<BidirectionalPath*> cycled_edges_;
+    InsertSizeLoopDetector is_detector_;
+
+public:
+    LoopDetectingPathExtender(const Graph & g, size_t max_loops,
+            bool investigateShortLoops,
+            size_t is):
+        CoveringPathExtender(g),
+        maxLoops_(max_loops),
+        investigateShortLoops_(investigateShortLoops),
+        is_detector_(g, is)
+    {
+    }
+
+    size_t getMaxLoops() const
+    {
+        return maxLoops_;
+    }
+
+    bool isInvestigateShortLoops() const
+    {
+        return investigateShortLoops_;
+    }
+
+    void setInvestigateShortLoops(bool investigateShortLoops)
+    {
+        this->investigateShortLoops_ = investigateShortLoops;
+    }
+
+    void setMaxLoops(size_t maxLoops)
+    {
+        if (maxLoops != 0) {
+            this->maxLoops_ = maxLoops;
+        }
+    }
+
+    bool LastEdgeCycled(const BidirectionalPath& path) {
+        DEBUG("Checking existing loops");
+        int j = 0;
+        for (BidirectionalPath* cycle : cycled_edges_){
+            VERIFY(!cycle->Empty());
+            VERBOSE_POWER2(j++, "checking ")
+            size_t length = 0;
+            int pos = path.FindLast(*cycle);
+            DEBUG("Found " << pos << " " << cycle->Size());
+            for (int i = pos; i >= 0; i -= (int) cycle->Size()) {
+                if (path.CompareFrom(i, *cycle)) {
+                    length += cycle->Length();
+                    DEBUG(length);
+                }
+                else {
+                    break;
+                }
+            }
+
+            if (length > is_detector_.GetMinCycleLenth()) {
+                DEBUG("Really in existing cycle")
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void AddCycledEdges(const BidirectionalPath& path, size_t pos) {
+        if (pos >= path.Size()) {
+            WARN("Wrong position in IS cycle");
+            return;
+        }
+        cycled_edges_.push_back(new BidirectionalPath(path.SubPath(pos)));
+        DEBUG("add cycle");
+        path.SubPath(pos).Print();
+    }
+
+    bool DetectCycle(BidirectionalPath& path) {
+        size_t skip_identical_edges = 0;
+        if (path.getLoopDetector().IsCycled(maxLoops_, skip_identical_edges)) {
+            AddCycledEdges(path, path.getLoopDetector().LoopEdges(skip_identical_edges, 1));
+            DEBUG("Path is Cycled! skip identival edges = " << skip_identical_edges);
+            path.Print();
+            path.getLoopDetector().RemoveLoop(skip_identical_edges, false);
+            DEBUG("After delete");
+            path.Print();
+            return true;
+        }
+        return false;
+    }
+
+    virtual bool MakeSimpleGrowStep(BidirectionalPath& path) = 0;
+
+    virtual bool ResolveShortLoop(BidirectionalPath& path) = 0;
+
+    virtual bool MakeGrowStep(BidirectionalPath& path) {
+        DEBUG("Making step");
+        bool result = MakeSimpleGrowStep(path);
+        DEBUG("Made step");
+
+        if (LastEdgeCycled(path)) {
+            DEBUG("Last edge cycled");
+            result = false;
+        }
+        else if (is_detector_.CheckCycled(path)) {
+            DEBUG("Checking IS cycle");
+            int loop_size = is_detector_.RemoveCycle(path);
+            DEBUG("Removed IS cycle");
+            VERIFY(loop_size != -1);
+            AddCycledEdges(path, loop_size);
+            DEBUG("Added IS cycle");
+            result = false;
+        }
+        else if (DetectCycle(path)) {
+            DEBUG("True cycle");
+            result = false;
+        }
+        else if (investigateShortLoops_ && path.getLoopDetector().EdgeInShortLoop(path.Back())) {
+            DEBUG("Edge in short loop");
+            result = ResolveShortLoop(path);
+        }
+        else if (investigateShortLoops_ && path.getLoopDetector().PrevEdgeInShortLoop()) {
+            DEBUG("Prev edge in short loop");
+            path.PopBack();
+            result = ResolveShortLoop(path);
+        }
+
+        return result;
+    }
+
+    virtual void GrowAll(PathContainer& paths, PathContainer * result) {
+        result->clear();
+
+        for (size_t i = 0; i < paths.size(); i ++) {
+            BidirectionalPath * path = new BidirectionalPath(*paths.Get(i));
+            BidirectionalPath * conjugatePath = new BidirectionalPath(*paths.GetConjugate(i));
+            result->AddPair(path, conjugatePath);
+
+            do {
+                path->CheckGrow();
+                GrowPath(*path);
+                conjugatePath->CheckGrow();
+                GrowPath(*conjugatePath);
+            }
+            while (conjugatePath->CheckPrevious() || path->CheckPrevious());
+        }
+    }
+
+};
+
+
+class CompositeExtender: public CoveringPathExtender {
 
 protected:
 
-    vector<LoopDetectingPathExtender* > extenders_;
+    vector<CoveringPathExtender* > extenders_;
 
 public:
 
-    CompositeExtender(Graph & g, size_t max_loops, bool investigateShortLoops): CoveringPathExtender(g, max_loops, investigateShortLoops), extenders_() {
+    CompositeExtender(Graph & g): CoveringPathExtender(g), extenders_() {
     }
 
     void AddExender(LoopDetectingPathExtender* pe) {
         extenders_.push_back(pe);
     }
 
-    CompositeExtender(Graph & g, size_t max_loops, vector<LoopDetectingPathExtender*> pes, bool investigateShortLoops = true) :
-			CoveringPathExtender(g, max_loops, investigateShortLoops), extenders_() {
+    CompositeExtender(Graph & g, vector<CoveringPathExtender*> pes) :
+			CoveringPathExtender(g), extenders_() {
 		extenders_ = pes;
 	}
 
     virtual bool MakeGrowStep(BidirectionalPath& path) {
-//        if (cfg::get().avoid_rc_connections && (path.CameToInterstrandBulge() || path.IsInterstrandBulge())) {
-//            DEBUG("Stoping because of interstand bulge");
-//            return false;
-//        }
-
         size_t current = 0;
 
         while (current < extenders_.size()) {
@@ -597,18 +709,13 @@ public:
             }
             ++current;
         }
-        /*for (size_t i = 0; i < extenders_.size(); ++i) {
-            extenders_[i]->ClearCycledEdges();
-        }*/
         return false;
     }
 
 };
 
 
-
-
-class SimpleExtender: public CoveringPathExtender {
+class SimpleExtender: public LoopDetectingPathExtender {
 
 protected:
 
@@ -629,32 +736,20 @@ protected:
 
 public:
 
-    SimpleExtender(const Graph& g, size_t max_loops, ExtensionChooser * ec,  bool investigateShortLoops = true):
-    	CoveringPathExtender(g, max_loops, investigateShortLoops), extensionChooser_(ec), loopResolver_(g, *extensionChooser_) {
+    SimpleExtender(const Graph& g, ExtensionChooser * ec, size_t is, size_t max_loops, bool investigateShortLoops):
+        LoopDetectingPathExtender(g, max_loops, investigateShortLoops, is),
+        extensionChooser_(ec),
+        loopResolver_(g, *extensionChooser_) {
     }
 
-    virtual bool MakeGrowStep(BidirectionalPath& path) {
-        DEBUG("make grow step");
-        if (LastEdgeCycled(path)) {
-            DEBUG("cycled");
-            return false;
-        }
-        size_t skip_identical_edges = 0;
-        if (path.getLoopDetector().IsCycled(maxLoops_ - 1, skip_identical_edges)) {
-            AddCycledEdges(path, path.getLoopDetector().LoopEdges(skip_identical_edges, 1));
-            path.getLoopDetector().RemoveLoop(skip_identical_edges, false);
-            DEBUG("cycled");
-            return false;
-        }
+
+    virtual bool MakeSimpleGrowStep(BidirectionalPath& path) {
         ExtensionChooser::EdgeContainer candidates;
-        bool result = false;
         FindFollowingEdges(path, &candidates);
         candidates = extensionChooser_->Filter(path, candidates);
         if (candidates.size() == 1) {
-            if (!investigateShortLoops_
-                    && (path.getLoopDetector().EdgeInShortLoop(path.Back())
-                            or path.getLoopDetector().EdgeInShortLoop(
-                                    candidates.back().e_))
+            if (!investigateShortLoops_ &&
+                    (path.getLoopDetector().EdgeInShortLoop(path.Back())  or path.getLoopDetector().EdgeInShortLoop(candidates.back().e_))
                     && extensionChooser_->WeighConterBased()) {
                 return false;
             }
@@ -662,42 +757,27 @@ public:
                 return false;
             }
             path.PushBack(candidates.back().e_, candidates.back().d_);
-            result = true;
-            if (investigateShortLoops_
-                    && path.getLoopDetector().EdgeInShortLoop(path.Back())
-                    && extensionChooser_->WeighConterBased()) {
-                while (path.getLoopDetector().EdgeInShortLoop(path.Back())) {
-                    loopResolver_.ResolveShortLoop(path);
-                }
-            }
-        } else if (investigateShortLoops_
-                && path.getLoopDetector().PrevEdgeInShortLoop()
-                && extensionChooser_->WeighConterBased()) {
-            DEBUG("Prev edge in short loop");
-            path.PopBack();
-            while (path.getLoopDetector().EdgeInShortLoop(path.Back())) {
-                loopResolver_.ResolveShortLoop(path);
-            }
-            result = true;
-        } else if (investigateShortLoops_
-                && path.getLoopDetector().EdgeInShortLoop(path.Back())
-                && extensionChooser_->WeighConterBased()) {
-            DEBUG("Edge in short loop");
-            while (path.getLoopDetector().EdgeInShortLoop(path.Back())) {
-                loopResolver_.ResolveShortLoop(path);
-            }
-            result = true;
-        } else if (candidates.size() >= 1) {
-            DEBUG("MORE 1 CANDIDATE");
+            return true;
         }
-        return result;
+        return false;
+    }
+
+    virtual bool ResolveShortLoop(BidirectionalPath& path) {
+        if (extensionChooser_->WeighConterBased()) {
+            DEBUG("Resolving short loop")
+            while (path.getLoopDetector().EdgeInShortLoop(path.Back())) {
+                loopResolver_.ResolveShortLoop(path);
+            }
+            return true;
+        }
+        return false;
     }
 
 };
 
 
 
-class ScaffoldingPathExtender: public CoveringPathExtender {
+class ScaffoldingPathExtender: public LoopDetectingPathExtender {
 
 protected:
 
@@ -727,16 +807,15 @@ protected:
 
 public:
 
-    ScaffoldingPathExtender(const Graph& g, size_t max_loops, ExtensionChooser * scaffoldingEC, GapJoiner * gapJoiner, bool investigateShortLoops = true):
-    	CoveringPathExtender(g, max_loops, investigateShortLoops),
+    ScaffoldingPathExtender(const Graph& g, ExtensionChooser * scaffoldingEC, GapJoiner * gapJoiner, size_t is, size_t max_loops, bool investigateShortLoops):
+        LoopDetectingPathExtender(g, max_loops, investigateShortLoops, is),
             scaffoldingExtensionChooser_(scaffoldingEC),
             gapJoiner_(gapJoiner)
     {
         InitSources();
     }
 
-
-    virtual bool MakeGrowStep(BidirectionalPath& path) {
+    virtual bool MakeSimpleGrowStep(BidirectionalPath& path) {
         DEBUG("scaffolding");
         ExtensionChooser::EdgeContainer candidates;
         bool result = false;
@@ -768,6 +847,10 @@ public:
         }
 
         return result;
+    }
+
+    virtual bool ResolveShortLoop(BidirectionalPath& /*path*/) {
+        return false;
     }
 
 };

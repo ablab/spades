@@ -18,3 +18,7 @@ default=INFO
 #PathSetGraphConstructor=TRACE
 #NewExtendedSequenceMapper=TRACE
 #JumpingPairInfoChecker=TRACE
+
+#PathExtender=DEBUG
+#BidirectionalPath=DEBUG
+#NextPathSearcher=DEBUG

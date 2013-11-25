@@ -165,6 +165,9 @@ private:
     Edge* prev_edge_;
     size_t dist_;
     int gap_;
+
+protected:
+    DECL_LOGGER("NextPathSearcher")
 };
 
 class NextPathSearcher {
@@ -215,6 +218,9 @@ private:
     PathsWeightCounter weight_counter_;
     size_t long_edge_len_;
     size_t max_paths_;
+
+protected:
+    DECL_LOGGER("NextPathSearcher")
 };
 
 NextPathSearcher::NextPathSearcher(const Graph& g,
@@ -430,6 +436,7 @@ void NextPathSearcher::ScaffoldChristmasTree(
 
     for (Edge* ed : candidates) {
         if (ed->Length() < path.Length() + search_dist_) {
+            INFO("Starting new path searcher " << path.Length() << ", " << search_dist_ << " " << ed->Length() << " " << path.Length() + search_dist_ - ed->Length());
             NextPathSearcher further_searcher(g_, cover_map_, path.Length() + search_dist_ - ed->Length(), weight_counter_);
             set<BidirectionalPath*> further_paths = further_searcher.FindNextPaths(*(ed->GetPrevPath(0)), ed->GetId(), true);
 
@@ -550,8 +557,10 @@ void NextPathSearcher::ProcessScaffoldingCandidate(EdgeWithDistance& e, EdgeSet&
     VERIFY(search_dist_ >= grown_path_len);
     VERIFY((int) search_dist_ >= e.d_);
 
+
     size_t max_length_back = search_dist_ - grown_path_len;
-    DEBUG("Searchin for edge of length " <<  g_.length(e.e_) << " to dist " << max_length_back);
+    INFO(search_dist_ << " " << grown_path_len);
+    INFO("Searchin for edge of length " <<  g_.length(e.e_) << " to dist " << max_length_back);
 
     NextPathSearcher back_searcher(g_, cover_map_, max_length_back, weight_counter_);
     BidirectionalPath jumped_edge(g_, g_.conjugate(e.e_));
