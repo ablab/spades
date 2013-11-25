@@ -112,7 +112,7 @@ public:
             for (size_t i = 0; i < index.size(); i++) {
                 if (nonempty_pairs.find(make_pair(iter->first, index[i])) != nonempty_pairs.end()
                         && nonempty_pairs.find(make_pair(index[i], iter->second)) != nonempty_pairs.end()) {
-                    INFO("pair " << g_.int_id(iter->first) << "," << g_.int_id(iter->second) << " is ignored because of edge between " << g_.int_id(index[i]));
+                    DEBUG("pair " << g_.int_id(iter->first) << "," << g_.int_id(iter->second) << " is ignored because of edge between " << g_.int_id(index[i]));
                     transitively_ignored_pairs.insert(make_pair(iter->first, iter->second));
                 }
             }
@@ -175,7 +175,7 @@ public:
                 bool exclude_long_seqs = false;
                 for (auto j_iter = cl_start; j_iter != next_iter; j_iter++) {
                     if (g_.length(j_iter->start) - j_iter->edge_gap_start_position > 500 || j_iter->edge_gap_end_position > 500) {
-                        INFO("ignoring alingment to the middle of edge");
+                        DEBUG("ignoring alingment to the middle of edge");
                         continue;
                     }
                     if (j_iter->gap_seq.size() > long_seq_limit)
@@ -212,7 +212,7 @@ public:
 
     void PadGapStrings() {
         for (auto iter = inner_index.begin(); iter != inner_index.end(); ++iter) {
-            INFO("Padding gaps for first edge " << g_.int_id(iter->first));
+            DEBUG("Padding gaps for first edge " << g_.int_id(iter->first));
             PadGapStrings(iter->first);
         }
         PostProcess();
@@ -235,13 +235,13 @@ public:
     void CloseGapsInGraph(map<EdgeId, EdgeId> &replacement) {
         for (auto iter = new_edges_.begin(); iter != new_edges_.end(); ++iter) {
             if (iter->second.size() != 1) {
-                WARN("non-unique gap!!");
+                DEBUG("non-unique gap!!");
                 continue;
             }
             EdgeId first = iter->first;
             EdgeId second = (iter->second.begin()->first);
             if (replacement.find(first) != replacement.end() || replacement.find(second) != replacement.end()) {
-                INFO("sorry, gap chains are not supported yet");
+                DEBUG("sorry, gap chains are not supported yet");
                 continue;
             }
 
@@ -251,7 +251,7 @@ public:
             size_t second_id = g_.int_id(second);
             size_t first_id_conj = g_.int_id(g_.conjugate(first));
             size_t second_id_conj = g_.int_id(g_.conjugate(second));
-            INFO("closing gaps between "<< first_id << " " << second_id);
+            DEBUG("closing gaps between "<< first_id << " " << second_id);
             size_t len_f = g_.length(first);
             size_t len_s = g_.length(second);
             size_t len_sum = iter->second.begin()->second.second.length();
@@ -259,7 +259,7 @@ public:
             TRACE(g_.int_id(newEdge));
             int len_split = int(((double) len_f * (double) len_sum) / (len_s + len_f));
             if (len_split == 0) {
-                WARN(" zero split length, length are:" << len_f <<" " << len_sum <<" " << len_s);
+                DEBUG(" zero split length, length are:" << len_f <<" " << len_sum <<" " << len_s);
                 len_split = 1;
             }
             pair<EdgeId, EdgeId> split_result = g_.SplitEdge(newEdge, len_split);
@@ -332,7 +332,7 @@ public:
         for (size_t i = 0; i < storage_size; i++) {
             EdgeId e = storage[i];
             size_t thread_num = omp_get_thread_num();
-            INFO("constructing consenus for first edge " << g_.int_id(e) << " in thread " <<thread_num);
+            DEBUG("constructing consenus for first edge " << g_.int_id(e) << " in thread " <<thread_num);
             ConstructConsensus(e, storage, new_edges_by_thread[thread_num]);
         }
         for (size_t i = 0; i < nthreads; i++) {
@@ -345,7 +345,7 @@ public:
         ofstream filestr(filename);
         for (auto iter = new_edges_.begin(); iter != new_edges_.end(); ++iter) {
             if (iter->second.size() > 1) {
-                WARN("nontrivial gap closing for edge" <<g_.int_id(iter->first));
+                DEBUG("nontrivial gap closing for edge" <<g_.int_id(iter->first));
             }
             for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); ++j_iter) {
                 filestr << ">" << g_.int_id(iter->first) << "_" << iter->second.size() << "_" << g_.int_id(j_iter->first) << "_" << j_iter->second.first << endl;

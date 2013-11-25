@@ -314,9 +314,9 @@ public:
                             s, start_v, end_v, limits.first, limits.second,
                             seq_start, seq_end, s_add, e_add);
                     if (intermediate_path.size() == 0) {
-                        INFO("Tangled region between edgees "<< g_.int_id(prev_edge) << " " << g_.int_id(cur_edge) << " is not closed, additions from edges: " << int(g_.length(prev_edge)) - int(prev_last_index.edge_position) <<" " << int(cur_first_index.edge_position) - int(debruijn_k - pacbio_k ) << " and seq "<< - seq_start + seq_end);
+                        DEBUG("Tangled region between edgees "<< g_.int_id(prev_edge) << " " << g_.int_id(cur_edge) << " is not closed, additions from edges: " << int(g_.length(prev_edge)) - int(prev_last_index.edge_position) <<" " << int(cur_first_index.edge_position) - int(debruijn_k - pacbio_k ) << " and seq "<< - seq_start + seq_end);
                         if (cfg::get().pb.additional_debug_info) {
-                            INFO(" escpected gap length: " << -int(g_.length(prev_edge)) + int(prev_last_index.edge_position) - int(cur_first_index.edge_position) + int(debruijn_k - pacbio_k ) - seq_start + seq_end);
+                            DEBUG(" escpected gap length: " << -int(g_.length(prev_edge)) + int(prev_last_index.edge_position) - int(cur_first_index.edge_position) + int(debruijn_k - pacbio_k ) - seq_start + seq_end);
                             PathStorageCallback<Graph> callback(g_);
                             PathProcessor<Graph> path_processor(g_, 0, 4000,
                                                                 start_v, end_v,
@@ -334,7 +334,7 @@ public:
                                 }
                                 s_buf << tlen << " ";
                             }
-                            INFO(s_buf.str());
+                            DEBUG(s_buf.str());
                         }
                         return intermediate_path;
                     }
@@ -494,7 +494,7 @@ public:
         int path_max_len = (int) ((double) (seq_len + (int) debruijn_k)
                 * cfg::get().pb.path_limit_stretching);
         if (seq_len < 0) {
-            WARN("suspicious negative seq_len " << start_pos << " " << end_pos << " " << path_min_len << " " << path_max_len);
+            DEBUG("suspicious negative seq_len " << start_pos << " " << end_pos << " " << path_min_len << " " << path_max_len);
             return std::make_pair(-1, -1);
         }
         path_min_len = max(path_min_len - int(s_add_len + e_add_len), 0);
