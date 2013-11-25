@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "dijkstra_tools/dijkstra_helper.hpp"
+
 namespace omnigraph {
 
 template<class Graph>
