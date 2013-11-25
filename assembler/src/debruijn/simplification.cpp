@@ -47,14 +47,13 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
 
     //  QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, edge_qual);
     auto colorer = debruijn_graph::DefaultGPColorer(gp);
-    QualityEdgeLocalityPrintingRH < Graph
-            > qual_removal_handler(gp.g, gp.edge_qual, boost::ref(labeler), colorer,
+    QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler(gp.g, gp.edge_qual, labeler, colorer,
                                    cfg::get().output_dir + "pictures/colored_edges_deleted/");
 
     //positive quality edges removed (folder colored_edges_deleted)
     boost::function<void(EdgeId)> removal_handler_f = boost::bind(
             //            &QualityLoggingRemovalHandler<Graph>::HandleDelete,
-            &QualityEdgeLocalityPrintingRH < Graph > ::HandleDelete,
+            &QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
             boost::ref(qual_removal_handler), _1);
 
     SimplifyGraph(gp, /*boost::function<void(EdgeId)>(0)*/removal_handler_f,

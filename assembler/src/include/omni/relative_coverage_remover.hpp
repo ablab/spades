@@ -253,9 +253,13 @@ class LongestPathFinder {
                 } else {
                     distance = std::max(distance, max_distance_[start] + int(g_.length(e)));
                 }
-            } else {
-                distance = std::max(distance, 0);
             }
+        }
+        //todo think...
+        //currently whole length of zig-zag path
+        //through several terminal vertices is counted
+        if (component_.terminating_vertices().count(v) > 0) {
+            distance = std::max(distance, 0);
         }
         return true;
     }
@@ -280,7 +284,7 @@ public:
     : component_(component), g_(component.g()), cycle_detected_(false) {
     }
 
-    //-1u if component contains a cycle
+    //-1u if component contains a cycle or no path between terminating vertices
     size_t Find() {
         int answer = 0;
         FOREACH(VertexId v, component_.terminating_vertices()) {
@@ -290,7 +294,9 @@ public:
             VERIFY(max_distance_.count(v) > 0);
             answer = std::max(answer, get(max_distance_, v));
         }
-        VERIFY(answer > 0);
+        VERIFY(answer >= 0);
+        if (answer == 0)
+            return -1u;
         return size_t(answer);
     }
 };
@@ -342,7 +348,7 @@ public:
         DEBUG("Performing full check of the component");
         size_t longest_connecting_path = LongestPathFinder<Graph>(component).Find();
         bool answer = true;
-        //todo add check on tip length in both cases!
+        //todo add check on tip length in all cases!
         if (longest_connecting_path == -1u) {
             DEBUG("Failed to find longest connecting path (check for cycles)");
             if (!component.contains_deadends()
@@ -396,11 +402,16 @@ public:
             if (!IsTerminateVertex(v)) {
                 INFO("Not terminating, adding neighbourhood");
                 component_.MakeInner(v);
+                if (component_.terminating_vertices().count(v) > 0) {
+                    INFO("Terminating vertex classified as non-terminating");
+                    return false;
+                }
             } else {
                 INFO("Terminating");
                 component_.TerminateOnVertex(v);
             }
         }
+
         return checker_.FullCheck(component_);
     }
 
@@ -492,7 +503,7 @@ public:
               vertex_count_limit_(vertex_count_limit),
               component_remover_(g, handler_function) {
         VERIFY(math::gr(min_coverage_gap, 1.));
-        VERIFY(tip_allowing_length_bound <= length_bound);
+        VERIFY(tip_allowing_length_bound >= length_bound);
         INFO("Coverage gap " << min_coverage_gap);
     }
 

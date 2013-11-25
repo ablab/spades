@@ -669,11 +669,13 @@ void SimplificationCycle(conj_graph_pack& gp,
     debruijn_config::simplification::relative_coverage_comp_remover rcc;
     rcc.coverage_gap = 8.;
     rcc.length_bound = 200;
-    rcc.tip_allowing_length_bound = 200;
+    rcc.tip_allowing_length_bound = 300;
     rcc.longest_connecting_path_bound = 150;
     rcc.max_coverage = 400.;
     rcc.vertex_count_limit = 20;
 
+    //todo remove
+//    printer(ipp_before_post_simplification, str(format("_%d") % iteration));
     RemoveRelativelyLowCoverageComponents(gp.g, gp.flanking_cov,
                                           rcc, rel_removal_handler);
     //todo end of temporary
@@ -767,6 +769,7 @@ void SimplifyGraph(conj_graph_pack &gp,
                     str(format("_%d") % (i + iteration_count)));
         }
 
+        //todo enable
         printer(ipp_before_post_simplification);
         //todo enable for comparison with current version
         PostSimplification(gp, removal_handler,
