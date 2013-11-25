@@ -488,6 +488,38 @@ def dataset_has_interlaced_reads(dataset_data):
 
 
 def split_interlaced_reads(dataset_data, dst, log):
+    def write_single_read(in_file, out_file, fasta_read_name=None, is_fastq=False, is_python3=False):
+        next_read_str = "" # if there is no next read: empty string
+        if not is_fastq and fasta_read_name is not None:
+            read_name = fasta_read_name
+        else:
+            read_name = in_file.readline()
+        if not read_name:
+            return next_read_str
+        read_value = in_file.readline()
+        line = in_file.readline()
+        while line and ((is_fastq and not line.startswith('+')) or (not is_fastq and not line.startswith('>'))):
+            read_value += line
+            line = in_file.readline()
+        next_read_str = line # if there is a next read: "+" (for fastq) or next read name (for fasta)
+        if is_python3:
+            out_file.write(str(read_name, 'utf-8'))
+            out_file.write(str(read_value, 'utf-8'))
+        else:
+            out_file.write(read_name)
+            out_file.write(read_value)
+
+        if is_fastq:
+            read_quality = in_file.readline()
+            while len(read_value) != len(read_quality):
+                read_quality += in_file.readline()
+            out_file.write("+\n")
+            if is_python3:
+                out_file.write(str(read_quality, 'utf-8'))
+            else:
+                out_file.write(read_quality)
+        return next_read_str
+
     new_dataset_data = list()
     for reads_library in dataset_data:
         new_reads_library = dict(reads_library)
@@ -515,10 +547,10 @@ def split_interlaced_reads(dataset_data, dst, log):
                     if interlaced_reads in options_storage.dict_of_prefixes:
                         ext = options_storage.dict_of_prefixes[interlaced_reads]
                     if ext.lower().startswith('.fq') or ext.lower().startswith('.fastq'):
-                        is_fasta_format = False
+                        is_fastq = True
                         ext = '.fastq'
                     else:
-                        is_fasta_format = True
+                        is_fastq = False
                         ext = '.fasta'
 
                     out_left_filename = os.path.join(dst, out_basename + "_1" + ext)
@@ -527,23 +559,20 @@ def split_interlaced_reads(dataset_data, dst, log):
                     if not (options_storage.continue_mode and os.path.isfile(out_left_filename) and os.path.isfile(out_right_filename)):
                         options_storage.continue_mode = False
                         log.info("== Splitting " + interlaced_reads + " into left and right reads (in " + dst + " directory)")
-                        out_left_file = open(out_left_filename, 'w')
-                        out_right_file = open(out_right_filename, 'w')
-                        if sys.version.startswith('3.') and was_compressed:
-                            for id, line in enumerate(input_file):
-                                if (is_fasta_format and (id % 4 < 2)) or (not is_fasta_format and (id % 8 < 4)):
-                                    out_left_file.write(str(line, 'utf-8'))
-                                else:
-                                    out_right_file.write(str(line, 'utf-8'))
-                        else:
-                            for id, line in enumerate(input_file):
-                                if (is_fasta_format and (id % 4 < 2)) or (not is_fasta_format and (id % 8 < 4)):
-                                    out_left_file.write(line)
-                                else:
-                                    out_right_file.write(line)
-                        out_left_file.close()
-                        out_right_file.close()
-
+                        out_files = [open(out_left_filename, 'w'), open(out_right_filename, 'w')]
+                        i = 0
+                        next_read_str = write_single_read(input_file, out_files[i], None, is_fastq,
+                            sys.version.startswith('3.') and was_compressed)
+                        while next_read_str:
+                            i = (i + 1) % 2
+                            next_read_str = write_single_read(input_file, out_files[i], next_read_str, is_fastq,
+                                sys.version.startswith('3.') and was_compressed)
+                        if (is_fastq and i % 2 == 1) or (not is_fastq and i % 2 == 0):
+                        # when fastq, the number of writes is equal to number of READS (should be EVEN)
+                        # when fasta, the number of writes is equal to number of NEXT READS (should be ODD)
+                            error("The number of reads in file with interlaced reads (" + interlaced_reads + ") is ODD!", log)
+                        out_files[0].close()
+                        out_files[1].close()
                     input_file.close()
                     new_reads_library['left reads'].append(out_left_filename)
                     new_reads_library['right reads'].append(out_right_filename)
