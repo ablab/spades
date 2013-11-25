@@ -95,9 +95,30 @@ public:
     bool IsCycled() {
         BidirectionalPath* path = GetPrevPath(0);
         size_t identical_edges = 0;
-        bool is_cycled = path->getLoopDetector().IsCycled(cfg::get().pe_params.param_set.loop_removal.mp_max_loops, identical_edges); //TODO: 5 - why ??
+        bool is_cycled = path->getLoopDetector().IsCycled(cfg::get().pe_params.param_set.loop_removal.mp_max_loops, identical_edges);
+        if (path->Size() > 1 && path->At(path->Size() - 1) == path->At(path->Size() -2)){
+            is_cycled = true;
+        }
         delete path;
         return is_cycled;
+    }
+
+    Edge* RemoveCycle() {
+        size_t skip_identical_edges = 0;
+        BidirectionalPath& path = *GetPrevPath(0);
+        path.getLoopDetector().IsCycled(
+                cfg::get().pe_params.param_set.loop_removal.mp_max_loops,
+                skip_identical_edges);
+        size_t remove = path.getLoopDetector().EdgesToRemove(
+                skip_identical_edges, false);
+        Edge* prev_edge = this;
+        Edge* last_loop_edge = this;
+        for (size_t i = 0; i < remove; ++i) {
+            last_loop_edge = prev_edge;
+            prev_edge = last_loop_edge->prev_edge_;
+        }
+        prev_edge->AddIncorrectOutEdge(last_loop_edge->GetId());
+        return prev_edge;
     }
 
     bool EqualBegins(const BidirectionalPath& path, int pos) {
@@ -224,7 +245,7 @@ set<BidirectionalPath*> NextPathSearcher::FindNextPaths(
         e = e->AddOutEdge(begin_edge);
         DEBUG("Try to find next path for path with edge " << g_.int_id(begin_edge));
     } else {
-        DEBUG("Try to search for path with last edge " << g_.int_id(path.Back()) << "Scaffolding: " << jump << ", next edges " << g_.OutgoingEdgeCount(g_.EdgeEnd(path.Back())));
+        DEBUG("Try to search for path with last edge " << g_.int_id(path.Back()) << " Scaffolding: " << jump << ", next edges " << g_.OutgoingEdgeCount(g_.EdgeEnd(path.Back())));
     }
     grow_paths.push_back(e);
 
@@ -233,6 +254,10 @@ set<BidirectionalPath*> NextPathSearcher::FindNextPaths(
         INFO("Iteration " << ipath << " of next path searching " << grow_paths[ipath]->Length() << " max len " << max_len);
         Edge* current_path = grow_paths[ipath++];
         if (!current_path->IsCorrect()  || current_path->IsCycled() || used_edges.count(current_path) > 0) {
+            DEBUG("not correct path " << !current_path->IsCorrect() << " cycled " <<  current_path->IsCycled() << " used " << (used_edges.count(current_path) > 0));
+            if (!current_path->IsCorrect() || current_path->IsCycled()){
+                current_path->GetPrevPath(0)->Print();
+            }
             used_edges.insert(current_path);
             continue;
         }
@@ -322,8 +347,8 @@ Edge* NextPathSearcher::AddPath(const BidirectionalPath& init_path,
             if (!next_edge)
                 break;
             e = next_edge;
-        } else {
-            //DEBUG("add this edge " << ie);
+        } else if (e->GetId() != path.At(ie)){
+            //DEBUG("add this " << ie);
             e = e->AddOutEdge(path.At(ie));
         }
     }
@@ -360,8 +385,8 @@ void NextPathSearcher::GrowPath(const BidirectionalPath& init_path, Edge* e,
         }
         if (e->GetOutEdgeIndex(next_edge) == -1
                 && e->GetIncorrectEdgeIndex(next_edge) == -1) {
-            if (!InBuble(next_edge, g_)
-                    || !AnalyzeBubble(init_path, next_edge, 0, e))
+            if ((!InBuble(next_edge, g_)
+                    || !AnalyzeBubble(init_path, next_edge, 0, e)) && e->GetId() != next_edge)
                 to_add.push_back(e->AddOutEdge(next_edge));
         }
     }
@@ -439,7 +464,7 @@ void NextPathSearcher::FindScaffoldingCandidates(const BidirectionalPath& init_p
             if (candidates.find(e.e_) == candidates.end()) {
                 candidates[e.e_] = vector<int>();
             }
-            candidates[e.e_].push_back(max(e.d_ - (int) distance_to_tip, 100));
+            candidates[e.e_].push_back(/*max(e.d_ - (int) distance_to_tip, 100)*/100);
         }
     }
 
@@ -605,18 +630,20 @@ void NextPathSearcher::FilterBackPaths(set<BidirectionalPath*>& back_paths, Edge
     DEBUG("Searching for proper back paths");
 
     int i = 0;
-    for (auto p = back_paths.begin(); p != back_paths.end(); ) {
+    for (auto piter = back_paths.begin(); piter != back_paths.end(); ) {
+        BidirectionalPath* p = *piter;
+        EdgeId last_e = p->Back();
+        VertexId last_v = g_.EdgeEnd(last_e);
         DEBUG("Processing path " << i++);
-        (*p)->Print();
-        if ((*p)->FindFirst(edge_to_reach) != -1) {
-            reached_paths.insert(*p);
-            ++p;
-        }
-        else if (g_.OutgoingEdgeCount(g_.EdgeEnd((*p)->Back())) == 0) {
-            ++p;
-        }
-        else {
-            p = back_paths.erase(p);
+        p->Print();
+        if (p->FindFirst(edge_to_reach) != -1) {
+            reached_paths.insert(p);
+            ++piter;
+        } else if (g_.OutgoingEdgeCount(last_v) == 0 ||
+                (g_.OutgoingEdgeCount(last_v) == 1 && (*g_.OutgoingEdges(last_v).begin()) == last_e)) {
+            ++piter;
+        } else {
+            piter = back_paths.erase(piter);
         }
     }
 }

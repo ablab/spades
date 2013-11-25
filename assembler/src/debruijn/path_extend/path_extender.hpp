@@ -424,7 +424,8 @@ public:
     virtual void GrowPath(BidirectionalPath& path) {
         while (MakeGrowStep(path)) {
             size_t skip_identical_edges = 0;
-            if (path.getLoopDetector().IsCycled(maxLoops_, skip_identical_edges)) {
+            if (path.getLoopDetector().IsCycled(maxLoops_,
+                                                skip_identical_edges)) {
                 DEBUG("Path is Cycled!");
                 DEBUG("skip identival edges = " << skip_identical_edges);
                 path.Print();
@@ -434,6 +435,17 @@ public:
                 return;
             }
         }
+        size_t skip_identical_edges = 0;
+        if (path.getLoopDetector().IsCycled(maxLoops_ - 1, skip_identical_edges)) {
+            DEBUG("Path is Cycled!");
+            DEBUG("skip identival edges = " << skip_identical_edges);
+            path.Print();
+            path.getLoopDetector().RemoveLoop(skip_identical_edges, false);
+            DEBUG("After delete");
+            path.Print();
+            return;
+        }
+
     }
 
     virtual void GrowAll(PathContainer& paths, PathContainer * result) {
@@ -644,6 +656,9 @@ public:
                             or path.getLoopDetector().EdgeInShortLoop(
                                     candidates.back().e_))
                     && extensionChooser_->WeighConterBased()) {
+                return false;
+            }
+            if (g_.length(candidates.back().e_) > 8000 && path.FindAll(candidates.back().e_).size() > 0){
                 return false;
             }
             path.PushBack(candidates.back().e_, candidates.back().d_);
