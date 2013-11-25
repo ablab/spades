@@ -585,8 +585,8 @@ private:
 
     bool ConsistentPath(const BidirectionalPath& path1, size_t pos1,
                         const BidirectionalPath& path2, size_t pos2) const {
-        return EqualBegins(path1, pos1, path2, pos2)
-                && EqualEnds(path1, pos1, path2, pos2);
+        return EqualBegins(path1, pos1, path2, pos2, true)
+                && EqualEnds(path1, pos1, path2, pos2, true);
     }
     bool SignificantlyDiffWeights(double w1, double w2) const {
         if (w1 > filter_threshold_ and w2 > filter_threshold_) {
@@ -602,8 +602,8 @@ private:
             const BidirectionalPath& path1, size_t pos1,
             const BidirectionalPath& path2, size_t pos2,
             const std::set<BidirectionalPath*>& cov_paths) const {
-        size_t first_diff_pos1 = FirstNotEqualPosition(path1, pos1, path2, pos2);
-        size_t first_diff_pos2 = FirstNotEqualPosition(path2, pos2, path1, pos1);
+        size_t first_diff_pos1 = FirstNotEqualPosition(path1, pos1, path2, pos2, true);
+        size_t first_diff_pos2 = FirstNotEqualPosition(path2, pos2, path1, pos1, true);
         if (first_diff_pos1 != -1UL && first_diff_pos2 != -1UL) {
             const BidirectionalPath cand1 = path1.SubPath(first_diff_pos1,
                                                           pos1 + 1);
@@ -617,8 +617,8 @@ private:
                 return true;
             }
         }
-        size_t last_diff_pos1 = LastNotEqualPosition(path1, pos1, path2, pos2);
-        size_t last_diff_pos2 = LastNotEqualPosition(path2, pos2, path1, pos1);
+        size_t last_diff_pos1 = LastNotEqualPosition(path1, pos1, path2, pos2, true);
+        size_t last_diff_pos2 = LastNotEqualPosition(path2, pos2, path1, pos1, true);
         if (last_diff_pos1 != -1UL) {
             const BidirectionalPath cand1 = path1.SubPath(pos1,
                                                           last_diff_pos1 + 1);
@@ -713,7 +713,7 @@ public:
             for (size_t i = 0; i < positions.size(); ++i) {
                 if ((int) positions[i] < (int) (*it)->Size() - 1
                         && EqualBegins(path, (int) path.Size() - 1, **it,
-                                       positions[i])) {
+                                       positions[i], true)) {
 
                     if (UniqueBackPath(**it, positions[i])) {
                         EdgeId next = (*it)->At(positions[i] + 1);
