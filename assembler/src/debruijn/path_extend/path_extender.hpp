@@ -713,15 +713,14 @@ protected:
     void InitSources() {
         sources_.clear();
 
-        for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
             if (g_.IncomingEdgeCount(g_.EdgeStart(*iter)) == 0) {
                 sources_.push_back(EdgeWithDistance(*iter, 0));
             }
         }
     }
 
-    bool IsSink(EdgeId e)
-	{
+    bool IsSink(EdgeId e) const	{
 		return g_.OutgoingEdgeCount(g_.EdgeEnd(e)) == 0;
 	}
 

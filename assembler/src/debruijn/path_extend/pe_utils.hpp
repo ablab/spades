@@ -214,7 +214,7 @@ public:
     void PrintUncovered() const {
         INFO("Uncovered edges");
         int s = 0;
-        for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
             if (!IsCovered(*iter)) {
                 INFO(g_.int_id(*iter) << " (" << g_.length(*iter) << ") ~ " << g_.int_id(g_.conjugate(*iter)) << " (" << g_.length(g_.conjugate(*iter)) << ")");
                 s += 1;
@@ -225,7 +225,7 @@ public:
 
     void PrintMulticovered() const {
         INFO("Multicovered edges");
-        for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
             auto paths = GetCoveringPaths(*iter);
             if (paths.size() > 1 && g_.length(*iter) > 1000) {
                 INFO(g_.int_id(*iter) << " (" << g_.length(*iter) << "). " << " Covered: " << paths.size());
