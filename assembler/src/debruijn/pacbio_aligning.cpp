@@ -18,7 +18,7 @@
 namespace debruijn_graph {
 
 void ProcessReadsBatch(conj_graph_pack &gp,
-                       std::vector<ReadStream::read_type>& reads,
+                       std::vector<io::SingleRead>& reads,
                        pacbio::PacBioMappingIndex<ConjugateDeBruijnGraph>& pac_index,
                        PathStorage<Graph>& long_reads, pacbio::GapStorage<Graph>& gaps,
                        size_t buf_size, int n) {
@@ -62,14 +62,14 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
 
     auto pacbio_read_stream = single_easy_reader(cfg::get().ds.reads[lib_id],
                                                  false, false);
-    io::ReadStreamVector<ReadStream> streams(pacbio_read_stream.get());
-    pacbio_read_stream.release();
+    io::ReadStreamList<io::SingleRead> streams(pacbio_read_stream.get());
+ //   pacbio_read_stream.release();
     int n = 0;
     PathStorage<Graph>& long_reads = gp.single_long_reads[lib_id];
     pacbio::GapStorage<ConjugateDeBruijnGraph> gaps(gp.g);
     size_t read_buffer_size = 50000;
-    std::vector<ReadStream::read_type> reads(read_buffer_size);
-    ReadStream::read_type read;
+    std::vector<io::SingleRead> reads(read_buffer_size);
+    io::SingleRead read;
     size_t buffer_no = 0;
     INFO(cfg::get().pb.pacbio_k);
     INFO(cfg::get().K);
