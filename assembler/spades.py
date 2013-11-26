@@ -486,7 +486,6 @@ def main():
             spades_cfg = merge_configs(cfg["assembly"], cfg["common"])
             spades_cfg.__dict__["result_contigs"] = result_contigs_filename
             spades_cfg.__dict__["result_scaffolds"] = result_scaffolds_filename
-            spades_cfg.__dict__["additional_contigs"] = os.path.join(spades_cfg.output_dir, "simplified_contigs.fasta")
 
             if options_storage.continue_mode and (os.path.isfile(spades_cfg.result_contigs)
                                                   or ("mismatch_corrector" in cfg and
@@ -547,8 +546,6 @@ def main():
                     shutil.rmtree(misc_dir)
                 if not os.path.isdir(misc_dir):
                     os.makedirs(misc_dir)
-                    if os.path.isfile(spades_cfg.additional_contigs):
-                        shutil.move(spades_cfg.additional_contigs, misc_dir)
 
                 if options_storage.continue_mode and options_storage.continue_from and options_storage.continue_from.startswith('k'):
                     support.error("failed to continue from K=%s because this K was not processed in the original run!"

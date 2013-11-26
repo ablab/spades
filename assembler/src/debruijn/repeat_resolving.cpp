@@ -154,7 +154,7 @@ void pe_resolving(conj_graph_pack& gp, const EdgeQuality<Graph, Index>& /* quali
 }
 
 void RepeatResolution::run(conj_graph_pack &gp, const char*) {
-    OutputContigs(gp.g, cfg::get().additional_contigs, cfg::get().use_unipaths,
+    OutputContigs(gp.g, cfg::get().output_dir + "simplified_contigs.fasta", cfg::get().use_unipaths,
                   cfg::get().simp.tec.plausibility_length);
     OutputContigs(gp.g, cfg::get().output_dir + "before_rr.fasta");
 
@@ -209,7 +209,7 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
 }
 
 void ContigOutput::run(conj_graph_pack &gp, const char*) {
-    OutputContigs(gp.g, cfg::get().additional_contigs, cfg::get().use_unipaths,
+    OutputContigs(gp.g, cfg::get().output_dir + "simplified_contigs.fasta", cfg::get().use_unipaths,
                   cfg::get().simp.tec.plausibility_length);
     OutputContigs(gp.g, cfg::get().output_dir + "before_rr.fasta");
     OutputContigs(gp.g, cfg::get().output_dir + "final_contigs.fasta");
