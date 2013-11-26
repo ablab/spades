@@ -37,7 +37,7 @@ struct Point {
     value_type var;
 
     Point()
-            : d(0), weight(0), var(0) {}
+            : d(0.0), weight(0.0), var(0.0) {}
 
     explicit Point(value_type distance, value_type weight, value_type variance)
             : d(distance), weight(weight), var(variance) {}
