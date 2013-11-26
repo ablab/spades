@@ -1101,11 +1101,16 @@ private:
     public:
 
         bool operator()(const PathPair& p1, const PathPair& p2) const {
-            return p1.first->Length() > p2.first->Length();
+            bool result = p1.first->Length() > p2.first->Length();
+            if (p1.first->Length() == p2.first->Length()) {
+                const Graph& g =  p1.first->graph();
+                result = g.int_id(p1.first->Front()) < g.int_id(p2.first->Front());
+            }
+            return result;
         }
 
         bool operator()(const PathPair* p1, const PathPair* p2) const {
-            return p1->first->Length() > p2->first->Length();
+            return operator ()(*p1, *p2);
         }
     };
 
