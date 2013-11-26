@@ -154,6 +154,10 @@ private:
             bool found = false;
             for (size_t pos2 = 0; pos2 < poses2.size(); ++pos2) {
                 if (poses2[pos2] > lastPos2) {
+                    if (path2.LengthAt(lastPos2) - path2.LengthAt(poses2[pos2])
+                              - g_.length(path2.At(lastPos2)) - path2.GapAt(poses2[pos2]) > maxOverlap) {
+                        break;
+                    }
                     lastPos2 = poses2[pos2];
                     lastPos1 = curPos;
                     found = true;
