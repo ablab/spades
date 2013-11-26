@@ -815,6 +815,9 @@ public:
             result = ChooseBest(path, next_paths);
         }
         DeleteNextPaths(next_paths);
+        if (result.size() != 1) {
+            DEBUG("nobody can extend");
+        }
         return result;
     }
 private:
@@ -959,11 +962,18 @@ private:
             set<BidirectionalPath*>& next_paths) {
         map<BidirectionalPath*, double> weights = CountWeightsAndFilter(path, next_paths, false);
         vector<BidirectionalPath*> result;
+        INFO("sort");
         while (weights.size() > 0) {
             auto max_iter = weights.begin();
             for (auto iter = weights.begin(); iter != weights.end(); ++iter) {
-                if (iter->second > max_iter->second)
+                INFO("unique " << HasUniqueEdges(path,*iter->first) << " max " << !HasUniqueEdges(path, *max_iter->first))
+                if (HasUniqueEdges(path,*iter->first) && !HasUniqueEdges(path, *max_iter->first)){
                     max_iter = iter;
+                    continue;
+                }
+                if (iter->second > max_iter->second){
+                    max_iter = iter;
+                }
                 if (max_iter->second != iter->second)
                     continue;
                 if (!PathCompare(iter->first, max_iter->first))
@@ -1040,12 +1050,12 @@ private:
         DEBUG("common " << common << " not common " << not_common << " max common " << max_begin << " " << max_end);
         max_path.Print();
         EdgeContainer result;
-        if (common > not_common) {
+        //if (common > not_common) {
             size_t to_add = max_begin;
             size_t gap_length = max_path.Length() - max_path.LengthAt(to_add);
             DEBUG(" edge to add " << g_.int_id(max_path.At(to_add)) << " with length " << gap_length);
             result.push_back(EdgeWithDistance(max_path.At(to_add), gap_length));
-        }
+       // }
         return result;
     }
 

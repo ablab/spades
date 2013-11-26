@@ -95,6 +95,7 @@ struct PairedInfoLibrary {
             //Can be modified according to distance comparison
             int d_min = distance - distanceDev;
             int d_max = distance + distanceDev;
+
             if (from_interval) {
                 d_min -= (int) (is_ - is_min_);
                 d_max += (int) (is_max_ - is_);

@@ -247,13 +247,14 @@ set<BidirectionalPath*> NextPathSearcher::FindNextPaths(
     } else {
         DEBUG("Try to search for path with last edge " << g_.int_id(path.Back()) << " Scaffolding: " << jump << ", next edges " << g_.OutgoingEdgeCount(g_.EdgeEnd(path.Back())));
     }
+    size_t init_length = e->Length();
     grow_paths.push_back(e);
 
     size_t ipath = 0;
     while (ipath < grow_paths.size()) {
         INFO("Iteration " << ipath << " of next path searching " << grow_paths[ipath]->Length() << " max len " << max_len);
         Edge* current_path = grow_paths[ipath++];
-        if (!current_path->IsCorrect()  || current_path->IsCycled() || used_edges.count(current_path) > 0) {
+        if (!current_path->IsCorrect()  || (current_path->IsCycled() && current_path->Length() > init_length) || used_edges.count(current_path) > 0) {
             DEBUG("not correct path " << !current_path->IsCorrect() << " cycled " <<  current_path->IsCycled() << " used " << (used_edges.count(current_path) > 0));
             if (!current_path->IsCorrect() || current_path->IsCycled()){
                 current_path->GetPrevPath(0)->Print();
@@ -349,7 +350,13 @@ Edge* NextPathSearcher::AddPath(const BidirectionalPath& init_path,
             e = next_edge;
         } else if (e->GetId() != path.At(ie)){
             //DEBUG("add this " << ie);
-            e = e->AddOutEdge(path.At(ie));
+            Edge* next_edge = e->AddOutEdge(path.At(ie));
+            if (next_edge->IsCycled()) {
+                e->AddIncorrectOutEdge(path.At(ie));
+                break;
+            } else {
+                e = next_edge;
+            }
         }
     }
     //DEBUG("e " << g_.int_id(e->GetId()));
