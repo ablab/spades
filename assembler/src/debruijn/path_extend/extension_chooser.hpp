@@ -562,7 +562,7 @@ public:
         }
         if (edges.empty()) {
             return edges;
-        }DEBUG("We in Filter of LongReadsExtensionChooser");
+        }DEBUG("We in Filter of LongReadsExtensionChooser with weight priority " << weight_priority_threshold_);
         path.Print();
         map<EdgeId, double> weights_cands;
         for (auto it = edges.begin(); it != edges.end(); ++it) {
@@ -578,6 +578,7 @@ public:
 
                     if (UniqueBackPath(**it, positions[i])) {
                         EdgeId next = (*it)->At(positions[i] + 1);
+			DEBUG("increasing weight for edge " << g_.int_id(next) << " on " << (*it)->GetWeight() << " path starting from " << g_.int_id((*it)->Front()));
                         weights_cands[next] += (*it)->GetWeight();
                         filtered_cands.insert(next);
                     }
@@ -593,6 +594,7 @@ public:
             filtered_cands.clear();
         } else if (sort_res.size() > 1
                 && sort_res[0].second > weight_priority_threshold_ * sort_res[1].second) {
+	    DEBUG("taking candidate "  << g_.int_id(sort_res[0].first));
             filtered_cands.clear();
             filtered_cands.insert(sort_res[0].first);
         }
@@ -600,6 +602,7 @@ public:
         for (auto it = edges.begin(); it != edges.end(); ++it) {
             if (filtered_cands.find(it->e_) != filtered_cands.end()) {
                 result.push_back(*it);
+		DEBUG("returning edge "<< g_.int_id(it->e_));
             }
         }
         return result;
