@@ -20,7 +20,7 @@ namespace cap {
 struct Count {
     size_t count;
     Count() : count(0) {}
-    Count conjugate(size_t k) {
+    Count conjugate(size_t /*k*/) {
     	return *this;
     }
 };
@@ -32,6 +32,7 @@ class RepeatSearchingIndexBuilder : public Builder {
     typedef typename Builder::IndexT IndexT;
     typedef typename IndexT::KMer Kmer;
     typedef typename IndexT::KMerIdx KmerIdx;
+    typedef typename IndexT::KeyWithHash KWH;
 
  private:
     template<class ReadStream>
@@ -46,14 +47,13 @@ class RepeatSearchingIndexBuilder : public Builder {
             if (seq.size() < k)
                 continue;
 
-            Kmer kmer = seq.start<Kmer>(k);
-            kmer >>= 'A';
+            KWH kwh = index.ConstructKWH(seq.start<Kmer>(k));
+            kwh >>= 'A';
             for (size_t j = k - 1; j < seq.size(); ++j) {
-                kmer <<= seq[j];
-                KmerIdx idx = index.seq_idx(kmer);
-                VERIFY(index.valid_idx(idx));
-                if (index[idx].count != -1u) {
-                    index[idx].count += 1;
+                kwh<<= seq[j];
+                VERIFY(index.valid(kwh));
+                if (index.get_value(kwh).count != -1u) {
+                    index.get_raw_value_reference(kwh).count += 1;
                 }
             }
         }
@@ -62,11 +62,11 @@ class RepeatSearchingIndexBuilder : public Builder {
     }
 
     void ProcessCounts(IndexT &index) const {
-        for (KmerIdx idx = index.kmer_idx_begin(); idx < index.kmer_idx_end(); ++idx) {
-            if (index[idx].count > 1) {
-                index[idx].count = -1u;
+        for (auto it = index.value_begin(); it != index.value_end(); ++it) {
+            if (it->count > 1) {
+                it->count = -1u;
             } else {
-                index[idx].count = 0;
+                it->count = 0;
             }
         }
     }
@@ -198,7 +198,7 @@ public:
             if (it->count == -1u) {
                 rep_kmer_cnt++;
             } else {
-                VERIFY(index_[idx].count == 0);
+                VERIFY(it->count == 0);
             }
         }
         INFO("Found " << rep_kmer_cnt << " repetitive " << k_ << "-mers");
