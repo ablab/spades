@@ -106,6 +106,7 @@ private:
                                              max_overlap);
         last1 = posRes.first;
         last2 = posRes.second;
+        INFO("compare paths " << pos1 << " " << pos2 << " to " << last1 << " " << last2);
         BidirectionalPath* conj1 = path1->GetConjPath();
         BidirectionalPath* conj2 = path2->GetConjPath();
         size_t first1 = conj1->Size() - pos1 - 1;
@@ -158,7 +159,7 @@ private:
             for (size_t pos2 = 0; pos2 < poses2.size(); ++pos2) {
                 if (poses2[pos2] > last2) {
                     if (path2.LengthAt(last2) - path2.LengthAt(poses2[pos2])
-                            - g_.length(path2.At(last2)) > max_overlap) {
+                            - g_.length(path2.At(last2)) - path2.GapAt(poses2[pos2]) > max_overlap) {
                         break;
                     }
                     last2 = poses2[pos2];

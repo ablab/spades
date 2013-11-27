@@ -816,7 +816,7 @@ public:
         }
         DeleteNextPaths(next_paths);
         if (result.size() != 1) {
-            DEBUG("nobody can extend");
+            DEBUG("nobody can extend " << g_.int_id(path.Back()));
         }
         return result;
     }

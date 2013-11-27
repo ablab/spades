@@ -713,24 +713,22 @@ public:
 
                 if (begin >= end) {
                     DEBUG("Found palindromic fragment from " << begin_pos << " to " << *end_pos);
+                    Print();
                     VERIFY(*end_pos < Size());
                     size_t tail_size = Size() - *end_pos - 1;
                     size_t head_size = begin_pos;
                     size_t palindrom_half_size = begin - begin_pos;
-
+                    size_t head_len = Length() - LengthAt(begin_pos);
+                    size_t tail_len =  *end_pos < Size() - 1 ? LengthAt(*end_pos + 1) : 0;
+                    size_t palindrom_len = Length() - head_len - tail_len;
+                    if (palindrom_len < head_len && palindrom_len < tail_len) {
+                        DEBUG("too big head and end");
+                        return;
+                    }
                     bool delete_tail = tail_size < head_size;
                     if (tail_size == head_size) {
-                        size_t tail_len = 0;
-                        for (size_t i = *end_pos + 1; i < Size(); ++i) {
-                            tail_len += LengthAt(i);
-                        }
-                        size_t head_len = 0;
-                        for (size_t i = 0; i < begin_pos; ++i) {
-                            head_len += LengthAt(i);
-                        }
                         delete_tail = tail_len < head_len;
                     }
-
                     if (delete_tail) {
                         PopBack(tail_size + palindrom_half_size);
                         FindConjEdges();
@@ -918,13 +916,15 @@ private:
 
 };
 
-int SkipOneGap(EdgeId end, const BidirectionalPath& path, int gap, int pos, bool forward) {
+int SkipOneGap(EdgeId end, const BidirectionalPath& path, int gap, int pos,
+               bool forward) {
     size_t len = 0;
-    while (pos < (int)path.Size() && pos >= 0 && end != path.At(pos) && (int)len < 2 * gap) {
+    while (pos < (int) path.Size() && pos >= 0 && end != path.At(pos)
+            && (int) len < 2 * gap) {
         len += path.graph().length(path.At(pos));
         forward ? pos++ : pos--;
     }
-    if (pos < (int)path.Size() && pos >= 0 && end == path.At(pos)) {
+    if (pos < (int) path.Size() && pos >= 0 && end == path.At(pos)) {
         return pos;
     }
     return -1;
@@ -932,17 +932,19 @@ int SkipOneGap(EdgeId end, const BidirectionalPath& path, int gap, int pos, bool
 
 void SkipGaps(const BidirectionalPath& path1, size_t& cur_pos1, int gap1,
               const BidirectionalPath& path2, size_t& cur_pos2, int gap2,
-              bool forward, bool use_gaps) {
+              bool use_gaps, bool forward) {
     if (use_gaps) {
         if (gap1 > 0 && gap2 <= 0) {
-            int temp2 = SkipOneGap(path1.At(cur_pos1), path2, gap1, (int)cur_pos2, forward);
+            int temp2 = SkipOneGap(path1.At(cur_pos1), path2, gap1,
+                                   (int) cur_pos2, forward);
             if (temp2 >= 0) {
-                cur_pos2 = (size_t)temp2;
+                cur_pos2 = (size_t) temp2;
             }
         } else if (gap2 > 0 && gap1 <= 0) {
-            int temp1 = SkipOneGap(path2.At(cur_pos2), path1, gap2, (int)cur_pos1, forward);
+            int temp1 = SkipOneGap(path2.At(cur_pos2), path1, gap2,
+                                   (int) cur_pos1, forward);
             if (temp1 >= 0) {
-                cur_pos1 = (size_t)temp1;
+                cur_pos1 = (size_t) temp1;
             }
         } else if (gap1 > 0 && gap2 > 0 && gap1 != gap2) {
             DEBUG("not equal gaps in two paths!!!");
@@ -951,7 +953,8 @@ void SkipGaps(const BidirectionalPath& path1, size_t& cur_pos1, int gap1,
 }
 
 size_t FirstNotEqualPosition(const BidirectionalPath& path1, size_t pos1,
-                       const BidirectionalPath& path2, size_t pos2, bool use_gaps) {
+                             const BidirectionalPath& path2, size_t pos2,
+                             bool use_gaps) {
     int cur_pos1 = (int) pos1;
     int cur_pos2 = (int) pos2;
     int gap1 = path1.GapAt(cur_pos1);
@@ -963,16 +966,15 @@ size_t FirstNotEqualPosition(const BidirectionalPath& path1, size_t pos1,
         } else {
             return cur_pos1;
         }
-        if (cur_pos1 >= 0 && cur_pos2 >=0){
+        if (cur_pos1 >= 0 && cur_pos2 >= 0) {
             size_t p1 = (size_t) cur_pos1;
             size_t p2 = (size_t) cur_pos2;
             SkipGaps(path1, p1, gap1, path2, p2, gap2, use_gaps, false);
-            cur_pos1 = (int)p1;
-            cur_pos2 = (int)p2;
+            cur_pos1 = (int) p1;
+            cur_pos2 = (int) p2;
             gap1 = path1.GapAt(cur_pos1);
             gap2 = path2.GapAt(cur_pos2);
         }
-
     }
     return -1UL;
 }
@@ -982,7 +984,8 @@ bool EqualBegins(const BidirectionalPath& path1, size_t pos1,
 }
 
 size_t LastNotEqualPosition(const BidirectionalPath& path1, size_t pos1,
-                      const BidirectionalPath& path2, size_t pos2, bool use_gaps) {
+                            const BidirectionalPath& path2, size_t pos2,
+                            bool use_gaps) {
     size_t cur_pos1 = pos1;
     size_t cur_pos2 = pos2;
     while (cur_pos1 < path1.Size() && cur_pos2 < path2.Size()) {
@@ -992,9 +995,9 @@ size_t LastNotEqualPosition(const BidirectionalPath& path1, size_t pos1,
         } else {
             return cur_pos1;
         }
-        int gap1 = cur_pos1 < path1.Size()? path1.GapAt(cur_pos1) : 0;
-        int gap2 = cur_pos2 < path2.Size()? path2.GapAt(cur_pos2) : 0;
-        SkipGaps(path1, cur_pos1, gap1, path2,  cur_pos2, gap2, use_gaps, true);
+        int gap1 = cur_pos1 < path1.Size() ? path1.GapAt(cur_pos1) : 0;
+        int gap2 = cur_pos2 < path2.Size() ? path2.GapAt(cur_pos2) : 0;
+        SkipGaps(path1, cur_pos1, gap1, path2, cur_pos2, gap2, use_gaps, true);
     }
     return -1UL;
 }
