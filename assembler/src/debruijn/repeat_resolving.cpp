@@ -91,13 +91,18 @@ size_t GetFirstPELibIndex() {
 //TODO: get rid of this conversion
 void ConvertLongReads(LongReadContainerT& single_long_reads, vector<PathStorageInfo<Graph> > &long_reads_libs) {
     for (size_t i = 0; i < single_long_reads.size(); ++i) {
+
         DEBUG("converting " << i)
         PathStorage<Graph>& storage = single_long_reads[i];
         vector<PathInfo<Graph> > paths = storage.GetAllPaths();
+        auto tmp = cfg::get().pe_params.long_reads.single_reads;
+        if (cfg::get().ds.reads[i].type() == io::LibraryType::PacBioReads) {
+            tmp = cfg::get().pe_params.long_reads.pacbio_reads;
+        }
         PathStorageInfo<Graph> single_storage(paths,
-                cfg::get().pe_params.long_reads.single_reads.filtering,
-                cfg::get().pe_params.long_reads.single_reads.weight_priority,
-                cfg::get().pe_params.long_reads.single_reads.unique_edge_priority);
+                tmp.filtering,
+                tmp.weight_priority,
+                tmp.unique_edge_priority);
         long_reads_libs.push_back(single_storage);
         DEBUG("done " << i)
     }
