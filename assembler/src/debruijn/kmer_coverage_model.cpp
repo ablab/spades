@@ -344,9 +344,9 @@ void KMerCoverageModel::Fit() {
     INFO("Probability of erroneous kmer at valley: " << z[Valley_]);
     Converged = false;
     for (size_t i = 0; i < z.size(); ++i)
-      if (z[i] > 0.999)
+      if (z[i] > strong_probability_threshold_) //0.999
         LowThreshold_ = std::min(i + 1, Valley_);
-      else if (z[i] < 0.05) {
+      else if (z[i] < probability_threshold_) {//0.05?
         ErrorThreshold_ = std::max(i + 1, Valley_);
         Converged = true;
         break;

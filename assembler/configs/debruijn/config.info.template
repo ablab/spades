@@ -131,6 +131,11 @@ gap_closer
     weight_threshold		2.0
 }
 
+kmer_coverage_model {
+    probability_threshold 0.05
+    strong_probability_threshold 0.999
+}
+
 pacbio_processor
 {
 ;align and traverse.

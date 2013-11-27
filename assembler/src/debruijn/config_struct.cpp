@@ -375,6 +375,13 @@ void load(debruijn_config::graph_read_corr_cfg& graph_read_corr,
   load(graph_read_corr.binary, pt, "binary");
 }
 
+void load(debruijn_config::kmer_coverage_model& kcm,
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
+  using config_common::load;
+  load(kcm.probability_threshold, pt, "probability_threshold");
+  load(kcm.strong_probability_threshold, pt, "strong_probability_threshold");
+}
+
 void load(debruijn_config::dataset& ds,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
@@ -632,6 +639,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   load(cfg.con, pt, "construction");
   load(cfg.gc, pt, "gap_closer");
   load(cfg.graph_read_corr, pt, "graph_read_corr");
+  load(cfg.kcm, pt, "kmer_coverage_model");
   load(cfg.need_consensus, pt, "need_consensus");
   load(cfg.uncorrected_reads, pt, "uncorrected_reads");
   load(cfg.mismatch_ratio, pt, "mismatch_ratio");

@@ -389,6 +389,11 @@ struct debruijn_config {
         bool binary;
     };
 
+    struct kmer_coverage_model {
+        double probability_threshold;
+        double strong_probability_threshold;
+    };
+
     typedef std::map<info_printer_pos, info_printer> info_printers_t;
 
 public:
@@ -473,6 +478,7 @@ public:
     gap_closer gc;
     graph_read_corr_cfg graph_read_corr;
     info_printers_t info_printers;
+    kmer_coverage_model kcm;
 
     size_t flanking_range;
 };

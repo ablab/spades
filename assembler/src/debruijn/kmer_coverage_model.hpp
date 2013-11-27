@@ -15,10 +15,11 @@ namespace cov_model {
 class KMerCoverageModel {
   const std::vector<size_t> &cov_;
   size_t MaxCov_, Valley_, ErrorThreshold_, LowThreshold_, GenomeSize_;
+  double probability_threshold_, strong_probability_threshold_;
 
  public:
-  KMerCoverageModel(const std::vector<size_t> &cov)
-      : cov_(cov), LowThreshold_(0){}
+  KMerCoverageModel(const std::vector<size_t> &cov, double probability_threshold, double strong_probability_threshold)
+      : cov_(cov), LowThreshold_(0), probability_threshold_(probability_threshold), strong_probability_threshold_(strong_probability_threshold) {}
 
   void Fit();
 
