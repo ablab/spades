@@ -137,6 +137,16 @@ public:
     size_t Length() const {
         return dist_;
     }
+    set<Edge*> GetPrevEdges(size_t dist) {
+        size_t init_len = Length();
+        Edge* e = this;
+        set<Edge*> result;
+        while (e && init_len - e->Length() < dist) {
+            result.insert(e);
+            e = e->prev_edge_;
+        }
+        return result;
+    }
     EdgeId GetId() const {
         return id_;
     }
@@ -458,7 +468,11 @@ void NextPathSearcher::Scaffold(const BidirectionalPath& init_path,
 
 void NextPathSearcher::FindScaffoldingCandidates(const BidirectionalPath& init_path, Edge* current_path,
         EdgeSet& candidate_set) {
-
+    set<EdgeId> path_end;
+    set<Edge*> prev_edges = current_path->GetPrevEdges(search_dist_);
+    for (Edge* e : prev_edges) {
+        path_end.insert(e->GetId());
+    }
     map<EdgeId, vector<int> > candidates;
     current_path->GetPrevPath(0)->Print();
     VERIFY(current_path->Length() >= init_path.Length());
@@ -478,6 +492,9 @@ void NextPathSearcher::FindScaffoldingCandidates(const BidirectionalPath& init_p
     }
 
     for (auto e: candidates) {
+        if (path_end.count(e.first) > 0) {
+            continue;
+        }
         int avg_distance = 0;
         DEBUG("All distances for edge " << g_.int_id(e.first) << " (" << g_.length(e.first) << ")");
         for (int dist: e.second) {
