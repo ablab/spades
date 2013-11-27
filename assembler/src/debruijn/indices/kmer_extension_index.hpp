@@ -48,6 +48,7 @@ private:
     char GetUnique(uint8_t mask) const {
         static char next[] = { -1, 0, 1, -1, 2, -1, -1, -1, 3, -1, -1, -1, -1,
                 -1, -1, -1 };
+        VERIFY(next[mask] != -1)
         return next[mask];
     }
 
@@ -142,7 +143,7 @@ public:
     }
 
     char GetUniqueIncoming() const {
-        return GetUnique(uint8_t(mask_ >> 15));
+        return GetUnique(uint8_t(mask_ >> 4));
     }
 
     size_t OutgoingEdgeCount() const {
