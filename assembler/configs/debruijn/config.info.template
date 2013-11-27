@@ -68,7 +68,7 @@ use_additional_contigs false
 topology_simplif_enabled false
 
 ; use unipaths as additional contigs instead of just graph edges
-use_unipaths false
+use_unipaths true
 
 ; set it true to separate the clusters after de stage
 divide_clusters false
