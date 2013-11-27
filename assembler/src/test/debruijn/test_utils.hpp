@@ -149,10 +149,10 @@ void AssertGraph(size_t k, const vector<string>& reads, const vector<string>& et
 	DEBUG("Asserting graph");
 	typedef io::VectorReadStream<io::SingleRead> RawStream;
 	Graph g(k);
-	graph_pack<Graph, runtime_k::RtSeq>::index_t index(g, k + 1, tmp_folder);
+	graph_pack<Graph, runtime_k::RtSeq>::index_t index(g, tmp_folder);
 
     io::ReadStreamList<io::SingleRead> streams(io::RCWrap<io::SingleRead>(make_shared<RawStream>(MakeReads(reads))));
-	ConstructGraph(k, CreateDefaultConstructionConfig(), streams, g, index);
+	ConstructGraph(CreateDefaultConstructionConfig(), streams, g, index);
 
 	AssertEdges(g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
 }
@@ -221,7 +221,7 @@ void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t rl, 
 	DEBUG("Graph pack created");
 
 	io::ReadStreamList<io::SingleRead> single_stream_vector = io::SquashingWrap<io::PairedRead>(paired_streams);
-	ConstructGraphWithCoverage(k, CreateDefaultConstructionConfig(), single_stream_vector, gp.g, gp.index, gp.flanking_cov);
+	ConstructGraphWithCoverage(CreateDefaultConstructionConfig(), single_stream_vector, gp.g, gp.index, gp.flanking_cov);
 
     SequenceMapperNotifier notifier(gp);
     LatePairedIndexFiller pif(gp.g, PairedReadCountWeight, gp.paired_indices[0]);

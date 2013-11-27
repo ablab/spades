@@ -62,8 +62,8 @@ public:
 
 public:
 
-    KmerFreeEdgeIndex(unsigned k, const Graph &graph, const std::string &workdir)
-            : base(k, workdir), graph_(graph) {}
+    KmerFreeEdgeIndex(const Graph &graph, const std::string &workdir)
+            : base(unsigned(graph.k() + 1), workdir), graph_(graph) {}
 
     /**
      * Shows if kmer has some entry associated with it
@@ -122,8 +122,8 @@ public:
   using base::ConstructKWH;
 
 
-  KmerStoringEdgeIndex(size_t K, const Graph& , const std::string &workdir)
-          : base(K, workdir) {}
+  KmerStoringEdgeIndex(const Graph& g, const std::string &workdir)
+          : base(unsigned(g.k() + 1), workdir) {}
 
   ~KmerStoringEdgeIndex() {}
 

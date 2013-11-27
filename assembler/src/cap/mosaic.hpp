@@ -4,6 +4,8 @@
 #include "io/sequence_reader.hpp"
 #include "diff_masking.hpp"
 #include "adt/bag.hpp"
+#include "io/vector_reader.hpp"
+#include "omni/visualization/graph_colorer.hpp"
 
 namespace cap {
 
@@ -50,6 +52,10 @@ public:
 
     EdgeId edge_id(const Block& block) const {
         return g_.int_ids().ReturnEdgeId(block);
+    }
+
+    const Graph& g() const {
+        return g_;
     }
 };
 
@@ -385,6 +391,10 @@ public:
                 answer.push_back(range);
         return answer;
     }
+
+    const multimap<string, StrandRange>& all_substruct_pos() const {
+        return all_substruct_pos_;
+    }
 };
 
 class MosaicHelper {
@@ -571,7 +581,7 @@ public:
 
 };
 
-class NotTandemFilter {
+class NotTandemFilter : public func::Predicate<MosaicStructure> {
     const BlockInfoProvider& block_info_;
 public:
     NotTandemFilter(const BlockInfoProvider& block_info) :
@@ -579,7 +589,8 @@ public:
 
     }
 
-    bool operator() (const MosaicStructure& mosaic) {
+    //todo use const references!!!
+    bool Check (MosaicStructure mosaic) const {
         bag<Block> block_cnts;
         for (Block b : mosaic.blocks()) {
             block_cnts.put(b);
@@ -595,9 +606,74 @@ public:
 
 };
 
-class MosaicStructureSet {
-    typedef function<bool (MosaicStructure)> FilterFT;
+class LengthFilter : public func::Predicate<MosaicStructure> {
+    const MosaicHelper& helper_;
+    size_t min_span_length_;
+public:
+    LengthFilter(const MosaicHelper& helper, size_t min_span_length) :
+        helper_(helper),
+        min_span_length_(min_span_length) {
 
+    }
+
+    //todo use const references!!!
+    bool Check (MosaicStructure mosaic) const {
+        return size_t(math::round(helper_.AvgGenomicSpan(mosaic))) >= min_span_length_;
+    }
+
+};
+
+class FullMosaicTracker : public MosaicPrinter {
+//    vector<vector<StrandRange>> full_mosaic_ranges_;
+    vector<StrandRange> full_mosaic_ranges_;
+
+    size_t curr_length_;
+public:
+    FullMosaicTracker() : curr_length_(0) {
+    }
+
+    virtual void StartRecord(const MosaicStructure& mosaic) {
+        curr_length_ = mosaic.block_size();
+    }
+
+    virtual void ReportSubMosaic(const MosaicStructure& mosaic, const vector<StrandRange>& ranges) {
+        if (mosaic.block_size() == curr_length_)
+            full_mosaic_ranges_.push_back(ranges.front());
+    }
+
+    virtual void EndRecord() {
+    }
+
+    const vector<StrandRange>& full_mosaic_ranges() const {
+        return full_mosaic_ranges_;
+    }
+
+};
+
+class AllRangesTracker : public MosaicPrinter {
+    vector<StrandRange> all_ranges_;
+
+public:
+    AllRangesTracker() {
+    }
+
+    virtual void StartRecord(const MosaicStructure& /*mosaic*/) {
+    }
+
+    virtual void ReportSubMosaic(const MosaicStructure& /*mosaic*/, const vector<StrandRange>& ranges) {
+        all_ranges_.push_back(ranges.front());
+    }
+
+    virtual void EndRecord() {
+    }
+
+    const vector<StrandRange>& all_ranges() const {
+        return all_ranges_;
+    }
+
+};
+
+class MosaicStructureSet {
     const GenomeBlockComposition& block_composition_;
     IntervalIndex& interval_index_;
 
@@ -656,7 +732,7 @@ public:
         }
     }
 
-    const multimap<string, size_t> different_irred_presence() const {
+    const multimap<string, size_t>& different_irred_presence() const {
         return different_irred_presence_;
     }
 
@@ -676,15 +752,18 @@ public:
         CountDifferentIrred();
     }
 
-    void Report(MosaicPrinter& printer, FilterFT filter) {
+    void Report(MosaicPrinter& printer, shared_ptr<func::Predicate<MosaicStructure>> filter
+                = 0) {
         for (size_t i = 0; i < irreducible_structures_.size(); ++i) {
             MosaicStructure mosaic = irreducible_structures_[i];
-            if (!filter || filter(mosaic)) {
+            if (!filter || filter->Check(mosaic)) {
                 printer.StartRecord(mosaic);
                 set<StrandRange> reported_ranges;
                 for (const MosaicStructure& submosaic: mosaic.SubMosaics()) {
                     vector<StrandRange> ranges = interval_index_
                             .UnReportedOccurences(submosaic, reported_ranges);
+                    if (ranges.empty())
+                        continue;
                     printer.ReportSubMosaic(submosaic, ranges);
                     insert_all(reported_ranges, ranges);
                 }
@@ -693,6 +772,111 @@ public:
     }
 
 };
+
+//todo reduce duplication
+const io::SingleRead MakeRead(const string& read, const string& name = "") {
+    //todo fill with good quality
+    std::string qual;
+    qual.resize(read.size());
+    return io::SingleRead(name, read, qual);
+}
+
+const vector<io::SingleRead> MakeReads(const vector<string>& reads) {
+    vector<io::SingleRead> ans;
+    for (size_t i = 0; i < reads.size(); ++i) {
+        ans.push_back(MakeRead(reads[i]));
+    }
+    return ans;
+}
+
+const vector<io::SingleRead> MakeReads(const vector<string>& reads, const vector<string>& names) {
+    vector<io::SingleRead> ans;
+    for (size_t i = 0; i < reads.size(); ++i) {
+        ans.push_back(MakeRead(reads[i], names[i]));
+    }
+    return ans;
+}
+
+vector<string> mosaic_names(size_t n) {
+    vector<string> ans;
+    for (size_t i = 0; i < n; ++i) {
+        ans.push_back("mosaic_" + ToString(i));
+    }
+    return ans;
+}
+
+shared_ptr<io::ReadStream<io::SingleRead>> StreamInstance(const vector<string>& sequences) {
+    return make_shared<io::VectorReadStream<io::SingleRead>>(MakeReads(sequences));
+}
+
+shared_ptr<io::ReadStream<io::SingleRead>> StreamInstance(const vector<string>& sequences, const vector<string>& names) {
+    return make_shared<io::VectorReadStream<io::SingleRead>>(MakeReads(sequences, names));
+}
+//multimap<string, StrandRange> all_substruct_pos_;
+//const GenomeBlockComposition& block_composition_;
+
+
+string ExtractSequence(const StrandRange& strand_range, const GenomeBlockComposition& block_composition) {
+    const BlockInfoProvider& block_info = block_composition.block_info();
+    const Graph& g = block_info.g();
+    vector<Graph::EdgeId> edges;
+    Range range = strand_range.first;
+    bool strand = strand_range.second;
+    for (size_t i = range.start_pos; i < range.end_pos; ++i) {
+        edges.push_back(block_info.edge_id(block_composition.block(i, strand)));
+    }
+    return MergeSequences(g, edges).str();
+}
+
+vector<string> ExtractSequences(const vector<StrandRange>& strand_ranges, const GenomeBlockComposition& block_composition) {
+    vector<string> answer;
+    for (StrandRange range : strand_ranges) {
+        answer.push_back(ExtractSequence(range, block_composition));
+    }
+    return answer;
+}
+
+debruijn_config::construction CreateDefaultConstructionConfig() {
+    debruijn_config::construction config;
+    config.con_mode = construction_mode::con_extention;
+    debruijn_config::construction::early_tip_clipper early_tc;
+    early_tc.enable = false;
+    config.early_tc = early_tc;
+    config.keep_perfect_loops = true;
+    return config;
+}
+
+void DrawGraph(const vector<StrandRange>& all_ranges,
+               const vector<StrandRange>& full_mosaic_ranges,
+               const GenomeBlockComposition& block_composition) {
+    make_dir("tmp");
+    graph_pack<Graph, runtime_k::RtSeq> gp(block_composition.block_info().g().k(), "tmp", 0);
+
+    auto stream = io::RCWrap(StreamInstance(ExtractSequences(all_ranges, block_composition)));
+    auto streams = io::ReadStreamList<io::SingleRead>(stream);
+//    ConstructGraphUsingOldIndex(streams, gp.g, gp.index);
+    ConstructGraph(CreateDefaultConstructionConfig(), streams, gp.g, gp.index);
+
+    auto full_mosaic_pos_stream = io::RCWrap(StreamInstance(ExtractSequences(full_mosaic_ranges, block_composition), mosaic_names(full_mosaic_ranges.size())));
+    INFO("Threading " << full_mosaic_ranges.size() << " full mosaics");
+    FillPos(gp, *full_mosaic_pos_stream);
+
+    typedef omnigraph::TotalLabelerGraphStruct  <debruijn_graph::ConjugateDeBruijnGraph>    total_labeler_graph_struct;
+    typedef omnigraph::TotalLabeler             <debruijn_graph::ConjugateDeBruijnGraph>    total_labeler;
+    total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
+    total_labeler labeler/*tot_lab*/(&graph_struct);
+
+    shared_ptr<GraphSplitter<Graph>> splitter = omnigraph::ReliableSplitter(gp.g,
+            numeric_limits<size_t>::max(),
+            numeric_limits<size_t>::max());
+
+    path::remove_if_exists("mosaic_pics");
+    path::make_dir("mosaic_pics");
+    INFO("Writing components");
+    omnigraph::visualization::WriteComponents(gp.g, "mosaic_pics/", splitter,
+            omnigraph::visualization::DefaultColorer(gp.g), labeler);
+    INFO("Components written");
+}
 
 class MosaicStructureAnalyzer {
     const BlockInfoProvider& block_info_;
@@ -767,8 +951,20 @@ public:
         TxtFileMosaicPrinter printer(helper, interval_set.different_irred_presence(), out_);
 
         //might have problems if only largest occurence is tandem making whole mosaic invalid
-        NotTandemFilter filter(block_info_);
-        interval_set.Report(printer, bind(&NotTandemFilter::operator(), ref(filter), _1));
+        //todo magic constant!
+        auto filter = func::And<MosaicStructure>(make_shared<NotTandemFilter>(block_info_), make_shared<LengthFilter>(helper, 500));
+//        auto filter = make_shared<func::AlwaysTrue<MosaicStructure>>();
+
+        //todo move filter to set constructor
+        interval_set.Report(printer, filter);
+
+        //pics
+        FullMosaicTracker tracker;
+        interval_set.Report(tracker, filter);
+        vector<StrandRange> full_mosaic_ranges = tracker.full_mosaic_ranges();
+        AllRangesTracker all_tracker;
+        interval_set.Report(all_tracker, filter);
+        DrawGraph(all_tracker.all_ranges(), full_mosaic_ranges, block_composition_);
     }
 
 };

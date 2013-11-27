@@ -44,9 +44,9 @@ private:
 
 public:
 
-    EdgeIndex(const Graph& g, size_t k, const std::string &workdir)
+    EdgeIndex(const Graph& g, const std::string &workdir)
             : GraphActionHandler<Graph>(g, "EdgeIndex"),
-              inner_index_((unsigned) k, g, workdir),
+              inner_index_(g, workdir),
               updater_(g, inner_index_),
               delete_index_(true) {
     }

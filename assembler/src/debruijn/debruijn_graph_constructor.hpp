@@ -167,8 +167,8 @@ private:
 	}
 
 public:
-	DeBruijnGraphConstructor(Graph& graph, DeBruijn &origin, size_t k) :
-			graph_(graph), origin_(origin), kmer_size_(k) {
+	DeBruijnGraphConstructor(Graph& graph, DeBruijn &origin) :
+			graph_(graph), origin_(origin), kmer_size_(graph_.k()) {
 	}
 
 	void ConstructGraph(size_t queueMinSize, size_t queueMaxSize,
@@ -533,8 +533,8 @@ private:
 	}
 
 public:
-	DeBruijnGraphExtentionConstructor(Graph& graph, DeBruijn &origin, size_t k) :
-			graph_(graph), origin_(origin), kmer_size_(k) {
+	DeBruijnGraphExtentionConstructor(Graph& graph, DeBruijn &origin) :
+			graph_(graph), origin_(origin), kmer_size_(graph.k()) {
 	}
 
 	void ConstructGraph(size_t queueMinSize, size_t queueMaxSize,

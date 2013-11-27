@@ -24,7 +24,7 @@ void construct_graph(io::ReadStreamList<Read>& streams,
     debruijn_config::construction params = cfg::get().con;
     params.early_tc.enable &= !cfg::get().ds.single_cell;
 
-    size_t rl = ConstructGraphWithCoverage(cfg::get().K, params, streams, gp.g,
+    size_t rl = ConstructGraphWithCoverage(params, streams, gp.g,
                                            gp.index, gp.flanking_cov, contigs_stream);
 
     if (!cfg::get().ds.RL()) {
