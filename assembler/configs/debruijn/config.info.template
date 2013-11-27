@@ -132,7 +132,7 @@ gap_closer
 }
 
 kmer_coverage_model {
-    probability_threshold 0.05
+    probability_threshold 0.2
     strong_probability_threshold 0.999
 }
 
