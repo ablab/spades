@@ -179,7 +179,7 @@ class QualityEdgeLocalityPrintingRH : public QualityLoggingRemovalHandler<Graph>
     typedef typename Graph::VertexId VertexId;
     const GraphLabeler<Graph>& labeler_;
     std::shared_ptr<visualization::GraphColorer<Graph>> colorer_;
-    const string& output_folder_;
+    const string output_folder_;
 //  size_t black_removed_;
 //  size_t colored_removed_;
 public:
@@ -198,15 +198,15 @@ public:
     virtual void HandlePositiveQuality(EdgeId e) {
         //todo magic constant
 //          map<EdgeId, string> empty_coloring;
-
         auto edge_colorer = make_shared<visualization::CompositeEdgeColorer<Graph>>("black");
         edge_colorer->AddColorer(colorer_);
         edge_colorer->AddColorer(make_shared<visualization::SetColorer<Graph>>(this->g(), vector<EdgeId>(1, e), "green"));
         shared_ptr<visualization::GraphColorer<Graph>> resulting_colorer = make_shared<visualization::CompositeGraphColorer<Graph>>(colorer_, edge_colorer);
-
+        
+        string fn = output_folder_ + "edge_" +  ToString(this->g().int_id(e))
+                    + "_" + ToString(this->quality_handler().quality(e)) + ".dot";
         omnigraph::visualization::WriteComponent(omnigraph::EdgeNeighborhood<Graph>(this->g(), e, 50, 250)
-                , output_folder_ + "edge_" +  ToString(this->g().int_id(e))
-                    + "_" + ToString(this->quality_handler().quality(e)) + ".dot"
+                , fn
                 , resulting_colorer, labeler_);
     }
 
