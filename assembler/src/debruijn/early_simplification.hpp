@@ -10,7 +10,7 @@ class LinkCleaner {
 private:
 	typedef DeBruijnExtensionIndex<> Index;
 	typedef Index::KMer Kmer;
-	typedef typename Index::KeyWithHash KeyWithHash;
+	typedef Index::KeyWithHash KeyWithHash;
 	Index &index_;
 
 	void CleanForwardLinks(KeyWithHash &kh, char i) {
@@ -51,7 +51,7 @@ class EarlyTipClipper {
 private:
 	typedef DeBruijnExtensionIndex<> Index;
 	typedef Index::KMer Kmer;
-	typedef typename Index::KeyWithHash KeyWithHash;
+	typedef Index::KeyWithHash KeyWithHash;
 	Index &index_;
 	size_t length_bound_;
 
@@ -127,7 +127,7 @@ class AlternativeEarlyTipClipper {
 private:
 	typedef DeBruijnExtensionIndex<> Index;
     typedef Index::KMer Kmer;
-	typedef typename Index::KeyWithHash KeyWithHash;
+	typedef Index::KeyWithHash KeyWithHash;
 	Index &index_;
 	size_t length_bound_;
 

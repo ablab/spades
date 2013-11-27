@@ -198,8 +198,8 @@ private:
 	typedef DeBruijnExtensionIndex<> Index;
 	typedef runtime_k::RtSeq Kmer;
 	typedef Index::kmer_iterator kmer_iterator;
-	typedef typename Index::KeyWithHash KeyWithHash;
-	typedef typename Index::DeEdge DeEdge;
+	typedef Index::KeyWithHash KeyWithHash;
+	typedef Index::DeEdge DeEdge;
 
 	Index &origin_;
 	size_t kmer_size_;
@@ -248,8 +248,8 @@ private:
 	typedef DeBruijnExtensionIndex<> Index;
 	typedef runtime_k::RtSeq Kmer;
 	typedef Index::kmer_iterator kmer_iterator;
-	typedef typename Index::DeEdge DeEdge;
-	typedef typename Index::KeyWithHash KeyWithHash;
+	typedef Index::DeEdge DeEdge;
+	typedef Index::KeyWithHash KeyWithHash;
 
 	Index &origin_;
 	size_t kmer_size_;
