@@ -389,6 +389,16 @@ void RemoveLowCoverageEdges(
 }
 
 template<class Graph>
+void RemoveSelfConjugateEdges(
+    Graph &g, size_t max_length, double max_coverage,
+                boost::function<void(EdgeId)> removal_handler = 0) {
+    INFO("Removing short low covered self-conjugate connections");
+    LowCoveredSelfConjEdgeRemovingAlgorithm<Graph> algo(g, max_length, max_coverage, removal_handler);
+    algo.Process();
+    DEBUG("Short low covered self-conjugate connections removed");
+}
+
+template<class Graph>
 bool RemoveRelativelyLowCoverageEdges(
     Graph &g,
     const debruijn_config::simplification::relative_coverage_ec_remover& rec_config,
@@ -664,6 +674,8 @@ void SimplifyGraph(conj_graph_pack &gp,
 
     printer(ipp_before_simplification);
     DEBUG("Graph simplification started");
+
+    RemoveSelfConjugateEdges(gp.g, 100, 1., removal_handler);
 
     if (cfg::get().ds.single_cell)
         PreSimplification(gp, removal_handler, printer, iteration_count,
