@@ -942,7 +942,7 @@ private:
             return;
         }
         size_t common_begin = 0;
-        /*BidirectionalPath* p = *next_paths.begin();
+        BidirectionalPath* p = *next_paths.begin();
         bool contain_all = true;
         while (contain_all && common_begin < p->Size()) {
             EdgeId e = p->At(common_begin);
@@ -953,7 +953,7 @@ private:
                 }
             }
             common_begin++;
-        }*/
+        }
         for (BidirectionalPath* next : next_paths) {
             result[next] = weight_counter_.FindPairInfoFromPath(path, 0, path.Size(), *next, common_begin, next->Size());
         }
