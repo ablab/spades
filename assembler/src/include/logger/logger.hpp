@@ -138,6 +138,7 @@ inline const char* __scope_source_name() {
 #define VERBOSE_POWER2(n, message)          VERBOSE_POWER_T2((n), 10000, message)
 #define WARN(message)                       LOG_MSG(logging::L_WARN, message)
 #define ERROR(message)                      LOG_MSG(logging::L_ERROR, message)
+#define FATAL_ERROR(message)                {ERROR(message); exit(-1);}
 
 
 /// implementation /////////////////////////////////////
