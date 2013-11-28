@@ -277,16 +277,13 @@ set<BidirectionalPath*> NextPathSearcher::FindNextPaths(
 
     size_t ipath = 0;
     while (ipath < grow_paths.size()) {
-        INFO("Iteration " << ipath << " of next path searching " << grow_paths[ipath]->Length() << " max len " << max_len << " last edge id " << g_.int_id(grow_paths[ipath]->GetId()));
         Edge* current_path = grow_paths[ipath++];
         if (!current_path->IsCorrect()  || (current_path->IsCycled() && current_path->Length() > init_length) || used_edges.count(current_path) > 0) {
-            DEBUG("not correct path " << !current_path->IsCorrect() << " cycled " <<  current_path->IsCycled() << " used " << (used_edges.count(current_path) > 0));
             used_edges.insert(current_path);
             continue;
         }
         used_edges.insert(current_path);
         if (current_path->Length() >= max_len) {
-            DEBUG("Added path of length " << current_path->Length());
             result_edges.push_back(current_path);
             continue;
         }
@@ -295,7 +292,6 @@ set<BidirectionalPath*> NextPathSearcher::FindNextPaths(
         if (to_add.empty()) {
             ScaffoldTip(path, current_path, result_edges, stopped_paths, to_add, jump);
         }
-        DEBUG("inserting apths")
         grow_paths.insert(grow_paths.end(), to_add.begin(), to_add.end());
 
         if (grow_paths.size() > max_paths_) { //TODO:move to config
@@ -309,9 +305,8 @@ set<BidirectionalPath*> NextPathSearcher::FindNextPaths(
     }
 
     std::set<BidirectionalPath*> result_paths;
-    DEBUG("adding paths")
+    DEBUG("adding paths " << result_edges.size());
     for (size_t i = 0; i < result_edges.size(); ++i) {
-        DEBUG("adding path " << i)
         result_paths.insert(new BidirectionalPath(result_edges[i]->GetPrevPath(path.Size())));
     }
     delete start_e;

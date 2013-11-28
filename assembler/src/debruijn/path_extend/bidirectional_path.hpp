@@ -316,14 +316,12 @@ protected:
 
     void DecreaseLengths() {
         Verify();
-        DEBUG("was " << totalLength_ << " " <<  g_.length(data_.back()) << " + " << gapLength_.back() << " " << cumulativeLength_[0] << " " << gapLength_[0]);
         size_t length = g_.length(data_.back()) + gapLength_.back();
         for(auto iter = cumulativeLength_.begin(); iter != cumulativeLength_.end(); ++iter) {
             *iter -= length;
         }
         cumulativeLength_.pop_back();
         totalLength_ -= length;
-        DEBUG("now " << totalLength_ << " " << cumulativeLength_[0] << " " << gapLength_[0]);
         Verify();
     }
 
@@ -353,9 +351,7 @@ protected:
 
     void PushFront(EdgeId e, int gap = 0) {
         Verify();
-        Print();
         data_.push_front(e);
-        DEBUG("gap " << gap);
         if (gapLength_.size() > 0) {
             gapLength_[0] += gap;
         }
@@ -375,6 +371,10 @@ protected:
     void PopFront() {
         EdgeId e = data_.front();
         int cur_gap = gapLength_.front();
+        if (gapLength_.size() > 1) {
+            cur_gap += GapAt(1);
+            gapLength_[1] = 0;
+        }
         data_.pop_front();
         gapLength_.pop_front();
 
@@ -505,7 +505,6 @@ public:
         if (data_.empty()) {
             return;
         }
-
         EdgeId e = data_.back();
         DecreaseLengths();
 	    gapLength_.pop_back();

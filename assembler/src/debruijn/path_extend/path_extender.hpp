@@ -85,15 +85,11 @@ public:
 
         if (GetLoopAndExit(path, edges)) {
             DEBUG("Resolving short loop...");
-            path.Print();
-
             EdgeId e = path.Head();
             path.PushBack(edges.first);
             path.PushBack(e);
             path.PushBack(edges.second);
             DEBUG("Resolving short loop done");
-
-            path.Print();
         }
     }
 
@@ -122,8 +118,6 @@ public:
     }
 
     void MakeBestChoice(BidirectionalPath& path, pair<EdgeId, EdgeId>& edges) {
-        DEBUG("Path before deleting");
-        path.Print();
         EdgeId first_edge = path.Back();
         EdgeId second_edge = edges.first;
         while (path.Size() > 2) {
@@ -134,8 +128,6 @@ public:
                 break;
             }
         }
-        DEBUG("Path after deleting");
-        path.Print();
         chooser_.ClearExcludedEdges();
         BidirectionalPath experiment(path);
         double maxWeight = chooser_.CountWeight(experiment, edges.second);
@@ -143,12 +135,10 @@ public:
         size_t maxIter = 0;
         for (size_t i = 1; i <= iter_; ++i) {
             double weight = chooser_.CountWeight(experiment, edges.first);
-            DEBUG("weight " << weight);
             if (weight > 0) {
                 MakeCycleStep(experiment, edges.first);
                 weight = chooser_.CountWeight(experiment, edges.second);
                 double weight2 = chooser_.CountWeight(experiment, edges.first);
-                DEBUG("iter " << i << " weight " << weight  << " maxWeight " << maxWeight << " weight 2 " <<  weight2 << " diff " << diff);
                 if (weight > maxWeight ||
                         (weight == maxWeight && weight - weight2 > diff) ||
                         (weight == maxWeight && weight - weight2 == diff  && i == 1)) {
@@ -162,8 +152,6 @@ public:
             MakeCycleStep(path, edges.first);
         }
         path.PushBack(edges.second);
-        DEBUG("path after resolving");
-        path.Print();
     }
 
     virtual void ResolveShortLoop(BidirectionalPath& path) {
@@ -488,7 +476,7 @@ public:
     int FindCycleStart(const BidirectionalPath& path) const {
 
         int i = (int) path.Size() - 1;
-        DEBUG("Looking for IS cycle " << min_cycle_len_);
+        TRACE("Looking for IS cycle " << min_cycle_len_);
         while (i >= 0 && path.LengthAt(i) < min_cycle_len_) {
             --i;
         }
@@ -496,35 +484,30 @@ public:
         if (i < 0) return -1;
 
         BidirectionalPath last = path.SubPath(i);
-        last.Print();
         int pos = path.SubPath(0, i).FindFirst(last);
-        DEBUG("looking for 1sr IS cycle " << pos);
+        TRACE("looking for 1sr IS cycle " << pos);
         return pos;
     }
 
     int RemoveCycle(BidirectionalPath& path) const {
         int pos = FindCycleStart(path);
-        DEBUG("Found IS cycle " << pos);
+        TRACE("Found IS cycle " << pos);
         if (pos == -1) {
             return -1;
         }
         int last_edge_pos = path.FindLast(path[pos]);
-        DEBUG("last edge pos " << last_edge_pos);
-        path.Print();
+        TRACE("last edge pos " << last_edge_pos);
         VERIFY(last_edge_pos > pos);
         for (int i = (int) path.Size() - 1; i >= last_edge_pos; --i) {
             path.PopBack();
         }
-        path.Print();
         VERIFY((int) path.Size() == last_edge_pos);
 
         size_t skip_identical_edges = 0;
         if (path.getLoopDetector().IsCycled(2, skip_identical_edges)) {
-            DEBUG("Path is cycled after found IS loop, skip identival edges = " << skip_identical_edges);
-            path.Print();
+            TRACE("Path is cycled after found IS loop, skip identival edges = " << skip_identical_edges);
             path.getLoopDetector().RemoveLoop(skip_identical_edges, false);
-            DEBUG("After removing");
-            path.Print();
+            TRACE("After removing");
         }
         VERIFY(pos < (int) path.Size());
         return pos;
@@ -573,7 +556,7 @@ public:
     }
 
     bool InExistingLoop(const BidirectionalPath& path) {
-        DEBUG("Checking existing loops");
+        TRACE("Checking existing loops");
         int j = 0;
         for (pair<BidirectionalPath*, BidirectionalPath*> cycle_pair : visited_cycles_) {
             BidirectionalPath* cycle = cycle_pair.first;
@@ -632,7 +615,6 @@ public:
             DEBUG("Removed IS cycle");
             VERIFY(loop_pos != -1);
             AddCycledEdges(path, loop_pos);
-            DEBUG("Added IS cycle");
             return true;
         } else if (path.getLoopDetector().IsCycled(maxLoops_, skip_identical_edges)) {
             size_t loop_size = path.getLoopDetector().LoopEdges(skip_identical_edges, 1);
@@ -658,13 +640,12 @@ public:
             return false;
         }
 
-        DEBUG("Making step");
+        TRACE("Making step");
         bool result = MakeSimpleGrowStep(path);
-        DEBUG("Made step");
+        TRACE("Made step");
 
 
         if (DetectCycle(path)) {
-            DEBUG("True cycle");
             result = false;
         }
         else if (investigateShortLoops_ && path.getLoopDetector().EdgeInShortLoop(path.Back())) {
@@ -783,7 +764,6 @@ public:
 
     virtual bool ResolveShortLoop(BidirectionalPath& path) {
         if (extensionChooser_->WeighConterBased()) {
-            DEBUG("Resolving short loop")
             while (path.getLoopDetector().EdgeInShortLoop(path.Back())) {
                 loopResolver_.ResolveShortLoop(path);
             }
