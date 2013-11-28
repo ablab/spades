@@ -670,7 +670,7 @@ public:
 
 
     bool Contains(const BidirectionalPath& path) const {
-        return FindFirst(path) != 0;
+        return FindFirst(path) != -1;
     }
 
     bool Equal(const BidirectionalPath& path) const {

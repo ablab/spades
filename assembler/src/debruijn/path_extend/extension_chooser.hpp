@@ -820,6 +820,7 @@ public:
                 next_paths.insert(best_paths[edges[iedge].e_]);
             }
         }
+        DEBUG("next paths size " << next_paths.size());
         EdgeContainer result = ChooseBest(path, next_paths);
         DeleteNextPaths(next_paths);
         if (result.size() != 1) {
@@ -941,7 +942,7 @@ private:
             return;
         }
         size_t common_begin = 0;
-        BidirectionalPath* p = *next_paths.begin();
+        /*BidirectionalPath* p = *next_paths.begin();
         bool contain_all = true;
         while (contain_all && common_begin < p->Size()) {
             EdgeId e = p->At(common_begin);
@@ -952,7 +953,7 @@ private:
                 }
             }
             common_begin++;
-        }
+        }*/
         for (BidirectionalPath* next : next_paths) {
             result[next] = weight_counter_.FindPairInfoFromPath(path, 0, path.Size(), *next, common_begin, next->Size());
         }
@@ -1024,10 +1025,13 @@ private:
 
     EdgeContainer TryToScaffold(const BidirectionalPath& path,
                                 const vector<BidirectionalPath*>& paths) {
+        DEBUG("Simple Scaffolding")
         if (paths.size() == 0) {
             return EdgeContainer();
         }
-
+        for (BidirectionalPath* p : paths) {
+            p->Print();
+        }
         size_t max_common_size = 0;
         size_t max_begin = 0;
         size_t max_end = 0;
@@ -1047,6 +1051,8 @@ private:
                         max_common_size = i1 - i;
                         max_begin = i;
                         max_end = i1;
+                        DEBUG("common end " << i << " " << i1)
+                        path1->Print();
                         max_path.Clear();
                         max_path.PushBack(*path1);
                     }
