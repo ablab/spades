@@ -131,6 +131,8 @@ public:
 		}
 
 	}
+protected:
+    DECL_LOGGER("LoopTraverser");
 };
 
 }

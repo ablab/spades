@@ -112,6 +112,8 @@ private:
     std::map<std::pair<size_t, size_t>, std::map<int, double> > pi_;
     std::vector<double> not_total_weights_right_;
     std::vector<double> not_total_weights_left_;
+protected:
+    DECL_LOGGER("PathExtendPI");
 };
 }  // path extend
 

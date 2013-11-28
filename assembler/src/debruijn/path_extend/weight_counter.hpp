@@ -54,6 +54,8 @@ struct EdgeWithPairedInfo {
 			e_(e_), pi_(pi) {
 
 	}
+protected:
+    DECL_LOGGER("WeightCounter");
 };
 
 struct EdgeWithDistance {
@@ -73,6 +75,8 @@ struct EdgeWithDistance {
 	};
 
 	static DistanceComparator comparator;
+protected:
+    DECL_LOGGER("WeightCounter");
 };
 
 class ExtentionAnalyzer {
@@ -121,6 +125,8 @@ public:
 			++i;
 		}
 	}
+protected:
+    DECL_LOGGER("WeightCounter");
 };
 
 class WeightCounter {
@@ -200,7 +206,8 @@ public:
 	PairedInfoLibraries& getLibs() {
 		return libs_;
 	}
-
+protected:
+    DECL_LOGGER("WeightCounter");
 };
 
 class ReadCountWeightCounter: public WeightCounter {
@@ -460,6 +467,8 @@ private:
     std::map<size_t, double> common_w_;
     //FIXME: move to config
     size_t min_read_count_;
+protected:
+    DECL_LOGGER("WeightCounter");
 };
 PathsWeightCounter::PathsWeightCounter(const Graph& g, PairedInfoLibrary& lib, size_t min_read_count):g_(g), lib_(lib), min_read_count_(min_read_count){
 

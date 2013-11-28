@@ -85,6 +85,9 @@ public:
 
         return lastEdge;
     }
+
+protected:
+    DECL_LOGGER("ExtensionChooser")
 };
 
 
@@ -197,6 +200,8 @@ protected:
         }
     }
 
+protected:
+    DECL_LOGGER("ExtensionChooser")
 
 };
 
@@ -534,6 +539,9 @@ bool EdgeWithWeightCompareReverse(const pair<EdgeId, double>& p1,
 }
 
 class UniqueEdgeAnalyzer {
+protected:
+    DECL_LOGGER("ExtensionChooser")
+
 public:
     UniqueEdgeAnalyzer(const Graph& g, GraphCoverageMap cov_map,
                        double filter_threshold, double prior_threshold)

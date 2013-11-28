@@ -23,6 +23,8 @@ namespace path_extend {
 using namespace debruijn_graph;
 
 class ContigWriter {
+protected:
+    DECL_LOGGER("PathExtendIO")
 
 protected:
 	const Graph& g_;
@@ -142,6 +144,8 @@ public:
 
 
 class PathInfoWriter {
+protected:
+    DECL_LOGGER("PathExtendIO")
 
 
 public:

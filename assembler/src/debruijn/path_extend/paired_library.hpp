@@ -183,6 +183,8 @@ struct PairedInfoLibrary {
     double single_threshold_;
     double coverage_coeff_;
     IdealPairInfoCounter ideal_pi_counter_;
+protected:
+    DECL_LOGGER("PathExtendPI");
 };
 
 typedef std::vector<PairedInfoLibrary *> PairedInfoLibraries;
