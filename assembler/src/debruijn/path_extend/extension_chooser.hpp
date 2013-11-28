@@ -935,8 +935,24 @@ private:
             const set<BidirectionalPath*>& next_paths,
             std::map<BidirectionalPath*, map<size_t, double> >& result) const {
         result.clear();
+        if (next_paths.size() == 0){
+            return;
+        }
+        size_t common_begin = 0;
+        BidirectionalPath* p = *next_paths.begin();
+        bool contain_all = true;
+        while (contain_all && common_begin < p->Size()) {
+            EdgeId e = p->At(common_begin);
+            for (BidirectionalPath* next : next_paths) {
+                if (common_begin >= next->Size() || next->At(common_begin) != e) {
+                    contain_all = false;
+                    break;
+                }
+            }
+            common_begin++;
+        }
         for (BidirectionalPath* next : next_paths) {
-            result[next] = weight_counter_.FindPairInfoFromPath(path, *next);
+            result[next] = weight_counter_.FindPairInfoFromPath(path, 0, path.Size(), *next, common_begin, next->Size());
         }
     }
 

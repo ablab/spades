@@ -431,8 +431,8 @@ class PathsWeightCounter {
 public:
     PathsWeightCounter(const Graph& g, PairedInfoLibrary& lib, size_t min_read_count);
     map<size_t, double> FindPairInfoFromPath(
-            const BidirectionalPath& path1,
-            const BidirectionalPath& path2) const;
+            const BidirectionalPath& path1, size_t from1, size_t to1,
+            const BidirectionalPath& path2, size_t from2, size_t to2) const;
     double CountPairInfo(const BidirectionalPath& path1, size_t from1,
                          size_t to1, const BidirectionalPath& path2,
                          size_t from2, size_t to2, bool normalize = true) const;
@@ -546,10 +546,11 @@ void PathsWeightCounter::FindPairInfo(EdgeId e1, EdgeId e2, size_t dist,
     }
 }
 map<size_t, double> PathsWeightCounter::FindPairInfoFromPath(
-        const BidirectionalPath& path1, const BidirectionalPath& path2) const {
+        const BidirectionalPath& path1, size_t from1, size_t to1,
+        const BidirectionalPath& path2, size_t from2, size_t to2) const {
     map<size_t, double> pi;
     double ideal_pi = 0;
-    FindPairInfo(path1, 0, path1.Size(), path2, 0, path2.Size(), pi, ideal_pi);
+    FindPairInfo(path1, from1, to1, path2, from2, to2, pi, ideal_pi);
     return pi;
 }
 void PathsWeightCounter::FindJumpCandidates(EdgeId e, int min_dist, int max_dist, size_t min_len, set<EdgeId>& result) {
