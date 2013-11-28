@@ -568,7 +568,7 @@ public:
         }
     }
 
-    bool LastEdgeCycled(const BidirectionalPath& path) {
+    int LastEdgeCycled(const BidirectionalPath& path) {
         DEBUG("Checking existing loops");
         int j = 0;
         for (BidirectionalPath* cycle : cycled_edges_){
@@ -577,8 +577,10 @@ public:
             size_t length = 0;
             int pos = path.FindLast(*cycle);
             DEBUG("Found " << pos << " " << cycle->Size());
+            int count = 0;
             for (int i = pos; i >= 0; i -= (int) cycle->Size()) {
                 if (path.CompareFrom(i, *cycle)) {
+                    count++;
                     length += cycle->Length();
                     DEBUG(length);
                 }
@@ -587,12 +589,12 @@ public:
                 }
             }
 
-            if (length > is_detector_.GetMinCycleLenth()) {
+            if (length > is_detector_.GetMinCycleLenth() && count >= 1) {
                 DEBUG("Really in existing cycle")
-                return true;
+                return (int) path.Size() - ((int) cycle->Size()) * (count - 1);
             }
         }
-        return false;
+        return -1;
     }
 
     void AddCycledEdges(const BidirectionalPath& path, size_t pos) {
@@ -628,8 +630,12 @@ public:
         bool result = MakeSimpleGrowStep(path);
         DEBUG("Made step");
 
-        if (LastEdgeCycled(path)) {
-            DEBUG("Last edge cycled");
+        int pos = LastEdgeCycled(path);
+        if (pos != -1) {
+            DEBUG("Last edge cycled from pos " << pos);
+            VERIFY((int)path.Size() >= pos);
+            path.PopBack(((int) path.Size()) - pos);
+            VERIFY((int)path.Size() == pos);
             result = false;
         }
         else if (is_detector_.CheckCycled(path)) {
