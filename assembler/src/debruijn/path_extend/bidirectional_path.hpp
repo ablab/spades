@@ -348,7 +348,6 @@ protected:
         }
     }
 
-public:
     void PushFront(EdgeId e, int gap = 0) {
         data_.push_front(e);
         if (gapLength_.size() > 0) {

@@ -486,16 +486,20 @@ public:
     }
 
     int FindCycleStart(const BidirectionalPath& path) const {
-        BidirectionalPath last(g_);
+
         int i = (int) path.Size() - 1;
         DEBUG("Looking for IS cycle " << min_cycle_len_);
-        while (i >= 0 && last.Length() < min_cycle_len_) {
-            last.PushFront(path.At(i));
+        while (i >= 0 && path.LengthAt(i) < min_cycle_len_) {
             --i;
         }
+
+        if (i < 0) return -1;
+
+        BidirectionalPath last = path.SubPath(i);
         last.Print();
-        DEBUG("looking for 1sr IS cycle")
-        return path.SubPath(0, i + 1).FindFirst(last);
+        int pos = path.SubPath(0, i).FindFirst(last);
+        DEBUG("looking for 1sr IS cycle " << pos);
+        return pos;
     }
 
     int RemoveCycle(BidirectionalPath& path) const {
