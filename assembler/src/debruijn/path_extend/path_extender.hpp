@@ -753,9 +753,6 @@ public:
                     && extensionChooser_->WeighConterBased()) {
                 return false;
             }
-            if (g_.length(candidates.back().e_) > 8000 && path.FindAll(candidates.back().e_).size() > 0){
-                return false;
-            }
             path.PushBack(candidates.back().e_, candidates.back().d_);
             return true;
         }
