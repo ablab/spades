@@ -102,7 +102,7 @@ class DeBruijnEdgeMultiIndex : public KeyStoringMap<Seq, EdgeInfoStorage<IdType>
       EdgeInfoStorage<IdType> &entry = this->get_raw_value_reference(kwh);
       EdgeInfo<IdType> new_entry;
       new_entry.edge_id = id;
-      new_entry.offset = offset;
+      new_entry.offset = (unsigned int) offset;
       entry.push_back(new_entry);
     }
   }

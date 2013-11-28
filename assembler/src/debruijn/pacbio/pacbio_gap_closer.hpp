@@ -257,7 +257,7 @@ public:
             size_t len_sum = iter->second.begin()->second.second.length();
             EdgeId newEdge = g_.AddEdge(g_.EdgeStart(first), g_.EdgeEnd(second), Sequence(iter->second.begin()->second.second));
             TRACE(g_.int_id(newEdge));
-            int len_split = int(((double) len_f * (double) len_sum) / (len_s + len_f));
+            int len_split = int(((double) len_f * (double) len_sum) / ((double)len_s + (double)len_f));
             if (len_split == 0) {
                 DEBUG(" zero split length, length are:" << len_f <<" " << len_sum <<" " << len_s);
                 len_split = 1;
