@@ -104,7 +104,7 @@ void EarlyClipTips(size_t k, const debruijn_config::construction params, size_t 
         size_t length_bound = rl - k;
         if (params.early_tc.length_bound)
             length_bound = params.early_tc.length_bound.get();
-        EarlyTipClipper(ext, length_bound).ClipTips();
+        AlternativeEarlyTipClipper(ext, length_bound).ClipTips();
     }
 }
 
