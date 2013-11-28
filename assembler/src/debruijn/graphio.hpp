@@ -52,6 +52,7 @@ void SaveKmerMapper(const string& file_name,
     mapper.BinWrite(file);
 
     file.close();
+    DEBUG("kmer mapper saved ")
 }
 
 template<class KmerMapper>
@@ -87,6 +88,7 @@ void SaveEdgeIndex(const std::string& file_name,
     index.BinWrite(file);
 
     file.close();
+    DEBUG("index saved ")
 }
 
 template<class EdgeIndex>

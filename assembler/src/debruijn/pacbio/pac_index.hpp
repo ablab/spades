@@ -27,6 +27,8 @@ public:
     typedef set<KmerCluster<Graph> > ClustersSet;
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
+    typedef     debruijn_graph::DeBruijnEdgeMultiIndex<typename Graph::EdgeId> Index;
+    typedef typename Index::KeyWithHash KeyWithHash;
 
 private:
     DECL_LOGGER("PacIndex")
@@ -52,6 +54,8 @@ public:
               debruijn_k(debruijn_k_),
               tmp_index((unsigned) pacbio_k, cfg::get().output_dir) {
         DEBUG("PB Mapping Index construction started");
+
+
         typedef typename debruijn_graph::EdgeIndexHelper<debruijn_graph::DeBruijnEdgeMultiIndex<typename Graph::EdgeId>>::GraphPositionFillingIndexBuilderT Builder;
         Builder().BuildIndexFromGraph(tmp_index, g_);
         FillBannedKmers();
@@ -590,18 +594,23 @@ PacBioMappingIndex<Graph>::Locate(const Sequence &s) {
     if (s.size() < pacbio_k)
         return res;
 
-    runtime_k::RtSeq kmer = s.start<runtime_k::RtSeq>(pacbio_k);
+    //runtime_k::RtSeq kmer = s.start<runtime_k::RtSeq>(pacbio_k);
+    KeyWithHash kwh = tmp_index.ConstructKWH(s.start<runtime_k::RtSeq>(pacbio_k));
+
     for (size_t j = pacbio_k; j < s.size(); ++j) {
-        kmer <<= s[j];
-
-        if (!tmp_index.valid_key(kmer))
+        kwh = kwh << s[j];
+        if (!tmp_index.valid(kwh.key())) {
+//          INFO("not valid kmer");
             continue;
+        }
+        auto keys = tmp_index.get(kwh);
+        TRACE("Valid key, size: "<< keys.size());
 
-        TRACE("Valid key, size: "<< tmp_index[kmer].size());
-        for (auto iter = tmp_index[kmer].begin(); iter != tmp_index[kmer].end(); ++iter) {
-            int quality = (int) tmp_index[kmer].size();
+        for (auto iter = keys.begin(); iter != keys.end(); ++iter) {
+
+            int quality = (int) keys.size();
             TRACE("and quality:" << quality);
-            if (banned_kmers.find(Sequence(kmer)) != banned_kmers.end())
+            if (banned_kmers.find(Sequence(kwh.key())) != banned_kmers.end())
                 continue;
 
             if (int(iter->offset) > int(debruijn_k - pacbio_k) &&

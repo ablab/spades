@@ -262,16 +262,18 @@ public:
                 DEBUG(" zero split length, length are:" << len_f <<" " << len_sum <<" " << len_s);
                 len_split = 1;
             }
-            pair<EdgeId, EdgeId> split_result = g_.SplitEdge(newEdge, len_split);
-            TRACE("GlueEdges " << g_.str(split_result.first));
-            TRACE(g_.int_id(split_result.first) << " " << g_.int_id(split_result.second));
-            vector<EdgeId> to_merge;
-            EdgeId tmp1 = g_.GlueEdges(first, split_result.first);
-            EdgeId tmp2 = g_.GlueEdges(second, split_result.second);
-            TRACE(g_.int_id(tmp1)<< " " << g_.int_id(tmp2));
-            to_merge.push_back(tmp1);
-            to_merge.push_back(tmp2);
-            newEdge = g_.MergePath(to_merge);
+            g_.DeleteEdge(first);
+            g_.DeleteEdge(second);
+//            pair<EdgeId, EdgeId> split_result = g_.SplitEdge(newEdge, len_split);
+//            TRACE("GlueEdges " << g_.str(split_result.first));
+//            TRACE(g_.int_id(split_result.first) << " " << g_.int_id(split_result.second));
+//            vector<EdgeId> to_merge;
+//            EdgeId tmp1 = g_.GlueEdges(first, split_result.first);
+//            EdgeId tmp2 = g_.GlueEdges(second, split_result.second);
+//            TRACE(g_.int_id(tmp1)<< " " << g_.int_id(tmp2));
+//            to_merge.push_back(tmp1);
+//            to_merge.push_back(tmp2);
+//            newEdge = g_.MergePath(to_merge);
             size_t next_id = g_.int_id(newEdge);
             size_t next_id_conj = g_.int_id(g_.conjugate(newEdge));
             TRACE(first_id << " " << second_id << " " << next_id << " " << first_id_conj << " " << second_id_conj << " " << next_id_conj << " ");

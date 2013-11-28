@@ -83,6 +83,15 @@ public:
         return kwh.key() == KMer(this->k(), graph_.EdgeNucls(entry.edge_id), entry.offset);
     }
 
+    void PutInIndex(KeyWithHash &kwh, EdgeId id, size_t offset) {
+        if (valid(kwh)) {
+            auto &entry = this->get_raw_value_reference(kwh);
+            if (!entry.valid() || contains(kwh)) {
+                this->put_value(kwh, Value(id, (unsigned)offset, entry.count));
+            }
+        }
+    }
+
     //Only coverage is loaded
     template<class Writer>
     void BinWrite(Writer &writer) const {

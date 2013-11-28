@@ -446,7 +446,6 @@ def get_lib_ids_by_type(dataset_data, types):
     return lib_ids
 
 
-<<<<<<< HEAD
 def get_libs_by_type(dataset_data, types):
     ids = get_lib_ids_by_type(dataset_data, types)
     result = []
@@ -462,8 +461,6 @@ def rm_libs_by_type(dataset_data, types):
     return dataset_data
 
 
-=======
->>>>>>> Fixed bug in auto-K selecting: now pacbio reads length is not account http://ablab.myjetbrains.com/youtrack/issue/Assembler-625
 def dataset_has_only_mate_pairs_libraries(dataset_data):
     for reads_library in dataset_data:
         if reads_library['type'] != 'mate-pairs':

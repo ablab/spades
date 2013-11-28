@@ -34,15 +34,15 @@ public:
 	}
 
 	iterator end() {
-		return content_.begin();
+		return content_.end();
 	}
 
 	const_iterator begin() const {
-		return content_.begin();
+		return content_.cbegin();
 	}
 
 	const_iterator end() const {
-		return content_.begin();
+		return content_.cend();
 	}
 
 	iterator find(const EdgeInfo<IdType> &info) {
@@ -57,6 +57,15 @@ public:
 		content_.push_back(info);
 	}
 
+	size_t size() const{
+	    return content_.size();
+	}
+
+	bool valid() const {
+	    //what's invalid edge info storage?
+	    return true;
+	}
+
 	EdgeInfoStorage conjugate(size_t k) const {
 		EdgeInfoStorage result;
 		for(auto it = content_.rbegin(); it != content_.rend(); ++it) {
@@ -68,14 +77,17 @@ public:
 
 //todo it is not handling graph events!!!
 template<class IdType, class Seq = runtime_k::RtSeq,
-    class traits = kmer_index_traits<Seq>,  class StoringType = DefaultStoring >
+    class traits = kmer_index_traits<Seq>,  class StoringType = SimpleStoring >
 class DeBruijnEdgeMultiIndex : public KeyStoringMap<Seq, EdgeInfoStorage<IdType>, traits, StoringType > {
   typedef KeyStoringMap<Seq, EdgeInfoStorage<IdType>, traits, StoringType > base;
  public:
+  typedef StoringType storing_type;
   typedef typename base::traits_t traits_t;
   typedef typename base::KMer KMer;
   typedef typename base::KMerIdx KMerIdx;
-	typedef typename  base::KeyWithHash KeyWithHash;
+  typedef typename  base::KeyWithHash KeyWithHash;
+  typedef EdgeInfoStorage<IdType> Value;
+
   using base::ConstructKWH;
 //  typedef typename base::IdType IdType;
   //todo move this typedef up in hierarchy (need some c++ tricks)
@@ -86,19 +98,25 @@ class DeBruijnEdgeMultiIndex : public KeyStoringMap<Seq, EdgeInfoStorage<IdType>
   ~DeBruijnEdgeMultiIndex() {}
 
 
-  std::vector<EdgePosition> get(const KeyWithHash &kwh) const {
+  Value get(const KeyWithHash &kwh) const {
     VERIFY(contains(kwh));
-    return base::operator[](kwh);
+    return base::get_value(kwh);
   }
 
-//  std::vector<EdgePosition> get(KMerIdx idx) const {
-//    VERIFY(valid_idx(idx));
-//    return base::operator[](idx);
-//  }
+  bool contains(const KeyWithHash &kwh) const {
+      if (!base::valid(kwh))
+          return false;
+      return this->get_raw_value_reference(kwh).valid();
+  }
 
-  void PutInIndex(const KMer &kmer, IdType id, size_t offset) {
-    KeyWithHash kwh = base::ConstructKWH(kmer);
-    if (base::contains(kwh)) {
+  bool valid(const KMer &kmer){
+      KeyWithHash kwh = base::ConstructKWH(kmer);
+      return base::valid(kwh);
+  }
+
+  void PutInIndex(const KeyWithHash &kwh, IdType id, size_t offset) {
+    //KeyWithHash kwh = base::ConstructKWH(kmer);
+    if (contains(kwh)) {
       EdgeInfoStorage<IdType> &entry = this->get_raw_value_reference(kwh);
       EdgeInfo<IdType> new_entry;
       new_entry.edge_id = id;
@@ -107,6 +125,12 @@ class DeBruijnEdgeMultiIndex : public KeyStoringMap<Seq, EdgeInfoStorage<IdType>
     }
   }
 
+  const EdgeInfoStorage<IdType> get(const KMer& kmer) const {
+//      VERIFY(this->IsAttached());
+      auto kwh = base::ConstructKWH(kmer);
+      auto entry = this->get_value(kwh);
+      return entry;
+  }
   //todo delete if equal seems to work improperly!!!
   bool DeleteIfEqual(const KeyWithHash &kwh, IdType id) {
       VERIFY(false);
