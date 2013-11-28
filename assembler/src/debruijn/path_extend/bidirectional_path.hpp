@@ -450,7 +450,7 @@ public:
     }
 
 	size_t LengthAt(size_t index) const {
-	    if(index < cumulativeLength_.size()) {
+	    if(index >= cumulativeLength_.size()) {
 	        WARN("no length for position " << index <<" size " << cumulativeLength_.size()
 	                <<" path size " << cumulativeLength_.size());
 	        print_stacktrace();
