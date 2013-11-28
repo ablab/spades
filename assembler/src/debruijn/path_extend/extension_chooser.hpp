@@ -804,16 +804,14 @@ public:
             DeleteNextPaths(following_paths);
         }
         set<BidirectionalPath*> next_paths;
-        if (best_paths.size() == edges.size()) {
+        if (edges.size() == 0){
+            next_paths = path_searcher_.FindNextPaths(path, path.Back());
+        } else if (best_paths.size() == edges.size()) {
             for (size_t iedge = 0; iedge < edges.size(); ++iedge) {
                 next_paths.insert(best_paths[edges[iedge].e_]);
             }
         }
         EdgeContainer result = ChooseBest(path, next_paths);
-        if (result.size() != 1) {
-            next_paths = path_searcher_.FindNextPaths(path, path.Back());
-            result = ChooseBest(path, next_paths);
-        }
         DeleteNextPaths(next_paths);
         if (result.size() != 1) {
             DEBUG("nobody can extend " << g_.int_id(path.Back()));
