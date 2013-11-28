@@ -536,7 +536,7 @@ class LoopDetectingPathExtender: public CoveringPathExtender {
 protected:
     size_t maxLoops_;
     bool investigateShortLoops_;
-    vector<BidirectionalPath*> cycled_edges_;
+    vector< pair<BidirectionalPath*, BidirectionalPath*> > visited_cycles_;
     InsertSizeLoopDetector is_detector_;
 
 public:
@@ -572,33 +572,38 @@ public:
         }
     }
 
-    int LastEdgeCycled(const BidirectionalPath& path) {
+    bool InExistingLoop(const BidirectionalPath& path) {
         DEBUG("Checking existing loops");
         int j = 0;
-        for (BidirectionalPath* cycle : cycled_edges_){
+        for (pair<BidirectionalPath*, BidirectionalPath*> cycle_pair : visited_cycles_) {
+            BidirectionalPath* cycle = cycle_pair.first;
+            BidirectionalPath* cycle_path = cycle_pair.second;
             VERIFY(!cycle->Empty());
+            VERIFY(!cycle_path->Empty());
             VERBOSE_POWER2(j++, "checking ")
-            size_t length = 0;
-            int pos = path.FindLast(*cycle);
-            DEBUG("Found " << pos << " " << cycle->Size());
-            int count = 0;
-            for (int i = pos; i >= 0; i -= (int) cycle->Size()) {
-                if (path.CompareFrom(i, *cycle)) {
-                    count++;
-                    length += cycle->Length();
-                    DEBUG(length);
-                }
-                else {
+
+            int pos = path.FindLast(*cycle_path);
+            if (pos == -1)
+                continue;
+
+            int startin_cycle_pos = pos + (int) cycle_path->Size();
+            bool only_cycles_in_tail = true;
+            int last_cycle_pos = startin_cycle_pos;
+            for (int i = startin_cycle_pos; i < (int) path.Size() - (int) cycle->Size(); i += (int) cycle->Size()) {
+                if (!path.CompareFrom(i, *cycle)) {
+                    only_cycles_in_tail = false;
                     break;
                 }
+                else {
+                    last_cycle_pos = i;
+                }
             }
-
-            if (length > is_detector_.GetMinCycleLenth() && count >= 1) {
-                DEBUG("Really in existing cycle")
-                return (int) path.Size() - ((int) cycle->Size()) * (count - 1);
+            only_cycles_in_tail = only_cycles_in_tail && cycle->CompareFrom(0, path.SubPath(last_cycle_pos + (int) cycle->Size()));
+            if (only_cycles_in_tail) {
+                return true;
             }
         }
-        return -1;
+        return false;
     }
 
     void AddCycledEdges(const BidirectionalPath& path, size_t pos) {
@@ -606,7 +611,15 @@ public:
             WARN("Wrong position in IS cycle");
             return;
         }
-        cycled_edges_.push_back(new BidirectionalPath(path.SubPath(pos)));
+        int i = (int) pos;
+        while (i >= 0 && path.LengthAt(i) < is_detector_.GetMinCycleLenth()) {
+            --i;
+        }
+        if (i < 0)
+            i = 0;
+
+        visited_cycles_.push_back(make_pair(new BidirectionalPath(path.SubPath(pos)),
+                                            new BidirectionalPath(path.SubPath(i))));
         DEBUG("add cycle");
         path.SubPath(pos).Print();
     }
@@ -630,24 +643,20 @@ public:
     virtual bool ResolveShortLoop(BidirectionalPath& path) = 0;
 
     virtual bool MakeGrowStep(BidirectionalPath& path) {
+        if (InExistingLoop(path)) {
+            return false;
+        }
+
         DEBUG("Making step");
         bool result = MakeSimpleGrowStep(path);
         DEBUG("Made step");
 
-        int pos = LastEdgeCycled(path);
-        if (pos != -1) {
-            DEBUG("Last edge cycled from pos " << pos);
-            VERIFY((int)path.Size() >= pos);
-            path.PopBack(((int) path.Size()) - pos);
-            VERIFY((int)path.Size() == pos);
-            result = false;
-        }
-        else if (is_detector_.CheckCycled(path)) {
+        if (is_detector_.CheckCycled(path)) {
             DEBUG("Checking IS cycle");
-            int loop_size = is_detector_.RemoveCycle(path);
+            int loop_pos = is_detector_.RemoveCycle(path);
             DEBUG("Removed IS cycle");
-            VERIFY(loop_size != -1);
-            AddCycledEdges(path, loop_size);
+            VERIFY(loop_pos != -1);
+            AddCycledEdges(path, loop_pos);
             DEBUG("Added IS cycle");
             result = false;
         }
