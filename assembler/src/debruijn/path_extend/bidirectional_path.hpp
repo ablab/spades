@@ -217,7 +217,7 @@ public:
         }
     }
 
-    BidirectionalPath(const Graph& g_, EdgeId startingEdge, int gap = 0)
+    BidirectionalPath(const Graph& g_, EdgeId startingEdge)
             : g_(g_),
               data_(),
               cumulativeLength_(),
@@ -227,7 +227,7 @@ public:
               listeners_(),
               weight_(1.0) {
         Init();
-        PushBack(startingEdge, gap);
+        PushBack(startingEdge);
         prev_ = data_.back();
         now_ = data_.back();
     }
@@ -291,6 +291,7 @@ protected:
 	}
 
     void RecountLengths() {
+        Verify();
         cumulativeLength_.clear();
         size_t currentLength = 0;
         for(auto iter = data_.rbegin(); iter != data_.rend(); ++iter) {
@@ -314,13 +315,15 @@ protected:
     }
 
     void DecreaseLengths() {
+        Verify();
+        DEBUG("was " << totalLength_ << " " <<  g_.length(data_.back()) << " + " << gapLength_.back() << " " << cumulativeLength_[0] << " " << gapLength_[0]);
         size_t length = g_.length(data_.back()) + gapLength_.back();
         for(auto iter = cumulativeLength_.begin(); iter != cumulativeLength_.end(); ++iter) {
             *iter -= length;
         }
-
         cumulativeLength_.pop_back();
         totalLength_ -= length;
+        DEBUG("now " << totalLength_ << " " << cumulativeLength_[0] << " " << gapLength_[0]);
         Verify();
     }
 
@@ -349,7 +352,10 @@ protected:
     }
 
     void PushFront(EdgeId e, int gap = 0) {
+        Verify();
+        Print();
         data_.push_front(e);
+        DEBUG("gap " << gap);
         if (gapLength_.size() > 0) {
             gapLength_[0] += gap;
         }
@@ -365,7 +371,7 @@ protected:
         NotifyFrontEdgeAdded(e, gap);
         Verify();
     }
-protected:
+
     void PopFront() {
         EdgeId e = data_.front();
         int cur_gap = gapLength_.front();
@@ -464,11 +470,6 @@ public:
 	        INFO("no gap for position " << index << " size " << gapLength_.size());
 	    }
 	    return gapLength_[index];
-	}
-
-	void SetFrontGap(int gap) {
-	    if (Size() > 0)
-	        gapLength_[0] = gap;
 	}
 
 	size_t GetId() const {

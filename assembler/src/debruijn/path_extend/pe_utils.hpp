@@ -395,7 +395,7 @@ private:
         size_t i = 0;
 
         while (i < path.Size()) {
-            BidirectionalPath * p = new BidirectionalPath(path.graph(), path[i], 0);
+            BidirectionalPath * p = new BidirectionalPath(path.graph(), path[i]);
             size_t rc_id = path.graph().int_id(path.graph().conjugate(path[i]));
             ++i;
 

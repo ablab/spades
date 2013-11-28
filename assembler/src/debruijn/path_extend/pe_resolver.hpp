@@ -266,18 +266,34 @@ private:
             path1->SetOverlapedEndTo(path2);
         } else if (overlap_size < path2->Size()
                 && overlap_size < path1->Size()) {
+            DEBUG("overlap smaller " << overlap_size);
+            path1->Print();
+            DEBUG("next");
+            path2->Print();
             BidirectionalPath* overlap = new BidirectionalPath(g_,
                                                                path1->Head());
             BidirectionalPath* conj_overlap = new BidirectionalPath(
                     g_, g_.conjugate(path1->Head()));
             paths.AddPair(overlap, conj_overlap);
+            DEBUG("pop back");
             path1->PopBack();
+            DEBUG("pop back2");
             conj2->PopBack();
+            path1->Print();
+            DEBUG("next");
+            path2->Print();
             for (size_t i = 1; i < overlap_size; ++i) {
                 conj_overlap->PushBack(g_.conjugate(path1->Head()));
+                DEBUG("pop back3");
                 path1->PopBack();
+                DEBUG("pop back5");
                 conj2->PopBack();
+                DEBUG("pop back6");
             }
+            DEBUG("after");
+            path1->Print();
+            DEBUG("next");
+            path2->Print();
             coverage_map_.Subscribe(overlap);
             overlap->SetOverlap(true);
             coverage_map_.Subscribe(conj_overlap);

@@ -784,6 +784,7 @@ public:
     virtual EdgeContainer Filter(BidirectionalPath& path,
                                  EdgeContainer& edges) {
         DEBUG("mp chooser");
+        path.Print();
         if (path.Length() < lib_.GetISMin()) {
             DEBUG("small path");
             return EdgeContainer();
@@ -853,7 +854,6 @@ private:
                         && unique_edge_analyzer.IsUnique(path.At(i2))
                         && weight_counter_.HasPI(init_path.At(i1),
                                 path.At(i2), gap)) {
-                    INFO("unique " << i1 << " " << i2);
                     return true;
                 }
             }
@@ -879,10 +879,6 @@ private:
             not_common_w1 += iter->second - w;
             common_w += w;
         }
-        DEBUG("common w " << (common_w/(not_common_w1 + common_w))
-              << " has unique edge " << HasUniqueEdges(init_path, path1)
-              << " second path " << HasUniqueEdges(init_path, path2));
-
         if (common_w < 0.8 * (not_common_w1 + common_w)||
                 (HasUniqueEdges(init_path, path1) && !HasUniqueEdges(init_path, path2))) {
             return true;
@@ -976,11 +972,9 @@ private:
             set<BidirectionalPath*>& next_paths) {
         map<BidirectionalPath*, double> weights = CountWeightsAndFilter(path, next_paths, false);
         vector<BidirectionalPath*> result;
-        INFO("sort");
         while (weights.size() > 0) {
             auto max_iter = weights.begin();
             for (auto iter = weights.begin(); iter != weights.end(); ++iter) {
-                INFO("unique " << HasUniqueEdges(path,*iter->first) << " max " << !HasUniqueEdges(path, *max_iter->first))
                 if (HasUniqueEdges(path,*iter->first) && !HasUniqueEdges(path, *max_iter->first)){
                     max_iter = iter;
                     continue;
