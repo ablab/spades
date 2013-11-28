@@ -106,7 +106,7 @@ private:
                                              max_overlap);
         last1 = posRes.first;
         last2 = posRes.second;
-        INFO("compare paths " << pos1 << " " << pos2 << " to " << last1 << " " << last2);
+        DEBUG("compare paths " << pos1 << " " << pos2 << " to " << last1 << " " << last2);
         BidirectionalPath* conj1 = path1->GetConjPath();
         BidirectionalPath* conj2 = path2->GetConjPath();
         size_t first1 = conj1->Size() - pos1 - 1;
@@ -357,7 +357,8 @@ private:
 
 	const Graph& g_;
 	GraphCoverageMap& coverage_map_;
-
+protected:
+    DECL_LOGGER("PEResolver")
 };
 
 class PathExtendResolver {
@@ -438,7 +439,8 @@ private:
             pos--;
         }
     }
-
+protected:
+    DECL_LOGGER("PEResolver")
 };
 
 } /* PE_RESOLVER_HPP_ */
