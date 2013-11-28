@@ -586,10 +586,10 @@ public:
             if (pos == -1)
                 continue;
 
-            int startin_cycle_pos = pos + (int) cycle_path->Size();
+            int start_cycle_pos = pos + (int) cycle_path->Size();
             bool only_cycles_in_tail = true;
-            int last_cycle_pos = startin_cycle_pos;
-            for (int i = startin_cycle_pos; i < (int) path.Size() - (int) cycle->Size(); i += (int) cycle->Size()) {
+            int last_cycle_pos = start_cycle_pos;
+            for (int i = start_cycle_pos; i < (int) path.Size() - (int) cycle->Size(); i += (int) cycle->Size()) {
                 if (!path.CompareFrom(i, *cycle)) {
                     only_cycles_in_tail = false;
                     break;
@@ -626,13 +626,24 @@ public:
 
     bool DetectCycle(BidirectionalPath& path) {
         size_t skip_identical_edges = 0;
-        if (path.getLoopDetector().IsCycled(maxLoops_, skip_identical_edges)) {
-            AddCycledEdges(path, path.getLoopDetector().LoopEdges(skip_identical_edges, 1));
+        if (is_detector_.CheckCycled(path)) {
+            DEBUG("Checking IS cycle");
+            int loop_pos = is_detector_.RemoveCycle(path);
+            DEBUG("Removed IS cycle");
+            VERIFY(loop_pos != -1);
+            AddCycledEdges(path, loop_pos);
+            DEBUG("Added IS cycle");
+            return true;
+        } else if (path.getLoopDetector().IsCycled(maxLoops_, skip_identical_edges)) {
+            size_t loop_size = path.getLoopDetector().LoopEdges(skip_identical_edges, 1);
             DEBUG("Path is Cycled! skip identival edges = " << skip_identical_edges);
             path.Print();
             path.getLoopDetector().RemoveLoop(skip_identical_edges, false);
             DEBUG("After delete");
             path.Print();
+
+            VERIFY(path.Size() >= loop_size);
+            AddCycledEdges(path, path.Size() - loop_size);
             return true;
         }
         return false;
@@ -651,16 +662,8 @@ public:
         bool result = MakeSimpleGrowStep(path);
         DEBUG("Made step");
 
-        if (is_detector_.CheckCycled(path)) {
-            DEBUG("Checking IS cycle");
-            int loop_pos = is_detector_.RemoveCycle(path);
-            DEBUG("Removed IS cycle");
-            VERIFY(loop_pos != -1);
-            AddCycledEdges(path, loop_pos);
-            DEBUG("Added IS cycle");
-            result = false;
-        }
-        else if (DetectCycle(path)) {
+
+        if (DetectCycle(path)) {
             DEBUG("True cycle");
             result = false;
         }
