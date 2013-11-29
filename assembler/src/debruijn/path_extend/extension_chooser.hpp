@@ -533,7 +533,7 @@ public:
     }
 };
 
-bool EdgeWithWeightCompareReverse(const pair<EdgeId, double>& p1,
+inline bool EdgeWithWeightCompareReverse(const pair<EdgeId, double>& p1,
                                       const pair<EdgeId, double>& p2) {
     return p1.second > p2.second;
 }

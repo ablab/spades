@@ -12,7 +12,7 @@
 
 namespace omnigraph {
 
-double get_median(const std::map<int, size_t> &hist) {
+inline double get_median(const std::map<int, size_t> &hist) {
   double S = 0;
   for (auto iter = hist.begin(); iter != hist.end(); ++iter)
     S += (double) iter->second;
@@ -28,7 +28,7 @@ double get_median(const std::map<int, size_t> &hist) {
   return -1;
 }
 
-double get_mad(const std::map<int, size_t> &hist, double median) { // median absolute deviation
+inline double get_mad(const std::map<int, size_t> &hist, double median) { // median absolute deviation
   std::map<int, size_t> hist2;
   for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
       int x = abs(iter->first - math::round_to_zero(median));
@@ -37,7 +37,7 @@ double get_mad(const std::map<int, size_t> &hist, double median) { // median abs
   return get_median(hist2);
 }
 
-void hist_crop(const map<int, size_t> &hist, double low, double high, map<int, size_t>& res) {
+inline void hist_crop(const map<int, size_t> &hist, double low, double high, map<int, size_t>& res) {
   for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
     if (iter->first >= low && iter->first <= high) {
       DEBUG("Cropped histogram " <<  iter->first << " " << iter->second);
@@ -46,7 +46,7 @@ void hist_crop(const map<int, size_t> &hist, double low, double high, map<int, s
   }
 }
 
-void normalize_distribution(const std::map<int, size_t>& is_hist,  std::map<int, double>& is_distrib) {
+inline void normalize_distribution(const std::map<int, size_t>& is_hist,  std::map<int, double>& is_distrib) {
   size_t sum = 0;
   for (auto iter = is_hist.begin(); iter != is_hist.end(); ++iter) {
     sum += iter->second;
@@ -56,7 +56,7 @@ void normalize_distribution(const std::map<int, size_t>& is_hist,  std::map<int,
   }
 }
 
-void ISInterval(double quant, double is,
+inline void ISInterval(double quant, double is,
                 const std::map<int, size_t>& insert_size_hist,
                 double& is_min, double& is_max) {
 

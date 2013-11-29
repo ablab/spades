@@ -21,7 +21,7 @@
 
 namespace path_extend {
 
-int median(const vector<int>& dist, const vector<double>& w, int min, int max) {
+inline int median(const vector<int>& dist, const vector<double>& w, int min, int max) {
     VERIFY(dist.size() == w.size());
     double S = 0;
     for (size_t i = 0; i < w.size(); ++i) {
@@ -470,10 +470,10 @@ private:
 protected:
     DECL_LOGGER("WeightCounter");
 };
-PathsWeightCounter::PathsWeightCounter(const Graph& g, PairedInfoLibrary& lib, size_t min_read_count):g_(g), lib_(lib), min_read_count_(min_read_count){
+inline PathsWeightCounter::PathsWeightCounter(const Graph& g, PairedInfoLibrary& lib, size_t min_read_count):g_(g), lib_(lib), min_read_count_(min_read_count){
 
 }
-double PathsWeightCounter::CountPairInfo(const BidirectionalPath& path1,
+inline double PathsWeightCounter::CountPairInfo(const BidirectionalPath& path1,
                                          size_t from1, size_t to1,
                                          const BidirectionalPath& path2,
                                          size_t from2, size_t to2, bool normalize) const {
@@ -498,7 +498,7 @@ double PathsWeightCounter::CountPairInfo(const BidirectionalPath& path1,
     return normalize ? total_result : result;
 }
 
-double PathsWeightCounter::CountPairInfo(const BidirectionalPath& path1,
+inline double PathsWeightCounter::CountPairInfo(const BidirectionalPath& path1,
                                          size_t from1, size_t to1, EdgeId edge,
                                          size_t gap) const {
     double result = 0.0;
@@ -510,7 +510,7 @@ double PathsWeightCounter::CountPairInfo(const BidirectionalPath& path1,
     return result;
 }
 
-void PathsWeightCounter::FindPairInfo(const BidirectionalPath& path1,
+inline void PathsWeightCounter::FindPairInfo(const BidirectionalPath& path1,
                                       size_t from1, size_t to1,
                                       const BidirectionalPath& path2,
                                       size_t from2, size_t to2,
@@ -543,7 +543,7 @@ void PathsWeightCounter::FindPairInfo(const BidirectionalPath& path1,
     }
 }
 
-void PathsWeightCounter::FindPairInfo(EdgeId e1, EdgeId e2, size_t dist,
+inline void PathsWeightCounter::FindPairInfo(EdgeId e1, EdgeId e2, size_t dist,
                                       double& ideal_w, double& result_w) const {
     ideal_w = lib_.IdealPairedInfo(e1, e2, (int) dist, true);
     result_w = 0.0;
@@ -554,7 +554,7 @@ void PathsWeightCounter::FindPairInfo(EdgeId e1, EdgeId e2, size_t dist,
         result_w = ideal_w;
     }
 }
-map<size_t, double> PathsWeightCounter::FindPairInfoFromPath(
+inline map<size_t, double> PathsWeightCounter::FindPairInfoFromPath(
         const BidirectionalPath& path1, size_t from1, size_t to1,
         const BidirectionalPath& path2, size_t from2, size_t to2) const {
     map<size_t, double> pi;
@@ -562,11 +562,11 @@ map<size_t, double> PathsWeightCounter::FindPairInfoFromPath(
     FindPairInfo(path1, from1, to1, path2, from2, to2, pi, ideal_pi);
     return pi;
 }
-void PathsWeightCounter::FindJumpCandidates(EdgeId e, int min_dist, int max_dist, size_t min_len, set<EdgeId>& result) {
+inline void PathsWeightCounter::FindJumpCandidates(EdgeId e, int min_dist, int max_dist, size_t min_len, set<EdgeId>& result) {
     result.clear();
     lib_.FindJumpEdges(e, result, min_dist, max_dist, min_len);
 }
-void PathsWeightCounter::FindJumpEdges(EdgeId e, set<EdgeId>& edges, int min_dist, int max_dist, vector<EdgeWithDistance>& result) {
+inline void PathsWeightCounter::FindJumpEdges(EdgeId e, set<EdgeId>& edges, int min_dist, int max_dist, vector<EdgeWithDistance>& result) {
     result.clear();
 
     for (auto e2 = edges.begin(); e2 != edges.end(); ++e2) {
@@ -580,18 +580,18 @@ void PathsWeightCounter::FindJumpEdges(EdgeId e, set<EdgeId>& edges, int min_dis
         }
     }
 }
-void PathsWeightCounter::SetCommonWeightFrom(size_t iedge, double weight) {
+inline void PathsWeightCounter::SetCommonWeightFrom(size_t iedge, double weight) {
 	common_w_[iedge] = weight;
 }
-void PathsWeightCounter::ClearCommonWeight() {
+inline void PathsWeightCounter::ClearCommonWeight() {
 	common_w_.clear();
 }
 
-bool PathsWeightCounter::HasPI(EdgeId e1, EdgeId e2, int dist) const {
+inline bool PathsWeightCounter::HasPI(EdgeId e1, EdgeId e2, int dist) const {
     return lib_.CountPairedInfo(e1, e2, dist, true) > (double)  min_read_count_;
 }
 
-bool PathsWeightCounter::HasPI(EdgeId e1, EdgeId e2, size_t dist_min, size_t dist_max) const {
+inline bool PathsWeightCounter::HasPI(EdgeId e1, EdgeId e2, size_t dist_min, size_t dist_max) const {
     return lib_.CountPairedInfo(e1, e2, dist_min, dist_max) > min_read_count_;
 }
 };

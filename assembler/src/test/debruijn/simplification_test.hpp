@@ -177,17 +177,17 @@ BOOST_AUTO_TEST_CASE( IterUniquePath ) {
 	BOOST_CHECK_EQUAL(g.size(), 16u);
 }
 
-BOOST_AUTO_TEST_CASE( MFIterUniquePath ) {
-	Graph g(55);
-	IdTrackHandler<Graph> int_ids(g);
-	graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g, int_ids);
-
-	debruijn_config::simplification::max_flow_ec_remover mfec_config = standard_mfec_config();
-	mfec_config.uniqueness_length = 500;
-	MaxFlowRemoveErroneousEdges<Graph>(g, mfec_config);
-
-	BOOST_CHECK_EQUAL(g.size(), 16u);
-}
+//BOOST_AUTO_TEST_CASE( MFIterUniquePath ) {
+//	Graph g(55);
+//	IdTrackHandler<Graph> int_ids(g);
+//	graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g, int_ids);
+//
+//	debruijn_config::simplification::max_flow_ec_remover mfec_config = standard_mfec_config();
+//	mfec_config.uniqueness_length = 500;
+//	MaxFlowRemoveErroneousEdges<Graph>(g, mfec_config);
+//
+//	BOOST_CHECK_EQUAL(g.size(), 16u);
+//}
 
 //todo very strange figure!!!
 BOOST_AUTO_TEST_CASE( MFUniquePath ) {
@@ -213,16 +213,16 @@ BOOST_AUTO_TEST_CASE( MFUniquePath ) {
 //	BOOST_CHECK_EQUAL(g.size(), 12u);
 //}
 
-BOOST_AUTO_TEST_CASE( SelfComp ) {
-       Graph g(55);
-       IdTrackHandler<Graph> int_ids(g);
-       graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/self_comp", g, int_ids);
-       debruijn_config::simplification::max_flow_ec_remover mfec_config = standard_mfec_config();
-       mfec_config.uniqueness_length = 1500;
-       MaxFlowRemoveErroneousEdges<Graph>(g, mfec_config);
-
-       BOOST_CHECK_EQUAL(g.size(), 4u);
-}
+//BOOST_AUTO_TEST_CASE( SelfComp ) {
+//       Graph g(55);
+//       IdTrackHandler<Graph> int_ids(g);
+//       graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/self_comp", g, int_ids);
+//       debruijn_config::simplification::max_flow_ec_remover mfec_config = standard_mfec_config();
+//       mfec_config.uniqueness_length = 1500;
+//       MaxFlowRemoveErroneousEdges<Graph>(g, mfec_config);
+//
+//       BOOST_CHECK_EQUAL(g.size(), 4u);
+//}
 
 BOOST_AUTO_TEST_CASE( ComplexBulgeRemoverOnSimpleBulge ) {
        Graph g(55);

@@ -13,7 +13,7 @@
 using namespace debruijn_graph;
 
 namespace path_extend {
-bool InCycle(EdgeId e, const Graph& g) {
+inline bool InCycle(EdgeId e, const Graph& g) {
     auto v = g.EdgeEnd(e);
     if (g.OutgoingEdgeCount(v) >= 1) {
         auto edges = g.OutgoingEdges(v);
@@ -26,7 +26,7 @@ bool InCycle(EdgeId e, const Graph& g) {
     return false;
 }
 
-bool InBuble(EdgeId e, const Graph& g) {
+inline bool InBuble(EdgeId e, const Graph& g) {
     auto edges = g.OutgoingEdges(g.EdgeStart(e));
     auto endVertex = g.EdgeEnd(e);
     for (auto it = edges.begin(); it != edges.end(); ++it) {
