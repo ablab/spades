@@ -528,13 +528,13 @@ inline void PathsWeightCounter::FindPairInfo(const BidirectionalPath& path1,
             double w = 0.0;
             FindPairInfo(path1.At(i1), path2.At(i2), dist, ideal_w, w);
             ideal_pi += ideal_w;
-           if (math::gr(ideal_w, 0.0) && math::ls(w, ideal_w)) {
+           /*if (math::gr(ideal_w, 0.0) && math::ls(w, ideal_w)) {
                 DEBUG("i1 " << i1 << " i2 " << i2
                 		<<" w " << w
                 		<< " ideal " << ideal_w
                 		<< " e1 " << g_.int_id (path1.At(i1))
                 		<< " e2 " << g_.int_id(path2.At(i2)) << " dist " << dist);
-            }
+            }*/
             if (pi.find(i1) == pi.end()) {
                 pi[i1] = 0;
             }
