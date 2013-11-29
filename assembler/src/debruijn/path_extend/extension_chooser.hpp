@@ -952,8 +952,12 @@ private:
                     break;
                 }
             }
+            if (!contain_all) {
+                break;
+            }
             common_begin++;
         }
+        DEBUG("common begin " << common_begin);
         for (BidirectionalPath* next : next_paths) {
             result[next] = weight_counter_.FindPairInfoFromPath(path, 0, path.Size(), *next, common_begin, next->Size());
         }
@@ -1023,6 +1027,53 @@ private:
         return SortResult(path, result);
     }
 
+    BidirectionalPath ChooseFromEnds(const BidirectionalPath& path,
+                                     const vector<BidirectionalPath*>& paths,
+                                     const BidirectionalPath& end) {
+        DEBUG("choose from ends");
+        end.Print();
+        vector<BidirectionalPath> new_paths;
+        vector<BidirectionalPath> paths_to_cover;
+        for (BidirectionalPath* p : paths) {
+            int from = 0;
+            int pos = p->FindFirst(end, from);
+            while (pos > -1) {
+                BidirectionalPath new_p(path);
+                BidirectionalPath new_end(p->SubPath(0, pos + end.Size()));
+                new_p.PushBack(new_end);
+                new_paths.push_back(new_p);
+                paths_to_cover.push_back(new_end);
+                from = pos + 1;
+                pos = p->FindFirst(end, from);
+            }
+        }
+        BidirectionalPath max = *new_paths.begin();
+        size_t covered_edges_max = 0;
+        size_t min_size = max.Size();
+        for (BidirectionalPath p: new_paths) {
+            size_t cov_edges = 0;
+            for (BidirectionalPath e : paths_to_cover) {
+                vector<size_t> poses = p.FindAll(e.Back());
+                for (size_t pos : poses) {
+                    if (EqualBegins(p, pos, e, e.Size() - 1, true)) {
+                        cov_edges++;
+                        break;
+                    }
+                }
+            }
+            if (cov_edges > covered_edges_max || (cov_edges == covered_edges_max && min_size > p.Size())) {
+                DEBUG("cov_e " << cov_edges << " s " << p.Size());
+                max.Clear();
+                max.PushBack(p);
+                covered_edges_max = cov_edges;
+                min_size = max.Size();
+            }
+        }
+        DEBUG("res");
+        max.SubPath(path.Size()).Print();
+        return max.SubPath(path.Size());
+    }
+
     EdgeContainer TryToScaffold(const BidirectionalPath& path,
                                 const vector<BidirectionalPath*>& paths) {
         DEBUG("Simple Scaffolding")
@@ -1032,10 +1083,8 @@ private:
         for (BidirectionalPath* p : paths) {
             p->Print();
         }
-        size_t max_common_size = 0;
-        size_t max_begin = 0;
-        size_t max_end = 0;
-        BidirectionalPath max_path(g_);
+
+        BidirectionalPath max_end(g_);
         for (auto it1 = paths.begin(); it1 != paths.end(); ++it1) {
             BidirectionalPath* path1 = *it1;
             for (size_t i = 1; i < path1->Size(); ++i) {
@@ -1047,36 +1096,34 @@ private:
                         if (!(*it2)->Contains(subpath))
                             contain_all = false;
                     }
-                    if (contain_all && (i1 - i) >= max_common_size) {
-                        max_common_size = i1 - i;
-                        max_begin = i;
-                        max_end = i1;
+                    if (contain_all && (i1 - i) >= max_end.Size()) {
                         DEBUG("common end " << i << " " << i1)
-                        path1->Print();
-                        max_path.Clear();
-                        max_path.PushBack(*path1);
+                        max_end.Clear();
+                        max_end.PushBack(subpath);
                     }
                 }
             }
         }
-        if (max_path.Size() == 0) {
+        if (max_end.Size() == 0) {
             return EdgeContainer();
         }
+        BidirectionalPath result_end = ChooseFromEnds(path, paths, max_end);
+        int begin = result_end.FindFirst(max_end);
         weight_counter_.ClearCommonWeight();
         double common = weight_counter_.CountPairInfo(
-                path, 0, path.Size(), max_path,
-                max_begin, max_end, false);
+                path, 0, path.Size(), result_end,
+                begin, begin + max_end.Size(), false);
         double not_common = weight_counter_.CountPairInfo(
-                path, 0, path.Size(), max_path, 0,
-                max_begin, false);
-        DEBUG("common " << common << " not common " << not_common << " max common " << max_begin << " " << max_end);
-        max_path.Print();
+                path, 0, path.Size(), result_end, 0,
+                begin, false);
+        DEBUG("common " << common << " not common " << not_common << " max common " << begin << " " << begin + max_end.Size());
+        result_end.Print();
         EdgeContainer result;
         //if (common > not_common) {
-            size_t to_add = max_begin;
-            size_t gap_length = max_path.Length() - max_path.LengthAt(to_add);
-            DEBUG(" edge to add " << g_.int_id(max_path.At(to_add)) << " with length " << gap_length);
-            result.push_back(EdgeWithDistance(max_path.At(to_add), gap_length));
+            size_t to_add = begin;
+            size_t gap_length = result_end.Length() - result_end.LengthAt(to_add);
+            DEBUG(" edge to add " << g_.int_id(result_end.At(to_add)) << " with length " << gap_length);
+            result.push_back(EdgeWithDistance(result_end.At(to_add), gap_length));
        // }
         return result;
     }

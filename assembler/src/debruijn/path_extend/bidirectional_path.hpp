@@ -644,11 +644,11 @@ public:
 		return max_over;
 	}
 
-    int FindFirst(const BidirectionalPath& path) const {
+    int FindFirst(const BidirectionalPath& path, size_t from = 0) const {
         if (path.Size() > Size()) {
             return -1;
         }
-        for (size_t i = 0; i <= Size() - path.Size(); ++i) {
+        for (size_t i = from; i <= Size() - path.Size(); ++i) {
             if (CompareFrom(i, path)) {
                 return (int) i;
             }
