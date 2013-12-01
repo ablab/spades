@@ -93,7 +93,7 @@ BOOST_AUTO_TEST_CASE( SyntheticExamplesTestsRtSeq ) {
     utils::TmpFolderFixture _("tmp");
     string input_dir = "./src/test/cap/tests/synthetic/";
     RunTests<runtime_k::RtSeq>(25, input_dir + "tests.xml", "tmp/",
-                               input_dir + "etalon/", "tmp", true);
+                               input_dir + "etalon/", "tmp", /*true*/false);
 }
 
 BOOST_AUTO_TEST_CASE( SyntheticExamplesTestsLSeq ) {
