@@ -134,7 +134,7 @@ class KMerIndex {
   typedef KMerIndex __self;
 
  public:
-  KMerIndex(/*unsigned k*/):/*k_(k), */index_(NULL),  num_buckets_(0) {}
+  KMerIndex(/*unsigned k*/):/*k_(k), */index_(NULL),  num_buckets_(0), size_(0) {}
 
   KMerIndex(const KMerIndex&) = delete;
   KMerIndex& operator=(const KMerIndex&) = delete;
@@ -161,8 +161,12 @@ class KMerIndex {
     return sz;
   }
 
-  void set_size(size_t size) {
-	  size_ = size;
+  void count_size() {
+      if(index_ == NULL)
+          return;
+	  size_ = 0;
+      for(size_t i = 0; i < num_buckets_; i++)
+          size_ += index_[i].size();
   }
 
   size_t size() const {
@@ -201,15 +205,16 @@ class KMerIndex {
 
     bucket_starts_.resize(num_buckets_ + 1);
     is.read((char*)&bucket_starts_[0], (num_buckets_ + 1) * sizeof(bucket_starts_[0]));
+    count_size();
   }
 
  private:
 //  unsigned k_;
   KMerDataIndex *index_;
-  size_t size_;
 
   size_t num_buckets_;
   std::vector<size_t> bucket_starts_;
+  size_t size_;
 
   size_t seq_bucket(const KMerSeq &s) const {
     return hash_function()(s) % num_buckets_;
@@ -508,6 +513,6 @@ size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &count
 
   double bits_per_kmer = 8.0 * (double)index.mem_size() / (double)kmers;
   INFO("Index built. Total " << index.mem_size() << " bytes occupied (" << bits_per_kmer << " bits per kmer).");
-  index.set_size(kmers);
+  index.count_size();
   return kmers;
 }

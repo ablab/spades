@@ -28,7 +28,7 @@ struct EdgeInfo {
 
     EdgeInfo conjugate(size_t k) const {
         if(!valid()) {
-            return EdgeInfo(edge_id->conjugate(), unsigned(-1), count);
+            return EdgeInfo(IdType(0), unsigned(-1), count);
         } else {
             return EdgeInfo(edge_id->conjugate(), (unsigned)edge_id->length(k) - offset, count);
         }
@@ -42,6 +42,11 @@ struct EdgeInfo {
         return offset != unsigned(-1);
     }
 };
+
+template<class stream, class IdType>
+stream &operator<<(stream &s, const EdgeInfo<IdType> &info) {
+    return s << "EdgeInfo[" << info.edge_id << ", " << info.offset << ", " << info.count << "]"; 
+}
 
 template<class Graph, class Seq = runtime_k::RtSeq, class traits = kmer_index_traits<Seq>, class StoringType = DefaultStoring>
 class KmerFreeEdgeIndex : public KeyIteratingMap<Seq, EdgeInfo<typename Graph::EdgeId>, traits, StoringType> {
