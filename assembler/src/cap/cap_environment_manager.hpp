@@ -69,7 +69,8 @@ class CapEnvironmentManager {
     ContigStreams rc_contigs = io::RCWrap(streams);
     rc_contigs.reset();
 
-    debruijn_graph::ConstructGraphUsingOldIndex(rc_contigs, result->g, result->index);
+    debruijn_graph::ConstructGraphUsingExtentionIndex(CreateDefaultConstructionConfig(),
+                                                      rc_contigs, result->g, result->index);
 
     env_->coloring_ = std::make_shared<ColorHandler<Graph> >(result->g, streams.size());
     ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(result->g,
@@ -277,8 +278,9 @@ class CapEnvironmentManager {
 
     VERIFY(env_->gp_rtseq_ == NULL && env_->gp_lseq_ == NULL);
     if (env_->UseLSeqForThisK(k)) {
-      env_->SetGraphPack(BuildGPFromStreams<LSeqGP>(
-          streams, k));
+        VERIFY(false);
+//      env_->SetGraphPack(BuildGPFromStreams<LSeqGP>(
+//          streams, k));
     } else {
       env_->SetGraphPack(BuildGPFromStreams<RtSeqGP>(
           streams, k));

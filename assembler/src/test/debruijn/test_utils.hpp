@@ -50,16 +50,6 @@ typedef multimap<MyEdgePair, pair<int, double>> EdgePairInfo;
 typedef map<MyEdge, double> CoverageInfo;
 typedef unordered_set<MyEdge> Edges;
 
-debruijn_config::construction CreateDefaultConstructionConfig() {
-    debruijn_config::construction config;
-    config.con_mode = construction_mode::con_extention;
-    debruijn_config::construction::early_tip_clipper early_tc;
-    early_tc.enable = false;
-    config.early_tc = early_tc;
-    config.keep_perfect_loops = true;
-    return config;
-}
-
 string print(const Edges& es) {
 	string s = "Edge set : {";
 	for (auto i = es.begin(); i != es.end(); ++i) {

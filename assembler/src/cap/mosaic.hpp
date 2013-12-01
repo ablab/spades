@@ -836,16 +836,6 @@ vector<string> ExtractSequences(const vector<StrandRange>& strand_ranges, const 
     return answer;
 }
 
-debruijn_config::construction CreateDefaultConstructionConfig() {
-    debruijn_config::construction config;
-    config.con_mode = construction_mode::con_extention;
-    debruijn_config::construction::early_tip_clipper early_tc;
-    early_tc.enable = false;
-    config.early_tc = early_tc;
-    config.keep_perfect_loops = true;
-    return config;
-}
-
 void DrawGraph(const vector<StrandRange>& all_ranges,
                const vector<StrandRange>& full_mosaic_ranges,
                const GenomeBlockComposition& block_composition) {
