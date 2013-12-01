@@ -30,7 +30,7 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
  public:
 
   KmerMapper(const Graph& g) :
-      base(g, "KmerMapper"), mapping_(g.k()), k_(g.k() + 1) {}
+      base(g, "KmerMapper"), mapping_(g.k() + 1), k_(g.k() + 1) {}
 
   virtual ~KmerMapper() { }
 
