@@ -97,7 +97,7 @@ size_t ConstructGraphUsingOldIndex(Readers& streams, Graph& g,
 	return rl;
 }
 
-debruijn_config::construction CreateDefaultConstructionConfig() {
+inline debruijn_config::construction CreateDefaultConstructionConfig() {
     debruijn_config::construction config;
     config.con_mode = construction_mode::con_extention;
     debruijn_config::construction::early_tip_clipper early_tc;
