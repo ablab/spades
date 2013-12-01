@@ -22,7 +22,7 @@ template<class Read>
 void construct_graph(io::ReadStreamList<Read>& streams,
                      conj_graph_pack& gp, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
     debruijn_config::construction params = cfg::get().con;
-    params.early_tc.enable &= !cfg::get().ds.single_cell;
+    params.early_tc.enable &= !cfg::get().gap_closer_enable;
 
     size_t rl = ConstructGraphWithCoverage(params, streams, gp.g,
                                            gp.index, gp.flanking_cov, contigs_stream);
