@@ -296,9 +296,11 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
             paths.SortByLength();
         }
         writer.writePaths(paths, output_dir + contigs_name);
+        writer.WritePathsToFASTG(paths, output_dir + "resulting_paths.fastg", output_dir + "resulting_paths.fasta");
         return;
     }
     writer.writePaths(paths, output_dir + "pe_paths.fasta");
+    writer.WritePathsToFASTG(paths, output_dir + "resulting_paths.fastg", output_dir + "resulting_paths.fasta");
 
 //MP
     INFO("mate pair path-extend started");

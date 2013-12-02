@@ -28,8 +28,8 @@ protected:
 
 protected:
 	const Graph& g_;
-    size_t k_;
 
+    size_t k_;
 
 	string ToString(const BidirectionalPath& path) const{
 		stringstream ss;
@@ -69,6 +69,76 @@ protected:
         return result.BuildSequence();
     }
 
+    void FindPathsOrder(PathContainer& paths, multimap<VertexId, BidirectionalPath*>& starting) const {
+        for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
+            BidirectionalPath* path = iter.get();
+            starting.insert(make_pair(g_.EdgeStart(path->Front()), path));
+
+            path = iter.getConjugate();
+            starting.insert(make_pair(g_.EdgeStart(path->Front()), path));
+        }
+    }
+
+    string GetContigName(BidirectionalPath* p, map<BidirectionalPath*, string> ids, int& counter) {
+        auto it = ids.find(p);
+        if (it != ids.end())
+            return it->second;
+
+        string name = io::MakeContigId(counter++, p->Length() + k_, p->Coverage(), p->GetId());
+        ids.insert(make_pair(p, name));
+        return name;
+    }
+
+    void ConstructFASTG(PathContainer& paths,
+            map<BidirectionalPath*, string >& ids,
+            map<BidirectionalPath*, vector<string> >& next_ids) {
+
+        multimap<VertexId, BidirectionalPath*> starting;
+        set<VertexId> visited;
+        queue<BidirectionalPath*> path_queue;
+        int counter = 1;
+
+        FindPathsOrder(paths, starting);
+
+        auto it = starting.begin();
+        for (; it != starting.end(); ++it) {
+            VertexId v = it->first;
+            if (visited.count(v) > 0)
+                continue;
+
+            visited.insert(v);
+            visited.insert(g_.conjugate(v));
+            while (it != starting.upper_bound(v)) {
+                path_queue.push(it->second);
+                ++it;
+            }
+
+            while (!path_queue.empty()) {
+                INFO("1");
+                BidirectionalPath* p = path_queue.front();
+                path_queue.pop();
+                string pname = GetContigName(p, ids, counter);
+                INFO(counter);
+                ids.insert(make_pair(p, pname));
+                next_ids.insert(make_pair(p, vector<string>()));
+
+                v = g_.EdgeEnd(p->Back());
+
+                bool add_new_paths = (visited.count(v) == 0);
+                for (auto v_it = starting.find(v); v_it != starting.upper_bound(v); ++v_it) {
+                    BidirectionalPath* next_path = v_it->second;
+                    next_ids[p].push_back(GetContigName(p, ids, counter));
+                    INFO(counter);
+                    if (add_new_paths)
+                        path_queue.push(next_path);
+                }
+                if (add_new_paths) {
+                    visited.insert(v);
+                    visited.insert(g_.conjugate(v));
+                }
+            }
+        }
+    }
 
 
 public:
@@ -139,7 +209,31 @@ public:
         DEBUG("Contigs written");
     }
 
+    void WritePathsToFASTG(PathContainer& paths, const string& filename, const string& fastafilename) {
+        map<BidirectionalPath*, string > ids;
+        map<BidirectionalPath*, vector<string> > next_ids;
 
+        INFO("Constructing FASTG file from paths " << filename);
+        ConstructFASTG(paths, ids, next_ids);
+
+        INFO("Writing contigs in FASTG to " << filename);
+        INFO("Writing contigs in FASTQ to " << fastafilename);
+        io::osequencestream_for_fastg fastg_oss(filename);
+        io::osequencestream_with_id oss(fastafilename);
+        for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
+            BidirectionalPath* path = iter.get();
+            if (path->Length() <= 0){
+                continue;
+            }
+            DEBUG(ids[path]);
+
+            oss.setID((int) path->GetId());
+            oss.setCoverage(path->Coverage());
+            oss << ToString(*path);
+            fastg_oss.set_header(ids[path]);
+            fastg_oss << next_ids[path] << ToString(*path);
+        }
+    }
 };
 
 
