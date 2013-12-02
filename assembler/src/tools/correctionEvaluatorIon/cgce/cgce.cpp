@@ -32,8 +32,8 @@ int main(int argc, char** argv) {
     conj_graph_pack gp(k, ".", 0);
 
     vector<ContigStream*> streams;
-    streams.push_back(new io::Reader(uncorrected_fn));
-    streams.push_back(new io::Reader(corrected_fn));
+    streams.push_back(new io::FileReadStream(uncorrected_fn));
+    streams.push_back(new io::FileReadStream(corrected_fn));
         
     vector<ContigStream*> rc_contigs;
     for (auto it = streams.begin(); it != streams.end(); ++it) {
