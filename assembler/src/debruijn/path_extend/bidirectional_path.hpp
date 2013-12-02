@@ -493,10 +493,10 @@ public:
 	}
 
 	void PushBack(EdgeId e, int gap = 0) {
-	    if (Size() == 0 && gap != 0) {
+	    /*if (Size() == 0 && gap != 0) {
 	        WARN("Pushing with front gap, setting to 0");
 	        gap = 0;
-	    }
+	    }*/
 	    data_.push_back(e);
 	    gapLength_.push_back(gap);
 	    IncreaseLengths(g_.length(e), gap);
