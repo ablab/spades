@@ -4,11 +4,11 @@
 # See file LICENSE for details.
 ############################################################################
 
-project(hammer-it CXX)
+project(ionhammer CXX)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-add_executable(hammer-it
+add_executable(ionhammer
                kmer_data.cpp
                hamcluster.cpp
                subcluster.cpp
@@ -17,11 +17,11 @@ add_executable(hammer-it
                expander.cpp
                main.cpp)
 
-target_link_libraries(hammer-it input mph_index yaml-cpp ${COMMON_LIBRARIES})
+target_link_libraries(ionhammer input mph_index yaml-cpp ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
-  set_target_properties(hammer-it PROPERTIES LINK_SEARCH_END_STATIC 1)
+  set_target_properties(ionhammer PROPERTIES LINK_SEARCH_END_STATIC 1)
 endif()
 
-install(TARGETS hammer-it
+install(TARGETS ionhammer
         RUNTIME DESTINATION bin)
