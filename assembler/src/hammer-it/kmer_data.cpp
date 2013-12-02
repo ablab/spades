@@ -9,7 +9,7 @@
 #include "valid_hkmer_generator.hpp"
 
 #include "io/mmapped_writer.hpp"
-#include "io/reader.hpp"
+#include "io/file_reader.hpp"
 #include "io/read_processor.hpp"
 
 #include <libcxx/sort.hpp>
@@ -143,7 +143,7 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
   const auto& dataset = cfg::get().dataset;
   BufferFiller filler(tmp_entries, cell_size, *this);
   for (auto it = dataset.reads_begin(), et = dataset.reads_end(); it != et; ++it) {
-    io::Reader irs(*it, io::PhredOffset);
+    io::FileReadStream irs(*it, io::PhredOffset);
     hammer::ReadProcessor rp(nthreads);
     while (!irs.eof()) {
       rp.Run(irs, filler);
@@ -222,7 +222,7 @@ void KMerDataCounter::FillKMerData(KMerData &data) {
 
   const auto& dataset = cfg::get().dataset;
   for (auto it = dataset.reads_begin(), et = dataset.reads_end(); it != et; ++it) {
-    io::Reader irs(*it, io::PhredOffset);
+    io::FileReadStream irs(*it, io::PhredOffset);
     KMerDataFiller filler(data);
     hammer::ReadProcessor(cfg::get().max_nthreads).Run(irs, filler);
   }

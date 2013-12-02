@@ -1,6 +1,6 @@
 #include "logger/log_writers.hpp"
 
-#include "io/reader.hpp"
+#include "io/file_reader.hpp"
 #include "io/osequencestream.hpp"
 #include "io/read_processor.hpp"
 
@@ -174,7 +174,7 @@ int main(int argc, char** argv) {
         Expander expander(kmer_data);
         const io::DataSet<> &dataset = cfg::get().dataset;
         for (auto I = dataset.reads_begin(), E = dataset.reads_end(); I != E; ++I) {
-            io::Reader irs(*I, io::PhredOffset);
+            io::FileReadStream irs(*I, io::PhredOffset);
             hammer::ReadProcessor rp(cfg::get().max_nthreads);
             rp.Run(irs, expander);
             VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
@@ -226,7 +226,7 @@ int main(int argc, char** argv) {
                                 boost::lexical_cast<std::string>(iread) + ".cor.fasta";
           std::string outcor = path::append_path(cfg::get().output_dir, path::basename(*I) + usuffix);
 
-          io::Reader irs(*I, io::PhredOffset);
+          io::FileReadStream irs(*I, io::PhredOffset);
           io::osequencestream ors(outcor);
 
           SingleReadCorrector read_corrector(kmer_data, pred);

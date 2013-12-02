@@ -4,7 +4,7 @@
 #include "kmer_data.hpp"
 #include "valid_hkmer_generator.hpp"
 
-#include "io/reader.hpp"
+#include "io/file_reader.hpp"
 
 #include <vector>
 #include <cstring>
