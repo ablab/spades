@@ -17,6 +17,7 @@ add_executable(debruijn_test
  ${CMAKE_SOURCE_DIR}/debruijn/construction.cpp
  ${CMAKE_SOURCE_DIR}/debruijn/stage.cpp
  ${CMAKE_SOURCE_DIR}/debruijn/mismatch_correction.cpp
+ ${CMAKE_SOURCE_DIR}/debruijn/pacbio_aligning.cpp 
  ${CMAKE_SOURCE_DIR}/debruijn/genomic_info_filler.cpp
  ${CMAKE_SOURCE_DIR}/debruijn/pair_info_count.cpp
  ${CMAKE_SOURCE_DIR}/debruijn/distance_estimation.cpp
@@ -24,5 +25,6 @@ add_executable(debruijn_test
  ${CMAKE_SOURCE_DIR}/debruijn/config_struct.cpp
  ${CMAKE_SOURCE_DIR}/debruijn/path_extend/pe_config_struct.cpp
  test.cpp)
-
-target_link_libraries(debruijn_test ${COMMON_LIBRARIES} input mph_index otkpp ssw ${ZLIB_LIBRARIES})
+ 
+include_directories(${EXT_DIR}/include/ConsensusCore)
+target_link_libraries(debruijn_test ${COMMON_LIBRARIES} ConsensusCore input mph_index otkpp ssw ${ZLIB_LIBRARIES})
