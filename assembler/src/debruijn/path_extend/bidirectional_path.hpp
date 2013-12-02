@@ -759,6 +759,7 @@ public:
 
     BidirectionalPath SubPath(size_t from, size_t to) const {
         BidirectionalPath result(g_);
+        VERIFY(to <= Size());
         for (size_t i = from; i < to; ++i) {
             result.PushBack(data_[i], gapLength_[i]);
         }
@@ -1239,6 +1240,9 @@ inline size_t LoopDetector::LoopEdges(size_t skip_identical_edges, size_t min_cy
 }
 
 inline bool LoopDetector::PathIsLoop(size_t edges) const {
+    if (edges == 0 || path_->Size() <= 1)
+        return false;
+
     for (size_t i = 0; i < edges; ++i) {
         EdgeId e = path_->At(i);
         for (int j = (int) path_->Size() - ((int) edges - (int) i); j >= 0; j -= (int) edges) {
