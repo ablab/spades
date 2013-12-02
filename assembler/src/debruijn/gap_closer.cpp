@@ -3,8 +3,8 @@
 #include "standard.hpp"
 
 #include "omni/omni_tools.hpp"
+#include "io/io_helper.hpp"
 #include "omni_labelers.hpp"
-#include "io/easy_reader.hpp"
 #include "dataset_readers.hpp"
 #include "read_converter.hpp"
 
@@ -16,12 +16,6 @@
 #include <unordered_map>
 
 namespace debruijn_graph {
-
-template<typename EdgeId>
-Path<EdgeId> ConvertToPath(MappingPath<EdgeId> mp) { return mp.simple_path(); }
-
-template<typename EdgeId>
-Path<EdgeId> ConvertToPath(Path<EdgeId> mp) { return mp; }
 
 template<class Graph, class SequenceMapper>
 class GapCloserPairedIndexFiller {
@@ -50,8 +44,8 @@ class GapCloserPairedIndexFiller {
         Sequence read1 = p_r.first().sequence();
         Sequence read2 = p_r.second().sequence();
 
-        Path<EdgeId> path1 = ConvertToPath(mapper_.MapSequence(read1));
-        Path<EdgeId> path2 = ConvertToPath(mapper_.MapSequence(read2));
+        Path<EdgeId> path1 = mapper_.MapSequence(read1).path();
+        Path<EdgeId> path2 = mapper_.MapSequence(read2).path();
         for (size_t i = 0; i < path1.size(); ++i) {
             auto OutTipIter = OutTipMap.find(path1[i]);
             if (OutTipIter != OutTipMap.end()) {
@@ -124,7 +118,7 @@ class GapCloserPairedIndexFiller {
         stream.reset();
         size_t n = 0;
         while (!stream.eof()) {
-            typename PairedStream::read_type p_r;
+            typename PairedStream::ReadT p_r;
             stream >> p_r;
             ProcessPairedRead(paired_index, p_r);
             VERBOSE_POWER(++n, " paired reads processed");
@@ -148,9 +142,8 @@ class GapCloserPairedIndexFiller {
         {
 #pragma omp for reduction(+ : counter)
             for (size_t i = 0; i < nthreads; ++i) {
-                typedef typename Streams::ReaderType PairedStream;
-                typename PairedStream::read_type r;
-                PairedStream& stream = streams[i];
+                typename Streams::ReadT r;
+                auto& stream = streams[i];
                 stream.reset();
 
                 while (!stream.eof()) {
@@ -194,7 +187,7 @@ class GapCloserPairedIndexFiller {
 
 template<class Mapper>
 bool CheckNoKmerClash(const Sequence& s, const Mapper& mapper) {
-    std::vector<EdgeId> path = mapper.MapSequence(s).simple_path().sequence();
+    std::vector<EdgeId> path = mapper.MapSequence(s).simple_path();
     return path.empty();
 }
 
@@ -500,12 +493,9 @@ void GapClosing::run(conj_graph_pack &gp, const char*) {
 
     if (cfg::get().use_multithreading) {
         auto streams = paired_binary_readers(cfg::get().ds.reads[lib_index], true, 0);
-        CloseGaps(gp, *streams);
+        CloseGaps(gp, streams);
     } else {
-        std::auto_ptr<PairedReadStream> stream = paired_easy_reader(cfg::get().ds.reads[lib_index], true, 0);
-        io::ReadStreamVector <PairedReadStream> streams(stream.get());
-        //todo WTF what does it mean?
-        streams.release();
+        io::PairedStreams streams(paired_easy_reader(cfg::get().ds.reads[lib_index], true, 0));
         CloseGaps(gp, streams);
     }
 

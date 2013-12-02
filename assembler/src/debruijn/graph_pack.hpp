@@ -13,7 +13,6 @@
 
 #pragma once
 
-#include "omni/edge_labels_handler.hpp"
 #include "omni/id_track_handler.hpp"
 #include "omni/edges_position_handler.hpp"
 #include "de/paired_info.hpp"
@@ -28,7 +27,7 @@
 namespace debruijn_graph {
 
 /*KmerFree*//*KmerStoring*/
-template<class Graph, class SeqType, class KmerEdgeIndex = DeBruijnEdgeIndex<KmerStoringDeBruijnEdgeIndex<Graph, SeqType>>>
+template<class Graph, class SeqType, class KmerEdgeIndex = KmerStoringEdgeIndex<Graph, SeqType, kmer_index_traits<SeqType>, DefaultStoring>>
 struct graph_pack: private boost::noncopyable {
     typedef Graph graph_t;
     typedef SeqType seq_t;
@@ -56,9 +55,9 @@ struct graph_pack: private boost::noncopyable {
     graph_pack(size_t k, const std::string &workdir, size_t lib_count,
                         Sequence genome = Sequence(), bool use_inner_ids = false,
                         size_t flanking_range = 50)
-            : k_value(k), g(k), index(g, k + 1, workdir),
+            : k_value(k), g(k), index(g, workdir),
               int_ids(g, use_inner_ids), edge_pos(g),
-              kmer_mapper(g, k + 1),
+              kmer_mapper(g),
               flanking_cov(g, flanking_range),
               paired_indices(g, lib_count),
               clustered_indices(g, lib_count),
@@ -72,8 +71,7 @@ struct graph_pack: private boost::noncopyable {
 //    }
 };
 
-typedef graph_pack<ConjugateDeBruijnGraph, runtime_k::RtSeq,
-                   DeBruijnEdgeIndex<KmerFreeDeBruijnEdgeIndex<ConjugateDeBruijnGraph, runtime_k::RtSeq>>> conj_graph_pack;
+typedef graph_pack<ConjugateDeBruijnGraph, runtime_k::RtSeq, KmerFreeEdgeIndex<Graph, runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq>, DefaultStoring>> conj_graph_pack;
 typedef conj_graph_pack::index_t Index;
 
 typedef conj_graph_pack::PairedInfoIndicesT PairedIndicesT;

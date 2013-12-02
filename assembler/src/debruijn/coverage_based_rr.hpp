@@ -6,7 +6,7 @@
 #include <set>
 #include <list>
 #include "graph_print_utils.hpp"
-#include "indices/debruijn_kmer_index.hpp"
+#include "indices/perfect_hash_map.hpp"
 #include "graph_pack.hpp"
 #include "pair_info_improver.hpp"
 #include "path_extend/pe_io.hpp"

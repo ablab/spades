@@ -14,6 +14,7 @@
 #pragma once
 
 #include <fstream>
+#include "single_read.hpp"
 
 using std::string;
 using std::endl;

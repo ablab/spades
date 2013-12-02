@@ -394,9 +394,9 @@ public:
 		for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
 			if (g_.int_id(*iter) <= 0 or InCycle(*iter, g_))
 				continue;
-
-			if (included.count(*iter) == 0) {
-				edges.AddPair(new BidirectionalPath(g_, *iter), new BidirectionalPath(g_, g_.conjugate(*iter)));
+            if (included.count(*iter) == 0) {
+				edges.AddPair(new BidirectionalPath(g_, *iter),
+                              new BidirectionalPath(g_, g_.conjugate(*iter)));
 				included.insert(*iter);
 				included.insert(g_.conjugate(*iter));
 			}

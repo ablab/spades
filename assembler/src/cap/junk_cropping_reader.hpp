@@ -4,15 +4,20 @@
 
 namespace cap {
 
-class RepeatCroppingReader : public io::DelegatingReaderWrapper<io::SingleRead> {
-    typedef io::DelegatingReaderWrapper<io::SingleRead> base;
+class JunkCroppingWrapper : public io::DelegatingWrapper<io::SingleRead> {
+    typedef io::DelegatingWrapper<io::SingleRead> base;
     vector<pair<size_t, size_t>> coordinates_ladder_;
+
+    bool IsGoodSymbol(char c) {
+        return c == 'A' || c == 'C' || c == 'G' || c == 'T';
+    }
+
 public:
-    RepeatCroppingReader(io::IReader<io::SingleRead>& reader) : base(reader) {
+    JunkCroppingWrapper(base::ReadStreamPtrT reader) : base(reader) {
 
     }
 
-    RepeatCroppingReader& operator>>(io::SingleRead& read) {
+    JunkCroppingWrapper& operator>>(io::SingleRead& read) {
         base::operator >>(read);
         coordinates_ladder_.clear();
         string orig_string = read.GetSequenceString();
@@ -21,16 +26,15 @@ public:
         string cropped_qual = "";
         coordinates_ladder_.push_back(make_pair(0, 0));
         for (size_t coord = 0; coord < orig_string.size(); ++coord) {
-            if (isupper(orig_string[coord])) {
+            if (coord > 0 && (IsGoodSymbol(orig_string[coord - 1]) ^ IsGoodSymbol(orig_string[coord]))) {
+                coordinates_ladder_.push_back(make_pair(cropped.size(), coord));
+            }
+            if (IsGoodSymbol(orig_string[coord])) {
                 cropped += orig_string[coord];
                 cropped_qual += orig_qual[coord];
             }
-            if (coord > 0 && coord < orig_string.size() - 1
-                    && (isupper(orig_string[coord]) ^ isupper(orig_string[coord + 1]))) {
-                coordinates_ladder_.push_back(make_pair(coord, cropped.size() - 1));
-            }
         }
-        coordinates_ladder_.push_back(make_pair(orig_string.size(), cropped.size()));
+        coordinates_ladder_.push_back(make_pair(cropped.size(), orig_string.size()));
         read = io::SingleRead(read.name(), cropped, cropped_qual);
         return *this;
     }

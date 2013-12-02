@@ -69,7 +69,7 @@
 // //Indels
 // //	make_dir(output_folder + "indels/");
 // //	SimpleInDelAnalyzer<Graph> del_analyzer(gp.g, coloring, gp.edge_pos,
-// //			(*MapperInstance(gp)).MapSequence(gp.genome).simple_path().sequence(),
+// //			(*MapperInstance(gp)).MapSequence(gp.genome).simple_path(),
 // //			edge_type::red, output_folder + "indels/");
 // //	del_analyzer.Analyze();
 
@@ -304,7 +304,7 @@ BOOST_AUTO_TEST_CASE( TwoStrainComparisonWR ) {
 	pair<Sequence, Sequence> genomes = CorrectGenomes<55>(CorrectGenomes<21>(
 			ReadGenome(genome_path1),
 			ReadGenome(genome_path2)), 200);
-	
+
 	INFO("Genomes ready");
 
 	CompareGenomes<77>(genomes.first, genomes.second, "bp_graph_test/two_strain_comp_wr/");

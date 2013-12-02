@@ -43,16 +43,10 @@ class Basket {
 
 public:
     Basket(EdgeId edgeId, size_t index)
-            : edgeId_(edgeId),
-              index_(index) {
-
-    }
+            : edgeId_(edgeId), index_(index) { }
 
     Basket(const Basket& b)
-            : edgeId_(b.edgeId_),
-              index_(b.index_) {
-
-    }
+            : edgeId_(b.edgeId_), index_(b.index_) {}
 
     const EdgeId edgeId() const {
         return edgeId_;
@@ -79,18 +73,11 @@ struct PairInfo {
     double distance_;
     size_t count_;
 
-    PairInfo() {
-        weight_ = 0.;
-        distance_ = 0.;
-        count_ = 0;
-    }
+    PairInfo() 
+            : weight_(0.), distance_(0.), count_(0) {}
 
     PairInfo(double weight, double distance, size_t count = 0)
-            : weight_(weight),
-              distance_(distance),
-              count_(count) {
-
-    }
+            : weight_(weight), distance_(distance), count_(count) {}
 
 };
 
@@ -273,8 +260,7 @@ public:
 
     }
 
-    ~SplitGraphPairInfo() {
-    }
+    ~SplitGraphPairInfo() {}
 
     virtual void StartProcessLibrary(size_t threads_count) {
         baskets_buffer_.clear();
@@ -324,15 +310,14 @@ private:
         vector<double> bad_pi;
         double insert_size_min = (double) is_ - 2. * (double) is_var_;
         double insert_size_max = (double) is_ + 2. * (double) is_var_;
-        for (auto edge = g.SmartEdgeBegin(); !edge.IsEnd(); ++edge) {
+        for (auto edge = g.ConstEdgeBegin(); !edge.IsEnd(); ++edge) {
             if (g.length(*edge) > min_long_edge) {
-                if (g.int_id(*edge) <= 0) {
+                if (g.int_id(*edge) <= 0)
                     continue;
-                }
+
                 EdgePairInfo& edge_pi = basket_index_.GetEdgePairInfo(*edge);
-                if (edge_pi.size() == 0) {
+                if (edge_pi.size() == 0)
                     continue;
-                }
                 size_t count_backets = LastBasketIndex(*edge, (int) insert_size_max,
                                                        edge_pi);
                 for (size_t index = 0; index <= count_backets; ++index) {

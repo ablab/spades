@@ -52,6 +52,7 @@ void SaveKmerMapper(const string& file_name,
     mapper.BinWrite(file);
 
     file.close();
+    DEBUG("kmer mapper saved ")
 }
 
 template<class KmerMapper>
@@ -61,7 +62,7 @@ void LoadKmerMapper(const string& file_name,
     std::ifstream file;
     file.open((file_name + ".kmm").c_str(),
               std::ios_base::binary | std::ios_base::in);
-    DEBUG("Reading kmer mapper, " << file_name <<" started");
+    INFO("Reading kmer mapper, " << file_name <<" started");
     VERIFY(file.is_open());
 
     uint32_t k_;
@@ -87,6 +88,7 @@ void SaveEdgeIndex(const std::string& file_name,
     index.BinWrite(file);
 
     file.close();
+    DEBUG("index saved ")
 }
 
 template<class EdgeIndex>
@@ -468,7 +470,7 @@ class DataScanner {
     }
 
     bool LoadFlankingCoverage(const string& file_name, NewFlankingCoverage<Graph>& flanking_cov) {
-        if (!FileExists(file_name + ".flcvr")) {
+        if (!path::FileExists(file_name + ".flcvr")) {
             INFO("Flanking coverage saves are absent");
             return false;
         }
@@ -503,14 +505,12 @@ class DataScanner {
                                 &first_real_id, &second_real_id, &d, &w, &v);
             VERIFY(read_count == 5);
             TRACE(first_real_id<< " " << second_real_id << " " << d << " " << w << " " << v);
-            if (id_handler_.ReturnEdgeId(first_real_id) == EdgeId(NULL) || id_handler_.ReturnEdgeId(second_real_id) == EdgeId(NULL))
+            EdgeId e1 = id_handler_.ReturnEdgeId(first_real_id);
+            EdgeId e2 = id_handler_.ReturnEdgeId(second_real_id);
+            if (e1 == EdgeId(NULL) || e2 == EdgeId(NULL))
                 continue;
-            TRACE(id_handler_.ReturnEdgeId(first_real_id) << " "
-                  << id_handler_.ReturnEdgeId(second_real_id)
-                  << " " << d << " " << w);
-            paired_index.AddPairInfo(
-                id_handler_.ReturnEdgeId(first_real_id),
-                id_handler_.ReturnEdgeId(second_real_id), d, w, v, false);
+            TRACE(e1 << " " << e2 << " " << d << " " << w);
+            paired_index.AddPairInfo(e1, e2, d, w, v, false);
         }
         DEBUG("PII SIZE " << paired_index.size());
         fclose(file);
@@ -521,7 +521,7 @@ class DataScanner {
         int read_count;
         FILE* file = fopen((file_name + ".pos").c_str(), "r");
         VERIFY(file != NULL);
-        DEBUG("Reading edges positions, " << file_name <<" started");
+        INFO("Reading edges positions, " << file_name <<" started");
         VERIFY(file != NULL);
         size_t pos_count;
         read_count = fscanf(file, "%zu\n", &pos_count);
@@ -545,7 +545,7 @@ class DataScanner {
                 //      VERIFY(read_count == 3);
                 VERIFY(read_count == 5);
                 EdgeId eid = id_handler_.ReturnEdgeId(edge_real_id);
-                edge_pos.AddEdgePosition(eid, string(contigId), start_pos, end_pos, m_start_pos, m_end_pos);
+                edge_pos.AddEdgePosition(eid, string(contigId), start_pos - 1, end_pos, m_start_pos - 1, m_end_pos);
             }
         }
         fclose(file);
@@ -757,7 +757,7 @@ struct ScannerTraits<NonconjugateDeBruijnGraph> {
 
 inline std::string MakeSingleReadsFileName(const std::string& file_name,
                                     size_t index) {
-    return file_name + "_paths_" + ToString(index) + ".mrp";
+    return file_name + "_paths_" + ToString(index) + ".mpr";
 }
 
 //helper methods

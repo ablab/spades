@@ -25,6 +25,7 @@ careful = False
 
 # advanced options
 continue_mode = False
+continue_from = None
 dataset_yaml_filename = ''
 threads = 16
 memory = 250
@@ -50,7 +51,7 @@ long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\
                "only-error-correction only-assembler "\
                "disable-gzip-output disable-rr help test debug reference= "\
                "bh-heap-check= spades-heap-check= help-hidden "\
-               "config-file= dataset= mismatch-correction careful continue".split()
+               "config-file= dataset= mismatch-correction careful continue continue-from=".split()
 short_options = "o:1:2:s:k:t:m:i:h"
 
 # adding multiple paired-end and mate-pair libraries support
@@ -112,6 +113,7 @@ def usage(spades_version, show_hidden=False):
     sys.stderr.write("--careful\t\ttries to reduce number"\
                          " of mismatches and short indels" + "\n")
     sys.stderr.write("--continue\t\tcontinue run from the last available check-point" + "\n")
+    sys.stderr.write("--continue-from\t<cp>\tcontinue run from the specified check-point ('ec', 'as', 'k<int>', 'mc')" + "\n")
     sys.stderr.write("--disable-gzip-output\tforces error correction not to"\
                          " compress the corrected reads" + "\n")
     sys.stderr.write("--disable-rr\t\tdisables repeat resolution stage"\

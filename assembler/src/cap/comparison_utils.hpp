@@ -58,17 +58,19 @@ void ConstructGraph(Graph& g, Index& index,
 	ConstructGraph<Graph>(streams, g, index);
 }
 
+/*
 template<class Graph, class Index>
 void ConstructGraph(Graph& g, Index& index,
 		ContigStream& stream1,
 		ContigStream& stream2) {
-	io::MultifileReader<io::SingleRead> composite_reader(stream1, stream2);
+	io::MultifileStream<io::SingleRead> composite_reader(stream1, stream2);
 	ConstructGraph<Graph, Index>(g, index, composite_reader);
 }
+*/
 
 inline Sequence ReadGenome(const string& filename) {
-	CheckFileExistenceFATAL(filename);
-	io::Reader genome_stream(filename);
+	path::CheckFileExistenceFATAL(filename);
+	io::FileReadStream genome_stream(filename);
 	return ReadSequence(genome_stream);
 }
 
@@ -106,8 +108,8 @@ inline vector<Sequence> AllSequences(ContigStream& stream) {
 }
 
 inline vector<Sequence> ReadContigs(const string& filename) {
-	CheckFileExistenceFATAL(filename);
-	io::Reader genome_stream(filename);
+	path::CheckFileExistenceFATAL(filename);
+	io::FileReadStream genome_stream(filename);
 	return AllSequences(genome_stream);
 }
 

@@ -3,39 +3,20 @@
 //* All Rights Reserved
 //* See file LICENSE for details.
 //****************************************************************************
-
-/**
- * @file    ireader.hpp
- * @author  Mariya Fomkina
- * @version 1.0
- *
- * @section LICENSE
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * @section DESCRIPTION
- *
- * IReader is the interface for all other readers and reader wrappers.
- */
-
-#ifndef COMMON_IO_IREADER_HPP_
-#define COMMON_IO_IREADER_HPP_
+//todo rename to reader
+#pragma once
 
 #include <boost/noncopyable.hpp>
 
 namespace io {
 
-
-struct ReadStat {
+struct ReadStreamStat {
     size_t read_count_;
     size_t max_len_;
     uint64_t total_len_;
 
 
-    ReadStat(): read_count_(0), max_len_(0), total_len_(0) { }
+    ReadStreamStat(): read_count_(0), max_len_(0), total_len_(0) { }
 
     void write(std::ostream& stream) const {
         stream.write((const char *) &read_count_, sizeof(read_count_));
@@ -60,7 +41,7 @@ struct ReadStat {
         total_len_ += read.nucl_count();
     }
 
-    void merge(const ReadStat& stat) {
+    void merge(const ReadStreamStat& stat) {
         read_count_ += stat.read_count_;
         if (max_len_ < stat.max_len_) {
             max_len_ = stat.max_len_;
@@ -74,29 +55,27 @@ struct ReadStat {
 
 };
 
-
-
+/**
+ * Reader is the interface for all other readers and reader wrappers.
+ */
 template<typename ReadType>
-class IReader: boost::noncopyable {
+class ReadStream: boost::noncopyable {
  public:
+  typedef ReadType ReadT;
 
-
-  typedef ReadType read_type;
-
-
-  /* 
+  /*
    * Default destructor.
    */
-  virtual ~IReader() {}
+  virtual ~ReadStream() {}
 
-  /* 
+  /*
    * Check whether the stream is opened.
    *
    * @return true if the stream is opened and false otherwise.
    */
   virtual bool is_open() = 0;
 
-  /* 
+  /*
    * Check whether we've reached the end of stream.
    *
    * @return true if the end of the stream is reached and false
@@ -111,23 +90,26 @@ class IReader: boost::noncopyable {
    *
    * @return Reference to this stream.
    */
-  virtual IReader& operator>>(ReadType& read) = 0;
+  virtual ReadStream& operator>>(ReadType& read) = 0;
 
   /*
    * Close the stream.
    */
   virtual void close() = 0;
 
-  /* 
+  /*
    * Close the stream and open it again.
    */
   virtual void reset() = 0;
 
-
-  virtual ReadStat get_stat() const = 0;
+  virtual ReadStreamStat get_stat() const = 0;
 
 };
 
-}
+template<class Read>
+class PredictableReadStream: public ReadStream<Read> {
+public:
+    virtual size_t size() const = 0;
+};
 
-#endif /* COMMON_IO_IREADER_HPP_ */
+}

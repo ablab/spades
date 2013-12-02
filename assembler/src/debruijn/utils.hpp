@@ -24,6 +24,8 @@
 #include "path_helper.hpp"
 
 #include "debruijn_graph.hpp"
+#include "indices/perfect_hash_map.hpp"
+#include "edge_index.hpp"
 #include "sequence_mapper.hpp"
 #include "genomic_quality.hpp"
 #include "sequence_mapper_notifier.hpp"

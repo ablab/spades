@@ -414,7 +414,7 @@ class LongSeq {
       return seq.hash_.GetHashInt();
     }
 
-    size_t operator()(const DataType *data, size_t sz = DataSize) {
+    size_t operator()(const DataType * /*data*/, size_t /*sz*/ = DataSize) {
       VERIFY(false);
       return 0;
     }
@@ -458,6 +458,10 @@ class LongSeq {
     }
   };
    */
+
+  bool IsMinimal() const {
+      return true;
+  }
 };
 
 typedef LongSeq<MultiPolynomialHash<3, uint64_t> > LSeq;

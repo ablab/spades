@@ -17,8 +17,7 @@
 #include "omni/graph_component.hpp"
 #include "io/rc_reader_wrapper.hpp"
 #include "io/delegating_reader_wrapper.hpp"
-#include "io/easy_reader.hpp"
-#include "io/splitting_wrapper.hpp"
+#include "io/io_helper.hpp"
 #include "io/wrapper_collection.hpp"
 #include "io/osequencestream.hpp"
 #include "dataset_readers.hpp"
@@ -97,7 +96,7 @@ class StatCounter: public AbstractStatCounter {
 
     StatCounter(const Graph& graph, const Index& index,
                 const Sequence& genome, size_t k) {
-        SimpleSequenceMapper<Graph, Index> sequence_mapper(graph, index, k + 1);
+        SimpleSequenceMapper<Graph, Index> sequence_mapper(graph, index);
         Path<EdgeId> path1 = sequence_mapper.MapSequence(Sequence(genome));
         Path<EdgeId> path2 = sequence_mapper.MapSequence(!Sequence(genome));
         stats_.AddStat(new VertexEdgeStat<Graph>(graph));
@@ -152,8 +151,8 @@ void WriteErrorLoc(const Graph &g,
 
 template<class Graph, class Index>
 Path<typename Graph::EdgeId> FindGenomePath(const Sequence& genome,
-                                            const Graph& g, const Index& index, size_t k) {
-    SimpleSequenceMapper<Graph, Index> srt(g, index, k + 1);
+                                            const Graph& g, const Index& index) {
+    SimpleSequenceMapper<Graph, Index> srt(g, index);
     return srt.MapSequence(genome);
 }
 
@@ -162,7 +161,7 @@ MappingPath<typename Graph::EdgeId>
 FindGenomeMappingPath(const Sequence& genome, const Graph& g,
                       const Index& index,
                       const KmerMapper<Graph>& kmer_mapper) {
-    NewExtendedSequenceMapper<Graph, Index> srt(g, index, kmer_mapper, g.k() + 1);
+    NewExtendedSequenceMapper<Graph, Index> srt(g, index, kmer_mapper);
     return srt.MapSequence(genome);
 }
 
@@ -188,13 +187,13 @@ void WriteGraphComponentsAlongContigs(const Graph& g,
                                       std::shared_ptr<omnigraph::visualization::GraphColorer<Graph>> colorer,
                                       const GraphLabeler<Graph>& labeler) {
     INFO("Writing graph components along contigs");
-    io::EasyReader contigs_to_thread(cfg::get().pos.contigs_to_analyze, false/*true*/);
-    contigs_to_thread.reset();
+    auto contigs_to_thread = io::EasyStream(cfg::get().pos.contigs_to_analyze, false);
+    contigs_to_thread->reset();
     io::SingleRead read;
-    while (!contigs_to_thread.eof()) {
-        contigs_to_thread >> read;
+    while (!contigs_to_thread->eof()) {
+        (*contigs_to_thread) >> read;
         make_dir(folder + read.name());
-        omnigraph::visualization::WriteComponentsAlongPath(g, mapper.MapSequence(read.sequence()).simple_path(), folder + read.name() + "/",
+        omnigraph::visualization::WriteComponentsAlongPath(g, mapper.MapSequence(read.sequence()).path(), folder + read.name() + "/",
                                                            colorer, labeler);
     }
     INFO("Writing graph components along contigs finished");
@@ -224,10 +223,8 @@ optional<runtime_k::RtSeq> FindCloseKP1mer(const conj_graph_pack &gp,
     for (size_t diff = 0; diff < magic_const; diff++) {
         for (int dir = -1; dir <= 1; dir += 2) {
             size_t pos = (gp.genome.size() - k + genome_pos + dir * diff) % (gp.genome.size() - k);
-            cout << pos << endl;
             runtime_k::RtSeq kp1mer = gp.kmer_mapper.Substitute(
                 runtime_k::RtSeq (k + 1, gp.genome, pos));
-            cout << "oppa" << endl;
             if (gp.index.contains(kp1mer))
                 return optional<runtime_k::RtSeq>(kp1mer);
         }
@@ -270,9 +267,9 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
         config.write_components_along_contigs || config.save_full_graph ||
         !config.components_for_genome_pos.empty()) {
         path1 = FindGenomeMappingPath(gp.genome, gp.g, gp.index,
-                                      gp.kmer_mapper).simple_path();
+                                      gp.kmer_mapper).path();
         path2 = FindGenomeMappingPath(!gp.genome, gp.g, gp.index,
-                                      gp.kmer_mapper).simple_path();
+                                      gp.kmer_mapper).path();
         colorer = omnigraph::visualization::DefaultColorer(gp.g, path1, path2);
         //		path1 = FindGenomePath<K>(gp.genome, gp.g, gp.index);
         //		path2 = FindGenomePath<K>(!gp.genome, gp.g, gp.index);
@@ -312,7 +309,7 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 
     if (config.write_components_along_contigs) {
         make_dir(folder + "along_contigs/");
-        NewExtendedSequenceMapper<Graph, Index> mapper(gp.g, gp.index, gp.kmer_mapper, gp.g.k() + 1);
+        NewExtendedSequenceMapper<Graph, Index> mapper(gp.g, gp.index, gp.kmer_mapper);
         WriteGraphComponentsAlongContigs(gp.g, mapper, folder + "along_contigs/", colorer, labeler);
     }
 
@@ -438,11 +435,10 @@ class PosFiller {
                             << mr.initial_range.start_pos + 1
                             << "--" << mr.initial_range.end_pos);
                     }
-            edge_pos_.AddEdgePosition(ei, name, mr.initial_range.start_pos + 1,
+            edge_pos_.AddEdgePosition(ei, name, mr.initial_range.start_pos,
                                       mr.initial_range.end_pos,
-                                      mr.mapped_range.start_pos + 1,
+                                      mr.mapped_range.start_pos,
                                       mr.mapped_range.end_pos);
-            //TODO start kmer counting from 0!!!
             cur_pos += len;
         }
     }
@@ -455,7 +451,7 @@ class PosFiller {
 template<class Graph, class Mapper>
 void FillPos(const Graph& g, const Mapper& mapper,
              EdgesPositionHandler<Graph>& edge_pos,
-             io::IReader<io::SingleRead>& stream) {
+             io::SingleStream& stream) {
     PosFiller<Graph, Mapper> filler(g, mapper, edge_pos);
     io::SingleRead read;
     while (!stream.eof()) {
@@ -465,7 +461,7 @@ void FillPos(const Graph& g, const Mapper& mapper,
 }
 
 template<class gp_t>
-void FillPos(gp_t& gp, io::IReader<io::SingleRead>& stream) {
+void FillPos(gp_t& gp, io::SingleStream& stream) {
     FillPos(gp.g, *MapperInstance(gp), gp.edge_pos, stream);
 }
 
@@ -484,7 +480,7 @@ template<class gp_t>
 void FillPos(gp_t& gp, const string& contig_file, string prefix) {
     //	typedef typename gp_t::Graph::EdgeId EdgeId;
     INFO("Threading large contigs");
-    io::Reader irs(contig_file);
+    io::FileReadStream irs(contig_file);
     while(!irs.eof()) {
         io::SingleRead read;
         irs >> read;
@@ -505,10 +501,10 @@ template<class gp_t>
 void FillPosWithRC(gp_t& gp, const string& contig_file, string prefix) {
     //  typedef typename gp_t::Graph::EdgeId EdgeId;
     INFO("Threading large contigs");
-    io::EasySplittingReader irs(contig_file, true);
-    while(!irs.eof()) {
+    auto irs = io::EasyStream(contig_file, true, io::OffsetType::UnknownOffset, true);
+    while(!irs->eof()) {
         io::SingleRead read;
-        irs >> read;
+        (*irs) >> read;
         DEBUG("Contig " << read.name() << ", length: " << read.size());
         if (!read.IsValid()) {
             WARN("Attention: contig " << read.name()

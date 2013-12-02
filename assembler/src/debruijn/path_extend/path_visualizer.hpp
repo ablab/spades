@@ -67,11 +67,9 @@ protected:
     bool writeLength;
     bool writePos;
 
-    size_t k_;
-
 public:
 
-    PathVisualizer(size_t k): writeLength(true), writePos(true), k_(k) {
+    PathVisualizer(): writeLength(true), writePos(true) {
 
     }
 
@@ -88,7 +86,8 @@ public:
         CompositeLabeler<Graph> composite_labeler(str_labeler, cov_labler, path_labeler, pos_labeler);
         shared_ptr<omnigraph::visualization::GraphColorer<Graph>> colorer;
         if (gp.index.IsAttached()) {
-             colorer = omnigraph::visualization::DefaultColorer(gp.g, FindGenomePath(gp.genome, gp.g, gp.index, k_), FindGenomePath(!gp.genome, gp.g, gp.index, k_));
+             colorer = omnigraph::visualization::DefaultColorer(gp.g, FindGenomePath(gp.genome, gp.g, gp.index),
+                                                                FindGenomePath(!gp.genome, gp.g, gp.index));
         } else {
             Path<EdgeId> empty;
             colorer = omnigraph::visualization::DefaultColorer(gp.g, empty, empty);
@@ -114,8 +113,8 @@ public:
         shared_ptr<omnigraph::visualization::GraphColorer<Graph>> colorer;
 
         if (gp.index.IsAttached()) {
-             colorer = omnigraph::visualization::DefaultColorer(gp.g, FindGenomePath(gp.genome, gp.g, gp.index, k_),
-                                                                FindGenomePath(!gp.genome, gp.g, gp.index, k_));
+             colorer = omnigraph::visualization::DefaultColorer(gp.g, FindGenomePath(gp.genome, gp.g, gp.index),
+                                                                FindGenomePath(!gp.genome, gp.g, gp.index));
         } else {
             Path<EdgeId> empty;
             colorer = omnigraph::visualization::DefaultColorer(gp.g, empty, empty);

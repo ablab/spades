@@ -33,12 +33,11 @@
 
 namespace cap {
 typedef io::SingleRead Contig;
-typedef io::IReader<Contig> ContigStream;
-typedef	io::MultifileReader<io::SingleRead> CompositeContigStream;
-typedef	io::RCReaderWrapper<io::SingleRead> RCWrapper;
-
-typedef io::ReadStreamVector<ContigStream> ContigStreams;
-typedef std::shared_ptr<ContigStreams> ContigStreamsPtr;
+typedef io::ReadStream<Contig> ContigStream;
+typedef std::shared_ptr<ContigStream> ContigStreamPtr;
+typedef	io::MultifileStream<io::SingleRead> CompositeContigStream;
+typedef	io::RCWrapper<io::SingleRead> RCWrapper;
+typedef io::ReadStreamList<Contig> ContigStreams;
 }
 
 // debruijn

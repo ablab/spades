@@ -11,7 +11,7 @@
 #include "coordinates_handler.hpp"
 #include "compare_standard.hpp"
 #include "comparison_utils.hpp"
-#include "omni/dijkstra.hpp"
+#include "omni/dijkstra_tools/dijkstra_helper.hpp"
 
 namespace cap {
 
@@ -384,6 +384,7 @@ class GenomePathsFinder {
   std::vector<Path> answer_;
 };
 
+/*
 template<class Graph>
 class ReliableTargetedBoundedDijkstra : public Dijkstra<Graph> {
   typedef typename Graph::VertexId VertexId;
@@ -425,6 +426,7 @@ class ReliableTargetedBoundedDijkstra : public Dijkstra<Graph> {
   size_t vertices_number_;
   bool vertex_limit_exceeded_;
 };
+*/
 
 }
 

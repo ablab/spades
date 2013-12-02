@@ -497,7 +497,7 @@ bool MaxFlowRemoveErroneousEdges(
 template<class Graph>
 bool RemoveComplexBulges(
     Graph& g,
-    const debruijn_config::simplification::complex_bulge_remover& cbr_config,
+    debruijn_config::simplification::complex_bulge_remover cbr_config,
     size_t iteration = 0) {
     if (!cbr_config.enabled)
         return false;
@@ -513,6 +513,21 @@ bool RemoveComplexBulges(
     omnigraph::complex_br::ComplexBulgeRemover<Graph> complex_bulge_remover(
         g, max_length, max_diff, output_dir);
     return complex_bulge_remover.Run();
+}
+
+template<class Graph>
+bool RemoveHiddenEC(Graph& g,
+                    const NewFlankingCoverage<Graph>& flanking_cov,
+                    double determined_coverage_threshold,
+                    debruijn_config::simplification::hidden_ec_remover her_config,
+                    boost::function<void(EdgeId)> removal_handler) {
+    if (her_config.enabled) {
+        INFO("Removing hidden erroneous connections");
+        return HiddenECRemover<Graph>(g, her_config.uniqueness_length, flanking_cov,
+                               her_config.unreliability_threshold, determined_coverage_threshold,
+                               cfg::get().simp.her.relative_threshold, removal_handler).Process();
+    }
+    return false;
 }
 
 template<class Graph>
@@ -592,7 +607,7 @@ void SimplificationCycle(conj_graph_pack& gp,
 
 inline
 void PostSimplification(conj_graph_pack& gp,
-                        boost::function<void(EdgeId)> &removal_handler,
+                        boost::function<void(EdgeId)> removal_handler,
                         detail_info_printer & /*printer*/,
                         double determined_coverage_threshold) {
     INFO("PROCEDURE == Post simplification");
@@ -665,10 +680,8 @@ void SimplifyGraph(conj_graph_pack &gp,
                        determined_coverage_threshold);
 
     // This should be put into PostSimplification when(if) flanking coverage will be rewritten.
-    if (cfg::get().topology_simplif_enabled && cfg::get().simp.her.enabled) {
-        HiddenECRemover<Graph>(gp.g, cfg::get().simp.her.uniqueness_length, gp.flanking_cov,
-                               cfg::get().simp.her.unreliability_threshold, determined_coverage_threshold, cfg::get().simp.her.relative_threshold,
-                               removal_handler).Process();
+    if (cfg::get().topology_simplif_enabled) {
+        RemoveHiddenEC(gp.g, gp.flanking_cov, determined_coverage_threshold, cfg::get().simp.her, removal_handler);
     }
 }
 

@@ -7,7 +7,7 @@
 #ifndef _EC_THRESHOLD_FINDER_HPP_
 #define _EC_THRESHOLD_FINDER_HPP_
 
-#include "indices/debruijn_kmer_index.hpp"
+#include "indices/perfect_hash_map.hpp"
 #include "logger/logger.hpp"
 
 #include "smooth.hpp"

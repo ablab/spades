@@ -10,7 +10,7 @@
 #include "longseq.hpp"
 #include "polynomial_hash.hpp"
 #include "adt/kmer_map.hpp"
-#include "indices/debruijn_edge_index.hpp"
+#include "indices/edge_position_index.hpp"
 
 #include "io/sequence_reader.hpp"
 
@@ -79,7 +79,7 @@ struct kmer_index_traits<cap::LSeq> {
     };
 
     template <class Reader>
-        static RawKMerStorage *raw_deserialize(Reader &reader, const std::string &FileName) {
+        static RawKMerStorage *raw_deserialize(Reader &/*reader*/, const std::string &/*FileName*/) {
             VERIFY(false);
             return NULL;
         }
@@ -88,20 +88,20 @@ struct kmer_index_traits<cap::LSeq> {
 
 namespace cap {
 
-    template <class Read>
+    template <class ReadType>
         class CapKMerCounter : public ::KMerCounter<LSeq> {
             typedef KMerCounter<LSeq> __super;
             typedef typename __super::RawKMerStorage RawKMerStorage;
 
             unsigned k_;
-            io::ReadStreamVector<io::IReader<Read>> *streams_;
+            io::ReadStreamList<ReadType> streams_;
             std::unordered_set<LSeq, LSeq::hash, LSeq::equal_to> storage_;
             RawKMerStorage *bucket;
 
             bool has_counted_;
 
             public:
-            CapKMerCounter(const unsigned k, io::ReadStreamVector<io::IReader<Read>> *streams)
+            CapKMerCounter(const unsigned k, io::ReadStreamList<ReadType> streams)
                 : k_(k),
                 streams_(streams),
                 storage_(),
@@ -193,11 +193,11 @@ namespace cap {
 
             protected:
             virtual void Init() {
-                VERIFY(streams_ != NULL);
-                for (size_t i = 0; i < streams_->size(); ++i) {
-                    while (!(*streams_)[i].eof()) {
-                        Read r;
-                        (*streams_)[i] >> r;
+                VERIFY(streams_.size() > 0);
+                for (size_t i = 0; i < streams_.size(); ++i) {
+                    while (!streams_[i].eof()) {
+                        ReadType r;
+                        streams_[i] >> r;
                         const Sequence &seq = r.sequence();
                         if (seq.size() == 0) {
                             continue;
@@ -215,10 +215,10 @@ namespace cap {
 
                     }
                 }
-                streams_ = NULL;
+                streams_.clear();
             }
 
-            void SetStreams(io::ReadStreamVector<io::IReader<Read>> *streams) {
+            void SetStreams(io::ReadStreamList<ReadType>& streams) {
                 streams_ = streams;
             }
 
@@ -226,7 +226,6 @@ namespace cap {
 
     template <class Graph>
         class CapKMerGraphCounter : public CapKMerCounter<io::SingleRead> {
-            typedef io::IReader<io::SingleRead> Reader;
 
             public:
             CapKMerGraphCounter(const unsigned k, const Graph &g)
@@ -237,14 +236,13 @@ namespace cap {
 
             protected:
             virtual void Init() {
-                io::ReadStreamVector<Reader> stream_vector(false);
-
+                io::ReadStreamList<io::SingleRead> stream_vector;
+                //fixme create reasonable reader from the graph
                 for (auto it = g_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-                    auto sr = new io::SequenceReader<io::SingleRead>(g_.EdgeNucls(*it));
-                    stream_vector.push_back(sr);
+                    stream_vector.push_back(make_shared<io::SequenceReadStream<io::SingleRead>>(g_.EdgeNucls(*it)));
                 }
 
-                CapKMerCounter<io::SingleRead>::SetStreams(&stream_vector);
+                CapKMerCounter<io::SingleRead>::SetStreams(stream_vector);
                 CapKMerCounter<io::SingleRead>::Init();
             }
 
@@ -264,7 +262,7 @@ namespace debruijn_graph {
                 template <class Streams>
                     size_t BuildIndexFromStream(Index &index,
                             Streams &streams,
-                            SingleReadStream* /* contigs_stream  */= 0) const {
+                            io::SingleStream* /* contigs_stream  */= 0) const {
                         /*
                            std::vector<io::IReader<io::SingleRead> *> stream_vec(streams.size());
                            for (size_t i = 0; i < streams.size(); ++i) {
@@ -273,8 +271,8 @@ namespace debruijn_graph {
                            auto streams_ptr = std::make_shared<Streams>(
                            new io::ReadStreamVector<io::IReader<io::SingleRead>>(stream_vec, false));
                            */
-                        cap::CapKMerCounter<typename Streams::ReaderType::read_type> counter(
-                                index.k(), &streams);
+                        cap::CapKMerCounter<typename Streams::ReadT> counter(
+                                index.k(), streams);
 
                         index.BuildIndex(counter, 1, 1);
                         return 0;

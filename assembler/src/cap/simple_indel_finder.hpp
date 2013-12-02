@@ -213,6 +213,7 @@ class SimpleIndelFinder {
     bool has_short_enough = false;
     for (const auto &path : alternative_paths_) {
       if (GetPathLength(path) < 10 * g_.k()) {
+          //todo move threshold out of here
         //TRACE("Too long path: " << GetPathLength(path));
         has_short_enough = true;
         break;

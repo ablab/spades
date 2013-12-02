@@ -20,6 +20,9 @@ namespace cap {
 struct Count {
     size_t count;
     Count() : count(0) {}
+    Count conjugate(size_t /*k*/) {
+    	return *this;
+    }
 };
 
 template <class Builder>
@@ -29,6 +32,7 @@ class RepeatSearchingIndexBuilder : public Builder {
     typedef typename Builder::IndexT IndexT;
     typedef typename IndexT::KMer Kmer;
     typedef typename IndexT::KMerIdx KmerIdx;
+    typedef typename IndexT::KeyWithHash KWH;
 
  private:
     template<class ReadStream>
@@ -36,21 +40,20 @@ class RepeatSearchingIndexBuilder : public Builder {
                                   IndexT &index) const {
         unsigned k = index.k();
         while (!stream.eof()) {
-            typename ReadStream::read_type r;
+            typename ReadStream::ReadT r;
             stream >> r;
 
             const Sequence &seq = r.sequence();
             if (seq.size() < k)
                 continue;
 
-            Kmer kmer = seq.start<Kmer>(k);
-            kmer >>= 'A';
+            KWH kwh = index.ConstructKWH(seq.start<Kmer>(k));
+            kwh >>= 'A';
             for (size_t j = k - 1; j < seq.size(); ++j) {
-                kmer <<= seq[j];
-                KmerIdx idx = index.seq_idx(kmer);
-                VERIFY(index.valid_idx(idx));
-                if (index[idx].count != -1u) {
-                    index[idx].count += 1;
+                kwh<<= seq[j];
+                VERIFY(index.valid(kwh));
+                if (index.get_value(kwh).count != -1u) {
+                    index.get_raw_value_reference(kwh).count += 1;
                 }
             }
         }
@@ -59,11 +62,11 @@ class RepeatSearchingIndexBuilder : public Builder {
     }
 
     void ProcessCounts(IndexT &index) const {
-        for (KmerIdx idx = index.kmer_idx_begin(); idx < index.kmer_idx_end(); ++idx) {
-            if (index[idx].count > 1) {
-                index[idx].count = -1u;
+        for (auto it = index.value_begin(); it != index.value_end(); ++it) {
+            if (it->count > 1) {
+                it->count = -1u;
             } else {
-                index[idx].count = 0;
+                it->count = 0;
             }
         }
     }
@@ -86,7 +89,7 @@ class RepeatSearchingIndexBuilder : public Builder {
     template<class Streams>
     size_t BuildIndexFromStream(IndexT &index,
                                 Streams &streams,
-                                SingleReadStream* contigs_stream = 0) const {
+                                io::SingleStream* contigs_stream = 0) const {
         base::BuildIndexFromStream(index, streams, contigs_stream);
 
         return FindRepeats(index, streams);
@@ -129,7 +132,8 @@ public:
 class RepeatMasker : public io::SequenceModifier {
 private:
     typedef runtime_k::RtSeq Kmer;
-    typedef DeBruijnKMerIndex<KmerFreeIndex<Count, kmer_index_traits<Kmer>>> KmerCountIndex;
+    typedef KeyIteratingMap<Kmer, Count, kmer_index_traits<Kmer>, SimpleStoring> KmerCountIndex;
+    typedef typename KmerCountIndex::KeyWithHash KeyWithHash;
     typedef KmerCountIndex::KMerIdx KmerIdx;
 
     size_t k_;
@@ -140,19 +144,18 @@ private:
     //todo maybe remove mutable? will need removing const from Modify
 
 
-    bool IsRepeat(const Kmer& kmer) const {
-        return index_[kmer].count == -1u;
+    bool IsRepeat(const KeyWithHash& kwh) const {
+        return index_.get_value(kwh).count == -1u;
     }
 
     template<class S>
     const vector<Range> RepeatIntervals(const S& s) const {
         vector<Range> answer;
         answer.push_back(Range(0, 0));
-        Kmer kmer(k_, s);
-        kmer >>= 'A';
+        KeyWithHash kwh = index_.ConstructKWH(Kmer(k_, s) >> 'A');
         for (size_t i = k_ - 1; i < s.size(); ++i) {
-            kmer <<= s[i];
-            if (IsRepeat(kmer)) {
+            kwh <<= s[i];
+            if (IsRepeat(kwh)) {
                 if (i <= answer.back().end_pos) {
                     answer.back().end_pos = i + k_;
                 } else {
@@ -187,15 +190,15 @@ public:
     }
 
     template<class Streams>
-    size_t FindRepeats(Streams& streams) {
+    size_t FindRepeats(Streams streams) {
         INFO("Looking for repetitive " << k_ << "-mers");
         CountIndexHelper<KmerCountIndex>::RepeatSearchingIndexBuilderT().BuildIndexFromStream(index_, streams);
         size_t rep_kmer_cnt = 0;
-        for (KmerIdx idx = index_.kmer_idx_begin(); idx < index_.kmer_idx_end(); ++idx) {
-            if (index_[idx].count == -1u) {
+        for (auto it = index_.value_cbegin(); it != index_.value_cend(); ++it) {
+            if (it->count == -1u) {
                 rep_kmer_cnt++;
             } else {
-                VERIFY(index_[idx].count == 0);
+                VERIFY(it->count == 0);
             }
         }
         INFO("Found " << rep_kmer_cnt << " repetitive " << k_ << "-mers");
@@ -216,44 +219,44 @@ private:
 
 template<class Stream1, class Stream2>
 void Transfer(Stream1& s1, Stream2& s2) {
-    typename Stream1::read_type r;
+    typename Stream1::ReadT r;
     while (!s1.eof()) {
         s1 >> r;
         s2 << r;
     }
 }
 
-inline ContigStreamsPtr OpenStreams(const string& root,
+inline ContigStreams OpenStreams(const string& root,
         const vector<string>& filenames, bool add_rc) {
-    ContigStreamsPtr streams(new ContigStreams());
+    ContigStreams streams;
     for (auto filename : filenames) {
         DEBUG("Opening stream from " << root << filename);
-        ContigStream* reader = new io::Reader(root + filename);
+        ContigStreamPtr reader = make_shared<io::FileReadStream>(root + filename);
         if (add_rc)
-            reader = new io::CleanRCReaderWrapper<Contig>(reader);
-        streams->push_back(reader);
+            reader = io::RCWrap<Contig>(reader);
+        streams.push_back(reader);
     }
     return streams;
 }
 
-inline void SaveStreams(ContigStreamsPtr streams, const vector<string>& suffixes,
+inline void SaveStreams(ContigStreams streams, const vector<string>& suffixes,
         const string& out_root) {
     make_dir(out_root);
 
-    streams->reset();
-    for (size_t i = 0; i < streams->size(); ++i) {
+    streams.reset();
+    for (size_t i = 0; i < streams.size(); ++i) {
         VERIFY(!suffixes[i].empty());
         string output_filename = out_root + suffixes[i];
         io::osequencestream ostream(output_filename);
-        Transfer((*streams)[i], ostream);
+        Transfer(streams[i], ostream);
     }
 }
 
-inline void ModifyAndSave(shared_ptr<io::SequenceModifier> modifier, ContigStreamsPtr streams, const vector<string>& suffixes,
+inline void ModifyAndSave(shared_ptr<io::SequenceModifier> modifier, ContigStreams streams, const vector<string>& suffixes,
         const string& out_root) {
-    ContigStreamsPtr modified = make_shared<ContigStreams>();
-    for (size_t i = 0; i < streams->size(); ++i) {
-        modified->push_back(new io::ModifyingWrapper<Contig>((*streams)[i], modifier));
+    ContigStreams modified;
+    for (size_t i = 0; i < streams.size(); ++i) {
+        modified.push_back(make_shared<io::ModifyingWrapper<Contig>>(streams.ptr_at(i), modifier));
     }
     SaveStreams(modified, suffixes, out_root);
 }
@@ -261,7 +264,7 @@ inline void ModifyAndSave(shared_ptr<io::SequenceModifier> modifier, ContigStrea
 inline bool MaskRepeatsIteration(size_t k, const string& input_dir, const vector<string>& suffixes, const string& output_dir, RandNucl& rand_nucl) {
     shared_ptr<RepeatMasker> masker_ptr = make_shared<RepeatMasker>(k, rand_nucl, "tmp");
     INFO("Opening streams in " << input_dir);
-    bool repeats_found = masker_ptr->FindRepeats(*OpenStreams(input_dir, suffixes, true));
+    bool repeats_found = masker_ptr->FindRepeats(OpenStreams(input_dir, suffixes, true));
     if (repeats_found) {
         INFO("Repeats found");
         INFO("Modifying and saving streams to " << output_dir);
@@ -296,7 +299,7 @@ inline bool MaskRepeatsIteration(size_t k, const string& input_dir, const vector
 //    return no_repeats;ContigStreamsPtr
 //}
 
-inline bool MaskRepeats(size_t k, ContigStreamsPtr input_streams, const vector<string>& suffixes, size_t max_iter_count, const string& work_dir) {
+inline bool MaskRepeats(size_t k, ContigStreams input_streams, const vector<string>& suffixes, size_t max_iter_count, const string& work_dir) {
     size_t iter = 0;
     RandNucl rand_nucl(239);
     bool no_repeats = false;

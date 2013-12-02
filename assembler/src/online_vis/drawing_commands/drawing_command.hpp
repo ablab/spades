@@ -30,7 +30,7 @@ namespace online_visualization {
                 omnigraph::visualization::WriteComponent<Graph>(component, file_name, curr_env.coloring_, curr_env.tot_lab_);
                 //WriteComponents <Graph> (curr_env.graph(), splitter, linkstream.str(), *DefaultColorer(curr_env.graph(), curr_env.coloring_), curr_env.tot_lab_);
                 cout << "The picture is written to " << file_name << endl;
-                
+
                 curr_env.picture_counter_++;
             }
 
@@ -41,18 +41,18 @@ namespace online_visualization {
                 make_dir(namestream.str());
                 namestream << label;
                 make_dir(namestream.str());
-                omnigraph::visualization::WriteComponentsAlongPath<Graph>(curr_env.graph(), path.simple_path(), namestream.str(), curr_env.coloring_, curr_env.tot_lab_);
+                omnigraph::visualization::WriteComponentsAlongPath<Graph>(curr_env.graph(), path.path(), namestream.str(), curr_env.coloring_, curr_env.tot_lab_);
                 cout << "The pictures is written to " << namestream.str() << endl;
-                
+
                 curr_env.picture_counter_++;
             }
 
-              
-            //TODO: copy zgrviewer 
+
+            //TODO: copy zgrviewer
             int ShowPicture(DebruijnEnvironment& curr_env, VertexId vertex, string label = "") const {
                 DrawPicture(curr_env, vertex, label);
                 stringstream command_line_string;
-                command_line_string << "gnome-open " << curr_env.folder_ << "/" << curr_env.file_name_base_ 
+                command_line_string << "gnome-open " << curr_env.folder_ << "/" << curr_env.file_name_base_
                                     << "_" << label << "_" << curr_env.GetFormattedPictureCounter()
                                     << "_*_.dot & > /dev/null < /dev/null";
                 int result = system(command_line_string.str().c_str());

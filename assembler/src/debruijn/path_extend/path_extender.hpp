@@ -704,7 +704,6 @@ public:
 
     virtual bool MakeGrowStep(BidirectionalPath& path) {
         size_t current = 0;
-
         while (current < extenders_.size()) {
         	DEBUG("step " << current << " from " <<extenders_.size());
             if (extenders_[current]->MakeGrowStep(path)) {
@@ -714,7 +713,6 @@ public:
         }
         return false;
     }
-
 };
 
 

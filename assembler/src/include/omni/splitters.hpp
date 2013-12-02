@@ -6,7 +6,8 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-#include "dijkstras_for_splitting.hpp"
+#include "dijkstra_tools/dijkstra_helper.hpp"
+#include "graph_component.hpp"
 #include "component_filters.hpp"
 
 namespace omnigraph {
@@ -500,7 +501,8 @@ public:
 //    }
 //  }
     GraphComponent<Graph> Find(typename Graph::VertexId v) {
-        CountingDijkstra<Graph> cd(this->graph(), max_size_, edge_length_bound_);
+    	auto cd = DijkstraHelper<Graph>::CreateCountingDijkstra(this->graph(), max_size_,
+    			edge_length_bound_);
         cd.run(v);
         vector<VertexId> result_vector = cd.ReachedVertices();
         set<VertexId> result(result_vector.begin(), result_vector.end());
@@ -534,7 +536,7 @@ public:
     }
 
     GraphComponent<Graph> Find(typename Graph::VertexId v) {
-        ShortEdgeDijkstra<Graph> cd(this->graph(), edge_length_bound_);
+    	auto cd = DijkstraHelper<Graph>::CreateShortEdgeDijkstra(this->graph(), edge_length_bound_);
         cd.run(v);
         set<VertexId> result = cd.ProcessedVertices();
         return GraphComponent<Graph>(this->graph(), result.begin(),
@@ -749,9 +751,9 @@ public:
     GraphComponent<Graph> Next() {
         VertexId next_vertex = inner_iterator_->Next();
         GraphComponent<Graph> result = neighbourhood_finder_->Find(next_vertex);
-        vector<VertexId> toRelax = neighbourhood_finder_->InnerVertices(result);
-        toRelax.push_back(next_vertex);
-        inner_iterator_->Relax(toRelax);
+        vector<VertexId> to_relax = neighbourhood_finder_->InnerVertices(result);
+        to_relax.push_back(next_vertex);
+        inner_iterator_->Relax(to_relax);
         return result;
     }
 

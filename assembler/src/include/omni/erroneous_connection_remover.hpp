@@ -19,6 +19,7 @@
 #include "omni_utils.hpp"
 #include "func.hpp"
 #include "xmath.h"
+#include "dijkstra_tools/dijkstra_helper.hpp"
 
 namespace omnigraph {
 
@@ -226,7 +227,7 @@ class ThornCondition : public EdgeCondition<Graph> {
         if (this->g().IncomingEdgeCount(this->g().EdgeEnd(e)) != 2)
             return false;
 
-        BoundedDijkstra<Graph> dij(this->g(), dijkstra_depth_);
+        auto dij = DijkstraHelper<Graph>::CreateBoundedDijkstra(this->g(), dijkstra_depth_);
         dij.run(this->g().EdgeStart(e));
         vector<VertexId> reached = dij.ReachedVertices();
         for (auto it = reached.begin(); it != reached.end(); ++it) {
@@ -438,7 +439,7 @@ private:
 			edges[0] = edges[1];
 			edges[1] = tmp;
 		}
-		cout << flanking_coverage_.GetInCov(edges[0]) << " " << flanking_coverage_.GetInCov(edges[1]) << endl;
+//		cout << flanking_coverage_.GetInCov(edges[0]) << " " << flanking_coverage_.GetInCov(edges[1]) << endl;
 		if(flanking_coverage_.GetInCov(edges[1]) < unreliability_threshold_) {
 			DisconnectEdges(v);
 //			cout << "disconnected" << endl;

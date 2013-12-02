@@ -14,7 +14,7 @@
 #include "graph_pack.hpp"
 
 namespace debruijn_graph {
-
+//todo think if we still need all this
 class SequenceMapperListener {
 public:
     virtual void StartProcessLibrary(size_t threads_count) = 0;
@@ -44,10 +44,10 @@ public:
         listeners_[lib_index].push_back(listener);
     }
 
-    template<class Read>
-    void ProcessLibrary(io::ReadStreamVector<io::IReader<Read> >& streams,
+    template<class ReadType>
+    void ProcessLibrary(io::ReadStreamList<ReadType>& streams,
             size_t lib_index, size_t read_length, size_t threads_count) {
-        streams.release();
+        streams.reset();
         NotifyStartProcessLibrary(lib_index, threads_count);
         MapperFactory<conj_graph_pack> mapper_factory(gp_);
         std::shared_ptr<SequenceMapperT> mapper = mapper_factory.GetSequenceMapper(read_length);
@@ -59,8 +59,8 @@ public:
             for (size_t ithread = 0; ithread < threads_count; ++ithread) {
                 size_t size = 0;
                 size_t limit = 1000000;
-                Read r;
-                io::IReader<Read>& stream = streams[ithread];
+                ReadType r;
+                auto& stream = streams[ithread];
                 stream.reset();
                 bool end_of_stream = false;
                 while (!end_of_stream) {
@@ -87,8 +87,8 @@ public:
     }
 
 private:
-    template<class Read>
-    void NotifyProcessRead(const Read& r, const SequenceMapperT& mapper, size_t ilib, size_t ithread) const;
+    template<class ReadType>
+    void NotifyProcessRead(const ReadType& r, const SequenceMapperT& mapper, size_t ilib, size_t ithread) const;
 
     void NotifyStartProcessLibrary(size_t ilib, size_t thread_count) const {
         for (size_t ilistener = 0; ilistener < listeners_[ilib].size();

@@ -4,13 +4,6 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-/*
- * standart.hpp
- *
- *  Created on: 1 Sep 2011
- *      Author: valery
- */
-
 #pragma once
 
 #include "standard_base.hpp"
@@ -25,18 +18,4 @@
 #include "io/ireader.hpp"
 #include "io/converting_reader_wrapper.hpp"
 
-// omni
-#include "omni/total_labeler.hpp"
-#include "omni/visualization/visualization.hpp"
-
 #include "runtime_k.hpp"
-// common typedefs
-
-namespace debruijn_graph
-{
-    // todo: rename
-    typedef io::IReader<io::SingleRead> SingleReadStream;
-    typedef io::IReader<io::PairedRead> PairedReadStream;
-    typedef io::ConvertingReaderWrapper UnitedStream;
-} // namespace debruijn_graph
-

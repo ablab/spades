@@ -60,7 +60,7 @@ namespace online_visualization {
                 if (!CheckFileExists(contigs_file))
                     return;
 
-                io::Reader irs(contigs_file);
+                io::FileReadStream irs(contigs_file);
 
                 while (!irs.eof()) {
                     io::SingleRead read;

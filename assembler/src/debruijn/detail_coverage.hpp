@@ -1,7 +1,8 @@
 #pragma once
 
-#include "verify.hpp"
+#include "indices/perfect_hash_map.hpp"
 #include "omni/coverage.hpp"
+#include "verify.hpp"
 #include <vector>
 #include <map>
 #include <set>
@@ -30,10 +31,18 @@ class NewFlankingCoverage : public GraphActionHandler<Graph>,
         return g_.data(e).flanking_coverage();
     }
 
+    size_t EdgeAveragingRange(EdgeId e) const {
+        return std::min(this->g().length(e), averaging_range_);
+    }
+
+    double AverageFlankingCoverage(EdgeId e) const {
+        return double(RawCoverage(e)) / double(EdgeAveragingRange(e));
+    }
+
     unsigned InterpolateCoverage(EdgeId e, size_t l) const {
         VERIFY(l <= averaging_range_);
         VERIFY(l < g_.length(e));
-        return unsigned(math::round(double(RawCoverage(e)) / double(averaging_range_) * double(l)));
+        return unsigned(math::round(AverageFlankingCoverage(e) * double(l)));
     }
 
 public:
@@ -72,8 +81,7 @@ public:
     }
 
     double CoverageOfStart(EdgeId e) const {
-        size_t averaging = std::min(this->g().length(e), averaging_range_);
-        return double(RawCoverage(e)) / double(averaging);
+        return AverageFlankingCoverage(e);
     }
 
     double CoverageOfEnd(EdgeId e) const {
@@ -154,13 +162,34 @@ private:
 };
 
 
+template<class StoringType>
+struct SimultaneousCoverageCollector {
+};
+
+template<>
+struct SimultaneousCoverageCollector<SimpleStoring> {
+    template<class SimultaneousCoverageFiller, class Info>
+    static void CollectCoverage(SimultaneousCoverageFiller& filler, const Info &edge_info) {
+        filler.inc_coverage(edge_info);
+    }
+};
+
+template<>
+struct SimultaneousCoverageCollector<InvertableStoring> {
+    template<class SimultaneousCoverageFiller, class Info>
+    static void CollectCoverage(SimultaneousCoverageFiller& filler, const Info &edge_info) {
+        filler.inc_coverage(edge_info);
+        filler.inc_coverage(edge_info.conjugate(filler.k()));
+    }
+};
+
 template<class Graph, class CountIndex>
 class SimultaneousCoverageFiller {
     const Graph& g_;
     const CountIndex& count_index_;
     NewFlankingCoverage<Graph>& flanking_coverage_;
     CoverageIndex<Graph>& coverage_index_;
-
+    typedef typename CountIndex::Value Value;
 public:
     SimultaneousCoverageFiller(const Graph& g, const CountIndex& count_index,
                                NewFlankingCoverage<Graph>& flanking_coverage,
@@ -171,22 +200,26 @@ public:
                                    coverage_index_(coverage_index) {
     }
 
+    size_t k() const {
+        return count_index_.k();
+    }
+
+    void inc_coverage(const Value &edge_info) {
+        coverage_index_.IncRawCoverage(edge_info.edge_id, edge_info.count);
+        if (edge_info.offset < flanking_coverage_.averaging_range()) {
+            flanking_coverage_.IncRawCoverage(edge_info.edge_id, edge_info.count);
+        }
+    }
+
     void Fill() {
         for (auto I = count_index_.value_cbegin(), E = count_index_.value_cend();
                 I != E; ++I) {
             const auto& edge_info = *I;
-            EdgeId e = edge_info.edge_id;
-            unsigned offset = edge_info.offset;
-            unsigned count = edge_info.count;
-            VERIFY(offset != -1u);
-            VERIFY(e.get() != NULL);
-            coverage_index_.IncRawCoverage(e, count);
-            if (offset < flanking_coverage_.averaging_range()) {
-                flanking_coverage_.IncRawCoverage(e, count);
-            }
+            VERIFY(edge_info.valid() != -1u);
+            VERIFY(edge_info.edge_id.get() != NULL);
+            SimultaneousCoverageCollector<typename CountIndex::storing_type>::CollectCoverage(*this, edge_info);
         }
     }
-
 };
 
 template<class Graph, class CountIndex>

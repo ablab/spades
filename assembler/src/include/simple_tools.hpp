@@ -98,22 +98,6 @@ inline const std::pair<T, T> ReversePair(std::pair<T, T> ep) {
   return std::pair<T, T>(ep.second, ep.first);
 }
 
-/**
- * Checks if file exists.
- * Analogs: http://www.techbytes.ca/techbyte103.html , http://www.gamedev.net/topic/211918-determining-if-a-file-exists-c/
- */
-inline bool FileExists(std::string filename) {
-    struct stat st_buf;
-    return stat(filename.c_str(), &st_buf) == 0 && S_ISREG(st_buf.st_mode);
-}
-
-/**
- * Exit(1) if file doesn't exists, writes FATAL log message.
- */
-inline void CheckFileExistenceFATAL(std::string filename) {
-  VERIFY_MSG(FileExists(filename), "File " << filename << " doesn't exist or can't be read!\n");
-}
-
 template <class ContainerT1, class ContainerT2>
 void push_back_all(ContainerT1& target, const ContainerT2& to_insert) {
 	target.insert(target.end(), to_insert.begin(), to_insert.end());

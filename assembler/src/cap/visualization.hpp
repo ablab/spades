@@ -138,10 +138,10 @@ void PrintColoredGraphWithColorFilter(const Graph &g, const ColorHandler<Graph> 
 template<class gp_t>
 void WriteComponentsAlongSequence(
         const gp_t& gp,
-        const AbstractFilter<vector<typename gp_t::graph_t::VertexId>>& filter,
-        const string& file_name,
-        size_t split_edge_length, size_t component_vertex_number,
-        const Sequence& s, const ColorHandler<typename gp_t::graph_t>& coloring) {
+        const AbstractFilter<vector<typename gp_t::graph_t::VertexId>>& /*filter*/,
+        const string& /*file_name*/,
+        size_t /*split_edge_length*/, size_t /*component_vertex_number*/,
+        const Sequence& /*s*/, const ColorHandler<typename gp_t::graph_t>& /*coloring*/) {
     typedef typename gp_t::graph_t Graph;
     LengthIdGraphLabeler < Graph > basic_labeler(gp.g);
     EdgePosGraphLabeler < Graph > pos_labeler(gp.g, gp.edge_pos);

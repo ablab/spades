@@ -42,10 +42,10 @@ inline bool event_happened(double rate) {
 	return ls(uniform_01(), rate);
 }
 
-inline int rand_int(size_t min, size_t max) {
+inline size_t rand_int(size_t min, size_t max) {
 	static boost::mt19937 rng(43);
-	boost::uniform_int<> un_int(min, max);
-	boost::variate_generator<boost::mt19937&, boost::uniform_int<> > die(rng,
+	boost::uniform_int<size_t> un_int(min, max);
+	boost::variate_generator<boost::mt19937&, boost::uniform_int<size_t> > die(rng,
 			un_int);
 	return die();
 }
@@ -89,9 +89,8 @@ inline Sequence IntroduceMutations(const Sequence& s, double rate) {
 
 template<class gp_t>
 void ConstructRepeatGraph(gp_t& gp) {
-	io::VectorReader<io::SingleRead> stream(
-			io::SingleRead("genome", gp.genome.str()));
-	io::RCReaderWrapper<io::SingleRead> rc_stream(stream);
+	io::RCWrapper<io::SingleRead> rc_stream(make_shared<io::VectorReadStream<io::SingleRead>>(
+                                            io::SingleRead("genome", gp.genome.str())));
 	ConstructGraph<gp_t::k_value, typename gp_t::graph_t>(gp.g, gp.index,
 			rc_stream);
 }
@@ -121,8 +120,8 @@ vector<Sequence> RepeatGraphEdges(const Sequence& genome) {
 
 bool CheckFileDiff(const string& file1, const string& file2) {
 	INFO("Checking differences between " << file1 << " and " << file2);
-	CheckFileExistenceFATAL(file1);
-	CheckFileExistenceFATAL(file2);
+	path::CheckFileExistenceFATAL(file1);
+	path::CheckFileExistenceFATAL(file2);
 	ifstream f1(file1.c_str());
 	ifstream f2(file2.c_str());
 	while (!f1.eof() && !f2.eof()) {
@@ -331,5 +330,20 @@ public:
         return CheckColoredGraphIsomorphism();
     }
 };
+
+const io::SingleRead MakeRead(const string& read) {
+    //todo fill with good quality
+    std::string qual;
+    qual.resize(read.size());
+    return io::SingleRead("", read, qual);
+}
+
+const vector<io::SingleRead> MakeReads(const vector<string>& reads) {
+    vector<io::SingleRead> ans;
+    for (size_t i = 0; i < reads.size(); ++i) {
+        ans.push_back(MakeRead(reads[i]));
+    }
+    return ans;
+}
 
 }

@@ -4,26 +4,7 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-/**
- * @file    single_read.hpp
- * @author  Mariya Fomkina
- * @version 1.0
- *
- * @section LICENSE
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License as
- * published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
- *
- * @section DESCRIPTION
- *
- * SingleRead is a structure, where information from input files is stored.
- * It includes 3 strings: with id, sequence and quality of the input read.
- */
-
-#ifndef COMMON_IO_SINGLEREAD_HPP_
-#define COMMON_IO_SINGLEREAD_HPP_
+#pragma once
 
 #include "verify.hpp"
 #include "sequence/quality.hpp"
@@ -49,6 +30,10 @@ enum OffsetType {
 };
 
 //todo extract code about offset from here
+
+/**
+ * It includes 3 strings: with id, sequence and quality of the input read.
+ */
 class SingleRead {
  public:
   static std::string EmptyQuality(const std::string& seq) {
@@ -56,12 +41,6 @@ class SingleRead {
   }
 
   static const int BAD_QUALITY_THRESHOLD = 2;
-
-  /*
-   * Type of variables which will store file names for reading from
-   * Reader stream.
-   */
-  typedef std::string FilenameType;
 
   /*
    * Default constructor.
@@ -362,5 +341,3 @@ inline std::ostream& operator<<(std::ostream& os, const SingleReadSeq& read) {
 }
 
 }
-
-#endif /* COMMON_IO_SINGLEREAD_HPP_ */

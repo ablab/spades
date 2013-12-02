@@ -19,14 +19,14 @@ namespace debruijn_graph {
 
 /**
  * EdgeIndex is a structure to store info about location of certain k-mers in graph. It delegates all
- * container procedures to inner_index_ which is DeBruijnKMerIndex and all handling procedures to
+ * container procedures to inner_index_ and all handling procedures to
  * renewer_ which is DataHashRenewer.
  * @see DeBruijnKMerIndex
  * @see DataHashRenewer
  */
 //fixme template params
 template<class Graph, class Seq /*= runtime_k::RtSeq*/,
-        class Index /*= DeBruijnEdgeIndex<KmerFreeDeBruijnEdgeIndex<Graph, Seq>>*/>
+        class Index /*= KmerFreeEdgeIndex<Graph, Seq>*/>
 class EdgeIndex: public GraphActionHandler<Graph> {
 
 public:
@@ -35,6 +35,7 @@ public:
     typedef Graph GraphT;
     typedef typename Index::KMer KMer;
     typedef typename Index::KMerIdx KMerIdx;
+    typedef typename Index::Value Value;
 
 private:
     Index inner_index_;
@@ -43,9 +44,9 @@ private:
 
 public:
 
-    EdgeIndex(const Graph& g, size_t k, const std::string &workdir)
+    EdgeIndex(const Graph& g, const std::string &workdir)
             : GraphActionHandler<Graph>(g, "EdgeIndex"),
-              inner_index_((unsigned) k, g, workdir),
+              inner_index_(g, workdir),
               updater_(g, inner_index_),
               delete_index_(true) {
     }
@@ -56,6 +57,10 @@ public:
 
     Index &inner_index() {
         return inner_index_;
+    }
+
+    size_t k() const {
+        return inner_index_.k();
     }
 
     const Index &inner_index() const {
@@ -73,34 +78,19 @@ public:
 
     bool contains(const KMer& kmer) const {
         VERIFY(this->IsAttached());
-        return inner_index_.contains(kmer);
+        return inner_index_.contains(inner_index_.ConstructKWH(kmer));
     }
 
     const pair<EdgeId, size_t> get(const KMer& kmer) const {
         VERIFY(this->IsAttached());
-        KMerIdx idx = inner_index_.seq_idx(kmer);
-        if (!inner_index_.contains(idx, kmer)) {
+        auto kwh = inner_index_.ConstructKWH(kmer);
+        if (!inner_index_.contains(kwh)) {
             return make_pair(EdgeId(0), -1u);
         } else {
-            return inner_index_.get(idx, kmer);
+        	EdgeInfo<EdgeId> entry = inner_index_.get_value(kwh);
+            return std::make_pair(entry.edge_id, (size_t)entry.offset);
         }
     }
-
-//  KMerIdx seq_idx(const Kmer& kmer) const {
-//    VERIFY(this->IsAttached());
-//    return inner_index_.seq_idx(kmer);
-//  }
-//  bool contains(const KMerIdx idx) const {
-//    VERIFY(this->IsAttached());
-//    return inner_index_.contains(idx);
-//  }
-//  bool contains(const KMerIdx idx, const Kmer& kmer) const {
-//  return inner_index_.contains(idx, kmer);
-//  }
-//  const pair<EdgeId, size_t> get(KMerIdx idx) const {
-//    VERIFY(this->IsAttached());
-//    return inner_index_.get(idx);
-//  }
 
     void Refill() {
         clear();
@@ -117,4 +107,5 @@ public:
         inner_index_.clear();
     }
 
-};}
+};
+}

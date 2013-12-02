@@ -3,9 +3,9 @@
 #include "config_common.hpp"
 #include "openmp_wrapper.h"
 
-#include "io/reader.hpp"
-
 #include "logger/logger.hpp"
+
+#include "io/file_reader.hpp"
 
 #include <string>
 #include <vector>
@@ -73,7 +73,7 @@ std::string estimated_param_filename(const std::string& prefix) {
 void load_lib_data(const std::string& prefix) {
   std::string filename = estimated_param_filename(prefix);
 
-  if (!FileExists(filename)) {
+  if (!path::FileExists(filename)) {
       WARN("Estimates params config " << prefix << " does not exist");
   }
   boost::optional<size_t> lib_count;
@@ -349,21 +349,13 @@ void load(debruijn_config::coverage_based_rr& cbrr,
 void load(debruijn_config::pacbio_processor& pb,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
-  load(pb.pacbio_reads, pt, "pacbio_reads");
   load(pb.pacbio_k, pt, "pacbio_k");
   load(pb.additional_debug_info, pt, "additional_debug_info");
-  load(pb.pacbio_optimized_sw, pt, "pacbio_optimized_sw");
   load(pb.compression_cutoff, pt, "compression_cutoff");
   load(pb.domination_cutoff, pt, "domination_cutoff");
   load(pb.path_limit_stretching, pt, "path_limit_stretching");
   load(pb.path_limit_pressing, pt, "path_limit_pressing");
-  load(pb.gap_closing_iterations, pt, "gap_closing_iterations");
   load(pb.long_seq_limit, pt, "long_seq_limit");
-  load(pb.split_cutoff, pt, "split_cutoff");
-  load(pb.match_value, pt, "match_value");
-  load(pb.mismatch_penalty, pt, "mismatch_penalty");
-  load(pb.insertion_penalty, pt, "insertion_penalty");
-  load(pb.deletion_penalty, pt, "deletion_penalty");
 }
 
 
@@ -414,7 +406,7 @@ void load_reads(debruijn_config::dataset& ds,
         std::string input_dir) {
   if (ds.reads_filename[0] != '/')
     ds.reads_filename = input_dir + ds.reads_filename;
-  CheckFileExistenceFATAL(ds.reads_filename);
+  path::CheckFileExistenceFATAL(ds.reads_filename);
   ds.reads.load(ds.reads_filename);
 }
 
@@ -426,8 +418,8 @@ void load_reference_genome(debruijn_config::dataset& ds,
   }
   if (ds.reference_genome_filename[0] != '/')
     ds.reference_genome_filename = input_dir + ds.reference_genome_filename;
-  CheckFileExistenceFATAL(ds.reference_genome_filename);
-  io::Reader genome_stream(ds.reference_genome_filename);
+  path::CheckFileExistenceFATAL(ds.reference_genome_filename);
+  io::FileReadStream genome_stream(ds.reference_genome_filename);
   io::SingleRead genome;
   genome_stream >> genome;
   VERIFY(genome.IsValid());
@@ -569,15 +561,11 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   load(cfg.topology_simplif_enabled, pt, "topology_simplif_enabled");
   load(cfg.use_unipaths, pt, "use_unipaths");
 
-  load(cfg.pacbio_test_on, pt, "pacbio_test_on");
   load(cfg.coverage_based_rr_on, pt, "coverage_based_rr_on");
   if (cfg.coverage_based_rr_on) {
     load (cfg.cbrr, pt, "coverage_based_rr");
-}
-  if (cfg.pacbio_test_on) {
-    load(cfg.pb, pt, "pacbio_processor");
-  } else {
   }
+  load(cfg.pb, pt, "pacbio_processor");
 
   load(cfg.additional_contigs, pt, "additional_contigs");
 
@@ -619,7 +607,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 
   load(cfg.max_memory, pt, "max_memory");
 
-  CheckFileExistenceFATAL(cfg.dataset_file);
+  path::CheckFileExistenceFATAL(cfg.dataset_file);
   boost::property_tree::ptree ds_pt;
   boost::property_tree::read_info(cfg.dataset_file, ds_pt);
   load(cfg.ds, ds_pt, true);

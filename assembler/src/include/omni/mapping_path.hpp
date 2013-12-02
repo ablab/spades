@@ -106,7 +106,7 @@ public:
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Range& range) {
-    os << "[" << range.start_pos << " - " << range.end_pos << "]";
+    os << "[" << (range.start_pos + 1) << " - " << range.end_pos << "]";
     return os;
 }
 
@@ -235,13 +235,17 @@ class MappingPath {
         return range_mappings_.back().mapped_range.end_pos;
     }
 
-    Path<ElementId> simple_path() const {
+    Path<ElementId> path() const {
         if (edges_.size() != 0)
             return Path<ElementId>(edges_,
                                    range_mappings_[0].mapped_range.start_pos,
                                    range_mappings_[range_mappings_.size() - 1].mapped_range.end_pos);
         else
             return Path<ElementId>();
+    }
+
+    const std::vector<ElementId>& simple_path() const {
+        return edges_;
     }
 
     void join(const MappingPath<ElementId>& that) {

@@ -47,7 +47,7 @@ inline void DebugOutputPaths(const ContigWriter& writer, const conj_graph_pack& 
                       const std::string& output_dir, PathContainer& paths,
                       const string& name) {
     PathInfoWriter path_writer;
-    PathVisualizer visualizer(gp.g.k());
+    PathVisualizer visualizer;
     string etcDir = GetEtcDir(output_dir);
     if (!cfg::get().pe_params.debug_output) {
         return;

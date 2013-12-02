@@ -48,6 +48,7 @@ enum info_printer_pos {
     ipp_final_bulge_removal,
     ipp_removing_isolated_edges,
     ipp_final_simplified,
+    ipp_final_gap_closed,
     ipp_before_repeat_resolution,
 
     ipp_total
@@ -61,7 +62,7 @@ inline const char* info_printer_pos_name(size_t pos) {
                             "err_con_removal", "before_final_err_con_removal",
                             "final_err_con_removal", "final_tip_clipping",
                             "final_bulge_removal", "removing_isolated_edges",
-                            "final_simplified", "before_repeat_resolution" };
+                            "final_simplified","final_gap_closed", "before_repeat_resolution" };
 
     utils::check_array_size < ipp_total > (names);
     return names[pos];
@@ -294,25 +295,15 @@ struct debruijn_config {
 
     struct pacbio_processor {
   //align and traverse.
-      std::string pacbio_reads;
-
       size_t  pacbio_k; //13
       bool additional_debug_info; //false
-      bool pacbio_optimized_sw; //false
       double compression_cutoff;// 0.6
       double domination_cutoff; //1.5
       double path_limit_stretching; //1.3
       double path_limit_pressing;//0.7
-  //  double gap_closing_relative_iterations; // 20.0
-      int gap_closing_iterations; //5000;
 
   //gap_closer
       size_t long_seq_limit; //400
-      int split_cutoff; //100
-      int match_value; // 1
-      int mismatch_penalty; //1
-      int insertion_penalty; //2
-      int deletion_penalty; //2
     };
 
     struct DataSetData {
@@ -332,9 +323,6 @@ struct debruijn_config {
         std::string paired_read_prefix;
         std::string single_read_prefix;
         size_t thread_num;
-
-        typedef io::IReader<io::SingleReadSeq> SequenceSingleReadStream;
-        typedef io::IReader<io::PairedReadSeq> SequencePairedReadStream;
 
         DataSetData(): read_length(0),
                 mean_insert_size(0.0),

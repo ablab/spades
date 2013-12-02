@@ -29,8 +29,8 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
 
  public:
 
-  KmerMapper(const Graph& g, size_t k) :
-      base(g, "KmerMapper"), mapping_(k), k_(k) {}
+  KmerMapper(const Graph& g) :
+      base(g, "KmerMapper"), mapping_(g.k() + 1), k_(g.k() + 1) {}
 
   virtual ~KmerMapper() { }
 
@@ -97,7 +97,6 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
 
   void RemapKmers(const Sequence& old_s, const Sequence& new_s) {
     VERIFY(this->IsAttached());
-    //		cout << endl << "Mapping " << old_s << " to " << new_s << endl;
     size_t old_length = old_s.size() - k_ + 1;
     size_t new_length = new_s.size() - k_ + 1;
     UniformPositionAligner aligner(old_s.size() - k_ + 1,
@@ -275,8 +274,8 @@ class SimpleSequenceMapper<Graph, runtime_k::RtSeq> {
    * @param g graph sequences should be mapped to
    * @param index index synchronized with graph
    */
-  SimpleSequenceMapper(const Graph& g, const Index& index, size_t k) :
-      g_(g), index_(index), k_(k) {
+  SimpleSequenceMapper(const Graph& g, const Index& index) :
+      g_(g), index_(index), k_(g.k()+1) {
   }
 
   /**
@@ -522,9 +521,8 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
  public:
   NewExtendedSequenceMapper(const Graph& g,
                             const Index& index,
-                            const KmerSubs& kmer_mapper,
-                            size_t k) :
-      SequenceMapper<Graph>(g), index_(index), kmer_mapper_(kmer_mapper), path_fixer_(g), k_(k) { }
+                            const KmerSubs& kmer_mapper) :
+      SequenceMapper<Graph>(g), index_(index), kmer_mapper_(kmer_mapper), path_fixer_(g), k_(g.k()+1) { }
 
   ~NewExtendedSequenceMapper() {
     //		TRACE("In destructor of sequence mapper");
@@ -595,7 +593,7 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
             return vector<EdgeId>();
         }
         vector<EdgeId> corrected_path = path_fixer_.DeleteSameEdges(
-                mapping_path.simple_path().sequence());
+                mapping_path.simple_path());
         vector<EdgeId> fixed_path = path_fixer_.TryFixPath(corrected_path);
         if (!path_fixer_.CheckContiguous(fixed_path)) {
             TRACE("read unmapped");
@@ -617,8 +615,7 @@ private:
 
 template<class gp_t>
 std::shared_ptr<NewExtendedSequenceMapper<typename gp_t::graph_t, typename gp_t::index_t> > MapperInstance(const gp_t& gp) {
-  size_t k_plus_1 = gp.k_value + 1;
-  return std::make_shared<NewExtendedSequenceMapper<typename gp_t::graph_t, typename gp_t::index_t> >(gp.g, gp.index, gp.kmer_mapper, k_plus_1);
+  return std::make_shared<NewExtendedSequenceMapper<typename gp_t::graph_t, typename gp_t::index_t> >(gp.g, gp.index, gp.kmer_mapper);
 }
 
 
@@ -638,14 +635,13 @@ public:
     std::shared_ptr<SequenceMapperT> GetSequenceMapper(size_t read_length) {
         if (read_length > gp_.k_value) {
             INFO("Read length = " << read_length << ", selecting usual mapper");
-            size_t k_plus_1 = gp_.k_value + 1;
-            return std::make_shared<NewExtendedSequenceMapper<typename graph_pack::graph_t, typename graph_pack::index_t> >(gp_.g, gp_.index, gp_.kmer_mapper, k_plus_1);
+            return std::make_shared<NewExtendedSequenceMapper<typename graph_pack::graph_t, typename graph_pack::index_t> >(gp_.g, gp_.index, gp_.kmer_mapper);
         }
         else {
             //TODO
+            VERIFY(false);
             INFO("Read length = " << read_length << ", selecting short read mapper");
-            size_t k_plus_1 = gp_.k_value + 1;
-            return std::make_shared<NewExtendedSequenceMapper<typename graph_pack::graph_t, typename graph_pack::index_t> >(gp_.g, gp_.index, gp_.kmer_mapper, k_plus_1);
+            return std::make_shared<NewExtendedSequenceMapper<typename graph_pack::graph_t, typename graph_pack::index_t> >(gp_.g, gp_.index, gp_.kmer_mapper);
 
         }
     }

@@ -14,13 +14,7 @@
 #include <iostream>
 
 #include "compare_standard.hpp"
-
-namespace cap {
-typedef io::SingleRead Contig;
-typedef io::IReader<Contig> ContigStream;
-typedef	io::MultifileReader<io::SingleRead> CompositeContigStream;
-typedef	io::RCReaderWrapper<io::SingleRead> RCWrapper;
-}
+#include "graphio.hpp"
 
 namespace cap {
 
@@ -76,11 +70,11 @@ bool DirExist(std::string path) {
   return (stat(path.c_str(), &st) == 0) && (S_ISDIR(st.st_mode));
 }
 
-vector<cap::ContigStream*> OpenStreams(const vector<string>& filenames) {
-  vector<ContigStream*> streams;
+ContigStreams OpenStreams(const vector<string>& filenames) {
+  ContigStreams streams;
   for (auto it = filenames.begin(); it != filenames.end(); ++it) {
     DEBUG("Opening stream from " << *it);
-    streams.push_back(new io::Reader(*it));
+    streams.push_back(make_shared<io::FileReadStream>(*it));
   }
   return streams;
 }
@@ -95,15 +89,15 @@ std::string GetMD5CommandString() {
   FILE *output;
   char buf[40];
   output = popen("echo a | md5sum 2> /dev/null", "r");
-  VERIFY(1 == fscanf(output, "%s", buf));
-  if (strcmp(buf, "60b725f10c9c85c70d97880dfe8191b3") == 0) {
+  if (1 == fscanf(output, "%s", buf) &&
+      strcmp(buf, "60b725f10c9c85c70d97880dfe8191b3") == 0) {
     return answer = "md5sum ";
   }
   pclose(output);
 
   output = popen("echo a | md5 2> /dev/null", "r");
-  VERIFY(1 == fscanf(output, "%s", buf));
-  if (strcmp(buf, "60b725f10c9c85c70d97880dfe8191b3") == 0) {
+  if (1 == fscanf(output, "%s", buf) &&
+      strcmp(buf, "60b725f10c9c85c70d97880dfe8191b3") == 0) {
     return answer = "md5 ";
   }
   pclose(output);
@@ -114,6 +108,7 @@ std::string GetMD5CommandString() {
 
 std::string GenMD5FromFiles(const std::vector<std::string> &paths,
                             const std::string &salt = "") {
+  VERIFY(!paths.empty());
   std::vector<std::string> paths_s = paths;
   //std::sort(paths_s.begin(), paths_s.end());
 
