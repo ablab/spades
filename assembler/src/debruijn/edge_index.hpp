@@ -60,7 +60,7 @@ public:
     }
 
     size_t k() const {
-        return inner_index.k();
+        return inner_index_.k();
     }
 
     const Index &inner_index() const {
