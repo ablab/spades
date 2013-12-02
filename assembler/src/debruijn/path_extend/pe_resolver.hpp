@@ -129,6 +129,19 @@ private:
               " delete_subpaths " << delete_subpaths <<
               " delete_begins " << delete_begins <<
               " delete_all " << delete_all);
+        if ((int)path2->LengthAt(last2) - (int)g_.length(path2->At(last2)) < (int)max_overlap) {
+            last2 = (int)path2->Size() - 1;
+        }
+        if ((int)path2->Length() - (int)path2->LengthAt(first2) < (int)max_overlap) {
+            first2 = 0;
+        }
+        if ((int)path1->LengthAt(last1) - (int)g_.length(path1->At(last1)) < (int)max_overlap) {
+            last1 = (int)path1->Size() - 1;
+        }
+        if ((int)path1->Length() - (int)path1->LengthAt(first1) < (int)max_overlap) {
+            first1 = 0;
+        }
+
         if (!CutOverlaps(path1, first1, last1, path1->Size(), path2,
                          first2, last2, path2->Size(), delete_subpaths,
                          delete_begins, delete_all)) {

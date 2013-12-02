@@ -479,8 +479,6 @@ public:
     }
     bool HasPI(EdgeId e1, EdgeId e2, int dist) const;
     bool HasPI(EdgeId e1, EdgeId e2, size_t dist_min, size_t dist_max) const;
-    void SetEqualPathsEnd(const BidirectionalPath& p);
-    void ClearEqualPathsEnd();
 
 private:
     void FindPairInfo(const BidirectionalPath& path1, size_t from1, size_t to1,
@@ -494,15 +492,14 @@ private:
     std::map<size_t, double> common_w_;
     //FIXME: move to config
     size_t min_read_count_;
-    BidirectionalPath common_end_subpath_;
 protected:
     DECL_LOGGER("WeightCounter");
 };
-inline PathsWeightCounter::PathsWeightCounter(const Graph& g, PairedInfoLibrary& lib, size_t min_read_count):g_(g), lib_(lib), min_read_count_(min_read_count), common_end_subpath_(g){
+inline PathsWeightCounter::PathsWeightCounter(const Graph& g, PairedInfoLibrary& lib, size_t min_read_count):g_(g), lib_(lib), min_read_count_(min_read_count){
 
 }
 
-inline PathsWeightCounter::PathsWeightCounter(const PathsWeightCounter& w): g_(w.g_), lib_(w.lib_), min_read_count_(w.min_read_count_), common_end_subpath_(w.g_) {
+inline PathsWeightCounter::PathsWeightCounter(const PathsWeightCounter& w): g_(w.g_), lib_(w.lib_), min_read_count_(w.min_read_count_) {
 
 }
 
@@ -553,17 +550,9 @@ inline void PathsWeightCounter::FindPairInfo(const BidirectionalPath& path1,
     for (size_t i = 0; i < path2.Size(); ++i) {
         str << g_.int_id(path2.At(i)) << " ";
     }
-    int pos_begin = path2.FindLast(common_end_subpath_);
-    int pos_end = -1;
-    if (pos_begin > 0 && common_end_subpath_.Size() > 0){
-        pos_end = pos_begin + (int)common_end_subpath_.Size();
-    }
     DEBUG("pair info for path " << str.str());
     for (size_t i1 = from1; i1 < to1; ++i1) {
         for (size_t i2 = from2; i2 < to2; ++i2) {
-            if ((int)i2 >= pos_begin && (int) i2 < pos_end) {
-                continue;
-            }
             size_t dist = path1.LengthAt(i1) + path2.Length()
                     - path2.LengthAt(i2);
             double ideal_w = 0.0;
@@ -635,13 +624,6 @@ inline bool PathsWeightCounter::HasPI(EdgeId e1, EdgeId e2, int dist) const {
 
 inline bool PathsWeightCounter::HasPI(EdgeId e1, EdgeId e2, size_t dist_min, size_t dist_max) const {
     return lib_.CountPairedInfo(e1, e2, dist_min, dist_max) > min_read_count_;
-}
-inline void PathsWeightCounter::SetEqualPathsEnd(const BidirectionalPath& p) {
-    common_end_subpath_.Clear();
-    common_end_subpath_.PushBack(p);
-}
-inline void PathsWeightCounter::ClearEqualPathsEnd() {
-    common_end_subpath_.Clear();
 }
 };
 

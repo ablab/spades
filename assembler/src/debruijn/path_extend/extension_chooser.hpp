@@ -799,13 +799,14 @@ public:
               unique_edge_analyzer(g, cov_map, 0., 1000.){
     }
     virtual EdgeContainer Filter(BidirectionalPath& path,
-                                 EdgeContainer& edges) {
+                                 EdgeContainer& init_edges) {
         DEBUG("mp chooser");
         path.Print();
         if (path.Length() < lib_.GetISMin()) {
             DEBUG("small path");
             return EdgeContainer();
         }
+        EdgeContainer edges = TryResolveBuldge(path, init_edges);
         map<EdgeId, BidirectionalPath*> best_paths;
         for (size_t iedge = 0; iedge < edges.size(); ++iedge) {
             set<BidirectionalPath*> following_paths = path_searcher_.FindNextPaths(path, edges[iedge].e_);
@@ -838,6 +839,29 @@ public:
         return result;
     }
 private:
+    EdgeContainer TryResolveBuldge(BidirectionalPath& p, EdgeContainer& edges) {
+        if (edges.size() == 0) {
+            return edges;
+        }
+        for (EdgeWithDistance e : edges) {
+            if (!InBuble(e.e_, g_)){
+                return edges;
+            }
+        }
+        double max_w = 0.0;
+        EdgeWithDistance max = *edges.begin();
+        for (EdgeWithDistance e : edges) {
+            double w = weight_counter_.CountPairInfo(p, 0, p.Size(), e.e_, 0);
+            if (w > max_w) {
+                max_w = w;
+                max = e;
+            }
+        }
+        EdgeContainer result;
+        result.push_back(max);
+        return result;
+
+    }
     void DeleteNextPaths(set<BidirectionalPath*>& paths) {
         for (auto i = paths.begin(); i != paths.end(); ++i) {
             delete (*i);
@@ -966,28 +990,7 @@ private:
             }
             common_begin++;
         }
-
-        BidirectionalPath max_end(g_);
-        for (auto it1 = next_paths.begin(); it1 != next_paths.end(); ++it1) {
-            BidirectionalPath* path1 = *it1;
-            for (size_t i = 0; i < path1->Size(); ++i) {
-                bool contain_all = true;
-                size_t i1 = path1->Size();
-                BidirectionalPath subpath = path1->SubPath(i, i1);
-                for (auto it2 = next_paths.begin();
-                        it2 != next_paths.end() && contain_all; ++it2) {
-                    if (!(*it2)->Contains(subpath))
-                        contain_all = false;
-                }
-                if (contain_all && (i1 - i) >= max_end.Size()) {
-                    DEBUG("common end " << i << " " << i1)
-                    max_end.Clear();
-                    max_end.PushBack(subpath);
-                }
-            }
-        }
-        DEBUG("common begin " << common_begin << " common end " << max_end.Size());
-        weight_counter_.SetEqualPathsEnd(max_end);
+        DEBUG("common begin " << common_begin);
         for (BidirectionalPath* next : next_paths) {
             result[next] = weight_counter_.FindPairInfoFromPath(path, 0, path.Size(), *next, common_begin, next->Size());
         }
@@ -1008,7 +1011,6 @@ private:
         if (delete_small_w) {
             DeleteSmallWeights(path, result, next_paths, all_pi);
         }
-        weight_counter_.ClearEqualPathsEnd();
         return result;
     }
 
@@ -1063,43 +1065,50 @@ private:
                                      const BidirectionalPath& end) {
         DEBUG("choose from ends");
         end.Print();
-        vector<BidirectionalPath> new_paths;
-        vector<BidirectionalPath> paths_to_cover;
+        vector<BidirectionalPath*> new_paths;
+        vector<BidirectionalPath*> paths_to_cover;
         for (BidirectionalPath* p : paths) {
             int from = 0;
             int pos = p->FindFirst(end, from);
             while (pos > -1) {
-                BidirectionalPath new_p(path);
-                BidirectionalPath new_end(p->SubPath(0, pos + end.Size()));
-                new_p.PushBack(new_end);
+                BidirectionalPath* new_p = new BidirectionalPath(path);
+                BidirectionalPath* new_end = new BidirectionalPath(p->SubPath(0, pos + end.Size()));
+                new_p->PushBack(*new_end);
                 new_paths.push_back(new_p);
                 paths_to_cover.push_back(new_end);
                 from = pos + 1;
                 pos = p->FindFirst(end, from);
             }
         }
-        BidirectionalPath max = *new_paths.begin();
+        BidirectionalPath max = **new_paths.begin();
         size_t covered_edges_max = 0;
         size_t min_size = max.Size();
-        for (BidirectionalPath p: new_paths) {
+        for (BidirectionalPath* p: new_paths) {
             size_t cov_edges = 0;
-            for (BidirectionalPath e : paths_to_cover) {
-                vector<size_t> poses = p.FindAll(e.Back());
+            for (BidirectionalPath* e : paths_to_cover) {
+                vector<size_t> poses = p->FindAll(e->Back());
                 for (size_t pos : poses) {
-                    if (EqualBegins(p, pos, e, e.Size() - 1, true)) {
+                    if (EqualBegins(*p, pos, *e, e->Size() - 1, true)) {
                         cov_edges++;
                         break;
                     }
                 }
             }
-            if (cov_edges > covered_edges_max || (cov_edges == covered_edges_max && min_size > p.Size())) {
-                DEBUG("cov_e " << cov_edges << " s " << p.Size());
+            if (cov_edges > covered_edges_max || (cov_edges == covered_edges_max && min_size > p->Size())) {
+                DEBUG("cov_e " << cov_edges << " s " << p->Size());
                 max.Clear();
-                max.PushBack(p);
+                max.PushBack(*p);
                 covered_edges_max = cov_edges;
                 min_size = max.Size();
             }
         }
+        for (BidirectionalPath* p: new_paths) {
+            delete p;
+        }
+        for (BidirectionalPath* p : paths_to_cover) {
+            delete p;
+        }
+
         DEBUG("res");
         max.SubPath(path.Size()).Print();
         return max.SubPath(path.Size());
@@ -1118,7 +1127,7 @@ private:
         BidirectionalPath max_end(g_);
         for (auto it1 = paths.begin(); it1 != paths.end(); ++it1) {
             BidirectionalPath* path1 = *it1;
-            for (size_t i = 1; i < path1->Size(); ++i) {
+            for (size_t i = 0; i < path1->Size(); ++i) {
                 bool contain_all = true;
                 for (size_t i1 = i + 1; i1 <= path1->Size() && contain_all; ++i1) {
                     BidirectionalPath subpath = path1->SubPath(i, i1);
