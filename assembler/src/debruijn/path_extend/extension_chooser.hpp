@@ -294,12 +294,21 @@ protected:
                 }
             }
             if (common) {
+                DEBUG("common info from " << index);
                 excluded_edges.insert(make_pair((size_t) index, 0.0));
             } else {
                 excluded_edges.insert(make_pair((size_t) index, min_ideal_w));
             }
             index--;
         }
+        stringstream not_excl;
+        not_excl << "not excluded edges ";
+        for (size_t i = 0; i < path.Size(); ++i) {
+            if (excluded_edges.find(i) != excluded_edges.end() && excluded_edges[i] > 0.0) {
+                not_excl << i << " " << excluded_edges[i] << " , ";
+            }
+        }
+        DEBUG(not_excl.str());
     }
 
 	void FindWeights(BidirectionalPath& path, EdgeContainer& edges,
@@ -961,7 +970,7 @@ private:
         BidirectionalPath max_end(g_);
         for (auto it1 = next_paths.begin(); it1 != next_paths.end(); ++it1) {
             BidirectionalPath* path1 = *it1;
-            for (size_t i = 1; i < path1->Size(); ++i) {
+            for (size_t i = 0; i < path1->Size(); ++i) {
                 bool contain_all = true;
                 size_t i1 = path1->Size();
                 BidirectionalPath subpath = path1->SubPath(i, i1);
