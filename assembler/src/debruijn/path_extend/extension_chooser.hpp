@@ -936,7 +936,7 @@ private:
     void CountAllPairInfo(
             const BidirectionalPath& path,
             const set<BidirectionalPath*>& next_paths,
-            std::map<BidirectionalPath*, map<size_t, double> >& result) const {
+            std::map<BidirectionalPath*, map<size_t, double> >& result) {
         result.clear();
         if (next_paths.size() == 0){
             return;
@@ -957,7 +957,28 @@ private:
             }
             common_begin++;
         }
-        DEBUG("common begin " << common_begin);
+
+        BidirectionalPath max_end(g_);
+        for (auto it1 = next_paths.begin(); it1 != next_paths.end(); ++it1) {
+            BidirectionalPath* path1 = *it1;
+            for (size_t i = 1; i < path1->Size(); ++i) {
+                bool contain_all = true;
+                size_t i1 = path1->Size();
+                BidirectionalPath subpath = path1->SubPath(i, i1);
+                for (auto it2 = next_paths.begin();
+                        it2 != next_paths.end() && contain_all; ++it2) {
+                    if (!(*it2)->Contains(subpath))
+                        contain_all = false;
+                }
+                if (contain_all && (i1 - i) >= max_end.Size()) {
+                    DEBUG("common end " << i << " " << i1)
+                    max_end.Clear();
+                    max_end.PushBack(subpath);
+                }
+            }
+        }
+        DEBUG("common begin " << common_begin << " common end " << max_end.Size());
+        weight_counter_.SetEqualPathsEnd(max_end);
         for (BidirectionalPath* next : next_paths) {
             result[next] = weight_counter_.FindPairInfoFromPath(path, 0, path.Size(), *next, common_begin, next->Size());
         }
@@ -978,6 +999,7 @@ private:
         if (delete_small_w) {
             DeleteSmallWeights(path, result, next_paths, all_pi);
         }
+        weight_counter_.ClearEqualPathsEnd();
         return result;
     }
 

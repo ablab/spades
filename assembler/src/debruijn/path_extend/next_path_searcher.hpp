@@ -584,7 +584,6 @@ inline void NextPathSearcher::ProcessScaffoldingCandidate(EdgeWithDistance& e, E
     size_t max_length_back = search_dist_ - grown_path_len;
     DEBUG(search_dist_ << " " << grown_path_len);
     DEBUG("Searchin for edge of length " <<  g_.length(e.e_) << " to dist " << max_length_back);
-
     NextPathSearcher back_searcher(g_, cover_map_, max_length_back, weight_counter_);
     BidirectionalPath jumped_edge(g_, g_.conjugate(e.e_));
     set<BidirectionalPath*> back_paths = back_searcher.FindNextPaths(jumped_edge, jumped_edge.Back(), false);
