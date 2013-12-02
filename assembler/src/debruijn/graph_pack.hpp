@@ -55,9 +55,9 @@ struct graph_pack: private boost::noncopyable {
     graph_pack(size_t k, const std::string &workdir, size_t lib_count,
                         Sequence genome = Sequence(), bool use_inner_ids = false,
                         size_t flanking_range = 50)
-            : k_value(k), g(k), index(g, k + 1, workdir),
+            : k_value(k), g(k), index(g, workdir),
               int_ids(g, use_inner_ids), edge_pos(g),
-              kmer_mapper(g, k + 1),
+              kmer_mapper(g),
               flanking_cov(g, flanking_range),
               paired_indices(g, lib_count),
               clustered_indices(g, lib_count),

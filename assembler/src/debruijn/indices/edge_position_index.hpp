@@ -28,7 +28,7 @@ struct EdgeInfo {
 
     EdgeInfo conjugate(size_t k) const {
         if(!valid()) {
-            return EdgeInfo(edge_id->conjugate(), unsigned(-1), count);
+            return EdgeInfo(IdType(0), unsigned(-1), count);
         } else {
             return EdgeInfo(edge_id->conjugate(), (unsigned)edge_id->length(k) - offset, count);
         }
@@ -42,6 +42,11 @@ struct EdgeInfo {
         return offset != unsigned(-1);
     }
 };
+
+template<class stream, class IdType>
+stream &operator<<(stream &s, const EdgeInfo<IdType> &info) {
+    return s << "EdgeInfo[" << info.edge_id << ", " << info.offset << ", " << info.count << "]"; 
+}
 
 template<class Graph, class Seq = runtime_k::RtSeq, class traits = kmer_index_traits<Seq>, class StoringType = DefaultStoring>
 class KmerFreeEdgeIndex : public KeyIteratingMap<Seq, EdgeInfo<typename Graph::EdgeId>, traits, StoringType> {
@@ -62,8 +67,8 @@ public:
 
 public:
 
-    KmerFreeEdgeIndex(unsigned k, const Graph &graph, const std::string &workdir)
-            : base(k, workdir), graph_(graph) {}
+    KmerFreeEdgeIndex(const Graph &graph, const std::string &workdir)
+            : base(unsigned(graph.k() + 1), workdir), graph_(graph) {}
 
     /**
      * Shows if kmer has some entry associated with it
@@ -131,8 +136,8 @@ public:
   using base::ConstructKWH;
 
 
-  KmerStoringEdgeIndex(size_t K, const Graph& , const std::string &workdir)
-          : base(K, workdir) {}
+  KmerStoringEdgeIndex(const Graph& g, const std::string &workdir)
+          : base(unsigned(g.k() + 1), workdir) {}
 
   ~KmerStoringEdgeIndex() {}
 

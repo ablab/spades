@@ -306,10 +306,9 @@ void SplitAndColorGraph(gp_t& gp,
 }
 
 template<class Graph, class Index, class Streams>
-size_t CapConstructGraph(size_t k,
-        Streams& streams, Graph& g,
+size_t CapConstructGraph(Streams& streams, Graph& g,
         Index& index) {
-    return ConstructGraphUsingOldIndex(k, streams, g, index);
+    return ConstructGraphUsingOldIndex(streams, g, index);
 }
 
 template<class gp_t>
@@ -353,7 +352,7 @@ void ConstructColoredGraph(gp_t& gp,
 
   INFO("Constructing de Bruijn graph for k=" << gp.k_value);
 
-	CapConstructGraph(gp.k_value, streams,
+	CapConstructGraph(streams,
 			gp.g, gp.index);
 	SplitAndColorGraph(gp, coloring, streams);
   FillPositions(gp, streams, coordinates_handler);

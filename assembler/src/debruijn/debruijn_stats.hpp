@@ -96,7 +96,7 @@ class StatCounter: public AbstractStatCounter {
 
     StatCounter(const Graph& graph, const Index& index,
                 const Sequence& genome, size_t k) {
-        SimpleSequenceMapper<Graph, Index> sequence_mapper(graph, index, k + 1);
+        SimpleSequenceMapper<Graph, Index> sequence_mapper(graph, index);
         Path<EdgeId> path1 = sequence_mapper.MapSequence(Sequence(genome));
         Path<EdgeId> path2 = sequence_mapper.MapSequence(!Sequence(genome));
         stats_.AddStat(new VertexEdgeStat<Graph>(graph));
@@ -151,8 +151,8 @@ void WriteErrorLoc(const Graph &g,
 
 template<class Graph, class Index>
 Path<typename Graph::EdgeId> FindGenomePath(const Sequence& genome,
-                                            const Graph& g, const Index& index, size_t k) {
-    SimpleSequenceMapper<Graph, Index> srt(g, index, k + 1);
+                                            const Graph& g, const Index& index) {
+    SimpleSequenceMapper<Graph, Index> srt(g, index);
     return srt.MapSequence(genome);
 }
 
@@ -161,7 +161,7 @@ MappingPath<typename Graph::EdgeId>
 FindGenomeMappingPath(const Sequence& genome, const Graph& g,
                       const Index& index,
                       const KmerMapper<Graph>& kmer_mapper) {
-    NewExtendedSequenceMapper<Graph, Index> srt(g, index, kmer_mapper, g.k() + 1);
+    NewExtendedSequenceMapper<Graph, Index> srt(g, index, kmer_mapper);
     return srt.MapSequence(genome);
 }
 
@@ -309,7 +309,7 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 
     if (config.write_components_along_contigs) {
         make_dir(folder + "along_contigs/");
-        NewExtendedSequenceMapper<Graph, Index> mapper(gp.g, gp.index, gp.kmer_mapper, gp.g.k() + 1);
+        NewExtendedSequenceMapper<Graph, Index> mapper(gp.g, gp.index, gp.kmer_mapper);
         WriteGraphComponentsAlongContigs(gp.g, mapper, folder + "along_contigs/", colorer, labeler);
     }
 

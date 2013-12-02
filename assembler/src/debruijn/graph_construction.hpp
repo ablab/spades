@@ -68,8 +68,7 @@ void FillCoverageFromIndex(const Index &index) {
 }
 
 template<class Graph, class Readers, class Index>
-size_t ConstructGraphUsingOldIndex(size_t k,
-		Readers& streams, Graph& g,
+size_t ConstructGraphUsingOldIndex(Readers& streams, Graph& g,
 		Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
 	INFO("Constructing DeBruijn graph");
 
@@ -84,18 +83,28 @@ size_t ConstructGraphUsingOldIndex(size_t k,
 	//fixme hack
 	rl = IndexBuilder().BuildIndexFromStream(debruijn, streams, (contigs_stream == 0) ? 0 : &(*contigs_stream));
 
-	VERIFY(k + 1== debruijn.k());
+	VERIFY(g.k() + 1== debruijn.k());
 	// FIXME: output_dir here is damn ugly!
 
 	TRACE("Filled indices");
 
 	INFO("Condensing graph");
-	DeBruijnGraphConstructor<Graph, InnerIndex> g_c(g, debruijn, k);
+	DeBruijnGraphConstructor<Graph, InnerIndex> g_c(g, debruijn);
 	TRACE("Constructor ok");
 	g_c.ConstructGraph(100, 10000, 1.2); // TODO: move magic constants to config
 	INFO("Graph condensed");
 
 	return rl;
+}
+
+inline debruijn_config::construction CreateDefaultConstructionConfig() {
+    debruijn_config::construction config;
+    config.con_mode = construction_mode::con_extention;
+    debruijn_config::construction::early_tip_clipper early_tc;
+    early_tc.enable = false;
+    config.early_tc = early_tc;
+    config.keep_perfect_loops = true;
+    return config;
 }
 
 template<class ExtensionIndex>
@@ -109,11 +118,12 @@ void EarlyClipTips(size_t k, const debruijn_config::construction params, size_t 
 }
 
 template<class Graph, class Read, class Index>
-size_t ConstructGraphUsingExtentionIndex(size_t k, const debruijn_config::construction params,
+size_t ConstructGraphUsingExtentionIndex(const debruijn_config::construction params,
 		io::ReadStreamList<Read>& streams, Graph& g,
 		Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
 
-	INFO("Constructing DeBruijn graph");
+    size_t k = g.k();
+	INFO("Constructing DeBruijn graph for k=" << k);
 
 	TRACE("Filling indices");
 	VERIFY_MSG(streams.size(), "No input streams specified");
@@ -131,7 +141,7 @@ size_t ConstructGraphUsingExtentionIndex(size_t k, const debruijn_config::constr
 
 	INFO("Condensing graph");
 	index.Detach();
-	DeBruijnGraphExtentionConstructor<Graph> g_c(g, ext, k);
+	DeBruijnGraphExtentionConstructor<Graph> g_c(g, ext);
 	g_c.ConstructGraph(100, 10000, 1.2, params.keep_perfect_loops);//TODO move these parameters to config
 	index.Attach();
 
@@ -144,11 +154,11 @@ size_t ConstructGraphUsingExtentionIndex(size_t k, const debruijn_config::constr
 }
 
 template<class Graph, class Index, class Streams>
-size_t ConstructGraph(size_t k, const debruijn_config::construction &params,
+size_t ConstructGraph(const debruijn_config::construction &params,
                       Streams& streams, Graph& g,
 		 Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
 	if(params.con_mode == construction_mode::con_extention) {
-		return ConstructGraphUsingExtentionIndex(k, params, streams, g, index, contigs_stream);
+		return ConstructGraphUsingExtentionIndex(params, streams, g, index, contigs_stream);
 //	} else if(params.con_mode == construction_mode::con_old){
 //		return ConstructGraphUsingOldIndex(k, streams, g, index, contigs_stream);
 	} else {
@@ -159,11 +169,11 @@ size_t ConstructGraph(size_t k, const debruijn_config::construction &params,
 }
 
 template<class Graph, class Index, class Streams>
-size_t ConstructGraphWithCoverage(size_t k, const debruijn_config::construction &params,
+size_t ConstructGraphWithCoverage(const debruijn_config::construction &params,
                                   Streams& streams, Graph& g,
                                   Index& index, NewFlankingCoverage<Graph>& flanking_cov,
                                   io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
-	size_t rl = ConstructGraph(k, params, streams, g, index, contigs_stream);
+	size_t rl = ConstructGraph(params, streams, g, index, contigs_stream);
 
 	INFO("Filling coverage and flanking coverage from index");
 	FillCoverageAndFlanking(index.inner_index(), g, flanking_cov);

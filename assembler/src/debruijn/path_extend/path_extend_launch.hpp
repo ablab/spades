@@ -68,7 +68,7 @@ void DebugOutputPaths(const ContigWriter& writer, const conj_graph_pack& gp,
                       const std::string& output_dir, PathContainer& paths,
                       const string& name) {
     PathInfoWriter path_writer;
-    PathVisualizer visualizer(gp.g.k());
+    PathVisualizer visualizer;
     string etcDir = GetEtcDir(output_dir);
     if (!cfg::get().pe_params.debug_output) {
         return;
@@ -88,7 +88,7 @@ void DebugOutputEdges(const ContigWriter& writer, const conj_graph_pack& gp,
     if (!cfg::get().pe_params.debug_output) {
         return;
     }
-    PathVisualizer visualizer(gp.g.k());
+    PathVisualizer visualizer;
     string etcDir = GetEtcDir(output_dir);
     DEBUG("debug_output " << cfg::get().pe_params.debug_output);
     if (cfg::get().pe_params.viz.print_paths) {
