@@ -315,8 +315,8 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	CompositeExtender* mp_main_pe = new CompositeExtender(gp.g, all_libs);
 	INFO("Growing mp paths");
 	auto mp_paths = resolver.extendSeeds(paths, *mp_main_pe);
-    //resolver.removeOverlaps(mp_paths, mp_main_pe->GetCoverageMap(), max_over,
-    //                        writer, output_dir);
+    resolver.removeOverlaps(mp_paths, mp_main_pe->GetCoverageMap(), max_over,
+                            writer, output_dir);
     resolver.RemoveMatePairEnds(mp_paths, max_over);
 	mp_paths.FilterEmptyPaths();
 	mp_paths.CheckSymmetry();

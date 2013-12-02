@@ -135,7 +135,11 @@ private:
             size_t common_length = path1->LengthAt(first1)
                     - path1->LengthAt(last1) + g_.length(path1->At(last1));
             if (common_length > cfg::get().max_repeat_length) {
-                DEBUG("Similar paths were not deleted " << common_length);
+                DEBUG("Similar paths were not deleted " << common_length
+                      << " before common 1 " << (path1->Length() - path1->LengthAt(first1))
+                      <<" after common 1 " << (path1->LengthAt(last1) - g_.length(path1->At(last1)))
+                      << " before common 2 " << (path2->Length() - path2->LengthAt(first2))
+                      << " after common 2 " << (path2->LengthAt(last2) - g_.length(path2->At(last2))));
             }
         }
     }

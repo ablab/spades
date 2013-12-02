@@ -824,10 +824,10 @@ public:
         DEBUG("Path " << id_);
         DEBUG("Length " << totalLength_);
         DEBUG("Weight " << weight_);
-        DEBUG("#, edge, length, gap length, total length");
+        DEBUG("#, edge, length, gap length, total length, total length from begin");
 
         for(size_t i = 0; i < Size(); ++i) {
-        	DEBUG(i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << GapAt(i) << ", " << LengthAt(i));
+        	DEBUG(i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << GapAt(i) << ", " << LengthAt(i) << ", " << Length() - LengthAt(i));
         }
     }
 
