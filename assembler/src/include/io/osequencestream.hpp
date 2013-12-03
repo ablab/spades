@@ -236,7 +236,7 @@ public:
     osequencestream_for_fastg& operator<<(const vector<string>& v) {
         write_header(header_);
         for (size_t i = 0; i < v.size(); ++i) {
-            ofstream_ << " ->" << v[i] << " ";
+            ofstream_ << ":" << v[i] << " ";
         }
         return *this;
     }

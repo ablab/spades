@@ -354,6 +354,7 @@ protected:
         data_.push_front(e);
         if (gapLength_.size() > 0) {
             gapLength_[0] += gap;
+            totalLength_ += gap;
         }
         gapLength_.push_front(0);
         int length = (int) g_.length(e);
@@ -362,7 +363,7 @@ protected:
         } else {
             cumulativeLength_.push_front(length + gap + cumulativeLength_.front());
         }
-        totalLength_ += length + gap;
+        totalLength_ += length;
         now_ = data_.back();
         NotifyFrontEdgeAdded(e, gap);
         Verify();
@@ -493,15 +494,11 @@ public:
 	}
 
 	void PushBack(EdgeId e, int gap = 0) {
-	    /*if (Size() == 0 && gap != 0) {
-	        WARN("Pushing with front gap, setting to 0");
-	        gap = 0;
-	    }*/
-	    data_.push_back(e);
-	    gapLength_.push_back(gap);
-	    IncreaseLengths(g_.length(e), gap);
+        data_.push_back(e);
+        gapLength_.push_back(gap);
+        IncreaseLengths(g_.length(e), gap);
         now_ = e;
-	    NotifyBackEdgeAdded(e, gap);
+        NotifyBackEdgeAdded(e, gap);
 	}
 
 
