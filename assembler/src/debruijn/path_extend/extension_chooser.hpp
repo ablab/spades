@@ -694,7 +694,62 @@ private:
     double prior_threshold_;bool unique_edges_founded_;
     std::set<EdgeId> unique_edges_;
 };
+class SimpleScaffolding {
+public:
+    SimpleScaffolding(const Graph& g) : g_(g) {}
 
+    BidirectionalPath FindMaxCommonPath(const vector<BidirectionalPath*>& paths,
+                                        size_t max_diff_len) {
+        BidirectionalPath max_end(g_);
+        for (auto it1 = paths.begin(); it1 != paths.end(); ++it1) {
+            BidirectionalPath* p1 = *it1;
+            DEBUG("begin find subpath for");
+            p1->PrintInString();
+            for (size_t i = 0; i < p1->Size(); ++i) {
+                if (p1->Length() - p1->LengthAt(i) > max_diff_len) {
+                    DEBUG("more max diff " << i << " len " << p1->Length() - p1->LengthAt(i))
+                    break;
+                }
+                bool contain_all = true;
+                for (size_t i1 = i + 1; i1 <= p1->Size() && contain_all; ++i1) {
+                    BidirectionalPath subpath = p1->SubPath(i, i1);
+                    DEBUG("analyze subpath ");
+                    subpath.PrintInString();
+                    for (auto it2 = paths.begin();  it2 != paths.end() && contain_all; ++it2) {
+                        BidirectionalPath* p2 = *it2;
+                        vector<size_t> positions2 = p2->FindAll(subpath.At(0));
+                        bool contain = false;
+                        for (size_t ipos2 = 0; ipos2 < positions2.size(); ++ipos2) {
+                            size_t pos2 = positions2[ipos2];
+                            if (p2->Length() - p2->LengthAt(pos2) <= max_diff_len
+                                    && EqualEnds(subpath, i, *p2, pos2, false)) {
+                                contain = true;
+                                break;
+                            } else {
+                                DEBUG("not consist with path " << pos2);
+                                p2->PrintInString();
+                            }
+                        }
+                        if (!contain) {
+                            DEBUG("not contains all " << i);
+                            contain_all = false;
+                        }
+                    }
+                    if (contain_all && (i1 - i) >= max_end.Size()) {
+                        DEBUG("common end " << i << " " << i1)
+                        max_end.Clear();
+                        max_end.PushBack(subpath);
+                    }
+                }
+            }
+        }
+        return max_end;
+    }
+
+private:
+    const Graph& g_;
+
+};
 class LongReadsExtensionChooser : public ExtensionChooser {
 public:
     LongReadsExtensionChooser(const Graph& g, PathContainer& pc,
@@ -705,7 +760,8 @@ public:
               filtering_threshold_(filtering_threshold),
               weight_priority_threshold_(weight_priority_threshold),
               cov_map_(g, pc),
-              unique_edge_analyzer(g, GraphCoverageMap(g, pc), filtering_threshold, unique_edge_priority_threshold) {
+              unique_edge_analyzer_(g, GraphCoverageMap(g, pc), filtering_threshold, unique_edge_priority_threshold),
+              simple_scaffolding_(g) {
 
     }
 
@@ -724,6 +780,7 @@ public:
             weights_cands.insert(make_pair(it->e_, 0.0));
         }
         set<EdgeId> filtered_cands;
+        map<EdgeId, set<BidirectionalPath*> > support_paths_ends;
         auto support_paths = cov_map_.GetCoveringPaths(path.Back());
         for (auto it = support_paths.begin(); it != support_paths.end(); ++it) {
             auto positions = (*it)->FindAll(path.Back());
@@ -736,10 +793,15 @@ public:
                         EdgeId next = (*it)->At(positions[i] + 1);
                         weights_cands[next] += (*it)->GetWeight();
                         filtered_cands.insert(next);
+                        if (support_paths_ends.count(next) == 0){
+                            support_paths_ends[next] = set<BidirectionalPath*>();
+                        }
+                        support_paths_ends[next].insert(new BidirectionalPath((*it)->SubPath(positions[i] + 1)));
                     }
                 }
             }
-        }DEBUG("Candidates");
+        }
+        DEBUG("Candidates");
         for (auto iter = weights_cands.begin(); iter != weights_cands.end();
                 ++iter) {
             DEBUG("Candidate " << g_.int_id(iter->first) << " weight " << iter->second);
@@ -752,6 +814,15 @@ public:
                         > weight_priority_threshold_ * sort_res[1].second) {
             filtered_cands.clear();
             filtered_cands.insert(sort_res[0].first);
+        } else if (sort_res.size() > 1) {
+            for (size_t i = 0; i < sort_res.size(); ++i) {
+                if (sort_res[i].second * weight_priority_threshold_ < sort_res[0].second){
+                    filtered_cands.erase(sort_res[i].first);
+                }
+            }
+        }
+        if (filtered_cands.size() > 1) {
+            filtered_cands = SimpleScaffold(filtered_cands, support_paths_ends, sort_res);
         }
         EdgeContainer result;
         for (auto it = edges.begin(); it != edges.end(); ++it) {
@@ -763,10 +834,29 @@ public:
     }
 
 private:
+    set<EdgeId> SimpleScaffold(set<EdgeId>& candidates, map<EdgeId, set<BidirectionalPath*> >& ends, vector<pair<EdgeId, double> > sort_weights) {
+        vector<BidirectionalPath*> all_ends;
+        for (auto it = ends.begin(); it != ends.end(); ++it) {
+            if (candidates.find(it->first) == candidates.end()) {
+                continue;
+            }
+            all_ends.insert(all_ends.end(), it->second.begin(), it->second.end());
+        }
+        DEBUG("Scaffolding");
+        BidirectionalPath end = simple_scaffolding_.FindMaxCommonPath(all_ends, g_.k() + 40); //TODO: move to config
+        end.Print();
+        if (end.Size() > 0){
+            set<EdgeId> res;
+            res.insert(sort_weights[0].first);
+            DEBUG("scaffolding helps");
+            return res;
+        }
+        return candidates;
+    }
     bool UniqueBackPath(const BidirectionalPath& path, size_t pos) {
         int int_pos = (int) pos;
         while (int_pos >= 0) {
-            if (unique_edge_analyzer.IsUnique(path.At(int_pos)) > 0)
+            if (unique_edge_analyzer_.IsUnique(path.At(int_pos)) > 0)
                 return true;
             int_pos--;
         }
@@ -783,7 +873,8 @@ private:
     double filtering_threshold_;
     double weight_priority_threshold_;
     const GraphCoverageMap cov_map_;
-    UniqueEdgeAnalyzer unique_edge_analyzer;
+    UniqueEdgeAnalyzer unique_edge_analyzer_;
+    SimpleScaffolding simple_scaffolding_;
 };
 
 class MatePairExtensionChooser : public ExtensionChooser {
@@ -796,7 +887,8 @@ public:
               search_dist_(lib.GetISMax()),
               weight_counter_(g, lib, 10),
               path_searcher_(g_, cov_map, lib_.GetISMax(), PathsWeightCounter(g, lib, 30)),
-              unique_edge_analyzer(g, cov_map, 0., 1000.){
+              unique_edge_analyzer_(g, cov_map, 0., 1000.),
+              simple_scaffolder_(g) {
     }
     virtual EdgeContainer Filter(BidirectionalPath& path,
                                  EdgeContainer& init_edges) {
@@ -892,8 +984,8 @@ private:
         for (size_t i1 = 0; i1 < init_path.Size(); ++i1) {
             for (size_t i2 = 0; i2 < path.Size(); ++i2) {
                 int gap = (int)init_path.LengthAt(i1) + (int)path.Length() - (int)path.LengthAt(i2);
-                if (unique_edge_analyzer.IsUnique(init_path.At(i1))
-                        && unique_edge_analyzer.IsUnique(path.At(i2))
+                if (unique_edge_analyzer_.IsUnique(init_path.At(i1))
+                        && unique_edge_analyzer_.IsUnique(path.At(i2))
                         && weight_counter_.HasPI(init_path.At(i1),
                                 path.At(i2), gap)) {
                     return true;
@@ -1124,26 +1216,7 @@ private:
             p->Print();
         }
 
-        BidirectionalPath max_end(g_);
-        for (auto it1 = paths.begin(); it1 != paths.end(); ++it1) {
-            BidirectionalPath* path1 = *it1;
-            for (size_t i = 0; i < path1->Size(); ++i) {
-                bool contain_all = true;
-                for (size_t i1 = i + 1; i1 <= path1->Size() && contain_all; ++i1) {
-                    BidirectionalPath subpath = path1->SubPath(i, i1);
-                    for (auto it2 = paths.begin();
-                            it2 != paths.end() && contain_all; ++it2) {
-                        if (!(*it2)->Contains(subpath))
-                            contain_all = false;
-                    }
-                    if (contain_all && (i1 - i) >= max_end.Size()) {
-                        DEBUG("common end " << i << " " << i1)
-                        max_end.Clear();
-                        max_end.PushBack(subpath);
-                    }
-                }
-            }
-        }
+        BidirectionalPath max_end = simple_scaffolder_.FindMaxCommonPath(paths, search_dist_);
         if (max_end.Size() == 0) {
             return EdgeContainer();
         }
@@ -1173,7 +1246,8 @@ private:
     size_t search_dist_;
     PathsWeightCounter weight_counter_;
     NextPathSearcher path_searcher_;
-    UniqueEdgeAnalyzer unique_edge_analyzer;
+    UniqueEdgeAnalyzer unique_edge_analyzer_;
+    SimpleScaffolding simple_scaffolder_;
 };
 }
 #endif /* EXTENSION_HPP_ */

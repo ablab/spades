@@ -832,6 +832,13 @@ public:
         }
     }
 
+    void PrintInString() const {
+        stringstream str;
+        for (size_t i = 0; i < Size(); ++i) {
+            str << g_.int_id(At(i)) << " ";
+        }
+        DEBUG(str.str());
+    }
     void PrintInfo() const {
         INFO("Path " << id_);
         INFO("Length " << totalLength_);

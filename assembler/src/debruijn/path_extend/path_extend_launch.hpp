@@ -142,7 +142,7 @@ inline vector<SimpleExtender *> MakePEExtenders(const conj_graph_pack& gp,
 
 inline vector<SimpleExtender*> MakeLongReadsExtender(
         const conj_graph_pack& gp, const vector<PathStorageInfo<Graph> >& reads,
-        size_t max_loops) {
+        size_t max_loops, const std::string& output_dir) {
     vector<SimpleExtender*> extends;
     for (size_t i = 0; i < reads.size(); ++i) {
         if (reads[i].GetPaths().size() == 0) {
@@ -150,6 +150,8 @@ inline vector<SimpleExtender*> MakeLongReadsExtender(
         }
         PathContainer paths;
         AddPathsToContainer(gp, reads[i].GetPaths(), 1, paths);
+        ContigWriter writer(gp.g);
+        DebugOutputPaths(writer, gp, output_dir, paths, "long_reads");
         ExtensionChooser * longReadEC = new LongReadsExtensionChooser(
                 gp.g, paths, reads[i].GetFilteringThreshold(),
                 reads[i].GetWeightPriorityThreshold(),
@@ -256,7 +258,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 //make pe + long reads extenders
     vector<SimpleExtender *> usualPEs = MakePEExtenders(gp, pset, libs, false);
     vector<SimpleExtender*> long_reads_extenders = MakeLongReadsExtender(
-            gp, long_reads, pset.loop_removal.max_loops);
+            gp, long_reads, pset.loop_removal.max_loops, output_dir);
     vector<SimpleExtender *> shortLoopPEs = MakePEExtenders(gp, pset, libs, true);
     vector<ScaffoldingPathExtender*> scafPEs = MakeScaffoldingExtender(gp, pset, scaff_libs);
     vector<CoveringPathExtender *> all_libs(usualPEs.begin(), usualPEs.end());
