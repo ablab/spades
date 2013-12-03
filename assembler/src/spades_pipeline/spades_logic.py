@@ -17,7 +17,9 @@ from process_cfg import bool_to_str
 from process_cfg import load_config_from_file
 import options_storage
 
-def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, last_one):
+BASE_STAGE = "construction"
+
+def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage, saves_dir, last_one):
     subst_dict = dict()
 
     subst_dict["K"] = str(K)
@@ -29,7 +31,8 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, last_
         subst_dict["use_additional_contigs"] = bool_to_str(True)
     else:
         subst_dict["use_additional_contigs"] = bool_to_str(False)
-    subst_dict["entry_point"] = "construction"
+    subst_dict["entry_point"] = stage
+    subst_dict["load_from"] = saves_dir
     subst_dict["developer_mode"] = bool_to_str(cfg.developer_mode)
     subst_dict["gap_closer_enable"] = bool_to_str(last_one)
     subst_dict["rr_enable"] = bool_to_str(last_one and cfg.rr_enable)
@@ -61,44 +64,55 @@ def get_read_length(output_dir, K, dataset_data):
     return max_read_length
 
 
-def update_k_mers_in_special_cases(cur_k_mers, RL, log):
+def update_k_mers_in_special_cases(cur_k_mers, RL, log, silent=False):
     if options_storage.auto_K_allowed():
         if RL >= 250:
-            support.warning("Default k-mer sizes were set to %s because estimated "
-                            "read length (%d) is equal or great than 250" % (str(options_storage.k_mers_250), RL), log)
+            if not silent:
+                support.warning("Default k-mer sizes were set to %s because estimated "
+                                "read length (%d) is equal or great than 250" % (str(options_storage.k_mers_250), RL), log)
             return options_storage.k_mers_250
         if RL >= 150:
-            support.warning("Default k-mer sizes were set to %s because estimated "
-                            "read length (%d) is equal or great than 150" % (str(options_storage.k_mers_150), RL), log)
+            if not silent:
+                support.warning("Default k-mer sizes were set to %s because estimated "
+                                "read length (%d) is equal or great than 150" % (str(options_storage.k_mers_150), RL), log)
             return options_storage.k_mers_150
     return cur_k_mers
 
 
 def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):
     data_dir = os.path.join(cfg.output_dir, "K%d" % K)
+    stage = BASE_STAGE
+    saves_dir = os.path.join(data_dir, 'saves')
+    dst_configs = os.path.join(data_dir, "configs")
+    cfg_file_name = os.path.join(dst_configs, "config.info")
+
     if options_storage.continue_mode:
-        if os.path.isfile(os.path.join(data_dir, "final_contigs.fasta")) and not (options_storage.continue_from == "k%d" % K):
+        if os.path.isfile(os.path.join(data_dir, "final_contigs.fasta")) and not (options_storage.restart_from and
+            (options_storage.restart_from == ("k%d" % K) or options_storage.restart_from.startswith("k%d:" % K))):
             log.info("\n== Skipping assembler: " + ("K%d" % K) + " (already processed)")
             return
+        if options_storage.restart_from and options_storage.restart_from.find(":") != -1:
+            stage = options_storage.restart_from[options_storage.restart_from.find(":") + 1:]
         support.continue_from_here(log)
 
-    if os.path.exists(data_dir):
-        shutil.rmtree(data_dir)
-    os.makedirs(data_dir)
-    bin_reads_dir = os.path.join(cfg.output_dir, ".bin_reads")
+    if stage != BASE_STAGE:
+        if not os.path.isdir(saves_dir):
+            support.error("Can not restart from stage %s: saves not found (%s)!" % (stage, saves_dir))
+    else:
+        if os.path.exists(data_dir):
+            shutil.rmtree(data_dir)
+        os.makedirs(data_dir)
 
-    dst_configs = os.path.join(data_dir, "configs")
-    shutil.copytree(os.path.join(configs_dir, "debruijn"), dst_configs)
-    cfg_file_name = os.path.join(dst_configs, "config.info")
-    # removing template configs
-    for root, dirs, files in os.walk(dst_configs):
-        for cfg_file in files:
-            cfg_file = os.path.join(root, cfg_file)
-            if cfg_file.endswith('.info.template'):
-                if os.path.isfile(cfg_file.split('.template')[0]):
-                    os.remove(cfg_file)
-                else:
-                    os.rename(cfg_file, cfg_file.split('.template')[0])
+        shutil.copytree(os.path.join(configs_dir, "debruijn"), dst_configs)
+        # removing template configs
+        for root, dirs, files in os.walk(dst_configs):
+            for cfg_file in files:
+                cfg_file = os.path.join(root, cfg_file)
+                if cfg_file.endswith('.info.template'):
+                    if os.path.isfile(cfg_file.split('.template')[0]):
+                        os.remove(cfg_file)
+                    else:
+                        os.rename(cfg_file, cfg_file.split('.template')[0])
 
     log.info("\n== Running assembler: " + ("K%d" % K) + "\n")
     if prev_K:
@@ -108,11 +122,14 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):
             additional_contigs_fname = None
     else:
         additional_contigs_fname = None
-    prepare_config_spades(cfg_file_name, cfg, log, additional_contigs_fname, K, last_one)
+
+    prepare_config_spades(cfg_file_name, cfg, log, additional_contigs_fname, K, stage, saves_dir, last_one)
 
     command = [os.path.join(execution_home, "spades"),
                os.path.abspath(cfg_file_name)]
+
 ## this code makes sense for src/debruijn/simplification.cpp: corrected_and_save_reads() function which is not used now
+#    bin_reads_dir = os.path.join(cfg.output_dir, ".bin_reads")
 #    if os.path.isdir(bin_reads_dir):
 #        if glob.glob(os.path.join(bin_reads_dir, "*_cor*")):
 #            for cor_filename in glob.glob(os.path.join(bin_reads_dir, "*_cor*")):
@@ -126,6 +143,33 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, log):
     if not isinstance(cfg.iterative_K, list):
         cfg.iterative_K = [cfg.iterative_K]
     cfg.iterative_K = sorted(cfg.iterative_K)
+
+    # checking and removing conflicting K-mer directories
+    if options_storage.restart_from:
+        processed_K = []
+        for k in range(options_storage.MIN_K, options_storage.MAX_K, 2):
+            cur_K_dir = os.path.join(cfg.output_dir, "K%d" % k)
+            if os.path.isdir(cur_K_dir) and os.path.isfile(os.path.join(cur_K_dir, "final_contigs.fasta")):
+                processed_K.append(k)
+        if processed_K:
+            RL = get_read_length(cfg.output_dir, processed_K[0], dataset_data)
+            needed_K = update_k_mers_in_special_cases(cfg.iterative_K, RL, log, silent=True)
+            needed_K = [k for k in needed_K if k < RL]
+            k_to_delete = []
+            for id, k in enumerate(needed_K):
+                if len(processed_K) == id:
+                    k_to_delete = [processed_K[-1]] # the last K in processed K was run in "last_one" mode
+                    break
+                if processed_K[id] != k:
+                    k_to_delete = processed_K[id:]
+                    break
+            if not k_to_delete and (len(processed_K) > len(needed_K)):
+                k_to_delete = processed_K[len(needed_K) - 1:]
+            if k_to_delete:
+                log.info("Restart mode: removing previously processed directories for K=%s "
+                         "to except conflicts with K specified with --restart-from" % (str(k_to_delete)))
+                for k in k_to_delete:
+                    shutil.rmtree(os.path.join(cfg.output_dir, "K%d" % k))
 
     bin_reads_dir = os.path.join(cfg.output_dir, ".bin_reads")
     if os.path.isdir(bin_reads_dir) and not options_storage.continue_mode:
