@@ -722,7 +722,7 @@ public:
                         for (size_t ipos2 = 0; ipos2 < positions2.size(); ++ipos2) {
                             size_t pos2 = positions2[ipos2];
                             if (p2->Length() - p2->LengthAt(pos2) <= max_diff_len
-                                    && EqualEnds(subpath, i, *p2, pos2, false)) {
+                                    && EqualEnds(subpath, 0, *p2, pos2, false)) {
                                 contain = true;
                                 break;
                             } else {
