@@ -251,7 +251,7 @@ inline NextPathSearcher::NextPathSearcher(const Graph& g,
           search_dist_(search_dist),
           weight_counter_(weight_counter),
           long_edge_len_(500),
-          max_paths_(4000){
+          max_paths_(1000){
 
 }
 
@@ -535,13 +535,25 @@ inline void NextPathSearcher::OrderScaffoldingCandidates(EdgeSet& candidate_set,
 
     ConstructedPathT constructed_paths;
     size_t grown_path_len = current_path->Length() - init_path.Length();
+    DEBUG("Order Scaffolding Candidates");
     for (EdgeWithDistance e : candidate_set) {
+        DEBUG("e " << g_.int_id(e.e_));
         if (constructed_paths.count(e.e_) > 0) {
+            DEBUG("visited");
             continue;
         }
         ProcessScaffoldingCandidate(e, candidate_set, current_path, grown_path_len, constructed_paths);
+        for (auto p1 = constructed_paths.begin(); p1 != constructed_paths.end(); ++p1) {
+            DEBUG("current constructed paths " << g_.int_id(p1->first));
+              p1->second.p_.Print();
+        }
+
     }
     INFO("constructed paths for edge " << g_.int_id(current_path->GetId()) << " size " << constructed_paths.size());
+    for (auto p1 = constructed_paths.begin(); p1 != constructed_paths.end();
+            ++p1) {
+        p1->second.p_.Print();
+    }
     RemoveRedundant(constructed_paths);
     JoinPaths(constructed_paths);
     RemoveRedundant(constructed_paths);
@@ -579,7 +591,6 @@ inline void NextPathSearcher::ProcessScaffoldingCandidate(EdgeWithDistance& e, E
     DEBUG("Distances: search = " << search_dist_ << ", grown = " << grown_path_len << ", estimated gap = " << e.d_);
     VERIFY(search_dist_ >= grown_path_len);
     VERIFY((int) search_dist_ >= e.d_);
-
 
     size_t max_length_back = search_dist_ - grown_path_len;
     DEBUG(search_dist_ << " " << grown_path_len);
@@ -658,10 +669,15 @@ inline void NextPathSearcher::AddConstructedPath(const BidirectionalPath& cp, si
     //cp.Print();
     DEBUG("Adding path starting from " << from);
     constructed_paths.insert(make_pair(cp.Back(), PathWithDistance(cp.SubPath(from), gap)));
+    DEBUG("add constructed path " << g_.int_id(cp.Back()));
+    cp.Print();
 
     for (size_t i = 0; i < cp.Size() - 1; ++i) {
         auto visited = constructed_paths.find(cp[i]);
         if (visited != constructed_paths.end()) {
+            DEBUG("found " << g_.int_id(cp[i]));
+            visited->second.p_.Print();
+            DEBUG("clear");
             visited->second.p_.Clear();
         }
     }
@@ -691,6 +707,10 @@ inline void NextPathSearcher::FilterBackPaths(set<BidirectionalPath*>& back_path
 
 inline void NextPathSearcher::JoinPaths(ConstructedPathT& constructed_paths) {
     set<EdgeId> visited;
+    DEBUG("try to join paths");
+    for (auto p1 = constructed_paths.begin(); p1 != constructed_paths.end(); ++p1) {
+        p1->second.p_.Print();
+    }
 
     for (auto p1 = constructed_paths.begin(); p1 != constructed_paths.end(); ++p1) {
         if (visited.count(p1->first) > 0){
@@ -728,10 +748,16 @@ inline void NextPathSearcher::JoinPaths(ConstructedPathT& constructed_paths) {
                 }
             }
             if (has_pi) {
+                DEBUG("has pi from ");
+                path1.Print();
+                DEBUG("to");
+                path2.Print();
                 path1.PushBack(path2.Front(), 100);
                 for(int i = 1; i < (int) path2.Size(); ++i) {
                     path1.PushBack(path2[i], path2.GapAt(i));
                 }
+                DEBUG("new path");
+                path1.Print();
                 path2.Clear();
                 visited.insert(p2->first);
             }
