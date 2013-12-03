@@ -30,9 +30,7 @@ void assemble_genome() {
 
     StageManager SPAdes;
 
-    debruijn_graph::conj_graph_pack conj_gp(cfg::get().K,
-                                            cfg::get().output_dir, cfg::get().ds.reads.lib_count(),
-                                            cfg::get().ds.reference_genome,
+    debruijn_graph::conj_graph_pack conj_gp(cfg::get().K, cfg::get().output_dir, cfg::get().ds.reads.lib_count(), cfg::get().ds.reference_genome,
                                             !cfg::get().developer_mode, cfg::get().flanking_range);
     if (!cfg::get().developer_mode) {
         conj_gp.edge_pos.Detach();
@@ -55,7 +53,17 @@ void assemble_genome() {
     if (cfg::get().correct_mismatches)
         SPAdes.add(new debruijn_graph::MismatchCorrection());
     if (cfg::get().rr_enable) {
-        SPAdes.add(new debruijn_graph::PacBioAligning());
+        bool has_pacbio_libs = false;
+        for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+            io::LibraryType type = cfg::get().ds.reads[i].type();
+            if (type == io::LibraryType::PacBioReads) {
+                has_pacbio_libs = true;
+                break;
+            }
+        }
+        if (has_pacbio_libs) {
+            SPAdes.add(new debruijn_graph::PacBioAligning());
+        }
         SPAdes.add(new debruijn_graph::PairInfoCount());
         SPAdes.add(new debruijn_graph::DistanceEstimation());
         SPAdes.add(new debruijn_graph::RepeatResolution());

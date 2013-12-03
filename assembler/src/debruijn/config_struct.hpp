@@ -413,7 +413,6 @@ public:
     bool use_unipaths;
     std::string additional_contigs;
 
-    bool pacbio_test_on;
     bool coverage_based_rr_on;
     struct coverage_based_rr {
         double coverage_threshold_one_list;
