@@ -807,6 +807,7 @@ public:
             DEBUG("Candidate " << g_.int_id(iter->first) << " weight " << iter->second);
         }
         vector<pair<EdgeId, double> > sort_res = MapToSortVector(weights_cands);
+        DEBUG("sort res res " << sort_res.size() << " tr " << weight_priority_threshold_);
         if (sort_res.size() < 1 || sort_res[0].second < filtering_threshold_) {
             filtered_cands.clear();
         } else if (sort_res.size() > 1
@@ -821,6 +822,7 @@ public:
                 }
             }
         }
+        DEBUG("fil size " << filtered_cands.size());
         if (filtered_cands.size() > 1) {
             filtered_cands = SimpleScaffold(filtered_cands, support_paths_ends, sort_res);
         }
@@ -829,6 +831,9 @@ public:
             if (filtered_cands.find(it->e_) != filtered_cands.end()) {
                 result.push_back(*it);
             }
+        }
+        if (result.size() != 1) {
+            DEBUG("Long reads doesn't help =(");
         }
         return result;
     }

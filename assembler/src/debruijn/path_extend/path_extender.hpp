@@ -635,6 +635,10 @@ public:
 
     virtual bool ResolveShortLoop(BidirectionalPath& path) = 0;
 
+    virtual bool CanInvistigateShortLoop() const {
+        return false;
+    }
+
     virtual bool MakeGrowStep(BidirectionalPath& path) {
         if (InExistingLoop(path)) {
             return false;
@@ -648,11 +652,11 @@ public:
         if (DetectCycle(path)) {
             result = false;
         }
-        else if (investigateShortLoops_ && path.getLoopDetector().EdgeInShortLoop(path.Back())) {
+        else if (CanInvistigateShortLoop() && investigateShortLoops_ && path.getLoopDetector().EdgeInShortLoop(path.Back())) {
             DEBUG("Edge in short loop");
             result = ResolveShortLoop(path);
         }
-        else if (investigateShortLoops_ && path.getLoopDetector().PrevEdgeInShortLoop()) {
+        else if (CanInvistigateShortLoop() && investigateShortLoops_ && path.getLoopDetector().PrevEdgeInShortLoop()) {
             DEBUG("Prev edge in short loop");
             path.PopBack();
             result = ResolveShortLoop(path);
@@ -758,6 +762,10 @@ public:
             return true;
         }
         return false;
+    }
+
+    virtual bool CanInvistigateShortLoop() const {
+        return extensionChooser_->WeighConterBased();
     }
 
     virtual bool ResolveShortLoop(BidirectionalPath& path) {
