@@ -296,11 +296,11 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
             paths.SortByLength();
         }
         writer.writePaths(paths, output_dir + contigs_name);
-        writer.WritePathsToFASTG(paths, output_dir + "resulting_paths.fastg", output_dir + "resulting_paths.fasta");
+        writer.WritePathsToFASTG(paths, output_dir + "resulting_pe_paths.fastg", output_dir + "resulting_pe_paths.fasta");
         return;
     }
     writer.writePaths(paths, output_dir + "pe_paths.fasta");
-    writer.WritePathsToFASTG(paths, output_dir + "resulting_paths.fastg", output_dir + "resulting_paths.fasta");
+    writer.WritePathsToFASTG(paths, output_dir + "resulting_pe_paths.fastg", output_dir + "resulting_pe_paths.fasta");
 
 //MP
     INFO("mate pair path-extend started");
@@ -358,6 +358,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
     }
     DebugOutputPaths(writer, gp, output_dir, last_paths, "last_paths");
     writer.writePaths(last_paths, output_dir + contigs_name);
+    writer.WritePathsToFASTG(paths, output_dir + "resulting_mp_paths.fastg", output_dir + "resulting_mp_paths.fasta");
 
     INFO("Path extend repeat resolving tool finished");
     //TODO:DELETE ALL!!!!

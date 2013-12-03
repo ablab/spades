@@ -114,21 +114,20 @@ protected:
             }
 
             while (!path_queue.empty()) {
-                INFO("1");
                 BidirectionalPath* p = path_queue.front();
                 path_queue.pop();
                 string pname = GetContigName(p, ids, counter);
-                INFO(counter);
+                TRACE("Node " << counter);
                 ids.insert(make_pair(p, pname));
                 next_ids.insert(make_pair(p, vector<string>()));
 
                 v = g_.EdgeEnd(p->Back());
 
                 bool add_new_paths = (visited.count(v) == 0);
-                for (auto v_it = starting.find(v); v_it != starting.upper_bound(v); ++v_it) {
+                for (auto v_it = starting.lower_bound(v); v_it != starting.upper_bound(v); ++v_it) {
                     BidirectionalPath* next_path = v_it->second;
                     next_ids[p].push_back(GetContigName(p, ids, counter));
-                    INFO(counter);
+                    TRACE("Node " << counter);
                     if (add_new_paths)
                         path_queue.push(next_path);
                 }
