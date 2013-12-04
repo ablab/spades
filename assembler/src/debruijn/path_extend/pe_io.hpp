@@ -71,10 +71,15 @@ protected:
 
     void FindPathsOrder(PathContainer& paths, multimap<VertexId, BidirectionalPath*>& starting) const {
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
+            if (iter.get()->Size() == 0)
+                            continue;
+
             BidirectionalPath* path = iter.get();
+            DEBUG(g_.int_id(g_.EdgeStart(path->Front())) << " -> " << path->Size() << ", " << path->Length());
             starting.insert(make_pair(g_.EdgeStart(path->Front()), path));
 
             path = iter.getConjugate();
+            DEBUG(g_.int_id(g_.EdgeStart(path->Front())) << " -> " << path->Size() << ", " << path->Length());
             starting.insert(make_pair(g_.EdgeStart(path->Front()), path));
         }
     }
@@ -85,10 +90,14 @@ protected:
 
         int counter = 1;
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
+            if (iter.get()->Size() == 0)
+                continue;
+
             BidirectionalPath* p = iter.get();
             string name = io::MakeContigId(counter++, p->Length() + k_, p->Coverage(), p->GetId());
             ids.insert(make_pair(p, name));
             ids.insert(make_pair(iter.getConjugate(), name + "'"));
+            DEBUG(ids[iter.getConjugate()]);
         }
 
         multimap<VertexId, BidirectionalPath*> starting;
@@ -96,15 +105,23 @@ protected:
         queue<BidirectionalPath*> path_queue;
         FindPathsOrder(paths, starting);
 
+        DEBUG("RESULT");
+        for (auto it = starting.begin(); it != starting.end(); ++it){
+            BidirectionalPath* path = it->second;
+            DEBUG(g_.int_id(it->first) << " -> " << path->Size() << ", " << path->Length());
+        }
+
         auto it = starting.begin();
         for (; it != starting.end(); ++it) {
             VertexId v = it->first;
             if (visited.count(v) > 0)
                 continue;
 
+            DEBUG("VERTEX " << g_.int_id(v) );
             visited.insert(v);
             visited.insert(g_.conjugate(v));
             while (it != starting.upper_bound(v)) {
+                DEBUG(ids[it->second]);
                 path_queue.push(it->second);
                 ++it;
             }
@@ -115,12 +132,13 @@ protected:
                 next_ids.insert(make_pair(p, vector<string>()));
 
                 v = g_.EdgeEnd(p->Back());
-
                 bool add_new_paths = (visited.count(v) == 0);
+                DEBUG("Node " << ids[p] << " is followed by: ");
+                DEBUG("VERTEX " << g_.int_id(v));
                 for (auto v_it = starting.lower_bound(v); v_it != starting.upper_bound(v); ++v_it) {
                     BidirectionalPath* next_path = v_it->second;
-                    next_ids[p].push_back(ids[p]);
-                    TRACE("Node " << counter);
+                    INFO(ids[next_path]);
+                    next_ids[p].push_back(ids[next_path]);
                     if (add_new_paths)
                         path_queue.push(next_path);
                 }
