@@ -425,8 +425,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     if (cfg::get().use_scaffolder
             && cfg::get().pe_params.param_set.scaffolder_options.on) {
         for (size_t i = 0; i < gp.scaffolding_indices.size(); ++i) {
-            if ((cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd
-             || cfg::get().ds.reads[i].type() == io::LibraryType::MatePairs)
+            if ((cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd)
              && cfg::get().ds.reads[i].data().mean_insert_size > 0.0) {
                 PairedInfoLibrary* lib = MakeNewLib(gp.g, gp.scaffolding_indices, i);
                 scaff_libs.push_back(lib);

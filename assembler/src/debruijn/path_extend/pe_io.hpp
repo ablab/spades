@@ -79,25 +79,21 @@ protected:
         }
     }
 
-    string GetContigName(BidirectionalPath* p, map<BidirectionalPath*, string> ids, int& counter) {
-        auto it = ids.find(p);
-        if (it != ids.end())
-            return it->second;
-
-        string name = io::MakeContigId(counter++, p->Length() + k_, p->Coverage(), p->GetId());
-        ids.insert(make_pair(p, name));
-        return name;
-    }
-
     void ConstructFASTG(PathContainer& paths,
             map<BidirectionalPath*, string >& ids,
             map<BidirectionalPath*, vector<string> >& next_ids) {
 
+        int counter = 1;
+        for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
+            BidirectionalPath* p = iter.get();
+            string name = io::MakeContigId(counter++, p->Length() + k_, p->Coverage(), p->GetId());
+            ids.insert(make_pair(p, name));
+            ids.insert(make_pair(iter.getConjugate(), name + "'"));
+        }
+
         multimap<VertexId, BidirectionalPath*> starting;
         set<VertexId> visited;
         queue<BidirectionalPath*> path_queue;
-        int counter = 1;
-
         FindPathsOrder(paths, starting);
 
         auto it = starting.begin();
@@ -116,9 +112,6 @@ protected:
             while (!path_queue.empty()) {
                 BidirectionalPath* p = path_queue.front();
                 path_queue.pop();
-                string pname = GetContigName(p, ids, counter);
-                TRACE("Node " << counter);
-                ids.insert(make_pair(p, pname));
                 next_ids.insert(make_pair(p, vector<string>()));
 
                 v = g_.EdgeEnd(p->Back());
@@ -126,7 +119,7 @@ protected:
                 bool add_new_paths = (visited.count(v) == 0);
                 for (auto v_it = starting.lower_bound(v); v_it != starting.upper_bound(v); ++v_it) {
                     BidirectionalPath* next_path = v_it->second;
-                    next_ids[p].push_back(GetContigName(p, ids, counter));
+                    next_ids[p].push_back(ids[p]);
                     TRACE("Node " << counter);
                     if (add_new_paths)
                         path_queue.push(next_path);
