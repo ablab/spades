@@ -937,13 +937,11 @@ public:
     }
 private:
     EdgeContainer TryResolveBuldge(BidirectionalPath& p, EdgeContainer& edges) {
-        if (edges.size() == 0) {
+        if (edges.size() == 0)
             return edges;
-        }
         for (EdgeWithDistance e : edges) {
-            if (!InBuble(e.e_, g_)){
+            if (!InBuble(e.e_, g_))
                 return edges;
-            }
         }
         double max_w = 0.0;
         EdgeWithDistance max = *edges.begin();
@@ -957,7 +955,6 @@ private:
         EdgeContainer result;
         result.push_back(max);
         return result;
-
     }
     void DeleteNextPaths(set<BidirectionalPath*>& paths) {
         for (auto i = paths.begin(); i != paths.end(); ++i) {
@@ -1237,12 +1234,10 @@ private:
         DEBUG("common " << common << " not common " << not_common << " max common " << begin << " " << begin + max_end.Size());
         result_end.Print();
         EdgeContainer result;
-        //if (common > not_common) {
-            size_t to_add = begin;
-            size_t gap_length = result_end.Length() - result_end.LengthAt(to_add);
-            DEBUG(" edge to add " << g_.int_id(result_end.At(to_add)) << " with length " << gap_length);
-            result.push_back(EdgeWithDistance(result_end.At(to_add), gap_length));
-       // }
+        size_t to_add = begin;
+        size_t gap_length = result_end.Length() - result_end.LengthAt(to_add);
+        DEBUG(" edge to add " << g_.int_id(result_end.At(to_add)) << " with length " << gap_length);
+        result.push_back(EdgeWithDistance(result_end.At(to_add), gap_length));
         return result;
     }
 

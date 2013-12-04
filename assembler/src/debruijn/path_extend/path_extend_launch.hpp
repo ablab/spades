@@ -22,7 +22,6 @@
 #include "loop_traverser.hpp"
 #include "long_read_storage.hpp"
 #include "split_graph_pair_info.hpp"
-#include "mate_pair_scaffolding.hpp"
 #include "next_path_searcher.hpp"
 
 
@@ -205,29 +204,6 @@ inline vector<SimpleExtender *> MakeMPExtenders(const conj_graph_pack& gp,
     return mpPEs;
 }
 
-//TODO: delete
-inline void TestIdealInfo(conj_graph_pack& gp) {
-    map<int, size_t> distr;
-    distr[220] = 1;
-    IdealPairInfoCounter counter(gp.g, 220, 221, 100, distr);
-    /*for (int i = 0; i < 220; ++i){
-        size_t edge_len = 100;
-        counter.IdealPairedInfo(edge_len, edge_len, edge_len + i);
-    }*/
-    size_t edge_len = 100;
-    double w1 = counter.IdealPairedInfo(edge_len, edge_len, (int) edge_len, true);
-    size_t edge_len1_1 = 50;
-    size_t edge_len1_2 = 50;
-    double w2_1 = counter.IdealPairedInfo(edge_len, edge_len1_1, (int) edge_len, true);
-    double w2_2 = counter.IdealPairedInfo(edge_len, edge_len1_2, (int) (edge_len + edge_len1_2), true);
-    size_t edge_len2_1 = 20;
-    size_t edge_len2_2 = 30;
-    size_t edge_len2_3 = 50;
-    double w3_1 = counter.IdealPairedInfo(edge_len, edge_len2_1, (int)edge_len, true);
-    double w3_2 = counter.IdealPairedInfo(edge_len, edge_len2_2, (int)(edge_len + edge_len2_1), true);
-    double w3_3 = counter.IdealPairedInfo(edge_len, edge_len2_3, (int)(edge_len + edge_len2_1 + edge_len2_2), true);
-    DEBUG("TEST " << w1 << " " << w2_1 + w2_2 << " " << w3_1 + w3_2 + w3_3);
-}
 inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 		vector<PairedInfoLibrary *>& libs,
 		vector<PairedInfoLibrary *>& scaff_libs,
@@ -239,9 +215,6 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 		boost::optional<std::string> broken_contigs) {
 
 	INFO("Path extend repeat resolving tool started");
-
-	//TODO: delete
-	TestIdealInfo(gp);
 
 	make_dir(output_dir);
 	if (cfg::get().developer_mode) {

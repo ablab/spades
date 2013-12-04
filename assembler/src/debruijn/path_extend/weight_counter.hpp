@@ -490,7 +490,6 @@ private:
     const Graph& g_;
     PairedInfoLibrary& lib_;
     std::map<size_t, double> common_w_;
-    //FIXME: move to config
     size_t min_read_count_;
 protected:
     DECL_LOGGER("WeightCounter");

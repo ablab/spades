@@ -35,9 +35,7 @@ public:
 
     virtual void BackEdgeRemoved(EdgeId e, BidirectionalPath * path) = 0;
 
-    virtual ~PathListener() {
-
-    }
+    virtual ~PathListener() {}
 
 };
 
@@ -47,17 +45,9 @@ public:
     //Edge and its weight
     typedef std::map <EdgeId, double> AltenativeMap;
 
-protected:
-    size_t iteration_;
+    LoopDetectorData(size_t i): iteration_(i), alternatives_()  {}
 
-    AltenativeMap alternatives_;
-
-public:
-    LoopDetectorData(size_t i): iteration_(i), alternatives_()  {
-    }
-
-    LoopDetectorData(): alternatives_(){
-    }
+    LoopDetectorData(): alternatives_(){}
 
     LoopDetectorData(const LoopDetectorData& d) {
         iteration_ = d.iteration_;
@@ -85,18 +75,17 @@ public:
         if (alternatives_.size() != d.alternatives_.size()) {
             return false;
         }
-
         auto iter2 = d.alternatives_.begin();
         for (auto iter1 = alternatives_.begin(); iter2 != d.alternatives_.end() && iter1 != alternatives_.end(); ++iter1, ++iter2) {
-            if (iter1->first != iter2->first || iter1->second != iter2->second) {
+            if (iter1->first != iter2->first || iter1->second != iter2->second)
                 return false;
-            }
         }
-
         return true;
     }
 
 protected:
+    size_t iteration_;
+    AltenativeMap alternatives_;
     DECL_LOGGER("BidirectionalPath")
 };
 
@@ -117,6 +106,8 @@ protected:
 public:
     LoopDetector(const Graph& g_, BidirectionalPath * p_);
 
+    virtual ~LoopDetector();
+
     void Clear();
 
     virtual void FrontEdgeAdded(EdgeId e, BidirectionalPath * path, int gap);
@@ -126,10 +117,6 @@ public:
     virtual void FrontEdgeRemoved(EdgeId e, BidirectionalPath * path);
 
     virtual void BackEdgeRemoved(EdgeId e, BidirectionalPath * path);
-
-
-    virtual ~LoopDetector();
-
 
     void AddAlternative(EdgeId e, double w = 1);
 
@@ -158,6 +145,7 @@ public:
     void RemoveLoop(size_t skip_identical_edges, bool fullRemoval = true);
 
     bool EdgeInShortLoop(EdgeId e) const;
+
     bool PrevEdgeInShortLoop() const;
 
     void Print() const {
@@ -174,7 +162,6 @@ public:
 
 protected:
     DECL_LOGGER("BidirectionalPath")
-
 };
 
 
@@ -705,22 +692,19 @@ public:
                 if (end <= begin) {
                     continue;
                 }
-
                 while (begin < end && At(begin) == g_.conjugate(At(end))) {
                     begin++;
                     end--;
-                }
-                DEBUG("Found palindromic fragment from " << begin_pos << " to " << *end_pos);
+                }DEBUG("Found palindromic fragment from " << begin_pos << " to " << *end_pos);
                 Print();
                 VERIFY(*end_pos < Size());
                 size_t tail_size = Size() - *end_pos - 1;
                 size_t head_size = begin_pos;
                 size_t palindrom_half_size = begin - begin_pos;
                 size_t head_len = Length() - LengthAt(begin_pos);
-                size_t tail_len =
-                        *end_pos < Size() - 1 ? LengthAt(*end_pos + 1) : 0;
-                size_t palindrom_len = (size_t) max((int)LengthAt(begin_pos) - (int)LengthAt(begin), 0);
-                size_t between = (size_t) max(0, (int)LengthAt(begin) - (int)(end < Size() -1 ?LengthAt(end + 1) : 0));
+                size_t tail_len = *end_pos < Size() - 1 ? LengthAt(*end_pos + 1) : 0;
+                size_t palindrom_len = (size_t) max((int) LengthAt(begin_pos) - (int) LengthAt(begin), 0);
+                size_t between = (size_t) max(0, (int) LengthAt(begin) - (int) (end < Size() - 1 ? LengthAt(end + 1) : 0));
                 DEBUG("tail len " << tail_len << " head len " << head_len << " palindrom_len "<< palindrom_len << " between " << between);
                 if (palindrom_len < head_len && palindrom_len < tail_len) {
                     DEBUG("too big head and end");

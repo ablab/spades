@@ -90,7 +90,7 @@ public:
         }
         return true;
     }
-    //TODO:too much time
+
     bool IsCycled() {
         BidirectionalPath path = GetPrevPath(0);
         size_t identical_edges = 0;
@@ -120,15 +120,6 @@ public:
     bool EqualBegins(const BidirectionalPath& path, int pos) {
         BidirectionalPath p = this->GetPrevPath(0);
         return path_extend::EqualBegins(path, (size_t) pos, p, p.Size() - 1, true);
-        /*Edge* curr_edge = this;
-         while (pos >= 0 && curr_edge->GetId() == path.At(pos)
-         && curr_edge->prev_edge_) {
-         pos--;
-         curr_edge = curr_edge->prev_edge_;
-         }
-         if (pos >= 0 && curr_edge->GetId() != path.At(pos))
-         return false;
-         return true;*/
     }
     size_t Length() const {
         return dist_;
@@ -528,16 +519,10 @@ inline void NextPathSearcher::OrderScaffoldingCandidates(EdgeSet& candidate_set,
             p1->second.p_.Print();
         }
 
-    }INFO( "constructed paths for edge " << g_.int_id(current_path->GetId()) << " size " << constructed_paths.size());
-    for (auto p1 = constructed_paths.begin(); p1 != constructed_paths.end(); ++p1) {
-        p1->second.p_.Print();
     }
     RemoveRedundant(constructed_paths);
     JoinPaths(constructed_paths);
     RemoveRedundant(constructed_paths);
-
-    INFO( "after redundant deleting constructed paths for edge " << g_.int_id(current_path->GetId()) << " size " << constructed_paths.size());
-
     for (auto edge = constructed_paths.begin(); edge != constructed_paths.end(); ++edge) {
         to_add.push_back(current_path->AddOutEdge(edge->second.p_[0], edge->second.dist_));
         to_add.back() = to_add.back()->AddPath(edge->second.p_, 1);
