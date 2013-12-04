@@ -614,16 +614,20 @@ def main():
                             max_insert_size = float(estimated_params.__dict__["insert_size_" + str(id)])
                             target_paired_end_library_id = id
                     if max_insert_size == 0.0:
-                        if options_storage.continue_mode or options_storage.restart_from == 'mc':
-                            support.error("failed to continue the previous run! Please restart from previous stages or from the beginning.", log)
-                        support.error('Mismatch correction cannot be performed without at least one '
-                                      'paired-end library (estimated insert size is 0.0 for all libraries)!', log)
+                        support.warning('Failed to estimate insert size for all paired-end libraries. Starting Mismatch correction'
+                                        ' based on the first paired-end library and with default insert size.', log)
+                    #                        if options_storage.continue_mode or options_storage.restart_from == 'mc':
+                    #                            support.error("failed to continue the previous run! Please restart from previous stages or from the beginning.", log)
+                    #                        support.error('Mismatch correction cannot be performed without at least one '
+                    #                                      'paired-end library (estimated insert size is 0.0 for all libraries)!', log)
+                        target_paired_end_library_id = paired_end_libraries_ids[0]
+                    else:
+                        cfg["mismatch_corrector"].__dict__["insert-size"] = round(max_insert_size)
                     yaml_dirname = os.path.dirname(options_storage.dataset_yaml_filename)
                     cfg["mismatch_corrector"].__dict__["1"] = list(map(lambda x: os.path.join(yaml_dirname, x),
                         dataset_data[target_paired_end_library_id]['left reads']))
                     cfg["mismatch_corrector"].__dict__["2"] = list(map(lambda x: os.path.join(yaml_dirname, x),
                         dataset_data[target_paired_end_library_id]['right reads']))
-                    cfg["mismatch_corrector"].__dict__["insert-size"] = round(max_insert_size)
                     #TODO: add reads orientation
 
                     import corrector
