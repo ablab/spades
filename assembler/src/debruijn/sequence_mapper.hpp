@@ -258,6 +258,7 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
   const KmerSubs& kmer_mapper_;
   const GraphMappingPathFixer path_fixer_;
   size_t k_;
+  bool optimization_on_;
   //	mutable size_t mapped_;
   //	mutable size_t unmapped_;
 
@@ -293,6 +294,11 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
       }
     } else {
       VertexId v = g_.EdgeEnd(last_edge);
+
+      if(!optimization_on_)
+    	  if(g_.OutgoingEdgeCount(v) > 1)
+    		  return false;
+
       for (auto I = g_.out_begin(v), E = g_.out_end(v); I != E; ++I) {
         EdgeId edge = *I;
         if (g_.EdgeNucls(edge)[k_ - 1] == kmer[k_ - 1]) {
@@ -349,8 +355,10 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
  public:
   NewExtendedSequenceMapper(const Graph& g,
                             const Index& index,
-                            const KmerSubs& kmer_mapper) :
-      SequenceMapper<Graph>(g), index_(index), kmer_mapper_(kmer_mapper), path_fixer_(g), k_(g.k()+1) { }
+                            const KmerSubs& kmer_mapper,
+			    bool optimization_on = true) :
+      SequenceMapper<Graph>(g), index_(index), kmer_mapper_(kmer_mapper), path_fixer_(g), k_(g.k()+1),
+	optimization_on_(optimization_on) { }
 
   ~NewExtendedSequenceMapper() {
     //		TRACE("In destructor of sequence mapper");

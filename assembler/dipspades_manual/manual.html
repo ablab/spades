@@ -1,0 +1,183 @@
+<html>
+<head>
+    <title>DipSPAdes 1.0 Manual</title>
+    <style type="text/css">
+        .code {
+            background-color: lightgray;
+        }
+    </style>
+</head>
+
+<body>
+<h1>DipSPAdes 1.0 manual</h1>
+
+<ol>
+	<li><a href = "#sec1">What is DipSPAdes?</a></li>
+	<ol>
+		<li><a href = "#sec1.1">DipSPAdes pipeline</a></li>
+		<ol>
+			<li><a href = "#sec1.1.2">Polymorphism collapsing algorithm</a></li>
+			<li><a href = "#sec1.1.3">Consensus contigs construction</a></li>
+			<li><a href = "#sec1.1.4">Haplotype assembly and conservative regions search</a></li>
+		</ol>
+	</ol>
+
+	<li><a href = "#sec2">Running DipSPAdes</a></li>
+		<ol>
+			<li><a href = "#sec2.1">Running mode</a></li>
+			<ol>
+				<li><a href = "#sec2.1.1">Mode1</a></li>
+				<li><a href = "#sec2.1.2">Mode2</a></li>	
+			</ol>
+
+			<li><a href = "#sec2.2">Options</a></li>
+			<ol>
+				<li><a href = "#sec2.2.1">Basic options</a></li>
+				<li><a href = "#sec2.2.2">Mode options</a></li>
+				<li><a href = "#sec2.2.3">Additional options</a></li>
+				<li><a href = "#sec2.2.4">Examples</a></li>
+			</ol>
+
+			<li><a href = "#sec2.3">DipSPAdes output</a></li>
+			<ol>
+				<li><a href = "#sec2.3.1">Haplotype assembly output</a></li>
+			</ol>
+		</ol>
+
+	<li><a href = "#sec3">Feedback and bug reports</a></li>
+</ol>
+
+<a id = "sec1"></a>
+<h2>1. What is DipSPAdes?</h2>
+DipSPAdes is a mode of SPAdes genome assembler designed specifically for diploid highly polymorphic genomes. 
+It takes advantage of divergence of haplomes in repetitive genome regions. 
+DipSPAdes produces consensus contigs and performs haplotype assembly. 
+Algorithm can either take reads as input or use already assembled haplocontigs and construct consensus contiigs from them.
+
+<h3><a id = "sec1.1">1.1 DipSPAdes pipeline</a></h3>
+	<div style="text-align:center">
+		<img src="dipspades_pipeline.jpg" alt="" height = 350><br>
+		DipSPAdes pipeline.	
+	</div>
+	DipSPAdes consists of four main modules: 
+	<ol>
+		<li>Input data processing</li>
+		<li>Polymorphism collapsing algorithm</li>
+		<li>Consensus contigs construction</li>
+		<li>Haplotype assembly</li>
+	</ol>
+	The module "Input data processing" constructs de Bruijn graph from input data and computes haplocontigs if they were not specified. 
+After module "Polymorphism collapsing algorithm" collapses polymorphisms in the de Bruijn graph constructed at the previous step. 
+This module by default run in the fast mode that uses optimized strategy of bulge search and  optionally
+
+	<a id = "sec1.1.2"></a>
+	<h4>1.1.2 Polymorphism collapsing algorithm</h4>
+	<a id = "sec1.1.3"></a>
+	<h4>1.1.3 Consensus contigs construction</h4>
+	<a id = "sec1.1.4"></a>
+	<h4>1.1.4 Haplotype assembly and conservative regions search</h4>
+
+<a id = "sec2"></a>
+<h2>2. Running DipSPAdes</h2>
+	<h3><a id = "sec2.1">2.1 Running mode</a></h3>
+		<h4><a id = "sec2.1.1">2.1.1 Mode1: Haplocontigs construction</a></h4>
+		<h4><a id = "sec2.1.2">2.1.2 Mode2: Using preliminary computed haplocontigs</a></h4>
+
+<a id = "sec2.2"></a>
+<h3>2.2 Options</h2>
+To run DipSPAdes from the command line, type<br>
+<pre class="code">
+<code>
+dipspades.py [options] -o &lt;output_dir>
+</code>
+</pre><br>
+
+		<a id = "sec2.2.1"></a>
+		<h4>2.2.1 Basic options</h4>
+		<code>--test</code><br>
+		Run test example.<br>
+
+		<code>-o &lt;output_directory></code><br>
+		Output directory. Required parameter.<br>
+		
+		<code>--help</code><br>
+		List of all parameters<br>
+
+		<a id = "sec2.2.2"></a>
+		<h4>2.2.2 Mode options</a></h4>
+		Mode1: <br>
+		no specific options <br>
+		Mode2: <br>
+		<code>-h &lt;file_name></code><br>
+		File with haplocontigs in .fasta <br>
+
+		<a id = "sec2.2.3"></a>
+		<h4>2.2.3 Additional options</h4>
+		<code>--forced-collapsing</code><br> 
+		Hard-mode of polymorphism collapsing algorithm additionally searches for complex bulges but takes a significant times (see <a href = "#sec6">DipSPAdes Performance</a>) <br>
+		<code>--strong-alignment</code><br> 
+		Alignment of bulges sides <br>
+		<code>--allow-coverage-gaps</code><br>
+		<code>--min-overlap &lt;int> </code><br>
+		minimal allowable length of overlap in nt. Default value is 1500.
+
+		<a id = "sec2.2.4"></a>
+		<h4>2.2.4 Examples</h4>
+Running DipSPAdes with default values of additional options in mode 1:<br>
+<pre class="code">
+<code>
+dipspades.py --pe1-1 share/dipspades/test_dataset/left.fastq --pe1-2 share/dipspades/test_dataset/right.fastq -o dipspades_test
+</code>
+</pre><br>
+
+Running DipSPAdes with default values of additional options in mode 2:<br>
+<pre class="code">
+<code>
+dipspades.py -h velvet_test_haplocontigs.fasta -h abyss_test_haplocontigs.fasta -o dipspades_test
+</code>
+</pre></br>
+
+Running DipSPAdes with additional values in mode 1:<br>
+<pre class="code">
+<code>
+dipspades.py --pe1-1 share/dipspades/test_dataset/left.fastq --pe1-2 share/dipspades/test_dataset/right.fastq --min-overlap 5000 --strong-alignment -o dipspades_test
+</code>
+</pre><br>
+
+<a id = "sec2.3"></a>
+<h3>2.3 DipSPAdes output</h3>
+DipSPAdes produces the following output:<br>
+<ul>
+	<li><b>haplocontigs.fasta</b> - file with computed haplocontigs (<b>only in MODE 1</b>). </li>
+	<li><b>consensus_contigs.fasta</b> - file in  in fasta format. all set of obtained consensus contigs </li>
+	<li><b>consensus_paired_contigs.fasta</b> - file in  in fasta format. subset of obtained consensus contigs that contains only contigs which were constructed from haplocontigs with non-empty alignment to one the other haplocontig </li>
+	<li><b>haplotype_assembly.out</b> - file with result of haplotype assembly </li> 
+	<li><b>conservative_regions.fasta</b> - file in  in fasta format. conservative regions of haplocontigs </li>   
+	<li><b>possibly_conservative_regions.fasta</b> - file in  in fasta format. unresolved regions of haplocontigs that may be conservative or repetitive. </li>
+</ul>  
+
+<a id="sec2.3.1"></a>
+<h4>2.3.1 Haplotype assembly output</h4>
+File <b>haplotype_assembly.out</b> contains lines with the following structure:<br>
+<pre class = "code">
+<code>
+HAPLOCONTIG_NAME_1	HAPLOCONTIG_NAME_2
+</code>
+</pre>
+where HAPLOCONTIG_NAME_1 and HAPLOCONTIG_NAME_2 are names of homologous haplocontigs which correspond to different haplomes. Names correspond to names of contigs in <b>haplocontigs.fasta</b> in MODE 1 or files specified after option
+<code>-h</code>
+in MODE 2. 
+
+<!--
+<a id = "sec6"></a>
+<h2>DipSPAdes performance</h2>
+-->
+
+<a id = "sec3"></a>
+<h2>Feedback and bug reports</h2>
+Your comments, bug reports, and suggestions are very welcomed. <br> 
+If you have trouble running DipSPAdes, please provide us with the files params.txt and dipspades.log from the directory &lt; output_dir>. <br>
+Address for communications: yana.safonova@ablab.spbau.ru. <br>
+
+</body>
+</html>

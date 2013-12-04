@@ -181,6 +181,7 @@ struct debruijn_config {
         };
 
         struct bulge_remover {
+        	bool   enabled;
             double max_bulge_length_coefficient;
             size_t max_additive_length_coefficient;
             double max_coverage;
@@ -293,6 +294,13 @@ struct debruijn_config {
         double inv_density;
         double derivative_threshold;
     };
+
+	struct ambiguous_distance_estimator {
+		bool enabled;
+		double haplom_threshold;
+		double relative_length_threshold;
+		double relative_seq_threshold;
+	};
 
     struct pacbio_processor {
   //align and traverse.
@@ -484,6 +492,7 @@ public:
     construction con;
     distance_estimator de;
     smoothing_distance_estimator ade;
+    ambiguous_distance_estimator amb_de;
     pacbio_processor pb;
     bool use_scaffolder;
     bool mask_all;
@@ -495,6 +504,8 @@ public:
     kmer_coverage_model kcm;
 
     size_t flanking_range;
+
+    bool diploid_mode;
 };
 
 void load(debruijn_config& cfg, const std::string &filename);

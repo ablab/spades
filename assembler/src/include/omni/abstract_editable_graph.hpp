@@ -453,7 +453,7 @@ public:
 		return ss.str();
 	}
 
-	EdgeId MergePath(const vector<EdgeId>& path) {
+	EdgeId MergePath(const vector<EdgeId>& path, bool safe_merging = true) {
 		VERIFY(!path.empty());
 		for (size_t i = 0; i < path.size(); i++)
 			for (size_t j = i + 1; j < path.size(); j++) {
@@ -475,7 +475,7 @@ public:
 				++it) {
 			to_merge.push_back(&(data(*it)));
 		}
-		EdgeId new_edge = HiddenAddEdge(v1, v2, master_.MergeData(to_merge));
+		EdgeId new_edge = HiddenAddEdge(v1, v2, master_.MergeData(to_merge, safe_merging));
 		this->FireMerge(corrected_path, new_edge);
 
 		//		cerr << "Corrected " << PrintDetailedPath(corrected_path) << endl;

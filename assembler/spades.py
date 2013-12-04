@@ -261,6 +261,8 @@ def fill_cfg(options_to_parse, log):
             support.add_to_dataset('-1', os.path.join(spades_home, "test_dataset/ecoli_1K_1.fq.gz"), dataset_data)
             support.add_to_dataset('-2', os.path.join(spades_home, "test_dataset/ecoli_1K_2.fq.gz"), dataset_data)
             #break
+        elif opt == "--diploid":
+            options_storage.diploid_mode = True
         else:
             raise ValueError
 
@@ -342,6 +344,7 @@ def fill_cfg(options_to_parse, log):
             cfg["assembly"].__dict__["iterative_K"] = options_storage.K_MERS_SHORT
         cfg["assembly"].__dict__["careful"] = options_storage.careful
         cfg["assembly"].__dict__["disable_rr"] = options_storage.disable_rr
+        cfg["assembly"].__dict__["diploid_mode"] = options_storage.diploid_mode
         if options_storage.spades_heap_check:
             cfg["assembly"].__dict__["heap_check"] = options_storage.spades_heap_check
 

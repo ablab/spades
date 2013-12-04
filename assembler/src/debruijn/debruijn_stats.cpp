@@ -204,7 +204,8 @@ void CountPairedInfoStats(const Graph& g,
                           const PairedInfoIndexT<Graph>& etalon_index,
                           const string& output_folder) {
     PairedInfoIndexT<Graph> filtered_index = paired_index;
-    PairInfoWeightFilter<Graph>(g, 40).Filter(filtered_index);
+//    PairInfoWeightFilter<Graph>(g, 40).Filter(filtered_index);
+    PairInfoFilter<Graph>(PairInfoWeightChecker<Graph>(g, 40)).Filter(filtered_index);
     INFO("Counting paired info stats");
     EdgePairStat<Graph>(g, paired_index, output_folder).Count();
 

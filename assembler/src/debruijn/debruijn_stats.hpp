@@ -230,7 +230,7 @@ optional<runtime_k::RtSeq> FindCloseKP1mer(const conj_graph_pack &gp,
                 return optional<runtime_k::RtSeq>(kp1mer);
         }
     }
-    return none;
+    return boost::none;
 }
 
 template<class Graph>

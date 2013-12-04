@@ -122,50 +122,41 @@ public:
 };
 
 template<class Graph>
-class NeighbourIteratorFactory {
+class ForwardNeighbourIteratorFactory {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-protected:
 	const Graph &graph_;
 public:
-	NeighbourIteratorFactory(const Graph &graph) : graph_(graph) { }
-	virtual shared_ptr<NeighbourIterator<Graph> > CreateIterator(VertexId vertex) = 0;
-	virtual ~NeighbourIteratorFactory() { }
-};
-
-template<class Graph>
-class ForwardNeighbourIteratorFactory : public NeighbourIteratorFactory<Graph>{
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-public:
-	ForwardNeighbourIteratorFactory(const Graph &graph) :
-		NeighbourIteratorFactory<Graph>(graph) { }
-	shared_ptr<NeighbourIterator<Graph> > CreateIterator(VertexId vertex){
-		return shared_ptr<NeighbourIterator<Graph> >(new ForwardNeighbourIterator<Graph>(this->graph_, vertex));
+	typedef ForwardNeighbourIterator<Graph> NeighbourIterator;
+	ForwardNeighbourIteratorFactory(const Graph &graph) : graph_(graph) { }
+	NeighbourIterator CreateIterator(VertexId vertex){
+		return NeighbourIterator(graph_, vertex);
 	}
 };
 
 template<class Graph>
-class BackwardNeighbourIteratorFactory : public NeighbourIteratorFactory<Graph>{
+class BackwardNeighbourIteratorFactory {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
+	const Graph &graph_;
 public:
-	BackwardNeighbourIteratorFactory(const Graph &graph) :
-		NeighbourIteratorFactory<Graph>(graph) { }
-	shared_ptr<NeighbourIterator<Graph> > CreateIterator(VertexId vertex){
-		return shared_ptr<NeighbourIterator<Graph> >(new BackwardNeighbourIterator<Graph>(this->graph_, vertex));
+	typedef BackwardNeighbourIterator<Graph> NeighbourIterator;
+	BackwardNeighbourIteratorFactory(const Graph &graph) : graph_(graph) { }
+	NeighbourIterator CreateIterator(VertexId vertex){
+		return NeighbourIterator(graph_, vertex);
 	}
 };
 
 template<class Graph>
-class UnorientedNeighbourIteratorFactory : public NeighbourIteratorFactory<Graph>{
+class UnorientedNeighbourIteratorFactory {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
+	const Graph &graph_;
 public:
-	UnorientedNeighbourIteratorFactory(const Graph &graph) :
-		NeighbourIteratorFactory<Graph>(graph) { }
-	shared_ptr<NeighbourIterator<Graph> > CreateIterator(VertexId vertex){
-		return shared_ptr<NeighbourIterator<Graph> >(new UnorientedNeighbourIterator<Graph>(this->graph_, vertex));
+	typedef UnorientedNeighbourIterator<Graph> NeighbourIterator;
+	UnorientedNeighbourIteratorFactory(const Graph &graph) : graph_(graph) { }
+	NeighbourIterator CreateIterator(VertexId vertex){
+		return NeighbourIterator(graph_, vertex);
 	}
 };
 

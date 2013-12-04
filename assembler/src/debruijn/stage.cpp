@@ -127,9 +127,6 @@ void StageManager::run(debruijn_graph::conj_graph_pack& g,
         if (saves_policy_.make_saves_)
             stage->save(g, saves_policy_.save_to_);
     }
-
-    // For informing spades.py about estimated params
-    debruijn_graph::write_lib_data(cfg::get().output_dir);
 }
 
 }

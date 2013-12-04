@@ -13,7 +13,6 @@ project_name    TOY_DATASET
 dataset         ./configs/debruijn/datasets_archive/toy.info
 log_filename    log.properties
 
-
 output_base	      ./data/debruijn/
 
 additional_contigs	tmp_contigs.fasta
@@ -27,7 +26,6 @@ temp_bin_reads_dir	.bin_reads/
 max_threads		8
 max_memory      120; in Gigabytes
 buffer_size	      	512; in Megabytes
-
 
 entry_point construction
 ;entry_point simplification
@@ -46,6 +44,9 @@ always_single_reads_rr false
 
 ;use single reads for rr 
 single_reads_rr true
+
+; diploid mode
+diploid_mode false
 
 ; The following parameters are used ONLY if developer_mode is true
 

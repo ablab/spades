@@ -484,7 +484,6 @@ class DataScanner {
                     PairedInfoIndexT<Graph>& paired_index,
                     bool force_exists = true) {
         typedef typename Graph::EdgeId EdgeId;
-        int read_count;
         FILE* file = fopen((file_name + ".prd").c_str(), "r");
         INFO((file_name + ".prd"));
         if (force_exists) {
@@ -496,7 +495,7 @@ class DataScanner {
         INFO("Reading paired info from " << file_name << " started");
 
         size_t paired_count;
-        read_count = fscanf(file, "%zu \n", &paired_count);
+        int read_count = fscanf(file, "%zu \n", &paired_count);
         VERIFY(read_count == 1);
         for (size_t i = 0; i < paired_count; i++) {
             size_t first_real_id, second_real_id;
@@ -518,13 +517,12 @@ class DataScanner {
 
     void LoadPositions(const string& file_name,
                        EdgesPositionHandler<Graph>& edge_pos) {
-        int read_count;
         FILE* file = fopen((file_name + ".pos").c_str(), "r");
         VERIFY(file != NULL);
         INFO("Reading edges positions, " << file_name <<" started");
         VERIFY(file != NULL);
         size_t pos_count;
-        read_count = fscanf(file, "%zu\n", &pos_count);
+        int read_count = fscanf(file, "%zu\n", &pos_count);
         VERIFY(read_count == 1);
         for (size_t i = 0; i < pos_count; i++) {
             size_t edge_real_id, pos_info_count;
@@ -585,7 +583,6 @@ class ConjugateDataScanner: public DataScanner<Graph> {
   public:
     /*virtual*/
     void LoadGraph(const string& file_name) {
-        int flag;
         INFO("Trying to read conjugate de bruijn graph from " << file_name << ".grp");
         FILE* file = fopen((file_name + ".grp").c_str(), "r");
         VERIFY_MSG(file != NULL, "Couldn't find file " << (file_name + ".grp"));
@@ -596,7 +593,7 @@ class ConjugateDataScanner: public DataScanner<Graph> {
         INFO("Reading conjugate de bruijn  graph from " << file_name << " started");
         size_t vertex_count;
         size_t edge_count;
-        flag = fscanf(file, "%zu %zu \n", &vertex_count, &edge_count);
+        int flag = fscanf(file, "%zu %zu \n", &vertex_count, &edge_count);
         VERIFY(flag == 2);
         for (size_t i = 0; i < vertex_count; i++) {
             size_t vertex_real_id, conjugate_id;

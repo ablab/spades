@@ -212,6 +212,7 @@ inline bool IsSymmetric(PairInfo<EdgeId> const& pi) {
   return pi.first == pi.second && math::eq(pi.d(), 0.);
 }
 
+//AntonB: Why is iterator and its value combined in single class? This is not logical.
 // new map { EdgeId -> (EdgeId -> (d, weight, var)) }
 template<class Graph>
 class PairedInfoIndexT: public GraphActionHandler<Graph> {

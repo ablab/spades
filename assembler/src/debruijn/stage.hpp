@@ -104,6 +104,7 @@ class CompositeStage : public CompositeStageBase {
 };
 
 class StageManager {
+
   public:
     struct SavesPolicy {
         bool make_saves_;

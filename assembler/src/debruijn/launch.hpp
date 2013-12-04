@@ -74,6 +74,9 @@ void assemble_genome() {
 
     SPAdes.run(conj_gp, cfg::get().entry_point.c_str());
 
+    // For informing spades.py about estimated params
+    debruijn_graph::write_lib_data(cfg::get().output_dir);
+
     INFO("SPAdes finished");
 }
 

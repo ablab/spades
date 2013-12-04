@@ -346,6 +346,9 @@ bool RemoveBulges(
     boost::function<void(EdgeId)> removal_handler = 0,
     size_t additional_length_bound = 0) {
 
+	if(!br_config.enabled)
+		return true;
+
     INFO("Removing bulges");
     size_t max_length = LengthThresholdFinder::MaxBulgeLength(
         g.k(), br_config.max_bulge_length_coefficient,

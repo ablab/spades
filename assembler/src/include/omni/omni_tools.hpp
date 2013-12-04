@@ -28,6 +28,7 @@ class Compressor {
 	typedef typename Graph::VertexId VertexId;
 
 	Graph &graph_;
+	bool safe_merging_;
 
 	bool GoUniqueWayForward(EdgeId &e) {
 		VertexId u = graph_.EdgeEnd(e);
@@ -66,7 +67,7 @@ class Compressor {
 		} while (GoUniqueWayForward(e) && e != start_edge
 				&& !graph_.RelatedVertices(graph_.EdgeStart(e),
 						graph_.EdgeEnd(e)));
-		EdgeId new_edge = graph_.MergePath(mergeList);
+		EdgeId new_edge = graph_.MergePath(mergeList, safe_merging_);
 		TRACE("Vertex compressed and is now part of edge "
 						<< graph_.str(new_edge));
 		return new_edge;
@@ -85,8 +86,9 @@ class Compressor {
 		return true;
 	}
 public:
-	Compressor(Graph &graph) :
-			graph_(graph) {
+	Compressor(Graph &graph, bool safe_merging = true) :
+			graph_(graph),
+			safe_merging_(safe_merging) {
 	}
 
 	/**

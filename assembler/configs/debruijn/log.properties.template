@@ -1,5 +1,12 @@
 default=INFO
 
+PolymorphicBulgeRemover=TRACE
+BulgeSplitter=TRACE
+SubpathSplitter=TRACE
+ComplexBulgeGluer=TRACE
+GluingVericesDefiner=TRACE
+GluingVericesDefinerResults=TRACE
+
 #DeBruijnGraphConstructor=TRACE
 #PairedHandlerApplier=TRACE
 #QualityEdgeLocalityPrintingRH=TRACE

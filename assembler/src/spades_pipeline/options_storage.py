@@ -49,6 +49,7 @@ only_assembler = False
 disable_gzip_output = None
 disable_rr = None
 careful = None
+diploid_mode = False
 
 # advanced options
 continue_mode = False
@@ -91,7 +92,7 @@ long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\
                "help test debug debug:false reference= config-file= dataset= "\
                "bh-heap-check= spades-heap-check= help-hidden "\
                "mismatch-correction mismatch-correction:false careful careful:false "\
-               "continue restart-from=".split()
+               "continue restart-from= diploid".split()
 short_options = "o:1:2:s:k:t:m:i:h"
 
 # adding multiple paired-end, mate-pair and other (long reads) libraries support
