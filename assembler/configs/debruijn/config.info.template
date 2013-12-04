@@ -67,11 +67,8 @@ compute_paths_number false
 ; iterative mode switcher, activates additional contigs usage
 use_additional_contigs false
 
-; enable advanced ec removal algo
-topology_simplif_enabled true
-
 ; use unipaths as additional contigs instead of just graph edges
-use_unipaths false
+use_unipaths true
 
 ; set it true to separate the clusters after de stage
 divide_clusters false
@@ -131,6 +128,11 @@ gap_closer
     in_simplify    		false
     after_simplify 		true
     weight_threshold		2.0
+}
+
+kmer_coverage_model {
+    probability_threshold 0.05
+    strong_probability_threshold 0.999
 }
 
 pacbio_processor

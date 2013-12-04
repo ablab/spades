@@ -389,6 +389,16 @@ void RemoveLowCoverageEdges(
 }
 
 template<class Graph>
+void RemoveSelfConjugateEdges(
+    Graph &g, size_t max_length, double max_coverage,
+                boost::function<void(EdgeId)> removal_handler = 0) {
+    INFO("Removing short low covered self-conjugate connections");
+    LowCoveredSelfConjEdgeRemovingAlgorithm<Graph> algo(g, max_length, max_coverage, removal_handler);
+    algo.Process();
+    DEBUG("Short low covered self-conjugate connections removed");
+}
+
+template<class Graph>
 bool RemoveRelativelyLowCoverageEdges(
     Graph &g,
     const debruijn_config::simplification::relative_coverage_ec_remover& rec_config,
@@ -553,7 +563,7 @@ bool FinalRemoveErroneousEdges(
         g, cfg::get().simp.rec, removal_handler,
         determined_coverage_threshold);
 
-    if (cfg::get().topology_simplif_enabled) {
+    if (cfg::get().simp.topology_simplif_enabled) {
         changed |= AllTopology(g, removal_handler, iteration);
         changed |= MaxFlowRemoveErroneousEdges(g, cfg::get().simp.mfec,
                                                removal_handler);
@@ -617,7 +627,7 @@ void PostSimplification(conj_graph_pack& gp,
         enable_flag = false;
 
         INFO("Iteration " << iteration);
-        if (cfg::get().topology_simplif_enabled) {
+        if (cfg::get().simp.topology_simplif_enabled) {
             enable_flag |= TopologyClipTips(gp.g, cfg::get().simp.ttc, cfg::get().ds.RL(),
                                             removal_handler);
         }
@@ -665,6 +675,8 @@ void SimplifyGraph(conj_graph_pack &gp,
     printer(ipp_before_simplification);
     DEBUG("Graph simplification started");
 
+    RemoveSelfConjugateEdges(gp.g, 100, 1., removal_handler);
+
     if (cfg::get().ds.single_cell)
         PreSimplification(gp, removal_handler, printer, iteration_count,
                           determined_coverage_threshold);
@@ -680,7 +692,7 @@ void SimplifyGraph(conj_graph_pack &gp,
                        determined_coverage_threshold);
 
     // This should be put into PostSimplification when(if) flanking coverage will be rewritten.
-    if (cfg::get().topology_simplif_enabled) {
+    if (cfg::get().simp.topology_simplif_enabled) {
         RemoveHiddenEC(gp.g, gp.flanking_cov, determined_coverage_threshold, cfg::get().simp.her, removal_handler);
     }
 }

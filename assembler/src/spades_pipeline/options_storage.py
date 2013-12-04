@@ -1,4 +1,13 @@
+#!/usr/bin/env python
+
+############################################################################
+# Copyright (c) 2011-2013 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
 import sys
+import support
 
 SUPPORTED_PYTHON_VERSIONS = ['2.4', '2.5', '2.6', '2.7', '3.2', '3.3']
 # allowed reads extensions for BayesHammer and for thw whole SPAdes pipeline
@@ -11,9 +20,21 @@ ALLOWED_READS_EXTENSIONS += [x + '.gz' for x in ALLOWED_READS_EXTENSIONS]
 # we support up to MAX_LIBS_NUMBER paired-end libs and MAX_LIBS_NUMBER mate-pair libs
 MAX_LIBS_NUMBER = 5
 
-### DEFAULT VALUES:
+#other constants
+MIN_K = 1
+MAX_K = 127
+
+#default values constants
+THREADS = 16
+MEMORY = 250
+K_MERS_SHORT = [21,33,55]
+K_MERS_150 = [21,33,55,77]
+K_MERS_250 = [21,33,55,77,99,127]
+ITERATIONS = 1
+
+### START OF OPTIONS
 # basic options
-output_dir = ''
+output_dir = None
 single_cell = False
 
 # pipeline options
@@ -25,25 +46,36 @@ careful = False
 
 # advanced options
 continue_mode = False
-continue_from = None
-dataset_yaml_filename = ''
-threads = 16
-memory = 250
-tmp_dir = ''
-k_mers = None
-k_mers_short = [21,33,55]
-k_mers_150 = [21,33,55,77]
-k_mers_250 = [21,33,55,77,99,127]
-qvoffset = None # auto-detect by default
 developer_mode = False
+dataset_yaml_filename = None
+threads = None
+memory = None
+tmp_dir = None
+k_mers = None
+qvoffset = None # auto-detect by default
 
 # hidden options
 mismatch_corrector = False
-reference = ''
-iterations = 1
-bh_heap_check = ''
-spades_heap_check = ''
-### END OF DEFAULT VALUES
+reference = None
+iterations = None
+bh_heap_check = None
+spades_heap_check = None
+### END OF OPTIONS
+
+# for restarting SPAdes
+restart_from = None
+restart_careful = None
+restart_mismatch_corrector = None
+restart_disable_gzip_output = None
+restart_disable_rr = None
+restart_threads = None
+restart_memory = None
+restart_tmp_dir = None
+restart_k_mers = None
+restart_qvoffset = None
+restart_developer_mode = None
+restart_reference = None
+
 dict_of_prefixes = dict()
 
 # list of spades.py options
@@ -51,7 +83,7 @@ long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\
                "only-error-correction only-assembler "\
                "disable-gzip-output disable-rr help test debug reference= "\
                "bh-heap-check= spades-heap-check= help-hidden "\
-               "config-file= dataset= mismatch-correction careful continue continue-from=".split()
+               "config-file= dataset= mismatch-correction careful continue restart-from=".split()
 short_options = "o:1:2:s:k:t:m:i:h"
 
 # adding multiple paired-end and mate-pair libraries support
@@ -113,7 +145,7 @@ def usage(spades_version, show_hidden=False):
     sys.stderr.write("--careful\t\ttries to reduce number"\
                          " of mismatches and short indels" + "\n")
     sys.stderr.write("--continue\t\tcontinue run from the last available check-point" + "\n")
-    sys.stderr.write("--continue-from\t<cp>\tcontinue run from the specified check-point ('ec', 'as', 'k<int>', 'mc')" + "\n")
+    sys.stderr.write("--restart-from\t<cp>\trestart run with updated options and from the specified check-point ('ec', 'as', 'k<int>', 'mc')" + "\n")
     sys.stderr.write("--disable-gzip-output\tforces error correction not to"\
                          " compress the corrected reads" + "\n")
     sys.stderr.write("--disable-rr\t\tdisables repeat resolution stage"\
@@ -123,16 +155,16 @@ def usage(spades_version, show_hidden=False):
     sys.stderr.write("Advanced options:" + "\n")
     sys.stderr.write("--dataset\t<filename>\tfile with dataset description in YAML format" + "\n")
     sys.stderr.write("-t/--threads\t<int>\t\tnumber of threads" + "\n")
-    sys.stderr.write("\t\t\t\t[default: %s]\n" % threads)
+    sys.stderr.write("\t\t\t\t[default: %s]\n" % THREADS)
     sys.stderr.write("-m/--memory\t<int>\t\tRAM limit for SPAdes in Gb"\
                          " (terminates if exceeded)" + "\n")
-    sys.stderr.write("\t\t\t\t[default: %s]\n" % memory)
+    sys.stderr.write("\t\t\t\t[default: %s]\n" % MEMORY)
     sys.stderr.write("--tmp-dir\t<dirname>\tdirectory for read error correction"\
                          " temporary files" + "\n")
     sys.stderr.write("\t\t\t\t[default: <output_dir>/corrected/tmp]" + "\n")
     sys.stderr.write("-k\t\t<int,int,...>\tcomma-separated list of k-mer sizes"\
                          " (must be odd and" + "\n")
-    sys.stderr.write("\t\t\t\tless than 128) [default: " + ",".join(map(str, k_mers_short)) + "]" + "\n")
+    sys.stderr.write("\t\t\t\tless than " + str(MAX_K + 1) + ") [default: 'auto']" + "\n") # ",".join(map(str, k_mers_short))
     sys.stderr.write("--phred-offset\t<33 or 64>\tPHRED quality offset in the"\
                          " input reads (33 or 64)" + "\n")
     sys.stderr.write("\t\t\t\t[default: auto-detect]" + "\n")
@@ -146,7 +178,7 @@ def usage(spades_version, show_hidden=False):
         sys.stderr.write("--reference\t<filename>\tfile with reference for deep analysis"\
                              " (only in debug mode)" + "\n")
         sys.stderr.write("-i/--iterations\t<int>\t\tnumber of iterations for read error"\
-                             " correction [default: %s]\n" % iterations)
+                             " correction [default: %s]\n" % ITERATIONS)
         sys.stderr.write("--bh-heap-check\t\t<value>\tsets HEAPCHECK environment variable"\
                              " for BayesHammer" + "\n")
         sys.stderr.write("--spades-heap-check\t<value>\tsets HEAPCHECK environment variable"\
@@ -160,9 +192,97 @@ def auto_K_allowed():
     return not k_mers and not single_cell  # kmers were set by default and not SC
 
 
+def set_default_values():
+    global threads
+    global memory
+    global iterations
+
+    if not threads:
+        threads = THREADS
+    if not memory:
+        memory = MEMORY
+    if not iterations:
+        iterations = ITERATIONS
+
+
 def set_test_options():
     global output_dir
     global single_cell
 
     output_dir = 'spades_test'
     single_cell = False
+
+
+def save_restart_options(log):
+    if dataset_yaml_filename:
+        support.error("you can not specify --dataset with --restart-from option!", log)
+    if single_cell:
+        support.error("you can not specify --sc with --restart-from option!", log)
+    if only_assembler:
+        support.error("you can not specify --only-assembler with --restart-from option!", log)
+    if only_error_correction:
+        support.error("you can not specify --only-error-correction with --restart-from option!", log)
+
+    global restart_k_mers
+    global restart_careful
+    global restart_mismatch_corrector
+    global restart_disable_gzip_output
+    global restart_disable_rr
+    global restart_threads
+    global restart_memory
+    global restart_tmp_dir
+    global restart_qvoffset
+    global restart_developer_mode
+    global restart_reference
+
+    restart_k_mers = k_mers
+    restart_careful = careful
+    restart_mismatch_corrector = mismatch_corrector
+    restart_disable_gzip_output = disable_gzip_output
+    restart_disable_rr = disable_rr
+    restart_threads = threads
+    restart_memory = memory
+    restart_tmp_dir = tmp_dir
+    restart_qvoffset = qvoffset
+    restart_developer_mode = developer_mode
+    restart_reference = reference
+
+
+def load_restart_options():
+    global k_mers
+    global careful
+    global mismatch_corrector
+    global disable_gzip_output
+    global disable_rr
+    global threads
+    global memory
+    global tmp_dir
+    global qvoffset
+    global developer_mode
+    global reference
+
+    if restart_k_mers:
+        if restart_k_mers == 'auto':
+            k_mers = None  # set by default
+        else:
+            k_mers = restart_k_mers
+    if restart_careful:
+        careful = restart_careful
+    if restart_mismatch_corrector:
+        mismatch_corrector = restart_mismatch_corrector
+    if disable_gzip_output:
+        disable_gzip_output = restart_disable_gzip_output
+    if restart_disable_rr:
+        disable_rr = restart_disable_rr
+    if restart_threads:
+        threads = restart_threads
+    if restart_memory:
+        memory = restart_memory
+    if restart_tmp_dir:
+        tmp_dir = restart_tmp_dir
+    if restart_qvoffset:
+        qvoffset = restart_qvoffset
+    if restart_developer_mode:
+        developer_mode = restart_developer_mode
+    if restart_reference:
+        reference = restart_reference

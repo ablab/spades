@@ -2,6 +2,9 @@
 
 default
 {
+    ; enable advanced ec removal algo
+    topology_simplif_enabled false
+
 	; tip clipper:
 	tc
 	{
@@ -117,6 +120,9 @@ default
 
 sc
 {
+    ; enable advanced ec removal algo
+    topology_simplif_enabled true 
+
 	; tip clipper:
 	tc
 	{

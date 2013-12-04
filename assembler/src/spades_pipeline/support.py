@@ -461,6 +461,13 @@ def rm_libs_by_type(dataset_data, types):
     return dataset_data
 
 
+def dataset_is_empty(dataset_data):
+    for reads_library in dataset_data:
+        if reads_library:
+            return False
+    return True
+
+
 def dataset_has_only_mate_pairs_libraries(dataset_data):
     for reads_library in dataset_data:
         if reads_library['type'] != 'mate-pairs':

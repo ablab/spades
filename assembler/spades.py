@@ -173,12 +173,16 @@ def fill_cfg(options_to_parse, log):
             support.add_to_dataset(opt, arg, dataset_data)
 
         elif opt == '-k':
-            options_storage.k_mers = list(map(int, arg.split(",")))
-            for k in options_storage.k_mers:
-                if k > 127:
-                    support.error('wrong k value ' + str(k) + ': all k values should be less than 128', log)
-                if k % 2 == 0:
-                    support.error('wrong k value ' + str(k) + ': all k values should be odd', log)
+            if arg == 'auto':
+                options_storage.k_mers = arg
+            else:
+                options_storage.k_mers = list(map(int, arg.split(",")))
+                for k in options_storage.k_mers:
+                    if k < options_storage.MIN_K or k > options_storage.MAX_K:
+                        support.error('wrong k value ' + str(k) + ': all k values should be between %d and %d' %
+                                                                  (options_storage.MIN_K, options_storage.MAX_K), log)
+                    if k % 2 == 0:
+                        support.error('wrong k value ' + str(k) + ': all k values should be odd', log)
 
         elif opt == "--sc":
             options_storage.single_cell = True
@@ -203,11 +207,11 @@ def fill_cfg(options_to_parse, log):
 
         elif opt == "--continue":
             options_storage.continue_mode = True
-        elif opt == "--continue-from":
+        elif opt == "--restart-from":
             if arg not in ['ec', 'as', 'mc'] and not arg.startswith('k'):
-                support.error("wrong value for --continue-from option: " + arg + " (only 'ec', 'as', 'k<int>', 'mc' are available)", log)
+                support.error("wrong value for --restart-from option: " + arg + " (only 'ec', 'as', 'k<int>', 'mc' are available)", log)
             options_storage.continue_mode = True
-            options_storage.continue_from = arg
+            options_storage.restart_from = arg
 
         elif opt == '-t' or opt == "--threads":
             options_storage.threads = int(arg)
@@ -252,8 +256,15 @@ def fill_cfg(options_to_parse, log):
         support.error("the output_dir is not set! It is a mandatory parameter (-o output_dir).", log)
     if not os.path.isdir(options_storage.output_dir):
         if options_storage.continue_mode:
-            support.error("the output_dir should exist for --continue!", log)
+            support.error("the output_dir should exist for --continue and for --restart-from!", log)
         os.makedirs(options_storage.output_dir)
+    if options_storage.restart_from:
+        if options_storage.continue_mode: # saving parameters specified with --restart-from
+            if not support.dataset_is_empty(dataset_data):
+                support.error("you can not specify reads with --restart-from option!", log)
+            options_storage.save_restart_options(log)
+        else:  # overriding previous run parameters
+            options_storage.load_restart_options()
     if options_storage.continue_mode:
         return None, None
 
@@ -274,6 +285,7 @@ def fill_cfg(options_to_parse, log):
     if support.dataset_has_only_mate_pairs_libraries(dataset_data):
         support.error('you should specify at least one paired-end or unpaired library (only mate-pairs libraries were found)!')
 
+    options_storage.set_default_values()
     ### FILLING cfg
     cfg["common"] = empty_config()
     cfg["dataset"] = empty_config()
@@ -314,7 +326,7 @@ def fill_cfg(options_to_parse, log):
         if options_storage.k_mers:
             cfg["assembly"].__dict__["iterative_K"] = options_storage.k_mers
         else:
-            cfg["assembly"].__dict__["iterative_K"] = options_storage.k_mers_short
+            cfg["assembly"].__dict__["iterative_K"] = options_storage.K_MERS_SHORT
         cfg["assembly"].__dict__["careful"] = options_storage.careful
         cfg["assembly"].__dict__["disable_rr"] = options_storage.disable_rr
         if options_storage.spades_heap_check:
@@ -331,26 +343,31 @@ def fill_cfg(options_to_parse, log):
     return cfg, dataset_data
 
 
-def check_cfg_for_continue_from(cfg):
-    if options_storage.continue_from == 'ec' and ("error_correction" not in cfg):
-        support.error("failed to continue from read error correction because this stage was not specified in the original run!")
-    if options_storage.continue_from == 'mc' and ("mismatch_corrector" not in cfg):
-        support.error("failed to continue from mismatch correction because this stage was not specified in the original run!")
-    if options_storage.continue_from == 'as' or options_storage.continue_from.startswith('k'):
+def check_cfg_for_restart_from(cfg):
+    if options_storage.restart_from == 'ec' and ("error_correction" not in cfg):
+        support.error("failed to restart from read error correction because this stage was not specified!")
+    if options_storage.restart_from == 'mc' and ("mismatch_corrector" not in cfg):
+        support.error("failed to restart from mismatch correction because this stage was not specified!")
+    if options_storage.restart_from == 'as' or options_storage.restart_from.startswith('k'):
         if "assembly" not in cfg:
-            support.error("failed to continue from assembling because this stage was not specified in the original run!")
-        if options_storage.continue_from.startswith('k'):
+            support.error("failed to restart from assembling because this stage was not specified!")
+        if options_storage.restart_from.startswith('k'):
             correct_k = False
             k_to_check = options_storage.k_mers
             if not k_to_check:
-                k_to_check = list(set(options_storage.k_mers_short + options_storage.k_mers_150 + options_storage.k_mers_250))
+                if options_storage.auto_K_allowed():
+                    k_to_check = list(set(options_storage.K_MERS_SHORT + options_storage.K_MERS_150 + options_storage.K_MERS_250))
+                else:
+                    k_to_check = options_storage.K_MERS_SHORT
             for k in k_to_check:
-                if "k%d" % k == options_storage.continue_from:
+                if options_storage.restart_from == ("k%d" % k) or options_storage.restart_from.startswith("k%d:" % k):
                     correct_k = True
                     break
             if not correct_k:
-                support.error("failed to continue from K=%s because this K was not specified in the original run "
-                              "and could not be set automatically!" % options_storage.continue_from[1:])
+                k_str = options_storage.restart_from[1:]
+                if k_str.find(":") != -1:
+                    k_str = k_str[:k_str.find(":")]
+                support.error("failed to restart from K=%s because this K was not specified!" % k_str)
 
 
 def get_options_from_params(params_filename):
@@ -390,8 +407,8 @@ def main():
         if not options:
             support.error("failed to parse command line of the previous run! Please restart from the beginning.")
         cfg, dataset_data = fill_cfg(options, log)
-        if options_storage.continue_from:
-            check_cfg_for_continue_from(cfg)
+        if options_storage.restart_from:
+            check_cfg_for_restart_from(cfg)
         options_storage.continue_mode = True
 
     log_filename = os.path.join(cfg["common"].output_dir, "spades.log")
@@ -443,7 +460,7 @@ def main():
             bh_cfg = merge_configs(cfg["error_correction"], cfg["common"])
             corrected_dataset_yaml_filename = os.path.join(bh_cfg.output_dir, "corrected.yaml")
             if os.path.isfile(corrected_dataset_yaml_filename) and options_storage.continue_mode \
-                and not options_storage.continue_from == "ec":
+                and not options_storage.restart_from == "ec":
                 log.info("\n===== Skipping %s (already processed). \n" % STAGE_NAME)
             else:
                 support.continue_from_here(log)
@@ -490,8 +507,8 @@ def main():
             if options_storage.continue_mode and (os.path.isfile(spades_cfg.result_contigs)
                                                   or ("mismatch_corrector" in cfg and
                                                       os.path.isfile(assembled_contigs_filename)))\
-                and not options_storage.continue_from == 'as' \
-                and not (options_storage.continue_from and options_storage.continue_from.startswith('k')):
+                and not options_storage.restart_from == 'as' \
+                and not (options_storage.restart_from and options_storage.restart_from.startswith('k')):
 
                 log.info("\n===== Skipping %s (already processed). \n" % STAGE_NAME)
                 # calculating latest_dir for the next stages
@@ -499,7 +516,12 @@ def main():
                 if not latest_dir:
                     support.error("failed to continue the previous run! Please restart from previous stages or from the beginning.", log)
             else:
-                if options_storage.continue_from == 'as':
+                old_result_files = [result_contigs_filename, result_scaffolds_filename]
+                for old_result_file in old_result_files:
+                    if os.path.isfile(old_result_file):
+                        os.remove(old_result_file)
+
+                if options_storage.restart_from == 'as':
                     support.continue_from_here(log)
 
                 if os.path.isfile(corrected_dataset_yaml_filename):
@@ -544,9 +566,11 @@ def main():
                 if not os.path.isdir(misc_dir):
                     os.makedirs(misc_dir)
 
-                if options_storage.continue_mode and options_storage.continue_from and options_storage.continue_from.startswith('k'):
-                    support.error("failed to continue from K=%s because this K was not processed in the original run!"
-                                  % options_storage.continue_from[1:], log)
+                if options_storage.continue_mode and options_storage.restart_from and options_storage.restart_from.startswith('k'):
+                    k_str = options_storage.restart_from[1:]
+                    if k_str.find(":") != -1:
+                        k_str = k_str[:k_str.find(":")]
+                    support.error("failed to continue from K=%s because this K was not processed in the original run!" % k_str, log)
                 log.info("\n===== %s finished. \n" % STAGE_NAME)
 
             #corrector
@@ -567,10 +591,10 @@ def main():
 
                 if options_storage.continue_mode and os.path.isfile(result_contigs_filename) and \
                     (os.path.isfile(result_scaffolds_filename) or not os.path.isfile(assembled_scaffolds_filename)) \
-                    and not options_storage.continue_from == 'mc':
+                    and not options_storage.restart_from == 'mc':
                     log.info("\n===== Skipping %s (already processed). \n" % STAGE_NAME)
                 else:
-                    if options_storage.continue_from == 'mc':
+                    if options_storage.restart_from == 'mc':
                         support.continue_from_here(log)
 
                     log.info("\n===== %s started." % STAGE_NAME)
@@ -591,16 +615,20 @@ def main():
                             max_insert_size = float(estimated_params.__dict__["insert_size_" + str(id)])
                             target_paired_end_library_id = id
                     if max_insert_size == 0.0:
-                        if options_storage.continue_mode or options_storage.continue_from == 'mc':
-                            support.error("failed to continue the previous run! Please restart from previous stages or from the beginning.", log)
-                        support.error('Mismatch correction cannot be performed without at least one '
-                                      'paired-end library (estimated insert size is 0.0 for all libraries)!', log)
+                        support.warning('Failed to estimate insert size for all paired-end libraries. Starting Mismatch correction'
+                                        ' based on the first paired-end library and with default insert size.', log)
+                    #                        if options_storage.continue_mode or options_storage.restart_from == 'mc':
+                    #                            support.error("failed to continue the previous run! Please restart from previous stages or from the beginning.", log)
+                    #                        support.error('Mismatch correction cannot be performed without at least one '
+                    #                                      'paired-end library (estimated insert size is 0.0 for all libraries)!', log)
+                        target_paired_end_library_id = paired_end_libraries_ids[0]
+                    else:
+                        cfg["mismatch_corrector"].__dict__["insert-size"] = round(max_insert_size)
                     yaml_dirname = os.path.dirname(options_storage.dataset_yaml_filename)
                     cfg["mismatch_corrector"].__dict__["1"] = list(map(lambda x: os.path.join(yaml_dirname, x),
                         dataset_data[target_paired_end_library_id]['left reads']))
                     cfg["mismatch_corrector"].__dict__["2"] = list(map(lambda x: os.path.join(yaml_dirname, x),
                         dataset_data[target_paired_end_library_id]['right reads']))
-                    cfg["mismatch_corrector"].__dict__["insert-size"] = round(max_insert_size)
                     #TODO: add reads orientation
 
                     import corrector

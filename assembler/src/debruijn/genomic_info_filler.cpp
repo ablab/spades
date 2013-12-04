@@ -87,7 +87,7 @@ void GenomicInfoFiller::run(conj_graph_pack &gp, const char*) {
         gp.ginfo.set_cov_histogram(extract(tmp));
 
         // Fit the coverage model and get the threshold
-        cov_model::KMerCoverageModel CovModel(gp.ginfo.cov_histogram());
+        cov_model::KMerCoverageModel CovModel(gp.ginfo.cov_histogram(), cfg::get().kcm.probability_threshold, cfg::get().kcm.strong_probability_threshold);
         CovModel.Fit();
 
         gp.ginfo.set_genome_size(CovModel.GetGenomeSize());

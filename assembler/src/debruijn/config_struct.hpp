@@ -245,6 +245,7 @@ struct debruijn_config {
             double relative_threshold;
         };
 
+        bool topology_simplif_enabled;
         tip_clipper tc;
         topology_tip_clipper ttc;
         bulge_remover br;
@@ -401,6 +402,11 @@ struct debruijn_config {
         bool binary;
     };
 
+    struct kmer_coverage_model {
+        double probability_threshold;
+        double strong_probability_threshold;
+    };
+
     typedef std::map<info_printer_pos, info_printer> info_printers_t;
 
 public:
@@ -421,11 +427,9 @@ public:
     bool compute_paths_number;
 
     bool use_additional_contigs;
-    bool topology_simplif_enabled;
     bool use_unipaths;
     std::string additional_contigs;
 
-    bool pacbio_test_on;
     bool coverage_based_rr_on;
     struct coverage_based_rr {
         double coverage_threshold_one_list;
@@ -486,6 +490,7 @@ public:
     gap_closer gc;
     graph_read_corr_cfg graph_read_corr;
     info_printers_t info_printers;
+    kmer_coverage_model kcm;
 
     size_t flanking_range;
 };
