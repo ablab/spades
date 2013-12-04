@@ -563,7 +563,7 @@ bool FinalRemoveErroneousEdges(
         g, cfg::get().simp.rec, removal_handler,
         determined_coverage_threshold);
 
-    if (cfg::get().topology_simplif_enabled) {
+    if (cfg::get().simp.topology_simplif_enabled) {
         changed |= AllTopology(g, removal_handler, iteration);
         changed |= MaxFlowRemoveErroneousEdges(g, cfg::get().simp.mfec,
                                                removal_handler);
@@ -627,7 +627,7 @@ void PostSimplification(conj_graph_pack& gp,
         enable_flag = false;
 
         INFO("Iteration " << iteration);
-        if (cfg::get().topology_simplif_enabled) {
+        if (cfg::get().simp.topology_simplif_enabled) {
             enable_flag |= TopologyClipTips(gp.g, cfg::get().simp.ttc, cfg::get().ds.RL(),
                                             removal_handler);
         }
@@ -692,7 +692,7 @@ void SimplifyGraph(conj_graph_pack &gp,
                        determined_coverage_threshold);
 
     // This should be put into PostSimplification when(if) flanking coverage will be rewritten.
-    if (cfg::get().topology_simplif_enabled) {
+    if (cfg::get().simp.topology_simplif_enabled) {
         RemoveHiddenEC(gp.g, gp.flanking_cov, determined_coverage_threshold, cfg::get().simp.her, removal_handler);
     }
 }

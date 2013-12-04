@@ -245,6 +245,7 @@ struct debruijn_config {
             double relative_threshold;
         };
 
+        bool topology_simplif_enabled;
         tip_clipper tc;
         topology_tip_clipper ttc;
         bulge_remover br;
@@ -414,7 +415,6 @@ public:
     bool compute_paths_number;
 
     bool use_additional_contigs;
-    bool topology_simplif_enabled;
     bool use_unipaths;
     std::string additional_contigs;
 

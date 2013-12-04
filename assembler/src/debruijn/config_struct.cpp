@@ -425,6 +425,7 @@ void load(debruijn_config::simplification& simp,
           boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
 
+  load(simp.topology_simplif_enabled, pt, "topology_simplif_enabled", complete);
   load(simp.tc, pt, "tc", complete); // tip clipper:
   load(simp.ttc, pt, "ttc", complete); // topology tip clipper:
   load(simp.br, pt, "br", complete); // bulge remover:
@@ -553,7 +554,6 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   load(cfg.entry_point, pt, "entry_point");
 
   load(cfg.use_additional_contigs, pt, "use_additional_contigs");
-  load(cfg.topology_simplif_enabled, pt, "topology_simplif_enabled");
   load(cfg.use_unipaths, pt, "use_unipaths");
 
   load(cfg.coverage_based_rr_on, pt, "coverage_based_rr_on");
