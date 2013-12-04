@@ -69,13 +69,13 @@ def update_k_mers_in_special_cases(cur_k_mers, RL, log, silent=False):
         if RL >= 250:
             if not silent:
                 support.warning("Default k-mer sizes were set to %s because estimated "
-                                "read length (%d) is equal or great than 250" % (str(options_storage.k_mers_250), RL), log)
-            return options_storage.k_mers_250
+                                "read length (%d) is equal or great than 250" % (str(options_storage.K_MERS_250), RL), log)
+            return options_storage.K_MERS_250
         if RL >= 150:
             if not silent:
                 support.warning("Default k-mer sizes were set to %s because estimated "
-                                "read length (%d) is equal or great than 150" % (str(options_storage.k_mers_150), RL), log)
-            return options_storage.k_mers_150
+                                "read length (%d) is equal or great than 150" % (str(options_storage.K_MERS_150), RL), log)
+            return options_storage.K_MERS_150
     return cur_k_mers
 
 

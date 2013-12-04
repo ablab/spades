@@ -285,6 +285,7 @@ def fill_cfg(options_to_parse, log):
     if support.dataset_has_only_mate_pairs_libraries(dataset_data):
         support.error('you should specify at least one paired-end or unpaired library (only mate-pairs libraries were found)!')
 
+    options_storage.set_default_values()
     ### FILLING cfg
     cfg["common"] = empty_config()
     cfg["dataset"] = empty_config()
@@ -325,7 +326,7 @@ def fill_cfg(options_to_parse, log):
         if options_storage.k_mers:
             cfg["assembly"].__dict__["iterative_K"] = options_storage.k_mers
         else:
-            cfg["assembly"].__dict__["iterative_K"] = options_storage.k_mers_short
+            cfg["assembly"].__dict__["iterative_K"] = options_storage.K_MERS_SHORT
         cfg["assembly"].__dict__["careful"] = options_storage.careful
         cfg["assembly"].__dict__["disable_rr"] = options_storage.disable_rr
         if options_storage.spades_heap_check:
@@ -355,9 +356,9 @@ def check_cfg_for_restart_from(cfg):
             k_to_check = options_storage.k_mers
             if not k_to_check:
                 if options_storage.auto_K_allowed():
-                    k_to_check = list(set(options_storage.k_mers_short + options_storage.k_mers_150 + options_storage.k_mers_250))
+                    k_to_check = list(set(options_storage.K_MERS_SHORT + options_storage.K_MERS_150 + options_storage.K_MERS_250))
                 else:
-                    k_to_check = options_storage.k_mers_short
+                    k_to_check = options_storage.K_MERS_SHORT
             for k in k_to_check:
                 if options_storage.restart_from == ("k%d" % k) or options_storage.restart_from.startswith("k%d:" % k):
                     correct_k = True
