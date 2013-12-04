@@ -337,6 +337,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
                     long_reads_extenders.end());
     all_libs.insert(all_libs.end(), shortLoopPEs.begin(), shortLoopPEs.end());
     all_libs.insert(all_libs.end(), scafPEs.begin(), scafPEs.end());
+    max_over = FindMaxOverlapedLen(libs);
     CompositeExtender* last_extender = new CompositeExtender(gp.g, all_libs);
     auto last_paths = resolver.extendSeeds(mp_paths, *last_extender);
     resolver.removeOverlaps(last_paths, last_extender->GetCoverageMap(), max_over,
