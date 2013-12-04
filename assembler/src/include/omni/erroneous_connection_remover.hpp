@@ -92,6 +92,26 @@ class IterativeLowCoverageEdgeRemover : public ChimericEdgeRemovingAlgorithm<
     }
 };
 
+template<class Graph>
+class SelfConjugateCondition : public EdgeCondition<Graph> {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    typedef EdgeCondition<Graph> base;
+
+ public:
+
+    SelfConjugateCondition(const Graph& g)
+            : base(g) {
+    }
+
+    bool Check(EdgeId e) const {
+        return e == this->g().conjugate(e);
+    }
+
+ private:
+    DECL_LOGGER("SelfConjugateCondition");
+};
+
 //coverage comparator
 template<class Graph>
 class RelativeCoverageCondition : public EdgeCondition<Graph> {
@@ -488,4 +508,25 @@ public:
 private:
 	DECL_LOGGER("HiddenECRemover");
 };
+
+template<class Graph>
+class LowCoveredSelfConjEdgeRemovingAlgorithm : public EdgeRemovingAlgorithm<Graph,
+        CoverageComparator<Graph>> {
+    typedef EdgeRemovingAlgorithm<Graph, CoverageComparator<Graph>> base;
+    typedef typename Graph::EdgeId EdgeId;
+
+ public:
+
+    LowCoveredSelfConjEdgeRemovingAlgorithm(
+            Graph &g, size_t max_length, double max_coverage,
+            boost::function<void(EdgeId)> removal_handler)
+            : base(g, func::And<EdgeId>(make_shared<SelfConjugateCondition<Graph>>(g), make_shared<LengthUpperBound<Graph>>(g, max_length)),
+                   removal_handler, CoverageComparator<Graph>(g),
+                   make_shared<CoverageUpperBound<Graph>>(g, max_coverage)) {
+    }
+
+ private:
+    DECL_LOGGER("LowCoveredSelfConjEdgeRemovingAlgorithm");
+};
+
 }
