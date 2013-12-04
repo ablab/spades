@@ -563,7 +563,7 @@ bool FinalRemoveErroneousEdges(
         g, cfg::get().simp.rec, removal_handler,
         determined_coverage_threshold);
 
-    if (cfg::get().simp.topology_simplif_enabled) {
+    if (cfg::get().simp.topology_simplif_enabled && cfg::get().rr_enable/*todo remove this dirtiest hack ever!!!*/) {
         changed |= AllTopology(g, removal_handler, iteration);
         changed |= MaxFlowRemoveErroneousEdges(g, cfg::get().simp.mfec,
                                                removal_handler);
