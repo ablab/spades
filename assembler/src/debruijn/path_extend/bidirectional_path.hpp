@@ -710,34 +710,36 @@ public:
                     begin++;
                     end--;
                 }
-
-                if (begin >= end) {
-                    DEBUG("Found palindromic fragment from " << begin_pos << " to " << *end_pos);
-                    Print();
-                    VERIFY(*end_pos < Size());
-                    size_t tail_size = Size() - *end_pos - 1;
-                    size_t head_size = begin_pos;
-                    size_t palindrom_half_size = begin - begin_pos;
-                    size_t head_len = Length() - LengthAt(begin_pos);
-                    size_t tail_len =  *end_pos < Size() - 1 ? LengthAt(*end_pos + 1) : 0;
-                    size_t palindrom_len = Length() - head_len - tail_len;
-                    if (palindrom_len < head_len && palindrom_len < tail_len) {
-                        DEBUG("too big head and end");
-                        return;
-                    }
-                    bool delete_tail = tail_size < head_size;
-                    if (tail_size == head_size) {
-                        delete_tail = tail_len < head_len;
-                    }
-                    if (delete_tail) {
-                        PopBack(tail_size + palindrom_half_size);
-                        FindConjEdges();
-                        return;
-                    } else {
-                        GetConjPath()->PopBack(head_size + palindrom_half_size);
-                        FindConjEdges();
-                        return;
-                    }
+                DEBUG("Found palindromic fragment from " << begin_pos << " to " << *end_pos);
+                Print();
+                VERIFY(*end_pos < Size());
+                size_t tail_size = Size() - *end_pos - 1;
+                size_t head_size = begin_pos;
+                size_t palindrom_half_size = begin - begin_pos;
+                size_t head_len = Length() - LengthAt(begin_pos);
+                size_t tail_len =
+                        *end_pos < Size() - 1 ? LengthAt(*end_pos + 1) : 0;
+                size_t palindrom_len = (size_t) max((int)LengthAt(begin_pos) - (int)LengthAt(begin), 0);
+                size_t between = (size_t) max(0, (int)LengthAt(begin) - (int)(end < Size() -1 ?LengthAt(end + 1) : 0));
+                DEBUG("tail len " << tail_len << " head len " << head_len << " palindrom_len "<< palindrom_len << " between " << between);
+                if (palindrom_len < head_len && palindrom_len < tail_len) {
+                    DEBUG("too big head and end");
+                    continue;
+                }
+                if (between > palindrom_len) {
+                    DEBUG("too big part between");
+                    continue;
+                }
+                bool delete_tail = tail_size < head_size;
+                if (tail_size == head_size) {
+                    delete_tail = tail_len < head_len;
+                }
+                if (delete_tail) {
+                    PopBack(tail_size + palindrom_half_size);
+                    return;
+                } else {
+                    GetConjPath()->PopBack(head_size + palindrom_half_size);
+                    return;
                 }
             }
         }
