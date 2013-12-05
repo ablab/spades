@@ -298,7 +298,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
     resolver.RemoveMatePairEnds(mp_paths, max_over);
 	mp_paths.FilterEmptyPaths();
 	mp_paths.CheckSymmetry();
-	resolver.addUncoveredEdges(mp_paths, mp_main_pe->GetCoverageMap());
+	//resolver.addUncoveredEdges(mp_paths, mp_main_pe->GetCoverageMap());
 	mp_paths.SortByLength();
 	DebugOutputPaths(writer, gp, output_dir, mp_paths, "mp_final_paths");
     INFO("End mp libs");

@@ -572,17 +572,32 @@ public:
             int start_cycle_pos = pos + (int) cycle_path->Size();
             bool only_cycles_in_tail = true;
             int last_cycle_pos = start_cycle_pos;
+            //DEBUG("start_cycle pos "<< last_cycle_pos);
             for (int i = start_cycle_pos; i < (int) path.Size() - (int) cycle->Size(); i += (int) cycle->Size()) {
                 if (!path.CompareFrom(i, *cycle)) {
                     only_cycles_in_tail = false;
                     break;
-                }
-                else {
-                    last_cycle_pos = i;
+                } else {
+                    last_cycle_pos = i + (int) cycle->Size();
+                    //DEBUG("last cycle pos changed " << last_cycle_pos);
                 }
             }
-            only_cycles_in_tail = only_cycles_in_tail && cycle->CompareFrom(0, path.SubPath(last_cycle_pos + (int) cycle->Size()));
+            //DEBUG("last_cycle_pos " << last_cycle_pos);
+            only_cycles_in_tail = only_cycles_in_tail && cycle->CompareFrom(0, path.SubPath(last_cycle_pos));
             if (only_cycles_in_tail) {
+                DEBUG("find cycle " << last_cycle_pos);
+                //DEBUG("path");
+                //path.Print();
+                //DEBUG("last subpath");
+                //path.SubPath(last_cycle_pos + (int) cycle->Size()).Print();
+                //DEBUG("cycle path");
+                //cycle_path->Print();
+                //DEBUG("cycle");
+                //cycle->Print();
+                //DEBUG("last_cycle_pos " << last_cycle_pos << " path size " << path.Size());
+                VERIFY(last_cycle_pos <= (int)path.Size());
+                //DEBUG("last cycle pos + cycle " << last_cycle_pos + (int)cycle->Size());
+                VERIFY(last_cycle_pos + (int)cycle->Size() >= (int)path.Size());
                 return true;
             }
         }
@@ -641,12 +656,13 @@ public:
 
     virtual bool MakeGrowStep(BidirectionalPath& path) {
         if (InExistingLoop(path)) {
+            DEBUG("in existing loop");
             return false;
         }
 
-        TRACE("Making step");
+        DEBUG("Making step");
         bool result = MakeSimpleGrowStep(path);
-        TRACE("Made step");
+        DEBUG("Made step");
 
 
         if (DetectCycle(path)) {

@@ -40,11 +40,8 @@ public:
         std::vector<EdgeId> edges = GetSortedEdges();
         for (size_t edgeId = 0; edgeId < edges.size(); ++edgeId) {
             EdgeId edge = edges.at(edgeId);
-            std::set<BidirectionalPath *> cov_paths = coverage_map_
-                    .GetCoveringPaths(edge);
-
-            std::vector<BidirectionalPath*> cov_vect(cov_paths.begin(),
-                                                     cov_paths.end());
+            std::set<BidirectionalPath *> cov_paths = coverage_map_.GetCoveringPaths(edge);
+            std::vector<BidirectionalPath*> cov_vect(cov_paths.begin(), cov_paths.end());
             std::sort(cov_vect.begin(), cov_vect.end(), PathIdCompare);
             DEBUG("Analyze edge " << g_.int_id(edge) << " covered paths size " << cov_vect.size());
             for (size_t vect_i = 0; vect_i < cov_vect.size(); ++vect_i) {
@@ -52,12 +49,12 @@ public:
                 if (cov_paths.find(path1) == cov_paths.end()) {
                     continue;
                 }
-                for (size_t vect_i1 = vect_i + 1; vect_i1 < cov_vect.size();
-                        ++vect_i1) {
+                for (size_t vect_i1 = vect_i + 1; vect_i1 < cov_vect.size(); ++vect_i1) {
                     BidirectionalPath* path2 = cov_vect.at(vect_i1);
-                    if (cov_paths.find(path2) == cov_paths.end()) {
+                    if (path1 == path2 || path1 == path2->GetConjPath())
                         continue;
-                    }
+                    if (cov_paths.find(path2) == cov_paths.end())
+                        continue;
                     if ((*path1) == (*path2)) {
                         if (path2->IsOverlap()) {
                             path1->SetOverlap(true);
@@ -199,6 +196,10 @@ private:
 	bool CutOverlaps(BidirectionalPath* path1, size_t first1, size_t last1, size_t size1,
                      BidirectionalPath* path2, size_t first2, size_t last2, size_t size2,
                      bool del_subpaths, bool del_begins, bool del_all) const {
+	    DEBUG("Cut overlaps: first1 = " << first1 << ", last1 = " << last1 << ", size1 = " << size1
+	          << ", first2 = " << first2 << ", last2 = " << last2 << ", size2 = " << size2
+	          <<", path1 over begin = " << path1->HasOverlapedBegin() << ", path1 over end = " << path1->HasOverlapedEnd()
+	          <<", path2 over begin = " << path2->HasOverlapedBegin() << ", path2 over end = " << path2->HasOverlapedEnd());
         if (first1 == 0 && last1 == size1 - 1 && del_subpaths
                 && !path1->HasOverlapedBegin() && !path1->HasOverlapedEnd()) {
             DEBUG("delete path 1");
