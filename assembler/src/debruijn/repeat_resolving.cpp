@@ -43,15 +43,15 @@ void PEResolving(conj_graph_pack& gp) {
     vector<size_t> indexes;
     vector<PathStorageInfo<Graph> > long_reads_libs;
     ConvertLongReads(gp.single_long_reads, long_reads_libs);
-    std::string name = "scaffolds.fasta";
+    std::string name = "scaffolds";
     bool traverse_loops = true;
     if (!(cfg::get().use_scaffolder && cfg::get().pe_params.param_set.scaffolder_options.on)) {
-        name = "final_contigs.fasta";
+        name = "final_contigs";
         traverse_loops = false;
     }
     path_extend::ResolveRepeatsPe(
             gp, long_reads_libs, cfg::get().output_dir, name, traverse_loops,
-            boost::optional<std::string>("final_contigs.fasta"));
+            boost::optional<std::string>("final_contigs"));
 }
 
 void RepeatResolution::run(conj_graph_pack &gp, const char*) {

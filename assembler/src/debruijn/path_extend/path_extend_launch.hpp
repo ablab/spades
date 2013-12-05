@@ -101,7 +101,8 @@ inline void OutputBrokenScaffolds(PathContainer& paths, int k,
     ScaffoldBreaker breaker(min_gap);
     breaker.Split(paths);
     breaker.container().SortByLength();
-    writer.writePaths(breaker.container(), filename);
+    //writer.writePaths(breaker.container(), filename + ".fasta");
+    writer.WritePathsToFASTG(breaker.container(), filename + ".fastg", filename + ".fasta");
 }
 
 inline void AddPathsToContainer(const conj_graph_pack& gp,
@@ -270,12 +271,12 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
             loopTraverser.TraverseAllLoops();
             paths.SortByLength();
         }
-        writer.writePaths(paths, output_dir + contigs_name);
-        writer.WritePathsToFASTG(paths, output_dir + "resulting_pe_paths.fastg", output_dir + "resulting_pe_paths.fasta");
+        //writer.writePaths(paths, output_dir + contigs_name + ".fasta");
+        writer.WritePathsToFASTG(paths, output_dir + contigs_name + ".fastg", output_dir + contigs_name + ".fasta");
         return;
     }
-    writer.writePaths(paths, output_dir + "pe_paths.fasta");
-    writer.WritePathsToFASTG(paths, output_dir + "resulting_pe_paths.fastg", output_dir + "resulting_pe_paths.fasta");
+    //writer.writePaths(paths, output_dir + "pe_paths.fasta");
+    writer.WritePathsToFASTG(paths, output_dir + "pe_paths.fastg", output_dir + "pe_paths.fasta");
 
 //MP
     INFO("mate pair path-extend started");
@@ -333,8 +334,8 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
                               output_dir + broken_contigs.get());
     }
     DebugOutputPaths(writer, gp, output_dir, last_paths, "last_paths");
-    writer.writePaths(last_paths, output_dir + contigs_name);
-    writer.WritePathsToFASTG(last_paths, output_dir + "resulting_mp_paths.fastg", output_dir + "resulting_mp_paths.fasta");
+    //writer.writePaths(last_paths, output_dir + contigs_name + ".fasta");
+    writer.WritePathsToFASTG(last_paths, output_dir + contigs_name + ".fastg", output_dir + contigs_name + ".fasta");
 
     INFO("Path extend repeat resolving tool finished");
     //TODO:DELETE ALL!!!!

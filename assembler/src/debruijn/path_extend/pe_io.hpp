@@ -69,6 +69,24 @@ protected:
         return result.BuildSequence();
     }
 
+    void MakeIDS(PathContainer& paths,
+                 map<BidirectionalPath*, string >& ids,
+                 map<BidirectionalPath*, vector<string> >& next_ids) const {
+        int counter = 1;
+        for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
+            if (iter.get()->Size() == 0)
+                continue;
+
+            BidirectionalPath* p = iter.get();
+            BidirectionalPath* cp = iter.getConjugate();
+            string name = io::MakeContigId(counter++, p->Length() + k_, p->Coverage(), p->GetId());
+            ids.insert(make_pair(p, name));
+            ids.insert(make_pair(cp, name + "'"));
+            next_ids.insert(make_pair(p, vector<string>()));
+            next_ids.insert(make_pair(cp, vector<string>()));
+        }
+    }
+
     void FindPathsOrder(PathContainer& paths, multimap<VertexId, BidirectionalPath*>& starting) const {
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
             if (iter.get()->Size() == 0)
@@ -84,21 +102,53 @@ protected:
         }
     }
 
-    void ConstructFASTG(PathContainer& paths,
-            map<BidirectionalPath*, string >& ids,
-            map<BidirectionalPath*, vector<string> >& next_ids) {
+    void VerifyIDS(PathContainer& paths,
+                 map<BidirectionalPath*, string >& ids,
+                 map<BidirectionalPath*, vector<string> >& next_ids,
+                 multimap<VertexId, BidirectionalPath*>& starting) const {
 
-        int counter = 1;
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
             if (iter.get()->Size() == 0)
                 continue;
 
             BidirectionalPath* p = iter.get();
-            string name = io::MakeContigId(counter++, p->Length() + k_, p->Coverage(), p->GetId());
-            ids.insert(make_pair(p, name));
-            ids.insert(make_pair(iter.getConjugate(), name + "'"));
-            DEBUG(ids[iter.getConjugate()]);
+            VertexId v = g_.EdgeEnd(p->Back());
+            size_t count = 0;
+            DEBUG("Node " << ids[p] << " is followed by: ");
+            for (auto v_it = starting.lower_bound(v); v_it != starting.upper_bound(v); ++v_it) {
+                DEBUG("Vertex: " << ids[v_it->second]);
+                ++count;
+                auto it = find(next_ids[p].begin(), next_ids[p].end(), ids[v_it->second]);
+
+                VERIFY(it != next_ids[p].end());
+            }
+            for (auto it = next_ids[p].begin(); it != next_ids[p].end(); ++it) {
+                DEBUG("Next ids: " << *it);
+            }
+            VERIFY(count == next_ids[p].size());
+
+            p = iter.getConjugate();
+            v = g_.EdgeEnd(p->Back());
+            count = 0;
+            DEBUG("Node " << ids[p] << " is followed by: ");
+            for (auto v_it = starting.lower_bound(v); v_it != starting.upper_bound(v); ++v_it) {
+                DEBUG("Vertex: " << ids[v_it->second]);
+                ++count;
+                auto it = find(next_ids[p].begin(), next_ids[p].end(), ids[v_it->second]);
+                VERIFY(it != next_ids[p].end());
+            }
+            for (auto it = next_ids[p].begin(); it != next_ids[p].end(); ++it) {
+                DEBUG("Next ids: " << *it);
+            }
+            VERIFY(count == next_ids[p].size());
         }
+    }
+
+    void ConstructFASTG(PathContainer& paths,
+            map<BidirectionalPath*, string >& ids,
+            map<BidirectionalPath*, vector<string> >& next_ids) const {
+
+        MakeIDS(paths, ids, next_ids);
 
         multimap<VertexId, BidirectionalPath*> starting;
         set<VertexId> visited;
@@ -119,35 +169,39 @@ protected:
 
             DEBUG("VERTEX " << g_.int_id(v) );
             visited.insert(v);
-            visited.insert(g_.conjugate(v));
             while (it != starting.upper_bound(v)) {
-                DEBUG(ids[it->second]);
+                DEBUG("Adding to queue:" << ids[it->second]);
                 path_queue.push(it->second);
                 ++it;
             }
+            --it;
 
             while (!path_queue.empty()) {
                 BidirectionalPath* p = path_queue.front();
                 path_queue.pop();
-                next_ids.insert(make_pair(p, vector<string>()));
 
                 v = g_.EdgeEnd(p->Back());
                 bool add_new_paths = (visited.count(v) == 0);
+                DEBUG("FIANL VERTEX " << g_.int_id(v));
                 DEBUG("Node " << ids[p] << " is followed by: ");
-                DEBUG("VERTEX " << g_.int_id(v));
+
                 for (auto v_it = starting.lower_bound(v); v_it != starting.upper_bound(v); ++v_it) {
                     BidirectionalPath* next_path = v_it->second;
-                    INFO(ids[next_path]);
+                    DEBUG(ids[next_path]);
                     next_ids[p].push_back(ids[next_path]);
-                    if (add_new_paths)
+
+                    if (add_new_paths) {
+                        DEBUG("Adding to queue:" << ids[next_path]);
                         path_queue.push(next_path);
+                    }
                 }
                 if (add_new_paths) {
                     visited.insert(v);
-                    visited.insert(g_.conjugate(v));
                 }
             }
         }
+
+        VerifyIDS(paths, ids, next_ids, starting);
     }
 
 
@@ -219,7 +273,7 @@ public:
         DEBUG("Contigs written");
     }
 
-    void WritePathsToFASTG(PathContainer& paths, const string& filename, const string& fastafilename) {
+    void WritePathsToFASTG(PathContainer& paths, const string& filename, const string& fastafilename) const {
         map<BidirectionalPath*, string > ids;
         map<BidirectionalPath*, vector<string> > next_ids;
 
