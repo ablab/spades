@@ -982,15 +982,18 @@ private:
         return result;
     }
     bool HasUniqueEdges(const BidirectionalPath& init_path,
-                        const BidirectionalPath& path) {
+                        const BidirectionalPath& path1,
+                        const set<size_t>& unique_init_edges) {
         for (size_t i1 = 0; i1 < init_path.Size(); ++i1) {
-            for (size_t i2 = 0; i2 < path.Size(); ++i2) {
-                int gap = (int)init_path.LengthAt(i1) + (int)path.Length() - (int)path.LengthAt(i2);
+            if (unique_init_edges.find(i1) == unique_init_edges.end()){
+                continue;
+            }
+            for (size_t i2 = 0; i2 < path1.Size(); ++i2) {
+                int gap = (int)init_path.LengthAt(i1) + (int)path1.Length() - (int)path1.LengthAt(i2);
                 if (unique_edge_analyzer_.IsUnique(init_path.At(i1))
-                        && unique_edge_analyzer_.IsUnique(path.At(i2))
-                        && weight_counter_.HasPI(init_path.At(i1),
-                                path.At(i2), gap)) {
-                    return true;
+                        && unique_edge_analyzer_.IsUnique(path1.At(i2))
+                        && weight_counter_.HasPI(init_path.At(i1), path1.At(i2), gap)) {
+                        return true;
                 }
             }
         }
@@ -1003,7 +1006,8 @@ private:
                                     double /*w1*/,
                                     const BidirectionalPath& path2,
                                     const map<size_t, double>& pi2,
-                                    double /*w2*/) {
+                                    double /*w2*/,
+                                    const set<size_t>& unique_init_edges) {
         double not_common_w1 = 0.0;
         double common_w = 0.0;
         for (auto iter = pi1.begin(); iter != pi1.end(); ++iter) {
@@ -1015,15 +1019,37 @@ private:
             not_common_w1 += iter->second - w;
             common_w += w;
         }
+
         if (common_w < 0.8 * (not_common_w1 + common_w)||
-                (HasUniqueEdges(init_path, path1) && !HasUniqueEdges(init_path, path2))) {
+                (HasUniqueEdges(init_path, path1, unique_init_edges) && !HasUniqueEdges(init_path, path2, unique_init_edges))) {
             return true;
         } else {
             DEBUG("common pi more then 0.8");
             return false;
         }
     }
-
+    set<size_t> FindNotCommonEdges(const BidirectionalPath& path, const std::map<BidirectionalPath*, map<size_t, double> >& all_pi) {
+        set<size_t> res;
+        for (size_t i = 0; i < path.Size(); ++i) {
+            bool not_common = true;
+            bool exist = false;
+            for (auto iter = all_pi.begin(); iter != all_pi.end(); ++iter){
+                const map<size_t, double>& info = iter->second;
+                if (info.count(i) > 0 && math::gr(info.at(i), 0.0)) {
+                    if (exist) {
+                        not_common = false;
+                        break;
+                    } else {
+                        exist = true;
+                    }
+                }
+            }
+            if (not_common && exist) {
+                res.insert(i);
+            }
+        }
+        return res;
+    }
     void DeleteSmallWeights(const BidirectionalPath& path, map<BidirectionalPath*, double>& weights,
                             set<BidirectionalPath*>& paths,
                             const std::map<BidirectionalPath*, map<size_t, double> >& all_pi) {
@@ -1038,7 +1064,8 @@ private:
         for (auto iter = weights.begin(); iter != weights.end(); ++iter) {
             if (math::gr(max_weight, iter->second * 1.5) &&
                     SignificallyDifferentEdges(path, *max_path, all_pi.find(max_path)->second, weights.find(max_path)->second,
-                                               *iter->first, all_pi.find(iter->first)->second, weights.find(iter->first)->second))
+                                               *iter->first, all_pi.find(iter->first)->second, weights.find(iter->first)->second,
+                                               FindNotCommonEdges(path, all_pi)))
                 paths.erase(iter->first);
         }
     }
@@ -1110,12 +1137,15 @@ private:
 
     vector<BidirectionalPath*> SortResult(const BidirectionalPath& path,
             set<BidirectionalPath*>& next_paths) {
+        std::map<BidirectionalPath*, map<size_t, double> > all_pi;
+        CountAllPairInfo(path, next_paths, all_pi);
         map<BidirectionalPath*, double> weights = CountWeightsAndFilter(path, next_paths, false);
         vector<BidirectionalPath*> result;
         while (weights.size() > 0) {
             auto max_iter = weights.begin();
             for (auto iter = weights.begin(); iter != weights.end(); ++iter) {
-                if (HasUniqueEdges(path,*iter->first) && !HasUniqueEdges(path, *max_iter->first)){
+                if (HasUniqueEdges(path,*iter->first, FindNotCommonEdges(path, all_pi))
+                        && !HasUniqueEdges(path, *max_iter->first, FindNotCommonEdges(path, all_pi))){
                     max_iter = iter;
                     continue;
                 }

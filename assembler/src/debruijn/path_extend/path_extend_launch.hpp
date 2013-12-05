@@ -334,8 +334,9 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
                               output_dir + broken_contigs.get());
     }
     DebugOutputPaths(writer, gp, output_dir, last_paths, "last_paths");
-    //writer.writePaths(last_paths, output_dir + contigs_name + ".fasta");
+
     writer.WritePathsToFASTG(last_paths, output_dir + contigs_name + ".fastg", output_dir + contigs_name + ".fasta");
+    writer.writePaths(last_paths, output_dir + contigs_name+ "_temp" + ".fasta");
 
     INFO("Path extend repeat resolving tool finished");
     //TODO:DELETE ALL!!!!
