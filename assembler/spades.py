@@ -372,13 +372,13 @@ def check_cfg_for_restart_from(cfg):
 
 def get_options_from_params(params_filename):
     if not os.path.isfile(params_filename):
-        return None
+        return None, None
     params = open(params_filename, 'r')
     cmd_line = params.readline()
     params.close()
     spades_py_pos = cmd_line.find('spades.py')
     if spades_py_pos == -1:
-        return None
+        return None, None
     return cmd_line, cmd_line[spades_py_pos + len('spades.py'):].split()
 
 
@@ -405,7 +405,7 @@ def main():
     if options_storage.continue_mode:
         cmd_line, options = get_options_from_params(os.path.join(options_storage.output_dir, "params.txt"))
         if not options:
-            support.error("failed to parse command line of the previous run! Please restart from the beginning.")
+            support.error("failed to parse command line of the previous run! Please restart from the beginning or specify another output directory.")
         cfg, dataset_data = fill_cfg(options, log)
         if options_storage.restart_from:
             check_cfg_for_restart_from(cfg)
