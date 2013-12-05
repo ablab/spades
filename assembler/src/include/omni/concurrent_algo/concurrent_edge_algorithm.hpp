@@ -76,8 +76,8 @@ public:
 			ComponentPtr ptr (
 					new ConjugateComponent(
 							graph,
-							restricted::PeriodicIdDistributor(
-								restricted::GlobalIdDistributor::GetInstance()->GetId(),
+							restricted::PeriodicIdDistributor(graph.GetGraphIdDistributor(),
+								graph.GetGraphIdDistributor()->GetId(),
 								nthreads
 							),
 							vertices.begin(),
@@ -114,8 +114,8 @@ public:
 			components_[i]->Synchronize();
 		}
 
-		restricted::PeriodicIdDistributor id_distributor(
-				restricted::GlobalIdDistributor::GetInstance()->GetId(), 1);
+		restricted::PeriodicIdDistributor id_distributor(graph.GetGraphIdDistributor(),
+				graph_.GetGraphIdDistributor()->GetId(), 1);
 
 		ConjugateComponent all_graph_component(
 				graph_, id_distributor, graph_.begin(), graph_.end());

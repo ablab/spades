@@ -222,9 +222,9 @@ bool MapsValueSetEquals(std::map <int, EdgeData> m1, std::map <int, EdgeData> m2
 template<class gp_t>
 inline void LoadWithColoring(gp_t& gp, ColorHandler<typename gp_t::graph_t>& coloring, const string& path) {
     typedef typename debruijn_graph::graphio::ScannerTraits<typename gp_t::graph_t>::Scanner Scanner;
-    Scanner scanner(gp.g, gp.int_ids);
+    Scanner scanner(gp.g);
     scanner.loadGraph(path);
-    LoadColoring(gp.g, gp.int_ids, coloring, path);
+    LoadColoring(gp.g, gp.element_finder, coloring, path);
 }
 
 template<class gp_t>
@@ -250,7 +250,7 @@ class ColoredGraphIsomorphismChecker {
 
         void FillMapping() {
             for (auto it = gp.g.SmartVertexBegin(); !it.IsEnd(); ++it) {
-                map[gp.g.VertexNucls(*it)] = gp.int_ids.ReturnIntId(*it);
+                map[gp.g.VertexNucls(*it)] = (*it).int_id();
             }
         }
     };
@@ -260,17 +260,17 @@ class ColoredGraphIsomorphismChecker {
 
     void LoadPack(Pack& pack, const string& path) {
         typedef typename debruijn_graph::graphio::ScannerTraits<typename gp_t::graph_t>::Scanner Scanner;
-        Scanner scanner(pack.gp.g, pack.gp.int_ids);
+        Scanner scanner(pack.gp.g);
         pack.gp.index.Detach();
         scanner.LoadGraph(path);
         pack.gp.index.Refill();
         pack.gp.index.Attach();
-        LoadColoring(pack.gp.g, pack.gp.int_ids, pack.col, path);
+        LoadColoring(pack.gp.g, pack.gp.element_finder, pack.col, path);
         pack.FillMapping();
     }
 
     VertexId GetVertexId(const Pack& pack, const Kmer& kmer) const {
-        return pack.gp.int_ids.ReturnVertexId(get(pack.map, kmer));
+        return pack.gp.element_finder.ReturnVertexId(get(pack.map, kmer));
     }
 
     bool CheckEdgeIsomorphism(vector<EdgeData> edges1, vector<EdgeData> edges2) const {

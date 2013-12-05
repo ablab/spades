@@ -17,14 +17,12 @@ BOOST_FIXTURE_TEST_SUITE(basic_debruijn_graph_tests, TmpFolderFixture)
 
 BOOST_AUTO_TEST_CASE( EmptyGraphTest ) {
 	Graph g(11);
-	IdTrackHandler<Graph> int_ids(g);
 	BOOST_CHECK_EQUAL(11u, g.k());
 	BOOST_CHECK_EQUAL(0u, g.size());
 }
 
 BOOST_AUTO_TEST_CASE( OneVertexGraphTest ) {
 	Graph g(11);
-	IdTrackHandler<Graph> int_ids(g);
 	g.AddVertex();
 	BOOST_CHECK_EQUAL(2u, g.size());
 	VertexId v = *(g.begin());
@@ -49,7 +47,6 @@ pair<vector<VertexId> , vector<EdgeId> > createGraph(Graph &graph,
 
 BOOST_AUTO_TEST_CASE( OneEdgeGraphTest ) {
 	Graph g(11);
-	IdTrackHandler<Graph> int_ids(g);
 	pair<vector<VertexId> , vector<EdgeId> > data = createGraph(g, 1);
 	BOOST_CHECK_EQUAL(1u, g.OutgoingEdgeCount(data.first[0]));
 	BOOST_CHECK_EQUAL(0u, g.OutgoingEdgeCount(data.first[1]));
@@ -78,7 +75,6 @@ BOOST_AUTO_TEST_CASE( OneEdgeGraphTest ) {
 
 BOOST_AUTO_TEST_CASE( VertexMethodsSimpleTest ) {
 	Graph g(11);
-	IdTrackHandler<Graph> int_ids(g);
 	pair<vector<VertexId> , vector<EdgeId> > data = createGraph(g, 2);
 	BOOST_CHECK_EQUAL(data.second[0], g.GetUniqueIncomingEdge(data.first[1]));
 	BOOST_CHECK_EQUAL(data.second[0], g.GetUniqueOutgoingEdge(data.first[0]));
@@ -109,7 +105,6 @@ BOOST_AUTO_TEST_CASE( VertexMethodsSimpleTest ) {
 
 BOOST_AUTO_TEST_CASE( SmartIteratorTest ) {
 	Graph g(11);
-	IdTrackHandler<Graph> int_ids(g);
 	pair<vector<VertexId> , vector<EdgeId> > data = createGraph(g, 4);
 	size_t num = 0;
 	set<VertexId> visited;

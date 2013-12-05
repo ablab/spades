@@ -58,13 +58,13 @@ class PrintPathsCommand : public LocalCommand<DebruijnEnvironment> {
       // not so good, maybe do something
 //      first_edge = second_edge = true;
       TRACE("Looking at edges");
-      if (!CheckEdgeExists(curr_env.int_ids(), from) || !CheckEdgeExists(curr_env.int_ids(), to))
+      if (!CheckEdgeExists(curr_env.finder(), from) || !CheckEdgeExists(curr_env.finder(), to))
         return;
-      from = curr_env.graph().int_id(curr_env.graph().EdgeEnd(curr_env.int_ids().ReturnEdgeId(from)));
-      to = curr_env.graph().int_id(curr_env.graph().EdgeStart(curr_env.int_ids().ReturnEdgeId(to)));
+      from = curr_env.graph().int_id(curr_env.graph().EdgeEnd(curr_env.finder().ReturnEdgeId(from)));
+      to = curr_env.graph().int_id(curr_env.graph().EdgeStart(curr_env.finder().ReturnEdgeId(to)));
     }
 
-    if (!CheckVertexExists(curr_env.int_ids(), from) || !CheckVertexExists(curr_env.int_ids(), to))
+    if (!CheckVertexExists(curr_env.finder(), from) || !CheckVertexExists(curr_env.finder(), to))
       return;
   
     const Graph& graph = curr_env.graph();
@@ -72,8 +72,8 @@ class PrintPathsCommand : public LocalCommand<DebruijnEnvironment> {
     TRACE("Looking for the paths");
     PathStorageCallback<Graph> callback(curr_env.graph());
     PathProcessor<Graph> pp(graph, 0, max_length,
-        curr_env.int_ids().ReturnVertexId(from),
-        curr_env.int_ids().ReturnVertexId(to), callback);
+        curr_env.finder().ReturnVertexId(from),
+        curr_env.finder().ReturnVertexId(to), callback);
     pp.Process();
     const vector<Path>& paths = callback.paths();
 
@@ -81,7 +81,7 @@ class PrintPathsCommand : public LocalCommand<DebruijnEnvironment> {
     for (size_t i = 0; i < paths.size(); ++i) {
       cout << (i + 1) << "-th path (" << PathLength(graph, paths[i]) << ") ::: ";
       for (size_t j = 0; j < paths[i].size(); ++j) {
-        cout << curr_env.int_ids().ReturnIntId(paths[i][j]) 
+        cout << paths[i][j].int_id()
              << "(" << graph.length(paths[i][j]) << ") ";
       }
       cout << endl;

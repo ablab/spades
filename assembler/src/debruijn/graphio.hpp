@@ -23,6 +23,8 @@
 #include "detail_coverage.hpp"
 #include "long_read_storage.hpp"
 
+#include "omni/order_and_law.hpp"
+
 #include <cmath>
 #include <set>
 #include <map>
@@ -143,7 +145,7 @@ class DataPrinter {
         for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
             EdgeId e = *iter;
             //todo fixme currently matches old format .cvr format
-            out << int_ids_.ReturnIntId(e)/* << endl*/;
+            out << e.int_id()/* << endl*/;
             out << " " << access_f(e) << " ." << endl;
         }
     }
@@ -159,7 +161,7 @@ class DataPrinter {
         for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
             EdgeId e = *iter;
             //todo fixme currently matches old format .cvr format
-            out << int_ids_.ReturnIntId(e)/* << endl*/;
+            out << e.int_id()/* << endl*/;
             out << " ";
             c.Save(e, out);
             out << " ." << endl;
@@ -169,6 +171,10 @@ class DataPrinter {
   public:
 
     void SaveGraph(const string& file_name) const {
+        FILE* gid_file = fopen((file_name + ".gid").c_str(), "w");
+        size_t max_id = this->component().g().GetGraphIdDistributor().GetMax();
+        fprintf(gid_file, "%zu\n", max_id);
+        fclose(gid_file);
         FILE* file = fopen((file_name + ".grp").c_str(), "w");
         DEBUG("Graph saving to " << file_name << " started");
         VERIFY_MSG(file != NULL,
@@ -197,7 +203,7 @@ class DataPrinter {
         DEBUG("Saving sequences, " << file_name <<" created");
         for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
             EdgeId e = *iter;
-            out << ">" << int_ids_.ReturnIntId(e) << endl;
+            out << ">" << e.int_id() << endl;
             out << component_.g().EdgeNucls(e) << endl;
         }
     }
@@ -245,8 +251,8 @@ class DataPrinter {
                     for (auto hist_it = hist.begin(); hist_it != hist.end(); ++hist_it) {
                         Point point = *hist_it;
                         fprintf(file, "%zu %zu %.2f %.2f %.2f .\n",
-                                int_ids_.ReturnIntId(e1),
-                                int_ids_.ReturnIntId(e2),
+                                e1.int_id(),
+                                e2.int_id(),
                                 point.d, point.weight, point.var);
                     }
             }
@@ -263,8 +269,7 @@ class DataPrinter {
         file << component_.e_size() << endl;
         for (auto it = component_.e_begin(); it != component_.e_end(); ++it) {
             vector<omnigraph::EdgePosition> pos_it = ref_pos.GetEdgePositions(*it);
-            file << id_handler().ReturnIntId(*it) << " " << pos_it.size()
-                 << endl;
+            file << it->int_id() << " " << pos_it.size() << endl;
             for (size_t i = 0; i < pos_it.size(); i++) {
                 file << "    " << pos_it[i].contigId << " " << pos_it[i].mr << endl;
             }
@@ -281,7 +286,6 @@ class DataPrinter {
     }
 
     const GraphComponent<Graph> component_;
-    const BaseIdTrackHandler<VertexId, EdgeId>& int_ids_;
 
     virtual std::string ToPrint(VertexId v) const = 0;
     virtual std::string ToPrint(EdgeId e) const = 0;
@@ -289,21 +293,15 @@ class DataPrinter {
   protected:
 
     //todo optimize component copy
-    DataPrinter(const GraphComponent<Graph>& component,
-                BaseIdTrackHandler<VertexId, EdgeId> const& int_ids) :
-            component_(component), int_ids_(int_ids) {
+    DataPrinter(const GraphComponent<Graph>& component) :
+            component_(component) {
     }
 
     const GraphComponent<Graph>& component() const {
         return component_;
     }
 
-    const BaseIdTrackHandler<VertexId, EdgeId>& id_handler() const {
-        return int_ids_;
-    }
-
   public:
-
     virtual ~DataPrinter() {
     }
 };
@@ -314,29 +312,26 @@ class ConjugateDataPrinter: public DataPrinter<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
   public:
-    ConjugateDataPrinter(Graph const& g, BaseIdTrackHandler<VertexId, EdgeId> const& int_ids) :
-            base(g, int_ids) {
+    ConjugateDataPrinter(Graph const& g) :
+            base(g) {
     }
 
-    ConjugateDataPrinter(const GraphComponent<Graph>& graph_component,
-                         BaseIdTrackHandler<VertexId, EdgeId> const& int_ids) :
-            base(GraphComponent<Graph>(graph_component, true), int_ids) {
+    ConjugateDataPrinter(const GraphComponent<Graph>& graph_component) :
+            base(GraphComponent<Graph>(graph_component, true)) {
     }
 
     template<class VertexIt>
-    ConjugateDataPrinter(const Graph& g, VertexIt begin, VertexIt end,
-                         BaseIdTrackHandler<VertexId, EdgeId> const& int_ids) :
-            base(GraphComponent<Graph>(g, begin, end, true), int_ids) {
+    ConjugateDataPrinter(const Graph& g, VertexIt begin, VertexIt end) :
+            base(GraphComponent<Graph>(g, begin, end, true)) {
     }
 
     std::string ToPrint(VertexId v) const {
         stringstream ss;
         ss
                 << "Vertex "
-                << this->id_handler().ReturnIntId(v)
+                << v.int_id()
                 << " ~ "
-                << this->id_handler().ReturnIntId(
-                    this->component().g().conjugate(v)) << " .";
+                << this->component().g().conjugate(v).int_id() << " .";
         return ss.str();
     }
 
@@ -344,18 +339,15 @@ class ConjugateDataPrinter: public DataPrinter<Graph> {
         stringstream ss;
         ss
                 << "Edge "
-                << this->id_handler().ReturnIntId(e)
+                << e.int_id()
                 << " : "
-                << this->id_handler().ReturnIntId(
-                    this->component().g().EdgeStart(e))
+                << this->component().g().EdgeStart(e).int_id()
                 << " -> "
-                << this->id_handler().ReturnIntId(
-                    this->component().g().EdgeEnd(e))
+                << this->component().g().EdgeEnd(e).int_id()
                 << ", l = "
                 << this->component().g().length(e)
                 << " ~ "
-                << this->id_handler().ReturnIntId(
-                    this->component().g().conjugate(e)) << " .";
+                << this->component().g().conjugate(e).int_id() << " .";
         return ss.str();
     }
 
@@ -367,25 +359,22 @@ class NonconjugateDataPrinter: public DataPrinter<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
   public:
-    NonconjugateDataPrinter(Graph const& g,
-                            BaseIdTrackHandler<VertexId, EdgeId> const& int_ids) :
-            base(g, int_ids) {
+    NonconjugateDataPrinter(Graph const& g) :
+            base(g) {
     }
 
-    NonconjugateDataPrinter(const GraphComponent<Graph>& graph_component,
-                            BaseIdTrackHandler<VertexId, EdgeId> const& int_ids) :
-            base(graph_component, int_ids) {
+    NonconjugateDataPrinter(const GraphComponent<Graph>& graph_component) :
+            base(graph_component) {
     }
 
     template<class VertexIt>
-    NonconjugateDataPrinter(const Graph& g, VertexIt begin, VertexIt end,
-                            BaseIdTrackHandler<VertexId, EdgeId> const& int_ids) :
-            base(GraphComponent<Graph>(g, begin, end), int_ids) {
+    NonconjugateDataPrinter(const Graph& g, VertexIt begin, VertexIt end) :
+            base(GraphComponent<Graph>(g, begin, end)) {
     }
 
     std::string ToPrint(VertexId v) const {
         stringstream ss;
-        ss << "Vertex " << this->id_handler().ReturnIntId(v) << " .";
+        ss << "Vertex " << v.int_id() << " .";
         return ss.str();
     }
 
@@ -393,13 +382,12 @@ class NonconjugateDataPrinter: public DataPrinter<Graph> {
         stringstream ss;
         ss
                 << "Edge "
-                << this->id_handler().ReturnIntId(e)
+                << e.int_id()
                 << " : "
-                << this->id_handler().ReturnIntId(
-                    this->component().g().EdgeStart(e))
+                << this->component().g().EdgeStart(e).int_id()
                 << " -> "
-                << this->id_handler().ReturnIntId(
-                    this->component().g().EdgeEnd(e)) << ", l = "
+                << this->component().g().EdgeEnd(e).int_id()
+                << ", l = "
                 << this->component().g().length(e) << " .";
         return ss.str();
     }
@@ -437,7 +425,8 @@ class DataScanner {
             in >> t;
             in >> delim;
             VERIFY(delim == ".");
-            setting_f(id_handler_.ReturnEdgeId(edge_id), t);
+            VERIFY(this->edge_id_map().find(edge_id) != this->edge_id_map().end());
+            setting_f(this->edge_id_map()[edge_id], t);
         }
     }
 
@@ -448,7 +437,9 @@ class DataScanner {
         for (size_t i = 0 ; i < cnt; ++i) {
             size_t edge_id;
             in >> edge_id;
-            t.Load(id_handler_.ReturnEdgeId(edge_id), in);
+            VERIFY(this->edge_id_map().find(edge_id) != this->edge_id_map().end());
+            EdgeId eid = this->edge_id_map().find(edge_id)->second;
+            t.Load(eid, in);
             string delim;
             in >> delim;
             VERIFY(delim == ".");
@@ -504,8 +495,9 @@ class DataScanner {
                                 &first_real_id, &second_real_id, &d, &w, &v);
             VERIFY(read_count == 5);
             TRACE(first_real_id<< " " << second_real_id << " " << d << " " << w << " " << v);
-            EdgeId e1 = id_handler_.ReturnEdgeId(first_real_id);
-            EdgeId e2 = id_handler_.ReturnEdgeId(second_real_id);
+            VERIFY(this->edge_id_map().find(first_real_id) != this->edge_id_map().end())
+            EdgeId e1 = this->edge_id_map()[first_real_id];
+            EdgeId e2 = this->edge_id_map()[second_real_id];
             if (e1 == EdgeId(NULL) || e2 == EdgeId(NULL))
                 continue;
             TRACE(e1 << " " << e2 << " " << d << " " << w);
@@ -542,7 +534,8 @@ class DataScanner {
                 //      INFO (contigId<<" "<< start_pos<<" "<<end_pos);
                 //      VERIFY(read_count == 3);
                 VERIFY(read_count == 5);
-                EdgeId eid = id_handler_.ReturnEdgeId(edge_real_id);
+                VERIFY(this->edge_id_map().find(edge_real_id) != this->edge_id_map().end());
+                EdgeId eid = this->edge_id_map()[edge_real_id];
                 edge_pos.AddEdgePosition(eid, string(contigId), start_pos - 1, end_pos, m_start_pos - 1, m_end_pos);
             }
         }
@@ -552,11 +545,11 @@ class DataScanner {
   private:
     Graph& g_;
     //  int edge_count_;
-    BaseIdTrackHandler<VertexId, EdgeId>& id_handler_;
+    map<size_t, EdgeId> edge_id_map_;
+    map<size_t, VertexId> vertex_id_map_;
 
   protected:
-    DataScanner(Graph &g, BaseIdTrackHandler<VertexId, EdgeId>& id_handler) :
-            g_(g), id_handler_(id_handler) {
+    DataScanner(Graph &g) : g_(g) {
         INFO("Creating of scanner started");
         //    edge_count_ = 0;
     }
@@ -565,8 +558,20 @@ class DataScanner {
         return g_;
     }
 
-    BaseIdTrackHandler<VertexId, EdgeId>& id_handler() {
-        return id_handler_;
+    map<size_t, EdgeId> &edge_id_map() {
+        return edge_id_map_;
+    }
+
+    map<size_t, VertexId> &vertex_id_map() {
+        return vertex_id_map_;
+    }
+
+    const map<size_t, EdgeId> &edge_id_map() const {
+        return edge_id_map_;
+    }
+
+    const map<size_t, VertexId> &vertex_id_map() const {
+        return vertex_id_map_;
     }
 
   public:
@@ -578,18 +583,34 @@ class DataScanner {
 template<class Graph>
 class ConjugateDataScanner: public DataScanner<Graph> {
     typedef DataScanner<Graph> base;
+public:
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
+private:
+    restricted::IdSegmentStorage CreateIdStorage(const string& file_name) {
+        FILE* file = fopen((file_name + ".gid").c_str(), "r");
+        //This is to support compatibility to old saves. Will be removed soon
+        if(file == NULL) {
+            return this->g().GetGraphIdDistributor().ReserveUpTo(1000000000);
+        }
+        VERIFY_MSG(file != NULL, "Couldn't find file " << (file_name + ".gid"));
+        size_t max;
+        int flag = fscanf(file, "%zu\n", &max);
+        VERIFY(flag == 1);
+        fclose(file);
+        return this->g().GetGraphIdDistributor().ReserveUpTo(max);
+    }
+
   public:
     /*virtual*/
     void LoadGraph(const string& file_name) {
+        int flag;
+        restricted::IdSegmentStorage id_storage = CreateIdStorage(file_name);
         INFO("Trying to read conjugate de bruijn graph from " << file_name << ".grp");
         FILE* file = fopen((file_name + ".grp").c_str(), "r");
         VERIFY_MSG(file != NULL, "Couldn't find file " << (file_name + ".grp"));
         FILE* sequence_file = fopen((file_name + ".sqn").c_str(), "r");
         VERIFY_MSG(file != NULL, "Couldn't find file " << (file_name + ".sqn"));
-        set<int> vertex_set;
-        set<int> edge_set;
         INFO("Reading conjugate de bruijn  graph from " << file_name << " started");
         size_t vertex_count;
         size_t edge_count;
@@ -601,14 +622,14 @@ class ConjugateDataScanner: public DataScanner<Graph> {
             TRACE("Vertex "<<vertex_real_id<<" ~ "<<conjugate_id<<" .");
             VERIFY(flag == 2);
 
-            if (vertex_set.find((int) vertex_real_id) == vertex_set.end()) {
-                VertexId vid = this->g().AddVertex();
+            if (this->vertex_id_map().find((int) vertex_real_id) == this->vertex_id_map().end()) {
+                size_t ids[2] = {vertex_real_id, conjugate_id};
+                auto id_distributor = id_storage.GetSegmentIdDistributor(ids, ids + 2);
+                VertexId vid = this->g().AddVertex(typename Graph::VertexData(), id_distributor);
                 VertexId conj_vid = this->g().conjugate(vid);
 
-                this->id_handler().AddVertexIntId(vid, vertex_real_id);
-                this->id_handler().AddVertexIntId(conj_vid, conjugate_id);
-                vertex_set.insert((int) conjugate_id);
-                TRACE(vid<<" ( "<< this->id_handler().ReturnVertexId(vertex_real_id) <<" )   "<< conj_vid << "( "<<this->id_handler().ReturnVertexId(conjugate_id)<<" )  added");
+                this->vertex_id_map()[vertex_real_id] = vid;
+                this->vertex_id_map()[conjugate_id] = conj_vid;
             }
         }
 
@@ -642,24 +663,21 @@ class ConjugateDataScanner: public DataScanner<Graph> {
             VERIFY(flag == 2);
             TRACE("Edge " << e_real_id << " : " << start_id << " -> "
                   << fin_id << " l = " << length << " ~ " << conjugate_edge_id);
-            if (edge_set.find((int) e_real_id) == edge_set.end()) {
+            if (this->edge_id_map().find((int) e_real_id) == this->edge_id_map().end()) {
+                size_t ids[2] = {e_real_id, conjugate_edge_id};
+                auto id_distributor = id_storage.GetSegmentIdDistributor(ids, ids + 2);
                 Sequence tmp(longstring);
-                TRACE(start_id << " " << fin_id << " " << this->id_handler().ReturnVertexId(start_id)
-                      << " " << this->id_handler().ReturnVertexId(fin_id));
-                EdgeId eid = this->g().AddEdge(
-                    this->id_handler().ReturnVertexId(start_id),
-                    this->id_handler().ReturnVertexId(fin_id), tmp);
-                this->id_handler().AddEdgeIntId(eid, e_real_id);
-                this->id_handler().AddEdgeIntId(this->g().conjugate(eid), conjugate_edge_id);
-                edge_set.insert((int) conjugate_edge_id);
+                EdgeId eid = this->g().AddEdge(this->vertex_id_map()[start_id], this->vertex_id_map()[fin_id], tmp, id_distributor);
+                this->edge_id_map()[e_real_id] = eid;
+                this->edge_id_map()[conjugate_edge_id] = this->g().conjugate(eid);
             }
         }
         fclose(file);
         fclose(sequence_file);
     }
   public:
-    ConjugateDataScanner(Graph& g, BaseIdTrackHandler<VertexId, EdgeId>& id_handler) :
-            base(g, id_handler) {
+    ConjugateDataScanner(Graph& g) :
+            base(g) {
     }
 };
 
@@ -696,7 +714,7 @@ class NonconjugateDataScanner: public DataScanner<Graph> {
             flag = fscanf(file, "\n");
             VERIFY(flag == 0);
             VertexId vid = this->g().AddVertex();
-            this->id_handler().AddVertexIntId(vid, vertex_real_id);
+            this->vertex_id_map()[vertex_real_id] = vid;
             TRACE(vid);
         }
         size_t tmp_edge_count;
@@ -720,20 +738,19 @@ class NonconjugateDataScanner: public DataScanner<Graph> {
             flag = fscanf(file, "\n");
             VERIFY(flag == 0);
             Sequence tmp(longstring);
-            TRACE(
-                start_id<<" "<< fin_id <<" "<< this->id_handler().ReturnVertexId(start_id)<<" "<< this->id_handler().ReturnVertexId(fin_id));
+            VERIFY(this->vertex_id_map().find(start_id) != this->vertex_id_map().end());
+            VERIFY(this->vertex_id_map().find(fin_id) != this->vertex_id_map().end());
             EdgeId eid = this->g().AddEdge(
-                this->id_handler().ReturnVertexId(start_id),
-                this->id_handler().ReturnVertexId(fin_id), tmp);
-            this->id_handler().AddEdgeIntId(eid, e_real_id);
-
+                this->vertex_id_map()[start_id],
+                this->vertex_id_map()[fin_id], tmp);
+            this->edge_id_map()[e_real_id] = eid;
         }
         fclose(file);
         fclose(sequence_file);
     }
 
-    NonconjugateDataScanner(Graph &g, BaseIdTrackHandler<VertexId, EdgeId>& id_handler) :
-            base(g, id_handler) {
+    NonconjugateDataScanner(Graph &g) :
+            base(g) {
     }
 };
 
@@ -785,8 +802,7 @@ void PrintGraphPack(const string& file_name,
 
 template<class graph_pack>
 void PrintGraphPack(const string& file_name, const graph_pack& gp) {
-    typename PrinterTraits<typename graph_pack::graph_t>::Printer printer(gp.g,
-                                                                          gp.int_ids);
+    typename PrinterTraits<typename graph_pack::graph_t>::Printer printer(gp.g);
     PrintGraphPack(file_name, printer, gp);
 }
 
@@ -891,8 +907,7 @@ void PrintSingleLongReads(const string& file_name, const LongReadContainer<Graph
 
 template<class graph_pack>
 void PrintAll(const string& file_name, const graph_pack& gp) {
-    typename PrinterTraits<typename graph_pack::graph_t>::Printer
-            printer(gp.g, gp.g.begin(), gp.g.end(), gp.int_ids);
+    typename PrinterTraits<typename graph_pack::graph_t>::Printer printer(gp.g, gp.g.begin(), gp.g.end());
     PrintGraphPack(file_name, printer, gp);
     PrintPairedIndices(file_name, printer, gp.paired_indices);
     PrintClusteredIndices(file_name, printer, gp.clustered_indices);
@@ -907,7 +922,7 @@ void PrintWithPairedIndex(const string& file_name, const graph_pack& gp,
                           const PairedInfoIndexT<typename graph_pack::graph_t>& paired_index,
                           bool clustered_index = false) {
     typename PrinterTraits<typename graph_pack::graph_t>::Printer printer(gp.g,
-                                                                          begin, end, gp.int_ids);
+                                                                          begin, end);
     PrintWithPairedIndex(file_name, printer, gp, paired_index, clustered_index);
 }
 
@@ -916,7 +931,7 @@ void PrintWithClusteredIndex(const string& file_name, const graph_pack& gp,
                              VertexIt begin, VertexIt end,
                              const PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index) {
     typename PrinterTraits<typename graph_pack::graph_t>::Printer printer(gp.g,
-                                                                          begin, end, gp.int_ids);
+                                                                          begin, end);
     PrintWithPairedIndex(file_name, printer, gp, clustered_index, true);
 }
 
@@ -932,7 +947,7 @@ template<class graph_pack, class VertexIt>
 void PrinGraphPack(const string& file_name, const graph_pack& gp,
                    VertexIt begin, VertexIt end) {
     typename PrinterTraits<typename graph_pack::graph_t>::Printer printer(gp.g,
-                                                                          begin, end, gp.int_ids);
+                                                                          begin, end);
     PrintGraphPack(file_name, printer, gp);
 }
 
@@ -948,7 +963,7 @@ void PrintWithPairedIndices(const string& file_name, const graph_pack& gp,
                             bool clustered_index = false) {
 
     typename PrinterTraits<typename graph_pack::graph_t>::Printer
-            printer(gp.g, gp.g.begin(), gp.g.end(), gp.int_ids);
+            printer(gp.g, gp.g.begin(), gp.g.end());
 
     PrintWithPairedIndices(file_name, printer, gp, paired_indices, clustered_index);
 }
@@ -1077,7 +1092,7 @@ template<class graph_pack>
 void ScanWithPairedIndex(const string& file_name, graph_pack& gp,
                          PairedInfoIndexT<typename graph_pack::graph_t>& paired_index,
                          bool clustered_index = false) {
-    typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(gp.g, gp.int_ids);
+    typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(gp.g);
     ScanWithPairedIndex(file_name, scanner, gp, paired_index, clustered_index);
 }
 
@@ -1098,7 +1113,7 @@ template<class graph_pack>
 void ScanWithPairedIndices(const string& file_name, graph_pack& gp,
                            PairedInfoIndicesT<typename graph_pack::graph_t>& paired_indices,
                            bool clustered_index = false) {
-    typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(gp.g, gp.int_ids);
+    typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(gp.g);
     ScanWithPairedIndices(file_name, scanner, gp, paired_indices, clustered_index);
 }
 
@@ -1110,10 +1125,9 @@ void ScanWithClusteredIndices(const string& file_name, graph_pack& gp,
 }
 
 template<class Graph>
-void ScanBasicGraph(const string& file_name, Graph& g,
-                    BaseIdTrackHandler<VertexId, EdgeId>& int_ids) {
-    typename ScannerTraits<Graph>::Scanner scanner(g, int_ids);
-    ScanBasicGraph(file_name, scanner);
+void ScanBasicGraph(const string& file_name, Graph& g) {
+    typename ScannerTraits<Graph>::Scanner scanner(g);
+    ScanBasicGraph<Graph>(file_name, scanner);
 }
 
 template<class Graph>
@@ -1125,16 +1139,14 @@ void ScanSingleLongReads(const string& file_name, LongReadContainer<Graph>& sing
 
 template<class graph_pack>
 void ScanGraphPack(const string& file_name, graph_pack& gp) {
-    typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(gp.g,
-                                                                          gp.int_ids);
+    typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(gp.g);
     ScanGraphPack(file_name, scanner, gp);
 }
 
 template<class graph_pack>
 void ScanAll(const std::string& file_name, graph_pack& gp,
              bool force_exists = true) {
-    typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(gp.g,
-                                                                          gp.int_ids);
+    typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(gp.g);
     ScanGraphPack(file_name, scanner, gp);
     ScanPairedIndices(file_name, scanner, gp.paired_indices, force_exists);
     ScanClusteredIndices(file_name, scanner, gp.clustered_indices, force_exists);

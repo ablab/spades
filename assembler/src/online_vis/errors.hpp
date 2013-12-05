@@ -96,8 +96,8 @@ namespace online_visualization {
     return true;
   }
 
-  bool CheckVertexExists(const IdTrackHandler<Graph>& int_ids, size_t vertex_id) {
-    VertexId vertex = int_ids.ReturnVertexId(vertex_id);
+  bool CheckVertexExists(const GraphElementFinder<Graph>& finder, size_t vertex_id) {
+    VertexId vertex = finder.ReturnVertexId(vertex_id);
     if (vertex == VertexId(NULL)) {
       FireVertexDoesNotExist(vertex_id);
       return false;
@@ -107,8 +107,8 @@ namespace online_visualization {
     }
   }
 
-  bool CheckEdgeExists(const IdTrackHandler<Graph>& int_ids, size_t edge_id) {
-    EdgeId edge = int_ids.ReturnEdgeId(edge_id);
+  bool CheckEdgeExists(const GraphElementFinder<Graph>& finder, size_t edge_id) {
+    EdgeId edge = finder.ReturnEdgeId(edge_id);
     if (edge == EdgeId(NULL)) {
       FireEdgeDoesNotExist(edge_id);
       return false;

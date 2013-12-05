@@ -33,9 +33,11 @@ typedef pair<Range, bool> StrandRange;
 
 class BlockInfoProvider {
     const Graph& g_;
+    omnigraph::GraphElementFinder<Graph> finder_;
 
 public:
-    BlockInfoProvider(const Graph& g) : g_(g) {
+    BlockInfoProvider(const Graph& g) : g_(g), finder_(g) {
+        finder_.Init();
     }
 
     Block conjugate(const Block& block) const {
@@ -51,7 +53,7 @@ public:
     }
 
     EdgeId edge_id(const Block& block) const {
-        return g_.int_ids().ReturnEdgeId(block);
+        return finder_.ReturnEdgeId(block);
     }
 
     const Graph& g() const {
@@ -947,10 +949,9 @@ void DrawGraph(const vector<StrandRange>& all_ranges,
     INFO("Threading " << full_mosaic_ranges.size() << " full mosaics");
     FillPos(gp, *full_mosaic_pos_stream);
 
-    typedef omnigraph::TotalLabelerGraphStruct  <debruijn_graph::ConjugateDeBruijnGraph>    total_labeler_graph_struct;
     typedef omnigraph::TotalLabeler             <debruijn_graph::ConjugateDeBruijnGraph>    total_labeler;
-    total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
-    total_labeler labeler/*tot_lab*/(&graph_struct);
+    total_labeler_graph_struct graph_struct(gp.g, &gp.edge_pos);
+    total_labeler labeler/*tot_lab*/(gp.g, gp.edge_pos);
 
     shared_ptr<GraphSplitter<Graph>> splitter = omnigraph::ReliableSplitter(gp.g,
             numeric_limits<size_t>::max(),

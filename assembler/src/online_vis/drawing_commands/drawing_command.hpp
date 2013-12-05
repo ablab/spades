@@ -61,7 +61,7 @@ namespace online_visualization {
             }
 
             void DrawVertex(DebruijnEnvironment& curr_env, size_t vertex_id, string label = "") const {
-                DrawPicture(curr_env, curr_env.int_ids().ReturnVertexId(vertex_id), label);
+                DrawPicture(curr_env, curr_env.finder().ReturnVertexId(vertex_id), label);
             }
 
 

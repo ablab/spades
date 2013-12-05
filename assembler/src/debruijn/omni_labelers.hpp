@@ -19,7 +19,6 @@
 
 namespace debruijn_graph
 {
-typedef omnigraph::TotalLabelerGraphStruct  <ConjugateDeBruijnGraph>	total_labeler_graph_struct;
 typedef omnigraph::TotalLabeler             <ConjugateDeBruijnGraph>    total_labeler;
 typedef omnigraph::GraphLabeler             <ConjugateDeBruijnGraph>    graph_labeler;
 

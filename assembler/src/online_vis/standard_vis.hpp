@@ -23,7 +23,6 @@ typedef EdgesPositionHandler<Graph> EdgePos;
 typedef Graph::VertexId VertexId;
 typedef Graph::EdgeId EdgeId;
 
-typedef omnigraph::TotalLabelerGraphStruct  <debruijn_graph::ConjugateDeBruijnGraph>	total_labeler_graph_struct;
 typedef omnigraph::TotalLabeler             <debruijn_graph::ConjugateDeBruijnGraph>    total_labeler;
 typedef omnigraph::GraphLabeler             <debruijn_graph::ConjugateDeBruijnGraph>    graph_labeler;
 

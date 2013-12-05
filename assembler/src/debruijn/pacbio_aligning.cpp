@@ -127,7 +127,7 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
 
 void PacBioAligning::run(conj_graph_pack &gp, const char*) {
     using namespace omnigraph;
-    total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
+    total_labeler_graph_struct graph_struct(gp.g, &gp.edge_pos);
     total_labeler labeler/*tot_lab*/(&graph_struct);
     int lib_id = -1;
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {

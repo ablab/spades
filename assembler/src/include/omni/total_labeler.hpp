@@ -28,85 +28,35 @@ using namespace omnigraph;
 namespace omnigraph {
 
 template<class Graph>
-class TotalLabelerGraphStruct
-    : boost::noncopyable
-{
-public:
-	const Graph& g_;
-	const IdTrackHandler<Graph>* IDs;
-	const EdgesPositionHandler<Graph>* EdgesPos;
-	const EdgeLabelHandler<Graph>* EdgesLabels;
-	TotalLabelerGraphStruct(const Graph &g, const IdTrackHandler<Graph>* id_handler, const EdgesPositionHandler<Graph>* position_handler,
-			const EdgeLabelHandler<Graph>* label_handler = NULL): g_(g),
-							IDs(id_handler), EdgesPos(position_handler), EdgesLabels(label_handler)	{
-
-	}
-	~TotalLabelerGraphStruct(){};
-};
-
-template<class Graph>
 class TotalLabeler: public GraphLabeler<Graph> {
-
+private:
+    const Graph& g_;
+    const EdgesPositionHandler<Graph> &edges_positions_;
 protected:
 	typedef GraphLabeler<Graph> super;
 	typedef typename super::EdgeId EdgeId;
 	typedef typename super::VertexId VertexId;
 public:
-	const TotalLabelerGraphStruct<Graph>* graph_struct;
-	const TotalLabelerGraphStruct<Graph>* proto_graph_struct;
 
-	TotalLabeler(const TotalLabelerGraphStruct<Graph>* g_struct, const TotalLabelerGraphStruct<Graph>* proto_g_struct = NULL) :
-		graph_struct(g_struct), proto_graph_struct(proto_g_struct)  {
-
-		if ((proto_graph_struct != NULL)){
-			VERIFY(proto_graph_struct->g_.ReturnIntIdPointer());
-		}
+	TotalLabeler(const Graph &g, const EdgesPositionHandler<Graph> &position_handler) :
+		g_(g), edges_positions_(position_handler) {
 	}
 
 	virtual std::string label(VertexId vertexId) const {
-		size_t vId = graph_struct->IDs->ReturnIntId(vertexId);
-		return ToString(vId);
+		return ToString(vertexId.int_id());
 	}
 
-	std::string OldEdgeIdToStr(EdgeId e_id) const {
-		if (proto_graph_struct != NULL)
-			if (proto_graph_struct->IDs != NULL){
-				int id = proto_graph_struct->IDs->ReturnIntId(e_id);
-				return ToString(id);
-			}
-		return ToString(e_id);
+	std::string edge_id_str(EdgeId e) const {
+	    return graph_struct->g_.str(e);
 	}
 
 	virtual std::string label(EdgeId edgeId) const {
-
-
-
 		std::string ret_label;
-		if (graph_struct->IDs != NULL) {
-			ret_label += "Id "+graph_struct->IDs->str(edgeId)+"\\n";
-		}
-
-		if (graph_struct->EdgesPos != NULL){
-			ret_label += "Positions:\\n"+ graph_struct->EdgesPos->str(edgeId);
-		}
-		if (graph_struct->EdgesLabels != NULL){
-			if ((proto_graph_struct != NULL) && (proto_graph_struct->IDs != NULL)) {
-				boost::function<string (EdgeId)> f = boost::bind(&IdTrackHandler<Graph>::str, boost::ref(*(proto_graph_struct->IDs)), _1);
-				ret_label += "Labels:\\n" + graph_struct->EdgesLabels->str(edgeId, f);
-			}
-			else {
-				ret_label += "Labels:\\n" + graph_struct->EdgesLabels->str(edgeId);
-			}
-		}
-
-
-
-		size_t len = graph_struct->g_.length(edgeId);
-
-		double cov = graph_struct->g_.coverage(edgeId);
-
+		ret_label += "Id "+graph_struct->g_.str(edgeId)+"\\n";
+		ret_label += "Positions:\\n"+ graph_struct->EdgesPos->str(edgeId);
+		size_t len = g_.length(edgeId);
+		double cov = g_.coverage(edgeId);
 		ret_label += "Len(cov): " + ToString(len) + "(" + ToString(cov) + ")";  // + graph_struct->g_.str(edgeId);
-
 		return ret_label;
 	}
 

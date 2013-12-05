@@ -34,7 +34,7 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
         CollectPositions(gp);
     }
 
-    total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
+    total_labeler_graph_struct graph_struct(gp.g, &gp.edge_pos);
     total_labeler labeler/*tot_lab*/(&graph_struct);
 
     detail_info_printer printer(gp, labeler, cfg::get().output_dir);
@@ -48,7 +48,7 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
 }
 
 void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
-    total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
+    total_labeler_graph_struct graph_struct(gp.g, &gp.edge_pos);
     total_labeler labeler/*tot_lab*/(&graph_struct);
 
     detail_info_printer printer(gp, labeler, cfg::get().output_dir);

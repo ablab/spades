@@ -384,7 +384,6 @@ public:
 
 template<class Graph>
 void SaveColoring(const Graph& g
-		, const IdTrackHandler<Graph>& /* int_ids */
 		, const ColorHandler<Graph>& coloring
 		, const string& filename) {
 	GraphComponent<Graph> whole_graph(g);
@@ -401,7 +400,7 @@ void SaveColoring(const Graph& g
 
 template<class Graph>
 void LoadColoring(const Graph& /*g*/
-		, const IdTrackHandler<Graph>& int_ids
+		, const omnigraph::GraphElementFinder<Graph>& element_finder
 		, ColorHandler<Graph>& coloring
 		, const string& filename) {
 	ifstream stream((filename + ".clr").c_str());
@@ -412,7 +411,7 @@ void LoadColoring(const Graph& /*g*/
 		stream >> id;
 		string color_string;
 		stream >> color_string;
-		coloring.PaintVertex(int_ids.ReturnVertexId(id), TColorSet(color_string));
+		coloring.PaintVertex(element_finder.ReturnVertexId(id), TColorSet(color_string));
 	}
 	size_t e_count;
 	stream >> e_count;
@@ -421,7 +420,7 @@ void LoadColoring(const Graph& /*g*/
 		stream >> id;
 		string color_string;
 		stream >> color_string;
-		coloring.PaintEdge(int_ids.ReturnEdgeId(id), TColorSet(color_string));
+		coloring.PaintEdge(element_finder.ReturnEdgeId(id), TColorSet(color_string));
 	}
 }
 

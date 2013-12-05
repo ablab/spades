@@ -614,8 +614,11 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
 
     // Handlers
     virtual void HandleAdd(EdgeId edge) {
-        TRACE("Handling Addition " << int_id(edge));
-        this->AddPairInfo(edge, edge, 0., 0., 0.);
+#pragma omp critical
+        {
+            TRACE("Handling Addition " << int_id(edge));
+            this->AddPairInfo(edge, edge, 0., 0., 0.);
+        }
     }
 
     virtual void HandleDelete(EdgeId edge) {

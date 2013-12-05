@@ -25,7 +25,7 @@ BOOST_AUTO_TEST_CASE( AgreementTest ) {
                        false, false,
                        /*flanking_range*/50);
     gp.index.Detach();
-    graphio::ScanBasicGraph(filename, gp.g, gp.int_ids);
+    graphio::ScanBasicGraph(filename, gp.g);
     bool loaded = graphio::LoadEdgeIndex(filename, gp.index.inner_index());
     VERIFY(loaded);
     gp.index.Update();
@@ -51,7 +51,7 @@ BOOST_AUTO_TEST_CASE( AgreementTest2 ) {
                        false, false,
                        /*flanking_range*/50);
     gp.index.Detach();
-    graphio::ScanBasicGraph(filename, gp.g, gp.int_ids);
+    graphio::ScanBasicGraph(filename, gp.g);
     bool loaded = graphio::LoadEdgeIndex("./data/debruijn/ECOLI_IS220_QUAKE_400K/K55/latest/saves/construction", gp.index.inner_index());
     VERIFY(loaded);
     gp.index.Update();

@@ -202,7 +202,7 @@ class SimpleSequenceMapper<Graph, runtime_k::RtSeq> {
 //
 //    //DEBUG
 //    //		for (size_t i = 0; i < passed_edges.size(); ++i) {
-//    //			cerr << int_ids_.ReturnIntId(passed_edges[i]) << " (" << range_mapping[i] << ")"<< "; ";
+//    //			cerr << passed_edges[i].int_id() << " (" << range_mapping[i] << ")"<< "; ";
 //    //		}
 //    //		cerr << endl;
 //    //DEBUG

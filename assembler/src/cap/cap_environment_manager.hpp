@@ -305,7 +305,7 @@ class CapEnvironmentManager {
 
     // Saving graph
     /*
-    debruijn_graph::graphio::PrinterTraits<Graph>::Printer printer(*env_->graph_, *env_->int_ids_);
+    debruijn_graph::graphio::PrinterTraits<Graph>::Printer printer(*env_->graph_);
 	printer.SaveGraph(filename);
 	printer.SaveEdgeSequences(filename);
 	printer.SavePositions(filename, *env_->edge_pos_);
@@ -317,7 +317,7 @@ class CapEnvironmentManager {
     }
 
     // Saving coloring of graph
-    cap::SaveColoring(*env_->graph_, *env_->int_ids_, *env_->coloring_, filename);
+    cap::SaveColoring(*env_->graph_, *env_->coloring_, filename);
   }
 
   void DrawPics(std::string folder) const {
@@ -476,7 +476,7 @@ class CapEnvironmentManager {
 
     env_->coloring_ = std::make_shared<ColorHandler<Graph> >(env_->graph(), env_->genome_cnt());
     INFO("Loading coloring from " << path);
-    cap::LoadColoring(*env_->graph_, *env_->int_ids_, *env_->coloring_, path);
+    cap::LoadColoring(*env_->graph_, *env_->element_finder_, *env_->coloring_, path);
 
     env_->CheckConsistency();
   }
