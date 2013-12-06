@@ -238,6 +238,8 @@ public:
         prev_ = data_.back();
         now_ = data_.back();
     }
+private:
+    DECL_LOGGER("BidirectionalPath")
 
 protected:
 	const Graph& g_;

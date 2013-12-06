@@ -116,6 +116,7 @@ protected:
 
     bool excludeTrivial_;
     bool excludeTrivialWithBulges_;
+    DECL_LOGGER("ExtensionChooser");
 
     std::vector<ExtensionChooserListener *> listeners_;
 
@@ -609,6 +610,34 @@ public:
     }
 
 private:
+    void FindAllUniqueCoverageEdges(){
+        if (cfg::get().ds.single_cell) {
+            return;
+        }
+        double sum_cov = 0;
+        size_t sum_len = 0;
+        size_t total_len = 0;
+        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
+            total_len += g_.length(*iter);
+            if (g_.length(*iter) >= cfg::get().max_repeat_length) {
+                sum_cov += g_.coverage(*iter) * (double)g_.length(*iter);
+                sum_len += g_.length(*iter);
+            }
+        }
+        if ((double)sum_len < 0.25 * total_len) return;
+        sum_cov /= (double)sum_len;
+        INFO("average coverage of long edges: " << sum_cov) ;
+        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
+            if (g_.length(*iter) > 500 && (double)g_.coverage(*iter) < 1.2 * sum_cov) {
+                if (unique_edges_.find(*iter) == unique_edges_.end()) {
+                    unique_edges_.insert(*iter);
+                    unique_edges_.insert(g_.conjugate(*iter));
+                    DEBUG("Added coverage based unique edge " << g_.int_id(*iter) << " len "<< g_.length(*iter) << " " << g_.coverage(*iter));
+                }
+            }
+        }
+    }
+
     void FindAllUniqueEdges() {
         DEBUG("Looking for unique edges");
         for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
@@ -618,6 +647,8 @@ private:
             }
         }
         unique_edges_founded_ = true;
+        DEBUG("coverage based uniqueness started");
+        FindAllUniqueCoverageEdges();
         DEBUG("Unique edges are found");
     }
 

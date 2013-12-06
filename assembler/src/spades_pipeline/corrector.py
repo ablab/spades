@@ -1146,7 +1146,10 @@ def process_contig(files):
                 deleted += 1
                 break
             elif tj == 'I':
-                tmp = vote_insertions(i,insertions)
+                if i in insertions:
+                    tmp = vote_insertions(i,insertions)
+                else:
+                    log.info("Something go wrong with insertion on position i" + contig_name + ", skipping...")
 
                 profile[i]['I'] = 0
         if tmp != '':
