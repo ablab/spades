@@ -842,7 +842,7 @@ def process_contig(files):
     replaced = 0
     deleted = 0
     pair_profile = {}
-
+    bad_pairs = 0;
 
     fasta_contig = read_genome(contig_file)
 #no spam about short contig processing
@@ -874,8 +874,10 @@ def process_contig(files):
             #if arr[2].split('_')[1] != cont_num:
             if arr[2].split('.')[0] != cont_num:
                 continue
-            process_read(arr, l, 1, mult_profile, mult_insertions)
-
+            try:
+                process_read(arr, l, 1, mult_profile, mult_insertions)
+            except:
+                bad_pairs += 1
     rescontig = ""
     for i in range (0, l):
         profile.append( {} )
@@ -914,8 +916,13 @@ def process_contig(files):
             mate = config["mate_weight"]
         else:
             mate = 1
-        indelled_reads += 1 - process_read(arr, l, mate, profile, insertions)
-        total_reads += 1
+        try:
+            indelled_reads += 1 - process_read(arr, l, mate, profile, insertions)
+            total_reads += 1
+        except:
+            bad_pairs += 1
+    if bad_pairs:
+        log.info(str(bad_pairs) + " pairs of reads were handled with exceptions, something went wrong??" )
     ntime = datetime.datetime.now()
     stime = ntime - stime
     logFile.write(ntime.strftime("%Y.%m.%d_%H.%M.%S")+": File processed. ")
@@ -1015,7 +1022,10 @@ def process_contig(files):
         else:
             mate = 1
         if read_name == prev_read_name:
-            symb_num = process_read_for_pairs(arr, l,mate, pair_profile, symb_num, symb_pos, symb_state)
+            try:
+                symb_num = process_read_for_pairs(arr, l,mate, pair_profile, symb_num, symb_pos, symb_state)
+            except:
+                continue
             read_processed = 0
             for i in range(0, len (symb_pos)):
                 if symb_pos[i] in interest100:
@@ -1040,7 +1050,10 @@ def process_contig(files):
             symb_num = 0
             symb_state = []
             symb_pos = []
-            process_read_for_pairs(arr, l,mate, pair_profile, symb_num, symb_pos, symb_state)
+            try:
+                process_read_for_pairs(arr, l,mate, pair_profile, symb_num, symb_pos, symb_state)
+            except:
+                continue
             read_processed = 1
 #        total_reads += 1
         prev_read_name = read_name
