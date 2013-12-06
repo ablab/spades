@@ -55,9 +55,9 @@ void PEResolving(conj_graph_pack& gp) {
 }
 
 void RepeatResolution::run(conj_graph_pack &gp, const char*) {
-    OutputContigs(gp.g, cfg::get().output_dir + "simplified_contigs.fasta", cfg::get().use_unipaths,
+    OutputContigs(gp.g, cfg::get().output_dir + "simplified_contigs", true, cfg::get().use_unipaths,
                   cfg::get().simp.tec.plausibility_length);
-    OutputContigs(gp.g, cfg::get().output_dir + "before_rr.fasta");
+    OutputContigs(gp.g, cfg::get().output_dir + "before_rr", true);
     if (cfg::get().developer_mode) {
         FillPos(gp, gp.genome, "ref0");
         FillPos(gp, !gp.genome, "ref1");
@@ -76,7 +76,7 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
     if ((no_valid_libs ||
             cfg::get().rm == debruijn_graph::resolving_mode::rm_none) &&
             !cfg::get().long_single_mode) {
-        OutputContigs(gp.g, cfg::get().output_dir + "final_contigs.fasta");
+        OutputContigs(gp.g, cfg::get().output_dir + "final_contigs", true);
         return;
     }
 
@@ -86,15 +86,15 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
         PEResolving(gp);
     } else {
         INFO("Unsupported repeat resolver");
-        OutputContigs(gp.g, cfg::get().output_dir + "final_contigs.fasta");
+        OutputContigs(gp.g, cfg::get().output_dir + "final_contigs", true);
     }
 }
 
 void ContigOutput::run(conj_graph_pack &gp, const char*) {
-    OutputContigs(gp.g, cfg::get().output_dir + "simplified_contigs.fasta", cfg::get().use_unipaths,
+    OutputContigs(gp.g, cfg::get().output_dir + "simplified_contigs", false, cfg::get().use_unipaths,
                   cfg::get().simp.tec.plausibility_length);
-    OutputContigs(gp.g, cfg::get().output_dir + "before_rr.fasta");
-    OutputContigs(gp.g, cfg::get().output_dir + "final_contigs.fasta");
+    OutputContigs(gp.g, cfg::get().output_dir + "before_rr", true);
+    OutputContigs(gp.g, cfg::get().output_dir + "final_contigs", true);
 }
 
 

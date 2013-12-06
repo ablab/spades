@@ -199,6 +199,15 @@ private:
 		oss << sequence_data.first;
 	}
 
+	void ReportEdge(io::osequencestream_for_fastg& oss,
+            const string& sequence,
+            const string& id,
+            const vector<string>& nex_ids) {
+	    oss.set_header(id);
+        oss << nex_ids;
+        oss << sequence;
+    }
+
 public:
 	ContigPrinter(const Graph &graph, ContigConstructor<Graph> &constructor) : graph_(graph), constructor_(constructor) {
 	}
@@ -210,6 +219,32 @@ public:
 			it.HandleDelete(graph_.conjugate(*it));
 		}
 	}
+
+	template<class sequence_stream>
+    void PrintContigsFASTG(sequence_stream &os) {
+	    map<EdgeId, string> ids;
+	    int counter = 1;
+	    for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+	        EdgeId e = *it;
+	        if (ids.count(e) == 0) {
+	            string id = io::MakeContigId(++counter, graph_.length(e) + graph_.k(), graph_.coverage(e));
+	            ids[e] = id;
+	            ids[graph_.conjugate(e)] = id + "'";
+
+	        }
+        }
+        for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+
+            vector<string> next;
+            VertexId v = graph_.EdgeEnd(*it);
+            auto edges = graph_.OutgoingEdges(v);
+            for (auto next_it = edges.begin(); next_it != edges.end(); ++next_it) {
+                next.push_back(ids[*next_it]);
+            }
+            ReportEdge(os, constructor_.construct(*it).first, ids[*it], next);
+            it.HandleDelete(graph_.conjugate(*it));
+        }
+    }
 };
 
 template<class Graph>
@@ -243,8 +278,8 @@ void OutputContigs(NonconjugateDeBruijnGraph& g,
 		const string& contigs_output_filename,
 		bool output_unipath = false,
 		size_t solid_edge_length_bound = 0) {
-	INFO("Outputting contigs to " << contigs_output_filename);
-	io::osequencestream_cov oss(contigs_output_filename);
+	INFO("Outputting contigs to " << contigs_output_filename );
+	io::osequencestream_cov oss(contigs_output_filename + ".fasta");
 	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 		ReportEdge(oss, g, *it, output_unipath, solid_edge_length_bound);
 	}
@@ -253,24 +288,35 @@ void OutputContigs(NonconjugateDeBruijnGraph& g,
 
 void OutputContigs(ConjugateDeBruijnGraph& g,
 		const string& contigs_output_filename,
+		bool output_fastg = false,
 		bool output_unipath = false,
 		size_t /*solid_edge_length_bound*/ = 0,
 		bool cut_bad_connections = false) {
 	INFO("Outputting contigs to " << contigs_output_filename);
 	DefaultContigCorrector<ConjugateDeBruijnGraph> corrector(g);
-	io::osequencestream_cov oss(contigs_output_filename);
+	io::osequencestream_cov oss(contigs_output_filename + ".fasta");
+
 	if(!output_unipath) {
 		if(!cut_bad_connections) {
 			DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
 			ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);
+			if (output_fastg) {
+			    io::osequencestream_for_fastg ossfg(contigs_output_filename + ".fastg");
+			    ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigsFASTG(ossfg);
+			}
 		} else {
 			CuttingContigConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
 			ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);
+			if (output_fastg) {
+			    io::osequencestream_for_fastg ossfg(contigs_output_filename + ".fastg");
+			    ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigsFASTG(ossfg);
+			}
 		}
 	} else {
 		UnipathConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
 		ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);
 	}
+
 //	{
 //		osequencestream_cov oss(contigs_output_filename);
 //		set<ConjugateDeBruijnGraph::EdgeId> edges;

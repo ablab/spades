@@ -209,8 +209,6 @@ public:
 
 class osequencestream_for_fastg: public osequencestream_with_id  {
 protected:
-    std::ofstream scstream_;
-
     string header_;
 
     virtual void write_header(const string& s) {
@@ -220,13 +218,10 @@ protected:
 public:
     osequencestream_for_fastg(const string& filename): osequencestream_with_id(filename) {
         id_ = 1;
-        std::string sc_filename = filename + ".info";
-        scstream_.open(sc_filename.c_str());
     }
 
     virtual ~osequencestream_for_fastg() {
         ofstream_.close();
-        scstream_.close();
     }
 
     void set_header(const string& h) {
