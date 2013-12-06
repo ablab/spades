@@ -472,31 +472,34 @@ public:
     bool CheckCycled(const BidirectionalPath& path) const {
         return FindCycleStart(path) != -1;
     }
-
-    int FindCycleStart(const BidirectionalPath& path) const {
-
+    int FindPosIS(const BidirectionalPath& path) const {
         int i = (int) path.Size() - 1;
-        TRACE("Looking for IS cycle " << min_cycle_len_);
         while (i >= 0 && path.LengthAt(i) < min_cycle_len_) {
             --i;
         }
-
+        return i;
+    }
+    int FindCycleStart(const BidirectionalPath& path) const {
+        TRACE("Looking for IS cycle " << min_cycle_len_);
+        int i = FindPosIS(path);
+        DEBUG("last is pos " << i);
         if (i < 0) return -1;
-
         BidirectionalPath last = path.SubPath(i);
+        last.Print();
         int pos = path.SubPath(0, i).FindFirst(last);
-        TRACE("looking for 1sr IS cycle " << pos);
+        DEBUG("looking for 1sr IS cycle " << pos);
         return pos;
     }
 
     int RemoveCycle(BidirectionalPath& path) const {
         int pos = FindCycleStart(path);
-        TRACE("Found IS cycle " << pos);
+        DEBUG("Found IS cycle " << pos);
         if (pos == -1) {
             return -1;
         }
-        int last_edge_pos = path.FindLast(path[pos]);
-        TRACE("last edge pos " << last_edge_pos);
+        int last_edge_pos = FindPosIS(path);
+        VERIFY(last_edge_pos > -1);
+        DEBUG("last edge pos " << last_edge_pos);
         VERIFY(last_edge_pos > pos);
         for (int i = (int) path.Size() - 1; i >= last_edge_pos; --i) {
             path.PopBack();
@@ -505,11 +508,12 @@ public:
 
         size_t skip_identical_edges = 0;
         if (path.getLoopDetector().IsCycled(2, skip_identical_edges)) {
-            TRACE("Path is cycled after found IS loop, skip identival edges = " << skip_identical_edges);
+            DEBUG("Path is cycled after found IS loop, skip identival edges = " << skip_identical_edges);
             path.getLoopDetector().RemoveLoop(skip_identical_edges, false);
-            TRACE("After removing");
+            DEBUG("After removing");
         }
         VERIFY(pos < (int) path.Size());
+        DEBUG("result pos " <<pos);
         return pos;
     }
 };
@@ -589,7 +593,7 @@ public:
                 DEBUG("path");
                 path.Print();
                 DEBUG("last subpath");
-                path.SubPath(last_cycle_pos + (int) cycle->Size()).Print();
+                path.SubPath(last_cycle_pos).Print();
                 DEBUG("cycle path");
                 cycle_path->Print();
                 DEBUG("cycle");
