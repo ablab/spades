@@ -27,14 +27,15 @@ using additional::BRUTE_DEEP;
 
 // Terminal args constants, say no magic numbers
 constexpr int ArgConfigFile = 2;
-constexpr int ArgDbFile = 4;
+constexpr int ArgDbFile = 5;
 constexpr int ArgInputFile = 3;
+constexpr int ArgOutputFile = 4;
 constexpr int ArgMode = 1;
 constexpr int ArgsMin = 4;
-constexpr int ArgsMax = 5;
+constexpr int ArgsMax = 6;
 
 void usage() {
-  std::cout << "usage: cclean <mode> <config-file> <database> <input-file>"
+  std::cout << "usage: cclean <mode> <config> <input> <output> <database>"
             << std::endl;
   std::cout << "\n<config-file>\t Path to config file" << std::endl;
   std::cout << "<database>\t Path to database file" << std::endl;
@@ -108,27 +109,28 @@ int main(int argc, char *argv[]) {
         ERROR("File " + input_file + " doesn't exists.");
         return EXIT_SUCCESS;
     }
-
-    cclean::AdapterIndex index;
-    cclean::AdapterIndexBuilder().FillAdapterIndex(data_base, index);
-
     ireadstream *input;
-
     INFO("Init file with reads-to-clean from " << input_file << " ... ");
     input = new ireadstream(input_file);
 
+    std::string output_file = argv[ArgOutputFile];
+    std::ofstream output(output_file);
+
     INFO("Start matching reads against database ...");
-    std::ofstream output(cfg::get().output_file);
+    std::ofstream aligned_output(cfg::get().output_file);
     std::ofstream bed(cfg::get().output_bed);
-    if (!output.is_open() || !bed.is_open()) {
+    if (!aligned_output.is_open() || !bed.is_open() || !output.is_open()) {
       ERROR("Cannot open output file: " << cfg::get().output_file << " or "
-                                        << cfg::get().output_bed);
+            << cfg::get().output_bed << "or " << output_file);
       return EXIT_SUCCESS;
     }
-    // Main work wrapper
-    ExactAndAlign(output, bed, input, data_base, index, mode);
 
-    output.close();
+    cclean::AdapterIndex index;
+    cclean::AdapterIndexBuilder().FillAdapterIndex(data_base, index);
+    // Main work wrapper
+    ExactAndAlign(aligned_output, bed, input, output, data_base, index, mode);
+
+    aligned_output.close();
     bed.close();
 
     delete input;

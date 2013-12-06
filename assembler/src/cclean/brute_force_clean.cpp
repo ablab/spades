@@ -20,6 +20,10 @@ using additional::NONE;
 using additional::SIMPLE;
 using additional::BRUTE_SIMPLE;
 using additional::BRUTE_DEEP;
+using cclean_output::print_alignment;
+using cclean_output::print_bed;
+using cclean_output::print_match;
+using cclean_output::print_read;
 
 static inline bool is_alignment_good(const StripedSmithWaterman::Alignment& a,
                               const std::string& sequence,
@@ -44,7 +48,9 @@ bool BruteForceClean::operator()(const Read &read) {
 void BruteForceClean::BruteSimple(const Read &read) {
   const string &read_name = read.getName();
   const string &seq_string = read.getSequenceString();
-
+//  std::cout << read.getName() << std::endl;
+//  std::cout << read.getPhredQualityString(33) << std::endl;
+//  std::cin.ignore().get();
   Filter filter; // SSW filter
   Aligner aligner; // SSW aligner
   aligner.SetReferenceSequence(seq_string.c_str(),
@@ -67,10 +73,13 @@ void BruteForceClean::BruteSimple(const Read &read) {
 #       pragma omp critical
       {
         cuted_ += 1;
-        print_alignment(output_stream_, alignment,
+        print_alignment(aligned_output_stream_, alignment,
                         seq_string, adapt_string, read_name, db_name_);
         print_bed(bed_stream_, read_name, alignment.ref_begin,
                   alignment.ref_end);
+        Read cuted_read = cclean_utils::CutRead(read, alignment.ref_begin,
+                                                alignment.ref_end);
+        print_read(output_stream_, cuted_read);
       }
     }
 
@@ -94,7 +103,7 @@ void BruteForceClean::BruteDeep(const Read &read) {
   for (auto adapt_string: adap_seqs_) {
     aligner.Align(adapt_string.c_str(), filter, &alignment);
 
-    align_score = cclean::GetScoreWithQuality(alignment, read.getQuality());
+    align_score = cclean_utils::GetScoreWithQuality(alignment, read.getQuality());
 
     if (align_score > threshold_
         && is_alignment_good(alignment, seq_string,
@@ -102,10 +111,13 @@ void BruteForceClean::BruteDeep(const Read &read) {
 #       pragma omp critical
       {
         cuted_ += 1;
-        print_alignment(output_stream_, alignment,
+        print_alignment(aligned_output_stream_, alignment,
                         seq_string, adapt_string, read_name, db_name_);
         print_bed(bed_stream_, read_name, alignment.ref_begin,
                   alignment.ref_end);
+        Read cuted_read = cclean_utils::CutRead(read, alignment.ref_begin,
+                                                alignment.ref_end);
+        print_read(output_stream_, cuted_read);
       }
     }
 

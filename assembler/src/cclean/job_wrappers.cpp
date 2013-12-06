@@ -1,3 +1,5 @@
+#include <set>
+
 #include "job_wrappers.hpp"
 #include "logger/log_writers.hpp"
 #include "adapter_index.hpp"
@@ -5,8 +7,12 @@
 #include "adapter_index.hpp"
 #include "output.hpp"
 #include "ssw/ssw_cpp.h"
+#include "utils.hpp"
 
-#include <set>
+using cclean_output::print_alignment;
+using cclean_output::print_bed;
+using cclean_output::print_match;
+using cclean_output::print_read;
 
 static inline bool is_alignment_good(const StripedSmithWaterman::Alignment& a,
                               const std::string& sequence,
@@ -44,14 +50,17 @@ bool SimpleClean::operator()(const Read &r) {
       const std::string& query = index_.seq(*it);
       aligner.Align(query.c_str(), filter, &alignment);
 
-      if (alignment.mismatches < mismatch_threshold &&
+      if (alignment.mismatches < mismatch_threshold_ &&
           is_alignment_good(alignment, sequence, query,
-                            aligned_part_fraction)) {
+                            aligned_part_fraction_)) {
 #       pragma omp critical
         {
           aligned_ += 1;
-          print_alignment(output, alignment, sequence, query, name, db_);
-          print_bed(bed, name, alignment.ref_begin, alignment.ref_end);
+          print_alignment(aligned_output_, alignment, sequence, query, name, db_);
+          print_bed(bed_, name, alignment.ref_begin, alignment.ref_end);
+          Read cuted_read = cclean_utils::CutRead(r, alignment.ref_begin,
+                                                  alignment.ref_end);
+          print_read(output_stream_, cuted_read);
         }
       }
     }

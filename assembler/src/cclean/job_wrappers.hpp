@@ -12,22 +12,24 @@ class AdapterIndex;
 
 class SimpleClean {
 public:
-  SimpleClean(std::ostream& output, std::ostream& bed, const std::string &db,
+  SimpleClean(std::ostream& aligned_output, std::ostream& output,
+              std::ostream& bed, const std::string &db,
               const cclean::AdapterIndex &index)
-      : output(output), bed(bed),
-        mismatch_threshold(cfg::get().mismatch_threshold),
-        aligned_part_fraction(cfg::get().aligned_part_fraction),
+    : aligned_output_(aligned_output), bed_(bed), output_stream_(output),
+        mismatch_threshold_(cfg::get().mismatch_threshold),
+        aligned_part_fraction_(cfg::get().aligned_part_fraction),
         aligned_(0), index_(index), db_(db) {}
 
   bool operator()(const Read &r);
   inline size_t aligned() const { return aligned_; }
 
 private:
-  std::ostream& output;
-  std::ostream& bed;
+  std::ostream& output_stream_;
+  std::ostream& aligned_output_;
+  std::ostream& bed_;
   const std::string& db_;
-  unsigned mismatch_threshold;
-  double aligned_part_fraction;
+  unsigned mismatch_threshold_;
+  double aligned_part_fraction_;
   size_t aligned_;
   const cclean::AdapterIndex &index_;
 };

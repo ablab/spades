@@ -14,7 +14,7 @@
 #include "simple_tools.hpp"
 #include "logger/log_writers.hpp"
 
-constexpr int READS_IN_TEST = 2000000;
+constexpr int READS_IN_TEST = 15000;
 constexpr int NTH = 5;
 
 enum TestGeneratorType {
@@ -25,17 +25,12 @@ enum TestGeneratorType {
 namespace cclean_test {
 
 
-void GenerateDataSet(const string &input_file, const string &output_file,
+void GenerateDataSet(const std::string &input_file, const std::string &output_file,
                      TestGeneratorType mode = EVERY_READ) {
   // Generates dataset with TEST_GENERATOR_TYPE option
   // EVERY_READ: takes to dataset every read in range 0 to READS_IN_TEST
   if (!FileExists(input_file)) {
       std::cout << "File " << input_file << " doesn't exists." << std::endl;
-      return;
-  }
-
-  if (!FileExists(output_file)) {
-      std::cout << "File " << output_file << " doesn't exists." << std::endl;
       return;
   }
 
@@ -50,7 +45,7 @@ void GenerateDataSet(const string &input_file, const string &output_file,
 
     while (index < READS_IN_TEST && !input_stream.eof()) {
       input_stream >> next_read;
-      next_read.print(output_stream, 0);  // What is that - offset?
+      next_read.print(output_stream, Read::PHRED_OFFSET);  // What is that - offset?
       ++index;
     }
 
@@ -63,8 +58,7 @@ void GenerateDataSet(const string &input_file, const string &output_file,
   }
 }
 
-bool AreFilesDifferent(const string &new_data, const string &old_data)
-{
+bool AreFastqFilesDifferent(const std::string &new_data, const std::string &old_data) {
   if (!FileExists(new_data)) {
       std::cout << "File " << new_data << " doesn't exists." << std::endl;
       return false;
@@ -92,9 +86,7 @@ bool AreFilesDifferent(const string &new_data, const string &old_data)
     seq_new = next_new_read.getSequenceString();
     seq_old = next_old_read.getSequenceString();
     if (strcmp(seq_new.c_str(), seq_old.c_str())) {
-      std::cout << "Read " << next_new_read.getName() << " didn't match in "
-                << "old file " << old_data << " and new file " << new_data
-                << endl;
+      std::cout << "Read " << next_new_read.getName() << " didn't match" << endl;
       match = false;
     }
   }
@@ -103,6 +95,46 @@ bool AreFilesDifferent(const string &new_data, const string &old_data)
     std::cout << "Files size didn't match!" << std::endl;
     match = false;
   }
+
+  return match;
+}
+
+bool AreTextFilesDifferent(const std::string &new_data, const std::string &old_data) {
+  if (!FileExists(new_data)) {
+      std::cout << "File " << new_data << " doesn't exists." << std::endl;
+      return false;
+  }
+
+  if (!FileExists(old_data)) {
+      std::cout << "File " << old_data << " doesn't exists." << std::endl;
+      return false;
+  }
+
+  std::ifstream old_stream(old_data);
+  if (!old_stream.is_open()) {
+    std::cout << "Can't open " << old_data << "!" << std::endl;
+    return false;
+  }
+
+  std::ifstream new_stream(new_data);
+  if (!new_stream.is_open()) {
+    std::cout << "Can't open " << new_data << "!" << std::endl;
+    return false;
+  }
+
+  std::string old_line;
+  std::string new_line;
+  int i = 0;
+  bool match = true;
+
+  while ( getline(old_stream, old_line) && getline(new_stream, new_line) ) {
+        if (strcmp(old_line.c_str(), new_line.c_str())) {
+          std::cout << "File " << new_data << " didn't match with " << old_data
+                    << " on line " << i << std::endl;
+          match = false;
+        }
+        ++i;
+      }
 
   return match;
 }

@@ -5,10 +5,16 @@
 #include <io/read.hpp>
 #include "additional.cpp"
 
-namespace cclean {
+namespace cclean_utils {
 
-std::string reverseComplement(const std::string& read);
+std::string ReverseComplement(const std::string& read);
+
 double GetScoreWithQuality(const StripedSmithWaterman::Alignment &a,
                                             const Quality &qual);
+
+// Cut read from start to end position of best aligment with adapter
+Read CutRead(const Read &r, int start_pos, int end_pos);
+
+// end of namespace
 }
 #endif /* UTILS_H_ */

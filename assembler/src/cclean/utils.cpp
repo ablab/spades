@@ -5,25 +5,29 @@
 #include <vector>
 
 #include "utils.hpp"
+#include <ssw/ssw_cpp.h>
+#include <ssw/ssw_cpp.h> // Striped Smith-Waterman aligner
+#include <io/read.hpp>
+#include "additional.cpp"
 
-namespace cclean {
+namespace cclean_utils {
 
-  std::string reverseComplement(const std::string& read) {
-   std::map<char, char> reverse;
-   reverse['C'] = 'G';
-   reverse['G'] = 'C';
-   reverse['T'] = 'A';
-   reverse['A'] = 'T';
-   reverse['N'] = 'N';
+std::string ReverseComplement(const std::string& read) {
+  std::map<char, char> reverse;
+  reverse['C'] = 'G';
+  reverse['G'] = 'C';
+  reverse['T'] = 'A';
+  reverse['A'] = 'T';
+  reverse['N'] = 'N';
 
-   std::vector<char> res;
-   for(int i = 0; i < (int) read.length(); ++i) {
-    res.push_back(reverse[read[i]]);
-   }
-
-   std::reverse(res.begin(), res.end());
-   return std::string(res.begin(), res.end());
+  std::vector<char> res;
+  for(int i = 0; i < (int) read.length(); ++i) {
+   res.push_back(reverse[read[i]]);
   }
+
+  std::reverse(res.begin(), res.end());
+  return std::string(res.begin(), res.end());
+}
 
 double GetScoreWithQuality(const StripedSmithWaterman::Alignment &a,
                                             const Quality &qual)
@@ -61,5 +65,24 @@ double GetScoreWithQuality(const StripedSmithWaterman::Alignment &a,
   return score;
 }
 
-  // end of namespace cclean
+Read CutRead(const Read &r, int start_pos, int end_pos) {
+  if(start_pos > end_pos)  return r;
+  //  Step 1: cutting read sequence
+  Read read = r;
+  std::string read_seq = read.getSequenceString();
+  std::string cuted_read_seq(std::string(read_seq, 0, start_pos) +
+                             std::string(read_seq, end_pos));
+  read.setSequence(cuted_read_seq.c_str());
+
+  //  Step 2: cutting read quality string
+  std::string qual_string = read.getQuality().str();
+  if(qual_string.empty())  return read;
+  std::string cuted_qual_string(std::string(qual_string, 0, start_pos) +
+                                std::string(qual_string, end_pos));
+  read.setQuality(cuted_qual_string.c_str(), 0);
+
+  return read;
+}
+
+  // end of namespace cclean_utils
 }

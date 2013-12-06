@@ -4,9 +4,12 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <io/read.hpp>
 #include <ostream>
 #include "comparator.hpp"
 #include "ssw/ssw_cpp.h"
+
+namespace cclean_output {
 
 void print_n_times(std::ostream& output, char c, int n);
 void print_alignment(std::ostream& output,
@@ -19,5 +22,7 @@ void print_match(std::ostream& output, std::ostream& bed, std::map<std::string*,
                  const std::string& seq, const std::string &db_name);
 void print_bed(std::ostream& output, const std::string & name,
                       int start, int stop);
-
+void print_read(std::ostream& output, const Read &read);
+// end of namespace
+}
 #endif /* OUTPUT_H_ */
