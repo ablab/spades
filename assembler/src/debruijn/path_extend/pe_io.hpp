@@ -151,8 +151,8 @@ protected:
         MakeIDS(paths, ids, next_ids);
 
         multimap<VertexId, BidirectionalPath*> starting;
-        set<VertexId> visited;
-        queue<BidirectionalPath*> path_queue;
+        //set<VertexId> visited;
+        //queue<BidirectionalPath*> path_queue;
         FindPathsOrder(paths, starting);
 
         DEBUG("RESULT");
@@ -161,43 +161,30 @@ protected:
             DEBUG(g_.int_id(it->first) << " -> " << path->Size() << ", " << path->Length());
         }
 
-        auto it = starting.begin();
-        for (; it != starting.end(); ++it) {
-            VertexId v = it->first;
-            if (visited.count(v) > 0)
-                continue;
+        for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
+            if (iter.get()->Size() == 0)
+                            continue;
 
-            DEBUG("VERTEX " << g_.int_id(v) );
-            visited.insert(v);
-            while (it != starting.upper_bound(v)) {
-                DEBUG("Adding to queue:" << ids[it->second]);
-                path_queue.push(it->second);
-                ++it;
+            BidirectionalPath* path = iter.get();
+            VertexId v = g_.EdgeEnd(path->Back());
+            DEBUG("FINAL VERTEX " << g_.int_id(v));
+            DEBUG("Node " << ids[path] << " is followed by: ");
+
+            for (auto v_it = starting.lower_bound(v); v_it != starting.upper_bound(v); ++v_it) {
+                BidirectionalPath* next_path = v_it->second;
+                DEBUG(ids[next_path]);
+                next_ids[path].push_back(ids[next_path]);
             }
-            --it;
 
-            while (!path_queue.empty()) {
-                BidirectionalPath* p = path_queue.front();
-                path_queue.pop();
+            path = iter.getConjugate();
+            v = g_.EdgeEnd(path->Back());
+            DEBUG("FINAL VERTEX " << g_.int_id(v));
+            DEBUG("Node " << ids[path] << " is followed by: ");
 
-                v = g_.EdgeEnd(p->Back());
-                bool add_new_paths = (visited.count(v) == 0);
-                DEBUG("FIANL VERTEX " << g_.int_id(v));
-                DEBUG("Node " << ids[p] << " is followed by: ");
-
-                for (auto v_it = starting.lower_bound(v); v_it != starting.upper_bound(v); ++v_it) {
-                    BidirectionalPath* next_path = v_it->second;
-                    DEBUG(ids[next_path]);
-                    next_ids[p].push_back(ids[next_path]);
-
-                    if (add_new_paths) {
-                        DEBUG("Adding to queue:" << ids[next_path]);
-                        path_queue.push(next_path);
-                    }
-                }
-                if (add_new_paths) {
-                    visited.insert(v);
-                }
+            for (auto v_it = starting.lower_bound(v); v_it != starting.upper_bound(v); ++v_it) {
+                BidirectionalPath* next_path = v_it->second;
+                DEBUG(ids[next_path]);
+                next_ids[path].push_back(ids[next_path]);
             }
         }
 
