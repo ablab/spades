@@ -735,18 +735,18 @@ public:
         BidirectionalPath max_end(g_);
         for (auto it1 = paths.begin(); it1 != paths.end(); ++it1) {
             BidirectionalPath* p1 = *it1;
-            DEBUG("begin find subpath for");
-            p1->PrintInString();
+            //DEBUG("begin find subpath for");
+            //p1->PrintInString();
             for (size_t i = 0; i < p1->Size(); ++i) {
                 if (p1->Length() - p1->LengthAt(i) > max_diff_len) {
-                    DEBUG("more max diff " << i << " len " << p1->Length() - p1->LengthAt(i))
+                    //DEBUG("more max diff " << i << " len " << p1->Length() - p1->LengthAt(i))
                     break;
                 }
                 bool contain_all = true;
                 for (size_t i1 = i + 1; i1 <= p1->Size() && contain_all; ++i1) {
                     BidirectionalPath subpath = p1->SubPath(i, i1);
-                    DEBUG("analyze subpath ");
-                    subpath.PrintInString();
+                    //DEBUG("analyze subpath ");
+                    //subpath.PrintInString();
                     for (auto it2 = paths.begin();  it2 != paths.end() && contain_all; ++it2) {
                         BidirectionalPath* p2 = *it2;
                         vector<size_t> positions2 = p2->FindAll(subpath.At(0));
@@ -758,17 +758,17 @@ public:
                                 contain = true;
                                 break;
                             } else {
-                                DEBUG("not consist with path " << pos2);
-                                p2->PrintInString();
+                                //DEBUG("not consist with path " << pos2);
+                                //p2->PrintInString();
                             }
                         }
                         if (!contain) {
-                            DEBUG("not contains all " << i);
+                            //DEBUG("not contains all " << i);
                             contain_all = false;
                         }
                     }
                     if (contain_all && (i1 - i) >= max_end.Size()) {
-                        DEBUG("common end " << i << " " << i1)
+                        //DEBUG("common end " << i << " " << i1)
                         max_end.Clear();
                         max_end.PushBack(subpath);
                     }
@@ -839,7 +839,7 @@ public:
             DEBUG("Candidate " << g_.int_id(iter->first) << " weight " << iter->second);
         }
         vector<pair<EdgeId, double> > sort_res = MapToSortVector(weights_cands);
-        DEBUG("sort res res " << sort_res.size() << " tr " << weight_priority_threshold_);
+        DEBUG("sort res " << sort_res.size() << " tr " << weight_priority_threshold_);
         if (sort_res.size() < 1 || sort_res[0].second < filtering_threshold_) {
             filtered_cands.clear();
         } else if (sort_res.size() > 1
@@ -951,13 +951,17 @@ public:
             }
             DeleteNextPaths(following_paths);
         }
+
         set<BidirectionalPath*> next_paths;
-        if (edges.size() == 0){
+        if (edges.size() == 0) {
             next_paths = path_searcher_.FindNextPaths(path, path.Back());
         } else if (best_paths.size() == edges.size()) {
             for (size_t iedge = 0; iedge < edges.size(); ++iedge) {
                 next_paths.insert(best_paths[edges[iedge].e_]);
             }
+        } else {
+            DEBUG("try scaffold tree");
+            //next_paths = path_searcher_.ScaffoldTree(path);
         }
         DEBUG("next paths size " << next_paths.size());
         EdgeContainer result = ChooseBest(path, next_paths);

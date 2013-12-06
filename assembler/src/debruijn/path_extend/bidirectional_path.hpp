@@ -695,7 +695,8 @@ public:
                 while (begin < end && At(begin) == g_.conjugate(At(end))) {
                     begin++;
                     end--;
-                }DEBUG("Found palindromic fragment from " << begin_pos << " to " << *end_pos);
+                }
+                DEBUG("Found palindromic fragment from " << begin_pos << " to " << *end_pos);
                 Print();
                 VERIFY(*end_pos < Size());
                 size_t tail_size = Size() - *end_pos - 1;
@@ -708,9 +709,11 @@ public:
                 DEBUG("tail len " << tail_len << " head len " << head_len << " palindrom_len "<< palindrom_len << " between " << between);
                 if (palindrom_len < head_len && palindrom_len < tail_len) {
                     DEBUG("too big head and end");
+                    VERIFY(palindrom_len < cfg::get().max_repeat_length);
                     continue;
                 }
                 if (between > palindrom_len) {
+                    VERIFY(palindrom_len < cfg::get().max_repeat_length);
                     DEBUG("too big part between");
                     continue;
                 }

@@ -182,12 +182,11 @@ struct PathWithDistance {
 class NextPathSearcher {
 public:
     typedef set<EdgeWithDistance, EdgeWithDistance::DistanceComparator> EdgeSet;
-
     typedef multimap<EdgeId, PathWithDistance> ConstructedPathT;
 
     NextPathSearcher(const Graph& g, const GraphCoverageMap& cover_map, size_t search_dist, PathsWeightCounter weight_counter);
-
     set<BidirectionalPath*> FindNextPaths(const BidirectionalPath& path, EdgeId begin_edge, bool jump = true);
+    set<BidirectionalPath*> ScaffoldTree(const BidirectionalPath& path);
 private:
     void GrowPath(const BidirectionalPath& init_path, Edge* e, size_t max_len, vector<Edge*>& to_add);
     Edge* AddPath(const BidirectionalPath& init_path, Edge* prev_e, size_t max_len, const BidirectionalPath& path, size_t start_pos);
@@ -227,7 +226,24 @@ inline NextPathSearcher::NextPathSearcher(const Graph& g, const GraphCoverageMap
           long_edge_len_(500),
           max_paths_(1000) {
 }
-
+inline set<BidirectionalPath*> NextPathSearcher::ScaffoldTree(const BidirectionalPath& path) {
+    Edge* start_e = new Edge(g_, path.At(0), NULL, g_.length(path.At(0)) + path.GapAt(0), path.GapAt(0));
+    Edge* e = start_e->AddPath(path, 1);
+    //jump forward when too much paths
+    DEBUG("Scaffolding tree for edge " << g_.int_id(start_e->GetId()));
+    vector<Edge*> result_edges;
+    ScaffoldChristmasTree(path, e, result_edges);
+    std::set<BidirectionalPath*> result_paths;
+    DEBUG("adding paths " << result_edges.size());
+    for (size_t i = 0; i < result_edges.size(); ++i) {
+        BidirectionalPath result_path = result_edges[i]->GetPrevPath(path.Size());
+        if (!result_path.Empty())
+            result_paths.insert(new BidirectionalPath(result_path));
+    }
+    delete start_e;
+    DEBUG( "for path " << path.GetId() << " several extension " << result_paths.size());
+    return result_paths;
+}
 inline set<BidirectionalPath*> NextPathSearcher::FindNextPaths(const BidirectionalPath& path, EdgeId begin_edge, bool jump) {
     DEBUG("begin find next paths");
     vector<Edge*> grow_paths;
@@ -252,7 +268,7 @@ inline set<BidirectionalPath*> NextPathSearcher::FindNextPaths(const Bidirection
         DEBUG("Processing path " << ipath << " of " << grow_paths.size());
         Edge* current_path = grow_paths[ipath++];
         DEBUG(" edge " << g_.int_id(current_path->GetId()));
-        DEBUG("is correct " << current_path->IsCorrect() << " is cycled " << current_path->IsCycled()  << " used " << ( used_edges.count(current_path) > 0));
+        DEBUG("is correct " << current_path->IsCorrect() << " is cycled " << current_path->IsCycled() << " used " << ( used_edges.count(current_path) > 0));
         if (!current_path->IsCorrect() || (current_path->IsCycled() && current_path->Length() > init_length) || used_edges.count(current_path) > 0) {
             used_edges.insert(current_path);
             continue;
@@ -271,14 +287,8 @@ inline set<BidirectionalPath*> NextPathSearcher::FindNextPaths(const Bidirection
         grow_paths.insert(grow_paths.end(), to_add.begin(), to_add.end());
 
         if (grow_paths.size() > max_paths_) {
-            //TODO:move to config
-            //if (!jump) {
             delete start_e;
             return set<BidirectionalPath*>();
-            //}
-            //jump forward when too much paths
-            //ScaffoldChristmasTree(path, current_path, to_add);
-            //result_edges.insert(result_edges.end(), to_add.begin(), to_add.end());
         }
     }
 
@@ -433,18 +443,24 @@ inline void NextPathSearcher::ScaffoldChristmasTree(const BidirectionalPath& pat
     DEBUG("Scaffolding when too many paths");
     vector<Edge*> candidates;
     Scaffold(path, current_path, candidates);
+    DEBUG("scaffolding candidates for tree " << candidates.size());
 
     for (Edge* ed : candidates) {
-        if (ed->Length() < path.Length() + search_dist_) {
+        DEBUG("candidate " << g_.int_id(ed->GetId()));
+        to_add.push_back(ed);
+        /*if (ed->Length() < current_path->Length() + search_dist_) {
+            int new_dist_to_search = (int)path.Length() + (int)search_dist_ - (int)ed->Length();
+
             DEBUG( "Starting new path searcher " << path.Length() << ", " << search_dist_ << " " << ed->Length() << " " << path.Length() + search_dist_ - ed->Length());
             NextPathSearcher further_searcher(g_, cover_map_, path.Length() + search_dist_ - ed->Length(), weight_counter_);
-            set<BidirectionalPath*> further_paths = further_searcher.FindNextPaths(ed->GetPrevPath(0), ed->GetId(), true);
+            set<BidirectionalPath*> further_paths = further_searcher.FindNextPaths(ed->GetPrevPath(0), ed->GetId(), false);
+            DEBUG("found for tree " << further_paths.size());
 
             for (BidirectionalPath* p : further_paths) {
                 to_add.push_back(ed->AddPath(*p, 0));
                 delete p;
             }
-        }
+       }*/
     }
 }
 
@@ -584,8 +600,20 @@ inline void NextPathSearcher::ProcessScaffoldingCandidate(EdgeWithDistance& e, E
             constructed_paths.insert(make_pair(e.e_, PathWithDistance(BidirectionalPath(g_, e.e_), e.d_)));
         } else if (g_.IncomingEdgeCount(g_.EdgeStart(e.e_)) > 0 && !looking_for_tip) {
             //No back paths -- just scaffold
-            DEBUG( "Added edge with no back path " << g_.int_id(e.e_) << " (" << g_.length(e.e_) << ")" << ", distance " << e.d_);
-            constructed_paths.insert(make_pair(e.e_, PathWithDistance(BidirectionalPath(g_, e.e_), e.d_)));
+            set<EdgeId> candidate_edges;
+            candidate_edges.insert(e.e_);
+            vector<EdgeWithDistance> jump_edges;
+            //TODO: make estimation for distance
+            weight_counter_.FindJumpEdges(current_path->GetId(), candidate_edges, 0, (int)search_dist_ + (int)g_.length(current_path->GetId()), jump_edges);
+            int dist = 100;
+            if (jump_edges.size() == 1) {
+                dist = jump_edges[0].d_;
+                DEBUG("add edge without path " << g_.int_id(e.e_) << " " << jump_edges[0].d_);
+            } else {
+                DEBUG("can't calculate dist for tree");
+            }
+            DEBUG( "Added edge with no back path " << g_.int_id(e.e_) << " (" << g_.length(e.e_) << ")" << ", distance " << dist);
+            constructed_paths.insert(make_pair(e.e_, PathWithDistance(BidirectionalPath(g_, e.e_), dist)));
         }
     } else {
         DEBUG("Found several back paths");

@@ -65,7 +65,6 @@ struct PairedInfoLibrary {
 
             }
         }
-
         return result.size();
     }
 

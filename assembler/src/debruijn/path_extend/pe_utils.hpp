@@ -131,9 +131,6 @@ public:
 
     bool IsCovered(const BidirectionalPath& path) const {
         for (size_t i = 0; i < path.Size(); ++i) {
-            if (g_.int_id(path[i]) == 39171 or g_.int_id(path[i]) == 39170) {
-                continue;
-            }
             if (!IsCovered(path[i])) {
                 return false;
             }
