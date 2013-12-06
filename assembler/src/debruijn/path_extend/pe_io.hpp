@@ -31,10 +31,15 @@ protected:
 
     size_t k_;
 
-	string ToString(const BidirectionalPath& path) const{
+	string ToString(const BidirectionalPath& path) const {
 		stringstream ss;
+		if (path.IsInterstrandBulge() && path.Size() == 1) {
+		    ss << g_.EdgeNucls(path.Back()).Subseq(k_, g_.length(path.Back())).str();
+		    return ss.str();
+		}
+
 		if (!path.Empty()) {
-			ss <<g_.EdgeNucls(path[0]).Subseq(0, k_).str();
+			ss << g_.EdgeNucls(path[0]).Subseq(0, k_).str();
 		}
 
 		for (size_t i = 0; i < path.Size(); ++i) {

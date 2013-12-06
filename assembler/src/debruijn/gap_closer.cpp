@@ -369,7 +369,8 @@ class GapCloser {
         TRACE("Processing edges " << g_.str(first) << " and " << g_.str(second));
         TRACE("first " << g_.EdgeNucls(first) << " second " << g_.EdgeNucls(second));
 
-        if (cfg::get().avoid_rc_connections && first == g_.conjugate(second)) {
+        if (cfg::get().avoid_rc_connections &&
+                (first == g_.conjugate(second) || first == second)) {
             DEBUG("Trying to join conjugate edges " << g_.int_id(first));
             return false;
         }

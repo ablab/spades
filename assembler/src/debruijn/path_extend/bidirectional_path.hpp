@@ -787,7 +787,33 @@ public:
         return vector<EdgeId>(data_.begin(), data_.end());
     }
 
+    bool CameToInterstrandBulge() const {
+        if (Empty())
+           return false;
+
+        EdgeId lastEdge = Back();
+        VertexId lastVertex = g_.EdgeEnd(lastEdge);
+
+        if (g_.OutgoingEdgeCount(lastVertex) == 2) {
+            vector<EdgeId> bulgeEdges(g_.out_begin(lastVertex), g_.out_end(lastVertex));
+            VertexId nextVertex = g_.EdgeEnd(bulgeEdges[0]);
+
+            if (bulgeEdges[0] == g_.conjugate(bulgeEdges[1]) &&
+                    nextVertex == g_.EdgeEnd(bulgeEdges[1]) &&
+                    g_.CheckUniqueOutgoingEdge(nextVertex) &&
+                    *(g_.out_begin(nextVertex)) == g_.conjugate(lastEdge)) {
+
+                DEBUG("Came to interstrand bulge " << g_.int_id(lastEdge));
+                return true;
+            }
+        }
+        return false;
+    }
+
     bool IsInterstrandBulge() const {
+        if (Empty())
+            return false;
+
         EdgeId lastEdge = Back();
         VertexId lastVertex = g_.EdgeEnd(lastEdge);
         VertexId prevVertex = g_.EdgeStart(lastEdge);
