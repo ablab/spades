@@ -230,18 +230,22 @@ private:
     Graph &g_;
     //first edge, second edge, weight, seq
     map<EdgeId, map<EdgeId, pair<size_t, string> > > new_edges_;
-
+    int closed_gaps;
+    int not_unique_gaps;
+    int chained_gaps;
 public:
     void CloseGapsInGraph(map<EdgeId, EdgeId> &replacement) {
         for (auto iter = new_edges_.begin(); iter != new_edges_.end(); ++iter) {
             if (iter->second.size() != 1) {
                 DEBUG("non-unique gap!!");
+                not_unique_gaps ++;
                 continue;
             }
             EdgeId first = iter->first;
             EdgeId second = (iter->second.begin()->first);
             if (replacement.find(first) != replacement.end() || replacement.find(second) != replacement.end()) {
                 DEBUG("sorry, gap chains are not supported yet");
+                chained_gaps++;
                 continue;
             }
 
@@ -264,17 +268,8 @@ public:
             }
             g_.DeleteEdge(first);
             g_.DeleteEdge(second);
-//            pair<EdgeId, EdgeId> split_result = g_.SplitEdge(newEdge, len_split);
-//            TRACE("GlueEdges " << g_.str(split_result.first));
-//            TRACE(g_.int_id(split_result.first) << " " << g_.int_id(split_result.second));
-//            vector<EdgeId> to_merge;
-//            EdgeId tmp1 = g_.GlueEdges(first, split_result.first);
-//            EdgeId tmp2 = g_.GlueEdges(second, split_result.second);
-//            TRACE(g_.int_id(tmp1)<< " " << g_.int_id(tmp2));
-//            to_merge.push_back(tmp1);
-//            to_merge.push_back(tmp2);
-//            newEdge = g_.MergePath(to_merge);
             size_t next_id = g_.int_id(newEdge);
+            closed_gaps ++;
             size_t next_id_conj = g_.int_id(g_.conjugate(newEdge));
             TRACE(first_id << " " << second_id << " " << next_id << " " << first_id_conj << " " << second_id_conj << " " << next_id_conj << " ");
             replacement[first] = newEdge;
@@ -282,6 +277,9 @@ public:
             replacement[first_conj] = g_.conjugate(newEdge);
             replacement[second_conj] = g_.conjugate(newEdge);
         }
+        INFO("Closed " << closed_gaps);
+        INFO(not_unique_gaps << " were not closed due to more than one possible pairing.");
+        INFO(chained_gaps << " were skipped because of gaps chains.");
         //TODO: chains of gaps!
     }
 private:
@@ -324,6 +322,9 @@ private:
 public:
     PacbioGapCloser(Graph &g)
             : g_(g) {
+        closed_gaps = 0;
+        not_unique_gaps = 0;
+        chained_gaps = 0;
     }
 
     void ConstructConsensus(size_t nthreads, GapStorage<Graph> &storage) {
