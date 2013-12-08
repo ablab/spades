@@ -707,15 +707,17 @@ public:
                 size_t palindrom_len = (size_t) max((int) LengthAt(begin_pos) - (int) LengthAt(begin), 0);
                 size_t between = (size_t) max(0, (int) LengthAt(begin) - (int) (end < Size() - 1 ? LengthAt(end + 1) : 0));
                 DEBUG("tail len " << tail_len << " head len " << head_len << " palindrom_len "<< palindrom_len << " between " << between);
-                if (palindrom_len < head_len && palindrom_len < tail_len) {
-                    DEBUG("too big head and end");
-                    VERIFY(palindrom_len < cfg::get().max_repeat_length);
-                    continue;
-                }
-                if (between > palindrom_len) {
-                    VERIFY(palindrom_len < cfg::get().max_repeat_length);
-                    DEBUG("too big part between");
-                    continue;
+                if (palindrom_len > cfg::get().max_repeat_length) {
+                    DEBUG("palindrom more then  " << cfg::get().max_repeat_length)
+                } else {
+                    if (palindrom_len < head_len && palindrom_len < tail_len) {
+                        DEBUG("too big head and end");
+                        continue;
+                    }
+                    if (between > palindrom_len) {
+                        DEBUG("to big part between");
+                        continue;
+                    }
                 }
                 bool delete_tail = tail_size < head_size;
                 if (tail_size == head_size) {
