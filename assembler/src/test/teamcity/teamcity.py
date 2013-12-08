@@ -412,9 +412,9 @@ if 'contig_storage' in dataset_info.__dict__:
         import glob
 #        sys.path.append('./src/tools/contig_analysis/')
 #        import compare_fasta
-        print("Running quast for all saved contigs now...")
-        os.system(quast_cmd + " -o " + quast_contig_dir + " " + os.path.join(contig_dir, "*.fasta") + " > " + os.path.join(contig_dir, "quast.log") + " 2> " + os.path.join(contig_dir, "quast.err"))
-        print("Done")
+#        print("Running quast for all saved contigs now...")
+#        os.system(quast_cmd + " -o " + quast_contig_dir + " " + os.path.join(contig_dir, "*.fasta") + " > " + os.path.join(contig_dir, "quast.log") + " 2> " + os.path.join(contig_dir, "quast.err"))
+#        print("Done")
 
 os.system("chmod -R 777 " + output_dir)
 sys.exit(exit_code)
