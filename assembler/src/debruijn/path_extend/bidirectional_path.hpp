@@ -237,7 +237,6 @@ public:
 private:
     DECL_LOGGER("BidirectionalPath")
 
-
 protected:
 	const Graph& g_;
 

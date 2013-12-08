@@ -295,19 +295,38 @@ private:
 		}
 	}
 
+    void CleanCondensed(const Sequence &sequence) {
+        Kmer kmer = sequence.start<Kmer>(kmer_size_);
+        KeyWithHash kwh = origin_.ConstructKWH(kmer);
+        origin_.IsolateVertex(kwh);
+        for(size_t pos = kmer_size_; pos < sequence.size(); pos++) {
+            kwh = kwh << sequence[pos];
+            origin_.IsolateVertex(kwh);
+        }
+    }
+
+    void CleanCondensed(const std::vector<Sequence> &sequences) {
+#   pragma omp parallel for schedule(guided)
+        for (size_t i = 0; i < sequences.size(); ++i) {
+            CleanCondensed(sequences[i]);
+        }
+    }
+
 	//This methods collects all loops that were not extracted by finding unbranching paths because there are no junctions on loops.
 	//TODO make parallel
-	const std::vector<Sequence> CollectLoops() const {
+	const std::vector<Sequence> CollectLoops() {
 		INFO("Collecting perfect loops");
 		UnbranchingPathFinder finder(origin_, kmer_size_);
 		std::vector<Sequence> result;
 		for (kmer_iterator it = origin_.kmer_begin(); it.good(); ++it) {
 			KeyWithHash kh = origin_.ConstructKWH(Kmer(kmer_size_, *it));
 			if (!IsJunction(kh)) {
-				result.push_back(finder.ConstructLoopFromVertex(kh));
-				KeyWithHash rc_kh = !kh;
-				if (!IsJunction(rc_kh)) {
-					result.push_back(finder.ConstructLoopFromVertex(rc_kh));
+                Sequence loop = finder.ConstructLoopFromVertex(kh);
+				result.push_back(loop);
+                CleanCondensed(loop);
+				if(loop != (!loop)) {
+                    CleanCondensed(!loop);
+					result.push_back(!loop);
 				}
 			}
 		}
@@ -338,19 +357,6 @@ public:
 		}
 		INFO("Extracting unbranching paths finished. " << sequences.size() << " sequences extracted");
 		return sequences;
-	}
-
-	void CleanCondensed(const std::vector<Sequence> &sequences) {
-#   pragma omp parallel for schedule(guided)
-        for (size_t i = 0; i < sequences.size(); ++i) {
-            Kmer kmer = sequences[i].start<Kmer>(kmer_size_);
-            KeyWithHash kwh = origin_.ConstructKWH(kmer);
-            origin_.IsolateVertex(kwh);
-            for(size_t pos = kmer_size_; pos < sequences[i].size(); pos++) {
-                kwh = kwh << sequences[i][pos];
-                origin_.IsolateVertex(kwh);
-            }
-        }
 	}
 
 	const std::vector<Sequence> ExtractUnbranchingPathsAndLoops(size_t queueMinSize, size_t queueMaxSize,

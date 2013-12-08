@@ -565,7 +565,6 @@ public:
         if (!unique_edges_founded_) {
             FindAllUniqueEdges();
         }
-
         unique_edges_founded_ = true;
         return unique_edges_.count(e) > 0;
     }
