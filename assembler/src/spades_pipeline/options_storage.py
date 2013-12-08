@@ -40,13 +40,13 @@ single_cell = False
 # pipeline options
 only_error_correction = False
 only_assembler = False
-disable_gzip_output = False
-disable_rr = False
-careful = False
+disable_gzip_output = None
+disable_rr = None
+careful = None
 
 # advanced options
 continue_mode = False
-developer_mode = False
+developer_mode = None
 dataset_yaml_filename = None
 threads = None
 memory = None
@@ -55,7 +55,7 @@ k_mers = None
 qvoffset = None # auto-detect by default
 
 # hidden options
-mismatch_corrector = False
+mismatch_corrector = None
 reference = None
 iterations = None
 bh_heap_check = None
@@ -81,9 +81,11 @@ dict_of_prefixes = dict()
 # list of spades.py options
 long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\
                "only-error-correction only-assembler "\
-               "disable-gzip-output disable-rr help test debug reference= "\
+               "disable-gzip-output disable-gzip-output:false disable-rr disable-rr:false " \
+               "help test debug debug:false reference= config-file= dataset= "\
                "bh-heap-check= spades-heap-check= help-hidden "\
-               "config-file= dataset= mismatch-correction careful continue restart-from=".split()
+               "mismatch-correction mismatch-correction:false careful careful:false " \
+               "continue restart-from=".split()
 short_options = "o:1:2:s:k:t:m:i:h"
 
 # adding multiple paired-end and mate-pair libraries support
@@ -196,13 +198,31 @@ def set_default_values():
     global threads
     global memory
     global iterations
+    global disable_gzip_output
+    global disable_rr
+    global careful
+    global mismatch_corrector
+    global developer_mode
+    global qvoffset
 
-    if not threads:
+    if threads is None:
         threads = THREADS
-    if not memory:
+    if memory is None:
         memory = MEMORY
-    if not iterations:
+    if iterations is None:
         iterations = ITERATIONS
+    if disable_gzip_output is None:
+        disable_gzip_output = False
+    if disable_rr is None:
+        disable_rr = False
+    if careful is None:
+        careful = False
+    if mismatch_corrector is None:
+        mismatch_corrector = False
+    if developer_mode is None:
+        developer_mode = False
+    if qvoffset == 'auto':
+        qvoffset = None
 
 
 def set_test_options():
@@ -266,23 +286,23 @@ def load_restart_options():
             k_mers = None  # set by default
         else:
             k_mers = restart_k_mers
-    if restart_careful:
+    if restart_careful is not None:
         careful = restart_careful
-    if restart_mismatch_corrector:
+    if restart_mismatch_corrector is not None:
         mismatch_corrector = restart_mismatch_corrector
-    if disable_gzip_output:
+    if disable_gzip_output is not None:
         disable_gzip_output = restart_disable_gzip_output
-    if restart_disable_rr:
+    if restart_disable_rr is not None:
         disable_rr = restart_disable_rr
-    if restart_threads:
+    if restart_threads is not None:
         threads = restart_threads
-    if restart_memory:
+    if restart_memory is not None:
         memory = restart_memory
-    if restart_tmp_dir:
+    if restart_tmp_dir is not None:
         tmp_dir = restart_tmp_dir
-    if restart_qvoffset:
+    if restart_qvoffset is not None:
         qvoffset = restart_qvoffset
-    if restart_developer_mode:
+    if restart_developer_mode is not None:
         developer_mode = restart_developer_mode
-    if restart_reference:
+    if restart_reference is not None:
         reference = restart_reference
