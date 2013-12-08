@@ -188,6 +188,8 @@ public:
     set<BidirectionalPath*> FindNextPaths(const BidirectionalPath& path, EdgeId begin_edge, bool jump = true);
     set<BidirectionalPath*> ScaffoldTree(const BidirectionalPath& path);
 private:
+    bool IsOutTip(VertexId v) const;
+    bool IsInTip(VertexId v) const;
     void GrowPath(const BidirectionalPath& init_path, Edge* e, size_t max_len, vector<Edge*>& to_add);
     Edge* AddPath(const BidirectionalPath& init_path, Edge* prev_e, size_t max_len, const BidirectionalPath& path, size_t start_pos);
     Edge* AnalyzeBubble(const BidirectionalPath& p, EdgeId buldge_edge, size_t gap, Edge* prev_edge);
@@ -260,7 +262,7 @@ inline set<BidirectionalPath*> NextPathSearcher::FindNextPaths(const Bidirection
     } else {
         DEBUG( "Try to search for path with last edge " << g_.int_id(path.Back()) << " Scaffolding: " << jump << ", next edges " << g_.OutgoingEdgeCount(g_.EdgeEnd(path.Back())));
     }
-    size_t init_length = e->Length();
+    //size_t init_length = e->Length();
     grow_paths.push_back(e);
 
     size_t ipath = 0;
@@ -269,7 +271,7 @@ inline set<BidirectionalPath*> NextPathSearcher::FindNextPaths(const Bidirection
         Edge* current_path = grow_paths[ipath++];
         DEBUG(" edge " << g_.int_id(current_path->GetId()));
         DEBUG("is correct " << current_path->IsCorrect() << " is cycled " << current_path->IsCycled() << " used " << ( used_edges.count(current_path) > 0));
-        if (!current_path->IsCorrect() || (current_path->IsCycled() && current_path->Length() > init_length) || used_edges.count(current_path) > 0) {
+        if (!current_path->IsCorrect() /*|| (current_path->IsCycled() && current_path->Length() > init_length) */|| used_edges.count(current_path) > 0) {
             used_edges.insert(current_path);
             continue;
         }
@@ -366,8 +368,9 @@ inline Edge* NextPathSearcher::AddPath(const BidirectionalPath& init_path, Edge*
         } else if (e->GetId() != path.At(ie)) {
             Edge* next_edge = e->AddOutEdge(path.At(ie));
             if (next_edge->IsCycled()) {
-                e->AddIncorrectOutEdge(path.At(ie));
-                e = next_edge->RemoveCycle(init_path.Length());
+                //e->AddIncorrectOutEdge(path.At(ie));
+                //e = next_edge->RemoveCycle(init_path.Length());
+                DEBUG("remove cycle");
                 break;
             } else {
                 e = next_edge;
@@ -577,7 +580,7 @@ inline void NextPathSearcher::RemoveRedundant(ConstructedPathT& constructed_path
 inline void NextPathSearcher::ProcessScaffoldingCandidate(EdgeWithDistance& e, EdgeSet& candidate_set, Edge* current_path, size_t grown_path_len,
                                                           ConstructedPathT& constructed_paths) {
 
-    bool looking_for_tip = (g_.OutgoingEdgeCount(g_.EdgeEnd(current_path->GetId())) == 0);
+    bool looking_for_tip = IsOutTip(g_.EdgeEnd(current_path->GetId()));
 
     //Search back from e till tip or maximim length back
     DEBUG(" === Searching back === ");
@@ -592,10 +595,10 @@ inline void NextPathSearcher::ProcessScaffoldingCandidate(EdgeWithDistance& e, E
     BidirectionalPath jumped_edge(g_, g_.conjugate(e.e_));
     set<BidirectionalPath*> back_paths = back_searcher.FindNextPaths(jumped_edge, jumped_edge.Back(), false);
     DEBUG(" === DONE SEARCHING === ");
-    DEBUG("Found " << back_paths.size());
+    DEBUG("Found " << back_paths.size() << " is tip " << IsInTip(g_.EdgeStart(e.e_)) << " look for tip " << looking_for_tip);
 
     if (back_paths.empty()) {
-        if (g_.IncomingEdgeCount(g_.EdgeStart(e.e_)) == 0 && looking_for_tip) {
+        if (IsInTip(g_.EdgeStart(e.e_)) && looking_for_tip) {
             DEBUG( "Added tip edge " << g_.int_id(e.e_) << " (" << g_.length(e.e_) << ")" << ", distance " << e.d_);
             constructed_paths.insert(make_pair(e.e_, PathWithDistance(BidirectionalPath(g_, e.e_), e.d_)));
         } else if (g_.IncomingEdgeCount(g_.EdgeStart(e.e_)) > 0 && !looking_for_tip) {
@@ -697,7 +700,36 @@ inline void NextPathSearcher::AddConstructedPath(const BidirectionalPath& cp, si
         }
     }
 }
-
+inline bool NextPathSearcher::IsOutTip(VertexId v) const {
+    if (g_.OutgoingEdgeCount(v) == 0) {
+        return true;
+    }
+    if (g_.OutgoingEdgeCount(v) != 1) {
+        return false;
+    }
+    EdgeId oute = *g_.OutgoingEdges(v).begin();
+    for (EdgeId ine : g_.IncomingEdges(v)) {
+        if (oute == ine) {
+            return true;
+        }
+    }
+    return false;
+}
+inline bool NextPathSearcher::IsInTip(VertexId v) const {
+    if (g_.IncomingEdgeCount(v) == 0) {
+        return true;
+    }
+    if (g_.IncomingEdgeCount(v) != 1) {
+        return false;
+    }
+    EdgeId ine = *g_.IncomingEdges(v).begin();
+    for (EdgeId oute : g_.OutgoingEdges(v)) {
+        if (oute == ine) {
+            return true;
+        }
+    }
+    return false;
+}
 inline void NextPathSearcher::FilterBackPaths(set<BidirectionalPath*>& back_paths, EdgeId edge_to_reach, set<BidirectionalPath*>& reached_paths,
                                               size_t max_len) {
     DEBUG("Searching for proper back paths");
@@ -713,8 +745,7 @@ inline void NextPathSearcher::FilterBackPaths(set<BidirectionalPath*>& back_path
         if (p->FindFirst(edge_to_reach) != -1) {
             reached_paths.insert(p);
             ++piter;
-        } else if ((g_.OutgoingEdgeCount(last_v) == 0 || (g_.OutgoingEdgeCount(last_v) == 1 && (*g_.OutgoingEdges(last_v).begin()) == last_e))
-                && p->Length() < max_len) {
+        } else if (IsInTip(last_v) == 0 && p->Length() < max_len) {
             ++piter;
         } else {
             piter = back_paths.erase(piter);

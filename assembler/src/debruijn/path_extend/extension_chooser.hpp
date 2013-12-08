@@ -1058,10 +1058,37 @@ private:
         if (common_w < 0.8 * (not_common_w1 + common_w)||
                 (HasUniqueEdges(init_path, path1, unique_init_edges) && !HasUniqueEdges(init_path, path2, unique_init_edges))) {
             return true;
-        } else {
+        } /*else {
+            map<BidirectionalPath*, double> result;
+            std::map<size_t, double> edges_to_exlude;
+            int excluded_edges = analyzer_.ExcludeTrivialWithBulges(init_path, edges_to_exlude);
+            double common_w1 = 0;
+            not_common_w1 = 0;
+            double not_common_w2 = 0;
+            for (int i = (int)excluded_edges; i >= 0; --i) {
+                if (pi1.count(i) > 0 && pi2.count(i) > 0 ) {
+                    common_w1 += std::min(pi1.at(i), pi2.at(i));
+                }
+                if (pi1.count(i) > 0) {
+                    not_common_w1 += pi1.at(i);
+                }
+                if (pi2.count(i) > 0) {
+                    not_common_w2 += pi2.at(i);
+                }
+            }
+            not_common_w1 -= common_w1;
+            not_common_w2 -= common_w1;
+            DEBUG("excluded edges " << excluded_edges
+                  << " common was " << common_w << " now " << common_w1
+                  << " not common1 " << not_common_w1 << " not_common w2 " << not_common_w2);
             DEBUG("common pi more then 0.8");
+            if (common_w1 < 0.8 * (not_common_w1 + common_w1) && not_common_w1 > 2 * not_common_w2) {
+                DEBUG("delete common helped");
+                return true;
+            }
             return false;
-        }
+        }*/
+        return false;
     }
     set<size_t> FindNotCommonEdges(const BidirectionalPath& path, const std::map<BidirectionalPath*, map<size_t, double> >& all_pi) {
         set<size_t> res;
