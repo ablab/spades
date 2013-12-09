@@ -188,8 +188,12 @@ def fill_cfg(options_to_parse, log):
             options_storage.single_cell = True
         elif opt == "--disable-gzip-output":
             options_storage.disable_gzip_output = True
+        elif opt == "--disable-gzip-output:false":
+            options_storage.disable_gzip_output = False
         elif opt == "--disable-rr":
             options_storage.disable_rr = True
+        elif opt == "--disable-rr:false":
+            options_storage.disable_rr = False
 
         elif opt == "--only-error-correction":
             if options_storage.only_assembler:
@@ -218,7 +222,9 @@ def fill_cfg(options_to_parse, log):
         elif opt == '-m' or opt == "--memory":
             options_storage.memory = int(arg)
         elif opt == "--phred-offset":
-            if int(arg) in [33, 64]:
+            if arg == 'auto':
+                options_storage.qvoffset = arg
+            elif arg in ['33', '64']:
                 options_storage.qvoffset = int(arg)
             else:
                 support.error('wrong PHRED quality offset value ' + str(arg) + ': should be either 33 or 64', log)
@@ -227,14 +233,21 @@ def fill_cfg(options_to_parse, log):
 
         elif opt == "--debug":
             options_storage.developer_mode = True
+        elif opt == "--debug:false":
+            options_storage.developer_mode = False
 
         #corrector
         elif opt == "--mismatch-correction":
             options_storage.mismatch_corrector = True
+        elif opt == "--mismatch-correction:false":
+            options_storage.mismatch_corrector = False
 
         elif opt == "--careful":
             options_storage.mismatch_corrector = True
             options_storage.careful = True
+        elif opt == "--careful:false":
+            options_storage.mismatch_corrector = False
+            options_storage.careful = False
 
         elif opt == '-h' or opt == "--help":
             options_storage.usage(spades_version)
@@ -420,7 +433,20 @@ def main():
 
     if options_storage.continue_mode:
         log.info("\n======= SPAdes pipeline continued. Log can be found here: " + log_filename + "\n")
-        log.info("Restored from " + cmd_line)
+        log.info("Restored from " + cmd_line.strip())
+        updated_params = "with updated parameters: "
+        flag = False
+        for v in sys.argv[1:]:
+            if v == '-o':
+                flag = True
+                continue
+            if flag:
+                flag = False
+                continue
+            updated_params += " " + v
+        log.info(updated_params)
+
+        print_used_values(cfg, log)
     else:
         params_filename = os.path.join(cfg["common"].output_dir, "params.txt")
         params_handler = logging.FileHandler(params_filename, mode='w')
