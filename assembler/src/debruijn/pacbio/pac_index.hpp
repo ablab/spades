@@ -398,6 +398,7 @@ public:
     OneReadMapping<Graph> GetReadAlignment(Sequence &s) {
         ClustersSet mapping_descr = GetClusters(s);
         int len = (int) mapping_descr.size();
+        vector<size_t> tmp;
         vector<int> colors = GetColors(mapping_descr, s);
         vector<vector<EdgeId> > sortedEdges;
         vector<typename ClustersSet::iterator> start_clusters, end_clusters;
@@ -469,7 +470,7 @@ public:
                 }
             }
         }
-        return OneReadMapping<Graph>(sortedEdges, illumina_gaps);
+        return OneReadMapping<Graph>(sortedEdges, illumina_gaps, tmp);
     }
 
     std::pair<int, int> GetPathLimits(const KmerCluster<Graph> &a,

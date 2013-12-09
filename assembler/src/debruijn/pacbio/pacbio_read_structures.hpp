@@ -9,7 +9,8 @@
 #include "indices/perfect_hash_map.hpp"
 #include "graph_pack.hpp"
 #include <algorithm>
-
+using std::map;
+using std::set;
 namespace pacbio {
 template<class T>
 struct pair_iterator_less {
@@ -147,15 +148,42 @@ struct OneReadMapping {
 	typedef typename Graph::EdgeId EdgeId;
 	vector<vector<EdgeId> > main_storage;
 	vector<GapDescription<Graph> > gaps;
-	OneReadMapping(vector<vector<EdgeId> > &paths_description, vector<GapDescription<Graph> > &gaps_description) :
-			main_storage(paths_description), gaps(gaps_description) {
+	vector<size_t> real_length;
+	OneReadMapping(vector<vector<EdgeId> > &paths_description, vector<GapDescription<Graph> > &gaps_description, vector<size_t> real_length) :
+			main_storage(paths_description), gaps(gaps_description), real_length(real_length) {
 	}
 
 };
 
-template<class Graph>
+
 struct StatsCounter{
-        StatsCounter(){}
+
+    map<size_t,size_t> path_len_in_edges;
+    vector<size_t> subreads_length;
+    size_t total_len ;
+    size_t reads_with_conjugate;
+    size_t subreads_count;
+    StatsCounter() {
+        total_len = 0;
+        reads_with_conjugate = 0;
+    }
+
+    void AddStorage(StatsCounter &other) {
+        total_len += other.total_len;
+        reads_with_conjugate += other.reads_with_conjugate;
+        for (auto iter = other.subreads_length.begin(); iter != other.subreads_length.end(); ++iter) {
+            subreads_length.push_back(*iter);
+        }
+        for (auto iter = other.path_len_in_edges.begin(); iter != other.path_len_in_edges.end(); ++iter){
+            auto j_iter = iter;
+            if (( j_iter = path_len_in_edges.find(iter->first)) == other.path_len_in_edges.end()){
+                path_len_in_edges.insert(make_pair(iter->first, iter->second));
+            } else {
+                path_len_in_edges[j_iter->first] += iter->second;
+            }
+        }
+    }
+
 };
 
 inline int StringDistance(string &a, string &b) {
