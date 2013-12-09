@@ -41,8 +41,11 @@ developer_mode true
 ; enabled (1) or disabled (0) repeat resolution (former "paired_mode")
 rr_enable true
 
-; for long single reads
-long_single_mode false
+; use single reads for rr when other libs available
+always_single_reads_rr false
+
+;use single reads for rr 
+single_reads_rr true
 
 ; The following parameters are used ONLY if developer_mode is true
 

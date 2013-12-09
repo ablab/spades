@@ -85,7 +85,7 @@ void load(pe_config::AllLongReads& p, boost::property_tree::ptree const& pt,
     using config_common::load;
     load(p.pacbio_reads, pt, "pacbio_reads");
     load(p.single_reads, pt, "single_reads");
-    load(p.coverage_base_rr, pt, "coverage_base_rr");
+    load(p.contigs, pt, "coverage_base_rr");
 }
 
 void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt,

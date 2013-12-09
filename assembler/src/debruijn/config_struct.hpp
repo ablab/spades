@@ -447,7 +447,8 @@ public:
     std::string entry_point;
 
     bool rr_enable;
-    bool long_single_mode;
+    bool single_reads_rr;
+    bool always_single_reads_rr;
     bool divide_clusters;
 
     bool mismatch_careful;

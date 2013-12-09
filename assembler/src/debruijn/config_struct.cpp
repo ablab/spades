@@ -577,7 +577,8 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   load(cfg.additional_contigs, pt, "additional_contigs");
 
   load(cfg.rr_enable, pt, "rr_enable");
-  load(cfg.long_single_mode, pt, "long_single_mode");
+  load(cfg.single_reads_rr, pt, "single_reads_rr");
+  load(cfg.always_single_reads_rr, pt, "always_single_reads_rr");
   load(cfg.divide_clusters, pt, "divide_clusters");
   load(cfg.mismatch_careful, pt, "mismatch_careful");
   load(cfg.correct_mismatches, pt, "correct_mismatches");

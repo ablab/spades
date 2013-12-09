@@ -26,14 +26,21 @@ void ConvertLongReads(LongReadContainerT& single_long_reads, vector<PathStorageI
         DEBUG("converting " << i)
         PathStorage<Graph>& storage = single_long_reads[i];
         vector<PathInfo<Graph> > paths = storage.GetAllPaths();
-        auto tmp = cfg::get().pe_params.long_reads.single_reads;
-        if (cfg::get().ds.reads[i].type() == io::LibraryType::PacBioReads) {
-            tmp = cfg::get().pe_params.long_reads.pacbio_reads;
+        auto single_read_param_set = cfg::get().pe_params.long_reads.single_reads;
+        auto type = cfg::get().ds.reads[i].type();
+
+        if (cfg::get().ds.reads[i].type() == io::LibraryType::PacBioReads  ||
+                type == io::LibraryType::SangerReads) {
+            single_read_param_set = cfg::get().pe_params.long_reads.pacbio_reads;
+        } else if (type == io::LibraryType::TrustedContigs ||
+                type == io::LibraryType::UntrustedContigs) {
+            single_read_param_set = cfg::get().pe_params.long_reads.contigs;
         }
+
         PathStorageInfo<Graph> single_storage(paths,
-                tmp.filtering,
-                tmp.weight_priority,
-                tmp.unique_edge_priority);
+                single_read_param_set.filtering,
+                single_read_param_set.weight_priority,
+                single_read_param_set.unique_edge_priority);
         long_reads_libs.push_back(single_storage);
         DEBUG("done " << i)
     }
@@ -64,18 +71,26 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
     }
 
     bool no_valid_libs = true;
-    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i)
-        if (cfg::get().ds.reads[i].data().mean_insert_size != 0.0 || cfg::get().ds.reads[i].type()== io::LibraryType::PacBioReads) {
+    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+        auto type = cfg::get().ds.reads[i].type();
+        if (cfg::get().ds.reads[i].data().mean_insert_size != 0.0 ||
+                type == io::LibraryType::PacBioReads ||
+                type == io::LibraryType::SangerReads ||
+                type == io::LibraryType::TrustedContigs ||
+                type == io::LibraryType::UntrustedContigs) {
+
             no_valid_libs = false;
             break;
         }
+    }
+    bool use_single_reads = cfg::get().always_single_reads_rr || (no_valid_libs && cfg::get().single_reads_rr);
 
-    if (cfg::get().rr_enable && no_valid_libs && !cfg::get().long_single_mode)
+    if (cfg::get().rr_enable && no_valid_libs && !use_single_reads)
         WARN("Insert size was not estimated for any of the paired libraries, repeat resolution module will not run.");
 
     if ((no_valid_libs ||
             cfg::get().rm == debruijn_graph::resolving_mode::rm_none) &&
-            !cfg::get().long_single_mode) {
+            !use_single_reads) {
         OutputContigs(gp.g, cfg::get().output_dir + "final_contigs", true);
         return;
     }

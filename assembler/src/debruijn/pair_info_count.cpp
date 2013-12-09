@@ -120,7 +120,7 @@ void ProcessSingleReads(conj_graph_pack& gp, size_t ilib) {
 }
 
 
-void ProcessPairedReads(conj_graph_pack& gp, size_t ilib) {
+void ProcessPairedReads(conj_graph_pack& gp, size_t ilib, bool map_single_reads) {
     SequenceMapperNotifier notifier(gp);
     const io::SequencingLibrary<debruijn_config::DataSetData>& reads = cfg::get().ds.reads[ilib];
     INFO("left qauntile " << reads.data().insert_size_left_quantile << " right " << reads.data().insert_size_right_quantile);
@@ -136,7 +136,7 @@ void ProcessPairedReads(conj_graph_pack& gp, size_t ilib) {
     LatePairedIndexFiller pif(gp.g, PairedReadCountWeight, gp.paired_indices[ilib]);
 
     SimpleLongReadMapper read_mapper(gp, gp.single_long_reads[ilib]);
-    if (cfg::get().long_single_mode) {
+    if (map_single_reads) {
         notifier.Subscribe(ilib, &read_mapper);
     }
     notifier.Subscribe(ilib, &split_graph);
@@ -153,7 +153,7 @@ void ProcessPairedReads(conj_graph_pack& gp, size_t ilib) {
         cfg::get_writable().ds.reads[ilib].data().pi_threshold = split_graph.GetThreshold();
     }
 
-    if (cfg::get().long_single_mode) {
+    if (map_single_reads) {
         ProcessSingleReads(gp, ilib);
     }
 }
@@ -164,6 +164,20 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
         gp.paired_indices.Attach();
         gp.paired_indices.Init();
     }
+
+    bool has_rr_reads = false;
+    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+        if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd ||
+            cfg::get().ds.reads[i].type() == io::LibraryType::MatePairs ||
+            cfg::get().ds.reads[i].type() == io::LibraryType::PacBioReads ||
+            cfg::get().ds.reads[i].type() == io::LibraryType::SangerReads ||
+            cfg::get().ds.reads[i].type() == io::LibraryType::TrustedContigs ||
+            cfg::get().ds.reads[i].type() == io::LibraryType::UntrustedContigs) {
+            has_rr_reads = true;
+            break;
+        }
+    }
+    bool map_single_reads = cfg::get().always_single_reads_rr || (!has_rr_reads && cfg::get().single_reads_rr);
 
     size_t edge_length_threshold = Nx(gp.g, 50);
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
@@ -201,15 +215,15 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
                         ", read length = " << cfg::get().ds.reads[i].data().read_length);
             }
             INFO("Mapping paired reads (takes a while) ");
-            ProcessPairedReads(gp, i);
+            ProcessPairedReads(gp, i, map_single_reads);
         }
 
-        if (cfg::get().ds.reads[i].type() == io::LibraryType::SingleReads && cfg::get().long_single_mode) {
+        if (cfg::get().ds.reads[i].type() == io::LibraryType::SingleReads && map_single_reads) {
             INFO("Mapping single reads (takes a while) ");
             ProcessSingleReads(gp, i);
         }
 
-        if (cfg::get().long_single_mode) {
+        if (map_single_reads) {
             INFO("Total paths obtained from single reads: " << gp.single_long_reads[i].size());
         }
     }

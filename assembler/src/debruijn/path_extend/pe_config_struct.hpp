@@ -139,7 +139,7 @@ struct pe_config {
   struct AllLongReads{
       LongReads single_reads;
       LongReads pacbio_reads;
-      LongReads coverage_base_rr;
+      LongReads contigs;
   };
 
   struct MainPEParamsT {
