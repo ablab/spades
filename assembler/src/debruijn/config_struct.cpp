@@ -529,18 +529,13 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 
   load(cfg.developer_mode, pt, "developer_mode");
   if (cfg.developer_mode) {
-    load(cfg.make_saves, pt, "make_saves");
     load(cfg.output_pictures, pt, "output_pictures");
     load(cfg.output_nonfinal_contigs, pt, "output_nonfinal_contigs");
     load(cfg.compute_paths_number, pt, "compute_paths_number");
   } else {
-    cfg.make_saves = false;
     cfg.output_pictures = false;
     cfg.output_nonfinal_contigs = false;
     cfg.compute_paths_number = false;
-  }
-  if (!cfg.make_saves) {
-    load(cfg.make_saves, pt, "force_make_saves");
   }
 
   load(cfg.load_from, pt, "load_from");

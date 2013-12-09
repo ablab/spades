@@ -14,16 +14,20 @@
 
 namespace spades {
 
-void AssemblyStage::load(debruijn_graph::conj_graph_pack& gp, const char* prefix) {
-    std::string p = path::append_path(cfg::get().load_from, prefix == NULL ? id_ : prefix);
+void AssemblyStage::load(debruijn_graph::conj_graph_pack& gp,
+                         const std::string &load_from,
+                         const char* prefix) {
+    std::string p = path::append_path(load_from, prefix == NULL ? id_ : prefix);
     INFO("Loading current state from " << p);
 
     debruijn_graph::graphio::ScanAll(p, gp, false);
     debruijn_graph::load_lib_data(p);
 }
 
-void AssemblyStage::save(const debruijn_graph::conj_graph_pack& gp, const char* prefix) const {
-    std::string p = path::append_path(cfg::get().output_saves, prefix == NULL ? id_ : prefix);
+void AssemblyStage::save(const debruijn_graph::conj_graph_pack& gp,
+                         const std::string &save_to,
+                         const char* prefix) const {
+    std::string p = path::append_path(save_to, prefix == NULL ? id_ : prefix);
     INFO("Saving current state to " << p);
 
     debruijn_graph::graphio::PrintAll(p, gp);
@@ -66,6 +70,7 @@ class PhaseIdComparator {
 
 void CompositeStageBase::run(debruijn_graph::conj_graph_pack& gp,
                              const char* started_from) {
+    VERIFY(parent_);
     auto start_phase = phases_.begin();
     if (started_from &&
         strstr(started_from, ":") &&
@@ -80,7 +85,7 @@ void CompositeStageBase::run(debruijn_graph::conj_graph_pack& gp,
             std::string composite_id(id());
             composite_id += ":";
             composite_id += prev_phase->id();
-            prev_phase->load(gp, composite_id.c_str());
+            prev_phase->load(gp, parent_->saves_policy().load_from_, composite_id.c_str());
         }
     }
 
@@ -90,12 +95,12 @@ void CompositeStageBase::run(debruijn_graph::conj_graph_pack& gp,
         INFO("PROCEDURE == " << phase->name());
         phase->run(gp, started_from);
 
-        if (cfg::get().developer_mode && cfg::get().make_saves) {
+        if (parent_->saves_policy().make_saves_) {
             std::string composite_id(id());
             composite_id += ":";
             composite_id += phase->id();
 
-            phase->save(gp, composite_id.c_str());
+            phase->save(gp, parent_->saves_policy().save_to_, composite_id.c_str());
         }
 
     }
@@ -111,7 +116,7 @@ void StageManager::run(debruijn_graph::conj_graph_pack& g,
             exit(-1);
         }
         if (start_stage != stages_.begin())
-            (*std::prev(start_stage))->load(g);
+            (*std::prev(start_stage))->load(g, saves_policy_.load_from_);
     }
 
     for (auto et = stages_.end(); start_stage != et; ++start_stage) {
@@ -119,8 +124,8 @@ void StageManager::run(debruijn_graph::conj_graph_pack& g,
 
         INFO("STAGE == " << stage->name());
         stage->run(g, start_from);
-        if (cfg::get().developer_mode && cfg::get().make_saves)
-            stage->save(g);
+        if (saves_policy_.make_saves_)
+            stage->save(g, saves_policy_.save_to_);
     }
 
     // For informing spades.py about estimated params

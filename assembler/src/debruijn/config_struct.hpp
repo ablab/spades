@@ -409,7 +409,6 @@ public:
     std::string final_contigs_file;
     std::string log_filename;
 
-    bool make_saves;
     bool output_pictures;
     bool output_nonfinal_contigs;
     bool compute_paths_number;

@@ -28,7 +28,9 @@ void assemble_genome() {
     INFO("SPAdes started");
     INFO("Starting from stage: " << cfg::get().entry_point);
 
-    StageManager SPAdes;
+    StageManager SPAdes({ cfg::get().developer_mode,
+                          cfg::get().load_from,
+                          cfg::get().output_saves});
 
     debruijn_graph::conj_graph_pack conj_gp(cfg::get().K, cfg::get().output_dir, cfg::get().ds.reads.lib_count(), cfg::get().ds.reference_genome,
                                             !cfg::get().developer_mode, cfg::get().flanking_range);
