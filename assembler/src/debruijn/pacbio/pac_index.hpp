@@ -399,6 +399,7 @@ public:
         ClustersSet mapping_descr = GetClusters(s);
         int len = (int) mapping_descr.size();
         vector<size_t> real_length;
+
         vector<int> colors = GetColors(mapping_descr, s);
         vector<vector<EdgeId> > sortedEdges;
         vector<typename ClustersSet::iterator> start_clusters, end_clusters;
