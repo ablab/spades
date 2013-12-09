@@ -408,8 +408,8 @@ if 'contig_storage' in dataset_info.__dict__:
         shutil.copy(boken_scaff, os.path.join(contig_dir, name_prefix + "_scaff_broken.fasta"))
 
 
-    if quast_cmd != "":
-        import glob
+#    if quast_cmd != "":
+#        import glob
 #        sys.path.append('./src/tools/contig_analysis/')
 #        import compare_fasta
 #        print("Running quast for all saved contigs now...")
