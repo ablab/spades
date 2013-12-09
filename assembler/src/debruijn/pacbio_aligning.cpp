@@ -65,10 +65,9 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
     io::ReadStreamList<io::SingleRead> streams(pacbio_read_stream);
  //   pacbio_read_stream.release();
     int n = 0;
-    gp.ginfo.Save("tmp1");
     PathStorage<Graph>& long_reads = gp.single_long_reads[lib_id];
     size_t min_gap_quantity = 2;
-    if (cfg::get().ds.reads[lib_id].type() == io::LibraryType::PacBioReads) {
+    if (cfg::get().ds.reads[lib_id].type() == io::LibraryType::PacBioReads || cfg::get().ds.reads[lib_id].type() == io::LibraryType::SangerReads) {
         min_gap_quantity = cfg::get().pb.pacbio_min_gap_quantity;
     } else {
         min_gap_quantity = cfg::get().pb.contigs_min_gap_quantity;
@@ -83,7 +82,6 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
     pacbio::PacBioMappingIndex<ConjugateDeBruijnGraph> pac_index(gp.g,
                                                          cfg::get().pb.pacbio_k,
                                                          cfg::get().K);
-    gp.ginfo.Save("tmp2");
 //    path_extend::ContigWriter cw(gp.g);
 //    cw.writeEdges("before_rr_with_ids.fasta");
 //    ofstream filestr("pacbio_mapped.mpr");
@@ -101,12 +99,10 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
             ++buffer_no;
         }
     }
-    gp.ginfo.Save("tmp3");
     map<EdgeId, EdgeId> replacement;
     long_reads.DumpToFile(cfg::get().output_saves + "long_reads_before_rep.mpr",
                           replacement);
     gaps.DumpToFile(cfg::get().output_saves + "gaps.mpr");
-    gp.ginfo.Save("tmp4");
     gaps.PadGapStrings();
     gaps.DumpToFile(cfg::get().output_saves +  "gaps_padded.mpr");
     pacbio::PacbioGapCloser<Graph> gap_closer(gp.g);
@@ -115,14 +111,12 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
     long_reads.ReplaceEdges(replacement);
 
     gap_closer.DumpToFile(cfg::get().output_saves + "gaps_pb_closed.fasta");
-    gp.ginfo.Save("tmp5");
     INFO("Index refill");
     gp.index.Refill();
     INFO("Index refill after PacBio finished");
     if (!gp.index.IsAttached())
         gp.index.Attach();
     INFO("PacBio test finished");
-    gp.ginfo.Save("tmp6");
     return;
 }
 
