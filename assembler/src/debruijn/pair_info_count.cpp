@@ -120,10 +120,16 @@ void ProcessSingleReads(conj_graph_pack& gp, size_t ilib) {
 }
 
 
-void ProcessPairedReads(conj_graph_pack& gp, size_t ilib, bool map_single_reads) {
+void ProcessPairedReads(conj_graph_pack& gp, size_t ilib, bool calculate_threshold, bool map_single_reads) {
     SequenceMapperNotifier notifier(gp);
     const io::SequencingLibrary<debruijn_config::DataSetData>& reads = cfg::get().ds.reads[ilib];
-    INFO("left qauntile " << reads.data().insert_size_left_quantile << " right " << reads.data().insert_size_right_quantile);
+    INFO("Left insert size qauntile " << reads.data().insert_size_left_quantile << ", right insert size quantile " << reads.data().insert_size_right_quantile);
+
+    SimpleLongReadMapper read_mapper(gp, gp.single_long_reads[ilib]);
+    if (map_single_reads) {
+        notifier.Subscribe(ilib, &read_mapper);
+    }
+
     path_extend::SplitGraphPairInfo split_graph(
             gp, (size_t) reads.data().median_insert_size,
             (size_t) reads.data().insert_size_deviation,
@@ -132,14 +138,11 @@ void ProcessPairedReads(conj_graph_pack& gp, size_t ilib, bool map_single_reads)
             reads.data().read_length, gp.g.k(),
             cfg::get().pe_params.param_set.split_edge_length,
             reads.data().insert_size_distribution);
+    if (calculate_threshold) {
+        notifier.Subscribe(ilib, &split_graph);
+    }
 
     LatePairedIndexFiller pif(gp.g, PairedReadCountWeight, gp.paired_indices[ilib]);
-
-    SimpleLongReadMapper read_mapper(gp, gp.single_long_reads[ilib]);
-    if (map_single_reads) {
-        notifier.Subscribe(ilib, &read_mapper);
-    }
-    notifier.Subscribe(ilib, &split_graph);
     notifier.Subscribe(ilib, &pif);
 
     if (cfg::get().use_multithreading) {
@@ -215,7 +218,8 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
                         ", read length = " << cfg::get().ds.reads[i].data().read_length);
             }
             INFO("Mapping paired reads (takes a while) ");
-            ProcessPairedReads(gp, i, map_single_reads);
+            bool calculate_threshold = cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd;
+            ProcessPairedReads(gp, i, calculate_threshold, map_single_reads);
         }
 
         if (cfg::get().ds.reads[i].type() == io::LibraryType::SingleReads && map_single_reads) {
