@@ -1240,7 +1240,7 @@ private:
                 break;
         }
         if (result.size() == 0) {
-            INFO("bad case");
+            DEBUG("bad case");
             return vector<BidirectionalPath*>();
         }
         return SortResult(path, result);
