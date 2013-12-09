@@ -24,6 +24,9 @@ enum class LibraryType {
   PairedEnd,
   MatePairs,
   PacBioReads,
+  SangerReads,
+  TrustedContigs,
+  UntrustedContigs,
 };
 
 enum class LibraryOrientation {

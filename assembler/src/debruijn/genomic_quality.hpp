@@ -3,6 +3,8 @@
 #include "omni/visualization/visualization.hpp"
 #include "omni/basic_edge_conditions.hpp"
 
+#include "sequence_mapper.hpp"
+
 namespace debruijn_graph {
 
 template<class Graph, class Index>

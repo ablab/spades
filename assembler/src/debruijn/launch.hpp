@@ -55,15 +55,18 @@ void assemble_genome() {
     if (cfg::get().correct_mismatches)
         SPAdes.add(new debruijn_graph::MismatchCorrection());
     if (cfg::get().rr_enable) {
-        bool has_pacbio_libs = false;
+        bool run_pacbio = false;
         for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
             io::LibraryType type = cfg::get().ds.reads[i].type();
-            if (type == io::LibraryType::PacBioReads) {
-                has_pacbio_libs = true;
+            if (type == io::LibraryType::PacBioReads ||
+                    type == io::LibraryType::SangerReads ||
+                    type == io::LibraryType::TrustedContigs ||
+                    type == io::LibraryType::UntrustedContigs) {
+                run_pacbio = true;
                 break;
             }
         }
-        if (has_pacbio_libs) {
+        if (run_pacbio) {
             SPAdes.add(new debruijn_graph::PacBioAligning());
         }
         SPAdes.add(new debruijn_graph::PairInfoCount());

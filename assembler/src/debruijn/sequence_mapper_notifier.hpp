@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <vector>
 #include "sequence_mapper.hpp"
+#include "short_read_mapper.hpp"
 #include "io/paired_read.hpp"
 #include "graph_pack.hpp"
 

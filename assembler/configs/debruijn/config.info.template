@@ -41,8 +41,11 @@ developer_mode true
 ; enabled (1) or disabled (0) repeat resolution (former "paired_mode")
 rr_enable true
 
-; for long single reads
-long_single_mode false
+; use single reads for rr when other libs available
+always_single_reads_rr false
+
+;use single reads for rr 
+single_reads_rr true
 
 ; The following parameters are used ONLY if developer_mode is true
 
@@ -85,7 +88,7 @@ estimation_mode simple
 cut_bad_connections false
 
 ;the only option left from repeat resolving -- WHY DO THEY DIFFER?
-max_repeat_length 4000
+max_repeat_length 8000
 max_repeat_length_sc 8000
 
 ; repeat resolving mode (none path_extend)
@@ -99,7 +102,6 @@ andrey_params {
 }
 
 avoid_rc_connections true
-
 
 ;position handling
 

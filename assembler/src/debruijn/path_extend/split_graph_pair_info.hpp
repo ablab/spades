@@ -11,50 +11,30 @@
 #include "sequence_mapper_notifier.hpp"
 #include "read_converter.hpp"
 #include "utils.hpp"
+#include "ideal_pair_info.hpp"
 
 using namespace debruijn_graph;
 
 namespace path_extend {
 
-double IdealPairedInfo(size_t len1, size_t len2, int dist, size_t is,
-                       size_t read_size, size_t is_var, size_t k) {
-    double w = 0.;
-    if (dist == 0) {
-        w = 0. + (double) (len1 - is + 2 * read_size + 1 - k);
-    } else {
-        if (dist < 0) {
-            size_t tmp = len1;
-            len1 = len2;
-            len2 = tmp;
-            dist = -dist;
+inline double FindIntersection(vector<double>& pi1, vector<double>& pi2) {
+    std::sort(pi1.begin(), pi1.end());
+    std::sort(pi2.begin(), pi2.end());
+    size_t iter1 = 0;
+    size_t iter2 = 0;
+    double threshold = 0.0;
+    double percent1 = 0.0;
+    double percent2 = 1.0;
+    while (percent1 < percent2 and iter1 < pi1.size() and iter2 < pi2.size()) {
+        threshold = pi1[iter1];
+        while (iter2 < pi2.size() and pi2[iter2] <= threshold) {
+            iter2++;
         }
-        int gap_len = dist - (int) len1;
-        int right = std::min((int) is, gap_len + (int) (len2 + read_size));
-        int left = std::max(gap_len, int(is) - int(read_size) - int(len1));
-        w = 0. + (double) (right - left + 1 - k + is_var);
+        percent1 = (double) iter1 / (double) pi1.size();
+        percent2 = 1.0 - (double) iter2 / (double) pi2.size();
+        iter1 += 1;
     }
-    return math::gr(w, 0.0) ? w : 0.0;
-}
-
-
-double FindIntersection(vector<double>& pi1, vector<double>& pi2) {
-	std::sort(pi1.begin(), pi1.end());
-	std::sort(pi2.begin(), pi2.end());
-	size_t iter1 = 0;
-	size_t iter2 = 0;
-	double threshold = 0.0;
-	double percent1 = 0.0;
-	double percent2 = 1.0;
-	while (percent1 < percent2 and iter1 < pi1.size() and iter2 < pi2.size()) {
-		threshold = pi1[iter1];
-		while (iter2 < pi2.size() and pi2[iter2] <= threshold) {
-			iter2++;
-		}
-		percent1 = (double) iter1 / (double) pi1.size();
-		percent2 = 1.0 - (double) iter2 / (double) pi2.size();
-		iter1 += 1;
-	}
-	return threshold;
+    return threshold;
 }
 
 class Basket {
@@ -187,7 +167,7 @@ private:
         }
         PairInfo oldPairInfo = pair_info_[index1][basket2];
         double basket_distance = GetBasketDistance(edge_distance, index1,
-				index2);
+                                                   index2);
         pair_info_[index1][basket2] = PairInfo(
                 oldPairInfo.weight_ + weight,
                 CountNewDistance(oldPairInfo, basket_distance),
@@ -195,17 +175,17 @@ private:
     }
 
     double CountNewDistance(PairInfo& oldPairInfo, double distance,
-			size_t count = 1) {
-		return (oldPairInfo.distance_ * (double) oldPairInfo.count_
-				+ distance * (double) count)
-				/ (double) (oldPairInfo.count_ + count);
-	}
+                            size_t count = 1) {
+        return (oldPairInfo.distance_ * (double) oldPairInfo.count_
+                + distance * (double) count)
+                / (double) (oldPairInfo.count_ + count);
+    }
 
     double GetBasketDistance(double edge_distance, size_t index1,
-			size_t index2) {
-		return edge_distance - (double) index1 * (double) basket_size_
-				+ (double) index2 * (double) basket_size_;
-	}
+                             size_t index2) {
+        return edge_distance - (double) index1 * (double) basket_size_
+                + (double) index2 * (double) basket_size_;
+    }
 };
 
 class BasketsPairInfoIndex {
@@ -260,16 +240,23 @@ public:
 class SplitGraphPairInfo : public SequenceMapperListener {
 
 public:
-    SplitGraphPairInfo(conj_graph_pack& gp, size_t is, size_t read_size,
-                       size_t is_var, size_t k, size_t basket_size)
+    //TODO: d_min = ? d_max = ? for ideal_pi_counter_
+    SplitGraphPairInfo(conj_graph_pack& gp, size_t is,
+                       size_t is_var,
+                       size_t is_min, size_t is_max,
+                       size_t read_size, size_t k, size_t basket_size,
+                       const std::map<int, size_t>& is_distribution)
             : gp_(gp),
               is_(is),
-              read_size_(read_size),
               is_var_(is_var),
+              is_min_(is_min),
+              is_max_(is_max),
               k_(k),
               basket_size_(basket_size),
               basket_index_(gp, basket_size),
-              threshold_(-1) {
+              threshold_(-1),
+              ideal_pi_counter_(gp.g, (int)is_min_,
+                                (int)is_max_, read_size, is_distribution) {
 
     }
 
@@ -278,7 +265,8 @@ public:
     virtual void StartProcessLibrary(size_t threads_count) {
         baskets_buffer_.clear();
         for (size_t i = 0; i < threads_count; ++i) {
-            baskets_buffer_.push_back(new BasketsPairInfoIndex(gp_, basket_size_));
+            baskets_buffer_.push_back(
+                    new BasketsPairInfoIndex(gp_, basket_size_));
         }
     }
 
@@ -289,8 +277,7 @@ public:
         ProcessPairedRead(*baskets_buffer_[thread_index], read1, read2, dist);
     }
 
-    virtual void ProcessSingleRead(size_t ,
-                                   const MappingPath<EdgeId>& ) {
+    virtual void ProcessSingleRead(size_t, const MappingPath<EdgeId>&) {
         //only paired reads are interesting
     }
 
@@ -304,7 +291,7 @@ public:
             MergeBuffer(i);
         }
         FindThreshold();
-        for (size_t i = 0; i < baskets_buffer_.size(); ++i){
+        for (size_t i = 0; i < baskets_buffer_.size(); ++i) {
             delete baskets_buffer_[i];
         }
         baskets_buffer_.clear();
@@ -316,12 +303,13 @@ public:
 
 private:
     void FindThreshold() {
-        size_t min_long_edge =  basket_size_;
-        int insert_size_min = (int) is_ - 2 * (int) is_var_;
-        int insert_size_max = (int) is_ + 2 * (int) is_var_;
+        std::ofstream ideal;
+        size_t min_long_edge = basket_size_;
         const Graph& g = gp_.g;
         vector<double> good_pi;
         vector<double> bad_pi;
+        double insert_size_min = (double) is_ - 2. * (double) is_var_;
+        double insert_size_max = (double) is_ + 2. * (double) is_var_;
         for (auto edge = g.ConstEdgeBegin(); !edge.IsEnd(); ++edge) {
             if (g.length(*edge) > min_long_edge) {
                 if (g.int_id(*edge) <= 0)
@@ -330,14 +318,13 @@ private:
                 EdgePairInfo& edge_pi = basket_index_.GetEdgePairInfo(*edge);
                 if (edge_pi.size() == 0)
                     continue;
-
-                size_t count_backets = LastBasketIndex(*edge, insert_size_max,
+                size_t count_backets = LastBasketIndex(*edge, (int) insert_size_max,
                                                        edge_pi);
                 for (size_t index = 0; index <= count_backets; ++index) {
                     map<Basket, PairInfo>& basket_info = edge_pi.GetInfo(index);
                     set<size_t> pair_baskets = GetBaskets(index,
-                                                          insert_size_min,
-                                                          insert_size_max,
+                                                          (int) insert_size_min,
+                                                          (int) insert_size_max,
                                                           edge_pi);
                     for (auto iter = basket_info.begin();
                             iter != basket_info.end(); ++iter) {
@@ -353,6 +340,7 @@ private:
                 }
             }
         }
+        DEBUG("good pi size " << good_pi.size() << " bad pi size " << bad_pi.size());
         threshold_ = FindIntersection(good_pi, bad_pi);
         INFO("Paired info threshold " << threshold_);
     }
@@ -388,46 +376,51 @@ private:
     }
 
     double GetNormalizedWeight(PairInfo& pi) {
-		return pi.weight_
-				/ (double) IdealPairedInfo(basket_size_, basket_size_,
-						(int) pi.distance_, is_, read_size_, is_var_, k_);
-	}
+        return pi.weight_
+                / ideal_pi_counter_.IdealPairedInfo(basket_size_, basket_size_,
+                                                    (int) pi.distance_);
+    }
 
     void ProcessPairedRead(BasketsPairInfoIndex& basket_index,
-			const MappingPath<EdgeId>& path1, const MappingPath<EdgeId>& path2, size_t read_distance) {
-		for (size_t i = 0; i < path1.size(); ++i) {
-			pair<EdgeId, MappingRange> mapping_edge_1 = path1[i];
-			for (size_t j = 0; j < path2.size(); ++j) {
-				pair<EdgeId, MappingRange> mapping_edge_2 = path2[j];
-				double weight = PairedReadCountWeight(mapping_edge_1.second,
-						mapping_edge_2.second);
-				size_t kmer_distance = read_distance
-						+ mapping_edge_2.second.initial_range.end_pos
-						- mapping_edge_1.second.initial_range.start_pos;
-				int edge_distance = (int) kmer_distance
-						+ (int) mapping_edge_1.second.mapped_range.start_pos
-						- (int) mapping_edge_2.second.mapped_range.end_pos;
+                           const MappingPath<EdgeId>& path1,
+                           const MappingPath<EdgeId>& path2,
+                           size_t read_distance) {
+        for (size_t i = 0; i < path1.size(); ++i) {
+            pair<EdgeId, MappingRange> mapping_edge_1 = path1[i];
+            for (size_t j = 0; j < path2.size(); ++j) {
+                pair<EdgeId, MappingRange> mapping_edge_2 = path2[j];
+                double weight = PairedReadCountWeight(mapping_edge_1.second,
+                                                      mapping_edge_2.second);
+                size_t kmer_distance = read_distance
+                        + mapping_edge_2.second.initial_range.end_pos
+                        - mapping_edge_1.second.initial_range.start_pos;
+                int edge_distance = (int) kmer_distance
+                        + (int) mapping_edge_1.second.mapped_range.start_pos
+                        - (int) mapping_edge_2.second.mapped_range.end_pos;
 
-				basket_index.AddPairInfo(mapping_edge_1.first,
-						mapping_edge_1.second.mapped_range.start_pos,
-						mapping_edge_1.second.mapped_range.end_pos,
-						mapping_edge_2.first,
-						mapping_edge_2.second.mapped_range.start_pos,
-						mapping_edge_2.second.mapped_range.end_pos, weight,
-						(double) edge_distance);
-			}
-		}
-	}
+                basket_index.AddPairInfo(
+                        mapping_edge_1.first,
+                        mapping_edge_1.second.mapped_range.start_pos,
+                        mapping_edge_1.second.mapped_range.end_pos,
+                        mapping_edge_2.first,
+                        mapping_edge_2.second.mapped_range.start_pos,
+                        mapping_edge_2.second.mapped_range.end_pos, weight,
+                        (double) edge_distance);
+            }
+        }
+    }
 
     const conj_graph_pack& gp_;
     size_t is_;
-    size_t read_size_;
     size_t is_var_;
+    size_t is_min_;
+    size_t is_max_;
     size_t k_;
     size_t basket_size_;
     BasketsPairInfoIndex basket_index_;
     vector<BasketsPairInfoIndex*> baskets_buffer_;
     double threshold_;
+    IdealPairInfoCounter ideal_pi_counter_;
 };
 
 } /* path_extend */

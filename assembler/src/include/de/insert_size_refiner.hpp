@@ -7,12 +7,10 @@
 #pragma once
 
 #include "cpp_utils.hpp"
-#include "debruijn_stats.hpp"
-
 
 namespace omnigraph {
 
-double get_median(const std::map<int, size_t> &hist) {
+inline double get_median(const std::map<int, size_t> &hist) {
   double S = 0;
   for (auto iter = hist.begin(); iter != hist.end(); ++iter)
     S += (double) iter->second;
@@ -28,7 +26,7 @@ double get_median(const std::map<int, size_t> &hist) {
   return -1;
 }
 
-double get_mad(const std::map<int, size_t> &hist, double median) { // median absolute deviation
+inline double get_mad(const std::map<int, size_t> &hist, double median) { // median absolute deviation
   std::map<int, size_t> hist2;
   for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
       int x = abs(iter->first - math::round_to_zero(median));
@@ -37,7 +35,7 @@ double get_mad(const std::map<int, size_t> &hist, double median) { // median abs
   return get_median(hist2);
 }
 
-void hist_crop(const map<int, size_t> &hist, double low, double high, map<int, size_t>& res) {
+inline void hist_crop(const map<int, size_t> &hist, double low, double high, map<int, size_t>& res) {
   for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
     if (iter->first >= low && iter->first <= high) {
       DEBUG("Cropped histogram " <<  iter->first << " " << iter->second);
@@ -46,18 +44,58 @@ void hist_crop(const map<int, size_t> &hist, double low, double high, map<int, s
   }
 }
 
+inline void normalize_distribution(const std::map<int, size_t>& is_hist,  std::map<int, double>& is_distrib) {
+  size_t sum = 0;
+  for (auto iter = is_hist.begin(); iter != is_hist.end(); ++iter) {
+    sum += iter->second;
+  }
+  for (auto iter = is_hist.begin(); iter != is_hist.end(); ++iter) {
+    is_distrib[iter->first] = (double) iter->second / (double) sum;
+  }
+}
+
+inline void ISInterval(double quant, double is,
+                const std::map<int, size_t>& insert_size_hist,
+                double& is_min, double& is_max) {
+
+  std::map<int, double> insert_size_distrib;
+  normalize_distribution(insert_size_hist, insert_size_distrib);
+  int ileft = (int) is - 1;
+  int iright = (int)is + 1;
+  double cur_percent = insert_size_distrib.at((int)is);
+  while (cur_percent < quant) {
+    double vleft = -1.;
+    if (insert_size_distrib.find(ileft) != insert_size_distrib.end()) {
+      vleft = insert_size_distrib.at(ileft);
+    }
+    double vright = -1.;
+    if (insert_size_distrib.find(iright) != insert_size_distrib.end()) {
+      vright = insert_size_distrib.at(iright);
+    }
+    if (vleft >= 0.0 && (vright < 0.0 || vleft > vright)) {
+      cur_percent += vleft;
+      ileft -= 1;
+    } else if (vright >= 0.0 && (vleft < 0.0 || vright >= vleft)) {
+      cur_percent += vright;
+      iright += 1;
+    } else {
+      break;
+    }
+  }
+  is_min = (double) ileft;
+  is_max = (double) iright;
+  DEBUG("quantile = " << quant << " d_min  = " << ileft << " d_max = " << iright);
+}
+
 template<class graph_pack>
 class InsertSizeHistogramCounter {
   typedef std::map<int, size_t> HistType;
-  typedef typename graph_pack::graph_t::EdgeId EdgeId;
 
  public:
   InsertSizeHistogramCounter(const graph_pack& gp,
-          size_t edge_length_threshold,
           bool ignore_negative = false)
-      : gp_(gp), edge_length_threshold_(edge_length_threshold), hist_(), tmp_hists_(),
+      : gp_(gp), hist_(), tmp_hists_(),
         total_(), counted_(), negative_(), k_(gp.k_value), ignore_negative_(ignore_negative) {
-
   }
 
   HistType hist() { return hist_; }
@@ -89,15 +127,11 @@ class InsertSizeHistogramCounter {
     negative_.merge();
   }
 
-  template<class PairedRead>
-  void ProcessPairedRead(size_t thread_index, const PairedRead& r, const pair<EdgeId, size_t>& pos_left, const pair<EdgeId, size_t>& pos_right) {
+  void ProcessPairedRead(size_t thread_index, bool correctly_aligned, int is) {
     ++total_.arr_[thread_index];
-    if (pos_left.second == -1u || pos_right.second == -1u || pos_left.first != pos_right.first || gp_.g.length(pos_left.first) < edge_length_threshold_) {
+    if (!correctly_aligned) {
       return;
     }
-
-    int is = (int) (pos_right.second - pos_left.second - k_ - 1 - r.insert_size()
-             + r.first().size() + r.second().size());
 
     if (is > 0 || !ignore_negative_) {
       (*tmp_hists_[thread_index])[is] += 1;
@@ -191,26 +225,24 @@ class InsertSizeHistogramCounter {
   }
 
  private:
-
   struct count_data {
-      size_t total_;
-      vector<size_t> arr_;
-      count_data(): total_(0) {
+    size_t total_;
+    vector<size_t> arr_;
+    count_data(): total_(0) {
+    }
+    count_data(size_t nthreads): total_(0), arr_(nthreads, 0) {
+    }
+    void inc(size_t i) {
+      ++arr_[i];
+    }
+    void merge() {
+      for (size_t i = 0; i < arr_.size(); ++i) {
+        total_ += arr_[i];
       }
-      count_data(size_t nthreads): total_(0), arr_(nthreads, 0) {
-      }
-      void inc(size_t i) {
-        ++arr_[i];
-      }
-      void merge() {
-        for (size_t i = 0; i < arr_.size(); ++i) {
-          total_ += arr_[i];
-        }
-      }
+    }
   };
 
   const graph_pack& gp_;
-  size_t edge_length_threshold_;
 
   HistType hist_;
   vector<HistType*> tmp_hists_;
@@ -221,6 +253,8 @@ class InsertSizeHistogramCounter {
 
   size_t k_;
   bool ignore_negative_;
+
+
 };
 
 

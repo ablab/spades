@@ -5,283 +5,195 @@
 #include "graph_pack.hpp"
 
 namespace debruijn_graph {
-	//todo WTF?!!!
-	template <class GraphPack, class DetailedCoverage>
-	struct LoopFilter {
-
-		GraphPack* graph_p;
-		DetailedCoverage* coverage;
+//todo WTF?!!!
+	template <class graph_pack, class DetailedCoverage>
+	class LoopFilter {
+		const graph_pack& gp;
+		const DetailedCoverage& coverage_;
 		std::vector<VertexId> order;
-		std::set<VertexId> usedVertices;
-		std::vector< set<EdgeId> > simpleLoops;
-
+		set<VertexId> used_vertices_;
+		std::vector< set<EdgeId> > simple_loops_;
 		//contains all the vertices that go to complex loops
-		std::set<EdgeId> prohibitedEdges;
-		std::vector< std::vector<EdgeId> > resolvedLoops;
-
+		set<EdgeId> prohibited_edges_;
+		std::vector< std::vector<EdgeId> > resolved_loops_;
 		const double ratio_lower_threshold_;
 		const double ratio_upper_threshold_;
 		const double repeat_length_upper_threshold_;
 
-		LoopFilter ( GraphPack& g, DetailedCoverage& index, double ratio_lower_threshold, double ratio_upper_threshold, double repeat_length_upper_threshold ):
+		public:
+		LoopFilter ( const graph_pack& g, const DetailedCoverage& index, double ratio_lower_threshold, double ratio_upper_threshold, double repeat_length_upper_threshold ):
+													gp(g),
+													coverage_(index),
 													ratio_lower_threshold_(ratio_lower_threshold),
 													ratio_upper_threshold_(ratio_upper_threshold),
 													repeat_length_upper_threshold_(repeat_length_upper_threshold) {
+		}
 
-			graph_p = &g;
-			coverage = &index;
+
+		const vector<vector<EdgeId>>& resolved_loops() const {
+			return resolved_loops_;
 		}
 
 		template<class EdgeQualityLabeler>
-		void get_loopy_components(const EdgeQualityLabeler& quality_labeler) {
-
-			for ( auto v = graph_p->g.begin(); v != graph_p->g.end(); ++v ) {
-
-				if ( usedVertices.find(*v) != usedVertices.end() )
+		void get_loopy_components( const EdgeQualityLabeler& quality_labeler ) {
+			INFO("Detecting loops...");
+			for ( auto v = gp.g.begin(); v != gp.g.end(); ++v ) {
+				if ( used_vertices_.find(*v) != used_vertices_.end() ) 
 					continue;
-
-				dfs1(*v);
-
+				dfs_down(*v);
 			}
-
-			usedVertices.clear();
-
-
+			used_vertices_.clear();
 			std::vector<std::vector<VertexId>> loops;
 			for ( unsigned i = 0; i < order.size(); ++i ) {
-
 				VertexId startVertex = order[order.size() - i - 1];
-				if ( usedVertices.find(startVertex) != usedVertices.end() )
+				if ( used_vertices_.find(startVertex) != used_vertices_.end() ) 
 					continue;
 				std::vector<VertexId> loop;
-				dfs2(startVertex, loop);
+				dfs_up(startVertex, loop);
 				loops.push_back(loop);
-
-
 			}
-
 			int L = 0;
-			int loopsCounter = 0;
-			int simpleLoopsCounter = 0;
-			//std::vector<EdgeId> resolvedLoops;
+			int loops_counter = 0;
+			int simple_loops_counter = 0;
 			for (auto loop = loops.begin(); loop != loops.end(); ++loop ){
-
-				//for (auto v = loop->begin(); v != loop->end(); ++v ) {
-				//	std::cout << graph_p->g.int_id(*v) << "  ";
-				//}
-
 				if (loop->size() == 1) {
 					continue;
 				}
-				loopsCounter++;
-				std::set<EdgeId> path;
-				std::vector<EdgeId> resolvedLoop;
+				loops_counter++;
+				set<EdgeId> path;
+				std::vector<EdgeId> resolved_loop;
 				EdgeId incomingEdge, outgoingEdge;
 				bool resolved = false;
-				bool ifSimple = ifSimpleLoop(*loop, path, incomingEdge, outgoingEdge);
+				bool ifSimple = IfSimpleLoop(*loop, path, incomingEdge, outgoingEdge);
 				if (ifSimple) {
-					simpleLoopsCounter++;
-					std::cout << "simple loop " ;
-					if ( graph_p->g.int_id(incomingEdge) != 0 && graph_p->g.int_id(outgoingEdge) != 0 )
-						resolved = resolveSimpleLoop( resolvedLoop, incomingEdge, outgoingEdge );
+					simple_loops_counter++;
+					if ( gp.g.int_id(incomingEdge) != 0 && gp.g.int_id(outgoingEdge) != 0 )
+						resolved = ResolveSimpleLoop( resolved_loop, incomingEdge, outgoingEdge );
 				}
 				/*if (!resolved) {
-					std::cout << "not simple loop or not resolved\n";
-					prohibitedEdges.insert(path.begin(), path.end());
+					prohibited_edges_.insert(path.begin(), path.end());
 				}*/
 				if (resolved) {
-					for (auto e = resolvedLoop.begin(); e != resolvedLoop.end(); ++e ) {
-						L += (int) graph_p->g.length(*e);
+					for (auto e = resolved_loop.begin(); e != resolved_loop.end(); ++e ) {
+						L += (int) gp.g.length(*e);
 					}
-					resolvedLoops.push_back(resolvedLoop);
-					//std::cout << "path: ";
+					resolved_loops_.push_back(resolved_loop);
 				}
-				else {
-					//std::cout << "not path: ";
-				}
-				/*for (auto e = path.begin(); e != path.end(); ++e ) {
-					std::cout <<  graph_p->g.int_id(graph_p->g.EdgeStart(*e)) << ", " << graph_p->g.int_id(graph_p->g.EdgeEnd(*e)) << ", ";
-				}*/
 
-				std::string str = "";
+				string str = "";
 				if (!resolved) str = "not ";
 
-				std::cout << str << "resolved ";
-				for (auto e = resolvedLoop.begin(); e != resolvedLoop.end(); ++e ) {
-					std::cout << graph_p->g.int_id(*e) << /*" (cov: " << graph_p->g.coverage(*e) << ",*/" q: (" << quality_labeler.quality(*e) << ") ";
+				DEBUG(str << "resolved ");
+				for (auto e = resolved_loop.begin(); e != resolved_loop.end(); ++e ) {
+					DEBUG(gp.g.int_id(*e) << "q: (" << quality_labeler.quality(*e) << ") ");
 				}
-				std::cout << std::endl << std::endl;
+				DEBUG("\n");
 			}
-			std::cout << "Overall length is " << L << ", number of loops: " << loopsCounter << " "
-					<< "number of resolved loops: " << resolvedLoops.size() << " "
-						<< "simple loops: " << simpleLoopsCounter << std::endl;
+			DEBUG("Overall length is " << L << ", number of loops: " << loops_counter << " " 
+					<< "number of resolved loops: " << resolved_loops_.size() << " " 
+						<< "simple loops: " << simple_loops_counter << "\n");
 
-		}
-
-		bool resolveSimpleLoop( std::vector<EdgeId>& resolvedLoop,
-					EdgeId& incomingEdge, EdgeId& outgoingEdge ) {
+		}	
+	
+		private:
+		bool ResolveSimpleLoop( std::vector<EdgeId>& resolved_loop, 
+					const EdgeId& incomingEdge, const EdgeId& outgoingEdge ) const  {
 
 			EdgeId startEdge, endEdge;
-
-			bool canBeResolved = true;
-
-			VertexId inVertex = graph_p->g.EdgeEnd( incomingEdge );
-			//VertexId outVertex = graph_p->g.EdgeStart( outgoingEdge );
-			auto inCov = coverage->GetOutCov(incomingEdge);
-			auto outCov = coverage->GetInCov(outgoingEdge);
-			auto cov = (inCov + outCov) / 2.0;
-			//auto cov = inCov;
-			//auto cov = min(inCov, outCov);
-
-			std::cout << "inCoverage: " << inCov << "; outCoverage " << outCov << "; cov: " << cov << std::endl;
-			//INFO("after initialization");
-
-			//INFO("before outgoing edges");
-			auto loopEdge1 = *graph_p->g.OutgoingEdges(inVertex).begin();
-
-			VertexId edge1End = graph_p->g.EdgeEnd(loopEdge1);
+			bool can_be_resolved = true;
+			VertexId inVertex = gp.g.EdgeEnd( incomingEdge );
+			auto inCov = coverage_.GetOutCov(incomingEdge);
+			auto outCov = coverage_.GetInCov(outgoingEdge);
+			auto cov = (inCov + outCov) / 2.0;	
+			DEBUG("inCoverage: " << inCov << "; outCoverage " << outCov << "; cov: " << cov << "\n");
+			auto loopEdge1 = *gp.g.OutgoingEdges(inVertex).begin();
+			VertexId edge1End = gp.g.EdgeEnd(loopEdge1);
 			EdgeId loopEdge2;
-			auto loopEdge2it = graph_p->g.OutgoingEdges(edge1End).begin();
+			auto loopEdge2it = gp.g.OutgoingEdges(edge1End).begin();
 			if ( *loopEdge2it == outgoingEdge ) {
 				++loopEdge2it;
 			}
 			loopEdge2 = *loopEdge2it;
-
-			auto cov1 = graph_p->g.coverage(loopEdge1);
-			auto cov2 = graph_p->g.coverage(loopEdge2);
-
+			auto cov1 = gp.g.coverage(loopEdge1);
+			auto cov2 = gp.g.coverage(loopEdge2);
 			double intpart;
-			//double ratio_lower_threshold_ = 0.3;
-			//double ratio_upper_threshold_ = 0.7;
 			auto ratio1 = modf( cov1 / cov, &intpart );
 			auto ratio2 = modf( cov2 / cov, &intpart );
-
 			if ( ( ratio1 > ratio_lower_threshold_ && ratio1 < ratio_upper_threshold_ ) || ( ratio2 > ratio_lower_threshold_ && ratio2 < ratio_upper_threshold_ ) ) {
-
-				canBeResolved = false;
+				can_be_resolved = false;
 			}
 			auto time1 = floor( cov1 / cov + 0.5 );
 			auto time2 = floor( cov2 / cov + 0.5 );
-
-			std::cout << time1 << " " << time2 << std::endl;
-			std::cout << time1 * cov << " " << cov1 << " " << time2 * cov << " " << cov2 << std::endl;
-			//double threshold = 0.75;
 			if (time1 - time2 != 1 || time2 == 0) {
-				canBeResolved = false;
+				can_be_resolved = false;
 			}
-
-		/*	else if (  min(time1 * cov, cov1) / max(time1 * cov, cov1) < threshold   ||  min(time2 * cov,cov2) / max(time2 * cov,cov2) < threshold )  {
-
-				canBeResolved = false;
-			}
-		*/
-
-			//if (canBeResolved) {
-
-				resolvedLoop.push_back(incomingEdge);
-				resolvedLoop.push_back(loopEdge1);
-
+			//if (can_be_resolved) {
+				resolved_loop.push_back(incomingEdge);
+				resolved_loop.push_back(loopEdge1);
 				for ( int i = 0; i < time2; ++i ) {
-
-					resolvedLoop.push_back(loopEdge2);
-					resolvedLoop.push_back(loopEdge1);
+					resolved_loop.push_back(loopEdge2);
+					resolved_loop.push_back(loopEdge1);
 				}
-				resolvedLoop.push_back(outgoingEdge);
-				//if ( resolvedLoop.size() > 5 ) canBeResolved = false;
+				resolved_loop.push_back(outgoingEdge);
+				if ( resolved_loop.size() > 5 ) can_be_resolved = false;
 			//}
-
-			return canBeResolved;
+			return can_be_resolved;
 		}
 
-		bool ifSimpleLoop( std::vector<VertexId>& loop, std::set<EdgeId>& path, EdgeId& incomingEdge, EdgeId& outgoingEdge ){
+		bool IfSimpleLoop( vector<VertexId>& loop, set<EdgeId>& path, EdgeId& incomingEdge, EdgeId& outgoingEdge ) const {
 		//the idea: if a loop is simple there is a single possible way to come into any vertex in the component
-
 			bool ifSimple = true;
 			int nextVerticesOutOfLoop = 0;
 			int prevVerticesOutOfLoop = 0;
-
 			for ( auto v = loop.begin(); v != loop.end(); ++v ) {
-
-				//std::cout << "vertex: " << graph_p->g.int_id(*v) << std::endl;
-				auto incomingEdges = graph_p->g.IncomingEdges(*v);
-
+				auto incomingEdges = gp.g.IncomingEdges(*v);
 				int prevVerticesInLoop = 0;
-				//if ( incomingEdges.size() > 1 ) {
-
-					///std::cout << "incoming edges: ";
-					for ( auto e = incomingEdges.begin(); e != incomingEdges.end(); ++e ){
-						///std::cout << graph_p->g.int_id(*e) << " ";
-						auto startVertex = graph_p->g.EdgeStart(*e);
-
-						// count the number of edges in the loop coming into this vertex
-						if ( std::find(loop.begin(),loop.end(),startVertex) != loop.end() ){
-							prevVerticesInLoop+=1;
-							if (prevVerticesInLoop > 1) {
-								ifSimple = false;
-							}
-							path.insert(*e);
-							//prohibitedEdges.insert(*e);
+				for ( auto e = incomingEdges.begin(); e != incomingEdges.end(); ++e ){
+					auto startVertex = gp.g.EdgeStart(*e);
+					// count the number of edges in the loop coming into this vertex	
+					if ( find(loop.begin(),loop.end(),startVertex) != loop.end() ){
+						prevVerticesInLoop+=1;
+						if (prevVerticesInLoop > 1) {
+							ifSimple = false;
 						}
-						//count the number of edges coming into loop, i.e. check if the loop is a repeat
-						else {
-							prevVerticesOutOfLoop+=1;
-							incomingEdge = *e;
-							if (prevVerticesOutOfLoop > 1) {
-								ifSimple = false;
-							}
-						}
-
+						path.insert(*e);
+						//prohibited_edges_.insert(*e);
 					}
-					///std::cout << std::endl;
-
-
-				//}
-
-
-				auto outgoingEdges = graph_p->g.OutgoingEdges(*v);
-
+					//count the number of edges coming into loop, i.e. check if the loop is a repeat
+					else {
+						prevVerticesOutOfLoop+=1;
+						incomingEdge = *e;
+						if (prevVerticesOutOfLoop > 1) {
+							ifSimple = false;
+						}
+					}
+				}
+				auto outgoingEdges = gp.g.OutgoingEdges(*v);
 				int nextVerticesInLoop = 0;
-				//if (outgoingEdges.size() > 1 ) {
-
-					///std::cout << "outgoing edges: " ;
-					for ( auto e = outgoingEdges.begin(); e != outgoingEdges.end(); ++e ){
-						///std::cout << graph_p->g.int_id(*e) << " ";
-						auto endVertex = graph_p->g.EdgeEnd(*e);
-						// count the number of edges in the loop coming out of the vertex
-						if ( std::find(loop.begin(), loop.end(), endVertex) != loop.end() ){
-							nextVerticesInLoop += 1;
-							if (nextVerticesInLoop > 1){
-								ifSimple = false;
-							}
-							path.insert(*e);
-							//prohibitedEdges.insert(*e);
+				for ( auto e = outgoingEdges.begin(); e != outgoingEdges.end(); ++e ){
+					auto endVertex = gp.g.EdgeEnd(*e);
+					// count the number of edges in the loop coming out of the vertex	
+					if ( find(loop.begin(), loop.end(), endVertex) != loop.end() ){
+						nextVerticesInLoop += 1;
+						if (nextVerticesInLoop > 1){
+							ifSimple = false;
 						}
-						//count the number of edges coming into loop, i.e. check if the loop is a repeat
-						else {
-							nextVerticesOutOfLoop+=1;
-							outgoingEdge = *e;
-							if (nextVerticesOutOfLoop > 1) {
-								ifSimple = false;
-							}
-						}
-
+						path.insert(*e);
+						//prohibited_edges_.insert(*e);
 					}
-					///std::cout << std::endl;
+					//count the number of edges coming into loop, i.e. check if the loop is a repeat
+					else {
+						nextVerticesOutOfLoop+=1;
+						outgoingEdge = *e;
+						if (nextVerticesOutOfLoop > 1) {
+							ifSimple = false;
+						}
+					}
 
-			//	}
+				}
 
 			}
-
-			if (ifSimple) std::cout << "simple: " << std::endl;
-			else std::cout << "complex: " << std::endl;
-			for ( auto e = path.begin(); e != path.end(); ++e) {
-				prohibitedEdges.insert(*e);
-				std::cout << graph_p->g.int_id(*e) << "  ";
-
-			}
-			std::cout << std::endl;
 			return ifSimple;
-
 		}
 
 
@@ -296,16 +208,13 @@ namespace debruijn_graph {
 				VertexId vOut = graph_p->g.EdgeEnd(*incidentEdge);
 				if (usedVertices.find(vOut) != usedVertices.end())
 					continue;
-				dfs1( vOut );
+				dfs_down( vOut );
 			}
-
 			order.push_back(v);
-
 		}
 
-		void dfs2( const VertexId& v, vector<VertexId>& loop ){
-
-			usedVertices.insert( v );
+		void dfs_up( const VertexId& v, vector<VertexId>& loop ){
+			used_vertices_.insert( v );
 			loop.push_back( v );
 
 			for ( auto incidentEdge = graph_p->g.in_begin(v); incidentEdge != graph_p->g.in_end(v); ++incidentEdge ) {
@@ -315,13 +224,10 @@ namespace debruijn_graph {
 				VertexId vIn = graph_p->g.EdgeStart(*incidentEdge);
 				if (usedVertices.find(vIn) != usedVertices.end())
 					continue;
-				dfs2( vIn, loop );
+				dfs_up( vIn, loop );
 			}
-
-
 		}
 	};
-
 }
 
 #endif

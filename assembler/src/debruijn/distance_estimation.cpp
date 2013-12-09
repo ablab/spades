@@ -192,7 +192,7 @@ void estimate_distance(conj_graph_pack& gp,
         size_t linkage_distance = size_t(cfg::get().de.linkage_distance_coeff * is_var);
         GraphDistanceFinder<Graph> dist_finder(gp.g, (size_t) math::round(lib.data().mean_insert_size),
                                                lib.data().read_length, delta);
-        size_t max_distance = size_t(cfg::get().de.max_distance_coeff * is_var);
+        size_t max_distance = size_t(cfg::get().de.max_distance_coeff_scaff * is_var);
         boost::function<double(int)> weight_function;
 
         DEBUG("Retaining insert size distribution for it");
@@ -223,7 +223,7 @@ void estimate_distance(conj_graph_pack& gp,
 
 void DistanceEstimation::run(conj_graph_pack &gp, const char*) {
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i)
-        if (cfg::get().ds.reads[i].data().mean_insert_size != 0.0) {
+        if (cfg::get().ds.reads[i].data().mean_insert_size != 0.0 && cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd) {
             INFO("Processing library #" << i);
             estimate_distance(gp, cfg::get().ds.reads[i], gp.paired_indices[i], gp.clustered_indices[i], gp.scaffolding_indices[i]);
         }

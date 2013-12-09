@@ -321,8 +321,27 @@ if 'quast_params' in dataset_info.__dict__:
             quast_output_scaf_dir = os.path.join(output_dir, "QUAST_RESULTS_SCAF")
             if os.system(quast_cmd + " -o " + quast_output_scaf_dir + " " + scafs) != 0:
                 print("Failed to estimate scaffolds")
+                if 'sc_assess' in dataset_info.__dict__ and dataset_info.sc_assess:
+                    exit_code = 11
             else:
-                result = assess_quast(os.path.join(quast_output_scaf_dir, "transposed_report.tsv"), {}, "scaffolds")
+                sc_limit_map = {}
+                if 'sc_assess' in dataset_info.__dict__ and dataset_info.sc_assess:
+                    print("Assessing QUAST results for scaffolds...")
+                    if 'sc_min_n50' in dataset_info.__dict__:
+                        sc_limit_map["N50"] = (int(dataset_info.sc_min_n50), True)
+                    if 'sc_max_mis' in dataset_info.__dict__:
+                        sc_limit_map["Misassemblies"] = (int(dataset_info.sc_max_mis), False)
+                    if 'sc_min_genome_mapped' in dataset_info.__dict__:
+                        sc_limit_map["Genome mapped"] = (float(dataset_info.sc_min_genome_mapped), True)
+                    if 'sc_min_genes' in dataset_info.__dict__:
+                        sc_limit_map["Genes"] = (int(dataset_info.sc_min_genes), True)
+                    if 'sc_max_indels' in dataset_info.__dict__:
+                        sc_limit_map["Indels"] = (float(dataset_info.sc_max_indels), False)
+                    if 'sc_max_subs' in dataset_info.__dict__:
+                        sc_limit_map["Mismatches"] = (float(dataset_info.sc_max_subs), False)
+                result = assess_quast(os.path.join(quast_output_scaf_dir, "transposed_report.tsv"), sc_limit_map, "scaffolds")
+                if result[0] != 0:
+                    exit_code = 11
                 new_log += result[1]
 
         #ALL FASTA
@@ -344,7 +363,7 @@ if 'etalon_saves' in dataset_info.__dict__:
     ecode = os.system("./src/test/teamcity/detect_diffs.sh " + output_dir + " " + dataset_info.etalon_saves)
     if ecode != 0:
         print("Comparing etalon saves finished abnormally with exit code " + str(ecode))
-        exit_code = 11
+        exit_code = 12
 
 
 #writing log
@@ -389,13 +408,13 @@ if 'contig_storage' in dataset_info.__dict__:
         shutil.copy(boken_scaff, os.path.join(contig_dir, name_prefix + "_scaff_broken.fasta"))
 
 
-    if quast_cmd != "":
-        import glob
+#    if quast_cmd != "":
+#        import glob
 #        sys.path.append('./src/tools/contig_analysis/')
 #        import compare_fasta
-        print("Running quast for all saved contigs now...")
-        os.system(quast_cmd + " -o " + quast_contig_dir + " " + os.path.join(contig_dir, "*.fasta") + " > " + os.path.join(contig_dir, "quast.log") + " 2> " + os.path.join(contig_dir, "quast.err"))
-        print("Done")
+#        print("Running quast for all saved contigs now...")
+#        os.system(quast_cmd + " -o " + quast_contig_dir + " " + os.path.join(contig_dir, "*.fasta") + " > " + os.path.join(contig_dir, "quast.log") + " 2> " + os.path.join(contig_dir, "quast.err"))
+#        print("Done")
 
 os.system("chmod -R 777 " + output_dir)
 sys.exit(exit_code)

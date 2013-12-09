@@ -279,6 +279,7 @@ struct debruijn_config {
     struct distance_estimator {
         double linkage_distance_coeff;
         double max_distance_coeff;
+        double max_distance_coeff_scaff;
         double filter_threshold;
     };
 
@@ -310,6 +311,8 @@ struct debruijn_config {
         size_t read_length;
         double mean_insert_size;
         double insert_size_deviation;
+        double insert_size_left_quantile;
+        double insert_size_right_quantile;
         double median_insert_size;
         double insert_size_mad;
         std::map<int, size_t> insert_size_distribution;
@@ -322,7 +325,16 @@ struct debruijn_config {
         std::string single_read_prefix;
         size_t thread_num;
 
-        DataSetData(): read_length(0), mean_insert_size(0.0), insert_size_deviation(0.0), median_insert_size(0.0), insert_size_mad(0.0), total_nucls(0), average_coverage(0.0), pi_threshold(0.0) {
+        DataSetData(): read_length(0),
+                mean_insert_size(0.0),
+                insert_size_deviation(0.0),
+                insert_size_left_quantile(0.0),
+                insert_size_right_quantile(0.0),
+                median_insert_size(0.0),
+                insert_size_mad(0.0),
+                total_nucls(0),
+                average_coverage(0.0),
+                pi_threshold(0.0) {
         }
     };
 
@@ -434,7 +446,8 @@ public:
     std::string entry_point;
 
     bool rr_enable;
-    bool long_single_mode;
+    bool single_reads_rr;
+    bool always_single_reads_rr;
     bool divide_clusters;
 
     bool mismatch_careful;

@@ -13,7 +13,7 @@ visualize {
 }
 
 ; none | break_gaps | break_all
-output_broken_scaffolds     break_all
+output_broken_scaffolds     break_gaps
 
 singlecell {
     split_edge_length       99
@@ -56,7 +56,8 @@ singlecell {
     
     loop_removal
     {
-        max_loops       30
+        max_loops       10
+        mp_max_loops    3
     }
 
     remove_overlaps     true
@@ -108,7 +109,8 @@ multicell {
     
     loop_removal
     {
-        max_loops       30
+        max_loops       10
+        mp_max_loops    3
     }
 
     remove_overlaps     true

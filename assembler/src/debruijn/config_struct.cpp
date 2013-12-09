@@ -107,6 +107,14 @@ void load_lib_data(const std::string& prefix) {
       load_param(filename, "insert_size_deviation_" + ToString(i), double_val);
       if (double_val) {
           cfg::get_writable().ds.reads[i].data().insert_size_deviation = *double_val;
+      }      
+      load_param(filename, "insert_size_left_quantile_" + ToString(i), double_val);
+      if(double_val) {
+          cfg::get_writable().ds.reads[i].data().insert_size_left_quantile = *double_val;
+      }
+      load_param(filename, "insert_size_right_quantile_" + ToString(i), double_val);
+        if (double_val) {
+            cfg::get_writable().ds.reads[i].data().insert_size_right_quantile = *double_val;
       }
       load_param(filename, "insert_size_median_" + ToString(i), double_val);
       if (double_val) {
@@ -132,6 +140,7 @@ void load_lib_data(const std::string& prefix) {
 void write_lib_data(const std::string& prefix) {
   std::string filename = estimated_param_filename(prefix);
 
+  cfg::get().ds.reads.save("foo.txt");
   write_param(filename, "lib_count", cfg::get().ds.reads.lib_count());
   write_param(filename, "max_read_length", cfg::get().ds.RL());
   write_param(filename, "average_coverage", cfg::get().ds.avg_coverage());
@@ -140,6 +149,8 @@ void write_lib_data(const std::string& prefix) {
       write_param(filename, "read_length_" + ToString(i), cfg::get().ds.reads[i].data().read_length);
       write_param(filename, "insert_size_" + ToString(i), cfg::get().ds.reads[i].data().mean_insert_size);
       write_param(filename, "insert_size_deviation_" + ToString(i), cfg::get().ds.reads[i].data().insert_size_deviation);
+      write_param(filename, "insert_size_left_quantile_" + ToString(i), cfg::get().ds.reads[i].data().insert_size_left_quantile);
+      write_param(filename, "insert_size_right_quantile_" + ToString(i), cfg::get().ds.reads[i].data().insert_size_right_quantile);
       write_param(filename, "insert_size_median_" + ToString(i), cfg::get().ds.reads[i].data().median_insert_size);
       write_param(filename, "insert_size_mad_" + ToString(i), cfg::get().ds.reads[i].data().insert_size_mad);
       write_param(filename, "average_coverage_" + ToString(i), cfg::get().ds.reads[i].data().average_coverage);
@@ -303,6 +314,7 @@ void load(debruijn_config::distance_estimator& de,
 
   load(de.linkage_distance_coeff, pt, "linkage_distance_coeff");
   load(de.max_distance_coeff, pt, "max_distance_coeff");
+  load(de.max_distance_coeff_scaff, pt, "max_distance_coeff_scaff");
   load(de.filter_threshold, pt, "filter_threshold");
 }
 
@@ -560,7 +572,8 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   load(cfg.additional_contigs, pt, "additional_contigs");
 
   load(cfg.rr_enable, pt, "rr_enable");
-  load(cfg.long_single_mode, pt, "long_single_mode");
+  load(cfg.single_reads_rr, pt, "single_reads_rr");
+  load(cfg.always_single_reads_rr, pt, "always_single_reads_rr");
   load(cfg.divide_clusters, pt, "divide_clusters");
   load(cfg.mismatch_careful, pt, "mismatch_careful");
   load(cfg.correct_mismatches, pt, "correct_mismatches");
