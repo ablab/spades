@@ -143,6 +143,8 @@ pacbio_processor
 
 ;gap_closer
 	long_seq_limit 400
+	pacbio_min_gap_quantity 2
+	contigs_min_gap_quantity 1
 }
 ; consensus
 need_consensus  false ; output is VERY large(gigabytes).

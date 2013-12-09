@@ -33,10 +33,12 @@ private:
     set<pair<EdgeId, EdgeId> > nonempty_pairs;
     set<pair<EdgeId, EdgeId> > transitively_ignored_pairs;
     set<pair<EdgeId, EdgeId> > symmetrically_ignored_pairs;
+
 public:
-    GapStorage(Graph &g)
+    size_t min_gap_quantity;
+    GapStorage(Graph &g, size_t min_gap_quantity)
             : g_(g),
-              inner_index() {
+              inner_index(), min_gap_quantity(min_gap_quantity){
     }
 
     size_t FillIndex() {
@@ -92,7 +94,7 @@ public:
                 auto next_iter = ++iter;
                 if (next_iter == inner_index[e].end() || next_iter->end != cl_start->end) {
                     size_t len = next_iter - cl_start;
-                    if (len > 1) {
+                    if (len >= min_gap_quantity) {
                         nonempty_pairs.insert(make_pair(cl_start->start, cl_start->end));
                     }
                     cl_start = next_iter;
@@ -169,8 +171,8 @@ public:
             if (next_iter == inner_index[e].end() || next_iter->end != cl_start->end) {
                 int start_min = 1000000000;
                 int end_max = 0;
-                int long_seqs = 0;
-                int short_seqs = 0;
+                size_t long_seqs = 0;
+                size_t short_seqs = 0;
                 size_t long_seq_limit = cfg::get().pb.long_seq_limit;  //400
                 bool exclude_long_seqs = false;
                 for (auto j_iter = cl_start; j_iter != next_iter; j_iter++) {
@@ -189,7 +191,7 @@ public:
                         end_max = j_iter->edge_gap_end_position;
                 }
 
-                if (short_seqs >= 2 && short_seqs > long_seqs)
+                if (short_seqs >= min_gap_quantity && short_seqs > long_seqs)
                     exclude_long_seqs = true;
 
                 for (auto j_iter = cl_start; j_iter != next_iter; j_iter++) {
@@ -292,7 +294,7 @@ private:
             auto next_iter = ++iter;
             cur_len++;
             if (next_iter == storage.inner_index[e].end() || next_iter->end != cl_start->end) {
-                if (cur_len > 1 && !storage.IsIgnored(make_pair(cl_start->start, cl_start->end))) {
+                if (cur_len >= storage.min_gap_quantity && !storage.IsIgnored(make_pair(cl_start->start, cl_start->end))) {
                     vector<string> gap_variants;
                     for (auto j_iter = cl_start; j_iter != next_iter; j_iter++) {
                         string s = j_iter->gap_seq.str();

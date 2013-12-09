@@ -21,11 +21,11 @@ void ProcessReadsBatch(conj_graph_pack &gp,
                        std::vector<io::SingleRead>& reads,
                        pacbio::PacBioMappingIndex<ConjugateDeBruijnGraph>& pac_index,
                        PathStorage<Graph>& long_reads, pacbio::GapStorage<Graph>& gaps,
-                       size_t buf_size, int n) {
+                       size_t buf_size, int n, size_t min_gap_quantity) {
     vector<PathStorage<Graph> > long_reads_by_thread(cfg::get().max_threads,
                                                      PathStorage<Graph>(gp.g));
     vector<pacbio::GapStorage<Graph> > gaps_by_thread(cfg::get().max_threads,
-                                              pacbio::GapStorage<Graph>(gp.g));
+                                              pacbio::GapStorage<Graph>(gp.g, min_gap_quantity));
 
 #   pragma omp parallel for shared(reads, long_reads_by_thread, pac_index, n)
     for (size_t i = 0; i < buf_size; ++i) {
@@ -67,7 +67,13 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
     int n = 0;
     gp.ginfo.Save("tmp1");
     PathStorage<Graph>& long_reads = gp.single_long_reads[lib_id];
-    pacbio::GapStorage<ConjugateDeBruijnGraph> gaps(gp.g);
+    size_t min_gap_quantity = 2;
+    if (cfg::get().ds.reads[lib_id].type() == io::LibraryType::PacBioReads) {
+        min_gap_quantity = cfg::get().pb.pacbio_min_gap_quantity;
+    } else {
+        min_gap_quantity = cfg::get().pb.contigs_min_gap_quantity;
+    }
+    pacbio::GapStorage<ConjugateDeBruijnGraph> gaps(gp.g, min_gap_quantity);
     size_t read_buffer_size = 50000;
     std::vector<io::SingleRead> reads(read_buffer_size);
     io::SingleRead read;
@@ -90,7 +96,7 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
                 stream >> reads[buf_size];
             INFO("Prepared batch " << buffer_no << " of " << buf_size << " reads.");
             DEBUG("master thread number " << omp_get_thread_num());
-            ProcessReadsBatch(gp, reads, pac_index, long_reads, gaps, buf_size, n);
+            ProcessReadsBatch(gp, reads, pac_index, long_reads, gaps, buf_size, n, min_gap_quantity);
             INFO("Processed batch " << buffer_no);
             ++buffer_no;
         }

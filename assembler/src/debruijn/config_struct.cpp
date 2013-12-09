@@ -356,6 +356,8 @@ void load(debruijn_config::pacbio_processor& pb,
   load(pb.path_limit_stretching, pt, "path_limit_stretching");
   load(pb.path_limit_pressing, pt, "path_limit_pressing");
   load(pb.long_seq_limit, pt, "long_seq_limit");
+  load(pb.pacbio_min_gap_quantity, pt, "pacbio_min_gap_quantity");
+  load(pb.contigs_min_gap_quantity, pt, "contigs_min_gap_quantity");
 }
 
 
