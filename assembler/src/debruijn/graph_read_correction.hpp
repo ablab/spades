@@ -122,7 +122,6 @@ private:
 	;
 };
 
-
 //todo improve logging
 template<class Graph, class Mapper>
 class GraphReadCorrector: public io::SequenceModifier {

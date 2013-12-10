@@ -308,7 +308,7 @@ class ThornRemover : public ChimericEdgeRemovingAlgorithm<Graph,
  private:
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef ChimericEdgeRemovingAlgorithm<Graph, LengthComparator<Graph>> base;
+    typedef ChimericEdgeRemovingAlgorithm<Graph, CoverageComparator<Graph>> base;
 
  public:
     ThornRemover(Graph& g, size_t max_length, size_t uniqueness_length,
