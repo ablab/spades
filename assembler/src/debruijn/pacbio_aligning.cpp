@@ -21,13 +21,13 @@ void ProcessReadsBatch(conj_graph_pack &gp,
                        std::vector<io::SingleRead>& reads,
                        pacbio::PacBioMappingIndex<ConjugateDeBruijnGraph>& pac_index,
                        PathStorage<Graph>& long_reads, pacbio::GapStorage<Graph>& gaps,
-                       size_t buf_size, int n, size_t min_gap_quantity) {
+                       size_t buf_size, int n, size_t min_gap_quantity, pacbio::StatsCounter stats) {
     vector<PathStorage<Graph> > long_reads_by_thread(cfg::get().max_threads,
                                                      PathStorage<Graph>(gp.g));
     vector<pacbio::GapStorage<Graph> > gaps_by_thread(cfg::get().max_threads,
                                               pacbio::GapStorage<Graph>(gp.g, min_gap_quantity));
     vector<pacbio::StatsCounter> stats_by_thread(cfg::get().max_threads);
-    pacbio::StatsCounter stats;
+
 #   pragma omp parallel for shared(reads, long_reads_by_thread, pac_index, n)
     for (size_t i = 0; i < buf_size; ++i) {
         if (i % 1000 == 0) {
@@ -45,6 +45,9 @@ void ProcessReadsBatch(conj_graph_pack &gp,
 
         for (auto iter = aligned_edges.begin(); iter != aligned_edges.end(); ++iter)
             long_reads_by_thread[thread_num].AddPath(*iter, 1, true);
+        //counting stats:
+        for (auto iter = aligned_edges.begin(); iter != aligned_edges.end(); ++iter)
+            stats_by_thread[thread_num].path_len_in_edges[iter->size()] ++;
 
 #       pragma omp critical
         {
@@ -68,6 +71,7 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
  //   pacbio_read_stream.release();
     int n = 0;
     PathStorage<Graph>& long_reads = gp.single_long_reads[lib_id];
+    pacbio::StatsCounter stats;
     size_t min_gap_quantity = 2;
     if (cfg::get().ds.reads[lib_id].type() == io::LibraryType::PacBioReads || cfg::get().ds.reads[lib_id].type() == io::LibraryType::SangerReads) {
         min_gap_quantity = cfg::get().pb.pacbio_min_gap_quantity;
@@ -83,7 +87,7 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
     INFO(cfg::get().K);
     pacbio::PacBioMappingIndex<ConjugateDeBruijnGraph> pac_index(gp.g,
                                                          cfg::get().pb.pacbio_k,
-                                                         cfg::get().K);
+                                                         cfg::get().K, cfg::get().pb.ignore_middle_alignment);
 //    path_extend::ContigWriter cw(gp.g);
 //    cw.writeEdges("before_rr_with_ids.fasta");
 //    ofstream filestr("pacbio_mapped.mpr");
@@ -96,7 +100,7 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
                 stream >> reads[buf_size];
             INFO("Prepared batch " << buffer_no << " of " << buf_size << " reads.");
             DEBUG("master thread number " << omp_get_thread_num());
-            ProcessReadsBatch(gp, reads, pac_index, long_reads, gaps, buf_size, n, min_gap_quantity);
+            ProcessReadsBatch(gp, reads, pac_index, long_reads, gaps, buf_size, n, min_gap_quantity, stats);
             INFO("Processed batch " << buffer_no);
             ++buffer_no;
         }
