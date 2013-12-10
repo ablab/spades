@@ -657,9 +657,14 @@ typename PacBioMappingIndex<Graph>::MappingDescription PacBioMappingIndex<Graph>
             TRACE("and quality:" << quality);
             if (banned_kmers.find(Sequence(kwh.key())) != banned_kmers.end())
                 continue;
-
-            if (int(iter->offset) > int(debruijn_k - pacbio_k) &&
-                int(iter->offset) < int(g_.length(iter->edge_id)))
+            int offset = (int)iter->offset;
+            int s_stretched = int ((double)s.size() * 1.2 + 50);
+            int edge_len = int(g_.length(iter->edge_id));
+            //No alignment in vertex, and further than s+eps bp from edge ends;
+            if (offset > int(debruijn_k - pacbio_k) &&
+                offset < edge_len &&
+                (offset < int(debruijn_k - pacbio_k) + s_stretched || offset > edge_len - s_stretched)
+                )
                 res[iter->edge_id].push_back(MappingInstance((int) iter->offset, (int) (j - pacbio_k + 1), quality));
         }
     }
