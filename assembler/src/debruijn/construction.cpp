@@ -58,8 +58,7 @@ void Construction::run(conj_graph_pack &gp, const char*) {
 
     std::vector<size_t> libs_for_construction;
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i)
-        if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd ||
-            cfg::get().ds.reads[i].type() == io::LibraryType::SingleReads)
+        if (cfg::get().ds.reads[i].is_graph_contructable())
             libs_for_construction.push_back(i);
 
     if (cfg::get().use_multithreading) {
