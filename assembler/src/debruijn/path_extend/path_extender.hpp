@@ -359,9 +359,14 @@ public:
             : g_(g),
               cov_map_(cov_map),
               used_paths_(),
-              repeat_len_(max_repeat_len) { }
+              repeat_len_(max_repeat_len){
+        empty_ = new BidirectionalPath(g_);
+    }
+    ~RepeatDetector() {
+        delete empty_;
+    }
 
-    size_t RepeatSize(const BidirectionalPath& p) {
+    BidirectionalPath* RepeatPath(const BidirectionalPath& p) {
         if (p.Size() == 0) {
             return 0;
         }
@@ -369,6 +374,7 @@ public:
         set<BidirectionalPath*> cov_paths = cov_map_.GetCoveringPaths(last_e);
         DEBUG("cov paths for e " << g_.int_id(last_e) << " size " << cov_paths.size());
         size_t max_common_size = 0;
+        BidirectionalPath* result_p = empty_;
         for (BidirectionalPath* cov_p : cov_paths) {
             if (used_paths_.find(cov_p) == used_paths_.end() || cov_p == &p) {
                 continue;
@@ -379,13 +385,13 @@ public:
             if (p.LengthAt(p.Size() - common_size) > repeat_len_) {
                 DEBUG("repeat from " << (p.Size() - common_size) << " length " << p.LengthAt(p.Size() - common_size) << " repeat length " << repeat_len_);
                 max_common_size = max(common_size, max_common_size);
+                result_p = cov_p;
             }
         }
         used_paths_.insert(&p);
         DEBUG("max common size " << max_common_size);
-        return max_common_size;
+        return result_p;
     }
-private:
     size_t MaxCommonSize(const BidirectionalPath& p1, const BidirectionalPath& p2) const {
         EdgeId last_e = p1.Back();
         vector<size_t> positions2 = p2.FindAll(last_e);
@@ -396,7 +402,7 @@ private:
         }
         return max_common_size;
     }
-
+private:
     size_t MaxCommonSize(const BidirectionalPath& p1, size_t pos1, const BidirectionalPath& p2, size_t pos2) const {
         int i1 = (int) pos1;
         int i2 = (int) pos2;
@@ -411,6 +417,7 @@ private:
     const GraphCoverageMap& cov_map_;
     set<const BidirectionalPath*> used_paths_;
     size_t repeat_len_;
+    BidirectionalPath* empty_;
 };
 
 class ContigsMaker {
@@ -484,10 +491,34 @@ public:
             DEBUG("Stoping because of interstand bulge");
             return false;
         }
-        size_t repeat_size = repeat_detector_.RepeatSize(path);
+        BidirectionalPath* repeat_path = repeat_detector_.RepeatPath(path);
+        size_t repeat_size = repeat_detector_.MaxCommonSize(path, *repeat_path);
         if (repeat_size > 0) {
             DEBUG("repeat with length " << repeat_size);
-            path.PopBack(repeat_size);
+            path.Print();
+            repeat_path->Print();
+            BidirectionalPath repeat = path.SubPath(path.Size() - repeat_size);
+            int begin_repeat = repeat_path->FindLast(repeat);
+            VERIFY(begin_repeat > -1);
+            size_t end_repeat = (size_t)begin_repeat + repeat_size;
+            DEBUG("not consistent subpaths ");
+            BidirectionalPath begin1 = path.SubPath(0, path.Size() >= repeat_size ? path.Size() - repeat_size :  0);
+            begin1.Print();
+            BidirectionalPath begin2 = repeat_path->SubPath(0, begin_repeat);
+            begin2.Print();
+            BidirectionalPath end2 = repeat_path->SubPath(end_repeat);
+            path.Clear();
+            repeat_path->Clear();
+            if (begin2.Size() != 0) {
+               path.PushBack(begin2);
+            } else {
+                path.PushBack(begin1);
+            }
+            path.PushBack(repeat);
+            path.PushBack(end2);
+            DEBUG("new path");
+            path.Print();
+            //path.PopBack(repeat_size);
             return false;
         }
         size_t current = 0;
