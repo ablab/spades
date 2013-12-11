@@ -405,7 +405,7 @@ public:
 		return edges;
 	}
 
-    PathContainer extendSeeds(PathContainer& seeds, PathExtender& pathExtender) {
+    PathContainer extendSeeds(PathContainer& seeds, ContigsMaker& pathExtender) {
         PathContainer paths;
         pathExtender.GrowAll(seeds, &paths);
         return paths;

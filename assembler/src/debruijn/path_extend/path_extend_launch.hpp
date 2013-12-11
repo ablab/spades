@@ -235,12 +235,12 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
             gp, long_reads, pset.loop_removal.max_loops, output_dir);
     vector<SimpleExtender *> shortLoopPEs = MakePEExtenders(gp, pset, libs, true);
     vector<ScaffoldingPathExtender*> scafPEs = MakeScaffoldingExtender(gp, pset, scaff_libs);
-    vector<CoveringPathExtender *> all_libs(usualPEs.begin(), usualPEs.end());
-    all_libs.insert(all_libs.end(), long_reads_extenders.begin(),
-                    long_reads_extenders.end());
+    vector<PathExtender *> all_libs(long_reads_extenders.begin(),
+                                    long_reads_extenders.end());
+    all_libs.insert(all_libs.end(), usualPEs.begin(), usualPEs.end() );
     all_libs.insert(all_libs.end(), shortLoopPEs.begin(), shortLoopPEs.end());
     all_libs.insert(all_libs.end(), scafPEs.begin(), scafPEs.end());
-    CoveringPathExtender * mainPE = new CompositeExtender(
+    CompositeExtender * mainPE = new CompositeExtender(
             gp.g, all_libs);
 
 //extend pe + long reads
@@ -251,7 +251,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	INFO("Growing paths");
 	auto paths = resolver.extendSeeds(seeds, *mainPE);
 	DebugOutputPaths(writer, gp, output_dir, paths, "pe_overlaped_paths");
-    size_t max_over = FindMaxOverlapedLen(libs);
+    size_t max_over = max(FindMaxOverlapedLen(libs), (size_t)10000);
 	paths.SortByLength();
 
     if (mp_libs.size() == 0) {
@@ -337,6 +337,10 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 
     writer.WritePathsToFASTG(last_paths, output_dir + contigs_name + ".fastg", output_dir + contigs_name + ".fasta");
     writer.writePaths(last_paths, output_dir + contigs_name+ "_temp" + ".fasta");
+    last_paths.DeleteAllPaths();
+    seeds.DeleteAllPaths();
+    mp_paths.DeleteAllPaths();
+    paths.DeleteAllPaths();
 
     INFO("Path extend repeat resolving tool finished");
     //TODO:DELETE ALL!!!!
@@ -412,6 +416,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     ResolveRepeatsManyLibs(gp, rr_libs, scaff_libs, mp_libs, long_reads, output_dir,
                            contigs_name, traverseLoops, broken_contigs);
     DeleteLibs(rr_libs);
+    DeleteLibs(mp_libs);
     DeleteLibs(scaff_libs);
 }
 

@@ -382,6 +382,7 @@ inline Edge* NextPathSearcher::AddPath(const BidirectionalPath& init_path, Edge*
 
 inline void NextPathSearcher::GrowPath(const BidirectionalPath& init_path, Edge* e, size_t max_len, vector<Edge*>& to_add) {
     if (!e->IsCorrect())
+        DEBUG("incorrect");
         return;
     for (EdgeId next_edge : g_.OutgoingEdges(g_.EdgeEnd(e->GetId()))) {
         set<BidirectionalPath*> cov_paths = cover_map_.GetCoveringPaths(next_edge);
@@ -748,6 +749,7 @@ inline void NextPathSearcher::FilterBackPaths(set<BidirectionalPath*>& back_path
         } else if (IsInTip(last_v) == 0 && p->Length() < max_len) {
             ++piter;
         } else {
+            delete p;
             piter = back_paths.erase(piter);
         }
     }

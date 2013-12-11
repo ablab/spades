@@ -1078,6 +1078,13 @@ public:
         return data_[index].second;
     }
 
+    void DeleteAllPaths() {
+        for (size_t i = 0; i < data_.size(); ++i) {
+            delete data_[i].first;
+            delete data_[i].second;
+        }
+    }
+
     size_t size() const {
         return data_.size();
     }

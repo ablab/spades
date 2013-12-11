@@ -551,15 +551,13 @@ protected:
     DECL_LOGGER("ExtensionChooser")
 
 public:
-    UniqueEdgeAnalyzer(const Graph& g, GraphCoverageMap cov_map,
+    UniqueEdgeAnalyzer(const Graph& g, const GraphCoverageMap& cov_map,
                        double filter_threshold, double prior_threshold)
             : g_(g),
               cov_map_(cov_map),
               filter_threshold_(filter_threshold),
               prior_threshold_(prior_threshold),
-              unique_edges_founded_(false) {
-
-    }
+              unique_edges_founded_(false) { }
 
     bool IsUnique(EdgeId e) {
         if (!unique_edges_founded_) {
@@ -719,7 +717,7 @@ private:
     }
 
     const Graph& g_;
-    GraphCoverageMap cov_map_;
+    const GraphCoverageMap& cov_map_;
     double filter_threshold_;
     double prior_threshold_;bool unique_edges_founded_;
     std::set<EdgeId> unique_edges_;
@@ -791,7 +789,7 @@ public:
               filtering_threshold_(filtering_threshold),
               weight_priority_threshold_(weight_priority_threshold),
               cov_map_(g, pc),
-              unique_edge_analyzer_(g, GraphCoverageMap(g, pc), filtering_threshold, unique_edge_priority_threshold),
+              unique_edge_analyzer_(g, cov_map_, filtering_threshold, unique_edge_priority_threshold),
               simple_scaffolding_(g) {
 
     }
@@ -916,7 +914,7 @@ private:
 class MatePairExtensionChooser : public ExtensionChooser {
 public:
     MatePairExtensionChooser(const Graph& g, PairedInfoLibrary& lib,
-                             const GraphCoverageMap& cov_map)
+                              const GraphCoverageMap& cov_map)
             : ExtensionChooser(g, 0, .0),
               g_(g),
               lib_(lib),
