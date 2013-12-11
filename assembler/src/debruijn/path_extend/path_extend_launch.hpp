@@ -251,7 +251,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	INFO("Growing paths");
 	auto paths = resolver.extendSeeds(seeds, *mainPE);
 	DebugOutputPaths(writer, gp, output_dir, paths, "pe_overlaped_paths");
-    size_t max_over = max(FindMaxOverlapedLen(libs), (size_t)10000);
+    size_t max_over = max(FindMaxOverlapedLen(libs), gp.g.k() + 100);
 	paths.SortByLength();
 
     if (mp_libs.size() == 0) {
