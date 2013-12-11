@@ -57,7 +57,6 @@ void assemble_genome() {
     if (cfg::get().rr_enable) {
         bool run_pacbio = false;
         for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-            io::LibraryType type = cfg::get().ds.reads[i].type();
             if (cfg::get().ds.reads[i].is_pacbio_alignable()) {
                 run_pacbio = true;
                 break;
