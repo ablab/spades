@@ -375,7 +375,7 @@ public:
             }
             size_t common_size = MaxCommonSize(p, *cov_p);
             DEBUG("max comon size with path " << cov_p->GetId() << " is " << common_size);
-            VERIFY(common_size < p.Size());
+            VERIFY(common_size <= p.Size());
             if (p.LengthAt(p.Size() - common_size) > repeat_len_) {
                 DEBUG("repeat from " << (p.Size() - common_size) << " length " << p.LengthAt(p.Size() - common_size) << " repeat length " << repeat_len_);
                 max_common_size = max(common_size, max_common_size);
@@ -403,7 +403,8 @@ private:
         while (i1 >= 0 && i2 >= 0 && p1.At((size_t) i1) == p2.At((size_t) i2)) {
             i1--;
             i2--;
-        }VERIFY(i1 <= (int)pos1);
+        }
+        VERIFY(i1 <= (int)pos1);
         return size_t((int) pos1 - i1);
     }
     const Graph& g_;
