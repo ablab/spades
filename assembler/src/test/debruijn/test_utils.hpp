@@ -225,6 +225,25 @@ void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t rl, 
 	AssertPairInfo(gp.g, gp.paired_indices[0], AddComplement(AddBackward(etalon_pair_info)));
 }
 
+template<class graph_pack>
+void CheckIndex(vector<string> reads, size_t k) {
+    typedef io::VectorReadStream<io::SingleRead> RawStream;
+    graph_pack gp(k, "tmp", 0);
+    auto stream = io::RCWrap<io::SingleRead>(make_shared<RawStream>(MakeReads(reads)));
+    io::ReadStreamList<io::SingleRead> streams(stream);
+    ConstructGraph(CreateDefaultConstructionConfig(), streams, gp.g, gp.index);
+    stream->reset();
+    io::SingleRead read;
+    while(!(stream->eof())) {
+        (*stream) >> read;
+        runtime_k::RtSeq kmer = read.sequence().start<runtime_k::RtSeq>(k + 1) >> 'A';
+        for(size_t i = k; i < read.size(); i++) {
+            kmer = kmer << read[i];
+            BOOST_CHECK(gp.index.contains(kmer));
+        }
+    }
+}
+
 struct TmpFolderFixture
 {
 	TmpFolderFixture()
