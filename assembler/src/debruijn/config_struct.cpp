@@ -355,7 +355,10 @@ void load(debruijn_config::pacbio_processor& pb,
   load(pb.domination_cutoff, pt, "domination_cutoff");
   load(pb.path_limit_stretching, pt, "path_limit_stretching");
   load(pb.path_limit_pressing, pt, "path_limit_pressing");
+  load(pb.ignore_middle_alignment, pt, "ignore_middle_alignment");
   load(pb.long_seq_limit, pt, "long_seq_limit");
+  load(pb.pacbio_min_gap_quantity, pt, "pacbio_min_gap_quantity");
+  load(pb.contigs_min_gap_quantity, pt, "contigs_min_gap_quantity");
 }
 
 
@@ -541,18 +544,13 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 
   load(cfg.developer_mode, pt, "developer_mode");
   if (cfg.developer_mode) {
-    load(cfg.make_saves, pt, "make_saves");
     load(cfg.output_pictures, pt, "output_pictures");
     load(cfg.output_nonfinal_contigs, pt, "output_nonfinal_contigs");
     load(cfg.compute_paths_number, pt, "compute_paths_number");
   } else {
-    cfg.make_saves = false;
     cfg.output_pictures = false;
     cfg.output_nonfinal_contigs = false;
     cfg.compute_paths_number = false;
-  }
-  if (!cfg.make_saves) {
-    load(cfg.make_saves, pt, "force_make_saves");
   }
 
   load(cfg.load_from, pt, "load_from");

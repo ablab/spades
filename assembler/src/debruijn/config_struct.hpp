@@ -302,9 +302,11 @@ struct debruijn_config {
       double domination_cutoff; //1.5
       double path_limit_stretching; //1.3
       double path_limit_pressing;//0.7
-
+      bool ignore_middle_alignment; //true; false for stats and mate_pairs;
   //gap_closer
       size_t long_seq_limit; //400
+      size_t pacbio_min_gap_quantity; //2
+      size_t contigs_min_gap_quantity; //1
     };
 
     struct DataSetData {
@@ -421,7 +423,6 @@ public:
     std::string final_contigs_file;
     std::string log_filename;
 
-    bool make_saves;
     bool output_pictures;
     bool output_nonfinal_contigs;
     bool compute_paths_number;

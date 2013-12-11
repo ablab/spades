@@ -170,12 +170,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
 
     bool has_rr_reads = false;
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd ||
-            cfg::get().ds.reads[i].type() == io::LibraryType::MatePairs ||
-            cfg::get().ds.reads[i].type() == io::LibraryType::PacBioReads ||
-            cfg::get().ds.reads[i].type() == io::LibraryType::SangerReads ||
-            cfg::get().ds.reads[i].type() == io::LibraryType::TrustedContigs ||
-            cfg::get().ds.reads[i].type() == io::LibraryType::UntrustedContigs) {
+        if (cfg::get().ds.reads[i].is_repeat_resolvable()) {
             has_rr_reads = true;
             break;
         }
@@ -185,8 +180,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
     size_t edge_length_threshold = Nx(gp.g, 50);
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         INFO("Processing library #" << i);
-        if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd ||
-            cfg::get().ds.reads[i].type() == io::LibraryType::MatePairs) {
+        if (cfg::get().ds.reads[i].is_paired()) {
 
             bool insert_size_refined;
             if (cfg::get().use_multithreading) {

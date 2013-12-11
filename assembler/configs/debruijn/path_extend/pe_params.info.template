@@ -121,7 +121,7 @@ long_reads {
 
     pacbio_reads {
         filtering   2.5
-        weight_priority    4.0
+        weight_priority    1.2
         unique_edge_priority 5.0
     }
 

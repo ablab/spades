@@ -30,7 +30,7 @@ private:
 
 public:
     ShortReadMapper(const Graph& g, size_t k, size_t graph_k) :
-        SequenceMapper<Graph>(g), index_(g, k, graph_k), small_k_(k)
+        SequenceMapper<Graph>(g), index_(g, k, graph_k, false), small_k_(k)
     {
     }
 

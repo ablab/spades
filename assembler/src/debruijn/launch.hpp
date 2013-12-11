@@ -28,7 +28,9 @@ void assemble_genome() {
     INFO("SPAdes started");
     INFO("Starting from stage: " << cfg::get().entry_point);
 
-    StageManager SPAdes;
+    StageManager SPAdes({ cfg::get().developer_mode,
+                          cfg::get().load_from,
+                          cfg::get().output_saves});
 
     debruijn_graph::conj_graph_pack conj_gp(cfg::get().K, cfg::get().output_dir, cfg::get().ds.reads.lib_count(), cfg::get().ds.reference_genome,
                                             !cfg::get().developer_mode, cfg::get().flanking_range);
@@ -56,10 +58,7 @@ void assemble_genome() {
         bool run_pacbio = false;
         for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
             io::LibraryType type = cfg::get().ds.reads[i].type();
-            if (type == io::LibraryType::PacBioReads ||
-                    type == io::LibraryType::SangerReads ||
-                    type == io::LibraryType::TrustedContigs ||
-                    type == io::LibraryType::UntrustedContigs) {
+            if (cfg::get().ds.reads[i].is_pacbio_alignable()) {
                 run_pacbio = true;
                 break;
             }

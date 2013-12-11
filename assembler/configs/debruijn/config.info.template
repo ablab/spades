@@ -49,9 +49,6 @@ single_reads_rr true
 
 ; The following parameters are used ONLY if developer_mode is true
 
-; whether to print save-files (which take space on disk) - ONLY in developer mode
-make_saves true
-
 ; whether to output dot-files with pictures of graphs - ONLY in developer mode
 output_pictures true
 
@@ -143,9 +140,11 @@ pacbio_processor
 	domination_cutoff 1.5
 	path_limit_stretching 1.3
 	path_limit_pressing 0.7
-
+	ignore_middle_alignment true
 ;gap_closer
 	long_seq_limit 400
+	pacbio_min_gap_quantity 2
+	contigs_min_gap_quantity 1
 }
 ; consensus
 need_consensus  false ; output is VERY large(gigabytes).
@@ -159,9 +158,6 @@ graph_read_corr
 	output_dir corrected_contigs/
 	binary true
 }
-
-;temporary flag to generate saves even in non-developer mode
-force_make_saves false
 
 ;flanking coverage range
 flanking_range 50

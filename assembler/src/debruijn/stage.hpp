@@ -14,10 +14,14 @@
 
 namespace spades {
 
+class StageManager;
+
+class StageManager;
+
 class AssemblyStage {
   public:
     AssemblyStage(const char *name, const char *id)
-            : name_(name), id_(id) {}
+            : name_(name), id_(id), parent_(NULL) {}
 
     AssemblyStage(const AssemblyStage&) = delete;
     AssemblyStage& operator=(const AssemblyStage&) = delete;
@@ -25,13 +29,18 @@ class AssemblyStage {
     const char *name() const { return name_; }
     const char *id() const { return id_; }
 
-    virtual void load(debruijn_graph::conj_graph_pack&, const char* prefix = NULL);
-    virtual void save(const debruijn_graph::conj_graph_pack&, const char* prefix = NULL) const;
+    virtual void load(debruijn_graph::conj_graph_pack&, const std::string &load_from, const char* prefix = NULL);
+    virtual void save(const debruijn_graph::conj_graph_pack&, const std::string &save_to, const char* prefix = NULL) const;
     virtual void run(debruijn_graph::conj_graph_pack&, const char* started_from = NULL) = 0;
 
   private:
     const char *name_;
     const char *id_;
+
+  protected:
+    const StageManager *parent_;
+
+    friend class StageManager;
 };
 
 class CompositeStageBase : public AssemblyStage {
@@ -39,9 +48,9 @@ class CompositeStageBase : public AssemblyStage {
     class PhaseBase : public AssemblyStage {
       public:
         PhaseBase(const char *name, const char *id)
-                : AssemblyStage(name, id), parent_(NULL) {}
+                : AssemblyStage(name, id), parent_stage_(NULL) {}
       protected:
-        CompositeStageBase *parent_;
+        CompositeStageBase *parent_stage_;
 
         friend class CompositeStageBase;
     };
@@ -51,7 +60,7 @@ class CompositeStageBase : public AssemblyStage {
 
     CompositeStageBase* add(PhaseBase *phase) {
         phases_.push_back(std::unique_ptr<PhaseBase>(phase));
-        phase->parent_ = this;
+        phase->parent_stage_ = this;
 
         return this;
     }
@@ -77,8 +86,8 @@ class CompositeStage : public CompositeStageBase {
         Phase(const char *name, const char *id)
                 : PhaseBase(name, id) {}
 
-        CompositeStage<Storage>* parent() { return static_cast<CompositeStage<Storage>*>(parent_); }
-        const CompositeStage<Storage>* parent() const { return static_cast<const CompositeStage<Storage>*>(parent_); }
+        CompositeStage<Storage>* parent() { return static_cast<CompositeStage<Storage>*>(parent_stage_); }
+        const CompositeStage<Storage>* parent() const { return static_cast<const CompositeStage<Storage>*>(parent_stage_); }
 
         Storage &storage() { return parent()->storage(); }
         const Storage &storage() const { return parent()->storage(); }
@@ -96,8 +105,24 @@ class CompositeStage : public CompositeStageBase {
 
 class StageManager {
   public:
+    struct SavesPolicy {
+        bool make_saves_;
+        std::string load_from_;
+        std::string save_to_;
+
+        SavesPolicy()
+                : make_saves_(false), load_from_(""), save_to_("") {}
+
+        SavesPolicy(bool make_saves, const std::string &load_from, const std::string &save_to)
+                : make_saves_(make_saves), load_from_(load_from), save_to_(save_to) {}
+    };
+
+    StageManager(SavesPolicy policy = SavesPolicy())
+            : saves_policy_(policy) {}
+
     void add(AssemblyStage *stage) {
         stages_.push_back(std::unique_ptr<AssemblyStage>(stage));
+        stages_.back()->parent_ = this;
     }
     void add(std::initializer_list<AssemblyStage*> stages) {
         for (auto it = stages.begin(), et = stages.end(); it != et; ++it)
@@ -106,8 +131,14 @@ class StageManager {
 
     void run(debruijn_graph::conj_graph_pack& g,
              const char* start_from = NULL);
+
+    const SavesPolicy& saves_policy() const {
+        return saves_policy_;
+    }
+
   private:
     std::vector<std::unique_ptr<AssemblyStage> > stages_;
+    SavesPolicy saves_policy_;
 
     DECL_LOGGER("StageManager");
 };

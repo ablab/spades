@@ -144,6 +144,9 @@ void SequencingLibraryBase::load(const YAML::Node &node) {
         break;
     case LibraryType::SingleReads:
     case LibraryType::PacBioReads:
+    case LibraryType::SangerReads:
+    case LibraryType::TrustedContigs:
+    case LibraryType::UntrustedContigs:
       single_reads_ = node["single reads"].as<std::vector<std::string> >();
       break;
     default:

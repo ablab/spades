@@ -72,12 +72,8 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
 
     bool no_valid_libs = true;
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        auto type = cfg::get().ds.reads[i].type();
         if (cfg::get().ds.reads[i].data().mean_insert_size != 0.0 ||
-                type == io::LibraryType::PacBioReads ||
-                type == io::LibraryType::SangerReads ||
-                type == io::LibraryType::TrustedContigs ||
-                type == io::LibraryType::UntrustedContigs) {
+                cfg::get().ds.reads[i].is_pacbio_alignable()) {
 
             no_valid_libs = false;
             break;

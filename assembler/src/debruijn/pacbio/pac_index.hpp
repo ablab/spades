@@ -43,15 +43,15 @@ private:
     debruijn_graph::DeBruijnEdgeMultiIndex<typename Graph::EdgeId> tmp_index;
     map<pair<VertexId, VertexId>, vector<size_t> > distance_cashed;
     size_t read_count;
-
+    bool ignore_map_to_middle;
 public:
     MappingDescription Locate(const Sequence &s) const;
 
-    PacBioMappingIndex(const Graph &g, size_t k, size_t debruijn_k_)
+    PacBioMappingIndex(const Graph &g, size_t k, size_t debruijn_k_, bool ignore_map_to_middle)
             : g_(g),
               pacbio_k(k),
               debruijn_k(debruijn_k_),
-              tmp_index((unsigned) pacbio_k, cfg::get().output_dir) {
+              tmp_index((unsigned) pacbio_k, cfg::get().output_dir), ignore_map_to_middle(ignore_map_to_middle) {
         DEBUG("PB Mapping Index construction started");
 
         typedef typename debruijn_graph::EdgeIndexHelper<debruijn_graph::DeBruijnEdgeMultiIndex<typename Graph::EdgeId>>::GraphPositionFillingIndexBuilderT Builder;
@@ -398,6 +398,7 @@ public:
     OneReadMapping<Graph> GetReadAlignment(Sequence &s) {
         ClustersSet mapping_descr = GetClusters(s);
         int len = (int) mapping_descr.size();
+        vector<size_t> real_length;
         vector<int> colors = GetColors(mapping_descr, s);
         vector<vector<EdgeId> > sortedEdges;
         vector<typename ClustersSet::iterator> start_clusters, end_clusters;
@@ -469,7 +470,7 @@ public:
                 }
             }
         }
-        return OneReadMapping<Graph>(sortedEdges, illumina_gaps);
+        return OneReadMapping<Graph>(sortedEdges, illumina_gaps, real_length);
     }
 
     std::pair<int, int> GetPathLimits(const KmerCluster<Graph> &a,
@@ -657,10 +658,17 @@ typename PacBioMappingIndex<Graph>::MappingDescription PacBioMappingIndex<Graph>
             TRACE("and quality:" << quality);
             if (banned_kmers.find(Sequence(kwh.key())) != banned_kmers.end())
                 continue;
-
-            if (int(iter->offset) > int(debruijn_k - pacbio_k) &&
-                int(iter->offset) < int(g_.length(iter->edge_id)))
+            int offset = (int)iter->offset;
+            int s_stretched = int ((double)s.size() * 1.2 + 50);
+            int edge_len = int(g_.length(iter->edge_id));
+            //No alignment in vertex, and further than s+eps bp from edge ends;
+            bool correct_alignment = offset > int(debruijn_k - pacbio_k) && offset < edge_len;
+            if (ignore_map_to_middle) {
+                correct_alignment &= (offset < int(debruijn_k - pacbio_k) + s_stretched || offset > edge_len - s_stretched);
+            }
+            if (correct_alignment) {
                 res[iter->edge_id].push_back(MappingInstance((int) iter->offset, (int) (j - pacbio_k + 1), quality));
+            }
         }
     }
 
