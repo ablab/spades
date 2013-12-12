@@ -393,13 +393,13 @@ public:
 		conj_path = path;
 	}
 
-	BidirectionalPath* GetConjPath() {
+	const BidirectionalPath* GetConjPath() const {
 		return conj_path;
 	}
 
-    const BidirectionalPath* GetConstConjPath() const {
-        return conj_path;
-    }
+	BidirectionalPath* GetConjPath() {
+	    return conj_path;
+	}
 
     void SetWeight(double w){
     	weight_ = w;

@@ -376,7 +376,7 @@ public:
         size_t max_common_size = 0;
         BidirectionalPath* result_p = empty_;
         for (BidirectionalPath* cov_p : cov_paths) {
-            if (used_paths_.find(cov_p) == used_paths_.end() || cov_p == &p) {
+            if (used_paths_.find(cov_p) == used_paths_.end() || cov_p == &p || cov_p == p.GetConjPath()) {
                 continue;
             }
             size_t common_size = MaxCommonSize(p, *cov_p);
