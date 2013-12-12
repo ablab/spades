@@ -967,6 +967,8 @@ class MosaicStructureAnalyzer {
     size_t min_support_block_length_;
     size_t max_support_block_multiplicity_;
     size_t max_inter_block_length_;
+    size_t min_reportable_mosaic_length_;
+    size_t min_reportable_submosaic_length_;
     ostream& out_;
 
     Pos curr_pos_;
@@ -1000,13 +1002,16 @@ class MosaicStructureAnalyzer {
 public:
     MosaicStructureAnalyzer(const GenomeBlockComposition& block_composition,
                             size_t min_support_length, size_t max_support_mult,
-                            size_t max_inter_length,
+                            size_t max_inter_length, size_t min_reportable_mosaic_length,
+                            size_t min_reportable_submosaic_length,
                             ostream& out)
              : block_info_(block_composition.block_info()),
                block_composition_(block_composition),
                min_support_block_length_(min_support_length),
                max_support_block_multiplicity_(max_support_mult),
                max_inter_block_length_(max_inter_length),
+               min_reportable_mosaic_length_(min_reportable_mosaic_length),
+               min_reportable_submosaic_length_(min_reportable_submosaic_length),
                out_(out),
                curr_pos_(0) {
     }
@@ -1030,17 +1035,15 @@ public:
         INFO("Analyzing intervals and forming mosaic structures");
         interval_set.Analysis();
         INFO("Reporting mosaic structures");
-        /*TxtFileMosaicPrinter*/
-        ParsableFormatPrinter printer(helper, interval_set.different_irred_presence(), out_);
 
         //might have problems if only largest occurence is tandem making whole mosaic invalid
         //todo magic constant!
-        auto filter = func::And<MosaicStructure>(make_shared<NotTandemFilter>(block_info_), make_shared<LengthFilter>(helper, 500));
+        auto filter = func::And<MosaicStructure>(make_shared<NotTandemFilter>(block_info_),
+                                                 make_shared<LengthFilter>(helper, min_reportable_mosaic_length_));
 //        auto filter = make_shared<func::AlwaysTrue<MosaicStructure>>();
 
         interval_set.set_structure_filter(filter);
         //todo move filter to set constructor
-        interval_set.Report(printer);
 
         //pics
         FullMosaicTracker tracker;
@@ -1049,6 +1052,13 @@ public:
         AllRangesTracker all_tracker;
         interval_set.Report(all_tracker);
         DrawGraph(all_tracker.all_ranges(), full_mosaic_ranges, block_composition_);
+        //end pics
+
+        interval_set.set_substructure_filter(make_shared<LengthFilter>(helper, min_reportable_submosaic_length_));
+        /*TxtFileMosaicPrinter*/
+        ParsableFormatPrinter printer(helper, interval_set.different_irred_presence(), out_);
+        interval_set.Report(printer);
+
     }
 
 };
@@ -1056,11 +1066,14 @@ public:
 template<class gp_t>
 void PerformMosaicAnalysis(const gp_t& gp, const MappingPath<EdgeId> mapping_path, const Sequence& genome,
                            size_t min_support_length, size_t max_support_mult,
-                           size_t max_inter_length, ostream& out) {
+                           size_t max_inter_length, size_t min_reportable_mosaic_length,
+                           size_t min_reportable_submosaic_length, ostream& out) {
     BlockInfoProvider block_info(gp.g);
     GenomeBlockComposition block_composition(gp.g, mapping_path, genome.size() - gp.g.k(), block_info);
 
-    MosaicStructureAnalyzer analyzer(block_composition, min_support_length, max_support_mult, max_inter_length, out);
+    MosaicStructureAnalyzer analyzer(block_composition, min_support_length, max_support_mult,
+                                     max_inter_length, min_reportable_mosaic_length,
+                                     min_reportable_submosaic_length, out);
     analyzer.Analyze();
 }
 

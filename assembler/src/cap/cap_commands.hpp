@@ -621,9 +621,11 @@ class MosaicAnalysisCommand : public NewLocalCommand<CapEnvironment> {
       VERIFY(curr_env.genome_cnt() == 1);
 //      const Sequence& genome = curr_env.genomes()[1];
       const Sequence& genome = curr_env.genomes()[0];
-      size_t min_support_length = 1;
+      size_t min_support_length = 20;
       size_t max_support_mult = 20;
       size_t max_inter_length = 1000;
+      size_t min_reportable_mosaic_length = 500;
+      size_t min_reportable_submosaic_length = 20;
       std::string folder = TryFetchFolder(curr_env, args);
       ofstream out(folder + "mosaic.txt");
       cout << "Mosaic analysis triggered" << endl;
@@ -631,11 +633,16 @@ class MosaicAnalysisCommand : public NewLocalCommand<CapEnvironment> {
       cout << "Max support block multiplicity " << max_support_mult << endl;
       cout << "Max inter-block length " << max_inter_length << endl;
       if (curr_env.LSeqIsUsed()) {
-          mosaic::PerformMosaicAnalysis(curr_env.l_seq_gp(), curr_env.coordinates_handler().AsMappingPath(0),
-                                        genome, min_support_length, max_support_mult, max_inter_length, out);
+          VERIFY(false);
+//          mosaic::PerformMosaicAnalysis(curr_env.l_seq_gp(), curr_env.coordinates_handler().AsMappingPath(0),
+//                                        genome, min_support_length, max_support_mult, max_inter_length,
+//                                        min_reportable_mosaic_length,
+//                                        min_reportable_submosaic_length, out);
       } else {
           mosaic::PerformMosaicAnalysis(curr_env.rt_seq_gp(), curr_env.coordinates_handler().AsMappingPath(0),
-                                        genome, min_support_length, max_support_mult, max_inter_length, out);
+                                        genome, min_support_length, max_support_mult, max_inter_length,
+                                        min_reportable_mosaic_length,
+                                        min_reportable_submosaic_length, out);
       }
   }
 };
