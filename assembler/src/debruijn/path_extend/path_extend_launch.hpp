@@ -240,8 +240,9 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
     all_libs.insert(all_libs.end(), usualPEs.begin(), usualPEs.end() );
     all_libs.insert(all_libs.end(), shortLoopPEs.begin(), shortLoopPEs.end());
     all_libs.insert(all_libs.end(), scafPEs.begin(), scafPEs.end());
+    size_t max_over = max(FindMaxOverlapedLen(libs), gp.g.k() + 100);
     CompositeExtender * mainPE = new CompositeExtender(
-            gp.g, all_libs);
+            gp.g, all_libs, max_over);
 
 //extend pe + long reads
     PathExtendResolver resolver(gp.g);
@@ -251,7 +252,6 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	INFO("Growing paths");
 	auto paths = resolver.extendSeeds(seeds, *mainPE);
 	DebugOutputPaths(writer, gp, output_dir, paths, "pe_overlaped_paths");
-    size_t max_over = max(FindMaxOverlapedLen(libs), gp.g.k() + 100);
 	paths.SortByLength();
 
     if (mp_libs.size() == 0) {
@@ -290,7 +290,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	all_libs.insert(all_libs.end(), shortLoopPEs.begin(), shortLoopPEs.end());
 	all_libs.insert(all_libs.end(), scafPEs.begin(), scafPEs.end());
 	all_libs.insert(all_libs.end(), mpPEs.begin(), mpPEs.end());
-	CompositeExtender* mp_main_pe = new CompositeExtender(gp.g, all_libs);
+	CompositeExtender* mp_main_pe = new CompositeExtender(gp.g, all_libs, max_over);
 	INFO("Growing mp paths");
 	auto mp_paths = resolver.extendSeeds(paths, *mp_main_pe);
     resolver.removeOverlaps(mp_paths, mp_main_pe->GetCoverageMap(), max_over,
@@ -312,7 +312,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
     all_libs.insert(all_libs.end(), shortLoopPEs.begin(), shortLoopPEs.end());
     all_libs.insert(all_libs.end(), scafPEs.begin(), scafPEs.end());
     max_over = FindMaxOverlapedLen(libs);
-    CompositeExtender* last_extender = new CompositeExtender(gp.g, all_libs);
+    CompositeExtender* last_extender = new CompositeExtender(gp.g, all_libs, max_over);
     auto last_paths = resolver.extendSeeds(mp_paths, *last_extender);
     resolver.removeOverlaps(last_paths, last_extender->GetCoverageMap(), max_over,
                     writer, output_dir);

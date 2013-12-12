@@ -746,8 +746,8 @@ public:
 
     BidirectionalPath SubPath(size_t from, size_t to) const {
         BidirectionalPath result(g_);
-        VERIFY(to <= Size());
-        for (size_t i = from; i < to; ++i) {
+        //VERIFY(to <= Size());
+        for (size_t i = from; i < min(to, Size()); ++i) {
             result.PushBack(data_[i], gapLength_[i]);
         }
         return result;
@@ -1423,7 +1423,51 @@ inline bool LoopDetector::PrevEdgeInShortLoop() const {
     }
     return false;
 }
-
+pair<size_t, size_t> ComparePaths(size_t start_pos1, size_t start_pos2,
+                                  const BidirectionalPath& path1,
+                                  const BidirectionalPath& path2,
+                                  size_t max_diff) {
+    path1.Print();
+    path2.Print();
+    if (start_pos1 >= path1.Size() || start_pos2 >= path2.Size()) {
+        return make_pair(start_pos1, start_pos2);
+    }
+    const Graph& g = path1.graph();
+    size_t cur_pos = start_pos1;
+    size_t last2 = start_pos2;
+    size_t last1 = cur_pos;
+    cur_pos++;
+    size_t diff_len = 0;
+    while (cur_pos < path1.Size()) {
+        if (diff_len > max_diff) {
+            return make_pair(last1, last2);
+        }
+        EdgeId e = path1[cur_pos];
+        vector<size_t> poses2 = path2.FindAll(e);
+        bool found = false;
+        for (size_t pos2 = 0; pos2 < poses2.size(); ++pos2) {
+            if (poses2[pos2] > last2) {
+                if (path2.LengthAt(last2) - path2.LengthAt(poses2[pos2])
+                        - g.length(path2.At(last2)) - path2.GapAt(poses2[pos2]) > max_diff) {
+                    break;
+                }
+                last2 = poses2[pos2];
+                last1 = cur_pos;
+                DEBUG("found " << cur_pos);
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            diff_len += g.length(e) + path1.GapAt(cur_pos);
+            DEBUG("not found " << cur_pos << " now diff len " << diff_len);
+        } else {
+            diff_len = 0;
+        }
+        cur_pos++;
+    }
+    return make_pair(last1, last2);
+}
 } // path extend
 
 #endif /* BIDIRECTIONAL_PATH_H_ */

@@ -448,17 +448,19 @@ protected:
 
 class CompositeExtender : public ContigsMaker {
 public:
-    CompositeExtender(Graph & g)
+    CompositeExtender(Graph & g, size_t max_diff_len)
             : ContigsMaker(g),
               coverageMap_(g),
               repeat_detector_(g, coverageMap_, 2 * cfg::get().max_repeat_length),  //TODO: move to config
-              extenders_() { }
+              extenders_(),
+              max_diff_len_(max_diff_len){ }
 
-    CompositeExtender(Graph & g, vector<PathExtender*> pes)
+    CompositeExtender(Graph & g, vector<PathExtender*> pes, size_t max_diff_len)
             : ContigsMaker(g),
               coverageMap_(g),
               repeat_detector_(g, coverageMap_, 2 * cfg::get().max_repeat_length),  //TODO: move to config
-              extenders_() {
+              extenders_(),
+              max_diff_len_(max_diff_len) {
         extenders_ = pes;
     }
 
@@ -502,17 +504,23 @@ public:
             VERIFY(begin_repeat > -1);
             size_t end_repeat = (size_t)begin_repeat + repeat_size;
             DEBUG("not consistent subpaths ");
-            BidirectionalPath begin1 = path.SubPath(0, path.Size() >= repeat_size ? path.Size() - repeat_size :  0);
+            BidirectionalPath begin1 = path.SubPath(0, path.Size() - repeat_size);
             begin1.Print();
             BidirectionalPath begin2 = repeat_path->SubPath(0, begin_repeat);
             begin2.Print();
             BidirectionalPath end2 = repeat_path->SubPath(end_repeat);
+            BidirectionalPath begin1_conj = path.SubPath(0, path.Size() - repeat_size + 1).Conjugate();
+            BidirectionalPath begin2_conj = repeat_path->SubPath(0, begin_repeat + 1).Conjugate();
+            pair<size_t, size_t> last = ComparePaths(0, 0, begin1_conj, begin2_conj, max_diff_len_);
+            DEBUG("last " << last.first << " last2 " << last.second);
             path.Clear();
             repeat_path->Clear();
-            if (begin2.Size() != 0) {
-               path.PushBack(begin2);
+            if (begin2.Size() == 0 || last.second != 0) { //TODO: incorrect: common edges, but then different ends
+               path.PushBack(begin1);
+               repeat_path->PushBack(begin2);
             } else {
-                path.PushBack(begin1);
+                path.PushBack(begin2);
+                repeat_path->PushBack(begin1);
             }
             path.PushBack(repeat);
             path.PushBack(end2);
@@ -535,6 +543,7 @@ private:
     GraphCoverageMap coverageMap_;
     RepeatDetector repeat_detector_;
     vector<PathExtender*> extenders_;
+    size_t max_diff_len_;
 
     void SubscribeCoverageMap(BidirectionalPath * path) {
         path->Subscribe(&coverageMap_);
@@ -560,12 +569,14 @@ private:
                 result->AddPair(path, conjugatePath);
                 SubscribeCoverageMap(path);
                 SubscribeCoverageMap(conjugatePath);
+                size_t count_trying = 0;
                 do {
+                    count_trying++;
                     path->CheckGrow();
                     GrowPath(*path);
                     conjugatePath->CheckGrow();
                     GrowPath(*conjugatePath);
-                } while (conjugatePath->CheckPrevious() || path->CheckPrevious());
+                } while (count_trying <10 && (conjugatePath->CheckPrevious() || path->CheckPrevious()));
                 path->CheckConjugateEnd();
                 DEBUG("result path ");
                 path->Print();

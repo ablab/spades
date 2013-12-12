@@ -281,9 +281,11 @@ inline set<BidirectionalPath*> NextPathSearcher::FindNextPaths(const Bidirection
             continue;
         }
         vector<Edge*> to_add;
+        DEBUG("try to grow path");
         GrowPath(path, current_path, max_len, to_add);
         if (to_add.empty()) {
-            path.Print();
+            DEBUG("scaffold tip");
+            //path.Print();
             ScaffoldTip(path, current_path, result_edges, stopped_paths, to_add, jump);
         }
         grow_paths.insert(grow_paths.end(), to_add.begin(), to_add.end());
@@ -381,9 +383,11 @@ inline Edge* NextPathSearcher::AddPath(const BidirectionalPath& init_path, Edge*
 }
 
 inline void NextPathSearcher::GrowPath(const BidirectionalPath& init_path, Edge* e, size_t max_len, vector<Edge*>& to_add) {
-    if (!e->IsCorrect())
+    DEBUG("in growing path");
+    if (!e->IsCorrect()){
         DEBUG("incorrect");
         return;
+    }
     for (EdgeId next_edge : g_.OutgoingEdges(g_.EdgeEnd(e->GetId()))) {
         set<BidirectionalPath*> cov_paths = cover_map_.GetCoveringPaths(next_edge);
         bool path_ended_here = false;
@@ -405,13 +409,13 @@ inline void NextPathSearcher::GrowPath(const BidirectionalPath& init_path, Edge*
                 }
             }
         }
-        //DEBUG("path ended here for edge " << g_.int_id(e->GetId())  << " is " << path_ended_here << " for next edge " << g_.int_id(next_edge));
-        //DEBUG("out " << (e->GetOutEdgeIndex(next_edge) == -1) << " incorrect " <<  (e->GetIncorrectEdgeIndex(next_edge) == -1));
+        DEBUG("path ended here for edge " << g_.int_id(e->GetId())  << " is " << path_ended_here << " for next edge " << g_.int_id(next_edge));
+        DEBUG("out " << (e->GetOutEdgeIndex(next_edge) == -1) << " incorrect " <<  (e->GetIncorrectEdgeIndex(next_edge) == -1));
         if (path_ended_here || (e->GetOutEdgeIndex(next_edge) == -1 && e->GetIncorrectEdgeIndex(next_edge) == -1)) {
-            //DEBUG("in buble " << InBuble(next_edge, g_) << " e != next " << (e->GetId() != next_edge));
-            //if (InBuble(next_edge, g_)) {
-            //    DEBUG("analyze bubble " << (!(bool)AnalyzeBubble(init_path, next_edge, 0, e)));
-            //}
+            DEBUG("in buble " << InBuble(next_edge, g_) << " e != next " << (e->GetId() != next_edge));
+            if (InBuble(next_edge, g_)) {
+                DEBUG("analyze bubble " << (!(bool)AnalyzeBubble(init_path, next_edge, 0, e)));
+            }
             if ((!InBuble(next_edge, g_) || !AnalyzeBubble(init_path, next_edge, 0, e)) && e->GetId() != next_edge)
                 to_add.push_back(e->AddOutEdge(next_edge));
         }
@@ -421,7 +425,7 @@ inline void NextPathSearcher::GrowPath(const BidirectionalPath& init_path, Edge*
     for (Edge* e1 : to_add) {
         str << " " << g_.int_id(e1->GetId());
     }
-    //DEBUG(str.str());
+    DEBUG(str.str());
 }
 
 inline void NextPathSearcher::ScaffoldTip(const BidirectionalPath& path, Edge * current_path, vector<Edge*>& result_edges, vector<Edge*>& stopped_paths,
