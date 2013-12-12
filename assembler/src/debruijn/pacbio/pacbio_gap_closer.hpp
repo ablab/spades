@@ -277,6 +277,8 @@ public:
             g_.DeleteEdge(first);
             g_.DeleteEdge(second);
             g_.coverage_index().SetAvgCoverage(newEdge, cov);
+            g_.coverage_index().SetAvgCoverage(g_.conjugate(newEdge), cov);
+
             size_t next_id = g_.int_id(newEdge);
             DEBUG("and new coverage is " << g_.coverage(newEdge));
             closed_gaps ++;
