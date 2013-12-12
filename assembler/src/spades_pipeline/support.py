@@ -102,11 +102,10 @@ def which(program):
     return None
 
 
-def process_subprocess_output(line):
-    if sys.version.startswith('2.'):
-        return line.rstrip()
-    else: # sys.version.startswith('3.'):
-        return str(line.rstrip(), 'utf-8')
+def process_readline(line, is_python3=sys.version.startswith('3.')):
+    if is_python3:
+        return str(line, 'utf-8')
+    return line
 
 
 def sys_call(cmd, log=None, cwd=None):
@@ -122,7 +121,7 @@ def sys_call(cmd, log=None, cwd=None):
 
     output = ''
     while not proc.poll():
-        line = process_subprocess_output(proc.stdout.readline())
+        line = process_readline(proc.stdout.readline()).rstrip()
         if line:
             if log:
                 log.info(line)
@@ -132,7 +131,7 @@ def sys_call(cmd, log=None, cwd=None):
             break
 
     for line in proc.stdout.readlines():
-        line = process_subprocess_output(line)
+        line = process_readline(line).rstrip()
         if line:
             if log:
                 log.info(line)
@@ -170,11 +169,11 @@ def universal_sys_call(cmd, log, out_filename=None, err_filename=None, cwd=None)
     if log and (not out_filename or not err_filename):
         while not proc.poll():
             if not out_filename:
-                line = process_subprocess_output(proc.stdout.readline())
+                line = process_readline(proc.stdout.readline()).rstrip()
                 if line:
                     log.info(line)
             if not err_filename:
-                line = process_subprocess_output(proc.stderr.readline())
+                line = process_readline(proc.stderr.readline()).rstrip()
                 if line:
                     log.info(line)
             if proc.returncode is not None:
@@ -183,11 +182,11 @@ def universal_sys_call(cmd, log, out_filename=None, err_filename=None, cwd=None)
         if not out_filename:
             for line in proc.stdout.readlines():
                 if line != '':
-                    log.info(process_subprocess_output(line))
+                    log.info(process_readline(line).rstrip())
         if not err_filename:
             for line in proc.stderr.readlines():
                 if line != '':
-                    log.info(process_subprocess_output(line))
+                    log.info(process_readline(line).rstrip())
     else:
         proc.wait()
 
@@ -519,7 +518,8 @@ def process_Ns_in_additional_contigs(dataset_data, dst, log):
                 gzipped = False
                 if ext.endswith('.gz'):
                     gzipped = True
-                    basename, ext = os.path.splitext(basename)
+                    if contigs not in options_storage.dict_of_prefixes:
+                        basename, _ = os.path.splitext(basename)
                 modified, new_fasta = break_scaffolds(contigs, options_storage.THRESHOLD_FOR_BREAKING_ADDITIONAL_CONTIGS,
                     replace_char='A', gzipped=gzipped)
                 if modified:
@@ -546,31 +546,24 @@ def split_interlaced_reads(dataset_data, dst, log):
         if not is_fastq and fasta_read_name is not None:
             read_name = fasta_read_name
         else:
-            read_name = in_file.readline()
+            read_name = process_readline(in_file.readline(), is_python3)
         if not read_name:
             return next_read_str
-        read_value = in_file.readline()
-        line = in_file.readline()
+        read_value = process_readline(in_file.readline(), is_python3)
+        line = process_readline(in_file.readline(), is_python3)
         while line and ((is_fastq and not line.startswith('+')) or (not is_fastq and not line.startswith('>'))):
             read_value += line
-            line = in_file.readline()
+            line = process_readline(in_file.readline(), is_python3)
         next_read_str = line # if there is a next read: "+" (for fastq) or next read name (for fasta)
-        if is_python3:
-            out_file.write(str(read_name, 'utf-8'))
-            out_file.write(str(read_value, 'utf-8'))
-        else:
-            out_file.write(read_name)
-            out_file.write(read_value)
+        out_file.write(read_name)
+        out_file.write(read_value)
 
         if is_fastq:
-            read_quality = in_file.readline()
+            read_quality = process_readline(in_file.readline(), is_python3)
             while len(read_value) != len(read_quality):
-                read_quality += in_file.readline()
+                read_quality += process_readline(in_file.readline(), is_python3)
             out_file.write("+\n")
-            if is_python3:
-                out_file.write(str(read_quality, 'utf-8'))
-            else:
-                out_file.write(read_quality)
+            out_file.write(read_quality)
         return next_read_str
 
     new_dataset_data = list()
@@ -660,8 +653,7 @@ def read_fasta(filename, gzipped=False):
     else:
         file_handler = open(filename)
     for line in file_handler:
-        if gzipped and sys.version.startswith('3.'):
-            line = str(line, 'utf-8')
+        line = process_readline(line, gzipped and sys.version.startswith('3.'))
         if line[0] == '>':
             res_name.append(line.strip())
             if not first:

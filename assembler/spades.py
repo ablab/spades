@@ -723,7 +723,8 @@ def main():
                     options_storage.THRESHOLD_FOR_BREAKING_SCAFFOLDS)
                 if modified:
                     support.write_fasta(result_broken_scaffolds, broken_scaffolds)
-                    #log.info(" * Scaffolds broken by " + str(threshold) + " Ns are in " + result_broken_scaffolds)
+                    #log.info(" * Scaffolds broken by " + str(options_storage.THRESHOLD_FOR_BREAKING_SCAFFOLDS) +
+                    # " Ns are in " + result_broken_scaffolds)
 
         ### printing WARNINGS SUMMARY
         if not support.log_warnings(log):
