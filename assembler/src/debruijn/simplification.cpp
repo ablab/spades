@@ -6,7 +6,7 @@
 
 #include "standard.hpp"
 #include "graph_simplification.hpp"
-#include "omni_labelers.hpp"
+#include "omni/visualization/graph_labeler.hpp"
 #include "io/single_read.hpp"
 
 #include "simplification.hpp"
@@ -34,8 +34,7 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
         CollectPositions(gp);
     }
 
-    total_labeler_graph_struct graph_struct(gp.g, &gp.edge_pos);
-    total_labeler labeler/*tot_lab*/(&graph_struct);
+    omnigraph::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
 
     detail_info_printer printer(gp, labeler, cfg::get().output_dir);
     printer(ipp_before_first_gap_closer);
@@ -48,9 +47,7 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
 }
 
 void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
-    total_labeler_graph_struct graph_struct(gp.g, &gp.edge_pos);
-    total_labeler labeler/*tot_lab*/(&graph_struct);
-
+    omnigraph::DefaultLabeler<Graph> labeler/*tot_lab*/(gp.g, gp.edge_pos);
     detail_info_printer printer(gp, labeler, cfg::get().output_dir);
 
     printer(ipp_removing_isolated_edges);

@@ -7,10 +7,10 @@
 #include "standard.hpp"
 #include "io/easy_reader.hpp"
 #include "io/vector_reader.hpp"
-#include "omni_labelers.hpp"
 #include "dataset_readers.hpp"
 #include "graph_pack.hpp"
 #include "read_converter.hpp"
+#include "omni/visualization/graph_labeler.hpp"
 
 #include "graph_construction.hpp"
 #include "construction.hpp"

@@ -6,7 +6,7 @@
 
 #include "standard.hpp"
 #include "graph_simplification.hpp"
-#include "omni_labelers.hpp"
+#include "omni/visualization/graph_labeler.hpp"
 #include "io/single_read.hpp"
 #include <algorithm>
 #include "pacbio/pac_index.hpp"
@@ -127,8 +127,7 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
 
 void PacBioAligning::run(conj_graph_pack &gp, const char*) {
     using namespace omnigraph;
-    total_labeler_graph_struct graph_struct(gp.g, &gp.edge_pos);
-    total_labeler labeler/*tot_lab*/(&graph_struct);
+    omnigraph::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
     int lib_id = -1;
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         io::LibraryType type = cfg::get().ds.reads[i].type();

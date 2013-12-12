@@ -5,7 +5,6 @@
 #include "equal_sequence_gluer.hpp"
 #include "iterative_tails_gluing.hpp"
 #include "../../debruijn/debruijn_stats.hpp"
-#include "../../debruijn/omni_labelers.hpp"
 
 #include "omni/visualization/visualization.hpp"
 #include "omni/edges_position_handler.hpp"
@@ -69,8 +68,7 @@ class PolymorphicBulgeRemover {
 			return;
 
 		make_dir(dsp_cfg::get().io.output_dir + "components/");
-	    debruijn_graph::total_labeler_graph_struct graph_struct(graph_pack_.g, &graph_pack_.int_ids, &graph_pack_.edge_pos);
-	    debruijn_graph::total_labeler labeler(&graph_struct);
+	    omnigraph::DefaultLabeler<Graph> labeler(graph_pack_.g, graph_pack_.edge_pos);
 	    make_dir(dsp_cfg::get().io.output_dir + "components/" + component_dir + "/");
         omnigraph::visualization::WriteComponents(graph_pack_.g,
         		dsp_cfg::get().io.output_dir + "components/" + component_dir + "/",

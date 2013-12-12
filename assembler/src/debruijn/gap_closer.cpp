@@ -4,7 +4,7 @@
 
 #include "omni/omni_tools.hpp"
 #include "io/io_helper.hpp"
-#include "omni_labelers.hpp"
+#include "omni/visualization/graph_labeler.hpp"
 #include "dataset_readers.hpp"
 #include "read_converter.hpp"
 #include "sequence_mapper.hpp"

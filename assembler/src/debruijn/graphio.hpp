@@ -604,7 +604,6 @@ private:
   public:
     /*virtual*/
     void LoadGraph(const string& file_name) {
-        int flag;
         restricted::IdSegmentStorage id_storage = CreateIdStorage(file_name);
         INFO("Trying to read conjugate de bruijn graph from " << file_name << ".grp");
         FILE* file = fopen((file_name + ".grp").c_str(), "r");

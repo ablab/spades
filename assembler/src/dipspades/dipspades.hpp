@@ -191,7 +191,6 @@ void run_dipspades() {
     		dsp_cfg::get().io.output_dir,
     		dsp_cfg::get().io.num_libraries,
             Sequence(""), // reference genome
-            false, // !cfg::get().developer_mode
             1); // flanking range
 
     if (!dsp_cfg::get().rp.developer_mode) {

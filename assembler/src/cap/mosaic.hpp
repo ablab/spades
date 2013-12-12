@@ -949,9 +949,7 @@ void DrawGraph(const vector<StrandRange>& all_ranges,
     INFO("Threading " << full_mosaic_ranges.size() << " full mosaics");
     FillPos(gp, *full_mosaic_pos_stream);
 
-    typedef omnigraph::TotalLabeler             <debruijn_graph::ConjugateDeBruijnGraph>    total_labeler;
-    total_labeler_graph_struct graph_struct(gp.g, &gp.edge_pos);
-    total_labeler labeler/*tot_lab*/(gp.g, gp.edge_pos);
+    omnigraph::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
 
     shared_ptr<GraphSplitter<Graph>> splitter = omnigraph::ReliableSplitter(gp.g,
             numeric_limits<size_t>::max(),

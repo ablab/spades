@@ -20,8 +20,7 @@ BOOST_FIXTURE_TEST_SUITE(path_extend_basic, TmpFolderFixture)
 
 BOOST_AUTO_TEST_CASE( BidirectionalPathConstructor ) {
     Graph g(13);
-    IdTrackHandler<Graph> int_ids(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/path_extend/distance_estimation", g, int_ids);
+    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/path_extend/distance_estimation", g);
     EdgeId start = *g.ConstEdgeBegin();
 
     BidirectionalPath path1(g);
@@ -69,8 +68,7 @@ BOOST_AUTO_TEST_CASE( BidirectionalPathConstructor ) {
 
 BOOST_AUTO_TEST_CASE( BidirectionalPathAddRemove ) {
     Graph g(13);
-    IdTrackHandler<Graph> int_ids(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/path_extend/distance_estimation", g, int_ids);
+    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/path_extend/distance_estimation", g);
     EdgeId start = *g.ConstEdgeBegin();
 
     BidirectionalPath path1(g);
@@ -218,8 +216,7 @@ BOOST_AUTO_TEST_CASE( BidirectionalPathAddRemove ) {
 
 BOOST_AUTO_TEST_CASE( BidirectionalPathAddRemoveGaps ) {
     Graph g(13);
-    IdTrackHandler<Graph> int_ids(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/path_extend/distance_estimation", g, int_ids);
+    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/path_extend/distance_estimation", g);
     EdgeId start = *g.ConstEdgeBegin();
 
     BidirectionalPath path1(g);
@@ -390,8 +387,7 @@ BOOST_AUTO_TEST_CASE( BidirectionalPathAddRemoveGaps ) {
 
 BOOST_AUTO_TEST_CASE( BidirectionalPathEquals ) {
     Graph g(13);
-    IdTrackHandler<Graph> int_ids(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/path_extend/distance_estimation", g, int_ids);
+    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/path_extend/distance_estimation", g);
     EdgeId start = *g.ConstEdgeBegin();
 
     BidirectionalPath path1(g);
@@ -445,8 +441,7 @@ BOOST_AUTO_TEST_CASE( BidirectionalPathEquals ) {
 
 BOOST_AUTO_TEST_CASE( BidirectionalPathSubpaths ) {
     Graph g(13);
-    IdTrackHandler<Graph> int_ids(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/path_extend/distance_estimation", g, int_ids);
+    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/path_extend/distance_estimation", g);
     EdgeId start = *g.ConstEdgeBegin();
 
     BidirectionalPath path1(g);
@@ -511,8 +506,7 @@ BOOST_AUTO_TEST_CASE( BidirectionalPathSubpaths ) {
 
 BOOST_AUTO_TEST_CASE( BidirectionalPathAddRemoveConjugate ) {
     Graph g(13);
-    IdTrackHandler<Graph> int_ids(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/path_extend/distance_estimation", g, int_ids);
+    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/path_extend/distance_estimation", g);
     EdgeId start = *g.ConstEdgeBegin();
 
     BidirectionalPath p(g);
@@ -592,8 +586,7 @@ BOOST_AUTO_TEST_CASE( BidirectionalPathAddRemoveConjugate ) {
 
 BOOST_AUTO_TEST_CASE( BidirectionalPathSearch ) {
     Graph g(13);
-    IdTrackHandler<Graph> int_ids(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/path_extend/distance_estimation", g, int_ids);
+    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/path_extend/distance_estimation", g);
     EdgeId start = *g.ConstEdgeBegin();
 
     BidirectionalPath path1(g);
@@ -691,8 +684,7 @@ BOOST_AUTO_TEST_CASE( BidirectionalPathSearch ) {
 
 BOOST_AUTO_TEST_CASE( BidirectionalPathLoopDetector ) {
     Graph g(13);
-    IdTrackHandler<Graph> int_ids(g);
-    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/path_extend/distance_estimation", g, int_ids);
+    graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/path_extend/distance_estimation", g);
     EdgeId start = *g.ConstEdgeBegin();
 
     BidirectionalPath path1(g);

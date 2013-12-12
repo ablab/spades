@@ -23,7 +23,7 @@ class DebruijnEnvironment : public Environment {
         GraphPack gp_;
         MapperClass mapper_;
         FillerClass filler_;
-        total_labeler tot_lab_;
+        omnigraph::DefaultLabeler<Graph> labeler_;
         ColoringClass coloring_;
         //CompositeLabeler<Graph> labeler_;
 
@@ -41,7 +41,7 @@ class DebruijnEnvironment : public Environment {
               gp_(K, "./tmp", cfg::get().ds.reads.lib_count(), cfg::get().ds.reference_genome),
               mapper_(gp_.g, gp_.index, gp_.kmer_mapper),
               filler_(gp_.g, mapper_, gp_.edge_pos),
-              tot_lab_(gp_.g, gp_.edge_pos) {
+              labeler_(gp_.g, gp_.edge_pos) {
 
             DEBUG("Environment constructor");
             debruijn_graph::graphio::ScanGraphPack(path_, gp_);
@@ -154,8 +154,8 @@ class DebruijnEnvironment : public Environment {
             return filler_;
         }
 
-        total_labeler& tot_lab() {
-            return tot_lab_;
+        omnigraph::GraphLabeler<Graph>& labeler() {
+            return labeler_;
         }
 
         ColoringClass& coloring() {

@@ -8,7 +8,8 @@
 
 #include "logger/logger.hpp"
 #include "debruijn_stats.hpp"
-#include "omni_labelers.hpp"
+#include "omni/visualization/graph_labeler.hpp"
+
 #include "de/distance_estimation.hpp"
 #include "de/smoothing_distance_estimation.hpp"
 #include "omni/omni_utils.hpp"

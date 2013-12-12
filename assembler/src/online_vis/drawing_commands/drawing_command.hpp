@@ -27,8 +27,8 @@ namespace online_visualization {
                 //linkstream  << curr_env.folder_ << "/" << curr_env.file_name_base_ << "_latest.dot";
                 //EdgePosGraphLabeler<Graph> labeler(curr_env.graph(), gp_.edge_pos);
                 omnigraph::GraphComponent<Graph> component = VertexNeighborhood(curr_env.graph(), vertex, curr_env.max_vertices_, curr_env.edge_length_bound_);
-                omnigraph::visualization::WriteComponent<Graph>(component, file_name, curr_env.coloring_, curr_env.tot_lab_);
-                //WriteComponents <Graph> (curr_env.graph(), splitter, linkstream.str(), *DefaultColorer(curr_env.graph(), curr_env.coloring_), curr_env.tot_lab_);
+                omnigraph::visualization::WriteComponent<Graph>(component, file_name, curr_env.coloring_, curr_env.labeler());
+                //WriteComponents <Graph> (curr_env.graph(), splitter, linkstream.str(), *DefaultColorer(curr_env.graph(), curr_env.coloring_), curr_env.labeler());
                 cout << "The picture is written to " << file_name << endl;
 
                 curr_env.picture_counter_++;
@@ -41,7 +41,7 @@ namespace online_visualization {
                 make_dir(namestream.str());
                 namestream << label;
                 make_dir(namestream.str());
-                omnigraph::visualization::WriteComponentsAlongPath<Graph>(curr_env.graph(), path.path(), namestream.str(), curr_env.coloring_, curr_env.tot_lab_);
+                omnigraph::visualization::WriteComponentsAlongPath<Graph>(curr_env.graph(), path.path(), namestream.str(), curr_env.coloring_, curr_env.labeler());
                 cout << "The pictures is written to " << namestream.str() << endl;
 
                 curr_env.picture_counter_++;
