@@ -25,7 +25,7 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
     subst_dict["K"] = str(K)
     subst_dict["run_mode"] = "false"
     if "diploid_mode" in cfg.__dict__:
-        subst_dict["diploid_mode"] = bool_to_str(True)
+        subst_dict["diploid_mode"] = bool_to_str(cfg.diploid_mode)
     subst_dict["dataset"] = process_cfg.process_spaces(cfg.dataset)
     subst_dict["output_base"] = process_cfg.process_spaces(cfg.output_dir)
     if additional_contigs_fname:
