@@ -261,7 +261,13 @@ public:
             size_t len_f = g_.length(first);
             size_t len_s = g_.length(second);
             size_t len_sum = iter->second.begin()->second.second.length();
+            double cov = (double)g_.length(first) * g_.coverage(first) +  (double)g_.length(second) * g_.coverage(second);
+
+            DEBUG("coverage was " << g_.coverage(first) << " " << g_.coverage(second));
+
             EdgeId newEdge = g_.AddEdge(g_.EdgeStart(first), g_.EdgeEnd(second), Sequence(iter->second.begin()->second.second));
+            if (cov > UINT_MAX * 0.75 ) cov = UINT_MAX*0.75;
+            cov /= (double) g_.length(newEdge);
             TRACE(g_.int_id(newEdge));
             int len_split = int(((double) len_f * (double) len_sum) / ((double)len_s + (double)len_f));
             if (len_split == 0) {
@@ -270,7 +276,9 @@ public:
             }
             g_.DeleteEdge(first);
             g_.DeleteEdge(second);
+            g_.coverage_index().SetAvgCoverage(newEdge, cov);
             size_t next_id = g_.int_id(newEdge);
+            DEBUG("and new coverage is " << g_.coverage(newEdge));
             closed_gaps ++;
             size_t next_id_conj = g_.int_id(g_.conjugate(newEdge));
             TRACE(first_id << " " << second_id << " " << next_id << " " << first_id_conj << " " << second_id_conj << " " << next_id_conj << " ");
