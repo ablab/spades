@@ -637,7 +637,7 @@ public:
     virtual void ReportSubMosaic(const MosaicStructure& mosaic, const vector<StrandRange>& ranges) {
         //1 399 733 735 + 1630584 1634815// (the first sub_mosaic structure---1, the blocks---399 733 735, genomic position info--- + 1630584 1634815)
         string finger = mosaic.Fingerprint();
-        out_ << submosaic_cnt_;
+        out_ << submosaic_cnt_++;
 //        out_ << "Sub_mosaic. Block cnt = " << mosaic.block_size() << endl;
 //        out_ << "Blocks " << finger;
 //        out_ << " ; Found in " << get_all(different_irred_presence_, finger).size() << " different irreducible mosaics";
@@ -651,9 +651,13 @@ public:
 
         string delim = " ";
 //        out_ << "Ranges: ";
+        for (Block b : mosaic.blocks()) {
+            out_ << delim;
+            out_ << b;
+        }
         for (StrandRange r : ranges) {
             out_ << delim;
-            out_ << "strand: " << (r.second ? "+" : "-") << " ";
+            out_ << (r.second ? "+" : "-") << " ";
             out_ << helper_.genome_composition().genome_coords(r);
 //            out_ << " (Pos: ";
 //            out_ << (r.second ? r.first : helper_.genome_composition().ConjStrandRange(r).first);
