@@ -246,13 +246,13 @@ def set_test_options():
 
 def save_restart_options(log):
     if dataset_yaml_filename:
-        support.error("you can not specify --dataset with --restart-from option!", log)
+        support.error("you cannot specify --dataset with --restart-from option!", log)
     if single_cell:
-        support.error("you can not specify --sc with --restart-from option!", log)
+        support.error("you cannot specify --sc with --restart-from option!", log)
     if only_assembler:
-        support.error("you can not specify --only-assembler with --restart-from option!", log)
+        support.error("you cannot specify --only-assembler with --restart-from option!", log)
     if only_error_correction:
-        support.error("you can not specify --only-error-correction with --restart-from option!", log)
+        support.error("you cannot specify --only-error-correction with --restart-from option!", log)
 
     global restart_k_mers
     global restart_careful

@@ -274,7 +274,7 @@ def fill_cfg(options_to_parse, log):
     if options_storage.restart_from:
         if options_storage.continue_mode: # saving parameters specified with --restart-from
             if not support.dataset_is_empty(dataset_data):
-                support.error("you can not specify reads with --restart-from option!", log)
+                support.error("you cannot specify reads with --restart-from option!", log)
             options_storage.save_restart_options(log)
         else:  # overriding previous run parameters
             options_storage.load_restart_options()

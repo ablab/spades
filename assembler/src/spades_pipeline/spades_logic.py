@@ -55,7 +55,7 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
 def get_read_length(output_dir, K, dataset_data):
     estimated_params = load_config_from_file(os.path.join(output_dir, "K%d" % K, "_est_params.info"))
     if "max_read_length" not in estimated_params.__dict__:
-        support.warning("Failed to estimate maximum read length.")
+        support.warning("Failed to estimate maximum read length")
     return int(estimated_params.__dict__["max_read_length"])
 
 
@@ -64,12 +64,12 @@ def update_k_mers_in_special_cases(cur_k_mers, RL, log, silent=False):
         if RL >= 250:
             if not silent:
                 support.warning("Default k-mer sizes were set to %s because estimated "
-                                "read length (%d) is equal or great than 250" % (str(options_storage.K_MERS_250), RL), log)
+                                "read length (%d) is equal to or greater than 250" % (str(options_storage.K_MERS_250), RL), log)
             return options_storage.K_MERS_250
         if RL >= 150:
             if not silent:
                 support.warning("Default k-mer sizes were set to %s because estimated "
-                                "read length (%d) is equal or great than 150" % (str(options_storage.K_MERS_150), RL), log)
+                                "read length (%d) is equal to or greater than 150" % (str(options_storage.K_MERS_150), RL), log)
             return options_storage.K_MERS_150
     return cur_k_mers
 
@@ -92,7 +92,7 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):
 
     if stage != BASE_STAGE:
         if not os.path.isdir(saves_dir):
-            support.error("Can not restart from stage %s: saves not found (%s)!" % (stage, saves_dir))
+            support.error("Cannot restart from stage %s: saves were not found (%s)!" % (stage, saves_dir))
     else:
         if os.path.exists(data_dir):
             shutil.rmtree(data_dir)

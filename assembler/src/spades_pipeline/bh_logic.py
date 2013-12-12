@@ -116,6 +116,6 @@ def run_bh(result_filename, configs_dir, execution_home, cfg, not_used_dataset_d
         corrected_dataset_data += not_used_dataset_data
     corrected_dataset_yaml_filename = result_filename
     pyyaml.dump(corrected_dataset_data, open(corrected_dataset_yaml_filename, 'w'))
-    log.info("\n== Dataset description file created: " + corrected_dataset_yaml_filename + "\n")
+    log.info("\n== Dataset description file was created: " + corrected_dataset_yaml_filename + "\n")
 
     shutil.rmtree(cfg.tmp_dir)
