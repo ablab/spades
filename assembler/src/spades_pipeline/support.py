@@ -12,6 +12,7 @@ import sys
 import logging
 import glob
 import re
+import gzip
 import options_storage
 
 # constants to print and detect warnings and errors in logs
@@ -19,9 +20,6 @@ SPADES_PY_ERROR_MESSAGE = "== Error == "
 SPADES_PY_WARN_MESSAGE = "== Warning == "
 SPADES_ERROR_MESSAGE = " ERROR "
 SPADES_WARN_MESSAGE = " WARN "
-# constants of reads types
-READS_TYPES_NOT_USED_IN_CONSTRUCTION = "pacbio"
-READS_TYPES_NOT_USED_IN_HAMMER = "pacbio"
 # for correct warnings detection in case of continue_mode
 continue_logfile_offset = None
 
@@ -66,7 +64,7 @@ def check_files_duplication(filenames, log):
             error("file %s was specified at least twice" % filename, log)
 
 
-def check_reads_file_format(filename, message, only_assembler, log):
+def check_reads_file_format(filename, message, only_assembler, library_type, log):
     if filename in options_storage.dict_of_prefixes:
         ext = options_storage.dict_of_prefixes[filename]
     else:
@@ -76,9 +74,13 @@ def check_reads_file_format(filename, message, only_assembler, log):
     if ext.lower() not in options_storage.ALLOWED_READS_EXTENSIONS:
         error("file with reads has unsupported format (only " + ", ".join(options_storage.ALLOWED_READS_EXTENSIONS) +
               " are supported): %s (%s)" % (filename, message), log)
-    if not only_assembler and ext.lower() not in options_storage.BH_ALLOWED_READS_EXTENSIONS:
+    if not only_assembler and ext.lower() not in options_storage.BH_ALLOWED_READS_EXTENSIONS and not library_type.endswith("contigs"):
         error("to run read error correction, reads should be in FASTQ format (" +
               ", ".join(options_storage.BH_ALLOWED_READS_EXTENSIONS) +
+              " are supported): %s (%s)" % (filename, message), log)
+    if library_type.endswith("contigs") and ext.lower() not in options_storage.CONTIGS_ALLOWED_READS_EXTENSIONS:
+        error("file with " + library_type + " should be in FASTA format  (" +
+              ", ".join(options_storage.CONTIGS_ALLOWED_READS_EXTENSIONS) +
               " are supported): %s (%s)" % (filename, message), log)
 
 
@@ -309,11 +311,20 @@ def get_latest_dir(pattern):
 
 
 ### START for processing YAML files
+def get_long_reads_type(option):
+    for long_reads_type in options_storage.LONG_READS_TYPES:
+        if option in ("--" + long_reads_type):
+            return long_reads_type
+    return None
+
+
 def get_lib_type_and_number(option):
     lib_type = 'pe'
     lib_number = 1
     if option.startswith('--mp'):
         lib_type = 'mp'
+    elif get_long_reads_type(option):
+        lib_type = get_long_reads_type(option)
     if option.startswith('--mp') or option.startswith('--pe'): # don't process simple -1, -2, -s, --12 options
         lib_number = int(option[4])
     return lib_type, lib_number
@@ -326,7 +337,7 @@ def get_data_type(option):
         data_type = 'left reads'
     elif option.endswith('-2'):
         data_type = 'right reads'
-    elif option.endswith('-s'):
+    elif option.endswith('-s') or get_long_reads_type(option):
         data_type = 'single reads'
     else: # -rf, -ff, -fr
         data_type = 'orientation'
@@ -338,19 +349,23 @@ def add_to_dataset(option, data, dataset_data):
     data_type = get_data_type(option)
     if data_type == 'orientation':
         data = option[-2:]
-    total_libs_number = len(dataset_data) / 2
 
     if lib_type == 'pe':
         record_id = lib_number - 1
-    else: # mate-pairs
-        record_id = total_libs_number + lib_number - 1
+    elif lib_type == 'mp':
+        record_id = options_storage.MAX_LIBS_NUMBER + lib_number - 1
+    else: # long reads libraries
+        dataset_data += [{}]
+        record_id = len(dataset_data) - 1
 
     if not dataset_data[record_id]: # setting default values for a new record
         if lib_type == 'pe':
             dataset_data[record_id]['type'] = 'paired-end'
-        else:
+        elif lib_type == 'mp':
             dataset_data[record_id]['type'] = 'mate-pairs'
-    if data_type.endswith('reads'): # reads are stored as lists
+        else:
+            dataset_data[record_id]['type'] = lib_type
+    if data_type.endswith('reads'):
         if data.find(':') != -1 and ('.' + data[:data.find(':')]) in options_storage.ALLOWED_READS_EXTENSIONS:
             prefix = '.' + data[:data.find(':')]
             data = data[data.find(':') + 1:]
@@ -421,7 +436,7 @@ def check_dataset_reads(dataset_data, only_assembler, log):
                     check_file_existence(reads_file, key + ', library number: ' + str(id + 1) +
                                          ', library type: ' + reads_library['type'], log)
                     check_reads_file_format(reads_file, key + ', library number: ' + str(id + 1) +
-                                            ', library type: ' + reads_library['type'], only_assembler, log)
+                                            ', library type: ' + reads_library['type'], only_assembler, reads_library['type'], log)
                     all_files.append(reads_file)
                 if key == 'left reads':
                     left_number = len(value)
@@ -475,38 +490,54 @@ def dataset_has_only_mate_pairs_libraries(dataset_data):
     return True
 
 
-def dataset_needs_long_single_mode(dataset_data):
-    return bool(get_lib_ids_by_type(dataset_data, 'single'))
-
-
-def get_pacbio_reads(dataset_data):
-    for reads_library in dataset_data:
-        if reads_library['type'] in ['pacbio']:
-            if reads_library['single reads']:
-                return reads_library['single reads'][0]
-    return None
-
-
-def dataset_needs_long_single_mode(dataset_data):
-    for reads_library in dataset_data:
-        if reads_library['type'] in ['single']:
-            return True
-    return False
-
-
-def get_pacbio_reads(dataset_data):
-    for reads_library in dataset_data:
-        if reads_library['type'] in ['pacbio']:
-            if reads_library['single reads']:
-                return reads_library['single reads'][0]
-    return None
-
-
 def dataset_has_interlaced_reads(dataset_data):
     for reads_library in dataset_data:
         if 'interlaced reads' in reads_library:
             return True
     return False
+
+
+def dataset_has_additional_contigs(dataset_data):
+    for reads_library in dataset_data:
+        if reads_library['type'].endswith('contigs'):
+            return True
+    return False
+
+
+def process_Ns_in_additional_contigs(dataset_data, dst, log):
+    new_dataset_data = list()
+    for reads_library in dataset_data:
+        new_reads_library = dict(reads_library)
+        if reads_library["type"].endswith("contigs"):
+            new_entry = []
+            for contigs in reads_library["single reads"]:
+                if contigs in options_storage.dict_of_prefixes:
+                    ext = options_storage.dict_of_prefixes[contigs]
+                    basename = contigs
+                else:
+                    basename, ext = os.path.splitext(contigs)
+                gzipped = False
+                if ext.endswith('.gz'):
+                    gzipped = True
+                    basename, ext = os.path.splitext(basename)
+                modified, new_fasta = break_scaffolds(contigs, options_storage.THRESHOLD_FOR_BREAKING_ADDITIONAL_CONTIGS,
+                    replace_char='A', gzipped=gzipped)
+                if modified:
+                    if not os.path.isdir(dst):
+                        os.makedirs(dst)
+                    new_filename = os.path.join(dst, os.path.basename(basename) + '.fasta')
+                    if contigs in options_storage.dict_of_prefixes:
+                        del options_storage.dict_of_prefixes[contigs]
+                    log.info("== Processing additional contigs (%s): changing Ns to As and "
+                             "splitting by continues (>= %d) Ns fragments (results are in %s directory)" % (contigs,
+                             options_storage.THRESHOLD_FOR_BREAKING_ADDITIONAL_CONTIGS, dst))
+                    write_fasta(new_filename, new_fasta)
+                    new_entry.append(new_filename)
+                else:
+                    new_entry.append(contigs)
+            new_reads_library["single reads"] = new_entry
+        new_dataset_data.append(new_reads_library)
+    return new_dataset_data
 
 
 def split_interlaced_reads(dataset_data, dst, log):
@@ -558,7 +589,6 @@ def split_interlaced_reads(dataset_data, dst, log):
                     was_compressed = False
                     if ext.endswith('.gz'):
                         was_compressed = True
-                        import gzip
                         input_file = gzip.open(interlaced_reads, 'r')
                         ungzipped = os.path.splitext(interlaced_reads)[0]
                         out_basename, ext = os.path.splitext(os.path.basename(ungzipped))
@@ -620,16 +650,18 @@ def pretty_print_reads(dataset_data, log, indent='    '):
 ### END: for processing YAML files
 
 
-def read_fasta(filename):
-    """
-        Returns list of FASTA entries (in tuples: name, seq)
-    """
+def read_fasta(filename, gzipped=False):
     res_name = []
     res_seq = []
     first = True
     seq = ''
-
-    for line in open(filename):
+    if gzipped:
+        file_handler = gzip.open(filename)
+    else:
+        file_handler = open(filename)
+    for line in file_handler:
+        if gzipped and sys.version.startswith('3.'):
+            line = str(line, 'utf-8')
         if line[0] == '>':
             res_name.append(line.strip())
             if not first:
@@ -640,6 +672,7 @@ def read_fasta(filename):
         else:
             seq += line.strip()
     res_seq.append(seq)
+    file_handler.close()
     return zip(res_name, res_seq)
 
 
@@ -652,24 +685,28 @@ def write_fasta(filename, fasta):
     outfile.close()
 
 
-def break_scaffolds(input_filename, threshold, output_filename):
+def break_scaffolds(input_filename, threshold, replace_char="N", gzipped=False):
     new_fasta = []
-    for id, (name, seq) in enumerate(read_fasta(input_filename)):
+    modified = False
+    for id, (name, seq) in enumerate(read_fasta(input_filename, gzipped)):
         i = 0
         cur_contig_number = 1
         cur_contig_start = 0
         while (i < len(seq)) and (seq.find("N", i) != -1):
+            if replace_char != "N":
+                modified = True
             start = seq.find("N", i)
             end = start + 1
-            while (end != len(seq)) and (seq[end] == 'N'):
+            while (end != len(seq)) and (seq[end] == "N"):
                 end += 1
 
             i = end + 1
             if (end - start) >= threshold:
-                new_fasta.append((name.split()[0] + "_" + str(cur_contig_number), seq[cur_contig_start:start]))
+                modified = True
+                new_fasta.append((name.split()[0] + "_" + str(cur_contig_number),
+                                  seq[cur_contig_start:start].replace("N", replace_char)))
                 cur_contig_number += 1
                 cur_contig_start = end
-
-        new_fasta.append((name.split()[0] + "_" + str(cur_contig_number), seq[cur_contig_start:]))
-
-    write_fasta(output_filename, new_fasta)
+        new_fasta.append((name.split()[0] + "_" + str(cur_contig_number),
+                          seq[cur_contig_start:].replace("N", replace_char)))
+    return modified, new_fasta

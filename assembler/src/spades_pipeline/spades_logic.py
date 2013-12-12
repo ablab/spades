@@ -54,14 +54,9 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
 
 def get_read_length(output_dir, K, dataset_data):
     estimated_params = load_config_from_file(os.path.join(output_dir, "K%d" % K, "_est_params.info"))
-    lib_count = int(estimated_params.__dict__["lib_count"])
-    max_read_length = 0
-    for i in range(lib_count):
-        if i in support.get_lib_ids_by_type(dataset_data, support.READS_TYPES_NOT_USED_IN_CONSTRUCTION):
-            continue
-        if int(estimated_params.__dict__["read_length_" + str(i)]) > max_read_length:
-            max_read_length = int(estimated_params.__dict__["read_length_" + str(i)])
-    return max_read_length
+    if "max_read_length" not in estimated_params.__dict__:
+        support.warning("Failed to estimate maximum read length.")
+    return int(estimated_params.__dict__["max_read_length"])
 
 
 def update_k_mers_in_special_cases(cur_k_mers, RL, log, silent=False):

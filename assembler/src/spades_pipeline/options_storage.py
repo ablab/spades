@@ -12,17 +12,23 @@ import support
 SUPPORTED_PYTHON_VERSIONS = ['2.4', '2.5', '2.6', '2.7', '3.2', '3.3']
 # allowed reads extensions for BayesHammer and for thw whole SPAdes pipeline
 BH_ALLOWED_READS_EXTENSIONS = ['.fq', '.fastq']
-ALLOWED_READS_EXTENSIONS = BH_ALLOWED_READS_EXTENSIONS + ['.fa', '.fasta']
+CONTIGS_ALLOWED_READS_EXTENSIONS = ['.fa', '.fasta']
+ALLOWED_READS_EXTENSIONS = BH_ALLOWED_READS_EXTENSIONS + CONTIGS_ALLOWED_READS_EXTENSIONS
 # reads could be gzipped
 BH_ALLOWED_READS_EXTENSIONS += [x + '.gz' for x in BH_ALLOWED_READS_EXTENSIONS]
+CONTIGS_ALLOWED_READS_EXTENSIONS += [x + '.gz' for x in CONTIGS_ALLOWED_READS_EXTENSIONS]
 ALLOWED_READS_EXTENSIONS += [x + '.gz' for x in ALLOWED_READS_EXTENSIONS]
 
 # we support up to MAX_LIBS_NUMBER paired-end libs and MAX_LIBS_NUMBER mate-pair libs
 MAX_LIBS_NUMBER = 5
+# other libs types:
+LONG_READS_TYPES = ["pacbio", "sanger", "trusted-contigs", "untrusted-contigs"]
 
 #other constants
 MIN_K = 1
 MAX_K = 127
+THRESHOLD_FOR_BREAKING_SCAFFOLDS = 3
+THRESHOLD_FOR_BREAKING_ADDITIONAL_CONTIGS = 10
 
 #default values constants
 THREADS = 16
@@ -84,15 +90,16 @@ long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\
                "disable-gzip-output disable-gzip-output:false disable-rr disable-rr:false " \
                "help test debug debug:false reference= config-file= dataset= "\
                "bh-heap-check= spades-heap-check= help-hidden "\
-               "mismatch-correction mismatch-correction:false careful careful:false " \
+               "mismatch-correction mismatch-correction:false careful careful:false "\
                "continue restart-from=".split()
 short_options = "o:1:2:s:k:t:m:i:h"
 
-# adding multiple paired-end and mate-pair libraries support
+# adding multiple paired-end, mate-pair and other (long reads) libraries support
 reads_options = []
 for i in range(MAX_LIBS_NUMBER):
     for type in ["pe", "mp"]:
         reads_options += ("%s%d-1= %s%d-2= %s%d-12= %s%d-s= %s%d-rf %s%d-fr %s%d-ff" % tuple([type, i + 1] * 7)).split()
+reads_options += list(map(lambda x: x + '=', LONG_READS_TYPES))
 long_options += reads_options
 # for checking whether option corresponds to reads or not
 reads_options = list(map(lambda x:"--" + x.split('=')[0], reads_options))
@@ -137,6 +144,10 @@ def usage(spades_version, show_hidden=False):
                          " for mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
     sys.stderr.write("--mp<#>-<or>\torientation of reads"\
                          " for mate-pair library number <#> (<#> = 1,2,3,4,5; <or> = fr, rf, ff)" + "\n")
+    sys.stderr.write("--sanger\t<filename>\tfile with Sanger reads\n")
+    sys.stderr.write("--pacbio\t<filename>\tfile with PacBio reads\n")
+    sys.stderr.write("--trusted-contigs\t<filename>\tfile with trusted contigs\n")
+    sys.stderr.write("--untrusted-contigs\t<filename>\tfile with untrusted contigs\n")
 
     sys.stderr.write("" + "\n")
     sys.stderr.write("Pipeline options:" + "\n")

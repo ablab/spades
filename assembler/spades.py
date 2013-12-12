@@ -156,7 +156,7 @@ def fill_cfg(options_to_parse, log):
     # all parameters are stored here
     cfg = dict()
     # dataset is stored here. We are prepared for up to MAX_LIBS_NUMBER paired-end libs and MAX_LIBS_NUMBER mate-pair libs
-    dataset_data = [{} for i in range(options_storage.MAX_LIBS_NUMBER * 2)]
+    dataset_data = [{} for i in range(options_storage.MAX_LIBS_NUMBER * 2)]  # "[{}] * num" doesn't work here!
 
     options_storage.continue_mode = False
     for opt, arg in options:
@@ -462,12 +462,15 @@ def main():
 
         log.info("\n======= SPAdes pipeline started. Log can be found here: " + log_filename + "\n")
 
-    # splitting interlaced reads if needed
-    if support.dataset_has_interlaced_reads(dataset_data):
-        dir_for_split_reads = os.path.join(os.path.abspath(options_storage.output_dir), 'split_reads')
-        if not os.path.isdir(dir_for_split_reads):
-            os.makedirs(dir_for_split_reads)
-        dataset_data = support.split_interlaced_reads(dataset_data, dir_for_split_reads, log)
+    # splitting interlaced reads and processing Ns in additional contigs if needed
+    if support.dataset_has_interlaced_reads(dataset_data) or support.dataset_has_additional_contigs(dataset_data):
+        dir_for_split_reads = os.path.join(os.path.abspath(options_storage.output_dir), 'split_input')
+        if support.dataset_has_interlaced_reads(dataset_data):
+            if not os.path.isdir(dir_for_split_reads):
+                os.makedirs(dir_for_split_reads)
+            dataset_data = support.split_interlaced_reads(dataset_data, dir_for_split_reads, log)
+        if support.dataset_has_additional_contigs(dataset_data):
+            dataset_data = support.process_Ns_in_additional_contigs(dataset_data, dir_for_split_reads, log)
         options_storage.dataset_yaml_filename = os.path.join(options_storage.output_dir, "input_dataset.yaml")
         pyyaml.dump(dataset_data, open(options_storage.dataset_yaml_filename, 'w'))
         cfg["dataset"].yaml_filename = os.path.abspath(options_storage.dataset_yaml_filename)
@@ -503,9 +506,9 @@ def main():
                 if not os.path.exists(bh_cfg.tmp_dir):
                     os.makedirs(bh_cfg.tmp_dir)
 
-                if support.get_lib_ids_by_type(dataset_data, support.READS_TYPES_NOT_USED_IN_HAMMER):
-                    not_used_dataset_data = support.get_libs_by_type(dataset_data, support.READS_TYPES_NOT_USED_IN_HAMMER)
-                    to_correct_dataset_data = support.rm_libs_by_type(dataset_data, support.READS_TYPES_NOT_USED_IN_HAMMER)
+                if support.get_lib_ids_by_type(dataset_data, options_storage.LONG_READS_TYPES):
+                    not_used_dataset_data = support.get_libs_by_type(dataset_data, options_storage.LONG_READS_TYPES)
+                    to_correct_dataset_data = support.rm_libs_by_type(dataset_data, options_storage.LONG_READS_TYPES)
                     to_correct_dataset_yaml_filename = os.path.join(bh_cfg.output_dir, "to_correct.yaml")
                     pyyaml.dump(to_correct_dataset_data, open(to_correct_dataset_yaml_filename, 'w'))
                     bh_cfg.__dict__["dataset_yaml_filename"] = to_correct_dataset_yaml_filename
@@ -557,10 +560,6 @@ def main():
                     spades_cfg.__dict__["rr_enable"] = False
                 else:
                     spades_cfg.__dict__["rr_enable"] = True
-#                if support.dataset_needs_long_single_mode(dataset_data):
-#                    spades_cfg.__dict__["long_single_mode"] = True
-#                else:
-#                    spades_cfg.__dict__["long_single_mode"] = False
 
                 if "HEAPCHECK" in os.environ:
                     del os.environ["HEAPCHECK"]
@@ -719,10 +718,12 @@ def main():
             if not os.path.isdir(misc_dir):
                 os.makedirs(misc_dir)
             result_broken_scaffolds = os.path.join(misc_dir, "broken_scaffolds.fasta")
-            threshold = 3
             if not os.path.isfile(result_broken_scaffolds) or not options_storage.continue_mode:
-                support.break_scaffolds(result_scaffolds_filename, threshold, result_broken_scaffolds)
-                #log.info(" * Scaffolds broken by " + str(threshold) + " Ns are in " + result_broken_scaffolds)
+                modified, broken_scaffolds = support.break_scaffolds(result_scaffolds_filename,
+                    options_storage.THRESHOLD_FOR_BREAKING_SCAFFOLDS)
+                if modified:
+                    support.write_fasta(result_broken_scaffolds, broken_scaffolds)
+                    #log.info(" * Scaffolds broken by " + str(threshold) + " Ns are in " + result_broken_scaffolds)
 
         ### printing WARNINGS SUMMARY
         if not support.log_warnings(log):
