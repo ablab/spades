@@ -37,10 +37,14 @@ void ConvertLongReads(LongReadContainerT& single_long_reads, vector<PathStorageI
             single_read_param_set = cfg::get().pe_params.long_reads.contigs;
         }
 
+        auto tmp = single_read_param_set.unique_edge_priority;
+        if (cfg::get().ds.single_cell &&  (cfg::get().ds.reads[i].type() == io::LibraryType::PacBioReads  ||
+                type == io::LibraryType::SangerReads)) tmp = 10000.0;
+
         PathStorageInfo<Graph> single_storage(paths,
                 single_read_param_set.filtering,
                 single_read_param_set.weight_priority,
-                single_read_param_set.unique_edge_priority);
+                tmp);
         long_reads_libs.push_back(single_storage);
         DEBUG("done " << i)
     }
