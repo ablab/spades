@@ -21,6 +21,7 @@
 			<li><a href = "#sec1.1.4">Haplotype assembly and conservative regions search</a></li>
 		</ol>
 	</ol>
+	<li><a href = "#sec2">Installing DipSPAdes</a></li>
 
 	<li><a href = "#sec2">Running DipSPAdes</a></li>
 		<ol>
@@ -49,111 +50,138 @@
 
 <a id = "sec1"></a>
 <h2>1. What is DipSPAdes?</h2>
-DipSPAdes is a mode of SPAdes genome assembler designed specifically for diploid highly polymorphic genomes. 
-It takes advantage of divergence of haplomes in repetitive genome regions. 
-DipSPAdes produces consensus contigs and performs haplotype assembly. 
-Algorithm can either take reads as input or use already assembled haplocontigs and construct consensus contiigs from them.
+DipSPAdes is a genome assembler designed specifically for diploid highly polymorphic genomes based on SPAdes.
+It takes advantage of divergence between haplomes in repetitive genome regions to resolve them and construct longer contigs. 
+DipSPAdes produces consensus contigs (representing a consensus of both haplomes for the orthologous regions) and performs haplotype assembly.
+Note that DipSPAdes can only benefit from high polymorphism rate (at least 0.4%).
+For the data with low polymorphism rate no improvement in terms of N50 is expected. 
 
-<h3><a id = "sec1.1">1.1 DipSPAdes pipeline</a></h3>
-	<div style="text-align:center">
-		<img src="dipspades_pipeline.jpg" alt="" height = 350><br>
-		DipSPAdes pipeline.	
-	</div>
-	DipSPAdes consists of four main modules: 
-	<ol>
-		<li>Input data processing</li>
-		<li>Polymorphism collapsing algorithm</li>
-		<li>Consensus contigs construction</li>
-		<li>Haplotype assembly</li>
-	</ol>
-	The module "Input data processing" constructs de Bruijn graph from input data and computes haplocontigs if they were not specified. 
-After module "Polymorphism collapsing algorithm" collapses polymorphisms in the de Bruijn graph constructed at the previous step. 
-This module by default run in the fast mode that uses optimized strategy of bulge search and  optionally
+<a id = "ds_pipeline"></a>
+<h3>DipSPAdes pipeline</h3>
+DipSPAdes Pipeline consists of three steps.
+<ol>
+    <li>Assembly of haplocontigs (contigs representing both haplomes)</li>
+    <li>Consensus contigs construction</li>
+    <li>Haplotype assembly</li>
+</ol>
 
-	<a id = "sec1.1.2"></a>
-	<h4>1.1.2 Polymorphism collapsing algorithm</h4>
-	<a id = "sec1.1.3"></a>
-	<h4>1.1.3 Consensus contigs construction</h4>
-	<a id = "sec1.1.4"></a>
-	<h4>1.1.4 Haplotype assembly and conservative regions search</h4>
+
+<a id = sec_install></a>
+<h2>2. Installing DipSPAdes</h2>
+DipSPAdes comes as a part of SPAdes assembler package.
+See <a href = ../manual.html#sec2>SPAdes manual</a> for installation instructions.
+
+You can additionally verify your DipSPAdes installation by running
+<pre class="code">
+<code>
+    &lt;spades installation dir>/dipspades.py --test
+</code>
+</pre>
 
 <a id = "sec2"></a>
-<h2>2. Running DipSPAdes</h2>
-	<h3><a id = "sec2.1">2.1 Running mode</a></h3>
-		<h4><a id = "sec2.1.1">2.1.1 Mode1: Haplocontigs construction</a></h4>
-		<h4><a id = "sec2.1.2">2.1.2 Mode2: Using preliminary computed haplocontigs</a></h4>
-
+<h2>3. Running DipSPAdes</h2>
+<a id = "sec2.1"></a>
+<h3>2.1 DipSPAdes input</h2>
+DipSPAdes takes as an input libraries of reads in the same way as described in <a href=../manual.html#sec3.1>SPAdes manual</a>.
+Also DipSPAdes can use haplocontigs provided by user.
+For example one can assemble haplocontigs with another assembler and run DipSPAdes with these haplocontigs (instead of reads) as an input.
+In this case the first step of DipSPAdes pipeline is skipped.
+If both reads and haplocontigs are provided as an input, DipSPAdes first computes haplocontigs from reads and then uses mixture of computed haplocontigs and haplocontigs provided by user for further steps.
 <a id = "sec2.2"></a>
-<h3>2.2 Options</h2>
+<h3>2.2 DipSPAdes command line options </h2>
 To run DipSPAdes from the command line, type<br>
 <pre class="code">
 <code>
 dipspades.py [options] -o &lt;output_dir>
 </code>
 </pre><br>
+Note that we assume that SPAdes installation directory is added to the <code>PATH</code> variable (provide full path to DipSPAdes executable otherwise: <code>&lt;spades installation dir>/dipspades.py</code>).
 
-		<a id = "sec2.2.1"></a>
-		<h4>2.2.1 Basic options</h4>
-		<code>--test</code><br>
-		Run test example.<br>
+<h4>Basic options</h4>
+<p>
+    <code>-o &lt;output_dir> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Specify the output directory. Required option.
+</p>
 
-		<code>-o &lt;output_directory></code><br>
-		Output directory. Required parameter.<br>
-		
-		<code>--help</code><br>
-		List of all parameters<br>
+<p>
+    <code>--test</code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Runs SPAdes on the toy data set; see <a href="#sec_install">section 2</a>.
+</p>
 
-		<a id = "sec2.2.2"></a>
-		<h4>2.2.2 Mode options</a></h4>
-		Mode1: <br>
-		no specific options <br>
-		Mode2: <br>
-		<code>-h &lt;file_name></code><br>
-		File with haplocontigs in .fasta <br>
+<p>
+    <code>-h</code> (or <code>--help</code>)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Prints help.
+    
+<h4>Input data</h4>
+For input reads specfication use options of SPAdes described in <a href=../manual.html#inputdata>SPAdes manual</a>.
 
-		<a id = "sec2.2.3"></a>
-		<h4>2.2.3 Additional options</h4>
-		<code>--forced-collapsing</code><br> 
-		Hard-mode of polymorphism collapsing algorithm additionally searches for complex bulges but takes a significant times (see <a href = "#sec6">DipSPAdes Performance</a>) <br>
-		<code>--strong-alignment</code><br> 
-		Alignment of bulges sides <br>
-		<code>--allow-coverage-gaps</code><br>
-		<code>--min-overlap &lt;int> </code><br>
-		minimal allowable length of overlap in nt. Default value is 1500.
+<p>
+    <code>--hap &lt;file_name></code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;File with haplocontigs in FASTA format. Note that DipSPAdes can use any number of haplocontig files.
+</p>
 
-		<a id = "sec2.2.4"></a>
-		<h4>2.2.4 Examples</h4>
-Running DipSPAdes with default values of additional options in mode 1:<br>
+<h4>Advanced options</h4>
+<p>
+    <code>--expect-gaps</code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Use to indicate that gaps in genome coverage are to be expected in significant amounts (e.g. for datasets with relatively low coverage).
+</p>
+
+<p>
+    <code>--expect-rearrangements</code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Use to indicate extreme heterozygosity rate in haplomes (e.g. haplomes differ by long insertions/delitions).
+</p>
+
+<a id = "sec2.2.4"></a>
+<h4>2.2.4 Examples</h4>
+To perform assembly (construct consensus contigs and perform haplotype assembly) of diploid genome from paired-end reads (<code>reads_left.fastq</code> and <code>reads_right.fastq</code>):
 <pre class="code">
 <code>
-dipspades.py --pe1-1 share/dipspades/test_dataset/left.fastq --pe1-2 share/dipspades/test_dataset/right.fastq -o dipspades_test
-</code>
-</pre><br>
-
-Running DipSPAdes with default values of additional options in mode 2:<br>
-<pre class="code">
-<code>
-dipspades.py -h velvet_test_haplocontigs.fasta -h abyss_test_haplocontigs.fasta -o dipspades_test
+dipspades.py -1 reads_left.fastq -2 reads_right.fastq -o output_dir
 </code>
 </pre></br>
 
-Running DipSPAdes with additional values in mode 1:<br>
+To perform assembly (construct consensus contigs and perform haplotype assembly) of diploid genome from preliminary computed haplocontigs (<code>haplocontigs1.fasta</code> and <code>haplocontigs2.fasta</code>):
 <pre class="code">
 <code>
-dipspades.py --pe1-1 share/dipspades/test_dataset/left.fastq --pe1-2 share/dipspades/test_dataset/right.fastq --min-overlap 5000 --strong-alignment -o dipspades_test
+dipspades.py --hap haplocontigs1.fasta --hap haplocontigs2.fasta -o output_dir
 </code>
-</pre><br>
+</pre></br>
 
-<a id = "sec2.3"></a>
+To construct haplocontigs from paired-end reads (<code>reads_left.fastq</code> and <code>reads_right.fastq</code>),
+then mix constructed haplocontigs with contigs from <code>haplocontigs.fasta</code> and use this mixture for further steps (consensus contigs construction and haplotype assembly):
+<pre class="code">
+<code>
+dipspades.py -1 reads_left.fastq -2 reads_right.fastq --hap haplocontigs.fasta -o output_dir
+</code>
+</pre></br>
+
+<h4>Examples of advanced options usage</h4>
+To perform assembly of diploid genome with additional options:
+<pre class="code">
+<code>
+dipspades.py -1 reads_left.fastq -2 reads_right.fastq --allow-gaps -o output_dir
+</code>
+</pre></br>
+
+To relaunch steps 2 and 3 of DipSPAdes (see <a href=#ds_pipeline>DipSPAdes pipeline section</a>) with different set of advanced options you can use haplocontigs constructed in the previous run (see <a href=#ds_output>DipSPAdes output section</a>):
+<pre class="code">
+<code>
+dipspades.py -hap output_dir/haplocontigs.fasta --allow-gaps --expect-rearrangements -o new_output_dir
+</code>
+</pre></br>
+
+<a id = "ds_output"></a>
 <h3>2.3 DipSPAdes output</h3>
 DipSPAdes produces the following output:<br>
 <ul>
-	<li><b>haplocontigs.fasta</b> - file with computed haplocontigs (<b>only in MODE 1</b>). </li>
-	<li><b>consensus_contigs.fasta</b> - file in  in fasta format. all set of obtained consensus contigs </li>
-	<li><b>consensus_paired_contigs.fasta</b> - file in  in fasta format. subset of obtained consensus contigs that contains only contigs which were constructed from haplocontigs with non-empty alignment to one the other haplocontig </li>
-	<li><b>haplotype_assembly.out</b> - file with result of haplotype assembly </li> 
-	<li><b>conservative_regions.fasta</b> - file in  in fasta format. conservative regions of haplocontigs </li>   
-	<li><b>possibly_conservative_regions.fasta</b> - file in  in fasta format. unresolved regions of haplocontigs that may be conservative or repetitive. </li>
+	<li><b>haplocontigs.fasta</b> - file in FASTA format. with computed haplocontigs (if input reads were provided). </li>
+	<li><b>consensus_contigs.fasta</b> - file in FASTA format with a set of constructed consensus contigs </li>
+	<li><b>paired_consensus_contigs.fasta</b> - file in FASTA format with a subset of consensus contigs that have a polymorphism detected on them. </li>
+	<li><b>unpaired_consensus_contigs.fasta</b> - file in FASTA format with a subset of consensus contigs that have no polymorphism detected on them. These contigs are potentially redundant.</li>
+	<li><b>haplocontigs_alignment.out</b> - file with recorded haplocontigs that correspond to homologous regions on haplomes.</li>
+	<li><b>haplotype_assembly.out</b> - result of haplotype assembly </li> 
+	<li><b>conservative_regions.fasta</b> - file in FASTA format with conservative regions of diploid genome </li>   
+	<li><b>possibly_conservative_regions.fasta</b> - file in FASTA format with unresolved regions of haplocontigs that may be either conservative or repetitive. </li>
 </ul>  
 
 <a id="sec2.3.1"></a>
