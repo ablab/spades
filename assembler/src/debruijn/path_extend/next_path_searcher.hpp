@@ -390,18 +390,22 @@ inline void NextPathSearcher::GrowPath(const BidirectionalPath& init_path, Edge*
     }
     for (EdgeId next_edge : g_.OutgoingEdges(g_.EdgeEnd(e->GetId()))) {
         set<BidirectionalPath*> cov_paths = cover_map_.GetCoveringPaths(next_edge);
-        bool path_ended_here = false;
+        bool path_ended_here = cov_paths.size() == 0;
+        DEBUG("cov_map size " << cov_paths.size() << " for edge " << g_.int_id(next_edge));
+        bool found_path = false;
         for (auto inext_path = cov_paths.begin(); inext_path != cov_paths.end(); ++inext_path) {
             vector<size_t> positions = (*inext_path)->FindAll(next_edge);
             for (size_t ipos = 0; ipos < positions.size(); ++ipos) {
                 size_t pos = positions[ipos];
                 if (pos == 0 || e->EqualBegins(**inext_path, (int) pos - 1)) {
+                    DEBUG("Found equal begin");
                     Edge* next_edge = AddPath(init_path, e, max_len, **inext_path, pos);
                     if (next_edge) {
                         if (e == next_edge) {
                             path_ended_here = true;
                         } else {
                             to_add.push_back(next_edge);
+                            found_path = true;
                         }
                     } else {
                         path_ended_here = true;
@@ -418,6 +422,9 @@ inline void NextPathSearcher::GrowPath(const BidirectionalPath& init_path, Edge*
             }
             if ((!InBuble(next_edge, g_) || !AnalyzeBubble(init_path, next_edge, 0, e)) && e->GetId() != next_edge)
                 to_add.push_back(e->AddOutEdge(next_edge));
+        }
+        if (!found_path && InBuble(next_edge, g_) && (e->GetIncorrectEdgeIndex(next_edge) != -1)) {
+            to_add.push_back(e->AddOutEdge(next_edge));
         }
     }
     stringstream str;
@@ -606,7 +613,7 @@ inline void NextPathSearcher::ProcessScaffoldingCandidate(EdgeWithDistance& e, E
         if (IsInTip(g_.EdgeStart(e.e_)) && looking_for_tip) {
             DEBUG( "Added tip edge " << g_.int_id(e.e_) << " (" << g_.length(e.e_) << ")" << ", distance " << e.d_);
             constructed_paths.insert(make_pair(e.e_, PathWithDistance(BidirectionalPath(g_, e.e_), e.d_)));
-        } else if (g_.IncomingEdgeCount(g_.EdgeStart(e.e_)) > 0 && !looking_for_tip) {
+        } else if (!IsInTip(g_.EdgeStart(e.e_)) && !looking_for_tip) {
             //No back paths -- just scaffold
             set<EdgeId> candidate_edges;
             candidate_edges.insert(e.e_);
