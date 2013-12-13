@@ -245,7 +245,7 @@ def set_test_options():
     global output_dir
     global single_cell
 
-    output_dir = 'spades_test'
+    output_dir = os.path.abspath('spades_test')
     single_cell = False
 
 
