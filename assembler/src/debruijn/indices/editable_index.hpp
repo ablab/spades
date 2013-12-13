@@ -1,6 +1,6 @@
 #pragma once
 
-#include "debruijn_kmer_index.hpp"
+#include "perfect_hash_map.hpp.hpp"
 
 namespace debruijn_graph {
 

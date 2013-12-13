@@ -233,7 +233,7 @@ public:
 //
 ////			SimpleInDelAnalyzer<Graph> del_analyzer(gp_.g, coloring_,
 ////					gp_.edge_pos,
-////					(*MapperInstance < gp_t > (gp_)).MapSequence(gp_.genome).simple_path().sequence(),
+////					(*MapperInstance < gp_t > (gp_)).MapSequence(gp_.genome).simple_path(),
 ////					kRedColorSet, output_folder);
 ////			del_analyzer.Analyze();
 //

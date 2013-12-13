@@ -27,12 +27,48 @@
 
 #include "read_converter.hpp"
 #include "detail_coverage.hpp"
+#include "indices/storing_traits.hpp"
 
 namespace debruijn_graph {
 
+template<class StoringType>
+struct CoverageCollector {
+};
+
+template<>
+struct CoverageCollector<SimpleStoring> {
+    template<class Info>
+    static void CollectCoverage(Info edge_info) {
+        edge_info.edge_id->IncCoverage(edge_info.count);
+    }
+};
+
+template<>
+struct CoverageCollector<InvertableStoring> {
+    template<class Info>
+    static void CollectCoverage(Info edge_info) {
+        edge_info.edge_id->IncCoverage(edge_info.count);
+        edge_info.edge_id->conjugate()->IncCoverage(edge_info.count);
+    }
+};
+
+
+template<class Index>
+void FillCoverageFromIndex(const Index &index) {
+    for (auto I = index.value_cbegin(), E = index.value_cend();
+            I != E; ++I) {
+        const auto& edge_info = *I;
+        VERIFY(edge_info.offset != -1u);
+//      VERIFY(edge_info.edge_id.get() != NULL);
+        if(edge_info.offset != -1u) {
+            CoverageCollector<typename Index::storing_type>::CollectCoverage(edge_info);
+        }
+    }
+    DEBUG("Coverage counted");
+}
+
 template<class Graph, class Readers, class Index>
-size_t ConstructGraphUsingOldIndex(size_t k,
-		Readers& streams, Graph& g,
+size_t ConstructGraphUsingOldIndex(Readers& streams, Graph& g,
 		Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
 	INFO("Constructing DeBruijn graph");
 
@@ -47,18 +83,28 @@ size_t ConstructGraphUsingOldIndex(size_t k,
 	//fixme hack
 	rl = IndexBuilder().BuildIndexFromStream(debruijn, streams, (contigs_stream == 0) ? 0 : &(*contigs_stream));
 
-	VERIFY(k + 1== debruijn.k());
+	VERIFY(g.k() + 1== debruijn.k());
 	// FIXME: output_dir here is damn ugly!
 
 	TRACE("Filled indices");
 
 	INFO("Condensing graph");
-	DeBruijnGraphConstructor<Graph, InnerIndex> g_c(g, debruijn, k);
+	DeBruijnGraphConstructor<Graph, InnerIndex> g_c(g, debruijn);
 	TRACE("Constructor ok");
 	g_c.ConstructGraph(100, 10000, 1.2); // TODO: move magic constants to config
-	TRACE("Graph condensed");
+	INFO("Graph condensed");
 
 	return rl;
+}
+
+inline debruijn_config::construction CreateDefaultConstructionConfig() {
+    debruijn_config::construction config;
+    config.con_mode = construction_mode::con_extention;
+    debruijn_config::construction::early_tip_clipper early_tc;
+    early_tc.enable = false;
+    config.early_tc = early_tc;
+    config.keep_perfect_loops = true;
+    return config;
 }
 
 template<class ExtensionIndex>
@@ -67,16 +113,17 @@ void EarlyClipTips(size_t k, const debruijn_config::construction params, size_t 
         size_t length_bound = rl - k;
         if (params.early_tc.length_bound)
             length_bound = params.early_tc.length_bound.get();
-        EarlyTipClipper(ext, length_bound).ClipTips();
+        AlternativeEarlyTipClipper(ext, length_bound).ClipTips();
     }
 }
 
 template<class Graph, class Read, class Index>
-size_t ConstructGraphUsingExtentionIndex(size_t k, const debruijn_config::construction params,
+size_t ConstructGraphUsingExtentionIndex(const debruijn_config::construction params,
 		io::ReadStreamList<Read>& streams, Graph& g,
 		Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
 
-	INFO("Constructing DeBruijn graph");
+    size_t k = g.k();
+	INFO("Constructing DeBruijn graph for k=" << k);
 
 	TRACE("Filling indices");
 	VERIFY_MSG(streams.size(), "No input streams specified");
@@ -94,7 +141,7 @@ size_t ConstructGraphUsingExtentionIndex(size_t k, const debruijn_config::constr
 
 	INFO("Condensing graph");
 	index.Detach();
-	DeBruijnGraphExtentionConstructor<Graph> g_c(g, ext, k);
+	DeBruijnGraphExtentionConstructor<Graph> g_c(g, ext);
 	g_c.ConstructGraph(100, 10000, 1.2, params.keep_perfect_loops);//TODO move these parameters to config
 	index.Attach();
 
@@ -107,11 +154,11 @@ size_t ConstructGraphUsingExtentionIndex(size_t k, const debruijn_config::constr
 }
 
 template<class Graph, class Index, class Streams>
-size_t ConstructGraph(size_t k, const debruijn_config::construction &params,
+size_t ConstructGraph(const debruijn_config::construction &params,
                       Streams& streams, Graph& g,
 		 Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
 	if(params.con_mode == construction_mode::con_extention) {
-		return ConstructGraphUsingExtentionIndex(k, params, streams, g, index, contigs_stream);
+		return ConstructGraphUsingExtentionIndex(params, streams, g, index, contigs_stream);
 //	} else if(params.con_mode == construction_mode::con_old){
 //		return ConstructGraphUsingOldIndex(k, streams, g, index, contigs_stream);
 	} else {
@@ -122,15 +169,14 @@ size_t ConstructGraph(size_t k, const debruijn_config::construction &params,
 }
 
 template<class Graph, class Index, class Streams>
-size_t ConstructGraphWithCoverage(size_t k, const debruijn_config::construction &params,
+size_t ConstructGraphWithCoverage(const debruijn_config::construction &params,
                                   Streams& streams, Graph& g,
                                   Index& index, FlankingCoverage<Graph>& flanking_cov,
                                   io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
-	size_t rl = ConstructGraph(k, params, streams, g, index, contigs_stream);
+	size_t rl = ConstructGraph(params, streams, g, index, contigs_stream);
 
 	INFO("Filling coverage and flanking coverage from index");
 	FillCoverageAndFlanking(index.inner_index(), g, flanking_cov);
-
 	return rl;
 }
 

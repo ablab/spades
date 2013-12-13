@@ -2,31 +2,35 @@
 
 sc_de
 {
-    linkage_distance_coeff  0.0
-    max_distance_coeff  	2000.0
-    filter_threshold        2.0 ;bigger than in non-single cell because normalization is disabled
+    linkage_distance_coeff      0.0
+    max_distance_coeff  	    2.0
+    max_distance_coeff_scaff    2000.0 
+    filter_threshold            2.0 
 }
 
 
 usual_de
 {
     linkage_distance_coeff    0.0
-    max_distance_coeff        2000.0
+    max_distance_coeff        2.0
+    max_distance_coeff_scaff  2000.0
     filter_threshold          2.0
 }
 
 old_sc_de
 {
-    linkage_distance_coeff  0.3
-    max_distance_coeff  	2.0
-    filter_threshold        10.0 ;bigger than in non-single cell because normalization is disabled
+    linkage_distance_coeff      0.3
+    max_distance_coeff      	2.0
+    max_distance_coeff_scaff    2000.0
+    filter_threshold            10.0 ;bigger than in non-single cell because normalization is disabled
 }
 
 old_usual_de
 {
-    linkage_distance_coeff    0.3
-    max_distance_coeff        2.0
-    filter_threshold          0.2
+    linkage_distance_coeff      0.3
+    max_distance_coeff          2.0
+    max_distance_coeff_scaff    2000.0
+    filter_threshold            0.2
 }
 
 ; advanced distance estimator:
@@ -73,4 +77,12 @@ usual_ade
     ;hard_mode arguments
         derivative_threshold  0.2 ;threshold for derivative in hard mode
 
+}
+
+; ambiguous pair info checker parameters 
+amb_de {
+        enabled                         false; true
+        haplom_threshold                500
+        relative_length_threshold       0.8
+        relative_seq_threshold          0.5
 }

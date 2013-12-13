@@ -19,8 +19,7 @@ class SyntheticTestsRunner {
     typedef boost::property_tree::ptree XmlTreeT;
     typedef XmlTreeT::value_type XmlNodeT;
     typedef ConjugateDeBruijnGraph GraphT;
-    typedef graph_pack<GraphT, Seq,
-            DeBruijnEdgeIndex<KmerStoringDeBruijnEdgeIndex<GraphT, Seq>>> GraphPackT;
+    typedef graph_pack<GraphT, Seq, KmerStoringEdgeIndex<GraphT, Seq, kmer_index_traits<Seq>, SimpleStoring>> GraphPackT;
 
     const string filename_;
     const size_t k_;
@@ -65,7 +64,7 @@ class SyntheticTestsRunner {
             for (size_t j = 0,
                     n = NumberOfContigs(stream);
                     j < n; ++j) {
-                block_printer.ProcessContig(unsigned(i + 1), transparent_id, contig_names[transparent_id]);
+                block_printer.ProcessContig(unsigned(i + 1), unsigned(transparent_id), contig_names[transparent_id]);
                 transparent_id += 2;
             }
         }

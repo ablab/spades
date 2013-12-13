@@ -1,63 +1,108 @@
+#!/usr/bin/env python
+
+############################################################################
+# Copyright (c) 2011-2013 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
+import os
 import sys
+import support
 
 SUPPORTED_PYTHON_VERSIONS = ['2.4', '2.5', '2.6', '2.7', '3.2', '3.3']
 # allowed reads extensions for BayesHammer and for thw whole SPAdes pipeline
 BH_ALLOWED_READS_EXTENSIONS = ['.fq', '.fastq']
-ALLOWED_READS_EXTENSIONS = BH_ALLOWED_READS_EXTENSIONS + ['.fa', '.fasta']
+CONTIGS_ALLOWED_READS_EXTENSIONS = ['.fa', '.fasta']
+ALLOWED_READS_EXTENSIONS = BH_ALLOWED_READS_EXTENSIONS + CONTIGS_ALLOWED_READS_EXTENSIONS
 # reads could be gzipped
 BH_ALLOWED_READS_EXTENSIONS += [x + '.gz' for x in BH_ALLOWED_READS_EXTENSIONS]
+CONTIGS_ALLOWED_READS_EXTENSIONS += [x + '.gz' for x in CONTIGS_ALLOWED_READS_EXTENSIONS]
 ALLOWED_READS_EXTENSIONS += [x + '.gz' for x in ALLOWED_READS_EXTENSIONS]
 
 # we support up to MAX_LIBS_NUMBER paired-end libs and MAX_LIBS_NUMBER mate-pair libs
 MAX_LIBS_NUMBER = 5
+# other libs types:
+LONG_READS_TYPES = ["pacbio", "sanger", "trusted-contigs", "untrusted-contigs"]
 
-### DEFAULT VALUES:
+#other constants
+MIN_K = 1
+MAX_K = 127
+THRESHOLD_FOR_BREAKING_SCAFFOLDS = 3
+THRESHOLD_FOR_BREAKING_ADDITIONAL_CONTIGS = 10
+
+#default values constants
+THREADS = 16
+MEMORY = 250
+K_MERS_SHORT = [21,33,55]
+K_MERS_150 = [21,33,55,77]
+K_MERS_250 = [21,33,55,77,99,127]
+ITERATIONS = 1
+TMP_DIR = "tmp"
+
+### START OF OPTIONS
 # basic options
-output_dir = ''
+output_dir = None
 single_cell = False
 
 # pipeline options
 only_error_correction = False
 only_assembler = False
-disable_gzip_output = False
-disable_rr = False
-careful = False
+disable_gzip_output = None
+disable_rr = None
+careful = None
+diploid_mode = False
 
 # advanced options
 continue_mode = False
-dataset_yaml_filename = ''
-threads = 16
-memory = 250
-tmp_dir = ''
+developer_mode = None
+dataset_yaml_filename = None
+threads = None
+memory = None
+tmp_dir = None
 k_mers = None
-k_mers_short = [21,33,55]
-k_mers_150 = [21,33,55,77]
-k_mers_250 = [21,33,55,77,99,127]
 qvoffset = None # auto-detect by default
-developer_mode = False
 
 # hidden options
-mismatch_corrector = False
-reference = ''
-iterations = 1
-bh_heap_check = ''
-spades_heap_check = ''
-### END OF DEFAULT VALUES
+mismatch_corrector = None
+reference = None
+iterations = None
+bh_heap_check = None
+spades_heap_check = None
+### END OF OPTIONS
+
+# for restarting SPAdes
+restart_from = None
+restart_careful = None
+restart_mismatch_corrector = None
+restart_disable_gzip_output = None
+restart_disable_rr = None
+restart_threads = None
+restart_memory = None
+restart_tmp_dir = None
+restart_k_mers = None
+restart_qvoffset = None
+restart_developer_mode = None
+restart_reference = None
+
 dict_of_prefixes = dict()
 
 # list of spades.py options
 long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\
                "only-error-correction only-assembler "\
-               "disable-gzip-output disable-rr help test debug reference= "\
+               "disable-gzip-output disable-gzip-output:false disable-rr disable-rr:false " \
+               "help test debug debug:false reference= config-file= dataset= "\
                "bh-heap-check= spades-heap-check= help-hidden "\
-               "config-file= dataset= mismatch-correction careful continue".split()
+               "mismatch-correction mismatch-correction:false careful careful:false "\
+               "continue restart-from= diploid".split()
 short_options = "o:1:2:s:k:t:m:i:h"
 
-# adding multiple paired-end and mate-pair libraries support
+# adding multiple paired-end, mate-pair and other (long reads) libraries support
 reads_options = []
 for i in range(MAX_LIBS_NUMBER):
     for type in ["pe", "mp"]:
         reads_options += ("%s%d-1= %s%d-2= %s%d-12= %s%d-s= %s%d-rf %s%d-fr %s%d-ff" % tuple([type, i + 1] * 7)).split()
+reads_options += list(map(lambda x: x + '=', LONG_READS_TYPES))
 long_options += reads_options
 # for checking whether option corresponds to reads or not
 reads_options = list(map(lambda x:"--" + x.split('=')[0], reads_options))
@@ -102,6 +147,10 @@ def usage(spades_version, show_hidden=False):
                          " for mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
     sys.stderr.write("--mp<#>-<or>\torientation of reads"\
                          " for mate-pair library number <#> (<#> = 1,2,3,4,5; <or> = fr, rf, ff)" + "\n")
+    sys.stderr.write("--sanger\t<filename>\tfile with Sanger reads\n")
+    sys.stderr.write("--pacbio\t<filename>\tfile with PacBio reads\n")
+    sys.stderr.write("--trusted-contigs\t<filename>\tfile with trusted contigs\n")
+    sys.stderr.write("--untrusted-contigs\t<filename>\tfile with untrusted contigs\n")
 
     sys.stderr.write("" + "\n")
     sys.stderr.write("Pipeline options:" + "\n")
@@ -112,6 +161,7 @@ def usage(spades_version, show_hidden=False):
     sys.stderr.write("--careful\t\ttries to reduce number"\
                          " of mismatches and short indels" + "\n")
     sys.stderr.write("--continue\t\tcontinue run from the last available check-point" + "\n")
+    sys.stderr.write("--restart-from\t<cp>\trestart run with updated options and from the specified check-point ('ec', 'as', 'k<int>', 'mc')" + "\n")
     sys.stderr.write("--disable-gzip-output\tforces error correction not to"\
                          " compress the corrected reads" + "\n")
     sys.stderr.write("--disable-rr\t\tdisables repeat resolution stage"\
@@ -121,16 +171,15 @@ def usage(spades_version, show_hidden=False):
     sys.stderr.write("Advanced options:" + "\n")
     sys.stderr.write("--dataset\t<filename>\tfile with dataset description in YAML format" + "\n")
     sys.stderr.write("-t/--threads\t<int>\t\tnumber of threads" + "\n")
-    sys.stderr.write("\t\t\t\t[default: %s]\n" % threads)
+    sys.stderr.write("\t\t\t\t[default: %s]\n" % THREADS)
     sys.stderr.write("-m/--memory\t<int>\t\tRAM limit for SPAdes in Gb"\
                          " (terminates if exceeded)" + "\n")
-    sys.stderr.write("\t\t\t\t[default: %s]\n" % memory)
-    sys.stderr.write("--tmp-dir\t<dirname>\tdirectory for read error correction"\
-                         " temporary files" + "\n")
-    sys.stderr.write("\t\t\t\t[default: <output_dir>/corrected/tmp]" + "\n")
+    sys.stderr.write("\t\t\t\t[default: %s]\n" % MEMORY)
+    sys.stderr.write("--tmp-dir\t<dirname>\tdirectory for temporary files" + "\n")
+    sys.stderr.write("\t\t\t\t[default: <output_dir>/tmp]" + "\n")
     sys.stderr.write("-k\t\t<int,int,...>\tcomma-separated list of k-mer sizes"\
                          " (must be odd and" + "\n")
-    sys.stderr.write("\t\t\t\tless than 128) [default: " + ",".join(map(str, k_mers_short)) + "]" + "\n")
+    sys.stderr.write("\t\t\t\tless than " + str(MAX_K + 1) + ") [default: 'auto']" + "\n") # ",".join(map(str, k_mers_short))
     sys.stderr.write("--phred-offset\t<33 or 64>\tPHRED quality offset in the"\
                          " input reads (33 or 64)" + "\n")
     sys.stderr.write("\t\t\t\t[default: auto-detect]" + "\n")
@@ -144,7 +193,7 @@ def usage(spades_version, show_hidden=False):
         sys.stderr.write("--reference\t<filename>\tfile with reference for deep analysis"\
                              " (only in debug mode)" + "\n")
         sys.stderr.write("-i/--iterations\t<int>\t\tnumber of iterations for read error"\
-                             " correction [default: %s]\n" % iterations)
+                             " correction [default: %s]\n" % ITERATIONS)
         sys.stderr.write("--bh-heap-check\t\t<value>\tsets HEAPCHECK environment variable"\
                              " for BayesHammer" + "\n")
         sys.stderr.write("--spades-heap-check\t<value>\tsets HEAPCHECK environment variable"\
@@ -158,9 +207,118 @@ def auto_K_allowed():
     return not k_mers and not single_cell  # kmers were set by default and not SC
 
 
+def set_default_values():
+    global threads
+    global memory
+    global iterations
+    global disable_gzip_output
+    global disable_rr
+    global careful
+    global mismatch_corrector
+    global developer_mode
+    global qvoffset
+    global tmp_dir
+
+    if threads is None:
+        threads = THREADS
+    if memory is None:
+        memory = MEMORY
+    if iterations is None:
+        iterations = ITERATIONS
+    if disable_gzip_output is None:
+        disable_gzip_output = False
+    if disable_rr is None:
+        disable_rr = False
+    if careful is None:
+        careful = False
+    if mismatch_corrector is None:
+        mismatch_corrector = False
+    if developer_mode is None:
+        developer_mode = False
+    if qvoffset == 'auto':
+        qvoffset = None
+    if tmp_dir is None:
+        tmp_dir = os.path.join(output_dir, TMP_DIR)
+
+
 def set_test_options():
     global output_dir
     global single_cell
 
     output_dir = 'spades_test'
     single_cell = False
+
+
+def save_restart_options(log):
+    if dataset_yaml_filename:
+        support.error("you cannot specify --dataset with --restart-from option!", log)
+    if single_cell:
+        support.error("you cannot specify --sc with --restart-from option!", log)
+    if only_assembler:
+        support.error("you cannot specify --only-assembler with --restart-from option!", log)
+    if only_error_correction:
+        support.error("you cannot specify --only-error-correction with --restart-from option!", log)
+
+    global restart_k_mers
+    global restart_careful
+    global restart_mismatch_corrector
+    global restart_disable_gzip_output
+    global restart_disable_rr
+    global restart_threads
+    global restart_memory
+    global restart_tmp_dir
+    global restart_qvoffset
+    global restart_developer_mode
+    global restart_reference
+
+    restart_k_mers = k_mers
+    restart_careful = careful
+    restart_mismatch_corrector = mismatch_corrector
+    restart_disable_gzip_output = disable_gzip_output
+    restart_disable_rr = disable_rr
+    restart_threads = threads
+    restart_memory = memory
+    restart_tmp_dir = tmp_dir
+    restart_qvoffset = qvoffset
+    restart_developer_mode = developer_mode
+    restart_reference = reference
+
+
+def load_restart_options():
+    global k_mers
+    global careful
+    global mismatch_corrector
+    global disable_gzip_output
+    global disable_rr
+    global threads
+    global memory
+    global tmp_dir
+    global qvoffset
+    global developer_mode
+    global reference
+
+    if restart_k_mers:
+        if restart_k_mers == 'auto':
+            k_mers = None  # set by default
+        else:
+            k_mers = restart_k_mers
+    if restart_careful is not None:
+        careful = restart_careful
+    if restart_mismatch_corrector is not None:
+        mismatch_corrector = restart_mismatch_corrector
+    if disable_gzip_output is not None:
+        disable_gzip_output = restart_disable_gzip_output
+    if restart_disable_rr is not None:
+        disable_rr = restart_disable_rr
+    if restart_threads is not None:
+        threads = restart_threads
+    if restart_memory is not None:
+        memory = restart_memory
+    if restart_tmp_dir is not None:
+        tmp_dir = restart_tmp_dir
+    if restart_qvoffset is not None:
+        qvoffset = restart_qvoffset
+    if restart_developer_mode is not None:
+        developer_mode = restart_developer_mode
+    if restart_reference is not None:
+        reference = restart_reference

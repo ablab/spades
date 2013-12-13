@@ -2,7 +2,8 @@
 
 default
 {
-    stats_mode 0
+    ; enable advanced ec removal algo
+    topology_simplif_enabled false
 
 	; tip clipper:
 	tc
@@ -16,8 +17,9 @@ default
 	; bulge remover:
 	br
 	{
+		enabled				true
 		max_bulge_length_coefficient	3.	; max_bulge_length = max_bulge_length_coefficient * k
-        max_additive_length_coefficient 100
+        	max_additive_length_coefficient 100
 		max_coverage			1000.0
 		max_relative_coverage		1.1	; bulge_cov < this * not_bulge_cov
 		max_delta			3.0
@@ -119,6 +121,9 @@ default
 
 sc
 {
+    ; enable advanced ec removal algo
+    topology_simplif_enabled true 
+
 	; tip clipper:
 	tc
 	{
@@ -130,8 +135,9 @@ sc
 	; bulge remover:
 	br
 	{
+		enabled				true
 		max_bulge_length_coefficient	3.		; max_bulge_length = max_bulge_length_coefficient * k
-        max_additive_length_coefficient 100
+        	max_additive_length_coefficient 100
 		max_coverage			1000000.0
 		max_relative_coverage		100000.		; bulge_cov < this * not_bulge_cov
 		max_delta			2.1
@@ -196,6 +202,8 @@ sc
 	    unreliability_threshold     0.2
 	    relative_threshold          5     
 	}
+
+    stats_mode 0
 }
 
 careful
@@ -203,8 +211,9 @@ careful
 	; bulge remover:
 	br
 	{
+		enabled				true
 		max_bulge_length_coefficient	3.		; max_bulge_length = max_bulge_length_coefficient * k
-        max_additive_length_coefficient 100
+        	max_additive_length_coefficient 100
 		max_coverage			1000000.0
 		max_relative_coverage		1.5		; bulge_cov < this * not_bulge_cov
 		max_delta			2.1
@@ -221,5 +230,20 @@ careful
 		max_length_difference	5
 	}
 
+}
+
+diploid_simp
+{
+	; bulge remover:
+	br
+	{
+		enabled				false
+		max_bulge_length_coefficient	3.		; max_bulge_length = max_bulge_length_coefficient * k
+        	max_additive_length_coefficient 100
+		max_coverage			1000000.0
+		max_relative_coverage		1.5		; bulge_cov < this * not_bulge_cov
+		max_delta			2.1
+		max_relative_delta		0.1
+	}
 }
 

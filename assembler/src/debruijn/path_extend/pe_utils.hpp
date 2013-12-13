@@ -13,7 +13,29 @@
 using namespace debruijn_graph;
 
 namespace path_extend {
+inline bool InCycle(EdgeId e, const Graph& g) {
+    auto v = g.EdgeEnd(e);
+    if (g.OutgoingEdgeCount(v) >= 1) {
+        auto edges = g.OutgoingEdges(v);
+        for (auto it = edges.begin(); it != edges.end(); ++it) {
+            if (g.EdgeStart(e) == g.EdgeEnd(*it)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
 
+inline bool InBuble(EdgeId e, const Graph& g) {
+    auto edges = g.OutgoingEdges(g.EdgeStart(e));
+    auto endVertex = g.EdgeEnd(e);
+    for (auto it = edges.begin(); it != edges.end(); ++it) {
+        if ((g.EdgeEnd(*it) == endVertex) and (*it != e)) {
+            return true;
+        }
+    }
+    return false;
+}
 
 class GraphCoverageMap: public PathListener {
 
@@ -55,13 +77,12 @@ public:
 
     GraphCoverageMap(const Graph& g, PathContainer& paths) : g_(g), edgeCoverage_() {
         empty_ = new MapDataT();
-
         for (size_t i = 0; i < paths.size(); ++i) {
             for (size_t j = 0; j < paths.Get(i)->Size(); ++j) {
-                EdgeAdded(paths.Get(i)->At(j), paths.Get(i), paths.Get(i)->GapAt(i));
+                EdgeAdded(paths.Get(i)->At(j), paths.Get(i), paths.Get(i)->GapAt(j));
             }
             for (size_t j = 0; j < paths.GetConjugate(i)->Size(); ++j) {
-                EdgeAdded(paths.GetConjugate(i)->At(j), paths.GetConjugate(i), paths.GetConjugate(i)->GapAt(i));
+                EdgeAdded(paths.GetConjugate(i)->At(j), paths.GetConjugate(i), paths.GetConjugate(i)->GapAt(j));
             }
         }
     }
@@ -139,29 +160,30 @@ public:
 
     }
 
-    std::set<BidirectionalPath*> GetCoveringPaths(const BidirectionalPath& path) const {
+    std::set<BidirectionalPath*> GetCoveringPaths(
+            const BidirectionalPath& path) const {
         std::set<BidirectionalPath*> result;
+        if (path.Empty()) {
+            return result;
+        }
+        MapDataT * data;
+        data = GetEdgePaths(path.Front());
 
-        if (!path.Empty()) {
-            MapDataT * data;
-            data = GetEdgePaths(path.Front());
+        result.insert(data->begin(), data->end());
 
-            result.insert(data->begin(), data->end());
+        for (size_t i = 1; i < path.Size(); ++i) {
+            data = GetEdgePaths(path[i]);
 
-            for (size_t i = 1; i < path.Size(); ++i) {
-                data = GetEdgePaths(path[i]);
+            std::set<BidirectionalPath*> dataSet;
+            dataSet.insert(data->begin(), data->end());
 
-                std::set<BidirectionalPath*> dataSet;
-                dataSet.insert(data->begin(), data->end());
-
-                for (auto iter = result.begin(); iter != result.end(); ) {
-                    auto next = iter;
-                    ++next;
-                    if (dataSet.count(*iter) == 0) {
-                        result.erase(iter);
-                    }
-                    iter = next;
+            for (auto iter = result.begin(); iter != result.end();) {
+                auto next = iter;
+                ++next;
+                if (dataSet.count(*iter) == 0) {
+                    result.erase(iter);
                 }
+                iter = next;
             }
         }
 
@@ -189,7 +211,7 @@ public:
     void PrintUncovered() const {
         INFO("Uncovered edges");
         int s = 0;
-        for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
             if (!IsCovered(*iter)) {
                 INFO(g_.int_id(*iter) << " (" << g_.length(*iter) << ") ~ " << g_.int_id(g_.conjugate(*iter)) << " (" << g_.length(g_.conjugate(*iter)) << ")");
                 s += 1;
@@ -200,7 +222,7 @@ public:
 
     void PrintMulticovered() const {
         INFO("Multicovered edges");
-        for (auto iter = g_.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
             auto paths = GetCoveringPaths(*iter);
             if (paths.size() > 1 && g_.length(*iter) > 1000) {
                 INFO(g_.int_id(*iter) << " (" << g_.length(*iter) << "). " << " Covered: " << paths.size());
@@ -210,6 +232,10 @@ public:
                 INFO("=====");
             }
         }
+    }
+
+    size_t size() const {
+        return edgeCoverage_.size();
     }
 };
 
@@ -373,6 +399,10 @@ private:
             while(i < path.Size() and path.GapAt(i) <= min_gap_) {
                 p->PushBack(path[i], path.GapAt(i));
                 ++i;
+            }
+            if (i < path.Size()) {
+                DEBUG("split path " << i << " gap " << path.GapAt(i));
+                p->Print();
             }
 
             BidirectionalPath * cp = new BidirectionalPath(p->Conjugate());

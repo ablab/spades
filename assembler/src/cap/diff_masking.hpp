@@ -132,7 +132,8 @@ ContigStreams RefineStreams(ContigStreams& streams,
                                size_t k,
                                size_t delta = 5,
                                const std::string &workdir = "tmp") {
-    typedef graph_pack<ConjugateDeBruijnGraph, Seq> refining_gp_t;
+    typedef debruijn_graph::KmerStoringEdgeIndex<Graph, Seq, kmer_index_traits<runtime_k::RtSeq>, debruijn_graph::SimpleStoring> RefiningIndex;
+    typedef graph_pack<ConjugateDeBruijnGraph, Seq, RefiningIndex> refining_gp_t;
     refining_gp_t gp(k, workdir);
 
     CapConstructGraph(gp.k_value, streams, gp.g, gp.index);
@@ -225,14 +226,14 @@ void PerformRefinement(ContigStreams& streams, const string& root,
     VERIFY(streams.size() == suffixes.size());
 
     const size_t delta = std::max(size_t(5), k /*/ 5*/);
-    typedef graph_pack<ConjugateDeBruijnGraph, Seq> gp_t;
-    typedef NewExtendedSequenceMapper<Graph, typename gp_t::seq_t> Mapper;
+    typedef graph_pack<ConjugateDeBruijnGraph, Seq, KmerStoringEdgeIndex<Graph, Seq, kmer_index_traits<Seq>, SimpleStoring>> gp_t;
+    typedef NewExtendedSequenceMapper<Graph, typename gp_t::index_t> Mapper;
 
     make_dir(root);
     INFO("Constructing graph pack for k=" << k << " delta=" << delta);
     gp_t gp(unsigned(k), "tmp", 0);
 
-    CapConstructGraph(gp.k_value, streams, gp.g, gp.index);
+    CapConstructGraph(streams, gp.g, gp.index);
 
     MakeSaves(gp, streams, root + "before_refinement/", suffixes);
 

@@ -38,7 +38,6 @@ class GraphDistanceFinder {
   // finds all distances from a current edge to a set of edges
   const vector<GraphLengths> GetGraphDistancesLengths(EdgeId e1, const set<EdgeId>& second_edges) const
   {
-    DEBUG("Edge " << graph_.int_id(e1));
     vector<VertexId> end_points;
     vector<size_t> path_lower_bounds;
     size_t i = 0;

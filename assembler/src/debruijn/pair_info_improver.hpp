@@ -238,18 +238,18 @@ void FindInconsistent(EdgeId base_edge, const typename omnigraph::de::PairedInfo
             const omnigraph::de::Point& p1 = entry1.second;
             EdgeId e2 = entry2.first;
             const omnigraph::de::Point& p2 = entry2.second;
-
             if (!IsConsistent(base_edge, e1, e2, p1, p2)) {
-                if (math::le(p1.weight, p2.weight))
+                if (math::le(p1.weight, p2.weight)) {
                     pi->AddPairInfo(base_edge, e1, p1);
-                else
+                } else {
                     pi->AddPairInfo(base_edge, e2, p2);
+                }
             }
         }
     }
 }
 
-//public:
+public:
 // Checking the consistency of two edge pairs (e, e_1) and (e, e_2)
   bool IsConsistent(EdgeId /*e*/, EdgeId e1, EdgeId e2, const omnigraph::de::Point& p1, const omnigraph::de::Point& p2) const {
     if (math::le(p1.d, 0.) || math::le(p2.d, 0.) || math::gr(p1.d, p2.d))

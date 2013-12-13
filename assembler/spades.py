@@ -95,7 +95,6 @@ def print_used_values(cfg, log):
     # error correction
     if "error_correction" in cfg:
         log.info("Read error correction parameters:")
-        print_value(cfg, "error_correction", "tmp_dir", "Dir for temp files")
         print_value(cfg, "error_correction", "max_iterations", "Iterations")
         print_value(cfg, "error_correction", "qvoffset", "PHRED offset")
 
@@ -121,6 +120,7 @@ def print_used_values(cfg, log):
             log.info("  Repeat resolution is enabled")
 
     log.info("Other parameters:")
+    print_value(cfg, "common", "tmp_dir", "Dir for temp files")
     print_value(cfg, "common", "max_threads", "Threads")
     print_value(cfg, "common", "max_memory", "Memory limit (in Gb)", "  ")
     log.info("")
@@ -156,14 +156,14 @@ def fill_cfg(options_to_parse, log):
     # all parameters are stored here
     cfg = dict()
     # dataset is stored here. We are prepared for up to MAX_LIBS_NUMBER paired-end libs and MAX_LIBS_NUMBER mate-pair libs
-    dataset_data = [{} for i in range(options_storage.MAX_LIBS_NUMBER * 2)]
+    dataset_data = [{} for i in range(options_storage.MAX_LIBS_NUMBER * 2)]  # "[{}] * num" doesn't work here!
 
     options_storage.continue_mode = False
     for opt, arg in options:
         if opt == '-o':
-            options_storage.output_dir = arg
+            options_storage.output_dir = os.path.abspath(arg)
         elif opt == "--tmp-dir":
-            options_storage.tmp_dir = arg
+            options_storage.tmp_dir = os.path.abspath(arg)
         elif opt == "--reference":
             options_storage.reference = support.check_file_existence(arg, 'reference', log)
         elif opt == "--dataset":
@@ -173,19 +173,27 @@ def fill_cfg(options_to_parse, log):
             support.add_to_dataset(opt, arg, dataset_data)
 
         elif opt == '-k':
-            options_storage.k_mers = list(map(int, arg.split(",")))
-            for k in options_storage.k_mers:
-                if k > 127:
-                    support.error('wrong k value ' + str(k) + ': all k values should be less than 128', log)
-                if k % 2 == 0:
-                    support.error('wrong k value ' + str(k) + ': all k values should be odd', log)
+            if arg == 'auto':
+                options_storage.k_mers = arg
+            else:
+                options_storage.k_mers = list(map(int, arg.split(",")))
+                for k in options_storage.k_mers:
+                    if k < options_storage.MIN_K or k > options_storage.MAX_K:
+                        support.error('wrong k value ' + str(k) + ': all k values should be between %d and %d' %
+                                                                  (options_storage.MIN_K, options_storage.MAX_K), log)
+                    if k % 2 == 0:
+                        support.error('wrong k value ' + str(k) + ': all k values should be odd', log)
 
         elif opt == "--sc":
             options_storage.single_cell = True
         elif opt == "--disable-gzip-output":
             options_storage.disable_gzip_output = True
+        elif opt == "--disable-gzip-output:false":
+            options_storage.disable_gzip_output = False
         elif opt == "--disable-rr":
             options_storage.disable_rr = True
+        elif opt == "--disable-rr:false":
+            options_storage.disable_rr = False
 
         elif opt == "--only-error-correction":
             if options_storage.only_assembler:
@@ -203,13 +211,20 @@ def fill_cfg(options_to_parse, log):
 
         elif opt == "--continue":
             options_storage.continue_mode = True
+        elif opt == "--restart-from":
+            if arg not in ['ec', 'as', 'mc'] and not arg.startswith('k'):
+                support.error("wrong value for --restart-from option: " + arg + " (only 'ec', 'as', 'k<int>', 'mc' are available)", log)
+            options_storage.continue_mode = True
+            options_storage.restart_from = arg
 
         elif opt == '-t' or opt == "--threads":
             options_storage.threads = int(arg)
         elif opt == '-m' or opt == "--memory":
             options_storage.memory = int(arg)
         elif opt == "--phred-offset":
-            if int(arg) in [33, 64]:
+            if arg == 'auto':
+                options_storage.qvoffset = arg
+            elif arg in ['33', '64']:
                 options_storage.qvoffset = int(arg)
             else:
                 support.error('wrong PHRED quality offset value ' + str(arg) + ': should be either 33 or 64', log)
@@ -218,14 +233,21 @@ def fill_cfg(options_to_parse, log):
 
         elif opt == "--debug":
             options_storage.developer_mode = True
+        elif opt == "--debug:false":
+            options_storage.developer_mode = False
 
         #corrector
         elif opt == "--mismatch-correction":
             options_storage.mismatch_corrector = True
+        elif opt == "--mismatch-correction:false":
+            options_storage.mismatch_corrector = False
 
         elif opt == "--careful":
             options_storage.mismatch_corrector = True
             options_storage.careful = True
+        elif opt == "--careful:false":
+            options_storage.mismatch_corrector = False
+            options_storage.careful = False
 
         elif opt == '-h' or opt == "--help":
             options_storage.usage(spades_version)
@@ -239,6 +261,8 @@ def fill_cfg(options_to_parse, log):
             support.add_to_dataset('-1', os.path.join(spades_home, "test_dataset/ecoli_1K_1.fq.gz"), dataset_data)
             support.add_to_dataset('-2', os.path.join(spades_home, "test_dataset/ecoli_1K_2.fq.gz"), dataset_data)
             #break
+        elif opt == "--diploid":
+            options_storage.diploid_mode = True
         else:
             raise ValueError
 
@@ -247,8 +271,15 @@ def fill_cfg(options_to_parse, log):
         support.error("the output_dir is not set! It is a mandatory parameter (-o output_dir).", log)
     if not os.path.isdir(options_storage.output_dir):
         if options_storage.continue_mode:
-            support.error("the output_dir should exist for --continue!", log)
+            support.error("the output_dir should exist for --continue and for --restart-from!", log)
         os.makedirs(options_storage.output_dir)
+    if options_storage.restart_from:
+        if options_storage.continue_mode: # saving parameters specified with --restart-from
+            if not support.dataset_is_empty(dataset_data):
+                support.error("you cannot specify reads with --restart-from option!", log)
+            options_storage.save_restart_options(log)
+        else:  # overriding previous run parameters
+            options_storage.load_restart_options()
     if options_storage.continue_mode:
         return None, None
 
@@ -269,6 +300,7 @@ def fill_cfg(options_to_parse, log):
     if support.dataset_has_only_mate_pairs_libraries(dataset_data):
         support.error('you should specify at least one paired-end or unpaired library (only mate-pairs libraries were found)!')
 
+    options_storage.set_default_values()
     ### FILLING cfg
     cfg["common"] = empty_config()
     cfg["dataset"] = empty_config()
@@ -278,14 +310,15 @@ def fill_cfg(options_to_parse, log):
         cfg["assembly"] = empty_config()
 
     # common
-    cfg["common"].__dict__["output_dir"] = os.path.abspath(options_storage.output_dir)
+    cfg["common"].__dict__["output_dir"] = options_storage.output_dir
+    cfg["common"].__dict__["tmp_dir"] = options_storage.tmp_dir
     cfg["common"].__dict__["max_threads"] = options_storage.threads
     cfg["common"].__dict__["max_memory"] = options_storage.memory
     cfg["common"].__dict__["developer_mode"] = options_storage.developer_mode
 
     # dataset section
     cfg["dataset"].__dict__["single_cell"] = options_storage.single_cell
-    cfg["dataset"].__dict__["yaml_filename"] = os.path.abspath(options_storage.dataset_yaml_filename)
+    cfg["dataset"].__dict__["yaml_filename"] = options_storage.dataset_yaml_filename
     if options_storage.developer_mode and options_storage.reference:
         cfg["dataset"].__dict__["reference"] = options_storage.reference
 
@@ -298,27 +331,23 @@ def fill_cfg(options_to_parse, log):
             cfg["error_correction"].__dict__["qvoffset"] = options_storage.qvoffset
         if options_storage.bh_heap_check:
             cfg["error_correction"].__dict__["heap_check"] = options_storage.bh_heap_check
-        if options_storage.tmp_dir:
-            cfg["error_correction"].__dict__["tmp_dir"] = options_storage.tmp_dir
-        else:
-            cfg["error_correction"].__dict__["tmp_dir"] = cfg["error_correction"].output_dir
-        cfg["error_correction"].tmp_dir = os.path.join(os.path.abspath(cfg["error_correction"].tmp_dir), 'tmp')
 
     # assembly
     if not options_storage.only_error_correction:
         if options_storage.k_mers:
             cfg["assembly"].__dict__["iterative_K"] = options_storage.k_mers
         else:
-            cfg["assembly"].__dict__["iterative_K"] = options_storage.k_mers_short
+            cfg["assembly"].__dict__["iterative_K"] = options_storage.K_MERS_SHORT
         cfg["assembly"].__dict__["careful"] = options_storage.careful
         cfg["assembly"].__dict__["disable_rr"] = options_storage.disable_rr
+        cfg["assembly"].__dict__["diploid_mode"] = options_storage.diploid_mode
         if options_storage.spades_heap_check:
             cfg["assembly"].__dict__["heap_check"] = options_storage.spades_heap_check
 
     #corrector can work only if contigs exist (not only error correction)
     if (not options_storage.only_error_correction) and options_storage.mismatch_corrector:
         cfg["mismatch_corrector"] = empty_config()
-        cfg["mismatch_corrector"].__dict__["skip-masked"] = ""
+        cfg["mismatch_corrector"].__dict__["skip-masked"] = None
         cfg["mismatch_corrector"].__dict__["bwa"] = os.path.join(bin_home, "bwa-spades")
         cfg["mismatch_corrector"].__dict__["threads"] = options_storage.threads
         cfg["mismatch_corrector"].__dict__["output-dir"] = options_storage.output_dir
@@ -326,15 +355,42 @@ def fill_cfg(options_to_parse, log):
     return cfg, dataset_data
 
 
+def check_cfg_for_restart_from(cfg):
+    if options_storage.restart_from == 'ec' and ("error_correction" not in cfg):
+        support.error("failed to restart from read error correction because this stage was not specified!")
+    if options_storage.restart_from == 'mc' and ("mismatch_corrector" not in cfg):
+        support.error("failed to restart from mismatch correction because this stage was not specified!")
+    if options_storage.restart_from == 'as' or options_storage.restart_from.startswith('k'):
+        if "assembly" not in cfg:
+            support.error("failed to restart from assembling because this stage was not specified!")
+        if options_storage.restart_from.startswith('k'):
+            correct_k = False
+            k_to_check = options_storage.k_mers
+            if not k_to_check:
+                if options_storage.auto_K_allowed():
+                    k_to_check = list(set(options_storage.K_MERS_SHORT + options_storage.K_MERS_150 + options_storage.K_MERS_250))
+                else:
+                    k_to_check = options_storage.K_MERS_SHORT
+            for k in k_to_check:
+                if options_storage.restart_from == ("k%d" % k) or options_storage.restart_from.startswith("k%d:" % k):
+                    correct_k = True
+                    break
+            if not correct_k:
+                k_str = options_storage.restart_from[1:]
+                if k_str.find(":") != -1:
+                    k_str = k_str[:k_str.find(":")]
+                support.error("failed to restart from K=%s because this K was not specified!" % k_str)
+
+
 def get_options_from_params(params_filename):
     if not os.path.isfile(params_filename):
-        return None
+        return None, None
     params = open(params_filename, 'r')
     cmd_line = params.readline()
     params.close()
     spades_py_pos = cmd_line.find('spades.py')
     if spades_py_pos == -1:
-        return None
+        return None, None
     return cmd_line, cmd_line[spades_py_pos + len('spades.py'):].split()
 
 
@@ -361,8 +417,10 @@ def main():
     if options_storage.continue_mode:
         cmd_line, options = get_options_from_params(os.path.join(options_storage.output_dir, "params.txt"))
         if not options:
-            support.error("failed to parse command line of the previous run! Please restart from the beginning.")
+            support.error("failed to parse command line of the previous run! Please restart from the beginning or specify another output directory.")
         cfg, dataset_data = fill_cfg(options, log)
+        if options_storage.restart_from:
+            check_cfg_for_restart_from(cfg)
         options_storage.continue_mode = True
 
     log_filename = os.path.join(cfg["common"].output_dir, "spades.log")
@@ -374,7 +432,20 @@ def main():
 
     if options_storage.continue_mode:
         log.info("\n======= SPAdes pipeline continued. Log can be found here: " + log_filename + "\n")
-        log.info("Restored from " + cmd_line)
+        log.info("Restored from " + cmd_line.strip())
+        updated_params = "with updated parameters: "
+        flag = False
+        for v in sys.argv[1:]:
+            if v == '-o':
+                flag = True
+                continue
+            if flag:
+                flag = False
+                continue
+            updated_params += " " + v
+        log.info(updated_params)
+
+        print_used_values(cfg, log)
     else:
         params_filename = os.path.join(cfg["common"].output_dir, "params.txt")
         params_handler = logging.FileHandler(params_filename, mode='w')
@@ -390,15 +461,18 @@ def main():
 
         log.info("\n======= SPAdes pipeline started. Log can be found here: " + log_filename + "\n")
 
-    # splitting interlaced reads if needed
-    if support.dataset_has_interlaced_reads(dataset_data):
-        dir_for_split_reads = os.path.join(os.path.abspath(options_storage.output_dir), 'split_reads')
-        if not os.path.isdir(dir_for_split_reads):
-            os.makedirs(dir_for_split_reads)
-        dataset_data = support.split_interlaced_reads(dataset_data, dir_for_split_reads, log)
+    # splitting interlaced reads and processing Ns in additional contigs if needed
+    if support.dataset_has_interlaced_reads(dataset_data) or support.dataset_has_additional_contigs(dataset_data):
+        dir_for_split_reads = os.path.join(options_storage.output_dir, 'split_input')
+        if support.dataset_has_interlaced_reads(dataset_data):
+            if not os.path.isdir(dir_for_split_reads):
+                os.makedirs(dir_for_split_reads)
+            dataset_data = support.split_interlaced_reads(dataset_data, dir_for_split_reads, log)
+        if support.dataset_has_additional_contigs(dataset_data):
+            dataset_data = support.process_Ns_in_additional_contigs(dataset_data, dir_for_split_reads, log)
         options_storage.dataset_yaml_filename = os.path.join(options_storage.output_dir, "input_dataset.yaml")
         pyyaml.dump(dataset_data, open(options_storage.dataset_yaml_filename, 'w'))
-        cfg["dataset"].yaml_filename = os.path.abspath(options_storage.dataset_yaml_filename)
+        cfg["dataset"].yaml_filename = options_storage.dataset_yaml_filename
 
     try:
         # copying configs before all computations (to prevent its changing at run time)
@@ -410,12 +484,14 @@ def main():
 
         corrected_dataset_yaml_filename = ''
         if "error_correction" in cfg:
+            STAGE_NAME = "Read error correction"
             bh_cfg = merge_configs(cfg["error_correction"], cfg["common"])
             corrected_dataset_yaml_filename = os.path.join(bh_cfg.output_dir, "corrected.yaml")
-            if os.path.isfile(corrected_dataset_yaml_filename) and options_storage.continue_mode:
-                log.info("\n===== Skipping read error correction (already processed). \n")
+            if os.path.isfile(corrected_dataset_yaml_filename) and options_storage.continue_mode \
+                and not options_storage.restart_from == "ec":
+                log.info("\n===== Skipping %s (already processed). \n" % STAGE_NAME)
             else:
-                options_storage.continue_mode = False # continue from here
+                support.continue_from_here(log)
 
                 if "HEAPCHECK" in os.environ:
                     del os.environ["HEAPCHECK"]
@@ -424,14 +500,11 @@ def main():
 
                 if os.path.exists(bh_cfg.output_dir):
                     shutil.rmtree(bh_cfg.output_dir)
-
                 os.makedirs(bh_cfg.output_dir)
-                if not os.path.exists(bh_cfg.tmp_dir):
-                    os.makedirs(bh_cfg.tmp_dir)
 
-                if support.get_lib_ids_by_type(dataset_data, support.READS_TYPES_NOT_USED_IN_HAMMER):
-                    not_used_dataset_data = support.get_libs_by_type(dataset_data, support.READS_TYPES_NOT_USED_IN_HAMMER)
-                    to_correct_dataset_data = support.rm_libs_by_type(dataset_data, support.READS_TYPES_NOT_USED_IN_HAMMER)
+                if support.get_lib_ids_by_type(dataset_data, options_storage.LONG_READS_TYPES):
+                    not_used_dataset_data = support.get_libs_by_type(dataset_data, options_storage.LONG_READS_TYPES)
+                    to_correct_dataset_data = support.rm_libs_by_type(dataset_data, options_storage.LONG_READS_TYPES)
                     to_correct_dataset_yaml_filename = os.path.join(bh_cfg.output_dir, "to_correct.yaml")
                     pyyaml.dump(to_correct_dataset_data, open(to_correct_dataset_yaml_filename, 'w'))
                     bh_cfg.__dict__["dataset_yaml_filename"] = to_correct_dataset_yaml_filename
@@ -439,10 +512,10 @@ def main():
                     not_used_dataset_data = None
                     bh_cfg.__dict__["dataset_yaml_filename"] = cfg["dataset"].yaml_filename
 
-                log.info("\n===== Read error correction started. \n")
+                log.info("\n===== %s started. \n" % STAGE_NAME)
                 bh_logic.run_bh(corrected_dataset_yaml_filename, tmp_configs_dir, bin_home, bh_cfg, not_used_dataset_data,
                     ext_python_modules_home, log)
-                log.info("\n===== Read error correction finished. \n")
+                log.info("\n===== %s finished. \n" % STAGE_NAME)
 
         result_contigs_filename = os.path.join(cfg["common"].output_dir, "contigs.fasta")
         result_scaffolds_filename = os.path.join(cfg["common"].output_dir, "scaffolds.fasta")
@@ -451,20 +524,31 @@ def main():
         assembled_contigs_filename = os.path.join(misc_dir, "assembled_contigs.fasta")
         assembled_scaffolds_filename = os.path.join(misc_dir, "assembled_scaffolds.fasta")
         if "assembly" in cfg:
+            STAGE_NAME = "Assembling"
             spades_cfg = merge_configs(cfg["assembly"], cfg["common"])
             spades_cfg.__dict__["result_contigs"] = result_contigs_filename
             spades_cfg.__dict__["result_scaffolds"] = result_scaffolds_filename
-            spades_cfg.__dict__["additional_contigs"] = os.path.join(spades_cfg.output_dir, "simplified_contigs.fasta")
 
             if options_storage.continue_mode and (os.path.isfile(spades_cfg.result_contigs)
                                                   or ("mismatch_corrector" in cfg and
-                                                      os.path.isfile(assembled_contigs_filename))):
-                log.info("\n===== Skipping assembling (already processed). \n")
+                                                      os.path.isfile(assembled_contigs_filename)))\
+                and not options_storage.restart_from == 'as' \
+                and not (options_storage.restart_from and options_storage.restart_from.startswith('k')):
+
+                log.info("\n===== Skipping %s (already processed). \n" % STAGE_NAME)
                 # calculating latest_dir for the next stages
                 latest_dir = support.get_latest_dir(os.path.join(spades_cfg.output_dir, "K*"))
                 if not latest_dir:
-                    support.error("failed to continue the previous run! Please restart from the beginning.")
+                    support.error("failed to continue the previous run! Please restart from previous stages or from the beginning.", log)
             else:
+                old_result_files = [result_contigs_filename, result_scaffolds_filename]
+                for old_result_file in old_result_files:
+                    if os.path.isfile(old_result_file):
+                        os.remove(old_result_file)
+
+                if options_storage.restart_from == 'as':
+                    support.continue_from_here(log)
+
                 if os.path.isfile(corrected_dataset_yaml_filename):
                     dataset_data = pyyaml.load(open(corrected_dataset_yaml_filename, 'r'))
                     dataset_data = support.relative2abs_paths(dataset_data, os.path.dirname(corrected_dataset_yaml_filename))
@@ -472,20 +556,13 @@ def main():
                     spades_cfg.__dict__["rr_enable"] = False
                 else:
                     spades_cfg.__dict__["rr_enable"] = True
-#                if support.dataset_needs_long_single_mode(dataset_data):
-#                    spades_cfg.__dict__["long_single_mode"] = True
-#                else:
-#                    spades_cfg.__dict__["long_single_mode"] = False
-                if support.get_pacbio_reads(dataset_data):
-                    spades_cfg.__dict__["pacbio_mode"] = True
-                    spades_cfg.__dict__["pacbio_reads"] = support.get_pacbio_reads(dataset_data)
 
                 if "HEAPCHECK" in os.environ:
                     del os.environ["HEAPCHECK"]
                 if "heap_check" in spades_cfg.__dict__:
                     os.environ["HEAPCHECK"] = spades_cfg.heap_check
 
-                log.info("\n===== Assembling started.\n")
+                log.info("\n===== %s started.\n" % STAGE_NAME)
 
                 # creating dataset
                 dataset_filename = os.path.join(spades_cfg.output_dir, "dataset.info")
@@ -499,7 +576,7 @@ def main():
                         dataset_file.write("reads" + '\t' + process_cfg.process_spaces(cfg["dataset"].yaml_filename) + '\n')
                     if spades_cfg.developer_mode and "reference" in cfg["dataset"].__dict__:
                         dataset_file.write("reference_genome" + '\t')
-                        dataset_file.write(process_cfg.process_spaces(os.path.abspath(cfg["dataset"].reference)) + '\n')
+                        dataset_file.write(process_cfg.process_spaces(cfg["dataset"].reference) + '\n')
                     dataset_file.close()
                 spades_cfg.__dict__["dataset"] = dataset_filename
 
@@ -509,14 +586,18 @@ def main():
                     shutil.rmtree(misc_dir)
                 if not os.path.isdir(misc_dir):
                     os.makedirs(misc_dir)
-                    if os.path.isfile(spades_cfg.additional_contigs):
-                        shutil.move(spades_cfg.additional_contigs, misc_dir)
 
-                log.info("\n===== Assembling finished. \n")
+                if options_storage.continue_mode and options_storage.restart_from and options_storage.restart_from.startswith('k'):
+                    k_str = options_storage.restart_from[1:]
+                    if k_str.find(":") != -1:
+                        k_str = k_str[:k_str.find(":")]
+                    support.error("failed to continue from K=%s because this K was not processed in the original run!" % k_str, log)
+                log.info("\n===== %s finished. \n" % STAGE_NAME)
 
             #corrector
             if "mismatch_corrector" in cfg and (os.path.isfile(result_contigs_filename) or
                                                 (options_storage.continue_mode and os.path.isfile(assembled_contigs_filename))):
+                STAGE_NAME = "Mismatch correction"
                 to_correct = dict()
                 to_correct["contigs"] = (result_contigs_filename, assembled_contigs_filename)
                 if os.path.isfile(result_scaffolds_filename) or (options_storage.continue_mode and
@@ -524,17 +605,20 @@ def main():
                     to_correct["scaffolds"] = (result_scaffolds_filename, assembled_scaffolds_filename)
 
                 # moving assembled contigs (scaffolds) to misc dir
-                for k, (old, new) in to_correct.items():
+                for assembly_type, (old, new) in to_correct.items():
                     if options_storage.continue_mode and os.path.isfile(new):
                         continue
                     shutil.move(old, new)
 
                 if options_storage.continue_mode and os.path.isfile(result_contigs_filename) and \
-                    (os.path.isfile(result_scaffolds_filename) or not os.path.isfile(assembled_scaffolds_filename)):
-                    log.info("\n===== Skipping mismatch correction (already processed). \n")
+                    (os.path.isfile(result_scaffolds_filename) or not os.path.isfile(assembled_scaffolds_filename)) \
+                    and not options_storage.restart_from == 'mc':
+                    log.info("\n===== Skipping %s (already processed). \n" % STAGE_NAME)
                 else:
-                    log.info("\n===== Mismatch correction started.")
+                    if options_storage.restart_from == 'mc':
+                        support.continue_from_here(log)
 
+                    log.info("\n===== %s started." % STAGE_NAME)
                     # detecting paired-end library with the largest insert size
                     dataset_data = pyyaml.load(open(options_storage.dataset_yaml_filename, 'r')) ### initial dataset, i.e. before error correction
                     dataset_data = support.relative2abs_paths(dataset_data, os.path.dirname(options_storage.dataset_yaml_filename))
@@ -543,20 +627,29 @@ def main():
                         if reads_library['type'] == 'paired-end':
                             paired_end_libraries_ids.append(id)
                     if not len(paired_end_libraries_ids):
-                        support.error('Mismatch correction cannot be performed without at least one paired-end library!')
+                        support.error('Mismatch correction cannot be performed without at least one paired-end library!', log)
                     estimated_params = load_config_from_file(os.path.join(latest_dir, "_est_params.info"))
-                    max_insert_size = -1
+                    max_insert_size = 0.0
                     target_paired_end_library_id = -1
                     for id in paired_end_libraries_ids:
                         if float(estimated_params.__dict__["insert_size_" + str(id)]) > max_insert_size:
                             max_insert_size = float(estimated_params.__dict__["insert_size_" + str(id)])
                             target_paired_end_library_id = id
+                    if max_insert_size == 0.0:
+                        support.warning('Failed to estimate insert size for all paired-end libraries. Starting Mismatch correction'
+                                        ' based on the first paired-end library and with default insert size.', log)
+                    #                        if options_storage.continue_mode or options_storage.restart_from == 'mc':
+                    #                            support.error("failed to continue the previous run! Please restart from previous stages or from the beginning.", log)
+                    #                        support.error('Mismatch correction cannot be performed without at least one '
+                    #                                      'paired-end library (estimated insert size is 0.0 for all libraries)!', log)
+                        target_paired_end_library_id = paired_end_libraries_ids[0]
+                    else:
+                        cfg["mismatch_corrector"].__dict__["insert-size"] = round(max_insert_size)
                     yaml_dirname = os.path.dirname(options_storage.dataset_yaml_filename)
                     cfg["mismatch_corrector"].__dict__["1"] = list(map(lambda x: os.path.join(yaml_dirname, x),
                         dataset_data[target_paired_end_library_id]['left reads']))
                     cfg["mismatch_corrector"].__dict__["2"] = list(map(lambda x: os.path.join(yaml_dirname, x),
                         dataset_data[target_paired_end_library_id]['right reads']))
-                    cfg["mismatch_corrector"].__dict__["insert-size"] = round(max_insert_size)
                     #TODO: add reads orientation
 
                     import corrector
@@ -574,27 +667,27 @@ def main():
                                 args.append('-' + key)
                             else:
                                 args.append('--' + key)
-                            if value:
+                            if value is not None:
                                 args.append(value)
 
                     # processing contigs and scaffolds (or only contigs)
-                    for k, (corrected, assembled) in to_correct.items():
+                    for assembly_type, (corrected, assembled) in to_correct.items():
                         if options_storage.continue_mode and os.path.isfile(corrected):
-                            log.info("\n== Skipping processing of " + k + " (already processed)\n")
+                            log.info("\n== Skipping processing of " + assembly_type + " (already processed)\n")
                             continue
 
-                        options_storage.continue_mode = False
-                        log.info("\n== Processing of " + k + "\n")
+                        support.continue_from_here(log)
+                        log.info("\n== Processing of " + assembly_type + "\n")
 
                         cur_args = args[:]
                         cur_args += ['-c', assembled]
-                        tmp_dir_for_corrector = os.path.join(corrector_cfg.__dict__["output-dir"], "mismatch_corrector_" + k)
+                        tmp_dir_for_corrector = support.get_tmp_dir(prefix="mis_cor_%s_" % assembly_type)
                         cur_args += ['--output-dir', tmp_dir_for_corrector]
 
                         # correcting
                         corrector.main(cur_args, ext_python_modules_home, log)
 
-                        result_corrected_filename = os.path.abspath(os.path.join(tmp_dir_for_corrector, "corrected_contigs.fasta"))
+                        result_corrected_filename = os.path.join(tmp_dir_for_corrector, "corrected_contigs.fasta")
                         # moving corrected contigs (scaffolds) to SPAdes output dir
                         if os.path.isfile(result_corrected_filename):
                             shutil.move(result_corrected_filename, corrected)
@@ -602,7 +695,7 @@ def main():
                         if os.path.isdir(tmp_dir_for_corrector):
                             shutil.rmtree(tmp_dir_for_corrector)
 
-                    log.info("\n===== Mismatch correction finished.\n")
+                    log.info("\n===== %s finished.\n" % STAGE_NAME)
 
         if not cfg["common"].developer_mode and os.path.isdir(tmp_configs_dir):
             shutil.rmtree(tmp_configs_dir)
@@ -621,10 +714,13 @@ def main():
             if not os.path.isdir(misc_dir):
                 os.makedirs(misc_dir)
             result_broken_scaffolds = os.path.join(misc_dir, "broken_scaffolds.fasta")
-            threshold = 3
             if not os.path.isfile(result_broken_scaffolds) or not options_storage.continue_mode:
-                support.break_scaffolds(result_scaffolds_filename, threshold, result_broken_scaffolds)
-                #log.info(" * Scaffolds broken by " + str(threshold) + " Ns are in " + result_broken_scaffolds)
+                modified, broken_scaffolds = support.break_scaffolds(result_scaffolds_filename,
+                    options_storage.THRESHOLD_FOR_BREAKING_SCAFFOLDS)
+                if modified:
+                    support.write_fasta(result_broken_scaffolds, broken_scaffolds)
+                    #log.info(" * Scaffolds broken by " + str(options_storage.THRESHOLD_FOR_BREAKING_SCAFFOLDS) +
+                    # " Ns are in " + result_broken_scaffolds)
 
         ### printing WARNINGS SUMMARY
         if not support.log_warnings(log):
@@ -641,7 +737,11 @@ def main():
             support.error("It looks like you are using SPAdes binaries for another platform.\n" + get_spades_binaries_info_message())
         else:
             log.exception(exc_value)
-            support.error("exception caught", log)
+            support.error("exception caught: %s" % exc_type, log)
+    except BaseException: # since python 2.5 system-exiting exceptions (e.g. KeyboardInterrupt) are derived from BaseException
+        exc_type, exc_value, _ = sys.exc_info()
+        log.exception(exc_value)
+        support.error("exception caught: %s" % exc_type, log)
 
 
 if __name__ == '__main__':

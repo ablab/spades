@@ -36,6 +36,9 @@ case $1 in
   'pet')   cfg="configs/debruijn/path_extend/pe_config.info.template";;
   'con')   cfg="configs/debruijn/construction.info";;
   'cont')   cfg="configs/debruijn/construction.info.template";;
+  'ds')  cfg="configs/dipspades/config.info";;
+  'dst')  cfg="configs/dipspades/config.info.template";;
+  'logds') cfg="configs/dipspades/log.properties";;
   
 esac
 

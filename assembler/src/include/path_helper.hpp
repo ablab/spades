@@ -13,6 +13,7 @@
 
 #include <string>
 #include <vector>
+#include "logger/logger.hpp"
 #include "verify.hpp"
 
 namespace path {
@@ -50,7 +51,8 @@ inline bool FileExists(std::string filename) {
  * Exit(1) if file doesn't exists, writes FATAL log message.
  */
 inline void CheckFileExistenceFATAL(std::string filename) {
-  VERIFY_MSG(FileExists(filename), "File " << filename << " doesn't exist or can't be read!\n");
+  if(!FileExists(filename))
+      FATAL_ERROR("File " << filename << " doesn't exist or can't be read!");
 }
 
 inline void make_dirs(const std::string& path) {

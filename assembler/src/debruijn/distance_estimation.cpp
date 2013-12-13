@@ -25,8 +25,9 @@ namespace debruijn_graph {
 using namespace omnigraph::de;
 
 template<class Graph>
-void estimate_with_estimator(const omnigraph::de::AbstractDistanceEstimator<Graph>& estimator,
-                             const omnigraph::de::PairInfoWeightFilter<Graph>& filter,
+void estimate_with_estimator(const Graph &graph,
+							 const omnigraph::de::AbstractDistanceEstimator<Graph>& estimator,
+                             omnigraph::de::AbstractPairInfoChecker<Graph>& checker,
                              PairedIndexT& clustered_index) {
     using debruijn_graph::estimation_mode;
     DEBUG("Estimating distances");
@@ -37,7 +38,18 @@ void estimate_with_estimator(const omnigraph::de::AbstractDistanceEstimator<Grap
         estimator.Estimate(clustered_index);
 
     INFO("Filtering info");
-    filter.Filter(clustered_index);
+    if(cfg::get().amb_de.enabled){
+    	AmbiguousPairInfoChecker<Graph> amb_de_checker(graph,
+    	    								clustered_index,
+    	    								checker,
+    	    								cfg::get().amb_de.haplom_threshold,
+    	    								cfg::get().amb_de.relative_length_threshold,
+    	    								cfg::get().amb_de.relative_seq_threshold);
+    	PairInfoFilter<Graph>(amb_de_checker).Filter(clustered_index);
+    }
+    else
+    	PairInfoFilter<Graph>(checker).Filter(clustered_index);
+//    filter.Filter(clustered_index);
     DEBUG("Info Filtered");
 }
 
@@ -127,7 +139,9 @@ void estimate_distance(conj_graph_pack& gp,
     }  else
         weight_function = UnityFunction;
 
-    PairInfoWeightFilter<Graph> filter(gp.g, config.de.filter_threshold);
+//    PairInfoWeightFilter<Graph> filter(gp.g, config.de.filter_threshold);
+    PairInfoWeightChecker<Graph> checker(gp.g, config.de.filter_threshold);
+
     INFO("Weight Filter Done");
 
     switch (config.est_mode) {
@@ -137,7 +151,7 @@ void estimate_distance(conj_graph_pack& gp,
                     DistanceEstimator<Graph>(gp.g, paired_index, dist_finder,
                                              linkage_distance, max_distance);
 
-            estimate_with_estimator<Graph>(estimator, filter, clustered_index);
+            estimate_with_estimator<Graph>(gp.g, estimator, checker, clustered_index);
             break;
         }
         case em_weighted: {
@@ -146,7 +160,7 @@ void estimate_distance(conj_graph_pack& gp,
                     WeightedDistanceEstimator<Graph>(gp.g, paired_index,
                                                      dist_finder, weight_function, linkage_distance, max_distance);
 
-            estimate_with_estimator<Graph>(estimator, filter, clustered_index);
+            estimate_with_estimator<Graph>(gp.g, estimator, checker, clustered_index);
             break;
         }
         case em_extensive: {
@@ -155,7 +169,7 @@ void estimate_distance(conj_graph_pack& gp,
                     ExtensiveDistanceEstimator<Graph>(gp.g, paired_index,
                                                       dist_finder, weight_function, linkage_distance, max_distance);
 
-            estimate_with_estimator<Graph>(estimator, filter, clustered_index);
+            estimate_with_estimator<Graph>(gp.g, estimator, checker, clustered_index);
             break;
         }
         case em_smoothing: {
@@ -171,7 +185,7 @@ void estimate_distance(conj_graph_pack& gp,
                                                       config.ade.percentage,
                                                       config.ade.derivative_threshold);
 
-            estimate_with_estimator<Graph>(estimator, filter, clustered_index);
+            estimate_with_estimator<Graph>(gp.g, estimator, checker, clustered_index);
             break;
         }
     }
@@ -192,7 +206,7 @@ void estimate_distance(conj_graph_pack& gp,
         size_t linkage_distance = size_t(cfg::get().de.linkage_distance_coeff * is_var);
         GraphDistanceFinder<Graph> dist_finder(gp.g, (size_t) math::round(lib.data().mean_insert_size),
                                                lib.data().read_length, delta);
-        size_t max_distance = size_t(cfg::get().de.max_distance_coeff * is_var);
+        size_t max_distance = size_t(cfg::get().de.max_distance_coeff_scaff * is_var);
         boost::function<double(int)> weight_function;
 
         DEBUG("Retaining insert size distribution for it");
@@ -206,7 +220,8 @@ void estimate_distance(conj_graph_pack& gp,
         DEBUG("Weight Wrapper Done");
         weight_function = boost::bind(&WeightDEWrapper::CountWeight, wrapper, _1);
 
-        PairInfoWeightFilter<Graph> filter(gp.g, 0.);
+//        PairInfoWeightFilter<Graph> filter(gp.g, 0.);
+        PairInfoWeightChecker<Graph> checker(gp.g, 0.);
         DEBUG("Weight Filter Done");
 
         const AbstractDistanceEstimator<Graph>& estimator =
@@ -217,13 +232,13 @@ void estimate_distance(conj_graph_pack& gp,
                                                   cfg::get().ade.min_peak_points, cfg::get().ade.inv_density,
                                                   cfg::get().ade.percentage,
                                                   cfg::get().ade.derivative_threshold, true);
-        estimate_with_estimator<Graph>(estimator, filter, scaffolding_index);
+        estimate_with_estimator<Graph>(gp.g, estimator, checker, scaffolding_index);
     }
 }
 
 void DistanceEstimation::run(conj_graph_pack &gp, const char*) {
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i)
-        if (cfg::get().ds.reads[i].data().mean_insert_size != 0.0) {
+        if (cfg::get().ds.reads[i].data().mean_insert_size != 0.0 && cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd) {
             INFO("Processing library #" << i);
             estimate_distance(gp, cfg::get().ds.reads[i], gp.paired_indices[i], gp.clustered_indices[i], gp.scaffolding_indices[i]);
         }

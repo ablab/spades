@@ -56,6 +56,12 @@ struct convert<LibraryType> {
         return Node("mate-pairs");
       case LibraryType::PacBioReads:
         return Node("pacbio");
+      case LibraryType::SangerReads:
+        return Node("sanger");
+      case LibraryType::TrustedContigs:
+        return Node("trusted-contigs");
+      case LibraryType::UntrustedContigs:
+        return Node("untrusted-contigs");
       default:
         return Node();
     }
@@ -72,6 +78,12 @@ struct convert<LibraryType> {
       rhs = LibraryType::PacBioReads;
     else if (type == "single")
       rhs = LibraryType::SingleReads;
+    else if (type == "sanger")
+      rhs = LibraryType::SangerReads;
+    else if (type == "trusted-contigs")
+      rhs = LibraryType::TrustedContigs;
+    else if (type == "untrusted-contigs")
+      rhs = LibraryType::UntrustedContigs;
     else
       return false;
     return true;
@@ -132,6 +144,9 @@ void SequencingLibraryBase::load(const YAML::Node &node) {
         break;
     case LibraryType::SingleReads:
     case LibraryType::PacBioReads:
+    case LibraryType::SangerReads:
+    case LibraryType::TrustedContigs:
+    case LibraryType::UntrustedContigs:
       single_reads_ = node["single reads"].as<std::vector<std::string> >();
       break;
     default:

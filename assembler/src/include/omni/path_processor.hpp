@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "dijkstra_tools/dijkstra_helper.hpp"
+
 namespace omnigraph {
 
 template<class Graph>
@@ -25,7 +27,7 @@ class PathProcessor {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 	typedef vector<EdgeId> Path;
-	typedef ReliableBoundedDijkstra<Graph> DijkstraT;
+	typedef typename DijkstraHelper<Graph>::BoundedDijkstra DijkstraT;
 
 public:
 	class Callback {
@@ -49,7 +51,7 @@ public:
 	};
 
 	int Go(VertexId v, const size_t min_len, size_t cur_len,
-			const Dijkstra<Graph>& dsts_to_start) {
+			const DijkstraT& dsts_to_start) {
 		int error_code = 0;
 		//TRACE("Now in the vertex " << g_.int_id(v));
 		if (++call_cnt_ >= MAX_CALL_CNT) {
@@ -92,8 +94,8 @@ public:
 			VertexId start, vector<VertexId> end_points, Callback& callback) :
 			g_(g), min_lens_(min_lens), max_len_(max_len), start_(start), end_points_(
 					end_points), dijkstra_(
-					DijkstraT(g, max_len, MAX_DIJKSTRA_VERTICES)), callback_(
-					&callback), call_cnt_(0) {
+					DijkstraHelper<Graph>::CreateBoundedDijkstra(g, max_len, MAX_DIJKSTRA_VERTICES)),
+					callback_(&callback), call_cnt_(0) {
 		dijkstra_.run(start);
 	}
 
@@ -101,8 +103,8 @@ public:
 	PathProcessor(const Graph& g, size_t min_len, size_t max_len,
 			VertexId start, VertexId end_point, Callback& callback) :
 			g_(g), max_len_(max_len), start_(start), dijkstra_(
-					DijkstraT(g, max_len, MAX_DIJKSTRA_VERTICES)), callback_(
-					&callback), call_cnt_(0) {
+					DijkstraHelper<Graph>::CreateBoundedDijkstra(g, max_len, MAX_DIJKSTRA_VERTICES)),
+					callback_(&callback), call_cnt_(0) {
 		min_lens_.push_back(min_len);
 		end_points_.push_back(end_point);
 		dijkstra_.run(start);
@@ -355,8 +357,6 @@ private:
 	DECL_LOGGER("DistancesLengthsCallback");
 };
 
-
-
 template<class Graph>
 class MappingPathFixer {
 public:
@@ -421,6 +421,7 @@ public:
         }
         return result;
     }
+
 private:
     vector<EdgeId> TryCloseGap(VertexId v1, VertexId v2) const {
         if (v1 == v2)

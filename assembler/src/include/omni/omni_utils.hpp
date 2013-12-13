@@ -13,103 +13,12 @@
 
 #include "omni/action_handlers.hpp"
 #include "omni/graph_iterators.hpp"
-#include "omni/dijkstra.hpp"
 #include "omni/mapping_path.hpp"
 
 #include <cmath>
 #include <ctime>
 
 namespace omnigraph {
-
-template<class Graph>
-class BackwardBoundedDijkstra : public BackwardDijkstra<Graph> {
- private:
-    typedef typename Graph::VertexId VertexId;
-    typedef typename Graph::EdgeId EdgeId;
-    typedef BackwardDijkstra<Graph> base;
-    const size_t bound_;
-
- public:
-    BackwardBoundedDijkstra(const Graph &g, size_t bound)
-            : base(g), bound_(bound) {}
-
-    virtual bool CheckProcessVertex(VertexId /*vertex*/, size_t distance) {
-        return distance <= bound_;
-    }
-
-};
-
-template<class Graph>
-class BackwardReliableBoundedDijkstra : public BackwardDijkstra<Graph> {
-    typedef typename Graph::VertexId VertexId;
-    typedef typename Graph::EdgeId EdgeId;
-    typedef BackwardDijkstra<Graph> base;
-
- public:
-    BackwardReliableBoundedDijkstra(const Graph &g, size_t bound,
-                                    size_t max_vertex_number)
-            : base(g),
-              bound_(bound),
-              max_vertex_number_(max_vertex_number),
-              vertices_number_(0),
-              vertex_limit_exceeded_(false) {
-    }
-
-    virtual bool CheckProcessVertex(VertexId /*vertex*/, size_t distance) {
-        ++vertices_number_;
-
-        if (vertices_number_ > max_vertex_number_)
-            vertex_limit_exceeded_ = true;
-
-        return vertices_number_ < max_vertex_number_ && distance <= bound_;
-    }
-
-    bool VertexLimitExceeded() const {
-        return vertex_limit_exceeded_;
-    }
-
- private:
-    const size_t bound_;
-    const size_t max_vertex_number_;
-    size_t vertices_number_;
-    bool vertex_limit_exceeded_;
-};
-
-template<class Graph>
-class ReliableBoundedDijkstra : public Dijkstra<Graph> {
-    typedef typename Graph::VertexId VertexId;
-    typedef typename Graph::EdgeId EdgeId;
-    typedef Dijkstra<Graph> base;
-
- public:
-    ReliableBoundedDijkstra(const Graph& g, size_t bound,
-                            size_t max_vertex_number)
-            : base(g),
-              bound_(bound),
-              max_vertex_number_(max_vertex_number),
-              vertices_number_(0),
-              vertex_limit_exceeded_(false) {
-    }
-
-    virtual bool CheckProcessVertex(VertexId /*vertex*/, size_t distance) {
-        ++vertices_number_;
-
-        if (vertices_number_ > max_vertex_number_)
-            vertex_limit_exceeded_ = true;
-
-        return (vertices_number_ < max_vertex_number_) && (distance <= bound_);
-    }
-
-    bool VertexLimitExceeded() const {
-        return vertex_limit_exceeded_;
-    }
-
- private:
-    const size_t bound_;
-    const size_t max_vertex_number_;
-    size_t vertices_number_;
-    bool vertex_limit_exceeded_;
-};
 
 template<class Graph>
 struct CoverageComparator {
@@ -339,7 +248,8 @@ class UniquePathFinder {
     }
 
     std::vector<EdgeId> UniquePathBackward(EdgeId e) const {
-        return this->operator()(e, BackwardDirection<Graph>(graph_));
+        auto tmp = this->operator()(e, BackwardDirection<Graph>(graph_));
+        return std::vector<EdgeId>(tmp.rbegin(), tmp.rend());
     }
 
 };

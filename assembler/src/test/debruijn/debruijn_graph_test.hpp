@@ -165,6 +165,16 @@ BOOST_AUTO_TEST_CASE( TestCondenseSimple ) {
 	AssertGraph (5, reads, edges);
 }
 
+BOOST_AUTO_TEST_CASE( TestKmerStoringIndex ) {
+    vector<string> reads = { "CGAAACCAC", "CGAAAACAC", "AACCACACC", "AAACACACC" };
+    CheckIndex<graph_pack<Graph, runtime_k::RtSeq>>(reads, 5);
+}
+
+BOOST_AUTO_TEST_CASE( TestKmerFreeIndex ) {
+    vector<string> reads = { "CGAAACCAC", "CGAAAACAC", "AACCACACC", "AAACACACC" };
+    CheckIndex<conj_graph_pack>(reads, 5);
+}
+
 //BOOST_AUTO_TEST_CASE( TestStrange ) {
 //	vector<string> reads = {"TTCTGCATGGTTATGCATAACCATGCAGAA", "ACACACACTGGGGGTCCCTTTTGGGGGGGGTTTTTTTTG"};
 //	typedef VectorStream<SingleRead> RawStream;

@@ -19,6 +19,7 @@
 #include "omni_utils.hpp"
 #include "func.hpp"
 #include "xmath.h"
+#include "dijkstra_tools/dijkstra_helper.hpp"
 
 namespace omnigraph {
 
@@ -89,6 +90,26 @@ class IterativeLowCoverageEdgeRemover : public ChimericEdgeRemovingAlgorithm<
             : base(g, condition, removal_handler, CoverageComparator<Graph>(g),
                    make_shared<CoverageUpperBound<Graph>>(g, max_coverage)) {
     }
+};
+
+template<class Graph>
+class SelfConjugateCondition : public EdgeCondition<Graph> {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    typedef EdgeCondition<Graph> base;
+
+ public:
+
+    SelfConjugateCondition(const Graph& g)
+            : base(g) {
+    }
+
+    bool Check(EdgeId e) const {
+        return e == this->g().conjugate(e);
+    }
+
+ private:
+    DECL_LOGGER("SelfConjugateCondition");
 };
 
 //coverage comparator
@@ -226,7 +247,7 @@ class ThornCondition : public EdgeCondition<Graph> {
         if (this->g().IncomingEdgeCount(this->g().EdgeEnd(e)) != 2)
             return false;
 
-        BoundedDijkstra<Graph> dij(this->g(), dijkstra_depth_);
+        auto dij = DijkstraHelper<Graph>::CreateBoundedDijkstra(this->g(), dijkstra_depth_);
         dij.run(this->g().EdgeStart(e));
         vector<VertexId> reached = dij.ReachedVertices();
         for (auto it = reached.begin(); it != reached.end(); ++it) {
@@ -283,21 +304,21 @@ class ThornCondition : public EdgeCondition<Graph> {
 
 template<class Graph>
 class ThornRemover : public ChimericEdgeRemovingAlgorithm<Graph,
-        LengthComparator<Graph>> {
+    CoverageComparator<Graph>> {
  private:
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef ChimericEdgeRemovingAlgorithm<Graph, LengthComparator<Graph>> base;
+    typedef ChimericEdgeRemovingAlgorithm<Graph, CoverageComparator<Graph>> base;
 
  public:
     ThornRemover(Graph& g, size_t max_length, size_t uniqueness_length,
                  size_t dijkstra_depth,
                  boost::function<void(EdgeId)> removal_handler)
             : base(g,
-                   make_shared<ThornCondition<Graph>>(g, uniqueness_length,
-                                                      dijkstra_depth),
-                   removal_handler, LengthComparator<Graph>(g),
-                   make_shared<LengthUpperBound<Graph>>(g, max_length)) {
+                   func::And<EdgeId>(make_shared<LengthUpperBound<Graph>>(g, max_length),
+                             make_shared<ThornCondition<Graph>>(g, uniqueness_length,
+                             dijkstra_depth)),
+                   removal_handler, CoverageComparator<Graph>(g)) {
     }
 };
 
@@ -487,4 +508,25 @@ public:
 private:
 	DECL_LOGGER("HiddenECRemover");
 };
+
+template<class Graph>
+class LowCoveredSelfConjEdgeRemovingAlgorithm : public EdgeRemovingAlgorithm<Graph,
+        CoverageComparator<Graph>> {
+    typedef EdgeRemovingAlgorithm<Graph, CoverageComparator<Graph>> base;
+    typedef typename Graph::EdgeId EdgeId;
+
+ public:
+
+    LowCoveredSelfConjEdgeRemovingAlgorithm(
+            Graph &g, size_t max_length, double max_coverage,
+            boost::function<void(EdgeId)> removal_handler)
+            : base(g, func::And<EdgeId>(make_shared<SelfConjugateCondition<Graph>>(g), make_shared<LengthUpperBound<Graph>>(g, max_length)),
+                   removal_handler, CoverageComparator<Graph>(g),
+                   make_shared<CoverageUpperBound<Graph>>(g, max_coverage)) {
+    }
+
+ private:
+    DECL_LOGGER("LowCoveredSelfConjEdgeRemovingAlgorithm");
+};
+
 }

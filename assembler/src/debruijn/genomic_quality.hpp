@@ -4,6 +4,8 @@
 #include "omni/basic_edge_conditions.hpp"
 #include "sequence_mapper.hpp"
 
+#include "sequence_mapper.hpp"
+
 namespace debruijn_graph {
 
 template<class Graph>

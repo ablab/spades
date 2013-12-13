@@ -1,0 +1,6 @@
+reads	ECOLI_IS220_QUAKE_PB.yaml
+single_cell	false
+;reference_genome	../../../data/input/Bacteria/E.coli/K12/MG1655-K12.fasta.gz
+
+; RL	100
+; IS	220

@@ -4,7 +4,7 @@
 <setting id="org.eclipse.cdt.core.formatter.insert_space_before_opening_paren_in_method_declaration" value="do not insert"/>
 <setting id="org.eclipse.cdt.core.formatter.insert_space_after_opening_paren_in_for" value="do not insert"/>
 <setting id="org.eclipse.cdt.core.formatter.insert_new_line_in_empty_block" value="insert"/>
-<setting id="org.eclipse.cdt.core.formatter.lineSplit" value="80"/>
+<setting id="org.eclipse.cdt.core.formatter.lineSplit" value="160"/>
 <setting id="org.eclipse.cdt.core.formatter.alignment_for_member_access" value="16"/>
 <setting id="org.eclipse.cdt.core.formatter.insert_space_before_comma_in_base_types" value="do not insert"/>
 <setting id="org.eclipse.cdt.core.formatter.keep_else_statement_on_same_line" value="false"/>

@@ -24,6 +24,9 @@ enum class LibraryType {
   PairedEnd,
   MatePairs,
   PacBioReads,
+  SangerReads,
+  TrustedContigs,
+  UntrustedContigs,
 };
 
 enum class LibraryOrientation {
@@ -128,6 +131,33 @@ class SequencingLibraryBase {
   single_reads_iterator single_end() const {
     // NOTE: Do not forget about the contract with single_begin here!
     return single_reads_iterator(single_reads_.end(), single_reads_.end());
+  }
+
+  bool is_graph_contructable() const {
+    return (type_ == io::LibraryType::PairedEnd ||
+            type_ == io::LibraryType::SingleReads);
+  }
+
+  bool is_paired() const {
+    return (type_ == io::LibraryType::PairedEnd ||
+            type_ == io::LibraryType::MatePairs);
+  }
+
+
+  bool is_repeat_resolvable() const {
+    return (type_ == io::LibraryType::PairedEnd ||
+            type_ == io::LibraryType::MatePairs ||
+            type_ == io::LibraryType::PacBioReads ||
+            type_ == io::LibraryType::SangerReads ||
+            type_ == io::LibraryType::TrustedContigs ||
+            type_ == io::LibraryType::UntrustedContigs);
+  }
+
+  bool is_pacbio_alignable() const {
+    return (type_ == io::LibraryType::PacBioReads ||
+            type_ == io::LibraryType::SangerReads ||
+            type_ == io::LibraryType::TrustedContigs ||
+            type_ == io::LibraryType::UntrustedContigs);
   }
 
  private:

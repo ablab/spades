@@ -366,6 +366,9 @@ bool RemoveBulges(
     boost::function<void(EdgeId)> removal_handler = 0,
     size_t additional_length_bound = 0) {
 
+	if(!br_config.enabled)
+		return true;
+
     INFO("Removing bulges");
     size_t max_length = LengthThresholdFinder::MaxBulgeLength(
         g.k(), br_config.max_bulge_length_coefficient,
@@ -430,6 +433,15 @@ void RemoveLowCoverageEdges(
 //}
 
 template<class Graph>
+void RemoveSelfConjugateEdges(
+    Graph &g, size_t max_length, double max_coverage,
+                boost::function<void(EdgeId)> removal_handler = 0) {
+    INFO("Removing short low covered self-conjugate connections");
+    LowCoveredSelfConjEdgeRemovingAlgorithm<Graph> algo(g, max_length, max_coverage, removal_handler);
+    algo.Process();
+    DEBUG("Short low covered self-conjugate connections removed");
+}
+
 bool RemoveRelativelyLowCoverageComponents(
         Graph &g,
         const FlankingCoverage<Graph>& flanking_cov,
@@ -594,10 +606,12 @@ bool FinalRemoveErroneousEdges(
     double /*determined_coverage_threshold*/, size_t iteration) {
 
     bool changed = false;
-
-    changed |= AllTopology(g, removal_handler, iteration);
-//    changed |= MaxFlowRemoveErroneousEdges(g, cfg::get().simp.mfec,
-//                                           removal_handler);
+    //todo put RelCovComp here
+    if (cfg::get().simp.topology_simplif_enabled && cfg::get().main_iteration) {
+        changed |= AllTopology(g, removal_handler, iteration);
+        changed |= MaxFlowRemoveErroneousEdges(g, cfg::get().simp.mfec,
+                                               removal_handler);
+    }
     return changed;
 }
 
@@ -700,7 +714,7 @@ void PostSimplification(conj_graph_pack& gp,
         enable_flag = false;
 
         INFO("Iteration " << iteration);
-        if (cfg::get().topology_simplif_enabled) {
+        if (cfg::get().simp.topology_simplif_enabled) {
             enable_flag |= TopologyClipTips(gp.g, cfg::get().simp.ttc, cfg::get().ds.RL(),
                                             removal_handler);
         }
@@ -759,8 +773,11 @@ void SimplifyGraph(conj_graph_pack &gp,
 
     if (!cfg::get().simp.stats_mode) {
 //todo remove magic constants
+        RemoveSelfConjugateEdges(gp.g, 100, 1., removal_handler);
+
         if (cfg::get().ds.single_cell)
-            PreSimplification(gp, removal_handler, determined_coverage_threshold);
+            PreSimplification(gp, removal_handler, printer, iteration_count,
+                              determined_coverage_threshold);
 
         for (size_t i = 0; i < iteration_count; i++) {
             SimplificationCycle(gp, removal_handler, labeler, printer,
@@ -790,7 +807,7 @@ void SimplifyGraph(conj_graph_pack &gp,
     }
 
     // This should be put into PostSimplification when(if) flanking coverage will be rewritten.
-    if (cfg::get().topology_simplif_enabled) {
+    if (cfg::get().simp.topology_simplif_enabled) {
         RemoveHiddenEC(gp.g, gp.flanking_cov, determined_coverage_threshold, cfg::get().simp.her, removal_handler);
     }
 }

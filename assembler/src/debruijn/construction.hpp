@@ -10,6 +10,10 @@
 
 namespace debruijn_graph {
 
+template<class Read>
+void construct_graph(io::ReadStreamList<Read>& streams,
+                     conj_graph_pack& gp, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr());
+
 class Construction : public spades::AssemblyStage {
   public:
     Construction()

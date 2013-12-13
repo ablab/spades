@@ -69,7 +69,8 @@ class CapEnvironmentManager {
     ContigStreams rc_contigs = io::RCWrap(streams);
     rc_contigs.reset();
 
-    debruijn_graph::ConstructGraphUsingOldIndex(result->k_value, rc_contigs, result->g, result->index);
+    debruijn_graph::ConstructGraphUsingExtentionIndex(CreateDefaultConstructionConfig(),
+                                                      rc_contigs, result->g, result->index);
 
     env_->coloring_ = std::make_shared<ColorHandler<Graph> >(result->g, streams.size());
     ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(result->g,
@@ -93,6 +94,18 @@ class CapEnvironmentManager {
 
     debruijn_graph::graphio::ScanGraphPack(path, *result);
 
+    ContigStreams streams;
+    for (size_t i = 0; i < env_->genomes_.size(); ++i) {
+      streams.push_back(make_shared<io::SequenceReadStream<Contig>>(
+                    env_->genomes_[i], env_->genomes_names_[i]));
+    }
+    ContigStreams rc_contigs = io::RCWrap(streams);
+    rc_contigs.reset();
+
+    INFO("Filling positions");
+    FillPositions(*result, rc_contigs, env_->coordinates_handler_);
+    INFO("Filling positions done.");
+
     return result;
   }
 
@@ -114,8 +127,7 @@ class CapEnvironmentManager {
 		}
   }
 
-  template <class gp_t>
-  void UpdateStreams(const gp_t &/* gp */) {
+  void UpdateStreams() {
     for (unsigned i = 0; i < env_->genomes_.size(); ++i) {
       env_->genomes_[i] = env_->coordinates_handler_.ReconstructGenome(2 * i);
       //VERIFY(env_->genomes_[i]->IsValid());
@@ -178,9 +190,9 @@ class CapEnvironmentManager {
 
     env_->k_history_.push_back(env_->GetGraphK());
     env_->num_genomes_history_.push_back(env_->init_genomes_paths_.size());
-    env_->coordinates_handler_.StoreGenomeThreads();
+    env_->coordinates_handler_.DumpRanges();
 
-    UpdateStreams(gp);
+    UpdateStreams();
   }
 
   template <class gp_t>
@@ -196,14 +208,11 @@ class CapEnvironmentManager {
     if (mask_indels) {
       env_->k_history_.push_back(env_->GetGraphK());
       env_->num_genomes_history_.push_back(env_->init_genomes_paths_.size());
-      env_->coordinates_handler_.StoreGenomeThreads();
-      UpdateStreams(gp);
+      env_->coordinates_handler_.DumpRanges();
+      UpdateStreams();
+
     }
 
-    //SimpleInDelCorrector<Graph> corrector(gp.g, *env_->coloring_,
-    //    (*MapperInstance(gp)).MapSequence(*env_->genomes_[0]).simple_path().sequence(), /*genome_color*/
-    //    kRedColorSet, /*assembly_color*/kBlueColorSet);
-    //corrector.Analyze();
   }
 
   template <class gp_t>
@@ -212,6 +221,21 @@ class CapEnvironmentManager {
     SimpleInversionFinder<gp_t> finder(gp, *env_->coloring_, env_->coordinates_handler_,
         base_pic_file_name, mask_inversions);
     finder.FindInversionEvents();
+  }
+
+  template<class gp_t>
+  void RefillPositions(const gp_t &gp) {
+    ContigStreams streams;
+    for (size_t i = 0; i < env_->genomes_.size(); ++i) {
+      streams.push_back(make_shared<io::SequenceReadStream<Contig>>(
+                    env_->genomes_[i], env_->genomes_names_[i]));
+    }
+    ContigStreams rc_contigs = io::RCWrap(streams);
+    rc_contigs.reset();
+
+    INFO("Filling positions");
+    FillPositions(gp, rc_contigs, env_->coordinates_handler_);
+    INFO("Filling positions done.");
   }
 
  public:
@@ -254,8 +278,9 @@ class CapEnvironmentManager {
 
     VERIFY(env_->gp_rtseq_ == NULL && env_->gp_lseq_ == NULL);
     if (env_->UseLSeqForThisK(k)) {
-      env_->SetGraphPack(BuildGPFromStreams<LSeqGP>(
-          streams, k));
+        VERIFY(false);
+//      env_->SetGraphPack(BuildGPFromStreams<LSeqGP>(
+//          streams, k));
     } else {
       env_->SetGraphPack(BuildGPFromStreams<RtSeqGP>(
           streams, k));
@@ -450,6 +475,7 @@ class CapEnvironmentManager {
     }
 
     env_->coloring_ = std::make_shared<ColorHandler<Graph> >(env_->graph(), env_->genome_cnt());
+    INFO("Loading coloring from " << path);
     cap::LoadColoring(*env_->graph_, *env_->int_ids_, *env_->coloring_, path);
 
     env_->CheckConsistency();

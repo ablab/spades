@@ -12,6 +12,9 @@ import sys
 import logging
 import glob
 import re
+import gzip
+import tempfile
+import shutil
 import options_storage
 
 # constants to print and detect warnings and errors in logs
@@ -19,9 +22,10 @@ SPADES_PY_ERROR_MESSAGE = "== Error == "
 SPADES_PY_WARN_MESSAGE = "== Warning == "
 SPADES_ERROR_MESSAGE = " ERROR "
 SPADES_WARN_MESSAGE = " WARN "
-# constants of reads types
-READS_TYPES_NOT_USED_IN_CONSTRUCTION = "pacbio"
-READS_TYPES_NOT_USED_IN_HAMMER = "pacbio"
+# for correct warnings detection in case of continue_mode
+continue_logfile_offset = None
+# for removing tmp_dir even if error occurs
+current_tmp_dir = None
 
 
 def error(err_str, log=None, prefix=SPADES_PY_ERROR_MESSAGE):
@@ -35,6 +39,8 @@ def error(err_str, log=None, prefix=SPADES_PY_ERROR_MESSAGE):
         sys.stderr.write("In case you have troubles running SPAdes, you can write to spades.support@bioinf.spbau.ru\n")
         sys.stderr.write("Please provide us with params.txt and spades.log files from the output directory.\n")
         sys.stderr.flush()
+    if current_tmp_dir and os.path.isdir(current_tmp_dir):
+        shutil.rmtree(current_tmp_dir)
     sys.exit(1)
 
 
@@ -53,6 +59,7 @@ def check_python_version():
 
 
 def check_file_existence(filename, message="", log=None):
+    filename = os.path.abspath(filename)
     if not os.path.isfile(filename):
         error("file not found: %s (%s)" % (filename, message), log)
     return filename
@@ -64,7 +71,7 @@ def check_files_duplication(filenames, log):
             error("file %s was specified at least twice" % filename, log)
 
 
-def check_reads_file_format(filename, message, only_assembler, log):
+def check_reads_file_format(filename, message, only_assembler, library_type, log):
     if filename in options_storage.dict_of_prefixes:
         ext = options_storage.dict_of_prefixes[filename]
     else:
@@ -74,9 +81,13 @@ def check_reads_file_format(filename, message, only_assembler, log):
     if ext.lower() not in options_storage.ALLOWED_READS_EXTENSIONS:
         error("file with reads has unsupported format (only " + ", ".join(options_storage.ALLOWED_READS_EXTENSIONS) +
               " are supported): %s (%s)" % (filename, message), log)
-    if not only_assembler and ext.lower() not in options_storage.BH_ALLOWED_READS_EXTENSIONS:
+    if not only_assembler and ext.lower() not in options_storage.BH_ALLOWED_READS_EXTENSIONS and not library_type.endswith("contigs"):
         error("to run read error correction, reads should be in FASTQ format (" +
               ", ".join(options_storage.BH_ALLOWED_READS_EXTENSIONS) +
+              " are supported): %s (%s)" % (filename, message), log)
+    if library_type.endswith("contigs") and ext.lower() not in options_storage.CONTIGS_ALLOWED_READS_EXTENSIONS:
+        error("file with " + library_type + " should be in FASTA format  (" +
+              ", ".join(options_storage.CONTIGS_ALLOWED_READS_EXTENSIONS) +
               " are supported): %s (%s)" % (filename, message), log)
 
 
@@ -98,11 +109,10 @@ def which(program):
     return None
 
 
-def process_subprocess_output(line):
-    if sys.version.startswith('2.'):
-        return line.rstrip()
-    else: # sys.version.startswith('3.'):
-        return str(line.rstrip(), 'utf-8')
+def process_readline(line, is_python3=sys.version.startswith('3.')):
+    if is_python3:
+        return str(line, 'utf-8')
+    return line
 
 
 def sys_call(cmd, log=None, cwd=None):
@@ -118,7 +128,7 @@ def sys_call(cmd, log=None, cwd=None):
 
     output = ''
     while not proc.poll():
-        line = process_subprocess_output(proc.stdout.readline())
+        line = process_readline(proc.stdout.readline()).rstrip()
         if line:
             if log:
                 log.info(line)
@@ -128,7 +138,7 @@ def sys_call(cmd, log=None, cwd=None):
             break
 
     for line in proc.stdout.readlines():
-        line = process_subprocess_output(line)
+        line = process_readline(line).rstrip()
         if line:
             if log:
                 log.info(line)
@@ -166,11 +176,11 @@ def universal_sys_call(cmd, log, out_filename=None, err_filename=None, cwd=None)
     if log and (not out_filename or not err_filename):
         while not proc.poll():
             if not out_filename:
-                line = process_subprocess_output(proc.stdout.readline())
+                line = process_readline(proc.stdout.readline()).rstrip()
                 if line:
                     log.info(line)
             if not err_filename:
-                line = process_subprocess_output(proc.stderr.readline())
+                line = process_readline(proc.stderr.readline()).rstrip()
                 if line:
                     log.info(line)
             if proc.returncode is not None:
@@ -179,11 +189,11 @@ def universal_sys_call(cmd, log, out_filename=None, err_filename=None, cwd=None)
         if not out_filename:
             for line in proc.stdout.readlines():
                 if line != '':
-                    log.info(process_subprocess_output(line))
+                    log.info(process_readline(line).rstrip())
         if not err_filename:
             for line in proc.stderr.readlines():
                 if line != '':
-                    log.info(process_subprocess_output(line))
+                    log.info(process_readline(line).rstrip())
     else:
         proc.wait()
 
@@ -201,14 +211,44 @@ def save_data_to_file(data, file):
 
 
 def get_warnings(log_filename):
+    def already_saved(list_to_check, suffix): # for excluding duplicates (--continue-from may cause them)
+        for item in list_to_check:
+            if item.endswith(suffix):
+                return True
+        return False
+
+    ### for capturing correct warnings in case of continue_mode
+    if continue_logfile_offset:
+        continued_log = open(log_filename, 'r')
+        continued_log.seek(continue_logfile_offset)
+        continued_stage_phrase = continued_log.readline()
+        while not continued_stage_phrase.strip():
+            continued_stage_phrase = continued_log.readline()
+        lines_to_check = continued_log.readlines()
+        continued_log.close()
+
+        all_lines = open(log_filename, 'r').readlines()
+        failed_stage_index = all_lines.index(continued_stage_phrase)
+        lines_to_check = all_lines[:failed_stage_index] + lines_to_check
+    else:
+        lines_to_check = open(log_filename, 'r').readlines()
+
     spades_py_warns = []
     spades_warns = []
-    for line in open(log_filename, 'r'):
+    WARN_SUMMARY_PREFIX = ' * '
+    for line in lines_to_check:
+        if line.startswith(WARN_SUMMARY_PREFIX):
+            continue
         if line.find(SPADES_PY_WARN_MESSAGE) != -1:
-            line = line.replace(SPADES_PY_WARN_MESSAGE, '')
-            spades_py_warns.append(' * ' + line.strip())
+            suffix = line[line.find(SPADES_PY_WARN_MESSAGE) + len(SPADES_PY_WARN_MESSAGE):].strip()
+            line = line.replace(SPADES_PY_WARN_MESSAGE, '').strip()
+            if not already_saved(spades_py_warns, suffix):
+                spades_py_warns.append(WARN_SUMMARY_PREFIX + line)
         elif line.find(SPADES_WARN_MESSAGE) != -1:
-            spades_warns.append(' * ' + line.strip())
+            suffix = line[line.find(SPADES_WARN_MESSAGE) + len(SPADES_WARN_MESSAGE):].strip()
+            line = line.strip()
+            if not already_saved(spades_warns, suffix):
+                spades_warns.append(WARN_SUMMARY_PREFIX + line)
     return spades_py_warns, spades_warns
 
 
@@ -224,6 +264,8 @@ def log_warnings(log):
     log_file = get_logger_filename(log)
     if not log_file:
         return False
+    for h in log.__dict__['handlers']:
+        h.flush()
     spades_py_warns, spades_warns = get_warnings(log_file)
     if spades_py_warns or spades_warns:
         log.info("\n======= SPAdes pipeline finished WITH WARNINGS!")
@@ -246,6 +288,17 @@ def log_warnings(log):
     return False
 
 
+def continue_from_here(log):
+    if options_storage.continue_mode:
+        options_storage.continue_mode = False
+        log_filename = get_logger_filename(log)
+        if log_filename:
+            log_file = open(log_filename, 'r')
+            log_file.seek(0, 2) # seek to the end of file
+            global continue_logfile_offset
+            continue_logfile_offset = log_file.tell()
+
+
 def get_latest_dir(pattern):
     def atoi(text):
         if text.isdigit():
@@ -263,12 +316,30 @@ def get_latest_dir(pattern):
     return latest_dir
 
 
+def get_tmp_dir(prefix=""):
+    global current_tmp_dir
+
+    if not os.path.isdir(options_storage.tmp_dir):
+        os.makedirs(options_storage.tmp_dir)
+    current_tmp_dir = tempfile.mkdtemp(dir=options_storage.tmp_dir, prefix=prefix)
+    return current_tmp_dir
+
+
 ### START for processing YAML files
+def get_long_reads_type(option):
+    for long_reads_type in options_storage.LONG_READS_TYPES:
+        if option.startswith('--') and option in ("--" + long_reads_type):
+            return long_reads_type
+    return None
+
+
 def get_lib_type_and_number(option):
     lib_type = 'pe'
     lib_number = 1
     if option.startswith('--mp'):
         lib_type = 'mp'
+    elif get_long_reads_type(option):
+        lib_type = get_long_reads_type(option)
     if option.startswith('--mp') or option.startswith('--pe'): # don't process simple -1, -2, -s, --12 options
         lib_number = int(option[4])
     return lib_type, lib_number
@@ -281,7 +352,7 @@ def get_data_type(option):
         data_type = 'left reads'
     elif option.endswith('-2'):
         data_type = 'right reads'
-    elif option.endswith('-s'):
+    elif option.endswith('-s') or get_long_reads_type(option):
         data_type = 'single reads'
     else: # -rf, -ff, -fr
         data_type = 'orientation'
@@ -293,19 +364,23 @@ def add_to_dataset(option, data, dataset_data):
     data_type = get_data_type(option)
     if data_type == 'orientation':
         data = option[-2:]
-    total_libs_number = len(dataset_data) / 2
 
     if lib_type == 'pe':
         record_id = lib_number - 1
-    else: # mate-pairs
-        record_id = total_libs_number + lib_number - 1
+    elif lib_type == 'mp':
+        record_id = options_storage.MAX_LIBS_NUMBER + lib_number - 1
+    else: # long reads libraries
+        dataset_data += [{}]
+        record_id = len(dataset_data) - 1
 
     if not dataset_data[record_id]: # setting default values for a new record
         if lib_type == 'pe':
             dataset_data[record_id]['type'] = 'paired-end'
-        else:
+        elif lib_type == 'mp':
             dataset_data[record_id]['type'] = 'mate-pairs'
-    if data_type.endswith('reads'): # reads are stored as lists
+        else:
+            dataset_data[record_id]['type'] = lib_type
+    if data_type.endswith('reads'):
         if data.find(':') != -1 and ('.' + data[:data.find(':')]) in options_storage.ALLOWED_READS_EXTENSIONS:
             prefix = '.' + data[:data.find(':')]
             data = data[data.find(':') + 1:]
@@ -376,7 +451,7 @@ def check_dataset_reads(dataset_data, only_assembler, log):
                     check_file_existence(reads_file, key + ', library number: ' + str(id + 1) +
                                          ', library type: ' + reads_library['type'], log)
                     check_reads_file_format(reads_file, key + ', library number: ' + str(id + 1) +
-                                            ', library type: ' + reads_library['type'], only_assembler, log)
+                                            ', library type: ' + reads_library['type'], only_assembler, reads_library['type'], log)
                     all_files.append(reads_file)
                 if key == 'left reads':
                     left_number = len(value)
@@ -416,23 +491,18 @@ def rm_libs_by_type(dataset_data, types):
     return dataset_data
 
 
+def dataset_is_empty(dataset_data):
+    for reads_library in dataset_data:
+        if reads_library:
+            return False
+    return True
+
+
 def dataset_has_only_mate_pairs_libraries(dataset_data):
     for reads_library in dataset_data:
         if reads_library['type'] != 'mate-pairs':
             return False
     return True
-
-
-def dataset_needs_long_single_mode(dataset_data):
-    return bool(get_lib_ids_by_type(dataset_data, 'single'))
-
-
-def get_pacbio_reads(dataset_data):
-    for reads_library in dataset_data:
-        if reads_library['type'] in ['pacbio']:
-            if reads_library['single reads']:
-                return reads_library['single reads'][0]
-    return None
 
 
 def dataset_has_interlaced_reads(dataset_data):
@@ -442,7 +512,76 @@ def dataset_has_interlaced_reads(dataset_data):
     return False
 
 
+def dataset_has_additional_contigs(dataset_data):
+    for reads_library in dataset_data:
+        if reads_library['type'].endswith('contigs'):
+            return True
+    return False
+
+
+def process_Ns_in_additional_contigs(dataset_data, dst, log):
+    new_dataset_data = list()
+    for reads_library in dataset_data:
+        new_reads_library = dict(reads_library)
+        if reads_library["type"].endswith("contigs"):
+            new_entry = []
+            for contigs in reads_library["single reads"]:
+                if contigs in options_storage.dict_of_prefixes:
+                    ext = options_storage.dict_of_prefixes[contigs]
+                    basename = contigs
+                else:
+                    basename, ext = os.path.splitext(contigs)
+                gzipped = False
+                if ext.endswith('.gz'):
+                    gzipped = True
+                    if contigs not in options_storage.dict_of_prefixes:
+                        basename, _ = os.path.splitext(basename)
+                modified, new_fasta = break_scaffolds(contigs, options_storage.THRESHOLD_FOR_BREAKING_ADDITIONAL_CONTIGS,
+                    replace_char='A', gzipped=gzipped)
+                if modified:
+                    if not os.path.isdir(dst):
+                        os.makedirs(dst)
+                    new_filename = os.path.join(dst, os.path.basename(basename) + '.fasta')
+                    if contigs in options_storage.dict_of_prefixes:
+                        del options_storage.dict_of_prefixes[contigs]
+                    log.info("== Processing additional contigs (%s): changing Ns to As and "
+                             "splitting by continues (>= %d) Ns fragments (results are in %s directory)" % (contigs,
+                             options_storage.THRESHOLD_FOR_BREAKING_ADDITIONAL_CONTIGS, dst))
+                    write_fasta(new_filename, new_fasta)
+                    new_entry.append(new_filename)
+                else:
+                    new_entry.append(contigs)
+            new_reads_library["single reads"] = new_entry
+        new_dataset_data.append(new_reads_library)
+    return new_dataset_data
+
+
 def split_interlaced_reads(dataset_data, dst, log):
+    def write_single_read(in_file, out_file, fasta_read_name=None, is_fastq=False, is_python3=False):
+        next_read_str = "" # if there is no next read: empty string
+        if not is_fastq and fasta_read_name is not None:
+            read_name = fasta_read_name
+        else:
+            read_name = process_readline(in_file.readline(), is_python3)
+        if not read_name:
+            return next_read_str
+        read_value = process_readline(in_file.readline(), is_python3)
+        line = process_readline(in_file.readline(), is_python3)
+        while line and ((is_fastq and not line.startswith('+')) or (not is_fastq and not line.startswith('>'))):
+            read_value += line
+            line = process_readline(in_file.readline(), is_python3)
+        next_read_str = line # if there is a next read: "+" (for fastq) or next read name (for fasta)
+        out_file.write(read_name)
+        out_file.write(read_value)
+
+        if is_fastq:
+            read_quality = process_readline(in_file.readline(), is_python3)
+            while len(read_value) != len(read_quality):
+                read_quality += process_readline(in_file.readline(), is_python3)
+            out_file.write("+\n")
+            out_file.write(read_quality)
+        return next_read_str
+
     new_dataset_data = list()
     for reads_library in dataset_data:
         new_reads_library = dict(reads_library)
@@ -459,7 +598,6 @@ def split_interlaced_reads(dataset_data, dst, log):
                     was_compressed = False
                     if ext.endswith('.gz'):
                         was_compressed = True
-                        import gzip
                         input_file = gzip.open(interlaced_reads, 'r')
                         ungzipped = os.path.splitext(interlaced_reads)[0]
                         out_basename, ext = os.path.splitext(os.path.basename(ungzipped))
@@ -470,10 +608,10 @@ def split_interlaced_reads(dataset_data, dst, log):
                     if interlaced_reads in options_storage.dict_of_prefixes:
                         ext = options_storage.dict_of_prefixes[interlaced_reads]
                     if ext.lower().startswith('.fq') or ext.lower().startswith('.fastq'):
-                        is_fasta_format = False
+                        is_fastq = True
                         ext = '.fastq'
                     else:
-                        is_fasta_format = True
+                        is_fastq = False
                         ext = '.fasta'
 
                     out_left_filename = os.path.join(dst, out_basename + "_1" + ext)
@@ -482,23 +620,20 @@ def split_interlaced_reads(dataset_data, dst, log):
                     if not (options_storage.continue_mode and os.path.isfile(out_left_filename) and os.path.isfile(out_right_filename)):
                         options_storage.continue_mode = False
                         log.info("== Splitting " + interlaced_reads + " into left and right reads (in " + dst + " directory)")
-                        out_left_file = open(out_left_filename, 'w')
-                        out_right_file = open(out_right_filename, 'w')
-                        if sys.version.startswith('3.') and was_compressed:
-                            for id, line in enumerate(input_file):
-                                if (is_fasta_format and (id % 4 < 2)) or (not is_fasta_format and (id % 8 < 4)):
-                                    out_left_file.write(str(line, 'utf-8'))
-                                else:
-                                    out_right_file.write(str(line, 'utf-8'))
-                        else:
-                            for id, line in enumerate(input_file):
-                                if (is_fasta_format and (id % 4 < 2)) or (not is_fasta_format and (id % 8 < 4)):
-                                    out_left_file.write(line)
-                                else:
-                                    out_right_file.write(line)
-                        out_left_file.close()
-                        out_right_file.close()
-
+                        out_files = [open(out_left_filename, 'w'), open(out_right_filename, 'w')]
+                        i = 0
+                        next_read_str = write_single_read(input_file, out_files[i], None, is_fastq,
+                            sys.version.startswith('3.') and was_compressed)
+                        while next_read_str:
+                            i = (i + 1) % 2
+                            next_read_str = write_single_read(input_file, out_files[i], next_read_str, is_fastq,
+                                sys.version.startswith('3.') and was_compressed)
+                        if (is_fastq and i % 2 == 1) or (not is_fastq and i % 2 == 0):
+                        # when fastq, the number of writes is equal to number of READS (should be EVEN)
+                        # when fasta, the number of writes is equal to number of NEXT READS (should be ODD)
+                            error("The number of reads in file with interlaced reads (" + interlaced_reads + ") is ODD!", log)
+                        out_files[0].close()
+                        out_files[1].close()
                     input_file.close()
                     new_reads_library['left reads'].append(out_left_filename)
                     new_reads_library['right reads'].append(out_right_filename)
@@ -524,16 +659,17 @@ def pretty_print_reads(dataset_data, log, indent='    '):
 ### END: for processing YAML files
 
 
-def read_fasta(filename):
-    """
-        Returns list of FASTA entries (in tuples: name, seq)
-    """
+def read_fasta(filename, gzipped=False):
     res_name = []
     res_seq = []
     first = True
     seq = ''
-
-    for line in open(filename):
+    if gzipped:
+        file_handler = gzip.open(filename)
+    else:
+        file_handler = open(filename)
+    for line in file_handler:
+        line = process_readline(line, gzipped and sys.version.startswith('3.'))
         if line[0] == '>':
             res_name.append(line.strip())
             if not first:
@@ -544,6 +680,7 @@ def read_fasta(filename):
         else:
             seq += line.strip()
     res_seq.append(seq)
+    file_handler.close()
     return zip(res_name, res_seq)
 
 
@@ -556,24 +693,28 @@ def write_fasta(filename, fasta):
     outfile.close()
 
 
-def break_scaffolds(input_filename, threshold, output_filename):
+def break_scaffolds(input_filename, threshold, replace_char="N", gzipped=False):
     new_fasta = []
-    for id, (name, seq) in enumerate(read_fasta(input_filename)):
+    modified = False
+    for id, (name, seq) in enumerate(read_fasta(input_filename, gzipped)):
         i = 0
         cur_contig_number = 1
         cur_contig_start = 0
         while (i < len(seq)) and (seq.find("N", i) != -1):
+            if replace_char != "N":
+                modified = True
             start = seq.find("N", i)
             end = start + 1
-            while (end != len(seq)) and (seq[end] == 'N'):
+            while (end != len(seq)) and (seq[end] == "N"):
                 end += 1
 
             i = end + 1
             if (end - start) >= threshold:
-                new_fasta.append((name.split()[0] + "_" + str(cur_contig_number), seq[cur_contig_start:start]))
+                modified = True
+                new_fasta.append((name.split()[0] + "_" + str(cur_contig_number),
+                                  seq[cur_contig_start:start].replace("N", replace_char)))
                 cur_contig_number += 1
                 cur_contig_start = end
-
-        new_fasta.append((name.split()[0] + "_" + str(cur_contig_number), seq[cur_contig_start:]))
-
-    write_fasta(output_filename, new_fasta)
+        new_fasta.append((name.split()[0] + "_" + str(cur_contig_number),
+                          seq[cur_contig_start:].replace("N", replace_char)))
+    return modified, new_fasta

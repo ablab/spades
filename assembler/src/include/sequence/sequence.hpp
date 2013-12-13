@@ -185,6 +185,10 @@ class Sequence {
     return true;
   }
 
+  bool operator!=(const Sequence &that) const {
+      return !(operator==(that));
+  }
+
   /**
    * @todo Might be optimized via int comparison (not so easy)
    */

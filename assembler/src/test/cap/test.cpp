@@ -93,7 +93,7 @@ BOOST_AUTO_TEST_CASE( SyntheticExamplesTestsRtSeq ) {
     utils::TmpFolderFixture _("tmp");
     string input_dir = "./src/test/cap/tests/synthetic/";
     RunTests<runtime_k::RtSeq>(25, input_dir + "tests.xml", "tmp/",
-                               input_dir + "etalon/", "tmp", true);
+                               input_dir + "etalon/", "tmp", /*true*/false);
 }
 
 BOOST_AUTO_TEST_CASE( SyntheticExamplesTestsLSeq ) {
@@ -126,7 +126,7 @@ BOOST_AUTO_TEST_CASE( RepeatCroppingReaderTest ) {
     reader.reset();
     reader >> read;
     BOOST_CHECK_EQUAL("ACGTCTTGCA", read.sequence().str());
-    vector<pair<size_t, size_t>> etalon_ladder = {{0, 0}, {5, 5}, {10, 5}, {15, 10}};
+    vector<pair<size_t, size_t>> etalon_ladder = {{0, 0}, {5, 5}, {5, 10}, {10, 15}};
     BOOST_CHECK_EQUAL(reader.coordinates_ladder(), etalon_ladder);
 }
 
@@ -140,8 +140,21 @@ BOOST_AUTO_TEST_CASE( RepeatCroppingReaderTest2 ) {
     reader.reset();
     reader >> read;
     BOOST_CHECK_EQUAL("ACGTCTTGCA", read.sequence().str());
-    vector<pair<size_t, size_t>> etalon_ladder = {{0, 0}, {5, 0}, {10, 5}, {15, 5}, {20, 10}, {25, 10}};
+    vector<pair<size_t, size_t>> etalon_ladder = {{0, 0}, {0, 5}, {5, 10}, {5, 15}, {10, 20}, {10, 25}};
     BOOST_CHECK_EQUAL(reader.coordinates_ladder(), etalon_ladder);
+
+    CoordinatesHandler<cap::Graph> coords;
+    coords.StoreGenomeThreadManual(0, reader.coordinates_ladder());
+    for (size_t i = 0; i < etalon_ladder.size(); ++i) {
+        const auto &p = etalon_ladder[i];
+        if (i > 0 && p.first == etalon_ladder[i - 1].first)
+            continue;
+
+        size_t orig_pos = coords.GetOriginalPos(0, coords.PreprocessCoordinates(p.first));
+        size_t etalon_pos = coords.PreprocessCoordinates(p.second);
+        DEBUG("get " << debug::PrintComplexPosition(orig_pos) << " etalon " << debug::PrintComplexPosition(etalon_pos));
+        BOOST_CHECK_EQUAL(orig_pos, etalon_pos);
+    }
 }
 
 }

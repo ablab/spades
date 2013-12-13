@@ -1,10 +1,17 @@
 default=INFO
 
-RelativeCoverageHelper=TRACE
-RelativelyLowCoveredComponentSearcher=TRACE
-RelativelyLowCoveredComponentChecker=TRACE
-RelativeCoverageComponentRemover=TRACE
+#RelativeCoverageHelper=TRACE
+#RelativelyLowCoveredComponentSearcher=TRACE
+#RelativelyLowCoveredComponentChecker=TRACE
+#RelativeCoverageComponentRemover=TRACE
 #FlankingCoverage=TRACE
+#PolymorphicBulgeRemover=TRACE
+#BulgeSplitter=TRACE
+#SubpathSplitter=TRACE
+#ComplexBulgeGluer=TRACE
+#GluingVericesDefiner=TRACE
+#GluingVericesDefinerResults=TRACE
+
 #DeBruijnGraphConstructor=TRACE
 #PairedHandlerApplier=TRACE
 QualityEdgeLocalityPrintingRH=TRACE
@@ -24,3 +31,12 @@ QualityLoggingRemovalHandler=TRACE
 #NewExtendedSequenceMapper=TRACE
 #JumpingPairInfoChecker=TRACE
 
+#PathExtender=DEBUG
+#BidirectionalPath=DEBUG
+#NextPathSearcher=DEBUG
+#ExtensionChooser=DEBUG
+#WeightCounter=DEBUG
+#PathExtendIO=DEBUG
+#PathExtendPI=DEBUG
+#LoopTraverser=DEBUG
+#PEResolver=DEBUG

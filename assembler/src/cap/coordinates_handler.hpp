@@ -58,6 +58,11 @@ std::string PrintComplexRange(const Range &range) {
         PrintComplexPosition(range.end_pos) + "]";
 }
 
+std::string PrintComplexRange(const std::pair<size_t, size_t> &range) {
+    return "[" + PrintComplexPosition(range.first) + ", " +
+        PrintComplexPosition(range.second) + "]";
+}
+
 
 }
 
@@ -93,7 +98,6 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
           edge_ranges_(),
           stored_threading_history_(),
           //genome_first_edges_(),
-          cur_genome_threads_(),
           last_deleted_(),
           pending_add_(),
           is_locked_(false) {
@@ -160,25 +164,18 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
           }
 
           genome_info_[genome_id].sequence_length = cur_start;
-          SetGenomeThread(genome_id, genome_path);
           TRACE("AddGenomePath End");
       }
 
       Sequence ReconstructGenome(const uint genome_id) const {
-          VERIFY(cur_genome_threads_.size() > genome_id);
+          const std::vector<EdgeId> genome_path =
+              AsMappingPath(genome_id).simple_path();
 
           std::vector<Sequence> path_sequences;
-          path_sequences.reserve(cur_genome_threads_[genome_id]->size());
-          for (const auto &e : *cur_genome_threads_[genome_id])
+          for (const auto &e : genome_path)
               path_sequences.push_back(g_->EdgeNucls(e));
 
           return MergeOverlappingSequences(path_sequences, g_->k());
-      }
-
-      const Path &GetGenomePath(const uint genome_id) const {
-          VERIFY(cur_genome_threads_.size() > genome_id);
-
-          return *cur_genome_threads_[genome_id];
       }
 
       PosArray FilterPosArray(const PosArray &old_array,
@@ -204,6 +201,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
               stored_threading_history_[entry.first] = entry.second;
           }
       }
+
       std::vector<std::pair<uint, std::vector<Thread>>> GetStoredThreads() const {
           std::vector<std::pair<uint, std::vector<Thread>>> result;
           for (const auto &entry : stored_threading_history_) {
@@ -212,47 +210,16 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
           return result;
       }
 
-      void StoreGenomeThreads() {
-          std::vector<std::pair<std::pair<uint, Range>, EdgeId> > all_ranges;
-          /*
-           *  A kind of verification
-           */
-          /*
-             for (auto it = g_->SmartEdgeBegin(); !it.IsEnd(); ++it) {
-             if (!HasEdgeData(*it)) {
-             INFO("NO data for edge " << g_->str(*it));
-             }
-             for (const auto &range_data : edge_ranges_.at(*it).GetRanges()) {
-             all_ranges.push_back(make_pair(make_pair(range_data.first, range_data.second), *it));
-             }
-             }
-             std::sort(all_ranges.begin(), all_ranges.end());
-             for (const auto &e : all_ranges) {
-             INFO("genome " << int(e.first.first) << ", " << e.first.second << ": " <<
-             g_->str(e.second));
-             }
-             for (size_t i = 1; i < all_ranges.size(); ++i) {
-             if (all_ranges[i].first.first != all_ranges[i - 1].first.first) continue;
-             if (all_ranges[i].first.second.start_pos != all_ranges[i - 1].first.second.end_pos) {
-             INFO("!!! TORN in genome " << int(all_ranges[i].first.first) << " at position " << all_ranges[i].first.second.start_pos);
-             }
-             }
-             */
-
-          TRACE("StoreGenomeThreads Start");
-          VERIFY(g_ != NULL);
-          for (auto &genome_it : genome_info_) {
-              const uint genome_id = genome_it.first;
-              stored_threading_history_[genome_id].push_back(Thread());
-              Thread &thread = stored_threading_history_[genome_id].back();
-
-              StoreGenomeThread(genome_id, thread);
-          }
-          TRACE("StoreGenomeThreads End");
+      /**
+       * Automatically adds conjugate strand!!!
+       */
+      void StoreGenomeThreadManual(const uint genome_id, const Thread &ladder) {
+        stored_threading_history_[2 * genome_id].push_back(PreprocessCoordinates(ladder));
+        stored_threading_history_[(2 * genome_id) ^ 1].push_back(PreprocessCoordinates(ConjugateThread(ladder)));
       }
 
-      void StoreGenomeThreadManual(const uint genome_id, const Thread &thread) {
-        stored_threading_history_[genome_id].push_back(std::move(thread));
+      size_t PreprocessCoordinates(const size_t coord) const {
+          return (coord << kShiftValue);
       }
 
       /*
@@ -275,7 +242,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
 
       size_t GetOriginalPos(const uint genome_id, const size_t new_pos) const;
 
-      size_t GetNewestPos(const uint genome_id, const size_t old_pos) const;
+      //size_t GetNewestPos(const uint genome_id, const size_t old_pos) const;
 
       // TODO getOrigRange?? (Edge)
       virtual void HandleDelete(EdgeId e);
@@ -301,9 +268,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
 
           for (const auto &p : edge_data_it->second.GetRanges()) {
               const uint genome_id = p.first;
-              DEBUG("from " << debug::PrintComplexRange(p.second));
-              Range newest(GetNewestPos(genome_id, p.second.start_pos),
-                           GetNewestPos(genome_id, p.second.end_pos));
+              Range newest = p.second;
               DEBUG("from " << debug::PrintComplexRange(newest));
               const Range original(GetOriginalPos(genome_id, newest.start_pos),
                                    GetOriginalPos(genome_id, newest.end_pos));
@@ -391,6 +356,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
           }
       }
 
+    //todo some usages do not need original pos, optimize if needed
     MappingPath<EdgeId> AsMappingPath(unsigned genome_id) const {
         MappingPath<EdgeId> answer;
         VertexId v = g_->EdgeStart(FindGenomeFirstEdge(genome_id));
@@ -400,23 +366,46 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
             auto step = StepForward(v, genome_id, genome_pos);
             if (step.second == -1u)
                 break;
-
             EdgeId e = step.first;
 
-            Range graph_pos(GetNewestPos(genome_id, genome_pos),
-                    GetNewestPos(genome_id, step.second));
-            Range contig_pos(
-                    GetOriginalPos(genome_id, graph_pos.start_pos),
-                    GetOriginalPos(genome_id, graph_pos.end_pos));
-            Range graph_pos_printable = GetPrintableRange(graph_pos);
-            Range contig_pos_printable = GetPrintableRange(contig_pos);
+            size_t next_genome_pos = step.second;
 
-            answer.push_back(e, MappingRange(contig_pos_printable, graph_pos_printable));
+            Range original_pos(
+                    GetOriginalPos(genome_id, genome_pos),
+                    GetOriginalPos(genome_id, next_genome_pos));
+
+            //todo fix possible troubles with cyclic genomes etc later
+            Range original_pos_printable = GetPrintableRange(original_pos);
+            Range graph_pos_printable(0, g_->length(e));
+
+            answer.push_back(e, MappingRange(original_pos_printable, graph_pos_printable));
 
             v = g_->EdgeEnd(e);
-            genome_pos = step.second;
+            genome_pos = next_genome_pos;
         }
+        //todo can we verify total length somehow
         return answer;
+    }
+
+    void DumpRanges() {
+        std::unordered_map<uint, Path> genome_paths;
+
+        for (const auto &genome_i : genome_info_) {
+            const uint genome_id = genome_i.first;
+
+            genome_paths[genome_id] = AsMappingPath(genome_id).
+                simple_path();
+        }
+
+        StoreGenomeThreads();
+        edge_ranges_.clear();
+        genome_info_.clear();
+
+        for (const auto &genome_it : genome_paths) {
+            const uint genome_id = genome_it.first;
+
+            AddGenomePath(genome_id, genome_it.second);
+        }
     }
 
      private:
@@ -551,6 +540,69 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
 
       constexpr static long double EPS = 1e-9;
 
+      pair<size_t, size_t> PreprocessCoordinates(const pair<size_t, size_t>& point) const {
+          return make_pair(PreprocessCoordinates(point.first), PreprocessCoordinates(point.second));
+      }
+
+      Thread PreprocessCoordinates(const Thread& ladder) const {
+          Thread answer;
+          for (pair<size_t, size_t> point : ladder) {
+              answer.push_back(PreprocessCoordinates(point));
+          }
+          return answer;
+      }
+
+      Thread ConjugateThread(const Thread& ladder) const {
+          Thread answer;
+          size_t first_length = ladder.back().first;
+          size_t second_length = ladder.back().second;
+          for (auto it = ladder.rbegin(); it != ladder.rend(); ++it) {
+              answer.push_back(make_pair(first_length - it->first,
+                                         second_length - it->second));
+          }
+          return answer;
+      }
+
+      void StoreGenomeThreads() {
+          std::vector<std::pair<std::pair<uint, Range>, EdgeId> > all_ranges;
+          /*
+           *  A kind of verification
+           */
+          /*
+             for (auto it = g_->SmartEdgeBegin(); !it.IsEnd(); ++it) {
+             if (!HasEdgeData(*it)) {
+             INFO("NO data for edge " << g_->str(*it));
+             }
+             for (const auto &range_data : edge_ranges_.at(*it).GetRanges()) {
+             all_ranges.push_back(make_pair(make_pair(range_data.first, range_data.second), *it));
+             }
+             }
+             std::sort(all_ranges.begin(), all_ranges.end());
+             for (const auto &e : all_ranges) {
+             INFO("genome " << int(e.first.first) << ", " << e.first.second << ": " <<
+             g_->str(e.second));
+             }
+             for (size_t i = 1; i < all_ranges.size(); ++i) {
+             if (all_ranges[i].first.first != all_ranges[i - 1].first.first) continue;
+             if (all_ranges[i].first.second.start_pos != all_ranges[i - 1].first.second.end_pos) {
+             INFO("!!! TORN in genome " << int(all_ranges[i].first.first) << " at position " << all_ranges[i].first.second.start_pos);
+             }
+             }
+             */
+
+          TRACE("StoreGenomeThreads Start");
+          VERIFY(g_ != NULL);
+          for (auto &genome_it : genome_info_) {
+              const uint genome_id = genome_it.first;
+              stored_threading_history_[genome_id].push_back(Thread());
+              Thread &thread = stored_threading_history_[genome_id].back();
+
+              StoreGenomeThread(genome_id, thread);
+          }
+          TRACE("StoreGenomeThreads End");
+      }
+
+
       void StoreGenomeThread(const uint genome_id, Thread &thread);
 
       RangeArray PopAndUpdateRangesToCopy(const EdgeId edge,
@@ -601,19 +653,12 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
             (size_t(((graph_pos - graph_range.start_pos) >> kShiftValue) * len_ratio) << kShiftValue);
     }
 
-    void SetGenomeThread(const uint genome_id, const Path &thread) {
-        if (cur_genome_threads_.size() <= genome_id)
-            cur_genome_threads_.resize(genome_id + 1);
-        cur_genome_threads_[genome_id] = std::make_shared<Path>(thread);
-    }
-
     const Graph *g_;
 
     std::unordered_map<uint, GenomeInfo> genome_info_;
     std::unordered_map<EdgeId, EdgeData> edge_ranges_;
     std::unordered_map<uint, std::vector<Thread> > stored_threading_history_;
     //std::unordered_map<EdgeId, std::vector<uint> > genome_first_edges_;
-    std::vector<std::shared_ptr<Path> > cur_genome_threads_;
 
     // For deletion unroll
     std::vector<std::pair<EdgeId, std::pair<uint, Range> > > last_deleted_;
@@ -990,7 +1035,6 @@ void CoordinatesHandler<Graph>::StoreGenomeThread(
            genome_pos = 0,
            genome_length = genome_info_[genome_id].sequence_length;
 
-    cur_genome_threads_[genome_id] = std::make_shared<Path>();
     std::pair<uint, size_t> cur_pos = make_pair(genome_id, genome_pos);
     EdgeId cur_edge = genome_info_[genome_id].first_edge;
     //INFO("searching for first edge " << cur_edge << "of genome " << int(genome_id));
@@ -1004,7 +1048,6 @@ void CoordinatesHandler<Graph>::StoreGenomeThread(
             return;
         }
 
-        cur_genome_threads_[genome_id]->push_back(cur_edge);
         thread.push_back(make_pair(graph_pos, genome_pos));
         graph_pos += g_->length(cur_edge) << kShiftValue;
         VERIFY(HasEdgeData(cur_edge));
@@ -1072,6 +1115,8 @@ size_t CoordinatesHandler<Graph>::GetOriginalPos(
          thread_it != E; ++thread_it) {
         // Verify thread sort order?
 
+        VERIFY(thread_it->size() > 0);
+
         // Kmers can have different lengths so going from larger kmers to smaller
         // implies shorting of thread length what may lead to "range-overflow"
         if (cur_pos > thread_it->back().first)
@@ -1081,8 +1126,8 @@ size_t CoordinatesHandler<Graph>::GetOriginalPos(
                                          make_pair(cur_pos, size_t(0)));
 
         DEBUG("Searching for pos " << debug::PrintComplexPosition(cur_pos)
-                << "in thread of " << thread_it->front()
-                << " - " << thread_it->back());
+                << "in thread of " << debug::PrintComplexRange(thread_it->front())
+                << " - " << debug::PrintComplexRange(thread_it->back()));
         VERIFY(found_it != thread_it->end());
         if (cur_pos == found_it->first) {
             cur_pos = found_it->second;
@@ -1109,6 +1154,7 @@ size_t CoordinatesHandler<Graph>::GetOriginalPos(
     return cur_pos;
 }
 
+/*
 template<class Graph>
 size_t CoordinatesHandler<Graph>::GetNewestPos(
     const uint genome_id, const size_t old_pos) const {
@@ -1151,6 +1197,7 @@ size_t CoordinatesHandler<Graph>::GetNewestPos(
     DEBUG("gettin' " << debug::PrintComplexPosition(result_pos));
     return result_pos;
 }
+*/
 
 /*
  *  Some handling methods (description in omni_utils.hpp)

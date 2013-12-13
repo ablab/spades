@@ -194,7 +194,7 @@ class ColoredGraphConstructor {
 		stream.reset();
 		while (!stream.eof()) {
 			stream >> read;
-			PaintPath(mapper_.MapSequence(read.sequence()).simple_path(),
+			PaintPath(mapper_.MapSequence(read.sequence()).path(),
 					color);
 		}
 	}
@@ -306,10 +306,9 @@ void SplitAndColorGraph(gp_t& gp,
 }
 
 template<class Graph, class Index, class Streams>
-size_t CapConstructGraph(size_t k,
-        Streams& streams, Graph& g,
+size_t CapConstructGraph(Streams& streams, Graph& g,
         Index& index) {
-    return ConstructGraphUsingOldIndex(k, streams, g, index);
+    return ConstructGraphUsingOldIndex(streams, g, index);
 }
 
 template<class gp_t>
@@ -336,7 +335,7 @@ void FillPositions(const gp_t &gp, ContigStreams &streams,
 
       MappingPath<EdgeId> mapping_path = mapper->MapRead(contig);
       const std::vector<EdgeId> edge_path =
-          mapping_path.simple_path().sequence();
+          mapping_path.simple_path();
       coordinates_handler.AddGenomePath(contig_id, edge_path);
       contig_id++;
     }
@@ -353,7 +352,7 @@ void ConstructColoredGraph(gp_t& gp,
 
   INFO("Constructing de Bruijn graph for k=" << gp.k_value);
 
-	CapConstructGraph(gp.k_value, streams,
+	CapConstructGraph(streams,
 			gp.g, gp.index);
 	SplitAndColorGraph(gp, coloring, streams);
   FillPositions(gp, streams, coordinates_handler);

@@ -7,6 +7,8 @@
 #include "omni_labelers.hpp"
 #include "dataset_readers.hpp"
 #include "read_converter.hpp"
+#include "sequence_mapper.hpp"
+#include "short_read_mapper.hpp"
 
 #include "de/paired_info.hpp"
 
@@ -16,12 +18,6 @@
 #include <unordered_map>
 
 namespace debruijn_graph {
-
-template<typename EdgeId>
-Path<EdgeId> ConvertToPath(MappingPath<EdgeId> mp) { return mp.simple_path(); }
-
-template<typename EdgeId>
-Path<EdgeId> ConvertToPath(Path<EdgeId> mp) { return mp; }
 
 template<class Graph, class SequenceMapper>
 class GapCloserPairedIndexFiller {
@@ -50,8 +46,8 @@ class GapCloserPairedIndexFiller {
         Sequence read1 = p_r.first().sequence();
         Sequence read2 = p_r.second().sequence();
 
-        Path<EdgeId> path1 = ConvertToPath(mapper_.MapSequence(read1));
-        Path<EdgeId> path2 = ConvertToPath(mapper_.MapSequence(read2));
+        Path<EdgeId> path1 = mapper_.MapSequence(read1).path();
+        Path<EdgeId> path2 = mapper_.MapSequence(read2).path();
         for (size_t i = 0; i < path1.size(); ++i) {
             auto OutTipIter = OutTipMap.find(path1[i]);
             if (OutTipIter != OutTipMap.end()) {
@@ -193,7 +189,7 @@ class GapCloserPairedIndexFiller {
 
 template<class Mapper>
 bool CheckNoKmerClash(const Sequence& s, const Mapper& mapper) {
-    std::vector<EdgeId> path = mapper.MapSequence(s).simple_path().sequence();
+    std::vector<EdgeId> path = mapper.MapSequence(s).simple_path();
     return path.empty();
 }
 
@@ -373,7 +369,8 @@ class GapCloser {
         TRACE("Processing edges " << g_.str(first) << " and " << g_.str(second));
         TRACE("first " << g_.EdgeNucls(first) << " second " << g_.EdgeNucls(second));
 
-        if (cfg::get().avoid_rc_connections && first == g_.conjugate(second)) {
+        if (cfg::get().avoid_rc_connections &&
+                (first == g_.conjugate(second) || first == second)) {
             DEBUG("Trying to join conjugate edges " << g_.int_id(first));
             return false;
         }

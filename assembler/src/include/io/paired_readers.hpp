@@ -27,7 +27,9 @@ class SeparatePairedReadStream : public ReadStream<PairedRead> {
         changer_(GetOrientationChanger<PairedRead>(orientation)),
         offset_type_(offset_type),
         first_(new FileReadStream(filename1, offset_type_)),
-        second_(new FileReadStream(filename2, offset_type_)) {}
+        second_(new FileReadStream(filename2, offset_type_)),
+        filename1_(filename1),
+        filename2_(filename2){}
 
   /*
    * Check whether the stream is opened.
@@ -45,7 +47,16 @@ class SeparatePairedReadStream : public ReadStream<PairedRead> {
    * otherwise.
    */
   /* virtual */ bool eof() {
-    return first_->eof() || second_->eof();
+
+    if (first_->eof() != second_->eof()) {
+        if (first_->eof()) {
+            ERROR("The number of right read-pairs is larger than the number of left read-pairs");
+        } else {
+            ERROR("The number of left read-pairs is larger than the number of right read-pairs");
+        }
+        FATAL_ERROR("Unequal number of read-pairs detected in the following files: " << filename1_ << "  " << filename2_ << "");
+    }
+    return first_->eof();
   }
 
   /*
@@ -118,6 +129,9 @@ class SeparatePairedReadStream : public ReadStream<PairedRead> {
    */
   std::unique_ptr<ReadStream<SingleRead>> second_;
 
+  //Only for providing information about error for users
+  std::string filename1_;
+  std::string filename2_;
 };
 
 class InterleavingPairedReadStream : public ReadStream<PairedRead> {

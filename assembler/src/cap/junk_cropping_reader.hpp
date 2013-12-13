@@ -27,14 +27,14 @@ public:
         coordinates_ladder_.push_back(make_pair(0, 0));
         for (size_t coord = 0; coord < orig_string.size(); ++coord) {
             if (coord > 0 && (IsGoodSymbol(orig_string[coord - 1]) ^ IsGoodSymbol(orig_string[coord]))) {
-                coordinates_ladder_.push_back(make_pair(coord, cropped.size()));
+                coordinates_ladder_.push_back(make_pair(cropped.size(), coord));
             }
             if (IsGoodSymbol(orig_string[coord])) {
                 cropped += orig_string[coord];
                 cropped_qual += orig_qual[coord];
             }
         }
-        coordinates_ladder_.push_back(make_pair(orig_string.size(), cropped.size()));
+        coordinates_ladder_.push_back(make_pair(cropped.size(), orig_string.size()));
         read = io::SingleRead(read.name(), cropped, cropped_qual);
         return *this;
     }
