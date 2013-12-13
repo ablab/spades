@@ -371,7 +371,7 @@ public:
 
         // Now, count unique k-mers from k+1-mers
         DeBruijnKMerKMerSplitter<StoringTypeFilter<typename IndexT::storing_type> > splitter2(index.workdir(), index.k(),
-                                           index.k() + 1, IndexT::storing_type::AddRC());
+                                           index.k() + 1, IndexT::storing_type::IsInvertable());
         for (unsigned i = 0; i < nthreads; ++i)
             splitter2.AddKMers(counter.GetMergedKMersFname(i));
         KMerDiskCounter<runtime_k::RtSeq> counter2(index.workdir(), splitter2);

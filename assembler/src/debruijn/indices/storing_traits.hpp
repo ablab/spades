@@ -22,7 +22,7 @@ struct SimpleStoring {
         values[key.idx()] = value;
     }
 
-    static bool AddRC() {
+    static bool IsInvertable() {
         return false;
     }
 };
@@ -44,7 +44,7 @@ struct InvertableStoring {
             values[key.idx()] = value.conjugate(key);
     }
 
-    static bool AddRC() {
+    static bool IsInvertable() {
         return true;
     }
 };
