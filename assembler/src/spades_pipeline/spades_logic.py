@@ -32,6 +32,7 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
         subst_dict["use_additional_contigs"] = bool_to_str(True)
     else:
         subst_dict["use_additional_contigs"] = bool_to_str(False)
+    subst_dict["main_iteration"] = bool_to_str(last_one)
     subst_dict["entry_point"] = stage
     subst_dict["load_from"] = saves_dir
     subst_dict["developer_mode"] = bool_to_str(cfg.developer_mode)

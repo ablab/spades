@@ -107,7 +107,7 @@ void load_lib_data(const std::string& prefix) {
       load_param(filename, "insert_size_deviation_" + ToString(i), double_val);
       if (double_val) {
           cfg::get_writable().ds.reads[i].data().insert_size_deviation = *double_val;
-      }      
+      }
       load_param(filename, "insert_size_left_quantile_" + ToString(i), double_val);
       if(double_val) {
           cfg::get_writable().ds.reads[i].data().insert_size_left_quantile = *double_val;
@@ -549,6 +549,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
     cfg.output_dir = cfg.output_root;
   }
 
+
   cfg.output_saves = cfg.output_dir + "saves/";
 
   load(cfg.log_filename, pt, "log_filename");
@@ -579,6 +580,8 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
     else
       cfg.tmp_dir = cfg.output_dir + cfg.tmp_dir;
   }
+
+  load(cfg.main_iteration, pt, "main_iteration");
 
   load(cfg.entry_point, pt, "entry_point");
 

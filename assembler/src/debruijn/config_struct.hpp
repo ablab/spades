@@ -419,7 +419,6 @@ struct debruijn_config {
 
     typedef std::map<info_printer_pos, info_printer> info_printers_t;
 
-public:
     std::string dataset_file;
     std::string project_name;
     std::string input_dir;
@@ -479,6 +478,8 @@ public:
     std::string single_read_prefix;
 
     size_t K;
+
+    bool main_iteration;
 
     bool use_multithreading;
     size_t max_threads;
