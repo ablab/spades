@@ -426,6 +426,7 @@ public:
     std::string output_base;
     std::string output_root;
     std::string output_dir;
+    std::string tmp_dir;
     std::string output_suffix;
     std::string output_saves;
     std::string final_contigs_file;

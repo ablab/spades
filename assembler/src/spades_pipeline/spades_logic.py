@@ -9,8 +9,6 @@
 
 import os
 import shutil
-import glob
-
 import support
 import process_cfg
 from process_cfg import bool_to_str
@@ -28,6 +26,7 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
         subst_dict["diploid_mode"] = bool_to_str(cfg.diploid_mode)
     subst_dict["dataset"] = process_cfg.process_spaces(cfg.dataset)
     subst_dict["output_base"] = process_cfg.process_spaces(cfg.output_dir)
+    subst_dict["tmp_dir"] = process_cfg.process_spaces(cfg.tmp_dir)
     if additional_contigs_fname:
         subst_dict["additional_contigs"] = process_cfg.process_spaces(additional_contigs_fname)
         subst_dict["use_additional_contigs"] = bool_to_str(True)
@@ -38,7 +37,6 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
     subst_dict["developer_mode"] = bool_to_str(cfg.developer_mode)
     subst_dict["gap_closer_enable"] = bool_to_str(last_one)
     subst_dict["rr_enable"] = bool_to_str(last_one and cfg.rr_enable)
-#    subst_dict["long_single_mode"] = bool_to_str(last_one and cfg.long_single_mode)
 #    subst_dict["topology_simplif_enabled"] = bool_to_str(last_one)
     subst_dict["max_threads"] = cfg.max_threads
     subst_dict["max_memory"] = cfg.max_memory
@@ -122,8 +120,7 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):
 
     prepare_config_spades(cfg_file_name, cfg, log, additional_contigs_fname, K, stage, saves_dir, last_one)
 
-    command = [os.path.join(execution_home, "spades"),
-               os.path.abspath(cfg_file_name)]
+    command = [os.path.join(execution_home, "spades"), cfg_file_name]
 
 ## this code makes sense for src/debruijn/simplification.cpp: corrected_and_save_reads() function which is not used now
 #    bin_reads_dir = os.path.join(cfg.output_dir, ".bin_reads")
@@ -171,6 +168,7 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, log):
     bin_reads_dir = os.path.join(cfg.output_dir, ".bin_reads")
     if os.path.isdir(bin_reads_dir) and not options_storage.continue_mode:
         shutil.rmtree(bin_reads_dir)
+    cfg.tmp_dir = support.get_tmp_dir(prefix="spades_")
 
     if len(cfg.iterative_K) == 1:
         run_iteration(configs_dir, execution_home, cfg, log, cfg.iterative_K[0], None, True)
@@ -224,5 +222,7 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, log):
 
     if os.path.isdir(bin_reads_dir):
         shutil.rmtree(bin_reads_dir)
+    if os.path.isdir(cfg.tmp_dir):
+        shutil.rmtree(cfg.tmp_dir)
 
     return latest

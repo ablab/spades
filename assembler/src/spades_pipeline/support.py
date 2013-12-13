@@ -13,6 +13,8 @@ import logging
 import glob
 import re
 import gzip
+import tempfile
+import shutil
 import options_storage
 
 # constants to print and detect warnings and errors in logs
@@ -22,6 +24,8 @@ SPADES_ERROR_MESSAGE = " ERROR "
 SPADES_WARN_MESSAGE = " WARN "
 # for correct warnings detection in case of continue_mode
 continue_logfile_offset = None
+# for removing tmp_dir even if error occurs
+current_tmp_dir = None
 
 
 def error(err_str, log=None, prefix=SPADES_PY_ERROR_MESSAGE):
@@ -35,6 +39,8 @@ def error(err_str, log=None, prefix=SPADES_PY_ERROR_MESSAGE):
         sys.stderr.write("In case you have troubles running SPAdes, you can write to spades.support@bioinf.spbau.ru\n")
         sys.stderr.write("Please provide us with params.txt and spades.log files from the output directory.\n")
         sys.stderr.flush()
+    if current_tmp_dir and os.path.isdir(current_tmp_dir):
+        shutil.rmtree(current_tmp_dir)
     sys.exit(1)
 
 
@@ -53,6 +59,7 @@ def check_python_version():
 
 
 def check_file_existence(filename, message="", log=None):
+    filename = os.path.abspath(filename)
     if not os.path.isfile(filename):
         error("file not found: %s (%s)" % (filename, message), log)
     return filename
@@ -307,6 +314,15 @@ def get_latest_dir(pattern):
             latest_dir = dir_to_test
             break
     return latest_dir
+
+
+def get_tmp_dir(prefix=""):
+    global current_tmp_dir
+
+    if not os.path.isdir(options_storage.tmp_dir):
+        os.makedirs(options_storage.tmp_dir)
+    current_tmp_dir = tempfile.mkdtemp(dir=options_storage.tmp_dir, prefix=prefix)
+    return current_tmp_dir
 
 
 ### START for processing YAML files

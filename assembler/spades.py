@@ -95,7 +95,6 @@ def print_used_values(cfg, log):
     # error correction
     if "error_correction" in cfg:
         log.info("Read error correction parameters:")
-        print_value(cfg, "error_correction", "tmp_dir", "Dir for temp files")
         print_value(cfg, "error_correction", "max_iterations", "Iterations")
         print_value(cfg, "error_correction", "qvoffset", "PHRED offset")
 
@@ -121,6 +120,7 @@ def print_used_values(cfg, log):
             log.info("  Repeat resolution is enabled")
 
     log.info("Other parameters:")
+    print_value(cfg, "common", "tmp_dir", "Dir for temp files")
     print_value(cfg, "common", "max_threads", "Threads")
     print_value(cfg, "common", "max_memory", "Memory limit (in Gb)", "  ")
     log.info("")
@@ -161,9 +161,9 @@ def fill_cfg(options_to_parse, log):
     options_storage.continue_mode = False
     for opt, arg in options:
         if opt == '-o':
-            options_storage.output_dir = arg
+            options_storage.output_dir = os.path.abspath(arg)
         elif opt == "--tmp-dir":
-            options_storage.tmp_dir = arg
+            options_storage.tmp_dir = os.path.abspath(arg)
         elif opt == "--reference":
             options_storage.reference = support.check_file_existence(arg, 'reference', log)
         elif opt == "--dataset":
@@ -310,14 +310,15 @@ def fill_cfg(options_to_parse, log):
         cfg["assembly"] = empty_config()
 
     # common
-    cfg["common"].__dict__["output_dir"] = os.path.abspath(options_storage.output_dir)
+    cfg["common"].__dict__["output_dir"] = options_storage.output_dir
+    cfg["common"].__dict__["tmp_dir"] = options_storage.tmp_dir
     cfg["common"].__dict__["max_threads"] = options_storage.threads
     cfg["common"].__dict__["max_memory"] = options_storage.memory
     cfg["common"].__dict__["developer_mode"] = options_storage.developer_mode
 
     # dataset section
     cfg["dataset"].__dict__["single_cell"] = options_storage.single_cell
-    cfg["dataset"].__dict__["yaml_filename"] = os.path.abspath(options_storage.dataset_yaml_filename)
+    cfg["dataset"].__dict__["yaml_filename"] = options_storage.dataset_yaml_filename
     if options_storage.developer_mode and options_storage.reference:
         cfg["dataset"].__dict__["reference"] = options_storage.reference
 
@@ -330,11 +331,6 @@ def fill_cfg(options_to_parse, log):
             cfg["error_correction"].__dict__["qvoffset"] = options_storage.qvoffset
         if options_storage.bh_heap_check:
             cfg["error_correction"].__dict__["heap_check"] = options_storage.bh_heap_check
-        if options_storage.tmp_dir:
-            cfg["error_correction"].__dict__["tmp_dir"] = options_storage.tmp_dir
-        else:
-            cfg["error_correction"].__dict__["tmp_dir"] = cfg["error_correction"].output_dir
-        cfg["error_correction"].tmp_dir = os.path.join(os.path.abspath(cfg["error_correction"].tmp_dir), 'tmp')
 
     # assembly
     if not options_storage.only_error_correction:
@@ -467,7 +463,7 @@ def main():
 
     # splitting interlaced reads and processing Ns in additional contigs if needed
     if support.dataset_has_interlaced_reads(dataset_data) or support.dataset_has_additional_contigs(dataset_data):
-        dir_for_split_reads = os.path.join(os.path.abspath(options_storage.output_dir), 'split_input')
+        dir_for_split_reads = os.path.join(options_storage.output_dir, 'split_input')
         if support.dataset_has_interlaced_reads(dataset_data):
             if not os.path.isdir(dir_for_split_reads):
                 os.makedirs(dir_for_split_reads)
@@ -476,7 +472,7 @@ def main():
             dataset_data = support.process_Ns_in_additional_contigs(dataset_data, dir_for_split_reads, log)
         options_storage.dataset_yaml_filename = os.path.join(options_storage.output_dir, "input_dataset.yaml")
         pyyaml.dump(dataset_data, open(options_storage.dataset_yaml_filename, 'w'))
-        cfg["dataset"].yaml_filename = os.path.abspath(options_storage.dataset_yaml_filename)
+        cfg["dataset"].yaml_filename = options_storage.dataset_yaml_filename
 
     try:
         # copying configs before all computations (to prevent its changing at run time)
@@ -504,10 +500,7 @@ def main():
 
                 if os.path.exists(bh_cfg.output_dir):
                     shutil.rmtree(bh_cfg.output_dir)
-
                 os.makedirs(bh_cfg.output_dir)
-                if not os.path.exists(bh_cfg.tmp_dir):
-                    os.makedirs(bh_cfg.tmp_dir)
 
                 if support.get_lib_ids_by_type(dataset_data, options_storage.LONG_READS_TYPES):
                     not_used_dataset_data = support.get_libs_by_type(dataset_data, options_storage.LONG_READS_TYPES)
@@ -583,7 +576,7 @@ def main():
                         dataset_file.write("reads" + '\t' + process_cfg.process_spaces(cfg["dataset"].yaml_filename) + '\n')
                     if spades_cfg.developer_mode and "reference" in cfg["dataset"].__dict__:
                         dataset_file.write("reference_genome" + '\t')
-                        dataset_file.write(process_cfg.process_spaces(os.path.abspath(cfg["dataset"].reference)) + '\n')
+                        dataset_file.write(process_cfg.process_spaces(cfg["dataset"].reference) + '\n')
                     dataset_file.close()
                 spades_cfg.__dict__["dataset"] = dataset_filename
 
@@ -612,7 +605,7 @@ def main():
                     to_correct["scaffolds"] = (result_scaffolds_filename, assembled_scaffolds_filename)
 
                 # moving assembled contigs (scaffolds) to misc dir
-                for k, (old, new) in to_correct.items():
+                for assembly_type, (old, new) in to_correct.items():
                     if options_storage.continue_mode and os.path.isfile(new):
                         continue
                     shutil.move(old, new)
@@ -678,23 +671,23 @@ def main():
                                 args.append(value)
 
                     # processing contigs and scaffolds (or only contigs)
-                    for k, (corrected, assembled) in to_correct.items():
+                    for assembly_type, (corrected, assembled) in to_correct.items():
                         if options_storage.continue_mode and os.path.isfile(corrected):
-                            log.info("\n== Skipping processing of " + k + " (already processed)\n")
+                            log.info("\n== Skipping processing of " + assembly_type + " (already processed)\n")
                             continue
 
                         support.continue_from_here(log)
-                        log.info("\n== Processing of " + k + "\n")
+                        log.info("\n== Processing of " + assembly_type + "\n")
 
                         cur_args = args[:]
                         cur_args += ['-c', assembled]
-                        tmp_dir_for_corrector = os.path.join(corrector_cfg.__dict__["output-dir"], "mismatch_corrector_" + k)
+                        tmp_dir_for_corrector = support.get_tmp_dir(prefix="mis_cor_%s_" % assembly_type)
                         cur_args += ['--output-dir', tmp_dir_for_corrector]
 
                         # correcting
                         corrector.main(cur_args, ext_python_modules_home, log)
 
-                        result_corrected_filename = os.path.abspath(os.path.join(tmp_dir_for_corrector, "corrected_contigs.fasta"))
+                        result_corrected_filename = os.path.join(tmp_dir_for_corrector, "corrected_contigs.fasta")
                         # moving corrected contigs (scaffolds) to SPAdes output dir
                         if os.path.isfile(result_corrected_filename):
                             shutil.move(result_corrected_filename, corrected)
@@ -744,7 +737,11 @@ def main():
             support.error("It looks like you are using SPAdes binaries for another platform.\n" + get_spades_binaries_info_message())
         else:
             log.exception(exc_value)
-            support.error("exception caught", log)
+            support.error("exception caught: %s" % exc_type, log)
+    except BaseException: # since python 2.5 system-exiting exceptions (e.g. KeyboardInterrupt) are derived from BaseException
+        exc_type, exc_value, _ = sys.exc_info()
+        log.exception(exc_value)
+        support.error("exception caught: %s" % exc_type, log)
 
 
 if __name__ == '__main__':

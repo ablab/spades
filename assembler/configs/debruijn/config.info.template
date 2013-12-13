@@ -14,6 +14,7 @@ dataset         ./configs/debruijn/datasets_archive/toy.info
 log_filename    log.properties
 
 output_base	      ./data/debruijn/
+tmp_dir	              spades_tmp/
 
 additional_contigs	tmp_contigs.fasta
 coverage_based_rr_on	false

@@ -572,6 +572,14 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
       cfg.load_from = cfg.output_dir + cfg.load_from;
   }
 
+  load(cfg.tmp_dir, pt, "tmp_dir");
+  if (cfg.tmp_dir[0] != '/') { // relative path
+    if (cfg.run_mode)
+      cfg.tmp_dir = cfg.output_root + cfg.tmp_dir;
+    else
+      cfg.tmp_dir = cfg.output_dir + cfg.tmp_dir;
+  }
+
   load(cfg.entry_point, pt, "entry_point");
 
   load(cfg.use_additional_contigs, pt, "use_additional_contigs");

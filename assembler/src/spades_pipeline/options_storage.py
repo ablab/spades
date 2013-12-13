@@ -6,6 +6,7 @@
 # See file LICENSE for details.
 ############################################################################
 
+import os
 import sys
 import support
 
@@ -37,6 +38,7 @@ K_MERS_SHORT = [21,33,55]
 K_MERS_150 = [21,33,55,77]
 K_MERS_250 = [21,33,55,77,99,127]
 ITERATIONS = 1
+TMP_DIR = "tmp"
 
 ### START OF OPTIONS
 # basic options
@@ -173,9 +175,8 @@ def usage(spades_version, show_hidden=False):
     sys.stderr.write("-m/--memory\t<int>\t\tRAM limit for SPAdes in Gb"\
                          " (terminates if exceeded)" + "\n")
     sys.stderr.write("\t\t\t\t[default: %s]\n" % MEMORY)
-    sys.stderr.write("--tmp-dir\t<dirname>\tdirectory for read error correction"\
-                         " temporary files" + "\n")
-    sys.stderr.write("\t\t\t\t[default: <output_dir>/corrected/tmp]" + "\n")
+    sys.stderr.write("--tmp-dir\t<dirname>\tdirectory for temporary files" + "\n")
+    sys.stderr.write("\t\t\t\t[default: <output_dir>/tmp]" + "\n")
     sys.stderr.write("-k\t\t<int,int,...>\tcomma-separated list of k-mer sizes"\
                          " (must be odd and" + "\n")
     sys.stderr.write("\t\t\t\tless than " + str(MAX_K + 1) + ") [default: 'auto']" + "\n") # ",".join(map(str, k_mers_short))
@@ -216,6 +217,7 @@ def set_default_values():
     global mismatch_corrector
     global developer_mode
     global qvoffset
+    global tmp_dir
 
     if threads is None:
         threads = THREADS
@@ -235,6 +237,8 @@ def set_default_values():
         developer_mode = False
     if qvoffset == 'auto':
         qvoffset = None
+    if tmp_dir is None:
+        tmp_dir = os.path.join(output_dir, TMP_DIR)
 
 
 def set_test_options():

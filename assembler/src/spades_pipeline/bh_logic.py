@@ -60,8 +60,8 @@ def prepare_config_bh(filename, cfg, log):
     subst_dict = dict()
 
     subst_dict["dataset"] = process_cfg.process_spaces(cfg.dataset_yaml_filename)
-    subst_dict["input_working_dir"] = process_cfg.process_spaces(os.path.abspath(cfg.tmp_dir))
-    subst_dict["output_dir"] = process_cfg.process_spaces(os.path.abspath(cfg.tmp_dir))  # for only final corrected reads
+    subst_dict["input_working_dir"] = process_cfg.process_spaces(cfg.tmp_dir)
+    subst_dict["output_dir"] = process_cfg.process_spaces(cfg.tmp_dir)
     subst_dict["general_max_iterations"] = cfg.max_iterations
     subst_dict["general_max_nthreads"] = cfg.max_threads
     subst_dict["count_merge_nthreads"] = cfg.max_threads
@@ -98,6 +98,7 @@ def run_bh(result_filename, configs_dir, execution_home, cfg, not_used_dataset_d
                 else:
                     os.rename(cfg_file, cfg_file.split('.template')[0])
 
+    cfg.tmp_dir = support.get_tmp_dir(prefix="hammer_")
     prepare_config_bh(cfg_file_name, cfg, log)
 
     command = [os.path.join(execution_home, "hammer"),
@@ -118,4 +119,5 @@ def run_bh(result_filename, configs_dir, execution_home, cfg, not_used_dataset_d
     pyyaml.dump(corrected_dataset_data, open(corrected_dataset_yaml_filename, 'w'))
     log.info("\n== Dataset description file was created: " + corrected_dataset_yaml_filename + "\n")
 
-    shutil.rmtree(cfg.tmp_dir)
+    if os.path.isdir(cfg.tmp_dir):
+        shutil.rmtree(cfg.tmp_dir)
