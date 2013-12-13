@@ -489,10 +489,10 @@ public:
 
     bool MakeGrowStep(BidirectionalPath& path) {
         DEBUG("make grow step composite extender");
-        if (cfg::get().avoid_rc_connections && (path.CameToInterstrandBulge() || path.IsInterstrandBulge())) {
-            DEBUG("Stoping because of interstand bulge");
-            return false;
-        }
+//        if (cfg::get().avoid_rc_connections && (path.CameToInterstrandBulge() || path.IsInterstrandBulge())) {
+//            DEBUG("Stoping because of interstand bulge");
+//            return false;
+//        }
         BidirectionalPath* repeat_path = repeat_detector_.RepeatPath(path);
         size_t repeat_size = repeat_detector_.MaxCommonSize(path, *repeat_path);
         if (repeat_size > 0) {

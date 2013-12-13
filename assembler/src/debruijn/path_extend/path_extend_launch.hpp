@@ -258,6 +258,9 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
         resolver.removeOverlaps(paths, mainPE->GetCoverageMap(), max_over,
                                 writer, output_dir);
         paths.FilterEmptyPaths();
+        if (cfg::get().avoid_rc_connections) {
+            paths.FilterInterstandBulges();
+        }
         paths.CheckSymmetry();
         resolver.addUncoveredEdges(paths, mainPE->GetCoverageMap());
         paths.SortByLength();
@@ -297,6 +300,9 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
                             writer, output_dir);
     resolver.RemoveMatePairEnds(mp_paths, max_over);
 	mp_paths.FilterEmptyPaths();
+	if (cfg::get().avoid_rc_connections) {
+	    mp_paths.FilterInterstandBulges();
+	}
 	mp_paths.CheckSymmetry();
 	//resolver.addUncoveredEdges(mp_paths, mp_main_pe->GetCoverageMap());
 	mp_paths.SortByLength();
@@ -317,7 +323,11 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
     resolver.removeOverlaps(last_paths, last_extender->GetCoverageMap(), max_over,
                     writer, output_dir);
     last_paths.FilterEmptyPaths();
+    if (cfg::get().avoid_rc_connections) {
+        last_paths.FilterInterstandBulges();
+    }
     resolver.addUncoveredEdges(last_paths, last_extender->GetCoverageMap());
+    last_paths.CheckSymmetry();
     last_paths.SortByLength();
 
 //Traverse loops

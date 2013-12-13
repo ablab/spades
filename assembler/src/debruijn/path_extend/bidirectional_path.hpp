@@ -1157,6 +1157,19 @@ public:
     	DEBUG("empty paths are removed");
     }
 
+    void FilterInterstandBulges(){
+        DEBUG ("Try to delete paths with interstand bulges");
+        for (Iterator iter = begin(); iter != end(); ++iter){
+            if (iter.get()->IsInterstrandBulge()){
+                iter.get()->PopBack();
+            }
+            if (iter.getConjugate()->IsInterstrandBulge()){
+                iter.getConjugate()->PopBack();
+            }
+        }
+        DEBUG("deleted paths with interstand bulges");
+    }
+
     void ResetPathsId() {
         path_id_ = 0;
         for (size_t i = 0; i < data_.size(); ++i) {
