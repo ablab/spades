@@ -394,10 +394,10 @@ def get_options_from_params(params_filename):
     return cmd_line, cmd_line[spades_py_pos + len('spades.py'):].split()
 
 
-def main():
+def main(args):
     os.environ["LC_ALL"] = "C"
 
-    if len(sys.argv) == 1:
+    if len(args) == 1:
         options_storage.usage(spades_version)
         sys.exit(0)
 
@@ -412,7 +412,7 @@ def main():
     check_binaries(bin_home, log)
 
     # parse options and safe all parameters to cfg
-    cfg, dataset_data = fill_cfg(sys.argv, log)
+    cfg, dataset_data = fill_cfg(args, log)
 
     if options_storage.continue_mode:
         cmd_line, options = get_options_from_params(os.path.join(options_storage.output_dir, "params.txt"))
@@ -435,7 +435,7 @@ def main():
         log.info("Restored from " + cmd_line.strip())
         updated_params = "with updated parameters: "
         flag = False
-        for v in sys.argv[1:]:
+        for v in args[1:]:
             if v == '-o':
                 flag = True
                 continue
@@ -452,7 +452,7 @@ def main():
         log.addHandler(params_handler)
 
         command = "Command line:"
-        for v in sys.argv:
+        for v in args:
             command += " " + v
         log.info(command)
 
@@ -745,4 +745,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv)
