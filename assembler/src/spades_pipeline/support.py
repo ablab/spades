@@ -312,7 +312,7 @@ def get_latest_dir(pattern):
 ### START for processing YAML files
 def get_long_reads_type(option):
     for long_reads_type in options_storage.LONG_READS_TYPES:
-        if option in ("--" + long_reads_type):
+        if option.startswith('--') and option in ("--" + long_reads_type):
             return long_reads_type
     return None
 
