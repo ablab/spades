@@ -958,7 +958,7 @@ public:
             }
         } else {
             DEBUG("try scaffold tree");
-            //next_paths = path_searcher_.ScaffoldTree(path);
+            next_paths = path_searcher_.ScaffoldTree(path);
         }
         DEBUG("next paths size " << next_paths.size());
         EdgeContainer result = ChooseBest(path, next_paths);
