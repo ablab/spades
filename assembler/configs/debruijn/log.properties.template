@@ -14,9 +14,9 @@ default=INFO
 
 #DeBruijnGraphConstructor=TRACE
 #PairedHandlerApplier=TRACE
-QualityEdgeLocalityPrintingRH=TRACE
+#QualityEdgeLocalityPrintingRH=TRACE
 #PairInfoAwareErroneousEdgeRemover=TRACE
-QualityLoggingRemovalHandler=TRACE
+#QualityLoggingRemovalHandler=TRACE
 #MatePairTransformStat=TRACE
 #EditDistanceTrackingCallback=TRACE
 #RepeatResolver=TRACE

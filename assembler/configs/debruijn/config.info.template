@@ -19,8 +19,7 @@ tmp_dir	              spades_tmp/
 main_iteration  true
 additional_contigs	tmp_contigs.fasta
 coverage_based_rr_on	false
-pacbio_test_on		false
-load_from         saves/ ; tmp or latest 
+load_from         latest/saves/ ; tmp or latest 
 
 
 ; Multithreading options
@@ -40,7 +39,7 @@ entry_point construction
 developer_mode true
 
 ; enabled (1) or disabled (0) repeat resolution (former "paired_mode")
-rr_enable false 
+rr_enable true
 
 ; use single reads for rr when other libs available
 always_single_reads_rr false
@@ -77,7 +76,7 @@ divide_clusters false
 mismatch_careful    false
 
 ;if true simple mismatches are corrected
-correct_mismatches          false
+correct_mismatches          true
 
 ; set it true to get statistics, such as false positive/negative, perfect match, etc.
 paired_info_statistics false
@@ -119,7 +118,7 @@ pos
 
 }
 
-gap_closer_enable	false
+gap_closer_enable   true	
 
 gap_closer
 {

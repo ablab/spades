@@ -38,29 +38,25 @@ info_printers
 
     before_post_simplification    
     {
-       write_components                 true
-       write_components_along_genome    true
-       write_error_loc                  true
+;       write_components                 true
+;       write_components_along_genome    true
+;       write_error_loc                  true
     }
 
     final_simplified
     {
-       write_components                 true
-       write_components_along_genome    true
-       write_error_loc                  true
+;       write_components                 true
+;       write_components_along_genome    true
+;       write_error_loc                  true
     }
 
 ;    before_repeat_resolution
 ;    {
-       ;write_components                 true
+;       ;write_components                 true
 ;       ;write_components_along_genome    true
 ;       ;write_error_loc                  true
 ;	write_full_nc_graph              true
 ;
 ;   }
 
-<<<<<<< HEAD
-}
-=======
 }  
->>>>>>> master

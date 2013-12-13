@@ -1,3 +1,0 @@
-single_cell	true
-reference_genome         /home/data/input/Bacteria/E.coli/K12/MG1655-K12.fasta.gz
-reads   /johnny/snurk/ecoli_trimmed/corrected/corrected.yaml

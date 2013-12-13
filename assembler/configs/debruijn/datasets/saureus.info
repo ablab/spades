@@ -1,3 +1,0 @@
-single_cell	true
-reference_genome         /home/snurk/sau_modified_ref/modified_sau_ref.fasta
-reads   /johnny/snurk/saureus_trimmed/corrected/corrected.yaml

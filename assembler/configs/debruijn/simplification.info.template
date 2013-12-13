@@ -32,7 +32,7 @@ default
        ; ec_lb: max_ec_length = k + ec_lb
        ; icb: iterative coverage bound
        ; to_ec_lb: max_ec_length = 2*tip_length(to_ec_lb) - 1
-        condition               "{ to_ec_lb 5, icb 2. }"
+        condition               "{ to_ec_lb 5, icb auto }"
        ; condition               "{ ec_lb 9, icb 40.0 }"
 	}
 	
@@ -149,8 +149,8 @@ sc
 	{
        ; ec_lb: max_ec_length = k + ec_lb
        ; icb: iterative coverage bound
-        condition               "{ to_ec_lb 5, icb 2. }"
        ; condition               "{ ec_lb 29, icb 20.0 }"
+       condition               "{ ec_lb 29, icb auto }"
 	}
 	
 	; relative coverage erroneous connection remover:
