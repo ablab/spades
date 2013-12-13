@@ -11,7 +11,7 @@ class ContigStorage{
 public:
 	virtual void Add(MappingContigPtr new_contig) = 0;
 	virtual size_t Size() = 0;
-	virtual MappingContigPtr operator[](size_t index) = 0;
+	virtual MappingContigPtr& operator[](size_t index) = 0;
 	virtual void ReplaceContig(MappingContigPtr new_contig, size_t index) = 0;
 	virtual void DeleteByIDs(set<size_t> ids) = 0;
 	virtual MappingContigPtr GetContigById(size_t id) = 0;
@@ -37,7 +37,7 @@ public:
 		return storage_.size();
 	}
 
-	MappingContigPtr operator[](size_t index){
+	MappingContigPtr& operator[](size_t index){
 		VERIFY(index < storage_.size());
 		return storage_[index];
 	}

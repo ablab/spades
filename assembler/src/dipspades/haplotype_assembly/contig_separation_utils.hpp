@@ -55,7 +55,7 @@ public:
 	string ToString(){
 		stringstream ss;
 		for(auto it = contigs_pairs.begin(); it != contigs_pairs.end(); it++)
-			ss << "Pair " << it->first.first << ", " << it->first.second << " - " << it->second << endl;
+			ss << "Pair " << it->first.first << ", " << it->first.second << " - " << it->second << ". ";
 		return ss.str();
 	}
 

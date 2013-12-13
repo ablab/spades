@@ -199,7 +199,7 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
   }
 
   // "turn on = true" means turning of all verifies
-  void UnsafeMode(bool turn_on){
+  void SetUnsafeMode(bool turn_on){
           verification_on_ = !turn_on;
   }
 };

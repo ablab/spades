@@ -23,6 +23,13 @@ string cut_fname_from_path(string path){
 			res = path.substr(i + 1, path.size() - i - 1);
 			break;
 		}
+
+	for(size_t i = 0; i < res.size(); i++)
+		if(res[i] == '.'){
+			res = res.substr(0, i);
+			break;
+		}
+
 	return res;
 }
 

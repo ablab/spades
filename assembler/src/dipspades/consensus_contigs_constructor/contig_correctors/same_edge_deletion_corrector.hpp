@@ -26,8 +26,8 @@ public:
 
 	ContigStoragePtr Correct(ContigStoragePtr contigs) {
 		for(size_t i = 0; i < contigs->Size(); i++)
-			//(*contigs)[i] = Correct((*contigs)[i]);
 			contigs->ReplaceContig(Correct((*contigs)[i]), i);
+		TRACE(contigs->Size() << " contigs from " << contigs->Size() << " were corrected");
 		return contigs;
 	}
 

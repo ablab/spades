@@ -57,7 +57,7 @@ public:
 			storage->ReplaceContig(Correct((*storage)[i]), i);
 
 		INFO(ToString(num_corr) + " contigs from " + ToString(storage->Size()) + " were corrected");
-		INFO(ToString(storage->Size() - num_corr) + " contigs have gaps");
+		INFO(ToString(storage->Size() - num_corr) + " contigs from " << storage->Size() << " have gaps");
 		return storage;
 	}
 
@@ -82,12 +82,10 @@ public:
 				num_corr++;
 			return MappingContigPtr(new ReplacedPathMappingContig(contig, new_path));
 		}
-		else{
-			num_corr++;
-			TRACE("Contig " << contig->id() << " has a gap");
-			TRACE("Contig path: " << SimplePathWithVerticesToString(g_, contig->path_seq()));
-			return contig;
-		}
+		num_corr++;
+		TRACE("Contig " << contig->id() << " has a gap");
+		TRACE("Contig path: " << SimplePathWithVerticesToString(g_, contig->path_seq()));
+		return contig;
 	}
 };
 

@@ -1,16 +1,16 @@
 default=INFO
 
-PolymorphicBulgeRemover=TRACE
-BulgeSplitter=TRACE
-SubpathSplitter=TRACE
-ComplexBulgeGluer=TRACE
-GluingVericesDefiner=TRACE
-GluingVericesDefinerResults=TRACE
-ConsensusContigsConstructor=TRACE
-LoopBulgeDeletionCorrector=TRACE
-CompositeMappingContig=TRACE
-DiploidContigSeparator=TRACE
-ContigLabelAllocator=TRACE
+#PolymorphicBulgeRemover=TRACE
+#BulgeSplitter=TRACE
+#SubpathSplitter=TRACE
+#ComplexBulgeGluer=TRACE
+#GluingVericesDefiner=TRACE
+#GluingVericesDefinerResults=TRACE
+#ConsensusContigsConstructor=TRACE
+#LoopBulgeDeletionCorrector=TRACE
+#CompositeMappingContig=TRACE
+#DiploidContigSeparator=TRACE
+#ContigLabelAllocator=TRACE
 
 #DeBruijnGraphConstructor=TRACE
 #PairedHandlerApplier=TRACE

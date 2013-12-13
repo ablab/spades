@@ -23,6 +23,8 @@ struct dipspades_config {
 	    std::string output_suffix;
 		std::string	output_saves;
 
+		std::string dataset_name;
+
 		std::string load_from;
 	};
 

@@ -39,6 +39,7 @@ void load(dipspades_config::io_params &io,
 	load(io.output_dir			, pt, 	"output_dir"			);
 	if (io.output_dir[io.output_dir.length() - 1] != '/')
 		io.output_dir += '/';
+	io.dataset_name = io.output_dir.substr(0, io.output_dir.length() - 1);
 	io.output_dir = io.output_base + io.output_dir + "/";
 
 	io.output_root = io.output_dir;

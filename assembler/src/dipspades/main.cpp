@@ -86,6 +86,8 @@ int main(int /*argc*/, char** argv) {
     VERIFY(dsp_cfg::get().bp.K % 2 != 0);
 
     limit_memory(dsp_cfg::get().bp.max_memory * GB);
+
+    INFO("Assembling dataset (" << dsp_cfg::get().io.dataset_name << ") with K=" << dsp_cfg::get().bp.K);
     dipspades::run_dipspades();
 
 //    link_output("latest_success");

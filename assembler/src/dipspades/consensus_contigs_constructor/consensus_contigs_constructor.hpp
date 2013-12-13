@@ -141,6 +141,7 @@ class ConsensusContigsConstructor {
 			new_storage->Add(rc_contig);
 		}
 		TRACE("CreateStorageWithRCContigs ends");
+		INFO("Addition of RC contigs. " << new_storage->Size() << " contigs will be used");
 		return new_storage;
 	}
 
@@ -209,6 +210,23 @@ class ConsensusContigsConstructor {
 				path::append_path(dsp_cfg::get().io.output_dir, "unpaired_consensus_contigs.fasta").c_str());
 	}
 
+	void WriteAlignedHaplocontigs(){
+		string fname = path::append_path(dsp_cfg::get().io.output_dir, "haplocontigs_alignent");
+		ofstream out(fname.c_str());
+		INFO("Writing aligned contigs into " << fname);
+		for(auto it = correction_result_.redundancy_map.begin();
+				it != correction_result_.redundancy_map.end(); it++){
+			auto contig1 = default_storage_->GetContigById(it->first);
+			auto set_ids = it->second;
+			for(auto set_it = set_ids.begin(); set_it != set_ids.end(); set_it++){
+				auto contig2 = default_storage_->GetContigById(*set_it);
+				out << contig1->src_file() << ":" << contig1->name() << "\t" <<
+						contig2->src_file() << ":" << contig2->name() << endl;
+			}
+		}
+
+	}
+
 public:
 	ConsensusContigsConstructor(conj_graph_pack &graph_pack,
 			BaseHistogram<size_t> &bulge_len_hist) :
@@ -229,6 +247,7 @@ public:
 			return;
 
 		vector<MappingPath<EdgeId> > mapping_paths = ConstructMappathsWithoutRC(contigs);
+		VERIFY(mapping_paths.size() == contigs.size());
 		DefineIndicesOfZeroPaths(mapping_paths);
 
 		auto preliminary_storage = CreateContigStorage(contigs, mapping_paths);
@@ -255,6 +274,8 @@ public:
 		string consensus_fname(path::append_path(dsp_cfg::get().io.output_dir, "consensus_contigs.fasta").c_str());
 		WriteContigsToFile(composite_storage_, consensus_fname);
 		WritePairedAndUnpairedContigs(composite_storage_);
+
+		WriteAlignedHaplocontigs();
 
 		INFO("Consensus contigs constructor ends");
 	}

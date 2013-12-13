@@ -208,11 +208,15 @@ public:
 						it->second.start_pos << " - " << it->second.end_pos);
 
 				// first path processing
-				TRACE("First path processing");
-				TRACE("Id - " << contigs_[0]->id());
-				vector<EdgeId> first_path = contigs_[0]->path_seq();
-				for(size_t i = 0; i <= IndexOfEdgeByNumberOfVertex(overlaps_[0].first.end_pos); i++)
-					composite_path.push_back(first_path[i]);
+				{
+					TRACE("First path processing");
+					TRACE("Id - " << contigs_[0]->id());
+					vector<EdgeId> first_path = contigs_[0]->path_seq();
+					size_t end_ind = min<size_t>(IndexOfEdgeByNumberOfVertex(overlaps_[0].first.end_pos),
+							first_path.size() - 1);
+					for(size_t i = 0; i <= end_ind; i++)
+						composite_path.push_back(first_path[i]);
+				}
 
 				TRACE("Intermediate paths processing");
 				// intermediate paths processing
@@ -229,17 +233,19 @@ public:
 						composite_path.push_back(cur_path[j]);
 				}
 
-				// last path processing
-				TRACE("Last path processing");
-				vector<EdgeId> last_path = contigs_[contigs_.size() - 1]->path_seq();
-				TRACE("Id: " << contigs_[contigs_.size() - 1]->id());
-				size_t start_ind = IndexOfEdgeByNumberOfVertex(overlaps_[overlaps_.size() - 1].second.end_pos) + 1;
-				start_ind = min<size_t>(start_ind, last_path.size() - 1);
-				size_t end_ind = last_path.size() - 1;
-				TRACE("Start - " << start_ind << ", end - " << end_ind);
-				VERIFY(start_ind < last_path.size() && end_ind < last_path.size());
-				for(size_t i = start_ind; i <= end_ind; i++)
-					composite_path.push_back(last_path[i]);
+				{
+					// last path processing
+					TRACE("Last path processing");
+					vector<EdgeId> last_path = contigs_[contigs_.size() - 1]->path_seq();
+					TRACE("Id: " << contigs_[contigs_.size() - 1]->id());
+					size_t start_ind = IndexOfEdgeByNumberOfVertex(overlaps_[overlaps_.size() - 1].second.end_pos) + 1;
+					start_ind = min<size_t>(start_ind, last_path.size() - 1);
+					size_t end_ind = last_path.size() - 1;
+					TRACE("Start - " << start_ind << ", end - " << end_ind);
+					VERIFY(start_ind < last_path.size() && end_ind < last_path.size());
+					for(size_t i = start_ind; i <= end_ind; i++)
+						composite_path.push_back(last_path[i]);
+				}
 
 				// deletion of repetitive start edge
 				TRACE("Deletion of repetitive start-end edge");

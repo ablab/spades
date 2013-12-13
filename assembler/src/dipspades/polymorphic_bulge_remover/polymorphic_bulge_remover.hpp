@@ -48,7 +48,7 @@ class PolymorphicBulgeRemover {
 	template<class BulgeRemover>
 	void BulgeRemoverCycle(string bulge_remover_name, size_t num_iters){
 		INFO(bulge_remover_name + " starts");
-		INFO("Maximal number of iterations - " << num_iters);
+		INFO("Maximal number of iterations: " << num_iters);
 		BulgeRemover br(graph_pack_.g,
 				PolymorphicBulgeRemoverHelper::CreateBaseBulgeGluer(graph_pack_.g,
 						dsp_cfg::get().pbr.paired_vert_rel_threshold),
@@ -90,16 +90,18 @@ public:
 
 		WriteComponents("before_pbr");
 
-		graph_pack_.kmer_mapper.UnsafeMode(true);
+		graph_pack_.kmer_mapper.SetUnsafeMode(true);
 
 		INFO("Polymorphic bulge remover starts");
 		RunSimpleBRCycle();
 		BulgeRemoverCycle<LightBulgeRemover>("LightBulgeRemover", dsp_cfg::get().pbr.num_iters_lbr);
 
-		INFO("IterativeTailGluing starts");
+		INFO("Iterative tail gluing starts");
 		IterativeTailGluing(graph_pack_.g, dsp_cfg::get().pbr.rel_bulge_align).IterativeProcessTails();
 		compressor_.CompressAllVertices();
+		INFO("Iterative tail gluing ends");
 
+		INFO("Index refilling");
 		graph_pack_.index.Refill();
 
         INFO("Glueing equal kmers");
@@ -108,7 +110,7 @@ public:
 
 		WriteComponents("after_pbr");
 
-		graph_pack_.kmer_mapper.UnsafeMode(false);
+		graph_pack_.kmer_mapper.SetUnsafeMode(false);
 	}
 };
 
