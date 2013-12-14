@@ -93,7 +93,7 @@ public:
 	typedef typename base::edge_const_iterator edge_const_iterator;
 	typedef ConstructionHelper<AbstractEditableGraph<VertexIdT, EdgeIdT, DataMasterT, VertexIt>> Helper;
 
-private:
+protected:
 	//todo think of necessity to pull these typedefs through hierarchy
 	DataMaster master_;
 

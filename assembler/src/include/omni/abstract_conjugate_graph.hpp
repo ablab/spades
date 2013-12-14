@@ -243,7 +243,7 @@ public:
     using base::CreateVertex;
     using base::HiddenAddEdge;
 
-private:
+protected:
 
     VertexId CreateVertex(const VertexData &data1, const VertexData &data2, restricted::IdDistributor &id_distributor) {
         VertexId vertex1(new PairedVertex<DataMaster>(data1), id_distributor);
