@@ -18,6 +18,7 @@
 #include "standard_base.hpp"
 #include "indices/kmer_extension_index.hpp"
 #include "openmp_wrapper.h"
+#include "parallel_wrapper.hpp"
 
 namespace debruijn_graph {
 
@@ -491,7 +492,7 @@ public:
 		typename Graph::Helper helper = graph.GetConstructionHelper();
 		vector<LinkRecord> records;
 		CollectLinkRecords(helper, graph, records, sequences);//TODO make parallel
-		std::sort(records.begin(), records.end());
+		parallel::sort(records.begin(), records.end());
 		size_t size = records.size();
 		vector<vector<VertexId>> vertices_list(omp_get_max_threads());
         restricted::IdSegmentStorage id_storage = helper.graph().GetGraphIdDistributor().Reserve(size * 2);
