@@ -324,6 +324,23 @@ inline void load(debruijn_config::ambiguous_distance_estimator& amde,
     load(amde.relative_seq_threshold,		pt,		"relative_seq_threshold");
 }
 
+void load(debruijn_config::scaffold_correction& sc_corr,
+        boost::property_tree::ptree const& pt, bool /*complete*/) {
+    using config_common::load;
+    load(sc_corr.scaffolds_file, pt, "scaffolds_file");
+    load(sc_corr.output_unfilled, pt, "output_unfilled");
+    load(sc_corr.max_insert, pt, "max_insert");
+    load(sc_corr.max_cut_length, pt, "max_cut_length");
+}
+
+void load(debruijn_config::truseq_analysis& tsa,
+      boost::property_tree::ptree const& pt, bool /*complete*/) {
+  using config_common::load;
+  load(tsa.scaffolds_file, pt, "scaffolds_file");
+  load(tsa.genome_file, pt, "genome_file");
+}
+
+
 void load(debruijn_config::pacbio_processor& pb,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
@@ -384,7 +401,6 @@ void load(debruijn_config::dataset& ds,
 
   load(ds.reads_filename, pt, "reads");
   load(ds.single_cell, pt, "single_cell");
-  
   //fixme temporary solution
   boost::optional<std::string> meta_opt =
       pt.get_optional<std::string>("meta");
@@ -398,6 +414,7 @@ void load(debruijn_config::dataset& ds,
   if (ds.meta)
       ds.single_cell = true;
 
+  ds.moleculo = pt.get("moleculo", false);
   ds.reference_genome_filename = "";
   boost::optional<std::string> refgen =
       pt.get_optional<std::string>("reference_genome");
@@ -541,6 +558,9 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 
   // TODO: remove this option
   load(cfg.run_mode, pt, "run_mode");
+  load(cfg.scaffold_correction_mode, pt, "scaffold_correction_mode");
+  load(cfg.sc_cor, pt, "sc_cor");
+  load(cfg.tsa, pt, "tsa");
 
   if (cfg.run_mode) {
     load(cfg.project_name, pt, "project_name");
@@ -552,8 +572,11 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
     cfg.output_suffix = MakeLaunchTimeDirName() + "/";
     cfg.output_dir = cfg.output_root + cfg.output_suffix;
   } else {
-    cfg.output_root = cfg.output_base + "/K" + ToString(cfg.K) + "/";
-
+    //todo remove scaffold_correction_mode from config after config is refactored and move this logic to main or spades.py
+    if(!cfg.scaffold_correction_mode)
+      cfg.output_root = cfg.output_base + "/K" + ToString(cfg.K) + "/";
+    else
+      cfg.output_root = cfg.output_base + "/SCC/";
     cfg.output_dir = cfg.output_root;
   }
 
@@ -625,7 +648,6 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
       (cfg.output_base + "/" + cfg.temp_bin_reads_dir) :
       (cfg.output_base + cfg.project_name + "/"
        + cfg.temp_bin_reads_dir);
-
   cfg.temp_bin_reads_info = cfg.temp_bin_reads_path + "INFO";
 
   cfg.paired_read_prefix = cfg.temp_bin_reads_path + "_paired";
@@ -663,8 +685,11 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   else {
       load(cfg.de, pt, (cfg.ds.single_cell ? "old_sc_de" : "old_usual_de"));
   }
-
-  cfg.pe_params.name = cfg.ds.single_cell ? "singlecell" : "multicell";
+  cfg.pe_params.name = "multicell";
+  if (cfg.ds.single_cell)
+    cfg.pe_params.name = "singlecell";
+  else if (cfg.ds.moleculo)
+    cfg.pe_params.name = "moleculo";
   load(cfg.pe_params, pt, "path_extend_params");
   if (!cfg.developer_mode) {
       cfg.pe_params.debug_output = false;
@@ -699,7 +724,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   load_reference_genome(cfg.ds, cfg.input_dir);
 
   cfg.need_mapping = cfg.developer_mode || cfg.correct_mismatches 
-                        || cfg.gap_closer_enable || cfg.rr_enable;
+                        || cfg.gap_closer_enable || cfg.rr_enable || cfg.scaffold_correction_mode;
 
   load(cfg.simp, pt, "default");
 
@@ -709,6 +734,8 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   if (cfg.mismatch_careful)
     load(cfg.simp, pt, "careful", false);
 
+  if (cfg.ds.moleculo)
+    load(cfg.simp, pt, "moleculo", false);
   if (cfg.diploid_mode)
     load(cfg.simp, pt, "diploid_simp", false);
 

@@ -262,6 +262,7 @@ class HammingGapJoiner: public GapJoiner {
         size_t n = s1.size();
         size_t mismatches = HammingDistance(s1, s2);
         return 2*n + (n - mismatches) * log_match_prob + mismatches * log_mismatch_prob;
+//        return 1.0 - (double) HammingDistance(s1, s2) / (double) s1.size() - (double) abs(gap - initial_gap) * gap_weight;
     }
 
 public:

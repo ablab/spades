@@ -166,7 +166,7 @@ ReadStatistics ConstructGraph(const debruijn_config::construction &params,
 	} else {
 		INFO("Invalid construction mode")
 		VERIFY(false);
-		return {};
+		return {0,0,0};
 	}
 }
 

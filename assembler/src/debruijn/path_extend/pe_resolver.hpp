@@ -34,6 +34,27 @@ public:
         }
     }
 
+    void CutPseudoSelfConjugatePaths(PathContainer& paths) {
+        vector<pair<BidirectionalPath *, BidirectionalPath *>> tmp_paths(paths.begin(), paths.end());
+        for(auto it = tmp_paths.begin(); it != tmp_paths.end(); ++it) {
+            BidirectionalPath * path1 = it->first;
+            BidirectionalPath * path2 = it->second;
+            bool ups = false;
+            if(path1 != path2) {
+                size_t last = 0;
+                while(last < path1->Size() && path1->operator [](last) == path2->operator [](last)) {
+                    last++;
+                }
+                if(last > 0) {
+                    AddOverlap(paths, path1, 0, last - 1);
+                    path1->PopBack(last);
+                    path2->PopBack(last);
+                }
+            }
+            if(ups) path1->Print();
+        }
+    }
+
     void RemoveSimilarPaths(PathContainer& paths, size_t max_overlap, bool del_only_equal, bool del_subpaths, bool del_begins, bool del_all, bool add_overlap_begins) const {
         std::vector<EdgeId> edges = GetSortedEdges();
         for (size_t edgeId = 0; edgeId < edges.size(); ++edgeId) {
@@ -48,8 +69,9 @@ public:
                 }
                 for (size_t vect_i1 = vect_i + 1; vect_i1 < cov_vect.size(); ++vect_i1) {
                     BidirectionalPath* path2 = cov_vect.at(vect_i1);
-                    if (path1 == path2 || path1 == path2->GetConjPath())
+                    if (path1 == path2 || path1 == path2->GetConjPath()) {
                         continue;
+                    }
                     if (cov_paths.find(path2) == cov_paths.end())
                         continue;
                     if ((*path1) == (*path2)) {
@@ -331,6 +353,7 @@ public:
             return;
         }
         SimpleOverlapRemover remover(g_, coverage_map);
+        remover.CutPseudoSelfConjugatePaths(paths);
         //writer.writePaths(paths, output_dir + "/before.fasta");
         //DEBUG("Removing subpaths");
         remover.RemoveSimilarPaths(paths, max_overlap, false, true, true, false, add_overlaps_begin);

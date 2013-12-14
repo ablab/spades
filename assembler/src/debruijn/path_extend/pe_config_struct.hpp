@@ -93,6 +93,7 @@ struct pe_config {
   struct ParamSetT {
     bool normalize_weight;
     size_t split_edge_length;
+    bool cut_all_overlaps;
 
     struct ExtensionOptionsT {
         bool recalculate_threshold;
@@ -153,7 +154,6 @@ struct pe_config {
     VisualizeParamsT viz;
     ParamSetT param_set;
     AllLongReads long_reads;
-    bool cut_all_overlaps;
   } params;
 
   std::string dataset_name;

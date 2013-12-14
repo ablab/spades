@@ -64,6 +64,7 @@ void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool /
 
   using config_common::load;
   load(p.normalize_weight, pt,  "normalize_weight");
+  load(p.cut_all_overlaps, pt, "cut_all_overlaps");
   load(p.split_edge_length, pt, "split_edge_length");
   load(p.extension_options, pt, "extension_options");
   load(p.mate_pair_options, pt, "mate_pair_options");
@@ -97,7 +98,6 @@ void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt,
     load(p.param_set, pt, p.name.c_str());
     load(p.obs, pt, "output_broken_scaffolds");
     load(p.long_reads, pt, "long_reads");
-    load(p.cut_all_overlaps, pt, "cut_all_overlaps");
     if (!p.debug_output) {
         p.output.DisableAll();
         p.viz.DisableAll();

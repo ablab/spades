@@ -5,6 +5,7 @@
 #include "distance_estimation.info"
 #include "detail_info_printer.info"
 #include "coverage_based_rr.info"
+#include "tsa.info"
 
 K		55
 
@@ -35,6 +36,7 @@ entry_point construction
 ;entry_point repeat_resolving
 
 developer_mode true
+scaffold_correction_mode false
 
 ; enabled (1) or disabled (0) repeat resolution (former "paired_mode")
 rr_enable true
@@ -157,6 +159,14 @@ graph_read_corr
 	enable false
 	output_dir corrected_contigs/
 	binary true
+}
+
+sc_cor
+{
+    scaffolds_file scaffolds.fasta
+    output_unfilled true
+    max_insert 100
+    max_cut_length 50
 }
 
 ;flanking coverage range

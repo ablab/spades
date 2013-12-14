@@ -164,6 +164,65 @@ bool UseCoverageResolverForSingleReads(const io::LibraryType& type) {
 
 }
 
+inline vector<SimpleExtender*> MakeLongReadsExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, size_t max_loops, const std::string& output_dir) {
+    vector<SimpleExtender*> extends;
+    for (size_t i = 0; i < gp.single_long_reads.size(); ++i) {
+        PathContainer paths;
+        AddPathsToContainer(gp, gp.single_long_reads[i].GetAllPaths(), 1, paths);
+        if (paths.size() == 0) {
+            continue;
+        }
+        ContigWriter writer(gp.g);
+        DebugOutputPaths(writer, gp, output_dir, paths, "long_reads");
+        ExtensionChooser * longReadEC = new LongReadsExtensionChooser(gp.g, paths, GetSingleReadsFilteringThreshold(cfg::get().ds.reads[i].type()),
+                                                                      GetSingleReadsWeightPriorityThreshold(cfg::get().ds.reads[i].type()),
+                                                                      GetSingleReadsUniqueEdgePriorityThreshold(cfg::get().ds.reads[i].type()));
+        SimpleExtender * longReadExtender = new SimpleExtender(gp, cov_map, longReadEC, 10000,  //FIXME
+                                                                       max_loops, true, UseCoverageResolverForSingleReads(cfg::get().ds.reads[i].type()));
+        extends.push_back(longReadExtender);
+    }
+    return extends;
+}
+
+inline vector<SimpleExtender *> MakeLongEdgePEExtenders(const conj_graph_pack& gp, const pe_config::ParamSetT& pset, vector<PairedInfoLibrary*>& libs,
+                                                const GraphCoverageMap& cov_map, bool investigate_loops) {
+    vector<SimpleExtender *> extends;
+    for (size_t i = 0; i < libs.size(); ++i) {
+        WeightCounter* wc = new PathCoverWeightCounter(gp.g, libs[i], GetWeightThreshold(libs[i], pset), GetSingleThreshold(libs[i], pset));
+        wc->setNormalizeWeight(pset.normalize_weight);
+        LongEdgeExtensionChooser * extension = new LongEdgeExtensionChooser(gp.g, wc, GetPriorityCoeff(libs[i], pset));
+        extends.push_back(new SimpleExtender(gp, cov_map, extension, libs[i]->GetISMax(), pset.loop_removal.max_loops, investigate_loops, false));
+    }
+    return extends;
+}
+
+inline vector<SimpleExtender *> MakePEExtenders(const conj_graph_pack& gp, const pe_config::ParamSetT& pset, vector<PairedInfoLibrary*>& libs,
+                                                const GraphCoverageMap& cov_map, bool investigate_loops) {
+    vector<SimpleExtender *> extends;
+    for (size_t i = 0; i < libs.size(); ++i) {
+        WeightCounter* wc = new PathCoverWeightCounter(gp.g, libs[i], GetWeightThreshold(libs[i], pset), GetSingleThreshold(libs[i], pset));
+        wc->setNormalizeWeight(pset.normalize_weight);
+        SimpleExtensionChooser * extension = new SimpleExtensionChooser(gp.g, wc, GetPriorityCoeff(libs[i], pset));
+        extends.push_back(new SimpleExtender(gp, cov_map, extension, libs[i]->GetISMax(), pset.loop_removal.max_loops, investigate_loops, false));
+    }
+    return extends;
+}
+
+inline vector<ScaffoldingPathExtender*> MakeScaffoldingExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, const pe_config::ParamSetT& pset,
+                                                                vector<PairedInfoLibrary *>& libs) {
+    GapJoiner * gapJoiner = new HammingGapJoiner(gp.g, pset.scaffolder_options.min_gap_score,
+                                                 (int) (pset.scaffolder_options.max_must_overlap * (double) gp.g.k()),
+                                                 (int) (pset.scaffolder_options.max_can_overlap * (double) gp.g.k()), pset.scaffolder_options.short_overlap);
+    vector<ScaffoldingPathExtender*> scafPEs;
+    for (size_t i = 0; i < libs.size(); ++i) {
+        WeightCounter* counter = new ReadCountWeightCounter(gp.g, libs[i]);
+        double prior_coef = GetPriorityCoeff(libs[i], pset);
+        ScaffoldingExtensionChooser * scaff_chooser = new ScaffoldingExtensionChooser(gp.g, counter, prior_coef);
+        scafPEs.push_back(new ScaffoldingPathExtender(gp, cov_map, scaff_chooser, gapJoiner, libs[i]->GetISMax(), pset.loop_removal.max_loops, false));
+    }
+    return scafPEs;
+}
+
 inline size_t CountEdgesInGraph(const Graph& g) {
     size_t count = 0;
     for (auto iter = g.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
@@ -210,7 +269,7 @@ inline void FinalizePaths(PathContainer& paths, GraphCoverageMap& cover_map, siz
     ContigWriter writer(cover_map.graph());
     PathExtendResolver resolver(cover_map.graph());
 
-    resolver.removeOverlaps(paths, cover_map, max_overlap, cfg::get().pe_params.param_set.remove_overlaps, cfg::get().pe_params.cut_all_overlaps);
+    resolver.removeOverlaps(paths, cover_map, max_overlap, cfg::get().pe_params.param_set.remove_overlaps, cfg::get().pe_params.param_set.cut_all_overlaps);
     if (mate_pairs) {
         resolver.RemoveMatePairEnds(paths, max_overlap);
     }
@@ -251,7 +310,6 @@ inline bool IsForPEExtender(size_t lib_index) {
 inline bool IsForShortLoopExtender(size_t lib_index) {
     io::LibraryType lt = cfg::get().ds.reads[lib_index].type();
     bool is_valid = cfg::get().ds.reads[lib_index].data().mean_insert_size > 0.0;
-
     return lt == io::LibraryType::PairedEnd && is_valid;
 }
 
@@ -305,6 +363,21 @@ inline shared_ptr<SimpleExtender> MakeLongReadsExtender(const conj_graph_pack& g
                                                                   GetSingleReadsUniqueEdgePriorityThreshold(cfg::get().ds.reads[lib_index].type()));
     return make_shared<SimpleExtender>(gp, cov_map, longReadEC, 10000,  //FIXME
             pset.loop_removal.max_loops, true, UseCoverageResolverForSingleReads(cfg::get().ds.reads[lib_index].type()));
+}
+
+inline shared_ptr<SimpleExtender> MakeLongEdgePEExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
+                                                         size_t lib_index, const pe_config::ParamSetT& pset, bool use_auto_threshold, bool investigate_loops) {
+    shared_ptr<PairedInfoLibrary> lib = MakeNewLib(gp.g, gp.clustered_indices, lib_index);
+    if (use_auto_threshold) {
+        lib->SetSingleThreshold(cfg::get().ds.reads[lib_index].data().pi_threshold);
+        if (!investigate_loops)
+            INFO("Threshold for library #" << lib_index << " is " << cfg::get().ds.reads[lib_index].data().pi_threshold);
+    }
+    shared_ptr<WeightCounter> wc = make_shared<PathCoverWeightCounter>(gp.g, lib, GetWeightThreshold(lib, pset),
+                                                                       GetSingleThreshold(lib, pset), cfg::get().ds.meta ? 0.5 : 1.0);
+    wc->setNormalizeWeight(pset.normalize_weight);
+    shared_ptr<SimpleExtensionChooser> extension = make_shared<LongEdgeExtensionChooser>(gp.g, wc, GetPriorityCoeff(lib, pset));
+    return make_shared<SimpleExtender>(gp, cov_map, extension, lib->GetISMax(), pset.loop_removal.max_loops, investigate_loops, false);
 }
 
 inline shared_ptr<SimpleExtender> MakePEExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
@@ -384,10 +457,12 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
             }
 
             if (IsForSingleReadExtender(i)) {
+                result.
                 result.push_back(MakeLongReadsExtender(gp, cov_map, i, pset));
                 ++single_read_libs;
             }
             if (IsForPEExtender(i) && stage == PathExtendStage::PEStage) {
+                pes.push_back(MakeLongEdgePEExtender(gp, cov_map, i, pset, use_auto_threshold, false))
                 pes.push_back(MakePEExtender(gp, cov_map, i, pset, use_auto_threshold, false));
             }
             if (IsForShortLoopExtender(i)) {
@@ -420,8 +495,6 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
     INFO("Using " << mp_libs << " mate-pair " << LibStr(mp_libs));
     INFO("Using " << single_read_libs << " single read " << LibStr(single_read_libs));
     INFO("Scaffolder is " << (pset.scaffolder_options.on ? "on" : "off"));
-
-
     return result;
 }
 
