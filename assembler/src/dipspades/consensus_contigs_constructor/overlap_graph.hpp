@@ -751,6 +751,8 @@ public:
 		return paths;
 	}
 
+	const OverlapGraph & GetGraph() { return g_; }
+
 	~OverlapGraphDijkstra(){
 	}
 };

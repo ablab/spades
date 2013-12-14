@@ -160,6 +160,12 @@ class OverlapCorrector : public LoopBulgeDeletionCorrector{
 		return make_pair(IsOverlapCorrect(path2, pos2, path1, pos1), IsOverlapCorrect(path1, pos1, path2, pos2));
 	}
 
+	string get_composite_contig_name(size_t i, size_t length){
+		stringstream ss;
+		ss << i << "_contig_" << length << "_length";
+		return ss.str();
+	}
+
 public:
 	OverlapCorrector(Graph &g, size_t k_value, size_t min_overlap_length, VertexPathIndex &path_index) :
 		LoopBulgeDeletionCorrector(g,
@@ -331,13 +337,15 @@ public:
 		TRACE(paths.size() << " were searched");
 
 		ContigStoragePtr new_storage(new SimpleContigStorage());
-		int i = 0;
+		size_t i = 1;
 		for(auto p = paths.begin(); p != paths.end(); p++){
 			VERIFY(p->size() > 0);
 			if(p->size() == 1){
 				TRACE("Contig" << i << " is simple");
 				auto contig = contigs->GetContigById((*p)[0]);
-				new_storage->Add(contigs->GetContigById((*p)[0]));
+				MappingContigPtr new_rc(new ReplacedNameMappingContig(contig,
+						get_composite_contig_name(i, contig->length())));
+				new_storage->Add(new_rc);
 			}
 			else{
 				TRACE("Contig" << i << " is composite");
@@ -351,8 +359,9 @@ public:
  					mc_vect.push_back(contigs->GetContigById(*id));
 				}
 
-				MappingContigPtr new_mc(new CompositeMappingContig(g_, k_value_, mc_vect, overlaps));
-//				cout << "path size - " << new_mc->path_seq().size() << endl;
+				MappingContigPtr new_mc(new CompositeMappingContig(g_, k_value_,
+						mc_vect, overlaps));
+				new_mc->ChangeName(get_composite_contig_name(i, new_mc->length()));
 				new_storage->Add(new_mc);
 			}
 			i++;

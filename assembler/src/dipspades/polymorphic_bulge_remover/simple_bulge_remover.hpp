@@ -11,7 +11,6 @@ namespace dipspades {
 class SimpleBulgeRemover{
 	Graph &graph_;
 	BaseHistogram<size_t> &bulge_len_hist_;
-	const dipspades_config::polymorphic_br &pbr_config_;
 	RelatedVerticesCondition rel_bulge_checker_;
 	DiploidyCondition dip_bulge_checker_;
 public:
@@ -20,7 +19,6 @@ public:
 			const dipspades_config::polymorphic_br &pbr_config) :
 		graph_(graph),
 		bulge_len_hist_(bulge_len_hist),
-		pbr_config_(pbr_config),
 		rel_bulge_checker_(graph),
 		dip_bulge_checker_(graph, pbr_config.rel_bulge_length, pbr_config.rel_bulge_align) {}
 

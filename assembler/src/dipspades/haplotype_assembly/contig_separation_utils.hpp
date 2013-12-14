@@ -73,7 +73,6 @@ public:
 };
 
 class ContigLabelAllocator{
-	Graph &g_;
 	ContigStoragePtr contig_storage_;
 
 	Sequence GetSequenceByRange(Sequence seq, pair<size_t, size_t> r){
@@ -140,8 +139,7 @@ class ContigLabelAllocator{
 	}
 
 public:
-	ContigLabelAllocator(Graph &g, ContigStoragePtr contig_storage) :
-		g_(g),
+	ContigLabelAllocator(ContigStoragePtr contig_storage) :
 		contig_storage_(contig_storage) { }
 
 	SignedLabels SignLabelsOnEdge(set<size_t> contigs, EdgeId current_edge){
@@ -422,7 +420,7 @@ public:
 	void SeparateContigs(){
 
 		SignedLabels signed_labels;
-		ContigLabelAllocator label_allocator(g_, default_storage_);
+		ContigLabelAllocator label_allocator(default_storage_);
 
 		// for each composite contig
 		for(size_t i = 0; i < composite_storage_->Size(); i++){

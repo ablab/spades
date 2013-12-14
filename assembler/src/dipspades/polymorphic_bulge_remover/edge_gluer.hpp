@@ -1,8 +1,6 @@
 #pragma once
 
 #include "../../include/omni/dijkstra_tools/neighbours_iterator.hpp"
-#include <boost/assign/std/vector.hpp>
-#include <boost/assign/list_of.hpp>
 
 using namespace debruijn_graph;
 

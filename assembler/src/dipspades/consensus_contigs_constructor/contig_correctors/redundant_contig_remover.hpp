@@ -609,7 +609,7 @@ public:
 
 			size_t best_lcs2 = GetLCSLengthByPath(path2, best_vect2);
 
-			if(abs(lcs_right1 - best_lcs2) < abs(lcs_left1 - best_lcs2))
+			if(abs_diff(lcs_right1, best_lcs2) < abs_diff(lcs_left1, best_lcs2))
 				return pair<vector<size_t>, vector<size_t> >(pos_right1, best_vect2);
 			else
 				return pair<vector<size_t>, vector<size_t> >(pos_left1, best_vect2);
@@ -618,7 +618,7 @@ public:
 		if(!equal_num_err1 && equal_num_err2){
 			size_t best_lcs1 = GetLCSLengthByPath(path1, best_vect1);
 
-			if(abs(lcs_right2 - best_lcs1) < abs(lcs_left2 - best_lcs1))
+			if(abs_diff(lcs_right2, best_lcs1) < abs_diff(lcs_left2, best_lcs1))
 				return pair<vector<size_t>, vector<size_t> >(best_vect1, pos_right2);
 			else
 				return pair<vector<size_t>, vector<size_t> >(best_vect1, pos_left2);

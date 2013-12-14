@@ -181,8 +181,8 @@ class ConsensusContigsConstructor {
 		for(size_t i = 0; i < contigs->Size(); i++){
 			vector<EdgeId> contig_path = (*contigs)[i]->path_seq();
 			TRACE(i << " path: " << SimplePathWithVerticesToString(graph_pack_.g, contig_path));
-			Sequence seq = GetSequenceByPath(graph_pack_, contig_path);
-			out << ">" << i + 1 << "_contig_length_" << seq.size() << endl;
+			Sequence seq = (*contigs)[i]->seq();
+			out << ">" << (*contigs)[i]->name() << endl;
 			out << seq.str() << endl;
 			total_length += seq.size();
 		}
@@ -213,8 +213,39 @@ class ConsensusContigsConstructor {
 	void WriteAlignedHaplocontigs(){
 		string fname = path::append_path(dsp_cfg::get().io.output_dir, "haplocontigs_alignent");
 		ofstream out(fname.c_str());
-		INFO("Writing aligned contigs into " << fname);
-		for(auto it = correction_result_.redundancy_map.begin();
+		INFO("Writing haplocontigs alignment to " << fname);
+
+		for(size_t i = 0; i < composite_storage_->Size(); i++){
+			auto composite_contig = (*composite_storage_)[i];
+			out << "Composite contig: " << composite_contig->name() << endl;
+			auto haplocontigs = composite_contig->AllMappingContigs();
+			if(haplocontigs.size() == 0) // contig is not composite
+				haplocontigs.push_back(composite_contig);
+
+			if(haplocontigs.size() > 1){
+				out << "\tOverlapped haplocontigs: " << endl;
+				for(size_t i = 0; i < haplocontigs.size() - 1; i++)
+					out << "\t\t" << haplocontigs[i]->full_name() << "\t" <<
+					haplocontigs[i + 1]->full_name() << endl;
+			}
+
+			out << "\tAligned pairs: " << endl;
+			size_t written_pairs = 0;
+			for(auto h = haplocontigs.begin(); h != haplocontigs.end(); h++){
+				size_t id = (*h)->id();
+				auto redundant_contigs = correction_result_.redundancy_map.GetValuesByKey(id);
+				for(auto it = redundant_contigs.begin(); it != redundant_contigs.end(); it++){
+					out << "\t\t" << (*h)->full_name() << "\t" <<
+							default_storage_->GetContigById(*it)->full_name() << endl;
+					written_pairs++;
+				}
+			}
+
+			if(written_pairs == 0)
+				out << "\t\tNo pairs" << endl;
+		}
+
+/*		for(auto it = correction_result_.redundancy_map.begin();
 				it != correction_result_.redundancy_map.end(); it++){
 			auto contig1 = default_storage_->GetContigById(it->first);
 			auto set_ids = it->second;
@@ -223,7 +254,7 @@ class ConsensusContigsConstructor {
 				out << contig1->src_file() << ":" << contig1->name() << "\t" <<
 						contig2->src_file() << ":" << contig2->name() << endl;
 			}
-		}
+		}*/
 
 	}
 

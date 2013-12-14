@@ -30,13 +30,18 @@ public:
 	virtual Sequence seq() = 0;
 	virtual vector<EdgeId> path_seq() = 0;
 	virtual MappingPath<EdgeId> mapping_path() = 0;
+
 	virtual string name() = 0;
 	virtual string src_file() = 0;
+	virtual string full_name() { return src_file() + ":" + name(); }
+
 	virtual size_t size() = 0;
+	virtual size_t length() = 0;
 	virtual size_t id(){ return -1; }
 	virtual size_t rc_id() = 0;
 	virtual vector<shared_ptr<MappingContig> > AllMappingContigs() = 0;
-	virtual void ChangeMappingRange(int, MappingRange){	}
+	virtual void ChangeMappingRange(size_t, MappingRange){	}
+	virtual void ChangeName(string new_name) = 0;
 
 	virtual string ToString(Graph &graph) = 0;
 
@@ -76,6 +81,8 @@ public:
 
 	size_t size() { return map_path_.size(); }
 
+	size_t length() { return seq_.size(); }
+
 	size_t id(){ return id_; }
 
 	size_t rc_id() { return rc_id_; }
@@ -95,6 +102,10 @@ public:
 				new_ranges.push_back(new_range);
 		MappingPath<EdgeId> new_map_path(new_path, new_ranges);
 		map_path_ = new_map_path;
+	}
+
+	void ChangeName(string new_name) {
+		name_ = new_name;
 	}
 
 	string ToString(Graph &graph) {
@@ -135,12 +146,18 @@ public:
 
 	size_t size() { return new_path_.size(); }
 
+	size_t length() { return c_->length(); }
+
 	size_t id(){ return c_->id(); }
 
 	size_t rc_id() { return c_->rc_id(); }
 
 	vector<MappingContigPtr> AllMappingContigs(){
 		return vector<MappingContigPtr>();
+	}
+
+	void ChangeName(string new_name) {
+		c_->ChangeName(new_name);
 	}
 
 	string ToString(Graph &graph) {
@@ -161,6 +178,8 @@ class CompositeMappingContig : public MappingContig{
 	vector<MappingContigPtr> contigs_;
 	vector<pair<Range, Range> > overlaps_;
 
+	string contig_name_;
+
 	Sequence composite_seq;
 	vector<EdgeId> composite_path;
 	size_t composite_size;
@@ -172,12 +191,15 @@ class CompositeMappingContig : public MappingContig{
 	}
 
 public:
-	CompositeMappingContig(Graph &g, size_t k_value, vector<MappingContigPtr> contigs,
+	CompositeMappingContig(Graph &g,
+			size_t k_value,
+			vector<MappingContigPtr> contigs,
 			vector<pair<Range, Range> > overlaps) :
 				g_(g),
 				k_value_(k_value),
 				contigs_(contigs),
-				overlaps_(overlaps) {
+				overlaps_(overlaps),
+				contig_name_("") {
 		VERIFY(contigs.size() > 1);
 		VERIFY(contigs.size() == overlaps.size() + 1);
 		composite_size = 0;
@@ -262,7 +284,7 @@ public:
 
 	MappingPath<EdgeId> mapping_path(){ return MappingPath<EdgeId>(); } // todo refactor
 
-	string name() { return ""; }
+	string name() { return contig_name_; }
 
 	string src_file() { return ""; }
 
@@ -270,9 +292,15 @@ public:
 		return path_seq().size();
 	}
 
+	size_t length() { return seq().size(); }
+
 	size_t id(){ return 0; }
 
 	size_t rc_id() { return 0; }
+
+	void ChangeName(string new_name) {
+		contig_name_ = new_name;
+	}
 
 	vector<MappingContigPtr> AllMappingContigs(){
 		return contigs_;
@@ -284,6 +312,50 @@ public:
 
 private:
 	DECL_LOGGER("CompositeMappingContig");
+};
+
+class ReplacedNameMappingContig : public MappingContig{
+	MappingContigPtr c_;
+	string contig_name_;
+
+public:
+	ReplacedNameMappingContig(MappingContigPtr c, string contig_name) :
+		c_(c),
+		contig_name_ (contig_name) { }
+
+	Sequence seq() { return c_->seq(); }
+
+	vector<EdgeId> path_seq() {
+		return c_->path_seq();
+	}
+
+	MappingPath<EdgeId> mapping_path(){
+		return c_->mapping_path();
+	}
+
+	string name() { return contig_name_; }
+
+	string src_file() { return c_->src_file(); }
+
+	size_t size() { return c_->size(); }
+
+	size_t length() { return c_->length(); }
+
+	size_t id(){ return c_->id(); }
+
+	size_t rc_id() { return c_->rc_id(); }
+
+	vector<MappingContigPtr> AllMappingContigs(){
+		return c_->AllMappingContigs();
+	}
+
+	void ChangeName(string new_name) {
+		c_->ChangeName(new_name);
+	}
+
+	string ToString(Graph &graph) {
+		return c_->ToString(graph);
+	}
 };
 
 }
