@@ -240,6 +240,8 @@ public:
     typedef typename base::EdgeData EdgeData;
     typedef typename base::VertexIterator VertexIterator;
     using base::str;
+    using base::CreateVertex;
+    using base::HiddenAddEdge;
 
 private:
 
