@@ -117,9 +117,9 @@ public:
 
         virtual void Flush() {
         }
-        ;
 
         virtual void HandleReversedPath(const vector<EdgeId>& reversed_path) = 0;
+
 
     protected:
         Path ReversePath(const Path& path) const {
@@ -269,7 +269,40 @@ private:
 	vector<typename PathProcessor<Graph>::Callback*> processors_;
 };
 
-template<class Graph>
+template<class Graph, class Comparator>
+class BestPathStorage: public PathProcessor<Graph>::Callback {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef vector<EdgeId> Path;
+public:
+    BestPathStorage(const Graph& g, Comparator comparator) :
+            g_(g), cnt_(0), comparator_(comparator) {
+    }
+
+    virtual void HandleReversedPath(const vector<EdgeId>& path) {
+        cnt_++;
+        if(best_path_.size() == 0 || comparator_(path, best_path_))
+            best_path_ = path;
+    }
+
+    vector<EdgeId> BestPath() const {
+        return best_path_;
+    }
+
+    size_t size() const {
+        return cnt_;
+    }
+
+private:
+    const Graph& g_;
+    size_t cnt_;
+    Comparator comparator_;
+    vector<vector<Path>> best_path_;
+};
+
+
+
+
+    template<class Graph>
 class PathStorageCallback: public PathProcessor<Graph>::Callback {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef vector<EdgeId> Path;
@@ -453,7 +486,6 @@ public:
             //          WARN("Mapping path was empty");
             return vector<EdgeId>();
         }
-        //      VERIFY(edges.size() > 0);
         answer.push_back(edges[0]);
         for (size_t i = 1; i < edges.size(); ++i) {
             if (g_.EdgeEnd(edges[i - 1]) != g_.EdgeStart(edges[i])) {
@@ -461,18 +493,6 @@ public:
                                                      g_.EdgeStart(edges[i]),
                                                      length_bound);
                 answer.insert(answer.end(), closure.begin(), closure.end());
-                //                  make_dir("assembly_compare/tmp");
-                //                  WriteComponentsAroundEdge(graph_,
-                //                          graph_.IncomingEdges(v1).front(),
-                //                          "assembly_compare/tmp/failed_close_gap_from.dot",
-                //                          *DefaultColorer(graph_),
-                //                          LengthIdGraphLabeler<Graph>(g_));
-                //                  WriteComponentsAroundEdge(graph_,
-                //                          g_.OutgoingEdges(v2).front(),
-                //                          "assembly_compare/tmp/failed_close_gap_to.dot",
-                //                          *DefaultColorer(g_),
-                //                          LengthIdGraphLabeler<Graph>(g_));
-                //                  VERIFY(false);
             }
             answer.push_back(edges[i]);
         }

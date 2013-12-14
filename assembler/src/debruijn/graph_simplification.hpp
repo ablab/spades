@@ -36,6 +36,7 @@
 #include "detail_coverage.hpp"
 
 #include "stats/chimera_stats.hpp"
+#include "moleculo.hpp"
 
 namespace debruijn {
 

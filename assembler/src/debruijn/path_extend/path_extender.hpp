@@ -227,6 +227,7 @@ class HammingGapJoiner: public GapJoiner {
     const size_t short_overlap_threshold_;
     const size_t basic_overlap_length_;
     const size_t artificial_gap_;
+    const bool use_old_score_;
 
     vector<size_t> DiffPos(const Sequence& s1, const Sequence& s2) const {
         VERIFY(s1.size() == s2.size());
@@ -265,6 +266,11 @@ class HammingGapJoiner: public GapJoiner {
         return 2.*double(n) + double(n - mismatches) * log_match_prob + double(mismatches) * log_mismatch_prob;
     }
 
+    double OldScoreGap(const Sequence& s1, const Sequence& s2) const {
+        size_t mismatches = HammingDistance(s1, s2);
+        return 1.0 - (double) HammingDistance(s1, s2) / (double) s1.size();
+    }
+
 public:
 
     //todo review parameters in usages
@@ -274,14 +280,16 @@ public:
             size_t may_overlap_threshold,
             size_t short_overlap_threshold,
             size_t basic_overlap_length,
-            size_t artificial_gap = DEFAULT_PADDING_LENGTH):
+            size_t artificial_gap = DEFAULT_PADDING_LENGTH,
+            bool use_old_score = false):
                 GapJoiner(g),
                 min_gap_score_(min_gap_score),
                 must_overlap_threshold_(must_overlap_threshold),
                 may_overlap_threshold_(may_overlap_threshold),
                 short_overlap_threshold_(short_overlap_threshold),
                 basic_overlap_length_(basic_overlap_length),
-                artificial_gap_(artificial_gap)
+                artificial_gap_(artificial_gap),
+                use_old_score_(use_old_score)
     {
         DEBUG("HammingGapJoiner params: \n min_gap_score " << min_gap_score_ <<
               "\n must_overlap_threshold " << must_overlap_threshold_ <<
@@ -318,7 +326,7 @@ public:
         size_t min_overlap = 1ul;
         if (estimated_gap < 0) {
             size_t estimated_overlap = g_.k() - estimated_gap;
-            min_overlap = max(size_t(math::round(overlap_coeff * estimated_overlap)), 1ul);
+            min_overlap = max(size_t(math::round(overlap_coeff * double(estimated_overlap))), 1ul);
         }
         //todo better usage of estimated overlap
         DEBUG("Min overlap " << min_overlap);
@@ -326,7 +334,12 @@ public:
         for (size_t l = corrected_start_overlap; l >= min_overlap; --l) {
             //TRACE("Sink: " << g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l).str());
             //TRACE("Source: " << g_.EdgeNucls(source).Subseq(0, l));
-            double score = ScoreGap(g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l),
+            double score = 0;
+            if(use_old_score_)
+                score = OldScoreGap(g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l),
+                                    g_.EdgeNucls(source).Subseq(0, l));
+            else
+                score = ScoreGap(g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l),
                                     g_.EdgeNucls(source).Subseq(0, l));
             if (math::gr(score, best_score)) {
                 TRACE("Curr overlap " << l);

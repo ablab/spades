@@ -7,6 +7,8 @@
 import os
 import sys
 
+source_dirs = ["", "truspades", "common"]
+
 # developers configuration
 spades_home = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 bin_home = os.path.join(spades_home, 'bin')
@@ -29,6 +31,7 @@ def init():
         python_modules_home = spades_home
         ext_python_modules_home = spades_home
 
-    sys.path.append(os.path.join(python_modules_home, 'spades_pipeline'))
+    for dir in source_dirs:
+        sys.path.append(os.path.join(python_modules_home, 'spades_pipeline', dir))
 
     spades_version = open(os.path.join(spades_home, 'VERSION'), 'r').readline()

@@ -7,6 +7,7 @@
 #pragma once
 
 #include "dijkstra_settings.hpp"
+#include "standard_base.hpp"
 
 #include <queue>
 
@@ -71,6 +72,7 @@ class Dijkstra {
 	std::map<VertexId, pair<VertexId, EdgeId> > prev_vert_map_;
 
 	void initialize(VertexId start, queue_t &queue){
+		vertex_number_ = 0;
 		distances_.clear();
 		processed_vertices_.clear();
 		prev_vert_map_.clear();
@@ -224,6 +226,8 @@ public:
   bool VertexLimitExceeded(){
 	  return vertex_limit_exceeded_;
   }
+private:
+  DECL_LOGGER("Dijkstra");
 };
 
 template<class Graph>

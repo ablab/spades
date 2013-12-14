@@ -14,10 +14,10 @@ visualize {
 
 ; none | break_gaps | break_all
 output_broken_scaffolds     break_gaps
-cut_all_overlaps  false
 singlecell {
     split_edge_length       99
     normalize_weight        true
+    cut_all_overlaps  false
 
     ; extension selection
     extension_options
@@ -52,6 +52,7 @@ singlecell {
         max_can_overlap   0.5
         short_overlap     6
         artificial_gap    10
+        use_old_score   false
     }
     
     loop_removal
@@ -63,11 +64,60 @@ singlecell {
     remove_overlaps     true
 }
 
+moleculo {
+    split_edge_length       99
+    normalize_weight        true
+    cut_all_overlaps  true
 
+    ; extension selection
+    extension_options
+    {
+        recalculate_threshold      true
+        single_threshold           0.001
+        weight_threshold           0.6
+        priority_coeff             1.5
+    }
+
+    mate_pair_options
+    {
+        recalculate_threshold      true
+        single_threshold           0.0001
+        weight_threshold           0.5
+        priority_coeff             1.5
+    }
+
+    scaffolder {
+        on              true
+        cutoff          2
+        rel_cutoff      0.1
+        sum_threshold   3  
+
+        cluster_info    true
+        cl_threshold    0
+
+        fix_gaps        true
+        min_gap_score   0.7
+
+        max_must_overlap  -2
+        max_can_overlap   0.5
+        short_overlap     10
+        artificial_gap    10
+        use_old_score     true
+    }
+    
+    loop_removal
+    {
+        max_loops       10
+        mp_max_loops    10
+    }
+
+    remove_overlaps     true
+}
 
 multicell {
     split_edge_length    99
     normalize_weight     false
+    cut_all_overlaps  false
     
     ; extension selection
     extension_options
@@ -105,6 +155,7 @@ multicell {
         max_can_overlap   0.5
         short_overlap     6
         artificial_gap    10
+        use_old_score   false
     }
     
     loop_removal

@@ -158,15 +158,65 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):
     prepare_config_spades(cfg_file_name, cfg, log, additional_contigs_fname, K, stage, saves_dir, last_one)
 
     command = [os.path.join(execution_home, "spades"), cfg_file_name]
+    support.sys_call(command, log)
 
-## this code makes sense for src/debruijn/simplification.cpp: corrected_and_save_reads() function which is not used now
-#    bin_reads_dir = os.path.join(cfg.output_dir, ".bin_reads")
-#    if os.path.isdir(bin_reads_dir):
-#        if glob.glob(os.path.join(bin_reads_dir, "*_cor*")):
-#            for cor_filename in glob.glob(os.path.join(bin_reads_dir, "*_cor*")):
-#                cor_index = cor_filename.rfind("_cor")
-#                new_bin_filename = cor_filename[:cor_index] + cor_filename[cor_index + 4:]
-#                shutil.move(cor_filename, new_bin_filename)
+def prepare_config_scaffold_correction(filename, cfg, log, saves_dir, scaffolds_file):
+    subst_dict = dict()
+
+    subst_dict["K"] = str(21)
+    subst_dict["run_mode"] = bool_to_str(False)
+    subst_dict["dataset"] = process_cfg.process_spaces(cfg.dataset)
+    subst_dict["output_base"] = process_cfg.process_spaces(cfg.output_dir)
+    subst_dict["tmp_dir"] = process_cfg.process_spaces(cfg.tmp_dir)
+    subst_dict["use_additional_contigs"] = bool_to_str(False)
+    subst_dict["main_iteration"] = bool_to_str(False)
+    subst_dict["entry_point"] = BASE_STAGE
+    subst_dict["load_from"] = saves_dir
+    subst_dict["developer_mode"] = bool_to_str(cfg.developer_mode)
+    subst_dict["max_threads"] = cfg.max_threads
+    subst_dict["max_memory"] = cfg.max_memory
+    subst_dict["scaffold_correction_mode"] = bool_to_str(True)
+    subst_dict["scaffolds_file"] = scaffolds_file
+
+
+    #todo
+
+    process_cfg.substitute_params(filename, subst_dict, log)
+
+
+
+def run_scaffold_correction(configs_dir, execution_home, cfg, log, K):
+    data_dir = os.path.join(cfg.output_dir, "SCC")
+    saves_dir = os.path.join(data_dir, 'saves')
+    dst_configs = os.path.join(data_dir, "configs")
+    cfg_file_name = os.path.join(dst_configs, "config.info")
+
+    if os.path.exists(data_dir):
+        shutil.rmtree(data_dir)
+    os.makedirs(data_dir)
+
+    dir_util.copy_tree(os.path.join(configs_dir, "debruijn"), dst_configs, preserve_times=False)
+    # removing template configs
+    for root, dirs, files in os.walk(dst_configs):
+        for cfg_file in files:
+            cfg_file = os.path.join(root, cfg_file)
+            if cfg_file.endswith('.info.template'):
+                if os.path.isfile(cfg_file.split('.template')[0]):
+                    os.remove(cfg_file)
+                else:
+                    os.rename(cfg_file, cfg_file.split('.template')[0])
+
+    log.info("\n== Running scaffold correction \n")
+    latest = os.path.join(cfg.output_dir, "K%d" % K)
+    scaffolds_file = os.path.join(latest, "scaffolds.fasta")
+    if not os.path.isfile(scaffolds_file):
+        support.error("Scaffodls were not found in " + scaffolds_file, log)
+    if "read_buffer_size" in cfg.__dict__:
+        construction_cfg_file_name = os.path.join(dst_configs, "construction.info")
+        process_cfg.substitute_params(construction_cfg_file_name, {"read_buffer_size": cfg.read_buffer_size}, log)
+    prepare_config_scaffold_correction(cfg_file_name, cfg, log, saves_dir, scaffolds_file)
+    command = [os.path.join(execution_home, "scaffold_correction"), cfg_file_name]
+    log.info(str(command))
     support.sys_call(command, log)
 
 
@@ -242,18 +292,31 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, ext_python_module
 
     latest = os.path.join(cfg.output_dir, "K%d" % K)
 
-    for format in [".fasta", ".fastg"]:
-        if os.path.isfile(os.path.join(latest, "before_rr" + format)):
-            result_before_rr_contigs = os.path.join(os.path.dirname(cfg.result_contigs), "before_rr" + format)
-            if not os.path.isfile(result_before_rr_contigs) or not options_storage.continue_mode:
-                shutil.copyfile(os.path.join(latest, "before_rr" + format), result_before_rr_contigs)
-        if os.path.isfile(os.path.join(latest, "final_contigs" + format)):
-            if not os.path.isfile(cfg.result_contigs[:-6] + format) or not options_storage.continue_mode:
-                shutil.copyfile(os.path.join(latest, "final_contigs" + format), cfg.result_contigs[:-6] + format)
-        if cfg.rr_enable:
-            if os.path.isfile(os.path.join(latest, "scaffolds" + format)):
-                if not os.path.isfile(cfg.result_scaffolds[:-6] + format) or not options_storage.continue_mode:
-                    shutil.copyfile(os.path.join(latest, "scaffolds" + format), cfg.result_scaffolds[:-6] + format)
+    if cfg.correct_scaffolds:
+        if options_storage.continue_mode and os.path.isfile(os.path.join(cfg.output_dir, "SCC", "corrected_scaffolds.fasta")) and not options_storage.restart_from == "scc" :
+            log.info("\n===== Skipping %s (already processed). \n" % "scaffold correction")
+        else:
+            if options_storage.continue_mode:
+                support.continue_from_here(log)
+            run_scaffold_correction(configs_dir, execution_home, cfg, log, K)
+        latest = os.path.join(cfg.output_dir, "SCC")
+
+    if cfg.correct_scaffolds:
+        shutil.copyfile(os.path.join(latest, "corrected_scaffolds.fasta"), cfg.result_scaffolds[:-6] + ".fasta")
+    else:
+        for format in [".fasta", ".fastg"]:
+            if os.path.isfile(os.path.join(latest, "before_rr" + format)):
+                result_before_rr_contigs = os.path.join(os.path.dirname(cfg.result_contigs), "before_rr" + format)
+                if not os.path.isfile(result_before_rr_contigs) or not options_storage.continue_mode:
+                    shutil.copyfile(os.path.join(latest, "before_rr" + format), result_before_rr_contigs)
+            if os.path.isfile(os.path.join(latest, "final_contigs" + format)):
+                if not os.path.isfile(cfg.result_contigs[:-6] + format) or not options_storage.continue_mode:
+                    shutil.copyfile(os.path.join(latest, "final_contigs" + format), cfg.result_contigs[:-6] + format)
+            if cfg.rr_enable:
+                if os.path.isfile(os.path.join(latest, "scaffolds" + format)):
+                    if not os.path.isfile(cfg.result_scaffolds[:-6] + format) or not options_storage.continue_mode:
+                        shutil.copyfile(os.path.join(latest, "scaffolds" + format), cfg.result_scaffolds[:-6] + format)
+
 
     if cfg.developer_mode:
         # saves

@@ -5,6 +5,7 @@
 //****************************************************************************
 
 #pragma once
+#include "standard_base.hpp"
 
 namespace omnigraph {
 
@@ -84,5 +85,27 @@ public:
         return base::GetLength(edge);
 	}
 };
+
+template<class Graph, typename distance_t = size_t>
+class PathIgnoringLengthCalculator : public LengthCalculator<Graph, distance_t> {
+    typedef LengthCalculator<Graph, distance_t> base;
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+    set<EdgeId> path_;
+    distance_t bound_;
+
+public:
+    PathIgnoringLengthCalculator(const Graph &graph, const vector<EdgeId> &edge_path) :
+            LengthCalculator<Graph, distance_t>(graph), path_(edge_path.begin(), edge_path.end())
+            { }
+
+    distance_t GetLength(EdgeId edge) const {
+        if (path_.find(edge) != path_.end()) {
+            return 0;
+        }
+        return base::GetLength(edge);
+    }
+};
+
 
 }

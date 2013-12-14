@@ -48,6 +48,18 @@ rp:
 dp:      
 	$(MAKE) -C build/debug/corrector
 
+rs:
+	$(MAKE) -C build/release/scaffold_correction
+
+ds:
+	$(MAKE) -C build/debug/scaffold_correction
+
+rts:
+	$(MAKE) -C build/release/truseq_analysis
+
+dts:
+	$(MAKE) -C build/debug/truseq_analysis
+
 dt:
 	$(MAKE) ddt
 	$(MAKE) dit

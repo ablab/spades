@@ -32,8 +32,8 @@ case $1 in
   'dipt') cfg="configs/debruijn/detail_info_printer.info.template";;
   'log') cfg="configs/debruijn/log.properties";;
   'logt') cfg="configs/debruijn/log.properties.template";;
-  'pe')   cfg="configs/debruijn/path_extend/pe_config.info";;
-  'pet')   cfg="configs/debruijn/path_extend/pe_config.info.template";;
+  'pep')   cfg="configs/debruijn/path_extend/pe_params.info";;
+  'pept')   cfg="configs/debruijn/path_extend/pe_params.info.template";;
   'con')   cfg="configs/debruijn/construction.info";;
   'cont')   cfg="configs/debruijn/construction.info.template";;
   'ds')  cfg="configs/dipspades/config.info";;

@@ -4,4 +4,4 @@
 # See file LICENSE for details.
 ############################################################################
 
-add_subdirectory(bwa-0.6.2)
+add_subdirectory(bwa-0.7.12)

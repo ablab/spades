@@ -209,7 +209,7 @@ inline void FinalizePaths(PathContainer& paths, GraphCoverageMap& cover_map, siz
     ContigWriter writer(cover_map.graph());
     PathExtendResolver resolver(cover_map.graph());
 
-    resolver.removeOverlaps(paths, cover_map, max_overlap, cfg::get().pe_params.param_set.remove_overlaps, cfg::get().pe_params.cut_all_overlaps);
+    resolver.removeOverlaps(paths, cover_map, max_overlap, cfg::get().pe_params.param_set.remove_overlaps, cfg::get().pe_params.param_set.cut_all_overlaps);
     if (mate_pairs) {
         resolver.RemoveMatePairEnds(paths, max_overlap);
     }
@@ -299,6 +299,21 @@ inline shared_ptr<SimpleExtender> MakeLongReadsExtender(const conj_graph_pack& g
                                        pset.loop_removal.max_loops, true, UseCoverageResolverForSingleReads(lib.type()));
 }
 
+inline shared_ptr<SimpleExtender> MakeLongEdgePEExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
+                                                         size_t lib_index, const pe_config::ParamSetT& pset, bool use_auto_threshold, bool investigate_loops) {
+    shared_ptr<PairedInfoLibrary> lib = MakeNewLib(gp.g, gp.clustered_indices, lib_index);
+    if (use_auto_threshold) {
+        lib->SetSingleThreshold(cfg::get().ds.reads[lib_index].data().pi_threshold);
+        if (!investigate_loops)
+            INFO("Threshold for library #" << lib_index << " is " << cfg::get().ds.reads[lib_index].data().pi_threshold);
+    }
+    shared_ptr<WeightCounter> wc = make_shared<PathCoverWeightCounter>(gp.g, lib, GetWeightThreshold(lib, pset),
+                                                                       GetSingleThreshold(lib, pset), cfg::get().ds.meta ? 0.5 : 1.0);
+    wc->setNormalizeWeight(pset.normalize_weight);
+    shared_ptr<ExtensionChooser> extension = make_shared<LongEdgeExtensionChooser>(gp.g, wc, GetPriorityCoeff(lib, pset));
+    return make_shared<SimpleExtender>(gp, cov_map, extension, lib->GetISMax(), pset.loop_removal.max_loops, investigate_loops, false);
+}
+
 inline shared_ptr<SimpleExtender> MakePEExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
                                        size_t lib_index, const pe_config::ParamSetT& pset, bool use_auto_threshold, bool investigate_loops) {
     shared_ptr<PairedInfoLibrary> lib = MakeNewLib(gp.g, gp.clustered_indices, lib_index);
@@ -330,7 +345,8 @@ inline shared_ptr<PathExtender> MakeScaffoldingExtender(const conj_graph_pack& g
                                                  int(math::round(gp.g.k() - var_coeff * lib->GetIsVar())),
                                                  (int) (pset.scaffolder_options.max_can_overlap * (double) gp.g.k()),
                                                  pset.scaffolder_options.short_overlap,
-                                                 (int) 2 * cfg::get().ds.RL(), pset.scaffolder_options.artificial_gap);
+                                                 (int) 2 * cfg::get().ds.RL(), pset.scaffolder_options.artificial_gap,
+                                                 cfg::get().pe_params.param_set.scaffolder_options.use_old_score);
     return make_shared<ScaffoldingPathExtender>(gp, cov_map, scaff_chooser, gap_joiner, lib->GetISMax(), pset.loop_removal.max_loops, false);
 }
 
@@ -377,6 +393,8 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
                 ++single_read_libs;
             }
             if (IsForPEExtender(lib) && stage == PathExtendStage::PEStage) {
+                if(cfg::get().ds.moleculo)
+                    pes.push_back(MakeLongEdgePEExtender(gp, cov_map, i, pset, use_auto_threshold, false));
                 pes.push_back(MakePEExtender(gp, cov_map, i, pset, use_auto_threshold, false));
             }
             if (IsForShortLoopExtender(lib)) {
@@ -409,8 +427,6 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
     INFO("Using " << mp_libs << " mate-pair " << LibStr(mp_libs));
     INFO("Using " << single_read_libs << " single read " << LibStr(single_read_libs));
     INFO("Scaffolder is " << (pset.scaffolder_options.on ? "on" : "off"));
-
-
     return result;
 }
 

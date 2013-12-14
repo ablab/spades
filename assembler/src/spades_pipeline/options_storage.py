@@ -39,6 +39,7 @@ MEMORY = 250
 K_MERS_SHORT = [21,33,55]
 K_MERS_150 = [21,33,55,77]
 K_MERS_250 = [21,33,55,77,99,127]
+
 ITERATIONS = 1
 TMP_DIR = "tmp"
 
@@ -97,6 +98,11 @@ restart_reference = None
 restart_configs_dir = None
 restart_read_buffer_size = None
 
+#truseq options
+truseq_mode = False
+correct_scaffolds = False
+run_truseq_postprocessing = False
+
 dict_of_prefixes = dict()
 dict_of_rel2abs = dict()
 
@@ -107,7 +113,7 @@ long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc ionto
                "help test debug debug:false reference= config-file= dataset= "\
                "bh-heap-check= spades-heap-check= read-buffer-size= help-hidden "\
                "mismatch-correction mismatch-correction:false careful careful:false "\
-               "continue restart-from= diploid cov-cutoff= configs-dir=".split()
+               "continue restart-from= diploid truseq cov-cutoff= configs-dir=".split()
 short_options = "o:1:2:s:k:t:m:i:h"
 
 # adding multiple paired-end, mate-pair and other (long reads) libraries support
@@ -270,6 +276,37 @@ def usage(spades_version, show_hidden=False, dipspades=False):
 
     sys.stderr.flush()
 
+def tru_usage(spades_version, show_hidden=False, dipspades=False):
+    sys.stderr.write("truSPAdes assembler v.1.0\n")
+    sys.stderr.write("Usage: " + str(sys.argv[0]) + " [options] -1 <left_reads> -2 <right_reads> -o <output_dir>" + "\n")
+    sys.stderr.write("" + "\n")
+    sys.stderr.write("Basic options:" + "\n")
+    sys.stderr.write("-o\t<output_dir>\tdirectory to store all the resulting files (required)" + "\n")
+    sys.stderr.write("-1\t<filename>\tfile with forward paired-end reads (required)" + "\n")
+    sys.stderr.write("-2\t<filename>\tfile with reverse paired-end reads (required)" + "\n")
+    sys.stderr.write("--test\t\t\truns SPAdes on toy dataset" + "\n")
+    sys.stderr.write("-h/--help\t\tprints this usage message" + "\n")
+
+    sys.stderr.write("" + "\n")
+    sys.stderr.write("Pipeline options:" + "\n")
+    sys.stderr.write("--continue\t\tcontinue run from the last available check-point" + "\n")
+    sys.stderr.write("--restart-from\t<cp>\trestart run with updated options and from the specified check-point ('ec', 'as', 'k<int>', 'mc')" + "\n")
+
+    sys.stderr.write("" + "\n")
+    sys.stderr.write("Advanced options:" + "\n")
+    sys.stderr.write("-t/--threads\t<int>\t\tnumber of threads" + "\n")
+    sys.stderr.write("\t\t\t\t[default: %s]\n" % THREADS)
+    sys.stderr.write("-m/--memory\t<int>\t\tRAM limit for SPAdes in Gb"\
+                         " (terminates if exceeded)" + "\n")
+    sys.stderr.write("\t\t\t\t[default: %s]\n" % MEMORY)
+    sys.stderr.write("--tmp-dir\t<dirname>\tdirectory for temporary files" + "\n")
+    sys.stderr.write("\t\t\t\t[default: <output_dir>/tmp]" + "\n")
+    sys.stderr.write("-k\t\t<int,int,...>\tcomma-separated list of k-mer sizes"\
+                         " (must be odd and" + "\n")
+    sys.stderr.write("\t\t\t\tless than " + str(MAX_K + 1) + ") [default: 'auto']" + "\n")
+
+    sys.stderr.flush()
+
 
 def auto_K_allowed():
     return not k_mers and not single_cell and not iontorrent and not meta 
@@ -420,3 +457,20 @@ def load_restart_options():
         configs_dir = restart_configs_dir
     if restart_read_buffer_size is not None:
         read_buffer_size = restart_read_buffer_size
+
+def enable_truseq_mode():
+    global truseq_mode
+    global correct_scaffolds
+    global run_truseq_postprocessing
+    global K_MERS_SHORT
+    global K_MERS_150
+    global K_MERS_250
+    global only_assembler
+    global single_cell
+    K_MERS_SHORT = [21,33,45,55]
+    K_MERS_150 = [21,33,45,55,77]
+    K_MERS_250 = [21,33,45,55,77,99,127]
+    truseq_mode = True
+    correct_scaffolds = True
+    run_truseq_postprocessing = True
+    only_assembler = True
