@@ -65,6 +65,10 @@ def write_haplocontigs_in_file(filename, haplocontigs):
         os.remove(filename)
     hapfile = open(filename, 'a')
     for hapcontig in haplocontigs:
+        if not os.path.exists(hapcontig):
+            sys.stderr.write(hapcontig + ": no such file\n")
+            sys.stderr.flush()
+            sys.exit(1)
         hapfile.write(hapcontig + "\n")
 
 
@@ -128,6 +132,7 @@ def get_dict_of_args(ds_args):
     args_dict["align_bulge_sides"] = process_cfg.bool_to_str(ds_args.weak_align)
     args_dict["haplocontigs"] = ds_args.haplocontigs
     args_dict["output_dir"] = ds_args.output_dir
+    args_dict["developer_mode"] = "false" #process_cfg.bool_to_str(False)
     return args_dict
 
 

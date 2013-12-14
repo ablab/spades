@@ -79,7 +79,8 @@ int main(int /*argc*/, char** argv) {
     string cfg_filename = argv[1];
     load_config          (cfg_filename);
     make_dirs();
-    copy_configs(cfg_filename, path::append_path(dsp_cfg::get().io.output_dir, "configs"));
+    if(dsp_cfg::get().rp.developer_mode)
+    	copy_configs(cfg_filename, path::append_path(dsp_cfg::get().io.output_dir, "configs"));
     create_console_logger(cfg_filename);
 
     VERIFY(dsp_cfg::get().bp.K >= runtime_k::MIN_K && dsp_cfg::get().bp.K < runtime_k::MAX_K);

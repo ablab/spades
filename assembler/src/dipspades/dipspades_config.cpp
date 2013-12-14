@@ -32,6 +32,7 @@ void load(dipspades_config::io_params &io,
 	io.num_libraries = GetAllLinesFromFile(io.haplocontigs).size();
 
 	load(io.log_filename		, pt, 	"log_filename"			);
+
 	load(io.output_base			, pt, 	"output_base"			);
 	if (io.output_base[io.output_base.length() - 1] != '/')
 		io.output_base += '/';
@@ -39,18 +40,10 @@ void load(dipspades_config::io_params &io,
 	load(io.output_dir			, pt, 	"output_dir"			);
 	if (io.output_dir[io.output_dir.length() - 1] != '/')
 		io.output_dir += '/';
-	io.dataset_name = io.output_dir.substr(0, io.output_dir.length() - 1);
-	io.output_dir = io.output_base + io.output_dir + "/";
-
-	io.output_root = io.output_dir;
-	io.output_suffix = MakeLaunchTimeDirName() + "/";
-	io.output_dir = io.output_root + io.output_suffix;
-	io.output_saves = io.output_dir + "saves/";
 
 	load(io.load_from		, pt, "load_from"		);
 	if(io.load_from[io.load_from.length() - 1] != '/')
 		io.load_from += '/';
-	io.load_from = io.output_root + io.load_from;
 }
 
 void load(dipspades_config::run_params &rp,
@@ -58,6 +51,27 @@ void load(dipspades_config::run_params &rp,
 	using config_common::load;
 	load(rp.entry_point 		, pt, 		"entry_point"	);
 	load(rp.developer_mode  	, pt,		"developer_mode");
+}
+
+void edit_io_params(bool developer_mode, dipspades_config::io_params &io){
+	if(developer_mode){
+		io.dataset_name = io.output_dir.substr(0, io.output_dir.length() - 1);
+		io.output_dir = io.output_base + io.output_dir + "/";
+		io.output_root = io.output_dir;
+		io.output_suffix = MakeLaunchTimeDirName() + "/";
+		io.output_dir = io.output_root + io.output_suffix;
+		io.output_saves = io.output_dir + "saves/";
+		io.load_from = io.output_root + io.load_from;
+		return;
+	}
+
+	// no developer mode
+	io.dataset_name = io.output_dir;
+	io.output_root = io.output_dir;
+	io.output_suffix = "";
+	io.output_base = "";
+	io.output_saves = io.output_dir;
+	io.load_from = "";
 }
 
 inline void load(dipspades_config::polymorphic_br &pbr,
@@ -107,4 +121,6 @@ void load(dipspades_config &cfg, std::string const &filename) {
 	  boost::property_tree::ptree pt;
 	  boost::property_tree::read_info(filename, pt);
 	  load(cfg, pt, true);
+	  edit_io_params(cfg.rp.developer_mode, cfg.io);
+
 }
