@@ -58,23 +58,32 @@ public:
 };
 
 template<class Graph>
-class PathColorer : public MapColorer<typename Graph::EdgeId> {
+class SetColorer : public MapColorer<typename Graph::EdgeId> {
 private:
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 	const Graph &graph_;
 
-    static map<EdgeId, string> ConstructColorMap(const Path<EdgeId> &path1, const string &color) {
+	template<class It>
+    map<EdgeId, string> ConstructColorMap(It begin, It end, const string &color) {
         map<EdgeId, string> result;
-        for (auto it = path1.sequence().begin(); it != path1.sequence().end(); ++it) {
+        for (auto it = begin; it != end; ++it) {
             result[*it] = color;
         }
         return result;
     }
 
 public:
-    PathColorer(const Graph &graph, const Path<EdgeId> &path1, const string &color) : MapColorer<typename Graph::EdgeId>(ConstructColorMap(path1, color), "black"), graph_(graph) {
+	template<class It>
+    SetColorer(const Graph &graph, It begin, It end, const string &color) :
+        MapColorer<typename Graph::EdgeId>(ConstructColorMap(begin, end, color), "black"), graph_(graph) {
     }
+
+	template<class Collection>
+    SetColorer(const Graph &graph, const Collection& c, const string &color) :
+        MapColorer<typename Graph::EdgeId>(ConstructColorMap(c.begin(), c.end(), color), "black"), graph_(graph) {
+    }
+
 };
 //
 //template<class Graph>
@@ -267,8 +276,8 @@ shared_ptr<GraphColorer<Graph>> DefaultColorer(const Graph& g,
 		const Path<typename Graph::EdgeId>& path2) {
 	shared_ptr<ElementColorer<typename Graph::EdgeId>> edge_colorer =
             make_shared<CompositeEdgeColorer<Graph>>(
-                    make_shared<PathColorer<Graph>>(g, path1, "red"),
-                    make_shared<PathColorer<Graph>>(g, path2, "blue"), "black");
+                    make_shared<SetColorer<Graph>>(g, path1.sequence(), "red"),
+                    make_shared<SetColorer<Graph>>(g, path2.sequence(), "blue"), "black");
 	return DefaultColorer(g, edge_colorer);
 }
 

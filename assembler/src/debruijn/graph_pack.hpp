@@ -19,7 +19,8 @@
 #include "debruijn_graph.hpp"
 #include "config_struct.hpp"
 #include "edge_index.hpp"
-#include "kmer_mapper.hpp"
+#include "genomic_quality.hpp"
+#include "sequence_mapper.hpp"
 #include "genomic_info.hpp"
 #include "long_read_storage.hpp"
 #include "detail_coverage.hpp"
@@ -45,7 +46,7 @@ struct graph_pack: private boost::noncopyable {
     EdgesPositionHandler<graph_t> edge_pos;
 //	PairedInfoIndex<graph_t> etalon_paired_index;
     KmerMapper<graph_t, seq_t> kmer_mapper;
-    NewFlankingCoverage<graph_t> flanking_cov;
+    FlankingCoverage<graph_t> flanking_cov;
     PairedInfoIndicesT paired_indices;
     PairedInfoIndicesT clustered_indices;
     PairedInfoIndicesT scaffolding_indices;
@@ -53,6 +54,7 @@ struct graph_pack: private boost::noncopyable {
 
     GenomicInfo ginfo;
     Sequence genome;
+	EdgeQuality<Graph> edge_qual;
 
     graph_pack(size_t k, const std::string &workdir, size_t lib_count,
                         Sequence genome = Sequence(),
@@ -65,8 +67,18 @@ struct graph_pack: private boost::noncopyable {
               clustered_indices(g, lib_count),
               scaffolding_indices(g, lib_count),
               single_long_reads(g, lib_count),
-              genome(genome)
+              genome(genome),
+              edge_qual(g)
     { }
+
+    void FillQuality() {
+        edge_qual.Fill(index, kmer_mapper, genome);
+    }
+
+    //todo remove with usages after checking
+    void ClearQuality() {
+        edge_qual.clear();
+    }
 
 //    void FillFlankingCoverage() {
 //        flanking_cov.Fill(index.inner_index());

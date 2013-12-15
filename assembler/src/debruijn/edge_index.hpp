@@ -95,8 +95,8 @@ public:
     void Refill() {
         clear();
         typedef typename EdgeIndexHelper<InnerIndexT>::GraphPositionFillingIndexBuilderT IndexBuilder;
+        //also makes an update!
         IndexBuilder().BuildIndexFromGraph(inner_index_, this->g());
-        //Update();
     }
 
     void Update() {

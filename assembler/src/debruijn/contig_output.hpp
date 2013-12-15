@@ -140,7 +140,7 @@ public:
 
 	pair<string, double> construct(EdgeId e) {
 		vector<EdgeId> unipath = Unipath(this->graph(), e);
-		return make_pair(MergeSequences(this->graph(), unipath), AvgCoverage(this->graph(), unipath));
+		return make_pair(MergeSequences(this->graph(), unipath), stats::AvgCoverage(this->graph(), unipath));
 	}
 };
 
@@ -268,7 +268,7 @@ void ReportEdge(io::osequencestream_cov& oss
 		TRACE("Outputting edge " << g.str(e) << " as part of unipath");
 		vector<EdgeId> unipath = Unipath(g, e);
 		TRACE("Unipath is " << g.str(unipath));
-		oss << AvgCoverage(g, unipath);
+		oss << stats::AvgCoverage(g, unipath);
 		TRACE("Merged sequence is of length " << MergeSequences(g, unipath).size());
 		oss << MergeSequences(g, unipath);
 	}

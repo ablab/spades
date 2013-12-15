@@ -13,6 +13,8 @@
 #include "omni/visualization/graph_labeler.hpp"
 
 #include "graph_construction.hpp"
+#include "stats/debruijn_stats.hpp"
+#include "positions.hpp"
 #include "construction.hpp"
 
 namespace debruijn_graph {

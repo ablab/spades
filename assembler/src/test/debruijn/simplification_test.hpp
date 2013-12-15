@@ -85,6 +85,18 @@ debruijn_config::simplification::tip_clipper standard_tc_config() {
 	return tc_config;
 }
 
+debruijn_config::simplification::relative_coverage_comp_remover standard_rcc_config() {
+    debruijn_config::simplification::relative_coverage_comp_remover rcc;
+    //rather unrealistic value =)
+    rcc.coverage_gap = 2.;
+    rcc.length_bound = 200;
+    rcc.tip_allowing_length_bound = 200;
+    rcc.longest_connecting_path_bound = 65;
+    rcc.max_coverage = std::numeric_limits<double>::max();
+    rcc.vertex_count_limit = 10;
+    return rcc;
+}
+
 void PrintGraph(const Graph & g) {
 	FOREACH(VertexId v, g.vertices()) {
 		FOREACH(EdgeId e, g.OutgoingEdges(v)) {
@@ -250,6 +262,32 @@ BOOST_AUTO_TEST_CASE( BigComplexBulge ) {
        remover.Run();
 //       WriteGraphPack(gp, string("./src/test/debruijn/graph_fragments/big_complex_bulge/big_complex_bulge_res.dot"));
        BOOST_CHECK_EQUAL(gp.g.size(), 66u);
+}
+
+template<class Graph, class InnerIndex>
+void FillKmerCoverageWithAvg(const Graph& g, InnerIndex& idx) {
+    for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+        EdgeId e = *it;
+        Sequence nucls = g.EdgeNucls(e);
+        double cov = g.coverage(e);
+        runtime_k::RtSeq kpomer(g.k() + 1, nucls);
+        kpomer >>= 0;
+        for (size_t i = 0; i < g.length(e); ++i) {
+            kpomer <<= nucls[i + g.k()];
+            idx[kpomer].count = unsigned(math::floor(cov));
+        }
+    }
+}
+
+BOOST_AUTO_TEST_CASE( RelativeCoverageRemover ) {
+    typedef graph_pack<ConjugateDeBruijnGraph, runtime_k::RtSeq> gp_t;
+    gp_t gp(55, tmp_folder, 0, Sequence(), 50, true, false);
+    graphio::ScanGraphPack("./src/test/debruijn/graph_fragments/rel_cov_ec/constructed_graph", gp);
+    INFO("Relative coverage component removal:");
+    FillKmerCoverageWithAvg(gp.g, gp.index.inner_index());
+    gp.flanking_cov.Fill(gp.index.inner_index());
+    RemoveRelativelyLowCoverageComponents(gp.g, gp.flanking_cov, standard_rcc_config());
+    BOOST_CHECK_EQUAL(gp.g.size(), 12u/*28u*/);
 }
 
 BOOST_AUTO_TEST_SUITE_END()}

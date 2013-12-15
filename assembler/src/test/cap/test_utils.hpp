@@ -39,7 +39,7 @@ inline double uniform_01() {
 }
 
 inline bool event_happened(double rate) {
-	return ls(uniform_01(), rate);
+	return math::ls(uniform_01(), rate);
 }
 
 inline size_t rand_int(size_t min, size_t max) {
@@ -77,7 +77,7 @@ inline Sequence IntroduceReversals(const Sequence& s, size_t rev_count, size_t m
 }
 
 inline Sequence IntroduceMutations(const Sequence& s, double rate) {
-	VERIFY(ge(rate, 0.) && ls(rate, 1.0));
+	VERIFY(math::ge(rate, 0.) && math::ls(rate, 1.0));
 	string as_str = s.str();
 	for (size_t i = 0; i < s.size(); ++i) {
 		if (event_happened(rate)) {

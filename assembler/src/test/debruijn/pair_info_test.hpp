@@ -38,8 +38,8 @@ BOOST_AUTO_TEST_CASE( EstimationFunctionalTest ) {
 	paired_info_index etalon_paired_index(gp.g);
 	FillAndCorrectEtalonPairedInfo(etalon_paired_index, gp, paired_index, /*is*/500, /*rl*/100, /*delta*/25);
 	INFO("Counting clustered info stats");
-	EdgeQuality<Graph> edge_qual(gp.g, gp.index, gp.kmer_mapper, gp.genome);
-	EstimationQualityStat<Graph> estimation_stat(gp.g, edge_qual, paired_index,
+	gp.FillQuality();
+	EstimationQualityStat<Graph> estimation_stat(gp.g, gp.edge_qual, paired_index,
 			clustered_index, etalon_paired_index);
 	estimation_stat.Count();
 	INFO("fpr " << estimation_stat.fpr());
