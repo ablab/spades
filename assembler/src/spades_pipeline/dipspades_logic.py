@@ -15,7 +15,7 @@ import shutil
 import options_storage
 
 class DS_Args_List:
-    long_options = "allow-gaps weak-align hap=".split()
+    long_options = "expect-gaps expect-rearrangements hap=".split()
     short_options = "o:"
 
 
@@ -159,9 +159,9 @@ def parse_arguments(argv):
     for opt, arg in options:
         if opt == '-o':
             ds_args.output_dir = arg
-        elif opt == '--allow-gaps':
+        elif opt == '--expect-gaps':
             ds_args.allow_gaps = True
-        elif opt == '--weak-align':
+        elif opt == '--expect-rearrangements':
             ds_args.weak_align = True
         elif opt == '--hap':
             ds_args.haplocontigs_fnames.append(arg)
