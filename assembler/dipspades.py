@@ -44,6 +44,11 @@ def main():
     output_dir = None
     for opt, arg in options:
         # processing some special options
+        if opt == '--test':
+            output_dir = test_dipspades
+            spades_py_command_line = '--diploid -1 test_dataset/ecoli_1K_1.fq.gz -2 test_dataset/ecoli_1K_2.fq.gz --only-assembler'
+            dipspades_logic_py_command_line = ''
+            break
         if opt == '-o':
             #arg = os.path.abspath(arg)
             output_dir = os.path.abspath(arg) #arg
