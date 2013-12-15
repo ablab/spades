@@ -16,14 +16,6 @@ import options_storage
 import dipspades_logic
 
 
-def usage():
-    sys.stderr.write("DipSPAdes is a mode of SPAdes genome assembler designed specifically for diploid highly polymorphic genomes.\n")
-    sys.stderr.write("Usage: " + str(sys.argv[0]) + " [options] -o <output_dir>" + "\n")
-    sys.stderr.write("" + "\n")
-    sys.stderr.flush()
-    #TODO: options
-
-
 def main():
     all_long_options = list(set(options_storage.long_options + dipspades_logic.DS_Args_List.long_options))
     all_short_options = options_storage.short_options + dipspades_logic.DS_Args_List.short_options
@@ -36,11 +28,12 @@ def main():
     except getopt.GetoptError:
         _, exc, _ = sys.exc_info()
         sys.stderr.write(str(exc) + "\n")
+        dipspades_logic.usage()
         sys.stderr.flush()
-        usage()
         sys.exit(1)
     if not options:
-        usage()
+        dipspades_logic.usage()
+        sys.stderr.flush()
         sys.exit(1)
 
     output_dir = None
@@ -52,6 +45,10 @@ def main():
             output_dir = os.path.abspath(arg) #arg
         elif opt == '--careful' or opt == '--mismatch-correction':
             continue
+        if opt == '-h' or opt == '--help':
+            dipspades_logic.usage()
+            sys.stderr.flush()
+            sys.exit(0)            
         # for all other options (and -o also)
         cur_opt_arg = " " + opt + " " + arg
         if opt.startswith("--"):  # long option

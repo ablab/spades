@@ -12,6 +12,7 @@ import getopt
 import os
 import logging
 import shutil
+import options_storage
 
 class DS_Args_List:
     long_options = "allow-gaps weak-align hap=".split()
@@ -38,7 +39,79 @@ def call_method(obj, method_name):
 
 
 def usage():
-    print ("./dipspades_logic.py: TODO: print usage")
+    sys.stderr.write("dipSPAdes 1.0: genome assembler designed for diploid genomes with high heterozygosity rate\n")
+    sys.stderr.write("Usage: " + str(sys.argv[0]) + " [options] -o <output_dir>" + "\n")
+    sys.stderr.write("" + "\n")
+    sys.stderr.write("Basic options:" + "\n")
+    sys.stderr.write("-o\t<output_dir>\tdirectory to store all the resulting files (required)" + "\n")
+    sys.stderr.write("--test\t\t\truns SPAdes on toy dataset" + "\n")
+    sys.stderr.write("-h/--help\t\tprints this usage message" + "\n")
+
+    sys.stderr.write("" + "\n")
+    sys.stderr.write("Input reads:" + "\n")
+    sys.stderr.write("--12\t<filename>\tfile with interlaced forward and reverse"\
+                         " paired-end reads" + "\n")
+    sys.stderr.write("-1\t<filename>\tfile with forward paired-end reads" + "\n")
+    sys.stderr.write("-2\t<filename>\tfile with reverse paired-end reads" + "\n")
+    sys.stderr.write("-s\t<filename>\tfile with unpaired reads" + "\n")
+    sys.stderr.write("--pe<#>-12\t<filename>\tfile with interlaced"\
+                         " reads for paired-end library number <#> (<#> = 1,2,3,4,5)" + "\n")
+    sys.stderr.write("--pe<#>-1\t<filename>\tfile with forward reads"\
+                         " for paired-end library number <#> (<#> = 1,2,3,4,5)" + "\n")
+    sys.stderr.write("--pe<#>-2\t<filename>\tfile with reverse reads"\
+                         " for paired-end library number <#> (<#> = 1,2,3,4,5)" + "\n")
+    sys.stderr.write("--pe<#>-s\t<filename>\tfile with unpaired reads"\
+                         " for paired-end library number <#> (<#> = 1,2,3,4,5)" + "\n")
+    sys.stderr.write("--pe<#>-<or>\torientation of reads"\
+                         " for paired-end library number <#> (<#> = 1,2,3,4,5; <or> = fr, rf, ff)" + "\n")
+    sys.stderr.write("--mp<#>-12\t<filename>\tfile with interlaced"\
+                         " reads for mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
+    sys.stderr.write("--mp<#>-1\t<filename>\tfile with forward reads"\
+                         " for mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
+    sys.stderr.write("--mp<#>-2\t<filename>\tfile with reverse reads"\
+                         " for mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
+    sys.stderr.write("--mp<#>-s\t<filename>\tfile with unpaired reads"\
+                         " for mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
+    sys.stderr.write("--mp<#>-<or>\torientation of reads"\
+                         " for mate-pair library number <#> (<#> = 1,2,3,4,5; <or> = fr, rf, ff)" + "\n")
+    sys.stderr.write("--sanger\t<filename>\tfile with Sanger reads\n")
+    sys.stderr.write("--pacbio\t<filename>\tfile with PacBio reads\n")
+    sys.stderr.write("--trusted-contigs\t<filename>\tfile with trusted contigs\n")
+    sys.stderr.write("--untrusted-contigs\t<filename>\tfile with untrusted contigs\n")
+    sys.stderr.write("Input haplocontigs:" + "\n")
+    sys.stderr.write("--hap\t<filename>\tfile with haplocontigs" + "\n")
+
+    sys.stderr.write("" + "\n")
+    sys.stderr.write("Pipeline options:" + "\n")
+    sys.stderr.write("--only-assembler\truns only assembling (without read error"\
+                         " correction)" + "\n")
+    sys.stderr.write("--disable-gzip-output\tforces error correction not to"\
+                         " compress the corrected reads" + "\n")
+    sys.stderr.write("--disable-rr\t\tdisables repeat resolution stage"\
+                     " of assembling" + "\n")
+                     
+    sys.stderr.write("" + "\n")
+    sys.stderr.write("DipSPAdes options:" + "\n")
+    sys.stderr.write("--expect-gaps\tindicate that significant number of gaps in coverage is expected" + "\n")
+    sys.stderr.write("--expect-rearrangements\tindicate that significant number of rearrangngements between haplomes of diploid genome is expected" + "\n")
+    
+    sys.stderr.write("" + "\n")
+    sys.stderr.write("Advanced options:" + "\n")
+    sys.stderr.write("--dataset\t<filename>\tfile with dataset description in YAML format" + "\n")
+    sys.stderr.write("-t/--threads\t<int>\t\tnumber of threads" + "\n")
+    sys.stderr.write("\t\t\t\t[default: %s]\n" % options_storage.THREADS)
+    sys.stderr.write("-m/--memory\t<int>\t\tRAM limit for SPAdes in Gb"\
+                         " (terminates if exceeded)" + "\n")
+    sys.stderr.write("\t\t\t\t[default: %s]\n" % options_storage.MEMORY)
+    sys.stderr.write("--tmp-dir\t<dirname>\tdirectory for temporary files" + "\n")
+    sys.stderr.write("\t\t\t\t[default: <output_dir>/tmp]" + "\n")
+    sys.stderr.write("-k\t\t<int,int,...>\tcomma-separated list of k-mer sizes"\
+                         " (must be odd and" + "\n")
+    sys.stderr.write("\t\t\t\tless than " + str(options_storage.MAX_K + 1) + ") [default: 'auto']" + "\n") # ",".join(map(str, k_mers_short))
+    sys.stderr.write("--phred-offset\t<33 or 64>\tPHRED quality offset in the"\
+                         " input reads (33 or 64)" + "\n")
+    sys.stderr.write("\t\t\t\t[default: auto-detect]" + "\n")
+    sys.stderr.write("--debug\t\t\t\truns SPAdes in debug mode (keeps intermediate output)" + "\n")
 
 
 def check_config_directory(output_base):
