@@ -958,7 +958,7 @@ public:
             }
         } else {
             DEBUG("try scaffold tree");
-            next_paths = path_searcher_.ScaffoldTree(path);
+            //next_paths = path_searcher_.ScaffoldTree(path);
         }
         DEBUG("next paths size " << next_paths.size());
         EdgeContainer result = ChooseBest(path, next_paths);
@@ -980,9 +980,18 @@ private:
         EdgeWithDistance max = *edges.begin();
         for (EdgeWithDistance e : edges) {
             double w = weight_counter_.CountPairInfo(p, 0, p.Size(), e.e_, 0);
+            DEBUG("buldge " << g_.int_id(e.e_) << " w = " << w);
             if (w > max_w) {
                 max_w = w;
                 max = e;
+            }
+        }
+        for (EdgeWithDistance e : edges) {
+            if (e.e_ == max.e_) {
+                continue;
+            }
+            if (weight_counter_.CountPairInfo(p, 0, p.Size(), e.e_, 0) == max_w) {
+                return edges;
             }
         }
         EdgeContainer result;
@@ -1026,7 +1035,8 @@ private:
                 if (unique_edge_analyzer_.IsUnique(init_path.At(i1))
                         && unique_edge_analyzer_.IsUnique(path1.At(i2))
                         && weight_counter_.HasPI(init_path.At(i1), path1.At(i2), gap)) {
-                        return true;
+                    DEBUG("has unique edge " << g_.int_id(init_path.At(i1)) << " " <<g_.int_id(path1.At(i2)));
+                    return true;
                 }
             }
         }
@@ -1055,6 +1065,7 @@ private:
 
         if (common_w < 0.8 * (not_common_w1 + common_w)||
                 (HasUniqueEdges(init_path, path1, unique_init_edges) && !HasUniqueEdges(init_path, path2, unique_init_edges))) {
+            DEBUG("common_w " << common_w  << " sum*0.8  = " << 0.8 * (not_common_w1 + common_w))
             return true;
         } /*else {
             map<BidirectionalPath*, double> result;

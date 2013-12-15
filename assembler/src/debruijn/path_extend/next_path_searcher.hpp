@@ -290,7 +290,8 @@ inline set<BidirectionalPath*> NextPathSearcher::FindNextPaths(const Bidirection
         }
         grow_paths.insert(grow_paths.end(), to_add.begin(), to_add.end());
 
-        if (grow_paths.size() > max_paths_) {
+        if (used_edges.size() > max_paths_) {
+            DEBUG("too much paths");
             delete start_e;
             return set<BidirectionalPath*>();
         }
