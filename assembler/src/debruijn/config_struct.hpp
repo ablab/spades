@@ -248,10 +248,10 @@ struct debruijn_config {
 
         struct relative_coverage_comp_remover {
             double coverage_gap;
-            size_t length_bound;
-            size_t tip_allowing_length_bound;
-            size_t longest_connecting_path_bound;
-            double max_coverage;
+            double length_coeff;
+            double tip_allowing_length_coeff;
+            size_t max_ec_length_coefficient;
+            double max_coverage_coeff;
             size_t vertex_count_limit;
         };
 
@@ -260,7 +260,6 @@ struct debruijn_config {
         topology_tip_clipper ttc;
         bulge_remover br;
         erroneous_connections_remover ec;
-        relative_coverage_ec_remover rec;
         relative_coverage_comp_remover rcc;
         topology_based_ec_remover tec;
         tr_based_ec_remover trec;
@@ -269,7 +268,7 @@ struct debruijn_config {
         isolated_edges_remover ier;
         complex_bulge_remover cbr;
         hidden_ec_remover her;
-        bool stats_mode;
+//        bool stats_mode;
     };
 
     struct construction {

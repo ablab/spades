@@ -19,7 +19,7 @@ default
 	{
 		enabled				true
 		max_bulge_length_coefficient	3.	; max_bulge_length = max_bulge_length_coefficient * k
-        	max_additive_length_coefficient 100
+       	max_additive_length_coefficient 100
 		max_coverage			1000.0
 		max_relative_coverage		1.1	; bulge_cov < this * not_bulge_cov
 		max_delta			3.0
@@ -36,12 +36,15 @@ default
        ; condition               "{ ec_lb 9, icb 40.0 }"
 	}
 	
-	; relative coverage erroneous remover:
-	rec
+	; relative coverage erroneous component remover:
+	rcc
 	{
-        max_coverage_coeff  0.
-        max_ec_length_coefficient   0
-        coverage_gap    50.
+        coverage_gap    5.
+        max_length_coeff    2.0
+        max_length_with_tips_coeff   3.0
+        max_vertex_cnt      30
+        max_ec_length_coefficient   30
+        max_coverage_coeff  0.3
 	}
 	
 	; topology based erroneous connection remover
@@ -149,16 +152,19 @@ sc
 	{
        ; ec_lb: max_ec_length = k + ec_lb
        ; icb: iterative coverage bound
-       ; condition               "{ ec_lb 29, icb 20.0 }"
-       condition               "{ ec_lb 29, icb auto }"
+       ; condition               "{ ec_lb 30, icb 20.0 }"
+       condition               "{ ec_lb 30, icb auto }"
 	}
 	
-	; relative coverage erroneous connection remover:
-	rec
+	; relative coverage erroneous component remover:
+	rcc
 	{
-        max_ec_length_coefficient   29
-        max_coverage_coeff  100000.
-        coverage_gap    50.
+        coverage_gap    8.
+        max_length_coeff    2.0
+        max_length_with_tips_coeff   3.0
+        max_vertex_cnt      30
+        max_ec_length_coefficient   30
+        max_coverage_coeff  5.0
 	}
 	
 	tec

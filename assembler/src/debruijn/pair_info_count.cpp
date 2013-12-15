@@ -12,7 +12,7 @@
 #include "de/paired_info.hpp"
 
 #include "utils.hpp"
-#include "debruijn_stats.hpp"
+#include "stats/debruijn_stats.hpp"
 
 #include "pair_info_count.hpp"
 #include "sequence_mapper.hpp"
@@ -178,7 +178,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
     }
     bool map_single_reads = cfg::get().always_single_reads_rr || (!has_rr_reads && cfg::get().single_reads_rr);
 
-    size_t edge_length_threshold = Nx(gp.g, 50);
+    size_t edge_length_threshold = stats::Nx(gp.g, 50);
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         INFO("Processing library #" << i);
         if (cfg::get().ds.reads[i].is_paired()) {

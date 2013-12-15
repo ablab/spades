@@ -15,7 +15,7 @@
 #define PATH_VISUALIZER_HPP_
 
 #include "bidirectional_path.hpp"
-#include "../debruijn_stats.hpp"
+#include "stats/debruijn_stats.hpp"
 
 namespace path_extend {
 

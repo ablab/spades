@@ -94,10 +94,8 @@ public:
     }
 
     void MakeInner(VertexId v) {
-//        INFO("Checking if vertex " << g_.str(v) << " is tip.");
         VERIFY(border_.count(v) > 0);
         if (g_.IsDeadEnd(v) || g_.IsDeadStart(v)) {
-//            INFO("Tip, flag put");
             contains_deadends_ = true;
         }
         inner_vertices_.insert(v);
@@ -175,21 +173,6 @@ public:
               min_coverage_gap_(min_coverage_gap) {
 
     }
-
-    //  double DetailLocalCoverage(EdgeId e, VertexId v) const {
-    //    INFO("Local coverage of edge " << this->g().str(e) << " around vertex "
-    //        << this->g().str(v) << " was " << local_coverage_f_(e, v));
-    //    return local_coverage_f_(e, v);
-    //  }
-    //
-    //  double MaxLocalCoverage(EdgeId e, VertexId v) const {
-    //      return std::max(DetailLocalCoverage(e, v), this->graph().coverage(e));
-    //  }
-    //
-    //
-    //  double MinLocalCoverage(EdgeId e, VertexId v) const {
-    //      return std::min(DetailLocalCoverage(e, v), this->graph().coverage(e));
-    //  }
 
     double LocalCoverage(EdgeId e, VertexId v) const {
         TRACE("Local coverage of edge " << g_.str(e) << " around vertex " << g_.str(v) << " was " << local_coverage_f_(e, v));
@@ -315,7 +298,7 @@ class ComponentChecker {
 
     bool CoverageCheck(const Component<Graph>& component) const {
         FOREACH(EdgeId e, component.edges()) {
-            DEBUG("Too high coverage! Component contains highly covered edge " << g_.str(e)
+            TRACE("Too high coverage! Component contains highly covered edge " << g_.str(e)
                   << " while threshold was " << max_coverage_);
             if (math::gr(g_.coverage(e), max_coverage_)) {
                 return false;
@@ -338,32 +321,31 @@ public:
 
     bool SizeCheck(const Component<Graph>& component) const {
         if (component.inner_vertex_cnt() > vertex_count_limit_) {
-            DEBUG("Too many vertices! More than " << vertex_count_limit_);
+            TRACE("Too many vertices! More than " << vertex_count_limit_);
             return false;
         }
         return true;
     }
 
     bool FullCheck(const Component<Graph>& component) const {
-        DEBUG("Performing full check of the component");
+        TRACE("Performing full check of the component");
         size_t longest_connecting_path = LongestPathFinder<Graph>(component).Find();
         bool answer = true;
-        //todo add check on tip length in all cases!
-        if (longest_connecting_path == -1u) {
-            DEBUG("Failed to find longest connecting path (check for cycles)");
-            if (!component.contains_deadends()
-                    && component.length() > length_bound_) {
-                DEBUG("Too long component of length " << component.length() << "! Longer than length bound " << length_bound_);
-                return false;
-            }
-            if (component.length() > tip_allowing_length_bound_) {
-                DEBUG("Too long component of length " << component.length() << "! Longer than tip allowing length bound " << tip_allowing_length_bound_);
-                return false;
-            }
-        } else {
-            DEBUG("Length of longest path: " << longest_connecting_path << "; threshold: " << longest_connecting_path_bound_);
+        if (longest_connecting_path != -1u) {
+            TRACE("Length of longest path: " << longest_connecting_path << "; threshold: " << longest_connecting_path_bound_);
             answer &= longest_connecting_path < longest_connecting_path_bound_;
+        } else {
+            TRACE("Failed to find longest connecting path (check for cycles)");
         }
+        if (!component.contains_deadends()
+                && component.length() > length_bound_) {
+            TRACE("Too long component of length " << component.length() << "! Longer than length bound " << length_bound_);
+            return false;
+        } else if (component.length() > tip_allowing_length_bound_) {
+            TRACE("Too long component of length " << component.length() << "! Longer than tip allowing length bound " << tip_allowing_length_bound_);
+            return false;
+        }
+
         return answer && SizeCheck(component) && CoverageCheck(component);
     }
 
@@ -397,17 +379,17 @@ public:
 
             VertexId v = component_.NextBorderVertex();
 
-            INFO("Checking if vertex " << g_.str(v) << " is terminating.");
+            TRACE("Checking if vertex " << g_.str(v) << " is terminating.");
             //checking if there is a sufficient coverage gap
             if (!IsTerminateVertex(v)) {
-                INFO("Not terminating, adding neighbourhood");
+                TRACE("Not terminating, adding neighbourhood");
                 component_.MakeInner(v);
                 if (component_.terminating_vertices().count(v) > 0) {
-                    INFO("Terminating vertex classified as non-terminating");
+                    TRACE("Terminating vertex classified as non-terminating");
                     return false;
                 }
             } else {
-                INFO("Terminating");
+                TRACE("Terminating");
                 component_.TerminateOnVertex(v);
             }
         }
@@ -485,7 +467,6 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
     ComponentRemover<Graph> component_remover_;
 
 public:
-//todo make some useful order and stop condition
     RelativeCoverageComponentRemover(
             Graph& g, LocalCoverageFT local_coverage_f,
             double min_coverage_gap,
@@ -504,37 +485,36 @@ public:
               component_remover_(g, handler_function) {
         VERIFY(math::gr(min_coverage_gap, 1.));
         VERIFY(tip_allowing_length_bound >= length_bound);
-        INFO("Coverage gap " << min_coverage_gap);
+        TRACE("Coverage gap " << min_coverage_gap);
     }
 
-    //todo change qualifiers
 protected:
 
     /*virtual*/
     bool ProcessEdge(EdgeId e) {
-        INFO("Processing edge " << this->g().str(e));
+        TRACE("Processing edge " << this->g().str(e));
 
         //here we use that the graph is conjugate!
         VertexId v = this->g().EdgeStart(e);
         if (this->g().IsDeadEnd(v) && this->g().IsDeadStart(v)) {
-            INFO("Isolated");
+            TRACE("Isolated");
             return false;
         }
         if (this->g().IsDeadEnd(v) || this->g().IsDeadStart(v)) {
-            INFO("Tip");
+            TRACE("Tip");
             return false;
         }
 
         double local_cov = rel_helper_.LocalCoverage(e, v);
 
-        INFO("Local coverage around start " << this->g().str(v) << " is " << local_cov);
+        TRACE("Local coverage around start " << this->g().str(v) << " is " << local_cov);
 
         //since min_coverage_gap_ > 1, we don't need to think about e here
-        INFO("Checking presence of highly covered edges around start")
+        TRACE("Checking presence of highly covered edges around start")
         if (rel_helper_.CheckAnyHighlyCovered(this->g().OutgoingEdges(v), v, local_cov)
                 && rel_helper_.CheckAnyHighlyCovered(this->g().IncomingEdges(v), v,
                                          local_cov)) {
-            INFO("Looking for component");
+            TRACE("Looking for component");
             ComponentChecker<Graph> checker(this->g(), vertex_count_limit_, length_bound_,
                                             tip_allowing_length_bound_,
                                             longest_connecting_path_bound_, max_coverage_);
@@ -542,15 +522,15 @@ protected:
             ComponentSearcher<Graph> component_searcher(
                     this->g(), rel_helper_, checker, e);
             if (component_searcher.FindComponent()) {
-                INFO("Deleting component");
+                TRACE("Deleting component");
                 const Component<Graph>& component = component_searcher.component();
                 component_remover_.DeleteComponent(component.edges());
                 return true;
             } else {
-                INFO("Failed to find component");
+                TRACE("Failed to find component");
             }
         } else {
-            INFO("No highly covered edges around");
+            TRACE("No highly covered edges around");
         }
         return false;
     }

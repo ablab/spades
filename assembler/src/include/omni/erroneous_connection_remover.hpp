@@ -113,72 +113,72 @@ class SelfConjugateCondition : public EdgeCondition<Graph> {
 };
 
 //coverage comparator
-template<class Graph>
-class RelativeCoverageCondition : public EdgeCondition<Graph> {
-    typedef typename Graph::EdgeId EdgeId;
-    typedef typename Graph::VertexId VertexId;
-    typedef EdgeCondition<Graph> base;
+//template<class Graph>
+//class RelativeCoverageCondition : public EdgeCondition<Graph> {
+//    typedef typename Graph::EdgeId EdgeId;
+//    typedef typename Graph::VertexId VertexId;
+//    typedef EdgeCondition<Graph> base;
+//
+//    double min_coverage_gap_;
+//
+//    bool StrongNeighbourCondition(EdgeId neighbour_edge,
+//                                  EdgeId possible_ec) const {
+//        return neighbour_edge == possible_ec
+//                || math::gr(this->g().coverage(neighbour_edge),
+//                            this->g().coverage(possible_ec) * min_coverage_gap_);
+////	              || this->g().length(neighbour_edge)
+////	                      >= neighbour_length_threshold_;
+//    }
+//
+//    bool CheckAdjacent(const vector<EdgeId>& edges, EdgeId possible_ec) const {
+//        FOREACH (EdgeId e, edges) {
+//            if (!StrongNeighbourCondition(e, possible_ec))
+//                return false;
+//        }
+//        return true;
+//    }
+//
+// public:
+//
+//    RelativeCoverageCondition(const Graph& g, double min_coverage_gap)
+//            : base(g),
+//              min_coverage_gap_(min_coverage_gap) {
+//
+//    }
+//
+//    bool Check(EdgeId e) const {
+//        const Graph& g = this->g();
+//        return CheckAdjacent(g.AdjacentEdges(g.EdgeStart(e)), e)
+//                && CheckAdjacent(g.AdjacentEdges(g.EdgeEnd(e)), e);
+//    }
+//
+// private:
+//    DECL_LOGGER("RelativeCoverageCondition")
+//    ;
+//
+//};
 
-    double min_coverage_gap_;
-
-    bool StrongNeighbourCondition(EdgeId neighbour_edge,
-                                  EdgeId possible_ec) const {
-        return neighbour_edge == possible_ec
-                || math::gr(this->g().coverage(neighbour_edge),
-                            this->g().coverage(possible_ec) * min_coverage_gap_);
-//	              || this->g().length(neighbour_edge)
-//	                      >= neighbour_length_threshold_;
-    }
-
-    bool CheckAdjacent(const vector<EdgeId>& edges, EdgeId possible_ec) const {
-        FOREACH (EdgeId e, edges) {
-            if (!StrongNeighbourCondition(e, possible_ec))
-                return false;
-        }
-        return true;
-    }
-
- public:
-
-    RelativeCoverageCondition(const Graph& g, double min_coverage_gap)
-            : base(g),
-              min_coverage_gap_(min_coverage_gap) {
-
-    }
-
-    bool Check(EdgeId e) const {
-        const Graph& g = this->g();
-        return CheckAdjacent(g.AdjacentEdges(g.EdgeStart(e)), e)
-                && CheckAdjacent(g.AdjacentEdges(g.EdgeEnd(e)), e);
-    }
-
- private:
-    DECL_LOGGER("RelativeCoverageCondition")
-    ;
-
-};
-
-template<class Graph>
-class RelativeLowCoverageEdgeRemover : public ChimericEdgeRemovingAlgorithm<
-        Graph, CoverageComparator<Graph>> {
- private:
-    typedef typename Graph::EdgeId EdgeId;
-    typedef typename Graph::VertexId VertexId;
-    typedef ChimericEdgeRemovingAlgorithm<Graph, CoverageComparator<Graph>> base;
-
- public:
-    RelativeLowCoverageEdgeRemover(
-            Graph& g, size_t max_length, double max_coverage,
-            double coverage_gap, boost::function<void(EdgeId)> removal_handler)
-            : base(g,
-                   func::And<EdgeId>(
-                           make_shared<RelativeCoverageCondition<Graph>>(
-                                   g, coverage_gap),
-                           make_shared<LengthUpperBound<Graph>>(g, max_length)),
-                   removal_handler, CoverageComparator<Graph>(g),
-                   make_shared<CoverageUpperBound<Graph>>(g, max_coverage)) {
-    }
-};
+//template<class Graph>
+//class RelativeLowCoverageEdgeRemover : public ChimericEdgeRemovingAlgorithm<
+//        Graph, CoverageComparator<Graph>> {
+// private:
+//    typedef typename Graph::EdgeId EdgeId;
+//    typedef typename Graph::VertexId VertexId;
+//    typedef ChimericEdgeRemovingAlgorithm<Graph, CoverageComparator<Graph>> base;
+//
+// public:
+//    RelativeLowCoverageEdgeRemover(
+//            Graph& g, size_t max_length, double max_coverage,
+//            double coverage_gap, boost::function<void(EdgeId)> removal_handler)
+//            : base(g,
+//                   func::And<EdgeId>(
+//                           make_shared<RelativeCoverageCondition<Graph>>(
+//                                   g, coverage_gap),
+//                           make_shared<LengthUpperBound<Graph>>(g, max_length)),
+//                   removal_handler, CoverageComparator<Graph>(g),
+//                   make_shared<CoverageUpperBound<Graph>>(g, max_coverage)) {
+//    }
+//};
 
 template<class Graph>
 class TopologyAndReliablityBasedChimericEdgeRemover :
