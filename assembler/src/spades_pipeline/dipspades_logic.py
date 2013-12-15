@@ -243,6 +243,14 @@ def print_ds_output(output_dir, log):
     if os.path.exists(possconsregions_file):
         log.info(" * Possibly conservative regions are in: " + possconsregions_file)
 
+def write_params(output_dir, command_line, ds_command_line):
+    params = os.path.join(output_dir, "params.txt")
+    if os.path.exists(params):
+        os.remove(params)
+    params_file = open(params, 'a')
+    params_file.write("Command line: " + command_line + "\n")
+    params_file.write("dipSPAdes command line: " + ds_command_line + "\n")
+
 def main(ds_command_line, general_command_line, spades_home, bin_home):
     import support
     
@@ -259,7 +267,7 @@ def main(ds_command_line, general_command_line, spades_home, bin_home):
     log.info("\n======= dipSPAdes started. Log can be found here: " + ds_args.output_dir + "/dipspades.log\n")
 
     write_haplocontigs_in_file(ds_args.haplocontigs, ds_args.haplocontigs_fnames)
-    #log.info("File with haplocontigs was written\n")
+    write_params(ds_args.output_dir, general_command_line, ds_command_line)
 
     config_fname = prepare_configs(os.path.join(spades_home, "configs/dipspades"), ds_args, log)
     prepare_config(config_fname, ds_args, log)
