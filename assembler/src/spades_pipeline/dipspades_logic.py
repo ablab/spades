@@ -243,14 +243,18 @@ def print_ds_output(output_dir, log):
     if os.path.exists(possconsregions_file):
         log.info(" * Possibly conservative regions are in: " + possconsregions_file)
 
-def main(args, spades_home, bin_home):
+def main(ds_command_line, general_command_line, spades_home, bin_home):
     import support
+    
+    args = ds_command_line.split()
     ds_args = parse_arguments(args)
 
     check_output_dir(ds_args.output_dir)
     log = create_log(ds_args.output_dir)
 
-    log.info("\n\n")
+    log.info("\n")
+    log.info("Command line: " + general_command_line + "\n")
+    log.info("dipSPAdes command line: "+ ds_command_line + "\n")
     print_ds_args(ds_args, log)
     log.info("\n======= dipSPAdes started. Log can be found here: " + ds_args.output_dir + "/dipspades.log\n")
 
