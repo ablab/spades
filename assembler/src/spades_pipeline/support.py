@@ -43,7 +43,7 @@ def error(err_str, log=None, prefix=SPADES_PY_ERROR_MESSAGE):
         shutil.rmtree(current_tmp_dir)
     sys.exit(1)
 
-def error(err_str, log=None, prefix=SPADES_PY_ERROR_MESSAGE):
+def ds_error(err_str, log=None, prefix=SPADES_PY_ERROR_MESSAGE):
     if log:
         log.info("\n\n" + prefix + " " + err_str)
         log_warnings(log)
