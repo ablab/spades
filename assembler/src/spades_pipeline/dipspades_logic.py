@@ -26,12 +26,12 @@ class DS_Args:
     output_dir = ""
     haplocontigs = ""
 
-    def print_fields(self):
-        print ("allow_gaps: " + str(self.allow_gaps))
-        print ("weak_align: " + str(self.weak_align))
-        print ("files with haplocontigs : " + str(self.haplocontigs_fnames))
-        print ("haplocontigs file: " + str(self.haplocontigs))
-        print ("output_dir: " + str(self.output_dir))
+def print_ds_args(ds_args, log):
+    log.info("dipSPAdes parameters:")
+    log.info("\tExpect gaps: " + str(ds_args.allow_gaps))
+    log.info("\tExpect rearrengements: " + str(ds_args.weak_align))
+    log.info("\tFiles with haplocontigs : " + str(ds_args.haplocontigs_fnames))
+    log.info("\tOutput directory: " + str(ds_args.output_dir))
 
 
 def call_method(obj, method_name):
@@ -128,7 +128,7 @@ def copy_configs(src_config_dir, dst_config_dir):
 def prepare_configs(src_config_dir, ds_args, log):
     config_dir = os.path.join(ds_args.output_dir, "dipspades_configs")
     copy_configs(src_config_dir, config_dir)
-    log.info("Configs were copied to " + config_dir)
+    #log.info("dipSPAdes configs were copied to " + config_dir)
     config_fname = os.path.join(config_dir, "config.info")
     return os.path.abspath(config_fname)
 
@@ -139,7 +139,7 @@ def write_haplocontigs_in_file(filename, haplocontigs):
     hapfile = open(filename, 'a')
     for hapcontig in haplocontigs:
         if not os.path.exists(hapcontig):
-            sys.stderr.write(hapcontig + ": no such file\n")
+            sys.stderr.write(hapcontig + ": file is nor found\n")
             sys.stderr.flush()
             sys.exit(1)
         hapfile.write(hapcontig + "\n")
@@ -214,27 +214,61 @@ def prepare_config(config_fname, ds_args, log):
     args_dict = get_dict_of_args(ds_args)
     process_cfg.substitute_params(config_fname, args_dict, log)
 
+def print_ds_output(output_dir, log):
+    consensus_file = os.path.join(output_dir, "consensus_contigs.fasta")
+    if os.path.exists(consensus_file):
+        log.info(" * Assembled consensus contigs are in: " + consensus_file)
+
+    paired_consensus_file = os.path.join(output_dir, "paired_consensus_contigs.fasta")
+    if os.path.exists(paired_consensus_file):
+        log.info(" * Assembled paired consensus contigs are in: " + paired_consensus_file)
+
+    unpaired_consensus_file = os.path.join(output_dir, "unpaired_consensus_contigs.fasta")
+    if os.path.exists(unpaired_consensus_file):
+        log.info(" * Assembled paired consensus contigs are in: " + unpaired_consensus_file)
+
+    hapalignment_file = os.path.join(output_dir, "haplocontigs_alignent")
+    if os.path.exists(hapalignment_file):
+        log.info(" * Alignment of haplocontigs is in: " + hapalignment_file)
+
+    haplotype_assembly_file = os.path.join(output_dir, "haplotype_assembly.out")
+    if os.path.exists(haplotype_assembly_file):
+        log.info(" * Assembled paired consensus contigs are in: " + haplotype_assembly_file)
+
+    consregions_file = os.path.join(output_dir, "conservative_regions.fasta")
+    if os.path.exists(consregions_file):
+        log.info(" * Conservative regions are in: " + consregions_file)
+
+    possconsregions_file = os.path.join(output_dir, "possibly_conservative_regions.fasta")
+    if os.path.exists(possconsregions_file):
+        log.info(" * Possibly conservative regions are in: " + possconsregions_file)
 
 def main(args, spades_home, bin_home):
     import support
     ds_args = parse_arguments(args)
-    call_method(ds_args, "print_fields")
 
     check_output_dir(ds_args.output_dir)
     log = create_log(ds_args.output_dir)
-    log.info("log was created")
+
+    log.info("\n\n")
+    print_ds_args(ds_args, log)
+    log.info("\n======= dipSPAdes started. Log can be found here: " + ds_args.output_dir + "/dipspades.log\n")
 
     write_haplocontigs_in_file(ds_args.haplocontigs, ds_args.haplocontigs_fnames)
-    log.info("file with haplocontigs was written\n")
+    #log.info("File with haplocontigs was written\n")
 
     config_fname = prepare_configs(os.path.join(spades_home, "configs/dipspades"), ds_args, log)
     prepare_config(config_fname, ds_args, log)
-    log.info("configs were prepared")
 
+    log.info("===== Assembling started.\n")
     binary_path = check_binary(bin_home, log)
     command = [binary_path, config_fname]
     support.sys_call(command, log)
-
+    log.info("\n===== Assembling finished.\n")
+    print_ds_output(ds_args.output_dir, log)
+    log.info("\n======= dipSPAdes finished.\n")
+    log.info("dipSPAdes log can be found here: " + ds_args.output_dir + "/dipspades.log\n")
+    log.info("Thank you for using dipSPAdes!")
 
 if __name__ == '__main__':
     self_dir_path = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))

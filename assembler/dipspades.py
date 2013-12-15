@@ -41,7 +41,6 @@ def main():
         # processing some special options
         if opt == '-o':
             #arg = os.path.abspath(arg)
-            print "oppa"
             output_dir = os.path.abspath(arg) #arg
         elif opt == '--careful' or opt == '--mismatch-correction':
             continue
@@ -63,14 +62,11 @@ def main():
                 if opt[1:] in dipspades_logic.DS_Args_List.short_options:
                     dipspades_logic_py_command_line += cur_opt_arg
 
-    print "oppa" + output_dir
     if not output_dir:
-        support.error("the output_dir is not set! It is a mandatory parameter (-o output_dir).")
+        support.error("The output_dir is not set! It is a mandatory parameter (-o output_dir).")
 
     spades_output_dir = os.path.join(output_dir, "spades")
     dipspades_output_dir = os.path.join(output_dir, "dipspades")
-
-    print "oppa " + spades_output_dir + " " + dipspades_output_dir
 
     if not os.path.isdir(output_dir):
         os.makedirs(output_dir)
@@ -83,13 +79,13 @@ def main():
     dipspades_logic_py_command_line += " -o " + dipspades_output_dir
     #log = dipspades_logic.create_log(output_dir) TODO: log
 
-    print ("hello", options, not_options)
-    print (dipspades_logic_py_command_line)
-    print (spades_py_command_line)
+    #print ("hello", options, not_options)
+    #print (dipspades_logic_py_command_line)
+    #print (spades_py_command_line)
     spades.main(spades_py_command_line.split())
     spades_result = os.path.join(spades_output_dir, "contigs.fasta")
     if not os.path.isfile(spades_result):
-        support.error("something went wrong and SPAdes did not generate contigs. DipSPAdes cannot proceed without them, aborting.")
+        support.error("Something went wrong and SPAdes did not generate haplocontigs. DipSPAdes cannot proceed without them, aborting.")
     dipspades_logic_py_command_line += " --hap " + spades_result
     dipspades_logic.main(dipspades_logic_py_command_line.split(), spades.spades_home, spades.bin_home)
 
