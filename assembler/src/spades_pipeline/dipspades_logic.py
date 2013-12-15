@@ -194,7 +194,7 @@ def check_binary(binary_dir, log):
     binary_path = os.path.join(binary_dir, "dipspades")
     if not os.path.isfile(binary_path):
         import support
-        support.error("DipSPAdes binaries not found: " + binary_path, log)
+        support.ds_error("DipSPAdes binaries not found: " + binary_path, log)
     return binary_path
 
 
@@ -264,15 +264,28 @@ def main(ds_command_line, general_command_line, spades_home, bin_home):
     config_fname = prepare_configs(os.path.join(spades_home, "configs/dipspades"), ds_args, log)
     prepare_config(config_fname, ds_args, log)
 
-    log.info("===== Assembling started.\n")
-    binary_path = check_binary(bin_home, log)
-    command = [binary_path, config_fname]
-    support.sys_call(command, log)
-    log.info("\n===== Assembling finished.\n")
-    print_ds_output(ds_args.output_dir, log)
-    log.info("\n======= dipSPAdes finished.\n")
-    log.info("dipSPAdes log can be found here: " + ds_args.output_dir + "/dipspades.log\n")
-    log.info("Thank you for using dipSPAdes!")
+    try:
+        log.info("===== Assembling started.\n")
+        binary_path = check_binary(bin_home, log)
+        command = [binary_path, config_fname]
+        support.sys_call(command, log)
+        log.info("\n===== Assembling finished.\n")
+        print_ds_output(ds_args.output_dir, log)
+        log.info("\n======= dipSPAdes finished.\n")
+        log.info("dipSPAdes log can be found here: " + ds_args.output_dir + "/dipspades.log\n")
+        log.info("Thank you for using dipSPAdes!")
+    except Exception:
+        exc_type, exc_value, _ = sys.exc_info()
+        if exc_type == OSError and exc_value.errno == errno.ENOEXEC: # Exec format error
+            support.ds_error("It looks like you are using SPAdes binaries for another platform.\n" + get_spades_binaries_info_message())
+        else:
+            log.exception(exc_value)
+            support.ds_error("exception caught: %s" % exc_type, log)
+    except BaseException: # since python 2.5 system-exiting exceptions (e.g. KeyboardInterrupt) are derived from BaseException
+        exc_type, exc_value, _ = sys.exc_info()
+        log.exception(exc_value)
+        support.ds_error("exception caught: %s" % exc_type, log)
+
 
 if __name__ == '__main__':
     self_dir_path = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
