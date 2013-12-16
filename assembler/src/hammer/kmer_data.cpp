@@ -25,7 +25,7 @@ class HammerKMerSplitter : public KMerSplitter<hammer::KMer> {
 
   void DumpBuffers(size_t num_files, size_t nthreads,
                    std::vector<KMerBuffer> &buffers,
-                   MMappedRecordWriter<KMer> *ostreams) const;
+                   const path::files_t &ostreams) const;
 
  public:
   HammerKMerSplitter(std::string &work_dir)
@@ -38,7 +38,7 @@ class HammerKMerSplitter : public KMerSplitter<hammer::KMer> {
 
 void HammerKMerSplitter::DumpBuffers(size_t num_files, size_t nthreads,
                                      std::vector<KMerBuffer> &buffers,
-                                     MMappedRecordWriter<KMer> *ostreams) const {
+                                     const path::files_t &ostreams) const {
 # pragma omp parallel for num_threads(nthreads)
   for (unsigned k = 0; k < num_files; ++k) {
     size_t sz = 0;
@@ -59,9 +59,10 @@ void HammerKMerSplitter::DumpBuffers(size_t num_files, size_t nthreads,
 
 #   pragma omp critical
     {
-      size_t osz = it - SortBuffer.begin();
-      ostreams[k].reserve(osz);
-      ostreams[k].write(&SortBuffer[0], osz);
+        FILE *f = fopen(ostreams[k].c_str(), "ab");
+        VERIFY_MSG(f, "Cannot open temporary file to write");
+        fwrite(SortBuffer.data(), sizeof(KMer), it - SortBuffer.begin(), f);
+        fclose(f);
     }
   }
 
@@ -136,9 +137,6 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
     WARN("Failed to setup necessary limit for number of open files. The process might crash later on.");
     WARN("Do 'ulimit -n " << file_limit << "' in the console to overcome the limit");
   }
-  MMappedRecordWriter<KMer>* ostreams = new MMappedRecordWriter<KMer>[num_files];
-  for (unsigned i = 0; i < num_files; ++i)
-    ostreams[i].open(out[i]);
 
   size_t read_buffer = cfg::get().count_split_buffer;
   size_t cell_size = (read_buffer / (num_files * sizeof(KMer)));
@@ -164,7 +162,7 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
     while (!irs.eof()) {
       hammer::ReadProcessor rp(nthreads);
       rp.Run(irs, filler);
-      DumpBuffers(num_files, nthreads, tmp_entries, ostreams);
+      DumpBuffers(num_files, nthreads, tmp_entries, out);
       VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
 
       if (filler.processed() >> n) {
@@ -174,8 +172,6 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
     }
   }
   INFO("Processed " << filler.processed() << " reads");
-
-  delete[] ostreams;
 
   return out;
 }
