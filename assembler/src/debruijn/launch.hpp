@@ -32,7 +32,10 @@ void assemble_genome() {
                           cfg::get().load_from,
                           cfg::get().output_saves});
 
-    debruijn_graph::conj_graph_pack conj_gp(cfg::get().K, cfg::get().output_dir, cfg::get().ds.reads.lib_count(), cfg::get().ds.reference_genome,
+    debruijn_graph::conj_graph_pack conj_gp(cfg::get().K,
+                                            cfg::get().tmp_dir,
+                                            cfg::get().ds.reads.lib_count(),
+                                            cfg::get().ds.reference_genome,
                                             cfg::get().flanking_range);
     if (!cfg::get().developer_mode) {
         conj_gp.edge_pos.Detach();
