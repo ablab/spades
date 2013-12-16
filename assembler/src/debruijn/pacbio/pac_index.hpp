@@ -551,27 +551,13 @@ public:
         //TODO: Serious optimization possible
         for (size_t i = 0; i < result.size(); i++) {
             for (auto a_iter = a.sorted_positions.begin();
-                    a_iter != a.sorted_positions.end(); ++a_iter) {
-                if (a_iter - a.sorted_positions.begin() > 500 &&  a.sorted_positions.end() - a_iter >500) continue;
-                int cnt = 0;
+                    a_iter != a.sorted_positions.end(); ++a_iter)
                 for (auto b_iter = b.sorted_positions.begin();
-                        b_iter != b.sorted_positions.end() && cnt <500; ++b_iter, cnt ++) {
+                        b_iter != b.sorted_positions.end(); ++b_iter)
                     if (similar(*a_iter, *b_iter,
                                 (int) (result[i] + addition))) {
                         return 1;
                     }
-                }
-                cnt = 0;
-                if (b.sorted_positions.size() > 500) {
-                    for (auto b_iter = b.sorted_positions.end() - 1;
-                                            b_iter != b.sorted_positions.begin() && cnt < 500; --b_iter, cnt ++) {
-                        if (similar(*a_iter, *b_iter,
-                                    (int) (result[i] + addition))) {
-                            return 1;
-                        }
-                    }
-                }
-            }
         }
         return 0;
 

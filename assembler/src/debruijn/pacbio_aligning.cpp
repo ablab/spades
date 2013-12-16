@@ -84,8 +84,8 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
     std::vector<io::SingleRead> reads(read_buffer_size);
     io::SingleRead read;
     size_t buffer_no = 0;
-    INFO("Aligning seed size: " << cfg::get().pb.pacbio_k);
-
+    INFO(cfg::get().pb.pacbio_k);
+    INFO(cfg::get().K);
     pacbio::PacBioMappingIndex<ConjugateDeBruijnGraph> pac_index(gp.g,
                                                          cfg::get().pb.pacbio_k,
                                                          cfg::get().K, cfg::get().pb.ignore_middle_alignment);
