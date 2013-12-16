@@ -114,7 +114,7 @@ public:
 
     void dfs_cluster_norec(vector<int> &used, vector<MappingInstance> &to_add,
                      const size_t cur_ind,
-                     const typename MappingDescription::iterator iter, vector<vector<size_t> > similarity_list) const {
+                     const typename MappingDescription::iterator iter, vector<vector<size_t> > &similarity_list) const {
         std::deque<size_t> stack;
         stack.push_back(cur_ind);
         used[cur_ind] = 1;
@@ -145,6 +145,7 @@ public:
             set<vector<MappingInstance> > edge_cluster_set;
             size_t len = iter->second.size();
             vector<vector<size_t> > similarity_list(len);
+	    int cnt = 0;
             for (size_t i = 0; i < len; i++){
                 for (size_t j = i + 1; j < len; j++){
                     if (iter->second[i].edge_position + max_similarity_distance < iter->second[j].edge_position) {
@@ -153,6 +154,8 @@ public:
                     if (similar(iter->second[i], iter->second[j])) {
                         similarity_list[i].push_back(j);
                         similarity_list[j].push_back(i);
+			cnt ++;
+			if (cnt % 10000 == 0) {DEBUG(cnt);}
                     }
                 }
             }
