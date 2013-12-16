@@ -20,7 +20,7 @@ general_debug			0
 count_do				1
 count_numfiles				16
 count_merge_nthreads			16
-count_split_buffer			100000000
+count_split_buffer			500000000
 
 ; hamming graph clustering
 hamming_do				1

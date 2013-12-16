@@ -173,7 +173,7 @@ path::files_t DeBruijnReadKMerSplitter<Read, KmerFilter>::Split(size_t num_files
   }
 
   size_t cell_size = READS_BUFFER_SIZE /
-                     (nthreads * num_files * runtime_k::RtSeq::GetDataSize(this->K_) * sizeof(runtime_k::RtSeq::DataType));
+                     (num_files * runtime_k::RtSeq::GetDataSize(this->K_) * sizeof(runtime_k::RtSeq::DataType));
   // Set sane minimum cell size
   if (cell_size < 16384)
     cell_size = 16384;
@@ -363,7 +363,7 @@ inline path::files_t DeBruijnKMerKMerSplitter<KmerFilter>::Split(size_t num_file
   }
 
   size_t cell_size = READS_BUFFER_SIZE /
-                     (nthreads * num_files * runtime_k::RtSeq::GetDataSize(this->K_) * sizeof(runtime_k::RtSeq::DataType));
+                     (num_files * runtime_k::RtSeq::GetDataSize(this->K_) * sizeof(runtime_k::RtSeq::DataType));
   // Set sane minimum cell size
   if (cell_size < 16384)
     cell_size = 16384;
