@@ -332,24 +332,49 @@ public:
         if (pos == -1) {
             return -1;
         }
-        int last_edge_pos = FindPosIS(path);
-        VERIFY(last_edge_pos > -1);
-        DEBUG("last edge pos " << last_edge_pos);
-        VERIFY(last_edge_pos > pos);
-        for (int i = (int) path.Size() - 1; i >= last_edge_pos; --i) {
-            path.PopBack();
-        }
-        VERIFY((int) path.Size() == last_edge_pos);
 
         size_t skip_identical_edges = 0;
         if (path.getLoopDetector().IsCycled(2, skip_identical_edges)) {
+            int loop_size = (int)path.getLoopDetector().LoopEdges(skip_identical_edges, 2);
+            int incorrect_loop_count = (int)path.getLoopDetector().LastLoopCount(loop_size);
+            BidirectionalPath small_loop = path.SubPath(path.Size() - loop_size);
+            DEBUG("loop size " << loop_size << " incorrect loop count " << incorrect_loop_count);
+            small_loop.Print();
+            int pos_in_path = (int)path.Size() - loop_size * incorrect_loop_count - 1;
+            int pos_in_loop = (int) small_loop.Size() - 1;
+            while (pos_in_path >=0 && pos_in_loop >=0 && path.At(pos_in_path) == small_loop.At(pos_in_loop)) {
+                pos_in_path--;
+                pos_in_loop--;
+            }
+            pos_in_path++;
+            pos_in_loop++;
+            DEBUG("pos in path " << pos_in_path << " pos in loop " << pos_in_loop);
+            int all_loops_length = (int)path.Size() - pos_in_path;
+            DEBUG("all loop len " << all_loops_length);
+            int all_loop_count = all_loops_length / loop_size;
+            DEBUG("all loop count " << all_loop_count);
+            int shift_loop = all_loops_length - all_loop_count * loop_size;
+            DEBUG("shift_loop " << shift_loop);
+            path.PopBack(shift_loop);
+            path.Print();
             DEBUG("Path is cycled after found IS loop, skip identival edges = " << skip_identical_edges);
             path.getLoopDetector().RemoveLoop(skip_identical_edges, false);
             DEBUG("After removing");
+            path.Print();
+            return pos_in_path;
+        } else {
+            int last_edge_pos = FindPosIS(path);
+            VERIFY(last_edge_pos > -1);
+            DEBUG("last edge pos " << last_edge_pos);
+            VERIFY(last_edge_pos > pos);
+            for (int i = (int) path.Size() - 1; i >= last_edge_pos; --i) {
+                path.PopBack();
+            }
+            VERIFY((int) path.Size() == last_edge_pos);
+            VERIFY(pos < (int) path.Size());
+            DEBUG("result pos " <<pos);
+            return pos;
         }
-        VERIFY(pos < (int) path.Size());
-        DEBUG("result pos " <<pos);
-        return pos;
     }
 };
 
