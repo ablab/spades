@@ -445,8 +445,11 @@ public:
         vector<typename ClustersSet::iterator> start_clusters, end_clusters;
         vector<GapDescription<Graph> > illumina_gaps;
         vector<int> used(len);
-        for (int i = 0; i < len; i++)
-            used[i] = 0;
+	auto iter = mapping_descr.begin();
+        for (int i = 0; i < len; i++, iter ++) {
+            used[i] = 0; 
+	    DEBUG(colors[i] <<" " << iter->str(g_));
+	}
         for (int i = 0; i < len; i++) {
             if (!used[i]) {
                 DEBUG("starting new subread");

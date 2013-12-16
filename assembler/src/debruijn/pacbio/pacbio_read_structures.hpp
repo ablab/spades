@@ -94,7 +94,7 @@ struct KmerCluster {
 		first_trustable_index = first_unique_ind;
 	}
 
-    string str(Graph &g) {
+    string str(const Graph &g) const{
         stringstream s;
         s << "Edge: " << g.int_id(edgeId) << " " << first_trustable_index<< " - "  <<last_trustable_index << size;
         return s.str();
