@@ -411,27 +411,6 @@ void RemoveLowCoverageEdges(
     DEBUG("Low coverage edges removed");
 }
 
-//template<class Graph>
-//bool RemoveRelativelyLowCoverageEdges(
-//    Graph &g,
-//    const debruijn_config::simplification::relative_coverage_ec_remover& rec_config,
-//    boost::function<void(typename Graph::EdgeId)> removal_handler,
-//    double determined_coverage_threshold) {
-//  INFO("Removing relatively low covered connections");
-//
-//  size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
-//      g.k(), rec_config.max_ec_length_coefficient);
-//  omnigraph::RelativeLowCoverageEdgeRemover<Graph> erroneous_edge_remover(
-//      g, max_length,
-//      determined_coverage_threshold * rec_config.max_coverage_coeff,
-//      rec_config.coverage_gap, removal_handler);
-//
-//  bool changed = erroneous_edge_remover.Process();
-//
-//  DEBUG("Relatively Low coverage edges removed");
-//  return changed;
-//}
-
 template<class Graph>
 void RemoveSelfConjugateEdges(
     Graph &g, size_t max_length, double max_coverage,
@@ -442,33 +421,12 @@ void RemoveSelfConjugateEdges(
     DEBUG("Short low covered self-conjugate connections removed");
 }
 
-//template<class Graph>
-//bool RemoveRelativelyLowCoverageEdges(
-//    Graph &g,
-//    const debruijn_config::simplification::relative_coverage_ec_remover& rec_config,
-//    boost::function<void(typename Graph::EdgeId)> removal_handler,
-//    double determined_coverage_threshold) {
-//    INFO("Removing relatively low covered connections");
-//
-//    size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
-//        g.k(), rec_config.max_ec_length_coefficient);
-//    omnigraph::RelativeLowCoverageEdgeRemover<Graph> erroneous_edge_remover(
-//        g, max_length,
-//        determined_coverage_threshold * rec_config.max_coverage_coeff,
-//        rec_config.coverage_gap, removal_handler);
-//
-//    bool changed = erroneous_edge_remover.Process();
-//
-//    DEBUG("Relatively Low coverage edges removed");
-//    return changed;
-//}
-
 template<class Graph>
 bool RemoveRelativelyLowCoverageComponents(
         Graph &g,
         const FlankingCoverage<Graph>& flanking_cov,
         const debruijn_config::simplification::relative_coverage_comp_remover& rcc_config,
-        double avg_coverage,
+        double determined_coverage_threshold,
         size_t read_length,
         typename ComponentRemover<Graph>::HandlerF removal_handler = 0) {
     INFO("Removing relatively low covered connections");
@@ -484,7 +442,7 @@ bool RemoveRelativelyLowCoverageComponents(
                         rcc_config.coverage_gap, size_t(double(read_length) * rcc_config.length_coeff),
                         size_t(double(read_length) * rcc_config.tip_allowing_length_coeff),
                         connecting_path_length_bound,
-                        avg_coverage * rcc_config.max_coverage_coeff,
+                        determined_coverage_threshold * rcc_config.max_coverage_coeff,
                         removal_handler, rcc_config.vertex_count_limit);
     return rel_rem.Process();
 }
@@ -624,22 +582,39 @@ bool AllTopology(Graph &g,
     return res;
 }
 
-template<class Graph>
+template<class gp_t>
 bool FinalRemoveErroneousEdges(
-    Graph &g, FlankingCoverage<Graph> flanking_cov,
+    gp_t &gp,
     boost::function<void(typename Graph::EdgeId)> removal_handler,
+    double determined_coverage_threshold,
     size_t iteration) {
 
+//    gp.ClearQuality();
+//    gp.FillQuality();
+//    auto colorer = debruijn_graph::DefaultGPColorer(gp);
+//    omnigraph::DefaultLabeler<typename gp_t::graph_t> labeler(gp.g, gp.edge_pos);
+//    QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler(gp.g, gp.edge_qual, labeler, colorer,
+//                                   cfg::get().output_dir + "pictures/colored_edges_deleted/");
+//
+//    //positive quality edges removed (folder colored_edges_deleted)
+//    boost::function<void(EdgeId)> qual_removal_handler_f = boost::bind(
+//            //            &QualityLoggingRemovalHandler<Graph>::HandleDelete,
+//            &QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
+//            boost::ref(qual_removal_handler), _1);
+//
+//    boost::function<void(set<EdgeId>)> set_removal_handler_f = boost::bind(
+//                &omnigraph::simplification::SingleEdgeAdapter<set<EdgeId>>, _1, qual_removal_handler_f);
+//
     boost::function<void(set<EdgeId>)> set_removal_handler_f = boost::bind(
                 &omnigraph::simplification::SingleEdgeAdapter<set<EdgeId>>, _1, removal_handler);
 
-    bool changed = RemoveRelativelyLowCoverageComponents(g, flanking_cov,
-                                          cfg::get().simp.rcc, cfg::get().ds.avg_coverage(),
+    bool changed = RemoveRelativelyLowCoverageComponents(gp.g, gp.flanking_cov,
+                                          cfg::get().simp.rcc, determined_coverage_threshold,
                                           cfg::get().ds.RL(), set_removal_handler_f);
 
     if (cfg::get().simp.topology_simplif_enabled && cfg::get().main_iteration) {
-        changed |= AllTopology(g, removal_handler, iteration);
-        changed |= MaxFlowRemoveErroneousEdges(g, cfg::get().simp.mfec,
+        changed |= AllTopology(gp.g, removal_handler, iteration);
+        changed |= MaxFlowRemoveErroneousEdges(gp.g, cfg::get().simp.mfec,
                                                removal_handler);
     }
     return changed;
@@ -687,7 +662,8 @@ void PostSimplification(conj_graph_pack& gp,
                                             removal_handler);
         }
 
-        enable_flag |= FinalRemoveErroneousEdges(gp.g, gp.flanking_cov, removal_handler,
+        enable_flag |= FinalRemoveErroneousEdges(gp, removal_handler,
+                                                 determined_coverage_threshold,
                                                  iteration);
 
         enable_flag |= ClipTipsWithProjection(gp, cfg::get().simp.tc,

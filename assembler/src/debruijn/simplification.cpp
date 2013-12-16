@@ -64,7 +64,7 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
 
 void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
     omnigraph::DefaultLabeler<Graph> labeler/*tot_lab*/(gp.g, gp.edge_pos);
-    detail_info_printer printer(gp, labeler, cfg::get().output_dir);
+    stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
 
     printer(ipp_removing_isolated_edges);
 

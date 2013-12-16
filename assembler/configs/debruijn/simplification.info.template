@@ -44,7 +44,7 @@ default
         max_length_with_tips_coeff   3.0
         max_vertex_cnt      30
         max_ec_length_coefficient   30
-        max_coverage_coeff  0.3
+        max_coverage_coeff  2.0
 	}
 	
 	; topology based erroneous connection remover
