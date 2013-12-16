@@ -273,8 +273,8 @@ public:
                     j_iter++;
                 }
             }
+            DEBUG("cluster size "<< i_iter->sorted_positions.size() << "survived filtering");
             i_iter++;
-            TRACE("cluster size "<< i_iter->sorted_positions.size() << "survived filtering");
         }
     }
 
@@ -390,6 +390,7 @@ public:
 
     vector<int> GetColors(ClustersSet &mapping_descr, Sequence &s) {
         int len = (int) mapping_descr.size();
+	DEBUG("getting colors, table size "<< len);
         vector<vector<int> > table(len);
         for (int i = 0; i < len; i++) {
             table[i].resize(len);
@@ -435,6 +436,7 @@ public:
 
     OneReadMapping<Graph> GetReadAlignment(Sequence &s) {
         ClustersSet mapping_descr = GetClusters(s);
+        DEBUG("clusters got");
         int len = (int) mapping_descr.size();
         vector<size_t> real_length;
 
@@ -447,6 +449,7 @@ public:
             used[i] = 0;
         for (int i = 0; i < len; i++) {
             if (!used[i]) {
+                DEBUG("starting new subread");
                 vector<pair<size_t, typename ClustersSet::iterator> > cur_cluster;
                 used[i] = 1;
                 int j = 0;
@@ -489,6 +492,7 @@ public:
                 }
             }
         }
+	DEBUG("adding gaps between subreads");
         int alignments = int(sortedEdges.size());
         for (int i = 0; i < alignments; i++) {
             for (int j = 0; j < alignments; j++) {
