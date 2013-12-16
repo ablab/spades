@@ -54,7 +54,7 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
 
 
 def get_read_length(output_dir, K, dataset_data):
-    estimated_params = load_config_from_file(os.path.join(output_dir, "K%d" % K, "_est_params.info"))
+    estimated_params = load_config_from_file(os.path.join(output_dir, "K%d" % K, "final_est_params.info"))
     if "max_read_length" not in estimated_params.__dict__:
         support.warning("Failed to estimate maximum read length")
     return int(estimated_params.__dict__["max_read_length"])
