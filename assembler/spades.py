@@ -153,6 +153,9 @@ def fill_cfg(options_to_parse, log):
         options_storage.usage(spades_version)
         sys.exit(1)
 
+    if len(not_options) > 1:
+        support.error("Please specify option (e.g. -1, -2, -s, etc) for the following paths: " + ", ".join(not_options[1:]) + "\n", log)
+
     # all parameters are stored here
     cfg = dict()
     # dataset is stored here. We are prepared for up to MAX_LIBS_NUMBER paired-end libs and MAX_LIBS_NUMBER mate-pair libs
