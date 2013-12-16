@@ -627,7 +627,6 @@ class MosaicAnalysisCommand : public NewLocalCommand<CapEnvironment> {
       size_t min_reportable_mosaic_length = 500;
       size_t min_reportable_submosaic_length = 20;
       std::string folder = TryFetchFolder(curr_env, args);
-      ofstream out(folder + "mosaic.txt");
       cout << "Mosaic analysis triggered" << endl;
       cout << "Min support block length " << min_support_length << endl;
       cout << "Max support block multiplicity " << max_support_mult << endl;
@@ -642,7 +641,7 @@ class MosaicAnalysisCommand : public NewLocalCommand<CapEnvironment> {
           mosaic::PerformMosaicAnalysis(curr_env.rt_seq_gp(), curr_env.coordinates_handler().AsMappingPath(0),
                                         genome, min_support_length, max_support_mult, max_inter_length,
                                         min_reportable_mosaic_length,
-                                        min_reportable_submosaic_length, out);
+                                        min_reportable_submosaic_length, folder);
       }
   }
 };

@@ -512,7 +512,7 @@ class TxtFileMosaicPrinter : public MosaicPrinter {
     size_t cnt_;
     const MosaicHelper& helper_;
     const multimap<string, size_t>& different_irred_presence_;
-    ostream& out_;
+    ofstream out_;
 
     void BlockInfo(Block b) {
         out_ << b << " (" << helper_.length(b) << ")";
@@ -522,11 +522,11 @@ public:
 
     TxtFileMosaicPrinter(const MosaicHelper& helper,
                          const multimap<string, size_t>& different_irred_presence,
-                         ostream& out) :
+                         const string& filename) :
                              cnt_(0),
                              helper_(helper),
                              different_irred_presence_(different_irred_presence),
-                             out_(out) {
+                             out_(filename) {
 
     }
 
@@ -593,7 +593,7 @@ class ParsableFormatPrinter : public MosaicPrinter {
     size_t cnt_;
     const MosaicHelper& helper_;
     vector<pair<MosaicStructure, vector<StrandRange>>> submosaics_;
-    ostream& out_;
+    ofstream out_;
 
     void BlockInfo(Block b) {
         out_ << b << " " << helper_.length(b) << endl;
@@ -602,10 +602,10 @@ class ParsableFormatPrinter : public MosaicPrinter {
 public:
 
     ParsableFormatPrinter(const MosaicHelper& helper,
-                         ostream& out) :
+                         const string& filename) :
                              cnt_(0),
                              helper_(helper),
-                             out_(out) {
+                             out_(filename) {
 
     }
 
@@ -870,6 +870,11 @@ public:
         }
     }
 
+    void Report(const vector<shared_ptr<MosaicPrinter>>& printers) {
+        for (auto printer_ptr : printers) {
+            Report(*printer_ptr);
+        }
+    }
 };
 
 //todo reduce duplication
@@ -973,7 +978,7 @@ class MosaicStructureAnalyzer {
     size_t max_inter_block_length_;
     size_t min_reportable_mosaic_length_;
     size_t min_reportable_submosaic_length_;
-    ostream& out_;
+    string folder_;
 
     Pos curr_pos_;
 
@@ -1008,7 +1013,7 @@ public:
                             size_t min_support_length, size_t max_support_mult,
                             size_t max_inter_length, size_t min_reportable_mosaic_length,
                             size_t min_reportable_submosaic_length,
-                            ostream& out)
+                            const string& folder)
              : block_info_(block_composition.block_info()),
                block_composition_(block_composition),
                min_support_block_length_(min_support_length),
@@ -1016,7 +1021,7 @@ public:
                max_inter_block_length_(max_inter_length),
                min_reportable_mosaic_length_(min_reportable_mosaic_length),
                min_reportable_submosaic_length_(min_reportable_submosaic_length),
-               out_(out),
+               folder_(folder),
                curr_pos_(0) {
     }
 
@@ -1059,9 +1064,13 @@ public:
         //end pics
 
         interval_set.set_substructure_filter(make_shared<LengthFilter>(helper, min_reportable_submosaic_length_));
-        /*TxtFileMosaicPrinter printer(helper, interval_set.different_irred_presence(), out_);*/
-        ParsableFormatPrinter printer(helper, out_);
-        interval_set.Report(printer);
+
+        ParsableFormatPrinter parsable_printer(helper, folder_ + "mosaic_to_parse.txt");
+        interval_set.Report(parsable_printer);
+
+        TxtFileMosaicPrinter readable_printer(helper, interval_set.different_irred_presence(),
+                                              folder_ + "mosaic_to_read.txt");
+        interval_set.Report(readable_printer);
 
     }
 
@@ -1071,13 +1080,13 @@ template<class gp_t>
 void PerformMosaicAnalysis(const gp_t& gp, const MappingPath<EdgeId> mapping_path, const Sequence& genome,
                            size_t min_support_length, size_t max_support_mult,
                            size_t max_inter_length, size_t min_reportable_mosaic_length,
-                           size_t min_reportable_submosaic_length, ostream& out) {
+                           size_t min_reportable_submosaic_length, const string& folder) {
     BlockInfoProvider block_info(gp.g);
     GenomeBlockComposition block_composition(gp.g, mapping_path, genome.size() - gp.g.k(), block_info);
 
     MosaicStructureAnalyzer analyzer(block_composition, min_support_length, max_support_mult,
                                      max_inter_length, min_reportable_mosaic_length,
-                                     min_reportable_submosaic_length, out);
+                                     min_reportable_submosaic_length, folder);
     analyzer.Analyze();
 }
 
