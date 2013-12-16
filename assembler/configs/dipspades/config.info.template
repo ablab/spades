@@ -1,9 +1,9 @@
 ; base parameters ;
 bp {
-	K			55;
+	K			        55;
 	use_multithreading	true;
-	max_threads		64;
-	max_memory		512;
+	max_threads		    16;
+	max_memory		    512;
 }
 
 ; input-output params ;
@@ -17,7 +17,10 @@ io {
 
 ; run params ;
 rp {
-	entry_point	dipspades
+	entry_point	    dipspades
+    ; entry_point   dipspades:contig_graph_construction
+    ; entry_point   dipspades:polymorphic_br
+    ; entry_point   dipspades:consensus_construction
 	developer_mode	true
 }
 
@@ -37,12 +40,12 @@ pbr {
 
 ; consensus constructor config
 cc {
-	enabled                         true
+	    enabled                         true
         bulge_len_quantile              .95                             ; value of this quantile of bulge length histogram
                                                                         ; is upper bound of bulge length in contigs
-        tails_lie_on_bulges             false                           ; tail has to lie on bulge side
+        tails_lie_on_bulges             true                            ; tail has to lie on bulge side
 		estimate_tails					true
-        align_bulge_sides               false                           ; check bulge into paired haplocontigs for alignment
+        align_bulge_sides               true                            ; check bulge into paired haplocontigs for alignment
         min_overlap_size                1500                            ; minimal allowable length of overlap (in nt)
         min_lcs_size                    1500                            ; minimal allowable length of shared subsequence of
                                                                         ; paired contigs (in nt)

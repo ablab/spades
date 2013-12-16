@@ -96,10 +96,10 @@ public:
 		RunSimpleBRCycle();
 		BulgeRemoverCycle<LightBulgeRemover>("LightBulgeRemover", dsp_cfg::get().pbr.num_iters_lbr);
 
-		INFO("Iterative tail gluing starts");
-		IterativeTailGluing(graph_pack_.g, dsp_cfg::get().pbr.rel_bulge_align).IterativeProcessTails();
-		compressor_.CompressAllVertices();
-		INFO("Iterative tail gluing ends");
+//		INFO("Iterative tail gluing starts");
+//		IterativeTailGluing(graph_pack_.g, dsp_cfg::get().pbr.rel_bulge_align).IterativeProcessTails();
+//		compressor_.CompressAllVertices();
+//		INFO("Iterative tail gluing ends");
 
 		INFO("Index refilling");
 		graph_pack_.index.Refill();
