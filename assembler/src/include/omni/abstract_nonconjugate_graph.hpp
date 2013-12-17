@@ -195,7 +195,9 @@ public:
 	typedef typename base::EdgeData EdgeData;
 	typedef typename base::VertexIterator VertexIterator;
 
-private:
+protected:
+    using base::CreateVertex;
+    using base::HiddenAddEdge;
 
 	virtual VertexId CreateVertex(const VertexData &data) {
 		return VertexId(new SingleVertex<DataMaster>(data));
