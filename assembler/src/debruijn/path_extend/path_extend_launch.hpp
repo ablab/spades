@@ -21,7 +21,6 @@
 #include "path_visualizer.hpp"
 #include "loop_traverser.hpp"
 #include "long_read_storage.hpp"
-#include "split_graph_pair_info.hpp"
 #include "next_path_searcher.hpp"
 
 

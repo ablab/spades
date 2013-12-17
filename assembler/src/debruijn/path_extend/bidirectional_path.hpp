@@ -597,6 +597,10 @@ public:
         return -1;
     }
 
+    bool Contains(EdgeId e) const {
+        return FindFirst(e) != -1;
+    }
+
     vector<size_t> FindAll(EdgeId e, size_t start = 0) const {
         vector<size_t> result;
         for (size_t i = start; i < Size(); ++i) {
@@ -1436,7 +1440,7 @@ inline bool LoopDetector::PrevEdgeInShortLoop() const {
     }
     return false;
 }
-pair<size_t, size_t> ComparePaths(size_t start_pos1, size_t start_pos2,
+inline pair<size_t, size_t> ComparePaths(size_t start_pos1, size_t start_pos2,
                                   const BidirectionalPath& path1,
                                   const BidirectionalPath& path2,
                                   size_t max_diff) {
