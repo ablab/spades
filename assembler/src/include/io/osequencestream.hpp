@@ -136,7 +136,7 @@ protected:
 	double cov_;
 
     virtual void write_header(const string& s) {
-        ofstream_ << ">" << MakeContigId(id_++, s.size(), cov_, uid_) << endl;
+        ofstream_ << ">" << MakeContigId(++id_, s.size(), cov_, uid_) << endl;
     }
 
 public:

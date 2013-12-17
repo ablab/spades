@@ -958,8 +958,20 @@ public:
             }
         } else {
             DEBUG("try scaffold tree");
-            //next_paths = path_searcher_.ScaffoldTree(path);
-
+//            next_paths = path_searcher_.ScaffoldTree(path);
+//            VERIFY(next_paths.size() <= 1);
+//            if (next_paths.size() == 1) {
+//                BidirectionalPath& p = **next_paths.begin();
+//                DEBUG("Path to add dirty ");
+//                p.Print();
+//                for (size_t i = 0; i < p.Size() - 1; ++i) {
+//                    path.PushBack(p[i], p.GapAt(i));
+//                }
+//                DEBUG("Finally the path, and an edge to add " << g_.int_id(p.Back()) << " : " << g_.length(p.Back()));
+//                path.Print();
+//
+//                return EdgeContainer(1, EdgeWithDistance(p.Back(), p.GapAt(p.Size() - 1)));
+//            }
         }
         DEBUG("next paths size " << next_paths.size());
         EdgeContainer result = ChooseBest(path, next_paths);
