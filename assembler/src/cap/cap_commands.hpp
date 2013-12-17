@@ -621,11 +621,11 @@ class MosaicAnalysisCommand : public NewLocalCommand<CapEnvironment> {
       VERIFY(curr_env.genome_cnt() == 1);
 //      const Sequence& genome = curr_env.genomes()[1];
       const Sequence& genome = curr_env.genomes()[0];
-      size_t min_support_length = 20;
-      size_t max_support_mult = 20;
+      size_t min_support_length = 100;
+      size_t max_support_mult = 10;
       size_t max_inter_length = 1000;
       size_t min_reportable_mosaic_length = 500;
-      size_t min_reportable_submosaic_length = 20;
+      size_t min_reportable_submosaic_length = 100;
       std::string folder = TryFetchFolder(curr_env, args);
       cout << "Mosaic analysis triggered" << endl;
       cout << "Min support block length " << min_support_length << endl;

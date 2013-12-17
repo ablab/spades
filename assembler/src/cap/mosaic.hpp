@@ -510,7 +510,7 @@ public:
 class TxtFileMosaicPrinter : public MosaicPrinter {
     size_t cnt_;
     const MosaicHelper& helper_;
-    const multimap<string, size_t>& different_irred_presence_;
+//    const multimap<string, size_t>& different_irred_presence_;
     ofstream out_;
 
     void BlockInfo(Block b) {
@@ -520,11 +520,11 @@ class TxtFileMosaicPrinter : public MosaicPrinter {
 public:
 
     TxtFileMosaicPrinter(const MosaicHelper& helper,
-                         const multimap<string, size_t>& different_irred_presence,
+//                         const multimap<string, size_t>& different_irred_presence,
                          const string& filename) :
                              cnt_(0),
                              helper_(helper),
-                             different_irred_presence_(different_irred_presence),
+//                             different_irred_presence_(different_irred_presence),
                              out_(filename) {
 
     }
@@ -563,16 +563,18 @@ public:
         out_ << "------" << endl;
         out_ << "Sub_mosaic. Block cnt = " << mosaic.block_size() << endl;
         out_ << "Blocks " << finger;
-        out_ << " ; Found in " << get_all(different_irred_presence_, finger).size() << " different irreducible mosaics";
-        string delim = " (";
-        for (size_t idx : get_all(different_irred_presence_, finger)) {
-            out_ << delim;
-            out_ << idx;
-            delim = ", ";
-        }
-        out_ << ")" << endl;
+//        set<size_t> different_irred;
+//        insert_all(different_irred, get_all(different_irred_presence_, finger));
+//        out_ << " ; Found in " << different_irred.size() << " different irreducible mosaics";
+//        string delim = " (";
+//        for (size_t idx : different_irred) {
+//            out_ << delim;
+//            out_ << idx;
+//            delim = ", ";
+//        }
+//        out_ << ")" << endl;
 
-        delim = "";
+        string delim = "";
         out_ << "Ranges: ";
         for (StrandRange r : ranges) {
             out_ << delim;
@@ -764,7 +766,7 @@ class MosaicStructureSet {
 
     vector<MosaicInterval> raw_intervals_;
     vector<MosaicStructure> irreducible_structures_;
-    multimap<string, size_t> different_irred_presence_;
+//    multimap<string, size_t> different_irred_presence_;
 
     shared_ptr<func::Predicate<MosaicStructure>> filter_;
     shared_ptr<func::Predicate<MosaicStructure>> sub_filter_;
@@ -774,22 +776,22 @@ class MosaicStructureSet {
         return mosaic.conjugate(block_composition_.block_info());
     }
 
-    void CountDifferentIrred(const MosaicStructure& mosaic, size_t idx) {
-        for (size_t i = 0; i < mosaic.block_size(); ++i) {
-            for (size_t j = i; j < mosaic.block_size(); ++j) {
-                MosaicStructure sub_mosaic = mosaic.SubMosaic(i, j);
-                different_irred_presence_.insert(make_pair(sub_mosaic.Fingerprint(), idx));
-                different_irred_presence_.insert(
-                        make_pair(ConjugateMosaic(sub_mosaic).Fingerprint(), idx));
-            }
-        }
-    }
-
-    void CountDifferentIrred() {
-        for (size_t i = 0; i < irreducible_structures_.size(); ++i) {
-            CountDifferentIrred(irreducible_structures_[i], i);
-        }
-    }
+//    void CountDifferentIrred(const MosaicStructure& mosaic, size_t idx) {
+//        for (size_t i = 0; i < mosaic.block_size(); ++i) {
+//            for (size_t j = i; j < mosaic.block_size(); ++j) {
+//                MosaicStructure sub_mosaic = mosaic.SubMosaic(i, j);
+//                different_irred_presence_.insert(make_pair(sub_mosaic.Fingerprint(), idx));
+//                different_irred_presence_.insert(
+//                        make_pair(ConjugateMosaic(sub_mosaic).Fingerprint(), idx));
+//            }
+//        }
+//    }
+//
+//    void CountDifferentIrred() {
+//        for (size_t i = 0; i < irreducible_structures_.size(); ++i) {
+//            CountDifferentIrred(irreducible_structures_[i], i);
+//        }
+//    }
 
     bool AnalyzeStructure(const MosaicStructure& mosaic) {
         for (auto& irred_struct : irreducible_structures_) {
@@ -821,9 +823,9 @@ public:
         }
     }
 
-    const multimap<string, size_t>& different_irred_presence() const {
-        return different_irred_presence_;
-    }
+//    const multimap<string, size_t>& different_irred_presence() const {
+//        return different_irred_presence_;
+//    }
 
     void Analysis() {
         INFO("Sorting raw intervals");
@@ -838,7 +840,7 @@ public:
             AnalyzeStructure(MosaicStructure(block_composition_, interval));
         }
         INFO("Counting distinct irreducible");
-        CountDifferentIrred();
+        //CountDifferentIrred();
     }
 
     void set_structure_filter(shared_ptr<func::Predicate<MosaicStructure>> filter) {
@@ -1067,7 +1069,7 @@ public:
         ParsableFormatPrinter parsable_printer(helper, folder_ + "mosaic_to_parse.txt");
         interval_set.Report(parsable_printer);
 
-        TxtFileMosaicPrinter readable_printer(helper, interval_set.different_irred_presence(),
+        TxtFileMosaicPrinter readable_printer(helper, /*interval_set.different_irred_presence(),*/
                                               folder_ + "mosaic_to_read.txt");
         interval_set.Report(readable_printer);
 
