@@ -41,7 +41,7 @@ public:
 	void Add(T new_elem, size_t count = 1){
 		invalid_part_sums_ = true;
 		if(sorted_elems_.find(new_elem) == sorted_elems_.end())
-			sorted_elems_[new_elem] = 1;
+			sorted_elems_[new_elem] = count;
 		else
 			sorted_elems_[new_elem] += count;
 	}
@@ -72,7 +72,7 @@ public:
 	void SaveToFile(string filename) const {
 		ofstream out(filename.c_str());
  		for(auto it = sorted_elems_.begin(); it != sorted_elems_.end(); it++)
-			out << it->first << " " << it->second << endl;
+			out << it->first << ' ' << it->second << endl;
 	}
 
 	void LoadFrom(string filename) {
@@ -81,16 +81,15 @@ public:
 		while(!src.eof()){
 			string tmp;
 			getline(src, tmp);
-			stringstream ss;
-			ss << tmp;
-			T elem;
-			char del;
-			size_t count;
-			ss >> elem;
-			ss >> del;
-			ss >> count;
-
-			Add(elem, count);
+			if(tmp != ""){
+				stringstream ss;
+				ss << tmp;
+				T elem;
+				size_t count;
+				ss >> elem;
+				ss >> count;
+				Add(elem, count);
+			}
 		}
 	}
 };

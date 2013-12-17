@@ -147,6 +147,7 @@ public:
 	    std::string p = path::append_path(save_to, prefix == NULL ? id() : prefix);
 	    INFO("Saving current state to " << p);
 	    debruijn_graph::graphio::PrintAll(p, gp);
+	    storage().bulge_len_histogram.SaveToFile(p + ".hist");
 	}
 
 	virtual ~ConsensusConstructionStage() { }
