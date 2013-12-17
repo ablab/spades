@@ -37,6 +37,7 @@ private:
     size_t debruijn_k;
     const static int short_edge_cutoff = 0;
     const static size_t min_cluster_size = 8;
+    const static int max_similarity_distance = 500;
     double compression_cutoff;
     double domination_cutoff;
     set<Sequence> banned_kmers;
@@ -111,6 +112,26 @@ public:
         }
     }
 
+    void dfs_cluster_norec(vector<int> &used, vector<MappingInstance> &to_add,
+                     const size_t cur_ind,
+                     const typename MappingDescription::iterator iter, vector<vector<size_t> > similarity_list) const {
+        std::deque<size_t> stack;
+        stack.push_back(cur_ind);
+        used[cur_ind] = 1;
+        while (stack.size() > 0) {
+            size_t k = stack.back();
+            stack.pop_back();
+            to_add.push_back(iter->second[k]);
+
+            for (size_t i = 0; i < similarity_list[k].size(); i++) {
+                if (!used[similarity_list[k][i]]) {
+                    stack.push_back(similarity_list[k][i]);
+                    used[similarity_list[k][i]] = 1;
+                }
+            }
+        }
+    }
+
     ClustersSet GetClusters(const Sequence &s) const {
         MappingDescription descr = Locate(s);
         ClustersSet res;
@@ -120,16 +141,30 @@ public:
         for (auto iter = descr.begin(); iter != descr.end(); ++iter) {
             size_t edge_id = g_.int_id(iter->first);
             DEBUG(edge_id);
+            sort(iter->second.begin(), iter->second.end());
             set<vector<MappingInstance> > edge_cluster_set;
             size_t len = iter->second.size();
+            vector<vector<size_t> > similarity_list(len);
+            for (size_t i = 0; i < len; i++){
+                for (size_t j = i + 1; j < len; j++){
+                    if (iter->second[i].edge_position + max_similarity_distance < iter->second[j].edge_position) {
+                        break;
+                    }
+                    if (similar(iter->second[i], iter->second[j])) {
+                        similarity_list[i].push_back(j);
+                        similarity_list[j].push_back(i);
+                    }
+                }
+            }
             DEBUG(len <<"  kmers in cluster");
             vector<int> used(len);
             for (size_t i = 0; i < len; i++) {
                 if (!used[i]) {
                     used[i] = 1;
                     vector<MappingInstance> to_add;
-                    to_add.push_back(iter->second[i]);
-                    dfs_cluster(used, to_add, (int) i, iter);
+                    //to_add.push_back(iter->second[i]);
+                    //dfs_cluster(used, to_add, (int) i, iter);
+                    dfs_cluster_norec(used, to_add, (int) i, iter, similarity_list);
                     sort(to_add.begin(), to_add.end(), ReadPositionComparator());
                     DEBUG(to_add.size()<<" subcluster size");
                     size_t count = 1;
@@ -516,13 +551,27 @@ public:
         //TODO: Serious optimization possible
         for (size_t i = 0; i < result.size(); i++) {
             for (auto a_iter = a.sorted_positions.begin();
-                    a_iter != a.sorted_positions.end(); ++a_iter)
+                    a_iter != a.sorted_positions.end(); ++a_iter) {
+                if (a_iter - a.sorted_positions.begin() > 500 &&  a.sorted_positions.end() - a_iter >500) continue;
+                int cnt = 0;
                 for (auto b_iter = b.sorted_positions.begin();
-                        b_iter != b.sorted_positions.end(); ++b_iter)
+                        b_iter != b.sorted_positions.end() && cnt <500; ++b_iter, cnt ++) {
                     if (similar(*a_iter, *b_iter,
                                 (int) (result[i] + addition))) {
                         return 1;
                     }
+                }
+                cnt = 0;
+                if (b.sorted_positions.size() > 500) {
+                    for (auto b_iter = b.sorted_positions.end() - 1;
+                                            b_iter != b.sorted_positions.begin() && cnt < 500; --b_iter, cnt ++) {
+                        if (similar(*a_iter, *b_iter,
+                                    (int) (result[i] + addition))) {
+                            return 1;
+                        }
+                    }
+                }
+            }
         }
         return 0;
 
