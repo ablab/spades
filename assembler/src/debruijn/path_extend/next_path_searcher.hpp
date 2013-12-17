@@ -765,7 +765,7 @@ inline void NextPathSearcher::JoinPathsByGraph(ConstructedPathT& constructed_pat
             continue;
         }
         for (auto p2 = constructed_paths.begin(); p2 != constructed_paths.end(); ++p2) {
-            if (p1->first == p2->first && to_remove.count(p2->first) > 0) {
+            if (p1->first == p2->first || to_remove.count(p2->first) > 0) {
                 continue;
             }
             if (p1->second.p_.Contains(p2->first)) {
