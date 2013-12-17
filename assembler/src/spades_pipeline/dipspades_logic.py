@@ -133,15 +133,14 @@ def prepare_configs(src_config_dir, ds_args, log):
     return os.path.abspath(config_fname)
 
 
-def write_haplocontigs_in_file(filename, haplocontigs):
+def write_haplocontigs_in_file(filename, haplocontigs, log):
     if os.path.exists(filename):
         os.remove(filename)
     hapfile = open(filename, 'a')
     for hapcontig in haplocontigs:
         if not os.path.exists(hapcontig):
-            sys.stderr.write(hapcontig + ": file is nor found\n")
-            sys.stderr.flush()
-            sys.exit(1)
+            import support
+            support.error(hapcontig + ": file is not found\n", log, binary_name='dipSPAdes')
         hapfile.write(hapcontig + "\n")
 
 
@@ -194,7 +193,7 @@ def check_binary(binary_dir, log):
     binary_path = os.path.join(binary_dir, "dipspades")
     if not os.path.isfile(binary_path):
         import support
-        support.ds_error("DipSPAdes binaries not found: " + binary_path, log)
+        support.error("DipSPAdes binaries not found: " + binary_path, log, binary_name='dipSPAdes')
     return binary_path
 
 
@@ -266,7 +265,7 @@ def main(ds_command_line, general_command_line, spades_home, bin_home):
     print_ds_args(ds_args, log)
     log.info("\n======= dipSPAdes started. Log can be found here: " + ds_args.output_dir + "/dipspades.log\n")
 
-    write_haplocontigs_in_file(ds_args.haplocontigs, ds_args.haplocontigs_fnames)
+    write_haplocontigs_in_file(ds_args.haplocontigs, ds_args.haplocontigs_fnames, log)
     write_params(ds_args.output_dir, general_command_line, ds_command_line)
 
     config_fname = prepare_configs(os.path.join(spades_home, "configs/dipspades"), ds_args, log)
@@ -285,14 +284,15 @@ def main(ds_command_line, general_command_line, spades_home, bin_home):
     except Exception:
         exc_type, exc_value, _ = sys.exc_info()
         if exc_type == OSError and exc_value.errno == errno.ENOEXEC: # Exec format error
-            support.ds_error("It looks like you are using SPAdes binaries for another platform.\n" + get_spades_binaries_info_message())
+            support.error("It looks like you are using SPAdes binaries for another platform.\n" + get_spades_binaries_info_message(),
+                binary_name='dipSPAdes')
         else:
             log.exception(exc_value)
-            support.ds_error("exception caught: %s" % exc_type, log)
+            support.error("exception caught: %s" % exc_type, log, binary_name='dipSPAdes')
     except BaseException: # since python 2.5 system-exiting exceptions (e.g. KeyboardInterrupt) are derived from BaseException
         exc_type, exc_value, _ = sys.exc_info()
         log.exception(exc_value)
-        support.ds_error("exception caught: %s" % exc_type, log)
+        support.error("exception caught: %s" % exc_type, log, binary_name='dipSPAdes')
 
 
 if __name__ == '__main__':

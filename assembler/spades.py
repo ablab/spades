@@ -736,15 +736,17 @@ def main(args):
 
     except Exception:
         exc_type, exc_value, _ = sys.exc_info()
-        if exc_type == OSError and exc_value.errno == errno.ENOEXEC: # Exec format error
-            support.error("It looks like you are using SPAdes binaries for another platform.\n" + get_spades_binaries_info_message())
-        else:
-            log.exception(exc_value)
-            support.error("exception caught: %s" % exc_type, log)
+        if exc_type != SystemExit:
+            if exc_type == OSError and exc_value.errno == errno.ENOEXEC: # Exec format error
+                support.error("It looks like you are using SPAdes binaries for another platform.\n" + get_spades_binaries_info_message())
+            else:
+                log.exception(exc_value)
+                support.error("exception caught: %s" % exc_type, log)
     except BaseException: # since python 2.5 system-exiting exceptions (e.g. KeyboardInterrupt) are derived from BaseException
         exc_type, exc_value, _ = sys.exc_info()
-        log.exception(exc_value)
-        support.error("exception caught: %s" % exc_type, log)
+        if exc_type != SystemExit:
+            log.exception(exc_value)
+            support.error("exception caught: %s" % exc_type, log)
 
 
 if __name__ == '__main__':

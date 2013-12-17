@@ -73,7 +73,7 @@ def main():
                     dipspades_logic_py_command_line += cur_opt_arg
 
     if not output_dir:
-        support.ds_error("The output_dir is not set! It is a mandatory parameter (-o output_dir).")
+        support.error("The output_dir is not set! It is a mandatory parameter (-o output_dir).", binary_name='dipSPAdes')
 
     spades_output_dir = os.path.join(output_dir, "spades")
     dipspades_output_dir = os.path.join(output_dir, "dipspades")
@@ -95,7 +95,8 @@ def main():
     spades.main(spades_py_command_line.split())
     spades_result = os.path.join(spades_output_dir, "contigs.fasta")
     if not os.path.isfile(spades_result):
-        support.ds_error("Something went wrong and SPAdes did not generate haplocontigs. DipSPAdes cannot proceed without them, aborting.")
+        support.error("Something went wrong and SPAdes did not generate haplocontigs. "
+                         "DipSPAdes cannot proceed without them, aborting.", binary_name='dipSPAdes')
     dipspades_logic_py_command_line += " --hap " + spades_result
     dipspades_logic.main(dipspades_logic_py_command_line, command_line_to_str(sys.argv), spades.spades_home, spades.bin_home)
 
