@@ -470,7 +470,7 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
                                    const PairedInfoIndexT<Graph> &clustered_index) {
     PairedIndexT etalon_index(gp.g);
 
-  FillAndCorrectEtalonPairedInfo(etalon_index, gp, paired_index,
+    FillAndCorrectEtalonPairedInfo(etalon_index, gp, paired_index,
                                  (size_t)math::round(lib.data().mean_insert_size),
                                  lib.data().read_length,
                                  (size_t)math::round(lib.data().insert_size_deviation), true);

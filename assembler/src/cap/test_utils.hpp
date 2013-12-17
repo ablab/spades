@@ -50,6 +50,7 @@ int add_time(double &time, int multiplier = 1, int ret = 0) {
   return ret;
 }
 
+//todo remove
 void MakeDirPath(const std::string& path) {
   if (path.size() == 0) {
     TRACE("Somewhat delirium: trying to create directory ``");
@@ -65,6 +66,7 @@ void MakeDirPath(const std::string& path) {
   }
 }
 
+//todo remove
 bool DirExist(std::string path) {
   struct stat st;
   return (stat(path.c_str(), &st) == 0) && (S_ISDIR(st.st_mode));

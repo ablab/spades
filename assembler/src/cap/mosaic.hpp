@@ -298,8 +298,7 @@ public:
         VERIFY(block_end < blocks_.size());
         VERIFY(block_start <= block_end);
 
-        return MosaicStructure(vector<Block>(blocks_.begin() + block_start, blocks_.begin() + block_end + 1)/*,
-            SubIntervals(block_start, block_end)*/);
+        return MosaicStructure(vector<Block>(blocks_.begin() + block_start, blocks_.begin() + block_end + 1));
     }
 
     //sorted by length in decreasing order

@@ -229,12 +229,15 @@ void load(debruijn_config::simplification::topology_tip_clipper& ttc,
   load(ttc.uniqueness_length, pt, "uniqueness_length");
 }
 
-void load(debruijn_config::simplification::relative_coverage_ec_remover& rec,
+void load(debruijn_config::simplification::relative_coverage_comp_remover& rcc,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
-  load(rec.max_ec_length_coefficient, pt, "max_ec_length_coefficient");
-  load(rec.max_coverage_coeff, pt, "max_coverage_coeff");
-  load(rec.coverage_gap, pt, "coverage_gap");
+  load(rcc.coverage_gap, pt, "coverage_gap");
+  load(rcc.length_coeff, pt, "max_length_coeff");
+  load(rcc.tip_allowing_length_coeff, pt, "max_length_with_tips_coeff");
+  load(rcc.vertex_count_limit, pt, "max_vertex_cnt");
+  load(rcc.max_ec_length_coefficient, pt, "max_ec_length_coefficient");
+  load(rcc.max_coverage_coeff, pt, "max_coverage_coeff");
 }
 
 void load(debruijn_config::simplification::isolated_edges_remover& ier,
@@ -456,7 +459,7 @@ void load(debruijn_config::simplification& simp,
   load(simp.ttc, pt, "ttc", complete); // topology tip clipper:
   load(simp.br, pt, "br", complete); // bulge remover:
   load(simp.ec, pt, "ec", complete); // erroneous connections remover:
-  load(simp.rec, pt, "rec", complete); // relative coverage erroneous connections remover:
+  load(simp.rcc, pt, "rcc", complete); // relative coverage component remover:
   load(simp.tec, pt, "tec", complete); // topology aware erroneous connections remover:
   load(simp.trec, pt, "trec", complete); // topology and reliability based erroneous connections remover:
   load(simp.isec, pt, "isec", complete); // interstrand erroneous connections remover (thorn remover):
@@ -464,6 +467,7 @@ void load(debruijn_config::simplification& simp,
   load(simp.ier, pt, "ier", complete); // isolated edges remover
   load(simp.cbr, pt, "cbr", complete); // complex bulge remover
   load(simp.her, pt, "her", complete); // hidden ec remover
+//  load(simp.stats_mode, pt, "stats_mode", complete); // temporary stats counting mode
 }
 
 void load(debruijn_config::info_printer& printer,

@@ -9,8 +9,7 @@
 #include "graph_pack.hpp"
 #include "omni/visualization/visualization_utils.hpp"
 #include "standard_vis.hpp"
-#include "debruijn_stats.hpp"
-#include "debruijn_graph.hpp"
+#include "positions.hpp"
 
 namespace online_visualization {
 

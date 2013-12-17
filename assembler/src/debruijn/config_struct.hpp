@@ -42,7 +42,7 @@ enum info_printer_pos {
     ipp_tip_clipping,
     ipp_bulge_removal,
     ipp_err_con_removal,
-    ipp_before_final_err_con_removal,
+    ipp_before_post_simplification,
     ipp_final_err_con_removal,
     ipp_final_tip_clipping,
     ipp_final_bulge_removal,
@@ -59,7 +59,7 @@ namespace details {
 inline const char* info_printer_pos_name(size_t pos) {
     const char* names[] = { "default", "before_first_gap_closer",
                             "before_simplification", "tip_clipping", "bulge_removal",
-                            "err_con_removal", "before_final_err_con_removal",
+                            "err_con_removal", "before_post_simplification",
                             "final_err_con_removal", "final_tip_clipping",
                             "final_bulge_removal", "removing_isolated_edges",
                             "final_simplified","final_gap_closed", "before_repeat_resolution" };
@@ -246,12 +246,21 @@ struct debruijn_config {
             double relative_threshold;
         };
 
+        struct relative_coverage_comp_remover {
+            double coverage_gap;
+            double length_coeff;
+            double tip_allowing_length_coeff;
+            size_t max_ec_length_coefficient;
+            double max_coverage_coeff;
+            size_t vertex_count_limit;
+        };
+
         bool topology_simplif_enabled;
         tip_clipper tc;
         topology_tip_clipper ttc;
         bulge_remover br;
         erroneous_connections_remover ec;
-        relative_coverage_ec_remover rec;
+        relative_coverage_comp_remover rcc;
         topology_based_ec_remover tec;
         tr_based_ec_remover trec;
         interstrand_ec_remover isec;
@@ -259,6 +268,7 @@ struct debruijn_config {
         isolated_edges_remover ier;
         complex_bulge_remover cbr;
         hidden_ec_remover her;
+//        bool stats_mode;
     };
 
     struct construction {

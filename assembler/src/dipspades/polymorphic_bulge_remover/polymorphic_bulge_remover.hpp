@@ -4,7 +4,7 @@
 #include "complex_bulge_remover.hpp"
 #include "equal_sequence_gluer.hpp"
 #include "iterative_tails_gluing.hpp"
-#include "../../debruijn/debruijn_stats.hpp"
+#include "../../debruijn/stats/debruijn_stats.hpp"
 
 #include "omni/visualization/visualization.hpp"
 #include "omni/edges_position_handler.hpp"

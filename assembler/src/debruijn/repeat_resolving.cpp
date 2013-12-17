@@ -7,14 +7,14 @@
 #include "standard.hpp"
 
 #include "logger/logger.hpp"
-#include "debruijn_stats.hpp"
+#include "stats/debruijn_stats.hpp"
 #include "omni/visualization/graph_labeler.hpp"
-
 #include "de/distance_estimation.hpp"
 #include "de/smoothing_distance_estimation.hpp"
 #include "omni/omni_utils.hpp"
 #include "path_extend/path_extend_launch.hpp"
 #include "contig_output.hpp"
+#include "positions.hpp"
 #include "long_read_storage.hpp"
 #include "repeat_resolving.hpp"
 
@@ -69,6 +69,8 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
     if (cfg::get().developer_mode) {
         FillPos(gp, gp.genome, "ref0");
         FillPos(gp, !gp.genome, "ref1");
+//        gp.ClearQuality();
+//        gp.FillQuality();
     }
 
     bool no_valid_libs = true;

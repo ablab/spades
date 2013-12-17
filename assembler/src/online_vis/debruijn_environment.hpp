@@ -7,6 +7,7 @@
 #pragma once
 
 #include "environment.hpp"
+#include "graphio.hpp"
 
 namespace online_visualization {
 
@@ -112,6 +113,10 @@ class DebruijnEnvironment : public Environment {
 
         const Graph& graph() const {
             return gp_.g;
+        }
+
+        GraphPack& graph_pack() {
+            return gp_;
         }
 
         Graph& graph() {
