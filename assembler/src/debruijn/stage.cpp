@@ -119,7 +119,7 @@ void StageManager::run(debruijn_graph::conj_graph_pack& g,
             (*std::prev(start_stage))->load(g, saves_policy_.load_from_);
     }
 
-    for (auto et = stages_.end(); start_stage != et; ++start_stage) {
+    for (; start_stage != stages_.end(); ++start_stage) {
         AssemblyStage *stage = start_stage->get();
 
         INFO("STAGE == " << stage->name());
@@ -127,9 +127,6 @@ void StageManager::run(debruijn_graph::conj_graph_pack& g,
         if (saves_policy_.make_saves_)
             stage->save(g, saves_policy_.save_to_);
     }
-
-    // For informing spades.py about estimated params
-    debruijn_graph::write_lib_data(cfg::get().output_dir);
 }
 
 }

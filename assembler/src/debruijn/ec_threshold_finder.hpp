@@ -57,10 +57,15 @@ class MCErroneousConnectionThresholdFinder {
     std::map<size_t, size_t> tmp;
 
     size_t maxcov = 0;
+    size_t kmer_per_record = 1;
+    if(KmerIndex::InnerIndexT::storing_type::IsInvertable()) {
+      kmer_per_record = 2;
+    }
+
     for (auto I = index_.value_cbegin(), E = index_.value_cend(); I != E;  ++I) {
       size_t cov = I->count;
       maxcov = std::max(cov, maxcov);
-      tmp[cov] += 1;
+      tmp[cov] += kmer_per_record;
     }
 
     // Touch all the values until maxcov to make sure all the values exist in the map

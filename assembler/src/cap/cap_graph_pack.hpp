@@ -17,14 +17,14 @@ struct cap_graph_pack {
 	typedef string contig_id_t;
 	typedef typename Graph::EdgeId EdgeId;
 	Graph g;
-	IdTrackHandler<Graph> int_ids;
+	omnigraph::GraphElementFinder<Graph> element_finder;
 	ColorHandler<Graph> coloring;
 //	map<contig_id_t, vector<EdgeId>> red_paths;
 //	map<contig_id_t, vector<EdgeId>> blue_paths;
 	EdgesPositionHandler<Graph> edge_pos;
 
 	cap_graph_pack(size_t k) :
-			g(k), int_ids(g), coloring(g), edge_pos(g) {
+			g(k), element_finder(g), coloring(g), edge_pos(g) {
 
 	}
 };

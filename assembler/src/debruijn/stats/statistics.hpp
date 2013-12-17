@@ -4,8 +4,7 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-#ifndef STATISTICS_HPP_
-#define STATISTICS_HPP_
+#pragma once
 
 #include "standard.hpp"
 #include "omni/omni_tools.hpp"
@@ -19,6 +18,8 @@
 #include <map>
 
 namespace debruijn_graph {
+namespace stats {
+
 using namespace math;
 using namespace omnigraph;
 
@@ -266,7 +267,5 @@ class SelfComplementStat: public AbstractStatCounter {
         INFO("Self-complement count=" << sc_number);
     }
 };
-
 }
-
-#endif /* STATISTICS_HPP_ */
+}

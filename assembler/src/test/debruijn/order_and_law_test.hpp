@@ -128,14 +128,12 @@ BOOST_FIXTURE_TEST_SUITE(robust_order_tests, TmpFolderFixture)
 BOOST_AUTO_TEST_CASE( OrderTest ) {
 	string file_name = "src/debruijn/test_save";
 	Graph graph(55);
-	IdTrackHandler<Graph> int_ids(graph);
 	RandomGraphConstructor<Graph>(1000, 100, 100).Generate(graph);
-	graphio::PrinterTraits<Graph>::Printer printer(graph, int_ids);
+	graphio::PrinterTraits<Graph>::Printer printer(graph);
 	printer.SaveGraph(file_name);
 	printer.SaveEdgeSequences(file_name);
 	Graph new_graph(55);
-	IdTrackHandler<Graph> new_int_ids(new_graph);
-	graphio::ScannerTraits<Graph>::Scanner scanner(new_graph, new_int_ids);
+	graphio::ScannerTraits<Graph>::Scanner scanner(new_graph);
 	scanner.LoadGraph(file_name);
 	IteratorOrderChecker<Graph> checker(graph, new_graph);
 	BOOST_CHECK(checker.CheckOrder(graph.SmartVertexBegin(), new_graph.SmartVertexBegin()));

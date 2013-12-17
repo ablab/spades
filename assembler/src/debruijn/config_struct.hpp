@@ -42,7 +42,7 @@ enum info_printer_pos {
     ipp_tip_clipping,
     ipp_bulge_removal,
     ipp_err_con_removal,
-    ipp_before_final_err_con_removal,
+    ipp_before_post_simplification,
     ipp_final_err_con_removal,
     ipp_final_tip_clipping,
     ipp_final_bulge_removal,
@@ -59,7 +59,7 @@ namespace details {
 inline const char* info_printer_pos_name(size_t pos) {
     const char* names[] = { "default", "before_first_gap_closer",
                             "before_simplification", "tip_clipping", "bulge_removal",
-                            "err_con_removal", "before_final_err_con_removal",
+                            "err_con_removal", "before_post_simplification",
                             "final_err_con_removal", "final_tip_clipping",
                             "final_bulge_removal", "removing_isolated_edges",
                             "final_simplified","final_gap_closed", "before_repeat_resolution" };
@@ -181,6 +181,7 @@ struct debruijn_config {
         };
 
         struct bulge_remover {
+        	bool   enabled;
             double max_bulge_length_coefficient;
             size_t max_additive_length_coefficient;
             double max_coverage;
@@ -245,12 +246,21 @@ struct debruijn_config {
             double relative_threshold;
         };
 
+        struct relative_coverage_comp_remover {
+            double coverage_gap;
+            double length_coeff;
+            double tip_allowing_length_coeff;
+            size_t max_ec_length_coefficient;
+            double max_coverage_coeff;
+            size_t vertex_count_limit;
+        };
+
         bool topology_simplif_enabled;
         tip_clipper tc;
         topology_tip_clipper ttc;
         bulge_remover br;
         erroneous_connections_remover ec;
-        relative_coverage_ec_remover rec;
+        relative_coverage_comp_remover rcc;
         topology_based_ec_remover tec;
         tr_based_ec_remover trec;
         interstrand_ec_remover isec;
@@ -258,6 +268,7 @@ struct debruijn_config {
         isolated_edges_remover ier;
         complex_bulge_remover cbr;
         hidden_ec_remover her;
+//        bool stats_mode;
     };
 
     struct construction {
@@ -293,6 +304,13 @@ struct debruijn_config {
         double inv_density;
         double derivative_threshold;
     };
+
+	struct ambiguous_distance_estimator {
+		bool enabled;
+		double haplom_threshold;
+		double relative_length_threshold;
+		double relative_seq_threshold;
+	};
 
     struct pacbio_processor {
   //align and traverse.
@@ -411,13 +429,13 @@ struct debruijn_config {
 
     typedef std::map<info_printer_pos, info_printer> info_printers_t;
 
-public:
     std::string dataset_file;
     std::string project_name;
     std::string input_dir;
     std::string output_base;
     std::string output_root;
     std::string output_dir;
+    std::string tmp_dir;
     std::string output_suffix;
     std::string output_saves;
     std::string final_contigs_file;
@@ -471,6 +489,8 @@ public:
 
     size_t K;
 
+    bool main_iteration;
+
     bool use_multithreading;
     size_t max_threads;
     size_t max_memory;
@@ -484,6 +504,7 @@ public:
     construction con;
     distance_estimator de;
     smoothing_distance_estimator ade;
+    ambiguous_distance_estimator amb_de;
     pacbio_processor pb;
     bool use_scaffolder;
     bool mask_all;
@@ -495,6 +516,8 @@ public:
     kmer_coverage_model kcm;
 
     size_t flanking_range;
+
+    bool diploid_mode;
 };
 
 void load(debruijn_config& cfg, const std::string &filename);

@@ -25,6 +25,7 @@ class AbstractGraph : public AbstractEditableGraph<VertexIdT, EdgeIdT,
     typedef typename DataMaster::EdgeData EdgeData;
     typedef typename base::VertexIterator VertexIterator;
     typedef typename VertexId::type::edge_const_iterator edge_const_iterator;
+    using base::str;
 
  protected:
 

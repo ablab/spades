@@ -522,7 +522,7 @@ def run_bwa(log):
 def parse_profile(args, log):
     global config
 
-    long_options = "threads= sam-file= output-dir= bwa= contigs= mate-weight= splitted-dir= bowtie2= 12= insert-size= help debug use-quality use-multiple-aligned skip-masked".split()
+    long_options = "threads= sam-file= output-dir= bwa= contigs= mate-weight= split-dir= bowtie2= 12= insert-size= help debug use-quality use-multiple-aligned skip-masked".split()
     short_options = "1:2:o:s:S:c:t:m:q"
 
     reads1 = []
@@ -566,8 +566,8 @@ def parse_profile(args, log):
             config["mate_weight"] = float(arg)
         if opt in ('-s', "--sam-file"):
             config["sam_file"] = os.path.abspath(arg)
-        if opt in ('-S', "--splitted-dir"):
-            config["splitted_dir"] = os.path.abspath(arg)
+        if opt in ('-S', "--split-dir"):
+            config["split_dir"] = os.path.abspath(arg)
         if opt in ('-q', "--use-quality"):
             config["use_quality"]= 1
         if opt == "--bowtie2":
@@ -925,7 +925,7 @@ def process_contig(files):
         log.info(str(bad_pairs) + " pairs of reads were handled with exceptions, something went wrong??" )
     ntime = datetime.datetime.now()
     stime = ntime - stime
-    logFile.write(ntime.strftime("%Y.%m.%d_%H.%M.%S")+": File processed. ")
+    logFile.write(ntime.strftime("%Y.%m.%d_%H.%M.%S")+": File was processed. ")
     logFile.write("elapsed time: " + str(stime) + "\n")
     stime = ntime
     interest = set([])
@@ -962,7 +962,7 @@ def process_contig(files):
                         pair_profile[i][j][s1][s2] = 0
     ntime = datetime.datetime.now()
     stime = ntime - stime
-    logFile.write(ntime.strftime("%Y.%m.%d_%H.%M.%S")+":  Prepare pair profile. ")
+    logFile.write(ntime.strftime("%Y.%m.%d_%H.%M.%S")+":  Pair profile was prepared. ")
     logFile.write("elapsed time: " + str(stime) + "\n")
     stime = ntime
 #    print "second go"
@@ -1060,7 +1060,7 @@ def process_contig(files):
 
     ntime = datetime.datetime.now()
     stime = ntime - stime
-    logFile.write(ntime.strftime("%Y.%m.%d_%H.%M.%S")+": File processed second time. ")
+    logFile.write(ntime.strftime("%Y.%m.%d_%H.%M.%S")+": File was processed for the second time. ")
     logFile.write("elapsed time: " + str(stime) + "\n")
     stime = ntime
 
@@ -1099,7 +1099,7 @@ def process_contig(files):
 #                        print s1+ "->"+ s2 +": "+ str(pair_profile[i][j][s1][s2])
     ntime = datetime.datetime.now()
     stime = ntime - stime
-    logFile.write(ntime.strftime("%Y.%m.%d_%H.%M.%S")+": Factors prepared. ")
+    logFile.write(ntime.strftime("%Y.%m.%d_%H.%M.%S")+": Factors were prepared. ")
     logFile.write("elapsed time: " + str(stime) + "\n")
     stime = ntime
     node = []
@@ -1110,7 +1110,7 @@ def process_contig(files):
 #    print choused_letter
     ntime = datetime.datetime.now()
     stime = ntime - stime
-    logFile.write(ntime.strftime("%Y.%m.%d_%H.%M.%S")+": Letters choused. ")
+    logFile.write(ntime.strftime("%Y.%m.%d_%H.%M.%S")+": Letters were chosen. ")
     logFile.write("elapsed time: " + str(stime) + "\n")
     stime = ntime
 
@@ -1162,7 +1162,7 @@ def process_contig(files):
                 if i in insertions:
                     tmp = vote_insertions(i,insertions)
                 else:
-                    log.info("Something go wrong with insertion on position i" + contig_name + ", skipping...")
+                    log.info("Something went wrong with insertion on position i" + contig_name + ", skipping...")
 
                 profile[i]['I'] = 0
         if tmp != '':
@@ -1177,7 +1177,7 @@ def process_contig(files):
     logFile.write(ntime.strftime("%Y.%m.%d_%H.%M.%S") + ": All done. ")
     logFile.write("elapsed time: " + str(stime) + "\n")
     stime = ntime - starttime
-    logFile.write("Time spended: " + str(stime) + "\n")
+    logFile.write("Time spent: " + str(stime) + "\n")
 
     logFile.write("Finished processing "+ str(contig_file) + ". Used " + str(total_reads) + " reads.\n")
     logFile.write("replaced: " + str(replaced) + " deleted: "+ str(deleted) +" inserted: " + str(inserted) +'\n')
@@ -1208,13 +1208,13 @@ def main(args, joblib_path, log=None):
         log.addHandler(log_handler)
 
     log.info("Config: " + str(config))
-    if "splitted_dir" not in config:
-#        print "no splitted dir, looking for sam file"
+    if "split_dir" not in config:
+#        print "no split dir, looking for sam file"
         if "sam_file" not in config:
             log.info("no sam file, running aligner")
             run_aligner(log)
         else:
-            log.info("sam file found")
+            log.info("sam file was found")
             tmp_sam_file_path = os.path.join(config["work_dir"], "tmp.sam")
             shutil.copy2(config["sam_file"], tmp_sam_file_path) # Note: shutil.copy2 is similar to the Unix command cp -p
             #os.system("cp -p "+ config["sam_file"] +" " + config["work_dir"]+"tmp.sam")
@@ -1223,14 +1223,14 @@ def main(args, joblib_path, log=None):
     #    now = datetime.datetime.now()
     #    res_directory = "corrector.output." + now.strftime("%Y.%m.%d_%H.%M.%S")+"/"
         split_contigs(config["contigs"], config["work_dir"])
-        log.info("contigs splitted, starting splitting .sam file")
+        log.info("contigs were split, starting splitting .sam file")
         split_sam(config["sam_file"], config["work_dir"], log)
-        log.info(".sam file splitted")
+        log.info(".sam file was split")
     else:
-        log.info("splitted tmp dir found, starting correcting")
-        for filename in glob.glob(os.path.join(config["splitted_dir"], '*')):
+        log.info("split tmp dir found, starting correcting")
+        for filename in glob.glob(os.path.join(config["split_dir"], '*')):
             shutil.copy(filename, config["work_dir"])
-        #os.system("cp "+ config["splitted_dir"] +"/* " + config["work_dir"])
+        #os.system("cp "+ config["split_dir"] +"/* " + config["work_dir"])
 
     #    return 0
 #    if not os.path.exists(res_directory):

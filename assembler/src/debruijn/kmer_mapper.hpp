@@ -30,13 +30,13 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
   typedef typename runtime_k::KmerMap<Kmer, Seq> MapType;
 
   MapType mapping_;
-
   size_t k_;
+  bool verification_on_;
 
  public:
 
-  KmerMapper(const Graph& g) :
-      base(g, "KmerMapper"), mapping_(g.k() + 1), k_(g.k() + 1) {}
+  KmerMapper(const Graph& g, bool verification_on = true) :
+      base(g, "KmerMapper"), mapping_(g.k() + 1), k_(g.k() + 1), verification_on_(verification_on) {}
 
   virtual ~KmerMapper() { }
 
@@ -126,7 +126,8 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
       Kmer new_kmer(unsigned(k_), new_s, new_kmer_offest);
       auto it = mapping_.find(new_kmer);
       if (it != mapping_.end()) {
-//        VERIFY(Substitute(new_kmer) == old_kmer);
+    	if(verification_on_)
+    		VERIFY(Substitute(new_kmer) == old_kmer);
         mapping_.erase(it);
       }
       if(old_kmer.str() != new_kmer.str())
@@ -144,7 +145,8 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
     Kmer answer = kmer;
     auto it = mapping_.find(answer);
     while (it != mapping_.end()) {
-      VERIFY(it.first() != it.second());
+      if(verification_on_)
+        VERIFY(it.first() != it.second());
       answer = it.second();
       it = mapping_.find(answer);
     }
@@ -194,6 +196,11 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
 
   size_t size() const {
     return mapping_.size();
+  }
+
+  // "turn on = true" means turning of all verifies
+  void SetUnsafeMode(bool turn_on){
+          verification_on_ = !turn_on;
   }
 };
 

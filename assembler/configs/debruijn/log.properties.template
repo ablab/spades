@@ -1,5 +1,17 @@
 default=INFO
 
+#RelativeCoverageHelper=TRACE
+#RelativelyLowCoveredComponentSearcher=TRACE
+#RelativelyLowCoveredComponentChecker=TRACE
+#RelativeCoverageComponentRemover=TRACE
+#FlankingCoverage=TRACE
+#PolymorphicBulgeRemover=TRACE
+#BulgeSplitter=TRACE
+#SubpathSplitter=TRACE
+#ComplexBulgeGluer=TRACE
+#GluingVericesDefiner=TRACE
+#GluingVericesDefinerResults=TRACE
+
 #DeBruijnGraphConstructor=TRACE
 #PairedHandlerApplier=TRACE
 #QualityEdgeLocalityPrintingRH=TRACE

@@ -9,8 +9,6 @@
 
 import os
 import shutil
-import glob
-
 import support
 import process_cfg
 from process_cfg import bool_to_str
@@ -24,19 +22,22 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
 
     subst_dict["K"] = str(K)
     subst_dict["run_mode"] = "false"
+    if "diploid_mode" in cfg.__dict__:
+        subst_dict["diploid_mode"] = bool_to_str(cfg.diploid_mode)
     subst_dict["dataset"] = process_cfg.process_spaces(cfg.dataset)
     subst_dict["output_base"] = process_cfg.process_spaces(cfg.output_dir)
+    subst_dict["tmp_dir"] = process_cfg.process_spaces(cfg.tmp_dir)
     if additional_contigs_fname:
         subst_dict["additional_contigs"] = process_cfg.process_spaces(additional_contigs_fname)
         subst_dict["use_additional_contigs"] = bool_to_str(True)
     else:
         subst_dict["use_additional_contigs"] = bool_to_str(False)
+    subst_dict["main_iteration"] = bool_to_str(last_one)
     subst_dict["entry_point"] = stage
     subst_dict["load_from"] = saves_dir
     subst_dict["developer_mode"] = bool_to_str(cfg.developer_mode)
     subst_dict["gap_closer_enable"] = bool_to_str(last_one)
     subst_dict["rr_enable"] = bool_to_str(last_one and cfg.rr_enable)
-#    subst_dict["long_single_mode"] = bool_to_str(last_one and cfg.long_single_mode)
 #    subst_dict["topology_simplif_enabled"] = bool_to_str(last_one)
     subst_dict["max_threads"] = cfg.max_threads
     subst_dict["max_memory"] = cfg.max_memory
@@ -54,14 +55,9 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
 
 def get_read_length(output_dir, K, dataset_data):
     estimated_params = load_config_from_file(os.path.join(output_dir, "K%d" % K, "_est_params.info"))
-    lib_count = int(estimated_params.__dict__["lib_count"])
-    max_read_length = 0
-    for i in range(lib_count):
-        if i in support.get_lib_ids_by_type(dataset_data, support.READS_TYPES_NOT_USED_IN_CONSTRUCTION):
-            continue
-        if int(estimated_params.__dict__["read_length_" + str(i)]) > max_read_length:
-            max_read_length = int(estimated_params.__dict__["read_length_" + str(i)])
-    return max_read_length
+    if "max_read_length" not in estimated_params.__dict__:
+        support.warning("Failed to estimate maximum read length")
+    return int(estimated_params.__dict__["max_read_length"])
 
 
 def update_k_mers_in_special_cases(cur_k_mers, RL, log, silent=False):
@@ -69,12 +65,12 @@ def update_k_mers_in_special_cases(cur_k_mers, RL, log, silent=False):
         if RL >= 250:
             if not silent:
                 support.warning("Default k-mer sizes were set to %s because estimated "
-                                "read length (%d) is equal or great than 250" % (str(options_storage.K_MERS_250), RL), log)
+                                "read length (%d) is equal to or greater than 250" % (str(options_storage.K_MERS_250), RL), log)
             return options_storage.K_MERS_250
         if RL >= 150:
             if not silent:
                 support.warning("Default k-mer sizes were set to %s because estimated "
-                                "read length (%d) is equal or great than 150" % (str(options_storage.K_MERS_150), RL), log)
+                                "read length (%d) is equal to or greater than 150" % (str(options_storage.K_MERS_150), RL), log)
             return options_storage.K_MERS_150
     return cur_k_mers
 
@@ -97,7 +93,7 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):
 
     if stage != BASE_STAGE:
         if not os.path.isdir(saves_dir):
-            support.error("Can not restart from stage %s: saves not found (%s)!" % (stage, saves_dir))
+            support.error("Cannot restart from stage %s: saves were not found (%s)!" % (stage, saves_dir))
     else:
         if os.path.exists(data_dir):
             shutil.rmtree(data_dir)
@@ -125,8 +121,7 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):
 
     prepare_config_spades(cfg_file_name, cfg, log, additional_contigs_fname, K, stage, saves_dir, last_one)
 
-    command = [os.path.join(execution_home, "spades"),
-               os.path.abspath(cfg_file_name)]
+    command = [os.path.join(execution_home, "spades"), cfg_file_name]
 
 ## this code makes sense for src/debruijn/simplification.cpp: corrected_and_save_reads() function which is not used now
 #    bin_reads_dir = os.path.join(cfg.output_dir, ".bin_reads")
@@ -174,6 +169,7 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, log):
     bin_reads_dir = os.path.join(cfg.output_dir, ".bin_reads")
     if os.path.isdir(bin_reads_dir) and not options_storage.continue_mode:
         shutil.rmtree(bin_reads_dir)
+    cfg.tmp_dir = support.get_tmp_dir(prefix="spades_")
 
     if len(cfg.iterative_K) == 1:
         run_iteration(configs_dir, execution_home, cfg, log, cfg.iterative_K[0], None, True)
@@ -227,5 +223,7 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, log):
 
     if os.path.isdir(bin_reads_dir):
         shutil.rmtree(bin_reads_dir)
+    if os.path.isdir(cfg.tmp_dir):
+        shutil.rmtree(cfg.tmp_dir)
 
     return latest

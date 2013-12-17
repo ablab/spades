@@ -157,6 +157,8 @@ class Sequence {
   }
 
   char operator[](const size_t index) const {
+    //todo can be put back after switching to distributing release without asserts  
+    //VERIFY(index < size_);
     const ST *bytes = data_.get();
     if (rtl_) {
       size_t i = from_ + size_ - 1 - index;

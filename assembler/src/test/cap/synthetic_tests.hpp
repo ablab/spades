@@ -83,12 +83,12 @@ class SyntheticTestsRunner {
     void Save(const GraphPackT& gp, const ColorHandler<GraphT>& coloring,
             const CoordinatesHandler<GraphT> &coordinates_handler,
             ContigStreams& streams, const string& file_name) const {
-        typename debruijn_graph::graphio::PrinterTraits<GraphT>::Printer printer(gp.g, gp.int_ids);
+        typename debruijn_graph::graphio::PrinterTraits<GraphT>::Printer printer(gp.g);
         INFO("Saving graph to " << file_name);
         printer.SaveGraph(file_name);
         printer.SaveEdgeSequences(file_name);
         //        printer.savePositions(filename, gp.edge_pos);
-        SaveColoring(gp.g, gp.int_ids, coloring, file_name);
+        SaveColoring(gp.g, coloring, file_name);
 
         shared_ptr<GraphSplitter<Graph>> splitter = omnigraph::ReliableSplitter(gp.g,
                 numeric_limits<size_t>::max(),
@@ -102,7 +102,7 @@ class SyntheticTestsRunner {
 //
 //        CompositeLabeler<Graph> labeler(length_labeler, pos_labeler);
 
-        omnigraph::visualization::WriteComponents(gp.g, file_name + "pictures/", splitter,
+        omnigraph::visualization::WriteComponents(gp.g, file_name, splitter,
                 coloring.ConstructColorer(), labeler);
 
         BlockPrinter<GraphT> block_printer(gp.g, coordinates_handler, file_name + ".blk");

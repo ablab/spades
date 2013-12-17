@@ -19,30 +19,118 @@ namespace restricted
 class IdDistributor {
 public:
   virtual size_t GetId() = 0;
+  virtual ~IdDistributor() {
+  }
 };
 
+template<class Iter>
+class ListIdDistributor: public IdDistributor {
+  friend class IdSegmentStorage;
+private:
+  Iter left_;
+  Iter right_;
+  size_t shift_;
+  size_t max_;
+  ListIdDistributor(Iter left, Iter right, size_t shift = 0, size_t max = size_t(-1)) : left_(left), right_(right), shift_(shift), max_(max) {
+  }
+
+public:
+  bool valid() {
+    return left_ < right_;
+  }
+
+  size_t GetId() {
+    size_t result = *(left_);
+    VERIFY(result < max_);
+    ++left_;
+    return shift_ + result;
+  }
+};
+
+class SegmentIterator {
+private:
+	size_t value_;
+public:
+	SegmentIterator(size_t value) : value_(value) {
+	}
+
+	size_t operator*() const {
+		return value_;
+	}
+
+	void operator++() {
+		value_++;
+	}
+
+    void operator++(int) {
+        ++value_;
+    }
+
+	bool operator==(const SegmentIterator &that) const {
+		return value_ == that.value_;
+	}
+
+	bool operator!=(const SegmentIterator &that) const {
+		return value_ != that.value_;
+	}
+};
+
+class IdSegmentStorage {
+  friend class LocalIdDistributor;
+public:
+  ListIdDistributor<SegmentIterator> GetSegmentIdDistributor(size_t left, size_t right) {
+    VERIFY(left < right);
+    VERIFY(right <= size_);
+    return ListIdDistributor<SegmentIterator>(SegmentIterator(left), SegmentIterator(right), min_value_, size_);
+  }
+
+  template<class Iter>
+  ListIdDistributor<Iter> GetSegmentIdDistributor(Iter left, Iter right) {
+    VERIFY(left < right);
+    return ListIdDistributor<Iter>(left, right, min_value_, size_);
+  }
+
+private:
+  IdSegmentStorage(size_t min_value, size_t size) : min_value_(min_value), size_(size) { }
+
+  size_t min_value_;
+  size_t size_;
+};
 
 // Id distributor for pure_pointer. Singleton.
-class GlobalIdDistributor : public IdDistributor, boost::noncopyable {
-
+class LocalIdDistributor : public IdDistributor, boost::noncopyable {
   friend class PeriodicIdDistributor;
-
+  static const size_t INITIAL_MAX_INT_ID = 2;
 public:
   size_t GetId() {
     return max_int_id_++;
   }
 
-  static GlobalIdDistributor* GetInstance() {
-    static GlobalIdDistributor instance;
-    return &instance;
+  IdSegmentStorage Reserve(size_t size) {
+    max_int_id_ += size;
+    return IdSegmentStorage(max_int_id_ - size, size);
   }
 
-private:
-  GlobalIdDistributor() : max_int_id_(2) { }
+  IdSegmentStorage ReserveUpTo(size_t max) {
+    VERIFY(max_int_id_ == INITIAL_MAX_INT_ID);
+    max_int_id_ = max;
+    return IdSegmentStorage(0, max);
+  }
 
+//  static GlobalIdDistributor &GetInstance() {
+//    static GlobalIdDistributor instance(INITIAL_MAX_INT_ID);
+//    return instance;
+//  }
+
+  size_t GetMax() const {
+      return max_int_id_;
+  }
+
+  LocalIdDistributor(size_t min_id_value = INITIAL_MAX_INT_ID) : max_int_id_(min_id_value) { }
+
+private:
   size_t max_int_id_;
 };
-
 
 /* id distributor used for concurrent algorithms.
  * each thread use their own PeriodicIdDistributor with period equals to
@@ -52,8 +140,8 @@ private:
 class PeriodicIdDistributor : public IdDistributor {
 
 public:
-  PeriodicIdDistributor(size_t first_id, size_t period)
-      : cur_id_(first_id), period_(period) {
+  PeriodicIdDistributor(LocalIdDistributor &id_distributor, size_t first_id, size_t period)
+      : id_distributor_(id_distributor), cur_id_(first_id), period_(period) {
   }
 
   virtual size_t GetId() {
@@ -64,11 +152,12 @@ public:
   }
 
   void Synchronize() const {
-    size_t& global_max_id = GlobalIdDistributor::GetInstance()->max_int_id_;
+    size_t& global_max_id = id_distributor_.max_int_id_;
     global_max_id = max(cur_id_, global_max_id);
   }
 
 private:
+  LocalIdDistributor &id_distributor_;
   size_t cur_id_;
   size_t period_;
 };
@@ -80,8 +169,15 @@ template<class T>
   typedef T  type;
   typedef T* pointer_type;
 
-  explicit pure_pointer(T *ptr = 0,
-      IdDistributor * idDistributor = GlobalIdDistributor::GetInstance())
+  explicit pure_pointer() : ptr_(pointer_type(0)), int_id_(0)  {
+  }
+
+  explicit pure_pointer(T *ptr) : ptr_(ptr), int_id_(size_t(ptr))  {
+    VERIFY(int_id_ < 2);
+  }
+
+  explicit pure_pointer(T *ptr,
+      IdDistributor &idDistributor)
     : ptr_(ptr), int_id_(generate_id(ptr, idDistributor))
   {
   }
@@ -119,12 +215,12 @@ template<class T>
 
 private:
 
-  static size_t generate_id(T *ptr, IdDistributor * idDistributor) {
+  static size_t generate_id(T *ptr, IdDistributor &idDistributor) {
     if(ptr == 0 || ptr == (T*)1 || ptr == (T*)(-1)) {
       return size_t(ptr);
     }
 
-    return idDistributor->GetId();
+    return idDistributor.GetId();
   }
 
   T *ptr_;

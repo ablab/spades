@@ -6,7 +6,7 @@
 
 #include "standard.hpp"
 #include "graph_simplification.hpp"
-#include "omni_labelers.hpp"
+#include "omni/visualization/graph_labeler.hpp"
 #include "io/single_read.hpp"
 #include <algorithm>
 #include "pacbio/pac_index.hpp"
@@ -84,8 +84,12 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
     std::vector<io::SingleRead> reads(read_buffer_size);
     io::SingleRead read;
     size_t buffer_no = 0;
+<<<<<<< HEAD
     INFO("Aligning seed size: " << cfg::get().pb.pacbio_k);
 
+=======
+    INFO("Seed size: " << cfg::get().pb.pacbio_k);
+>>>>>>> master
     pacbio::PacBioMappingIndex<ConjugateDeBruijnGraph> pac_index(gp.g,
                                                          cfg::get().pb.pacbio_k,
                                                          cfg::get().K, cfg::get().pb.ignore_middle_alignment);
@@ -129,8 +133,7 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
 
 void PacBioAligning::run(conj_graph_pack &gp, const char*) {
     using namespace omnigraph;
-    total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
-    total_labeler labeler/*tot_lab*/(&graph_struct);
+    omnigraph::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
     int lib_id = -1;
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         io::LibraryType type = cfg::get().ds.reads[i].type();
@@ -145,7 +148,7 @@ void PacBioAligning::run(conj_graph_pack &gp, const char*) {
     if (lib_id == -1) {
         INFO("no PacBio lib found");
     }
-    detail_info_printer printer(gp, labeler, cfg::get().output_dir);
+    stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
     printer(ipp_final_gap_closed);
 }
 

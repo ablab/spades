@@ -136,12 +136,12 @@
 // 	//make saves
 // 	make_dir(output_folder + "saves");
 // 	string filename = output_folder + "saves/graph";
-// 	PrinterTraits<Graph>::Printer printer(gp.g, gp.int_ids);
+// 	PrinterTraits<Graph>::Printer printer(gp.g);
 // 	INFO("Saving graph to " << filename);
 // 	printer.saveGraph(filename);
 // 	printer.saveEdgeSequences(filename);
 // 	printer.savePositions(filename, gp.edge_pos);
-// 	SaveColoring(gp.g, gp.int_ids, coloring, filename);
+// 	SaveColoring(gp.g, coloring, filename);
 // }
 
 //End of gingi block
@@ -447,13 +447,12 @@ BOOST_AUTO_TEST_CASE( TwoStrainComparisonWR ) {
 //	ScanGraphPack(input_path, gp);
 //	//prints only basic graph structure
 //	PrintGraphComponentContainingEdge(output_path, gp.g,
-//			split_threshold, gp.int_ids, int_edge_id);
+//			split_threshold, int_edge_id);
 //
 //	//long way to write to dot file
 //	Graph g(55);
-//	IdTrackHandler<Graph> int_ids(g);
-//	ScanBasicGraph(output_path, g, int_ids);
-//	total_labeler_graph_struct graph_struct(g, &int_ids, (const EdgesPositionHandler<Graph>*)0);
+//	ScanBasicGraph(output_path, g);
+//	total_labeler_graph_struct graph_struct(g, (const EdgesPositionHandler<Graph>*)0);
 //	total_labeler tot_lab(&graph_struct);
 //	WriteToDotFile(g,
 //			tot_lab, output_path + ".dot",

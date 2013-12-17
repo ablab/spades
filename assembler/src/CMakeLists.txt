@@ -1,12 +1,13 @@
+# -*- cmake -*-
 ############################################################################
 # Copyright (c) 2011-2013 Saint-Petersburg Academic University
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
-# -*- cmake -*-
 
-cmake_minimum_required (VERSION 2.8)
- 
+# Hard prerequisites
+cmake_minimum_required(VERSION 2.8.8)
+
 # allow more human readable "if then else" constructs
 set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE) 
 
@@ -66,6 +67,7 @@ add_subdirectory(ssw)
 add_subdirectory(debruijn)
 add_subdirectory(hammer)
 add_subdirectory(spades_pipeline)
+add_subdirectory(dipspades)
 
 # Main pipeline script
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../spades.py"

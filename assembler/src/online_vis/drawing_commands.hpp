@@ -55,7 +55,7 @@ namespace online_visualization {
                 if (!CheckCorrectness(args))
                     return;
                 size_t vertex_id = GetInt(args[1]);
-                if (CheckVertexExists(curr_env.int_ids(), vertex_id)) 
+                if (CheckVertexExists(curr_env.finder(), vertex_id))
                     DrawVertex(curr_env, vertex_id, args[1]);
             }
     };
@@ -75,7 +75,7 @@ namespace online_visualization {
             }
 
             void DrawEdge(DebruijnEnvironment& curr_env, size_t edge_id, string label = "") const {
-                DrawEdge(curr_env, curr_env.int_ids().ReturnEdgeId(edge_id), label);
+                DrawEdge(curr_env, curr_env.finder().ReturnEdgeId(edge_id), label);
             }
 
         public:
@@ -100,7 +100,7 @@ namespace online_visualization {
                      return;
 
                 size_t edge_id = GetInt(args[1]);
-                if (CheckEdgeExists(curr_env.int_ids(), edge_id)) {
+                if (CheckEdgeExists(curr_env.finder(), edge_id)) {
                     DrawEdge(curr_env, edge_id, args[1]);
                 }
             }

@@ -273,7 +273,7 @@ public:
         ConstructFASTG(paths, ids, next_ids);
 
         INFO("Writing contigs in FASTG to " << filename);
-        INFO("Writing contigs in FASTQ to " << fastafilename);
+        INFO("Writing contigs in FASTA to " << fastafilename);
         io::osequencestream_for_fastg fastg_oss(filename);
         io::osequencestream_with_id oss(fastafilename);
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {

@@ -239,12 +239,15 @@ public:
     typedef typename base::VertexData VertexData;
     typedef typename base::EdgeData EdgeData;
     typedef typename base::VertexIterator VertexIterator;
+    using base::str;
+    using base::CreateVertex;
+    using base::HiddenAddEdge;
 
-private:
+protected:
 
-    VertexId CreateVertex(const VertexData &data1, const VertexData &data2) {
-        VertexId vertex1(new PairedVertex<DataMaster>(data1));
-        VertexId vertex2(new PairedVertex<DataMaster>(data2));
+    VertexId CreateVertex(const VertexData &data1, const VertexData &data2, restricted::IdDistributor &id_distributor) {
+        VertexId vertex1(new PairedVertex<DataMaster>(data1), id_distributor);
+        VertexId vertex2(new PairedVertex<DataMaster>(data2), id_distributor);
 
         vertex1->set_conjugate(vertex2);
         vertex2->set_conjugate(vertex1);
@@ -252,8 +255,8 @@ private:
         return vertex1;
     }
 
-    virtual VertexId CreateVertex(const VertexData &data) {
-        return CreateVertex(data, this->master().conjugate(data));
+    virtual VertexId CreateVertex(const VertexData &data, restricted::IdDistributor &id_distributor) {
+        return CreateVertex(data, this->master().conjugate(data), id_distributor);
     }
 
     /*virtual */
@@ -278,30 +281,16 @@ private:
         DestroyVertex(vertex);
     }
 
-    virtual VertexId HiddenAddVertex(const VertexData &data) {
-        VertexId vertex = CreateVertex(data);
+    virtual VertexId HiddenAddVertex(const VertexData &data, restricted::IdDistributor &id_distributor) {
+        VertexId vertex = CreateVertex(data, id_distributor);
         AddVertexToGraph(vertex);
         return vertex;
     }
 
-//    virtual EdgeId HiddenAddEdge(const EdgeData &data) {
-//        return HiddenAddEdge(data, restricted::GlobalIdDistributor::GetInstance());
-//    }
-
-//    virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2,
-//                                 const EdgeData &data) {
-//        return HiddenAddEdge(v1, v2, data,
-//                             restricted::GlobalIdDistributor::GetInstance());
-//    }
-
-    virtual EdgeId HiddenAddEdge(
-            const EdgeData &data, restricted::IdDistributor * id_distributor =
-                    restricted::GlobalIdDistributor::GetInstance()) {
-        EdgeId result = AddSingleEdge(VertexId(0), VertexId(0), data,
-                                      id_distributor);
+    virtual EdgeId HiddenAddEdge(const EdgeData &data, restricted::IdDistributor &id_distributor) {
+        EdgeId result = AddSingleEdge(VertexId(0), VertexId(0), data, id_distributor);
 
         if (this->master().isSelfConjugate(data)) {
-
             result->set_conjugate(result);
             return result;
         }
@@ -316,8 +305,7 @@ private:
 
     virtual EdgeId HiddenAddEdge(
             VertexId v1, VertexId v2, const EdgeData &data,
-            restricted::IdDistributor * id_distributor =
-                    restricted::GlobalIdDistributor::GetInstance()) {
+            restricted::IdDistributor &id_distributor) {
         TRACE("Adding edge between vertices " << this->str(v1) << " and " << this->str(v2));
 
 //      todo was suppressed for concurrent execution reasons (see concurrent_graph_component.hpp)
@@ -400,7 +388,7 @@ private:
     }
 
     EdgeId AddSingleEdge(VertexId v1, VertexId v2, const EdgeData &data,
-                         IdDistributor * idDistributor) {
+                         IdDistributor &idDistributor) {
         EdgeId newEdge(new PairedEdge<DataMaster>(v2, data), idDistributor);
         if (v1 != VertexId(0))
             v1->AddOutgoingEdge(newEdge);

@@ -7,6 +7,7 @@
 #pragma once
 
 #include "environment.hpp"
+#include "graphio.hpp"
 
 namespace online_visualization {
 
@@ -23,8 +24,7 @@ class DebruijnEnvironment : public Environment {
         GraphPack gp_;
         MapperClass mapper_;
         FillerClass filler_;
-        total_labeler_graph_struct graph_struct_;
-        total_labeler tot_lab_;
+        omnigraph::DefaultLabeler<Graph> labeler_;
         ColoringClass coloring_;
         //CompositeLabeler<Graph> labeler_;
 
@@ -42,8 +42,7 @@ class DebruijnEnvironment : public Environment {
               gp_(K, "./tmp", cfg::get().ds.reads.lib_count(), cfg::get().ds.reference_genome),
               mapper_(gp_.g, gp_.index, gp_.kmer_mapper),
               filler_(gp_.g, mapper_, gp_.edge_pos),
-              graph_struct_(gp_.g, &gp_.int_ids, &gp_.edge_pos),
-              tot_lab_(&graph_struct_) {
+              labeler_(gp_.g, gp_.edge_pos) {
 
             DEBUG("Environment constructor");
             debruijn_graph::graphio::ScanGraphPack(path_, gp_);
@@ -116,6 +115,10 @@ class DebruijnEnvironment : public Environment {
             return gp_.g;
         }
 
+        GraphPack& graph_pack() {
+            return gp_;
+        }
+
         Graph& graph() {
             return gp_.g;
         }
@@ -136,8 +139,8 @@ class DebruijnEnvironment : public Environment {
             return gp_.kmer_mapper;
         }
 
-        const IdTrackHandler<Graph>& int_ids() const {
-            return gp_.int_ids;
+        const ElementFinder& finder() const {
+            return gp_.element_finder;
         }
 
         void set_max_vertices(size_t max_vertices) {
@@ -156,8 +159,8 @@ class DebruijnEnvironment : public Environment {
             return filler_;
         }
 
-        total_labeler& tot_lab() {
-            return tot_lab_;
+        omnigraph::GraphLabeler<Graph>& labeler() {
+            return labeler_;
         }
 
         ColoringClass& coloring() {

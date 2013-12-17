@@ -33,9 +33,11 @@ typedef pair<Range, bool> StrandRange;
 
 class BlockInfoProvider {
     const Graph& g_;
+    omnigraph::GraphElementFinder<Graph> finder_;
 
 public:
-    BlockInfoProvider(const Graph& g) : g_(g) {
+    BlockInfoProvider(const Graph& g) : g_(g), finder_(g) {
+        finder_.Init();
     }
 
     Block conjugate(const Block& block) const {
@@ -51,7 +53,7 @@ public:
     }
 
     EdgeId edge_id(const Block& block) const {
-        return g_.int_ids().ReturnEdgeId(block);
+        return finder_.ReturnEdgeId(block);
     }
 
     const Graph& g() const {
@@ -296,8 +298,7 @@ public:
         VERIFY(block_end < blocks_.size());
         VERIFY(block_start <= block_end);
 
-        return MosaicStructure(vector<Block>(blocks_.begin() + block_start, blocks_.begin() + block_end + 1)/*,
-            SubIntervals(block_start, block_end)*/);
+        return MosaicStructure(vector<Block>(blocks_.begin() + block_start, blocks_.begin() + block_end + 1));
     }
 
     //sorted by length in decreasing order
@@ -491,7 +492,7 @@ public:
 
 class MosaicPrinter {
 public:
-    virtual void StartRecord(const MosaicStructure& /*mosaic*/, size_t /*submosaics_cnt*/) {
+    virtual void StartRecord(const MosaicStructure& /*mosaic*/) {
 
     }
 
@@ -509,8 +510,8 @@ public:
 class TxtFileMosaicPrinter : public MosaicPrinter {
     size_t cnt_;
     const MosaicHelper& helper_;
-    const multimap<string, size_t>& different_irred_presence_;
-    ostream& out_;
+//    const multimap<string, size_t>& different_irred_presence_;
+    ofstream out_;
 
     void BlockInfo(Block b) {
         out_ << b << " (" << helper_.length(b) << ")";
@@ -519,16 +520,16 @@ class TxtFileMosaicPrinter : public MosaicPrinter {
 public:
 
     TxtFileMosaicPrinter(const MosaicHelper& helper,
-                         const multimap<string, size_t>& different_irred_presence,
-                         ostream& out) :
+//                         const multimap<string, size_t>& different_irred_presence,
+                         const string& filename) :
                              cnt_(0),
                              helper_(helper),
-                             different_irred_presence_(different_irred_presence),
-                             out_(out) {
+//                             different_irred_presence_(different_irred_presence),
+                             out_(filename) {
 
     }
 
-    virtual void StartRecord(const MosaicStructure& mosaic, size_t submosaics_cnt) {
+    virtual void StartRecord(const MosaicStructure& mosaic) {
         out_ << "Irreducible Mosaic " << cnt_++ << endl;
         out_ << "Support block cnt = " << mosaic.block_size();
         out_ << "; Total support block length = " << helper_.TotalBlockLength(mosaic);
@@ -562,16 +563,18 @@ public:
         out_ << "------" << endl;
         out_ << "Sub_mosaic. Block cnt = " << mosaic.block_size() << endl;
         out_ << "Blocks " << finger;
-        out_ << " ; Found in " << get_all(different_irred_presence_, finger).size() << " different irreducible mosaics";
-        string delim = " (";
-        for (size_t idx : get_all(different_irred_presence_, finger)) {
-            out_ << delim;
-            out_ << idx;
-            delim = ", ";
-        }
-        out_ << ")" << endl;
+//        set<size_t> different_irred;
+//        insert_all(different_irred, get_all(different_irred_presence_, finger));
+//        out_ << " ; Found in " << different_irred.size() << " different irreducible mosaics";
+//        string delim = " (";
+//        for (size_t idx : different_irred) {
+//            out_ << delim;
+//            out_ << idx;
+//            delim = ", ";
+//        }
+//        out_ << ")" << endl;
 
-        delim = "";
+        string delim = "";
         out_ << "Ranges: ";
         for (StrandRange r : ranges) {
             out_ << delim;
@@ -589,10 +592,9 @@ public:
 
 class ParsableFormatPrinter : public MosaicPrinter {
     size_t cnt_;
-    size_t submosaic_cnt_;
     const MosaicHelper& helper_;
-    const multimap<string, size_t>& different_irred_presence_;
-    ostream& out_;
+    vector<pair<MosaicStructure, vector<StrandRange>>> submosaics_;
+    ofstream out_;
 
     void BlockInfo(Block b) {
         out_ << b << " " << helper_.length(b) << endl;
@@ -601,17 +603,14 @@ class ParsableFormatPrinter : public MosaicPrinter {
 public:
 
     ParsableFormatPrinter(const MosaicHelper& helper,
-                         const multimap<string, size_t>& different_irred_presence,
-                         ostream& out) :
+                         const string& filename) :
                              cnt_(0),
-                             submosaic_cnt_(0),
                              helper_(helper),
-                             different_irred_presence_(different_irred_presence),
-                             out_(out) {
+                             out_(filename) {
 
     }
 
-    virtual void StartRecord(const MosaicStructure& mosaic, size_t total_submosaics_cnt) {
+    virtual void StartRecord(const MosaicStructure& mosaic) {
         out_ << cnt_++ << endl; // (the index of the irreducible mosaic)
         out_ << mosaic.block_size() << endl; // (number of the the support blocks)
         out_ << helper_.TotalBlockLength(mosaic) << endl; // (total length)
@@ -630,37 +629,50 @@ public:
             out_ << inter_lengths[i - 1] << endl;
             BlockInfo(mosaic.blocks()[i]);
         }
-        out_ << total_submosaics_cnt << endl;// the number of sub_mosaic structures identified
-        submosaic_cnt_ = 0;
+        submosaics_.clear();
     }
 
     virtual void ReportSubMosaic(const MosaicStructure& mosaic, const vector<StrandRange>& ranges) {
-        //1 399 733 735 + 1630584 1634815// (the first sub_mosaic structure---1, the blocks---399 733 735, genomic position info--- + 1630584 1634815)
-        string finger = mosaic.Fingerprint();
-        out_ << submosaic_cnt_;
-//        out_ << "Sub_mosaic. Block cnt = " << mosaic.block_size() << endl;
-//        out_ << "Blocks " << finger;
-//        out_ << " ; Found in " << get_all(different_irred_presence_, finger).size() << " different irreducible mosaics";
-//        string delim = " (";
-//        for (size_t idx : get_all(different_irred_presence_, finger)) {
-//            out_ << delim;
-//            out_ << idx;
-//            delim = ", ";
-//        }
-//        out_ << ")" << endl;
+        submosaics_.push_back(make_pair(mosaic, ranges));
+    }
 
-        string delim = " ";
-//        out_ << "Ranges: ";
-        for (StrandRange r : ranges) {
-            out_ << delim;
-            out_ << "strand: " << (r.second ? "+" : "-") << " ";
-            out_ << helper_.genome_composition().genome_coords(r);
-//            out_ << " (Pos: ";
-//            out_ << (r.second ? r.first : helper_.genome_composition().ConjStrandRange(r).first);
-//            out_ << ")";
-//            delim = "; ";
+    virtual void EndRecord() {
+        out_ << submosaics_.size() << endl;
+        size_t cnt = 1;
+        for (auto pair : submosaics_) {
+            auto mosaic = pair.first;
+            auto ranges = pair.second;
+            //1 399 733 735 + 1630584 1634815// (the first sub_mosaic structure---1, the blocks---399 733 735, genomic position info--- + 1630584 1634815)
+//            string finger = mosaic.Fingerprint();
+    //        out_ << "Sub_mosaic. Block cnt = " << mosaic.block_size() << endl;
+    //        out_ << "Blocks " << finger;
+    //        out_ << " ; Found in " << get_all(different_irred_presence_, finger).size() << " different irreducible mosaics";
+    //        string delim = " (";
+    //        for (size_t idx : get_all(different_irred_presence_, finger)) {
+    //            out_ << delim;
+    //            out_ << idx;
+    //            delim = ", ";
+    //        }
+    //        out_ << ")" << endl;
+
+            out_ << cnt++;
+            string delim = " ";
+    //        out_ << "Ranges: ";
+            for (Block b : mosaic.blocks()) {
+                out_ << delim;
+                out_ << b;
+            }
+            for (StrandRange r : ranges) {
+                out_ << delim;
+                out_ << (r.second ? "+" : "-") << " ";
+                out_ << helper_.genome_composition().genome_coords(r);
+    //            out_ << " (Pos: ";
+    //            out_ << (r.second ? r.first : helper_.genome_composition().ConjStrandRange(r).first);
+    //            out_ << ")";
+    //            delim = "; ";
+            }
+            out_ << endl;
         }
-        out_ << endl;
     }
 
 };
@@ -716,7 +728,7 @@ public:
     FullMosaicTracker() : curr_length_(0) {
     }
 
-    virtual void StartRecord(const MosaicStructure& mosaic, size_t submosaics_cnt) {
+    virtual void StartRecord(const MosaicStructure& mosaic) {
         curr_length_ = mosaic.block_size();
     }
 
@@ -754,7 +766,7 @@ class MosaicStructureSet {
 
     vector<MosaicInterval> raw_intervals_;
     vector<MosaicStructure> irreducible_structures_;
-    multimap<string, size_t> different_irred_presence_;
+//    multimap<string, size_t> different_irred_presence_;
 
     shared_ptr<func::Predicate<MosaicStructure>> filter_;
     shared_ptr<func::Predicate<MosaicStructure>> sub_filter_;
@@ -764,22 +776,22 @@ class MosaicStructureSet {
         return mosaic.conjugate(block_composition_.block_info());
     }
 
-    void CountDifferentIrred(const MosaicStructure& mosaic, size_t idx) {
-        for (size_t i = 0; i < mosaic.block_size(); ++i) {
-            for (size_t j = i; j < mosaic.block_size(); ++j) {
-                MosaicStructure sub_mosaic = mosaic.SubMosaic(i, j);
-                different_irred_presence_.insert(make_pair(sub_mosaic.Fingerprint(), idx));
-                different_irred_presence_.insert(
-                        make_pair(ConjugateMosaic(sub_mosaic).Fingerprint(), idx));
-            }
-        }
-    }
-
-    void CountDifferentIrred() {
-        for (size_t i = 0; i < irreducible_structures_.size(); ++i) {
-            CountDifferentIrred(irreducible_structures_[i], i);
-        }
-    }
+//    void CountDifferentIrred(const MosaicStructure& mosaic, size_t idx) {
+//        for (size_t i = 0; i < mosaic.block_size(); ++i) {
+//            for (size_t j = i; j < mosaic.block_size(); ++j) {
+//                MosaicStructure sub_mosaic = mosaic.SubMosaic(i, j);
+//                different_irred_presence_.insert(make_pair(sub_mosaic.Fingerprint(), idx));
+//                different_irred_presence_.insert(
+//                        make_pair(ConjugateMosaic(sub_mosaic).Fingerprint(), idx));
+//            }
+//        }
+//    }
+//
+//    void CountDifferentIrred() {
+//        for (size_t i = 0; i < irreducible_structures_.size(); ++i) {
+//            CountDifferentIrred(irreducible_structures_[i], i);
+//        }
+//    }
 
     bool AnalyzeStructure(const MosaicStructure& mosaic) {
         for (auto& irred_struct : irreducible_structures_) {
@@ -811,9 +823,9 @@ public:
         }
     }
 
-    const multimap<string, size_t>& different_irred_presence() const {
-        return different_irred_presence_;
-    }
+//    const multimap<string, size_t>& different_irred_presence() const {
+//        return different_irred_presence_;
+//    }
 
     void Analysis() {
         INFO("Sorting raw intervals");
@@ -828,7 +840,7 @@ public:
             AnalyzeStructure(MosaicStructure(block_composition_, interval));
         }
         INFO("Counting distinct irreducible");
-        CountDifferentIrred();
+        //CountDifferentIrred();
     }
 
     void set_structure_filter(shared_ptr<func::Predicate<MosaicStructure>> filter) {
@@ -843,10 +855,9 @@ public:
         for (size_t i = 0; i < irreducible_structures_.size(); ++i) {
             MosaicStructure mosaic = irreducible_structures_[i];
             if (!filter_ || filter_->Check(mosaic)) {
-                vector<MosaicStructure> submosaics = mosaic.SubMosaics();
-                printer.StartRecord(mosaic, submosaics.size());
+                printer.StartRecord(mosaic);
                 set<StrandRange> reported_ranges;
-                for (const MosaicStructure& submosaic: submosaics) {
+                for (const MosaicStructure& submosaic: mosaic.SubMosaics()) {
                     vector<StrandRange> ranges = interval_index_
                             .UnReportedOccurences(submosaic, reported_ranges);
                     if (ranges.empty())
@@ -855,10 +866,16 @@ public:
                         printer.ReportSubMosaic(submosaic, ranges);
                     insert_all(reported_ranges, ranges);
                 }
+                printer.EndRecord();
             }
         }
     }
 
+    void Report(const vector<shared_ptr<MosaicPrinter>>& printers) {
+        for (auto printer_ptr : printers) {
+            Report(*printer_ptr);
+        }
+    }
 };
 
 //todo reduce duplication
@@ -938,10 +955,7 @@ void DrawGraph(const vector<StrandRange>& all_ranges,
     INFO("Threading " << full_mosaic_ranges.size() << " full mosaics");
     FillPos(gp, *full_mosaic_pos_stream);
 
-    typedef omnigraph::TotalLabelerGraphStruct  <debruijn_graph::ConjugateDeBruijnGraph>    total_labeler_graph_struct;
-    typedef omnigraph::TotalLabeler             <debruijn_graph::ConjugateDeBruijnGraph>    total_labeler;
-    total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
-    total_labeler labeler/*tot_lab*/(&graph_struct);
+    omnigraph::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
 
     shared_ptr<GraphSplitter<Graph>> splitter = omnigraph::ReliableSplitter(gp.g,
             numeric_limits<size_t>::max(),
@@ -963,7 +977,9 @@ class MosaicStructureAnalyzer {
     size_t min_support_block_length_;
     size_t max_support_block_multiplicity_;
     size_t max_inter_block_length_;
-    ostream& out_;
+    size_t min_reportable_mosaic_length_;
+    size_t min_reportable_submosaic_length_;
+    string folder_;
 
     Pos curr_pos_;
 
@@ -996,14 +1012,17 @@ class MosaicStructureAnalyzer {
 public:
     MosaicStructureAnalyzer(const GenomeBlockComposition& block_composition,
                             size_t min_support_length, size_t max_support_mult,
-                            size_t max_inter_length,
-                            ostream& out)
+                            size_t max_inter_length, size_t min_reportable_mosaic_length,
+                            size_t min_reportable_submosaic_length,
+                            const string& folder)
              : block_info_(block_composition.block_info()),
                block_composition_(block_composition),
                min_support_block_length_(min_support_length),
                max_support_block_multiplicity_(max_support_mult),
                max_inter_block_length_(max_inter_length),
-               out_(out),
+               min_reportable_mosaic_length_(min_reportable_mosaic_length),
+               min_reportable_submosaic_length_(min_reportable_submosaic_length),
+               folder_(folder),
                curr_pos_(0) {
     }
 
@@ -1026,17 +1045,15 @@ public:
         INFO("Analyzing intervals and forming mosaic structures");
         interval_set.Analysis();
         INFO("Reporting mosaic structures");
-        /*TxtFileMosaicPrinter*/
-        ParsableFormatPrinter printer(helper, interval_set.different_irred_presence(), out_);
 
         //might have problems if only largest occurence is tandem making whole mosaic invalid
         //todo magic constant!
-        auto filter = func::And<MosaicStructure>(make_shared<NotTandemFilter>(block_info_), make_shared<LengthFilter>(helper, 500));
+        auto filter = func::And<MosaicStructure>(make_shared<NotTandemFilter>(block_info_),
+                                                 make_shared<LengthFilter>(helper, min_reportable_mosaic_length_));
 //        auto filter = make_shared<func::AlwaysTrue<MosaicStructure>>();
 
         interval_set.set_structure_filter(filter);
         //todo move filter to set constructor
-        interval_set.Report(printer);
 
         //pics
         FullMosaicTracker tracker;
@@ -1045,6 +1062,17 @@ public:
         AllRangesTracker all_tracker;
         interval_set.Report(all_tracker);
         DrawGraph(all_tracker.all_ranges(), full_mosaic_ranges, block_composition_);
+        //end pics
+
+        interval_set.set_substructure_filter(make_shared<LengthFilter>(helper, min_reportable_submosaic_length_));
+
+        ParsableFormatPrinter parsable_printer(helper, folder_ + "mosaic_to_parse.txt");
+        interval_set.Report(parsable_printer);
+
+        TxtFileMosaicPrinter readable_printer(helper, /*interval_set.different_irred_presence(),*/
+                                              folder_ + "mosaic_to_read.txt");
+        interval_set.Report(readable_printer);
+
     }
 
 };
@@ -1052,11 +1080,14 @@ public:
 template<class gp_t>
 void PerformMosaicAnalysis(const gp_t& gp, const MappingPath<EdgeId> mapping_path, const Sequence& genome,
                            size_t min_support_length, size_t max_support_mult,
-                           size_t max_inter_length, ostream& out) {
+                           size_t max_inter_length, size_t min_reportable_mosaic_length,
+                           size_t min_reportable_submosaic_length, const string& folder) {
     BlockInfoProvider block_info(gp.g);
     GenomeBlockComposition block_composition(gp.g, mapping_path, genome.size() - gp.g.k(), block_info);
 
-    MosaicStructureAnalyzer analyzer(block_composition, min_support_length, max_support_mult, max_inter_length, out);
+    MosaicStructureAnalyzer analyzer(block_composition, min_support_length, max_support_mult,
+                                     max_inter_length, min_reportable_mosaic_length,
+                                     min_reportable_submosaic_length, folder);
     analyzer.Analyze();
 }
 

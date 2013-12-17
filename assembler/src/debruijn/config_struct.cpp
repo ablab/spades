@@ -107,7 +107,7 @@ void load_lib_data(const std::string& prefix) {
       load_param(filename, "insert_size_deviation_" + ToString(i), double_val);
       if (double_val) {
           cfg::get_writable().ds.reads[i].data().insert_size_deviation = *double_val;
-      }      
+      }
       load_param(filename, "insert_size_left_quantile_" + ToString(i), double_val);
       if(double_val) {
           cfg::get_writable().ds.reads[i].data().insert_size_left_quantile = *double_val;
@@ -211,13 +211,14 @@ void load(debruijn_config::simplification::bulge_remover& br,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
 
-  load(br.max_bulge_length_coefficient, pt, "max_bulge_length_coefficient");
-  load(br.max_additive_length_coefficient, pt,
+  load(br.enabled					 		, pt, 	"enabled"					);
+  load(br.max_bulge_length_coefficient		, pt, 	"max_bulge_length_coefficient");
+  load(br.max_additive_length_coefficient	, pt,
        "max_additive_length_coefficient");
-  load(br.max_coverage, pt, "max_coverage");
-  load(br.max_relative_coverage, pt, "max_relative_coverage");
-  load(br.max_delta, pt, "max_delta");
-  load(br.max_relative_delta, pt, "max_relative_delta");
+  load(br.max_coverage, 					pt, 	"max_coverage");
+  load(br.max_relative_coverage, 			pt, 	"max_relative_coverage");
+  load(br.max_delta, 						pt, 	"max_delta");
+  load(br.max_relative_delta, 				pt, 	"max_relative_delta");
 }
 
 void load(debruijn_config::simplification::topology_tip_clipper& ttc,
@@ -228,12 +229,15 @@ void load(debruijn_config::simplification::topology_tip_clipper& ttc,
   load(ttc.uniqueness_length, pt, "uniqueness_length");
 }
 
-void load(debruijn_config::simplification::relative_coverage_ec_remover& rec,
+void load(debruijn_config::simplification::relative_coverage_comp_remover& rcc,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
-  load(rec.max_ec_length_coefficient, pt, "max_ec_length_coefficient");
-  load(rec.max_coverage_coeff, pt, "max_coverage_coeff");
-  load(rec.coverage_gap, pt, "coverage_gap");
+  load(rcc.coverage_gap, pt, "coverage_gap");
+  load(rcc.length_coeff, pt, "max_length_coeff");
+  load(rcc.tip_allowing_length_coeff, pt, "max_length_with_tips_coeff");
+  load(rcc.vertex_count_limit, pt, "max_vertex_cnt");
+  load(rcc.max_ec_length_coefficient, pt, "max_ec_length_coefficient");
+  load(rcc.max_coverage_coeff, pt, "max_coverage_coeff");
 }
 
 void load(debruijn_config::simplification::isolated_edges_remover& ier,
@@ -330,6 +334,16 @@ void load(debruijn_config::smoothing_distance_estimator& ade,
   load(ade.min_peak_points, pt, "min_peak_points");
   load(ade.inv_density, pt, "inv_density");
   load(ade.derivative_threshold, pt, "derivative_threshold");
+}
+
+inline void load(debruijn_config::ambiguous_distance_estimator& amde,
+		boost::property_tree::ptree const& pt, bool){
+	using config_common::load;
+
+	load(amde.enabled,						pt,		"enabled");
+	load(amde.haplom_threshold,				pt,		"haplom_threshold");
+	load(amde.relative_length_threshold,	pt,		"relative_length_threshold");
+	load(amde.relative_seq_threshold,		pt,		"relative_seq_threshold");
 }
 
 void load(debruijn_config::coverage_based_rr& cbrr,
@@ -445,7 +459,7 @@ void load(debruijn_config::simplification& simp,
   load(simp.ttc, pt, "ttc", complete); // topology tip clipper:
   load(simp.br, pt, "br", complete); // bulge remover:
   load(simp.ec, pt, "ec", complete); // erroneous connections remover:
-  load(simp.rec, pt, "rec", complete); // relative coverage erroneous connections remover:
+  load(simp.rcc, pt, "rcc", complete); // relative coverage component remover:
   load(simp.tec, pt, "tec", complete); // topology aware erroneous connections remover:
   load(simp.trec, pt, "trec", complete); // topology and reliability based erroneous connections remover:
   load(simp.isec, pt, "isec", complete); // interstrand erroneous connections remover (thorn remover):
@@ -453,6 +467,7 @@ void load(debruijn_config::simplification& simp,
   load(simp.ier, pt, "ier", complete); // isolated edges remover
   load(simp.cbr, pt, "cbr", complete); // complex bulge remover
   load(simp.her, pt, "her", complete); // hidden ec remover
+//  load(simp.stats_mode, pt, "stats_mode", complete); // temporary stats counting mode
 }
 
 void load(debruijn_config::info_printer& printer,
@@ -511,7 +526,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 
   // input options:
   load(cfg.dataset_file, pt, "dataset");
-  // input dir is based on dataset file location (all pathes in datasets are relative to its location)
+  // input dir is based on dataset file location (all paths in datasets are relative to its location)
   cfg.input_dir = path::parent_path(cfg.dataset_file);
   if (cfg.input_dir[cfg.input_dir.length() - 1] != '/')
     cfg.input_dir += '/';
@@ -538,6 +553,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
     cfg.output_dir = cfg.output_root;
   }
 
+
   cfg.output_saves = cfg.output_dir + "saves/";
 
   load(cfg.log_filename, pt, "log_filename");
@@ -560,6 +576,16 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
     else
       cfg.load_from = cfg.output_dir + cfg.load_from;
   }
+
+  load(cfg.tmp_dir, pt, "tmp_dir");
+  if (cfg.tmp_dir[0] != '/') { // relative path
+    if (cfg.run_mode)
+      cfg.tmp_dir = cfg.output_root + cfg.tmp_dir;
+    else
+      cfg.tmp_dir = cfg.output_dir + cfg.tmp_dir;
+  }
+
+  load(cfg.main_iteration, pt, "main_iteration");
 
   load(cfg.entry_point, pt, "entry_point");
 
@@ -613,15 +639,21 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 
   load(cfg.max_memory, pt, "max_memory");
 
+  load(cfg.diploid_mode, pt,	"diploid_mode");
+
   path::CheckFileExistenceFATAL(cfg.dataset_file);
   boost::property_tree::ptree ds_pt;
   boost::property_tree::read_info(cfg.dataset_file, ds_pt);
   load(cfg.ds, ds_pt, true);
 
   load(cfg.ade, pt, (cfg.ds.single_cell ? "sc_ade" : "usual_ade")); // advanced distance estimator:
+
   load(cfg.pos, pt, "pos"); // position handler:
 
   load(cfg.est_mode, pt, "estimation_mode");
+
+  load(cfg.amb_de, pt, "amb_de");
+  cfg.amb_de.enabled = (cfg.diploid_mode) ? true : false;
 
   load(cfg.rm, pt, "resolving_mode");
 
@@ -665,6 +697,9 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   if (cfg.mismatch_careful)
     load(cfg.simp, pt, "careful", false);
 
+  if (cfg.diploid_mode)
+	  load(cfg.simp, pt, "diploid_simp", false);
+
   cfg.simp.cbr.folder = cfg.output_dir + cfg.simp.cbr.folder + "/";
   load(cfg.info_printers, pt, "info_printers");
   if (!cfg.developer_mode) {
@@ -684,3 +719,4 @@ void load(debruijn_config& cfg, const std::string &filename) {
 }
 
 };
+

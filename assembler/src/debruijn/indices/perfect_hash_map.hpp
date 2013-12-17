@@ -256,7 +256,10 @@ public:
             return false;
 
         auto it = this->kmers_->begin() + kwh.idx();
-        return (typename traits_t::raw_equal_to()(kwh.key(), *it));
+        if(!kwh.is_minimal())
+            return (typename traits_t::raw_equal_to()(!kwh.key(), *it));
+        else
+            return (typename traits_t::raw_equal_to()(kwh.key(), *it));
     }
 
     /**

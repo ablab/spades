@@ -102,9 +102,7 @@ size_t GetAllPathsQuantity(const graph_pack& origin_gp,
                      callback);
   path_processor.Process();
   auto paths = callback.paths();
-  TRACE(origin_gp.int_ids.ReturnIntId(e1) << " "
-        << origin_gp.int_ids.ReturnIntId(e2) << " "
-        << paths.size());
+  TRACE(e1.ind_id() << " " << e2.int_id() << " " << paths.size());
   return paths.size();
 }
 

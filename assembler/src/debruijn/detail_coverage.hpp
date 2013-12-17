@@ -13,7 +13,7 @@
 namespace debruijn_graph {
 
 template<class Graph>
-class NewFlankingCoverage : public GraphActionHandler<Graph>,
+class FlankingCoverage : public GraphActionHandler<Graph>,
         public omnigraph::AbstractFlankingCoverage<Graph> {
     typedef GraphActionHandler<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
@@ -45,11 +45,19 @@ class NewFlankingCoverage : public GraphActionHandler<Graph>,
         return unsigned(math::round(AverageFlankingCoverage(e) * double(l)));
     }
 
+    void SetCoverageSimilarToAverageFlanking(EdgeId target, EdgeId source) {
+        SetRawCoverage(target, unsigned(math::round(AverageFlankingCoverage(source) * double(g_.length(target)))));
+    }
+
+    void SetCoverageSimilarToAverageGlobal(EdgeId target, EdgeId source) {
+        SetRawCoverage(target, unsigned(math::round(g_.coverage(source) * double(g_.length(target)))));
+    }
+
 public:
 
     //todo think about interactions with gap closer
-    NewFlankingCoverage(Graph& g, size_t averaging_range)
-            : base(g, "NewFlankingCoverage"), g_(g),
+    FlankingCoverage(Graph& g, size_t averaging_range)
+            : base(g, "FlankingCoverage"), g_(g),
               averaging_range_(averaging_range) {
     }
 
@@ -113,9 +121,10 @@ public:
     }
 
     virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge_1,
-                             EdgeId /*new_edge_2*/) {
-        //hard to think of any other solution
-        SetRawCoverage(new_edge_1, RawCoverage(old_edge));
+                             EdgeId new_edge_2) {
+        //todo maybe improve later
+        SetCoverageSimilarToAverageFlanking(new_edge_1, old_edge);
+        SetCoverageSimilarToAverageGlobal(new_edge_2, old_edge);
     }
 
     virtual void HandleDelete(EdgeId e) {
@@ -157,10 +166,9 @@ public:
     }
 
 private:
-    DECL_LOGGER("NewFlankingCoverage")
+    DECL_LOGGER("FlankingCoverage")
     ;
 };
-
 
 template<class StoringType>
 struct SimultaneousCoverageCollector {
@@ -187,12 +195,12 @@ template<class Graph, class CountIndex>
 class SimultaneousCoverageFiller {
     const Graph& g_;
     const CountIndex& count_index_;
-    NewFlankingCoverage<Graph>& flanking_coverage_;
+    FlankingCoverage<Graph>& flanking_coverage_;
     CoverageIndex<Graph>& coverage_index_;
     typedef typename CountIndex::Value Value;
 public:
     SimultaneousCoverageFiller(const Graph& g, const CountIndex& count_index,
-                               NewFlankingCoverage<Graph>& flanking_coverage,
+                               FlankingCoverage<Graph>& flanking_coverage,
                                CoverageIndex<Graph>& coverage_index) :
                                    g_(g),
                                    count_index_(count_index),
@@ -224,7 +232,7 @@ public:
 
 template<class Graph, class CountIndex>
 void FillCoverageAndFlanking(const CountIndex& count_index, Graph& g,
-                             NewFlankingCoverage<Graph>& flanking_coverage) {
+                             FlankingCoverage<Graph>& flanking_coverage) {
     SimultaneousCoverageFiller<Graph, CountIndex> filler(g, count_index, flanking_coverage, g.coverage_index());
     filler.Fill();
 }

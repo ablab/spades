@@ -224,6 +224,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 
 	INFO("Using " << libs.size() << " paired lib(s)");
 	INFO("Using " << scaff_libs.size() << " scaffolding libs");
+	INFO("Using " << long_reads.size() << " long read libs");
 	INFO("Scaffolder is " << (pset.scaffolder_options.on ? "on" : "off"));
 
 	ContigWriter writer(gp.g);

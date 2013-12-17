@@ -17,6 +17,8 @@
 #include "omni/abstract_editable_graph.hpp"
 #include "standard_base.hpp"
 #include "indices/kmer_extension_index.hpp"
+#include "openmp_wrapper.h"
+#include "parallel_wrapper.hpp"
 
 namespace debruijn_graph {
 
@@ -456,12 +458,12 @@ private:
 	void CollectLinkRecords(typename Graph::Helper &helper, const Graph &graph, vector<LinkRecord> &records, const vector<Sequence> &sequences) const {
 		size_t size = sequences.size();
 		records.resize(size * 2, LinkRecord(0, EdgeId(0), false, false));
-//#   pragma omp parallel for schedule(guided)
-//		TODO: deal with handlers. The most troublesome is outer index handler. It probably should copy its values from inner index after the graph is created.
-//		Also inner indices are a problem.
+		restricted::IdSegmentStorage id_storage = helper.graph().GetGraphIdDistributor().Reserve(size * 2);
+#   pragma omp parallel for schedule(guided)
 		for (size_t i = 0; i < size; ++i) {
 			size_t j = i << 1;
-			EdgeId edge = helper.AddEdge(DeBruijnEdgeData(sequences[i]));
+		    auto id_distributor = id_storage.GetSegmentIdDistributor(j, j + 2);//indices for two edges are required
+			EdgeId edge = helper.AddEdge(DeBruijnEdgeData(sequences[i]), id_distributor);
 			records[j] = StartLink(edge, sequences[i]);
 			if(graph.conjugate(edge) != edge)
 				records[j + 1] = EndLink(edge, sequences[i]);
@@ -490,25 +492,26 @@ public:
 		typename Graph::Helper helper = graph.GetConstructionHelper();
 		vector<LinkRecord> records;
 		CollectLinkRecords(helper, graph, records, sequences);//TODO make parallel
-		std::sort(records.begin(), records.end());
+		parallel::sort(records.begin(), records.end());
 		size_t size = records.size();
-//#   pragma omp parallel for schedule(guided)
-//		TODO: make inner ids be the same in each run
+		vector<vector<VertexId>> vertices_list(omp_get_max_threads());
+        restricted::IdSegmentStorage id_storage = helper.graph().GetGraphIdDistributor().Reserve(size * 2);
+#   pragma omp parallel for schedule(guided)
 		for(size_t i = 0; i < size; i++) {
 			if(i != 0 && records[i].GetHash() == records[i - 1].GetHash()) {
 				continue;
 			}
 			if(records[i].IsInvalid())
 				continue;
-			VertexId v(0);
-#   pragma omp critical
-			{
-				v = graph.AddVertex();
-			}
+			auto id_distributor = id_storage.GetSegmentIdDistributor(i << 1, (i << 1) + 2);
+			VertexId v = helper.CreateVertex(DeBruijnVertexData(), id_distributor);
+			vertices_list[omp_get_thread_num()].push_back(v);
 			for(size_t j = i; j < size && records[j].GetHash() == records[i].GetHash(); j++) {
 				LinkEdge(helper, graph, v, records[j].GetEdge(), records[j].IsStart(), records[j].IsRC());
 			}
 		}
+		for(size_t i = 0; i < vertices_list.size(); i++)
+		    helper.AddVerticesToGraph(vertices_list[i].begin(), vertices_list[i].end());
 	}
 };
 

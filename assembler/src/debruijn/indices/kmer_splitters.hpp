@@ -68,7 +68,7 @@ class DeBruijnKMerSplitter : public RtSeqKMerSplitter {
 
   void DumpBuffers(size_t num_files, size_t nthreads,
                    std::vector<KMerBuffer> &buffers,
-                   FILE **ostreams) const{
+                   const path::files_t &ostreams) const{
     # pragma omp parallel for
       for (unsigned k = 0; k < num_files; ++k) {
         size_t sz = 0;
@@ -86,7 +86,10 @@ class DeBruijnKMerSplitter : public RtSeqKMerSplitter {
 
     #   pragma omp critical
         {
-          fwrite(SortBuffer.data(), SortBuffer.el_data_size(), it - SortBuffer.begin(), ostreams[k]);
+          FILE *f = fopen(ostreams[k].c_str(), "ab");
+          VERIFY_MSG(f, "Cannot open temporary file to write");
+          fwrite(SortBuffer.data(), SortBuffer.el_data_size(), it - SortBuffer.begin(), f);
+          fclose(f);
         }
       }
 
@@ -169,14 +172,8 @@ path::files_t DeBruijnReadKMerSplitter<Read, KmerFilter>::Split(size_t num_files
     WARN("Do 'ulimit -n " << file_limit << "' in the console to overcome the limit");
   }
 
-  FILE** ostreams = new FILE*[num_files];
-  for (unsigned i = 0; i < num_files; ++i) {
-    ostreams[i] = fopen(out[i].c_str(), "wb");
-    VERIFY_MSG(ostreams[i], "Cannot open temporary file to write");
-  }
-
   size_t cell_size = READS_BUFFER_SIZE /
-                     (nthreads * num_files * runtime_k::RtSeq::GetDataSize(this->K_) * sizeof(runtime_k::RtSeq::DataType));
+                     (num_files * runtime_k::RtSeq::GetDataSize(this->K_) * sizeof(runtime_k::RtSeq::DataType));
   // Set sane minimum cell size
   if (cell_size < 16384)
     cell_size = 16384;
@@ -205,7 +202,7 @@ path::files_t DeBruijnReadKMerSplitter<Read, KmerFilter>::Split(size_t num_files
       }
     }
 
-    this->DumpBuffers(num_files, nthreads, tmp_entries, ostreams);
+    this->DumpBuffers(num_files, nthreads, tmp_entries, out);
 
     if (counter >> n) {
       INFO("Processed " << counter << " reads");
@@ -219,16 +216,11 @@ path::files_t DeBruijnReadKMerSplitter<Read, KmerFilter>::Split(size_t num_files
     contigs_->reset();
     while (!contigs_->eof()) {
       FillBufferFromStream(*contigs_, tmp_entries[cnt], (unsigned) num_files, cell_size);
-      this->DumpBuffers(num_files, nthreads, tmp_entries, ostreams);
+      this->DumpBuffers(num_files, nthreads, tmp_entries, out);
       if (++cnt >= nthreads)
         cnt = 0;
     }
   }
-
-  for (unsigned i = 0; i < num_files; ++i)
-    fclose(ostreams[i]);
-
-  delete[] ostreams;
 
   INFO("Used " << counter << " reads. Maximum read length " << rl);
   rl_ = rl;
@@ -287,11 +279,6 @@ path::files_t DeBruijnGraphKMerSplitter<Graph, KmerFilter>::Split(size_t num_fil
     WARN("Do 'ulimit -n " << file_limit << "' in the console to overcome the limit");
   }
 
-  FILE** ostreams = new FILE*[num_files];
-  for (unsigned i = 0; i < num_files; ++i) {
-    ostreams[i] = fopen(out[i].c_str(), "wb");
-    VERIFY_MSG(ostreams[i], "Cannot open temporary file to write");
-  }
   size_t cell_size = READS_BUFFER_SIZE /
                      (num_files * runtime_k::RtSeq::GetDataSize(this->K_) * sizeof(runtime_k::RtSeq::DataType));
   INFO("Using cell size of " << cell_size);
@@ -304,18 +291,13 @@ path::files_t DeBruijnGraphKMerSplitter<Graph, KmerFilter>::Split(size_t num_fil
   for (auto it = g_.ConstEdgeBegin(); !it.IsEnd(); ) {
     counter += FillBufferFromEdges(it, tmp_entries[0], (unsigned) num_files, cell_size);
 
-    this->DumpBuffers(num_files, 1, tmp_entries, ostreams);
+    this->DumpBuffers(num_files, 1, tmp_entries, out);
 
     if (counter >> n) {
       INFO("Processed " << counter << " edges");
       n += 1;
     }
   }
-
-  for (unsigned i = 0; i < num_files; ++i)
-    fclose(ostreams[i]);
-
-  delete[] ostreams;
 
   INFO("Used " << counter << " sequences.");
 
@@ -380,13 +362,8 @@ inline path::files_t DeBruijnKMerKMerSplitter<KmerFilter>::Split(size_t num_file
     WARN("Do 'ulimit -n " << file_limit << "' in the console to overcome the limit");
   }
 
-  FILE** ostreams = new FILE*[num_files];
-  for (unsigned i = 0; i < num_files; ++i) {
-    ostreams[i] = fopen(out[i].c_str(), "wb");
-    VERIFY_MSG(ostreams[i], "Cannot open temporary file to write");
-  }
   size_t cell_size = READS_BUFFER_SIZE /
-                     (nthreads * num_files * runtime_k::RtSeq::GetDataSize(this->K_) * sizeof(runtime_k::RtSeq::DataType));
+                     (num_files * runtime_k::RtSeq::GetDataSize(this->K_) * sizeof(runtime_k::RtSeq::DataType));
   // Set sane minimum cell size
   if (cell_size < 16384)
     cell_size = 16384;
@@ -410,7 +387,7 @@ inline path::files_t DeBruijnKMerKMerSplitter<KmerFilter>::Split(size_t num_file
     for (size_t i = 0; i < nthreads; ++i)
       counter += FillBufferFromKMers(its[i], tmp_entries[i], (unsigned) num_files, cell_size);
 
-    this->DumpBuffers(num_files, nthreads, tmp_entries, ostreams);
+    this->DumpBuffers(num_files, nthreads, tmp_entries, out);
 
     if (counter >> n) {
       INFO("Processed " << counter << " kmers");
@@ -421,11 +398,6 @@ inline path::files_t DeBruijnKMerKMerSplitter<KmerFilter>::Split(size_t num_file
     for (auto it = its.begin(), et = its.end(); it != et; ++it)
       anygood |= it->good();
   } while (anygood);
-
-  for (unsigned i = 0; i < num_files; ++i)
-    fclose(ostreams[i]);
-
-  delete[] ostreams;
 
   INFO("Used " << counter << " kmers.");
 
