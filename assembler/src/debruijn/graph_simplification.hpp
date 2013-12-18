@@ -367,7 +367,7 @@ bool RemoveBulges(
     size_t additional_length_bound = 0) {
 
 	if(!br_config.enabled)
-		return true;
+		return false;
 
     INFO("Removing bulges");
     size_t max_length = LengthThresholdFinder::MaxBulgeLength(
@@ -629,23 +629,23 @@ void PreSimplification(conj_graph_pack& gp,
                        boost::function<void(EdgeId)> removal_handler,
                        double determined_coverage_threshold) {
     INFO("PROCEDURE == Presimplification");
-    RemoveSelfConjugateEdges(gp.g, 100, 1., removal_handler);
+    RemoveSelfConjugateEdges(gp.g, gp.k_value + 100, 1., removal_handler);
 
-    INFO("Early tip clipping");
-
-    ClipTipsWithProjection(gp, cfg::get().simp.tc,
-                           cfg::get().graph_read_corr.enable, cfg::get().ds.RL(),
-                           determined_coverage_threshold, removal_handler);
-
-    INFO("Isolated edge remover");
-    size_t max_length = std::max(cfg::get().ds.RL(), cfg::get().simp.ier.max_length_any_cov);
-    INFO("All edges of length smaller than " << max_length << " will be removed");
-    IsolatedEdgeRemover<Graph>(gp.g, cfg::get().simp.ier.max_length,
-                               cfg::get().simp.ier.max_coverage, max_length)
-            .RemoveIsolatedEdges();
-
-    INFO("Early bulge removal");
-    RemoveBulges(gp.g, cfg::get().simp.br, 0, removal_handler, gp.g.k() + 1);
+//    INFO("Early tip clipping");
+//
+//    ClipTipsWithProjection(gp, cfg::get().simp.tc,
+//                           cfg::get().graph_read_corr.enable, cfg::get().ds.RL(),
+//                           determined_coverage_threshold, removal_handler);
+//
+//    INFO("Isolated edge remover");
+//    size_t max_length = std::max(cfg::get().ds.RL(), cfg::get().simp.ier.max_length_any_cov);
+//    INFO("All edges of length smaller than " << max_length << " will be removed");
+//    IsolatedEdgeRemover<Graph>(gp.g, cfg::get().simp.ier.max_length,
+//                               cfg::get().simp.ier.max_coverage, max_length)
+//            .RemoveIsolatedEdges();
+//
+//    INFO("Early bulge removal");
+//    RemoveBulges(gp.g, cfg::get().simp.br, 0, removal_handler, gp.g.k() + 1);
 }
 
 
