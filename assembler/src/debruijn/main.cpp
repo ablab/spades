@@ -90,6 +90,7 @@ void load_config(string cfg_filename) {
   }
 
   make_dir(cfg::get().output_root);
+  make_dir(cfg::get().tmp_dir);
 
   make_dir(cfg::get().output_dir);
   if (cfg::get().developer_mode)
