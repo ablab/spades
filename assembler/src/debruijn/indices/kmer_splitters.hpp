@@ -178,7 +178,9 @@ path::files_t DeBruijnReadKMerSplitter<Read, KmerFilter>::Split(size_t num_files
   size_t clen = sizeof(cmem);
 
   je_mallctl("stats.cactive", &cmem, &clen, NULL, 0);
-  reads_buffer_size = std::min(reads_buffer_size, (size_t)((get_memory_limit() - *cmem) / (nthreads * 2.5)));
+  size_t mem_limit =  (size_t)((double)(get_memory_limit() - *cmem) / (nthreads * 2.5));
+  INFO("Memory available for splitting buffers: " << (double)mem_limit / 1024.0 / 1024.0 / 1024.0 << " Gb");
+  reads_buffer_size = std::min(reads_buffer_size, mem_limit);
 # endif
   size_t cell_size = reads_buffer_size /
                      (num_files * runtime_k::RtSeq::GetDataSize(this->K_) * sizeof(runtime_k::RtSeq::DataType));
@@ -294,7 +296,9 @@ path::files_t DeBruijnGraphKMerSplitter<Graph, KmerFilter>::Split(size_t num_fil
   size_t clen = sizeof(cmem);
 
   je_mallctl("stats.cactive", &cmem, &clen, NULL, 0);
-  reads_buffer_size = std::min(reads_buffer_size, (size_t)((get_memory_limit() - *cmem) / (2.5)));
+  size_t mem_limit =  (size_t)((double)(get_memory_limit() - *cmem) / (2.5));
+  INFO("Memory available for splitting buffers: " << (double)mem_limit / 1024.0 / 1024.0 / 1024.0 << " Gb");
+  reads_buffer_size = std::min(reads_buffer_size, mem_limit);
 # endif
   size_t cell_size = reads_buffer_size /
                      (num_files * runtime_k::RtSeq::GetDataSize(this->K_) * sizeof(runtime_k::RtSeq::DataType));
@@ -385,7 +389,9 @@ inline path::files_t DeBruijnKMerKMerSplitter<KmerFilter>::Split(size_t num_file
   size_t clen = sizeof(cmem);
 
   je_mallctl("stats.cactive", &cmem, &clen, NULL, 0);
-  reads_buffer_size = std::min(reads_buffer_size, (size_t)((get_memory_limit() - *cmem) / (nthreads * 2.5)));
+  size_t mem_limit =  (size_t)((double)(get_memory_limit() - *cmem) / (nthreads * 2.5));
+  INFO("Memory available for splitting buffers: " << (double)mem_limit / 1024.0 / 1024.0 / 1024.0 << " Gb");
+  reads_buffer_size = std::min(reads_buffer_size, mem_limit);
 # endif
   size_t cell_size = reads_buffer_size /
                      (num_files * runtime_k::RtSeq::GetDataSize(this->K_) * sizeof(runtime_k::RtSeq::DataType));
