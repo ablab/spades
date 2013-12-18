@@ -627,7 +627,7 @@ bool FinalRemoveErroneousEdges(
 inline
 void PreSimplification(conj_graph_pack& gp,
                        boost::function<void(EdgeId)> removal_handler,
-                       double determined_coverage_threshold) {
+                       double /*determined_coverage_threshold*/) {
     INFO("PROCEDURE == Presimplification");
     RemoveSelfConjugateEdges(gp.g, gp.k_value + 100, 1., removal_handler);
 

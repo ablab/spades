@@ -47,9 +47,8 @@ public:
     }
     double IdealPairedInfo(size_t len1, size_t len2, int dist, bool additive = false) const {
         double result = 0.0;
-        for (int d = max(d_min_, 0); d < d_max_; ++d) {
-            double weight = insert_size_distrib_.at(d);
-            result += weight * (double) IdealReads(len1, len2, dist, d, additive);
+        for (auto it = insert_size_distrib_.lower_bound(max(d_min_, 0)); it != insert_size_distrib_.upper_bound(d_max_); ++it) {
+            result += it->second * (double) IdealReads(len1, len2, dist, it->first, additive);
         }
         return result;
     }
