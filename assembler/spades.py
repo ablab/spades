@@ -207,6 +207,8 @@ def fill_cfg(options_to_parse, log):
                 support.error('you cannot specify --only-error-correction and --only-assembler simultaneously')
             options_storage.only_assembler = True
 
+        elif opt == "--read-buffer-size":
+            options_storage.read_buffer_size = int(arg)
         elif opt == "--bh-heap-check":
             options_storage.bh_heap_check = arg
         elif opt == "--spades-heap-check":
@@ -346,6 +348,8 @@ def fill_cfg(options_to_parse, log):
         cfg["assembly"].__dict__["diploid_mode"] = options_storage.diploid_mode
         if options_storage.spades_heap_check:
             cfg["assembly"].__dict__["heap_check"] = options_storage.spades_heap_check
+        if options_storage.read_buffer_size:
+            cfg["assembly"].__dict__["read_buffer_size"] = options_storage.read_buffer_size
 
     #corrector can work only if contigs exist (not only error correction)
     if (not options_storage.only_error_correction) and options_storage.mismatch_corrector:

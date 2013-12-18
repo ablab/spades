@@ -69,6 +69,7 @@ reference = None
 iterations = None
 bh_heap_check = None
 spades_heap_check = None
+read_buffer_size = None
 ### END OF OPTIONS
 
 # for restarting SPAdes
@@ -84,6 +85,7 @@ restart_k_mers = None
 restart_qvoffset = None
 restart_developer_mode = None
 restart_reference = None
+restart_read_buffer_size = None
 
 dict_of_prefixes = dict()
 
@@ -92,7 +94,7 @@ long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc "\
                "only-error-correction only-assembler "\
                "disable-gzip-output disable-gzip-output:false disable-rr disable-rr:false " \
                "help test debug debug:false reference= config-file= dataset= "\
-               "bh-heap-check= spades-heap-check= help-hidden "\
+               "bh-heap-check= spades-heap-check= read-buffer-size= help-hidden "\
                "mismatch-correction mismatch-correction:false careful careful:false "\
                "continue restart-from= diploid".split()
 short_options = "o:1:2:s:k:t:m:i:h"
@@ -194,6 +196,7 @@ def usage(spades_version, show_hidden=False):
                              " (only in debug mode)" + "\n")
         sys.stderr.write("-i/--iterations\t<int>\t\tnumber of iterations for read error"\
                              " correction [default: %s]\n" % ITERATIONS)
+        sys.stderr.write("--read-buffer-size\t<int>\t\tsets size of read buffer for graph construction")
         sys.stderr.write("--bh-heap-check\t\t<value>\tsets HEAPCHECK environment variable"\
                              " for BayesHammer" + "\n")
         sys.stderr.write("--spades-heap-check\t<value>\tsets HEAPCHECK environment variable"\
@@ -270,6 +273,7 @@ def save_restart_options(log):
     global restart_qvoffset
     global restart_developer_mode
     global restart_reference
+    global restart_read_buffer_size
 
     restart_k_mers = k_mers
     restart_careful = careful
@@ -282,6 +286,7 @@ def save_restart_options(log):
     restart_qvoffset = qvoffset
     restart_developer_mode = developer_mode
     restart_reference = reference
+    restart_read_buffer_size = read_buffer_size
 
 
 def load_restart_options():
@@ -296,6 +301,7 @@ def load_restart_options():
     global qvoffset
     global developer_mode
     global reference
+    global read_buffer_size
 
     if restart_k_mers:
         if restart_k_mers == 'auto':
@@ -322,3 +328,5 @@ def load_restart_options():
         developer_mode = restart_developer_mode
     if restart_reference is not None:
         reference = restart_reference
+    if restart_read_buffer_size is not None:
+        read_buffer_size = restart_read_buffer_size
