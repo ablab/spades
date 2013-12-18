@@ -31,7 +31,6 @@
 
 #include "detail_coverage.hpp"
 #include "graph_read_correction.hpp"
-#include "ec_threshold_finder.hpp"
 #include "detail_coverage.hpp"
 
 #include "stats/chimera_stats.hpp"
