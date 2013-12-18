@@ -280,6 +280,7 @@ struct debruijn_config {
         construction_mode con_mode;
         early_tip_clipper early_tc;
         bool keep_perfect_loops;
+        size_t read_buffer_size;
     };
 
     std::string uncorrected_reads;

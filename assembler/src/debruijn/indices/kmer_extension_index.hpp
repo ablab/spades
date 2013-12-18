@@ -358,20 +358,20 @@ public:
 public:
     template<class Streams>
     size_t BuildExtensionIndexFromStream(
-            IndexT &index, Streams &streams, io::SingleStream* contigs_stream =
-                    0) const {
+            IndexT &index, Streams &streams, io::SingleStream* contigs_stream = 0,
+            size_t read_buffer_size = 536870912) const {
         unsigned nthreads = (unsigned) streams.size();
 
         // First, build a k+1-mer index
         DeBruijnReadKMerSplitter<typename Streams::ReadT, StoringTypeFilter<typename IndexT::storing_type>> splitter(
                 index.workdir(), index.k() + 1, 0xDEADBEEF, streams,
-                contigs_stream);
+                contigs_stream, read_buffer_size);
         KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
         counter.CountAll(nthreads, nthreads, /* merge */false);
 
         // Now, count unique k-mers from k+1-mers
         DeBruijnKMerKMerSplitter<StoringTypeFilter<typename IndexT::storing_type> > splitter2(index.workdir(), index.k(),
-                                           index.k() + 1, IndexT::storing_type::IsInvertable());
+                                           index.k() + 1, IndexT::storing_type::IsInvertable(), read_buffer_size);
         for (unsigned i = 0; i < nthreads; ++i)
             splitter2.AddKMers(counter.GetMergedKMersFname(i));
         KMerDiskCounter<runtime_k::RtSeq> counter2(index.workdir(), splitter2);

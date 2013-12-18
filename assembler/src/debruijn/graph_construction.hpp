@@ -135,7 +135,7 @@ size_t ConstructGraphUsingExtentionIndex(const debruijn_config::construction par
 	ExtensionIndex ext((unsigned) k, index.inner_index().workdir());
 
 	//fixme hack
-	size_t rl = ExtensionIndexBuilder().BuildExtensionIndexFromStream(ext, streams, (contigs_stream == 0) ? 0 : &(*contigs_stream));
+	size_t rl = ExtensionIndexBuilder().BuildExtensionIndexFromStream(ext, streams, (contigs_stream == 0) ? 0 : &(*contigs_stream), params.read_buffer_size);
 
 	EarlyClipTips(k, params, rl, ext);
 

@@ -7,6 +7,9 @@ construction
 
 	; enable keeping in graph perfect cycles. This slows down condensing but some plasmids can be lost if this is turned off.
 	keep_perfect_loops true
+
+	; size of buffer for each thread in MB
+	read_buffer_size 512
 	
 	early_tip_clipper
 	{
