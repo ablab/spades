@@ -178,7 +178,7 @@ path::files_t DeBruijnReadKMerSplitter<Read, KmerFilter>::Split(size_t num_files
   size_t clen = sizeof(cmem);
 
   je_mallctl("stats.cactive", &cmem, &clen, NULL, 0);
-  size_t mem_limit =  (size_t)((double)(get_memory_limit() - *cmem) / (nthreads * 2.5));
+  size_t mem_limit =  (size_t)((double)(get_memory_limit() - *cmem) / (nthreads * 3));
   INFO("Memory available for splitting buffers: " << (double)mem_limit / 1024.0 / 1024.0 / 1024.0 << " Gb");
   reads_buffer_size = std::min(reads_buffer_size, mem_limit);
 # endif
@@ -193,7 +193,7 @@ path::files_t DeBruijnReadKMerSplitter<Read, KmerFilter>::Split(size_t num_files
   std::vector<KMerBuffer> tmp_entries(nthreads);
   for (unsigned i = 0; i < nthreads; ++i) {
     KMerBuffer &entry = tmp_entries[i];
-    entry.resize(num_files, RtSeqKMerVector(this->K_, (size_t) (1.25 * (double) cell_size)));
+    entry.resize(num_files, RtSeqKMerVector(this->K_, (size_t) (1.1 * (double) cell_size)));
   }
 
   size_t counter = 0, rl = 0, n = 15;
@@ -296,7 +296,7 @@ path::files_t DeBruijnGraphKMerSplitter<Graph, KmerFilter>::Split(size_t num_fil
   size_t clen = sizeof(cmem);
 
   je_mallctl("stats.cactive", &cmem, &clen, NULL, 0);
-  size_t mem_limit =  (size_t)((double)(get_memory_limit() - *cmem) / (2.5));
+  size_t mem_limit =  (size_t)((double)(get_memory_limit() - *cmem) / (3));
   INFO("Memory available for splitting buffers: " << (double)mem_limit / 1024.0 / 1024.0 / 1024.0 << " Gb");
   reads_buffer_size = std::min(reads_buffer_size, mem_limit);
 # endif
@@ -306,7 +306,7 @@ path::files_t DeBruijnGraphKMerSplitter<Graph, KmerFilter>::Split(size_t num_fil
 
   std::vector<KMerBuffer> tmp_entries(1);
   KMerBuffer &entry = tmp_entries[0];
-  entry.resize(num_files, RtSeqKMerVector(this->K_, (size_t) (1.25 * (double) cell_size)));
+  entry.resize(num_files, RtSeqKMerVector(this->K_, (size_t) (1.1 * (double) cell_size)));
 
   size_t counter = 0, n = 10;
   for (auto it = g_.ConstEdgeBegin(); !it.IsEnd(); ) {
@@ -389,7 +389,7 @@ inline path::files_t DeBruijnKMerKMerSplitter<KmerFilter>::Split(size_t num_file
   size_t clen = sizeof(cmem);
 
   je_mallctl("stats.cactive", &cmem, &clen, NULL, 0);
-  size_t mem_limit =  (size_t)((double)(get_memory_limit() - *cmem) / (nthreads * 2.5));
+  size_t mem_limit =  (size_t)((double)(get_memory_limit() - *cmem) / (nthreads * 3));
   INFO("Memory available for splitting buffers: " << (double)mem_limit / 1024.0 / 1024.0 / 1024.0 << " Gb");
   reads_buffer_size = std::min(reads_buffer_size, mem_limit);
 # endif
@@ -403,7 +403,7 @@ inline path::files_t DeBruijnKMerKMerSplitter<KmerFilter>::Split(size_t num_file
   std::vector<KMerBuffer> tmp_entries(nthreads);
   for (unsigned i = 0; i < nthreads; ++i) {
     KMerBuffer &entry = tmp_entries[i];
-    entry.resize(num_files, RtSeqKMerVector(this->K_, (size_t) (1.25 * (double) cell_size)));
+    entry.resize(num_files, RtSeqKMerVector(this->K_, (size_t) (1.1 * (double) cell_size)));
   }
 
   size_t counter = 0, n = 10;
