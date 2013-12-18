@@ -172,8 +172,17 @@ path::files_t DeBruijnReadKMerSplitter<Read, KmerFilter>::Split(size_t num_files
     WARN("Do 'ulimit -n " << file_limit << "' in the console to overcome the limit");
   }
 
-  size_t cell_size = READS_BUFFER_SIZE /
+  size_t reads_buffer_size = READS_BUFFER_SIZE;
+# ifdef SPADES_USE_JEMALLOC
+  const size_t *cmem = 0;
+  size_t clen = sizeof(cmem);
+
+  je_mallctl("stats.cactive", &cmem, &clen, NULL, 0);
+  reads_buffer_size = std::min(reads_buffer_size, (size_t)((get_memory_limit() - *cmem) / (nthreads * 2.5)));
+# endif
+  size_t cell_size = reads_buffer_size /
                      (num_files * runtime_k::RtSeq::GetDataSize(this->K_) * sizeof(runtime_k::RtSeq::DataType));
+
   // Set sane minimum cell size
   if (cell_size < 16384)
     cell_size = 16384;
@@ -279,7 +288,15 @@ path::files_t DeBruijnGraphKMerSplitter<Graph, KmerFilter>::Split(size_t num_fil
     WARN("Do 'ulimit -n " << file_limit << "' in the console to overcome the limit");
   }
 
-  size_t cell_size = READS_BUFFER_SIZE /
+  size_t reads_buffer_size = READS_BUFFER_SIZE;
+# ifdef SPADES_USE_JEMALLOC
+  const size_t *cmem = 0;
+  size_t clen = sizeof(cmem);
+
+  je_mallctl("stats.cactive", &cmem, &clen, NULL, 0);
+  reads_buffer_size = std::min(reads_buffer_size, (size_t)((get_memory_limit() - *cmem) / (2.5)));
+# endif
+  size_t cell_size = reads_buffer_size /
                      (num_files * runtime_k::RtSeq::GetDataSize(this->K_) * sizeof(runtime_k::RtSeq::DataType));
   INFO("Using cell size of " << cell_size);
 
@@ -362,7 +379,15 @@ inline path::files_t DeBruijnKMerKMerSplitter<KmerFilter>::Split(size_t num_file
     WARN("Do 'ulimit -n " << file_limit << "' in the console to overcome the limit");
   }
 
-  size_t cell_size = READS_BUFFER_SIZE /
+  size_t reads_buffer_size = READS_BUFFER_SIZE;
+# ifdef SPADES_USE_JEMALLOC
+  const size_t *cmem = 0;
+  size_t clen = sizeof(cmem);
+
+  je_mallctl("stats.cactive", &cmem, &clen, NULL, 0);
+  reads_buffer_size = std::min(reads_buffer_size, (size_t)((get_memory_limit() - *cmem) / (nthreads * 2.5)));
+# endif
+  size_t cell_size = reads_buffer_size /
                      (num_files * runtime_k::RtSeq::GetDataSize(this->K_) * sizeof(runtime_k::RtSeq::DataType));
   // Set sane minimum cell size
   if (cell_size < 16384)
