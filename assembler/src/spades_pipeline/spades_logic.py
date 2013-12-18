@@ -8,14 +8,16 @@
 
 
 import os
+import sys
 import shutil
 import support
 import process_cfg
 from process_cfg import bool_to_str
-from process_cfg import load_config_from_file
+from site import addsitedir
 import options_storage
 
 BASE_STAGE = "construction"
+READS_TYPES_USED_IN_CONSTRUCTION = ["paired-end", "single"]
 
 def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage, saves_dir, last_one):
     subst_dict = dict()
@@ -53,11 +55,23 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
     process_cfg.substitute_params(filename, subst_dict, log)
 
 
-def get_read_length(output_dir, K, dataset_data):
-    estimated_params = load_config_from_file(os.path.join(output_dir, "K%d" % K, "_est_params.info"))
-    if "max_read_length" not in estimated_params.__dict__:
-        support.warning("Failed to estimate maximum read length")
-    return int(estimated_params.__dict__["max_read_length"])
+def get_read_length(output_dir, K, ext_python_modules_home, log):
+    est_params_filename = os.path.join(output_dir, "K%d" % K, "final.lib_data")
+    max_read_length = 0
+    if os.path.isfile(est_params_filename):
+        addsitedir(ext_python_modules_home)
+        if sys.version.startswith('2.'):
+            import pyyaml2 as pyyaml
+        elif sys.version.startswith('3.'):
+            import pyyaml3 as pyyaml
+        est_params_data = pyyaml.load(open(est_params_filename, 'r'))
+        for reads_library in est_params_data:
+            if reads_library['type'] in READS_TYPES_USED_IN_CONSTRUCTION:
+                if int(reads_library["read length"]) > max_read_length:
+                    max_read_length = int(reads_library["read length"])
+    if max_read_length == 0:
+        support.error("Failed to estimate maximum read length! File with estimated params: " + est_params_filename, log)
+    return max_read_length
 
 
 def update_k_mers_in_special_cases(cur_k_mers, RL, log, silent=False):
@@ -134,7 +148,7 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):
     support.sys_call(command, log)
 
 
-def run_spades(configs_dir, execution_home, cfg, dataset_data, log):
+def run_spades(configs_dir, execution_home, cfg, dataset_data, ext_python_modules_home, log):
     if not isinstance(cfg.iterative_K, list):
         cfg.iterative_K = [cfg.iterative_K]
     cfg.iterative_K = sorted(cfg.iterative_K)
@@ -147,7 +161,7 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, log):
             if os.path.isdir(cur_K_dir) and os.path.isfile(os.path.join(cur_K_dir, "final_contigs.fasta")):
                 processed_K.append(k)
         if processed_K:
-            RL = get_read_length(cfg.output_dir, processed_K[0], dataset_data)
+            RL = get_read_length(cfg.output_dir, processed_K[0], ext_python_modules_home, log)
             needed_K = update_k_mers_in_special_cases(cfg.iterative_K, RL, log, silent=True)
             needed_K = [k for k in needed_K if k < RL]
             k_to_delete = []
@@ -177,7 +191,7 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, log):
     else:
         run_iteration(configs_dir, execution_home, cfg, log, cfg.iterative_K[0], None, False)
         prev_K = cfg.iterative_K[0]
-        RL = get_read_length(cfg.output_dir, cfg.iterative_K[0], dataset_data)
+        RL = get_read_length(cfg.output_dir, cfg.iterative_K[0], ext_python_modules_home, log)
         cfg.iterative_K = update_k_mers_in_special_cases(cfg.iterative_K, RL, log)
         if cfg.iterative_K[1] + 1 > RL:
             if cfg.rr_enable:

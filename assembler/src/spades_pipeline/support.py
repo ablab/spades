@@ -28,31 +28,16 @@ continue_logfile_offset = None
 current_tmp_dir = None
 
 
-def error(err_str, log=None, prefix=SPADES_PY_ERROR_MESSAGE):
+def error(err_str, log=None, prefix=SPADES_PY_ERROR_MESSAGE, binary_name='SPAdes'):
     if log:
         log.info("\n\n" + prefix + " " + err_str)
         log_warnings(log)
-        log.info("\nIn case you have troubles running SPAdes, you can write to spades.support@bioinf.spbau.ru")
-        log.info("Please provide us with params.txt and spades.log files from the output directory.")
+        log.info("\nIn case you have troubles running " + binary_name + ", you can write to spades.support@bioinf.spbau.ru")
+        log.info("Please provide us with params.txt and " + binary_name.lower() + ".log files from the output directory.")
     else:
         sys.stderr.write("\n\n" + prefix + " " + err_str + "\n\n")
-        sys.stderr.write("In case you have troubles running SPAdes, you can write to spades.support@bioinf.spbau.ru\n")
-        sys.stderr.write("Please provide us with params.txt and spades.log files from the output directory.\n")
-        sys.stderr.flush()
-    if current_tmp_dir and os.path.isdir(current_tmp_dir):
-        shutil.rmtree(current_tmp_dir)
-    sys.exit(1)
-
-def ds_error(err_str, log=None, prefix=SPADES_PY_ERROR_MESSAGE):
-    if log:
-        log.info("\n\n" + prefix + " " + err_str)
-        log_warnings(log)
-        log.info("\nIn case you have troubles running dipSPAdes, you can write to spades.support@bioinf.spbau.ru")
-        log.info("Please provide us with params.txt and spades.log files from the output directory.")
-    else:
-        sys.stderr.write("\n\n" + prefix + " " + err_str + "\n\n")
-        sys.stderr.write("In case you have troubles running dipSPAdes, you can write to spades.support@bioinf.spbau.ru\n")
-        sys.stderr.write("Please provide us with params.txt and spades.log files from the dipSPAdes directory.\n")
+        sys.stderr.write("\nIn case you have troubles running " + binary_name + ", you can write to spades.support@bioinf.spbau.ru\n")
+        sys.stderr.write("Please provide us with params.txt and " + binary_name.lower() + ".log files from the output directory.\n")
         sys.stderr.flush()
     if current_tmp_dir and os.path.isdir(current_tmp_dir):
         shutil.rmtree(current_tmp_dir)

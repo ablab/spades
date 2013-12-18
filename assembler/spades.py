@@ -583,7 +583,7 @@ def main(args):
                     dataset_file.close()
                 spades_cfg.__dict__["dataset"] = dataset_filename
 
-                latest_dir = spades_logic.run_spades(tmp_configs_dir, bin_home, spades_cfg, dataset_data, log)
+                latest_dir = spades_logic.run_spades(tmp_configs_dir, bin_home, spades_cfg, dataset_data, ext_python_modules_home, log)
 
                 if os.path.isdir(misc_dir) and not options_storage.continue_mode:
                     shutil.rmtree(misc_dir)
@@ -623,36 +623,24 @@ def main(args):
 
                     log.info("\n===== %s started." % STAGE_NAME)
                     # detecting paired-end library with the largest insert size
-                    dataset_data = pyyaml.load(open(options_storage.dataset_yaml_filename, 'r')) ### initial dataset, i.e. before error correction
-                    dataset_data = support.relative2abs_paths(dataset_data, os.path.dirname(options_storage.dataset_yaml_filename))
-                    paired_end_libraries_ids = []
-                    for id, reads_library in enumerate(dataset_data):
+                    est_params_data = pyyaml.load(open(os.path.join(latest_dir, "final.lib_data"), 'r'))
+                    max_IS_library = None
+                    for reads_library in est_params_data:
                         if reads_library['type'] == 'paired-end':
-                            paired_end_libraries_ids.append(id)
-                    if not len(paired_end_libraries_ids):
+                            if not max_IS_library or float(reads_library["insert size mean"]) > float(max_IS_library["insert size mean"]):
+                                max_IS_library = reads_library
+                    if not max_IS_library:
                         support.error('Mismatch correction cannot be performed without at least one paired-end library!', log)
-                    estimated_params = load_config_from_file(os.path.join(latest_dir, "_est_params.info"))
-                    max_insert_size = 0.0
-                    target_paired_end_library_id = -1
-                    for id in paired_end_libraries_ids:
-                        if float(estimated_params.__dict__["insert_size_" + str(id)]) > max_insert_size:
-                            max_insert_size = float(estimated_params.__dict__["insert_size_" + str(id)])
-                            target_paired_end_library_id = id
-                    if max_insert_size == 0.0:
+                    if not max_IS_library["insert size mean"]:
                         support.warning('Failed to estimate insert size for all paired-end libraries. Starting Mismatch correction'
                                         ' based on the first paired-end library and with default insert size.', log)
-                    #                        if options_storage.continue_mode or options_storage.restart_from == 'mc':
-                    #                            support.error("failed to continue the previous run! Please restart from previous stages or from the beginning.", log)
-                    #                        support.error('Mismatch correction cannot be performed without at least one '
-                    #                                      'paired-end library (estimated insert size is 0.0 for all libraries)!', log)
-                        target_paired_end_library_id = paired_end_libraries_ids[0]
                     else:
-                        cfg["mismatch_corrector"].__dict__["insert-size"] = round(max_insert_size)
+                        cfg["mismatch_corrector"].__dict__["insert-size"] = round(max_IS_library["insert size mean"])
                     yaml_dirname = os.path.dirname(options_storage.dataset_yaml_filename)
                     cfg["mismatch_corrector"].__dict__["1"] = list(map(lambda x: os.path.join(yaml_dirname, x),
-                        dataset_data[target_paired_end_library_id]['left reads']))
+                        max_IS_library['left reads']))
                     cfg["mismatch_corrector"].__dict__["2"] = list(map(lambda x: os.path.join(yaml_dirname, x),
-                        dataset_data[target_paired_end_library_id]['right reads']))
+                        max_IS_library['right reads']))
                     #TODO: add reads orientation
 
                     import corrector
@@ -736,15 +724,17 @@ def main(args):
 
     except Exception:
         exc_type, exc_value, _ = sys.exc_info()
-        if exc_type == OSError and exc_value.errno == errno.ENOEXEC: # Exec format error
-            support.error("It looks like you are using SPAdes binaries for another platform.\n" + get_spades_binaries_info_message())
-        else:
-            log.exception(exc_value)
-            support.error("exception caught: %s" % exc_type, log)
+        if exc_type != SystemExit:
+            if exc_type == OSError and exc_value.errno == errno.ENOEXEC: # Exec format error
+                support.error("It looks like you are using SPAdes binaries for another platform.\n" + get_spades_binaries_info_message())
+            else:
+                log.exception(exc_value)
+                support.error("exception caught: %s" % exc_type, log)
     except BaseException: # since python 2.5 system-exiting exceptions (e.g. KeyboardInterrupt) are derived from BaseException
         exc_type, exc_value, _ = sys.exc_info()
-        log.exception(exc_value)
-        support.error("exception caught: %s" % exc_type, log)
+        if exc_type != SystemExit:
+            log.exception(exc_value)
+            support.error("exception caught: %s" % exc_type, log)
 
 
 if __name__ == '__main__':

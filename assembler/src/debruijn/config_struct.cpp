@@ -19,13 +19,16 @@ struct convert<io::SequencingLibrary<debruijn_graph::debruijn_config::DataSetDat
 
       // Now, save the remaining stuff
       auto const& data = rhs.data();
-      node["read length"] = data.read_length;
-      node["mean insert size"] = data.mean_insert_size;
-      node["insert size deviation"] = data.insert_size_deviation;
-      node["median insert size"] = data.median_insert_size;
-      node["insert size mad"] = data.insert_size_mad;
-      node["average coverage"] = data.average_coverage;
-      node["insert size distribution"] = data.insert_size_distribution;
+      node["read length"]                = data.read_length;
+      node["insert size mean"]           = data.mean_insert_size;
+      node["insert size deviation"]      = data.insert_size_deviation;
+      node["insert size left quantile"]  = data.insert_size_left_quantile;
+      node["insert size right quantile"] = data.insert_size_right_quantile;
+      node["insert size median"]         = data.median_insert_size;
+      node["insert size mad"]            = data.insert_size_mad;
+      node["insert size distribution"]   = data.insert_size_distribution;
+      node["average coverage"]           = data.average_coverage;
+      node["pi threshold"]               = data.pi_threshold;
 
       return node;
   }
@@ -36,17 +39,38 @@ struct convert<io::SequencingLibrary<debruijn_graph::debruijn_config::DataSetDat
 
       // Now load the remaining stuff
       auto& data = rhs.data();
-      data.read_length = node["RL"].as<size_t>(0);
-      if (data.read_length == 0)
-          data.read_length = node["read length"].as<size_t>(0);
-      data.mean_insert_size = (double) node["IS"].as<size_t>(0);
-      if (data.mean_insert_size == 0.0)
-          data.mean_insert_size = node["mean insert size"].as<double>(0);
-      data.insert_size_deviation = node["insert size deviation"].as<double>(0.0);
-      data.median_insert_size = node["median insert size"].as<double>(0.0);
-      data.insert_size_mad = node["insert size mad"].as<double>(0.0);
-      data.average_coverage = node["average_coverage"].as<double>(0.0);
-      data.insert_size_distribution = node["insert size distribution"].as<decltype(data.insert_size_distribution)>(decltype(data.insert_size_distribution)());
+      data.read_length                = node["read length"].as<size_t>(0);
+      data.mean_insert_size           = node["insert size mean"].as<double>(0);
+      data.insert_size_deviation      = node["insert size deviation"].as<double>(0.0);
+      data.insert_size_left_quantile  = node["insert size left quantile"].as<double>(0.0);
+      data.insert_size_right_quantile = node["insert size right quantile"].as<double>(0.0);
+      data.median_insert_size         = node["insert size median"].as<double>(0.0);
+      data.insert_size_mad            = node["insert size mad"].as<double>(0.0);
+      data.insert_size_distribution   = node["insert size distribution"].as<decltype(data.insert_size_distribution)>(decltype(data.insert_size_distribution)());
+
+      data.average_coverage           = node["average coverage"].as<double>(0.0);
+      data.pi_threshold               = node["pi threshold"].as<double>(0.0);
+
+      return true;
+  }
+};
+
+template<>
+struct convert<debruijn_graph::debruijn_config::dataset> {
+  static Node encode(const debruijn_graph::debruijn_config::dataset &rhs) {
+      Node node;
+
+      node["reads"] = rhs.reads;
+      node["max read length"] = rhs.RL();
+      node["average coverage"] = rhs.avg_coverage();
+
+      return node;
+  }
+
+  static bool decode(const Node& node, debruijn_graph::debruijn_config::dataset &rhs) {
+      rhs.set_RL(node["max read length"].as<size_t>(0));
+      rhs.set_avg_coverage(node["average coverage"].as<double>(0.0));
+      rhs.reads = node["reads"];
 
       return true;
   }
@@ -66,99 +90,29 @@ static std::string MakeLaunchTimeDirName() {
   return std::string(buffer);
 }
 
-std::string estimated_param_filename(const std::string& prefix) {
-  return prefix + "_est_params.info";
-}
-
 void load_lib_data(const std::string& prefix) {
-  std::string filename = estimated_param_filename(prefix);
+  // First, load the data into separate libs
+  cfg::get_writable().ds.reads.load(prefix + ".lib_data");
 
-  if (!path::FileExists(filename)) {
-      WARN("Estimates params config " << prefix << " does not exist");
-  }
-  boost::optional<size_t> lib_count;
-  load_param(filename, "lib_count", lib_count);
-  if (!lib_count || lib_count != cfg::get().ds.reads.lib_count()) {
-      WARN("Estimated params file seems to be incorrect");
-      return;
-  }
-
-  boost::optional<size_t> sizet_val(0);
-  boost::optional<double> double_val(0.);
-
-  load_param(filename, "max_read_length", sizet_val);
-  if (sizet_val) {
-      cfg::get_writable().ds.set_RL(*sizet_val);
-  }
-  load_param(filename, "average_coverage", double_val);
-  if (double_val) {
-      cfg::get_writable().ds.set_avg_coverage(*double_val);
+  // Now, infer the common parameters
+  const auto& reads = cfg::get().ds.reads;
+  size_t max_rl = 0;
+  double avg_cov = 0.0;
+  for (auto it = reads.library_begin(), et = reads.library_end(); it != et; ++it) {
+      auto const& data = it->data();
+      if (it->is_graph_contructable())
+          max_rl = std::max(max_rl, data.read_length);
+      if (data.average_coverage > 0)
+          avg_cov = data.average_coverage;
   }
 
-  for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-      load_param(filename, "read_length_" + ToString(i), sizet_val);
-      if (sizet_val) {
-          cfg::get_writable().ds.reads[i].data().read_length = *sizet_val;
-      }
-      load_param(filename, "insert_size_" + ToString(i), double_val);
-      if (double_val) {
-          cfg::get_writable().ds.reads[i].data().mean_insert_size = *double_val;
-      }
-      load_param(filename, "insert_size_deviation_" + ToString(i), double_val);
-      if (double_val) {
-          cfg::get_writable().ds.reads[i].data().insert_size_deviation = *double_val;
-      }
-      load_param(filename, "insert_size_left_quantile_" + ToString(i), double_val);
-      if(double_val) {
-          cfg::get_writable().ds.reads[i].data().insert_size_left_quantile = *double_val;
-      }
-      load_param(filename, "insert_size_right_quantile_" + ToString(i), double_val);
-        if (double_val) {
-            cfg::get_writable().ds.reads[i].data().insert_size_right_quantile = *double_val;
-      }
-      load_param(filename, "insert_size_median_" + ToString(i), double_val);
-      if (double_val) {
-          cfg::get_writable().ds.reads[i].data().median_insert_size = *double_val;
-      }
-      load_param(filename, "insert_size_mad_" + ToString(i), double_val);
-      if (double_val) {
-          cfg::get_writable().ds.reads[i].data().insert_size_mad = *double_val;
-      }
-      load_param(filename, "average_coverage_" + ToString(i), double_val);
-      if (double_val) {
-          cfg::get_writable().ds.reads[i].data().average_coverage = *double_val;
-      }
-      load_param(filename, "pi_threshold_"+ToString(i), double_val);
-      if (double_val) {
-          cfg::get_writable().ds.reads[i].data().pi_threshold = *double_val;
-      }
-      load_param_map(filename, "histogram_" + ToString(i), cfg::get_writable().ds.reads[i].data().insert_size_distribution);
-  }
-
+  cfg::get_writable().ds.set_RL(max_rl);
+  cfg::get_writable().ds.set_avg_coverage(avg_cov);
 }
 
 void write_lib_data(const std::string& prefix) {
-  std::string filename = estimated_param_filename(prefix);
-
-  cfg::get().ds.reads.save("foo.txt");
-  write_param(filename, "lib_count", cfg::get().ds.reads.lib_count());
-  write_param(filename, "max_read_length", cfg::get().ds.RL());
-  write_param(filename, "average_coverage", cfg::get().ds.avg_coverage());
-
-  for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-      write_param(filename, "read_length_" + ToString(i), cfg::get().ds.reads[i].data().read_length);
-      write_param(filename, "insert_size_" + ToString(i), cfg::get().ds.reads[i].data().mean_insert_size);
-      write_param(filename, "insert_size_deviation_" + ToString(i), cfg::get().ds.reads[i].data().insert_size_deviation);
-      write_param(filename, "insert_size_left_quantile_" + ToString(i), cfg::get().ds.reads[i].data().insert_size_left_quantile);
-      write_param(filename, "insert_size_right_quantile_" + ToString(i), cfg::get().ds.reads[i].data().insert_size_right_quantile);
-      write_param(filename, "insert_size_median_" + ToString(i), cfg::get().ds.reads[i].data().median_insert_size);
-      write_param(filename, "insert_size_mad_" + ToString(i), cfg::get().ds.reads[i].data().insert_size_mad);
-      write_param(filename, "average_coverage_" + ToString(i), cfg::get().ds.reads[i].data().average_coverage);
-      write_param(filename, "pi_threshold_" + ToString(i), cfg::get().ds.reads[i].data().pi_threshold);
-      write_param_map(filename, "histogram_" + ToString(i), cfg::get().ds.reads[i].data().insert_size_distribution);
-  }
+  cfg::get().ds.reads.save(prefix + ".lib_data");
 }
-
 
 void load(debruijn_config::simplification::tip_clipper& tc,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
@@ -211,14 +165,14 @@ void load(debruijn_config::simplification::bulge_remover& br,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
 
-  load(br.enabled					 		, pt, 	"enabled"					);
-  load(br.max_bulge_length_coefficient		, pt, 	"max_bulge_length_coefficient");
+  load(br.enabled                           , pt,   "enabled"					);
+  load(br.max_bulge_length_coefficient		, pt,   "max_bulge_length_coefficient");
   load(br.max_additive_length_coefficient	, pt,
        "max_additive_length_coefficient");
-  load(br.max_coverage, 					pt, 	"max_coverage");
-  load(br.max_relative_coverage, 			pt, 	"max_relative_coverage");
-  load(br.max_delta, 						pt, 	"max_delta");
-  load(br.max_relative_delta, 				pt, 	"max_relative_delta");
+  load(br.max_coverage,                     pt,     "max_coverage");
+  load(br.max_relative_coverage,            pt,     "max_relative_coverage");
+  load(br.max_delta,                        pt,     "max_delta");
+  load(br.max_relative_delta,               pt,     "max_relative_delta");
 }
 
 void load(debruijn_config::simplification::topology_tip_clipper& ttc,
@@ -337,13 +291,13 @@ void load(debruijn_config::smoothing_distance_estimator& ade,
 }
 
 inline void load(debruijn_config::ambiguous_distance_estimator& amde,
-		boost::property_tree::ptree const& pt, bool){
-	using config_common::load;
+        boost::property_tree::ptree const& pt, bool){
+    using config_common::load;
 
-	load(amde.enabled,						pt,		"enabled");
-	load(amde.haplom_threshold,				pt,		"haplom_threshold");
-	load(amde.relative_length_threshold,	pt,		"relative_length_threshold");
-	load(amde.relative_seq_threshold,		pt,		"relative_seq_threshold");
+    load(amde.enabled,						pt,		"enabled");
+    load(amde.haplom_threshold,				pt,		"haplom_threshold");
+    load(amde.relative_length_threshold,	pt,		"relative_length_threshold");
+    load(amde.relative_seq_threshold,		pt,		"relative_seq_threshold");
 }
 
 void load(debruijn_config::coverage_based_rr& cbrr,
@@ -698,7 +652,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
     load(cfg.simp, pt, "careful", false);
 
   if (cfg.diploid_mode)
-	  load(cfg.simp, pt, "diploid_simp", false);
+      load(cfg.simp, pt, "diploid_simp", false);
 
   cfg.simp.cbr.folder = cfg.output_dir + cfg.simp.cbr.folder + "/";
   load(cfg.info_printers, pt, "info_printers");
@@ -719,4 +673,3 @@ void load(debruijn_config& cfg, const std::string &filename) {
 }
 
 };
-

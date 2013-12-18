@@ -605,8 +605,12 @@ bool FinalRemoveErroneousEdges(
 //    boost::function<void(set<EdgeId>)> set_removal_handler_f = boost::bind(
 //                &omnigraph::simplification::SingleEdgeAdapter<set<EdgeId>>, _1, qual_removal_handler_f);
 //
-    boost::function<void(set<EdgeId>)> set_removal_handler_f = boost::bind(
+
+    boost::function<void(set<EdgeId>)> set_removal_handler_f(0);
+    if (removal_handler) {
+        set_removal_handler_f = boost::bind(
                 &omnigraph::simplification::SingleEdgeAdapter<set<EdgeId>>, _1, removal_handler);
+    }
 
     bool changed = RemoveRelativelyLowCoverageComponents(gp.g, gp.flanking_cov,
                                           cfg::get().simp.rcc, determined_coverage_threshold,

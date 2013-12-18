@@ -210,19 +210,13 @@ class DataSet {
 
     load(config);
 
-    for (auto it = libraries_.begin(); it != libraries_.end(); ++it) {
-    	it->update_relative_reads_filenames(input_dir);
-    }
+    for (auto it = libraries_.begin(); it != libraries_.end(); ++it)
+      it->update_relative_reads_filenames(input_dir);
   }
 
   void save(const std::string &filename) const {
     std::ofstream ofs(filename.c_str());
-    YAML::Node node;
-
-    for (auto it = library_begin(), et = library_end(); it != et; ++it)
-      node.push_back(*it);
-
-    ofs << node;
+    ofs << YAML::Node(*this);
   }
 
   void load(const YAML::Node &node) {
@@ -303,6 +297,18 @@ template<>
 struct convert<io::SequencingLibrary<> > {
   static Node encode(const io::SequencingLibrary<>& rhs);
   static bool decode(const Node& node, io::SequencingLibrary<>& rhs);
+};
+
+template<class Data>
+struct convert<io::DataSet<Data> > {
+  static Node encode(const io::DataSet<Data>& rhs) {
+    Node node;
+
+    for (auto it = rhs.library_begin(), et = rhs.library_end(); it != et; ++it)
+      node.push_back(*it);
+
+    return node;
+  }
 };
 }
 

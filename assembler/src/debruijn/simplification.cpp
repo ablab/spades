@@ -40,7 +40,6 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
     omnigraph::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
 
     stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
-    printer(ipp_before_first_gap_closer);
 
     //  QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, edge_qual);
 //    auto colorer = debruijn_graph::DefaultGPColorer(gp);
