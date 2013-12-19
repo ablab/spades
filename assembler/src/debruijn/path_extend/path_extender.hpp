@@ -393,7 +393,7 @@ public:
 
     BidirectionalPath* RepeatPath(const BidirectionalPath& p) {
         if (p.Size() == 0) {
-            return 0;
+            return empty_;
         }
         EdgeId last_e = p.Back();
         set<BidirectionalPath*> cov_paths = cov_map_.GetCoveringPaths(last_e);
