@@ -12,6 +12,8 @@
 using std::map;
 using std::set;
 namespace pacbio {
+DECL_LOGGER("PacbioStructures");
+
 template<class T>
 struct pair_iterator_less {
 	bool operator ()(pair<size_t, T> const& a, pair<size_t, T> const& b) const {
@@ -97,6 +99,15 @@ struct KmerCluster {
 		while (last_unique_ind != 0 && abs(sorted_positions[last_unique_ind].shift() - shift) > 50 ) {//!(sorted_positions[last_unique_ind].IsUnique())) {
 			last_unique_ind -= 1;
 		}
+ 		 first_unique_ind = 0;
+                while (first_unique_ind != size - 1 && !(sorted_positions[first_unique_ind].IsUnique())) {
+                        first_unique_ind += 1;
+                }
+                last_unique_ind = size - 1;
+                while (last_unique_ind != 0 && !(sorted_positions[last_unique_ind].IsUnique())) {
+                        last_unique_ind -= 1;
+                }
+
 		if (first_unique_ind > last_unique_ind && size > 100){
 		    WARN("bad big cluster");
 		    DEBUG("shift " << shift);
