@@ -335,7 +335,8 @@ public:
 
         size_t skip_identical_edges = 0;
         if (path.getLoopDetector().IsCycled(2, skip_identical_edges)) {
-            int loop_size = (int)path.getLoopDetector().LoopEdges(skip_identical_edges, 2);
+            return -1;
+            /*int loop_size = (int)path.getLoopDetector().LoopEdges(skip_identical_edges, 2);
             int incorrect_loop_count = (int)path.getLoopDetector().LastLoopCount(loop_size);
             BidirectionalPath small_loop = path.SubPath(path.Size() - loop_size);
             DEBUG("loop size " << loop_size << " incorrect loop count " << incorrect_loop_count);
@@ -361,7 +362,7 @@ public:
             path.getLoopDetector().RemoveLoop(skip_identical_edges, false);
             DEBUG("After removing");
             path.Print();
-            return pos_in_path;
+            return pos_in_path;*/
         } else {
             int last_edge_pos = FindPosIS(path);
             VERIFY(last_edge_pos > -1);
@@ -731,10 +732,12 @@ public:
             DEBUG("Checking IS cycle");
             int loop_pos = is_detector_.RemoveCycle(path);
             DEBUG("Removed IS cycle");
-            VERIFY(loop_pos != -1);
-            AddCycledEdges(path, loop_pos);
-            return true;
-        } else if (path.getLoopDetector().IsCycled(maxLoops_, skip_identical_edges)) {
+            if (loop_pos != -1) {
+                AddCycledEdges(path, loop_pos);
+                return true;
+            }
+        }
+        if (path.getLoopDetector().IsCycled(maxLoops_, skip_identical_edges)) {
             size_t loop_size = path.getLoopDetector().LoopEdges(skip_identical_edges, 1);
             DEBUG("Path is Cycled! skip identival edges = " << skip_identical_edges);
             path.Print();
