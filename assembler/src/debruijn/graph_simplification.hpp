@@ -307,7 +307,6 @@ bool ClipTips(Graph& g,
     auto condition = parser();
 
     INFO("Clipping tips");
-    INFO("Tip bound " << parser.max_length_bound());
     return ClipTips(g, parser.max_length_bound(), condition, removal_handler);
 }
 
