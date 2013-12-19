@@ -31,7 +31,6 @@
 
 #include "detail_coverage.hpp"
 #include "graph_read_correction.hpp"
-#include "ec_threshold_finder.hpp"
 #include "detail_coverage.hpp"
 
 #include "stats/chimera_stats.hpp"
@@ -308,7 +307,6 @@ bool ClipTips(Graph& g,
     auto condition = parser();
 
     INFO("Clipping tips");
-    INFO("Tip bound " << parser.max_length_bound());
     return ClipTips(g, parser.max_length_bound(), condition, removal_handler);
 }
 
