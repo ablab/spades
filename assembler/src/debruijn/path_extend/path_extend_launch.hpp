@@ -222,9 +222,10 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	}
 	const pe_config::ParamSetT& pset = cfg::get().pe_params.param_set;
 
-	INFO("Using " << libs.size() << " paired lib(s)");
-	INFO("Using " << scaff_libs.size() << " scaffolding libs");
-	INFO("Using " << long_reads.size() << " long read libs");
+	INFO("Using " << libs.size() << " paired-end libraries(s)");
+	INFO("Using " << scaff_libs.size() << " paired-end scaffolding libraries(s)");
+	INFO("Using " << mp_libs.size() << " mate-pair libraries(s)");
+	INFO("Using " << long_reads.size() << " single read libraries(s)");
 	INFO("Scaffolder is " << (pset.scaffolder_options.on ? "on" : "off"));
 
 	ContigWriter writer(gp.g);
