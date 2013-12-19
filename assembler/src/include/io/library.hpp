@@ -220,6 +220,7 @@ class DataSet {
   }
 
   void load(const YAML::Node &node) {
+    clear();
     for (YAML::const_iterator it = node.begin(); it != node.end(); ++it)
       libraries_.push_back(it->as<Library>());
   }
