@@ -579,7 +579,7 @@ inline void NextPathSearcher::FindScaffoldingCandidates(EdgeId e, size_t distanc
     DEBUG( distance_to_tip << " " << distance_to_tip - g_.length(e) << " " << search_dist_);
 
     set<EdgeId> candidate_edges;
-    int min_distance = (int) distance_to_tip - (int) weight_counter_.GetLib().GetLeftVar();
+    int min_distance = std::max((int) distance_to_tip - (int) weight_counter_.GetLib().GetLeftVar(), 0);
     int max_distance = (int) search_dist_ + (int) g_.length(e);
     DEBUG("Looking in range " << min_distance << " " << max_distance);
     weight_counter_.FindJumpCandidates(e, min_distance, max_distance, long_edge_len_, candidate_edges);
