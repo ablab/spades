@@ -104,6 +104,7 @@ inline debruijn_config::construction CreateDefaultConstructionConfig() {
     early_tc.enable = false;
     config.early_tc = early_tc;
     config.keep_perfect_loops = true;
+    config.read_buffer_size = 524288;
     return config;
 }
 
@@ -120,7 +121,7 @@ void EarlyClipTips(size_t k, const debruijn_config::construction params, size_t 
 template<class Graph, class Read, class Index>
 size_t ConstructGraphUsingExtentionIndex(const debruijn_config::construction params,
 		io::ReadStreamList<Read>& streams, Graph& g,
-		Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
+		Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr(), size_t read_buffer_size = 536870912) {
 
     size_t k = g.k();
 	INFO("Constructing DeBruijn graph for k=" << k);
@@ -135,7 +136,7 @@ size_t ConstructGraphUsingExtentionIndex(const debruijn_config::construction par
 	ExtensionIndex ext((unsigned) k, index.inner_index().workdir());
 
 	//fixme hack
-	size_t rl = ExtensionIndexBuilder().BuildExtensionIndexFromStream(ext, streams, (contigs_stream == 0) ? 0 : &(*contigs_stream));
+	size_t rl = ExtensionIndexBuilder().BuildExtensionIndexFromStream(ext, streams, (contigs_stream == 0) ? 0 : &(*contigs_stream), params.read_buffer_size);
 
 	EarlyClipTips(k, params, rl, ext);
 
@@ -148,7 +149,7 @@ size_t ConstructGraphUsingExtentionIndex(const debruijn_config::construction par
     typedef typename Index::InnerIndexT InnerIndex;
     typedef typename EdgeIndexHelper<InnerIndex>::CoverageAndGraphPositionFillingIndexBuilderT IndexBuilder;
 	INFO("Building index with coverage from graph")
-	IndexBuilder().BuildIndexFromGraph(index.inner_index(), g);
+	IndexBuilder().BuildIndexFromGraph(index.inner_index(), g, read_buffer_size);
 	IndexBuilder().ParallelFillCoverage(index.inner_index(), streams);
 	return rl;
 }
@@ -158,7 +159,7 @@ size_t ConstructGraph(const debruijn_config::construction &params,
                       Streams& streams, Graph& g,
 		 Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
 	if(params.con_mode == construction_mode::con_extention) {
-		return ConstructGraphUsingExtentionIndex(params, streams, g, index, contigs_stream);
+		return ConstructGraphUsingExtentionIndex(params, streams, g, index, contigs_stream, params.read_buffer_size);
 //	} else if(params.con_mode == construction_mode::con_old){
 //		return ConstructGraphUsingOldIndex(k, streams, g, index, contigs_stream);
 	} else {

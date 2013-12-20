@@ -14,8 +14,8 @@ public:
 
     template<class Graph>
     void BuildIndexFromGraph(IndexT &index,
-                             const Graph/*T*/ &g) const {
-        base::BuildIndexFromGraph(index, g);
+                             const Graph/*T*/ &g, size_t read_buffer_size = 536870912) const {
+        base::BuildIndexFromGraph(index, g, read_buffer_size);
 
         // Now use the index to fill the coverage and EdgeId's
         INFO("Collecting k-mer coverage information from graph, this takes a while.");

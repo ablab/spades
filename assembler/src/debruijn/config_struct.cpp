@@ -149,6 +149,8 @@ inline void load(debruijn_config::construction& con,
     using config_common::load;
     load(con.con_mode, pt, "mode", complete);
     load(con.keep_perfect_loops, pt, "keep_perfect_loops", complete);
+    load(con.read_buffer_size, pt, "read_buffer_size", complete);
+    con.read_buffer_size *= 1024 * 1024;
     load(con.early_tc, pt, "early_tip_clipper", complete);
 }
 

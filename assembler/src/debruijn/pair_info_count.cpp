@@ -169,18 +169,9 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
         gp.paired_indices.Init();
     }
 
-    bool has_rr_reads = false;
-    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        if (cfg::get().ds.reads[i].is_repeat_resolvable()) {
-            has_rr_reads = true;
-            break;
-        }
-    }
-    bool map_single_reads = cfg::get().always_single_reads_rr || (!has_rr_reads && cfg::get().single_reads_rr);
-
     size_t edge_length_threshold = stats::Nx(gp.g, 50);
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        INFO("Processing library #" << i);
+        INFO("Estimating insert size for library #" << i);
         if (cfg::get().ds.reads[i].is_paired()) {
 
             bool insert_size_refined;
@@ -212,8 +203,28 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
                         ", right quantile = " << cfg::get().ds.reads[i].data().insert_size_right_quantile <<
                         ", read length = " << cfg::get().ds.reads[i].data().read_length);
             }
+        }
+    }
+
+    bool has_good_rr_reads = false;
+    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+        if (cfg::get().ds.reads[i].is_paired() &&
+                (cfg::get().ds.reads[i].data().mean_insert_size == 0.0 ||
+                cfg::get().ds.reads[i].data().mean_insert_size < 1.1 * (double) cfg::get().ds.reads[i].data().read_length)) {
+            continue;
+        }
+        if (cfg::get().ds.reads[i].is_repeat_resolvable()) {
+            has_good_rr_reads = true;
+            break;
+        }
+    }
+    bool map_single_reads = cfg::get().always_single_reads_rr || (!has_good_rr_reads && cfg::get().single_reads_rr);
+
+    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+        INFO("Mapping library #" << i);
+        if (cfg::get().ds.reads[i].is_paired() && cfg::get().ds.reads[i].data().mean_insert_size != 0.0) {
             INFO("Mapping paired reads (takes a while) ");
-            bool calculate_threshold = cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd;
+            bool calculate_threshold = (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd);
             ProcessPairedReads(gp, i, calculate_threshold, map_single_reads);
         }
 

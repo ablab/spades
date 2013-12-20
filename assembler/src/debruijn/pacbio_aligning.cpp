@@ -28,6 +28,7 @@ void ProcessReadsBatch(conj_graph_pack &gp,
                                               pacbio::GapStorage<Graph>(gp.g, min_gap_quantity));
     vector<pacbio::StatsCounter> stats_by_thread(cfg::get().max_threads);
 
+
 #   pragma omp parallel for shared(reads, long_reads_by_thread, pac_index, n)
     for (size_t i = 0; i < buf_size; ++i) {
         if (i % 1000 == 0) {

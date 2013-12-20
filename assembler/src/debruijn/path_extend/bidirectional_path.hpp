@@ -393,13 +393,13 @@ public:
 		conj_path = path;
 	}
 
-	BidirectionalPath* GetConjPath() {
+	const BidirectionalPath* GetConjPath() const {
 		return conj_path;
 	}
 
-    const BidirectionalPath* GetConstConjPath() const {
-        return conj_path;
-    }
+	BidirectionalPath* GetConjPath() {
+	    return conj_path;
+	}
 
     void SetWeight(double w){
     	weight_ = w;
@@ -597,6 +597,10 @@ public:
         return -1;
     }
 
+    bool Contains(EdgeId e) const {
+        return FindFirst(e) != -1;
+    }
+
     vector<size_t> FindAll(EdgeId e, size_t start = 0) const {
         vector<size_t> result;
         for (size_t i = start; i < Size(); ++i) {
@@ -746,8 +750,8 @@ public:
 
     BidirectionalPath SubPath(size_t from, size_t to) const {
         BidirectionalPath result(g_);
-        VERIFY(to <= Size());
-        for (size_t i = from; i < to; ++i) {
+        //VERIFY(to <= Size());
+        for (size_t i = from; i < min(to, Size()); ++i) {
             result.PushBack(data_[i], gapLength_[i]);
         }
         return result;
@@ -1078,6 +1082,13 @@ public:
         return data_[index].second;
     }
 
+    void DeleteAllPaths() {
+        for (size_t i = 0; i < data_.size(); ++i) {
+            delete data_[i].first;
+            delete data_[i].second;
+        }
+    }
+
     size_t size() const {
         return data_.size();
     }
@@ -1148,6 +1159,19 @@ public:
     		}
     	}
     	DEBUG("empty paths are removed");
+    }
+
+    void FilterInterstandBulges(){
+        DEBUG ("Try to delete paths with interstand bulges");
+        for (Iterator iter = begin(); iter != end(); ++iter){
+            if (iter.get()->IsInterstrandBulge()){
+                iter.get()->PopBack();
+            }
+            if (iter.getConjugate()->IsInterstrandBulge()){
+                iter.getConjugate()->PopBack();
+            }
+        }
+        DEBUG("deleted paths with interstand bulges");
     }
 
     void ResetPathsId() {
@@ -1416,7 +1440,51 @@ inline bool LoopDetector::PrevEdgeInShortLoop() const {
     }
     return false;
 }
-
+inline pair<size_t, size_t> ComparePaths(size_t start_pos1, size_t start_pos2,
+                                  const BidirectionalPath& path1,
+                                  const BidirectionalPath& path2,
+                                  size_t max_diff) {
+    path1.Print();
+    path2.Print();
+    if (start_pos1 >= path1.Size() || start_pos2 >= path2.Size()) {
+        return make_pair(start_pos1, start_pos2);
+    }
+    const Graph& g = path1.graph();
+    size_t cur_pos = start_pos1;
+    size_t last2 = start_pos2;
+    size_t last1 = cur_pos;
+    cur_pos++;
+    size_t diff_len = 0;
+    while (cur_pos < path1.Size()) {
+        if (diff_len > max_diff) {
+            return make_pair(last1, last2);
+        }
+        EdgeId e = path1[cur_pos];
+        vector<size_t> poses2 = path2.FindAll(e);
+        bool found = false;
+        for (size_t pos2 = 0; pos2 < poses2.size(); ++pos2) {
+            if (poses2[pos2] > last2) {
+                if (path2.LengthAt(last2) - path2.LengthAt(poses2[pos2])
+                        - g.length(path2.At(last2)) - path2.GapAt(poses2[pos2]) > max_diff) {
+                    break;
+                }
+                last2 = poses2[pos2];
+                last1 = cur_pos;
+                DEBUG("found " << cur_pos);
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            diff_len += g.length(e) + path1.GapAt(cur_pos);
+            DEBUG("not found " << cur_pos << " now diff len " << diff_len);
+        } else {
+            diff_len = 0;
+        }
+        cur_pos++;
+    }
+    return make_pair(last1, last2);
+}
 } // path extend
 
 #endif /* BIDIRECTIONAL_PATH_H_ */

@@ -154,45 +154,6 @@ private:
         }
     }
 
-    pair<size_t, size_t> ComparePaths(size_t start_pos1, size_t start_pos2,
-                                      const BidirectionalPath& path1,
-                                      const BidirectionalPath& path2,
-                                      size_t max_overlap) const {
-        size_t cur_pos = start_pos1;
-        size_t last2 = start_pos2;
-        size_t last1 = cur_pos;
-        cur_pos++;
-        size_t diff_len = 0;
-        while (cur_pos < path1.Size()) {
-            if (diff_len > max_overlap) {
-                return make_pair(last1, last2);
-            }
-            EdgeId e = path1[cur_pos];
-            vector<size_t> poses2 = path2.FindAll(e);
-            bool found = false;
-            for (size_t pos2 = 0; pos2 < poses2.size(); ++pos2) {
-                if (poses2[pos2] > last2) {
-                    if (path2.LengthAt(last2) - path2.LengthAt(poses2[pos2])
-                            - g_.length(path2.At(last2)) - path2.GapAt(poses2[pos2]) > max_overlap) {
-                        break;
-                    }
-                    last2 = poses2[pos2];
-                    last1 = cur_pos;
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                diff_len += g_.length(e) + path1.GapAt(cur_pos);
-            } else {
-                diff_len = 0;
-            }
-            cur_pos++;
-        }
-        return make_pair(last1, last2);
-    }
-
-
 	bool CutOverlaps(BidirectionalPath* path1, size_t first1, size_t last1, size_t size1,
                      BidirectionalPath* path2, size_t first2, size_t last2, size_t size2,
                      bool del_subpaths, bool del_begins, bool del_all) const {
@@ -405,7 +366,7 @@ public:
 		return edges;
 	}
 
-    PathContainer extendSeeds(PathContainer& seeds, PathExtender& pathExtender) {
+    PathContainer extendSeeds(PathContainer& seeds, ContigsMaker& pathExtender) {
         PathContainer paths;
         pathExtender.GrowAll(seeds, &paths);
         return paths;

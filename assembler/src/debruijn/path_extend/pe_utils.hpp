@@ -87,6 +87,13 @@ public:
         }
     }
 
+    virtual ~GraphCoverageMap() {
+        delete empty_;
+        for (auto iter = edgeCoverage_.begin(); iter != edgeCoverage_.end(); ++iter) {
+            delete iter->second;
+        }
+    }
+
 	void Subscribe(BidirectionalPath * path) {
 		path->Subscribe(this);
 		for (size_t i = 0; i < path->Size(); ++i) {
@@ -115,7 +122,6 @@ public:
         if (iter != edgeCoverage_.end()) {
             return iter->second;
         }
-
         return empty_;
     }
 
@@ -237,6 +243,8 @@ public:
     size_t size() const {
         return edgeCoverage_.size();
     }
+private:
+    GraphCoverageMap(const GraphCoverageMap& t) : g_(t.g_), empty_(t.empty_) {}
 };
 
 

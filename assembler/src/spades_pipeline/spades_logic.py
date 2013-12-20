@@ -6,7 +6,6 @@
 # See file LICENSE for details.
 ############################################################################
 
-
 import os
 import sys
 import shutil
@@ -132,7 +131,9 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):
             additional_contigs_fname = None
     else:
         additional_contigs_fname = None
-
+    if "read_buffer_size" in cfg.__dict__:
+        construction_cfg_file_name = os.path.join(dst_configs, "construction.info")
+        process_cfg.substitute_params(construction_cfg_file_name, {"read_buffer_size": cfg.read_buffer_size}, log)
     prepare_config_spades(cfg_file_name, cfg, log, additional_contigs_fname, K, stage, saves_dir, last_one)
 
     command = [os.path.join(execution_home, "spades"), cfg_file_name]

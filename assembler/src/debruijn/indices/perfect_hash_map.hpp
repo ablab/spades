@@ -381,9 +381,9 @@ class DeBruijnGraphKMerIndexBuilder<Index, runtime_k::RtSeq> {
   typedef Index IndexT;
 
   template<class Graph>
-  void BuildIndexFromGraph(IndexT &index, const Graph &g) const {
+  void BuildIndexFromGraph(IndexT &index, const Graph &g, size_t read_buffer_size = 536870912) const {
       DeBruijnGraphKMerSplitter<Graph, StoringTypeFilter<typename Index::storing_type>> splitter(index.workdir(), index.k(),
-                                                g);
+                                                g, read_buffer_size);
       KMerDiskCounter<runtime_k::RtSeq> counter(index.workdir(), splitter);
       index.BuildIndex(counter, 16, 1);
   }

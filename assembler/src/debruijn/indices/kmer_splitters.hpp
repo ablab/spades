@@ -47,6 +47,8 @@ class DeBruijnKMerSplitter : public RtSeqKMerSplitter {
   bool skip_not_minimal_;
   KmerFilter kmer_filter_;
  protected:
+  size_t read_buffer_size_;
+ protected:
   size_t FillBufferFromSequence(const Sequence &seq,
                                 KMerBuffer &buffer, unsigned num_files) const {
       size_t kmers = 0;
@@ -102,8 +104,8 @@ class DeBruijnKMerSplitter : public RtSeqKMerSplitter {
 
  public:
   DeBruijnKMerSplitter(const std::string &work_dir,
-                       unsigned K, KmerFilter kmer_filter, uint32_t seed = 0)
-      : RtSeqKMerSplitter(work_dir, K, seed), kmer_filter_(kmer_filter) {
+                       unsigned K, KmerFilter kmer_filter, size_t read_buffer_size = READS_BUFFER_SIZE, uint32_t seed = 0)
+      : RtSeqKMerSplitter(work_dir, K, seed), kmer_filter_(kmer_filter), read_buffer_size_(read_buffer_size) {
   }
  protected:
   DECL_LOGGER("DeBruijnKMerSplitter");
@@ -126,8 +128,9 @@ class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
   DeBruijnReadKMerSplitter(const std::string &work_dir,
                            unsigned K, uint32_t seed,
                            io::ReadStreamList<Read>& streams,
-                           io::SingleStream* contigs_stream = 0)
-      : DeBruijnKMerSplitter<KmerFilter>(work_dir, K, KmerFilter(), seed),
+                           io::SingleStream* contigs_stream = 0,
+                           size_t read_buffer_size = READS_BUFFER_SIZE)
+      : DeBruijnKMerSplitter<KmerFilter>(work_dir, K, KmerFilter(), read_buffer_size, seed),
         streams_(streams), contigs_(contigs_stream), rl_(0) {
   }
 
@@ -172,16 +175,19 @@ path::files_t DeBruijnReadKMerSplitter<Read, KmerFilter>::Split(size_t num_files
     WARN("Do 'ulimit -n " << file_limit << "' in the console to overcome the limit");
   }
 
-  size_t reads_buffer_size = READS_BUFFER_SIZE;
+  size_t reads_buffer_size = DeBruijnKMerSplitter<KmerFilter>::read_buffer_size_;
+  if (reads_buffer_size == 0) {
+    reads_buffer_size = READS_BUFFER_SIZE;
 # ifdef SPADES_USE_JEMALLOC
-  const size_t *cmem = 0;
-  size_t clen = sizeof(cmem);
+    const size_t *cmem = 0;
+    size_t clen = sizeof(cmem);
 
-  je_mallctl("stats.cactive", &cmem, &clen, NULL, 0);
-  size_t mem_limit =  (size_t)((double)(get_memory_limit() - *cmem) / (nthreads * 3));
-  INFO("Memory available for splitting buffers: " << (double)mem_limit / 1024.0 / 1024.0 / 1024.0 << " Gb");
-  reads_buffer_size = std::min(reads_buffer_size, mem_limit);
+    je_mallctl("stats.cactive", &cmem, &clen, NULL, 0);
+    size_t mem_limit =  (size_t)((double)(get_memory_limit() - *cmem) / (nthreads * 3));
+    INFO("Memory available for splitting buffers: " << (double)mem_limit / 1024.0 / 1024.0 / 1024.0 << " Gb");
+    reads_buffer_size = std::min(reads_buffer_size, mem_limit);
 # endif
+  }
   size_t cell_size = reads_buffer_size /
                      (num_files * runtime_k::RtSeq::GetDataSize(this->K_) * sizeof(runtime_k::RtSeq::DataType));
 
@@ -252,8 +258,8 @@ class DeBruijnGraphKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
 
  public:
   DeBruijnGraphKMerSplitter(const std::string &work_dir,
-                            unsigned K, const Graph &g)
-      : DeBruijnKMerSplitter<KmerFilter>(work_dir, K, KmerFilter()), g_(g) {}
+                            unsigned K, const Graph &g, size_t read_buffer_size = READS_BUFFER_SIZE)
+      : DeBruijnKMerSplitter<KmerFilter>(work_dir, K, KmerFilter(), read_buffer_size), g_(g) {}
 
   virtual path::files_t Split(size_t num_files);
 };
@@ -290,16 +296,19 @@ path::files_t DeBruijnGraphKMerSplitter<Graph, KmerFilter>::Split(size_t num_fil
     WARN("Do 'ulimit -n " << file_limit << "' in the console to overcome the limit");
   }
 
-  size_t reads_buffer_size = READS_BUFFER_SIZE;
+  size_t reads_buffer_size = DeBruijnKMerSplitter<KmerFilter>::read_buffer_size_;
+  if (reads_buffer_size == 0) {
+    reads_buffer_size = READS_BUFFER_SIZE;
 # ifdef SPADES_USE_JEMALLOC
-  const size_t *cmem = 0;
-  size_t clen = sizeof(cmem);
+    const size_t *cmem = 0;
+    size_t clen = sizeof(cmem);
 
-  je_mallctl("stats.cactive", &cmem, &clen, NULL, 0);
-  size_t mem_limit =  (size_t)((double)(get_memory_limit() - *cmem) / (3));
-  INFO("Memory available for splitting buffers: " << (double)mem_limit / 1024.0 / 1024.0 / 1024.0 << " Gb");
-  reads_buffer_size = std::min(reads_buffer_size, mem_limit);
+    je_mallctl("stats.cactive", &cmem, &clen, NULL, 0);
+    size_t mem_limit =  (size_t)((double)(get_memory_limit() - *cmem) / (3));
+    INFO("Memory available for splitting buffers: " << (double)mem_limit / 1024.0 / 1024.0 / 1024.0 << " Gb");
+    reads_buffer_size = std::min(reads_buffer_size, mem_limit);
 # endif
+  }
   size_t cell_size = reads_buffer_size /
                      (num_files * runtime_k::RtSeq::GetDataSize(this->K_) * sizeof(runtime_k::RtSeq::DataType));
   INFO("Using cell size of " << cell_size);
@@ -340,8 +349,8 @@ class DeBruijnKMerKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
 
  public:
   DeBruijnKMerKMerSplitter(const std::string &work_dir,
-                           unsigned K_target, unsigned K_source, bool add_rc)
-      : DeBruijnKMerSplitter<KmerFilter>(work_dir, K_target, KmerFilter()), K_source_(K_source), add_rc_(add_rc) {}
+                           unsigned K_target, unsigned K_source, bool add_rc, size_t read_buffer_size = READS_BUFFER_SIZE)
+      : DeBruijnKMerSplitter<KmerFilter>(work_dir, K_target, KmerFilter(), read_buffer_size), K_source_(K_source), add_rc_(add_rc) {}
 
   void AddKMers(const std::string &file) {
     kmers_.push_back(file);
@@ -383,16 +392,19 @@ inline path::files_t DeBruijnKMerKMerSplitter<KmerFilter>::Split(size_t num_file
     WARN("Do 'ulimit -n " << file_limit << "' in the console to overcome the limit");
   }
 
-  size_t reads_buffer_size = READS_BUFFER_SIZE;
+  size_t reads_buffer_size = DeBruijnKMerSplitter<KmerFilter>::read_buffer_size_;
+  if (reads_buffer_size == 0) {
+    reads_buffer_size = READS_BUFFER_SIZE;
 # ifdef SPADES_USE_JEMALLOC
-  const size_t *cmem = 0;
-  size_t clen = sizeof(cmem);
+    const size_t *cmem = 0;
+    size_t clen = sizeof(cmem);
 
-  je_mallctl("stats.cactive", &cmem, &clen, NULL, 0);
-  size_t mem_limit =  (size_t)((double)(get_memory_limit() - *cmem) / (nthreads * 3));
-  INFO("Memory available for splitting buffers: " << (double)mem_limit / 1024.0 / 1024.0 / 1024.0 << " Gb");
-  reads_buffer_size = std::min(reads_buffer_size, mem_limit);
+    je_mallctl("stats.cactive", &cmem, &clen, NULL, 0);
+    size_t mem_limit =  (size_t)((double)(get_memory_limit() - *cmem) / (nthreads * 3));
+    INFO("Memory available for splitting buffers: " << (double)mem_limit / 1024.0 / 1024.0 / 1024.0 << " Gb");
+    reads_buffer_size = std::min(reads_buffer_size, mem_limit);
 # endif
+  }
   size_t cell_size = reads_buffer_size /
                      (num_files * runtime_k::RtSeq::GetDataSize(this->K_) * sizeof(runtime_k::RtSeq::DataType));
   // Set sane minimum cell size

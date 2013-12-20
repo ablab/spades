@@ -551,15 +551,13 @@ protected:
     DECL_LOGGER("ExtensionChooser")
 
 public:
-    UniqueEdgeAnalyzer(const Graph& g, GraphCoverageMap cov_map,
+    UniqueEdgeAnalyzer(const Graph& g, const GraphCoverageMap& cov_map,
                        double filter_threshold, double prior_threshold)
             : g_(g),
               cov_map_(cov_map),
               filter_threshold_(filter_threshold),
               prior_threshold_(prior_threshold),
-              unique_edges_founded_(false) {
-
-    }
+              unique_edges_founded_(false) { }
 
     bool IsUnique(EdgeId e) {
         if (!unique_edges_founded_) {
@@ -719,7 +717,7 @@ private:
     }
 
     const Graph& g_;
-    GraphCoverageMap cov_map_;
+    const GraphCoverageMap& cov_map_;
     double filter_threshold_;
     double prior_threshold_;bool unique_edges_founded_;
     std::set<EdgeId> unique_edges_;
@@ -791,7 +789,7 @@ public:
               filtering_threshold_(filtering_threshold),
               weight_priority_threshold_(weight_priority_threshold),
               cov_map_(g, pc),
-              unique_edge_analyzer_(g, GraphCoverageMap(g, pc), filtering_threshold, unique_edge_priority_threshold),
+              unique_edge_analyzer_(g, cov_map_, filtering_threshold, unique_edge_priority_threshold),
               simple_scaffolding_(g) {
 
     }
@@ -916,7 +914,7 @@ private:
 class MatePairExtensionChooser : public ExtensionChooser {
 public:
     MatePairExtensionChooser(const Graph& g, PairedInfoLibrary& lib,
-                             const GraphCoverageMap& cov_map)
+                              const GraphCoverageMap& cov_map)
             : ExtensionChooser(g, 0, .0),
               g_(g),
               lib_(lib),
@@ -960,7 +958,20 @@ public:
             }
         } else {
             DEBUG("try scaffold tree");
-            //next_paths = path_searcher_.ScaffoldTree(path);
+//            next_paths = path_searcher_.ScaffoldTree(path);
+//            VERIFY(next_paths.size() <= 1);
+//            if (next_paths.size() == 1) {
+//                BidirectionalPath& p = **next_paths.begin();
+//                DEBUG("Path to add dirty ");
+//                p.Print();
+//                for (size_t i = 0; i < p.Size() - 1; ++i) {
+//                    path.PushBack(p[i], p.GapAt(i));
+//                }
+//                DEBUG("Finally the path, and an edge to add " << g_.int_id(p.Back()) << " : " << g_.length(p.Back()));
+//                path.Print();
+//
+//                return EdgeContainer(1, EdgeWithDistance(p.Back(), p.GapAt(p.Size() - 1)));
+//            }
         }
         DEBUG("next paths size " << next_paths.size());
         EdgeContainer result = ChooseBest(path, next_paths);
@@ -982,9 +993,18 @@ private:
         EdgeWithDistance max = *edges.begin();
         for (EdgeWithDistance e : edges) {
             double w = weight_counter_.CountPairInfo(p, 0, p.Size(), e.e_, 0);
+            DEBUG("buldge " << g_.int_id(e.e_) << " w = " << w);
             if (w > max_w) {
                 max_w = w;
                 max = e;
+            }
+        }
+        for (EdgeWithDistance e : edges) {
+            if (e.e_ == max.e_) {
+                continue;
+            }
+            if (weight_counter_.CountPairInfo(p, 0, p.Size(), e.e_, 0) == max_w) {
+                return edges;
             }
         }
         EdgeContainer result;
@@ -1028,7 +1048,8 @@ private:
                 if (unique_edge_analyzer_.IsUnique(init_path.At(i1))
                         && unique_edge_analyzer_.IsUnique(path1.At(i2))
                         && weight_counter_.HasPI(init_path.At(i1), path1.At(i2), gap)) {
-                        return true;
+                    DEBUG("has unique edge " << g_.int_id(init_path.At(i1)) << " " <<g_.int_id(path1.At(i2)));
+                    return true;
                 }
             }
         }
@@ -1057,37 +1078,9 @@ private:
 
         if (common_w < 0.8 * (not_common_w1 + common_w)||
                 (HasUniqueEdges(init_path, path1, unique_init_edges) && !HasUniqueEdges(init_path, path2, unique_init_edges))) {
+            DEBUG("common_w " << common_w  << " sum*0.8  = " << 0.8 * (not_common_w1 + common_w))
             return true;
-        } /*else {
-            map<BidirectionalPath*, double> result;
-            std::map<size_t, double> edges_to_exlude;
-            int excluded_edges = analyzer_.ExcludeTrivialWithBulges(init_path, edges_to_exlude);
-            double common_w1 = 0;
-            not_common_w1 = 0;
-            double not_common_w2 = 0;
-            for (int i = (int)excluded_edges; i >= 0; --i) {
-                if (pi1.count(i) > 0 && pi2.count(i) > 0 ) {
-                    common_w1 += std::min(pi1.at(i), pi2.at(i));
-                }
-                if (pi1.count(i) > 0) {
-                    not_common_w1 += pi1.at(i);
-                }
-                if (pi2.count(i) > 0) {
-                    not_common_w2 += pi2.at(i);
-                }
-            }
-            not_common_w1 -= common_w1;
-            not_common_w2 -= common_w1;
-            DEBUG("excluded edges " << excluded_edges
-                  << " common was " << common_w << " now " << common_w1
-                  << " not common1 " << not_common_w1 << " not_common w2 " << not_common_w2);
-            DEBUG("common pi more then 0.8");
-            if (common_w1 < 0.8 * (not_common_w1 + common_w1) && not_common_w1 > 2 * not_common_w2) {
-                DEBUG("delete common helped");
-                return true;
-            }
-            return false;
-        }*/
+        }
         return false;
     }
     set<size_t> FindNotCommonEdges(const BidirectionalPath& path, const std::map<BidirectionalPath*, map<size_t, double> >& all_pi) {
