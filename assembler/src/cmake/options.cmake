@@ -10,7 +10,7 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 
 # Define option for turning on/off debug logging
-option(SPADES_DEBUG_LOGGING "Turn on debug / trace logging" OFF)
+option(SPADES_DEBUG_LOGGING "Turn on debug / trace logging" ON)
 
 # Define option for static / dynamic build.
 option(SPADES_STATIC_BUILD "Link SPAdes statically" OFF)
