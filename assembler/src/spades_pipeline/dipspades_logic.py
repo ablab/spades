@@ -12,6 +12,7 @@ import getopt
 import os
 import logging
 import shutil
+import errno
 import options_storage
 
 class DS_Args_List:
@@ -283,16 +284,22 @@ def main(ds_command_line, general_command_line, spades_home, bin_home):
         log.info("Thank you for using dipSPAdes!")
     except Exception:
         exc_type, exc_value, _ = sys.exc_info()
-        if exc_type == OSError and exc_value.errno == errno.ENOEXEC: # Exec format error
-            support.error("It looks like you are using SPAdes binaries for another platform.\n" + get_spades_binaries_info_message(),
-                binary_name='dipSPAdes')
+        if exc_type == SystemExit:
+            sys.exit(exc_value)
+        else:
+            if exc_type == OSError and exc_value.errno == errno.ENOEXEC: # Exec format error
+                support.error("It looks like you are using SPAdes binaries for another platform.\n" +
+                              support.get_spades_binaries_info_message(), binary_name='dipSPAdes')
+            else:
+                log.exception(exc_value)
+                support.error("exception caught: %s" % exc_type, log)
+    except BaseException: # since python 2.5 system-exiting exceptions (e.g. KeyboardInterrupt) are derived from BaseException
+        exc_type, exc_value, _ = sys.exc_info()
+        if exc_type == SystemExit:
+            sys.exit(exc_value)
         else:
             log.exception(exc_value)
             support.error("exception caught: %s" % exc_type, log, binary_name='dipSPAdes')
-    except BaseException: # since python 2.5 system-exiting exceptions (e.g. KeyboardInterrupt) are derived from BaseException
-        exc_type, exc_value, _ = sys.exc_info()
-        log.exception(exc_value)
-        support.error("exception caught: %s" % exc_type, log, binary_name='dipSPAdes')
 
 
 if __name__ == '__main__':
@@ -309,4 +316,4 @@ if __name__ == '__main__':
         sys.exit(1)
     import spades_init
     spades_init.init()
-    main(sys.argv, spades_init.spades_home, spades_init.bin_home)
+    main(" ".join(sys.argv), "", spades_init.spades_home, spades_init.bin_home)

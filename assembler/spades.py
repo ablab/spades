@@ -126,19 +126,6 @@ def print_used_values(cfg, log):
     log.info("")
 
 
-def get_spades_binaries_info_message():
-    return "You can obtain SPAdes binaries in one of two ways:" + \
-           "\n1. Download them from http://bioinf.spbau.ru/content/spades-download" + \
-           "\n2. Build source code with ./spades_compile.sh script"
-
-
-def check_binaries(binary_dir, log):
-    for binary in ["hammer", "spades", "bwa-spades"]:
-        binary_path = os.path.join(binary_dir, binary)
-        if not os.path.isfile(binary_path):
-            support.error("SPAdes binaries not found: " + binary_path + "\n" + get_spades_binaries_info_message(), log)
-
-
 def fill_cfg(options_to_parse, log):
     try:
         options, not_options = getopt.gnu_getopt(options_to_parse, options_storage.short_options, options_storage.long_options)
@@ -412,7 +399,7 @@ def main(args):
     console.setLevel(logging.DEBUG)
     log.addHandler(console)
 
-    check_binaries(bin_home, log)
+    support.check_binaries(bin_home, log)
 
     # parse options and safe all parameters to cfg
     cfg, dataset_data = fill_cfg(args, log)
@@ -724,15 +711,20 @@ def main(args):
 
     except Exception:
         exc_type, exc_value, _ = sys.exc_info()
-        if exc_type != SystemExit:
+        if exc_type == SystemExit:
+            sys.exit(exc_value)
+        else:
             if exc_type == OSError and exc_value.errno == errno.ENOEXEC: # Exec format error
-                support.error("It looks like you are using SPAdes binaries for another platform.\n" + get_spades_binaries_info_message())
+                support.error("It looks like you are using SPAdes binaries for another platform.\n" +
+                              support.get_spades_binaries_info_message())
             else:
                 log.exception(exc_value)
                 support.error("exception caught: %s" % exc_type, log)
     except BaseException: # since python 2.5 system-exiting exceptions (e.g. KeyboardInterrupt) are derived from BaseException
         exc_type, exc_value, _ = sys.exc_info()
-        if exc_type != SystemExit:
+        if exc_type == SystemExit:
+            sys.exit(exc_value)
+        else:
             log.exception(exc_value)
             support.error("exception caught: %s" % exc_type, log)
 

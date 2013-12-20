@@ -15,11 +15,13 @@ import support
 import options_storage
 import dipspades_logic
 
+
 def command_line_to_str(argv):
     cl = ""
     for obj in argv:
         cl += str(obj) + " "
     return cl
+
 
 def main():
     all_long_options = list(set(options_storage.long_options + dipspades_logic.DS_Args_List.long_options))
@@ -96,7 +98,7 @@ def main():
     spades_result = os.path.join(spades_output_dir, "contigs.fasta")
     if not os.path.isfile(spades_result):
         support.error("Something went wrong and SPAdes did not generate haplocontigs. "
-                         "DipSPAdes cannot proceed without them, aborting.", binary_name='dipSPAdes')
+                      "DipSPAdes cannot proceed without them, aborting.", binary_name='dipSPAdes')
     dipspades_logic_py_command_line += " --hap " + spades_result
     dipspades_logic.main(dipspades_logic_py_command_line, command_line_to_str(sys.argv), spades.spades_home, spades.bin_home)
 

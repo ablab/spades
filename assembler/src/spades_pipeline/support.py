@@ -58,6 +58,19 @@ def check_python_version():
               "Supported versions are " + ", ".join(options_storage.SUPPORTED_PYTHON_VERSIONS))
 
 
+def get_spades_binaries_info_message():
+    return "You can obtain SPAdes binaries in one of two ways:" +\
+           "\n1. Download them from http://bioinf.spbau.ru/content/spades-download" +\
+           "\n2. Build source code with ./spades_compile.sh script"
+
+
+def check_binaries(binary_dir, log):
+    for binary in ["hammer", "spades", "bwa-spades", "dipspades"]:
+        binary_path = os.path.join(binary_dir, binary)
+        if not os.path.isfile(binary_path):
+            error("SPAdes binaries not found: " + binary_path + "\n" + get_spades_binaries_info_message(), log)
+
+
 def check_file_existence(filename, message="", log=None):
     filename = os.path.abspath(filename)
     if not os.path.isfile(filename):
