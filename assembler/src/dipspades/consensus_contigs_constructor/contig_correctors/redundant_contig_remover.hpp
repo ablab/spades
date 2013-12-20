@@ -704,6 +704,9 @@ public:
 	}
 
 	virtual ContigStoragePtr Correct(ContigStoragePtr contigs)	{
+
+		INFO("Computing redundant contigs starts");
+
 		redundant_contigs.clear();
 
 		InitializeMap(contigs);
@@ -854,6 +857,9 @@ public:
 		INFO(ToString(redundant_contigs.size()) + " contigs from " + ToString(contigs->Size()) + " are redundant");
 
 		contigs->DeleteByIDs(redundant_contigs);
+
+		INFO("Computing redundant contigs ends");
+
 		return contigs;
 	}
 

@@ -24,7 +24,7 @@ string cut_fname_from_path(string path){
 			break;
 		}
 
-	for(size_t i = 0; i < res.size(); i++)
+	for(size_t i = res.size() - 1; i > 0 ; i--)
 		if(res[i] == '.'){
 			res = res.substr(0, i);
 			break;

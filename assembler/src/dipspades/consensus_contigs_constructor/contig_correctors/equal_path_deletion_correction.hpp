@@ -23,6 +23,9 @@ public:
 	path_index_(path_index){ }
 
 	ContigStoragePtr Correct(ContigStoragePtr contigs)	{
+
+		INFO("Computing redundant equal contigs starts");
+
 		InitializeMap(contigs);
 		set<size_t> ids_for_deletion;
 		for(size_t i = 0; i < contigs->Size() - 1; i++){
@@ -54,6 +57,9 @@ public:
 		res_.redundancy_map = condenser.Condense(res_.redundancy_map);
 		INFO(ToString(ids_for_deletion.size()) + " contigs from " << contigs->Size() << " are redundant");
 		contigs->DeleteByIDs(ids_for_deletion);
+
+		INFO("Computing redundant equal contigs ends");
+
 		return contigs;
 	}
 

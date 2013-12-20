@@ -177,6 +177,9 @@ public:
 			k_value_(k_value) {}
 
 	ContigStoragePtr Correct(ContigStoragePtr contigs) {
+
+		INFO("Computing overlaps starts");
+
 		OverlapGraph og;
 		vector<size_t> vertices;
 		vector<size_t> id, rc_id;
@@ -366,6 +369,8 @@ public:
 			}
 			i++;
 		}
+
+		INFO("Computing overlaps ends");
 
 		return new_storage;
 	}

@@ -24,7 +24,7 @@ public:
 	}
 
 	void Initialize(ContigStoragePtr storage){
-		INFO("Initialization of vertex-paths index");
+		INFO("Initialization of vertex-paths index starts");
 		for(size_t i = 0; i < storage->Size(); i++){
 			auto path = (*storage)[i]->path_seq();
 			if(path.size() > 0){
@@ -37,6 +37,7 @@ public:
 				}
 			}
 		}
+		INFO("Initialization of vertex-paths index ends");
 	}
 
 	void Clear(){

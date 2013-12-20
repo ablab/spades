@@ -217,7 +217,7 @@ class ConsensusContigsConstructor {
 
 		for(size_t i = 0; i < composite_storage_->Size(); i++){
 			auto composite_contig = (*composite_storage_)[i];
-			out << "Composite contig: " << composite_contig->name() << endl;
+			out << "Consensus contig: " << composite_contig->name() << endl;
 			auto haplocontigs = composite_contig->AllMappingContigs();
 			if(haplocontigs.size() == 0) // contig is not composite
 				haplocontigs.push_back(composite_contig);
