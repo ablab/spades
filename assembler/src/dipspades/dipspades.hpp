@@ -26,6 +26,8 @@ void construct_graph_from_contigs(debruijn_graph::conj_graph_pack &graph_pack){
 	params.early_tc.enable = false;
 	params.early_tc.length_bound = 10;
 	params.keep_perfect_loops = true;
+	params.read_buffer_size = dsp_cfg::get().bp.read_buffer_size;
+
 	ConstructGraphWithCoverage(params,
 			streams,
 			graph_pack.g,
@@ -187,6 +189,8 @@ public:
 void run_dipspades() {
     INFO("DipSPAdes started");
 
+    cout << "oppa - " << dsp_cfg::get().io.tmp_dir << endl;
+
     debruijn_graph::conj_graph_pack conj_gp(
     		dsp_cfg::get().bp.K,
     		dsp_cfg::get().io.tmp_dir,
@@ -200,33 +204,6 @@ void run_dipspades() {
         conj_gp.clustered_indices.Detach();
         conj_gp.scaffolding_indices.Detach();
     }
-
-    /*
-    construct_graph_from_contigs(conj_gp);
-    DipSPAdesStorage storage;
-    PolymorphicBulgeRemover(conj_gp, storage.bulge_len_histogram).Run();
-    INFO("Consensus graph was constructed");
-
-    ConsensusContigsConstructor consensus_constructor(conj_gp, storage.bulge_len_histogram);
-    consensus_constructor.Run();
-    storage.composite_storage = consensus_constructor.CompositeContigsStorage();
-    storage.default_storage = consensus_constructor.DefaultContigsStorage();
-    storage.redundancy_map = consensus_constructor.RedundancyResult();
-
-    if(dsp_cfg::get().ha.enabled){
-    	if(!storage.composite_storage || !storage.default_storage)
-    		return;
-    	if(storage.composite_storage->Size() == 0 ||
-    			storage.default_storage->Size() == 0)
-    		return;
-    	INFO("Diploid graph construction");
-    	conj_graph_pack double_graph_pack(conj_gp.k_value, dsp_cfg::get().io.tmp_dir,
-    			dsp_cfg::get().io.num_libraries);
-    	construct_graph_from_contigs(double_graph_pack);
-    	HaplotypeAssembler(conj_gp, double_graph_pack, storage.default_storage,
-    			storage.composite_storage, storage.redundancy_map).Run();
-    }
-    */
 
     StageManager DS_Manager ( {dsp_cfg::get().rp.developer_mode,
     						dsp_cfg::get().io.load_from,

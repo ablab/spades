@@ -10,6 +10,7 @@ struct dipspades_config {
 	    bool 			use_multithreading;
 	    size_t 			max_threads;
 	    size_t 			max_memory;
+	    size_t 			read_buffer_size;
 	};
 
 	struct io_params {

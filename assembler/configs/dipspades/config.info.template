@@ -4,6 +4,8 @@ bp {
 	use_multithreading	true;
 	max_threads		    16;
 	max_memory		    512;
+    ; size of buffer for each thread in MB, 0 for autodetection
+    read_buffer_size 0
 }
 
 ; input-output params ;
