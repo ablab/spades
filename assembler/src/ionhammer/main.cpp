@@ -168,7 +168,7 @@ int main(int argc, char** argv) {
       INFO("Total " << kmer_data.size() << " entries were loader");
     }
 
-#if 1
+#if 0
     INFO("Starting solid k-mers expansion in " << cfg::get().max_nthreads << " threads.");
     while (true) {
         Expander expander(kmer_data);
