@@ -9,35 +9,26 @@
 
 import os
 import sys
+import glob
 import shutil
 import support
 import process_cfg
 from site import addsitedir
 
 
-def move_dataset_files(dataset_data, dst, ext_python_modules_home, max_threads, log, gzip=False):
+def compress_dataset_files(dataset_data, ext_python_modules_home, max_threads, log):
+    log.info("\n== Compressing corrected reads (with gzip)")
     to_compress = []
     for reads_library in dataset_data:
         for key, value in reads_library.items():
             if key.endswith('reads'):
-                moved_reads_files = []
+                compressed_reads_filenames = []
                 for reads_file in value:
-                    dst_filename = os.path.join(dst, os.path.basename(reads_file))
-                    # TODO: fix problem with files with the same basenames in Hammer binary!
                     if not os.path.isfile(reads_file):
-                        if (not gzip and os.path.isfile(dst_filename)) or (gzip and os.path.isfile(dst_filename + '.gz')):
-                            support.warning('file with corrected reads (' + reads_file + ') is the same in several libraries', log)
-                            if gzip:
-                                dst_filename += '.gz'
-                        else:
-                            support.error('something went wrong and file with corrected reads (' + reads_file + ') is missing!', log)
-                    else:
-                        shutil.move(reads_file, dst_filename)
-                        if gzip:
-                            to_compress.append(dst_filename)
-                            dst_filename += '.gz'
-                    moved_reads_files.append(dst_filename)
-                reads_library[key] = moved_reads_files
+                        support.error('something went wrong and file with corrected reads (' + reads_file + ') is missing!', log)
+                    to_compress.append(reads_file)
+                    compressed_reads_filenames.append(reads_file + ".gz")
+                reads_library[key] = compressed_reads_filenames
     if len(to_compress):
         pigz_path = support.which('pigz')
         if pigz_path:
@@ -56,12 +47,17 @@ def move_dataset_files(dataset_data, dst, ext_python_modules_home, max_threads, 
                     log.info(output)
 
 
+def remove_not_corrected_reads(output_dir):
+    for not_corrected in glob.glob(os.path.join(output_dir, "*.bad.fastq")):
+        os.remove(not_corrected)
+
+
 def prepare_config_bh(filename, cfg, log):
     subst_dict = dict()
 
     subst_dict["dataset"] = process_cfg.process_spaces(cfg.dataset_yaml_filename)
     subst_dict["input_working_dir"] = process_cfg.process_spaces(cfg.tmp_dir)
-    subst_dict["output_dir"] = process_cfg.process_spaces(cfg.tmp_dir)
+    subst_dict["output_dir"] = process_cfg.process_spaces(cfg.output_dir)
     subst_dict["general_max_iterations"] = cfg.max_iterations
     subst_dict["general_max_nthreads"] = cfg.max_threads
     subst_dict["count_merge_nthreads"] = cfg.max_threads
@@ -69,14 +65,12 @@ def prepare_config_bh(filename, cfg, log):
     subst_dict["expand_nthreads"] = cfg.max_threads
     subst_dict["correct_nthreads"] = cfg.max_threads
     subst_dict["general_hard_memory_limit"] = cfg.max_memory
-
     if "qvoffset" in cfg.__dict__:
         subst_dict["input_qvoffset"] = cfg.qvoffset
-
     process_cfg.substitute_params(filename, subst_dict, log)
 
 
-def run_bh(result_filename, configs_dir, execution_home, cfg, not_used_dataset_data, ext_python_modules_home, log):
+def run_bh(corrected_dataset_yaml_filename, configs_dir, execution_home, cfg, not_used_dataset_data, ext_python_modules_home, log):
     addsitedir(ext_python_modules_home)
     if sys.version.startswith('2.'):
         import pyyaml2 as pyyaml
@@ -106,17 +100,19 @@ def run_bh(result_filename, configs_dir, execution_home, cfg, not_used_dataset_d
 
     log.info("\n== Running read error correction tool: " + ' '.join(command) + "\n")
     support.sys_call(command, log)
-    corrected_dataset_yaml_filename = os.path.join(cfg.tmp_dir, "corrected.yaml")
     if not os.path.isfile(corrected_dataset_yaml_filename):
         support.error("read error correction finished abnormally: " + corrected_dataset_yaml_filename + " not found!")
     corrected_dataset_data = pyyaml.load(open(corrected_dataset_yaml_filename, 'r'))
+    remove_not_corrected_reads(cfg.output_dir)
+    is_changed = False
     if cfg.gzip_output:
-        log.info("\n== Compressing corrected reads (with gzip)")
-    move_dataset_files(corrected_dataset_data, cfg.output_dir, ext_python_modules_home, cfg.max_threads, log, cfg.gzip_output)
+        is_changed = True
+        compress_dataset_files(corrected_dataset_data, ext_python_modules_home, cfg.max_threads, log)
     if not_used_dataset_data:
+        is_changed = True
         corrected_dataset_data += not_used_dataset_data
-    corrected_dataset_yaml_filename = result_filename
-    pyyaml.dump(corrected_dataset_data, open(corrected_dataset_yaml_filename, 'w'))
+    if is_changed:
+        pyyaml.dump(corrected_dataset_data, open(corrected_dataset_yaml_filename, 'w'))
     log.info("\n== Dataset description file was created: " + corrected_dataset_yaml_filename + "\n")
 
     if os.path.isdir(cfg.tmp_dir):

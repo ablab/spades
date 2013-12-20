@@ -12,6 +12,7 @@ io {
 	log_filename 	log.properties
 	output_base		data/debruijn
 	output_dir		simulated_e.coli_100k
+	tmp_dir			dipspades_tmp/
 	load_from		data/debruijn
 }
 

@@ -19,11 +19,14 @@ import process_cfg
 
 
 class DS_Args_List:
-    long_options = "expect-gaps expect-rearrangements hap=".split()
-    short_options = "o:"
+    long_options = "expect-gaps expect-rearrangements hap= threads= memory= tmp-dir=".split()
+    short_options = "o:t:m:"
 
 
 class DS_Args:
+    max_threads = options_storage.THREADS
+    max_memory = options_storage.MEMORY
+    tmp_dir = None
     allow_gaps = False
     weak_align = False
     haplocontigs_fnames = []
@@ -37,6 +40,10 @@ def print_ds_args(ds_args, log):
     log.info("\tExpect rearrengements: " + str(ds_args.weak_align))
     log.info("\tFiles with haplocontigs : " + str(ds_args.haplocontigs_fnames))
     log.info("\tOutput directory: " + str(ds_args.output_dir))
+    log.info("")
+    log.info("\tDir for temp files: " + str(ds_args.tmp_dir))
+    log.info("\tThreads: " + str(ds_args.max_threads))
+    log.info("\tMemory limit (in Gb): " + str(ds_args.max_memory))
 
 
 # src_config_dir - path of dipspades configs
@@ -80,8 +87,21 @@ def parse_arguments(argv, log):
         elif opt == '--expect-rearrangements':
             ds_args.weak_align = True
         elif opt == '--hap':
-            ds_args.haplocontigs_fnames.append(support.check_file_existence(arg, 'haplocontigs', log))
+            ds_args.haplocontigs_fnames.append(support.check_file_existence(arg, 'haplocontigs', log, dipspades=True))
+        elif opt == '-t' or opt == "--threads":
+            ds_args.max_threads = int(arg)
+        elif opt == '-m' or opt == "--memory":
+            ds_args.max_memory = int(arg)
+        elif opt == '--tmp-dir':
+            ds_args.tmp_dir = os.path.abspath(arg)
     ds_args.haplocontigs = os.path.join(ds_args.output_dir, "haplocontigs")
+
+    if not ds_args.output_dir:
+        support.error("the output_dir is not set! It is a mandatory parameter (-o output_dir).", log, dipspades=True)
+    if not ds_args.haplocontigs_fnames:
+        support.error("cannot start dipSPAdes without at least one haplocontigs file!", log, dipspades=True)
+    if not ds_args.tmp_dir:
+        ds_args.tmp_dir = os.path.join(ds_args.output_dir, options_storage.TMP_DIR)
     return ds_args
 
 
@@ -89,9 +109,12 @@ def prepare_config(config_fname, ds_args, log):
     args_dict = dict()
     args_dict["tails_lie_on_bulges"] = process_cfg.bool_to_str(ds_args.allow_gaps)
     args_dict["align_bulge_sides"] = process_cfg.bool_to_str(ds_args.weak_align)
-    args_dict["haplocontigs"] = ds_args.haplocontigs
-    args_dict["output_dir"] = ds_args.output_dir
+    args_dict["haplocontigs"] = process_cfg.process_spaces(ds_args.haplocontigs)
+    args_dict["output_dir"] = process_cfg.process_spaces(ds_args.output_dir)
     args_dict["developer_mode"] = "false" #process_cfg.bool_to_str(False)
+    args_dict["tmp_dir"] = process_cfg.process_spaces(ds_args.tmp_dir)
+    args_dict["max_threads"] = ds_args.max_threads
+    args_dict["max_memory"] = ds_args.max_memory
     process_cfg.substitute_params(config_fname, args_dict, log)
 
 
@@ -158,6 +181,7 @@ def main(ds_args_list, general_args_list, spades_home, bin_home):
     write_haplocontigs_in_file(ds_args.haplocontigs, ds_args.haplocontigs_fnames)
 
     config_fname = prepare_configs(os.path.join(spades_home, "configs", "dipspades"), ds_args, log)
+    ds_args.tmp_dir = support.get_tmp_dir(prefix="dipspades_", base_dir=ds_args.tmp_dir)
     prepare_config(config_fname, ds_args, log)
 
     try:
@@ -167,6 +191,8 @@ def main(ds_args_list, general_args_list, spades_home, bin_home):
         support.sys_call(command, log)
         log.info("\n===== Assembling finished.\n")
         print_ds_output(ds_args.output_dir, log)
+        if os.path.isdir(ds_args.tmp_dir):
+            shutil.rmtree(ds_args.tmp_dir)
         log.info("\n======= dipSPAdes finished.\n")
         log.info("dipSPAdes log can be found here: " + log_filename + "\n")
         log.info("Thank you for using dipSPAdes!")

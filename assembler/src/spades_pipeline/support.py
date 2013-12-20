@@ -333,12 +333,14 @@ def get_latest_dir(pattern):
     return latest_dir
 
 
-def get_tmp_dir(prefix=""):
+def get_tmp_dir(prefix="", base_dir=None):
     global current_tmp_dir
 
-    if not os.path.isdir(options_storage.tmp_dir):
-        os.makedirs(options_storage.tmp_dir)
-    current_tmp_dir = tempfile.mkdtemp(dir=options_storage.tmp_dir, prefix=prefix)
+    if not base_dir:
+        base_dir = options_storage.tmp_dir
+    if not os.path.isdir(base_dir):
+        os.makedirs(base_dir)
+    current_tmp_dir = tempfile.mkdtemp(dir=base_dir, prefix=prefix)
     return current_tmp_dir
 
 
