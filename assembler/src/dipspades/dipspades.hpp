@@ -48,7 +48,7 @@ public:
 class DipSPAdes : public CompositeStage<DipSPAdesStorage> {
 	DipSPAdesStorage dsp_params_;
 public:
-	DipSPAdes() : CompositeStage<DipSPAdesStorage>("DipSPAdes", "dipspades") { }
+	DipSPAdes() : CompositeStage<DipSPAdesStorage>("dipSPAdes", "dipspades") { }
 
 	void load(debruijn_graph::conj_graph_pack&,
             const std::string &,
@@ -187,7 +187,7 @@ public:
 	virtual ~HaplotypeAssemblyStage() { }
 };
 void run_dipspades() {
-    INFO("DipSPAdes started");
+    INFO("dipSPAdes started");
 
     debruijn_graph::conj_graph_pack conj_gp(
     		dsp_cfg::get().bp.K,
@@ -205,7 +205,7 @@ void run_dipspades() {
 
     StageManager DS_Manager ( {dsp_cfg::get().rp.developer_mode,
     						dsp_cfg::get().io.load_from,
-    						dsp_cfg::get().io.output_saves});
+    						dsp_cfg::get().io.output_saves} );
     DS_Manager.add((new DipSPAdes())->
     	add(new ContigGraphConstructionStage())->
     	add(new PolymorphicBulgeRemoverStage())->
@@ -213,7 +213,7 @@ void run_dipspades() {
     	add(new HaplotypeAssemblyStage()));
     DS_Manager.run(conj_gp, dsp_cfg::get().rp.entry_point.c_str());
 
-    INFO("DipSPAdes finished");
+    INFO("dipSPAdes finished");
 }
 
 }

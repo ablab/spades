@@ -105,7 +105,7 @@ public:
 		BulgePathsSearcher paths_searcher(graph_,
 				max<size_t>(hist_.max(), pbr_config_.max_bulge_nucls_len),
 				pbr_config_.max_neigh_number);
-		TRACE("Maximal bulge length - " << hist_.max());
+		INFO("Maximal length of glued bulge: " << hist_.max());
 		TRACE("BulgeRemoverAlgorithm starts");
 		for(auto v = graph_.SmartVertexBegin(); !v.IsEnd(); ++v){
 			TRACE("Processing vertex " << graph_.str(*v));

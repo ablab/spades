@@ -30,6 +30,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "../include/segfault_handler.hpp"
+
 void make_dirs(){
 	  make_dir(dsp_cfg::get().io.output_base);
 	  make_dir(dsp_cfg::get().io.output_root);
@@ -74,6 +76,8 @@ int main(int /*argc*/, char** argv) {
 
   srand(42);
   srandom(42);
+
+  segfault_handler sh;
 
   try {
     using namespace debruijn_graph;
