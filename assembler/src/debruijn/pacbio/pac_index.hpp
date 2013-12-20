@@ -91,9 +91,6 @@ public:
         } else if (b.read_position == a.read_position) {
             return (abs(int(b.edge_position) + shift - int(a.edge_position)) < 2);
         } else {
-//            if (a.read_position + max_similarity_distance < b.read_position + shift) {
-//                return false;
-//            }
             return ((b.edge_position + shift - a.edge_position
                     >= (b.read_position - a.read_position) * compression_cutoff)
                     && (b.edge_position + shift - a.edge_position
@@ -144,23 +141,21 @@ public:
         for (auto iter = descr.begin(); iter != descr.end(); ++iter) {
             size_t edge_id = g_.int_id(iter->first);
             DEBUG(edge_id);
-            sort(iter->second.begin(), iter->second.end(), ReadPositionComparator());
+            sort(iter->second.begin(), iter->second.end());
             set<vector<MappingInstance> > edge_cluster_set;
             size_t len = iter->second.size();
             vector<vector<size_t> > similarity_list(len);
-            int cnt = 0;
+	    int cnt = 0;
             for (size_t i = 0; i < len; i++){
                 for (size_t j = i + 1; j < len; j++){
-                    if (iter->second[i].read_position + max_similarity_distance < iter->second[j].read_position) {
+                    if (iter->second[i].edge_position + max_similarity_distance < iter->second[j].edge_position) {
                         break;
                     }
                     if (similar(iter->second[i], iter->second[j])) {
                         similarity_list[i].push_back(j);
                         similarity_list[j].push_back(i);
-                        cnt ++;
-                        if (cnt % 10000 == 0) {
-                            DEBUG(cnt);
-                        }
+			cnt ++;
+			if (cnt % 10000 == 0) {DEBUG(cnt);}
                     }
                 }
             }
@@ -174,7 +169,6 @@ public:
                     //dfs_cluster(used, to_add, (int) i, iter);
                     dfs_cluster_norec(used, to_add, (int) i, iter, similarity_list);
                     sort(to_add.begin(), to_add.end(), ReadPositionComparator());
-
                     DEBUG(to_add.size()<<" subcluster size");
                     size_t count = 1;
                     size_t longest_len = 0;
@@ -186,7 +180,7 @@ public:
                             j_iter < to_add.end() - 1; j_iter++, j++) {
 //Do not spilt clusters in the middle, only beginning is interesting.
                         if ((j * 5 < to_add.size() || (j + 1) * 5 > to_add.size() * 4) &&
-                            !similar(*j_iter, *(j_iter + 1)) && false) {
+                            !similar(*j_iter, *(j_iter + 1))) {
                             if (longest_len < count) {
                                 longest_len = count;
                                 best_start = cur_start;
@@ -300,102 +294,92 @@ public:
         }
     }
 
-    //false - if no filling; if true result in res;
-    bool FillOneGap(const typename ClustersSet::iterator &prev_iter, const typename ClustersSet::iterator &iter, vector<EdgeId> &res,  const Sequence &s) {
-        EdgeId prev_edge = prev_iter->edgeId;
-        EdgeId cur_edge = iter->edgeId;
-        VertexId start_v = g_.EdgeEnd(prev_edge);
-        VertexId end_v = g_.EdgeStart(cur_edge);
-
-        MappingInstance cur_first_index =iter->sorted_positions[iter->first_trustable_index];
-        MappingInstance prev_last_index = prev_iter->sorted_positions[prev_iter->last_trustable_index];
-
-        if (start_v != end_v ||
-            (start_v == end_v &&
-             (double) (cur_first_index.read_position - prev_last_index.read_position) >
-             (double) (cur_first_index.edge_position + (int) g_.length(prev_edge) - prev_last_index.edge_position) * 1.3)) {
-            DEBUG(" traversing tangled region between "<< g_.int_id(prev_edge)<< " " << g_.int_id(cur_edge));
-            DEBUG(" first pair" << cur_first_index.str() << " edge_len" << g_.length(cur_edge));
-            DEBUG(" last pair" << prev_last_index.str() << " edge_len" << g_.length(prev_edge));
-            string s_add = "";
-            string e_add = "";
-            int seq_end = cur_first_index.read_position;
-            int seq_start = prev_last_index.read_position;
-            string tmp = g_.EdgeNucls(prev_edge).str();
-            s_add = tmp.substr(prev_last_index.edge_position,
-                               g_.length(prev_edge) - prev_last_index.edge_position);
-            tmp = g_.EdgeNucls(cur_edge).str();
-            e_add = tmp.substr(0, cur_first_index.edge_position);
-            pair<int, int> limits = GetPathLimits(*(prev_iter),
-                                                  *(iter),
-                                                  (int) s_add.length(),
-                                                  (int) e_add.length());
-            if (limits.first == -1)
-                return false;
-
-            vector<EdgeId> intermediate_path = BestScoredPath(s, start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add);
-            if (intermediate_path.size() == 0) {
-                DEBUG("Tangled region between edgees "<< g_.int_id(prev_edge) << " " << g_.int_id(cur_edge) << " is not closed, additions from edges: " << int(g_.length(prev_edge)) - int(prev_last_index.edge_position) <<" " << int(cur_first_index.edge_position) - int(debruijn_k - pacbio_k ) << " and seq "<< - seq_start + seq_end);
-                if (cfg::get().pb.additional_debug_info) {
-                    DEBUG(" espected gap length: " << -int(g_.length(prev_edge)) + int(prev_last_index.edge_position) - int(cur_first_index.edge_position) + int(debruijn_k - pacbio_k ) - seq_start + seq_end);
-                    PathStorageCallback<Graph> callback(g_);
-                    PathProcessor<Graph> path_processor(g_, 0, 4000,
-                                                        start_v, end_v,
-                                                        callback);
-                    path_processor.Process();
-                    vector<vector<EdgeId> > paths = callback.paths();
-                    stringstream s_buf;
-                    for (auto p_iter = paths.begin();
-                            p_iter != paths.end(); p_iter++) {
-                        size_t tlen = 0;
-                        for (auto path_iter = p_iter->begin();
-                                path_iter != p_iter->end();
-                                path_iter++) {
-                            tlen += g_.length(*path_iter);
-                        }
-                        s_buf << tlen << " ";
-                    }
-                    DEBUG(s_buf.str());
-                }
-                return false;
-            }
-            for (auto j_iter = intermediate_path.begin(); j_iter != intermediate_path.end(); j_iter++) {
-                res.push_back(*j_iter);
-            }
-            return true;
-        } else {
-            res.resize(0);
-            return true;
-        }
-    }
-
     vector<EdgeId> FillGapsInCluster(vector<pair<size_t, typename ClustersSet::iterator> > &cur_cluster,
                                      const Sequence &s) {
         vector<EdgeId> cur_sorted;
         EdgeId prev_edge = EdgeId(0);
+        if (read_count == 151) {
+            DEBUG("edges in cluster:")
+            for (auto iter = cur_cluster.begin(); iter != cur_cluster.end();
+                    ++iter) {
+                EdgeId cur_edge = iter->second->edgeId;
+                DEBUG(g_.int_id(cur_edge) << " " << iter->second->sorted_positions.size());
+            }
+        }
         for (auto iter = cur_cluster.begin(); iter != cur_cluster.end();
                 ++iter) {
             EdgeId cur_edge = iter->second->edgeId;
             if (prev_edge != EdgeId(0)) {
 //Need to find sequence of edges between clusters
+                VertexId start_v = g_.EdgeEnd(prev_edge);
+                VertexId end_v = g_.EdgeStart(cur_edge);
                 auto prev_iter = iter - 1;
-                vector<EdgeId> res;
-                if (FillOneGap(prev_iter->second, iter->second, res, s)) {
-                    for (auto j_iter = res.begin(); j_iter != res.end(); j_iter++) {
+                MappingInstance cur_first_index =
+                        iter->second->sorted_positions[iter->second
+                                ->first_trustable_index];
+                MappingInstance prev_last_index = prev_iter->second
+                        ->sorted_positions[prev_iter->second
+                        ->last_trustable_index];
+
+                if (start_v != end_v ||
+                    (start_v == end_v &&
+                     (double) (cur_first_index.read_position - prev_last_index.read_position) >
+                     (double) (cur_first_index.edge_position + (int) g_.length(prev_edge) - prev_last_index.edge_position) * 1.3)) {
+                    DEBUG(" traversing tangled region between "<< g_.int_id(prev_edge)<< " " << g_.int_id(cur_edge));
+                    DEBUG(" first pair" << cur_first_index.str() << " edge_len" << g_.length(cur_edge));
+                    DEBUG(" last pair" << prev_last_index.str() << " edge_len" << g_.length(prev_edge));
+                    string s_add = "";
+                    string e_add = "";
+                    int seq_end = cur_first_index.read_position;
+                    int seq_start = prev_last_index.read_position;
+                    string tmp = g_.EdgeNucls(prev_edge).str();
+                    s_add = tmp.substr(prev_last_index.edge_position,
+                                       g_.length(prev_edge) - prev_last_index.edge_position);
+                    tmp = g_.EdgeNucls(cur_edge).str();
+                    e_add = tmp.substr(0, cur_first_index.edge_position);
+                    pair<int, int> limits = GetPathLimits(*(prev_iter->second),
+                                                          *(iter->second),
+                                                          (int) s_add.length(),
+                                                          (int) e_add.length());
+                    if (limits.first == -1)
+                        return vector<EdgeId>(0);
+
+                    vector<EdgeId> intermediate_path = BestScoredPath(s, start_v, end_v, limits.first, limits.second, seq_start, seq_end, s_add, e_add);
+                    if (intermediate_path.size() == 0) {
+                        DEBUG("Tangled region between edgees "<< g_.int_id(prev_edge) << " " << g_.int_id(cur_edge) << " is not closed, additions from edges: " << int(g_.length(prev_edge)) - int(prev_last_index.edge_position) <<" " << int(cur_first_index.edge_position) - int(debruijn_k - pacbio_k ) << " and seq "<< - seq_start + seq_end);
+                        if (cfg::get().pb.additional_debug_info) {
+                            DEBUG(" escpected gap length: " << -int(g_.length(prev_edge)) + int(prev_last_index.edge_position) - int(cur_first_index.edge_position) + int(debruijn_k - pacbio_k ) - seq_start + seq_end);
+                            PathStorageCallback<Graph> callback(g_);
+                            PathProcessor<Graph> path_processor(g_, 0, 4000,
+                                                                start_v, end_v,
+                                                                callback);
+                            path_processor.Process();
+                            vector<vector<EdgeId> > paths = callback.paths();
+                            stringstream s_buf;
+                            for (auto p_iter = paths.begin();
+                                    p_iter != paths.end(); p_iter++) {
+                                size_t tlen = 0;
+                                for (auto path_iter = p_iter->begin();
+                                        path_iter != p_iter->end();
+                                        path_iter++) {
+                                    tlen += g_.length(*path_iter);
+                                }
+                                s_buf << tlen << " ";
+                            }
+                            DEBUG(s_buf.str());
+                        }
+                        return intermediate_path;
+                    }
+                    for (auto j_iter = intermediate_path.begin(); j_iter != intermediate_path.end(); j_iter++) {
                         cur_sorted.push_back(*j_iter);
                     }
-
                 }
-
             }
             cur_sorted.push_back(cur_edge);
             prev_edge = cur_edge;
         }
         return cur_sorted;
     }
-
-
-
 
     bool TopologyGap(EdgeId first, EdgeId second, bool oriented) const {
         bool res = (g_.IsDeadStart(g_.EdgeStart(first)) && g_.IsDeadEnd(g_.EdgeEnd(second)));
@@ -461,11 +445,11 @@ public:
         vector<typename ClustersSet::iterator> start_clusters, end_clusters;
         vector<GapDescription<Graph> > illumina_gaps;
         vector<int> used(len);
-        auto iter = mapping_descr.begin();
+	auto iter = mapping_descr.begin();
         for (int i = 0; i < len; i++, iter ++) {
             used[i] = 0; 
-            DEBUG(colors[i] <<" " << iter->str(g_));
-        }
+	    DEBUG(colors[i] <<" " << iter->str(g_));
+	}
         for (int i = 0; i < len; i++) {
             if (!used[i]) {
                 DEBUG("starting new subread");
@@ -487,61 +471,31 @@ public:
                 sort(cur_cluster.begin(), cur_cluster.end(),
                      pair_iterator_less<typename ClustersSet::iterator>());
                 VERIFY(cur_cluster.size() > 0);
-                vector<EdgeId > cur_sorted;
                 auto cur_cluster_start = cur_cluster.begin();
-                auto iter = cur_cluster.begin();
-                DEBUG("starting from ");
-                DEBUG(iter->second->str(g_));
-                while (iter != cur_cluster.end()) {
+                for (auto iter = cur_cluster.begin(); iter != cur_cluster.end();
+                        ++iter) {
                     auto next_iter = iter + 1;
-                    cur_sorted.push_back(iter->second->edgeId);
-                    //cluster already used;
-                    DEBUG("using cluster");
-                    DEBUG(iter->second->str(g_));
-
-                    iter->first = std::numeric_limits<size_t>::max();
-                    bool next_found = false;
-                    while(!next_found && next_iter != cur_cluster.end()) {
-                        vector<EdgeId> res;
-                        if (std::numeric_limits<size_t>::max() == next_iter->first||!IsConsistent(s, *(iter->second), *(next_iter->second))
-                                || ! FillOneGap(iter->second, next_iter->second, res, s) ) {
-                            next_iter ++;
-                        } else {
-                            next_found = true;
-                            cur_sorted.insert(cur_sorted.end(), res.begin(), res.end());
-                            iter = next_iter;
+                    if (next_iter == cur_cluster.end()
+                            || !IsConsistent(s, *(iter->second),
+                                             *(next_iter->second))) {
+                        if (next_iter != cur_cluster.end()) {
+                            DEBUG("cluster splitted...");
                         }
-                    }
-                    if (!next_found) {
-
-                        DEBUG("cluster splitted after");
-                        DEBUG(iter->second->str(g_));
-
-
                         vector<pair<size_t, typename ClustersSet::iterator> > splitted_cluster(
                                 cur_cluster_start, next_iter);
-//                        vector<EdgeId> cur_sorted = FillGapsInCluster(
-//                                splitted_cluster, s);
+                        vector<EdgeId> cur_sorted = FillGapsInCluster(
+                                splitted_cluster, s);
                         if (cur_sorted.size() > 0) {
                             start_clusters.push_back(cur_cluster_start->second);
                             end_clusters.push_back(iter->second);
                             sortedEdges.push_back(cur_sorted);
-                            cur_sorted.resize(0);
                         }
-                        auto j_iter = cur_cluster.begin();
-                        for (; j_iter != cur_cluster.end();j_iter ++)
-                            if (j_iter->first != std::numeric_limits<size_t>::max()) break;
-                        cur_cluster_start = j_iter;
-                        if (j_iter != cur_cluster.end()) {
-                            DEBUG("next cluster starting from.. ");
-                            DEBUG(j_iter->second->str(g_));
-                        }
-                        iter = j_iter;
+                        cur_cluster_start = next_iter;
                     }
                 }
             }
         }
-        DEBUG("adding gaps between subreads");
+	DEBUG("adding gaps between subreads");
         int alignments = int(sortedEdges.size());
         for (int i = 0; i < alignments; i++) {
             for (int j = 0; j < alignments; j++) {
@@ -589,13 +543,7 @@ public:
                      const KmerCluster<Graph> &b) {
         EdgeId a_edge = a.edgeId;
         EdgeId b_edge = b.edgeId;
-        DEBUG("checking for consistency clusters: ");
-        DEBUG(a.str(g_));
-        DEBUG(b.str(g_));
-        if (abs(a.sorted_positions[a.last_trustable_index].read_position - b.sorted_positions[b.first_trustable_index].read_position) > 10000) {
-            DEBUG("we do not believe in such long tangled regions, exiting");
-            return 0;
-        }
+
         VertexId start_v = g_.EdgeEnd(a_edge);
         size_t addition = g_.length(a_edge);
         VertexId end_v = g_.EdgeStart(b_edge);
@@ -603,7 +551,7 @@ public:
         vector<size_t> result;
         if (distance_cashed.find(vertex_pair) == distance_cashed.end()) {
             DistancesLengthsCallback<Graph> callback(g_);
-            PathProcessor<Graph> path_processor(g_, 0, 10000, start_v,
+            PathProcessor<Graph> path_processor(g_, 0, s.size() / 3, start_v,
                                                 end_v, callback);
             path_processor.Process();
             result = callback.distances();
@@ -612,21 +560,29 @@ public:
         result = distance_cashed[vertex_pair];
         //TODO: Serious optimization possible
         for (size_t i = 0; i < result.size(); i++) {
-            if (g_.int_id(a_edge) == 2353017 ){
-                DEBUG(result[i]);
-            }
-            for (auto a_i = a.last_trustable_index;
-                    a_i >=0 && a_i + 500 > a.last_trustable_index ; --a_i) {
-                for (auto b_i = b.first_trustable_index;
-                        b_i < b.size && b_i <500 + b.first_trustable_index; ++b_i) {
-                    if (similar(a.sorted_positions[a_i], b.sorted_positions[b_i],
+            for (auto a_iter = a.sorted_positions.begin();
+                    a_iter != a.sorted_positions.end(); ++a_iter) {
+                if (a_iter - a.sorted_positions.begin() > 500 &&  a.sorted_positions.end() - a_iter >500) continue;
+                int cnt = 0;
+                for (auto b_iter = b.sorted_positions.begin();
+                        b_iter != b.sorted_positions.end() && cnt <500; ++b_iter, cnt ++) {
+                    if (similar(*a_iter, *b_iter,
                                 (int) (result[i] + addition))) {
                         return 1;
                     }
                 }
+                cnt = 0;
+                if (b.sorted_positions.size() > 500) {
+                    for (auto b_iter = b.sorted_positions.end() - 1;
+                                            b_iter != b.sorted_positions.begin() && cnt < 500; --b_iter, cnt ++) {
+                        if (similar(*a_iter, *b_iter,
+                                    (int) (result[i] + addition))) {
+                            return 1;
+                        }
+                    }
+                }
             }
         }
-        DEBUG("..and they are not consistent");
         return 0;
 
     }
@@ -661,10 +617,6 @@ public:
         DEBUG("need to find best scored path between "<<paths.size()<<" , seq_len " << seq_string.length());
         if (paths.size() == 0)
             return vector<EdgeId>(0);
-        if (seq_string.length() >= 10000) {
-            DEBUG("we do not believe in such long tangled regions, exiting");
-            return vector<EdgeId>(0);
-        }
         for (size_t i = 0; i < paths.size(); i++) {
             string cur_string = s_add + PathToString(paths[i]) + e_add;
             if (paths.size() > 1 && paths.size() < 10) {
@@ -781,7 +733,7 @@ typename PacBioMappingIndex<Graph>::MappingDescription PacBioMappingIndex<Graph>
     }
 
     for (auto iter = res.begin(); iter != res.end(); ++iter) {
-        sort(iter->second.begin(), iter->second.end(), ReadPositionComparator());
+        sort(iter->second.begin(), iter->second.end());
         DEBUG("read count "<< local_read_count);
         DEBUG("edge: " << g_.int_id(iter->first) << "size: " << iter->second.size());
         for (auto j_iter = iter->second.begin(); j_iter != iter->second.end(); j_iter++) {

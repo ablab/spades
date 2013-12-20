@@ -12,8 +12,6 @@
 using std::map;
 using std::set;
 namespace pacbio {
-DECL_LOGGER("PacbioStructures");
-
 template<class T>
 struct pair_iterator_less {
 	bool operator ()(pair<size_t, T> const& a, pair<size_t, T> const& b) const {
@@ -34,14 +32,12 @@ struct MappingInstance {
 		return (quality == 1);
 	}
 
-	string str() const {
+	string str() {
 		stringstream s;
 		s << "E: " << edge_position << " R: " << read_position << " Q: " << quality;
 		return s.str();
 	}
-	inline int shift() const {
-	    return edge_position - read_position;
-	}
+
 //Less by EDGE position
 	bool operator <(MappingInstance const& b) const {
 		if (edge_position < b.edge_position || (edge_position == b.edge_position && read_position < b.read_position))
@@ -86,34 +82,13 @@ struct KmerCluster {
 
 	void FillTrustableIndeces() {
 		//ignore non-unique kmers for distance determination
-	    double shift = 0;
-        for (const auto& descr : sorted_positions) {
-           shift += double(descr.shift());
-        }
-        shift = shift/ size;
 		int first_unique_ind = 0;
-		while (first_unique_ind != size - 1 && abs(sorted_positions[first_unique_ind].shift() - shift) > 50 ) {// !(sorted_positions[first_unique_ind].IsUnique())) {
+		while (first_unique_ind != size - 1 && !(sorted_positions[first_unique_ind].IsUnique())) {
 			first_unique_ind += 1;
 		}
 		int last_unique_ind = size - 1;
-		while (last_unique_ind != 0 && abs(sorted_positions[last_unique_ind].shift() - shift) > 50 ) {//!(sorted_positions[last_unique_ind].IsUnique())) {
+		while (last_unique_ind != 0 && !(sorted_positions[last_unique_ind].IsUnique())) {
 			last_unique_ind -= 1;
-		}
- 		 first_unique_ind = 0;
-                while (first_unique_ind != size - 1 && !(sorted_positions[first_unique_ind].IsUnique())) {
-                        first_unique_ind += 1;
-                }
-                last_unique_ind = size - 1;
-                while (last_unique_ind != 0 && !(sorted_positions[last_unique_ind].IsUnique())) {
-                        last_unique_ind -= 1;
-                }
-
-		if (first_unique_ind > last_unique_ind && size > 100){
-		    WARN("bad big cluster");
-		    DEBUG("shift " << shift);
-	        for (const auto& descr : sorted_positions) {
-	            DEBUG(descr.shift() << " " << descr.str());
-	        }
 		}
 		last_trustable_index = last_unique_ind;
 		first_trustable_index = first_unique_ind;
@@ -121,7 +96,7 @@ struct KmerCluster {
 
     string str(const Graph &g) const{
         stringstream s;
-        s << "Edge: " << g.int_id(edgeId)<< "("<<g.length(edgeId) <<")" << " " <<  sorted_positions[first_trustable_index].str()<< " - "  << sorted_positions[last_trustable_index].str() << " " << size;
+        s << "Edge: " << g.int_id(edgeId) << " " << first_trustable_index<< " - "  <<last_trustable_index << size;
         return s.str();
     }
 };
