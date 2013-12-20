@@ -189,8 +189,6 @@ public:
 void run_dipspades() {
     INFO("DipSPAdes started");
 
-    cout << "oppa - " << dsp_cfg::get().io.tmp_dir << endl;
-
     debruijn_graph::conj_graph_pack conj_gp(
     		dsp_cfg::get().bp.K,
     		dsp_cfg::get().io.tmp_dir,
