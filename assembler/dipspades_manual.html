@@ -182,34 +182,34 @@ dipSPAdes produces the following output:<br>
 
 <a id="align_output"></a>
 <h4>2.3.1 Haplocontigs alignment output</h4>
-File <b>haplocontigs_alignment.out</b> contains blocks the following structure:<br>
+File <b>haplocontigs_alignment.out</b> consists of blocks of the following structure:<br>
 <pre class = "code">
 <code>
 Consensus contig: CONSENSUS_CONTIG_NAME
-    Overlapped haplocontigs:
+    Overlapping haplocontigs:
         HAPLOCONTIG_NAME_1 HAPLOCONTIG_NAME_2
                          ...
-    Aligned pairs:
+    Nested haplocontigs:
         HAPLOCONTIG_NAME_3 HAPLOCONTIG_NAME_4
                         ...
 </code>
 </pre>
-Each block corresponds to alignment of haplocontigs to concrete consensus contigs. Name of consensus contig, <code>CONSENSUS_CONTIG_NAME</code>, coincides with the name in file <b>consensus_contigs.fasta</b>. Subblock "Overlapped contigs" contains pairs of names of haplocontigs that overlaped and result in consensus contig. Subblock "Aligned pairs" contains pairs of names of haplocontigs that correspond to homologous regions of haplomes.  
+Each block corresponds to alignment of haplocontigs to consensus contigs <code>CONSENSUS_CONTIG_NAME</code>. Name of consensus contig, <code>CONSENSUS_CONTIG_NAME</code>, coincides with the name in file <b>consensus_contigs.fasta</b>. Further the list of pairs of haplocontig names is printed. Haplocontigs in each pair at least partially correspond either to the same positions on the same haplome or to homologous positions on different haplomes. Also the list is divided into two subblocks: <code>Overlapping haplocontigs</code> and <code>Nested haplocontigs</code>. <code>Overlapping haplocontigs</code> contain pairs of haplocontigs such that the suffix of the first haplocontig corresponds to the prefix of the second contig. <code>Nested haplocontigs</code> contains pairs of haplocontigs such that certain subcontig of the second contig corresponds to the whole first contig.
 
 <a id="hapl_assembly_output"></a>
 <h4>2.3.2 Haplotype assembly output</h4>
-File <b>haplotype_assembly.out</b> contains lines with the following structure:<br>
+File <b>haplotype_assembly.out</b> consists of lines of the following structure:<br>
 <pre class = "code">
 <code>
 HAPLOCONTIG_NAME_1	HAPLOCONTIG_NAME_2
 </code>
 </pre>
-where HAPLOCONTIG_NAME_1 and HAPLOCONTIG_NAME_2 are names of homologous haplocontigs which correspond to different haplomes. Names correspond to names of haplocontigs specified as input using options <code>--hap</code> or computed at the first step.
+where HAPLOCONTIG_NAME_1 and HAPLOCONTIG_NAME_2 are names of homologous haplocontigs which correspond to different haplomes and at least partially correspond to homologous positions in different chromosomes. Names correspond to names of haplocontigs specified as input using options <code>--hap</code> or computed at the first step.
 
 <a id = "feedback"></a>
 <h2>Feedback and bug reports</h2>
 Your comments, bug reports, and suggestions are very welcomed. <br> 
-If you have trouble running dipSPAdes, please provide us with the files params.txt and dipspades.log from the directory &lt; output_dir>. <br>
+If you have trouble running dipSPAdes, please provide us with the files params.txt and dipspades.log from the directory &lt;output_dir>. <br>
 Address for communications: <a href="mailto:spades.support@bioinf.spbau.ru" target="_blank">spades.support@bioinf.spbau.ru</a>.
 
 </body>
