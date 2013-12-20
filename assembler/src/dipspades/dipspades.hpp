@@ -166,7 +166,7 @@ public:
 					storage().default_storage->Size() == 0)
 				return;
 			INFO("Diploid graph construction");
-			conj_graph_pack double_graph_pack(graph_pack.k_value, dsp_cfg::get().io.output_dir,
+			conj_graph_pack double_graph_pack(graph_pack.k_value, dsp_cfg::get().io.tmp_dir,
 					dsp_cfg::get().io.num_libraries);
 			construct_graph_from_contigs(double_graph_pack);
 			HaplotypeAssembler(graph_pack, double_graph_pack, storage().default_storage,
@@ -189,7 +189,7 @@ void run_dipspades() {
 
     debruijn_graph::conj_graph_pack conj_gp(
     		dsp_cfg::get().bp.K,
-    		dsp_cfg::get().io.output_dir,
+    		dsp_cfg::get().io.tmp_dir,
     		dsp_cfg::get().io.num_libraries,
             Sequence(""), // reference genome
             1); // flanking range
@@ -220,7 +220,7 @@ void run_dipspades() {
     			storage.default_storage->Size() == 0)
     		return;
     	INFO("Diploid graph construction");
-    	conj_graph_pack double_graph_pack(conj_gp.k_value, dsp_cfg::get().io.output_dir,
+    	conj_graph_pack double_graph_pack(conj_gp.k_value, dsp_cfg::get().io.tmp_dir,
     			dsp_cfg::get().io.num_libraries);
     	construct_graph_from_contigs(double_graph_pack);
     	HaplotypeAssembler(conj_gp, double_graph_pack, storage.default_storage,

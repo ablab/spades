@@ -35,6 +35,7 @@ void make_dirs(){
 	  make_dir(dsp_cfg::get().io.output_root);
 	  make_dir(dsp_cfg::get().io.output_dir);
 	  make_dir(dsp_cfg::get().io.output_saves);
+	  make_dir(dsp_cfg::get().io.tmp_dir);
 }
 
 void copy_configs(string cfg_filename, string to) {
