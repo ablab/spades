@@ -109,19 +109,26 @@ reads_options = list(map(lambda x:"--" + x.split('=')[0], reads_options))
 reads_options += ["--12", "-1", "-2", "-s"]
 
 
-def usage(spades_version, show_hidden=False):
-    sys.stderr.write("SPAdes genome assembler v." + str(spades_version) + "\n")
+def usage(spades_version, show_hidden=False, dipspades=False):
+    if not dipspades:
+        sys.stderr.write("SPAdes genome assembler v." + str(spades_version) + "\n")
+    else:
+        sys.stderr.write("dipSPAdes 1.0: genome assembler designed for diploid genomes with high heterozygosity rate\n\n")
     sys.stderr.write("Usage: " + str(sys.argv[0]) + " [options] -o <output_dir>" + "\n")
     sys.stderr.write("" + "\n")
     sys.stderr.write("Basic options:" + "\n")
     sys.stderr.write("-o\t<output_dir>\tdirectory to store all the resulting files (required)" + "\n")
-    sys.stderr.write("--sc\t\t\tthis flag is required for MDA (single-cell)"\
-                         " data" + "\n")
+    if not dipspades:
+        sys.stderr.write("--sc\t\t\tthis flag is required for MDA (single-cell)"\
+                             " data" + "\n")
     sys.stderr.write("--test\t\t\truns SPAdes on toy dataset" + "\n")
     sys.stderr.write("-h/--help\t\tprints this usage message" + "\n")
 
     sys.stderr.write("" + "\n")
-    sys.stderr.write("Input data:" + "\n")
+    if not dipspades:
+        sys.stderr.write("Input data:" + "\n")
+    else:
+        sys.stderr.write("Input reads:" + "\n")
     sys.stderr.write("--12\t<filename>\tfile with interlaced forward and reverse"\
                          " paired-end reads" + "\n")
     sys.stderr.write("-1\t<filename>\tfile with forward paired-end reads" + "\n")
@@ -151,21 +158,32 @@ def usage(spades_version, show_hidden=False):
     sys.stderr.write("--pacbio\t<filename>\tfile with PacBio reads\n")
     sys.stderr.write("--trusted-contigs\t<filename>\tfile with trusted contigs\n")
     sys.stderr.write("--untrusted-contigs\t<filename>\tfile with untrusted contigs\n")
+    if dipspades:
+        sys.stderr.write("Input haplocontigs:" + "\n")
+        sys.stderr.write("--hap\t<filename>\tfile with haplocontigs" + "\n")
 
     sys.stderr.write("" + "\n")
     sys.stderr.write("Pipeline options:" + "\n")
-    sys.stderr.write("--only-error-correction\truns only read error correction"\
-                         " (without assembling)" + "\n")
+    if not dipspades:
+        sys.stderr.write("--only-error-correction\truns only read error correction"\
+                             " (without assembling)" + "\n")
     sys.stderr.write("--only-assembler\truns only assembling (without read error"\
                          " correction)" + "\n")
-    sys.stderr.write("--careful\t\ttries to reduce number"\
-                         " of mismatches and short indels" + "\n")
-    sys.stderr.write("--continue\t\tcontinue run from the last available check-point" + "\n")
-    sys.stderr.write("--restart-from\t<cp>\trestart run with updated options and from the specified check-point ('ec', 'as', 'k<int>', 'mc')" + "\n")
+    if not dipspades:
+        sys.stderr.write("--careful\t\ttries to reduce number"\
+                             " of mismatches and short indels" + "\n")
+        sys.stderr.write("--continue\t\tcontinue run from the last available check-point" + "\n")
+        sys.stderr.write("--restart-from\t<cp>\trestart run with updated options and from the specified check-point ('ec', 'as', 'k<int>', 'mc')" + "\n")
     sys.stderr.write("--disable-gzip-output\tforces error correction not to"\
                          " compress the corrected reads" + "\n")
     sys.stderr.write("--disable-rr\t\tdisables repeat resolution stage"\
                      " of assembling" + "\n")
+
+    if dipspades:
+        sys.stderr.write("" + "\n")
+        sys.stderr.write("DipSPAdes options:" + "\n")
+        sys.stderr.write("--expect-gaps\tindicate that significant number of gaps in coverage is expected" + "\n")
+        sys.stderr.write("--expect-rearrangements\tindicate that significant number of rearrangngements between haplomes of diploid genome is expected" + "\n")
 
     sys.stderr.write("" + "\n")
     sys.stderr.write("Advanced options:" + "\n")

@@ -28,7 +28,11 @@ continue_logfile_offset = None
 current_tmp_dir = None
 
 
-def error(err_str, log=None, prefix=SPADES_PY_ERROR_MESSAGE, binary_name='SPAdes'):
+def error(err_str, log=None, dipspades=False, prefix=SPADES_PY_ERROR_MESSAGE):
+    if not dipspades:
+        binary_name = "SPAdes"
+    else:
+        binary_name = "dipSPAdes"
     if log:
         log.info("\n\n" + prefix + " " + err_str)
         log_warnings(log)
@@ -71,10 +75,10 @@ def check_binaries(binary_dir, log):
             error("SPAdes binaries not found: " + binary_path + "\n" + get_spades_binaries_info_message(), log)
 
 
-def check_file_existence(filename, message="", log=None):
+def check_file_existence(filename, message="", log=None, dipspades=False):
     filename = os.path.abspath(filename)
     if not os.path.isfile(filename):
-        error("file not found: %s (%s)" % (filename, message), log)
+        error("file not found: %s (%s)" % (filename, message), log=log, dipspades=dipspades)
     return filename
 
 

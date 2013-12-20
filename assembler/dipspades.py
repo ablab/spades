@@ -16,13 +16,6 @@ import options_storage
 import dipspades_logic
 
 
-def command_line_to_str(argv):
-    cl = ""
-    for obj in argv:
-        cl += str(obj) + " "
-    return cl
-
-
 def main():
     all_long_options = list(set(options_storage.long_options + dipspades_logic.DS_Args_List.long_options))
     all_short_options = options_storage.short_options + dipspades_logic.DS_Args_List.short_options
@@ -35,11 +28,11 @@ def main():
     except getopt.GetoptError:
         _, exc, _ = sys.exc_info()
         sys.stderr.write(str(exc) + "\n")
-        dipspades_logic.usage()
+        options_storage.usage("", dipspades=True)
         sys.stderr.flush()
         sys.exit(1)
     if not options:
-        dipspades_logic.usage()
+        options_storage.usage("", dipspades=True)
         sys.stderr.flush()
         sys.exit(1)
 
@@ -52,15 +45,16 @@ def main():
             dipspades_logic_py_command_line = ''
             break
         if opt == '-o':
-            #arg = os.path.abspath(arg)
             output_dir = os.path.abspath(arg) #arg
         elif opt == '--careful' or opt == '--mismatch-correction':
             continue
         if opt == '-h' or opt == '--help':
-            dipspades_logic.usage()
-            sys.stderr.flush()
-            sys.exit(0)            
-        # for all other options (and -o also)
+            options_storage.usage("", dipspades=True)
+            sys.exit(0)
+        elif opt == "--help-hidden":
+            options_storage.usage("", show_hidden=True, dipspades=True)
+            sys.exit(0)
+        # for all other options
         cur_opt_arg = " " + opt + " " + arg
         if opt.startswith("--"):  # long option
             if opt[2:] in options_storage.long_options or (opt[2:] + "=") in options_storage.long_options:
@@ -75,7 +69,7 @@ def main():
                     dipspades_logic_py_command_line += cur_opt_arg
 
     if not output_dir:
-        support.error("The output_dir is not set! It is a mandatory parameter (-o output_dir).", binary_name='dipSPAdes')
+        support.error("The output_dir is not set! It is a mandatory parameter (-o output_dir).", dipspades=True)
 
     spades_output_dir = os.path.join(output_dir, "spades")
     dipspades_output_dir = os.path.join(output_dir, "dipspades")
@@ -89,18 +83,14 @@ def main():
 
     spades_py_command_line += " -o " + spades_output_dir
     dipspades_logic_py_command_line += " -o " + dipspades_output_dir
-    #log = dipspades_logic.create_log(output_dir) TODO: log
 
-    #print ("hello", options, not_options)
-    #print (dipspades_logic_py_command_line)
-    #print (spades_py_command_line)
     spades.main(spades_py_command_line.split())
     spades_result = os.path.join(spades_output_dir, "contigs.fasta")
     if not os.path.isfile(spades_result):
         support.error("Something went wrong and SPAdes did not generate haplocontigs. "
-                      "DipSPAdes cannot proceed without them, aborting.", binary_name='dipSPAdes')
+                      "DipSPAdes cannot proceed without them, aborting.", dipspades=True)
     dipspades_logic_py_command_line += " --hap " + spades_result
-    dipspades_logic.main(dipspades_logic_py_command_line, command_line_to_str(sys.argv), spades.spades_home, spades.bin_home)
+    dipspades_logic.main(dipspades_logic_py_command_line.split(), sys.argv, spades.spades_home, spades.bin_home)
 
 
 if __name__ == '__main__':
