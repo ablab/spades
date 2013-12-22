@@ -359,7 +359,7 @@ public:
     template<class Streams>
     size_t BuildExtensionIndexFromStream(
             IndexT &index, Streams &streams, io::SingleStream* contigs_stream = 0,
-            size_t read_buffer_size = 536870912) const {
+            size_t read_buffer_size = 0) const {
         unsigned nthreads = (unsigned) streams.size();
 
         // First, build a k+1-mer index

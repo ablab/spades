@@ -104,7 +104,7 @@ class DeBruijnKMerSplitter : public RtSeqKMerSplitter {
 
  public:
   DeBruijnKMerSplitter(const std::string &work_dir,
-                       unsigned K, KmerFilter kmer_filter, size_t read_buffer_size = READS_BUFFER_SIZE, uint32_t seed = 0)
+                       unsigned K, KmerFilter kmer_filter, size_t read_buffer_size = 0, uint32_t seed = 0)
       : RtSeqKMerSplitter(work_dir, K, seed), kmer_filter_(kmer_filter), read_buffer_size_(read_buffer_size) {
   }
  protected:
@@ -129,7 +129,7 @@ class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
                            unsigned K, uint32_t seed,
                            io::ReadStreamList<Read>& streams,
                            io::SingleStream* contigs_stream = 0,
-                           size_t read_buffer_size = READS_BUFFER_SIZE)
+                           size_t read_buffer_size = 0)
       : DeBruijnKMerSplitter<KmerFilter>(work_dir, K, KmerFilter(), read_buffer_size, seed),
         streams_(streams), contigs_(contigs_stream), rl_(0) {
   }
@@ -258,7 +258,7 @@ class DeBruijnGraphKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
 
  public:
   DeBruijnGraphKMerSplitter(const std::string &work_dir,
-                            unsigned K, const Graph &g, size_t read_buffer_size = READS_BUFFER_SIZE)
+                            unsigned K, const Graph &g, size_t read_buffer_size = 0)
       : DeBruijnKMerSplitter<KmerFilter>(work_dir, K, KmerFilter(), read_buffer_size), g_(g) {}
 
   virtual path::files_t Split(size_t num_files);
@@ -349,7 +349,7 @@ class DeBruijnKMerKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
 
  public:
   DeBruijnKMerKMerSplitter(const std::string &work_dir,
-                           unsigned K_target, unsigned K_source, bool add_rc, size_t read_buffer_size = READS_BUFFER_SIZE)
+                           unsigned K_target, unsigned K_source, bool add_rc, size_t read_buffer_size = 0)
       : DeBruijnKMerSplitter<KmerFilter>(work_dir, K_target, KmerFilter(), read_buffer_size), K_source_(K_source), add_rc_(add_rc) {}
 
   void AddKMers(const std::string &file) {

@@ -14,7 +14,7 @@ public:
 
     template<class Graph>
     void BuildIndexFromGraph(IndexT &index,
-                             const Graph/*T*/ &g, size_t read_buffer_size = 536870912) const {
+                             const Graph/*T*/ &g, size_t read_buffer_size = 0) const {
         base::BuildIndexFromGraph(index, g, read_buffer_size);
 
         // Now use the index to fill the coverage and EdgeId's

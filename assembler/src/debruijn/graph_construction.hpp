@@ -104,7 +104,7 @@ inline debruijn_config::construction CreateDefaultConstructionConfig() {
     early_tc.enable = false;
     config.early_tc = early_tc;
     config.keep_perfect_loops = true;
-    config.read_buffer_size = 524288;
+    config.read_buffer_size = 0;
     return config;
 }
 
@@ -121,7 +121,7 @@ void EarlyClipTips(size_t k, const debruijn_config::construction params, size_t 
 template<class Graph, class Read, class Index>
 size_t ConstructGraphUsingExtentionIndex(const debruijn_config::construction params,
 		io::ReadStreamList<Read>& streams, Graph& g,
-		Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr(), size_t read_buffer_size = 536870912) {
+		Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr(), size_t read_buffer_size = 0) {
 
     size_t k = g.k();
 	INFO("Constructing DeBruijn graph for k=" << k);
