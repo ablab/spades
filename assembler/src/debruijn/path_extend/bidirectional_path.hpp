@@ -1328,7 +1328,6 @@ inline size_t LoopDetector::LastLoopCount(size_t edges) const {
 inline bool LoopDetector::IsCycled(size_t loopLimit, size_t& skip_identical_edges) const {
     skip_identical_edges = 0;
     size_t loop_count = LastLoopCount(skip_identical_edges, loopLimit);
-
     while (loop_count > 0) {
         if (loop_count >= loopLimit) {
             return true;

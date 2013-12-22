@@ -727,7 +727,7 @@ public:
     }
 
     bool DetectCycle(BidirectionalPath& path) {
-        size_t skip_identical_edges = 0;
+        DEBUG("detect cycle");
         if (is_detector_.CheckCycled(path)) {
             DEBUG("Checking IS cycle");
             int loop_pos = is_detector_.RemoveCycle(path);
@@ -737,6 +737,8 @@ public:
                 return true;
             }
         }
+        DEBUG("check is cycled? " << maxLoops_);
+        size_t skip_identical_edges = 0;
         if (path.getLoopDetector().IsCycled(maxLoops_, skip_identical_edges)) {
             size_t loop_size = path.getLoopDetector().LoopEdges(skip_identical_edges, 1);
             DEBUG("Path is Cycled! skip identival edges = " << skip_identical_edges);
@@ -763,6 +765,9 @@ public:
     virtual bool MakeGrowStep(BidirectionalPath& path) {
         if (InExistingLoop(path)) {
             DEBUG("in existing loop");
+            return false;
+        }
+        if (DetectCycle(path)) {
             return false;
         }
         DEBUG("Making step");
