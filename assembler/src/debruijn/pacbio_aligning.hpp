@@ -13,7 +13,7 @@ namespace debruijn_graph {
 class PacBioAligning : public spades::AssemblyStage {
 public:
     PacBioAligning()
-            : AssemblyStage("PacBioAligning", "pacbio_aligning") {
+            : AssemblyStage("PacBio Aligning", "pacbio_aligning") {
     }
     void run(conj_graph_pack &gp, const char*);
 };

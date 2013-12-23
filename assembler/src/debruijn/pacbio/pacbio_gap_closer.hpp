@@ -288,9 +288,9 @@ public:
             replacement[first_conj] = g_.conjugate(newEdge);
             replacement[second_conj] = g_.conjugate(newEdge);
         }
-        INFO("Closed " << closed_gaps);
-        INFO(not_unique_gaps << " were not closed due to more than one possible pairing.");
-        INFO(chained_gaps << " were skipped because of gaps chains.");
+        INFO("Closed " << closed_gaps << " gaps");
+        INFO("Total " << not_unique_gaps << " were not closed due to more than one possible pairing");
+        INFO("Total " << chained_gaps << " were skipped because of gap chains");
         //TODO: chains of gaps!
     }
 private:

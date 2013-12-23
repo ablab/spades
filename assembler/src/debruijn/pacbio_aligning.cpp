@@ -64,8 +64,6 @@ void ProcessReadsBatch(conj_graph_pack &gp,
 }
 
 void align_pacbio(conj_graph_pack &gp, int lib_id) {
-    INFO("starting pacbio tests");
-
     auto pacbio_read_stream = single_easy_reader(cfg::get().ds.reads[lib_id],
                                                  false, false);
     io::ReadStreamList<io::SingleRead> streams(pacbio_read_stream);
@@ -84,7 +82,7 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
     std::vector<io::SingleRead> reads(read_buffer_size);
     io::SingleRead read;
     size_t buffer_no = 0;
-    INFO("Seed size: " << cfg::get().pb.pacbio_k);
+    INFO("Usign seed size: " << cfg::get().pb.pacbio_k);
     pacbio::PacBioMappingIndex<ConjugateDeBruijnGraph> pac_index(gp.g,
                                                          cfg::get().pb.pacbio_k,
                                                          cfg::get().K, cfg::get().pb.ignore_middle_alignment);
@@ -140,9 +138,10 @@ void PacBioAligning::run(conj_graph_pack &gp, const char*) {
             align_pacbio(gp, lib_id);
         }
     }
-    if (lib_id == -1) {
+
+    if (lib_id == -1)
         INFO("no PacBio lib found");
-    }
+
     stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
     printer(ipp_final_gap_closed);
 }
