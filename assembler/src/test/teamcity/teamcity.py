@@ -206,12 +206,16 @@ i = 0
 while i < len(dataset_info.spades_params):
     option = dataset_info.spades_params[i]
     spades_params.append(str(option))
-    if i < len(dataset_info.spades_params) - 1 and (option == '-1' or option == '-2' or option == '--12' or option == '-s'):
+    if i < len(dataset_info.spades_params) - 1 and (option == '-1' or option == '-2' or option == '--12' or option == '-s' or option == '--hap'):
         spades_params.append(os.path.join(dataset_path, str(dataset_info.spades_params[i + 1])))
         i += 1
     i += 1
 
-spades_cmd = "./spades.py --disable-gzip-output " + " ".join(spades_params) + " -o " + output_dir
+spades_cmd = ""
+if 'dipspades' in dataset_info.__dict__ and dataset_info.dipspades:
+    spades_cmd = "./dipspades.py " + " ".join(spades_params) + " -o " + output_dir
+else:
+    spades_cmd = "./spades.py --disable-gzip-output " + " ".join(spades_params) + " -o " + output_dir
 
 #run spades
 ecode = os.system(spades_cmd)
