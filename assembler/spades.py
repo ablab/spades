@@ -27,7 +27,7 @@ import support
 support.check_python_version()
 
 from process_cfg import merge_configs, empty_config, load_config_from_file
-import bh_logic
+import hammer_logic
 import spades_logic
 import options_storage
 addsitedir(ext_python_modules_home)
@@ -86,6 +86,8 @@ def print_used_values(cfg, log):
         else:
             log.info("  Multi-cell mode (you should set '--sc' flag if input data"\
                      " was obtained with MDA (single-cell) technology")
+        if cfg["dataset"].iontorrent:
+            log.info("  IonTorrent data")
 
         log.info("  Reads:")
         dataset_data = pyyaml.load(open(cfg["dataset"].yaml_filename, 'r'))
@@ -176,6 +178,8 @@ def fill_cfg(options_to_parse, log):
 
         elif opt == "--sc":
             options_storage.single_cell = True
+        elif opt == "--iontorrent":
+            options_storage.iontorrent = True
         elif opt == "--disable-gzip-output":
             options_storage.disable_gzip_output = True
         elif opt == "--disable-gzip-output:false":
@@ -310,6 +314,7 @@ def fill_cfg(options_to_parse, log):
 
     # dataset section
     cfg["dataset"].__dict__["single_cell"] = options_storage.single_cell
+    cfg["dataset"].__dict__["iontorrent"] = options_storage.iontorrent
     cfg["dataset"].__dict__["yaml_filename"] = options_storage.dataset_yaml_filename
     if options_storage.developer_mode and options_storage.reference:
         cfg["dataset"].__dict__["reference"] = options_storage.reference
@@ -323,6 +328,7 @@ def fill_cfg(options_to_parse, log):
             cfg["error_correction"].__dict__["qvoffset"] = options_storage.qvoffset
         if options_storage.bh_heap_check:
             cfg["error_correction"].__dict__["heap_check"] = options_storage.bh_heap_check
+        cfg["error_correction"].__dict__["iontorrent"] = options_storage.iontorrent
 
     # assembly
     if not options_storage.only_error_correction:
@@ -507,7 +513,7 @@ def main(args):
                     bh_cfg.__dict__["dataset_yaml_filename"] = cfg["dataset"].yaml_filename
 
                 log.info("\n===== %s started. \n" % STAGE_NAME)
-                bh_logic.run_bh(corrected_dataset_yaml_filename, tmp_configs_dir, bin_home, bh_cfg, not_used_dataset_data,
+                hammer_logic.run_hammer(corrected_dataset_yaml_filename, tmp_configs_dir, bin_home, bh_cfg, not_used_dataset_data,
                     ext_python_modules_home, log)
                 log.info("\n===== %s finished. \n" % STAGE_NAME)
 
@@ -683,11 +689,11 @@ def main(args):
             shutil.rmtree(tmp_configs_dir)
 
         #log.info("")
-        if os.path.isdir(os.path.dirname(corrected_dataset_yaml_filename)):
+        if "error_correction" in cfg and os.path.isdir(os.path.dirname(corrected_dataset_yaml_filename)):
             log.info(" * Corrected reads are in " + os.path.dirname(corrected_dataset_yaml_filename) + "/")
-        if os.path.isfile(result_contigs_filename):
+        if "assembly" in cfg and os.path.isfile(result_contigs_filename):
             log.info(" * Assembled contigs are in " + result_contigs_filename)
-        if os.path.isfile(result_scaffolds_filename):
+        if "assembly" in cfg and os.path.isfile(result_scaffolds_filename):
             log.info(" * Assembled scaffolds are in " + result_scaffolds_filename)
         #log.info("")
 

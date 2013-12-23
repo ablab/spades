@@ -70,7 +70,24 @@ def prepare_config_bh(filename, cfg, log):
     process_cfg.substitute_params(filename, subst_dict, log)
 
 
-def run_bh(corrected_dataset_yaml_filename, configs_dir, execution_home, cfg, not_used_dataset_data, ext_python_modules_home, log):
+def prepare_config_ih(filename, cfg, ext_python_modules_home):
+    addsitedir(ext_python_modules_home)
+    if sys.version.startswith('2.'):
+        import pyyaml2 as pyyaml
+    elif sys.version.startswith('3.'):
+        import pyyaml3 as pyyaml
+
+    data = pyyaml.load(open(filename, 'r'))
+    data["dataset"] = process_cfg.process_spaces(cfg.dataset_yaml_filename)
+    data["working_dir"] = process_cfg.process_spaces(cfg.tmp_dir)
+    data["output_dir"] = process_cfg.process_spaces(cfg.output_dir)
+    data["hard_memory_limit"] = cfg.max_memory
+    data["max_nthreads"] = cfg.max_threads
+    pyyaml.dump(data, open(filename, 'w'))
+
+
+def run_hammer(corrected_dataset_yaml_filename, configs_dir, execution_home, cfg,
+               not_used_dataset_data, ext_python_modules_home, log):
     addsitedir(ext_python_modules_home)
     if sys.version.startswith('2.'):
         import pyyaml2 as pyyaml
@@ -80,22 +97,31 @@ def run_bh(corrected_dataset_yaml_filename, configs_dir, execution_home, cfg, no
     dst_configs = os.path.join(cfg.output_dir, "configs")
     if os.path.exists(dst_configs):
         shutil.rmtree(dst_configs)
-    shutil.copytree(os.path.join(configs_dir, "hammer"), dst_configs)
-    cfg_file_name = os.path.join(dst_configs, "config.info")
+    if cfg.iontorrent:
+        shutil.copytree(os.path.join(configs_dir, "ionhammer"), dst_configs)
+        cfg_file_name = os.path.join(dst_configs, "ionhammer.cfg")
+    else:
+        shutil.copytree(os.path.join(configs_dir, "hammer"), dst_configs)
+        cfg_file_name = os.path.join(dst_configs, "config.info")
     # removing template configs
     for root, dirs, files in os.walk(dst_configs):
         for cfg_file in files:
             cfg_file = os.path.join(root, cfg_file)
-            if cfg_file.endswith('.info.template'):
+            if cfg_file.endswith('.template'):
                 if os.path.isfile(cfg_file.split('.template')[0]):
                     os.remove(cfg_file)
                 else:
                     os.rename(cfg_file, cfg_file.split('.template')[0])
 
     cfg.tmp_dir = support.get_tmp_dir(prefix="hammer_")
-    prepare_config_bh(cfg_file_name, cfg, log)
+    if cfg.iontorrent:
+        prepare_config_ih(cfg_file_name, cfg, ext_python_modules_home)
+        binary_name = "ionhammer"
+    else:
+        prepare_config_bh(cfg_file_name, cfg, log)
+        binary_name = "hammer"
 
-    command = [os.path.join(execution_home, "hammer"),
+    command = [os.path.join(execution_home, binary_name),
                os.path.abspath(cfg_file_name)]
 
     log.info("\n== Running read error correction tool: " + ' '.join(command) + "\n")
