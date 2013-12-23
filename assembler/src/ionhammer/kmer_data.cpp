@@ -135,7 +135,7 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
     KMerBuffer &entry = tmp_entries[i];
     entry.resize(num_files);
     for (unsigned j = 0; j < num_files; ++j) {
-      entry[j].reserve(size_t(1.1 * cell_size));
+      entry[j].reserve(size_t(1.1 * double(cell_size)));
     }
   }
 
@@ -238,5 +238,5 @@ void KMerDataCounter::FillKMerData(KMerData &data) {
   }
 
   INFO("Merge done. There are " << data.size() << " kmers in total. "
-       "Among them " << singletons << " (" <<  100.0 * singletons / data.size() << "%) are singletons.");
+       "Among them " << singletons << " (" <<  100.0 * double(singletons) / double(data.size()) << "%) are singletons.");
 }

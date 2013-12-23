@@ -20,7 +20,7 @@ hammer::HKMer center(const KMerData &data, const std::vector<size_t>& kmers) {
       const hammer::KMerStat &k = data[kmers[j]];
       // FIXME: switch to MLE when we'll have use per-run quality values
 #if 1
-      scores(k.kmer[i].nucl, k.kmer[i].len) += k.count * (1 - k.qual);
+      scores(k.kmer[i].nucl, k.kmer[i].len) += double(k.count) * (1 - k.qual);
 #else
       for (unsigned n = 0; n < 4; ++n)
         for (unsigned l = 1; l < 64; ++l)
@@ -49,7 +49,7 @@ bool assign(KMerData &kmer_data, const std::vector<size_t> &cluster) {
   }
 
   for (size_t j = 0; j < cluster.size(); ++j)
-    kmer_data[cluster[j]].changeto = idx;
+    kmer_data[cluster[j]].changeto = unsigned(idx);
 
   return nonread;
 }

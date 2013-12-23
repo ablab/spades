@@ -57,7 +57,7 @@ std::pair<size_t, size_t> SubKMerSplitter::split() {
 }
 
 #if 1
-static bool canMerge(const ConcurrentDSU &uf, int x, int y) {
+static bool canMerge(const ConcurrentDSU &uf, unsigned x, unsigned y) {
   size_t szx = uf.set_size(x), szy = uf.set_size(y);
   const size_t hardthr = 2500;
 
@@ -74,7 +74,7 @@ static bool canMerge(const ConcurrentDSU &uf, int x, int y) {
   return true;
 }
 #else
-static bool canMerge(const ConcurrentDSU &uf, int x, int y) {
+static bool canMerge(const ConcurrentDSU &uf, unsigned x, unsigned y) {
   return (uf.set_size(x) + uf.set_size(y)) < 10000;
 }
 #endif
@@ -86,10 +86,10 @@ static void processBlockQuadratic(ConcurrentDSU  &uf,
                                   unsigned tau) {
   size_t blockSize = block.size();
   for (size_t i = 0; i < blockSize; ++i) {
-    size_t x = block[i];
+    auto x = static_cast<unsigned>(block[i]);
     hammer::HKMer kmerx = data[x].kmer;
     for (size_t j = i + 1; j < blockSize; j++) {
-      size_t y = block[j];
+      auto y = static_cast<unsigned>(block[j]);
       hammer::HKMer kmery = data[y].kmer;
       if (uf.find_set(x) != uf.find_set(y) &&
           canMerge(uf, x, y) &&

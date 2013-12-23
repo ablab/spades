@@ -23,7 +23,7 @@ union HomopolymerRun {
   HomopolymerRun()
       : raw(0) {}
   HomopolymerRun(uint8_t nucl, uint8_t len)
-      : len(len), nucl(nucl) {}
+      : len(len & 63), nucl(nucl & 3) {}
 
   bool operator==(const HomopolymerRun &that) const {
     return raw == that.raw;
@@ -131,14 +131,14 @@ class HSeq {
 
     for (size_t i = 0; i < N / 2; ++i) {
       HomopolymerRun front = res[i], back = res[N - i - 1];
-      front.nucl = complement(front.nucl);
-      back.nucl = complement(back.nucl);
+      front.nucl = complement(front.nucl) & 3;
+      back.nucl = complement(back.nucl) & 3;
       res[i] = back;
       res[N - i - 1] = front;
     }
 
     if (N & 1)
-      res[N/2].nucl = complement(res[N/2].nucl);
+      res[N/2].nucl = complement(res[N/2].nucl) & 3;
 
     return res;
   }
@@ -171,14 +171,14 @@ class HSeq {
     // Easy case - just add to run
     HomopolymerRun &last = data_[N-1];
     if (last.nucl == nucl) {
-      last.len += 1;
+      last.len = (last.len + 1) & 63;
       return *this;
     }
 
     // Hard case - have to shift the stuff
     for (size_t i = 0; i < N - 1; ++i)
       data_[i] = data_[i + 1];
-    data_[N - 1].nucl = nucl;
+    data_[N - 1].nucl = nucl & 3;
     data_[N - 1].len = 1;
 
     return *this;

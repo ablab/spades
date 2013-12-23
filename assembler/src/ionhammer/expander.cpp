@@ -44,7 +44,7 @@ bool Expander::operator()(const io::SingleRead &r) {
             changed_ += 1;
 
             kmer_data.lock();
-            kmer_data.changeto = idx;
+            kmer_data.changeto = static_cast<unsigned>(idx);
             kmer_data.unlock();
         }
     }

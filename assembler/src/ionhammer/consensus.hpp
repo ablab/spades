@@ -13,9 +13,11 @@ inline
 std::pair<hammer::HomopolymerRun, double> consensus(const boost::numeric::ublas::matrix<double>& scores) {
   double inf = -std::numeric_limits<double>::infinity();
 
-  unsigned nucl = 0, len = 1; double max = inf;
-  for (unsigned j = 0; j < 4; ++j)
-    for (unsigned k = 1; k < 64; ++k)
+  double max = inf;
+  uint8_t nucl = 0;
+  uint8_t len = 1;
+  for (uint8_t j = 0; j < 4; ++j)
+    for (uint8_t k = 1; k < 64; ++k)
       if (scores(j, k) > max) {
         nucl = j;
         len = k;

@@ -19,7 +19,7 @@ struct IonPairAlignEvent {
   IonEventType type;
   It1 x_iter;
   It2 y_iter;
-  size_t length;
+  unsigned length;
 };
 
 template<typename It1, typename It2>

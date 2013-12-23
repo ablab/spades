@@ -38,8 +38,8 @@ typedef std::vector<ScoreMatrix> ScoreStorage;
 
 template <typename It1, typename It2>
 static bool exactAlignH(It1 a_begin, It1 a_initial_pos, It1 a_end,
-                        It2 b_initial_pos, It2 b_end,
-                        size_t max_offset, size_t n_cmp, int* p_offset)
+                        It2 b_initial_pos, It2 /*b_end*/,
+                        uint8_t max_offset, uint8_t n_cmp, int* p_offset)
 {
   int M = max_offset * 2 + 1;
   for (int i = 0; i < M; i++) {
@@ -64,7 +64,7 @@ static bool exactAlignH(It1 a_begin, It1 a_initial_pos, It1 a_end,
 
 template <typename It1, typename It2>
 static int overlapAlignH(It1 a_begin, It1 a_end, It2 b_begin, It2 b_end,
-                         size_t max_offset)
+                         uint8_t max_offset)
 {
   // TODO: use dynamic programming
   int M = max_offset * 2 + 1;
@@ -121,14 +121,14 @@ template <typename It1, typename It2>
 static int alignH(It1 read_begin, It1 read_end,
                   It2 consensus_begin, It2 consensus_end,
                   int approx_read_offset, size_t n_skip_consensus,
-                  size_t n_side = 5, size_t n_cmp = 8) {
+                  uint8_t n_side = 5, uint8_t n_cmp = 8) {
 
   int left_offset = n_side;
 
   auto x_begin = read_begin + approx_read_offset - n_side;
   if (x_begin + n_cmp >= read_end) {
     x_begin = read_end - n_cmp - 2 * n_side;
-    left_offset = read_begin + approx_read_offset - x_begin;
+    left_offset = int(read_begin + approx_read_offset - x_begin);
   }
 
   if (x_begin < read_begin) {
@@ -146,21 +146,21 @@ static int alignH(It1 read_begin, It1 read_end,
     y_end = consensus_end;
 
   // glocal alignment of homopolymer runs
-  const int kDirUpLeft = 0;
-  const int kDirUp = 1;
-  const int kDirLeft = 2;
+  const short kDirUpLeft = 0;
+  const short kDirUp = 1;
+  const short kDirLeft = 2;
 
-  const int kBaseDiff = -3;
-  const int kRunInsertionStart = -4;
-  const int kRunInsertionExtend = -5;
-  const int kRunDeletionStart = -4;
-  const int kRunDeletionExtend = -5;
-  const int kNuclMismatch = -5;
-  const int kNuclMatch = 1;
-  const int kFullMatch = 5;
+  const short kBaseDiff = -3;
+  const short kRunInsertionStart = -4;
+  const short kRunInsertionExtend = -5;
+  const short kRunDeletionStart = -4;
+  const short kRunDeletionExtend = -5;
+  const short kNuclMismatch = -5;
+  const short kNuclMatch = 1;
+  const short kFullMatch = 5;
 
-  size_t m = x_end - x_begin;
-  size_t n = y_end - y_begin;
+  int m = int(x_end - x_begin);
+  int n = int(y_end - y_begin);
 
   using namespace boost::numeric::ublas;
   matrix<Score> scores(m + 1, n + 1, Score(0, 0));
@@ -168,10 +168,10 @@ static int alignH(It1 read_begin, It1 read_end,
   size_t highest_x = 0, highest_y = 0;
   int highest_entry = std::numeric_limits<int>::min();
 
-  for (size_t i = 1; i <= m; i++) {
-    for (size_t j = 1; j <= n; j++) {
+  for (int i = 1; i <= m; i++) {
+    for (int j = 1; j <= n; j++) {
       int best_score = std::numeric_limits<int>::min();
-      int best_dir = 0;
+      short best_dir = 0;
 
       auto run_x = *(x_begin + i - 1);
       auto run_y = *(y_begin + j - 1);
@@ -224,7 +224,7 @@ static int alignH(It1 read_begin, It1 read_end,
         best_dir = kDirLeft;
       }
 
-      scores(i, j) = Score(best_score, best_dir);
+      scores(i, j) = Score(static_cast<short>(best_score), best_dir);
 
       if (i == m || j == n) {
         const int kOffset = 4;
@@ -244,10 +244,10 @@ static int alignH(It1 read_begin, It1 read_end,
     return alignH(read_begin, read_end,
                   consensus_begin, consensus_end,
                   approx_read_offset, n_skip_consensus,
-                  n_side, n_cmp * 2);
+                  n_side, uint8_t(n_cmp * 2));
 
-  int x = highest_x;
-  int y = highest_y;
+  int x = int(highest_x);
+  int y = int(highest_y);
   while (x > 0 && y > 0) {
     int dir = scores(x, y).dir;
     switch (dir) {
@@ -389,8 +389,7 @@ class CorrectedRead {
                    const ScoreStorage &scores,
                    unsigned rollback_end,
                    const FlowSpaceRead &read,
-                   bool debug_mode,
-                   double trim_threshold=1.0)
+                   bool debug_mode)
         : approx_read_offset(approximate_read_offset),
           rollback_end(rollback_end),
           alignment(kChunkNotAligned), raw_read(read),
@@ -446,10 +445,10 @@ class CorrectedRead {
 
     void AlignRightEndAgainstRead(size_t skip=0) {
       const auto& data = raw_read.data();
-      int position_on_read = approx_read_offset + consensus.size() - 1;
+      int position_on_read = approx_read_offset + int(consensus.size()) - 1;
       int offset = alignH(data.rbegin(), data.rend(),
                           consensus.rbegin(), consensus.rend(),
-                          data.size() - 1 - position_on_read, skip);
+                          int(data.size()) - 1 - position_on_read, skip);
       if (debug_mode) {
         std::cerr << "[approx. read offset (right)] before: " << approx_read_offset << "; after: "
                   << approx_read_offset - offset << std::endl;
@@ -459,11 +458,11 @@ class CorrectedRead {
     }
 
     int approx_end_read_offset() const {
-      return approx_read_offset + consensus.size();
+      return approx_read_offset + int(consensus.size());
     }
 
     int approx_end_read_offset_untrimmed() const {
-      return approx_end_read_offset() + trimmed_right;
+      return approx_end_read_offset() + int(trimmed_right);
     }
 
    private:
@@ -485,18 +484,18 @@ class CorrectedRead {
         int white_l = 0;
         for (int i = right_end_offset - 1; i >= 0; --i)
           white_l += raw_read[i].len;
-        for (int i = 0; i < consensus.size(); ++i)
+        for (size_t i = 0; i < consensus.size(); ++i)
           white_l -= consensus[i].len;
         for (int i = 0; i < white_l; ++i)
           std::cerr << ' ';
-        for (int i = std::max(-white_l, 0); i < consensus.size(); ++i)
+        for (size_t i = std::max(-white_l, 0); i < consensus.size(); ++i)
           std::cerr << consensus[i].str();
         std::cerr << std::endl;
 
         for (int i = 0; i < chunk.approx_read_offset; ++i)
           for (int j = 0; j < raw_read[i].len; ++j)
             std::cerr << ' ';
-        for (int i = 0; i < chunk.consensus.size(); ++i)
+        for (size_t i = 0; i < chunk.consensus.size(); ++i)
           std::cerr << chunk.consensus[i].str();
         std::cerr << std::endl;
       }
@@ -537,7 +536,7 @@ class CorrectedRead {
         }
 
         int n_trim = 0;
-        int n_runs = consensus.size();
+        int n_runs = int(consensus.size());
 
         if (overlap > 0 && rollback_end > 0) {
           for (int i = 0; i < overlap; i++) {
@@ -587,7 +586,7 @@ class CorrectedRead {
     bool MergeWithOverlappingChunk(ConsensusChunk& chunk) {
       if (debug_mode)
         std::cerr << "[MergeWithOverlappingChunk]" << std::endl;
-      int right_end_offset = approx_read_offset + consensus.size();
+      int right_end_offset = approx_read_offset + int(consensus.size());
       size_t overlap = right_end_offset - chunk.approx_read_offset;
       if (overlap > chunk.consensus_scores.size())
         return false;
@@ -605,7 +604,7 @@ class CorrectedRead {
         return true;
 
       alignment = kChunkNotAligned;
-      int right_end_offset = approx_read_offset + consensus.size();
+      int right_end_offset = approx_read_offset + int(consensus.size());
 
       if (right_end_offset <= chunk.approx_read_offset)
         return MergeWithDisjointChunk(chunk);
@@ -647,7 +646,7 @@ class CorrectedRead {
 
     ValidHKMerGenerator<hammer::K> gen;
     int pos;
-    int skipped;
+    unsigned skipped;
 
     hammer::HKMer last_good_center;
     bool last_good_center_is_defined;
@@ -702,8 +701,8 @@ class CorrectedRead {
       if (replacing) {
         if (rollback_size < 0)
           rollback_size = 0;
-        if (rollback_size < scores.size())
-          rollback_end = scores.size() - rollback_size;
+        if (rollback_size < int(scores.size()))
+            rollback_end = int(scores.size()) - rollback_size;
         replacing = false;
         rollback_size = 0;
       }
@@ -768,7 +767,7 @@ class CorrectedRead {
       auto k = kmer_data_[center];
 
       for (size_t i = 0; i < hammer::K; ++i)
-        scores[chunk_pos + i](center[i].nucl, center[i].len) += k.count * (1.0 - k.qual);
+        scores[chunk_pos + i](center[i].nucl, center[i].len) += double(k.count) * (1.0 - k.qual);
 
       last_good_center = center;
       last_good_center_is_defined = true;
@@ -780,7 +779,7 @@ class CorrectedRead {
     ChunkCollector(const io::SingleRead& r, CorrectedRead &cread,
                    const KMerData &kmer_data, bool debug_mode) :
       r(r), cread_(cread), kmer_data_(kmer_data), debug_mode_(debug_mode),
-      gen(r), pos(gen.trimmed_left()), skipped(0),
+      gen(r), pos(int(gen.trimmed_left())), skipped(0),
       last_good_center(), last_good_center_is_defined(false),
       replacing(false), rollback_size(0),
       need_to_align(false), approx_read_offset(0), scores(), chunk_pos(0),
@@ -879,7 +878,7 @@ class CorrectedRead {
         for (int i = 0; i < iter->approx_read_offset; ++i)
           for (int j = 0; j < raw_read_[i].len; ++j)
             std::cerr << ' ';
-        for (int i = 0; i < iter->consensus.size(); ++i)
+        for (size_t i = 0; i < iter->consensus.size(); ++i)
           std::cerr << iter->consensus[i].str();
         std::cerr << std::endl;
       }
@@ -897,8 +896,8 @@ class CorrectedRead {
 
   void AttachUncorrectedRuns() {
     const auto& data = raw_read_.data();
-    int n_raw = raw_read_.size();
-    int n_corr = corrected_runs_.size();
+    int n_raw = int(raw_read_.size());
+    int n_corr = int(corrected_runs_.size());
     const int skip_from_end = 3;
     if (n_corr < skip_from_end) {
       std::copy(data.begin(), data.end(), std::back_inserter(corrected_runs_));
@@ -945,13 +944,13 @@ class SingleReadCorrector {
   };
 
   struct NoDebug : public DebugOutputPredicate {
-    virtual bool operator()(const io::SingleRead &read) {
+    virtual bool operator()(const io::SingleRead &) {
       return false;
     }
   };
 
   struct FullDebug : public DebugOutputPredicate {
-    virtual bool operator()(const io::SingleRead &read) {
+    virtual bool operator()(const io::SingleRead &) {
       return true;
     }
   };

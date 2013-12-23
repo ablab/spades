@@ -52,6 +52,7 @@ static bool stage(hammer_config::HammerStage start, hammer_config::HammerStage c
     case hammer_config::HammerStage::ReadCorrection:
       return current == hammer_config::HammerStage::ReadCorrection;
   }
+  assert(0);
 }
 
 int main(int argc, char** argv) {
