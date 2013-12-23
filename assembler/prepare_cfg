@@ -5,6 +5,7 @@
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
+set -e
 
 export assembler="`pwd`"
 export src="$assembler/src"

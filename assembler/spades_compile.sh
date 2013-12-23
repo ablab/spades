@@ -6,6 +6,8 @@
 # See file LICENSE for details.
 ############################################################################
 
+set -e
+
 if [ "x$PREFIX" == "x" ]; then
   PREFIX=`pwd`
 fi
