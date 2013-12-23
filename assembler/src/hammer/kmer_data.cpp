@@ -138,8 +138,20 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
     WARN("Do 'ulimit -n " << file_limit << "' in the console to overcome the limit");
   }
 
-  size_t read_buffer = cfg::get().count_split_buffer;
-  size_t cell_size = (read_buffer / (num_files * sizeof(KMer)));
+  size_t reads_buffer_size = cfg::get().count_split_buffer;
+  if (reads_buffer_size == 0) {
+    reads_buffer_size = 536870912;
+# ifdef SPADES_USE_JEMALLOC
+    const size_t *cmem = 0;
+    size_t clen = sizeof(cmem);
+
+    je_mallctl("stats.cactive", &cmem, &clen, NULL, 0);
+    size_t mem_limit =  (size_t)((double)(get_memory_limit() - *cmem) / (nthreads * 3));
+    INFO("Memory available for splitting buffers: " << (double)mem_limit / 1024.0 / 1024.0 / 1024.0 << " Gb");
+    reads_buffer_size = std::min(reads_buffer_size, mem_limit);
+# endif
+  }
+  size_t cell_size = reads_buffer_size / (num_files * sizeof(KMer));
   // Set sane minimum cell size
   if (cell_size < 16384)
     cell_size = 16384;
