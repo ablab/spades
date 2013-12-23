@@ -81,15 +81,18 @@ def main():
     if not os.path.isdir(dipspades_output_dir):
         os.makedirs(dipspades_output_dir)
 
-    spades_py_command_line += " -o " + spades_output_dir
-    dipspades_logic_py_command_line += " -o " + dipspades_output_dir
-
-    spades.main(spades_py_command_line.split())
-    spades_result = os.path.join(spades_output_dir, "contigs.fasta")
-    if not os.path.isfile(spades_result):
-        support.error("Something went wrong and SPAdes did not generate haplocontigs. "
+    spades_result = ""
+    if spades_py_command_line != "./spades.py --diploid":
+        spades_py_command_line += " -o " + spades_output_dir
+        spades.main(spades_py_command_line.split())
+        spades_result = os.path.join(spades_output_dir, "contigs.fasta")
+        if not os.path.isfile(spades_result):
+            support.error("Something went wrong and SPAdes did not generate haplocontigs. "
                       "DipSPAdes cannot proceed without them, aborting.", dipspades=True)
-    dipspades_logic_py_command_line += " --hap " + spades_result
+
+    dipspades_logic_py_command_line += " -o " + dipspades_output_dir
+    if spades_result != "":
+        dipspades_logic_py_command_line += " --hap " + spades_result
     dipspades_logic.main(dipspades_logic_py_command_line.split(), sys.argv, spades.spades_home, spades.bin_home)
 
 
