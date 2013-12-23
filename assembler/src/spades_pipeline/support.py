@@ -69,7 +69,7 @@ def get_spades_binaries_info_message():
 
 
 def check_binaries(binary_dir, log):
-    for binary in ["hammer", "spades", "bwa-spades", "dipspades"]:
+    for binary in ["hammer", "ionhammer", "spades", "bwa-spades", "dipspades"]:
         binary_path = os.path.join(binary_dir, binary)
         if not os.path.isfile(binary_path):
             error("SPAdes binaries not found: " + binary_path + "\n" + get_spades_binaries_info_message(), log)

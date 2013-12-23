@@ -74,6 +74,9 @@ add_subdirectory(dipspades)
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../spades.py"
         DESTINATION bin
         COMPONENT runtime)
+install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../dipspades.py"
+        DESTINATION bin
+        COMPONENT runtime)
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../spades_init.py"
         DESTINATION bin
         COMPONENT runtime)
