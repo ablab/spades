@@ -141,21 +141,23 @@ public:
         for (auto iter = descr.begin(); iter != descr.end(); ++iter) {
             size_t edge_id = g_.int_id(iter->first);
             DEBUG(edge_id);
-            sort(iter->second.begin(), iter->second.end());
+            sort(iter->second.begin(), iter->second.end(), ReadPositionComparator());
             set<vector<MappingInstance> > edge_cluster_set;
             size_t len = iter->second.size();
             vector<vector<size_t> > similarity_list(len);
-	    int cnt = 0;
+            int cnt = 0;
             for (size_t i = 0; i < len; i++){
                 for (size_t j = i + 1; j < len; j++){
-                    if (iter->second[i].edge_position + max_similarity_distance < iter->second[j].edge_position) {
+                    if (iter->second[i].read_position + max_similarity_distance < iter->second[j].read_position) {
                         break;
                     }
                     if (similar(iter->second[i], iter->second[j])) {
                         similarity_list[i].push_back(j);
                         similarity_list[j].push_back(i);
-			cnt ++;
-			if (cnt % 10000 == 0) {DEBUG(cnt);}
+                        cnt ++;
+                        if (cnt % 10000 == 0) {
+                            DEBUG(cnt);
+                        }
                     }
                 }
             }
@@ -174,13 +176,15 @@ public:
                     size_t longest_len = 0;
                     auto cur_start = to_add.begin();
                     auto best_start = to_add.begin();
+                    int cur_edge_len = (int)g_.length(iter->first);
                     size_t j = 0;
                         DEBUG("new_cluster sz " << to_add.size());
                     for (auto j_iter = to_add.begin();
                             j_iter < to_add.end() - 1; j_iter++, j++) {
 //Do not spilt clusters in the middle, only beginning is interesting.
                         if ((j * 5 < to_add.size() || (j + 1) * 5 > to_add.size() * 4) &&
-                            !similar(*j_iter, *(j_iter + 1))) {
+                            !similar(*j_iter, *(j_iter + 1))
+                            && (j < 5000 && cur_edge_len - j < 5000)) {
                             if (longest_len < count) {
                                 longest_len = count;
                                 best_start = cur_start;
@@ -325,7 +329,7 @@ public:
                     (start_v == end_v &&
                      (double) (cur_first_index.read_position - prev_last_index.read_position) >
                      (double) (cur_first_index.edge_position + (int) g_.length(prev_edge) - prev_last_index.edge_position) * 1.3)) {
-                    DEBUG(" traversing tangled region between "<< g_.int_id(prev_edge)<< " " << g_.int_id(cur_edge));
+                    DEBUG(" traversing tangled hregion between "<< g_.int_id(prev_edge)<< " " << g_.int_id(cur_edge));
                     DEBUG(" first pair" << cur_first_index.str() << " edge_len" << g_.length(cur_edge));
                     DEBUG(" last pair" << prev_last_index.str() << " edge_len" << g_.length(prev_edge));
                     string s_add = "";
@@ -543,7 +547,9 @@ public:
                      const KmerCluster<Graph> &b) {
         EdgeId a_edge = a.edgeId;
         EdgeId b_edge = b.edgeId;
-
+        if (abs(a.sorted_positions[a.last_trustable_index].read_position - b.sorted_positions[b.first_trustable_index].read_position) > 5000) {
+            return 0;
+        }
         VertexId start_v = g_.EdgeEnd(a_edge);
         size_t addition = g_.length(a_edge);
         VertexId end_v = g_.EdgeStart(b_edge);
