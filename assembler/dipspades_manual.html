@@ -11,34 +11,21 @@
 <body>
 <h1>dipSPAdes 1.0 manual</h1>
 
-<ol>
-	<li><a href = "#ds">What is dipSPAdes?</a></li>
-	<ol>
-		<li><a href = "#ds_pipeline">dipSPAdes pipeline</a></li>
-	</ol>
-	<li><a href = "#sec_install">Installing dipSPAdes</a></li>
-
-	<li><a href = "#running">Running dipSPAdes</a></li>
-		<ol>
-			<li><a href = "#ds_input">dipSPAdes input</a></li>
-			<li><a href = "#options">dipSPAdes command line options</a></li>
-			<ol>
-				<li><a href = "#basic_opt">Basic options</a></li>
-				<li><a href = "#input_data">Input data</a></li>
-				<li><a href = "#adv_opt">Advanced options</a></li>
-				<li><a href = "#examples">Examples</a></li>
-                <li><a href = "#adv_examples">Examples of advanced options usage</a></li>
-			</ol>
-
-			<li><a href = "#ds_output">dipSPAdes output</a></li>
-			<ol>
-                <li><a href = "#align_output">Haplocontigs alignment output</a></li>
-				<li><a href = "#hapl_assembly_output">Haplotype assembly output</a></li>
-			</ol>
-		</ol>
-
-	<li><a href = "#feedback">Feedback and bug reports</a></li>
-</ol>
+1. <a href = "#ds">What is dipSPAdes?</a></br>
+&nbsp;&nbsp;&nbsp;&nbsp;1.1. <a href = "#ds_pipeline">dipSPAdes pipeline</a></br>
+2. <a href = "#sec_install">Installing dipSPAdes</a></br>
+3. <a href = "#running">Running dipSPAdes</a></br>
+&nbsp;&nbsp;&nbsp;&nbsp;3.1 <a href = "#ds_input">dipSPAdes input</a></br>
+&nbsp;&nbsp;&nbsp;&nbsp;3.2 <a href = "#options">dipSPAdes command line options</a></br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3.2.1 <a href = "#basic_opt">Basic options</a></br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3.2.2 <a href = "#input_data">Input data</a></br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3.2.3 <a href = "#adv_opt">Advanced options</a></br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3.2.4 <a href = "#examples">Examples</a></br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3.2.5 <a href = "#adv_examples">Examples of advanced options usage</a></br>
+&nbsp;&nbsp;&nbsp;&nbsp;3.3 <a href = "#ds_output">dipSPAdes output</a></br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3.3.1 <a href = "#align_output">Haplocontigs alignment output</a></br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3.3.2 <a href = "#hapl_assembly_output">Haplotype assembly output</a></br>
+4. <a href = "#feedback">Feedback and bug reports</a></br>
 
 <a id = "ds"></a>
 <h2>1. What is dipSPAdes?</h2>
@@ -46,24 +33,21 @@ dipSPAdes is a genome assembler designed specifically for diploid highly polymor
 It takes advantage of divergence between haplomes in repetitive genome regions to resolve them and construct longer contigs. 
 dipSPAdes produces consensus contigs (representing a consensus of both haplomes for the orthologous regions) and performs haplotype assembly.
 Note that dipSPAdes can only benefit from high polymorphism rate (at least 0.4%).
-For the data with low polymorphism rate no improvement in terms of N50 is expected. 
+For the data with low polymorphism rate no improvement in terms of N50 vs consentional assemblers is expected. 
 
 <a id = "ds_pipeline"></a>
-<h3>dipSPAdes pipeline</h3>
-dipSPAdes Pipeline consists of three steps.
-<ol>
-    <li>Assembly of haplocontigs (contigs representing both haplomes)</li>
-    <li>Consensus contigs construction</li>
-    <li>Haplotype assembly</li>
-</ol>
+<h3>1.1 dipSPAdes pipeline</h3>
+dipSPAdes pipeline consists of three steps: </br>
+&nbsp;&nbsp;&nbsp;&nbsp;1. Assembly of haplocontigs (contigs representing both haplomes).</br>
+&nbsp;&nbsp;&nbsp;&nbsp;2. Consensus contigs construction.</br>
+&nbsp;&nbsp;&nbsp;&nbsp;3. Haplotype assembly.</br>
 
 
 <a id = sec_install></a>
 <h2>2. Installing dipSPAdes</h2>
-dipSPAdes comes as a part of SPAdes assembler package.
-See <a href = manual.html#sec2>SPAdes manual</a> for installation instructions.
-
-You can additionally verify your dipSPAdes installation by running
+dipSPAdes comes as a part of SPAdes assembler package.</br>
+See <a href = manual.html#sec2>SPAdes manual</a> for installation instructions.</br>
+Please verify your dipSPAdes installation prior to initiate the dipSPAdes:
 <pre class="code">
 <code>
     &lt;spades installation dir>/dipspades.py --test
@@ -72,15 +56,19 @@ You can additionally verify your dipSPAdes installation by running
 
 <a id = "running"></a>
 <h2>3. Running dipSPAdes</h2>
+
 <a id = "ds_input"></a>
-<h3>2.1 dipSPAdes input</h2>
-dipSPAdes takes as an input libraries of reads in the same way as described in <a href=manual.html#sec3.1>SPAdes manual</a>.
-Also dipSPAdes can use haplocontigs provided by user.
-For example one can assemble haplocontigs with another assembler and run dipSPAdes with these haplocontigs (instead of reads) as an input.
-In this case the first step of dipSPAdes pipeline is skipped.
-If both reads and haplocontigs are provided as an input, dipSPAdes first computes haplocontigs from reads and then uses mixture of computed haplocontigs and haplocontigs provided by user for further steps.
+<h3>3.1 dipSPAdes input</h2>
+dipSPAdes can take as an input one of the three following alternatives:
+<ul>
+	<li><b>Reads</b>. dipSPAdes takes them in the same wat as described in <a href=manual.html#sec3.1>SPAdes manual</a>. In this case dipSPAdes run SPAdes to obtain haplocontigs at the first step "Assembly of haplocontigs".</li>
+	<li><b>Haplocontigs</b>. dipSPAdes can take haplocontigs computed using another assemblers. In this case dipSPAdes skips the first step and starts from the second step "Consensus contigs construction".
+	<li><b>Reads and haplocontigs</b>. dipSPAdes can also take both reads and haplocontigs. In this case dipSPAdes first computes haplocontigs from reads and then uses mixture of computed haplocontigs and haplocontigs provided as input for further steps.
+</li>  
+</ul>
+
 <a id = "options"></a>
-<h3>2.2 dipSPAdes command line options </h2>
+<h3>3.2 dipSPAdes command line options </h2>
 To run dipSPAdes from the command line, type<br>
 <pre class="code">
 <code>
@@ -90,60 +78,55 @@ dipspades.py [options] -o &lt;output_dir>
 Note that we assume that SPAdes installation directory is added to the <code>PATH</code> variable (provide full path to dipSPAdes executable otherwise: <code>&lt;spades installation dir>/dipspades.py</code>).
 
 <a id = "basic_opt"></a>
-<h4>2.2.1 Basic options</h4>
+<h4>3.2.1 Basic options</h4>
 <p>
     <code>-o &lt;output_dir> </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Specify the output directory. Required option.
+    &nbsp;&nbsp;&nbsp;&nbsp;Specifies the output directory. Required option.
 </p>
-
 <p>
     <code>--test</code><br>
     &nbsp;&nbsp;&nbsp;&nbsp;Runs SPAdes on the toy data set; see <a href="#sec_install">section 2</a>.
 </p>
-
 <p>
     <code>-h</code> (or <code>--help</code>)<br>
     &nbsp;&nbsp;&nbsp;&nbsp;Prints help.
     
 <a id = "input_data"></a>
-<h4>2.2.2 Input data</h4>
+<h4>3.2.2 Input data</h4>
 For input reads specfication use options of SPAdes described in <a href=manual.html#inputdata>SPAdes manual</a>.
-
 <p>
     <code>--hap &lt;file_name></code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;File with haplocontigs in FASTA format. Note that dipSPAdes can use any number of haplocontig files.
+    &nbsp;&nbsp;&nbsp;&nbsp;Specifies file with haplocontigs in FASTA format. Note that dipSPAdes can use any number of haplocontig files.
 </p>
 
 <a id = "adv_opt"></a>
-<h4>2.2.3 Advanced options</h4>
+<h4>3.2.3 Advanced options</h4>
 <p>
     <code>--expect-gaps</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Use to indicate that gaps in genome coverage are to be expected in significant amounts (e.g. for datasets with relatively low coverage).
+    &nbsp;&nbsp;&nbsp;&nbsp;Used to indicate significant amount of expected gaps in genome coverage (e.g. for datasets with relatively low coverage).
 </p>
-
 <p>
     <code>--expect-rearrangements</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Use to indicate extreme heterozygosity rate in haplomes (e.g. haplomes differ by long insertions/delitions).
+    &nbsp;&nbsp;&nbsp;&nbsp;Used to indicate extreme heterozygosity rate in haplomes (e.g. haplomes differ by long insertions/delitions).
 </p>
 
 <a id = "examples"></a>
-<h4>2.2.4 Examples</h4>
-To perform assembly (construct consensus contigs and perform haplotype assembly) of diploid genome from paired-end reads (<code>reads_left.fastq</code> and <code>reads_right.fastq</code>):
+<h4>3.2.4 Examples</h4>
+To perform assembly (construct consensus contigs and perform haplotype assembly) of diploid genome from paired-end reads (<code>reads_left.fastq</code> and <code>reads_right.fastq</code>) run:
 <pre class="code">
 <code>
 dipspades.py -1 reads_left.fastq -2 reads_right.fastq -o output_dir
 </code>
 </pre></br>
 
-To perform assembly (construct consensus contigs and perform haplotype assembly) of diploid genome from preliminary computed haplocontigs (<code>haplocontigs1.fasta</code> and <code>haplocontigs2.fasta</code>):
+To perform assembly (construct consensus contigs and perform haplotype assembly) of diploid genome from preliminary computed haplocontigs (<code>haplocontigs1.fasta</code> and <code>haplocontigs2.fasta</code>) run:
 <pre class="code">
 <code>
 dipspades.py --hap haplocontigs1.fasta --hap haplocontigs2.fasta -o output_dir
 </code>
 </pre></br>
 
-To construct haplocontigs from paired-end reads (<code>reads_left.fastq</code> and <code>reads_right.fastq</code>),
-then mix constructed haplocontigs with contigs from <code>haplocontigs.fasta</code> and use this mixture for further steps (consensus contigs construction and haplotype assembly):
+To perform assembly of diploid genome from paired-end reads <code>reads_left.fastq</code> and <code>reads_right.fastq</code> and preliminary computed haplocontigs <code>haplocontigs.fasta</code> run:
 <pre class="code">
 <code>
 dipspades.py -1 reads_left.fastq -2 reads_right.fastq --hap haplocontigs.fasta -o output_dir
@@ -151,15 +134,15 @@ dipspades.py -1 reads_left.fastq -2 reads_right.fastq --hap haplocontigs.fasta -
 </pre></br>
 
 <a id = "adv_examples"></a>
-<h4>Examples of advanced options usage</h4>
-To perform assembly of diploid genome with additional options:
+<h4>3.2.5 Examples of advanced options usage</h4>
+To perform assembly of diploid genome with additional options run:
 <pre class="code">
 <code>
 dipspades.py -1 reads_left.fastq -2 reads_right.fastq --allow-gaps -o output_dir
 </code>
 </pre></br>
 
-To relaunch steps 2 and 3 of dipSPAdes (see <a href=#ds_pipeline>dipSPAdes pipeline section</a>) with different set of advanced options you can use haplocontigs constructed in the previous run (see <a href=#ds_output>dipSPAdes output section</a>):
+To relaunch steps 2 and 3 of dipSPAdes (see <a href=#ds_pipeline>dipSPAdes pipeline section</a>) with different set of advanced options you can use haplocontigs constructed in the previous run (see <a href=#ds_output>dipSPAdes output section</a>) run:
 <pre class="code">
 <code>
 dipspades.py -hap output_dir/haplocontigs.fasta --allow-gaps --expect-rearrangements -o new_output_dir
@@ -167,10 +150,10 @@ dipspades.py -hap output_dir/haplocontigs.fasta --allow-gaps --expect-rearrangem
 </pre></br>
 
 <a id = "ds_output"></a>
-<h3>2.3 dipSPAdes output</h3>
+<h3>3.3 dipSPAdes output</h3>
 dipSPAdes produces the following output:<br>
 <ul>
-	<li><b>haplocontigs.fasta</b> - file in FASTA format. with computed haplocontigs (if input reads were provided). </li>
+	<li><b>haplocontigs.fasta</b> - file in FASTA format with computed haplocontigs (if input reads were provided). </li>
 	<li><b>consensus_contigs.fasta</b> - file in FASTA format with a set of constructed consensus contigs </li>
 	<li><b>paired_consensus_contigs.fasta</b> - file in FASTA format with a subset of consensus contigs that have a polymorphism detected on them. </li>
 	<li><b>unpaired_consensus_contigs.fasta</b> - file in FASTA format with a subset of consensus contigs that have no polymorphism detected on them. These contigs are potentially redundant.</li>
@@ -181,7 +164,7 @@ dipSPAdes produces the following output:<br>
 </ul>  
 
 <a id="align_output"></a>
-<h4>2.3.1 Haplocontigs alignment output</h4>
+<h4>3.3.1 Haplocontigs alignment output</h4>
 File <b>haplocontigs_alignment.out</b> consists of blocks of the following structure:<br>
 <pre class = "code">
 <code>
@@ -194,17 +177,24 @@ Consensus contig: CONSENSUS_CONTIG_NAME
                         ...
 </code>
 </pre>
-Each block corresponds to alignment of haplocontigs to consensus contigs <code>CONSENSUS_CONTIG_NAME</code>. Name of consensus contig, <code>CONSENSUS_CONTIG_NAME</code>, coincides with the name in file <b>consensus_contigs.fasta</b>. Further the list of pairs of haplocontig names is printed. Haplocontigs in each pair at least partially correspond either to the same positions on the same haplome or to homologous positions on different haplomes. Also the list is divided into two subblocks: <code>Overlapping haplocontigs</code> and <code>Nested haplocontigs</code>. <code>Overlapping haplocontigs</code> contain pairs of haplocontigs such that the suffix of the first haplocontig corresponds to the prefix of the second contig. <code>Nested haplocontigs</code> contains pairs of haplocontigs such that certain subcontig of the second contig corresponds to the whole first contig.
+Each block corresponds to alignment of haplocontigs to consensus contigs <code>CONSENSUS_CONTIG_NAME</code>. 
+Name of consensus contig, <code>CONSENSUS_CONTIG_NAME</code>, coincides with the name in file <b>consensus_contigs.fasta</b>. 
+Further the list of pairs of haplocontig names is printed. 
+Haplocontigs in each pair at least partially correspond either to the same positions on the same haplome or to homologous positions on different haplomes. 
+Also the list is divided into two subblocks: <code>Overlapping haplocontigs</code> and <code>Nested haplocontigs</code>. 
+<code>Overlapping haplocontigs</code> contain pairs of haplocontigs such that the suffix of the first haplocontig corresponds to the prefix of the second contig. 
+<code>Nested haplocontigs</code> contains pairs of haplocontigs such that certain subcontig of the second contig corresponds to the entire first contig.
 
 <a id="hapl_assembly_output"></a>
-<h4>2.3.2 Haplotype assembly output</h4>
+<h4>3.3.2 Haplotype assembly output</h4>
 File <b>haplotype_assembly.out</b> consists of lines of the following structure:<br>
 <pre class = "code">
 <code>
 HAPLOCONTIG_NAME_1	HAPLOCONTIG_NAME_2
 </code>
 </pre>
-where HAPLOCONTIG_NAME_1 and HAPLOCONTIG_NAME_2 are names of homologous haplocontigs which correspond to different haplomes and at least partially correspond to homologous positions in different chromosomes. Names correspond to names of haplocontigs specified as input using options <code>--hap</code> or computed at the first step.
+where HAPLOCONTIG_NAME_1 and HAPLOCONTIG_NAME_2 are names of homologous haplocontigs that correspond to different haplomes and at least partially correspond to homologous positions in different chromosomes. 
+Names correspond to the names of haplocontigs specified as an input using options <code>--hap</code> or computed at the first step.
 
 <a id = "feedback"></a>
 <h2>Feedback and bug reports</h2>
