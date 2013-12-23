@@ -53,6 +53,23 @@ Please verify your dipSPAdes installation prior to initiate the dipSPAdes:
     &lt;spades installation dir>/dipspades.py --test
 </code>
 </pre>
+If the installation is successful, you will find the following information at the end of the log:
+
+<pre class="code">
+<code>
+ * Assembled consensus contigs are in: test_dipspades/dipspades/consensus_contigs.fasta
+ * Assembled paired consensus contigs are in: test_dipspades/dipspades/paired_consensus_contigs.fasta
+ * Assembled paired consensus contigs are in: test_dipspades/dipspades/unpaired_consensus_contigs.fasta
+ * Alignment of haplocontigs is in: test_dipspades/dipspades/haplocontigs_alignent
+ * Assembled paired consensus contigs are in: test_dipspades/dipspades/haplotype_assembly.out
+ * Possibly conservative regions are in: test_dipspades/dipspades/possibly_conservative_regions.fasta
+
+Thank you for using SPAdes!
+
+======= dipSPAdes finished.
+dipSPAdes log can be found here: test_dipspades/dipspades/dipspades.log
+</code>
+</pre>
 
 <a id = "running"></a>
 <h2>3. Running dipSPAdes</h2>
@@ -61,11 +78,12 @@ Please verify your dipSPAdes installation prior to initiate the dipSPAdes:
 <h3>3.1 dipSPAdes input</h2>
 dipSPAdes can take as an input one of the three following alternatives:
 <ul>
-	<li><b>Reads</b>. dipSPAdes takes them in the same wat as described in <a href=manual.html#sec3.1>SPAdes manual</a>. In this case dipSPAdes run SPAdes to obtain haplocontigs at the first step "Assembly of haplocontigs".</li>
-	<li><b>Haplocontigs</b>. dipSPAdes can take haplocontigs computed using another assemblers. In this case dipSPAdes skips the first step and starts from the second step "Consensus contigs construction".
-	<li><b>Reads and haplocontigs</b>. dipSPAdes can also take both reads and haplocontigs. In this case dipSPAdes first computes haplocontigs from reads and then uses mixture of computed haplocontigs and haplocontigs provided as input for further steps.
+	<li><b>Reads</b>. dipSPAdes takes them in the same format as described in <a href=manual.html#sec3.1>SPAdes manual</a>. In this case dipSPAdes runs SPAdes to obtain haplocontigs as the first step "Assembly of haplocontigs".</li>
+	<li><b>Haplocontigs</b>. dipSPAdes can use user-provided haplocontigs (for example computed with another assembler). In this case dipSPAdes skips the first step and starts from the second step "Consensus contigs construction".
+	<li><b>Reads and haplocontigs</b>. dipSPAdes can also use both reads and haplocontigs. In this case dipSPAdes first computes haplocontigs from reads and then uses mixture of computed haplocontigs and user-provided haplocontigs as input for further steps.
 </li>  
 </ul>
+We provide example command lines for each of these scenarios in <a href="#examples">Examples</a> section.
 
 <a id = "options"></a>
 <h3>3.2 dipSPAdes command line options </h2>
@@ -103,11 +121,11 @@ For input reads specfication use options of SPAdes described in <a href=manual.h
 <h4>3.2.3 Advanced options</h4>
 <p>
     <code>--expect-gaps</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Used to indicate significant amount of expected gaps in genome coverage (e.g. for datasets with relatively low coverage).
+    &nbsp;&nbsp;&nbsp;&nbsp;Indicates significant amount of expected gaps in genome coverage (e.g. for datasets with relatively low coverage).
 </p>
 <p>
     <code>--expect-rearrangements</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Used to indicate extreme heterozygosity rate in haplomes (e.g. haplomes differ by long insertions/delitions).
+    &nbsp;&nbsp;&nbsp;&nbsp;Indicates extreme heterozygosity rate in haplomes (e.g. haplomes differ by long insertions/delitions).
 </p>
 
 <a id = "examples"></a>
@@ -126,7 +144,7 @@ dipspades.py --hap haplocontigs1.fasta --hap haplocontigs2.fasta -o output_dir
 </code>
 </pre></br>
 
-To perform assembly of diploid genome from paired-end reads <code>reads_left.fastq</code> and <code>reads_right.fastq</code> and preliminary computed haplocontigs <code>haplocontigs.fasta</code> run:
+To perform assembly of diploid genome from both reads (<code>reads_left.fastq</code> and <code>reads_right.fastq</code>) and preliminary computed haplocontigs (<code>haplocontigs.fasta</code>) run:
 <pre class="code">
 <code>
 dipspades.py -1 reads_left.fastq -2 reads_right.fastq --hap haplocontigs.fasta -o output_dir
@@ -193,7 +211,7 @@ File <b>haplotype_assembly.out</b> consists of lines of the following structure:
 HAPLOCONTIG_NAME_1	HAPLOCONTIG_NAME_2
 </code>
 </pre>
-where HAPLOCONTIG_NAME_1 and HAPLOCONTIG_NAME_2 are names of homologous haplocontigs that correspond to different haplomes and at least partially correspond to homologous positions in different chromosomes. 
+where <code>HAPLOCONTIG_NAME_1</code> and <code>HAPLOCONTIG_NAME_2</code> are names of homologous haplocontigs that correspond to different haplomes and at least partially correspond to homologous positions in different chromosomes. 
 Names correspond to the names of haplocontigs specified as an input using options <code>--hap</code> or computed at the first step.
 
 <a id = "feedback"></a>
