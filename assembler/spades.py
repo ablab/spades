@@ -542,9 +542,10 @@ def main(args):
                     support.error("failed to continue the previous run! Please restart from previous stages or from the beginning.", log)
             else:
                 old_result_files = [result_contigs_filename, result_scaffolds_filename]
-                for old_result_file in old_result_files:
-                    if os.path.isfile(old_result_file):
-                        os.remove(old_result_file)
+                for format in [".fasta", ".fastg"]:
+                    for old_result_file in old_result_files:
+                        if os.path.isfile(old_result_file[:-6] + format):
+                            os.remove(old_result_file[:-6] + format)
 
                 if options_storage.restart_from == 'as':
                     support.continue_from_here(log)
@@ -608,7 +609,9 @@ def main(args):
                 for assembly_type, (old, new) in to_correct.items():
                     if options_storage.continue_mode and os.path.isfile(new):
                         continue
-                    shutil.move(old, new)
+                    for format in [".fasta", ".fastg"]:
+                        if os.path.isfile(old[:-6] + format):
+                            shutil.move(old[:-6] + format, new[:-6] + format)
 
                 if options_storage.continue_mode and os.path.isfile(result_contigs_filename) and \
                     (os.path.isfile(result_scaffolds_filename) or not os.path.isfile(assembled_scaffolds_filename)) \
@@ -692,9 +695,15 @@ def main(args):
         if "error_correction" in cfg and os.path.isdir(os.path.dirname(corrected_dataset_yaml_filename)):
             log.info(" * Corrected reads are in " + os.path.dirname(corrected_dataset_yaml_filename) + "/")
         if "assembly" in cfg and os.path.isfile(result_contigs_filename):
-            log.info(" * Assembled contigs are in " + result_contigs_filename)
+            message = " * Assembled contigs are in " + result_contigs_filename
+            if os.path.isfile(result_contigs_filename[:-6] + ".fastg"):
+                message += " (" + os.path.basename(result_contigs_filename[:-6] + ".fastg") + ")"
+            log.info(message)
         if "assembly" in cfg and os.path.isfile(result_scaffolds_filename):
-            log.info(" * Assembled scaffolds are in " + result_scaffolds_filename)
+            message = " * Assembled scaffolds are in " + result_scaffolds_filename
+            if os.path.isfile(result_scaffolds_filename[:-6] + ".fastg"):
+                message += " (" + os.path.basename(result_scaffolds_filename[:-6] + ".fastg") + ")"
+            log.info(message)
         #log.info("")
 
         #breaking scaffolds

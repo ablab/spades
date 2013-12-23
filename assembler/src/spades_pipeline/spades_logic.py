@@ -218,16 +218,18 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, ext_python_module
 
     latest = os.path.join(cfg.output_dir, "K%d" % K)
 
-    if os.path.isfile(os.path.join(latest, "before_rr.fasta")):
-        if not os.path.isfile(os.path.join(os.path.dirname(cfg.result_contigs), "before_rr.fasta")) or not options_storage.continue_mode:
-            shutil.copyfile(os.path.join(latest, "before_rr.fasta"), os.path.join(os.path.dirname(cfg.result_contigs), "before_rr.fasta"))
-    if os.path.isfile(os.path.join(latest, "final_contigs.fasta")):
-        if not os.path.isfile(cfg.result_contigs) or not options_storage.continue_mode:
-            shutil.copyfile(os.path.join(latest, "final_contigs.fasta"), cfg.result_contigs)
-    if cfg.rr_enable:
-        if os.path.isfile(os.path.join(latest, "scaffolds.fasta")):
-            if not os.path.isfile(cfg.result_scaffolds) or not options_storage.continue_mode:
-                shutil.copyfile(os.path.join(latest, "scaffolds.fasta"), cfg.result_scaffolds)
+    for format in [".fasta", ".fastg"]:
+        if os.path.isfile(os.path.join(latest, "before_rr" + format)):
+            result_before_rr_contigs = os.path.join(os.path.dirname(cfg.result_contigs), "before_rr" + format)
+            if not os.path.isfile(result_before_rr_contigs) or not options_storage.continue_mode:
+                shutil.copyfile(os.path.join(latest, "before_rr" + format), result_before_rr_contigs)
+        if os.path.isfile(os.path.join(latest, "final_contigs" + format)):
+            if not os.path.isfile(cfg.result_contigs[:-6] + format) or not options_storage.continue_mode:
+                shutil.copyfile(os.path.join(latest, "final_contigs" + format), cfg.result_contigs[:-6] + format)
+        if cfg.rr_enable:
+            if os.path.isfile(os.path.join(latest, "scaffolds" + format)):
+                if not os.path.isfile(cfg.result_scaffolds[:-6] + format) or not options_storage.continue_mode:
+                    shutil.copyfile(os.path.join(latest, "scaffolds" + format), cfg.result_scaffolds[:-6] + format)
 
     if cfg.developer_mode:
         # saves
