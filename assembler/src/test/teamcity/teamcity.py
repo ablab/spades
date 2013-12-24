@@ -280,6 +280,8 @@ if 'reads_quality_params' in dataset_info.__dict__:
 quast_cmd = ""
 if 'quast_params' in dataset_info.__dict__:
     contigs = os.path.join(output_dir, "contigs.fasta")
+    if 'dipspades' in dataset_info.__dict__ and dataset_info.dipspades:
+        contigs = os.path.join(output_dir, "consensus_contigs.fasta")
 
     if not os.path.exists(contigs):
         print("No contigs were found in " + output_dir)
@@ -382,7 +384,10 @@ if 'contig_storage' in dataset_info.__dict__:
         name_prefix += "_" + sys.argv[2]
     print("Contigs have prefix " + name_prefix)
 
-    shutil.copy(os.path.join(output_dir, "contigs.fasta"), os.path.join(contig_dir, name_prefix + ".fasta"))
+    if 'dipspades' in dataset_info.__dict__ and dataset_info.dipspades:
+        shutil.copy(os.path.join(output_dir, "consensus_contigs.fasta"), os.path.join(contig_dir, name_prefix + ".fasta"))
+    else:
+        shutil.copy(os.path.join(output_dir, "contigs.fasta"), os.path.join(contig_dir, name_prefix + ".fasta"))
     print("Contigs saved to " + os.path.join(contig_dir, name_prefix + ".fasta"))
 
     scafs = os.path.join(output_dir, "scaffolds.fasta")
