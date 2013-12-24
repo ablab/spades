@@ -167,6 +167,14 @@ if len(sys.argv) < 2:
 
 dataset_path, dataset_info = load_info(sys.argv[1])
 
+#clean
+if ('prepare_cfg' not in dataset_info.__dict__ or dataset_info.prepare_cfg) and ('spades_compile' not in dataset_info.__dict__ or dataset_info.spades_compile):
+    ecode = os.system('rm -r build build_spades bin')
+    if ecode != 0:
+        print("Cleaning shed abnormally with exit code " + str(ecode))
+        sys.exit(2)
+
+
 #prepare cfg
 if 'prepare_cfg' not in dataset_info.__dict__ or dataset_info.prepare_cfg:
     ecode = os.system('./prepare_cfg')
@@ -206,7 +214,7 @@ i = 0
 while i < len(dataset_info.spades_params):
     option = dataset_info.spades_params[i]
     spades_params.append(str(option))
-    if i < len(dataset_info.spades_params) - 1 and (option == '-1' or option == '-2' or option == '--12' or option == '-s' or option == '--hap'):
+    if i < len(dataset_info.spades_params) - 1 and (option == '-1' or option == '-2' or option == '--12' or option == '-s' or option == '--hap'  or option == '--trusted-contigs' or option == '--untrusted-contigs'  or option == '--pacbio' or option == '--sanger'):
         spades_params.append(os.path.join(dataset_path, str(dataset_info.spades_params[i + 1])))
         i += 1
     i += 1
