@@ -427,22 +427,26 @@ bool RemoveRelativelyLowCoverageComponents(
         double determined_coverage_threshold,
         size_t read_length,
         typename ComponentRemover<Graph>::HandlerF removal_handler = 0) {
-    INFO("Removing relatively low covered connections");
+    if (rcc_config.enabled) {
+        INFO("Removing relatively low covered connections");
+        size_t connecting_path_length_bound = LengthThresholdFinder::MaxErroneousConnectionLength(
+            g.k(), rcc_config.max_ec_length_coefficient);
 
-    size_t connecting_path_length_bound = LengthThresholdFinder::MaxErroneousConnectionLength(
-        g.k(), rcc_config.max_ec_length_coefficient);
-
-    omnigraph::simplification::relative_coverage::RelativeCoverageComponentRemover<
-            Graph> rel_rem(
-            g,
-            boost::bind(&FlankingCoverage<Graph>::LocalCoverage,
-                        boost::cref(flanking_cov), _1, _2),
-                        rcc_config.coverage_gap, size_t(double(read_length) * rcc_config.length_coeff),
-                        size_t(double(read_length) * rcc_config.tip_allowing_length_coeff),
-                        connecting_path_length_bound,
-                        determined_coverage_threshold * rcc_config.max_coverage_coeff,
-                        removal_handler, rcc_config.vertex_count_limit);
-    return rel_rem.Process();
+        omnigraph::simplification::relative_coverage::RelativeCoverageComponentRemover<
+                Graph> rel_rem(
+                g,
+                boost::bind(&FlankingCoverage<Graph>::LocalCoverage,
+                            boost::cref(flanking_cov), _1, _2),
+                            rcc_config.coverage_gap, size_t(double(read_length) * rcc_config.length_coeff),
+                            size_t(double(read_length) * rcc_config.tip_allowing_length_coeff),
+                            connecting_path_length_bound,
+                            determined_coverage_threshold * rcc_config.max_coverage_coeff,
+                            removal_handler, rcc_config.vertex_count_limit);
+        return rel_rem.Process();
+    } else {
+        INFO("Removal of relatively low covered connections disabled");
+        return false;
+    }
 }
 
 template<class Graph>

@@ -247,6 +247,7 @@ struct debruijn_config {
         };
 
         struct relative_coverage_comp_remover {
+            bool enabled;
             double coverage_gap;
             double length_coeff;
             double tip_allowing_length_coeff;

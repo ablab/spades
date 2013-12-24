@@ -39,6 +39,7 @@ default
 	; relative coverage erroneous component remover:
 	rcc
 	{
+        enabled true
         coverage_gap    5.
         max_length_coeff    2.0
         max_length_with_tips_coeff   3.0
@@ -159,6 +160,7 @@ sc
 	; relative coverage erroneous component remover:
 	rcc
 	{
+        enabled true
         coverage_gap    20.
         max_length_coeff    2.0
         max_length_with_tips_coeff   3.0
@@ -236,6 +238,17 @@ careful
 		max_length_difference	5
 	}
 
+	; relative coverage erroneous component remover:
+	rcc
+	{
+        enabled false
+        coverage_gap    20.
+        max_length_coeff    2.0
+        max_length_with_tips_coeff   3.0
+        max_vertex_cnt      30
+        max_ec_length_coefficient   30
+        max_coverage_coeff  5.0
+	}
 }
 
 diploid_simp

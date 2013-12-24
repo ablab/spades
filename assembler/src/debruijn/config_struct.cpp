@@ -188,6 +188,7 @@ void load(debruijn_config::simplification::topology_tip_clipper& ttc,
 void load(debruijn_config::simplification::relative_coverage_comp_remover& rcc,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
+  load(rcc.enabled, pt, "enabled");
   load(rcc.coverage_gap, pt, "coverage_gap");
   load(rcc.length_coeff, pt, "max_length_coeff");
   load(rcc.tip_allowing_length_coeff, pt, "max_length_with_tips_coeff");
