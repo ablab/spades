@@ -288,14 +288,15 @@ if 'quast_params' in dataset_info.__dict__:
         exit_code = 8
     else:
         quast_params = []
-        i = 0
-        while i < len(dataset_info.quast_params):
-            option = dataset_info.quast_params[i]
-            quast_params.append(str(option))
-            if i < len(dataset_info.quast_params) - 1 and (option == '-R' or option == '-G' or option == '-O'):
-                quast_params.append(os.path.join(dataset_path, str(dataset_info.quast_params[i + 1])))
+        if dataset_info.quast_params:
+            i = 0
+            while i < len(dataset_info.quast_params):
+                option = dataset_info.quast_params[i]
+                quast_params.append(str(option))
+                if i < len(dataset_info.quast_params) - 1 and (option == '-R' or option == '-G' or option == '-O'):
+                    quast_params.append(os.path.join(dataset_path, str(dataset_info.quast_params[i + 1])))
+                    i += 1
                 i += 1
-            i += 1
 
         #CONTIGS
         quast_output_dir = os.path.join(output_dir, "QUAST_RESULTS")
