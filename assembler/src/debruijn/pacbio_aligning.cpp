@@ -113,6 +113,9 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
     gap_closer.ConstructConsensus(cfg::get().max_threads, gaps);
     gap_closer.CloseGapsInGraph(replacement);
     long_reads.ReplaceEdges(replacement);
+    for(int j = 0; j < lib_id; j++) {
+        gp.single_long_reads[j].ReplaceEdges(replacement);
+    }
 
     gap_closer.DumpToFile(cfg::get().output_saves + "gaps_pb_closed.fasta");
     INFO("Index refill");
