@@ -88,6 +88,7 @@ debruijn_config::simplification::tip_clipper standard_tc_config() {
 debruijn_config::simplification::relative_coverage_comp_remover standard_rcc_config() {
     debruijn_config::simplification::relative_coverage_comp_remover rcc;
     //rather unrealistic value =)
+    rcc.enabled = true;
     rcc.coverage_gap = 2.;
     rcc.length_coeff = 2.;
     rcc.tip_allowing_length_coeff = 2.;
