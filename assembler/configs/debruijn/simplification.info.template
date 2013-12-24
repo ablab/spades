@@ -39,7 +39,7 @@ default
 	; relative coverage erroneous component remover:
 	rcc
 	{
-        enabled true
+        enabled false
         coverage_gap    5.
         max_length_coeff    2.0
         max_length_with_tips_coeff   3.0
