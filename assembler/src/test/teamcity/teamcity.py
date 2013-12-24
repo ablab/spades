@@ -221,7 +221,7 @@ while i < len(dataset_info.spades_params):
 
 spades_cmd = ""
 if 'dipspades' in dataset_info.__dict__ and dataset_info.dipspades:
-    spades_cmd = "./dipspades.py " + " ".join(spades_params) + " -o " + output_dir
+    spades_cmd = "./src/spades_pipeline/dipspades_logic.py " + " ".join(spades_params) + " -o " + output_dir
 else:
     spades_cmd = "./spades.py --disable-gzip-output " + " ".join(spades_params) + " -o " + output_dir
 
