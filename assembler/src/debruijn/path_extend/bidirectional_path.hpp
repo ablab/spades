@@ -268,11 +268,11 @@ protected:
 protected:
 	void Verify() {
 	    if (cumulativeLength_.empty() && totalLength_ != 0) {
-	        INFO("---" << totalLength_);
+	        DEBUG("---" << totalLength_);
 	    }
 	    else if (!cumulativeLength_.empty() && cumulativeLength_[0] + gapLength_[0] != totalLength_) {
-	        INFO("||| " << totalLength_ << " !=  " << cumulativeLength_[0] << " + " << gapLength_[0]);
-	        PrintInfo();
+	        DEBUG("||| " << totalLength_ << " !=  " << cumulativeLength_[0] << " + " << gapLength_[0]);
+	        Print();
 	    }
 	}
 
@@ -445,7 +445,7 @@ public:
 	    if(index >= cumulativeLength_.size()) {
 	        WARN("no length for position " << index <<" size " << cumulativeLength_.size()
 	                <<" path size " << cumulativeLength_.size());
-	        print_stacktrace();
+	        //print_stacktrace();
 	        VERIFY(false);
 	    }
 
@@ -454,7 +454,7 @@ public:
 
 	int GapAt(size_t index) const {
 	    if (index >= gapLength_.size()) {
-	        INFO("no gap for position " << index << " size " << gapLength_.size());
+	        DEBUG("no gap for position " << index << " size " << gapLength_.size());
 	    }
 	    return gapLength_[index];
 	}

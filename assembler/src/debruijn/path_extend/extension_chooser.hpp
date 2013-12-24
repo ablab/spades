@@ -689,7 +689,7 @@ private:
        }
        if (sum_len * 4 < total_len) return;
        sum_cov /= (double)sum_len;
-       INFO("average coverage of long edges: " << sum_cov) ;
+       DEBUG("average coverage of long edges: " << sum_cov) ;
        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
            if (g_.length(*iter) > 500 && (double)g_.coverage(*iter) < 1.2 * sum_cov) {
                if (unique_edges_.find(*iter) == unique_edges_.end()) {

@@ -29,7 +29,7 @@ inline int median(const vector<int>& dist, const vector<double>& w, int min, int
             S += w[i];
     }
     if (S == 0) {
-        WARN("Empty histogram");
+        DEBUG("Empty histogram");
         return 0;
     }
 

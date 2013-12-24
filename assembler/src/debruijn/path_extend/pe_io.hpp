@@ -269,7 +269,7 @@ public:
         map<BidirectionalPath*, string > ids;
         map<BidirectionalPath*, vector<string> > next_ids;
 
-        INFO("Constructing FASTG file from paths " << filename);
+        INFO("Constructing FASTG file from paths ");
         ConstructFASTG(paths, ids, next_ids);
 
         INFO("Writing contigs in FASTG to " << filename);

@@ -712,7 +712,7 @@ public:
 
     void AddCycledEdges(const BidirectionalPath& path, size_t pos) {
         if (pos >= path.Size()) {
-            WARN("Wrong position in IS cycle");
+            DEBUG("Wrong position in IS cycle");
             return;
         }
         int i = (int) pos;

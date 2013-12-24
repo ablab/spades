@@ -278,7 +278,7 @@ void OutputContigs(NonconjugateDeBruijnGraph& g,
 		const string& contigs_output_filename,
 		bool output_unipath = false,
 		size_t solid_edge_length_bound = 0) {
-	INFO("Outputting contigs to " << contigs_output_filename );
+	INFO("Outputting contigs to " << contigs_output_filename << ".fasta");
 	io::osequencestream_cov oss(contigs_output_filename + ".fasta");
 	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
 		ReportEdge(oss, g, *it, output_unipath, solid_edge_length_bound);
@@ -292,7 +292,7 @@ void OutputContigs(ConjugateDeBruijnGraph& g,
 		bool output_unipath = false,
 		size_t /*solid_edge_length_bound*/ = 0,
 		bool cut_bad_connections = false) {
-	INFO("Outputting contigs to " << contigs_output_filename);
+	INFO("Outputting contigs to " << contigs_output_filename << ".fasta");
 	DefaultContigCorrector<ConjugateDeBruijnGraph> corrector(g);
 	io::osequencestream_cov oss(contigs_output_filename + ".fasta");
 

@@ -342,7 +342,7 @@ private:
         }
         DEBUG("good pi size " << good_pi.size() << " bad pi size " << bad_pi.size());
         threshold_ = FindIntersection(good_pi, bad_pi);
-        INFO("Paired info threshold " << threshold_);
+        INFO("Threshold for paired information " << threshold_);
     }
 
     size_t LastBasketIndex(EdgeId edgeId, int insert_size_max,

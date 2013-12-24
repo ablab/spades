@@ -204,6 +204,11 @@ inline vector<SimpleExtender *> MakeMPExtenders(const conj_graph_pack& gp,
     return mpPEs;
 }
 
+inline string LibStr(size_t count) {
+    return count == 1 ? "library" : "libraries";
+}
+
+
 inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 		vector<PairedInfoLibrary *>& libs,
 		vector<PairedInfoLibrary *>& scaff_libs,
@@ -222,10 +227,10 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	}
 	const pe_config::ParamSetT& pset = cfg::get().pe_params.param_set;
 
-	INFO("Using " << libs.size() << " paired-end libraries(s)");
-	INFO("Using " << scaff_libs.size() << " paired-end scaffolding libraries(s)");
-	INFO("Using " << mp_libs.size() << " mate-pair libraries(s)");
-	INFO("Using " << long_reads.size() << " single read libraries(s)");
+	INFO("Using " << libs.size() << " paired-end " << LibStr(libs.size()));
+	INFO("Using " << scaff_libs.size() << " paired-end scaffolding " << LibStr(scaff_libs.size()));
+	INFO("Using " << mp_libs.size() << " mate-pair " << LibStr(mp_libs.size()));
+	INFO("Using " << long_reads.size() << " single read " << LibStr(long_reads.size()));
 	INFO("Scaffolder is " << (pset.scaffolder_options.on ? "on" : "off"));
 
 	ContigWriter writer(gp.g);
@@ -250,7 +255,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
     auto seeds = resolver.makeSimpleSeeds();
 	seeds.SortByLength();
 	seeds.ResetPathsId();
-	INFO("Growing paths");
+	INFO("Growing paths using paired-end and long single reads");
 	auto paths = resolver.extendSeeds(seeds, *mainPE);
 	DebugOutputPaths(writer, gp, output_dir, paths, "pe_overlaped_paths");
 	paths.SortByLength();
@@ -283,7 +288,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
     writer.WritePathsToFASTG(paths, output_dir + "pe_paths.fastg", output_dir + "pe_paths.fasta");
 
 //MP
-    INFO("mate pair path-extend started");
+    INFO("Adding mate-pairs");
     vector<SimpleExtender*> mpPEs = MakeMPExtenders(gp, pset,
                                                     mainPE->GetCoverageMap(),
                                                     mp_libs);
@@ -295,7 +300,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	all_libs.insert(all_libs.end(), scafPEs.begin(), scafPEs.end());
 	all_libs.insert(all_libs.end(), mpPEs.begin(), mpPEs.end());
 	CompositeExtender* mp_main_pe = new CompositeExtender(gp.g, all_libs, max_over);
-	INFO("Growing mp paths");
+	INFO("Growing paths using mate-pairs");
 	auto mp_paths = resolver.extendSeeds(paths, *mp_main_pe);
     resolver.removeOverlaps(mp_paths, mp_main_pe->GetCoverageMap(), max_over,
                             writer, output_dir);
@@ -308,7 +313,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	//resolver.addUncoveredEdges(mp_paths, mp_main_pe->GetCoverageMap());
 	mp_paths.SortByLength();
 	DebugOutputPaths(writer, gp, output_dir, mp_paths, "mp_final_paths");
-    INFO("End mp libs");
+    DEBUG("Paths are grown with mate-pairs");
     writer.writePaths(mp_paths, output_dir + "mp_paths.fasta");
 //MP end
 
@@ -354,7 +359,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
     mp_paths.DeleteAllPaths();
     paths.DeleteAllPaths();
 
-    INFO("Path extend repeat resolving tool finished");
+    INFO("Path-extend repeat resolving tool finished");
     //TODO:DELETE ALL!!!!
 }
 
