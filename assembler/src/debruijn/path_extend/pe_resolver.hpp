@@ -388,7 +388,9 @@ public:
         //DEBUG("remove similar path. Max difference " << max_overlap);
         remover.RemoveSimilarPaths(max_overlap, false, true, true, true);
         DEBUG("end removing");
-        writer.writePaths(paths, output_dir + "/remove_all.fasta");
+        if (cfg::get().pe_params.debug_output) {
+            writer.writePaths(paths, output_dir + "/remove_all.fasta");
+        }
     }
 
     void RemoveMatePairEnds(PathContainer& paths, size_t min_edge_len) const {

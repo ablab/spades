@@ -100,7 +100,7 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
 
     // Repeat resolving begins
     if (cfg::get().rm == debruijn_graph::resolving_mode::rm_path_extend) {
-        INFO("Path-Extend repeat resolving");
+        INFO("Using Path-Extend repeat resolving");
         PEResolving(gp);
     } else {
         INFO("Unsupported repeat resolver");

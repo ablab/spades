@@ -219,7 +219,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 		bool traversLoops,
 		boost::optional<std::string> broken_contigs) {
 
-	INFO("Path extend repeat resolving tool started");
+	INFO("Path-Extend repeat resolving tool started");
 
 	make_dir(output_dir);
 	if (cfg::get().developer_mode) {
@@ -285,7 +285,9 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
         return;
     }
     //writer.writePaths(paths, output_dir + "pe_paths.fasta");
-    writer.WritePathsToFASTG(paths, output_dir + "pe_paths.fastg", output_dir + "pe_paths.fasta");
+    if (cfg::get().pe_params.debug_output) {
+        writer.WritePathsToFASTG(paths, output_dir + "pe_paths.fastg", output_dir + "pe_paths.fasta");
+    }
 
 //MP
     INFO("Adding mate-pairs");
@@ -314,7 +316,9 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	mp_paths.SortByLength();
 	DebugOutputPaths(writer, gp, output_dir, mp_paths, "mp_final_paths");
     DEBUG("Paths are grown with mate-pairs");
-    writer.writePaths(mp_paths, output_dir + "mp_paths.fasta");
+    if (cfg::get().pe_params.debug_output) {
+        writer.writePaths(mp_paths, output_dir + "mp_paths.fasta");
+    }
 //MP end
 
 //pe again
@@ -353,13 +357,13 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
     DebugOutputPaths(writer, gp, output_dir, last_paths, "last_paths");
 
     writer.WritePathsToFASTG(last_paths, output_dir + contigs_name + ".fastg", output_dir + contigs_name + ".fasta");
-    writer.writePaths(last_paths, output_dir + contigs_name+ "_temp" + ".fasta");
+    //writer.writePaths(last_paths, output_dir + contigs_name+ "_temp" + ".fasta");
     last_paths.DeleteAllPaths();
     seeds.DeleteAllPaths();
     mp_paths.DeleteAllPaths();
     paths.DeleteAllPaths();
 
-    INFO("Path-extend repeat resolving tool finished");
+    INFO("Path-Extend repeat resolving tool finished");
     //TODO:DELETE ALL!!!!
 }
 
@@ -406,7 +410,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
             PairedInfoLibrary* lib = MakeNewLib(gp.g, gp.clustered_indices, i);
             if (use_auto_threshold) {
                 lib->SetSingleThreshold(cfg::get().ds.reads[i].data().pi_threshold);
-                INFO("Threshold for library # " << i << " is " << cfg::get().ds.reads[i].data().pi_threshold);
+                INFO("Threshold for library #" << i << " is " << cfg::get().ds.reads[i].data().pi_threshold);
             }
             rr_libs.push_back(lib);
         }
