@@ -737,3 +737,26 @@ def break_scaffolds(input_filename, threshold, replace_char="N", gzipped=False):
         new_fasta.append((name.split()[0] + "_" + str(cur_contig_number),
                           seq[cur_contig_start:].replace("N", replace_char)))
     return modified, new_fasta
+
+
+def create_fastg_from_fasta(fasta_filename, fastg_filename, log=None):
+    '''
+    contig names are taken from <fastg> and applied to <fasta> for creating new fastg (location is near with fasta)
+    '''
+    fasta_data = read_fasta(fasta_filename)
+    fastg_names = [name for (name, seq) in read_fasta(fastg_filename)]
+    new_fastg_data = []
+    new_fastg_filename = fasta_filename[:-6] + ".fastg"
+    for (name, seq) in fasta_data:
+        fastg_name = ""
+        for n in fastg_names:
+            if n.startswith(name):
+                fastg_name = n
+                break
+        if fastg_name:
+            fastg_names.remove(fastg_name)
+            new_fastg_data.append((fastg_name, seq))
+        else:
+            warning("Creating %s: failed to find appropriate name for contig %s (looking for names in %s)! Skipping this contig." %
+                    (new_fastg_filename, name, fastg_filename))
+    write_fasta(new_fastg_filename, new_fastg_data)

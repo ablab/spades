@@ -686,6 +686,9 @@ def main(args):
                         if os.path.isdir(tmp_dir_for_corrector):
                             shutil.rmtree(tmp_dir_for_corrector)
 
+                        assembled_fastg = assembled[:-6] + ".fastg"
+                        if os.path.isfile(assembled_fastg):
+                            support.create_fastg_from_fasta(corrected, assembled_fastg, log)
                     log.info("\n===== %s finished.\n" % STAGE_NAME)
 
         if not cfg["common"].developer_mode and os.path.isdir(tmp_configs_dir):
