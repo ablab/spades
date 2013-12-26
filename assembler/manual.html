@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>SPAdes 2.5.1 Manual</title>
+    <title>SPAdes 3.0.0 Manual</title>
     <style type="text/css">
         .code {
             background-color: lightgray;
@@ -8,7 +8,7 @@
     </style>
 </head>
 <body>
-<h1>SPAdes 2.5.1 Manual</h1>
+<h1>SPAdes 3.0.0 Manual</h1>
 
 1. <a href="#sec1">About SPAdes</a><br>
 &nbsp;&nbsp;&nbsp;&nbsp;1.1. <a href="#sec1.1">Supported data types</a><br>
@@ -33,30 +33,34 @@
 <a name="sec1"></a>
 <h2>1. About SPAdes</h2>
 <p>
-    SPAdes &ndash; St. Petersburg genome assembler &ndash; is intended for both standard isolates and single-cell MDA bacteria assemblies. This manual will help you to install and run SPAdes. SPAdes version 2.5.1 was released under GPLv2 on September 10, 2013 and can be downloaded from  <a href="http://bioinf.spbau.ru/spades" target="_blank">http://bioinf.spbau.ru/spades</a>.
+    SPAdes &ndash; St. Petersburg genome assembler &ndash; is intended for both standard isolates and single-cell MDA bacteria assemblies. This manual will help you to install and run SPAdes. SPAdes version 3.0.0 was released under GPLv2 on December 29, 2013 and can be downloaded from  <a href="http://bioinf.spbau.ru/spades" target="_blank">http://bioinf.spbau.ru/spades</a>.
 
 
 <a name="sec1.1"></a>
 <h3>1.1 Supported data types</h3>
 <p>
-    The current version of SPAdes works only with Illumina reads. Support for other technologies (e.g.  Roche 454, IonTorrent, PacBio) is currently in progress and will probably be included in one of the next releases. 
+    The current version of SPAdes works with Illumina, IonTorrent, PacBio and Sanger reads. You can also provide additional contigs that will be used as long reads.
 <p>
-    Version 2.5.1 of SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries simultaneously. 
+    Version 3.0.0 of SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries simultaneously. 
 <p>
-    Also note, that SPAdes was initially designed for single-cell and standard bacterial data sets and is not intended for larger genomes (e.g. mammalian size genomes) and metagenomic projects. For such purposes you can use it at your own risk.
+    Note, that SPAdes was initially designed for small genomes. It was tested on single-cell and standard bacterial and fungal data sets. SPAdes is not intended for larger genomes (e.g. mammalian size genomes) and metagenomic projects. For such purposes you can use it at your own risk.
+<p>
+    SPAdes has also a separate module for assemblying diploid highly polimorphic genomes. For more information see <a href="dipspades_manual.html" target="_blank">dipSPAdes manual</a>.
 
 
 <a name="sec1.2"></a>
 <h3>1.2 SPAdes pipeline</h3>
 <p>
-SPAdes comes in three separate modules:
+SPAdes comes in several separate modules:
     <ul>
-        <li> <a href="http://bioinf.spbau.ru/en/spades/bayeshammer" target="_blank">BayesHammer</a> &ndash; read error correction tool, which works well on both single-cell and standard data sets. </li>
-        <li> SPAdes &ndash; iterative short-read genome assembly module; by default consecutively iterates through K value equal to 21, 33 and 55. </li>
+        <li> <a href="http://bioinf.spbau.ru/en/spades/bayeshammer" target="_blank">BayesHammer</a> &ndash; read error correction tool for Illumina reads, which works well on both single-cell and standard data sets. </li>
+        <li> IonHammer &ndash; read error correction tool for IonTorrent data, which also works on both types of data. </li>
+        <li> SPAdes &ndash; iterative short-read genome assembly module; values of K are selected automatically based on the read length and data set type. </li>
         <li> MismatchCorrector &ndash; a tool which improves mismatch and short indel rates in resulting contigs and scaffolds; this module uses the <a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> tool [<a href="http://www.ncbi.nlm.nih.gov/pubmed/19451168" target="_blank">Li H. and Durbin R., 2009</a>]; MismatchCorrector is turned off by default, but we recommend to turn it on (see <a href="#correctoropt">SPAdes options section</a>). </li>
+        <li> dipSPAdes &ndash; module for assemblying diploid highly polimorphic genomes; for more information see <a href="dipspades_manual.html" target="_blank">dipSPAdes manual</a>. </li>
     </ul>
 <p>
-    We recommend to run SPAdes with BayesHammer to obtain high-quality assemblies. However, if you use your own read correction tool, it is possible to turn BayesHammer off. It is also possible to use only the read error correction stage, if you wish to use another assembler. See the <a href="#pipelineopt">SPAdes options section</a>.
+    We recommend to run SPAdes with BayesHammer/IonHammer to obtain high-quality assemblies. However, if you use your own read correction tool, it is possible to turn error correction module off. It is also possible to use only the read error correction stage, if you wish to use another assembler. See the <a href="#pipelineopt">SPAdes options section</a>.
 
 
 <a name="sec1.3"></a>
@@ -122,7 +126,7 @@ SPAdes comes in three separate modules:
 <p>
     Notes:
     <ul>
-        <li> Running SPAdes without preliminary read error correction (e.g. without BayesHammer) will likely require more time and memory. </li>
+        <li> Running SPAdes without preliminary read error correction (e.g. without BayesHammer or IonHammer) will likely require more time and memory. </li>
         <li> Each module removes its temporary files as soon as it finishes. </li>
     </ul>
 
@@ -136,13 +140,13 @@ SPAdes comes in three separate modules:
 <h3>2.1 Downloading SPAdes Linux binaries</h3>
 
 <p>
-    To download <a href="http://spades.bioinf.spbau.ru/release2.5.1/SPAdes-2.5.1-Linux.tar.gz">SPAdes Linux binaries</a> and extract them, go to the directory in which you wish SPAdes to be installed and run:
+    To download <a href="http://spades.bioinf.spbau.ru/release3.0.0/SPAdes-3.0.0-Linux.tar.gz">SPAdes Linux binaries</a> and extract them, go to the directory in which you wish SPAdes to be installed and run:
 
 <pre  class="code">
 <code>
-    wget http://spades.bioinf.spbau.ru/release2.5.1/SPAdes-2.5.1-Linux.tar.gz
-    tar -xzf SPAdes-2.5.1-Linux.tar.gz
-    cd SPAdes-2.5.1-Linux/bin/
+    wget http://spades.bioinf.spbau.ru/release3.0.0/SPAdes-3.0.0-Linux.tar.gz
+    tar -xzf SPAdes-3.0.0-Linux.tar.gz
+    cd SPAdes-3.0.0-Linux/bin/
 </code>
 </pre>
 
@@ -150,9 +154,12 @@ SPAdes comes in three separate modules:
     In this case you do not need to run any installation scripts &ndash; SPAdes is ready to use. The following files will be placed in the <code>bin</code> directory:
     <ul>
         <li><code>spades.py</code>  (main executable script)</li>
-        <li><code>hammer</code>  (read error correcting module)</li>
+        <li><code>hammer</code>  (read error correcting module for Illumina reads)</li>
+        <li><code>ionhammer</code>  (read error correcting module for IonTorrent reads)</li>
         <li><code>spades</code>  (assembly module)</li>
         <li><code>bwa-spades</code>  (<a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> alignment module which is required for mismatch correction)</li>
+        <li><code>dipspades.py</code>  (main executable script for <a href="dipspades_manual.html" target="_blank">dipSPAdes</a>)</li>
+        <li><code>dipspades</code>  (assemly module for diploid highly polymorphic genomes)</li>
     </ul>
 
 <p>
@@ -162,13 +169,13 @@ SPAdes comes in three separate modules:
 <h3>2.2 Downloading SPAdes binaries for Mac</h3>
 
 <p>
-    To obtain <a href="http://spades.bioinf.spbau.ru/release2.5.1/SPAdes-2.5.1-Darwin.tar.gz">SPAdes binaries for Mac</a>, go to the directory in which you wish SPAdes to be installed and run:
+    To obtain <a href="http://spades.bioinf.spbau.ru/release3.0.0/SPAdes-3.0.0-Darwin.tar.gz">SPAdes binaries for Mac</a>, go to the directory in which you wish SPAdes to be installed and run:
 
 <pre  class="code">
 <code>
-    curl http://spades.bioinf.spbau.ru/release2.5.1/SPAdes-2.5.1-Darwin.tar.gz -o SPAdes-2.5.1-Darwin.tar.gz
-    tar -zxf SPAdes-2.5.1-Darwin.tar.gz
-    cd SPAdes-2.5.1-Darwin/bin/
+    curl http://spades.bioinf.spbau.ru/release3.0.0/SPAdes-3.0.0-Darwin.tar.gz -o SPAdes-3.0.0-Darwin.tar.gz
+    tar -zxf SPAdes-3.0.0-Darwin.tar.gz
+    cd SPAdes-3.0.0-Darwin/bin/
 </code>
 </pre>
 
@@ -176,9 +183,12 @@ SPAdes comes in three separate modules:
     Just as in Linux, SPAdes is ready to use and no further installation steps are required. You will get the same files in the <code>bin</code> directory:
     <ul>
         <li><code>spades.py</code>  (main executable script)</li>
-        <li><code>hammer</code>  (read error correcting module)</li>
+        <li><code>hammer</code>  (read error correcting module for Illumina reads)</li>
+        <li><code>ionhammer</code>  (read error correcting module for IonTorrent reads)</li>
         <li><code>spades</code>  (assembly module)</li>
         <li><code>bwa-spades</code>  (<a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> alignment module which is required for mismatch correction)</li>
+        <li><code>dipspades.py</code>  (main executable script for <a href="dipspades_manual.html" target="_blank">dipSPAdes</a>)</li>
+        <li><code>dipspades</code>  (assemly module for diploid highly polymorphic genomes)</li>
     </ul>
 
 <p>
@@ -190,19 +200,19 @@ SPAdes comes in three separate modules:
 <p>
     If you wish to compile SPAdes by yourself you will need the following libraries to be pre-installed:
     <ul>
-        <li>g++ (version 4.4 or higher)</li>
-        <li>cmake (version 2.8 or higher)</li>
+        <li>g++ (version 4.7 or higher)</li>
+        <li>cmake (version 2.8.8 or higher)</li>
         <li>zlib</li>
     </ul>
 
 <p>
-    If you meet these requirements, you can download the <a href="http://spades.bioinf.spbau.ru/release2.5.1/SPAdes-2.5.1.tar.gz">SPAdes source code</a>: 
+    If you meet these requirements, you can download the <a href="http://spades.bioinf.spbau.ru/release3.0.0/SPAdes-3.0.0.tar.gz">SPAdes source code</a>: 
 
 <pre class="code">
 <code>
-    wget http://spades.bioinf.spbau.ru/release2.5.1/SPAdes-2.5.1.tar.gz
-    tar -xzf SPAdes-2.5.1.tar.gz
-    cd SPAdes-2.5.1
+    wget http://spades.bioinf.spbau.ru/release3.0.0/SPAdes-3.0.0.tar.gz
+    tar -xzf SPAdes-3.0.0.tar.gz
+    cd SPAdes-3.0.0
 </code>
 </pre>
 
@@ -240,9 +250,12 @@ SPAdes comes in three separate modules:
     After installation you will get the same files in <code>./bin</code> (or <code>&lt;destination_dir>/bin</code> if you specified PREFIX) directory:
     <ul>
         <li><code>spades.py</code>  (main executable script)</li>
-        <li><code>hammer</code>  (read error correcting module)</li>
+        <li><code>hammer</code>  (read error correcting module for Illumina reads)</li>
+        <li><code>ionhammer</code>  (read error correcting module for IonTorrent reads)</li>
         <li><code>spades</code>  (assembly module)</li>
         <li><code>bwa-spades</code>  (<a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> alignment module which is required for mismatch correction)</li>
+        <li><code>dipspades.py</code>  (main executable script for <a href="dipspades_manual.html" target="_blank">dipSPAdes</a>)</li>
+        <li><code>dipspades</code>  (assemly module for diploid highly polymorphic genomes)</li>
     </ul>
 
 <p>
@@ -297,7 +310,25 @@ Thank you for using SPAdes!
     SPAdes takes as input paired-end reads, mate-pairs and single (unpaired) reads in FASTA or FASTQ format. However, in order to run read error correction, reads should be in FASTQ format.
 
 <p>
-    By using command line interface, you can specify up to five different paired-end libraries and also up to five different mate-pair ones. If you wish to use more, you can use <a href="#yaml">YAML data set file</a>. The number of unpaired libraries is unlimited. SPAdes 2.5.1 should not be used if only mate-pair libraries are available. We further refer to paired-end and mate-pair libraries simply as to read-pair libraries.
+    To run SPAdes 3.0.0 you need at least one library of the following types:
+    <ul>
+        <li>Illumina paired-end/unpaired reads</li>
+        <li>IonTorrent paired-end/unpaired reads</li>
+        <li>PacBio CCS reads</li>
+    </ul>
+
+Illumina and IonTorrent libraries should not be assembled together. Other types of input data are all compatible. SPAdes should not be used if only mate-pairs, PacBio CLR reads, Sanger reads or additional contigs are available.
+
+<p> Notes:
+    <ul>
+        <li>It is not reccomended to run SPAdes on PacBio reads with low coverage (less than 5).</li>
+        <li>We suggest no to run SPAdes on PacBio reads for large genomes.</li>
+        <li>SPAdes accepts gzip-compressed files.</li>
+    </ul>
+
+<h4>Read-pair libraries</h4>
+<p>
+    By using command line interface, you can specify up to five different paired-end libraries and also up to five different mate-pair ones. If you wish to use more, you can use <a href="#yaml">YAML data set file</a>. The number of unpaired libraries is unlimited.  We further refer to paired-end and mate-pair libraries simply as to read-pair libraries. 
 
 <p>
     By default, SPAdes assumes that paired-end reads have forward-reverse (fr) orientation and mate-pairs have reverse-forward (rf) orientation. However, different orientations can be set for any library by using SPAdes options. 
@@ -315,9 +346,6 @@ Thank you for using SPAdes!
 
 <p>
     For example, Illumina produces paired-end reads in two files: <code>s_1_1_sequence.txt</code> and <code>s_1_2_sequence.txt</code>. If you choose to store reads in file pairs make sure that for every read from <code>s_1_1_sequence.txt</code> the corresponding paired read from <code>s_1_2_sequence.txt</code> is placed in the respective paired file on the same line number. If you choose to use merged files, every read from <code>s_1_1_sequence.txt</code> should be followed by the corresponding paired read from <code>s_1_2_sequence.txt</code>.
-
-<p>
-    Note that SPAdes also accepts gzip-compressed files.
 
 <a name="sec3.2"></a>
 <h3>3.2 SPAdes command line options </h3>
@@ -342,6 +370,12 @@ Note that we assume that SPAdes installation directory is added to the <code>PAT
     <code>--sc </code><br>
     &nbsp;&nbsp;&nbsp;&nbsp;This flag is required for MDA (single-cell) data.
 </p>
+
+<p>
+    <code>--iontorrent </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;This flag is required when assemblying IonTorrent data &ndash; runs IonHammer instead of BayesHammer.
+</p>
+
 
 <p>
     <code>--test</code><br>
@@ -388,13 +422,21 @@ Note that all options except <code>-o &lt;output_dir> </code> are ignored if <co
 </p>
 
 <p>
-    <code>--disable-gzip-output</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Forces read error correction module not to compress the corrected reads. If this options is not set, corrected reads will be in <code>*.fastq.gz</code> format.
+    <code>--restart-from &lt;check_point></code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Restart SPAdes run from the specified output folder starting from the specified check-point. Check-points are:
+    <ul>
+        <li><code>ec</code> &ndash; start from error correction</li>
+        <li><code>as</code> &ndash; restart assembly module from the first iteration</li>
+        <li><code>k&lt;int></code> &ndash; restart from the iteration with specified k values, e.g. k55</li>
+        <li><code>mc</code> &ndash; restart mismatch correction</li>
+    </ul>
+In comparison to the <code>--continue</code> option, you can change some of the options when using <code>--restart-from</code>. You can change any option except: all basic options, all options for specifying input data (including <code>--dataset</code>), <code>--only-error-correction</code> option and <code>--only-assembler</code> option. For example, if you ran assmbler with k values 21,33,55 without mismatch correction, you can add one more iteration with k=77 and run mismatch correction step by running SPAdes with following options:<br>
+     <code>--restart-from k55 -k 21,33,55,77 --mismatch-correction -o &lt;previous_output_dir></code>. 
 </p>
 
 <p>
-    <code>--rectangles</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Uses the <a href="http://bioinf.spbau.ru/en/rectangles" target="_blank">rectangle graph algorithm</a> for repeat resolution stage instead of the usual SPAdes repeat resolution module (deprecated). Note that this option requires python of version 2.5, 2.6 or 2.7 to be preinstalled.
+    <code>--disable-gzip-output</code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Forces read error correction module not to compress the corrected reads. If this options is not set, corrected reads will be in <code>*.fastq.gz</code> format.
 </p>
 
 
@@ -419,7 +461,7 @@ Note that all options except <code>-o &lt;output_dir> </code> are ignored if <co
 
 <p>
     <code>-s &lt;file_name> </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;File with unpaired reads.
+    &nbsp;&nbsp;&nbsp;&nbsp;File with unpaired reads (including PacBio CCS reads).
 </p>
 
 <i><b>&nbsp;&nbsp;Specifying multiple libraries (new format)</i></b>
@@ -472,6 +514,29 @@ Note that all options except <code>-o &lt;output_dir> </code> are ignored if <co
     <code>--mp1-ff </code><br>
 </p>
 
+
+<i><b>&nbsp;&nbsp;Specifying additional input data </i></b>
+
+<p>
+    <code>--pacbio &lt;file_name> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;File with PacBio CLR reads. For PacBio CCS reads use <code>-s</code> option.
+</p>
+
+<p>
+    <code>--sanger &lt;file_name> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;File with Sanger reads
+</p>
+
+<p>
+    <code>--trusted-contigs &lt;file_name> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Reliable contigs of the same genome, which are likely to have no misassembles and small rate of other errors (e.g. mismatches and indels). This option is not intended for contigs of the related species.
+</p>
+
+<p>
+    <code>--untrusted-contigs &lt;file_name> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Contigs of the same genome, quality of which is average or unknown. Contigs of poor quality can be usedm but may introduce errors in the assembly. This option is also not intended for contigs of the related species.
+</p>
+
 <a name="yaml"></a>
 <i><b>&nbsp;&nbsp;Specifying input data with YAML data set file (advanced)</i></b>
 
@@ -483,7 +548,7 @@ Each library is provided in braces as a comma-separated list of attributes.
 The following attributes are available:
     <ul>
         <li>orientation ("fr", "rf", "ff")</li>
-        <li>type ("paired-end", "mate-pairs", "single")</li>
+        <li>type ("paired-end", "mate-pairs", "single", "pacbio", "sanger", "trusted-contigs", "untrusted-contigs")</li>
         <li>interlaced reads (comma-separated list of files with interlaced reads)</li>
         <li>left reads (comma-separated list of files with left reads)</li>
         <li>right reads (comma-separated list of files with right reads)</li>
@@ -512,13 +577,22 @@ Make sure that files with right reads are given in the same order as correspondi
 </code>
 </pre>
 
-and one mate-pair library:
+one mate-pair library:
 
 <pre class="code">
 <code>
     lib_mp1_left.fastq
     lib_mp1_right.fastq
 </code>
+</pre>
+and PacBio CCS and CLR reads:
+
+<pre class="code">
+<code>
+    pacbio_css.fastq
+    pacbio_clr.fastq
+</code>
+</pre>
 </pre>
     YAML file should look like this:
     
@@ -545,6 +619,18 @@ and one mate-pair library:
         ],
         left reads: [
           "/FULL_PATH_TO_DATASET/lib_mp1_left.fastq"
+        ]
+      },
+      {
+        type: "single",
+        single reads: [
+          "/FULL_PATH_TO_DATASET/pacbio_ccs.fastq" 
+        ]
+      },
+      {
+        type: "pacbio",
+        single reads: [
+          "/FULL_PATH_TO_DATASET/pacbio_clr.fastq" 
         ]
       }
     ]
@@ -680,8 +766,29 @@ and one mate-pair library:
 </pre>
 
 <p>
-    All options for specifying input data can be mixed if needed, but make sure that files for each library are grouped and files with left and right paired reads are listed in the same order.
+    If you have IonTorrent unpaired reads library, PacBio CLR and additional reliable contigs:
 
+<pre class="code">
+<code>
+    it_reads.fastq
+    pacbio_clr.fastq
+    contigs.fasta
+</code>
+</pre>
+
+<p>
+    run SPAdes with the following command:
+
+<pre class="code">
+<code>
+    spades.py --iontorrent -s it_reads.fastq \
+    --pacbio pacbio_clr.fastq --trusted_contigs contigs.fastq \
+    -o spades_output
+</code>
+</pre>
+
+<p>
+    All options for specifying input data can be mixed if needed, but make sure that files for each library are grouped and files with left and right paired reads are listed in the same order.
 
 <a name="sec3.3">
 <h3>3.3 Assembling long Illumina paired reads (2x150 and 2x250)</h3>
@@ -759,25 +866,21 @@ However, it might be tricky to fully utilize the advantages of  long reads you h
     <ul>
         <li><code>&lt;output_dir>/corrected/</code> directory contains reads corrected by BayesHammer in <code>*.fastq.gz</code> files; if compression is disabled, reads are stored in uncompressed  <code>*.fastq</code> files</li>
         <li><code>&lt;output_dir>/contigs.fasta</code> contains resulting contigs</li>
+        <li><code>&lt;output_dir>/contigs.fastg</code> resulting contigs in <a href="http://fastg.sourceforge.net/FASTG_Spec_v1.00.pdf" target="_blank">FASTG format</a></li>
         <li><code>&lt;output_dir>/scaffolds.fasta</code> contains resulting scaffolds</li>
+        <li><code>&lt;output_dir>/scaffolds.fastg</code> resulting scaffolds in <a href="http://fastg.sourceforge.net/FASTG_Spec_v1.00.pdf" target="_blank">FASTG format</a></li>
     </ul>
 
 <p>
 
-<p>
-    Notes:
-    <ul>
-        <li> Scaffolds are not produced if no read-pair library is provided. </li>
-        <li> The scaffolding procedure in SPAdes is optimized for paired-end reads, but not yet for mate-pair libraries. </li>
-        <li> You can use a third-party scaffolder (e.g. <a href="http://sourceforge.net/projects/operasf/files/version%201.3.1/"  target="_blank">Opera</a>) if you have mate-pair libraries. </li>
-    </ul>
+
 
 <p>
 The full list of <code>&lt;output_dir></code> content is presented below: 
 </p>
 <pre>
-    <code>contigs.fasta</code> &ndash; <i>resulting contigs</i>
-    <code>scaffolds.fasta</code> &ndash; <i>resulting scaffolds (will not be produced if input reads are unpaired)</i>
+    <code>contigs.fasta, contigs.fastg</code> &ndash; <i>resulting contigs</i>
+    <code>scaffolds.fasta, scaffolds.fasta</code> &ndash; <i>resulting scaffolds </i>
 
     <code>corrected/</code> &ndash; <i>files from read error correction</i>
         <code>configs/</code> &ndash; <i>configuration files for read error correction</i>
