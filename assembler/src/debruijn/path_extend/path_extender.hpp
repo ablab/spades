@@ -497,8 +497,9 @@ public:
     virtual void GrowAll(PathContainer& paths, PathContainer * result) {
         result->clear();
         PathContainer usedPaths;
-        for (size_t i = 0; i < paths.size() && !AllPathsCovered(paths); i++) {
-            GrowAll(paths, usedPaths, result);
+        GrowAll(paths, usedPaths, result);
+        if (!AllPathsCovered(paths)) {
+            INFO("Very few edges are not included in the resulting paths and will be added later");
         }
 
         LengthPathFilter filter(g_, 0);
