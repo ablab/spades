@@ -177,12 +177,12 @@ public:
                     auto cur_start = to_add.begin();
                     auto best_start = to_add.begin();
                     int cur_edge_len = (int)g_.length(iter->first);
-                    size_t j = 0;
+                    int j = 0;
                         DEBUG("new_cluster sz " << to_add.size());
                     for (auto j_iter = to_add.begin();
                             j_iter < to_add.end() - 1; j_iter++, j++) {
 //Do not spilt clusters in the middle, only beginning is interesting.
-                        if ((j * 5 < to_add.size() || (j + 1) * 5 > to_add.size() * 4) &&
+                        if ((j * 5 < (int)to_add.size() || (j + 1) * 5 > (int)to_add.size() * 4) &&
                             !similar(*j_iter, *(j_iter + 1))
                             && (j < 5000 && cur_edge_len - j < 5000)) {
                             if (longest_len < count) {
