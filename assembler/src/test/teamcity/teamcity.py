@@ -169,11 +169,9 @@ dataset_path, dataset_info = load_info(sys.argv[1])
 
 #clean
 if ('prepare_cfg' not in dataset_info.__dict__ or dataset_info.prepare_cfg) and ('spades_compile' not in dataset_info.__dict__ or dataset_info.spades_compile):
-    ecode = os.system('rm -rf build build_spades bin')
-    if ecode != 0:
-        print("Cleaning shed abnormally with exit code " + str(ecode))
-        sys.exit(2)
-
+    shutil.rmtree('bin', True)
+    shutil.rmtree('build', True)
+    shutil.rmtree('build_spades', True)
 
 #prepare cfg
 if 'prepare_cfg' not in dataset_info.__dict__ or dataset_info.prepare_cfg:
