@@ -1,0 +1,5 @@
+load OUT_BASE
+add_genome REFERENCE my_genome
+build_graph KMER_SIZE
+save_graph
+exit

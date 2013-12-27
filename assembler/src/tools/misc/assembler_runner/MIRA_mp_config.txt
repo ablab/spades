@@ -1,0 +1,16 @@
+project = MyFirstAssembly
+job = denovo,genome,accurate
+
+readgroup = DataIlluminaForPairedEndLib
+data = RUNNER_PARAM_LEFT RUNNER_PARAM_RIGHT
+technology = solexa
+template_size = RUNNER_PARAM_MIRA_MIN RUNNER_PARAM_MIRA_MAX
+segment_placement = ---> <---
+
+readgroup = DataIlluminaForMatePair
+data = RUNNER_PARAM_MATE_LEFT RUNNER_PARAM_MATE_RIGHT
+technology = solexa
+template_size = RUNNER_PARAM_MIRA_MP_MIN RUNNER_PARAM_MIRA_MP_MAX
+segment_placement = RUNNER_PARAM_MP_ORIENT
+
+parameters = COMMON_SETTINGS -GE:not=RUNNER_PARAM_THREADS -DI:trt='RUNNER_PARAM_MIRA_TMP_DIR' SOLEXA_SETTINGS

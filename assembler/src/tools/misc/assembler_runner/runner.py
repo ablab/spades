@@ -20,25 +20,32 @@ quast_bin = 'quast' # '/home/alex/biolab/master_rep/quast/quast.py'
 abyss_base = '/acestorage/software/abyss_1.3.6/abyss_build/bin/'
 msrca_base = '/acestorage/software/MaSuRCA-2.0.3.1/bin/'
 msrca_config = os.path.join(runner_dirpath, 'MSRCA_config.txt')
+msrca_mp_config = os.path.join(runner_dirpath, 'MSRCA_mp_config.txt')
 soap_base = '/acestorage/software/SOAPdenovo_2.04/'
 soap_run_script = os.path.join(runner_dirpath, 'SOAP_assemble.sh')
 soap_config = os.path.join(runner_dirpath, 'SOAP_config.txt')
+soap_mp_config = os.path.join(runner_dirpath, 'SOAP_mp_config.txt')
 idba_base = '/acestorage/software/idba-1.1.1/bin/'
 spades_base = '/acestorage/software/SPAdes-2.5.1/bin/'
 ray_base = '/acestorage/software/Ray-v2.2.0/Ray-Large-k-mers/'
 cabog_base = '/acestorage/software/CABOG_wgs_7.0/Linux-amd64/bin'
 cabog_run_script = os.path.join(runner_dirpath, 'CABOG_assemble.sh')
+cabog_mp_run_script = os.path.join(runner_dirpath, 'CABOG_mp_assemble.sh')
 cabog_config = os.path.join(runner_dirpath, 'CABOG_config.txt')
 sga_base = '/acestorage/software/SGA-0.10.10/build/bin/'
 sga_run_script = os.path.join(runner_dirpath, 'SGA_assemble.sh')
+sga_mp_run_script = os.path.join(runner_dirpath, 'SGA_mp_assemble.sh')
 sga_cor_run_script = os.path.join(runner_dirpath, 'SGA_assemble_cor.sh')
+sga_mp_cor_run_script = os.path.join(runner_dirpath, 'SGA_mp_assemble_cor.sh')
 velvet_base = '/acestorage/software/velvet_1.2.10/'
 velvet_run_script = os.path.join(runner_dirpath, 'VELVET_assemble.sh')
+velvet_mp_run_script = os.path.join(runner_dirpath, 'VELVET_mp_assemble.sh')
 mira_base = '/acestorage/software/mira-4.0rc1/build/bin/'
 mira_config = os.path.join(runner_dirpath, 'MIRA_config.txt')
+mira_mp_config = os.path.join(runner_dirpath, 'MIRA_mp_config.txt')
 
 # IMPORTANT CONSTANTS
-long_options = "min-k= max-k= step-k= threads= is= dev= assemblers= mira-tmp-dir= corrected sc mp1= mp2= mp-orient=".split()
+long_options = "min-k= max-k= step-k= threads= is= dev= assemblers= mira-tmp-dir= corrected sc mp1= mp2= mp-orient= mp-is= mp-dev= phred64".split()
 short_options = "o:1:2:r:t:"
 
 # options
@@ -50,12 +57,15 @@ right = None
 mate_left = None
 mate_right = None
 mate_orient = 'rf'
+mate_is = None
+mate_is_dev = None
 insert_size = None
 is_dev = None
 max_threads = 8
 reference = None
 corrected = False
 single_cell = False
+phred64 = False
 
 k_2level_selection = True
 min_k_rough = 35
@@ -238,9 +248,20 @@ def run_abyss(K, log_filename):
 def run_msrca(K, log_filename):
     log_file = open(log_filename, 'a')
     cur_msrca_config = os.path.join(os.getcwd(), 'config.txt')
-    shutil.copy(msrca_config, cur_msrca_config)
+    #shutil.copy(msrca_config, cur_msrca_config)
     params_subst_dict = dict(common_params_subst_dict)
     params_subst_dict['K'] = str(K)
+    if mate_left and mate_right and mate_is and mate_is_dev:
+        params_subst_dict['MP_LEFT'] = mate_left
+        params_subst_dict['MP_RIGHT'] = mate_right
+        params_subst_dict['MP_INSERT_SIZE'] = str(mate_is)
+        if mate_orient == 'rf':
+            params_subst_dict['MP_DEVIATION'] = str(mate_is_dev)
+        else:
+            params_subst_dict['MP_DEVIATION'] = str(-mate_is_dev)
+        shutil.copy(msrca_mp_config, cur_msrca_config)
+    else:
+        shutil.copy(msrca_config, cur_msrca_config)
     update_runner_params(cur_msrca_config, params_subst_dict)
     cmd_line = os.path.join(msrca_base, "runSRCA.pl") + " " + cur_msrca_config
     cmd_line += " >>%s 2>>%s" % (log_filename, log_filename)
@@ -274,13 +295,20 @@ def run_msrca(K, log_filename):
 def run_soap(K, log_filename):
     log_file = open(log_filename, 'a')
     cur_soap_config = os.path.abspath(os.path.join(os.getcwd(), 'config.txt'))
-    shutil.copy(soap_config, cur_soap_config)
+    #shutil.copy(soap_config, cur_soap_config)
     cur_soap_run_script = os.path.abspath(os.path.join(os.getcwd(), 'run.sh'))
     shutil.copy(soap_run_script, cur_soap_run_script)
     params_subst_dict = dict(common_params_subst_dict)
     params_subst_dict['K'] = str(K)
     params_subst_dict['SOAP_BASE'] = soap_base
     params_subst_dict['SOAP_CONFIG'] = cur_soap_config
+    if mate_left and mate_right and mate_is:
+        params_subst_dict['MP_LEFT'] = mate_left
+        params_subst_dict['MP_RIGHT'] = mate_right
+        params_subst_dict['MP_INSERT_SIZE'] = str(mate_is)
+        shutil.copy(soap_mp_config, cur_soap_config)
+    else:
+        shutil.copy(soap_config, cur_soap_config)
     update_runner_params(cur_soap_config, params_subst_dict)
     update_runner_params(cur_soap_run_script, params_subst_dict)
     cmd_line = cur_soap_run_script
@@ -307,11 +335,19 @@ def run_soap(K, log_filename):
 def run_velvet(K, log_filename):
     log_file = open(log_filename, 'a')
     cur_velvet_run_script = os.path.abspath(os.path.join(os.getcwd(), 'run.sh'))
-    shutil.copy(velvet_run_script, cur_velvet_run_script)
+    #shutil.copy(velvet_run_script, cur_velvet_run_script)
     params_subst_dict = dict(common_params_subst_dict)
     params_subst_dict['K'] = str(K)
     params_subst_dict['VELVET_BASE'] = velvet_base
     params_subst_dict['OUTPUT_DIR'] = os.path.dirname(log_filename)
+    if mate_left and mate_right and mate_is and mate_is_dev:
+        params_subst_dict['MP_LEFT'] = mate_left
+        params_subst_dict['MP_RIGHT'] = mate_right
+        params_subst_dict['MP_INSERT_SIZE'] = str(mate_is)
+        params_subst_dict['MP_DEVIATION'] = str(mate_is_dev)
+        shutil.copy(velvet_mp_run_script, cur_velvet_run_script)
+    else:
+        shutil.copy(velvet_run_script, cur_velvet_run_script)
     update_runner_params(cur_velvet_run_script, params_subst_dict)
     cmd_line = cur_velvet_run_script
     cmd_line += " >>%s 2>>%s" % (log_filename, log_filename)
@@ -335,9 +371,15 @@ def run_sga(K, log_filename):
     log_file = open(log_filename, 'a')
     cur_sga_run_script = os.path.abspath(os.path.join(os.getcwd(), 'run.sh'))
     if corrected:
-        shutil.copy(sga_cor_run_script, cur_sga_run_script)
+        if mate_left and mate_right:
+            shutil.copy(sga_mp_cor_run_script, cur_sga_run_script)
+        else:
+            shutil.copy(sga_cor_run_script, cur_sga_run_script)
     else:
-        shutil.copy(sga_run_script, cur_sga_run_script)
+        if mate_left and mate_right:
+            shutil.copy(sga_mp_run_script, cur_sga_run_script)
+        else:
+            shutil.copy(sga_run_script, cur_sga_run_script)
     params_subst_dict = dict(common_params_subst_dict)
     params_subst_dict['K'] = str(K)
     params_subst_dict['SGA_BASE'] = sga_base
@@ -350,6 +392,13 @@ def run_sga(K, log_filename):
     target_link = 'frag2'
     log_file.write("Started preparation 2: creating symlink from %s to %s\n\n" % (right, target_link))
     os.symlink(right, target_link)
+    if mate_left and mate_right:
+        target_link = 'jump1'
+        log_file.write("Started preparation 3: creating symlink from %s to %s\n\n" % (mate_left, target_link))
+        os.symlink(mate_left, target_link)
+        target_link = 'jump2'
+        log_file.write("Started preparation 4: creating symlink from %s to %s\n\n" % (mate_right, target_link))
+        os.symlink(mate_right, target_link)
     log_file.write("Started assembling: " + cmd_line + "\n\n")
     log_file.write("Run script content:\n")
     for line in open(cur_sga_run_script, 'r'):
@@ -373,6 +422,9 @@ def run_ray(K, log_filename):
         shutil.rmtree(out_subdir)
     cmd_line = "mpirun -np %d" % (max_threads / 2) + " " + os.path.join(ray_base, "Ray") + " -o out -k %d -p %s %s" % \
                                                       (K, left, right)  ## TODO max_threads / 2 or not.
+    if mate_left and mate_right:
+        if mate_orient == 'fr':  # TODO: else
+            cmd_line += " -p %s %s " % (mate_left, mate_right)
     cmd_line += " >>%s 2>>%s" % (log_filename, log_filename)
     log_file.write("Started: " + cmd_line + "\n\n")
     log_file.flush()
@@ -564,7 +616,24 @@ def run_idba(log_filename):
         warning("IDBA preparing step didn't create shuffled reads!")
         return 0, None, None
 
+    shuffled_mp_reads = None
+    if mate_left and mate_right: 
+        if mate_orient == 'fr':  # TODO: else
+            shuffled_mp_reads = os.path.abspath('shuffled_mp.fasta')
+            cmd_line = os.path.join(idba_base, "fq2fa") + " --merge %s %s %s" % (mate_left, mate_right, shuffled_mp_reads)
+            cmd_line += " >>%s 2>>%s" % (log_filename, log_filename)
+            log_file.write("Started preparing step-2 (mate-pairs): " + cmd_line + "\n\n")
+            log_file.flush()
+            return_code = os.system(cmd_line)
+            if return_code:
+                warning("IDBA preparing step-2 (shuffling two fastQ into one fastA) returned non-zero code!")
+            if not os.path.isfile(shuffled_mp_reads):
+                warning("IDBA preparing step-2 didn't create shuffled reads!")
+                return 0, None, None
+
     cmd_line = os.path.join(idba_base, "idba_ud") + " -o out -r %s --num_threads %d" % (shuffled_reads, max_threads)
+    if shuffled_mp_reads:
+        cmd_line += " --read_level_2 %s " % (shuffled_mp_reads)
     cmd_line += " >>%s 2>>%s" % (log_filename, log_filename)
     log_file.write("Started assembling step: " + cmd_line + "\n\n")
     log_file.flush()
@@ -574,6 +643,8 @@ def run_idba(log_filename):
     log_file.close()
     contigs_path = "out/contig.fa"
     scaffolds_path = "out/scaffold.fa"
+    if shuffled_mp_reads:
+        scaffolds_path = "out/scaffold-level-2.fa"
     return return_code, contigs_path, scaffolds_path
 
 
@@ -582,12 +653,30 @@ def run_cabog(log_filename):
     cur_cabog_config = os.path.abspath(os.path.join(os.getcwd(), 'config.txt'))
     shutil.copy(cabog_config, cur_cabog_config)
     cur_cabog_run_script = os.path.abspath(os.path.join(os.getcwd(), 'run.sh'))
-    shutil.copy(cabog_run_script, cur_cabog_run_script)
+    #shutil.copy(cabog_run_script, cur_cabog_run_script)
     params_subst_dict = dict(common_params_subst_dict)
     params_subst_dict['CABOG_BASE'] = cabog_base
     params_subst_dict['CABOG_CONFIG'] = cur_cabog_config
     params_subst_dict['STDOUT_LOG'] = log_filename
     params_subst_dict['STDERR_LOG'] = log_filename
+    if phred64:
+        params_subst_dict['PHRED_TYPE'] = 'illumina'
+    else:
+        params_subst_dict['PHRED_TYPE'] = 'sanger'
+    if mate_left and mate_right and mate_is and mate_is_dev:
+        log_file.write("Starting with mate-pairs\n")
+        params_subst_dict['MP_LEFT'] = mate_left
+        params_subst_dict['MP_RIGHT'] = mate_right
+        params_subst_dict['MP_INSERT_SIZE'] = str(mate_is)
+        params_subst_dict['MP_DEVIATION'] = str(mate_is_dev)
+        if mate_orient == 'fr':
+            params_subst_dict['MP_ORIENT'] = '-innie'
+        else:
+            params_subst_dict['MP_ORIENT'] = '-outtie'
+        shutil.copy(cabog_mp_run_script, cur_cabog_run_script)
+    else:
+        log_file.write("Starting only with paired-end\n")
+        shutil.copy(cabog_run_script, cur_cabog_run_script)
     update_runner_params(cur_cabog_run_script, params_subst_dict)
     cmd_line = cur_cabog_run_script
     log_file.write("Started: " + cmd_line + "\n\n")
@@ -643,10 +732,23 @@ def run_mira(log_filename):
 
     log_file = open(log_filename, 'a')
     cur_mira_config = os.path.abspath(os.path.join(os.getcwd(), 'config.txt'))
-    shutil.copy(mira_config, cur_mira_config)
-    cropped_left, cropped_right = crop_read_names_if_needed(left, right, os.path.dirname(log_filename))
     params_subst_dict = dict(common_params_subst_dict)
-
+    
+    #shutil.copy(mira_config, cur_mira_config)
+    cropped_left, cropped_right = crop_read_names_if_needed(left, right, os.path.dirname(log_filename))
+    if mate_left and mate_right and mate_is and mate_is_dev:
+        log_file.write("Starting with mate-pairs\n")
+        cropped_mate_left, cropped_mate_right = crop_read_names_if_needed(mate_left, mate_right, os.path.dirname(log_filename))
+        shutil.copy(mira_mp_config, cur_mira_config)
+        params_subst_dict['MIRA_MP_MIN'] = str(max(0, mate_is - mate_is_dev)) # TODO: check this
+        params_subst_dict['MIRA_MP_MAX'] = str(min(mate_is + mate_is_dev, 2 * mate_is)) # TODO: check this
+        params_subst_dict['MATE_LEFT'] = cropped_mate_left
+        params_subst_dict['MATE_RIGHT'] = cropped_mate_right
+        params_subst_dict['MP_ORIENT'] = mate_orient.upper()
+    else:
+        log_file.write("Starting only with paired-ends\n")
+        shutil.copy(mira_config, cur_mira_config)
+    
     global mira_tmp_dir
     original_mira_tmp_dir = mira_tmp_dir
     i = 1
@@ -680,7 +782,6 @@ def run_mira(log_filename):
     return return_code, contigs_path, scaffolds_path
 
 
-
 def main():
     global output_dir
     global left
@@ -700,6 +801,9 @@ def main():
     global mate_left
     global mate_right
     global mate_orient
+    global mate_is
+    global mate_is_dev
+    global phred64
 
     if len(sys.argv) == 1:
         print("Assemblers runner v.1.1")
@@ -715,6 +819,7 @@ def main():
         print("--mp-orient\t<rf,fr>\tmate-pairs orientation (RF -- default or FR)")
         print("--mp1\t<file>\t\tleft mate-pairs reads (in FASTQ)")
         print("--mp2\t<file>\t\tright mate-pairs reads (in FASTQ)")
+        print("--mp-is\t<int>\t\tmate-pairs insert size mean")
         print("\nRecommended options:")
         print("-r\t\t<file>\treference (in FASTA)")
         print("--threads\t<int>\tmax threads number (default is %d)" % max_threads)
@@ -725,6 +830,7 @@ def main():
         print("--mira-tmp-dir\t<dir>\ttemporary dir for MIRA assembler (default is %s)" % mira_tmp_dir)
         print("--corrected\t\t\treads are corrected (disable error correction if it is configurable)")
         print("--sc\t\t\t\tdataset is single-cell")
+        print("--phred64\t\tdataset quality encoding is Phred+64 (default is Phred+33)")
         print("--assemblers\t<str,str>\tlist of assemblers to run (default is %s)" % assemblers_to_run)
         sys.exit(0)
 
@@ -753,6 +859,10 @@ def main():
             mate_left = arg
         elif opt == '--mp2':
             mate_right = arg
+        elif opt == '--mp-is':
+            mate_is = int(arg)
+        elif opt == '--mp-dev':
+            mate_is_dev = int(arg)
         elif opt == '--mp-orient':
             if arg == "fr" or arg == "rf":
                 mate_orient = arg
@@ -773,6 +883,8 @@ def main():
             corrected = True
         elif opt == '--sc':
             single_cell = True
+        elif opt == '--phred64':
+            phred64 = True
         elif opt == '--assemblers':
             new_assemblers_to_run = arg.split(',')
             for name in new_assemblers_to_run:
