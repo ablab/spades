@@ -98,7 +98,8 @@ def check_reads_file_format(filename, message, only_assembler, library_type, log
     if ext.lower() not in options_storage.ALLOWED_READS_EXTENSIONS:
         error("file with reads has unsupported format (only " + ", ".join(options_storage.ALLOWED_READS_EXTENSIONS) +
               " are supported): %s (%s)" % (filename, message), log)
-    if not only_assembler and ext.lower() not in options_storage.BH_ALLOWED_READS_EXTENSIONS and not library_type.endswith("contigs"):
+    if not only_assembler and ext.lower() not in options_storage.BH_ALLOWED_READS_EXTENSIONS and \
+       library_type not in options_storage.LONG_READS_TYPES:
         error("to run read error correction, reads should be in FASTQ format (" +
               ", ".join(options_storage.BH_ALLOWED_READS_EXTENSIONS) +
               " are supported): %s (%s)" % (filename, message), log)
