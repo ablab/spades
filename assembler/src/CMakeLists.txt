@@ -102,7 +102,7 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../GPLv2.txt"
         COMPONENT runtime)
 
 # Random stuff
-include(CMakeListsInternal.txt)
+#include(CMakeListsInternal.txt)
 
 # Packaging
 include(pack)
