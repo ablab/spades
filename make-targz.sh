@@ -4,11 +4,13 @@ mkdir -p SPAdes-$VERSION/src
 
 cp -r assembler/src/debruijn SPAdes-$VERSION/src/debruijn
 cp -r assembler/src/hammer SPAdes-$VERSION/src/hammer
+cp -r assembler/src/debruijn SPAdes-$VERSION/src/dipspades
+cp -r assembler/src/hammer SPAdes-$VERSION/src/ionhammer
 cp -r assembler/src/include SPAdes-$VERSION/src/include
 cp -r assembler/src/io SPAdes-$VERSION/src/io
 cp -r assembler/src/mph_index SPAdes-$VERSION/src/mph_index
-cp -r assembler/src/rectangles SPAdes-$VERSION/src/rectangles
 cp -r assembler/src/cmake SPAdes-$VERSION/src/cmake
+cp -r assembler/src/ssw SPAdes-$VERSION/src/tools
 cp -r assembler/src/ssw SPAdes-$VERSION/src/ssw
 cp -r assembler/src/spades_pipeline SPAdes-$VERSION/src/spades_pipeline
 cp assembler/src/CMakeLists.txt SPAdes-$VERSION/src/CMakeLists.txt
@@ -21,8 +23,6 @@ rm -r SPAdes-$VERSION/ext/include/teamcity_boost
 # cleaning .pyc and .pyo
 rm -f SPAdes-$VERSION/src/spades_pipeline/*.pyc
 rm -f SPAdes-$VERSION/src/spades_pipeline/*.pyo
-rm -f SPAdes-$VERSION/src/rectangles/*.pyc
-rm -f SPAdes-$VERSION/src/rectangles/*.pyo
 rm -f SPAdes-$VERSION/ext/include/python_libs/joblib/*.pyc
 rm -f SPAdes-$VERSION/ext/include/python_libs/joblib/*.pyo
 
@@ -50,6 +50,12 @@ cp configs/debruijn/detail_info_printer.info.template configs/debruijn/detail_in
 cp configs/debruijn/simplification.info.template configs/debruijn/simplification.info
 cp configs/debruijn/distance_estimation.info.template configs/debruijn/distance_estimation.info
 cp configs/debruijn/path_extend/pe_params.info.template configs/debruijn/path_extend/pe_params.info
+cp configs/debruijn/log.properties.template configs/debruijn/log.properties
+cp configs/debruijn/path_extend/pe_params.info.template configs/debruijn/path_extend/pe_params.info
+cp configs/debruijn/coverage_based_rr.info.template   configs/debruijn/coverage_based_rr.info
+cp configs/dipspades/config.info.template configs/dipspades/config.i
+cp configs/dipspades/log.properties.template configs/dipspades/log.propertie
+cp configs/ionhammer/ionhammer.cfg.template configs/ionhammer/ionhammer.cfg
 
 cd ..
 
