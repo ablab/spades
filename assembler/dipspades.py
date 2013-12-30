@@ -14,6 +14,7 @@ import spades
 import support
 import options_storage
 import dipspades_logic
+import spades_init
 
 
 def main():
@@ -41,7 +42,7 @@ def main():
         # processing some special options
         if opt == '--test':
             output_dir = os.path.join(os.path.abspath(arg), "test_dipspades")
-            spades_py_command_line = '--diploid -1 test_dataset/ecoli_1K_1.fq.gz -2 test_dataset/ecoli_1K_2.fq.gz --only-assembler'
+            spades_py_command_line = '--diploid -1 ' + os.path.join(spades_init.spades_home, "test_dataset/ecoli_1K_1.fq.gz") + ' -2 ' + os.path.join(spades_init.spades_home, "test_dataset/ecoli_1K_2.fq.gz") + ' --only-assembler'
             dipspades_logic_py_command_line = ''
             break
         if opt == '-o':
