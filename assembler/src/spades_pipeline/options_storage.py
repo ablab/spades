@@ -203,12 +203,12 @@ def usage(spades_version, show_hidden=False, dipspades=False):
     sys.stderr.write("\t\t\t\tless than " + str(MAX_K + 1) + ") [default: 'auto']" + "\n") # ",".join(map(str, k_mers_short))
     sys.stderr.write("--phred-offset\t<33 or 64>\tPHRED quality offset in the"\
                          " input reads (33 or 64)" + "\n")
-    sys.stderr.write("\t\t\t\t[default: auto-detect]" + "\n")
-    sys.stderr.write("--debug\t\t\t\truns SPAdes in debug mode (keeps intermediate output)" + "\n")
+    sys.stderr.write("\t\t\t\t[default: auto-detect]" + "\n")    
 
     if show_hidden:
         sys.stderr.write("" + "\n")
         sys.stderr.write("HIDDEN options:" + "\n")
+        sys.stderr.write("--debug\t\t\t\truns SPAdes in debug mode (keeps intermediate output)" + "\n")
         sys.stderr.write("--mismatch-correction\t\truns post processing correction"\
                              " of mismatches and short indels" + "\n")
         sys.stderr.write("--reference\t<filename>\tfile with reference for deep analysis"\
