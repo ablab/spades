@@ -30,9 +30,11 @@ cp assembler/LICENSE SPAdes-$VERSION
 cp assembler/README SPAdes-$VERSION
 cp assembler/VERSION SPAdes-$VERSION
 cp assembler/spades.py SPAdes-$VERSION
+cp assembler/dipspades.py SPAdes-$VERSION
 cp assembler/spades_compile.sh SPAdes-$VERSION
 cp assembler/spades_init.py SPAdes-$VERSION
 cp assembler/manual.html SPAdes-$VERSION
+cp assembler/dipspades_manual.html SPAdes-$VERSION
 cp assembler/changelog.html SPAdes-$VERSION
 cp assembler/GPLv2.txt SPAdes-$VERSION
 
