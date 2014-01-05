@@ -16,4 +16,4 @@ add_executable(debruijn_test
  test.cpp)
  
 include_directories(${EXT_DIR}/include/ConsensusCore)
-target_link_libraries(debruijn_test ${COMMON_LIBRARIES} ConsensusCore input mph_index otkpp ssw ${ZLIB_LIBRARIES})
+target_link_libraries(debruijn_test ${COMMON_LIBRARIES} ConsensusCore input mph_index nlopt ssw ${ZLIB_LIBRARIES})
