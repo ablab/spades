@@ -28,6 +28,7 @@
 #include "logger/logger.hpp"
 #include "io/parser.hpp"
 #include "io/fasta_fastq_gz_parser.hpp"
+#include "io/bam_parser.hpp"
 
 
 namespace io {
@@ -62,20 +63,24 @@ std::string GetExtension(const std::string& filename) {
  * @return Pointer to the new parser object with these filename and
  * offset.
  */
-Parser* SelectParser(const std::string& filename, 
+Parser* SelectParser(const std::string& filename,
                      OffsetType offset_type /*= PhredOffset*/) {
+  std::string ext = GetExtension(filename);
+  if (ext == "bam")
+      return new BAMParser(filename, offset_type);
+
   return new FastaFastqGzParser(filename, offset_type);
   /*
-  std::string ext = GetExtension(filename);  
   if ((ext == "fastq") || (ext == "fastq.gz") ||
-      (ext == "fasta") || (ext == "fasta.gz") || 
+      (ext == "fasta") || (ext == "fasta.gz") ||
       (ext == "fa") || (ext == "fq.gz") ||
       (ext == "fq") || (ext == "fa.gz") ||
       (ext == "seq") || (ext == "seq.gz")) {
     return new FastaFastqGzParser(filename, offset_type);
   }
-  ERROR("Unknown file extention in input!"); 
-  return NULL;*/
+
+  ERROR("Unknown file extention in input!");
+  return NULL; */
 }
 
 void first_fun(int) {
