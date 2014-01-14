@@ -956,25 +956,13 @@ public:
             for (size_t iedge = 0; iedge < edges.size(); ++iedge) {
                 next_paths.insert(best_paths[edges[iedge].e_]);
             }
-        } else {
-            DEBUG("try scaffold tree");
-//            next_paths = path_searcher_.ScaffoldTree(path);
-//            VERIFY(next_paths.size() <= 1);
-//            if (next_paths.size() == 1) {
-//                BidirectionalPath& p = **next_paths.begin();
-//                DEBUG("Path to add dirty ");
-//                p.Print();
-//                for (size_t i = 0; i < p.Size() - 1; ++i) {
-//                    path.PushBack(p[i], p.GapAt(i));
-//                }
-//                DEBUG("Finally the path, and an edge to add " << g_.int_id(p.Back()) << " : " << g_.length(p.Back()));
-//                path.Print();
-//
-//                return EdgeContainer(1, EdgeWithDistance(p.Back(), p.GapAt(p.Size() - 1)));
-//            }
         }
+
         DEBUG("next paths size " << next_paths.size());
         EdgeContainer result = ChooseBest(path, next_paths);
+        if (result.size() != 1) {
+            result = ScaffoldTree(path);
+        }
         DeleteNextPaths(next_paths);
         if (result.size() != 1) {
             DEBUG("nobody can extend " << g_.int_id(path.Back()));
@@ -982,6 +970,25 @@ public:
         return result;
     }
 private:
+    EdgeContainer ScaffoldTree(BidirectionalPath& path) {
+        DEBUG("try scaffold tree");
+        set<BidirectionalPath*> next_paths = path_searcher_.ScaffoldTree(path);
+        VERIFY(next_paths.size() <= 1);
+        if (next_paths.size() != 1) {
+            return EdgeContainer();
+        }
+        BidirectionalPath& p = **next_paths.begin();
+        DEBUG("Path to add dirty ");
+        p.Print();
+        for (size_t i = 0; i < p.Size() - 1; ++i) {
+            path.PushBack(p[i], p.GapAt(i));
+        }
+        DEBUG("Finally the path, and an edge to add " << g_.int_id(p.Back()) << " : " << g_.length(p.Back()));
+        path.Print();
+        DeleteNextPaths(next_paths);
+        return EdgeContainer(1, EdgeWithDistance(p.Back(), p.GapAt(p.Size() - 1)));
+    }
+
     EdgeContainer TryResolveBuldge(BidirectionalPath& p, EdgeContainer& edges) {
         if (edges.size() == 0)
             return edges;
