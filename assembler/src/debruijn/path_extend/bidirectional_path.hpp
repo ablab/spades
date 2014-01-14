@@ -47,12 +47,7 @@ public:
 
     LoopDetectorData(size_t i): iteration_(i), alternatives_()  {}
 
-    LoopDetectorData(): alternatives_(){}
-
-    LoopDetectorData(const LoopDetectorData& d) {
-        iteration_ = d.iteration_;
-        alternatives_.insert(d.alternatives_.begin(), d.alternatives_.end());
-    }
+    LoopDetectorData(): iteration_(0), alternatives_(){}
 
     size_t GetIteration() const {
         return iteration_;
