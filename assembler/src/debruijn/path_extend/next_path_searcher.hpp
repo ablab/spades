@@ -299,7 +299,7 @@ inline set<BidirectionalPath*> NextPathSearcher::FindNextPaths(const Bidirection
         grow_paths.insert(grow_paths.end(), to_add.begin(), to_add.end());
 
         if (used_edges.size() > max_paths_) {
-            DEBUG("too much paths");
+            DEBUG("too many paths");
             delete start_e;
             return set<BidirectionalPath*>();
         }
@@ -472,7 +472,9 @@ inline void NextPathSearcher::ScaffoldChristmasTree(const BidirectionalPath& pat
     set<EdgeId> seeds;
     Scaffold(path, current_path, constructed_paths, seeds, false);
     DEBUG("scaffolding candidates for tree " << constructed_paths.size());
-
+    for (auto iter = constructed_paths.begin(); iter != constructed_paths.end(); ++iter){
+        iter->second.p_.Print();
+    }
     if (constructed_paths.size() > 0 &&
             constructed_paths.upper_bound(constructed_paths.begin()->first) == constructed_paths.end()) {
         DEBUG("All paths from one seed");
@@ -593,9 +595,9 @@ inline void NextPathSearcher::OrderScaffoldingCandidates(EdgeSet& candidate_set,
 
     TRACE("Order Scaffolding Candidates, is gap " << is_gap);
     for (EdgeWithDistance e : candidate_set) {
-    	TRACE("e " << g_.int_id(e.e_));
+        TRACE("e " << g_.int_id(e.e_));
         if (constructed_paths.count(e.e_) > 0) {
-        	TRACE("visited");
+            TRACE("visited");
             continue;
         }
         ProcessScaffoldingCandidate(e, candidate_set, current_path, grown_path_len, constructed_paths, is_gap);
@@ -823,11 +825,11 @@ inline void NextPathSearcher::JoinPathsByGraph(ConstructedPathT& constructed_pat
 }
 
 inline void NextPathSearcher::JoinPathsByPI(ConstructedPathT& constructed_paths) {
-	TRACE("==  try to join paths ===");
+	DEBUG("==  try to join paths ===");
     for (auto p1 = constructed_paths.begin(); p1 != constructed_paths.end(); ++p1) {
-        //p1->second.p_.Print();
+        p1->second.p_.Print();
     }
-    TRACE("==  printed ===");
+    DEBUG("==  printed ===");
 
     //Checking paired info
     set<EdgeId> visited;
@@ -847,8 +849,13 @@ inline void NextPathSearcher::JoinPathsByPI(ConstructedPathT& constructed_paths)
                 for (size_t j = 0; j < path2.Size(); ++j) {
                     size_t len_to_e2 = path2.Length() - path2.LengthAt(j);
                     size_t dist = path1.LengthAt(i) + len_to_e2;
+                    size_t min_dist = (size_t) max(0, (int) dist - (int) weight_counter_.GetLib().GetLeftVar());
+                    size_t max_dist = dist + search_dist_;
+                    DEBUG("try to find pair info between " << g_.int_id(path1[i]) << " and  " << g_.int_id(path2[j])
+                          << " distance from " << min_dist
+                          <<" to " << max_dist);
                     if (path1[i] != path2[j] &&
-                            weight_counter_.HasPI(path1[i], path2[j], max(0, (int) dist - (int) weight_counter_.GetLib().GetLeftVar()), dist + search_dist_)) {
+                            weight_counter_.HasPI(path1[i], path2[j], min_dist, max_dist)) {
                         has_pi = true;
                         break;
                     }
@@ -868,16 +875,16 @@ inline void NextPathSearcher::JoinPathsByPI(ConstructedPathT& constructed_paths)
                 }
             }
             if (has_pi) {
-            	TRACE("has pi from ");
-                //path1.Print();
-                TRACE("to");
-                //path2.Print();
+            	DEBUG("has pi from ");
+                path1.Print();
+                DEBUG("to");
+                path2.Print();
                 path1.PushBack(path2.Front(), 100);
                 for (int i = 1; i < (int) path2.Size(); ++i) {
                     path1.PushBack(path2[i], path2.GapAt(i));
                 }
-                TRACE("new path");
-                //path1.Print();
+                DEBUG("new path");
+                path1.Print();
                 path2.Clear();
                 visited.insert(p2->first);
             }
