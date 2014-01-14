@@ -288,6 +288,8 @@ public:
             oss << ToString(*path);
             fastg_oss.set_header(ids[path]);
             fastg_oss << next_ids[path] << ToString(*path);
+            DEBUG("NODE " << ids[path]);
+            path->Print();
         }
     }
 };
