@@ -358,7 +358,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
     DebugOutputPaths(writer, gp, output_dir, last_paths, "last_paths");
 
     writer.WritePathsToFASTG(last_paths, output_dir + contigs_name + ".fastg", output_dir + contigs_name + ".fasta");
-    writer.writePaths(last_paths, output_dir + contigs_name+ "_temp" + ".fasta");
+    //writer.writePaths(last_paths, output_dir + contigs_name+ "_temp" + ".fasta");
     last_paths.DeleteAllPaths();
     seeds.DeleteAllPaths();
     mp_paths.DeleteAllPaths();
