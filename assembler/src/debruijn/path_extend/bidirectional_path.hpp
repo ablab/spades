@@ -42,18 +42,12 @@ public:
 class LoopDetector: public PathListener {
 
 protected:
-    const Graph& g_;
-
-    size_t currentIteration_;
-
     size_t current_;
-
     std::multimap <EdgeId, size_t > data_;
-
     BidirectionalPath * path_;
 
 public:
-    LoopDetector(const Graph& g_, BidirectionalPath * p_);
+    LoopDetector(BidirectionalPath * p_);
 
     virtual ~LoopDetector();
 
@@ -67,7 +61,7 @@ public:
 
     virtual void BackEdgeRemoved(EdgeId e, BidirectionalPath * path);
 
-    void SelectEdge(EdgeId e, double weight = 1);
+    void SelectEdge(EdgeId e);
 
     size_t LoopEdges(size_t skip_identical_edges, size_t min_cycle_appearences) const;
 
@@ -78,8 +72,6 @@ public:
     size_t LastLoopCount(size_t skip_identical_edges, size_t min_cycle_appearences) const;
 
     size_t LastLoopCount(size_t edges) const;
-
-    bool LoopBecameStable() const;
 
     bool IsCycled(size_t loopLimit, size_t& skip_identical_edges) const;
 
@@ -107,7 +99,7 @@ public:
               cumulativeLength_(),
               gapLength_(),
               totalLength_(0),
-              loopDetector_(g_, this),
+              loopDetector_(this),
               listeners_(),
               weight_(1.0) {
         Init();
@@ -119,7 +111,7 @@ public:
               cumulativeLength_(),
               gapLength_(),
               totalLength_(0),
-              loopDetector_(g_, this),
+              loopDetector_(this),
               listeners_(),
               weight_(1.0) {
         Init();
@@ -139,7 +131,7 @@ public:
               cumulativeLength_(),
               gapLength_(),
               totalLength_(0),
-              loopDetector_(g_, this),
+              loopDetector_(this),
               listeners_(),
               weight_(1.0) {
         Init();
@@ -154,7 +146,7 @@ public:
               cumulativeLength_(path.cumulativeLength_),
               gapLength_(path.gapLength_),
               totalLength_(path.totalLength_),
-              loopDetector_(g_, this),
+              loopDetector_(this),
               listeners_(),
               id_(path.id_),
               weight_(path.weight_) {
@@ -1142,8 +1134,7 @@ protected:
 
 
 
-inline LoopDetector::LoopDetector(const Graph& g_, BidirectionalPath * p_): g_(g_), currentIteration_(0), data_(), path_(p_) {
-    current_ = currentIteration_;
+inline LoopDetector::LoopDetector(BidirectionalPath * p_): current_(0), data_(), path_(p_) {
 }
 
 inline void LoopDetector::FrontEdgeAdded(EdgeId /*e*/, BidirectionalPath * /*path*/, int /*gap*/) {
@@ -1168,9 +1159,9 @@ inline void LoopDetector::BackEdgeRemoved(EdgeId e, BidirectionalPath * /*path*/
     }
 }
 
-inline void LoopDetector::SelectEdge(EdgeId e, double /*weight*/) {
+inline void LoopDetector::SelectEdge(EdgeId e) {
     data_.insert(std::make_pair(e, current_));
-    current_ = ++currentIteration_;
+    ++current_;
 }
 
 inline void LoopDetector::Clear() {
@@ -1279,31 +1270,17 @@ inline void LoopDetector::RemoveLoop(size_t skip_identical_edges, bool fullRemov
     }
 }
 
-
-inline bool LoopDetector::LoopBecameStable() const {
-    EdgeId e = path_->Head();
-
-    if (data_.count(e) < 2) {
-        return false;
-    }
-
-    auto iter = data_.upper_bound(e);
-    auto last = --iter;
-    auto prev = --iter;
-
-    return prev->second == last->second;
-}
-
 inline bool LoopDetector::EdgeInShortLoop(EdgeId e) const {
-	VertexId v = g_.EdgeEnd(e);
-	if (g_.OutgoingEdgeCount(v) != 2) {
+    const Graph& g = path_->graph();
+	VertexId v = g.EdgeEnd(e);
+	if (g.OutgoingEdgeCount(v) != 2) {
 		return false;
 	}
-	auto edges = g_.OutgoingEdges(v);
+	auto edges = g.OutgoingEdges(v);
 	bool loop_found = false;
 	bool exit_found = false;
 	for (auto edge = edges.begin(); edge != edges.end(); ++edge) {
-		if (g_.EdgeEnd(*edge) == g_.EdgeStart(e)) {
+		if (g.EdgeEnd(*edge) == g.EdgeStart(e)) {
 			loop_found = true;
 		} else {
 			exit_found = true;
@@ -1316,10 +1293,11 @@ inline bool LoopDetector::PrevEdgeInShortLoop() const {
     if (path_->Size() <= 1){
     	return false;
     }
+    const Graph& g = path_->graph();
 	EdgeId e2 = path_->At(path_->Size() - 1);
     EdgeId e1 = path_->At(path_->Size() - 2);
-    VertexId v2 = g_.EdgeEnd(e1);
-    if (g_.OutgoingEdgeCount(v2) == 2 && g_.EdgeEnd(e2)== g_.EdgeStart(e1) && g_.EdgeEnd(e1)== g_.EdgeStart(e2)) {
+    VertexId v2 = g.EdgeEnd(e1);
+    if (g.OutgoingEdgeCount(v2) == 2 && g.EdgeEnd(e2)== g.EdgeStart(e1) && g.EdgeEnd(e1)== g.EdgeStart(e2)) {
         return EdgeInShortLoop(e1);
     }
     return false;
