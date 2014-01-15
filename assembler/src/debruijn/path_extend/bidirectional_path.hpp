@@ -39,52 +39,6 @@ public:
 
 };
 
-class LoopDetectorData {
-
-public:
-    //Edge and its weight
-    typedef std::map <EdgeId, double> AltenativeMap;
-
-    LoopDetectorData(size_t i): iteration_(i), alternatives_()  {}
-
-    LoopDetectorData(): iteration_(0), alternatives_(){}
-
-    size_t GetIteration() const {
-        return iteration_;
-    }
-
-    const AltenativeMap& GetAlternatives() const {
-        return alternatives_;
-    }
-
-    void AddAlternative(EdgeId e, double w = 1) {
-        alternatives_.insert(std::make_pair(e, w));
-    }
-
-    void Clear() {
-        alternatives_.clear();
-        iteration_ = 0;
-    }
-
-    bool operator==(const LoopDetectorData& d) const {
-        if (alternatives_.size() != d.alternatives_.size()) {
-            return false;
-        }
-        auto iter2 = d.alternatives_.begin();
-        for (auto iter1 = alternatives_.begin(); iter2 != d.alternatives_.end() && iter1 != alternatives_.end(); ++iter1, ++iter2) {
-            if (iter1->first != iter2->first || iter1->second != iter2->second)
-                return false;
-        }
-        return true;
-    }
-
-protected:
-    size_t iteration_;
-    AltenativeMap alternatives_;
-    DECL_LOGGER("BidirectionalPath")
-};
-
-
 class LoopDetector: public PathListener {
 
 protected:
@@ -92,9 +46,9 @@ protected:
 
     size_t currentIteration_;
 
-    LoopDetectorData * current_;
+    size_t current_;
 
-    std::multimap <EdgeId, LoopDetectorData* > data_;
+    std::multimap <EdgeId, size_t > data_;
 
     BidirectionalPath * path_;
 
@@ -113,8 +67,6 @@ public:
 
     virtual void BackEdgeRemoved(EdgeId e, BidirectionalPath * path);
 
-    void AddAlternative(EdgeId e, double w = 1);
-
     void SelectEdge(EdgeId e, double weight = 1);
 
     size_t LoopEdges(size_t skip_identical_edges, size_t min_cycle_appearences) const;
@@ -129,10 +81,6 @@ public:
 
     bool LoopBecameStable() const;
 
-    size_t GetMaxExitIteration(EdgeId loopEdge, EdgeId loopExit, std::pair<size_t, size_t> iterationRange) const;
-
-    size_t GetFirstExitIteration(EdgeId loopEdge, EdgeId loopExit, std::pair<size_t, size_t> iterationRange, double coeff) const;
-
     bool IsCycled(size_t loopLimit, size_t& skip_identical_edges) const;
 
     size_t EdgesToRemove(size_t skip_identical_edges, bool fullRemoval = false) const;
@@ -142,18 +90,6 @@ public:
     bool EdgeInShortLoop(EdgeId e) const;
 
     bool PrevEdgeInShortLoop() const;
-
-    void Print() const {
-        INFO("== Detector data_ ==");
-        for (auto iter = data_.begin(); iter != data_.end(); ++iter) {
-            INFO("Edge " << g_.length(iter->first));
-
-            const LoopDetectorData::AltenativeMap& alts = iter->second->GetAlternatives();
-            for(auto alt = alts.begin(); alt != alts.end(); ++alt) {
-                INFO("Edge " << g_.length(alt->first) << ", weight " << alt->second);
-            }
-        }
-    }
 
 protected:
     DECL_LOGGER("BidirectionalPath")
@@ -1207,11 +1143,7 @@ protected:
 
 
 inline LoopDetector::LoopDetector(const Graph& g_, BidirectionalPath * p_): g_(g_), currentIteration_(0), data_(), path_(p_) {
-    current_ = new LoopDetectorData(currentIteration_);
-}
-
-inline void LoopDetector::AddAlternative(EdgeId e, double w) {
-    current_->AddAlternative(e, w);
+    current_ = currentIteration_;
 }
 
 inline void LoopDetector::FrontEdgeAdded(EdgeId /*e*/, BidirectionalPath * /*path*/, int /*gap*/) {
@@ -1219,7 +1151,6 @@ inline void LoopDetector::FrontEdgeAdded(EdgeId /*e*/, BidirectionalPath * /*pat
 }
 
 inline void LoopDetector::BackEdgeAdded(EdgeId e, BidirectionalPath * /*path*/, int /*gap*/) {
-    current_->AddAlternative(e, 1);
     SelectEdge(e);
 }
 
@@ -1239,25 +1170,17 @@ inline void LoopDetector::BackEdgeRemoved(EdgeId e, BidirectionalPath * /*path*/
 
 inline void LoopDetector::SelectEdge(EdgeId e, double /*weight*/) {
     data_.insert(std::make_pair(e, current_));
-    current_ = new LoopDetectorData(++currentIteration_);
+    current_ = ++currentIteration_;
 }
-
 
 inline void LoopDetector::Clear() {
-    for (auto iter = data_.begin(); iter != data_.end(); ++iter) {
-      delete iter->second;
-    }
-
     data_.clear();
-    current_->Clear();
+    current_ = 0;
 }
-
 
 inline LoopDetector::~LoopDetector() {
     Clear();
-    delete current_;
 }
-
 
 inline size_t LoopDetector::LoopEdges(size_t skip_identical_edges, size_t min_cycle_appearences) const {
     EdgeId e = path_->Head();
@@ -1269,11 +1192,11 @@ inline size_t LoopDetector::LoopEdges(size_t skip_identical_edges, size_t min_cy
 
     auto iter = data_.upper_bound(e);
     --iter;
-    size_t loopSize = iter->second->GetIteration();
+    size_t loopSize = iter->second;
     for (size_t i = 0; i < skip_identical_edges + 1; ++i) {
         --iter;
     }
-    loopSize -= iter->second->GetIteration();
+    loopSize -= iter->second;
 
     return loopSize;
 }
@@ -1292,7 +1215,6 @@ inline bool LoopDetector::PathIsLoop(size_t edges) const {
     }
     return true;
 }
-
 
 inline size_t LoopDetector::LastLoopCount(size_t skip_identical_edges, size_t min_cycle_appearences) const {
     size_t edges = LoopEdges(skip_identical_edges, min_cycle_appearences);
@@ -1372,38 +1294,6 @@ inline bool LoopDetector::LoopBecameStable() const {
     return prev->second == last->second;
 }
 
-
-inline size_t LoopDetector::GetMaxExitIteration(EdgeId loopEdge, EdgeId loopExit, std::pair<size_t, size_t> iterationRange) const {
-    auto range = data_.equal_range(loopEdge);
-
-    size_t maxIter = 0;
-    double maxWeight = 0;
-    for (auto iter = range.first; iter != range.second; ++iter) {
-        double w = iter->second->GetAlternatives().find(loopExit)->second;
-        if (w > maxWeight &&
-                iter->second->GetIteration() >= iterationRange.first && iter->second->GetIteration() <= iterationRange.second) {
-
-            maxIter = iter->second->GetIteration();
-            maxWeight = w;
-        }
-    }
-    return maxIter;
-}
-
-inline size_t LoopDetector::GetFirstExitIteration(EdgeId loopEdge, EdgeId loopExit, std::pair<size_t, size_t> iterationRange, double coeff) const {
-    auto range = data_.equal_range(loopEdge);
-
-    size_t maxIter = 0;
-    for (auto iter = range.first; iter != range.second; ++iter) {
-        if (iter->second->GetAlternatives().find(loopExit)->second * coeff > iter->second->GetAlternatives().find(loopEdge)->second && maxIter > iter->second->GetIteration() &&
-                iter->second->GetIteration() >= iterationRange.first && iter->second->GetIteration() <= iterationRange.second) {
-
-            maxIter = iter->second->GetIteration();
-        }
-    }
-    return maxIter;
-}
-
 inline bool LoopDetector::EdgeInShortLoop(EdgeId e) const {
 	VertexId v = g_.EdgeEnd(e);
 	if (g_.OutgoingEdgeCount(v) != 2) {
@@ -1434,6 +1324,7 @@ inline bool LoopDetector::PrevEdgeInShortLoop() const {
     }
     return false;
 }
+
 inline pair<size_t, size_t> ComparePaths(size_t start_pos1, size_t start_pos2,
                                   const BidirectionalPath& path1,
                                   const BidirectionalPath& path2,

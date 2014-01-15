@@ -316,8 +316,6 @@ protected:
 			double weight = wc_->CountWeight(path, iter->e_);
 			weights.insert(std::make_pair(weight, *iter));
 			DEBUG("Candidate " << g_.int_id(iter->e_) << " weight " << weight << " length " << g_.length(iter->e_));
-			path.getLoopDetector().AddAlternative(iter->e_, weight);
-
 		}
 		NotifyAll(weights);
 	}
