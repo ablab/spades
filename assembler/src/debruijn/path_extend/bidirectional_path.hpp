@@ -43,7 +43,6 @@ public:
               conj_path_(NULL),
               cumulative_len_(),
               gap_len_(),
-              total_len_(0),
               listeners_(),
               id_(0),
               weight_(1.0),
@@ -71,7 +70,6 @@ public:
               conj_path_(NULL),
               cumulative_len_(path.cumulative_len_),
               gap_len_(path.gap_len_),
-              total_len_(path.total_len_),
               listeners_(),
               id_(path.id_),
               weight_(path.weight_),
@@ -122,7 +120,7 @@ public:
     }
 
     size_t Length() const {
-        return total_len_;
+        return cumulative_len_[0] + gap_len_[0];
     }
 
     EdgeId operator[](size_t index) const {
@@ -480,7 +478,7 @@ public:
 
     void Print() const {
         DEBUG("Path " << id_);
-        DEBUG("Length " << total_len_);
+        DEBUG("Length " << Length());
         DEBUG("Weight " << weight_);
         DEBUG("#, edge, length, gap length, total length, total length from begin");
         for (size_t i = 0; i < Size(); ++i) {
@@ -497,7 +495,7 @@ public:
     }
     void PrintInfo() const {
         INFO("Path " << id_);
-        INFO("Length " << total_len_);
+        INFO("Length " << Length());
         INFO("Weight " << weight_);
         INFO("#, edge, length, gap length, total length");
         for (size_t i = 0; i < Size(); ++i) {
@@ -550,48 +548,30 @@ public:
         return overlap_;
     }
 private:
-    void Verify() {
-        if (cumulative_len_.empty() && total_len_ != 0) {
-            DEBUG("---" << total_len_);
-        } else if (!cumulative_len_.empty() && cumulative_len_[0] + gap_len_[0] != total_len_) {
-            DEBUG("||| " << total_len_ << " !=  " << cumulative_len_[0] << " + " << gap_len_[0]);
-            Print();
-        }
-    }
 
     void RecountLengths() {
-        Verify();
         cumulative_len_.clear();
         size_t currentLength = 0;
         for (auto iter = data_.rbegin(); iter != data_.rend(); ++iter) {
             currentLength += g_.length((EdgeId) *iter);
             cumulative_len_.push_front(currentLength);
         }
-
-        total_len_ = currentLength;
-        Verify();
     }
 
     void IncreaseLengths(size_t length, size_t gap) {
-        Verify();
         for (auto iter = cumulative_len_.begin(); iter != cumulative_len_.end(); ++iter) {
             *iter += length + gap;
         }
 
         cumulative_len_.push_back(length);
-        total_len_ += length + gap;
-        Verify();
     }
 
     void DecreaseLengths() {
-        Verify();
         size_t length = g_.length(data_.back()) + gap_len_.back();
         for (auto iter = cumulative_len_.begin(); iter != cumulative_len_.end(); ++iter) {
             *iter -= length;
         }
         cumulative_len_.pop_back();
-        total_len_ -= length;
-        Verify();
     }
 
     void NotifyFrontEdgeAdded(EdgeId e, int gap) {
@@ -619,11 +599,9 @@ private:
     }
 
     void PushFront(EdgeId e, int gap = 0) {
-        Verify();
         data_.push_front(e);
         if (gap_len_.size() > 0) {
             gap_len_[0] += gap;
-            total_len_ += gap;
         }
         gap_len_.push_front(0);
         int length = (int) g_.length(e);
@@ -632,9 +610,7 @@ private:
         } else {
             cumulative_len_.push_front(length + gap + cumulative_len_.front());
         }
-        total_len_ += length;
         NotifyFrontEdgeAdded(e, gap);
-        Verify();
     }
 
     void PopFront() {
@@ -648,9 +624,7 @@ private:
         gap_len_.pop_front();
 
         cumulative_len_.pop_front();
-        total_len_ -= (g_.length(e) + cur_gap);
         NotifyFrontEdgeRemoved(e);
-        Verify();
     }
 
     void SetOverlapBegin(bool overlap = true) {
@@ -671,7 +645,6 @@ private:
     BidirectionalPath* conj_path_;
     std::deque<size_t> cumulative_len_;  // Length from beginning of i-th edge to path end for forward directed path: L(e1 + e2 + ... + eN) ... L(eN)
     std::deque<int> gap_len_;  // e1 - gap2 - e2 - ... - gapN - eN
-    size_t total_len_;
     std::set<PathListener *> listeners_;
     size_t id_;  //Unique ID in PathContainer
     double weight_;
