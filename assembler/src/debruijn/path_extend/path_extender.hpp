@@ -295,10 +295,11 @@ public:
 class InsertSizeLoopDetector {
 protected:
     const Graph& g_;
+    const GraphCoverageMap& cov_map_;
     size_t min_cycle_len_;
 
 public:
-    InsertSizeLoopDetector(const Graph& g, size_t is): g_(g), min_cycle_len_(is) { }
+    InsertSizeLoopDetector(const Graph& g, const GraphCoverageMap& cov_map, size_t is): g_(g), cov_map_(cov_map), min_cycle_len_(is) { }
 
     size_t GetMinCycleLenth() const {
         return min_cycle_len_;
@@ -339,35 +340,9 @@ public:
         }
 
         size_t skip_identical_edges = 0;
-        if (path.GetLoopDetector().IsCycled(2, skip_identical_edges)) {
+        LoopDetector loop_detect(&path, cov_map_);
+        if (loop_detect.IsCycled(2, skip_identical_edges)) {
             return -1;
-            /*int loop_size = (int)path.getLoopDetector().LoopEdges(skip_identical_edges, 2);
-            int incorrect_loop_count = (int)path.getLoopDetector().LastLoopCount(loop_size);
-            BidirectionalPath small_loop = path.SubPath(path.Size() - loop_size);
-            DEBUG("loop size " << loop_size << " incorrect loop count " << incorrect_loop_count);
-            small_loop.Print();
-            int pos_in_path = (int)path.Size() - loop_size * incorrect_loop_count - 1;
-            int pos_in_loop = (int) small_loop.Size() - 1;
-            while (pos_in_path >=0 && pos_in_loop >=0 && path.At(pos_in_path) == small_loop.At(pos_in_loop)) {
-                pos_in_path--;
-                pos_in_loop--;
-            }
-            pos_in_path++;
-            pos_in_loop++;
-            DEBUG("pos in path " << pos_in_path << " pos in loop " << pos_in_loop);
-            int all_loops_length = (int)path.Size() - pos_in_path;
-            DEBUG("all loop len " << all_loops_length);
-            int all_loop_count = all_loops_length / loop_size;
-            DEBUG("all loop count " << all_loop_count);
-            int shift_loop = all_loops_length - all_loop_count * loop_size;
-            DEBUG("shift_loop " << shift_loop);
-            path.PopBack(shift_loop);
-            path.Print();
-            DEBUG("Path is cycled after found IS loop, skip identival edges = " << skip_identical_edges);
-            path.getLoopDetector().RemoveLoop(skip_identical_edges, false);
-            DEBUG("After removing");
-            path.Print();
-            return pos_in_path;*/
         } else {
             int last_edge_pos = FindPosIS(path);
             VERIFY(last_edge_pos > -1);
@@ -481,17 +456,18 @@ protected:
 
 class CompositeExtender : public ContigsMaker {
 public:
-    CompositeExtender(Graph & g, size_t max_diff_len)
+    CompositeExtender(Graph & g, GraphCoverageMap& cov_map, size_t max_diff_len)
             : ContigsMaker(g),
-              coverageMap_(g),
-              repeat_detector_(g, coverageMap_, 2 * cfg::get().max_repeat_length),  //TODO: move to config
+              cover_map_(cov_map),
+              repeat_detector_(g, cover_map_, 2 * cfg::get().max_repeat_length),  //TODO: move to config
               extenders_(),
-              max_diff_len_(max_diff_len){ }
+              max_diff_len_(max_diff_len) {
+    }
 
-    CompositeExtender(Graph & g, vector<PathExtender*> pes, size_t max_diff_len)
+    CompositeExtender(Graph & g, GraphCoverageMap& cov_map, vector<PathExtender*> pes, size_t max_diff_len)
             : ContigsMaker(g),
-              coverageMap_(g),
-              repeat_detector_(g, coverageMap_, 2 * cfg::get().max_repeat_length),  //TODO: move to config
+              cover_map_(cov_map),
+              repeat_detector_(g, cover_map_, 2 * cfg::get().max_repeat_length),  //TODO: move to config
               extenders_(),
               max_diff_len_(max_diff_len) {
         extenders_ = pes;
@@ -505,16 +481,8 @@ public:
         result->clear();
         PathContainer usedPaths;
         GrowAll(paths, usedPaths, result);
-        if (!AllPathsCovered(paths)) {
-            INFO("Very few edges are not included in the resulting paths and will be added later");
-        }
-
         LengthPathFilter filter(g_, 0);
         filter.filter(*result);
-    }
-
-    GraphCoverageMap& GetCoverageMap() {
-        return coverageMap_;
     }
 
     virtual void GrowPath(BidirectionalPath& path) {
@@ -523,10 +491,6 @@ public:
 
     bool MakeGrowStep(BidirectionalPath& path) {
         DEBUG("make grow step composite extender");
-//        if (cfg::get().avoid_rc_connections && (path.CameToInterstrandBulge() || path.IsInterstrandBulge())) {
-//            DEBUG("Stoping because of interstand bulge");
-//            return false;
-//        }
         BidirectionalPath* repeat_path = repeat_detector_.RepeatPath(path);
         size_t repeat_size = repeat_detector_.MaxCommonSize(path, *repeat_path);
         if (repeat_size > 0) {
@@ -574,29 +538,22 @@ public:
         return false;
     }
 private:
-    GraphCoverageMap coverageMap_;
+    GraphCoverageMap& cover_map_;
     RepeatDetector repeat_detector_;
     vector<PathExtender*> extenders_;
     size_t max_diff_len_;
 
     void SubscribeCoverageMap(BidirectionalPath * path) {
-        path->Subscribe(&coverageMap_);
+        path->Subscribe(&cover_map_);
         for (size_t i = 0; i < path->Size(); ++i) {
-            coverageMap_.BackEdgeAdded(path->At(i), path, path->GapAt(i));
+            cover_map_.BackEdgeAdded(path->At(i), path, path->GapAt(i));
         }
-    }
-
-    bool AllPathsCovered(PathContainer& paths) {
-        for (size_t i = 0; i < paths.size(); ++i) {
-            if (!coverageMap_.IsCovered(*paths.Get(i)))
-                return false;
-        }
-        return true;
     }
 
     void GrowAll(PathContainer& paths, PathContainer& usedPaths, PathContainer * result) {
+        cover_map_.Clear();
         for (size_t i = 0; i < paths.size(); ++i) {
-            if (!coverageMap_.IsCovered(*paths.Get(i))) {
+            if (!cover_map_.IsCovered(*paths.Get(i))) {
                 usedPaths.AddPair(paths.Get(i), paths.GetConjugate(i));
                 BidirectionalPath * path = new BidirectionalPath(*paths.Get(i));
                 BidirectionalPath * conjugatePath = new BidirectionalPath(*paths.GetConjugate(i));
@@ -618,20 +575,6 @@ private:
         }
     }
 
-    void VerifyMap(PathContainer * result) {
-        for (size_t i = 0; i < result->size(); ++i) {
-            auto path = result->Get(i);
-            for (size_t j = 0; j < path->Size(); ++j) {
-                if (coverageMap_.GetCoveringPaths(path->At(j)).count(path) == 0)
-                    DEBUG("Inconsistent coverage map");
-            }
-            path = result->GetConjugate(i);
-            for (size_t j = 0; j < path->Size(); ++j) {
-                if (coverageMap_.GetCoveringPaths(path->At(j)).count(path) == 0)
-                    DEBUG("Inconsistent coverage map");
-            }
-        }
-    }
 };
 
 
@@ -641,13 +584,15 @@ protected:
     size_t maxLoops_;bool investigateShortLoops_;
     vector<pair<BidirectionalPath*, BidirectionalPath*> > visited_cycles_;
     InsertSizeLoopDetector is_detector_;
+    const GraphCoverageMap& cov_map_;
 
 public:
-    LoopDetectingPathExtender(const Graph & g, size_t max_loops, bool investigateShortLoops, size_t is)
+    LoopDetectingPathExtender(const Graph& g, const GraphCoverageMap& cov_map, size_t max_loops, bool investigateShortLoops, size_t is)
             : PathExtender(g),
               maxLoops_(max_loops),
               investigateShortLoops_(investigateShortLoops),
-              is_detector_(g, is) {
+              is_detector_(g, cov_map, is),
+              cov_map_(cov_map) {
 
     }
 
@@ -747,11 +692,12 @@ public:
         }
         DEBUG("check is cycled? " << maxLoops_);
         size_t skip_identical_edges = 0;
-        if (path.GetLoopDetector().IsCycled(maxLoops_, skip_identical_edges)) {
-            size_t loop_size = path.GetLoopDetector().LoopEdges(skip_identical_edges, 1);
+        LoopDetector loop_detect(&path, cov_map_);
+        if (loop_detect.IsCycled(maxLoops_, skip_identical_edges)) {
+            size_t loop_size = loop_detect.LoopEdges(skip_identical_edges, 1);
             DEBUG("Path is Cycled! skip identival edges = " << skip_identical_edges);
             path.Print();
-            path.GetLoopDetector().RemoveLoop(skip_identical_edges, false);
+            loop_detect.RemoveLoop(skip_identical_edges, false);
             DEBUG("After delete");
             path.Print();
 
@@ -781,13 +727,13 @@ public:
         DEBUG("Making step");
         bool result = MakeSimpleGrowStep(path);
         DEBUG("Made step");
-
+        LoopDetector loop_detector(&path, cov_map_);
         if (DetectCycle(path)) {
             result = false;
-        } else if (CanInvistigateShortLoop() && investigateShortLoops_ && path.GetLoopDetector().EdgeInShortLoop(path.Back())) {
+        } else if (CanInvistigateShortLoop() && investigateShortLoops_ && loop_detector.EdgeInShortLoop(path.Back())) {
             DEBUG("Edge in short loop");
             result = ResolveShortLoop(path);
-        } else if (CanInvistigateShortLoop() && investigateShortLoops_ && path.GetLoopDetector().PrevEdgeInShortLoop()) {
+        } else if (CanInvistigateShortLoop() && investigateShortLoops_ && loop_detector.PrevEdgeInShortLoop()) {
             DEBUG("Prev edge in short loop");
             path.PopBack();
             result = ResolveShortLoop(path);
@@ -802,7 +748,6 @@ class SimpleExtender: public LoopDetectingPathExtender {
 protected:
 
     ExtensionChooser * extensionChooser_;
-
     LoopResolver loopResolver_;
 
     void FindFollowingEdges(BidirectionalPath& path, ExtensionChooser::EdgeContainer * result) {
@@ -818,8 +763,8 @@ protected:
 
 public:
 
-    SimpleExtender(const Graph& g, ExtensionChooser * ec, size_t is, size_t max_loops, bool investigateShortLoops):
-        LoopDetectingPathExtender(g, max_loops, investigateShortLoops, is),
+    SimpleExtender(const Graph& g, const GraphCoverageMap& cov_map, ExtensionChooser * ec, size_t is, size_t max_loops, bool investigateShortLoops):
+        LoopDetectingPathExtender(g, cov_map, max_loops, investigateShortLoops, is),
         extensionChooser_(ec),
         loopResolver_(g, *extensionChooser_) {
     }
@@ -830,8 +775,9 @@ public:
         FindFollowingEdges(path, &candidates);
         candidates = extensionChooser_->Filter(path, candidates);
         if (candidates.size() == 1) {
+            LoopDetector loop_detector(&path, cov_map_);
             if (!investigateShortLoops_ &&
-                    (path.GetLoopDetector().EdgeInShortLoop(path.Back())  or path.GetLoopDetector().EdgeInShortLoop(candidates.back().e_))
+                    (loop_detector.EdgeInShortLoop(path.Back())  or loop_detector.EdgeInShortLoop(candidates.back().e_))
                     && extensionChooser_->WeighConterBased()) {
                 return false;
             }
@@ -847,7 +793,8 @@ public:
 
     virtual bool ResolveShortLoop(BidirectionalPath& path) {
         if (extensionChooser_->WeighConterBased()) {
-            while (path.GetLoopDetector().EdgeInShortLoop(path.Back())) {
+            LoopDetector loop_detector(&path, cov_map_);
+            while (loop_detector.EdgeInShortLoop(path.Back())) {
                 loopResolver_.ResolveShortLoop(path);
             }
             return true;
@@ -887,8 +834,8 @@ protected:
 
 public:
 
-    ScaffoldingPathExtender(const Graph& g, ExtensionChooser * scaffoldingEC, GapJoiner * gapJoiner, size_t is, size_t max_loops, bool investigateShortLoops):
-        LoopDetectingPathExtender(g, max_loops, investigateShortLoops, is),
+    ScaffoldingPathExtender(const Graph& g, const GraphCoverageMap& cov_map, ExtensionChooser * scaffoldingEC, GapJoiner * gapJoiner, size_t is, size_t max_loops, bool investigateShortLoops):
+        LoopDetectingPathExtender(g, cov_map, max_loops, investigateShortLoops, is),
             scaffoldingExtensionChooser_(scaffoldingEC),
             gapJoiner_(gapJoiner)
     {

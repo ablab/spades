@@ -34,46 +34,22 @@ public:
     }
 };
 
-class LoopDetector : public PathListener {
-public:
-    LoopDetector(BidirectionalPath * p_);
-    virtual ~LoopDetector();
-
-    virtual void FrontEdgeAdded(EdgeId e, BidirectionalPath * path, int gap);
-    virtual void BackEdgeAdded(EdgeId e, BidirectionalPath * path, int gap);
-    virtual void FrontEdgeRemoved(EdgeId e, BidirectionalPath * path);
-    virtual void BackEdgeRemoved(EdgeId e, BidirectionalPath * path);
-
-    size_t LoopEdges(size_t skip_identical_edges, size_t min_cycle_appearences) const;
-    size_t LoopLength(size_t skip_identical_edges, size_t min_cycle_appearences) const;bool PathIsLoop(size_t edges) const;
-    size_t LastLoopCount(size_t skip_identical_edges, size_t min_cycle_appearences) const;
-    size_t LastLoopCount(size_t edges) const;bool IsCycled(size_t loopLimit, size_t& skip_identical_edges) const;
-    size_t EdgesToRemove(size_t skip_identical_edges, bool fullRemoval = false) const;
-    void RemoveLoop(size_t skip_identical_edges, bool fullRemoval = true);bool EdgeInShortLoop(EdgeId e) const;bool PrevEdgeInShortLoop() const;
-private:
-    size_t current_;
-    std::multimap<EdgeId, size_t> data_;
-    BidirectionalPath * path_;DECL_LOGGER("BidirectionalPath")
-    ;
-};
-
 class BidirectionalPath : public PathListener {
 
 public:
     BidirectionalPath(const Graph& g)
             : g_(g),
               data_(),
+              conj_path_(NULL),
               cumulative_len_(),
               gap_len_(),
               total_len_(0),
-              loopDetector_(this),
               listeners_(),
               id_(0),
               weight_(1.0),
               has_overlaped_begin_(false),
               has_overlaped_end_(false),
               overlap_(false) {
-        Subscribe(&loopDetector_);
     }
 
     BidirectionalPath(const Graph& g, const std::vector<EdgeId>& path)
@@ -92,17 +68,16 @@ public:
     BidirectionalPath(const BidirectionalPath& path)
             : g_(path.g_),
               data_(path.data_),
+              conj_path_(NULL),
               cumulative_len_(path.cumulative_len_),
               gap_len_(path.gap_len_),
               total_len_(path.total_len_),
-              loopDetector_(this),
               listeners_(),
               id_(path.id_),
               weight_(path.weight_),
               has_overlaped_begin_(path.has_overlaped_begin_),
               has_overlaped_end_(path.has_overlaped_end_),
               overlap_(path.overlap_) {
-        Subscribe(&loopDetector_);
     }
 
 public:
@@ -115,15 +90,15 @@ public:
     }
 
     void SetConjPath(BidirectionalPath* path) {
-        conj_path = path;
+        conj_path_ = path;
     }
 
     const BidirectionalPath* GetConjPath() const {
-        return conj_path;
+        return conj_path_;
     }
 
     BidirectionalPath* GetConjPath() {
-        return conj_path;
+        return conj_path_;
     }
 
     void SetWeight(double w) {
@@ -180,10 +155,6 @@ public:
 
     EdgeId Front() const {
         return data_.front();
-    }
-
-    LoopDetector& GetLoopDetector() {
-        return loopDetector_;
     }
 
     void PushBack(EdgeId e, int gap = 0) {
@@ -564,7 +535,7 @@ public:
 
     void SetOverlap(bool overlap = true) {
         overlap_ = overlap;
-        conj_path->overlap_ = overlap;
+        conj_path_->overlap_ = overlap;
     }
 
     bool HasOverlapedBegin() const {
@@ -578,7 +549,7 @@ public:
     bool IsOverlap() const {
         return overlap_;
     }
-protected:
+private:
     void Verify() {
         if (cumulative_len_.empty() && total_len_ != 0) {
             DEBUG("---" << total_len_);
@@ -682,8 +653,6 @@ protected:
         Verify();
     }
 
-private:
-
     void SetOverlapBegin(bool overlap = true) {
         if (has_overlaped_begin_ != overlap) {
             has_overlaped_begin_ = overlap;
@@ -699,11 +668,10 @@ private:
 
     const Graph& g_;
     std::deque<EdgeId> data_;
-    BidirectionalPath* conj_path;
+    BidirectionalPath* conj_path_;
     std::deque<size_t> cumulative_len_;  // Length from beginning of i-th edge to path end for forward directed path: L(e1 + e2 + ... + eN) ... L(eN)
     std::deque<int> gap_len_;  // e1 - gap2 - e2 - ... - gapN - eN
     size_t total_len_;
-    LoopDetector loopDetector_;
     std::set<PathListener *> listeners_;
     size_t id_;  //Unique ID in PathContainer
     double weight_;
@@ -951,167 +919,6 @@ protected:
     DECL_LOGGER("BidirectionalPath");
 
 };
-
-inline LoopDetector::LoopDetector(BidirectionalPath * p_)
-        : current_(0),
-          data_(),
-          path_(p_) {
-}
-
-inline void LoopDetector::FrontEdgeAdded(EdgeId /*e*/, BidirectionalPath * /*path*/, int /*gap*/) {
-
-}
-
-inline void LoopDetector::BackEdgeAdded(EdgeId e, BidirectionalPath * /*path*/, int /*gap*/) {
-    data_.insert(std::make_pair(e, current_));
-    ++current_;
-}
-
-inline void LoopDetector::FrontEdgeRemoved(EdgeId /*e*/, BidirectionalPath * /*path*/) {
-
-}
-
-inline void LoopDetector::BackEdgeRemoved(EdgeId e, BidirectionalPath * /*path*/) {
-    auto iter = data_.find(e);
-
-    if (iter != data_.end()) {
-        iter = data_.upper_bound(e);
-        --iter;
-        data_.erase(iter);
-    }
-}
-
-inline LoopDetector::~LoopDetector() {
-}
-
-inline size_t LoopDetector::LoopEdges(size_t skip_identical_edges, size_t min_cycle_appearences) const {
-    EdgeId e = path_->Back();
-
-    size_t count = data_.count(e);
-    if (count <= 1 || count < min_cycle_appearences * (skip_identical_edges + 1)) {
-        return 0;
-    }
-
-    auto iter = data_.upper_bound(e);
-    --iter;
-    size_t loopSize = iter->second;
-    for (size_t i = 0; i < skip_identical_edges + 1; ++i) {
-        --iter;
-    }
-    loopSize -= iter->second;
-
-    return loopSize;
-}
-
-inline bool LoopDetector::PathIsLoop(size_t edges) const {
-    if (edges == 0 || path_->Size() <= 1)
-        return false;
-
-    for (size_t i = 0; i < edges; ++i) {
-        EdgeId e = path_->At(i);
-        for (int j = (int) path_->Size() - ((int) edges - (int) i); j >= 0; j -= (int) edges) {
-            if (path_->operator [](j) != e) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
-inline size_t LoopDetector::LastLoopCount(size_t skip_identical_edges, size_t min_cycle_appearences) const {
-    size_t edges = LoopEdges(skip_identical_edges, min_cycle_appearences);
-    return LastLoopCount(edges);
-}
-
-inline size_t LoopDetector::LastLoopCount(size_t edges) const {
-    if (edges == 0) {
-        return 0;
-    }
-
-    BidirectionalPath loop = path_->SubPath(path_->Size() - edges);
-    size_t count = 0;
-    int i = (int) path_->Size() - (int) edges;
-    int delta = -(int) edges;
-
-    while (i >= 0) {
-        if (!path_->CompareFrom(i, loop)) {
-            break;
-        }
-        ++count;
-        i += delta;
-    }
-
-    return count;
-}
-
-inline bool LoopDetector::IsCycled(size_t loopLimit, size_t& skip_identical_edges) const {
-    skip_identical_edges = 0;
-    size_t loop_count = LastLoopCount(skip_identical_edges, loopLimit);
-    while (loop_count > 0) {
-        if (loop_count >= loopLimit) {
-            return true;
-        }
-        loop_count = LastLoopCount(++skip_identical_edges, loopLimit);
-    }
-    return false;
-}
-
-inline size_t LoopDetector::EdgesToRemove(size_t skip_identical_edges, bool fullRemoval) const {
-    size_t edges = LoopEdges(skip_identical_edges, 1);
-    size_t count = LastLoopCount(edges);
-    bool onlyCycle = PathIsLoop(edges);
-    int result;
-
-    if (onlyCycle || path_->Size() <= count * edges) {
-        result = (int) path_->Size() - (int) edges;
-    } else if (fullRemoval) {
-        result = (int) count * (int) edges;
-    } else {
-        result = (int) (count - 1) * (int) edges;
-    }
-
-    return result < 0 ? 0 : result;
-}
-
-inline void LoopDetector::RemoveLoop(size_t skip_identical_edges, bool fullRemoval) {
-    size_t toRemove = EdgesToRemove(skip_identical_edges, fullRemoval);
-    for (size_t i = 0; i < toRemove; ++i) {
-        path_->PopBack();
-    }
-}
-
-inline bool LoopDetector::EdgeInShortLoop(EdgeId e) const {
-    const Graph& g = path_->graph();
-    VertexId v = g.EdgeEnd(e);
-    if (g.OutgoingEdgeCount(v) != 2) {
-        return false;
-    }
-    auto edges = g.OutgoingEdges(v);
-    bool loop_found = false;
-    bool exit_found = false;
-    for (auto edge = edges.begin(); edge != edges.end(); ++edge) {
-        if (g.EdgeEnd(*edge) == g.EdgeStart(e)) {
-            loop_found = true;
-        } else {
-            exit_found = true;
-        }
-    }
-    return loop_found && exit_found;
-}
-
-inline bool LoopDetector::PrevEdgeInShortLoop() const {
-    if (path_->Size() <= 1) {
-        return false;
-    }
-    const Graph& g = path_->graph();
-    EdgeId e2 = path_->At(path_->Size() - 1);
-    EdgeId e1 = path_->At(path_->Size() - 2);
-    VertexId v2 = g.EdgeEnd(e1);
-    if (g.OutgoingEdgeCount(v2) == 2 && g.EdgeEnd(e2) == g.EdgeStart(e1) && g.EdgeEnd(e1) == g.EdgeStart(e2)) {
-        return EdgeInShortLoop(e1);
-    }
-    return false;
-}
 
 inline pair<size_t, size_t> ComparePaths(size_t start_pos1, size_t start_pos2, const BidirectionalPath& path1, const BidirectionalPath& path2,
                                          size_t max_diff) {

@@ -912,14 +912,15 @@ private:
 class MatePairExtensionChooser : public ExtensionChooser {
 public:
     MatePairExtensionChooser(const Graph& g, PairedInfoLibrary& lib,
-                              const GraphCoverageMap& cov_map)
+                              const PathContainer& paths)
             : ExtensionChooser(g, 0, .0),
               g_(g),
               lib_(lib),
               search_dist_(lib.GetISMax()),
               weight_counter_(g, lib, 10),
-              path_searcher_(g_, cov_map, lib_.GetISMax(), PathsWeightCounter(g, lib, 30)),
-              unique_edge_analyzer_(g, cov_map, 0., 1000.),
+              cov_map_(g_, paths),
+              path_searcher_(g_, cov_map_, lib_.GetISMax(), PathsWeightCounter(g, lib, 30)),
+              unique_edge_analyzer_(g, cov_map_, 0., 1000.),
               simple_scaffolder_(g) {
     }
     virtual EdgeContainer Filter(BidirectionalPath& path,
@@ -1335,6 +1336,7 @@ private:
     PairedInfoLibrary& lib_;
     size_t search_dist_;
     PathsWeightCounter weight_counter_;
+    const GraphCoverageMap cov_map_;
     NextPathSearcher path_searcher_;
     UniqueEdgeAnalyzer unique_edge_analyzer_;
     SimpleScaffolding simple_scaffolder_;

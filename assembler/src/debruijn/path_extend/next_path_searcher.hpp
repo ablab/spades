@@ -98,21 +98,23 @@ public:
         return true;
     }
 
-    bool IsCycled() {
+    bool IsCycled(const GraphCoverageMap& cov_map) {
         BidirectionalPath path = GetPrevPath(0);
         size_t identical_edges = 0;
-        bool is_cycled = path.GetLoopDetector().IsCycled(cfg::get().pe_params.param_set.loop_removal.mp_max_loops, identical_edges);
+        LoopDetector loop_detect(&path, cov_map);
+        bool is_cycled = loop_detect.IsCycled(cfg::get().pe_params.param_set.loop_removal.mp_max_loops, identical_edges);
         if (path.Size() > 1 && path.At(path.Size() - 1) == path.At(path.Size() - 2)) {
             is_cycled = true;
         }
         return is_cycled;
     }
 
-    Edge* RemoveCycle(size_t min_length) {
+    Edge* RemoveCycle(const GraphCoverageMap& cov_map, size_t min_length) {
         size_t skip_identical_edges = 0;
         BidirectionalPath path = GetPrevPath(0);
-        path.GetLoopDetector().IsCycled(cfg::get().pe_params.param_set.loop_removal.mp_max_loops, skip_identical_edges);
-        size_t remove = path.GetLoopDetector().EdgesToRemove(skip_identical_edges, false);
+        LoopDetector loop_detect(&path, cov_map);
+        loop_detect.IsCycled(cfg::get().pe_params.param_set.loop_removal.mp_max_loops, skip_identical_edges);
+        size_t remove = loop_detect.EdgesToRemove(skip_identical_edges, false);
         Edge* prev_edge = this;
         Edge* last_loop_edge = this;
         for (size_t i = 0; i < remove && prev_edge->Length() > min_length; ++i) {
@@ -279,7 +281,6 @@ inline set<BidirectionalPath*> NextPathSearcher::FindNextPaths(const Bidirection
         TRACE("Processing path " << ipath << " of " << grow_paths.size());
         Edge* current_path = grow_paths[ipath++];
         TRACE(" edge " << g_.int_id(current_path->GetId()));
-        TRACE("is correct " << current_path->IsCorrect() << " is cycled " << current_path->IsCycled() << " used " << ( used_edges.count(current_path) > 0));
         if (!current_path->IsCorrect() /*|| (current_path->IsCycled() && current_path->Length() > init_length) */|| used_edges.count(current_path) > 0) {
             used_edges.insert(current_path);
             continue;
@@ -378,7 +379,7 @@ inline Edge* NextPathSearcher::AddPath(const BidirectionalPath& init_path, Edge*
             e = next_edge;
         } else if (e->GetId() != path.At(ie)) {
             Edge* next_edge = e->AddOutEdge(path.At(ie));
-            if (next_edge->IsCycled()) {
+            if (next_edge->IsCycled(cover_map_)) {
                 //e->AddIncorrectOutEdge(path.At(ie));
                 //e = next_edge->RemoveCycle(init_path.Length());
             	TRACE("remove cycle");
