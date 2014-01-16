@@ -68,18 +68,20 @@ public:
               total_len_(0),
               loopDetector_(this),
               listeners_(),
-              weight_(1.0) {
-        Init();
+              id_(0),
+              weight_(1.0),
+              has_overlaped_begin_(false),
+              has_overlaped_end_(false),
+              overlap_(false) {
+        Subscribe(&loopDetector_);
     }
 
     BidirectionalPath(const Graph& g, const std::vector<EdgeId>& path)
             : BidirectionalPath(g) {
-        if (path.size() != 0) {
-            for (size_t i = 0; i < path.size(); ++i) {
-                PushBack(path[i]);
-            }
-            RecountLengths();
+        for (size_t i = 0; i < path.size(); ++i) {
+            PushBack(path[i]);
         }
+        RecountLengths();
     }
 
     BidirectionalPath(const Graph& g, EdgeId startingEdge)
@@ -96,11 +98,11 @@ public:
               loopDetector_(this),
               listeners_(),
               id_(path.id_),
-              weight_(path.weight_) {
-        Init();
-        overlap_ = path.overlap_;
-        has_overlaped_begin_ = path.has_overlaped_begin_;
-        has_overlaped_end_ = path.has_overlaped_end_;
+              weight_(path.weight_),
+              has_overlaped_begin_(path.has_overlaped_begin_),
+              has_overlaped_end_(path.has_overlaped_end_),
+              overlap_(path.overlap_) {
+        Subscribe(&loopDetector_);
     }
 
 public:
@@ -693,14 +695,6 @@ private:
 
     void SetOverlapEnd(bool overlap = true) {
         GetConjPath()->SetOverlapBegin(overlap);
-    }
-
-    void Init() {
-        Subscribe(&loopDetector_);
-        has_overlaped_begin_ = false;
-        has_overlaped_end_ = false;
-        overlap_ = false;
-        id_ = 0;
     }
 
     const Graph& g_;
