@@ -119,8 +119,6 @@ public:
             for (size_t i = 0; i < path.size(); ++i) {
                 PushBack(path[i]);
             }
-            prev_ = path[path.size() - 1];
-            now_ = path[path.size() - 1];
             RecountLengths();
         }
     }
@@ -136,8 +134,6 @@ public:
               weight_(1.0) {
         Init();
         PushBack(startingEdge);
-        prev_ = data_.back();
-        now_ = data_.back();
     }
 
     BidirectionalPath(const BidirectionalPath& path)
@@ -154,18 +150,12 @@ public:
         overlap_ = path.overlap_;
         has_overlaped_begin_ = path.has_overlaped_begin_;
         has_overlaped_end_ = path.has_overlaped_end_;
-        prev_ = data_.back();
-        now_ = data_.back();
     }
 private:
     DECL_LOGGER("BidirectionalPath")
 
 protected:
 	const Graph& g_;
-
-	EdgeId prev_, now_;
-
-	// Edges: e1 e2 ... eN
 	std::deque <EdgeId> data_;
 
 	BidirectionalPath* conj_path;
@@ -273,7 +263,6 @@ protected:
             cumulativeLength_.push_front(length + gap + cumulativeLength_.front());
         }
         totalLength_ += length;
-        now_ = data_.back();
         NotifyFrontEdgeAdded(e, gap);
         Verify();
     }
@@ -290,11 +279,6 @@ protected:
 
         cumulativeLength_.pop_front();
         totalLength_ -= (g_.length(e) + cur_gap);
-        if (data_.size() > 0) {
-			now_ = data_.back();
-		}else{
-			now_ = prev_;
-		}
         NotifyFrontEdgeRemoved(e);
         Verify();
     }
@@ -406,7 +390,6 @@ public:
         data_.push_back(e);
         gapLength_.push_back(gap);
         IncreaseLengths(g_.length(e), gap);
-        now_ = e;
         NotifyBackEdgeAdded(e, gap);
 	}
 
@@ -419,11 +402,6 @@ public:
         DecreaseLengths();
 	    gapLength_.pop_back();
         data_.pop_back();
-        if (data_.size() > 0) {
-        	now_ = data_.back();
-        }else{
-        	now_ = prev_;
-        }
 	    NotifyBackEdgeRemoved(e);
 	}
 
@@ -659,17 +637,6 @@ public:
             }
         }
     }
-
-    void CheckGrow()
-    {
-    	prev_ = data_.back();
-    	now_ = data_.back();
-    }
-
-    bool CheckPrevious()
-	{
-	    return prev_ != now_;
-	}
 
     BidirectionalPath SubPath(size_t from, size_t to) const {
         BidirectionalPath result(g_);

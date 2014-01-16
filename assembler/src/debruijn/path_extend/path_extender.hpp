@@ -604,13 +604,13 @@ private:
                 SubscribeCoverageMap(path);
                 SubscribeCoverageMap(conjugatePath);
                 size_t count_trying = 0;
+                size_t current_path_len = 0;
                 do {
+                    current_path_len = path->Length();
                     count_trying++;
-                    path->CheckGrow();
                     GrowPath(*path);
-                    conjugatePath->CheckGrow();
                     GrowPath(*conjugatePath);
-                } while (count_trying <10 && (conjugatePath->CheckPrevious() || path->CheckPrevious()));
+                } while (count_trying < 10 && (path->Length() != current_path_len));
                 path->CheckConjugateEnd();
                 DEBUG("result path ");
                 path->Print();
