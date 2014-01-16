@@ -250,9 +250,9 @@ private:
             DEBUG("next");
             path2->Print();
             BidirectionalPath* overlap = new BidirectionalPath(g_,
-                                                               path1->Head());
+                                                               path1->Back());
             BidirectionalPath* conj_overlap = new BidirectionalPath(
-                    g_, g_.conjugate(path1->Head()));
+                    g_, g_.conjugate(path1->Back()));
             paths.AddPair(overlap, conj_overlap);
             DEBUG("pop back");
             path1->PopBack();
@@ -262,7 +262,7 @@ private:
             DEBUG("next");
             path2->Print();
             for (size_t i = 1; i < overlap_size; ++i) {
-                conj_overlap->PushBack(g_.conjugate(path1->Head()));
+                conj_overlap->PushBack(g_.conjugate(path1->Back()));
                 DEBUG("pop back3");
                 path1->PopBack();
                 DEBUG("pop back5");

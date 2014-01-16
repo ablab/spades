@@ -34,7 +34,7 @@ protected:
     const Graph& g_;
 
     bool GetLoopAndExit(BidirectionalPath& path, pair<EdgeId, EdgeId>& result) const {
-        EdgeId e = path.Head();
+        EdgeId e = path.Back();
         VertexId v = g_.EdgeEnd(e);
         if (g_.OutgoingEdgeCount(v) != 2) {
             return false;
@@ -67,7 +67,7 @@ public:
         pair<EdgeId, EdgeId> edges;
         if (GetLoopAndExit(path, edges)) {
             DEBUG("Resolving short loop...");
-            EdgeId e = path.Head();
+            EdgeId e = path.Back();
             path.PushBack(edges.first);
             path.PushBack(e);
             path.PushBack(edges.second);
@@ -89,7 +89,7 @@ public:
               chooser_(chooser) { }
 
     void MakeCycleStep(BidirectionalPath& path, EdgeId e) {
-        EdgeId pathEnd = path.Head();
+        EdgeId pathEnd = path.Back();
         path.PushBack(e);
         path.PushBack(pathEnd);
     }
@@ -339,7 +339,7 @@ public:
         }
 
         size_t skip_identical_edges = 0;
-        if (path.getLoopDetector().IsCycled(2, skip_identical_edges)) {
+        if (path.GetLoopDetector().IsCycled(2, skip_identical_edges)) {
             return -1;
             /*int loop_size = (int)path.getLoopDetector().LoopEdges(skip_identical_edges, 2);
             int incorrect_loop_count = (int)path.getLoopDetector().LastLoopCount(loop_size);
@@ -747,11 +747,11 @@ public:
         }
         DEBUG("check is cycled? " << maxLoops_);
         size_t skip_identical_edges = 0;
-        if (path.getLoopDetector().IsCycled(maxLoops_, skip_identical_edges)) {
-            size_t loop_size = path.getLoopDetector().LoopEdges(skip_identical_edges, 1);
+        if (path.GetLoopDetector().IsCycled(maxLoops_, skip_identical_edges)) {
+            size_t loop_size = path.GetLoopDetector().LoopEdges(skip_identical_edges, 1);
             DEBUG("Path is Cycled! skip identival edges = " << skip_identical_edges);
             path.Print();
-            path.getLoopDetector().RemoveLoop(skip_identical_edges, false);
+            path.GetLoopDetector().RemoveLoop(skip_identical_edges, false);
             DEBUG("After delete");
             path.Print();
 
@@ -784,10 +784,10 @@ public:
 
         if (DetectCycle(path)) {
             result = false;
-        } else if (CanInvistigateShortLoop() && investigateShortLoops_ && path.getLoopDetector().EdgeInShortLoop(path.Back())) {
+        } else if (CanInvistigateShortLoop() && investigateShortLoops_ && path.GetLoopDetector().EdgeInShortLoop(path.Back())) {
             DEBUG("Edge in short loop");
             result = ResolveShortLoop(path);
-        } else if (CanInvistigateShortLoop() && investigateShortLoops_ && path.getLoopDetector().PrevEdgeInShortLoop()) {
+        } else if (CanInvistigateShortLoop() && investigateShortLoops_ && path.GetLoopDetector().PrevEdgeInShortLoop()) {
             DEBUG("Prev edge in short loop");
             path.PopBack();
             result = ResolveShortLoop(path);
@@ -831,7 +831,7 @@ public:
         candidates = extensionChooser_->Filter(path, candidates);
         if (candidates.size() == 1) {
             if (!investigateShortLoops_ &&
-                    (path.getLoopDetector().EdgeInShortLoop(path.Back())  or path.getLoopDetector().EdgeInShortLoop(candidates.back().e_))
+                    (path.GetLoopDetector().EdgeInShortLoop(path.Back())  or path.GetLoopDetector().EdgeInShortLoop(candidates.back().e_))
                     && extensionChooser_->WeighConterBased()) {
                 return false;
             }
@@ -847,7 +847,7 @@ public:
 
     virtual bool ResolveShortLoop(BidirectionalPath& path) {
         if (extensionChooser_->WeighConterBased()) {
-            while (path.getLoopDetector().EdgeInShortLoop(path.Back())) {
+            while (path.GetLoopDetector().EdgeInShortLoop(path.Back())) {
                 loopResolver_.ResolveShortLoop(path);
             }
             return true;

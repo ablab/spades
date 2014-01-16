@@ -101,7 +101,7 @@ public:
     bool IsCycled() {
         BidirectionalPath path = GetPrevPath(0);
         size_t identical_edges = 0;
-        bool is_cycled = path.getLoopDetector().IsCycled(cfg::get().pe_params.param_set.loop_removal.mp_max_loops, identical_edges);
+        bool is_cycled = path.GetLoopDetector().IsCycled(cfg::get().pe_params.param_set.loop_removal.mp_max_loops, identical_edges);
         if (path.Size() > 1 && path.At(path.Size() - 1) == path.At(path.Size() - 2)) {
             is_cycled = true;
         }
@@ -111,8 +111,8 @@ public:
     Edge* RemoveCycle(size_t min_length) {
         size_t skip_identical_edges = 0;
         BidirectionalPath path = GetPrevPath(0);
-        path.getLoopDetector().IsCycled(cfg::get().pe_params.param_set.loop_removal.mp_max_loops, skip_identical_edges);
-        size_t remove = path.getLoopDetector().EdgesToRemove(skip_identical_edges, false);
+        path.GetLoopDetector().IsCycled(cfg::get().pe_params.param_set.loop_removal.mp_max_loops, skip_identical_edges);
+        size_t remove = path.GetLoopDetector().EdgesToRemove(skip_identical_edges, false);
         Edge* prev_edge = this;
         Edge* last_loop_edge = this;
         for (size_t i = 0; i < remove && prev_edge->Length() > min_length; ++i) {

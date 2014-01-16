@@ -267,7 +267,6 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
             paths.FilterInterstandBulges();
         }
         paths.FilterEmptyPaths();
-        paths.CheckSymmetry();
         resolver.addUncoveredEdges(paths, mainPE->GetCoverageMap());
         paths.SortByLength();
         if (broken_contigs.is_initialized()) {
@@ -312,7 +311,6 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	    mp_paths.FilterInterstandBulges();
 	}
 	mp_paths.FilterEmptyPaths();
-	mp_paths.CheckSymmetry();
 	//resolver.addUncoveredEdges(mp_paths, mp_main_pe->GetCoverageMap());
 	mp_paths.SortByLength();
 	DebugOutputPaths(writer, gp, output_dir, mp_paths, "mp_final_paths");
@@ -339,7 +337,6 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
     }
     last_paths.FilterEmptyPaths();
     resolver.addUncoveredEdges(last_paths, last_extender->GetCoverageMap());
-    last_paths.CheckSymmetry();
     last_paths.SortByLength();
 
 //Traverse loops
