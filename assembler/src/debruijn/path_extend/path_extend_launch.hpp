@@ -105,8 +105,8 @@ inline void AddPathsToContainer(const conj_graph_pack& gp,
         vector<EdgeId> edges = path.getPath();
         BidirectionalPath* new_path = new BidirectionalPath(gp.g, edges);
         BidirectionalPath* conj_path = new BidirectionalPath(new_path->Conjugate());
-        new_path->SetWeight((double) path.getWeight());
-        conj_path->SetWeight((double) path.getWeight());
+        new_path->SetWeight((float) path.getWeight());
+        conj_path->SetWeight((float) path.getWeight());
         result.AddPair(new_path, conj_path);
     }
     DEBUG("Long reads paths " << result.size() << " == ");
@@ -140,6 +140,7 @@ inline vector<SimpleExtender*> MakeLongReadsExtender(const conj_graph_pack& gp, 
         SimpleExtender * longReadExtender = new SimpleExtender(gp.g, cov_map, longReadEC, 10000,  //FIXME
                                                                max_loops, true);
         extends.push_back(longReadExtender);
+
     }
     return extends;
 }
@@ -178,7 +179,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 		vector<PairedInfoLibrary *>& libs,
 		vector<PairedInfoLibrary *>& scaff_libs,
 		vector<PairedInfoLibrary *>& mp_libs,
-		const vector<PathStorageInfo<Graph> >& long_reads,
+		vector<PathStorageInfo<Graph> >& long_reads,
 		const std::string& output_dir,
 		const std::string& contigs_name,
 		bool traversLoops,
@@ -204,6 +205,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
     GraphCoverageMap cover_map(gp.g);
     vector<SimpleExtender *> usualPEs = MakePEExtenders(gp, pset, libs, cover_map, false);
     vector<SimpleExtender*> long_reads_extenders = MakeLongReadsExtender(gp, long_reads, cover_map, pset.loop_removal.max_loops, output_dir);
+    long_reads.clear();
     vector<SimpleExtender *> shortLoopPEs = MakePEExtenders(gp, pset, libs, cover_map, true);
     vector<ScaffoldingPathExtender*> scafPEs = MakeScaffoldingExtender(gp, cover_map, pset, scaff_libs);
     vector<PathExtender *> all_libs(long_reads_extenders.begin(), long_reads_extenders.end());
@@ -356,7 +358,7 @@ inline bool InsertSizeCompare(const PairedInfoLibrary* lib1,
 }
 
 inline void ResolveRepeatsPe(conj_graph_pack& gp,
-                      const vector<PathStorageInfo<Graph> >& long_reads,
+                      vector<PathStorageInfo<Graph> >& long_reads,
                       const std::string& output_dir,
                       const std::string& contigs_name, bool traverseLoops,
                       boost::optional<std::string> broken_contigs,

@@ -425,7 +425,6 @@ private:
 
         while (i < path.Size()) {
             BidirectionalPath * p = new BidirectionalPath(path.graph(), path[i]);
-            size_t rc_id = path.graph().int_id(path.graph().conjugate(path[i]));
             ++i;
 
             while(i < path.Size() and path.GapAt(i) <= min_gap_) {
@@ -438,7 +437,6 @@ private:
             }
 
             BidirectionalPath * cp = new BidirectionalPath(p->Conjugate());
-            cp->SetId(rc_id);
             container_.AddPair(p, cp);
         }
     }

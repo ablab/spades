@@ -80,11 +80,11 @@ public:
 
 public:
     void Subscribe(PathListener * listener) {
-        listeners_.insert(listener);
+        listeners_.push_back(listener);
     }
 
     void Unsubscribe(PathListener * listener) {
-        listeners_.erase(listener);
+        listeners_.push_back(listener);
     }
 
     void SetConjPath(BidirectionalPath* path) {
@@ -99,7 +99,7 @@ public:
         return conj_path_;
     }
 
-    void SetWeight(double w) {
+    void SetWeight(float w) {
         weight_ = w;
     }
 
@@ -194,7 +194,7 @@ public:
         }
     }
 
-    void SetId(size_t uid) {
+    void SetId(uint32_t uid) {
         id_ = uid;
     }
 
@@ -414,7 +414,7 @@ public:
         return cov / (double) Length();
     }
 
-    BidirectionalPath Conjugate(size_t id = 0) const {
+    BidirectionalPath Conjugate(uint32_t id = 0) const {
         BidirectionalPath result(g_);
         if (id == 0) {
             result.SetId(id_ % 2 == 0 ? id_ + 1 : id_ - 1);
@@ -648,9 +648,9 @@ private:
     BidirectionalPath* conj_path_;
     std::deque<size_t> cumulative_len_;  // Length from beginning of i-th edge to path end for forward directed path: L(e1 + e2 + ... + eN) ... L(eN)
     std::deque<int> gap_len_;  // e1 - gap2 - e2 - ... - gapN - eN
-    std::set<PathListener *> listeners_;
-    size_t id_;  //Unique ID in PathContainer
-    double weight_;
+    std::vector<PathListener *> listeners_;
+    uint32_t id_;  //Unique ID in PathContainer
+    float weight_;
     bool has_overlaped_begin_;
     bool has_overlaped_end_;
     bool overlap_;
@@ -889,7 +889,7 @@ private:
     };
 
     std::vector<PathPair> data_;
-    size_t path_id_;
+    uint32_t path_id_;
 
 protected:
     DECL_LOGGER("BidirectionalPath");
