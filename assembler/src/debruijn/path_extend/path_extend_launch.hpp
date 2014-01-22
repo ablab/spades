@@ -217,7 +217,8 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 //extend pe + long reads
     PathExtendResolver resolver(gp.g);
     auto seeds = resolver.makeSimpleSeeds();
-	seeds.SortByLength();
+	DebugOutputPaths(writer, gp, output_dir, seeds, "init_paths");
+    seeds.SortByLength();
 	seeds.ResetPathsId();
 	INFO("Growing paths using paired-end and long single reads");
 	auto paths = resolver.extendSeeds(seeds, *mainPE);

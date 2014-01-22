@@ -120,6 +120,9 @@ public:
     }
 
     size_t Length() const {
+        if (gap_len_.size() == 0 || cumulative_len_.size() == 0) {
+            return 0;
+        }
         return cumulative_len_[0] + gap_len_[0];
     }
 
