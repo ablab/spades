@@ -485,7 +485,7 @@ private:
     size_t MaxCommonSize(const BidirectionalPath& p1, size_t pos1, const BidirectionalPath& p2, size_t pos2) const {
         int i1 = (int) pos1;
         int i2 = (int) pos2;
-        while (i1 >= 0 && i2 >= 0 && p1.At((size_t) i1) == p2.At((size_t) i2)) {
+        while (i1 >= 0 && i2 >= 0 && p1.At((size_t) i1) == p2.At((size_t) i2) && p1.GapAt((size_t) i1) == p2.GapAt((size_t) i2)) {
             i1--;
             i2--;
         }
@@ -577,6 +577,7 @@ public:
             begin1.Print();
             BidirectionalPath begin2 = repeat_path->SubPath(0, begin_repeat);
             begin2.Print();
+            int gpa_in_repeat_path = repeat_path->GapAt(begin_repeat);
             BidirectionalPath end2 = repeat_path->SubPath(end_repeat);
             BidirectionalPath begin1_conj = path.SubPath(0, path.Size() - repeat_size + 1).Conjugate();
             BidirectionalPath begin2_conj = repeat_path->SubPath(0, begin_repeat + 1).Conjugate();
@@ -584,14 +585,17 @@ public:
             DEBUG("last " << last.first << " last2 " << last.second);
             path.Clear();
             repeat_path->Clear();
+            int gap_len = repeat.GapAt(0);
             if (begin2.Size() == 0 || last.second != 0) { //TODO: incorrect: common edges, but then different ends
-               path.PushBack(begin1);
-               repeat_path->PushBack(begin2);
+                path.PushBack(begin1);
+                repeat_path->PushBack(begin2);
             } else {
-                path.PushBack(begin2);
-                repeat_path->PushBack(begin1);
+               gap_len = gpa_in_repeat_path;
+               path.PushBack(begin2);
+               repeat_path->PushBack(begin1);
             }
-            path.PushBack(repeat);
+            path.PushBack(repeat.At(0), gap_len);
+            path.PushBack(repeat.SubPath(1));
             path.PushBack(end2);
             DEBUG("new path");
             path.Print();
@@ -603,7 +607,7 @@ public:
             if (extenders_[current]->MakeGrowStep(path)) {
                 return true;
             }
-            ++current;
+           ++current;
         }
         return false;
     }
