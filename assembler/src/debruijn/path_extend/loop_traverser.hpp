@@ -81,7 +81,7 @@ private:
             VertexId lastVertex = g_.EdgeEnd(startPath->At(startPath->Size() - 1));
             VertexId firstVertex = g_.EdgeStart(endPath->At(0));
             PathStorageCallback<Graph> path_store(g_);
-            PathProcessor<Graph> path_processor(g_, 0, 70, lastVertex, firstVertex, path_store);
+            PathProcessor<Graph> path_processor(g_, 0, 1000, lastVertex, firstVertex, path_store);
             path_processor.Process();
             if (path_store.size() == 0) {
                 TRACE("Failed to find closing path");
