@@ -281,6 +281,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
             paths.SortByLength();
         }
         //writer.writePaths(paths, output_dir + contigs_name + ".fasta");
+        DebugOutputPaths(writer, gp, output_dir, paths, "final_paths");
         writer.WritePathsToFASTG(paths, output_dir + contigs_name + ".fastg", output_dir + contigs_name + ".fasta");
         return;
     }

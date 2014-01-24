@@ -305,7 +305,12 @@ public:
     }
 
     bool CheckCycled(const BidirectionalPath& path) const {
-        return FindCycleStart(path) != -1;
+        bool res = FindCycleStart(path) != -1;
+        if (res) {
+            INFO("DETECTED IS CYCLE " << FindCycleStart(path));
+            path.PrintInfo();
+        }
+        return res;
     }
     int FindPosIS(const BidirectionalPath& path) const {
         int i = (int) path.Size() - 1;
@@ -328,7 +333,7 @@ public:
 
     int RemoveCycle(BidirectionalPath& path) const {
         int pos = FindCycleStart(path);
-        DEBUG("Found IS cycle " << pos);
+        INFO("Found IS cycle " << pos);
         if (pos == -1) {
             return -1;
         }
@@ -374,6 +379,8 @@ public:
             VERIFY((int) path.Size() == last_edge_pos);
             VERIFY(pos < (int) path.Size());
             DEBUG("result pos " <<pos);
+            INFO("After removal");
+            path.PrintInfo();
             return pos;
         }
     }
