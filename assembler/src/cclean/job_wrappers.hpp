@@ -21,6 +21,7 @@ public:
         aligned_(0), index_(index), db_(db) {}
 
   bool operator()(const Read &r);
+
   inline size_t aligned() const { return aligned_; }
 
 private:

@@ -18,55 +18,63 @@ static inline bool is_alignment_good(const StripedSmithWaterman::Alignment& a,
                               const std::string& sequence,
                               const std::string& query,
                               double aligned_part_fraction) {
-  // Сheck that query adjoins or even overlaps the sequence edge
+  //  Сheck that query adjoins or even overlaps the sequence edge
   return (std::min(a.query_end - a.query_begin + 1, a.ref_end - a.ref_begin + 1)
          / (double) query.size() > aligned_part_fraction) &&
          (a.ref_begin == 0 || a.ref_end == sequence.size() - 1);
 }
 
 bool SimpleClean::operator()(const Read &r) {
-  try {
-    const std::string& name = r.getName();
-    const std::string& sequence = r.getSequenceString();
+  const std::string& name = r.getName();
+  const std::string& sequence = r.getSequenceString();
 
-    std::set<size_t> to_check;
-    ValidKMerGenerator<cclean::K> gen(sequence.c_str(), NULL, sequence.size());
-    while (gen.HasMore()) {
-      cclean::KMer kmer = gen.kmer();
+  std::set<size_t> to_check;
+  ValidKMerGenerator<cclean::K> gen(sequence.c_str(), NULL, sequence.size());
+  while (gen.HasMore()) {
+    cclean::KMer kmer = gen.kmer();
 
-      auto it = index_.find(kmer);
-      if (it != index_.end())
-        to_check.insert(it->second.begin(), it->second.end());
+    auto it = index_.find(kmer);
+    if (it != index_.end())
+      to_check.insert(it->second.begin(), it->second.end());
 
-      gen.Next();
+    gen.Next();
+  }
+
+  //  Try to align the artifacts for corresponding kmers
+  StripedSmithWaterman::Aligner aligner;
+  StripedSmithWaterman::Filter filter;
+  StripedSmithWaterman::Alignment alignment; // why it was in for loop?
+  aligner.SetReferenceSequence(sequence.c_str(), sequence.size());
+  //  It can be aligned many adapters, but we want to find most probable
+  int best_mismatch = mismatch_threshold_;
+  int cur_mismatch = INT_MAX;
+  const std::string *best_adapter = nullptr;
+
+  for (auto it = to_check.begin(), et = to_check.end(); it != et; ++it) {
+    const std::string& query = index_.seq(*it);
+    aligner.Align(query.c_str(), filter, &alignment);
+    cur_mismatch = cclean_utils::GetMismatches(r.getSequenceString(),
+                                                 query, alignment);
+    if (cur_mismatch < best_mismatch &&
+        is_alignment_good(alignment, sequence, query,
+                          aligned_part_fraction_)) {
+      best_mismatch = cur_mismatch;
+      best_adapter = &query;
     }
+  }
 
-    // Try to align the artifacts for corresponding kmers
-    StripedSmithWaterman::Aligner aligner;
-    StripedSmithWaterman::Filter filter;
-    aligner.SetReferenceSequence(sequence.c_str(), sequence.size());
-    for (auto it = to_check.begin(), et = to_check.end(); it != et; ++it) {
-      StripedSmithWaterman::Alignment alignment;
-      const std::string& query = index_.seq(*it);
-      aligner.Align(query.c_str(), filter, &alignment);
-
-      if (alignment.mismatches < mismatch_threshold_ &&
-          is_alignment_good(alignment, sequence, query,
-                            aligned_part_fraction_)) {
-#       pragma omp critical
-        {
-          aligned_ += 1;
-          print_alignment(aligned_output_, alignment, sequence, query, name, db_);
-          print_bed(bed_, name, alignment.ref_begin, alignment.ref_end);
-          Read cuted_read = cclean_utils::CutRead(r, alignment.ref_begin,
-                                                  alignment.ref_end);
-          print_read(output_stream_, cuted_read);
-        }
-      }
+  if (best_adapter != nullptr)  {
+#   pragma omp critical
+    {
+      aligner.Align(best_adapter->c_str(), filter, &alignment);
+      aligned_ += 1;
+      print_alignment(aligned_output_, alignment, sequence, *best_adapter,
+                      name, db_);
+      print_bed(bed_, name, alignment.ref_begin, alignment.ref_end);
+      Read cuted_read = cclean_utils::CutRead(r, alignment.ref_begin,
+                                              alignment.ref_end);
+      print_read(output_stream_, cuted_read);
     }
-
-  } catch (std::exception& e) {
-    ERROR(e.what());
   }
 
   return false;

@@ -4,13 +4,14 @@ namespace additional {
 
   enum WorkModeType {
     NONE = 0,
-    SIMPLE = 1,
+    SIGNLE_END = 1,
+    SINGLE_END_Q = 2,
     BRUTE_SIMPLE = 3,
-    BRUTE_DEEP = 4
+    BRUTE_WITH_Q = 4
   };
 
-  const double BruteMatchScore = 0.6;
-  const double BruteMismatchScore = 10;
+  constexpr double MatchScore = 0.6;
+  constexpr double MismatchScore = 100;
 
   // end of namespace additional
 }

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include "output.hpp"
+#include "utils.hpp"
 
 namespace cclean_output {
 
@@ -12,50 +13,7 @@ void print_n_times(std::ostream& output, char c, int n) {
   }
 }
 
-void RestoreFromCigar(const std::string& ref, const std::string& query,
-                      std::string& out_ref, std::string& out_query,
-                      const StripedSmithWaterman::Alignment& a) {
-
-  std::vector<char> aligned_ref, aligned_query;
-  int ref_pos = 0, query_pos = 0;
-  for (std::vector<uint32_t>::const_iterator it = a.cigar.begin();
-       it != a.cigar.end(); ++it) {
-    int num = (*it & 0xFFFFFFF0) >> 4;
-    int op_code = *it & 0x0000000F;
-
-    switch (op_code) {
-      case 0: { //match
-        for (int i = 0; i < num; ++i) {
-          aligned_ref.push_back(ref[a.ref_begin + ref_pos++]);
-          aligned_query.push_back(query[a.query_begin + query_pos++]);
-        }
-        break;
-      }
-      case 1: { //insert
-        for (int i = 0; i < num; ++i) {
-          aligned_ref.push_back('-');
-          aligned_query.push_back(query[a.query_begin + query_pos++]);
-        }
-        break;
-      }
-      case 2: { //del
-        for (int i = 0; i < num; ++i) {
-          aligned_ref.push_back(ref[a.ref_begin + ref_pos++]);
-          aligned_query.push_back('-');
-        }
-        break;
-     }
-      default:
-        break;
-    }
-
-  }
-
-  out_ref = std::string(aligned_ref.begin(), aligned_ref.end());
-  out_query = std::string(aligned_query.begin(), aligned_query.end());
-}
-
-void print_alignment(std::ostream& output, const StripedSmithWaterman::Alignment & data,
+void print_alignment(std::ostream& output, const StripedSmithWaterman::Alignment &data,
 		const std::string& ref, const std::string& query,
 		const std::string& name, const std::string& database_name) {
 
@@ -64,7 +22,7 @@ void print_alignment(std::ostream& output, const StripedSmithWaterman::Alignment
          << "sequence from database (last line) " << database_name << std::endl;
 
   std::string aligned_query, aligned_ref;
-  RestoreFromCigar(ref, query, aligned_ref, aligned_query, data);
+  cclean_utils::RestoreFromCigar(ref, query, aligned_ref, aligned_query, data);
 
   // case when pattern's start pos is less than text one
   int text_offset = data.ref_begin - data.query_begin < 0 ? data.query_begin
@@ -109,22 +67,9 @@ void print_match(std::ostream& output, std::ostream& bed, std::map<std::string*,
     output << *(it->first) << std::endl;
     output << std::endl;
 
-    //std::replace(db_name.begin(), db_name.end(), ' ', '_'); // why? it will never used
-
     print_bed(bed, name, *it_pos, *it_pos + it->first->size());
    }
   }
 }
-
-void print_bed(std::ostream& output, const std::string & name,
-               int start, int stop) {
-  output << name << "\t" << start << "\t" << stop << std::endl;
-}
-
-void print_read(std::ostream& output, const Read &read) {
-    std::ofstream &stream = reinterpret_cast<std::ofstream&>(output);
-    read.print(stream, Read::PHRED_OFFSET);
-}
-
 //end of namespace
 }

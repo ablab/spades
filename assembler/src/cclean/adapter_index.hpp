@@ -15,7 +15,7 @@
 #include <unordered_map>
 
 namespace cclean {
-const unsigned K = 11;
+const unsigned K = 10;
 typedef Seq<K> KMer;
 
 class AdapterIndex {
