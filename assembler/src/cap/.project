@@ -3,7 +3,6 @@
 	<name>cap</name>
 	<comment></comment>
 	<projects>
-		<project>debruijn</project>
 		<project>online_vis</project>
 	</projects>
 	<buildSpec>

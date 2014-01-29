@@ -4,7 +4,6 @@
 	<comment></comment>
 	<projects>
 		<project>debruijn</project>
-		<project>include</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

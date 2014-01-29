@@ -22,7 +22,7 @@ default
        	max_additive_length_coefficient 100
 		max_coverage			1000.0
 		max_relative_coverage		1.1	; bulge_cov < this * not_bulge_cov
-		max_delta			3.0
+		max_delta			3
 		max_relative_delta		0.1
 	}
 	
@@ -144,7 +144,7 @@ sc
         	max_additive_length_coefficient 100
 		max_coverage			1000000.0
 		max_relative_coverage		100000.		; bulge_cov < this * not_bulge_cov
-		max_delta			2.1
+		max_delta			3
 		max_relative_delta		0.1
 	}
 	
@@ -224,7 +224,7 @@ careful
         	max_additive_length_coefficient 100
 		max_coverage			1000000.0
 		max_relative_coverage		1.5		; bulge_cov < this * not_bulge_cov
-		max_delta			2.1
+		max_delta			3
 		max_relative_delta		0.1
 	}
 	
@@ -261,7 +261,7 @@ diploid_simp
         	max_additive_length_coefficient 100
 		max_coverage			1000000.0
 		max_relative_coverage		1.5		; bulge_cov < this * not_bulge_cov
-		max_delta			2.1
+		max_delta			3
 		max_relative_delta		0.1
 	}
 }

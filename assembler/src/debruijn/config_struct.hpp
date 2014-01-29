@@ -186,7 +186,7 @@ struct debruijn_config {
             size_t max_additive_length_coefficient;
             double max_coverage;
             double max_relative_coverage;
-            double max_delta;
+            size_t max_delta;
             double max_relative_delta;
         };
 
