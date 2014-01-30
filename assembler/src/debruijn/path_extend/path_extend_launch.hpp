@@ -119,7 +119,7 @@ inline vector<SimpleExtender *> MakePEExtenders(const conj_graph_pack& gp, const
         WeightCounter* wc = new PathCoverWeightCounter(gp.g, libs[i], GetWeightThreshold(libs[i], pset), GetSingleThreshold(libs[i], pset));
         wc->setNormalizeWeight(pset.normalize_weight);
         SimpleExtensionChooser * extension = new SimpleExtensionChooser(gp.g, wc, GetPriorityCoeff(libs[i], pset));
-        extends.push_back(new SimpleExtender(gp.g, cov_map, extension, libs[i]->GetISMax(), pset.loop_removal.max_loops, investigate_loops));
+        extends.push_back(new SimpleExtender(gp, cov_map, extension, libs[i]->GetISMax(), pset.loop_removal.max_loops, investigate_loops));
     }
     return extends;
 }
@@ -137,7 +137,7 @@ inline vector<SimpleExtender*> MakeLongReadsExtender(const conj_graph_pack& gp, 
         DebugOutputPaths(writer, gp, output_dir, paths, "long_reads");
         ExtensionChooser * longReadEC = new LongReadsExtensionChooser(gp.g, paths, reads[i].GetFilteringThreshold(), reads[i].GetWeightPriorityThreshold(),
                                                                       reads[i].GetUniqueEdgePriorityThreshold());
-        SimpleExtender * longReadExtender = new SimpleExtender(gp.g, cov_map, longReadEC, 10000,  //FIXME
+        SimpleExtender * longReadExtender = new SimpleExtender(gp, cov_map, longReadEC, 10000,  //FIXME
                                                                max_loops, true);
         extends.push_back(longReadExtender);
 
@@ -154,7 +154,7 @@ inline vector<ScaffoldingPathExtender*> MakeScaffoldingExtender(const conj_graph
         WeightCounter* counter = new ReadCountWeightCounter(gp.g, libs[i]);
         double prior_coef = GetPriorityCoeff(libs[i], pset);
         ScaffoldingExtensionChooser * scaff_chooser = new ScaffoldingExtensionChooser(gp.g, counter, prior_coef);
-        scafPEs.push_back(new ScaffoldingPathExtender(gp.g, cov_map, scaff_chooser, gapJoiner, libs[i]->GetISMax(), pset.loop_removal.max_loops, false));
+        scafPEs.push_back(new ScaffoldingPathExtender(gp, cov_map, scaff_chooser, gapJoiner, libs[i]->GetISMax(), pset.loop_removal.max_loops, false));
     }
     return scafPEs;
 }
@@ -164,7 +164,7 @@ inline vector<SimpleExtender *> MakeMPExtenders(const conj_graph_pack& gp, const
     vector<SimpleExtender *> mpPEs;
     for (size_t i = 0; i < libs.size(); ++i) {
         MatePairExtensionChooser* chooser = new MatePairExtensionChooser(gp.g, *libs[i], paths);
-        SimpleExtender* mp_extender = new SimpleExtender(gp.g, cov_map, chooser, libs[i]->GetISMax(), pset.loop_removal.mp_max_loops, false);
+        SimpleExtender* mp_extender = new SimpleExtender(gp, cov_map, chooser, libs[i]->GetISMax(), pset.loop_removal.mp_max_loops, true);
         mpPEs.push_back(mp_extender);
     }
     return mpPEs;
