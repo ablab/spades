@@ -217,7 +217,11 @@ private:
     void FilterBackPaths(set<BidirectionalPath*>& back_paths, EdgeId edge_to_reach, set<BidirectionalPath*>& reached_paths, size_t max_len = -1UL);
     void JoinPathsByGraph(ConstructedPathT& constructed_paths);
     void JoinPathsByPI(ConstructedPathT& constructed_paths);
-    void JoinPathsByDejikstra(ConstructedPathT& constructed_paths);
+    void JoinPathsByDejikstra(const BidirectionalPath& init_path, ConstructedPathT& constructed_paths);
+    map<PathWithDistance*, size_t> FindDistances(const BidirectionalPath& p, vector<PathWithDistance*>& paths);
+    map<PathWithDistance*, set<PathWithDistance*> > FindConnections(vector<PathWithDistance*>& all_paths);
+    vector<vector<PathWithDistance*> > FilterConnections(vector<PathWithDistance*>& all_paths, map<PathWithDistance*, set<PathWithDistance*> >& connections);
+    void ConnectPaths(const BidirectionalPath& init_path, vector<vector<PathWithDistance*> >& variants);
 
     const Graph& g_;
     const GraphCoverageMap& cover_map_;
@@ -481,7 +485,7 @@ inline void NextPathSearcher::ScaffoldChristmasTree(
 		constructed_paths.insert(make_pair(e.e_,PathWithDistance(BidirectionalPath(g_, e.e_), e.d_)));
 	}
 	RemoveRedundant(constructed_paths);
-	JoinPathsByDejikstra(constructed_paths);
+	JoinPathsByDejikstra(path, constructed_paths);
 
 	RemoveRedundant(constructed_paths);
     DEBUG("Scafolding candidates");
@@ -938,45 +942,79 @@ vector<vector<size_t> > Generate(size_t n) {
 	return result;
 }
 
-inline void NextPathSearcher::JoinPathsByDejikstra(ConstructedPathT& constructed_paths) {
-    DEBUG("==  try to join paths by dejikstra ===");
-    for (auto p1 = constructed_paths.begin(); p1 != constructed_paths.end(); ++p1) {
-        p1->second.p_.Print();
+inline map<PathWithDistance*, size_t> NextPathSearcher::FindDistances(const BidirectionalPath& p, vector<PathWithDistance*>& paths) {
+    map<PathWithDistance*, size_t> result;
+    DijkstraHelper<Graph>::BoundedDijkstra dijkstra(DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, search_dist_, 3000));
+    dijkstra.run(g_.EdgeEnd(p.Back()));
+    for (auto ipath = paths.begin(); ipath != paths.end(); ++ipath) {
+        vector<EdgeId> shortest_path = dijkstra.GetShortestPathTo(g_.EdgeStart((*ipath)->p_.Front()));
+        if (shortest_path.size() != 0) {
+            int gap = 0;
+            for (size_t i = 0; i < shortest_path.size(); ++i) {
+                DEBUG("answer " << i << " " << g_.int_id(shortest_path[i]))
+                gap += (int) g_.length(shortest_path[i]);
+            }
+            gap += (int) g_.k();
+            result[*ipath] = gap;
+        }
     }
-    DEBUG("==  printed ===");
+    return result;
+}
 
+inline map<PathWithDistance*, set<PathWithDistance*> > NextPathSearcher::FindConnections(vector<PathWithDistance*>& all_paths) {
     map<PathWithDistance*, set<PathWithDistance*> > connections;
-    vector<PathWithDistance*> all_paths;
-    DEBUG("1");
-    for (auto p1 = constructed_paths.begin(); p1 != constructed_paths.end(); ++p1) {
-        all_paths.push_back(&p1->second);
-        BidirectionalPath& path1 = p1->second.p_;
-        if (path1.Size() == 0) {
-            continue;
+    for (auto p1 = all_paths.begin(); p1 != all_paths.end(); ++p1) {
+        map<PathWithDistance*, size_t> distances = FindDistances((*p1)->p_, all_paths);
+        connections[*p1] = set<PathWithDistance*>();
+        for (auto iter = distances.begin(); iter != distances.end(); ++iter) {
+            connections[*p1].insert(iter->first);
         }
-        VertexId end1 = g_.EdgeEnd(path1.Back());
-        set<PathWithDistance*> next_paths;
-        for (auto p2 = constructed_paths.begin(); p2 != constructed_paths.end(); ++p2) {
-            if (p1->first == p2->first || p2->second.p_.Size() == 0) {
-                continue;
+    }
+    return connections;
+}
+
+inline void NextPathSearcher::ConnectPaths(const BidirectionalPath& init_path, vector<vector<PathWithDistance*> >& variants) {
+    if (variants.size() == 1 && variants[0].size() > 0) {
+        vector<PathWithDistance*> res = variants[0];
+        vector<PathWithDistance*> for_dijkstra;
+        BidirectionalPath& path1 = res[0]->p_;
+        for_dijkstra.push_back(res[0]);
+        map<PathWithDistance*, size_t> distances = FindDistances(init_path, for_dijkstra);
+        size_t gap = distances.count(res[0]) > 0 ? distances[res[0]] : 100 + g_.k();
+        BidirectionalPath p(path1);
+        path1.Clear();
+        path1.PushBack(p.Front(), (int)gap);
+        path1.PushBack(p.SubPath(1));
+        for (size_t i = 1; i < res.size(); ++i) {
+            for_dijkstra.clear();
+            for_dijkstra.push_back(res[i]);
+            BidirectionalPath& path2 = res[i]->p_;
+            distances = FindDistances(path1, for_dijkstra);
+            gap = distances.count(res[i]) > 0 ? distances[res[i]] : 100 + g_.k();
+            path1.PushBack(path2.Front(), (int)gap);
+            for (int i = 1; i < (int) path2.Size(); ++i) {
+                path1.PushBack(path2[i], path2.GapAt(i));
             }
-            BidirectionalPath& path2 = p2->second.p_;
-            VertexId begin2 = g_.EdgeStart(path2.Front());
-            PathStorageCallback<Graph> path_store(g_);
-            DEBUG("process")
-            PathProcessor<Graph> path_processor(g_, 0, search_dist_, end1, begin2, path_store);
-            path_processor.Process();
-            if (path_store.size() != 0) {
-                next_paths.insert(&(p2->second));
-                DEBUG("found");
-            } else {
-                DEBUG("not found");
+            path2.Clear();
+        }
+    } else if (variants.size() > 1) {
+        vector<PathWithDistance*> res = variants[0];
+        EdgeId last = res.back()->p_.Back();
+        for (size_t i = 1; i < variants.size(); ++i) {
+            if (last != variants[i].back()->p_.Back()) {
+                return;
             }
         }
-        connections[&p1->second] = next_paths;
-    } DEBUG("2 " << all_paths.size());
+        for (size_t i = 0; i < res.size(); ++i) {
+            res[i]->p_.Clear();
+        }
+        int gap = (int) 1000 + (int) g_.k();
+        res[0]->p_.PushBack(last, gap);
+    }
+}
+
+inline vector<vector<PathWithDistance*> > NextPathSearcher::FilterConnections(vector<PathWithDistance*>& all_paths, map<PathWithDistance*, set<PathWithDistance*> >& connections) {
     vector<vector<size_t> > permutations = Generate(all_paths.size());
-    DEBUG("3");
     vector<vector<PathWithDistance*> > variants;
     for (size_t i = 0; i < permutations.size(); ++i) {
         bool correct_permutation = true;
@@ -992,54 +1030,29 @@ inline void NextPathSearcher::JoinPathsByDejikstra(ConstructedPathT& constructed
             }
         }
         if (correct_permutation) {
-            DEBUG("correct permut ");
-            for (size_t l = 0; l < variant.size(); ++l) {
-                variant[l]->p_.Print();
-            } DEBUG("end correct permut");
             variants.push_back(variant);
         }
     }
-    DEBUG("variant size " << variants.size());
-    if (variants.size() == 1 && variants[0].size() > 0) {
-        vector<PathWithDistance*> res = variants[0];
-        BidirectionalPath& path1 = res[0]->p_;
-        for (size_t i = 1; i < res.size(); ++i) {
-            BidirectionalPath& path2 = res[i]->p_;
-            PathStorageCallback<Graph> path_store(g_);
-            DEBUG("process")
-            PathProcessor<Graph> path_processor(g_, 0, search_dist_, g_.EdgeEnd(path1.Back()), g_.EdgeStart(path2.Front()), path_store);
-            path_processor.Process();
-            int gap = (int) 100 + (int) g_.k();
-            if (path_store.size() != 0) {
-                vector<EdgeId> answer = path_store.paths().front();
-                for (size_t i = 0; i < answer.size(); ++i) {
-                    gap += (int) g_.length(answer[i]);
-                }
-                gap += (int) g_.k();
-            }
-            path1.PushBack(path2.Front(), gap);
-            for (int i = 1; i < (int) path2.Size(); ++i) {
-                path1.PushBack(path2[i], path2.GapAt(i));
-            }
-            path2.Clear();
-        }
-    } else if (variants.size() > 1) {
-        vector<PathWithDistance*> res = variants[0];
-        EdgeId last = res.back()->p_.Back();
-        bool equal = true;
-        for (size_t i = 1; i < variants.size(); ++i) {
-            if (last != variants[i].back()->p_.Back()) {
-                equal = false;
-            }
-        }
-        if (equal) {
-            for (size_t i = 0; i < res.size(); ++i) {
-                res[i]->p_.Clear();
-            }
+    return variants;
+}
 
-            res[0]->p_.PushBack(last, 1000);
+inline void NextPathSearcher::JoinPathsByDejikstra(const BidirectionalPath& init_path, ConstructedPathT& constructed_paths) {
+    DEBUG("==  try to join paths by dejikstra ===");
+    for (auto p1 = constructed_paths.begin(); p1 != constructed_paths.end(); ++p1) {
+        p1->second.p_.Print();
+    }
+    DEBUG("==  printed ===");
+
+    vector<PathWithDistance*> all_paths;
+    for (auto p1 = constructed_paths.begin(); p1 != constructed_paths.end(); ++p1) {
+        if (p1->second.p_.Size() != 0) {
+            all_paths.push_back(&p1->second);
         }
     }
+    map<PathWithDistance*, set<PathWithDistance*> > connections = FindConnections(all_paths);
+    vector<vector<PathWithDistance*> > variants = FilterConnections(all_paths, connections);
+    ConnectPaths(init_path, variants);
+
     DEBUG("==  after to join paths ===");
     for (auto p1 = constructed_paths.begin(); p1 != constructed_paths.end(); ++p1) {
         p1->second.p_.Print();
