@@ -1242,18 +1242,18 @@ private:
 
         bool operator()(const pair<BidirectionalPath*, double>& p1, const pair<BidirectionalPath*, double>& p2) {
             if (mp_chooser_.HasUniqueEdges(path_, *(p1.first), not_common_) && !mp_chooser_.HasUniqueEdges(path_, *(p2.first), not_common_)) {
-                return false;
+                return true;
             }
             if (mp_chooser_.HasUniqueEdges(path_, *(p2.first), not_common_) && !mp_chooser_.HasUniqueEdges(path_, *(p1.first), not_common_)) {
-                return true;
-            }
-            if (p1.second < p2.second) {
-                return true;
-            }
-            if (p2.second < p1.second) {
                 return false;
             }
-            return PathCompare(p1.first, p2.first);
+            if (p1.second < p2.second) {
+                return false;
+            }
+            if (p2.second < p1.second) {
+                return true;
+            }
+            return !PathCompare(p1.first, p2.first);
         }
         MatePairExtensionChooser& mp_chooser_;
         const BidirectionalPath& path_;
