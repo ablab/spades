@@ -68,6 +68,7 @@ class ValidHKMerGenerator {
     bad_quality_threshold_ = bad_quality_threshold;
     has_more_ = true;
     first_ = true;
+    last_ = false;
     probs_.resize(0);
 
     TrimBadQuality();
@@ -154,6 +155,7 @@ class ValidHKMerGenerator {
   unsigned bad_quality_threshold_;
   bool has_more_;
   bool first_;
+  bool last_;
   std::deque<double> probs_;
 
   // Disallow copy and assign
@@ -180,6 +182,11 @@ void ValidHKMerGenerator<kK>::TrimBadQuality() {
 
 template<size_t kK>
 void ValidHKMerGenerator<kK>::Next() {
+  if (last_) {
+    has_more_ = false;
+    return;
+  }
+
   size_t toadd = (first_ ? kK : 1);
   char pnucl = -1;
   double cprob = 1.0;
@@ -187,9 +194,10 @@ void ValidHKMerGenerator<kK>::Next() {
   // Build the flow-space kmer looking over homopolymer streches.
   while (toadd) {
     // If we went past the end, then there are no new kmers anymore.
-    // The current one is incomplete.
+    // The current one might be incomplete but we yield it anyway
+    // because one hk-mer can't have much influence on the consensus.
     if (pos_ >= end_) {
-      has_more_ = false;
+      last_ = true;
       return;
     }
 

@@ -616,6 +616,7 @@ class CorrectedRead {
 
   // Chunks where strong consensus was obtained
   std::list<ConsensusChunk> chunks_;
+  int trimmed_by_gen_;
 
   void PushChunk(const ScoreStorage &scores, int approx_read_offset,
                  unsigned rollback_end) {
@@ -632,6 +633,8 @@ class CorrectedRead {
     }
 
     chunks_.back().AlignLeftEndAgainstRead();
+    if (chunks_.size() == 1)
+      trimmed_by_gen_ = chunks_.back().approx_read_offset;
   }
 
   const ConsensusChunk& LastChunk() const {
@@ -895,6 +898,7 @@ class CorrectedRead {
   }
 
   void AttachUncorrectedRuns() {
+    // attach runs from the right
     const auto& data = raw_read_.data();
     int n_raw = int(raw_read_.size());
     int n_corr = int(corrected_runs_.size());
@@ -914,6 +918,15 @@ class CorrectedRead {
                     std::back_inserter(corrected_runs_));
         }
       }
+    }
+    
+    // attach runs from the left
+    if (trimmed_by_gen_ > 0 && size_t(trimmed_by_gen_) <= data.size()) {
+      std::vector<HomopolymerRun> runs;
+      runs.reserve(corrected_runs_.size() + trimmed_by_gen_);
+      runs.insert(runs.end(), data.begin(), data.begin() + trimmed_by_gen_);
+      runs.insert(runs.end(), corrected_runs_.begin(), corrected_runs_.end());
+      std::swap(runs, corrected_runs_);
     }
   }
 
