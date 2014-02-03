@@ -594,7 +594,8 @@ private:
                     }
                 }
             }
-        }DEBUG("***edge " << g_.int_id(e) << " is unique.***");
+        }
+        DEBUG("***edge " << g_.int_id(e) << " is unique.***");
         return true;
     }
 
@@ -931,7 +932,6 @@ public:
         DEBUG("mp chooser");
         path.Print();
         if (path.Length() < lib_.GetISMin()) {
-            DEBUG("small path");
             return EdgeContainer();
         }
         EdgeContainer edges = init_edges;
@@ -954,7 +954,6 @@ public:
             }
             DeleteNextPaths(following_paths);
         }
-
         set<BidirectionalPath*> next_paths;
         if (edges.size() == 0) {
         	DEBUG("scaffolding edges size " << edges.size())
@@ -965,9 +964,9 @@ public:
             }
         }
 
-        DEBUG("next paths size " << next_paths.size());
         EdgeContainer result = ChooseBest(path, next_paths);
         /*if (result.size() != 1) {
+            DEBUG("scaffold tree");
             result = ScaffoldTree(path);
         }*/
         DeleteNextPaths(next_paths);
@@ -1221,6 +1220,7 @@ private:
         CountAllPairInfo(path, next_paths, all_pi);
         DeleteCommonPi(path, all_pi);
         map<BidirectionalPath*, double> result;
+        size_t iter = 0;
         for (BidirectionalPath* next : next_paths) {
             result[next] = weight_counter_.CountPairInfo(path, 0, path.Size(),
                                                          *next, 0,
@@ -1232,31 +1232,50 @@ private:
         return result;
     }
 
+    struct PathWithWeightSort {
+        PathWithWeightSort(MatePairExtensionChooser& mp_chooser, const BidirectionalPath& path, std::map<BidirectionalPath*, map<size_t, double> >& all_pi)
+                : mp_chooser_(mp_chooser),
+                  path_(path),
+                  all_pi_(all_pi) {
+            not_common_ = mp_chooser_.FindNotCommonEdges(path_, all_pi_);
+        }
+
+        bool operator()(const pair<BidirectionalPath*, double>& p1, const pair<BidirectionalPath*, double>& p2) {
+            if (mp_chooser_.HasUniqueEdges(path_, *(p1.first), not_common_) && !mp_chooser_.HasUniqueEdges(path_, *(p2.first), not_common_)) {
+                return false;
+            }
+            if (mp_chooser_.HasUniqueEdges(path_, *(p2.first), not_common_) && !mp_chooser_.HasUniqueEdges(path_, *(p1.first), not_common_)) {
+                return true;
+            }
+            if (p1.second < p2.second) {
+                return true;
+            }
+            if (p2.second < p1.second) {
+                return false;
+            }
+            return PathCompare(p1.first, p2.first);
+        }
+        MatePairExtensionChooser& mp_chooser_;
+        const BidirectionalPath& path_;
+        std::map<BidirectionalPath*, map<size_t, double> >& all_pi_;
+        set<size_t> not_common_;
+    };
+
     vector<BidirectionalPath*> SortResult(const BidirectionalPath& path,
             set<BidirectionalPath*>& next_paths) {
+        DEBUG("sort result");
         std::map<BidirectionalPath*, map<size_t, double> > all_pi;
         CountAllPairInfo(path, next_paths, all_pi);
         map<BidirectionalPath*, double> weights = CountWeightsAndFilter(path, next_paths, false);
+        vector<pair<BidirectionalPath*, double> > to_sort(weights.begin(), weights.end());
+        DEBUG("sort weight and filter");
+        PathWithWeightSort comparator(*this, path, all_pi);
+        std::sort(to_sort.begin(), to_sort.end(), comparator);
         vector<BidirectionalPath*> result;
-        while (weights.size() > 0) {
-            auto max_iter = weights.begin();
-            for (auto iter = weights.begin(); iter != weights.end(); ++iter) {
-                if (HasUniqueEdges(path,*iter->first, FindNotCommonEdges(path, all_pi))
-                        && !HasUniqueEdges(path, *max_iter->first, FindNotCommonEdges(path, all_pi))){
-                    max_iter = iter;
-                    continue;
-                }
-                if (iter->second > max_iter->second){
-                    max_iter = iter;
-                }
-                if (max_iter->second != iter->second)
-                    continue;
-                if (!PathCompare(iter->first, max_iter->first))
-                    max_iter = iter;
-            }
-            result.push_back(max_iter->first);
-            weights.erase(max_iter);
+        for (size_t i = 0; i < to_sort.size(); ++ i){
+            result.push_back(to_sort[i].first);
         }
+        DEBUG("end sort result");
         return result;
     }
 

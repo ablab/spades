@@ -740,10 +740,12 @@ inline bool PathIdCompare(const BidirectionalPath* p1, const BidirectionalPath* 
 }
 
 inline bool PathCompare(const BidirectionalPath* p1, const BidirectionalPath* p2) {
-    if (PathIdCompare(p1, p2) != PathIdCompare(p2, p1))
+    if (PathIdCompare(p1, p2) != PathIdCompare(p2, p1)) {
         return PathIdCompare(p1, p2);
-    if (p1->Length() != p2->Length())
+    }
+    if (p1->Length() != p2->Length()) {
         return p1->Length() < p2->Length();
+    }
     return p1->Size() < p2->Size();
 }
 
