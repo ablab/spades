@@ -69,6 +69,14 @@ private:
 public:
     typedef conjugate_iterator edge_const_iterator;
 
+    void Lock() {
+        //todo fill
+    }
+
+    void Unlock() {
+        //todo fill
+    }
+
 private:
     friend class AbstractGraph<
             restricted::pure_pointer<PairedVertex<DataMaster>>,

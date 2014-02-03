@@ -20,8 +20,34 @@ class ParallelTipClippingFunctor {
     size_t length_bound_;
     HandlerF handler_f_;
 
+    size_t LockingIncomingCount(VertexId v) const {
+        size_t answer;
+        v->Lock();
+        answer = g_.IncomingEdgeCount(v);
+        v->Unlock();
+        return answer;
+    }
+
+    size_t LockingOutgoingCount(VertexId v) const {
+        size_t answer;
+        v->Lock();
+        answer = g_.OutgoingEdgeCount(v);
+        v->Unlock();
+        return answer;
+    }
+
     bool IsIncomingTip(EdgeId e) const {
-        return g_.length() <= length_bound_ && g_.IncomingEdgeCount(g_.EdgeStart(e)) == 0;
+        return g_.length(e) <= length_bound_ && LockingIncomingEdgeCount(g_.EdgeStart(e)) == 0;
+    }
+
+    void RemoveEdge(EdgeId e) {
+        VertexId start = g_.EdgeStart(e);
+        VertexId end = g_.EdgeEnd(e);
+        start->Lock();
+        end->Lock();
+        g_.RemoveEdge(e);
+        start->Unlock();
+        end->Unlock();
     }
 
 public:
@@ -34,7 +60,11 @@ public:
     }
 
     bool operator()(VertexId v) const {
+        if (LockingOutgoingCount(v) == 0)
+            return false;
+
         vector<EdgeId> tips;
+        //don't need lock here after the previous check
         for (EdgeId e : g_.IncomingEdges(v)) {
             if (IsIncomingTip(e)) {
                 tips.push_back(e);
@@ -51,8 +81,9 @@ public:
             if (handler_f_) {
                 handler_f_(e);
             }
-            g_.RemoveEdge(e);
+            RemoveEdge(e);
         }
+        v->Unlock();
         return false;
     }
 };
@@ -93,12 +124,64 @@ class ParallelSimpleBRFunctor {
                 if (alt != EdgeId(0)
                         && math::ge(g_.coverage(alt) * max_relative_coverage_, g_.coverage(e))) {
                     //todo is not work in multiple threads for now :)
+                    //Reasons: id distribution, kmer-mapping
                     g_.Glue(e, alt);
                     return true;
                 }
             }
         }
         return false;
+    }
+
+    vector<VertexId> MultiEdgeDestinations(VertexId v) const {
+        vector<VertexId> answer;
+        set<VertexId> destinations;
+        for (EdgeId e : g_.OutgoingEdges(v)) {
+            VertexId end = g_.EdgeEnd(e);
+            if (destinations.count(end) > 0) {
+                answer.push_back(end);
+            }
+            destinations.insert(end);
+        }
+        return answer;
+    }
+
+
+    VertexId SingleMultiEdgeDestination(VertexId v) const {
+        vector<VertexId> dests = MultiEdgeDestinations(v);
+        if (dests.size() == 1) {
+            return dests.front();
+        } else {
+            return VertexId(0);
+        }
+    }
+
+    void RemoveBulges(VertexId v) {
+        bool flag = true;
+        while (flag) {
+            vector<EdgeId> edges(g_.out_begin(v), g_.out_end(v));
+            if (edges.size() == 1)
+                return;
+            sort(edges.begin(), edges.end(), omnigraph::CoverageComparator<Graph>(g_));
+            flag = ProcessEdges(edges);
+        }
+    }
+
+    bool CheckVertex(VertexId v) const {
+        bool answer;
+        v->Lock();
+        answer = MultiEdgeDestinations(v).size() == 1
+                && MultiEdgeDestinations(g_.conjugate(v)).size() == 0;
+        v->Unlock();
+        return answer;
+    }
+
+    size_t MinId(VertexId v) const {
+        return std::min(v.int_id(), g_.conjugate(v).int_id());
+    }
+
+    bool IsMinimal(VertexId v1, VertexId v2) const {
+        return MinId(v1) < MinId(v2);
     }
 
 public:
@@ -119,15 +202,25 @@ public:
 
     }
 
-    bool operator()(VertexId v) const {
-        bool flag = true;
-        while (flag) {
-            vector<EdgeId> edges(g_.out_begin(v), g_.out_end(v));
-            sort(edges.begin(), edges.end(), omnigraph::CoverageComparator<Graph>(g_));
-            flag = ProcessEdges(edges);
+    bool operator()(VertexId v/*, need number of vertex for stable id distribution*/) const {
+        vector<VertexId> multi_dest;
+        Lock(v);
+        multi_dest = MultiEdgeDestinations(v);
+        Unlock(v);
+
+        if (multi_dest.size() == 1 && IsMinimal(v, multi_dest.front())) {
+            VertexId dest = multi_dest.front();
+            if (CheckVertex(v) && CheckVertex(g_.conjugate(dest))) {
+                Lock(v);
+                Lock(dest);
+                RemoveBulges(v);
+                Unlock(v);
+                Unlock(dest);
+            }
         }
         return false;
     }
+
 };
 
 }
