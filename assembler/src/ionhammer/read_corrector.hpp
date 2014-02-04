@@ -13,6 +13,10 @@
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/storage.hpp>
 
+#include <bamtools/api/BamAlignment.h>
+#include <bamtools/api/SamHeader.h>
+#include "seqeval/BaseHypothesisEvaluator.h"
+
 #include <deque>
 #include <vector>
 #include <iterator>
@@ -988,12 +992,20 @@ class SingleReadCorrector {
   };
 
 private:
+  BamTools::SamHeader* sam_header_;
   DebugOutputPredicate &debug_pred_;
 
 public:
   SingleReadCorrector(const KMerData &kmer_data,
+                      BamTools::SamHeader *sam_header,
                       DebugOutputPredicate &debug) :
-    kmer_data_(kmer_data), debug_pred_(debug) {}
+    kmer_data_(kmer_data), sam_header_(sam_header),
+    debug_pred_(debug) {}
+
+  SingleReadCorrector(const KMerData &kmer_data,
+                      DebugOutputPredicate &debug) :
+    kmer_data_(kmer_data), sam_header_(NULL),
+    debug_pred_(debug) {}
 
   boost::optional<io::SingleRead> operator()(const io::SingleRead &r) {
 
@@ -1019,6 +1031,23 @@ public:
       return boost::optional<io::SingleRead>();
 
     return io::SingleRead(r.name(), seq);
+  }
+
+  boost::optional<io::SingleRead>
+  operator()(BamTools::BamAlignment &alignment) {
+    VERIFY(sam_header_);
+    io::SingleRead r(alignment.Name, alignment.QueryBases);
+    auto corrected_r = operator()(r);
+    std::string rg;
+    if (!alignment.GetTag("RG", rg) || !corrected_r)
+      return boost::optional<io::SingleRead>();
+    auto flow_order = sam_header_->ReadGroups[rg].FlowOrder;
+
+    float delta_score, fit_score;
+    BaseHypothesisEvaluator(alignment, flow_order,
+                            corrected_r.get().GetSequenceString(),
+                            delta_score, fit_score, 0);
+    return delta_score < 0 ? corrected_r : r;
   }
 };
 
