@@ -931,7 +931,11 @@ public:
             DEBUG("small path");
             return EdgeContainer();
         }
-        EdgeContainer edges = TryResolveBuldge(path, init_edges);
+        EdgeContainer edges;
+        if (IsBulge(init_edges)){
+        	 edges = TryResolveBulge(path, init_edges);
+        	 DEBUG("bulge " << edges.size())
+        }
         map<EdgeId, BidirectionalPath*> best_paths;
         for (size_t iedge = 0; iedge < edges.size(); ++iedge) {
             set<BidirectionalPath*> following_paths = path_searcher_.FindNextPaths(path, edges[iedge].e_);
@@ -988,35 +992,62 @@ private:
         return EdgeContainer(1, EdgeWithDistance(p.Back(), p.GapAt(p.Size() - 1)));
     }
 
-    EdgeContainer TryResolveBuldge(BidirectionalPath& p, EdgeContainer& edges) {
-        if (edges.size() == 0)
-            return edges;
-        for (EdgeWithDistance e : edges) {
-            if (!InBuble(e.e_, g_))
-                return edges;
-        }
-        double max_w = 0.0;
-        EdgeWithDistance max = *edges.begin();
-        for (EdgeWithDistance e : edges) {
-            double w = weight_counter_.CountPairInfo(p, 0, p.Size(), e.e_, 0);
-            DEBUG("buldge " << g_.int_id(e.e_) << " w = " << w);
-            if (w > max_w) {
-                max_w = w;
-                max = e;
-            }
-        }
-        for (EdgeWithDistance e : edges) {
-            if (e.e_ == max.e_) {
-                continue;
-            }
-            if (weight_counter_.CountPairInfo(p, 0, p.Size(), e.e_, 0) == max_w) {
-                return edges;
-            }
-        }
-        EdgeContainer result;
-        result.push_back(max);
-        return result;
-    }
+	bool IsBulge(EdgeContainer& edges) {
+		if (edges.size() == 0)
+			return false;
+		for (EdgeWithDistance e : edges) {
+			if (!InBuble(e.e_, g_))
+				return false;
+		}
+		return true;
+	}
+
+	EdgeContainer TryResolveBulge(BidirectionalPath& p, EdgeContainer& edges) {
+		vector<double> weights;
+		for (size_t i = 0; i < edges.size(); ++i) {
+			weights.push_back(0);
+		}
+		for (size_t i = 0; i < p.Size(); ++i) {
+			bool common = true;
+			bool all_has_ideal_pi = true;
+			for (EdgeWithDistance e : edges) {
+				if (!weight_counter_.HasIdealPI(p.At(i), e.e_, (int)p.LengthAt(i))){
+					all_has_ideal_pi = false;
+				}
+				if (!weight_counter_.HasPI(p.At(i), e.e_, (int)p.LengthAt(i))) {
+					common = false;
+				}
+			}
+			if (all_has_ideal_pi && !common) {
+				for (size_t j = 0; j < edges.size(); ++j) {
+					weights[j] += weight_counter_.PI(p.At(i), edges[j].e_,
+							(int)p.LengthAt(i));
+				}
+			}
+		}
+		double max_w = 0.0;
+		EdgeWithDistance max = *edges.begin();
+		for (size_t i = 0; i < edges.size(); ++i) {
+			double w = weights[i];
+			DEBUG("bulge " << g_.int_id(edges[i].e_) << " w = " << w);
+			if (w > max_w) {
+				max_w = w;
+				max = edges[i];
+			}
+		}
+		for (size_t i = 0; i < edges.size(); ++i) {
+			if (edges[i].e_ == max.e_) {
+				continue;
+			}
+			if (math::eq(weights[i], max_w)) {
+				return edges;
+			}
+		}
+		EdgeContainer result;
+		result.push_back(max);
+		return result;
+	}
+
     void DeleteNextPaths(set<BidirectionalPath*>& paths) {
         for (auto i = paths.begin(); i != paths.end(); ++i) {
             delete (*i);
@@ -1248,7 +1279,7 @@ private:
     BidirectionalPath ChooseFromEnds(const BidirectionalPath& path,
                                      const vector<BidirectionalPath*>& paths,
                                      const BidirectionalPath& end) {
-        DEBUG("choose from ends");
+        DEBUG("choose from ends " << paths.size());
         end.Print();
         vector<BidirectionalPath*> new_paths;
         vector<BidirectionalPath*> paths_to_cover;

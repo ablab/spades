@@ -479,6 +479,9 @@ public:
     }
     bool HasPI(EdgeId e1, EdgeId e2, int dist) const;
     bool HasPI(EdgeId e1, EdgeId e2, size_t dist_min, size_t dist_max) const;
+    double PI(EdgeId e1, EdgeId e2, int dist) const;
+    bool HasIdealPI(EdgeId e1, EdgeId e2, int dist) const;
+    double IdealPI(EdgeId e1, EdgeId e2, int dist) const;
 
 private:
     void FindPairInfo(const BidirectionalPath& path1, size_t from1, size_t to1,
@@ -617,8 +620,21 @@ inline void PathsWeightCounter::ClearCommonWeight() {
 	common_w_.clear();
 }
 
+inline double PathsWeightCounter::PI(EdgeId e1, EdgeId e2, int dist) const {
+	double w = lib_.CountPairedInfo(e1, e2, dist, true);
+	return w > (double) min_read_count_ ? w : 0.0;
+}
+
 inline bool PathsWeightCounter::HasPI(EdgeId e1, EdgeId e2, int dist) const {
     return lib_.CountPairedInfo(e1, e2, dist, true) > (double)  min_read_count_;
+}
+
+inline bool PathsWeightCounter::HasIdealPI(EdgeId e1, EdgeId e2, int dist) const {
+    return lib_.IdealPairedInfo(e1, e2, dist, true) > 0.0;
+}
+
+inline double PathsWeightCounter::IdealPI(EdgeId e1, EdgeId e2, int dist) const {
+    return lib_.IdealPairedInfo(e1, e2, dist, true);
 }
 
 inline bool PathsWeightCounter::HasPI(EdgeId e1, EdgeId e2, size_t dist_min, size_t dist_max) const {

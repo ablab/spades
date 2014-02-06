@@ -425,6 +425,9 @@ public:
             }
             size_t common_size = MaxCommonSize(p, *cov_p);
             DEBUG("max comon size with path " << cov_p->GetId() << " is " << common_size);
+            if (common_size == 0) {
+            	continue;
+            }
             VERIFY(common_size <= p.Size());
             if (p.LengthAt(p.Size() - common_size) > repeat_len_) {
                 DEBUG("repeat from " << (p.Size() - common_size) << " length " << p.LengthAt(p.Size() - common_size) << " repeat length " << repeat_len_);
@@ -437,11 +440,14 @@ public:
         return result_p;
     }
     size_t MaxCommonSize(const BidirectionalPath& p1, const BidirectionalPath& p2) const {
-        EdgeId last_e = p1.Back();
+        DEBUG("max coomon size ")
+    	EdgeId last_e = p1.Back();
         vector<size_t> positions2 = p2.FindAll(last_e);
+        DEBUG("pos size " << positions2.size())
         size_t max_common_size = 0;
         for (size_t pos2 : positions2) {
             size_t common_size = MaxCommonSize(p1, p1.Size() - 1, p2, pos2);
+            DEBUG("max common size from " << pos2 << " is " << common_size);
             max_common_size = max(max_common_size, common_size);
         }
         return max_common_size;
@@ -462,7 +468,7 @@ private:
         }
 
         VERIFY(i1 <= (int)pos1);
-        return size_t((int) pos1 - i1);
+        return std::max(size_t((int) pos1 - i1), (size_t)1);
     }
     const Graph& g_;
     const GraphCoverageMap& cov_map_;
