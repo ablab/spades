@@ -570,6 +570,9 @@ private:
         if (g_.length(e) > cfg::get().max_repeat_length)
             return true;
         DEBUG("Analyze unique edge " << g_.int_id(e));
+        if (cov_map_.size() == 0) {
+            return false;
+        }
         auto cov_paths = cov_map_.GetCoveringPaths(e);
         for (auto it1 = cov_paths.begin(); it1 != cov_paths.end(); ++it1) {
             auto pos1 = (*it1)->FindAll(e);
@@ -931,7 +934,7 @@ public:
             DEBUG("small path");
             return EdgeContainer();
         }
-        EdgeContainer edges;
+        EdgeContainer edges = init_edges;
         if (IsBulge(init_edges)){
         	 edges = TryResolveBulge(path, init_edges);
         	 DEBUG("bulge " << edges.size())
@@ -954,6 +957,7 @@ public:
 
         set<BidirectionalPath*> next_paths;
         if (edges.size() == 0) {
+        	DEBUG("scaffolding edges size " << edges.size())
             next_paths = path_searcher_.FindNextPaths(path, path.Back());
         } else if (best_paths.size() == edges.size()) {
             for (size_t iedge = 0; iedge < edges.size(); ++iedge) {
@@ -1002,51 +1006,52 @@ private:
 		return true;
 	}
 
-	EdgeContainer TryResolveBulge(BidirectionalPath& p, EdgeContainer& edges) {
-		vector<double> weights;
-		for (size_t i = 0; i < edges.size(); ++i) {
-			weights.push_back(0);
-		}
-		for (size_t i = 0; i < p.Size(); ++i) {
-			bool common = true;
-			bool all_has_ideal_pi = true;
-			for (EdgeWithDistance e : edges) {
-				if (!weight_counter_.HasIdealPI(p.At(i), e.e_, (int)p.LengthAt(i))){
-					all_has_ideal_pi = false;
-				}
-				if (!weight_counter_.HasPI(p.At(i), e.e_, (int)p.LengthAt(i))) {
-					common = false;
-				}
-			}
-			if (all_has_ideal_pi && !common) {
-				for (size_t j = 0; j < edges.size(); ++j) {
-					weights[j] += weight_counter_.PI(p.At(i), edges[j].e_,
-							(int)p.LengthAt(i));
-				}
-			}
-		}
-		double max_w = 0.0;
-		EdgeWithDistance max = *edges.begin();
-		for (size_t i = 0; i < edges.size(); ++i) {
-			double w = weights[i];
-			DEBUG("bulge " << g_.int_id(edges[i].e_) << " w = " << w);
-			if (w > max_w) {
-				max_w = w;
-				max = edges[i];
-			}
-		}
-		for (size_t i = 0; i < edges.size(); ++i) {
-			if (edges[i].e_ == max.e_) {
-				continue;
-			}
-			if (math::eq(weights[i], max_w)) {
-				return edges;
-			}
-		}
-		EdgeContainer result;
-		result.push_back(max);
-		return result;
-	}
+    map<EdgeId, double> FindBulgeWeights(BidirectionalPath& p, EdgeContainer& edges) const {
+        map<EdgeId, double> result;
+        for (size_t i = 0; i < edges.size(); ++i) {
+            result[edges[i].e_] = 0.0;
+        }
+        for (size_t i = 0; i < p.Size(); ++i) {
+            bool common = true;
+            bool common_ideal = true;
+            for (EdgeWithDistance e : edges) {
+                common_ideal = common_ideal && weight_counter_.HasIdealPI(p.At(i), e.e_, (int) p.LengthAt(i));
+                common = common && weight_counter_.HasPI(p.At(i), e.e_, (int) p.LengthAt(i));
+            }
+            if (!common_ideal || common) {
+                continue;
+            }
+            for (size_t j = 0; j < edges.size(); ++j) {
+                result[edges[j].e_] += weight_counter_.PI(p.At(i), edges[j].e_, (int) p.LengthAt(i));
+            }
+        }
+        return result;
+    }
+
+    EdgeContainer TryResolveBulge(BidirectionalPath& p, EdgeContainer& edges) const {
+        map<EdgeId, double> weights = FindBulgeWeights(p, edges);
+        double max_w = 0.0;
+        EdgeWithDistance max = *edges.begin();
+        for (EdgeWithDistance e : edges) {
+            double w = weights[e.e_];
+            DEBUG("bulge " << g_.int_id(e.e_) << " w = " << w);
+            if (w > max_w) {
+                max_w = w;
+                max = e;
+            }
+        }
+        for (EdgeWithDistance e : edges) {
+            if (e.e_ == max.e_) {
+                continue;
+            }
+            if (math::eq(weights[e.e_], max_w)) {
+                return edges;
+            }
+        }
+        EdgeContainer result;
+        result.push_back(max);
+        return result;
+    }
 
     void DeleteNextPaths(set<BidirectionalPath*>& paths) {
         for (auto i = paths.begin(); i != paths.end(); ++i) {
