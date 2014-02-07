@@ -256,7 +256,7 @@ void KMerCoverageModel::Fit() {
   x[2] = MaxCov_; lb[2] = 0; ub[2] = 2 * MaxCov_;
   x[3] = CovSd; lb[3] = MaxCov_ - Valley_; ub[3] = SecondValley;
   x[4] = 1; lb[4] = 0; ub[4] = 2000;
-  x[5] = 0; lb[5] = -6; lb[6] = 6;
+  x[5] = 0; lb[5] = -6; ub[5] = 6;
 
   INFO("Fitting coverage model");
   // Ensure that there will be at least 2 iterations.
