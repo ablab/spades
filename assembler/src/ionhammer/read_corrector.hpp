@@ -25,6 +25,7 @@
 #include <list>
 #include <string>
 #include <algorithm>
+#include <fstream>
 
 #if 1
 #include "sequence/nucl.hpp"
@@ -1033,21 +1034,29 @@ public:
     return io::SingleRead(r.name(), seq);
   }
 
-  boost::optional<io::SingleRead>
+  boost::optional<io::BamRead>
   operator()(BamTools::BamAlignment &alignment) {
     VERIFY(sam_header_);
     io::SingleRead r(alignment.Name, alignment.QueryBases);
     auto corrected_r = operator()(r);
     std::string rg;
     if (!alignment.GetTag("RG", rg) || !corrected_r)
-      return boost::optional<io::SingleRead>();
+      return boost::optional<io::BamRead>();
     auto flow_order = sam_header_->ReadGroups[rg].FlowOrder;
 
     float delta_score, fit_score;
     BaseHypothesisEvaluator(alignment, flow_order,
                             corrected_r.get().GetSequenceString(),
                             delta_score, fit_score, 0);
-    return delta_score < 0 ? corrected_r : r;
+    std::stringstream ss;
+    ss << alignment.Name << "_" << delta_score << "_" << fit_score;
+    alignment.Name = ss.str();
+    if (delta_score >= 10)
+       return io::BamRead(alignment);
+
+    BamTools::BamAlignment corrected(alignment);
+    corrected.QueryBases = corrected_r.get().GetSequenceString();
+    return io::BamRead(corrected);
   }
 };
 

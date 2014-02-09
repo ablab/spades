@@ -15,6 +15,8 @@ add_executable(ionhammer
                err_helper_table.cpp
                config_struct.cpp
                expander.cpp
+               seqeval/BaseHypothesisEvaluator.cpp
+               seqeval/TreephaserLite.cpp
                main.cpp)
 
 target_link_libraries(ionhammer input mph_index yaml-cpp ${COMMON_LIBRARIES})

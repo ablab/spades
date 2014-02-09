@@ -7,6 +7,7 @@
 #pragma once
 
 #include "ireader.hpp"
+#include "single_read.hpp"
 
 #include <bamtools/api/BamReader.h>
 
@@ -33,9 +34,16 @@ class BamRead : public BamTools::BamAlignment {
     const std::string& GetSequenceString() const {
         return QueryBases;
     }
-
+    
     std::string GetPhredQualityString() const {
         return Qualities;
+    }
+
+    operator io::SingleRead() {
+        // not including quality is intentional:
+        // during read correction bases might be inserted/deleted,
+        // and base qualities for them are not calculated
+        return io::SingleRead(name(), GetSequenceString());
     }
 
     char operator[](size_t i) const {

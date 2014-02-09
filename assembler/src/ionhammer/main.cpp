@@ -1,6 +1,7 @@
 #include "logger/log_writers.hpp"
 
 #include "io/file_reader.hpp"
+#include "io/bam_reader.hpp"
 #include "io/osequencestream.hpp"
 #include "io/read_processor.hpp"
 
@@ -23,6 +24,9 @@
 #include <yaml-cpp/yaml.h>
 #include <fstream>
 #include <iomanip>
+
+#include <bamtools/api/BamReader.h>
+#include <bamtools/api/SamHeader.h>
 
 void create_console_logger() {
   using namespace logging;
@@ -227,11 +231,17 @@ int main(int argc, char** argv) {
                                 boost::lexical_cast<std::string>(iread) + ".cor.fasta";
           std::string outcor = path::append_path(cfg::get().output_dir, path::basename(*I) + usuffix);
 
-          io::FileReadStream irs(*I, io::PhredOffset);
+          BamTools::BamReader bam_reader;
+          bam_reader.Open(*I);
+          auto header = bam_reader.GetHeader();
+          bam_reader.Close();
+
+          SingleReadCorrector read_corrector(kmer_data, &header, pred);
+          io::UnmappedBamStream irs(*I);
           io::osequencestream ors(outcor);
 
-          SingleReadCorrector read_corrector(kmer_data, pred);
           hammer::ReadProcessor(cfg::get().max_nthreads).Run(irs, read_corrector, ors);
+
           outlib.push_back_single(outcor);
       }
       outdataset.push_back(outlib);
