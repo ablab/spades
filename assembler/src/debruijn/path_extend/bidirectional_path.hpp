@@ -740,8 +740,8 @@ inline bool PathIdCompare(const BidirectionalPath* p1, const BidirectionalPath* 
 }
 
 inline bool PathCompare(const BidirectionalPath* p1, const BidirectionalPath* p2) {
-    if (PathIdCompare(p1, p2) != PathIdCompare(p2, p1)) {
-        return PathIdCompare(p1, p2);
+    if (p1->GetId() != p2->GetId()) {
+        return p1->GetId() < p2->GetId();
     }
     if (p1->Length() != p2->Length()) {
         return p1->Length() < p2->Length();
@@ -749,11 +749,19 @@ inline bool PathCompare(const BidirectionalPath* p1, const BidirectionalPath* p2
     return p1->Size() < p2->Size();
 }
 
+typedef std::pair<BidirectionalPath*, BidirectionalPath*> PathPair;
+bool compare_path_pairs(const PathPair& p1, const PathPair& p2) {
+    if (p1.first->Length() != p2.first->Length() || p1.first->Size() == 0 || p2.first->Size() == 0) {
+        return p1.first->Length() > p2.first->Length();
+    }
+    const Graph& g = p1.first->graph();
+    return g.int_id(p1.first->Front()) < g.int_id(p2.first->Front());
+}
+
 class PathContainer {
 
 public:
 
-    typedef std::pair<BidirectionalPath*, BidirectionalPath*> PathPair;
     typedef std::vector<PathPair> PathContainerT;
 
     class Iterator : public PathContainerT::iterator {
@@ -816,7 +824,7 @@ public:
     }
 
     void SortByLength() {
-        std::stable_sort(data_.begin(), data_.end(), PathPairComparator());
+        std::stable_sort(data_.begin(), data_.end(), compare_path_pairs);
     }
 
     Iterator begin() {
@@ -872,24 +880,6 @@ public:
     }
 
 private:
-
-    class PathPairComparator {
-    public:
-
-        bool operator()(const PathPair& p1, const PathPair& p2) const {
-            bool result = p1.first->Length() > p2.first->Length();
-            if (p1.first->Length() == p2.first->Length()) {
-                const Graph& g = p1.first->graph();
-                result = g.int_id(p1.first->Front()) < g.int_id(p2.first->Front());
-            }
-            return result;
-        }
-
-        bool operator()(const PathPair* p1, const PathPair* p2) const {
-            return operator ()(*p1, *p2);
-        }
-    };
-
     std::vector<PathPair> data_;
     uint32_t path_id_;
 
