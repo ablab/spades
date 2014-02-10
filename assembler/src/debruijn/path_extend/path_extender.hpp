@@ -33,41 +33,6 @@ protected:
     DECL_LOGGER("PathExtender")
     const Graph& g_;
 
-    bool GetLoopAndExit(BidirectionalPath& path, pair<EdgeId, EdgeId>& result) const {
-        if (path.Size() == 0) {
-            return false;
-        }
-        DEBUG("get loop and exit");
-        EdgeId e = path.Back();
-        DEBUG("get loop and exit " << g_.int_id(e));
-        DEBUG("get loop and exit " << g_.EdgeStart(e));
-        DEBUG("get loop and exit " << g_.EdgeEnd(e));
-        VertexId v = g_.EdgeEnd(e);
-        DEBUG("get loop and exit " << g_.int_id(e) << " " << g_.int_id(v));
-        if (g_.OutgoingEdgeCount(v) != 2) {
-            return false;
-        }
-        EdgeId loop;
-        EdgeId exit;
-        DEBUG("loop and exit");
-        bool loop_found = false;
-        bool exit_found = false;
-        DEBUG("outgoing");
-        auto edges = g_.OutgoingEdges(v);
-        for (auto edge = edges.begin(); edge != edges.end(); ++edge) {
-            if (g_.EdgeEnd(*edge) == g_.EdgeStart(e)) {
-                loop = *edge;
-                loop_found = true;
-            } else {
-                exit = *edge;
-                exit_found = true;
-            }
-        }
-        DEBUG("cycle");
-        result = make_pair(loop, exit);
-        return exit_found && loop_found;
-    }
-
     void UndoCycles(BidirectionalPath& p, EdgeId next_edge) const {
         EdgeId first_edge = p.Back();
         EdgeId second_edge = next_edge;
@@ -98,7 +63,7 @@ public:
         path.Print();
 
         pair<EdgeId, EdgeId> edges;
-        if (GetLoopAndExit(path, edges)) {
+        if (GetLoopAndExit(g_, path.Back(), edges)) {
             DEBUG("Coverage Short Loop Resolver");
             UndoCycles(path, edges.first);
             EdgeId e1 = path.Back();
@@ -150,7 +115,7 @@ public:
 
     virtual void ResolveShortLoop(BidirectionalPath& path) {
         pair<EdgeId, EdgeId> edges;
-        if (GetLoopAndExit(path, edges)) {
+        if (GetLoopAndExit(g_, path.Back(), edges)) {
             DEBUG("Resolving short loop...");
             EdgeId e = path.Back();
             path.PushBack(edges.first);
@@ -202,7 +167,7 @@ public:
 
     virtual void ResolveShortLoop(BidirectionalPath& path) {
         pair<EdgeId, EdgeId> edges;
-        if (GetLoopAndExit(path, edges)) {
+        if (GetLoopAndExit(g_, path.Back(), edges)) {
             DEBUG("Resolving short loop...");
             MakeBestChoice(path, edges);
             DEBUG("Resolving short loop done");

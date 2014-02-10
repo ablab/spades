@@ -259,6 +259,29 @@ private:
     GraphCoverageMap(const GraphCoverageMap& t) : g_(t.g_), empty_(t.empty_) {}
 };
 
+inline bool GetLoopAndExit(const Graph& g, EdgeId e, pair<EdgeId, EdgeId>& result) {
+    VertexId v = g.EdgeEnd(e);
+    if (g.OutgoingEdgeCount(v) != 2) {
+        return false;
+    }
+    EdgeId loop;
+    EdgeId exit;
+    bool loop_found = false;
+    bool exit_found = false;
+    auto edges = g.OutgoingEdges(v);
+    for (auto edge = edges.begin(); edge != edges.end(); ++edge) {
+        if (g.EdgeEnd(*edge) == g.EdgeStart(e) && *edge != e) {
+            loop = *edge;
+            loop_found = true;
+        } else if (*edge != e) {
+            exit = *edge;
+            exit_found = true;
+        }
+    }
+    result = make_pair(loop, exit);
+    return exit_found && loop_found;
+}
+
 class LoopDetector {
 public:
     LoopDetector(BidirectionalPath* p, const GraphCoverageMap& cov_map);
@@ -380,22 +403,8 @@ inline void LoopDetector::RemoveLoop(size_t skip_identical_edges, bool fullRemov
 }
 
 inline bool LoopDetector::EdgeInShortLoop(EdgeId e) const {
-    const Graph& g = path_->graph();
-    VertexId v = g.EdgeEnd(e);
-    if (g.OutgoingEdgeCount(v) != 2) {
-        return false;
-    }
-    auto edges = g.OutgoingEdges(v);
-    bool loop_found = false;
-    bool exit_found = false;
-    for (auto edge = edges.begin(); edge != edges.end(); ++edge) {
-        if (g.EdgeEnd(*edge) == g.EdgeStart(e)) {
-            loop_found = true;
-        } else {
-            exit_found = true;
-        }
-    }
-    return loop_found && exit_found;
+    pair<EdgeId, EdgeId> temp;
+    return GetLoopAndExit(path_->graph(), e, temp);
 }
 
 inline bool LoopDetector::PrevEdgeInShortLoop() const {
