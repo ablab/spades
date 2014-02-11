@@ -10,30 +10,89 @@ namespace debruijn {
 
 namespace simplification {
 
+//template<class VertexId>
+//class LockedVertexId : boost::noncopyable {
+//    typedef typename VertexId::type VertexT;
+//    VertexId v_;
+//
+//public:
+//    explicit LockedVertexId(VertexId v) : v_(v) {
+//    }
+//
+//    VertexT *get        () const  { return v_.get();  }
+//    VertexT& operator*  () const  { return *v_;     }
+//    VertexT* operator-> () const  { return v_.get();}
+//
+//    const VertexId& vertex_id() const {
+//        return v_;
+//    }
+//
+//    bool operator==(const LockedVertexId &rhs) const {
+//        return v_ == rhs.v_;
+//    }
+//
+//    bool operator!=(const LockedVertexId &rhs) const {
+//        return !operator ==(rhs);
+//    }
+//
+//    bool operator<(const LockedVertexId &rhs) const {
+//      return v_ < rhs.v_;
+//    }
+//
+//    bool operator==(const VertexId &rhs) const {
+//        return v_ == rhs;
+//    }
+//
+//    bool operator!=(const VertexId &rhs) const {
+//        return !operator ==(rhs);
+//    }
+//
+//    bool operator<(const VertexId &rhs) const {
+//      return v_ < rhs;
+//    }
+//
+//    size_t hash() const {
+//      return v_->int_id_;
+//    }
+//
+//    size_t int_id() const {
+//      return v_->int_id_;
+//    }
+//
+//};
+
+template<class VertexId>
+class VertexLock {
+    VertexId v_;
+public:
+    VertexLock(VertexId v) : v_(v) {
+        v_->Lock();
+    }
+
+    ~VertexLock() {
+        v_->Unlock();
+    }
+};
+
 template<class Graph>
 class ParallelTipClippingFunctor {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     typedef boost::function<void(EdgeId)> HandlerF;
+    typedef VertexLock<VertexId> VertexLock;
 
     Graph& g_;
     size_t length_bound_;
     HandlerF handler_f_;
 
     size_t LockingIncomingCount(VertexId v) const {
-        size_t answer;
-        v->Lock();
-        answer = g_.IncomingEdgeCount(v);
-        v->Unlock();
-        return answer;
+        VertexLock lock(v);
+        return g_.IncomingEdgeCount(v);
     }
 
     size_t LockingOutgoingCount(VertexId v) const {
-        size_t answer;
-        v->Lock();
-        answer = g_.OutgoingEdgeCount(v);
-        v->Unlock();
-        return answer;
+        VertexLock lock(v);
+        return g_.OutgoingEdgeCount(v);
     }
 
     bool IsIncomingTip(EdgeId e) const {
@@ -41,13 +100,9 @@ class ParallelTipClippingFunctor {
     }
 
     void RemoveEdge(EdgeId e) {
-        VertexId start = g_.EdgeStart(e);
-        VertexId end = g_.EdgeEnd(e);
-        start->Lock();
-        end->Lock();
+        VertexLock lock1(g_.EdgeStart(e));
+        VertexLock lock2(g_.EdgeEnd(e));
         g_.RemoveEdge(e);
-        start->Unlock();
-        end->Unlock();
     }
 
 public:
@@ -83,7 +138,6 @@ public:
             }
             RemoveEdge(e);
         }
-        v->Unlock();
         return false;
     }
 };
@@ -92,6 +146,7 @@ template<class Graph>
 class ParallelSimpleBRFunctor {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
+    typedef VertexLock<VertexId> VertexLock;
 
     Graph& g_;
     size_t max_length_;
@@ -146,7 +201,6 @@ class ParallelSimpleBRFunctor {
         return answer;
     }
 
-
     VertexId SingleMultiEdgeDestination(VertexId v) const {
         vector<VertexId> dests = MultiEdgeDestinations(v);
         if (dests.size() == 1) {
@@ -168,12 +222,9 @@ class ParallelSimpleBRFunctor {
     }
 
     bool CheckVertex(VertexId v) const {
-        bool answer;
-        v->Lock();
-        answer = MultiEdgeDestinations(v).size() == 1
+        VertexLock lock(v);
+        return MultiEdgeDestinations(v).size() == 1
                 && MultiEdgeDestinations(g_.conjugate(v)).size() == 0;
-        v->Unlock();
-        return answer;
     }
 
     size_t MinId(VertexId v) const {
@@ -204,21 +255,72 @@ public:
 
     bool operator()(VertexId v/*, need number of vertex for stable id distribution*/) const {
         vector<VertexId> multi_dest;
-        Lock(v);
-        multi_dest = MultiEdgeDestinations(v);
-        Unlock(v);
+
+        {
+            VertexLock lock(v);
+            multi_dest = MultiEdgeDestinations(v);
+        }
 
         if (multi_dest.size() == 1 && IsMinimal(v, multi_dest.front())) {
             VertexId dest = multi_dest.front();
             if (CheckVertex(v) && CheckVertex(g_.conjugate(dest))) {
-                Lock(v);
-                Lock(dest);
+                VertexLock lock1(v);
+                VertexLock lock2(dest);
                 RemoveBulges(v);
-                Unlock(v);
-                Unlock(dest);
             }
         }
         return false;
+    }
+
+};
+
+//currently just a stab and not parallel at all,
+//no way to write it parallel before deletion of edge requires two locks
+template<class Graph>
+class ParallelLowCoverageFunctor {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    typedef VertexLock<VertexId> VertexLock;
+    typedef boost::function<void(EdgeId)> HandlerF;
+
+    Graph& g_;
+    shared_ptr<omnigraph::EdgeCondition<Graph>> ec_condition_;
+    HandlerF handler_f_;
+
+    vector<EdgeId> edges_to_remove_;
+
+public:
+
+    ParallelLowCoverageFunctor(Graph& g,
+                               size_t max_length,
+                               double max_coverage,
+                               HandlerF handler_f)
+            : g_(g),
+              ec_condition_(
+                      func::And<EdgeId>(
+                      func::And<EdgeId>(make_shared<omnigraph::LengthUpperBound<Graph>>(g, max_length),
+                                        make_shared<omnigraph::CoverageUpperBound<Graph>>(g, max_coverage)),
+                      omnigraph::AlternativesPresenceCondition<Graph>(g))),
+              handler_f_(handler_f)
+    {
+
+    }
+
+    bool operator()(EdgeId e) const {
+        if (ec_condition_->Check(e)) {
+            edges_to_remove_.push_back(e);
+        }
+        return false;
+    }
+
+    void RemoveCollectedEdges() {
+        omnigraph::SmartSetIterator<Graph, EdgeId> to_delete(g_, edges_to_remove_.begin(), edges_to_remove_.end());
+        while (!to_delete.IsEnd()) {
+            EdgeId e = *to_delete;
+            handler_f_(e);
+            g_.RemoveEdge(e);
+            ++to_delete;
+        }
     }
 
 };
