@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 2.8.1, 2014-01-27T15:40:51. -->
+<!-- Written by QtCreator 2.8.1, 2014-02-12T20:08:55. -->
 <qtcreator>
  <data>
   <variable>ProjectExplorer.Project.ActiveTarget</variable>
@@ -345,7 +345,7 @@
      <value type="int">14</value>
     </valuelist>
     <value type="QString" key="CMakeProjectManager.CMakeRunConfiguation.Title">cclean</value>
-    <value type="QString" key="CMakeProjectManager.CMakeRunConfiguration.Arguments">--m=BSE --c:/home/undead/cclean_data/config.info.template --i=/home/undead/cclean_data/dataset_500.fastq --o=/home/undead/cclean_data/output_bruteforce.fastq --d=/home/undead/cclean_data/TruSeq2-SE.fa </value>
+    <value type="QString" key="CMakeProjectManager.CMakeRunConfiguration.Arguments">--m=SEQ --c:/home/undead/cclean_data/config.info.template --i=/home/undead/cclean_data/dataset_100.fastq --o=/home/undead/cclean_data/output_bruteforce.fastq --d=/home/undead/cclean_data/TruSeq2-SE.fa --mlen=0</value>
     <value type="bool" key="CMakeProjectManager.CMakeRunConfiguration.UseTerminal">true</value>
     <value type="QString" key="CMakeProjectManager.CMakeRunConfiguration.UserWorkingDirectory"></value>
     <value type="int" key="PE.EnvironmentAspect.Base">2</value>

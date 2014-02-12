@@ -12,7 +12,8 @@
 
 using additional::WorkModeType;
 using additional::NONE;
-using additional::SIGNLE_END;
+using additional::SINGLE_END;
+using additional::SINGLE_END_Q;
 using additional::BRUTE_SIMPLE;
 using additional::BRUTE_WITH_Q;
 using std::string;
@@ -20,9 +21,10 @@ using std::string;
 void ExactAndAlign(std::ostream &aligned_output,
                    std::ostream &bed, ireadstream *input, std::ostream &output,
                    const std::string &db, const cclean::AdapterIndex &index,
-                   const additional::WorkModeType &mode) {
-  if (mode == SIGNLE_END) {
-    SimpleClean filler(aligned_output, output, bed, db, index);
+                   const additional::WorkModeType &mode,
+                   const std::unordered_map<string, string> &options) {
+  if (mode == SINGLE_END || mode == SINGLE_END_Q) {
+    SimpleClean filler(aligned_output, output, bed, db, index, mode, options);
     hammer::ReadProcessor rp(cfg::get().nthreads);
     rp.Run(*input, filler);
     VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
@@ -30,8 +32,9 @@ void ExactAndAlign(std::ostream &aligned_output,
          << filler.aligned());
     INFO("Reads aligned: " << filler.aligned());
   }
-  else {  // Now only two modes, thats because else
-    BruteForceClean filler(aligned_output, output, bed, db, index.GetSeqs(), mode);
+  else {
+    BruteForceClean filler(aligned_output, output, bed, db, index.GetSeqs(),
+                           mode, options);
     hammer::ReadProcessor rp(cfg::get().nthreads);
     rp.Run(*input, filler);
     VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");

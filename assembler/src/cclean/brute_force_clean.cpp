@@ -17,7 +17,7 @@ using StripedSmithWaterman::Aligner;
 using StripedSmithWaterman::Alignment;
 using additional::WorkModeType;
 using additional::NONE;
-using additional::SIGNLE_END;
+using additional::SINGLE_END;
 using additional::BRUTE_SIMPLE;
 using additional::BRUTE_WITH_Q;
 using cclean_output::print_alignment;
@@ -40,7 +40,7 @@ int BruteForceClean::cuted_ = 0;
 
 bool BruteForceClean::operator()(const Read &read) {
   if (brute_ == BRUTE_SIMPLE)  BruteSimple(read);
-  if (brute_ == BRUTE_WITH_Q)    BruteDeep(read);
+  if (brute_ == BRUTE_WITH_Q)  BruteDeep(read);
 
   return false;
 }
@@ -70,9 +70,6 @@ void BruteForceClean::BruteSimple(const Read &read) {
     if (cur_mismatches < best_mismatches
         && is_alignment_good(alignment, seq_string,
                              adapt_string, aligned_part_fraction_)) {
-//      std::cout << "mism: " << alignment.mismatches << " getmism: " << cur_mismatches << std::endl;
-//      std::cout << "read: " << read.getName() << " adap: " << adapt_string << std::endl;
-//      std::cin.get();
       best_mismatches = cur_mismatches;
       best_adapter = adapt_string;
     }
@@ -83,14 +80,26 @@ void BruteForceClean::BruteSimple(const Read &read) {
     {
       aligner.Align(best_adapter.c_str(), filter, &alignment);
       cuted_ += 1;
-      print_alignment(aligned_output_stream_, alignment,
-                      seq_string, best_adapter, read_name, db_name_);
-      print_bed(bed_stream_, read_name, alignment.ref_begin,
-                alignment.ref_end);
+      if (options_["inform"] == "FULL") { // if user want full information
+        print_alignment(aligned_output_stream_, alignment,
+                        seq_string, best_adapter, read_name, db_name_);
+        print_bed(bed_stream_, read_name, alignment.ref_begin,
+                  alignment.ref_end);
+      }
       Read cuted_read = cclean_utils::CutRead(read, alignment.ref_begin,
                                               alignment.ref_end);
-      print_read(output_stream_, cuted_read);
+      if (cuted_read.getSequenceString().size() >= read_mlen_) {
+        print_read(output_stream_, cuted_read);
+      }
+      else { // 0 - because start of read
+        if (options_["inform"] == "FULL") print_bed(bed_stream_,
+                                                    read_name, 0, alignment.ref_end);
+      }
     }
+  }
+  else {
+#   pragma omp critical
+    print_read(output_stream_, read);
   }
 }
 
@@ -111,7 +120,8 @@ void BruteForceClean::BruteDeep(const Read &read) {
   for (auto adapt_string: adap_seqs_) {
     aligner.Align(adapt_string.c_str(), filter, &alignment);
 
-    align_score = cclean_utils::GetScoreWithQuality(alignment, read.getQuality());
+    align_score = cclean_utils::GetScoreWithQuality(alignment,
+                                                    read.getQuality().str());
 
     if (align_score > best_align_score
         && is_alignment_good(alignment, seq_string,
@@ -126,13 +136,25 @@ void BruteForceClean::BruteDeep(const Read &read) {
     {
       aligner.Align(best_adapter.c_str(), filter, &alignment);
       cuted_ += 1;
-      print_alignment(aligned_output_stream_, alignment,
-                      seq_string, best_adapter, read_name, db_name_);
-      print_bed(bed_stream_, read_name, alignment.ref_begin,
-                alignment.ref_end);
+      if (options_["inform"] == "FULL") { // if user want full information
+        print_alignment(aligned_output_stream_, alignment,
+                        seq_string, best_adapter, read_name, db_name_);
+        print_bed(bed_stream_, read_name, alignment.ref_begin,
+                  alignment.ref_end);
+      }
       Read cuted_read = cclean_utils::CutRead(read, alignment.ref_begin,
                                               alignment.ref_end);
-      print_read(output_stream_, cuted_read);
+      if (cuted_read.getSequenceString().size() >= read_mlen_) {
+        print_read(output_stream_, cuted_read);
+      }
+      else { // 0 - because start of read
+        if (options_["inform"] == "FULL") print_bed(bed_stream_,
+                                                    read_name, 0, alignment.ref_end);
+      }
     }
+  }
+  else {
+#   pragma omp critical
+    print_read(output_stream_, read);
   }
 }

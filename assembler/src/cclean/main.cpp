@@ -22,7 +22,8 @@ using logging::create_logger;
 using logging::console_writer;
 using std::string;
 using additional::WorkModeType;
-using additional::SIGNLE_END;
+using additional::SINGLE_END;
+using additional::SINGLE_END_Q;
 using additional::BRUTE_SIMPLE;
 using additional::BRUTE_WITH_Q;
 
@@ -39,8 +40,12 @@ void usage() {
   std::cout << "\tinput [or i]\tPath to cclean input fastq file." << std::endl;
   std::cout << "\toutput [or o]\tPath to cclean output file." << std::endl;
   std::cout << "\tdatabase [or d]\tPath to adapters database file." << std::endl;
+  std::cout << "\tmlen [or ml]\tMinimum lenght for cuted read for output." << std::endl;
+  std::cout << "\tinform [or in]\tFull output with aligned and bed reads in specified files." << std::endl;
+  std::cout << "\t\t\tNONE - none information will be outputed. (default)" << std::endl;
+  std::cout << "\t\t\tFULL - full information will be outputed." << std::endl;
   std::cout << "example:\ncclean --m=BSE --c=config.info.template --i=dataset_500.fastq "
-            << "--o=output_bruteforce.fastq --d=TruSeq2-SE.fa" << std::endl;
+            << "--o=output_bruteforce.fastq --d=TruSeq2-SE.fa --in=FULL" << std::endl;
 }
 
 void create_console_logger() {
@@ -64,11 +69,22 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
+  // check min len arg
+  if (options.find("mlen") == options.end())
+    options["mlen"] = "0";
+  if (atoi(options["mlen"].c_str()) < 0) {
+    ERROR("Bad value mlen");
+    usage();
+    return EXIT_FAILURE;
+  }
+
   string mode_string = options["mode"];
   WorkModeType mode;
   // Type mode for processing
   if (mode_string == "SE") // Single end
-    mode = SIGNLE_END;
+    mode = SINGLE_END;
+  else if (mode_string == "SEQ") // Bruteforce single end
+    mode = SINGLE_END_Q;
   else if (mode_string == "BSE") // Bruteforce single end
     mode = BRUTE_SIMPLE;
   else if (mode_string == "BSEQ") // Bruteforce single end with quality
@@ -122,7 +138,7 @@ int main(int argc, char *argv[]) {
   cclean::AdapterIndex index;
   cclean::AdapterIndexBuilder().FillAdapterIndex(data_base, index);
   // Main work wrapper
-  ExactAndAlign(aligned_output, bed, input, output, data_base, index, mode);
+  ExactAndAlign(aligned_output, bed, input, output, data_base, index, mode, options);
 
   aligned_output.close();
   bed.close();

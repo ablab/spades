@@ -61,7 +61,6 @@ double GetScoreWithQuality(const StripedSmithWaterman::Alignment &a,
         break;
     }
   }
-
   return score;
 }
 
@@ -170,19 +169,35 @@ std::unordered_map<std::string, std::string> ProcessArgs(int argc, char *argv[],
     options[arg] = val;
   }
 
-  // Process simonims
-  std::unordered_map<std::string, std::vector<std::string> > sinonims;
-  // Add new args here with sinonims
-  sinonims["mode"] = {"--m", "--mode", "--MODE"};
-  sinonims["config"] = {"--c", "--config", "--CONFIG"};
-  sinonims["input"] = {"--i", "--input", "--INPUT"};
-  sinonims["output"] = {"--o", "--output", "--OUTPUT"};
-  sinonims["database"] = {"--d", "--database", "--DATABASE"};
+  // Process sinonims
+  std::unordered_map<std::string, std::vector<std::string> > reqParams;
+  // Add new required args here with sinonims
+  reqParams["mode"] = {"--m", "--mode", "--MODE"};
+  reqParams["config"] = {"--c", "--config", "--CONFIG"};
+  reqParams["input"] = {"--i", "--input", "--INPUT"};
+  reqParams["output"] = {"--o", "--output", "--OUTPUT"};
+  reqParams["database"] = {"--d", "--database", "--DATABASE"};
+  // not required args here
+  std::unordered_map<std::string, std::vector<std::string> > notReqParams;
+  notReqParams["mlen"] = {"--ml", "--mlen", "--MLEN"};
+  notReqParams["inform"] = {"--in", "--inform", "--INFORM"};
 
   for (auto kv: options) {
     std::string arg = kv.first;
     bool correct_arg = false;
-    for (auto sinonim: sinonims) {
+    for (auto sinonim: reqParams) {
+      if (std::find(sinonim.second.begin(), sinonim.second.end(), arg) !=
+          sinonim.second.end()) {
+        options.erase(kv.first);
+        options[sinonim.first] = kv.second;
+        correct_arg = true;
+        break;
+      }
+      if (sinonim.first == kv.first)
+        correct_arg = true;
+    }
+
+    for (auto sinonim: notReqParams) {
       if (std::find(sinonim.second.begin(), sinonim.second.end(), arg) !=
           sinonim.second.end()) {
         options.erase(kv.first);
@@ -196,6 +211,21 @@ std::unordered_map<std::string, std::string> ProcessArgs(int argc, char *argv[],
     if (!correct_arg) {
       (*ok) = false;
       (*error) = "Bad argument " + std::string(kv.first);
+      return options;
+    }
+  }
+  // Check that all required args was specified
+  for (auto reqArg: reqParams) {
+    std::string arg = reqArg.first;
+    bool hasArg = false;
+    for (auto opt: options)
+      if (opt.first == arg) {
+        hasArg = true;
+        break;
+      }
+    if (!hasArg) {
+      (*ok) = false;
+      (*error) = "Missing argument " + arg;
       return options;
     }
   }

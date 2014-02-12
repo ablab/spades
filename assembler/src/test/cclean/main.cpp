@@ -8,6 +8,6 @@ int main()
 //    cclean_test::CompareAndPrintFastqFiles("/home/undead/cclean_data/output_bruteforce.fastq",
 //                                       "/home/undead/cclean_data/output_simple.fastq");
     cclean_test::CompareAndPrintFastqFiles("/home/undead/cclean_data/output_bruteforce.fastq",
-                                       "/home/undead/cclean_data/trimmomatic_500.fastq");
+                                       "/home/undead/cclean_data/output_100_trimm.fastq");
   return EXIT_SUCCESS;
 }
