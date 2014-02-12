@@ -46,11 +46,11 @@ class FlankingCoverage : public GraphActionHandler<Graph>,
     }
 
     void SetCoverageSimilarToAverageFlanking(EdgeId target, EdgeId source) {
-        SetRawCoverage(target, unsigned(math::round(AverageFlankingCoverage(source) * double(g_.length(target)))));
+        SetRawCoverage(target, unsigned(math::round(AverageFlankingCoverage(source) * double(EdgeAveragingRange(target)))));
     }
 
     void SetCoverageSimilarToAverageGlobal(EdgeId target, EdgeId source) {
-        SetRawCoverage(target, unsigned(math::round(g_.coverage(source) * double(g_.length(target)))));
+        SetRawCoverage(target, unsigned(math::round(g_.coverage(source) * double(EdgeAveragingRange(target)))));
     }
 
 public:
