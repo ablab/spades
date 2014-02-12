@@ -115,8 +115,8 @@ public:
             if (count != 2) {
                 return;
             }
-            double in_cov = gp_.flanking_cov.GetOutCov(e_in);
-            double out_cov = gp_.flanking_cov.GetInCov(e_out);
+            double in_cov = g_.coverage(e_in);//gp_.flanking_cov.GetOutCov(e_in);
+            double out_cov = g_.coverage(e_out);//gp_.flanking_cov.GetInCov(e_out);
             double cov = (in_cov + out_cov) / 2.0;
             double time1 = math::round(gp_.g.coverage(e1) / cov);
             double time2 = math::round(gp_.g.coverage(e2) / cov);
@@ -126,7 +126,12 @@ public:
             }
             path.PushBack(edges.second);
             DEBUG("loop with start " << g_.int_id(e_in)
-                  << " cov in = " << in_cov
+            		<<" e1 " << g_.int_id(e1)
+            		<< " e2 " << g_.int_id(e2)
+            		<< " out " <<g_.int_id(e_out)
+            		<< " cov in = " << in_cov
+            		<< " cov out " << out_cov
+            		<< " cov " << cov
                   << " cov e1 = " << gp_.g.coverage(e1)
                   << " cov e2 = " << gp_.g.coverage(e2)
                   << " time1 = " << time1
@@ -779,6 +784,8 @@ public:
 
     virtual bool ResolveShortLoop(BidirectionalPath& path) = 0;
 
+    virtual bool ResolveShortLoopByPI(BidirectionalPath& path) = 0;
+
     virtual bool CanInvistigateShortLoop() const {
         return false;
     }
@@ -805,6 +812,13 @@ public:
             DEBUG("Made step");
             if (DetectCycle(path)) {
                 result = false;
+            } else if (CanInvistigateShortLoop() && investigateShortLoops_ && loop_detector.EdgeInShortLoop(path.Back())) {
+                DEBUG("Edge in short loop");
+                result = ResolveShortLoopByPI(path);
+            } else if (CanInvistigateShortLoop() && investigateShortLoops_ && loop_detector.PrevEdgeInShortLoop()) {
+                DEBUG("Prev edge in short loop");
+                path.PopBack();
+                result = ResolveShortLoopByPI(path);
             } else if (investigateShortLoops_ && loop_detector.EdgeInShortLoop(path.Back())) {
                 DEBUG("edge in short loop");
                 result = ResolveShortLoop(path);
@@ -814,14 +828,6 @@ public:
                 result = ResolveShortLoop(path);
             }
         }
-        /*else if (CanInvistigateShortLoop() && investigateShortLoops_ && loop_detector.EdgeInShortLoop(path.Back())) {
-            DEBUG("Edge in short loop");
-            result = ResolveShortLoop(path);
-        } else if (CanInvistigateShortLoop() && investigateShortLoops_ && loop_detector.PrevEdgeInShortLoop()) {
-            DEBUG("Prev edge in short loop");
-            path.PopBack();
-            result = ResolveShortLoop(path);
-        }*/
         return result;
     }
 
@@ -902,6 +908,25 @@ public:
         //return false;
     }
 
+    virtual bool ResolveShortLoopByPI(BidirectionalPath& path) {
+            if (extensionChooser_->WeighConterBased()) {
+                LoopDetector loop_detector(&path, cov_map_);
+                size_t init_len = path.Length();
+                bool result = false;
+                while (loop_detector.EdgeInShortLoop(path.Back())) {
+                    loopResolver_.ResolveShortLoop(path);
+                    if (init_len == path.Length()) {
+                        return result;
+                    } else {
+                        result = true;
+                    }
+                    init_len = path.Length();
+                }
+                return true;
+            }
+            return false;
+        }
+
 };
 
 class ScaffoldingPathExtender: public LoopDetectingPathExtender {
@@ -979,6 +1004,10 @@ public:
     virtual bool ResolveShortLoop(BidirectionalPath& /*path*/) {
         return false;
     }
+
+	virtual bool ResolveShortLoopByPI(BidirectionalPath& /*path*/) {
+		return false;
+	}
 
 };
 
