@@ -485,10 +485,17 @@ private:
     size_t MaxCommonSize(const BidirectionalPath& p1, size_t pos1, const BidirectionalPath& p2, size_t pos2) const {
         int i1 = (int) pos1;
         int i2 = (int) pos2;
-        while (i1 >= 0 && i2 >= 0 && p1.At((size_t) i1) == p2.At((size_t) i2) && p1.GapAt((size_t) i1) == p2.GapAt((size_t) i2)) {
+        while (i1 >= 0 && i2 >= 0 &&
+        		p1.At((size_t) i1) == p2.At((size_t) i2) &&
+        		p1.GapAt((size_t) i1) == p2.GapAt((size_t) i2)) {
             i1--;
             i2--;
         }
+        if (i1 >=0 && i2>=0 && p1.At((size_t) i1) == p2.At((size_t) i2)) {
+        	i1--;
+        	i2--;
+        }
+
         VERIFY(i1 <= (int)pos1);
         return size_t((int) pos1 - i1);
     }
