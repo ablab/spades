@@ -28,6 +28,7 @@
 #include "omni/relative_coverage_remover.hpp"
 #include "omni/mf_ec_remover.hpp"
 #include "utils.hpp"
+#include "parallel_simplification_algorithms.hpp"
 
 #include "detail_coverage.hpp"
 #include "graph_read_correction.hpp"
@@ -384,7 +385,7 @@ bool RemoveBulges(
                            br_config.max_relative_delta,
                            GetBulgeCondition<Graph>(g), opt_handler, removal_handler);
 
-    return br.RemoveBulges();
+    return br.Process();
 }
 
 template<class Graph>
@@ -626,13 +627,98 @@ bool FinalRemoveErroneousEdges(
     return changed;
 }
 
+template<class Graph>
+bool ParallelClipTips(Graph& g,
+              const debruijn_config::simplification::tip_clipper& tc_config,
+              size_t read_length = 0,
+              boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
+
+    string condition_str = tc_config.condition;
+
+    ConditionParser<Graph> parser(g, condition_str, read_length,
+                                  0., 1, 0);
+
+    auto condition = parser();
+
+    debruijn::simplification::ParallelTipClippingFunctor<Graph> tip_clipper(g, parser.max_length_bound());
+    for (VertexId v : g) {
+        tip_clipper(v);
+    }
+
+    Compressor<Graph> compressor(g);
+    compressor.CompressAllVertices();
+
+    Cleaner<Graph> cleaner(g);
+    cleaner.Clean();
+
+    return true;
+}
+
+template<class Graph>
+bool ParallelRemoveBulges(Graph& g,
+              const debruijn_config::simplification::bulge_remover& br_config,
+              size_t read_length = 0,
+              boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
+
+    size_t max_length = LengthThresholdFinder::MaxBulgeLength(
+        g.k(), br_config.max_bulge_length_coefficient,
+        br_config.max_additive_length_coefficient);
+
+    DEBUG("Max bulge length " << max_length);
+
+    debruijn::simplification::ParallelSimpleBRFunctor<Graph> bulge_remover(g,
+                            max_length,
+                            br_config.max_coverage,
+                            br_config.max_relative_coverage,
+                            br_config.max_delta,
+                            br_config.max_relative_delta,
+                            removal_handler);
+    for (VertexId v : g) {
+        bulge_remover(v);
+    }
+
+    Compressor<Graph> compressor(g);
+    compressor.CompressAllVertices();
+}
+
+template<class Graph>
+bool ParallelEC(Graph& g,
+              const debruijn_config::simplification::erroneous_connections_remover& ec_config,
+              size_t read_length = 0,
+              boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
+
+    ConditionParser<Graph> parser(g, ec_config.condition, read_length,
+                                  0, 1, 0);
+
+    auto condition = parser();
+
+    size_t max_length = parser.max_length_bound();
+    double max_coverage = 3.0;
+
+    debruijn::simplification::ParallelLowCoverageFunctor<Graph> ec_remover(g,
+                            max_length,
+                            max_coverage,
+                            removal_handler);
+
+    for (auto it = g.ConstEdgeBegin(); !it.IsEnd(); ++it) {
+        ec_remover(*it);
+    }
+
+    Compressor<Graph> compressor(g);
+    compressor.CompressAllVertices();
+}
+
 inline
 void PreSimplification(conj_graph_pack& gp,
-                       boost::function<void(EdgeId)> removal_handler,
-                       double /*determined_coverage_threshold*/) {
+                       boost::function<void(EdgeId)> removal_handler) {
     INFO("PROCEDURE == Presimplification");
     RemoveSelfConjugateEdges(gp.g, gp.k_value + 100, 1., removal_handler);
 
+    ParallelClipTips(gp.g, cfg::get().simp.tc, cfg::get().ds.RL(),
+                     removal_handler);
+
+    ParallelEC(gp.g, cfg::get().simp.ec, cfg::get().ds.RL(),
+               removal_handler);
 //    INFO("Early tip clipping");
 //
 //    ClipTipsWithProjection(gp, cfg::get().simp.tc,
@@ -743,7 +829,7 @@ void SimplifyGraph(conj_graph_pack &gp,
     printer(ipp_before_simplification);
     DEBUG("Graph simplification started");
 
-    PreSimplification(gp, removal_handler, determined_coverage_threshold);
+    PreSimplification(gp, removal_handler);
 
     for (size_t i = 0; i < iteration_count; i++) {
         SimplificationCycle(gp, removal_handler, printer, iteration_count, i,

@@ -202,7 +202,7 @@ class BulgeRemover: EdgeProcessingAlgorithm<Graph, CoverageComparator<Graph>> {
 
 protected:
     /*virtual*/
-    bool ProcessEdge(EdgeId e) {
+    bool ProcessEdge(EdgeId edge) {
         TRACE("Considering edge " << graph_.str(edge) << " of length " << graph_.length(edge) << " and avg coverage " << graph_.coverage(edge));
         TRACE("Is possible bulge " << PossibleBulgeEdge(edge));
 
@@ -215,15 +215,15 @@ protected:
 
         size_t delta = CountMaxDifference(max_delta_, graph_.length(edge), max_relative_delta_);
 
-        MostCoveredAlternativePathChooser<Graph> path_chooser(graph_, e);
+        MostCoveredAlternativePathChooser<Graph> path_chooser(graph_, edge);
 
-        VertexId start = graph_.EdgeStart(e);
+        VertexId start = graph_.EdgeStart(edge);
         TRACE("Start " << graph_.str(start));
 
-        VertexId end = graph_.EdgeEnd(e);
+        VertexId end = graph_.EdgeEnd(edge);
         TRACE("End " << graph_.str(end));
 
-        PathProcessor<Graph> path_finder(graph_, (graph_.length(e) > delta) ? graph_.length(e) - delta : 0, graph_.length(e) + delta, start, end, path_chooser);
+        PathProcessor<Graph> path_finder(graph_, (graph_.length(edge) > delta) ? graph_.length(edge) - delta : 0, graph_.length(edge) + delta, start, end, path_chooser);
 
         path_finder.Process();
 

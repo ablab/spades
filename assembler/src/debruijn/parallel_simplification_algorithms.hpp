@@ -79,19 +79,19 @@ class ParallelTipClippingFunctor {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     typedef boost::function<void(EdgeId)> HandlerF;
-    typedef VertexLock<VertexId> VertexLock;
+    typedef VertexLock<VertexId> VertexLockT;
 
     Graph& g_;
     size_t length_bound_;
     HandlerF handler_f_;
 
     size_t LockingIncomingCount(VertexId v) const {
-        VertexLock lock(v);
+        VertexLockT lock(v);
         return g_.IncomingEdgeCount(v);
     }
 
     size_t LockingOutgoingCount(VertexId v) const {
-        VertexLock lock(v);
+        VertexLockT lock(v);
         return g_.OutgoingEdgeCount(v);
     }
 
@@ -100,14 +100,14 @@ class ParallelTipClippingFunctor {
     }
 
     void RemoveEdge(EdgeId e) {
-        VertexLock lock1(g_.EdgeStart(e));
-        VertexLock lock2(g_.EdgeEnd(e));
+        VertexLockT lock1(g_.EdgeStart(e));
+        VertexLockT lock2(g_.EdgeEnd(e));
         g_.RemoveEdge(e);
     }
 
 public:
 
-    ParallelTipClippingFunctor(Graph& g, size_t length_bound, HandlerF handler_f)
+    ParallelTipClippingFunctor(Graph& g, size_t length_bound, HandlerF handler_f = 0)
             : g_(g),
               length_bound_(length_bound),
               handler_f_(handler_f) {
@@ -146,7 +146,7 @@ template<class Graph>
 class ParallelSimpleBRFunctor {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef VertexLock<VertexId> VertexLock;
+    typedef VertexLock<VertexId> VertexLockT;
 
     Graph& g_;
     size_t max_length_;
@@ -222,7 +222,7 @@ class ParallelSimpleBRFunctor {
     }
 
     bool CheckVertex(VertexId v) const {
-        VertexLock lock(v);
+        VertexLockT lock(v);
         return MultiEdgeDestinations(v).size() == 1
                 && MultiEdgeDestinations(g_.conjugate(v)).size() == 0;
     }
@@ -243,7 +243,7 @@ public:
                             double max_relative_coverage,
                             size_t max_delta,
                             double max_relative_delta,
-                            boost::function<void(EdgeId)> handler_f)
+                            boost::function<void(EdgeId)> handler_f = 0)
             : g_(g),
               max_length_(max_length),
               max_coverage_(max_coverage),
@@ -257,15 +257,15 @@ public:
         vector<VertexId> multi_dest;
 
         {
-            VertexLock lock(v);
+            VertexLockT lock(v);
             multi_dest = MultiEdgeDestinations(v);
         }
 
         if (multi_dest.size() == 1 && IsMinimal(v, multi_dest.front())) {
             VertexId dest = multi_dest.front();
             if (CheckVertex(v) && CheckVertex(g_.conjugate(dest))) {
-                VertexLock lock1(v);
-                VertexLock lock2(dest);
+                VertexLockT lock1(v);
+                VertexLockT lock2(dest);
                 RemoveBulges(v);
             }
         }
@@ -280,7 +280,7 @@ template<class Graph>
 class ParallelLowCoverageFunctor {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef VertexLock<VertexId> VertexLock;
+    typedef VertexLock<VertexId> VertexLockT;
     typedef boost::function<void(EdgeId)> HandlerF;
 
     Graph& g_;
@@ -294,7 +294,7 @@ public:
     ParallelLowCoverageFunctor(Graph& g,
                                size_t max_length,
                                double max_coverage,
-                               HandlerF handler_f)
+                               HandlerF handler_f = 0)
             : g_(g),
               ec_condition_(
                       func::And<EdgeId>(
