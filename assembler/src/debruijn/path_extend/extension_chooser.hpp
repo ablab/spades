@@ -960,9 +960,9 @@ public:
 
         DEBUG("next paths size " << next_paths.size());
         EdgeContainer result = ChooseBest(path, next_paths);
-        if (result.size() != 1) {
+        /*if (result.size() != 1) {
             result = ScaffoldTree(path);
-        }
+        }*/
         DeleteNextPaths(next_paths);
         if (result.size() != 1) {
             DEBUG("nobody can extend " << g_.int_id(path.Back()));
