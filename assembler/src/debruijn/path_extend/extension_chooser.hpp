@@ -1220,7 +1220,6 @@ private:
         CountAllPairInfo(path, next_paths, all_pi);
         DeleteCommonPi(path, all_pi);
         map<BidirectionalPath*, double> result;
-        size_t iter = 0;
         for (BidirectionalPath* next : next_paths) {
             result[next] = weight_counter_.CountPairInfo(path, 0, path.Size(),
                                                          *next, 0,
