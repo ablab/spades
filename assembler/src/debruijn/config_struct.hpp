@@ -257,6 +257,7 @@ struct debruijn_config {
         };
 
         bool topology_simplif_enabled;
+        bool presimplif_enabled;
         tip_clipper tc;
         topology_tip_clipper ttc;
         bulge_remover br;

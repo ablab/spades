@@ -96,13 +96,14 @@ class ParallelTipClippingFunctor {
     }
 
     bool IsIncomingTip(EdgeId e) const {
-        return g_.length(e) <= length_bound_ && LockingIncomingEdgeCount(g_.EdgeStart(e)) == 0;
+        return g_.length(e) <= length_bound_ 
+                && LockingIncomingCount(g_.EdgeStart(e)) + LockingOutgoingCount(g_.EdgeStart(e)) == 1;
     }
 
     void RemoveEdge(EdgeId e) {
         VertexLockT lock1(g_.EdgeStart(e));
         VertexLockT lock2(g_.EdgeEnd(e));
-        g_.RemoveEdge(e);
+        g_.DeleteEdge(e);
     }
 
 public:
@@ -114,7 +115,7 @@ public:
 
     }
 
-    bool operator()(VertexId v) const {
+    bool operator()(VertexId v) {
         if (LockingOutgoingCount(v) == 0)
             return false;
 
@@ -125,9 +126,9 @@ public:
                 tips.push_back(e);
             }
         }
-
+        
         //if all of edges are tips, leave the longest one
-        if (tips.size() == g_.IncomingEdgeCount(v)) {
+        if (!tips.empty() && tips.size() == g_.IncomingEdgeCount(v)) {
             sort(tips.begin(), tips.end(), omnigraph::LengthComparator<Graph>(g_));
             tips.pop_back();
         }
@@ -154,6 +155,7 @@ class ParallelSimpleBRFunctor {
     double max_relative_coverage_;
     size_t max_delta_;
     double max_relative_delta_;
+    boost::function<void(EdgeId)> handler_f_;
 
     bool LengthDiffCheck(size_t l1, size_t l2, size_t delta) const {
         return l1 <= l2 + delta  && l2 <= l1 + delta;
@@ -180,7 +182,8 @@ class ParallelSimpleBRFunctor {
                         && math::ge(g_.coverage(alt) * max_relative_coverage_, g_.coverage(e))) {
                     //todo is not work in multiple threads for now :)
                     //Reasons: id distribution, kmer-mapping
-                    g_.Glue(e, alt);
+                    handler_f_(e);
+                    g_.GlueEdges(e, alt);
                     return true;
                 }
             }
@@ -249,11 +252,12 @@ public:
               max_coverage_(max_coverage),
               max_relative_coverage_(max_relative_coverage),
               max_delta_(max_delta),
-              max_relative_delta_(max_relative_delta) {
+              max_relative_delta_(max_relative_delta),
+              handler_f_(handler_f) {
 
     }
 
-    bool operator()(VertexId v/*, need number of vertex for stable id distribution*/) const {
+    bool operator()(VertexId v/*, need number of vertex for stable id distribution*/) {
         vector<VertexId> multi_dest;
 
         {
@@ -284,7 +288,7 @@ class ParallelLowCoverageFunctor {
     typedef boost::function<void(EdgeId)> HandlerF;
 
     Graph& g_;
-    shared_ptr<omnigraph::EdgeCondition<Graph>> ec_condition_;
+    shared_ptr<func::Predicate<EdgeId>> ec_condition_;
     HandlerF handler_f_;
 
     vector<EdgeId> edges_to_remove_;
@@ -300,13 +304,13 @@ public:
                       func::And<EdgeId>(
                       func::And<EdgeId>(make_shared<omnigraph::LengthUpperBound<Graph>>(g, max_length),
                                         make_shared<omnigraph::CoverageUpperBound<Graph>>(g, max_coverage)),
-                      omnigraph::AlternativesPresenceCondition<Graph>(g))),
+                      make_shared<omnigraph::AlternativesPresenceCondition<Graph>>(g))),
               handler_f_(handler_f)
     {
 
     }
 
-    bool operator()(EdgeId e) const {
+    bool operator()(EdgeId e) {
         if (ec_condition_->Check(e)) {
             edges_to_remove_.push_back(e);
         }
@@ -318,7 +322,7 @@ public:
         while (!to_delete.IsEnd()) {
             EdgeId e = *to_delete;
             handler_f_(e);
-            g_.RemoveEdge(e);
+            g_.DeleteEdge(e);
             ++to_delete;
         }
     }

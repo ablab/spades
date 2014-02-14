@@ -412,6 +412,7 @@ void load(debruijn_config::simplification& simp,
   using config_common::load;
 
   load(simp.topology_simplif_enabled, pt, "topology_simplif_enabled", complete);
+  load(simp.presimplif_enabled, pt, "presimplif_enabled", complete);
   load(simp.tc, pt, "tc", complete); // tip clipper:
   load(simp.ttc, pt, "ttc", complete); // topology tip clipper:
   load(simp.br, pt, "br", complete); // bulge remover:

@@ -42,9 +42,6 @@ namespace debruijn_graph {
 template<class graph_pack>
 shared_ptr<omnigraph::visualization::GraphColorer<typename graph_pack::graph_t>> DefaultGPColorer(
         const graph_pack& gp) {
-    typedef typename graph_pack::graph_t Graph;
-    typedef typename Graph::EdgeId EdgeId;
-
     auto mapper = MapperInstance(gp);
     auto path1 = mapper->MapSequence(gp.genome).path();
     auto path2 = mapper->MapSequence(!gp.genome).path();
@@ -585,6 +582,29 @@ bool AllTopology(Graph &g,
     return res;
 }
 
+template<class Graph>
+class CountingCallback {
+    typedef typename Graph::EdgeId EdgeId;
+    size_t cnt_;
+
+public:
+    CountingCallback() : 
+            cnt_(0) {
+    }
+    
+    void HandleDelete(EdgeId /*e*/) {
+        cnt_++;
+    }
+
+    void Report() {
+        INFO(cnt_ << " edges were removed.")
+        cnt_ = 0;
+    }
+
+private:
+    DECL_LOGGER("CountingCallback");
+};
+
 template<class gp_t>
 bool FinalRemoveErroneousEdges(
     gp_t &gp,
@@ -632,6 +652,7 @@ bool ParallelClipTips(Graph& g,
               const debruijn_config::simplification::tip_clipper& tc_config,
               size_t read_length = 0,
               boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
+    INFO("Parallel tip clipping");
 
     string condition_str = tc_config.condition;
 
@@ -640,10 +661,15 @@ bool ParallelClipTips(Graph& g,
 
     auto condition = parser();
 
-    debruijn::simplification::ParallelTipClippingFunctor<Graph> tip_clipper(g, parser.max_length_bound());
-    for (VertexId v : g) {
-        tip_clipper(v);
+    debruijn::simplification::ParallelTipClippingFunctor<Graph> tip_clipper(g, 
+        parser.max_length_bound(), removal_handler);
+
+    for (auto it = g.begin(); it != g.end(); ++it) {
+        tip_clipper(*it);
     }
+//    for (VertexId v : g) {
+//        tip_clipper(v);
+//    }
 
     Compressor<Graph> compressor(g);
     compressor.CompressAllVertices();
@@ -657,8 +683,9 @@ bool ParallelClipTips(Graph& g,
 template<class Graph>
 bool ParallelRemoveBulges(Graph& g,
               const debruijn_config::simplification::bulge_remover& br_config,
-              size_t read_length = 0,
+              size_t /*read_length*/,
               boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
+    INFO("Parallel bulge remover");
 
     size_t max_length = LengthThresholdFinder::MaxBulgeLength(
         g.k(), br_config.max_bulge_length_coefficient,
@@ -679,6 +706,7 @@ bool ParallelRemoveBulges(Graph& g,
 
     Compressor<Graph> compressor(g);
     compressor.CompressAllVertices();
+    return true;
 }
 
 template<class Graph>
@@ -686,6 +714,7 @@ bool ParallelEC(Graph& g,
               const debruijn_config::simplification::erroneous_connections_remover& ec_config,
               size_t read_length = 0,
               boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
+    INFO("Parallel ec remover");
 
     ConditionParser<Graph> parser(g, ec_config.condition, read_length,
                                   0, 1, 0);
@@ -693,7 +722,7 @@ bool ParallelEC(Graph& g,
     auto condition = parser();
 
     size_t max_length = parser.max_length_bound();
-    double max_coverage = 3.0;
+    double max_coverage = 2.0;
 
     debruijn::simplification::ParallelLowCoverageFunctor<Graph> ec_remover(g,
                             max_length,
@@ -704,21 +733,42 @@ bool ParallelEC(Graph& g,
         ec_remover(*it);
     }
 
+    ec_remover.RemoveCollectedEdges();
+
     Compressor<Graph> compressor(g);
     compressor.CompressAllVertices();
+    return true;
 }
 
 inline
 void PreSimplification(conj_graph_pack& gp,
                        boost::function<void(EdgeId)> removal_handler) {
     INFO("PROCEDURE == Presimplification");
-    RemoveSelfConjugateEdges(gp.g, gp.k_value + 100, 1., removal_handler);
+    
+    CountingCallback<Graph> cnt_callback;
+
+    boost::function<void(EdgeId)> cnt_handler = boost::bind(&CountingCallback<Graph>::HandleDelete, boost::ref(cnt_callback), _1); 
+    removal_handler = boost::bind(func::Composition<EdgeId>, _1, removal_handler,
+                       cnt_handler);
+
+//    RemoveSelfConjugateEdges(gp.g, gp.k_value + 100, 1., removal_handler);
+    
+//    cnt_callback.Report();
 
     ParallelClipTips(gp.g, cfg::get().simp.tc, cfg::get().ds.RL(),
                      removal_handler);
+    
+    cnt_callback.Report();
+
+    ParallelRemoveBulges(gp.g, cfg::get().simp.br, cfg::get().ds.RL(), 
+                         removal_handler);
+    
+    cnt_callback.Report();
 
     ParallelEC(gp.g, cfg::get().simp.ec, cfg::get().ds.RL(),
                removal_handler);
+
+    cnt_callback.Report();
 //    INFO("Early tip clipping");
 //
 //    ClipTipsWithProjection(gp, cfg::get().simp.tc,
@@ -797,16 +847,24 @@ void SimplificationCycle(conj_graph_pack& gp,
                          stats::detail_info_printer &printer, size_t iteration_count,
                          size_t iteration, double max_coverage) {
     INFO("PROCEDURE == Simplification cycle, iteration " << (iteration + 1));
+    
+    CountingCallback<Graph> cnt_callback;
+
+    boost::function<void(EdgeId)> cnt_handler = boost::bind(&CountingCallback<Graph>::HandleDelete, boost::ref(cnt_callback), _1); 
+    removal_handler = boost::bind(func::Composition<EdgeId>, _1, removal_handler,
+                       cnt_handler);
 
     DEBUG(iteration << " TipClipping");
     ClipTipsWithProjection(gp, cfg::get().simp.tc,
                            cfg::get().graph_read_corr.enable, cfg::get().ds.RL(),
                            max_coverage, removal_handler);
+    cnt_callback.Report();
     DEBUG(iteration << " TipClipping stats");
     printer(ipp_tip_clipping, str(format("_%d") % iteration));
 
     DEBUG(iteration << " BulgeRemoval");
     RemoveBulges(gp.g, cfg::get().simp.br, 0, removal_handler);
+    cnt_callback.Report();
     DEBUG(iteration << " BulgeRemoval stats");
     printer(ipp_bulge_removal, str(format("_%d") % iteration));
 
@@ -814,6 +872,7 @@ void SimplificationCycle(conj_graph_pack& gp,
     RemoveLowCoverageEdges(gp.g, cfg::get().simp.ec, removal_handler,
                            cfg::get().ds.RL(), max_coverage, iteration_count,
                            iteration);
+    cnt_callback.Report();
     DEBUG(iteration << " ErroneousConnectionsRemoval stats");
     printer(ipp_err_con_removal, str(format("_%d") % iteration));
 
@@ -828,14 +887,14 @@ void SimplifyGraph(conj_graph_pack &gp,
 
     printer(ipp_before_simplification);
     DEBUG("Graph simplification started");
-
-    PreSimplification(gp, removal_handler);
+    
+    if (cfg::get().simp.presimplif_enabled) {
+        PreSimplification(gp, removal_handler);
+    }
 
     for (size_t i = 0; i < iteration_count; i++) {
         SimplificationCycle(gp, removal_handler, printer, iteration_count, i,
                             determined_coverage_threshold);
-        printer(ipp_err_con_removal,
-                str(format("_%d") % (i + iteration_count)));
     }
 
     PostSimplification(gp, removal_handler,

@@ -102,10 +102,10 @@ class EdgeRemover {
 
     //todo how is it even compiling with const?!!!
     void DeleteEdge(EdgeId e) {
-    	DeleteEdgeWithNoCompression(e);
-        TRACE("Compressing locality");
         VertexId start = g_.EdgeStart(e);
         VertexId end = g_.EdgeEnd(e);
+    	DeleteEdgeWithNoCompression(e);
+        TRACE("Compressing locality");
         if (!g_.RelatedVertices(start, end)) {
             TRACE("Vertices not related");
             TRACE("Processing end");

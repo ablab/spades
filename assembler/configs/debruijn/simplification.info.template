@@ -4,6 +4,8 @@ default
 {
     ; enable advanced ec removal algo
     topology_simplif_enabled false
+    
+    presimplif_enabled true
 
 	; tip clipper:
 	tc

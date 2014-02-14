@@ -56,7 +56,6 @@ struct SimplePathCondition {
 template<class Graph>
 bool TrivialCondition(typename Graph::EdgeId,
 		const vector<typename Graph::EdgeId>& path) {
-	typedef typename Graph::EdgeId EdgeId;
 	for (size_t i = 0; i < path.size(); ++i)
 		for (size_t j = i + 1; j < path.size(); ++j)
 			if (path[i] == path[j])
@@ -113,8 +112,8 @@ inline size_t CountMaxDifference(size_t absolute_diff, size_t length, double rel
  * if edge is judged to be one it is removed.
  */
 template<class Graph>
-class BulgeRemover: EdgeProcessingAlgorithm<Graph, CoverageComparator<Graph>> {
-    typedef EdgeProcessingAlgorithm<Graph> base;
+class BulgeRemover: public EdgeProcessingAlgorithm<Graph, CoverageComparator<Graph>> {
+    typedef EdgeProcessingAlgorithm<Graph, CoverageComparator<Graph>> base;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 
@@ -232,8 +231,6 @@ protected:
         double path_coverage = path_chooser.max_coverage();
         TRACE("Best path with coverage " << path_coverage << " is " << PrintPath<Graph>(graph_, path));
 
-        return make_pair(path, path_coverage);
-
         if (BulgeCondition(edge, path, path_coverage)) {
             TRACE("Satisfied condition");
 
@@ -249,7 +246,7 @@ public:
 
 	typedef boost::function<bool(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackBoolF;
 	typedef boost::function<void(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackVoidF;
-
+    
 	BulgeRemover(Graph& graph, size_t max_length, double max_coverage,
 			double max_relative_coverage, size_t max_delta,
 			double max_relative_delta, BulgeCallbackBoolF bulge_condition,
