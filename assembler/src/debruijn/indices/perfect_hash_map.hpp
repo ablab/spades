@@ -75,7 +75,7 @@ public:
 	}
 
 	template<class Reader>
-	void BinRead(Reader &reader, const std::string &tmp) {
+	void BinRead(Reader &reader, const std::string &) {
 		clear();
 		index_.deserialize(reader);
 	}

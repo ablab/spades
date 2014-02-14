@@ -134,7 +134,7 @@ class DeBruijnEdgeMultiIndex : public KeyStoringMap<Seq, EdgeInfoStorage<IdType>
       return entry;
   }
   //todo delete if equal seems to work improperly!!!
-  bool DeleteIfEqual(const KeyWithHash &kwh, IdType id) {
+  bool DeleteIfEqual(const KeyWithHash &, IdType) {
       VERIFY(false);
       return false;
   }

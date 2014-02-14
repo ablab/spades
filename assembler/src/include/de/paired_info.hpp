@@ -761,7 +761,6 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
 template <class Graph>
 struct PairedInfoIndicesT {
     typedef PairedInfoIndexT<Graph> IndexT;
-
     std::vector<IndexT> data_;
 
     PairedInfoIndicesT(const Graph& graph, size_t lib_num) {
@@ -770,18 +769,18 @@ struct PairedInfoIndicesT {
     }
 
     void Init() {
-        for (auto it = data_.begin(); it != data_.end(); ++it)
-            it->Init();
+        for (auto it : data_)
+            it.Init();
     }
 
     void Attach() {
-        for (auto it = data_.begin(); it != data_.end(); ++it)
-            it->Attach();
+        for (auto it : data_)
+            it.Attach();
     }
 
     void Detach() {
-        for (auto it = data_.begin(); it != data_.end(); ++it)
-            it->Detach();
+        for (auto it : data_)
+            it.Detach();
     }
 
     IndexT& operator[](size_t i) {
