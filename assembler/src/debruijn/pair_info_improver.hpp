@@ -154,8 +154,7 @@ class PairInfoImprover {
     {
       size_t paths_size = 0;
       #pragma omp for schedule(guided)
-      for (size_t i = 0; i < infos.size(); ++i)
-      {
+      for (size_t i = 0; i < infos.size(); ++i) {
         vector<PathInfoClass<Graph>> paths = spc.ConvertPIToSplitPaths(infos[i], lib_.data().mean_insert_size, lib_.data().insert_size_deviation);
         paths_size += paths.size();
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
