@@ -41,9 +41,6 @@ namespace debruijn_graph {
 template<class graph_pack>
 shared_ptr<omnigraph::visualization::GraphColorer<typename graph_pack::graph_t>> DefaultGPColorer(
         const graph_pack& gp) {
-    typedef typename graph_pack::graph_t Graph;
-    typedef typename Graph::EdgeId EdgeId;
-
     auto mapper = MapperInstance(gp);
     auto path1 = mapper->MapSequence(gp.genome).path();
     auto path2 = mapper->MapSequence(!gp.genome).path();

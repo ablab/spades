@@ -259,7 +259,6 @@ public:
 
 	template<class CopyGraph>
 	void Copy(CopyGraph& new_graph) {
-		typedef typename CopyGraph::EdgeId NewEdgeId;
 		typedef typename CopyGraph::VertexId NewVertexId;
 		map<VertexId, NewVertexId> copy;
 		for (auto iter = graph_.begin(); iter != graph_.end(); ++iter) {
