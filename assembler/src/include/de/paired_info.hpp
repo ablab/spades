@@ -769,17 +769,17 @@ struct PairedInfoIndicesT {
     }
 
     void Init() {
-        for (auto it : data_)
+        for (auto& it : data_)
             it.Init();
     }
 
     void Attach() {
-        for (auto it : data_)
+        for (auto& it : data_)
             it.Attach();
     }
 
     void Detach() {
-        for (auto it : data_)
+        for (auto& it : data_)
             it.Detach();
     }
 
