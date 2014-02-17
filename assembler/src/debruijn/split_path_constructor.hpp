@@ -30,25 +30,17 @@ class PathInfoClass {
     vector<PairInfo> path;
     PathInfoClass(): base_edge(NULL) {};
     PathInfoClass(const EdgeId Edge): base_edge(Edge) {};
-    pair<EdgeId, double> operator[](const size_t i) const {
-        if (i == 0) {
-            return(make_pair(base_edge, 0.0));
-        }
+    std::pair<EdgeId, double> operator[](const size_t i) const {
+        if (i == 0)
+            return std::make_pair(base_edge, 0.0);
+
         VERIFY(i < path.size() + 1);
-        return (make_pair(path[i-1].second, path[i-1].d()));
+        return std::make_pair(path[i-1].second, path[i-1].d());
     }
-    size_t size() const {
-        return path.size() + 1;
-    }
-    void push_back(const PairInfo& pi) {
-        path.push_back(pi);
-    }
-    typename vector<PairInfo>::const_iterator begin() const {
-        return path.begin();
-    }
-    typename vector<PairInfo>::const_iterator end() const {
-        return path.end();
-    }
+    size_t size() const { return path.size() + 1; }
+    void push_back(const PairInfo& pi) { path.push_back(pi); }
+    typename std::vector<PairInfo>::const_iterator begin() const { return path.begin(); }
+    typename std::vector<PairInfo>::const_iterator end() const { return path.end(); }
     std::string PrintPath(const Graph& graph) const {
         std::ostringstream ss;
         ss<<" "<<graph.int_id(base_edge)<<": ";
@@ -57,9 +49,7 @@ class PathInfoClass {
         }
         return ss.str();
     }
-
 };
-
 
 template<class Graph>
 class SplitPathConstructor {
@@ -74,58 +64,57 @@ class SplitPathConstructor {
         vector<PathInfo> result;
         if (pair_infos.size() == 0)
             return result;
-        else {
-            EdgeId cur_edge = pair_infos[0].first;
-            vector<bool> pair_info_used(pair_infos.size());
-            TRACE("Preparing path_processor for this base edge");
-            size_t path_upper_bound = PairInfoPathLengthUpperBound(graph_.k(), (size_t) is, is_var);
 
-            PathStorageCallback<Graph> callback(graph_);
-            PathProcessor<Graph> path_processor(graph_,
-                                                path_upper_bound,
-                                                path_upper_bound,
-                                                graph_.EdgeEnd(cur_edge), graph_.EdgeStart(cur_edge), callback);
+        EdgeId cur_edge = pair_infos[0].first;
+        vector<bool> pair_info_used(pair_infos.size());
+        TRACE("Preparing path_processor for this base edge");
+        size_t path_upper_bound = PairInfoPathLengthUpperBound(graph_.k(), (size_t) is, is_var);
 
-            TRACE("Path_processor is done");
+        PathStorageCallback<Graph> callback(graph_);
+        PathProcessor<Graph> path_processor(graph_,
+                                            path_upper_bound,
+                                            path_upper_bound,
+                                            graph_.EdgeEnd(cur_edge), graph_.EdgeStart(cur_edge), callback);
 
-            for (size_t i = pair_infos.size(); i > 0; --i) {
-                const PairInfo& cur_info = pair_infos[i - 1];
-                if (math::le(cur_info.d(), 0.))
-                    continue;
-                if (pair_info_used[i - 1])
-                    continue;
-                DEBUG("SPC: pi " << cur_info);
-                vector<EdgeId> common_part = GetCommonPathsEnd(graph_, cur_edge, cur_info.second,
-                                                               (size_t) (cur_info.d() - cur_info.var()),
-                                                               (size_t) (cur_info.d() - cur_info.var()),
-                                                               path_processor);
-                DEBUG("Found common part of size " << common_part.size());
-                PathInfoClass<Graph> sub_res(cur_edge);
-                if (common_part.size() > 0) {
-                    size_t total_length = 0;
-                    for (size_t j = 0; j < common_part.size(); ++j)
-                        total_length += graph_.length(common_part[j]);
+        TRACE("Path_processor is done");
 
-                    DEBUG("Common part " << ToString(common_part));
-                    for (size_t j = 0; j < common_part.size(); ++j) {
-                        PairInfo cur_pi(cur_edge, common_part[j],
-                                        cur_info.d() - (double) total_length,
-                                        cur_info.weight(),
-                                        cur_info.var());
+        for (size_t i = pair_infos.size(); i > 0; --i) {
+            const PairInfo& cur_info = pair_infos[i - 1];
+            if (math::le(cur_info.d(), 0.))
+                continue;
+            if (pair_info_used[i - 1])
+                continue;
+            DEBUG("SPC: pi " << cur_info);
+            vector<EdgeId> common_part = GetCommonPathsEnd(graph_, cur_edge, cur_info.second,
+                                                           (size_t) (cur_info.d() - cur_info.var()),
+                                                           (size_t) (cur_info.d() - cur_info.var()),
+                                                           path_processor);
+            DEBUG("Found common part of size " << common_part.size());
+            PathInfoClass<Graph> sub_res(cur_edge);
+            if (common_part.size() > 0) {
+                size_t total_length = 0;
+                for (size_t j = 0; j < common_part.size(); ++j)
+                    total_length += graph_.length(common_part[j]);
 
-                        sub_res.push_back(cur_pi);
-                        total_length -= graph_.length(common_part[j]);
-                        for (size_t ind = 0; ind + 1 < i; ++ind) {
-                            if (cur_pi == pair_infos[ind])
-                                pair_info_used[ind] = true;
-                        }
+                DEBUG("Common part " << ToString(common_part));
+                for (size_t j = 0; j < common_part.size(); ++j) {
+                    PairInfo cur_pi(cur_edge, common_part[j],
+                                    cur_info.d() - (double) total_length,
+                                    cur_info.weight(),
+                                    cur_info.var());
+
+                    sub_res.push_back(cur_pi);
+                    total_length -= graph_.length(common_part[j]);
+                    for (size_t ind = 0; ind + 1 < i; ++ind) {
+                        if (cur_pi == pair_infos[ind])
+                            pair_info_used[ind] = true;
                     }
                 }
-
-                sub_res.push_back(cur_info);
-                result.push_back(sub_res);
-                DEBUG(sub_res.PrintPath(graph_));
             }
+
+            sub_res.push_back(cur_info);
+            result.push_back(sub_res);
+            DEBUG(sub_res.PrintPath(graph_));
         }
         return result;
     }
