@@ -560,27 +560,10 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
         VERIFY_MSG(size_ == size, "Size " << size << " must have been equal to " << size_);
     }
 
-    // Usual implementation, the same as in the old paired index
-    vector<PairInfo<EdgeId> > GetEdgeInfo(EdgeId edge) const {
-        VERIFY(this->IsAttached());
-        typename IndexDataType::const_iterator iter = index_.find(edge);
-        TRACE("Getting edge info");
-        if (iter == index_.end())
-            return vector<PairInfo<EdgeId> >();
-
-        vector<PairInfo<EdgeId> > result;
-        result.reserve(iter->second.size());
-        for (auto I = edge_begin(iter), E = edge_end(iter); I != E; ++I) {
-            std::pair<EdgeId, Point> entry = *I;
-            result.push_back(PairInfo<EdgeId>(edge, entry.first, entry.second));
-        }
-        return result;
-    }
-
     // faster implementation, but less resolver-friendly
     // returns InnerMap instead of vector<>,
     // one can iterate it using FastIterator class
-    const InnerMap GetEdgeInfo(EdgeId edge, int) const {
+    const InnerMap GetEdgeInfo(EdgeId edge) const {
         VERIFY(this->IsAttached());
         typename IndexDataType::const_iterator iter = index_.find(edge);
         if (iter == index_.end())
@@ -702,7 +685,7 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
   void TransferInfo(EdgeId old_edge, EdgeId new_edge,
                     int shift = 0,
                     double weight_scale = 1.) {
-      const InnerMap& inner_map = this->GetEdgeInfo(old_edge, 0);
+      const InnerMap& inner_map = this->GetEdgeInfo(old_edge);
       for (auto iter = inner_map.begin(); iter != inner_map.end(); ++iter) {
           EdgeId e2 = iter->first;
           const Histogram& histogram = iter->second;
