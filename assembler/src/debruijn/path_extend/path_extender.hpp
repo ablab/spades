@@ -775,13 +775,6 @@ public:
         LoopDetector loop_detector(&path, cov_map_);
         if (DetectCycle(path)) {
             result = false;
-        } else if (investigateShortLoops_ && loop_detector.EdgeInShortLoop(path.Back())) {
-            DEBUG("edge in short loop");
-            result = ResolveShortLoop(path);
-        } else if (investigateShortLoops_ && loop_detector.PrevEdgeInShortLoop()) {
-            DEBUG("Prev edge in short loop");
-            path.PopBack();
-            result = ResolveShortLoop(path);
         } else {
             DEBUG("Making step");
             result = MakeSimpleGrowStep(path);
@@ -795,13 +788,6 @@ public:
                 DEBUG("Prev edge in short loop");
                 path.PopBack();
                 result = ResolveShortLoopByPI(path);
-            } else if (investigateShortLoops_ && loop_detector.EdgeInShortLoop(path.Back())) {
-                DEBUG("edge in short loop");
-                result = ResolveShortLoop(path);
-            } else if (investigateShortLoops_ && loop_detector.PrevEdgeInShortLoop()) {
-                DEBUG("Prev edge in short loop");
-                path.PopBack();
-                result = ResolveShortLoop(path);
             }
         }
         return result;
