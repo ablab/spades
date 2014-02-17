@@ -1081,13 +1081,6 @@ void ScanWithPairedIndices(const string& file_name,
 }
 
 template<class graph_pack>
-void ScanWithClusteredIndex(const string& file_name,
-                            DataScanner<typename graph_pack::graph_t>& scanner, graph_pack& gp,
-                            PairedInfoIndex<typename graph_pack::graph_t>& paired_index) {
-    ScanWithPairedIndex(file_name, scanner, gp, paired_index, true);
-}
-
-template<class graph_pack>
 void ScanWithPairedIndex(const string& file_name, graph_pack& gp,
                          PairedInfoIndexT<typename graph_pack::graph_t>& paired_index,
                          bool clustered_index = false) {
