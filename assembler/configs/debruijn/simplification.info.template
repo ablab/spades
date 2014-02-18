@@ -5,8 +5,6 @@ default
     ; enable advanced ec removal algo
     topology_simplif_enabled false
     
-    presimplif_enabled true
-
 	; tip clipper:
 	tc
 	{
@@ -123,6 +121,15 @@ default
 	    unreliability_threshold     4
 	    relative_threshold          5     
 	}
+
+    presimp 
+    {
+       enabled true
+       ; will be enabled only if average coverage \leq activate_cov
+       activation_cov 40.
+       tip_condition   "{ tc_lb 3.5, cb auto }"
+       ec_condition    "{ ec_lb 10, cb 3.0 }"
+    }
 }
 
 sc
@@ -213,6 +220,11 @@ sc
 	    relative_threshold          5     
 	}
 
+    presimp 
+    {
+        enabled false
+    }
+
     stats_mode 0
 }
 
@@ -267,4 +279,3 @@ diploid_simp
 		max_relative_delta		0.1
 	}
 }
-

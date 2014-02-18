@@ -111,6 +111,16 @@ public:
 };
 
 template<class T>
+class AlwaysFalse: public Predicate<T> {
+public:
+
+	bool Check(T /*t*/) const {
+		return false;
+	}
+
+};
+
+template<class T>
 class NotOperator: public Predicate<T> {
 	shared_ptr<Predicate<T>> a_;
 

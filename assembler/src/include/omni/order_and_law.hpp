@@ -17,6 +17,9 @@
 namespace restricted
 {
 
+//todo discuss with Anton
+static const uint16_t MAX_THREAD_CNT = 128;
+
 class IdDistributor {
 public:
   virtual size_t GetId() = 0;
@@ -91,6 +94,7 @@ public:
     return ListIdDistributor<Iter>(left, right, min_value_, size_);
   }
 
+  IdSegmentStorage() : min_value_(0), size_(0) { }
 private:
   IdSegmentStorage(size_t min_value, size_t size) : min_value_(min_value), size_(size) { }
 
@@ -182,7 +186,7 @@ class ReEnteringLock {
     }
 
     void Unlock() {
-        lock_.setExtra(uint16_t(-1u));
+        lock_.setExtra(MAX_THREAD_CNT);
         lock_.unlock();
     }
 
@@ -227,7 +231,7 @@ struct pure_pointer {
 
     explicit pure_pointer(T *ptr, IdDistributor &idDistributor)
             : int_id_(generate_id(ptr, idDistributor)) {
-        ptr_.init(ptr, uint16_t(-1u));
+        ptr_.init(ptr, MAX_THREAD_CNT);
     }
 
 //    lock_pointer_type& get_lockable() {

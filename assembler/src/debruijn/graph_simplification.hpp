@@ -28,6 +28,7 @@
 #include "omni/relative_coverage_remover.hpp"
 #include "omni/mf_ec_remover.hpp"
 #include "utils.hpp"
+#include "simplification_settings.hpp"
 #include "parallel_simplification_algorithms.hpp"
 
 #include "detail_coverage.hpp"
@@ -36,7 +37,12 @@
 
 #include "stats/chimera_stats.hpp"
 
-namespace debruijn_graph {
+namespace debruijn {
+
+namespace simplification {
+
+//todo remove this line
+using namespace debruijn_graph;
 
 //todo move to visualization
 template<class graph_pack>
@@ -47,219 +53,6 @@ shared_ptr<omnigraph::visualization::GraphColorer<typename graph_pack::graph_t>>
     auto path2 = mapper->MapSequence(!gp.genome).path();
     return omnigraph::visualization::DefaultColorer(gp.g, path1, path2);
 }
-
-class LengthThresholdFinder {
-public:
-    static size_t MaxTipLength(size_t read_length, size_t k, double coeff) {
-        return std::max((size_t) math::round((double)std::min(k, read_length / 2) * coeff),
-                        read_length);
-    }
-
-    static size_t MaxBulgeLength(size_t k, double coeff,
-                                 size_t additive_coeff) {
-        return std::max((size_t) math::round((double)k * coeff), k + additive_coeff);
-    }
-
-    static size_t MaxErroneousConnectionLength(size_t k, size_t param) {
-        return k + param;
-    }
-
-    static size_t MaxTipOriginatedECLength(size_t read_length, size_t k,
-                                           double coeff) {
-        return 2 * MaxTipLength(read_length, k, coeff) - 1;
-    }
-};
-
-template<class Graph>
-class ConditionParser {
-private:
-    typedef typename Graph::EdgeId EdgeId;
-
-    const Graph& g_;
-    string next_token_;
-    string input_;
-    queue<string> tokenized_input_;
-
-    size_t read_length_;
-    double detected_coverage_bound_;
-
-    size_t iteration_count_;
-    size_t iteration_;
-
-    size_t max_length_bound_;
-    double max_coverage_bound_;
-
-    string ReadNext() {
-        if (!tokenized_input_.empty()) {
-            next_token_ = tokenized_input_.front();
-            tokenized_input_.pop();
-        } else {
-            next_token_ = "";
-        }
-        return next_token_;
-    }
-
-    template<typename T>
-    bool RelaxMax(T& cur_max, T t) {
-        if (t > cur_max) {
-            cur_max = t;
-            return true;
-        }
-        return false;
-    }
-
-    template<typename T>
-    bool RelaxMin(T& cur_min, T t) {
-        if (t < cur_min) {
-            cur_min = t;
-            return true;
-        }
-        return false;
-    }
-
-    double GetCoverageBound() {
-        if (next_token_ == "auto") {
-            return detected_coverage_bound_;
-        } else {
-            return lexical_cast<double>(next_token_);
-        }
-    }
-
-    shared_ptr<Predicate<EdgeId>> ParseCondition(size_t& min_length_bound,
-                                                 double& min_coverage_bound) {
-        if (next_token_ == "tc_lb") {
-            double length_coeff = lexical_cast<double>(ReadNext());
-
-            DEBUG("Creating tip length bound. Coeff " << length_coeff);
-            size_t length_bound = LengthThresholdFinder::MaxTipLength(
-                read_length_, g_.k(), length_coeff);
-
-            DEBUG("Length bound" << length_bound);
-
-            RelaxMin(min_length_bound, length_bound);
-            return make_shared<LengthUpperBound<Graph>>(g_, length_bound);
-        } else if (next_token_ == "to_ec_lb") {
-            double length_coeff = lexical_cast<double>(ReadNext());
-
-            DEBUG( "Creating length bound for erroneous connections originated from tip merging. Coeff " << length_coeff);
-            size_t length_bound =
-                    LengthThresholdFinder::MaxTipOriginatedECLength(
-                        read_length_, g_.k(), length_coeff);
-
-            DEBUG("Length bound" << length_bound);
-
-            RelaxMin(min_length_bound, length_bound);
-            return make_shared<LengthUpperBound<Graph>>(g_, length_bound);
-        } else if (next_token_ == "ec_lb") {
-            size_t length_coeff = lexical_cast<size_t>(ReadNext());
-
-            DEBUG("Creating ec length bound. Coeff " << length_coeff);
-            size_t length_bound =
-                    LengthThresholdFinder::MaxErroneousConnectionLength(
-                        g_.k(), length_coeff);
-
-            RelaxMin(min_length_bound, length_bound);
-            return make_shared<LengthUpperBound<Graph>>(g_, length_bound);
-        } else if (next_token_ == "lb") {
-            size_t length_bound = lexical_cast<size_t>(ReadNext());
-
-            DEBUG("Creating length bound. Value " << length_bound);
-
-            RelaxMin(min_length_bound, length_bound);
-            return make_shared<LengthUpperBound<Graph>>(g_, length_bound);
-        } else if (next_token_ == "cb") {
-            ReadNext();
-            double cov_bound = GetCoverageBound();
-            DEBUG("Creating coverage upper bound " << cov_bound);
-            RelaxMin(min_coverage_bound, cov_bound);
-            return make_shared<CoverageUpperBound<Graph>>(g_, cov_bound);
-        } else if (next_token_ == "icb") {
-            ReadNext();
-            double cov_bound = GetCoverageBound();
-            cov_bound = cov_bound / (double) iteration_count_ * (double) (iteration_ + 1);
-            DEBUG("Creating iterative coverage upper bound " << cov_bound);
-            RelaxMin(min_coverage_bound, cov_bound);
-            return make_shared<CoverageUpperBound<Graph>>(g_, cov_bound);
-        } else if (next_token_ == "rctc") {
-            ReadNext();
-            DEBUG("Creating relative cov tip cond " << next_token_);
-            return make_shared<RelativeCoverageTipCondition<Graph>>(
-                g_, lexical_cast<double>(next_token_));
-        } else {
-            VERIFY(false);
-            return make_shared<AlwaysTrue<EdgeId>>();
-        }
-    }
-
-    shared_ptr<Predicate<EdgeId>> ParseConjunction(size_t& min_length_bound,
-                                                   double& min_coverage_bound) {
-        shared_ptr<Predicate<EdgeId>> answer =
-                make_shared<AlwaysTrue<EdgeId>>();
-        VERIFY(next_token_ == "{");
-        ReadNext();
-        while (next_token_ != "}") {
-            answer = make_shared<AndOperator<EdgeId>>(
-                answer,
-                ParseCondition(min_length_bound, min_coverage_bound));
-            ReadNext();
-        }
-        return answer;
-    }
-
-public:
-
-    ConditionParser(const Graph& g, string input, size_t read_length,
-                    double max_coverage, size_t iteration_count = 1,
-                    size_t iteration = 0)
-            : g_(g),
-              input_(input),
-              read_length_(read_length),
-              detected_coverage_bound_(max_coverage),
-              iteration_count_(iteration_count),
-              iteration_(iteration),
-              max_length_bound_(0),
-              max_coverage_bound_(0.) {
-        DEBUG("Creating parser for string " << input);
-        using namespace boost;
-        vector<string> tmp_tokenized_input;
-        split(tmp_tokenized_input, input_, is_any_of(" ,;"), token_compress_on);
-        for (auto it = tmp_tokenized_input.begin();
-             it != tmp_tokenized_input.end(); ++it) {
-            tokenized_input_.push(*it);
-        }
-        ReadNext();
-    }
-
-    shared_ptr<Predicate<EdgeId>> operator()() {
-        DEBUG("Parsing");
-        shared_ptr<Predicate<EdgeId>> answer = make_shared<NotOperator<EdgeId>>(
-            make_shared<AlwaysTrue<EdgeId>>());
-        VERIFY(next_token_ == "{");
-        while (next_token_ == "{") {
-            size_t min_length_bound = numeric_limits<size_t>::max();
-            double min_coverage_bound = numeric_limits<double>::max();
-            answer = make_shared<OrOperator<EdgeId>>(
-                answer,
-                ParseConjunction(min_length_bound, min_coverage_bound));
-            RelaxMax(max_length_bound_, min_length_bound);
-            RelaxMax(max_coverage_bound_, min_coverage_bound);
-            ReadNext();
-        }
-        return answer;
-    }
-
-    size_t max_length_bound() const {
-        return max_length_bound_;
-    }
-
-    double max_coverage_bound() const {
-        return max_coverage_bound_;
-    }
-
-private:
-    DECL_LOGGER("ConditionParser")
-    ;
-};
 
 template<class Graph>
 class EditDistanceTrackingCallback {
@@ -292,15 +85,12 @@ private:
 template<class Graph>
 bool ClipTips(Graph& g,
               const debruijn_config::simplification::tip_clipper& tc_config,
-              size_t read_length = 0, double detected_coverage_threshold = 0.,
-              boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
-              size_t iteration_count = 1, size_t iteration = 0) {
+              const SimplifInfoContainer& info,
+              boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
 
     string condition_str = tc_config.condition;
 
-    ConditionParser<Graph> parser(g, condition_str, read_length,
-                                  detected_coverage_threshold, iteration_count,
-                                  iteration);
+    ConditionParser<Graph> parser(g, condition_str, info);
 
     auto condition = parser();
 
@@ -310,7 +100,7 @@ bool ClipTips(Graph& g,
 
 //enabling tip projection, todo optimize if hotspot
 template<class gp_t>
-boost::function<void(typename Graph::EdgeId)> EnableProjection(
+boost::function<void(typename Graph::EdgeId)> WrapWithProjectionCallback(
     gp_t& gp,
     boost::function<void(typename Graph::EdgeId)> removal_handler_f) {
     typedef typename Graph::EdgeId EdgeId;
@@ -328,30 +118,16 @@ template<class gp_t>
 bool ClipTipsWithProjection(
     gp_t& gp,
     const debruijn_config::simplification::tip_clipper& tc_config,
+    const SimplifInfoContainer& info,
     bool enable_projection = true,
-    size_t read_length = 0,
-    double detected_coverage_threshold = 0.,
     boost::function<void(typename gp_t::graph_t::EdgeId)> removal_handler_f =
-    0,
-    size_t iteration_count = 1, size_t iteration = 0) {
+    0) {
     return ClipTips(
         gp.g,
         tc_config,
-        read_length,
-        detected_coverage_threshold,
+        info,
         enable_projection ?
-        EnableProjection(gp, removal_handler_f) : removal_handler_f,
-        iteration_count, iteration);
-}
-
-//todo optimize if hotspot
-template<class Graph>
-typename omnigraph::BulgeRemover<Graph>::BulgeCallbackBoolF GetBulgeCondition(
-    ConjugateDeBruijnGraph &graph) {
-    return boost::bind(
-        &omnigraph::SimplePathCondition<ConjugateDeBruijnGraph>::operator(),
-        omnigraph::SimplePathCondition<ConjugateDeBruijnGraph>(graph), _1,
-        _2);
+        WrapWithProjectionCallback(gp, removal_handler_f) : removal_handler_f);
 }
 
 template<class Graph>
@@ -380,7 +156,7 @@ bool RemoveBulges(
     BulgeRemover<Graph> br(g, max_length, br_config.max_coverage,
                            br_config.max_relative_coverage, br_config.max_delta,
                            br_config.max_relative_delta,
-                           GetBulgeCondition<Graph>(g), opt_handler, removal_handler);
+                           opt_handler, removal_handler);
 
     return br.Process();
 }
@@ -389,14 +165,12 @@ template<class Graph>
 void RemoveLowCoverageEdges(
     Graph &g,
     const debruijn_config::simplification::erroneous_connections_remover& ec_config,
-    boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
-    size_t read_length = 0, double detected_coverage_threshold = 0.,
-    size_t iteration_count = 1, size_t i = 0) {
+    const SimplifInfoContainer& info_container,
+    boost::function<void(EdgeId)> removal_handler = 0) {
+
     INFO("Removing low covered connections");
     //double max_coverage = cfg::get().simp.ec.max_coverage;
-    ConditionParser<Graph> parser(g, ec_config.condition, read_length,
-                                  detected_coverage_threshold, iteration_count,
-                                  i);
+    ConditionParser<Graph> parser(g, ec_config.condition, info_container);
 
     auto condition = parser();
 
@@ -422,8 +196,7 @@ bool RemoveRelativelyLowCoverageComponents(
         Graph &g,
         const FlankingCoverage<Graph>& flanking_cov,
         const debruijn_config::simplification::relative_coverage_comp_remover& rcc_config,
-        double determined_coverage_threshold,
-        size_t read_length,
+        const SimplifInfoContainer& info,
         typename ComponentRemover<Graph>::HandlerF removal_handler = 0) {
     if (rcc_config.enabled) {
         INFO("Removing relatively low covered connections");
@@ -435,10 +208,10 @@ bool RemoveRelativelyLowCoverageComponents(
                 g,
                 boost::bind(&FlankingCoverage<Graph>::LocalCoverage,
                             boost::cref(flanking_cov), _1, _2),
-                            rcc_config.coverage_gap, size_t(double(read_length) * rcc_config.length_coeff),
-                            size_t(double(read_length) * rcc_config.tip_allowing_length_coeff),
+                            rcc_config.coverage_gap, size_t(double(info.read_length()) * rcc_config.length_coeff),
+                            size_t(double(info.read_length()) * rcc_config.tip_allowing_length_coeff),
                             connecting_path_length_bound,
-                            determined_coverage_threshold * rcc_config.max_coverage_coeff,
+                            info.detected_coverage_bound() * rcc_config.max_coverage_coeff,
                             removal_handler, rcc_config.vertex_count_limit);
         return rel_rem.Process();
     } else {
@@ -582,6 +355,7 @@ bool AllTopology(Graph &g,
     return res;
 }
 
+//todo move to some of the utils files
 template<class Graph>
 class CountingCallback {
     typedef typename Graph::EdgeId EdgeId;
@@ -609,7 +383,7 @@ template<class gp_t>
 bool FinalRemoveErroneousEdges(
     gp_t &gp,
     boost::function<void(typename Graph::EdgeId)> removal_handler,
-    double determined_coverage_threshold,
+    const SimplifInfoContainer& info,
     size_t iteration) {
 
 //    gp.ClearQuality();
@@ -636,8 +410,7 @@ bool FinalRemoveErroneousEdges(
     }
 
     bool changed = RemoveRelativelyLowCoverageComponents(gp.g, gp.flanking_cov,
-                                          cfg::get().simp.rcc, determined_coverage_threshold,
-                                          cfg::get().ds.RL(), set_removal_handler_f);
+                                          cfg::get().simp.rcc, info, set_removal_handler_f);
 
     if (cfg::get().simp.topology_simplif_enabled && cfg::get().main_iteration) {
         changed |= AllTopology(gp.g, removal_handler, iteration);
@@ -648,21 +421,32 @@ bool FinalRemoveErroneousEdges(
 }
 
 template<class Graph>
+void Compress(Graph& g) {
+    Compressor<Graph> compressor(g);
+    compressor.CompressAllVertices();
+}
+
+template<class Graph>
+void ParallelCompress(Graph& g) {
+    debruijn::simplification::ParallelCompressor<Graph> compressor(g);
+    debruijn::simplification::TwoStepVertexAlgorithmRunner<Graph>(g).Run(compressor);
+}
+
+template<class Graph>
 bool ParallelClipTips(Graph& g,
-              const debruijn_config::simplification::tip_clipper& tc_config,
-              size_t read_length = 0,
+              const string& tip_condition,
+              const SimplifInfoContainer& info_container,
               boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
     INFO("Parallel tip clipping");
 
-    string condition_str = tc_config.condition;
+    string condition_str = tip_condition;
 
-    ConditionParser<Graph> parser(g, condition_str, read_length,
-                                  0., 1, 0);
+    ConditionParser<Graph> parser(g, condition_str, info_container);
 
-    auto condition = parser();
+    parser();
 
     debruijn::simplification::ParallelTipClippingFunctor<Graph> tip_clipper(g, 
-        parser.max_length_bound(), removal_handler);
+        parser.max_length_bound(), parser.max_coverage_bound(), removal_handler);
 
     for (auto it = g.begin(); it != g.end(); ++it) {
         tip_clipper(*it);
@@ -671,8 +455,7 @@ bool ParallelClipTips(Graph& g,
 //        tip_clipper(v);
 //    }
 
-    Compressor<Graph> compressor(g);
-    compressor.CompressAllVertices();
+    ParallelCompress(g);
 
     Cleaner<Graph> cleaner(g);
     cleaner.Clean();
@@ -704,25 +487,23 @@ bool ParallelRemoveBulges(Graph& g,
         bulge_remover(v);
     }
 
-    Compressor<Graph> compressor(g);
-    compressor.CompressAllVertices();
+    Compress(g);
     return true;
 }
 
 template<class Graph>
 bool ParallelEC(Graph& g,
-              const debruijn_config::simplification::erroneous_connections_remover& ec_config,
-              size_t read_length = 0,
+              const string& ec_condition,
+              const SimplifInfoContainer& info_container,
               boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
     INFO("Parallel ec remover");
 
-    ConditionParser<Graph> parser(g, ec_config.condition, read_length,
-                                  0, 1, 0);
+    ConditionParser<Graph> parser(g, ec_condition, info_container);
 
     auto condition = parser();
 
     size_t max_length = parser.max_length_bound();
-    double max_coverage = 2.0;
+    double max_coverage = parser.max_coverage_bound();
 
     debruijn::simplification::ParallelLowCoverageFunctor<Graph> ec_remover(g,
                             max_length,
@@ -733,48 +514,56 @@ bool ParallelEC(Graph& g,
         ec_remover(*it);
     }
 
+    //todo think of parallelization
     ec_remover.RemoveCollectedEdges();
 
-    Compressor<Graph> compressor(g);
-    compressor.CompressAllVertices();
+    ParallelCompress(g);
     return true;
 }
 
 inline
 void PreSimplification(conj_graph_pack& gp,
+                       const debruijn_config::simplification::presimplification& presimp,
+                       const SimplifInfoContainer& info,
                        boost::function<void(EdgeId)> removal_handler) {
-    INFO("PROCEDURE == Presimplification");
-    
     CountingCallback<Graph> cnt_callback;
 
+    INFO("PROCEDURE == Presimplification");
+    RemoveSelfConjugateEdges(gp.g, gp.k_value + 100, 1., removal_handler);
+    cnt_callback.Report();
+
+    if (!presimp.enabled) {
+        INFO("Further presimplification is disabled");
+        return;
+    }
+    
     boost::function<void(EdgeId)> cnt_handler = boost::bind(&CountingCallback<Graph>::HandleDelete, boost::ref(cnt_callback), _1); 
     removal_handler = boost::bind(func::Composition<EdgeId>, _1, removal_handler,
                        cnt_handler);
 
-//    RemoveSelfConjugateEdges(gp.g, gp.k_value + 100, 1., removal_handler);
-    
-//    cnt_callback.Report();
-
-    ParallelClipTips(gp.g, cfg::get().simp.tc, cfg::get().ds.RL(),
+    ParallelClipTips(gp.g, presimp.tip_condition, info,
                      removal_handler);
     
     cnt_callback.Report();
+    //    INFO("Early tip clipping");
+    //
+    //    ClipTipsWithProjection(gp, cfg::get().simp.tc,
+    //                           cfg::get().graph_read_corr.enable, cfg::get().ds.RL(),
+    //                           determined_coverage_threshold, removal_handler);
+    //
 
-    ParallelRemoveBulges(gp.g, cfg::get().simp.br, cfg::get().ds.RL(), 
-                         removal_handler);
-    
-    cnt_callback.Report();
 
-    ParallelEC(gp.g, cfg::get().simp.ec, cfg::get().ds.RL(),
+//    ParallelRemoveBulges(gp.g, cfg::get().simp.br, cfg::get().ds.RL(),
+//                         removal_handler);
+//
+//    cnt_callback.Report();
+
+    ParallelEC(gp.g, presimp.ec_condition, info,
                removal_handler);
 
     cnt_callback.Report();
-//    INFO("Early tip clipping");
-//
-//    ClipTipsWithProjection(gp, cfg::get().simp.tc,
-//                           cfg::get().graph_read_corr.enable, cfg::get().ds.RL(),
-//                           determined_coverage_threshold, removal_handler);
-//
+
+    //todo maybe enable with small
 //    INFO("Isolated edge remover");
 //    size_t max_length = std::max(cfg::get().ds.RL(), cfg::get().simp.ier.max_length_any_cov);
 //    INFO("All edges of length smaller than " << max_length << " will be removed");
@@ -789,8 +578,9 @@ void PreSimplification(conj_graph_pack& gp,
 
 inline
 void PostSimplification(conj_graph_pack& gp,
+                        const SimplifInfoContainer& info,
                         boost::function<void(EdgeId)> &removal_handler,
-                        double determined_coverage_threshold) {
+                        stats::detail_info_printer& /*printer*/) {
 
     INFO("PROCEDURE == Post simplification");
     size_t iteration = 0;
@@ -800,17 +590,17 @@ void PostSimplification(conj_graph_pack& gp,
 
         INFO("Iteration " << iteration);
         if (cfg::get().simp.topology_simplif_enabled) {
-            enable_flag |= TopologyClipTips(gp.g, cfg::get().simp.ttc, cfg::get().ds.RL(),
+            enable_flag |= TopologyClipTips(gp.g, cfg::get().simp.ttc, info.read_length(),
                                             removal_handler);
         }
 
         enable_flag |= FinalRemoveErroneousEdges(gp, removal_handler,
-                                                 determined_coverage_threshold,
+                                                 info,
                                                  iteration);
 
         enable_flag |= ClipTipsWithProjection(gp, cfg::get().simp.tc,
+                                              info,
                                               cfg::get().graph_read_corr.enable,
-                                              cfg::get().ds.RL(), determined_coverage_threshold,
                                               removal_handler);
         //todo enable_flag |=
         RemoveBulges(gp.g, cfg::get().simp.br, 0, removal_handler);
@@ -826,7 +616,7 @@ void PostSimplification(conj_graph_pack& gp,
     }
 
     if (cfg::get().simp.topology_simplif_enabled) {
-        RemoveHiddenEC(gp.g, gp.flanking_cov, determined_coverage_threshold, cfg::get().simp.her, removal_handler);
+        RemoveHiddenEC(gp.g, gp.flanking_cov, info.detected_coverage_bound(), cfg::get().simp.her, removal_handler);
     }
 }
 
@@ -843,9 +633,11 @@ void IdealSimplification(Graph& graph, Compressor<Graph>& compressor,
 
 inline
 void SimplificationCycle(conj_graph_pack& gp,
+                         const SimplifInfoContainer& info_container,
                          boost::function<void(EdgeId)> removal_handler,
-                         stats::detail_info_printer &printer, size_t iteration_count,
-                         size_t iteration, double max_coverage) {
+                         stats::detail_info_printer &printer) {
+    size_t iteration = info_container.iteration();
+
     INFO("PROCEDURE == Simplification cycle, iteration " << (iteration + 1));
     
     CountingCallback<Graph> cnt_callback;
@@ -856,8 +648,8 @@ void SimplificationCycle(conj_graph_pack& gp,
 
     DEBUG(iteration << " TipClipping");
     ClipTipsWithProjection(gp, cfg::get().simp.tc,
-                           cfg::get().graph_read_corr.enable, cfg::get().ds.RL(),
-                           max_coverage, removal_handler);
+                           info_container,
+                           cfg::get().graph_read_corr.enable, removal_handler);
     cnt_callback.Report();
     DEBUG(iteration << " TipClipping stats");
     printer(ipp_tip_clipping, str(format("_%d") % iteration));
@@ -869,9 +661,7 @@ void SimplificationCycle(conj_graph_pack& gp,
     printer(ipp_bulge_removal, str(format("_%d") % iteration));
 
     DEBUG(iteration << " ErroneousConnectionsRemoval");
-    RemoveLowCoverageEdges(gp.g, cfg::get().simp.ec, removal_handler,
-                           cfg::get().ds.RL(), max_coverage, iteration_count,
-                           iteration);
+    RemoveLowCoverageEdges(gp.g, cfg::get().simp.ec, info_container, removal_handler);
     cnt_callback.Report();
     DEBUG(iteration << " ErroneousConnectionsRemoval stats");
     printer(ipp_err_con_removal, str(format("_%d") % iteration));
@@ -881,24 +671,27 @@ void SimplificationCycle(conj_graph_pack& gp,
 inline
 void SimplifyGraph(conj_graph_pack &gp,
                    boost::function<void(EdgeId)> removal_handler,
-                   omnigraph::GraphLabeler<Graph>& /*labeler*/,
                    stats::detail_info_printer& printer, size_t iteration_count) {
-    double determined_coverage_threshold = gp.ginfo.ec_bound();
-
     printer(ipp_before_simplification);
     DEBUG("Graph simplification started");
+
+    SimplifInfoContainer info_container;
+    info_container
+        .set_detected_coverage_bound(gp.ginfo.ec_bound())
+        .set_read_length(cfg::get().ds.RL());
+
+    PreSimplification(gp, cfg::get().simp.presimp,
+    		info_container, removal_handler);
     
-    if (cfg::get().simp.presimplif_enabled) {
-        PreSimplification(gp, removal_handler);
-    }
-
+    info_container.set_iteration_count(iteration_count);
     for (size_t i = 0; i < iteration_count; i++) {
-        SimplificationCycle(gp, removal_handler, printer, iteration_count, i,
-                            determined_coverage_threshold);
+        info_container.set_iteration(i);
+        SimplificationCycle(gp, info_container, removal_handler, printer);
     }
 
-    PostSimplification(gp, removal_handler,
-                       determined_coverage_threshold);
+    PostSimplification(gp, info_container, removal_handler, printer);
+
+}
 
 }
 

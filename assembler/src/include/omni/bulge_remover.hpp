@@ -130,7 +130,7 @@ class BulgeRemover: public EdgeProcessingAlgorithm<Graph, CoverageComparator<Gra
 	bool BulgeCondition(EdgeId e, const vector<EdgeId>& path,
 			double path_coverage) {
 		return math::ge(path_coverage * max_relative_coverage_,
-				graph_.coverage(e)) && bulge_condition_(e, path);
+				graph_.coverage(e)) && SimplePathCondition<Graph>(graph_)(e, path);
 	}
 
 	void ProcessBulge(EdgeId edge, const vector<EdgeId>& path) {
@@ -244,13 +244,12 @@ protected:
 
 public:
 
-	typedef boost::function<bool(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackBoolF;
-	typedef boost::function<void(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackVoidF;
+	typedef boost::function<void(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackF;
     
 	BulgeRemover(Graph& graph, size_t max_length, double max_coverage,
 			double max_relative_coverage, size_t max_delta,
-			double max_relative_delta, BulgeCallbackBoolF bulge_condition,
-			BulgeCallbackVoidF opt_callback = 0,
+			double max_relative_delta,
+			BulgeCallbackF opt_callback = 0,
 			boost::function<void(EdgeId)> removal_handler = 0) :
 			base(graph,
 			     CoverageComparator<Graph>(graph),
@@ -261,7 +260,6 @@ public:
 			max_relative_coverage_(max_relative_coverage),
 			max_delta_(max_delta),
 			max_relative_delta_(max_relative_delta),
-			bulge_condition_(bulge_condition),
 			opt_callback_(opt_callback),
 			removal_handler_(removal_handler) {
 	}
@@ -287,8 +285,7 @@ private:
 	double max_relative_coverage_;
 	size_t max_delta_;
 	double max_relative_delta_;
-	BulgeCallbackBoolF bulge_condition_;
-	BulgeCallbackVoidF opt_callback_;
+	BulgeCallbackF opt_callback_;
 	boost::function<void(EdgeId)> removal_handler_;
 
 private:

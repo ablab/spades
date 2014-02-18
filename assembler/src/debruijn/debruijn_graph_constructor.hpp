@@ -455,7 +455,7 @@ private:
 			return LinkRecord(origin_.ConstructKWH(kmer_rc).idx(), edge, false, true);
 	}
 
-	void CollectLinkRecords(typename Graph::Helper &helper, const Graph &graph, vector<LinkRecord> &records, const vector<Sequence> &sequences) const {
+	void CollectLinkRecords(typename Graph::HelperT &helper, const Graph &graph, vector<LinkRecord> &records, const vector<Sequence> &sequences) const {
 		size_t size = sequences.size();
 		records.resize(size * 2, LinkRecord(0, EdgeId(0), false, false));
 		restricted::IdSegmentStorage id_storage = helper.graph().GetGraphIdDistributor().Reserve(size * 2);
@@ -472,7 +472,7 @@ private:
 		}
 	}
 
-	void LinkEdge(typename Graph::Helper &helper, const Graph &graph, const VertexId v, const EdgeId edge, const bool is_start, const bool is_rc) const {
+	void LinkEdge(typename Graph::HelperT &helper, const Graph &graph, const VertexId v, const EdgeId edge, const bool is_start, const bool is_rc) const {
 		VertexId v1 = v;
 		if(is_rc) {
 			v1 = graph.conjugate(v);
@@ -489,7 +489,7 @@ public:
 	}
 
 	void ConstructGraph(Graph &graph, const vector<Sequence> &sequences) const {
-		typename Graph::Helper helper = graph.GetConstructionHelper();
+		typename Graph::HelperT helper = graph.GetConstructionHelper();
 		vector<LinkRecord> records;
 		CollectLinkRecords(helper, graph, records, sequences);//TODO make parallel
 		parallel::sort(records.begin(), records.end());

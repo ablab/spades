@@ -407,12 +407,22 @@ void load_reference_genome(debruijn_config::dataset& ds,
   ds.reference_genome = genome.sequence();
 }
 
+void load(debruijn_config::simplification::presimplification& presimp,
+          boost::property_tree::ptree const& pt, bool complete) {
+  using config_common::load;
+
+  load(presimp.enabled, pt, "enabled", complete);
+  load(presimp.activation_cov, pt, "activation_cov", complete);
+  load(presimp.tip_condition, pt, "tip_condition", complete); // pre tip clipper:
+  load(presimp.ec_condition, pt, "ec_condition", complete); // pre ec remover:
+}
+
 void load(debruijn_config::simplification& simp,
           boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
 
+  load(simp.presimp, pt, "presimp", complete); // presimplification
   load(simp.topology_simplif_enabled, pt, "topology_simplif_enabled", complete);
-  load(simp.presimplif_enabled, pt, "presimplif_enabled", complete);
   load(simp.tc, pt, "tc", complete); // tip clipper:
   load(simp.ttc, pt, "ttc", complete); // topology tip clipper:
   load(simp.br, pt, "br", complete); // bulge remover:
