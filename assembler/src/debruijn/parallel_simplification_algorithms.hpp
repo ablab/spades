@@ -61,25 +61,25 @@ namespace simplification {
 //
 //};
 
-template<class VertexId>
-class VertexLock {
-    VertexId v_;
-public:
-    VertexLock(VertexId v) : v_(v) {
-        v_->Lock();
-    }
-
-    ~VertexLock() {
-        v_->Unlock();
-    }
-};
+//template<class VertexId>
+//class VertexLock {
+//    VertexId v_;
+//public:
+//    VertexLock(VertexId v) : v_(v) {
+//        v_->Lock();
+//    }
+//
+//    ~VertexLock() {
+//        v_->Unlock();
+//    }
+//};
 
 template<class Graph>
 class ParallelTipClippingFunctor {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     typedef boost::function<void(EdgeId)> HandlerF;
-    typedef VertexLock<VertexId> VertexLockT;
+    typedef omnigraph::PairedVertexLock<VertexId> VertexLockT;
 
     Graph& g_;
     size_t length_bound_;
@@ -147,7 +147,7 @@ template<class Graph>
 class ParallelSimpleBRFunctor {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef VertexLock<VertexId> VertexLockT;
+    typedef omnigraph::PairedVertexLock<VertexId> VertexLockT;
 
     Graph& g_;
     size_t max_length_;
@@ -284,8 +284,8 @@ template<class Graph>
 class ParallelLowCoverageFunctor {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef VertexLock<VertexId> VertexLockT;
     typedef boost::function<void(EdgeId)> HandlerF;
+    typedef omnigraph::PairedVertexLock<VertexId> VertexLockT;
 
     Graph& g_;
     shared_ptr<func::Predicate<EdgeId>> ec_condition_;

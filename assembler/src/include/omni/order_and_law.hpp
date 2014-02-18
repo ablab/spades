@@ -12,6 +12,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <stacktrace.hpp>
+#include "folly/PackedSyncPtr.h"
 
 namespace restricted
 {
@@ -162,70 +163,148 @@ private:
   size_t period_;
 };
 
+template<class LockT>
+class ReEnteringLock {
+    LockT& lock_;
+    bool reentered_;
 
-template<class T>
-  struct pure_pointer
-{
-  typedef T  type;
-  typedef T* pointer_type;
-
-  explicit pure_pointer() : ptr_(pointer_type(0)), int_id_(0)  {
-  }
-
-  explicit pure_pointer(T *ptr) : ptr_(ptr), int_id_(size_t(ptr))  {
-    VERIFY(int_id_ < 2);
-  }
-
-  explicit pure_pointer(T *ptr,
-      IdDistributor &idDistributor)
-    : ptr_(ptr), int_id_(generate_id(ptr, idDistributor))
-  {
-  }
-
-  T *get      () const  { return ptr_ ; }
-  T& operator*  () const  { return *ptr_; }
-  T* operator-> () const  { return ptr_ ; }
-
-  bool operator==(const pure_pointer &rhs) const {
-      if (int_id_ == rhs.int_id_) {
-          if (ptr_ != rhs.ptr_) {
-              print_stacktrace();
-          }
-          VERIFY(ptr_ == rhs.ptr_);
-          return true;
-      }
-      return false;
-  }
-
-  bool operator!=(const pure_pointer &rhs) const {
-      return !operator ==(rhs);
-  }
-
-  bool operator<(const pure_pointer &rhs) const {
-    return this->int_id_ < rhs.int_id_;
-  }
-
-  size_t hash() const {
-    return this->int_id_;
-  }
-
-  size_t int_id() const {
-    return int_id_;
-  }
-
-private:
-
-  static size_t generate_id(T *ptr, IdDistributor &idDistributor) {
-    if(ptr == 0 || ptr == (T*)1 || ptr == (T*)(-1)) {
-      return size_t(ptr);
+    uint16_t locking_thread() const {
+        return lock_.extra();
     }
 
-    return idDistributor.GetId();
-  }
+    uint16_t current_thread() const {
+        return uint16_t(omp_get_thread_num());
+    }
 
-  T *ptr_;
+    void Lock() {
+        lock_.lock();
+        lock_.setExtra(current_thread());
+    }
 
-  size_t int_id_;
+    void Unlock() {
+        lock_.setExtra(uint16_t(-1u));
+        lock_.unlock();
+    }
+
+public:
+    ReEnteringLock(LockT& lock) :
+        lock_(lock),
+        reentered_(false) {
+        if (locking_thread() == current_thread()) {
+            reentered_ = true;
+        } else {
+            Lock();
+        }
+    }
+
+    ~ReEnteringLock() {
+        if (!reentered_) {
+            Unlock();
+        }
+    }
+};
+
+
+template<class P>
+class PurePtrLock;
+
+//todo maybe make it extend folly::PackedSyncPtr<T>?
+template<class T>
+struct pure_pointer {
+    typedef T type;
+    typedef T* pointer_type;
+
+    explicit pure_pointer()
+            : int_id_(0) {
+        ptr_.init(pointer_type(0), uint16_t(-1u));
+    }
+
+    explicit pure_pointer(T *ptr)
+            : int_id_(size_t(ptr)) {
+        ptr_.init(ptr, uint16_t(-1u));
+        VERIFY(int_id_ < 2);
+    }
+
+    explicit pure_pointer(T *ptr, IdDistributor &idDistributor)
+            : int_id_(generate_id(ptr, idDistributor)) {
+        ptr_.init(ptr, uint16_t(-1u));
+    }
+
+//    lock_pointer_type& get_lockable() {
+//        return ptr_;
+//    }
+
+    T *get() const {
+        return ptr_.get();
+    }
+
+    T& operator*() const {
+        return *ptr_;
+    }
+
+    T* operator->() const {
+        return ptr_.get();
+    }
+
+    bool operator==(const pure_pointer &rhs) const {
+        if (int_id_ == rhs.int_id_) {
+            if (ptr_.get() != rhs.ptr_.get()) {
+                print_stacktrace();
+            }
+            VERIFY(ptr_.get() == rhs.ptr_.get());
+            return true;
+        }
+        return false;
+    }
+
+    bool operator!=(const pure_pointer &rhs) const {
+        return !operator ==(rhs);
+    }
+
+    bool operator<(const pure_pointer &rhs) const {
+        return this->int_id_ < rhs.int_id_;
+    }
+
+    size_t hash() const {
+        return this->int_id_;
+    }
+
+    size_t int_id() const {
+        return int_id_;
+    }
+
+private:
+    friend class PurePtrLock<pure_pointer<T>> ;
+
+    typedef folly::PackedSyncPtr<T> lock_pointer_type;
+
+    static size_t generate_id(T *ptr, IdDistributor &idDistributor) {
+        if (ptr == 0 || ptr == (T*) 1 || ptr == (T*) (-1)) {
+            return size_t(ptr);
+        }
+
+        return idDistributor.GetId();
+    }
+
+    lock_pointer_type ptr_;
+
+    size_t int_id_;
+};
+
+/**
+ * Lock that uses a pure ptr as a target.
+ * Be careful NOT to pass a COPY of pure ptr you want to use as locked object!
+ */
+template<class PurePtrT>
+class PurePtrLock {
+    ReEnteringLock<typename PurePtrT::lock_pointer_type> inner_lock_;
+
+public:
+    PurePtrLock(PurePtrT& pure_ptr) :
+            inner_lock_(pure_ptr.ptr_)
+    {
+    }
+
 };
 
 //template<class T>

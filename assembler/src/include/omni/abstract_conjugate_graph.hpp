@@ -23,6 +23,9 @@ class AbstractConjugateGraph;
 template<class DataMaster>
 class PairedEdge;
 
+template<class V>
+class PairedVertexLock;
+
 template<class DataMaster>
 class PairedVertex {
 private:
@@ -69,20 +72,13 @@ private:
 public:
     typedef conjugate_iterator edge_const_iterator;
 
-    void Lock() {
-        //todo fill
-    }
-
-    void Unlock() {
-        //todo fill
-    }
-
 private:
     friend class AbstractGraph<
             restricted::pure_pointer<PairedVertex<DataMaster>>,
             restricted::pure_pointer<PairedEdge<DataMaster>>, DataMaster> ;
     friend class AbstractConjugateGraph<DataMaster> ;
     friend class PairedEdge<DataMaster> ;
+    friend class PairedVertexLock<restricted::pure_pointer<PairedVertex<DataMaster>>>;
     friend class conjugate_iterator;
 
     std::vector<EdgeId> outgoing_edges_;
@@ -90,6 +86,11 @@ private:
     VertexId conjugate_;
 
     VertexData data_;
+
+    bool IsMinimal() const {
+        return conjugate_->conjugate_ <= conjugate_;
+    }
+
 
     void set_conjugate(VertexId conjugate) {
         conjugate_ = conjugate;
@@ -169,6 +170,34 @@ private:
         VERIFY(outgoing_edges_.size() == 0);
         TRACE("PairedVertex destructor ok");
     }
+};
+
+template<class V>
+class PairedVertexLock {
+    restricted::PurePtrLock<V> inner_lock_;
+
+    static bool IsMinimal(V v) {
+        return !(v->conjugate_ < v);
+    }
+
+    static V MinimalFromPair(V v) {
+        if (IsMinimal(v)) {
+            return v;
+        } else {
+            return v->conjugate_;
+        }
+    }
+
+    static V& GetLockableElement(V v) {
+        return v->conjugate_;
+    }
+
+public:
+    PairedVertexLock(V v) :
+        inner_lock_(GetLockableElement(MinimalFromPair(v)))
+    {
+    }
+
 };
 
 template<class DataMaster>
