@@ -951,7 +951,6 @@ inline map<PathWithDistance*, size_t> NextPathSearcher::FindDistances(const Bidi
         if (shortest_path.size() != 0) {
             int gap = 0;
             for (size_t i = 0; i < shortest_path.size(); ++i) {
-                DEBUG("answer " << i << " " << g_.int_id(shortest_path[i]))
                 gap += (int) g_.length(shortest_path[i]);
             }
             gap += (int) g_.k();
