@@ -916,15 +916,18 @@ inline void NextPathSearcher::JoinPathsByPI(ConstructedPathT& constructed_paths)
     }
 }
 void Generate(size_t l, size_t r, vector<size_t> a,
-		vector<vector<size_t> >& res) {
+		vector<vector<size_t> >& res, vector<PathWithDistance*>& all_paths, map<PathWithDistance*, set<PathWithDistance*> >& connections) {
 	if (l == r) {
 		res.push_back(a);
 	} else {
 		for (size_t i = l; i < r; ++i) {
+			if (l > 0 && connections[all_paths[l - 1]].count(all_paths[i]) == 0) {
+				continue;
+			}
 			size_t v = a[l];
 			a[l] = a[i];
 			a[i] = v;
-			Generate(l + 1, r, a, res);
+			Generate(l + 1, r, a, res, all_paths, connections);
 			v = a[l];
 			a[l] = a[i];
 			a[i] = v;
@@ -932,31 +935,36 @@ void Generate(size_t l, size_t r, vector<size_t> a,
 	}
 }
 
-vector<vector<size_t> > Generate(size_t n) {
+vector<vector<size_t> > Generate(size_t n, vector<PathWithDistance*>& all_paths, map<PathWithDistance*, set<PathWithDistance*> >& connections) {
 	vector<vector<size_t> > result;
 	vector<size_t> a;
 	for (size_t i = 0; i < n; ++i) {
 		a.push_back(i);
 	}
-	Generate(0, n, a, result);
+	Generate(0, n, a, result, all_paths, connections);
 	return result;
 }
 
 inline map<PathWithDistance*, size_t> NextPathSearcher::FindDistances(const BidirectionalPath& p, vector<PathWithDistance*>& paths) {
-    map<PathWithDistance*, size_t> result;
+    DEBUG("find distances")
+	map<PathWithDistance*, size_t> result;
     DijkstraHelper<Graph>::BoundedDijkstra dijkstra(DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, search_dist_, 3000));
     dijkstra.run(g_.EdgeEnd(p.Back()));
+    DEBUG("paths size " << paths.size());
     for (auto ipath = paths.begin(); ipath != paths.end(); ++ipath) {
         vector<EdgeId> shortest_path = dijkstra.GetShortestPathTo(g_.EdgeStart((*ipath)->p_.Front()));
+        DEBUG("shortest path is " << shortest_path.size());
         if (shortest_path.size() != 0) {
             int gap = 0;
             for (size_t i = 0; i < shortest_path.size(); ++i) {
+                DEBUG("answer " << i << " " << g_.int_id(shortest_path[i]))
                 gap += (int) g_.length(shortest_path[i]);
             }
             gap += (int) g_.k();
             result[*ipath] = gap;
         }
     }
+    DEBUG("return result " << result.size());
     return result;
 }
 
@@ -969,6 +977,7 @@ inline map<PathWithDistance*, set<PathWithDistance*> > NextPathSearcher::FindCon
             connections[*p1].insert(iter->first);
         }
     }
+    DEBUG("return connections " << connections.size())
     return connections;
 }
 
@@ -1013,7 +1022,9 @@ inline void NextPathSearcher::ConnectPaths(const BidirectionalPath& init_path, v
 }
 
 inline vector<vector<PathWithDistance*> > NextPathSearcher::FilterConnections(vector<PathWithDistance*>& all_paths, map<PathWithDistance*, set<PathWithDistance*> >& connections) {
-    vector<vector<size_t> > permutations = Generate(all_paths.size());
+    DEBUG("filter connections " << connections.size() << " all paths size " << all_paths.size())
+	vector<vector<size_t> > permutations = Generate(all_paths.size(), all_paths, connections);
+    DEBUG("generated all permutations " << permutations.size());
     vector<vector<PathWithDistance*> > variants;
     for (size_t i = 0; i < permutations.size(); ++i) {
         bool correct_permutation = true;
