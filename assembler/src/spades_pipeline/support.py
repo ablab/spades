@@ -523,13 +523,6 @@ def dataset_is_empty(dataset_data):
     return True
 
 
-def dataset_has_only_mate_pairs_libraries(dataset_data):
-    for reads_library in dataset_data:
-        if reads_library['type'] != 'mate-pairs':
-            return False
-    return True
-
-
 def dataset_has_interlaced_reads(dataset_data):
     for reads_library in dataset_data:
         if 'interlaced reads' in reads_library:

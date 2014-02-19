@@ -293,8 +293,8 @@ def fill_cfg(options_to_parse, log):
         pyyaml.dump(dataset_data, open(options_storage.dataset_yaml_filename, 'w'))
 
     support.check_dataset_reads(dataset_data, options_storage.only_assembler, log)
-    if support.dataset_has_only_mate_pairs_libraries(dataset_data):
-        support.error('you should specify at least one paired-end or unpaired library (only mate-pairs libraries were found)!')
+    if not support.get_lib_ids_by_type(dataset_data, ['single', 'paired-end']):
+        support.error('you should specify at least one paired-end or unpaired library!')
 
     options_storage.set_default_values()
     ### FILLING cfg
