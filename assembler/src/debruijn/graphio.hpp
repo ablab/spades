@@ -229,7 +229,7 @@ class DataPrinter {
         size_t comp_size = 0;
         for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
             EdgeId e1 = *I;
-            auto inner_map = paired_index.GetEdgeInfo(e1);
+            auto inner_map = paired_index.GetEdgeInfo(e1, 0);
             for (auto II = inner_map.begin(), IE = inner_map.end(); II != IE; ++II) {
                 EdgeId e2 = II->first;
                 const de::Histogram& hist = II->second;
@@ -243,7 +243,7 @@ class DataPrinter {
 
         for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
             EdgeId e1 = *I;
-            auto inner_map = paired_index.GetEdgeInfo(e1);
+            auto inner_map = paired_index.GetEdgeInfo(e1, 0);
             for (auto II = inner_map.begin(), IE = inner_map.end(); II != IE; ++II) {
                 EdgeId e2 = II->first;
                 const Histogram& hist = II->second;

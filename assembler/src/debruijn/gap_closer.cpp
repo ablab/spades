@@ -432,7 +432,7 @@ class GapCloser {
         size_t gaps_checked = 0;
         for (auto edge = g_.SmartEdgeBegin(); !edge.IsEnd(); ++edge) {
             EdgeId first_edge = *edge;
-            auto edge_info = tips_paired_idx_.GetEdgeInfo(first_edge);
+            auto edge_info = tips_paired_idx_.GetEdgeInfo(first_edge, 0);
 
             for (EdgeIterator it(edge_info.begin(), edge_info.end()),
                          et(edge_info.end(), edge_info.end());

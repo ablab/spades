@@ -137,13 +137,10 @@ class PairInfoImprover {
 
     size_t ParallelFillMissing(size_t nthreads) {
         DEBUG("Fill missing: Put infos to vector");
+        vector<PairInfos> infos;
         set<EdgeId> edges;
-        std::vector<std::tuple<EdgeId,
-                               typename omnigraph::de::PairedInfoIndexT<Graph>::EdgeIterator,
-                               typename omnigraph::de::PairedInfoIndexT<Graph>::EdgeIterator> > infos;
         for (auto e_iter = graph_.ConstEdgeBegin(); !e_iter.IsEnd(); ++e_iter)
-            infos.emplace_back(*e_iter,
-                               index_.edge_begin(*e_iter), index_.edge_end(*e_iter));
+            infos.push_back(index_.GetEdgeInfo(*e_iter));
 
         TRACE("Fill missing: Creating indexes");
         vector<vector<omnigraph::de::PairedInfoIndexT<Graph> > > to_add(nthreads);
@@ -158,9 +155,7 @@ class PairInfoImprover {
             size_t paths_size = 0;
 #pragma omp for schedule(guided)
             for (size_t i = 0; i < infos.size(); ++i) {
-                vector<PathInfoClass<Graph>> paths = spc.ConvertPIToSplitPaths(std::get<0>(infos[i]),
-                                                                               std::get<1>(infos[i]), std::get<2>(infos[i]),
-                                                                               lib_.data().mean_insert_size, lib_.data().insert_size_deviation);
+                vector<PathInfoClass<Graph>> paths = spc.ConvertPIToSplitPaths(infos[i], lib_.data().mean_insert_size, lib_.data().insert_size_deviation);
                 paths_size += paths.size();
                 for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
                     TRACE("Path " << iter->PrintPath(graph_));
@@ -207,10 +202,8 @@ class PairInfoImprover {
         omnigraph::de::PairedInfoIndexT<Graph> to_add(graph_);
         SplitPathConstructor<Graph> spc(graph_);
         for (auto e_iter = graph_.ConstEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
-            EdgeId e = *e_iter;
-            std::vector<PathInfoClass<Graph> > paths = spc.ConvertPIToSplitPaths(e,
-                                                                                 index_.edge_begin(e), index_.edge_end(e),
-                                                                                 lib_.data().mean_insert_size, lib_.data().insert_size_deviation);
+            const PairInfos& infos = index_.GetEdgeInfo(*e_iter);
+            std::vector<PathInfoClass<Graph> > paths = spc.ConvertPIToSplitPaths(infos, lib_.data().mean_insert_size, lib_.data().insert_size_deviation);
             for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
                 TRACE("Path " << iter->PrintPath(graph_));
                 for (auto pi_iter = iter->begin(); pi_iter != iter->end(); ++pi_iter) {
