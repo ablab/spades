@@ -49,7 +49,7 @@ class PairInfoImprover {
     void ParallelCorrectPairedInfo(size_t nthreads) {
         size_t missing_paired_info_count = 0;
         size_t extra_paired_info_count = 0;
-        extra_paired_info_count = ParallelRemoveContraditional(nthreads);
+        extra_paired_info_count = RemoveContradictional(nthreads);
         missing_paired_info_count = ParallelFillMissing(nthreads);
 
         INFO("Paired info stats: missing = " << missing_paired_info_count
@@ -60,40 +60,108 @@ class PairInfoImprover {
         size_t missing_paired_info_count = 0;
         size_t extra_paired_info_count = 0;
 
-        extra_paired_info_count = NonParallelRemoveContraditional();
+        extra_paired_info_count = RemoveContradictional(1);
         missing_paired_info_count = NonParallelFillMissing();
 
         INFO("Paired info stats: missing = " << missing_paired_info_count
              << "; contradictional = " << extra_paired_info_count);
     }
 
-    size_t ParallelRemoveContraditional(size_t nthreads) {
+    class ContradictionalRemover {
+      public:
+        ContradictionalRemover(std::vector<omnigraph::de::PairedInfoIndexT<Graph> > &to_remove,
+                               const Graph &g,
+                               omnigraph::de::PairedInfoIndexT<Graph>& index)
+                : to_remove_(to_remove), graph_(g), index_(index) {}
+
+        bool operator()(EdgeId e) {
+            omnigraph::de::PairedInfoIndexT<Graph> &to_remove = to_remove_[omp_get_thread_num()];
+
+            if (graph_.length(e)>= cfg::get().max_repeat_length)
+                FindInconsistent(e,
+                                 index_.edge_begin(e), index_.edge_end(e),
+                                 to_remove);
+
+            return false;
+        }
+
+      private:
+        bool IsConsistent(EdgeId /*e*/, EdgeId e1, EdgeId e2,
+                          const omnigraph::de::Point& p1, const omnigraph::de::Point& p2) const {
+            if (math::le(p1.d, 0.) || math::le(p2.d, 0.) || math::gr(p1.d, p2.d))
+                return true;
+
+            double pi_dist = p2.d - p1.d;
+            int first_length = (int) graph_.length(e1);
+            double var = p1.var + p2.var;
+
+            TRACE("   PI " << p1  << " tr "  << omp_get_thread_num());
+            TRACE("vs PI " << p2  << " tr "  << omp_get_thread_num());
+
+            if (math::le(pi_dist, double(first_length) + var) &&
+                math::le(double(first_length), pi_dist + var)) {
+                if (graph_.EdgeEnd(e1) == graph_.EdgeStart(e2))
+                    return true;
+
+                auto paths = GetAllPathsBetweenEdges(graph_, e1, e2, 0, (size_t) ceil(pi_dist - first_length + var));
+                return (paths.size() > 0);
+            } else {
+                if (math::gr(p2.d, p1.d + first_length)) {
+                    auto paths = GetAllPathsBetweenEdges(graph_, e1, e2,
+                                                         (size_t) floor(pi_dist - first_length - var),
+                                                         (size_t)  ceil(pi_dist - first_length + var));
+                    return (paths.size() > 0);
+                }
+                return false;
+            }
+        }
+
+        // Checking the consitency of two edge pairs (e, e_1) and (e, e_2) for all pairs (e, <some_edge>)
+        void FindInconsistent(EdgeId base_edge,
+                              typename omnigraph::de::PairedInfoIndexT<Graph>::EdgeIterator start,
+                              typename omnigraph::de::PairedInfoIndexT<Graph>::EdgeIterator end,
+                              omnigraph::de::PairedInfoIndexT<Graph>& pi) const {
+            typedef typename omnigraph::de::PairedInfoIndexT<Graph>::EdgeIterator EdgeIterator;
+
+            for (EdgeIterator I_1(start), E(end); I_1 != E; ++I_1) {
+                for (EdgeIterator I_2(start); I_2 != E; ++I_2) {
+                    if (I_1 == I_2)
+                        continue;
+
+                    std::pair<EdgeId, omnigraph::de::Point> entry1 = *I_1;
+                    std::pair<EdgeId, omnigraph::de::Point> entry2 = *I_2;
+
+                    EdgeId e1 = entry1.first;
+                    const omnigraph::de::Point& p1 = entry1.second;
+                    EdgeId e2 = entry2.first;
+                    const omnigraph::de::Point& p2 = entry2.second;
+                    if (!IsConsistent(base_edge, e1, e2, p1, p2)) {
+                        if (math::le(p1.weight, p2.weight)) {
+                            pi.AddPairInfo(base_edge, e1, p1);
+                        } else {
+                            pi.AddPairInfo(base_edge, e2, p2);
+                        }
+                    }
+                }
+            }
+        }
+
+        std::vector<omnigraph::de::PairedInfoIndexT<Graph> > &to_remove_;
+        const Graph &graph_;
+        omnigraph::de::PairedInfoIndexT<Graph>& index_;
+    };
+
+    size_t RemoveContradictional(size_t nthreads) {
         size_t cnt = 0;
-        DEBUG("ParallelRemoveContraditional: Put infos to vector");
-
-        std::vector<std::tuple<EdgeId,
-                               typename omnigraph::de::PairedInfoIndexT<Graph>::EdgeIterator,
-                               typename omnigraph::de::PairedInfoIndexT<Graph>::EdgeIterator> > inner_maps;
-        for (auto e_iter = graph_.ConstEdgeBegin(); !e_iter.IsEnd(); ++e_iter)
-            if (graph_.length(*e_iter) >= cfg::get().max_repeat_length)
-                inner_maps.emplace_back(*e_iter,
-                                        index_.edge_begin(*e_iter), index_.edge_end(*e_iter));
-
 
         std::vector<omnigraph::de::PairedInfoIndexT<Graph> > to_remove;
         for (size_t i = 0; i < nthreads; ++i)
             to_remove.emplace_back(graph_);
 
-        DEBUG("ParallelRemoveContraditional: Start threads");
-#pragma omp parallel num_threads(nthreads)
-        {
-#pragma omp for schedule(guided)
-            for (size_t i = 0; i < inner_maps.size(); ++i)
-                FindInconsistent(std::get<0>(inner_maps[i]),
-                                 std::get<1>(inner_maps[i]), std::get<2>(inner_maps[i]),
-                                 to_remove[omp_get_thread_num()]);
-            TRACE("Thread number " << omp_get_thread_num() << " finished");
-        }
+        // FIXME: Replace with lambda
+        ContradictionalRemover remover(to_remove, graph_, index_);
+        ParallelEdgeProcessor<Graph>(graph_, nthreads).Run(remover);
+
         DEBUG("ParallelRemoveContraditional: Threads finished");
 
         DEBUG("Merging maps");
@@ -113,26 +181,7 @@ class PairInfoImprover {
         DEBUG("Size of index " << index_.size());
         DEBUG("ParallelRemoveContraditional: Clean finished");
         return cnt;
-    }
 
-    size_t NonParallelRemoveContraditional() {
-        size_t cnt = 0;
-        omnigraph::de::PairedInfoIndexT<Graph> to_remove(graph_);
-
-        for (auto e_iter = graph_.ConstEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
-            if (graph_.length(*e_iter )>= cfg::get().max_repeat_length) {
-                FindInconsistent(*e_iter,
-                                 index_.edge_begin(*e_iter), index_.edge_end(*e_iter),
-                                 to_remove);
-            }
-        }
-
-        for (auto I = to_remove.begin(), E = to_remove.end(); I != E; ++I) {
-            cnt += DeleteIfExist(I.first(), I.second(), *I);
-            cnt += DeleteConjugateIfExist(I.first(), I.second(), *I);
-        }
-
-        return cnt;
     }
 
     size_t ParallelFillMissing(size_t nthreads) {
@@ -216,67 +265,7 @@ class PairInfoImprover {
         return cnt;
     }
 
-    // Checking the consitency of two edge pairs (e, e_1) and (e, e_2) for all pairs (e, <some_edge>)
-    void FindInconsistent(EdgeId base_edge,
-                          typename omnigraph::de::PairedInfoIndexT<Graph>::EdgeIterator start,
-                          typename omnigraph::de::PairedInfoIndexT<Graph>::EdgeIterator end,
-                          omnigraph::de::PairedInfoIndexT<Graph>& pi) {
-        typedef typename omnigraph::de::PairedInfoIndexT<Graph>::EdgeIterator EdgeIterator;
-
-        for (EdgeIterator I_1(start), E(end); I_1 != E; ++I_1) {
-            for (EdgeIterator I_2(start); I_2 != E; ++I_2) {
-                if (I_1 == I_2)
-                    continue;
-
-                std::pair<EdgeId, omnigraph::de::Point> entry1 = *I_1;
-                std::pair<EdgeId, omnigraph::de::Point> entry2 = *I_2;
-
-                EdgeId e1 = entry1.first;
-                const omnigraph::de::Point& p1 = entry1.second;
-                EdgeId e2 = entry2.first;
-                const omnigraph::de::Point& p2 = entry2.second;
-                if (!IsConsistent(base_edge, e1, e2, p1, p2)) {
-                    if (math::le(p1.weight, p2.weight)) {
-                        pi.AddPairInfo(base_edge, e1, p1);
-                    } else {
-                        pi.AddPairInfo(base_edge, e2, p2);
-                    }
-                }
-            }
-        }
-    }
-
   public:
-    // Checking the consistency of two edge pairs (e, e_1) and (e, e_2)
-    bool IsConsistent(EdgeId /*e*/, EdgeId e1, EdgeId e2, const omnigraph::de::Point& p1, const omnigraph::de::Point& p2) const {
-        if (math::le(p1.d, 0.) || math::le(p2.d, 0.) || math::gr(p1.d, p2.d))
-            return true;
-
-        double pi_dist = p2.d - p1.d;
-        int first_length = (int) graph_.length(e1);
-        double var = p1.var + p2.var;
-
-        TRACE("   PI " << p1  << " tr "  << omp_get_thread_num());
-        TRACE("vs PI " << p2  << " tr "  << omp_get_thread_num());
-
-        if (math::le(pi_dist, double(first_length) + var) &&
-            math::le(double(first_length), pi_dist + var)) {
-            if (graph_.EdgeEnd(e1) == graph_.EdgeStart(e2))
-                return true;
-
-            auto paths = GetAllPathsBetweenEdges(graph_, e1, e2, 0, (size_t) ceil(pi_dist - first_length + var));
-            return (paths.size() > 0);
-        } else {
-            if (math::gr(p2.d, p1.d + first_length)) {
-                auto paths = GetAllPathsBetweenEdges(graph_, e1, e2,
-                                                     (size_t) floor(pi_dist - first_length - var),
-                                                     (size_t)  ceil(pi_dist - first_length + var));
-                return (paths.size() > 0);
-            }
-            return false;
-        }
-    }
-
     //private:
     size_t DeleteIfExist(EdgeId e1, EdgeId e2, const de::Histogram& infos) {
         size_t cnt = 0;
