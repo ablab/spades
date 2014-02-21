@@ -30,20 +30,16 @@ public:
     }
 
     virtual void StartProcessLibrary(size_t threads_count) {
-        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it) {
+        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it)
             paired_index_.AddPairInfo(*it, *it, 0., 0., 0.);
-        }
-        for (size_t i = 0; i < threads_count; ++i) {
-            buffer_pi_.push_back(
-                    new omnigraph::de::PairedInfoIndexT<Graph>(graph_));
-        }
+        for (size_t i = 0; i < threads_count; ++i)
+            buffer_pi_.emplace_back(graph_);
     }
 
     virtual void StopProcessLibrary() {
-        for (size_t i = 0; i < buffer_pi_.size(); ++i) {
+        for (size_t i = 0; i < buffer_pi_.size(); ++i)
             MergeBuffer(i);
-            delete buffer_pi_[i];
-        }
+
         buffer_pi_.clear();
     }
 
@@ -51,20 +47,18 @@ public:
                                    const MappingPath<EdgeId>& read1,
                                    const MappingPath<EdgeId>& read2,
                                    size_t dist) {
-        ProcessPairedRead(*(buffer_pi_[thread_index]), read1, read2, dist);
+        ProcessPairedRead(buffer_pi_[thread_index], read1, read2, dist);
     }
 
     virtual void ProcessSingleRead(size_t,
-                                   const MappingPath<EdgeId>&) {
-    }
+                                   const MappingPath<EdgeId>&) {}
 
     virtual void MergeBuffer(size_t thread_index) {
-        paired_index_.AddAll(*(buffer_pi_[thread_index]));
-        buffer_pi_[thread_index]->Clear();
+        paired_index_.AddAll(buffer_pi_[thread_index]);
+        buffer_pi_[thread_index].Clear();
     }
 
-    virtual ~LatePairedIndexFiller() {
-    }
+    virtual ~LatePairedIndexFiller() {}
 
 private:
     void ProcessPairedRead(omnigraph::de::PairedInfoIndexT<Graph>& paired_index,
@@ -94,7 +88,7 @@ private:
     const Graph& graph_;
     WeightF weight_f_;
     omnigraph::de::PairedInfoIndexT<Graph>& paired_index_;
-    vector<omnigraph::de::PairedInfoIndexT<Graph>*> buffer_pi_;
+    std::vector<omnigraph::de::PairedInfoIndexT<Graph> > buffer_pi_;
 
     DECL_LOGGER("LatePairedIndexFiller")
     ;
