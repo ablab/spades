@@ -259,7 +259,11 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
   std::string workdir = cfg::get().input_working_dir;
   HammerKMerSplitter splitter(workdir);
   KMerDiskCounter<hammer::KMer> counter(workdir, splitter);
-  KMerIndexBuilder<HammerKMerIndex>(workdir, num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save finall */ true);
+  size_t kmers = KMerIndexBuilder<HammerKMerIndex>(workdir, num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save finall */ true);
+
+  // Check, whether we'll ever have enough memory for running BH and bail out earlier
+  if (1.25 * kmers * (sizeof(KMerStat) + sizeof(hammer::KMer)) > (double) get_memory_limit())
+      FATAL_ERROR("The reads contain too many k-mers to fit into available memory limit. Increase memory limit and restart")
 
   data.kmers_ = counter.GetFinalKMers();
 
