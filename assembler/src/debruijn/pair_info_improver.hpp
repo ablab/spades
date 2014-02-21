@@ -22,11 +22,38 @@
 
 namespace debruijn_graph {
 
+template<class Graph>
+static
+bool TryToAddPairInfo(omnigraph::de::PairedInfoIndexT<Graph>& clustered_index,
+                      typename Graph::EdgeId e1, typename Graph::EdgeId e2,
+                      const omnigraph::de::Point& p,
+                      bool reflected = true) {
+    const omnigraph::de::Point& point_to_add = p;
+
+    const de::Histogram histogram = clustered_index.GetEdgePairInfo(e1, e2);
+    bool already_exist = false;
+    for (auto it = histogram.begin(); it != histogram.end(); ++it) {
+        const omnigraph::de::Point& cur_point = *it;
+        if (ClustersIntersect(cur_point, point_to_add)) {
+            already_exist = true;
+            return false;
+        }
+    }
+
+    if (!already_exist) {
+        clustered_index.AddPairInfo(e1, e2, point_to_add, reflected);
+        if (reflected)
+            clustered_index.AddConjPairInfo(e1, e2, point_to_add, reflected);
+        return true;
+    }
+
+    return false;
+}
 
 template<class Graph>
 class PairInfoImprover {
     typedef typename Graph::EdgeId EdgeId;
-    typedef vector<omnigraph::de::PairInfo<EdgeId> > PairInfos;
+    typedef std::vector<omnigraph::de::PairInfo<EdgeId> > PairInfos;
     typedef std::pair<EdgeId, EdgeId> EdgePair;
 
   public:
@@ -35,33 +62,17 @@ class PairInfoImprover {
                      const io::SequencingLibrary<debruijn_config::DataSetData> &lib)
             : graph_(g), index_(clustered_index), lib_(lib) { }
 
-    void ImprovePairedInfo(bool parallel = false, size_t num_threads = 1) {
-        if (parallel) {
-            ParallelCorrectPairedInfo(num_threads);
-            ParallelCorrectPairedInfo(num_threads);
-        } else {
-            NonParallelCorrectPairedInfo();
-            NonParallelCorrectPairedInfo();
-        }
+    void ImprovePairedInfo(unsigned num_threads = 1) {
+        CorrectPairedInfo(num_threads);
+        CorrectPairedInfo(num_threads);
     }
 
   private:
-    void ParallelCorrectPairedInfo(size_t nthreads) {
+    void CorrectPairedInfo(unsigned nthreads) {
         size_t missing_paired_info_count = 0;
         size_t extra_paired_info_count = 0;
         extra_paired_info_count = RemoveContradictional(nthreads);
-        missing_paired_info_count = ParallelFillMissing(nthreads);
-
-        INFO("Paired info stats: missing = " << missing_paired_info_count
-             << "; contradictional = " << extra_paired_info_count);
-    }
-
-    void NonParallelCorrectPairedInfo() {
-        size_t missing_paired_info_count = 0;
-        size_t extra_paired_info_count = 0;
-
-        extra_paired_info_count = RemoveContradictional(1);
-        missing_paired_info_count = NonParallelFillMissing();
+        missing_paired_info_count = FillMissing(nthreads);
 
         INFO("Paired info stats: missing = " << missing_paired_info_count
              << "; contradictional = " << extra_paired_info_count);
@@ -151,7 +162,7 @@ class PairInfoImprover {
         omnigraph::de::PairedInfoIndexT<Graph>& index_;
     };
 
-    size_t RemoveContradictional(size_t nthreads) {
+    size_t RemoveContradictional(unsigned nthreads) {
         size_t cnt = 0;
 
         std::vector<omnigraph::de::PairedInfoIndexT<Graph> > to_remove;
@@ -184,7 +195,51 @@ class PairInfoImprover {
 
     }
 
-    size_t ParallelFillMissing(size_t nthreads) {
+    class MissingFiller {
+      public:
+        MissingFiller(std::vector<std::vector<omnigraph::de::PairedInfoIndexT<Graph> > > &to_add,
+                      const Graph &graph,
+                      const omnigraph::de::PairedInfoIndexT<Graph> &index,
+                      const SplitPathConstructor<Graph> &spc,
+                      const io::SequencingLibrary<debruijn_config::DataSetData> &lib)
+                : to_add_(to_add), graph_(graph), index_(index), spc_(spc), lib_(lib) {}
+
+        bool operator()(EdgeId e) {
+            std::vector<PathInfoClass<Graph> > paths =
+                    spc_.ConvertPIToSplitPaths(index_.GetEdgeInfo(e),
+                                               lib_.data().mean_insert_size, lib_.data().insert_size_deviation);
+            for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
+                TRACE("Path " << iter->PrintPath(graph_));
+
+                const PathInfoClass<Graph>& path = *iter;
+                for (auto pi_iter = path.begin(); pi_iter != path.end(); ++pi_iter) {
+                    const auto& pi = *pi_iter;
+                    EdgeId e1 = pi.first;
+                    EdgeId e2 = pi.second;
+                    std::pair<EdgeId, EdgeId> ep = std::make_pair(e1, e2);
+                    if (ep <= ConjugatePair(ep))
+                        TryToAddPairInfo(to_add_[omp_get_thread_num()][0], e1, e2, pi.point, false);
+                    else
+                        TryToAddPairInfo(to_add_[omp_get_thread_num()][1], e1, e2, pi.point, false);
+                }
+            }
+
+            return false;
+        }
+
+      private:
+        EdgePair ConjugatePair(EdgePair ep) const {
+            return std::make_pair(graph_.conjugate(ep.second), graph_.conjugate(ep.first));
+        }
+
+        std::vector<std::vector<omnigraph::de::PairedInfoIndexT<Graph> > > &to_add_;
+        const Graph &graph_;
+        const omnigraph::de::PairedInfoIndexT<Graph> &index_;
+        const SplitPathConstructor<Graph> &spc_;
+        const io::SequencingLibrary<debruijn_config::DataSetData>& lib_;
+    };
+
+    size_t FillMissing(unsigned nthreads) {
         DEBUG("Fill missing: Put infos to vector");
         vector<PairInfos> infos;
         set<EdgeId> edges;
@@ -192,38 +247,17 @@ class PairInfoImprover {
             infos.push_back(index_.GetEdgeInfo(*e_iter));
 
         TRACE("Fill missing: Creating indexes");
-        vector<vector<omnigraph::de::PairedInfoIndexT<Graph> > > to_add(nthreads);
-        for (size_t j = 0; j < 2; ++j)
-            for (size_t i = 0; i < nthreads; ++i)
-                to_add[i].emplace_back(graph_);
+        std::vector<std::vector<omnigraph::de::PairedInfoIndexT<Graph> > > to_add(nthreads);
+        for (size_t i = 0; i < nthreads; ++i) {
+            to_add[i].emplace_back(graph_);
+            to_add[i].emplace_back(graph_);
+        }
 
         SplitPathConstructor<Graph> spc(graph_);
+        // FIXME: Replace with lambda
+        MissingFiller filler(to_add, graph_, index_, spc, lib_);
         DEBUG("Fill missing: Start threads");
-#pragma omp parallel num_threads(nthreads)
-        {
-            size_t paths_size = 0;
-#pragma omp for schedule(guided)
-            for (size_t i = 0; i < infos.size(); ++i) {
-                vector<PathInfoClass<Graph>> paths = spc.ConvertPIToSplitPaths(infos[i], lib_.data().mean_insert_size, lib_.data().insert_size_deviation);
-                paths_size += paths.size();
-                for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-                    TRACE("Path " << iter->PrintPath(graph_));
-
-                    const PathInfoClass<Graph>& path = *iter;
-                    for (auto pi_iter = path.begin(); pi_iter != path.end(); ++pi_iter) {
-                        const auto& pi = *pi_iter;
-                        EdgeId e1 = pi.first;
-                        EdgeId e2 = pi.second;
-                        pair<EdgeId, EdgeId> ep = make_pair(e1, e2);
-                        if (ep <= ConjugatePair(ep))
-                            TryToAddPairInfo(to_add[omp_get_thread_num()][0], e1, e2, pi.point, false);
-                        else
-                            TryToAddPairInfo(to_add[omp_get_thread_num()][1], e1, e2, pi.point, false);
-                    }
-                }
-            }
-            DEBUG("Thread number " << omp_get_thread_num() << " finished");
-        }
+        ParallelEdgeProcessor<Graph>(graph_, nthreads).Run(filler);
         DEBUG("Fill missing: Threads finished");
 
         size_t cnt = 0;
@@ -246,27 +280,7 @@ class PairInfoImprover {
         return cnt;
     }
 
-    size_t NonParallelFillMissing() {
-        size_t cnt = 0;
-        omnigraph::de::PairedInfoIndexT<Graph> to_add(graph_);
-        SplitPathConstructor<Graph> spc(graph_);
-        for (auto e_iter = graph_.ConstEdgeBegin(); !e_iter.IsEnd(); ++e_iter) {
-            const PairInfos& infos = index_.GetEdgeInfo(*e_iter);
-            std::vector<PathInfoClass<Graph> > paths = spc.ConvertPIToSplitPaths(infos, lib_.data().mean_insert_size, lib_.data().insert_size_deviation);
-            for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-                TRACE("Path " << iter->PrintPath(graph_));
-                for (auto pi_iter = iter->begin(); pi_iter != iter->end(); ++pi_iter) {
-                    const auto& pi = *pi_iter;
-                    cnt += TryToAddPairInfo(index_, pi.first, pi.second, pi.point);
-                }
-            }
-        }
-
-        return cnt;
-    }
-
-  public:
-    //private:
+  private:
     size_t DeleteIfExist(EdgeId e1, EdgeId e2, const de::Histogram& infos) {
         size_t cnt = 0;
         const de::Histogram histogram = index_.GetEdgePairInfo(e1, e2);
@@ -305,45 +319,6 @@ class PairInfoImprover {
             TRACE("cnt += " << cnt);
         }
         return cnt;
-    }
-
-    bool ComparePriority(EdgeId e1, EdgeId e2, omnigraph::de::Point p1, omnigraph::de::Point p2) {
-        using namespace math;
-        VERIFY(ge(p1.d, 0.));
-        VERIFY(ge(p2.d, 0.));
-        EdgePair ep = make_pair(e1, e2);
-        bool distance_priority = ls(p1.d, p2.d) || (eq(p1.d, p2.d) && ls(p1.weight, p2.weight));
-        return ls(p1.var, p2.var) || (eq(p1.var, p2.var) && distance_priority);
-    }
-
-    bool TryToAddPairInfo(omnigraph::de::PairedInfoIndexT<Graph>& clustered_index,
-                          EdgeId e1, EdgeId e2,
-                          const omnigraph::de::Point& p,
-                          bool reflected = true) {
-        const omnigraph::de::Point& point_to_add = p;
-
-        const de::Histogram histogram = clustered_index.GetEdgePairInfo(e1, e2);
-        bool already_exist = false;
-        for (auto it = histogram.begin(); it != histogram.end(); ++it) {
-            const omnigraph::de::Point& cur_point = *it;
-            if (ClustersIntersect(cur_point, point_to_add)) {
-                already_exist = true;
-                return false;
-            }
-        }
-
-        if (!already_exist) {
-            clustered_index.AddPairInfo(e1, e2, point_to_add, reflected);
-            if (reflected)
-                clustered_index.AddConjPairInfo(e1, e2, point_to_add, reflected);
-            return true;
-        }
-
-        return false;
-    }
-
-    EdgePair ConjugatePair(EdgePair ep) const {
-        return std::make_pair(graph_.conjugate(ep.second), graph_.conjugate(ep.first));
     }
 
     const Graph& graph_;
