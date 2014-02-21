@@ -1,16 +1,8 @@
-
 //***************************************************************************
 //* Copyright (c) 2011-2013 Saint-Petersburg Academic University
 //* All Rights Reserved
 //* See file LICENSE for details.
 //****************************************************************************
-
-/*
- * pair_info_improver.hpp
- *
- *  Created on: Jul 4, 2012
- *      Author: avsirotkin
- */
 
 #pragma once
 
@@ -31,23 +23,14 @@ bool TryToAddPairInfo(omnigraph::de::PairedInfoIndexT<Graph>& clustered_index,
     const omnigraph::de::Point& point_to_add = p;
 
     const de::Histogram histogram = clustered_index.GetEdgePairInfo(e1, e2);
-    bool already_exist = false;
-    for (auto it = histogram.begin(); it != histogram.end(); ++it) {
-        const omnigraph::de::Point& cur_point = *it;
-        if (ClustersIntersect(cur_point, point_to_add)) {
-            already_exist = true;
+    for (auto it = histogram.begin(); it != histogram.end(); ++it)
+        if (ClustersIntersect(*it, point_to_add))
             return false;
-        }
-    }
 
-    if (!already_exist) {
-        clustered_index.AddPairInfo(e1, e2, point_to_add, reflected);
-        if (reflected)
-            clustered_index.AddConjPairInfo(e1, e2, point_to_add, reflected);
-        return true;
-    }
-
-    return false;
+    clustered_index.AddPairInfo(e1, e2, point_to_add, reflected);
+    if (reflected)
+        clustered_index.AddConjPairInfo(e1, e2, point_to_add, reflected);
+    return true;
 }
 
 template<class Graph>
@@ -240,12 +223,6 @@ class PairInfoImprover {
     };
 
     size_t FillMissing(unsigned nthreads) {
-        DEBUG("Fill missing: Put infos to vector");
-        vector<PairInfos> infos;
-        set<EdgeId> edges;
-        for (auto e_iter = graph_.ConstEdgeBegin(); !e_iter.IsEnd(); ++e_iter)
-            infos.push_back(index_.GetEdgeInfo(*e_iter));
-
         TRACE("Fill missing: Creating indexes");
         std::vector<std::vector<omnigraph::de::PairedInfoIndexT<Graph> > > to_add(nthreads);
         for (size_t i = 0; i < nthreads; ++i) {
