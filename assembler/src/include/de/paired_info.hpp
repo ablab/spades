@@ -353,11 +353,17 @@ class PairedInfoIndexT: public GraphActionHandler<Graph> {
     }
 
     EdgeIterator edge_begin(EdgeId edge) const {
+        VERIFY(contains(edge));
         return edge_begin(index_.find(edge));
     }
 
     EdgeIterator edge_end(EdgeId edge) const {
+        VERIFY(contains(edge));
         return edge_end(index_.find(edge));
+    }
+
+    bool contains(EdgeId edge) const {
+        return index_.count(edge);
     }
 
     // FIXME: Make these private
