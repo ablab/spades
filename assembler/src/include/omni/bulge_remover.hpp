@@ -55,7 +55,6 @@ struct SimplePathCondition {
 template<class Graph>
 bool TrivialCondition(typename Graph::EdgeId,
 		const vector<typename Graph::EdgeId>& path) {
-	typedef typename Graph::EdgeId EdgeId;
 	for (size_t i = 0; i < path.size(); ++i)
 		for (size_t j = i + 1; j < path.size(); ++j)
 			if (path[i] == path[j])

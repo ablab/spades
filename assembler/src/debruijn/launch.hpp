@@ -36,7 +36,9 @@ void assemble_genome() {
                                             cfg::get().tmp_dir,
                                             cfg::get().ds.reads.lib_count(),
                                             cfg::get().ds.reference_genome,
-                                            cfg::get().flanking_range);
+                                            cfg::get().flanking_range,
+                                            cfg::get().pos.max_mapping_gap,
+                                            cfg::get().pos.max_gap_diff);
     if (!cfg::get().developer_mode) {
         conj_gp.edge_pos.Detach();
         conj_gp.paired_indices.Detach();
