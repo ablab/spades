@@ -71,7 +71,7 @@ class PairInfoImprover {
         bool operator()(EdgeId e) {
             omnigraph::de::PairedInfoIndexT<Graph> &to_remove = to_remove_[omp_get_thread_num()];
 
-            if (graph_.length(e)>= cfg::get().max_repeat_length)
+            if (graph_.length(e)>= cfg::get().max_repeat_length && index_.contains(e))
                 FindInconsistent(e,
                                  index_.edge_begin(e), index_.edge_end(e),
                                  to_remove);
