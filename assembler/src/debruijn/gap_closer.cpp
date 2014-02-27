@@ -208,7 +208,7 @@ class GapCloser {
     runtime_k::KmerSet new_kmers_;
 
     bool CheckNoKmerClash(const Sequence& s) {
-        runtime_k::RtSeq kmer(k_ + 1);
+        runtime_k::RtSeq kmer(k_ + 1, s);
         kmer >>= 'A';
         for (size_t i = k_; i < s.size(); ++i) {
             kmer <<= s[i];
@@ -290,7 +290,7 @@ class GapCloser {
     }
 
     void AddEdge(VertexId start, VertexId end, const Sequence& s) {
-        runtime_k::RtSeq kmer(k_ + 1);
+        runtime_k::RtSeq kmer(k_ + 1, s);
         kmer >>= 'A';
         for (size_t i = k_; i < s.size(); ++i) {
             kmer <<= s[i];
