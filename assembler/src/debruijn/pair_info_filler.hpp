@@ -19,9 +19,7 @@ namespace debruijn_graph {
  * todo talk with Anton about simplification and speed-up of procedure with little quality loss
  */
 class LatePairedIndexFiller : public SequenceMapperListener {
-
     typedef boost::function<double(MappingRange, MappingRange)> WeightF;
-
 public:
     LatePairedIndexFiller(const Graph &graph, WeightF weight_f, omnigraph::de::PairedInfoIndexT<Graph>& paired_index)
             : graph_(graph),
@@ -33,7 +31,7 @@ public:
         for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it)
             paired_index_.AddPairInfo(*it, *it, 0., 0., 0.);
         for (size_t i = 0; i < threads_count; ++i)
-            buffer_pi_.emplace_back(graph_);
+            buffer_pi_.emplace_back();
     }
 
     virtual void StopProcessLibrary() {
@@ -61,9 +59,9 @@ public:
     virtual ~LatePairedIndexFiller() {}
 
 private:
-    void ProcessPairedRead(omnigraph::de::PairedInfoIndexT<Graph>& paired_index,
+    void ProcessPairedRead(omnigraph::de::PairedInfoBuffer<Graph>& paired_index,
                            const MappingPath<EdgeId>& path1,
-                           const MappingPath<EdgeId>& path2, size_t read_distance) {
+                           const MappingPath<EdgeId>& path2, size_t read_distance) const {
         for (size_t i = 0; i < path1.size(); ++i) {
             pair<EdgeId, MappingRange> mapping_edge_1 = path1[i];
             for (size_t j = 0; j < path2.size(); ++j) {
@@ -88,7 +86,7 @@ private:
     const Graph& graph_;
     WeightF weight_f_;
     omnigraph::de::PairedInfoIndexT<Graph>& paired_index_;
-    std::vector<omnigraph::de::PairedInfoIndexT<Graph> > buffer_pi_;
+    std::vector<omnigraph::de::PairedInfoBuffer<Graph> > buffer_pi_;
 
     DECL_LOGGER("LatePairedIndexFiller")
     ;

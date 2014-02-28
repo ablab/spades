@@ -213,14 +213,15 @@ inline bool IsSymmetric(PairInfo<EdgeId> const& pi) {
 }
 
 // new map { EdgeId -> (EdgeId -> (d, weight, var)) }
-template<class Graph>
+template<class Graph,
+         class InnerMapType = std::map<typename Graph::EdgeId, Histogram>,
+         class IndexDataType = std::map<typename Graph::EdgeId, InnerMapType> >
 class PairedInfoStorage {
  public:
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Histogram::const_iterator HistIterator;
     typedef typename Point::value_type PointValueType;
-    typedef std::map<EdgeId, Histogram> InnerMap;
-    typedef std::map<EdgeId, InnerMap>  IndexDataType;     // @InnerMap is a wrapper for map<EdgeId, Histogram>
+    typedef InnerMapType InnerMap;
     typedef typename IndexDataType::const_iterator DataIterator;
 
     PairedInfoStorage()
@@ -532,19 +533,15 @@ class PairedInfoStorage {
     // here we trying to insert PairInfo,
     // if there is no existing PairInfo with the same key
     // very complicated implementation, but it seems to be faster.
-    void AddAll(const PairedInfoStorage& index_to_add) {
+    template<class Storage>
+    void AddAll(const Storage& index_to_add) {
         typedef typename IndexDataType::iterator data_iterator;
         IndexDataType& base_index = this->index_;
-        const IndexDataType& index = index_to_add.index_;
-        for (auto AddI = index.begin(), E = index.end(); AddI != E; ++AddI) {
+        for (auto AddI = index_to_add.Begin(), E = index_to_add.End(); AddI != E; ++AddI) {
             EdgeId e1_to_add = AddI->first;
-            const InnerMap& map_to_add = AddI->second;
-            const std::pair<data_iterator, bool>& result = base_index.insert(*AddI);
-            if (!result.second) {
-                InnerMap& map_already_exists = (result.first)->second; // data_iterator points to <EdgeId, InnerMap>
-                MergeInnerMaps(e1_to_add, map_to_add, map_already_exists);
-            } else
-                size_ += map_to_add.size();
+            const auto& map_to_add = AddI->second;
+            InnerMap& map_already_exists = base_index[e1_to_add];
+            MergeInnerMaps(e1_to_add, map_to_add, map_already_exists);
         }
     }
 
@@ -597,8 +594,9 @@ class PairedInfoStorage {
         UpdateSinglePoint(hist, to_update, *to_update + point_to_add);
     }
 
+    template<class OtherMap>
     void MergeInnerMaps(EdgeId /*e1_to_add*/,
-                        const InnerMap& map_to_add,
+                        const OtherMap& map_to_add,
                         InnerMap& map) {
         typedef typename Histogram::iterator hist_iterator;
         typedef typename InnerMap::iterator map_iterator;
@@ -656,6 +654,12 @@ class PairedInfoStorage {
     IndexDataType index_;
     size_t size_;
 };
+
+template<class Graph>
+using PairedInfoBuffer = PairedInfoStorage<Graph,
+                                           std::unordered_map<typename Graph::EdgeId, Histogram>,
+                                           std::unordered_map<typename Graph::EdgeId,
+                                                              std::unordered_map<typename Graph::EdgeId, Histogram> > >;
 
 template<class Graph>
 class PairedInfoIndexT: public GraphActionHandler<Graph>, public PairedInfoStorage<Graph> {
