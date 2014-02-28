@@ -535,7 +535,6 @@ class PairedInfoStorage {
     // very complicated implementation, but it seems to be faster.
     template<class Storage>
     void AddAll(const Storage& index_to_add) {
-        typedef typename IndexDataType::iterator data_iterator;
         IndexDataType& base_index = this->index_;
         for (auto AddI = index_to_add.Begin(), E = index_to_add.End(); AddI != E; ++AddI) {
             EdgeId e1_to_add = AddI->first;
