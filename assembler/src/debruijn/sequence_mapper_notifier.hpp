@@ -54,6 +54,7 @@ public:
         std::shared_ptr<SequenceMapperT> mapper = mapper_factory.GetSequenceMapper(read_length);
 
         size_t counter = 0, n = 15;
+        size_t fmem = get_free_memory();
 #       pragma omp parallel for num_threads(threads_count) shared(counter)
         for (size_t ithread = 0; ithread < threads_count; ++ithread) {
             size_t size = 0;
@@ -69,6 +70,11 @@ public:
                     ++size;
                     NotifyProcessRead(r, *mapper, lib_index, ithread);
                     end_of_stream = stream.eof();
+                    // Stop filling buffer if the amount of available is smaller
+                    // than half of free memory.
+                    if (10 * get_free_memory() / 4 < fmem &&
+                        size > 10000)
+                        break;
                 }
 #               pragma omp critical
                 {
