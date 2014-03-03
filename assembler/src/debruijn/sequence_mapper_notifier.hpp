@@ -47,43 +47,42 @@ public:
 
     template<class ReadType>
     void ProcessLibrary(io::ReadStreamList<ReadType>& streams,
-            size_t lib_index, size_t read_length, size_t threads_count) {
+                        size_t lib_index, size_t read_length, size_t threads_count) {
         streams.reset();
         NotifyStartProcessLibrary(lib_index, threads_count);
         MapperFactory<conj_graph_pack> mapper_factory(gp_);
         std::shared_ptr<SequenceMapperT> mapper = mapper_factory.GetSequenceMapper(read_length);
 
-        size_t counter = 0;
-        #pragma omp parallel num_threads(threads_count)
-        {
-            #pragma omp for reduction(+: counter)
-            for (size_t ithread = 0; ithread < threads_count; ++ithread) {
-                size_t size = 0;
-                size_t limit = 1000000;
-                ReadType r;
-                auto& stream = streams[ithread];
-                stream.reset();
-                bool end_of_stream = false;
-                while (!end_of_stream) {
+        size_t counter = 0, n = 15;
+#       pragma omp parallel for num_threads(threads_count) shared(counter)
+        for (size_t ithread = 0; ithread < threads_count; ++ithread) {
+            size_t size = 0;
+            size_t limit = 200000;
+            ReadType r;
+            auto& stream = streams[ithread];
+            stream.reset();
+            bool end_of_stream = false;
+            while (!end_of_stream) {
+                end_of_stream = stream.eof();
+                while (!end_of_stream && size < limit) {
+                    stream >> r;
+                    ++size;
+                    NotifyProcessRead(r, *mapper, lib_index, ithread);
                     end_of_stream = stream.eof();
-                    while (!end_of_stream && size < limit) {
-                        stream >> r;
-                        ++size;
-                        counter++;
-                        NotifyProcessRead(r, *mapper, lib_index, ithread);
-                        end_of_stream = stream.eof();
-                        if (counter % 1000000 == 0) {
-                            DEBUG("process " << counter << " reads");
-                        }
+                }
+#               pragma omp critical
+                {
+                    counter += size;
+                    if (counter >> n) {
+                        INFO("Processed " << counter << " reads");
+                        n += 1;
                     }
-                    #pragma omp critical
-                    {
-                        size = 0;
-                        NotifyMergeBuffer(lib_index, ithread);
-                    }
+                    size = 0;
+                    NotifyMergeBuffer(lib_index, ithread);
                 }
             }
         }
+        INFO("Processed " << counter << " reads");
         NotifyStopProcessLibrary(lib_index);
     }
 
