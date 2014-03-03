@@ -72,14 +72,19 @@ inline size_t get_max_rss() {
 }
 #endif
 
-inline size_t get_free_memory() {
-    const size_t *cmem = 0;
+inline size_t get_used_memory() {
 #ifdef SPADES_USE_JEMALLOC
+    const size_t *cmem = 0;
     size_t clen = sizeof(cmem);
 
     je_mallctl("stats.cactive", &cmem, &clen, NULL, 0);
-    return get_memory_limit() - *cmem;
+    return *cmem;
 #else
-    return get_memory_limit() - get_max_rss();
+    get_max_rss();
 #endif
+}
+
+
+inline size_t get_free_memory() {
+    return get_memory_limit() - get_used_memory();
 }
