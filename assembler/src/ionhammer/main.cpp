@@ -230,17 +230,22 @@ int main(int argc, char** argv) {
           std::string usuffix = boost::lexical_cast<std::string>(ilib) + "_" +
                                 boost::lexical_cast<std::string>(iread) + ".cor.fasta";
           std::string outcor = path::append_path(cfg::get().output_dir, path::basename(*I) + usuffix);
-
-          BamTools::BamReader bam_reader;
-          bam_reader.Open(*I);
-          auto header = bam_reader.GetHeader();
-          bam_reader.Close();
-
-          SingleReadCorrector read_corrector(kmer_data, &header, pred);
-          io::UnmappedBamStream irs(*I);
           io::osequencestream ors(outcor);
 
-          hammer::ReadProcessor(cfg::get().max_nthreads).Run(irs, read_corrector, ors);
+          if (path::extension(*I) == ".bam") {
+            BamTools::BamReader bam_reader;
+            bam_reader.Open(*I);
+            auto header = bam_reader.GetHeader();
+            bam_reader.Close();
+
+            SingleReadCorrector read_corrector(kmer_data, &header, pred);
+            io::UnmappedBamStream irs(*I);
+            hammer::ReadProcessor(cfg::get().max_nthreads).Run(irs, read_corrector, ors);
+          } else {
+            io::FileReadStream irs(*I, io::PhredOffset);
+            SingleReadCorrector read_corrector(kmer_data, pred);
+            hammer::ReadProcessor(cfg::get().max_nthreads).Run(irs, read_corrector, ors);
+          }
 
           outlib.push_back_single(outcor);
       }

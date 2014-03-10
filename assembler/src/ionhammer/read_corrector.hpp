@@ -1009,7 +1009,6 @@ public:
     debug_pred_(debug) {}
 
   boost::optional<io::SingleRead> operator()(const io::SingleRead &r) {
-
     bool debug_mode = debug_pred_(r);
     if (debug_mode) {
       std::cerr << "=============================================" << std::endl;
