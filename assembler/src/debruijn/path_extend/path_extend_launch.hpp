@@ -228,7 +228,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	paths.SortByLength();
 
     if (mp_libs.size() == 0) {
-        resolver.removeOverlaps(paths, cover_map, max_over,
+        resolver.removeOverlaps(paths, cover_map, max_over, cfg::get().pe_params.param_set.remove_overlaps,
                                 writer, output_dir);
         if (cfg::get().avoid_rc_connections) {
             paths.FilterInterstandBulges();
@@ -269,7 +269,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	CompositeExtender* mp_main_pe = new CompositeExtender(gp.g, cover_map, all_libs, max_over);
 	INFO("Growing paths using mate-pairs");
 	auto mp_paths = resolver.extendSeeds(paths, *mp_main_pe);
-    resolver.removeOverlaps(mp_paths, cover_map, max_over,
+    resolver.removeOverlaps(mp_paths, cover_map, max_over, cfg::get().pe_params.param_set.remove_overlaps,
                             writer, output_dir);
     resolver.RemoveMatePairEnds(mp_paths, max_over);
 	if (cfg::get().avoid_rc_connections) {
@@ -294,7 +294,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
     max_over = FindMaxOverlapedLen(libs);
     CompositeExtender* last_extender = new CompositeExtender(gp.g, cover_map, all_libs, max_over);
     auto last_paths = resolver.extendSeeds(mp_paths, *last_extender);
-    resolver.removeOverlaps(last_paths, cover_map, max_over,
+    resolver.removeOverlaps(last_paths, cover_map, max_over, cfg::get().pe_params.param_set.remove_overlaps,
                     writer, output_dir);
 
     if (cfg::get().avoid_rc_connections) {

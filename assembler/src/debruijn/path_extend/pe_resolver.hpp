@@ -373,8 +373,11 @@ public:
     }
 
     void removeOverlaps(PathContainer& paths, GraphCoverageMap& coverage_map,
-                        size_t max_overlap, ContigWriter& writer,
+                        size_t max_overlap, bool cut_overlaps, ContigWriter& writer,
                         string output_dir) {
+        if (!cut_overlaps) {
+            return;
+        }
         SimpleOverlapRemover remover(g_, coverage_map);
         //writer.writePaths(paths, output_dir + "/before.fasta");
         //DEBUG("Removing subpaths");
