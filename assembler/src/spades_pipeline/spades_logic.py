@@ -38,7 +38,7 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
     subst_dict["load_from"] = saves_dir
     subst_dict["developer_mode"] = bool_to_str(cfg.developer_mode)
     subst_dict["gap_closer_enable"] = bool_to_str(last_one)
-    subst_dict["rr_enable"] = bool_to_str(K >= 55 and cfg.rr_enable)
+    subst_dict["rr_enable"] = bool_to_str((last_one or K >= 55) and cfg.rr_enable)
 #    subst_dict["topology_simplif_enabled"] = bool_to_str(last_one)
     subst_dict["max_threads"] = cfg.max_threads
     subst_dict["max_memory"] = cfg.max_memory
