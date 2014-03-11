@@ -81,7 +81,7 @@ bool RefineInsertSizeForLib(const graph_pack& gp,
 
   INFO("Estimating insert size (takes a while)");
   InsertSizeHistogramCounter<graph_pack> hist_counter(gp, /* ignore negative */ true);
-  RefineInsertSizeParallel<graph_pack, PairedReadType>(gp, streams, hist_counter, edge_length_threshold,data.read_length);
+  RefineInsertSizeParallel<graph_pack, PairedReadType>(gp, streams, hist_counter, edge_length_threshold, data.read_length);
 
   INFO(hist_counter.mapped() << " paired reads (" << ((double) hist_counter.mapped() * 100.0 / (double) hist_counter.total()) << "% of all) aligned to long edges");
   if (hist_counter.negative() > 3 * hist_counter.mapped())
@@ -170,6 +170,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
     }
 
     size_t edge_length_threshold = stats::Nx(gp.g, 50);
+    INFO("Graph N50: " << edge_length_threshold);
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         INFO("Estimating insert size for library #" << i);
         if (cfg::get().ds.reads[i].is_paired()) {

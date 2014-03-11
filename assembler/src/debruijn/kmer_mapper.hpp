@@ -130,7 +130,7 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
     		VERIFY(Substitute(new_kmer) == old_kmer);
         mapping_.erase(it);
       }
-      if(old_kmer.str() != new_kmer.str())
+      if(old_kmer != new_kmer)
             mapping_[old_kmer] = new_kmer;
     }
   }

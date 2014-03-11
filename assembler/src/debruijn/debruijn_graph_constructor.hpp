@@ -120,7 +120,7 @@ private:
 		}
 	}
 
-	VertexId FindEndMaybeMissing(const NonconjugateDeBruijnGraph& graph,
+	VertexId FindEndMaybeMissing(const NonconjugateDeBruijnGraph&,
 			VertexId start, Kmer start_kmer, Kmer end_kmer) {
 		if (start_kmer == end_kmer) {
 			return start;

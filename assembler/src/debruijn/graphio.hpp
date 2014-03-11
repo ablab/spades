@@ -229,7 +229,7 @@ class DataPrinter {
         size_t comp_size = 0;
         for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
             EdgeId e1 = *I;
-            auto inner_map = paired_index.GetEdgeInfo(e1, 0);
+            const auto& inner_map = paired_index.GetEdgeInfo(e1, 0);
             for (auto II = inner_map.begin(), IE = inner_map.end(); II != IE; ++II) {
                 EdgeId e2 = II->first;
                 const de::Histogram& hist = II->second;
@@ -243,7 +243,7 @@ class DataPrinter {
 
         for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
             EdgeId e1 = *I;
-            auto inner_map = paired_index.GetEdgeInfo(e1, 0);
+            const auto& inner_map = paired_index.GetEdgeInfo(e1, 0);
             for (auto II = inner_map.begin(), IE = inner_map.end(); II != IE; ++II) {
                 EdgeId e2 = II->first;
                 const Histogram& hist = II->second;
@@ -1078,13 +1078,6 @@ void ScanWithPairedIndices(const string& file_name,
     } else {
         ScanClusteredIndices(file_name, scanner, paired_indices);
     }
-}
-
-template<class graph_pack>
-void ScanWithClusteredIndex(const string& file_name,
-                            DataScanner<typename graph_pack::graph_t>& scanner, graph_pack& gp,
-                            PairedInfoIndex<typename graph_pack::graph_t>& paired_index) {
-    ScanWithPairedIndex(file_name, scanner, gp, paired_index, true);
 }
 
 template<class graph_pack>

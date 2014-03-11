@@ -253,14 +253,14 @@ template<class Graph>
 class ParallelEdgeProcessor {
     class ConstEdgeIteratorWrapper {
       public:
-        typedef typename Graph::EdgeId read_type;
+        typedef typename Graph::EdgeId ReadT;
 
         ConstEdgeIteratorWrapper(const Graph &g)
                 : it_(g) {}
 
         bool eof() const { return it_.IsEnd(); }
 
-        ConstEdgeIteratorWrapper& operator>>(typename Graph::EdgeIt &val) {
+        ConstEdgeIteratorWrapper& operator>>(typename Graph::EdgeId &val) {
             val = *(it_++);
             return *this;
         }
@@ -276,8 +276,8 @@ class ParallelEdgeProcessor {
     template <class Processor>
     bool Run(Processor &op) { return rp_.Run(it_, op); }
 
-    bool IsEnd() const { return it_.IsEnd(); }
-    size_t processed() const { return it_.processed(); }
+    bool IsEnd() const { return it_.eof(); }
+    size_t processed() const { return rp_.processed(); }
 
   private:
     hammer::ReadProcessor rp_;

@@ -140,16 +140,10 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
 
   size_t reads_buffer_size = cfg::get().count_split_buffer;
   if (reads_buffer_size == 0) {
-    reads_buffer_size = 536870912;
-# ifdef SPADES_USE_JEMALLOC
-    const size_t *cmem = 0;
-    size_t clen = sizeof(cmem);
-
-    je_mallctl("stats.cactive", &cmem, &clen, NULL, 0);
-    size_t mem_limit =  (size_t)((double)(get_memory_limit() - *cmem) / (nthreads * 3));
+    reads_buffer_size = 536870912ull;
+    size_t mem_limit =  (size_t)((double)(get_free_memory()) / (nthreads * 3));
     INFO("Memory available for splitting buffers: " << (double)mem_limit / 1024.0 / 1024.0 / 1024.0 << " Gb");
     reads_buffer_size = std::min(reads_buffer_size, mem_limit);
-# endif
   }
   size_t cell_size = reads_buffer_size / (num_files * sizeof(KMer));
   // Set sane minimum cell size
@@ -259,7 +253,11 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
   std::string workdir = cfg::get().input_working_dir;
   HammerKMerSplitter splitter(workdir);
   KMerDiskCounter<hammer::KMer> counter(workdir, splitter);
-  KMerIndexBuilder<HammerKMerIndex>(workdir, num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save finall */ true);
+  size_t kmers = KMerIndexBuilder<HammerKMerIndex>(workdir, num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save finall */ true);
+
+  // Check, whether we'll ever have enough memory for running BH and bail out earlier
+  if (1.25 * kmers * (sizeof(KMerStat) + sizeof(hammer::KMer)) > (double) get_memory_limit())
+      FATAL_ERROR("The reads contain too many k-mers to fit into available memory limit. Increase memory limit and restart")
 
   data.kmers_ = counter.GetFinalKMers();
 

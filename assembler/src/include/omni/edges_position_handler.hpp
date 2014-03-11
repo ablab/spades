@@ -38,15 +38,17 @@ class EdgesPositionHandler: public GraphActionHandler<Graph> {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 
+    size_t max_mapping_gap_;
+    size_t max_gap_diff_;
 	map<EdgeId, map<string, set<MappingRange>>> edges_positions_;
 	//TODO extract set<MappingRange> as a storage class
 
 	MappingRange EraseAndExtract(set<MappingRange> &ranges, set<MappingRange>::iterator &position, const MappingRange &new_pos) {
 		auto &old_pos = *position;
-		if(old_pos.IntersectLeftOf(new_pos) || old_pos.StrictlyContinuesWith(new_pos, this->g().k())) {
+		if(old_pos.IntersectLeftOf(new_pos) || old_pos.StrictlyContinuesWith(new_pos, max_mapping_gap_, max_gap_diff_)) {
 			ranges.erase(position);
 			return old_pos.Merge(new_pos);
-		} else if(new_pos.IntersectLeftOf(old_pos) || new_pos.StrictlyContinuesWith(old_pos, this->g().k())) {
+		} else if(new_pos.IntersectLeftOf(old_pos) || new_pos.StrictlyContinuesWith(old_pos, max_mapping_gap_, max_gap_diff_)) {
 			ranges.erase(position);
 			return new_pos.Merge(old_pos);
 		} else {
@@ -133,9 +135,17 @@ public:
 		}
 		return ss.str();
 	}
-
-	EdgesPositionHandler(const Graph &g) :
-			GraphActionHandler<Graph>(g, "EdgePositionHandler") {
+    
+    /**
+    * @param max_mapping_gap - maximal difference in positions of 
+    * original sequence for two mapping ranges to be merged.
+    * @param max_gap_diff - maximal difference between gaps in initial and mapped ranges for
+    * mapping ranges to be merged
+    */
+	EdgesPositionHandler(const Graph &g, size_t max_mapping_gap, size_t max_gap_diff = 0) :
+			GraphActionHandler<Graph>(g, "EdgePositionHandler"), 
+            max_mapping_gap_(max_mapping_gap),
+            max_gap_diff_(max_gap_diff) {
 	}
 
 	virtual ~EdgesPositionHandler() {

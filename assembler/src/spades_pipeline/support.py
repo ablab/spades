@@ -94,7 +94,12 @@ def check_reads_file_format(filename, message, only_assembler, library_type, log
     else:
         ext = os.path.splitext(filename)[1]
         if ext.lower() == '.gz':
-            ext = os.path.splitext(filename[:-len(ext)])[1] + ext
+            pre_ext = os.path.splitext(filename[:-len(ext)])[1]
+            if (pre_ext + ext).lower() in options_storage.ALLOWED_READS_EXTENSIONS:
+                ext = pre_ext + ext
+            else: # allows ".fastq.1.gz" like extensions
+                pre_pre_ext = os.path.splitext(filename[:-len(pre_ext + ext)])[1]
+                ext = pre_pre_ext + ext
     if ext.lower() not in options_storage.ALLOWED_READS_EXTENSIONS:
         error("file with reads has unsupported format (only " + ", ".join(options_storage.ALLOWED_READS_EXTENSIONS) +
               " are supported): %s (%s)" % (filename, message), log)
@@ -514,13 +519,6 @@ def rm_libs_by_type(dataset_data, types):
 def dataset_is_empty(dataset_data):
     for reads_library in dataset_data:
         if reads_library:
-            return False
-    return True
-
-
-def dataset_has_only_mate_pairs_libraries(dataset_data):
-    for reads_library in dataset_data:
-        if reads_library['type'] != 'mate-pairs':
             return False
     return True
 

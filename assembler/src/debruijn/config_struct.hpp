@@ -390,7 +390,8 @@ struct debruijn_config {
     };
 
     struct position_handler {
-        int max_single_gap;
+        size_t max_mapping_gap;
+        size_t max_gap_diff;
         std::string contigs_for_threading;
         std::string contigs_to_analyze;
         bool late_threading;

@@ -39,7 +39,11 @@ class DebruijnEnvironment : public Environment {
               file_name_base_("picture"),
               max_vertices_(40),
               edge_length_bound_(1000),
-              gp_(K, "./tmp", cfg::get().ds.reads.lib_count(), cfg::get().ds.reference_genome),
+              gp_(K, "./tmp", cfg::get().ds.reads.lib_count(), 
+                  cfg::get().ds.reference_genome,
+                  cfg::get().flanking_range,
+                  cfg::get().pos.max_mapping_gap,
+                  cfg::get().pos.max_gap_diff),
               mapper_(gp_.g, gp_.index, gp_.kmer_mapper),
               filler_(gp_.g, mapper_, gp_.edge_pos),
               labeler_(gp_.g, gp_.edge_pos) {

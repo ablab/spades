@@ -110,7 +110,8 @@ avoid_rc_connections true
 
 pos
 {
-	max_single_gap 50
+    max_mapping_gap 0 ; in terms of K+1 mers value will be K + max_mapping_gap
+    max_gap_diff 0
 	contigs_for_threading ./data/debruijn/contigs.fasta
     contigs_to_analyze ./data/debruijn/contigs.fasta
 	late_threading true

@@ -336,7 +336,8 @@ void load(debruijn_config::pacbio_processor& pb,
 void load(debruijn_config::position_handler& pos,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
-  load(pos.max_single_gap, pt, "max_single_gap");
+  load(pos.max_mapping_gap, pt, "max_mapping_gap");
+  load(pos.max_gap_diff, pt, "max_gap_diff");
   load(pos.contigs_for_threading, pt, "contigs_for_threading");
   load(pos.contigs_to_analyze, pt, "contigs_to_analyze");
   load(pos.late_threading, pt, "late_threading");
