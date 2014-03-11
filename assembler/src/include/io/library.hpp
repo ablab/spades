@@ -137,8 +137,7 @@ class SequencingLibraryBase {
 
   bool is_graph_contructable() const {
     return (type_ == io::LibraryType::PairedEnd ||
-            type_ == io::LibraryType::SingleReads ||
-            type_ == io::LibraryType::MatePairs);
+            type_ == io::LibraryType::SingleReads);
   }
 
   bool is_paired() const {
