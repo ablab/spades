@@ -9,6 +9,7 @@
 import os
 import shutil
 from site import addsitedir
+from distutils import dir_util
 import sys
 import getopt
 import logging
@@ -480,7 +481,7 @@ def main(args):
         if os.path.isdir(tmp_configs_dir) and not options_storage.continue_mode:
             shutil.rmtree(tmp_configs_dir)
         if not os.path.isdir(tmp_configs_dir):
-            shutil.copytree(os.path.join(spades_home, "configs"), tmp_configs_dir)
+            dir_util.copy_tree(os.path.join(spades_home, "configs"), tmp_configs_dir, preserve_times=False)
 
         corrected_dataset_yaml_filename = ''
         if "error_correction" in cfg:

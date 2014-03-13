@@ -16,6 +16,7 @@ import errno
 import options_storage
 import support
 import process_cfg
+from distutils import dir_util
 
 
 class DS_Args_List:
@@ -50,7 +51,7 @@ def print_ds_args(ds_args, log):
 def copy_configs(src_config_dir, dst_config_dir):
     if os.path.exists(dst_config_dir):
         shutil.rmtree(dst_config_dir)
-    shutil.copytree(src_config_dir, dst_config_dir)
+    dir_util.copy_tree(src_config_dir, dst_config_dir, preserve_times=False)
 
 
 def prepare_configs(src_config_dir, ds_args, log):

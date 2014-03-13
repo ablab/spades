@@ -14,6 +14,7 @@ import shutil
 import support
 import process_cfg
 from site import addsitedir
+from distutils import dir_util
 
 
 def compress_dataset_files(dataset_data, ext_python_modules_home, max_threads, log):
@@ -98,10 +99,10 @@ def run_hammer(corrected_dataset_yaml_filename, configs_dir, execution_home, cfg
     if os.path.exists(dst_configs):
         shutil.rmtree(dst_configs)
     if cfg.iontorrent:
-        shutil.copytree(os.path.join(configs_dir, "ionhammer"), dst_configs)
+        dir_util.copy_tree(os.path.join(configs_dir, "ionhammer"), dst_configs, preserve_times=False)
         cfg_file_name = os.path.join(dst_configs, "ionhammer.cfg")
     else:
-        shutil.copytree(os.path.join(configs_dir, "hammer"), dst_configs)
+        dir_util.copy_tree(os.path.join(configs_dir, "hammer"), dst_configs, preserve_times=False)
         cfg_file_name = os.path.join(dst_configs, "config.info")
     # removing template configs
     for root, dirs, files in os.walk(dst_configs):

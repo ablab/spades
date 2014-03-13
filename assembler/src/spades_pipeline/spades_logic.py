@@ -13,6 +13,7 @@ import support
 import process_cfg
 from process_cfg import bool_to_str
 from site import addsitedir
+from distutils import dir_util
 import options_storage
 
 BASE_STAGE = "construction"
@@ -112,7 +113,7 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):
             shutil.rmtree(data_dir)
         os.makedirs(data_dir)
 
-        shutil.copytree(os.path.join(configs_dir, "debruijn"), dst_configs)
+        dir_util.copy_tree(os.path.join(configs_dir, "debruijn"), dst_configs, preserve_times=False)
         # removing template configs
         for root, dirs, files in os.walk(dst_configs):
             for cfg_file in files:
