@@ -734,18 +734,13 @@ public:
         BidirectionalPath max_end(g_);
         for (auto it1 = paths.begin(); it1 != paths.end(); ++it1) {
             BidirectionalPath* p1 = *it1;
-            //DEBUG("begin find subpath for");
-            //p1->PrintInString();
             for (size_t i = 0; i < p1->Size(); ++i) {
                 if (p1->Length() - p1->LengthAt(i) > max_diff_len) {
-                    //DEBUG("more max diff " << i << " len " << p1->Length() - p1->LengthAt(i))
                     break;
                 }
                 bool contain_all = true;
                 for (size_t i1 = i + 1; i1 <= p1->Size() && contain_all; ++i1) {
                     BidirectionalPath subpath = p1->SubPath(i, i1);
-                    //DEBUG("analyze subpath ");
-                    //subpath.PrintInString();
                     for (auto it2 = paths.begin();  it2 != paths.end() && contain_all; ++it2) {
                         BidirectionalPath* p2 = *it2;
                         vector<size_t> positions2 = p2->FindAll(subpath.At(0));
@@ -756,18 +751,13 @@ public:
                                     && EqualEnds(subpath, 0, *p2, pos2, false)) {
                                 contain = true;
                                 break;
-                            } else {
-                                //DEBUG("not consist with path " << pos2);
-                                //p2->PrintInString();
                             }
                         }
                         if (!contain) {
-                            //DEBUG("not contains all " << i);
                             contain_all = false;
                         }
                     }
                     if (contain_all && (i1 - i) >= max_end.Size()) {
-                        //DEBUG("common end " << i << " " << i1)
                         max_end.Clear();
                         max_end.PushBack(subpath);
                     }
@@ -833,8 +823,7 @@ public:
             }
         }
         DEBUG("Candidates");
-        for (auto iter = weights_cands.begin(); iter != weights_cands.end();
-                ++iter) {
+        for (auto iter = weights_cands.begin(); iter != weights_cands.end(); ++iter) {
             DEBUG("Candidate " << g_.int_id(iter->first) << " weight " << iter->second);
         }
         vector<pair<EdgeId, double> > sort_res = MapToSortVector(weights_cands);
@@ -842,20 +831,15 @@ public:
         if (sort_res.size() < 1 || sort_res[0].second < filtering_threshold_) {
             filtered_cands.clear();
         } else if (sort_res.size() > 1
-                && sort_res[0].second
-                        > weight_priority_threshold_ * sort_res[1].second) {
+                && sort_res[0].second > weight_priority_threshold_ * sort_res[1].second) {
             filtered_cands.clear();
             filtered_cands.insert(sort_res[0].first);
         } else if (sort_res.size() > 1) {
             for (size_t i = 0; i < sort_res.size(); ++i) {
-                if (sort_res[i].second * weight_priority_threshold_ < sort_res[0].second){
+                if (sort_res[i].second * weight_priority_threshold_ < sort_res[0].second) {
                     filtered_cands.erase(sort_res[i].first);
                 }
             }
-        }
-        DEBUG("fil size " << filtered_cands.size());
-        if (filtered_cands.size() > 1) {
-            filtered_cands = SimpleScaffold(filtered_cands, support_paths_ends, sort_res);
         }
         EdgeContainer result;
         for (auto it = edges.begin(); it != edges.end(); ++it) {
@@ -870,25 +854,6 @@ public:
     }
 
 private:
-    set<EdgeId> SimpleScaffold(set<EdgeId>& candidates, map<EdgeId, set<BidirectionalPath*> >& ends, vector<pair<EdgeId, double> > sort_weights) {
-        vector<BidirectionalPath*> all_ends;
-        for (auto it = ends.begin(); it != ends.end(); ++it) {
-            if (candidates.find(it->first) == candidates.end()) {
-                continue;
-            }
-            all_ends.insert(all_ends.end(), it->second.begin(), it->second.end());
-        }
-        DEBUG("Scaffolding");
-        BidirectionalPath end = simple_scaffolding_.FindMaxCommonPath(all_ends, g_.k() + 40); //TODO: move to config
-        end.Print();
-        if (end.Size() > 0){
-            set<EdgeId> res;
-            res.insert(sort_weights[0].first);
-            DEBUG("scaffolding helps");
-            return res;
-        }
-        return candidates;
-    }
     bool UniqueBackPath(const BidirectionalPath& path, size_t pos) {
         int int_pos = (int) pos;
         while (int_pos >= 0) {
@@ -1110,10 +1075,8 @@ private:
     bool SignificallyDifferentEdges(const BidirectionalPath& init_path,
                                     const BidirectionalPath& path1,
                                     const map<size_t, double>& pi1,
-                                    double /*w1*/,
                                     const BidirectionalPath& path2,
                                     const map<size_t, double>& pi2,
-                                    double /*w2*/,
                                     const set<size_t>& unique_init_edges) {
         double not_common_w1 = 0.0;
         double common_w = 0.0;
@@ -1170,8 +1133,8 @@ private:
         set<BidirectionalPath*> to_del;
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
             if (math::gr(max_weight, (*iter)->GetWeight() * 1.5) &&
-                    SignificallyDifferentEdges(path, *max_path, all_pi.find(max_path)->second, max_weight,
-                                               *    *iter, all_pi.find(*iter)->second, (*iter)->GetWeight(),
+                    SignificallyDifferentEdges(path, *max_path, all_pi.find(max_path)->second,
+                                               **iter, all_pi.find(*iter)->second,
                                                FindNotCommonEdges(path, all_pi)))
                 to_del.insert(*iter);
         }
@@ -1278,19 +1241,12 @@ private:
 
     vector<BidirectionalPath*> SortResult(const BidirectionalPath& path,
             set<BidirectionalPath*>& next_paths) {
-        DEBUG("sort result");
         std::map<BidirectionalPath*, map<size_t, double> > all_pi;
         CountAllPairInfo(path, next_paths, all_pi);
         CountWeightsAndFilter(path, next_paths, false);
         vector<BidirectionalPath*> to_sort(next_paths.begin(), next_paths.end());
-        DEBUG("sort weight and filter");
-        for (size_t i = 0; i < to_sort.size(); ++i){
-               INFO("i " << i << " from " << to_sort.size());
-               to_sort[i]->PrintInfo();
-        }
         PathWithWeightSort comparator(*this, path, all_pi);
         std::sort(to_sort.begin(), to_sort.end(), comparator);
-        DEBUG("end sort result");
         return to_sort;
     }
 

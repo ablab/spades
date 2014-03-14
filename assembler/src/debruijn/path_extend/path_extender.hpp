@@ -615,7 +615,7 @@ private:
                     GrowPath(*conjugatePath);
                 } while (count_trying < 10 && (path->Length() != current_path_len));
                 path->CheckConjugateEnd();
-                DEBUG("result path ");
+                DEBUG("result path " << path->GetId());
                 path->Print();
             }
         }
