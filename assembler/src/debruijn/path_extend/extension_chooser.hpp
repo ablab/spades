@@ -994,25 +994,21 @@ private:
     EdgeContainer TryResolveBulge(BidirectionalPath& p, EdgeContainer& edges) const {
         map<EdgeId, double> weights = FindBulgeWeights(p, edges);
         double max_w = 0.0;
-        EdgeWithDistance max = *edges.begin();
+        EdgeContainer result;
         for (EdgeWithDistance e : edges) {
             double w = weights[e.e_];
             DEBUG("bulge " << g_.int_id(e.e_) << " w = " << w);
-            if (w > max_w) {
+            if (math::gr(w, max_w)) {
                 max_w = w;
-                max = e;
+                result.clear();
+                result.push_back(e);
+            } else if (math::eq(w, max_w)) {
+                result.push_back(e);
             }
         }
-        for (EdgeWithDistance e : edges) {
-            if (e.e_ == max.e_) {
-                continue;
-            }
-            if (math::eq(weights[e.e_], max_w)) {
-                return edges;
-            }
+        if (result.size() != 1) {
+            result.clear();
         }
-        EdgeContainer result;
-        result.push_back(max);
         return result;
     }
 
