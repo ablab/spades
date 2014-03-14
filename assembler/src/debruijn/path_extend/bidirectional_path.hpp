@@ -920,6 +920,24 @@ inline pair<size_t, size_t> ComparePaths(size_t start_pos1, size_t start_pos2, c
     }
     return make_pair(last1, last2);
 }
+
+inline void DeletePaths(set<BidirectionalPath*>& paths) {
+    for (auto i = paths.begin(); i != paths.end(); ++i) {
+        delete (*i);
+    }
+}
+
+inline void DeletePaths(vector<BidirectionalPath*>& paths) {
+    for (auto i = paths.begin(); i != paths.end(); ++i) {
+        delete (*i);
+    }
+}
+
+inline void DeleteMapWithPaths(map<EdgeId, BidirectionalPath*> m) {
+    for (auto i = m.begin(); i != m.end(); ++i){
+        delete i->second;
+    }
+}
 }  // path extend
 
 #endif /* BIDIRECTIONAL_PATH_H_ */
