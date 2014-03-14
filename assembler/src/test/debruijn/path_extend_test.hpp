@@ -13,7 +13,7 @@
 #include "test_utils.hpp"
 #include "omni/omni_utils.hpp"
 #include "path_extend/path_visualizer.hpp"
-
+#include "path_extend/pe_utils.hpp"
 namespace path_extend {
 
 BOOST_FIXTURE_TEST_SUITE(path_extend_basic, TmpFolderFixture)
@@ -688,6 +688,9 @@ BOOST_AUTO_TEST_CASE( BidirectionalPathLoopDetector ) {
     EdgeId start = *g.ConstEdgeBegin();
 
     BidirectionalPath path1(g);
+    GraphCoverageMap cover_map(g);
+    LoopDetector loop_detect(&path1, cover_map);
+    path1.Subscribe(&cover_map);
 
     // 98 26 145 70 3 139 139
     EdgeId e1 = g.conjugate(start);
@@ -710,13 +713,11 @@ BOOST_AUTO_TEST_CASE( BidirectionalPathLoopDetector ) {
     path1.PushBack(e6);
     path1.PushBack(e5);
     path1.PushBack(e6);
-
     size_t skip_identical = 0;
-    BOOST_CHECK_EQUAL(path1.getLoopDetector().IsCycled(4, skip_identical), false);
-    BOOST_CHECK_EQUAL(path1.getLoopDetector().IsCycled(3, skip_identical), true);
-    BOOST_CHECK_EQUAL(path1.getLoopDetector().IsCycled(2, skip_identical), true);
-
-    path1.getLoopDetector().RemoveLoop(skip_identical, false);
+    BOOST_CHECK_EQUAL(loop_detect.IsCycled(4, skip_identical), false);
+    BOOST_CHECK_EQUAL(loop_detect.IsCycled(3, skip_identical), true);
+    BOOST_CHECK_EQUAL(loop_detect.IsCycled(2, skip_identical), true);
+    loop_detect.RemoveLoop(skip_identical, false);
     BOOST_CHECK_EQUAL(path1.Size(), 6);
     BOOST_CHECK_EQUAL(path1.Back(), e6);
 
@@ -727,13 +728,13 @@ BOOST_AUTO_TEST_CASE( BidirectionalPathLoopDetector ) {
     path1.PushBack(e5);
 
     skip_identical = 0;
-    BOOST_CHECK_EQUAL(path1.getLoopDetector().IsCycled(4, skip_identical), false);
+    BOOST_CHECK_EQUAL(loop_detect.IsCycled(4, skip_identical), false);
     skip_identical = 0;
-    BOOST_CHECK_EQUAL(path1.getLoopDetector().IsCycled(3, skip_identical), true);
+    BOOST_CHECK_EQUAL(loop_detect.IsCycled(3, skip_identical), true);
     skip_identical = 0;
-    BOOST_CHECK_EQUAL(path1.getLoopDetector().IsCycled(2, skip_identical), true);
+    BOOST_CHECK_EQUAL(loop_detect.IsCycled(2, skip_identical), true);
 
-    path1.getLoopDetector().RemoveLoop(skip_identical, true);
+    loop_detect.RemoveLoop(skip_identical, true);
     BOOST_CHECK_EQUAL(path1.Size(), 5);
     BOOST_CHECK_EQUAL(path1.Back(), e5);
 
@@ -746,14 +747,14 @@ BOOST_AUTO_TEST_CASE( BidirectionalPathLoopDetector ) {
     path1.PushBack(e7);
 
     skip_identical = 0;
-    BOOST_CHECK_EQUAL(path1.getLoopDetector().IsCycled(4, skip_identical), false);
+    BOOST_CHECK_EQUAL(loop_detect.IsCycled(4, skip_identical), false);
     skip_identical = 0;
-    BOOST_CHECK_EQUAL(path1.getLoopDetector().IsCycled(3, skip_identical), false);
+    BOOST_CHECK_EQUAL(loop_detect.IsCycled(3, skip_identical), false);
     skip_identical = 0;
-    BOOST_CHECK_EQUAL(path1.getLoopDetector().IsCycled(2, skip_identical), false);
+    BOOST_CHECK_EQUAL(loop_detect.IsCycled(2, skip_identical), false);
 
-    BOOST_CHECK_EQUAL(path1.getLoopDetector().EdgesToRemove(skip_identical, false), 0);
-    path1.getLoopDetector().RemoveLoop(skip_identical, false);
+    BOOST_CHECK_EQUAL(loop_detect.EdgesToRemove(skip_identical, false), 0);
+    loop_detect.RemoveLoop(skip_identical, false);
     BOOST_CHECK_EQUAL(path1.Size(), 12);
     BOOST_CHECK_EQUAL(path1.Back(), e7);
 }
