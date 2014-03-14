@@ -739,16 +739,6 @@ inline bool PathIdCompare(const BidirectionalPath* p1, const BidirectionalPath* 
     return p1->GetId() < p2->GetId();
 }
 
-inline bool PathCompare(const BidirectionalPath* p1, const BidirectionalPath* p2) {
-    if (p1->GetId() != p2->GetId()) {
-        return p1->GetId() < p2->GetId();
-    }
-    if (p1->Length() != p2->Length()) {
-        return p1->Length() < p2->Length();
-    }
-    return p1->Size() < p2->Size();
-}
-
 typedef std::pair<BidirectionalPath*, BidirectionalPath*> PathPair;
 bool compare_path_pairs(const PathPair& p1, const PathPair& p2) {
     if (p1.first->Length() != p2.first->Length() || p1.first->Size() == 0 || p2.first->Size() == 0) {

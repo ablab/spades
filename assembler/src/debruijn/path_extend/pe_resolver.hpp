@@ -43,7 +43,6 @@ public:
             std::set<BidirectionalPath *> cov_paths = coverage_map_.GetCoveringPaths(edge);
             std::vector<BidirectionalPath*> cov_vect(cov_paths.begin(), cov_paths.end());
             std::sort(cov_vect.begin(), cov_vect.end(), PathIdCompare);
-            DEBUG("Analyze edge " << g_.int_id(edge) << " covered paths size " << cov_vect.size());
             for (size_t vect_i = 0; vect_i < cov_vect.size(); ++vect_i) {
                 BidirectionalPath* path1 = cov_vect.at(vect_i);
                 if (cov_paths.find(path1) == cov_paths.end()) {
@@ -72,7 +71,6 @@ public:
                 }
             }
         }
-        DEBUG("END ALL CUT")
     }
 
 private:
@@ -103,7 +101,6 @@ private:
                                              max_overlap);
         last1 = posRes.first;
         last2 = posRes.second;
-        DEBUG("compare paths " << pos1 << " " << pos2 << " to " << last1 << " " << last2);
         BidirectionalPath* conj1 = path1->GetConjPath();
         BidirectionalPath* conj2 = path2->GetConjPath();
         size_t first1 = conj1->Size() - pos1 - 1;
@@ -111,21 +108,6 @@ private:
         posRes = ComparePaths(first1, first2, *conj1, *conj2, max_overlap);
         first2 = conj2->Size() - posRes.second - 1;
         first1 = conj1->Size() - posRes.first - 1;
-        DEBUG("try to delete smth ");
-        path1->Print();
-        DEBUG("second path");
-        path2->Print();
-        DEBUG("path1 begin " << first1 << " path1 end " << last1 <<
-              " path2_begin " << first2 << " path2_end " << last2 <<
-              " path1_is_overlap " << path1->IsOverlap() <<
-              " path2_is_overlap " << path2->IsOverlap() <<
-              " path1 _has_overlaped_begin " << path1->HasOverlapedBegin() <<
-              " path2_has_overlaped_begin " << path2->HasOverlapedBegin() <<
-              " path1 _has_overlaped_end " << path1->HasOverlapedEnd() <<
-              " path2_has_overlaped_end " << path2->HasOverlapedEnd() <<
-              " delete_subpaths " << delete_subpaths <<
-              " delete_begins " << delete_begins <<
-              " delete_all " << delete_all);
         if ((int)path2->LengthAt(last2) - (int)g_.length(path2->At(last2)) < (int)max_overlap) {
             last2 = (int)path2->Size() - 1;
         }
@@ -150,6 +132,8 @@ private:
                       <<" after common 1 " << (path1->LengthAt(last1) - g_.length(path1->At(last1)))
                       << " before common 2 " << (path2->Length() - path2->LengthAt(first2))
                       << " after common 2 " << (path2->LengthAt(last2) - g_.length(path2->At(last2))));
+                path1->Print();
+                path2->Print();
             }
         }
     }
@@ -157,48 +141,33 @@ private:
 	bool CutOverlaps(BidirectionalPath* path1, size_t first1, size_t last1, size_t size1,
                      BidirectionalPath* path2, size_t first2, size_t last2, size_t size2,
                      bool del_subpaths, bool del_begins, bool del_all) const {
-	    DEBUG("Cut overlaps: first1 = " << first1 << ", last1 = " << last1 << ", size1 = " << size1
-	          << ", first2 = " << first2 << ", last2 = " << last2 << ", size2 = " << size2
-	          <<", path1 over begin = " << path1->HasOverlapedBegin() << ", path1 over end = " << path1->HasOverlapedEnd()
-	          <<", path2 over begin = " << path2->HasOverlapedBegin() << ", path2 over end = " << path2->HasOverlapedEnd());
         if (first1 == 0 && last1 == size1 - 1 && del_subpaths
                 && !path1->HasOverlapedBegin() && !path1->HasOverlapedEnd()) {
-            DEBUG("delete path 1");
             path1->Clear();
         } else if (first2 == 0 && last2 == size2 - 1 && del_subpaths
                 && !path2->HasOverlapedBegin() && !path2->HasOverlapedEnd()) {
-            DEBUG("delete path 2");
             path2->Clear();
         } else if (first2 == 0 && first1 == 0 && del_begins) {
             if (path1->Length() < path2->Length() && !path1->HasOverlapedBegin()) {
-                DEBUG("delete begin path 1");
                 path1->GetConjPath()->PopBack(last1 + 1);
             } else if (!path2->HasOverlapedBegin()) {
-                DEBUG("delete begin path 2");
                 path2->GetConjPath()->PopBack(last2 + 1);
             }
         } else if ((last1 == size1 - 1 && last2 == size2 - 1) && del_begins) {
             if (path1->Length() < path2->Length() && !path1->HasOverlapedEnd()) {
-                DEBUG("delete end path 1");
                 path1->PopBack(last1 + 1 - first1);
             } else if (!path2->HasOverlapedEnd()) {
-                DEBUG("delete end path 2");
                 path2->PopBack(last2 + 1 - first2);
             }
         } else if (first2 == 0 && del_all && !path2->HasOverlapedBegin()) {
-            DEBUG("delete path 2 begin");
             path2->GetConjPath()->PopBack(last2 + 1);
         } else if (last2 == size2 - 1 && del_all && !path2->HasOverlapedEnd()) {
-            DEBUG("delete path 2 end");
             path2->PopBack(last1 + 1 - first1);
         } else if (first1 == 0 && del_all && !path1->HasOverlapedBegin()) {
-            DEBUG("delete path1 begin");
             path1->GetConjPath()->PopBack(last1 + 1);
         } else if (last1 == size1 - 1 && del_all && !path1->HasOverlapedEnd()) {
             path1->PopBack(last1 + 1 - first1);
-            DEBUG("delete path1 end")
         } else {
-            DEBUG("nothing delete");
             return false;
         }
         return true;
@@ -230,56 +199,31 @@ private:
 
     void RemoveOverlap(PathContainer& paths, BidirectionalPath* path1,
                        BidirectionalPath* path2, size_t overlap_size) const {
-        DEBUG("remove overlaps, change paths " << overlap_size);
-        path1->Print();
-        DEBUG("next");
-        path2->Print();
         BidirectionalPath* conj2 = path2->GetConjPath();
         if (path1->IsOverlap() && overlap_size == path1->Size()) {
             conj2->PopBack(overlap_size);
-            DEBUG("change second path");
             path2->SetOverlapedBeginTo(path1);
         } else if (path2->IsOverlap() && path2->Size() == overlap_size) {
             path1->PopBack(overlap_size);
-            DEBUG("change first path");
             path1->SetOverlapedEndTo(path2);
         } else if (overlap_size < path2->Size()
                 && overlap_size < path1->Size()) {
-            DEBUG("overlap smaller " << overlap_size);
-            path1->Print();
-            DEBUG("next");
-            path2->Print();
-            BidirectionalPath* overlap = new BidirectionalPath(g_,
-                                                               path1->Back());
+            BidirectionalPath* overlap = new BidirectionalPath(g_, path1->Back());
             BidirectionalPath* conj_overlap = new BidirectionalPath(
                     g_, g_.conjugate(path1->Back()));
             paths.AddPair(overlap, conj_overlap);
-            DEBUG("pop back");
             path1->PopBack();
-            DEBUG("pop back2");
             conj2->PopBack();
-            path1->Print();
-            DEBUG("next");
-            path2->Print();
             for (size_t i = 1; i < overlap_size; ++i) {
                 conj_overlap->PushBack(g_.conjugate(path1->Back()));
-                DEBUG("pop back3");
                 path1->PopBack();
-                DEBUG("pop back5");
                 conj2->PopBack();
-                DEBUG("pop back6");
             }
-            DEBUG("after");
-            path1->Print();
-            DEBUG("next");
-            path2->Print();
             coverage_map_.Subscribe(overlap);
             overlap->SetOverlap(true);
             coverage_map_.Subscribe(conj_overlap);
             path1->SetOverlapedEndTo(overlap);
             path2->SetOverlapedBeginTo(overlap);
-            DEBUG("add new overlap");
-            overlap->Print();
         }
     }
 
