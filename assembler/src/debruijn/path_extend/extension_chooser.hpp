@@ -945,25 +945,14 @@ public:
 private:
     EdgeContainer ScaffoldTree(BidirectionalPath& path) {
         DEBUG("try scaffold tree");
-        set<BidirectionalPath*> next_paths = path_searcher_.ScaffoldTree(path);
+        vector<BidirectionalPath*> next_paths = path_searcher_.ScaffoldTree(path);
         VERIFY(next_paths.size() <= 1);
-        if (next_paths.size() != 1) {
-            DeleteNextPaths(next_paths);
-            return EdgeContainer();
-        }
-        DEBUG("Path to add dirty ");
-        BidirectionalPath* res = NULL;
-        for (BidirectionalPath* p : next_paths) {
-            res = p;
-            p->Print();
-            for (size_t i = 0; i < p->Size() - 1; ++i) {
-                path.PushBack(p->At(i), p->GapAt(i));
+        EdgeContainer result;
+        if (next_paths.size() == 1 && next_paths[0]->Size() > 0) {
+            BidirectionalPath* res = next_paths[0];
+            for (size_t i = 0; i < res->Size() - 1; ++i) {
+                path.PushBack(res->At(i), res->GapAt(i));
             }
-        }
-        EdgeContainer result = EdgeContainer();
-        if (res != NULL) {
-            DEBUG("Finally the path, and an edge to add " << g_.int_id(res->Back()) << " : " << g_.length(res->Back()));
-            path.Print();
             result = EdgeContainer(1, EdgeWithDistance(res->Back(), res->GapAt(res->Size() - 1)));
         }
         DeleteNextPaths(next_paths);
@@ -1032,6 +1021,13 @@ private:
             delete (*i);
         }
     }
+
+    void DeleteNextPaths(vector<BidirectionalPath*>& paths) {
+        for (auto i = paths.begin(); i != paths.end(); ++i) {
+            delete (*i);
+        }
+    }
+
     void DeleteMapWithPaths(map<EdgeId, BidirectionalPath*> m) {
         for (auto i = m.begin(); i != m.end(); ++i){
             delete i->second;

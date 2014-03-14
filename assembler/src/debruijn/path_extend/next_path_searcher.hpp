@@ -193,7 +193,7 @@ public:
 
     NextPathSearcher(const Graph& g, const GraphCoverageMap& cover_map, size_t search_dist, PathsWeightCounter weight_counter);
     set<BidirectionalPath*> FindNextPaths(const BidirectionalPath& path, EdgeId begin_edge, bool jump = true);
-    set<BidirectionalPath*> ScaffoldTree(const BidirectionalPath& path);
+    vector<BidirectionalPath*> ScaffoldTree(const BidirectionalPath& path);
 private:
     bool IsOutTip(VertexId v) const;
     bool IsInTip(VertexId v) const;
@@ -243,7 +243,7 @@ inline NextPathSearcher::NextPathSearcher(const Graph& g, const GraphCoverageMap
           max_paths_(1000) {
 
 }
-inline set<BidirectionalPath*> NextPathSearcher::ScaffoldTree(const BidirectionalPath& path) {
+inline vector<BidirectionalPath*> NextPathSearcher::ScaffoldTree(const BidirectionalPath& path) {
     Edge* start_e = new Edge(g_, path.At(0), NULL, g_.length(path.At(0)) + path.GapAt(0), path.GapAt(0));
     Edge* e = start_e->AddPath(path, 1);
     //jump forward when too much paths
@@ -251,12 +251,12 @@ inline set<BidirectionalPath*> NextPathSearcher::ScaffoldTree(const Bidirectiona
     path.Print();
     vector<Edge*> result_edges;
     ScaffoldChristmasTree(path, e, result_edges);
-    std::set<BidirectionalPath*> result_paths;
+    std::vector<BidirectionalPath*> result_paths;
     DEBUG("adding paths " << result_edges.size());
     for (size_t i = 0; i < result_edges.size(); ++i) {
         BidirectionalPath result_path = result_edges[i]->GetPrevPath(path.Size());
         if (!result_path.Empty())
-            result_paths.insert(new BidirectionalPath(result_path));
+            result_paths.push_back(new BidirectionalPath(result_path));
     }
     delete start_e;
     DEBUG( "for path " << path.GetId() << " several extension " << result_paths.size());
