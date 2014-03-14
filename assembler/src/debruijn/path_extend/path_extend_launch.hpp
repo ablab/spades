@@ -60,30 +60,20 @@ inline void DebugOutputPaths(const ContigWriter& writer, const conj_graph_pack& 
     }
 }
 
-inline double GetWeightThreshold(const PairedInfoLibrary* lib,
-                          const pe_config::ParamSetT& pset) {
-    return lib->IsMp() ?
-            pset.mate_pair_options.weight_threshold :
-            pset.extension_options.weight_threshold;
+inline double GetWeightThreshold(const PairedInfoLibrary* lib, const pe_config::ParamSetT& pset) {
+    return lib->IsMp() ? pset.mate_pair_options.weight_threshold : pset.extension_options.weight_threshold;
 }
 
-inline double GetSingleThreshold(const PairedInfoLibrary* lib,
-                          const pe_config::ParamSetT& pset) {
-    return lib->IsMp() ?
-            pset.mate_pair_options.single_threshold :
-            pset.extension_options.single_threshold;
+inline double GetSingleThreshold(const PairedInfoLibrary* lib, const pe_config::ParamSetT& pset) {
+    return lib->IsMp() ? pset.mate_pair_options.single_threshold : pset.extension_options.single_threshold;
 }
 
-inline double GetPriorityCoeff(const PairedInfoLibrary* lib,
-                        const pe_config::ParamSetT& pset) {
-    return lib->IsMp() ?
-            pset.mate_pair_options.priority_coeff :
-            pset.extension_options.priority_coeff;
+inline double GetPriorityCoeff(const PairedInfoLibrary* lib, const pe_config::ParamSetT& pset) {
+    return lib->IsMp() ? pset.mate_pair_options.priority_coeff : pset.extension_options.priority_coeff;
 }
 
-inline string MakeNewName(const std::string& contigs_name,
-		const std::string& subname){
-	return contigs_name.substr(0, contigs_name.rfind(".fasta")) + "_" + subname + ".fasta";
+inline string MakeNewName(const std::string& contigs_name, const std::string& subname) {
+    return contigs_name.substr(0, contigs_name.rfind(".fasta")) + "_" + subname + ".fasta";
 }
 
 inline void OutputBrokenScaffolds(PathContainer& paths, int k,
@@ -115,33 +105,27 @@ inline void AddPathsToContainer(const conj_graph_pack& gp,
         vector<EdgeId> edges = path.getPath();
         BidirectionalPath* new_path = new BidirectionalPath(gp.g, edges);
         BidirectionalPath* conj_path = new BidirectionalPath(new_path->Conjugate());
-        new_path->SetWeight((double) path.getWeight());
-        conj_path->SetWeight((double) path.getWeight());
+        new_path->SetWeight((float) path.getWeight());
+        conj_path->SetWeight((float) path.getWeight());
         result.AddPair(new_path, conj_path);
     }
     DEBUG("Long reads paths " << result.size() << " == ");
 }
 
-inline vector<SimpleExtender *> MakePEExtenders(const conj_graph_pack& gp,
-                                         const pe_config::ParamSetT& pset,
-                                         vector<PairedInfoLibrary*>& libs,
-                                         bool investigate_loops) {
+inline vector<SimpleExtender *> MakePEExtenders(const conj_graph_pack& gp, const pe_config::ParamSetT& pset, vector<PairedInfoLibrary*>& libs,
+                                                const GraphCoverageMap& cov_map, bool investigate_loops) {
     vector<SimpleExtender *> extends;
     for (size_t i = 0; i < libs.size(); ++i) {
-        WeightCounter* wc = new PathCoverWeightCounter(
-                gp.g, libs[i], GetWeightThreshold(libs[i], pset),
-                GetSingleThreshold(libs[i], pset));
+        WeightCounter* wc = new PathCoverWeightCounter(gp.g, libs[i], GetWeightThreshold(libs[i], pset), GetSingleThreshold(libs[i], pset));
         wc->setNormalizeWeight(pset.normalize_weight);
-        SimpleExtensionChooser * extension = new SimpleExtensionChooser(
-                gp.g, wc, GetPriorityCoeff(libs[i], pset));
-        extends.push_back(new SimpleExtender(gp.g, extension, libs[i]->GetISMax(), pset.loop_removal.max_loops, investigate_loops));
+        SimpleExtensionChooser * extension = new SimpleExtensionChooser(gp.g, wc, GetPriorityCoeff(libs[i], pset));
+        extends.push_back(new SimpleExtender(gp, cov_map, extension, libs[i]->GetISMax(), pset.loop_removal.max_loops, investigate_loops));
     }
     return extends;
 }
 
-inline vector<SimpleExtender*> MakeLongReadsExtender(
-        const conj_graph_pack& gp, const vector<PathStorageInfo<Graph> >& reads,
-        size_t max_loops, const std::string& output_dir) {
+inline vector<SimpleExtender*> MakeLongReadsExtender(const conj_graph_pack& gp, const vector<PathStorageInfo<Graph> >& reads, const GraphCoverageMap& cov_map,
+                                                     size_t max_loops, const std::string& output_dir) {
     vector<SimpleExtender*> extends;
     for (size_t i = 0; i < reads.size(); ++i) {
         if (reads[i].GetPaths().size() == 0) {
@@ -151,54 +135,36 @@ inline vector<SimpleExtender*> MakeLongReadsExtender(
         AddPathsToContainer(gp, reads[i].GetPaths(), 1, paths);
         ContigWriter writer(gp.g);
         DebugOutputPaths(writer, gp, output_dir, paths, "long_reads");
-        ExtensionChooser * longReadEC = new LongReadsExtensionChooser(
-                gp.g, paths, reads[i].GetFilteringThreshold(),
-                reads[i].GetWeightPriorityThreshold(),
-                reads[i].GetUniqueEdgePriorityThreshold());
-        SimpleExtender * longReadExtender = new SimpleExtender(gp.g,
-                                                               longReadEC,
-                                                               10000, //FIXME
-                                                               max_loops,
-                                                               true);
+        ExtensionChooser * longReadEC = new LongReadsExtensionChooser(gp.g, paths, reads[i].GetFilteringThreshold(), reads[i].GetWeightPriorityThreshold(),
+                                                                      reads[i].GetUniqueEdgePriorityThreshold());
+        SimpleExtender * longReadExtender = new SimpleExtender(gp, cov_map, longReadEC, 10000,  //FIXME
+                                                               max_loops, true);
         extends.push_back(longReadExtender);
+
     }
     return extends;
 }
-inline vector<ScaffoldingPathExtender*> MakeScaffoldingExtender(
-        const conj_graph_pack& gp, const pe_config::ParamSetT& pset,
-        vector<PairedInfoLibrary *>& libs) {
-    GapJoiner * gapJoiner =
-            new HammingGapJoiner(
-                    gp.g,
-                    pset.scaffolder_options.min_gap_score,
-                    (int) (pset.scaffolder_options.max_must_overlap * (double) gp.g.k()),
-                    (int) (pset.scaffolder_options.max_can_overlap * (double) gp.g.k()),
-                    pset.scaffolder_options.short_overlap);
+inline vector<ScaffoldingPathExtender*> MakeScaffoldingExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, const pe_config::ParamSetT& pset,
+                                                                vector<PairedInfoLibrary *>& libs) {
+    GapJoiner * gapJoiner = new HammingGapJoiner(gp.g, pset.scaffolder_options.min_gap_score,
+                                                 (int) (pset.scaffolder_options.max_must_overlap * (double) gp.g.k()),
+                                                 (int) (pset.scaffolder_options.max_can_overlap * (double) gp.g.k()), pset.scaffolder_options.short_overlap);
     vector<ScaffoldingPathExtender*> scafPEs;
     for (size_t i = 0; i < libs.size(); ++i) {
         WeightCounter* counter = new ReadCountWeightCounter(gp.g, libs[i]);
         double prior_coef = GetPriorityCoeff(libs[i], pset);
-        ScaffoldingExtensionChooser * scaff_chooser =
-                new ScaffoldingExtensionChooser(gp.g, counter, prior_coef);
-        scafPEs.push_back(
-                new ScaffoldingPathExtender(gp.g,
-                                            scaff_chooser, gapJoiner,
-                                            libs[i]->GetISMax(), pset.loop_removal.max_loops, false));
+        ScaffoldingExtensionChooser * scaff_chooser = new ScaffoldingExtensionChooser(gp.g, counter, prior_coef);
+        scafPEs.push_back(new ScaffoldingPathExtender(gp, cov_map, scaff_chooser, gapJoiner, libs[i]->GetISMax(), pset.loop_removal.max_loops, false));
     }
     return scafPEs;
 }
 
-inline vector<SimpleExtender *> MakeMPExtenders(const conj_graph_pack& gp,
-                                         const pe_config::ParamSetT& pset,
-                                         const GraphCoverageMap& cover_map,
-                                         vector<PairedInfoLibrary *>& libs) {
+inline vector<SimpleExtender *> MakeMPExtenders(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, const pe_config::ParamSetT& pset,
+                                                const PathContainer& paths, vector<PairedInfoLibrary *>& libs) {
     vector<SimpleExtender *> mpPEs;
     for (size_t i = 0; i < libs.size(); ++i) {
-        MatePairExtensionChooser* chooser = new MatePairExtensionChooser(
-                gp.g, *libs[i], cover_map);
-        SimpleExtender* mp_extender = new SimpleExtender(
-                gp.g, chooser, libs[i]->GetISMax(),
-                pset.loop_removal.mp_max_loops, false);
+        MatePairExtensionChooser* chooser = new MatePairExtensionChooser(gp.g, *libs[i], paths);
+        SimpleExtender* mp_extender = new SimpleExtender(gp, cov_map, chooser, libs[i]->GetISMax(), pset.loop_removal.mp_max_loops, true);
         mpPEs.push_back(mp_extender);
     }
     return mpPEs;
@@ -213,7 +179,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 		vector<PairedInfoLibrary *>& libs,
 		vector<PairedInfoLibrary *>& scaff_libs,
 		vector<PairedInfoLibrary *>& mp_libs,
-		const vector<PathStorageInfo<Graph> >& long_reads,
+		vector<PathStorageInfo<Graph> >& long_reads,
 		const std::string& output_dir,
 		const std::string& contigs_name,
 		bool traversLoops,
@@ -236,24 +202,25 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	ContigWriter writer(gp.g);
 
 //make pe + long reads extenders
-    vector<SimpleExtender *> usualPEs = MakePEExtenders(gp, pset, libs, false);
-    vector<SimpleExtender*> long_reads_extenders = MakeLongReadsExtender(
-            gp, long_reads, pset.loop_removal.max_loops, output_dir);
-    vector<SimpleExtender *> shortLoopPEs = MakePEExtenders(gp, pset, libs, true);
-    vector<ScaffoldingPathExtender*> scafPEs = MakeScaffoldingExtender(gp, pset, scaff_libs);
-    vector<PathExtender *> all_libs(long_reads_extenders.begin(),
-                                    long_reads_extenders.end());
-    all_libs.insert(all_libs.end(), usualPEs.begin(), usualPEs.end() );
+    GraphCoverageMap cover_map(gp.g);
+    vector<SimpleExtender *> usualPEs = MakePEExtenders(gp, pset, libs, cover_map, false);
+    vector<SimpleExtender*> long_reads_extenders = MakeLongReadsExtender(gp, long_reads, cover_map, pset.loop_removal.max_loops, output_dir);
+    long_reads.clear();
+    vector<SimpleExtender *> shortLoopPEs = MakePEExtenders(gp, pset, libs, cover_map, true);
+    vector<ScaffoldingPathExtender*> scafPEs = MakeScaffoldingExtender(gp, cover_map, pset, scaff_libs);
+    vector<PathExtender *> all_libs(long_reads_extenders.begin(), long_reads_extenders.end());
+    all_libs.insert(all_libs.end(), usualPEs.begin(), usualPEs.end());
     all_libs.insert(all_libs.end(), shortLoopPEs.begin(), shortLoopPEs.end());
     all_libs.insert(all_libs.end(), scafPEs.begin(), scafPEs.end());
     size_t max_over = max(FindMaxOverlapedLen(libs), gp.g.k() + 100);
-    CompositeExtender * mainPE = new CompositeExtender(
-            gp.g, all_libs, max_over);
+
+    CompositeExtender * mainPE = new CompositeExtender(gp.g, cover_map, all_libs, max_over);
 
 //extend pe + long reads
     PathExtendResolver resolver(gp.g);
     auto seeds = resolver.makeSimpleSeeds();
-	seeds.SortByLength();
+	DebugOutputPaths(writer, gp, output_dir, seeds, "init_paths");
+    seeds.SortByLength();
 	seeds.ResetPathsId();
 	INFO("Growing paths using paired-end and long single reads");
 	auto paths = resolver.extendSeeds(seeds, *mainPE);
@@ -261,14 +228,13 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	paths.SortByLength();
 
     if (mp_libs.size() == 0) {
-        resolver.removeOverlaps(paths, mainPE->GetCoverageMap(), max_over,
+        resolver.removeOverlaps(paths, cover_map, max_over, cfg::get().pe_params.param_set.remove_overlaps,
                                 writer, output_dir);
         if (cfg::get().avoid_rc_connections) {
             paths.FilterInterstandBulges();
         }
         paths.FilterEmptyPaths();
-        paths.CheckSymmetry();
-        resolver.addUncoveredEdges(paths, mainPE->GetCoverageMap());
+        resolver.addUncoveredEdges(paths, cover_map);
         paths.SortByLength();
         if (broken_contigs.is_initialized()) {
             OutputBrokenScaffolds(paths, (int) gp.g.k(), writer,
@@ -276,7 +242,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
         }
         if (traversLoops) {
             INFO("Traversing tandem repeats");
-            LoopTraverser loopTraverser(gp.g, mainPE->GetCoverageMap(), mainPE);
+            LoopTraverser loopTraverser(gp.g, cover_map, mainPE);
             loopTraverser.TraverseAllLoops();
             paths.SortByLength();
         }
@@ -292,9 +258,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 
 //MP
     INFO("Adding mate-pairs");
-    vector<SimpleExtender*> mpPEs = MakeMPExtenders(gp, pset,
-                                                    mainPE->GetCoverageMap(),
-                                                    mp_libs);
+    vector<SimpleExtender*> mpPEs = MakeMPExtenders(gp, cover_map, pset, paths, mp_libs);
     max_over = std::max(FindMaxOverlapedLen(mp_libs), FindMaxOverlapedLen(libs));
 	all_libs.clear();
 	all_libs.insert(all_libs.end(), long_reads_extenders.begin(),
@@ -302,17 +266,16 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	all_libs.insert(all_libs.end(), shortLoopPEs.begin(), shortLoopPEs.end());
 	all_libs.insert(all_libs.end(), scafPEs.begin(), scafPEs.end());
 	all_libs.insert(all_libs.end(), mpPEs.begin(), mpPEs.end());
-	CompositeExtender* mp_main_pe = new CompositeExtender(gp.g, all_libs, max_over);
+	CompositeExtender* mp_main_pe = new CompositeExtender(gp.g, cover_map, all_libs, max_over);
 	INFO("Growing paths using mate-pairs");
 	auto mp_paths = resolver.extendSeeds(paths, *mp_main_pe);
-    resolver.removeOverlaps(mp_paths, mp_main_pe->GetCoverageMap(), max_over,
+    resolver.removeOverlaps(mp_paths, cover_map, max_over, cfg::get().pe_params.param_set.remove_overlaps,
                             writer, output_dir);
     resolver.RemoveMatePairEnds(mp_paths, max_over);
 	if (cfg::get().avoid_rc_connections) {
 	    mp_paths.FilterInterstandBulges();
 	}
 	mp_paths.FilterEmptyPaths();
-	mp_paths.CheckSymmetry();
 	//resolver.addUncoveredEdges(mp_paths, mp_main_pe->GetCoverageMap());
 	mp_paths.SortByLength();
 	DebugOutputPaths(writer, gp, output_dir, mp_paths, "mp_final_paths");
@@ -329,23 +292,22 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
     all_libs.insert(all_libs.end(), shortLoopPEs.begin(), shortLoopPEs.end());
     all_libs.insert(all_libs.end(), scafPEs.begin(), scafPEs.end());
     max_over = FindMaxOverlapedLen(libs);
-    CompositeExtender* last_extender = new CompositeExtender(gp.g, all_libs, max_over);
+    CompositeExtender* last_extender = new CompositeExtender(gp.g, cover_map, all_libs, max_over);
     auto last_paths = resolver.extendSeeds(mp_paths, *last_extender);
-    resolver.removeOverlaps(last_paths, last_extender->GetCoverageMap(), max_over,
+    resolver.removeOverlaps(last_paths, cover_map, max_over, cfg::get().pe_params.param_set.remove_overlaps,
                     writer, output_dir);
 
     if (cfg::get().avoid_rc_connections) {
         last_paths.FilterInterstandBulges();
     }
     last_paths.FilterEmptyPaths();
-    resolver.addUncoveredEdges(last_paths, last_extender->GetCoverageMap());
-    last_paths.CheckSymmetry();
+    resolver.addUncoveredEdges(last_paths, cover_map);
     last_paths.SortByLength();
 
 //Traverse loops
     if (traversLoops) {
         INFO("Traversing tandem repeats");
-        LoopTraverser loopTraverser(gp.g, last_extender->GetCoverageMap(), last_extender);
+        LoopTraverser loopTraverser(gp.g, cover_map, last_extender);
         loopTraverser.TraverseAllLoops();
         last_paths.SortByLength();
     }
@@ -396,7 +358,7 @@ inline bool InsertSizeCompare(const PairedInfoLibrary* lib1,
 }
 
 inline void ResolveRepeatsPe(conj_graph_pack& gp,
-                      const vector<PathStorageInfo<Graph> >& long_reads,
+                      vector<PathStorageInfo<Graph> >& long_reads,
                       const std::string& output_dir,
                       const std::string& contigs_name, bool traverseLoops,
                       boost::optional<std::string> broken_contigs,

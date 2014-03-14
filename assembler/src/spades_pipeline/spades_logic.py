@@ -39,7 +39,7 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
     subst_dict["load_from"] = saves_dir
     subst_dict["developer_mode"] = bool_to_str(cfg.developer_mode)
     subst_dict["gap_closer_enable"] = bool_to_str(last_one)
-    subst_dict["rr_enable"] = bool_to_str((last_one or K >= 55) and cfg.rr_enable)
+    subst_dict["rr_enable"] = bool_to_str(last_one and cfg.rr_enable)
 #    subst_dict["topology_simplif_enabled"] = bool_to_str(last_one)
     subst_dict["max_threads"] = cfg.max_threads
     subst_dict["max_memory"] = cfg.max_memory
@@ -126,7 +126,7 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):
 
     log.info("\n== Running assembler: " + ("K%d" % K) + "\n")
     if prev_K:
-        additional_contigs_fname = os.path.join(cfg.output_dir, "K%d" % prev_K, "final_contigs.fasta")
+        additional_contigs_fname = os.path.join(cfg.output_dir, "K%d" % prev_K, "simplified_contigs.fasta")
         if not os.path.isfile(additional_contigs_fname):
             support.warning("additional contigs for K=%d were not found (%s)!" % (K, additional_contigs_fname), log)
             additional_contigs_fname = None

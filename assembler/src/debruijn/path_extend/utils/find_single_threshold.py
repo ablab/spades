@@ -1,5 +1,6 @@
 import sys
 import numpy as np
+import matplotlib
 import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 if (len(sys.argv) != 2):
@@ -7,9 +8,9 @@ if (len(sys.argv) != 2):
     exit(1)
 
 fin = open(sys.argv[1]);
-Pattern_good = " good "
+Pattern_good = "good "
 lst_good = []
-Pattern_bad = " all_bad "
+Pattern_bad = "bad "
 lst_bad = []
 good_size = 1
 bad_size = 1
@@ -28,19 +29,18 @@ for line in fin:
         params = text.split(" ")
         if (float(params[0]) >= 0 and float(params[-1]) >=0 and
             float(params[-1]) != float('nan')):
-            lst.append((float(params[0]),
-            float(params[1]), float(params[-1]), float(params[-2]),
-            float(params[-3]), float(params[-5]), float(params[-9])))
+            lst.append(float(params[0]))
 
-def commulate(index, com, lst, begin, t):
+def commulate( com, lst, begin, t):
     i = begin
-    while i < len(lst) and lst[i][index] < t:
+    while i < len(lst) and lst[i] < t:
         com += 1
         i += 1
     return (i, com)
-def plot_lines(ax, name, index, lst_g, lst_b, min_x, max_x, nbins):
-    lst1 = sorted([x for x in lst_g if x[index] > min_x], key = lambda x:x[index])
-    lst2 = sorted([x for x in lst_b if x[index] > min_x], key = lambda x:x[index])
+matplotlib.rcParams.update({'font.size': 18})
+def plot_lines(ax, name, lst_g, lst_b, min_x, max_x, nbins):
+    lst1 = sorted([x for x in lst_g if x > 0.0], key = lambda x:x)
+    lst2 = sorted([x for x in lst_b if x > 0.0], key = lambda x:x)
     params = []
     i = min_x
     while i < max_x:
@@ -53,18 +53,22 @@ def plot_lines(ax, name, index, lst_g, lst_b, min_x, max_x, nbins):
     begin2 = 0
     com2 = 0
     for param in params:
-        (begin, com) = commulate(index, com, lst1, begin, param)
+        (begin, com) = commulate( com, lst1, begin, param)
         if len(lst1) == 0:
             good.append(0)
         else:
             good.append(float(com) / float(len(lst1)))
-        (begin2, com2) = commulate(index, com2, lst2, begin2, param)
+        (begin2, com2) = commulate(com2, lst2, begin2, param)
         if len(lst2) == 0:
             bad.append(0)
         else:
             bad.append(1- float(com2)/ float(len(lst2)))
     ax.plot(params, good, params, bad)
-    ax.set_title(name)
+    plt.xlabel(u"\u03A8", fontsize=24)
+    plt.ylabel('FP/FN rate', fontsize = 24)
+   # a.xaxis.label.set_fontsize(40)
+    #a.ylabel.label.set_fontsize(40)
+    #ax.set_title(name)
 """max_range = 50
 count_bins = 200
 min_x_norm = 1.0
@@ -78,13 +82,13 @@ bad_l = len([x[1] for x in lst_bad if x[1] > min_x_norm])
 plt.bar(bins[:-1], hist/float(bad_l), widths, alpha = 0.5, color = "blue")
 plt.show()
 """
-f, axarr = plt.subplots(2, 3)
-plot_lines(axarr[0, 0], "(w/ideal_pi)", 0, lst_good, lst_bad, 0.000, 0.008, 500)
-plot_lines(axarr[0, 1], "w", 1, lst_good, lst_bad, 0, 10, 200)
-plot_lines(axarr[0, 2], "(w / ideal_pi) / min(pi1, pi2)", 3, lst_good, lst_bad,
-0.000001, 0.05, 500)
-plot_lines(axarr[1, 0], "(w / ideal_pi) / min(cov1, cov2)", 5, lst_good, lst_bad, 0.0, 0.001, 500)
-plot_lines(axarr[1, 1], "(w / ideal_pi) / min(pi_norm1, pi_norm2)", 2, lst_good,
-lst_bad, 0.0, 0.05, 500)
+f, axarr = plt.subplots(1, 1)
+plot_lines(axarr, "plot", lst_good, lst_bad, 0.00, 0.8, 5000)
+#plot_lines(axarr[0, 1], "w", 1, lst_good, lst_bad, 0, 10, 200)
+#plot_lines(axarr[0, 2], "(w / ideal_pi) / min(pi1, pi2)", 3, lst_good, lst_bad,
+#0.000001, 0.05, 500)
+#plot_lines(axarr[1, 0], "(w / ideal_pi) / min(cov1, cov2)", 5, lst_good, lst_bad, 0.0, 0.001, 500)
+#plot_lines(axarr[1, 1], "(w / ideal_pi) / min(pi_norm1, pi_norm2)", 2, lst_good,
+#lst_bad, 0.0, 0.05, 500)
 #plot_lines(axarr[1, 2], "test1 / min(pi_norm1_aver, pi_norm2_aver)", 6, lst_good, lst_bad, 0.0,  3, 500)
 plt.show()

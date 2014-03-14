@@ -62,9 +62,9 @@ inline void ISInterval(double quant, double is,
 
   std::map<int, double> insert_size_distrib;
   normalize_distribution(insert_size_hist, insert_size_distrib);
-  int ileft = (int) is - 1;
+  int ileft = (int) is;
   int iright = (int)is + 1;
-  double cur_percent = insert_size_distrib.at((int)is);
+  double cur_percent = 0;
   while (cur_percent < quant) {
     double vleft = -1.;
     if (insert_size_distrib.find(ileft) != insert_size_distrib.end()) {

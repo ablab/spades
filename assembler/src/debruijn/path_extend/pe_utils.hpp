@@ -75,7 +75,7 @@ public:
         empty_ = new MapDataT();
     }
 
-    GraphCoverageMap(const Graph& g, PathContainer& paths) : g_(g), edgeCoverage_() {
+    GraphCoverageMap(const Graph& g, const PathContainer& paths) : g_(g), edgeCoverage_() {
         empty_ = new MapDataT();
         for (size_t i = 0; i < paths.size(); ++i) {
             for (size_t j = 0; j < paths.Get(i)->Size(); ++j) {
@@ -92,6 +92,18 @@ public:
         for (auto iter = edgeCoverage_.begin(); iter != edgeCoverage_.end(); ++iter) {
             delete iter->second;
         }
+    }
+
+    void Clear() {
+        for (auto iter = edgeCoverage_.begin(); iter != edgeCoverage_.end(); ++iter) {
+            MapDataT* cover_paths = iter->second;
+            for (auto ipath = cover_paths->begin(); ipath != cover_paths->end(); ++ipath) {
+                BidirectionalPath* p = *ipath;
+                p->Unsubscribe(this);
+            }
+            delete cover_paths;
+        }
+        edgeCoverage_.clear();
     }
 
 	void Subscribe(BidirectionalPath * path) {
@@ -247,146 +259,167 @@ private:
     GraphCoverageMap(const GraphCoverageMap& t) : g_(t.g_), empty_(t.empty_) {}
 };
 
+inline bool GetLoopAndExit(const Graph& g, EdgeId e, pair<EdgeId, EdgeId>& result) {
+    VertexId v = g.EdgeEnd(e);
+    if (g.OutgoingEdgeCount(v) != 2) {
+        return false;
+    }
+    EdgeId loop;
+    EdgeId exit;
+    bool loop_found = false;
+    bool exit_found = false;
+    auto edges = g.OutgoingEdges(v);
+    for (auto edge = edges.begin(); edge != edges.end(); ++edge) {
+        if (g.EdgeEnd(*edge) == g.EdgeStart(e) && *edge != e) {
+            loop = *edge;
+            loop_found = true;
+        } else if (*edge != e) {
+            exit = *edge;
+            exit_found = true;
+        }
+    }
+    result = make_pair(loop, exit);
+    return exit_found && loop_found;
+}
 
-
-struct paths_searcher_config{
-    size_t max_num_vertices;
-    size_t depth_neigh_search;
-    size_t max_len_path;
+class LoopDetector {
+public:
+    LoopDetector(BidirectionalPath* p, const GraphCoverageMap& cov_map);
+    size_t LoopEdges(size_t skip_identical_edges, size_t min_cycle_appearences) const;
+    size_t LoopLength(size_t skip_identical_edges, size_t min_cycle_appearences) const;
+    bool PathIsLoop(size_t edges) const;
+    size_t LastLoopCount(size_t skip_identical_edges, size_t min_cycle_appearences) const;
+    size_t LastLoopCount(size_t edges) const;
+    bool IsCycled(size_t loopLimit, size_t& skip_identical_edges) const;
+    size_t EdgesToRemove(size_t skip_identical_edges, bool fullRemoval = false) const;
+    void RemoveLoop(size_t skip_identical_edges, bool fullRemoval = true);
+    bool EdgeInShortLoop(EdgeId e) const;
+    bool PrevEdgeInShortLoop() const;
+private:
+    BidirectionalPath* path_;
+    const GraphCoverageMap& cov_map_;
+    DECL_LOGGER("BidirectionalPath");
 };
 
-class PathsSearcher{
+inline LoopDetector::LoopDetector(BidirectionalPath* p, const GraphCoverageMap& cov_map)
+        : path_(p),
+          cov_map_(cov_map) {
+}
 
-protected:
-    Graph & g_;
-    paths_searcher_config conf_;
-
-public:
-    PathsSearcher(Graph & g) : g_(g) {
-
+inline size_t LoopDetector::LoopEdges(size_t skip_identical_edges, size_t min_cycle_appearences) const {
+    if (path_->Size() == 0) {
+        return 0;
     }
-
-    virtual ~PathsSearcher() {
-
+    EdgeId e = path_->Back();
+    size_t count = cov_map_.GetEdgePaths(e)->count(path_);
+    if (count <= 1 || count < min_cycle_appearences * (skip_identical_edges + 1)) {
+        return 0;
     }
+    vector<size_t> edge_positions = path_->FindAll(e);
+    VERIFY(edge_positions.size() == count);
+    VERIFY(edge_positions.size() >= skip_identical_edges);
+    size_t loopSize = edge_positions.back() - edge_positions[edge_positions.size() - 1 - (skip_identical_edges + 1)];
+    return loopSize;
+}
 
-    void Initialize(paths_searcher_config conf){
-        conf_ = conf;
-    }
+inline bool LoopDetector::PathIsLoop(size_t edges) const {
+    if (edges == 0 || path_->Size() <= 1)
+        return false;
 
-    virtual map<VertexId, vector<EdgeId> > FindShortestPathsFrom(VertexId v) = 0;
-};
-
-
-class DijkstraSearcher : public PathsSearcher{
-
-public:
-    DijkstraSearcher(Graph & g) : PathsSearcher(g) {
-    }
-
-    map<VertexId, vector<EdgeId> > FindShortestPathsFrom(VertexId v){
-        map<VertexId, vector<EdgeId> > short_paths;
-
-        multimap<size_t, VertexId> dist_v;
-        map<VertexId, size_t> v_dist;
-        map<VertexId, size_t> v_depth;
-        set<VertexId> visited;
-
-        // insertion of the initial vertex
-        vector<EdgeId> empty_path;
-        dist_v.insert(pair<size_t, VertexId>(0, v));
-        v_dist.insert(pair<VertexId, size_t>(v, 0));
-        short_paths.insert(pair<VertexId, vector<EdgeId> >(v, empty_path));
-        v_depth[v] = 0;
-
-        size_t num_visited = 0;
-
-        while((visited.size() < conf_.max_num_vertices) && (dist_v.size() != 0)) {
-
-            VertexId cur_v = dist_v.begin()->second;
-            size_t cur_dist = dist_v.begin()->first;
-
-            size_t cur_depth;
-            if(v_depth.find(cur_v) != v_depth.end()) {
-                cur_depth = v_depth[cur_v];
-            }
-            else {
-                size_t min_depth = 100000;
-                bool is_defined = false;
-
-                // defining of depth
-                FOREACH (EdgeId e, g_.IncomingEdges(cur_v)) {
-                    VertexId w = g_.EdgeStart(e);
-                    if(v_depth.find(w) != v_depth.end())
-                        if(min_depth > v_depth[w]){
-                            min_depth = v_depth[w];
-                            is_defined = true;
-                        }
-                }
-
-                if(is_defined){
-                    cur_depth = min_depth + 1;
-                }
-                else{
-                    cur_depth = 0;
-                }
-                v_depth[cur_v] = cur_depth;
-            }
-
-            if((cur_depth <= conf_.depth_neigh_search)){
-                FOREACH (EdgeId e, g_.OutgoingEdges(cur_v)) {
-                    VertexId cur_neigh = g_.EdgeEnd(e);
-
-                    if(visited.find(cur_neigh) == visited.end()){
-                        size_t new_neigh_dist = g_.length(e) + cur_dist;
-                        bool is_replaced = false;
-                        if(v_dist.find(cur_neigh) != v_dist.end()){
-                            size_t old_neigh_dist = v_dist[cur_neigh];
-
-                            if(old_neigh_dist > new_neigh_dist){
-                                is_replaced = true;
-
-                                for(auto it = dist_v.find(old_neigh_dist); it != dist_v.end(); it++)
-                                    if(it->second == cur_neigh){
-                                        dist_v.erase(it);
-                                        break;
-                                    }
-                            }
-                        }
-                        else {
-                            is_replaced = true;
-                        }
-
-                        if(is_replaced && new_neigh_dist <= conf_.max_len_path){
-                            dist_v.insert(pair<size_t, VertexId>(new_neigh_dist, cur_neigh));
-                            v_dist[cur_neigh] = new_neigh_dist;
-
-                            short_paths[cur_neigh] = short_paths[cur_v];
-                            short_paths[cur_neigh].push_back(e);
-                        }
-                    }
-                }
-            }
-            else{
-                break;
-            }
-
-            num_visited++;
-            visited.insert(cur_v);
-
-            // erasing of visited element;
-            for(auto it = dist_v.find(cur_dist); it != dist_v.end(); it++){
-                if(it->second == cur_v){
-                    dist_v.erase(it);
-                    v_dist.erase(it->second);
-                    break;
-                }
+    for (size_t i = 0; i < edges; ++i) {
+        EdgeId e = path_->At(i);
+        for (int j = (int) path_->Size() - ((int) edges - (int) i); j >= 0; j -= (int) edges) {
+            if (path_->operator [](j) != e) {
+                return false;
             }
         }
-
-        return short_paths;
     }
-};
+    return true;
+}
+
+inline size_t LoopDetector::LastLoopCount(size_t skip_identical_edges, size_t min_cycle_appearences) const {
+    size_t edges = LoopEdges(skip_identical_edges, min_cycle_appearences);
+    return LastLoopCount(edges);
+}
+
+inline size_t LoopDetector::LastLoopCount(size_t edges) const {
+    if (edges == 0) {
+        return 0;
+    }
+
+    BidirectionalPath loop = path_->SubPath(path_->Size() - edges);
+    size_t count = 0;
+    int i = (int) path_->Size() - (int) edges;
+    int delta = -(int) edges;
+
+    while (i >= 0) {
+        if (!path_->CompareFrom(i, loop)) {
+            break;
+        }
+        ++count;
+        i += delta;
+    }
+
+    return count;
+}
+
+inline bool LoopDetector::IsCycled(size_t loopLimit, size_t& skip_identical_edges) const {
+    if (path_->Size() == 0 or cov_map_.GetEdgePaths(path_->Back())->count(path_) < loopLimit) {
+        return false;
+    }
+    skip_identical_edges = 0;
+    size_t loop_count = LastLoopCount(skip_identical_edges, loopLimit);
+    while (loop_count > 0) {
+        if (loop_count >= loopLimit) {
+            return true;
+        }
+        loop_count = LastLoopCount(++skip_identical_edges, loopLimit);
+    }
+    return false;
+}
+
+inline size_t LoopDetector::EdgesToRemove(size_t skip_identical_edges, bool fullRemoval) const {
+    size_t edges = LoopEdges(skip_identical_edges, 1);
+    size_t count = LastLoopCount(edges);
+    bool onlyCycle = PathIsLoop(edges);
+    int result;
+
+    if (onlyCycle || path_->Size() <= count * edges) {
+        result = (int) path_->Size() - (int) edges;
+    } else if (fullRemoval) {
+        result = (int) count * (int) edges;
+    } else {
+        result = (int) (count - 1) * (int) edges;
+    }
+
+    return result < 0 ? 0 : result;
+}
+
+inline void LoopDetector::RemoveLoop(size_t skip_identical_edges, bool fullRemoval) {
+    size_t toRemove = EdgesToRemove(skip_identical_edges, fullRemoval);
+    for (size_t i = 0; i < toRemove; ++i) {
+        path_->PopBack();
+    }
+}
+
+inline bool LoopDetector::EdgeInShortLoop(EdgeId e) const {
+    pair<EdgeId, EdgeId> temp;
+    return GetLoopAndExit(path_->graph(), e, temp);
+}
+
+inline bool LoopDetector::PrevEdgeInShortLoop() const {
+    if (path_->Size() <= 1) {
+        return false;
+    }
+    const Graph& g = path_->graph();
+    EdgeId e2 = path_->At(path_->Size() - 1);
+    EdgeId e1 = path_->At(path_->Size() - 2);
+    VertexId v2 = g.EdgeEnd(e1);
+    if (g.OutgoingEdgeCount(v2) == 2 && g.EdgeEnd(e2) == g.EdgeStart(e1) && g.EdgeEnd(e1) == g.EdgeStart(e2)) {
+        return EdgeInShortLoop(e1);
+    }
+    return false;
+}
 
 class ScaffoldBreaker {
 
@@ -401,7 +434,6 @@ private:
 
         while (i < path.Size()) {
             BidirectionalPath * p = new BidirectionalPath(path.graph(), path[i]);
-            size_t rc_id = path.graph().int_id(path.graph().conjugate(path[i]));
             ++i;
 
             while(i < path.Size() and path.GapAt(i) <= min_gap_) {
@@ -414,7 +446,6 @@ private:
             }
 
             BidirectionalPath * cp = new BidirectionalPath(p->Conjugate());
-            cp->SetId(rc_id);
             container_.AddPair(p, cp);
         }
     }

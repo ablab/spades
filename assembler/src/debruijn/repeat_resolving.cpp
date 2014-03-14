@@ -67,8 +67,8 @@ void PEResolving(conj_graph_pack& gp) {
 }
 
 void RepeatResolution::run(conj_graph_pack &gp, const char*) {
-    OutputContigs(gp.g, cfg::get().output_dir + "simplified_contigs", true, cfg::get().use_unipaths,
-                  cfg::get().simp.tec.plausibility_length);
+    /*OutputContigs(gp.g, cfg::get().output_dir + "simplified_contigs", true, cfg::get().use_unipaths,
+                  cfg::get().simp.tec.plausibility_length);*/
     OutputContigs(gp.g, cfg::get().output_dir + "before_rr", true);
     if (cfg::get().developer_mode) {
         FillPos(gp, gp.genome, "ref0");
