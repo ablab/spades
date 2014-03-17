@@ -924,7 +924,7 @@ class CorrectedRead {
         }
       }
     }
-    
+
     // attach runs from the left
     if (trimmed_by_gen_ > 0 && size_t(trimmed_by_gen_) <= data.size()) {
       std::vector<HomopolymerRun> runs;
@@ -1056,6 +1056,23 @@ public:
     BamTools::BamAlignment corrected(alignment);
     corrected.QueryBases = corrected_r.get().GetSequenceString();
     return io::BamRead(corrected);
+  }
+};
+
+class PairedReadCorrector : public SingleReadCorrector {
+ public:
+  PairedReadCorrector(const KMerData &kmer_data,
+                      DebugOutputPredicate &debug)
+      : SingleReadCorrector(kmer_data, debug) {}
+
+  boost::optional<io::PairedRead> operator()(const io::PairedRead &r) {
+    auto corrected_r = SingleReadCorrector::operator()(r.first());
+    auto corrected_l = SingleReadCorrector::operator()(r.second());
+
+    if (!corrected_r || !corrected_l)
+      return boost::optional<io::PairedRead>();
+
+    return io::PairedRead(corrected_r.get(), corrected_l.get(), 0);
   }
 };
 
