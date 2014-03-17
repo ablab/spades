@@ -899,11 +899,7 @@ public:
         if (path.Length() < lib_.GetISMin()) {
             return EdgeContainer();
         }
-        EdgeContainer edges = init_edges;
-        if (IsBulge(init_edges)){
-        	 edges = TryResolveBulge(path, init_edges);
-        	 DEBUG("bulge " << edges.size())
-        }
+        EdgeContainer edges = TryResolveBulge(path, init_edges);
         map<EdgeId, BidirectionalPath*> best_paths;
         for (size_t iedge = 0; iedge < edges.size(); ++iedge) {
             set<BidirectionalPath*> following_paths = path_searcher_.FindNextPaths(path, edges[iedge].e_);
@@ -959,7 +955,7 @@ private:
         return result;
     }
 
-	bool IsBulge(EdgeContainer& edges) {
+	bool IsBulge(const EdgeContainer& edges) const {
 		if (edges.size() == 0)
 			return false;
 		for (EdgeWithDistance e : edges) {
@@ -992,6 +988,8 @@ private:
     }
 
     EdgeContainer TryResolveBulge(BidirectionalPath& p, EdgeContainer& edges) const {
+        if (!IsBulge(edges))
+            return edges;
         map<EdgeId, double> weights = FindBulgeWeights(p, edges);
         double max_w = 0.0;
         EdgeContainer result;
