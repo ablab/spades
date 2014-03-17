@@ -23,7 +23,7 @@ class HammerKMerSplitter : public KMerSplitter<hammer::HKMer> {
 
   void DumpBuffers(size_t num_files, size_t nthreads,
                    std::vector<KMerBuffer> &buffers,
-                   MMappedRecordWriter<HKMer> *ostreams) const;
+                   const path::files_t &ostreams) const;
 
  public:
   HammerKMerSplitter(const std::string &work_dir)
@@ -36,7 +36,7 @@ class HammerKMerSplitter : public KMerSplitter<hammer::HKMer> {
 
 void HammerKMerSplitter::DumpBuffers(size_t num_files, size_t nthreads,
                                      std::vector<KMerBuffer> &buffers,
-                                     MMappedRecordWriter<HKMer> *ostreams) const {
+                                     const path::files_t &ostreams) const {
 # pragma omp parallel for num_threads(nthreads)
   for (unsigned k = 0; k < num_files; ++k) {
     size_t sz = 0;
@@ -54,9 +54,10 @@ void HammerKMerSplitter::DumpBuffers(size_t num_files, size_t nthreads,
 
 #   pragma omp critical
     {
-      size_t osz = it - SortBuffer.begin();
-      ostreams[k].reserve(osz);
-      ostreams[k].write(&SortBuffer[0], osz);
+      FILE *f = fopen(ostreams[k].c_str(), "ab");
+      VERIFY_MSG(f, "Cannot open temporary file to write");
+      fwrite(SortBuffer.data(), sizeof(HKMer), it - SortBuffer.begin(), f);
+      fclose(f);
     }
   }
 
@@ -118,13 +119,14 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
   for (unsigned i = 0; i < num_files; ++i)
     out.push_back(GetRawKMersFname(i));
 
-  MMappedRecordWriter<HKMer>* ostreams = new MMappedRecordWriter<HKMer>[num_files];
-  for (unsigned i = 0; i < num_files; ++i)
-    ostreams[i].open(out[i]);
-
-  size_t read_buffer = 0; // cfg::get().count_split_buffer;
-  size_t cell_size = read_buffer  /
-                     (nthreads * num_files * sizeof(HKMer));
+  size_t reads_buffer_size = cfg::get().count_split_buffer;
+  if (reads_buffer_size == 0) {
+    reads_buffer_size = 536870912ull;
+    size_t mem_limit =  (size_t)((double)(get_free_memory()) / (nthreads * 3));
+    INFO("Memory available for splitting buffers: " << (double)mem_limit / 1024.0 / 1024.0 / 1024.0 << " Gb");
+    reads_buffer_size = std::min(reads_buffer_size, mem_limit);
+  }
+  size_t cell_size = reads_buffer_size / (num_files * sizeof(HKMer));
   // Set sane minimum cell size
   if (cell_size < 16384)
     cell_size = 16384;
@@ -135,7 +137,7 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
     KMerBuffer &entry = tmp_entries[i];
     entry.resize(num_files);
     for (unsigned j = 0; j < num_files; ++j) {
-      entry[j].reserve(size_t(1.1 * double(cell_size)));
+      entry[j].reserve((size_t)(1.1 * (double)cell_size));
     }
   }
 
@@ -147,7 +149,7 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
     hammer::ReadProcessor rp(nthreads);
     while (!irs.eof()) {
       rp.Run(irs, filler);
-      DumpBuffers(num_files, nthreads, tmp_entries, ostreams);
+      DumpBuffers(num_files, nthreads, tmp_entries, out);
       VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
 
       if (filler.processed() >> n) {
@@ -157,8 +159,6 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
     }
   }
   INFO("Processed " << filler.processed() << " reads");
-
-  delete[] ostreams;
 
   return out;
 }

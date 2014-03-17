@@ -23,6 +23,8 @@ struct hammer_config {
   unsigned tau;
   unsigned hard_memory_limit;
 
+  size_t count_split_buffer;
+
   double kmer_qual_threshold;
   double center_qual_threshold;
   bool keep_uncorrected_ends;

@@ -43,6 +43,8 @@ void load(hammer_config& cfg, const std::string &filename) {
   // FIXME: Make trivial deserialization trivial
   cfg.hard_memory_limit = config["hard_memory_limit"].as<unsigned>();
 
+  cfg.count_split_buffer = config["count_split_buffer"].as<size_t>(0);
+
   cfg.max_nthreads = config["max_nthreads"].as<unsigned>();
   // Fix number of threads according to OMP capabilities.
   cfg.max_nthreads = std::min(cfg.max_nthreads, (unsigned)omp_get_max_threads());
