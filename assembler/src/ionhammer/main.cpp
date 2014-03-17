@@ -2,6 +2,7 @@
 
 #include "io/file_reader.hpp"
 #include "io/bam_reader.hpp"
+#include "io/paired_readers.hpp"
 #include "io/osequencestream.hpp"
 #include "io/read_processor.hpp"
 
@@ -221,34 +222,75 @@ int main(int argc, char** argv) {
       const auto& lib = *it;
       auto outlib = lib;
       outlib.clear();
-      outlib.set_type(io::LibraryType::SingleReads);
 
       size_t iread = 0;
-      for (auto I = lib.reads_begin(), E = lib.reads_end(); I != E; ++I, ++iread) {
+      // First, correct all the paired FASTQ files
+      for (auto I = lib.paired_begin(), E = lib.paired_end(); I != E; ++I, ++iread) {
+          if (path::extension(I->first) == ".bam" || path::extension(I->second) == ".bam")
+              continue;
+
+          INFO("Correcting pair of reads: " << I->first << " and " << I->second);
+
+          std::string usuffix = boost::lexical_cast<std::string>(ilib) + "_" +
+                                boost::lexical_cast<std::string>(iread) + ".cor.fasta";
+
+          std::string outcorl = path::append_path(cfg::get().output_dir, path::basename(I->first) + usuffix);
+          std::string outcorr = path::append_path(cfg::get().output_dir, path::basename(I->second) + usuffix);
+
+          io::PairedOutputSequenceStream ors(outcorl, outcorr);
+
+          io::SeparatePairedReadStream irs(I->first, I->second, 0, false, false);
+          PairedReadCorrector read_corrector(kmer_data, pred);
+          hammer::ReadProcessor(cfg::get().max_nthreads).Run(irs, read_corrector, ors);
+
+          outlib.push_back_paired(outcorl, outcorr);
+      }
+
+      // Second, correct all the single FASTQ files
+      for (auto I = lib.single_begin(), E = lib.single_end(); I != E; ++I, ++iread) {
+          if (path::extension(*I) == ".bam")
+              continue;
+
           INFO("Correcting " << *I);
 
           std::string usuffix = boost::lexical_cast<std::string>(ilib) + "_" +
                                 boost::lexical_cast<std::string>(iread) + ".cor.fasta";
+
           std::string outcor = path::append_path(cfg::get().output_dir, path::basename(*I) + usuffix);
           io::osequencestream ors(outcor);
 
-          if (path::extension(*I) == ".bam") {
-            BamTools::BamReader bam_reader;
-            bam_reader.Open(*I);
-            auto header = bam_reader.GetHeader();
-            bam_reader.Close();
-
-            SingleReadCorrector read_corrector(kmer_data, &header, pred);
-            io::UnmappedBamStream irs(*I);
-            hammer::ReadProcessor(cfg::get().max_nthreads).Run(irs, read_corrector, ors);
-          } else {
-            io::FileReadStream irs(*I, io::PhredOffset);
-            SingleReadCorrector read_corrector(kmer_data, pred);
-            hammer::ReadProcessor(cfg::get().max_nthreads).Run(irs, read_corrector, ors);
-          }
+          io::FileReadStream irs(*I, io::PhredOffset);
+          SingleReadCorrector read_corrector(kmer_data, pred);
+          hammer::ReadProcessor(cfg::get().max_nthreads).Run(irs, read_corrector, ors);
 
           outlib.push_back_single(outcor);
       }
+
+      // Finally, correct all the BAM stuff in a row
+      for (auto I = lib.reads_begin(), E = lib.reads_end(); I != E; ++I, ++iread) {
+        if (path::extension(*I) != ".bam")
+              continue;
+
+        INFO("Correcting " << *I);
+
+        std::string usuffix = boost::lexical_cast<std::string>(ilib) + "_" +
+                              boost::lexical_cast<std::string>(iread) + ".cor.fasta";
+
+        std::string outcor = path::append_path(cfg::get().output_dir, path::basename(*I) + usuffix);
+        io::osequencestream ors(outcor);
+
+        BamTools::BamReader bam_reader;
+        bam_reader.Open(*I);
+        auto header = bam_reader.GetHeader();
+        bam_reader.Close();
+
+        SingleReadCorrector read_corrector(kmer_data, &header, pred);
+        io::UnmappedBamStream irs(*I);
+        hammer::ReadProcessor(cfg::get().max_nthreads).Run(irs, read_corrector, ors);
+
+        outlib.push_back_single(outcor);
+      }
+
       outdataset.push_back(outlib);
     }
     cfg::get_writable().dataset = outdataset;
