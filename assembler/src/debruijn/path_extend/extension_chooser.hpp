@@ -1007,7 +1007,7 @@ private:
             }
         }
         if (result.size() != 1) {
-            result.clear();
+            result = edges;
         }
         return result;
     }
