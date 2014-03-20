@@ -602,8 +602,8 @@ void PostSimplification(conj_graph_pack& gp,
                                               info,
                                               cfg::get().graph_read_corr.enable,
                                               removal_handler);
-        //todo enable_flag |=
-        RemoveBulges(gp.g, cfg::get().simp.br, 0, removal_handler);
+
+        enable_flag |= RemoveBulges(gp.g, cfg::get().simp.br, 0, removal_handler);
 
         enable_flag |= RemoveComplexBulges(gp.g, cfg::get().simp.cbr, iteration);
 

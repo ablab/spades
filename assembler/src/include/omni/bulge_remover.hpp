@@ -170,6 +170,9 @@ class BulgeRemover: public EdgeProcessingAlgorithm<Graph, CoverageComparator<Gra
 
 		TRACE("Process bulge " << path.size() << " edges");
 
+		//fixme remove after checking results
+		bool flag = false;
+
 		for (size_t i = 0; i < path.size(); ++i) {
 			if (bulge_prefix_lengths[i] > prev_length) {
 				if (bulge_prefix_lengths[i] - prev_length
@@ -188,15 +191,18 @@ class BulgeRemover: public EdgeProcessingAlgorithm<Graph, CoverageComparator<Gra
 					edge_to_split = split_result.second;
 
 					TRACE("GlueEdges " << graph_.str(split_result.first));
+					flag = true;
 					graph_.GlueEdges(split_result.first, path[i]);
 
 				} else {
 					TRACE("GlueEdges " << graph_.str(edge_to_split));
+					flag = true;
 					graph_.GlueEdges(edge_to_split, path[i]);
 				}
 			}
 			prev_length = bulge_prefix_lengths[i];
 		}
+		VERIFY(flag);
 	}
 
 protected:
