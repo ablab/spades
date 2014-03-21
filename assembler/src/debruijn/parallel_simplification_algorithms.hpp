@@ -485,11 +485,9 @@ public:
     }
 
     bool Process(VertexId v, size_t idx) {
-        if (IsBranching(v)) {
-            VertexId init = LockingGetInit(v);
-            if (init != VertexId(0))
-                ProcessBranching(v, init, idx);
-        }
+		VertexId init = LockingGetInit(v);
+		if (init != VertexId(0))
+			ProcessBranching(v, init, idx);
         return false;
     }
 
@@ -503,13 +501,21 @@ class TwoStepAlgorithmRunner {
 
     const Graph& g_;
     vector<ElementType> elements_of_interest_;
+    //todo use this parameters
+    size_t step_one_thread_cnt_;
+    size_t step_two_thread_cnt_;
 protected:
 
     const Graph& g() const {
         return g_;
     }
 
-    TwoStepAlgorithmRunner(Graph& g) : g_(g) {
+    TwoStepAlgorithmRunner(Graph& g,
+    		size_t step_one_thread_cnt,
+    		size_t step_two_thread_cnt)
+    : g_(g),
+      step_one_thread_cnt_(step_one_thread_cnt),
+      step_two_thread_cnt_(step_two_thread_cnt) {
 
     }
 

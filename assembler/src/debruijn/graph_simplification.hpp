@@ -680,17 +680,19 @@ void SimplifyGraph(conj_graph_pack &gp,
         .set_detected_coverage_bound(gp.ginfo.ec_bound())
         .set_read_length(cfg::get().ds.RL());
 
-    PreSimplification(gp, cfg::get().simp.presimp,
+//    PreSimplification(gp, cfg::get().simp.presimp,
+//    		info_container, removal_handler);
+//
+//    info_container.set_iteration_count(iteration_count);
+//    for (size_t i = 0; i < iteration_count; i++) {
+//        info_container.set_iteration(i);
+//        SimplificationCycle(gp, info_container, removal_handler, printer);
+//    }
+//
+//    PostSimplification(gp, info_container, removal_handler, printer);
+
+    ParallelClipTips(gp.g, cfg::get().simp.presimp.tip_condition,
     		info_container, removal_handler);
-    
-    info_container.set_iteration_count(iteration_count);
-    for (size_t i = 0; i < iteration_count; i++) {
-        info_container.set_iteration(i);
-        SimplificationCycle(gp, info_container, removal_handler, printer);
-    }
-
-    PostSimplification(gp, info_container, removal_handler, printer);
-
 }
 
 }
