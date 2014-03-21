@@ -46,47 +46,30 @@ inline void hist_crop(const map<int, size_t> &hist, double low, double high, map
   }
 }
 
-inline void normalize_distribution(const std::map<int, size_t>& is_hist,  std::map<int, double>& is_distrib) {
-  size_t sum = 0;
-  for (auto iter = is_hist.begin(); iter != is_hist.end(); ++iter) {
-    sum += iter->second;
-  }
-  for (auto iter = is_hist.begin(); iter != is_hist.end(); ++iter) {
-    is_distrib[iter->first] = (double) iter->second / (double) sum;
-  }
-}
+inline
+std::pair<double, double> GetISInterval(double quantile,
+                                        const std::map<int, size_t> &is_hist) {
+  // First, obtain the sum of the values
+  double S = 0;
+  for (auto iter : is_hist)
+    S += (double) iter.second;
 
-inline void ISInterval(double quant, double is,
-                const std::map<int, size_t>& insert_size_hist,
-                double& is_min, double& is_max) {
+  double lval = S * (1 - quantile) / 2, rval = S * (1 + quantile) / 2;
+  double is_min, is_max;
 
-  std::map<int, double> insert_size_distrib;
-  normalize_distribution(insert_size_hist, insert_size_distrib);
-  int ileft = (int) is;
-  int iright = (int)is + 1;
-  double cur_percent = 0;
-  while (cur_percent < quant) {
-    double vleft = -1.;
-    if (insert_size_distrib.find(ileft) != insert_size_distrib.end()) {
-      vleft = insert_size_distrib.at(ileft);
-    }
-    double vright = -1.;
-    if (insert_size_distrib.find(iright) != insert_size_distrib.end()) {
-      vright = insert_size_distrib.at(iright);
-    }
-    if (vleft >= 0.0 && (vright < 0.0 || vleft > vright)) {
-      cur_percent += vleft;
-      ileft -= 1;
-    } else if (vright >= 0.0 && (vleft < 0.0 || vright >= vleft)) {
-      cur_percent += vright;
-      iright += 1;
-    } else {
-      break;
-    }
+  // Now, find the quantiles
+  double cS = 0;
+  is_min = is_hist.begin()->first;
+  is_max = is_hist.rbegin()->first;
+  for (auto iter : is_hist) {
+    if (cS <= lval)
+      is_min = iter.first;
+    else if (cS <= rval)
+      is_max = iter.first;
+    cS += (double) iter.second;
   }
-  is_min = (double) ileft;
-  is_max = (double) iright;
-  DEBUG("quantile = " << quant << " d_min  = " << ileft << " d_max = " << iright);
+
+  return std::make_pair(is_min, is_max);
 }
 
 template<class graph_pack>

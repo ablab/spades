@@ -90,17 +90,14 @@ bool RefineInsertSizeForLib(const graph_pack& gp,
     return false;
 
   std::map<size_t, size_t> percentiles;
-  hist_counter.FindMean(data.mean_insert_size,  data.insert_size_deviation, percentiles);
+  hist_counter.FindMean(data.mean_insert_size, data.insert_size_deviation, percentiles);
   hist_counter.FindMedian(data.median_insert_size, data.insert_size_mad, data.insert_size_distribution);
 
-  omnigraph::ISInterval(0.8, data.mean_insert_size,
-          data.insert_size_distribution,
-          data.insert_size_left_quantile,
-          data.insert_size_right_quantile);
+  std::tie(data.insert_size_left_quantile, data.insert_size_right_quantile) = GetISInterval(0.8, data.insert_size_distribution);
 
-  if (data.insert_size_distribution.size() == 0) {
+  if (data.insert_size_distribution.size() == 0)
     return false;
-  }
+
   return true;
 }
 
