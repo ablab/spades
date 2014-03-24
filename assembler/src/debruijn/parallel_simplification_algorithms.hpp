@@ -6,7 +6,6 @@
 #include "omni/bulge_remover.hpp"
 #include "omni/abstract_conjugate_graph.hpp"
 #include "simplification_settings.hpp"
-#include <boost/range/adaptor/reversed.hpp>
 
 namespace debruijn {
 
@@ -105,7 +104,8 @@ class ParallelSimpleBRFunctor {
 
     EdgeId Alternative(EdgeId e, const vector<EdgeId>& edges) const {
         size_t delta = omnigraph::CountMaxDifference(max_delta_, g_.length(e), max_relative_delta_);
-        for (EdgeId candidate : boost::adaptors::reverse(edges)) {
+        for (auto it = edges.rbegin(); it != edges.rend(); ++it) {
+            EdgeId candidate = *it;
             if (g_.EdgeEnd(candidate) == g_.EdgeEnd(e)
                     && candidate != e
                     && candidate != g_.conjugate(e)
@@ -355,7 +355,8 @@ class ParallelCompressor {
         helper_.DeleteLink(g_.conjugate(v), g_.GetUniqueOutgoingEdge(g_.conjugate(v)));
     }
 
-    //todo duplication with abstract conj graph
+    //fixme duplication with abstract conj graph
+    //not locking!
     vector<EdgeId> EdgesToDelete(const vector<EdgeId> &path) const {
         set<EdgeId> edgesToDelete;
         edgesToDelete.insert(path[0]);
@@ -367,6 +368,8 @@ class ParallelCompressor {
         return vector<EdgeId>(edgesToDelete.begin(), edgesToDelete.end());
     }
 
+    //not locking!
+    //fixme duplication with abstract conj graph
     vector<VertexId> VerticesToDelete(
             const vector<EdgeId> &path) const {
         set<VertexId> verticesToDelete;
@@ -411,7 +414,7 @@ class ParallelCompressor {
             VertexLockT lock(v1);
             helper_.LinkOutgoingEdge(v1, new_edge);
         }
-        {
+        if (g_.conjugate(new_edge) != new_edge) {
             VertexLockT lock(v2);
             helper_.LinkIncomingEdge(v2, new_edge);
         }
@@ -438,10 +441,13 @@ class ParallelCompressor {
 
             VertexId final = g_.EdgeEnd(edges.back());
             UnlinkEdge(init, edges.front());
-            for (VertexId v: to_compress) {
+            for (VertexId v: VerticesToDelete(edges/*to_compress*/)) {
                 UnlinkEdges(v);
             }
-            UnlinkEdge(g_.conjugate(final), g_.conjugate(edges.back()));
+            
+            if (g_.conjugate(new_edge) != new_edge) {
+                UnlinkEdge(g_.conjugate(final), g_.conjugate(edges.back()));
+            }
 
             for (EdgeId e : EdgesToDelete(edges)) {
                 helper_.DeleteUnlinkedEdge(e);

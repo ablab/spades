@@ -44,6 +44,7 @@ bool GenomicInfo::Load(const std::string &filename) {
     YAML::Node node = YAML::Load(ifs);
 
     ec_bound_ = node["ec bound"].as<double>(0);
+    estimated_mean_ = node["estimated mean"].as<double>(0);
     trusted_bound_ = node["trusted bound"].as<size_t>(0);
     genome_size_ = node["genome size"].as<size_t>(0);
     cov_histogram_ = node["coverage histogram"].as<std::vector<size_t> >(std::vector<size_t>());
@@ -56,6 +57,7 @@ void GenomicInfo::Save(const std::string &filename) const {
 
     YAML::Node node;
     node["ec bound"] = ec_bound_;
+    node["estimated mean"] = estimated_mean_;
     node["trusted bound"] = trusted_bound_;
     node["genome size"] = genome_size_;
     node["coverage histogram"] = cov_histogram_;
