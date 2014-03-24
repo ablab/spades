@@ -96,6 +96,11 @@ void GenomicInfoFiller::run(conj_graph_pack &gp, const char*) {
 
         gp.ginfo.set_genome_size(CovModel.GetGenomeSize());
         gp.ginfo.set_ec_bound((double)CovModel.GetErrorThreshold());
+        if (CovModel.converged()) {
+        	gp.ginfo.set_estimated_mean((double)CovModel.GetMeanCoverage());
+        	INFO("Mean coverage was calculated as " << gp.ginfo.estimated_mean());
+        }
+      	INFO("Failed to estimate mean coverage ");
         // ginfo.set.trusted_bound(CovModel.GetLowThreshold());
     }
     INFO("EC coverage threshold value was calculated as " << gp.ginfo.ec_bound());

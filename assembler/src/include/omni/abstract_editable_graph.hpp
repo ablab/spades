@@ -443,7 +443,7 @@ public:
 		return ss.str();
 	}
 
-	EdgeId MergePath(const vector<EdgeId>& path, bool safe_merging = true, /*bool*/ delete_vertices) {
+	EdgeId MergePath(const vector<EdgeId>& path, bool safe_merging = true) {
 		VERIFY(!path.empty());
 		for (size_t i = 0; i < path.size(); i++)
 			for (size_t j = i + 1; j < path.size(); j++) {

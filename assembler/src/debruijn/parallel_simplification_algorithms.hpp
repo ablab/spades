@@ -502,20 +502,14 @@ class TwoStepAlgorithmRunner {
     const Graph& g_;
     vector<ElementType> elements_of_interest_;
     //todo use this parameters
-    size_t step_one_thread_cnt_;
-    size_t step_two_thread_cnt_;
 protected:
 
     const Graph& g() const {
         return g_;
     }
 
-    TwoStepAlgorithmRunner(Graph& g,
-    		size_t step_one_thread_cnt,
-    		size_t step_two_thread_cnt)
-    : g_(g),
-      step_one_thread_cnt_(step_one_thread_cnt),
-      step_two_thread_cnt_(step_two_thread_cnt) {
+    TwoStepAlgorithmRunner(Graph& g)
+    : g_(g) {
 
     }
 

@@ -26,8 +26,10 @@ public:
     }
 };
 
+//todo use GenomicInfo as field!
 class SimplifInfoContainer {
     size_t read_length_;
+    double detected_mean_coverage_;
     double detected_coverage_bound_;
     size_t iteration_count_;
     size_t iteration_;
@@ -35,6 +37,7 @@ class SimplifInfoContainer {
 public: 
     SimplifInfoContainer() : 
         read_length_(-1u),
+        detected_mean_coverage_(-1.0),
         detected_coverage_bound_(-1.0),
         iteration_count_(-1u),
         iteration_(-1u) {
@@ -43,6 +46,11 @@ public:
     size_t read_length() const {
         VERIFY(read_length_ != -1u);
         return read_length_;
+    }
+
+    double detected_mean_coverage() const {
+        VERIFY(!math::ge(detected_mean_coverage_, 0.));
+        return detected_mean_coverage_;
     }
 
     double detected_coverage_bound() const {
@@ -67,6 +75,11 @@ public:
 
     SimplifInfoContainer& set_detected_coverage_bound(double detected_coverage_bound) {
         detected_coverage_bound_ = detected_coverage_bound;
+        return *this;
+    }
+
+    SimplifInfoContainer& set_detected_mean_coverage(double detected_mean_coverage) {
+    	detected_mean_coverage_ = detected_mean_coverage;
         return *this;
     }
 

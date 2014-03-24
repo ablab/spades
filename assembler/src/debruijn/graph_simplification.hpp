@@ -430,6 +430,8 @@ template<class Graph>
 void ParallelCompress(Graph& g) {
     debruijn::simplification::ParallelCompressor<Graph> compressor(g);
     debruijn::simplification::TwoStepVertexAlgorithmRunner<Graph>(g).Run(compressor);
+    //have to call "final" compression to get rid of loops
+    Compress(g);
 }
 
 template<class Graph>
@@ -524,6 +526,7 @@ bool ParallelEC(Graph& g,
 inline
 void PreSimplification(conj_graph_pack& gp,
                        const debruijn_config::simplification::presimplification& presimp,
+                       const SimplifInfoContainer& info,
                        boost::function<void(EdgeId)> removal_handler) {
     CountingCallback<Graph> cnt_callback;
 
@@ -534,6 +537,14 @@ void PreSimplification(conj_graph_pack& gp,
     if (!presimp.enabled) {
         INFO("Further presimplification is disabled");
         return;
+    } else if (math::eq(info.detected_mean_coverage(), 0.)) {
+    	INFO("Mean coverage wasn't reliably estimated, no further presimplification");
+    	return;
+    } else if (math::ls(info.detected_mean_coverage(), presimp.activation_cov)) {
+    	INFO("Estimated mean coverage " << info.detected_mean_coverage()
+    			<< " is less than activation coverage " << presimp.activation_cov
+    			<< ", no further presimplification");
+    	return;
     }
     
     boost::function<void(EdgeId)> cnt_handler = boost::bind(&CountingCallback<Graph>::HandleDelete, boost::ref(cnt_callback), _1); 
@@ -677,6 +688,8 @@ void SimplifyGraph(conj_graph_pack &gp,
     SimplifInfoContainer info_container;
     info_container
         .set_detected_coverage_bound(gp.ginfo.ec_bound())
+        //0 if model didn't converge
+        .set_detected_mean_coverage(gp.ginfo.estimated_mean())
         .set_read_length(cfg::get().ds.RL());
 
     PreSimplification(gp, cfg::get().simp.presimp,
