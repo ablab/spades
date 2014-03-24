@@ -79,9 +79,9 @@ void GenomicInfoFiller::run(conj_graph_pack &gp, const char*) {
         std::map<size_t, size_t> tmp;
         size_t maxcov = 0;
         size_t kmer_per_record = 1;
-        if(conj_graph_pack::index_t::InnerIndexT::storing_type::IsInvertable()) {
+        if (conj_graph_pack::index_t::InnerIndexT::storing_type::IsInvertable())
             kmer_per_record = 2;
-        }
+
         for (auto I = gp.index.inner_index().value_cbegin(), E = gp.index.inner_index().value_cend(); I != E;  ++I) {
             size_t ccov = I->count;
             maxcov = std::max(ccov, maxcov);
@@ -97,10 +97,10 @@ void GenomicInfoFiller::run(conj_graph_pack &gp, const char*) {
         gp.ginfo.set_genome_size(CovModel.GetGenomeSize());
         gp.ginfo.set_ec_bound((double)CovModel.GetErrorThreshold());
         if (CovModel.converged()) {
-        	gp.ginfo.set_estimated_mean((double)CovModel.GetMeanCoverage());
-        	INFO("Mean coverage was calculated as " << gp.ginfo.estimated_mean());
-        }
-      	INFO("Failed to estimate mean coverage ");
+            gp.ginfo.set_estimated_mean((double)CovModel.GetMeanCoverage());
+            INFO("Mean coverage was calculated as " << gp.ginfo.estimated_mean());
+        } else
+            INFO("Failed to estimate mean coverage");
         // ginfo.set.trusted_bound(CovModel.GetLowThreshold());
     }
     INFO("EC coverage threshold value was calculated as " << gp.ginfo.ec_bound());

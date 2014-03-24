@@ -49,7 +49,7 @@ public:
     }
 
     double detected_mean_coverage() const {
-        VERIFY(!math::ge(detected_mean_coverage_, 0.));
+        VERIFY(math::ge(detected_mean_coverage_, 0.));
         return detected_mean_coverage_;
     }
 
