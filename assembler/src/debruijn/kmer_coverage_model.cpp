@@ -264,7 +264,7 @@ void KMerCoverageModel::Fit() {
   const double ErrProbThr = 1e-8;
   auto GoodCov = cov_;
   GoodCov.resize(std::min(cov_.size(), 5 * MaxCopy * MaxCov_ / 4));
-  bool Converged = true;
+  converged_ = true;
   unsigned it = 1;
   while (fabs(PrevErrProb - ErrorProb) > ErrProbThr) {
     // Recalculate the vector of posterior error probabilities
@@ -304,39 +304,41 @@ void KMerCoverageModel::Fit() {
   }
 
   double delta = x[5] / sqrt(1 + x[5]*x[5]);
-  INFO("Fitted mean coverage: " << x[2] + x[3]*delta*sqrt(2/M_PI) << ". Fitted coverage std. dev: " << x[3]*sqrt(1-2*delta*delta/M_PI));
+  mean_coverage_ = x[2] + x[3]*delta*sqrt(2/M_PI);
+  sd_coverage_ = x[3]*sqrt(1-2*delta*delta/M_PI);
+  INFO("Fitted mean coverage: " << mean_coverage_ << ". Fitted coverage std. dev: " << sd_coverage_);
 
   // Now let us check whether we have sane results
   for (size_t i = 0; i < x.size(); ++i)
     if (!isfinite(x[i])) {
-      Converged = false;
+      converged_ = false;
       break;
     }
 
   if (!isfinite(ErrorProb))
-    Converged = false;
+    converged_ = false;
 
   // See, if we can deduce proper threshold
 
   // First, check whether initial estimate of Valley was sane.
   ErrorThreshold_ = 0;
-  if (Converged && Valley_ > x[2] && x[2] > 2) {
+  if (converged_ && Valley_ > x[2] && x[2] > 2) {
     Valley_ = (size_t)math::round(x[2] / 2.0);
     WARN("Valley value was estimated improperly, reset to " << Valley_);
   }
 
   // If the model converged, then use it to estimate the thresholds.
-  if (Converged) {
+  if (converged_) {
     std::vector<double> z = EStep(x, ErrorProb, GoodCov.size());
 
     INFO("Probability of erroneous kmer at valley: " << z[Valley_]);
-    Converged = false;
+    converged_ = false;
     for (size_t i = 0; i < z.size(); ++i)
       if (z[i] > strong_probability_threshold_) //0.999
         LowThreshold_ = std::min(i + 1, Valley_);
       else if (z[i] < probability_threshold_) {//0.05?
         ErrorThreshold_ = std::max(i + 1, Valley_);
-        Converged = true;
+        converged_ = true;
         break;
       }
 
@@ -351,7 +353,7 @@ void KMerCoverageModel::Fit() {
     #endif
   }
 
-  if (!Converged) {
+  if (!converged_) {
     ErrorThreshold_ = Valley_;
     LowThreshold_ = 1;
     WARN("Failed to determine erroneous kmer threshold. Threshold set to: " << ErrorThreshold_);
