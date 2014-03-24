@@ -44,9 +44,7 @@ def bool_to_str(b):
 
 
 def process_spaces(str):
-    if str.find(" ") != -1:
-        str = '"' + str + '"'
-    return str
+    return support.process_spaces(str)
 
 
 def vars_from_lines(lines):

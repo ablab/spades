@@ -138,6 +138,12 @@ def process_readline(line, is_python3=sys.version.startswith('3.')):
     return line
 
 
+def process_spaces(str):
+    if str.find(" ") != -1:
+        str = '"' + str + '"'
+    return str
+
+
 def sys_call(cmd, log=None, cwd=None):
     import shlex
     import subprocess

@@ -21,8 +21,8 @@ def main():
     all_long_options = list(set(options_storage.long_options + dipspades_logic.DS_Args_List.long_options))
     all_short_options = options_storage.short_options + dipspades_logic.DS_Args_List.short_options
 
-    dipspades_logic_py_command_line = "./dipspades_logic.py"
-    spades_py_command_line = "./spades.py --diploid"
+    dipspades_logic_args = []
+    spades_py_args = ["--diploid"]
 
     try:
         options, not_options = getopt.gnu_getopt(sys.argv, all_short_options, all_long_options)
@@ -41,9 +41,10 @@ def main():
     for opt, arg in options:
         # processing some special options
         if opt == '--test':
-            output_dir = os.path.join(os.path.abspath(arg), "test_dipspades")
-            spades_py_command_line = '--diploid -1 ' + os.path.join(spades_init.spades_home, "test_dataset/ecoli_1K_1.fq.gz") + ' -2 ' + os.path.join(spades_init.spades_home, "test_dataset/ecoli_1K_2.fq.gz") + ' --only-assembler'
-            dipspades_logic_py_command_line = ''
+            output_dir = os.path.abspath("test_dipspades")
+            spades_py_args = ["--diploid", "-1", os.path.join(spades_init.spades_home, "test_dataset/ecoli_1K_1.fq.gz"),
+                              "-2", os.path.join(spades_init.spades_home, "test_dataset/ecoli_1K_2.fq.gz"), "--only-assembler"]
+            dipspades_logic_args = []
             break
         if opt == '-o':
             output_dir = os.path.abspath(arg) #arg
@@ -56,18 +57,20 @@ def main():
             options_storage.usage("", show_hidden=True, dipspades=True)
             sys.exit(0)
         # for all other options
-        cur_opt_arg = " " + opt + " " + arg
+        cur_opt_arg = [opt]
+        if arg:
+            cur_opt_arg.append(arg)
         if opt.startswith("--"):  # long option
             if opt[2:] in options_storage.long_options or (opt[2:] + "=") in options_storage.long_options:
-                spades_py_command_line += cur_opt_arg
+                spades_py_args += cur_opt_arg
             if opt[2:] in dipspades_logic.DS_Args_List.long_options or (opt[2:] + "=") in dipspades_logic.DS_Args_List.long_options:
-                dipspades_logic_py_command_line += cur_opt_arg
+                dipspades_logic_args += cur_opt_arg
         else: # short option
             if opt != '-o':
                 if opt[1:] in options_storage.short_options:
-                    spades_py_command_line += cur_opt_arg
+                    spades_py_args += cur_opt_arg
                 if opt[1:] in dipspades_logic.DS_Args_List.short_options:
-                    dipspades_logic_py_command_line += cur_opt_arg
+                    dipspades_logic_args += cur_opt_arg
 
     if not output_dir:
         support.error("The output_dir is not set! It is a mandatory parameter (-o output_dir).", dipspades=True)
@@ -83,18 +86,18 @@ def main():
         os.makedirs(dipspades_output_dir)
 
     spades_result = ""
-    if spades_py_command_line != "./spades.py --diploid":
-        spades_py_command_line += " -o " + spades_output_dir
-        spades.main(spades_py_command_line.split())
+    if len(spades_py_args) > 1:
+        spades_py_args += ["-o", spades_output_dir]
+        spades.main(spades_py_args)
         spades_result = os.path.join(spades_output_dir, "contigs.fasta")
         if not os.path.isfile(spades_result):
             support.error("Something went wrong and SPAdes did not generate haplocontigs. "
                       "DipSPAdes cannot proceed without them, aborting.", dipspades=True)
 
-    dipspades_logic_py_command_line += " -o " + dipspades_output_dir
+    dipspades_logic_args += ["-o", dipspades_output_dir]
     if spades_result != "":
-        dipspades_logic_py_command_line += " --hap " + spades_result
-    dipspades_logic.main(dipspades_logic_py_command_line.split(), sys.argv, spades.spades_home, spades.bin_home)
+        dipspades_logic_args += ["--hap", spades_result]
+    dipspades_logic.main(dipspades_logic_args, sys.argv, spades.spades_home, spades.bin_home)
 
 
 if __name__ == '__main__':

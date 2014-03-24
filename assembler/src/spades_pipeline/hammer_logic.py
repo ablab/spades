@@ -79,9 +79,9 @@ def prepare_config_ih(filename, cfg, ext_python_modules_home):
         import pyyaml3 as pyyaml
 
     data = pyyaml.load(open(filename, 'r'))
-    data["dataset"] = process_cfg.process_spaces(cfg.dataset_yaml_filename)
-    data["working_dir"] = process_cfg.process_spaces(cfg.tmp_dir)
-    data["output_dir"] = process_cfg.process_spaces(cfg.output_dir)
+    data["dataset"] = cfg.dataset_yaml_filename
+    data["working_dir"] = cfg.tmp_dir
+    data["output_dir"] = cfg.output_dir
     data["hard_memory_limit"] = cfg.max_memory
     data["max_nthreads"] = cfg.max_threads
     pyyaml.dump(data, open(filename, 'w'))

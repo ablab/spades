@@ -697,14 +697,14 @@ def main(args):
 
         #log.info("")
         if "error_correction" in cfg and os.path.isdir(os.path.dirname(corrected_dataset_yaml_filename)):
-            log.info(" * Corrected reads are in " + os.path.dirname(corrected_dataset_yaml_filename) + "/")
+            log.info(" * Corrected reads are in " + support.process_spaces(os.path.dirname(corrected_dataset_yaml_filename) + "/"))
         if "assembly" in cfg and os.path.isfile(result_contigs_filename):
-            message = " * Assembled contigs are in " + result_contigs_filename
+            message = " * Assembled contigs are in " + support.process_spaces(result_contigs_filename)
             if os.path.isfile(result_contigs_filename[:-6] + ".fastg"):
                 message += " (" + os.path.basename(result_contigs_filename[:-6] + ".fastg") + ")"
             log.info(message)
         if "assembly" in cfg and os.path.isfile(result_scaffolds_filename):
-            message = " * Assembled scaffolds are in " + result_scaffolds_filename
+            message = " * Assembled scaffolds are in " + support.process_spaces(result_scaffolds_filename)
             if os.path.isfile(result_scaffolds_filename[:-6] + ".fastg"):
                 message += " (" + os.path.basename(result_scaffolds_filename[:-6] + ".fastg") + ")"
             log.info(message)

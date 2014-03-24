@@ -125,31 +125,31 @@ def prepare_config(config_fname, ds_args, log):
 def print_ds_output(output_dir, log):
     consensus_file = os.path.join(output_dir, "consensus_contigs.fasta")
     if os.path.exists(consensus_file):
-        log.info(" * Assembled consensus contigs are in: " + consensus_file)
+        log.info(" * Assembled consensus contigs are in: " + support.process_spaces(consensus_file))
 
     paired_consensus_file = os.path.join(output_dir, "paired_consensus_contigs.fasta")
     if os.path.exists(paired_consensus_file):
-        log.info(" * Assembled paired consensus contigs are in: " + paired_consensus_file)
+        log.info(" * Assembled paired consensus contigs are in: " + support.process_spaces(paired_consensus_file))
 
     unpaired_consensus_file = os.path.join(output_dir, "unpaired_consensus_contigs.fasta")
     if os.path.exists(unpaired_consensus_file):
-        log.info(" * Assembled paired consensus contigs are in: " + unpaired_consensus_file)
+        log.info(" * Assembled unpaired consensus contigs are in: " + support.process_spaces(unpaired_consensus_file))
 
     hapalignment_file = os.path.join(output_dir, "haplocontigs_alignent")
     if os.path.exists(hapalignment_file):
-        log.info(" * Alignment of haplocontigs is in: " + hapalignment_file)
+        log.info(" * Alignment of haplocontigs is in: " + support.process_spaces(hapalignment_file))
 
     haplotype_assembly_file = os.path.join(output_dir, "haplotype_assembly.out")
     if os.path.exists(haplotype_assembly_file):
-        log.info(" * Assembled paired consensus contigs are in: " + haplotype_assembly_file)
+        log.info(" * Assembled paired consensus contigs are in: " + support.process_spaces(haplotype_assembly_file))
 
     consregions_file = os.path.join(output_dir, "conservative_regions.fasta")
     if os.path.exists(consregions_file):
-        log.info(" * Conservative regions are in: " + consregions_file)
+        log.info(" * Conservative regions are in: " + support.process_spaces(consregions_file))
 
     possconsregions_file = os.path.join(output_dir, "possibly_conservative_regions.fasta")
     if os.path.exists(possconsregions_file):
-        log.info(" * Possibly conservative regions are in: " + possconsregions_file)
+        log.info(" * Possibly conservative regions are in: " + support.process_spaces(possconsregions_file))
 
 
 def main(ds_args_list, general_args_list, spades_home, bin_home):
@@ -177,7 +177,7 @@ def main(ds_args_list, general_args_list, spades_home, bin_home):
 
     log.info("\n")
     log.info("General command line: " + " ".join(general_args_list) + "\n")
-    log.info("dipSPAdes command line: "+ " ".join(ds_args_list) + "\n")
+    log.info("dipSPAdes command line: " + " ".join(ds_args_list) + "\n")
     print_ds_args(ds_args, log)
     log.removeHandler(params_handler)
 
