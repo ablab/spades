@@ -125,6 +125,7 @@ default
     presimp 
     {
        enabled true
+       parallel false 
        ; will be enabled only if average coverage \leq activate_cov
        activation_cov 40.
        tip_condition   "{ tc_lb 3.5, cb auto }"

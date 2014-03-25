@@ -1,4 +1,4 @@
-//***************************************************************************
+/true/***************************************************************************
 //* Copyright (c) 2011-2013 Saint-Petersburg Academic University
 //* All Rights Reserved
 //* See file LICENSE for details.
@@ -82,22 +82,6 @@ private:
     ;
 };
 
-template<class Graph>
-bool ClipTips(Graph& g,
-              const debruijn_config::simplification::tip_clipper& tc_config,
-              const SimplifInfoContainer& info,
-              boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
-
-    string condition_str = tc_config.condition;
-
-    ConditionParser<Graph> parser(g, condition_str, info);
-
-    auto condition = parser();
-
-    INFO("Clipping tips");
-    return ClipTips(g, parser.max_length_bound(), condition, removal_handler);
-}
-
 //enabling tip projection, todo optimize if hotspot
 template<class gp_t>
 boost::function<void(typename Graph::EdgeId)> WrapWithProjectionCallback(
@@ -115,19 +99,24 @@ boost::function<void(typename Graph::EdgeId)> WrapWithProjectionCallback(
 }
 
 template<class gp_t>
-bool ClipTipsWithProjection(
+bool ClipTips(
     gp_t& gp,
     const debruijn_config::simplification::tip_clipper& tc_config,
     const SimplifInfoContainer& info,
     bool enable_projection = true,
     boost::function<void(typename gp_t::graph_t::EdgeId)> removal_handler_f =
     0) {
-    return ClipTips(
-        gp.g,
-        tc_config,
-        info,
-        enable_projection ?
-        WrapWithProjectionCallback(gp, removal_handler_f) : removal_handler_f);
+
+    INFO("Clipping tips");
+
+    string condition_str = tc_config.condition;
+    ConditionParser<Graph> parser(gp.g, condition_str, info);
+    auto condition = parser();
+    
+    if (enable_projection)
+        removal_handler_f = WrapWithProjectionCallback(gp, removal_handler_f);  
+
+    return ClipTips(gp.g, parser.max_length_bound(), condition, removal_handler_f);
 }
 
 template<class Graph>
@@ -524,32 +513,44 @@ bool ParallelEC(Graph& g,
 }
 
 inline
-void PreSimplification(conj_graph_pack& gp,
+void NonParallelPreSimplification(conj_graph_pack& gp,
                        const debruijn_config::simplification::presimplification& presimp,
                        const SimplifInfoContainer& info,
                        boost::function<void(EdgeId)> removal_handler) {
+    INFO("Non parallel mode"):
     CountingCallback<Graph> cnt_callback;
 
-    INFO("PROCEDURE == Presimplification");
-    RemoveSelfConjugateEdges(gp.g, gp.k_value + 100, 1., removal_handler);
-    cnt_callback.Report();
-
-    if (!presimp.enabled) {
-        INFO("Further presimplification is disabled");
-        return;
-    } else if (math::eq(info.detected_mean_coverage(), 0.)) {
-    	INFO("Mean coverage wasn't reliably estimated, no further presimplification");
-    	return;
-    } else if (math::ls(info.detected_mean_coverage(), presimp.activation_cov)) {
-    	INFO("Estimated mean coverage " << info.detected_mean_coverage()
-    			<< " is less than activation coverage " << presimp.activation_cov
-    			<< ", no further presimplification");
-    	return;
-    }
-    
     boost::function<void(EdgeId)> cnt_handler = boost::bind(&CountingCallback<Graph>::HandleDelete, boost::ref(cnt_callback), _1); 
     removal_handler = boost::bind(func::Composition<EdgeId>, _1, removal_handler,
                        cnt_handler);
+
+    debruijn_config::simplification::tip_clipper tc_config;
+    tc_config.condition = presimp.tip_condition;
+
+    ClipTips(gp, tc_config, info, false, removal_handler);
+    
+    cnt_callback.Report();
+
+    debruijn_config::simplification::erroneous_connections_remover ec_config;
+    ec_config.condition = presimp.ec_condition;
+
+    RemoveLowCoverageEdges(gp.g, ec_config, info, removal_handler);
+
+    cnt_callback.Report();
+}
+
+inline
+void ParallelPreSimplification(conj_graph_pack& gp,
+                       const debruijn_config::simplification::presimplification& presimp,
+                       const SimplifInfoContainer& info,
+                       boost::function<void(EdgeId)> removal_handler) {
+    INFO("Parallel mode"):
+    CountingCallback<Graph> cnt_callback;
+
+    boost::function<void(EdgeId)> cnt_handler = boost::bind(&CountingCallback<Graph>::HandleDelete, boost::ref(cnt_callback), _1); 
+    removal_handler = boost::bind(func::Composition<EdgeId>, _1, removal_handler,
+                       cnt_handler);
+
 
     ParallelClipTips(gp.g, presimp.tip_condition, info,
                      removal_handler);
@@ -585,6 +586,33 @@ void PreSimplification(conj_graph_pack& gp,
 //    RemoveBulges(gp.g, cfg::get().simp.br, 0, removal_handler, gp.g.k() + 1);
 }
 
+inline
+void PreSimplification(conj_graph_pack& gp,
+                       const debruijn_config::simplification::presimplification& presimp,
+                       const SimplifInfoContainer& info,
+                       boost::function<void(EdgeId)> removal_handler) {
+    INFO("PROCEDURE == Presimplification");
+    RemoveSelfConjugateEdges(gp.g, gp.k_value + 100, 1., removal_handler);
+
+    if (!presimp.enabled) {
+        INFO("Further presimplification is disabled");
+        return;
+    } else if (math::eq(info.detected_mean_coverage(), 0.)) {
+    	INFO("Mean coverage wasn't reliably estimated, no further presimplification");
+    	return;
+    } else if (math::ls(info.detected_mean_coverage(), presimp.activation_cov)) {
+    	INFO("Estimated mean coverage " << info.detected_mean_coverage()
+    			<< " is less than activation coverage " << presimp.activation_cov
+    			<< ", no further presimplification");
+    	return;
+    }
+    
+    if (presimp.parallel) {
+        ParallelPreSimplification(gp, presimp, info, removal_handler);
+    } else {
+        NonParallelPreSimplification(gp, presimp, info, removal_handler);
+    }
+}
 
 inline
 void PostSimplification(conj_graph_pack& gp,
@@ -608,7 +636,7 @@ void PostSimplification(conj_graph_pack& gp,
                                                  info,
                                                  iteration);
 
-        enable_flag |= ClipTipsWithProjection(gp, cfg::get().simp.tc,
+        enable_flag |= ClipTips(gp, cfg::get().simp.tc,
                                               info,
                                               cfg::get().graph_read_corr.enable,
                                               removal_handler);
@@ -657,7 +685,7 @@ void SimplificationCycle(conj_graph_pack& gp,
                        cnt_handler);
 
     DEBUG(iteration << " TipClipping");
-    ClipTipsWithProjection(gp, cfg::get().simp.tc,
+    ClipTips(gp, cfg::get().simp.tc,
                            info_container,
                            cfg::get().graph_read_corr.enable, removal_handler);
     cnt_callback.Report();
