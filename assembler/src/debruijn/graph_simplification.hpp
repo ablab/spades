@@ -1,4 +1,4 @@
-/true/***************************************************************************
+//***************************************************************************
 //* Copyright (c) 2011-2013 Saint-Petersburg Academic University
 //* All Rights Reserved
 //* See file LICENSE for details.
@@ -517,7 +517,7 @@ void NonParallelPreSimplification(conj_graph_pack& gp,
                        const debruijn_config::simplification::presimplification& presimp,
                        const SimplifInfoContainer& info,
                        boost::function<void(EdgeId)> removal_handler) {
-    INFO("Non parallel mode"):
+    INFO("Non parallel mode");
     CountingCallback<Graph> cnt_callback;
 
     boost::function<void(EdgeId)> cnt_handler = boost::bind(&CountingCallback<Graph>::HandleDelete, boost::ref(cnt_callback), _1); 
@@ -544,7 +544,7 @@ void ParallelPreSimplification(conj_graph_pack& gp,
                        const debruijn_config::simplification::presimplification& presimp,
                        const SimplifInfoContainer& info,
                        boost::function<void(EdgeId)> removal_handler) {
-    INFO("Parallel mode"):
+    INFO("Parallel mode");
     CountingCallback<Graph> cnt_callback;
 
     boost::function<void(EdgeId)> cnt_handler = boost::bind(&CountingCallback<Graph>::HandleDelete, boost::ref(cnt_callback), _1); 
