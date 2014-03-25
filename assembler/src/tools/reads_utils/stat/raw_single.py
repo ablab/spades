@@ -25,8 +25,10 @@ def raw_single(in_filename, out_filename):
         linesplt = line.split('\t')
         pos1 = int(linesplt[3])
         len1 = len(linesplt[9].strip())
-	
-        outFile.write(str(pos1) + ' ' + str(len1) + '\n')
+        flag = int(linesplt[1])
+
+        if not (flag & 4): # The read has no reported alignments
+            outFile.write(str(pos1) + ' ' + str(len1) + '\n')
 
     inFile.close()
     outFile.close()
