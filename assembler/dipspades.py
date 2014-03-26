@@ -38,6 +38,7 @@ def main():
         sys.exit(1)
 
     output_dir = None
+    spades_py_run_needed = False
     for opt, arg in options:
         # processing some special options
         if opt == '--test':
@@ -45,6 +46,7 @@ def main():
             spades_py_args = ["--diploid", "-1", os.path.join(spades_init.spades_home, "test_dataset/ecoli_1K_1.fq.gz"),
                               "-2", os.path.join(spades_init.spades_home, "test_dataset/ecoli_1K_2.fq.gz"), "--only-assembler"]
             dipspades_logic_args = []
+            spades_py_run_needed = True
             break
         if opt == '-o':
             output_dir = os.path.abspath(arg) #arg
@@ -63,13 +65,21 @@ def main():
         if opt.startswith("--"):  # long option
             if opt[2:] in options_storage.long_options or (opt[2:] + "=") in options_storage.long_options:
                 spades_py_args += cur_opt_arg
-            if opt[2:] in dipspades_logic.DS_Args_List.long_options or (opt[2:] + "=") in dipspades_logic.DS_Args_List.long_options:
+                if opt[2:] in dipspades_logic.DS_Args_List.long_options or (opt[2:] + "=") in dipspades_logic.DS_Args_List.long_options:
+                    dipspades_logic_args += cur_opt_arg
+                else:
+                    spades_py_run_needed = True
+            else:
                 dipspades_logic_args += cur_opt_arg
         else: # short option
             if opt != '-o':
                 if opt[1:] in options_storage.short_options:
                     spades_py_args += cur_opt_arg
-                if opt[1:] in dipspades_logic.DS_Args_List.short_options:
+                    if opt[1:] in dipspades_logic.DS_Args_List.short_options:
+                        dipspades_logic_args += cur_opt_arg
+                    else:
+                        spades_py_run_needed = True
+                else:
                     dipspades_logic_args += cur_opt_arg
 
     if not output_dir:
@@ -86,7 +96,7 @@ def main():
         os.makedirs(dipspades_output_dir)
 
     spades_result = ""
-    if len(spades_py_args) > 1:
+    if spades_py_run_needed:
         spades_py_args += ["-o", spades_output_dir]
         spades.main(spades_py_args)
         spades_result = os.path.join(spades_output_dir, "contigs.fasta")
