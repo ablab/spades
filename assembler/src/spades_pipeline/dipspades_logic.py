@@ -141,7 +141,7 @@ def print_ds_output(output_dir, log):
 
     haplotype_assembly_file = os.path.join(output_dir, "haplotype_assembly.out")
     if os.path.exists(haplotype_assembly_file):
-        log.info(" * Assembled paired consensus contigs are in: " + support.process_spaces(haplotype_assembly_file))
+        log.info(" * Results of haplotype assembly are in: " + support.process_spaces(haplotype_assembly_file))
 
     consregions_file = os.path.join(output_dir, "conservative_regions.fasta")
     if os.path.exists(consregions_file):
