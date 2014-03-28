@@ -77,7 +77,7 @@ int main(int argc, char * argv[]) {
   try {
     create_console_logger();
 
-    string config_file = CONFIG_FILENAME;
+    std::string config_file = CONFIG_FILENAME;
     if (argc > 1) config_file = argv[1];
     INFO("Loading config from " << config_file.c_str());
     cfg::create_instance(config_file);
@@ -113,13 +113,13 @@ int main(int argc, char * argv[]) {
     }
 
     // initialize subkmer positions
-    HammerTools::InitializeSubKMerPositions();
+    hammer::InitializeSubKMerPositions();
 
     int max_iterations = cfg::get().general_max_iterations;
 
     // now we can begin the iterations
     for (Globals::iteration_no = 0; Globals::iteration_no < max_iterations; ++Globals::iteration_no) {
-        cout << "\n     === ITERATION " << Globals::iteration_no << " begins ===" << endl;
+      std::cout << "\n     === ITERATION " << Globals::iteration_no << " begins ===" << endl;
       bool do_everything = cfg::get().general_do_everything_after_first_iteration && (Globals::iteration_no > 0);
 
       // initialize k-mer structures
@@ -131,13 +131,13 @@ int main(int argc, char * argv[]) {
 
         if (cfg::get().general_debug) {
           INFO("Debug mode on. Dumping K-mer index");
-          std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index");
+          std::string fname = hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index");
           std::ofstream os(fname.c_str(), std::ios::binary);
           Globals::kmer_data->binary_write(os);
         }
       } else {
         INFO("Reading K-mer index");
-        std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index");
+        std::string fname = hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index");
         std::ifstream is(fname.c_str(), std::ios::binary);
         VERIFY(is.good());
         Globals::kmer_data->binary_read(is, fname);
@@ -149,9 +149,9 @@ int main(int argc, char * argv[]) {
         ConcurrentDSU uf(Globals::kmer_data->size());
         KMerHamClusterer clusterer(cfg::get().general_tau);
         INFO("Clustering Hamming graph.");
-        clusterer.cluster(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamcls"),
+        clusterer.cluster(hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamcls"),
                           *Globals::kmer_data, uf);
-        size_t num_classes = uf.extract_to_file(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming"));
+        size_t num_classes = uf.extract_to_file(hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming"));
 
 #if 0
         std::sort(classes.begin(), classes.end(),  UfCmp());
@@ -167,7 +167,7 @@ int main(int argc, char * argv[]) {
         if (cfg::get().general_debug) {
           INFO("Debug mode on. Writing down clusters.");
 
-          std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming");
+          std::string fname = hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming");
           std::ofstream ofs(fname.c_str(),
                             std::ios::binary | std::ios::out);
 
@@ -181,7 +181,7 @@ int main(int argc, char * argv[]) {
       } else {
         INFO("Reading clusters");
 
-        std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming");
+        std::string fname = hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming");
         std::ifstream is(fname.c_str(), std::ios::binary | std::ios::in);
         VERIFY(is.good());
 
@@ -204,18 +204,18 @@ int main(int argc, char * argv[]) {
         unsigned clustering_nthreads = std::min(cfg::get().general_max_nthreads, cfg::get().bayes_nthreads);
         KMerClustering kmc(*Globals::kmer_data, clustering_nthreads,
                            cfg::get().input_working_dir, cfg::get().general_debug);
-        kmc.process(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming"));
+        kmc.process(hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming"));
         INFO("Finished clustering.");
 
         if (cfg::get().general_debug) {
           INFO("Debug mode on. Dumping K-mer index");
-          std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index2");
+          std::string fname = hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index2");
           std::ofstream os(fname.c_str(), std::ios::binary);
           Globals::kmer_data->binary_write(os);
         }
       } else {
         INFO("Reading K-mer index");
-        std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index2");
+        std::string fname = hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index2");
         std::ifstream is(fname.c_str(), std::ios::binary);
         VERIFY(is.good());
         Globals::kmer_data->binary_read(is, fname);
@@ -237,7 +237,7 @@ int main(int argc, char * argv[]) {
           }
 
           if (cfg::get().expand_write_each_iteration) {
-            std::ofstream oftmp(HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "goodkmers", expand_iter_no).data());
+            std::ofstream oftmp(hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "goodkmers", expand_iter_no).data());
             for (size_t n = 0; n < Globals::kmer_data->size(); ++n) {
               const KMerStat &kmer_data = (*Globals::kmer_data)[n];
               if (kmer_data.isGoodForIterative())
@@ -254,13 +254,13 @@ int main(int argc, char * argv[]) {
 
         if (cfg::get().general_debug) {
           INFO("Debug mode on. Dumping K-mer index");
-          std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index3");
+          std::string fname = hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index3");
           std::ofstream os(fname.c_str(), std::ios::binary);
           Globals::kmer_data->binary_write(os);
         }
       } else {
         INFO("Reading K-mer index");
-        std::string fname = HammerTools::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index3");
+        std::string fname = hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmer.index3");
         std::ifstream is(fname.c_str(), std::ios::binary);
         VERIFY(is.good());
         Globals::kmer_data->binary_read(is, fname);
@@ -269,7 +269,7 @@ int main(int argc, char * argv[]) {
       size_t totalReads = 0;
       // reconstruct and output the reads
       if (cfg::get().correct_do || do_everything) {
-        totalReads = HammerTools::CorrectAllReads();
+        totalReads = hammer::CorrectAllReads();
       }
 
       // prepare the reads for next iteration
@@ -282,7 +282,7 @@ int main(int argc, char * argv[]) {
       // break;
     }
 
-    std::string fname = HammerTools::getFilename(cfg::get().output_dir, "corrected.yaml");
+    std::string fname = hammer::getFilename(cfg::get().output_dir, "corrected.yaml");
     INFO("Saving corrected dataset description to " << fname);
     cfg::get().dataset.save(fname);
 

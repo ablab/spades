@@ -4,20 +4,7 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-/*
- * kmer_cluster.cpp
- *
- *  Created on: 16.07.2011
- *      Author: snikolenko
- */
-
-#include "standard.hpp"
-#include <iostream>
-#include <fstream>
-#include <algorithm>
-
 #include "io/ireadstream.hpp"
-#include "mathfunctions.hpp"
 #include "hammer_tools.hpp"
 #include "hamcluster.hpp"
 #include "kmer_cluster.hpp"
@@ -26,6 +13,10 @@
 #include <boost/numeric/ublas/io.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/numeric/ublas/symmetric.hpp>
+
+#include <iostream>
+#include <fstream>
+#include <algorithm>
 
 using std::max_element;
 using std::min_element;
@@ -241,7 +232,7 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<size_t> &k
     if (cfg::get().bayes_debug_output > 1) {
 #     pragma omp critical
       {
-        cout << "      total likelihood=" << curlik << " as compared to previous " << totalLikelihood << endl;
+        std::cout << "      total likelihood=" << curlik << " as compared to previous " << totalLikelihood << std::endl;
       }
     }
     improved = (curlik > totalLikelihood);
@@ -282,7 +273,7 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
     {
       std::cout << "  kmers:\n";
       for (size_t i = 0; i < block.size(); i++) {
-          cout << data_.kmer(block[i]) << '\n';
+        std::cout << data_.kmer(block[i]) << '\n';
       }
     }
   }
@@ -317,10 +308,10 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
     if (cfg::get().bayes_debug_output > 0) {
       #pragma omp critical
       {
-        cout << "    indices: ";
-        for (uint32_t i = 0; i < origBlockSize; i++) cout << indices[i] << " ";
-        cout << "\n";
-        cout << "  likelihood with " << l << " clusters is " << curLikelihood << endl;
+        std::cout << "    indices: ";
+        for (uint32_t i = 0; i < origBlockSize; i++) std::cout << indices[i] << " ";
+        std::cout << "\n";
+        std::cout << "  likelihood with " << l << " clusters is " << curLikelihood << std::endl;
       }
     }
     if (curLikelihood > bestLikelihood) {
@@ -347,19 +338,19 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
         std::cout << "  " << std::setw(4) << bestCenters[k].count_ << ": ";
         if (centersInCluster[k] != -1u) {
           const KMerStat &kms = data_[block[centersInCluster[k]]];
-          std::cout << kms << " " << setw(8) << block[centersInCluster[k]] << "  ";
+          std::cout << kms << " " << std::setw(8) << block[centersInCluster[k]] << "  ";
         } else {
           std::cout << bestCenters[k].center_;
         }
         std::cout << '\n';
       }
-      cout << "The entire block:" << endl;
+      std::cout << "The entire block:" << std::endl;
       for (uint32_t i = 0; i < origBlockSize; i++) {
         const KMerStat &kms = data_[block[i]];
-        cout << "  " << kms << " " << setw(8) << block[i] << "  ";
-        for (uint32_t j=0; j<K; ++j) cout << setw(3) << (unsigned)getQual(kms, j) << " "; cout << "\n";
+        std::cout << "  " << kms << " " << std::setw(8) << block[i] << "  ";
+        for (uint32_t j=0; j<K; ++j) std::cout << std::setw(3) << (unsigned)getQual(kms, j) << " "; std::cout << "\n";
       }
-      cout << endl;
+      std::cout << std::endl;
     }
   }
 
@@ -394,13 +385,13 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
   if (cfg::get().bayes_debug_output > 0 && origBlockSize > 2) {
     #pragma omp critical
     {
-      cout << "\nAfter the check we got centers: \n";
+      std::cout << "\nAfter the check we got centers: \n";
       for (size_t k=0; k<bestCenters.size(); ++k) {
-        cout << "  " << bestCenters[k].center_ << " (" << bestCenters[k].count_ << ", " << bestCenters[k].quality_ << ") ";
-        if (centersInCluster[k] != -1u) cout << block[centersInCluster[k]];
-        cout << "\n";
+        std::cout << "  " << bestCenters[k].center_ << " (" << bestCenters[k].count_ << ", " << bestCenters[k].quality_ << ") ";
+        if (centersInCluster[k] != -1u) std::cout << block[centersInCluster[k]];
+        std::cout << "\n";
       }
-      cout << endl;
+      std::cout << std::endl;
     }
   }
 

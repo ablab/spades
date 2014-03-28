@@ -25,13 +25,10 @@
 
 namespace hammer {
 const uint32_t K = 21;
-const uint32_t M = 55;
 typedef Seq<K> KMer;
 };
 
 class Read;
-class PositionRead;
-class PositionKMer;
 struct KMerStat;
 
 static inline unsigned hamdistKMer(const hammer::KMer &x, const hammer::KMer &y,
@@ -44,8 +41,6 @@ static inline unsigned hamdistKMer(const hammer::KMer &x, const hammer::KMer &y,
   }
   return dist;
 }
-
-typedef std::map<PositionKMer, KMerStat> KMerStatMap;
 
 struct QualBitSet {
   unsigned char q_[hammer::K];

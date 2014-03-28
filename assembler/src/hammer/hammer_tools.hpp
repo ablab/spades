@@ -4,13 +4,6 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-/*
- * hammer_tools.hpp
- *
- *  Created on: 08.07.2011
- *      Author: snikolenko
- */
-
 #ifndef HAMMER_TOOLS_HPP
 #define HAMMER_TOOLS_HPP
 
@@ -26,39 +19,36 @@
 #include "kmer_stat.hpp"
 #include "io/mmapped_reader.hpp"
 
-using namespace std;
+namespace hammer {
 
-/**
- * a container class for all general procedures in BayesHammer
- */
-class HammerTools {
-public:
-  /// initialize subkmer positions and log about it
-  static void InitializeSubKMerPositions();
+/// initialize subkmer positions and log about it
+void InitializeSubKMerPositions();
 
-  /// parallel correction of batch of reads
-  static void CorrectReadsBatch(std::vector<bool> &res, std::vector<Read> &reads, size_t buf_size,
-                                size_t &changedReads, size_t &changedNucleotides, size_t &uncorrectedNucleotides, size_t &totalNucleotides,
-                                const KMerData &data);
-  /// correct reads in a given file
-  static void CorrectReadFile(const KMerData &data,
-                              size_t &changedReads, size_t &changedNucleotides, size_t &uncorrectedNucleotides, size_t &totalNucleotides,
-                              const std::string &fname,
-                              ofstream *outf_good, ofstream *outf_bad);
-  /// correct reads in a given pair of files
-  static void CorrectPairedReadFiles(const KMerData &data,
-                                     size_t &changedReads, size_t &changedNucleotides, size_t &uncorrectedNucleotides, size_t &totalNucleotides,
-                                     const std::string &fnamel, const std::string &fnamer,
-                                     ofstream * ofbadl, ofstream * ofcorl, ofstream * ofbadr, ofstream * ofcorr, ofstream * ofunp);
-  /// correct all reads
-  static size_t CorrectAllReads();
+/// parallel correction of batch of reads
+void CorrectReadsBatch(std::vector<bool> &res, std::vector<Read> &reads, size_t buf_size,
+                       size_t &changedReads, size_t &changedNucleotides, size_t &uncorrectedNucleotides, size_t &totalNucleotides,
+                       const KMerData &data);
 
-  static string getFilename( const string & dirprefix, const string & suffix );
-  static string getFilename( const string & dirprefix, unsigned iter_count, const string & suffix );
-  static string getFilename( const string & dirprefix, int iter_count, const string & suffix, int suffix_num );
-  static string getFilename( const string & dirprefix, int iter_count, const string & suffix, int suffix_num, const string & suffix2 );
-  static string getFilename( const string & dirprefix, const string & suffix, int suffix_num );
-  static string getReadsFilename(const std::string & dirprefix, const std::string &fname, unsigned iter_no, const std::string & suffix);
+/// correct reads in a given file
+void CorrectReadFile(const KMerData &data,
+                     size_t &changedReads, size_t &changedNucleotides, size_t &uncorrectedNucleotides, size_t &totalNucleotides,
+                     const std::string &fname,
+                     std::ofstream *outf_good, std::ofstream *outf_bad);
+
+/// correct reads in a given pair of files
+void CorrectPairedReadFiles(const KMerData &data,
+                            size_t &changedReads, size_t &changedNucleotides, size_t &uncorrectedNucleotides, size_t &totalNucleotides,
+                            const std::string &fnamel, const std::string &fnamer,
+                            std::ofstream * ofbadl, std::ofstream * ofcorl, std::ofstream * ofbadr, std::ofstream * ofcorr, std::ofstream * ofunp);
+/// correct all reads
+size_t CorrectAllReads();
+
+std::string getFilename(const std::string & dirprefix, const std::string & suffix );
+std::string getFilename(const std::string & dirprefix, unsigned iter_count, const std::string & suffix );
+std::string getFilename(const std::string & dirprefix, int iter_count, const std::string & suffix, int suffix_num );
+std::string getFilename(const std::string & dirprefix, int iter_count, const std::string & suffix, int suffix_num, const std::string & suffix2 );
+std::string getFilename(const std::string & dirprefix, const std::string & suffix, int suffix_num );
+std::string getReadsFilename(const std::string & dirprefix, const std::string &fname, unsigned iter_no, const std::string & suffix);
 };
 
 
