@@ -44,17 +44,17 @@ double GetScoreWithQuality(const StripedSmithWaterman::Alignment &a,
     switch (op_code) {
       case 0: { //match
         for (int i = 0; i < num; ++i, ++ref_pos, ++query_pos)
-          score += additional::MatchScore;
+          score += MatchScore;
         break;
       }
       case 1: { //insert
         for (int i = 0; i < num; ++i, ++query_pos)
-          score -= (double)qual[query_pos] / additional::MismatchScore;
+          score -= (double)qual[query_pos] / MismatchScore;
         break;
       }
       case 2: { //del
         for (int i = 0; i < num; ++i, ++ref_pos)
-          score -= (double)qual[query_pos] / additional::MismatchScore;
+          score -= (double)qual[query_pos] / MismatchScore;
         break;
       }
       default:
@@ -123,115 +123,6 @@ void RestoreFromCigar(const std::string& ref, const std::string& query,
 
   out_ref = std::string(aligned_ref.begin(), aligned_ref.end());
   out_query = std::string(aligned_query.begin(), aligned_query.end());
-}
-
-std::unordered_map<std::string, std::string> ProcessArgs(int argc, char *argv[],
-                                                         bool *ok, std::string *error)
-{
-  std::unordered_map<std::string, std::string> options;
-
-  // Process arg
-  for(int i = 1; i < argc; ++i)
-  {
-    std::string arg;
-    int j = 0;
-    char next_ch = argv[i][j];
-
-    while (next_ch != ':' && next_ch != '=') {
-      if (next_ch == '\0') {
-        (*ok) = false;
-        (*error) = "Bad argument " + std::string(argv[i]);
-        return options;
-      }
-      arg += next_ch;
-      ++j;
-      next_ch = argv[i][j];
-    }
-
-    // Process argument value
-    ++j;
-    next_ch = argv[i][j];
-
-    std::string val;
-    while (next_ch != '\0') {
-      val += next_ch;
-      ++j;
-      next_ch = argv[i][j];
-    }
-
-    if (arg.empty() || val.empty()) {
-      if (next_ch == '\0') {
-        (*ok) = false;
-        (*error) = "Bad argument " + std::string(argv[i]);
-        return options;
-      }
-    }
-    options[arg] = val;
-  }
-
-  // Process sinonims
-  std::unordered_map<std::string, std::vector<std::string> > reqParams;
-  // Add new required args here with sinonims
-  reqParams["mode"] = {"--m", "--mode", "--MODE"};
-  reqParams["config"] = {"--c", "--config", "--CONFIG"};
-  reqParams["input"] = {"--i", "--input", "--INPUT"};
-  reqParams["output"] = {"--o", "--output", "--OUTPUT"};
-  reqParams["database"] = {"--d", "--database", "--DATABASE"};
-  // not required args here
-  std::unordered_map<std::string, std::vector<std::string> > notReqParams;
-  notReqParams["mlen"] = {"--ml", "--mlen", "--MLEN"};
-  notReqParams["inform"] = {"--in", "--inform", "--INFORM"};
-
-  for (auto kv: options) {
-    std::string arg = kv.first;
-    bool correct_arg = false;
-    for (auto sinonim: reqParams) {
-      if (std::find(sinonim.second.begin(), sinonim.second.end(), arg) !=
-          sinonim.second.end()) {
-        options.erase(kv.first);
-        options[sinonim.first] = kv.second;
-        correct_arg = true;
-        break;
-      }
-      if (sinonim.first == kv.first)
-        correct_arg = true;
-    }
-
-    for (auto sinonim: notReqParams) {
-      if (std::find(sinonim.second.begin(), sinonim.second.end(), arg) !=
-          sinonim.second.end()) {
-        options.erase(kv.first);
-        options[sinonim.first] = kv.second;
-        correct_arg = true;
-        break;
-      }
-      if (sinonim.first == kv.first)
-        correct_arg = true;
-    }
-    if (!correct_arg) {
-      (*ok) = false;
-      (*error) = "Bad argument " + std::string(kv.first);
-      return options;
-    }
-  }
-  // Check that all required args was specified
-  for (auto reqArg: reqParams) {
-    std::string arg = reqArg.first;
-    bool hasArg = false;
-    for (auto opt: options)
-      if (opt.first == arg) {
-        hasArg = true;
-        break;
-      }
-    if (!hasArg) {
-      (*ok) = false;
-      (*error) = "Missing argument " + arg;
-      return options;
-    }
-  }
-
-  (*ok) = true;
-  return options;
 }
 
   // end of namespace cclean_utils

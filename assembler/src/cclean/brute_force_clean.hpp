@@ -1,52 +1,65 @@
 #ifndef BRUTE_FORCE_CLEAN_HPP
 #define BRUTE_FORCE_CLEAN_HPP
 
-#include <iostream>
-
-#include "adapter_index.hpp"
-#include "io/ireadstream.hpp"
-#include "sequence/sequence_tools.hpp"
-#include "io/read.hpp"
-#include <config_struct_cclean.hpp>
-#include <ssw/ssw_cpp.h> // Striped Smith-Waterman aligner
-
+#include "utils.hpp"
 #include "additional.cpp"
 
-class BruteForceClean
-{
+class BruteForceClean: public AbstractCclean {
   // Class that get read with oper() and clean it, if that possible
   public:
-    BruteForceClean(std::ostream& aligned_output, std::ostream& output,
+    BruteForceClean(std::ostream& aligned_output,
                     std::ostream& bed,const std::string &db,
+                    const WorkModeType &mode,
+                    const uint mlen,
                     const std::vector<std::string> &gen,
-                    const additional::WorkModeType &brute,
-                    const std::unordered_map<std::string, std::string> &options)
-      : aligned_output_stream_(aligned_output), bed_stream_(bed),
-        adap_seqs_(gen), brute_(brute), output_stream_(output),
-        threshold_(cfg::get().mismatch_threshold), db_name_(db),
-        aligned_part_fraction_(cfg::get().aligned_part_fraction),
-        options_(options) { read_mlen_ = atoi(options_["mlen"].c_str()); }
-
+                    const bool full_inform = false)
+      : AbstractCclean(aligned_output, bed, db, mode, mlen, full_inform),
+        adap_seqs_(gen)  {
+      if(mode == BRUTE_SIMPLE) checker = new BruteCleanFunctor;
+      if(mode == BRUTE_WITH_Q) checker = new BruteQualityCleanFunctor;
+    }
+    virtual ~BruteForceClean() { delete checker; }
     // ReadProcessor class put each read in this operator
-    bool operator()(const Read &read);
-    inline void BruteSimple(const Read &read);
-    inline void BruteDeep(const Read &read);
-    inline int aligned() { return cuted_; }
+    virtual Read operator()(const Read &read, bool *ok);
 
   private:
-    static int cuted_;
-
-    std::unordered_map<std::string, std::string> options_;
-    const additional::WorkModeType &brute_;
     const std::vector<std::string> &adap_seqs_;
-    const double aligned_part_fraction_;
-    const std::string &db_name_;
+    std::string best_adapter_;
+    AbstractCleanFunctor *checker; // Checks is adapter in read
 
-    std::ostream &output_stream_;
-    std::ostream &aligned_output_stream_;
-    std::ostream &bed_stream_;
-    unsigned threshold_;
-    unsigned read_mlen_;
+    // Here goes functors for clean in different modes
+    class BruteCleanFunctor: public AbstractCleanFunctor {
+        virtual inline bool operator()(const Read &r,
+                                       const StripedSmithWaterman::Alignment &a,
+                                       double aligned_part, const std::string &adapter,
+                                       double *best_score) {
+          double cur_score = cclean_utils::
+                             GetMismatches(r.getSequenceString(), adapter, a);
+          if (cur_score < (*best_score) &&
+              cclean_utils::is_alignment_good(a, r.getSequenceString(), adapter,
+                                              aligned_part)) {
+            (*best_score) = cur_score;
+            return true;
+          }
+          return false;
+        }
+    };
+    class BruteQualityCleanFunctor: public AbstractCleanFunctor {
+        virtual inline bool operator()(const Read &r,
+                                       const StripedSmithWaterman::Alignment &a,
+                                       double aligned_part, const std::string &adapter,
+                                       double *best_score) {
+          double cur_score = cclean_utils::
+                             GetScoreWithQuality(a, r.getQuality().str());
+          if (cur_score >= (*best_score) &&
+              cclean_utils::is_alignment_good(a, r.getSequenceString(), adapter,
+                                              aligned_part)) {
+            (*best_score) = cur_score;
+            return true;
+          }
+          return false;
+        }
+    };
 };
 
 #endif // BRUTE_FORCE_CLEAN_HPP

@@ -67,7 +67,7 @@ void print_match(std::ostream& output, std::ostream& bed, std::map<std::string*,
     output << *(it->first) << std::endl;
     output << std::endl;
 
-    print_bed(bed, name, *it_pos, *it_pos + it->first->size());
+    print_bad(bed, name, *it_pos, *it_pos + it->first->size());
    }
   }
 }

@@ -1,47 +1,66 @@
-#ifndef JOBWRAPERS_H_
-#define JOBWRAPERS_H_
+#ifndef JOB_WRAPERS_HPP
+#define JOB_WRAPERS_HPP
 
-#include "running_modes.hpp"
-#include "output.hpp"
-#include "config_struct_cclean.hpp"
-#include "io/read_processor.hpp"
 #include "additional.cpp"
+#include "utils.hpp"
 
 namespace cclean {
-class AdapterIndex;
+  class AdapterIndex;
 }
 
-class SimpleClean {
-public:
-  SimpleClean(std::ostream& aligned_output, std::ostream& output,
-              std::ostream& bed, const std::string &db,
-              const cclean::AdapterIndex &index,
-              const additional::WorkModeType &mode,
-              const std::unordered_map<std::string, std::string> &options)
-    : aligned_output_(aligned_output), bed_(bed), output_stream_(output),
-        mismatch_threshold_(cfg::get().mismatch_threshold),
-        aligned_part_fraction_(cfg::get().aligned_part_fraction),
-        aligned_(0), index_(index), db_(db), options_(options), mode_(mode)
-        { read_mlen_ = atoi(options_["mlen"].c_str()); }
+class SimpleClean: public AbstractCclean {
+  public:
+    SimpleClean(std::ostream &aligned_output,
+                std::ostream &bed, const std::string &db,
+                const WorkModeType &mode,
+                const unsigned mlen,
+                const cclean::AdapterIndex &index,
+                const bool full_inform = false)
+      : AbstractCclean(aligned_output, bed, db, mode, mlen, full_inform),
+        index_(index)  {
+      if(mode_ == SINGLE_END) checker = new SimpleCleanFunctor;
+      if(mode_ == SINGLE_END_Q) checker = new SimpleQualityCleanFunctor;
+    }
+    virtual ~SimpleClean() { delete checker; }
+    virtual Read operator()(const Read &read, bool *ok);
 
-  bool operator()(const Read &r);
-  inline void SingleEndClean(const Read &r);
-  inline void SingleEndWQualityClean(const Read &r);
+  private:
+    const cclean::AdapterIndex &index_;
+    AbstractCleanFunctor *checker; // Checks is adapter in read
 
-  inline size_t aligned() const { return aligned_; }
-
-private:
-  std::unordered_map<std::string, std::string> options_;
-  const std::string& db_;
-  std::ostream& output_stream_;
-  std::ostream& aligned_output_;
-  std::ostream& bed_;
-  const additional::WorkModeType &mode_;
-  double aligned_part_fraction_;
-  size_t aligned_;
-  const cclean::AdapterIndex &index_;
-  unsigned mismatch_threshold_;
-  unsigned read_mlen_;
+    // Here goes functors for clean in different modes
+    class SimpleCleanFunctor: public AbstractCleanFunctor {
+        virtual inline bool operator()(const Read &r,
+                                       const StripedSmithWaterman::Alignment &a,
+                                       double aligned_part, const std::string &adapter,
+                                       double *best_score) {
+          double cur_score = cclean_utils::
+                             GetMismatches(r.getSequenceString(), adapter, a);
+          if (cur_score < (*best_score) &&
+              cclean_utils::is_alignment_good(a, r.getSequenceString(), adapter,
+                                aligned_part)) {
+              (*best_score) = cur_score;
+              return true;
+          }
+          return false;
+        }
+    };
+    class SimpleQualityCleanFunctor: public AbstractCleanFunctor {
+        virtual inline bool operator()(const Read &r,
+                                       const StripedSmithWaterman::Alignment &a,
+                                       double aligned_part, const std::string &adapter,
+                                       double *best_score) {
+          double cur_score = cclean_utils::
+                             GetScoreWithQuality(a, r.getQuality().str());
+          if (cur_score >= (*best_score) &&
+              cclean_utils::is_alignment_good(a, r.getSequenceString(), adapter,
+                                aligned_part)) {
+              (*best_score) = cur_score;
+              return true;
+          }
+          return false;
+        }
+    };
 };
 
-#endif /* JOBWRAPERS_H_ */
+#endif /* JOBWRAPPERS_H_ */

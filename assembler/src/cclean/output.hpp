@@ -1,5 +1,5 @@
-#ifndef OUTPUT_H_
-#define OUTPUT_H_
+#ifndef OUTPUT_HPP
+#define OUTPUT_HPP
 
 #include <string>
 #include <vector>
@@ -23,16 +23,16 @@ void print_match(std::ostream& output, std::ostream& bed, std::map<std::string*,
                  std::vector<int>, Compare>& res, const std::string& name,
                  const std::string& seq, const std::string &db_name);
 
-void print_bed(std::ostream& output, const std::string & name,
+void print_bad(std::ostream& output, const std::string & name,
                int start, int stop);
 
 inline void print_read(std::ostream& output, const Read &read) {
-                       std::ofstream &stream =
-                       reinterpret_cast<std::ofstream&>(output);
+    std::ofstream &stream =
+    reinterpret_cast<std::ofstream&>(output);
     read.print(stream, Read::PHRED_OFFSET);
 }
 
-inline void print_bed(std::ostream& output, const std::string & name,
+inline void print_bad(std::ostream& output, const std::string & name,
                       int start, int stop) {
          output << name << "\t" << start << "\t" << stop << std::endl;
 }

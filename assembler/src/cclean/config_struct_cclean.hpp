@@ -4,20 +4,32 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-#ifndef CONFIG_STRUCT_CCLEAN_HPP_
-#define CONFIG_STRUCT_CCLEAN_HPP_
+#ifndef CONFIG_STRUCT_CCLEAN_HPP
+#define CONFIG_STRUCT_CCLEAN_HPP
 
 #include "config_singl.hpp"
 #include <boost/property_tree/ptree_fwd.hpp>
+#include "io/library.hpp"
 
 struct cclean_config {
-  unsigned mismatch_threshold;
-  double aligned_part_fraction;
-  std::string output_file;
-  std::string output_bed;
-  unsigned nthreads;
 
+  bool use_quality;
+  bool use_bruteforce;
+  bool debug_information;
+
+  unsigned score_treshold;
+  unsigned mismatch_threshold;
+  unsigned minimum_lenght;
+  unsigned nthreads;
+  unsigned buffer_size;
+  double aligned_part_fraction;
+
+  std::string dataset_file_name;
+  std::string database;
   std::string input_working_dir;
+  std::string output_working_dir;
+
+  io::DataSet<> dataset;
 };
 
 // main config load function

@@ -16,7 +16,7 @@
 #include "logger/log_writers.hpp"
 #include "adapter_index.hpp"
 
-constexpr int READS_IN_TEST = 250000;
+constexpr int READS_IN_TEST = 700000;
 constexpr int NTH = 5;
 
 enum TestGeneratorType {
@@ -140,7 +140,7 @@ void CompareAndPrintFastqFiles(const std::string &new_data,
 void TestMultithreadsCorrect(const std::string &aligned_output,
                              const std::string &bed, const std::string &input,
                              const std::string &output, const std::string &db,
-                             const additional::WorkModeType &mode, int times) {
+                             const WorkModeType &mode, int times) {
   // check algorithm on multithreads correctness and reads repeats
   std::ofstream reads_text_output(aligned_output);
   std::ofstream reads_bed(aligned_output);

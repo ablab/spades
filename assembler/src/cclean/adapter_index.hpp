@@ -4,8 +4,8 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-#ifndef __CCLEAN__ADAPTERINDEX_HPP__
-#define __CCLEAN__ADAPTERINDEX_HPP__
+#ifndef CCLEAN_ADAPTERINDEX_HPP
+#define CCLEAN_ADAPTERINDEX_HPP
 
 #include "sequence/seq.hpp"
 #include "mph_index/kmer_index.hpp"

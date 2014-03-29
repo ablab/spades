@@ -8,20 +8,14 @@
 #include <ssw/ssw_cpp.h> // Striped Smith-Waterman aligner
 #include "additional.cpp"
 #include "output.hpp"
-#include "utils.hpp"
 
 using std::string;
 using std::vector;
 using StripedSmithWaterman::Filter;
 using StripedSmithWaterman::Aligner;
 using StripedSmithWaterman::Alignment;
-using additional::WorkModeType;
-using additional::NONE;
-using additional::SINGLE_END;
-using additional::BRUTE_SIMPLE;
-using additional::BRUTE_WITH_Q;
 using cclean_output::print_alignment;
-using cclean_output::print_bed;
+using cclean_output::print_bad;
 using cclean_output::print_match;
 using cclean_output::print_read;
 
@@ -35,126 +29,62 @@ static inline bool is_alignment_good(const StripedSmithWaterman::Alignment& a,
          (a.ref_begin == 0 || a.ref_end == sequence.size() - 1);
 }
 
-
-int BruteForceClean::cuted_ = 0;
-
-bool BruteForceClean::operator()(const Read &read) {
-  if (brute_ == BRUTE_SIMPLE)  BruteSimple(read);
-  if (brute_ == BRUTE_WITH_Q)  BruteDeep(read);
-
-  return false;
-}
-
-void BruteForceClean::BruteSimple(const Read &read) {
+Read BruteForceClean::operator()(const Read &read, bool *ok) {
   const string &read_name = read.getName();
   const string &seq_string = read.getSequenceString();
-
   Filter filter; // SSW filter
   Aligner aligner; // SSW aligner
   aligner.SetReferenceSequence(seq_string.c_str(),
                                static_cast<int>(seq_string.size()));
   Alignment alignment;
 
-  //  it can be many alignment adaps, so we searching the most probable
-  int best_mismatches = threshold_;
-  int cur_mismatches = INT_MAX;
+  //  It can be many alignment adaps, so we searching the most probable
+  double best_score;
+  if (mode_ == BRUTE_SIMPLE)  // so in both mode first overlap will initialize as best
+    best_score = mismatch_threshold_;
+  if (mode_ == BRUTE_WITH_Q)
+    best_score = score_threshold_;
   std::string best_adapter = "";
 
   //  For each adapter align read and adapter
   for (std::string adapt_string: adap_seqs_) {
 
     aligner.Align(adapt_string.c_str(), filter, &alignment);
-    cur_mismatches = cclean_utils::GetMismatches(read.getSequenceString(),
-                                                 adapt_string, alignment);
-
-    if (cur_mismatches < best_mismatches
-        && is_alignment_good(alignment, seq_string,
-                             adapt_string, aligned_part_fraction_)) {
-      best_mismatches = cur_mismatches;
+    if((*checker)(read, alignment, aligned_part_fraction_, adapt_string,
+                  &best_score)) {
       best_adapter = adapt_string;
     }
   }
 
   if (!best_adapter.empty())  {
-  #   pragma omp critical
-    {
       aligner.Align(best_adapter.c_str(), filter, &alignment);
-      cuted_ += 1;
-      if (options_["inform"] == "FULL") { // if user want full information
-        print_alignment(aligned_output_stream_, alignment,
-                        seq_string, best_adapter, read_name, db_name_);
-        print_bed(bed_stream_, read_name, alignment.ref_begin,
-                  alignment.ref_end);
-      }
+      aligned_ += 1;
       Read cuted_read = cclean_utils::CutRead(read, alignment.ref_begin,
                                               alignment.ref_end);
+      if (full_inform_)  // If user want full output
+#       pragma omp critical
+        print_alignment(aligned_output_stream_, alignment, seq_string,
+                        best_adapter, read_name, db_name_);
+
+      // Cuted read must be >= minimum lenght specified by arg
       if (cuted_read.getSequenceString().size() >= read_mlen_) {
-        print_read(output_stream_, cuted_read);
+        if (full_inform_)  // If user want full output
+#         pragma omp critical
+          print_bad(bad_stream_, read_name, alignment.ref_begin, alignment.ref_end);
+        (*ok) = true;
+        return cuted_read;
       }
-      else { // 0 - because start of read
-        if (options_["inform"] == "FULL") print_bed(bed_stream_,
-                                                    read_name, 0, alignment.ref_end);
+      else {
+        if (full_inform_)
+#         pragma omp critical
+          print_bad(bad_stream_, read_name, 0, alignment.ref_end);
+        (*ok) = false;
+        return cuted_read;
       }
     }
-  }
   else {
-#   pragma omp critical
-    print_read(output_stream_, read);
-  }
-}
-
-void BruteForceClean::BruteDeep(const Read &read) {
-  const string &read_name = read.getName();
-  const string &seq_string = read.getSequenceString();
-
-  Filter filter; // SSW filter
-  Aligner aligner; // SSW aligner
-  aligner.SetReferenceSequence(seq_string.c_str(),
-                               static_cast<int>(seq_string.size()));
-  Alignment alignment;
-
-  double align_score;
-  double best_align_score = threshold_;
-  std::string best_adapter = "";
-
-  for (auto adapt_string: adap_seqs_) {
-    aligner.Align(adapt_string.c_str(), filter, &alignment);
-
-    align_score = cclean_utils::GetScoreWithQuality(alignment,
-                                                    read.getQuality().str());
-
-    if (align_score > best_align_score
-        && is_alignment_good(alignment, seq_string,
-                             adapt_string, aligned_part_fraction_)) {
-      best_align_score = align_score;
-      best_adapter = adapt_string;
-    }
-  }
-
-  if (!best_adapter.empty())  {
-#     pragma omp critical
-    {
-      aligner.Align(best_adapter.c_str(), filter, &alignment);
-      cuted_ += 1;
-      if (options_["inform"] == "FULL") { // if user want full information
-        print_alignment(aligned_output_stream_, alignment,
-                        seq_string, best_adapter, read_name, db_name_);
-        print_bed(bed_stream_, read_name, alignment.ref_begin,
-                  alignment.ref_end);
-      }
-      Read cuted_read = cclean_utils::CutRead(read, alignment.ref_begin,
-                                              alignment.ref_end);
-      if (cuted_read.getSequenceString().size() >= read_mlen_) {
-        print_read(output_stream_, cuted_read);
-      }
-      else { // 0 - because start of read
-        if (options_["inform"] == "FULL") print_bed(bed_stream_,
-                                                    read_name, 0, alignment.ref_end);
-      }
-    }
-  }
-  else {
-#   pragma omp critical
-    print_read(output_stream_, read);
+    // Read was not aligned with any adapter
+    (*ok) = true;
+    return read;
   }
 }
