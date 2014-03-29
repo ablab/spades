@@ -248,7 +248,8 @@ class UniquePathFinder {
     }
 
     std::vector<EdgeId> UniquePathBackward(EdgeId e) const {
-        return this->operator()(e, BackwardDirection<Graph>(graph_));
+        auto tmp = this->operator()(e, BackwardDirection<Graph>(graph_));
+        return std::vector<EdgeId>(tmp.rbegin(), tmp.rend());
     }
 
 };

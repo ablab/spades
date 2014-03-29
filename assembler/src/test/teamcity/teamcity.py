@@ -167,6 +167,12 @@ if len(sys.argv) < 2:
 
 dataset_path, dataset_info = load_info(sys.argv[1])
 
+#clean
+if ('prepare_cfg' not in dataset_info.__dict__ or dataset_info.prepare_cfg) and ('spades_compile' not in dataset_info.__dict__ or dataset_info.spades_compile):
+    shutil.rmtree('bin', True)
+    shutil.rmtree('build', True)
+    shutil.rmtree('build_spades', True)
+
 #prepare cfg
 if 'prepare_cfg' not in dataset_info.__dict__ or dataset_info.prepare_cfg:
     ecode = os.system('./prepare_cfg')
@@ -206,12 +212,16 @@ i = 0
 while i < len(dataset_info.spades_params):
     option = dataset_info.spades_params[i]
     spades_params.append(str(option))
-    if i < len(dataset_info.spades_params) - 1 and (option == '-1' or option == '-2' or option == '--12' or option == '-s'):
+    if i < len(dataset_info.spades_params) - 1 and (option == '-1' or option == '-2' or option == '--12' or option == '-s' or option == '--hap'  or option == '--trusted-contigs' or option == '--untrusted-contigs'  or option == '--pacbio' or option == '--sanger'):
         spades_params.append(os.path.join(dataset_path, str(dataset_info.spades_params[i + 1])))
         i += 1
     i += 1
 
-spades_cmd = "./spades.py --disable-gzip-output " + " ".join(spades_params) + " -o " + output_dir
+spades_cmd = ""
+if 'dipspades' in dataset_info.__dict__ and dataset_info.dipspades:
+    spades_cmd = "./src/spades_pipeline/dipspades_logic.py " + " ".join(spades_params) + " -o " + output_dir
+else:
+    spades_cmd = "./spades.py --disable-gzip-output " + " ".join(spades_params) + " -o " + output_dir
 
 #run spades
 ecode = os.system(spades_cmd)
@@ -268,20 +278,23 @@ if 'reads_quality_params' in dataset_info.__dict__:
 quast_cmd = ""
 if 'quast_params' in dataset_info.__dict__:
     contigs = os.path.join(output_dir, "contigs.fasta")
+    if 'dipspades' in dataset_info.__dict__ and dataset_info.dipspades:
+        contigs = os.path.join(output_dir, "consensus_contigs.fasta")
 
     if not os.path.exists(contigs):
         print("No contigs were found in " + output_dir)
         exit_code = 8
     else:
         quast_params = []
-        i = 0
-        while i < len(dataset_info.quast_params):
-            option = dataset_info.quast_params[i]
-            quast_params.append(str(option))
-            if i < len(dataset_info.quast_params) - 1 and (option == '-R' or option == '-G' or option == '-O'):
-                quast_params.append(os.path.join(dataset_path, str(dataset_info.quast_params[i + 1])))
+        if dataset_info.quast_params:
+            i = 0
+            while i < len(dataset_info.quast_params):
+                option = dataset_info.quast_params[i]
+                quast_params.append(str(option))
+                if i < len(dataset_info.quast_params) - 1 and (option == '-R' or option == '-G' or option == '-O'):
+                    quast_params.append(os.path.join(dataset_path, str(dataset_info.quast_params[i + 1])))
+                    i += 1
                 i += 1
-            i += 1
 
         #CONTIGS
         quast_output_dir = os.path.join(output_dir, "QUAST_RESULTS")
@@ -321,21 +334,28 @@ if 'quast_params' in dataset_info.__dict__:
             quast_output_scaf_dir = os.path.join(output_dir, "QUAST_RESULTS_SCAF")
             if os.system(quast_cmd + " -o " + quast_output_scaf_dir + " " + scafs) != 0:
                 print("Failed to estimate scaffolds")
+                if 'sc_assess' in dataset_info.__dict__ and dataset_info.sc_assess:
+                    exit_code = 11
             else:
-                result = assess_quast(os.path.join(quast_output_scaf_dir, "transposed_report.tsv"), {}, "scaffolds")
+                sc_limit_map = {}
+                if 'sc_assess' in dataset_info.__dict__ and dataset_info.sc_assess:
+                    print("Assessing QUAST results for scaffolds...")
+                    if 'sc_min_n50' in dataset_info.__dict__:
+                        sc_limit_map["N50"] = (int(dataset_info.sc_min_n50), True)
+                    if 'sc_max_mis' in dataset_info.__dict__:
+                        sc_limit_map["Misassemblies"] = (int(dataset_info.sc_max_mis), False)
+                    if 'sc_min_genome_mapped' in dataset_info.__dict__:
+                        sc_limit_map["Genome mapped"] = (float(dataset_info.sc_min_genome_mapped), True)
+                    if 'sc_min_genes' in dataset_info.__dict__:
+                        sc_limit_map["Genes"] = (int(dataset_info.sc_min_genes), True)
+                    if 'sc_max_indels' in dataset_info.__dict__:
+                        sc_limit_map["Indels"] = (float(dataset_info.sc_max_indels), False)
+                    if 'sc_max_subs' in dataset_info.__dict__:
+                        sc_limit_map["Mismatches"] = (float(dataset_info.sc_max_subs), False)
+                result = assess_quast(os.path.join(quast_output_scaf_dir, "transposed_report.tsv"), sc_limit_map, "scaffolds")
+                if result[0] != 0:
+                    exit_code = 11
                 new_log += result[1]
-
-        #ALL FASTA
-        print("Now running QUAST on all contigs...")
-        if os.path.exists(os.path.join(output_dir, "K55")):
-            allfasta = os.path.join(output_dir, "K55/*.fasta")
-            quast_output_dir_all = os.path.join(output_dir, "QUAST_RESULTS_ALL")
-            if os.system(quast_cmd + " -o " + quast_output_dir_all + " " + allfasta) != 0:
-                print("Failed to estimate all FASTA files")
-            else:
-                print("Ira, QUAST report for all contigs is in " + quast_output_dir_all)
-        else:
-            print("K55 does not exist")
 
 
 #etalon saves
@@ -344,7 +364,7 @@ if 'etalon_saves' in dataset_info.__dict__:
     ecode = os.system("./src/test/teamcity/detect_diffs.sh " + output_dir + " " + dataset_info.etalon_saves)
     if ecode != 0:
         print("Comparing etalon saves finished abnormally with exit code " + str(ecode))
-        exit_code = 11
+        exit_code = 12
 
 
 #writing log
@@ -363,7 +383,10 @@ if 'contig_storage' in dataset_info.__dict__:
         name_prefix += "_" + sys.argv[2]
     print("Contigs have prefix " + name_prefix)
 
-    shutil.copy(os.path.join(output_dir, "contigs.fasta"), os.path.join(contig_dir, name_prefix + ".fasta"))
+    if 'dipspades' in dataset_info.__dict__ and dataset_info.dipspades:
+        shutil.copy(os.path.join(output_dir, "consensus_contigs.fasta"), os.path.join(contig_dir, name_prefix + ".fasta"))
+    else:
+        shutil.copy(os.path.join(output_dir, "contigs.fasta"), os.path.join(contig_dir, name_prefix + ".fasta"))
     print("Contigs saved to " + os.path.join(contig_dir, name_prefix + ".fasta"))
 
     scafs = os.path.join(output_dir, "scaffolds.fasta")
@@ -389,13 +412,13 @@ if 'contig_storage' in dataset_info.__dict__:
         shutil.copy(boken_scaff, os.path.join(contig_dir, name_prefix + "_scaff_broken.fasta"))
 
 
-    if quast_cmd != "":
-        import glob
+#    if quast_cmd != "":
+#        import glob
 #        sys.path.append('./src/tools/contig_analysis/')
 #        import compare_fasta
-        print("Running quast for all saved contigs now...")
-        os.system(quast_cmd + " -o " + quast_contig_dir + " " + os.path.join(contig_dir, "*.fasta") + " > " + os.path.join(contig_dir, "quast.log") + " 2> " + os.path.join(contig_dir, "quast.err"))
-        print("Done")
+#        print("Running quast for all saved contigs now...")
+#        os.system(quast_cmd + " -o " + quast_contig_dir + " " + os.path.join(contig_dir, "*.fasta") + " > " + os.path.join(contig_dir, "quast.log") + " 2> " + os.path.join(contig_dir, "quast.err"))
+#        print("Done")
 
 os.system("chmod -R 777 " + output_dir)
 sys.exit(exit_code)

@@ -124,7 +124,7 @@ public:
             vertex_limit_exceeded_ = true;
             return false;
         }
-        return settings_.CheckProcessVertex(vertex, distance);
+        return (vertex_number_ < max_vertex_number_) && settings_.CheckProcessVertex(vertex, distance);
 	}
 
 	distance_t GetLength(EdgeId edge) const {
@@ -154,14 +154,20 @@ public:
 
 	void AddNeighboursToQueue(VertexId cur_vertex, distance_t cur_dist, queue_t& queue) {
 		auto neigh_iterator = settings_.GetIterator(cur_vertex);
-		while(neigh_iterator->HasNext()){
-			auto cur_pair = neigh_iterator->Next();
+		while(neigh_iterator.HasNext()){
+			TRACE("Checking new neighbour of vertex " << graph_.str(cur_vertex) << " started");
+			auto cur_pair = neigh_iterator.Next();
 			if (!DistanceCounted(cur_pair.vertex)) {
+				TRACE("Adding new entry to queue");
 				distance_t new_dist = GetLength(cur_pair.edge) + cur_dist;
+				TRACE("Entry: vertex " << graph_.str(cur_vertex) << " distance " << new_dist);
 				if (CheckPutVertex(cur_pair.vertex, cur_pair.edge, new_dist)) {
-					queue.push(element_t<Graph, distance_t>(new_dist, cur_pair.vertex, cur_vertex, cur_pair.edge));
+					TRACE("CheckPutVertex returned true and new entry is added");
+					queue.push(element_t<Graph, distance_t>(new_dist, cur_pair.vertex,
+							cur_vertex, cur_pair.edge));
 				}
 			}
+			TRACE("Checking new neighbour of vertex " << graph_.str(cur_vertex) << " finished");
 		}
 		TRACE("All neighbours of vertex " << graph_.str(cur_vertex) << " processed");
 	}
@@ -180,13 +186,20 @@ public:
 
 			prev_vert_map_[vertex] = std::pair<VertexId, EdgeId>(next.prev_vertex, next.edge_between);
 			queue.pop();
+			TRACE("Vertex " << graph_.str(vertex) << " with distance " << distance << " fetched from queue");
 
-			if (DistanceCounted(vertex))
+			if (DistanceCounted(vertex)){
+				TRACE("Distance to vertex " << graph_.str(vertex) << " already counted. Proceeding to next queue entry.");
 				continue;
+			}
 			distances_.insert(make_pair(vertex, distance));
 
-			if (!CheckProcessVertex(vertex, distance))
+		    TRACE("Vertex " << graph_.str(vertex) << " is found to be at distance "
+		              << distance << " from vertex " << graph_.str(start));
+			if (!CheckProcessVertex(vertex, distance)){
+				TRACE("Check for processing vertex failed. Proceeding to the next queue entry.");
 				continue;
+			}
 			processed_vertices_.insert(vertex);
 			AddNeighboursToQueue(vertex, distance, queue);
 		}

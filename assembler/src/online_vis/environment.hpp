@@ -9,13 +9,14 @@
 #include "graph_pack.hpp"
 #include "omni/visualization/visualization_utils.hpp"
 #include "standard_vis.hpp"
-#include "debruijn_stats.hpp"
+#include "positions.hpp"
 
 namespace online_visualization {
 
-typedef debruijn_graph::NewExtendedSequenceMapper<Graph, Index> MapperClass;
+typedef debruijn_graph::NewExtendedSequenceMapper<debruijn_graph::Graph, Index> MapperClass;
 typedef debruijn_graph::PosFiller<Graph, MapperClass> FillerClass;
 typedef debruijn_graph::KmerMapper<Graph> KmerMapperClass;
+typedef omnigraph::GraphElementFinder<Graph> ElementFinder;
 typedef shared_ptr<omnigraph::visualization::GraphColorer<Graph>> ColoringClass;
 
 class Environment : private boost::noncopyable {

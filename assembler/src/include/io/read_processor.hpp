@@ -21,7 +21,7 @@ private:
   template<class Reader, class Op>
   bool RunSingle(Reader &irs, Op &op) {
     while (!irs.eof()) {
-      typename Reader::read_type r;
+      typename Reader::ReadT r;
       irs >> r;
       read_ += 1;
 
@@ -36,7 +36,7 @@ private:
   template<class Reader, class Op, class Writer>
   void RunSingle(Reader &irs, Op &op, Writer &writer) {
     while (!irs.eof()) {
-      typename Reader::read_type r;
+      typename Reader::ReadT r;
       irs >> r;
       read_ += 1;
 
@@ -69,7 +69,7 @@ public:
     bufsize = (bufsize >> 16) | bufsize;
     bufsize += 1;
 
-    mpmc_bounded_queue<typename Reader::read_type> in_queue(2*bufsize);
+    mpmc_bounded_queue<typename Reader::ReadT> in_queue(2*bufsize);
 
     bool stop = false;
 #   pragma omp parallel shared(in_queue, irs, op, stop) num_threads(nthreads_)
@@ -77,7 +77,7 @@ public:
 #     pragma omp master
       {
         while (!irs.eof()) {
-          typename Reader::read_type r;
+          typename Reader::ReadT r;
           irs >> r;
 #         pragma omp atomic
           read_ += 1;
@@ -99,7 +99,7 @@ public:
       }
 
       while (1) {
-        typename Reader::read_type r;
+        typename Reader::ReadT r;
 
         if (!in_queue.wait_dequeue(r))
           break;
@@ -135,20 +135,20 @@ public:
     bufsize = (bufsize >> 16) | bufsize;
     bufsize += 1;
 
-    mpmc_bounded_queue<typename Reader::read_type> in_queue(bufsize), out_queue(bufsize);
+    mpmc_bounded_queue<typename Reader::ReadT> in_queue(bufsize), out_queue(2*bufsize);
 #   pragma omp parallel shared(in_queue, out_queue, irs, op, writer) num_threads(nthreads_)
     {
 #     pragma omp master
       {
         while (!irs.eof()) {
-          typename Reader::read_type r;
+          typename Reader::ReadT r;
           irs >> r;
 
           // First, try to provide read to the queue. If it's full, never mind.
           bool status = in_queue.enqueue(r);
 
           // Flush down the output queue
-          typename Reader::read_type outr;
+          typename Reader::ReadT outr;
           while (out_queue.dequeue(outr))
             writer << outr;
 
@@ -160,10 +160,15 @@ public:
         }
 
         in_queue.close();
+
+        // Flush down the output queue while in master threads.
+        typename Reader::ReadT outr;
+        while (out_queue.dequeue(outr))
+          writer << outr;
       }
 
       while (1) {
-        typename Reader::read_type r;
+        typename Reader::ReadT r;
 
         if (!in_queue.wait_dequeue(r))
           break;
@@ -176,7 +181,7 @@ public:
     }
 
     // Flush down the output queue
-    typename Reader::read_type outr;
+    typename Reader::ReadT outr;
     while (out_queue.dequeue(outr))
       writer << outr;
   }

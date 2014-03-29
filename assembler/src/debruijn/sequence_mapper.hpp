@@ -12,186 +12,11 @@
 
 #include "runtime_k.hpp"
 #include "edge_index.hpp"
+#include "kmer_mapper.hpp"
 
 #include <cstdlib>
 
 namespace debruijn_graph {
-template <class Graph, class Seq = runtime_k::RtSeq>
-class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
-  typedef omnigraph::GraphActionHandler<Graph> base;
-  typedef typename Graph::EdgeId EdgeId;
-  typedef Seq Kmer;
-  typedef typename runtime_k::KmerMap<Kmer, Seq> MapType;
-
-  MapType mapping_;
-
-  size_t k_;
-
- public:
-
-  KmerMapper(const Graph& g, size_t k) :
-      base(g, "KmerMapper"), mapping_(k), k_(k) {}
-
-  virtual ~KmerMapper() { }
-
-  size_t get_k() const { return k_; }
-
-  typename MapType::const_iterator begin() const {
-    return mapping_.begin();
-  }
-
-  typename MapType::const_iterator end() const {
-    return mapping_.end();
-  }
-
-  void Normalize() {
-    std::vector<Kmer> all;
-    for (auto it = begin(); it != end(); ++it) {
-      all.push_back(it->first);
-    }
-    for (auto it = all.begin(); it != all.end(); ++it) {
-      Normalize(*it);
-    }
-  }
-
-  void Revert(const Kmer &kmer) {
-    Kmer old_value = Substitute(kmer);
-    if (old_value != kmer) {
-      mapping_.erase(kmer);
-      mapping_[old_value] = kmer;
-    }
-  }
-
-  void Normalize(const Kmer &kmer) {
-    mapping_[kmer] = Substitute(kmer);
-  }
-
-  bool CheckCanRemap(const Sequence& old_s, const Sequence& new_s) const {
-    size_t old_length = old_s.size() - k_ + 1;
-    size_t new_length = new_s.size() - k_ + 1;
-    UniformPositionAligner aligner(old_s.size() - k_ + 1,
-                                   new_s.size() - k_ + 1);
-    Kmer old_kmer = old_s.start<Kmer>(k_);
-    old_kmer >>= 0;
-
-    for (size_t i = k_ - 1; i < old_s.size(); ++i) {
-      old_kmer <<= old_s[i];
-      size_t old_kmer_offset = i - k_ + 1;
-      size_t new_kmer_offest = aligner.GetPosition(old_kmer_offset);
-      if(old_kmer_offset * 2 + 1 == old_length && new_length % 2 == 0) {
-        Kmer middle(k_ - 1, new_s, new_length / 2);
-        if (typename Kmer::less2()(middle, !middle)) {
-          new_kmer_offest = new_length - 1 - new_kmer_offest;
-        }
-      }
-      Kmer new_kmer(k_, new_s, new_kmer_offest);
-      auto it = mapping_.find(new_kmer);
-      if (it != mapping_.end()) {
-        if (Substitute(new_kmer) != old_kmer) {
-          return false;
-        }
-      }
-    }
-    return true;
-  }
-
-  void RemapKmers(const Sequence& old_s, const Sequence& new_s) {
-    VERIFY(this->IsAttached());
-    //		cout << endl << "Mapping " << old_s << " to " << new_s << endl;
-    size_t old_length = old_s.size() - k_ + 1;
-    size_t new_length = new_s.size() - k_ + 1;
-    UniformPositionAligner aligner(old_s.size() - k_ + 1,
-                                   new_s.size() - k_ + 1);
-    Kmer old_kmer = old_s.start<Kmer>(k_);
-
-    for (size_t i = k_ - 1; i < old_s.size(); ++i) {
-      // Instead of shifting right
-      if (i != k_ - 1) {
-        old_kmer <<= old_s[i];
-      }
-
-      size_t old_kmer_offset = i - k_ + 1;
-      size_t new_kmer_offest = aligner.GetPosition(old_kmer_offset);
-      if(old_kmer_offset * 2 + 1 == old_length && new_length % 2 == 0) {
-        Kmer middle(unsigned(k_ - 1), new_s, new_length / 2);
-        if(typename Kmer::less2()(middle, !middle)) {
-          new_kmer_offest = new_length - 1 - new_kmer_offest;
-        }
-      }
-      Kmer new_kmer(unsigned(k_), new_s, new_kmer_offest);
-      auto it = mapping_.find(new_kmer);
-      if (it != mapping_.end()) {
-//        VERIFY(Substitute(new_kmer) == old_kmer);
-        mapping_.erase(it);
-      }
-      if(old_kmer.str() != new_kmer.str())
-            mapping_[old_kmer] = new_kmer;
-    }
-  }
-
-  virtual void HandleGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) {
-    VERIFY(this->g().EdgeNucls(new_edge) == this->g().EdgeNucls(edge2));
-    RemapKmers(this->g().EdgeNucls(edge1), this->g().EdgeNucls(edge2));
-  }
-
-  Kmer Substitute(const Kmer& kmer) const {
-    VERIFY(this->IsAttached());
-    Kmer answer = kmer;
-    auto it = mapping_.find(answer);
-    while (it != mapping_.end()) {
-      VERIFY(it.first() != it.second());
-      answer = it.second();
-      it = mapping_.find(answer);
-    }
-    return answer;
-  }
-
-  void BinWrite(std::ostream& file) const {
-    u_int32_t size = (u_int32_t) mapping_.size();
-    file.write((const char *) &size, sizeof(u_int32_t));
-
-    for (auto iter = mapping_.begin(); iter != mapping_.end(); ++iter) {
-      Kmer::BinWrite(file, iter.first());
-      Kmer::BinWrite(file, iter.second());
-    }
-  }
-
-  void BinRead(std::istream& file) {
-    mapping_.clear();
-    u_int32_t size;
-    file.read((char *) &size, sizeof(u_int32_t));
-
-    for (u_int32_t i = 0; i < size; ++i) {
-      Kmer key(k_);
-      Kmer value(k_);
-      Kmer::BinRead(file, &key);
-      Kmer::BinRead(file, &value);
-      mapping_[key] = value;
-    }
-  }
-
-  bool CompareTo(KmerMapper<Graph, Kmer> const& m) {
-    if (mapping_.size() != m.mapping_.size()) {
-      INFO("Unequal sizes");
-    }
-    for (auto iter = mapping_.begin(); iter != mapping_.end(); ++iter) {
-      auto cmp = m.mapping_.find(iter.first());
-      if (cmp == m.mapping_.end() || cmp.second() != iter.second()) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  void clear() {
-    mapping_.clear();
-  }
-
-  size_t size() const {
-    return mapping_.size();
-  }
-};
-
 /**
  * This class finds how certain sequence is mapped to genome. As it is now it works correct only if sequence
  * is mapped to graph ideally and in unique way.
@@ -275,8 +100,8 @@ class SimpleSequenceMapper<Graph, runtime_k::RtSeq> {
    * @param g graph sequences should be mapped to
    * @param index index synchronized with graph
    */
-  SimpleSequenceMapper(const Graph& g, const Index& index, size_t k) :
-      g_(g), index_(index), k_(k) {
+  SimpleSequenceMapper(const Graph& g, const Index& index) :
+      g_(g), index_(index), k_(g.k()+1) {
   }
 
   /**
@@ -377,7 +202,7 @@ class SimpleSequenceMapper<Graph, runtime_k::RtSeq> {
 //
 //    //DEBUG
 //    //		for (size_t i = 0; i < passed_edges.size(); ++i) {
-//    //			cerr << int_ids_.ReturnIntId(passed_edges[i]) << " (" << range_mapping[i] << ")"<< "; ";
+//    //			cerr << passed_edges[i].int_id() << " (" << range_mapping[i] << ")"<< "; ";
 //    //		}
 //    //		cerr << endl;
 //    //DEBUG
@@ -412,6 +237,8 @@ public:
     virtual pair<EdgeId, size_t> GetFirstKmerPos(const Sequence &sequence) const = 0;
 
     virtual pair<EdgeId, size_t> GetLastKmerPos(const Sequence &sequence) const = 0;
+
+    virtual pair<bool, int> GetISFromLongEdge(const Sequence &left, const Sequence &right, size_t is, size_t edge_length_threshold = 0) const = 0;
 };
 
 //todo compare performance
@@ -431,6 +258,7 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
   const KmerSubs& kmer_mapper_;
   const GraphMappingPathFixer path_fixer_;
   size_t k_;
+  bool optimization_on_;
   //	mutable size_t mapped_;
   //	mutable size_t unmapped_;
 
@@ -466,6 +294,11 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
       }
     } else {
       VertexId v = g_.EdgeEnd(last_edge);
+
+      if(!optimization_on_)
+    	  if(g_.OutgoingEdgeCount(v) > 1)
+    		  return false;
+
       for (auto I = g_.out_begin(v), E = g_.out_end(v); I != E; ++I) {
         EdgeId edge = *I;
         if (g_.EdgeNucls(edge)[k_ - 1] == kmer[k_ - 1]) {
@@ -523,8 +356,9 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
   NewExtendedSequenceMapper(const Graph& g,
                             const Index& index,
                             const KmerSubs& kmer_mapper,
-                            size_t k) :
-      SequenceMapper<Graph>(g), index_(index), kmer_mapper_(kmer_mapper), path_fixer_(g), k_(k) { }
+			    bool optimization_on = true) :
+      SequenceMapper<Graph>(g), index_(index), kmer_mapper_(kmer_mapper), path_fixer_(g), k_(g.k()+1),
+	optimization_on_(optimization_on) { }
 
   ~NewExtendedSequenceMapper() {
     //		TRACE("In destructor of sequence mapper");
@@ -589,13 +423,23 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
     return index_.get(right);
   }
 
+  pair<bool, int> GetISFromLongEdge(const Sequence &left, const Sequence &right, size_t is, size_t edge_length_threshold) const {
+      auto pos_left = GetLastKmerPos(left);
+      auto pos_right = GetFirstKmerPos(right);
+      if (pos_left.second == -1u || pos_right.second == -1u || pos_left.first != pos_right.first || g_.length(pos_left.first) < edge_length_threshold) {
+          return make_pair(false, 0);
+      }
+
+      return make_pair(true, (int) (pos_right.second - pos_left.second - k_ - is + left.size() + right.size()));
+  }
+
   vector<EdgeId> FindReadPath(const MappingPath<EdgeId>& mapping_path) const {
         if (!IsMappingPathValid(mapping_path)) {
             TRACE("read unmapped");
             return vector<EdgeId>();
         }
         vector<EdgeId> corrected_path = path_fixer_.DeleteSameEdges(
-                mapping_path.simple_path().sequence());
+                mapping_path.simple_path());
         vector<EdgeId> fixed_path = path_fixer_.TryFixPath(corrected_path);
         if (!path_fixer_.CheckContiguous(fixed_path)) {
             TRACE("read unmapped");
@@ -615,42 +459,11 @@ private:
     DECL_LOGGER("NewExtendedSequenceMapper");
 };
 
+
 template<class gp_t>
 std::shared_ptr<NewExtendedSequenceMapper<typename gp_t::graph_t, typename gp_t::index_t> > MapperInstance(const gp_t& gp) {
-  size_t k_plus_1 = gp.k_value + 1;
-  return std::make_shared<NewExtendedSequenceMapper<typename gp_t::graph_t, typename gp_t::index_t> >(gp.g, gp.index, gp.kmer_mapper, k_plus_1);
+  return std::make_shared<NewExtendedSequenceMapper<typename gp_t::graph_t, typename gp_t::index_t> >(gp.g, gp.index, gp.kmer_mapper);
 }
 
-
-
-template<class graph_pack>
-class MapperFactory {
-
-private:
-    const graph_pack& gp_;
-
-public:
-    typedef SequenceMapper<typename graph_pack::graph_t> SequenceMapperT;
-
-    MapperFactory(const graph_pack& gp):gp_(gp) {
-    }
-
-    std::shared_ptr<SequenceMapperT> GetSequenceMapper(size_t read_length) {
-        if (read_length > gp_.k_value) {
-            INFO("Read length = " << read_length << ", selecting usual mapper");
-            size_t k_plus_1 = gp_.k_value + 1;
-            return std::make_shared<NewExtendedSequenceMapper<typename graph_pack::graph_t, typename graph_pack::index_t> >(gp_.g, gp_.index, gp_.kmer_mapper, k_plus_1);
-        }
-        else {
-            //TODO
-            INFO("Read length = " << read_length << ", selecting short read mapper");
-            size_t k_plus_1 = gp_.k_value + 1;
-            return std::make_shared<NewExtendedSequenceMapper<typename graph_pack::graph_t, typename graph_pack::index_t> >(gp_.g, gp_.index, gp_.kmer_mapper, k_plus_1);
-
-        }
-    }
-
-
-};
 
 }

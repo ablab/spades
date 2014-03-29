@@ -19,3 +19,6 @@ tags
 ._.DS_Store
 spades_config.info
 bh_config.info
+bin
+build_spades
+share

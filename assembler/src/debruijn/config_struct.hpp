@@ -42,12 +42,13 @@ enum info_printer_pos {
     ipp_tip_clipping,
     ipp_bulge_removal,
     ipp_err_con_removal,
-    ipp_before_final_err_con_removal,
+    ipp_before_post_simplification,
     ipp_final_err_con_removal,
     ipp_final_tip_clipping,
     ipp_final_bulge_removal,
     ipp_removing_isolated_edges,
     ipp_final_simplified,
+    ipp_final_gap_closed,
     ipp_before_repeat_resolution,
 
     ipp_total
@@ -58,10 +59,10 @@ namespace details {
 inline const char* info_printer_pos_name(size_t pos) {
     const char* names[] = { "default", "before_first_gap_closer",
                             "before_simplification", "tip_clipping", "bulge_removal",
-                            "err_con_removal", "before_final_err_con_removal",
+                            "err_con_removal", "before_post_simplification",
                             "final_err_con_removal", "final_tip_clipping",
                             "final_bulge_removal", "removing_isolated_edges",
-                            "final_simplified", "before_repeat_resolution" };
+                            "final_simplified","final_gap_closed", "before_repeat_resolution" };
 
     utils::check_array_size < ipp_total > (names);
     return names[pos];
@@ -180,6 +181,7 @@ struct debruijn_config {
         };
 
         struct bulge_remover {
+        	bool   enabled;
             double max_bulge_length_coefficient;
             size_t max_additive_length_coefficient;
             double max_coverage;
@@ -244,11 +246,22 @@ struct debruijn_config {
             double relative_threshold;
         };
 
+        struct relative_coverage_comp_remover {
+            bool enabled;
+            double coverage_gap;
+            double length_coeff;
+            double tip_allowing_length_coeff;
+            size_t max_ec_length_coefficient;
+            double max_coverage_coeff;
+            size_t vertex_count_limit;
+        };
+
+        bool topology_simplif_enabled;
         tip_clipper tc;
         topology_tip_clipper ttc;
         bulge_remover br;
         erroneous_connections_remover ec;
-        relative_coverage_ec_remover rec;
+        relative_coverage_comp_remover rcc;
         topology_based_ec_remover tec;
         tr_based_ec_remover trec;
         interstrand_ec_remover isec;
@@ -256,6 +269,7 @@ struct debruijn_config {
         isolated_edges_remover ier;
         complex_bulge_remover cbr;
         hidden_ec_remover her;
+//        bool stats_mode;
     };
 
     struct construction {
@@ -267,6 +281,7 @@ struct debruijn_config {
         construction_mode con_mode;
         early_tip_clipper early_tc;
         bool keep_perfect_loops;
+        size_t read_buffer_size;
     };
 
     std::string uncorrected_reads;
@@ -277,6 +292,7 @@ struct debruijn_config {
     struct distance_estimator {
         double linkage_distance_coeff;
         double max_distance_coeff;
+        double max_distance_coeff_scaff;
         double filter_threshold;
     };
 
@@ -291,33 +307,34 @@ struct debruijn_config {
         double derivative_threshold;
     };
 
+	struct ambiguous_distance_estimator {
+		bool enabled;
+		double haplom_threshold;
+		double relative_length_threshold;
+		double relative_seq_threshold;
+	};
+
     struct pacbio_processor {
   //align and traverse.
-      std::string pacbio_reads;
-
       size_t  pacbio_k; //13
       bool additional_debug_info; //false
-      bool pacbio_optimized_sw; //false
       double compression_cutoff;// 0.6
       double domination_cutoff; //1.5
       double path_limit_stretching; //1.3
       double path_limit_pressing;//0.7
-  //  double gap_closing_relative_iterations; // 20.0
-      int gap_closing_iterations; //5000;
-
+      bool ignore_middle_alignment; //true; false for stats and mate_pairs;
   //gap_closer
       size_t long_seq_limit; //400
-      int split_cutoff; //100
-      int match_value; // 1
-      int mismatch_penalty; //1
-      int insertion_penalty; //2
-      int deletion_penalty; //2
+      size_t pacbio_min_gap_quantity; //2
+      size_t contigs_min_gap_quantity; //1
     };
 
     struct DataSetData {
         size_t read_length;
         double mean_insert_size;
         double insert_size_deviation;
+        double insert_size_left_quantile;
+        double insert_size_right_quantile;
         double median_insert_size;
         double insert_size_mad;
         std::map<int, size_t> insert_size_distribution;
@@ -330,7 +347,16 @@ struct debruijn_config {
         std::string single_read_prefix;
         size_t thread_num;
 
-        DataSetData(): read_length(0), mean_insert_size(0.0), insert_size_deviation(0.0), median_insert_size(0.0), insert_size_mad(0.0), total_nucls(0), average_coverage(0.0), pi_threshold(0.0) {
+        DataSetData(): read_length(0),
+                mean_insert_size(0.0),
+                insert_size_deviation(0.0),
+                insert_size_left_quantile(0.0),
+                insert_size_right_quantile(0.0),
+                median_insert_size(0.0),
+                insert_size_mad(0.0),
+                total_nucls(0),
+                average_coverage(0.0),
+                pi_threshold(0.0) {
         }
     };
 
@@ -364,7 +390,8 @@ struct debruijn_config {
     };
 
     struct position_handler {
-        int max_single_gap;
+        size_t max_mapping_gap;
+        size_t max_gap_diff;
         std::string contigs_for_threading;
         std::string contigs_to_analyze;
         bool late_threading;
@@ -398,31 +425,33 @@ struct debruijn_config {
         bool binary;
     };
 
+    struct kmer_coverage_model {
+        double probability_threshold;
+        double strong_probability_threshold;
+    };
+
     typedef std::map<info_printer_pos, info_printer> info_printers_t;
 
-public:
     std::string dataset_file;
     std::string project_name;
     std::string input_dir;
     std::string output_base;
     std::string output_root;
     std::string output_dir;
+    std::string tmp_dir;
     std::string output_suffix;
     std::string output_saves;
     std::string final_contigs_file;
     std::string log_filename;
 
-    bool make_saves;
     bool output_pictures;
     bool output_nonfinal_contigs;
     bool compute_paths_number;
 
     bool use_additional_contigs;
-    bool topology_simplif_enabled;
     bool use_unipaths;
     std::string additional_contigs;
 
-    bool pacbio_test_on;
     bool coverage_based_rr_on;
     struct coverage_based_rr {
         double coverage_threshold_one_list;
@@ -440,7 +469,8 @@ public:
     std::string entry_point;
 
     bool rr_enable;
-    bool long_single_mode;
+    bool single_reads_rr;
+    bool always_single_reads_rr;
     bool divide_clusters;
 
     bool mismatch_careful;
@@ -462,6 +492,8 @@ public:
 
     size_t K;
 
+    bool main_iteration;
+
     bool use_multithreading;
     size_t max_threads;
     size_t max_memory;
@@ -475,6 +507,7 @@ public:
     construction con;
     distance_estimator de;
     smoothing_distance_estimator ade;
+    ambiguous_distance_estimator amb_de;
     pacbio_processor pb;
     bool use_scaffolder;
     bool mask_all;
@@ -483,8 +516,11 @@ public:
     gap_closer gc;
     graph_read_corr_cfg graph_read_corr;
     info_printers_t info_printers;
+    kmer_coverage_model kcm;
 
     size_t flanking_range;
+
+    bool diploid_mode;
 };
 
 void load(debruijn_config& cfg, const std::string &filename);

@@ -116,14 +116,14 @@ inline vector<Sequence> ReadContigs(const string& filename) {
 //Prints only basic graph structure!!!
 //todo rewrite with normal splitter usage instead of filtering
 inline void PrintGraphComponentContainingEdge(const string& file_name, const Graph& g,
-		size_t split_edge_length, const IdTrackHandler<Graph>& int_ids,
+		size_t split_edge_length, const omnigraph::GraphElementFinder<Graph>& element_finder,
 		int int_edge_id) {
     shared_ptr<GraphSplitter<Graph>> inner_splitter = ReliableSplitter<Graph>(g, split_edge_length);
 
-//	VERIFY_MSG(int_ids.ReturnEdgeId(int_edge_id) != NULL,
+//	VERIFY_MSG(element_finder.ReturnEdgeId(int_edge_id) != NULL,
 //			"Couldn't find edge with id = " << int_edge_id);
 
-    shared_ptr<GraphComponentFilter<Graph>> filter = make_shared<AnyEdgeContainFilter<Graph>>(g, int_ids.ReturnEdgeId(int_edge_id));
+    shared_ptr<GraphComponentFilter<Graph>> filter = make_shared<AnyEdgeContainFilter<Graph>>(g, element_finder.ReturnEdgeId(int_edge_id));
 	FilteringSplitterWrapper<Graph> splitter(inner_splitter, filter);
 	vector<vector<VertexId>> components;
 	while (splitter.HasNext()) {
@@ -131,8 +131,7 @@ inline void PrintGraphComponentContainingEdge(const string& file_name, const Gra
 		components.push_back(vector<VertexId>(component.vertices().begin(), component.vertices().end()));
 	}
 	VERIFY(components.size() == 1);
-	debruijn_graph::graphio::ConjugateDataPrinter<Graph> printer(g, components.front().begin(),
-			components.front().end(), int_ids);
+	debruijn_graph::graphio::ConjugateDataPrinter<Graph> printer(g, components.front().begin(), components.front().end());
 	debruijn_graph::graphio::PrintBasicGraph<Graph>(file_name, printer);
 }
 

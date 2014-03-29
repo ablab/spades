@@ -1,0 +1,20 @@
+max_rd_len=301
+[LIB]
+avg_ins=RUNNER_PARAM_INSERT_SIZE
+reverse_seq=0
+asm_flags=3
+rank=1
+q1=RUNNER_PARAM_LEFT
+q2=RUNNER_PARAM_RIGHT
+[LIB]
+avg_ins=RUNNER_PARAM_MP_INSERT_SIZE
+reverse_seq=1
+asm_flags=2
+rank=2
+# cutoff of pair number for a reliable connection (at least 5 for large insert size)
+pair_num_cutoff=5
+#minimum aligned length to contigs for a reliable read location (at least 35 for large insert size)
+map_len=35
+q1=RUNNER_PARAM_MP_LEFT
+q2=RUNNER_PARAM_MP_RIGHT
+

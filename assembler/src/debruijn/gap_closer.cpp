@@ -4,9 +4,12 @@
 
 #include "omni/omni_tools.hpp"
 #include "io/io_helper.hpp"
-#include "omni_labelers.hpp"
+#include "omni/visualization/graph_labeler.hpp"
 #include "dataset_readers.hpp"
 #include "read_converter.hpp"
+#include "sequence_mapper.hpp"
+#include "short_read_mapper.hpp"
+#include "adt/kmer_set.hpp"
 
 #include "de/paired_info.hpp"
 
@@ -16,12 +19,6 @@
 #include <unordered_map>
 
 namespace debruijn_graph {
-
-template<typename EdgeId>
-Path<EdgeId> ConvertToPath(MappingPath<EdgeId> mp) { return mp.simple_path(); }
-
-template<typename EdgeId>
-Path<EdgeId> ConvertToPath(Path<EdgeId> mp) { return mp; }
 
 template<class Graph, class SequenceMapper>
 class GapCloserPairedIndexFiller {
@@ -50,8 +47,8 @@ class GapCloserPairedIndexFiller {
         Sequence read1 = p_r.first().sequence();
         Sequence read2 = p_r.second().sequence();
 
-        Path<EdgeId> path1 = ConvertToPath(mapper_.MapSequence(read1));
-        Path<EdgeId> path2 = ConvertToPath(mapper_.MapSequence(read2));
+        Path<EdgeId> path1 = mapper_.MapSequence(read1).path();
+        Path<EdgeId> path2 = mapper_.MapSequence(read2).path();
         for (size_t i = 0; i < path1.size(); ++i) {
             auto OutTipIter = OutTipMap.find(path1[i]);
             if (OutTipIter != OutTipMap.end()) {
@@ -191,12 +188,6 @@ class GapCloserPairedIndexFiller {
 
 };
 
-template<class Mapper>
-bool CheckNoKmerClash(const Sequence& s, const Mapper& mapper) {
-    std::vector<EdgeId> path = mapper.MapSequence(s).simple_path().sequence();
-    return path.empty();
-}
-
 template<class Graph, class SequenceMapper>
 class GapCloser {
   public:
@@ -212,7 +203,22 @@ class GapCloser {
     const size_t hamming_dist_bound_;
     const int init_gap_val_;
     const double weight_threshold_;
-    SequenceCheckF sequence_check_f_;
+
+    SequenceMapper mapper_;
+    runtime_k::KmerSet new_kmers_;
+
+    bool CheckNoKmerClash(const Sequence& s) {
+        runtime_k::RtSeq kmer(k_ + 1, s);
+        kmer >>= 'A';
+        for (size_t i = k_; i < s.size(); ++i) {
+            kmer <<= s[i];
+            if (new_kmers_.contains(kmer)) {
+                return false;
+            }
+        }
+        std::vector<EdgeId> path = mapper_.MapSequence(s).simple_path();
+        return path.empty();
+    }
 
     bool WeightCondition(const omnigraph::de::Histogram& infos) const {
         for (auto it = infos.begin(); it != infos.end(); ++it) {
@@ -283,12 +289,23 @@ class GapCloser {
                 : long_seq.Subseq(long_seq.size() - short_seq.size()) == short_seq;
     }
 
+    void AddEdge(VertexId start, VertexId end, const Sequence& s) {
+        runtime_k::RtSeq kmer(k_ + 1, s);
+        kmer >>= 'A';
+        for (size_t i = k_; i < s.size(); ++i) {
+            kmer <<= s[i];
+            new_kmers_.insert(kmer);
+            new_kmers_.insert(!kmer);
+        }
+        g_.AddEdge(start, end, s);
+    }
+
     bool CorrectLeft(EdgeId first, EdgeId second, int overlap, const vector<size_t>& diff_pos) {
         DEBUG("Can correct first with sequence from second.");
         Sequence new_sequence = g_.EdgeNucls(first).Subseq(g_.length(first) - overlap + diff_pos.front(), g_.length(first) + k_ - overlap)
                                 + g_.EdgeNucls(second).First(k_);
         DEBUG("Checking new k+1-mers.");
-        if (sequence_check_f_(new_sequence)) {
+        if (CheckNoKmerClash(new_sequence)) {
             DEBUG("Check ok.");
             DEBUG("Splitting first edge.");
             pair<EdgeId, EdgeId> split_res = g_.SplitEdge(first, g_.length(first) - overlap + diff_pos.front());
@@ -297,7 +314,7 @@ class GapCloser {
             DEBUG("Adding new edge.");
             VERIFY(MatchesEnd(new_sequence, g_.VertexNucls(g_.EdgeEnd(first)), true));
             VERIFY(MatchesEnd(new_sequence, g_.VertexNucls(g_.EdgeStart(second)), false));
-            g_.AddEdge(g_.EdgeEnd(first), g_.EdgeStart(second),
+            AddEdge(g_.EdgeEnd(first), g_.EdgeStart(second),
                        new_sequence);
             return true;
         } else {
@@ -312,7 +329,7 @@ class GapCloser {
         DEBUG("Can correct second with sequence from first.");
         Sequence new_sequence = g_.EdgeNucls(first).Last(k_) + g_.EdgeNucls(second).Subseq(overlap, diff_pos.back() + 1 + k_);
         DEBUG("Checking new k+1-mers.");
-        if (sequence_check_f_(new_sequence)) {
+        if (CheckNoKmerClash(new_sequence)) {
             DEBUG("Check ok.");
             DEBUG("Splitting second edge.");
             pair<EdgeId, EdgeId> split_res = g_.SplitEdge(second, diff_pos.back() + 1);
@@ -322,7 +339,7 @@ class GapCloser {
             VERIFY(MatchesEnd(new_sequence, g_.VertexNucls(g_.EdgeEnd(first)), true));
             VERIFY(MatchesEnd(new_sequence, g_.VertexNucls(g_.EdgeStart(second)), false));
 
-            g_.AddEdge(g_.EdgeEnd(first), g_.EdgeStart(second),
+            AddEdge(g_.EdgeEnd(first), g_.EdgeStart(second),
                        new_sequence);
             return true;
         } else {
@@ -358,10 +375,10 @@ class GapCloser {
         //old code
         Sequence edge_sequence = g_.EdgeNucls(first).Last(k_)
                                  + g_.EdgeNucls(second).Subseq(overlap, k_);
-        if (sequence_check_f_(edge_sequence)) {
+        if (CheckNoKmerClash(edge_sequence)) {
             DEBUG("Gap filled: Gap size = " << k_ - overlap << "  Result seq "
                   << edge_sequence.str());
-            g_.AddEdge(g_.EdgeEnd(first), g_.EdgeStart(second), edge_sequence);
+            AddEdge(g_.EdgeEnd(first), g_.EdgeStart(second), edge_sequence);
             return true;
         } else {
             DEBUG("Filled k-mer already present in graph");
@@ -373,7 +390,8 @@ class GapCloser {
         TRACE("Processing edges " << g_.str(first) << " and " << g_.str(second));
         TRACE("first " << g_.EdgeNucls(first) << " second " << g_.EdgeNucls(second));
 
-        if (cfg::get().avoid_rc_connections && first == g_.conjugate(second)) {
+        if (cfg::get().avoid_rc_connections &&
+                (first == g_.conjugate(second) || first == second)) {
             DEBUG("Trying to join conjugate edges " << g_.int_id(first));
             return false;
         }
@@ -445,7 +463,7 @@ class GapCloser {
 
     GapCloser(Graph& g, omnigraph::de::PairedInfoIndexT<Graph>& tips_paired_idx,
               size_t min_intersection, double weight_threshold,
-              const SequenceCheckF& sequence_check_f,
+              const SequenceMapper& mapper,
               size_t hamming_dist_bound = 0 /*min_intersection_ / 5*/)
             : g_(g),
               k_((int) g_.k()),
@@ -454,7 +472,8 @@ class GapCloser {
               hamming_dist_bound_(hamming_dist_bound),
               init_gap_val_(-10),
               weight_threshold_(weight_threshold),
-              sequence_check_f_(sequence_check_f) {
+              mapper_(mapper),
+              new_kmers_(k_ + 1) {
         VERIFY(min_intersection_ < g_.k());
         DEBUG("weight_threshold=" << weight_threshold_);
         DEBUG("min_intersect=" << min_intersection_);
@@ -474,7 +493,7 @@ void CloseGaps(conj_graph_pack& gp, Streams& streams) {
     gcpif.FillIndex(tips_paired_idx, streams);
     GapCloser<Graph, Mapper> gap_closer(gp.g, tips_paired_idx,
                                         cfg::get().gc.minimal_intersection, cfg::get().gc.weight_threshold,
-                                        boost::bind(&CheckNoKmerClash<Mapper>, _1, boost::ref(*mapper)));
+                                        *mapper);
     gap_closer.CloseShortGaps();
 }
 

@@ -1,5 +1,5 @@
-- left reads: [../../../data/input/TM6/BH3/09.reads.0.right.corrected.fastq]
+- left reads: [/Johnny/data/projects/JCVI.SingleCell.PacBio/Tm6/Illumina/TM6MDA3_s_8_1_sequence.00.cor.fastq.gz]
   orientation: fr
-  right reads: [../../../data/input/TM6/BH3/09.reads.0.left.corrected.fastq]
-  single reads: [../../../data/input/TM6/BH3/09.reads.0.left.unpaired.fastq, ../../../data/input/TM6/BH3/09.reads.0.right.unpaired.fastq]
+  right reads: [/Johnny/data/projects/JCVI.SingleCell.PacBio/Tm6/Illumina/TM6MDA3_s_8_2_sequence.00.cor.fastq.gz]
+  single reads: [/Johnny/data/projects/JCVI.SingleCell.PacBio/Tm6/Illumina/TM6MDA3_s_8__unpaired.00.cor.fastq.gz]
   type: paired-end

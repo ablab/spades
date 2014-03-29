@@ -38,7 +38,6 @@ class GraphDistanceFinder {
   // finds all distances from a current edge to a set of edges
   const vector<GraphLengths> GetGraphDistancesLengths(EdgeId e1, const set<EdgeId>& second_edges) const
   {
-    DEBUG("Edge " << graph_.int_id(e1));
     vector<VertexId> end_points;
     vector<size_t> path_lower_bounds;
     size_t i = 0;
@@ -261,7 +260,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
       for (size_t i = 0; i < edges.size(); ++i)
       {
         EdgeId edge = edges[i];
-        const typename PairedInfoIndexT<Graph>::InnerMap& inner_map = index.GetEdgeInfo(edge, 0);
+        const auto& inner_map = index.GetEdgeInfo(edge, 0);
         ProcessEdge(edge, inner_map, *buffer[omp_get_thread_num()], pc);
 
         //if (i % 10000 == 0) {

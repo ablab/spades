@@ -160,6 +160,7 @@ inline void assertion_failed_msg(char const * expr, char const * msg,
 //math
 #include "xmath.h"
 #include "func.hpp"
+#include "verify.hpp"
 // log
 #include "logger/logger.hpp"
 

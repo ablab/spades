@@ -1,7 +1,8 @@
 #pragma once
 
-#include "verify.hpp"
+#include "indices/perfect_hash_map.hpp"
 #include "omni/coverage.hpp"
+#include "verify.hpp"
 #include <vector>
 #include <map>
 #include <set>
@@ -12,7 +13,7 @@
 namespace debruijn_graph {
 
 template<class Graph>
-class NewFlankingCoverage : public GraphActionHandler<Graph>,
+class FlankingCoverage : public GraphActionHandler<Graph>,
         public omnigraph::AbstractFlankingCoverage<Graph> {
     typedef GraphActionHandler<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
@@ -44,11 +45,19 @@ class NewFlankingCoverage : public GraphActionHandler<Graph>,
         return unsigned(math::round(AverageFlankingCoverage(e) * double(l)));
     }
 
+    void SetCoverageSimilarToAverageFlanking(EdgeId target, EdgeId source) {
+        SetRawCoverage(target, unsigned(math::round(AverageFlankingCoverage(source) * double(EdgeAveragingRange(target)))));
+    }
+
+    void SetCoverageSimilarToAverageGlobal(EdgeId target, EdgeId source) {
+        SetRawCoverage(target, unsigned(math::round(g_.coverage(source) * double(EdgeAveragingRange(target)))));
+    }
+
 public:
 
     //todo think about interactions with gap closer
-    NewFlankingCoverage(Graph& g, size_t averaging_range)
-            : base(g, "NewFlankingCoverage"), g_(g),
+    FlankingCoverage(Graph& g, size_t averaging_range)
+            : base(g, "FlankingCoverage"), g_(g),
               averaging_range_(averaging_range) {
     }
 
@@ -112,9 +121,10 @@ public:
     }
 
     virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge_1,
-                             EdgeId /*new_edge_2*/) {
-        //hard to think of any other solution
-        SetRawCoverage(new_edge_1, RawCoverage(old_edge));
+                             EdgeId new_edge_2) {
+        //todo maybe improve later
+        SetCoverageSimilarToAverageFlanking(new_edge_1, old_edge);
+        SetCoverageSimilarToAverageGlobal(new_edge_2, old_edge);
     }
 
     virtual void HandleDelete(EdgeId e) {
@@ -156,21 +166,41 @@ public:
     }
 
 private:
-    DECL_LOGGER("NewFlankingCoverage")
+    DECL_LOGGER("FlankingCoverage")
     ;
 };
 
+template<class StoringType>
+struct SimultaneousCoverageCollector {
+};
+
+template<>
+struct SimultaneousCoverageCollector<SimpleStoring> {
+    template<class SimultaneousCoverageFiller, class Info>
+    static void CollectCoverage(SimultaneousCoverageFiller& filler, const Info &edge_info) {
+        filler.inc_coverage(edge_info);
+    }
+};
+
+template<>
+struct SimultaneousCoverageCollector<InvertableStoring> {
+    template<class SimultaneousCoverageFiller, class Info>
+    static void CollectCoverage(SimultaneousCoverageFiller& filler, const Info &edge_info) {
+        filler.inc_coverage(edge_info);
+        filler.inc_coverage(edge_info.conjugate(filler.k()));
+    }
+};
 
 template<class Graph, class CountIndex>
 class SimultaneousCoverageFiller {
     const Graph& g_;
     const CountIndex& count_index_;
-    NewFlankingCoverage<Graph>& flanking_coverage_;
+    FlankingCoverage<Graph>& flanking_coverage_;
     CoverageIndex<Graph>& coverage_index_;
-
+    typedef typename CountIndex::Value Value;
 public:
     SimultaneousCoverageFiller(const Graph& g, const CountIndex& count_index,
-                               NewFlankingCoverage<Graph>& flanking_coverage,
+                               FlankingCoverage<Graph>& flanking_coverage,
                                CoverageIndex<Graph>& coverage_index) :
                                    g_(g),
                                    count_index_(count_index),
@@ -178,27 +208,31 @@ public:
                                    coverage_index_(coverage_index) {
     }
 
+    size_t k() const {
+        return count_index_.k();
+    }
+
+    void inc_coverage(const Value &edge_info) {
+        coverage_index_.IncRawCoverage(edge_info.edge_id, edge_info.count);
+        if (edge_info.offset < flanking_coverage_.averaging_range()) {
+            flanking_coverage_.IncRawCoverage(edge_info.edge_id, edge_info.count);
+        }
+    }
+
     void Fill() {
         for (auto I = count_index_.value_cbegin(), E = count_index_.value_cend();
                 I != E; ++I) {
             const auto& edge_info = *I;
-            EdgeId e = edge_info.edge_id;
-            unsigned offset = edge_info.offset;
-            unsigned count = edge_info.count;
-            VERIFY(offset != -1u);
-            VERIFY(e.get() != NULL);
-            coverage_index_.IncRawCoverage(e, count);
-            if (offset < flanking_coverage_.averaging_range()) {
-                flanking_coverage_.IncRawCoverage(e, count);
-            }
+            VERIFY(edge_info.valid());
+            VERIFY(edge_info.edge_id.get() != NULL);
+            SimultaneousCoverageCollector<typename CountIndex::storing_type>::CollectCoverage(*this, edge_info);
         }
     }
-
 };
 
 template<class Graph, class CountIndex>
 void FillCoverageAndFlanking(const CountIndex& count_index, Graph& g,
-                             NewFlankingCoverage<Graph>& flanking_coverage) {
+                             FlankingCoverage<Graph>& flanking_coverage) {
     SimultaneousCoverageFiller<Graph, CountIndex> filler(g, count_index, flanking_coverage, g.coverage_index());
     filler.Fill();
 }

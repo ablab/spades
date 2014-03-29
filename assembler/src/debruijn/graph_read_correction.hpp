@@ -122,7 +122,6 @@ private:
 	;
 };
 
-
 //todo improve logging
 template<class Graph, class Mapper>
 class GraphReadCorrector: public io::SequenceModifier {
@@ -157,7 +156,7 @@ public:
 //			return Sequence();
 		}
 
-		Path<EdgeId> path = TryFixPath(mapping_path.simple_path());
+		Path<EdgeId> path = TryFixPath(mapping_path.path());
 //		TRACE("Mapped sequence to path " << graph_.str(path.sequence()));
 
 		if (!path_fixer_.CheckContiguous(path.sequence())) {

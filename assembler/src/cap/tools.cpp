@@ -126,8 +126,9 @@ BOOST_AUTO_TEST_CASE( CompareEcoli ) {
 
 BOOST_AUTO_TEST_CASE( MultipleGenomesVisualization ) {
 	return;
+	typedef KmerStoringEdgeIndex<Graph, LSeq, kmer_index_traits<LSeq>, SimpleStoring> comparing_index_t;
 	typedef debruijn_graph::graph_pack<
-	/*Nonc*/debruijn_graph::ConjugateDeBruijnGraph, LSeq> comparing_gp_t;
+	/*Nonc*/debruijn_graph::ConjugateDeBruijnGraph, LSeq, comparing_index_t> comparing_gp_t;
 	static const size_t K = 1001;
 	utils::TmpFolderFixture _("tmp");
 

@@ -144,15 +144,14 @@ int main() {
 
 	Graph g(K);
 	EdgeIndex<K + 1, Graph> index(g);
-	IdTrackHandler<Graph> intIds(g);
 	PairedInfoIndex<Graph> pairedIndex(g, 0);
 	KmerMapper<K+1, Graph> mapper(g);
 	Sequence sequence("");
 
-	long_contigs::LoadFromFile(lc_cfg::get().ds.graph_file, &g, &intIds, sequence, &mapper);
+	long_contigs::LoadFromFile(lc_cfg::get().ds.graph_file, &g, sequence, &mapper);
 	PairedInfoChecker checker(g);
 
-	DataScanner<Graph> dataScanner(g, intIds);
+	DataScanner<Graph> dataScanner(g);
 
 	switch (lc_cfg::get().u.mode) {
 	case 1: {
@@ -186,7 +185,7 @@ int main() {
 				lc_cfg::get().u.insert_size, lc_cfg::get().u.read_size,
 				&res);
 
-		DataPrinter<Graph> dataPrinter(g, intIds);
+		DataPrinter<Graph> dataPrinter(g);
 		dataPrinter.savePaired( "./" + lc_cfg::get().paired_info_file_prefix + "IS" + ToString(lc_cfg::get().u.insert_size) + "_RS" + ToString(lc_cfg::get().u.read_size)
 				+ "_agregate_" + ToString(lc_cfg::get().es.advanced_coeff), res);
 

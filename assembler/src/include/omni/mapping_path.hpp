@@ -180,12 +180,14 @@ struct MappingRange {
     	return initial_range.IntersectLeftOf(other.initial_range) && mapped_range.IntersectLeftOf(other.mapped_range);
     }
 
-    bool StrictlyContinuesWith(const MappingRange &other, size_t k) const {
-        return this->initial_range.end_pos <= other.initial_range.start_pos &&
-                this->mapped_range.end_pos <= other.mapped_range.start_pos &&
-                other.initial_range.start_pos - this->initial_range.end_pos ==
-                        other.mapped_range.start_pos - this->mapped_range.end_pos &&
-                        other.initial_range.start_pos - this->initial_range.end_pos <= k;
+    bool StrictlyContinuesWith(const MappingRange &other, size_t max_gap, size_t gap_diff = 0) const {
+        return this->initial_range.end_pos <= other.initial_range.start_pos 
+                && this->mapped_range.end_pos <= other.mapped_range.start_pos 
+                && other.initial_range.start_pos - this->initial_range.end_pos 
+                    <= other.mapped_range.start_pos - this->mapped_range.end_pos + gap_diff
+                && other.mapped_range.start_pos - this->mapped_range.end_pos 
+                    <= other.initial_range.start_pos - this->initial_range.end_pos + gap_diff
+                && other.initial_range.start_pos - this->initial_range.end_pos <= max_gap;
     }
 
     bool operator==(const MappingRange &that) const {
@@ -235,13 +237,17 @@ class MappingPath {
         return range_mappings_.back().mapped_range.end_pos;
     }
 
-    Path<ElementId> simple_path() const {
+    Path<ElementId> path() const {
         if (edges_.size() != 0)
             return Path<ElementId>(edges_,
                                    range_mappings_[0].mapped_range.start_pos,
                                    range_mappings_[range_mappings_.size() - 1].mapped_range.end_pos);
         else
             return Path<ElementId>();
+    }
+
+    const std::vector<ElementId>& simple_path() const {
+        return edges_;
     }
 
     void join(const MappingPath<ElementId>& that) {

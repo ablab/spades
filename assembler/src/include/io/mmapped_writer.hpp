@@ -8,6 +8,7 @@
 #define HAMMER_MMAPPED_WRITER_HPP
 
 #include "adt/pointer_iterator.hpp"
+#include "adt/array_vector.hpp"
 
 #include <string>
 

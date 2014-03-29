@@ -159,10 +159,7 @@ class EdgeLabelHandler : public GraphActionHandler<Graph> {
         edge_labels.erase(e);
     }
 
-    std::string str(
-            EdgeId edgeId,
-            boost::function<string(const EdgeId&)> f = boost::bind(
-                    static_cast<string (*)(const EdgeId&)>(ToString<EdgeId>), _1))const {
+    std::string str(EdgeId edgeId) const {
         std::stringstream ss;
 
         auto it = edge_labels.find(edgeId);
@@ -170,7 +167,7 @@ class EdgeLabelHandler : public GraphActionHandler<Graph> {
             TRACE("Number of labels " << it->second.size());
             for (auto label_it = it->second.begin(), end = it->second.end();
                     label_it != end; ++label_it) {
-                ss << f(*label_it) << "\\n";
+                ss << this->g().str(*label_it) << "\\n";
             }
         }
         return ss.str();

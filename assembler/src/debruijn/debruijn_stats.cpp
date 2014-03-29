@@ -94,7 +94,6 @@ template<class Graph>
 void GetAllDistances(const Graph& g,
                      const PairedInfoIndexT<Graph>& paired_index,
                      const PairedInfoIndexT<Graph>& clustered_index,
-                     const IdTrackHandler<Graph>& int_ids,
                      const GraphDistanceFinder<Graph>& dist_finder,
                      PairedInfoIndexT<Graph>& result)
 {
@@ -140,11 +139,11 @@ void GetAllDistances(const Graph& g,
         }
 
         for (size_t i = 0; i < paths.size(); ++i) {
-            cout << int_ids.ReturnIntId(first) << "(" << g.length(first) << ") "
-                 << int_ids.ReturnIntId(second) << "(" << g.length(second) << ") : "
+            cout << first.int_id() << "(" << g.length(first) << ") "
+                 << second.int_id() << "(" << g.length(second) << ") : "
                  << (i + 1) << "-th path (" << path_lengths[i] << ", " << path_weights[i] << ")   :::   ";
             for (size_t j = 0; j < paths[i].size(); ++j) {
-                cout << int_ids.ReturnIntId(paths[i][j]) << "(" << g.length(paths[i][j]) << ") ";
+                cout << paths[i][j].int_id() << "(" << g.length(paths[i][j]) << ") ";
             }
             cout << endl;
         }
@@ -204,7 +203,8 @@ void CountPairedInfoStats(const Graph& g,
                           const PairedInfoIndexT<Graph>& etalon_index,
                           const string& output_folder) {
     PairedInfoIndexT<Graph> filtered_index = paired_index;
-    PairInfoWeightFilter<Graph>(g, 40).Filter(filtered_index);
+//    PairInfoWeightFilter<Graph>(g, 40).Filter(filtered_index);
+    PairInfoFilter<Graph>(PairInfoWeightChecker<Graph>(g, 40)).Filter(filtered_index);
     INFO("Counting paired info stats");
     EdgePairStat<Graph>(g, paired_index, output_folder).Count();
 
@@ -264,20 +264,20 @@ void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig,
             inGenomeWay[ei] = tmp;
             CurI++;
             new_edge_added = true;
-            DEBUG("Edge " << gp.int_ids.str(ei) << " num " << CurI << " pos " << start);
+            DEBUG("Edge " << gp.g.str(ei) << " num " << CurI << " pos " << start);
         } else {
             if (m_path1[i - 1].first == ei) {
                 if (abs(start - inGenomeWay[ei][(inGenomeWay[ei].size() - 1)].second) > 50) {
                     inGenomeWay[ei].push_back(make_pair(CurI, start));
                     CurI++;
                     new_edge_added = true;
-                    DEBUG("Edge " << gp.int_ids.str(ei) << " num " << CurI << " pos " << start);
+                    DEBUG("Edge " << gp.g().str(ei) << " num " << CurI << " pos " << start);
                 }
             } else {
                 inGenomeWay[ei].push_back(make_pair(CurI, start));
                 CurI++;
                 new_edge_added = true;
-                DEBUG("Edge " << gp.int_ids.str(ei) << " num " << CurI << " pos " << start);
+                DEBUG("Edge " << gp.g.str(ei) << " num " << CurI << " pos " << start);
             }
         }
         if (new_edge_added && (i > 0)) {
@@ -307,7 +307,7 @@ void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig,
             int best_t = 0;
             PosInfo++;
             DEBUG(
-                "PairInfo " << gp.int_ids.str(left_edge) << " -- " << gp.int_ids.str(right_edge) << " d " << d);
+                "PairInfo " << gp.g().str(left_edge) << " -- " << gp.g().str(right_edge) << " d " << d);
             bool ExactOnD = false;
             for (size_t left_i = 0; left_i < inGenomeWay[left_edge].size();
                  left_i++)
@@ -357,7 +357,7 @@ void tSeparatedStats(conj_graph_pack& gp, const Sequence& contig,
 }
 
 template<class Graph>
-void CountAndSaveAllPaths(const Graph& g, const io::SequencingLibrary<debruijn_config::DataSetData> &lib, const IdTrackHandler<Graph>& int_ids,
+void CountAndSaveAllPaths(const Graph& g, const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
                           const PairedInfoIndexT<Graph>& paired_index, const PairedInfoIndexT<Graph>& /*clustered_index*/) {
     PairedIndexT all_paths(g);
     GetAllDistances<Graph>(paired_index,
@@ -370,13 +370,12 @@ void CountAndSaveAllPaths(const Graph& g, const io::SequencingLibrary<debruijn_c
     std::string dir_name = cfg::get().output_dir + "estimation_qual/";
     make_dir(dir_name);
 
-    typename PrinterTraits<Graph>::Printer printer(g, int_ids);
+    typename PrinterTraits<Graph>::Printer printer(g);
     printer.savePaired(dir_name + "paths", all_paths);
 
     //PairedIndexT& all_paths_2(g);
     //GetAllDistances<Graph>(g,
     //paired_index, clustered_index,
-    //int_ids,
     //all_paths_2,
     //GraphDistanceFinder<Graph>(g, *cfg::get().ds.IS, *cfg::get().ds.RL,
     //size_t(*cfg::get().ds.is_var)));
@@ -399,8 +398,7 @@ void FillAndCorrectEtalonPairedInfo(PairedIndexT&  corrected_etalon_index,
         else {
             INFO("Loading etalon pair info from the previous run...");
             Graph& graph = const_cast<Graph&>(gp.g);
-            IdTrackHandler<Graph>& int_ids = const_cast<IdTrackHandler<Graph>& >(gp.int_ids);
-            ScannerTraits<Graph>::Scanner scanner(graph, int_ids);
+            ScannerTraits<Graph>::Scanner scanner(graph);
             scanner.loadPaired(p, etalon_index);
             path::files_t files;
             files.push_back(p);
@@ -438,7 +436,7 @@ void FillAndCorrectEtalonPairedInfo(PairedIndexT&  corrected_etalon_index,
     estimator.Estimate(corrected_etalon_index);
     if (save_etalon_info_history) {
         INFO("Saving etalon paired info indices on different stages");
-        ConjugateDataPrinter<Graph> data_printer(gp.g, gp.int_ids);
+        ConjugateDataPrinter<Graph> data_printer(gp.g);
         data_printer.savePaired(cfg::get().output_dir + "etalon", etalon_index);
         data_printer.savePaired(cfg::get().output_dir + "etalon_filtered_by_index",
                                 filtered_etalon_index);
@@ -472,16 +470,16 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
                                    const PairedInfoIndexT<Graph> &clustered_index) {
     PairedIndexT etalon_index(gp.g);
 
-  FillAndCorrectEtalonPairedInfo(etalon_index, gp, paired_index,
+    FillAndCorrectEtalonPairedInfo(etalon_index, gp, paired_index,
                                  (size_t)math::round(lib.data().mean_insert_size),
                                  lib.data().read_length,
                                  (size_t)math::round(lib.data().insert_size_deviation), true);
 
-	CountAndSaveAllPaths(gp.g, lib, gp.int_ids, paired_index, clustered_index);
+	CountAndSaveAllPaths(gp.g, lib, paired_index, clustered_index);
 
 	INFO("Counting clustered info stats");
 	EdgeQuality<Graph, Index> edge_qual(gp.g, gp.index, gp.kmer_mapper, gp.genome);
-  //EstimationQualityStat<Graph> estimation_stat(gp.g, gp.int_ids, edge_qual,
+  //EstimationQualityStat<Graph> estimation_stat(gp.g, edge_qual,
                                               //paired_index, clustered_index, etalon_index);
   //estimation_stat.Count();
   //estimation_stat.SaveStats(cfg::get().output_dir + "estimation_qual/");
@@ -491,7 +489,7 @@ void CountClusteredPairedInfoStats(const conj_graph_pack &gp,
 	INFO("Overall cluster stat");
 
   if (cfg::get().paired_info_scaffolder) {
-		ConjugateDataPrinter<Graph> data_printer(gp.g, gp.int_ids);
+		ConjugateDataPrinter<Graph> data_printer(gp.g);
     INFO("Generating the statistics of pair info for scaffolding");
     PairedIndexT scaf_clustered_index(gp.g);
     FilterIndexWithExistingPaths(scaf_clustered_index,

@@ -14,12 +14,15 @@
 
 #define VERIFY(expr)                                             \
     do {                                                         \
+        if(!(expr))\
+            print_stacktrace();\
         assert(expr);                                            \
     } while(0);
 
 #define VERIFY_MSG(expr, msg)                                           \
     if (!(expr)) {                                                      \
         std::stringstream ss;                                           \
+        print_stacktrace();\
         ss << "Verification of expression '" << #expr << "' failed in function '" <<  BOOST_CURRENT_FUNCTION << \
                 "'. In file '" << __FILE__ << "' on line " << __LINE__ << ". Message '" << msg << "'." ; \
         std::cout << ss.str() << std::endl;                             \

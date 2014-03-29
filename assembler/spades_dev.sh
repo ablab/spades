@@ -1,4 +1,7 @@
 #!/bin/bash
+
+set -e
+
 make rd;
 make rh;
 mkdir -p bin;

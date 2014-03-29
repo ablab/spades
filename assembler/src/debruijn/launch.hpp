@@ -19,7 +19,7 @@
 #include "pair_info_count.hpp"
 #include "repeat_resolving.hpp"
 #include "distance_estimation.hpp"
-
+#include "pacbio_aligning.hpp"
 #include "stage.hpp"
 
 namespace spades {
@@ -28,17 +28,23 @@ void assemble_genome() {
     INFO("SPAdes started");
     INFO("Starting from stage: " << cfg::get().entry_point);
 
-    StageManager SPAdes;
+    StageManager SPAdes({ cfg::get().developer_mode,
+                          cfg::get().load_from,
+                          cfg::get().output_saves});
 
     debruijn_graph::conj_graph_pack conj_gp(cfg::get().K,
-                                            cfg::get().output_dir, cfg::get().ds.reads.lib_count(),
+                                            cfg::get().tmp_dir,
+                                            cfg::get().ds.reads.lib_count(),
                                             cfg::get().ds.reference_genome,
-                                            !cfg::get().developer_mode, cfg::get().flanking_range);
+                                            cfg::get().flanking_range,
+                                            cfg::get().pos.max_mapping_gap,
+                                            cfg::get().pos.max_gap_diff);
     if (!cfg::get().developer_mode) {
         conj_gp.edge_pos.Detach();
         conj_gp.paired_indices.Detach();
         conj_gp.clustered_indices.Detach();
         conj_gp.scaffolding_indices.Detach();
+        conj_gp.element_finder.Detach();
         if (!cfg::get().gap_closer_enable && !cfg::get().rr_enable)
             conj_gp.kmer_mapper.Detach();
     }
@@ -55,6 +61,16 @@ void assemble_genome() {
     if (cfg::get().correct_mismatches)
         SPAdes.add(new debruijn_graph::MismatchCorrection());
     if (cfg::get().rr_enable) {
+        bool run_pacbio = false;
+        for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+            if (cfg::get().ds.reads[i].is_pacbio_alignable()) {
+                run_pacbio = true;
+                break;
+            }
+        }
+        if (run_pacbio) {
+            SPAdes.add(new debruijn_graph::PacBioAligning());
+        }
         SPAdes.add(new debruijn_graph::PairInfoCount());
         SPAdes.add(new debruijn_graph::DistanceEstimation());
         SPAdes.add(new debruijn_graph::RepeatResolution());
@@ -63,6 +79,9 @@ void assemble_genome() {
     }
 
     SPAdes.run(conj_gp, cfg::get().entry_point.c_str());
+
+    // For informing spades.py about estimated params
+    debruijn_graph::write_lib_data(path::append_path(cfg::get().output_dir, "final"));
 
     INFO("SPAdes finished");
 }

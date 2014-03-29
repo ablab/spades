@@ -11,6 +11,7 @@
 
 #include "io/paired_read.hpp"
 #include "omni/omni_utils.hpp"
+#include "omni/visualization/graph_colorer.hpp"
 #include "omni/id_track_handler.hpp"
 #include "omni/splitters.hpp"
 #include "omni/path_processor.hpp"
@@ -24,8 +25,8 @@
 #include "path_helper.hpp"
 
 #include "debruijn_graph.hpp"
-#include "sequence_mapper.hpp"
-#include "genomic_quality.hpp"
+#include "indices/perfect_hash_map.hpp"
+#include "edge_index.hpp"
 
 #include <iostream>
 

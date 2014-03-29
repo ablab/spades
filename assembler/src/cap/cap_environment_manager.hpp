@@ -69,7 +69,8 @@ class CapEnvironmentManager {
     ContigStreams rc_contigs = io::RCWrap(streams);
     rc_contigs.reset();
 
-    debruijn_graph::ConstructGraphUsingOldIndex(result->k_value, rc_contigs, result->g, result->index);
+    debruijn_graph::ConstructGraphUsingExtentionIndex(CreateDefaultConstructionConfig(),
+                                                      rc_contigs, result->g, result->index);
 
     env_->coloring_ = std::make_shared<ColorHandler<Graph> >(result->g, streams.size());
     ColoredGraphConstructor<Graph, Mapper> colored_graph_constructor(result->g,
@@ -212,10 +213,6 @@ class CapEnvironmentManager {
 
     }
 
-    //SimpleInDelCorrector<Graph> corrector(gp.g, *env_->coloring_,
-    //    (*MapperInstance(gp)).MapSequence(*env_->genomes_[0]).simple_path().sequence(), /*genome_color*/
-    //    kRedColorSet, /*assembly_color*/kBlueColorSet);
-    //corrector.Analyze();
   }
 
   template <class gp_t>
@@ -281,8 +278,9 @@ class CapEnvironmentManager {
 
     VERIFY(env_->gp_rtseq_ == NULL && env_->gp_lseq_ == NULL);
     if (env_->UseLSeqForThisK(k)) {
-      env_->SetGraphPack(BuildGPFromStreams<LSeqGP>(
-          streams, k));
+        VERIFY(false);
+//      env_->SetGraphPack(BuildGPFromStreams<LSeqGP>(
+//          streams, k));
     } else {
       env_->SetGraphPack(BuildGPFromStreams<RtSeqGP>(
           streams, k));
@@ -307,7 +305,7 @@ class CapEnvironmentManager {
 
     // Saving graph
     /*
-    debruijn_graph::graphio::PrinterTraits<Graph>::Printer printer(*env_->graph_, *env_->int_ids_);
+    debruijn_graph::graphio::PrinterTraits<Graph>::Printer printer(*env_->graph_);
 	printer.SaveGraph(filename);
 	printer.SaveEdgeSequences(filename);
 	printer.SavePositions(filename, *env_->edge_pos_);
@@ -319,7 +317,7 @@ class CapEnvironmentManager {
     }
 
     // Saving coloring of graph
-    cap::SaveColoring(*env_->graph_, *env_->int_ids_, *env_->coloring_, filename);
+    cap::SaveColoring(*env_->graph_, *env_->coloring_, filename);
   }
 
   void DrawPics(std::string folder) const {
@@ -478,7 +476,7 @@ class CapEnvironmentManager {
 
     env_->coloring_ = std::make_shared<ColorHandler<Graph> >(env_->graph(), env_->genome_cnt());
     INFO("Loading coloring from " << path);
-    cap::LoadColoring(*env_->graph_, *env_->int_ids_, *env_->coloring_, path);
+    cap::LoadColoring(*env_->graph_, *env_->element_finder_, *env_->coloring_, path);
 
     env_->CheckConsistency();
   }

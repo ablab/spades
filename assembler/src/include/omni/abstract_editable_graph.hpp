@@ -20,6 +20,9 @@
 
 namespace omnigraph {
 
+using restricted::LocalIdDistributor;
+using restricted::IdDistributor;
+
 template<typename VertexIdT, typename EdgeIdT, class DataMasterT,
 		typename VertexIt>
 class AbstractEditableGraph;
@@ -29,6 +32,7 @@ class ConstructionHelper {
 	friend class AbstractEditableGraph<typename Graph::VertexId, typename Graph::EdgeId, typename Graph::DataMaster, typename Graph::VertexIterator>;
 private:
 	typedef typename Graph::DataMaster::EdgeData EdgeData;
+    typedef typename Graph::DataMaster::VertexData VertexData;
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 
@@ -37,9 +41,16 @@ private:
 	ConstructionHelper(Graph &graph) : graph_(graph) {
 	}
 public:
+	Graph &graph() {
+	    return graph_;
+	}
 
-	EdgeId AddEdge(const EdgeData &data) {
-		return graph_.AddEdge(data);
+    EdgeId AddEdge(const EdgeData &data) {
+        return AddEdge(data, graph_.GetGraphIdDistributor());
+    }
+
+	EdgeId AddEdge(const EdgeData &data, IdDistributor &id_distributor) {
+		return graph_.AddEdge(data, id_distributor);
 	}
 
     void LinkIncomingEdge(VertexId v, EdgeId e) {
@@ -48,6 +59,21 @@ public:
 
     void LinkOutgoingEdge(VertexId v, EdgeId e) {
     	graph_.LinkOutgoingEdge(v, e);
+    }
+
+    VertexId CreateVertex(const VertexData &data) {
+        return CreateVertex(data, graph_.GetGraphIdDistributor());
+    }
+
+    VertexId CreateVertex(const VertexData &data, IdDistributor &id_distributor) {
+        return graph_.CreateVertex(data, id_distributor);
+    }
+
+    template<class Iter>
+    void AddVerticesToGraph(Iter begin, Iter end) {
+        for(; begin != end; ++begin) {
+            graph_.AddVertexToGraph(*begin);
+        }
     }
 };
 
@@ -67,25 +93,41 @@ public:
 	typedef typename base::edge_const_iterator edge_const_iterator;
 	typedef ConstructionHelper<AbstractEditableGraph<VertexIdT, EdgeIdT, DataMasterT, VertexIt>> Helper;
 
-private:
+protected:
 	//todo think of necessity to pull these typedefs through hierarchy
 	DataMaster master_;
 
-	mutable BaseIdTrackHandler<VertexIdT, EdgeIdT>* int_ids_;
+	LocalIdDistributor id_distributor_;
 
-	virtual VertexId CreateVertex(const VertexData &data) = 0;
+    virtual VertexId CreateVertex(const VertexData &data) {
+        return CreateVertex(data, this->GetGraphIdDistributor());
+    }
+
+	virtual VertexId CreateVertex(const VertexData &data, restricted::IdDistributor &id_distributor) = 0;
+
+	virtual void AddVertexToGraph(VertexId v) = 0;
 
 //	virtual void DestroyVertex(VertexId vertex) = 0;
 
-	virtual VertexId HiddenAddVertex(const VertexData &data) = 0;
+    virtual VertexId HiddenAddVertex(const VertexData &data) {
+        return HiddenAddVertex(data, this->GetGraphIdDistributor());
+    }
+
+	virtual VertexId HiddenAddVertex(const VertexData &data, restricted::IdDistributor &id_distributor) = 0;
 
 	virtual void HiddenDeleteVertex(VertexId v) = 0;
 
-	virtual EdgeId HiddenAddEdge(const EdgeData &data,
-            restricted::IdDistributor * id_distributor = restricted::GlobalIdDistributor::GetInstance()) = 0;
+    virtual EdgeId HiddenAddEdge(const EdgeData &data) {
+        return HiddenAddEdge(data, this->GetGraphIdDistributor());
+    }
 
-	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData &data,
-            restricted::IdDistributor * id_distributor = restricted::GlobalIdDistributor::GetInstance()) = 0;
+	virtual EdgeId HiddenAddEdge(const EdgeData &data, restricted::IdDistributor &id_distributor) = 0;
+
+    virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData &data) {
+        return HiddenAddEdge(v1, v2, data, this->GetGraphIdDistributor());
+    }
+
+	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData &data, restricted::IdDistributor &id_distributor) = 0;
 
 	virtual void HiddenDeleteEdge(EdgeId edge) = 0;
 
@@ -161,7 +203,7 @@ public:
 
 	AbstractEditableGraph(HandlerApplier<VertexId, EdgeId>* applier,
 	const DataMaster& master) :
-			base(applier), master_(master), int_ids_(NULL) {
+			base(applier), master_(master) {
 	}
 
 	virtual ~AbstractEditableGraph() {
@@ -172,32 +214,26 @@ public:
 		//		}
 	}
 
+	LocalIdDistributor &GetGraphIdDistributor() {
+	    return id_distributor_;
+	}
+
+    const LocalIdDistributor &GetGraphIdDistributor() const {
+        return id_distributor_;
+    }
+
 	ConstructionHelper<AbstractEditableGraph<VertexIdT, EdgeIdT, DataMasterT, VertexIt>> GetConstructionHelper() {
 //		TODO: fix everything and restore this check
 //		VERIFY(this->VerifyAllDetached());
 		return ConstructionHelper<AbstractEditableGraph<VertexIdT, EdgeIdT, DataMasterT, VertexIt>> (*this);
 	}
 
-	void set_int_ids(BaseIdTrackHandler<VertexIdT, EdgeIdT>* int_ids) const {
-		VERIFY(!int_ids_ || !int_ids);
-		int_ids_ = int_ids;
-	}
-
-	const BaseIdTrackHandler<VertexIdT, EdgeIdT> &int_ids() const {
-		VERIFY(int_ids_);
-		return *int_ids_;
-	}
-
-	BaseIdTrackHandler<VertexIdT, EdgeIdT>* ReturnIntIdPointer() const {return int_ids_;};
-
 	size_t int_id(EdgeId edge) const {
-		VERIFY(int_ids_);
-		return int_ids_->ReturnIntId(edge);
+		return edge.int_id();
 	}
 
 	size_t int_id(VertexId vertex) const {
-		VERIFY(int_ids_);
-		return int_ids_->ReturnIntId(vertex);
+		return vertex.int_id();
 	}
 
 	const DataMaster& master() const {
@@ -279,9 +315,13 @@ public:
 		return master_.length(data(v));
 	}
 
-	VertexId AddVertex(const VertexData& data) {
+    VertexId AddVertex(const VertexData& data) {
+        return AddVertex(data, this->GetGraphIdDistributor());
+    }
+
+	VertexId AddVertex(const VertexData& data, restricted::IdDistributor &id_distributor) {
 		TRACE("Adding vertex");
-		VertexId v = HiddenAddVertex(data);
+		VertexId v = HiddenAddVertex(data, id_distributor);
 		this->FireAddVertex(v);
 		TRACE("Vertex " << str(v) << " added");
 		return v;
@@ -310,18 +350,35 @@ private:
     virtual void LinkOutgoingEdge(VertexId v, EdgeId e) = 0;
 
 public:
-	EdgeId AddEdge(const EdgeData &data) {
-		TRACE("Adding unlinked edge");
-		EdgeId e = HiddenAddEdge(data);
-		this->FireAddEdge(e);
-		TRACE("Added unlinked edge " << str(e) << " connecting ");
-		return e;
-	}
+//	EdgeId AddEdge(const EdgeData &data) {
+//		TRACE("Adding unlinked edge");
+//		EdgeId e = HiddenAddEdge(data);
+//		this->FireAddEdge(e);
+//		TRACE("Added unlinked edge " << str(e) << " connecting ");
+//        return e;
+//	}
+//
+    EdgeId AddEdge(const EdgeData &data) {
+        return AddEdge(data, this->GetGraphIdDistributor());
+    }
 
-public:
-	EdgeId AddEdge(VertexId v1, VertexId v2, const EdgeData &data) {
+    EdgeId AddEdge(const EdgeData &data,
+                   restricted::IdDistributor &id_distributor) {
+        TRACE("Adding unlinked edge");
+        EdgeId e = HiddenAddEdge(data, id_distributor);
+        this->FireAddEdge(e);
+        TRACE("Added unlinked edge " << str(e) << " connecting ");
+        return e;
+    }
+
+    EdgeId AddEdge(VertexId v1, VertexId v2, const EdgeData &data) {
+        return AddEdge(v1, v2, data, this->GetGraphIdDistributor());
+    }
+
+	EdgeId AddEdge(VertexId v1, VertexId v2, const EdgeData &data,
+                   restricted::IdDistributor &id_distributor) {
 		TRACE("Adding edge connecting " << str(v1) << " and " << str(v2));
-		EdgeId e = HiddenAddEdge(v1, v2, data);
+		EdgeId e = HiddenAddEdge(v1, v2, data, id_distributor);
 		this->FireAddEdge(e);
 		TRACE("Added edge " << str(e) << " connecting " << str(v1) << " and " << str(v2));
 		return e;
@@ -402,19 +459,13 @@ public:
 	virtual std::string str(const EdgeId e) const {
 //		return master_.str(data(edge));
 		stringstream ss;
-		if(int_ids_)
-			ss << int_id(e) << " (" << length(e) << ")";
-		else
-			ss << e << " (" << length(e) << ")";
+		ss << int_id(e) << " (" << length(e) << ")";
 		return ss.str();
 	}
 
 	virtual std::string str(const VertexId v) const {
 //		return master_.str(data(v));
-		if(int_ids_)
-			return ToString(int_id(v));
-		else
-			return ToString(v);
+		return ToString(int_id(v));
 	}
 
 	std::string detailed_str(const VertexId v) const {
@@ -453,7 +504,7 @@ public:
 		return ss.str();
 	}
 
-	EdgeId MergePath(const vector<EdgeId>& path) {
+	EdgeId MergePath(const vector<EdgeId>& path, bool safe_merging = true) {
 		VERIFY(!path.empty());
 		for (size_t i = 0; i < path.size(); i++)
 			for (size_t j = i + 1; j < path.size(); j++) {
@@ -475,7 +526,7 @@ public:
 				++it) {
 			to_merge.push_back(&(data(*it)));
 		}
-		EdgeId new_edge = HiddenAddEdge(v1, v2, master_.MergeData(to_merge));
+		EdgeId new_edge = HiddenAddEdge(v1, v2, master_.MergeData(to_merge, safe_merging));
 		this->FireMerge(corrected_path, new_edge);
 
 		//		cerr << "Corrected " << PrintDetailedPath(corrected_path) << endl;

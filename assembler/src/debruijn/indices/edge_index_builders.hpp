@@ -1,6 +1,6 @@
 #pragma once
 
-#include "debruijn_edge_index.hpp"
+#include "edge_position_index.hpp"
 
 namespace debruijn_graph {
 
@@ -14,8 +14,8 @@ public:
 
     template<class Graph>
     void BuildIndexFromGraph(IndexT &index,
-                             const Graph/*T*/ &g) const {
-        base::BuildIndexFromGraph(index, g);
+                             const Graph/*T*/ &g, size_t read_buffer_size = 0) const {
+        base::BuildIndexFromGraph(index, g, read_buffer_size);
 
         // Now use the index to fill the coverage and EdgeId's
         INFO("Collecting k-mer coverage information from graph, this takes a while.");
@@ -35,7 +35,7 @@ struct has_contains<
     T
     , typename Void<
         //decltype( std::declval<T&>().contains(typename T::KMerIdx(0), typename T::KMer()) )
-        decltype( ((T*)(0))->contains(typename T::KMerIdx(0), typename T::KMer()) )
+        decltype( ((T*)(0))->contains(*((typename T::KeyWithHash*)(0))) )
     >::type
 >: std::true_type {};
 
@@ -46,15 +46,18 @@ class CoverageFillingEdgeIndexBuilder : public Builder {
     typedef typename Builder::IndexT IndexT;
     typedef typename IndexT::KMer Kmer;
     typedef typename IndexT::KMerIdx KmerIdx;
+    typedef typename IndexT::KeyWithHash KeyWithHash;
 
  private:
 
-    bool ContainsWrap(bool check_contains, IndexT& index, KmerIdx idx, const Kmer& kmer, std::true_type) const {
-        return !check_contains || index.contains(idx, kmer);
+
+    bool ContainsWrap(bool check_contains, IndexT& index, const KeyWithHash &kwh, std::true_type) const {
+        return !check_contains || index.contains(kwh);
     }
 
-    bool ContainsWrap(bool check_contains, IndexT& /* index */, KmerIdx /* idx */, const Kmer& /* kmer */, std::false_type) const {
-        VERIFY(!check_contains);
+    bool ContainsWrap(bool /*check_contains*/, IndexT&/* index*/, const KeyWithHash &/*kwh*/, std::false_type) const {
+        VERIFY(false);
+//        VERIFY(!check_contains);
         return true;
     }
 
@@ -73,15 +76,13 @@ class CoverageFillingEdgeIndexBuilder : public Builder {
             if (seq.size() < k)
                 continue;
 
-            Kmer kmer = seq.start<Kmer>(k);
-            kmer >>= 'A';
+            KeyWithHash kwh = index.ConstructKWH(seq.start<Kmer>(k) >> 'A');
             for (size_t j = k - 1; j < seq.size(); ++j) {
-                kmer <<= seq[j];
-                KmerIdx idx = index.seq_idx(kmer);
+            	kwh <<= seq[j];
                 //contains is not used since index might be still empty here
-                if (index.valid_idx(idx) && ContainsWrap(check_contains, index, idx, kmer, has_contains<IndexT>())) {
+                if (kwh.is_minimal() && index.valid(kwh) && ContainsWrap(check_contains, index, kwh, has_contains<IndexT>())) {
 #     pragma omp atomic
-                    index[idx].count += 1;
+                    index.get_raw_value_reference(kwh).count += 1;
                 }
             }
         }

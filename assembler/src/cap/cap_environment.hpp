@@ -22,8 +22,10 @@ class CapEnvironment : public Environment {
   typedef Graph::VertexId VertexId;
   typedef Graph::EdgeId EdgeId;
 
-  typedef debruijn_graph::graph_pack<Graph, runtime_k::RtSeq> RtSeqGraphPack;
-  typedef debruijn_graph::graph_pack<Graph, cap::LSeq> LSeqGraphPack;
+  typedef debruijn_graph::KmerStoringEdgeIndex<Graph, runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq>, debruijn_graph::SimpleStoring> RtSetIndex;
+  typedef debruijn_graph::graph_pack<Graph, runtime_k::RtSeq, RtSetIndex> RtSeqGraphPack;
+  typedef debruijn_graph::KmerStoringEdgeIndex<Graph, cap::LSeq, kmer_index_traits<cap::LSeq>, debruijn_graph::SimpleStoring> LSeqIndex;
+  typedef debruijn_graph::graph_pack<Graph, cap::LSeq, LSeqIndex> LSeqGraphPack;
 
   typedef cap::ColorHandler<Graph> ColorHandler;
   typedef cap::CoordinatesHandler<Graph> CoordinatesHandler;
@@ -54,7 +56,7 @@ class CapEnvironment : public Environment {
   //
   Graph *graph_;
   EdgesPositionHandler<Graph> *edge_pos_;
-	IdTrackHandler<Graph> *int_ids_;
+  GraphElementFinder<Graph> *element_finder_;
 
   // Information concerning the default way to write out info about diversities
   std::string event_log_path_;
@@ -70,11 +72,11 @@ class CapEnvironment : public Environment {
     if (LSeqIsUsed()) {
       graph_ = &(gp_lseq_->g);
       edge_pos_ = &(gp_lseq_->edge_pos);
-      int_ids_ = &(gp_lseq_->int_ids);
+      element_finder_ = &(gp_lseq_->element_finder);
     } else {
       graph_ = &(gp_rtseq_->g);
       edge_pos_ = &(gp_rtseq_->edge_pos);
-      int_ids_ = &(gp_rtseq_->int_ids);
+      element_finder_ = &(gp_rtseq_->element_finder);
     }
     coordinates_handler_.SetGraph(graph_);
   }
@@ -106,7 +108,7 @@ class CapEnvironment : public Environment {
         coordinates_handler_(),
         graph_(NULL),
         edge_pos_(NULL),
-        int_ids_(NULL),
+        element_finder_(NULL),
         event_log_path_(dir_ + "/" + cap_cfg::get().default_log_filename),
         event_log_file_mode_(cap_cfg::get().default_log_file_mode),
         manager_(std::make_shared<CapEnvironmentManager>(this)),
@@ -156,7 +158,7 @@ class CapEnvironment : public Environment {
     if (have_any_gp) {
       VERIFY(graph_ != NULL);
       VERIFY(edge_pos_ != NULL);
-      VERIFY(int_ids_ != NULL);
+      VERIFY(element_finder_ != NULL);
       VERIFY(coordinates_handler_.GetGraph() == graph_);
     }
   }
@@ -168,7 +170,7 @@ class CapEnvironment : public Environment {
     gp_lseq_.reset();
     graph_ = NULL;
     edge_pos_ = NULL;
-    int_ids_ = NULL;
+    element_finder_ = NULL;
     coloring_.reset();
 
     CheckConsistency();

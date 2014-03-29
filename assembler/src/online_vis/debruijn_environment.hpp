@@ -7,6 +7,7 @@
 #pragma once
 
 #include "environment.hpp"
+#include "graphio.hpp"
 
 namespace online_visualization {
 
@@ -23,8 +24,7 @@ class DebruijnEnvironment : public Environment {
         GraphPack gp_;
         MapperClass mapper_;
         FillerClass filler_;
-        total_labeler_graph_struct graph_struct_;
-        total_labeler tot_lab_;
+        omnigraph::DefaultLabeler<Graph> labeler_;
         ColoringClass coloring_;
         //CompositeLabeler<Graph> labeler_;
 
@@ -39,11 +39,14 @@ class DebruijnEnvironment : public Environment {
               file_name_base_("picture"),
               max_vertices_(40),
               edge_length_bound_(1000),
-              gp_(K, "./tmp", cfg::get().ds.reads.lib_count(), cfg::get().ds.reference_genome),
-              mapper_(gp_.g, gp_.index, gp_.kmer_mapper, K + 1),
+              gp_(K, "./tmp", cfg::get().ds.reads.lib_count(), 
+                  cfg::get().ds.reference_genome,
+                  cfg::get().flanking_range,
+                  cfg::get().pos.max_mapping_gap,
+                  cfg::get().pos.max_gap_diff),
+              mapper_(gp_.g, gp_.index, gp_.kmer_mapper),
               filler_(gp_.g, mapper_, gp_.edge_pos),
-              graph_struct_(gp_.g, &gp_.int_ids, &gp_.edge_pos),
-              tot_lab_(&graph_struct_) {
+              labeler_(gp_.g, gp_.edge_pos) {
 
             DEBUG("Environment constructor");
             debruijn_graph::graphio::ScanGraphPack(path_, gp_);
@@ -73,8 +76,8 @@ class DebruijnEnvironment : public Environment {
         void LoadFromGP() {
             //Loading Genome and Handlers
             DEBUG("Colorer done");
-            Path<EdgeId> path1 = mapper_.MapSequence(gp_.genome).simple_path();
-            Path<EdgeId> path2 = mapper_.MapSequence(!gp_.genome).simple_path();
+            Path<EdgeId> path1 = mapper_.MapSequence(gp_.genome).path();
+            Path<EdgeId> path2 = mapper_.MapSequence(!gp_.genome).path();
         	coloring_ = omnigraph::visualization::DefaultColorer(gp_.g, path1, path2);
             ResetPositions();
         }
@@ -86,7 +89,7 @@ class DebruijnEnvironment : public Environment {
 
         void ResetPositions() {
             gp_.edge_pos.clear();
-            MapperClass mapper_(gp_.g, gp_.index, gp_.kmer_mapper, gp_.k_value + 1);
+            MapperClass mapper_(gp_.g, gp_.index, gp_.kmer_mapper);
             FillerClass filler_(gp_.g, mapper_, gp_.edge_pos);
             filler_.Process(gp_.genome, "ref0");
             filler_.Process(!gp_.genome, "ref1");
@@ -116,6 +119,10 @@ class DebruijnEnvironment : public Environment {
             return gp_.g;
         }
 
+        GraphPack& graph_pack() {
+            return gp_;
+        }
+
         Graph& graph() {
             return gp_.g;
         }
@@ -136,8 +143,8 @@ class DebruijnEnvironment : public Environment {
             return gp_.kmer_mapper;
         }
 
-        const IdTrackHandler<Graph>& int_ids() const {
-            return gp_.int_ids;
+        const ElementFinder& finder() const {
+            return gp_.element_finder;
         }
 
         void set_max_vertices(size_t max_vertices) {
@@ -156,8 +163,8 @@ class DebruijnEnvironment : public Environment {
             return filler_;
         }
 
-        total_labeler& tot_lab() {
-            return tot_lab_;
+        omnigraph::GraphLabeler<Graph>& labeler() {
+            return labeler_;
         }
 
         ColoringClass& coloring() {

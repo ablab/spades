@@ -27,6 +27,7 @@ for arg; do
 case $arg in
   'c')   $cmd configs/debruijn/config.info.template configs/debruijn/config.info ;;
   'h')   $cmd configs/hammer/config.info.template configs/hammer/config.info ;;  
+  'ih')  $cmd configs/ionhammer/ionhammer.cfg.template configs/ionhammer/ionhammer.cfg ;;
   's')   $cmd configs/debruijn/simplification.info.template configs/debruijn/simplification.info ;;
   'de')  $cmd configs/debruijn/distance_estimation.info.template configs/debruijn/distance_estimation.info;;
   'dip') $cmd configs/debruijn/detail_info_printer.info.template configs/debruijn/detail_info_printer.info;;
@@ -35,6 +36,8 @@ case $arg in
   'pep') $cmd configs/debruijn/path_extend/pe_params.info.template   configs/debruijn/path_extend/pe_params.info;;
   'con') $cmd configs/debruijn/construction.info.template   configs/debruijn/construction.info;;
   'cov') $cmd configs/debruijn/coverage_based_rr.info.template   configs/debruijn/coverage_based_rr.info;;
+  'ds') $cmd configs/dipspades/config.info.template configs/dipspades/config.info;;
+  'logds') $cmd configs/dipspades/log.properties.template configs/dipspades/log.properties;;
   '-all')
  # 		echo ----------------------spades_config.info------------------------
  #       $cmd spades_config.info.template                            spades_config.info
@@ -54,8 +57,14 @@ case $arg in
         $cmd configs/debruijn/path_extend/pe_params.info.template   configs/debruijn/path_extend/pe_params.info
 		echo --------------configs/debruijn/construction.info----------------
         $cmd configs/debruijn/construction.info.template   configs/debruijn/construction.info
-		echo --------------configs/debruijn/coverage_based_rr.info----------------
-        $cmd configs/debruijn/coverage_based_rr.info.template   configs/debruijn/coverage_based_rr.info;;
+		echo --------------configs/debruijn/coverage_based_rr.info-----------
+        $cmd configs/debruijn/coverage_based_rr.info.template   configs/debruijn/coverage_based_rr.info
+		echo ------------------configs/dipspades/configs.info----------------
+	$cmd configs/dipspades/config.info.template	    configs/dipspades/config.info
+		echo ---------------configs/dipspades/log.properties-----------------
+	$cmd configs/dipspades/log.properties.template configs/dipspades/log.properties
+		echo ---------------configs/ionhammer/ionhammer.cfg----------------
+	$cmd configs/ionhammer/ionhammer.cfg.template configs/ionhammer/ionhammer.cfg 
 esac
 
 done

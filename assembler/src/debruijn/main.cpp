@@ -90,11 +90,11 @@ void load_config(string cfg_filename) {
   }
 
   make_dir(cfg::get().output_root);
+  make_dir(cfg::get().tmp_dir);
 
   make_dir(cfg::get().output_dir);
-  if (cfg::get().make_saves) {
+  if (cfg::get().developer_mode)
     make_dir(cfg::get().output_saves);
-  }
 
   make_dir(cfg::get().temp_bin_reads_path);
 

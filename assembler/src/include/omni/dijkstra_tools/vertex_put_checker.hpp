@@ -40,7 +40,7 @@ class SubgraphPutChecker : public VertexPutChecker<Graph, distance_t> {
 public:
     SubgraphPutChecker(const set<VertexId>& subgraph) : VertexPutChecker<Graph, distance_t>(),
     	subgraph_(subgraph) { }
-    bool Check(VertexId vertex, EdgeId edge, distance_t length) const{
+    bool Check(VertexId vertex, EdgeId, distance_t) const{
     	return subgraph_.count(vertex) != 0;
     }
 };

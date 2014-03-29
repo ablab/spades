@@ -127,8 +127,13 @@ inline const char* __scope_source_name() {
     }                                                                   \
   } while(0);
 
-#define DEBUG(message)                      LOG_MSG(logging::L_DEBUG, message)
-#define TRACE(message)                      LOG_MSG(logging::L_TRACE, message)
+#ifdef SPADES_DEBUG_LOGGING
+# define DEBUG(message)                      LOG_MSG(logging::L_DEBUG, message)
+# define TRACE(message)                      LOG_MSG(logging::L_TRACE, message)
+#else
+# define DEBUG(message)                      /* No trace */
+# define TRACE(message)                      /* No trace */
+#endif
 #define INFO(message)                       LOG_MSG(logging::L_INFO , message)
 #define VERBOSE_T(n, T, message)            {size_t n_copy = (n); if (n_copy % (T) == 0 && n_copy > 0) INFO(n_copy << message)}
 #define VERBOSE(n, message)                 VERBOSE_T((n), 10000, message)
@@ -138,6 +143,7 @@ inline const char* __scope_source_name() {
 #define VERBOSE_POWER2(n, message)          VERBOSE_POWER_T2((n), 10000, message)
 #define WARN(message)                       LOG_MSG(logging::L_WARN, message)
 #define ERROR(message)                      LOG_MSG(logging::L_ERROR, message)
+#define FATAL_ERROR(message)                {ERROR(message); exit(-1);}
 
 
 /// implementation /////////////////////////////////////

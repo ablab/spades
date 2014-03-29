@@ -6,6 +6,8 @@
 # See file LICENSE for details.
 ############################################################################
 
+set -e
+
 export assembler="`pwd`"
 export src="$assembler/src"
 export ext="$assembler/ext"

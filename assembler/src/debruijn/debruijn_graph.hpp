@@ -66,6 +66,10 @@ public:
     unsigned flanking_coverage() const {
         return flanking_cov_.coverage();
     }
+
+    size_t size() const {
+		return nucls_.size();
+	}
 };
 
 class DeBruijnMaster {
@@ -80,13 +84,14 @@ public:
 			k_(k) {
 	}
 
-	const EdgeData MergeData(const vector<const EdgeData*>& to_merge) const {
+	const EdgeData MergeData(const vector<const EdgeData*>& to_merge,
+			bool safe_merging = true) const {
 		vector<Sequence> ss;
 		ss.reserve(to_merge.size());
 		for (auto it = to_merge.begin(); it != to_merge.end(); ++it) {
 			ss.push_back((*it)->nucls());
 		}
-		return EdgeData(MergeOverlappingSequences(ss, k_));
+		return EdgeData(MergeOverlappingSequences(ss, k_,safe_merging));
 	}
 
 	pair<VertexData, pair<EdgeData, EdgeData> > SplitData(const EdgeData &edge,

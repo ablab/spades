@@ -53,7 +53,7 @@ public:
 		return vert_put_checker_.Check(vertex, edge, length);
 	}
 
-    shared_ptr<NeighbourIterator<Graph> > GetIterator(VertexId vertex) {
+	typename NeighbourIteratorFactory::NeighbourIterator GetIterator(VertexId vertex) {
 		return neigh_iter_factory_.CreateIterator(vertex);
 	}
 };
@@ -118,7 +118,7 @@ public:
         return false;
 	}
 
-    shared_ptr<NeighbourIterator<Graph> > GetIterator(VertexId vertex) {
+    typename NeighbourIteratorFactory::NeighbourIterator GetIterator(VertexId vertex) {
 		return neigh_iter_factory_.CreateIterator(vertex);
 	}
 };

@@ -11,7 +11,7 @@
 #include "graph_pack.hpp"
 #include "simple_tools.hpp"
 #include "omni/omni_utils.hpp"
-#include "debruijn_stats.hpp"
+#include "stats/debruijn_stats.hpp"
 #include "io/splitting_wrapper.hpp"
 #include "io/multifile_reader.hpp"
 #include <boost/algorithm/string/predicate.hpp>
@@ -47,8 +47,7 @@ namespace cap {
 //	string filename = tmp_dir + "tmp";
 //	make_dir(tmp_dir);
 //	PrintGraphPack(filename, gp);
-//	typename ScannerTraits<typename gp_t2::graph_t>::Scanner scanner(bp_gp.g,
-//				bp_gp.int_ids);
+//	typename ScannerTraits<typename gp_t2::graph_t>::Scanner scanner(bp_gp.g);
 //	ScanBasicGraph(filename, scanner);
 //	scanner.loadPositions(filename, bp_gp.edge_pos);
 //	//
@@ -142,13 +141,12 @@ public:
 //	void UniversalSaveGP(
 //			const gp_t2& gp/*, const omnigraph::visualization::GraphColorer<typename gp_t2::graph_t> coloring*/,
 //			const string& filename) {
-//		typename PrinterTraits<Graph>::Printer printer(gp.g, gp.int_ids);
+//		typename PrinterTraits<Graph>::Printer printer(gp.g);
 //		INFO("Saving graph to " << filename);
 //		printer.saveGraph(filename);
 //		printer.saveEdgeSequences(filename);
 //		printer.savePositions(filename, gp.edge_pos);
 ////		SaveColoring(gp.g
-////				, gp.int_ids
 ////				, coloring
 ////				, filename);
 //
@@ -233,7 +231,7 @@ public:
 //
 ////			SimpleInDelAnalyzer<Graph> del_analyzer(gp_.g, coloring_,
 ////					gp_.edge_pos,
-////					(*MapperInstance < gp_t > (gp_)).MapSequence(gp_.genome).simple_path().sequence(),
+////					(*MapperInstance < gp_t > (gp_)).MapSequence(gp_.genome).simple_path(),
 ////					kRedColorSet, output_folder);
 ////			del_analyzer.Analyze();
 //
@@ -301,13 +299,13 @@ public:
 //			if (add_saves_path != "") {
 //				UniversalSaveGP(gp_, //coloring,
 //						add_saves_path);
-//				SaveColoring(gp_.g, gp_.int_ids, coloring_, add_saves_path);
+//				SaveColoring(gp_.g, coloring_, add_saves_path);
 //				//PrintColoredGraphWithColorFilter(gp_.g, coloring_, gp_.edge_pos,
 //			//			add_saves_path + ".dot");
 //			}
 //			UniversalSaveGP(gp_, //coloring,
 //					output_folder + "saves/colored_split_graph");
-//			SaveColoring(gp_.g, gp_.int_ids, coloring_,
+//			SaveColoring(gp_.g, coloring_,
 //					output_folder + "saves/colored_split_graph");
 //			//PrintColoredGraphWithColorFilter(gp_.g, coloring_, gp_.edge_pos,
 //			//		output_folder + "saves/colored_split_graph.dot");
@@ -498,7 +496,7 @@ void RunMultipleGenomesVisualization(size_t k_visualize,
 
 	utils::MakeDirPath(output_folder);
 
-	gp_t gp(k_visualize, "tmp", 0, Sequence(), 200, true);
+	gp_t gp(k_visualize, "tmp", 0, Sequence(), 200);
 	ColorHandler<Graph> coloring(gp.g, genomes_paths.size());
   CoordinatesHandler<Graph> coordinates_handler;
 
@@ -516,7 +514,7 @@ void RunMultipleGenomesVisualization(size_t k_visualize,
 	ofstream indel_event_logger(output_folder + "/indel_events");
 
 //  UnversalSaveGP(gp, output_folder + "/colored_split_graph");
-//  SaveColoring(gp.g, gp.int_ids, coloring, output_folder + "/colored_split_graph");
+//  SaveColoring(gp.g, coloring, output_folder + "/colored_split_graph");
 	//PrintColoredGraphWithColorFilter(gp.g, coloring, gp.edge_pos,
 	//		output_folder + "/colored_split_graph.dot");
 }

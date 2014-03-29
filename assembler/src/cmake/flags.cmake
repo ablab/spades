@@ -34,6 +34,7 @@ if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
 
   add_definitions(-g3)
   add_definitions(-D_GLIBCXX_DEBUG)
+  set(SPADES_DEBUG_LOGGING)
 else()
   message("Making Release Configuration...")
 

@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "dijkstra_tools/dijkstra_helper.hpp"
+
 namespace omnigraph {
 
 template<class Graph>
@@ -355,8 +357,6 @@ private:
 	DECL_LOGGER("DistancesLengthsCallback");
 };
 
-
-
 template<class Graph>
 class MappingPathFixer {
 public:
@@ -421,6 +421,7 @@ public:
         }
         return result;
     }
+
 private:
     vector<EdgeId> TryCloseGap(VertexId v1, VertexId v2) const {
         if (v1 == v2)

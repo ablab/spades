@@ -6,7 +6,8 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-//#include "dijkstras_for_splitting.hpp"
+#include "standard_base.hpp"
+#include "graph_component.hpp"
 #include "dijkstra_tools/dijkstra_helper.hpp"
 #include "component_filters.hpp"
 
@@ -70,7 +71,6 @@ public:
     }
 };
 
-
 template<typename Element>
 class RelaxingIterator : public JSIterator<Element> {
 public:
@@ -117,6 +117,7 @@ public:
 
     Element Next() {
         if(!HasNext()) { //This function actually changes value of current! It is not just to verify!
+            //fixme use VERIFY_MSG instead
             VERIFY(HasNext());
         }
         Element next = *current_;
@@ -368,30 +369,7 @@ public:
               edge_length_bound_(edge_length_bound) {
     }
 
-    ~ComponentCloser() {
-    }
-
-//  distance_t bound_;
-//public:
-//  ShortEdgeComponentFinder(const Graph &graph, distance_t bound) :
-//      base(graph), bound_(bound) {
-//  }
-//
-//  virtual bool CheckProcessVertex(VertexId /*vertex*/, distance_t distance) {
-//    return distance == 0;
-//  }
-//
-//  virtual distance_t GetLength(EdgeId edge) const {
-//    if (this->graph().length(edge) <= bound_)
-//      return 0;
-//    else
-//      return 1;
-//  }
-    void AddNewVertices(vector<EdgeId>,
-                        set<VertexId> &) {
-    }
-
-    void CloseComponent(set<VertexId> &component) {
+    void CloseComponent(set<VertexId> &component) const {
         set<VertexId> additional_vertices;
         for (auto it = component.begin(); it != component.end(); ++it) {
             FOREACH (EdgeId e, graph_.OutgoingEdges(*it)) {
@@ -408,8 +386,13 @@ public:
         component.insert(additional_vertices.begin(),
                          additional_vertices.end());
     }
-};
 
+    GraphComponent<Graph> CloseComponent(const GraphComponent<Graph>& component) const {
+        set<VertexId> vertices(component.v_begin(), component.v_end());
+        CloseComponent(vertices);
+        return GraphComponent<Graph>(graph_, vertices.begin(), vertices.end());
+    }
+};
 
 //This method finds a neighbourhood of a set of vertices. Vertices that are connected by an edge of length more than 600 are not considered as adjacent.
 template<class Graph>
@@ -638,7 +621,6 @@ public:
 private:
     DECL_LOGGER("FilteringSplitterWrapper");
 };
-
 
 template<class Graph>
 class CondensingSplitterWrapper : public GraphSplitter<Graph> {

@@ -50,6 +50,69 @@ class RuntimeSeq {
    */
   const static size_t TNuclBits = log_<TNucl, 2>::value;
 
+  const static size_t Iterations = log_<TBits, 2>::value;
+
+  static const std::array<T, Iterations> ConstructLeftMasks() {
+    std::array<T, Iterations> result;
+    for(size_t i = 0; i < Iterations; i++) {
+      size_t shift = 1 << i;
+      T mask = T(T(1) << shift) - T(1);
+      result[i] = T(mask << shift);
+      for(size_t j = 0; j < i; j++) {
+        result[j] += T(result[j] << shift);
+      }
+    }
+    return result;
+  }
+
+  static const std::array<T, Iterations> ConstructRightMasks() {
+      std::array<T, Iterations> result(ConstructLeftMasks());
+      for(size_t i = 0; i < Iterations; i++) {
+        result[i] = T(~result[i]);
+      }
+      return result;
+  }
+
+
+
+  RuntimeSeq<max_size_, T> FastRC() const {
+    const static std::array<T, Iterations> LeftMasks(ConstructLeftMasks());
+    const static std::array<T, Iterations> RightMasks(ConstructRightMasks());
+    const static size_t LogTSize = log_<sizeof(T), 2>::value + 3;
+
+    RuntimeSeq<max_size_, T> res(this->size());
+
+    const size_t bit_size = size_ << 1;
+    const size_t extra = bit_size & ((1 << LogTSize) - 1);
+    const size_t to_extra = TBits - extra;
+    const size_t filled = bit_size >> LogTSize;
+    size_t real_length = filled;
+    if(extra == 0) {
+        for(size_t i = 0, j = filled - 1; i < filled; i++,j--) {
+          res.data_[i] = data_[j];
+        }
+    } else {
+        for(size_t i = 0, j = filled; i < filled && j > 0; i++,j--) {
+          res.data_[i] = (data_[j] << to_extra) + (data_[j - 1] >> extra);
+        }
+        res.data_[filled] = (data_[0] << to_extra);
+        real_length++;
+    }
+
+    for(size_t i = 0; i < real_length; i++) {
+      res.data_[i] = res.data_[i] ^ T(-1);
+      for(size_t it = 1; it < Iterations; it++) {
+        size_t shift = 1 << it;
+        res.data_[i] = T((res.data_[i] & LeftMasks[it]) >> shift) ^ T((res.data_[i] & RightMasks[it]) << shift);
+      }
+    }
+
+    if(extra != 0) {
+      res.data_[real_length - 1] = (res.data_[real_length - 1] & ((T(1) << extra) - 1));
+    }
+    return res;
+  }
+
   /**
    * @variable Number of Ts which required to store all sequence.
    */
@@ -300,29 +363,43 @@ class RuntimeSeq {
    * @return 0123-char on position i
    */
   char operator[](const size_t i) const {
-    //VERIFY(i >= 0);
-    //VERIFY(i < size_);
+    VERIFY(i < size_);
     return (data_[i >> TNuclBits] >> ((i & (TNucl - 1)) << 1)) & 3;
   }
 
-  /**
+  /**::
    * Reverse complement.
    *
    * @return Reverse complement Seq.
    */
   RuntimeSeq<max_size_, T> operator!() const {
-    RuntimeSeq<max_size_, T> res(*this);
-    for (size_t i = 0; i < (size_ >> 1); ++i) {
-      auto front = complement(res[i]);
-      auto end = complement(res[size_ - 1 - i]);
-      res.set(i, end);
-      res.set(size_ - 1 - i, front);
+//    RuntimeSeq<max_size_, T> res(*this);
+//    for (size_t i = 0; i < (size_ >> 1); ++i) {
+//      auto front = complement(res[i]);
+//      auto end = complement(res[size_ - 1 - i]);
+//      res.set(i, end);
+//      res.set(size_ - 1 - i, front);
+//    }
+//    if ((size_ & 1) == 1) {
+//      res.set(size_ >> 1, complement(res[size_ >> 1]));
+//    }
+    return FastRC();
+//    return res;
+  }
+
+  /**
+   * Is the kmer minimal among this and !this.
+   *
+   * @return True if kmer < !kmer and false otherwise.
+   */
+  bool IsMinimal() const {
+    for (size_t i = 0; (i << 1) + 1 <= size_; ++i) {
+      auto front = this->operator[](i);
+      auto end = complement(this->operator[](size_ - 1 - i));
+      if(front != end)
+    	  return front < end;
     }
-    if ((size_ & 1) == 1) {
-      res.set(size_ >> 1, complement(res[size_ >> 1]));
-    }
-    // can be made without complement calls, but with xor on all bytes afterwards.
-    return res;
+    return true;
   }
 
   /**
@@ -376,7 +453,7 @@ class RuntimeSeq {
     data_[data_size - 1] = (data_[data_size - 1] >> 2) | ((T) c << lastnuclshift_);
   }
 
-
+//todo naming convention violation!
   RuntimeSeq<max_size_, T> pushBack(char c) const {
     //VERIFY(size_ + 1 <= max_size_);
 
@@ -395,6 +472,7 @@ class RuntimeSeq {
   }
 
 
+//todo naming convention violation!
   void pushBackThis(char c) {
     VERIFY(size_ + 1 <= max_size_);
 
@@ -420,6 +498,7 @@ class RuntimeSeq {
   //        return RuntimeSeq<max_size_, T> (size_ + 1, nucl(c) + str());
   //    }
 
+  //todo naming convention violation!
   RuntimeSeq<max_size_, T>  pushFront(char c) const {
     VERIFY(size_ + 1 <= max_size_);
     if (is_nucl(c)) {
@@ -440,6 +519,7 @@ class RuntimeSeq {
     return res;
   }
 
+//todo naming convention violation!
   void pushFrontThis(char c)  {
     VERIFY(size_ + 1 <= max_size_);
 
@@ -485,6 +565,7 @@ class RuntimeSeq {
     return res;
   }
 
+  //todo remove code duplication!
   void operator>>=(char c) {
     if (is_nucl(c)) {
       c = dignucl(c);

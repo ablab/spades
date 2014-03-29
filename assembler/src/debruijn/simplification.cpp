@@ -6,8 +6,9 @@
 
 #include "standard.hpp"
 #include "graph_simplification.hpp"
-#include "omni_labelers.hpp"
+#include "omni/visualization/graph_labeler.hpp"
 #include "io/single_read.hpp"
+#include "positions.hpp"
 
 #include "simplification.hpp"
 
@@ -32,26 +33,37 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
     using namespace omnigraph;
     if (cfg::get().developer_mode) {
         CollectPositions(gp);
+        gp.ClearQuality();
+        gp.FillQuality();
     }
 
-    total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
-    total_labeler labeler/*tot_lab*/(&graph_struct);
+    omnigraph::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
 
-    detail_info_printer printer(gp, labeler, cfg::get().output_dir);
-    printer(ipp_before_first_gap_closer);
+    stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
 
-    SimplifyGraph(gp, 0/*removal_handler_f*/, labeler, printer, 10
+    //  QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, edge_qual);
+//    auto colorer = debruijn_graph::DefaultGPColorer(gp);
+//    QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler(gp.g, gp.edge_qual, labeler, colorer,
+//                                   cfg::get().output_dir + "pictures/colored_edges_deleted/");
+//
+//    //positive quality edges removed (folder colored_edges_deleted)
+//    boost::function<void(EdgeId)> removal_handler_f = boost::bind(
+//            //            &QualityLoggingRemovalHandler<Graph>::HandleDelete,
+//            &QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
+//            boost::ref(qual_removal_handler), _1);
+
+    SimplifyGraph(gp, 0/*removal_handler_f*/,
+                  labeler, printer, /*iteration count*/10
                   /*, etalon_paired_index*/);
+
 
     AvgCovereageCounter<Graph> cov_counter(gp.g);
     cfg::get_writable().ds.set_avg_coverage(cov_counter.Count());
 }
 
 void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
-    total_labeler_graph_struct graph_struct(gp.g, &gp.int_ids, &gp.edge_pos);
-    total_labeler labeler/*tot_lab*/(&graph_struct);
-
-    detail_info_printer printer(gp, labeler, cfg::get().output_dir);
+    omnigraph::DefaultLabeler<Graph> labeler/*tot_lab*/(gp.g, gp.edge_pos);
+    stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
 
     printer(ipp_removing_isolated_edges);
 
@@ -152,7 +164,7 @@ void parallel_correct_mismatches(conj_graph_pack &gp) {
 
 void exec_simplification(conj_graph_pack& gp) {
     simplify_graph(gp);
-    
+
     if (cfg::get().correct_mismatches)
     {
         parallel_correct_mismatches(gp);
@@ -161,7 +173,7 @@ void exec_simplification(conj_graph_pack& gp) {
     if (cfg::get().graph_read_corr.enable) {
         //			corrected_and_save_reads(gp);
     }
-    
+
     } else {
         INFO("Loading Simplification");
 

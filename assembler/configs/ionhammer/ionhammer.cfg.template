@@ -1,0 +1,11 @@
+dataset           : dataset.cfg
+working_dir       : ./test_dataset/input/corrected/tmp
+output_dir        : ./test_dataset/input/corrected
+hard_memory_limit : 250
+max_nthreads      : 16
+kmer_qual_threshold   : 1e-24
+center_qual_threshold   : 1e-5
+keep_uncorrected_ends : true
+tau               : 1
+debug_mode        : false
+start_stage       : count

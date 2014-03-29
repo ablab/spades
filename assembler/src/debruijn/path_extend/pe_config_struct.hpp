@@ -124,6 +124,7 @@ struct pe_config {
 
     struct LoopRemovalT {
       size_t max_loops;
+      size_t mp_max_loops;
     } loop_removal;
 
     bool remove_overlaps;
@@ -138,7 +139,7 @@ struct pe_config {
   struct AllLongReads{
       LongReads single_reads;
       LongReads pacbio_reads;
-      LongReads coverage_base_rr;
+      LongReads contigs;
   };
 
   struct MainPEParamsT {

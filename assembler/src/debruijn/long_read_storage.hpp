@@ -289,6 +289,7 @@ public:
 				AddPath(p, w);
 			}
 		}
+		fclose(file);
 		INFO("Loading finished.");
 	}
 

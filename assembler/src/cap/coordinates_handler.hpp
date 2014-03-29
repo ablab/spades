@@ -58,6 +58,11 @@ std::string PrintComplexRange(const Range &range) {
         PrintComplexPosition(range.end_pos) + "]";
 }
 
+std::string PrintComplexRange(const std::pair<size_t, size_t> &range) {
+    return "[" + PrintComplexPosition(range.first) + ", " +
+        PrintComplexPosition(range.second) + "]";
+}
+
 
 }
 
@@ -164,7 +169,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
 
       Sequence ReconstructGenome(const uint genome_id) const {
           const std::vector<EdgeId> genome_path =
-              AsMappingPath(genome_id).simple_path().sequence();
+              AsMappingPath(genome_id).simple_path();
 
           std::vector<Sequence> path_sequences;
           for (const auto &e : genome_path)
@@ -209,8 +214,12 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
        * Automatically adds conjugate strand!!!
        */
       void StoreGenomeThreadManual(const uint genome_id, const Thread &ladder) {
-        stored_threading_history_[genome_id].push_back(PreprocessCoordinates(ladder));
-        stored_threading_history_[genome_id ^ 1].push_back(PreprocessCoordinates(ConjugateThread(ladder)));
+        stored_threading_history_[2 * genome_id].push_back(PreprocessCoordinates(ladder));
+        stored_threading_history_[(2 * genome_id) ^ 1].push_back(PreprocessCoordinates(ConjugateThread(ladder)));
+      }
+
+      size_t PreprocessCoordinates(const size_t coord) const {
+          return (coord << kShiftValue);
       }
 
       /*
@@ -347,33 +356,34 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
           }
       }
 
+    //todo some usages do not need original pos, optimize if needed
     MappingPath<EdgeId> AsMappingPath(unsigned genome_id) const {
         MappingPath<EdgeId> answer;
         VertexId v = g_->EdgeStart(FindGenomeFirstEdge(genome_id));
-        size_t graph_pos = 0;
         size_t genome_pos = 0;
 
         while (true) {
             auto step = StepForward(v, genome_id, genome_pos);
             if (step.second == -1u)
                 break;
-
             EdgeId e = step.first;
 
-            size_t next_graph_pos = graph_pos + g_->length(e);
             size_t next_genome_pos = step.second;
 
             Range original_pos(
                     GetOriginalPos(genome_id, genome_pos),
                     GetOriginalPos(genome_id, next_genome_pos));
-            Range graph_pos_printable(graph_pos, next_graph_pos);
+
+            //todo fix possible troubles with cyclic genomes etc later
             Range original_pos_printable = GetPrintableRange(original_pos);
+            Range graph_pos_printable(0, g_->length(e));
 
             answer.push_back(e, MappingRange(original_pos_printable, graph_pos_printable));
 
             v = g_->EdgeEnd(e);
             genome_pos = next_genome_pos;
         }
+        //todo can we verify total length somehow
         return answer;
     }
 
@@ -384,7 +394,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
             const uint genome_id = genome_i.first;
 
             genome_paths[genome_id] = AsMappingPath(genome_id).
-                simple_path().sequence();
+                simple_path();
         }
 
         StoreGenomeThreads();
@@ -531,7 +541,7 @@ class CoordinatesHandler : public ActionHandler<typename Graph::VertexId,
       constexpr static long double EPS = 1e-9;
 
       pair<size_t, size_t> PreprocessCoordinates(const pair<size_t, size_t>& point) const {
-          return make_pair(point.first << kShiftValue | kHalfMask, point.second << kShiftValue | kHalfMask);
+          return make_pair(PreprocessCoordinates(point.first), PreprocessCoordinates(point.second));
       }
 
       Thread PreprocessCoordinates(const Thread& ladder) const {
@@ -1105,6 +1115,8 @@ size_t CoordinatesHandler<Graph>::GetOriginalPos(
          thread_it != E; ++thread_it) {
         // Verify thread sort order?
 
+        VERIFY(thread_it->size() > 0);
+
         // Kmers can have different lengths so going from larger kmers to smaller
         // implies shorting of thread length what may lead to "range-overflow"
         if (cur_pos > thread_it->back().first)
@@ -1114,8 +1126,8 @@ size_t CoordinatesHandler<Graph>::GetOriginalPos(
                                          make_pair(cur_pos, size_t(0)));
 
         DEBUG("Searching for pos " << debug::PrintComplexPosition(cur_pos)
-                << "in thread of " << thread_it->front()
-                << " - " << thread_it->back());
+                << "in thread of " << debug::PrintComplexRange(thread_it->front())
+                << " - " << debug::PrintComplexRange(thread_it->back()));
         VERIFY(found_it != thread_it->end());
         if (cur_pos == found_it->first) {
             cur_pos = found_it->second;

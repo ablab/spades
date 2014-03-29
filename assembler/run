@@ -16,6 +16,7 @@ mkdir -p $tmp_cfg_dir
 cp -r configs $tmp_cfg_dir 
 cfg_debruijn="$tmp_cfg_dir/configs/debruijn"
 cfg_cap="$tmp_cfg_dir/configs/cap"
+cfg_dipspades="$tmp_cfg_dir/configs/dipspades"
 
 function run_n_measure
 {
@@ -110,6 +111,8 @@ else
     'dctls' ) run_n_measure build/debug/bin/cap-tools $cfg_debruijn/config.info $cfg_cap/gaf.info --log_level=test_suite ;;
     'rct' ) ./build/release/bin/cap_test --log_level=test_suite ;;
     'dct' ) ./build/debug/bin/cap_test --log_level=test_suite ;;
+    'rds' ) run_n_measure build/release/bin/dipspades $cfg_dipspades/config.info ;;
+    'dds' ) run_n_measure build/debug/bin/dipspades $cfg_dipspades/config.info ;;
 
     * ) 
         change_config $1

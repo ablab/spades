@@ -105,7 +105,7 @@
 //
 //	vector<EdgeId> MappingEdgeVector(const string& contig_id) {
 //		VERIFY(contigs_map_.find(contig_id) != contigs_map_.end());
-//		return mapper_.MapSequence(contigs_map_[contig_id]).simple_path().sequence();
+//		return mapper_.MapSequence(contigs_map_[contig_id]).simple_path();
 //	}
 //
 //	set<EdgeId> MappingEdgeSet(const string& contig_id) {

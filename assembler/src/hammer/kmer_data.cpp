@@ -25,7 +25,7 @@ class HammerKMerSplitter : public KMerSplitter<hammer::KMer> {
 
   void DumpBuffers(size_t num_files, size_t nthreads,
                    std::vector<KMerBuffer> &buffers,
-                   MMappedRecordWriter<KMer> *ostreams) const;
+                   const path::files_t &ostreams) const;
 
  public:
   HammerKMerSplitter(std::string &work_dir)
@@ -38,7 +38,7 @@ class HammerKMerSplitter : public KMerSplitter<hammer::KMer> {
 
 void HammerKMerSplitter::DumpBuffers(size_t num_files, size_t nthreads,
                                      std::vector<KMerBuffer> &buffers,
-                                     MMappedRecordWriter<KMer> *ostreams) const {
+                                     const path::files_t &ostreams) const {
 # pragma omp parallel for num_threads(nthreads)
   for (unsigned k = 0; k < num_files; ++k) {
     size_t sz = 0;
@@ -59,9 +59,10 @@ void HammerKMerSplitter::DumpBuffers(size_t num_files, size_t nthreads,
 
 #   pragma omp critical
     {
-      size_t osz = it - SortBuffer.begin();
-      ostreams[k].reserve(osz);
-      ostreams[k].write(&SortBuffer[0], osz);
+        FILE *f = fopen(ostreams[k].c_str(), "ab");
+        VERIFY_MSG(f, "Cannot open temporary file to write");
+        fwrite(SortBuffer.data(), sizeof(KMer), it - SortBuffer.begin(), f);
+        fclose(f);
     }
   }
 
@@ -136,12 +137,15 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
     WARN("Failed to setup necessary limit for number of open files. The process might crash later on.");
     WARN("Do 'ulimit -n " << file_limit << "' in the console to overcome the limit");
   }
-  MMappedRecordWriter<KMer>* ostreams = new MMappedRecordWriter<KMer>[num_files];
-  for (unsigned i = 0; i < num_files; ++i)
-    ostreams[i].open(out[i]);
 
-  size_t read_buffer = cfg::get().count_split_buffer;
-  size_t cell_size = (read_buffer / (num_files * sizeof(KMer)));
+  size_t reads_buffer_size = cfg::get().count_split_buffer;
+  if (reads_buffer_size == 0) {
+    reads_buffer_size = 536870912ull;
+    size_t mem_limit =  (size_t)((double)(get_free_memory()) / (nthreads * 3));
+    INFO("Memory available for splitting buffers: " << (double)mem_limit / 1024.0 / 1024.0 / 1024.0 << " Gb");
+    reads_buffer_size = std::min(reads_buffer_size, mem_limit);
+  }
+  size_t cell_size = reads_buffer_size / (num_files * sizeof(KMer));
   // Set sane minimum cell size
   if (cell_size < 16384)
     cell_size = 16384;
@@ -152,7 +156,7 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
     KMerBuffer &entry = tmp_entries[i];
     entry.resize(num_files);
     for (unsigned j = 0; j < num_files; ++j) {
-      entry[j].reserve((long unsigned)(1.1 * (double)cell_size));
+      entry[j].reserve((size_t)(1.1 * (double)cell_size));
     }
   }
 
@@ -164,7 +168,7 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
     while (!irs.eof()) {
       hammer::ReadProcessor rp(nthreads);
       rp.Run(irs, filler);
-      DumpBuffers(num_files, nthreads, tmp_entries, ostreams);
+      DumpBuffers(num_files, nthreads, tmp_entries, out);
       VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
 
       if (filler.processed() >> n) {
@@ -174,8 +178,6 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
     }
   }
   INFO("Processed " << filler.processed() << " reads");
-
-  delete[] ostreams;
 
   return out;
 }
@@ -251,7 +253,11 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
   std::string workdir = cfg::get().input_working_dir;
   HammerKMerSplitter splitter(workdir);
   KMerDiskCounter<hammer::KMer> counter(workdir, splitter);
-  KMerIndexBuilder<HammerKMerIndex>(workdir, num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save finall */ true);
+  size_t kmers = KMerIndexBuilder<HammerKMerIndex>(workdir, num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save finall */ true);
+
+  // Check, whether we'll ever have enough memory for running BH and bail out earlier
+  if (1.25 * kmers * (sizeof(KMerStat) + sizeof(hammer::KMer)) > (double) get_memory_limit())
+      FATAL_ERROR("The reads contain too many k-mers to fit into available memory limit. Increase memory limit and restart")
 
   data.kmers_ = counter.GetFinalKMers();
 

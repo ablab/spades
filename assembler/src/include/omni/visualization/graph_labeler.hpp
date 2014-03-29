@@ -265,6 +265,39 @@ private:
 	DECL_LOGGER("EdgePosGraphLabeler")
 };
 
+template<class Graph>
+class DefaultLabeler: public GraphLabeler<Graph> {
+private:
+    const Graph& g_;
+    const EdgesPositionHandler<Graph> &edges_positions_;
+protected:
+    typedef GraphLabeler<Graph> super;
+    typedef typename super::EdgeId EdgeId;
+    typedef typename super::VertexId VertexId;
+public:
+
+    DefaultLabeler(const Graph &g, const EdgesPositionHandler<Graph> &position_handler) :
+        g_(g), edges_positions_(position_handler) {
+    }
+
+    virtual std::string label(VertexId vertexId) const {
+        return ToString(vertexId.int_id());
+    }
+
+    virtual std::string label(EdgeId edgeId) const {
+        std::string ret_label;
+        ret_label += "Id " + g_.str(edgeId) + "\\n";
+        ret_label += "Positions:\\n"+ edges_positions_.str(edgeId);
+        size_t len = g_.length(edgeId);
+        double cov = g_.coverage(edgeId);
+        ret_label += "Len(cov): " + ToString(len) + "(" + ToString(cov) + ")";
+        return ret_label;
+    }
+
+    virtual ~DefaultLabeler() {
+    }
+};
+
 }
 
 #endif /* GRAPH_LABELER_HPP_ */

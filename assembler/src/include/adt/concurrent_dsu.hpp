@@ -226,7 +226,7 @@ private:
     return false;
   }
 
-  void unlock(int y) {
+  void unlock(unsigned y) {
     data[y].dirty = 0;
   }
 

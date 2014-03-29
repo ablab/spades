@@ -1,0 +1,13 @@
+Evaluating quality of IonTorrent read correction.
+============
+
+1. Compilation
+
+  chmod +x compile.sh
+  ./compile.sh
+
+2. Usage
+
+* Add this directory to the PATH
+* chmod +x clusters.rb evaluate.sh
+* Tweak evaluate.sh script to your needs

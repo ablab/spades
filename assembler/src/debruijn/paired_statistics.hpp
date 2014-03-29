@@ -441,7 +441,6 @@ private:
   typedef vector<Info> Infos;
   //input fields
   const Graph &graph_;
-  const IdTrackHandler<Graph>& int_ids_;
   const EdgeQuality<Graph, Index>& quality_;
   const PairedInfoIndex<Graph>& pair_info_;
   const PairedInfoIndex<Graph>& estimated_pair_info_;
@@ -650,12 +649,11 @@ private:
 
 public:
   EstimationQualityStat(const Graph &graph,
-      const IdTrackHandler<Graph>& int_ids,
       const EdgeQuality<Graph, Index>& quality,
       const PairedInfoIndex<Graph>& pair_info,
       const PairedInfoIndex<Graph>& estimated_pair_info,
       const PairedInfoIndex<Graph>& etalon_pair_info) :
-      graph_(graph), int_ids_(int_ids), quality_(quality), pair_info_(pair_info), estimated_pair_info_(
+      graph_(graph), quality_(quality), pair_info_(pair_info), estimated_pair_info_(
           estimated_pair_info), etalon_pair_info_(etalon_pair_info), false_positives_(
           graph_), perfect_matches_(graph_), imperfect_matches_(
           graph_), false_negatives_(graph_) {
@@ -714,7 +712,7 @@ public:
     //saving results
     INFO("Saving estimation statistic");
     make_dir(dir_name);
-    typename PrinterTraits<Graph>::Printer printer(graph_, int_ids_);
+    typename PrinterTraits<Graph>::Printer printer(graph_);
     printer.savePaired(dir_name + "fp", false_positives_);
     printer.savePaired(dir_name + "pm", perfect_matches_);
     printer.savePaired(dir_name + "im", imperfect_matches_);

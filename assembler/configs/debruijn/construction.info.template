@@ -7,14 +7,17 @@ construction
 
 	; enable keeping in graph perfect cycles. This slows down condensing but some plasmids can be lost if this is turned off.
 	keep_perfect_loops true
+
+	; size of buffer for each thread in MB, 0 for autodetection
+	read_buffer_size 0
 	
 	early_tip_clipper
 	{
 		; tip clipper can be enabled only in extension mode
-		enable false
+		enable true
 
 		; optional parameter. By default tips of length rl-k are removed
-		length_bound 10
+;		length_bound 10
 	}
 }
 

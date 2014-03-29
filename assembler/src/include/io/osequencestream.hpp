@@ -14,12 +14,26 @@
 #pragma once
 
 #include <fstream>
+#include <string>
+#include <vector>
 #include "single_read.hpp"
 
 using std::string;
 using std::endl;
 
 namespace io {
+
+inline string MakeContigId(int number, size_t length) {
+    return  "NODE_" + ToString(number) + "_length_" + ToString(length);
+}
+
+inline string MakeContigId(int number, size_t length, double coverage) {
+    return "NODE_" + ToString(number)  + "_length_" + ToString(length) + "_cov_" + ToString(coverage);
+}
+
+inline string MakeContigId(int number, size_t length, double coverage, size_t id) {
+    return "NODE_" + ToString(number)  + "_length_" + ToString(length) + "_cov_" + ToString(coverage)  + "_ID_" +  ToString(id);
+}
 
 class osequencestream {
 
@@ -28,7 +42,7 @@ protected:
 
 	int id_;
 
-	void write_str(const string& s) {
+	void write_str(const std::string& s) {
         size_t cur = 0;
         while (cur < s.size()) {
             ofstream_ << s.substr(cur, 60) << endl;
@@ -36,13 +50,13 @@ protected:
         }
 	}
 
-	virtual void write_header(const string& s) {
+	virtual void write_header(const std::string& s) {
         // Velvet format: NODE_1_length_24705_cov_358.255249
-	    ofstream_ << ">NODE_" << id_++ << "_length_" << s.size() << endl;
+	    ofstream_ << ">" << MakeContigId(id_++, s.size()) << endl;
 	}
 
 public:
-	osequencestream(const string& filename): id_(0) {
+	osequencestream(const std::string& filename): id_(0) {
 		ofstream_.open(filename.c_str());
 	}
 
@@ -50,7 +64,7 @@ public:
 		ofstream_.close();
 	}
 
-    osequencestream& operator<<(const string& s) {
+    osequencestream& operator<<(const std::string& s) {
         write_header(s);
         write_str(s);
         return *this;
@@ -86,12 +100,12 @@ protected:
 
     virtual void write_header(const string& s) {
         // Velvet format: NODE_1_length_24705_cov_358.255249
-        ofstream_ << ">NODE_" << id_++ << "_length_" << s.size() << "_cov_" << coverage_ << endl;
+        ofstream_ << ">" << MakeContigId(id_++, s.size(), coverage_) << endl;
     }
 
 
 public:
-	osequencestream_cov(const string& filename): osequencestream(filename), coverage_(0.) {
+	osequencestream_cov(const std::string& filename): osequencestream(filename), coverage_(0.) {
 	}
 
     virtual ~osequencestream_cov() {
@@ -103,7 +117,7 @@ public:
 		return *this;
 	}
 
-	osequencestream_cov& operator<<(const string& s) {
+	osequencestream_cov& operator<<(const std::string& s) {
         write_header(s);
         write_str(s);
         return *this;
@@ -124,7 +138,7 @@ protected:
 	double cov_;
 
     virtual void write_header(const string& s) {
-        ofstream_ << ">NODE_" << id_++ << "_length_" << s.size() << "_cov_" << cov_ << "_ID_" << uid_ << endl;
+        ofstream_ << ">" << MakeContigId(++id_, s.size(), cov_, uid_) << endl;
     }
 
 public:
@@ -134,7 +148,6 @@ public:
     virtual ~osequencestream_with_id() {
         ofstream_.close();
     }
-
 
 	void setCoverage(double c) {
 		cov_ = c;
@@ -168,7 +181,7 @@ protected:
 
     virtual void write_header(const string& s) {
         scstream_ << id_ << "\tNODE_" << id_ << "\t" << s.size() << "\t" << (int) round(cov_) << endl;
-        ofstream_ << ">NODE_" << id_++ << "_length_" << s.size() << "_cov_" << cov_ << "_ID_" << uid_ << endl;
+        ofstream_ << ">" << MakeContigId(id_++, s.size(), cov_, uid_) << endl;
     }
 
 public:
@@ -190,6 +203,48 @@ public:
     }
 
 	osequencestream_with_data_for_scaffold& operator<<(const Sequence& seq) {
+        std::string s = seq.str();
+        return operator <<(s);
+    }
+
+};
+
+class osequencestream_for_fastg: public osequencestream_with_id  {
+protected:
+    string header_;
+
+    virtual void write_header(const std::string& s) {
+        ofstream_ << ">" << s;
+    }
+
+public:
+    osequencestream_for_fastg(const std::string& filename): osequencestream_with_id(filename) {
+        id_ = 1;
+    }
+
+    virtual ~osequencestream_for_fastg() {
+        ofstream_.close();
+    }
+
+    void set_header(const string& h) {
+        header_=  h;
+    }
+
+    osequencestream_for_fastg& operator<<(const std::vector<std::string>& v) {
+        write_header(header_);
+        for (size_t i = 0; i < v.size(); ++i) {
+            ofstream_ << ":" << v[i];
+        }
+        ofstream_ << ";" << endl;
+        return *this;
+    }
+
+    osequencestream_for_fastg& operator<<(const std::string& s) {
+        write_str(s);
+        return *this;
+    }
+
+    osequencestream_for_fastg& operator<<(const Sequence& seq) {
         std::string s = seq.str();
         return operator <<(s);
     }

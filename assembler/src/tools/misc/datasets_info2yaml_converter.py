@@ -14,7 +14,10 @@ import glob
 sys.path.append(os.path.join(sys.path[0], "../../spades_pipeline/"))
 sys.path.append(os.path.join(sys.path[0], "../../../ext/src/python_libs/"))
 from process_cfg import *
-import pyyaml
+if sys.version.startswith('2.'):
+    import pyyaml2 as pyyaml
+elif sys.version.startswith('3.'):
+    import pyyaml3 as pyyaml
 import support
 
 ########################################################################

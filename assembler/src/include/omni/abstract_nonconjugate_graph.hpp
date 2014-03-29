@@ -195,7 +195,9 @@ public:
 	typedef typename base::EdgeData EdgeData;
 	typedef typename base::VertexIterator VertexIterator;
 
-private:
+protected:
+    using base::CreateVertex;
+    using base::HiddenAddEdge;
 
 	virtual VertexId CreateVertex(const VertexData &data) {
 		return VertexId(new SingleVertex<DataMaster>(data));
@@ -224,10 +226,6 @@ private:
 		DestroyVertex(vertex);
 	}
 
-//	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData &data) {
-//		return HiddenAddEdge(v1, v2, data, restricted::GlobalIdDistributor::GetInstance());
-//	}
-
     virtual void LinkIncomingEdge(VertexId v, EdgeId e) {
     	VERIFY(this->EdgeEnd(e) == VertexId(0));
     	e->SetEndVertex(v);
@@ -241,13 +239,13 @@ private:
     }
 
 	virtual EdgeId HiddenAddEdge(const EdgeData &data,
-			restricted::IdDistributor * idDistributor = restricted::GlobalIdDistributor::GetInstance()) {
+			restricted::IdDistributor * idDistributor) {
 		EdgeId newEdge(new SingleEdge<DataMaster>(VertexId(0), VertexId(0), data), idDistributor);
 		return newEdge;
 	}
 
 	virtual EdgeId HiddenAddEdge(VertexId v1, VertexId v2, const EdgeData &data,
-			restricted::IdDistributor * idDistributor = restricted::GlobalIdDistributor::GetInstance()) {
+			restricted::IdDistributor * idDistributor) {
 		VERIFY(
 				this->vertices_.find(v1) != this->vertices_.end() && this->vertices_.find(v2) != this->vertices_.end());
 		EdgeId newEdge(new SingleEdge<DataMaster>(v1, v2, data), idDistributor);

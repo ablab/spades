@@ -24,6 +24,9 @@ enum class LibraryType {
   PairedEnd,
   MatePairs,
   PacBioReads,
+  SangerReads,
+  TrustedContigs,
+  UntrustedContigs,
 };
 
 enum class LibraryOrientation {
@@ -79,7 +82,9 @@ class SequencingLibraryBase {
   void load(const YAML::Node &node);
 
   LibraryType type() const { return type_; }
+  void set_type(LibraryType type) { type_ = type; }
   LibraryOrientation orientation() const { return orientation_; }
+  void set_orientation(LibraryOrientation orientation) { orientation_ = orientation; }
 
   void clear() {
     left_paired_reads_.clear();
@@ -88,9 +93,9 @@ class SequencingLibraryBase {
   }
 
   void update_relative_reads_filenames(const std::string &input_dir) {
-	  std::transform(left_paired_reads_.begin(), left_paired_reads_.end(), left_paired_reads_.begin(), std::bind2nd(update_relative_filename(), input_dir));
-	  std::transform(right_paired_reads_.begin(), right_paired_reads_.end(), right_paired_reads_.begin(), std::bind2nd(update_relative_filename(), input_dir));
-	  std::transform(single_reads_.begin(), single_reads_.end(), single_reads_.begin(), std::bind2nd(update_relative_filename(), input_dir));
+      std::transform(left_paired_reads_.begin(), left_paired_reads_.end(), left_paired_reads_.begin(), std::bind2nd(update_relative_filename(), input_dir));
+      std::transform(right_paired_reads_.begin(), right_paired_reads_.end(), right_paired_reads_.begin(), std::bind2nd(update_relative_filename(), input_dir));
+      std::transform(single_reads_.begin(), single_reads_.end(), single_reads_.begin(), std::bind2nd(update_relative_filename(), input_dir));
   }
 
   void push_back_single(const std::string &reads) {
@@ -128,6 +133,33 @@ class SequencingLibraryBase {
   single_reads_iterator single_end() const {
     // NOTE: Do not forget about the contract with single_begin here!
     return single_reads_iterator(single_reads_.end(), single_reads_.end());
+  }
+
+  bool is_graph_contructable() const {
+    return (type_ == io::LibraryType::PairedEnd ||
+            type_ == io::LibraryType::SingleReads);
+  }
+
+  bool is_paired() const {
+    return (type_ == io::LibraryType::PairedEnd ||
+            type_ == io::LibraryType::MatePairs);
+  }
+
+
+  bool is_repeat_resolvable() const {
+    return (type_ == io::LibraryType::PairedEnd ||
+            type_ == io::LibraryType::MatePairs ||
+            type_ == io::LibraryType::PacBioReads ||
+            type_ == io::LibraryType::SangerReads ||
+            type_ == io::LibraryType::TrustedContigs ||
+            type_ == io::LibraryType::UntrustedContigs);
+  }
+
+  bool is_pacbio_alignable() const {
+    return (type_ == io::LibraryType::PacBioReads ||
+            type_ == io::LibraryType::SangerReads ||
+            type_ == io::LibraryType::TrustedContigs ||
+            type_ == io::LibraryType::UntrustedContigs);
   }
 
  private:
@@ -176,26 +208,21 @@ class DataSet {
 
     std::string input_dir = path::parent_path(filename);
     if (input_dir[input_dir.length() - 1] != '/')
-    	input_dir += '/';
+        input_dir += '/';
 
     load(config);
 
-    for (auto it = libraries_.begin(); it != libraries_.end(); ++it) {
-    	it->update_relative_reads_filenames(input_dir);
-    }
+    for (auto it = libraries_.begin(); it != libraries_.end(); ++it)
+      it->update_relative_reads_filenames(input_dir);
   }
 
   void save(const std::string &filename) const {
     std::ofstream ofs(filename.c_str());
-    YAML::Node node;
-
-    for (auto it = library_begin(), et = library_end(); it != et; ++it)
-      node.push_back(*it);
-
-    ofs << node;
+    ofs << YAML::Node(*this);
   }
 
   void load(const YAML::Node &node) {
+    clear();
     for (YAML::const_iterator it = node.begin(); it != node.end(); ++it)
       libraries_.push_back(it->as<Library>());
   }
@@ -273,6 +300,18 @@ template<>
 struct convert<io::SequencingLibrary<> > {
   static Node encode(const io::SequencingLibrary<>& rhs);
   static bool decode(const Node& node, io::SequencingLibrary<>& rhs);
+};
+
+template<class Data>
+struct convert<io::DataSet<Data> > {
+  static Node encode(const io::DataSet<Data>& rhs) {
+    Node node;
+
+    for (auto it = rhs.library_begin(), et = rhs.library_end(); it != et; ++it)
+      node.push_back(*it);
+
+    return node;
+  }
 };
 }
 
