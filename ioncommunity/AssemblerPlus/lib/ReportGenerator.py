@@ -1,37 +1,81 @@
-# Classes for parsing *_info_assembly.txt files produced by MIRA
-# and creating nice HTML reports with summaries about multiple samples.
+# creating nice HTML reports with summaries about multiple samples
 
 import hypertext as h
 from ordereddict import OrderedDict # TorrentServer VM has only python 2.6 :(
 import locale # for printing numbers with thousands delimited by commas
 import json
+import os
 
 MIRA_LINK = str(h.a("MIRA", target="_blank",
                     href="http://mira-assembler.sourceforge.net"))
 
-class Sample(object):
-    def __init__(self, name):
-        self._name = name
-        self._metrics = OrderedDict()
-        self._assembly_settings = OrderedDict()
-        self._downloads = OrderedDict() # TODO
+SPADES_LINK = str(h.a("SPAdes", target="_blank",
+                    href="http://bioinf.spbau.ru/spades"))
 
-    # fills assembly settings dictionary from 'startplugin.json'
-    def loadAssemblySettings(self, startplugin_json_path):
-        with open(startplugin_json_path, 'r') as f:
-            config = json.load(f)
-            params = config['pluginconfig']
-            self._assembly_settings['Reference'] = params['agenome']
-            self._assembly_settings['MIRA Version'] = params['miraversion']
-            self._assembly_settings['Assembly Type'] = params['type']
-            self._assembly_settings['Fraction of Reads Used'] = \
-                params['fraction_of_reads']
-            self._assembly_settings['RAM'] = params['RAM']
-            self._assembly_settings['Barcode Minimum Read Cutoff'] = \
-                params['min_reads']
+ASSEMBLER_LINKS = { 'mira' : MIRA_LINK,
+                    'spades' : SPADES_LINK }
+
+DIRNAME = os.environ['TSP_FILEPATH_PLUGIN_DIR']
+
+def _alertAboutAssemblerWebsite(assembler):
+    link = ASSEMBLER_LINKS[assembler]
+    with h.div(id="alertUser", class_="row-fluid"):
+        with h.div(class_="span12"):
+            with h.div(class_="alert alert-info"):
+                h.button("x", class_="close", data_dismiss="alert",
+                         type="button")
+                h.UNESCAPED(("Assemblies were performed using %s. If you have "
+                            "questions on the quality of the assembly please "
+                            "refer to the %s site.") % (link, link))
+
+class Sample(object):
+    def __init__(self, info_json_filename):
+        with open(info_json_filename, 'r') as info:
+            self._info = json.load(info)
+        self._name = self._info.get('sampleName') or '.'
+        self._metrics = {}
+        self._assembly_settings = {}
+        self._downloads = {}
+
+        params = self._info['params']
+        self._assembly_settings['Fraction of Reads Used'] = \
+            params['fraction_of_reads']
+        self._assembly_settings['RAM'] = params['RAM']
+        self._assembly_settings['Barcode Minimum Read Cutoff'] = \
+            params['min_reads']
+
+        mira_info = self._info.get('mira')
+        if mira_info:
+            self._addAssembler('mira')
+            self._loadMiraInfo(mira_info)
+
+        spades_info = self._info.get('spades')
+        if spades_info:
+            self._addAssembler('spades')
+            self._loadSPAdesInfo(spades_info)
+
+    def _addAssembler(self, assembler):
+        self._metrics[assembler] = OrderedDict()
+        self._assembly_settings[assembler] = OrderedDict()
+        self._downloads[assembler] = OrderedDict()
+
+    def _loadMiraInfo(self, mira_info):
+        settings = self._assembly_settings['mira']
+        downloads = self._downloads['mira']
+        settings['Reference'] = mira_info['reference']
+        settings['MIRA Version'] = mira_info['version']
+        settings['Assembly Type'] = mira_info['type']
+        self._loadMiraAssemblyInfo(mira_info['info'])
+        downloads['Assembled Contigs (FASTA)'] = mira_info['contigs']
+        downloads['Coverage Information (WIG)'] = mira_info['wig']
+        downloads['Assembly Statistics (TXT)'] = mira_info['info']
+        downloads['Mira Log (TXT)'] = mira_info['log']
+        if mira_info.get('quastReportDir'):
+            report_url = os.path.join(mira_info['quastReportDir'], 'report.html')
+            downloads['QUAST report (HTML)'] = report_url
 
     # fills metrics from an *_info_assembly.txt file
-    def loadMiraAssemblyInfo(self, info_assembly_path):
+    def _loadMiraAssemblyInfo(self, info_assembly_path):
         locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
 
         with open(info_assembly_path, 'r') as f:
@@ -54,13 +98,40 @@ class Sample(object):
             def cval(description):
                 return (ival(2, description), ival(3, description))
 
-            self._metrics['Assembled Reads'] = (ival(0, 'Num. reads assembled'),)
-            self._metrics['Coverage'] = (val(1, 'Avg. total coverage'),)
-            self._metrics['Consensus Length'] = cval('Total consensus')
-            self._metrics['Number of Contigs'] = cval('Number of contigs')
-            self._metrics['Largest Contig'] = (ival(2, 'Largest contig'),)
+            metrics = self._metrics['mira']
+            metrics['Assembled Reads'] = (ival(0, 'Num. reads assembled'),)
+            metrics['Coverage'] = (val(1, 'Avg. total coverage'),)
+            metrics['Consensus Length'] = cval('Total consensus')
+            metrics['Number of Contigs'] = cval('Number of contigs')
+            metrics['Largest Contig'] = (ival(2, 'Largest contig'),)
             for q in (50, 90, 95):
-                self._metrics['N%d' % q] = cval('N%d contig size' % q)
+                metrics['N%d' % q] = cval('N%d contig size' % q)
+
+    def _loadSPAdesInfo(self, spades_info):
+        settings = self._assembly_settings['spades']
+        downloads = self._downloads['spades']
+        settings['SPAdes Version'] = spades_info['version']
+        settings['Options'] = spades_info['userOptions']
+        downloads['Assembled Contigs (FASTA)'] = spades_info['contigs']
+        downloads['SPAdes Log (TXT)'] = spades_info['log']
+        if spades_info.get('quastReportDir'):
+            htmlpath = os.path.join(spades_info['quastReportDir'], 'report.html')
+            downloads['QUAST report (HTML)'] = htmlpath
+            metrics = self._metrics['spades']
+            tsvpath = os.path.join(spades_info['quastReportDir'], 'report.tsv')
+            with open(tsvpath, 'r') as tsv:
+                report = dict(line.split("\t") for line in tsv.readlines())
+
+            def i(number):
+                return locale.format("%d", int(number), grouping=True)
+            metrics['Number of Contigs'] = (i(report['# contigs']),
+                                            i(report['# contigs (>= 0 bp)']))
+            metrics['Largest Contig'] = (i(report['Largest contig']), )
+            metrics['Total Length'] = (i(report['Total length']),
+                                       i(report['Total length (>= 0 bp)']))
+            for q in [50, 75]:
+                metrics['N%s' % q] = (i(report['N%s' % q]), '')
+                
 
     # unique sample ID
     def name(self):
@@ -69,26 +140,16 @@ class Sample(object):
     # ordered dictionary, each record is {metric name : metric value(s)},
     # either a tuple containing single value for all contigs,
     # or a tuple of two values - one for long contigs and another for all of them
-    def metrics(self):
-        return self._metrics
+    def metrics(self, assembler):
+        return self._metrics[assembler]
 
     # ordered dictionary, each record is {setting name : setting value}
-    def assemblySettings(self):
-        return self._assembly_settings
+    def assemblySettings(self, assembler):
+        return self._assembly_settings[assembler]
 
     # ordered dictionary, each record is {description : path to file}
-    def downloads(self):
-        return self._downloads
-
-def _alertAboutAssemblerWebsites():
-    with h.div(id="alertUser", class_="row-fluid"):
-        with h.div(class_="span12"):
-            with h.div(class_="alert alert-info"):
-                h.button("x", class_="close", data_dismiss="alert",
-                         type="button")
-                h.UNESCAPED(("Assemblies were performed using %s. If you have "
-                            "questions on the quality of the assembly please "
-                            "refer to the %s site.") % (MIRA_LINK, MIRA_LINK))
+    def downloads(self, assembler):
+        return self._downloads[assembler]
 
 def _sampleSelector(samples):
     with h.div(class_="row-fluid"):
@@ -100,11 +161,12 @@ def _sampleSelector(samples):
                               onchange="showSample(this.value)"):
                     for i, sample in enumerate(samples):
                         if i == 0:
-                            h.option(value=sample.name(), selected=selected)
+                            h.option(sample.name(),
+                                     value=sample.name(), selected="selected")
                         else:
-                            h.option(value=sample.name())
+                            h.option(sample.name(), value=sample.name())
 
-def _linksToDownloads(sample):
+def _linksToDownloads(sample, assembler):
     div_id = "collapseDownload" + sample.name()
     with h.div(class_="accordion-group"):
         with h.div(class_="accordion-heading"):
@@ -119,27 +181,31 @@ def _linksToDownloads(sample):
                             with h.div(style="padding-top:5px"):
                                 with h.p():
                                     index = 0
-                                    for descr, url in sample.downloads():
+                                    downloads = sample.downloads(assembler)
+                                    for descr, url in downloads.items():
+                                        rurl = os.path.relpath(url, DIRNAME)
                                         index += 1
-                                        if index % 5 == 0:
-                                            h.br()
-                                        elif index % 5 > 1:
+                                        if index % 5 != 1:
                                             h.UNESCAPED(("&nbsp;&nbsp;|"
                                                          "&nbsp;&nbsp;"))
-                                        h.a(h.i(class_="icon-download"),
-                                            descr, target="_blank", href=url)
+                                        h.UNESCAPED("<a target='_blank' "
+                                                    "href='%s'>"
+                                                    "<i class='icon-download'>"
+                                                    "</i>%s</a>" % (rurl, descr))
+                                        if index % 5 == 0:
+                                            h.br()
 
-def _assemblyStats(sample):
+def _assemblyStats(sample, assembler):
     def _assemblySettingsTable():
         with h.table(class_="table table-condensed"):
             h.tr(h.th("Parameter"), h.th("Value"))
-            for param, value in sample.assemblySettings().items():
+            for param, value in sample.assemblySettings(assembler).items():
                 h.tr(h.td(param), h.td(value))
 
     def _assemblyMetricsTable():
         with h.table(class_="table table-condensed"):
             h.tr(h.th("Metric"), h.th("Large Contigs"), h.th("All Contigs"))
-            for metric, value in sample.metrics().items():
+            for metric, value in sample.metrics(assembler).items():
                 if len(value) == 1:
                     h.tr(h.td(metric), h.td(value[0], colspan='2'))
                 else:
@@ -162,12 +228,11 @@ def _assemblyStats(sample):
                             with h.div(style="padding-top:10px"):
                                 _assemblyMetricsTable()
 
-# main function in this module
-def generateReport(samples):
+def generateReport(samples, assembler):
     css_path = "/pluginMedia/AssemblerPlus/css/"
     css = ["kendo.common.min.css", "kendo.default.min.css", "kendo.ir.css",
            "ir.css", "app.css", "bootstrap.css", "bootstrap-custom.css",
-           "bootstrap-select.min.css"]
+           "bootstrap-select.css"]
     less = ["app.less"]
 
     js_path = "/pluginMedia/AssemblerPlus/js/"
@@ -189,13 +254,14 @@ def generateReport(samples):
                 h.script('', src=js_path+js_fn)
             with h.script():
                 h.UNESCAPED("function showSample(sample) { \n"
+                            "  var str = sample.replace(/\./g, '\\\\.') \n"
                             "  $('div.row-fluid.sample').hide() \n"
-                            "  $('div#'+sample+'.row-fluid.sample').show() \n"
+                            "  $('div#'+str+'.row-fluid.sample').show() \n"
                             "}")
             with h.div(class_="main"):
                 with h.div(class_="main-content clearfix"):
                     with h.div(class_="container-fluid"):
-                        _alertAboutAssemblerWebsites()
+                        _alertAboutAssemblerWebsite(assembler)
                         if len(samples) > 1:
                             _sampleSelector(samples)
                         for i, sample in enumerate(samples):
@@ -204,8 +270,8 @@ def generateReport(samples):
                                        class_="row-fluid sample", style=display):
                                 with h.div(class_="span12"):
                                     with h.div(style="padding:0 19px"):
-                                        _linksToDownloads(sample)
+                                        _linksToDownloads(sample, assembler)
                                         with h.div(style="padding-top:10px"):
-                                            _assemblyStats(sample)
+                                            _assemblyStats(sample, assembler)
 
     return str(root)

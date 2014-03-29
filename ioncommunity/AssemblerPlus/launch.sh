@@ -49,7 +49,7 @@ set_output_paths;
 ASSEMBLER_PATH="${DIRNAME}/bin/";
 
 # remove some files if they are there
-run "rm -rf ${TSP_FILEPATH_PLUGIN_DIR}/*.html ${TSP_FILEPATH_PLUGIN_DIR}/assembly_summary.txt";
+run "rm -rf ${TSP_FILEPATH_PLUGIN_DIR}/*.html ${TSP_FILEPATH_PLUGIN_DIR}/info*.json"
 
 # ===================================================
 # Run AssemblerPlus Plugin
@@ -102,10 +102,12 @@ if [ -f ${TSP_FILEPATH_BARCODE_TXT} ]; then
 	    fi
 
             #build call to the assembler.pl script which will take care of the rest
-	    run "perl ${ASSEMBLER_PATH}/assembler.pl \"${BARCODE_BAM_NAME}\" \"${PLUGINCONFIG__AGENOME}\" \"${PLUGINCONFIG__FRACTION_OF_READS}\" \"${ASSEMBLER_PATH}\" \"${TSP_FILEPATH_PLUGIN_DIR}\" \"${URL_ROOT}\" \"${BARCODE_ID}.${BARCODE_SEQ}\" \"${PLUGINCONFIG__MIRAVERSION}\" \"${PLUGINCONFIG__RUNMIRA}\" \"${PLUGINCONFIG__RUNSPADES}\" \"${PLUGINCONFIG__SPADESVERSION}\" \"${PLUGINCONFIG__QUASTONLY}\" \"${PLUGINCONFIG__BGENOME}\"";
+	    run "python ${ASSEMBLER_PATH}/RunAssembler.py \"${BARCODE_ID}\" \"${BARCODE_SEQ}\" \"${BARCODE_BAM_NAME}\"";
 	    CTR=`expr ${CTR} + 1`;
 	fi
     done
+
+    run "python ${ASSEMBLER_PATH}/GenerateReport.py ${TSP_FILEPATH_PLUGIN_DIR}/info*.json"
 
 #nonbarcoded run
 else
@@ -117,26 +119,16 @@ else
     echo "";
     echo "";
 
-    #create sub dir
-    if [ ! -f ${TSP_FILEPATH_PLUGIN_DIR}/AssemblerPlus ]; then
-	run "mkdir -p ${TSP_FILEPATH_PLUGIN_DIR}/AssemblerPlus";
-    fi
-
     #remove any link that may be there
-    if [ -f ${TSP_FILEPATH_PLUGIN_DIR}/AssemblerPlus/${PLUGIN_OUT_BAM_NAME} ]; then
-	run "rm ${TSP_FILEPATH_PLUGIN_DIR}/AssemblerPlus/${PLUGIN_OUT_BAM_NAME}";
+    if [ -f ${TSP_FILEPATH_PLUGIN_DIR}/${PLUGIN_OUT_BAM_NAME} ]; then
+	run "rm ${TSP_FILEPATH_PLUGIN_DIR}/${PLUGIN_OUT_BAM_NAME}";
     fi
 
     #create the sym link
-    if [ ! -f ${TSP_FILEPATH_PLUGIN_DIR}/AssemblerPlus/${PLUGIN_OUT_BAM_NAME} ]; then
-	run "ln -snf ${BASECALLER_DIR}/${PLUGIN_OUT_BAM_NAME} ${TSP_FILEPATH_PLUGIN_DIR}/AssemblerPlus/${PLUGIN_OUT_BAM_NAME}";
+    if [ ! -f ${TSP_FILEPATH_PLUGIN_DIR}/${PLUGIN_OUT_BAM_NAME} ]; then
+	run "ln -snf ${BASECALLER_DIR}/${PLUGIN_OUT_BAM_NAME} ${TSP_FILEPATH_PLUGIN_DIR}/${PLUGIN_OUT_BAM_NAME}";
     fi
 
-    #build call to the assembler.pl script which will take care of the rest
-    #run "perl ${ASSEMBLER_PATH}/assembler.pl ${PLUGIN_OUT_BAM_NAME} ${PLUGINCONFIG__AGENOME} ${PLUGINCONFIG__FRACTION_OF_READS} ${ASSEMBLER_PATH} ${TSP_FILEPATH_PLUGIN_DIR} ${URL_ROOT} AssemblerPlus ${PLUGINCONFIG__MIRAVERSION} \"${PLUGINCONFIG__RUNMIRA}\" \"${PLUGINCONFIG__RUNSPADES}\" \"${PLUGINCONFIG__SPADESVERSION}\" \"${PLUGINCONFIG__SPADESOPTIONS}\" \"${PLUGINCONFIG__QUASTONLY}\" ${PLUGINCONFIG__BGENOME}";
-    run "python ${ASSEMBLER_PATH}/RunAssembler.py AssemblerPlus ${PLUGIN_OUT_BAM_NAME}"
-
+    run "python ${ASSEMBLER_PATH}/RunAssembler.py ${PLUGIN_OUT_BAM_NAME}"
+    run "python ${ASSEMBLER_PATH}/GenerateReport.py ${TSP_FILEPATH_PLUGIN_DIR}/info.json"
 fi
-
-#run "perl ${ASSEMBLER_PATH}/generate_report.pl ${TSP_FILEPATH_PLUGIN_DIR}";
-
