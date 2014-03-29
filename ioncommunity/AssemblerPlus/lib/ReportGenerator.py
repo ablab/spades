@@ -221,8 +221,9 @@ def _assemblyStats(sample, assembler):
                 with h.div(class_="row-fluid", id="statPane"):
                     with h.div(class_="row-fluid"):
                         with h.div(class_="span12"):
-                            h.p("Assembly summary statistics for ",
-                                sample.name() + ".")
+                            if sample.name() != '.':
+                                h.p("Assembly summary statistics for ",
+                                    sample.name() + ".")
                             with h.div(style="padding-top:5px"):
                                 _assemblySettingsTable()
                             with h.div(style="padding-top:10px"):
