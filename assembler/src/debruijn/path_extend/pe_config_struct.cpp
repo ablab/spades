@@ -97,6 +97,7 @@ void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt,
     load(p.param_set, pt, p.name.c_str());
     load(p.obs, pt, "output_broken_scaffolds");
     load(p.long_reads, pt, "long_reads");
+    load(p.cut_all_overlaps, pt, "cut_all_overlaps");
     if (!p.debug_output) {
         p.output.DisableAll();
         p.viz.DisableAll();

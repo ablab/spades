@@ -153,9 +153,12 @@ struct pe_config {
     VisualizeParamsT viz;
     ParamSetT param_set;
     AllLongReads long_reads;
+    bool cut_all_overlaps;
   } params;
 
   std::string dataset_name;
+
+
 };
 
 

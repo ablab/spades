@@ -14,7 +14,7 @@ visualize {
 
 ; none | break_gaps | break_all
 output_broken_scaffolds     break_gaps
-
+cut_all_overlaps  false
 singlecell {
     split_edge_length       99
     normalize_weight        true
