@@ -43,29 +43,15 @@ std::string KMerClustering::GetBadKMersFname() const {
   return tmp.str();
 }
 
-static double logLikelihoodKMer(const KMer center,
-                                const KMer kmer, const KMerStat &x) {
-  double res = 0;
-  for (unsigned i = 0; i < K; ++i) {
-    if (center[i] != kmer[i]) {
-      res += getRevProb(x, i, /* log */ true) - log(3);
-    } else {
-      res += getProb(x, i, /* log */ true);
-    }
-  }
-
-  return res;
-}
-
-KMer KMerClustering::ConsensusWithMask(const std::vector<size_t> & cl, const std::vector<size_t> & mask, size_t maskVal) const {
-  size_t blockSize = cl.size();
+KMer KMerClustering::ConsensusWithMask(const std::vector<size_t> &cl, const std::vector<size_t> &mask, size_t maskVal) const {
+  size_t block_size = cl.size();
 
   // consensus of a single string is trivial
-  if (blockSize == 1)
+  if (block_size == 1)
     return data_.kmer(cl[0]);
 
   uint64_t scores[4*K] = {0};
-  for (size_t j = 0; j < blockSize; ++j) {
+  for (size_t j = 0; j < block_size; ++j) {
     if (mask[j] != maskVal)
       continue;
 
@@ -110,31 +96,28 @@ KMer KMerClustering::Consensus(const std::vector<size_t> & cl) const {
   return KMer(res);
 }
 
-double KMerClustering::ClusterBIC(const std::vector<size_t> & cl, const std::vector<Center> & centers, const std::vector<size_t> & indices) const {
-  size_t blockSize = cl.size();
+double KMerClustering::ClusterBIC(const std::vector<Center> &centers,
+                                  const std::vector<size_t> &indices, const std::vector<hammer::ExpandedKMer> &kmers) const {
+  size_t block_size = indices.size();
   size_t clusters = centers.size();
-  if (blockSize == 0)
+  if (block_size == 0)
     return -std::numeric_limits<double>::infinity();
-  assert(blockSize == indices.size());
   assert(centers.size() > 0);
 
   double loglik = 0;
   unsigned total = 0;
-  for (size_t i=0; i<blockSize; ++i) {
-    const KMerStat &kms = data_[cl[i]];
-    KMer kmer = data_.kmer(cl[i]);
-    unsigned cnt = kms.count;
-    loglik += logLikelihoodKMer(centers[indices[i]].center_,
-                                kmer, kms);
-    total += cnt;
+  for (size_t i = 0; i < block_size; ++i) {
+    loglik += kmers[i].logL(centers[indices[i]].center_);
+    total += kmers[i].count();
   }
 
   size_t nparams = (clusters - 1) + clusters*K + 2*clusters*K;
 
-  return loglik - (double)nparams * log((double)blockSize) / 2.0;
+  return loglik - (double)nparams * log((double)block_size) / 2.0;
 }
 
-double KMerClustering::lMeansClustering(unsigned l, const std::vector<size_t> &kmerinds,
+
+double KMerClustering::lMeansClustering(unsigned l, const std::vector<size_t> &kmerinds, const std::vector<hammer::ExpandedKMer> &kmers,
                                         std::vector<size_t> & indices, std::vector<Center> & centers) {
   centers.resize(l); // there are l centers
 
@@ -145,7 +128,7 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<size_t> &k
     centers[0].quality_ = 1.0;
     for (size_t i = 0; i < kmerinds.size(); ++i)
       indices[i] = 0;
-    return ClusterBIC(kmerinds, centers, indices);
+    return ClusterBIC(centers, indices, kmers);
   }
 
   // We assume that kmerinds are sorted wrt the count.
@@ -168,21 +151,18 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<size_t> &k
 
   // Provide the initial approximation.
   double totalLikelihood = 0.0;
-  for (size_t i = 0; i < kmerinds.size(); ++i) {
-    const KMerStat &kms = data_[kmerinds[i]];
-    const KMer kmer = data_.kmer(kmerinds[i]);
+  for (size_t i = 0; i < kmers.size(); ++i) {
     unsigned mdist = K;
     unsigned cidx = 0;
     for (unsigned j = 0; j < l; ++j) {
-      unsigned cdist = hamdistKMer(kmer, centers[j].center_, mdist);
+      unsigned cdist = kmers[i].hamdist(centers[j].center_, mdist);
       if (cdist < mdist) {
         mdist = cdist;
         cidx = j;
       }
     }
     indices[i] = cidx;
-    totalLikelihood += logLikelihoodKMer(centers[cidx].center_,
-                                         kmer, kms);
+    totalLikelihood += kmers[i].logL(centers[cidx].center_);
   }
 
   // Main loop
@@ -204,19 +184,16 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<size_t> &k
 
     // E step: find which clusters we belong to
     for (size_t i = 0; i < kmerinds.size(); ++i) {
-      const KMerStat &kms = data_[kmerinds[i]];
-      const KMer kmer = data_.kmer(kmerinds[i]);
-
       size_t newInd = 0;
-      for (unsigned j=0; j < l; ++j)
-        loglike[j] = logLikelihoodKMer(centers[j].center_, kmer, kms);
-      newInd = std::max_element(loglike.begin(), loglike.end()) - loglike.begin();
-
       if (cfg::get().bayes_use_hamming_dist) {
-        for (unsigned j=0; j < l; ++j)
-          dists[j] = hamdistKMer(kmer, centers[j].center_);
+        for (unsigned j = 0; j < l; ++j)
+          dists[j] = kmers[i].hamdist(centers[j].center_);
 
         newInd = std::min_element(dists.begin(), dists.end()) - dists.begin();
+      } else {
+        for (unsigned j = 0; j < l; ++j)
+          loglike[j] = kmers[i].logL(centers[j].center_);
+        newInd = std::max_element(loglike.begin(), loglike.end()) - loglike.begin();
       }
 
       curlik += loglike[newInd];
@@ -262,8 +239,9 @@ double KMerClustering::lMeansClustering(unsigned l, const std::vector<size_t> &k
     }
   }
 
-  return ClusterBIC(kmerinds, centers, indices);
+  return ClusterBIC(centers, indices, kmers);
 }
+
 
 size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::vector< std::vector<size_t> > & vec) {
   size_t newkmers = 0;
@@ -296,6 +274,11 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
     }
   }
 
+  // Prepare the expanded k-mer structure
+  std::vector<hammer::ExpandedKMer> kmers;
+  for (size_t idx : block)
+    kmers.emplace_back(data_.kmer(idx), data_[idx]);
+
   std::vector<size_t> indices(origBlockSize);
   double bestLikelihood = -std::numeric_limits<double>::infinity();
   std::vector<Center> bestCenters;
@@ -304,7 +287,7 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
   unsigned max_l = cfg::get().bayes_hammer_mode ? 1 : (unsigned) origBlockSize;
   for (unsigned l = 1; l <= max_l; ++l) {
     std::vector<Center> centers(l);
-    double curLikelihood = lMeansClustering(l, block, indices, centers);
+    double curLikelihood = lMeansClustering(l, block, kmers, indices, centers);
     if (cfg::get().bayes_debug_output > 0) {
       #pragma omp critical
       {
@@ -597,7 +580,7 @@ void KMerClustering::process(const std::string &Prefix) {
 
   std::vector<numeric::matrix<uint64_t> > errs(nthreads_, numeric::matrix<double>(4, 4, 0.0));
 
-# pragma omp parallel for shared(ofs, ofs_bad, errs) num_threads(nthreads_) reduction(+:newkmers, gsingl, tsingl, tcsingl, gcsingl, tcls, gcls, tkmers, tncls)
+# pragma omp parallel for shared(ofs, ofs_bad, errs) num_threads(nthreads_) schedule(guided) reduction(+:newkmers, gsingl, tsingl, tcsingl, gcsingl, tcls, gcls, tkmers, tncls)
   for (size_t chunk = 0; chunk < nthreads_; ++chunk) {
       size_t *current = findex.data() + findex.size() * chunk / nthreads_;
       size_t *next = findex.data() + findex.size() * (chunk + 1)/ nthreads_;

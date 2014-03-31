@@ -47,7 +47,8 @@ private:
 
   hammer::KMer ConsensusWithMask(const std::vector<size_t> & block, const std::vector<size_t> & mask, size_t maskVal) const;
 
-  double ClusterBIC(const std::vector<size_t> & cl, const std::vector<Center> & centers, const std::vector<size_t> & indices) const;
+  double ClusterBIC(const std::vector<Center> &centers,
+                    const std::vector<size_t> &indices, const std::vector<hammer::ExpandedKMer> &kmers) const;
 
   /**
     * perform l-means clustering on the set of k-mers with initial centers being the l most frequent k-mers here
@@ -55,7 +56,8 @@ private:
     * @param centers fill array indices with ints from 0 to l that denote which kmers belong where
     * @return the resulting likelihood of this clustering
     */
-  double lMeansClustering(unsigned l, const std::vector<size_t> & kmerinds, std::vector<size_t> & indices, std::vector<Center> & centers);
+  double lMeansClustering(unsigned l, const std::vector<size_t> & kmerinds, const std::vector<hammer::ExpandedKMer> &kmers,
+                          std::vector<size_t> & indices, std::vector<Center> & centers);
 
   size_t SubClusterSingle(const std::vector<size_t> & block, std::vector< std::vector<size_t> > & vec);
 

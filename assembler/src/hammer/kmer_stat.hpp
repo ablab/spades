@@ -17,10 +17,11 @@
 #include <iomanip>
 #include <map>
 #include <string>
+#include <cstdint>
+#include <cmath>
 
 #include <sched.h>
 #include <string.h>
-#include <stdint.h>
 
 
 namespace hammer {
@@ -182,5 +183,73 @@ inline void binary_read(Reader &is, KMerStat &k) {
 inline unsigned char getQual(const KMerStat & kmc, size_t i) {
   return (unsigned char)kmc.qual[i];
 }
+
+inline double getProb(const KMerStat &kmc, size_t i, bool log);
+inline double getRevProb(const KMerStat &kmc, size_t i, bool log);
+
+namespace hammer {
+class ExpandedKMer {
+ public:
+  ExpandedKMer(const KMer k, const KMerStat &kmc) {
+    for (unsigned i = 0; i < hammer::K; ++i) {
+      s_[i] = k[i];
+      for (unsigned j = 0; j < 4; ++j)
+        lprobs_[4*i + j] = ((char)j != s_[i] ?
+                            getRevProb(kmc, i, /* log */ true) - log(3) :
+                            getProb(kmc, i, /* log */ true));
+    }
+    count_ = kmc.count;
+  }
+
+  double logL(const ExpandedKMer &center) const {
+    double res = 0;
+    for (unsigned i = 0; i < hammer::K; ++i)
+      res += lprobs_[4*i + center.s_[i]];
+
+    return res;
+  }
+
+  unsigned hamdist(const ExpandedKMer &k,
+                   unsigned tau = hammer::K) const {
+    unsigned dist = 0;
+    for (unsigned i = 0; i < hammer::K; ++i) {
+      if (s_[i] != k.s_[i]) {
+        ++dist; if (dist > tau) return dist;
+      }
+    }
+
+    return dist;
+  }
+
+  double logL(const KMer center) const {
+    double res = 0;
+    for (unsigned i = 0; i < hammer::K; ++i)
+      res += lprobs_[4*i + center[i]];
+
+    return res;
+  }
+
+  unsigned hamdist(const KMer &k,
+                   unsigned tau = hammer::K) const {
+    unsigned dist = 0;
+    for (unsigned i = 0; i < hammer::K; ++i) {
+      if (s_[i] != k[i]) {
+        ++dist; if (dist > tau) return dist;
+      }
+    }
+
+    return dist;
+  }
+
+  uint32_t count() const {
+    return count_;
+  }
+
+ private:
+  double lprobs_[4*hammer::K];
+  uint32_t count_;
+  char s_[hammer::K];
+};
+};
 
 #endif //  HAMMER_KMERSTAT_HPP_
