@@ -78,9 +78,79 @@ public:
             if (handler_f_) {
                 handler_f_(e);
             }
+            //don't need any synchronization here!
             RemoveEdge(e);
         }
         return false;
+    }
+};
+
+template<class Graph, class ElementType>
+class AlgorithmRunner {
+    const Graph& g_;
+
+protected:
+
+    const Graph& g() const {
+        return g_;
+    }
+
+    //todo make parallel
+    AlgorithmRunner(Graph& g)
+    : g_(g) {
+
+    }
+
+    template <class Algo, class It>
+    void RunFromIterator(Algo& algo, It begin, It end) {
+        for (auto it = begin; it != end; ++it) {
+            algo(*it);
+        }
+    }
+    
+    template <class Algo, class It>
+    void RunFromJavaStyleIterator(Algo& algo, It it) {
+        for (; !it.IsEnd(); ++it) {
+            algo(*it);
+        }
+    }
+};
+
+template<class Graph>
+class VertexAlgorithmRunner : public AlgorithmRunner<Graph, typename Graph::VertexId> {
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+    typedef AlgorithmRunner<Graph, VertexId> base;
+
+public:
+
+    VertexAlgorithmRunner(Graph& g) : 
+        base(g) {
+
+    }
+
+    template <class Algo>
+    void Run(Algo& algo) {
+        this->RunFromIterator(algo, this->g().begin(), this->g().end());
+    }
+};
+
+template<class Graph>
+class EdgeAlgorithmRunner : public AlgorithmRunner<Graph, typename Graph::EdgeId> {
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+    typedef AlgorithmRunner<Graph, VertexId> base;
+
+public:
+
+    EdgeAlgorithmRunner(Graph& g) : 
+        base(g) {
+
+    }
+
+    template <class Algo>
+    void Run(Algo& algo) {
+        this->RunFromJavaStyleIterator(algo, this->g().ConstEdgeBegin());
     }
 };
 
@@ -220,8 +290,6 @@ public:
 
 };
 
-//currently just a stab and not parallel at all,
-//no way to write it parallel before deletion of edge requires two locks
 template<class Graph>
 class ParallelLowCoverageFunctor {
     typedef typename Graph::EdgeId EdgeId;
@@ -230,10 +298,23 @@ class ParallelLowCoverageFunctor {
     typedef omnigraph::PairedVertexLock<VertexId> VertexLockT;
 
     Graph& g_;
+    typename Graph::HelperT helper_;
     shared_ptr<func::Predicate<EdgeId>> ec_condition_;
     HandlerF handler_f_;
 
     vector<EdgeId> edges_to_remove_;
+
+    void UnlinkEdgeFromStart(EdgeId e) {
+        VertexId start = g_.EdgeStart(e);
+        VertexLockT lock(start);
+        helper_.DeleteLink(start, e);
+    }
+
+    void UnlinkEdge(EdgeId e) {
+        UnlinkEdgeFromStart(e);
+        if (g_.conjugate(e) != e)
+            UnlinkEdgeFromStart(g_.conjugate(e));
+    }
 
 public:
 
@@ -242,6 +323,7 @@ public:
                                double max_coverage,
                                HandlerF handler_f = 0)
             : g_(g),
+              helper_(g_.GetConstructionHelper()),
               ec_condition_(
                       func::And<EdgeId>(
                       func::And<EdgeId>(make_shared<omnigraph::LengthUpperBound<Graph>>(g, max_length),
@@ -252,22 +334,37 @@ public:
 
     }
 
-    bool operator()(EdgeId e) {
-        if (ec_condition_->Check(e)) {
-            edges_to_remove_.push_back(e);
-        }
-        return false;
+    bool IsOfInterest(EdgeId e) const {
+        return ec_condition_->Check(e);
     }
 
-    void RemoveCollectedEdges() {
-        omnigraph::SmartSetIterator<Graph, EdgeId> to_delete(g_, edges_to_remove_.begin(), edges_to_remove_.end());
-        while (!to_delete.IsEnd()) {
-            EdgeId e = *to_delete;
-            handler_f_(e);
-            g_.DeleteEdge(e);
-            ++to_delete;
-        }
+    void PrepareForProcessing(size_t /*interesting_cnt*/) {
     }
+
+    //conjugate copies should be filtered in advance!
+    bool Process(EdgeId e, size_t /*idx*/) {
+        handler_f_(e);
+        UnlinkEdge(e);
+        helper_.DeleteUnlinkedEdge(e);
+        return true;
+    }
+
+//    bool operator()(EdgeId e) {
+//        if (ec_condition_->Check(e)) {
+//            edges_to_remove_.push_back(e);
+//        }
+//        return false;
+//    }
+//
+//    void RemoveCollectedEdges() {
+//        omnigraph::SmartSetIterator<Graph, EdgeId> to_delete(g_, edges_to_remove_.begin(), edges_to_remove_.end());
+//        while (!to_delete.IsEnd()) {
+//            EdgeId e = *to_delete;
+//            handler_f_(e);
+//            g_.DeleteEdge(e);
+//            ++to_delete;
+//        }
+//    }
 
 };
 
@@ -408,7 +505,7 @@ class ParallelCompressor {
         return g_.master().MergeData(to_merge);
     }
 
-    EdgeId AddEdge(VertexId v1, VertexId v2, const EdgeData& data, IdDistributor& id_distributor) {
+    EdgeId SyncAddEdge(VertexId v1, VertexId v2, const EdgeData& data, IdDistributor& id_distributor) {
         EdgeId new_edge = helper_.AddEdge(data, id_distributor);
         {
             VertexLockT lock(v1);
@@ -434,7 +531,7 @@ class ParallelCompressor {
             restricted::ListIdDistributor<restricted::SegmentIterator> id_distributor =
                     segment_storage_.GetSegmentIdDistributor(2 * idx, 2 * idx + 1);
 
-            EdgeId new_edge = AddEdge(g_.EdgeStart(edges.front()), g_.EdgeEnd(edges.back()),
+            EdgeId new_edge = SyncAddEdge(g_.EdgeStart(edges.front()), g_.EdgeEnd(edges.back()),
                                       MergeSequences(g_, edges), id_distributor);
 
             CallHandlers(edges, new_edge);
@@ -454,7 +551,8 @@ class ParallelCompressor {
             }
         }
     }
-
+    
+    //vertex is not consistent if the path has already been compressed or under compression right now
     //not needed here, but could check if vertex is fully isolated
     bool CheckConsistent(VertexId v) const {
         //todo change to incoming edge count
@@ -499,38 +597,58 @@ public:
 
 };
 
-//todo generalize to edges
 template<class Graph, class ElementType>
 class TwoStepAlgorithmRunner {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
 
     const Graph& g_;
-    vector<ElementType> elements_of_interest_;
-    //todo use this parameters
+    const bool filter_conjugate_;
+    set<ElementType> elements_of_interest_;
+
+    template <class Algo>
+    void Process(Algo& algo) const {
+        algo.PrepareForProcessing(elements_of_interest_.size());
+        size_t i = 0;
+        for (ElementType el : elements_of_interest_) {
+            algo.Process(el, i++);
+        }
+    }
+
+    template <class Algo>
+    void CountElement(Algo& algo, ElementType el) {
+        if (algo.IsOfInterest(el))
+            //todo it will not work in parallel as is
+            if (!filter_conjugate_ || elements_of_interest_.count(g_.conjugate(el)) == 0)
+                elements_of_interest_.insert(el);
+    }
+
 protected:
 
     const Graph& g() const {
         return g_;
     }
 
-    TwoStepAlgorithmRunner(Graph& g)
-    : g_(g) {
+    //todo make parallel
+    TwoStepAlgorithmRunner(Graph& g, bool filter_conjugate)
+    : g_(g), filter_conjugate_(filter_conjugate) {
 
     }
 
     template <class Algo, class It>
     void RunFromIterator(Algo& algo, It begin, It end) {
-        //todo make parallel
         for (auto it = begin; it != end; ++it) {
-            if (algo.IsOfInterest(*it)) {
-                elements_of_interest_.push_back(*it);
-            }
+            CountElement(algo, *it);
         }
-        algo.PrepareForProcessing(elements_of_interest_.size());
-        for (size_t i = 0; i < elements_of_interest_.size(); ++i) {
-            algo.Process(elements_of_interest_[i], i);
+        Process(algo);
+    }
+    
+    template <class Algo, class It>
+    void RunFromJavaStyleIterator(Algo& algo, It it) {
+        for (; !it.IsEnd(); ++it) {
+            CountElement(algo, *it);
         }
+        Process(algo);
     }
 };
 
@@ -542,7 +660,8 @@ class TwoStepVertexAlgorithmRunner : public TwoStepAlgorithmRunner<Graph, typena
 
 public:
 
-    TwoStepVertexAlgorithmRunner(Graph& g) : base(g) {
+    TwoStepVertexAlgorithmRunner(Graph& g, bool filter_conjugate) : 
+        base(g, filter_conjugate) {
 
     }
 
@@ -552,23 +671,24 @@ public:
     }
 };
 
-//template<class Graph>
-//class TwoStepEdgeAlgorithmRunner : public TwoStepAlgorithmRunner<Graph, typename Graph::VertexId> {
-//    typedef typename Graph::VertexId VertexId;
-//    typedef typename Graph::EdgeId EdgeId;
-//    typedef TwoStepAlgorithmRunner<Graph, VertexId> base;
-//
-//public:
-//
-//    TwoStepEdgeAlgorithmRunner(Graph& g) : base(g) {
-//
-//    }
-//
-//    template <class Algo>
-//    void Run(Algo& algo) const {
-//        this->RunFromIterator(algo, this->g().ConstEdgeBegin());
-//    }
-//};
+template<class Graph>
+class TwoStepEdgeAlgorithmRunner : public TwoStepAlgorithmRunner<Graph, typename Graph::EdgeId> {
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+    typedef TwoStepAlgorithmRunner<Graph, EdgeId> base;
+
+public:
+
+    TwoStepEdgeAlgorithmRunner(Graph& g, bool filter_conjugate) : 
+        base(g, filter_conjugate) {
+
+    }
+
+    template <class Algo>
+    void Run(Algo& algo) {
+        this->RunFromJavaStyleIterator(algo, this->g().ConstEdgeBegin());
+    }
+};
 
 }
 

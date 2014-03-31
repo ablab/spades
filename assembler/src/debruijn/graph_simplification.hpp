@@ -418,7 +418,7 @@ void Compress(Graph& g) {
 template<class Graph>
 void ParallelCompress(Graph& g) {
     debruijn::simplification::ParallelCompressor<Graph> compressor(g);
-    debruijn::simplification::TwoStepVertexAlgorithmRunner<Graph>(g).Run(compressor);
+    debruijn::simplification::TwoStepVertexAlgorithmRunner<Graph>(g, false).Run(compressor);
     //have to call "final" compression to get rid of loops
     Compress(g);
 }
@@ -438,13 +438,10 @@ bool ParallelClipTips(Graph& g,
 
     debruijn::simplification::ParallelTipClippingFunctor<Graph> tip_clipper(g, 
         parser.max_length_bound(), parser.max_coverage_bound(), removal_handler);
+    
+    debruijn::simplification::VertexAlgorithmRunner<Graph> runner(g);
 
-    for (auto it = g.begin(); it != g.end(); ++it) {
-        tip_clipper(*it);
-    }
-//    for (VertexId v : g) {
-//        tip_clipper(v);
-//    }
+    runner.Run(tip_clipper);
 
     ParallelCompress(g);
 
@@ -454,33 +451,33 @@ bool ParallelClipTips(Graph& g,
     return true;
 }
 
-template<class Graph>
-bool ParallelRemoveBulges(Graph& g,
-              const debruijn_config::simplification::bulge_remover& br_config,
-              size_t /*read_length*/,
-              boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
-    INFO("Parallel bulge remover");
-
-    size_t max_length = LengthThresholdFinder::MaxBulgeLength(
-        g.k(), br_config.max_bulge_length_coefficient,
-        br_config.max_additive_length_coefficient);
-
-    DEBUG("Max bulge length " << max_length);
-
-    debruijn::simplification::ParallelSimpleBRFunctor<Graph> bulge_remover(g,
-                            max_length,
-                            br_config.max_coverage,
-                            br_config.max_relative_coverage,
-                            br_config.max_delta,
-                            br_config.max_relative_delta,
-                            removal_handler);
-    for (VertexId v : g) {
-        bulge_remover(v);
-    }
-
-    Compress(g);
-    return true;
-}
+//template<class Graph>
+//bool ParallelRemoveBulges(Graph& g,
+//              const debruijn_config::simplification::bulge_remover& br_config,
+//              size_t /*read_length*/,
+//              boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
+//    INFO("Parallel bulge remover");
+//
+//    size_t max_length = LengthThresholdFinder::MaxBulgeLength(
+//        g.k(), br_config.max_bulge_length_coefficient,
+//        br_config.max_additive_length_coefficient);
+//
+//    DEBUG("Max bulge length " << max_length);
+//
+//    debruijn::simplification::ParallelSimpleBRFunctor<Graph> bulge_remover(g,
+//                            max_length,
+//                            br_config.max_coverage,
+//                            br_config.max_relative_coverage,
+//                            br_config.max_delta,
+//                            br_config.max_relative_delta,
+//                            removal_handler);
+//    for (VertexId v : g) {
+//        bulge_remover(v);
+//    }
+//
+//    Compress(g);
+//    return true;
+//}
 
 template<class Graph>
 bool ParallelEC(Graph& g,
@@ -501,14 +498,14 @@ bool ParallelEC(Graph& g,
                             max_coverage,
                             removal_handler);
 
-    for (auto it = g.ConstEdgeBegin(); !it.IsEnd(); ++it) {
-        ec_remover(*it);
-    }
-
-    //todo think of parallelization
-    ec_remover.RemoveCollectedEdges();
+    debruijn::simplification::TwoStepEdgeAlgorithmRunner<Graph> runner(g, true);
+    
+    runner.Run(ec_remover);
 
     ParallelCompress(g);
+    
+    //Not executing cleaner as small optimization =) Not so many vertices to clean here.
+
     return true;
 }
 
