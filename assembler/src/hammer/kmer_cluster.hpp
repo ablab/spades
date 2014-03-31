@@ -36,17 +36,10 @@ private:
   bool debug_;
 
   struct Center {
-    hammer::KMer center_;
-    uint32_t count_;
-    double quality_;
+    hammer::ExpandedSeq center_;
+    size_t count_;
   };
-
     
-  /// @return consensus string for a block
-  hammer::KMer Consensus(const std::vector<size_t> & block) const;
-
-  hammer::KMer ConsensusWithMask(const std::vector<size_t> & block, const std::vector<size_t> & mask, size_t maskVal) const;
-
   double ClusterBIC(const std::vector<Center> &centers,
                     const std::vector<size_t> &indices, const std::vector<hammer::ExpandedKMer> &kmers) const;
 

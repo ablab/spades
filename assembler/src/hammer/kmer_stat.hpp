@@ -188,6 +188,19 @@ inline double getProb(const KMerStat &kmc, size_t i, bool log);
 inline double getRevProb(const KMerStat &kmc, size_t i, bool log);
 
 namespace hammer {
+typedef std::array<char, hammer::K> ExpandedSeq;
+
+static inline unsigned hamdist(const ExpandedSeq &x, const ExpandedSeq &y,
+                               unsigned tau = hammer::K) {
+  unsigned dist = 0;
+  for (unsigned i = 0; i < hammer::K; ++i) {
+    if (x[i] != y[i]) {
+      ++dist; if (dist > tau) return dist;
+    }
+  }
+  return dist;
+}
+
 class ExpandedKMer {
  public:
   ExpandedKMer(const KMer k, const KMerStat &kmc) {
@@ -201,24 +214,33 @@ class ExpandedKMer {
     count_ = kmc.count;
   }
 
-  double logL(const ExpandedKMer &center) const {
+  double logL(const ExpandedSeq &center) const {
     double res = 0;
     for (unsigned i = 0; i < hammer::K; ++i)
-      res += lprobs_[4*i + center.s_[i]];
+      res += lprobs_[4*i + center[i]];
 
     return res;
   }
 
-  unsigned hamdist(const ExpandedKMer &k,
+  double logL(const ExpandedKMer &center) const {
+    return logL(center.s_);
+  }
+
+  unsigned hamdist(const ExpandedSeq &k,
                    unsigned tau = hammer::K) const {
     unsigned dist = 0;
     for (unsigned i = 0; i < hammer::K; ++i) {
-      if (s_[i] != k.s_[i]) {
+      if (s_[i] != k[i]) {
         ++dist; if (dist > tau) return dist;
       }
     }
 
     return dist;
+  }
+
+  unsigned hamdist(const ExpandedKMer &k,
+                   unsigned tau = hammer::K) const {
+    return hamdist(k.s_, tau);
   }
 
   double logL(const KMer center) const {
@@ -245,11 +267,24 @@ class ExpandedKMer {
     return count_;
   }
 
+  ExpandedSeq seq() const {
+    return s_;
+  }
+
  private:
   double lprobs_[4*hammer::K];
   uint32_t count_;
-  char s_[hammer::K];
+  ExpandedSeq s_;
 };
+
+inline
+std::ostream& operator<<(std::ostream &os, const ExpandedSeq &seq) {
+  for (auto s : seq)
+    os << nucl(s);
+
+  return os;
+}
+
 };
 
 #endif //  HAMMER_KMERSTAT_HPP_
