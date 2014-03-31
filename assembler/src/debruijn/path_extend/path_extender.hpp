@@ -599,6 +599,9 @@ private:
     void GrowAll(PathContainer& paths, PathContainer& usedPaths, PathContainer * result) {
         cover_map_.Clear();
         for (size_t i = 0; i < paths.size(); ++i) {
+            if (i % 10000) {
+                INFO("Processed " << i << " paths from " << paths.size());
+            }
             if (!cover_map_.IsCovered(*paths.Get(i))) {
                 usedPaths.AddPair(paths.Get(i), paths.GetConjugate(i));
                 BidirectionalPath * path = new BidirectionalPath(*paths.Get(i));
