@@ -40,6 +40,7 @@ class ParallelTipClippingFunctor {
     }
 
     void RemoveEdge(EdgeId e) {
+        //even full tip locking can't lead to deadlock
         VertexLockT lock1(g_.EdgeStart(e));
         VertexLockT lock2(g_.EdgeEnd(e));
         g_.DeleteEdge(e);
@@ -344,6 +345,7 @@ public:
     //conjugate copies should be filtered in advance!
     bool Process(EdgeId e, size_t /*idx*/) {
         handler_f_(e);
+        g_.FireDeleteEdge(e);
         UnlinkEdge(e);
         helper_.DeleteUnlinkedEdge(e);
         return true;
