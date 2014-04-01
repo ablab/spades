@@ -160,8 +160,8 @@ class BulgeRemover: public EdgeProcessingAlgorithm<Graph, CoverageComparator<Gra
 		double prefix_length = 0.;
 		vector<size_t> bulge_prefix_lengths;
 
-		for (auto it = path.begin(); it != path.end(); ++it) {
-			prefix_length += (double) graph_.length(*it);
+		for (EdgeId e : path) {
+			prefix_length += (double) graph_.length(e);
 			bulge_prefix_lengths.push_back(aligner.GetPosition((size_t) prefix_length));
 		}
 
@@ -172,6 +172,7 @@ class BulgeRemover: public EdgeProcessingAlgorithm<Graph, CoverageComparator<Gra
 
 		//fixme remove after checking results
 		bool flag = false;
+        VERIFY(bulge_prefix_lengths.back() == graph_.length(edge));
 
 		for (size_t i = 0; i < path.size(); ++i) {
 			if (bulge_prefix_lengths[i] > prev_length) {
