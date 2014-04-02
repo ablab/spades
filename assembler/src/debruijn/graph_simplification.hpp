@@ -28,8 +28,8 @@
 #include "omni/relative_coverage_remover.hpp"
 #include "omni/mf_ec_remover.hpp"
 #include "utils.hpp"
-#include "simplification_settings.hpp"
-#include "parallel_simplification_algorithms.hpp"
+#include "simplification/simplification_settings.hpp"
+#include "simplification/parallel_simplification_algorithms.hpp"
 
 #include "detail_coverage.hpp"
 #include "graph_read_correction.hpp"
