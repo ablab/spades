@@ -727,6 +727,21 @@ def main(args):
         if not support.log_warnings(log):
             log.info("\n======= SPAdes pipeline finished.")  # otherwise it finished WITH WARNINGS
 
+        if options_storage.test_mode:
+            test_passed = True
+            for result_filename in [result_contigs_filename, result_scaffolds_filename]:
+                if os.path.isfile(result_filename):
+                    result_fasta = support.read_fasta(result_filename)
+                    if len(result_fasta) != 1 or len(result_fasta[0][1]) != 1000: # should be one contig of length 1000
+                        test_passed = False
+                else:
+                    test_passed = False
+            if test_passed:
+                log.info("\n========= TEST PASSED CORRECTLY.")
+            else:
+                log.info("\n========= TEST FAILED!")
+
+
         log.info("\nSPAdes log can be found here: " + log_filename)
         log.info("")
         log.info("Thank you for using SPAdes!")

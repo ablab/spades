@@ -45,6 +45,7 @@ TMP_DIR = "tmp"
 output_dir = None
 single_cell = False
 iontorrent = False
+test_mode = False
 
 # pipeline options
 only_error_correction = False
@@ -266,9 +267,11 @@ def set_default_values():
 def set_test_options():
     global output_dir
     global single_cell
+    global test_mode
 
     output_dir = os.path.abspath('spades_test')
     single_cell = False
+    test_mode = True
 
 
 def save_restart_options(log):
