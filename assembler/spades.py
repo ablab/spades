@@ -739,7 +739,7 @@ def main(args):
             if test_passed:
                 log.info("\n========= TEST PASSED CORRECTLY.")
             else:
-                log.info("\n========= TEST FAILED!")
+                support.error("TEST FAILED!")
 
 
         log.info("\nSPAdes log can be found here: " + log_filename)
