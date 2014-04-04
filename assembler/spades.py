@@ -728,18 +728,27 @@ def main(args):
             log.info("\n======= SPAdes pipeline finished.")  # otherwise it finished WITH WARNINGS
 
         if options_storage.test_mode:
-            test_passed = True
             for result_filename in [result_contigs_filename, result_scaffolds_filename]:
                 if os.path.isfile(result_filename):
                     result_fasta = support.read_fasta(result_filename)
-                    if len(result_fasta) != 1 or len(result_fasta[0][1]) != 1000: # should be one contig of length 1000
-                        test_passed = False
+                    # correctness check: should be one contig of length 1000 bp
+                    correct_number = 1
+                    correct_length = 1000
+                    if not len(result_fasta):
+                        support.error("TEST FAILED: %s does not contain contigs!" % result_filename)
+                    elif len(result_fasta) > correct_number:
+                        support.error("TEST FAILED: %s contains more than %d contig (%d)!" %
+                                      (result_filename, correct_number, len(result_fasta)))
+                    elif len(result_fasta[0][1]) != correct_length:
+                        if len(result_fasta[0][1]) > correct_length:
+                            relation = "more"
+                        else:
+                            relation = "less"
+                        support.error("TEST FAILED: %s contains %s than %d bp (%d bp)!" %
+                                      (result_filename, relation, correct_length, len(result_fasta[0][1])))
                 else:
-                    test_passed = False
-            if test_passed:
-                log.info("\n========= TEST PASSED CORRECTLY.")
-            else:
-                support.error("TEST FAILED!")
+                    support.error("TEST FAILED: " + result_filename + " does not exist!")
+            log.info("\n========= TEST PASSED CORRECTLY.")
 
 
         log.info("\nSPAdes log can be found here: " + log_filename)
