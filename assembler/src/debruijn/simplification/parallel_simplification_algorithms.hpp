@@ -12,6 +12,100 @@ namespace debruijn {
 namespace simplification {
 
 template<class Graph>
+class ParallelIterationHelper {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::VertexIterator const_vertex_iterator;
+    typedef typename Graph::edge_const_iterator const_edge_iterator;
+
+    const Graph& g_;
+public:
+
+    class graph_edge_iterator : public boost::iterator_facade<graph_edge_iterator,
+            EdgeId, boost::forward_traversal_tag, EdgeId> {
+    public:
+//        explicit graph_edge_iterator(const Graph& g, VertexIterator v_it,
+//                                     const_edge_iterator e_it)
+//                : g_(g),
+//                  v_it_(v_it),
+//                  e_it_(e_it) {
+//        }
+
+        explicit graph_edge_iterator(const Graph& g, const_vertex_iterator v_it)
+                : g_(g),
+                  v_it_(v_it) {
+        	if (v_it_ != g_.end()) {
+        		e_it_ = g_.out_begin(*v_it_);
+        	}
+        }
+
+    private:
+        friend class boost::iterator_core_access;
+
+        void increment() {
+        	if (v_it_ == g_.end())
+        		return;
+        	e_it_++;
+        	if (e_it_ == g_.out_end(*v_it_)) {
+        		v_it_++;
+        		if (v_it_ != g_.end())
+        			e_it_ = g_.out_begin(*v_it_);
+        	}
+        }
+
+        bool equal(const graph_edge_iterator &other) const {
+        	if (other.v_it_ != v_it_)
+        		return false;
+            if (v_it_ != g_.end() && other.e_it_ != e_it_)
+            	return false;
+            return true;
+        }
+
+        EdgeId dereference() const {
+            return *e_it_;
+        }
+
+        const Graph& g_;
+        const_vertex_iterator v_it_;
+        const_edge_iterator e_it_;
+    };
+
+
+    ParallelIterationHelper(const Graph& g) : g_(g) {
+
+    }
+
+    vector<const_vertex_iterator> VertexChunks(size_t chunk_cnt) const {
+    	VERIFY(chunk_cnt > 0);
+    	vector<const_vertex_iterator> answer;
+    	size_t vertex_cnt = g_.size();
+    	size_t chunk_size = vertex_cnt / chunk_cnt;
+    	size_t i = 0;
+    	for (auto it = g_.begin(); it != g_.end(); ++it) {
+    		if (i % chunk_size == 0) {
+    			answer.push_back(it);
+    		}
+    		i++;
+    	}
+    	VERIFY(i == vertex_cnt);
+    	if (vertex_cnt % chunk_size == 0) {
+    		answer.push_back(g_.end());
+    	} else {
+    		answer.back() = g_.end();
+    	}
+    	return answer;
+    }
+
+    vector<graph_edge_iterator> EdgeChunks(size_t chunk_cnt) const {
+    	vector<graph_edge_iterator> answer;
+    	for (const_vertex_iterator v_it: VertexChunks(chunk_cnt)) {
+    		answer.push_back(graph_edge_iterator(g_, v_it));
+    	}
+    	return answer;
+    }
+};
+
+template<class Graph>
 class ParallelTipClippingFunctor {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
@@ -84,19 +178,23 @@ public:
         }
         return false;
     }
+
+    bool ShouldFilterConjugate() const {
+    	return false;
+    }
 };
 
+//todo add conjugate filtration
 template<class Graph, class ElementType>
 class AlgorithmRunner {
     const Graph& g_;
 
-protected:
+public:
 
     const Graph& g() const {
         return g_;
     }
 
-    //todo make parallel
     AlgorithmRunner(Graph& g)
     : g_(g) {
 
@@ -108,51 +206,22 @@ protected:
             algo(*it);
         }
     }
-    
-    template <class Algo, class It>
-    void RunFromJavaStyleIterator(Algo& algo, It it) {
-        for (; !it.IsEnd(); ++it) {
-            algo(*it);
-        }
-    }
-};
 
-template<class Graph>
-class VertexAlgorithmRunner : public AlgorithmRunner<Graph, typename Graph::VertexId> {
-    typedef typename Graph::VertexId VertexId;
-    typedef typename Graph::EdgeId EdgeId;
-    typedef AlgorithmRunner<Graph, VertexId> base;
-
-public:
-
-    VertexAlgorithmRunner(Graph& g) : 
-        base(g) {
-
+    template <class Algo, class ItVec>
+    void RunFromChunkIterators(Algo& algo, const ItVec& chunk_iterators) {
+    	VERIFY(chunk_iterators.size() > 1);
+#pragma omp parallel for schedule(guided)
+    	for (size_t i = 0; i < chunk_iterators.size() - 1; ++i) {
+    		RunFromIterator(algo, chunk_iterators[i], chunk_iterators[i+1]);
+    	}
     }
 
-    template <class Algo>
-    void Run(Algo& algo) {
-        this->RunFromIterator(algo, this->g().begin(), this->g().end());
-    }
-};
-
-template<class Graph>
-class EdgeAlgorithmRunner : public AlgorithmRunner<Graph, typename Graph::EdgeId> {
-    typedef typename Graph::VertexId VertexId;
-    typedef typename Graph::EdgeId EdgeId;
-    typedef AlgorithmRunner<Graph, VertexId> base;
-
-public:
-
-    EdgeAlgorithmRunner(Graph& g) : 
-        base(g) {
-
-    }
-
-    template <class Algo>
-    void Run(Algo& algo) {
-        this->RunFromJavaStyleIterator(algo, this->g().ConstEdgeBegin());
-    }
+//    template <class Algo, class It>
+//    void RunFromJavaStyleIterator(Algo& algo, It it) {
+//        for (; !it.IsEnd(); ++it) {
+//            algo(*it);
+//        }
+//    }
 };
 
 template<class Graph>
@@ -289,6 +358,9 @@ public:
         return false;
     }
 
+    bool ShouldFilterConjugate() const {
+    	return false;
+    }
 };
 
 template<class Graph>
@@ -319,6 +391,7 @@ class ParallelLowCoverageFunctor {
 
 public:
 
+    //should be launched with conjugate copies filtered
     ParallelLowCoverageFunctor(Graph& g,
                                size_t max_length,
                                double max_coverage,
@@ -342,7 +415,7 @@ public:
     void PrepareForProcessing(size_t /*interesting_cnt*/) {
     }
 
-    //conjugate copies should be filtered in advance!
+    //no conjugate copies here!
     bool Process(EdgeId e, size_t /*idx*/) {
         handler_f_(e);
         g_.FireDeleteEdge(e);
@@ -351,6 +424,9 @@ public:
         return true;
     }
 
+    bool ShouldFilterConjugate() const {
+    	return true;
+    }
 //    bool operator()(EdgeId e) {
 //        if (ec_condition_->Check(e)) {
 //            edges_to_remove_.push_back(e);
@@ -597,6 +673,10 @@ public:
         return false;
     }
 
+    bool ShouldFilterConjugate() const {
+    	return false;
+    }
+
 };
 
 template<class Graph, class ElementType>
@@ -606,91 +686,165 @@ class TwoStepAlgorithmRunner {
 
     const Graph& g_;
     const bool filter_conjugate_;
-    set<ElementType> elements_of_interest_;
+    vector<vector<ElementType>> elements_of_interest_;
+
+    template <class Algo>
+    void ProcessBucket(Algo& algo, const vector<ElementType>& bucket, size_t idx_offset) const {
+    	for (ElementType el : bucket) {
+    		algo.Process(el, idx_offset++);
+    	}
+    }
 
     template <class Algo>
     void Process(Algo& algo) const {
-        algo.PrepareForProcessing(elements_of_interest_.size());
-        size_t i = 0;
-        for (ElementType el : elements_of_interest_) {
-            algo.Process(el, i++);
+    	vector<size_t> cumulative_bucket_sizes;
+    	cumulative_bucket_sizes.push_back(0);
+    	for (const auto& bucket : elements_of_interest_) {
+        	cumulative_bucket_sizes.push_back(cumulative_bucket_sizes.back() + bucket.size());
+    	}
+    	algo.PrepareForProcessing(cumulative_bucket_sizes.back());
+#pragma omp parallel for schedule(guided)
+        for (size_t i = 0; i < elements_of_interest_.size(); ++i) {
+        	ProcessBucket(algo, elements_of_interest_[i], cumulative_bucket_sizes[i]);
         }
     }
 
     template <class Algo>
-    void CountElement(Algo& algo, ElementType el) {
+    void CountElement(Algo& algo, ElementType el, size_t bucket) {
+    	if (filter_conjugate_ && g_.conjugate(el) < el)
+    		return;
         if (algo.IsOfInterest(el))
-            //todo it will not work in parallel as is
-            if (!filter_conjugate_ || elements_of_interest_.count(g_.conjugate(el)) == 0)
-                elements_of_interest_.insert(el);
+        	elements_of_interest_[bucket].push_back(el);
     }
 
-protected:
+    template <class Algo, class It>
+    void CountAll(Algo& algo, It begin, It end, size_t bucket) {
+        for (auto it = begin; it != end; ++it) {
+            CountElement(algo, *it, bucket);
+        }
+    }
+
+public:
 
     const Graph& g() const {
         return g_;
     }
 
     //todo make parallel
+    //conjugate elements are filtered based on ids
+    //should be used only if both conjugate elements are simultaneously either interesting or not
     TwoStepAlgorithmRunner(Graph& g, bool filter_conjugate)
     : g_(g), filter_conjugate_(filter_conjugate) {
 
     }
 
+    template <class Algo, class ItVec>
+    void RunFromChunkIterators(Algo& algo, const ItVec& chunk_iterators) {
+    	VERIFY(algo.ShouldFilterConjugate() ^ filter_conjugate_);
+    	VERIFY(chunk_iterators.size() > 1);
+    	elements_of_interest_.clear();
+    	elements_of_interest_.resize(chunk_iterators.size() - 1);
+#pragma omp parallel for schedule(guided)
+    	for (size_t i = 0; i < chunk_iterators.size() - 1; ++i) {
+            CountAll(algo, chunk_iterators[i], chunk_iterators[i+1], i);
+    	}
+    	Process(algo);
+    }
+
     template <class Algo, class It>
     void RunFromIterator(Algo& algo, It begin, It end) {
-        for (auto it = begin; it != end; ++it) {
-            CountElement(algo, *it);
-        }
-        Process(algo);
+    	RunFromChunkIterators(algo, vector<It>{begin, end});
+//    	VERIFY(algo.ShouldFilterConjugate() ^ filter_conjugate_);
+//    	elements_of_interest_.clear();
+//    	elements_of_interest_.resize(1);
+//        CountAll(algo, begin, end, 0);
+//        Process(algo);
     }
-    
-    template <class Algo, class It>
-    void RunFromJavaStyleIterator(Algo& algo, It it) {
-        for (; !it.IsEnd(); ++it) {
-            CountElement(algo, *it);
-        }
-        Process(algo);
-    }
+
+//    template <class Algo, class It>
+//    void RunFromJavaStyleIterator(Algo& algo, It it) {
+//    	VERIFY(algo.ShouldFilterConjugate() ^ filter_conjugate_);
+//    	elements_of_interest_.clear();
+//    	elements_of_interest_.resize(1);
+//        for (; !it.IsEnd(); ++it) {
+//            CountElement(algo, *it, 0);
+//        }
+//        Process(algo);
+//    }
 };
 
-template<class Graph>
-class TwoStepVertexAlgorithmRunner : public TwoStepAlgorithmRunner<Graph, typename Graph::VertexId> {
-    typedef typename Graph::VertexId VertexId;
-    typedef typename Graph::EdgeId EdgeId;
-    typedef TwoStepAlgorithmRunner<Graph, VertexId> base;
+template<class Graph, class AlgoRunner, class Algo>
+void RunVertexAlgorithm(Graph& g, AlgoRunner& runner, Algo& algo, size_t chunk_cnt) {
+	runner.RunFromChunkIterators(algo, ParallelIterationHelper<Graph>(g).VertexChunks(chunk_cnt));
+}
 
-public:
+template<class Graph, class AlgoRunner, class Algo>
+void RunEdgeAlgorithm(Graph& g, AlgoRunner& runner, Algo& algo, size_t chunk_cnt) {
+	runner.RunFromChunkIterators(algo, ParallelIterationHelper<Graph>(g).EdgeChunks(chunk_cnt));
+}
 
-    TwoStepVertexAlgorithmRunner(Graph& g, bool filter_conjugate) : 
-        base(g, filter_conjugate) {
-
-    }
-
-    template <class Algo>
-    void Run(Algo& algo) {
-        this->RunFromIterator(algo, this->g().begin(), this->g().end());
-    }
-};
-
-template<class Graph>
-class TwoStepEdgeAlgorithmRunner : public TwoStepAlgorithmRunner<Graph, typename Graph::EdgeId> {
-    typedef typename Graph::VertexId VertexId;
-    typedef typename Graph::EdgeId EdgeId;
-    typedef TwoStepAlgorithmRunner<Graph, EdgeId> base;
-
-public:
-
-    TwoStepEdgeAlgorithmRunner(Graph& g, bool filter_conjugate) : 
-        base(g, filter_conjugate) {
-
-    }
-
-    template <class Algo>
-    void Run(Algo& algo) {
-        this->RunFromJavaStyleIterator(algo, this->g().ConstEdgeBegin());
-    }
-};
+//
+//template<class Graph>
+//class EdgeAlgorithmRunner : public AlgorithmRunner<Graph, typename Graph::EdgeId> {
+//    typedef typename Graph::VertexId VertexId;
+//    typedef typename Graph::EdgeId EdgeId;
+//    typedef AlgorithmRunner<Graph, VertexId> base;
+//
+//public:
+//
+//    EdgeAlgorithmRunner(Graph& g) :
+//        base(g) {
+//
+//    }
+//
+//    template <class Algo>
+//    void Run(Algo& algo) {
+//        this->RunFromJavaStyleIterator(algo, this->g().ConstEdgeBegin());
+//    }
+//
+//    template <class Algo>
+//    void RunParallelChunks(Algo& algo, size_t chunk_cnt) {
+//    	RunFromChunkIterators(algo, ParallelIterationHelper(this->g()).EdgeChunks(chunk_cnt));
+//    }
+//};
+//
+//template<class Graph>
+//class TwoStepVertexAlgorithmRunner : public TwoStepAlgorithmRunner<Graph, typename Graph::VertexId> {
+//    typedef typename Graph::VertexId VertexId;
+//    typedef typename Graph::EdgeId EdgeId;
+//    typedef TwoStepAlgorithmRunner<Graph, VertexId> base;
+//
+//public:
+//
+//    TwoStepVertexAlgorithmRunner(Graph& g, bool filter_conjugate) :
+//        base(g, filter_conjugate) {
+//
+//    }
+//
+//    template <class Algo>
+//    void Run(Algo& algo) {
+//        this->RunFromIterator(algo, this->g().begin(), this->g().end());
+//    }
+//};
+//
+//template<class Graph>
+//class TwoStepEdgeAlgorithmRunner : public TwoStepAlgorithmRunner<Graph, typename Graph::EdgeId> {
+//    typedef typename Graph::VertexId VertexId;
+//    typedef typename Graph::EdgeId EdgeId;
+//    typedef TwoStepAlgorithmRunner<Graph, EdgeId> base;
+//
+//public:
+//
+//    TwoStepEdgeAlgorithmRunner(Graph& g, bool filter_conjugate) :
+//        base(g, filter_conjugate) {
+//
+//    }
+//
+//    template <class Algo>
+//    void Run(Algo& algo) {
+//        this->RunFromJavaStyleIterator(algo, this->g().ConstEdgeBegin());
+//    }
+//};
 
 }
 

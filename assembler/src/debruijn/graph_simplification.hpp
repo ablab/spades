@@ -418,7 +418,9 @@ void Compress(Graph& g) {
 template<class Graph>
 void ParallelCompress(Graph& g) {
     debruijn::simplification::ParallelCompressor<Graph> compressor(g);
-    debruijn::simplification::TwoStepVertexAlgorithmRunner<Graph>(g, false).Run(compressor);
+    debruijn::simplification::TwoStepAlgorithmRunner<Graph, typename Graph::VertexId> runner(g, false);
+    size_t chunk_cnt = 1;
+    debruijn::simplification::RunVertexAlgorithm(g, runner, compressor, chunk_cnt);
     //have to call "final" compression to get rid of loops
     Compress(g);
 }
@@ -439,9 +441,10 @@ bool ParallelClipTips(Graph& g,
     debruijn::simplification::ParallelTipClippingFunctor<Graph> tip_clipper(g, 
         parser.max_length_bound(), parser.max_coverage_bound(), removal_handler);
     
-    debruijn::simplification::VertexAlgorithmRunner<Graph> runner(g);
+    debruijn::simplification::AlgorithmRunner<Graph, typename Graph::VertexId> runner(g);
 
-    runner.Run(tip_clipper);
+    size_t chunk_cnt = 1;
+    debruijn::simplification::RunVertexAlgorithm(g, runner, tip_clipper, chunk_cnt);
 
     ParallelCompress(g);
 
@@ -498,9 +501,10 @@ bool ParallelEC(Graph& g,
                             max_coverage,
                             removal_handler);
 
-    debruijn::simplification::TwoStepEdgeAlgorithmRunner<Graph> runner(g, true);
-    
-    runner.Run(ec_remover);
+    debruijn::simplification::TwoStepAlgorithmRunner<Graph, typename Graph::EdgeId> runner(g, true);
+
+    size_t chunk_cnt = 1;
+    debruijn::simplification::RunEdgeAlgorithm(g, runner, ec_remover, chunk_cnt);
 
     ParallelCompress(g);
     
