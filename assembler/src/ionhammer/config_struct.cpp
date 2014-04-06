@@ -53,6 +53,7 @@ void load(hammer_config& cfg, const std::string &filename) {
 
   cfg.kmer_qual_threshold = config["kmer_qual_threshold"].as<double>();
   cfg.center_qual_threshold = config["center_qual_threshold"].as<double>();
+  cfg.delta_score_threshold = config["delta_score_threshold"].as<double>();
   cfg.keep_uncorrected_ends = config["keep_uncorrected_ends"].as<bool>();
   cfg.tau = config["tau"].as<unsigned>();
 

@@ -5,6 +5,7 @@ hard_memory_limit : 250
 max_nthreads      : 16
 kmer_qual_threshold   : 1e-24
 center_qual_threshold   : 1e-5
+delta_score_threshold   : 10.0
 keep_uncorrected_ends : true
 tau               : 1
 debug_mode        : false

@@ -1050,7 +1050,7 @@ public:
     std::stringstream ss;
     ss << alignment.Name << "_" << delta_score << "_" << fit_score;
     alignment.Name = ss.str();
-    if (delta_score >= 10)
+    if (delta_score >= cfg::get().delta_score_threshold)
        return io::BamRead(alignment);
 
     BamTools::BamAlignment corrected(alignment);

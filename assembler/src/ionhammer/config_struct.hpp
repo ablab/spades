@@ -27,6 +27,7 @@ struct hammer_config {
 
   double kmer_qual_threshold;
   double center_qual_threshold;
+  double delta_score_threshold;
   bool keep_uncorrected_ends;
 
   bool debug_mode;
