@@ -730,7 +730,7 @@ def main(args):
         if options_storage.test_mode:
             for result_filename in [result_contigs_filename, result_scaffolds_filename]:
                 if os.path.isfile(result_filename):
-                    result_fasta = support.read_fasta(result_filename)
+                    result_fasta = list(support.read_fasta(result_filename))
                     # correctness check: should be one contig of length 1000 bp
                     correct_number = 1
                     correct_length = 1000
