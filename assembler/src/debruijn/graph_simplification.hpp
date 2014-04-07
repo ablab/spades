@@ -416,11 +416,10 @@ void Compress(Graph& g) {
 }
 
 template<class Graph>
-void ParallelCompress(Graph& g) {
+void ParallelCompress(Graph& g, const SimplifInfoContainer& info) {
     debruijn::simplification::ParallelCompressor<Graph> compressor(g);
     debruijn::simplification::TwoStepAlgorithmRunner<Graph, typename Graph::VertexId> runner(g, false);
-    size_t chunk_cnt = 1;
-    debruijn::simplification::RunVertexAlgorithm(g, runner, compressor, chunk_cnt);
+    debruijn::simplification::RunVertexAlgorithm(g, runner, compressor, info.chunk_cnt());
     //have to call "final" compression to get rid of loops
     Compress(g);
 }
@@ -428,13 +427,13 @@ void ParallelCompress(Graph& g) {
 template<class Graph>
 bool ParallelClipTips(Graph& g,
               const string& tip_condition,
-              const SimplifInfoContainer& info_container,
+              const SimplifInfoContainer& info,
               boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
     INFO("Parallel tip clipping");
 
     string condition_str = tip_condition;
 
-    ConditionParser<Graph> parser(g, condition_str, info_container);
+    ConditionParser<Graph> parser(g, condition_str, info);
 
     parser();
 
@@ -443,10 +442,9 @@ bool ParallelClipTips(Graph& g,
     
     debruijn::simplification::AlgorithmRunner<Graph, typename Graph::VertexId> runner(g);
 
-    size_t chunk_cnt = 1;
-    debruijn::simplification::RunVertexAlgorithm(g, runner, tip_clipper, chunk_cnt);
+    debruijn::simplification::RunVertexAlgorithm(g, runner, tip_clipper, info.chunk_cnt());
 
-    ParallelCompress(g);
+    ParallelCompress(g, info);
 
     Cleaner<Graph> cleaner(g);
     cleaner.Clean();
@@ -485,11 +483,11 @@ bool ParallelClipTips(Graph& g,
 template<class Graph>
 bool ParallelEC(Graph& g,
               const string& ec_condition,
-              const SimplifInfoContainer& info_container,
+              const SimplifInfoContainer& info,
               boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
     INFO("Parallel ec remover");
 
-    ConditionParser<Graph> parser(g, ec_condition, info_container);
+    ConditionParser<Graph> parser(g, ec_condition, info);
 
     auto condition = parser();
 
@@ -503,10 +501,9 @@ bool ParallelEC(Graph& g,
 
     debruijn::simplification::TwoStepAlgorithmRunner<Graph, typename Graph::EdgeId> runner(g, true);
 
-    size_t chunk_cnt = 1;
-    debruijn::simplification::RunEdgeAlgorithm(g, runner, ec_remover, chunk_cnt);
+    debruijn::simplification::RunEdgeAlgorithm(g, runner, ec_remover, info.chunk_cnt());
 
-    ParallelCompress(g);
+    ParallelCompress(g, info);
     
     //Not executing cleaner as small optimization =) Not so many vertices to clean here.
 
@@ -553,6 +550,12 @@ void ParallelPreSimplification(conj_graph_pack& gp,
                        cnt_handler);
 
 
+    gp.kmer_mapper.Detach();
+
+    if (info.chunk_cnt() > 1) {
+        VERIFY(gp.g.AllHandlersThreadSafe());
+    }
+    
     ParallelClipTips(gp.g, presimp.tip_condition, info,
                      removal_handler);
     
@@ -585,6 +588,7 @@ void ParallelPreSimplification(conj_graph_pack& gp,
 //
 //    INFO("Early bulge removal");
 //    RemoveBulges(gp.g, cfg::get().simp.br, 0, removal_handler, gp.g.k() + 1);
+    gp.kmer_mapper.Attach();
 }
 
 inline
@@ -609,7 +613,9 @@ void PreSimplification(conj_graph_pack& gp,
     }
     
     if (presimp.parallel) {
-        ParallelPreSimplification(gp, presimp, info, removal_handler);
+        SimplifInfoContainer presimp_info(info); 
+
+        ParallelPreSimplification(gp, presimp, presimp_info.set_chunk_cnt(presimp.chunk_cnt), removal_handler);
     } else {
         NonParallelPreSimplification(gp, presimp, info, removal_handler);
     }

@@ -33,6 +33,7 @@ class SimplifInfoContainer {
     double detected_coverage_bound_;
     size_t iteration_count_;
     size_t iteration_;
+    size_t chunk_cnt_;
 
 public: 
     SimplifInfoContainer() : 
@@ -40,7 +41,8 @@ public:
         detected_mean_coverage_(-1.0),
         detected_coverage_bound_(-1.0),
         iteration_count_(-1u),
-        iteration_(-1u) {
+        iteration_(-1u),
+        chunk_cnt_(-1u) {
     }
 
     size_t read_length() const {
@@ -59,15 +61,20 @@ public:
     }
 
     size_t iteration_count() const {
-        VERIFY(iteration_count_ != -1u)
+        VERIFY(iteration_count_ != -1u);
         return iteration_count_;
     }
 
     size_t iteration() const {
-        VERIFY(iteration_ != -1u)
+        VERIFY(iteration_ != -1u);
         return iteration_;
     }
     
+    size_t chunk_cnt() const {
+        VERIFY(chunk_cnt_ != -1u);
+        return chunk_cnt_;
+    }
+
     SimplifInfoContainer& set_read_length(size_t read_length) {
         read_length_ = read_length;
         return *this;
@@ -93,6 +100,10 @@ public:
         return *this;
     }
 
+    SimplifInfoContainer& set_chunk_cnt(size_t chunk_cnt) {
+        chunk_cnt_ = chunk_cnt;
+        return *this;
+    }
 };
 
 template<class Graph>

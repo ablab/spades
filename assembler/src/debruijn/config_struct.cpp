@@ -413,6 +413,7 @@ void load(debruijn_config::simplification::presimplification& presimp,
 
   load(presimp.enabled, pt, "enabled", complete);
   load(presimp.parallel, pt, "parallel", complete);
+  load(presimp.chunk_cnt, pt, "chunk_cnt", complete);
   load(presimp.activation_cov, pt, "activation_cov", complete);
   load(presimp.tip_condition, pt, "tip_condition", complete); // pre tip clipper:
   load(presimp.ec_condition, pt, "ec_condition", complete); // pre ec remover:

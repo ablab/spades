@@ -259,6 +259,7 @@ struct debruijn_config {
         struct presimplification {
             bool enabled;
             bool parallel;
+            size_t chunk_cnt;
             double activation_cov;
             std::string tip_condition;
             std::string ec_condition;

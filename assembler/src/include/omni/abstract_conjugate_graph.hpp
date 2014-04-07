@@ -106,11 +106,12 @@ private:
                   conjugate_(conjugate) {
         }
 
+        //fixme seems to be ok and rather useful. Delete comment?
         // Should not exist. Temporary patch to write empty in_begin, out_end... methods for
         // ConcurrentGraphComponent which can not have such methods by definition
         conjugate_iterator()
                 : conjugate_(false) {
-            VERIFY_MSG(false, "There is no sense in using this. See comments.")
+    //        VERIFY_MSG(false, "There is no sense in using this. See comments.")
         }
 
     private:

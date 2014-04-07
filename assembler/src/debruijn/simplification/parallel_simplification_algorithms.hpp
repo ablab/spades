@@ -35,7 +35,7 @@ public:
                 : g_(g),
                   v_it_(v_it) {
         	if (v_it_ != g_.end()) {
-        		e_it_ = g_.out_begin(*v_it_);
+        	    e_it_ = g_.out_begin(*v_it_);
         	}
         }
 
@@ -43,13 +43,14 @@ public:
         friend class boost::iterator_core_access;
 
         void increment() {
-        	if (v_it_ == g_.end())
-        		return;
-        	e_it_++;
-        	if (e_it_ == g_.out_end(*v_it_)) {
-        		v_it_++;
-        		if (v_it_ != g_.end())
-        			e_it_ = g_.out_begin(*v_it_);
+            if (v_it_ == g_.end())
+        	    return;
+            e_it_++;
+            while (e_it_ == g_.out_end(*v_it_)) {
+        	    v_it_++;
+                if (v_it_ == g_.end())
+                    return;
+                e_it_ = g_.out_begin(*v_it_);
         	}
         }
 
@@ -62,6 +63,7 @@ public:
         }
 
         EdgeId dereference() const {
+            VERIFY(v_it_ != g_.end());
             return *e_it_;
         }
 
@@ -77,22 +79,26 @@ public:
 
     vector<const_vertex_iterator> VertexChunks(size_t chunk_cnt) const {
     	VERIFY(chunk_cnt > 0);
+        //trying to split vertices into equal chunks, leftovers put into first chunk
     	vector<const_vertex_iterator> answer;
     	size_t vertex_cnt = g_.size();
     	size_t chunk_size = vertex_cnt / chunk_cnt;
-    	size_t i = 0;
-    	for (auto it = g_.begin(); it != g_.end(); ++it) {
-    		if (i % chunk_size == 0) {
-    			answer.push_back(it);
-    		}
-    		i++;
-    	}
-    	VERIFY(i == vertex_cnt);
-    	if (vertex_cnt % chunk_size == 0) {
-    		answer.push_back(g_.end());
-    	} else {
-    		answer.back() = g_.end();
-    	}
+        auto it = g_.begin();
+        answer.push_back(it);
+        for (size_t i = 0; i + chunk_cnt * chunk_size < vertex_cnt; ++i) {
+            it++;
+        }
+        if (chunk_size > 0) {
+    	    size_t i = 0;
+    	    for (; it != g_.end(); ++it) 
+    	    	if (++i % chunk_size == 0) 
+    	    		answer.push_back(it);
+    	    
+            VERIFY(i == chunk_cnt * chunk_size);
+        } else {
+            VERIFY(it == g_.end());
+            answer.push_back(it);
+        }
     	return answer;
     }
 
@@ -730,9 +736,9 @@ public:
         return g_;
     }
 
-    //todo make parallel
     //conjugate elements are filtered based on ids
     //should be used only if both conjugate elements are simultaneously either interesting or not
+    //fixme filter_conjugate is redundant
     TwoStepAlgorithmRunner(Graph& g, bool filter_conjugate)
     : g_(g), filter_conjugate_(filter_conjugate) {
 
@@ -740,7 +746,7 @@ public:
 
     template <class Algo, class ItVec>
     void RunFromChunkIterators(Algo& algo, const ItVec& chunk_iterators) {
-    	VERIFY(algo.ShouldFilterConjugate() ^ filter_conjugate_);
+    	VERIFY(algo.ShouldFilterConjugate() == filter_conjugate_);
     	VERIFY(chunk_iterators.size() > 1);
     	elements_of_interest_.clear();
     	elements_of_interest_.resize(chunk_iterators.size() - 1);
