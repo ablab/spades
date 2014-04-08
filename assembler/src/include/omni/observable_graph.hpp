@@ -210,7 +210,7 @@ class ObservableGraph : private boost::noncopyable {
 
     bool AllHandlersThreadSafe() const {
         BOOST_FOREACH(Handler* handler, action_handler_list_) {
-            if (!handler->IsThreadSafe()) {
+            if (handler->IsAttached() && !handler->IsThreadSafe()) {
                 return false;
             }
         }
@@ -220,7 +220,7 @@ class ObservableGraph : private boost::noncopyable {
     // TODO: for debug. remove.
     void PrintHandlersNames() const {
         BOOST_FOREACH(Handler* handler, action_handler_list_) {
-            cout << handler->name() << endl;
+            cout << handler->name() << " attached=" << handler->IsAttached() << endl;
         }
     }
 

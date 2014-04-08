@@ -549,13 +549,6 @@ void ParallelPreSimplification(conj_graph_pack& gp,
     removal_handler = boost::bind(func::Composition<EdgeId>, _1, removal_handler,
                        cnt_handler);
 
-
-    gp.kmer_mapper.Detach();
-
-    if (info.chunk_cnt() > 1) {
-        VERIFY(gp.g.AllHandlersThreadSafe());
-    }
-    
     ParallelClipTips(gp.g, presimp.tip_condition, info,
                      removal_handler);
     
@@ -588,7 +581,26 @@ void ParallelPreSimplification(conj_graph_pack& gp,
 //
 //    INFO("Early bulge removal");
 //    RemoveBulges(gp.g, cfg::get().simp.br, 0, removal_handler, gp.g.k() + 1);
-    gp.kmer_mapper.Attach();
+}
+
+inline
+bool EnableParallel(conj_graph_pack& gp,
+                       const debruijn_config::simplification::presimplification& presimp) {
+    if (presimp.parallel) {
+        INFO("Trying to enable parallel presimplification. Chunk count = " << presimp.chunk_cnt);
+        VERIFY(presimp.chunk_cnt > 0);
+        if (presimp.chunk_cnt == 1) {
+            return true;
+        } else {
+            if (gp.g.AllHandlersThreadSafe()) {
+                return true;
+            } else {
+                WARN("Not all handlers are threadsafe, switching to non-parallel presimplif");
+                gp.g.PrintHandlersNames();
+            }
+        }
+    }
+    return false;
 }
 
 inline
@@ -612,7 +624,9 @@ void PreSimplification(conj_graph_pack& gp,
     	return;
     }
     
-    if (presimp.parallel) {
+
+    if (EnableParallel(gp, presimp)) {
+        //fixme chunks configuration
         SimplifInfoContainer presimp_info(info); 
 
         ParallelPreSimplification(gp, presimp, presimp_info.set_chunk_cnt(presimp.chunk_cnt), removal_handler);
