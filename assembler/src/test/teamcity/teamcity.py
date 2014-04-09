@@ -265,9 +265,9 @@ if 'reads_quality_params' in dataset_info.__dict__:
         limit_map = {}
         if 'assess' in dataset_info.__dict__ and dataset_info.assess:
             if 'min_genome_mapped' in dataset_info.__dict__:
-                limit_map["Genome mapped"] = (float(dataset_info.min_genome_mapped), True)
+                limit_map["Genome mapped"] = [(float(dataset_info.min_genome_mapped), True)]
             if 'min_aligned' in dataset_info.__dict__:
-                limit_map["Uniquely aligned reads"] = (float(dataset_info.min_aligned), True)
+                limit_map["Uniquely aligned reads"] = [(float(dataset_info.min_aligned), True)]
             
         result = assess_reads(os.path.join(rq_output_dir, "report.horizontal.tsv"), limit_map)
         if result[0] != 0:
@@ -318,11 +318,11 @@ if 'quast_params' in dataset_info.__dict__:
             if 'max_n50' in dataset_info.__dict__:
                 limit_map["N50"].append((int(dataset_info.max_n50), False))
             if 'max_mis' in dataset_info.__dict__:
-                limit_map["Misassemblies"].append[(int(dataset_info.max_mis), False)]
+                limit_map["Misassemblies"] = [(int(dataset_info.max_mis), False)]
             else:
                 limit_map["Misassemblies"] = []
             if 'min_mis' in dataset_info.__dict__:
-                limit_map["Misassemblies"] = [(int(dataset_info.min_mis), True)]
+                limit_map["Misassemblies"].append((int(dataset_info.min_mis), True))
             if 'min_genome_mapped' in dataset_info.__dict__:
                 limit_map["Genome mapped"] = [(float(dataset_info.min_genome_mapped), True)]
             if 'min_genes' in dataset_info.__dict__:
@@ -350,25 +350,25 @@ if 'quast_params' in dataset_info.__dict__:
                 if 'sc_assess' in dataset_info.__dict__ and dataset_info.sc_assess:
                     print("Assessing QUAST results for scaffolds...")
                     if 'sc_min_n50' in dataset_info.__dict__:
-                        sc_limit_map["N50"] = (int(dataset_info.sc_min_n50), True)
+                        sc_limit_map["N50"] = [(int(dataset_info.sc_min_n50), True)]
                     else:
                         limit_map["N50"] = [] 
                     if 'sc_max_n50' in dataset_info.__dict__:
-                        sc_limit_map["N50"] = (int(dataset_info.sc_max_n50), False)
+                        sc_limit_map["N50"].append((int(dataset_info.sc_max_n50), False))
                     if 'sc_max_mis' in dataset_info.__dict__:
-                        sc_limit_map["Misassemblies"] = (int(dataset_info.sc_max_mis), False)
+                        sc_limit_map["Misassemblies"] = [(int(dataset_info.sc_max_mis), False)]
                     else:
                         limit_map["Misassemblies"] = []
                     if 'sc_min_mis' in dataset_info.__dict__:
-                        sc_limit_map["Misassemblies"] = (int(dataset_info.sc_min_mis), True)
+                        sc_limit_map["Misassemblies"].append((int(dataset_info.sc_min_mis), True))
                     if 'sc_min_genome_mapped' in dataset_info.__dict__:
-                        sc_limit_map["Genome mapped"] = (float(dataset_info.sc_min_genome_mapped), True)
+                        sc_limit_map["Genome mapped"] = [(float(dataset_info.sc_min_genome_mapped), True)]
                     if 'sc_min_genes' in dataset_info.__dict__:
-                        sc_limit_map["Genes"] = (int(dataset_info.sc_min_genes), True)
+                        sc_limit_map["Genes"] = [(int(dataset_info.sc_min_genes), True)]
                     if 'sc_max_indels' in dataset_info.__dict__:
-                        sc_limit_map["Indels"] = (float(dataset_info.sc_max_indels), False)
+                        sc_limit_map["Indels"] = [(float(dataset_info.sc_max_indels), False)]
                     if 'sc_max_subs' in dataset_info.__dict__:
-                        sc_limit_map["Mismatches"] = (float(dataset_info.sc_max_subs), False)
+                        sc_limit_map["Mismatches"] = [(float(dataset_info.sc_max_subs), False)]
                 result = assess_quast(os.path.join(quast_output_scaf_dir, "transposed_report.tsv"), sc_limit_map, "scaffolds")
                 if result[0] != 0:
                     exit_code = 11
