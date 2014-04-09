@@ -248,8 +248,9 @@ public:
 		std::ofstream oss;
         oss.open(filename.c_str());
         int i = 1;
+        oss << paths.size() << endl;
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-			oss << i << endl;
+			//oss << i << endl;
 			i++;
             BidirectionalPath* path = iter.get();
             if (path->GetId() % 2 != 0) {
@@ -257,13 +258,52 @@ public:
             }
             oss << "PATH " << path->GetId() << " " << path->Size() << " " << path->Length() + k_ << endl;
             for (size_t j = 0; j < path->Size(); ++j) {
-			    oss << g_.int_id(path->At(j)) << " " << g_.length(path->At(j)) << endl;
+			    oss << g_.int_id(path->At(j)) << " " << g_.length(path->At(j)) <<  " " << path->GapAt(j) << endl;
             }
-            oss << endl;
+            //oss << endl;
 		}
 		oss.close();
 		DEBUG("Edges written");
 	}
+
+    void loadPaths(PathContainer& paths,  GraphCoverageMap& cover_map, const string& filename) const {
+        paths.clear();
+        map<size_t, EdgeId> int_ids;
+        for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
+            int_ids.insert(make_pair(g_.int_id(*iter), *iter));
+        }
+
+        std::ifstream iss;
+        iss.open(filename);
+        size_t psize;
+        iss >> psize;
+        for(size_t i = 0; i < psize && !iss.eof(); ++i) {
+            string s;
+            size_t id;
+            size_t size;
+            size_t len;
+            iss >> s >> id >> size >> len;
+            VERIFY(s == "PATH");
+
+            BidirectionalPath * path = new BidirectionalPath(g_);
+            BidirectionalPath * conjugatePath = new BidirectionalPath(g_);
+            paths.AddPair(path, conjugatePath);
+            path->Subscribe(&cover_map);
+            conjugatePath->Subscribe(&cover_map);
+            for (size_t j = 0; !iss.eof() && j < size; ++j) {
+                size_t eid;
+                size_t elen;
+                int gap;
+                iss >> eid >> elen >> gap;
+                EdgeId edge = int_ids[eid];
+                conjugatePath->PushBack(edge, gap);
+                VERIFY(g_.length(edge) == elen);
+            }
+            VERIFY(path->Length() + k_ == len);
+        }
+        VERIFY(psize == paths.size());
+        iss.close();
+    }
 
     void writePaths(PathContainer& paths, const string& filename) const {
 

@@ -72,11 +72,15 @@ private:
 		if ((*startPath) == endPath->Conjugate()){
 			return;
 		}
+		DEBUG("Growing start")
 		extender_->GrowPath(*startPath);
+		DEBUG("Growing end")
 		extender_->GrowPath(*endPath->GetConjPath());
+		DEBUG("done")
 
 		size_t commonSize = startPath->CommonEndSize(*endPath);
 		size_t nLen = 0;
+        DEBUG("Str " << startPath->Size() << ", end" << endPath->Size());
         if (commonSize == 0 && startPath->Size() >= 1 && endPath->Size() >= 1) {
             VertexId lastVertex = g_.EdgeEnd(startPath->At(startPath->Size() - 1));
             VertexId firstVertex = g_.EdgeStart(endPath->At(0));

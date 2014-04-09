@@ -106,6 +106,7 @@ class AbstractGraph : public AbstractEditableGraph<VertexIdT, EdgeIdT,
     }
 
     virtual VertexId EdgeEnd(EdgeId edge) const {
+        //INFO("Edge end");
         return edge->end();
     }
 
