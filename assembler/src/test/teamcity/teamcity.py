@@ -67,22 +67,23 @@ def assess_map(result_map, limit_map):
     for metric in sorted(result_map.keys()):
         log_str += metric + " = " + str(result_map[metric])
 
-        if metric in limit_map:
-            if limit_map[metric][1]:
-                if result_map[metric] < limit_map[metric][0]:
-                    print(metric + " = " + str(result_map[metric]) + " is less than expected: " + str(limit_map[metric][0]))
-                    log_str += " (bad)"
-                    res = -1
-                else:
-                    print(metric + " = " + str(result_map[metric]) + " >= " + str(limit_map[metric][0]) + " (OK)")
+        if metric in limit_map and len(limit_map[metric]) > 0:
+            for constraint in limit_map[metric]:
+                if constraint[1]:
+                    if result_map[metric] < constraint[0]:
+                        print(metric + " = " + str(result_map[metric]) + " is less than expected: " + str(constraint[0]))
+                        log_str += " (bad)"
+                        res = -1
+                    else:
+                        print(metric + " = " + str(result_map[metric]) + " >= " + str(constraint[0]) + " (OK)")
 
-            else:
-                if result_map[metric] > limit_map[metric][0]:
-                    print(metric + " = " + str(result_map[metric]) + " is higher than expected: " + str(limit_map[metric][0]))
-                    log_str += " (bad)"
-                    res = -1
                 else:
-                    print(metric + " = " + str(result_map[metric]) + " <= " + str(limit_map[metric][0]) + " (OK)")
+                    if result_map[metric] > constraint[0]:
+                        print(metric + " = " + str(result_map[metric]) + " is higher than expected: " + str(constraint[0]))
+                        log_str += " (bad)"
+                        res = -1
+                    else:
+                        print(metric + " = " + str(result_map[metric]) + " <= " + str(constraint[0]) + " (OK)")
         else:
             print(metric + " = " + str(result_map[metric]))
 
@@ -311,17 +312,25 @@ if 'quast_params' in dataset_info.__dict__:
             print("Assessing QUAST results...")
             limit_map = {}
             if 'min_n50' in dataset_info.__dict__:
-                limit_map["N50"] = (int(dataset_info.min_n50), True)
+                limit_map["N50"] = [(int(dataset_info.min_n50), True)]
+            else:
+                limit_map["N50"] = []    
+            if 'max_n50' in dataset_info.__dict__:
+                limit_map["N50"].append((int(dataset_info.max_n50), False))
             if 'max_mis' in dataset_info.__dict__:
-                limit_map["Misassemblies"] = (int(dataset_info.max_mis), False)
+                limit_map["Misassemblies"].append[(int(dataset_info.max_mis), False)]
+            else:
+                limit_map["Misassemblies"] = []
+            if 'min_mis' in dataset_info.__dict__:
+                limit_map["Misassemblies"] = [(int(dataset_info.min_mis), True)]
             if 'min_genome_mapped' in dataset_info.__dict__:
-                limit_map["Genome mapped"] = (float(dataset_info.min_genome_mapped), True)
+                limit_map["Genome mapped"] = [(float(dataset_info.min_genome_mapped), True)]
             if 'min_genes' in dataset_info.__dict__:
-                limit_map["Genes"] = (int(dataset_info.min_genes), True)
+                limit_map["Genes"] = [(int(dataset_info.min_genes), True)]
             if 'max_indels' in dataset_info.__dict__:
-                limit_map["Indels"] = (float(dataset_info.max_indels), False)
+                limit_map["Indels"] = [(float(dataset_info.max_indels), False)]
             if 'max_subs' in dataset_info.__dict__:
-                limit_map["Mismatches"] = (float(dataset_info.max_subs), False)
+                limit_map["Mismatches"] = [(float(dataset_info.max_subs), False)]
 
         result = assess_quast(os.path.join(quast_output_dir, "transposed_report.tsv"), limit_map, "contigs")
         if result[0] != 0:
@@ -342,8 +351,16 @@ if 'quast_params' in dataset_info.__dict__:
                     print("Assessing QUAST results for scaffolds...")
                     if 'sc_min_n50' in dataset_info.__dict__:
                         sc_limit_map["N50"] = (int(dataset_info.sc_min_n50), True)
+                    else:
+                        limit_map["N50"] = [] 
+                    if 'sc_max_n50' in dataset_info.__dict__:
+                        sc_limit_map["N50"] = (int(dataset_info.sc_max_n50), False)
                     if 'sc_max_mis' in dataset_info.__dict__:
                         sc_limit_map["Misassemblies"] = (int(dataset_info.sc_max_mis), False)
+                    else:
+                        limit_map["Misassemblies"] = []
+                    if 'sc_min_mis' in dataset_info.__dict__:
+                        sc_limit_map["Misassemblies"] = (int(dataset_info.sc_min_mis), True)
                     if 'sc_min_genome_mapped' in dataset_info.__dict__:
                         sc_limit_map["Genome mapped"] = (float(dataset_info.sc_min_genome_mapped), True)
                     if 'sc_min_genes' in dataset_info.__dict__:
