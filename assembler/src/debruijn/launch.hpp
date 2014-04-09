@@ -38,6 +38,7 @@ void assemble_genome() {
                                             cfg::get().ds.reference_genome,
                                             cfg::get().flanking_range);
     if (!cfg::get().developer_mode) {
+        conj_gp.edge_qual.Detach();
         conj_gp.edge_pos.Detach();
         conj_gp.paired_indices.Detach();
         conj_gp.clustered_indices.Detach();

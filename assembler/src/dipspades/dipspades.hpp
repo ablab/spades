@@ -197,6 +197,7 @@ void run_dipspades() {
             1); // flanking range
 
     if (!dsp_cfg::get().rp.developer_mode) {
+        conj_gp.edge_qual.Detach();
         conj_gp.edge_pos.Detach();
         conj_gp.paired_indices.Detach();
         conj_gp.clustered_indices.Detach();

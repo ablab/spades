@@ -165,6 +165,13 @@ public:
         SetRawCoverage(e, cov);
     }
 
+    /*
+     * Is thread safe if different threads process different edges.
+     */
+    bool IsThreadSafe() const {
+        return true;
+    }
+
 private:
     DECL_LOGGER("FlankingCoverage")
     ;
