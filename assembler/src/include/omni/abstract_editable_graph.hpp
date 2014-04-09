@@ -254,6 +254,7 @@ public:
 	virtual VertexData& data(VertexId v) = 0;
 
 	IteratorContainer OutgoingEdges(VertexId v) const {
+	    //INFO("Outgoing");
 	    return IteratorContainer(out_begin(v), out_end(v));
 	}
 

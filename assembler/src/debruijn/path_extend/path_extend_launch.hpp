@@ -51,7 +51,7 @@ inline void DebugOutputPaths(const ContigWriter& writer, const conj_graph_pack& 
         return;
     }
     if (cfg::get().pe_params.output.write_paths) {
-        writer.writePathEdges(paths, output_dir + name + ".dat");
+        writer.writePathEdges(paths, etcDir + name + ".dat");
     }
     if (cfg::get().pe_params.viz.print_paths) {
         visualizer.writeGraphWithPathsSimple(gp, etcDir + name + ".dot", name,
@@ -331,8 +331,14 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	seeds.ResetPathsId();
 	INFO("Growing paths using paired-end and long single reads");
 	auto paths = resolver.extendSeeds(seeds, *mainPE);
-	DebugOutputPaths(writer, gp, output_dir, paths, "pe_overlaped_paths");
 	paths.SortByLength();
+	paths.ResetPathsId();
+	DebugOutputPaths(writer, gp, output_dir, paths, "pe_overlaped_paths");
+
+//    PathContainer tmp_paths;
+//    GraphCoverageMap cover_map2(gp.g);
+//    writer.loadPaths(tmp_paths, cover_map2, "./data/debruijn/ECOLI_SC/K55/latest/path_extend/pe_overlaped_paths.dat");
+//    DebugOutputPaths(writer, gp,output_dir, tmp_paths, "tmp_paths" );
 
     PathContainer clone_paths;
     GraphCoverageMap clone_map(gp.g);
@@ -347,7 +353,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
                               output_dir + (mp_exist ? "pe_contigs" : broken_contigs.get()));
     }
     writer.WritePathsToFASTG(paths, GetEtcDir(output_dir) + "pe_before_traversal.fastg", GetEtcDir(output_dir) + "pe_before_traversal.fasta");
-
+    DebugOutputPaths(writer, gp, output_dir, paths, "before_traverse_pe");
     if (traversLoops) {
         TraverseLoops(paths, cover_map, mainPE);
     }
@@ -364,6 +370,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 
 //MP
     INFO("Adding mate-pairs");
+    DebugOutputPaths(writer, gp, output_dir, clone_paths, "before_mp_paths");
     vector<SimpleExtender*> mpPEs = MakeMPExtenders(gp, clone_map, pset, clone_paths, mp_libs);
     max_over = std::max(FindMaxOverlapedLen(mp_libs), FindMaxOverlapedLen(libs));
 	all_libs.clear();
@@ -377,7 +384,6 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	INFO("Growing paths using mate-pairs");
 	auto mp_paths = resolver.extendSeeds(clone_paths, *mp_main_pe);
 	FinalizePaths(mp_paths, clone_map, max_over, true);
-
 	DebugOutputPaths(writer, gp, output_dir, mp_paths, "mp_final_paths");
 	writer.WritePathsToFASTG(mp_paths, GetEtcDir(output_dir) + "mp_prefinal.fastg", GetEtcDir(output_dir) + "mp_prefinal.fasta");
 
@@ -399,6 +405,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
     FinalizePaths(last_paths, clone_map, max_over);
 
     writer.WritePathsToFASTG(last_paths, GetEtcDir(output_dir) + "mp_before_traversal.fastg", GetEtcDir(output_dir) + "mp_before_traversal.fasta");
+    DebugOutputPaths(writer, gp, output_dir, last_paths, "before_traverse_mp");
     TraverseLoops(last_paths, clone_map, last_extender);
 
 //result

@@ -835,13 +835,17 @@ protected:
     LoopResolver loopResolver_;
 
     void FindFollowingEdges(BidirectionalPath& path, ExtensionChooser::EdgeContainer * result) {
+        INFO("Looking for the following edges")
         result->clear();
         vector<EdgeId> edges;
+        INFO("Pushing back")
         push_back_all(edges, g_.OutgoingEdges(g_.EdgeEnd(path.Back())));
         result->reserve(edges.size());
         for (auto iter = edges.begin(); iter != edges.end(); ++iter) {
+            INFO("Adding edge w distance " << g_.int_id(*iter));
             result->push_back(EdgeWithDistance(*iter, 0));
         }
+        INFO("Following edges found");
     }
 
 
@@ -853,13 +857,16 @@ public:
         loopResolver_(gp.g, *extensionChooser_) {
     }
 
-
     virtual bool MakeSimpleGrowStep(BidirectionalPath& path) {
         if (path.Size() == 0) {
             return false;
         }
+        DEBUG("Simple grow step");
+        path.PrintInfo();
         ExtensionChooser::EdgeContainer candidates;
         FindFollowingEdges(path, &candidates);
+        DEBUG("found candidates");
+        DEBUG(candidates.size())
         if (candidates.size() == 1) {
             LoopDetector loop_detector(&path, cov_map_);
             if (!investigateShortLoops_ && (loop_detector.EdgeInShortLoop(path.Back()) or loop_detector.EdgeInShortLoop(candidates.back().e_))
@@ -867,19 +874,26 @@ public:
                 return false;
             }
         }
+        DEBUG("more filtering");
         candidates = extensionChooser_->Filter(path, candidates);
+        DEBUG("found candidates 2");
+        DEBUG(candidates.size())
         if (candidates.size() == 1) {
             LoopDetector loop_detector(&path, cov_map_);
+            DEBUG("loop detecor");
             if (!investigateShortLoops_ &&
                     (loop_detector.EdgeInShortLoop(path.Back())  or loop_detector.EdgeInShortLoop(candidates.back().e_))
                     && extensionChooser_->WeighConterBased()) {
                 return false;
             }
+            DEBUG("push");
             path.PushBack(candidates.back().e_, candidates.back().d_);
+            DEBUG("push done");
             return true;
         }
         return false;
     }
+
 
     virtual bool CanInvistigateShortLoop() const {
         return extensionChooser_->WeighConterBased();
