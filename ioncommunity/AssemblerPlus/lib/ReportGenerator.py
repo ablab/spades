@@ -6,6 +6,12 @@ import locale # for printing numbers with thousands delimited by commas
 import json
 import os
 
+import sys
+# FIXME: hardcoded version
+sys.path.append(os.path.join(os.environ['DIRNAME'], "bin", "quast-2.3"))
+from libs.N50 import N50
+from libs.fastaparser import get_lengths_from_fastafile
+
 MIRA_LINK = str(h.a("MIRA", target="_blank",
                     href="http://mira-assembler.sourceforge.net"))
 
@@ -113,25 +119,29 @@ class Sample(object):
         settings['SPAdes Version'] = spades_info['version']
         settings['Options'] = spades_info['userOptions']
         downloads['Assembled Contigs (FASTA)'] = spades_info['contigs']
+        downloads['Assembled Scaffolds (FASTA)'] = spades_info['scaffolds']
         downloads['SPAdes Log (TXT)'] = spades_info['log']
         if spades_info.get('quastReportDir'):
             htmlpath = os.path.join(spades_info['quastReportDir'], 'report.html')
             downloads['QUAST report (HTML)'] = htmlpath
             metrics = self._metrics['spades']
-            tsvpath = os.path.join(spades_info['quastReportDir'], 'report.tsv')
-            with open(tsvpath, 'r') as tsv:
-                report = dict(line.split("\t") for line in tsv.readlines())
+
+            contigs_fn = spades_info['contigs']
+            contig_lengths_all = get_lengths_from_fastafile(contigs_fn)
+            contig_lengths_large = [l for l in contig_lengths_all if l >= 500]
 
             def i(number):
                 return locale.format("%d", int(number), grouping=True)
-            metrics['Number of Contigs'] = (i(report['# contigs']),
-                                            i(report['# contigs (>= 0 bp)']))
-            metrics['Largest Contig'] = (i(report['Largest contig']), )
-            metrics['Total Length'] = (i(report['Total length']),
-                                       i(report['Total length (>= 0 bp)']))
-            for q in [50, 75]:
-                metrics['N%s' % q] = (i(report['N%s' % q]), '')
-                
+
+            def cval(func):
+                return (i(func(contig_lengths_large)),
+                        i(func(contig_lengths_all)))
+            
+            metrics['Largest Contig'] = (i(max(contig_lengths_all)), )
+            metrics['Total Length'] = cval(sum)
+            metrics['Number of Contigs'] = cval(len)
+            for q in [50, 75, 90, 95]:
+                metrics['N%s' % q] = cval(lambda x: N50(x, q))
 
     # unique sample ID
     def name(self):
@@ -204,7 +214,11 @@ def _assemblyStats(sample, assembler):
 
     def _assemblyMetricsTable():
         with h.table(class_="table table-condensed"):
-            h.tr(h.th("Metric"), h.th("Large Contigs"), h.th("All Contigs"))
+            with h.tr():
+                h.th("Metric")
+                with h.th():
+                    h.UNESCAPED("Large Contigs (&ge; 500bp)")
+                h.th("All Contigs")
             for metric, value in sample.metrics(assembler).items():
                 if len(value) == 1:
                     h.tr(h.td(metric), h.td(value[0], colspan='2'))

@@ -192,11 +192,14 @@ technology = iontor
 
         output_dir = os.path.join(self.sample_name, "spades")
         contigs_fn = os.path.join(output_dir, "contigs.fasta")
+        scaffolds_fn = os.path.join(output_dir, "scaffolds.fasta")
         log_fn = os.path.join(output_dir, "spades.log")
         skip_assembly = self.quast_only and fileExistsAndNonEmpty(contigs_fn)
         user_options = self.params['spadesOptions']
 
-        spades_info = {'contigs' : contigs_fn, 'log' : log_fn,
+        spades_info = {'contigs' : contigs_fn,
+                       'scaffolds' : scaffolds_fn,
+                       'log' : log_fn,
                        'userOptions' : user_options,
                        'version' : version }
 
