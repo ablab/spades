@@ -10,7 +10,7 @@ import sys
 # FIXME: hardcoded version
 sys.path.append(os.path.join(os.environ['DIRNAME'], "bin", "quast-2.3"))
 from libs.N50 import N50
-from libs.fastaparser import get_lengths_from_fastafile
+from libs.fastaparser import get_lengths_from_fastafile, read_fasta
 
 MIRA_LINK = str(h.a("MIRA", target="_blank",
                     href="http://mira-assembler.sourceforge.net"))
@@ -43,12 +43,16 @@ class Sample(object):
         self._assembly_settings = {}
         self._downloads = {}
 
+        self._has_scaffolds_cache = {}
+
         params = self._info['params']
         self._assembly_settings['Fraction of Reads Used'] = \
             params['fraction_of_reads']
         self._assembly_settings['RAM'] = params['RAM']
         self._assembly_settings['Barcode Minimum Read Cutoff'] = \
             params['min_reads']
+
+        locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
 
         mira_info = self._info.get('mira')
         if mira_info:
@@ -61,7 +65,8 @@ class Sample(object):
             self._loadSPAdesInfo(spades_info)
 
     def _addAssembler(self, assembler):
-        self._metrics[assembler] = OrderedDict()
+        self._metrics[assembler] = { 'Contig' : OrderedDict(),
+                                     'Scaffold' : OrderedDict() }
         self._assembly_settings[assembler] = OrderedDict()
         self._downloads[assembler] = OrderedDict()
 
@@ -82,8 +87,6 @@ class Sample(object):
 
     # fills metrics from an *_info_assembly.txt file
     def _loadMiraAssemblyInfo(self, info_assembly_path):
-        locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
-
         with open(info_assembly_path, 'r') as f:
             lines = f.readlines()
             starts = [i-1 for i, line in enumerate(lines) if line[0:4] == "===="]
@@ -104,7 +107,7 @@ class Sample(object):
             def cval(description):
                 return (ival(2, description), ival(3, description))
 
-            metrics = self._metrics['mira']
+            metrics = self._metrics['mira']['Contig']
             metrics['Assembled Reads'] = (ival(0, 'Num. reads assembled'),)
             metrics['Coverage'] = (val(1, 'Avg. total coverage'),)
             metrics['Consensus Length'] = cval('Total consensus')
@@ -119,30 +122,33 @@ class Sample(object):
         settings['SPAdes Version'] = spades_info['version']
         settings['Options'] = spades_info['userOptions']
         downloads['Assembled Contigs (FASTA)'] = spades_info['contigs']
-        downloads['Assembled Scaffolds (FASTA)'] = spades_info['scaffolds']
+        if self.hasScaffolds('spades'):
+            downloads['Assembled Scaffolds (FASTA)'] = spades_info['scaffolds']
         downloads['SPAdes Log (TXT)'] = spades_info['log']
         if spades_info.get('quastReportDir'):
             htmlpath = os.path.join(spades_info['quastReportDir'], 'report.html')
             downloads['QUAST report (HTML)'] = htmlpath
-            metrics = self._metrics['spades']
 
-            contigs_fn = spades_info['contigs']
-            contig_lengths_all = get_lengths_from_fastafile(contigs_fn)
-            contig_lengths_large = [l for l in contig_lengths_all if l >= 500]
+            def fillMetrics(kind, fasta_fn):
+                metrics = self._metrics['spades'][kind]
+                lengths_all = get_lengths_from_fastafile(fasta_fn)
+                lengths_large = [l for l in lengths_all if l >= 500]
 
-            def i(number):
-                return locale.format("%d", int(number), grouping=True)
+                def i(number):
+                    return locale.format("%d", int(number), grouping=True)
 
-            def cval(func):
-                return (i(func(contig_lengths_large)),
-                        i(func(contig_lengths_all)))
+                def cval(func):
+                    return (i(func(lengths_large)), i(func(lengths_all)))
+
+                metrics['Largest ' + kind] = (i(max(lengths_all)), )
+                metrics['Total Length'] = cval(sum)
+                metrics['Number of ' + kind + 's'] = cval(len)
+                for q in [50, 75, 90, 95]:
+                    metrics['N%s' % q] = cval(lambda x: N50(x, q))
+
+            fillMetrics('Contig', spades_info['contigs'])
+            fillMetrics('Scaffold', spades_info['scaffolds'])
             
-            metrics['Largest Contig'] = (i(max(contig_lengths_all)), )
-            metrics['Total Length'] = cval(sum)
-            metrics['Number of Contigs'] = cval(len)
-            for q in [50, 75, 90, 95]:
-                metrics['N%s' % q] = cval(lambda x: N50(x, q))
-
     # unique sample ID
     def name(self):
         return self._name
@@ -150,8 +156,24 @@ class Sample(object):
     # ordered dictionary, each record is {metric name : metric value(s)},
     # either a tuple containing single value for all contigs,
     # or a tuple of two values - one for long contigs and another for all of them
-    def metrics(self, assembler):
-        return self._metrics[assembler]
+    def metrics(self, assembler, kind):
+        return self._metrics[assembler][kind]
+
+    def hasScaffolds(self, assembler):
+        result = self._has_scaffolds_cache.get(assembler)
+        if result is not None:
+            return result
+        
+        result = False
+        if assembler == "spades":
+            scaffolds_fn = self._info[assembler]['scaffolds']
+            for name, seq in read_fasta(scaffolds_fn):
+                if 'N' in seq:
+                    result = True
+                    break
+
+        self._has_scaffolds_cache[assembler] = result
+        return result
 
     # ordered dictionary, each record is {setting name : setting value}
     def assemblySettings(self, assembler):
@@ -212,14 +234,14 @@ def _assemblyStats(sample, assembler):
             for param, value in sample.assemblySettings(assembler).items():
                 h.tr(h.td(param), h.td(value))
 
-    def _assemblyMetricsTable():
+    def _assemblyMetricsTable(kind):
         with h.table(class_="table table-condensed"):
             with h.tr():
                 h.th("Metric")
                 with h.th():
-                    h.UNESCAPED("Large Contigs (&ge; 500bp)")
-                h.th("All Contigs")
-            for metric, value in sample.metrics(assembler).items():
+                    h.UNESCAPED("Large " + kind + "s (&ge; 500bp)")
+                h.th("All " + kind + 's')
+            for metric, value in sample.metrics(assembler, kind).items():
                 if len(value) == 1:
                     h.tr(h.td(metric), h.td(value[0], colspan='2'))
                 else:
@@ -241,7 +263,10 @@ def _assemblyStats(sample, assembler):
                             with h.div(style="padding-top:5px"):
                                 _assemblySettingsTable()
                             with h.div(style="padding-top:10px"):
-                                _assemblyMetricsTable()
+                                _assemblyMetricsTable("Contig")
+                            if sample.hasScaffolds(assembler):
+                                with h.div(style="padding-top:10px"):
+                                    _assemblyMetricsTable("Scaffold")
 
 def generateReport(samples, assembler):
     css_path = "/pluginMedia/AssemblerPlus/css/"
