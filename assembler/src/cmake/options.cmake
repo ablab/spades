@@ -17,6 +17,7 @@ option(SPADES_STATIC_BUILD "Link SPAdes statically" OFF)
 if (SPADES_STATIC_BUILD)
   # it'll make cmake to find libraries archives, not dynamic link
   set(CMAKE_FIND_LIBRARY_SUFFIXES .a) 
+  set(LINK_SEARCH_END_STATIC TRUE)
 
   if (APPLE)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc")
