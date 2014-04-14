@@ -98,25 +98,36 @@ boost::function<void(typename Graph::EdgeId)> WrapWithProjectionCallback(
                        boost::ref(removal_handler_f), projecting_callback);
 }
 
-template<class gp_t>
+template<class Graph>
 bool ClipTips(
-    gp_t& gp,
+    Graph& g,
     const debruijn_config::simplification::tip_clipper& tc_config,
     const SimplifInfoContainer& info,
-    bool enable_projection = true,
-    boost::function<void(typename gp_t::graph_t::EdgeId)> removal_handler_f =
+    boost::function<void(typename Graph::EdgeId)> removal_handler_f =
     0) {
 
     INFO("Clipping tips");
 
     string condition_str = tc_config.condition;
-    ConditionParser<Graph> parser(gp.g, condition_str, info);
+    ConditionParser<Graph> parser(g, condition_str, info);
     auto condition = parser();
     
+    return ClipTips(g, parser.max_length_bound(), condition, removal_handler_f);
+}
+
+template<class gp_t>
+bool ClipTips(
+    gp_t& gp,
+    const debruijn_config::simplification::tip_clipper& tc_config,
+    const SimplifInfoContainer& info,
+    bool enable_projection = false,
+    boost::function<void(typename gp_t::graph_t::EdgeId)> removal_handler_f =
+    0) {
+
     if (enable_projection)
         removal_handler_f = WrapWithProjectionCallback(gp, removal_handler_f);  
 
-    return ClipTips(gp.g, parser.max_length_bound(), condition, removal_handler_f);
+    return ClipTips(gp.g, tc_config, info, removal_handler_f);
 }
 
 template<class Graph>
