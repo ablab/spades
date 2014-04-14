@@ -348,7 +348,7 @@ bool AllTopology(Graph &g,
 template<class Graph>
 class CountingCallback {
     typedef typename Graph::EdgeId EdgeId;
-    size_t cnt_;
+    std::atomic<size_t> cnt_;
 
 public:
     CountingCallback() : 
@@ -360,7 +360,7 @@ public:
     }
 
     void Report() {
-        INFO(cnt_ << " edges were removed.")
+        TRACE(cnt_ << " edges were removed.")
         cnt_ = 0;
     }
 
