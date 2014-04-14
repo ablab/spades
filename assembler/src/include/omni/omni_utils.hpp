@@ -90,6 +90,19 @@ size_t CumulativeLength(const Graph& g,
 }
 
 template<class Graph>
+double AvgCoverage(const Graph& g,
+                   const std::vector<typename Graph::EdgeId>& path) {
+    double unnormalized_coverage = 0;
+    size_t path_length = 0;
+    for (auto edge : path) {
+        size_t length = g.length(edge);
+        path_length += length;
+        unnormalized_coverage += g.coverage(edge) * (double) length;
+    }
+    return unnormalized_coverage / (double) path_length;
+}
+
+template<class Graph>
 class AbstractDirection {
  private:
     typedef typename Graph::EdgeId EdgeId;

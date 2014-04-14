@@ -31,31 +31,37 @@ void CollectPositions(conj_graph_pack &gp) {
 
 void Simplification::run(conj_graph_pack &gp, const char*) {
     using namespace omnigraph;
+    
+    if (!cfg::get().developer_mode && gp.index.IsAttached())
+        gp.index.Detach();
+    
+    boost::function<void(EdgeId)> removal_handler_f (0);
+
     if (cfg::get().developer_mode) {
         CollectPositions(gp);
         gp.ClearQuality();
         gp.FillQuality();
+        
+        QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, gp.edge_qual);
+
+//        auto colorer = debruijn_graph::DefaultGPColorer(gp);
+//        QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler(gp.g, gp.edge_qual, labeler, colorer,
+//                                       cfg::get().output_dir + "pictures/colored_edges_deleted/");
+//
+//        //positive quality edges removed (folder colored_edges_deleted)
+        removal_handler_f = //0
+            boost::bind(
+            &QualityLoggingRemovalHandler<Graph>::HandleDelete,
+//                &QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
+                boost::ref(qual_removal_handler), _1);
+
     }
 
     omnigraph::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
-
     stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
 
-    //  QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, edge_qual);
-//    auto colorer = debruijn_graph::DefaultGPColorer(gp);
-//    QualityEdgeLocalityPrintingRH<Graph> qual_removal_handler(gp.g, gp.edge_qual, labeler, colorer,
-//                                   cfg::get().output_dir + "pictures/colored_edges_deleted/");
-//
-//    //positive quality edges removed (folder colored_edges_deleted)
-//    boost::function<void(EdgeId)> removal_handler_f = boost::bind(
-//            //            &QualityLoggingRemovalHandler<Graph>::HandleDelete,
-//            &QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
-//            boost::ref(qual_removal_handler), _1);
-
-    SimplifyGraph(gp, 0/*removal_handler_f*/,
-                  labeler, printer, /*iteration count*/10
-                  /*, etalon_paired_index*/);
-
+    debruijn::simplification::SimplifyGraph(gp, removal_handler_f,
+                  printer, /*iteration count*/10);
 
     AvgCovereageCounter<Graph> cov_counter(gp.g);
     cfg::get_writable().ds.set_avg_coverage(cov_counter.Count());

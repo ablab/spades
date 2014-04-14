@@ -40,6 +40,7 @@ void assemble_genome() {
                                             cfg::get().pos.max_mapping_gap,
                                             cfg::get().pos.max_gap_diff);
     if (!cfg::get().developer_mode) {
+        conj_gp.edge_qual.Detach();
         conj_gp.edge_pos.Detach();
         conj_gp.paired_indices.Detach();
         conj_gp.clustered_indices.Detach();

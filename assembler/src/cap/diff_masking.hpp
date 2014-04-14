@@ -63,7 +63,6 @@ void MakeSaves(gp_t& gp, ContigStreams streams, const string& root,
 template<class gp_t>
 void RefineGP(gp_t& gp, size_t delta = 5) {
     using namespace debruijn_graph;
-    typedef typename gp_t::graph_t Graph;
     INFO("Constructing graph pack for refinement");
 
     //todo configure!!!
@@ -75,7 +74,7 @@ void RefineGP(gp_t& gp, size_t delta = 5) {
     br_config.max_relative_delta = 0.1;
 
     INFO("Removing bulges");
-    RemoveBulges(gp.g, br_config);
+    debruijn::simplification::RemoveBulges(gp.g, br_config);
 
     INFO("Remapped " << gp.kmer_mapper.size() << " k-mers");
 
@@ -87,7 +86,7 @@ void RefineGP(gp_t& gp, size_t delta = 5) {
     cbr_config.max_length_difference = delta;
 
     INFO("Removing complex bulges");
-    RemoveComplexBulges(gp.g, cbr_config);
+    debruijn::simplification::RemoveComplexBulges(gp.g, cbr_config);
 
     TipsProjector<gp_t> tip_projector(gp);
     boost::function<void(EdgeId)> projecting_callback = boost::bind(
@@ -98,7 +97,9 @@ void RefineGP(gp_t& gp, size_t delta = 5) {
 
     INFO("Clipping tips with projection");
 
-    ClipTipsWithProjection(gp, tc_config, true);
+    debruijn::simplification::SimplifInfoContainer info_container;
+
+    debruijn::simplification::ClipTips(gp, tc_config, info_container, true);
 
     INFO("Remapped " << gp.kmer_mapper.size() << " k-mers");
 }

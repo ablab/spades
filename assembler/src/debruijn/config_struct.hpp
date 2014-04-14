@@ -186,7 +186,7 @@ struct debruijn_config {
             size_t max_additive_length_coefficient;
             double max_coverage;
             double max_relative_coverage;
-            double max_delta;
+            size_t max_delta;
             double max_relative_delta;
         };
 
@@ -256,6 +256,15 @@ struct debruijn_config {
             size_t vertex_count_limit;
         };
 
+        struct presimplification {
+            bool enabled;
+            bool parallel;
+            size_t chunk_cnt;
+            double activation_cov;
+            std::string tip_condition;
+            std::string ec_condition;
+        };
+
         bool topology_simplif_enabled;
         tip_clipper tc;
         topology_tip_clipper ttc;
@@ -269,6 +278,7 @@ struct debruijn_config {
         isolated_edges_remover ier;
         complex_bulge_remover cbr;
         hidden_ec_remover her;
+        presimplification presimp;
 //        bool stats_mode;
     };
 

@@ -23,26 +23,6 @@
 
 namespace omnigraph {
 
-template<class Graph>
-class AlternativesPresenceCondition : public EdgeCondition<Graph> {
-    typedef typename Graph::EdgeId EdgeId;
-    typedef typename Graph::VertexId VertexId;
-    typedef EdgeCondition<Graph> base;
-
- public:
-
-    AlternativesPresenceCondition(const Graph& g)
-            : base(g) {
-
-    }
-
-    bool Check(EdgeId e) const {
-        return this->g().OutgoingEdgeCount(this->g().EdgeStart(e)) > 1
-                && this->g().IncomingEdgeCount(this->g().EdgeEnd(e)) > 1;
-    }
-
-};
-
 template<class Graph, class Comparator = std::less<typename Graph::EdgeId>>
 class ChimericEdgeRemovingAlgorithm : public EdgeRemovingAlgorithm<Graph,
         Comparator> {

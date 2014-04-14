@@ -157,7 +157,7 @@ class CapEnvironmentManager {
                     &adapter, _1, _2);
 
     //omp_set_num_threads(1);
-    RemoveBulges(gp.g, br_config, projecting_callback);
+    debruijn::simplification::RemoveBulges(gp.g, br_config, projecting_callback);
     //omp_set_num_threads(4);
 
     INFO("Remapped " << gp.kmer_mapper.size() << " k-mers");

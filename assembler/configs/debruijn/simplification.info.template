@@ -4,7 +4,7 @@ default
 {
     ; enable advanced ec removal algo
     topology_simplif_enabled false
-
+    
 	; tip clipper:
 	tc
 	{
@@ -22,7 +22,7 @@ default
        	max_additive_length_coefficient 100
 		max_coverage			1000.0
 		max_relative_coverage		1.1	; bulge_cov < this * not_bulge_cov
-		max_delta			3.0
+		max_delta			3
 		max_relative_delta		0.1
 	}
 	
@@ -121,6 +121,17 @@ default
 	    unreliability_threshold     4
 	    relative_threshold          5     
 	}
+
+    presimp 
+    {
+       enabled false
+       parallel false
+       chunk_cnt 1
+       ; will be enabled only if average coverage \leq activate_cov
+       activation_cov 40.
+       tip_condition   "{ tc_lb 3.5, cb auto }"
+       ec_condition    "{ ec_lb 10, cb 3.0 }"
+    }
 }
 
 sc
@@ -144,7 +155,7 @@ sc
         	max_additive_length_coefficient 100
 		max_coverage			1000000.0
 		max_relative_coverage		100000.		; bulge_cov < this * not_bulge_cov
-		max_delta			2.1
+		max_delta			3
 		max_relative_delta		0.1
 	}
 	
@@ -211,6 +222,11 @@ sc
 	    relative_threshold          5     
 	}
 
+    presimp 
+    {
+        enabled false
+    }
+
     stats_mode 0
 }
 
@@ -224,7 +240,7 @@ careful
         	max_additive_length_coefficient 100
 		max_coverage			1000000.0
 		max_relative_coverage		1.5		; bulge_cov < this * not_bulge_cov
-		max_delta			2.1
+		max_delta			3
 		max_relative_delta		0.1
 	}
 	
@@ -261,8 +277,7 @@ diploid_simp
         	max_additive_length_coefficient 100
 		max_coverage			1000000.0
 		max_relative_coverage		1.5		; bulge_cov < this * not_bulge_cov
-		max_delta			2.1
+		max_delta			3
 		max_relative_delta		0.1
 	}
 }
-
