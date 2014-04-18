@@ -84,6 +84,7 @@ restart_threads = None
 restart_memory = None
 restart_tmp_dir = None
 restart_k_mers = None
+original_k_mers = None
 restart_qvoffset = None
 restart_developer_mode = None
 restart_reference = None
@@ -326,8 +327,10 @@ def load_restart_options():
     global developer_mode
     global reference
     global read_buffer_size
+    global original_k_mers
 
     if restart_k_mers:
+        original_k_mers = k_mers
         if restart_k_mers == 'auto':
             k_mers = None  # set by default
         else:

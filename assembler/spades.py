@@ -151,7 +151,10 @@ def fill_cfg(options_to_parse, log):
     # dataset is stored here. We are prepared for up to MAX_LIBS_NUMBER paired-end libs and MAX_LIBS_NUMBER mate-pair libs
     dataset_data = [{} for i in range(options_storage.MAX_LIBS_NUMBER * 2)]  # "[{}] * num" doesn't work here!
 
+    # for parsing options from "previous run command"
     options_storage.continue_mode = False
+    options_storage.k_mers = None
+
     for opt, arg in options:
         if opt == '-o':
             options_storage.output_dir = os.path.abspath(arg)
@@ -387,7 +390,7 @@ def get_options_from_params(params_filename):
     if not os.path.isfile(params_filename):
         return None, None
     params = open(params_filename, 'r')
-    cmd_line = params.readline()
+    cmd_line = params.readline().strip()
     params.close()
     spades_py_pos = cmd_line.find('spades.py')
     if spades_py_pos == -1:
@@ -433,33 +436,39 @@ def main(args):
 
     if options_storage.continue_mode:
         log.info("\n======= SPAdes pipeline continued. Log can be found here: " + log_filename + "\n")
-        log.info("Restored from " + cmd_line.strip())
-        updated_params = "with updated parameters: "
-        flag = False
-        for v in args[1:]:
-            if v == '-o':
-                flag = True
-                continue
-            if flag:
-                flag = False
-                continue
-            updated_params += " " + v
-        log.info(updated_params)
+        log.info("Restored from " + cmd_line)
+        if options_storage.restart_from:
+            updated_params = ""
+            flag = False
+            for v in args[1:]:
+                if v == '-o' or v == '--restart-from':
+                    flag = True
+                    continue
+                if flag:
+                    flag = False
+                    continue
+                updated_params += " " + v
+            updated_params = updated_params.strip()
+            log.info("with updated parameters: " + updated_params)
+            cmd_line += " " + updated_params
+        log.info("")
 
-        print_used_values(cfg, log)
+    params_filename = os.path.join(cfg["common"].output_dir, "params.txt")
+    params_handler = logging.FileHandler(params_filename, mode='w')
+    log.addHandler(params_handler)
+
+    if options_storage.continue_mode:
+        log.info(cmd_line)
     else:
-        params_filename = os.path.join(cfg["common"].output_dir, "params.txt")
-        params_handler = logging.FileHandler(params_filename, mode='w')
-        log.addHandler(params_handler)
-
         command = "Command line:"
         for v in args:
             command += " " + v
         log.info(command)
 
-        print_used_values(cfg, log)
-        log.removeHandler(params_handler)
+    print_used_values(cfg, log)
+    log.removeHandler(params_handler)
 
+    if not options_storage.continue_mode:
         log.info("\n======= SPAdes pipeline started. Log can be found here: " + log_filename + "\n")
 
     # splitting interlaced reads and processing Ns in additional contigs if needed
@@ -542,7 +551,8 @@ def main(args):
                 if not latest_dir:
                     support.error("failed to continue the previous run! Please restart from previous stages or from the beginning.", log)
             else:
-                old_result_files = [result_contigs_filename, result_scaffolds_filename]
+                old_result_files = [result_contigs_filename, result_scaffolds_filename,
+                                    assembled_contigs_filename, assembled_scaffolds_filename]
                 for format in [".fasta", ".fastg"]:
                     for old_result_file in old_result_files:
                         if os.path.isfile(old_result_file[:-6] + format):

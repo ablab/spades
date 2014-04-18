@@ -89,6 +89,18 @@ def update_k_mers_in_special_cases(cur_k_mers, RL, log, silent=False):
     return cur_k_mers
 
 
+def reveal_original_k_mers(RL):
+    if options_storage.original_k_mers is None or options_storage.original_k_mers == 'auto':
+        cur_k_mers = options_storage.k_mers
+        options_storage.k_mers = options_storage.original_k_mers
+        original_k_mers = update_k_mers_in_special_cases(options_storage.K_MERS_SHORT, RL, None, silent=True)
+        options_storage.k_mers = cur_k_mers
+    else:
+        original_k_mers = options_storage.original_k_mers
+    original_k_mers = [k for k in original_k_mers if k < RL]
+    return original_k_mers
+
+
 def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):
     data_dir = os.path.join(cfg.output_dir, "K%d" % K)
     stage = BASE_STAGE
@@ -166,10 +178,13 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, ext_python_module
             RL = get_read_length(cfg.output_dir, processed_K[0], ext_python_modules_home, log)
             needed_K = update_k_mers_in_special_cases(cfg.iterative_K, RL, log, silent=True)
             needed_K = [k for k in needed_K if k < RL]
+            original_K = reveal_original_k_mers(RL)
+
             k_to_delete = []
             for id, k in enumerate(needed_K):
                 if len(processed_K) == id:
-                    k_to_delete = [processed_K[-1]] # the last K in processed K was run in "last_one" mode
+                    if processed_K[-1] == original_K[-1]: # the last K in the original run was processed in "last_one" mode
+                        k_to_delete = [original_K[-1]]
                     break
                 if processed_K[id] != k:
                     k_to_delete = processed_K[id:]
@@ -178,7 +193,7 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, ext_python_module
                 k_to_delete = processed_K[len(needed_K) - 1:]
             if k_to_delete:
                 log.info("Restart mode: removing previously processed directories for K=%s "
-                         "to except conflicts with K specified with --restart-from" % (str(k_to_delete)))
+                         "to avoid conflicts with K specified with --restart-from" % (str(k_to_delete)))
                 for k in k_to_delete:
                     shutil.rmtree(os.path.join(cfg.output_dir, "K%d" % k))
 
