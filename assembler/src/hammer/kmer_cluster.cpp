@@ -269,14 +269,15 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
   for (size_t idx : block)
     kmers.emplace_back(data_.kmer(idx), data_[idx]);
 
-  std::vector<size_t> indices(origBlockSize);
   double bestLikelihood = -std::numeric_limits<double>::infinity();
   std::vector<Center> bestCenters;
-  std::vector<size_t> bestIndices(block.size());
+  std::vector<size_t> indices(origBlockSize);
+  std::vector<size_t> bestIndices(origBlockSize);
 
   unsigned max_l = cfg::get().bayes_hammer_mode ? 1 : (unsigned) origBlockSize;
   for (unsigned l = 1; l <= max_l; ++l) {
     std::vector<Center> centers(l);
+
     double curLikelihood = lMeansClustering(l, block, kmers, indices, centers);
     if (cfg::get().bayes_debug_output > 0) {
       #pragma omp critical
@@ -289,7 +290,7 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
     }
     if (curLikelihood > bestLikelihood) {
       bestLikelihood = curLikelihood;
-      bestCenters = centers; bestIndices = indices;
+      bestCenters = std::move(centers); bestIndices.swap(indices);
     } else if (l >= maxcls)
       break;
   }
