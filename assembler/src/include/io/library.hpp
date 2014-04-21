@@ -23,6 +23,7 @@ enum class LibraryType {
   SingleReads,
   PairedEnd,
   MatePairs,
+  HQMatePairs,
   PacBioReads,
   SangerReads,
   TrustedContigs,
@@ -137,17 +138,20 @@ class SequencingLibraryBase {
 
   bool is_graph_contructable() const {
     return (type_ == io::LibraryType::PairedEnd ||
-            type_ == io::LibraryType::SingleReads);
+            type_ == io::LibraryType::SingleReads ||
+            type_ == io::LibraryType::HQMatePairs);
   }
 
   bool is_paired() const {
     return (type_ == io::LibraryType::PairedEnd ||
-            type_ == io::LibraryType::MatePairs);
+            type_ == io::LibraryType::MatePairs||
+            type_ == io::LibraryType::HQMatePairs);
   }
 
 
   bool is_repeat_resolvable() const {
     return (type_ == io::LibraryType::PairedEnd ||
+            type_ == io::LibraryType::HQMatePairs ||
             type_ == io::LibraryType::MatePairs ||
             type_ == io::LibraryType::PacBioReads ||
             type_ == io::LibraryType::SangerReads ||

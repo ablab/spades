@@ -54,6 +54,8 @@ struct convert<LibraryType> {
         return Node("single");
       case LibraryType::MatePairs:
         return Node("mate-pairs");
+      case LibraryType::HQMatePairs:
+        return Node("hq-mate-pairs");
       case LibraryType::PacBioReads:
         return Node("pacbio");
       case LibraryType::SangerReads:
@@ -74,6 +76,8 @@ struct convert<LibraryType> {
       rhs = LibraryType::PairedEnd;
     else if (type == "mate-pairs")
       rhs = LibraryType::MatePairs;
+    else if (type == "hq-mate-pairs")
+      rhs = LibraryType::HQMatePairs;
     else if (type == "pacbio")
       rhs = LibraryType::PacBioReads;
     else if (type == "single")
@@ -130,6 +134,7 @@ void SequencingLibraryBase::load(const YAML::Node &node) {
   switch (type_) {
     case LibraryType::PairedEnd:
     case LibraryType::MatePairs:
+    case LibraryType::HQMatePairs:
       left_paired_reads_ = node["left reads"].as<std::vector<std::string> >();
       right_paired_reads_ = node["right reads"].as<std::vector<std::string> >();
 
