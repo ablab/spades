@@ -148,8 +148,8 @@ def fill_cfg(options_to_parse, log):
 
     # all parameters are stored here
     cfg = dict()
-    # dataset is stored here. We are prepared for up to MAX_LIBS_NUMBER paired-end libs and MAX_LIBS_NUMBER mate-pair libs
-    dataset_data = [{} for i in range(options_storage.MAX_LIBS_NUMBER * 2)]  # "[{}] * num" doesn't work here!
+    # dataset is stored here. We are prepared for up to MAX_LIBS_NUMBER for each type of short-reads libs
+    dataset_data = [{} for i in range(options_storage.MAX_LIBS_NUMBER * len(options_storage.SHORT_READS_TYPES.keys()))]  # "[{}] * num" doesn't work here!
 
     # for parsing options from "previous run command"
     options_storage.continue_mode = False
@@ -297,8 +297,8 @@ def fill_cfg(options_to_parse, log):
         pyyaml.dump(dataset_data, open(options_storage.dataset_yaml_filename, 'w'))
 
     support.check_dataset_reads(dataset_data, options_storage.only_assembler, log)
-    if not support.get_lib_ids_by_type(dataset_data, ['single', 'paired-end']):
-        support.error('you should specify at least one paired-end or unpaired library!')
+    if not support.get_lib_ids_by_type(dataset_data, spades_logic.READS_TYPES_USED_IN_CONSTRUCTION):
+        support.error('you should specify at least one unpaired, paired-end, or high-quality mate-pairs library!')
 
     options_storage.set_default_values()
     ### FILLING cfg

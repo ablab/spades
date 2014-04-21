@@ -357,6 +357,13 @@ def get_tmp_dir(prefix="", base_dir=None):
 
 
 ### START for processing YAML files
+def get_short_reads_type(option):
+    for short_reads_type in options_storage.SHORT_READS_TYPES.keys():
+        if option.startswith('--' + short_reads_type):
+            return short_reads_type
+    return None
+
+
 def get_long_reads_type(option):
     for long_reads_type in options_storage.LONG_READS_TYPES:
         if option.startswith('--') and option in ("--" + long_reads_type):
@@ -365,14 +372,15 @@ def get_long_reads_type(option):
 
 
 def get_lib_type_and_number(option):
+    # defaults for simple -1, -2, -s, --12 options
     lib_type = 'pe'
     lib_number = 1
-    if option.startswith('--mp'):
-        lib_type = 'mp'
+
+    if get_short_reads_type(option):
+        lib_type = get_short_reads_type(option)
+        lib_number = int(option[re.search("\d", option).start()])
     elif get_long_reads_type(option):
         lib_type = get_long_reads_type(option)
-    if option.startswith('--mp') or option.startswith('--pe'): # don't process simple -1, -2, -s, --12 options
-        lib_number = int(option[4])
     return lib_type, lib_number
 
 
@@ -396,19 +404,15 @@ def add_to_dataset(option, data, dataset_data):
     if data_type == 'orientation':
         data = option[-2:]
 
-    if lib_type == 'pe':
-        record_id = lib_number - 1
-    elif lib_type == 'mp':
-        record_id = options_storage.MAX_LIBS_NUMBER + lib_number - 1
+    if lib_type in options_storage.SHORT_READS_TYPES:
+        record_id = options_storage.MAX_LIBS_NUMBER * sorted(options_storage.SHORT_READS_TYPES).index(lib_type) + lib_number - 1
     else: # long reads libraries
         dataset_data += [{}]
         record_id = len(dataset_data) - 1
 
     if not dataset_data[record_id]: # setting default values for a new record
-        if lib_type == 'pe':
-            dataset_data[record_id]['type'] = 'paired-end'
-        elif lib_type == 'mp':
-            dataset_data[record_id]['type'] = 'mate-pairs'
+        if lib_type in options_storage.SHORT_READS_TYPES:
+            dataset_data[record_id]['type'] = options_storage.SHORT_READS_TYPES[lib_type]
         else:
             dataset_data[record_id]['type'] = lib_type
     if data_type.endswith('reads'):
@@ -447,7 +451,7 @@ def correct_dataset(dataset_data):
         if 'orientation' not in reads_library:
             if reads_library['type'] == 'paired-end':
                 reads_library['orientation'] = 'fr'
-            elif reads_library['type'] == 'mate-pairs':
+            elif reads_library['type'] == 'mate-pairs' or reads_library['type'] == 'hq-mate-pairs':
                 reads_library['orientation'] = 'rf'
         corrected_dataset_data.append(reads_library)
     return corrected_dataset_data

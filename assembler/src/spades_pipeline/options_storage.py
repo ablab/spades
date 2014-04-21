@@ -20,8 +20,9 @@ BH_ALLOWED_READS_EXTENSIONS += [x + '.gz' for x in BH_ALLOWED_READS_EXTENSIONS]
 CONTIGS_ALLOWED_READS_EXTENSIONS += [x + '.gz' for x in CONTIGS_ALLOWED_READS_EXTENSIONS]
 ALLOWED_READS_EXTENSIONS += [x + '.gz' for x in ALLOWED_READS_EXTENSIONS]
 
-# we support up to MAX_LIBS_NUMBER paired-end libs and MAX_LIBS_NUMBER mate-pair libs
+# we support up to MAX_LIBS_NUMBER libs for each type of short-reads libs
 MAX_LIBS_NUMBER = 5
+SHORT_READS_TYPES = {"pe": "paired-end", "mp": "mate-pairs", "hqmp": "hq-mate-pairs"}
 # other libs types:
 LONG_READS_TYPES = ["pacbio", "sanger", "trusted-contigs", "untrusted-contigs"]
 
@@ -105,7 +106,7 @@ short_options = "o:1:2:s:k:t:m:i:h"
 # adding multiple paired-end, mate-pair and other (long reads) libraries support
 reads_options = []
 for i in range(MAX_LIBS_NUMBER):
-    for type in ["pe", "mp"]:
+    for type in SHORT_READS_TYPES.keys():
         reads_options += ("%s%d-1= %s%d-2= %s%d-12= %s%d-s= %s%d-rf %s%d-fr %s%d-ff" % tuple([type, i + 1] * 7)).split()
 reads_options += list(map(lambda x: x + '=', LONG_READS_TYPES))
 long_options += reads_options
@@ -159,6 +160,16 @@ def usage(spades_version, show_hidden=False, dipspades=False):
                          " for mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
     sys.stderr.write("--mp<#>-<or>\torientation of reads"\
                          " for mate-pair library number <#> (<#> = 1,2,3,4,5; <or> = fr, rf, ff)" + "\n")
+    sys.stderr.write("--hqmp<#>-12\t<filename>\tfile with interlaced"\
+                     " reads for high-quality mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
+    sys.stderr.write("--hqmp<#>-1\t<filename>\tfile with forward reads"\
+                     " for high-quality mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
+    sys.stderr.write("--hqmp<#>-2\t<filename>\tfile with reverse reads"\
+                     " for high-quality mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
+    sys.stderr.write("--hqmp<#>-s\t<filename>\tfile with unpaired reads"\
+                     " for high-quality mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
+    sys.stderr.write("--hqmp<#>-<or>\torientation of reads"\
+                     " for high-quality mate-pair library number <#> (<#> = 1,2,3,4,5; <or> = fr, rf, ff)" + "\n")
     sys.stderr.write("--sanger\t<filename>\tfile with Sanger reads\n")
     sys.stderr.write("--pacbio\t<filename>\tfile with PacBio reads\n")
     sys.stderr.write("--trusted-contigs\t<filename>\tfile with trusted contigs\n")

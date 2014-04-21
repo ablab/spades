@@ -17,7 +17,7 @@ from distutils import dir_util
 import options_storage
 
 BASE_STAGE = "construction"
-READS_TYPES_USED_IN_CONSTRUCTION = ["paired-end", "single"]
+READS_TYPES_USED_IN_CONSTRUCTION = ["paired-end", "single", "hq-mate-pairs"]
 
 def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage, saves_dir, last_one):
     subst_dict = dict()
