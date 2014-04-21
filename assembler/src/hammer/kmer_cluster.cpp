@@ -249,13 +249,21 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
   size_t origBlockSize = block.size();
   if (origBlockSize == 0) return 0;
 
-  // Ad-hoc max cluster limit: we start to consider only thous k-mers which
+  // Ad-hoc max cluster limit: we start to consider only those k-mers which
   // multiplicity differs from maximum multiplicity by 10x.
   size_t maxcls = 0;
   size_t cntthr = std::max(10u, data_[block[0]].count / 10);
   for (size_t i = 0; i < block.size(); ++i)
     maxcls += (data_[block[i]].count > cntthr);
-  maxcls = std::max(1ul, maxcls);
+  // Another limit: we're interested in good centers only
+  size_t maxgcnt = 0;
+  for (size_t i = 0; i < block.size(); ++i) {
+    float center_quality = data_[block[i]].totalQual;
+    if ((center_quality > cfg::get().bayes_singleton_threshold) ||
+        (cfg::get().correct_use_threshold && center_quality > cfg::get().correct_threshold))
+      maxgcnt += 1;
+  }
+  maxcls = std::max(1ul, std::min(maxcls, maxgcnt));
 
   if (cfg::get().bayes_debug_output > 0) {
     #pragma omp critical
