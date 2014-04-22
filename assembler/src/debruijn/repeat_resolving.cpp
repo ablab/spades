@@ -20,9 +20,6 @@
 
 namespace debruijn_graph {
 
-//TODO: get rid of this conversion
-
-
 void PEResolving(conj_graph_pack& gp) {
     vector<size_t> indexes;
     std::string name = "scaffolds";
@@ -35,14 +32,10 @@ void PEResolving(conj_graph_pack& gp) {
 }
 
 void RepeatResolution::run(conj_graph_pack &gp, const char*) {
-    /*OutputContigs(gp.g, cfg::get().output_dir + "simplified_contigs", true, cfg::get().use_unipaths,
-                  cfg::get().simp.tec.plausibility_length);*/
     OutputContigs(gp.g, cfg::get().output_dir + "before_rr", true);
     if (cfg::get().developer_mode) {
         FillPos(gp, gp.genome, "ref0");
         FillPos(gp, !gp.genome, "ref1");
-//        gp.ClearQuality();
-//        gp.FillQuality();
     }
 
     bool no_valid_libs = true;
@@ -63,8 +56,6 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
         OutputContigs(gp.g, cfg::get().output_dir + "final_contigs", true);
         return;
     }
-
-    // Repeat resolving begins
     if (cfg::get().rm == debruijn_graph::resolving_mode::rm_path_extend) {
         INFO("Using Path-Extend repeat resolving");
         PEResolving(gp);
