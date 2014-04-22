@@ -203,7 +203,7 @@ public:
 		DEBUG("noncontinued/total long:" << noncontinued <<"/" << noncontinued + continued);
 	}
 
-	vector<PathInfo<Graph> > GetAllPaths() {
+	vector<PathInfo<Graph> > GetAllPaths() const {
 		vector<PathInfo<Graph> > res;
 		for (auto iter = inner_index_.begin(); iter != inner_index_.end();
 				++iter) {
@@ -324,42 +324,6 @@ public:
 private:
     size_t size_;
 };
-
-template<class Graph>
-class PathStorageInfo {
-public:
-    PathStorageInfo(vector<PathInfo<Graph> >& paths, double filtering_threshold,
-                    double weight_priority_threshold,
-                    double unique_edge_priority_threshold)
-            : paths_(paths.begin(), paths.end()),
-              filtering_threshold_(filtering_threshold),
-              weight_priority_threshold_(weight_priority_threshold),
-              unique_edge_priority_threshold_(unique_edge_priority_threshold) {
-    }
-
-    double GetFilteringThreshold() const {
-        return filtering_threshold_;
-    }
-
-    double GetWeightPriorityThreshold() const {
-        return weight_priority_threshold_;
-    }
-
-    double GetUniqueEdgePriorityThreshold() const {
-        return unique_edge_priority_threshold_;
-    }
-
-    const vector<PathInfo<Graph> >& GetPaths() const {
-        return paths_;
-    }
-
-private:
-    vector<PathInfo<Graph> > paths_;
-    double filtering_threshold_;
-    double weight_priority_threshold_;
-    double unique_edge_priority_threshold_;
-};
-
 
 template<class Graph>
 class LongReadContainer {

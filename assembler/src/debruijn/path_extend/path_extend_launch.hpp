@@ -95,14 +95,14 @@ inline void OutputBrokenScaffolds(PathContainer& paths, int k,
 }
 
 inline void AddPathsToContainer(const conj_graph_pack& gp,
-                         const std::vector<PathInfo<Graph> >& paths,
+                         const std::vector<PathInfo<Graph> > paths,
                          size_t size_threshold, PathContainer& result) {
     for (size_t i = 0; i < paths.size(); ++i) {
-        PathInfo<Graph> path = paths[i];
-        if (path.getPath().size() <= size_threshold) {
+        auto path = paths.at(i);
+        vector<EdgeId> edges = path.getPath();
+        if (edges.size() <= size_threshold) {
             continue;
         }
-        vector<EdgeId> edges = path.getPath();
         BidirectionalPath* new_path = new BidirectionalPath(gp.g, edges);
         BidirectionalPath* conj_path = new BidirectionalPath(new_path->Conjugate());
         new_path->SetWeight((float) path.getWeight());
@@ -110,6 +110,54 @@ inline void AddPathsToContainer(const conj_graph_pack& gp,
         result.AddPair(new_path, conj_path);
     }
     DEBUG("Long reads paths " << result.size() << " == ");
+}
+
+double GetSingleReadsFilteringThreshold(const io::LibraryType& type) {
+    if (type == io::LibraryType::PacBioReads || type == io::LibraryType::SangerReads) {
+        return cfg::get().pe_params.long_reads.pacbio_reads.filtering;
+    } else if (type == io::LibraryType::TrustedContigs || type == io::LibraryType::UntrustedContigs) {
+        return cfg::get().pe_params.long_reads.contigs.filtering;
+    }
+    return cfg::get().pe_params.long_reads.single_reads.filtering;
+}
+
+double GetSingleReadsWeightPriorityThreshold(const io::LibraryType& type) {
+    if (type == io::LibraryType::PacBioReads || type == io::LibraryType::SangerReads) {
+        return cfg::get().pe_params.long_reads.pacbio_reads.weight_priority;
+    } else if (type == io::LibraryType::TrustedContigs || type == io::LibraryType::UntrustedContigs) {
+        return cfg::get().pe_params.long_reads.contigs.weight_priority;
+    }
+    return cfg::get().pe_params.long_reads.single_reads.weight_priority;
+}
+
+double GetSingleReadsUniqueEdgePriorityThreshold(const io::LibraryType& type) {
+    if (cfg::get().ds.single_cell &&
+            (type == io::LibraryType::PacBioReads || type == io::LibraryType::SangerReads)) {
+        return 10000.0;
+    }
+    if (type == io::LibraryType::PacBioReads || type == io::LibraryType::SangerReads) {
+        return cfg::get().pe_params.long_reads.pacbio_reads.unique_edge_priority;
+    } else if (type == io::LibraryType::TrustedContigs || type == io::LibraryType::UntrustedContigs) {
+        return cfg::get().pe_params.long_reads.contigs.unique_edge_priority;
+    }
+    return cfg::get().pe_params.long_reads.single_reads.unique_edge_priority;
+}
+
+inline vector<SimpleExtender*> MakeLongReadsExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, size_t max_loops, const std::string& output_dir) {
+    vector<SimpleExtender*> extends;
+    for (size_t i = 0; i < gp.single_long_reads.size(); ++i) {
+        PathContainer paths;
+        AddPathsToContainer(gp, gp.single_long_reads[i].GetAllPaths(), 1, paths);
+        ContigWriter writer(gp.g);
+        DebugOutputPaths(writer, gp, output_dir, paths, "long_reads");
+        ExtensionChooser * longReadEC = new LongReadsExtensionChooser(gp.g, paths, GetSingleReadsFilteringThreshold(cfg::get().ds.reads[i].type()),
+                                                                      GetSingleReadsWeightPriorityThreshold(cfg::get().ds.reads[i].type()),
+                                                                      GetSingleReadsUniqueEdgePriorityThreshold(cfg::get().ds.reads[i].type()));
+        SimpleExtender * longReadExtender = new SimpleExtender(gp, cov_map, longReadEC, 10000,  //FIXME
+                                                                       max_loops, true);
+        extends.push_back(longReadExtender);
+    }
+    return extends;
 }
 
 inline vector<SimpleExtender *> MakePEExtenders(const conj_graph_pack& gp, const pe_config::ParamSetT& pset, vector<PairedInfoLibrary*>& libs,
@@ -124,26 +172,6 @@ inline vector<SimpleExtender *> MakePEExtenders(const conj_graph_pack& gp, const
     return extends;
 }
 
-inline vector<SimpleExtender*> MakeLongReadsExtender(const conj_graph_pack& gp, const vector<PathStorageInfo<Graph> >& reads, const GraphCoverageMap& cov_map,
-                                                     size_t max_loops, const std::string& output_dir) {
-    vector<SimpleExtender*> extends;
-    for (size_t i = 0; i < reads.size(); ++i) {
-        if (reads[i].GetPaths().size() == 0) {
-            continue;
-        }
-        PathContainer paths;
-        AddPathsToContainer(gp, reads[i].GetPaths(), 1, paths);
-        ContigWriter writer(gp.g);
-        DebugOutputPaths(writer, gp, output_dir, paths, "long_reads");
-        ExtensionChooser * longReadEC = new LongReadsExtensionChooser(gp.g, paths, reads[i].GetFilteringThreshold(), reads[i].GetWeightPriorityThreshold(),
-                                                                      reads[i].GetUniqueEdgePriorityThreshold());
-        SimpleExtender * longReadExtender = new SimpleExtender(gp, cov_map, longReadEC, 10000,  //FIXME
-                                                               max_loops, true);
-        extends.push_back(longReadExtender);
-
-    }
-    return extends;
-}
 inline vector<ScaffoldingPathExtender*> MakeScaffoldingExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, const pe_config::ParamSetT& pset,
                                                                 vector<PairedInfoLibrary *>& libs) {
     GapJoiner * gapJoiner = new HammingGapJoiner(gp.g, pset.scaffolder_options.min_gap_score,
@@ -188,7 +216,6 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 		vector<PairedInfoLibrary *>& libs,
 		vector<PairedInfoLibrary *>& scaff_libs,
 		vector<PairedInfoLibrary *>& mp_libs,
-		vector<PathStorageInfo<Graph> >& long_reads,
 		const std::string& output_dir,
 		const std::string& contigs_name,
 		bool traversLoops,
@@ -202,25 +229,24 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	}
 	const pe_config::ParamSetT& pset = cfg::get().pe_params.param_set;
 
-	INFO("Using " << libs.size() << " paired-end " << LibStr(libs.size()));
-	INFO("Using " << scaff_libs.size() << " paired-end scaffolding " << LibStr(scaff_libs.size()));
-	INFO("Using " << mp_libs.size() << " mate-pair " << LibStr(mp_libs.size()));
-	INFO("Using " << long_reads.size() << " single read " << LibStr(long_reads.size()));
-	INFO("Scaffolder is " << (pset.scaffolder_options.on ? "on" : "off"));
-
 	ContigWriter writer(gp.g);
 
 //make pe + long reads extenders
     GraphCoverageMap cover_map(gp.g);
     vector<SimpleExtender *> usualPEs = MakePEExtenders(gp, pset, libs, cover_map, false);
-    vector<SimpleExtender*> long_reads_extenders = MakeLongReadsExtender(gp, long_reads, cover_map, pset.loop_removal.max_loops, output_dir);
-    long_reads.clear();
+    vector<SimpleExtender*> long_reads_extenders = MakeLongReadsExtender(gp, cover_map, pset.loop_removal.max_loops, output_dir);
     vector<SimpleExtender *> shortLoopPEs = MakePEExtenders(gp, pset, libs, cover_map, true);
     vector<ScaffoldingPathExtender*> scafPEs = MakeScaffoldingExtender(gp, cover_map, pset, scaff_libs);
     vector<PathExtender *> all_libs(long_reads_extenders.begin(), long_reads_extenders.end());
     all_libs.insert(all_libs.end(), usualPEs.begin(), usualPEs.end());
     all_libs.insert(all_libs.end(), shortLoopPEs.begin(), shortLoopPEs.end());
     all_libs.insert(all_libs.end(), scafPEs.begin(), scafPEs.end());
+    INFO("Using " << libs.size() << " paired-end " << LibStr(libs.size()));
+    INFO("Using " << scaff_libs.size() << " paired-end scaffolding " << LibStr(scaff_libs.size()));
+    INFO("Using " << mp_libs.size() << " mate-pair " << LibStr(mp_libs.size()));
+    INFO("Using " << long_reads_extenders.size() << " single read " << LibStr(long_reads_extenders.size()));
+    INFO("Scaffolder is " << (pset.scaffolder_options.on ? "on" : "off"));
+
     size_t max_over = max(FindMaxOverlapedLen(libs), gp.g.k() + 100);
 
     CompositeExtender * mainPE = new CompositeExtender(gp.g, cover_map, all_libs, max_over);
@@ -365,41 +391,8 @@ inline bool InsertSizeCompare(const PairedInfoLibrary* lib1,
     return lib1->GetISMax() < lib2->GetISMax();
 }
 
-void ConvertLongReads(LongReadContainerT& single_long_reads, vector<PathStorageInfo<Graph> > &long_reads_libs) {
-    for (size_t i = 0; i < single_long_reads.size(); ++i) {
-        DEBUG("converting " << i)
-        PathStorage<Graph>& storage = single_long_reads[i];
-        vector<PathInfo<Graph> > paths = storage.GetAllPaths();
-        auto single_read_param_set = cfg::get().pe_params.long_reads.single_reads;
-        auto type = cfg::get().ds.reads[i].type();
-
-        if (cfg::get().ds.reads[i].type() == io::LibraryType::PacBioReads  ||
-            type == io::LibraryType::SangerReads) {
-            single_read_param_set = cfg::get().pe_params.long_reads.pacbio_reads;
-        } else if (type == io::LibraryType::TrustedContigs ||
-                   type == io::LibraryType::UntrustedContigs) {
-            single_read_param_set = cfg::get().pe_params.long_reads.contigs;
-        }
-
-        auto tmp = single_read_param_set.unique_edge_priority;
-        if (cfg::get().ds.single_cell &&
-            (cfg::get().ds.reads[i].type() == io::LibraryType::PacBioReads  ||
-             type == io::LibraryType::SangerReads))
-          tmp = 10000.0;
-
-        PathStorageInfo<Graph> single_storage(paths,
-                                              single_read_param_set.filtering,
-                                              single_read_param_set.weight_priority,
-                                              tmp);
-        long_reads_libs.push_back(single_storage);
-        DEBUG("done " << i)
-    }
-}
-
 inline void ResolveRepeatsPe(conj_graph_pack& gp, const std::string& output_dir, const std::string& contigs_name, bool traverseLoops,
                              boost::optional<std::string> broken_contigs, bool use_auto_threshold = true) {
-    vector<PathStorageInfo<Graph> > long_reads;
-    ConvertLongReads(gp.single_long_reads, long_reads);
     vector<PairedInfoLibrary*> rr_libs;
     vector<PairedInfoLibrary*> mp_libs;
     vector<PairedInfoLibrary*> scaff_libs;
@@ -430,7 +423,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp, const std::string& output_dir,
         }
     }
     std::sort(scaff_libs.begin(), scaff_libs.end(), InsertSizeCompare);
-    ResolveRepeatsManyLibs(gp, rr_libs, scaff_libs, mp_libs, long_reads, output_dir, contigs_name, traverseLoops, broken_contigs);
+    ResolveRepeatsManyLibs(gp, rr_libs, scaff_libs, mp_libs, output_dir, contigs_name, traverseLoops, broken_contigs);
     DeleteLibs(rr_libs);
     DeleteLibs(mp_libs);
     DeleteLibs(scaff_libs);
