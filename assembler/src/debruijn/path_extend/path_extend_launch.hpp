@@ -174,6 +174,15 @@ inline string LibStr(size_t count) {
     return count == 1 ? "library" : "libraries";
 }
 
+bool HasOnlyMPLibs() {
+    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+        if (!((cfg::get().ds.reads[i].type() == io::LibraryType::MatePairs || cfg::get().ds.reads[i].type() == io::LibraryType::HQMatePairs)
+                && cfg::get().ds.reads[i].data().mean_insert_size > 0.0)) {
+            return false;
+        }
+    }
+    return true;
+}
 
 inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 		vector<PairedInfoLibrary *>& libs,
@@ -356,8 +365,41 @@ inline bool InsertSizeCompare(const PairedInfoLibrary* lib1,
     return lib1->GetISMax() < lib2->GetISMax();
 }
 
-inline void ResolveRepeatsPe(conj_graph_pack& gp, vector<PathStorageInfo<Graph> >& long_reads, const std::string& output_dir, const std::string& contigs_name, bool traverseLoops,
+void ConvertLongReads(LongReadContainerT& single_long_reads, vector<PathStorageInfo<Graph> > &long_reads_libs) {
+    for (size_t i = 0; i < single_long_reads.size(); ++i) {
+        DEBUG("converting " << i)
+        PathStorage<Graph>& storage = single_long_reads[i];
+        vector<PathInfo<Graph> > paths = storage.GetAllPaths();
+        auto single_read_param_set = cfg::get().pe_params.long_reads.single_reads;
+        auto type = cfg::get().ds.reads[i].type();
+
+        if (cfg::get().ds.reads[i].type() == io::LibraryType::PacBioReads  ||
+            type == io::LibraryType::SangerReads) {
+            single_read_param_set = cfg::get().pe_params.long_reads.pacbio_reads;
+        } else if (type == io::LibraryType::TrustedContigs ||
+                   type == io::LibraryType::UntrustedContigs) {
+            single_read_param_set = cfg::get().pe_params.long_reads.contigs;
+        }
+
+        auto tmp = single_read_param_set.unique_edge_priority;
+        if (cfg::get().ds.single_cell &&
+            (cfg::get().ds.reads[i].type() == io::LibraryType::PacBioReads  ||
+             type == io::LibraryType::SangerReads))
+          tmp = 10000.0;
+
+        PathStorageInfo<Graph> single_storage(paths,
+                                              single_read_param_set.filtering,
+                                              single_read_param_set.weight_priority,
+                                              tmp);
+        long_reads_libs.push_back(single_storage);
+        DEBUG("done " << i)
+    }
+}
+
+inline void ResolveRepeatsPe(conj_graph_pack& gp, const std::string& output_dir, const std::string& contigs_name, bool traverseLoops,
                              boost::optional<std::string> broken_contigs, bool use_auto_threshold = true) {
+    vector<PathStorageInfo<Graph> > long_reads;
+    ConvertLongReads(gp.single_long_reads, long_reads);
     vector<PairedInfoLibrary*> rr_libs;
     vector<PairedInfoLibrary*> mp_libs;
     vector<PairedInfoLibrary*> scaff_libs;
