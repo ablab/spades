@@ -143,18 +143,36 @@ double GetSingleReadsUniqueEdgePriorityThreshold(const io::LibraryType& type) {
     return cfg::get().pe_params.long_reads.single_reads.unique_edge_priority;
 }
 
+bool HasOnlyMPLibs() {
+    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+        if (!((cfg::get().ds.reads[i].type() == io::LibraryType::MatePairs || cfg::get().ds.reads[i].type() == io::LibraryType::HQMatePairs)
+                && cfg::get().ds.reads[i].data().mean_insert_size > 0.0)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool UseCoverageResolverForSingleReads(const io::LibraryType& type) {
+    return HasOnlyMPLibs() && (type == io::LibraryType::HQMatePairs);
+
+}
+
 inline vector<SimpleExtender*> MakeLongReadsExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, size_t max_loops, const std::string& output_dir) {
     vector<SimpleExtender*> extends;
     for (size_t i = 0; i < gp.single_long_reads.size(); ++i) {
         PathContainer paths;
         AddPathsToContainer(gp, gp.single_long_reads[i].GetAllPaths(), 1, paths);
+        if (paths.size() == 0) {
+            continue;
+        }
         ContigWriter writer(gp.g);
         DebugOutputPaths(writer, gp, output_dir, paths, "long_reads");
         ExtensionChooser * longReadEC = new LongReadsExtensionChooser(gp.g, paths, GetSingleReadsFilteringThreshold(cfg::get().ds.reads[i].type()),
                                                                       GetSingleReadsWeightPriorityThreshold(cfg::get().ds.reads[i].type()),
                                                                       GetSingleReadsUniqueEdgePriorityThreshold(cfg::get().ds.reads[i].type()));
         SimpleExtender * longReadExtender = new SimpleExtender(gp, cov_map, longReadEC, 10000,  //FIXME
-                                                                       max_loops, true);
+                                                                       max_loops, true, UseCoverageResolverForSingleReads(cfg::get().ds.reads[i].type()));
         extends.push_back(longReadExtender);
     }
     return extends;
@@ -167,7 +185,7 @@ inline vector<SimpleExtender *> MakePEExtenders(const conj_graph_pack& gp, const
         WeightCounter* wc = new PathCoverWeightCounter(gp.g, libs[i], GetWeightThreshold(libs[i], pset), GetSingleThreshold(libs[i], pset));
         wc->setNormalizeWeight(pset.normalize_weight);
         SimpleExtensionChooser * extension = new SimpleExtensionChooser(gp.g, wc, GetPriorityCoeff(libs[i], pset));
-        extends.push_back(new SimpleExtender(gp, cov_map, extension, libs[i]->GetISMax(), pset.loop_removal.max_loops, investigate_loops));
+        extends.push_back(new SimpleExtender(gp, cov_map, extension, libs[i]->GetISMax(), pset.loop_removal.max_loops, investigate_loops, false));
     }
     return extends;
 }
@@ -192,7 +210,7 @@ inline vector<SimpleExtender *> MakeMPExtenders(const conj_graph_pack& gp, const
     vector<SimpleExtender *> mpPEs;
     for (size_t i = 0; i < libs.size(); ++i) {
         MatePairExtensionChooser* chooser = new MatePairExtensionChooser(gp.g, *libs[i], paths);
-        SimpleExtender* mp_extender = new SimpleExtender(gp, cov_map, chooser, libs[i]->GetISMax(), pset.loop_removal.mp_max_loops, true);
+        SimpleExtender* mp_extender = new SimpleExtender(gp, cov_map, chooser, libs[i]->GetISMax(), pset.loop_removal.mp_max_loops, true, false);
         mpPEs.push_back(mp_extender);
     }
     return mpPEs;
@@ -200,16 +218,6 @@ inline vector<SimpleExtender *> MakeMPExtenders(const conj_graph_pack& gp, const
 
 inline string LibStr(size_t count) {
     return count == 1 ? "library" : "libraries";
-}
-
-bool HasOnlyMPLibs() {
-    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        if (!((cfg::get().ds.reads[i].type() == io::LibraryType::MatePairs || cfg::get().ds.reads[i].type() == io::LibraryType::HQMatePairs)
-                && cfg::get().ds.reads[i].data().mean_insert_size > 0.0)) {
-            return false;
-        }
-    }
-    return true;
 }
 
 inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
