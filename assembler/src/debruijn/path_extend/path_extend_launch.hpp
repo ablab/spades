@@ -356,19 +356,13 @@ inline bool InsertSizeCompare(const PairedInfoLibrary* lib1,
     return lib1->GetISMax() < lib2->GetISMax();
 }
 
-inline void ResolveRepeatsPe(conj_graph_pack& gp,
-                      vector<PathStorageInfo<Graph> >& long_reads,
-                      const std::string& output_dir,
-                      const std::string& contigs_name, bool traverseLoops,
-                      boost::optional<std::string> broken_contigs,
-                      bool use_auto_threshold = true) {
+inline void ResolveRepeatsPe(conj_graph_pack& gp, vector<PathStorageInfo<Graph> >& long_reads, const std::string& output_dir, const std::string& contigs_name,
+                             bool traverseLoops, boost::optional<std::string> broken_contigs, bool use_auto_threshold = true) {
     vector<PairedInfoLibrary*> rr_libs;
     vector<PairedInfoLibrary*> mp_libs;
     vector<PairedInfoLibrary*> scaff_libs;
     for (size_t i = 0; i < gp.clustered_indices.size(); ++i) {
-        if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd
-                /*|| cfg::get().ds.reads[indexs[i]].type()
-                        == io::LibraryType::MatePairs*/ && cfg::get().ds.reads[i].data().mean_insert_size > 0.0) {
+        if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd && cfg::get().ds.reads[i].data().mean_insert_size > 0.0) {
             PairedInfoLibrary* lib = MakeNewLib(gp.g, gp.clustered_indices, i);
             if (use_auto_threshold) {
                 lib->SetSingleThreshold(cfg::get().ds.reads[i].data().pi_threshold);
@@ -378,26 +372,22 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
         }
     }
     for (size_t i = 0; i < gp.paired_indices.size(); ++i) {
-		if (cfg::get().ds.reads[i].type()
-				== io::LibraryType::MatePairs&& cfg::get().ds.reads[i].data().mean_insert_size > 0.0) {
-			PairedInfoLibrary* lib = MakeNewLib(gp.g, gp.paired_indices/*paired_index*/, i);
-			mp_libs.push_back(lib);
-		}
-	}
+        if (cfg::get().ds.reads[i].type() == io::LibraryType::MatePairs && cfg::get().ds.reads[i].data().mean_insert_size > 0.0) {
+            PairedInfoLibrary* lib = MakeNewLib(gp.g, gp.paired_indices, i);
+            mp_libs.push_back(lib);
+        }
+    }
     std::sort(rr_libs.begin(), rr_libs.end(), InsertSizeCompare);
-    if (cfg::get().use_scaffolder
-            && cfg::get().pe_params.param_set.scaffolder_options.on) {
+    if (cfg::get().use_scaffolder && cfg::get().pe_params.param_set.scaffolder_options.on) {
         for (size_t i = 0; i < gp.scaffolding_indices.size(); ++i) {
-            if ((cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd)
-             && cfg::get().ds.reads[i].data().mean_insert_size > 0.0) {
+            if ((cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd) && cfg::get().ds.reads[i].data().mean_insert_size > 0.0) {
                 PairedInfoLibrary* lib = MakeNewLib(gp.g, gp.scaffolding_indices, i);
                 scaff_libs.push_back(lib);
             }
         }
     }
     std::sort(scaff_libs.begin(), scaff_libs.end(), InsertSizeCompare);
-    ResolveRepeatsManyLibs(gp, rr_libs, scaff_libs, mp_libs, long_reads, output_dir,
-                           contigs_name, traverseLoops, broken_contigs);
+    ResolveRepeatsManyLibs(gp, rr_libs, scaff_libs, mp_libs, long_reads, output_dir, contigs_name, traverseLoops, broken_contigs);
     DeleteLibs(rr_libs);
     DeleteLibs(mp_libs);
     DeleteLibs(scaff_libs);
