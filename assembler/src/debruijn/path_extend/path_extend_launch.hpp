@@ -356,8 +356,8 @@ inline bool InsertSizeCompare(const PairedInfoLibrary* lib1,
     return lib1->GetISMax() < lib2->GetISMax();
 }
 
-inline void ResolveRepeatsPe(conj_graph_pack& gp, vector<PathStorageInfo<Graph> >& long_reads, const std::string& output_dir, const std::string& contigs_name,
-                             bool traverseLoops, boost::optional<std::string> broken_contigs, bool use_auto_threshold = true) {
+inline void ResolveRepeatsPe(conj_graph_pack& gp, vector<PathStorageInfo<Graph> >& long_reads, const std::string& output_dir, const std::string& contigs_name, bool traverseLoops,
+                             boost::optional<std::string> broken_contigs, bool use_auto_threshold = true) {
     vector<PairedInfoLibrary*> rr_libs;
     vector<PairedInfoLibrary*> mp_libs;
     vector<PairedInfoLibrary*> scaff_libs;
@@ -372,7 +372,8 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp, vector<PathStorageInfo<Graph> 
         }
     }
     for (size_t i = 0; i < gp.paired_indices.size(); ++i) {
-        if (cfg::get().ds.reads[i].type() == io::LibraryType::MatePairs && cfg::get().ds.reads[i].data().mean_insert_size > 0.0) {
+        if ((cfg::get().ds.reads[i].type() == io::LibraryType::MatePairs || cfg::get().ds.reads[i].type() == io::LibraryType::HQMatePairs)
+                && cfg::get().ds.reads[i].data().mean_insert_size > 0.0) {
             PairedInfoLibrary* lib = MakeNewLib(gp.g, gp.paired_indices, i);
             mp_libs.push_back(lib);
         }
