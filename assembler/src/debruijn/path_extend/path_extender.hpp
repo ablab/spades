@@ -335,7 +335,8 @@ protected:
     size_t min_cycle_len_;
 
 public:
-    InsertSizeLoopDetector(const Graph& g, const GraphCoverageMap& cov_map, size_t is): g_(g), cov_map_(cov_map), min_cycle_len_(is) { }
+    InsertSizeLoopDetector(const Graph& g, const GraphCoverageMap& cov_map, size_t is): g_(g), cov_map_(cov_map), min_cycle_len_(is) {
+    }
 
     size_t GetMinCycleLenth() const {
         return min_cycle_len_;
@@ -943,7 +944,7 @@ protected:
 public:
 
     ScaffoldingPathExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, ExtensionChooser * scaffoldingEC, GapJoiner * gapJoiner, size_t is, size_t max_loops, bool investigateShortLoops):
-        LoopDetectingPathExtender(gp, cov_map, max_loops, investigateShortLoops, is, false),
+        LoopDetectingPathExtender(gp, cov_map, max_loops, investigateShortLoops, false, is),
             scaffoldingExtensionChooser_(scaffoldingEC),
             gapJoiner_(gapJoiner)
     {
