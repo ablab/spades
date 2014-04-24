@@ -65,7 +65,7 @@ namespace online_visualization {
                 while (!irs.eof()) {
                     io::SingleRead read;
                     irs >> read;
-                    LOG("Contig " << read.name() << " is being processed now");
+                    //LOG("Contig " << read.name() << " is being processed now");
 
                     // if read is valid and also the name contains a given string <contig_name> as a substring.
                     if (read.IsValid()) {
