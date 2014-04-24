@@ -159,6 +159,21 @@ void ProcessPairedReads(conj_graph_pack& gp, size_t ilib, bool calculate_thresho
     }
 }
 
+bool ShouldMapSingleReads(bool has_good_rr_reads, size_t ilib) {
+    bool map_single_reads = cfg::get().always_single_reads_rr || (!has_good_rr_reads && cfg::get().single_reads_rr);
+    if (cfg::get().ds.reads[ilib].type() != io::LibraryType::HQMatePairs) {
+        return map_single_reads;
+    }
+    if (map_single_reads) {
+        return true;
+    }
+    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+        if (cfg::get().ds.reads[i].type() != io::LibraryType::MatePairs && cfg::get().ds.reads[i].type() != io::LibraryType::HQMatePairs) {
+            return false;
+        }
+    }
+    return true;
+}
 
 void PairInfoCount::run(conj_graph_pack &gp, const char*) {
     if (!cfg::get().developer_mode) {
@@ -216,9 +231,9 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
             break;
         }
     }
-    bool map_single_reads = cfg::get().always_single_reads_rr || (!has_good_rr_reads && cfg::get().single_reads_rr);
 
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+        bool map_single_reads = ShouldMapSingleReads(has_good_rr_reads, i);
         INFO("Mapping library #" << i);
         if (cfg::get().ds.reads[i].is_paired() && cfg::get().ds.reads[i].data().mean_insert_size != 0.0) {
             INFO("Mapping paired reads (takes a while) ");

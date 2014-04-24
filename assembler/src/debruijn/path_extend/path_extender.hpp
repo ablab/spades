@@ -335,7 +335,8 @@ protected:
     size_t min_cycle_len_;
 
 public:
-    InsertSizeLoopDetector(const Graph& g, const GraphCoverageMap& cov_map, size_t is): g_(g), cov_map_(cov_map), min_cycle_len_(is) { }
+    InsertSizeLoopDetector(const Graph& g, const GraphCoverageMap& cov_map, size_t is): g_(g), cov_map_(cov_map), min_cycle_len_(is) {
+    }
 
     size_t GetMinCycleLenth() const {
         return min_cycle_len_;
@@ -632,16 +633,19 @@ class LoopDetectingPathExtender : public PathExtender {
 protected:
     size_t maxLoops_;
     bool investigateShortLoops_;
+    bool use_short_loop_cov_resolver_;
     CovShortLoopResolver cov_loop_resolver_;
     vector<pair<BidirectionalPath*, BidirectionalPath*> > visited_cycles_;
     InsertSizeLoopDetector is_detector_;
     const GraphCoverageMap& cov_map_;
 
 public:
-    LoopDetectingPathExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, size_t max_loops, bool investigateShortLoops, size_t is)
+    LoopDetectingPathExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, size_t max_loops, bool investigateShortLoops,
+                              bool use_short_loop_cov_resolver, size_t is)
             : PathExtender(gp.g),
               maxLoops_(max_loops),
               investigateShortLoops_(investigateShortLoops),
+              use_short_loop_cov_resolver_(use_short_loop_cov_resolver),
               cov_loop_resolver_(gp),
               is_detector_(gp.g, cov_map, is),
               cov_map_(cov_map) {
@@ -761,7 +765,7 @@ public:
 
     virtual bool MakeSimpleGrowStep(BidirectionalPath& path) = 0;
 
-    virtual bool ResolveShortLoop(BidirectionalPath& path) = 0;
+    virtual bool ResolveShortLoopByCov(BidirectionalPath& path) = 0;
 
     virtual bool ResolveShortLoopByPI(BidirectionalPath& path) = 0;
 
@@ -778,24 +782,43 @@ public:
         LoopDetector loop_detector(&path, cov_map_);
         if (DetectCycle(path)) {
             result = false;
+        } else if (InvestigateShortLoop() && loop_detector.EdgeInShortLoop(path.Back()) && use_short_loop_cov_resolver_) {
+            DEBUG("edge in short loop");
+            result = ResolveShortLoop(path);
+        } else if (InvestigateShortLoop() && loop_detector.PrevEdgeInShortLoop() && use_short_loop_cov_resolver_) {
+            DEBUG("Prev edge in short loop");
+            path.PopBack();
+            result = ResolveShortLoop(path);
         } else {
             DEBUG("Making step");
             result = MakeSimpleGrowStep(path);
             DEBUG("Made step");
             if (DetectCycle(path)) {
                 result = false;
-            } else if (CanInvistigateShortLoop() && investigateShortLoops_ && loop_detector.EdgeInShortLoop(path.Back())) {
+            } else if (InvestigateShortLoop() && loop_detector.EdgeInShortLoop(path.Back())) {
                 DEBUG("Edge in short loop");
-                result = ResolveShortLoopByPI(path);
-            } else if (CanInvistigateShortLoop() && investigateShortLoops_ && loop_detector.PrevEdgeInShortLoop()) {
+                result = ResolveShortLoop(path);
+            } else if (InvestigateShortLoop() && loop_detector.PrevEdgeInShortLoop()) {
                 DEBUG("Prev edge in short loop");
                 path.PopBack();
-                result = ResolveShortLoopByPI(path);
+                result = ResolveShortLoop(path);
             }
         }
         return result;
     }
 
+private:
+    bool ResolveShortLoop(BidirectionalPath& p) {
+        if (use_short_loop_cov_resolver_) {
+            return ResolveShortLoopByCov(p);
+        } else {
+            return ResolveShortLoopByPI(p);
+        }
+    }
+
+    bool InvestigateShortLoop() {
+        return investigateShortLoops_ && (use_short_loop_cov_resolver_ || CanInvistigateShortLoop());
+    }
 };
 
 class SimpleExtender: public LoopDetectingPathExtender {
@@ -818,8 +841,8 @@ protected:
 
 public:
 
-    SimpleExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, ExtensionChooser * ec, size_t is, size_t max_loops, bool investigateShortLoops):
-        LoopDetectingPathExtender(gp, cov_map, max_loops, investigateShortLoops, is),
+    SimpleExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, ExtensionChooser * ec, size_t is, size_t max_loops, bool investigate_short_loops, bool use_short_loop_cov_resolver):
+        LoopDetectingPathExtender(gp, cov_map, max_loops, investigate_short_loops, use_short_loop_cov_resolver, is),
         extensionChooser_(ec),
         loopResolver_(gp.g, *extensionChooser_) {
     }
@@ -853,24 +876,20 @@ public:
         return extensionChooser_->WeighConterBased();
     }
 
-    virtual bool ResolveShortLoop(BidirectionalPath& path) {
-        //if (extensionChooser_->WeighConterBased()) {
-            LoopDetector loop_detector(&path, cov_map_);
-            size_t init_len = path.Length();
-            bool result = false;
-            while (loop_detector.EdgeInShortLoop(path.Back())) {
-                //loopResolver_.ResolveShortLoop(path);
-                cov_loop_resolver_.ResolveShortLoop(path);
-                if (init_len == path.Length()) {
-                    return result;
-                } else {
-                    result = true;
-                }
-                init_len = path.Length();
+    virtual bool ResolveShortLoopByCov(BidirectionalPath& path) {
+        LoopDetector loop_detector(&path, cov_map_);
+        size_t init_len = path.Length();
+        bool result = false;
+        while (loop_detector.EdgeInShortLoop(path.Back())) {
+            cov_loop_resolver_.ResolveShortLoop(path);
+            if (init_len == path.Length()) {
+                return result;
+            } else {
+                result = true;
             }
-            return true;
-        //}
-        //return false;
+            init_len = path.Length();
+        }
+        return true;
     }
 
     virtual bool ResolveShortLoopByPI(BidirectionalPath& path) {
@@ -925,7 +944,7 @@ protected:
 public:
 
     ScaffoldingPathExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, ExtensionChooser * scaffoldingEC, GapJoiner * gapJoiner, size_t is, size_t max_loops, bool investigateShortLoops):
-        LoopDetectingPathExtender(gp, cov_map, max_loops, investigateShortLoops, is),
+        LoopDetectingPathExtender(gp, cov_map, max_loops, investigateShortLoops, false, is),
             scaffoldingExtensionChooser_(scaffoldingEC),
             gapJoiner_(gapJoiner)
     {
@@ -966,11 +985,11 @@ public:
         return result;
     }
 
-    virtual bool ResolveShortLoop(BidirectionalPath& /*path*/) {
+    virtual bool ResolveShortLoopByCov(BidirectionalPath&) {
         return false;
     }
 
-	virtual bool ResolveShortLoopByPI(BidirectionalPath& /*path*/) {
+	virtual bool ResolveShortLoopByPI(BidirectionalPath&) {
 		return false;
 	}
 
