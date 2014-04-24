@@ -579,9 +579,9 @@ void KMerClustering::process(const std::string &Prefix) {
   std::vector<numeric::matrix<uint64_t> > errs(nthreads_, numeric::matrix<double>(4, 4, 0.0));
 
 # pragma omp parallel for shared(ofs, ofs_bad, errs) num_threads(nthreads_) schedule(guided) reduction(+:newkmers, gsingl, tsingl, tcsingl, gcsingl, tcls, gcls, tkmers, tncls)
-  for (size_t chunk = 0; chunk < nthreads_; ++chunk) {
-      size_t *current = findex.data() + findex.size() * chunk / nthreads_;
-      size_t *next = findex.data() + findex.size() * (chunk + 1)/ nthreads_;
+  for (size_t chunk = 0; chunk < nthreads_ * nthreads_; ++chunk) {
+      size_t *current = findex.data() + findex.size() * chunk / nthreads_ / nthreads_;
+      size_t *next = findex.data() + findex.size() * (chunk + 1)/ nthreads_ / nthreads_;
       std::ifstream is(Prefix, std::ios::in | std::ios::binary);
 
       // Calculate how much we need to seek
