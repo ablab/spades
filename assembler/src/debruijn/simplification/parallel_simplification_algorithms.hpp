@@ -36,22 +36,28 @@ public:
                   v_it_(v_it) {
         	if (v_it_ != g_.end()) {
         	    e_it_ = g_.out_begin(*v_it_);
+                Skip();
         	}
         }
 
     private:
         friend class boost::iterator_core_access;
 
-        void increment() {
-            if (v_it_ == g_.end())
-        	    return;
-            e_it_++;
+        void Skip() {
+            VERIFY(v_it_ != g_.end());
             while (e_it_ == g_.out_end(*v_it_)) {
         	    v_it_++;
-                if (v_it_ == g_.end())
+                if (v_it_ == g_.end()) 
                     return;
                 e_it_ = g_.out_begin(*v_it_);
         	}
+        }
+
+        void increment() {
+            if (v_it_ == g_.end()) 
+              return;
+            e_it_++;
+            Skip();
         }
 
         bool equal(const graph_edge_iterator &other) const {
@@ -90,15 +96,18 @@ public:
         }
         if (chunk_size > 0) {
     	    size_t i = 0;
-    	    for (; it != g_.end(); ++it) 
+            do {
+                ++it;
     	    	if (++i % chunk_size == 0) 
     	    		answer.push_back(it);
-    	    
+            } while (it != g_.end());
+
             VERIFY(i == chunk_cnt * chunk_size);
         } else {
             VERIFY(it == g_.end());
             answer.push_back(it);
         }
+        VERIFY(answer.back() == g_.end());
     	return answer;
     }
 
@@ -725,7 +734,7 @@ class TwoStepAlgorithmRunner {
 
     template <class Algo, class It>
     void CountAll(Algo& algo, It begin, It end, size_t bucket) {
-        for (auto it = begin; it != end; ++it) {
+        for (auto it = begin; !(it == end); ++it) {
             CountElement(algo, *it, bucket);
         }
     }
