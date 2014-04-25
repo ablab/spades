@@ -15,69 +15,10 @@ template<class Graph>
 class ParallelIterationHelper {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef typename Graph::VertexIterator const_vertex_iterator;
-    typedef typename Graph::edge_const_iterator const_edge_iterator;
+    typedef typename Graph::VertexIt const_vertex_iterator;
 
     const Graph& g_;
 public:
-
-    class graph_edge_iterator : public boost::iterator_facade<graph_edge_iterator,
-            EdgeId, boost::forward_traversal_tag, EdgeId> {
-    public:
-//        explicit graph_edge_iterator(const Graph& g, VertexIterator v_it,
-//                                     const_edge_iterator e_it)
-//                : g_(g),
-//                  v_it_(v_it),
-//                  e_it_(e_it) {
-//        }
-
-        explicit graph_edge_iterator(const Graph& g, const_vertex_iterator v_it)
-                : g_(g),
-                  v_it_(v_it) {
-        	if (v_it_ != g_.end()) {
-        	    e_it_ = g_.out_begin(*v_it_);
-                Skip();
-        	}
-        }
-
-    private:
-        friend class boost::iterator_core_access;
-
-        void Skip() {
-            VERIFY(v_it_ != g_.end());
-            while (e_it_ == g_.out_end(*v_it_)) {
-        	    v_it_++;
-                if (v_it_ == g_.end()) 
-                    return;
-                e_it_ = g_.out_begin(*v_it_);
-        	}
-        }
-
-        void increment() {
-            if (v_it_ == g_.end()) 
-              return;
-            e_it_++;
-            Skip();
-        }
-
-        bool equal(const graph_edge_iterator &other) const {
-        	if (other.v_it_ != v_it_)
-        		return false;
-            if (v_it_ != g_.end() && other.e_it_ != e_it_)
-            	return false;
-            return true;
-        }
-
-        EdgeId dereference() const {
-            VERIFY(v_it_ != g_.end());
-            return *e_it_;
-        }
-
-        const Graph& g_;
-        const_vertex_iterator v_it_;
-        const_edge_iterator e_it_;
-    };
-
 
     ParallelIterationHelper(const Graph& g) : g_(g) {
 
@@ -111,10 +52,10 @@ public:
     	return answer;
     }
 
-    vector<graph_edge_iterator> EdgeChunks(size_t chunk_cnt) const {
-    	vector<graph_edge_iterator> answer;
+    vector<omnigraph::GraphEdgeIterator<Graph>> EdgeChunks(size_t chunk_cnt) const {
+    	vector<omnigraph::GraphEdgeIterator<Graph>> answer;
     	for (const_vertex_iterator v_it: VertexChunks(chunk_cnt)) {
-    		answer.push_back(graph_edge_iterator(g_, v_it));
+    		answer.push_back(omnigraph::GraphEdgeIterator<Graph>(g_, v_it));
     	}
     	return answer;
     }
