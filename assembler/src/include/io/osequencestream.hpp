@@ -17,21 +17,19 @@
 #include <string>
 #include <vector>
 #include "single_read.hpp"
-
-using std::string;
-using std::endl;
+#include "paired_read.hpp"
 
 namespace io {
 
-inline string MakeContigId(int number, size_t length) {
+inline std::string MakeContigId(int number, size_t length) {
     return  "NODE_" + ToString(number) + "_length_" + ToString(length);
 }
 
-inline string MakeContigId(int number, size_t length, double coverage) {
+inline std::string MakeContigId(int number, size_t length, double coverage) {
     return "NODE_" + ToString(number)  + "_length_" + ToString(length) + "_cov_" + ToString(coverage);
 }
 
-inline string MakeContigId(int number, size_t length, double coverage, size_t id) {
+inline std::string MakeContigId(int number, size_t length, double coverage, size_t id) {
     return "NODE_" + ToString(number)  + "_length_" + ToString(length) + "_cov_" + ToString(coverage)  + "_ID_" +  ToString(id);
 }
 
@@ -44,14 +42,14 @@ protected:
     void write_str(const std::string& s) {
         size_t cur = 0;
         while (cur < s.size()) {
-            ofstream_ << s.substr(cur, 60) << endl;
+            ofstream_ << s.substr(cur, 60) << std::endl;
             cur += 60;
         }
     }
 
     virtual void write_header(const std::string& s) {
         // Velvet format: NODE_1_length_24705_cov_358.255249
-        ofstream_ << ">" << MakeContigId(id_++, s.size()) << endl;
+        ofstream_ << ">" << MakeContigId(id_++, s.size()) << std::endl;
     }
 
 public:
@@ -79,11 +77,11 @@ public:
      * Doesn't increase counters, don't mix with other methods!
      */
     osequencestream& operator<<(const SingleRead& read) {
-        ofstream_ << ">" << read.name() << endl;
+        ofstream_ << ">" << read.name() << std::endl;
         size_t cur = 0;
-        string s = read.GetSequenceString();
+        std::string s = read.GetSequenceString();
         while (cur < s.size()) {
-            ofstream_ << s.substr(cur, 60) << endl;
+            ofstream_ << s.substr(cur, 60) << std::endl;
             cur += 60;
         }
         return *this;
@@ -100,7 +98,7 @@ protected:
     size_t cur = 0;
     std::string s = read.GetSequenceString();
     while (cur < s.size()) {
-      stream << s.substr(cur, 60) << endl;
+      stream << s.substr(cur, 60) << std::endl;
       cur += 60;
     }
   }
@@ -126,19 +124,17 @@ public:
 
 class osequencestream_cov: public osequencestream {
 protected:
-
     double coverage_;
 
-
-    virtual void write_header(const string& s) {
+    virtual void write_header(const std::string& s) {
         // Velvet format: NODE_1_length_24705_cov_358.255249
-        ofstream_ << ">" << MakeContigId(id_++, s.size(), coverage_) << endl;
+        ofstream_ << ">" << MakeContigId(id_++, s.size(), coverage_) << std::endl;
     }
 
 
 public:
-    osequencestream_cov(const std::string& filename): osequencestream(filename), coverage_(0.) {
-    }
+    osequencestream_cov(const std::string& filename)
+        : osequencestream(filename), coverage_(0.) { }
 
     virtual ~osequencestream_cov() {
         ofstream_.close();
@@ -169,13 +165,13 @@ protected:
 
     double cov_;
 
-    virtual void write_header(const string& s) {
-        ofstream_ << ">" << MakeContigId(++id_, s.size(), cov_, uid_) << endl;
+  virtual void write_header(const std::string& s) {
+        ofstream_ << ">" << MakeContigId(++id_, s.size(), cov_, uid_) << std::endl;
     }
 
 public:
-    osequencestream_with_id(const string& filename): osequencestream(filename), uid_(0), cov_(0.0) {
-    }
+    osequencestream_with_id(const std::string& filename)
+        : osequencestream(filename), uid_(0), cov_(0.0) { }
 
     virtual ~osequencestream_with_id() {
         ofstream_.close();
@@ -189,7 +185,7 @@ public:
         uid_ = uid;
     }
 
-    osequencestream_with_id& operator<<(const string& s) {
+    osequencestream_with_id& operator<<(const std::string& s) {
         write_header(s);
         write_str(s);
         return *this;
@@ -211,13 +207,13 @@ class osequencestream_with_data_for_scaffold: public osequencestream_with_id  {
 protected:
     std::ofstream scstream_;
 
-    virtual void write_header(const string& s) {
-        scstream_ << id_ << "\tNODE_" << id_ << "\t" << s.size() << "\t" << (int) round(cov_) << endl;
-        ofstream_ << ">" << MakeContigId(id_++, s.size(), cov_, uid_) << endl;
+    virtual void write_header(const std::string& s) {
+        scstream_ << id_ << "\tNODE_" << id_ << "\t" << s.size() << "\t" << (int) round(cov_) << std::endl;
+        ofstream_ << ">" << MakeContigId(id_++, s.size(), cov_, uid_) << std::endl;
     }
 
 public:
-    osequencestream_with_data_for_scaffold(const string& filename): osequencestream_with_id(filename) {
+    osequencestream_with_data_for_scaffold(const std::string& filename): osequencestream_with_id(filename) {
         id_ = 1;
         std::string sc_filename = filename + ".info";
         scstream_.open(sc_filename.c_str());
@@ -228,7 +224,7 @@ public:
         scstream_.close();
     }
 
-    osequencestream_with_data_for_scaffold& operator<<(const string& s) {
+    osequencestream_with_data_for_scaffold& operator<<(const std::string& s) {
         write_header(s);
         write_str(s);
         return *this;
@@ -243,7 +239,7 @@ public:
 
 class osequencestream_for_fastg: public osequencestream_with_id  {
 protected:
-    string header_;
+    std::string header_;
 
     virtual void write_header(const std::string& s) {
         ofstream_ << ">" << s;
@@ -258,7 +254,7 @@ public:
         ofstream_.close();
     }
 
-    void set_header(const string& h) {
+    void set_header(const std::string& h) {
         header_=  h;
     }
 
@@ -267,7 +263,7 @@ public:
         for (size_t i = 0; i < v.size(); ++i) {
             ofstream_ << ":" << v[i];
         }
-        ofstream_ << ";" << endl;
+        ofstream_ << ";" << std::endl;
         return *this;
     }
 
