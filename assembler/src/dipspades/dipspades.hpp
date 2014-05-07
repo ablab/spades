@@ -161,7 +161,6 @@ public:
 		DipSPAdes::Phase("Haplotype assembly", "haplotype_assembly") { }
 
 	void run(debruijn_graph::conj_graph_pack &graph_pack, const char*) {
-		if(dsp_cfg::get().ha.enabled){
 			if(!storage().composite_storage || !storage().default_storage)
 				return;
 			if(storage().composite_storage->Size() == 0 ||
@@ -173,7 +172,6 @@ public:
 			construct_graph_from_contigs(double_graph_pack);
 			HaplotypeAssembler(graph_pack, double_graph_pack, storage().default_storage,
 					storage().composite_storage, storage().redundancy_map).Run();
-		}
 	}
 
 	void load(debruijn_graph::conj_graph_pack&,
@@ -205,14 +203,16 @@ void run_dipspades() {
 
     StageManager DS_Manager ( {dsp_cfg::get().rp.developer_mode,
     						dsp_cfg::get().io.load_from,
-    						dsp_cfg::get().io.output_saves} );
-    DS_Manager.add((new DipSPAdes())->
-    	add(new ContigGraphConstructionStage())->
+   						dsp_cfg::get().io.output_saves} );
+    auto ds_phase = new DipSPAdes();
+    ds_phase->add(new ContigGraphConstructionStage())->
     	add(new PolymorphicBulgeRemoverStage())->
-    	add(new ConsensusConstructionStage())->
-    	add(new HaplotypeAssemblyStage()));
-    DS_Manager.run(conj_gp, dsp_cfg::get().rp.entry_point.c_str());
+    	add(new ConsensusConstructionStage());
+    if(dsp_cfg::get().ha.ha_enabled)
+    	ds_phase->add(new HaplotypeAssemblyStage());
 
+    DS_Manager.add(ds_phase);
+    DS_Manager.run(conj_gp, dsp_cfg::get().rp.entry_point.c_str());
     INFO("dipSPAdes finished");
 }
 

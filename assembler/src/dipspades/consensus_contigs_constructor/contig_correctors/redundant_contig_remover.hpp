@@ -722,9 +722,9 @@ public:
 		set<size_t> processed_contigs;
 		set<size_t> absolutely_redundant;
 
-		size_t num_pair = seqs.size() * (seqs.size() - 1) / 2;
-		size_t num_proc_pair = 0;
-		double cur_part = 0.1;
+		size_t contigs_number = seqs.size();
+		double processed_perc = 0.1;
+		double processed_step = 0.1;
 
 		for(size_t i = 0; i < seqs.size() - 1; i++){
 
@@ -840,16 +840,20 @@ public:
 								if(absolutely_redundant.find(i) != absolutely_redundant.end())
 									break;
 							}
-						num_proc_pair++;
-						if((double)num_proc_pair / double(num_pair) >= cur_part){
-							INFO(ToString(cur_part) + " of pair were processed");
-							cur_part += 0.1;
-						}
 					}
 					}
 				}
 			}
+
+			double cur_process_perc = double(i) / contigs_number;
+			if(cur_process_perc > processed_perc) {
+				while(processed_perc + processed_step<= cur_process_perc)
+					processed_perc += processed_step;
+				INFO(ToString(processed_perc * 100.0) << "% contigs were processed");
+				processed_perc += processed_step;
+			}
 		}
+		INFO("100% contigs were processed");
 
 		RedundancyMapCondenser<size_t> condenser;
 		condenser.Condense(res.redundancy_map);

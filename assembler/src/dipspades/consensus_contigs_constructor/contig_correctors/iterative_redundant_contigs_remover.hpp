@@ -33,6 +33,7 @@ public:
 			contigs = equal_path_remover.Correct(contigs);
 			res.redundancy_map = equal_path_remover.Result().redundancy_map;
 			index_.Clear();
+			INFO(ToString(contigs->Size()) + " contigs will be used further");
 		}
 
 		INFO("Iterative loop corrector starts");
@@ -51,6 +52,7 @@ public:
 			RedundancyMapMerger<size_t> map_merger;
 			res.redundancy_map = map_merger.MergeTwoMaps(old_map, new_map);
 			index_.Clear();
+			INFO(ToString(contigs->Size()) + " contigs will be used further");
 		}
 
 		{
@@ -67,6 +69,7 @@ public:
 			RedundancyMapMerger<size_t> map_merger;
 			res.redundancy_map = map_merger.MergeTwoMaps(old_map, new_map);
 			index_.Clear();
+			INFO(ToString(contigs->Size()) + " contigs will be used further");
 		}
 		INFO("Iterative loop corrector ends");
 		return contigs;
