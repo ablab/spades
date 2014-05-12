@@ -185,7 +185,7 @@
 #undef JEMALLOC_VALGRIND
 
 /* Support optional abort() on OOM. */
-#undef JEMALLOC_XMALLOC
+#define JEMALLOC_XMALLOC
 
 /* Support lazy locking (avoid locking unless a second thread is launched). */
 #cmakedefine JEMALLOC_LAZY_LOCK

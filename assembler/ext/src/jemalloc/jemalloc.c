@@ -27,7 +27,11 @@ size_t	opt_quarantine = ZU(0);
 bool	opt_redzone = false;
 bool	opt_utrace = false;
 bool	opt_valgrind = false;
+#ifdef JEMALLOC_XMALLOC
+bool	opt_xmalloc = true;
+#else
 bool	opt_xmalloc = false;
+#endif
 bool	opt_zero = false;
 size_t	opt_narenas = 0;
 
