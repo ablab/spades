@@ -261,7 +261,8 @@ private:
 
 inline bool GetLoopAndExit(const Graph& g, EdgeId e, pair<EdgeId, EdgeId>& result) {
     VertexId v = g.EdgeEnd(e);
-    if (g.OutgoingEdgeCount(v) != 2) {
+    VertexId start = g.EdgeStart(e);
+    if (g.OutgoingEdgeCount(v) != 2 || g.IncomingEdgeCount(v) != 1 || g.OutgoingEdgeCount(start) != 1 || g.IncomingEdgeCount(start) != 2) {
         return false;
     }
     EdgeId loop;
