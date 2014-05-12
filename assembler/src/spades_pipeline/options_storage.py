@@ -257,7 +257,10 @@ def set_default_values():
     if threads is None:
         threads = THREADS
     if memory is None:
-        memory = MEMORY
+        if support.get_available_memory():
+            memory = min(MEMORY, support.get_available_memory())
+        else:
+            memory = MEMORY
     if iterations is None:
         iterations = ITERATIONS
     if disable_gzip_output is None:

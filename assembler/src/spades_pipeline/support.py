@@ -132,6 +132,23 @@ def which(program):
     return None
 
 
+def get_available_memory():
+    mem_info_filename = "/proc/meminfo"
+    avail_mem_header = "MemTotal:"
+    if os.path.isfile(mem_info_filename):
+        try:
+            for line in open(mem_info_filename):
+                if line.startswith(avail_mem_header):
+                    avail_mem = int(line[len(avail_mem_header):].split()[0]) # in kB
+                    avail_mem /= 1024 * 1024 # in GB
+                    return avail_mem
+        except ValueError:
+            return None
+        except IOError:
+            return None
+    return None
+
+
 def process_readline(line, is_python3=sys.version.startswith('3.')):
     if is_python3:
         return str(line, 'utf-8')
