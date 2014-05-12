@@ -114,13 +114,17 @@ def print_used_values(cfg, log):
         else:
             print_value(cfg, "assembly", "iterative_K", "k")
         if cfg["assembly"].careful:
-            log.info("  MismatchCorrector will be used")
+            log.info("  Mismatch careful mode is turned ON")
         else:
-            log.info("  MismatchCorrector will be SKIPPED")
+            log.info("  Mismatch careful mode is turned OFF")
         if cfg["assembly"].disable_rr:
             log.info("  Repeat resolution is DISABLED")
         else:
             log.info("  Repeat resolution is enabled")
+        if "mismatch_corrector" in cfg:
+            log.info("  MismatchCorrector will be used")
+        else:
+            log.info("  MismatchCorrector will be SKIPPED")
 
     log.info("Other parameters:")
     print_value(cfg, "common", "tmp_dir", "Dir for temp files")
@@ -464,6 +468,11 @@ def main(args):
         for v in args:
             command += " " + v
         log.info(command)
+
+    # special case
+    if "mismatch_corrector" in cfg and not support.get_lib_ids_by_type(dataset_data, 'paired-end'):
+        support.warning('cannot perform mismatch correction without at least one paired-end library! Skipping this step.', log)
+        del cfg["mismatch_corrector"]
 
     print_used_values(cfg, log)
     log.removeHandler(params_handler)
