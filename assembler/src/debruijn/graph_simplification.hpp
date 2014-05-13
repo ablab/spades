@@ -606,9 +606,8 @@ bool EnableParallel(conj_graph_pack& gp,
             if (gp.g.AllHandlersThreadSafe()) {
                 return true;
             } else {
-                WARN("Not all handlers are threadsafe, switching to non-parallel presimplif");
-                //fixme remove this output
-                gp.g.PrintHandlersNames();
+                INFO("Not all handlers are threadsafe, switching to non-parallel presimplif");
+                //gp.g.PrintHandlersNames();
             }
         }
     }
