@@ -658,10 +658,21 @@ public:
 
         //Selecting the biggest cluster for each edge
         for (auto iter = mapping_descr.begin(); iter != mapping_descr.end(); ++iter) {
+
+            auto first_cluster = iter->sorted_positions[iter->first_trustable_index];
+            auto last_cluster = iter->sorted_positions[iter->last_trustable_index];
+            int read_range = last_cluster.read_position - first_cluster.read_position;
+            int edge_range = last_cluster.edge_position - first_cluster.edge_position;
+            int cluster_szie = iter->last_trustable_index - iter->first_trustable_index;
+            if (cluster_szie > 2 * read_range || edge_range < 0 || 2 * edge_range < read_range || edge_range > 2 * read_range) {
+                //skipping cluster
+                continue;
+            }
+
             auto edge_cluster = largest_clusters.find(iter->edgeId);
             if (edge_cluster != largest_clusters.end()) {
                 if (edge_cluster->second.last_trustable_index - edge_cluster->second.first_trustable_index
-                        > iter->last_trustable_index - iter->first_trustable_index) {
+                        < iter->last_trustable_index - iter->first_trustable_index) {
 
                     edge_cluster->second = *iter;
                 }
@@ -673,9 +684,10 @@ public:
 
         MappingPath<EdgeId> result;
         for (auto iter = largest_clusters.begin(); iter != largest_clusters.end(); ++iter) {
-            MappingRange range(Range(iter->second.sorted_positions[iter->second.first_trustable_index].read_position, iter->second.sorted_positions[iter->second.last_trustable_index].read_position),
-                    Range(iter->second.sorted_positions[iter->second.first_trustable_index].edge_position, iter->second.sorted_positions[iter->second.last_trustable_index].edge_position));
-
+            auto first_cluster = iter->second.sorted_positions[iter->second.first_trustable_index];
+            auto last_cluster = iter->second.sorted_positions[iter->second.last_trustable_index];
+            MappingRange range(Range(first_cluster.read_position, last_cluster.read_position),
+                    Range(first_cluster.edge_position, last_cluster.edge_position));
             result.join(MappingPath<EdgeId>(vector<EdgeId>(1, iter->second.edgeId), vector<MappingRange>(1, range)));
         }
 
