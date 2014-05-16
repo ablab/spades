@@ -498,13 +498,17 @@ void CloseGaps(conj_graph_pack& gp, Streams& streams) {
 }
 
 void GapClosing::run(conj_graph_pack &gp, const char*) {
-    // FIXME
-    size_t lib_index = 0;
+
+    bool pe_exist = false;
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd) {
-            lib_index = i;
+            pe_exist = true;
             break;
         }
+    }
+    if (!pe_exist) {
+        INFO("No paired-end libraries exist, skipping gap closer");
+        return;
     }
 
     if (!gp.index.IsAttached()) {
@@ -516,12 +520,17 @@ void GapClosing::run(conj_graph_pack &gp, const char*) {
         INFO("Index attached");
     }
 
-    if (cfg::get().use_multithreading) {
-        auto streams = paired_binary_readers(cfg::get().ds.reads[lib_index], true, 0);
-        CloseGaps(gp, streams);
-    } else {
-        io::PairedStreams streams(paired_easy_reader(cfg::get().ds.reads[lib_index], true, 0));
-        CloseGaps(gp, streams);
+    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+        if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd) {
+
+            if (cfg::get().use_multithreading) {
+                auto streams = paired_binary_readers(cfg::get().ds.reads[i], true, 0);
+                CloseGaps(gp, streams);
+            } else {
+                io::PairedStreams streams(paired_easy_reader(cfg::get().ds.reads[i], true, 0));
+                CloseGaps(gp, streams);
+            }
+        }
     }
 
     if (!cfg::get().developer_mode) {
