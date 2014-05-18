@@ -341,7 +341,8 @@ class ParallelEdgeProcessor {
         bool eof() const { return it_.IsEnd(); }
 
         ConstEdgeIteratorWrapper& operator>>(typename Graph::EdgeId &val) {
-            val = *(++it_);
+            val = *it_;
+            ++it_; 
             return *this;
         }
 
