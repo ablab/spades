@@ -355,6 +355,23 @@ bool AllTopology(Graph &g,
     return res;
 }
 
+template<class Graph>
+bool RemoveIsolatedEdges(Graph &g, size_t max_length, double max_coverage, size_t max_length_any_cov,
+                 boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
+    typedef typename Graph::EdgeId EdgeId;
+
+    return EdgeRemovingAlgorithm<Graph>(g,
+        func::And<EdgeId>(
+            make_shared<IsolatedEdgeCondition<Graph>>(g),
+            func::Or<EdgeId>(
+                make_shared<LengthUpperBound<Graph>>(g, max_length_any_cov),
+                func::And<EdgeId>(
+                    make_shared<LengthUpperBound<Graph>>(g, max_length),
+                    make_shared<CoverageUpperBound<Graph>>(g, max_coverage)
+                )
+    )), removal_handler).Process();
+}
+
 //todo move to some of the utils files
 template<class Graph>
 class CountingCallback {
@@ -595,7 +612,7 @@ void ParallelPreSimplification(conj_graph_pack& gp,
 }
 
 inline
-bool EnableParallel(conj_graph_pack& gp,
+bool EnableParallel(const conj_graph_pack& gp,
                        const debruijn_config::simplification::presimplification& presimp) {
     if (presimp.parallel) {
         INFO("Trying to enable parallel presimplification. Chunk count = " << presimp.chunk_cnt);

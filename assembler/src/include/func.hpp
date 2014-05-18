@@ -92,12 +92,12 @@ const shared_ptr<Predicate<T>> And(const shared_ptr<Predicate<T>>& a,
 template<class T>
 const shared_ptr<Predicate<T>> Or(const shared_ptr<Predicate<T>>& a,
 		const shared_ptr<Predicate<T>>& b) {
-	return OrOperator<T>(a, b);
+	return make_shared<OrOperator<T>>(a, b);
 }
 
 template<class T>
 const shared_ptr<Predicate<T>> Not(const shared_ptr<Predicate<T>>& a) {
-	return NotOperator<T>(a);
+	return make_shared<NotOperator<T>>(a);
 }
 
 template<class T>

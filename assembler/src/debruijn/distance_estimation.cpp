@@ -196,7 +196,7 @@ void estimate_distance(conj_graph_pack& gp,
 
     INFO("Filling paired information");
     PairInfoImprover<Graph> improver(gp.g, clustered_index, lib);
-    improver.ImprovePairedInfo(config.max_threads);
+    improver.ImprovePairedInfo((unsigned int)config.max_threads);
 
     if (cfg::get().pe_params.param_set.scaffolder_options.cluster_info) {
         INFO("Filling scaffolding index");

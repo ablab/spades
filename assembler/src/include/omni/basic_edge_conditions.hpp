@@ -31,6 +31,26 @@ class EdgeCondition : public Predicate<typename Graph::EdgeId> {
 };
 
 template<class Graph>
+class IsolatedEdgeCondition : public EdgeCondition<Graph> {
+	typedef typename Graph::EdgeId EdgeId;
+	typedef typename Graph::VertexId VertexId;
+    typedef EdgeCondition<Graph> base;
+
+	bool IsTerminalVertex(VertexId v) const {
+		return this->g().IncomingEdgeCount(v) + this->g().OutgoingEdgeCount(v) == 1;
+	}
+
+public:
+	IsolatedEdgeCondition(const Graph& g) : base(g) {
+	}
+
+    bool Check(EdgeId e) const {
+        return IsTerminalVertex(this->g().EdgeStart(e)) && IsTerminalVertex(this->g().EdgeEnd(e));
+    }
+
+};
+
+template<class Graph>
 class AlternativesPresenceCondition : public EdgeCondition<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;

@@ -13,21 +13,6 @@
 #include "simplification.hpp"
 
 namespace debruijn_graph {
-void CollectPositions(conj_graph_pack &gp) {
-    gp.edge_pos.clear();
-    if (gp.genome.size() > 0) {
-        FillPos(gp, gp.genome, "ref0");
-        FillPos(gp, !gp.genome, "ref1");
-    }
-
-    if (!cfg::get().pos.contigs_for_threading.empty() &&
-        path::FileExists(cfg::get().pos.contigs_for_threading))
-      FillPosWithRC(gp, cfg::get().pos.contigs_for_threading, "thr_");
-
-    if (!cfg::get().pos.contigs_to_analyze.empty() &&
-        path::FileExists(cfg::get().pos.contigs_to_analyze))
-      FillPosWithRC(gp, cfg::get().pos.contigs_to_analyze, "anlz_");
-}
 
 void Simplification::run(conj_graph_pack &gp, const char*) {
     using namespace omnigraph;
@@ -73,15 +58,15 @@ void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
 
     printer(ipp_removing_isolated_edges);
 
-    {
-        INFO("Final isolated edges removal:");
-        size_t max_length = std::max(cfg::get().ds.RL(), cfg::get().simp.ier.max_length_any_cov);
-        INFO("All edges of length smaller than " << max_length << " will be removed");
-        size_t removed = IsolatedEdgeRemover<Graph>(gp.g, cfg::get().simp.ier.max_length,
-                                                    cfg::get().simp.ier.max_coverage,
-                                                    max_length).RemoveIsolatedEdges();
-        INFO("Removed " << removed << " edges");
-    }
+    INFO("Final isolated edges removal:");
+    size_t max_length = std::max(cfg::get().ds.RL(), cfg::get().simp.ier.max_length_any_cov);
+    //todo add info that some other edges might be removed =)
+    INFO("All edges of length smaller than " << max_length << " will be removed");
+    debruijn::simplification::RemoveIsolatedEdges(gp.g, cfg::get().simp.ier.max_length,
+                              cfg::get().simp.ier.max_coverage,
+                              max_length);
+//todo return this functionality
+//        INFO("Removed " << removed << " edges");
 
     size_t low_threshold = gp.ginfo.trusted_bound();
     if (low_threshold) {

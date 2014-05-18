@@ -132,6 +132,23 @@ void FillPosWithRC(gp_t& gp, const string& contig_file, string prefix) {
     }
 }
 
+inline
+void CollectPositions(conj_graph_pack &gp) {
+    gp.edge_pos.clear();
+    if (gp.genome.size() > 0) {
+        FillPos(gp, gp.genome, "ref0");
+        FillPos(gp, !gp.genome, "ref1");
+    }
+
+    if (!cfg::get().pos.contigs_for_threading.empty() &&
+        path::FileExists(cfg::get().pos.contigs_for_threading))
+      FillPosWithRC(gp, cfg::get().pos.contigs_for_threading, "thr_");
+
+    if (!cfg::get().pos.contigs_to_analyze.empty() &&
+        path::FileExists(cfg::get().pos.contigs_to_analyze))
+      FillPosWithRC(gp, cfg::get().pos.contigs_to_analyze, "anlz_");
+}
+
 }
 //version from master
 //
