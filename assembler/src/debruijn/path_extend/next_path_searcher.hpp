@@ -240,7 +240,7 @@ inline NextPathSearcher::NextPathSearcher(const Graph& g, const GraphCoverageMap
           search_dist_(search_dist),
           weight_counter_(weight_counter),
           long_edge_len_(500),
-          max_paths_(1000) {
+          max_paths_(50) {
 
 }
 inline vector<BidirectionalPath*> NextPathSearcher::ScaffoldTree(const BidirectionalPath& path) {
