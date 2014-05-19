@@ -58,7 +58,6 @@ void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
 
     printer(ipp_removing_isolated_edges);
 
-    INFO("Final isolated edges removal:");
     debruijn::simplification::RemoveIsolatedEdges(gp.g, cfg::get().simp.ier, cfg::get().ds.RL());
 //todo return this functionality
 //        INFO("Removed " << removed << " edges");

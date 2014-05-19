@@ -379,6 +379,7 @@ bool RemoveIsolatedEdges(Graph &g, debruijn_config::simplification::isolated_edg
     typedef typename Graph::EdgeId EdgeId;
     size_t max_length = std::max(read_length, cfg::get().simp.ier.max_length_any_cov);
     //todo add info that some other edges might be removed =)
+    INFO("Removing isolated edges");
     INFO("All edges shorter than " << max_length << " will be removed");
     INFO("Also edges shorter than " << ier.max_length << " and coverage smaller than " << ier.max_coverage << " will be removed");
     return RemoveIsolatedEdges(g, ier.max_length, ier.max_coverage, max_length, removal_handler);
@@ -649,12 +650,17 @@ void PreSimplification(conj_graph_pack& gp,
                        const SimplifInfoContainer& info,
                        boost::function<void(EdgeId)> removal_handler) {
     INFO("PROCEDURE == Presimplification");
-    RemoveSelfConjugateEdges(gp.g, gp.k_value + 100, 1., removal_handler);
 
     if (!presimp.enabled) {
         INFO("Further presimplification is disabled");
         return;
-    } else if (math::eq(info.detected_mean_coverage(), 0.)) {
+    }
+    
+    RemoveSelfConjugateEdges(gp.g, gp.k_value + 100, 1., removal_handler);
+    //todo make parallel version
+    RemoveIsolatedEdges(gp.g, presimp.ier, info.read_length(), removal_handler);
+
+    if (math::eq(info.detected_mean_coverage(), 0.)) {
     	INFO("Mean coverage wasn't reliably estimated, no further presimplification");
     	return;
     } else if (math::ls(info.detected_mean_coverage(), presimp.activation_cov)) {
@@ -674,8 +680,6 @@ void PreSimplification(conj_graph_pack& gp,
         NonParallelPreSimplification(gp, presimp, info, removal_handler);
     }
 
-    //todo make parallel version
-    RemoveIsolatedEdges(gp.g, presimp.ier, info.read_length(), removal_handler);
 }
 
 inline
