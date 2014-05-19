@@ -86,11 +86,9 @@ public:
         CompositeLabeler<Graph> composite_labeler(str_labeler, cov_labler, path_labeler, pos_labeler);
         shared_ptr<omnigraph::visualization::GraphColorer<Graph>> colorer;
         if (gp.index.IsAttached()) {
-             colorer = omnigraph::visualization::DefaultColorer(gp.g, stats::FindGenomePath(gp.genome, gp.g, gp.index)
-                 , stats::FindGenomePath(!gp.genome, gp.g, gp.index));
+             colorer = stats::DefaultColorer(gp);
         } else {
-            Path<EdgeId> empty;
-            colorer = omnigraph::visualization::DefaultColorer(gp.g, empty, empty);
+            colorer = omnigraph::visualization::DefaultColorer(gp.g);
         }
 
         omnigraph::visualization::ComponentVisualizer<Graph> visualizer(gp.g, false);
@@ -113,8 +111,7 @@ public:
         shared_ptr<omnigraph::visualization::GraphColorer<Graph>> colorer;
 
         if (gp.index.IsAttached()) {
-             colorer = omnigraph::visualization::DefaultColorer(gp.g, stats::FindGenomePath(gp.genome, gp.g, gp.index)
-                 , stats::FindGenomePath(!gp.genome, gp.g, gp.index));
+             colorer = stats::DefaultColorer(gp);
         } else {
             Path<EdgeId> empty;
             colorer = omnigraph::visualization::DefaultColorer(gp.g, empty, empty);

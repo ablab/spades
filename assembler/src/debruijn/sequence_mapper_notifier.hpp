@@ -29,9 +29,9 @@ public:
 
 class SequenceMapperNotifier {
 public:
-    typedef MapperFactory<conj_graph_pack>::SequenceMapperT SequenceMapperT;
-    typedef std::shared_ptr<
-            const NewExtendedSequenceMapper<conj_graph_pack::graph_t, conj_graph_pack::index_t> > Mapper;
+    typedef SequenceMapper<conj_graph_pack::graph_t> SequenceMapperT;
+//    typedef std::shared_ptr<
+//            const NewExtendedSequenceMapper<conj_graph_pack::graph_t, conj_graph_pack::index_t> > Mapper;
 
     SequenceMapperNotifier(const conj_graph_pack& gp)
             : gp_(gp) {
@@ -50,8 +50,7 @@ public:
                         size_t lib_index, size_t read_length, size_t threads_count) {
         streams.reset();
         NotifyStartProcessLibrary(lib_index, threads_count);
-        MapperFactory<conj_graph_pack> mapper_factory(gp_);
-        std::shared_ptr<SequenceMapperT> mapper = mapper_factory.GetSequenceMapper(read_length);
+        std::shared_ptr<SequenceMapperT> mapper = ChooseProperMapper(gp_, read_length);
 
         size_t counter = 0, n = 15;
         size_t fmem = get_free_memory();

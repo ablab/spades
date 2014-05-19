@@ -24,15 +24,47 @@
 
 namespace debruijn_graph {
 
-template<class graph_pack, class PairedReadType>
-void RefineInsertSizeParallel(const graph_pack& gp,
-        io::ReadStreamList<PairedReadType>& streams,
+//    template<class PairedRead>
+//    pair<bool, int> GetISFromLongEdge(const PairedRead& read, size_t edge_length_threshold) const {
+//        auto pos_left = GetLastKmerPos(read.first.sequence());
+//        auto pos_right = GetFirstKmerPos(read.second.sequence());
+//        if (pos_left.second == -1u || pos_right.second == -1u || pos_left.first != pos_right.first || g_.length(pos_left.first) < edge_length_threshold) {
+//          return make_pair(false, 0);
+//        }
+//
+//        return make_pair(true, (int) (pos_right.second - pos_left.second - small_k_ - read.insert_size() + left.size() + right.size()));
+//    }
+//
+//  pair<EdgeId, size_t> GetFirstKmerPos(const Sequence &sequence) const {
+//    if (sequence.size() < k_) {
+//      return make_pair(EdgeId(0), -1u);
+//    }
+//
+//    Kmer left = sequence.start<Kmer>(k_);
+//    left = kmer_mapper_.Substitute(left);
+//
+//    return index_.get(left);
+//  }
+//
+//  pair<EdgeId, size_t> GetLastKmerPos(const Sequence &sequence) const {
+//    if (sequence.size() < k_) {
+//      return make_pair(EdgeId(0), -1u);
+//    }
+//
+//    Kmer right = sequence.end<Kmer>(k_);
+//    right = kmer_mapper_.Substitute(right);
+//
+//    return index_.get(right);
+//  }
+template<class graph_pack, class PairedStreams, class Mapper>
+size_t RefineInsertSizeParallel(const graph_pack& gp,
+        const Mapper& mapper,
+        PairedStreams& streams,
         InsertSizeHistogramCounter<graph_pack>& counter,
-        size_t edge_length_threshold,
-        size_t& rl) {
+        size_t edge_length_threshold) {
 
-  debruijn_graph::MapperFactory<graph_pack> mapper_factory(gp);
-  auto mapper = mapper_factory.GetSequenceMapper(rl == 0 ? gp.k_value + 1 : rl);
+  typedef typename Mapper::Kmer Kmer;
+  size_t mapper_k = mapper.KmerSize();
 
   size_t nthreads = streams.size();
   std::vector<size_t> rls(nthreads, 0);
@@ -40,48 +72,53 @@ void RefineInsertSizeParallel(const graph_pack& gp,
 
 #pragma omp parallel for num_threads(nthreads)
   for (size_t i = 0; i < nthreads; ++i) {
-    PairedReadType r;
+    typename PairedStreams::ReadT r;
     auto& stream = streams[i];
     stream.reset();
 
     while (!stream.eof()) {
       stream >> r;
-      Sequence sequence_left = r.first().sequence();
-      Sequence sequence_right = r.second().sequence();
+      Sequence first = r.first().sequence();
+      Sequence second = r.second().sequence();
+      rls[i] = std::max(std::max(first.size(), second.size()), rls[i]);
 
-      if (sequence_left.size() > rls[i]) {
-        rls[i] = sequence_left.size();
+      if (first.size() < mapper_k || second.size() < mapper_k)
+          continue;
+      
+      auto pos_left = mapper.GetKmerPos(first.start<Kmer>(mapper_k));
+      auto pos_right = mapper.GetKmerPos(second.end<Kmer>(mapper_k));
+      if (pos_left.second == -1u || pos_right.second == -1u || pos_left.first != pos_right.first || gp.g.length(pos_left.first) < edge_length_threshold) {
+        counter.ProcessPairedRead(i, false, 0);
+      } else {
+        counter.ProcessPairedRead(i, true, (int) (pos_right.second - pos_left.second - mapper_k - r.insert_size() + first.size() + second.size()));
       }
-      if (sequence_right.size() > rls[i]) {
-        rls[i] = sequence_right.size();
-      }
-
-      auto is = mapper->GetISFromLongEdge(sequence_left, sequence_right, r.insert_size(), edge_length_threshold);
-      counter.ProcessPairedRead(i, is.first, is.second);
     }
   }
   counter.Finalize();
 
-  if (rl == 0) {
-    rl = rls[0];
-    for (size_t i = 1; i < nthreads; ++i) {
-      if (rl < rls[i]) {
-        rl = rls[i];
-      }
-    }
+  size_t rl = 0;
+  for (size_t i = 0; i < nthreads; ++i) {
+    rl = std::max(rl, rls[i]);
   }
+  return rl;
 }
 
 
-template<class graph_pack, class PairedReadType, class DataSet>
+template<class graph_pack, class PairedStreams, class DataSet>
 bool RefineInsertSizeForLib(const graph_pack& gp,
-                      io::ReadStreamList<PairedReadType>& streams,
+                      PairedStreams& streams,
                       DataSet& data,
                       size_t edge_length_threshold) {
 
   INFO("Estimating insert size (takes a while)");
   InsertSizeHistogramCounter<graph_pack> hist_counter(gp, /* ignore negative */ true);
-  RefineInsertSizeParallel<graph_pack, PairedReadType>(gp, streams, hist_counter, edge_length_threshold, data.read_length);
+
+  //FIXME
+  auto mapper = ChooseProperMapper(gp, data.read_length == 0 ? gp.k_value + 1 : data.read_length);
+
+  size_t rl = RefineInsertSizeParallel(gp, *mapper, streams, hist_counter, edge_length_threshold);
+  if (data.read_length == 0)
+      data.read_length = rl;
 
   INFO(hist_counter.mapped() << " paired reads (" << ((double) hist_counter.mapped() * 100.0 / (double) hist_counter.total()) << "% of all) aligned to long edges");
   if (hist_counter.negative() > 3 * hist_counter.mapped())
@@ -143,16 +180,10 @@ void ProcessPairedReads(conj_graph_pack& gp, size_t ilib, bool calculate_thresho
     LatePairedIndexFiller pif(gp.g, PairedReadCountWeight, gp.paired_indices[ilib]);
     notifier.Subscribe(ilib, &pif);
 
-    if (cfg::get().use_multithreading) {
-        auto paired_streams = paired_binary_readers(reads, true, (size_t) reads.data().mean_insert_size);
-        notifier.ProcessLibrary(paired_streams, ilib, reads.data().read_length, paired_streams.size());
-        cfg::get_writable().ds.reads[ilib].data().pi_threshold = split_graph.GetThreshold();
-    }
-    else {
-        io::PairedStreams paired_streams(paired_easy_reader(reads, true, (size_t) reads.data().mean_insert_size));
-        notifier.ProcessLibrary(paired_streams, ilib, reads.data().read_length, paired_streams.size());
-        cfg::get_writable().ds.reads[ilib].data().pi_threshold = split_graph.GetThreshold();
-    }
+    VERIFY(cfg::get().use_multithreading);
+    auto paired_streams = paired_binary_readers(reads, true, (size_t) reads.data().mean_insert_size);
+    notifier.ProcessLibrary(paired_streams, ilib, reads.data().read_length, paired_streams.size());
+    cfg::get_writable().ds.reads[ilib].data().pi_threshold = split_graph.GetThreshold();
 
     if (map_single_reads) {
         ProcessSingleReads(gp, ilib);
@@ -188,13 +219,9 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
         if (cfg::get().ds.reads[i].is_paired()) {
 
             bool insert_size_refined;
-            if (cfg::get().use_multithreading) {
-                auto streams = paired_binary_readers(cfg::get().ds.reads[i], false, 0);
-                insert_size_refined = RefineInsertSizeForLib(gp, streams, cfg::get_writable().ds.reads[i].data(), edge_length_threshold);
-            } else {
-                io::PairedStreams streams(paired_easy_reader(cfg::get().ds.reads[i], false, 0));
-                insert_size_refined = RefineInsertSizeForLib(gp, streams, cfg::get_writable().ds.reads[i].data(), edge_length_threshold);
-            }
+            VERIFY(cfg::get().use_multithreading);
+            auto streams = paired_binary_readers(cfg::get().ds.reads[i], false, 0);
+            insert_size_refined = RefineInsertSizeForLib(gp, streams, cfg::get_writable().ds.reads[i].data(), edge_length_threshold);
 
             if (!insert_size_refined) {
                 cfg::get_writable().ds.reads[i].data().mean_insert_size = 0.0;

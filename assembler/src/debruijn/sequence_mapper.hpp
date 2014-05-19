@@ -17,123 +17,123 @@
 #include <cstdlib>
 
 namespace debruijn_graph {
-/**
- * This class finds how certain sequence is mapped to genome. As it is now it works correct only if sequence
- * is mapped to graph ideally and in unique way.
- */
-template <class Graph, class Index>
-class SimpleSequenceMapper {
-  /*
-};
-
-template<class Graph>
-class SimpleSequenceMapper<Graph, runtime_k::RtSeq> {
-*/
- public:
-  typedef typename Graph::EdgeId EdgeId;
-  typedef typename Index::KMer Kmer;
-
- private:
-  const Graph& g_;
-  const Index &index_;
-  size_t k_;
-
-  bool TryThread(Kmer &kmer, std::vector<EdgeId> &passed,
-                 size_t& endPosition) const {
-    VERIFY(passed.size() > 0);
-    EdgeId last = passed[passed.size() - 1];
-    if (endPosition + 1 < g_.length(last)) {
-      if (g_.EdgeNucls(last)[endPosition + k_] == kmer[k_ - 1]) {
-        endPosition++;
-        return true;
-      }
-    } else {
-      VertexId v = g_.EdgeEnd(last);
-      for (auto I = g_.out_begin(v), E = g_.out_end(v); I != E; ++I) {
-        EdgeId edge = *I;
-        if (g_.EdgeNucls(edge)[k_ - 1] == kmer[k_ - 1]) {
-          passed.push_back(edge);
-          endPosition = 0;
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  bool FindKmer(Kmer& kmer, std::vector<EdgeId> &passed, size_t& startPosition,
-                size_t& endPosition) const {
-    //TRACE("CONTAINS kmer " << " " << omp_get_thread_num() );
-    pair<EdgeId, size_t> position = index_.get(kmer);
-    if (position.second != -1u) {
-      //TRACE("YES CONTAINS " << omp_get_thread_num());
-      //DEBUG("LENGTH " << g_.length(position.first));
-      endPosition = position.second;
-      if (passed.empty()) {
-        startPosition = position.second;
-      }
-      if (passed.empty() || passed.back() != position.first) {
-        passed.push_back(position.first);
-      }
-
-      return true;
-    }
-    return false;
-  }
-
-  bool ProcessKmer(Kmer &kmer, std::vector<EdgeId> &passed, size_t &startPosition,
-                   size_t &endPosition, bool valid) const {
-    //DEBUG("process kmer started " << omp_get_thread_num() << " valid " << valid);
-    if (valid) {
-      return TryThread(kmer, passed, endPosition);
-    } else {
-      return FindKmer(kmer, passed, startPosition, endPosition);
-    }
-    return false;
-    //DEBUG("process kmer finished " << omp_get_thread_num());
-  }
-
- public:
-  /**
-   * Creates SimpleSequenceMapper for given graph. Also requires index_ which should be synchronized
-   * with graph.
-   * @param g graph sequences should be mapped to
-   * @param index index synchronized with graph
-   */
-  SimpleSequenceMapper(const Graph& g, const Index& index) :
-      g_(g), index_(index), k_(g.k()+1) {
-  }
-
-  /**
-   * Finds a path in graph which corresponds to given sequence.
-   * @read sequence to be mapped
-   */
-
-  Path<EdgeId> MapSequence(const Sequence &read) const {
-    std::vector<EdgeId> passed;
-    //TRACE("Mapping sequence");
-    if (read.size() <= k_ - 1) {
-      return Path<EdgeId>();
-    }
-
-    Kmer kmer = read.start<Kmer>(k_);
-    //DEBUG("started " << kmer.str() << omp_get_thread_num() );
-    size_t startPosition = -1ul;
-    size_t endPosition = -1ul;
-    bool valid = ProcessKmer(kmer, passed, startPosition, endPosition,
-                             false);
-    for (size_t i = k_; i < read.size(); ++i) {
-      kmer <<= read[i];
-      //DEBUG("shifted " << kmer.str() << omp_get_thread_num());
-      valid = ProcessKmer(kmer, passed, startPosition, endPosition,
-                          valid);
-    }
-    //DEBUG("Path got " << omp_get_thread_num());
-    Path<EdgeId> ans(passed, startPosition, endPosition + 1);
-    return ans;
-  }
-
-};
+///**
+// * This class finds how certain sequence is mapped to genome. As it is now it works correct only if sequence
+// * is mapped to graph ideally and in unique way.
+// */
+//template <class Graph, class Index>
+//class SimpleSequenceMapper {
+//  /*
+//};
+//
+//template<class Graph>
+//class SimpleSequenceMapper<Graph, runtime_k::RtSeq> {
+//*/
+// public:
+//  typedef typename Graph::EdgeId EdgeId;
+//  typedef typename Index::KMer Kmer;
+//
+// private:
+//  const Graph& g_;
+//  const Index &index_;
+//  size_t k_;
+//
+//  bool TryThread(Kmer &kmer, std::vector<EdgeId> &passed,
+//                 size_t& endPosition) const {
+//    VERIFY(passed.size() > 0);
+//    EdgeId last = passed[passed.size() - 1];
+//    if (endPosition + 1 < g_.length(last)) {
+//      if (g_.EdgeNucls(last)[endPosition + k_] == kmer[k_ - 1]) {
+//        endPosition++;
+//        return true;
+//      }
+//    } else {
+//      VertexId v = g_.EdgeEnd(last);
+//      for (auto I = g_.out_begin(v), E = g_.out_end(v); I != E; ++I) {
+//        EdgeId edge = *I;
+//        if (g_.EdgeNucls(edge)[k_ - 1] == kmer[k_ - 1]) {
+//          passed.push_back(edge);
+//          endPosition = 0;
+//          return true;
+//        }
+//      }
+//    }
+//    return false;
+//  }
+//
+//  bool FindKmer(Kmer& kmer, std::vector<EdgeId> &passed, size_t& startPosition,
+//                size_t& endPosition) const {
+//    //TRACE("CONTAINS kmer " << " " << omp_get_thread_num() );
+//    pair<EdgeId, size_t> position = index_.get(kmer);
+//    if (position.second != -1u) {
+//      //TRACE("YES CONTAINS " << omp_get_thread_num());
+//      //DEBUG("LENGTH " << g_.length(position.first));
+//      endPosition = position.second;
+//      if (passed.empty()) {
+//        startPosition = position.second;
+//      }
+//      if (passed.empty() || passed.back() != position.first) {
+//        passed.push_back(position.first);
+//      }
+//
+//      return true;
+//    }
+//    return false;
+//  }
+//
+//  bool ProcessKmer(Kmer &kmer, std::vector<EdgeId> &passed, size_t &startPosition,
+//                   size_t &endPosition, bool valid) const {
+//    //DEBUG("process kmer started " << omp_get_thread_num() << " valid " << valid);
+//    if (valid) {
+//      return TryThread(kmer, passed, endPosition);
+//    } else {
+//      return FindKmer(kmer, passed, startPosition, endPosition);
+//    }
+//    return false;
+//    //DEBUG("process kmer finished " << omp_get_thread_num());
+//  }
+//
+// public:
+//  /**
+//   * Creates SimpleSequenceMapper for given graph. Also requires index_ which should be synchronized
+//   * with graph.
+//   * @param g graph sequences should be mapped to
+//   * @param index index synchronized with graph
+//   */
+//  SimpleSequenceMapper(const Graph& g, const Index& index) :
+//      g_(g), index_(index), k_(g.k()+1) {
+//  }
+//
+//  /**
+//   * Finds a path in graph which corresponds to given sequence.
+//   * @read sequence to be mapped
+//   */
+//
+//  Path<EdgeId> MapSequence(const Sequence &read) const {
+//    std::vector<EdgeId> passed;
+//    //TRACE("Mapping sequence");
+//    if (read.size() <= k_ - 1) {
+//      return Path<EdgeId>();
+//    }
+//
+//    Kmer kmer = read.start<Kmer>(k_);
+//    //DEBUG("started " << kmer.str() << omp_get_thread_num() );
+//    size_t startPosition = -1ul;
+//    size_t endPosition = -1ul;
+//    bool valid = ProcessKmer(kmer, passed, startPosition, endPosition,
+//                             false);
+//    for (size_t i = k_; i < read.size(); ++i) {
+//      kmer <<= read[i];
+//      //DEBUG("shifted " << kmer.str() << omp_get_thread_num());
+//      valid = ProcessKmer(kmer, passed, startPosition, endPosition,
+//                          valid);
+//    }
+//    //DEBUG("Path got " << omp_get_thread_num());
+//    Path<EdgeId> ans(passed, startPosition, endPosition + 1);
+//    return ans;
+//  }
+//
+//};
 
 //template<class Graph, class Seq = runtime_k::RtSeq>
 //class ExtendedSequenceMapper {
@@ -217,6 +217,7 @@ template<class Graph>
 class SequenceMapper {
 public:
     typedef typename Graph::EdgeId EdgeId;
+    typedef runtime_k::RtSeq Kmer;
 
 protected:
     const Graph& g_;
@@ -232,13 +233,15 @@ public:
 
     virtual MappingPath<EdgeId> MapSequence(const Sequence &sequence) const = 0;
 
-    virtual MappingPath<EdgeId> MapRead(const io::SingleRead &read) const = 0;
+  
+    MappingPath<EdgeId> MapRead(const io::SingleRead &read) const {
+      VERIFY(read.IsValid());
+      return MapSequence(read.sequence());
+    }
 
-    virtual pair<EdgeId, size_t> GetFirstKmerPos(const Sequence &sequence) const = 0;
+    virtual pair<EdgeId, size_t> GetKmerPos(const Kmer& kmer) const = 0;
 
-    virtual pair<EdgeId, size_t> GetLastKmerPos(const Sequence &sequence) const = 0;
-
-    virtual pair<bool, int> GetISFromLongEdge(const Sequence &left, const Sequence &right, size_t is, size_t edge_length_threshold = 0) const = 0;
+    virtual size_t KmerSize() const = 0;
 };
 
 //todo compare performance
@@ -248,8 +251,8 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
  using SequenceMapper<Graph>::g_;
 
  public:
+  typedef typename SequenceMapper<Graph>::Kmer Kmer;
   typedef std::vector<MappingRange> RangeMappings;
-  typedef typename Index::KMer Kmer;
   typedef KmerMapper<Graph, Kmer> KmerSubs;
   typedef MappingPathFixer<Graph> GraphMappingPathFixer;
 
@@ -396,41 +399,14 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
     return MappingPath<EdgeId>(passed_edges, range_mapping);
   }
 
-  MappingPath<EdgeId> MapRead(const io::SingleRead &read) const {
-    VERIFY(read.IsValid());
-    return MapSequence(read.sequence());
+  pair<EdgeId, size_t> GetKmerPos(const Kmer& kmer) const {
+    VERIFY(kmer.size() == k_);
+
+    return index_.get(kmer_mapper_.Substitute(kmer));
   }
 
-  pair<EdgeId, size_t> GetFirstKmerPos(const Sequence &sequence) const {
-    if (sequence.size() < k_) {
-      return make_pair(EdgeId(0), -1u);
-    }
-
-    Kmer left = sequence.start<Kmer>(k_);
-    left = kmer_mapper_.Substitute(left);
-
-    return index_.get(left);
-  }
-
-  pair<EdgeId, size_t> GetLastKmerPos(const Sequence &sequence) const {
-    if (sequence.size() < k_) {
-      return make_pair(EdgeId(0), -1u);
-    }
-
-    Kmer right = sequence.end<Kmer>(k_);
-    right = kmer_mapper_.Substitute(right);
-
-    return index_.get(right);
-  }
-
-  pair<bool, int> GetISFromLongEdge(const Sequence &left, const Sequence &right, size_t is, size_t edge_length_threshold) const {
-      auto pos_left = GetLastKmerPos(left);
-      auto pos_right = GetFirstKmerPos(right);
-      if (pos_left.second == -1u || pos_right.second == -1u || pos_left.first != pos_right.first || g_.length(pos_left.first) < edge_length_threshold) {
-          return make_pair(false, 0);
-      }
-
-      return make_pair(true, (int) (pos_right.second - pos_left.second - k_ - is + left.size() + right.size()));
+  size_t KmerSize() const {
+      return k_;
   }
 
   vector<EdgeId> FindReadPath(const MappingPath<EdgeId>& mapping_path) const {
