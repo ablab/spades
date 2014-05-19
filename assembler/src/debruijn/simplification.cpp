@@ -59,12 +59,7 @@ void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
     printer(ipp_removing_isolated_edges);
 
     INFO("Final isolated edges removal:");
-    size_t max_length = std::max(cfg::get().ds.RL(), cfg::get().simp.ier.max_length_any_cov);
-    //todo add info that some other edges might be removed =)
-    INFO("All edges of length smaller than " << max_length << " will be removed");
-    debruijn::simplification::RemoveIsolatedEdges(gp.g, cfg::get().simp.ier.max_length,
-                              cfg::get().simp.ier.max_coverage,
-                              max_length);
+    debruijn::simplification::RemoveIsolatedEdges(gp.g, cfg::get().simp.ier, cfg::get().ds.RL());
 //todo return this functionality
 //        INFO("Removed " << removed << " edges");
 

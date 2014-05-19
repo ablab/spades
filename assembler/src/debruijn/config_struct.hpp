@@ -261,6 +261,7 @@ struct debruijn_config {
             bool parallel;
             size_t chunk_cnt;
             double activation_cov;
+            isolated_edges_remover ier;
             std::string tip_condition;
             std::string ec_condition;
         };

@@ -418,6 +418,7 @@ void load(debruijn_config::simplification::presimplification& presimp,
   load(presimp.activation_cov, pt, "activation_cov", complete);
   load(presimp.tip_condition, pt, "tip_condition", complete); // pre tip clipper:
   load(presimp.ec_condition, pt, "ec_condition", complete); // pre ec remover:
+  load(presimp.ier, pt, "ier", complete);
 }
 
 void load(debruijn_config::simplification& simp,
