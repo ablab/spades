@@ -57,7 +57,7 @@ namespace debruijn_graph {
 //    return index_.get(right);
 //  }
 template<class graph_pack, class PairedStreams, class Mapper>
-size_t RefineInsertSizeParallel(const graph_pack& gp,
+void RefineInsertSizeParallel(const graph_pack& gp,
         const Mapper& mapper,
         PairedStreams& streams,
         InsertSizeHistogramCounter<graph_pack>& counter,
@@ -80,7 +80,6 @@ size_t RefineInsertSizeParallel(const graph_pack& gp,
       stream >> r;
       Sequence first = r.first().sequence();
       Sequence second = r.second().sequence();
-      rls[i] = std::max(std::max(first.size(), second.size()), rls[i]);
 
       if (first.size() < mapper_k || second.size() < mapper_k)
           continue;
@@ -95,12 +94,6 @@ size_t RefineInsertSizeParallel(const graph_pack& gp,
     }
   }
   counter.Finalize();
-
-  size_t rl = 0;
-  for (size_t i = 0; i < nthreads; ++i) {
-    rl = std::max(rl, rls[i]);
-  }
-  return rl;
 }
 
 
@@ -113,12 +106,10 @@ bool RefineInsertSizeForLib(const graph_pack& gp,
   INFO("Estimating insert size (takes a while)");
   InsertSizeHistogramCounter<graph_pack> hist_counter(gp, /* ignore negative */ true);
 
-  //FIXME
-  auto mapper = ChooseProperMapper(gp, data.read_length == 0 ? gp.k_value + 1 : data.read_length);
+  VERIFY(data.read_length != 0);
+  auto mapper = ChooseProperMapper(gp, data.read_length);
 
-  size_t rl = RefineInsertSizeParallel(gp, *mapper, streams, hist_counter, edge_length_threshold);
-  if (data.read_length == 0)
-      data.read_length = rl;
+  RefineInsertSizeParallel(gp, *mapper, streams, hist_counter, edge_length_threshold);
 
   INFO(hist_counter.mapped() << " paired reads (" << ((double) hist_counter.mapped() * 100.0 / (double) hist_counter.total()) << "% of all) aligned to long edges");
   if (hist_counter.negative() > 3 * hist_counter.mapped())
