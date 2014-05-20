@@ -326,8 +326,7 @@ public:
     }
 
     void removeOverlaps(PathContainer& paths, GraphCoverageMap& coverage_map,
-                        size_t max_overlap, bool cut_overlaps,  bool add_overlaps_begin, ContigWriter& writer,
-                        string output_dir) {
+                        size_t max_overlap, bool cut_overlaps,  bool add_overlaps_begin) {
         if (!cut_overlaps) {
             return;
         }
@@ -344,9 +343,6 @@ public:
         //DEBUG("remove similar path. Max difference " << max_overlap);
         remover.RemoveSimilarPaths(paths, max_overlap, false, true, true, true, add_overlaps_begin);
         DEBUG("end removing");
-        if (cfg::get().pe_params.debug_output) {
-            writer.writePaths(paths, output_dir + "/remove_all.fasta");
-        }
     }
 
     void RemoveMatePairEnds(PathContainer& paths, size_t min_edge_len) const {

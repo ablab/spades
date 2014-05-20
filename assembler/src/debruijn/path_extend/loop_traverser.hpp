@@ -16,7 +16,7 @@ namespace path_extend {
 
 class LoopTraverser {
 
-	Graph& g_;
+	const Graph& g_;
 	GraphCoverageMap& covMap_;
 	ContigsMaker* extender_;
 private:
@@ -111,7 +111,7 @@ private:
 	}
 
 public:
-	LoopTraverser(Graph& g, GraphCoverageMap& coverageMap, ContigsMaker* extender) :
+	LoopTraverser(const Graph& g, GraphCoverageMap& coverageMap, ContigsMaker* extender) :
 			g_(g), covMap_(coverageMap), extender_(extender) {
 	}
 

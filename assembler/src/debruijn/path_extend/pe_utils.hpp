@@ -255,6 +255,11 @@ public:
     size_t size() const {
         return edgeCoverage_.size();
     }
+
+    const Graph& graph() const {
+        return g_;
+    }
+
 private:
     GraphCoverageMap(const GraphCoverageMap& t) : g_(t.g_), empty_(t.empty_) {}
 };

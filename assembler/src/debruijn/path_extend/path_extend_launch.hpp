@@ -220,6 +220,52 @@ inline string LibStr(size_t count) {
     return count == 1 ? "library" : "libraries";
 }
 
+inline void ClonePathContainer(PathContainer& spaths, PathContainer& tpaths, GraphCoverageMap& tmap) {
+    tpaths.clear();
+    tmap.Clear();
+
+    for (auto iter = spaths.begin(); iter != spaths.end(); ++iter) {
+        BidirectionalPath& path = *iter.get();
+        BidirectionalPath* new_path = new BidirectionalPath(path.graph());
+        new_path->Subscribe(&tmap);
+        new_path->PushBack(path);
+
+        BidirectionalPath& cpath = *iter.getConjugate();
+        BidirectionalPath* new_cpath = new BidirectionalPath(cpath.graph());
+        new_cpath->Subscribe(&tmap);
+        new_cpath->PushBack(cpath);
+
+        tpaths.AddPair(new_path, new_cpath);
+    }
+}
+
+inline void FinalizePaths(PathContainer& paths, GraphCoverageMap& cover_map, size_t max_overlap, bool mate_pairs = false) {
+    ContigWriter writer(cover_map.graph());
+    PathExtendResolver resolver(cover_map.graph());
+
+    resolver.removeOverlaps(paths, cover_map, max_overlap, cfg::get().pe_params.param_set.remove_overlaps, cfg::get().pe_params.cut_all_overlaps);
+    if (mate_pairs) {
+        resolver.RemoveMatePairEnds(paths, max_overlap);
+    }
+    if (cfg::get().avoid_rc_connections) {
+        paths.FilterInterstandBulges();
+    }
+    paths.FilterEmptyPaths();
+    if (!mate_pairs) {
+        resolver.addUncoveredEdges(paths, cover_map);
+    }
+    paths.SortByLength();
+    paths.ResetPathsId();
+}
+
+inline void TraverseLoops(PathContainer& paths, GraphCoverageMap& cover_map, ContigsMaker* extender) {
+    INFO("Traversing tandem repeats");
+    LoopTraverser loopTraverser(cover_map.graph(), cover_map, extender);
+    loopTraverser.TraverseAllLoops();
+    paths.SortByLength();
+    paths.ResetPathsId();
+}
+
 inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 		vector<PairedInfoLibrary *>& libs,
 		vector<PairedInfoLibrary *>& scaff_libs,
@@ -232,9 +278,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	INFO("Path-Extend repeat resolving tool started");
 
 	make_dir(output_dir);
-	if (cfg::get().developer_mode) {
-	    make_dir(GetEtcDir(output_dir));
-	}
+    make_dir(GetEtcDir(output_dir));
 	const pe_config::ParamSetT& pset = cfg::get().pe_params.param_set;
 
 	ContigWriter writer(gp.g);
@@ -271,32 +315,35 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	paths.SortByLength();
 
     if (mp_libs.size() == 0) {
-        resolver.removeOverlaps(paths, cover_map, max_over, cfg::get().pe_params.param_set.remove_overlaps, cfg::get().pe_params.cut_all_overlaps,
-                                writer, output_dir);
-        if (cfg::get().avoid_rc_connections) {
-            paths.FilterInterstandBulges();
-        }
-        paths.FilterEmptyPaths();
-        resolver.addUncoveredEdges(paths, cover_map);
-        paths.SortByLength();
+        FinalizePaths(paths, cover_map, max_over);
         if (broken_contigs.is_initialized()) {
-            OutputBrokenScaffolds(paths, (int) gp.g.k(), writer,
-                                  output_dir + broken_contigs.get());
+            OutputBrokenScaffolds(paths, (int) gp.g.k(), writer, output_dir + broken_contigs.get());
         }
+
+        writer.WritePathsToFASTG(paths, GetEtcDir(output_dir) + "pe_before_traversal.fastg", GetEtcDir(output_dir) + "pe_before_traversal.fasta");
         if (traversLoops) {
-            INFO("Traversing tandem repeats");
-            LoopTraverser loopTraverser(gp.g, cover_map, mainPE);
-            loopTraverser.TraverseAllLoops();
-            paths.SortByLength();
+            TraverseLoops(paths, cover_map, mainPE);
         }
-        //writer.writePaths(paths, output_dir + contigs_name + ".fasta");
         DebugOutputPaths(writer, gp, output_dir, paths, "final_paths");
         writer.WritePathsToFASTG(paths, output_dir + contigs_name + ".fastg", output_dir + contigs_name + ".fasta");
         return;
     }
-    //writer.writePaths(paths, output_dir + "pe_paths.fasta");
-    if (cfg::get().pe_params.debug_output) {
-        writer.WritePathsToFASTG(paths, output_dir + "pe_paths.fastg", output_dir + "pe_paths.fasta");
+    else {
+        PathContainer clone_paths;
+        GraphCoverageMap clone_map(gp.g);
+        ClonePathContainer(paths, clone_paths, clone_map);
+
+        FinalizePaths(clone_paths, clone_map, max_over);
+        if (broken_contigs.is_initialized()) {
+            OutputBrokenScaffolds(clone_paths, (int) gp.g.k(), writer, output_dir + "pe_contigs");
+        }
+
+        writer.WritePathsToFASTG(clone_paths, GetEtcDir(output_dir) + "pe_before_traversal.fastg", GetEtcDir(output_dir) + "pe_before_traversal.fasta");
+        if (traversLoops) {
+            TraverseLoops(clone_paths, clone_map, mainPE);
+        }
+        DebugOutputPaths(writer, gp, output_dir, clone_paths, "final_pe_paths");
+        writer.WritePathsToFASTG(clone_paths, output_dir + "pe_scaffolds.fastg", output_dir + "pe_scaffolds.fasta");
     }
 
 //MP
@@ -310,18 +357,14 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	all_libs.insert(all_libs.end(), scafPEs.begin(), scafPEs.end());
 	all_libs.insert(all_libs.end(), mpPEs.begin(), mpPEs.end());
 	CompositeExtender* mp_main_pe = new CompositeExtender(gp.g, cover_map, all_libs, max_over);
+
 	INFO("Growing paths using mate-pairs");
 	auto mp_paths = resolver.extendSeeds(paths, *mp_main_pe);
-    resolver.removeOverlaps(mp_paths, cover_map, max_over, cfg::get().pe_params.param_set.remove_overlaps, cfg::get().pe_params.cut_all_overlaps,
-                            writer, output_dir);
-    resolver.RemoveMatePairEnds(mp_paths, max_over);
-	if (cfg::get().avoid_rc_connections) {
-	    mp_paths.FilterInterstandBulges();
-	}
-	mp_paths.FilterEmptyPaths();
-	//resolver.addUncoveredEdges(mp_paths, mp_main_pe->GetCoverageMap());
-	mp_paths.SortByLength();
+	FinalizePaths(mp_paths, cover_map, max_over, true);
+
 	DebugOutputPaths(writer, gp, output_dir, mp_paths, "mp_final_paths");
+	writer.WritePathsToFASTG(mp_paths, GetEtcDir(output_dir) + "mp_prefinal.fastg", GetEtcDir(output_dir) + "mp_prefinal.fasta");
+
     DEBUG("Paths are grown with mate-pairs");
     if (cfg::get().pe_params.debug_output) {
         writer.writePaths(mp_paths, output_dir + "mp_paths.fasta");
@@ -337,33 +380,18 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
     max_over = FindMaxOverlapedLen(libs);
     CompositeExtender* last_extender = new CompositeExtender(gp.g, cover_map, all_libs, max_over);
     auto last_paths = resolver.extendSeeds(mp_paths, *last_extender);
-    resolver.removeOverlaps(last_paths, cover_map, max_over, cfg::get().pe_params.param_set.remove_overlaps, cfg::get().pe_params.cut_all_overlaps,
-                    writer, output_dir);
+    FinalizePaths(last_paths, cover_map, max_over);
 
-    if (cfg::get().avoid_rc_connections) {
-        last_paths.FilterInterstandBulges();
-    }
-    last_paths.FilterEmptyPaths();
-    resolver.addUncoveredEdges(last_paths, cover_map);
-    last_paths.SortByLength();
-
-//Traverse loops
-    if (traversLoops) {
-        INFO("Traversing tandem repeats");
-        LoopTraverser loopTraverser(gp.g, cover_map, last_extender);
-        loopTraverser.TraverseAllLoops();
-        last_paths.SortByLength();
-    }
+    writer.WritePathsToFASTG(last_paths, GetEtcDir(output_dir) + "mp_before_traversal.fastg", GetEtcDir(output_dir) + "mp_before_traversal.fasta");
+    TraverseLoops(last_paths, cover_map, last_extender);
 
 //result
     if (broken_contigs.is_initialized()) {
-        OutputBrokenScaffolds(last_paths, (int) gp.g.k(), writer,
-                              output_dir + broken_contigs.get());
+        OutputBrokenScaffolds(last_paths, (int) gp.g.k(), writer, output_dir + broken_contigs.get());
     }
     DebugOutputPaths(writer, gp, output_dir, last_paths, "last_paths");
-
     writer.WritePathsToFASTG(last_paths, output_dir + contigs_name + ".fastg", output_dir + contigs_name + ".fasta");
-    //writer.writePaths(last_paths, output_dir + contigs_name+ "_temp" + ".fasta");
+
     last_paths.DeleteAllPaths();
     seeds.DeleteAllPaths();
     mp_paths.DeleteAllPaths();
