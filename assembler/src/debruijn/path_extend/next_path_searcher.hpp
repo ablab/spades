@@ -701,7 +701,7 @@ inline void NextPathSearcher::ProcessScaffoldingCandidate(EdgeWithDistance& e, E
                 AddConstructedPath(cp, reached_edge_pos + 1, 0, constructed_paths);
             }
         } else if (reached_paths.size() > 0 && looking_for_tip) {
-            WARN("Impossible: back path reaches tip");
+            DEBUG("Impossible: back path reaches tip");
         } else if (looking_for_tip) {
         	TRACE( "Found " << back_paths.size() << " path(s) going back to tip");
             int i = 0;
