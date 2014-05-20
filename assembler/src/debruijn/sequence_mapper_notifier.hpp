@@ -47,10 +47,9 @@ public:
 
     template<class ReadType>
     void ProcessLibrary(io::ReadStreamList<ReadType>& streams,
-                        size_t lib_index, size_t read_length, size_t threads_count) {
+                        size_t lib_index, const SequenceMapperT& mapper, size_t threads_count) {
         streams.reset();
         NotifyStartProcessLibrary(lib_index, threads_count);
-        std::shared_ptr<SequenceMapperT> mapper = ChooseProperMapper(gp_, read_length);
 
         size_t counter = 0, n = 15;
         size_t fmem = get_free_memory();
@@ -67,7 +66,7 @@ public:
                 while (!end_of_stream && size < limit) {
                     stream >> r;
                     ++size;
-                    NotifyProcessRead(r, *mapper, lib_index, ithread);
+                    NotifyProcessRead(r, mapper, lib_index, ithread);
                     end_of_stream = stream.eof();
                     // Stop filling buffer if the amount of available is smaller
                     // than half of free memory.

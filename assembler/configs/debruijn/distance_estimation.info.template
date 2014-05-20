@@ -8,7 +8,6 @@ sc_de
     filter_threshold            2.0 
 }
 
-
 usual_de
 {
     linkage_distance_coeff    0.0
@@ -85,4 +84,8 @@ amb_de {
         haplom_threshold                500
         relative_length_threshold       0.8
         relative_seq_threshold          0.5
+}
+
+sensitive_mapper {
+    k   19
 }
