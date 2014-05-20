@@ -191,7 +191,7 @@ public:
     typedef set<EdgeWithDistance, EdgeWithDistance::DistanceComparator> EdgeSet;
     typedef multimap<EdgeId, PathWithDistance> ConstructedPathT;
 
-    NextPathSearcher(const Graph& g, const GraphCoverageMap& cover_map, size_t search_dist, PathsWeightCounter weight_counter);
+    NextPathSearcher(const Graph& g, const GraphCoverageMap& cover_map, size_t search_dist, PathsWeightCounter weight_counter, size_t max_number_of_paths_to_search);
     set<BidirectionalPath*> FindNextPaths(const BidirectionalPath& path, EdgeId begin_edge, bool jump = true);
     vector<BidirectionalPath*> ScaffoldTree(const BidirectionalPath& path);
 private:
@@ -234,13 +234,13 @@ protected:
     DECL_LOGGER("NextPathSearcher")
 };
 
-inline NextPathSearcher::NextPathSearcher(const Graph& g, const GraphCoverageMap& cover_map, size_t search_dist, PathsWeightCounter weight_counter)
+inline NextPathSearcher::NextPathSearcher(const Graph& g, const GraphCoverageMap& cover_map, size_t search_dist, PathsWeightCounter weight_counter, size_t max_number_of_paths_to_search)
         : g_(g),
           cover_map_(cover_map),
           search_dist_(search_dist),
           weight_counter_(weight_counter),
           long_edge_len_(500),
-          max_paths_(50) {
+          max_paths_(max_number_of_paths_to_search) {
 
 }
 inline vector<BidirectionalPath*> NextPathSearcher::ScaffoldTree(const BidirectionalPath& path) {
@@ -669,7 +669,7 @@ inline void NextPathSearcher::ProcessScaffoldingCandidate(EdgeWithDistance& e, E
     size_t max_length_back = search_dist_ - grown_path_len;
     TRACE(search_dist_ << " " << grown_path_len);
     TRACE( "Searchin for edge of length " << g_.length(e.e_) << " to dist " << max_length_back);
-    NextPathSearcher back_searcher(g_, cover_map_, max_length_back, weight_counter_);
+    NextPathSearcher back_searcher(g_, cover_map_, max_length_back, weight_counter_, max_paths_);
     BidirectionalPath jumped_edge(g_, g_.conjugate(e.e_));
     set<BidirectionalPath*> back_paths = back_searcher.FindNextPaths(jumped_edge, jumped_edge.Back(), false);
     TRACE(" === DONE SEARCHING === ");

@@ -204,12 +204,30 @@ inline vector<ScaffoldingPathExtender*> MakeScaffoldingExtender(const conj_graph
     }
     return scafPEs;
 }
+inline size_t CountEdgesInGraph(const Graph& g) {
+    size_t count = 0;
+    for (auto iter = g.SmartEdgeBegin(); !iter.IsEnd(); ++iter) {
+        count++;
+    }
+    return count;
+}
 
+inline size_t GetNumberMPPaths(const Graph& g) {
+    size_t count_edge = CountEdgesInGraph(g);
+    if (count_edge < 1000) {
+        return 1000;
+    }
+    if (count_edge < 10000) {
+        return 100;
+    }
+    return 50;
+}
 inline vector<SimpleExtender *> MakeMPExtenders(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, const pe_config::ParamSetT& pset,
                                                 const PathContainer& paths, vector<PairedInfoLibrary *>& libs) {
+    size_t max_number_of_paths_to_search = GetNumberMPPaths(gp.g);
     vector<SimpleExtender *> mpPEs;
     for (size_t i = 0; i < libs.size(); ++i) {
-        MatePairExtensionChooser* chooser = new MatePairExtensionChooser(gp.g, *libs[i], paths);
+        MatePairExtensionChooser* chooser = new MatePairExtensionChooser(gp.g, *libs[i], paths, max_number_of_paths_to_search);
         SimpleExtender* mp_extender = new SimpleExtender(gp, cov_map, chooser, libs[i]->GetISMax(), pset.loop_removal.mp_max_loops, true, false);
         mpPEs.push_back(mp_extender);
     }
