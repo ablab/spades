@@ -98,34 +98,6 @@ public:
         return true;
     }
 
-    bool IsCycled(const GraphCoverageMap& cov_map) {
-        BidirectionalPath path = GetPrevPath(0);
-        size_t identical_edges = 0;
-        LoopDetector loop_detect(&path, cov_map);
-        bool is_cycled = loop_detect.IsCycled(cfg::get().pe_params.param_set.loop_removal.mp_max_loops, identical_edges);
-        if (path.Size() > 1 && path.At(path.Size() - 1) == path.At(path.Size() - 2)) {
-            is_cycled = true;
-        }
-        return is_cycled;
-    }
-
-    Edge* RemoveCycle(const GraphCoverageMap& cov_map, size_t min_length) {
-        size_t skip_identical_edges = 0;
-        BidirectionalPath path = GetPrevPath(0);
-        LoopDetector loop_detect(&path, cov_map);
-        loop_detect.IsCycled(cfg::get().pe_params.param_set.loop_removal.mp_max_loops, skip_identical_edges);
-        size_t remove = loop_detect.EdgesToRemove(skip_identical_edges, false);
-        Edge* prev_edge = this;
-        Edge* last_loop_edge = this;
-        for (size_t i = 0; i < remove && prev_edge->Length() > min_length; ++i) {
-            last_loop_edge = prev_edge;
-            prev_edge = last_loop_edge->prev_edge_;
-        }
-        prev_edge->AddIncorrectOutEdge(last_loop_edge->GetId());
-        VERIFY(prev_edge->Length() >= min_length);
-        return prev_edge;
-    }
-
     bool EqualBegins(const BidirectionalPath& path, int pos) {
         BidirectionalPath p = this->GetPrevPath(0);
         return path_extend::EqualBegins(path, (size_t) pos, p, p.Size() - 1, true);
@@ -269,6 +241,7 @@ inline set<BidirectionalPath*> NextPathSearcher::FindNextPaths(const Bidirection
     vector<Edge*> stopped_paths;
     size_t max_len = search_dist_ + path.Length();
     std::set<Edge*> used_edges;
+    std::unordered_set<Edge*> grow_paths_set;
 
     Edge* start_e = new Edge(g_, path.At(0), NULL, g_.length(path.At(0)) + path.GapAt(0), path.GapAt(0));
     Edge* e = start_e->AddPath(path, 1);
@@ -302,9 +275,17 @@ inline set<BidirectionalPath*> NextPathSearcher::FindNextPaths(const Bidirection
             //path.Print();
             ScaffoldTip(path, current_path, result_edges, stopped_paths, to_add, jump);
         }
-        grow_paths.insert(grow_paths.end(), to_add.begin(), to_add.end());
+        for (Edge* e_to_add : to_add) {
+            if (grow_paths_set.count(e_to_add) == 0) {
+                grow_paths.push_back(e_to_add);
+                grow_paths_set.insert(e_to_add);
+            }
+        }
 
-        if (used_edges.size() > max_paths_) {
+        //grow_paths.insert(grow_paths.end(), to_add.begin(), to_add.end());
+
+        //if (used_edges.size() > max_paths_) {
+        if (grow_paths_set.size() > max_paths_) {
             DEBUG("too many paths");
             delete start_e;
             return set<BidirectionalPath*>();
@@ -384,14 +365,7 @@ inline Edge* NextPathSearcher::AddPath(const BidirectionalPath& init_path, Edge*
             e = next_edge;
         } else if (e->GetId() != path.At(ie)) {
             Edge* next_edge = e->AddOutEdge(path.At(ie));
-            if (next_edge->IsCycled(cover_map_)) {
-                //e->AddIncorrectOutEdge(path.At(ie));
-                //e = next_edge->RemoveCycle(init_path.Length());
-            	TRACE("remove cycle");
-                break;
-            } else {
-                e = next_edge;
-            }
+            e = next_edge;
         }
     }
     return e;
