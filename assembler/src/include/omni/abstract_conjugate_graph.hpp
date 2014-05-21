@@ -214,7 +214,8 @@ private:
 
     void AddOutgoingEdge(EdgeId e) {
         VERIFY(this != 0);
-        outgoing_edges_.push_back(e);
+        outgoing_edges_.insert(std::upper_bound(outgoing_edges_.begin(), outgoing_edges_.end(), e), e);
+        //outgoing_edges_.push_back(e);
     }
 
     bool RemoveOutgoingEdge(const EdgeId e) {
