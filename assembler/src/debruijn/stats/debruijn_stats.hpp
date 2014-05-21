@@ -33,6 +33,29 @@ namespace debruijn_graph {
 namespace stats {
 
 template<class Graph, class Index>
+MappingPath<typename Graph::EdgeId>
+FindGenomeMappingPath(const Sequence& genome, const Graph& g,
+                      const Index& index,
+                      const KmerMapper<Graph>& kmer_mapper) {
+    NewExtendedSequenceMapper<Graph, Index> srt(g, index, kmer_mapper);
+    return srt.MapSequence(genome);
+}
+
+template<class graph_pack>
+MappingPath<typename graph_pack::graph_t::EdgeId>
+FindGenomeMappingPath(const Sequence& genome, const graph_pack& gp) {
+    return FindGenomeMappingPath(genome, gp.g, gp.index, gp.kmer_mapper);
+}
+
+template <class graph_pack>
+shared_ptr<omnigraph::visualization::GraphColorer<Graph>> DefaultColorer(const graph_pack& gp) {
+    return omnigraph::visualization::DefaultColorer(gp.g, 
+        FindGenomeMappingPath(gp.genome, gp.g, gp.index, gp.kmer_mapper).path(),
+        FindGenomeMappingPath(!gp.genome, gp.g, gp.index, gp.kmer_mapper).path());
+}
+
+
+template<class Graph, class Index>
 class GenomeMappingStat: public AbstractStatCounter {
   private:
     typedef typename Graph::EdgeId EdgeId;
@@ -89,50 +112,6 @@ class GenomeMappingStat: public AbstractStatCounter {
     }
 };
 
-template<class Graph, class Index>
-class StatCounter: public AbstractStatCounter {
-  private:
-    StatList stats_;
-  public:
-    typedef typename Graph::VertexId VertexId;
-    typedef typename Graph::EdgeId EdgeId;
-
-    StatCounter(const Graph& graph, const Index& index,
-                const Sequence& genome, size_t k) {
-        SimpleSequenceMapper<Graph, Index> sequence_mapper(graph, index);
-        Path<EdgeId> path1 = sequence_mapper.MapSequence(Sequence(genome));
-        Path<EdgeId> path2 = sequence_mapper.MapSequence(!Sequence(genome));
-        stats_.AddStat(new VertexEdgeStat<Graph>(graph));
-        stats_.AddStat(new BlackEdgesStat<Graph>(graph, path1, path2));
-        stats_.AddStat(new NStat<Graph>(graph, path1, 50));
-        stats_.AddStat(new SelfComplementStat<Graph>(graph));
-        stats_.AddStat(
-            new GenomeMappingStat<Graph, Index>(graph, index,
-                                                Sequence(genome), k));
-        stats_.AddStat(new IsolatedEdgesStat<Graph>(graph, path1, path2));
-    }
-
-    virtual ~StatCounter() {
-        stats_.DeleteStats();
-    }
-
-    virtual void Count() {
-        stats_.Count();
-    }
-
-  private:
-    DECL_LOGGER("StatCounter")
-};
-
-template<class Graph, class Index>
-void CountStats(const Graph& g, const Index& index,
-                const Sequence& genome, size_t k) {
-    INFO("Counting stats");
-    StatCounter<Graph, Index> stat(g, index, genome, k);
-    stat.Count();
-    INFO("Stats counted");
-}
-
 template<class Graph>
 void WriteErrorLoc(const Graph &g,
                    const string& folder_name,
@@ -152,20 +131,26 @@ void WriteErrorLoc(const Graph &g,
     INFO("Error localities written written to folder " << folder_name);
 }
 
-template<class Graph, class Index>
-Path<typename Graph::EdgeId> FindGenomePath(const Sequence& genome,
-                                            const Graph& g, const Index& index) {
-    SimpleSequenceMapper<Graph, Index> srt(g, index);
-    return srt.MapSequence(genome);
-}
-
-template<class Graph, class Index>
-MappingPath<typename Graph::EdgeId>
-FindGenomeMappingPath(const Sequence& genome, const Graph& g,
-                      const Index& index,
-                      const KmerMapper<Graph>& kmer_mapper) {
-    NewExtendedSequenceMapper<Graph, Index> srt(g, index, kmer_mapper);
-    return srt.MapSequence(genome);
+template<class graph_pack>
+void CountStats(const graph_pack& gp) {
+    typedef typename graph_pack::graph_t Graph;
+    typedef typename Graph::EdgeId EdgeId;
+    INFO("Counting stats");
+    StatList stats;
+    Path<EdgeId> path1 = FindGenomeMappingPath(gp.genome, gp.g, gp.index,
+                                      gp.kmer_mapper).path();
+    Path<EdgeId> path2 = FindGenomeMappingPath(!gp.genome, gp.g, gp.index,
+                                      gp.kmer_mapper).path();
+    stats.AddStat(new VertexEdgeStat<Graph>(gp.g));
+    stats.AddStat(new BlackEdgesStat<Graph>(gp.g, path1, path2));
+    stats.AddStat(new NStat<Graph>(gp.g, path1, 50));
+    stats.AddStat(new SelfComplementStat<Graph>(gp.g));
+    stats.AddStat(
+        new GenomeMappingStat<Graph, Index>(gp.g, gp.index,
+                                            gp.genome, gp.k_value));
+    stats.AddStat(new IsolatedEdgesStat<Graph>(gp.g, path1, path2));
+    stats.Count();
+    INFO("Stats counted");
 }
 
 template<class Graph>
@@ -235,12 +220,11 @@ optional<runtime_k::RtSeq> FindCloseKP1mer(const conj_graph_pack &gp,
     return boost::none;
 }
 
-template<class Graph>
+inline
 void ProduceDetailedInfo(conj_graph_pack &gp,
                          const omnigraph::GraphLabeler<Graph>& labeler, const string& run_folder,
                          const string &pos_name,
-                         info_printer_pos pos,
-                         size_t k) {
+                         info_printer_pos pos) {
     string base_folder = path::append_path(run_folder, "pictures/");
     make_dir(base_folder);
     string folder = path::append_path(base_folder, pos_name + "/");
@@ -253,13 +237,13 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 
     if (config.print_stats) {
         INFO("Printing statistics for " << details::info_printer_pos_name(pos));
-        CountStats(gp.g, gp.index, gp.genome, k);
+        CountStats(gp);
     }
 
-    typedef Path<typename Graph::EdgeId> path_t;
-    path_t path1;
-    path_t path2;
-    shared_ptr<omnigraph::visualization::GraphColorer<Graph>> colorer = omnigraph::visualization::DefaultColorer(gp.g);
+    auto path1 = FindGenomeMappingPath(gp.genome, gp.g, gp.index,
+                                      gp.kmer_mapper).path();
+
+    auto colorer = omnigraph::visualization::DefaultColorer(gp.g);
 
     if (config.write_error_loc ||
         config.write_full_graph ||
@@ -269,13 +253,7 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
         config.write_components_along_genome ||
         config.write_components_along_contigs || config.save_full_graph ||
         !config.components_for_genome_pos.empty()) {
-        path1 = FindGenomeMappingPath(gp.genome, gp.g, gp.index,
-                                      gp.kmer_mapper).path();
-        path2 = FindGenomeMappingPath(!gp.genome, gp.g, gp.index,
-                                      gp.kmer_mapper).path();
-        colorer = omnigraph::visualization::DefaultColorer(gp.g, path1, path2);
-        //		path1 = FindGenomePath<K>(gp.genome, gp.g, gp.index);
-        //		path2 = FindGenomePath<K>(!gp.genome, gp.g, gp.index);
+        colorer = DefaultColorer(gp);
         make_dir(folder);
     }
 
@@ -300,7 +278,7 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
     if (!config.components_for_kmer.empty()) {
         string kmer_folder = path::append_path(base_folder, "kmer_loc/");
         make_dir(kmer_folder);
-        auto kmer = runtime_k::RtSeq(k + 1, config.components_for_kmer.substr(0, k + 1).c_str());
+        auto kmer = runtime_k::RtSeq(gp.k_value + 1, config.components_for_kmer.substr(0, gp.k_value + 1).c_str());
         string file_name = path::append_path(kmer_folder, pos_name + ".dot");
         WriteKmerComponent(gp, kmer, file_name, colorer,labeler);
     }
@@ -329,7 +307,7 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
                      boost::is_any_of(" ,"), boost::token_compress_on);
         for (auto it = positions.begin(); it != positions.end(); ++it) {
             optional < runtime_k::RtSeq > close_kp1mer = FindCloseKP1mer(gp,
-                                                                         boost::lexical_cast<int>(*it), k);
+                                                                         boost::lexical_cast<int>(*it), gp.k_value);
             if (close_kp1mer) {
                 string locality_folder = path::append_path(pos_loc_folder, *it + "/");
                 make_dir(locality_folder);
@@ -337,7 +315,7 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
             } else {
                 WARN(
                     "Failed to find genome kp1mer close to the one at position "
-                    << *it << " in the graph. Which is " << runtime_k::RtSeq (k + 1, gp.genome, boost::lexical_cast<int>(*it)));
+                    << *it << " in the graph. Which is " << runtime_k::RtSeq (gp.k_value + 1, gp.genome, boost::lexical_cast<int>(*it)));
             }
         }
     }
@@ -347,8 +325,8 @@ struct detail_info_printer {
     detail_info_printer(conj_graph_pack &gp,
                         const omnigraph::GraphLabeler<Graph>& labeler, const string& folder)
             :  folder_(folder),
-               func_(bind(&ProduceDetailedInfo<conj_graph_pack::graph_t>, boost::ref(gp),
-                     boost::ref(labeler), _3, _2, _1, gp.k_value)),
+               func_(bind(&ProduceDetailedInfo, boost::ref(gp),
+                     boost::ref(labeler), _3, _2, _1)),
                graph_(gp.g), cnt(0) {
     }
 

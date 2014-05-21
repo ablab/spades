@@ -114,7 +114,7 @@ inline void load(dipspades_config::consensus_constructor &cc,
 inline void load(dipspades_config::haplotype_assembly &ha,
 		boost::property_tree::ptree const& pt, bool /*complete*/){
 	using config_common::load;
-	load(ha.enabled		, pt, 	"enabled"	);
+	load(ha.ha_enabled		, pt, 	"ha_enabled"	);
 }
 
 void load(dipspades_config &cfg,

@@ -20,7 +20,7 @@ from distutils import dir_util
 
 
 class DS_Args_List:
-    long_options = "expect-gaps expect-rearrangements hap= threads= memory= tmp-dir=".split()
+    long_options = "expect-gaps expect-rearrangements hap= threads= memory= tmp-dir= dsdebug hap-assembly dsK=".split()
     short_options = "o:t:m:"
 
 
@@ -33,13 +33,18 @@ class DS_Args:
     haplocontigs_fnames = []
     output_dir = ""
     haplocontigs = ""
+    dev_mode = False
+    haplotype_assembly = False
+    k = 55
 
 
 def print_ds_args(ds_args, log):
     log.info("dipSPAdes parameters:")
+    log.info("\tK value for dipSPAdes: " + str(ds_args.k))
     log.info("\tExpect gaps: " + str(ds_args.allow_gaps))
-    log.info("\tExpect rearrengements: " + str(ds_args.weak_align))
+    log.info("\tExpect rearrangements: " + str(ds_args.weak_align))
     log.info("\tFiles with haplocontigs : " + str(ds_args.haplocontigs_fnames))
+    log.info("\tHaplotype assembly stage: " + str(ds_args.haplotype_assembly))
     log.info("\tOutput directory: " + str(ds_args.output_dir))
     log.info("")
     log.info("\tDir for temp files: " + str(ds_args.tmp_dir))
@@ -98,6 +103,12 @@ def parse_arguments(argv, log):
             ds_args.max_memory = int(arg)
         elif opt == '--tmp-dir':
             ds_args.tmp_dir = os.path.abspath(arg)
+        elif opt == '--dsdebug':
+            ds_args.dev_mode = True
+        elif opt == '--hap-assembly':
+            ds_args.haplotype_assembly = True
+        elif opt == '--dsK':
+            ds_args.k = int(arg)
     ds_args.haplocontigs = os.path.join(ds_args.output_dir, "haplocontigs")
 
     if not ds_args.output_dir:
@@ -115,10 +126,13 @@ def prepare_config(config_fname, ds_args, log):
     args_dict["align_bulge_sides"] = process_cfg.bool_to_str(ds_args.weak_align)
     args_dict["haplocontigs"] = process_cfg.process_spaces(ds_args.haplocontigs)
     args_dict["output_dir"] = process_cfg.process_spaces(ds_args.output_dir)
-    args_dict["developer_mode"] = "false" #process_cfg.bool_to_str(False)
+    args_dict["developer_mode"] = process_cfg.bool_to_str(ds_args.dev_mode)
     args_dict["tmp_dir"] = process_cfg.process_spaces(ds_args.tmp_dir)
     args_dict["max_threads"] = ds_args.max_threads
     args_dict["max_memory"] = ds_args.max_memory
+    args_dict["output_base"] = ""
+    args_dict["ha_enabled"] = process_cfg.bool_to_str(ds_args.haplotype_assembly)
+    args_dict["K"] = str(ds_args.k)
     process_cfg.substitute_params(config_fname, args_dict, log)
 
 

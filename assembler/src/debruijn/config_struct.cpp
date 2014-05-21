@@ -154,7 +154,13 @@ inline void load(debruijn_config::construction& con,
     load(con.early_tc, pt, "early_tip_clipper", complete);
 }
 
-void load(estimation_mode& est_mode,
+inline void load(debruijn_config::sensitive_mapper& sensitive_map,
+        boost::property_tree::ptree const& pt, bool complete) {
+    using config_common::load;
+    load(sensitive_map.k, pt, "k", complete);
+}
+
+inline void load(estimation_mode& est_mode,
           boost::property_tree::ptree const& pt, std::string const& key,
           bool complete) {
   if (complete || pt.find(key) != pt.not_found()) {
@@ -645,6 +651,8 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   load(cfg.uncorrected_reads, pt, "uncorrected_reads");
   load(cfg.mismatch_ratio, pt, "mismatch_ratio");
 
+  load(cfg.con, pt, "construction");
+  load(cfg.sensitive_map, pt, "sensitive_mapper");
   load(cfg.flanking_range, pt, "flanking_range");
 
   load(cfg.simp, pt, "default");

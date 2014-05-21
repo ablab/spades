@@ -30,12 +30,174 @@ void OverlapgraphToDot(string dotfname, OverlapGraph & g, ContigStoragePtr stor)
 
 //--------------------------------------------------------------------------------------------
 
+class OverlappedContigsMap {
+	size_t min_lcs_length_;
+public:
+	struct OverlappedKey {
+		size_t id1;
+		size_t id2;
+		size_t id1_rc;
+		size_t id2_rc;
+
+		OverlappedKey(size_t new_id1, size_t new_id2,
+				size_t new_id1_rc, size_t new_id2_rc) :
+			id1(new_id1),
+			id2(new_id2),
+			id1_rc(new_id1_rc),
+			id2_rc(new_id2_rc) { }
+
+		OverlappedKey() :
+			id1(), id2(), id1_rc(), id2_rc() { }
+
+		string ToString() const {
+			stringstream ss;
+			ss << "<" << id1 << ", " << id2 << "> <" << id2_rc << ", " << id1_rc << ">";
+			return ss.str();
+		}
+
+		string id() const {
+			stringstream ss;
+			ss << id1 << "_" << id2 << "_" << id1_rc << "_" << id2_rc;
+			return ss.str();
+		}
+
+		OverlappedKey Reverse1() {
+			return OverlappedKey(id1, id2_rc, id1_rc, id2);
+		}
+
+		OverlappedKey Reverse2() {
+			return OverlappedKey(id2_rc, id1, id2, id1_rc);
+		}
+
+		OverlappedKey Reverse3() {
+			return OverlappedKey(id1_rc, id2, id1, id2_rc);
+		}
+
+		OverlappedKey Reverse4() {
+			return OverlappedKey(id2, id1_rc, id2_rc, id1);
+		}
+	};
+
+	struct OverlappedValue {
+		Range range_left;
+		Range range_right;
+		Range range_left_rc;
+		Range range_right_rc;
+		size_t lcs_length;
+
+		OverlappedValue(Range new_range_left, Range new_range_right,
+				Range new_range_left_rc, Range new_range_right_rc,
+				size_t new_lcs_length) :
+			range_left(new_range_left),
+			range_right(new_range_right),
+			range_left_rc(new_range_left_rc),
+			range_right_rc(new_range_right_rc),
+			lcs_length(new_lcs_length) { }
+
+		OverlappedValue() :
+			range_left(),
+			range_right(),
+			range_left_rc(),
+			range_right_rc(),
+			lcs_length() { }
+
+		string ToString() const {
+			stringstream ss;
+			ss << "(" << range_left.start_pos << ", " << range_left.end_pos << "), (" <<
+					range_right.start_pos << ", " << range_right.end_pos << "): " << lcs_length;
+			return ss.str();
+		}
+	};
+
+private:
+	class OverlappedKeyComparator {
+	public:
+		bool operator()(const OverlappedKey &obj1,  const OverlappedKey &obj2) const {
+			return obj1.id() < obj2.id();
+
+			if(obj1.id1 < obj2.id1)
+				return true;
+			return obj1.id2 < obj2.id2;
+		}
+	};
+
+	map<OverlappedKey, OverlappedValue, OverlappedKeyComparator> overlap_map_;
+	map<pair<size_t, size_t>, pair<Range, Range> > pair_overlap_map_;
+
+	void RemoveElement(OverlappedKey key) {
+		overlap_map_.erase(key);
+		pair_overlap_map_.erase(make_pair(key.id1, key.id2));
+		pair_overlap_map_.erase(make_pair(key.id2_rc, key.id1_rc));
+	}
+
+	void AddElement(OverlappedKey key, OverlappedValue value) {
+		overlap_map_[key] = value;
+		pair_overlap_map_[make_pair(key.id1, key.id2)] =
+				make_pair(value.range_left, value.range_right);
+		pair_overlap_map_[make_pair(key.id2_rc, key.id1_rc)] =
+				make_pair(value.range_right_rc, value.range_left_rc);
+	}
+
+	void ProcessReverseKey(OverlappedKey key, OverlappedValue value,
+			OverlappedKey reverse_key) {
+		if(overlap_map_.find(reverse_key) == overlap_map_.end())
+			AddElement(key, value);
+		else
+			if(overlap_map_[reverse_key].lcs_length < value.lcs_length) {
+				AddElement(key, value);
+				RemoveElement(reverse_key);
+			}
+	}
+
+public:
+	OverlappedContigsMap(size_t min_lcs_length) :
+		min_lcs_length_(min_lcs_length) { }
+
+	void Add(OverlappedKey key, OverlappedValue value) {
+		if(value.lcs_length < min_lcs_length_)
+			return;
+		ProcessReverseKey(key, value, key.Reverse1());
+		ProcessReverseKey(key, value, key.Reverse2());
+		ProcessReverseKey(key, value, key.Reverse3());
+		ProcessReverseKey(key, value, key.Reverse4());
+	}
+
+	void PrintMap() {
+		for(auto it = overlap_map_.begin(); it != overlap_map_.end(); it++) {
+			TRACE(it->first.ToString() << " - " << it->second.ToString());
+		}
+	}
+
+	size_t Size() { return overlap_map_.size(); }
+
+	typedef map<OverlappedKey, OverlappedValue, OverlappedKeyComparator>::const_iterator overlap_map_iter;
+
+	overlap_map_iter begin() const { return overlap_map_.begin(); }
+
+	overlap_map_iter end() const { return overlap_map_.end(); }
+
+	pair<Range, Range> Ranges(size_t id1, size_t id2) {
+		return pair_overlap_map_[make_pair(id1, id2)];
+	}
+
+private:
+	DECL_LOGGER("OverlappedContigsMap");
+};
+
+ostream& operator<<(ostream& os, const OverlappedContigsMap& obj) {
+	for(auto it = obj.begin(); it != obj.end(); it++)
+		os << it->first.ToString() << " - " << it->second.ToString() << endl;
+    return os;
+}
+
+//--------------------------------------------------------------------------------------------
+
 class OverlapCorrector : public LoopBulgeDeletionCorrector{
 	size_t k_value_;
 
 	struct overlap_res {
 		bool correctness;
-		bool size;
+		size_t size;
 
 		overlap_res(bool over_corr, size_t over_size) :
 			correctness(over_corr),
@@ -166,6 +328,13 @@ class OverlapCorrector : public LoopBulgeDeletionCorrector{
 		return ss.str();
 	}
 
+	void FillOverlapGraphByMap(OverlappedContigsMap &overlap_map, OverlapGraph &graph) {
+		for(auto it = overlap_map.begin(); it != overlap_map.end(); it++) {
+			graph.AddNeighVertices(it->first.id1, it->first.id2, it->second.lcs_length);
+			graph.AddNeighVertices(it->first.id2_rc, it->first.id1_rc, it->second.lcs_length);
+		}
+	}
+
 public:
 	OverlapCorrector(Graph &g, size_t k_value, size_t min_overlap_length, VertexPathIndex &path_index) :
 		LoopBulgeDeletionCorrector(g,
@@ -179,6 +348,8 @@ public:
 	ContigStoragePtr Correct(ContigStoragePtr contigs) {
 
 		INFO("Computing overlaps starts");
+
+		OverlappedContigsMap overlap_map(dsp_cfg::get().cc.min_overlap_size);
 
 		OverlapGraph og;
 		vector<size_t> vertices;
@@ -196,8 +367,6 @@ public:
 			seqs.push_back(seq);
 		}
 		LCSCalculator<VertexId> lcs_calc;
-		map<pair<size_t, size_t>, pair<Range, Range> > map_over;
-
 		set<pair<int, int> > processed_pairs;
 
 		for(size_t i = 0; i < contigs->Size(); i++){
@@ -238,11 +407,6 @@ public:
 					bool is_overlaped = overlap_result.first.correctness ||
 							overlap_result.second.correctness;
 
-//					cout << "first -> second - " << overlap_result.second.correctness  <<
-//							" with " << overlap_result.second.size << endl;
-//					cout << "second -> first - " << overlap_result.first.correctness <<
-//							" with " << overlap_result.first.size << endl;
-
 					if(is_overlaped){
 
 						size_t first_id, last_id;
@@ -277,25 +441,18 @@ public:
 						size_t lcs_len1 = GetLCSLengthByPath(path1, pos1);
 						size_t lcs_len2 = GetLCSLengthByPath(path2, pos2);
 
-						size_t over_weight = max<size_t>(lcs_len1, lcs_len2);
-
-						if(over_weight >= dsp_cfg::get().cc.min_overlap_size){
-							og.AddNeighVertices(first_id, last_id, over_weight);
-							og.AddNeighVertices(rc_last_id, rc_first_id, over_weight);
-						}
-
 						Range overlap_first(first_pos[0], first_pos[first_pos.size() - 1]);
 						Range overlap_last(last_pos[0], last_pos[last_pos.size() - 1]);
-
-						map_over[pair<size_t, size_t>(first_id, last_id)] = pair<Range, Range>(overlap_first,
-								overlap_last);
 
 						Range overlap_first_rc(first_path.size() - overlap_first.end_pos,
 								first_path.size() - overlap_first.start_pos);
 						Range overlap_last_rc(last_path.size() - overlap_last.end_pos,
 								last_path.size() - overlap_last.start_pos);
-						map_over[pair<size_t , size_t >(rc_last_id, rc_first_id)] = pair<Range, Range>(overlap_last_rc,
-								overlap_first_rc);
+
+						overlap_map.Add(
+								OverlappedContigsMap::OverlappedKey(first_id, last_id, rc_first_id, rc_last_id),
+								OverlappedContigsMap::OverlappedValue(overlap_first, overlap_last,
+										overlap_first_rc, overlap_last_rc, max<size_t>(lcs_len1, lcs_len2)));
 
 						TRACE(first_id << " - " << last_id << ". " << overlap_first.start_pos << " - " <<
 								overlap_first.end_pos << ", " << overlap_last.start_pos << " - " <<
@@ -309,14 +466,10 @@ public:
 			}
 		}
 
-//		cout << "Overlap map" << endl;
-//		for(auto it = map_over.begin(); it != map_over.end(); it++){
-//			Range r_first = it->second.first;
-//			Range r_second = it->second.second;
-//
-//			cout << it->first.first << " - " << it->first.second << ". " << r_first.start_pos << " - " <<
-//					r_first.end_pos << ", " << r_second.start_pos << " - " << r_second.end_pos << endl;
-//		}
+		TRACE("Overlapped contigs map. Size - " << ToString(overlap_map.Size()) << endl <<
+				overlap_map);
+
+		FillOverlapGraphByMap(overlap_map, og);
 
 		string fname = dsp_cfg::get().io.output_dir + "default_overlap_graph.dot";
 		OverlapgraphToDot(fname, og, contigs);
@@ -337,30 +490,29 @@ public:
 
 		UniquePathsSearcher ps(og);
 		auto paths = ps.FindLongPaths();
-		TRACE(paths.size() << " were searched");
+		TRACE(paths.size() << " paths in overlap graph were searched");
 
 		ContigStoragePtr new_storage(new SimpleContigStorage());
 		size_t i = 1;
 		for(auto p = paths.begin(); p != paths.end(); p++){
 			VERIFY(p->size() > 0);
 			if(p->size() == 1){
-				TRACE("Contig" << i << " is simple");
+				TRACE("Consensus contig " << i << " is simple");
 				auto contig = contigs->GetContigById((*p)[0]);
 				MappingContigPtr new_rc(new ReplacedNameMappingContig(contig,
 						get_composite_contig_name(i, contig->length())));
 				new_storage->Add(new_rc);
 			}
 			else{
-				TRACE("Contig" << i << " is composite");
+				TRACE("Consensus contig " << i << " is composite");
 
 				vector<pair<Range, Range> > overlaps;
 				vector<MappingContigPtr> mc_vect;
-				for(size_t i = 0; i < p->size() - 1; i++){
-					overlaps.push_back(map_over[pair<size_t , size_t >((*p)[i], (*p)[i + 1])]);
-				}
-				for(auto id = p->begin(); id != p->end(); id++){
+				for(size_t i = 0; i < p->size() - 1; i++)
+					overlaps.push_back(overlap_map.Ranges((*p)[i], (*p)[i + 1]));
+
+				for(auto id = p->begin(); id != p->end(); id++)
  					mc_vect.push_back(contigs->GetContigById(*id));
-				}
 
 				MappingContigPtr new_mc(new CompositeMappingContig(g_, k_value_,
 						mc_vect, overlaps));
@@ -374,6 +526,9 @@ public:
 
 		return new_storage;
 	}
+
+private:
+	DECL_LOGGER("OverlapCorrector");
 };
 
 }

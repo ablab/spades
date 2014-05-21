@@ -57,5 +57,5 @@ cc {
 
 ; haplotype_assembly
 ha {
-	enabled                         true
+	ha_enabled                         true
 }

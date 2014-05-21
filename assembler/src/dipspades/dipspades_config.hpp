@@ -59,7 +59,7 @@ struct dipspades_config {
 	};
 
 	struct haplotype_assembly {
-		bool 		enabled;
+		bool 		ha_enabled;
 	};
 
 	base_params 			bp;

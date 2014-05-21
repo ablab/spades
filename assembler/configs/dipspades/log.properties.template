@@ -11,6 +11,8 @@ default=INFO
 #CompositeMappingContig=TRACE
 #DiploidContigSeparator=TRACE
 #ContigLabelAllocator=TRACE
+#OverlappedContigsMap=TRACE
+#OverlapCorrector=TRACE
 
 #DeBruijnGraphConstructor=TRACE
 #PairedHandlerApplier=TRACE

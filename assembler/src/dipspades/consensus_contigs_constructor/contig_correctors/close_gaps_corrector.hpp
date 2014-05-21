@@ -47,17 +47,44 @@ class CloseGapsCorrector : public AbstractContigCorrector{
 		return new_path;
 	}
 
+	size_t CountContigsWithGaps(ContigStoragePtr storage) {
+		size_t contigs_with_gaps = 0;
+		for(size_t i = 0; i < storage->Size(); i++)
+			if(!IsPathConnected(g_, (*storage)[i]->path_seq()))
+				contigs_with_gaps++;
+		return contigs_with_gaps;
+	}
+
+	void ProcessContigs(ContigStoragePtr storage) {
+		double processed_perc = 0.1;
+		double step = 0.1;
+		for(size_t i = 0; i < storage->Size(); i++) {
+			storage->ReplaceContig(Correct((*storage)[i]), i);
+			double cur_process_perc = double(i) / storage->Size();
+			if(cur_process_perc > processed_perc) {
+				while(processed_perc + step <= cur_process_perc)
+					processed_perc += step;
+				INFO(ToString(processed_perc * 100.0) << "% contigs were processed");
+				processed_perc += step;
+			}
+		}
+		INFO("100% contigs were processed");
+	}
+
 public:
 	CloseGapsCorrector(Graph &g) : AbstractContigCorrector(g) {
 		num_corr = 0;
 	}
 
 	virtual ContigStoragePtr Correct(ContigStoragePtr storage){
-		for(size_t i = 0; i < storage->Size(); i++)
-			storage->ReplaceContig(Correct((*storage)[i]), i);
+
+		INFO(ToString(CountContigsWithGaps(storage)) << " contigs from " <<
+				ToString(storage->Size()) << " have gaps before correction");
+
+		ProcessContigs(storage);
 
 		INFO(ToString(num_corr) + " contigs from " + ToString(storage->Size()) + " were corrected");
-		INFO(ToString(storage->Size() - num_corr) + " contigs from " << storage->Size() << " have gaps");
+		INFO(ToString(storage->Size() - num_corr) + " contigs from " << storage->Size() << " have gaps after correction");
 		return storage;
 	}
 

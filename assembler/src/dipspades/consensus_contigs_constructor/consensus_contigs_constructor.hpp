@@ -211,7 +211,7 @@ class ConsensusContigsConstructor {
 	}
 
 	void WriteAlignedHaplocontigs(){
-		string fname = path::append_path(dsp_cfg::get().io.output_dir, "haplocontigs_alignent");
+		string fname = path::append_path(dsp_cfg::get().io.output_dir, "haplocontigs_alignment");
 		ofstream out(fname.c_str());
 		INFO("Writing haplocontigs alignment to " << fname);
 

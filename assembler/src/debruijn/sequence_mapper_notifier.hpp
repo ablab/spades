@@ -29,9 +29,9 @@ public:
 
 class SequenceMapperNotifier {
 public:
-    typedef MapperFactory<conj_graph_pack>::SequenceMapperT SequenceMapperT;
-    typedef std::shared_ptr<
-            const NewExtendedSequenceMapper<conj_graph_pack::graph_t, conj_graph_pack::index_t> > Mapper;
+    typedef SequenceMapper<conj_graph_pack::graph_t> SequenceMapperT;
+//    typedef std::shared_ptr<
+//            const NewExtendedSequenceMapper<conj_graph_pack::graph_t, conj_graph_pack::index_t> > Mapper;
 
     SequenceMapperNotifier(const conj_graph_pack& gp)
             : gp_(gp) {
@@ -47,11 +47,9 @@ public:
 
     template<class ReadType>
     void ProcessLibrary(io::ReadStreamList<ReadType>& streams,
-                        size_t lib_index, size_t read_length, size_t threads_count) {
+                        size_t lib_index, const SequenceMapperT& mapper, size_t threads_count) {
         streams.reset();
         NotifyStartProcessLibrary(lib_index, threads_count);
-        MapperFactory<conj_graph_pack> mapper_factory(gp_);
-        std::shared_ptr<SequenceMapperT> mapper = mapper_factory.GetSequenceMapper(read_length);
 
         size_t counter = 0, n = 15;
         size_t fmem = get_free_memory();
@@ -68,7 +66,7 @@ public:
                 while (!end_of_stream && size < limit) {
                     stream >> r;
                     ++size;
-                    NotifyProcessRead(r, *mapper, lib_index, ithread);
+                    NotifyProcessRead(r, mapper, lib_index, ithread);
                     end_of_stream = stream.eof();
                     // Stop filling buffer if the amount of available is smaller
                     // than half of free memory.
