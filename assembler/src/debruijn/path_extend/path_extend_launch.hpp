@@ -285,6 +285,7 @@ inline void TraverseLoops(PathContainer& paths, GraphCoverageMap& cover_map, Con
     paths.ResetPathsId();
 }
 
+
 inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 		vector<PairedInfoLibrary *>& libs,
 		vector<PairedInfoLibrary *>& scaff_libs,
@@ -333,41 +334,37 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	DebugOutputPaths(writer, gp, output_dir, paths, "pe_overlaped_paths");
 	paths.SortByLength();
 
-    if (mp_libs.size() == 0) {
-        FinalizePaths(paths, cover_map, max_over);
-        if (broken_contigs.is_initialized()) {
-            OutputBrokenScaffolds(paths, (int) gp.g.k(), writer, output_dir + broken_contigs.get());
-        }
-
-        writer.WritePathsToFASTG(paths, GetEtcDir(output_dir) + "pe_before_traversal.fastg", GetEtcDir(output_dir) + "pe_before_traversal.fasta");
-        if (traversLoops) {
-            TraverseLoops(paths, cover_map, mainPE);
-        }
-        DebugOutputPaths(writer, gp, output_dir, paths, "final_paths");
-        writer.WritePathsToFASTG(paths, output_dir + contigs_name + ".fastg", output_dir + contigs_name + ".fasta");
-        return;
-    }
-    else {
-        PathContainer clone_paths;
-        GraphCoverageMap clone_map(gp.g);
+    PathContainer clone_paths;
+    GraphCoverageMap clone_map(gp.g);
+    bool mp_exist = mp_libs.size() > 0;
+    if (mp_exist) {
         ClonePathContainer(paths, clone_paths, clone_map);
+    }
 
-        FinalizePaths(clone_paths, clone_map, max_over);
-        if (broken_contigs.is_initialized()) {
-            OutputBrokenScaffolds(clone_paths, (int) gp.g.k(), writer, output_dir + "pe_contigs");
-        }
+    FinalizePaths(paths, cover_map, max_over);
+    if (broken_contigs.is_initialized()) {
+        OutputBrokenScaffolds(paths, (int) gp.g.k(), writer,
+                              output_dir + (mp_exist ? "pe_contigs" : broken_contigs.get()));
+    }
+    writer.WritePathsToFASTG(paths, GetEtcDir(output_dir) + "pe_before_traversal.fastg", GetEtcDir(output_dir) + "pe_before_traversal.fasta");
 
-        writer.WritePathsToFASTG(clone_paths, GetEtcDir(output_dir) + "pe_before_traversal.fastg", GetEtcDir(output_dir) + "pe_before_traversal.fasta");
-        if (traversLoops) {
-            TraverseLoops(clone_paths, clone_map, mainPE);
-        }
-        DebugOutputPaths(writer, gp, output_dir, clone_paths, "final_pe_paths");
-        writer.WritePathsToFASTG(clone_paths, output_dir + "pe_scaffolds.fastg", output_dir + "pe_scaffolds.fasta");
+    if (traversLoops) {
+        TraverseLoops(paths, cover_map, mainPE);
+    }
+    DebugOutputPaths(writer, gp, output_dir, paths, (mp_exist ? "final_pe_paths" : "final_paths"));
+    writer.WritePathsToFASTG(paths,
+                             output_dir + (mp_exist ? "pe_scaffolds" : contigs_name) + ".fastg",
+                             output_dir + (mp_exist ? "pe_scaffolds" : contigs_name) + ".fasta" );
+
+    cover_map.Clear();
+    paths.DeleteAllPaths();
+    if (!mp_exist) {
+        return;
     }
 
 //MP
     INFO("Adding mate-pairs");
-    vector<SimpleExtender*> mpPEs = MakeMPExtenders(gp, cover_map, pset, paths, mp_libs);
+    vector<SimpleExtender*> mpPEs = MakeMPExtenders(gp, cover_map, pset, clone_paths, mp_libs);
     max_over = std::max(FindMaxOverlapedLen(mp_libs), FindMaxOverlapedLen(libs));
 	all_libs.clear();
 	all_libs.insert(all_libs.end(), long_reads_extenders.begin(),
@@ -378,7 +375,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	CompositeExtender* mp_main_pe = new CompositeExtender(gp.g, cover_map, all_libs, max_over);
 
 	INFO("Growing paths using mate-pairs");
-	auto mp_paths = resolver.extendSeeds(paths, *mp_main_pe);
+	auto mp_paths = resolver.extendSeeds(clone_paths, *mp_main_pe);
 	FinalizePaths(mp_paths, cover_map, max_over, true);
 
 	DebugOutputPaths(writer, gp, output_dir, mp_paths, "mp_final_paths");
@@ -414,7 +411,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
     last_paths.DeleteAllPaths();
     seeds.DeleteAllPaths();
     mp_paths.DeleteAllPaths();
-    paths.DeleteAllPaths();
+    clone_paths.DeleteAllPaths();
 
     INFO("Path-Extend repeat resolving tool finished");
 }

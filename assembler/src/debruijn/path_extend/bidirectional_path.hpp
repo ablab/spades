@@ -788,6 +788,7 @@ public:
             delete data_[i].first;
             delete data_[i].second;
         }
+        clear();
     }
 
     size_t size() const {
