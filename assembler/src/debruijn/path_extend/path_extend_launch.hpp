@@ -364,7 +364,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 
 //MP
     INFO("Adding mate-pairs");
-    vector<SimpleExtender*> mpPEs = MakeMPExtenders(gp, cover_map, pset, clone_paths, mp_libs);
+    vector<SimpleExtender*> mpPEs = MakeMPExtenders(gp, clone_map, pset, clone_paths, mp_libs);
     max_over = std::max(FindMaxOverlapedLen(mp_libs), FindMaxOverlapedLen(libs));
 	all_libs.clear();
 	all_libs.insert(all_libs.end(), long_reads_extenders.begin(),
@@ -372,11 +372,11 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	all_libs.insert(all_libs.end(), shortLoopPEs.begin(), shortLoopPEs.end());
 	all_libs.insert(all_libs.end(), scafPEs.begin(), scafPEs.end());
 	all_libs.insert(all_libs.end(), mpPEs.begin(), mpPEs.end());
-	CompositeExtender* mp_main_pe = new CompositeExtender(gp.g, cover_map, all_libs, max_over);
+	CompositeExtender* mp_main_pe = new CompositeExtender(gp.g, clone_map, all_libs, max_over);
 
 	INFO("Growing paths using mate-pairs");
 	auto mp_paths = resolver.extendSeeds(clone_paths, *mp_main_pe);
-	FinalizePaths(mp_paths, cover_map, max_over, true);
+	FinalizePaths(mp_paths, clone_map, max_over, true);
 
 	DebugOutputPaths(writer, gp, output_dir, mp_paths, "mp_final_paths");
 	writer.WritePathsToFASTG(mp_paths, GetEtcDir(output_dir) + "mp_prefinal.fastg", GetEtcDir(output_dir) + "mp_prefinal.fasta");
@@ -394,12 +394,12 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
     all_libs.insert(all_libs.end(), shortLoopPEs.begin(), shortLoopPEs.end());
     all_libs.insert(all_libs.end(), scafPEs.begin(), scafPEs.end());
     max_over = FindMaxOverlapedLen(libs);
-    CompositeExtender* last_extender = new CompositeExtender(gp.g, cover_map, all_libs, max_over);
+    CompositeExtender* last_extender = new CompositeExtender(gp.g, clone_map, all_libs, max_over);
     auto last_paths = resolver.extendSeeds(mp_paths, *last_extender);
-    FinalizePaths(last_paths, cover_map, max_over);
+    FinalizePaths(last_paths, clone_map, max_over);
 
     writer.WritePathsToFASTG(last_paths, GetEtcDir(output_dir) + "mp_before_traversal.fastg", GetEtcDir(output_dir) + "mp_before_traversal.fasta");
-    TraverseLoops(last_paths, cover_map, last_extender);
+    TraverseLoops(last_paths, clone_map, last_extender);
 
 //result
     if (broken_contigs.is_initialized()) {
