@@ -42,25 +42,6 @@ rv:
 dv:
 	$(MAKE) -C build/debug/online_vis
 
-rc:
-	$(MAKE) -C build/release/cap cap
-
-dc:
-	$(MAKE) -C build/debug/cap cap
-
-rctls:
-	$(MAKE) -C build/release/cap cap-tools
-
-dctls:
-	$(MAKE) -C build/debug/cap cap-tools
-
-
-rct:
-	$(MAKE) -C build/release/test/cap
-
-dct:
-	$(MAKE) -C build/debug/test/cap
-
 dt:
 	$(MAKE) ddt
 	$(MAKE) dit
