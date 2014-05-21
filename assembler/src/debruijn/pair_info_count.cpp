@@ -53,8 +53,8 @@ void RefineInsertSizeParallel(const graph_pack& gp,
       if (first.size() < mapper_k || second.size() < mapper_k)
           continue;
       
-      auto pos_left = mapper.GetKmerPos(first.start<Kmer>(mapper_k));
-      auto pos_right = mapper.GetKmerPos(second.end<Kmer>(mapper_k));
+      auto pos_left = mapper.GetKmerPos(first.end<Kmer>(mapper_k));
+      auto pos_right = mapper.GetKmerPos(second.start<Kmer>(mapper_k));
       if (pos_left.second == -1u || pos_right.second == -1u || pos_left.first != pos_right.first || gp.g.length(pos_left.first) < edge_length_threshold) {
         counter.ProcessPairedRead(i, false, 0);
       } else {
