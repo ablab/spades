@@ -25,7 +25,8 @@
 &nbsp;&nbsp;&nbsp;&nbsp;3.3 <a href = "#ds_output">dipSPAdes output</a></br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3.3.1 <a href = "#align_output">Haplocontigs alignment output</a></br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3.3.2 <a href = "#hapl_assembly_output">Haplotype assembly output</a></br>
-4. <a href = "#feedback">Feedback and bug reports</a></br>
+4. <a href = "#citation">Citation</a></br>
+5. <a href = "#feedback">Feedback and bug reports</a></br>
 
 <a id = "ds"></a>
 <h2>1. What is dipSPAdes?</h2>
@@ -125,7 +126,11 @@ For input reads specfication use options of SPAdes described in <a href=manual.h
 </p>
 <p>
     <code>--expect-rearrangements</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Indicates extreme heterozygosity rate in haplomes (e.g. haplomes differ by long insertions/delitions).
+    &nbsp;&nbsp;&nbsp;&nbsp;Indicates extreme heterozygosity rate in haplomes (e.g. haplomes differ by long insertions/deletions).
+</p>
+<p>
+    <code>--hap-assembly</code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Enables haplotype assembly phase that results in files <b>haplotype_assembly.out</b>, <b>conservative_regions.fasta</b>, and <b>possibly_conservative_regions.fasta</b> (see <a href="#hapl_assembly_output">Haplotype assembly output</a>).
 </p>
 
 <a id = "examples"></a>
@@ -156,14 +161,14 @@ dipspades.py -1 reads_left.fastq -2 reads_right.fastq --hap haplocontigs.fasta -
 To perform assembly of diploid genome with additional options run:
 <pre class="code">
 <code>
-dipspades.py -1 reads_left.fastq -2 reads_right.fastq --allow-gaps -o output_dir
+dipspades.py -1 reads_left.fastq -2 reads_right.fastq --expect-gaps -o output_dir
 </code>
 </pre></br>
 
 To relaunch steps 2 and 3 of dipSPAdes (see <a href=#ds_pipeline>dipSPAdes pipeline section</a>) with different set of advanced options you can use haplocontigs constructed in the previous run (see <a href=#ds_output>dipSPAdes output section</a>) run:
 <pre class="code">
 <code>
-dipspades.py -hap output_dir/haplocontigs.fasta --allow-gaps --expect-rearrangements -o new_output_dir
+dipspades.py -hap output_dir/haplocontigs.fasta --expect-gaps --expect-rearrangements --hap-assembly -o new_output_dir
 </code>
 </pre></br>
 
@@ -214,8 +219,16 @@ HAPLOCONTIG_NAME_1	HAPLOCONTIG_NAME_2
 where <code>HAPLOCONTIG_NAME_1</code> and <code>HAPLOCONTIG_NAME_2</code> are names of homologous haplocontigs that correspond to different haplomes and at least partially correspond to homologous positions in different chromosomes. 
 Names correspond to the names of haplocontigs specified as an input using options <code>--hap</code> or computed at the first step.
 
+<a name="citation">
+<h2>4. Citation</h2>
+<p>
+    If you use dipSPAdes in your research, please include <a href="http://link.springer.com/chapter/10.1007/978-3-319-05269-4_21" target="_blank">Safonova, Bankevich, and Pevzner, 2014</a> in your reference list.
+<p>
+    In addition, we would like to list your publications that use our software on our website. Please email the reference, the name of your lab, department and institution to <a href="mailto:spades.support@bioinf.spbau.ru" target="_blank">spades.support@bioinf.spbau.ru</a>.
+<br>
+
 <a id = "feedback"></a>
-<h2>Feedback and bug reports</h2>
+<h2>5. Feedback and bug reports</h2>
 Your comments, bug reports, and suggestions are very welcomed. <br> 
 If you have trouble running dipSPAdes, please provide us with the files params.txt and dipspades.log from the directory &lt;output_dir>. <br>
 Address for communications: <a href="mailto:spades.support@bioinf.spbau.ru" target="_blank">spades.support@bioinf.spbau.ru</a>.

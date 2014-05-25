@@ -198,8 +198,9 @@ def usage(spades_version, show_hidden=False, dipspades=False):
     if dipspades:
         sys.stderr.write("" + "\n")
         sys.stderr.write("DipSPAdes options:" + "\n")
-        sys.stderr.write("--expect-gaps\tindicate that significant number of gaps in coverage is expected" + "\n")
-        sys.stderr.write("--expect-rearrangements\tindicate that significant number of rearrangngements between haplomes of diploid genome is expected" + "\n")
+        sys.stderr.write("--expect-gaps\t\tindicates that significant number of gaps in coverage is expected" + "\n")
+        sys.stderr.write("--expect-rearrangements\tindicates that significant number of rearrangngements between haplomes of diploid genome is expected" + "\n")
+        sys.stderr.write("--hap-assembly\t\tenables haplotype assembly phase" + "\n")
 
     sys.stderr.write("" + "\n")
     sys.stderr.write("Advanced options:" + "\n")
