@@ -33,8 +33,8 @@ public:
 //    typedef std::shared_ptr<
 //            const NewExtendedSequenceMapper<conj_graph_pack::graph_t, conj_graph_pack::index_t> > Mapper;
 
-    SequenceMapperNotifier(const conj_graph_pack& gp)
-            : gp_(gp) {
+    SequenceMapperNotifier(const conj_graph_pack& gp, bool send_true_distance = true)
+            : gp_(gp), send_true_distance_(send_true_distance) {
     }
 
     void Subscribe(size_t lib_index, SequenceMapperListener* listener) {
@@ -115,6 +115,7 @@ private:
         }
     }
     const conj_graph_pack& gp_;
+    bool send_true_distance_;
     std::vector<std::vector<SequenceMapperListener*> > listeners_;  //first vector's size = count libs
 };
 
@@ -130,7 +131,13 @@ inline void SequenceMapperNotifier::NotifyProcessRead(const io::PairedReadSeq& r
     MappingPath<EdgeId> path2 = mapper.MapSequence(read2);
     for (size_t ilistener = 0; ilistener < listeners_[ilib].size();
             ++ilistener) {
-        listeners_[ilib][ilistener]->ProcessPairedRead(ithread, path1, path2, r.distance());
+        if (send_true_distance_) {
+            listeners_[ilib][ilistener]->ProcessPairedRead(ithread, path1, path2, r.distance());
+        }
+        else {
+            INFO("Dist: " << r.second().size() << " - " << r.insert_size() << " = " << r.second().size() - r.insert_size());
+            listeners_[ilib][ilistener]->ProcessPairedRead(ithread, path1, path2, r.second().size() - r.insert_size());
+        }
         listeners_[ilib][ilistener]->ProcessSingleRead(ithread, path1);
         listeners_[ilib][ilistener]->ProcessSingleRead(ithread, path2);
     }
@@ -147,7 +154,13 @@ inline void SequenceMapperNotifier::NotifyProcessRead(const io::PairedRead& r,
     MappingPath<EdgeId> path2 = mapper.MapSequence(read2);
     for (size_t ilistener = 0; ilistener < listeners_[ilib].size();
             ++ilistener) {
-        listeners_[ilib][ilistener]->ProcessPairedRead(ithread, path1, path2, r.distance());
+        if (send_true_distance_) {
+            listeners_[ilib][ilistener]->ProcessPairedRead(ithread, path1, path2, r.distance());
+        }
+        else {
+            INFO("Dist: " << r.second().size() << " - " << r.insert_size() << " = " << r.second().size() - r.insert_size());
+            listeners_[ilib][ilistener]->ProcessPairedRead(ithread, path1, path2, r.second().size() - r.insert_size());
+        }
         listeners_[ilib][ilistener]->ProcessSingleRead(ithread, path1);
         listeners_[ilib][ilistener]->ProcessSingleRead(ithread, path2);
     }

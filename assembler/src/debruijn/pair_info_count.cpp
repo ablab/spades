@@ -8,12 +8,12 @@
 #include "dataset_readers.hpp"
 #include "read_converter.hpp"
 
-#include "de/insert_size_refiner.hpp"
 #include "de/paired_info.hpp"
 
 #include "utils.hpp"
 #include "stats/debruijn_stats.hpp"
 
+#include "is_counter.hpp"
 #include "pair_info_count.hpp"
 #include "sequence_mapper.hpp"
 #include "short_read_mapper.hpp"
@@ -25,59 +25,19 @@
 namespace debruijn_graph {
     typedef io::SequencingLibrary<debruijn_config::DataSetData> SequencingLib;
 
-template<class graph_pack, class PairedStreams, class Mapper>
-void RefineInsertSizeParallel(const graph_pack& gp,
-        const Mapper& mapper,
-        PairedStreams& streams,
-        InsertSizeHistogramCounter<graph_pack>& counter,
-        size_t edge_length_threshold) {
 
-  typedef typename Mapper::Kmer Kmer;
-  size_t mapper_k = mapper.KmerSize();
-
-  size_t nthreads = streams.size();
-  std::vector<size_t> rls(nthreads, 0);
-  counter.Init(nthreads);
-
-#pragma omp parallel for num_threads(nthreads)
-  for (size_t i = 0; i < nthreads; ++i) {
-    typename PairedStreams::ReadT r;
-    auto& stream = streams[i];
-    stream.reset();
-
-    while (!stream.eof()) {
-      stream >> r;
-      Sequence first = r.first().sequence();
-      Sequence second = r.second().sequence();
-
-      if (first.size() < mapper_k || second.size() < mapper_k)
-          continue;
-      
-      auto pos_left = mapper.GetKmerPos(first.end<Kmer>(mapper_k));
-      auto pos_right = mapper.GetKmerPos(second.start<Kmer>(mapper_k));
-      if (pos_left.second == -1u || pos_right.second == -1u || pos_left.first != pos_right.first || gp.g.length(pos_left.first) < edge_length_threshold) {
-        counter.ProcessPairedRead(i, false, 0);
-      } else {
-        counter.ProcessPairedRead(i, true, (int) (pos_right.second - pos_left.second - mapper_k - r.insert_size() + first.size() + second.size()));
-      }
-    }
-  }
-  counter.Finalize();
-}
-
-
-template<class graph_pack, class PairedStreams>
-bool RefineInsertSizeForLib(const graph_pack& gp,
-                      PairedStreams& streams,
-                      SequencingLib& library,
-                      size_t edge_length_threshold) {
+bool RefineInsertSizeForLib(conj_graph_pack& gp, size_t ilib, size_t edge_length_threshold) {
 
   INFO("Estimating insert size (takes a while)");
-  InsertSizeHistogramCounter<graph_pack> hist_counter(gp, /* ignore negative */ true);
+  InsertSizeCounter hist_counter(gp, edge_length_threshold, /* ignore negative */ true);
+  SequenceMapperNotifier notifier(gp, false);
+  notifier.Subscribe(ilib, &hist_counter);
 
-  VERIFY(library.data().read_length != 0);
-
-  RefineInsertSizeParallel(gp, *ChooseProperMapper(gp, library), streams, hist_counter, edge_length_threshold);
+  VERIFY(cfg::get().use_multithreading);
+  SequencingLib& reads = cfg::get_writable().ds.reads[ilib];
+  VERIFY(reads.data().read_length != 0);
+  auto paired_streams = paired_binary_readers(reads, false, (size_t) reads.data().mean_insert_size);
+  notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads), paired_streams.size());
 
   INFO(hist_counter.mapped() << " paired reads (" << ((double) hist_counter.mapped() * 100.0 / (double) hist_counter.total()) << "% of all) aligned to long edges");
   if (hist_counter.negative() > 3 * hist_counter.mapped())
@@ -86,30 +46,29 @@ bool RefineInsertSizeForLib(const graph_pack& gp,
     return false;
 
   std::map<size_t, size_t> percentiles;
-  hist_counter.FindMean(library.data().mean_insert_size, library.data().insert_size_deviation, percentiles);
-  hist_counter.FindMedian(library.data().median_insert_size, library.data().insert_size_mad, library.data().insert_size_distribution);
+  hist_counter.FindMean(reads.data().mean_insert_size, reads.data().insert_size_deviation, percentiles);
+  hist_counter.FindMedian(reads.data().median_insert_size, reads.data().insert_size_mad, reads.data().insert_size_distribution);
 
-  std::tie(library.data().insert_size_left_quantile, library.data().insert_size_right_quantile) = GetISInterval(0.8, library.data().insert_size_distribution);
+  std::tie(reads.data().insert_size_left_quantile, reads.data().insert_size_right_quantile) = omnigraph::GetISInterval(0.8, reads.data().insert_size_distribution);
 
-  return !library.data().insert_size_distribution.empty();
+  return !reads.data().insert_size_distribution.empty();
 }
 
 void ProcessSingleReads(conj_graph_pack& gp, size_t ilib) {
-    const SequencingLib& library = cfg::get().ds.reads[ilib];
+    const SequencingLib& reads = cfg::get().ds.reads[ilib];
     SequenceMapperNotifier notifier(gp);
     SimpleLongReadMapper read_mapper(gp, gp.single_long_reads[ilib]);
     notifier.Subscribe(ilib, &read_mapper);
 
     VERIFY(cfg::get().use_multithreading);
-    auto single_streams = single_binary_readers(library, true, false);
-    notifier.ProcessLibrary(single_streams, ilib, *ChooseProperMapper(gp, library), single_streams.size());
+    auto single_streams = single_binary_readers(reads, true, false);
+    notifier.ProcessLibrary(single_streams, ilib, *ChooseProperMapper(gp, reads), single_streams.size());
 }
 
 void ProcessPairedReads(conj_graph_pack& gp, size_t ilib, bool map_single_reads) {
-    const SequencingLib& library = cfg::get().ds.reads[ilib];
-    bool calculate_threshold = (library.type() == io::LibraryType::PairedEnd);
-    SequenceMapperNotifier notifier(gp);
     const SequencingLib& reads = cfg::get().ds.reads[ilib];
+    bool calculate_threshold = (reads.type() == io::LibraryType::PairedEnd);
+    SequenceMapperNotifier notifier(gp);
     INFO("Left insert size qauntile " << reads.data().insert_size_left_quantile << ", right insert size quantile " << reads.data().insert_size_right_quantile);
 
     SimpleLongReadMapper read_mapper(gp, gp.single_long_reads[ilib]);
@@ -134,7 +93,7 @@ void ProcessPairedReads(conj_graph_pack& gp, size_t ilib, bool map_single_reads)
 
     VERIFY(cfg::get().use_multithreading);
     auto paired_streams = paired_binary_readers(reads, true, (size_t) reads.data().mean_insert_size);
-    notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, library), paired_streams.size());
+    notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads), paired_streams.size());
     cfg::get_writable().ds.reads[ilib].data().pi_threshold = split_graph.GetThreshold();
 
     if (map_single_reads) {
@@ -170,10 +129,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
         INFO("Estimating insert size for library #" << i);
         if (cfg::get().ds.reads[i].is_paired()) {
 
-            bool insert_size_refined;
-            VERIFY(cfg::get().use_multithreading);
-            auto streams = paired_binary_readers(cfg::get().ds.reads[i], false, 0);
-            insert_size_refined = RefineInsertSizeForLib(gp, streams, cfg::get_writable().ds.reads[i], edge_length_threshold);
+            bool insert_size_refined = RefineInsertSizeForLib(gp, i, edge_length_threshold);
 
             if (!insert_size_refined) {
                 cfg::get_writable().ds.reads[i].data().mean_insert_size = 0.0;
