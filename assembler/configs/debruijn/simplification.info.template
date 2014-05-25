@@ -124,7 +124,7 @@ default
 
     presimp 
     {
-       enabled true
+       enabled false
        parallel false 
        chunk_cnt 16
        ; will be enabled only if average coverage \leq activate_cov

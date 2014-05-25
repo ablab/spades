@@ -651,13 +651,13 @@ void PreSimplification(conj_graph_pack& gp,
                        const SimplifInfoContainer& info,
                        boost::function<void(EdgeId)> removal_handler) {
     INFO("PROCEDURE == Presimplification");
+    RemoveSelfConjugateEdges(gp.g, gp.k_value + 100, 1., removal_handler);
 
     if (!presimp.enabled) {
         INFO("Further presimplification is disabled");
         return;
     }
     
-    RemoveSelfConjugateEdges(gp.g, gp.k_value + 100, 1., removal_handler);
     //todo make parallel version
     RemoveIsolatedEdges(gp.g, presimp.ier, info.read_length(), removal_handler);
 
