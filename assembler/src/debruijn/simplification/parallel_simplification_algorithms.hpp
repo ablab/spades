@@ -165,19 +165,16 @@ public:
 
     template <class Algo, class ItVec>
     void RunFromChunkIterators(Algo& algo, const ItVec& chunk_iterators) {
+        DEBUG("Running from " << chunk_iterators.size() - 1 << "chunks");
     	VERIFY(chunk_iterators.size() > 1);
 #pragma omp parallel for schedule(guided)
     	for (size_t i = 0; i < chunk_iterators.size() - 1; ++i) {
     		RunFromIterator(algo, chunk_iterators[i], chunk_iterators[i+1]);
     	}
+        DEBUG("Finished");
     }
-
-//    template <class Algo, class It>
-//    void RunFromJavaStyleIterator(Algo& algo, It it) {
-//        for (; !it.IsEnd(); ++it) {
-//            algo(*it);
-//        }
-//    }
+private:
+    DECL_LOGGER("AlgorithmRunner");
 };
 
 template<class Graph>
@@ -658,7 +655,9 @@ class TwoStepAlgorithmRunner {
     	for (const auto& bucket : elements_of_interest_) {
         	cumulative_bucket_sizes.push_back(cumulative_bucket_sizes.back() + bucket.size());
     	}
+        DEBUG("Preparing for processing");
     	algo.PrepareForProcessing(cumulative_bucket_sizes.back());
+        DEBUG("Processing buckets");
 #pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < elements_of_interest_.size(); ++i) {
         	ProcessBucket(algo, elements_of_interest_[i], cumulative_bucket_sizes[i]);
@@ -696,37 +695,27 @@ public:
 
     template <class Algo, class ItVec>
     void RunFromChunkIterators(Algo& algo, const ItVec& chunk_iterators) {
+        DEBUG("Started running from " << chunk_iterators.size() - 1 << " chunks");
     	VERIFY(algo.ShouldFilterConjugate() == filter_conjugate_);
     	VERIFY(chunk_iterators.size() > 1);
     	elements_of_interest_.clear();
     	elements_of_interest_.resize(chunk_iterators.size() - 1);
+        DEBUG("Searching elements of interest");
 #pragma omp parallel for schedule(guided)
     	for (size_t i = 0; i < chunk_iterators.size() - 1; ++i) {
             CountAll(algo, chunk_iterators[i], chunk_iterators[i+1], i);
     	}
+        DEBUG("Processing");
     	Process(algo);
+        DEBUG("Finished");
     }
 
     template <class Algo, class It>
     void RunFromIterator(Algo& algo, It begin, It end) {
     	RunFromChunkIterators(algo, vector<It>{begin, end});
-//    	VERIFY(algo.ShouldFilterConjugate() ^ filter_conjugate_);
-//    	elements_of_interest_.clear();
-//    	elements_of_interest_.resize(1);
-//        CountAll(algo, begin, end, 0);
-//        Process(algo);
     }
-
-//    template <class Algo, class It>
-//    void RunFromJavaStyleIterator(Algo& algo, It it) {
-//    	VERIFY(algo.ShouldFilterConjugate() ^ filter_conjugate_);
-//    	elements_of_interest_.clear();
-//    	elements_of_interest_.resize(1);
-//        for (; !it.IsEnd(); ++it) {
-//            CountElement(algo, *it, 0);
-//        }
-//        Process(algo);
-//    }
+private:
+    DECL_LOGGER("TwoStepAlgorithmRunner");
 };
 
 template<class Graph, class AlgoRunner, class Algo>
@@ -738,69 +727,6 @@ template<class Graph, class AlgoRunner, class Algo>
 void RunEdgeAlgorithm(Graph& g, AlgoRunner& runner, Algo& algo, size_t chunk_cnt) {
 	runner.RunFromChunkIterators(algo, ParallelIterationHelper<Graph>(g).EdgeChunks(chunk_cnt));
 }
-
-//
-//template<class Graph>
-//class EdgeAlgorithmRunner : public AlgorithmRunner<Graph, typename Graph::EdgeId> {
-//    typedef typename Graph::VertexId VertexId;
-//    typedef typename Graph::EdgeId EdgeId;
-//    typedef AlgorithmRunner<Graph, VertexId> base;
-//
-//public:
-//
-//    EdgeAlgorithmRunner(Graph& g) :
-//        base(g) {
-//
-//    }
-//
-//    template <class Algo>
-//    void Run(Algo& algo) {
-//        this->RunFromJavaStyleIterator(algo, this->g().ConstEdgeBegin());
-//    }
-//
-//    template <class Algo>
-//    void RunParallelChunks(Algo& algo, size_t chunk_cnt) {
-//    	RunFromChunkIterators(algo, ParallelIterationHelper(this->g()).EdgeChunks(chunk_cnt));
-//    }
-//};
-//
-//template<class Graph>
-//class TwoStepVertexAlgorithmRunner : public TwoStepAlgorithmRunner<Graph, typename Graph::VertexId> {
-//    typedef typename Graph::VertexId VertexId;
-//    typedef typename Graph::EdgeId EdgeId;
-//    typedef TwoStepAlgorithmRunner<Graph, VertexId> base;
-//
-//public:
-//
-//    TwoStepVertexAlgorithmRunner(Graph& g, bool filter_conjugate) :
-//        base(g, filter_conjugate) {
-//
-//    }
-//
-//    template <class Algo>
-//    void Run(Algo& algo) {
-//        this->RunFromIterator(algo, this->g().begin(), this->g().end());
-//    }
-//};
-//
-//template<class Graph>
-//class TwoStepEdgeAlgorithmRunner : public TwoStepAlgorithmRunner<Graph, typename Graph::EdgeId> {
-//    typedef typename Graph::VertexId VertexId;
-//    typedef typename Graph::EdgeId EdgeId;
-//    typedef TwoStepAlgorithmRunner<Graph, EdgeId> base;
-//
-//public:
-//
-//    TwoStepEdgeAlgorithmRunner(Graph& g, bool filter_conjugate) :
-//        base(g, filter_conjugate) {
-//
-//    }
-//
-//    template <class Algo>
-//    void Run(Algo& algo) {
-//        this->RunFromJavaStyleIterator(algo, this->g().ConstEdgeBegin());
-//    }
-//};
 
 }
 

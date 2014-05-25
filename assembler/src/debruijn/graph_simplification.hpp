@@ -376,7 +376,6 @@ template<class Graph>
 bool RemoveIsolatedEdges(Graph &g, debruijn_config::simplification::isolated_edges_remover ier,
                  size_t read_length,
                  boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
-    typedef typename Graph::EdgeId EdgeId;
     size_t max_length = std::max(read_length, cfg::get().simp.ier.max_length_any_cov);
     //todo add info that some other edges might be removed =)
     INFO("Removing isolated edges");
@@ -458,10 +457,12 @@ void Compress(Graph& g) {
 
 template<class Graph>
 void ParallelCompress(Graph& g, const SimplifInfoContainer& info) {
+    INFO("Parallel compression");
     debruijn::simplification::ParallelCompressor<Graph> compressor(g);
     debruijn::simplification::TwoStepAlgorithmRunner<Graph, typename Graph::VertexId> runner(g, false);
     debruijn::simplification::RunVertexAlgorithm(g, runner, compressor, info.chunk_cnt());
     //have to call "final" compression to get rid of loops
+    INFO("Postcompression");
     Compress(g);
 }
 
