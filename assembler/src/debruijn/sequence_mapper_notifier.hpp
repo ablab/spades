@@ -135,7 +135,7 @@ inline void SequenceMapperNotifier::NotifyProcessRead(const io::PairedReadSeq& r
             listeners_[ilib][ilistener]->ProcessPairedRead(ithread, path1, path2, r.distance());
         }
         else {
-            INFO("Dist: " << r.second().size() << " - " << r.insert_size() << " = " << r.second().size() - r.insert_size());
+            TRACE("Dist: " << r.second().size() << " - " << r.insert_size() << " = " << r.second().size() - r.insert_size());
             listeners_[ilib][ilistener]->ProcessPairedRead(ithread, path1, path2, r.second().size() - r.insert_size());
         }
         listeners_[ilib][ilistener]->ProcessSingleRead(ithread, path1);
@@ -158,7 +158,7 @@ inline void SequenceMapperNotifier::NotifyProcessRead(const io::PairedRead& r,
             listeners_[ilib][ilistener]->ProcessPairedRead(ithread, path1, path2, r.distance());
         }
         else {
-            INFO("Dist: " << r.second().size() << " - " << r.insert_size() << " = " << r.second().size() - r.insert_size());
+            TRACE("Dist: " << r.second().size() << " - " << r.insert_size() << " = " << r.second().size() - r.insert_size());
             listeners_[ilib][ilistener]->ProcessPairedRead(ithread, path1, path2, r.second().size() - r.insert_size());
         }
         listeners_[ilib][ilistener]->ProcessSingleRead(ithread, path1);
