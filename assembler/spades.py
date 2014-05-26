@@ -148,6 +148,9 @@ def fill_cfg(options_to_parse, log):
         sys.exit(1)
 
     if len(not_options) > 1:
+        for opt, arg in options:
+            if opt == "-k" and arg.strip().endswith(','):
+                support.error("Do not put spaces after commas in the list of k-mers sizes! Correct example: -k 21,33,55", log)
         support.error("Please specify option (e.g. -1, -2, -s, etc) for the following paths: " + ", ".join(not_options[1:]) + "\n", log)
 
     # all parameters are stored here
