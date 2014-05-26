@@ -70,7 +70,9 @@ namespace io {
         if (split) {
             reader = SplittingWrap(reader);
         } else {
-            reader = make_shared<CarefulFilteringWrapper<SingleRead>>(reader);
+            reader = std::shared_ptr<CarefulFilteringWrapper<SingleRead>>(
+                    new CarefulFilteringWrapper<SingleRead>(reader));
+            //reader = make_shared<CarefulFilteringWrapper<SingleRead>>(reader, false, LibraryOrientation::Undefined);
         }
         if (followed_by_rc) {
             reader = RCWrap<SingleRead>(reader);
@@ -78,9 +80,12 @@ namespace io {
         return reader;
     }
 
-    inline PairedStreamPtr WrapPairedStream(PairedStreamPtr reader, bool followed_by_rc) {
+    inline PairedStreamPtr WrapPairedStream(PairedStreamPtr reader,
+                                            bool followed_by_rc,
+                                            bool use_orientation = false,
+                                            LibraryOrientation orientation = LibraryOrientation::Undefined) {
         PairedStreamPtr answer = reader;
-        answer = CarefulFilteringWrap<PairedRead>(answer);
+        answer = CarefulFilteringWrap<PairedRead>(answer, use_orientation, orientation);
         if (followed_by_rc) {
             answer = RCWrap<PairedRead>(answer);
         }
@@ -95,7 +100,8 @@ namespace io {
         PairedStreamPtr reader = make_shared<SeparatePairedReadStream>(filename1, filename2, insert_size,
                                                              change_read_order, use_orientation,
                                                              orientation, offset_type);
-        return WrapPairedStream(reader, followed_by_rc);
+        //Use orientation for IS calculation if it's not done by changer
+        return WrapPairedStream(reader, followed_by_rc, !use_orientation, orientation);
     }
 
     inline PairedStreamPtr PairedEasyStream(const std::string& filename, bool followed_by_rc,
@@ -104,6 +110,7 @@ namespace io {
             OffsetType offset_type = PhredOffset) {
         PairedStreamPtr reader = make_shared<InterleavingPairedReadStream>(filename, insert_size, change_read_order,
                                 use_orientation, orientation, offset_type);
-        return WrapPairedStream(reader, followed_by_rc);
+        //Use orientation for IS calculation if it's not done by changer
+        return WrapPairedStream(reader, followed_by_rc, !use_orientation, orientation);
     }
 }
