@@ -60,7 +60,7 @@ class CloseGapsCorrector : public AbstractContigCorrector{
 		double step = 0.1;
 		for(size_t i = 0; i < storage->Size(); i++) {
 			storage->ReplaceContig(Correct((*storage)[i]), i);
-			double cur_process_perc = double(i) / storage->Size();
+			double cur_process_perc = static_cast<double>(i) / static_cast<double>(storage->Size());
 			if(cur_process_perc > processed_perc) {
 				while(processed_perc + step <= cur_process_perc)
 					processed_perc += step;

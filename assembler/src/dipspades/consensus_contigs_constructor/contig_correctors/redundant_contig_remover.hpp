@@ -845,7 +845,7 @@ public:
 				}
 			}
 
-			double cur_process_perc = double(i) / contigs_number;
+			double cur_process_perc = static_cast<double>(i) / static_cast<double>(contigs_number);
 			if(cur_process_perc > processed_perc) {
 				while(processed_perc + processed_step<= cur_process_perc)
 					processed_perc += processed_step;
