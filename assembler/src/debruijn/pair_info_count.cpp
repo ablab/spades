@@ -184,6 +184,8 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
             INFO("Total paths obtained from single reads: " << gp.single_long_reads[i].size());
         }
     }
+
+    SensitiveReadMapper<Graph>::EraseIndices();
 }
 
 }
