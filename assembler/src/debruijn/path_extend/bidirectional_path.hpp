@@ -258,6 +258,9 @@ public:
     }
 
     size_t CommonEndSize(const BidirectionalPath& p) const {
+        if (p.Size() == 0) {
+            return 0;
+        }
         std::vector<size_t> begins = FindAll(p.At(0));
         for (size_t i = 0; i < begins.size(); ++i) {
             size_t it1 = begins[i];

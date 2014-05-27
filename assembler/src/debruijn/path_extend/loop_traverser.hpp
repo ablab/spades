@@ -77,7 +77,7 @@ private:
 
 		size_t commonSize = startPath->CommonEndSize(*endPath);
 		size_t nLen = 0;
-        if (commonSize == 0) {
+        if (commonSize == 0 && startPath->Size() >= 1 && endPath->Size() >= 1) {
             VertexId lastVertex = g_.EdgeEnd(startPath->At(startPath->Size() - 1));
             VertexId firstVertex = g_.EdgeStart(endPath->At(0));
             PathStorageCallback<Graph> path_store(g_);

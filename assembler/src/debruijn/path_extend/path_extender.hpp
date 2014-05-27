@@ -34,6 +34,9 @@ protected:
     const Graph& g_;
 
     void UndoCycles(BidirectionalPath& p, EdgeId next_edge) const {
+        if (p.Size() <= 2) {
+            return;
+        }
         EdgeId first_edge = p.Back();
         EdgeId second_edge = next_edge;
         while (p.Size() > 2) {
@@ -46,6 +49,9 @@ protected:
     }
 
     void MakeCycleStep(BidirectionalPath& path, EdgeId e) {
+        if (path.Size() == 0) {
+            return;
+        }
         EdgeId pathEnd = path.Back();
         path.PushBack(e);
         path.PushBack(pathEnd);
@@ -63,7 +69,7 @@ public:
         path.Print();
 
         pair<EdgeId, EdgeId> edges;
-        if (GetLoopAndExit(g_, path.Back(), edges)) {
+        if (path.Size() >= 1 && GetLoopAndExit(g_, path.Back(), edges)) {
             DEBUG("Coverage Short Loop Resolver");
             UndoCycles(path, edges.first);
             EdgeId e1 = path.Back();
@@ -115,7 +121,7 @@ public:
 
     virtual void ResolveShortLoop(BidirectionalPath& path) {
         pair<EdgeId, EdgeId> edges;
-        if (GetLoopAndExit(g_, path.Back(), edges)) {
+        if (path.Size() >= 1 && GetLoopAndExit(g_, path.Back(), edges)) {
             DEBUG("Resolving short loop...");
             EdgeId e = path.Back();
             path.PushBack(edges.first);
@@ -167,7 +173,7 @@ public:
 
     virtual void ResolveShortLoop(BidirectionalPath& path) {
         pair<EdgeId, EdgeId> edges;
-        if (GetLoopAndExit(g_, path.Back(), edges)) {
+        if (path.Size() >=1 && GetLoopAndExit(g_, path.Back(), edges)) {
             DEBUG("Resolving short loop...");
             MakeBestChoice(path, edges);
             DEBUG("Resolving short loop done");
@@ -782,7 +788,7 @@ public:
         LoopDetector loop_detector(&path, cov_map_);
         if (DetectCycle(path)) {
             result = false;
-        } else if (InvestigateShortLoop() && loop_detector.EdgeInShortLoop(path.Back()) && use_short_loop_cov_resolver_) {
+        } else if (path.Size() >= 1 && InvestigateShortLoop() && loop_detector.EdgeInShortLoop(path.Back()) && use_short_loop_cov_resolver_) {
             DEBUG("edge in short loop");
             result = ResolveShortLoop(path);
         } else if (InvestigateShortLoop() && loop_detector.PrevEdgeInShortLoop() && use_short_loop_cov_resolver_) {
@@ -795,7 +801,7 @@ public:
             DEBUG("Made step");
             if (DetectCycle(path)) {
                 result = false;
-            } else if (InvestigateShortLoop() && loop_detector.EdgeInShortLoop(path.Back())) {
+            } else if (path.Size() >= 1 && InvestigateShortLoop() && loop_detector.EdgeInShortLoop(path.Back())) {
                 DEBUG("Edge in short loop");
                 result = ResolveShortLoop(path);
             } else if (InvestigateShortLoop() && loop_detector.PrevEdgeInShortLoop()) {
@@ -849,6 +855,9 @@ public:
 
 
     virtual bool MakeSimpleGrowStep(BidirectionalPath& path) {
+        if (path.Size() == 0) {
+            return false;
+        }
         ExtensionChooser::EdgeContainer candidates;
         FindFollowingEdges(path, &candidates);
         if (candidates.size() == 1) {
@@ -880,7 +889,7 @@ public:
         LoopDetector loop_detector(&path, cov_map_);
         size_t init_len = path.Length();
         bool result = false;
-        while (loop_detector.EdgeInShortLoop(path.Back())) {
+        while (path.Size() >= 1 && loop_detector.EdgeInShortLoop(path.Back())) {
             cov_loop_resolver_.ResolveShortLoop(path);
             if (init_len == path.Length()) {
                 return result;
@@ -897,7 +906,7 @@ public:
                 LoopDetector loop_detector(&path, cov_map_);
                 size_t init_len = path.Length();
                 bool result = false;
-                while (loop_detector.EdgeInShortLoop(path.Back())) {
+                while (path.Size() >= 1 && loop_detector.EdgeInShortLoop(path.Back())) {
                     loopResolver_.ResolveShortLoop(path);
                     if (init_len == path.Length()) {
                         return result;
@@ -956,7 +965,7 @@ public:
         ExtensionChooser::EdgeContainer candidates;
         bool result = false;
 
-        if (IsSink(path.Back())) {
+        if (path.Size() >= 1 && IsSink(path.Back())) {
             candidates = scaffoldingExtensionChooser_->Filter(path, sources_);
 
             if (candidates.size() == 1) {
