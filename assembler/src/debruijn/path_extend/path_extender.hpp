@@ -835,17 +835,17 @@ protected:
     LoopResolver loopResolver_;
 
     void FindFollowingEdges(BidirectionalPath& path, ExtensionChooser::EdgeContainer * result) {
-        INFO("Looking for the following edges")
+        DEBUG("Looking for the following edges")
         result->clear();
         vector<EdgeId> edges;
-        INFO("Pushing back")
+        DEBUG("Pushing back")
         push_back_all(edges, g_.OutgoingEdges(g_.EdgeEnd(path.Back())));
         result->reserve(edges.size());
         for (auto iter = edges.begin(); iter != edges.end(); ++iter) {
-            INFO("Adding edge w distance " << g_.int_id(*iter));
+            DEBUG("Adding edge w distance " << g_.int_id(*iter));
             result->push_back(EdgeWithDistance(*iter, 0));
         }
-        INFO("Following edges found");
+        DEBUG("Following edges found");
     }
 
 
@@ -862,7 +862,7 @@ public:
             return false;
         }
         DEBUG("Simple grow step");
-        path.PrintInfo();
+        path.Print();
         ExtensionChooser::EdgeContainer candidates;
         FindFollowingEdges(path, &candidates);
         DEBUG("found candidates");
