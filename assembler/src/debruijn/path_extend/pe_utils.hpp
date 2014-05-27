@@ -414,7 +414,7 @@ inline bool LoopDetector::EdgeInShortLoop(EdgeId e) const {
 }
 
 inline bool LoopDetector::PrevEdgeInShortLoop() const {
-    if (path_->Size() <= 1) {
+    if (path_->Size() <= 2) {
         return false;
     }
     const Graph& g = path_->graph();
