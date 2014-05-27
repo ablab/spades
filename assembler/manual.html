@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>SPAdes 3.0.0 Manual</title>
+    <title>SPAdes 3.1.0 Manual</title>
     <style type="text/css">
         .code {
             background-color: lightgray;
@@ -8,7 +8,7 @@
     </style>
 </head>
 <body>
-<h1>SPAdes 3.0.0 Manual</h1>
+<h1>SPAdes 3.1.0 Manual</h1>
 
 1. <a href="#sec1">About SPAdes</a><br>
 &nbsp;&nbsp;&nbsp;&nbsp;1.1. <a href="#sec1.1">Supported data types</a><br>
@@ -34,7 +34,7 @@
 <a name="sec1"></a>
 <h2>1. About SPAdes</h2>
 <p>
-    SPAdes &ndash; St. Petersburg genome assembler &ndash; is intended for both standard isolates and single-cell MDA bacteria assemblies. This manual will help you to install and run SPAdes. SPAdes version 3.0.0 was released under GPLv2 on December 29, 2013 and can be downloaded from  <a href="http://bioinf.spbau.ru/en/spades" target="_blank">http://bioinf.spbau.ru/en/spades</a>.
+    SPAdes &ndash; St. Petersburg genome assembler &ndash; is intended for both standard isolates and single-cell MDA bacteria assemblies. This manual will help you to install and run SPAdes. SPAdes version 3.1.0 was released under GPLv2 on May 28, 2014 and can be downloaded from  <a href="http://bioinf.spbau.ru/en/spades" target="_blank">http://bioinf.spbau.ru/en/spades</a>.
 
 
 <a name="sec1.1"></a>
@@ -42,7 +42,7 @@
 <p>
     The current version of SPAdes works with Illumina or IonTorrent reads and is capable of providing hybrid assemblies using PacBio and Sanger reads. You can also provide additional contigs that will be used as long reads.
 <p>
-    Version 3.0.0 of SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries simultaneously. 
+    Version 3.1.0 of SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries simultaneously. 
 <p>
     Note, that SPAdes was initially designed for small genomes. It was tested on single-cell and standard bacterial and fungal data sets. SPAdes is not intended for larger genomes (e.g. mammalian size genomes) and metagenomic projects. For such purposes you can use it at your own risk.
 <p>
@@ -129,7 +129,7 @@ SPAdes comes in several separate modules:
     <ul>
         <li> Running SPAdes without preliminary read error correction (e.g. without BayesHammer or IonHammer) will likely require more time and memory. </li>
         <li> Each module removes its temporary files as soon as it finishes. </li>
-        <li> SPAdes 3.0 uses 512 Mb per thread for buffers, thus memory consumption may be greater. However, if you set memory limit manually SPAdes will use smaller buffers.
+        <li> SPAdes 3.1 uses 512 Mb per thread for buffers, thus memory consumption may be greater. However, if you set memory limit manually SPAdes will use smaller buffers.
     </ul>
 
 
@@ -142,13 +142,13 @@ SPAdes comes in several separate modules:
 <h3>2.1 Downloading SPAdes Linux binaries</h3>
 
 <p>
-    To download <a href="http://spades.bioinf.spbau.ru/release3.0.0/SPAdes-3.0.0-Linux.tar.gz">SPAdes Linux binaries</a> and extract them, go to the directory in which you wish SPAdes to be installed and run:
+    To download <a href="http://spades.bioinf.spbau.ru/release3.1.0/SPAdes-3.1.0-Linux.tar.gz">SPAdes Linux binaries</a> and extract them, go to the directory in which you wish SPAdes to be installed and run:
 
 <pre  class="code">
 <code>
-    wget http://spades.bioinf.spbau.ru/release3.0.0/SPAdes-3.0.0-Linux.tar.gz
-    tar -xzf SPAdes-3.0.0-Linux.tar.gz
-    cd SPAdes-3.0.0-Linux/bin/
+    wget http://spades.bioinf.spbau.ru/release3.1.0/SPAdes-3.1.0-Linux.tar.gz
+    tar -xzf SPAdes-3.1.0-Linux.tar.gz
+    cd SPAdes-3.1.0-Linux/bin/
 </code>
 </pre>
 
@@ -171,13 +171,13 @@ SPAdes comes in several separate modules:
 <h3>2.2 Downloading SPAdes binaries for Mac</h3>
 
 <p>
-    To obtain <a href="http://spades.bioinf.spbau.ru/release3.0.0/SPAdes-3.0.0-Darwin.tar.gz">SPAdes binaries for Mac</a>, go to the directory in which you wish SPAdes to be installed and run:
+    To obtain <a href="http://spades.bioinf.spbau.ru/release3.1.0/SPAdes-3.1.0-Darwin.tar.gz">SPAdes binaries for Mac</a>, go to the directory in which you wish SPAdes to be installed and run:
 
 <pre  class="code">
 <code>
-    curl http://spades.bioinf.spbau.ru/release3.0.0/SPAdes-3.0.0-Darwin.tar.gz -o SPAdes-3.0.0-Darwin.tar.gz
-    tar -zxf SPAdes-3.0.0-Darwin.tar.gz
-    cd SPAdes-3.0.0-Darwin/bin/
+    curl http://spades.bioinf.spbau.ru/release3.1.0/SPAdes-3.1.0-Darwin.tar.gz -o SPAdes-3.1.0-Darwin.tar.gz
+    tar -zxf SPAdes-3.1.0-Darwin.tar.gz
+    cd SPAdes-3.1.0-Darwin/bin/
 </code>
 </pre>
 
@@ -208,13 +208,13 @@ SPAdes comes in several separate modules:
     </ul>
 
 <p>
-    If you meet these requirements, you can download the <a href="http://spades.bioinf.spbau.ru/release3.0.0/SPAdes-3.0.0.tar.gz">SPAdes source code</a>: 
+    If you meet these requirements, you can download the <a href="http://spades.bioinf.spbau.ru/release3.1.0/SPAdes-3.1.0.tar.gz">SPAdes source code</a>: 
 
 <pre class="code">
 <code>
-    wget http://spades.bioinf.spbau.ru/release3.0.0/SPAdes-3.0.0.tar.gz
-    tar -xzf SPAdes-3.0.0.tar.gz
-    cd SPAdes-3.0.0
+    wget http://spades.bioinf.spbau.ru/release3.1.0/SPAdes-3.1.0.tar.gz
+    tar -xzf SPAdes-3.1.0.tar.gz
+    cd SPAdes-3.1.0
 </code>
 </pre>
 
@@ -314,17 +314,20 @@ Thank you for using SPAdes!
 <a name="sec3.1"></a>
 <h3>3.1 SPAdes input</h3>
 <p>
-    SPAdes takes as input paired-end reads, mate-pairs and single (unpaired) reads in FASTA or FASTQ format. However, in order to run read error correction, reads should be in FASTQ format. Sanger and PacBio CCS reads can be provided in both formats since SPAdes does not run error correction for these types of data.
+    SPAdes takes as input paired-end reads, mate-pairs and single (unpaired) reads in FASTA, FASTQ and BAM format. However, in order to run read error correction, reads should be in FASTQ or BAM format. Sanger and PacBio CCS reads can be provided in both formats since SPAdes does not run error correction for these types of data.
 
 <p>
-    To run SPAdes 3.0.0 you need at least one library of the following types:
+    To run SPAdes 3.1.0 you need at least one library of the following types:
     <ul>
-        <li>Illumina paired-end/unpaired reads</li>
-        <li>IonTorrent paired-end/unpaired reads</li>
+        <li>Illumina paired-end/high-quality mate-pairs/unpaired reads</li>
+        <li>IonTorrent paired-end/high-quality mate-pairs/unpaired reads</li>
         <li>PacBio CCS reads</li>
     </ul>
+<p>
+Illumina and IonTorrent libraries should not be assembled together. All other types of input data are compatible. SPAdes should not be used if only PacBio CLR reads, Sanger reads or additional contigs are available.
 
-Illumina and IonTorrent libraries should not be assembled together. All other types of input data are compatible. SPAdes should not be used if only mate-pairs, PacBio CLR reads, Sanger reads or additional contigs are available.
+<p>
+SPAdes supports mate-pair only assembly. However, we recommend to use only high-quality mate-pair libraries in this case (e.g. that do not have a paired-end part). We tested mate-pair only pipeline using Illumina Nextera mate-pairs. See more <a href="#hqmp">here</a>.
 
 <p> Notes:
     <ul>
@@ -335,7 +338,7 @@ Illumina and IonTorrent libraries should not be assembled together. All other ty
 
 <h4>Read-pair libraries</h4>
 <p>
-    By using command line interface, you can specify up to five different paired-end libraries and also up to five different mate-pair ones. If you wish to use more, you can use <a href="#yaml">YAML data set file</a>. The number of unpaired libraries is unlimited.  We further refer to paired-end and mate-pair libraries simply as to read-pair libraries. 
+    By using command line interface, you can specify up to five different paired-end libraries, up to five mate-pair libraries and also up to five high-quality mate-pair ones. If you wish to use more, you can use <a href="#yaml">YAML data set file</a>. The number of unpaired libraries is unlimited.  We further refer to paired-end and mate-pair libraries simply as to read-pair libraries. 
 
 <p>
     By default, SPAdes assumes that paired-end reads have forward-reverse (fr) orientation and mate-pairs have reverse-forward (rf) orientation. However, different orientations can be set for any library by using SPAdes options. 
@@ -496,7 +499,10 @@ In comparison to the <code>--continue</code> option, you can change some of the 
     &nbsp;&nbsp;&nbsp;&nbsp;File with unpaired reads (including PacBio CCS reads).
 </p>
 
-<i><b>&nbsp;&nbsp;Specifying multiple libraries (new format)</i></b>
+<i><b>&nbsp;&nbsp;Specifying multiple libraries (new format)</i></b><br>
+<ul>
+<li><b>&nbsp;Paired-end libraries</b></li>
+
 <p>
     <code>--pe<b>&lt;#></b>-12 &lt;file_name> </code><br>
     &nbsp;&nbsp;&nbsp;&nbsp;File with interlaced reads for paired-end library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5). For example, for the first paired-end library the option is:
@@ -525,6 +531,8 @@ In comparison to the <code>--continue</code> option, you can change some of the 
     &nbsp;&nbsp;&nbsp;&nbsp;The default orientation for paired-end libraries is forward-reverse. For example, to specify reverse-forward orientation for the second paired-end library, you should use the flag:
     <code>--pe2-rf </code><br>
 </p>
+
+<li><b>&nbsp;Mate-pair libraries</b></li>
 <p>
     <code>--mp<b>&lt;#></b>-12 &lt;file_name> </code><br>
     &nbsp;&nbsp;&nbsp;&nbsp;File with interlaced reads for mate-pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5).
@@ -546,6 +554,30 @@ In comparison to the <code>--continue</code> option, you can change some of the 
     <code>--mp1-ff </code><br>
 </p>
 
+<a name="hqmp"></a>
+<li><b>&nbsp;High-quality mate-pair libraries</b> (can be used for mate-pair only assembly)</li>
+
+<p>
+    <code>--hqmp<b>&lt;#></b>-12 &lt;file_name> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;File with interlaced reads for high-quality mate-pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5).
+</p>
+
+<p>
+    <code>--hqmp<b>&lt;#></b>-1 &lt;file_name> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;File with left reads for high-quality mate-pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5).
+</p>
+
+<p>
+    <code>--hqmp<b>&lt;#></b>-2 &lt;file_name> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;File with right reads for high-quality mate-pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5).
+</p>
+<p>
+    <code>--hqmp<b>&lt;#></b>-<b>&lt;or></b> &lt;file_name> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Orientation of reads for high-quality mate-pair library number <code><b>&lt;#></b></code> (<code><b>&lt;#></b></code> = 1,2,3,4,5; <code><b>&lt;or></b></code> = "fr","rf","ff"). <br>
+    &nbsp;&nbsp;&nbsp;&nbsp;The default orientation for high-quality mate-pair libraries is also reverse-forward. For example, to specify forward-reverse orientation for the first high-quality mate-pair library, you should use the flag:
+    <code>--hqmp1-fr </code><br>
+</p>
+</ul>
 
 <i><b>&nbsp;&nbsp;Specifying data for hybrid assembly</i></b>
 
@@ -580,7 +612,7 @@ Each library is provided in braces as a comma-separated list of attributes.
 The following attributes are available:
     <ul>
         <li>orientation ("fr", "rf", "ff")</li>
-        <li>type ("paired-end", "mate-pairs", "single", "pacbio", "sanger", "trusted-contigs", "untrusted-contigs")</li>
+        <li>type ("paired-end", "mate-pairs", "hq-mate-pairs", "single", "pacbio", "sanger", "trusted-contigs", "untrusted-contigs")</li>
         <li>interlaced reads (comma-separated list of files with interlaced reads)</li>
         <li>left reads (comma-separated list of files with left reads)</li>
         <li>right reads (comma-separated list of files with right reads)</li>
@@ -821,10 +853,7 @@ and PacBio CCS and CLR reads:
 <a name="sec3.3">
 <h3>3.3 Assembling IonTorrent reads</h3>
 <p>
-Only FASTQ as input is supported. Support for BAM will be added in the next SPAdes versions.
-
-<p>
-IonHammer is an experimental error correction tool for IonTorrent data. We expect to work towards its performance.
+Only FASTQ or BAM files are supported as input.
 
 <p>
 The selection of k-mer length is non-trivial for IonTorrent. If the dataset is more or less conventional (good coverage, not high GC, etc), then use our <a href="#sec3.4">recommendation for long reads</a> (e.g. assemble using k-mer lengths 21,33,55,77,99,127). However, due to increased error rate some changes of k-mer lengths (e.g. selection of shorter ones) may be required. For example, if you ran SPAdes with k-mer lengths 21,33,55,77 and then decided to assemble the same data set using more iterations and larger values of K, you can run SPAdes once again specifying the same output folder and the following options: <code>--restart-from k77 -k 21,33,55,77,99,127 --mismatch-correction -o &lt;previous_output_dir></code>. Do not forget to copy contigs and scaffolds from the previous run. We're planning to tackle issue of selecting k-mer lengths for IonTorrent reads in next versions.
