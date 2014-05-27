@@ -151,7 +151,6 @@ public:
     }
 
     EdgeId Back() const {
-        INFO("Path back");
         return data_.back();
     }
 
