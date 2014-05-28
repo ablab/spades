@@ -526,6 +526,7 @@ struct debruijn_config {
     size_t flanking_range;
 
     bool diploid_mode;
+    bool need_mapping;
 };
 
 void load(debruijn_config& cfg, const std::string &filename);

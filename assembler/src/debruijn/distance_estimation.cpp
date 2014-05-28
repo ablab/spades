@@ -110,13 +110,6 @@ void estimate_distance(conj_graph_pack& gp,
                        PairedIndexT& scaffolding_index) {
     using debruijn_graph::estimation_mode;
 
-    if (!cfg::get().developer_mode) {
-        clustered_index.Attach();
-        clustered_index.Init();
-        scaffolding_index.Attach();
-        scaffolding_index.Init();
-    }
-
     const debruijn_config& config = cfg::get();
     size_t delta = size_t(lib.data().insert_size_deviation);
     size_t linkage_distance = size_t(config.de.linkage_distance_coeff * lib.data().insert_size_deviation);

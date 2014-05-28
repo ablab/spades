@@ -22,6 +22,7 @@ class DebruijnEnvironment : public Environment {
         size_t edge_length_bound_;
 
         GraphPack gp_;
+        GraphElementFinder<Graph> element_finder_;
         MapperClass mapper_;
         FillerClass filler_;
         omnigraph::DefaultLabeler<Graph> labeler_;
@@ -44,6 +45,7 @@ class DebruijnEnvironment : public Environment {
                   cfg::get().flanking_range,
                   cfg::get().pos.max_mapping_gap,
                   cfg::get().pos.max_gap_diff),
+              element_finder_(gp_.g),
               mapper_(gp_.g, gp_.index, gp_.kmer_mapper),
               filler_(gp_.g, mapper_, gp_.edge_pos),
               labeler_(gp_.g, gp_.edge_pos) {

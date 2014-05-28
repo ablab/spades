@@ -510,15 +510,7 @@ void GapClosing::run(conj_graph_pack &gp, const char*) {
         INFO("No paired-end libraries exist, skipping gap closer");
         return;
     }
-
-    if (!gp.index.IsAttached()) {
-        INFO("Refilling index");
-        gp.index.Refill();
-        INFO("Index refilled");
-        INFO("Attaching index");
-        gp.index.Attach();
-        INFO("Index attached");
-    }
+    gp.EnsureIndex();
 
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd) {
@@ -531,13 +523,6 @@ void GapClosing::run(conj_graph_pack &gp, const char*) {
                 CloseGaps(gp, streams);
             }
         }
-    }
-
-    if (!cfg::get().developer_mode) {
-        INFO("Detaching and clearing index");
-        gp.index.Detach();
-        gp.index.clear();
-        INFO("Index clearing finished");
     }
 }
 

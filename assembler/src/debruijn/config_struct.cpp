@@ -675,6 +675,10 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   }
   load_reads(cfg.ds, cfg.input_dir);
   load_reference_genome(cfg.ds, cfg.input_dir);
+
+  cfg.need_mapping = cfg.developer_mode || cfg.correct_mismatches 
+                        || cfg.gap_closer_enable || cfg.rr_enable;
+
 }
 
 void load(debruijn_config& cfg, const std::string &filename) {

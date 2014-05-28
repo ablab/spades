@@ -91,6 +91,8 @@ size_t ConstructGraphUsingOldIndex(Readers& streams, Graph& g,
 	INFO("Condensing graph");
 	DeBruijnGraphConstructor<Graph, InnerIndex> g_c(g, debruijn);
 	TRACE("Constructor ok");
+	VERIFY(!index.IsAttached());
+	index.Attach();
 	g_c.ConstructGraph(100, 10000, 1.2); // TODO: move magic constants to config
 	INFO("Graph condensed");
 
@@ -121,7 +123,7 @@ void EarlyClipTips(size_t k, const debruijn_config::construction params, size_t 
 template<class Graph, class Read, class Index>
 size_t ConstructGraphUsingExtentionIndex(const debruijn_config::construction params,
 		io::ReadStreamList<Read>& streams, Graph& g,
-		Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr(), size_t read_buffer_size = 0) {
+		Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
 
     size_t k = g.k();
 	INFO("Constructing DeBruijn graph for k=" << k);
@@ -141,15 +143,16 @@ size_t ConstructGraphUsingExtentionIndex(const debruijn_config::construction par
 	EarlyClipTips(k, params, rl, ext);
 
 	INFO("Condensing graph");
-	index.Detach();
+	VERIFY(!index.IsAttached());
 	DeBruijnGraphExtentionConstructor<Graph> g_c(g, ext);
 	g_c.ConstructGraph(100, 10000, 1.2, params.keep_perfect_loops);//TODO move these parameters to config
-	index.Attach();
 
     typedef typename Index::InnerIndexT InnerIndex;
     typedef typename EdgeIndexHelper<InnerIndex>::CoverageAndGraphPositionFillingIndexBuilderT IndexBuilder;
 	INFO("Building index with coverage from graph")
-	IndexBuilder().BuildIndexFromGraph(index.inner_index(), g, read_buffer_size);
+    //todo pass buffer size
+    index.Refill();
+	index.Attach();
 	IndexBuilder().ParallelFillCoverage(index.inner_index(), streams);
 	return rl;
 }
@@ -159,7 +162,7 @@ size_t ConstructGraph(const debruijn_config::construction &params,
                       Streams& streams, Graph& g,
 		 Index& index, io::SingleStreamPtr contigs_stream = io::SingleStreamPtr()) {
 	if(params.con_mode == construction_mode::con_extention) {
-		return ConstructGraphUsingExtentionIndex(params, streams, g, index, contigs_stream, params.read_buffer_size);
+		return ConstructGraphUsingExtentionIndex(params, streams, g, index, contigs_stream);
 //	} else if(params.con_mode == construction_mode::con_old){
 //		return ConstructGraphUsingOldIndex(k, streams, g, index, contigs_stream);
 	} else {

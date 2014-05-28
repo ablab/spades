@@ -42,27 +42,24 @@ struct graph_pack: private boost::noncopyable {
 
     graph_t g;
     index_t index;
-    GraphElementFinder<Graph> element_finder;
-    EdgesPositionHandler<graph_t> edge_pos;
-//	PairedInfoIndex<graph_t> etalon_paired_index;
     KmerMapper<graph_t, seq_t> kmer_mapper;
     FlankingCoverage<graph_t> flanking_cov;
     PairedInfoIndicesT paired_indices;
     PairedInfoIndicesT clustered_indices;
     PairedInfoIndicesT scaffolding_indices;
     LongReadContainerT single_long_reads;
-
     GenomicInfo ginfo;
+
     Sequence genome;
 	EdgeQuality<Graph> edge_qual;
-
+    EdgesPositionHandler<graph_t> edge_pos;
+ 
     graph_pack(size_t k, const std::string &workdir, size_t lib_count,
                         Sequence genome = Sequence(),
                         size_t flanking_range = 50,
                         size_t max_mapping_gap = 0,
                         size_t max_gap_diff = 0)
             : k_value(k), g(k), index(g, workdir),
-              element_finder(g), edge_pos(g, max_mapping_gap + k, max_gap_diff),
               kmer_mapper(g),
               flanking_cov(g, flanking_range),
               paired_indices(g, lib_count),
@@ -70,7 +67,8 @@ struct graph_pack: private boost::noncopyable {
               scaffolding_indices(g, lib_count),
               single_long_reads(g, lib_count),
               genome(genome),
-              edge_qual(g)
+              edge_qual(g),
+              edge_pos(g, max_mapping_gap + k, max_gap_diff)
     { }
 
     void FillQuality() {
@@ -82,9 +80,61 @@ struct graph_pack: private boost::noncopyable {
         edge_qual.clear();
     }
 
-//    void FillFlankingCoverage() {
-//        flanking_cov.Fill(index.inner_index());
-//    }
+    void EnsureIndex() {
+        if (!index.IsAttached()) {
+            INFO("Index refill");
+            index.Refill();
+            index.Attach();
+        }
+    }
+
+    void EnsureBasicMapping() {
+        VERIFY(kmer_mapper.IsAttached());
+        EnsureIndex();
+    }
+
+    void EnsureQuality() {
+        if (!edge_qual.IsAttached()) {
+            ClearQuality();
+            FillQuality();
+            edge_qual.Attach();
+        }
+    }
+
+    void EnsurePos() {
+        if (!edge_pos.IsAttached()) {
+            edge_pos.Attach();
+            edge_pos.clear();
+            FillPos(*this, genome, "ref0");
+            FillPos(*this, !genome, "ref1");
+        }
+    }
+    
+    void EnsureDebugInfo() {
+        EnsureBasicMapping();
+        EnsureQuality();
+        EnsurePos();
+    }
+
+    void InitRRIndices() {
+        paired_indices.Attach();
+        paired_indices.Init();
+        clustered_indices.Attach();
+        clustered_indices.Init();
+        scaffolding_indices.Attach();
+        scaffolding_indices.Init();
+    }
+
+    void DetachAll() {
+        index.Detach();
+        paired_indices.Detach();
+        clustered_indices.Detach();
+        scaffolding_indices.Detach();
+        kmer_mapper.Detach();
+        edge_pos.Detach();
+        edge_qual.Detach();
+    }
+
 };
 
 typedef graph_pack<ConjugateDeBruijnGraph, runtime_k::RtSeq, KmerFreeEdgeIndex<Graph, runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq>, DefaultStoring>> conj_graph_pack;

@@ -13,32 +13,16 @@
 #include "simplification.hpp"
 
 namespace debruijn_graph {
-void CollectPositions(conj_graph_pack &gp) {
-    gp.edge_pos.clear();
-    if (gp.genome.size() > 0) {
-        FillPos(gp, gp.genome, "ref0");
-        FillPos(gp, !gp.genome, "ref1");
-    }
-
-    if (!cfg::get().pos.contigs_for_threading.empty() &&
-        path::FileExists(cfg::get().pos.contigs_for_threading))
-      FillPosWithRC(gp, cfg::get().pos.contigs_for_threading, "thr_");
-
-    if (!cfg::get().pos.contigs_to_analyze.empty() &&
-        path::FileExists(cfg::get().pos.contigs_to_analyze))
-      FillPosWithRC(gp, cfg::get().pos.contigs_to_analyze, "anlz_");
-}
 
 void Simplification::run(conj_graph_pack &gp, const char*) {
     using namespace omnigraph;
-    if (cfg::get().developer_mode) {
-        CollectPositions(gp);
-        gp.ClearQuality();
-        gp.FillQuality();
-    }
+
+    //no other handlers here, todo change with DetachAll
+    gp.index.Detach();
+    gp.index.clear();
 
     omnigraph::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
-
+    
     stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
 
     //  QualityLoggingRemovalHandler<Graph> qual_removal_handler(gp.g, edge_qual);
@@ -91,15 +75,6 @@ void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
     }
 
     printer(ipp_final_simplified);
-
-    // FIXME: Get rid of this
-    if (cfg::get().correct_mismatches || cfg::get().rr_enable) {
-        INFO("Final index refill");
-        gp.index.Refill();
-        INFO("Final index refill finished");
-        if (!gp.index.IsAttached())
-            gp.index.Attach();
-    }
 
     DEBUG("Graph simplification finished");
 

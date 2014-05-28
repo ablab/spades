@@ -12,6 +12,7 @@
 #include "graph_pack.hpp"
 #include "sequence_mapper.hpp"
 #include "graphio.hpp"
+#include "positions.hpp"
 
 #include "omni/visualization/visualization.hpp"
 #include "omni/edges_position_handler.hpp"
@@ -54,6 +55,16 @@ shared_ptr<omnigraph::visualization::GraphColorer<Graph>> DefaultColorer(const g
         FindGenomeMappingPath(!gp.genome, gp.g, gp.index, gp.kmer_mapper).path());
 }
 
+template <class graph_pack>
+void CollectContigPositions(graph_pack &gp) {
+    if (!cfg::get().pos.contigs_for_threading.empty() &&
+        path::FileExists(cfg::get().pos.contigs_for_threading))
+      FillPosWithRC(gp, cfg::get().pos.contigs_for_threading, "thr_");
+
+    if (!cfg::get().pos.contigs_to_analyze.empty() &&
+        path::FileExists(cfg::get().pos.contigs_to_analyze))
+      FillPosWithRC(gp, cfg::get().pos.contigs_to_analyze, "anlz_");
+}
 
 template<class Graph, class Index>
 class GenomeMappingStat: public AbstractStatCounter {
@@ -221,6 +232,13 @@ optional<runtime_k::RtSeq> FindCloseKP1mer(const conj_graph_pack &gp,
 }
 
 inline
+void PrepareForDrawing(conj_graph_pack &gp) {
+    gp.edge_pos.clear();
+    gp.EnsureDebugInfo();
+    CollectContigPositions(gp);
+}
+
+inline
 void ProduceDetailedInfo(conj_graph_pack &gp,
                          const omnigraph::GraphLabeler<Graph>& labeler, const string& run_folder,
                          const string &pos_name,
@@ -234,27 +252,29 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 
     const debruijn_config::info_printer & config = it->second;
 
-
-    if (config.print_stats) {
-        INFO("Printing statistics for " << details::info_printer_pos_name(pos));
-        CountStats(gp);
-    }
-
-    auto path1 = FindGenomeMappingPath(gp.genome, gp.g, gp.index,
-                                      gp.kmer_mapper).path();
-
-    auto colorer = omnigraph::visualization::DefaultColorer(gp.g);
-
-    if (config.write_error_loc ||
+    if (!(config.print_stats || config.write_error_loc ||
         config.write_full_graph ||
         config.write_full_nc_graph ||
         config.write_components ||
         !config.components_for_kmer.empty() ||
         config.write_components_along_genome ||
         config.write_components_along_contigs || config.save_full_graph ||
-        !config.components_for_genome_pos.empty()) {
-        colorer = DefaultColorer(gp);
-        make_dir(folder);
+        !config.components_for_genome_pos.empty())) {
+
+        return;
+    } 
+
+    make_dir(folder);
+    PrepareForDrawing(gp);
+
+    auto path1 = FindGenomeMappingPath(gp.genome, gp.g, gp.index,
+                                      gp.kmer_mapper).path();
+
+    auto colorer = DefaultColorer(gp);
+
+    if (config.print_stats) {
+        INFO("Printing statistics for " << details::info_printer_pos_name(pos));
+        CountStats(gp);
     }
 
     if (config.write_error_loc) {

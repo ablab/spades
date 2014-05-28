@@ -96,6 +96,7 @@ public:
         clear();
         typedef typename EdgeIndexHelper<InnerIndexT>::GraphPositionFillingIndexBuilderT IndexBuilder;
         //also makes an update!
+        //todo pass appropriate 3-rd arg
         IndexBuilder().BuildIndexFromGraph(inner_index_, this->g());
     }
 

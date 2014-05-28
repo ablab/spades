@@ -28,7 +28,7 @@ void assemble_genome() {
     INFO("SPAdes started");
     INFO("Starting from stage: " << cfg::get().entry_point);
 
-    StageManager SPAdes({ cfg::get().developer_mode,
+    StageManager SPAdes({cfg::get().developer_mode,
                           cfg::get().load_from,
                           cfg::get().output_saves});
 
@@ -39,16 +39,13 @@ void assemble_genome() {
                                             cfg::get().flanking_range,
                                             cfg::get().pos.max_mapping_gap,
                                             cfg::get().pos.max_gap_diff);
-    if (!cfg::get().developer_mode) {
-        conj_gp.edge_pos.Detach();
-        conj_gp.paired_indices.Detach();
-        conj_gp.clustered_indices.Detach();
-        conj_gp.scaffolding_indices.Detach();
-        conj_gp.element_finder.Detach();
-        if (!cfg::get().gap_closer_enable && !cfg::get().rr_enable)
-            conj_gp.kmer_mapper.Detach();
-    }
+    conj_gp.DetachAll();
 
+    if (cfg::get().need_mapping) {
+        INFO("Will need read mapping, kmer mapper will be attached");
+        conj_gp.kmer_mapper.Attach();
+    }
+    
     // Build the pipeline
     SPAdes.add(new debruijn_graph::Construction());
     SPAdes.add(new debruijn_graph::GenomicInfoFiller());

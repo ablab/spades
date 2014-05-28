@@ -118,10 +118,8 @@ bool ShouldMapSingleReads(bool has_good_rr_reads, size_t ilib) {
 }
 
 void PairInfoCount::run(conj_graph_pack &gp, const char*) {
-    if (!cfg::get().developer_mode) {
-        gp.paired_indices.Attach();
-        gp.paired_indices.Init();
-    }
+    gp.InitRRIndices();
+    gp.EnsureBasicMapping();
 
     size_t edge_length_threshold = stats::Nx(gp.g, 50);
     INFO("Graph N50: " << edge_length_threshold);
