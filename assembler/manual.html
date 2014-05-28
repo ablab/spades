@@ -315,7 +315,7 @@ Thank you for using SPAdes!
 <a name="sec3.1"></a>
 <h3>3.1 SPAdes input</h3>
 <p>
-    SPAdes takes as input paired-end reads, mate-pairs and single (unpaired) reads in FASTA, FASTQ and BAM format. However, in order to run read error correction, reads should be in FASTQ or BAM format. Sanger and PacBio CCS reads can be provided in both formats since SPAdes does not run error correction for these types of data.
+    SPAdes takes as input paired-end reads, mate-pairs and single (unpaired) reads in FASTA and FASTQ. For IonTorrent data SPAdes also supports unpaired reads in unmapped BAM format (like the one produced by Torrent Server). However, in order to run read error correction, reads should be in FASTQ or BAM format. Sanger and PacBio CCS reads can be provided in both formats since SPAdes does not run error correction for these types of data.
 
 <p>
     To run SPAdes 3.1.0 you need at least one library of the following types:
@@ -408,7 +408,7 @@ Note that we assume that SPAdes installation directory is added to the <code>PAT
 
 <p>
     <code>--iontorrent </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;This flag is required when assembling IonTorrent data. Carefully read <a href="#sec3.3">section 3.3</a> before using this option.
+    &nbsp;&nbsp;&nbsp;&nbsp;This flag is required when assembling IonTorrent data. Allows BAM files as input. Carefully read <a href="#sec3.3">section 3.3</a> before using this option.
 </p>
 
 
