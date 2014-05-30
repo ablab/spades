@@ -445,7 +445,7 @@ public:
         EdgeContainer jumping_edges;
         PairedInfoLibraries libs = wc_->getLibs();
         for (PairedInfoLibrary* lib : libs) {
-            for (int i = (int) path.Size() - 1; i >= 0 && path.LengthAt(i) <= lib->GetISMax(); --i) {
+            for (int i = (int) path.Size() - 1; i >= 0 && path.LengthAt(i) - g_.length(path.At(i)) <= lib->GetISMax(); --i) {
                 set<EdgeId> jump_edges_i;
                 lib->FindJumpEdges(path.At(i), jump_edges_i, (int)path.LengthAt(i) - (int)g_.k(), (int) (path.LengthAt(i) + lib->GetISMax()), 0);
                 for (EdgeId e : jump_edges_i) {
