@@ -68,17 +68,16 @@ struct PairedInfoLibrary {
         return result.size();
     }
 
-    void CountDistances(EdgeId e1, EdgeId e2, vector<int>& dist,
-                        vector<double>& w) const {
-        if (e1 != e2) {
-            de::Histogram histogram = index_.GetEdgePairInfo(e1, e2);
-            for (auto pointIter = histogram.begin();
-                    pointIter != histogram.end(); ++pointIter) {
-                int pairedDistance = rounded_d(*pointIter);
-                if (pairedDistance >= 0) {
-                    dist.push_back(pairedDistance);
-                    w.push_back(pointIter->weight);
-                }
+    void CountDistances(EdgeId e1, EdgeId e2, vector<int>& dist, vector<double>& w) const {
+        if (e1 == e2) {
+            return;
+        }
+        de::Histogram histogram = index_.GetEdgePairInfo(e1, e2);
+        for (auto pointIter = histogram.begin(); pointIter != histogram.end(); ++pointIter) {
+            int pairedDistance = rounded_d(*pointIter);
+            if (pairedDistance >= 0) {
+                dist.push_back(pairedDistance);
+                w.push_back(pointIter->weight);
             }
         }
     }
