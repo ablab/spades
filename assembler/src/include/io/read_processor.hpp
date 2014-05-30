@@ -82,11 +82,6 @@ public:
 #         pragma omp atomic
           read_ += 1;
 
-          if (read_ % 10000 == 0) {
-        	  //no lock here is intentional - it is a master thread -> no race conditions
-        	  std::clog << read_ << " read from disk and processed\r";
-          }
-
           while (!in_queue.enqueue(r))
             sched_yield();
 

@@ -20,7 +20,6 @@ class Quality {
 public:
 
 	Quality(const std::string &s) : qual_(s) {
-   //
 	}
 
 	int operator[](size_t i) const {
