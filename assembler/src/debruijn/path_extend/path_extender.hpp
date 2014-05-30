@@ -979,9 +979,9 @@ public:
         if (path.Size() < 1 || !IsSink(path.Back())) {
             return false;
         }
-        INFO("scaffolding");
+        DEBUG("scaffolding");
         candidates = scaffoldingExtensionChooser_->Filter(path, sources_);
-        INFO("scaffolding candidates " << candidates.size() << " from sources " << sources_.size());
+        DEBUG("scaffolding candidates " << candidates.size() << " from sources " << sources_.size());
         if (candidates.size() == 1) {
             if (candidates[0].e_ == path.Back() || (cfg::get().avoid_rc_connections && candidates[0].e_ == g_.conjugate(path.Back()))) {
                 return false;
@@ -998,7 +998,7 @@ public:
                 return false;
             }
         }
-        INFO("scaffolding end");
+        DEBUG("scaffolding end");
         return false;
     }
 
