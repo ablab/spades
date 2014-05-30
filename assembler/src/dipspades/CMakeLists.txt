@@ -1,5 +1,5 @@
 ############################################################################
-# Copyright (c) 2011-2013 Saint-Petersburg Academic University
+# Copyright (c) 2011-2014 Saint-Petersburg Academic University
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
@@ -27,7 +27,7 @@ add_executable(dipspades
 	      utils/files_utils.cpp
           main.cpp)
 
-target_link_libraries(dipspades input mph_index yaml-cpp nlopt ${COMMON_LIBRARIES} ssw)
+target_link_libraries(dipspades input mph_index BamTools yaml-cpp nlopt ${COMMON_LIBRARIES} ssw)
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(dipspades PROPERTIES LINK_SEARCH_END_STATIC 1)

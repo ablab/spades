@@ -1,5 +1,5 @@
 ############################################################################
-# Copyright (c) 2011-2013 Saint-Petersburg Academic University
+# Copyright (c) 2011-2014 Saint-Petersburg Academic University
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
@@ -21,7 +21,7 @@ add_executable(hammer
 #  add_subdirectory(quake_count)
 #  add_subdirectory(gen_test_data)
 
-target_link_libraries(hammer input mph_index yaml-cpp ${COMMON_LIBRARIES})
+target_link_libraries(hammer input mph_index BamTools yaml-cpp ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(hammer PROPERTIES LINK_SEARCH_END_STATIC 1)
