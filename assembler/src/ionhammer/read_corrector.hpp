@@ -79,6 +79,8 @@ static int overlapAlignH(It1 a_begin, It1 a_end, It2 b_begin, It2 b_end,
     int offset = (i / 2) * ((i & 1) ? 1 : -1); // 0, -1, 1, -2, 2, ...
     auto a_it = offset < 0 ? a_begin : a_begin + offset;
     auto b_it = offset < 0 ? b_begin - offset : b_begin;
+    if (b_it < b_begin || a_it >= a_end)
+        continue;
     int score = 0;
     for ( ; a_it != a_end && b_it != b_end; ++a_it, ++b_it)
       if (a_it->nucl == b_it->nucl)
@@ -146,6 +148,8 @@ static int alignH(It1 read_begin, It1 read_end,
     x_end = read_end;
 
   auto y_begin = consensus_begin + n_skip_consensus;
+  if (y_begin >= consensus_end)
+      return 0; // weird situation
   auto y_end = y_begin + n_cmp;
   if (y_end > consensus_end)
     y_end = consensus_end;
