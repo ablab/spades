@@ -975,37 +975,31 @@ public:
     }
 
     virtual bool MakeSimpleGrowStep(BidirectionalPath& path) {
-        DEBUG("scaffolding");
         ExtensionChooser::EdgeContainer candidates;
-        bool result = false;
+        if (path.Size() < 1 || !IsSink(path.Back())) {
+            return false;
+        }
+        INFO("scaffolding");
+        candidates = scaffoldingExtensionChooser_->Filter(path, sources_);
+        INFO("scaffolding candidates " << candidates.size() << " from sources " << sources_.size());
+        if (candidates.size() == 1) {
+            if (candidates[0].e_ == path.Back() || (cfg::get().avoid_rc_connections && candidates[0].e_ == g_.conjugate(path.Back()))) {
+                return false;
+            }
+            int gap = cfg::get().pe_params.param_set.scaffolder_options.fix_gaps ?
+                            gapJoiner_->FixGap(path.Back(), candidates.back().e_, candidates.back().d_) : candidates.back().d_;
 
-        if (path.Size() >= 1 && IsSink(path.Back())) {
-            candidates = scaffoldingExtensionChooser_->Filter(path, sources_);
-
-            if (candidates.size() == 1) {
-                if (candidates[0].e_ == path.Back()) {
-                    return false;
-                }
-                if (cfg::get().avoid_rc_connections && candidates[0].e_ == g_.conjugate(path.Back())) {
-                    return false;
-                }
-
-                int gap = cfg::get().pe_params.param_set.scaffolder_options.fix_gaps ?
-                     gapJoiner_->FixGap(path.Back(), candidates.back().e_, candidates.back().d_) :
-                     candidates.back().d_;
-
-                if (gap != GapJoiner::INVALID_GAP) {
-                    DEBUG("Scaffolding. PathId: " << path.GetId() << " path length: " << path.Length() << ", fixed gap length: " << gap);
-                    path.PushBack(candidates.back().e_, gap);
-                    result = true;
-                } else {
-                    DEBUG("Looks like wrong scaffolding. PathId: " << path.GetId() << " path length: " << path.Length() << ", fixed gap length: " << candidates.back().d_);
-                    return false;
-                }
+            if (gap != GapJoiner::INVALID_GAP) {
+                DEBUG("Scaffolding. PathId: " << path.GetId() << " path length: " << path.Length() << ", fixed gap length: " << gap);
+                path.PushBack(candidates.back().e_, gap);
+                return true;
+            } else {
+                DEBUG("Looks like wrong scaffolding. PathId: " << path.GetId() << " path length: " << path.Length() << ", fixed gap length: " << candidates.back().d_);
+                return false;
             }
         }
-
-        return result;
+        INFO("scaffolding end");
+        return false;
     }
 
     virtual bool ResolveShortLoopByCov(BidirectionalPath&) {
