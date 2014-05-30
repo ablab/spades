@@ -48,19 +48,19 @@ int main(int argc, char *argv[]) {
 
   std::string config_file = argv[CONFIG_FILE_ARG];
   INFO("Loading config from " << config_file.c_str());
-  if (!FileExists(config_file)) {
+  if (!path::FileExists(config_file)) {
       ERROR("File " + config_file + " doesn't exists.");
       return EXIT_FAILURE;
   }
   cfg::create_instance(config_file);
 
   const std::string &database = cfg::get().database;
-  if (!FileExists(database)) {
+  if (!path::FileExists(database)) {
       ERROR("File " + database + " doesn't exists.");
       return EXIT_FAILURE;
   }
   const std::string &dataset = cfg::get().dataset_file_name;
-  if (!FileExists(dataset)) {
+  if (!path::FileExists(dataset)) {
       ERROR("File " + dataset + " doesn't exists.");
       return EXIT_FAILURE;
   }

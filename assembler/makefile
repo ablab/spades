@@ -47,8 +47,8 @@ dt:
 	$(MAKE) dit
 
 clean:
-	$(MAKE) -C build/debug clean
-	$(MAKE) -C build/release clean
+	$(MAKE) -C build/debug/cclean
+	$(MAKE) -C build/release/cclean
 
 all:
 	$(MAKE) -C build/release all
