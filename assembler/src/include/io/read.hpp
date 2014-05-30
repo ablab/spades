@@ -44,7 +44,7 @@ public:
   }
 
   Quality getQuality() const {
-    VERIFY(valid_);
+//    VERIFY(valid_);
     return Quality(qual_);
   }
 

@@ -171,6 +171,7 @@ class KMerIndex {
 
   size_t size() const {
 	  return size_;
+
   }
 
   size_t seq_idx(const KMerSeq &s) const {
