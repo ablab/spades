@@ -377,166 +377,100 @@ public:
 
 
 
-class ScaffoldingExtensionChooser: public ExtensionChooser {
-
-    bool cluster_info_;
-
-    static bool compare(pair<int,double> a, pair<int,double> b)
-    {
-        if (a.first < b.first) return true;
-        else return false;
-    }
+class ScaffoldingExtensionChooser : public ExtensionChooser {
 
 public:
-	ScaffoldingExtensionChooser(const Graph& g, WeightCounter * wc, double priority, bool cluster_info = true): ExtensionChooser(g, wc, priority), cluster_info_(cluster_info) {
+    ScaffoldingExtensionChooser(const Graph& g, WeightCounter * wc, double priority) :
+        ExtensionChooser(g, wc, priority), weight_threshold_(0.0),
+        cl_weight_threshold_(cfg::get().pe_params.param_set.scaffolder_options.cl_threshold) {
     }
 
-	double AddInfoFromEdge(const std::vector<int>& distances, const std::vector<double>& weights, std::vector<pair<int,double> >& histogram, const BidirectionalPath& path, size_t j, double threshold)
-	{
-		double mean = 0.0;
-		double sum  = 0.0;
+    void AddInfoFromEdge(const std::vector<int>& distances, const std::vector<double>& weights, std::vector<pair<int, double> >& histogram,
+                         size_t len_to_path_end) {
+        for (size_t l = 0; l < distances.size(); ++l) {
+            if (distances[l] > max(0, (int) len_to_path_end - (int) g_.k()) && weights[l] >= weight_threshold_) {
+                histogram.push_back(make_pair(distances[l] - len_to_path_end, weights[l]));
+            }
+        }
+    }
 
-		for (size_t l = 0; l < distances.size(); ++ l){
-			if (distances[l] > max(0, (int) path.LengthAt(j) - (int) g_.k()) && weights[l] >= threshold) {
-                mean += ((distances[l] - (int) path.LengthAt(j)) * weights[l]);
-                sum += weights[l];
-                histogram.push_back(make_pair(distances[l] - path.LengthAt(j), weights[l]));
-			}
-		}
-		return mean / sum;
-	}
-
-
-    int CountMean(vector< pair<int,double> >& histogram)
-    {
+    int CountMean(vector<pair<int, double> >& histogram) {
         double dist = 0.0;
-        double sum = 0;
-        for (size_t i = 0; i < histogram.size(); ++ i) {
-			 sum += histogram[i].second;
-		}
-        for (size_t i = 0; i < histogram.size(); ++ i) {
-			 dist += (histogram[i].first * histogram[i].second / sum);
-		}
+        double sum = 0.0;
+        for (size_t i = 0; i < histogram.size(); ++i) {
+            dist += histogram[i].first * histogram[i].second;
+            sum += histogram[i].second;
+        }
+        dist /= sum;
         return (int) round(dist);
     }
 
-    int CountDev(vector< pair<int,double> >& histogram, int avg)
-    {
-        double dev = 0.0;
-        double sum = 0;
-        for (size_t i = 0; i < histogram.size(); ++ i) {
-             sum += histogram[i].second;
-        }
-        for (size_t i = 0; i < histogram.size(); ++ i) {
-             dev += (((double) (histogram[i].first - avg)) * ((double) (histogram[i].first - avg)) * ((double) histogram[i].second));
-        }
-        return (int) round(sqrt(dev / sum));
-    }
-
-    vector< pair<int,double> > FilterHistogram(vector< pair<int,double> >& histogram, int start, int end, int threshold)
-    {
-        vector< pair<int,double> > res;
-
-        for (size_t i = 0; i < histogram.size(); ++i){
-            if (histogram[i].first >= start && histogram[i].first <= end && histogram[i].second >= threshold) {
-                res.push_back(histogram[i]);
+    void CountAvrgDists(BidirectionalPath& path, EdgeId e, std::vector<pair<int, double> > & histogram) {
+        std::vector<int> distances;
+        std::vector<double> weights;
+        for (size_t j = 0; j < path.Size(); ++j) {
+            wc_->GetDistances(path.At(j), e, distances, weights);
+            if (distances.size() > 0) {
+                AddInfoFromEdge(distances, weights, histogram, path.LengthAt(j));
             }
+            distances.clear();
         }
-
-        return res;
     }
 
-    double CountAvrgDists(BidirectionalPath& path, EdgeId e, std::vector<pair<int,double> > & histogram)
-    {
-		std::vector<int> distances;
-		std::vector<double> weights;
-
-		double max_weight = 0.0;
-		//bool print = true;
-		for (size_t j = 0; j < path.Size(); ++ j) {
-			wc_->GetDistances(path.At(j), e, distances, weights);
-
-			for (size_t l = 0; l < weights.size(); ++l){
-				if (weights[l] > max_weight) {
-				    max_weight = weights[l];
-				}
-			}
-
-			if (distances.size() > 0) {
-				AddInfoFromEdge(distances, weights, histogram, path, j, 0);
-			}
-			distances.clear();
-		}
-		return max_weight;
-    }
-
-    void FindBestFittedEdges(BidirectionalPath& path, EdgeContainer& edges, EdgeContainer& result)
-    {
-		std::vector<pair<int,double> > histogram;
-		for (size_t i = 0; i < edges.size(); ++i){
-			histogram.clear();
-			double max_w = CountAvrgDists(path, edges[i].e_, histogram);
-
-			for (int j = 0; j < 2; ++j) {
-                int mean = CountMean(histogram);
-                int dev = CountDev(histogram, mean);
-                double cutoff = min(max_w * cfg::get().pe_params.param_set.scaffolder_options.rel_cutoff, (double) cfg::get().pe_params.param_set.scaffolder_options.cutoff);
-                histogram = FilterHistogram(histogram, mean - (5 - j)  * dev, mean + (5 - j) * dev, (int) round(cutoff));
-			}
-
-			double sum = 0.0;
-			for (size_t j = 0; j < histogram.size(); ++j) {
-			    sum += histogram[j].second;
-			}
-
-			if (sum > cfg::get().pe_params.param_set.scaffolder_options.sum_threshold) {
-				sort(histogram.begin(), histogram.end(), compare);
-				int gap = CountMean(histogram);
-
-				if (wc_->CountIdealInfo(path, edges[i].e_, gap) > 0.0) {
-					result.push_back(EdgeWithDistance(edges[i].e_, gap));
-                }
-			}
-		}
-    }
-
-
-    void FindBestFittedEdgesForClustered(BidirectionalPath& path, EdgeContainer& edges, EdgeContainer& result)
-    {
-        std::vector<pair<int,double> > histogram;
-        for (size_t i = 0; i < edges.size(); ++i){
+    void FindBestFittedEdgesForClustered(BidirectionalPath& path, EdgeContainer& edges, EdgeContainer& result) {
+        std::vector < pair<int, double> > histogram;
+        for (size_t i = 0; i < edges.size(); ++i) {
             histogram.clear();
             CountAvrgDists(path, edges[i].e_, histogram);
-
             double sum = 0.0;
             for (size_t j = 0; j < histogram.size(); ++j) {
                 sum += histogram[j].second;
             }
-            if (sum > cfg::get().pe_params.param_set.scaffolder_options.cl_threshold) {
-                sort(histogram.begin(), histogram.end(), compare);
-                int gap = CountMean(histogram);
-                if (wc_->CountIdealInfo(path, edges[i].e_, gap) > 0.0) {
-                    DEBUG("scaffolding " << g_.int_id(edges[i].e_) << " gap " << gap);
-                    result.push_back(EdgeWithDistance(edges[i].e_, gap));
+            if (sum <= cl_weight_threshold_) {
+                return;
+            }
+            int gap = CountMean(histogram);
+            if (wc_->CountIdealInfo(path, edges[i].e_, gap) > 0.0) {
+                DEBUG("scaffolding " << g_.int_id(edges[i].e_) << " gap " << gap);
+                result.push_back(EdgeWithDistance(edges[i].e_, gap));
+            }
+        }
+    }
+
+    bool IsTip(EdgeId e) const {
+        return g_.IncomingEdgeCount(g_.EdgeStart(e)) == 0;
+    }
+
+    EdgeContainer FindCandidates(BidirectionalPath& path) const {
+        EdgeContainer jumping_edges;
+        PairedInfoLibraries libs = wc_->getLibs();
+        for (PairedInfoLibrary* lib : libs) {
+            for (int i = (int) path.Size() - 1; i >= 0 && path.LengthAt(i) <= lib->GetISMax(); --i) {
+                set<EdgeId> jump_edges_i;
+                lib->FindJumpEdges(path.At(i), jump_edges_i, (int)path.LengthAt(i) - (int)g_.k(), (int) (path.LengthAt(i) + lib->GetISMax()), 0);
+                for (EdgeId e : jump_edges_i) {
+                    if (IsTip(e)) {
+                        jumping_edges.push_back(EdgeWithDistance(e, 0));
+                    }
                 }
             }
         }
+        return jumping_edges;
     }
 
     virtual EdgeContainer Filter(BidirectionalPath& path, EdgeContainer& edges) {
         if (edges.empty()) {
             return edges;
         }
+        EdgeContainer candidates = FindCandidates(path);
         EdgeContainer result;
-
-        if (cluster_info_) {
-            FindBestFittedEdgesForClustered(path, edges, result);
-        } else {
-            FindBestFittedEdges(path, edges, result);
-        }
-
+        FindBestFittedEdgesForClustered(path, candidates, result);
         return result;
     }
+
+private:
+    double weight_threshold_;
+    double cl_weight_threshold_;
 };
 
 inline bool EdgeWithWeightCompareReverse(const pair<EdgeId, double>& p1,
