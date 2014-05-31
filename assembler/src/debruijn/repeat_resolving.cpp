@@ -32,11 +32,9 @@ void PEResolving(conj_graph_pack& gp) {
 }
 
 void RepeatResolution::run(conj_graph_pack &gp, const char*) {
-    cout << "here" << endl;
     if (cfg::get().developer_mode) {
         stats::PrepareForDrawing(gp);
     }
-    cout << "here" << endl;
 
     OutputContigs(gp.g, cfg::get().output_dir + "before_rr", true);
 
