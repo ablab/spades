@@ -140,6 +140,7 @@ void AssertGraph(size_t k, const vector<string>& reads, const vector<string>& et
 	typedef io::VectorReadStream<io::SingleRead> RawStream;
 	Graph g(k);
 	graph_pack<Graph, runtime_k::RtSeq>::index_t index(g, tmp_folder);
+    index.Detach();
 
     io::ReadStreamList<io::SingleRead> streams(io::RCWrap<io::SingleRead>(make_shared<RawStream>(MakeReads(reads))));
 	ConstructGraph(CreateDefaultConstructionConfig(), streams, g, index);
@@ -213,11 +214,14 @@ void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t /*rl
 	io::ReadStreamList<io::SingleRead> single_stream_vector = io::SquashingWrap<io::PairedRead>(paired_streams);
 	ConstructGraphWithCoverage(CreateDefaultConstructionConfig(), single_stream_vector, gp.g, gp.index, gp.flanking_cov);
 
+    gp.InitRRIndices();
+    gp.kmer_mapper.Attach();
+    gp.EnsureBasicMapping();
     SequenceMapperNotifier notifier(gp);
     LatePairedIndexFiller pif(gp.g, PairedReadCountWeight, gp.paired_indices[0]);
     notifier.Subscribe(0, &pif);
     notifier.ProcessLibrary(paired_streams, 0, *MapperInstance(gp), paired_streams.size());
-
+    
 	AssertEdges(gp.g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
 
 	AssertCoverage(gp.g, AddComplement(etalon_coverage));

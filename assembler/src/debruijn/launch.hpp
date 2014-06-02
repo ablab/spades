@@ -39,7 +39,6 @@ void assemble_genome() {
                                             cfg::get().flanking_range,
                                             cfg::get().pos.max_mapping_gap,
                                             cfg::get().pos.max_gap_diff);
-    conj_gp.DetachAll();
 
     if (cfg::get().need_mapping) {
         INFO("Will need read mapping, kmer mapper will be attached");

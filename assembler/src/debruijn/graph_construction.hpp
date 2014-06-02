@@ -143,6 +143,9 @@ size_t ConstructGraphUsingExtentionIndex(const debruijn_config::construction par
 	EarlyClipTips(k, params, rl, ext);
 
 	INFO("Condensing graph");
+    //if (index.IsAttached()) {
+    //    index.Detach();
+    //}
 	VERIFY(!index.IsAttached());
 	DeBruijnGraphExtentionConstructor<Graph> g_c(g, ext);
 	g_c.ConstructGraph(100, 10000, 1.2, params.keep_perfect_loops);//TODO move these parameters to config

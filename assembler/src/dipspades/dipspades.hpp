@@ -194,13 +194,7 @@ void run_dipspades() {
             Sequence(""), // reference genome
             1); // flanking range
 
-    if (!dsp_cfg::get().rp.developer_mode) {
-        conj_gp.edge_pos.Detach();
-        conj_gp.paired_indices.Detach();
-        conj_gp.clustered_indices.Detach();
-        conj_gp.scaffolding_indices.Detach();
-    }
-
+    conj_gp.kmer_mapper.Attach();
     StageManager DS_Manager ( {dsp_cfg::get().rp.developer_mode,
     						dsp_cfg::get().io.load_from,
    						dsp_cfg::get().io.output_saves} );

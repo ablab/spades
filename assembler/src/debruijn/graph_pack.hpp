@@ -58,7 +58,8 @@ struct graph_pack: private boost::noncopyable {
                         Sequence genome = Sequence(),
                         size_t flanking_range = 50,
                         size_t max_mapping_gap = 0,
-                        size_t max_gap_diff = 0)
+                        size_t max_gap_diff = 0,
+                        bool detach_indices = true)
             : k_value(k), g(k), index(g, workdir),
               kmer_mapper(g),
               flanking_cov(g, flanking_range),
@@ -69,7 +70,11 @@ struct graph_pack: private boost::noncopyable {
               genome(genome),
               edge_qual(g),
               edge_pos(g, max_mapping_gap + k, max_gap_diff)
-    { }
+    { 
+        if (detach_indices) {
+            DetachAll();
+        }
+    }
 
     void FillQuality() {
         edge_qual.Fill(index, kmer_mapper, genome);

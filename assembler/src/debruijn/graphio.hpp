@@ -982,15 +982,14 @@ void ScanBasicGraph(const string& file_name, DataScanner<Graph>& scanner) {
 template<class graph_pack>
 void ScanGraphPack(const string& file_name,
                    DataScanner<typename graph_pack::graph_t>& scanner, graph_pack& gp) {
-    gp.index.Detach();
     ScanBasicGraph(file_name, scanner);
+    gp.index.Attach();
     if (LoadEdgeIndex(file_name, gp.index.inner_index())) {
         gp.index.Update();
     } else {
         WARN("Cannot load edge index, kmer coverages will be missed");
         gp.index.Refill();
     }
-    gp.index.Attach();
     //  scanner.LoadPaired(file_name + "_et", gp.etalon_paired_index);
     scanner.LoadPositions(file_name, gp.edge_pos);
     LoadKmerMapper(file_name, gp.kmer_mapper);
