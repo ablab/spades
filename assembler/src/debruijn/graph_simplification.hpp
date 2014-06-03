@@ -461,6 +461,11 @@ void ParallelCompress(Graph& g, const SimplifInfoContainer& info) {
     debruijn::simplification::ParallelCompressor<Graph> compressor(g);
     debruijn::simplification::TwoStepAlgorithmRunner<Graph, typename Graph::VertexId> runner(g, false);
     debruijn::simplification::RunVertexAlgorithm(g, runner, compressor, info.chunk_cnt());
+
+    //have to call cleaner to get rid of new isolated vertices
+    Cleaner<Graph> cleaner(g);
+    cleaner.Clean();
+
     //have to call "final" compression to get rid of loops
     INFO("Postcompression");
     Compress(g);
@@ -487,9 +492,7 @@ bool ParallelClipTips(Graph& g,
     debruijn::simplification::RunVertexAlgorithm(g, runner, tip_clipper, info.chunk_cnt());
 
     ParallelCompress(g, info);
-
-    Cleaner<Graph> cleaner(g);
-    cleaner.Clean();
+    //Cleaner is launched inside ParallelCompression
 
     return true;
 }
@@ -547,8 +550,6 @@ bool ParallelEC(Graph& g,
 
     ParallelCompress(g, info);
     
-    //Not executing cleaner as small optimization =) Not so many vertices to clean here.
-
     return true;
 }
 
