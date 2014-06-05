@@ -146,7 +146,7 @@ class DebruijnEnvironment : public Environment {
         }
 
         const ElementFinder& finder() const {
-            return gp_.element_finder;
+            return element_finder_;
         }
 
         void set_max_vertices(size_t max_vertices) {
