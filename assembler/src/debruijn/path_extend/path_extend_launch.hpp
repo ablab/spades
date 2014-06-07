@@ -332,13 +332,8 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	INFO("Growing paths using paired-end and long single reads");
 	auto paths = resolver.extendSeeds(seeds, *mainPE);
 	paths.SortByLength();
-	paths.ResetPathsId();
+	//paths.ResetPathsId();
 	DebugOutputPaths(writer, gp, output_dir, paths, "pe_overlaped_paths");
-
-//    PathContainer tmp_paths;
-//    GraphCoverageMap cover_map2(gp.g);
-//    writer.loadPaths(tmp_paths, cover_map2, "./data/debruijn/ECOLI_SC/K55/latest/path_extend/pe_overlaped_paths.dat");
-//    DebugOutputPaths(writer, gp,output_dir, tmp_paths, "tmp_paths" );
 
     PathContainer clone_paths;
     GraphCoverageMap clone_map(gp.g);
