@@ -507,10 +507,15 @@ class DataScanner {
         fclose(file);
     }
 
-    void LoadPositions(const string& file_name,
+    bool LoadPositions(const string& file_name,
                        EdgesPositionHandler<Graph>& edge_pos) {
         FILE* file = fopen((file_name + ".pos").c_str(), "r");
-        VERIFY(file != NULL);
+        if (file == NULL) {
+            INFO("No positions were saved");
+            return false;
+        }
+        VERIFY(!edge_pos.IsAttached());
+        edge_pos.Attach();
         INFO("Reading edges positions, " << file_name <<" started");
         VERIFY(file != NULL);
         size_t pos_count;
@@ -540,6 +545,7 @@ class DataScanner {
             }
         }
         fclose(file);
+        return true;
     }
 
   private:
@@ -992,7 +998,9 @@ void ScanGraphPack(const string& file_name,
     }
     //  scanner.LoadPaired(file_name + "_et", gp.etalon_paired_index);
     scanner.LoadPositions(file_name, gp.edge_pos);
-    LoadKmerMapper(file_name, gp.kmer_mapper);
+    //load kmer_mapper only if needed
+    if (gp.kmer_mapper.IsAttached())
+        LoadKmerMapper(file_name, gp.kmer_mapper);
     if (!scanner.LoadFlankingCoverage(file_name, gp.flanking_cov)) {
         gp.flanking_cov.Fill(gp.index.inner_index());
     }
