@@ -12,6 +12,8 @@ default=INFO
 #GluingVericesDefiner=TRACE
 #GluingVericesDefinerResults=TRACE
 
+#TwoStepAlgorithmRunner=TRACE
+#AlgorithmRunner=TRACE
 #DeBruijnGraphConstructor=TRACE
 #PairedHandlerApplier=TRACE
 #QualityEdgeLocalityPrintingRH=TRACE

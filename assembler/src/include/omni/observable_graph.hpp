@@ -47,6 +47,8 @@ class ObservableGraph : private boost::noncopyable {
         return true;
     }
 
+ public:
+ //todo make Fire* protected once again with helper friend class
     virtual void FireAddVertex(VertexId v) const {
         TRACE("FireAddVertex event of vertex inner_id=" << v.int_id() << " for " << action_handler_list_.size() << " handlers");
         FOREACH (Handler* handler_ptr, action_handler_list_) {
@@ -119,8 +121,6 @@ class ObservableGraph : private boost::noncopyable {
             }
         }
     }
-
- public:
 
     ObservableGraph(HandlerApplier<VertexId, EdgeId> *applier)
             : applier_(applier)/*, element_order_(*this)*/{
@@ -210,7 +210,7 @@ class ObservableGraph : private boost::noncopyable {
 
     bool AllHandlersThreadSafe() const {
         BOOST_FOREACH(Handler* handler, action_handler_list_) {
-            if (!handler->IsThreadSafe()) {
+            if (handler->IsAttached() && !handler->IsThreadSafe()) {
                 return false;
             }
         }
@@ -220,7 +220,7 @@ class ObservableGraph : private boost::noncopyable {
     // TODO: for debug. remove.
     void PrintHandlersNames() const {
         BOOST_FOREACH(Handler* handler, action_handler_list_) {
-            cout << handler->name() << endl;
+            cout << handler->name() << " attached=" << handler->IsAttached() << endl;
         }
     }
 

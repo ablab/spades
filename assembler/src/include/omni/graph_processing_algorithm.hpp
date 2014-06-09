@@ -11,7 +11,11 @@ class ProcessingAlgorithm : private boost::noncopyable {
     Graph& g_;
 
  protected:
-    Graph& g() const {
+    Graph& g() {
+        return g_;
+    }
+
+    const Graph& g() const {
         return g_;
     }
 

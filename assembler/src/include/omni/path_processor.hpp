@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "standard_base.hpp"
 #include "dijkstra_tools/dijkstra_helper.hpp"
 
 namespace omnigraph {
@@ -131,6 +132,7 @@ public:
 		return error_code; // 3 two mistakes, 2 bad dijkstra, 1 bad dfs, 0 = okay
 	}
 
+	//todo remove setters
 	void SetMinLens(const vector<size_t>& new_min_lens) {
 		min_lens_ = new_min_lens;
 	}

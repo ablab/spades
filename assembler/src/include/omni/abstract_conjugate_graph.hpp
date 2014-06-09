@@ -23,6 +23,72 @@ class AbstractConjugateGraph;
 template<class DataMaster>
 class PairedEdge;
 
+template<class V>
+class PairedVertexLock;
+
+template<class Graph>
+class ConstructionHelper {
+private:
+    typedef typename Graph::DataMaster::EdgeData EdgeData;
+    typedef typename Graph::DataMaster::VertexData VertexData;
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+
+    Graph &graph_;
+
+public:
+
+    ConstructionHelper(Graph &graph) : graph_(graph) {
+    }
+
+    Graph &graph() {
+        return graph_;
+    }
+
+    EdgeId AddEdge(const EdgeData &data) {
+        return AddEdge(data, graph_.GetGraphIdDistributor());
+    }
+
+    EdgeId AddEdge(const EdgeData &data, IdDistributor &id_distributor) {
+        return graph_.AddEdge(data, id_distributor);
+    }
+
+    void LinkIncomingEdge(VertexId v, EdgeId e) {
+        graph_.LinkIncomingEdge(v, e);
+    }
+
+    void LinkOutgoingEdge(VertexId v, EdgeId e) {
+        graph_.LinkOutgoingEdge(v, e);
+    }
+
+    void DeleteLink(VertexId v, EdgeId e) {
+        v->RemoveOutgoingEdge(e);
+    }
+
+    void DeleteUnlinkedEdge(EdgeId e) {
+        EdgeId rc = graph_.conjugate(e);
+        if (e != rc) {
+            delete rc.get();
+        }
+        delete e.get();
+    }
+
+    VertexId CreateVertex(const VertexData &data) {
+        return CreateVertex(data, graph_.GetGraphIdDistributor());
+    }
+
+    VertexId CreateVertex(const VertexData &data, IdDistributor &id_distributor) {
+        return graph_.CreateVertex(data, id_distributor);
+    }
+
+    template<class Iter>
+    void AddVerticesToGraph(Iter begin, Iter end) {
+        for(; begin != end; ++begin) {
+            graph_.AddVertexToGraph(*begin);
+        }
+    }
+};
+
 template<class DataMaster>
 class PairedVertex {
 private:
@@ -40,11 +106,12 @@ private:
                   conjugate_(conjugate) {
         }
 
+        //fixme seems to be ok and rather useful. Delete comment?
         // Should not exist. Temporary patch to write empty in_begin, out_end... methods for
         // ConcurrentGraphComponent which can not have such methods by definition
         conjugate_iterator()
                 : conjugate_(false) {
-            VERIFY_MSG(false, "There is no sense in using this. See comments.")
+    //        VERIFY_MSG(false, "There is no sense in using this. See comments.")
         }
 
     private:
@@ -74,7 +141,9 @@ private:
             restricted::pure_pointer<PairedVertex<DataMaster>>,
             restricted::pure_pointer<PairedEdge<DataMaster>>, DataMaster> ;
     friend class AbstractConjugateGraph<DataMaster> ;
+    friend class ConstructionHelper<AbstractConjugateGraph<DataMaster>>;
     friend class PairedEdge<DataMaster> ;
+    friend class PairedVertexLock<restricted::pure_pointer<PairedVertex<DataMaster>>>;
     friend class conjugate_iterator;
 
     std::vector<EdgeId> outgoing_edges_;
@@ -82,6 +151,11 @@ private:
     VertexId conjugate_;
 
     VertexData data_;
+
+    bool IsMinimal() const {
+        return conjugate_->conjugate_ <= conjugate_;
+    }
+
 
     void set_conjugate(VertexId conjugate) {
         conjugate_ = conjugate;
@@ -140,7 +214,8 @@ private:
 
     void AddOutgoingEdge(EdgeId e) {
         VERIFY(this != 0);
-        outgoing_edges_.push_back(e);
+        outgoing_edges_.insert(std::upper_bound(outgoing_edges_.begin(), outgoing_edges_.end(), e), e);
+        //outgoing_edges_.push_back(e);
     }
 
     bool RemoveOutgoingEdge(const EdgeId e) {
@@ -163,6 +238,34 @@ private:
     }
 };
 
+template<class V>
+class PairedVertexLock {
+    restricted::PurePtrLock<V> inner_lock_;
+
+    static bool IsMinimal(V v) {
+        return !(v->conjugate_ < v);
+    }
+
+    static V MinimalFromPair(V v) {
+        if (IsMinimal(v)) {
+            return v;
+        } else {
+            return v->conjugate_;
+        }
+    }
+
+    static V& GetLockableElement(V v) {
+        return v->conjugate_;
+    }
+
+public:
+    PairedVertexLock(V v) :
+        inner_lock_(GetLockableElement(MinimalFromPair(v)))
+    {
+    }
+
+};
+
 template<class DataMaster>
 class PairedEdge {
  private:
@@ -173,6 +276,7 @@ class PairedEdge {
             restricted::pure_pointer<PairedVertex<DataMaster>>,
             restricted::pure_pointer<PairedEdge<DataMaster>>, DataMaster> ;
     friend class AbstractConjugateGraph<DataMaster> ;
+    friend class ConstructionHelper<AbstractConjugateGraph<DataMaster>>;
     //todo unfriend
     friend class PairedVertex<DataMaster> ;
     VertexId end_;
@@ -232,6 +336,8 @@ private:
             restricted::pure_pointer<PairedEdge<DataMaster>>, DataMaster> base;
     typedef restricted::IdDistributor IdDistributor;
 
+    friend class ConstructionHelper<AbstractConjugateGraph<DataMaster>>;
+
 public:
 
     typedef typename base::VertexId VertexId;
@@ -239,6 +345,7 @@ public:
     typedef typename base::VertexData VertexData;
     typedef typename base::EdgeData EdgeData;
     typedef typename base::VertexIterator VertexIterator;
+    typedef ConstructionHelper<AbstractConjugateGraph<DataMaster>> HelperT;
     using base::str;
     using base::CreateVertex;
     using base::HiddenAddEdge;
@@ -427,6 +534,12 @@ public:
 
     EdgeId conjugate(EdgeId edge) const {
         return edge->conjugate();
+    }
+
+    HelperT GetConstructionHelper() {
+//      TODO: fix everything and restore this check
+//      VERIFY(this->VerifyAllDetached());
+        return HelperT(*this);
     }
 
 protected:

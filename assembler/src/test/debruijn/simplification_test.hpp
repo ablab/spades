@@ -27,9 +27,9 @@ static debruijn_config::simplification::bulge_remover standard_br_config_generat
 	return br_config;
 }
 
-static size_t standard_read_length() {
-	return 100;
-}
+//static size_t standard_read_length() {
+//	return 100;
+//}
 
 debruijn_config::simplification::bulge_remover standard_br_config() {
 	static debruijn_config::simplification::bulge_remover br_config = standard_br_config_generation();
@@ -98,6 +98,14 @@ debruijn_config::simplification::relative_coverage_comp_remover standard_rcc_con
     return rcc;
 }
 
+debruijn::simplification::SimplifInfoContainer standard_simplif_relevant_info() {
+    debruijn::simplification::SimplifInfoContainer info;
+    return info.set_read_length(100)
+            .set_detected_coverage_bound(10.)
+            .set_iteration_count(1)
+            .set_iteration(0);
+}
+
 void PrintGraph(const Graph & g) {
 	FOREACH(VertexId v, g.vertices()) {
 		FOREACH(EdgeId e, g.OutgoingEdges(v)) {
@@ -108,7 +116,7 @@ void PrintGraph(const Graph & g) {
 }
 
 void DefaultClipTips(Graph& graph) {
-	ClipTips(graph, standard_tc_config(), 100);
+	debruijn::simplification::ClipTips(graph, standard_tc_config(), standard_simplif_relevant_info());
 }
 /*
 void DefaultRemoveBulges(Graph& graph) {
@@ -130,7 +138,7 @@ BOOST_AUTO_TEST_CASE( SimpleBulgeRemovalTest ) {
 	Graph g(55);
 	graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/simpliest_bulge/simpliest_bulge", g);
 
-	RemoveBulges(g, standard_br_config());
+	debruijn::simplification::RemoveBulges(g, standard_br_config());
 
 	BOOST_CHECK_EQUAL(g.size(), 4u);
 }
@@ -141,7 +149,7 @@ BOOST_AUTO_TEST_CASE( TipobulgeTest ) {
 
 	DefaultClipTips(g);
 
-	RemoveBulges(g, standard_br_config());
+	debruijn::simplification::RemoveBulges(g, standard_br_config());
 
 	BOOST_CHECK_EQUAL(g.size(), 16u);
 }
@@ -153,7 +161,7 @@ BOOST_AUTO_TEST_CASE( SimpleECTest ) {
 	debruijn_config::simplification::erroneous_connections_remover ec_config;
 	ec_config.condition = "{ icb 7000 , ec_lb 20 }";
 
-	RemoveLowCoverageEdges(g, ec_config);
+	debruijn::simplification::RemoveLowCoverageEdges(g, ec_config, standard_simplif_relevant_info());
 
 	BOOST_CHECK_EQUAL(g.size(), 16u);
 }
@@ -165,11 +173,15 @@ BOOST_AUTO_TEST_CASE( IterECTest ) {
 	debruijn_config::simplification::erroneous_connections_remover ec_config;
 	ec_config.condition = "{ icb 7000 , ec_lb 20 }";
 
-	RemoveLowCoverageEdges<Graph>(g, ec_config, 0, 0, 0., 2, 0);
+    auto info = standard_simplif_relevant_info();
+    info.set_iteration_count(2);
+
+	debruijn::simplification::RemoveLowCoverageEdges<Graph>(g, ec_config, info);
 
 	BOOST_CHECK_EQUAL(g.size(), 20u);
 
-	RemoveLowCoverageEdges<Graph>(g, ec_config, 0, 0, 0., 2, 1);
+    info.set_iteration(1);
+	debruijn::simplification::RemoveLowCoverageEdges<Graph>(g, ec_config, info);
 
 	BOOST_CHECK_EQUAL(g.size(), 16u);
 }
@@ -178,8 +190,8 @@ BOOST_AUTO_TEST_CASE( IterUniquePath ) {
 	Graph g(55);
 	graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g);
 
-	debruijn_config::simplification::topology_based_ec_remover tec_config = standard_tec_config();
-	while(TopologyRemoveErroneousEdges<Graph>(g, tec_config, 0)) {
+	auto tec_config = standard_tec_config();
+	while(debruijn::simplification::TopologyRemoveErroneousEdges<Graph>(g, tec_config, 0)) {
 	}
 
 	BOOST_CHECK_EQUAL(g.size(), 16u);
@@ -202,7 +214,7 @@ BOOST_AUTO_TEST_CASE( MFUniquePath ) {
 	graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/unique_path", g);
 	debruijn_config::simplification::max_flow_ec_remover mfec_config = standard_mfec_config();
 	mfec_config.uniqueness_length = 400;
-	MaxFlowRemoveErroneousEdges<Graph>(g, mfec_config);
+	debruijn::simplification::MaxFlowRemoveErroneousEdges<Graph>(g, mfec_config);
 
 	BOOST_CHECK_EQUAL(g.size(), 12u);
 }
@@ -288,7 +300,7 @@ BOOST_AUTO_TEST_CASE( RelativeCoverageRemover ) {
     INFO("Relative coverage component removal:");
     FillKmerCoverageWithAvg(gp.g, gp.index.inner_index());
     gp.flanking_cov.Fill(gp.index.inner_index());
-    RemoveRelativelyLowCoverageComponents(gp.g, gp.flanking_cov, standard_rcc_config(), 10., 100);
+    debruijn::simplification::RemoveRelativelyLowCoverageComponents(gp.g, gp.flanking_cov, standard_rcc_config(), standard_simplif_relevant_info());
     BOOST_CHECK_EQUAL(gp.g.size(), 12u/*28u*/);
 }
 

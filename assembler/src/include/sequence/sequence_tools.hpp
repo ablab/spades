@@ -139,19 +139,20 @@ public:
 
 class EnsureEndsPositionAligner {
 private:
-	size_t upper_length_;
-	size_t lower_length_;
+    size_t upper_length_;
+    size_t lower_length_;
 public:
-	EnsureEndsPositionAligner(size_t upper_length, size_t lower_length) :
-			upper_length_(upper_length), lower_length_(lower_length) {
-	}
+    EnsureEndsPositionAligner(size_t upper_length, size_t lower_length) :
+        upper_length_(upper_length), lower_length_(lower_length) {
+    }
 
 	size_t GetPosition(size_t upper_position) {
-		if (lower_length_ == 1)
-			return 0;
-		return (2 * upper_position * lower_length_ + upper_length_)
-				/ (2 * upper_length_);
-	}
+        VERIFY(upper_position > 0);
+        if (lower_length_ == 1)
+            return 1;
+        return (2 * upper_position * lower_length_ + upper_length_)
+            / (2 * upper_length_);
+    }
 };
 
 #endif /* SEQUENCE_TOOLS_HPP_ */

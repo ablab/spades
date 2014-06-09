@@ -44,6 +44,7 @@ bool GenomicInfo::Load(const std::string &filename) {
     YAML::Node node = YAML::Load(ifs);
 
     ec_bound_ = node["ec bound"].as<double>(0);
+    estimated_mean_ = node["estimated mean"].as<double>(0);
     trusted_bound_ = node["trusted bound"].as<size_t>(0);
     genome_size_ = node["genome size"].as<size_t>(0);
     cov_histogram_ = node["coverage histogram"].as<std::vector<size_t> >(std::vector<size_t>());
@@ -56,6 +57,7 @@ void GenomicInfo::Save(const std::string &filename) const {
 
     YAML::Node node;
     node["ec bound"] = ec_bound_;
+    node["estimated mean"] = estimated_mean_;
     node["trusted bound"] = trusted_bound_;
     node["genome size"] = genome_size_;
     node["coverage histogram"] = cov_histogram_;
@@ -79,9 +81,9 @@ void GenomicInfoFiller::run(conj_graph_pack &gp, const char*) {
         std::map<size_t, size_t> tmp;
         size_t maxcov = 0;
         size_t kmer_per_record = 1;
-        if(conj_graph_pack::index_t::InnerIndexT::storing_type::IsInvertable()) {
+        if (conj_graph_pack::index_t::InnerIndexT::storing_type::IsInvertable())
             kmer_per_record = 2;
-        }
+
         for (auto I = gp.index.inner_index().value_cbegin(), E = gp.index.inner_index().value_cend(); I != E;  ++I) {
             size_t ccov = I->count;
             maxcov = std::max(ccov, maxcov);
@@ -96,6 +98,11 @@ void GenomicInfoFiller::run(conj_graph_pack &gp, const char*) {
 
         gp.ginfo.set_genome_size(CovModel.GetGenomeSize());
         gp.ginfo.set_ec_bound((double)CovModel.GetErrorThreshold());
+        if (CovModel.converged()) {
+            gp.ginfo.set_estimated_mean((double)CovModel.GetMeanCoverage());
+            INFO("Mean coverage was calculated as " << gp.ginfo.estimated_mean());
+        } else
+            INFO("Failed to estimate mean coverage");
         // ginfo.set.trusted_bound(CovModel.GetLowThreshold());
     }
     INFO("EC coverage threshold value was calculated as " << gp.ginfo.ec_bound());

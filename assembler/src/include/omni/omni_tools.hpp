@@ -73,6 +73,8 @@ class Compressor {
 		return new_edge;
 
 	}
+
+	//todo use graph method!
 	bool CanCompressVertex(VertexId v) {
 		if (!graph_.CheckUniqueOutgoingEdge(v)
 			|| !graph_.CheckUniqueIncomingEdge(v)) {
@@ -105,6 +107,7 @@ public:
 		CompressWithoutChecks(v);
 		return true;
 	}
+
 	EdgeId CompressVertexEdgeId(VertexId v){
 		TRACE("Processing vertex " << graph_.str(v) << " started");
 		if (! CanCompressVertex(v)) {
@@ -125,9 +128,14 @@ public:
 		//todo is it still true???
 		//in current implementation will work incorrectly if smart iterator won't give vertex and its conjugate
 		//(in case of self-conjugate edges)
-		for (auto it = graph_.SmartVertexBegin(); !it.IsEnd(); ++it) {
-			VertexId v = *it;
-			CompressVertex(v);
+		vector<VertexId> to_compress;
+		for (VertexId v : graph_) {
+			if (CanCompressVertex(v)) {
+				to_compress.push_back(v);
+			}
+		}
+		for (auto it = SmartSetIterator<Graph, VertexId>(graph_, to_compress.begin(), to_compress.end()); !it.IsEnd(); ++it) {
+			CompressVertex(*it);
 		}
 		TRACE("Vertex compressing finished")
 	}

@@ -173,7 +173,8 @@ template<class Graph>
 bool ClipTips(
         Graph& graph,
         size_t max_tip_length,
-        const shared_ptr<Predicate<typename Graph::EdgeId>>& condition = make_shared<func::AlwaysTrue<typename Graph::EdgeId>>(),
+        shared_ptr<Predicate<typename Graph::EdgeId>> condition 
+            = make_shared<func::AlwaysTrue<typename Graph::EdgeId>>(),
         boost::function<void(typename Graph::EdgeId)> raw_removal_handler = 0) {
 
     DEBUG("Max tip length: " << max_tip_length);

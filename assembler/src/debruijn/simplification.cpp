@@ -36,8 +36,8 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
 //            &QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
 //            boost::ref(qual_removal_handler), _1);
 
-    SimplifyGraph(gp, 0/*removal_handler_f*/,
-                  labeler, printer, /*iteration count*/10
+    debruijn::simplification::SimplifyGraph(gp, 0/*removal_handler_f*/,
+                  printer, /*iteration count*/10
                   /*, etalon_paired_index*/);
 
 
@@ -51,15 +51,9 @@ void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
 
     printer(ipp_removing_isolated_edges);
 
-    {
-        INFO("Final isolated edges removal:");
-        size_t max_length = std::max(cfg::get().ds.RL(), cfg::get().simp.ier.max_length_any_cov);
-        INFO("All edges of length smaller than " << max_length << " will be removed");
-        size_t removed = IsolatedEdgeRemover<Graph>(gp.g, cfg::get().simp.ier.max_length,
-                                                    cfg::get().simp.ier.max_coverage,
-                                                    max_length).RemoveIsolatedEdges();
-        INFO("Removed " << removed << " edges");
-    }
+    debruijn::simplification::RemoveIsolatedEdges(gp.g, cfg::get().simp.ier, cfg::get().ds.RL());
+//todo return this functionality
+//        INFO("Removed " << removed << " edges");
 
     size_t low_threshold = gp.ginfo.trusted_bound();
     if (low_threshold) {

@@ -25,65 +25,10 @@ using restricted::IdDistributor;
 
 template<typename VertexIdT, typename EdgeIdT, class DataMasterT,
 		typename VertexIt>
-class AbstractEditableGraph;
-
-template<class Graph>
-class ConstructionHelper {
-	friend class AbstractEditableGraph<typename Graph::VertexId, typename Graph::EdgeId, typename Graph::DataMaster, typename Graph::VertexIterator>;
-private:
-	typedef typename Graph::DataMaster::EdgeData EdgeData;
-    typedef typename Graph::DataMaster::VertexData VertexData;
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-
-	Graph &graph_;
-
-	ConstructionHelper(Graph &graph) : graph_(graph) {
-	}
-public:
-	Graph &graph() {
-	    return graph_;
-	}
-
-    EdgeId AddEdge(const EdgeData &data) {
-        return AddEdge(data, graph_.GetGraphIdDistributor());
-    }
-
-	EdgeId AddEdge(const EdgeData &data, IdDistributor &id_distributor) {
-		return graph_.AddEdge(data, id_distributor);
-	}
-
-    void LinkIncomingEdge(VertexId v, EdgeId e) {
-    	graph_.LinkIncomingEdge(v, e);
-    }
-
-    void LinkOutgoingEdge(VertexId v, EdgeId e) {
-    	graph_.LinkOutgoingEdge(v, e);
-    }
-
-    VertexId CreateVertex(const VertexData &data) {
-        return CreateVertex(data, graph_.GetGraphIdDistributor());
-    }
-
-    VertexId CreateVertex(const VertexData &data, IdDistributor &id_distributor) {
-        return graph_.CreateVertex(data, id_distributor);
-    }
-
-    template<class Iter>
-    void AddVerticesToGraph(Iter begin, Iter end) {
-        for(; begin != end; ++begin) {
-            graph_.AddVertexToGraph(*begin);
-        }
-    }
-};
-
-template<typename VertexIdT, typename EdgeIdT, class DataMasterT,
-		typename VertexIt>
 class AbstractEditableGraph: public ObservableGraph<VertexIdT, EdgeIdT, VertexIt> {
 	typedef ObservableGraph<VertexIdT, EdgeIdT, VertexIt> base;
 	//todo maybe rename template params themselves???
 public:
-	friend class ConstructionHelper<AbstractEditableGraph<VertexIdT, EdgeIdT, DataMasterT, VertexIt>>;
 	typedef VertexIdT VertexId;
 	typedef EdgeIdT EdgeId;
 	typedef DataMasterT DataMaster;
@@ -91,7 +36,6 @@ public:
 	typedef typename DataMaster::EdgeData EdgeData;
 	typedef VertexIt VertexIterator;
 	typedef typename base::edge_const_iterator edge_const_iterator;
-	typedef ConstructionHelper<AbstractEditableGraph<VertexIdT, EdgeIdT, DataMasterT, VertexIt>> Helper;
 
 protected:
 	//todo think of necessity to pull these typedefs through hierarchy
@@ -157,15 +101,6 @@ protected:
 		}TRACE("DeleteAllIncoming ok");
 	}
 
-	void FireDeletePath(const vector<EdgeId> &edgesToDelete,
-			const vector<VertexId> &verticesToDelete) const {
-		for (auto it = edgesToDelete.begin(); it != edgesToDelete.end(); ++it)
-			this->FireDeleteEdge(*it);
-		for (auto it = verticesToDelete.begin(); it != verticesToDelete.end();
-				++it)
-			this->FireDeleteVertex(*it);
-	}
-
 	void HiddenDeletePath(const vector<EdgeId> &edgesToDelete,
 			const vector<VertexId> &verticesToDelete) {
 		for (auto it = edgesToDelete.begin(); it != edgesToDelete.end(); ++it)
@@ -176,6 +111,16 @@ protected:
 	}
 
 public:
+
+	void FireDeletePath(const vector<EdgeId> &edgesToDelete,
+			const vector<VertexId> &verticesToDelete) const {
+		for (auto it = edgesToDelete.begin(); it != edgesToDelete.end(); ++it)
+			this->FireDeleteEdge(*it);
+		for (auto it = verticesToDelete.begin(); it != verticesToDelete.end();
+				++it)
+			this->FireDeleteVertex(*it);
+	}
+
 
 	class IteratorContainer {
 	public:
@@ -221,12 +166,6 @@ public:
     const LocalIdDistributor &GetGraphIdDistributor() const {
         return id_distributor_;
     }
-
-	ConstructionHelper<AbstractEditableGraph<VertexIdT, EdgeIdT, DataMasterT, VertexIt>> GetConstructionHelper() {
-//		TODO: fix everything and restore this check
-//		VERIFY(this->VerifyAllDetached());
-		return ConstructionHelper<AbstractEditableGraph<VertexIdT, EdgeIdT, DataMasterT, VertexIt>> (*this);
-	}
 
 	size_t int_id(EdgeId edge) const {
 		return edge.int_id();
@@ -529,16 +468,11 @@ public:
 		}
 		EdgeId new_edge = HiddenAddEdge(v1, v2, master_.MergeData(to_merge, safe_merging));
 		this->FireMerge(corrected_path, new_edge);
-
-		//		cerr << "Corrected " << PrintDetailedPath(corrected_path) << endl;
-		//		cerr << "Corrected conjugate " << PrintConjugatePath(corrected_path) << endl;
 		vector<EdgeId> edges_to_delete = EdgesToDelete(corrected_path);
-		//		cerr << "To delete " << PrintEdges(edges_to_delete) << endl;
 		vector<VertexId> vertices_to_delete = VerticesToDelete(corrected_path);
-		//		cerr << "To delete " << PrintVertices(vertices_to_delete) << endl;
-
 		this->FireDeletePath(edges_to_delete, vertices_to_delete);
 		this->FireAddEdge(new_edge);
+
 		HiddenDeletePath(edges_to_delete, vertices_to_delete);
 		TRACE(
 				"Path merged. Corrected path merged into " << str(new_edge));
