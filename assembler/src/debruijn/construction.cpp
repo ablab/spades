@@ -63,7 +63,6 @@ void Construction::run(conj_graph_pack &gp, const char*) {
         if (cfg::get().ds.reads[i].is_graph_contructable())
             libs_for_construction.push_back(i);
 
-    VERIFY(cfg::get().use_multithreading); 
     auto streams = single_binary_readers_for_libs(libs_for_construction, true, true);
     construct_graph<io::SingleReadSeq>(streams, gp, contigs_stream);
 }

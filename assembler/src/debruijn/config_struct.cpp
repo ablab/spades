@@ -594,7 +594,6 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   cfg.paired_read_prefix = cfg.temp_bin_reads_path + "_paired";
   cfg.single_read_prefix = cfg.temp_bin_reads_path + "_single";
 
-  load(cfg.use_multithreading, pt, "use_multithreading");
   load(cfg.max_threads, pt, "max_threads");
   // Fix number of threads according to OMP capabilities.
   cfg.max_threads = std::min(cfg.max_threads, (size_t) omp_get_max_threads());

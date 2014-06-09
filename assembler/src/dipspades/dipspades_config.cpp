@@ -22,7 +22,6 @@ void load(dipspades_config::base_params &bp,
 	load(bp.K					, pt,	"K"						);
 	load(bp.max_memory			, pt,	"max_memory"			);
 	load(bp.max_threads			, pt, 	"max_threads"			);
-	load(bp.use_multithreading	, pt, 	"use_multithreading"	);
 	load(bp.read_buffer_size 	, pt, 	"read_buffer_size"		);
 }
 

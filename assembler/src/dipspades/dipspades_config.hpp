@@ -7,7 +7,6 @@ struct dipspades_config {
 
 	struct base_params {
 	    size_t 			K;
-	    bool 			use_multithreading;
 	    size_t 			max_threads;
 	    size_t 			max_memory;
 	    size_t 			read_buffer_size;

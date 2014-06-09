@@ -498,7 +498,6 @@ struct debruijn_config {
 
     bool main_iteration;
 
-    bool use_multithreading;
     size_t max_threads;
     size_t max_memory;
 

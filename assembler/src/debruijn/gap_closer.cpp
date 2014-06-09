@@ -514,14 +514,8 @@ void GapClosing::run(conj_graph_pack &gp, const char*) {
 
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         if (cfg::get().ds.reads[i].type() == io::LibraryType::PairedEnd) {
-
-            if (cfg::get().use_multithreading) {
-                auto streams = paired_binary_readers(cfg::get().ds.reads[i], true, 0);
-                CloseGaps(gp, streams);
-            } else {
-                io::PairedStreams streams(paired_easy_reader(cfg::get().ds.reads[i], true, 0));
-                CloseGaps(gp, streams);
-            }
+            auto streams = paired_binary_readers(cfg::get().ds.reads[i], true, 0);
+            CloseGaps(gp, streams);
         }
     }
 }

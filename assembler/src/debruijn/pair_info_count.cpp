@@ -33,7 +33,6 @@ bool RefineInsertSizeForLib(conj_graph_pack& gp, size_t ilib, size_t edge_length
   SequenceMapperNotifier notifier(gp, false);
   notifier.Subscribe(ilib, &hist_counter);
 
-  VERIFY(cfg::get().use_multithreading);
   SequencingLib& reads = cfg::get_writable().ds.reads[ilib];
   VERIFY(reads.data().read_length != 0);
   auto paired_streams = paired_binary_readers(reads, false, (size_t) reads.data().mean_insert_size);
@@ -60,7 +59,6 @@ void ProcessSingleReads(conj_graph_pack& gp, size_t ilib) {
     SimpleLongReadMapper read_mapper(gp, gp.single_long_reads[ilib]);
     notifier.Subscribe(ilib, &read_mapper);
 
-    VERIFY(cfg::get().use_multithreading);
     auto single_streams = single_binary_readers(reads, true, false);
     notifier.ProcessLibrary(single_streams, ilib, *ChooseProperMapper(gp, reads), single_streams.size());
 }
@@ -91,7 +89,6 @@ void ProcessPairedReads(conj_graph_pack& gp, size_t ilib, bool map_single_reads)
     LatePairedIndexFiller pif(gp.g, PairedReadCountWeight, gp.paired_indices[ilib]);
     notifier.Subscribe(ilib, &pif);
 
-    VERIFY(cfg::get().use_multithreading);
     auto paired_streams = paired_binary_readers(reads, true, (size_t) reads.data().mean_insert_size);
     notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads), paired_streams.size());
     cfg::get_writable().ds.reads[ilib].data().pi_threshold = split_graph.GetThreshold();
