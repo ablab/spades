@@ -393,16 +393,20 @@ def check_cfg_for_restart_from(cfg):
                 support.error("failed to restart from K=%s because this K was not specified!" % k_str)
 
 
-def get_options_from_params(params_filename):
+def get_options_from_params(params_filename, spades_py_name=None):
     if not os.path.isfile(params_filename):
         return None, None
     params = open(params_filename, 'r')
     cmd_line = params.readline().strip()
     params.close()
-    spades_py_pos = cmd_line.find('spades.py')
+    if spades_py_name is None or cmd_line.find(os.path.basename(spades_py_name)) == -1:
+        spades_py_name = 'spades.py' # try default name
+    else:
+        spades_py_name = os.path.basename(spades_py_name)
+    spades_py_pos = cmd_line.find(spades_py_name)
     if spades_py_pos == -1:
         return None, None
-    return cmd_line, cmd_line[spades_py_pos + len('spades.py'):].split()
+    return cmd_line, cmd_line[spades_py_pos + len(spades_py_name):].split()
 
 
 def main(args):
@@ -426,7 +430,7 @@ def main(args):
     cfg, dataset_data = fill_cfg(args, log)
 
     if options_storage.continue_mode:
-        cmd_line, options = get_options_from_params(os.path.join(options_storage.output_dir, "params.txt"))
+        cmd_line, options = get_options_from_params(os.path.join(options_storage.output_dir, "params.txt"), args[0])
         if not options:
             support.error("failed to parse command line of the previous run! Please restart from the beginning or specify another output directory.")
         cfg, dataset_data = fill_cfg(options, log)
