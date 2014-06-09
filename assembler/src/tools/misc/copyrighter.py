@@ -66,6 +66,8 @@ def visit(arg, dirname, names):
         path = os.path.join(dirname, name)
         if not os.path.isfile(path):
             continue
+        if os.system('grep -Gq "Copyright (c) [0-9]\{4\}-[0-9]\{4\} Saint-Petersburg Academic University" ' + path) == 0: # already copyrighted
+            continue
         ext = os.path.splitext(name)[1]
         if arg and ext != arg:
             continue
