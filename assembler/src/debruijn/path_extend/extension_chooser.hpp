@@ -1192,34 +1192,47 @@ private:
         for (BidirectionalPath* p : paths_to_cover) {
             delete p;
         }
-
+        BidirectionalPath result = max.SubPath(path.Size());
         DEBUG("res");
-        max.SubPath(path.Size()).Print();
-        return max.SubPath(path.Size());
+        result.Print();
+        return result;
+    }
+
+    int CheckPairInfo(const BidirectionalPath& path, const BidirectionalPath& result_end, int to_add) {
+        while (to_add < (int)result_end.Size()) {
+            map<size_t, double> weights = weight_counter_.FindPairInfoFromPath(path, 0, path.Size(), result_end, to_add, to_add + 1);
+            double weight_to_edge = 0.0;
+            for (auto iter = weights.begin(); iter != weights.end(); ++iter) {
+                weight_to_edge += iter->second;
+            }
+            if (math::gr(weight_to_edge, 0.0)) {
+                break;
+            }
+            to_add++;
+        }
+        return to_add;
     }
 
     EdgeContainer TryToScaffold(const BidirectionalPath& path, const vector<BidirectionalPath*>& paths) {
-        DEBUG("Simple Scaffolding")
         if (paths.size() == 0) {
             return EdgeContainer();
         }
+        DEBUG("Simple Scaffolding")
         for (BidirectionalPath* p : paths) {
             p->Print();
         }
-
         BidirectionalPath max_end = simple_scaffolder_.FindMaxCommonPath(paths, search_dist_);
         if (max_end.Size() == 0) {
             return EdgeContainer();
         }
         BidirectionalPath result_end = ChooseFromEnds(path, paths, max_end);
-        int begin = result_end.FindFirst(max_end);
-        weight_counter_.ClearCommonWeight();
-        double common = weight_counter_.CountPairInfo(path, 0, path.Size(), result_end, begin, begin + max_end.Size(), false);
-        double not_common = weight_counter_.CountPairInfo(path, 0, path.Size(), result_end, 0, begin, false);
-        DEBUG("common " << common << " not common " << not_common << " max common " << begin << " " << begin + max_end.Size());
+        int to_add = result_end.FindFirst(max_end);
         result_end.Print();
         EdgeContainer result;
-        size_t to_add = begin;
+        to_add = CheckPairInfo(path, result_end, to_add);
+        if (to_add < 0 || to_add >= (int) result_end.Size()) {
+            return EdgeContainer();
+        }
         size_t gap_length = result_end.Length() - result_end.LengthAt(to_add);
         DEBUG(" edge to add " << g_.int_id(result_end.At(to_add)) << " with length " << gap_length);
         result.push_back(EdgeWithDistance(result_end.At(to_add), gap_length));
