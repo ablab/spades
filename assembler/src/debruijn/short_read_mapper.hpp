@@ -33,8 +33,6 @@ private:
 
 public:
 
-    typedef typename SequenceMapper<Graph>::Kmer Kmer;
-
     SensitiveReadMapper(const Graph& g, size_t k, size_t graph_k) :
         SequenceMapper<Graph>(g), small_k_(k)
     {
@@ -48,12 +46,6 @@ public:
 
     MappingPath<EdgeId> MapSequence(const Sequence &sequence) const {
         return index_->GetShortReadAlignment(sequence);
-    }
-
-    pair<EdgeId, size_t> GetKmerPos(const Kmer& kmer) const {
-        VERIFY(kmer.size() == small_k_);
-
-        return index_->GetUniqueKmerPos(kmer);
     }
 
     size_t KmerSize() const {
