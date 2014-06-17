@@ -4,8 +4,6 @@
 #include "omni/basic_edge_conditions.hpp"
 #include "sequence_mapper.hpp"
 
-#include "sequence_mapper.hpp"
-
 namespace debruijn_graph {
 
 template<class Graph>
@@ -108,24 +106,6 @@ public:
 
 };
 
-//template<class Graph, class Index>
-//class ZeroQualityCondition : public EdgeCondition<Graph> {
-//    typedef EdgeCondition<Graph> base;
-//    const EdgeQuality<Graph, Index>& edge_qual_;
-//
-//public:
-//    ZeroQualityCondition(const Graph& g, const EdgeQuality<Graph, Index>& edge_qual)
-//            : base(g),
-//              edge_qual_(edge_qual) {
-//
-//    }
-//
-//    bool Check(EdgeId e) const {
-//        return edge_qual_.IsZeroQuality(e);
-//    }
-//
-//};
-
 template<class Graph>
 class QualityLoggingRemovalHandler {
     typedef typename Graph::EdgeId EdgeId;
@@ -133,19 +113,21 @@ class QualityLoggingRemovalHandler {
     const EdgeQuality<Graph>& quality_handler_;
     size_t black_removed_;
     size_t total_;
+    bool handle_all_;
 
     virtual void HandlePositiveQuality(EdgeId /*e*/) {
 
     }
 
 public:
-    QualityLoggingRemovalHandler(const Graph& g, const EdgeQuality<Graph>& quality_handler) :
-            g_(g), quality_handler_(quality_handler), black_removed_(0), total_(0) {
+    QualityLoggingRemovalHandler(const Graph& g, const EdgeQuality<Graph>& quality_handler, 
+                                    bool handle_all = false) :
+            g_(g), quality_handler_(quality_handler), black_removed_(0), total_(0), handle_all_(handle_all) {
     }
 
     void HandleDelete(EdgeId e) {
         total_++;
-        if (math::gr(quality_handler_.quality(e), 0.)) {
+        if (handle_all_ || math::gr(quality_handler_.quality(e), 0.)) {
             TRACE("Deleting good edge id = " << g_.int_id(e)
                   << "; length = " << g_.length(e)
                   << "; quality = " << quality_handler_.quality(e)
@@ -179,42 +161,23 @@ class QualityEdgeLocalityPrintingRH : public QualityLoggingRemovalHandler<Graph>
     typedef QualityLoggingRemovalHandler<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    const GraphLabeler<Graph>& labeler_;
-    std::shared_ptr<visualization::GraphColorer<Graph>> colorer_;
-    const string output_folder_;
-//  size_t black_removed_;
-//  size_t colored_removed_;
+    omnigraph::visualization::LocalityPrintingRH<Graph> printing_rh_;
 public:
     QualityEdgeLocalityPrintingRH(const Graph& g
             , const EdgeQuality<Graph>& quality_handler
             , const GraphLabeler<Graph>& labeler
             , std::shared_ptr<visualization::GraphColorer<Graph>> colorer
-            , const string& output_folder) :
-            base(g, quality_handler),
-            labeler_(labeler),
-            colorer_(colorer),
-            output_folder_(output_folder) {
-        path::make_dirs(output_folder_);
-    }
+            , const string& output_folder, bool handle_all = false) :
+            base(g, quality_handler, handle_all),
+            printing_rh_(g, labeler, colorer, output_folder)
+            {}
 
     virtual void HandlePositiveQuality(EdgeId e) {
-        //todo magic constant
-//          map<EdgeId, string> empty_coloring;
-        auto edge_colorer = make_shared<visualization::CompositeEdgeColorer<Graph>>("black");
-        edge_colorer->AddColorer(colorer_);
-        edge_colorer->AddColorer(make_shared<visualization::SetColorer<Graph>>(this->g(), vector<EdgeId>(1, e), "green"));
-        shared_ptr<visualization::GraphColorer<Graph>> resulting_colorer = make_shared<visualization::CompositeGraphColorer<Graph>>(colorer_, edge_colorer);
-        
-        string fn = output_folder_ + "edge_" +  ToString(this->g().int_id(e))
-                    + "_" + ToString(this->quality_handler().quality(e)) + ".dot";
-        omnigraph::visualization::WriteComponent(omnigraph::EdgeNeighborhood<Graph>(this->g(), e, 50, 250)
-                , fn
-                , resulting_colorer, labeler_);
+        printing_rh_.HandleDelete(e, "_" + ToString(this->quality_handler().quality(e)));
     }
 
 private:
-    DECL_LOGGER("QualityEdgeLocalityPrintingRH")
-    ;
+    DECL_LOGGER("QualityEdgeLocalityPrintingRH");
 };
 
 //earlier version from rel_cov branch
