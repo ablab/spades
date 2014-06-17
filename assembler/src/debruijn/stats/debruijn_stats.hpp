@@ -233,7 +233,6 @@ optional<runtime_k::RtSeq> FindCloseKP1mer(const conj_graph_pack &gp,
 
 inline
 void PrepareForDrawing(conj_graph_pack &gp) {
-    gp.edge_pos.clear();
     gp.EnsureDebugInfo();
     CollectContigPositions(gp);
 }

@@ -67,6 +67,7 @@ class PolymorphicBulgeRemover {
 		if(!dsp_cfg::get().rp.developer_mode)
 			return;
 
+        graph_pack_.EnsureDebugInfo();
 		make_dir(dsp_cfg::get().io.output_dir + "components/");
 	    omnigraph::DefaultLabeler<Graph> labeler(graph_pack_.g, graph_pack_.edge_pos);
 	    make_dir(dsp_cfg::get().io.output_dir + "components/" + component_dir + "/");

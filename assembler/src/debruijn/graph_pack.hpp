@@ -106,13 +106,14 @@ struct graph_pack: private boost::noncopyable {
         }
     }
 
+    //positions are refilled every time
     void EnsurePos() {
         if (!edge_pos.IsAttached()) {
             edge_pos.Attach();
-            edge_pos.clear();
-            FillPos(*this, genome, "ref0");
-            FillPos(*this, !genome, "ref1");
         }
+        edge_pos.clear();
+        FillPos(*this, genome, "ref0");
+        FillPos(*this, !genome, "ref1");
     }
     
     void EnsureDebugInfo() {
