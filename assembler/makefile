@@ -42,10 +42,10 @@ rv:
 dv:
 	$(MAKE) -C build/debug/online_vis
 
-rc:	
+rp:	
 	$(MAKE) -C build/release/corrector
 
-dc:      
+dp:      
 	$(MAKE) -C build/debug/corrector
 
 dt:
