@@ -69,6 +69,7 @@ add_subdirectory(hammer)
 add_subdirectory(ionhammer)
 add_subdirectory(spades_pipeline)
 add_subdirectory(dipspades)
+add_subdirectory(corrector)
 
 # Main pipeline script
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../spades.py"
