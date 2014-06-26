@@ -27,6 +27,10 @@ class chained_iterator :
  private:
   friend class boost::iterator_core_access;
 
+  bool is_end() const {
+    return current_ == ends_[section_];
+  }
+  
   void skip_empty() {
     while ((section_ + 1) < begins_.size() &&
            current_ == ends_[section_])
@@ -40,7 +44,15 @@ class chained_iterator :
   }
 
   bool equal(const chained_iterator &other) const {
-    return current_ == other.current_;
+    // Special case: both ends
+    bool other_end = other.is_end(), current_end = is_end();
+    if (current_end)
+      return other_end == current_end;
+
+    // Now, make sure we are comparing the iterators from the same sequences
+    // (actually, not, but this would be undefined behavior)
+    return (section_ == other.section_ &&
+            current_ == other.current_);
   }
 
   typename std::iterator_traits<It>::value_type dereference() const {
