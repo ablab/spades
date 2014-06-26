@@ -198,7 +198,7 @@ void KMerCoverageModel::Fit() {
   INFO("K-mer histogram maximum: " << MaxCov_);
 
   // Refine the estimate via median
-  size_t AfterValley = 0, SecondValley = 2*MaxCov_ - Valley_;
+  size_t AfterValley = 0, SecondValley = std::min(2*MaxCov_ - Valley_, cov_.size());
   for (size_t i = Valley_ + 1; i < SecondValley ; ++i)
     AfterValley += cov_[i];
 
@@ -217,7 +217,7 @@ void KMerCoverageModel::Fit() {
   std::vector<size_t> mvals(1 + MaxCov_ - Valley_);
   mvals[0] = cov_[MaxCov_];
   size_t tmadcov = mvals[0];
-  for (size_t i = 1; i < MaxCov_ - Valley_; ++i) {
+  for (size_t i = 1; i < std::min(MaxCov_ - Valley_, cov_.size() - MaxCov_); ++i) {
     mvals[i] =  cov_[MaxCov_ + i] + cov_[MaxCov_ - i];
     tmadcov += mvals[i];
   }
