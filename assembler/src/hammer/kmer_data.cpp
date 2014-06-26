@@ -164,6 +164,7 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
   BufferFiller filler(tmp_entries, cell_size, *this);
   const auto& dataset = cfg::get().dataset;
   for (auto I = dataset.reads_begin(), E = dataset.reads_end(); I != E; ++I) {
+    INFO("Processing " << *I);
     ireadstream irs(*I, cfg::get().input_qvoffset);
     while (!irs.eof()) {
       hammer::ReadProcessor rp(nthreads);
