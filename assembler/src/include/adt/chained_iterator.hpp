@@ -46,7 +46,7 @@ class chained_iterator :
   bool equal(const chained_iterator &other) const {
     // Special case: both ends
     bool other_end = other.is_end(), current_end = is_end();
-    if (current_end)
+    if (current_end || other_end)
       return other_end == current_end;
 
     // Now, make sure we are comparing the iterators from the same sequences
