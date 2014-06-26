@@ -296,7 +296,7 @@ public:
     char *tempprefix = strcpy(new char[prefix.length() + 1], prefix.c_str());
     VERIFY_MSG(-1 != (fd_ = ::mkstemp(tempprefix)), "Cannot create temporary file");
     kmer_prefix_ = tempprefix;
-    delete tempprefix;
+    delete[] tempprefix;
   }
 
   ~KMerDiskCounter() {
