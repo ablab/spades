@@ -28,8 +28,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
+#include "read.hpp"
 #include "../include/segfault_handler.hpp"
+#include "sam_reader.hpp"
 /*
 void make_dirs(){
 	  make_dir(dsp_cfg::get().io.output_base);
@@ -85,6 +86,14 @@ int main(int /*argc*/, char** argv) {
   srand(42);
   srandom(42);
   create_console_logger();
+  string name (argv[1]);
+  cerr << name;
+  MappedSamStream sm(name);
+  while (!sm.eof()) {
+	  SingleSamRead tmp;
+	  sm >>tmp;
+	  //print tmp.
+  }
 /*
   segfault_handler sh;
 

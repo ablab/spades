@@ -13,7 +13,9 @@ include_directories(${CMAKE_SOURCE_DIR}/debruijn)
 add_executable(corrector
           main.cpp)
 
-target_link_libraries(corrector input mph_index BamTools yaml-cpp  ${COMMON_LIBRARIES} ssw)
+target_link_libraries(corrector samtools input mph_index BamTools yaml-cpp  ${COMMON_LIBRARIES} ssw)
+
+
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(corrector PROPERTIES LINK_SEARCH_END_STATIC 1)
