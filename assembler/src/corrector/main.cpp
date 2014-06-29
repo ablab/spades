@@ -31,6 +31,7 @@
 #include "read.hpp"
 #include "../include/segfault_handler.hpp"
 #include "sam_reader.hpp"
+#include "contig_processor.hpp"
 /*
 void make_dirs(){
 	  make_dir(dsp_cfg::get().io.output_base);
@@ -79,6 +80,7 @@ void create_console_logger() {
   attach_logger(lg);
 }
 
+
 int main(int /*argc*/, char** argv) {
   perf_counter pc;
   const size_t GB = 1 << 30;
@@ -86,8 +88,10 @@ int main(int /*argc*/, char** argv) {
   srand(42);
   srandom(42);
   create_console_logger();
-  string name (argv[1]);
-  cerr << name;
+  string sam_name (argv[1]);
+  string contig_name (argv[2]);
+  ContigProcessor(sam_name, contig_name);
+  /*cerr << name;
   MappedSamStream sm(name);
   while (!sm.eof()) {
 	  SingleSamRead tmp;
