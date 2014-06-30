@@ -17,7 +17,7 @@ void construct_graph_from_contigs(debruijn_graph::conj_graph_pack &graph_pack){
 	for(auto fname = fnames.begin(); fname != fnames.end(); fname++)
 		if(fname_valid(*fname)){
 			INFO("Addition of contigs from " << *fname);
-			streams.push_back(EasyStream(*fname, true));
+			streams.push_back(EasyStream(*fname, true, PhredOffset, true));
 		}
 
 	INFO("Construction of the de Bruijn graph with K=" << dsp_cfg::get().bp.K);
