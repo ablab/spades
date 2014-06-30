@@ -1284,9 +1284,10 @@ def main(args, joblib_path, log=None):
                 deleted += int(arr[3])
                 inserted += int(arr[5])
 
+    os.system("cp -r " + config["work_dir"] + " ~/work/")
+
     if not config["debug"]:
         shutil.rmtree(config["work_dir"])
-
     log.info("TOTAL - replaced: " + str(replaced) + " deleted: "+ str(deleted) +" inserted: " + str(inserted))
 
 

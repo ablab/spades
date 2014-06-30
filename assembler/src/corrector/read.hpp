@@ -49,13 +49,8 @@ struct SingleSamRead{
 		return data_->core.n_cigar;
 	}
 	void CountPositions(map <size_t, position_description> &ps){
-//	    cigar = arr[5]
-//	    aligned = arr[9]
-//	    qual_aligned = arr[10]
 	    int position = data_->core.pos;
 	    int mate = 1; // bonus for mate mapped can be here;
-//	    map_q = int(arr[4])
-//	    mate = m
 	    size_t l_read = DataLen();
 	    size_t l_cigar = CigarLen();
 //	    if '*' in cigar:
@@ -64,8 +59,6 @@ struct SingleSamRead{
 	    int  aligned_length = 0;
 	    uint32_t *cigar = bam1_cigar(data_);
 	    for (size_t i = 0; i <l_cigar; i++)
-//            nums.append(int(tms))
-//            operations.append(cigar[i])
             if (bam_cigar_opchr(cigar[i]) =='M')
                 aligned_length +=  bam_cigar_oplen(cigar[i]);
 //	#we do not need short reads aligned near gaps
@@ -81,10 +74,6 @@ struct SingleSamRead{
 	    //char int_A = ord('A') - 1
 	    for (size_t i = 0; i < l_read; i++) {
 	    	DEBUG(i << " " << position << " " << skipped);
-	    //reads away from the contig, check outside.
-//	        if i + position - skipped >= l:
-//	            break
-
 	        if (shift +  bam_cigar_oplen(cigar[state_pos]) <= i){
 	            shift +=  bam_cigar_oplen(cigar[state_pos]);
 	            state_pos += 1;

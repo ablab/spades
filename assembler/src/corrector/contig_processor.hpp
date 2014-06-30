@@ -53,10 +53,10 @@ public:
 //returns: number of changed nucleotides;
 	int UpdateOneBase(size_t i, stringstream &ss){
 		char old = toupper(contig[i]);
-		size_t maxi = 0;
-		int maxx = 0;
+		size_t maxi = nt_to_pos.find(contig[i])->second;
+		int maxx = charts[i].votes[maxi];
 		for (size_t j = 0; j < max_votes; j++) {
-			if (maxx < charts[i].votes[j]) {
+			if (maxx < charts[i].votes[j] || (j == INSERTION && maxx * 2 < charts[i].votes[j] * 3)) {
 				maxx = charts[i].votes[j];
 				maxi = j;
 			}
@@ -64,7 +64,7 @@ public:
 		if (old != pos_to_nt.find(maxi)->second) {
 			INFO("On position " << i << " changing " << old <<" to "<<pos_to_nt.find(maxi)->second);
 			INFO(charts[i].str());
-			if (maxi < 4) {
+			if (maxi < DELETION) {
 				ss <<pos_to_nt.find(maxi)->second;
 				return 1;
 			} else if (maxi == DELETION) {
@@ -104,6 +104,7 @@ public:
 		}
 		stringstream s_new_contig;
 		for (size_t i = 0; i < contig.length(); i ++) {
+			DEBUG(charts[i].str());
 			UpdateOneBase(i, s_new_contig);
 		}
 		INFO (s_new_contig.str());
