@@ -7,17 +7,7 @@
 /*
  * Assembler Main
  */
-#include "standard.hpp"
-#include "../include/logger/log_writers.hpp"
-#include "../include/logger/logger.hpp"
-
-#include "../include/segfault_handler.hpp"
-#include "../include/stacktrace.hpp"
-#include "../include/memory_limit.hpp"
-#include "../include/copy_file.hpp"
-#include "../include/perfcounter.hpp"
-#include "../include/runtime_k.hpp"
-
+#include "include.hpp";
 //#include "config_struct.hpp"
 
 #include "graph_pack.hpp"
@@ -90,7 +80,8 @@ int main(int /*argc*/, char** argv) {
   create_console_logger();
   string sam_name (argv[1]);
   string contig_name (argv[2]);
-  ContigProcessor(sam_name, contig_name);
+  ContigProcessor cp(sam_name, contig_name);
+  cp.process_sam_file();
   /*cerr << name;
   MappedSamStream sm(name);
   while (!sm.eof()) {
@@ -98,7 +89,8 @@ int main(int /*argc*/, char** argv) {
 	  sm >>tmp;
 	  //print tmp.
   }
-/*
+
+
   segfault_handler sh;
 
   try {

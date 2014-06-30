@@ -5,7 +5,9 @@
  *      Author: lab42
  */
 #include "samtools/bam.h"
-
+#include <string>
+#include "logger/log_writers.hpp"
+#include "logger/logger.hpp"
 #pragma once
 
 using namespace std;
@@ -14,22 +16,31 @@ using namespace std;
 
 
 struct position_description {
-	int votes[5];
+	int votes[max_votes];
 	//'A', 'C', 'G', 'T', 'D', 'I'
 
-	vector<string > insertions;
+	map<string, int > insertions;
 	void update(position_description &another){
-		for (size_t i = 0; i < 6; i++)
+		for (size_t i = 0; i < max_votes; i++)
 			votes[i] += another.votes[i];
-		insertions.insert(insertions.end(), another.insertions.begin(), another.insertions.end());
+		for (auto iter = another.insertions.begin(); iter != another.insertions.end(); ++iter)
+			insertions[iter->first] += another.insertions[iter->first];
+	}
+	string str(){
+		stringstream ss;
+		for (int i = 0; i < max_votes; i++ ){
+			ss << pos_to_nt.find(i)->second;
+			ss <<  ": " << votes[i]<<"; ";
+		}
+		return ss.str();
 	}
 };
 struct SingleSamRead{
 	string seq, cigar;
 	pair<size_t, size_t> borders;
 	bam1_t *data_;
-	map<char, int> nt_to_pos = {{'a', 0}, {'A', 0}, {'c', 1}, {'C', 1}, {'t', 2}, {'T', 2}, {'g', 3}, {'G', 3}, {'D', 4}};
-	map< char, char> pos_to_nt = {{0, 'A'},  {1, 'C'},  {2, 'T'}, {3, 'G'}, {4, 'D'}};
+//	map<char, int> nt_to_pos = {{'a', 0}, {'A', 0}, {'c', 1}, {'C', 1}, {'t', 2}, {'T', 2}, {'g', 3}, {'G', 3}, {'D', 4}, {'I', 5}};
+//	map< char, char> pos_to_nt = {{0, 'A'},  {1, 'C'},  {2, 'T'}, {3, 'G'}, {4, 'D'}, {5, 'I'}};
 
 	size_t DataLen() {
 		return data_->core.l_qseq;
@@ -69,6 +80,7 @@ struct SingleSamRead{
 		auto seq = bam1_seq(data_);
 	    //char int_A = ord('A') - 1
 	    for (size_t i = 0; i < l_read; i++) {
+	    	DEBUG(i << " " << position << " " << skipped);
 	    //reads away from the contig, check outside.
 //	        if i + position - skipped >= l:
 //	            break
@@ -78,19 +90,19 @@ struct SingleSamRead{
 	            state_pos += 1;
 	        }
 	        if (insertion_string != "" and bam_cigar_opchr(cigar[state_pos]) != 'I'){
-	        	assert(i + position >= skipped + 1);
+	        	VERIFY(i + position >= skipped + 1);
 	            size_t ind = i + position - skipped - 1;
-	            ps[ind].insertions.push_back(insertion_string);
+	            ps[ind].insertions[insertion_string] += 1;
 	            insertion_string = "";
 	        }
 	        char cur_state = bam_cigar_opchr(cigar[state_pos]);
 	        if (cur_state == 'M'){
 
-	        	assert(i >= deleted);
-	        	assert (i + skipped >= position);
+	        	VERIFY(i >= deleted);
+	        	VERIFY (i + position >= skipped);
 	        	size_t ind = i + position - skipped;
-	        	char cur = bam_nt16_rev_table[bam1_seqi(seq, i - deleted)];
-	        	ps[ind].votes[nt_to_pos[cur]] = ps[ind].votes[nt_to_pos[cur]] +  mate;//t_mate
+	        	int cur = nt_to_pos.find(bam_nt16_rev_table[bam1_seqi(seq, i - deleted)])->second;
+	        	ps[ind].votes[cur] = ps[ind].votes[cur] +  mate;//t_mate
 	        } else {
 	            if (to_skip.find(cur_state) != to_skip.end()){
 	                if (cur_state == 'I'){
@@ -107,9 +119,9 @@ struct SingleSamRead{
 	        }
 		}
 		if (insertion_string != "" and bam_cigar_opchr(cigar[state_pos]) != 'I'){
-			assert(l_read + position >= skipped + 1);
+			VERIFY(l_read + position >= skipped + 1);
 			size_t ind = l_read + position - skipped - 1;
-			ps[ind].insertions.push_back(insertion_string);
+			ps[ind].insertions[insertion_string] += 1;
 			insertion_string = "";
 		}
 	}
