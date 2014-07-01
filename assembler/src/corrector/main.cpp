@@ -7,7 +7,7 @@
 /*
  * Assembler Main
  */
-#include "include.hpp";
+#include "include.hpp"
 //#include "config_struct.hpp"
 
 #include "graph_pack.hpp"
@@ -127,7 +127,7 @@ int main(int /*argc*/, char** argv) {
   unsigned mins = (ms / 1000 / 60) % 60;
   unsigned hours = (ms / 1000 / 60 / 60);
   
-  INFO("Assembling time: " << hours << " hours " << mins << " minutes " << secs << " seconds");
+  INFO("Correcting time: " << hours << " hours " << mins << " minutes " << secs << " seconds");
 
   // OK
   return 0;

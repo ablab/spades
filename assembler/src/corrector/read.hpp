@@ -98,7 +98,7 @@ struct SingleSamRead{
 	                    if (insertion_string == "") {
 	                        ps[i + position - skipped - 1].votes[5] += mate;
 	                    }
-	                    insertion_string += bam_nt16_rev_table[bam1_seqi(seq, i )];
+	                    insertion_string += bam_nt16_rev_table[bam1_seqi(seq, i - deleted)];
 	                skipped += 1;
 	                }
 	           } else if (bam_cigar_opchr(cigar[state_pos]) == 'D') {

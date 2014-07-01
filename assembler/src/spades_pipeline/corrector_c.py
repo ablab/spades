@@ -366,10 +366,13 @@ def split_sam(filename, tmpdir, log):
                 if need_to_cashe:
                     separate_sams[contig[1]] = samfilename
                     cashed_sams[contig[1]] = []
+                    cashed_sams[contig[1]].append(line)
 
                 else:
                     separate_sams[contig[1]] = open(samfilename, 'w')
                     mult_aligned[contig[1]] = open(multalignedfilename , 'w')
+                    separate_sams[contig[1]].write(line)
+
     if need_to_cashe:
         drop_cash(cashed_sams , separate_sams, log, True)
         cashed_sams = None
@@ -830,9 +833,11 @@ def chouseLetters(first_node, second_node, prof, node, choused_letter, single_pr
 
 def process_contig(files):
     log = logging.getLogger('spades')
-
+    
     samfilename = files[0]
     contig_file = files[1]
+    os.system ('./build/release/bin/corrector ' + samfilename + ' ' + contig_file)
+    return None
     if len(files) == 3:
         mult_aligned_filename = files[2]
     profile = []

@@ -15,6 +15,8 @@
 class ContigProcessor {
 	string sam_file;
 	string contig_file;
+	string contig_name;
+	string output_contig_file;
 //	static const map<char, char> nt_to_pos;
 //	static const map< char, char> pos_to_nt;// = {{0, 'A'},  {1, 'C'},  {2, 'T'}, {3, 'G'}, {4, 'D'}};
 
@@ -39,7 +41,10 @@ public:
 		io::SingleRead ctg;
 		contig_stream >> ctg;
 		contig = ctg.sequence().str();
-		INFO("processing contig length " + contig.length());
+		contig_name = ctg.name();
+		INFO("Processing contig of length " << contig.length());
+//extention is always "fasta"
+		output_contig_file = contig_file.substr(0, contig_file.length() - 5) + "ref.fasta";
 		charts.resize(contig.length());
 	}
 
@@ -72,6 +77,16 @@ public:
 				return 1;
 			} else if (maxi == INSERTION) {
 				string maxj = "";
+				//first base before insertion;
+				size_t new_maxi = nt_to_pos.find(contig[i])->second;
+				int new_maxx = charts[i].votes[new_maxi];
+				for (size_t k = 0; k < max_votes; k++) {
+					if (new_maxx < charts[i].votes[k] && (k != INSERTION) && (k != DELETION)) {
+						new_maxx = charts[i].votes[k];
+						new_maxi = k;
+					}
+				}
+				ss <<pos_to_nt.find(new_maxi)->second;
 				int max_ins = 0;
 				for (auto iter = charts[i].insertions.begin(); iter != charts[i].insertions.end(); ++iter) {
 					if (iter->second > max_ins){
@@ -86,8 +101,10 @@ public:
 				} else {
 					return maxj.length();
 				}
-
-
+			} else {
+				//something starnge happened
+				WARN("While processing base " << i << " unknown decision was made");
+				return -1;
 			}
 		} else {
 			ss << old;
@@ -107,7 +124,9 @@ public:
 			DEBUG(charts[i].str());
 			UpdateOneBase(i, s_new_contig);
 		}
-		INFO (s_new_contig.str());
+		io::osequencestream oss(output_contig_file);
+		oss << io::SingleRead(contig_name, s_new_contig.str());
+
 	}
 
 	//string seq, cigar; pair<size_t, size_t> borders;
