@@ -35,6 +35,12 @@ enum resolving_mode {
     rm_path_extend,
 };
 
+enum single_read_resolving_mode {
+    sr_none,
+    sr_only_single_libs,
+    sr_all
+};
+
 enum info_printer_pos {
     ipp_default = 0,
     ipp_before_first_gap_closer,
@@ -75,6 +81,8 @@ struct debruijn_config {
     typedef boost::bimap<std::string, construction_mode> construction_mode_id_mapping;
     typedef boost::bimap<std::string, estimation_mode> estimation_mode_id_mapping;
     typedef boost::bimap<std::string, resolving_mode> resolve_mode_id_mapping;
+    typedef boost::bimap<std::string, single_read_resolving_mode> single_read_resolving_mode_id_mapping;
+
 
     //  bad fix, it is to be removed! To determine is it started from run.sh or from spades.py
     bool run_mode;
@@ -107,6 +115,16 @@ struct debruijn_config {
         return resolve_mode_id_mapping(info, utils::array_end(info));
     }
 
+    static const single_read_resolving_mode_id_mapping FillSingleReadResolveModeInfo() {
+        single_read_resolving_mode_id_mapping::value_type info[] = {
+            single_read_resolving_mode_id_mapping::value_type("none", sr_none),
+            single_read_resolving_mode_id_mapping::value_type("all", sr_all),
+            single_read_resolving_mode_id_mapping::value_type("only_single_libs", sr_only_single_libs),
+        };
+
+        return single_read_resolving_mode_id_mapping(info, utils::array_end(info));
+    }
+
     static const construction_mode_id_mapping& construction_mode_info() {
         static construction_mode_id_mapping con_mode_info =
                 FillConstructionModeInfo();
@@ -120,6 +138,11 @@ struct debruijn_config {
 
     static const resolve_mode_id_mapping& resolve_mode_info() {
         static resolve_mode_id_mapping info = FillResolveModeInfo();
+        return info;
+    }
+
+    static const single_read_resolving_mode_id_mapping& single_read_resolve_mode_info() {
+        static single_read_resolving_mode_id_mapping info = FillSingleReadResolveModeInfo();
         return info;
     }
 
@@ -164,6 +187,22 @@ struct debruijn_config {
     static resolving_mode resolving_mode_id(std::string name) {
         auto it = resolve_mode_info().left.find(name);
         VERIFY_MSG(it != resolve_mode_info().left.end(),
+                   "There is no resolving mode with name = " << name);
+
+        return it->second;
+    }
+
+    static const std::string& single_read_resolving_mode_name(single_read_resolving_mode mode_id) {
+        auto it = single_read_resolve_mode_info().right.find(mode_id);
+        VERIFY_MSG(it != single_read_resolve_mode_info().right.end(),
+                   "No name for single read resolving mode id = " << mode_id);
+
+        return it->second;
+    }
+
+    static single_read_resolving_mode single_read_resolving_mode_id(std::string name) {
+        auto it = single_read_resolve_mode_info().left.find(name);
+        VERIFY_MSG(it != single_read_resolve_mode_info().left.end(),
                    "There is no resolving mode with name = " << name);
 
         return it->second;
@@ -484,8 +523,8 @@ struct debruijn_config {
     std::string entry_point;
 
     bool rr_enable;
-    bool single_reads_rr;
-    bool always_single_reads_rr;
+    single_read_resolving_mode single_reads_rr;
+    bool use_single_reads;
     bool divide_clusters;
 
     bool mismatch_careful;
