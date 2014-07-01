@@ -128,6 +128,14 @@ void load(resolving_mode& rm, boost::property_tree::ptree const& pt,
   }
 }
 
+void load(single_read_resolving_mode& rm, boost::property_tree::ptree const& pt,
+          std::string const& key, bool complete) {
+  if (complete || pt.find(key) != pt.not_found()) {
+    std::string ep = pt.get<std::string>(key);
+    rm = debruijn_config::single_read_resolving_mode_id(ep);
+  }
+}
+
 inline void load(construction_mode& con_mode,
         boost::property_tree::ptree const& pt, std::string const& key,
         bool complete) {
@@ -566,7 +574,8 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 
   load(cfg.rr_enable, pt, "rr_enable");
   load(cfg.single_reads_rr, pt, "single_reads_rr");
-  load(cfg.always_single_reads_rr, pt, "always_single_reads_rr");
+  cfg.use_single_reads = false;
+
   load(cfg.divide_clusters, pt, "divide_clusters");
   load(cfg.mismatch_careful, pt, "mismatch_careful");
   load(cfg.correct_mismatches, pt, "correct_mismatches");

@@ -101,20 +101,45 @@ void ProcessPairedReads(conj_graph_pack& gp, size_t ilib, bool map_single_reads)
     }
 }
 
-bool ShouldMapSingleReads(bool has_good_rr_reads, size_t ilib) {
-    bool map_single_reads = cfg::get().always_single_reads_rr || (!has_good_rr_reads && cfg::get().single_reads_rr);
-    if (cfg::get().ds.reads[ilib].type() != io::LibraryType::HQMatePairs) {
-        return map_single_reads;
+static bool HasGoodRRLibs() {
+    static bool has_good_rr_reads = false;
+    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+        if (cfg::get().ds.reads[i].is_paired() &&
+                (cfg::get().ds.reads[i].data().mean_insert_size == 0.0 ||
+                cfg::get().ds.reads[i].data().mean_insert_size < 1.1 * (double) cfg::get().ds.reads[i].data().read_length)) {
+            continue;
+        }
+        if (cfg::get().ds.reads[i].is_repeat_resolvable()) {
+            has_good_rr_reads = true;
+            break;
+        }
     }
-    if (map_single_reads) {
-        return true;
-    }
+    return has_good_rr_reads;
+}
+
+static bool HasOnlyMP() {
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         if (cfg::get().ds.reads[i].type() != io::LibraryType::MatePairs && cfg::get().ds.reads[i].type() != io::LibraryType::HQMatePairs) {
             return false;
         }
     }
     return true;
+}
+
+bool ShouldMapSingleReads(size_t ilib) {
+    switch (cfg::get().single_reads_rr) {
+        case sr_none: {
+            return false;
+        }
+        case sr_all: {
+            return true;
+        }
+        case sr_only_single_libs: {
+            //Map when no PacBio/paried libs or only mate-pairs or single lib itself
+            return !HasGoodRRLibs() || HasOnlyMP() || (cfg::get().ds.reads[ilib].type() == io::LibraryType::SingleReads);
+        }
+    }
+    return false;
 }
 
 void PairInfoCount::run(conj_graph_pack &gp, const char*) {
@@ -154,28 +179,19 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
         }
     }
 
-    bool has_good_rr_reads = false;
-    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        if (cfg::get().ds.reads[i].is_paired() &&
-                (cfg::get().ds.reads[i].data().mean_insert_size == 0.0 ||
-                cfg::get().ds.reads[i].data().mean_insert_size < 1.1 * (double) cfg::get().ds.reads[i].data().read_length)) {
-            continue;
-        }
-        if (cfg::get().ds.reads[i].is_repeat_resolvable()) {
-            has_good_rr_reads = true;
-            break;
-        }
-    }
+
 
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        bool map_single_reads = ShouldMapSingleReads(has_good_rr_reads, i);
+        bool map_single_reads = ShouldMapSingleReads(i);
+        cfg::get_writable().use_single_reads |= map_single_reads;
+
+
         INFO("Mapping library #" << i);
         if (cfg::get().ds.reads[i].is_paired() && cfg::get().ds.reads[i].data().mean_insert_size != 0.0) {
             INFO("Mapping paired reads (takes a while) ");
             ProcessPairedReads(gp, i, map_single_reads);
         }
-
-        if (cfg::get().ds.reads[i].type() == io::LibraryType::SingleReads && map_single_reads) {
+        else if (map_single_reads) {
             INFO("Mapping single reads (takes a while) ");
             ProcessSingleReads(gp, i);
         }
