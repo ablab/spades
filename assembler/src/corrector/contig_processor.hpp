@@ -21,6 +21,7 @@ class ContigProcessor {
 //	static const map< char, char> pos_to_nt;// = {{0, 'A'},  {1, 'C'},  {2, 'T'}, {3, 'G'}, {4, 'D'}};
 
 	string contig;
+	size_t contig_size;
 //	cerr << name;
 	MappedSamStream sm;
 //
@@ -41,6 +42,7 @@ public:
 		io::SingleRead ctg;
 		contig_stream >> ctg;
 		contig = ctg.sequence().str();
+		contig_size = contig.length();
 		contig_name = ctg.name();
 		INFO("Processing contig of length " << contig.length());
 //extention is always "fasta"
@@ -62,8 +64,10 @@ public:
 			return;
 		}
 		tmp.CountPositions(all_positions);
+
 		for (auto iter = all_positions.begin(); iter != all_positions.end(); ++iter) {
-			charts[iter->first].update(iter->second);
+			if (iter->first >=0 && iter->first < contig_size)
+				charts[iter->first].update(iter->second);
 		}
 	}
 //returns: number of changed nucleotides;
