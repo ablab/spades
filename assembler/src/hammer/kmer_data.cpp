@@ -287,6 +287,7 @@ void KMerDataCounter::FillKMerData(KMerData &data) {
   KMerDataFiller filler(data);
   const auto& dataset = cfg::get().dataset;
   for (auto I = dataset.reads_begin(), E = dataset.reads_end(); I != E; ++I) {
+    INFO("Processing " << *I);
     ireadstream irs(*I, cfg::get().input_qvoffset);
     hammer::ReadProcessor rp(omp_get_max_threads());
     rp.Run(irs, filler);
