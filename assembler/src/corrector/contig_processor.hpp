@@ -50,6 +50,7 @@ public:
 
 	void UpdateOneRead(SingleSamRead &tmp){
 		map<size_t, position_description> all_positions;
+		INFO(tmp.GetName());
 		//INFO(tmp.get_contig_id());
 		if (tmp.get_contig_id() < 0) {
 			return;

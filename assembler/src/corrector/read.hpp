@@ -139,6 +139,11 @@ struct SingleSamRead{
 		return res;
 	}
 
+	string GetName(){
+		string res(bam1_qname(data_));
+		return res;
+	}
+
 	string GetSeq() {
 		//string res(reinterpret_cast<const char*>bam1_seq(data_));
 		string res = "";
