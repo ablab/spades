@@ -81,7 +81,16 @@ class MappedSamStream: public io::ReadStream<SingleSamRead> {
         eof_ = (0 >= tmp);
         return *this;
     }
+    void ReadHeader(bam_header_t *bam_header){
+//    	INFO(reader_->header->n_targets << " contigs in header ");
+//    	INFO(reader_->header->target_name[0]);
+    	bam_header = reader_->header;
+    }
 
+    string get_contig_name(int i){
+    	VERIFY(i < reader_->header->n_targets);
+    	return (reader_->header->target_name[i]);
+    }
     void close() {
     	samclose(reader_);
     	is_open_ = false;

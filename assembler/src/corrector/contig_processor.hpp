@@ -28,13 +28,13 @@ class ContigProcessor {
 //	SingleSamRead tmp;
 //	sm >>tmp;
 	//print tmp.
+	bam_header_t *bam_header;
 	vector<position_description> charts;
 
 public:
 	ContigProcessor(string sam_file, string contig_file):sam_file(sam_file), contig_file(contig_file),sm(sam_file){
+		sm.ReadHeader(bam_header);
 		read_contig();
-//		const map<char, char> nt_to_pos = {{'a', 0}, {'A', 0}, {'c', 1}, {'C', 1}, {'t', 2}, {'T', 2}, {'g', 3}, {'G', 3}, {'D', 4}};
-//		const map< char, char> pos_to_nt = {{0, 'A'},  {1, 'C'},  {2, 'T'}, {3, 'G'}, {4, 'D'}};
 	}
 	void read_contig() {
 		io::FileReadStream contig_stream(contig_file);
@@ -50,6 +50,11 @@ public:
 
 	void UpdateOneRead(SingleSamRead &tmp){
 		map<size_t, position_description> all_positions;
+		string cur_s = sm.get_contig_name(tmp.get_contig_id());
+		if (cur_s != contig_name) {
+			WARN("wrong string");
+			return;
+		}
 		tmp.CountPositions(all_positions);
 		for (auto iter = all_positions.begin(); iter != all_positions.end(); ++iter) {
 			charts[iter->first].update(iter->second);
@@ -61,6 +66,7 @@ public:
 		size_t maxi = nt_to_pos.find(contig[i])->second;
 		int maxx = charts[i].votes[maxi];
 		for (size_t j = 0; j < max_votes; j++) {
+			//1.5 because insertion goes _after_ match
 			if (maxx < charts[i].votes[j] || (j == INSERTION && maxx * 2 < charts[i].votes[j] * 3)) {
 				maxx = charts[i].votes[j];
 				maxi = j;

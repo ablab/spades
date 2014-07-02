@@ -48,6 +48,9 @@ struct SingleSamRead{
 	size_t CigarLen() {
 		return data_->core.n_cigar;
 	}
+	int get_contig_id(){
+		return data_->core.tid;
+	}
 	void CountPositions(map <size_t, position_description> &ps){
 	    int position = data_->core.pos;
 	    int mate = 1; // bonus for mate mapped can be here;
