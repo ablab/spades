@@ -145,6 +145,8 @@ public:
 				}
 			}
 			if (variants > 1 || contig[i] == 'N'){
+				INFO(i)
+				INFO(charts[i].str());
 				interesting_positions.push_back((int)i);
 			}
 		}
@@ -160,9 +162,6 @@ public:
 		}
 		sm.reset();
 		size_t interesting = count_interesting_positions();
-		for(size_t i = 0; i < interesting_positions.size(); i++ ) {
-			cout << interesting_positions[i]<< ", ";
-		}
 		while (!sm.eof()) {
 			PairedSamRead tmp;
 			sm >>tmp;

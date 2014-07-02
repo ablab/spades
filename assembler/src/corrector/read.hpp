@@ -31,6 +31,7 @@ struct position_description {
 		for (int i = 0; i < MAX_VOTES; i++ ){
 			ss << pos_to_nt.find(i)->second;
 			ss <<  ": " << votes[i]<<"; ";
+
 		}
 		return ss.str();
 	}
@@ -55,7 +56,7 @@ struct SingleSamRead{
 	    size_t l_read = DataLen();
 	    size_t l_cigar = CigarLen();
 
-	    set<char> to_skip = {'C', 'I', 'H'};
+	    set<char> to_skip = {'S', 'I', 'H'};
 	    int  aligned_length = 0;
 	    uint32_t *cigar = bam1_cigar(data_);
 	   //* in cigar;
@@ -104,8 +105,8 @@ struct SingleSamRead{
 	                        ps[i + position - skipped - 1].votes[5] += mate;
 	                    }
 	                    insertion_string += bam_nt16_rev_table[bam1_seqi(seq, i - deleted)];
-	                skipped += 1;
 	                }
+	                skipped += 1;
 	           } else if (bam_cigar_opchr(cigar[state_pos]) == 'D') {
 	                ps[i + position - skipped].votes[4] += mate;
 	                deleted += 1;
