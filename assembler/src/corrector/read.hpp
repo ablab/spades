@@ -56,11 +56,13 @@ struct SingleSamRead{
 	    int mate = 1; // bonus for mate mapped can be here;
 	    size_t l_read = DataLen();
 	    size_t l_cigar = CigarLen();
-//	    if '*' in cigar:
-//	        return 0
+
 	    set<char> to_skip = {'C', 'I', 'H'};
 	    int  aligned_length = 0;
 	    uint32_t *cigar = bam1_cigar(data_);
+	   //* in cigar;
+	    if (l_cigar == 0)
+	    	return;
 	    if (bam_cigar_opchr(cigar[0]) =='*')
 	    	return ;
 	    for (size_t i = 0; i <l_cigar; i++)
