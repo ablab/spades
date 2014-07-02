@@ -50,7 +50,12 @@ public:
 
 	void UpdateOneRead(SingleSamRead &tmp){
 		map<size_t, position_description> all_positions;
+		INFO(tmp.get_contig_id());
+		if (tmp.get_contig_id() < 0) {
+			return;
+		}
 		string cur_s = sm.get_contig_name(tmp.get_contig_id());
+
 		if (cur_s != contig_name) {
 			WARN("wrong string");
 			return;
