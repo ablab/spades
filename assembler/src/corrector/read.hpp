@@ -61,6 +61,8 @@ struct SingleSamRead{
 	    set<char> to_skip = {'C', 'I', 'H'};
 	    int  aligned_length = 0;
 	    uint32_t *cigar = bam1_cigar(data_);
+	    if (bam_cigar_opchr(cigar[0]) =='*')
+	    	return ;
 	    for (size_t i = 0; i <l_cigar; i++)
             if (bam_cigar_opchr(cigar[i]) =='M')
                 aligned_length +=  bam_cigar_oplen(cigar[i]);
