@@ -81,6 +81,16 @@ class MappedSamStream: public io::ReadStream<SingleSamRead> {
         eof_ = (0 >= tmp);
         return *this;
     }
+    MappedSamStream& operator >> (PairedSamRead& read){
+
+    	SingleSamRead r1;
+    	MappedSamStream::operator >> (r1);
+    	SingleSamRead r2;
+    	MappedSamStream::operator >> (r2);
+
+    	VERIFY (r1.GetName() == r2.GetName());
+    	read.pair(r1,r2);
+    }
     void ReadHeader(bam_header_t *bam_header){
 //    	INFO(reader_->header->n_targets << " contigs in header ");
 //    	INFO(reader_->header->target_name[0]);

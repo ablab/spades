@@ -16,19 +16,19 @@ using namespace std;
 
 
 struct position_description {
-	int votes[max_votes];
+	int votes[MAX_VOTES];
 	//'A', 'C', 'G', 'T', 'D', 'I'
 
 	map<string, int > insertions;
 	void update(position_description &another){
-		for (size_t i = 0; i < max_votes; i++)
+		for (size_t i = 0; i < MAX_VOTES; i++)
 			votes[i] += another.votes[i];
 		for (auto iter = another.insertions.begin(); iter != another.insertions.end(); ++iter)
 			insertions[iter->first] += another.insertions[iter->first];
 	}
 	string str(){
 		stringstream ss;
-		for (int i = 0; i < max_votes; i++ ){
+		for (int i = 0; i < MAX_VOTES; i++ ){
 			ss << pos_to_nt.find(i)->second;
 			ss <<  ": " << votes[i]<<"; ";
 		}
@@ -36,11 +36,7 @@ struct position_description {
 	}
 };
 struct SingleSamRead{
-	string seq, cigar;
-	pair<size_t, size_t> borders;
 	bam1_t *data_;
-//	map<char, int> nt_to_pos = {{'a', 0}, {'A', 0}, {'c', 1}, {'C', 1}, {'t', 2}, {'T', 2}, {'g', 3}, {'G', 3}, {'D', 4}, {'I', 5}};
-//	map< char, char> pos_to_nt = {{0, 'A'},  {1, 'C'},  {2, 'T'}, {3, 'G'}, {4, 'D'}, {5, 'I'}};
 
 	size_t DataLen() {
 		return data_->core.l_qseq;
@@ -52,6 +48,8 @@ struct SingleSamRead{
 		return data_->core.tid;
 	}
 	void CountPositions(map <size_t, position_description> &ps){
+		if (get_contig_id() < 0)
+			return;
 	    int position = data_->core.pos;
 	    int mate = 1; // bonus for mate mapped can be here;
 	    size_t l_read = DataLen();
@@ -163,46 +161,19 @@ struct SingleSamRead{
 		return res;
 	}
 };
-
-struct AlignedRead {
-	string left, right;
-	string cigar_left, cigar_right;
-	//left position including, right - excluding;
-	//for single_reads gap_start = gap_end = end;
-	pair<size_t,size_t> borders, gap;
-
-	AlignedRead(SingleSamRead &f, SingleSamRead &s) {
-		left = f.seq;
-		//rc?
-		right = s.seq;
-		cigar_left =f.cigar;
-		cigar_right = s.cigar;
-		borders.first = f.borders.first;
-		gap.first = f.borders.second;
-
-		borders.second = s.borders.second;
-		gap.second = s.borders.first;
-
-	}
-	//position in contig.
-	//TODO: cigar!
-	char operator [] (size_t i) {
-		if (i < borders.first)
-			return 'X';
-		else if (i < gap.first) return left[i - borders.first];
-		else if (i < gap.second) return 'X';
-		else if (i < borders.second) return right[i - gap.second];
-		else return 'X';
-	}
-	//TODO: cigar!
-	bool contains (size_t i) {
-		if (i < borders.first || i >= borders.second || (i < gap.second  && i >= gap.first))
-			return false;
-		return true;
+struct PairedSamRead{
+	SingleSamRead r1; SingleSamRead r2;
+	void pair(SingleSamRead &a1, SingleSamRead &a2) {
+		r1 = a1; r2 = a2;
 	}
 
-
+	void CountPositions(map <size_t, position_description> &ps) {
+		r1.CountPositions(ps);
+		map <size_t, position_description> tmp;
+		r2.CountPositions(tmp);
+		//overlaps? multimap?
+		ps.insert( tmp.begin(), tmp.end());
+	}
 };
-
 
 

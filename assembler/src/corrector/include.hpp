@@ -17,7 +17,7 @@
 #include "runtime_k.hpp"
 #include "io/osequencestream.hpp"
 #include <string>
-#define max_votes 6
+#define MAX_VOTES 6
 #define DELETION 4
 #define INSERTION 5
 

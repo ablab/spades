@@ -31,6 +31,7 @@ class ContigProcessor {
 	//print tmp.
 	bam_header_t *bam_header;
 	vector<position_description> charts;
+	vector<int> interesting_positions;
 
 public:
 	ContigProcessor(string sam_file, string contig_file):sam_file(sam_file), contig_file(contig_file),sm(sam_file){
@@ -52,7 +53,7 @@ public:
 
 	void UpdateOneRead(SingleSamRead &tmp){
 		map<size_t, position_description> all_positions;
-		INFO(tmp.GetName());
+		//INFO(tmp.GetName());
 		//INFO(tmp.get_contig_id());
 		if (tmp.get_contig_id() < 0) {
 			return;
@@ -75,7 +76,7 @@ public:
 		char old = toupper(contig[i]);
 		size_t maxi = nt_to_pos.find(contig[i])->second;
 		int maxx = charts[i].votes[maxi];
-		for (size_t j = 0; j < max_votes; j++) {
+		for (size_t j = 0; j < MAX_VOTES; j++) {
 			//1.5 because insertion goes _after_ match
 			if (maxx < charts[i].votes[j] || (j == INSERTION && maxx * 2 < charts[i].votes[j] * 3)) {
 				maxx = charts[i].votes[j];
@@ -96,7 +97,7 @@ public:
 				//first base before insertion;
 				size_t new_maxi = nt_to_pos.find(contig[i])->second;
 				int new_maxx = charts[i].votes[new_maxi];
-				for (size_t k = 0; k < max_votes; k++) {
+				for (size_t k = 0; k < MAX_VOTES; k++) {
 					if (new_maxx < charts[i].votes[k] && (k != INSERTION) && (k != DELETION)) {
 						new_maxx = charts[i].votes[k];
 						new_maxi = k;
@@ -127,6 +128,28 @@ public:
 			return 0;
 		}
 	}
+	size_t count_interesting_positions(){
+		for( size_t i = 0; i < contig_size; i++) {
+			int sum_total = 0;
+			for (size_t j = 0; j < MAX_VOTES; j++) {
+//TODO: remove this condition
+				if (j != INSERTION && j != DELETION) {
+					sum_total += charts[i].votes[j];
+				}
+			}
+			int variants = 0;
+			for (size_t j = 0; j < MAX_VOTES; j++) {
+//TODO: reconsider this condition
+				if (j != INSERTION && j != DELETION && (charts[i].votes[j] > 0.1* sum_total) && (charts[i].votes[j] < 0.9* sum_total) && (sum_total > 20)) {
+					variants++;
+				}
+			}
+			if (variants > 1 || contig[i] == 'N'){
+				interesting_positions.push_back((int)i);
+			}
+		}
+		return interesting_positions.size();
+	}
 
 	void process_sam_file (){
 		while (!sm.eof()) {
@@ -134,6 +157,15 @@ public:
 			sm >> tmp;
 			UpdateOneRead(tmp);
 			//	sm >>tmp;
+		}
+		sm.reset();
+		size_t interesting = count_interesting_positions();
+		for(size_t i = 0; i < interesting_positions.size(); i++ ) {
+			cout << interesting_positions[i]<< ", ";
+		}
+		while (!sm.eof()) {
+			PairedSamRead tmp;
+			sm >>tmp;
 		}
 		stringstream s_new_contig;
 		for (size_t i = 0; i < contig.length(); i ++) {
