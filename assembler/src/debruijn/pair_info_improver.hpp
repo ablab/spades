@@ -266,7 +266,7 @@ class PairInfoImprover {
             for (auto p_iter = histogram.begin(); p_iter != histogram.end(); ++p_iter) {
                 if (math::eq(p_iter->d, point.d)) {
                     cnt += index_.RemovePairInfo(e1, e2, *p_iter);
-                    cnt += index_.RemovePairInfo(e1, e2, -*p_iter);
+                    cnt += index_.RemovePairInfo(e2, e1, -*p_iter);
                     TRACE("Removed pi " << graph_.int_id(e1) << " " << graph_.int_id(e2)
                           << " dist " << p_iter->d << " var " << p_iter->var);
                 }
@@ -283,11 +283,11 @@ class PairInfoImprover {
         EdgeId rc_e2 = graph_.conjugate(e1);
         const de::Histogram histogram = index_.GetEdgePairInfo(rc_e1, rc_e2);
         for (auto I = infos.begin(), E = infos.end(); I != E; ++I) {
-            const omnigraph::de::Point& point = ConjugatePoint(graph_.length(e1), graph_.length(e2), *I);
+            const omnigraph::de::Point point = ConjugatePoint(graph_.length(e1), graph_.length(e2), *I);
             for (auto p_iter = histogram.begin(); p_iter != histogram.end(); ++p_iter) {
                 if (math::eq(p_iter->d, point.d)) {
                     cnt += index_.RemovePairInfo(rc_e1, rc_e2, *p_iter);
-                    cnt += index_.RemovePairInfo(rc_e1, rc_e2, -*p_iter);
+                    cnt += index_.RemovePairInfo(rc_e2, rc_e1, -*p_iter);
                     TRACE("Removed pi " << graph_.int_id(rc_e1) << " " << graph_.int_id(rc_e2)
                           << " dist " << p_iter->d << " var " << p_iter->var);
                 }
