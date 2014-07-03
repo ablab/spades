@@ -48,7 +48,7 @@ struct SingleSamRead{
 	int get_contig_id(){
 		return data_->core.tid;
 	}
-	void CountPositions(map <size_t, position_description> &ps){
+	void CountPositions(map <size_t, position_description> &ps, size_t contig_size){
 		if (get_contig_id() < 0)
 			return;
 	    int pos = data_->core.pos;
@@ -73,9 +73,12 @@ struct SingleSamRead{
 	    for (size_t i = 0; i <l_cigar; i++)
             if (bam_cigar_opchr(cigar[i]) =='M')
                 aligned_length +=  bam_cigar_oplen(cigar[i]);
-//	#we do not need short reads aligned near gaps
-//	    if aligned_length < min(l_read* 0.4, 40) and position > l_read / 2 and l - position > l_read / 2 and mate == 1:
-//	        return 0
+//TODO: reconsider this condition
+//It's about bad aligned reads, but whether it is necessary?
+	    double read_len_double = (double) l_read;
+	    if ((aligned_length < min(read_len_double* 0.4, 40.0)) && (position > read_len_double/ 2) && (contig_size  > read_len_double/ 2 + position) ) {
+	        return ;
+	    }
 	    int state_pos = 0;
 	    int shift = 0;
 	    size_t skipped = 0;
@@ -83,7 +86,6 @@ struct SingleSamRead{
 	    string insertion_string = "";
 
 		auto seq = bam1_seq(data_);
-	    //char int_A = ord('A') - 1
 	    for (size_t i = 0; i < l_read; i++) {
 	    	DEBUG(i << " " << position << " " << skipped);
 	        if (shift +  bam_cigar_oplen(cigar[state_pos]) <= i){
@@ -107,7 +109,7 @@ struct SingleSamRead{
 	        	VERIFY (i + position >= skipped);
 
 	        	size_t ind = i + position - skipped;
-	        	int cur = var_to_pos[bam_nt16_rev_table[bam1_seqi(seq, i - deleted)]];
+	        	int cur = var_to_pos[(int)bam_nt16_rev_table[bam1_seqi(seq, i - deleted)]];
 	        	ps[ind].votes[cur] = ps[ind].votes[cur] +  mate;//t_mate
 	        } else {
 	            if (to_skip.find(cur_state) != to_skip.end()){
@@ -144,10 +146,9 @@ struct SingleSamRead{
 	}
 
 	string GetQual() {
-
 		uint8_t *qual = bam1_qual(data_);
 		for (int i = 0; i < data_->core.l_qseq; ++i) {
-			qual[i] += 33;
+			qual[i] = uint8_t (qual[i] + 33);
 		}
 		string res(reinterpret_cast<const char*>(qual));
 		return res;
@@ -159,17 +160,11 @@ struct SingleSamRead{
 	}
 
 	string GetSeq() {
-		//string res(reinterpret_cast<const char*>bam1_seq(data_));
 		string res = "";
 		auto b = bam1_seq(data_);
-		for (size_t k = 0; k < data_->core.l_qseq; ++k) {
+		for (int k = 0; k < data_->core.l_qseq; ++k) {
 			res += bam_nt16_rev_table[bam1_seqi(b, k)];
 		}
-	//		uint8_t *qual = bam1_qual(data_);
-	//		for (i = 0; i < data_->core.l_qseq; ++i) {
-	//			qual[i] = c < 93? c : 93;
-	//			res += std::to_string(qual[i]);
-	//		}
 		return res;
 	}
 };
@@ -179,11 +174,11 @@ struct PairedSamRead{
 		r1 = a1; r2 = a2;
 	}
 
-	void CountPositions(map <size_t, position_description> &ps) {
-		r1.CountPositions(ps);
+	void CountPositions(map <size_t, position_description> &ps, size_t contig_length) {
+		r1.CountPositions(ps, contig_length);
 		map <size_t, position_description> tmp;
-		r2.CountPositions(tmp);
-		//overlaps? multimap?
+		r2.CountPositions(tmp, contig_length);
+		//overlaps.. multimap?
 		ps.insert( tmp.begin(), tmp.end());
 	}
 };

@@ -73,7 +73,7 @@ void create_console_logger() {
 
 int main(int /*argc*/, char** argv) {
   perf_counter pc;
-  const size_t GB = 1 << 30;
+  //const size_t GB = 1 << 30;
 
   srand(42);
   srandom(42);

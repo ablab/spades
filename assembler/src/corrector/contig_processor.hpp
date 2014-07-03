@@ -62,7 +62,7 @@ public:
 			WARN("wrong string");
 			return;
 		}
-		tmp.CountPositions(all_positions);
+		tmp.CountPositions(all_positions, contig_size);
 
 		for (auto iter = all_positions.begin(); iter != all_positions.end(); ++iter) {
 			if ((int)iter->first >=0 && iter->first < contig_size)
@@ -71,7 +71,7 @@ public:
 	}
 //returns: number of changed nucleotides;
 	int UpdateOneBase(size_t i, stringstream &ss){
-		char old = (int) toupper(contig[i]);
+		char old = (char) toupper(contig[i]);
 		size_t maxi = var_to_pos[(int)contig[i]];
 		int maxx = charts[i].votes[maxi];
 		for (size_t j = 0; j < MAX_VARIANTS; j++) {
@@ -112,9 +112,9 @@ public:
 				INFO("most popular insertion: " << maxj);
 				ss << maxj;
 				if (old == maxj[0]) {
-					return maxj.length() - 1;
+					return (int) maxj.length() - 1;
 				} else {
-					return maxj.length();
+					return (int) maxj.length();
 				}
 			} else {
 				//something starnge happened
