@@ -17,8 +17,6 @@ class ContigProcessor {
 	string contig_file;
 	string contig_name;
 	string output_contig_file;
-//	static const map<char, char> nt_to_pos;
-//	static const map< char, char> pos_to_nt;// = {{0, 'A'},  {1, 'C'},  {2, 'T'}, {3, 'G'}, {4, 'D'}};
 
 	string contig;
 	size_t contig_size;
@@ -35,7 +33,7 @@ class ContigProcessor {
 
 public:
 	ContigProcessor(string sam_file, string contig_file):sam_file(sam_file), contig_file(contig_file),sm(sam_file){
-		sm.ReadHeader(bam_header);
+		bam_header = sm.ReadHeader();
 		read_contig();
 	}
 	void read_contig() {
@@ -67,27 +65,27 @@ public:
 		tmp.CountPositions(all_positions);
 
 		for (auto iter = all_positions.begin(); iter != all_positions.end(); ++iter) {
-			if (iter->first >=0 && iter->first < contig_size)
+			if ((int)iter->first >=0 && iter->first < contig_size)
 				charts[iter->first].update(iter->second);
 		}
 	}
 //returns: number of changed nucleotides;
 	int UpdateOneBase(size_t i, stringstream &ss){
-		char old = toupper(contig[i]);
-		size_t maxi = nt_to_pos.find(contig[i])->second;
+		char old = (int) toupper(contig[i]);
+		size_t maxi = var_to_pos[(int)contig[i]];
 		int maxx = charts[i].votes[maxi];
-		for (size_t j = 0; j < MAX_VOTES; j++) {
+		for (size_t j = 0; j < MAX_VARIANTS; j++) {
 			//1.5 because insertion goes _after_ match
 			if (maxx < charts[i].votes[j] || (j == INSERTION && maxx * 2 < charts[i].votes[j] * 3)) {
 				maxx = charts[i].votes[j];
 				maxi = j;
 			}
 		}
-		if (old != pos_to_nt.find(maxi)->second) {
-			INFO("On position " << i << " changing " << old <<" to "<<pos_to_nt.find(maxi)->second);
+		if (old != pos_to_var[maxi]) {
+			INFO("On position " << i << " changing " << old <<" to "<<pos_to_var[maxi]);
 			INFO(charts[i].str());
 			if (maxi < DELETION) {
-				ss <<pos_to_nt.find(maxi)->second;
+				ss <<pos_to_var[maxi];
 				return 1;
 			} else if (maxi == DELETION) {
 
@@ -95,15 +93,15 @@ public:
 			} else if (maxi == INSERTION) {
 				string maxj = "";
 				//first base before insertion;
-				size_t new_maxi = nt_to_pos.find(contig[i])->second;
+				size_t new_maxi = var_to_pos[(int)contig[i]];
 				int new_maxx = charts[i].votes[new_maxi];
-				for (size_t k = 0; k < MAX_VOTES; k++) {
+				for (size_t k = 0; k < MAX_VARIANTS; k++) {
 					if (new_maxx < charts[i].votes[k] && (k != INSERTION) && (k != DELETION)) {
 						new_maxx = charts[i].votes[k];
 						new_maxi = k;
 					}
 				}
-				ss <<pos_to_nt.find(new_maxi)->second;
+				ss <<pos_to_var[new_maxi];
 				int max_ins = 0;
 				for (auto iter = charts[i].insertions.begin(); iter != charts[i].insertions.end(); ++iter) {
 					if (iter->second > max_ins){
@@ -131,20 +129,20 @@ public:
 	size_t count_interesting_positions(){
 		for( size_t i = 0; i < contig_size; i++) {
 			int sum_total = 0;
-			for (size_t j = 0; j < MAX_VOTES; j++) {
+			for (size_t j = 0; j < MAX_VARIANTS; j++) {
 //TODO: remove this condition
 				if (j != INSERTION && j != DELETION) {
 					sum_total += charts[i].votes[j];
 				}
 			}
 			int variants = 0;
-			for (size_t j = 0; j < MAX_VOTES; j++) {
+			for (size_t j = 0; j < MAX_VARIANTS; j++) {
 //TODO: reconsider this condition
 				if (j != INSERTION && j != DELETION && (charts[i].votes[j] > 0.1* sum_total) && (charts[i].votes[j] < 0.9* sum_total) && (sum_total > 20)) {
 					variants++;
 				}
 			}
-			if (variants > 1 || contig[i] == 'N'){
+			if (variants > 1 || contig[i] == UNDEFINED){
 				INFO(i)
 				INFO(charts[i].str());
 				interesting_positions.push_back((int)i);

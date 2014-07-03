@@ -91,10 +91,10 @@ class MappedSamStream: public io::ReadStream<SingleSamRead> {
     	VERIFY (r1.GetName() == r2.GetName());
     	read.pair(r1,r2);
     }
-    void ReadHeader(bam_header_t *bam_header){
+    bam_header_t* ReadHeader(){
 //    	INFO(reader_->header->n_targets << " contigs in header ");
 //    	INFO(reader_->header->target_name[0]);
-    	bam_header = reader_->header;
+    	return reader_->header;
     }
 
     string get_contig_name(int i){

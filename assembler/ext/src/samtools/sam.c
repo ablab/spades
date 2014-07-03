@@ -68,7 +68,7 @@ samfile_t *samopen(const char *fn, const char *mode, const void *aux)
 				}
 				if (fp->header->n_targets == 0 && bam_verbose >= 1)
 					fprintf(stderr, "[samopen] no @SQ lines in the header.\n");
-			} else if (bam_verbose >= 2) fprintf(stderr, "[samopen] SAM header is present: %d sequences.\n", fp->header->n_targets);
+			} //else if (bam_verbose >= 2) fprintf(stderr, "[samopen] SAM header is present: %d sequences.\n", fp->header->n_targets);
 		}
 	} else if (strchr(mode, 'w')) { // write
 		fp->header = bam_header_dup((const bam_header_t*)aux);

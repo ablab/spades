@@ -16,20 +16,20 @@ using namespace std;
 
 
 struct position_description {
-	int votes[MAX_VOTES];
+	int votes[MAX_VARIANTS];
 	//'A', 'C', 'G', 'T', 'D', 'I'
 
 	map<string, int > insertions;
 	void update(position_description &another){
-		for (size_t i = 0; i < MAX_VOTES; i++)
+		for (size_t i = 0; i < MAX_VARIANTS; i++)
 			votes[i] += another.votes[i];
 		for (auto iter = another.insertions.begin(); iter != another.insertions.end(); ++iter)
 			insertions[iter->first] += another.insertions[iter->first];
 	}
 	string str(){
 		stringstream ss;
-		for (int i = 0; i < MAX_VOTES; i++ ){
-			ss << pos_to_nt.find(i)->second;
+		for (int i = 0; i < MAX_VARIANTS; i++ ){
+			ss << pos_to_var[i];
 			ss <<  ": " << votes[i]<<"; ";
 
 		}
@@ -51,7 +51,13 @@ struct SingleSamRead{
 	void CountPositions(map <size_t, position_description> &ps){
 		if (get_contig_id() < 0)
 			return;
-	    int position = data_->core.pos;
+	    int pos = data_->core.pos;
+	    if (pos < 0) {
+	    	WARN("Negative position " << pos << " found on read " << GetName() <<", skipping");
+
+	    	return;
+	    }
+	    size_t position = size_t(pos);
 	    int mate = 1; // bonus for mate mapped can be here;
 	    size_t l_read = DataLen();
 	    size_t l_cigar = CigarLen();
@@ -72,8 +78,8 @@ struct SingleSamRead{
 //	        return 0
 	    int state_pos = 0;
 	    int shift = 0;
-	    int skipped = 0;
-	    int deleted = 0;
+	    size_t skipped = 0;
+	    size_t deleted = 0;
 	    string insertion_string = "";
 
 		auto seq = bam1_seq(data_);
@@ -94,21 +100,26 @@ struct SingleSamRead{
 	        if (cur_state == 'M'){
 
 	        	VERIFY(i >= deleted);
+	        	if (i + position < skipped) {
+					INFO(i << " " << position <<" "<< skipped);
+					INFO(GetName());
+	        	}
 	        	VERIFY (i + position >= skipped);
+
 	        	size_t ind = i + position - skipped;
-	        	int cur = nt_to_pos.find(bam_nt16_rev_table[bam1_seqi(seq, i - deleted)])->second;
+	        	int cur = var_to_pos[bam_nt16_rev_table[bam1_seqi(seq, i - deleted)]];
 	        	ps[ind].votes[cur] = ps[ind].votes[cur] +  mate;//t_mate
 	        } else {
 	            if (to_skip.find(cur_state) != to_skip.end()){
 	                if (cur_state == 'I'){
 	                    if (insertion_string == "") {
-	                        ps[i + position - skipped - 1].votes[5] += mate;
+	                        ps[i + position - skipped - 1].votes[INSERTION] += mate;
 	                    }
 	                    insertion_string += bam_nt16_rev_table[bam1_seqi(seq, i - deleted)];
 	                }
 	                skipped += 1;
 	           } else if (bam_cigar_opchr(cigar[state_pos]) == 'D') {
-	                ps[i + position - skipped].votes[4] += mate;
+	                ps[i + position - skipped].votes[DELETION] += mate;
 	                deleted += 1;
 	           }
 	        }
@@ -135,8 +146,8 @@ struct SingleSamRead{
 	string GetQual() {
 
 		uint8_t *qual = bam1_qual(data_);
-		for (size_t i = 0; i < data_->core.l_qseq; ++i) {
-				qual[i] += 33;
+		for (int i = 0; i < data_->core.l_qseq; ++i) {
+			qual[i] += 33;
 		}
 		string res(reinterpret_cast<const char*>(qual));
 		return res;
