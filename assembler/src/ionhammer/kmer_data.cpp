@@ -223,6 +223,7 @@ void KMerDataCounter::FillKMerData(KMerData &data) {
 
   const auto& dataset = cfg::get().dataset;
   for (auto it = dataset.reads_begin(), et = dataset.reads_end(); it != et; ++it) {
+    INFO("Processing " << *it);
     io::FileReadStream irs(*it, io::PhredOffset);
     KMerDataFiller filler(data);
     hammer::ReadProcessor(cfg::get().max_nthreads).Run(irs, filler);

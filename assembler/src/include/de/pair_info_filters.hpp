@@ -344,8 +344,10 @@ public:
       if (pair_info_checker_.Check(e1, e2)) {
         for (auto p_iter = points.begin(); p_iter != points.end(); ) {
           const Point& point = *p_iter++;
-          if (!pair_info_checker_.Check(PairInfoT(e1, e2, point)))
+          if (!pair_info_checker_.Check(PairInfoT(e1, e2, point))) {
             index.DeletePairInfo(e1, e2, point);
+            index.DeletePairInfo(e2, e1, -point);
+          }
         }
       }
     }
