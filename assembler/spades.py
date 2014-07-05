@@ -304,7 +304,6 @@ def fill_cfg(options_to_parse, log):
         pyyaml.dump(dataset_data, open(options_storage.dataset_yaml_filename, 'w'))
 
     support.check_dataset_reads(dataset_data, options_storage.only_assembler, log)
-    #support.check_single_reads_in_options(options, log)
     if not support.get_lib_ids_by_type(dataset_data, spades_logic.READS_TYPES_USED_IN_CONSTRUCTION):
         support.error('you should specify at least one unpaired, paired-end, or high-quality mate-pairs library!')
 
@@ -428,7 +427,8 @@ def main(args):
     support.check_binaries(bin_home, log)
 
     # parse options and safe all parameters to cfg
-    cfg, dataset_data = fill_cfg(args, log)
+    options = args
+    cfg, dataset_data = fill_cfg(options, log)
 
     if options_storage.continue_mode:
         cmd_line, options = get_options_from_params(os.path.join(options_storage.output_dir, "params.txt"), args[0])
@@ -484,6 +484,8 @@ def main(args):
 
     print_used_values(cfg, log)
     log.removeHandler(params_handler)
+
+    support.check_single_reads_in_options(options, log)
 
     if not options_storage.continue_mode:
         log.info("\n======= SPAdes pipeline started. Log can be found here: " + log_filename + "\n")
