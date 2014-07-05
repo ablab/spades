@@ -522,6 +522,23 @@ def check_dataset_reads(dataset_data, only_assembler, log):
     check_files_duplication(all_files, log)
 
 
+def check_single_reads_in_options(options, log):
+    only_old_style_options = True
+    old_style_single_reads = False
+    for option in options:
+        if option not in options_storage.reads_options:
+            continue
+        if option in options_storage.OLD_STYLE_READS_OPTIONS:
+            if option == '-s':
+                old_style_single_reads = True
+        else:
+            only_old_style_options = False
+    if not only_old_style_options and old_style_single_reads:
+        warning("It is recommended to specify single reads with --pe<#>-s, --mp<#>-s, --hqmp<#>-s, "
+                "or --s<#> option instead of -s!", log)
+
+
+
 def get_lib_ids_by_type(dataset_data, types):
     if type(types) is not list:
         types = [types]

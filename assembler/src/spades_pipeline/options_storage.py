@@ -108,9 +108,11 @@ short_options = "o:1:2:s:k:t:m:i:h"
 reads_options = []
 for i in range(MAX_LIBS_NUMBER):
     for type in SHORT_READS_TYPES.keys():
-        reads_options += ("%s%d-1= %s%d-2= %s%d-12= %s%d-s= %s%d-rf %s%d-fr %s%d-ff" % tuple([type, i + 1] * 7)).split()
+        if type == 's': # single
+            reads_options += ["s%d=" % (i+1)]
+        else: # paired-end, mate-pairs, hq-mate-pairs
+            reads_options += ("%s%d-1= %s%d-2= %s%d-12= %s%d-s= %s%d-rf %s%d-fr %s%d-ff" % tuple([type, i + 1] * 7)).split()
 reads_options += list(map(lambda x: x + '=', LONG_READS_TYPES))
-reads_options += ["s%d=" % (i+1) for i in range(MAX_LIBS_NUMBER)]  # single libraries
 long_options += reads_options
 # for checking whether option corresponds to reads or not
 reads_options = list(map(lambda x: "--" + x.split('=')[0], reads_options))
