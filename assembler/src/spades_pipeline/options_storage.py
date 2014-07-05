@@ -22,7 +22,8 @@ ALLOWED_READS_EXTENSIONS += [x + '.gz' for x in ALLOWED_READS_EXTENSIONS]
 
 # we support up to MAX_LIBS_NUMBER libs for each type of short-reads libs
 MAX_LIBS_NUMBER = 5
-SHORT_READS_TYPES = {"pe": "paired-end", "mp": "mate-pairs", "hqmp": "hq-mate-pairs"}
+OLD_STYLE_READS_OPTIONS = ["--12", "-1", "-2", "-s"]
+SHORT_READS_TYPES = {"pe": "paired-end", "s": "single", "mp": "mate-pairs", "hqmp": "hq-mate-pairs"}
 # other libs types:
 LONG_READS_TYPES = ["pacbio", "sanger", "trusted-contigs", "untrusted-contigs"]
 
@@ -109,10 +110,11 @@ for i in range(MAX_LIBS_NUMBER):
     for type in SHORT_READS_TYPES.keys():
         reads_options += ("%s%d-1= %s%d-2= %s%d-12= %s%d-s= %s%d-rf %s%d-fr %s%d-ff" % tuple([type, i + 1] * 7)).split()
 reads_options += list(map(lambda x: x + '=', LONG_READS_TYPES))
+reads_options += ["s%d=" % (i+1) for i in range(MAX_LIBS_NUMBER)]  # single libraries
 long_options += reads_options
 # for checking whether option corresponds to reads or not
-reads_options = list(map(lambda x:"--" + x.split('=')[0], reads_options))
-reads_options += ["--12", "-1", "-2", "-s"]
+reads_options = list(map(lambda x: "--" + x.split('=')[0], reads_options))
+reads_options += OLD_STYLE_READS_OPTIONS
 
 
 def usage(spades_version, show_hidden=False, dipspades=False):
@@ -150,6 +152,8 @@ def usage(spades_version, show_hidden=False, dipspades=False):
                          " for paired-end library number <#> (<#> = 1,2,3,4,5)" + "\n")
     sys.stderr.write("--pe<#>-<or>\torientation of reads"\
                          " for paired-end library number <#> (<#> = 1,2,3,4,5; <or> = fr, rf, ff)" + "\n")
+    sys.stderr.write("--s<#>\t\t<filename>\tfile with unpaired reads"\
+                     " for single reads library number <#> (<#> = 1,2,3,4,5)" + "\n")
     sys.stderr.write("--mp<#>-12\t<filename>\tfile with interlaced"\
                          " reads for mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
     sys.stderr.write("--mp<#>-1\t<filename>\tfile with forward reads"\

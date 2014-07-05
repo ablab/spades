@@ -388,6 +388,10 @@ def get_long_reads_type(option):
     return None
 
 
+def is_single_read_type(option):
+    return option.startswith('--s') and option[3:].isdigit()
+
+
 def get_lib_type_and_number(option):
     # defaults for simple -1, -2, -s, --12 options
     lib_type = 'pe'
@@ -408,7 +412,7 @@ def get_data_type(option):
         data_type = 'left reads'
     elif option.endswith('-2'):
         data_type = 'right reads'
-    elif option.endswith('-s') or get_long_reads_type(option):
+    elif option.endswith('-s') or is_single_read_type(option) or get_long_reads_type(option):
         data_type = 'single reads'
     else: # -rf, -ff, -fr
         data_type = 'orientation'
@@ -423,7 +427,7 @@ def add_to_dataset(option, data, dataset_data):
 
     if lib_type in options_storage.SHORT_READS_TYPES:
         record_id = options_storage.MAX_LIBS_NUMBER * sorted(options_storage.SHORT_READS_TYPES).index(lib_type) + lib_number - 1
-    else: # long reads libraries
+    else:  # long reads libraries
         dataset_data += [{}]
         record_id = len(dataset_data) - 1
 
@@ -441,7 +445,7 @@ def add_to_dataset(option, data, dataset_data):
             dataset_data[record_id][data_type].append(data)
         else:
             dataset_data[record_id][data_type] = [data]
-    else: # other values are stored as plain strings
+    else:  # other values are stored as plain strings
         dataset_data[record_id][data_type] = data
 
 
@@ -515,7 +519,6 @@ def check_dataset_reads(dataset_data, only_assembler, log):
                   ', library type: ' + reads_library['type'] + ')!', log)
     if not len(all_files):
         error("You should specify at least one file with reads!", log)
-    check_files_duplication(all_files, log)
 
 
 def get_lib_ids_by_type(dataset_data, types):

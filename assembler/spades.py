@@ -156,7 +156,8 @@ def fill_cfg(options_to_parse, log):
     # all parameters are stored here
     cfg = dict()
     # dataset is stored here. We are prepared for up to MAX_LIBS_NUMBER for each type of short-reads libs
-    dataset_data = [{} for i in range(options_storage.MAX_LIBS_NUMBER * len(options_storage.SHORT_READS_TYPES.keys()))]  # "[{}] * num" doesn't work here!
+    dataset_data = [{} for i in range(options_storage.MAX_LIBS_NUMBER *
+                                      len(options_storage.SHORT_READS_TYPES.keys()))]  # "[{}]*num" doesn't work here!
 
     # for parsing options from "previous run command"
     options_storage.continue_mode = False
@@ -273,7 +274,6 @@ def fill_cfg(options_to_parse, log):
         else:
             raise ValueError
 
-
     if not options_storage.output_dir:
         support.error("the output_dir is not set! It is a mandatory parameter (-o output_dir).", log)
     if not os.path.isdir(options_storage.output_dir):
@@ -304,6 +304,7 @@ def fill_cfg(options_to_parse, log):
         pyyaml.dump(dataset_data, open(options_storage.dataset_yaml_filename, 'w'))
 
     support.check_dataset_reads(dataset_data, options_storage.only_assembler, log)
+    #support.check_single_reads_in_options(options, log)
     if not support.get_lib_ids_by_type(dataset_data, spades_logic.READS_TYPES_USED_IN_CONSTRUCTION):
         support.error('you should specify at least one unpaired, paired-end, or high-quality mate-pairs library!')
 
