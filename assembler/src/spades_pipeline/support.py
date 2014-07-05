@@ -519,6 +519,7 @@ def check_dataset_reads(dataset_data, only_assembler, log):
                   ', library type: ' + reads_library['type'] + ')!', log)
     if not len(all_files):
         error("You should specify at least one file with reads!", log)
+    check_files_duplication(all_files, log)
 
 
 def get_lib_ids_by_type(dataset_data, types):
