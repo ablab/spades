@@ -10,38 +10,162 @@
 #include "read.hpp"
 #include "include.hpp"
 
+//struct WeightedReadStorage{
+//	//id, read
+//	map<int, WeightedRead> data;
+//
+//};
+typedef vector<WeightedRead> WeightedReadStorage;
 
+class InterestingPositionProcessor {
+	string contig;
+	vector<int> interesting_positions;
+	vector<int> is_interesting;
+	vector<vector<size_t> > read_ids;
+	WeightedReadStorage wr_storage;
+//TODO:: init this consts with something more reasonable
+	const int anchor_gap = 100;
+	const int anchor_num = 1;
+//TODO: old formula 1 scores? RECONSIDER REASONABLE INIT
+
+	static const size_t MaxErrorCount = 6;
+	const int error_weight[MaxErrorCount] ={10, 6, 4, 3, 2, 1};
+	map<size_t, position_description> interesting_weights;
+
+
+public:
+	InterestingPositionProcessor(){
+	}
+	void set_contig(string ctg) {
+		contig = ctg;
+		size_t len = contig.length();
+		interesting_positions.resize(len);
+		is_interesting.resize(len);
+		read_ids.resize(len);
+	}
+	inline double get_error_weight(size_t i) {
+		if (i >= MaxErrorCount)
+			return 0;
+		else
+			return error_weight[i];
+	}
+	size_t FillInterestingPositions(vector<position_description> &charts){
+		set<int> tmp_pos;
+		for( size_t i = 0; i < contig.length(); i++) {
+			int sum_total = 0;
+			for (size_t j = 0; j < MAX_VARIANTS; j++) {
+//TODO: remove this condition
+				if (j != INSERTION && j != DELETION) {
+					sum_total += charts[i].votes[j];
+				}
+			}
+			int variants = 0;
+			for (size_t j = 0; j < MAX_VARIANTS; j++) {
+//TODO: reconsider this condition
+				if (j != INSERTION && j != DELETION && (charts[i].votes[j] > 0.1* sum_total) && (charts[i].votes[j] < 0.9* sum_total) && (sum_total > 20)) {
+					variants++;
+				}
+			}
+			if (variants > 1 || contig[i] == UNDEFINED){
+				INFO(i);
+				INFO(charts[i].str());
+				tmp_pos.insert((int) i);
+				for (int j = -anchor_num + 1; j <= anchor_num; j++) {
+					tmp_pos.insert((int) (i / anchor_gap + j) * anchor_gap);
+				}
+			}
+		}
+		for (auto iter = tmp_pos.begin(); iter != tmp_pos.end(); ++iter)
+			if (*iter >= 0 && *iter < (int) contig.length()) {
+				interesting_positions.push_back(*iter);
+				INFO("position " << *iter << " is interesting ");
+				INFO(charts[*iter].str());
+				is_interesting[*iter] = 1;
+			}
+		return interesting_positions.size();
+	}
+
+
+	void UpdateInterestingRead(PositionDescriptionMap &ps) {
+		vector<size_t> interesting_in_read;
+		for(auto iter = ps.begin(); iter != ps.end(); ++iter) {
+			if (is_interesting[iter->first]) {
+				interesting_in_read.push_back(iter->first);
+			}
+		}
+		if (interesting_in_read.size() >= 2) {
+			WeightedRead wr(interesting_in_read, ps);
+			size_t cur_id = wr_storage.size();
+			wr_storage.push_back(wr);
+			for (size_t i = 0; i < interesting_in_read.size(); i++) {
+				read_ids[interesting_in_read[i]].push_back(cur_id);
+			}
+		}
+	}
+
+	void UpdateInterestingPositions() {
+		for (int dir = 1;  dir >= -1; dir -=2 ) {
+			int start_pos;
+			dir == 1 ? start_pos = 0 : start_pos = (int) contig.length() -1;
+			int current_pos = start_pos;
+			for(;current_pos >=0 && current_pos < (int) contig.length();current_pos += dir){
+				if (is_interesting[current_pos]) {
+					for(size_t i = 0; i < MAX_VARIANTS; i++ )
+						interesting_weights[current_pos].votes[i] = 0;
+					for(size_t i = 0; i < read_ids[current_pos].size(); i++ ) {
+						size_t current_read_id = read_ids[current_pos][i];
+						size_t current_variant = wr_storage[current_read_id].positions[current_pos];
+						interesting_weights[current_pos].votes[current_variant] += error_weight[wr_storage[current_read_id].error_num];
+					}
+					size_t maxi = interesting_weights[current_pos].FoundOptimal(contig[current_pos]);
+					for(size_t i = 0; i < read_ids[current_pos].size(); i++ ) {
+						size_t current_read_id = read_ids[current_pos][i];
+						size_t current_variant = wr_storage[current_read_id].positions[current_pos];
+						if (current_variant != maxi) {
+							wr_storage[current_read_id].error_num ++;
+						}
+					}
+					maxi = interesting_weights[current_pos].FoundOptimal(contig[current_pos]);
+					if ((char)toupper(contig[current_pos]) != pos_to_var[maxi]) {
+						INFO("Interesting positions differ at position "<< current_pos);
+						INFO("Was " << (char)toupper(contig[current_pos]) << "new " << pos_to_var[maxi]);
+						INFO("weights" << interesting_weights[current_pos].str());
+					}
+				}
+			}
+		}
+	}
+
+};
 
 class ContigProcessor {
 	string sam_file;
 	string contig_file;
 	string contig_name;
 	string output_contig_file;
-
+//TODO: readlength?
 	string contig;
-	size_t contig_size;
-//	cerr << name;
+
 	MappedSamStream sm;
-//
-//	while (!sm.eof()) {
-//	SingleSamRead tmp;
-//	sm >>tmp;
-	//print tmp.
+
 	bam_header_t *bam_header;
 	vector<position_description> charts;
 	vector<int> interesting_positions;
-
+	vector<int> is_interesting;
+	vector<vector<int> > read_position_ids;
+	WeightedReadStorage wr_storage;
+	InterestingPositionProcessor ipp;
 public:
-	ContigProcessor(string sam_file, string contig_file):sam_file(sam_file), contig_file(contig_file),sm(sam_file){
+	ContigProcessor(string sam_file, string contig_file):sam_file(sam_file), contig_file(contig_file), sm(sam_file){
 		bam_header = sm.ReadHeader();
 		read_contig();
+		ipp.set_contig(contig);
 	}
 	void read_contig() {
 		io::FileReadStream contig_stream(contig_file);
 		io::SingleRead ctg;
 		contig_stream >> ctg;
 		contig = ctg.sequence().str();
-		contig_size = contig.length();
 		contig_name = ctg.name();
 		INFO("Processing contig of length " << contig.length());
 //extention is always "fasta"
@@ -62,25 +186,22 @@ public:
 			WARN("wrong string");
 			return;
 		}
-		tmp.CountPositions(all_positions, contig_size);
+		tmp.CountPositions(all_positions, contig.length());
 
 		for (auto iter = all_positions.begin(); iter != all_positions.end(); ++iter) {
-			if ((int)iter->first >=0 && iter->first < contig_size)
+			if ((int)iter->first >=0 && iter->first < contig.length()) {
 				charts[iter->first].update(iter->second);
+				if (iter->first == 1 && iter->second.votes[2] != 0) {
+					INFO("strange read");
+					INFO(tmp.GetName());
+				}
+			}
 		}
 	}
 //returns: number of changed nucleotides;
 	int UpdateOneBase(size_t i, stringstream &ss){
 		char old = (char) toupper(contig[i]);
-		size_t maxi = var_to_pos[(int)contig[i]];
-		int maxx = charts[i].votes[maxi];
-		for (size_t j = 0; j < MAX_VARIANTS; j++) {
-			//1.5 because insertion goes _after_ match
-			if (maxx < charts[i].votes[j] || (j == INSERTION && maxx * 2 < charts[i].votes[j] * 3)) {
-				maxx = charts[i].votes[j];
-				maxi = j;
-			}
-		}
+		size_t maxi = charts[i].FoundOptimal(contig[i]);
 		if (old != pos_to_var[maxi]) {
 			INFO("On position " << i << " changing " << old <<" to "<<pos_to_var[maxi]);
 			INFO(charts[i].str());
@@ -126,30 +247,6 @@ public:
 			return 0;
 		}
 	}
-	size_t count_interesting_positions(){
-		for( size_t i = 0; i < contig_size; i++) {
-			int sum_total = 0;
-			for (size_t j = 0; j < MAX_VARIANTS; j++) {
-//TODO: remove this condition
-				if (j != INSERTION && j != DELETION) {
-					sum_total += charts[i].votes[j];
-				}
-			}
-			int variants = 0;
-			for (size_t j = 0; j < MAX_VARIANTS; j++) {
-//TODO: reconsider this condition
-				if (j != INSERTION && j != DELETION && (charts[i].votes[j] > 0.1* sum_total) && (charts[i].votes[j] < 0.9* sum_total) && (sum_total > 20)) {
-					variants++;
-				}
-			}
-			if (variants > 1 || contig[i] == UNDEFINED){
-				INFO(i)
-				INFO(charts[i].str());
-				interesting_positions.push_back((int)i);
-			}
-		}
-		return interesting_positions.size();
-	}
 
 	void process_sam_file (){
 		while (!sm.eof()) {
@@ -159,11 +256,16 @@ public:
 			//	sm >>tmp;
 		}
 		sm.reset();
-		size_t interesting = count_interesting_positions();
+		size_t interesting = ipp.FillInterestingPositions(charts);
+		INFO("interesting size: " << interesting);
 		while (!sm.eof()) {
 			PairedSamRead tmp;
+			map<size_t, position_description> ps;
 			sm >>tmp;
+			tmp.CountPositions(ps, contig.length());
+			ipp.UpdateInterestingRead(ps);
 		}
+		ipp.UpdateInterestingPositions();
 		stringstream s_new_contig;
 		for (size_t i = 0; i < contig.length(); i ++) {
 			DEBUG(charts[i].str());
@@ -171,8 +273,8 @@ public:
 		}
 		io::osequencestream oss(output_contig_file);
 		oss << io::SingleRead(contig_name, s_new_contig.str());
-
 	}
+
 
 	//string seq, cigar; pair<size_t, size_t> borders;
 };

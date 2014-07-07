@@ -35,7 +35,23 @@ struct position_description {
 		}
 		return ss.str();
 	}
+	size_t FoundOptimal(char current){
+		size_t maxi = var_to_pos[(int) current];
+		int maxx = votes[maxi];
+		for (size_t j = 0; j < MAX_VARIANTS; j++) {
+			//1.5 because insertion goes _after_ match
+			if (maxx < votes[j] || (j == INSERTION && maxx * 2 <votes[j] * 3)) {
+				maxx = votes[j];
+				maxi = j;
+			}
+		}
+		return maxi;
+	}
+
 };
+
+typedef map <size_t, position_description> PositionDescriptionMap;
+
 struct SingleSamRead{
 	bam1_t *data_;
 
@@ -48,7 +64,7 @@ struct SingleSamRead{
 	int get_contig_id(){
 		return data_->core.tid;
 	}
-	void CountPositions(map <size_t, position_description> &ps, size_t contig_size){
+	void CountPositions(map <size_t, position_description> &ps, size_t contig_length){
 		if (get_contig_id() < 0)
 			return;
 	    int pos = data_->core.pos;
@@ -76,7 +92,7 @@ struct SingleSamRead{
 //TODO: reconsider this condition
 //It's about bad aligned reads, but whether it is necessary?
 	    double read_len_double = (double) l_read;
-	    if ((aligned_length < min(read_len_double* 0.4, 40.0)) && (position > read_len_double/ 2) && (contig_size  > read_len_double/ 2 + position) ) {
+	    if ((aligned_length < min(read_len_double* 0.4, 40.0)) && (position > read_len_double/ 2) && (contig_length  > read_len_double/ 2 + (double) position) ) {
 	        return ;
 	    }
 	    int state_pos = 0;
@@ -86,6 +102,10 @@ struct SingleSamRead{
 	    string insertion_string = "";
 
 		auto seq = bam1_seq(data_);
+		if (GetName() == "M00141:217:000000000-A55DC:1:1108:15665:7837") {
+			INFO("position of selected " << position);
+			INFO (bam_cigar_opchr(cigar[state_pos]));
+		}
 	    for (size_t i = 0; i < l_read; i++) {
 	    	DEBUG(i << " " << position << " " << skipped);
 	        if (shift +  bam_cigar_oplen(cigar[state_pos]) <= i){
@@ -168,7 +188,7 @@ struct SingleSamRead{
 		return res;
 	}
 };
-struct PairedSamRead{
+struct PairedSamRead {
 	SingleSamRead r1; SingleSamRead r2;
 	void pair(SingleSamRead &a1, SingleSamRead &a2) {
 		r1 = a1; r2 = a2;
@@ -178,8 +198,26 @@ struct PairedSamRead{
 		r1.CountPositions(ps, contig_length);
 		map <size_t, position_description> tmp;
 		r2.CountPositions(tmp, contig_length);
-		//overlaps.. multimap?
+		//TODO: overlaps.. multimap? Look on qual?
 		ps.insert( tmp.begin(), tmp.end());
+	}
+};
+
+struct WeightedRead {
+	map<size_t, size_t> positions;
+	int error_num;
+	double weight;
+	WeightedRead(vector<size_t> &int_pos, PositionDescriptionMap &ps){
+		for (size_t i = 0; i < int_pos.size(); i++ ) {
+			for (size_t j = 0; j < MAX_VARIANTS; j++) {
+				if (ps[int_pos[i]].votes[j] != 0) {
+					positions[int_pos[i]] = j;
+					break;
+				}
+
+			}
+		}
+		error_num = 0;
 	}
 };
 

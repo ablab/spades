@@ -408,8 +408,7 @@ def run_bwa(log):
     tmp2_sai_filename = os.path.join(config["work_dir"], "tmp2.sai")
     tmp_sam_filename = os.path.join(config["work_dir"], "tmp.sam")
     isize_txt_filename = os.path.join(config["work_dir"], "isize.txt")
-
-    b([config["bwa"], "index", "-a", "is", config["contigs"], "2"], log)
+    universal_sys_call([config["bwa"], "index", "-a", "is", config["contigs"], "2"], log)
     universal_sys_call([config["bwa"], "aln", config["contigs"], config["reads1"], "-t",
                        str(config["t"]), "-O", "7", "-E", "2", "-k", "3", "-n", "0.08", "-q", "15"], log, tmp1_sai_filename)
     universal_sys_call([config["bwa"], "aln", config["contigs"], config["reads2"], "-t",

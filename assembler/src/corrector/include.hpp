@@ -22,7 +22,6 @@
 #define INSERTION 6
 #define UNDEFINED 4
 
-
 //const map<char, int> nt_to_pos = {{'a', 0}, {'A', 0}, {'c', 1}, {'C', 1}, {'g', 2}, {'G', 2}, {'t', 3}, {'T', 3}, {'D', 4}, {'I', 5}};
 //const map< char, char> pos_to_nt = {{0, 'A'},  {1, 'C'},  {2, 'G'}, {3, 'T'}, {4, 'N'} {5, 'D'}, {6, 'I'}};
 const char pos_to_var[MAX_VARIANTS]= {'A','C','G','T','N','D','I'};
