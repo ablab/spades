@@ -67,6 +67,8 @@ struct SingleSamRead{
 	void CountPositions(map <size_t, position_description> &ps, size_t contig_length){
 		if (get_contig_id() < 0)
 			return;
+		if (data_->core.qual == 0)
+			return;
 	    int pos = data_->core.pos;
 	    if (pos < 0) {
 	    	WARN("Negative position " << pos << " found on read " << GetName() <<", skipping");
@@ -102,10 +104,6 @@ struct SingleSamRead{
 	    string insertion_string = "";
 
 		auto seq = bam1_seq(data_);
-		if (GetName() == "M00141:217:000000000-A55DC:1:1108:15665:7837") {
-			INFO("position of selected " << position);
-			INFO (bam_cigar_opchr(cigar[state_pos]));
-		}
 	    for (size_t i = 0; i < l_read; i++) {
 	    	DEBUG(i << " " << position << " " << skipped);
 	        if (shift +  bam_cigar_oplen(cigar[state_pos]) <= i){
@@ -123,7 +121,7 @@ struct SingleSamRead{
 
 	        	VERIFY(i >= deleted);
 	        	if (i + position < skipped) {
-					INFO(i << " " << position <<" "<< skipped);
+					WARN(i << " " << position <<" "<< skipped);
 					INFO(GetName());
 	        	}
 	        	VERIFY (i + position >= skipped);
@@ -152,6 +150,16 @@ struct SingleSamRead{
 			ps[ind].insertions[insertion_string] += 1;
 			insertion_string = "";
 		}
+		if (ps.find(1) != ps.end() && ps[1].votes[2] != 0) {
+			INFO("strange read");
+			INFO(GetName());
+			INFO(GetSeq());
+			INFO(GetCigar());
+
+			INFO("position of selected " << position);
+			INFO ("first char " << bam_cigar_opchr(cigar[0]));
+		}
+
 	}
 
 	string GetCigar() {
@@ -159,8 +167,9 @@ struct SingleSamRead{
 		string res;
 		res.reserve(data_->core.n_cigar);
 		for (size_t k = 0; k < data_->core.n_cigar; ++k) {
-			res += bam_cigar_opchr(cigar[k]);
 			res += std::to_string( bam_cigar_oplen(cigar[k]));
+			res += bam_cigar_opchr(cigar[k]);
+
 		}
 		return res;
 	}

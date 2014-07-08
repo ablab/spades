@@ -66,17 +66,21 @@ public:
 		for (auto iter = all_positions.begin(); iter != all_positions.end(); ++iter) {
 			if ((int)iter->first >=0 && iter->first < contig.length()) {
 				charts[iter->first].update(iter->second);
-				if (iter->first == 1 && iter->second.votes[2] != 0) {
-					INFO("strange read");
-					INFO(tmp.GetName());
-				}
 			}
 		}
 	}
 //returns: number of changed nucleotides;
-	int UpdateOneBase(size_t i, stringstream &ss){
+	int UpdateOneBase(size_t i, stringstream &ss, map<size_t, position_description> &interesting_positions){
 		char old = (char) toupper(contig[i]);
 		size_t maxi = charts[i].FoundOptimal(contig[i]);
+		if (interesting_positions.find(i) != interesting_positions.end()) {
+			size_t maxj = interesting_positions[i].FoundOptimal(contig[i]);
+			if (maxj != maxi) {
+				INFO("Interesting positions differ with majority!");
+				INFO("On position " << i << "  old: " << old <<" majority: "<<pos_to_var[maxi] << "interesting: " << pos_to_var[maxj]);
+				maxi = maxj;
+			}
+		}
 		if (old != pos_to_var[maxi]) {
 			INFO("On position " << i << " changing " << old <<" to "<<pos_to_var[maxi]);
 			INFO(charts[i].str());
@@ -141,10 +145,11 @@ public:
 			ipp.UpdateInterestingRead(ps);
 		}
 		ipp.UpdateInterestingPositions();
+		map<size_t, position_description> interesting_positions = ipp.get_weights();
 		stringstream s_new_contig;
 		for (size_t i = 0; i < contig.length(); i ++) {
 			DEBUG(charts[i].str());
-			UpdateOneBase(i, s_new_contig);
+			UpdateOneBase(i, s_new_contig, interesting_positions);
 		}
 		io::osequencestream oss(output_contig_file);
 		oss << io::SingleRead(contig_name, s_new_contig.str());

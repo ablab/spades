@@ -31,7 +31,11 @@ public:
 		is_interesting.resize(len);
 		read_ids.resize(len);
 	}
-	inline double get_error_weight(size_t i) {
+	map<size_t, position_description> get_weights() {
+		return interesting_weights;
+	}
+
+	inline int get_error_weight(size_t i) {
 		if (i >= MaxErrorCount)
 			return 0;
 		else
@@ -66,8 +70,8 @@ public:
 		for (auto iter = tmp_pos.begin(); iter != tmp_pos.end(); ++iter)
 			if (*iter >= 0 && *iter < (int) contig.length()) {
 				interesting_positions.push_back(*iter);
-				INFO("position " << *iter << " is interesting ");
-				INFO(charts[*iter].str());
+				DEBUG("position " << *iter << " is interesting ");
+				DEBUG(charts[*iter].str());
 				is_interesting[*iter] = 1;
 			}
 		return interesting_positions.size();
@@ -98,12 +102,12 @@ public:
 			int current_pos = start_pos;
 			for(;current_pos >=0 && current_pos < (int) contig.length();current_pos += dir){
 				if (is_interesting[current_pos]) {
-					for(size_t i = 0; i < MAX_VARIANTS; i++ )
-						interesting_weights[current_pos].votes[i] = 0;
+					//for(size_t i = 0; i < MAX_VARIANTS; i++ )
+						//interesting_weights[current_pos].votes[i] = 0;
 					for(size_t i = 0; i < read_ids[current_pos].size(); i++ ) {
 						size_t current_read_id = read_ids[current_pos][i];
 						size_t current_variant = wr_storage[current_read_id].positions[current_pos];
-						interesting_weights[current_pos].votes[current_variant] += error_weight[wr_storage[current_read_id].error_num];
+						interesting_weights[current_pos].votes[current_variant] += get_error_weight(wr_storage[current_read_id].error_num);
 					}
 					size_t maxi = interesting_weights[current_pos].FoundOptimal(contig[current_pos]);
 					for(size_t i = 0; i < read_ids[current_pos].size(); i++ ) {
@@ -114,13 +118,17 @@ public:
 						}
 					}
 					maxi = interesting_weights[current_pos].FoundOptimal(contig[current_pos]);
-					if ((char)toupper(contig[current_pos]) != pos_to_var[maxi]) {
+					/*if ((char)toupper(contig[current_pos]) != pos_to_var[maxi]) {
 						INFO("Interesting positions differ at position "<< current_pos);
 						INFO("Was " << (char)toupper(contig[current_pos]) << "new " << pos_to_var[maxi]);
 						INFO("weights" << interesting_weights[current_pos].str());
-					}
+					}*/
 				}
 			}
+			INFO("clearing the error weights...");
+			for(size_t i = 0; i < wr_storage.size(); i++)
+				wr_storage[i].error_num = 0;
+			INFO("reversing the order...");
 		}
 	}
 

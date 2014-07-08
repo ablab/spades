@@ -553,6 +553,7 @@ def main(args, joblib_path, log=None):
         sys.exit(0)
     addsitedir(joblib_path)
 
+    os.system ("make -C build/release/corrector/ install=local")
     init_config()
     parse_profile(args, log)
 
@@ -656,5 +657,4 @@ def main(args, joblib_path, log=None):
 if __name__ == '__main__':
     joblib_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../ext/src/python_libs')
     main(sys.argv[1:], joblib_path)
-
     
