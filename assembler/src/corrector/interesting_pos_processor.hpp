@@ -7,7 +7,6 @@ typedef vector<WeightedRead> WeightedReadStorage;
 
 class InterestingPositionProcessor {
 	string contig;
-	vector<int> interesting_positions;
 	vector<int> is_interesting;
 	vector<vector<size_t> > read_ids;
 	WeightedReadStorage wr_storage;
@@ -27,7 +26,6 @@ public:
 	void set_contig(string ctg) {
 		contig = ctg;
 		size_t len = contig.length();
-		interesting_positions.resize(len);
 		is_interesting.resize(len);
 		read_ids.resize(len);
 	}
@@ -42,6 +40,7 @@ public:
 			return error_weight[i];
 	}
 	size_t FillInterestingPositions(vector<position_description> &charts){
+		size_t count = 0;
 		set<int> tmp_pos;
 		for( size_t i = 0; i < contig.length(); i++) {
 			int sum_total = 0;
@@ -59,8 +58,8 @@ public:
 				}
 			}
 			if (variants > 1 || contig[i] == UNDEFINED){
-				INFO(i);
-				INFO(charts[i].str());
+				DEBUG(i);
+				DEBUG(charts[i].str());
 				tmp_pos.insert((int) i);
 				for (int j = -anchor_num + 1; j <= anchor_num; j++) {
 					tmp_pos.insert((int) (i / anchor_gap + j) * anchor_gap);
@@ -69,12 +68,12 @@ public:
 		}
 		for (auto iter = tmp_pos.begin(); iter != tmp_pos.end(); ++iter)
 			if (*iter >= 0 && *iter < (int) contig.length()) {
-				interesting_positions.push_back(*iter);
 				DEBUG("position " << *iter << " is interesting ");
 				DEBUG(charts[*iter].str());
 				is_interesting[*iter] = 1;
+				count++;
 			}
-		return interesting_positions.size();
+		return count;
 	}
 
 
@@ -118,11 +117,11 @@ public:
 						}
 					}
 					maxi = interesting_weights[current_pos].FoundOptimal(contig[current_pos]);
-					/*if ((char)toupper(contig[current_pos]) != pos_to_var[maxi]) {
+					if ((char)toupper(contig[current_pos]) != pos_to_var[maxi]) {
 						INFO("Interesting positions differ at position "<< current_pos);
 						INFO("Was " << (char)toupper(contig[current_pos]) << "new " << pos_to_var[maxi]);
 						INFO("weights" << interesting_weights[current_pos].str());
-					}*/
+					}
 				}
 			}
 			INFO("clearing the error weights...");
