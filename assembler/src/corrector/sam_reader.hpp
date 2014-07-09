@@ -79,7 +79,7 @@ class MappedSamStream: public io::ReadStream<SingleSamRead> {
 //        bam1_t *new_seq = new  bam1_t(*seq_);
 //		data_ = *new_seq;
         read.set_data(seq_);
-        INFO(read.GetSeq());
+        //INFO(read.GetSeq());
         int tmp = samread(reader_, seq_);
         eof_ = (0 >= tmp);
         return *this;
@@ -88,14 +88,11 @@ class MappedSamStream: public io::ReadStream<SingleSamRead> {
 
     	SingleSamRead r1;
     	MappedSamStream::operator >> (r1);
-    	INFO(r1.GetSeq());
-    	INFO(&r1.data_);
     	SingleSamRead r2;
     	MappedSamStream::operator >> (r2);
-    	INFO(&r1.data_);
-    	INFO(&r2.data_);
     	INFO(r1.GetSeq());
     	INFO(r2.GetSeq());
+    	INFO(r1.GetName());
     	VERIFY (r1.GetName() == r2.GetName());
     	read.pair(r1,r2);
         return *this;
