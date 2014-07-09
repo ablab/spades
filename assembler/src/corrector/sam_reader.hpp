@@ -76,7 +76,8 @@ class MappedSamStream: public io::ReadStream<SingleSamRead> {
 //        cerr << " qual: " << GetQual(seq_);
 //        cerr << '\n';
 //        unsigned char* ls = seq_->data;
-        read.data_ = new bam1_t(*seq_);
+        bam1_t new_seq = *seq_;
+        read.data_ = &new_seq;
         int tmp = samread(reader_, seq_);
         eof_ = (0 >= tmp);
         return *this;
