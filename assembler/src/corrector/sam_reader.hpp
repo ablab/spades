@@ -76,7 +76,7 @@ class MappedSamStream: public io::ReadStream<SingleSamRead> {
 //        cerr << " qual: " << GetQual(seq_);
 //        cerr << '\n';
 //        unsigned char* ls = seq_->data;
-        read.data_ = seq_;
+        read.data_ = new bam1_t(*seq_);
         int tmp = samread(reader_, seq_);
         eof_ = (0 >= tmp);
         return *this;
@@ -87,7 +87,6 @@ class MappedSamStream: public io::ReadStream<SingleSamRead> {
     	MappedSamStream::operator >> (r1);
     	SingleSamRead r2;
     	MappedSamStream::operator >> (r2);
-
     	VERIFY (r1.GetName() == r2.GetName());
     	read.pair(r1,r2);
         return *this;
