@@ -53,23 +53,29 @@ struct position_description {
 typedef map <size_t, position_description> PositionDescriptionMap;
 
 struct SingleSamRead{
-	bam1_t *data_;
+	bam1_t data_;
 
 	size_t DataLen() {
-		return data_->core.l_qseq;
+		return data_.core.l_qseq;
 	}
 	size_t CigarLen() {
-		return data_->core.n_cigar;
+		return data_.core.n_cigar;
 	}
 	int get_contig_id(){
-		return data_->core.tid;
+		return data_.core.tid;
+	}
+	void set_data(bam1_t *seq_) {
+		bam1_t *new_seq = bam_dup1(seq_);
+		//bam_copy1 (new_seq, seq)
+		//new_seq->data = new uint8_t (seq_data);
+		data_ = *new_seq;
 	}
 	void CountPositions(map <size_t, position_description> &ps, size_t contig_length){
 		if (get_contig_id() < 0)
 			return;
-		if (data_->core.qual == 0)
+		if (data_.core.qual == 0)
 			return;
-	    int pos = data_->core.pos;
+	    int pos = data_.core.pos;
 	    if (pos < 0) {
 	    	WARN("Negative position " << pos << " found on read " << GetName() <<", skipping");
 
@@ -82,7 +88,7 @@ struct SingleSamRead{
 
 	    set<char> to_skip = {'S', 'I', 'H'};
 	    int  aligned_length = 0;
-	    uint32_t *cigar = bam1_cigar(data_);
+	    uint32_t *cigar = bam1_cigar(&data_);
 	   //* in cigar;
 	    if (l_cigar == 0)
 	    	return;
@@ -103,7 +109,7 @@ struct SingleSamRead{
 	    size_t deleted = 0;
 	    string insertion_string = "";
 
-		auto seq = bam1_seq(data_);
+		auto seq = bam1_seq(&data_);
 	    for (size_t i = 0; i < l_read; i++) {
 	    	DEBUG(i << " " << position << " " << skipped);
 	        if (shift +  bam_cigar_oplen(cigar[state_pos]) <= i){
@@ -163,10 +169,10 @@ struct SingleSamRead{
 	}
 
 	string GetCigar() {
-		uint32_t *cigar = bam1_cigar(data_);
+		uint32_t *cigar = bam1_cigar(&data_);
 		string res;
-		res.reserve(data_->core.n_cigar);
-		for (size_t k = 0; k < data_->core.n_cigar; ++k) {
+		res.reserve(data_.core.n_cigar);
+		for (size_t k = 0; k < data_.core.n_cigar; ++k) {
 			res += std::to_string( bam_cigar_oplen(cigar[k]));
 			res += bam_cigar_opchr(cigar[k]);
 
@@ -175,8 +181,8 @@ struct SingleSamRead{
 	}
 
 	string GetQual() {
-		uint8_t *qual = bam1_qual(data_);
-		for (int i = 0; i < data_->core.l_qseq; ++i) {
+		uint8_t *qual = bam1_qual(&data_);
+		for (int i = 0; i < data_.core.l_qseq; ++i) {
 			qual[i] = uint8_t (qual[i] + 33);
 		}
 		string res(reinterpret_cast<const char*>(qual));
@@ -184,14 +190,14 @@ struct SingleSamRead{
 	}
 
 	string GetName(){
-		string res(bam1_qname(data_));
+		string res(bam1_qname(&data_));
 		return res;
 	}
 
 	string GetSeq() {
 		string res = "";
-		auto b = bam1_seq(data_);
-		for (int k = 0; k < data_->core.l_qseq; ++k) {
+		auto b = bam1_seq(&data_);
+		for (int k = 0; k < data_.core.l_qseq; ++k) {
 			res += bam_nt16_rev_table[bam1_seqi(b, k)];
 		}
 		return res;

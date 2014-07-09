@@ -76,8 +76,10 @@ class MappedSamStream: public io::ReadStream<SingleSamRead> {
 //        cerr << " qual: " << GetQual(seq_);
 //        cerr << '\n';
 //        unsigned char* ls = seq_->data;
-        bam1_t new_seq = *seq_;
-        read.data_ = &new_seq;
+//        bam1_t *new_seq = new  bam1_t(*seq_);
+//		data_ = *new_seq;
+        read.set_data(seq_);
+        INFO(read.GetSeq());
         int tmp = samread(reader_, seq_);
         eof_ = (0 >= tmp);
         return *this;
@@ -86,8 +88,14 @@ class MappedSamStream: public io::ReadStream<SingleSamRead> {
 
     	SingleSamRead r1;
     	MappedSamStream::operator >> (r1);
+    	INFO(r1.GetSeq());
+    	INFO(&r1.data_);
     	SingleSamRead r2;
     	MappedSamStream::operator >> (r2);
+    	INFO(&r1.data_);
+    	INFO(&r2.data_);
+    	INFO(r1.GetSeq());
+    	INFO(r2.GetSeq());
     	VERIFY (r1.GetName() == r2.GetName());
     	read.pair(r1,r2);
         return *this;
@@ -125,12 +133,14 @@ class MappedSamStream: public io::ReadStream<SingleSamRead> {
 
 
     void open() {
+
         if ((reader_ = samopen(filename_.c_str(), "r", NULL)) == NULL)
 		{
 		   cerr << "Fail to open SAM/BAM file " << filename_ << endl;
 		 //  exit(-1);
 		}
         is_open_ = true;
+    	//seq_ = new bam1_t;
         int tmp = samread(reader_, seq_);
         eof_ = (0 >= tmp);
 
