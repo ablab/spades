@@ -142,6 +142,7 @@ public:
 			map<size_t, position_description> ps;
 			sm >>tmp;
 			tmp.CountPositions(ps, contig.length());
+			TRACE("updating interesting read..");
 			ipp.UpdateInterestingRead(ps);
 		}
 		ipp.UpdateInterestingPositions();

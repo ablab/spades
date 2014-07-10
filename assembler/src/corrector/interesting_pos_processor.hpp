@@ -39,6 +39,11 @@ public:
 		else
 			return error_weight[i];
 	}
+	inline bool IsInteresting(size_t position) {
+		if (position >= contig.length())
+			return 0;
+		else return is_interesting[position];
+	}
 	size_t FillInterestingPositions(vector<position_description> &charts){
 		size_t count = 0;
 		set<int> tmp_pos;
@@ -80,7 +85,7 @@ public:
 	void UpdateInterestingRead(PositionDescriptionMap &ps) {
 		vector<size_t> interesting_in_read;
 		for(auto iter = ps.begin(); iter != ps.end(); ++iter) {
-			if (is_interesting[iter->first]) {
+			if (IsInteresting(iter->first)) {
 				interesting_in_read.push_back(iter->first);
 			}
 		}
@@ -89,6 +94,7 @@ public:
 			size_t cur_id = wr_storage.size();
 			wr_storage.push_back(wr);
 			for (size_t i = 0; i < interesting_in_read.size(); i++) {
+				TRACE(interesting_in_read[i] <<" "<< contig.length());
 				read_ids[interesting_in_read[i]].push_back(cur_id);
 			}
 		}
@@ -124,10 +130,12 @@ public:
 					}
 				}
 			}
-			INFO("clearing the error weights...");
+			if (dir == 1)
+				INFO("reversing the order...");
+
 			for(size_t i = 0; i < wr_storage.size(); i++)
 				wr_storage[i].error_num = 0;
-			INFO("reversing the order...");
+
 		}
 	}
 

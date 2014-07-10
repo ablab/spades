@@ -79,28 +79,30 @@ class MappedSamStream: public io::ReadStream<SingleSamRead> {
 //        bam1_t *new_seq = new  bam1_t(*seq_);
 //		data_ = *new_seq;
         read.set_data(seq_);
-        //INFO(read.GetSeq());
+        //TRACE(read.GetSeq());
         int tmp = samread(reader_, seq_);
         eof_ = (0 >= tmp);
         return *this;
     }
     MappedSamStream& operator >> (PairedSamRead& read){
-
+    	TRACE("starting process paired read");
     	SingleSamRead r1;
     	MappedSamStream::operator >> (r1);
     	SingleSamRead r2;
     	MappedSamStream::operator >> (r2);
-    	INFO(r1.GetSeq());
-    	INFO(r2.GetSeq());
-    	INFO(r1.GetName());
+    	TRACE(r1.GetSeq());
+    	TRACE(r2.GetSeq());
+    	TRACE(r1.GetName());
     	VERIFY (r1.GetName() == r2.GetName());
     	read.pair(r1,r2);
+    	TRACE("read read");
         return *this;
+
 
     }
     bam_header_t* ReadHeader(){
-//    	INFO(reader_->header->n_targets << " contigs in header ");
-//    	INFO(reader_->header->target_name[0]);
+//    	TRACE(reader_->header->n_targets << " contigs in header ");
+//    	TRACE(reader_->header->target_name[0]);
     	return reader_->header;
     }
 

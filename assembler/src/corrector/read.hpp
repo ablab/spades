@@ -71,10 +71,14 @@ struct SingleSamRead{
 		data_ = *new_seq;
 	}
 	void CountPositions(map <size_t, position_description> &ps, size_t contig_length){
-		if (get_contig_id() < 0)
+		if (get_contig_id() < 0) {
+			DEBUG("not this contig");
 			return;
-		if (data_.core.qual == 0)
+		}
+		if (data_.core.qual == 0) {
+			DEBUG("zero qual");
 			return;
+		}
 	    int pos = data_.core.pos;
 	    if (pos < 0) {
 	    	WARN("Negative position " << pos << " found on read " << GetName() <<", skipping");
@@ -156,7 +160,7 @@ struct SingleSamRead{
 			ps[ind].insertions[insertion_string] += 1;
 			insertion_string = "";
 		}
-		if (ps.find(1) != ps.end() && ps[1].votes[2] != 0) {
+		if (false) {
 			INFO("strange read");
 			INFO(GetName());
 			INFO(GetSeq());
@@ -210,11 +214,15 @@ struct PairedSamRead {
 	}
 
 	void CountPositions(map <size_t, position_description> &ps, size_t contig_length) {
+
+		TRACE("starting pairing");
 		r1.CountPositions(ps, contig_length);
 		map <size_t, position_description> tmp;
 		r2.CountPositions(tmp, contig_length);
 		//TODO: overlaps.. multimap? Look on qual?
+		TRACE("counted, uniting maps of " << tmp.size () << " and " << ps.size());
 		ps.insert( tmp.begin(), tmp.end());
+		TRACE("united");
 	}
 };
 
