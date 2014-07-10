@@ -12,12 +12,15 @@ class InterestingPositionProcessor {
 	WeightedReadStorage wr_storage;
 //TODO:: init this consts with something more reasonable
 	const int anchor_gap = 100;
-	const int anchor_num = 1;
+	const int anchor_num = 6;
 //TODO: old formula 1 scores? RECONSIDER REASONABLE INIT
 
 	static const size_t MaxErrorCount = 6;
-	const int error_weight[MaxErrorCount] ={10, 6, 4, 3, 2, 1};
+	//const int error_weight[MaxErrorCount] ={374864, 3853, 1171, 841, 66, 27};
+	//const int error_weight[MaxErrorCount] ={100000, 1000, 1000, 1000, 1, 1};
+	const int error_weight[MaxErrorCount] ={100, 10, 8, 5, 2, 1};
 	map<size_t, position_description> interesting_weights;
+	map<size_t, position_description> changed_weights;
 
 
 public:
@@ -30,7 +33,7 @@ public:
 		read_ids.resize(len);
 	}
 	map<size_t, position_description> get_weights() {
-		return interesting_weights;
+		return changed_weights;
 	}
 
 	inline int get_error_weight(size_t i) {
@@ -64,7 +67,7 @@ public:
 			}
 			if (variants > 1 || contig[i] == UNDEFINED){
 				DEBUG(i);
-				DEBUG(charts[i].str());
+				INFO("Adding interesting position: " << i<< " " << charts[i].str());
 				tmp_pos.insert((int) i);
 				for (int j = -anchor_num + 1; j <= anchor_num; j++) {
 					tmp_pos.insert((int) (i / anchor_gap + j) * anchor_gap);
@@ -101,6 +104,7 @@ public:
 	}
 
 	void UpdateInterestingPositions() {
+		set<int > debug_pos ={}; //{1884, 1826, 1803, 1768};
 		for (int dir = 1;  dir >= -1; dir -=2 ) {
 			int start_pos;
 			dir == 1 ? start_pos = 0 : start_pos = (int) contig.length() -1;
@@ -127,6 +131,12 @@ public:
 						INFO("Interesting positions differ at position "<< current_pos);
 						INFO("Was " << (char)toupper(contig[current_pos]) << "new " << pos_to_var[maxi]);
 						INFO("weights" << interesting_weights[current_pos].str());
+						changed_weights[current_pos] = interesting_weights[current_pos];
+					}	//for backward pass
+						interesting_weights[current_pos].clear();
+
+					if (debug_pos.find(current_pos + 1) != debug_pos.end()) {
+						INFO("debugging position "<< current_pos << " weights " << interesting_weights[current_pos].str());
 					}
 				}
 			}

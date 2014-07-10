@@ -47,7 +47,12 @@ struct position_description {
 		}
 		return maxi;
 	}
-
+	void clear() {
+		for (size_t i = 0; i < MAX_VARIANTS; i++) {
+			votes[i] = 0;
+			insertions.clear();
+		}
+	}
 };
 
 typedef map <size_t, position_description> PositionDescriptionMap;
@@ -70,20 +75,22 @@ struct SingleSamRead{
 		//new_seq->data = new uint8_t (seq_data);
 		data_ = *new_seq;
 	}
-	void CountPositions(map <size_t, position_description> &ps, size_t contig_length){
+	int CountPositions(map <size_t, position_description> &ps, string &contig){
+		size_t contig_length = contig.length();
+		int error_num = 0;
 		if (get_contig_id() < 0) {
 			DEBUG("not this contig");
-			return;
+			return -1;
 		}
 		if (data_.core.qual == 0) {
 			DEBUG("zero qual");
-			return;
+			return -1;
 		}
 	    int pos = data_.core.pos;
 	    if (pos < 0) {
 	    	WARN("Negative position " << pos << " found on read " << GetName() <<", skipping");
 
-	    	return;
+	    	return -1;
 	    }
 	    size_t position = size_t(pos);
 	    int mate = 1; // bonus for mate mapped can be here;
@@ -95,9 +102,9 @@ struct SingleSamRead{
 	    uint32_t *cigar = bam1_cigar(&data_);
 	   //* in cigar;
 	    if (l_cigar == 0)
-	    	return;
+	    	return -1;
 	    if (bam_cigar_opchr(cigar[0]) =='*')
-	    	return ;
+	    	return -1 ;
 	    for (size_t i = 0; i <l_cigar; i++)
             if (bam_cigar_opchr(cigar[i]) =='M')
                 aligned_length +=  bam_cigar_oplen(cigar[i]);
@@ -105,7 +112,7 @@ struct SingleSamRead{
 //It's about bad aligned reads, but whether it is necessary?
 	    double read_len_double = (double) l_read;
 	    if ((aligned_length < min(read_len_double* 0.4, 40.0)) && (position > read_len_double/ 2) && (contig_length  > read_len_double/ 2 + (double) position) ) {
-	        return ;
+	        return -1;
 	    }
 	    int state_pos = 0;
 	    int shift = 0;
@@ -139,6 +146,7 @@ struct SingleSamRead{
 	        	size_t ind = i + position - skipped;
 	        	int cur = var_to_pos[(int)bam_nt16_rev_table[bam1_seqi(seq, i - deleted)]];
 	        	ps[ind].votes[cur] = ps[ind].votes[cur] +  mate;//t_mate
+	        	if (contig[ind] != pos_to_var[cur]) error_num ++;
 	        } else {
 	            if (to_skip.find(cur_state) != to_skip.end()){
 	                if (cur_state == 'I'){
@@ -146,11 +154,13 @@ struct SingleSamRead{
 	                        ps[i + position - skipped - 1].votes[INSERTION] += mate;
 	                    }
 	                    insertion_string += bam_nt16_rev_table[bam1_seqi(seq, i - deleted)];
+	                    error_num ++;
 	                }
 	                skipped += 1;
 	           } else if (bam_cigar_opchr(cigar[state_pos]) == 'D') {
 	                ps[i + position - skipped].votes[DELETION] += mate;
 	                deleted += 1;
+	                error_num ++;
 	           }
 	        }
 		}
@@ -169,7 +179,7 @@ struct SingleSamRead{
 			INFO("position of selected " << position);
 			INFO ("first char " << bam_cigar_opchr(cigar[0]));
 		}
-
+		return error_num;
 	}
 
 	string GetCigar() {
@@ -213,16 +223,22 @@ struct PairedSamRead {
 		r1 = a1; r2 = a2;
 	}
 
-	void CountPositions(map <size_t, position_description> &ps, size_t contig_length) {
+	int CountPositions(map <size_t, position_description> &ps, string &contig) {
 
 		TRACE("starting pairing");
-		r1.CountPositions(ps, contig_length);
+		int t1 = r1.CountPositions(ps, contig);
 		map <size_t, position_description> tmp;
-		r2.CountPositions(tmp, contig_length);
+		int t2 = r2.CountPositions(tmp, contig);
 		//TODO: overlaps.. multimap? Look on qual?
+		if (ps.size() ==0 || tmp.size() == 0) {
+			//We do not need paired reads which are not really paired
+			ps.clear();
+			return -1 ;
+		}
 		TRACE("counted, uniting maps of " << tmp.size () << " and " << ps.size());
 		ps.insert( tmp.begin(), tmp.end());
 		TRACE("united");
+		return t1 + t2;
 	}
 };
 

@@ -30,6 +30,7 @@ class ContigProcessor {
 	bam_header_t *bam_header;
 	vector<position_description> charts;
 	InterestingPositionProcessor ipp;
+	vector<int> error_counts;
 public:
 	ContigProcessor(string sam_file, string contig_file):sam_file(sam_file), contig_file(contig_file), sm(sam_file){
 		bam_header = sm.ReadHeader();
@@ -61,11 +62,14 @@ public:
 			WARN("wrong string");
 			return;
 		}
-		tmp.CountPositions(all_positions, contig.length());
-
+		int error_num = tmp.CountPositions(all_positions, contig);
+		if (error_num > 19) error_counts[20] ++;
+		else if (error_num >=0) error_counts[error_num] ++;
 		for (auto iter = all_positions.begin(); iter != all_positions.end(); ++iter) {
 			if ((int)iter->first >=0 && iter->first < contig.length()) {
 				charts[iter->first].update(iter->second);
+
+
 			}
 		}
 	}
@@ -128,12 +132,15 @@ public:
 	}
 
 	void process_sam_file (){
+		error_counts.resize(20);
 		while (!sm.eof()) {
 			SingleSamRead tmp;
 			sm >> tmp;
 			UpdateOneRead(tmp);
 			//	sm >>tmp;
 		}
+		for(int i = 0; i < 20; i ++)
+			cout << error_counts[i] << " ";
 		sm.reset();
 		size_t interesting = ipp.FillInterestingPositions(charts);
 		INFO("interesting size: " << interesting);
@@ -141,7 +148,7 @@ public:
 			PairedSamRead tmp;
 			map<size_t, position_description> ps;
 			sm >>tmp;
-			tmp.CountPositions(ps, contig.length());
+			tmp.CountPositions(ps, contig);
 			TRACE("updating interesting read..");
 			ipp.UpdateInterestingRead(ps);
 		}
