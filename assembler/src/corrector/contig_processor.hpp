@@ -153,6 +153,7 @@ public:
 			UpdateOneBase(i, s_new_contig, interesting_positions);
 		}
 		io::osequencestream oss(output_contig_file);
+		contig_name = ContigRenameWithLength(contig_name, s_new_contig.str().length());
 		oss << io::SingleRead(contig_name, s_new_contig.str());
 	}
 
