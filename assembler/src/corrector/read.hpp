@@ -10,19 +10,23 @@
 #include "logger/logger.hpp"
 #pragma once
 
+namespace corrector {
 using namespace std;
+//TODO: no using in hpp
 //tmp structure before samtools included;
 
 
 
 struct position_description {
 	int votes[MAX_VARIANTS];
-	//'A', 'C', 'G', 'T', 'D', 'I'
+	//'A', 'C', 'G', 'T', 'N', 'D', 'I'
 
+	//TODO:hash_map
 	map<string, int > insertions;
 	void update(position_description &another){
 		for (size_t i = 0; i < MAX_VARIANTS; i++)
 			votes[i] += another.votes[i];
+		//TODO:range based for
 		for (auto iter = another.insertions.begin(); iter != another.insertions.end(); ++iter)
 			insertions[iter->first] += another.insertions[iter->first];
 	}
@@ -36,10 +40,11 @@ struct position_description {
 		return ss.str();
 	}
 	size_t FoundOptimal(char current){
-		size_t maxi = var_to_pos[(int) current];
+		size_t maxi = var_to_pos[(size_t) current];
 		int maxx = votes[maxi];
 		for (size_t j = 0; j < MAX_VARIANTS; j++) {
 			//1.5 because insertion goes _after_ match
+			//std::min_element
 			if (maxx < votes[j] || (j == INSERTION && maxx * 2 <votes[j] * 3)) {
 				maxx = votes[j];
 				maxi = j;
@@ -55,27 +60,30 @@ struct position_description {
 	}
 };
 
-typedef map <size_t, position_description> PositionDescriptionMap;
+typedef unordered_map <size_t, position_description> PositionDescriptionMap;
 
+//TODO::destructor
 struct SingleSamRead{
 	bam1_t data_;
 
-	size_t DataLen() {
+	size_t DataLen() const{
 		return data_.core.l_qseq;
 	}
-	size_t CigarLen() {
+	size_t CigarLen() const{
 		return data_.core.n_cigar;
 	}
-	int get_contig_id(){
+	int get_contig_id() const{
 		return data_.core.tid;
 	}
 	void set_data(bam1_t *seq_) {
+//		delete *data_;
+		//TODO: delete
 		bam1_t *new_seq = bam_dup1(seq_);
 		//bam_copy1 (new_seq, seq)
 		//new_seq->data = new uint8_t (seq_data);
 		data_ = *new_seq;
 	}
-	int CountPositions(map <size_t, position_description> &ps, string &contig){
+	int CountPositions(unordered_map <size_t, position_description> &ps, string &contig){
 		size_t contig_length = contig.length();
 		int error_num = 0;
 		if (get_contig_id() < 0) {
@@ -182,7 +190,7 @@ struct SingleSamRead{
 		return error_num;
 	}
 
-	string GetCigar() {
+	string GetCigar() const {
 		uint32_t *cigar = bam1_cigar(&data_);
 		string res;
 		res.reserve(data_.core.n_cigar);
@@ -194,7 +202,7 @@ struct SingleSamRead{
 		return res;
 	}
 
-	string GetQual() {
+	string GetQual() const{
 		uint8_t *qual = bam1_qual(&data_);
 		for (int i = 0; i < data_.core.l_qseq; ++i) {
 			qual[i] = uint8_t (qual[i] + 33);
@@ -203,12 +211,12 @@ struct SingleSamRead{
 		return res;
 	}
 
-	string GetName(){
+	string GetName() const{
 		string res(bam1_qname(&data_));
 		return res;
 	}
 
-	string GetSeq() {
+	string GetSeq() const{
 		string res = "";
 		auto b = bam1_seq(&data_);
 		for (int k = 0; k < data_.core.l_qseq; ++k) {
@@ -219,15 +227,17 @@ struct SingleSamRead{
 };
 struct PairedSamRead {
 	SingleSamRead r1; SingleSamRead r2;
+//TODO::pair to constructor?
+//TODO::more consts
 	void pair(SingleSamRead &a1, SingleSamRead &a2) {
 		r1 = a1; r2 = a2;
 	}
 
-	int CountPositions(map <size_t, position_description> &ps, string &contig) {
+	int CountPositions(unordered_map <size_t, position_description> &ps, string &contig) {
 
 		TRACE("starting pairing");
 		int t1 = r1.CountPositions(ps, contig);
-		map <size_t, position_description> tmp;
+		unordered_map <size_t, position_description> tmp;
 		int t2 = r2.CountPositions(tmp, contig);
 		//TODO: overlaps.. multimap? Look on qual?
 		if (ps.size() ==0 || tmp.size() == 0) {
@@ -241,23 +251,25 @@ struct PairedSamRead {
 		return t1 + t2;
 	}
 };
-
+//TODO::rename
 struct WeightedRead {
 	map<size_t, size_t> positions;
 	int error_num;
 	double weight;
-	WeightedRead(vector<size_t> &int_pos, PositionDescriptionMap &ps){
+	WeightedRead(const vector<size_t> &int_pos, const PositionDescriptionMap &ps){
 		for (size_t i = 0; i < int_pos.size(); i++ ) {
 			for (size_t j = 0; j < MAX_VARIANTS; j++) {
-				if (ps[int_pos[i]].votes[j] != 0) {
-					positions[int_pos[i]] = j;
-					break;
+				PositionDescriptionMap::const_iterator tmp = ps.find(int_pos[i]);
+				if (tmp != ps.end()) {
+					if (tmp->second.votes[j] !=0) {
+						positions[int_pos[i]] = j;
+						break;
+					}
 				}
-
 			}
 		}
 		error_num = 0;
 	}
 };
 
-
+};

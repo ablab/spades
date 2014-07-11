@@ -12,6 +12,7 @@
 #include "read.hpp"
 #include "io/ireader.hpp"
 
+namespace corrector {
 //namespace io {
 /*class SamRead : public SamTools::BamAlignment {
   public:
@@ -67,19 +68,7 @@ class MappedSamStream: public io::ReadStream<SingleSamRead> {
     MappedSamStream& operator>>(SingleSamRead& read) {
         if (!is_open_ || eof_)
             return *this;
-
-     //   read = seq_;
-//        cerr <<"name: " <<  bam1_qname(seq_);
-//        //cerr << " " << cigar(bam1_cigar(seq_));
-//        cerr << " cigar: " << GetCigar(seq_);
-//        cerr << " seq: " << GetSeq(seq_);
-//        cerr << " qual: " << GetQual(seq_);
-//        cerr << '\n';
-//        unsigned char* ls = seq_->data;
-//        bam1_t *new_seq = new  bam1_t(*seq_);
-//		data_ = *new_seq;
         read.set_data(seq_);
-        //TRACE(read.GetSeq());
         int tmp = samread(reader_, seq_);
         eof_ = (0 >= tmp);
         return *this;
@@ -101,8 +90,6 @@ class MappedSamStream: public io::ReadStream<SingleSamRead> {
 
     }
     bam_header_t* ReadHeader(){
-//    	TRACE(reader_->header->n_targets << " contigs in header ");
-//    	TRACE(reader_->header->target_name[0]);
     	return reader_->header;
     }
 
@@ -147,3 +134,4 @@ class MappedSamStream: public io::ReadStream<SingleSamRead> {
 
 };
 //}
+};

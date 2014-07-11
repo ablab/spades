@@ -3,6 +3,7 @@
 #include "read.hpp"
 #include "include.hpp"
 
+namespace corrector {
 typedef vector<WeightedRead> WeightedReadStorage;
 
 class InterestingPositionProcessor {
@@ -19,8 +20,8 @@ class InterestingPositionProcessor {
 	//const int error_weight[MaxErrorCount] ={374864, 3853, 1171, 841, 66, 27};
 	//const int error_weight[MaxErrorCount] ={100000, 1000, 1000, 1000, 1, 1};
 	const int error_weight[MaxErrorCount] ={100, 10, 8, 5, 2, 1};
-	map<size_t, position_description> interesting_weights;
-	map<size_t, position_description> changed_weights;
+	unordered_map<size_t, position_description> interesting_weights;
+	unordered_map<size_t, position_description> changed_weights;
 
 
 public:
@@ -32,7 +33,7 @@ public:
 		is_interesting.resize(len);
 		read_ids.resize(len);
 	}
-	map<size_t, position_description> get_weights() {
+	unordered_map<size_t, position_description> get_weights() {
 		return changed_weights;
 	}
 
@@ -126,7 +127,7 @@ public:
 							wr_storage[current_read_id].error_num ++;
 						}
 					}
-					maxi = interesting_weights[current_pos].FoundOptimal(contig[current_pos]);
+
 					if ((char)toupper(contig[current_pos]) != pos_to_var[maxi]) {
 						INFO("Interesting positions differ at position "<< current_pos);
 						INFO("Was " << (char)toupper(contig[current_pos]) << "new " << pos_to_var[maxi]);
@@ -149,4 +150,5 @@ public:
 		}
 	}
 
+};
 };

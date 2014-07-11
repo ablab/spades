@@ -11,12 +11,7 @@
 #include "include.hpp"
 #include "interesting_pos_processor.hpp"
 
-//struct WeightedReadStorage{
-//	//id, read
-//	map<int, WeightedRead> data;
-//
-//};
-
+namespace corrector {
 class ContigProcessor {
 	string sam_file;
 	string contig_file;
@@ -50,7 +45,7 @@ public:
 	}
 
 	void UpdateOneRead(SingleSamRead &tmp){
-		map<size_t, position_description> all_positions;
+		unordered_map<size_t, position_description> all_positions;
 		//INFO(tmp.GetName());
 		//INFO(tmp.get_contig_id());
 		if (tmp.get_contig_id() < 0) {
@@ -74,7 +69,7 @@ public:
 		}
 	}
 //returns: number of changed nucleotides;
-	int UpdateOneBase(size_t i, stringstream &ss, map<size_t, position_description> &interesting_positions){
+	int UpdateOneBase(size_t i, stringstream &ss, unordered_map<size_t, position_description> &interesting_positions){
 		char old = (char) toupper(contig[i]);
 		size_t maxi = charts[i].FoundOptimal(contig[i]);
 		if (interesting_positions.find(i) != interesting_positions.end()) {
@@ -146,14 +141,14 @@ public:
 		INFO("interesting size: " << interesting);
 		while (!sm.eof()) {
 			PairedSamRead tmp;
-			map<size_t, position_description> ps;
+			unordered_map<size_t, position_description> ps;
 			sm >>tmp;
 			tmp.CountPositions(ps, contig);
 			TRACE("updating interesting read..");
 			ipp.UpdateInterestingRead(ps);
 		}
 		ipp.UpdateInterestingPositions();
-		map<size_t, position_description> interesting_positions = ipp.get_weights();
+		unordered_map<size_t, position_description> interesting_positions = ipp.get_weights();
 		stringstream s_new_contig;
 		for (size_t i = 0; i < contig.length(); i ++) {
 			DEBUG(charts[i].str());
@@ -166,4 +161,5 @@ public:
 
 
 	//string seq, cigar; pair<size_t, size_t> borders;
+};
 };

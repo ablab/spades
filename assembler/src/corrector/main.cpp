@@ -80,7 +80,7 @@ int main(int /*argc*/, char** argv) {
   create_console_logger();
   string sam_name (argv[1]);
   string contig_name (argv[2]);
-  ContigProcessor cp(sam_name, contig_name);
+  corrector::ContigProcessor cp(sam_name, contig_name);
   cp.process_sam_file();
   /*cerr << name;
   MappedSamStream sm(name);
