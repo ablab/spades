@@ -214,7 +214,8 @@ int main(int argc, char** argv) {
 
     INFO("Correcting reads.");
     using namespace hammer::correction;
-    SingleReadCorrector::NoDebug pred;
+    SingleReadCorrector::NoDebug debug_pred;
+    SingleReadCorrector::SelectAll select_pred;
     const auto& dataset = cfg::get().dataset;
     io::DataSet<> outdataset;
     size_t ilib = 0;
@@ -240,7 +241,7 @@ int main(int argc, char** argv) {
           io::PairedOutputSequenceStream ors(outcorl, outcorr);
 
           io::SeparatePairedReadStream irs(I->first, I->second, 0, false, false);
-          PairedReadCorrector read_corrector(kmer_data, pred);
+          PairedReadCorrector read_corrector(kmer_data, debug_pred, select_pred);
           hammer::ReadProcessor(cfg::get().max_nthreads).Run(irs, read_corrector, ors);
 
           outlib.push_back_paired(outcorl, outcorr);
@@ -260,7 +261,7 @@ int main(int argc, char** argv) {
           io::osequencestream ors(outcor);
 
           io::FileReadStream irs(*I, io::PhredOffset);
-          SingleReadCorrector read_corrector(kmer_data, pred);
+          SingleReadCorrector read_corrector(kmer_data, debug_pred, select_pred);
           hammer::ReadProcessor(cfg::get().max_nthreads).Run(irs, read_corrector, ors);
 
           outlib.push_back_single(outcor);
@@ -284,7 +285,7 @@ int main(int argc, char** argv) {
         auto header = bam_reader.GetHeader();
         bam_reader.Close();
 
-        SingleReadCorrector read_corrector(kmer_data, &header, pred);
+        SingleReadCorrector read_corrector(kmer_data, &header, debug_pred, select_pred);
         io::UnmappedBamStream irs(*I);
         hammer::ReadProcessor(cfg::get().max_nthreads).Run(irs, read_corrector, ors);
 

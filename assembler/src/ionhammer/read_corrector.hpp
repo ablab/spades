@@ -910,24 +910,28 @@ class CorrectedRead {
     // attach runs from the right
     const auto& data = raw_read_.data();
     int n_raw = int(raw_read_.size());
-    int n_corr = int(corrected_runs_.size());
+    int n_corr = int(corrected_runs_.size() + chunks_.begin()->approx_read_offset);
+    if (debug_mode_) {
+      std::cerr << "n_raw=" << n_raw << ", n_corr=" << n_corr << std::endl;
+    }
     const int skip_from_end = 3;
     if (n_corr < skip_from_end) {
       std::copy(data.begin(), data.end(), std::back_inserter(corrected_runs_));
     } else {
       const int eps = 3;
+      int delta = 0;
       if (n_corr + eps < n_raw) {
-        int delta = alignH(data.rbegin(), data.rend(),
-                           corrected_runs_.rbegin(), corrected_runs_.rend(),
-                           n_raw - n_corr, skip_from_end);
-        int read_offset = n_corr - delta;
-        if (read_offset < n_raw) {
-          corrected_runs_.resize(n_corr - skip_from_end);
-          std::copy(data.begin() + read_offset, data.end(),
-                    std::back_inserter(corrected_runs_));
-        }
+        delta = alignH(data.rbegin(), data.rend(),
+                       corrected_runs_.rbegin(), corrected_runs_.rend(),
+                       n_raw - n_corr, skip_from_end);
       }
-    }
+      int read_offset = n_corr - delta;
+      if (read_offset < n_raw) {
+        corrected_runs_.resize(n_corr - skip_from_end);
+        std::copy(data.begin() + read_offset, data.end(),
+                  std::back_inserter(corrected_runs_));
+      }
+}
 
     // attach runs from the left
     if (trimmed_by_gen_ > 0 && size_t(trimmed_by_gen_) <= data.size()) {
@@ -961,9 +965,11 @@ class SingleReadCorrector {
 
  public:
 
-  struct DebugOutputPredicate {
+  struct ReadSelectionPredicate {
     virtual bool operator()(const io::SingleRead &read) = 0;
   };
+
+  struct DebugOutputPredicate : public ReadSelectionPredicate {};
 
   struct NoDebug : public DebugOutputPredicate {
     virtual bool operator()(const io::SingleRead &) {
@@ -996,23 +1002,46 @@ class SingleReadCorrector {
     }
   };
 
+  struct SelectPredicate : public ReadSelectionPredicate {};
+  struct SelectAll : public SelectPredicate {
+    virtual bool operator()(const io::SingleRead &) {
+      return true;
+    }
+  };
+
+  class SelectByName : public SelectPredicate {
+    std::set<std::string> names_;
+  public:
+    SelectByName(const std::set<std::string>& names) :
+      names_(names) {}
+    virtual bool operator()(const io::SingleRead &r) {
+      return names_.find(r.name()) != names_.end();
+    }
+  };
+
 private:
   BamTools::SamHeader* sam_header_;
   DebugOutputPredicate &debug_pred_;
+  SelectPredicate &select_pred_;
 
 public:
   SingleReadCorrector(const KMerData &kmer_data,
                       BamTools::SamHeader *sam_header,
-                      DebugOutputPredicate &debug) :
+                      DebugOutputPredicate &debug,
+                      SelectPredicate &select) :
     kmer_data_(kmer_data), sam_header_(sam_header),
-    debug_pred_(debug) {}
+    debug_pred_(debug), select_pred_(select) {}
 
   SingleReadCorrector(const KMerData &kmer_data,
-                      DebugOutputPredicate &debug) :
+                      DebugOutputPredicate &debug,
+                      SelectPredicate &select) :
     kmer_data_(kmer_data), sam_header_(NULL),
-    debug_pred_(debug) {}
+    debug_pred_(debug), select_pred_(select) {}
 
   boost::optional<io::SingleRead> operator()(const io::SingleRead &r) {
+    if (!select_pred_(r))
+        return boost::optional<io::SingleRead>();
+
     bool debug_mode = debug_pred_(r);
     if (debug_mode) {
       std::cerr << "=============================================" << std::endl;
@@ -1066,8 +1095,9 @@ public:
 class PairedReadCorrector : public SingleReadCorrector {
  public:
   PairedReadCorrector(const KMerData &kmer_data,
-                      DebugOutputPredicate &debug)
-      : SingleReadCorrector(kmer_data, debug) {}
+                      DebugOutputPredicate &debug,
+                      SelectPredicate &select)
+    : SingleReadCorrector(kmer_data, debug, select) {}
 
   boost::optional<io::PairedRead> operator()(const io::PairedRead &r) {
     auto corrected_r = SingleReadCorrector::operator()(r.first());
