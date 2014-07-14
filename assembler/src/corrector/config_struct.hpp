@@ -1,0 +1,21 @@
+#pragma once
+
+#include "config_singl.hpp"
+
+#include "io/library.hpp"
+
+namespace corrector {
+
+struct corrector_config {
+  io::DataSet<> dataset;
+
+  std::string working_dir;
+  std::string output_dir;
+
+  unsigned max_nthreads;
+};
+
+void load(corrector::corrector_config& cfg, const std::string &filename);
+}
+
+typedef config_common::config<corrector::corrector_config> cfg;

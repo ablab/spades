@@ -8,6 +8,7 @@
 #include <string>
 #include "logger/log_writers.hpp"
 #include "logger/logger.hpp"
+#include "include.hpp"
 #pragma once
 
 namespace corrector {
