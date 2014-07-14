@@ -112,7 +112,7 @@ class MappedSamStream: public io::ReadStream<SingleSamRead> {
 
   private:
     samfile_t *reader_;
-    bam1_t *seq_ = new bam1_t;
+    bam1_t *seq_ =bam_init1();
     std::string filename_;
     bool is_open_;
     bool eof_;
@@ -129,7 +129,6 @@ class MappedSamStream: public io::ReadStream<SingleSamRead> {
     	//seq_ = new bam1_t;
         int tmp = samread(reader_, seq_);
         eof_ = (0 >= tmp);
-
     }
 
 };

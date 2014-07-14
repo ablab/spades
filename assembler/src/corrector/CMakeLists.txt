@@ -15,6 +15,7 @@ add_executable(corrector
 	utils.cpp
 	interesting_pos_processor.cpp
 	contig_processor.cpp
+	dataset_processor.cpp
         main.cpp)
 
 target_link_libraries(corrector samtools input mph_index BamTools yaml-cpp  ${COMMON_LIBRARIES} ssw)

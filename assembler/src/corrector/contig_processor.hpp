@@ -28,9 +28,11 @@ class ContigProcessor {
 	vector<int> error_counts;
 public:
 	ContigProcessor(string sam_file, string contig_file):sam_file(sam_file), contig_file(contig_file), sm(sam_file){
+		INFO("CP creating..");
 		bam_header = sm.ReadHeader();
 		read_contig();
 		ipp.set_contig(contig);
+		INFO("CP created..");
 	}
 	void read_contig();
 	void UpdateOneRead(SingleSamRead &tmp);

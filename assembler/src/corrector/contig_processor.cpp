@@ -34,11 +34,10 @@ void ContigProcessor::UpdateOneRead(SingleSamRead &tmp){
 	int error_num = tmp.CountPositions(all_positions, contig);
 	if (error_num > 19) error_counts[20] ++;
 	else if (error_num >=0) error_counts[error_num] ++;
+
 	for (auto iter = all_positions.begin(); iter != all_positions.end(); ++iter) {
 		if ((int)iter->first >=0 && iter->first < contig.length()) {
 			charts[iter->first].update(iter->second);
-
-
 		}
 	}
 }

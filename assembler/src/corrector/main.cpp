@@ -21,7 +21,7 @@
 #include "read.hpp"
 #include "../include/segfault_handler.hpp"
 #include "sam_reader.hpp"
-#include "contig_processor.hpp"
+#include "dataset_processor.hpp"
 /*
 void make_dirs(){
 	  make_dir(dsp_cfg::get().io.output_base);
@@ -80,8 +80,10 @@ int main(int /*argc*/, char** argv) {
   create_console_logger();
   string sam_name (argv[1]);
   string contig_name (argv[2]);
-  corrector::ContigProcessor cp(sam_name, contig_name);
-  cp.process_sam_file();
+  //corrector::ContigProcessor cp(sam_name, contig_name);
+  //cp.process_sam_file();
+  corrector::DatasetProcessor dp(sam_name, contig_name);
+  dp.ProcessLibrary(sam_name);
   /*cerr << name;
   MappedSamStream sm(name);
   while (!sm.eof()) {
