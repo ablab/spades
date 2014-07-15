@@ -82,7 +82,7 @@ class MappedSamStream: public io::ReadStream<SingleSamRead> {
     	TRACE(r1.GetSeq());
     	TRACE(r2.GetSeq());
     	TRACE(r1.GetName());
-    	VERIFY (r1.GetName() == r2.GetName());
+    	VERIFY_MSG (r1.GetName() == r2.GetName(), r1.GetName() + " " + r2.GetName());
     	read.pair(r1,r2);
     	TRACE("read read");
         return *this;
