@@ -533,7 +533,7 @@ def process_contig(files):
     logFile = open(logFileName, 'w')
     ntime = datetime.datetime.now()
     starttime = ntime
-    os.system ('./build/release/bin/corrector ' + samfilename + ' ' + contig_file + ' ' + ' 1')
+    os.system ('./build/release/bin/corrector ' + samfilename + ' ' + contig_file)
 
     logFile.write(ntime.strftime("%Y.%m.%d_%H.%M.%S") + ": All done. ")
     stime = ntime - starttime
@@ -583,75 +583,9 @@ def main(args, joblib_path, log=None):
             #os.system("cp -p "+ config["sam_file"] +" " + config["work_dir"]+"tmp.sam")
             config["sam_file"] = tmp_sam_file_path
 
+        os.system ('./build/release/bin/corrector ' + config["sam_file"] + ' ' + config["contigs"] + ' ' + ' 0 ' + config["output_dirpath"])
     #    now = datetime.datetime.now()
     #    res_directory = "corrector.output." + now.strftime("%Y.%m.%d_%H.%M.%S")+"/"
-        split_contigs(config["contigs"], config["work_dir"])
-        log.info("contigs were split, starting splitting .sam file")
-        split_sam(config["sam_file"], config["work_dir"], log)
-        log.info(".sam file was split")
-    else:
-        log.info("split tmp dir found, starting correcting")
-        for filename in glob.glob(os.path.join(config["split_dir"], '*')):
-            shutil.copy(filename, config["work_dir"])
-        #os.system("cp "+ config["split_dir"] +"/* " + config["work_dir"])
-
-    #    return 0
-#    if not os.path.exists(res_directory):
-#        os.makedirs(res_directory)
-#    refinedFileName = res_directory + sys.argv[2].split('/')[-1].split('.')[0] + '.ref.fasta'
-
-    pairs = []
-    for f_name in os.listdir(config["work_dir"]):
-        contig_file = os.path.join(config["work_dir"], f_name)
-        if not os.path.isfile(contig_file):
-            continue
-
-        f_arr = f_name.split('.')
-        if len(f_arr) == 2 and f_arr[1].startswith("fa") and os.path.exists(os.path.join(os.path.dirname(contig_file), f_arr[0] + ".pair.sam")):
-            samfilename = os.path.join(os.path.dirname(contig_file), f_arr[0] + ".pair.sam")
-            mult_aligned_filename = os.path.join(os.path.dirname(contig_file), f_arr[0] + ".multiple.sam")
-            tmp = [samfilename, contig_file]
-            if config["use_multiple_aligned"]:
-                tmp.append(mult_aligned_filename)
-            tmp.append(os.path.getsize(contig_file))
-            pairs.append(tmp)
-    pairs.sort(key=lambda x: x[-1], reverse=True)
-    if sys.version.startswith('2.'):
-        from joblib2 import Parallel, delayed
-    elif sys.version.startswith('3.'):
-        from joblib3 import Parallel, delayed
-    Parallel(n_jobs=config["t"])(delayed(process_contig)(pair) for pair in pairs)
-#        inserted += loc_ins
-#        replaced += loc_rep
-
-    #cat_line = "cat "+ config["work_dir"] + "/*.ref.fasta > "+ config["work_dir"] + "../corrected_contigs.fasta"
-    #log.info(cat_line)
-    #os.system(cat_line)
-    correct_contigs_filename = os.path.join(config["output_dirpath"], "corrected_contigs.fasta")
-    contigs_pattern = os.path.join(config["work_dir"], "*.ref.fasta")
-    cat_line = "concatenating " + contigs_pattern + " INTO " + correct_contigs_filename
-    log.info(cat_line)
-    correct_contigs = open(correct_contigs_filename, 'wb')
-    for filename in glob.glob(contigs_pattern):
-        shutil.copyfileobj(open(filename, 'rb'), correct_contigs)
-    correct_contigs.close()
-
-    replaced = 0
-    deleted = 0
-    inserted = 0
-    for cur_file in glob.glob(os.path.join(config["work_dir"], "*.stdout")):
-        for line in open(cur_file, 'r'):
-            arr = line.split()
-            if arr[0] == "replaced:":
-                replaced += int(arr[1])
-                deleted += int(arr[3])
-                inserted += int(arr[5])
-
-    os.system("cp -r " + config["work_dir"] + " ~/work/")
-
-    if not config["debug"]:
-        shutil.rmtree(config["work_dir"])
-    log.info("TOTAL - replaced: " + str(replaced) + " deleted: "+ str(deleted) +" inserted: " + str(inserted))
 
 
 if __name__ == '__main__':

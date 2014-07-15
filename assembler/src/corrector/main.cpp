@@ -80,10 +80,15 @@ int main(int /*argc*/, char** argv) {
   create_console_logger();
   string sam_name (argv[1]);
   string contig_name (argv[2]);
-  //corrector::ContigProcessor cp(sam_name, contig_name);
-  //cp.process_sam_file();
-  corrector::DatasetProcessor dp(sam_name, contig_name);
-  dp.ProcessLibrary(sam_name);
+  string out_dir(argv[4]);
+  int mode = atoi(argv[3]);
+  if (mode == 1) {
+	  corrector::ContigProcessor cp(sam_name, contig_name);
+	  cp.process_sam_file();
+  } else  {
+	  corrector::DatasetProcessor dp(sam_name, contig_name, out_dir);
+	  dp.ProcessLibrary(sam_name);
+  }
   /*cerr << name;
   MappedSamStream sm(name);
   while (!sm.eof()) {
