@@ -124,7 +124,7 @@ void DatasetProcessor::ProcessLibrary(string &sam_file){
 	}
 	size_t cont_num = ordered_contigs.size();
 	sort(ordered_contigs.begin(), ordered_contigs.end());
-	ordered_contigs.reverse();
+	reverse(ordered_contigs.begin(), ordered_contigs.end());
 
 # pragma omp parallel for shared(all_contigs_copy, ordered_contigs) num_threads(nthreads)
 	for (size_t i = 0; i < cont_num; i++ ) {
