@@ -74,6 +74,7 @@ void DatasetProcessor::SplitPairedLibrary(string &all_reads_filename, ContigInfo
 		string r1;
 		string r2;
 		getline(fs, r1);
+		if (r1[0]=="@") continue;
 		getline(fs, r2);
 
 		GetAlignedContigs(r1, contigs);
