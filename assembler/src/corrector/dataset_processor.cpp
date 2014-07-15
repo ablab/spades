@@ -15,11 +15,11 @@ void DatasetProcessor::SplitGenome(const string &genome, const string &genome_sp
     while (! contig_stream.eof()) {
     	contig_stream >> ctg;
     	string contig_name = ctg.name();
-    	INFO(contig_name);
+    	//INFO(contig_name);
     	string full_path = genome_splitted_dir + "/" + contig_name+ ".fasta";
     	string out_full_path = 	 full_path.substr(0, full_path.length() - 5) + "ref.fasta";
     	string sam_filename =  full_path.substr(0, full_path.length() - 5) + "pair.sam";
-    	INFO("full_path:" << full_path);
+    	//INFO("full_path:" << full_path);
     	all_contigs[contig_name].input_contig_filename = full_path;
     	all_contigs[contig_name].output_contig_filename = out_full_path;
     	all_contigs[contig_name].sam_filename = sam_filename;
@@ -99,7 +99,7 @@ void DatasetProcessor::SplitHeaders(string &all_reads_filename, ContigInfoMap &a
 		if (arr[0] == "@SQ") {
 			VERIFY_MSG(arr.size() > 1, "Invalid .sam header");
 			string contig_name = arr[1].substr(3, arr[1].length() - 3) ;
-			INFO(contig_name);
+			//INFO(contig_name);
 			VERIFY_MSG(all_writers.find(contig_name) != all_writers.end(), "wrong contig name in SAM file header");
 			OutputRead(r, contig_name);
 		}
@@ -124,6 +124,7 @@ void DatasetProcessor::ProcessLibrary(string &sam_file){
 	}
 	size_t cont_num = ordered_contigs.size();
 	sort(ordered_contigs.begin(), ordered_contigs.end());
+	ordered_contigs.reverse();
 
 # pragma omp parallel for shared(all_contigs_copy, ordered_contigs) num_threads(nthreads)
 	for (size_t i = 0; i < cont_num; i++ ) {
