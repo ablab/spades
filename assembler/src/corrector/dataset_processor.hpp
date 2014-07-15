@@ -11,8 +11,10 @@ namespace corrector {
 struct OneContigDescription{
 	string input_contig_filename;
 	string output_contig_filename;
+	size_t contig_length;
 //TODO: place for multilib
 	string sam_filename;
+
 };
 typedef unordered_map<string, OneContigDescription> ContigInfoMap;
 
@@ -28,11 +30,13 @@ class DatasetProcessor {
 	vector<int> error_counts;
 	string work_dir;
 	map<string, std::ofstream*> all_writers;
+	int nthreads;
 public:
 	DatasetProcessor(string sam_file, string genome_file, string work_dir):sam_file(sam_file), genome_file(genome_file), work_dir(work_dir){
 		//work_dir = "/home/lab42/work/someshit";
 		//path::make_dir(work_dir);
 		output_contig_file = work_dir + "/corrected.fasta";
+		nthreads = 8;
 	}
 	void OutputRead(string &read, string &contig_name);
 	void PrepareWriters(ContigInfoMap &all_contigs);

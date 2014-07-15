@@ -4,6 +4,7 @@
 #include "io/converting_reader_wrapper.hpp"
 #include "io/file_reader.hpp"
 #include "path_helper.hpp"
+#include <omp.h>
 using namespace std;
 namespace corrector{
 
@@ -22,6 +23,7 @@ void DatasetProcessor::SplitGenome(const string &genome, const string &genome_sp
     	all_contigs[contig_name].input_contig_filename = full_path;
     	all_contigs[contig_name].output_contig_filename = out_full_path;
     	all_contigs[contig_name].sam_filename = sam_filename;
+    	all_contigs[contig_name].contig_length = ctg.sequence().str().length();
     	io::osequencestream oss(full_path);
     	oss << ctg;
     }
@@ -54,10 +56,7 @@ void DatasetProcessor::PrepareWriters(ContigInfoMap &all_contigs){
 void DatasetProcessor::CloseWriters(ContigInfoMap &all_contigs){
 //TODO::place for buffered writers;
 	for (auto ac :all_contigs){
-		INFO("closing writer");
-		INFO(ac.first);
 		all_writers[ac.first]->close();
-		INFO(all_writers[ac.first]->is_open());
 	}
 }
 
@@ -111,19 +110,30 @@ void DatasetProcessor::SplitHeaders(string &all_reads_filename, ContigInfoMap &a
 void DatasetProcessor::ProcessLibrary(string &sam_file){
 	INFO("Splitting genome");
 	SplitGenome(genome_file, work_dir, all_contigs);
-	INFO("preparing writers");
 	PrepareWriters(all_contigs);
-	INFO("Splitting headers");
 	SplitHeaders(sam_file, all_contigs);
 	INFO("Splitting paired library");
 	SplitPairedLibrary(sam_file, all_contigs);
 	CloseWriters(all_contigs);
 	INFO("Processing contigs");
-	for (auto ac : all_contigs) {
-		INFO("processing " << ac.second.sam_filename<<"  "<< ac.second.input_contig_filename);
-		ContigProcessor pc(ac.second.sam_filename, ac.second.input_contig_filename);
+	vector<pair<size_t, string> > ordered_contigs;
+	ContigInfoMap all_contigs_copy;
+	for (auto ac: all_contigs) {
+		ordered_contigs.push_back(make_pair(ac.second.contig_length, ac.first));
+		all_contigs_copy.insert(ac);
+	}
+	size_t cont_num = ordered_contigs.size();
+	sort(ordered_contigs.begin(), ordered_contigs.end());
+
+# pragma omp parallel for shared(all_contigs_copy, ordered_contigs) num_threads(nthreads)
+	for (size_t i = 0; i < cont_num; i++ ) {
+
+		if ( ordered_contigs[i].first > 20000)
+			INFO("processing contig" << ordered_contigs[i].second << " in thread number " << omp_get_thread_num());
+		ContigProcessor pc(all_contigs_copy[ordered_contigs[i].second].sam_filename, all_contigs_copy[ordered_contigs[i].second].input_contig_filename);
 		pc.process_sam_file();
 	}
+
 	INFO("Gluing processed contigs");
 	GlueSplittedContigs(output_contig_file, all_contigs);
 }
