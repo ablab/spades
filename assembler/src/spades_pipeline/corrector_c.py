@@ -524,6 +524,7 @@ def init_config():
 
 
 def process_contig(files):
+    global config
     log = logging.getLogger('spades')
     samfilename = files[0]
     contig_file = files[1]
@@ -533,7 +534,7 @@ def process_contig(files):
     logFile = open(logFileName, 'w')
     ntime = datetime.datetime.now()
     starttime = ntime
-    os.system ('./build/release/bin/corrector ' + samfilename + ' ' + contig_file + ' ' + ' 1')
+    os.system ('./build/release/bin/corrector ' + samfilename + ' ' + contig_file + ' ' + ' 1 ' + config["output_dirpath"])
 
     logFile.write(ntime.strftime("%Y.%m.%d_%H.%M.%S") + ": All done. ")
     stime = ntime - starttime

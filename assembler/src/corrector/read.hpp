@@ -57,10 +57,16 @@ struct WeightedRead {
 	map<size_t, size_t> positions;
 	int error_num;
 	double weight;
+	size_t first_pos;
+	size_t last_pos;
 	WeightedRead(const vector<size_t> &int_pos, const PositionDescriptionMap &ps){
+		first_pos = std::numeric_limits<size_t>::max();
+		last_pos = 0;
 		for (size_t i = 0; i < int_pos.size(); i++ ) {
 			for (size_t j = 0; j < MAX_VARIANTS; j++) {
 				PositionDescriptionMap::const_iterator tmp = ps.find(int_pos[i]);
+				first_pos = min(first_pos, int_pos[i]);
+				last_pos = max(last_pos, int_pos[i]);
 				if (tmp != ps.end()) {
 					if (tmp->second.votes[j] !=0) {
 						positions[int_pos[i]] = j;
@@ -70,6 +76,12 @@ struct WeightedRead {
 			}
 		}
 		error_num = 0;
+	}
+	inline bool is_first(size_t i, int dir) {
+		if ((dir == 1 && i == first_pos) || (dir == -1 && i == last_pos))
+			return true;
+		else
+			return false;
 	}
 };
 
