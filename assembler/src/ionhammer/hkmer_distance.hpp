@@ -32,9 +32,11 @@ class IonPairAligner {
 
   bool empty_;
   hammer::HomopolymerRun cx_, cy_;
+  int end_diff_;
 
   IonPairAlignEvent<It1, It2> front_;
 
+  // true iff alignment process is not yet finished
   bool checkForZeroLengthRuns() {
     if (x_it_ == x_end_ || y_it_ == y_end_)
       return false;
@@ -42,19 +44,24 @@ class IonPairAligner {
     if (cx_.len > 0 && cy_.len > 0)
       return true;
 
+    bool result = true;
     while (cx_.len == 0) {
-      if (++x_it_ == x_end_)
-        return false;
+      if (++x_it_ == x_end_) {
+        result = false;
+        break;
+      }
       cx_ = *x_it_;
     }
 
     while (cy_.len == 0) {
-      if (++y_it_ == y_end_)
-        return false;
+      if (++y_it_ == y_end_) {
+        result = false;
+        break;
+      }
       cy_ = *y_it_;
     }
 
-    return true;
+    return result;
   }
 
   bool fetchNextX() {
@@ -100,11 +107,25 @@ class IonPairAligner {
   void yieldRunInsertion() { yieldRunEvent(kIonEventRunInsertion); }
   void yieldRunDeletion() { yieldRunEvent(kIonEventRunDeletion); }
 
+  void finishAlignmentProcess() {
+    empty_ = true;
+    if (x_it_ != x_end_) {
+      do {
+        end_diff_ += cx_.len;
+      } while (fetchNextX());
+    }
+    if (y_it_ != y_end_) {
+      do {
+        end_diff_ -= cy_.len;
+      } while (fetchNextY());
+    }
+  }
+
  public:
   IonPairAligner(const It1 &x_begin, const It1 &x_end,
                  const It2 &y_begin, const It2 &y_end)
     : x_it_(x_begin), x_end_(x_end), y_it_(y_begin), y_end_(y_end),
-        empty_(false), cx_(*x_it_), cy_(*y_it_)
+        empty_(false), cx_(*x_it_), cy_(*y_it_), end_diff_(0)
   {
     popFront();
   }
@@ -112,6 +133,9 @@ class IonPairAligner {
   bool empty() const { return empty_; }
 
   IonPairAlignEvent<It1, It2> front() const { return front_; }
+
+  // see comment to distanceHKMer function
+  int endDiff() const { return end_diff_; }
 
   void popFront() {
     VERIFY(x_it_ <= x_end_);
@@ -122,6 +146,7 @@ class IonPairAligner {
         if (x_it_ == x_end_ && y_it_ != y_end_ && cy_.len < y_it_->len) {
           cx_ = *(x_it_ - 1);
           cx_.len = 0;
+          end_diff_ -= cy_.len;
           yieldBaseInsertion();
           fetchNextY();
           return;
@@ -130,28 +155,30 @@ class IonPairAligner {
         if (y_it_ == y_end_ && x_it_ != x_end_ && cx_.len < x_it_->len) {
           cy_ = *(y_it_ - 1);
           cy_.len = 0;
+          end_diff_ += cx_.len;
           yieldBaseDeletion();
           fetchNextX();
           return;
         }
 
-        empty_ = true;
+        finishAlignmentProcess();
         return;
       }
 
       bool end = false;
-      while (cx_.raw == cy_.raw)
-        if (!fetchNextX() || !fetchNextY()) {
-          end = true;
-          break;
-        }
+      while (cx_.raw == cy_.raw) {
+        // don't short-circuit for correct end_diff_ calculation!
+        end = !fetchNextX();
+        end |= !fetchNextY();
+        if (end) break;
+      }
 
       if (!end)
         break;
     }
 
     if (!checkForZeroLengthRuns()) {
-      empty_ = true;
+      finishAlignmentProcess();
       return;
     }
 
@@ -199,13 +226,20 @@ class IonPairAligner {
   }
 };
 
+
+// returns distance between two homopolymer sequences;
+// optionally, fills *end_diff:
+//  [ --------- X ----------- ]
+// [---------- Y -------]######
+//                       \____/
+//                       end_diff
 template <int kMismatchCost=1,
           int kBaseInsertionCost=1, int kRunInsertionCost=1,
           int kBaseDeletionCost=1, int kRunDeletionCost=1,
           typename It1, typename It2>
 inline unsigned distanceHKMer(const It1 &x_begin, const It1 &x_end,
                               const It2 &y_begin, const It2 &y_end,
-                              unsigned tau = -1) {
+                              unsigned tau = -1, int *end_diff=NULL) {
   unsigned dist = 0;
 
   IonPairAligner<It1, It2> aligner(x_begin, x_end, y_begin, y_end);
@@ -225,10 +259,13 @@ inline unsigned distanceHKMer(const It1 &x_begin, const It1 &x_end,
         dist += kRunDeletionCost * event.length; break;
       default: break;
     }
-    if (dist > tau)
-      return dist;
+    if (dist > tau && end_diff == NULL)
+        break;
     aligner.popFront();
   }
+
+  if (end_diff != NULL)
+      *end_diff = aligner.endDiff();
 
   return dist;
 }
@@ -269,7 +306,7 @@ namespace unittest {
         aligner.popFront();
       }
 
-      std::cerr << std::endl;
+      std::cerr << " (end. diff. = " << aligner.endDiff() << ")" << std::endl;
       return dist;
     }
 
