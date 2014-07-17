@@ -146,7 +146,7 @@ public:
 	static TargeredBoundedDijkstra CreateTargeredBoundedDijkstra(const Graph &graph,
 			VertexId target_vertex, size_t bound, size_t max_vertex_number = size_t(-1)){
 		return TargeredBoundedDijkstra(graph,
-				TargeredBoundedDijkstra(LengthCalculator<Graph>(graph),
+				TargeredBoundedDijkstraSettings(LengthCalculator<Graph>(graph),
 						BoundedVertexTargetedProcessChecker<Graph>(target_vertex, bound),
 						BoundPutChecker<Graph>(bound),
 						ForwardNeighbourIteratorFactory<Graph>(graph)),
