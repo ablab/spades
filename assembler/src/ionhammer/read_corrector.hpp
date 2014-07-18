@@ -705,7 +705,7 @@ class CorrectedRead {
 
         }
         if (dist <= 2) {
-          return Center{seq, start_pos + int(hammer::K) + end_diff};
+          return Center{kmer, start_pos + int(hammer::K) + end_diff};
         }
       }
       return Center{seq, start_pos + int(hammer::K)};
