@@ -552,8 +552,11 @@ class CorrectedRead {
         int n_trim = 0;
         int n_runs = int(consensus.size());
 
+        // FIXME
         if (overlap > 0 && rollback_end > 0) {
           for (int i = 0; i < overlap; i++) {
+            if (n_runs - overlap + i < 0 || n_runs - overlap + i >= consensus.size())
+              continue;
             auto left_run = consensus[n_runs - overlap + i];
             auto right_run = chunk.consensus[i];
             if (left_run != right_run) {
@@ -674,6 +677,7 @@ class CorrectedRead {
 
     Center last_good_center;
     bool last_good_center_is_defined;
+    bool is_first_center;
     bool replacing;
     int rollback_size;
 
@@ -787,6 +791,7 @@ class CorrectedRead {
     void IncludeIntoConsensus(const Center &center) {
       VERIFY(chunk_pos >= 0);
       VERIFY(chunk_pos < (1 << 16));
+      is_first_center = false;
 
       if (chunk_pos + hammer::K > scores.size())
         scores.resize(chunk_pos + hammer::K, ScoreMatrix(4, 64, 0));
@@ -809,6 +814,7 @@ class CorrectedRead {
       r(r), cread_(cread), kmer_data_(kmer_data), debug_mode_(debug_mode),
       gen(r), pos(int(gen.trimmed_left())), skipped(0),
       last_good_center(), last_good_center_is_defined(false),
+      is_first_center(true),
       replacing(false), rollback_size(0),
       need_to_align(false), approx_read_offset(0), scores(), chunk_pos(0),
       approx_n_insertions(0)
@@ -830,7 +836,8 @@ class CorrectedRead {
         auto center = Center{seq, pos + int(hammer::K)};
         auto qual = kmer_data_[seq].qual;
 
-        if (qual > lowQualThreshold && last_good_center_is_defined) {
+        bool can_be_changed = last_good_center_is_defined || is_first_center;
+        if (qual > lowQualThreshold && can_be_changed) {
           center = GetCenterOfCluster(seq, pos);
           qual = kmer_data_[center.seq].qual;
         }
