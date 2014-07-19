@@ -88,14 +88,23 @@ static void processBlockQuadratic(ConcurrentDSU  &uf,
   for (size_t i = 0; i < blockSize; ++i) {
     auto x = static_cast<unsigned>(block[i]);
     hammer::HKMer kmerx = data[x].kmer;
+    hammer::HKMer rkmerx = !kmerx;
+    auto rcx = static_cast<unsigned>(data.seq_idx(rkmerx));
+
     for (size_t j = i + 1; j < blockSize; j++) {
       auto y = static_cast<unsigned>(block[j]);
       hammer::HKMer kmery = data[y].kmer;
-      if (uf.find_set(x) != uf.find_set(y) &&
-          canMerge(uf, x, y) &&
-          hammer::distanceHKMer(kmerx.begin(), kmerx.end(), 
-                                kmery.begin(), kmery.end(), tau) <= tau) {
-        uf.unite(x, y);
+      hammer::HKMer rkmery = !kmery;
+      auto rcy = static_cast<unsigned>(data.seq_idx(rkmery));
+      if ((uf.find_set(x) != uf.find_set(y) || uf.find_set(rcx) !=
+           uf.find_set(rcy)) &&
+          (canMerge(uf, x, y) || canMerge(uf, rcx, rcy)) &&
+          (hammer::distanceHKMer(kmerx.begin(), kmerx.end(),
+                                 kmery.begin(), kmery.end(), tau) <= tau ||
+           hammer::distanceHKMer(rkmerx.begin(), rkmerx.end(),
+                                 rkmery.begin(), rkmery.end(), tau) <= tau)) {
+          uf.unite(x, y);
+          uf.unite(rcx, rcy);
       }
     }
   }
