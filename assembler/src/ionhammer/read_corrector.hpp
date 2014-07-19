@@ -804,6 +804,9 @@ class CorrectedRead {
       last_good_center = center;
       last_good_center_is_defined = true;
       approx_end_read_offset = center.end_offset;
+      if (debug_mode_) {
+        std::cerr << "e.o. = " << approx_end_read_offset << std::endl;
+      }
       need_to_align = false;
       skipped = 0;
     }
@@ -824,21 +827,26 @@ class CorrectedRead {
     }
 
     void Run() {
+      int raw_pos = int(gen.trimmed_left()) - 1;
       while (gen.HasMore()) {
         auto prev_chunk_pos = chunk_pos;
         auto seq = gen.kmer();
         gen.Next();
         ++pos;
+        ++raw_pos;
+        if (debug_mode_) {
+          std::cerr << "raw_pos = " << raw_pos << std::endl;
+        }
         ++chunk_pos;
 
         double lowQualThreshold = cfg::get().kmer_qual_threshold;
 
-        auto center = Center{seq, pos + int(hammer::K)};
+        auto center = Center{seq, raw_pos + int(hammer::K)};
         auto qual = kmer_data_[seq].qual;
 
         bool can_be_changed = last_good_center_is_defined || is_first_center;
         if (qual > lowQualThreshold && can_be_changed) {
-          center = GetCenterOfCluster(seq, pos);
+          center = GetCenterOfCluster(seq, raw_pos);
           qual = kmer_data_[center.seq].qual;
         }
 
@@ -938,6 +946,9 @@ class CorrectedRead {
       corrected_runs_.insert(corrected_runs_.end(),
                              data.begin() + end_read_offset,
                              data.end());
+    }
+    if (debug_mode_) {
+      std::cerr << "n_raw = " << n_raw << ", end_read_offset = " << end_read_offset << std::endl;
     }
 
     // attach runs from the left
