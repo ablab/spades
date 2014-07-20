@@ -827,6 +827,8 @@ class CorrectedRead {
     }
 
     void Run() {
+      double lowQualThreshold = cfg::get().kmer_qual_threshold;
+
       int raw_pos = int(gen.trimmed_left()) - 1;
       while (gen.HasMore()) {
         auto prev_chunk_pos = chunk_pos;
@@ -835,11 +837,10 @@ class CorrectedRead {
         ++pos;
         ++raw_pos;
         if (debug_mode_) {
-          std::cerr << "raw_pos = " << raw_pos << std::endl;
+          std::cerr << "=================================" << std::endl;
+          std::cerr << "pos = " << pos << ", raw_pos = " << raw_pos << std::endl;
         }
         ++chunk_pos;
-
-        double lowQualThreshold = cfg::get().kmer_qual_threshold;
 
         auto center = Center{seq, raw_pos + int(hammer::K)};
         auto qual = kmer_data_[seq].qual;
@@ -848,6 +849,36 @@ class CorrectedRead {
         if (qual > lowQualThreshold && can_be_changed) {
           center = GetCenterOfCluster(seq, raw_pos);
           qual = kmer_data_[center.seq].qual;
+        }
+
+        if (qual > lowQualThreshold && last_good_center_is_defined && skipped == 0) {
+          // Finding a center by means of clustering failed.
+          // Let's try the following: take last good center and make a new one
+          // from it by appending next homopolymer run; if its quality is high, we use it.
+          if (raw_pos + hammer::K < last_good_center.end_offset + 1) {
+            --pos;
+            --chunk_pos;
+            if (debug_mode_) {
+              std::cerr << "skipping low-quality hk-mer" << std::endl;
+            }
+            continue; // move to next hk-mer
+          } else if (raw_pos + hammer::K == last_good_center.end_offset + 1) {
+            auto seq_corr = last_good_center.seq;
+            for (size_t i = 0; i < hammer::K - 1; ++i)
+              seq_corr[i] = seq_corr[i + 1];
+            seq_corr[hammer::K - 1] = seq[hammer::K - 1];
+            center = Center{seq_corr, last_good_center.end_offset + 1};
+            qual = kmer_data_[center.seq].qual;
+            if (debug_mode_) {
+              std::cerr << "seq_corr = " << seq_corr.str() << " , qual = " << qual << std::endl;
+            }
+
+            if (qual > lowQualThreshold && can_be_changed) {
+              // our last resort...
+              center = GetCenterOfCluster(seq_corr, raw_pos);
+              qual = kmer_data_[center.seq].qual;
+            }
+          }
         }
 
         bool low_qual = qual > lowQualThreshold;
