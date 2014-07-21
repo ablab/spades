@@ -376,7 +376,9 @@ inline vector<Edge*> NextPathSearcher::GrowPath(const BidirectionalPath& init_pa
     }
     if (to_add.size() == 0) {
         for (EdgeId next_edge : g_.OutgoingEdges(g_.EdgeEnd(e->GetId()))) {
-            to_add.push_back(e->AddOutEdge(next_edge));
+            if (next_edge != e->GetId()) {
+                to_add.push_back(e->AddOutEdge(next_edge));
+            }
         }
     }
     stringstream str;

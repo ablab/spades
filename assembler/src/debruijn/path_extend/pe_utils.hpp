@@ -147,10 +147,16 @@ public:
         return GetCoverage(e) > 0;
     }
 
-    bool IsCovered(const BidirectionalPath& path) const {
+    bool IsCovered(const BidirectionalPath& path, size_t max_uncov_len = 0) const {
+        size_t cur_uncov = 0;
         for (size_t i = 0; i < path.Size(); ++i) {
             if (!IsCovered(path[i])) {
-                return false;
+                cur_uncov += g_.length(path[i]);
+                if (cur_uncov >= max_uncov_len){
+                    return false;
+                }
+            } else {
+                cur_uncov = 0;
             }
         }
         return true;
