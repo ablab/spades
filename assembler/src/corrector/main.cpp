@@ -22,6 +22,8 @@
 #include "../include/segfault_handler.hpp"
 #include "sam_reader.hpp"
 #include "dataset_processor.hpp"
+#include "config_struct.hpp"
+
 /*
 void make_dirs(){
 	  make_dir(dsp_cfg::get().io.output_base);
@@ -77,7 +79,17 @@ int main(int /*argc*/, char** argv) {
 
   srand(42);
   srandom(42);
+
+
   create_console_logger();
+  //tst
+//  {
+//	  string cfg_file(argv[1]);
+//	  corr_cfg::create_instance(cfg_file);
+//	  INFO( corr_cfg::get().work_dir);
+//	  exit(0);
+//  }
+
   string sam_name (argv[1]);
   string contig_name (argv[2]);
   string out_dir(argv[4]);

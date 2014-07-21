@@ -9,7 +9,7 @@ namespace corrector {
 struct corrector_config {
   io::DataSet<> dataset;
 
-  std::string working_dir;
+  std::string work_dir;
   std::string output_dir;
 
   unsigned max_nthreads;
@@ -18,4 +18,4 @@ struct corrector_config {
 void load(corrector::corrector_config& cfg, const std::string &filename);
 }
 
-typedef config_common::config<corrector::corrector_config> cfg;
+typedef config_common::config<corrector::corrector_config> corr_cfg;

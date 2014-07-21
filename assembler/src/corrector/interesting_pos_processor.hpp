@@ -13,7 +13,7 @@ class InterestingPositionProcessor {
 	WeightedReadStorage wr_storage;
 //TODO:: init this consts with something more reasonable
 	const int anchor_gap = 100;
-	const int anchor_num = 0;
+	const int anchor_num = 6;
 //TODO: old formula 1 scores? RECONSIDER REASONABLE INIT
 
 	static const size_t MaxErrorCount = 6;
