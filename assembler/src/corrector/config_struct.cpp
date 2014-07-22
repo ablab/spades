@@ -15,7 +15,7 @@ void load(corrector_config& cfg, const std::string &filename) {
 
   cfg.work_dir = config["work_dir"].as<std::string>(".");
   cfg.output_dir = config["output_dir"].as<std::string>(".");
-
+  cfg.use_paired = config["max_nthreads"].as<bool>();
 
   cfg.max_nthreads = config["max_nthreads"].as<unsigned>();
   // Fix number of threads according to OMP capabilities.

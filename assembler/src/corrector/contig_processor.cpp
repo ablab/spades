@@ -18,7 +18,7 @@ void ContigProcessor::read_contig() {
 	charts.resize(contig.length());
 }
 
-void ContigProcessor::UpdateOneRead(SingleSamRead &tmp){
+void ContigProcessor::UpdateOneRead(const SingleSamRead &tmp){
 	unordered_map<size_t, position_description> all_positions;
 	//INFO(tmp.GetName());
 	//INFO(tmp.get_contig_id());
@@ -42,11 +42,11 @@ void ContigProcessor::UpdateOneRead(SingleSamRead &tmp){
 	}
 }
 //returns: number of changed nucleotides;
-int ContigProcessor::UpdateOneBase(size_t i, stringstream &ss, unordered_map<size_t, position_description> &interesting_positions){
+int ContigProcessor::UpdateOneBase(size_t i, stringstream &ss, const unordered_map<size_t, position_description> &interesting_positions){
 	char old = (char) toupper(contig[i]);
 	size_t maxi = charts[i].FoundOptimal(contig[i]);
 	if (interesting_positions.find(i) != interesting_positions.end()) {
-		size_t maxj = interesting_positions[i].FoundOptimal(contig[i]);
+		size_t maxj = interesting_positions.find(i)->second.FoundOptimal(contig[i]);
 		if (maxj != maxi) {
 			INFO("Interesting positions differ with majority!");
 			INFO("On position " << i << "  old: " << old <<" majority: "<<pos_to_var[maxi] << "interesting: " << pos_to_var[maxj]);

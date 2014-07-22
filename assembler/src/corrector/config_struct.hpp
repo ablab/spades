@@ -11,7 +11,7 @@ struct corrector_config {
 
   std::string work_dir;
   std::string output_dir;
-
+  bool use_paired;
   unsigned max_nthreads;
 };
 

@@ -39,7 +39,7 @@ size_t InterestingPositionProcessor::FillInterestingPositions(vector<position_de
 }
 
 
-void InterestingPositionProcessor::UpdateInterestingRead(PositionDescriptionMap &ps) {
+void InterestingPositionProcessor::UpdateInterestingRead(const PositionDescriptionMap &ps) {
 	vector<size_t> interesting_in_read;
 	for(auto iter = ps.begin(); iter != ps.end(); ++iter) {
 		if (IsInteresting(iter->first)) {

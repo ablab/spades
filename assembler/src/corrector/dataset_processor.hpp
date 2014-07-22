@@ -35,7 +35,7 @@ public:
 	DatasetProcessor(string sam_file, string genome_file, string work_dir):sam_file(sam_file), genome_file(genome_file), work_dir(work_dir){
 		//work_dir = "/home/lab42/work/someshit";
 		//path::make_dir(work_dir);
-		output_contig_file = work_dir + "/corrected.fasta";
+		output_contig_file = work_dir + "/corrected_contigs.fasta";
 		nthreads = 8;
 	}
 	void OutputRead(string &read, string &contig_name);

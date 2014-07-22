@@ -33,9 +33,9 @@ public:
 		ipp.set_contig(contig);
 	}
 	void read_contig();
-	void UpdateOneRead(SingleSamRead &tmp);
+	void UpdateOneRead(const SingleSamRead &tmp);
 	//returns: number of changed nucleotides;
-	int UpdateOneBase(size_t i, stringstream &ss, unordered_map<size_t, position_description> &interesting_positions);
+	int UpdateOneBase(size_t i, stringstream &ss, const unordered_map<size_t, position_description> &interesting_positions);
 	void process_sam_file ();
 
 	//string seq, cigar; pair<size_t, size_t> borders;

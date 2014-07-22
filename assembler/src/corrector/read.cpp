@@ -4,14 +4,14 @@ using namespace std;
 
 namespace corrector {
 
-void position_description::update(position_description &another){
+void position_description::update(const position_description &another){
 	for (size_t i = 0; i < MAX_VARIANTS; i++)
 		votes[i] += another.votes[i];
 	//TODO:range based for
 	for (auto iter = another.insertions.begin(); iter != another.insertions.end(); ++iter)
-		insertions[iter->first] += another.insertions[iter->first];
+		insertions[iter->first] += iter->second;
 }
-string position_description::str(){
+string position_description::str() const{
 	stringstream ss;
 	for (int i = 0; i < MAX_VARIANTS; i++ ){
 		ss << pos_to_var[i];
@@ -20,7 +20,7 @@ string position_description::str(){
 	}
 	return ss.str();
 }
-size_t position_description::FoundOptimal(char current){
+size_t position_description::FoundOptimal(char current) const{
 	size_t maxi = var_to_pos[(size_t) current];
 	int maxx = votes[maxi];
 	for (size_t j = 0; j < MAX_VARIANTS; j++) {
@@ -57,7 +57,7 @@ void SingleSamRead::set_data(bam1_t *seq_) {
 	//new_seq->data = new uint8_t (seq_data);
 	data_ = *new_seq;
 }
-int SingleSamRead::CountPositions(unordered_map <size_t, position_description> &ps, string &contig){
+int SingleSamRead::CountPositions(unordered_map <size_t, position_description> &ps, string &contig) const{
 	size_t contig_length = contig.length();
 	int error_num = 0;
 	if (get_contig_id() < 0) {
@@ -204,7 +204,7 @@ void PairedSamRead::pair(SingleSamRead &a1, SingleSamRead &a2) {
 	r1 = a1; r2 = a2;
 }
 
-int PairedSamRead::CountPositions(unordered_map <size_t, position_description> &ps, string &contig) {
+int PairedSamRead::CountPositions(unordered_map <size_t, position_description> &ps, string &contig) const{
 
 	TRACE("starting pairing");
 	int t1 = r1.CountPositions(ps, contig);

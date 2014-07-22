@@ -24,9 +24,9 @@ struct position_description {
 
 
 	std::unordered_map<std::string, int > insertions;
-	void update(position_description &another);
-	std::string str();
-	size_t FoundOptimal(char current);
+	void update(const position_description &another);
+	std::string str() const;
+	size_t FoundOptimal(char current) const;
 	void clear() ;
 };
 typedef unordered_map <size_t, position_description> PositionDescriptionMap;
@@ -39,7 +39,7 @@ struct SingleSamRead {
 	size_t CigarLen() const;
 	int get_contig_id() const;
 	void set_data(bam1_t *seq_);
-	int CountPositions(unordered_map <size_t, position_description> &ps, string &contig);
+	int CountPositions(unordered_map <size_t, position_description> &ps, string &contig) const;
 	string GetCigar() const;
 	string GetQual() const;
 	string GetName() const;
@@ -50,7 +50,7 @@ struct PairedSamRead {
 //TODO::pair to constructor?
 //TODO::more consts
 	void pair(SingleSamRead &a1, SingleSamRead &a2);
-	int CountPositions(unordered_map <size_t, position_description> &ps, string &contig);
+	int CountPositions(unordered_map <size_t, position_description> &ps, string &contig) const;
 };
 //TODO::rename
 struct WeightedRead {
@@ -77,7 +77,7 @@ struct WeightedRead {
 		}
 		error_num = 0;
 	}
-	inline bool is_first(size_t i, int dir) {
+	inline bool is_first(size_t i, int dir) const{
 		if ((dir == 1 && i == first_pos) || (dir == -1 && i == last_pos))
 			return true;
 		else
