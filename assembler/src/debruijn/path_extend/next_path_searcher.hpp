@@ -931,7 +931,6 @@ inline map<PathWithDistance*, size_t> NextPathSearcher::FindDistances(const Bidi
         if (shortest_path.size() != 0) {
             int gap = 0;
             for (size_t i = 0; i < shortest_path.size(); ++i) {
-                DEBUG("answer " << i << " " << g_.int_id(shortest_path[i]))
                 gap += (int) g_.length(shortest_path[i]);
             }
             gap += (int) g_.k();
@@ -948,10 +947,11 @@ inline map<PathWithDistance*, set<PathWithDistance*> > NextPathSearcher::FindCon
         map<PathWithDistance*, size_t> distances = FindDistances((*p1)->p_, all_paths);
         connections[*p1] = set<PathWithDistance*>();
         for (auto iter = distances.begin(); iter != distances.end(); ++iter) {
-            connections[*p1].insert(iter->first);
+        	if ((*p1)->p_.Length() + iter->second < search_dist_){
+        		connections[*p1].insert(iter->first);
+        	}
         }
     }
-    DEBUG("return connections " << connections.size())
     return connections;
 }
 
@@ -996,10 +996,10 @@ inline void NextPathSearcher::ConnectPaths(const BidirectionalPath& init_path, v
 }
 
 inline vector<vector<PathWithDistance*> > NextPathSearcher::FilterConnections(vector<PathWithDistance*>& all_paths, map<PathWithDistance*, set<PathWithDistance*> >& connections) {
-    DEBUG("filter connections " << connections.size() << " all paths size " << all_paths.size())
-	vector<vector<size_t> > permutations = Generate(all_paths.size(), all_paths, connections);
-    DEBUG("generated all permutations " << permutations.size());
     vector<vector<PathWithDistance*> > variants;
+    DEBUG("filter connections " << connections.size() << " all paths size " << all_paths.size())
+    vector<vector<size_t> > permutations = Generate(all_paths.size(), all_paths, connections);
+    DEBUG("generated all permutations " << permutations.size());
     for (size_t i = 0; i < permutations.size(); ++i) {
         bool correct_permutation = true;
         vector<PathWithDistance*> variant;
