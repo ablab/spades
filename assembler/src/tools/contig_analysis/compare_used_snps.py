@@ -34,12 +34,20 @@ if len(sys.argv) != 3:
 
 first_snps = read_snps(sys.argv[1])
 second_snps = read_snps(sys.argv[2])
+first_lines = []
+second_lines = []
 print("SNPs present in " + sys.argv[1] + " not present in " + sys.argv[2] + ':')
 for snp in first_snps:
     if not snp in second_snps:
-        print  first_snps[snp]
-
+        first_lines.append(first_snps[snp])
+first_lines.sort()
+for line in first_lines:
+    print line
 print("\n SNPs present in " + sys.argv[2] + " not present in " + sys.argv[1] + ':')
 for snp in second_snps:
     if not snp in first_snps:
-        print  second_snps[snp]
+        second_lines.append( second_snps[snp])
+second_lines.sort()
+for line in second_lines:
+    print line
+
