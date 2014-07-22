@@ -181,9 +181,9 @@ private:
 
     void ScaffoldTip(const BidirectionalPath& path, Edge * current_path, vector<Edge*>& result_edges, vector<Edge*>& stopped_paths, vector<Edge*>& to_add,
                      bool jump);
-    void ScaffoldChristmasTree(const BidirectionalPath& path, Edge * current_path, vector<Edge*>& to_add);
+    void ScaffoldChristmasTree(const BidirectionalPath& path, Edge * current_path, vector<Edge*>& to_add, size_t min_length_from);
     void Scaffold(const BidirectionalPath& init_path, Edge* current_path, ConstructedPathT& constructed_paths, set<EdgeId>& seeds, bool is_gap);
-    void FindScaffoldingCandidates(const BidirectionalPath& init_path, Edge* current_path, EdgeSet& candidate_set);
+    void FindScaffoldingCandidates(const BidirectionalPath& init_path, Edge* current_path, EdgeSet& candidate_set, size_t min_length_from);
     void FindScaffoldingCandidates(EdgeId e, size_t distance_to_tip, vector<EdgeWithDistance>& jump_edges);
     void OrderScaffoldingCandidates(EdgeSet& candidate_set, const BidirectionalPath& init_path, Edge* current_path, ConstructedPathT& constructed_paths, set<EdgeId>& seeds, bool is_gap);
     void RemoveRedundant(ConstructedPathT& constructed_paths) const;
@@ -197,7 +197,7 @@ private:
     void JoinPathsByPI(ConstructedPathT& constructed_paths);
     void JoinPathsByDejikstra(const BidirectionalPath& init_path, ConstructedPathT& constructed_paths);
     map<PathWithDistance*, size_t> FindDistances(const BidirectionalPath& p, vector<PathWithDistance*>& paths);
-    map<PathWithDistance*, set<PathWithDistance*> > FindConnections(vector<PathWithDistance*>& all_paths);
+    void FindConnections(vector<PathWithDistance*>& all_paths, map<PathWithDistance*, set<PathWithDistance*> >& connections);
     vector<vector<PathWithDistance*> > FilterConnections(vector<PathWithDistance*>& all_paths, map<PathWithDistance*, set<PathWithDistance*> >& connections);
     void ConnectPaths(const BidirectionalPath& init_path, vector<vector<PathWithDistance*> >& variants);
 
@@ -228,13 +228,27 @@ inline vector<BidirectionalPath*> NextPathSearcher::ScaffoldTree(const Bidirecti
     DEBUG("Scaffolding tree for edge " << g_.int_id(start_e->GetId()));
     path.Print();
     vector<Edge*> result_edges;
-    ScaffoldChristmasTree(path, e, result_edges);
+    ScaffoldChristmasTree(path, e, result_edges, 0);
     std::vector<BidirectionalPath*> result_paths;
     DEBUG("adding paths " << result_edges.size());
     for (size_t i = 0; i < result_edges.size(); ++i) {
         BidirectionalPath result_path = result_edges[i]->GetPrevPath(path.Size());
         if (!result_path.Empty())
             result_paths.push_back(new BidirectionalPath(result_path));
+    }
+    if (result_paths.size() != 1) {
+        for (size_t i = 0; i < result_paths.size(); ++i) {
+            delete result_paths[i];
+        }
+        result_paths.clear();
+        result_edges.clear();
+        ScaffoldChristmasTree(path, e, result_edges, long_edge_len_);
+        DEBUG("adding paths SECOND " << result_edges.size());
+        for (size_t i = 0; i < result_edges.size(); ++i) {
+            BidirectionalPath result_path = result_edges[i]->GetPrevPath(path.Size());
+            if (!result_path.Empty())
+                result_paths.push_back(new BidirectionalPath(result_path));
+        }
     }
     delete start_e;
     DEBUG( "for path " << path.GetId() << " several extension " << result_paths.size());
@@ -411,16 +425,14 @@ inline void NextPathSearcher::ScaffoldTip(const BidirectionalPath& path, Edge * 
     }
 }
 
-inline void NextPathSearcher::ScaffoldChristmasTree(
-		const BidirectionalPath& path, Edge * current_path,
-		vector<Edge*>& to_add) {
+inline void NextPathSearcher::ScaffoldChristmasTree(const BidirectionalPath& path, Edge * current_path, vector<Edge*>& to_add, size_t min_length_from) {
 	//jump forward when too much paths
 	DEBUG("========= Scaffolding when too many paths =========");
 	ConstructedPathT constructed_paths;
 	set<EdgeId> seeds;
 	//Scaffold(path, current_path, constructed_paths, seeds, false);
 	EdgeSet candidate_set;
-	FindScaffoldingCandidates(path, current_path, candidate_set);
+	FindScaffoldingCandidates(path, current_path, candidate_set, min_length_from);
 	for (EdgeWithDistance e : candidate_set) {
 		constructed_paths.insert(make_pair(e.e_,PathWithDistance(BidirectionalPath(g_, e.e_), e.d_)));
 	}
@@ -438,8 +450,7 @@ inline void NextPathSearcher::ScaffoldChristmasTree(
         iter->second.p_.Print();
     }
 
-    if (constructed_paths.size() > 0 &&
-            constructed_paths.upper_bound(constructed_paths.begin()->first) == constructed_paths.end()) {
+    if (constructed_paths.size() > 0 && constructed_paths.upper_bound(constructed_paths.begin()->first) == constructed_paths.end()) {
         DEBUG("All paths from one seed");
         int first_seed_pos = 0;
         auto p = constructed_paths.begin();
@@ -483,7 +494,7 @@ inline void NextPathSearcher::Scaffold(const BidirectionalPath& init_path, Edge*
                                        ConstructedPathT& constructed_paths, set<EdgeId>& seeds, bool is_gap) {
 
     EdgeSet candidate_set;
-    FindScaffoldingCandidates(init_path, current_path, candidate_set);
+    FindScaffoldingCandidates(init_path, current_path, candidate_set, 0);
 
     DEBUG("Scafolding candidates");
     for (EdgeWithDistance e : candidate_set) {
@@ -493,7 +504,7 @@ inline void NextPathSearcher::Scaffold(const BidirectionalPath& init_path, Edge*
     OrderScaffoldingCandidates(candidate_set, init_path, current_path, constructed_paths, seeds, is_gap);
 }
 
-inline void NextPathSearcher::FindScaffoldingCandidates(const BidirectionalPath& init_path, Edge* current_path, EdgeSet& candidate_set) {
+inline void NextPathSearcher::FindScaffoldingCandidates(const BidirectionalPath& init_path, Edge* current_path, EdgeSet& candidate_set, size_t min_length_from) {
     set<EdgeId> path_end;
     set<Edge*> prev_edges = current_path->GetPrevEdges(search_dist_);
     for (Edge* e : prev_edges) {
@@ -508,6 +519,9 @@ inline void NextPathSearcher::FindScaffoldingCandidates(const BidirectionalPath&
     TRACE("Path already grown to " << grown_path_len);
 
     for (size_t i = 0; i < init_path.Size(); ++i) {
+        if (g_.length(init_path[i]) <= min_length_from) {
+            continue;
+        }
         vector<EdgeWithDistance> jump_edges;
         size_t distance_to_tip = init_path.LengthAt(i) + grown_path_len;
         FindScaffoldingCandidates(init_path[i], distance_to_tip, jump_edges);
@@ -515,8 +529,8 @@ inline void NextPathSearcher::FindScaffoldingCandidates(const BidirectionalPath&
             if (candidates.find(e.e_) == candidates.end()) {
                 candidates[e.e_] = vector<int>();
             }
-            candidates[e.e_].push_back(
-            /*max(e.d_ - (int) distance_to_tip, 100)*/100);
+            DEBUG("ADD JUMP EDGE FROM " << g_.int_id(init_path[i]) << " TO " << g_.int_id(e.e_))
+            candidates[e.e_].push_back(/*max(e.d_ - (int) distance_to_tip, 100)*/100);
         }
     }
 
@@ -858,12 +872,15 @@ inline void NextPathSearcher::JoinPathsByPI(ConstructedPathT& constructed_paths)
 void Generate(size_t l, size_t r, vector<size_t> a,
 		vector<vector<size_t> >& res, vector<PathWithDistance*>& all_paths, map<PathWithDistance*, set<PathWithDistance*> >& connections) {
 	if (l == r) {
+	    DEBUG("result " << a.size())
 		res.push_back(a);
 	} else {
 		for (size_t i = l; i < r; ++i) {
-			if (l > 0 && connections[all_paths[l - 1]].count(all_paths[i]) == 0) {
+		    if (l > 0 && connections[all_paths[a[l - 1]]].count(all_paths[a[i]]) == 0) {
+		        DEBUG(" not connected " << a[l-1] << " and " << a[i])
 				continue;
 			}
+		    DEBUG("  connected " << l-1 << " and " << i)
 			size_t v = a[l];
 			a[l] = a[i];
 			a[i] = v;
@@ -886,7 +903,7 @@ vector<vector<size_t> > Generate(size_t n, vector<PathWithDistance*>& all_paths,
 }
 
 inline map<PathWithDistance*, size_t> NextPathSearcher::FindDistances(const BidirectionalPath& p, vector<PathWithDistance*>& paths) {
-    DEBUG("find distances")
+    DEBUG("find distances from e " << g_.int_id(p.Back()))
 	map<PathWithDistance*, size_t> result;
     DijkstraHelper<Graph>::BoundedDijkstra dijkstra(DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, search_dist_, 3000));
     dijkstra.run(g_.EdgeEnd(p.Back()));
@@ -900,23 +917,23 @@ inline map<PathWithDistance*, size_t> NextPathSearcher::FindDistances(const Bidi
             }
             gap += (int) g_.k();
             result[*ipath] = gap;
+
         }
     }
     DEBUG("return result " << result.size());
     return result;
 }
 
-inline map<PathWithDistance*, set<PathWithDistance*> > NextPathSearcher::FindConnections(vector<PathWithDistance*>& all_paths) {
-    map<PathWithDistance*, set<PathWithDistance*> > connections;
+inline void NextPathSearcher::FindConnections(vector<PathWithDistance*>& all_paths, map<PathWithDistance*, set<PathWithDistance*> >& connections) {
     for (auto p1 = all_paths.begin(); p1 != all_paths.end(); ++p1) {
         map<PathWithDistance*, size_t> distances = FindDistances((*p1)->p_, all_paths);
         connections[*p1] = set<PathWithDistance*>();
         for (auto iter = distances.begin(); iter != distances.end(); ++iter) {
             connections[*p1].insert(iter->first);
+            DEBUG("CONNECTION from " << g_.int_id((*p1)->p_.Back()) << " TO " << g_.int_id(iter->first->p_.At(0)))
         }
     }
     DEBUG("return connections " << connections.size())
-    return connections;
 }
 
 inline void NextPathSearcher::ConnectPaths(const BidirectionalPath& init_path, vector<vector<PathWithDistance*> >& variants) {
@@ -961,6 +978,11 @@ inline void NextPathSearcher::ConnectPaths(const BidirectionalPath& init_path, v
 
 inline vector<vector<PathWithDistance*> > NextPathSearcher::FilterConnections(vector<PathWithDistance*>& all_paths, map<PathWithDistance*, set<PathWithDistance*> >& connections) {
     DEBUG("filter connections " << connections.size() << " all paths size " << all_paths.size())
+    for (auto iter1 = connections.begin(); iter1 != connections.end(); ++ iter1) {
+        for (auto iter2 = iter1->second.begin(); iter2 != iter1->second.end(); ++iter2) {
+            DEBUG("WE HAVE CONNECTIONS FROM " << g_.int_id(iter1->first->p_.Back()) << " TO " << g_.int_id((*iter2)->p_.Back()))
+        }
+    }
 	vector<vector<size_t> > permutations = Generate(all_paths.size(), all_paths, connections);
     DEBUG("generated all permutations " << permutations.size());
     vector<vector<PathWithDistance*> > variants;
@@ -997,7 +1019,8 @@ inline void NextPathSearcher::JoinPathsByDejikstra(const BidirectionalPath& init
             all_paths.push_back(&p1->second);
         }
     }
-    map<PathWithDistance*, set<PathWithDistance*> > connections = FindConnections(all_paths);
+    map<PathWithDistance*, set<PathWithDistance*> > connections;
+    FindConnections(all_paths, connections);
     vector<vector<PathWithDistance*> > variants = FilterConnections(all_paths, connections);
     ConnectPaths(init_path, variants);
 

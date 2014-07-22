@@ -57,13 +57,11 @@ struct PairedInfoLibrary {
 
     size_t FindJumpEdges(EdgeId e, set<EdgeId>& result, int min_dist = 0, int max_dist = 100000000, size_t min_len = 0) {
         result.clear();
-
         if (!index_.contains(e))
-          return result.size();
+            return result.size();
 
         for (auto it = index_.edge_begin(e); it != index_.edge_end(e); ++it) {
-            if (it->first != e && g_.length(it->first) >= min_len &&
-                    math::le(it->second.d, (double) max_dist) && math::ge(it->second.d, (double) min_dist)) {
+            if (it->first != e && g_.length(it->first) >= min_len && math::le(it->second.d, (double) max_dist) && math::ge(it->second.d, (double) min_dist)) {
                 result.insert(it->first);
 
             }
