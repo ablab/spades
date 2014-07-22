@@ -23,7 +23,7 @@ size_t InterestingPositionProcessor::FillInterestingPositions(vector<position_de
 			DEBUG(i);
 			INFO("Adding interesting position: " << i<< " " << charts[i].str());
 			tmp_pos.insert((int) i);
-			for (int j = -anchor_num + 1; j <= anchor_num; j++) {
+			for (int j = -anchor_num ; j <= anchor_num; j++) {
 				tmp_pos.insert((int) (i / anchor_gap + j) * anchor_gap);
 			}
 		}
@@ -68,7 +68,7 @@ void InterestingPositionProcessor::UpdateInterestingPositions() {
 				//for(size_t i = 0; i < MAX_VARIANTS; i++ )
 					//interesting_weights[current_pos].votes[i] = 0;
 
-				INFO("reads on position: " << read_ids[current_pos].size());
+				DEBUG("reads on position: " << read_ids[current_pos].size());
 //				size_t back_0 = 0;
 //				size_t back_true_A=0, back_true_C =0 ;
 //				size_t back_false = 0;
