@@ -98,6 +98,8 @@ int main(int /*argc*/, char** argv) {
 	  corrector::ContigProcessor cp(sam_name, contig_name);
 	  cp.process_sam_file();
   } else  {
+	  string cfg_file(argv[5]);
+	  corr_cfg::create_instance(cfg_file);
 	  corrector::DatasetProcessor dp(sam_name, contig_name, out_dir);
 	  dp.ProcessLibrary(sam_name);
   }

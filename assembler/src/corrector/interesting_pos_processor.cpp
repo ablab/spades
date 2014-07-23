@@ -75,8 +75,14 @@ void InterestingPositionProcessor::UpdateInterestingPositions() {
 				for(size_t i = 0; i < read_ids[current_pos].size(); i++ ) {
 					size_t current_read_id = read_ids[current_pos][i];
 					size_t current_variant = wr_storage[current_read_id].positions[current_pos];
-					if (! wr_storage[current_read_id].is_first(current_pos, dir)) {
-						interesting_weights[current_pos].votes[current_variant] += get_error_weight(wr_storage[current_read_id].error_num);
+					{
+						int coef = 1;
+						if (corr_cfg::get().strategy == "all_reads") coef = 1;
+						else if (corr_cfg::get().strategy == "mapped_squared") coef = wr_storage[current_read_id].processed_positions * wr_storage[current_read_id].processed_positions ;
+						else if (corr_cfg::get().strategy == "not_started") coef = wr_storage[current_read_id].is_first(current_pos, dir);
+
+
+						interesting_weights[current_pos].votes[current_variant] += get_error_weight(wr_storage[current_read_id].error_num) * coef;
 //						if (current_pos == 1669) {
 //							if (wr_storage[current_read_id].positions.find(1528) != wr_storage[current_read_id].positions.end() ) {
 //								if (wr_storage[current_read_id].positions[1528] == var_to_pos[contig[1528]]) {
@@ -101,7 +107,10 @@ void InterestingPositionProcessor::UpdateInterestingPositions() {
 					size_t current_variant = wr_storage[current_read_id].positions[current_pos];
 					if (current_variant != maxi) {
 						wr_storage[current_read_id].error_num ++;
+					} else {
+						wr_storage[current_read_id].processed_positions ++;
 					}
+
 				}
 
 				if ((char)toupper(contig[current_pos]) != pos_to_var[maxi]) {
@@ -124,9 +133,10 @@ void InterestingPositionProcessor::UpdateInterestingPositions() {
 		if (dir == 1)
 			INFO("reversing the order...");
 
-		for(size_t i = 0; i < wr_storage.size(); i++)
+		for(size_t i = 0; i < wr_storage.size(); i++) {
 			wr_storage[i].error_num = 0;
-
+			wr_storage[i].processed_positions = 0;
+		}
 	}
 }
 };

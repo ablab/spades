@@ -50,7 +50,8 @@ int ContigProcessor::UpdateOneBase(size_t i, stringstream &ss, const unordered_m
 		if (maxj != maxi) {
 			INFO("Interesting positions differ with majority!");
 			INFO("On position " << i << "  old: " << old <<" majority: "<<pos_to_var[maxi] << "interesting: " << pos_to_var[maxj]);
-			maxi = maxj;
+			if (corr_cfg::get().strategy != "majority_only")
+				maxi = maxj;
 		}
 	}
 	if (old != pos_to_var[maxi]) {

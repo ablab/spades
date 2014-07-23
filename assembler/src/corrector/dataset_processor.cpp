@@ -9,7 +9,7 @@ using namespace std;
 namespace corrector{
 
 
-void DatasetProcessor::SplitGenome(const string &genome, const string &genome_splitted_dir, ContigInfoMap &all_contigs){
+void DatasetProcessor::SplitGenome(const string &genome, const string &genome_splitted_dir){
     io::FileReadStream contig_stream(genome);
     io::SingleRead ctg;
     while (! contig_stream.eof()) {
@@ -41,11 +41,29 @@ void DatasetProcessor::GetAlignedContigs(string &read, set<string> &contigs) {
 }
 
 
-void DatasetProcessor::SplitSingleLibrary(){
+void DatasetProcessor::SplitSingleLibrary(string &all_reads_filename){
+	ifstream fs(all_reads_filename);
+	while (! fs.eof()){
+		set<string> contigs;
+		string r1;
 
+		getline(fs, r1);
+		if (r1[0] =='@') continue;
+
+
+		GetAlignedContigs(r1, contigs);
+
+
+		for (string contig: contigs) {
+			VERIFY_MSG(all_contigs.find(contig) != all_contigs.end(), "wrong contig name in SAM file header: " + contig);
+			OutputRead(r1, contig);
+
+		}
+	}
 }
 
-void DatasetProcessor::PrepareWriters(ContigInfoMap &all_contigs){
+
+void DatasetProcessor::PrepareWriters(){
 //TODO::place for buffered writers;
 	for (auto ac :all_contigs){
 
@@ -53,7 +71,7 @@ void DatasetProcessor::PrepareWriters(ContigInfoMap &all_contigs){
 	}
 }
 
-void DatasetProcessor::CloseWriters(ContigInfoMap &all_contigs){
+void DatasetProcessor::CloseWriters(){
 //TODO::place for buffered writers;
 	for (auto ac :all_contigs){
 		all_writers[ac.first]->close();
@@ -67,7 +85,7 @@ void DatasetProcessor::OutputRead(string &read, string &contig_name) {
 	*all_writers[contig_name] <<  '\n';
 }
 
-void DatasetProcessor::SplitPairedLibrary(string &all_reads_filename, ContigInfoMap &all_contigs){
+void DatasetProcessor::SplitPairedLibrary(string &all_reads_filename){
 	ifstream fs(all_reads_filename);
 	while (! fs.eof()){
 		set<string> contigs;
@@ -81,14 +99,16 @@ void DatasetProcessor::SplitPairedLibrary(string &all_reads_filename, ContigInfo
 		GetAlignedContigs(r2, contigs);
 
 		for (string contig: contigs) {
-			VERIFY_MSG(all_contigs.find(contig) != all_contigs.end(), "wrong contig name in SAM file header: " + contig);
-			OutputRead(r1, contig);
-			OutputRead(r2, contig);
+		//	VERIFY_MSG(all_contigs.find(contig) != all_contigs.end(), "wrong contig name in SAM file header: " + contig);
+			if (all_contigs.find(contig)!= all_contigs.end()) {
+				OutputRead(r1, contig);
+				OutputRead(r2, contig);
+			}
 		}
 	}
 }
 
-void DatasetProcessor::SplitHeaders(string &all_reads_filename, ContigInfoMap &all_contigs) {
+void DatasetProcessor::SplitHeaders(string &all_reads_filename) {
 	ifstream fs(all_reads_filename);
 	while (! fs.eof()){
 		string r;
@@ -110,12 +130,12 @@ void DatasetProcessor::SplitHeaders(string &all_reads_filename, ContigInfoMap &a
 
 void DatasetProcessor::ProcessLibrary(string &sam_file){
 	INFO("Splitting genome");
-	SplitGenome(genome_file, work_dir, all_contigs);
-	PrepareWriters(all_contigs);
-	SplitHeaders(sam_file, all_contigs);
+	SplitGenome(genome_file, work_dir);
+	PrepareWriters();
+	SplitHeaders(sam_file);
 	INFO("Splitting paired library");
-	SplitPairedLibrary(sam_file, all_contigs);
-	CloseWriters(all_contigs);
+	SplitPairedLibrary(sam_file);
+	CloseWriters();
 	INFO("Processing contigs");
 	vector<pair<size_t, string> > ordered_contigs;
 	ContigInfoMap all_contigs_copy;
@@ -137,10 +157,10 @@ void DatasetProcessor::ProcessLibrary(string &sam_file){
 	}
 
 	INFO("Gluing processed contigs");
-	GlueSplittedContigs(output_contig_file, all_contigs);
+	GlueSplittedContigs(output_contig_file);
 }
 
-void DatasetProcessor::GlueSplittedContigs(string &out_contigs_filename, ContigInfoMap &all_contigs){
+void DatasetProcessor::GlueSplittedContigs(string &out_contigs_filename){
 
 	ofstream of_c(out_contigs_filename, std::ios_base::binary);
 	for (auto ac : all_contigs) {

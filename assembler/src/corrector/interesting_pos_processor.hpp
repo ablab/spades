@@ -2,6 +2,8 @@
 #include "sam_reader.hpp"
 #include "read.hpp"
 #include "include.hpp"
+#include "config_struct.hpp"
+
 
 namespace corrector {
 typedef vector<WeightedRead> WeightedReadStorage;

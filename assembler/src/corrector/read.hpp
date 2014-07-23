@@ -56,12 +56,15 @@ struct PairedSamRead {
 struct WeightedRead {
 	map<size_t, size_t> positions;
 	int error_num;
+	int non_interesting_error_num;
+	int processed_positions;
 	double weight;
 	size_t first_pos;
 	size_t last_pos;
 	WeightedRead(const vector<size_t> &int_pos, const PositionDescriptionMap &ps){
 		first_pos = std::numeric_limits<size_t>::max();
 		last_pos = 0;
+		non_interesting_error_num = 0;
 		for (size_t i = 0; i < int_pos.size(); i++ ) {
 			for (size_t j = 0; j < MAX_VARIANTS; j++) {
 				PositionDescriptionMap::const_iterator tmp = ps.find(int_pos[i]);
@@ -76,6 +79,7 @@ struct WeightedRead {
 			}
 		}
 		error_num = 0;
+		processed_positions = 0;
 	}
 	inline bool is_first(size_t i, int dir) const{
 		if ((dir == 1 && i == first_pos) || (dir == -1 && i == last_pos))
@@ -83,6 +87,7 @@ struct WeightedRead {
 		else
 			return false;
 	}
+
 };
 
 };
