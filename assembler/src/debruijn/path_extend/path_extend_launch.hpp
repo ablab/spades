@@ -321,7 +321,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 
     size_t max_over = max(FindMaxOverlapedLen(libs), gp.g.k() + 100);
 
-    CompositeExtender * mainPE = new CompositeExtender(gp.g, cover_map, all_libs, max_over, 0);
+    CompositeExtender * mainPE = new CompositeExtender(gp.g, cover_map, all_libs, max_over);
 
 //extend pe + long reads
     PathExtendResolver resolver(gp.g);
@@ -374,7 +374,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
 	all_libs.insert(all_libs.end(), shortLoopPEs.begin(), shortLoopPEs.end());
 	all_libs.insert(all_libs.end(), scafPEs.begin(), scafPEs.end());
 	all_libs.insert(all_libs.end(), mpPEs.begin(), mpPEs.end());
-	CompositeExtender* mp_main_pe = new CompositeExtender(gp.g, clone_map, all_libs, max_over, FindMaxOverlapedLen(mp_libs));
+	CompositeExtender* mp_main_pe = new CompositeExtender(gp.g, clone_map, all_libs, max_over);
 
 	INFO("Growing paths using mate-pairs");
 	auto mp_paths = resolver.extendSeeds(clone_paths, *mp_main_pe);
@@ -395,7 +395,7 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
     all_libs.insert(all_libs.end(), shortLoopPEs.begin(), shortLoopPEs.end());
     all_libs.insert(all_libs.end(), scafPEs.begin(), scafPEs.end());
     max_over = FindMaxOverlapedLen(libs);
-    CompositeExtender* last_extender = new CompositeExtender(gp.g, clone_map, all_libs, max_over, 0);
+    CompositeExtender* last_extender = new CompositeExtender(gp.g, clone_map, all_libs, max_over);
     auto last_paths = resolver.extendSeeds(mp_paths, *last_extender);
     FinalizePaths(last_paths, clone_map, max_over);
 

@@ -506,22 +506,20 @@ protected:
 
 class CompositeExtender : public ContigsMaker {
 public:
-    CompositeExtender(Graph & g, GraphCoverageMap& cov_map, size_t max_diff_len, size_t covered_less)
+    CompositeExtender(Graph & g, GraphCoverageMap& cov_map, size_t max_diff_len)
             : ContigsMaker(g),
               cover_map_(cov_map),
               repeat_detector_(g, cover_map_, 2 * cfg::get().max_repeat_length),  //TODO: move to config
               extenders_(),
-              max_diff_len_(max_diff_len),
-              covered_less_(covered_less){
+              max_diff_len_(max_diff_len) {
     }
 
-    CompositeExtender(Graph & g, GraphCoverageMap& cov_map, vector<PathExtender*> pes, size_t max_diff_len, size_t covered_less)
+    CompositeExtender(Graph & g, GraphCoverageMap& cov_map, vector<PathExtender*> pes, size_t max_diff_len)
             : ContigsMaker(g),
               cover_map_(cov_map),
               repeat_detector_(g, cover_map_, 2 * cfg::get().max_repeat_length),  //TODO: move to config
               extenders_(),
-              max_diff_len_(max_diff_len),
-              covered_less_(covered_less){
+              max_diff_len_(max_diff_len) {
         extenders_ = pes;
     }
 
@@ -597,7 +595,6 @@ private:
     RepeatDetector repeat_detector_;
     vector<PathExtender*> extenders_;
     size_t max_diff_len_;
-    size_t covered_less_;
 
     void SubscribeCoverageMap(BidirectionalPath * path) {
         path->Subscribe(&cover_map_);
@@ -612,7 +609,7 @@ private:
             if (i % 10000 == 0) {
                 INFO("Processed " << i << " paths from " << paths.size());
             }
-            if (!cover_map_.IsCovered(*paths.Get(i), covered_less_)) {
+            if (!cover_map_.IsCovered(*paths.Get(i))) {
                 usedPaths.AddPair(paths.Get(i), paths.GetConjugate(i));
                 BidirectionalPath * path = new BidirectionalPath(*paths.Get(i));
                 BidirectionalPath * conjugatePath = new BidirectionalPath(*paths.GetConjugate(i));
