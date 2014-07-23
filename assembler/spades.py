@@ -673,7 +673,7 @@ def main(args):
                         max_IS_library['right reads']))
                     #TODO: add reads orientation
 
-                    import corrector
+                    import corrector_bwa_only
                     corrector_cfg = cfg["mismatch_corrector"]
                     args = []
                     for key, values in corrector_cfg.__dict__.items():
@@ -706,7 +706,7 @@ def main(args):
                         cur_args += ['--output-dir', tmp_dir_for_corrector]
 
                         # correcting
-                        corrector.main(cur_args, ext_python_modules_home, log)
+                        corrector_bwa_only.main(cur_args, ext_python_modules_home, log)
 
                         result_corrected_filename = os.path.join(tmp_dir_for_corrector, "corrected_contigs.fasta")
                         # moving corrected contigs (scaffolds) to SPAdes output dir
