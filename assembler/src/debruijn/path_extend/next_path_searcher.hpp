@@ -895,7 +895,7 @@ void Generate(size_t l, size_t r, vector<size_t> a,
 		res.push_back(a);
 	} else {
 		for (size_t i = l; i < r; ++i) {
-			if (l > 0 && connections[all_paths[l - 1]].count(all_paths[i]) == 0) {
+			if (l > 0 && connections[all_paths[a[l - 1]]].count(all_paths[a[i]]) == 0) {
 				continue;
 			}
 			size_t v = a[l];
