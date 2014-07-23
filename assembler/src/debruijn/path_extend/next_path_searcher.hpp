@@ -917,7 +917,6 @@ inline map<PathWithDistance*, size_t> NextPathSearcher::FindDistances(const Bidi
             }
             gap += (int) g_.k();
             result[*ipath] = gap;
-
         }
     }
     DEBUG("return result " << result.size());
@@ -929,8 +928,10 @@ inline void NextPathSearcher::FindConnections(vector<PathWithDistance*>& all_pat
         map<PathWithDistance*, size_t> distances = FindDistances((*p1)->p_, all_paths);
         connections[*p1] = set<PathWithDistance*>();
         for (auto iter = distances.begin(); iter != distances.end(); ++iter) {
-            connections[*p1].insert(iter->first);
-            DEBUG("CONNECTION from " << g_.int_id((*p1)->p_.Back()) << " TO " << g_.int_id(iter->first->p_.At(0)))
+            if ((*p1)->p_.Length() + iter->second < search_dist_){
+                connections[*p1].insert(iter->first);
+                DEBUG("CONNECTION from " << g_.int_id((*p1)->p_.Back()) << " TO " << g_.int_id(iter->first->p_.At(0)))
+            }
         }
     }
     DEBUG("return connections " << connections.size())
@@ -977,31 +978,15 @@ inline void NextPathSearcher::ConnectPaths(const BidirectionalPath& init_path, v
 }
 
 inline vector<vector<PathWithDistance*> > NextPathSearcher::FilterConnections(vector<PathWithDistance*>& all_paths, map<PathWithDistance*, set<PathWithDistance*> >& connections) {
-    DEBUG("filter connections " << connections.size() << " all paths size " << all_paths.size())
-    for (auto iter1 = connections.begin(); iter1 != connections.end(); ++ iter1) {
-        for (auto iter2 = iter1->second.begin(); iter2 != iter1->second.end(); ++iter2) {
-            DEBUG("WE HAVE CONNECTIONS FROM " << g_.int_id(iter1->first->p_.Back()) << " TO " << g_.int_id((*iter2)->p_.Back()))
-        }
-    }
 	vector<vector<size_t> > permutations = Generate(all_paths.size(), all_paths, connections);
     DEBUG("generated all permutations " << permutations.size());
     vector<vector<PathWithDistance*> > variants;
     for (size_t i = 0; i < permutations.size(); ++i) {
-        bool correct_permutation = true;
         vector<PathWithDistance*> variant;
         for (size_t j = 0; j < permutations[i].size(); ++j) {
             variant.push_back(all_paths[permutations[i][j]]);
         }
-        for (int j = (int) variant.size() - 2; j >= 0; j--) {
-            PathWithDistance* next = variant[j + 1];
-            PathWithDistance* curr = variant[j];
-            if (connections[curr].count(next) == 0) {
-                correct_permutation = false;
-            }
-        }
-        if (correct_permutation) {
-            variants.push_back(variant);
-        }
+        variants.push_back(variant);
     }
     return variants;
 }
