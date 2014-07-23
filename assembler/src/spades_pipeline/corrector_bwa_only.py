@@ -583,7 +583,9 @@ def main(args, joblib_path, log=None):
             #os.system("cp -p "+ config["sam_file"] +" " + config["work_dir"]+"tmp.sam")
             config["sam_file"] = tmp_sam_file_path
 
-        os.system ('./build/release/bin/corrector ' + config["sam_file"] + ' ' + config["contigs"] + ' ' + ' 0 ' + config["output_dirpath"] + " " + './configs/corrector/corrector.info')
+        corr_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../configs/corrector/corrector.info')
+
+        os.system ('./build/release/bin/corrector ' + config["sam_file"] + ' ' + config["contigs"] + ' ' + ' 0 ' + config["output_dirpath"] + " " + corr_path)
     #    now = datetime.datetime.now()
     #    res_directory = "corrector.output." + now.strftime("%Y.%m.%d_%H.%M.%S")+"/"
 

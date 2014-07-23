@@ -65,7 +65,7 @@ case $arg in
 	$cmd configs/dipspades/log.properties.template configs/dipspades/log.properties
 		echo ---------------configs/ionhammer/ionhammer.cfg----------------
 	$cmd configs/ionhammer/ionhammer.cfg.template configs/ionhammer/ionhammer.cfg 
-               echo ---------------configs/ionhammer/corrector.info----------------
+               echo ---------------configs/corrector/corrector.info----------------
         $cmd configs/corrector/corrector.info.template configs/corrector/corrector.info
 
 esac
