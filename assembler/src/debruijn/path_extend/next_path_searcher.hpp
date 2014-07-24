@@ -221,6 +221,7 @@ inline NextPathSearcher::NextPathSearcher(const Graph& g, const GraphCoverageMap
           max_paths_(max_number_of_paths_to_search) {
 
 }
+
 inline vector<BidirectionalPath*> NextPathSearcher::ScaffoldTree(const BidirectionalPath& path) {
     Edge* start_e = new Edge(g_, path.At(0), NULL, g_.length(path.At(0)) + path.GapAt(0), path.GapAt(0));
     Edge* e = start_e->AddPath(path, 1);
@@ -230,7 +231,6 @@ inline vector<BidirectionalPath*> NextPathSearcher::ScaffoldTree(const Bidirecti
     vector<Edge*> result_edges;
     ScaffoldChristmasTree(path, e, result_edges, 0);
     std::vector<BidirectionalPath*> result_paths;
-    DEBUG("adding paths " << result_edges.size());
     for (size_t i = 0; i < result_edges.size(); ++i) {
         BidirectionalPath result_path = result_edges[i]->GetPrevPath(path.Size());
         if (!result_path.Empty())
@@ -243,7 +243,6 @@ inline vector<BidirectionalPath*> NextPathSearcher::ScaffoldTree(const Bidirecti
         result_paths.clear();
         result_edges.clear();
         ScaffoldChristmasTree(path, e, result_edges, long_edge_len_);
-        DEBUG("adding paths SECOND " << result_edges.size());
         for (size_t i = 0; i < result_edges.size(); ++i) {
             BidirectionalPath result_path = result_edges[i]->GetPrevPath(path.Size());
             if (!result_path.Empty())
