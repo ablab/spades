@@ -79,7 +79,7 @@ int main(int /*argc*/, char** argv) {
 
   srand(42);
   srandom(42);
-
+//  system("echo blablabla");
 
   create_console_logger();
   //tst

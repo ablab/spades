@@ -47,7 +47,7 @@ void InterestingPositionProcessor::UpdateInterestingRead(const PositionDescripti
 		}
 	}
 	if (interesting_in_read.size() >= 2) {
-		WeightedRead wr(interesting_in_read, ps);
+		WeightedRead wr(interesting_in_read, ps, contig);
 		size_t cur_id = wr_storage.size();
 		wr_storage.push_back(wr);
 		for (size_t i = 0; i < interesting_in_read.size(); i++) {
@@ -82,7 +82,7 @@ void InterestingPositionProcessor::UpdateInterestingPositions() {
 						else if (corr_cfg::get().strategy == "not_started") coef = wr_storage[current_read_id].is_first(current_pos, dir);
 
 
-						interesting_weights[current_pos].votes[current_variant] += get_error_weight(wr_storage[current_read_id].error_num) * coef;
+						interesting_weights[current_pos].votes[current_variant] += get_error_weight(wr_storage[current_read_id].error_num /*+ wr_storage[current_read_id].non_interesting_error_num*/) * coef;
 //						if (current_pos == 1669) {
 //							if (wr_storage[current_read_id].positions.find(1528) != wr_storage[current_read_id].positions.end() ) {
 //								if (wr_storage[current_read_id].positions[1528] == var_to_pos[contig[1528]]) {

@@ -61,7 +61,7 @@ struct WeightedRead {
 	double weight;
 	size_t first_pos;
 	size_t last_pos;
-	WeightedRead(const vector<size_t> &int_pos, const PositionDescriptionMap &ps){
+	WeightedRead(const vector<size_t> &int_pos, const PositionDescriptionMap &ps,const string &contig){
 		first_pos = std::numeric_limits<size_t>::max();
 		last_pos = 0;
 		non_interesting_error_num = 0;
@@ -75,6 +75,14 @@ struct WeightedRead {
 						positions[int_pos[i]] = j;
 						break;
 					}
+				}
+			}
+		}
+		non_interesting_error_num = 0;
+		for (auto position: ps) {
+			if (positions.find(position.first) == positions.end()) {
+				if (position.second.FoundOptimal(contig[position.first]) != (size_t)var_to_pos[(size_t)contig[position.first]]) {
+					non_interesting_error_num++;
 				}
 			}
 		}
