@@ -542,6 +542,8 @@ def main(args):
                     bh_cfg.__dict__["dataset_yaml_filename"] = cfg["dataset"].yaml_filename
 
                 log.info("\n===== %s started. \n" % STAGE_NAME)
+                print tmp_configs_dir
+
                 hammer_logic.run_hammer(corrected_dataset_yaml_filename, tmp_configs_dir, bin_home, bh_cfg, not_used_dataset_data,
                     ext_python_modules_home, log)
                 log.info("\n===== %s finished. \n" % STAGE_NAME)
@@ -610,6 +612,7 @@ def main(args):
                         dataset_file.write(process_cfg.process_spaces(cfg["dataset"].reference) + '\n')
                     dataset_file.close()
                 spades_cfg.__dict__["dataset"] = dataset_filename
+                print tmp_configs_dir
 
                 latest_dir = spades_logic.run_spades(tmp_configs_dir, bin_home, spades_cfg, dataset_data, ext_python_modules_home, log)
 
@@ -653,6 +656,8 @@ def main(args):
 
                     log.info("\n===== %s started." % STAGE_NAME)
                     # detecting paired-end library with the largest insert size
+                    est_params_dataset = os.path.join(latest_dir, "final.lib_data")
+                    cfg["mismatch_corrector"].__dict__["dataset"] = est_params_dataset
                     est_params_data = pyyaml.load(open(os.path.join(latest_dir, "final.lib_data"), 'r'))
                     max_IS_library = None
                     for reads_library in est_params_data:
@@ -704,8 +709,13 @@ def main(args):
                         cur_args += ['-c', assembled]
                         tmp_dir_for_corrector = support.get_tmp_dir(prefix="mis_cor_%s_" % assembly_type)
                         cur_args += ['--output-dir', tmp_dir_for_corrector]
-
+                        cfg["mismatch_corrector"].__dict__["output_dir"] = tmp_dir_for_corrector
                         # correcting
+                        corr_cfg = merge_configs(cfg["mismatch_corrector"], cfg["common"])
+                        corrector_dataset_yaml_filename = os.path.join(corr_cfg.output_dir, "corrector.info")
+                        print tmp_configs_dir
+                        corrector_bwa_only.run_corrector(corrector_dataset_yaml_filename, tmp_configs_dir, bin_home, corr_cfg, not_used_dataset_data,
+                        ext_python_modules_home, log)
                         corrector_bwa_only.main(cur_args, ext_python_modules_home, log)
 
                         result_corrected_filename = os.path.join(tmp_dir_for_corrector, "corrected_contigs.fasta")

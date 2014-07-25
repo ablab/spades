@@ -6,6 +6,7 @@
 #include "read.hpp"
 #include "interesting_pos_processor.hpp"
 #include "path_helper.hpp"
+
 namespace corrector {
 
 struct OneContigDescription{
@@ -33,10 +34,9 @@ class DatasetProcessor {
 	int nthreads;
 public:
 	DatasetProcessor(string sam_file, string genome_file, string work_dir):sam_file(sam_file), genome_file(genome_file), work_dir(work_dir){
-		//work_dir = "/home/lab42/work/someshit";
 		//path::make_dir(work_dir);
 		output_contig_file = work_dir + "/corrected_contigs.fasta";
-		nthreads = 8;
+		nthreads = corr_cfg::get().max_nthreads;
 	}
 	void OutputRead(string &read, string &contig_name);
 	void PrepareWriters();

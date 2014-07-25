@@ -94,7 +94,6 @@ def run_hammer(corrected_dataset_yaml_filename, configs_dir, execution_home, cfg
         import pyyaml2 as pyyaml
     elif sys.version.startswith('3.'):
         import pyyaml3 as pyyaml
-
     dst_configs = os.path.join(cfg.output_dir, "configs")
     if os.path.exists(dst_configs):
         shutil.rmtree(dst_configs)

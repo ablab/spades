@@ -26,7 +26,14 @@ import options_storage
 #insertions = {}
 config = {}
 #total_contigs
-
+import os
+import sys
+import glob
+import shutil
+import support
+import process_cfg
+from site import addsitedir
+from distutils import dir_util
 
 def read_genome(filename):
     res_seq = []
@@ -426,7 +433,7 @@ def run_bwa(log):
 def parse_profile(args, log):
     global config
 
-    long_options = "threads= sam-file= output-dir= bwa= contigs= mate-weight= split-dir= bowtie2= 12= insert-size= help debug use-quality use-multiple-aligned skip-masked".split()
+    long_options = "threads= sam-file= output-dir= bwa= contigs= mate-weight= dataset= split-dir= bowtie2= 12= insert-size= help debug use-quality use-multiple-aligned skip-masked".split()
     short_options = "1:2:o:s:S:c:t:m:q"
 
     reads1 = []
@@ -470,6 +477,8 @@ def parse_profile(args, log):
             config["mate_weight"] = float(arg)
         if opt in ('-s', "--sam-file"):
             config["sam_file"] = os.path.abspath(arg)
+        if opt == "--dataset":
+            config["dataset"] = os.path.abspath(arg)
         if opt in ('-S', "--split-dir"):
             config["split_dir"] = os.path.abspath(arg)
         if opt in ('-q', "--use-quality"):
@@ -533,7 +542,7 @@ def process_contig(files):
     logFile = open(logFileName, 'w')
     ntime = datetime.datetime.now()
     starttime = ntime
-    os.system ('./build/release/bin/corrector ' + samfilename + ' ' + contig_file)
+  #  os.system ('./build/release/bin/corrector ' + samfilename + ' ' + contig_file)
 
     logFile.write(ntime.strftime("%Y.%m.%d_%H.%M.%S") + ": All done. ")
     stime = ntime - starttime
@@ -545,6 +554,67 @@ def process_contig(files):
 
 #    return inserted, replaced
 
+def prepare_config_corr(filename, cfg, ext_python_modules_home):
+    addsitedir(ext_python_modules_home)
+    if sys.version.startswith('2.'):
+        import pyyaml2 as pyyaml
+    elif sys.version.startswith('3.'):
+        import pyyaml3 as pyyaml
+    print filename
+    data = pyyaml.load(open(filename, 'r'))
+    data["dataset"] = cfg.dataset_yaml_filename
+    data["working_dir"] = cfg.tmp_dir
+    data["output_dir"] = cfg.output_dir
+    data["hard_memory_limit"] = cfg.max_memory
+    data["max_nthreads"] = cfg.max_threads
+    pyyaml.dump(data, open(filename, 'w'))
+
+
+def run_corrector(corrected_dataset_yaml_filename, configs_dir, execution_home, cfg,
+               not_used_dataset_data, ext_python_modules_home, log):
+    addsitedir(ext_python_modules_home)
+    if sys.version.startswith('2.'):
+        import pyyaml2 as pyyaml
+    elif sys.version.startswith('3.'):
+        import pyyaml3 as pyyaml
+    cfg.dataset_yaml_filename = corrected_dataset_yaml_filename
+    print cfg.dataset_yaml_filename + " SSSS"
+    dst_configs = os.path.join(cfg.output_dir, "configs")
+    if os.path.exists(dst_configs):
+        shutil.rmtree(dst_configs)
+    dir_util.copy_tree(os.path.join(configs_dir, "corrector"), dst_configs, preserve_times=False)
+    cfg_file_name = os.path.join(dst_configs, "corrector.info")
+    # removing template configs
+    for root, dirs, files in os.walk(dst_configs):
+        for cfg_file in files:
+            cfg_file = os.path.join(root, cfg_file)
+            if cfg_file.endswith('.template'):
+                if os.path.isfile(cfg_file.split('.template')[0]):
+                    os.remove(cfg_file)
+                else:
+                    os.rename(cfg_file, cfg_file.split('.template')[0])
+
+    cfg.tmp_dir = support.get_tmp_dir(prefix="corrector_")
+    shutil.copyfile(cfg_file_name, corrected_dataset_yaml_filename)
+    prepare_config_corr(cfg_file_name, cfg, ext_python_modules_home)
+    binary_name = "corrector"
+
+    command = [os.path.join(execution_home, binary_name),
+               os.path.abspath(cfg_file_name)]
+
+    log.info("\n== Running contig polishing tool: " + ' '.join(command) + "\n")
+ #   support.sys_call(command, log)
+ #   if not os.path.isfile(corrected_dataset_yaml_filename):
+ #       support.error("read error correction finished abnormally: " + corrected_dataset_yaml_filename + " not found!")
+    corrected_dataset_data = pyyaml.load(open(corrected_dataset_yaml_filename, 'r'))
+
+    is_changed = False
+    if is_changed:
+        pyyaml.dump(corrected_dataset_data, open(corrected_dataset_yaml_filename, 'w'))
+    log.info("\n== Dataset description file was created: " + corrected_dataset_yaml_filename + "\n")
+
+    if os.path.isdir(cfg.tmp_dir):
+        shutil.rmtree(cfg.tmp_dir)
 
 def main(args, joblib_path, log=None):
 
@@ -553,7 +623,7 @@ def main(args, joblib_path, log=None):
         sys.exit(0)
     addsitedir(joblib_path)
 
-    os.system ("make -C build/release/corrector/ install=local")
+#    os.system ("make -C build/release/corrector/ install=local")
     init_config()
     parse_profile(args, log)
 
@@ -583,12 +653,13 @@ def main(args, joblib_path, log=None):
             #os.system("cp -p "+ config["sam_file"] +" " + config["work_dir"]+"tmp.sam")
             config["sam_file"] = tmp_sam_file_path
 
-        path_to_bin = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../build/release/bin/corrector')
+        path_to_bin = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../bin/corrector')
         path_to_config = os.path.join(os.path.dirname(os.path.realpath(__file__)) , '../../configs/corrector/corrector.info')
         print path_to_config
         os.system (path_to_bin + ' ' + config["sam_file"] + ' ' + config["contigs"] + ' ' + ' 0 ' + config["output_dirpath"] + " " + path_to_config)
     #    now = datetime.datetime.now()
     #    res_directory = "corrector.output." + now.strftime("%Y.%m.%d_%H.%M.%S")+"/"
+
 
 
 if __name__ == '__main__':

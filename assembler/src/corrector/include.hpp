@@ -5,6 +5,7 @@
  *      Author: lab42
  */
 #pragma once
+#include "config_struct.hpp"
 #include "standard.hpp"
 #include "logger/log_writers.hpp"
 #include "logger/logger.hpp"
