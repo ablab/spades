@@ -654,7 +654,7 @@ def main(args, joblib_path, log=None):
             config["sam_file"] = tmp_sam_file_path
 
         path_to_bin = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../bin/corrector')
-        path_to_config = os.path.join(os.path.dirname(os.path.realpath(__file__)) , '../../configs/corrector/corrector.info')
+        path_to_config = os.path.join(os.path.dirname(os.path.realpath(__file__)) , '../../configs/corrector/corrector.info.template')
         print path_to_config
         os.system (path_to_bin + ' ' + config["sam_file"] + ' ' + config["contigs"] + ' ' + ' 0 ' + config["output_dirpath"] + " " + path_to_config)
     #    now = datetime.datetime.now()
