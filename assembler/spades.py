@@ -156,7 +156,8 @@ def fill_cfg(options_to_parse, log):
     # all parameters are stored here
     cfg = dict()
     # dataset is stored here. We are prepared for up to MAX_LIBS_NUMBER for each type of short-reads libs
-    dataset_data = [{} for i in range(options_storage.MAX_LIBS_NUMBER * len(options_storage.SHORT_READS_TYPES.keys()))]  # "[{}] * num" doesn't work here!
+    dataset_data = [{} for i in range(options_storage.MAX_LIBS_NUMBER *
+                                      len(options_storage.SHORT_READS_TYPES.keys()))]  # "[{}]*num" doesn't work here!
 
     # for parsing options from "previous run command"
     options_storage.continue_mode = False
@@ -272,7 +273,6 @@ def fill_cfg(options_to_parse, log):
             options_storage.diploid_mode = True
         else:
             raise ValueError
-
 
     if not options_storage.output_dir:
         support.error("the output_dir is not set! It is a mandatory parameter (-o output_dir).", log)
@@ -427,7 +427,8 @@ def main(args):
     support.check_binaries(bin_home, log)
 
     # parse options and safe all parameters to cfg
-    cfg, dataset_data = fill_cfg(args, log)
+    options = args
+    cfg, dataset_data = fill_cfg(options, log)
 
     if options_storage.continue_mode:
         cmd_line, options = get_options_from_params(os.path.join(options_storage.output_dir, "params.txt"), args[0])
@@ -483,6 +484,8 @@ def main(args):
 
     print_used_values(cfg, log)
     log.removeHandler(params_handler)
+
+    support.check_single_reads_in_options(options, log)
 
     if not options_storage.continue_mode:
         log.info("\n======= SPAdes pipeline started. Log can be found here: " + log_filename + "\n")
