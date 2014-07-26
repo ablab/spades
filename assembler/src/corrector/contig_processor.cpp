@@ -108,8 +108,11 @@ void ContigProcessor::process_sam_file (){
 		UpdateOneRead(tmp);
 		//	sm >>tmp;
 	}
+	stringstream err_str;
+
 	for(int i = 0; i < 20; i ++)
-		cout << error_counts[i] << " ";
+		err_str << error_counts[i] << " ";
+	INFO("Error counts:" << err_str);
 	sm.reset();
 	size_t interesting = ipp.FillInterestingPositions(charts);
 	INFO("interesting size: " << interesting);

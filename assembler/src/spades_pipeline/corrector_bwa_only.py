@@ -560,7 +560,7 @@ def prepare_config_corr(filename, cfg, ext_python_modules_home):
         import pyyaml2 as pyyaml
     elif sys.version.startswith('3.'):
         import pyyaml3 as pyyaml
-    print filename
+    print "dumping contigs to " + filename
     data = pyyaml.load(open(filename, 'r'))
     data["dataset"] = cfg.dataset_yaml_filename
     data["working_dir"] = cfg.tmp_dir

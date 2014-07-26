@@ -1,5 +1,2 @@
-dataset           : ./spades_test/input_dataset.yaml
-work_dir       : ./test_dataset/input/corrected/tmp
-output_dir        : ./test_dataset/input/corrected
-max_nthreads      : 16
-strategy        : mapped_squared
+{dataset: ./spades_test/input_dataset.yaml, work_dir: ./test_dataset/input/corrected/tmp, output_dir: ./test_dataset/input/corrected,max_nthreads: 16
+,strategy: mapped_squared}

@@ -723,8 +723,8 @@ def main(args):
                         if os.path.isfile(result_corrected_filename):
                             shutil.move(result_corrected_filename, corrected)
 
-                        if os.path.isdir(tmp_dir_for_corrector):
-                            shutil.rmtree(tmp_dir_for_corrector)
+                        #if os.path.isdir(tmp_dir_for_corrector):
+                        #    shutil.rmtree(tmp_dir_for_corrector)
 
                         assembled_fastg = assembled[:-6] + ".fastg"
                         if os.path.isfile(assembled_fastg):
