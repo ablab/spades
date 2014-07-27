@@ -112,7 +112,7 @@ void ContigProcessor::process_sam_file (){
 
 	for(int i = 0; i < 20; i ++)
 		err_str << error_counts[i] << " ";
-	INFO("Error counts:" << err_str);
+	INFO("Error counts:" << err_str.str());
 	sm.reset();
 	size_t interesting = ipp.FillInterestingPositions(charts);
 	INFO("interesting size: " << interesting);
