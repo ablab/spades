@@ -10,11 +10,13 @@ namespace corrector{
 
 
 void DatasetProcessor::SplitGenome(const string &genome, const string &genome_splitted_dir){
-    io::FileReadStream contig_stream(genome);
-    io::SingleRead ctg;
-    while (! contig_stream.eof()) {
-    	contig_stream >> ctg;
-    	string contig_name = ctg.name();
+    auto cont_map = GetContigs(genome);
+
+
+    for (auto &p :cont_map) {
+
+    	string contig_name = p.first;
+    	string contig_seq = p.second;
     	//INFO(contig_name);
     	string full_path = genome_splitted_dir + "/" + contig_name+ ".fasta";
     	string out_full_path = 	 full_path.substr(0, full_path.length() - 5) + "ref.fasta";
@@ -23,15 +25,16 @@ void DatasetProcessor::SplitGenome(const string &genome, const string &genome_sp
     	all_contigs[contig_name].input_contig_filename = full_path;
     	all_contigs[contig_name].output_contig_filename = out_full_path;
     	all_contigs[contig_name].sam_filename = sam_filename;
-    	all_contigs[contig_name].contig_length = ctg.sequence().str().length();
+    	all_contigs[contig_name].contig_length = contig_seq.length();
     	all_contigs[contig_name].buffered_reads.clear();
 		//auto tmp_stream = new ofstream(sam_filename.c_str(), ios::app);
 		string header = "@SQ\tSN:"+ contig_name+"\tLN:"+ to_string(all_contigs[contig_name].contig_length);
 		BufferedOutputRead(header, contig_name);
 		//tmp_stream->close();
-    	io::osequencestream oss(full_path);
+		PutContig(full_path, contig_name, contig_seq);
+
     	DEBUG("full_path "+full_path)
-    	oss << ctg;
+    	//oss << ctg;
 
     }
 }

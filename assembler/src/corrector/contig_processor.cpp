@@ -7,11 +7,11 @@
 namespace corrector{
 
 void ContigProcessor::read_contig() {
-	io::FileReadStream contig_stream(contig_file);
-	io::SingleRead ctg;
-	contig_stream >> ctg;
-	contig = ctg.sequence().str();
-	contig_name = ctg.name();
+	auto res= GetContigs(contig_file);
+	VERIFY_MSG(res.size()== 1, "Not one contig in file with unique contigs");
+
+	contig = res.begin()->second;
+	contig_name = res.begin()->first;
 	INFO("Processing contig of length " << contig.length());
 //extention is always "fasta"
 	output_contig_file = contig_file.substr(0, contig_file.length() - 5) + "ref.fasta";
@@ -25,6 +25,7 @@ void ContigProcessor::UpdateOneRead(const SingleSamRead &tmp){
 	if (tmp.get_contig_id() < 0) {
 		return;
 	}
+
 	string cur_s = sm.get_contig_name(tmp.get_contig_id());
 
 	if (cur_s != contig_name) {
@@ -131,9 +132,10 @@ void ContigProcessor::process_sam_file (){
 		DEBUG(charts[i].str());
 		UpdateOneBase(i, s_new_contig, interesting_positions);
 	}
-	io::osequencestream oss(output_contig_file);
+	//io::osequencestream oss(output_contig_file);
 	contig_name = ContigRenameWithLength(contig_name, s_new_contig.str().length());
-	oss << io::SingleRead(contig_name, s_new_contig.str());
+	PutContig(output_contig_file, contig_name, s_new_contig.str());
+	//oss << io::SingleRead(contig_name, s_new_contig.str());
 }
 
 };

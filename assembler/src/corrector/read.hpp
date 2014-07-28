@@ -32,6 +32,7 @@ struct position_description {
 typedef unordered_map <size_t, position_description> PositionDescriptionMap;
 
 
+
 //TODO::destructor
 struct SingleSamRead {
 	bam1_t data_;

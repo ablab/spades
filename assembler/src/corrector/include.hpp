@@ -19,6 +19,7 @@
 #include "io/osequencestream.hpp"
 #include "io/ireader.hpp"
 #include <vector>
+
 #include <string>
 #define MAX_VARIANTS 7
 #define DELETION 5
@@ -38,4 +39,5 @@ const int var_to_pos[128] = {
 inline static bool IsValidVariant(char C) {
 	return valid_variant.find(C) != valid_variant.end();
 }
+
 };
