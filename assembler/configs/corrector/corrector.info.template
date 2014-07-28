@@ -1,2 +1,7 @@
-{dataset: /home/lab42/work/algorithmic-biology/assembler/check/K55/final.lib_data, work_dir: ./test_dataset/input/corrected/tmp, output_dir: ./test_dataset/input/corrected,max_nthreads: 16
-,strategy: mapped_squared}
+{
+dataset: ./configs/debruijn/datasets/ECOLI_IS220_QUAKE.yaml, 
+work_dir: ./test_dataset/input/corrected/tmp, 
+output_dir: ./test_dataset/input/corrected,
+max_nthreads: 16,
+strategy: mapped_squared
+}
