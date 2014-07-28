@@ -94,6 +94,7 @@ void DatasetProcessor::FlushAll() {
 			*stream << read;
 			*stream << '\n';
 		}
+		ac.second.buffered_reads.resize(0);
 	}
 }
 
