@@ -24,6 +24,7 @@ void DatasetProcessor::SplitGenome(const string &genome, const string &genome_sp
     	all_contigs[contig_name].output_contig_filename = out_full_path;
     	all_contigs[contig_name].sam_filename = sam_filename;
     	all_contigs[contig_name].contig_length = ctg.sequence().str().length();
+    	all_contigs[contig_name].buffered_reads.clear();
     	io::osequencestream oss(full_path);
     	DEBUG("full_path "+full_path)
     	oss << ctg;
@@ -142,7 +143,7 @@ void DatasetProcessor::SplitHeaders(string &all_reads_filename) {
 		if (arr[0] == "@SQ") {
 			VERIFY_MSG(arr.size() > 1, "Invalid .sam header");
 			string contig_name = arr[1].substr(3, arr[1].length() - 3) ;
-			//INFO(contig_name);
+			INFO(contig_name);
 			//VERIFY_MSG(all_writers.find(contig_name) != all_writers.end(), "wrong contig name in SAM file header");
 			BufferedOutputRead(r, contig_name);
 		}
