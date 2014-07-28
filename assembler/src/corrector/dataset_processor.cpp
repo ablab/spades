@@ -64,7 +64,7 @@ void DatasetProcessor::SplitSingleLibrary(string &all_reads_filename){
 	}
 }
 
-
+/*
 void DatasetProcessor::PrepareWriters(){
 //TODO::place for buffered writers;
 	for (auto ac :all_contigs){
@@ -86,7 +86,7 @@ void DatasetProcessor::OutputRead(string &read, string &contig_name) {
 	*all_writers[contig_name] << read ;
 	*all_writers[contig_name] <<  '\n';
 }
-
+*/
 void DatasetProcessor::FlushAll() {
 	for (auto ac :all_contigs) {
 		auto stream = new ofstream(ac.second.sam_filename.c_str());
@@ -94,7 +94,7 @@ void DatasetProcessor::FlushAll() {
 			*stream << read;
 			*stream << '\n';
 		}
-		ac.second.buffered_reads.resize(0);
+		ac.second.buffered_reads.clear();
 	}
 }
 

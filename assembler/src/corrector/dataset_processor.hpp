@@ -31,7 +31,7 @@ class DatasetProcessor {
 	InterestingPositionProcessor ipp;
 	vector<int> error_counts;
 	string work_dir;
-	map<string, std::ofstream*> all_writers;
+	//map<string, std::ofstream*> all_writers;
 	int nthreads;
 	int buffered_count ;
 	const int buff_size = 1000000;
@@ -43,7 +43,7 @@ public:
 		buffered_count = 0;
 	}
 	void OutputRead(string &read, string &contig_name);
-	void PrepareWriters();
+//	void PrepareWriters();
 	void SplitGenome(const string &genome, const string &genome_splitted_dir);
 	void FlushAll();
 	void BufferedOutputRead(string &read, string &contig_name);
@@ -54,7 +54,7 @@ public:
 	void ProcessSplittedLibrary();
 	void ProcessLibrary(string &sam_file);
 	void SplitHeaders(string &all_reads_filename);
-	void CloseWriters();
+//	void CloseWriters();
 	void ProcessDataset();
 
 };
