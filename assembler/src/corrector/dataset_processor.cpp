@@ -25,6 +25,8 @@ void DatasetProcessor::SplitGenome(const string &genome, const string &genome_sp
     	all_contigs[contig_name].sam_filename = sam_filename;
     	all_contigs[contig_name].contig_length = ctg.sequence().str().length();
     	all_contigs[contig_name].buffered_reads.clear();
+		auto tmp_stream = new ofstream(sam_filename.c_str());
+		tmp_stream->close();
     	io::osequencestream oss(full_path);
     	DEBUG("full_path "+full_path)
     	oss << ctg;
