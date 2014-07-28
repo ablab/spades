@@ -707,21 +707,24 @@ def main(args):
 
                         cur_args = args[:]
                         cur_args += ['-c', assembled]
-                        tmp_dir_for_corrector = support.get_tmp_dir(prefix="mis_cor_%s_" % assembly_type)
+                        #tmp_dir_for_corrector = support.get_tmp_dir(prefix="mis_cor_%s_" % assembly_type)
+                        tmp_dir_for_corrector = os.path.join(cfg["common"].output_dir, "mismatch_corrector/" + assembly_type)
+
+                        print tmp_dir_for_corrector + " tmp_dir_for_corrector"
                         cur_args += ['--output-dir', tmp_dir_for_corrector]
                         cfg["mismatch_corrector"].__dict__["output_dir"] = tmp_dir_for_corrector
                         # correcting
                         corr_cfg = merge_configs(cfg["mismatch_corrector"], cfg["common"])
                         corrector_dataset_yaml_filename = os.path.join(corr_cfg.output_dir, "corrector.info")
                         print tmp_configs_dir
-                        corrector_bwa_only.run_corrector(corrector_dataset_yaml_filename, tmp_configs_dir, bin_home, corr_cfg, not_used_dataset_data,
-                        ext_python_modules_home, log)
-                        corrector_bwa_only.main(cur_args, ext_python_modules_home, log)
+                        corrector_bwa_only.run_corrector(est_params_dataset, tmp_configs_dir, bin_home, corr_cfg,
+                        ext_python_modules_home, log, cur_args)
 
                         result_corrected_filename = os.path.join(tmp_dir_for_corrector, "corrected_contigs.fasta")
+                        print "corrected filename = " + result_corrected_filename
                         # moving corrected contigs (scaffolds) to SPAdes output dir
                         if os.path.isfile(result_corrected_filename):
-                            shutil.move(result_corrected_filename, corrected)
+                            shutil.copyfile(result_corrected_filename, corrected)
 
                         #if os.path.isdir(tmp_dir_for_corrector):
                         #    shutil.rmtree(tmp_dir_for_corrector)

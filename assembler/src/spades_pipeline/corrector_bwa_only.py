@@ -507,7 +507,7 @@ def parse_profile(args, log):
     if reads_mixed:
         config["reads_mixed"] = reads_mixed
 
-    work_dir = os.path.join(config["output_dirpath"], "mismatch_corrector_tmp")
+    work_dir = os.path.join(config["output_dirpath"], "tmp")
     config["work_dir"] = work_dir
     if os.path.isdir(work_dir):
         shutil.rmtree(work_dir)
@@ -562,23 +562,76 @@ def prepare_config_corr(filename, cfg, ext_python_modules_home):
         import pyyaml3 as pyyaml
     print "dumping contigs to " + filename
     data = pyyaml.load(open(filename, 'r'))
-    data["dataset"] = cfg.dataset_yaml_filename
-    data["working_dir"] = cfg.tmp_dir
+    data["dataset"] = cfg.dataset
     data["output_dir"] = cfg.output_dir
-    data["hard_memory_limit"] = cfg.max_memory
+    data["work_dir"] = cfg.output_dir + '/tmp'
+    #data["hard_memory_limit"] = cfg.max_memory
     data["max_nthreads"] = cfg.max_threads
-    pyyaml.dump(data, open(filename, 'w'))
+    file_c = open(filename, 'w')
+    pyyaml.dump(data, file_c)
+    file_c.close()
+
+
+def main(args, joblib_path, log=None, config_file=None):
+
+    if len(args) < 1:
+        usage()
+        sys.exit(0)
+    addsitedir(joblib_path)
+
+    init_config()
+    parse_profile(args, log)
+
+    if not log:
+        log = logging.getLogger('spades')
+        log.setLevel(logging.DEBUG)
+
+        console = logging.StreamHandler(sys.stdout)
+        console.setFormatter(logging.Formatter('%(message)s'))
+        console.setLevel(logging.DEBUG)
+        log.addHandler(console)
+
+        log_filename = os.path.join(config["output_dirpath"], "corrector.log")
+        log_handler = logging.FileHandler(log_filename, mode='w')
+        log.addHandler(log_handler)
+
+    log.info("Config: " + str(config))
+    if "split_dir" not in config:
+#        print "no split dir, looking for sam file"
+        if "sam_file" not in config:
+            log.info("no sam file, running aligner")
+            run_aligner(log)
+        else:
+            log.info("sam file was found")
+            tmp_sam_file_path = os.path.join(config["work_dir"], "tmp.sam")
+            shutil.copy2(config["sam_file"], tmp_sam_file_path) # Note: shutil.copy2 is similar to the Unix command cp -p
+            #os.system("cp -p "+ config["sam_file"] +" " + config["work_dir"]+"tmp.sam")
+            config["sam_file"] = tmp_sam_file_path
+
+        path_to_bin = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../bin/corrector')
+        path_to_config = os.path.join(os.path.dirname(os.path.realpath(__file__)) , '../../configs/corrector/corrector.info.template')
+        if config_file:
+            path_to_config = config_file
+       # config["output_dirpath"] += "/mismatch_corrector_tmp"
+        print config["output_dirpath"] + " output_dirpath"
+        print path_to_config
+        os.system (path_to_bin + ' ' + config["sam_file"] + ' ' + config["contigs"] + ' ' + ' 0 ' + config["output_dirpath"] + " " + path_to_config)
+    #    now = datetime.datetime.now()
+    #    res_directory = "corrector.output." + now.strftime("%Y.%m.%d_%H.%M.%S")+"/"
+
 
 
 def run_corrector(corrected_dataset_yaml_filename, configs_dir, execution_home, cfg,
-               not_used_dataset_data, ext_python_modules_home, log):
+                ext_python_modules_home, log, args):
     addsitedir(ext_python_modules_home)
     if sys.version.startswith('2.'):
         import pyyaml2 as pyyaml
     elif sys.version.startswith('3.'):
         import pyyaml3 as pyyaml
     cfg.dataset_yaml_filename = corrected_dataset_yaml_filename
-    print cfg.dataset_yaml_filename + " SSSS"
+    print cfg.dataset_yaml_filename + " yaml of last iteration"
+    print configs_dir + " configs dir"
+    print execution_home + " execution home"
     dst_configs = os.path.join(cfg.output_dir, "configs")
     if os.path.exists(dst_configs):
         shutil.rmtree(dst_configs)
@@ -612,53 +665,7 @@ def run_corrector(corrected_dataset_yaml_filename, configs_dir, execution_home, 
     if is_changed:
         pyyaml.dump(corrected_dataset_data, open(corrected_dataset_yaml_filename, 'w'))
     log.info("\n== Dataset description file was created: " + corrected_dataset_yaml_filename + "\n")
-
-    if os.path.isdir(cfg.tmp_dir):
-        shutil.rmtree(cfg.tmp_dir)
-
-def main(args, joblib_path, log=None):
-
-    if len(args) < 1:
-        usage()
-        sys.exit(0)
-    addsitedir(joblib_path)
-
-#    os.system ("make -C build/release/corrector/ install=local")
-    init_config()
-    parse_profile(args, log)
-
-    if not log:
-        log = logging.getLogger('spades')
-        log.setLevel(logging.DEBUG)
-
-        console = logging.StreamHandler(sys.stdout)
-        console.setFormatter(logging.Formatter('%(message)s'))
-        console.setLevel(logging.DEBUG)
-        log.addHandler(console)
-
-        log_filename = os.path.join(config["output_dirpath"], "corrector.log")
-        log_handler = logging.FileHandler(log_filename, mode='w')
-        log.addHandler(log_handler)
-
-    log.info("Config: " + str(config))
-    if "split_dir" not in config:
-#        print "no split dir, looking for sam file"
-        if "sam_file" not in config:
-            log.info("no sam file, running aligner")
-            run_aligner(log)
-        else:
-            log.info("sam file was found")
-            tmp_sam_file_path = os.path.join(config["work_dir"], "tmp.sam")
-            shutil.copy2(config["sam_file"], tmp_sam_file_path) # Note: shutil.copy2 is similar to the Unix command cp -p
-            #os.system("cp -p "+ config["sam_file"] +" " + config["work_dir"]+"tmp.sam")
-            config["sam_file"] = tmp_sam_file_path
-
-        path_to_bin = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../bin/corrector')
-        path_to_config = os.path.join(os.path.dirname(os.path.realpath(__file__)) , '../../configs/corrector/corrector.info.template')
-        print path_to_config
-        os.system (path_to_bin + ' ' + config["sam_file"] + ' ' + config["contigs"] + ' ' + ' 0 ' + config["output_dirpath"] + " " + path_to_config)
-    #    now = datetime.datetime.now()
-    #    res_directory = "corrector.output." + now.strftime("%Y.%m.%d_%H.%M.%S")+"/"
+    main(args, ext_python_modules_home, log, cfg_file_name)
 
 
 
@@ -666,3 +673,5 @@ if __name__ == '__main__':
     joblib_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../ext/src/python_libs')
     main(sys.argv[1:], joblib_path)
     
+
+

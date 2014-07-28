@@ -1,14 +1,15 @@
 #pragma once
 
 #include "config_singl.hpp"
+#include "../debruijn/config_struct.hpp"
 
 #include "io/library.hpp"
 
 namespace corrector {
 
 struct corrector_config {
-  io::DataSet<> dataset;
-
+//  io::DataSet<debruijn_graph::debruijn_config::DataSetData> dataset;
+//std::string dataset;
   std::string work_dir;
   std::string output_dir;
   unsigned max_nthreads;

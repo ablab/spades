@@ -25,6 +25,7 @@ void DatasetProcessor::SplitGenome(const string &genome, const string &genome_sp
     	all_contigs[contig_name].sam_filename = sam_filename;
     	all_contigs[contig_name].contig_length = ctg.sequence().str().length();
     	io::osequencestream oss(full_path);
+    	INFO("full_path "+full_path)
     	oss << ctg;
     }
 }
@@ -130,11 +131,14 @@ void DatasetProcessor::SplitHeaders(string &all_reads_filename) {
 
 void DatasetProcessor::ProcessLibrary(string &sam_file){
 	INFO("Splitting genome");
+	INFO("genome_file: " + genome_file);
 	SplitGenome(genome_file, work_dir);
 	PrepareWriters();
 	SplitHeaders(sam_file);
 	INFO("Splitting paired library");
+	INFO("sam_file: " + sam_file)
 	SplitPairedLibrary(sam_file);
+
 	CloseWriters();
 	INFO("Processing contigs");
 	vector<pair<size_t, string> > ordered_contigs;

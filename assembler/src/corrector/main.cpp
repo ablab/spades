@@ -100,7 +100,13 @@ int main(int /*argc*/, char** argv) {
   } else  {
 	  string cfg_file(argv[5]);
 	  corr_cfg::create_instance(cfg_file);
-	  corrector::DatasetProcessor dp(sam_name, contig_name, out_dir);
+	  for (int i = 1; i <5; i++) {
+		  INFO (argv[i]);
+	  }
+	  string work_dir = out_dir + "/tmp";
+	  string to_run = "mkdir " + work_dir;
+	  //system(to_run.c_str());
+	  corrector::DatasetProcessor dp(sam_name, contig_name, out_dir, work_dir);
 	  dp.ProcessLibrary(sam_name);
   }
   /*cerr << name;

@@ -1,2 +1,2 @@
-{dataset: ./spades_test/input_dataset.yaml, work_dir: ./test_dataset/input/corrected/tmp, output_dir: ./test_dataset/input/corrected,max_nthreads: 16
+{dataset: /home/lab42/work/algorithmic-biology/assembler/check/K55/final.lib_data, work_dir: ./test_dataset/input/corrected/tmp, output_dir: ./test_dataset/input/corrected,max_nthreads: 16
 ,strategy: mapped_squared}

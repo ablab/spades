@@ -208,16 +208,21 @@ class DataSet {
   DataSet(const YAML::Node &node) { load(node); }
 
   void load(const std::string &filename) {
+	std::cerr << "loading....";
     YAML::Node config = YAML::LoadFile(filename);
-
+    std::cerr << "yaml lodaede";
     std::string input_dir = path::parent_path(filename);
     if (input_dir[input_dir.length() - 1] != '/')
         input_dir += '/';
 
     load(config);
-
-    for (auto it = libraries_.begin(); it != libraries_.end(); ++it)
+    std::cerr << "config loaded";
+    INFO("intput_dir");
+    for (auto it = libraries_.begin(); it != libraries_.end(); ++it) {
+    	INFO("updating smth");
       it->update_relative_reads_filenames(input_dir);
+
+    }
   }
 
   void save(const std::string &filename) const {
@@ -227,8 +232,11 @@ class DataSet {
 
   void load(const YAML::Node &node) {
     clear();
-    for (YAML::const_iterator it = node.begin(); it != node.end(); ++it)
+    INFO("1");
+    for (YAML::const_iterator it = node.begin(); it != node.end(); ++it) {
       libraries_.push_back(it->as<Library>());
+      INFO("smt");
+    }
   }
 
   void clear() { libraries_.clear(); }
