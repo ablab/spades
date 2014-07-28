@@ -25,8 +25,10 @@ void DatasetProcessor::SplitGenome(const string &genome, const string &genome_sp
     	all_contigs[contig_name].sam_filename = sam_filename;
     	all_contigs[contig_name].contig_length = ctg.sequence().str().length();
     	all_contigs[contig_name].buffered_reads.clear();
-		auto tmp_stream = new ofstream(sam_filename.c_str(), ios::app);
-		tmp_stream->close();
+		//auto tmp_stream = new ofstream(sam_filename.c_str(), ios::app);
+		string header = "@SQ\tSN:"+ contig_name+"\tLN:"+ to_string(all_contigs[contig_name].contig_length);
+		BufferedOutputRead(header, contig_name);
+		//tmp_stream->close();
     	io::osequencestream oss(full_path);
     	DEBUG("full_path "+full_path)
     	oss << ctg;
@@ -183,7 +185,7 @@ void DatasetProcessor::ProcessLibrary(string &sam_file){
 		INFO("processing contig" << ordered_contigs[i].second << " in thread number " << omp_get_thread_num());
 		ContigProcessor pc(all_contigs_copy[ordered_contigs[i].second].sam_filename, all_contigs_copy[ordered_contigs[i].second].input_contig_filename);
 		pc.process_sam_file();
-		INFO("contig" << ordered_contigs[i].second << " in thread number " << omp_get_thread_num() <<" processed");
+		INFO("contig " << ordered_contigs[i].second << " in thread number " << omp_get_thread_num() <<" processed");
 	}
 
 	INFO("Gluing processed contigs");
