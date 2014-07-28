@@ -112,6 +112,8 @@ int SingleSamRead::CountPositions(unordered_map <size_t, position_description> &
 		if (insertion_string != "" and bam_cigar_opchr(cigar[state_pos]) != 'I'){
 			VERIFY(i + position >= skipped + 1);
 			size_t ind = i + position - skipped - 1;
+			if (ind >= contig_length)
+				break;
 			ps[ind].insertions[insertion_string] += 1;
 			insertion_string = "";
 		}
@@ -127,12 +129,17 @@ int SingleSamRead::CountPositions(unordered_map <size_t, position_description> &
 
 			size_t ind = i + position - skipped;
 			int cur = var_to_pos[(int)bam_nt16_rev_table[bam1_seqi(seq, i - deleted)]];
+			if (ind >= contig_length)
+				continue;
 			ps[ind].votes[cur] = ps[ind].votes[cur] +  mate;//t_mate
 			if (contig[ind] != pos_to_var[cur]) error_num ++;
 		} else {
 			if (to_skip.find(cur_state) != to_skip.end()){
 				if (cur_state == 'I'){
 					if (insertion_string == "") {
+						size_t ind = i + position - skipped - 1;
+						if (ind >= contig_length)
+							break;
 						ps[i + position - skipped - 1].votes[INSERTION] += mate;
 					}
 					insertion_string += bam_nt16_rev_table[bam1_seqi(seq, i - deleted)];
@@ -140,6 +147,8 @@ int SingleSamRead::CountPositions(unordered_map <size_t, position_description> &
 				}
 				skipped += 1;
 		   } else if (bam_cigar_opchr(cigar[state_pos]) == 'D') {
+			   if (i + position - skipped >= contig_length)
+				   break;
 				ps[i + position - skipped].votes[DELETION] += mate;
 				deleted += 1;
 				error_num ++;
@@ -149,7 +158,9 @@ int SingleSamRead::CountPositions(unordered_map <size_t, position_description> &
 	if (insertion_string != "" and bam_cigar_opchr(cigar[state_pos]) != 'I'){
 		VERIFY(l_read + position >= skipped + 1);
 		size_t ind = l_read + position - skipped - 1;
-		ps[ind].insertions[insertion_string] += 1;
+		if (ind < contig_length) {
+			ps[ind].insertions[insertion_string] += 1;
+		}
 		insertion_string = "";
 	}
 	if (false) {
