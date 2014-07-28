@@ -179,10 +179,11 @@ void DatasetProcessor::ProcessLibrary(string &sam_file){
 # pragma omp parallel for shared(all_contigs_copy, ordered_contigs) num_threads(nthreads)
 	for (size_t i = 0; i < cont_num; i++ ) {
 
-		if ( ordered_contigs[i].first > 20000)
-			INFO("processing contig" << ordered_contigs[i].second << " in thread number " << omp_get_thread_num());
+		//if ( ordered_contigs[i].first > 20000)
+		INFO("processing contig" << ordered_contigs[i].second << " in thread number " << omp_get_thread_num());
 		ContigProcessor pc(all_contigs_copy[ordered_contigs[i].second].sam_filename, all_contigs_copy[ordered_contigs[i].second].input_contig_filename);
 		pc.process_sam_file();
+		INFO("contig" << ordered_contigs[i].second << " in thread number " << omp_get_thread_num() <<" processed");
 	}
 
 	INFO("Gluing processed contigs");
