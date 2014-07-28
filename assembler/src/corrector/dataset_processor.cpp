@@ -93,13 +93,15 @@ void DatasetProcessor::OutputRead(string &read, string &contig_name) {
 }
 */
 void DatasetProcessor::FlushAll() {
-	for (auto ac :all_contigs) {
-		auto stream = new ofstream(ac.second.sam_filename.c_str(), ios::app);
+	for (auto &ac :all_contigs) {
+		auto stream = new ofstream(ac.second.sam_filename.c_str(), std::ios_base::app | std::ios_base::out);
+		INFO(ac.second.buffered_reads.size());
 		for (string read: ac.second.buffered_reads){
 			*stream << read;
 			*stream << '\n';
 		}
 		stream->close();
+
 		ac.second.buffered_reads.clear();
 	}
 }

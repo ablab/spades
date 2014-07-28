@@ -34,7 +34,7 @@ class DatasetProcessor {
 	//map<string, std::ofstream*> all_writers;
 	int nthreads;
 	int buffered_count ;
-	const int buff_size = 1000000;
+	const int buff_size = 100000;
 public:
 	DatasetProcessor(string sam_file, string genome_file, string output_dir, string work_dir):sam_file(sam_file), genome_file(genome_file), work_dir(work_dir){
 		//path::make_dir(work_dir);
