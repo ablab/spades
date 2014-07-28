@@ -25,7 +25,7 @@ void DatasetProcessor::SplitGenome(const string &genome, const string &genome_sp
     	all_contigs[contig_name].sam_filename = sam_filename;
     	all_contigs[contig_name].contig_length = ctg.sequence().str().length();
     	all_contigs[contig_name].buffered_reads.clear();
-		auto tmp_stream = new ofstream(sam_filename.c_str());
+		auto tmp_stream = new ofstream(sam_filename.c_str(), ios::app);
 		tmp_stream->close();
     	io::osequencestream oss(full_path);
     	DEBUG("full_path "+full_path)
@@ -92,11 +92,12 @@ void DatasetProcessor::OutputRead(string &read, string &contig_name) {
 */
 void DatasetProcessor::FlushAll() {
 	for (auto ac :all_contigs) {
-		auto stream = new ofstream(ac.second.sam_filename.c_str());
+		auto stream = new ofstream(ac.second.sam_filename.c_str(), ios::app);
 		for (string read: ac.second.buffered_reads){
 			*stream << read;
 			*stream << '\n';
 		}
+		stream->close();
 		ac.second.buffered_reads.clear();
 	}
 }
