@@ -163,7 +163,7 @@ void DatasetProcessor::ProcessLibrary(string &sam_file){
 	INFO("genome_file: " + genome_file);
 	SplitGenome(genome_file, work_dir);
 	//PrepareWriters();
-	SplitHeaders(sam_file);
+	//SplitHeaders(sam_file);
 	INFO("Splitting paired library");
 	INFO("sam_file: " + sam_file)
 	SplitPairedLibrary(sam_file);
