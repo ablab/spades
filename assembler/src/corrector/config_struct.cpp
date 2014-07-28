@@ -18,6 +18,8 @@ void load(corrector_config& cfg, const std::string &filename) {
 //  cfg.dataset.load(dataset);
 //  cfg.dataset = config["dataset"].as<std::string>(".");
   INFO("A");
+  cfg.dataset.load(config["dataset"].as<std::string>());
+
   cfg.work_dir = config["work_dir"].as<std::string>(".");
   INFO("B");
   cfg.output_dir = config["output_dir"].as<std::string>(".");

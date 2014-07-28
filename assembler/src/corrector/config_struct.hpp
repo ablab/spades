@@ -10,6 +10,7 @@ namespace corrector {
 struct corrector_config {
 //  io::DataSet<debruijn_graph::debruijn_config::DataSetData> dataset;
 //std::string dataset;
+  io::DataSet<> dataset;
   std::string work_dir;
   std::string output_dir;
   unsigned max_nthreads;
@@ -18,5 +19,6 @@ struct corrector_config {
 
 void load(corrector::corrector_config& cfg, const std::string &filename);
 }
+
 
 typedef config_common::config<corrector::corrector_config> corr_cfg;

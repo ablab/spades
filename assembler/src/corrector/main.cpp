@@ -107,6 +107,7 @@ int main(int /*argc*/, char** argv) {
 	  string to_run = "mkdir " + work_dir;
 	  //system(to_run.c_str());
 	  corrector::DatasetProcessor dp(sam_name, contig_name, out_dir, work_dir);
+	  dp.ProcessDataset();
 	  dp.ProcessLibrary(sam_name);
   }
   /*cerr << name;

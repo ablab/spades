@@ -657,7 +657,7 @@ def main(args):
                     log.info("\n===== %s started." % STAGE_NAME)
                     # detecting paired-end library with the largest insert size
                     est_params_dataset = os.path.join(latest_dir, "final.lib_data")
-                    cfg["mismatch_corrector"].__dict__["dataset"] = est_params_dataset
+                    cfg["mismatch_corrector"].__dict__["dataset"] = cfg["dataset"].yaml_filename
                     est_params_data = pyyaml.load(open(os.path.join(latest_dir, "final.lib_data"), 'r'))
                     max_IS_library = None
                     for reads_library in est_params_data:
@@ -717,7 +717,7 @@ def main(args):
                         corr_cfg = merge_configs(cfg["mismatch_corrector"], cfg["common"])
                         corrector_dataset_yaml_filename = os.path.join(corr_cfg.output_dir, "corrector.info")
                         print tmp_configs_dir
-                        corrector_bwa_only.run_corrector(est_params_dataset, tmp_configs_dir, bin_home, corr_cfg,
+                        corrector_bwa_only.run_corrector(cfg["dataset"].yaml_filename, tmp_configs_dir, bin_home, corr_cfg,
                         ext_python_modules_home, log, cur_args)
 
                         result_corrected_filename = os.path.join(tmp_dir_for_corrector, "corrected_contigs.fasta")

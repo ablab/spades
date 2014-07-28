@@ -25,8 +25,9 @@ void DatasetProcessor::SplitGenome(const string &genome, const string &genome_sp
     	all_contigs[contig_name].sam_filename = sam_filename;
     	all_contigs[contig_name].contig_length = ctg.sequence().str().length();
     	io::osequencestream oss(full_path);
-    	INFO("full_path "+full_path)
+    	DEBUG("full_path "+full_path)
     	oss << ctg;
+
     }
 }
 //returns names
@@ -57,7 +58,7 @@ void DatasetProcessor::SplitSingleLibrary(string &all_reads_filename){
 
 		for (string contig: contigs) {
 			VERIFY_MSG(all_contigs.find(contig) != all_contigs.end(), "wrong contig name in SAM file header: " + contig);
-			OutputRead(r1, contig);
+			BufferedOutputRead(r1, contig);
 
 		}
 	}
@@ -86,6 +87,25 @@ void DatasetProcessor::OutputRead(string &read, string &contig_name) {
 	*all_writers[contig_name] <<  '\n';
 }
 
+void DatasetProcessor::FlushAll() {
+	for (auto ac :all_contigs) {
+		auto stream = new ofstream(ac.second.sam_filename.c_str());
+		for (string read: ac.second.buffered_reads){
+			*stream << read;
+			*stream << '\n';
+		}
+	}
+}
+
+void DatasetProcessor::BufferedOutputRead(string &read, string &contig_name) {
+	all_contigs[contig_name].buffered_reads.push_back(read);
+	buffered_count ++;
+	if (buffered_count % buff_size == 0) {
+		INFO("processed " << buffered_count << "reads, flushing");
+		FlushAll();
+	}
+}
+
 void DatasetProcessor::SplitPairedLibrary(string &all_reads_filename){
 	ifstream fs(all_reads_filename);
 	while (! fs.eof()){
@@ -102,8 +122,8 @@ void DatasetProcessor::SplitPairedLibrary(string &all_reads_filename){
 		for (string contig: contigs) {
 		//	VERIFY_MSG(all_contigs.find(contig) != all_contigs.end(), "wrong contig name in SAM file header: " + contig);
 			if (all_contigs.find(contig)!= all_contigs.end()) {
-				OutputRead(r1, contig);
-				OutputRead(r2, contig);
+				BufferedOutputRead(r1, contig);
+				BufferedOutputRead(r2, contig);
 			}
 		}
 	}
@@ -122,8 +142,8 @@ void DatasetProcessor::SplitHeaders(string &all_reads_filename) {
 			VERIFY_MSG(arr.size() > 1, "Invalid .sam header");
 			string contig_name = arr[1].substr(3, arr[1].length() - 3) ;
 			//INFO(contig_name);
-			VERIFY_MSG(all_writers.find(contig_name) != all_writers.end(), "wrong contig name in SAM file header");
-			OutputRead(r, contig_name);
+			//VERIFY_MSG(all_writers.find(contig_name) != all_writers.end(), "wrong contig name in SAM file header");
+			BufferedOutputRead(r, contig_name);
 		}
 	}
 }
@@ -133,13 +153,13 @@ void DatasetProcessor::ProcessLibrary(string &sam_file){
 	INFO("Splitting genome");
 	INFO("genome_file: " + genome_file);
 	SplitGenome(genome_file, work_dir);
-	PrepareWriters();
+	//PrepareWriters();
 	SplitHeaders(sam_file);
 	INFO("Splitting paired library");
 	INFO("sam_file: " + sam_file)
 	SplitPairedLibrary(sam_file);
-
-	CloseWriters();
+	FlushAll();
+	//CloseWriters();
 	INFO("Processing contigs");
 	vector<pair<size_t, string> > ordered_contigs;
 	ContigInfoMap all_contigs_copy;
@@ -164,6 +184,15 @@ void DatasetProcessor::ProcessLibrary(string &sam_file){
 	GlueSplittedContigs(output_contig_file);
 }
 
+void DatasetProcessor::ProcessDataset() {
+	for (auto I = corr_cfg::get().dataset.reads_begin(), E = corr_cfg::get().dataset.reads_end(); I != E; ++I) {
+		//io::FileReadStream irs(*I, io::PhredOffset);
+//		hammer::ReadProcessor rp(cfg::get().max_nthreads);
+	//	rp.Run(irs, expander);
+		INFO(*I);
+		//VERIFY_MSG(rp.read() == rp.processed(), "Queue unbalanced");
+	}
+}
 void DatasetProcessor::GlueSplittedContigs(string &out_contigs_filename){
 
 	ofstream of_c(out_contigs_filename, std::ios_base::binary);

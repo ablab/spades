@@ -629,7 +629,7 @@ def run_corrector(corrected_dataset_yaml_filename, configs_dir, execution_home, 
     elif sys.version.startswith('3.'):
         import pyyaml3 as pyyaml
     cfg.dataset_yaml_filename = corrected_dataset_yaml_filename
-    print cfg.dataset_yaml_filename + " yaml of last iteration"
+    print cfg.dataset_yaml_filename + " yaml with all_libs"
     print configs_dir + " configs dir"
     print execution_home + " execution home"
     dst_configs = os.path.join(cfg.output_dir, "configs")
@@ -648,7 +648,7 @@ def run_corrector(corrected_dataset_yaml_filename, configs_dir, execution_home, 
                     os.rename(cfg_file, cfg_file.split('.template')[0])
 
     cfg.tmp_dir = support.get_tmp_dir(prefix="corrector_")
-    shutil.copyfile(cfg_file_name, corrected_dataset_yaml_filename)
+
     prepare_config_corr(cfg_file_name, cfg, ext_python_modules_home)
     binary_name = "corrector"
 
@@ -659,12 +659,11 @@ def run_corrector(corrected_dataset_yaml_filename, configs_dir, execution_home, 
  #   support.sys_call(command, log)
  #   if not os.path.isfile(corrected_dataset_yaml_filename):
  #       support.error("read error correction finished abnormally: " + corrected_dataset_yaml_filename + " not found!")
-    corrected_dataset_data = pyyaml.load(open(corrected_dataset_yaml_filename, 'r'))
+#    corrected_dataset_data = pyyaml.load(open(corrected_dataset_yaml_filename, 'r'))
 
     is_changed = False
-    if is_changed:
-        pyyaml.dump(corrected_dataset_data, open(corrected_dataset_yaml_filename, 'w'))
-    log.info("\n== Dataset description file was created: " + corrected_dataset_yaml_filename + "\n")
+
+    log.info("\n== Dataset description file was created: " + cfg_file_name + "\n")
     main(args, ext_python_modules_home, log, cfg_file_name)
 
 
