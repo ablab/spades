@@ -45,7 +45,7 @@ std::map<std::string, std::string> GetContigs(std::string filename) {
                 res[cont_name] = ss.str();
 
             }
-            ss.clear();
+            ss.str().clear();
             cont_name = line.substr(1, line.length() - 1);
         } else {
             ss << line;
@@ -53,7 +53,6 @@ std::map<std::string, std::string> GetContigs(std::string filename) {
     }
     if (cont_name != "") {
         res[cont_name] = ss.str();
-
     }
     return res;
 }
