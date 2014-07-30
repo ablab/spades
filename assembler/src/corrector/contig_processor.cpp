@@ -18,7 +18,7 @@ void ContigProcessor::read_contig() {
 	charts.resize(contig.length());
 }
 
-void ContigProcessor::UpdateOneRead(const SingleSamRead &tmp){
+void ContigProcessor::UpdateOneRead(const SingleSamRead &tmp, MappedSamStream &sm){
 	unordered_map<size_t, position_description> all_positions;
 	//INFO(tmp.GetName());
 	//INFO(tmp.get_contig_id());
@@ -100,8 +100,51 @@ int ContigProcessor::UpdateOneBase(size_t i, stringstream &ss, const unordered_m
 		return 0;
 	}
 }
+void ContigProcessor::process_multiple_sam_files() {
+	error_counts.resize(20);
+	INFO("working with " << sam_files.size() << " sublibs");
+	for (auto &sf : sam_files){
+		MappedSamStream sm (sf.first);
+		bam_header_t *bam_header = sm.ReadHeader();
 
-void ContigProcessor::process_sam_file (){
+		while (!sm.eof()) {
+			SingleSamRead tmp;
+			sm >> tmp;
+			UpdateOneRead(tmp, sm);
+			//	sm >>tmp;
+		}
+	}
+	stringstream err_str;
+	for(int i = 0; i < 20; i ++)
+		err_str << error_counts[i] << " ";
+	INFO("Error counts:" << err_str.str());
+	size_t interesting = ipp.FillInterestingPositions(charts);
+	INFO("interesting size: " << interesting);
+	for (auto &sf : sam_files){
+		MappedSamStream sm (sf.first);
+		bam_header_t *bam_header = sm.ReadHeader();
+		while (!sm.eof()) {
+			PairedSamRead tmp;
+			unordered_map<size_t, position_description> ps;
+			sm >>tmp;
+			tmp.CountPositions(ps, contig);
+			TRACE("updating interesting read..");
+			ipp.UpdateInterestingRead(ps);
+		}
+	}
+	ipp.UpdateInterestingPositions();
+	unordered_map<size_t, position_description> interesting_positions = ipp.get_weights();
+	stringstream s_new_contig;
+	for (size_t i = 0; i < contig.length(); i ++) {
+		DEBUG(charts[i].str());
+		UpdateOneBase(i, s_new_contig, interesting_positions);
+	}
+	//io::osequencestream oss(output_contig_file);
+	contig_name = ContigRenameWithLength(contig_name, s_new_contig.str().length());
+	PutContig(output_contig_file, contig_name, s_new_contig.str());
+}
+
+/*void ContigProcessor::process_sam_file (){
 	error_counts.resize(20);
 	while (!sm.eof()) {
 		SingleSamRead tmp;
@@ -136,6 +179,6 @@ void ContigProcessor::process_sam_file (){
 	contig_name = ContigRenameWithLength(contig_name, s_new_contig.str().length());
 	PutContig(output_contig_file, contig_name, s_new_contig.str());
 	//oss << io::SingleRead(contig_name, s_new_contig.str());
-}
+}*/
 
 };

@@ -567,6 +567,7 @@ def prepare_config_corr(filename, cfg, ext_python_modules_home):
     data["work_dir"] = cfg.output_dir + '/tmp'
     #data["hard_memory_limit"] = cfg.max_memory
     data["max_nthreads"] = cfg.max_threads
+    data["bwa"] = cfg.bwa
     file_c = open(filename, 'w')
     pyyaml.dump(data, file_c)
     file_c.close()

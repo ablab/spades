@@ -30,6 +30,7 @@ void load(corrector_config& cfg, const std::string &filename) {
   cfg.max_nthreads = std::min(cfg.max_nthreads, (unsigned)omp_get_max_threads());
   INFO("E");
   cfg.strategy = config["strategy"].as<std::string>(".");
+  cfg.bwa = config["bwa"].as<std::string>(".");
   INFO("F");
 // Inform OpenMP runtime about this :)
   omp_set_num_threads(cfg.max_nthreads);

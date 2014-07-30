@@ -726,8 +726,8 @@ def main(args):
                         if os.path.isfile(result_corrected_filename):
                             shutil.copyfile(result_corrected_filename, corrected)
 
-                        #if os.path.isdir(tmp_dir_for_corrector):
-                        #    shutil.rmtree(tmp_dir_for_corrector)
+                        if os.path.isdir(tmp_dir_for_corrector) and not cfg["common"].developer_mode:
+                            shutil.rmtree(tmp_dir_for_corrector)
 
                         assembled_fastg = assembled[:-6] + ".fastg"
                         if os.path.isfile(assembled_fastg):
