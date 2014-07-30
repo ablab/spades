@@ -169,69 +169,89 @@ string DatasetProcessor::RunPairedBwa(const string &left, const string &right, c
 	string slib = to_string(lib);
 	string cur_dir = corr_cfg::get().work_dir + "/lib" + slib;
 	string cur_line = "mkdir " + cur_dir;
-	system(cur_line.c_str());
+	int run_res = system(cur_line.c_str());
 	string tmp1_sai_filename = cur_dir +"/tmp1.sai";
 	string tmp2_sai_filename = cur_dir +"/tmp2.sai";
 	string tmp_sam_filename = cur_dir + "/tmp.sam";
 	string isize_txt_filename = cur_dir +"/isize.txt";
+	string tmp_file = cur_dir + "/bwa.flood";
 	//os.path.join(config["work_dir"], "isize.txt")
 
 	//universal_sys_call([config["bwa"], "index", "-a", "is", config["contigs"], "2"], log)
-	string index_line = corr_cfg::get().bwa + " index " + "-a " + "is "+ genome_file + " 2 ";
-	INFO("index line: " << index_line);
-	system(index_line.c_str());
+	string index_line = corr_cfg::get().bwa + " index " + "-a " + "is "+ genome_file + " " + " 2>" + tmp_file;;
+	INFO("Running bwa index ...: " << index_line);
+	run_res = system(index_line.c_str());
+	if (run_res != 0) {
+		INFO("bwa failed, skipping sublib");
+		return "";
+	}
 	string nthreads = to_string(corr_cfg::get().max_nthreads);
 	string left_line =  corr_cfg::get().bwa + " aln " + genome_file +" "+ left + " -t " + nthreads +
-	 				   " -O 7 -E 2 -k 3 -n 0.08 -q 15 > " +tmp1_sai_filename;
+	 				   " -O 7 -E 2 -k 3 -n 0.08 -q 15 > " +tmp1_sai_filename + " 2>" + tmp_file;
 
 	string right_line =  corr_cfg::get().bwa + " aln " + genome_file +" "+ right + " -t " + nthreads +
-	 				   " -O 7 -E 2 -k 3 -n 0.08 -q 15 > " +tmp2_sai_filename;
-	INFO(left_line);
-	INFO(right_line);
-	system(left_line.c_str());
-	system(right_line.c_str());
-/*	universal_sys_call([config["bwa"], "aln", config["contigs"], config["reads1"], "-t",
-				   str(config["t"]), "-O", "7", "-E", "2", "-k", "3", "-n", "0.08", "-q", "15"], log, tmp1_sai_filename)
-	universal_sys_call([config["bwa"], "aln", config["contigs"], config["reads2"], "-t",
-				   str(config["t"]), "-O", "7", "-E", "2", "-k", "3", "-n", "0.08", "-q", "15"], log, tmp2_sai_filename)
+	 				   " -O 7 -E 2 -k 3 -n 0.08 -q 15 > " +tmp2_sai_filename + " 2>" + tmp_file;
+	INFO("Running bwa aln ...: " << left_line);
+	run_res += system(left_line.c_str());
+	INFO("Running bwa aln ...: " <<right_line);
+	run_res += system(right_line.c_str());
+	if (run_res != 0) {
+		INFO("bwa failed, skipping sublib");
+		return "";
+	}
 
-	universal_sys_call([config["bwa"], "sampe", config["contigs"], tmp1_sai_filename,
-				   tmp2_sai_filename, config["reads1"], config["reads2"]],
-				   None, tmp_sam_filename, isize_txt_filename)*/
 	string last_line =  corr_cfg::get().bwa + " sampe "+ genome_file + " " + tmp1_sai_filename + " " +
 	 				   tmp2_sai_filename + " " + left + " " + right + "  > " +  tmp_sam_filename + " 2>" + isize_txt_filename;
-	INFO(last_line);
-	system(last_line.c_str());
-
+	INFO("Running bwa sampe ...:" << last_line);
+	run_res = system(last_line.c_str());
+	if (run_res != 0) {
+		INFO("bwa failed, skipping sublib");
+		return "";
+	}
 	return tmp_sam_filename;
 }
 
 string DatasetProcessor::RunSingleBwa(const string &single,const size_t lib) const{
+	int run_res = 0;
 	string slib = to_string(lib);
 	string cur_dir = corr_cfg::get().work_dir + "/lib" + slib;
 	string cur_line = "mkdir " + cur_dir;
-	system(cur_line.c_str());
+	run_res = system(cur_line.c_str());
 	string tmp_sai_filename = cur_dir +"/tmp.sai";
 
 	string tmp_sam_filename = cur_dir + "/tmp.sam";
 	string isize_txt_filename = cur_dir +"/isize.txt";
-		//os.path.join(config["work_dir"], "isize.txt")
+	string tmp_file = cur_dir + "/bwa.flood";
+
+	//os.path.join(config["work_dir"], "isize.txt")
 
 		//universal_sys_call([config["bwa"], "index", "-a", "is", config["contigs"], "2"], log)
-	string index_line = corr_cfg::get().bwa + " index " + "-a " + "is "+ genome_file + " 2 ";
-	INFO("index line: " << index_line);
-	system(index_line.c_str());
+	string index_line = corr_cfg::get().bwa + " index " + "-a " + "is "+ genome_file + " 2 "+ "2>" + tmp_file;
+	INFO("Running bwa index ...: " << index_line);
+	run_res= system(index_line.c_str());
+	if (run_res != 0) {
+		INFO("bwa failed, skipping sublib");
+		return "";
+	}
 	string nthreads = to_string(corr_cfg::get().max_nthreads);
 	string single_sai_line =  corr_cfg::get().bwa + " aln " + genome_file +" "+ single+ " -t " + nthreads +
-		 				   " -O 7 -E 2 -k 3 -n 0.08 -q 15 > " +tmp_sai_filename;
+		 				   " -O 7 -E 2 -k 3 -n 0.08 -q 15 > " +tmp_sai_filename + " 2>" + tmp_file;
 
-	INFO(single_sai_line);
+	INFO("Running bwa aln ...:" + single_sai_line);
 
-	system(single_sai_line.c_str());
+	run_res = system(single_sai_line.c_str());
+	if (run_res != 0) {
+		INFO("bwa failed, skipping sublib");
+		return "";
+	}
 	string last_line =  corr_cfg::get().bwa + " samse "+ genome_file + " " + tmp_sai_filename + " " +
 	 				    single +"  > " +  tmp_sam_filename + " 2>" + isize_txt_filename;
-	INFO(last_line);
-	system(last_line.c_str());
+	INFO("Running bwa samse ...:" << last_line);
+	run_res = system(last_line.c_str());
+	if (run_res != 0) {
+		INFO("bwa failed, skipping sublib");
+		return "";
+	}
 	return tmp_sam_filename;
 
 }
@@ -263,12 +283,16 @@ void DatasetProcessor::ProcessDataset() {
     			INFO(left + " " + right);
     			string samf = RunPairedBwa(left, right, lib_num);
     			//INFO(RunPairedBwa(left, right, lib_num));
-    			INFO("adding samfile " << samf);
-    			unsplitted_sam_files.push_back(make_pair(samf, "paired"));
-    			PrepareContigDirs(lib_num);
-    			SplitPairedLibrary(samf, lib_num);
+    			if (samf !="") {
+        			INFO("adding samfile " << samf);
 
-        		lib_num++;
+    				unsplitted_sam_files.push_back(make_pair(samf, "paired"));
+    				PrepareContigDirs(lib_num);
+    				SplitPairedLibrary(samf, lib_num);
+            		lib_num++;
+    			} else {
+    				WARN("Failed to align paired reads " << left << " and " << right);
+    			}
     		}
     		for (auto iter = corr_cfg::get().dataset[i].single_begin(); iter !=  corr_cfg::get().dataset[i].single_end(); iter++){
     			INFO("Processing single sublib of number " << lib_num);
@@ -276,13 +300,15 @@ void DatasetProcessor::ProcessDataset() {
 				//string right = iter->second;
 				INFO(left);
 				string samf = RunSingleBwa(left, lib_num);
-				INFO("adding samfile "<< samf);
-				unsplitted_sam_files.push_back(make_pair(samf, "single"));
-    			PrepareContigDirs(lib_num);
-    			SplitSingleLibrary(samf, lib_num);
-
-				lib_num++;
-
+				if (samf != "") {
+					INFO("adding samfile "<< samf);
+					unsplitted_sam_files.push_back(make_pair(samf, "single"));
+					PrepareContigDirs(lib_num);
+					SplitSingleLibrary(samf, lib_num);
+					lib_num++;
+				} else {
+					WARN("Failed to align single reads " << left );
+				}
 			}
     	}
     	/*else if (corr_cfg::get().dataset[i].type() == io::LibraryType::SingleReads) {
