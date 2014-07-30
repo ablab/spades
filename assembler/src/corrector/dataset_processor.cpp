@@ -255,9 +255,9 @@ void DatasetProcessor::ProcessDataset() {
 	SplitGenome(genome_file, work_dir);
     for (size_t i = 0 ; i < corr_cfg::get().dataset.lib_count(); ++i) {
     	//INFO(corr_cfg::get().dataset[i].type());
-    	if (corr_cfg::get().dataset[i].type() == io::LibraryType::PairedEnd || corr_cfg::get().dataset[i].type() == io::LibraryType::HQMatePairs) {
-    		INFO("paired");
+    	if (corr_cfg::get().dataset[i].type() == io::LibraryType::PairedEnd || corr_cfg::get().dataset[i].type() == io::LibraryType::HQMatePairs || corr_cfg::get().dataset[i].type() == io::LibraryType::SingleReads) {
     		for (auto iter = corr_cfg::get().dataset[i].paired_begin(); iter !=  corr_cfg::get().dataset[i].paired_end(); iter++){
+    			INFO("Processing paired sublib of number " << lib_num);
     			string left = iter->first;
     			string right = iter->second;
     			INFO(left + " " + right);
@@ -271,7 +271,8 @@ void DatasetProcessor::ProcessDataset() {
         		lib_num++;
     		}
     		for (auto iter = corr_cfg::get().dataset[i].single_begin(); iter !=  corr_cfg::get().dataset[i].single_end(); iter++){
-				string left = *iter;
+    			INFO("Processing single sublib of number " << lib_num);
+    			string left = *iter;
 				//string right = iter->second;
 				INFO(left);
 				string samf = RunSingleBwa(left, lib_num);
@@ -283,11 +284,24 @@ void DatasetProcessor::ProcessDataset() {
 				lib_num++;
 
 			}
-    	} else if (corr_cfg::get().dataset[i].type() == io::LibraryType::SingleReads) {
-    		INFO("single");
-
-    		//for (auto iter = corr_cfg::get().dataset[i].paired_begin(); iter !=  corr_cfg::get().dataset[i].single_end(); iter++){
     	}
+    	/*else if (corr_cfg::get().dataset[i].type() == io::LibraryType::SingleReads) {
+    		INFO("single");
+    		for (auto iter = corr_cfg::get().dataset[i].reads_begin(); iter !=  corr_cfg::get().dataset[i].reads_end(); iter++){
+				string left = *iter;
+				//string right = iter->second;
+				INFO(left);
+				string samf = RunSingleBwa(left, lib_num);
+				INFO("adding samfile "<< samf);
+				unsplitted_sam_files.push_back(make_pair(samf, "single"));
+				PrepareContigDirs(lib_num);
+				SplitSingleLibrary(samf, lib_num);
+
+				lib_num++;
+
+			}
+    		//for (auto iter = corr_cfg::get().dataset[i].paired_begin(); iter !=  corr_cfg::get().dataset[i].single_end(); iter++){
+    	}*/
 //
     }
 	INFO("Processing contigs");
@@ -308,8 +322,9 @@ void DatasetProcessor::ProcessDataset() {
 # pragma omp parallel for shared( all_contigs_copy, ordered_contigs) num_threads(nthreads) schedule(dynamic,1)
 	for (size_t i = 0; i < cont_num; i++ ) {
 
-		//if ( ordered_contigs[i].first > 20000)
-		INFO(i << " processing contig" << ordered_contigs[i].second << " of length " << ordered_contigs[i].first <<" in thread number " << omp_get_thread_num());
+		if ( ordered_contigs[i].first > 20000) {
+			INFO(i << " processing contig" << ordered_contigs[i].second << " of length " << ordered_contigs[i].first <<" in thread number " << omp_get_thread_num());
+		}
 //		ContigProcessor pc(all_contigs_copy[ordered_contigs[i].second].sam_filenames[0].first, all_contigs_copy[ordered_contigs[i].second].input_contig_filename);
 		ContigProcessor pc(all_contigs_copy[ordered_contigs[i].second].sam_filenames, all_contigs_copy[ordered_contigs[i].second].input_contig_filename);
 

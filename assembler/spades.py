@@ -725,7 +725,7 @@ def main(args):
                         # moving corrected contigs (scaffolds) to SPAdes output dir
                         if os.path.isfile(result_corrected_filename):
                             shutil.copyfile(result_corrected_filename, corrected)
-                        tmp_d = os.path.join(tmp_dir_for_corrector, "/tmp")
+                        tmp_d = os.path.join(tmp_dir_for_corrector, "tmp")
                         if os.path.isdir(tmp_d) and not cfg["common"].developer_mode:
                             shutil.rmtree(tmp_d)
 
