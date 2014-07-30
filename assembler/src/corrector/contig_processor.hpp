@@ -8,6 +8,7 @@
 #pragma once
 #include "sam_reader.hpp"
 #include "read.hpp"
+#include <omp.h>
 #include "include.hpp"
 #include "interesting_pos_processor.hpp"
 

@@ -108,8 +108,6 @@ void ContigProcessor::process_multiple_sam_files() {
 	DEBUG("working with " << sam_files.size() << " sublibs");
 	for (auto &sf : sam_files){
 		MappedSamStream sm (sf.first);
-		bam_header_t *bam_header = sm.ReadHeader();
-
 		while (!sm.eof()) {
 			SingleSamRead tmp;
 			sm >> tmp;
@@ -122,7 +120,8 @@ void ContigProcessor::process_multiple_sam_files() {
 		err_str << error_counts[i] << " ";
 	size_t interesting = ipp.FillInterestingPositions(charts);
 	if (debug_info) {
-		INFO("Error counts for contig "<<contig_name<<" : " << err_str.str() );
+
+		INFO("Error counts for contig "<<contig_name<< " in thread " << omp_get_thread_num() <<" : " << err_str.str() );
 		INFO("Interesting size: " << interesting);
 	} else {
 		DEBUG("Error counts for contig "<<contig_name<<" : " << err_str.str() );
@@ -130,7 +129,6 @@ void ContigProcessor::process_multiple_sam_files() {
 	}
 	for (auto &sf : sam_files){
 		MappedSamStream sm (sf.first);
-		bam_header_t *bam_header = sm.ReadHeader();
 		while (!sm.eof()) {
 			unordered_map<size_t, position_description> ps;
 

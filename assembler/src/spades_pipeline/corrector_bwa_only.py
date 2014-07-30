@@ -562,7 +562,7 @@ def prepare_config_corr(filename, cfg, ext_python_modules_home):
         import pyyaml3 as pyyaml
     print "dumping contigs to " + filename
     data = pyyaml.load(open(filename, 'r'))
-    data["dataset"] = cfg.dataset
+    data["dataset"] = cfg.dataset_yaml_filename
     data["output_dir"] = cfg.output_dir
     data["work_dir"] = cfg.output_dir + '/tmp'
     #data["hard_memory_limit"] = cfg.max_memory
@@ -615,7 +615,7 @@ def main(args, joblib_path, log=None, config_file=None):
        # config["output_dirpath"] += "/mismatch_corrector_tmp"
         print config["output_dirpath"] + " output_dirpath"
         print path_to_config
-        run_str = path_to_bin + ' ' + path_to_config + ' ' + config["contigs"] 
+        run_str = path_to_bin + ' ' + path_to_config + ' ' + config["contigs"]
         print run_str
         os.system (run_str)
     #    now = datetime.datetime.now()

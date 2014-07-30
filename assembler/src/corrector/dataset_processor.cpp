@@ -300,12 +300,16 @@ void DatasetProcessor::ProcessDataset() {
 	size_t cont_num = ordered_contigs.size();
 	sort(ordered_contigs.begin(), ordered_contigs.end());
 	reverse(ordered_contigs.begin(), ordered_contigs.end());
+	for (size_t i = 0; i < cont_num; i++ ) {
+		INFO(ordered_contigs[i].first << " " << ordered_contigs[i].second);
+	}
+    //std::vector<ContigProcessor*> cont_prc(nthreads);
 
-# pragma omp parallel for shared(all_contigs_copy, ordered_contigs) num_threads(nthreads)
+# pragma omp parallel for shared( all_contigs_copy, ordered_contigs) num_threads(nthreads) schedule(dynamic,1)
 	for (size_t i = 0; i < cont_num; i++ ) {
 
 		//if ( ordered_contigs[i].first > 20000)
-		INFO("processing contig" << ordered_contigs[i].second << " of length " << ordered_contigs[i].first <<" in thread number " << omp_get_thread_num());
+		INFO(i << " processing contig" << ordered_contigs[i].second << " of length " << ordered_contigs[i].first <<" in thread number " << omp_get_thread_num());
 //		ContigProcessor pc(all_contigs_copy[ordered_contigs[i].second].sam_filenames[0].first, all_contigs_copy[ordered_contigs[i].second].input_contig_filename);
 		ContigProcessor pc(all_contigs_copy[ordered_contigs[i].second].sam_filenames, all_contigs_copy[ordered_contigs[i].second].input_contig_filename);
 

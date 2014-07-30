@@ -478,9 +478,9 @@ def main(args):
         log.info(command)
 
     # special case
-    if "mismatch_corrector" in cfg and not support.get_lib_ids_by_type(dataset_data, 'paired-end'):
-        support.warning('cannot perform mismatch correction without at least one paired-end library! Skipping this step.', log)
-        del cfg["mismatch_corrector"]
+#    if "mismatch_corrector" in cfg and not support.get_lib_ids_by_type(dataset_data, 'paired-end'):
+#        support.warning('cannot perform mismatch correction without at least one paired-end library! Skipping this step.', log)
+#        del cfg["mismatch_corrector"]
 
     print_used_values(cfg, log)
     log.removeHandler(params_handler)
@@ -717,7 +717,7 @@ def main(args):
                         corr_cfg = merge_configs(cfg["mismatch_corrector"], cfg["common"])
                         corrector_dataset_yaml_filename = os.path.join(corr_cfg.output_dir, "corrector.info")
                         print tmp_configs_dir
-                        corrector_bwa_only.run_corrector(cfg["dataset"].yaml_filename, tmp_configs_dir, bin_home, corr_cfg,
+                        corrector_bwa_only.run_corrector(corrected_dataset_yaml_filename, tmp_configs_dir, bin_home, corr_cfg,
                         ext_python_modules_home, log, cur_args)
 
                         result_corrected_filename = os.path.join(tmp_dir_for_corrector, "corrected_contigs.fasta")
@@ -725,9 +725,9 @@ def main(args):
                         # moving corrected contigs (scaffolds) to SPAdes output dir
                         if os.path.isfile(result_corrected_filename):
                             shutil.copyfile(result_corrected_filename, corrected)
-
-                        if os.path.isdir(tmp_dir_for_corrector) and not cfg["common"].developer_mode:
-                            shutil.rmtree(tmp_dir_for_corrector)
+                        tmp_d = os.path.join(tmp_dir_for_corrector, "/tmp")
+                        if os.path.isdir(tmp_d) and not cfg["common"].developer_mode:
+                            shutil.rmtree(tmp_d)
 
                         assembled_fastg = assembled[:-6] + ".fastg"
                         if os.path.isfile(assembled_fastg):
