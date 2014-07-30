@@ -38,9 +38,9 @@ class DatasetProcessor {
 	int buffered_count ;
 	const int buff_size = 100000;
 public:
-	DatasetProcessor(string genome_file, string output_dir, string work_dir): genome_file(genome_file), work_dir(work_dir){
+	DatasetProcessor(string genome_file): genome_file(genome_file), work_dir(corr_cfg::get().work_dir){
 		//path::make_dir(work_dir);
-		output_contig_file = output_dir + "/corrected_contigs.fasta";
+		output_contig_file = corr_cfg::get().output_dir + "/corrected_contigs.fasta";
 		nthreads = corr_cfg::get().max_nthreads;
 		buffered_count = 0;
 	}

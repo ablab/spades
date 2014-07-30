@@ -615,7 +615,7 @@ def main(args, joblib_path, log=None, config_file=None):
        # config["output_dirpath"] += "/mismatch_corrector_tmp"
         print config["output_dirpath"] + " output_dirpath"
         print path_to_config
-        run_str = path_to_bin + ' ' + path_to_config + ' ' + config["contigs"] + ' ' + config["output_dirpath"]
+        run_str = path_to_bin + ' ' + path_to_config + ' ' + config["contigs"] 
         print run_str
         os.system (run_str)
     #    now = datetime.datetime.now()

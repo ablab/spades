@@ -91,14 +91,12 @@ int main(int /*argc*/, char** argv) {
 //  }
 
   string contig_name (argv[2]);
-  string out_dir(argv[3]);
   string cfg_file(argv[1]);
   corr_cfg::create_instance(cfg_file);
-
-  string work_dir = out_dir + "/tmp";
+  string work_dir = corr_cfg::get().work_dir;
   string to_run = "mkdir " + work_dir;
   //system(to_run.c_str());
-  corrector::DatasetProcessor dp(contig_name, out_dir, work_dir);
+  corrector::DatasetProcessor dp(contig_name);
   dp.ProcessDataset();
 	 // dp.ProcessLibrary(sam_name);
   /*cerr << name;
