@@ -253,9 +253,6 @@ void DatasetProcessor::ProcessDataset() {
 	INFO("Splitting genome");
 	INFO("genome_file: " + genome_file);
 	SplitGenome(genome_file, work_dir);
-	//PrepareWriters();
-	//SplitHeaders(sam_file);
-
     for (size_t i = 0 ; i < corr_cfg::get().dataset.lib_count(); ++i) {
     	//INFO(corr_cfg::get().dataset[i].type());
     	if (corr_cfg::get().dataset[i].type() == io::LibraryType::PairedEnd || corr_cfg::get().dataset[i].type() == io::LibraryType::HQMatePairs) {

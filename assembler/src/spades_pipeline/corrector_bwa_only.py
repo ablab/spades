@@ -599,7 +599,7 @@ def main(args, joblib_path, log=None, config_file=None):
     log.info("Config: " + str(config))
     if "split_dir" not in config:
 #        print "no split dir, looking for sam file"
-        if "sam_file" not in config:
+        '''        if "sam_file" not in config:
             log.info("no sam file, running aligner")
             run_aligner(log)
         else:
@@ -607,8 +607,7 @@ def main(args, joblib_path, log=None, config_file=None):
             tmp_sam_file_path = os.path.join(config["work_dir"], "tmp.sam")
             shutil.copy2(config["sam_file"], tmp_sam_file_path) # Note: shutil.copy2 is similar to the Unix command cp -p
             #os.system("cp -p "+ config["sam_file"] +" " + config["work_dir"]+"tmp.sam")
-            config["sam_file"] = tmp_sam_file_path
-
+            config["sam_file"] = tmp_sam_file_path '''
         path_to_bin = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../bin/corrector')
         path_to_config = os.path.join(os.path.dirname(os.path.realpath(__file__)) , '../../configs/corrector/corrector.info.template')
         if config_file:
@@ -616,7 +615,9 @@ def main(args, joblib_path, log=None, config_file=None):
        # config["output_dirpath"] += "/mismatch_corrector_tmp"
         print config["output_dirpath"] + " output_dirpath"
         print path_to_config
-        os.system (path_to_bin + ' ' + config["sam_file"] + ' ' + config["contigs"] + ' ' + ' 0 ' + config["output_dirpath"] + " " + path_to_config)
+        run_str = path_to_bin + ' ' + path_to_config + ' ' + config["contigs"] + ' ' + config["output_dirpath"]
+        print run_str
+        os.system (run_str)
     #    now = datetime.datetime.now()
     #    res_directory = "corrector.output." + now.strftime("%Y.%m.%d_%H.%M.%S")+"/"
 

@@ -90,26 +90,17 @@ int main(int /*argc*/, char** argv) {
 //	  exit(0);
 //  }
 
-  string sam_name (argv[1]);
   string contig_name (argv[2]);
-  string out_dir(argv[4]);
-  int mode = atoi(argv[3]);
-  if (mode == 1) {
-	  //corrector::ContigProcessor cp(sam_name, contig_name);
-	  //cp.process_sam_file();
-  } else  {
-	  string cfg_file(argv[5]);
-	  corr_cfg::create_instance(cfg_file);
-	  for (int i = 1; i <5; i++) {
-		  INFO (argv[i]);
-	  }
-	  string work_dir = out_dir + "/tmp";
-	  string to_run = "mkdir " + work_dir;
-	  //system(to_run.c_str());
-	  corrector::DatasetProcessor dp(sam_name, contig_name, out_dir, work_dir);
-	  dp.ProcessDataset();
+  string out_dir(argv[3]);
+  string cfg_file(argv[1]);
+  corr_cfg::create_instance(cfg_file);
+
+  string work_dir = out_dir + "/tmp";
+  string to_run = "mkdir " + work_dir;
+  //system(to_run.c_str());
+  corrector::DatasetProcessor dp(contig_name, out_dir, work_dir);
+  dp.ProcessDataset();
 	 // dp.ProcessLibrary(sam_name);
-  }
   /*cerr << name;
   MappedSamStream sm(name);
   while (!sm.eof()) {

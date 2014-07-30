@@ -22,7 +22,7 @@ struct OneContigDescription{
 typedef unordered_map<string, OneContigDescription> ContigInfoMap;
 
 class DatasetProcessor {
-	string sam_file;
+	//string sam_file;
 	string genome_file;
 	string output_contig_file;
 //TODO: readlength?
@@ -38,7 +38,7 @@ class DatasetProcessor {
 	int buffered_count ;
 	const int buff_size = 100000;
 public:
-	DatasetProcessor(string sam_file, string genome_file, string output_dir, string work_dir):sam_file(sam_file), genome_file(genome_file), work_dir(work_dir){
+	DatasetProcessor(string genome_file, string output_dir, string work_dir): genome_file(genome_file), work_dir(work_dir){
 		//path::make_dir(work_dir);
 		output_contig_file = output_dir + "/corrected_contigs.fasta";
 		nthreads = corr_cfg::get().max_nthreads;
