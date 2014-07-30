@@ -37,7 +37,7 @@ void DatasetProcessor::SplitGenome(const string &genome, const string &genome_sp
     }
 }
 //returns names
-void DatasetProcessor::GetAlignedContigs(string &read, set<string> &contigs) {
+void DatasetProcessor::GetAlignedContigs(const string &read, set<string> &contigs) const {
 	vector<string> arr = split(read, '\t');
 	if (arr.size() > 5) {
 		if (arr[2] != "*" && stoi(arr[4]) > 0) {
@@ -49,7 +49,7 @@ void DatasetProcessor::GetAlignedContigs(string &read, set<string> &contigs) {
 }
 
 
-void DatasetProcessor::SplitSingleLibrary(string &all_reads_filename, size_t lib_count){
+void DatasetProcessor::SplitSingleLibrary(const string &all_reads_filename, const size_t lib_count){
 	ifstream fs(all_reads_filename);
 	while (! fs.eof()){
 		set<string> contigs;
@@ -94,7 +94,7 @@ void DatasetProcessor::OutputRead(string &read, string &contig_name) {
 	*all_writers[contig_name] <<  '\n';
 }
 */
-void DatasetProcessor::FlushAll(size_t lib_count) {
+void DatasetProcessor::FlushAll(const size_t lib_count)  {
 	for (auto &ac :all_contigs) {
 		auto stream = new ofstream(ac.second.sam_filenames[lib_count].first.c_str(), std::ios_base::app | std::ios_base::out);
 		//INFO(ac.second.buffered_reads.size());
@@ -108,7 +108,7 @@ void DatasetProcessor::FlushAll(size_t lib_count) {
 	}
 }
 
-void DatasetProcessor::BufferedOutputRead(string &read, string &contig_name, size_t lib_count) {
+void DatasetProcessor::BufferedOutputRead(const string &read, const string &contig_name, const size_t lib_count) {
 	all_contigs[contig_name].buffered_reads.push_back(read);
 	buffered_count ++;
 	if (buffered_count % buff_size == 0) {
@@ -117,7 +117,7 @@ void DatasetProcessor::BufferedOutputRead(string &read, string &contig_name, siz
 	}
 }
 
-void DatasetProcessor::SplitPairedLibrary(string &all_reads_filename, size_t lib_count){
+void DatasetProcessor::SplitPairedLibrary(const string &all_reads_filename, const size_t lib_count){
 	ifstream fs(all_reads_filename);
 	while (! fs.eof()){
 		set<string> contigs;
@@ -237,14 +237,7 @@ string DatasetProcessor::RunSingleBwa(const string &single,const size_t lib) con
 }
 
 
-/*void DatasetProcessor::ProcessLibrary(string &sam_file, size_t lib_count){
-	INFO("Splitting paired library");
-	INFO("sam_file: " + sam_file)
-	SplitPairedLibrary(sam_file, lib_count);
-	FlushAll(lib_count);
-	//CloseWriters();
-}*/
-void DatasetProcessor::PrepareContigDirs(size_t lib_count) {
+void DatasetProcessor::PrepareContigDirs(const size_t lib_count) {
 
 	string out_dir = GetLibDir(lib_count);
 	for(auto &ac: all_contigs ){
@@ -339,9 +332,6 @@ void DatasetProcessor::GlueSplittedContigs(string &out_contigs_filename){
 	}
 }
 
-void DatasetProcessor::ProcessSplittedLibrary(){
-
-}
 
 
 };

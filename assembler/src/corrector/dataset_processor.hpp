@@ -44,20 +44,19 @@ public:
 		nthreads = corr_cfg::get().max_nthreads;
 		buffered_count = 0;
 	}
-	void OutputRead(string &read, string &contig_name);
+	//void OutputRead(string &read, string &contig_name);
 //	void PrepareWriters();
 	void SplitGenome(const string &genome, const string &genome_splitted_dir);
-	void FlushAll(size_t lib_count);
-	void BufferedOutputRead(string &read, string &contig_name, size_t lib_count);
-	void GetAlignedContigs(string &read, set<string> &contigs);
+	void FlushAll(const size_t lib_count) ;
+	void BufferedOutputRead(const string &read, const string &contig_name, const size_t lib_count) ;
+	void GetAlignedContigs(const string &read, set<string> &contigs) const ;
 	std::string GetLibDir(const size_t lib_count) const;
-	void SplitSingleLibrary(string &out_contigs_filename, size_t lib_count);
-	void SplitPairedLibrary(string &all_reads, size_t lib_count);
+	void SplitSingleLibrary(const string &out_contigs_filename, const size_t lib_count);
+	void SplitPairedLibrary(const string &all_reads, const size_t lib_count);
 	void GlueSplittedContigs(string &out_contigs_filename);
 	std::string RunPairedBwa(const string &left, const string &right, const size_t lib) const;
 	std::string RunSingleBwa(const string &single, const size_t lib) const;
-	void ProcessSplittedLibrary();
-	void PrepareContigDirs(size_t lib_count);
+	void PrepareContigDirs(const size_t lib_count);
 //	void ProcessLibrary(string &sam_file);
 	//void SplitHeaders(string &all_reads_filename);
 //	void CloseWriters();
