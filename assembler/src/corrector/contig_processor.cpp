@@ -12,7 +12,10 @@ void ContigProcessor::read_contig() {
 
 	contig = res.begin()->second;
 	contig_name = res.begin()->first;
-	INFO("Processing contig of length " << contig.length());
+	if (debug_info) {
+		INFO("Processing contig of length " << contig.length());
+	}
+	DEBUG("Processing contig of length " << contig.length());
 //extention is always "fasta"
 	output_contig_file = contig_file.substr(0, contig_file.length() - 5) + "ref.fasta";
 	charts.resize(contig.length());
@@ -49,15 +52,15 @@ int ContigProcessor::UpdateOneBase(size_t i, stringstream &ss, const unordered_m
 	if (interesting_positions.find(i) != interesting_positions.end()) {
 		size_t maxj = interesting_positions.find(i)->second.FoundOptimal(contig[i]);
 		if (maxj != maxi) {
-			INFO("Interesting positions differ with majority!");
-			INFO("On position " << i << "  old: " << old <<" majority: "<<pos_to_var[maxi] << "interesting: " << pos_to_var[maxj]);
+			DEBUG("Interesting positions differ with majority!");
+			DEBUG("On position " << i << "  old: " << old <<" majority: "<<pos_to_var[maxi] << "interesting: " << pos_to_var[maxj]);
 			if (corr_cfg::get().strategy != "majority_only")
 				maxi = maxj;
 		}
 	}
 	if (old != pos_to_var[maxi]) {
-		INFO("On position " << i << " changing " << old <<" to "<<pos_to_var[maxi]);
-		INFO(charts[i].str());
+		DEBUG("On position " << i << " changing " << old <<" to "<<pos_to_var[maxi]);
+		DEBUG(charts[i].str());
 		if (maxi < DELETION) {
 			ss <<pos_to_var[maxi];
 			return 1;
@@ -83,7 +86,7 @@ int ContigProcessor::UpdateOneBase(size_t i, stringstream &ss, const unordered_m
 					maxj = iter->first;
 				}
 			}
-			INFO("most popular insertion: " << maxj);
+			DEBUG("most popular insertion: " << maxj);
 			ss << maxj;
 			if (old == maxj[0]) {
 				return (int) maxj.length() - 1;
@@ -93,7 +96,7 @@ int ContigProcessor::UpdateOneBase(size_t i, stringstream &ss, const unordered_m
 		} else {
 			//something starnge happened
 			WARN("While processing base " << i << " unknown decision was made");
-			return -1;
+			return 0;
 		}
 	} else {
 		ss << old;
@@ -102,7 +105,7 @@ int ContigProcessor::UpdateOneBase(size_t i, stringstream &ss, const unordered_m
 }
 void ContigProcessor::process_multiple_sam_files() {
 	error_counts.resize(20);
-	INFO("working with " << sam_files.size() << " sublibs");
+	DEBUG("working with " << sam_files.size() << " sublibs");
 	for (auto &sf : sam_files){
 		MappedSamStream sm (sf.first);
 		bam_header_t *bam_header = sm.ReadHeader();
@@ -117,17 +120,30 @@ void ContigProcessor::process_multiple_sam_files() {
 	stringstream err_str;
 	for(int i = 0; i < 20; i ++)
 		err_str << error_counts[i] << " ";
-	INFO("Error counts:" << err_str.str());
 	size_t interesting = ipp.FillInterestingPositions(charts);
-	INFO("interesting size: " << interesting);
+	if (debug_info) {
+		INFO("Error counts for contig "<<contig_name<<" : " << err_str.str() );
+		INFO("Interesting size: " << interesting);
+	} else {
+		DEBUG("Error counts for contig "<<contig_name<<" : " << err_str.str() );
+		DEBUG("Interesting size: " << interesting);
+	}
 	for (auto &sf : sam_files){
 		MappedSamStream sm (sf.first);
 		bam_header_t *bam_header = sm.ReadHeader();
 		while (!sm.eof()) {
-			PairedSamRead tmp;
 			unordered_map<size_t, position_description> ps;
-			sm >>tmp;
-			tmp.CountPositions(ps, contig);
+
+			if (sf.second == "paired") {
+				PairedSamRead tmp;
+				sm >>tmp;
+				tmp.CountPositions(ps, contig);
+			} else {
+				SingleSamRead tmp;
+				sm >>tmp;
+				tmp.CountPositions(ps, contig);
+			}
+
 			TRACE("updating interesting read..");
 			ipp.UpdateInterestingRead(ps);
 		}
@@ -135,9 +151,15 @@ void ContigProcessor::process_multiple_sam_files() {
 	ipp.UpdateInterestingPositions();
 	unordered_map<size_t, position_description> interesting_positions = ipp.get_weights();
 	stringstream s_new_contig;
+	int total_changes = 0;
 	for (size_t i = 0; i < contig.length(); i ++) {
 		DEBUG(charts[i].str());
-		UpdateOneBase(i, s_new_contig, interesting_positions);
+		total_changes += UpdateOneBase(i, s_new_contig, interesting_positions);
+	}
+	if (debug_info || total_changes * 5 > contig.length()) {
+		INFO("Contig " << contig_name <<" processed with " << total_changes << "changes");
+	} else {
+		DEBUG("Contig " << contig_name <<" processed with " << total_changes << "changes");
 	}
 	//io::osequencestream oss(output_contig_file);
 	contig_name = ContigRenameWithLength(contig_name, s_new_contig.str().length());

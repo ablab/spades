@@ -50,16 +50,16 @@ public:
 	void FlushAll(size_t lib_count);
 	void BufferedOutputRead(string &read, string &contig_name, size_t lib_count);
 	void GetAlignedContigs(string &read, set<string> &contigs);
-	std::string GetLibDir(size_t lib_count);
+	std::string GetLibDir(const size_t lib_count) const;
 	void SplitSingleLibrary(string &out_contigs_filename, size_t lib_count);
 	void SplitPairedLibrary(string &all_reads, size_t lib_count);
 	void GlueSplittedContigs(string &out_contigs_filename);
-	std::string RunPairedBwa(string &left, string &right, size_t lib);
-	std::string RunSingleBwa(string &single, size_t lib);
+	std::string RunPairedBwa(const string &left, const string &right, const size_t lib) const;
+	std::string RunSingleBwa(const string &single, const size_t lib) const;
 	void ProcessSplittedLibrary();
 	void PrepareContigDirs(size_t lib_count);
 //	void ProcessLibrary(string &sam_file);
-	void SplitHeaders(string &all_reads_filename);
+	//void SplitHeaders(string &all_reads_filename);
 //	void CloseWriters();
 	void ProcessDataset();
 

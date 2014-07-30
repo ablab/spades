@@ -20,8 +20,7 @@ size_t InterestingPositionProcessor::FillInterestingPositions(vector<position_de
 			}
 		}
 		if (variants > 1 || contig[i] == UNDEFINED){
-			DEBUG(i);
-			INFO("Adding interesting position: " << i<< " " << charts[i].str());
+			DEBUG("Adding interesting position: " << i<< " " << charts[i].str());
 			tmp_pos.insert((int) i);
 			for (int j = -anchor_num ; j <= anchor_num; j++) {
 				tmp_pos.insert((int) (i / anchor_gap + j) * anchor_gap);
@@ -114,9 +113,10 @@ void InterestingPositionProcessor::UpdateInterestingPositions() {
 				}
 
 				if ((char)toupper(contig[current_pos]) != pos_to_var[maxi]) {
-					INFO("Interesting positions differ at position "<< current_pos);
-					INFO("Was " << (char)toupper(contig[current_pos]) << "new " << pos_to_var[maxi]);
-					INFO("weights" << interesting_weights[current_pos].str());
+
+					DEBUG("Interesting positions differ at position "<< current_pos);
+					DEBUG("Was " << (char)toupper(contig[current_pos]) << "new " << pos_to_var[maxi]);
+					DEBUG("weights" << interesting_weights[current_pos].str());
 					changed_weights[current_pos] = interesting_weights[current_pos];
 				}
 
@@ -131,7 +131,7 @@ void InterestingPositionProcessor::UpdateInterestingPositions() {
 			}
 		}
 		if (dir == 1)
-			INFO("reversing the order...");
+			DEBUG("reversing the order...");
 
 		for(size_t i = 0; i < wr_storage.size(); i++) {
 			wr_storage[i].error_num = 0;

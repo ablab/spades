@@ -141,12 +141,12 @@ void DatasetProcessor::SplitPairedLibrary(string &all_reads_filename, size_t lib
 	FlushAll(lib_count);
 }
 
-string DatasetProcessor::GetLibDir(size_t lib_count){
+string DatasetProcessor::GetLibDir(const size_t lib_count) const{
 	return corr_cfg::get().work_dir + "/lib" + to_string(lib_count);
 }
-
+/*
 void DatasetProcessor::SplitHeaders(string &all_reads_filename) {
-	/*ifstream fs(all_reads_filename);
+	ifstream fs(all_reads_filename);
 	while (! fs.eof()){
 		string r;
 		getline(fs, r);
@@ -161,11 +161,11 @@ void DatasetProcessor::SplitHeaders(string &all_reads_filename) {
 			//VERIFY_MSG(all_writers.find(contig_name) != all_writers.end(), "wrong contig name in SAM file header");
 			BufferedOutputRead(r, contig_name, lib_count);
 		}
-	}*/
+	}
 }
+*/
 
-
-string DatasetProcessor::RunPairedBwa(string &left, string &right, size_t lib){
+string DatasetProcessor::RunPairedBwa(const string &left, const string &right, const size_t lib) const{
 	string slib = to_string(lib);
 	string cur_dir = corr_cfg::get().work_dir + "/lib" + slib;
 	string cur_line = "mkdir " + cur_dir;
@@ -206,7 +206,7 @@ string DatasetProcessor::RunPairedBwa(string &left, string &right, size_t lib){
 	return tmp_sam_filename;
 }
 
-string DatasetProcessor::RunSingleBwa(string &single, size_t lib){
+string DatasetProcessor::RunSingleBwa(const string &single,const size_t lib) const{
 	string slib = to_string(lib);
 	string cur_dir = corr_cfg::get().work_dir + "/lib" + slib;
 	string cur_line = "mkdir " + cur_dir;
@@ -229,7 +229,7 @@ string DatasetProcessor::RunSingleBwa(string &single, size_t lib){
 
 	system(single_sai_line.c_str());
 	string last_line =  corr_cfg::get().bwa + " samse "+ genome_file + " " + tmp_sai_filename + " " +
-	 				   tmp_sai_filename + " " + single +"  > " +  tmp_sam_filename + " 2>" + isize_txt_filename;
+	 				    single +"  > " +  tmp_sam_filename + " 2>" + isize_txt_filename;
 	INFO(last_line);
 	system(last_line.c_str());
 	return tmp_sam_filename;
@@ -321,7 +321,7 @@ void DatasetProcessor::ProcessDataset() {
 
 		pc.process_multiple_sam_files();
 		//pc.process_all_sam_files();
-		INFO("contig " << ordered_contigs[i].second << " in thread number " << omp_get_thread_num() <<" processed");
+//		INFO("contig " << ordered_contigs[i].second << " in thread number " << omp_get_thread_num() <<" processed");
 	}
 
 	INFO("Gluing processed contigs");

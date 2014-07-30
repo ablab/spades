@@ -21,7 +21,7 @@ class ContigProcessor {
 	string output_contig_file;
 //TODO: readlength?
 	string contig;
-
+	bool debug_info;
 	//MappedSamStream sm;
 
 	//bam_header_t *bam_header;
@@ -38,6 +38,7 @@ public:
 		//bam_header = sm.ReadHeader();
 		read_contig();
 		ipp.set_contig(contig);
+		debug_info = (contig.length() > 20000);
 		for (auto sf : sam_files_)
 			sam_files.push_back(sf);
 	}
