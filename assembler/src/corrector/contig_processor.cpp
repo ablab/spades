@@ -33,9 +33,9 @@ void ContigProcessor::UpdateOneRead(const SingleSamRead &tmp, MappedSamStream &s
 	int error_num = tmp.CountPositions(all_positions, contig);
 	if (error_num > 19) error_counts[20] ++;
 	else if (error_num >=0) error_counts[error_num] ++;
-	for (auto iter = all_positions.begin(); iter != all_positions.end(); ++iter) {
-		if ((int)iter->first >=0 && iter->first < contig.length()) {
-			charts[iter->first].update(iter->second);
+	for (auto &pos :all_positions) {
+		if ((int)pos.first >=0 && pos.first < contig.length()) {
+			charts[pos.first].update(pos.second);
 		}
 	}
 }
@@ -60,7 +60,6 @@ int ContigProcessor::UpdateOneBase(size_t i, stringstream &ss, const unordered_m
 			ss <<pos_to_var[maxi];
 			return 1;
 		} else if (maxi == DELETION) {
-
 			return 1;
 		} else if (maxi == INSERTION) {
 			string maxj = "";
@@ -75,10 +74,10 @@ int ContigProcessor::UpdateOneBase(size_t i, stringstream &ss, const unordered_m
 			}
 			ss <<pos_to_var[new_maxi];
 			int max_ins = 0;
-			for (auto iter = charts[i].insertions.begin(); iter != charts[i].insertions.end(); ++iter) {
-				if (iter->second > max_ins){
-					max_ins = iter->second;
-					maxj = iter->first;
+			for (auto &ic :charts[i].insertions) {
+				if (ic.second > max_ins){
+					max_ins = ic.second;
+					maxj = ic.first;
 				}
 			}
 			DEBUG("most popular insertion: " << maxj);
@@ -98,6 +97,7 @@ int ContigProcessor::UpdateOneBase(size_t i, stringstream &ss, const unordered_m
 		return 0;
 	}
 }
+
 void ContigProcessor::process_multiple_sam_files() {
 	error_counts.resize(20);
 	DEBUG("working with " << sam_files.size() << " sublibs");
@@ -106,7 +106,6 @@ void ContigProcessor::process_multiple_sam_files() {
 		bam_header_t *bam_header = sm.ReadHeader();
 		while (!sm.eof()) {
 			SingleSamRead tmp;
-
 			sm >> tmp;
 			UpdateOneRead(tmp, sm);
 		}
@@ -116,13 +115,11 @@ void ContigProcessor::process_multiple_sam_files() {
 		err_str << error_counts[i] << " ";
 	size_t interesting = ipp.FillInterestingPositions(charts);
 	if (debug_info) {
-
 		INFO("Error counts for contig "<<contig_name<< " in thread " << omp_get_thread_num() <<" : " << err_str.str() );
-		INFO("Interesting size: " << interesting);
 	} else {
 		DEBUG("Error counts for contig "<<contig_name<<" : " << err_str.str() );
-		DEBUG("Interesting size: " << interesting);
 	}
+	DEBUG("Interesting size: " << interesting);
 	for (auto &sf : sam_files){
 		MappedSamStream sm (sf.first);
 		bam_header_t *bam_header = sm.ReadHeader();
@@ -150,9 +147,9 @@ void ContigProcessor::process_multiple_sam_files() {
 		total_changes += UpdateOneBase(i, s_new_contig, interesting_positions);
 	}
 	if (debug_info || total_changes * 5 > (int) contig.length()) {
-		INFO("Contig " << contig_name <<" processed with " << total_changes << "changes");
+		INFO("Contig " << contig_name <<" processed with " << total_changes << " changes");
 	} else {
-		DEBUG("Contig " << contig_name <<" processed with " << total_changes << "changes");
+		DEBUG("Contig " << contig_name <<" processed with " << total_changes << " changes");
 	}
 	contig_name = ContigRenameWithLength(contig_name, s_new_contig.str().length());
 	PutContig(output_contig_file, contig_name, s_new_contig.str());

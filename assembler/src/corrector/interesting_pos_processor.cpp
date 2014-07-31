@@ -26,11 +26,11 @@ size_t InterestingPositionProcessor::FillInterestingPositions(vector<position_de
 			}
 		}
 	}
-	for (auto iter = tmp_pos.begin(); iter != tmp_pos.end(); ++iter)
-		if (*iter >= 0 && *iter < (int) contig.length()) {
-			DEBUG("position " << *iter << " is interesting ");
-			DEBUG(charts[*iter].str());
-			is_interesting[*iter] = 1;
+	for (auto &pos: tmp_pos)
+		if (pos>= 0 && pos< (int) contig.length()) {
+			DEBUG("position " << pos<< " is interesting ");
+			DEBUG(charts[pos].str());
+			is_interesting[pos] = 1;
 			count++;
 		}
 	return count;
@@ -39,9 +39,9 @@ size_t InterestingPositionProcessor::FillInterestingPositions(vector<position_de
 
 void InterestingPositionProcessor::UpdateInterestingRead(const PositionDescriptionMap &ps) {
 	vector<size_t> interesting_in_read;
-	for(auto iter = ps.begin(); iter != ps.end(); ++iter) {
-		if (IsInteresting(iter->first)) {
-			interesting_in_read.push_back(iter->first);
+	for(auto &pos: ps) {
+		if (IsInteresting(pos.first)) {
+			interesting_in_read.push_back(pos.first);
 		}
 	}
 	if (interesting_in_read.size() >= 2) {

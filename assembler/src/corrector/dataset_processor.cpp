@@ -203,8 +203,8 @@ void DatasetProcessor::PrepareContigDirs(const size_t lib_count) {
 }
 void DatasetProcessor::ProcessDataset() {
 	size_t lib_num = 0;
-	INFO("Splitting genome");
-	INFO("genome_file: " + genome_file);
+	INFO("Splitting genome...");
+	INFO("Genome_file: " + genome_file);
 	SplitGenome(genome_file, work_dir);
     for (size_t i = 0 ; i < corr_cfg::get().dataset.lib_count(); ++i) {
     	if (corr_cfg::get().dataset[i].type() == io::LibraryType::PairedEnd || corr_cfg::get().dataset[i].type() == io::LibraryType::HQMatePairs || corr_cfg::get().dataset[i].type() == io::LibraryType::SingleReads) {
@@ -216,7 +216,7 @@ void DatasetProcessor::ProcessDataset() {
     			string samf = RunPairedBwa(left, right, lib_num);
     			//INFO(RunPairedBwa(left, right, lib_num));
     			if (samf !="") {
-        			INFO("adding samfile " << samf);
+        			INFO("Adding samfile " << samf);
 
     				unsplitted_sam_files.push_back(make_pair(samf, "paired"));
     				PrepareContigDirs(lib_num);
@@ -232,7 +232,7 @@ void DatasetProcessor::ProcessDataset() {
 				INFO(left);
 				string samf = RunSingleBwa(left, lib_num);
 				if (samf != "") {
-					INFO("adding samfile "<< samf);
+					INFO("Adding samfile "<< samf);
 					unsplitted_sam_files.push_back(make_pair(samf, "single"));
 					PrepareContigDirs(lib_num);
 					SplitSingleLibrary(samf, lib_num);
@@ -257,7 +257,7 @@ void DatasetProcessor::ProcessDataset() {
 	for (size_t i = 0; i < cont_num; i++ ) {
 
 		if ( ordered_contigs[i].first > 20000) {
-			INFO(i << " processing contig" << ordered_contigs[i].second << " of length " << ordered_contigs[i].first <<" in thread number " << omp_get_thread_num());
+			INFO("Processing contig" << ordered_contigs[i].second << " of length " << ordered_contigs[i].first <<" in thread number " << omp_get_thread_num());
 		}
 		ContigProcessor pc(all_contigs_copy[ordered_contigs[i].second].sam_filenames, all_contigs_copy[ordered_contigs[i].second].input_contig_filename);
 

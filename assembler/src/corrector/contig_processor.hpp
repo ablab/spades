@@ -33,11 +33,12 @@ public:
 		for (auto sf : sam_files_)
 			sam_files.push_back(sf);
 	}
+	void process_multiple_sam_files();
+private:
 	void read_contig();
 	void UpdateOneRead(const SingleSamRead &tmp, MappedSamStream &sm);
 	//returns: number of changed nucleotides;
 	int UpdateOneBase(size_t i, stringstream &ss, const unordered_map<size_t, position_description> &interesting_positions);
-	void process_sam_file ();
-	void process_multiple_sam_files();
+
 };
 };
