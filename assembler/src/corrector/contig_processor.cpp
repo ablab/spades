@@ -28,7 +28,6 @@ void ContigProcessor::UpdateOneRead(const SingleSamRead &tmp, MappedSamStream &s
 	}
 	string cur_s = sm.get_contig_name(tmp.get_contig_id());
 	if (cur_s != contig_name) {
-		WARN("wrong string");
 		return;
 	}
 	int error_num = tmp.CountPositions(all_positions, contig);
@@ -104,8 +103,10 @@ void ContigProcessor::process_multiple_sam_files() {
 	DEBUG("working with " << sam_files.size() << " sublibs");
 	for (auto &sf : sam_files){
 		MappedSamStream sm (sf.first);
+		bam_header_t *bam_header = sm.ReadHeader();
 		while (!sm.eof()) {
 			SingleSamRead tmp;
+
 			sm >> tmp;
 			UpdateOneRead(tmp, sm);
 		}
@@ -124,6 +125,7 @@ void ContigProcessor::process_multiple_sam_files() {
 	}
 	for (auto &sf : sam_files){
 		MappedSamStream sm (sf.first);
+		bam_header_t *bam_header = sm.ReadHeader();
 		while (!sm.eof()) {
 			unordered_map<size_t, position_description> ps;
 			if (sf.second == "paired") {

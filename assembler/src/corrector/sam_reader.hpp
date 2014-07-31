@@ -22,18 +22,19 @@ class MappedSamStream: public io::ReadStream<SingleSamRead> {
 
     virtual ~MappedSamStream() {}
 
-    bool is_open() { return is_open_; }
-    bool eof() { return eof_; }
-    MappedSamStream& operator>>(SingleSamRead& read) {
+    bool is_open();
+    bool eof();
+
+    MappedSamStream& operator>>(SingleSamRead& read);/* {
         if (!is_open_ || eof_)
             return *this;
         read.set_data(seq_);
         int tmp = samread(reader_, seq_);
         eof_ = (0 >= tmp);
         return *this;
-    }
+    }*/
 
-    MappedSamStream& operator >> (PairedSamRead& read){
+    MappedSamStream& operator >> (PairedSamRead& read);/*{
     	TRACE("starting process paired read");
     	SingleSamRead r1;
     	MappedSamStream::operator >> (r1);
@@ -46,27 +47,16 @@ class MappedSamStream: public io::ReadStream<SingleSamRead> {
     	read.pair(r1,r2);
         return *this;
     }
-
-    bam_header_t* ReadHeader(){
+*/
+    bam_header_t* ReadHeader();/*{
     	return reader_->header;
-    }
+    }*/
 
-    string get_contig_name(int i){
-    	VERIFY(i < reader_->header->n_targets);
-    	return (reader_->header->target_name[i]);
-    }
-    void close() {
-    	samclose(reader_);
-    	is_open_ = false;
-        eof_ = true;
-    }
+    string get_contig_name(int i);
+    void close();
 
-    void reset() {
-        close();
-        open();
-    }
-
-    io::ReadStreamStat get_stat() const { return io::ReadStreamStat(); }
+    void reset();
+    io::ReadStreamStat get_stat() const;
 
   private:
     samfile_t *reader_;
@@ -76,19 +66,7 @@ class MappedSamStream: public io::ReadStream<SingleSamRead> {
     bool eof_;
 
 
-    void open() {
-
-        if ((reader_ = samopen(filename_.c_str(), "r", NULL)) == NULL)
-		{
-		   cerr << "Fail to open SAM/BAM file " << filename_ << endl;
-		 //  exit(-1);
-		}
-        is_open_ = true;
-    	//seq_ = new bam1_t;
-        int tmp = samread(reader_, seq_);
-        eof_ = (0 >= tmp);
-    }
-
+    void open();
 };
 //}
 };

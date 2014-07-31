@@ -65,7 +65,6 @@ void DatasetProcessor::FlushAll(const size_t lib_count)  {
 			*stream << '\n';
 		}
 		stream->close();
-
 		ac.second.buffered_reads.clear();
 	}
 }
@@ -89,10 +88,8 @@ void DatasetProcessor::SplitPairedLibrary(const string &all_reads_filename, cons
 		getline(fs, r1);
 		if (r1[0] =='@') continue;
 		getline(fs, r2);
-
 		GetAlignedContigs(r1, contigs);
 		GetAlignedContigs(r2, contigs);
-
 		for (string contig: contigs) {
 		//	VERIFY_MSG(all_contigs.find(contig) != all_contigs.end(), "wrong contig name in SAM file header: " + contig);
 			if (all_contigs.find(contig)!= all_contigs.end()) {

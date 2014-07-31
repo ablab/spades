@@ -12,6 +12,7 @@ include_directories(${CMAKE_SOURCE_DIR}/debruijn)
 
 add_executable(corrector
 	read.cpp
+	sam_reader.cpp
 	utils.cpp
 	interesting_pos_processor.cpp
 	contig_processor.cpp
