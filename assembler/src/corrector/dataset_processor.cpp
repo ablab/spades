@@ -340,9 +340,6 @@ void DatasetProcessor::ProcessDataset() {
 	size_t cont_num = ordered_contigs.size();
 	sort(ordered_contigs.begin(), ordered_contigs.end());
 	reverse(ordered_contigs.begin(), ordered_contigs.end());
-	for (size_t i = 0; i < cont_num; i++ ) {
-		INFO(ordered_contigs[i].first << " " << ordered_contigs[i].second);
-	}
     //std::vector<ContigProcessor*> cont_prc(nthreads);
 
 # pragma omp parallel for shared( all_contigs_copy, ordered_contigs) num_threads(nthreads) schedule(dynamic,1)

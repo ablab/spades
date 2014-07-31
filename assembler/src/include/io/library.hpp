@@ -214,7 +214,6 @@ class DataSet {
         input_dir += '/';
 
     load(config);
-    INFO("intput_dir");
     for (auto it = libraries_.begin(); it != libraries_.end(); ++it) {
       it->update_relative_reads_filenames(input_dir);
     }

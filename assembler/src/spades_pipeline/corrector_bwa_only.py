@@ -560,7 +560,7 @@ def prepare_config_corr(filename, cfg, ext_python_modules_home):
         import pyyaml2 as pyyaml
     elif sys.version.startswith('3.'):
         import pyyaml3 as pyyaml
-    print "dumping contigs to " + filename
+    #print "dumping contigs to " + filename
     data = pyyaml.load(open(filename, 'r'))
     data["dataset"] = cfg.dataset
     data["output_dir"] = cfg.output_dir
@@ -613,10 +613,10 @@ def main(args, joblib_path, log=None, config_file=None):
         if config_file:
             path_to_config = config_file
        # config["output_dirpath"] += "/mismatch_corrector_tmp"
-        print config["output_dirpath"] + " output_dirpath"
-        print path_to_config
+#        print config["output_dirpath"] + " output_dirpath"
+#        print path_to_config
         run_str = path_to_bin + ' ' + path_to_config + ' ' + config["contigs"]
-        print run_str
+#        print run_str
         os.system (run_str)
     #    now = datetime.datetime.now()
     #    res_directory = "corrector.output." + now.strftime("%Y.%m.%d_%H.%M.%S")+"/"
@@ -631,9 +631,9 @@ def run_corrector(corrected_dataset_yaml_filename, configs_dir, execution_home, 
     elif sys.version.startswith('3.'):
         import pyyaml3 as pyyaml
     cfg.dataset_yaml_filename = corrected_dataset_yaml_filename
-    print cfg.dataset_yaml_filename + " yaml with all_libs"
-    print configs_dir + " configs dir"
-    print execution_home + " execution home"
+    #print cfg.dataset_yaml_filename + " yaml with all_libs"
+    #print configs_dir + " configs dir"
+    #print execution_home + " execution home"
     dst_configs = os.path.join(cfg.output_dir, "configs")
     if os.path.exists(dst_configs):
         shutil.rmtree(dst_configs)

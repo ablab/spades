@@ -659,7 +659,7 @@ def main(args):
                     est_params_dataset = os.path.join(latest_dir, "final.lib_data")
                     cfg["mismatch_corrector"].__dict__["dataset"] = cfg["dataset"].yaml_filename
                     est_params_data = pyyaml.load(open(os.path.join(latest_dir, "final.lib_data"), 'r'))
-                    max_IS_library = None
+                    '''max_IS_library = None
                     for reads_library in est_params_data:
                         if reads_library['type'] == 'paired-end':
                             if not max_IS_library or float(reads_library["insert size mean"]) > float(max_IS_library["insert size mean"]):
@@ -671,11 +671,12 @@ def main(args):
                                         ' based on the first paired-end library and with default insert size.', log)
                     else:
                         cfg["mismatch_corrector"].__dict__["insert-size"] = round(max_IS_library["insert size mean"])
-                    yaml_dirname = os.path.dirname(options_storage.dataset_yaml_filename)
                     cfg["mismatch_corrector"].__dict__["1"] = list(map(lambda x: os.path.join(yaml_dirname, x),
                         max_IS_library['left reads']))
                     cfg["mismatch_corrector"].__dict__["2"] = list(map(lambda x: os.path.join(yaml_dirname, x),
                         max_IS_library['right reads']))
+                    '''
+                    yaml_dirname = os.path.dirname(options_storage.dataset_yaml_filename)
                     #TODO: add reads orientation
 
                     import corrector_bwa_only
@@ -710,18 +711,18 @@ def main(args):
                         #tmp_dir_for_corrector = support.get_tmp_dir(prefix="mis_cor_%s_" % assembly_type)
                         tmp_dir_for_corrector = os.path.join(cfg["common"].output_dir, "mismatch_corrector/" + assembly_type)
 
-                        print tmp_dir_for_corrector + " tmp_dir_for_corrector"
+                        #print tmp_dir_for_corrector + " tmp_dir_for_corrector"
                         cur_args += ['--output-dir', tmp_dir_for_corrector]
                         cfg["mismatch_corrector"].__dict__["output_dir"] = tmp_dir_for_corrector
                         # correcting
                         corr_cfg = merge_configs(cfg["mismatch_corrector"], cfg["common"])
                         corrector_dataset_yaml_filename = os.path.join(corr_cfg.output_dir, "corrector.info")
-                        print tmp_configs_dir
+                        #print tmp_configs_dir
                         corrector_bwa_only.run_corrector(corrected_dataset_yaml_filename, tmp_configs_dir, bin_home, corr_cfg,
                         ext_python_modules_home, log, cur_args)
 
                         result_corrected_filename = os.path.join(tmp_dir_for_corrector, "corrected_contigs.fasta")
-                        print "corrected filename = " + result_corrected_filename
+                        #print "corrected filename = " + result_corrected_filename
                         # moving corrected contigs (scaffolds) to SPAdes output dir
                         if os.path.isfile(result_corrected_filename):
                             shutil.copyfile(result_corrected_filename, corrected)
