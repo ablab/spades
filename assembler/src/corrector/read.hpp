@@ -13,9 +13,6 @@
 
 namespace corrector {
 
-//TODO: no using in hpp
-//tmp structure before samtools included;
-
 
 
 struct position_description {
@@ -33,28 +30,34 @@ typedef unordered_map <size_t, position_description> PositionDescriptionMap;
 
 
 
-//TODO::destructor
 struct SingleSamRead {
 	bam1_t data_;
 	size_t DataLen() const;
 	size_t CigarLen() const;
 	int get_contig_id() const;
 	void set_data(bam1_t *seq_);
-	int CountPositions(unordered_map <size_t, position_description> &ps, string &contig) const;
+	int CountPositions(unordered_map <size_t, position_description> &ps, const string &contig) const;
 	string GetCigar() const;
 	string GetQual() const;
 	string GetName() const;
 	string GetSeq() const;
+	~SingleSamRead(){
+	}
 };
+
+
 struct PairedSamRead {
 	SingleSamRead r1; SingleSamRead r2;
-//TODO::pair to constructor?
-//TODO::more consts
-	void pair(SingleSamRead &a1, SingleSamRead &a2);
-	int CountPositions(unordered_map <size_t, position_description> &ps, string &contig) const;
+	void pair(SingleSamRead &a1,  SingleSamRead &a2);
+	PairedSamRead(){}
+	PairedSamRead (SingleSamRead &a1, SingleSamRead &a2):r1(a1), r2(a2){
+
+	}
+	int CountPositions(unordered_map <size_t, position_description> &ps, const string &contig) const;
 };
-//TODO::rename
-struct WeightedRead {
+
+
+struct WeightedPositionalRead {
 	map<size_t, size_t> positions;
 	int error_num;
 	int non_interesting_error_num;
@@ -62,7 +65,7 @@ struct WeightedRead {
 	double weight;
 	size_t first_pos;
 	size_t last_pos;
-	WeightedRead(const vector<size_t> &int_pos, const PositionDescriptionMap &ps,const string &contig){
+	WeightedPositionalRead(const vector<size_t> &int_pos, const PositionDescriptionMap &ps,const string &contig){
 		first_pos = std::numeric_limits<size_t>::max();
 		last_pos = 0;
 		non_interesting_error_num = 0;

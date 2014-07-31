@@ -23,14 +23,10 @@ void ContigProcessor::read_contig() {
 
 void ContigProcessor::UpdateOneRead(const SingleSamRead &tmp, MappedSamStream &sm){
 	unordered_map<size_t, position_description> all_positions;
-	//INFO(tmp.GetName());
-	//INFO(tmp.get_contig_id());
 	if (tmp.get_contig_id() < 0) {
 		return;
 	}
-
 	string cur_s = sm.get_contig_name(tmp.get_contig_id());
-
 	if (cur_s != contig_name) {
 		WARN("wrong string");
 		return;
@@ -38,13 +34,13 @@ void ContigProcessor::UpdateOneRead(const SingleSamRead &tmp, MappedSamStream &s
 	int error_num = tmp.CountPositions(all_positions, contig);
 	if (error_num > 19) error_counts[20] ++;
 	else if (error_num >=0) error_counts[error_num] ++;
-
 	for (auto iter = all_positions.begin(); iter != all_positions.end(); ++iter) {
 		if ((int)iter->first >=0 && iter->first < contig.length()) {
 			charts[iter->first].update(iter->second);
 		}
 	}
 }
+
 //returns: number of changed nucleotides;
 int ContigProcessor::UpdateOneBase(size_t i, stringstream &ss, const unordered_map<size_t, position_description> &interesting_positions){
 	char old = (char) toupper(contig[i]);
@@ -112,7 +108,6 @@ void ContigProcessor::process_multiple_sam_files() {
 			SingleSamRead tmp;
 			sm >> tmp;
 			UpdateOneRead(tmp, sm);
-			//	sm >>tmp;
 		}
 	}
 	stringstream err_str;
@@ -131,7 +126,6 @@ void ContigProcessor::process_multiple_sam_files() {
 		MappedSamStream sm (sf.first);
 		while (!sm.eof()) {
 			unordered_map<size_t, position_description> ps;
-
 			if (sf.second == "paired") {
 				PairedSamRead tmp;
 				sm >>tmp;
@@ -141,7 +135,6 @@ void ContigProcessor::process_multiple_sam_files() {
 				sm >>tmp;
 				tmp.CountPositions(ps, contig);
 			}
-
 			TRACE("updating interesting read..");
 			ipp.UpdateInterestingRead(ps);
 		}
@@ -154,51 +147,13 @@ void ContigProcessor::process_multiple_sam_files() {
 		DEBUG(charts[i].str());
 		total_changes += UpdateOneBase(i, s_new_contig, interesting_positions);
 	}
-	if (debug_info || total_changes * 5 > contig.length()) {
+	if (debug_info || total_changes * 5 > (int) contig.length()) {
 		INFO("Contig " << contig_name <<" processed with " << total_changes << "changes");
 	} else {
 		DEBUG("Contig " << contig_name <<" processed with " << total_changes << "changes");
 	}
-	//io::osequencestream oss(output_contig_file);
 	contig_name = ContigRenameWithLength(contig_name, s_new_contig.str().length());
 	PutContig(output_contig_file, contig_name, s_new_contig.str());
 }
-
-/*void ContigProcessor::process_sam_file (){
-	error_counts.resize(20);
-	while (!sm.eof()) {
-		SingleSamRead tmp;
-		sm >> tmp;
-		UpdateOneRead(tmp);
-		//	sm >>tmp;
-	}
-	stringstream err_str;
-
-	for(int i = 0; i < 20; i ++)
-		err_str << error_counts[i] << " ";
-	INFO("Error counts:" << err_str.str());
-	sm.reset();
-	size_t interesting = ipp.FillInterestingPositions(charts);
-	INFO("interesting size: " << interesting);
-	while (!sm.eof()) {
-		PairedSamRead tmp;
-		unordered_map<size_t, position_description> ps;
-		sm >>tmp;
-		tmp.CountPositions(ps, contig);
-		TRACE("updating interesting read..");
-		ipp.UpdateInterestingRead(ps);
-	}
-	ipp.UpdateInterestingPositions();
-	unordered_map<size_t, position_description> interesting_positions = ipp.get_weights();
-	stringstream s_new_contig;
-	for (size_t i = 0; i < contig.length(); i ++) {
-		DEBUG(charts[i].str());
-		UpdateOneBase(i, s_new_contig, interesting_positions);
-	}
-	//io::osequencestream oss(output_contig_file);
-	contig_name = ContigRenameWithLength(contig_name, s_new_contig.str().length());
-	PutContig(output_contig_file, contig_name, s_new_contig.str());
-	//oss << io::SingleRead(contig_name, s_new_contig.str());
-}*/
 
 };

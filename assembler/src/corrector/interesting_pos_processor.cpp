@@ -7,14 +7,13 @@ size_t InterestingPositionProcessor::FillInterestingPositions(vector<position_de
 	for( size_t i = 0; i < contig.length(); i++) {
 		int sum_total = 0;
 		for (size_t j = 0; j < MAX_VARIANTS; j++) {
-//TODO: remove this condition
 			if (j != INSERTION && j != DELETION) {
 				sum_total += charts[i].votes[j];
 			}
 		}
 		int variants = 0;
 		for (size_t j = 0; j < MAX_VARIANTS; j++) {
-//TODO: reconsider this condition
+			//TODO::For IT reconsider this condition
 			if (j != INSERTION && j != DELETION && (charts[i].votes[j] > 0.1* sum_total) && (charts[i].votes[j] < 0.9* sum_total) && (sum_total > 20)) {
 				variants++;
 			}
@@ -46,7 +45,7 @@ void InterestingPositionProcessor::UpdateInterestingRead(const PositionDescripti
 		}
 	}
 	if (interesting_in_read.size() >= 2) {
-		WeightedRead wr(interesting_in_read, ps, contig);
+		WeightedPositionalRead wr(interesting_in_read, ps, contig);
 		size_t cur_id = wr_storage.size();
 		wr_storage.push_back(wr);
 		for (size_t i = 0; i < interesting_in_read.size(); i++) {
@@ -64,13 +63,7 @@ void InterestingPositionProcessor::UpdateInterestingPositions() {
 		int current_pos = start_pos;
 		for(;current_pos >=0 && current_pos < (int) contig.length();current_pos += dir){
 			if (is_interesting[current_pos]) {
-				//for(size_t i = 0; i < MAX_VARIANTS; i++ )
-					//interesting_weights[current_pos].votes[i] = 0;
-
 				DEBUG("reads on position: " << read_ids[current_pos].size());
-//				size_t back_0 = 0;
-//				size_t back_true_A=0, back_true_C =0 ;
-//				size_t back_false = 0;
 				for(size_t i = 0; i < read_ids[current_pos].size(); i++ ) {
 					size_t current_read_id = read_ids[current_pos][i];
 					size_t current_variant = wr_storage[current_read_id].positions[current_pos];
@@ -82,24 +75,8 @@ void InterestingPositionProcessor::UpdateInterestingPositions() {
 
 
 						interesting_weights[current_pos].votes[current_variant] += get_error_weight(wr_storage[current_read_id].error_num /*+ wr_storage[current_read_id].non_interesting_error_num*/) * coef;
-//						if (current_pos == 1669) {
-//							if (wr_storage[current_read_id].positions.find(1528) != wr_storage[current_read_id].positions.end() ) {
-//								if (wr_storage[current_read_id].positions[1528] == var_to_pos[contig[1528]]) {
-//									if (current_variant == 0)
-//										back_true_A++;
-//									else if (current_variant == 1)
-//										back_true_C++;
-//								} else {
-//									back_false ++;
-//								}
-//							} else {
-//								back_0++;
-//							}
-//						}
 					}
 				}
-//				if (current_pos == 1669)
-//					cout << back_0 << " " << back_true_A << " " << back_true_C << " "<< back_false;
 				size_t maxi = interesting_weights[current_pos].FoundOptimal(contig[current_pos]);
 				for(size_t i = 0; i < read_ids[current_pos].size(); i++ ) {
 					size_t current_read_id = read_ids[current_pos][i];
@@ -113,19 +90,11 @@ void InterestingPositionProcessor::UpdateInterestingPositions() {
 				}
 
 				if ((char)toupper(contig[current_pos]) != pos_to_var[maxi]) {
-
 					DEBUG("Interesting positions differ at position "<< current_pos);
 					DEBUG("Was " << (char)toupper(contig[current_pos]) << "new " << pos_to_var[maxi]);
 					DEBUG("weights" << interesting_weights[current_pos].str());
 					changed_weights[current_pos] = interesting_weights[current_pos];
 				}
-
-
-
-				{
-//					INFO("debugging position "<< current_pos << " weights " << interesting_weights[current_pos].str());
-				}
-
 				//for backward pass
 				interesting_weights[current_pos].clear();
 			}

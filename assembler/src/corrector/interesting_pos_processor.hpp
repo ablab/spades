@@ -6,21 +6,17 @@
 
 
 namespace corrector {
-typedef vector<WeightedRead> WeightedReadStorage;
+typedef vector<WeightedPositionalRead> WeightedReadStorage;
 
 class InterestingPositionProcessor {
 	string contig;
 	vector<int> is_interesting;
 	vector<vector<size_t> > read_ids;
 	WeightedReadStorage wr_storage;
-//TODO:: init this consts with something more reasonable
 	const int anchor_gap = 100;
 	const int anchor_num = 6;
-//TODO: old formula 1 scores? RECONSIDER REASONABLE INIT
 
 	static const size_t MaxErrorCount = 6;
-	//const int error_weight[MaxErrorCount] ={374864, 3853, 1171, 841, 66, 27};
-	//const int error_weight[MaxErrorCount] ={100000, 1000, 1000, 1000, 1, 1};
 	const int error_weight[MaxErrorCount] ={100, 10, 8, 5, 2, 1};
 	unordered_map<size_t, position_description> interesting_weights;
 	unordered_map<size_t, position_description> changed_weights;

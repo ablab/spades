@@ -3,7 +3,6 @@
 //* All Rights Reserved
 //* See file LICENSE for details.
 //****************************************************************************
-//todo rename to reader
 #pragma once
 
 
@@ -13,47 +12,7 @@
 #include "io/ireader.hpp"
 
 namespace corrector {
-//namespace io {
-/*class SamRead : public SamTools::BamAlignment {
-  public:
-    BamRead() {}
 
-    BamRead(const BamTools::BamAlignment &other)
-            : BamTools::BamAlignment(other) {}
-
-    const std::string& name() const {
-        return Name;
-    }
-
-    size_t size() const {
-        return Length;
-    }
-
-    size_t nucl_count() const {
-        return size();
-    }
-
-    const std::string& GetSequenceString() const {
-        return QueryBases;
-    }
-
-    std::string GetPhredQualityString() const {
-        return Qualities;
-    }
-
-    operator io::SingleRead() {
-        // not including quality is intentional:
-        // during read correction bases might be inserted/deleted,
-        // and base qualities for them are not calculated
-        return io::SingleRead(name(), GetSequenceString());
-    }
-
-    char operator[](size_t i) const {
-        VERIFY(is_nucl(QueryBases[i]));
-        return dignucl(QueryBases[i]);
-    }
-};
-*/
 class MappedSamStream: public io::ReadStream<SingleSamRead> {
   public:
     MappedSamStream(const std::string &filename)
@@ -73,6 +32,7 @@ class MappedSamStream: public io::ReadStream<SingleSamRead> {
         eof_ = (0 >= tmp);
         return *this;
     }
+
     MappedSamStream& operator >> (PairedSamRead& read){
     	TRACE("starting process paired read");
     	SingleSamRead r1;
@@ -84,11 +44,9 @@ class MappedSamStream: public io::ReadStream<SingleSamRead> {
     	TRACE(r1.GetName());
     	VERIFY_MSG (r1.GetName() == r2.GetName(), r1.GetName() + " " + r2.GetName());
     	read.pair(r1,r2);
-    	TRACE("read read");
         return *this;
-
-
     }
+
     bam_header_t* ReadHeader(){
     	return reader_->header;
     }

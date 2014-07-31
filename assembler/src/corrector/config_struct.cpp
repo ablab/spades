@@ -8,7 +8,6 @@
 
 namespace corrector {
 void load(corrector_config& cfg, const std::string &filename) {
-//  INFO("loading config from " << filename);
   YAML::Node config = YAML::LoadFile(filename);
   cfg.dataset.load(config["dataset"].as<std::string>());
   cfg.work_dir = config["work_dir"].as<std::string>(".");

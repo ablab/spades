@@ -8,8 +8,6 @@
 namespace corrector {
 
 struct corrector_config {
-//  io::DataSet<debruijn_graph::debruijn_config::DataSetData> dataset;
-//std::string dataset;
   io::DataSet<> dataset;
   std::string work_dir;
   std::string output_dir;

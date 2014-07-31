@@ -7,9 +7,8 @@ namespace corrector {
 void position_description::update(const position_description &another){
 	for (size_t i = 0; i < MAX_VARIANTS; i++)
 		votes[i] += another.votes[i];
-	//TODO:range based for
-	for (auto iter = another.insertions.begin(); iter != another.insertions.end(); ++iter)
-		insertions[iter->first] += iter->second;
+	for (auto &ins : another.insertions)
+		insertions[ins.first] += ins.second;
 }
 string position_description::str() const{
 	stringstream ss;
@@ -50,14 +49,11 @@ int SingleSamRead::get_contig_id() const{
 	return data_.core.tid;
 }
 void SingleSamRead::set_data(bam1_t *seq_) {
-//		delete *data_;
 	//TODO: delete
 	bam1_t *new_seq = bam_dup1(seq_);
-	//bam_copy1 (new_seq, seq)
-	//new_seq->data = new uint8_t (seq_data);
 	data_ = *new_seq;
 }
-int SingleSamRead::CountPositions(unordered_map <size_t, position_description> &ps, string &contig) const{
+int SingleSamRead::CountPositions(unordered_map <size_t, position_description> &ps, const string &contig) const{
 	size_t contig_length = contig.length();
 	int error_num = 0;
 	if (get_contig_id() < 0) {
@@ -90,7 +86,6 @@ int SingleSamRead::CountPositions(unordered_map <size_t, position_description> &
 	for (size_t i = 0; i <l_cigar; i++)
 		if (bam_cigar_opchr(cigar[i]) =='M')
 			aligned_length +=  bam_cigar_oplen(cigar[i]);
-//TODO: reconsider this condition
 //It's about bad aligned reads, but whether it is necessary?
 	double read_len_double = (double) l_read;
 	if ((aligned_length < min(read_len_double* 0.4, 40.0)) && (position > read_len_double/ 2) && (contig_length  > read_len_double/ 2 + (double) position) ) {
@@ -215,13 +210,13 @@ void PairedSamRead::pair(SingleSamRead &a1, SingleSamRead &a2) {
 	r1 = a1; r2 = a2;
 }
 
-int PairedSamRead::CountPositions(unordered_map <size_t, position_description> &ps, string &contig) const{
+int PairedSamRead::CountPositions(unordered_map <size_t, position_description> &ps, const string &contig) const{
 
 	TRACE("starting pairing");
 	int t1 = r1.CountPositions(ps, contig);
 	unordered_map <size_t, position_description> tmp;
 	int t2 = r2.CountPositions(tmp, contig);
-	//TODO: overlaps.. multimap? Look on qual?
+	//overlaps.. multimap? Look on qual?
 	if (ps.size() ==0 || tmp.size() == 0) {
 		//We do not need paired reads which are not really paired
 		ps.clear();
