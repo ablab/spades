@@ -242,7 +242,7 @@ def main(args, joblib_path, log=None, config_file=None):
 #        print path_to_config
         run_str = path_to_bin + ' ' + path_to_config + ' ' + config["contigs"]
 #        print run_str
-        os.system (run_str)
+        support.sys_call(run_str, log)
     #    now = datetime.datetime.now()
     #    res_directory = "corrector.output." + now.strftime("%Y.%m.%d_%H.%M.%S")+"/"
 
