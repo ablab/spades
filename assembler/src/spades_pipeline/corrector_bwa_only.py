@@ -187,7 +187,7 @@ def prepare_config_corr(filename, cfg, ext_python_modules_home):
         import pyyaml3 as pyyaml
     #print "dumping contigs to " + filename
     data = pyyaml.load(open(filename, 'r'))
-    data["dataset"] = cfg.dataset_yaml_filename
+    data["dataset"] = cfg.dataset
     data["output_dir"] = cfg.output_dir
     data["work_dir"] = cfg.output_dir + '/tmp'
     #data["hard_memory_limit"] = cfg.max_memory
