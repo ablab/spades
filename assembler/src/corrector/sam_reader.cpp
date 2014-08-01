@@ -56,12 +56,13 @@ namespace corrector {
 		if ((reader_ = samopen(filename_.c_str(), "r", NULL)) == NULL)
 		{
 		   cerr << "Fail to open SAM/BAM file " << filename_ << endl;
-		 //  exit(-1);
+		   is_open_ = false;
+		   eof_ = true;
+		} else {
+			is_open_ = true;
+			int tmp = samread(reader_, seq_);
+			eof_ = (0 >= tmp);
 		}
-		is_open_ = true;
-		//seq_ = new bam1_t;
-		int tmp = samread(reader_, seq_);
-		eof_ = (0 >= tmp);
 	}
     io::ReadStreamStat MappedSamStream::get_stat() const {
     	return io::ReadStreamStat();
