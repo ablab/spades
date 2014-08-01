@@ -13,7 +13,7 @@
 #include "interesting_pos_processor.hpp"
 
 namespace corrector {
-	typedef std::vector<std::pair<string, string> > sam_files_type;
+	typedef std::vector<std::pair<string, io::LibraryType> > sam_files_type;
 class ContigProcessor {
 	sam_files_type sam_files;
 	string sam_file;

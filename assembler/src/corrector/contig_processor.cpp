@@ -123,7 +123,7 @@ void ContigProcessor::ProcessMultipleSamFiles() {
 		MappedSamStream sm (sf.first);
 		while (!sm.eof()) {
 			unordered_map<size_t, position_description> ps;
-			if (sf.second == "paired") {
+			if (sf.second == io::LibraryType::PairedEnd || sf.second == io::LibraryType::HQMatePairs) {
 				PairedSamRead tmp;
 				sm >>tmp;
 				tmp.CountPositions(ps, contig);

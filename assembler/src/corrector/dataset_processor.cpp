@@ -148,14 +148,13 @@ string DatasetProcessor::RunPairedBwa(const string &left, const string &right, c
 	return tmp_sam_filename;
 }
 
-string DatasetProcessor::RunSingleBwa(const string &single,const size_t lib) const{
+string DatasetProcessor::RunSingleBwa(const string &single, const size_t lib) const{
 	int run_res = 0;
 	string slib = to_string(lib);
 	string cur_dir = corr_cfg::get().work_dir + "/lib" + slib;
 	string cur_line = "mkdir " + cur_dir;
 	run_res = system(cur_line.c_str());
 	string tmp_sai_filename = cur_dir +"/tmp.sai";
-
 	string tmp_sam_filename = cur_dir + "/tmp.sam";
 	string isize_txt_filename = cur_dir +"/isize.txt";
 	string tmp_file = cur_dir + "/bwa.flood";
@@ -217,9 +216,7 @@ void DatasetProcessor::ProcessDataset() {
     			string samf = RunPairedBwa(left, right, lib_num);
     			//INFO(RunPairedBwa(left, right, lib_num));
     			if (samf !="") {
-        			INFO("Adding samfile " << samf);
-
-    				unsplitted_sam_files.push_back(make_pair(samf, "paired"));
+        			unsplitted_sam_files.push_back(make_pair(samf, corr_cfg::get().dataset[i].type()));
     				PrepareContigDirs(lib_num);
     				SplitPairedLibrary(samf, lib_num);
             		lib_num++;
@@ -234,7 +231,7 @@ void DatasetProcessor::ProcessDataset() {
 				string samf = RunSingleBwa(left, lib_num);
 				if (samf != "") {
 					INFO("Adding samfile "<< samf);
-					unsplitted_sam_files.push_back(make_pair(samf, "single"));
+					unsplitted_sam_files.push_back(make_pair(samf, io::LibraryType::SingleReads));
 					PrepareContigDirs(lib_num);
 					SplitSingleLibrary(samf, lib_num);
 					lib_num++;
