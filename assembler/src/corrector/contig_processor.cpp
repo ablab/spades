@@ -6,7 +6,7 @@
 
 namespace corrector{
 
-void ContigProcessor::read_contig() {
+void ContigProcessor::ReadContig() {
 	auto res= GetContigs(contig_file);
 	VERIFY_MSG(res.size()== 1, "Not one contig in file with unique contigs");
 
