@@ -103,7 +103,6 @@ void ContigProcessor::process_multiple_sam_files() {
 	DEBUG("working with " << sam_files.size() << " sublibs");
 	for (auto &sf : sam_files){
 		MappedSamStream sm (sf.first);
-		bam_header_t *bam_header = sm.ReadHeader();
 		while (!sm.eof()) {
 			SingleSamRead tmp;
 			sm >> tmp;
@@ -122,7 +121,6 @@ void ContigProcessor::process_multiple_sam_files() {
 	DEBUG("Interesting size: " << interesting);
 	for (auto &sf : sam_files){
 		MappedSamStream sm (sf.first);
-		bam_header_t *bam_header = sm.ReadHeader();
 		while (!sm.eof()) {
 			unordered_map<size_t, position_description> ps;
 			if (sf.second == "paired") {
