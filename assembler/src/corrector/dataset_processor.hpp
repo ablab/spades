@@ -39,6 +39,8 @@ public:
 		nthreads = corr_cfg::get().max_nthreads;
 		buffered_count = 0;
 	}
+	void ProcessDataset();
+private:
 	void SplitGenome(const string &genome, const string &genome_splitted_dir);
 	void FlushAll(const size_t lib_count) ;
 	void BufferedOutputRead(const string &read, const string &contig_name, const size_t lib_count) ;
@@ -50,7 +52,6 @@ public:
 	std::string RunPairedBwa(const string &left, const string &right, const size_t lib) const;
 	std::string RunSingleBwa(const string &single, const size_t lib) const;
 	void PrepareContigDirs(const size_t lib_count);
-	void ProcessDataset();
 
 };
 };

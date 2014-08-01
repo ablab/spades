@@ -200,6 +200,7 @@ void DatasetProcessor::PrepareContigDirs(const size_t lib_count) {
 		string out_name = out_dir + "/" + ac.first + ".sam";
 		ac.second.sam_filenames.push_back(make_pair(out_name, unsplitted_sam_files[lib_count].second));
 	}
+	FlushAll(lib_count);
 }
 void DatasetProcessor::ProcessDataset() {
 	size_t lib_num = 0;

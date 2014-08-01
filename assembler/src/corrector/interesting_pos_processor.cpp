@@ -55,6 +55,13 @@ void InterestingPositionProcessor::UpdateInterestingRead(const PositionDescripti
 	}
 }
 
+void InterestingPositionProcessor::set_contig(string ctg) {
+	contig = ctg;
+	size_t len = contig.length();
+			is_interesting.resize(len);
+			read_ids.resize(len);
+}
+
 void InterestingPositionProcessor::UpdateInterestingPositions() {
 	set<int > debug_pos ={1669, 1709}; //{1884, 1826, 1803, 1768};
 	for (int dir = 1;  dir >= -1; dir -=2 ) {
