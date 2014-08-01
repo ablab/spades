@@ -56,6 +56,7 @@ std::map<std::string, std::string> GetContigs(std::string filename) {
     if (cont_name != "") {
         res[cont_name] = ss.str();
     }
+    istr.close();
     return res;
 }
 void PutContig(std::string full_path, std::string contig_name, std::string contig_seq) {
@@ -66,6 +67,7 @@ void PutContig(std::string full_path, std::string contig_name, std::string conti
 		oss << contig_seq.substr(cur, 60) << std::endl;
 	    cur += 60;
 	}
+	oss.close();
 }
 
 
