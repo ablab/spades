@@ -262,7 +262,7 @@ void DatasetProcessor::ProcessDataset() {
 		}
 		ContigProcessor pc(all_contigs_copy[ordered_contigs[i].second].sam_filenames, all_contigs_copy[ordered_contigs[i].second].input_contig_filename);
 
-		pc.process_multiple_sam_files();
+		pc.ProcessMultipleSamFiles();
 	}
 	INFO("Gluing processed contigs");
 	GlueSplittedContigs(output_contig_file);

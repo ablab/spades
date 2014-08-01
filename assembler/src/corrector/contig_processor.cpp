@@ -98,7 +98,7 @@ int ContigProcessor::UpdateOneBase(size_t i, stringstream &ss, const unordered_m
 	}
 }
 
-void ContigProcessor::process_multiple_sam_files() {
+void ContigProcessor::ProcessMultipleSamFiles() {
 	error_counts.resize(20);
 	DEBUG("working with " << sam_files.size() << " sublibs");
 	for (auto &sf : sam_files){

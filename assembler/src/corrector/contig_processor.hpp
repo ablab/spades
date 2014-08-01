@@ -27,15 +27,15 @@ class ContigProcessor {
 	vector<int> error_counts;
 public:
 	ContigProcessor(sam_files_type &sam_files_, string contig_file): contig_file(contig_file){
-		read_contig();
+		ReadContig();
 		ipp.set_contig(contig);
 		debug_info = (contig.length() > 20000);
 		for (auto sf : sam_files_)
 			sam_files.push_back(sf);
 	}
-	void process_multiple_sam_files();
+	void ProcessMultipleSamFiles();
 private:
-	void read_contig();
+	void ReadContig();
 	void UpdateOneRead(const SingleSamRead &tmp, MappedSamStream &sm);
 	//returns: number of changed nucleotides;
 	int UpdateOneBase(size_t i, stringstream &ss, const unordered_map<size_t, position_description> &interesting_positions);
