@@ -55,7 +55,7 @@ namespace corrector {
     void MappedSamStream::open() {
 		if ((reader_ = samopen(filename_.c_str(), "r", NULL)) == NULL)
 		{
-		   cerr << "Fail to open SAM/BAM file " << filename_ << endl;
+		   WARN( "Fail to open SAM/BAM file " << filename_ << " ,skipping");
 		   is_open_ = false;
 		   eof_ = true;
 		} else {
