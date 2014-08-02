@@ -659,23 +659,6 @@ def main(args):
                     est_params_dataset = os.path.join(latest_dir, "final.lib_data")
                     cfg["mismatch_corrector"].__dict__["dataset"] = cfg["dataset"].yaml_filename
                     est_params_data = pyyaml.load(open(os.path.join(latest_dir, "final.lib_data"), 'r'))
-                    '''max_IS_library = None
-                    for reads_library in est_params_data:
-                        if reads_library['type'] == 'paired-end':
-                            if not max_IS_library or float(reads_library["insert size mean"]) > float(max_IS_library["insert size mean"]):
-                                max_IS_library = reads_library
-                    if not max_IS_library:
-                        support.error('Mismatch correction cannot be performed without at least one paired-end library!', log)
-                    if not max_IS_library["insert size mean"]:
-                        support.warning('Failed to estimate insert size for all paired-end libraries. Starting Mismatch correction'
-                                        ' based on the first paired-end library and with default insert size.', log)
-                    else:
-                        cfg["mismatch_corrector"].__dict__["insert-size"] = round(max_IS_library["insert size mean"])
-                    cfg["mismatch_corrector"].__dict__["1"] = list(map(lambda x: os.path.join(yaml_dirname, x),
-                        max_IS_library['left reads']))
-                    cfg["mismatch_corrector"].__dict__["2"] = list(map(lambda x: os.path.join(yaml_dirname, x),
-                        max_IS_library['right reads']))
-                    '''
                     yaml_dirname = os.path.dirname(options_storage.dataset_yaml_filename)
                     #TODO: add reads orientation
 
@@ -727,8 +710,8 @@ def main(args):
                         if os.path.isfile(result_corrected_filename):
                             shutil.copyfile(result_corrected_filename, corrected)
                         tmp_d = os.path.join(tmp_dir_for_corrector, "tmp")
-#                        if os.path.isdir(tmp_d) and not cfg["common"].developer_mode:
-#                            shutil.rmtree(tmp_d)
+                        if os.path.isdir(tmp_d) and not cfg["common"].developer_mode:
+                            shutil.rmtree(tmp_d)
 
                         assembled_fastg = assembled[:-6] + ".fastg"
                         if os.path.isfile(assembled_fastg):
