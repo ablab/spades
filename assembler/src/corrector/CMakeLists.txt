@@ -20,7 +20,7 @@ add_executable(corrector
 	config_struct.cpp
         main.cpp)
 
-target_link_libraries(corrector samtools input mph_index BamTools yaml-cpp  ${COMMON_LIBRARIES} ssw)
+target_link_libraries(corrector samtools input  yaml-cpp  ${COMMON_LIBRARIES} )
 
 
 

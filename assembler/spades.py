@@ -658,8 +658,6 @@ def main(args):
                     # detecting paired-end library with the largest insert size
                     est_params_dataset = os.path.join(latest_dir, "final.lib_data")
                     cfg["mismatch_corrector"].__dict__["dataset"] = cfg["dataset"].yaml_filename
-                    est_params_data = pyyaml.load(open(os.path.join(latest_dir, "final.lib_data"), 'r'))
-                    yaml_dirname = os.path.dirname(options_storage.dataset_yaml_filename)
                     #TODO: add reads orientation
 
                     import corrector_bwa_only
@@ -705,8 +703,6 @@ def main(args):
                         ext_python_modules_home, log, cur_args)
 
                         result_corrected_filename = os.path.join(tmp_dir_for_corrector, "corrected_contigs.fasta")
-                        #print "corrected filename = " + result_corrected_filename
-                        # moving corrected contigs (scaffolds) to SPAdes output dir
                         if os.path.isfile(result_corrected_filename):
                             shutil.copyfile(result_corrected_filename, corrected)
                         tmp_d = os.path.join(tmp_dir_for_corrector, "tmp")

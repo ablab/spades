@@ -185,7 +185,6 @@ def prepare_config_corr(filename, cfg, ext_python_modules_home):
         import pyyaml2 as pyyaml
     elif sys.version.startswith('3.'):
         import pyyaml3 as pyyaml
-    #print "dumping contigs to " + filename
     data = pyyaml.load(open(filename, 'r'))
     data["dataset"] = cfg.dataset
     data["output_dir"] = cfg.output_dir
@@ -220,31 +219,13 @@ def main(args, joblib_path, log=None, config_file=None):
         log_filename = os.path.join(config["output_dirpath"], "corrector.log")
         log_handler = logging.FileHandler(log_filename, mode='w')
         log.addHandler(log_handler)
-
-    log.info("Config: " + str(config))
     if "split_dir" not in config:
-#        print "no split dir, looking for sam file"
-        '''        if "sam_file" not in config:
-            log.info("no sam file, running aligner")
-            run_aligner(log)
-        else:
-            log.info("sam file was found")
-            tmp_sam_file_path = os.path.join(config["work_dir"], "tmp.sam")
-            shutil.copy2(config["sam_file"], tmp_sam_file_path) # Note: shutil.copy2 is similar to the Unix command cp -p
-            #os.system("cp -p "+ config["sam_file"] +" " + config["work_dir"]+"tmp.sam")
-            config["sam_file"] = tmp_sam_file_path '''
         path_to_bin = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../bin/corrector')
         path_to_config = os.path.join(os.path.dirname(os.path.realpath(__file__)) , '../../configs/corrector/corrector.info.template')
         if config_file:
             path_to_config = config_file
-       # config["output_dirpath"] += "/mismatch_corrector_tmp"
-#        print config["output_dirpath"] + " output_dirpath"
-#        print path_to_config
         run_str = path_to_bin + ' ' + path_to_config + ' ' + config["contigs"]
-#        print run_str
         support.sys_call(run_str, log)
-    #    now = datetime.datetime.now()
-    #    res_directory = "corrector.output." + now.strftime("%Y.%m.%d_%H.%M.%S")+"/"
 
 
 
@@ -256,9 +237,6 @@ def run_corrector(corrected_dataset_yaml_filename, configs_dir, execution_home, 
     elif sys.version.startswith('3.'):
         import pyyaml3 as pyyaml
     cfg.dataset_yaml_filename = corrected_dataset_yaml_filename
-    #print cfg.dataset_yaml_filename + " yaml with all_libs"
-    #print configs_dir + " configs dir"
-    #print execution_home + " execution home"
     dst_configs = os.path.join(cfg.output_dir, "configs")
     if os.path.exists(dst_configs):
         shutil.rmtree(dst_configs)
@@ -283,12 +261,7 @@ def run_corrector(corrected_dataset_yaml_filename, configs_dir, execution_home, 
                os.path.abspath(cfg_file_name)]
 
     log.info("\n== Running contig polishing tool: " + ' '.join(command) + "\n")
- #   support.sys_call(command, log)
- #   if not os.path.isfile(corrected_dataset_yaml_filename):
- #       support.error("read error correction finished abnormally: " + corrected_dataset_yaml_filename + " not found!")
-#    corrected_dataset_data = pyyaml.load(open(corrected_dataset_yaml_filename, 'r'))
 
-    is_changed = False
 
     log.info("\n== Dataset description file was created: " + cfg_file_name + "\n")
     main(args, ext_python_modules_home, log, cfg_file_name)

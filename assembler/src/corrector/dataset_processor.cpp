@@ -108,9 +108,8 @@ string DatasetProcessor::GetLibDir(const size_t lib_count) const{
 string DatasetProcessor::RunPairedBwa(const string &left, const string &right, const size_t lib) const{
 	string slib = to_string(lib);
 	string cur_dir = corr_cfg::get().work_dir + "/lib" + slib;
-	string cur_line = "mkdir " + cur_dir;
 	path::make_dir(cur_dir);
-	int run_res = system(cur_line.c_str());
+	int run_res = 0;
 	string tmp1_sai_filename = cur_dir +"/tmp1.sai";
 	string tmp2_sai_filename = cur_dir +"/tmp2.sai";
 	string tmp_sam_filename = cur_dir + "/tmp.sam";
@@ -153,9 +152,9 @@ string DatasetProcessor::RunSingleBwa(const string &single, const size_t lib) co
 	int run_res = 0;
 	string slib = to_string(lib);
 	string cur_dir = corr_cfg::get().work_dir + "/lib" + slib;
-	string cur_line = "mkdir " + cur_dir;
+
 	path::make_dir(cur_dir);
-	run_res = system(cur_line.c_str());
+
 	string tmp_sai_filename = cur_dir +"/tmp.sai";
 	string tmp_sam_filename = cur_dir + "/tmp.sam";
 	string isize_txt_filename = cur_dir +"/isize.txt";
@@ -257,7 +256,7 @@ void DatasetProcessor::ProcessDataset() {
 	for (size_t i = 0; i < cont_num; i++ ) {
 
 		if ( ordered_contigs[i].first > 20000) {
-			INFO("Processing contig" << ordered_contigs[i].second << " of length " << ordered_contigs[i].first <<" in thread number " << omp_get_thread_num());
+			INFO("Processing contig " << ordered_contigs[i].second << " of length " << ordered_contigs[i].first <<" in thread number " << omp_get_thread_num());
 		}
 		ContigProcessor pc(all_contigs_copy[ordered_contigs[i].second].sam_filenames, all_contigs_copy[ordered_contigs[i].second].input_contig_filename);
 
