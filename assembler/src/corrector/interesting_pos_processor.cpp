@@ -1,5 +1,7 @@
 #include "interesting_pos_processor.hpp"
 
+// FIXME: EVERYWHERE: USE SPACES, NOT TABS! FIX ALL THE CODING STYLE PROBLEMS EVERYWHERE
+
 namespace corrector {
 size_t InterestingPositionProcessor::FillInterestingPositions(vector<position_description> &charts){
 	size_t count = 0;

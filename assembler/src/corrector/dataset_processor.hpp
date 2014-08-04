@@ -1,11 +1,14 @@
 #pragma once
 
+// WTF: get rid of include-all-you-can-ever-imagine-header
 #include "include.hpp"
 #include "contig_processor.hpp"
 #include "sam_reader.hpp"
 #include "read.hpp"
 #include "interesting_pos_processor.hpp"
 #include "path_helper.hpp"
+
+// FIXME: EVERYWHERE: USE SPACES, NOT TABS! FIX ALL THE CODING STYLE PROBLEMS EVERYWHERE
 
 namespace corrector {
 
@@ -29,12 +32,14 @@ class DatasetProcessor {
 	vector<int> error_counts;
 	sam_files_type unsplitted_sam_files;
 	string work_dir;
+    // WTF: Why these vars (3 of them) int? Can you have -1 threads?
 	int nthreads;
 	int buffered_count ;
 	const int buff_size = 100000;
 public:
 	DatasetProcessor(string genome_file): genome_file(genome_file), work_dir(corr_cfg::get().work_dir){
 		//path::make_dir(work_dir);
+        // WTF: Use stuff from path to form filenames properly
 		output_contig_file = corr_cfg::get().output_dir + "/corrected_contigs.fasta";
 		nthreads = corr_cfg::get().max_nthreads;
 		buffered_count = 0;

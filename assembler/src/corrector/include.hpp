@@ -5,6 +5,9 @@
  *      Author: lab42
  */
 #pragma once
+
+// WTF: This header should never exist. Include only WHAT YOURE USING, NOT THE WHOLE PROJECT.
+
 #include "config_struct.hpp"
 #include "standard.hpp"
 #include "logger/log_writers.hpp"
@@ -21,6 +24,7 @@
 #include <vector>
 
 #include <string>
+// WTF: Use enum
 #define MAX_VARIANTS 7
 #define DELETION 5
 #define INSERTION 6
@@ -33,6 +37,7 @@ const int var_to_pos[128] = {
     0, 0, 1, 5, 0, 0, 2, 0, 6, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 5, 0, 0, 2, 0, 6, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 
+// WTF: This is very inefficient. Make static table
 inline static bool IsValidVariant(char C) {
 	return valid_variant.find(C) != valid_variant.end();
 }

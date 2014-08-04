@@ -2,6 +2,8 @@
 #include "include.hpp"
 using namespace std;
 
+// FIXME: EVERYWHERE: USE SPACES, NOT TABS! FIX ALL THE CODING STYLE PROBLEMS EVERYWHERE
+
 namespace corrector {
 
 void position_description::update(const position_description &another){
@@ -39,6 +41,7 @@ void position_description::clear() {
 	}
 }
 
+// WTF: this should go into the header
 size_t SingleSamRead::DataLen() const{
 	return data_.core.l_qseq;
 }
@@ -50,7 +53,8 @@ int SingleSamRead::get_contig_id() const{
 }
 void SingleSamRead::set_data(bam1_t *seq_) {
 	//TODO: delete
-	bam1_t *new_seq = bam_dup1(seq_);
+    // WTF: fix TODO
+    bam1_t *new_seq = bam_dup1(seq_);
 	data_ = *new_seq;
 }
 int SingleSamRead::CountPositions(unordered_map <size_t, position_description> &ps, const string &contig) const{
@@ -158,6 +162,7 @@ int SingleSamRead::CountPositions(unordered_map <size_t, position_description> &
 		}
 		insertion_string = "";
 	}
+    // WTF: get rid of bogus code
 	if (false) {
 		INFO("strange read");
 		INFO(GetName());

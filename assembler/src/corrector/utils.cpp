@@ -1,6 +1,8 @@
 #include "utils.hpp"
 #include <sstream>
 
+// WTF: EVERYWHERE: USE SPACES, NOT TABS! FIX ALL THE CODING STYLE PROBLEMS EVERYWHERE
+
 using namespace std;
 
 namespace corrector {
@@ -13,7 +15,7 @@ vector<string> split(const string &s, char delim) {
     }
     return elems;
 }
-
+// WTF: Get rid of this. Use osequencestream.
 string ContigRenameWithLength( string name, size_t len) {
 	vector<string> splitted = split(name, '_');
 	if (splitted.size() == 6 && splitted[0] == "NODE" && splitted[2] == "length") {
@@ -29,6 +31,7 @@ string ContigRenameWithLength( string name, size_t len) {
 }
 
 
+// WTF: Why do you think that writing your own FASTA parser is a sane idea? Get rid of it, use what we're having in io
 std::map<std::string, std::string> GetContigs(std::string filename) {
 	std::map<std::string, std::string> res;
 	std::ifstream istr(filename, std::ios_base::in);
@@ -59,6 +62,7 @@ std::map<std::string, std::string> GetContigs(std::string filename) {
     istr.close();
     return res;
 }
+// WTF: Why do you think that writing your own FASTA writer is a sane idea? Use osequencestream.
 void PutContig(std::string full_path, std::string contig_name, std::string contig_seq) {
 	std::ofstream oss(full_path, std::ios_base::out);
 	oss << ">" << contig_name << std::endl;

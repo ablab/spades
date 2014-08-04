@@ -4,26 +4,32 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
+// WTF: What is 'assembler' ?
 /*
  * Assembler Main
  */
+// WTF: get rid of include-all-you-can-ever-imagine-header
 #include "include.hpp"
 //#include "config_struct.hpp"
 
+
+// WTF: graph_pack? construction? stage?
 #include "graph_pack.hpp"
 #include "construction.hpp"
 #include "stage.hpp"
 
-
+// WTF: make proper order of includes
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include "read.hpp"
+// WTF: never use relative stuff
 #include "../include/segfault_handler.hpp"
 #include "sam_reader.hpp"
 #include "dataset_processor.hpp"
 #include "config_struct.hpp"
 
+// FIXME: EVERYWHERE: USE SPACES, NOT TABS! FIX ALL THE CODING STYLE PROBLEMS EVERYWHERE
 
 void create_console_logger() {
   using namespace logging;
@@ -42,6 +48,9 @@ int main(int /*argc*/, char** argv) {
   srandom(42);
 
   create_console_logger();
+
+  // WTF: Check argc
+  
   string contig_name (argv[2]);
   string cfg_file(argv[1]);
   corr_cfg::create_instance(cfg_file);

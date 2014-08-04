@@ -5,23 +5,31 @@
 #include "io/file_reader.hpp"
 #include "path_helper.hpp"
 #include <omp.h>
+
+// FIXME: EVERYWHERE: USE SPACES, NOT TABS! FIX ALL THE CODING STYLE PROBLEMS EVERYWHERE
+
 using namespace std;
 namespace corrector{
 
 
 void DatasetProcessor::SplitGenome(const string &genome, const string &genome_splitted_dir){
+    // WTF: Switch to iterator interface. Are you going to put 200 Mb of contigs into a map?
     auto cont_map = GetContigs(genome);
     for (auto &p :cont_map) {
+        // WTF: this will go with proper iterators
     	string contig_name = p.first;
     	string contig_seq = p.second;
+        // WTF: Use stuff from path_helpers
     	string full_path = genome_splitted_dir + "/" + contig_name+ ".fasta";
     	string out_full_path = 	 full_path.substr(0, full_path.length() - 5) + "ref.fasta";
     	string sam_filename =  full_path.substr(0, full_path.length() - 5) + "pair.sam";
-    	all_contigs[contig_name].input_contig_filename = full_path;
+        // WTF: What if you will have 2 contigs with the same name?
+        all_contigs[contig_name].input_contig_filename = full_path;
     	all_contigs[contig_name].output_contig_filename = out_full_path;
     	all_contigs[contig_name].sam_filename = sam_filename;
     	all_contigs[contig_name].contig_length = contig_seq.length();
     	all_contigs[contig_name].buffered_reads.clear();
+        // WTF: Use osequencestream
 		PutContig(full_path, contig_name, contig_seq);
     	DEBUG("full_path "+full_path)
     }
@@ -59,11 +67,13 @@ void DatasetProcessor::SplitSingleLibrary(const string &all_reads_filename, cons
 
 void DatasetProcessor::FlushAll(const size_t lib_count)  {
 	for (auto &ac :all_contigs) {
+        // WTF: Are you leaking stream every time here?
 		auto stream = new ofstream(ac.second.sam_filenames[lib_count].first.c_str(), std::ios_base::app | std::ios_base::out);
 		for (string read: ac.second.buffered_reads){
 			*stream << read;
 			*stream << '\n';
 		}
+        // WTF: Stream will auto-close in dtor
 		stream->close();
 		ac.second.buffered_reads.clear();
 	}
@@ -72,6 +82,7 @@ void DatasetProcessor::FlushAll(const size_t lib_count)  {
 void DatasetProcessor::BufferedOutputRead(const string &read, const string &contig_name, const size_t lib_count) {
 	all_contigs[contig_name].buffered_reads.push_back(read);
 	buffered_count ++;
+    // WTF: Why two if's here?
 	if (buffered_count % buff_size == 0) {
 		if (buffered_count % (10*buff_size) == 0)
 			INFO("processed " << buffered_count << "reads, flushing");
@@ -102,15 +113,18 @@ void DatasetProcessor::SplitPairedLibrary(const string &all_reads_filename, cons
 }
 
 string DatasetProcessor::GetLibDir(const size_t lib_count) const{
+    // WTF: Use path_helpers
 	return corr_cfg::get().work_dir + "/lib" + to_string(lib_count);
 }
 
 string DatasetProcessor::RunPairedBwa(const string &left, const string &right, const size_t lib) const{
 	string slib = to_string(lib);
-	string cur_dir = corr_cfg::get().work_dir + "/lib" + slib;
+    // WTF: Use path_helpers
+    string cur_dir = corr_cfg::get().work_dir + "/lib" + slib;
 	path::make_dir(cur_dir);
 	int run_res = 0;
-	string tmp1_sai_filename = cur_dir +"/tmp1.sai";
+    // WTF: Use path_helpers
+    string tmp1_sai_filename = cur_dir +"/tmp1.sai";
 	string tmp2_sai_filename = cur_dir +"/tmp2.sai";
 	string tmp_sam_filename = cur_dir + "/tmp.sam";
 	string isize_txt_filename = cur_dir +"/isize.txt";
@@ -145,16 +159,19 @@ string DatasetProcessor::RunPairedBwa(const string &left, const string &right, c
 		INFO("bwa failed, skipping sublib");
 		return "";
 	}
+    // WTF: Who will delete the temporary .sai files?
 	return tmp_sam_filename;
 }
 
 string DatasetProcessor::RunSingleBwa(const string &single, const size_t lib) const{
 	int run_res = 0;
 	string slib = to_string(lib);
+    // WTF: Use path_helpers
 	string cur_dir = corr_cfg::get().work_dir + "/lib" + slib;
 
 	path::make_dir(cur_dir);
 
+    // WTF: Use path_helpers
 	string tmp_sai_filename = cur_dir +"/tmp.sai";
 	string tmp_sam_filename = cur_dir + "/tmp.sam";
 	string isize_txt_filename = cur_dir +"/isize.txt";
@@ -185,6 +202,7 @@ string DatasetProcessor::RunSingleBwa(const string &single, const size_t lib) co
 		INFO("bwa failed, skipping sublib");
 		return "";
 	}
+    // WTF: Who will delete the temporary .sai files
 	return tmp_sam_filename;
 
 }
@@ -245,6 +263,7 @@ void DatasetProcessor::ProcessDataset() {
 	INFO("Processing contigs");
 	vector<pair<size_t, string> > ordered_contigs;
 	ContigInfoMap all_contigs_copy;
+    // WTF: Why do you need to copy here?
 	for (auto ac: all_contigs) {
 		ordered_contigs.push_back(make_pair(ac.second.contig_length, ac.first));
 		all_contigs_copy.insert(ac);
@@ -255,6 +274,7 @@ void DatasetProcessor::ProcessDataset() {
 # pragma omp parallel for shared( all_contigs_copy, ordered_contigs) num_threads(nthreads) schedule(dynamic,1)
 	for (size_t i = 0; i < cont_num; i++ ) {
 
+        // WTF: race on INFO here
 		if ( ordered_contigs[i].first > 20000) {
 			INFO("Processing contig " << ordered_contigs[i].second << " of length " << ordered_contigs[i].first <<" in thread number " << omp_get_thread_num());
 		}

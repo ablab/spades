@@ -8,6 +8,7 @@ project(corrector CXX)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
+# FIXME: Why do you need this? What are you including?
 include_directories(${CMAKE_SOURCE_DIR}/debruijn)
 
 add_executable(corrector

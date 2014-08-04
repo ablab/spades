@@ -4,6 +4,8 @@
 #include "io/converting_reader_wrapper.hpp"
 #include "io/file_reader.hpp"
 
+// FIXME: EVERYWHERE: USE SPACES, NOT TABS! FIX ALL THE CODING STYLE PROBLEMS EVERYWHERE
+
 namespace corrector{
 
 void ContigProcessor::ReadContig() {

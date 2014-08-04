@@ -4,17 +4,21 @@
  *  Created on: Jun 26, 2014
  *      Author: lab42
  */
+// WTF: Make sure all the includes are in proper order.
 #include "samtools/bam.h"
 #include <string>
+// WTF: You never using logging here
 #include "logger/log_writers.hpp"
 #include "logger/logger.hpp"
 #include "include.hpp"
 #pragma once
 
+// WTF: EVERYWHERE: USE SPACES, NOT TABS! FIX ALL THE CODING STYLE PROBLEMS EVERYWHERE
+
 namespace corrector {
 
 
-
+// WTF: Why this junk is here? This does not belong to read.
 struct position_description {
 	int votes[MAX_VARIANTS];
 	//'A', 'C', 'G', 'T', 'N', 'D', 'I'
@@ -29,13 +33,14 @@ struct position_description {
 typedef unordered_map <size_t, position_description> PositionDescriptionMap;
 
 
-
+// WTF: Make sure getters and setters are properly named
 struct SingleSamRead {
 	bam1_t data_;
 	size_t DataLen() const;
 	size_t CigarLen() const;
 	int get_contig_id() const;
 	void set_data(bam1_t *seq_);
+    // WTF: This does not belong here
 	int CountPositions(unordered_map <size_t, position_description> &ps, const string &contig) const;
 	string GetCigar() const;
 	string GetQual() const;
@@ -53,6 +58,7 @@ struct PairedSamRead {
 	PairedSamRead (SingleSamRead &a1, SingleSamRead &a2):r1(a1), r2(a2){
 
 	}
+    // WTF: This does not belong here    
 	int CountPositions(unordered_map <size_t, position_description> &ps, const string &contig) const;
 };
 

@@ -6,10 +6,13 @@
 #pragma once
 
 
+// WTF: Make sure your includes are in proper order
 #include <samtools/sam.h>
 #include "samtools/bam.h"
 #include "read.hpp"
 #include "io/ireader.hpp"
+
+// WTF: EVERYWHERE: USE SPACES, NOT TABS! FIX ALL THE CODING STYLE PROBLEMS EVERYWHERE
 
 namespace corrector {
 
@@ -22,6 +25,7 @@ class MappedSamStream: public io::ReadStream<SingleSamRead> {
 
     virtual ~MappedSamStream() {}
 
+    // WTF: Why these are not const?
     bool is_open();
     bool eof();
     MappedSamStream& operator>>(SingleSamRead& read);
