@@ -106,9 +106,16 @@ void ContigProcessor::ProcessMultipleSamFiles() {
 		while (!sm.eof()) {
 			SingleSamRead tmp;
 			sm >> tmp;
-			UpdateOneRead(tmp, sm);
+			try {
+				UpdateOneRead(tmp, sm);
+			}
+			catch (...) {
+				WARN("something went wrong, skipping read");
+			}
 		}
+		sm.close();
 	}
+
 	stringstream err_str;
 	for(int i = 0; i < 20; i ++)
 		err_str << error_counts[i] << " ";
@@ -135,6 +142,7 @@ void ContigProcessor::ProcessMultipleSamFiles() {
 			TRACE("updating interesting read..");
 			ipp.UpdateInterestingRead(ps);
 		}
+		sm.close();
 	}
 	ipp.UpdateInterestingPositions();
 	unordered_map<size_t, position_description> interesting_positions = ipp.get_weights();

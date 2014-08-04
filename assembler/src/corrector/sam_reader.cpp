@@ -15,8 +15,15 @@ namespace corrector {
 	  if (!is_open_ || eof_)
 		  return *this;
 	  read.set_data(seq_);
-	  int tmp = samread(reader_, seq_);
-	  eof_ = (0 >= tmp);
+	  try {
+		  int tmp = samread(reader_, seq_);
+		  eof_ = (0 >= tmp);
+	  } catch (std::exception e) {
+		  WARN("Error in sam file" << filename_ << "skipping the rest");
+		  eof_ = 0;
+	  }
+
+
 	  return *this;
     }
 

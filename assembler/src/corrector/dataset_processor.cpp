@@ -109,6 +109,7 @@ string DatasetProcessor::RunPairedBwa(const string &left, const string &right, c
 	string slib = to_string(lib);
 	string cur_dir = corr_cfg::get().work_dir + "/lib" + slib;
 	string cur_line = "mkdir " + cur_dir;
+	path::make_dir(cur_dir);
 	int run_res = system(cur_line.c_str());
 	string tmp1_sai_filename = cur_dir +"/tmp1.sai";
 	string tmp2_sai_filename = cur_dir +"/tmp2.sai";
@@ -153,6 +154,7 @@ string DatasetProcessor::RunSingleBwa(const string &single, const size_t lib) co
 	string slib = to_string(lib);
 	string cur_dir = corr_cfg::get().work_dir + "/lib" + slib;
 	string cur_line = "mkdir " + cur_dir;
+	path::make_dir(cur_dir);
 	run_res = system(cur_line.c_str());
 	string tmp_sai_filename = cur_dir +"/tmp.sai";
 	string tmp_sam_filename = cur_dir + "/tmp.sam";

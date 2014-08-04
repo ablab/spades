@@ -46,7 +46,11 @@ int main(int /*argc*/, char** argv) {
   string cfg_file(argv[1]);
   corr_cfg::create_instance(cfg_file);
   string work_dir = corr_cfg::get().work_dir;
-  string to_run = "mkdir " + work_dir;
+  if (! path::check_existence(corr_cfg::get().output_dir))
+	  path::make_dir(corr_cfg::get().output_dir);
+  if (! path::check_existence(corr_cfg::get().work_dir))
+	  path::make_dir(corr_cfg::get().work_dir);
+
   corrector::DatasetProcessor dp(contig_name);
   dp.ProcessDataset();
   unsigned ms = (unsigned)pc.time_ms();
