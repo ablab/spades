@@ -145,11 +145,6 @@ string SingleSamRead::get_seq() const {
     return res;
 }
 
-void PairedSamRead::pair(SingleSamRead &a1, SingleSamRead &a2) {
-    r1 = a1;
-    r2 = a2;
-}
-
 int PairedSamRead::CountPositions(unordered_map<size_t, position_description> &ps, const size_t &contig_length) const {
 
     TRACE("starting pairing");

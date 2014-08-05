@@ -37,7 +37,6 @@ MappedSamStream& MappedSamStream::operator >>(PairedSamRead& read) {
     TRACE(r2.get_seq());
     TRACE(r1.get_name());
     VERIFY_MSG(r1.get_name() == r2.get_name(), "Paired read names are different: " <<  r1.get_name() + " and " + r2.get_name());
-    //read.pair(r1, r2);
     return *this;
 }
 
@@ -51,7 +50,7 @@ void MappedSamStream::close() {
     samclose(reader_);
     is_open_ = false;
     eof_ = true;
-    //bam_destroy1(seq_);
+    bam_destroy1(seq_);
 }
 
 void MappedSamStream::reset() {

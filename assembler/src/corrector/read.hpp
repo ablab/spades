@@ -56,7 +56,6 @@ struct SingleSamRead {
 struct PairedSamRead {
     SingleSamRead r1;
     SingleSamRead r2;
-    void pair(SingleSamRead &a1, SingleSamRead &a2);
     PairedSamRead(): r1(), r2(){
     }
 
