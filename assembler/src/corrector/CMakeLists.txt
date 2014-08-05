@@ -5,6 +5,7 @@
 ############################################################################
 
 project(corrector CXX)
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,--allow-multiple-definition")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 

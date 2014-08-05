@@ -21,6 +21,7 @@ string position_description::str() const {
     }
     return ss.str();
 }
+
 size_t position_description::FoundOptimal(char current) const {
     size_t maxi = var_to_pos[(size_t) current];
     int maxx = votes[maxi];

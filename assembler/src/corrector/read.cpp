@@ -6,9 +6,8 @@ using namespace std;
 
 namespace corrector {
 
-int SingleSamRead::CountPositions(unordered_map<size_t, position_description> &ps, const string &contig) const {
-    size_t contig_length = contig.length();
-    int error_num = 0;
+int SingleSamRead::CountPositions(unordered_map<size_t, position_description> &ps, const size_t &contig_length) const {
+
     if (get_contig_id() < 0) {
         DEBUG("not this contig");
         return -1;
@@ -67,7 +66,6 @@ int SingleSamRead::CountPositions(unordered_map<size_t, position_description> &p
         }
         char cur_state = bam_cigar_opchr(cigar[state_pos]);
         if (cur_state == 'M') {
-
             VERIFY(i >= deleted);
             if (i + position < skipped) {
                 WARN(i << " " << position << " " << skipped);
@@ -76,12 +74,11 @@ int SingleSamRead::CountPositions(unordered_map<size_t, position_description> &p
             VERIFY(i + position >= skipped);
 
             size_t ind = i + position - skipped;
-            int cur = var_to_pos[(int) bam_nt16_rev_table[bam1_seqi(seq, i - deleted)]];
+            size_t cur = var_to_pos[(int) bam_nt16_rev_table[bam1_seqi(seq, i - deleted)]];
             if (ind >= contig_length)
                 continue;
             ps[ind].votes[cur] = ps[ind].votes[cur] + mate;  //t_mate
-            if (contig[ind] != pos_to_var[cur])
-                error_num++;
+
         } else {
             if (to_skip.find(cur_state) != to_skip.end()) {
                 if (cur_state == 'I') {
@@ -92,7 +89,6 @@ int SingleSamRead::CountPositions(unordered_map<size_t, position_description> &p
                         ps[i + position - skipped - 1].votes[Variants::Insertion] += mate;
                     }
                     insertion_string += bam_nt16_rev_table[bam1_seqi(seq, i - deleted)];
-                    error_num++;
                 }
                 skipped += 1;
             } else if (bam_cigar_opchr(cigar[state_pos]) == 'D') {
@@ -100,7 +96,6 @@ int SingleSamRead::CountPositions(unordered_map<size_t, position_description> &p
                     break;
                 ps[i + position - skipped].votes[Variants::Deletion] += mate;
                 deleted += 1;
-                error_num++;
             }
         }
     }
@@ -112,7 +107,7 @@ int SingleSamRead::CountPositions(unordered_map<size_t, position_description> &p
         }
         insertion_string = "";
     }
-    return error_num;
+    return 0;
 }
 
 string SingleSamRead::get_cigar() const {
@@ -155,12 +150,12 @@ void PairedSamRead::pair(SingleSamRead &a1, SingleSamRead &a2) {
     r2 = a2;
 }
 
-int PairedSamRead::CountPositions(unordered_map<size_t, position_description> &ps, const string &contig) const {
+int PairedSamRead::CountPositions(unordered_map<size_t, position_description> &ps, const size_t &contig_length) const {
 
     TRACE("starting pairing");
-    int t1 = r1.CountPositions(ps, contig);
+    int t1 = r1.CountPositions(ps, contig_length);
     unordered_map<size_t, position_description> tmp;
-    int t2 = r2.CountPositions(tmp, contig);
+    int t2 = r2.CountPositions(tmp, contig_length);
     //overlaps.. multimap? Look on qual?
     if (ps.size() == 0 || tmp.size() == 0) {
         //We do not need paired reads which are not really paired

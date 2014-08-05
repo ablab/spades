@@ -1,7 +1,8 @@
 #pragma once
 
 #include "include.hpp"
-//#include "io/file_reader.hpp"
+#include "utils.hpp"
+#include "io/file_reader.hpp"
 #include "contig_processor.hpp"
 
 #include "path_helper.hpp"
@@ -42,7 +43,7 @@ public:
     }
     void ProcessDataset();
 private:
-    void SplitGenome(const string &genome, const string &genome_splitted_dir);
+    void SplitGenome(const string &genome_splitted_dir);
     void FlushAll(const size_t lib_count);
     void BufferedOutputRead(const string &read, const string &contig_name, const size_t lib_count);
     void GetAlignedContigs(const string &read, set<string> &contigs) const;

@@ -11,31 +11,33 @@
 using namespace std;
 namespace corrector {
 
-void DatasetProcessor::SplitGenome(const string &genome, const string &genome_splitted_dir) {
-    // WTF: Switch to iterator interface. Are you going to put 200 Mb of contigs into a map?
-    auto cont_map = GetContigs(genome);
-  /*  io::FileReadStream frs(genome_file);
+void DatasetProcessor::SplitGenome(const string &genome_splitted_dir) {
+    io::FileReadStream frs(genome_file);
     //not safe because of scaffolds being not valid single reads
     io::SingleRead cur_read;
     while (!frs.eof()){
         frs >> cur_read;
         string contig_name = cur_read.name();
         string contig_seq = cur_read.GetSequenceString();
-     } */
-    for (auto &p : cont_map) {
-        // WTF: this will go with proper iterators
-        string contig_name = p.first;
-        string contig_seq = p.second;
+       // WTF: this will go with proper iterators
+       // Re: after refactoring no need
+        if (all_contigs.find(contig_name) != all_contigs.end()) {
+            WARN("Duplicated contig names! Multiple contigs with name" << contig_name);
+            string new_contig_name = "";
+            do {
+                int add_id = rand() % 1000000;
+                new_contig_name = contig_name + "_" + to_string(add_id);
+            } while (all_contigs.find(new_contig_name) != all_contigs.end());
+            contig_name = new_contig_name;
+        }
         string full_path = path::append_path(genome_splitted_dir , contig_name + ".fasta");
         string out_full_path = path::append_path(genome_splitted_dir, contig_name + ".ref.fasta");
         string sam_filename =  path::append_path(genome_splitted_dir, contig_name + ".pair.sam");
-        // WTF: What if you will have 2 contigs with the same name?
         all_contigs[contig_name].input_contig_filename = full_path;
         all_contigs[contig_name].output_contig_filename = out_full_path;
         all_contigs[contig_name].sam_filename = sam_filename;
         all_contigs[contig_name].contig_length = contig_seq.length();
         all_contigs[contig_name].buffered_reads.clear();
-        // WTF: Use osequencestream
         io::osequencestream oss(full_path);
         //Re: it's not safe - io::SingleRead is not valid for scaffolds.
         oss << io::SingleRead(contig_name, contig_seq);
@@ -232,9 +234,9 @@ void DatasetProcessor::PrepareContigDirs(const size_t lib_count) {
 }
 void DatasetProcessor::ProcessDataset() {
     size_t lib_num = 0;
-    INFO("Splitting genome...");
-    INFO("Genome_file: " + genome_file);
-    SplitGenome(genome_file, work_dir);
+    INFO("Splitting assembly...");
+    INFO("Assembly file: " + genome_file);
+    SplitGenome(work_dir);
     for (size_t i = 0; i < corr_cfg::get().dataset.lib_count(); ++i) {
         if (corr_cfg::get().dataset[i].type() == io::LibraryType::PairedEnd || corr_cfg::get().dataset[i].type() == io::LibraryType::HQMatePairs
                 || corr_cfg::get().dataset[i].type() == io::LibraryType::SingleReads) {

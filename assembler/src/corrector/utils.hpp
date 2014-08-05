@@ -10,6 +10,5 @@ namespace corrector {
 std::vector<std::string> split(const std::string &s, char delim);
 
 std::string ContigRenameWithLength(std::string name, size_t len);
-std::map<std::string, std::string> GetContigs(std::string filename);
 }
 ;

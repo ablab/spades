@@ -13,7 +13,6 @@
 
 namespace corrector {
 
-// WTF: Make sure getters and setters are properly named
 struct SingleSamRead {
     bam1_t data_;
     size_t get_data_len() const {
@@ -28,11 +27,13 @@ struct SingleSamRead {
     void set_data(bam1_t *seq_) {
         //TODO: delete
         // WTF: fix TODO
+        //Re: no new->nothing to delete. data_ is freed in read destructor, *seq_ is freed in sam_reader, new_seq - right after this function
         bam1_t *new_seq = bam_dup1(seq_);
         data_ = *new_seq;
     }
     // WTF: This does not belong here
-    int CountPositions(unordered_map<size_t, position_description> &ps, const string &contig) const;
+    // Re: Now it knows nothing about the contig, and depends on read and length parameter only. I'm still sure this should be here- bam_1 stuff should be localized.
+    int CountPositions(unordered_map<size_t, position_description> &ps, const size_t &contig_length) const;
     string get_cigar() const;
     string get_qual() const;
     string get_name() const;
@@ -53,7 +54,8 @@ struct PairedSamRead {
 
     }
     // WTF: This does not belong here    
-    int CountPositions(unordered_map<size_t, position_description> &ps, const string &contig) const;
+    // Re: same as for SingleSamRead
+    int CountPositions(unordered_map<size_t, position_description> &ps, const size_t &contig_length) const;
 };
 }
 ;

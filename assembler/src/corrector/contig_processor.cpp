@@ -4,18 +4,20 @@
 
 #include "io/ireader.hpp"
 #include "io/osequencestream.hpp"
-#include "io/converting_reader_wrapper.hpp"
+#include "io/file_reader.hpp"
 #include "io/single_read.hpp"
 
 namespace corrector {
 
 void ContigProcessor::ReadContig() {
-    auto res = GetContigs(contig_file);
-
-    VERIFY_MSG(res.size() == 1, "Not one contig in file with unique contigs");
-
-    contig = res.begin()->second;
-    contig_name = res.begin()->first;
+    io::FileReadStream frs(contig_file);
+    io::SingleRead cur_read;
+    frs >> cur_read;
+    if (! frs.eof()) {
+        WARN ("Non unique sequnce in one contig fasta!");
+    }
+    contig_name = cur_read.name();
+    contig = cur_read.GetSequenceString();
 //extention is always "fasta"
     output_contig_file = contig_file.substr(0, contig_file.length() - 5) + "ref.fasta";
     charts.resize(contig.length());
@@ -30,16 +32,22 @@ void ContigProcessor::UpdateOneRead(const SingleSamRead &tmp, MappedSamStream &s
     if (cur_s != contig_name) {
         return;
     }
-    int error_num = tmp.CountPositions(all_positions, contig);
+    tmp.CountPositions(all_positions, contig.length());
+    int error_num = 0;
+
+    for (auto &pos : all_positions) {
+        if ((int) pos.first >= 0 && pos.first < contig.length()) {
+            charts[pos.first].update(pos.second);
+            if (pos.second.FoundOptimal(contig[pos.first]) != var_to_pos[(int)contig[pos.first]]) {
+                error_num ++;
+            }
+        }
+    }
+
     if (error_num > 19)
         error_counts[20]++;
     else if (error_num >= 0)
         error_counts[error_num]++;
-    for (auto &pos : all_positions) {
-        if ((int) pos.first >= 0 && pos.first < contig.length()) {
-            charts[pos.first].update(pos.second);
-        }
-    }
 }
 
 //returns: number of changed nucleotides;
@@ -134,11 +142,11 @@ void ContigProcessor::ProcessMultipleSamFiles() {
             if (sf.second == io::LibraryType::PairedEnd || sf.second == io::LibraryType::HQMatePairs) {
                 PairedSamRead tmp;
                 sm >> tmp;
-                tmp.CountPositions(ps, contig);
+                tmp.CountPositions(ps, contig.length());
             } else {
                 SingleSamRead tmp;
                 sm >> tmp;
-                tmp.CountPositions(ps, contig);
+                tmp.CountPositions(ps, contig.length());
             }
             TRACE("updating interesting read..");
             ipp.UpdateInterestingRead(ps);
