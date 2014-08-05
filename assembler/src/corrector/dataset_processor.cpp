@@ -3,6 +3,7 @@
 
 #include "io/file_reader.hpp"
 #include "path_helper.hpp"
+#include "io/osequencestream.hpp"
 
 #include <iostream>
 #include <omp.h>
@@ -26,8 +27,8 @@ void DatasetProcessor::SplitGenome(const string &genome, const string &genome_sp
         string contig_name = p.first;
         string contig_seq = p.second;
         string full_path = path::append_path(genome_splitted_dir , contig_name + ".fasta");
-        string out_full_path = path::append_path( full_path.substr(0, full_path.length() - 5), "ref.fasta");
-        string sam_filename =  path::append_path(full_path.substr(0, full_path.length() - 5), "pair.sam");
+        string out_full_path = path::append_path(genome_splitted_dir, contig_name + ".ref.fasta");
+        string sam_filename =  path::append_path(genome_splitted_dir, contig_name + ".pair.sam");
         // WTF: What if you will have 2 contigs with the same name?
         all_contigs[contig_name].input_contig_filename = full_path;
         all_contigs[contig_name].output_contig_filename = out_full_path;
@@ -35,7 +36,9 @@ void DatasetProcessor::SplitGenome(const string &genome, const string &genome_sp
         all_contigs[contig_name].contig_length = contig_seq.length();
         all_contigs[contig_name].buffered_reads.clear();
         // WTF: Use osequencestream
-        PutContig(full_path, contig_name, contig_seq);
+        io::osequencestream oss(full_path);
+        //Re: it's not safe - io::SingleRead is not valid for scaffolds.
+        oss << io::SingleRead(contig_name, contig_seq);
         DEBUG("full_path " + full_path)
     }
 }

@@ -61,17 +61,6 @@ std::map<std::string, std::string> GetContigs(std::string filename) {
     istr.close();
     return res;
 }
-// WTF: Why do you think that writing your own FASTA writer is a sane idea? Use osequencestream.
-void PutContig(std::string full_path, std::string contig_name, std::string contig_seq) {
-    std::ofstream oss(full_path, std::ios_base::out);
-    oss << ">" << contig_name << std::endl;
-    size_t cur = 0;
-    while (cur < contig_seq.size()) {
-        oss << contig_seq.substr(cur, 60) << std::endl;
-        cur += 60;
-    }
-    oss.close();
-}
 
 }
 ;
