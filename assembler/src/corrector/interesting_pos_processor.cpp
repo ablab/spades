@@ -62,7 +62,6 @@ void InterestingPositionProcessor::set_contig(string ctg) {
 }
 
 void InterestingPositionProcessor::UpdateInterestingPositions() {
-    set<int> debug_pos = { 1669, 1709 };  //{1884, 1826, 1803, 1768};
     for (int dir = 1; dir >= -1; dir -= 2) {
         int start_pos;
         dir == 1 ? start_pos = 0 : start_pos = (int) contig.length() - 1;

@@ -31,11 +31,13 @@ MappedSamStream& MappedSamStream::operator >>(PairedSamRead& read) {
     MappedSamStream::operator >>(r1);
     SingleSamRead r2;
     MappedSamStream::operator >>(r2);
+
+    read = PairedSamRead(r1, r2);
     TRACE(r1.get_seq());
     TRACE(r2.get_seq());
     TRACE(r1.get_name());
     VERIFY_MSG(r1.get_name() == r2.get_name(), "Paired read names are different: " <<  r1.get_name() + " and " + r2.get_name());
-    read.pair(r1, r2);
+    //read.pair(r1, r2);
     return *this;
 }
 
@@ -45,10 +47,11 @@ string MappedSamStream::get_contig_name(int i) const {
 }
 
 void MappedSamStream::close() {
+    cerr << "closing reader";
     samclose(reader_);
     is_open_ = false;
     eof_ = true;
-    bam_destroy1(seq_);
+    //bam_destroy1(seq_);
 }
 
 void MappedSamStream::reset() {

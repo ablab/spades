@@ -116,11 +116,8 @@ void ContigProcessor::ProcessMultipleSamFiles() {
         while (!sm.eof()) {
             SingleSamRead tmp;
             sm >> tmp;
-            try {
-                UpdateOneRead(tmp, sm);
-            } catch (...) {
-                WARN("something went wrong, skipping read");
-            }
+
+            UpdateOneRead(tmp, sm);
         }
         sm.close();
     }
@@ -131,10 +128,10 @@ void ContigProcessor::ProcessMultipleSamFiles() {
     size_t interesting = ipp.FillInterestingPositions(charts);
     if (debug_info) {
         INFO("Error counts for contig " << contig_name << " in thread " << omp_get_thread_num() << " : " << err_str.str());
+        INFO(interesting << " positions" <<  "are in consideration "  );
     } else {
         DEBUG("Error counts for contig " << contig_name << " : " << err_str.str());
     }
-    DEBUG("Interesting size: " << interesting);
     for (auto &sf : sam_files) {
         MappedSamStream sm(sf.first);
         while (!sm.eof()) {
@@ -171,7 +168,6 @@ void ContigProcessor::ProcessMultipleSamFiles() {
     //Re: it's not safe - io::SingleRead is not valid for scaffolds.
     oss << io::SingleRead(contig_name, s_new_contig.str());
 
-//    PutContig(output_contig_file, contig_name, s_new_contig.str());
 }
 
 }

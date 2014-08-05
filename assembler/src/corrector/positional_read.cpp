@@ -27,7 +27,6 @@ size_t position_description::FoundOptimal(char current) const {
     int maxx = votes[maxi];
     for (size_t j = 0; j < MAX_VARIANTS; j++) {
         //1.5 because insertion goes _after_ match
-        //std::min_element
         if (maxx < votes[j] || (j == Variants::Insertion && maxx * 2 < votes[j] * 3)) {
             maxx = votes[j];
             maxi = j;
