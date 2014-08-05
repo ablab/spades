@@ -5,46 +5,43 @@
 //****************************************************************************
 #pragma once
 
-
-// WTF: Make sure your includes are in proper order
-#include <samtools/sam.h>
-#include "samtools/bam.h"
 #include "read.hpp"
+
 #include "io/ireader.hpp"
 
-// WTF: EVERYWHERE: USE SPACES, NOT TABS! FIX ALL THE CODING STYLE PROBLEMS EVERYWHERE
+#include <samtools/sam.h>
+#include <samtools/bam.h>
 
 namespace corrector {
 
-class MappedSamStream: public io::ReadStream<SingleSamRead> {
-  public:
+class MappedSamStream {
+public:
     MappedSamStream(const std::string &filename)
             : filename_(filename) {
-    	open();
+        open();
     }
 
-    virtual ~MappedSamStream() {}
+    virtual ~MappedSamStream() {
+    }
 
-    // WTF: Why these are not const?
-    bool is_open();
-    bool eof();
+    bool is_open() const;
+    bool eof() const;
     MappedSamStream& operator>>(SingleSamRead& read);
-    MappedSamStream& operator >> (PairedSamRead& read);
-    bam_header_t* ReadHeader();
-    string get_contig_name(int i);
+    MappedSamStream& operator >>(PairedSamRead& read);
+    string get_contig_name(int i) const;
     void close();
     void reset();
     io::ReadStreamStat get_stat() const;
 
-  private:
+private:
     samfile_t *reader_;
-    bam1_t *seq_ =bam_init1();
+    bam1_t *seq_ = bam_init1();
     std::string filename_;
     bool is_open_;
     bool eof_;
 
-
     void open();
 };
 
-};
+}
+;
