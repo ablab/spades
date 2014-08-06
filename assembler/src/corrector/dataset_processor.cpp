@@ -6,6 +6,7 @@
 #include "io/osequencestream.hpp"
 
 #include <iostream>
+// WTF: wrapper!
 #include <omp.h>
 
 using namespace std;
@@ -14,6 +15,7 @@ namespace corrector {
 void DatasetProcessor::SplitGenome(const string &genome_splitted_dir) {
     io::FileReadStream frs(genome_file);
     //not safe because of scaffolds being not valid single reads
+    // WTF: They are valid single read
     io::SingleRead cur_read;
     while (!frs.eof()){
         frs >> cur_read;
@@ -25,6 +27,7 @@ void DatasetProcessor::SplitGenome(const string &genome_splitted_dir) {
             WARN("Duplicated contig names! Multiple contigs with name" << contig_name);
             string new_contig_name = "";
             do {
+                // WTF: get rid of this junk
                 int add_id = rand() % 1000000;
                 new_contig_name = contig_name + "_" + to_string(add_id);
             } while (all_contigs.find(new_contig_name) != all_contigs.end());
@@ -40,6 +43,7 @@ void DatasetProcessor::SplitGenome(const string &genome_splitted_dir) {
         all_contigs[contig_name].buffered_reads.clear();
         io::osequencestream oss(full_path);
         //Re: it's not safe - io::SingleRead is not valid for scaffolds.
+        // WTF: It's safe and valid
         oss << io::SingleRead(contig_name, contig_seq);
         DEBUG("full_path " + full_path)
     }
@@ -47,6 +51,7 @@ void DatasetProcessor::SplitGenome(const string &genome_splitted_dir) {
 
 //contigs - set of aligned contig names
 void DatasetProcessor::GetAlignedContigs(const string &read, set<string> &contigs) const {
+    // WTD: Why spaces?
     vector < string > arr = split(read, '\t');
     if (arr.size() > 5) {
         if (arr[2] != "*" && stoi(arr[4]) > 0) {
@@ -60,12 +65,14 @@ void DatasetProcessor::GetAlignedContigs(const string &read, set<string> &contig
 void DatasetProcessor::SplitSingleLibrary(const string &all_reads_filename, const size_t lib_count) {
     ifstream fs(all_reads_filename);
     while (!fs.eof()) {
+        // WTF: Why spaces?
         set < string > contigs;
         string r1;
         getline(fs, r1);
         if (r1[0] == '@')
             continue;
         GetAlignedContigs(r1, contigs);
+        // WTF: Why copy?
         for (string contig : contigs) {
             VERIFY_MSG(all_contigs.find(contig) != all_contigs.end(), "wrong contig name in SAM file header: " + contig);
             BufferedOutputRead(r1, contig, lib_count);
@@ -76,7 +83,9 @@ void DatasetProcessor::SplitSingleLibrary(const string &all_reads_filename, cons
 }
 
 void DatasetProcessor::FlushAll(const size_t lib_count) {
+    // WTF: Why not const?
     for (auto &ac : all_contigs) {
+        // WTF: why new + delete?
         auto stream = new ofstream(ac.second.sam_filenames[lib_count].first.c_str(), std::ios_base::app | std::ios_base::out);
         for (string read : ac.second.buffered_reads) {
             *stream << read;
@@ -90,8 +99,6 @@ void DatasetProcessor::FlushAll(const size_t lib_count) {
 void DatasetProcessor::BufferedOutputRead(const string &read, const string &contig_name, const size_t lib_count) {
     all_contigs[contig_name].buffered_reads.push_back(read);
     buffered_count++;
-    // WTF: Why two if's here?
-    // Re: One for INFO, second for Flush, to avoid excessive flood.
     if (buffered_count % buff_size == 0) {
         if (buffered_count % (10 * buff_size) == 0)
             INFO("processed " << buffered_count << "reads, flushing");
@@ -102,6 +109,7 @@ void DatasetProcessor::BufferedOutputRead(const string &read, const string &cont
 void DatasetProcessor::SplitPairedLibrary(const string &all_reads_filename, const size_t lib_count) {
     ifstream fs(all_reads_filename);
     while (!fs.eof()) {
+        // WTF: Why space?
         set < string > contigs;
         string r1;
         string r2;
@@ -111,6 +119,7 @@ void DatasetProcessor::SplitPairedLibrary(const string &all_reads_filename, cons
         getline(fs, r2);
         GetAlignedContigs(r1, contigs);
         GetAlignedContigs(r2, contigs);
+        // WTF: Why copy? Why VERIFY_MSG is disabled here?
         for (string contig : contigs) {
             //	VERIFY_MSG(all_contigs.find(contig) != all_contigs.end(), "wrong contig name in SAM file header: " + contig);
             if (all_contigs.find(contig) != all_contigs.end()) {
@@ -122,12 +131,14 @@ void DatasetProcessor::SplitPairedLibrary(const string &all_reads_filename, cons
     FlushAll(lib_count);
 }
 
+// WTF: Why this is class function? Why not simple static helper?
 string DatasetProcessor::GetLibDir(const size_t lib_count) const {
     return path::append_path(corr_cfg::get().work_dir , "lib" + to_string(lib_count));
 }
 
 string DatasetProcessor::RunPairedBwa(const string &left, const string &right, const size_t lib) const {
     string cur_dir = GetLibDir(lib);
+    // WTF: What if this will fail?
     path::make_dir(cur_dir);
     int run_res = 0;
     string tmp1_sai_filename = path::append_path(cur_dir , "tmp1.sai");
@@ -151,6 +162,7 @@ string DatasetProcessor::RunPairedBwa(const string &left, const string &right, c
     string right_line = corr_cfg::get().bwa + " aln " + genome_file + " " + right + " -t " + nthreads + " -O 7 -E 2 -k 3 -n 0.08 -q 15 > " + tmp2_sai_filename
             + " 2>" + tmp_file;
     INFO("Running bwa aln ...: " << left_line);
+    // WTF: What if first one will end with error code 1 and second -1 ?
     run_res += system(left_line.c_str());
     INFO("Running bwa aln ...: " << right_line);
     run_res += system(right_line.c_str());
@@ -167,6 +179,7 @@ string DatasetProcessor::RunPairedBwa(const string &left, const string &right, c
         INFO("bwa failed, skipping sublib");
         return "";
     }
+    // WTF: Get rid of this junk. Learn about unlink(2)
     run_res |= system (("rm "+ tmp1_sai_filename).c_str());
     run_res |= system (("rm "+ tmp2_sai_filename).c_str());
     if (run_res != 0) {
@@ -178,6 +191,7 @@ string DatasetProcessor::RunPairedBwa(const string &left, const string &right, c
 string DatasetProcessor::RunSingleBwa(const string &single, const size_t lib) const {
     int run_res = 0;
     string cur_dir = GetLibDir(lib);
+    // WTF: See all the comments as for paired
     path::make_dir(cur_dir);
 
     string tmp_sai_filename = path::append_path(cur_dir , "tmp1.sai");
@@ -223,6 +237,7 @@ string DatasetProcessor::RunSingleBwa(const string &single, const size_t lib) co
 void DatasetProcessor::PrepareContigDirs(const size_t lib_count) {
 
     string out_dir = GetLibDir(lib_count);
+    // WTF: Why not const?
     for (auto &ac : all_contigs) {
         auto contig_name = ac.first;
         string header = "@SQ\tSN:" + contig_name + "\tLN:" + to_string(all_contigs[contig_name].contig_length);
@@ -273,10 +288,12 @@ void DatasetProcessor::ProcessDataset() {
         }
     }
     INFO("Processing contigs");
+    // WTF: spaces
     vector < pair<size_t, string> > ordered_contigs;
     ContigInfoMap all_contigs_copy;
     // WTF: Why do you need to copy here?
     // Re: OMP does not allow to use class members in parallel for shared.
+    // WTF: This is irrelevant. And no OMP in the following for().
     for (auto ac : all_contigs) {
         ordered_contigs.push_back(make_pair(ac.second.contig_length, ac.first));
         all_contigs_copy.insert(ac);
@@ -295,6 +312,7 @@ void DatasetProcessor::ProcessDataset() {
 
 void DatasetProcessor::GlueSplittedContigs(string &out_contigs_filename) {
     ofstream of_c(out_contigs_filename, std::ios_base::binary);
+    // WTF: do not copy
     for (auto ac : all_contigs) {
         string a = ac.second.output_contig_filename;
         ifstream a_f(a, std::ios_base::binary);

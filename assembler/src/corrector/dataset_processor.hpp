@@ -1,5 +1,6 @@
 #pragma once
 
+// WTF: Include only what you use
 #include "include.hpp"
 #include "utils.hpp"
 #include "io/file_reader.hpp"
@@ -22,6 +23,7 @@ struct OneContigDescription {
 typedef unordered_map<string, OneContigDescription> ContigInfoMap;
 
 class DatasetProcessor {
+    // WTF: member var names!
     string genome_file;
     string output_contig_file;
     ContigInfoMap all_contigs;
@@ -34,6 +36,7 @@ class DatasetProcessor {
     size_t buffered_count;
     const size_t buff_size = 100000;
 public:
+    // WTF: Why copy?
     DatasetProcessor(string genome_file)
             : genome_file(genome_file),
               work_dir(corr_cfg::get().work_dir) {

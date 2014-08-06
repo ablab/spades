@@ -125,6 +125,7 @@ string SingleSamRead::get_cigar() const {
 string SingleSamRead::get_qual() const {
     uint8_t *qual = bam1_qual(data_);
     for (int i = 0; i < data_->core.l_qseq; ++i) {
+        // WTF: So, it adds 33 on every call to get_qual? How this is supposed to work?
         qual[i] = uint8_t(qual[i] + 33);
     }
     string res(reinterpret_cast<const char*>(qual));

@@ -9,6 +9,7 @@ namespace corrector {
 void load(corrector_config& cfg, const std::string &filename) {
     YAML::Node config = YAML::LoadFile(filename);
     cfg.dataset.load(config["dataset"].as<std::string>());
+    // WTF: Why extra spaces? Fix the coding style everywhere!
     cfg.work_dir = config["work_dir"].as < std::string > (".");
     cfg.output_dir = config["output_dir"].as < std::string > (".");
     cfg.max_nthreads = config["max_nthreads"].as<unsigned>();

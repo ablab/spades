@@ -1,12 +1,15 @@
 #pragma once
 #include "read.hpp"
+// WTF: Include only what you're using
 #include "include.hpp"
+// WTF: config is not necessary for header
 #include "config_struct.hpp"
 
 namespace corrector {
 typedef vector<WeightedPositionalRead> WeightedReadStorage;
 
 class InterestingPositionProcessor {
+    // WTD: member var names!
     string contig;
     vector<int> is_interesting;
     vector<vector<size_t> > read_ids;
@@ -22,6 +25,7 @@ class InterestingPositionProcessor {
 public:
     InterestingPositionProcessor() {
     }
+    // WTF: Why copy ctg?
     void set_contig(string ctg);
 
     inline int get_error_weight(size_t i) const {

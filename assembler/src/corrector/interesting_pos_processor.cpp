@@ -26,6 +26,7 @@ size_t InterestingPositionProcessor::FillInterestingPositions(vector<position_de
             }
         }
     }
+    // WTF: why not const?
     for (auto &pos : tmp_pos)
         if (pos >= 0 && pos < (int) contig.length()) {
             DEBUG("position " << pos << " is interesting ");
@@ -37,7 +38,9 @@ size_t InterestingPositionProcessor::FillInterestingPositions(vector<position_de
 }
 
 void InterestingPositionProcessor::UpdateInterestingRead(const PositionDescriptionMap &ps) {
+    // WTF: spaces!
     vector < size_t > interesting_in_read;
+    // WTF: why not const?
     for (auto &pos : ps) {
         if (IsInteresting(pos.first)) {
             interesting_in_read.push_back(pos.first);
@@ -74,6 +77,7 @@ void InterestingPositionProcessor::UpdateInterestingPositions() {
                     size_t current_variant = wr_storage[current_read_id].positions[current_pos];
                     {
                         int coef = 1;
+                        // WTF: enum! Never compare strings in hot places!
                         if (corr_cfg::get().strategy == "all_reads")
                             coef = 1;
                         else if (corr_cfg::get().strategy == "mapped_squared")

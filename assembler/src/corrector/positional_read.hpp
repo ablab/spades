@@ -40,6 +40,7 @@ struct WeightedPositionalRead {
             }
         }
         non_interesting_error_num = 0;
+        // WTF: why copy?
         for (auto position: ps) {
             if (positions.find(position.first) == positions.end()) {
                 if (position.second.FoundOptimal(contig[position.first]) != (size_t)var_to_pos[(size_t)contig[position.first]]) {
