@@ -23,7 +23,7 @@ typedef std::vector<std::pair<string, io::LibraryType> > sam_files_type;
 class ContigProcessor {
     sam_files_type sam_files_;
     std::string contig_file_;
-    std::string contig_name;
+    std::string contig_name_;
     std::string output_contig_file_;
     std::string contig_;
     bool debug_info_;
@@ -43,7 +43,7 @@ public:
         if (debug_info_) {
 #pragma omp critical
             {
-                INFO("Processing contig_ " <<contig_name << " in thread " << omp_get_thread_num());
+                INFO("Processing contig_ " <<contig_name_ << " in thread " << omp_get_thread_num());
             }
         }
     }

@@ -20,8 +20,8 @@ vector<string> split(const string &s, char delim) {
 //Re: For this function wont fix. a) I want to save old NODE_ID, Cov and  UID;  b) while outputing this concrete contig we do not know number of processed in other threads, so we need to use one locking osequencestream for all threads..
 //Changed string sum to  MakeContigId(int number, size_t length, double coverage, size_t id) {
 // WTF: Extend osequencestream. Prepare patch and submit for review.
-
-string ContigRenameWithLength(string name, size_t len) {
+// Re: Done, but still like old solution more..
+/*string ContigRenameWithLength(string name, size_t len) {
     vector < string > splitted = split(name, '_');
     if (splitted.size() >= 8 && splitted[0] == "NODE" && splitted[2] == "length") {
         string res = io::MakeContigId(stoi(splitted[1]), len, stod(splitted[5]), stoi(splitted[7]));
@@ -29,7 +29,7 @@ string ContigRenameWithLength(string name, size_t len) {
     } else {
         return name;
     }
-}
+}*/
 
 }
 ;

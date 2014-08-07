@@ -45,7 +45,6 @@ string MappedSamStream::get_contig_name(int i) const {
 }
 
 void MappedSamStream::close() {
-    cerr << "closing reader";
     samclose(reader_);
     is_open_ = false;
     eof_ = true;

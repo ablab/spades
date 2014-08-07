@@ -24,7 +24,7 @@ void ContigProcessor::ReadContig() {
             WARN ("Non unique sequnce in one contig fasta!");
         }
     }
-    contig_name = cur_read.name();
+    contig_name_ = cur_read.name();
     contig_ = cur_read.GetSequenceString();
 
     output_contig_file_ = path::append_path(path::parent_path(contig_file_), path::basename(contig_file_) +  ".ref.fasta");
@@ -37,7 +37,7 @@ void ContigProcessor::UpdateOneRead(const SingleSamRead &tmp, MappedSamStream &s
         return;
     }
     string cur_s = sm.get_contig_name(tmp.get_contig_id());
-    if (cur_s != contig_name) {
+    if (cur_s != contig_name_) {
         return;
     }
     tmp.CountPositions(all_positions, contig_.length());
@@ -139,8 +139,8 @@ void ContigProcessor::ProcessMultipleSamFiles() {
     if (debug_info_) {
 #pragma omp critical
         {
-            INFO("Error counts for contig " << contig_name << " in thread " << omp_get_thread_num() << " : " << err_str.str());
-            INFO(interesting << " positions" <<  "are in consideration "  );
+            INFO("Error counts for contig " << contig_name_ << " in thread " << omp_get_thread_num() << " : " << err_str.str());
+            INFO(interesting << " positions" <<  " are in consideration "  );
         }
     }
     for (const auto &sf : sam_files_) {
@@ -170,13 +170,22 @@ void ContigProcessor::ProcessMultipleSamFiles() {
     if (debug_info_ || total_changes * 5 >  contig_.length()) {
 #pragma omp critical
         {
-            INFO("Contig " << contig_name << " processed with " << total_changes << " changes");
+            INFO("Contig " << contig_name_ << " processed with " << total_changes << " changes");
         }
     }
-    contig_name = ContigRenameWithLength(contig_name, s_new_contig.str().length());
-    io::osequencestream oss(output_contig_file_);
-    oss << io::SingleRead(contig_name, s_new_contig.str());
+    auto contig_name_splitted = split(contig_name_, '_');
+    if (contig_name_splitted.size() >= 8 ) {
+        io::osequencestream_with_manual_node_id oss(output_contig_file_);
+        oss.setNodeID(std::stoi(contig_name_splitted[1]));
+        oss.setCoverage(std::stod(contig_name_splitted[5]));
+        oss.setID(std::stoi(contig_name_splitted[7]));
+        oss << s_new_contig.str();
+    } else {
+        io::osequencestream oss(output_contig_file_);
+        oss << io::SingleRead(contig_name_, s_new_contig.str());
 
+    }
+    //contig_name = ContigRenameWithLength(contig_name, s_new_contig.str().length());
 }
 
 }
