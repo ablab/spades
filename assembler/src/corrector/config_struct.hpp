@@ -5,13 +5,13 @@
 #include "io/library.hpp"
 
 namespace corrector {
-
+enum strategy{all_reads, mapped_squared, not_started, majority_only};
 struct corrector_config {
     io::DataSet<> dataset;
     std::string work_dir;
     std::string output_dir;
     unsigned max_nthreads;
-    std::string strategy;
+    strategy strat;
     std::string bwa;
 };
 

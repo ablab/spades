@@ -8,39 +8,39 @@
 #pragma once
 #include "sam_reader.hpp"
 #include "read.hpp"
-// WTF: Include only what you're using
-#include "include.hpp"
 #include "interesting_pos_processor.hpp"
 #include "positional_read.hpp"
 
-// WTF: omp_wrapper! Everywhere
-#include <omp.h>
+#include "io/library.hpp"
+#include "openmp_wrapper.h"
+
+#include <string>
+#include <vector>
+#include <unordered_map>
 
 namespace corrector {
 typedef std::vector<std::pair<string, io::LibraryType> > sam_files_type;
 class ContigProcessor {
     // WTF: Coding style! Name member vars properly!
     sam_files_type sam_files;
-    string sam_file;
-    string contig_file;
-    string contig_name;
-    string output_contig_file;
-    string contig;
+    std::string sam_file;
+    std::string contig_file;
+    std::string contig_name;
+    std::string output_contig_file;
+    std::string contig;
     bool debug_info;
-    vector<position_description> charts;
+    std::vector<position_description> charts;
     InterestingPositionProcessor ipp;
-    vector<int> error_counts;
+    std::vector<int> error_counts;
+    const size_t max_error_num = 20;
 public:
-    // WTF: Why not const? Why copy string?
-    ContigProcessor(sam_files_type &sam_files_, string contig_file)
-            : contig_file(contig_file) {
+    ContigProcessor(const sam_files_type &sam_files_, const std::string &contig_file)
+            : sam_files(sam_files_), contig_file(contig_file) {
         ReadContig();
         ipp.set_contig(contig);
         debug_info = (contig.length() > 20000);
-        // WTF: Why copy here?
-        for (auto sf : sam_files_)
-            sam_files.push_back(sf);
         // WTF: race on INFO()
+        // Re: atomic INFO's or no INFO's in parallel code?
         if (debug_info) {
             INFO("Processing contig " <<contig_name << " in thread " << omp_get_thread_num());
         }
@@ -52,7 +52,7 @@ private:
     void ReadContig();
     void UpdateOneRead(const SingleSamRead &tmp, MappedSamStream &sm);
     //returns: number of changed nucleotides;
-    int UpdateOneBase(size_t i, stringstream &ss, const unordered_map<size_t, position_description> &interesting_positions);
+    size_t UpdateOneBase(size_t i, std::stringstream &ss, const std::unordered_map<size_t, position_description> &interesting_positions);
 
 };
 }

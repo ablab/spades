@@ -1,4 +1,5 @@
 #include "interesting_pos_processor.hpp"
+#include "config_struct.hpp"
 
 namespace corrector {
 size_t InterestingPositionProcessor::FillInterestingPositions(vector<position_description> &charts) {
@@ -26,8 +27,7 @@ size_t InterestingPositionProcessor::FillInterestingPositions(vector<position_de
             }
         }
     }
-    // WTF: why not const?
-    for (auto &pos : tmp_pos)
+    for (const auto &pos : tmp_pos)
         if (pos >= 0 && pos < (int) contig.length()) {
             DEBUG("position " << pos << " is interesting ");
             DEBUG(charts[pos].str());
@@ -38,10 +38,8 @@ size_t InterestingPositionProcessor::FillInterestingPositions(vector<position_de
 }
 
 void InterestingPositionProcessor::UpdateInterestingRead(const PositionDescriptionMap &ps) {
-    // WTF: spaces!
-    vector < size_t > interesting_in_read;
-    // WTF: why not const?
-    for (auto &pos : ps) {
+    vector<size_t> interesting_in_read;
+    for (const auto &pos : ps) {
         if (IsInteresting(pos.first)) {
             interesting_in_read.push_back(pos.first);
         }
@@ -57,7 +55,7 @@ void InterestingPositionProcessor::UpdateInterestingRead(const PositionDescripti
     }
 }
 
-void InterestingPositionProcessor::set_contig(string ctg) {
+void InterestingPositionProcessor::set_contig(string &ctg) {
     contig = ctg;
     size_t len = contig.length();
     is_interesting.resize(len);
@@ -78,15 +76,16 @@ void InterestingPositionProcessor::UpdateInterestingPositions() {
                     {
                         int coef = 1;
                         // WTF: enum! Never compare strings in hot places!
-                        if (corr_cfg::get().strategy == "all_reads")
+                        // Re: ooops! Here string comparison realy sucked!
+                        if (corr_cfg::get().strat == strategy::all_reads)
                             coef = 1;
-                        else if (corr_cfg::get().strategy == "mapped_squared")
+                        else if (corr_cfg::get().strat == strategy::mapped_squared)
                             coef = wr_storage[current_read_id].processed_positions * wr_storage[current_read_id].processed_positions;
-                        else if (corr_cfg::get().strategy == "not_started")
+                        else if (corr_cfg::get().strat == strategy::not_started)
                             coef = wr_storage[current_read_id].is_first(current_pos, dir);
 
                         interesting_weights[current_pos].votes[current_variant] += get_error_weight(
-                                wr_storage[current_read_id].error_num /*+ wr_storage[current_read_id].non_interesting_error_num*/) * coef;
+                                wr_storage[current_read_id].error_num ) * coef;
                     }
                 }
                 size_t maxi = interesting_weights[current_pos].FoundOptimal(contig[current_pos]);
@@ -113,7 +112,6 @@ void InterestingPositionProcessor::UpdateInterestingPositions() {
         }
         if (dir == 1)
             DEBUG("reversing the order...");
-
         for (size_t i = 0; i < wr_storage.size(); i++) {
             wr_storage[i].error_num = 0;
             wr_storage[i].processed_positions = 0;

@@ -1,33 +1,31 @@
 #pragma once
 #include "read.hpp"
-// WTF: Include only what you're using
-#include "include.hpp"
-// WTF: config is not necessary for header
-#include "config_struct.hpp"
+
+#include <vector>
+#include <string>
+#include <unordered_map>
 
 namespace corrector {
-typedef vector<WeightedPositionalRead> WeightedReadStorage;
+typedef std::vector<WeightedPositionalRead> WeightedReadStorage;
 
 class InterestingPositionProcessor {
     // WTD: member var names!
-    string contig;
-    vector<int> is_interesting;
-    vector<vector<size_t> > read_ids;
+    std::string contig;
+    std::vector<int> is_interesting;
+    std::vector<std::vector<size_t> > read_ids;
     WeightedReadStorage wr_storage;
     const int anchor_gap = 100;
     const int anchor_num = 6;
 
     static const size_t MaxErrorCount = 6;
     const int error_weight[MaxErrorCount] = { 100, 10, 8, 5, 2, 1 };
-    unordered_map<size_t, position_description> interesting_weights;
-    unordered_map<size_t, position_description> changed_weights;
+    std::unordered_map<size_t, position_description> interesting_weights;
+    std::unordered_map<size_t, position_description> changed_weights;
 
 public:
     InterestingPositionProcessor() {
     }
-    // WTF: Why copy ctg?
-    void set_contig(string ctg);
-
+    void set_contig(string &ctg);
     inline int get_error_weight(size_t i) const {
         if (i >= MaxErrorCount)
             return 0;

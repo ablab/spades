@@ -5,7 +5,7 @@
  *      Author: lab42
  */
 // WTF: Include only what you're using
-#include "include.hpp"
+// needed
 #include "positional_read.hpp"
 
 #include "samtools/bam.h"
@@ -31,7 +31,6 @@ struct SingleSamRead {
     }
 
     string get_cigar() const;
-    string get_qual() const;
     string get_name() const;
     string get_seq() const;
 

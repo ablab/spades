@@ -4,18 +4,17 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-// WTF: Include only what you're using
-#include "include.hpp"
-#include "read.hpp"
 #include "dataset_processor.hpp"
 #include "config_struct.hpp"
-#include "utils.hpp"
 
+#include "logger/log_writers.hpp"
 #include "segfault_handler.hpp"
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <string>
 
+using namespace std;
 void create_console_logger() {
     using namespace logging;
 
@@ -45,7 +44,7 @@ int main(int argc, char** argv) {
     if (!path::check_existence(corr_cfg::get().work_dir))
         path::make_dir(corr_cfg::get().work_dir);
 
-    corrector::DatasetProcessor dp(contig_name);
+    corrector::DatasetProcessor dp(contig_name, corr_cfg::get().work_dir, corr_cfg::get().output_dir, corr_cfg::get().max_nthreads);
     dp.ProcessDataset();
     unsigned ms = (unsigned) pc.time_ms();
     unsigned secs = (ms / 1000) % 60;

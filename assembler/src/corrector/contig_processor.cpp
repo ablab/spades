@@ -1,5 +1,7 @@
 #include "contig_processor.hpp"
+#include "config_struct.hpp"
 // WTF: Include only what you're using
+// Re: include.hpp IS used, utils under discussion
 #include "include.hpp"
 #include "utils.hpp"
 
@@ -7,22 +9,22 @@
 #include "io/osequencestream.hpp"
 #include "io/file_reader.hpp"
 #include "io/single_read.hpp"
+#include "path_helper.hpp"
 
 namespace corrector {
+
 
 void ContigProcessor::ReadContig() {
     io::FileReadStream frs(contig_file);
     io::SingleRead cur_read;
     frs >> cur_read;
-    // WTF: No spaces, when not necessary. Fix your coding style.
-    if (! frs.eof()) {
+    if (!frs.eof()) {
         WARN ("Non unique sequnce in one contig fasta!");
     }
     contig_name = cur_read.name();
     contig = cur_read.GetSequenceString();
-    // WTF: Surely not. Use functions from path_helper
-//extention is always "fasta"
-    output_contig_file = contig_file.substr(0, contig_file.length() - 5) + "ref.fasta";
+
+    output_contig_file = path::append_path(path::parent_path(contig_file), path::basename(contig_file) +  ".ref.fasta");
     charts.resize(contig.length());
 }
 
@@ -36,7 +38,7 @@ void ContigProcessor::UpdateOneRead(const SingleSamRead &tmp, MappedSamStream &s
         return;
     }
     tmp.CountPositions(all_positions, contig.length());
-    int error_num = 0;
+    size_t error_num = 0;
 
     for (auto &pos : all_positions) {
         if ((int) pos.first >= 0 && pos.first < contig.length()) {
@@ -47,26 +49,23 @@ void ContigProcessor::UpdateOneRead(const SingleSamRead &tmp, MappedSamStream &s
         }
     }
 
-    // WTF: Get rid of magic constants. Use array length here.
-    if (error_num > 19)
-        error_counts[20]++;
-    else if (error_num >= 0)
+    if (error_num >= error_counts.size())
+        error_counts[error_counts.size() - 1]++;
+    else
         error_counts[error_num]++;
 }
 
 //returns: number of changed nucleotides;
-// WTF: Number should be unsigned. You cannot change -1 nucl
-int ContigProcessor::UpdateOneBase(size_t i, stringstream &ss, const unordered_map<size_t, position_description> &interesting_positions) {
+size_t ContigProcessor::UpdateOneBase(size_t i, stringstream &ss, const unordered_map<size_t, position_description> &interesting_positions) {
     char old = (char) toupper(contig[i]);
     size_t maxi = charts[i].FoundOptimal(contig[i]);
-    if (interesting_positions.find(i) != interesting_positions.end()) {
-        // WTF: Do not do second lookup
-        size_t maxj = interesting_positions.find(i)->second.FoundOptimal(contig[i]);
+    auto i_position = interesting_positions.find(i);
+    if ( i_position != interesting_positions.end()) {
+        size_t maxj = i_position->second.FoundOptimal(contig[i]);
         if (maxj != maxi) {
             DEBUG("Interesting positions differ with majority!");
             DEBUG("On position " << i << "  old: " << old << " majority: " << pos_to_var[maxi] << "interesting: " << pos_to_var[maxj]);
-            // WTF: Use enum. *NEVER* compare strings in hot code.
-            if (corr_cfg::get().strategy != "majority_only")
+            if (corr_cfg::get().strat != strategy::majority_only)
                 maxi = maxj;
         }
     }
@@ -91,8 +90,7 @@ int ContigProcessor::UpdateOneBase(size_t i, stringstream &ss, const unordered_m
             }
             ss << pos_to_var[new_maxi];
             int max_ins = 0;
-            // WTF: Why not const?
-            for (auto &ic : charts[i].insertions) {
+            for (const auto &ic : charts[i].insertions) {
                 if (ic.second > max_ins) {
                     max_ins = ic.second;
                     maxj = ic.first;
@@ -117,11 +115,9 @@ int ContigProcessor::UpdateOneBase(size_t i, stringstream &ss, const unordered_m
 }
 
 void ContigProcessor::ProcessMultipleSamFiles() {
-    // WTF: Get rid of magic constant
-    error_counts.resize(20);
+    error_counts.resize(max_error_num);
     DEBUG("working with " << sam_files.size() << " sublibs");
-    // WTF: Why not const?
-    for (auto &sf : sam_files) {
+    for (const auto &sf : sam_files) {
         MappedSamStream sm(sf.first);
         while (!sm.eof()) {
             SingleSamRead tmp;
@@ -133,8 +129,9 @@ void ContigProcessor::ProcessMultipleSamFiles() {
     }
 
     stringstream err_str;
-    // WTF: Why int? err_str is only used for debug!
-    for (int i = 0; i < 20; i++)
+    // WTF: err_str is only used for debug!
+     // Re: yes. Why not?
+    for (size_t i = 0; i < error_counts.size(); i++)
         err_str << error_counts[i] << " ";
     size_t interesting = ipp.FillInterestingPositions(charts);
     if (debug_info) {
@@ -143,8 +140,7 @@ void ContigProcessor::ProcessMultipleSamFiles() {
     } else {
         DEBUG("Error counts for contig " << contig_name << " : " << err_str.str());
     }
-    // WTF: Why not const
-    for (auto &sf : sam_files) {
+    for (const auto &sf : sam_files) {
         MappedSamStream sm(sf.first);
         while (!sm.eof()) {
             unordered_map<size_t, position_description> ps;
@@ -165,21 +161,18 @@ void ContigProcessor::ProcessMultipleSamFiles() {
     ipp.UpdateInterestingPositions();
     unordered_map<size_t, position_description> interesting_positions = ipp.get_weights();
     stringstream s_new_contig;
-    // WTF: Why int?
-    int total_changes = 0;
+    size_t total_changes = 0;
     for (size_t i = 0; i < contig.length(); i++) {
         DEBUG(charts[i].str());
         total_changes += UpdateOneBase(i, s_new_contig, interesting_positions);
     }
-    if (debug_info || total_changes * 5 > (int) contig.length()) {
+    if (debug_info || total_changes * 5 >  contig.length()) {
         INFO("Contig " << contig_name << " processed with " << total_changes << " changes");
     } else {
         DEBUG("Contig " << contig_name << " processed with " << total_changes << " changes");
     }
     contig_name = ContigRenameWithLength(contig_name, s_new_contig.str().length());
     io::osequencestream oss(output_contig_file);
-    //Re: it's not safe - io::SingleRead is not valid for scaffolds.
-    //WTF: It is safe
     oss << io::SingleRead(contig_name, s_new_contig.str());
 
 }

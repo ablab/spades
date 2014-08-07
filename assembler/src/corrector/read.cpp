@@ -2,7 +2,6 @@
 #include "include.hpp"
 using namespace std;
 
-// FIXME: EVERYWHERE: USE SPACES, NOT TABS! FIX ALL THE CODING STYLE PROBLEMS EVERYWHERE
 
 namespace corrector {
 
@@ -19,7 +18,6 @@ int SingleSamRead::CountPositions(unordered_map<size_t, position_description> &p
     int pos = data_->core.pos;
     if (pos < 0) {
         WARN("Negative position " << pos << " found on read " << get_name() << ", skipping");
-
         return -1;
     }
     size_t position = size_t(pos);
@@ -48,7 +46,6 @@ int SingleSamRead::CountPositions(unordered_map<size_t, position_description> &p
     size_t skipped = 0;
     size_t deleted = 0;
     string insertion_string = "";
-
     auto seq = bam1_seq(data_);
     for (size_t i = 0; i < l_read; i++) {
         DEBUG(i << " " << position << " " << skipped);
@@ -119,16 +116,6 @@ string SingleSamRead::get_cigar() const {
         res += bam_cigar_opchr(cigar[k]);
 
     }
-    return res;
-}
-
-string SingleSamRead::get_qual() const {
-    uint8_t *qual = bam1_qual(data_);
-    for (int i = 0; i < data_->core.l_qseq; ++i) {
-        // WTF: So, it adds 33 on every call to get_qual? How this is supposed to work?
-        qual[i] = uint8_t(qual[i] + 33);
-    }
-    string res(reinterpret_cast<const char*>(qual));
     return res;
 }
 
