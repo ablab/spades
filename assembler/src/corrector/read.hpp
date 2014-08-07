@@ -4,9 +4,12 @@
  *  Created on: Jun 26, 2014
  *      Author: lab42
  */
-
+#include "positional_read.hpp"
 
 #include "samtools/bam.h"
+
+#include <string>
+#include <unordered_map>
 
 #pragma once
 
@@ -28,13 +31,13 @@ struct SingleSamRead {
         data_ = bam_dup1( seq_);
     }
 
-    string get_cigar() const;
-    string get_name() const;
-    string get_seq() const;
+    std::string get_cigar() const;
+    std::string get_name() const;
+    std::string get_seq() const;
 
     // WTF: This does not belong here
     // Re: Now it knows nothing about the contig, and depends on read and length parameter only. I'm still sure this should be here- bam_1 stuff should be localized.
-    int CountPositions(unordered_map<size_t, position_description> &ps, const size_t &contig_length) const;
+    int CountPositions(std::unordered_map<size_t, position_description> &ps, const size_t &contig_length) const;
     SingleSamRead() {
         data_ = bam_init1();
     }

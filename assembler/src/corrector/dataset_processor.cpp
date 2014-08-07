@@ -90,8 +90,8 @@ void DatasetProcessor::FlushAll(const size_t lib_count) {
 void DatasetProcessor::BufferedOutputRead(const string &read, const string &contig_name, const size_t lib_count) {
     buffered_reads_[contig_name].push_back(read);
     buffered_count_++;
-    if (buffered_count_ % buff_size == 0) {
-        if (buffered_count_ % (10 * buff_size_) == 0)
+    if (buffered_count_ % kBuffSize == 0) {
+        if (buffered_count_ % (10 * kBuffSize) == 0)
             INFO("processed " << buffered_count_ << "reads, flushing");
         FlushAll(lib_count);
     }
@@ -140,11 +140,11 @@ string DatasetProcessor::RunPairedBwa(const string &left, const string &right, c
         INFO("bwa failed, skipping sublib");
         return "";
     }
-    string nthreads = to_string(corr_cfg::get().max_nthreads);
-    string left_line = corr_cfg::get().bwa + " aln " + genome_file_ + " " + left + " -t " + nthreads + " -O 7 -E 2 -k 3 -n 0.08 -q 15 > " + tmp1_sai_filename
+    string nthreads_str = to_string(nthreads_);
+    string left_line = corr_cfg::get().bwa + " aln " + genome_file_ + " " + left + " -t " + nthreads_str + " -O 7 -E 2 -k 3 -n 0.08 -q 15 > " + tmp1_sai_filename
             + " 2>" + tmp_file;
 
-    string right_line = corr_cfg::get().bwa + " aln " + genome_file_ + " " + right + " -t " + nthreads + " -O 7 -E 2 -k 3 -n 0.08 -q 15 > " + tmp2_sai_filename
+    string right_line = corr_cfg::get().bwa + " aln " + genome_file_ + " " + right + " -t " + nthreads_str + " -O 7 -E 2 -k 3 -n 0.08 -q 15 > " + tmp2_sai_filename
             + " 2>" + tmp_file;
     INFO("Running bwa aln ...: " << left_line);
     int res1 = system(left_line.c_str());
@@ -164,7 +164,7 @@ string DatasetProcessor::RunPairedBwa(const string &left, const string &right, c
         return "";
     }
     res1 = unlink(tmp1_sai_filename.c_str());
-    res2 = unlink(tmp1_sai_filename.c_str());
+    res2 = unlink(tmp2_sai_filename.c_str());
     if (res1 != 0 || res2 != 0) {
         INFO("Failed to delete temporary sai files");
     }
@@ -190,8 +190,8 @@ string DatasetProcessor::RunSingleBwa(const string &single, const size_t lib) co
         INFO("bwa failed, skipping sublib");
         return "";
     }
-    string nthreads = to_string(corr_cfg::get().max_nthreads);
-    string single_sai_line = corr_cfg::get().bwa + " aln " + genome_file_ + " " + single + " -t " + nthreads + " -O 7 -E 2 -k 3 -n 0.08 -q 15 > "
+    string nthreads_str = to_string(nthreads_);
+    string single_sai_line = corr_cfg::get().bwa + " aln " + genome_file_ + " " + single + " -t " + nthreads_str + " -O 7 -E 2 -k 3 -n 0.08 -q 15 > "
             + tmp_sai_filename + " 2>" + tmp_file;
 
     INFO("Running bwa aln ...:" + single_sai_line);
@@ -285,7 +285,7 @@ void DatasetProcessor::ProcessDataset() {
     // Re: I can refactor to exclude all_contigs from dataset_processor class, but it is logically this class' member.
     // Re: rewritten for more clear.
     ContigInfoMap all_contigs_copy(all_contigs_);
-    # pragma omp parallel for shared(all_contigs_copy, ordered_contigs) num_threads(nthreads) schedule(dynamic,1)
+    # pragma omp parallel for shared(all_contigs_copy, ordered_contigs) num_threads(nthreads_) schedule(dynamic,1)
     for (size_t i = 0; i < cont_num; i++) {
         ContigProcessor pc(all_contigs_copy[ordered_contigs[i].second].sam_filenames, all_contigs_copy[ordered_contigs[i].second].input_contig_filename);
         pc.ProcessMultipleSamFiles();
