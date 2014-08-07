@@ -21,7 +21,6 @@ enum Variants {
 #define MAX_VARIANTS Variants::VariantsNumber
 
 namespace corrector {
-// WTF: constexpr
 constexpr char pos_to_var[MAX_VARIANTS] = { 'A', 'C', 'G', 'T', 'N', 'D', 'I' };
 constexpr size_t var_to_pos[128] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 5, 0, 0, 2, 0, 6, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0,

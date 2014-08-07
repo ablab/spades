@@ -1,5 +1,5 @@
 #include "dataset_processor.hpp"
-#include "include.hpp"
+#include "variants_table.hpp"
 #include "contig_processor.hpp"
 #include "config_struct.hpp"
 
@@ -14,16 +14,14 @@
 using namespace std;
 
 namespace corrector {
-// WTF: Why it's not static?
-inline std::string GetLibDir(const size_t lib_count) {
+static std::string GetLibDir(const size_t lib_count) {
     return path::append_path(corr_cfg::get().work_dir, "lib" + to_string(lib_count));
 }
 
 void DatasetProcessor::SplitGenome(const string &genome_splitted_dir) {
     io::FileReadStream frs(genome_file_);
-    // WTF: Make it loop temporary
-    io::SingleRead cur_read;
     while (!frs.eof()) {
+        io::SingleRead cur_read;
         frs >> cur_read;
         string contig_name = cur_read.name();
         string contig_seq = cur_read.GetSequenceString();
@@ -33,11 +31,7 @@ void DatasetProcessor::SplitGenome(const string &genome_splitted_dir) {
         string full_path = path::append_path(genome_splitted_dir, contig_name + ".fasta");
         string out_full_path = path::append_path(genome_splitted_dir, contig_name + ".ref.fasta");
         string sam_filename = path::append_path(genome_splitted_dir, contig_name + ".pair.sam");
-        // WTF: Use brace initialization
-        all_contigs_[contig_name].input_contig_filename = full_path;
-        all_contigs_[contig_name].output_contig_filename = out_full_path;
-        all_contigs_[contig_name].sam_filename = sam_filename;
-        all_contigs_[contig_name].contig_length = contig_seq.length();
+        all_contigs_[contig_name] = {full_path, out_full_path, contig_seq.length(), sam_files_type(), sam_filename};
         buffered_reads_[contig_name].clear();
         io::osequencestream oss(full_path);
         oss << io::SingleRead(contig_name, contig_seq);
@@ -47,8 +41,7 @@ void DatasetProcessor::SplitGenome(const string &genome_splitted_dir) {
 
 //contigs - set of aligned contig names
 void DatasetProcessor::GetAlignedContigs(const string &read, set<string> &contigs) const {
-    // WTF: Use split from Boost
-    vector < string > arr;
+    vector<string> arr;
     boost::split(arr, read, boost::is_any_of("\t"));
     if (arr.size() > 5) {
         if (arr[2] != "*" && stoi(arr[4]) > 0) {
@@ -62,11 +55,7 @@ void DatasetProcessor::GetAlignedContigs(const string &read, set<string> &contig
 void DatasetProcessor::SplitSingleLibrary(const string &all_reads_filename, const size_t lib_count) {
     ifstream fs(all_reads_filename);
     while (!fs.eof()) {
-        // WTF: Why spaces?
-        // Re: because of code style defined in ext/eclipse/gsgc.xml
-        // WTF: You're not using it properly
-        // fixed here
-        set < string > contigs;
+        set<string> contigs;
         string r1;
         getline(fs, r1);
         if (r1[0] == '@')
@@ -104,7 +93,7 @@ void DatasetProcessor::BufferedOutputRead(const string &read, const string &cont
 void DatasetProcessor::SplitPairedLibrary(const string &all_reads_filename, const size_t lib_count) {
     ifstream fs(all_reads_filename);
     while (!fs.eof()) {
-        set < string > contigs;
+        set<string> contigs;
         string r1;
         string r2;
         getline(fs, r1);
@@ -279,7 +268,7 @@ void DatasetProcessor::ProcessDataset() {
         ordered_contigs.push_back(make_pair(ac.second.contig_length, ac.first));
     }
     size_t cont_num = ordered_contigs.size();
-    sort(ordered_contigs.begin(), ordered_contigs.end(), std::greater<pair<size_t, string> >() );
+    sort(ordered_contigs.begin(), ordered_contigs.end(), std::greater<pair<size_t, string> >());
     auto all_contigs_ptr = &all_contigs_;
 # pragma omp parallel for shared(all_contigs_ptr, ordered_contigs) num_threads(nthreads_) schedule(dynamic,1)
     for (size_t i = 0; i < cont_num; i++) {

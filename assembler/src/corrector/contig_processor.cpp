@@ -1,9 +1,6 @@
 #include "contig_processor.hpp"
 #include "config_struct.hpp"
-// WTF: Include only what you're using
-// Re: include.hpp IS used, utils under discussion
-// Rename it to something more useful then.
-#include "include.hpp"
+#include "variants_table.hpp"
 
 #include "io/ireader.hpp"
 #include "io/osequencestream.hpp"
@@ -160,7 +157,7 @@ size_t ContigProcessor::ProcessMultipleSamFiles() {
     for (size_t i = 0; i < contig_.length(); i++) {
         total_changes += UpdateOneBase(i, s_new_contig, interesting_positions);
     }
-    vector < string > contig_name_splitted;
+    vector<string> contig_name_splitted;
     boost::split(contig_name_splitted, contig_name_, boost::is_any_of("_"));
     if (contig_name_splitted.size() >= 8) {
         io::osequencestream_with_manual_node_id oss(output_contig_file_);

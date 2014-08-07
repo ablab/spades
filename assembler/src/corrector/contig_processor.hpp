@@ -33,8 +33,6 @@ class ContigProcessor {
     const size_t kMaxErrorNum = 20;
 
 public:
-    // WTF: Argument name! Use brain for naming, not search & replace
-    // Eclipse refactor->rename:(
     ContigProcessor(const sam_files_type &sam_files, const std::string &contig_file)
             : sam_files_(sam_files), contig_file_(contig_file) {
         ReadContig();
@@ -43,11 +41,11 @@ public:
     size_t ProcessMultipleSamFiles();
 private:
     void ReadContig();
+
     // WTF: Is this function const?
     // Re: No. It updates internal structures with read data.
     void UpdateOneRead(const SingleSamRead &tmp, MappedSamStream &sm);
     //returns: number of changed nucleotides;
-    // WTF: Is this function const?
 
     size_t UpdateOneBase(size_t i, std::stringstream &ss, const std::unordered_map<size_t, position_description> &interesting_positions) const ;
 
