@@ -77,6 +77,10 @@ class DebruijnEnvironment : public Environment {
         }
 
         void LoadFromGP() {
+            if (!gp_.edge_pos.IsAttached()) {
+                gp_.edge_pos.Attach();
+            }
+
             //Loading Genome and Handlers
             DEBUG("Colorer done");
             Path<EdgeId> path1 = mapper_.MapSequence(gp_.genome).path();
