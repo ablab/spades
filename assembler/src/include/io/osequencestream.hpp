@@ -202,43 +202,6 @@ public:
 
 };
 
-class osequencestream_with_manual_node_id: public osequencestream_with_id {
-    bool is_id_set_;
-    virtual void write_header(const std::string& s) {
-        //for manual NODE ID setting osequencestream need to chech that node ID is really manually set
-        if (!is_id_set_) {
-            WARN ("NODE ID is not set manually, setting to 0");
-            id_ = 0;
-        }
-        ofstream_ << ">" << MakeContigId(id_, s.size(), cov_, uid_) << std::endl;
-        is_id_set_ = false;
-    }
-
-public:
-//unfortunately constructor inheritance is supported only since g++4.8
-    osequencestream_with_manual_node_id(const std::string& filename): osequencestream_with_id(filename) {
-        is_id_set_ = false;
-    }
-
-    void setNodeID(int id) {
-        id_ = id;
-        is_id_set_ = true;
-    }
-
-    osequencestream_with_manual_node_id& operator<<(const std::string& s) {
-        write_header(s);
-        write_str(s);
-        return *this;
-    }
-
-    osequencestream_with_manual_node_id& operator<<(const Sequence& seq) {
-        std::string s = seq.str();
-        return operator <<(s);
-    }
-
-
-};
-
 
 class osequencestream_with_data_for_scaffold: public osequencestream_with_id  {
 protected:
