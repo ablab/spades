@@ -38,13 +38,14 @@ public:
         ReadContig();
         ipp_.set_contig(contig_);
         debug_info_ = (contig_.length() > 20000);
-        // WTF: race on INFO()
-        // Re: atomic INFO's or no INFO's in parallel code?
-        if (debug_info_) {
-            INFO("Processing contig_ " <<contig_name << " in thread " << omp_get_thread_num());
-        }
-        DEBUG("Processing contig_ " <<contig_name << " in thread " << omp_get_thread_num());
 
+        //Re: or just remove all info's from parallel section?
+        if (debug_info_) {
+#pragma omp critical
+            {
+                INFO("Processing contig_ " <<contig_name << " in thread " << omp_get_thread_num());
+            }
+        }
     }
     void ProcessMultipleSamFiles();
 private:

@@ -19,7 +19,10 @@ void ContigProcessor::ReadContig() {
     io::SingleRead cur_read;
     frs >> cur_read;
     if (!frs.eof()) {
-        WARN ("Non unique sequnce in one contig fasta!");
+#pragma omp critical
+        {
+            WARN ("Non unique sequnce in one contig fasta!");
+        }
     }
     contig_name = cur_read.name();
     contig_ = cur_read.GetSequenceString();
@@ -116,7 +119,6 @@ size_t ContigProcessor::UpdateOneBase(size_t i, stringstream &ss, const unordere
 
 void ContigProcessor::ProcessMultipleSamFiles() {
     error_counts_.resize(kMaxErrorNum);
-    DEBUG("working with " << sam_files_.size() << " sublibs");
     for (const auto &sf : sam_files_) {
         MappedSamStream sm(sf.first);
         while (!sm.eof()) {
@@ -135,10 +137,11 @@ void ContigProcessor::ProcessMultipleSamFiles() {
         err_str << error_counts_[i] << " ";
     size_t interesting = ipp_.FillInterestingPositions(charts_);
     if (debug_info_) {
-        INFO("Error counts for contig " << contig_name << " in thread " << omp_get_thread_num() << " : " << err_str.str());
-        INFO(interesting << " positions" <<  "are in consideration "  );
-    } else {
-        DEBUG("Error counts for contig " << contig_name << " : " << err_str.str());
+#pragma omp critical
+        {
+            INFO("Error counts for contig " << contig_name << " in thread " << omp_get_thread_num() << " : " << err_str.str());
+            INFO(interesting << " positions" <<  "are in consideration "  );
+        }
     }
     for (const auto &sf : sam_files_) {
         MappedSamStream sm(sf.first);
@@ -153,7 +156,6 @@ void ContigProcessor::ProcessMultipleSamFiles() {
                 sm >> tmp;
                 tmp.CountPositions(ps, contig_.length());
             }
-            TRACE("updating interesting read..");
             ipp_.UpdateInterestingRead(ps);
         }
         sm.close();
@@ -163,13 +165,13 @@ void ContigProcessor::ProcessMultipleSamFiles() {
     stringstream s_new_contig;
     size_t total_changes = 0;
     for (size_t i = 0; i < contig_.length(); i++) {
-        DEBUG(charts_[i].str());
         total_changes += UpdateOneBase(i, s_new_contig, interesting_positions);
     }
     if (debug_info_ || total_changes * 5 >  contig_.length()) {
-        INFO("Contig " << contig_name << " processed with " << total_changes << " changes");
-    } else {
-        DEBUG("Contig " << contig_name << " processed with " << total_changes << " changes");
+#pragma omp critical
+        {
+            INFO("Contig " << contig_name << " processed with " << total_changes << " changes");
+        }
     }
     contig_name = ContigRenameWithLength(contig_name, s_new_contig.str().length());
     io::osequencestream oss(output_contig_file_);
