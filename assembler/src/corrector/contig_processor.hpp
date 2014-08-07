@@ -33,6 +33,7 @@ class ContigProcessor {
 
     const size_t kMaxErrorNum = 20;
 public:
+    // WTF: Argument name! Use brain for naming, not search & replace
     ContigProcessor(const sam_files_type &sam_files_, const std::string &contig_file)
             : sam_files_(sam_files_), contig_file_(contig_file) {
         ReadContig();
@@ -40,6 +41,7 @@ public:
         debug_info_ = (contig_.length() > 20000);
 
         //Re: or just remove all info's from parallel section?
+        // WTF: All the printing should be localized to outside of parallel section as much as possible
         if (debug_info_) {
 #pragma omp critical
             {
@@ -50,8 +52,10 @@ public:
     void ProcessMultipleSamFiles();
 private:
     void ReadContig();
+    // WTF: Is this function const?
     void UpdateOneRead(const SingleSamRead &tmp, MappedSamStream &sm);
     //returns: number of changed nucleotides;
+    // WTF: Is this function const?
     size_t UpdateOneBase(size_t i, std::stringstream &ss, const std::unordered_map<size_t, position_description> &interesting_positions);
 
 };

@@ -17,6 +17,7 @@ typedef unordered_map <size_t, position_description> PositionDescriptionMap;
 
 
 struct WeightedPositionalRead {
+    // WTF: member names!
     map<size_t, size_t> positions;
     int error_num;
     int non_interesting_error_num;

@@ -7,6 +7,7 @@
 using namespace std;
 
 namespace corrector {
+// WTF: Get rid of this. Use split() from Boost
 vector<string> split(const string &s, char delim) {
     vector < string > elems;
     stringstream ss(s);

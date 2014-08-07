@@ -2,6 +2,7 @@
 #include "config_struct.hpp"
 // WTF: Include only what you're using
 // Re: include.hpp IS used, utils under discussion
+// Rename it to something more useful then.
 #include "include.hpp"
 #include "utils.hpp"
 
@@ -133,6 +134,7 @@ void ContigProcessor::ProcessMultipleSamFiles() {
     stringstream err_str;
     // WTF: err_str is only used for debug!
      // Re: yes. Why not?
+    // WTF: No need to *always* create this junk
     for (size_t i = 0; i < error_counts_.size(); i++)
         err_str << error_counts_[i] << " ";
     size_t interesting = ipp_.FillInterestingPositions(charts_);

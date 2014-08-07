@@ -16,12 +16,14 @@
 using namespace std;
 namespace corrector {
 
+// WTF: Why it's not static?
 inline std::string GetLibDir(const size_t lib_count) {
     return path::append_path(corr_cfg::get().work_dir , "lib" + to_string(lib_count));
 }
 
 void DatasetProcessor::SplitGenome(const string &genome_splitted_dir) {
     io::FileReadStream frs(genome_file_);
+    // WTF: Make it loop temporary
     io::SingleRead cur_read;
     while (!frs.eof()){
         frs >> cur_read;
@@ -33,6 +35,7 @@ void DatasetProcessor::SplitGenome(const string &genome_splitted_dir) {
         string full_path = path::append_path(genome_splitted_dir , contig_name + ".fasta");
         string out_full_path = path::append_path(genome_splitted_dir, contig_name + ".ref.fasta");
         string sam_filename =  path::append_path(genome_splitted_dir, contig_name + ".pair.sam");
+        // WTF: Use brace initialization
         all_contigs_[contig_name].input_contig_filename = full_path;
         all_contigs_[contig_name].output_contig_filename = out_full_path;
         all_contigs_[contig_name].sam_filename = sam_filename;
@@ -46,6 +49,7 @@ void DatasetProcessor::SplitGenome(const string &genome_splitted_dir) {
 
 //contigs - set of aligned contig names
 void DatasetProcessor::GetAlignedContigs(const string &read, set<string> &contigs) const {
+    // WTF: Use split from Boost
     vector<string> arr = split(read, '\t');
     if (arr.size() > 5) {
         if (arr[2] != "*" && stoi(arr[4]) > 0) {
@@ -61,6 +65,7 @@ void DatasetProcessor::SplitSingleLibrary(const string &all_reads_filename, cons
     while (!fs.eof()) {
         // WTF: Why spaces?
         // Re: because of code style defined in ext/eclipse/gsgc.xml
+        // WTF: You're not using it properly
         // fixed here
         set<string> contigs;
         string r1;
@@ -218,8 +223,6 @@ string DatasetProcessor::RunSingleBwa(const string &single, const size_t lib) co
 
 void DatasetProcessor::PrepareContigDirs(const size_t lib_count) {
     string out_dir = GetLibDir(lib_count);
-    // WTF: Why not const?
-    // Re: It IS not const. We store sam filenames here into all_contigs.
     for (auto &ac : all_contigs_) {
         auto contig_name = ac.first;
         string header = "@SQ\tSN:" + contig_name + "\tLN:" + to_string(all_contigs_[contig_name].contig_length);
@@ -236,16 +239,19 @@ void DatasetProcessor::ProcessDataset() {
     INFO("Assembly file: " + genome_file_);
     SplitGenome(work_dir_);
     for (size_t i = 0; i < corr_cfg::get().dataset.lib_count(); ++i) {
-        if (corr_cfg::get().dataset[i].type() == io::LibraryType::PairedEnd || corr_cfg::get().dataset[i].type() == io::LibraryType::HQMatePairs
-                || corr_cfg::get().dataset[i].type() == io::LibraryType::SingleReads) {
-            for (auto iter = corr_cfg::get().dataset[i].paired_begin(); iter != corr_cfg::get().dataset[i].paired_end(); iter++) {
+        const auto& dataset = corr_cfg::get().dataset[i];
+        auto lib_type = dataset.type();
+        if (lib_type == io::LibraryType::PairedEnd ||
+            lib_type == io::LibraryType::HQMatePairs ||
+            lib_type == io::LibraryType::SingleReads) {
+            for (auto iter = dataset.paired_begin(); iter != dataset.paired_end(); iter++) {
                 INFO("Processing paired sublib of number " << lib_num);
                 string left = iter->first;
                 string right = iter->second;
                 INFO(left + " " + right);
                 string samf = RunPairedBwa(left, right, lib_num);
                 if (samf != "") {
-                    unsplitted_sam_files_.push_back(make_pair(samf, corr_cfg::get().dataset[i].type()));
+                    unsplitted_sam_files_.push_back(make_pair(samf, lib_type));
                     PrepareContigDirs(lib_num);
                     SplitPairedLibrary(samf, lib_num);
                     lib_num++;
@@ -253,7 +259,7 @@ void DatasetProcessor::ProcessDataset() {
                     WARN("Failed to align paired reads " << left << " and " << right);
                 }
             }
-            for (auto iter = corr_cfg::get().dataset[i].single_begin(); iter != corr_cfg::get().dataset[i].single_end(); iter++) {
+            for (auto iter = dataset.single_begin(); iter !=dataset.single_end(); iter++) {
                 INFO("Processing single sublib of number " << lib_num);
                 string left = *iter;
                 INFO(left);
@@ -277,13 +283,13 @@ void DatasetProcessor::ProcessDataset() {
     }
     size_t cont_num = ordered_contigs.size();
     sort(ordered_contigs.begin(), ordered_contigs.end());
+    // WTF: Provide you own comparator to sort in reverse order. You can definitely use lambda here.
     reverse(ordered_contigs.begin(), ordered_contigs.end());
     // WTF: Why do you need to copy here?
     // Re: OMP does not allow to use class members in parallel for shared.
     // WTF: This is irrelevant. And no OMP in the following for().
     // Re: What do you mean "irrelevant"? We need to pass this class member as a shared clause. That is forbidden by omp, so we pass a copy.
-    // Re: I can refactor to exclude all_contigs from dataset_processor class, but it is logically this class' member.
-    // Re: rewritten for more clear.
+    // WTF: Pass the pointer, it's easy, no? This you won't copy all the huge set of the contigs
     ContigInfoMap all_contigs_copy(all_contigs_);
     # pragma omp parallel for shared(all_contigs_copy, ordered_contigs) num_threads(nthreads_) schedule(dynamic,1)
     for (size_t i = 0; i < cont_num; i++) {

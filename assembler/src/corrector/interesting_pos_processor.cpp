@@ -77,6 +77,7 @@ void InterestingPositionProcessor::UpdateInterestingPositions() {
                         int coef = 1;
                         // WTF: enum! Never compare strings in hot places!
                         // Re: ooops! Here string comparison realy sucked!
+                        // WTF: Factor out get() out of 3 loops!
                         if (corr_cfg::get().strat == strategy::all_reads)
                             coef = 1;
                         else if (corr_cfg::get().strat == strategy::mapped_squared)

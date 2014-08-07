@@ -5,6 +5,7 @@
 #include "io/library.hpp"
 
 namespace corrector {
+// WTF: Enum naming style
 enum strategy{all_reads, mapped_squared, not_started, majority_only};
 struct corrector_config {
     io::DataSet<> dataset;
