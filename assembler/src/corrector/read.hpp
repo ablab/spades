@@ -4,9 +4,7 @@
  *  Created on: Jun 26, 2014
  *      Author: lab42
  */
-// WTF: Include only what you're using
-// needed
-#include "positional_read.hpp"
+
 
 #include "samtools/bam.h"
 

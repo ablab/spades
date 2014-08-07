@@ -15,17 +15,17 @@ namespace corrector {
 
 
 void ContigProcessor::ReadContig() {
-    io::FileReadStream frs(contig_file);
+    io::FileReadStream frs(contig_file_);
     io::SingleRead cur_read;
     frs >> cur_read;
     if (!frs.eof()) {
         WARN ("Non unique sequnce in one contig fasta!");
     }
     contig_name = cur_read.name();
-    contig = cur_read.GetSequenceString();
+    contig_ = cur_read.GetSequenceString();
 
-    output_contig_file = path::append_path(path::parent_path(contig_file), path::basename(contig_file) +  ".ref.fasta");
-    charts.resize(contig.length());
+    output_contig_file_ = path::append_path(path::parent_path(contig_file_), path::basename(contig_file_) +  ".ref.fasta");
+    charts_.resize(contig_.length());
 }
 
 void ContigProcessor::UpdateOneRead(const SingleSamRead &tmp, MappedSamStream &sm) {
@@ -37,31 +37,31 @@ void ContigProcessor::UpdateOneRead(const SingleSamRead &tmp, MappedSamStream &s
     if (cur_s != contig_name) {
         return;
     }
-    tmp.CountPositions(all_positions, contig.length());
+    tmp.CountPositions(all_positions, contig_.length());
     size_t error_num = 0;
 
     for (auto &pos : all_positions) {
-        if ((int) pos.first >= 0 && pos.first < contig.length()) {
-            charts[pos.first].update(pos.second);
-            if (pos.second.FoundOptimal(contig[pos.first]) != var_to_pos[(int)contig[pos.first]]) {
+        if ((int) pos.first >= 0 && pos.first < contig_.length()) {
+            charts_[pos.first].update(pos.second);
+            if (pos.second.FoundOptimal(contig_[pos.first]) != var_to_pos[(int)contig_[pos.first]]) {
                 error_num ++;
             }
         }
     }
 
-    if (error_num >= error_counts.size())
-        error_counts[error_counts.size() - 1]++;
+    if (error_num >= error_counts_.size())
+        error_counts_[error_counts_.size() - 1]++;
     else
-        error_counts[error_num]++;
+        error_counts_[error_num]++;
 }
 
 //returns: number of changed nucleotides;
 size_t ContigProcessor::UpdateOneBase(size_t i, stringstream &ss, const unordered_map<size_t, position_description> &interesting_positions) {
-    char old = (char) toupper(contig[i]);
-    size_t maxi = charts[i].FoundOptimal(contig[i]);
+    char old = (char) toupper(contig_[i]);
+    size_t maxi = charts_[i].FoundOptimal(contig_[i]);
     auto i_position = interesting_positions.find(i);
     if ( i_position != interesting_positions.end()) {
-        size_t maxj = i_position->second.FoundOptimal(contig[i]);
+        size_t maxj = i_position->second.FoundOptimal(contig_[i]);
         if (maxj != maxi) {
             DEBUG("Interesting positions differ with majority!");
             DEBUG("On position " << i << "  old: " << old << " majority: " << pos_to_var[maxi] << "interesting: " << pos_to_var[maxj]);
@@ -71,7 +71,7 @@ size_t ContigProcessor::UpdateOneBase(size_t i, stringstream &ss, const unordere
     }
     if (old != pos_to_var[maxi]) {
         DEBUG("On position " << i << " changing " << old << " to " << pos_to_var[maxi]);
-        DEBUG(charts[i].str());
+        DEBUG(charts_[i].str());
         if (maxi < Variants::Deletion) {
             ss << pos_to_var[maxi];
             return 1;
@@ -80,17 +80,17 @@ size_t ContigProcessor::UpdateOneBase(size_t i, stringstream &ss, const unordere
         } else if (maxi == Variants::Insertion) {
             string maxj = "";
             //first base before insertion;
-            size_t new_maxi = var_to_pos[(int) contig[i]];
-            int new_maxx = charts[i].votes[new_maxi];
+            size_t new_maxi = var_to_pos[(int) contig_[i]];
+            int new_maxx = charts_[i].votes[new_maxi];
             for (size_t k = 0; k < MAX_VARIANTS; k++) {
-                if (new_maxx < charts[i].votes[k] && (k != Variants::Insertion) && (k != Variants::Deletion)) {
-                    new_maxx = charts[i].votes[k];
+                if (new_maxx < charts_[i].votes[k] && (k != Variants::Insertion) && (k != Variants::Deletion)) {
+                    new_maxx = charts_[i].votes[k];
                     new_maxi = k;
                 }
             }
             ss << pos_to_var[new_maxi];
             int max_ins = 0;
-            for (const auto &ic : charts[i].insertions) {
+            for (const auto &ic : charts_[i].insertions) {
                 if (ic.second > max_ins) {
                     max_ins = ic.second;
                     maxj = ic.first;
@@ -115,9 +115,9 @@ size_t ContigProcessor::UpdateOneBase(size_t i, stringstream &ss, const unordere
 }
 
 void ContigProcessor::ProcessMultipleSamFiles() {
-    error_counts.resize(max_error_num);
-    DEBUG("working with " << sam_files.size() << " sublibs");
-    for (const auto &sf : sam_files) {
+    error_counts_.resize(kMaxErrorNum);
+    DEBUG("working with " << sam_files_.size() << " sublibs");
+    for (const auto &sf : sam_files_) {
         MappedSamStream sm(sf.first);
         while (!sm.eof()) {
             SingleSamRead tmp;
@@ -131,48 +131,48 @@ void ContigProcessor::ProcessMultipleSamFiles() {
     stringstream err_str;
     // WTF: err_str is only used for debug!
      // Re: yes. Why not?
-    for (size_t i = 0; i < error_counts.size(); i++)
-        err_str << error_counts[i] << " ";
-    size_t interesting = ipp.FillInterestingPositions(charts);
-    if (debug_info) {
+    for (size_t i = 0; i < error_counts_.size(); i++)
+        err_str << error_counts_[i] << " ";
+    size_t interesting = ipp_.FillInterestingPositions(charts_);
+    if (debug_info_) {
         INFO("Error counts for contig " << contig_name << " in thread " << omp_get_thread_num() << " : " << err_str.str());
         INFO(interesting << " positions" <<  "are in consideration "  );
     } else {
         DEBUG("Error counts for contig " << contig_name << " : " << err_str.str());
     }
-    for (const auto &sf : sam_files) {
+    for (const auto &sf : sam_files_) {
         MappedSamStream sm(sf.first);
         while (!sm.eof()) {
             unordered_map<size_t, position_description> ps;
             if (sf.second == io::LibraryType::PairedEnd || sf.second == io::LibraryType::HQMatePairs) {
                 PairedSamRead tmp;
                 sm >> tmp;
-                tmp.CountPositions(ps, contig.length());
+                tmp.CountPositions(ps, contig_.length());
             } else {
                 SingleSamRead tmp;
                 sm >> tmp;
-                tmp.CountPositions(ps, contig.length());
+                tmp.CountPositions(ps, contig_.length());
             }
             TRACE("updating interesting read..");
-            ipp.UpdateInterestingRead(ps);
+            ipp_.UpdateInterestingRead(ps);
         }
         sm.close();
     }
-    ipp.UpdateInterestingPositions();
-    unordered_map<size_t, position_description> interesting_positions = ipp.get_weights();
+    ipp_.UpdateInterestingPositions();
+    unordered_map<size_t, position_description> interesting_positions = ipp_.get_weights();
     stringstream s_new_contig;
     size_t total_changes = 0;
-    for (size_t i = 0; i < contig.length(); i++) {
-        DEBUG(charts[i].str());
+    for (size_t i = 0; i < contig_.length(); i++) {
+        DEBUG(charts_[i].str());
         total_changes += UpdateOneBase(i, s_new_contig, interesting_positions);
     }
-    if (debug_info || total_changes * 5 >  contig.length()) {
+    if (debug_info_ || total_changes * 5 >  contig_.length()) {
         INFO("Contig " << contig_name << " processed with " << total_changes << " changes");
     } else {
         DEBUG("Contig " << contig_name << " processed with " << total_changes << " changes");
     }
     contig_name = ContigRenameWithLength(contig_name, s_new_contig.str().length());
-    io::osequencestream oss(output_contig_file);
+    io::osequencestream oss(output_contig_file_);
     oss << io::SingleRead(contig_name, s_new_contig.str());
 
 }

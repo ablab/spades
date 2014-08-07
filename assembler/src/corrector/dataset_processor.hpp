@@ -25,22 +25,22 @@ struct OneContigDescription {
 typedef std::unordered_map<std::string, OneContigDescription> ContigInfoMap;
 
 class DatasetProcessor {
-    // WTF: member var names!
-    const std::string &genome_file;
-    std::string output_contig_file;
-    ContigInfoMap all_contigs;
-    std::vector<int> error_counts;
-    sam_files_type unsplitted_sam_files;
-    const std::string &work_dir;
-    std::unordered_map<std::string, std::vector<std::string> > buffered_reads;
-    size_t nthreads;
-    size_t buffered_count;
-    const size_t buff_size = 100000;
+
+    const std::string &genome_file_;
+    std::string output_contig_file_;
+    ContigInfoMap all_contigs_;
+    sam_files_type unsplitted_sam_files_;
+    const std::string &work_dir_;
+    std::unordered_map<std::string, std::vector<std::string> > buffered_reads_;
+    size_t nthreads_;
+    size_t buffered_count_;
+
+    const size_t kBuffSize = 100000;
 public:
     DatasetProcessor(const std::string &genome_file, const std::string &work_dir, const std::string &output_dir, const size_t &thread_num)
-            : genome_file(genome_file), work_dir(work_dir), nthreads(thread_num) {
-        output_contig_file = path::append_path(output_dir, "corrected_contigs.fasta");
-        buffered_count = 0;
+            : genome_file_(genome_file), work_dir_(work_dir), nthreads_(thread_num) {
+        output_contig_file_ = path::append_path(output_dir, "corrected_contigs.fasta");
+        buffered_count_ = 0;
     }
 
     void ProcessDataset();

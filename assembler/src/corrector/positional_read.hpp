@@ -5,9 +5,9 @@ namespace corrector {
 
 
 struct position_description {
-    int votes[MAX_VARIANTS];
+    int votes_[MAX_VARIANTS];
     //'A', 'C', 'G', 'T', 'N', 'D', 'I'
-    std::unordered_map<std::string, int > insertions;
+    std::unordered_map<std::string, int > insertions_;
     void update(const position_description &another);
     std::string str() const;
     size_t FoundOptimal(char current) const;
@@ -34,7 +34,7 @@ struct WeightedPositionalRead {
                 first_pos = min(first_pos, int_pos[i]);
                 last_pos = max(last_pos, int_pos[i]);
                 if (tmp != ps.end()) {
-                    if (tmp->second.votes[j] !=0) {
+                    if (tmp->second.votes_[j] !=0) {
                         positions[int_pos[i]] = j;
                         break;
                     }
