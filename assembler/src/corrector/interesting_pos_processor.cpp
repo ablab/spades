@@ -1,6 +1,8 @@
 #include "interesting_pos_processor.hpp"
 #include "config_struct.hpp"
 
+using namespace std;
+
 namespace corrector {
 size_t InterestingPositionProcessor::FillInterestingPositions(vector<position_description> &charts) {
     size_t count = 0;
@@ -63,6 +65,7 @@ void InterestingPositionProcessor::set_contig(string &ctg) {
 }
 
 void InterestingPositionProcessor::UpdateInterestingPositions() {
+    auto strat = corr_cfg::get().strat;
     for (int dir = 1; dir >= -1; dir -= 2) {
         int start_pos;
         dir == 1 ? start_pos = 0 : start_pos = (int) contig_.length() - 1;
@@ -75,16 +78,12 @@ void InterestingPositionProcessor::UpdateInterestingPositions() {
                     size_t current_variant = wr_storage_[current_read_id].positions[current_pos];
                     {
                         int coef = 1;
-                        // WTF: enum! Never compare strings in hot places!
-                        // Re: ooops! Here string comparison realy sucked!
-                        // WTF: Factor out get() out of 3 loops!
-                        if (corr_cfg::get().strat == strategy::all_reads)
+                        if (strat == Strategy::AllReads)
                             coef = 1;
-                        else if (corr_cfg::get().strat == strategy::mapped_squared)
+                        else if (strat == Strategy::MappedSquared)
                             coef = wr_storage_[current_read_id].processed_positions * wr_storage_[current_read_id].processed_positions;
-                        else if (corr_cfg::get().strat == strategy::not_started)
+                        else if (strat == Strategy::AllExceptJustStarted)
                             coef = wr_storage_[current_read_id].is_first(current_pos, dir);
-
                         interesting_weights[current_pos].votes[current_variant] += get_error_weight(
                                 wr_storage_[current_read_id].error_num ) * coef;
                     }

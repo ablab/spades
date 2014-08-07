@@ -66,7 +66,7 @@ struct PairedSamRead {
     }
     // WTF: This does not belong here    
     // Re: same as for SingleSamRead
-    int CountPositions(unordered_map<size_t, position_description> &ps, const size_t &contig_length) const;
+    int CountPositions(std::unordered_map<size_t, position_description> &ps, const size_t &contig_length) const;
 };
 }
 ;

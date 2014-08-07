@@ -7,11 +7,12 @@
 
 #include "read.hpp"
 
-#include "io/ireader.hpp"
+#include "logger/log_writers.hpp"
 
 #include <samtools/sam.h>
 #include <samtools/bam.h>
 
+#include <string>
 namespace corrector {
 
 class MappedSamStream {
@@ -26,12 +27,11 @@ public:
 
     bool is_open() const;
     bool eof() const;
-    MappedSamStream& operator>>(SingleSamRead& read);
+    MappedSamStream& operator >>(SingleSamRead& read);
     MappedSamStream& operator >>(PairedSamRead& read);
-    string get_contig_name(int i) const;
+    std::string get_contig_name(int i) const;
     void close();
     void reset();
-    io::ReadStreamStat get_stat() const;
 
 private:
     samfile_t *reader_;

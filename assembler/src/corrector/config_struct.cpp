@@ -5,6 +5,29 @@
 #include <yaml-cpp/yaml.h>
 #include <string>
 
+namespace YAML {
+template<>
+struct convert<corrector::Strategy> {
+    static bool decode(const YAML::Node &node, corrector::Strategy &rhs) {
+        std::string strategy_str = node.as<std::string>();
+        if (strategy_str == "all_reads") {
+            rhs = corrector::Strategy::AllReads;
+            return true;
+        } else if (strategy_str == "majority_only") {
+            rhs = corrector::Strategy::MajorityOnly;
+            return true;
+        } else if (strategy_str == "not_started") {
+            rhs = corrector::Strategy::AllExceptJustStarted;
+            return true;
+        } else if (strategy_str == "mapped_squared") {
+            rhs = corrector::Strategy::MappedSquared;
+            return true;
+        }
+        return false;
+    }
+};
+}
+
 namespace corrector {
 void load(corrector_config& cfg, const std::string &filename) {
     YAML::Node config = YAML::LoadFile(filename);
@@ -16,24 +39,18 @@ void load(corrector_config& cfg, const std::string &filename) {
     // Everything else is an approximation. Period. Even more, in this file you can easily find:
     // <setting id="org.eclipse.cdt.core.formatter.insert_space_after_opening_angle_bracket_in_template_arguments" value="do not insert"/>
     // So, maybe you're not using it after all?
+
+    // Re: I _use_ this style file. Seems that such string is too complicated to eclipse formatter parser.
+    // cfg.work_dir = config["work_dir"].as<std::string>() is autoformatted correctly, but
+    // cfg.work_dir = config["work_dir"].as<std::string>(".") is not
+
     cfg.work_dir = config["work_dir"].as<std::string>(".");
     cfg.output_dir = config["output_dir"].as<std::string>(".");
     cfg.max_nthreads = config["max_nthreads"].as<unsigned>();
-    // Fix number of threads according to OMP capabilities.
+
     cfg.max_nthreads = std::min(cfg.max_nthreads, (unsigned) omp_get_max_threads());
-    // WTF: Add proper serialization / deserialization of the enum. Learn about enum classes. There are plenty of examples around.
-    std::string strategy_str = config["strategy"].as<std::string>(".");
-    if (strategy_str == "all_reads")
-        cfg.strat = strategy::all_reads;
-    else if (strategy_str == "majority_only")
-        cfg.strat = strategy::majority_only;
-    else if (strategy_str == "not_started")
-        cfg.strat= strategy::not_started;
-    else
-        //default strat
-        cfg.strat= strategy::mapped_squared;
+    cfg.strat = config["strategy"].as<Strategy>();
     cfg.bwa = config["bwa"].as<std::string>(".");
-// Inform OpenMP runtime about this :)
     omp_set_num_threads(cfg.max_nthreads);
 }
 }

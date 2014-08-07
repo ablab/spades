@@ -6,18 +6,25 @@
  */
 #pragma once
 
-// WTF: Why it's here? Include *only* what you're using
-#include "standard_base.hpp"
+#include <sys/types.h>
 
-// WTF: Make it out of sync: introduce the last state (with a value) to determine the max amount
-#define MAX_VARIANTS 7
-enum Variants {NuclA, NuclC, NuclT, NuclG, Undefined, Deletion, Insertion};
+enum Variants {
+    NuclA = 0,
+    NuclC = 1,
+    NuclT = 2,
+    NuclG = 3,
+    Undefined = 4,
+    Deletion = 5,
+    Insertion = 6,
+    VariantsNumber = 7
+};
+#define MAX_VARIANTS Variants::VariantsNumber
 
 namespace corrector {
 // WTF: constexpr
-const char pos_to_var[MAX_VARIANTS] = { 'A', 'C', 'G', 'T', 'N', 'D', 'I' };
-const size_t var_to_pos[128] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 5, 0, 0, 2, 0, 6, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 1, 5, 0, 0, 2, 0, 6, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+constexpr char pos_to_var[MAX_VARIANTS] = { 'A', 'C', 'G', 'T', 'N', 'D', 'I' };
+constexpr size_t var_to_pos[128] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 5, 0, 0, 2, 0, 6, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 1, 5, 0, 0, 2, 0, 6, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 }
 ;

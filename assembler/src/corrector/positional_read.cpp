@@ -1,4 +1,6 @@
 #include "positional_read.hpp"
+
+#include <sstream>
 using namespace std;
 
 namespace corrector {

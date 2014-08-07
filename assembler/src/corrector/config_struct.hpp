@@ -5,14 +5,18 @@
 #include "io/library.hpp"
 
 namespace corrector {
-// WTF: Enum naming style
-enum strategy{all_reads, mapped_squared, not_started, majority_only};
+enum class Strategy {
+    AllReads = 1,
+    MappedSquared = 2,
+    AllExceptJustStarted = 3,
+    MajorityOnly = 4
+};
 struct corrector_config {
     io::DataSet<> dataset;
     std::string work_dir;
     std::string output_dir;
     unsigned max_nthreads;
-    strategy strat;
+    Strategy strat;
     std::string bwa;
 };
 

@@ -25,7 +25,7 @@ class InterestingPositionProcessor {
 public:
     InterestingPositionProcessor() {
     }
-    void set_contig(string &ctg);
+    void set_contig(std::string &ctg);
     inline int get_error_weight(size_t i) const {
         if (i >= kMaxErrorCount)
             return 0;
@@ -39,13 +39,13 @@ public:
             return is_interesting_[position];
     }
 
-    unordered_map<size_t, position_description> get_weights() const {
+    std::unordered_map<size_t, position_description> get_weights() const {
         return changed_weights_;
     }
     void UpdateInterestingRead(const PositionDescriptionMap &ps);
     void UpdateInterestingPositions();
 
-    size_t FillInterestingPositions(vector<position_description> &charts);
+    size_t FillInterestingPositions(std::vector<position_description> &charts);
 
 };
 }

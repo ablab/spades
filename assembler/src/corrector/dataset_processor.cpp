@@ -1,7 +1,6 @@
 #include "dataset_processor.hpp"
 #include "include.hpp"
 #include "contig_processor.hpp"
-#include "utils.hpp"
 #include "config_struct.hpp"
 
 #include "io/file_reader.hpp"
@@ -12,29 +11,28 @@
 #include <iostream>
 #include <unistd.h>
 
-
 using namespace std;
-namespace corrector {
 
+namespace corrector {
 // WTF: Why it's not static?
 inline std::string GetLibDir(const size_t lib_count) {
-    return path::append_path(corr_cfg::get().work_dir , "lib" + to_string(lib_count));
+    return path::append_path(corr_cfg::get().work_dir, "lib" + to_string(lib_count));
 }
 
 void DatasetProcessor::SplitGenome(const string &genome_splitted_dir) {
     io::FileReadStream frs(genome_file_);
     // WTF: Make it loop temporary
     io::SingleRead cur_read;
-    while (!frs.eof()){
+    while (!frs.eof()) {
         frs >> cur_read;
         string contig_name = cur_read.name();
         string contig_seq = cur_read.GetSequenceString();
         if (all_contigs_.find(contig_name) != all_contigs_.end()) {
             WARN("Duplicated contig names! Multiple contigs with name" << contig_name);
         }
-        string full_path = path::append_path(genome_splitted_dir , contig_name + ".fasta");
+        string full_path = path::append_path(genome_splitted_dir, contig_name + ".fasta");
         string out_full_path = path::append_path(genome_splitted_dir, contig_name + ".ref.fasta");
-        string sam_filename =  path::append_path(genome_splitted_dir, contig_name + ".pair.sam");
+        string sam_filename = path::append_path(genome_splitted_dir, contig_name + ".pair.sam");
         // WTF: Use brace initialization
         all_contigs_[contig_name].input_contig_filename = full_path;
         all_contigs_[contig_name].output_contig_filename = out_full_path;
@@ -50,7 +48,8 @@ void DatasetProcessor::SplitGenome(const string &genome_splitted_dir) {
 //contigs - set of aligned contig names
 void DatasetProcessor::GetAlignedContigs(const string &read, set<string> &contigs) const {
     // WTF: Use split from Boost
-    vector<string> arr = split(read, '\t');
+    vector < string > arr;
+    boost::split(arr, read, boost::is_any_of("\t"));
     if (arr.size() > 5) {
         if (arr[2] != "*" && stoi(arr[4]) > 0) {
 // here can be multuple aligned parsing if neeeded;
@@ -67,13 +66,13 @@ void DatasetProcessor::SplitSingleLibrary(const string &all_reads_filename, cons
         // Re: because of code style defined in ext/eclipse/gsgc.xml
         // WTF: You're not using it properly
         // fixed here
-        set<string> contigs;
+        set < string > contigs;
         string r1;
         getline(fs, r1);
         if (r1[0] == '@')
             continue;
         GetAlignedContigs(r1, contigs);
-        for (auto  &contig : contigs) {
+        for (auto &contig : contigs) {
             VERIFY_MSG(all_contigs_.find(contig) != all_contigs_.end(), "wrong contig name in SAM file header: " + contig);
             BufferedOutputRead(r1, contig, lib_count);
         }
@@ -105,7 +104,7 @@ void DatasetProcessor::BufferedOutputRead(const string &read, const string &cont
 void DatasetProcessor::SplitPairedLibrary(const string &all_reads_filename, const size_t lib_count) {
     ifstream fs(all_reads_filename);
     while (!fs.eof()) {
-        set<string> contigs;
+        set < string > contigs;
         string r1;
         string r2;
         getline(fs, r1);
@@ -128,15 +127,15 @@ void DatasetProcessor::SplitPairedLibrary(const string &all_reads_filename, cons
 string DatasetProcessor::RunPairedBwa(const string &left, const string &right, const size_t lib) const {
     string cur_dir = GetLibDir(lib);
     if (!path::make_dir(cur_dir)) {
-        WARN("Failed to create directory " << cur_dir<< ", skipping sublib");
+        WARN("Failed to create directory " << cur_dir << ", skipping sublib");
         return "";
     }
     int run_res = 0;
-    string tmp1_sai_filename = path::append_path(cur_dir , "tmp1.sai");
-    string tmp2_sai_filename = path::append_path(cur_dir , "tmp2.sai");
-    string tmp_sam_filename = path::append_path(cur_dir , "tmp.sam");
-    string isize_txt_filename = path::append_path(cur_dir , "isize.txt");
-    string tmp_file =  path::append_path(cur_dir , "bwa.flood");
+    string tmp1_sai_filename = path::append_path(cur_dir, "tmp1.sai");
+    string tmp2_sai_filename = path::append_path(cur_dir, "tmp2.sai");
+    string tmp_sam_filename = path::append_path(cur_dir, "tmp.sam");
+    string isize_txt_filename = path::append_path(cur_dir, "isize.txt");
+    string tmp_file = path::append_path(cur_dir, "bwa.flood");
 
     string index_line = corr_cfg::get().bwa + " index " + "-a " + "is " + genome_file_ + " " + " 2>" + tmp_file;
     INFO("Running bwa index ...: " << index_line);
@@ -146,11 +145,11 @@ string DatasetProcessor::RunPairedBwa(const string &left, const string &right, c
         return "";
     }
     string nthreads_str = to_string(nthreads_);
-    string left_line = corr_cfg::get().bwa + " aln " + genome_file_ + " " + left + " -t " + nthreads_str + " -O 7 -E 2 -k 3 -n 0.08 -q 15 > " + tmp1_sai_filename
-            + " 2>" + tmp_file;
+    string left_line = corr_cfg::get().bwa + " aln " + genome_file_ + " " + left + " -t " + nthreads_str + " -O 7 -E 2 -k 3 -n 0.08 -q 15 > "
+            + tmp1_sai_filename + " 2>" + tmp_file;
 
-    string right_line = corr_cfg::get().bwa + " aln " + genome_file_ + " " + right + " -t " + nthreads_str + " -O 7 -E 2 -k 3 -n 0.08 -q 15 > " + tmp2_sai_filename
-            + " 2>" + tmp_file;
+    string right_line = corr_cfg::get().bwa + " aln " + genome_file_ + " " + right + " -t " + nthreads_str + " -O 7 -E 2 -k 3 -n 0.08 -q 15 > "
+            + tmp2_sai_filename + " 2>" + tmp_file;
     INFO("Running bwa aln ...: " << left_line);
     int res1 = system(left_line.c_str());
     INFO("Running bwa aln ...: " << right_line);
@@ -180,13 +179,13 @@ string DatasetProcessor::RunSingleBwa(const string &single, const size_t lib) co
     int run_res = 0;
     string cur_dir = GetLibDir(lib);
     if (!path::make_dir(cur_dir)) {
-        WARN("Failed to create directory " << cur_dir<< ", skipping sublib");
+        WARN("Failed to create directory " << cur_dir << ", skipping sublib");
         return "";
     }
-    string tmp_sai_filename = path::append_path(cur_dir , "tmp1.sai");
-    string tmp_sam_filename = path::append_path(cur_dir , "tmp.sam");
-    string isize_txt_filename = path::append_path(cur_dir , "isize.txt");
-    string tmp_file =  path::append_path(cur_dir , "bwa.flood");
+    string tmp_sai_filename = path::append_path(cur_dir, "tmp1.sai");
+    string tmp_sam_filename = path::append_path(cur_dir, "tmp.sam");
+    string isize_txt_filename = path::append_path(cur_dir, "isize.txt");
+    string tmp_file = path::append_path(cur_dir, "bwa.flood");
 
     string index_line = corr_cfg::get().bwa + " index " + "-a " + "is " + genome_file_ + " 2 " + "2>" + tmp_file;
     INFO("Running bwa index ...: " << index_line);
@@ -241,9 +240,7 @@ void DatasetProcessor::ProcessDataset() {
     for (size_t i = 0; i < corr_cfg::get().dataset.lib_count(); ++i) {
         const auto& dataset = corr_cfg::get().dataset[i];
         auto lib_type = dataset.type();
-        if (lib_type == io::LibraryType::PairedEnd ||
-            lib_type == io::LibraryType::HQMatePairs ||
-            lib_type == io::LibraryType::SingleReads) {
+        if (lib_type == io::LibraryType::PairedEnd || lib_type == io::LibraryType::HQMatePairs || lib_type == io::LibraryType::SingleReads) {
             for (auto iter = dataset.paired_begin(); iter != dataset.paired_end(); iter++) {
                 INFO("Processing paired sublib of number " << lib_num);
                 string left = iter->first;
@@ -259,7 +256,7 @@ void DatasetProcessor::ProcessDataset() {
                     WARN("Failed to align paired reads " << left << " and " << right);
                 }
             }
-            for (auto iter = dataset.single_begin(); iter !=dataset.single_end(); iter++) {
+            for (auto iter = dataset.single_begin(); iter != dataset.single_end(); iter++) {
                 INFO("Processing single sublib of number " << lib_num);
                 string left = *iter;
                 INFO(left);
@@ -282,19 +279,19 @@ void DatasetProcessor::ProcessDataset() {
         ordered_contigs.push_back(make_pair(ac.second.contig_length, ac.first));
     }
     size_t cont_num = ordered_contigs.size();
-    sort(ordered_contigs.begin(), ordered_contigs.end());
-    // WTF: Provide you own comparator to sort in reverse order. You can definitely use lambda here.
-    reverse(ordered_contigs.begin(), ordered_contigs.end());
-    // WTF: Why do you need to copy here?
-    // Re: OMP does not allow to use class members in parallel for shared.
-    // WTF: This is irrelevant. And no OMP in the following for().
-    // Re: What do you mean "irrelevant"? We need to pass this class member as a shared clause. That is forbidden by omp, so we pass a copy.
-    // WTF: Pass the pointer, it's easy, no? This you won't copy all the huge set of the contigs
-    ContigInfoMap all_contigs_copy(all_contigs_);
-    # pragma omp parallel for shared(all_contigs_copy, ordered_contigs) num_threads(nthreads_) schedule(dynamic,1)
+    sort(ordered_contigs.begin(), ordered_contigs.end(), std::greater<pair<size_t, string> >() );
+    auto all_contigs_ptr = &all_contigs_;
+# pragma omp parallel for shared(all_contigs_ptr, ordered_contigs) num_threads(nthreads_) schedule(dynamic,1)
     for (size_t i = 0; i < cont_num; i++) {
-        ContigProcessor pc(all_contigs_copy[ordered_contigs[i].second].sam_filenames, all_contigs_copy[ordered_contigs[i].second].input_contig_filename);
-        pc.ProcessMultipleSamFiles();
+        bool long_enough = (*all_contigs_ptr)[ordered_contigs[i].second].contig_length > kMinContigLengthForInfo;
+        ContigProcessor pc((*all_contigs_ptr)[ordered_contigs[i].second].sam_filenames, (*all_contigs_ptr)[ordered_contigs[i].second].input_contig_filename);
+        size_t changes = pc.ProcessMultipleSamFiles();
+        if (long_enough) {
+#pragma omp critical
+            {
+                INFO("Contig " << ordered_contigs[i].second << " processed with " << changes << " changes in thread " << omp_get_thread_num());
+            }
+        }
     }
     INFO("Gluing processed contigs");
     GlueSplittedContigs(output_contig_file_);

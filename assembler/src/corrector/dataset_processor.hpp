@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utils.hpp"
+#include "path_helper.hpp"
 
 #include "io/file_reader.hpp"
 #include "path_helper.hpp"
@@ -36,6 +36,7 @@ class DatasetProcessor {
     size_t buffered_count_;
 
     const size_t kBuffSize = 100000;
+    const size_t kMinContigLengthForInfo = 20000;
 public:
     DatasetProcessor(const std::string &genome_file, const std::string &work_dir, const std::string &output_dir, const size_t &thread_num)
             : genome_file_(genome_file), work_dir_(work_dir), nthreads_(thread_num) {

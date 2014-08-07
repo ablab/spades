@@ -4,7 +4,6 @@
 // Re: include.hpp IS used, utils under discussion
 // Rename it to something more useful then.
 #include "include.hpp"
-#include "utils.hpp"
 
 #include "io/ireader.hpp"
 #include "io/osequencestream.hpp"
@@ -12,8 +11,11 @@
 #include "io/single_read.hpp"
 #include "path_helper.hpp"
 
-namespace corrector {
+#include <boost/algorithm/string.hpp>
 
+using namespace std;
+
+namespace corrector {
 
 void ContigProcessor::ReadContig() {
     io::FileReadStream frs(contig_file_);
@@ -22,13 +24,13 @@ void ContigProcessor::ReadContig() {
     if (!frs.eof()) {
 #pragma omp critical
         {
-            WARN ("Non unique sequnce in one contig fasta!");
+            WARN("Non unique sequnce in one contig fasta!");
         }
     }
     contig_name_ = cur_read.name();
     contig_ = cur_read.GetSequenceString();
 
-    output_contig_file_ = path::append_path(path::parent_path(contig_file_), path::basename(contig_file_) +  ".ref.fasta");
+    output_contig_file_ = path::append_path(path::parent_path(contig_file_), path::basename(contig_file_) + ".ref.fasta");
     charts_.resize(contig_.length());
 }
 
@@ -47,8 +49,8 @@ void ContigProcessor::UpdateOneRead(const SingleSamRead &tmp, MappedSamStream &s
     for (auto &pos : all_positions) {
         if ((int) pos.first >= 0 && pos.first < contig_.length()) {
             charts_[pos.first].update(pos.second);
-            if (pos.second.FoundOptimal(contig_[pos.first]) != var_to_pos[(int)contig_[pos.first]]) {
-                error_num ++;
+            if (pos.second.FoundOptimal(contig_[pos.first]) != var_to_pos[(int) contig_[pos.first]]) {
+                error_num++;
             }
         }
     }
@@ -60,16 +62,17 @@ void ContigProcessor::UpdateOneRead(const SingleSamRead &tmp, MappedSamStream &s
 }
 
 //returns: number of changed nucleotides;
-size_t ContigProcessor::UpdateOneBase(size_t i, stringstream &ss, const unordered_map<size_t, position_description> &interesting_positions) {
+size_t ContigProcessor::UpdateOneBase(size_t i, stringstream &ss, const unordered_map<size_t, position_description> &interesting_positions) const{
     char old = (char) toupper(contig_[i]);
+    auto strat = corr_cfg::get().strat;
     size_t maxi = charts_[i].FoundOptimal(contig_[i]);
     auto i_position = interesting_positions.find(i);
-    if ( i_position != interesting_positions.end()) {
+    if (i_position != interesting_positions.end()) {
         size_t maxj = i_position->second.FoundOptimal(contig_[i]);
         if (maxj != maxi) {
             DEBUG("Interesting positions differ with majority!");
             DEBUG("On position " << i << "  old: " << old << " majority: " << pos_to_var[maxi] << "interesting: " << pos_to_var[maxj]);
-            if (corr_cfg::get().strat != strategy::majority_only)
+            if (strat != Strategy::MajorityOnly)
                 maxi = maxj;
         }
     }
@@ -118,7 +121,7 @@ size_t ContigProcessor::UpdateOneBase(size_t i, stringstream &ss, const unordere
     }
 }
 
-void ContigProcessor::ProcessMultipleSamFiles() {
+size_t ContigProcessor::ProcessMultipleSamFiles() {
     error_counts_.resize(kMaxErrorNum);
     for (const auto &sf : sam_files_) {
         MappedSamStream sm(sf.first);
@@ -131,20 +134,8 @@ void ContigProcessor::ProcessMultipleSamFiles() {
         sm.close();
     }
 
-    stringstream err_str;
-    // WTF: err_str is only used for debug!
-     // Re: yes. Why not?
-    // WTF: No need to *always* create this junk
-    for (size_t i = 0; i < error_counts_.size(); i++)
-        err_str << error_counts_[i] << " ";
     size_t interesting = ipp_.FillInterestingPositions(charts_);
-    if (debug_info_) {
-#pragma omp critical
-        {
-            INFO("Error counts for contig " << contig_name_ << " in thread " << omp_get_thread_num() << " : " << err_str.str());
-            INFO(interesting << " positions" <<  " are in consideration "  );
-        }
-    }
+    DEBUG("Interesting size : " << interesting);
     for (const auto &sf : sam_files_) {
         MappedSamStream sm(sf.first);
         while (!sm.eof()) {
@@ -169,14 +160,9 @@ void ContigProcessor::ProcessMultipleSamFiles() {
     for (size_t i = 0; i < contig_.length(); i++) {
         total_changes += UpdateOneBase(i, s_new_contig, interesting_positions);
     }
-    if (debug_info_ || total_changes * 5 >  contig_.length()) {
-#pragma omp critical
-        {
-            INFO("Contig " << contig_name_ << " processed with " << total_changes << " changes");
-        }
-    }
-    auto contig_name_splitted = split(contig_name_, '_');
-    if (contig_name_splitted.size() >= 8 ) {
+    vector < string > contig_name_splitted;
+    boost::split(contig_name_splitted, contig_name_, boost::is_any_of("_"));
+    if (contig_name_splitted.size() >= 8) {
         io::osequencestream_with_manual_node_id oss(output_contig_file_);
         oss.setNodeID(std::stoi(contig_name_splitted[1]));
         oss.setCoverage(std::stod(contig_name_splitted[5]));
@@ -185,8 +171,8 @@ void ContigProcessor::ProcessMultipleSamFiles() {
     } else {
         io::osequencestream oss(output_contig_file_);
         oss << io::SingleRead(contig_name_, s_new_contig.str());
-
     }
+    return total_changes;
     //contig_name = ContigRenameWithLength(contig_name, s_new_contig.str().length());
 }
 

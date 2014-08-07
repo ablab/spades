@@ -15,7 +15,6 @@ add_executable(corrector
 	positional_read.cpp
 	read.cpp
 	sam_reader.cpp
-	utils.cpp
 	interesting_pos_processor.cpp
 	contig_processor.cpp
 	dataset_processor.cpp

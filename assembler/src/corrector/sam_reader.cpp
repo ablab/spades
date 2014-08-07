@@ -67,8 +67,5 @@ void MappedSamStream::open() {
         eof_ = (0 >= tmp);
     }
 }
-io::ReadStreamStat MappedSamStream::get_stat() const {
-    return io::ReadStreamStat();
-}
 
 }
