@@ -6,7 +6,7 @@ OPTION(BUILD_SHARED_LIBS "Build package with shared libraries." OFF)
 add_definitions(-D_FILE_OFFSET_BITS=64 -D_USE_KNETFILE -DMD5SUM_MAIN -D_CURSES_LIB=1)
 
 add_library (bam
- bgzf.c
+# bgzf.c
  kstring.c
  bam_aux.c
  bam.c
@@ -25,6 +25,8 @@ add_library (bam
  bam_reheader.c
  kprobaln.c
  bam_cat.c) 
+#because of bgzf redefinition
+target_link_libraries(BamTools)
 
 add_library (samtools
  bam_tview.c
