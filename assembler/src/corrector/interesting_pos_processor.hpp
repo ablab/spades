@@ -33,10 +33,7 @@ public:
             return error_weight[i];
     }
     inline bool IsInteresting(size_t position) const {
-        if (position >= contig_.length())
-            return 0;
-        else
-            return is_interesting_[position];
+        return is_interesting_[position];
     }
 
     std::unordered_map<size_t, position_description> get_weights() const {
