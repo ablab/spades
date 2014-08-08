@@ -5,14 +5,6 @@ using namespace std;
 
 namespace corrector {
 
-// WTF: This certainly need to be inside a header, so it can be inlined
-void position_description::update(const position_description &another) {
-    for (size_t i = 0; i < MAX_VARIANTS; i++)
-        votes[i] += another.votes[i];
-    for (auto &ins : another.insertions)
-        insertions[ins.first] += ins.second;
-}
-
 string position_description::str() const {
     stringstream ss;
     for (int i = 0; i < MAX_VARIANTS; i++) {
@@ -22,24 +14,10 @@ string position_description::str() const {
     return ss.str();
 }
 
-// WTF: This certainly need to be inside a header, so it can be inlined
-size_t position_description::FoundOptimal(char current) const {
-    size_t maxi = var_to_pos[(size_t) current];
-    int maxx = votes[maxi];
-    for (size_t j = 0; j < MAX_VARIANTS; j++) {
-        //1.5 because insertion goes _after_ match
-        if (maxx < votes[j] || (j == Variants::Insertion && maxx * 2 < votes[j] * 3)) {
-            maxx = votes[j];
-            maxi = j;
-        }
-    }
-    return maxi;
-}
 void position_description::clear() {
     for (size_t i = 0; i < MAX_VARIANTS; i++) {
         votes[i] = 0;
         insertions.clear();
     }
 }
-}
-;
+};

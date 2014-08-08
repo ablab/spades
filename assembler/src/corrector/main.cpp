@@ -53,6 +53,5 @@ int main(int argc, char** argv) {
 
     INFO("Correcting time: " << hours << " hours " << mins << " minutes " << secs << " seconds");
 
-    // OK
     return 0;
 }

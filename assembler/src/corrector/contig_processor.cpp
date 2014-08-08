@@ -21,8 +21,7 @@ void ContigProcessor::ReadContig() {
     if (!frs.eof()) {
 #pragma omp critical
         {
-            // WTF: Why this is warning and not a hard error instead?
-            WARN("Non unique sequnce in one contig fasta!");
+            ERROR("Non unique sequnce in one contig fasta!");
         }
     }
     contig_name_ = cur_read.name();
@@ -37,18 +36,14 @@ void ContigProcessor::UpdateOneRead(const SingleSamRead &tmp, MappedSamStream &s
     if (tmp.get_contig_id() < 0) {
         return;
     }
-    // WTF: Why do you need to make a copy here?
-    string cur_s = sm.get_contig_name(tmp.get_contig_id());
-    if (cur_s != contig_name_) {
+    auto cur_s = sm.get_contig_name(tmp.get_contig_id());
+    if (contig_name_.compare(cur_s) != 0) {
         return;
     }
     tmp.CountPositions(all_positions, contig_.length());
     size_t error_num = 0;
 
     for (auto &pos : all_positions) {
-        // WTF: It seems that you *always* consider such positions
-        // everywhere. Simply make sure that CountPositions always fills stuff
-        // within this range.
         if ((int) pos.first >= 0 && pos.first < contig_.length()) {
             charts_[pos.first].update(pos.second);
             if (pos.second.FoundOptimal(contig_[pos.first]) != var_to_pos[(int) contig_[pos.first]]) {
@@ -113,7 +108,7 @@ size_t ContigProcessor::UpdateOneBase(size_t i, stringstream &ss, const unordere
                 return (int) maxj.length();
             }
         } else {
-            //something starnge happened
+            //something strange happened
             WARN("While processing base " << i << " unknown decision was made");
             return 0;
         }

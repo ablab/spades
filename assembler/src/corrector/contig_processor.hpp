@@ -42,8 +42,6 @@ public:
 private:
     void ReadContig();
 
-    // WTF: Is this function const?
-    // Re: No. It updates internal structures with read data.
     void UpdateOneRead(const SingleSamRead &tmp, MappedSamStream &sm);
     //returns: number of changed nucleotides;
 

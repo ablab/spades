@@ -80,7 +80,7 @@ int SingleSamRead::CountPositions(unordered_map<size_t, position_description> &p
             size_t cur = var_to_pos[(int) bam_nt16_rev_table[bam1_seqi(seq, i - deleted)]];
             if (ind >= contig_length)
                 continue;
-            ps[ind].votes[cur] = ps[ind].votes[cur] + mate;  //t_mate
+            ps[ind].votes[cur] = ps[ind].votes[cur] + mate;
 
         } else {
             if (to_skip.find(cur_state) != to_skip.end()) {
@@ -89,7 +89,7 @@ int SingleSamRead::CountPositions(unordered_map<size_t, position_description> &p
                         size_t ind = i + position - skipped - 1;
                         if (ind >= contig_length)
                             break;
-                        ps[i + position - skipped - 1].votes[Variants::Insertion] += mate;
+                        ps[ind].votes[Variants::Insertion] += mate;
                     }
                     insertion_string += bam_nt16_rev_table[bam1_seqi(seq, i - deleted)];
                 }

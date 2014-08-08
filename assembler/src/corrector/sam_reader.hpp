@@ -29,9 +29,7 @@ public:
     bool eof() const;
     MappedSamStream& operator >>(SingleSamRead& read);
     MappedSamStream& operator >>(PairedSamRead& read);
-    // WTF: Why i is int here? Can you ask for -1?
-    // Why do you need to return a copy here? You're not supposed to change it, return const reference
-    std::string get_contig_name(int i) const;
+const char* get_contig_name(size_t i) const;
     void close();
     void reset();
 

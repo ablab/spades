@@ -35,8 +35,6 @@ struct SingleSamRead {
     std::string get_name() const;
     std::string get_seq() const;
 
-    // WTF: This does not belong here
-    // Re: Now it knows nothing about the contig, and depends on read and length parameter only. I'm still sure this should be here- bam_1 stuff should be localized.
     int CountPositions(std::unordered_map<size_t, position_description> &ps, const size_t &contig_length) const;
     SingleSamRead() {
         data_ = bam_init1();
@@ -64,8 +62,6 @@ struct PairedSamRead {
         r1 = a1;
         r2 = a2;
     }
-    // WTF: This does not belong here    
-    // Re: same as for SingleSamRead
     int CountPositions(std::unordered_map<size_t, position_description> &ps, const size_t &contig_length) const;
 };
 }

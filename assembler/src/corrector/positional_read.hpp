@@ -15,17 +15,33 @@ struct position_description {
     int votes[MAX_VARIANTS];
     //'A', 'C', 'G', 'T', 'N', 'D', 'I'
     std::unordered_map<std::string, int > insertions;
-    void update(const position_description &another);
+    void update(const position_description &another) {
+        for (size_t i = 0; i < MAX_VARIANTS; i++)
+            votes[i] += another.votes[i];
+        for (auto &ins : another.insertions)
+            insertions[ins.first] += ins.second;
+    }
+
+    size_t FoundOptimal(char current) const {
+        size_t maxi = var_to_pos[(size_t) current];
+        int maxx = votes[maxi];
+        for (size_t j = 0; j < MAX_VARIANTS; j++) {
+            //1.5 because insertion goes _after_ match
+            if (maxx < votes[j] || (j == Variants::Insertion && maxx * 2 < votes[j] * 3)) {
+                maxx = votes[j];
+                maxi = j;
+            }
+        }
+        return maxi;
+    }
+
+
     std::string str() const;
-    size_t FoundOptimal(char current) const;
     void clear() ;
 };
 typedef std::unordered_map <size_t, position_description> PositionDescriptionMap;
 
 struct WeightedPositionalRead {
-    // WTF: member names!
-    //Re: What do you mean?
-    //Re: "Data members in structs should be named like regular variables without the trailing underscores that data members in classes have.
     std::unordered_map<size_t, size_t> positions;
     int error_num;
     int non_interesting_error_num;
