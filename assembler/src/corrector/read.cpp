@@ -30,6 +30,7 @@ int SingleSamRead::CountPositions(unordered_map<size_t, position_description> &p
     size_t l_read = get_data_len();
     size_t l_cigar = get_cigar_len();
 
+    // WTF: No need to have set here when you simply need to compare 3 chars!
     set<char> to_skip = { 'S', 'I', 'H' };
     int aligned_length = 0;
     uint32_t *cigar = bam1_cigar(data_);
