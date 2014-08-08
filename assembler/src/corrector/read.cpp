@@ -3,8 +3,6 @@
 
 #include "logger/log_writers.hpp"
 
-#include <set>
-
 using namespace std;
 
 
@@ -30,8 +28,6 @@ int SingleSamRead::CountPositions(unordered_map<size_t, position_description> &p
     size_t l_read = get_data_len();
     size_t l_cigar = get_cigar_len();
 
-    // WTF: No need to have set here when you simply need to compare 3 chars!
-    set<char> to_skip = { 'S', 'I', 'H' };
     int aligned_length = 0;
     uint32_t *cigar = bam1_cigar(data_);
     //* in cigar;
@@ -83,7 +79,7 @@ int SingleSamRead::CountPositions(unordered_map<size_t, position_description> &p
             ps[ind].votes[cur] = ps[ind].votes[cur] + mate;
 
         } else {
-            if (to_skip.find(cur_state) != to_skip.end()) {
+            if (cur_state == 'I' || cur_state == 'H' || cur_state == 'S' ) {
                 if (cur_state == 'I') {
                     if (insertion_string == "") {
                         size_t ind = i + position - skipped - 1;
