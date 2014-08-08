@@ -354,13 +354,21 @@ void KMerCoverageModel::Fit() {
   }
 
   // See, if we have sane ErrorThreshold_ and go down to something convervative, if not.
-  if (converged_ && ErrorThreshold_ > mean_coverage_ - sd_coverage_) {
-    ErrorThreshold_ = std::max(Valley_, (size_t)math::round(mean_coverage_ - 2*sd_coverage_));
-    INFO("Threshold adjusted to: " << ErrorThreshold_);
-  } else if (!converged_) {
-    ErrorThreshold_ = Valley_;
-    LowThreshold_ = 1;
-    WARN("Failed to determine erroneous kmer threshold. Threshold set to: " << ErrorThreshold_);
+  if (converged_) {
+      INFO("Preliminary threshold calculated as: " << ErrorThreshold_);
+      if (mean_coverage_ > 2*sd_coverage_)
+          ErrorThreshold_ = std::max(Valley_ + (size_t)(mean_coverage_ - Valley_) / 2,
+                                     std::min(ErrorThreshold_, (size_t)math::round(mean_coverage_ - 2*sd_coverage_)));
+      else if (Valley_ < mean_coverage_)
+          ErrorThreshold_ = Valley_ + (size_t)(mean_coverage_ - Valley_) / 2;
+      else
+          ErrorThreshold_ = Valley_;
+
+      INFO("Threshold adjusted to: " << ErrorThreshold_);
+  } else {
+      ErrorThreshold_ = Valley_;
+      LowThreshold_ = 1;
+      WARN("Failed to determine erroneous kmer threshold. Threshold set to: " << ErrorThreshold_);
   }
 
   // Now the bonus: estimate the genome size!
