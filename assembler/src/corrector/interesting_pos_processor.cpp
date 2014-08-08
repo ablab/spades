@@ -25,7 +25,10 @@ size_t InterestingPositionProcessor::FillInterestingPositions(vector<position_de
             DEBUG("Adding interesting position: " << i << " " << charts[i].str());
             tmp_pos.insert((int) i);
             for (int j = -kAnchorNum; j <= kAnchorNum; j++) {
-                tmp_pos.insert((int) (i / kAnchorGap + j) * kAnchorGap);
+                int additional = (int) (i / kAnchorGap + j) * kAnchorGap;
+                if (additional >= 0 && additional < (int) contig_.length()) {
+                    tmp_pos.insert((int) (i / kAnchorGap + j) * kAnchorGap);
+                }
             }
         }
     }
