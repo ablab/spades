@@ -5,6 +5,7 @@ using namespace std;
 
 namespace corrector {
 
+// WTF: This certainly need to be inside a header, so it can be inlined
 void position_description::update(const position_description &another) {
     for (size_t i = 0; i < MAX_VARIANTS; i++)
         votes[i] += another.votes[i];
@@ -21,6 +22,7 @@ string position_description::str() const {
     return ss.str();
 }
 
+// WTF: This certainly need to be inside a header, so it can be inlined
 size_t position_description::FoundOptimal(char current) const {
     size_t maxi = var_to_pos[(size_t) current];
     int maxx = votes[maxi];

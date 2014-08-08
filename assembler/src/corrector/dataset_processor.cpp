@@ -215,6 +215,9 @@ void DatasetProcessor::PrepareContigDirs(const size_t lib_count) {
         auto contig_name = ac.first;
         string header = "@SQ\tSN:" + contig_name + "\tLN:" + to_string(all_contigs_[contig_name].contig_length);
         BufferedOutputRead(header, contig_name, lib_count);
+        // WTF: Use path_helper. Check ALL (twice, or, better 5 times) the
+        // places where you're deadling with names and replace the usage, not
+        // only thouse I pointed to!
         string out_name = out_dir + "/" + ac.first + ".sam";
         ac.second.sam_filenames.push_back(make_pair(out_name, unsplitted_sam_files_[lib_count].second));
     }
