@@ -29,13 +29,12 @@ size_t InterestingPositionProcessor::FillInterestingPositions(vector<position_de
             }
         }
     }
-    for (const auto &pos : tmp_pos)
-        if (pos >= 0 && pos < (int) contig_.length()) {
-            DEBUG("position " << pos << " is interesting ");
-            DEBUG(charts[pos].str());
-            is_interesting_[pos] = 1;
-            count++;
-        }
+    for (const auto &pos : tmp_pos) {
+        DEBUG("position " << pos << " is interesting ");
+        DEBUG(charts[pos].str());
+        is_interesting_[pos] = 1;
+        count++;
+    }
     return count;
 }
 
