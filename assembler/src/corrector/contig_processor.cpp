@@ -44,11 +44,9 @@ void ContigProcessor::UpdateOneRead(const SingleSamRead &tmp, MappedSamStream &s
     size_t error_num = 0;
 
     for (auto &pos : all_positions) {
-        if ((int) pos.first >= 0 && pos.first < contig_.length()) {
-            charts_[pos.first].update(pos.second);
-            if (pos.second.FoundOptimal(contig_[pos.first]) != var_to_pos[(int) contig_[pos.first]]) {
-                error_num++;
-            }
+        charts_[pos.first].update(pos.second);
+        if (pos.second.FoundOptimal(contig_[pos.first]) != var_to_pos[(int) contig_[pos.first]]) {
+            error_num++;
         }
     }
 
