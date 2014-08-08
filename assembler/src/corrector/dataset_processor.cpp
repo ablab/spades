@@ -85,7 +85,7 @@ void DatasetProcessor::BufferedOutputRead(const string &read, const string &cont
     buffered_count_++;
     if (buffered_count_ % kBuffSize == 0) {
         if (buffered_count_ % (10 * kBuffSize) == 0)
-            INFO("processed " << buffered_count_ << "reads, flushing");
+            INFO("processed " << buffered_count_ << " reads, flushing");
         FlushAll(lib_count);
     }
 }
