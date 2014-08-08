@@ -91,10 +91,9 @@ int SingleSamRead::CountPositions(unordered_map<size_t, position_description> &p
                 }
                 skipped += 1;
             } else if (bam_cigar_opchr(cigar[state_pos]) == 'D') {
-                size_t ind = i + position - skipped;
-                if (ind >= contig_length)
+                if (i + position - skipped >= contig_length)
                     break;
-                ps[ind].votes[Variants::Deletion] += mate;
+                ps[i + position - skipped].votes[Variants::Deletion] += mate;
                 deleted += 1;
             }
         }
@@ -106,11 +105,6 @@ int SingleSamRead::CountPositions(unordered_map<size_t, position_description> &p
             ps[ind].insertions[insertion_string] += 1;
         }
         insertion_string = "";
-    }
-    for (auto pos: ps) {
-        if (pos.first >= contig_length) {
-            ERROR("ACHTUNG");
-        }
     }
     return 0;
 }
