@@ -670,7 +670,7 @@ def main(args):
                         support.continue_from_here(log)
                         log.info("\n== Processing of " + assembly_type + "\n")
 
-                        tmp_dir_for_corrector = os.path.join(cfg["common"].output_dir, "mismatch_corrector/" + assembly_type)
+                        tmp_dir_for_corrector = os.path.join(cfg["common"].output_dir, "mismatch_corrector", assembly_type)
 
                         cfg["mismatch_corrector"].__dict__["output_dir"] = tmp_dir_for_corrector
                         # correcting
