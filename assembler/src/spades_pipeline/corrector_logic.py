@@ -55,15 +55,6 @@ def prepare_config_corr(filename, cfg, ext_python_modules_home):
     file_c.close()
 
 
-def run_bin(to_correct, joblib_path, log, config_file=None):
-    path_to_bin = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../bin/corrector')
-    path_to_config = os.path.join(os.path.dirname(os.path.realpath(__file__)) , '../../configs/corrector/corrector.info.template')
-    if config_file:
-        path_to_config = config_file
-    run_str = path_to_bin + ' ' + path_to_config + ' ' + to_correct
-    support.sys_call(run_str, log)
-
-
 
 def run_corrector(corrected_dataset_yaml_filename, configs_dir, execution_home, cfg,
                 ext_python_modules_home, log, to_correct):
@@ -101,7 +92,6 @@ def run_corrector(corrected_dataset_yaml_filename, configs_dir, execution_home, 
 
 
     log.info("\n== Dataset description file was created: " + cfg_file_name + "\n")
-#    run_bin(to_correct, ext_python_modules_home, log, cfg_file_name)
     path_to_bin = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../bin/corrector')
     path_to_config = cfg_file_name
     run_str = path_to_bin + ' ' + path_to_config + ' ' + to_correct
