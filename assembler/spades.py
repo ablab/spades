@@ -660,7 +660,7 @@ def main(args):
                     cfg["mismatch_corrector"].__dict__["dataset"] = cfg["dataset"].yaml_filename
                     #TODO: add reads orientation
 
-                    import corrector_bwa_only
+                    import corrector_logic
                     corrector_cfg = cfg["mismatch_corrector"]
                     args = []
                     for key, values in corrector_cfg.__dict__.items():
@@ -699,7 +699,7 @@ def main(args):
                         corr_cfg = merge_configs(cfg["mismatch_corrector"], cfg["common"])
                         corrector_dataset_yaml_filename = os.path.join(corr_cfg.output_dir, "corrector.info")
                         #print tmp_configs_dir
-                        corrector_bwa_only.run_corrector(corrected_dataset_yaml_filename, tmp_configs_dir, bin_home, corr_cfg,
+                        corrector_logic.run_corrector(corrected_dataset_yaml_filename, tmp_configs_dir, bin_home, corr_cfg,
                         ext_python_modules_home, log, cur_args)
 
                         result_corrected_filename = os.path.join(tmp_dir_for_corrector, "corrected_contigs.fasta")
