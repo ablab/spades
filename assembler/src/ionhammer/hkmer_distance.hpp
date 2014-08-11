@@ -33,6 +33,7 @@ class IonPairAligner {
   bool empty_;
   hammer::HomopolymerRun cx_, cy_;
   int end_diff_;
+  bool at_the_start_; // turned off once we find a pair of runs with same nucleotide
 
   IonPairAlignEvent<It1, It2> front_;
 
@@ -110,14 +111,10 @@ class IonPairAligner {
   void finishAlignmentProcess() {
     empty_ = true;
     if (x_it_ != x_end_) {
-      do {
-        end_diff_ += cx_.len;
-      } while (fetchNextX());
+        end_diff_ += x_end_ - x_it_;
     }
     if (y_it_ != y_end_) {
-      do {
-        end_diff_ -= cy_.len;
-      } while (fetchNextY());
+        end_diff_ -= y_end_ - y_it_;
     }
   }
 
@@ -125,7 +122,7 @@ class IonPairAligner {
   IonPairAligner(const It1 &x_begin, const It1 &x_end,
                  const It2 &y_begin, const It2 &y_end)
     : x_it_(x_begin), x_end_(x_end), y_it_(y_begin), y_end_(y_end),
-        empty_(false), cx_(*x_it_), cy_(*y_it_), end_diff_(0)
+        empty_(false), cx_(*x_it_), cy_(*y_it_), end_diff_(0), at_the_start_(true)
   {
     popFront();
   }
@@ -146,7 +143,7 @@ class IonPairAligner {
         if (x_it_ == x_end_ && y_it_ != y_end_ && cy_.len < y_it_->len) {
           cx_ = *(x_it_ - 1);
           cx_.len = 0;
-          end_diff_ -= cy_.len;
+          // end_diff_ -= 1;
           yieldBaseInsertion();
           fetchNextY();
           return;
@@ -155,7 +152,7 @@ class IonPairAligner {
         if (y_it_ == y_end_ && x_it_ != x_end_ && cx_.len < x_it_->len) {
           cy_ = *(y_it_ - 1);
           cy_.len = 0;
-          end_diff_ += cx_.len;
+          // end_diff_ += 1;
           yieldBaseDeletion();
           fetchNextX();
           return;
@@ -171,6 +168,7 @@ class IonPairAligner {
         end = !fetchNextX();
         end |= !fetchNextY();
         if (end) break;
+        at_the_start_ = false;
       }
 
       if (!end)
@@ -196,13 +194,21 @@ class IonPairAligner {
           yieldBaseDeletion();
         fetchNextX();
         fetchNextY();
+        at_the_start_ = false;
         return;
       } else {
         --cx_.len;
         --cy_.len;
+        at_the_start_ = false;
         popFront();
       }
 
+    } else if (at_the_start_) {
+      // alignment can't start with a deletion or insertion
+      // unless it is in a homopolymer run
+      --cx_.len, --cy_.len;
+      yieldMismatch();
+      return;
     } else {
 
       using namespace hammer::errHelper;
@@ -324,6 +330,13 @@ namespace unittest {
 
   inline void hkmer_distance() {
     using namespace detail;
+
+    assert(distance("ACGTACGTACGTACGT",
+                    "CGTACGTACGTACGTA") > 1);
+
+    assert(distance("AACGTACGTACGTACGT",
+                    "CGTACGTACGTACGTA") > 1);
+
     assert(distance("GATAGCGATTTGTTCGGTTTAGGGGGGG",
                     "GATAGCGATTTGTTCGTTTAG") >= 7);
 

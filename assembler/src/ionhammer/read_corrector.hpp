@@ -380,6 +380,8 @@ class CorrectedRead {
     int approx_end_read_offset_;
     unsigned rollback_end;  // remove if don't align well
 
+    int initial_read_offset_;
+
     enum {
       kChunkLeftAligned,
       kChunkRightAligned,
@@ -394,13 +396,19 @@ class CorrectedRead {
     std::vector<hammer::HomopolymerRun> consensus;
     std::vector<double> consensus_scores;
 
-    ConsensusChunk(int approximate_read_offset,
+    int raw_start_offset() const {
+      return initial_read_offset_;
+    }
+
+    ConsensusChunk(int initial_read_offset,
+                   int approximate_read_offset,
                    int approximate_end_read_offset,
                    const ScoreStorage &scores,
                    unsigned rollback_end,
                    const FlowSpaceRead &read,
                    bool debug_mode)
-        : approx_read_offset(approximate_read_offset),
+      :   initial_read_offset_(initial_read_offset),
+          approx_read_offset(approximate_read_offset),
           approx_end_read_offset_(approximate_end_read_offset),
           rollback_end(rollback_end),
           alignment(kChunkNotAligned), raw_read(read),
@@ -415,6 +423,11 @@ class CorrectedRead {
           approx_read_offset += 1;
           trimmed_left += 1;
           continue;
+        }
+
+        if (debug_mode && left_trim) {
+            std::cerr << "[ConsensusChunk] trimmed from left: " << trimmed_left << std::endl;
+            std::cerr << "[ConsensusChunk] approx. read offset: " << approx_read_offset << std::endl;
         }
 
         left_trim = false;
@@ -637,10 +650,11 @@ class CorrectedRead {
   int trimmed_by_gen_;
 
   void PushChunk(const ScoreStorage &scores,
+                 int initial_read_offset,
                  int approx_read_offset,
                  int approx_end_read_offset,
                  unsigned rollback_end) {
-    chunks_.push_back(ConsensusChunk(approx_read_offset,
+    chunks_.push_back(ConsensusChunk(initial_read_offset, approx_read_offset,
                                      approx_end_read_offset, scores,
                                      rollback_end, raw_read_, debug_mode_));
     if (debug_mode_) {
@@ -653,7 +667,7 @@ class CorrectedRead {
 
     chunks_.back().AlignLeftEndAgainstRead();
     if (chunks_.size() == 1)
-      trimmed_by_gen_ = chunks_.back().approx_read_offset;
+      trimmed_by_gen_ = chunks_.back().raw_start_offset();
   }
 
   const ConsensusChunk& LastChunk() const {
@@ -669,6 +683,7 @@ class CorrectedRead {
     ValidHKMerGenerator<hammer::K> gen;
     int pos;
     unsigned skipped;
+    int raw_pos;
 
     struct Center {
       hammer::HKMer seq;
@@ -687,6 +702,7 @@ class CorrectedRead {
     int approx_end_read_offset;
     ScoreStorage scores;
     int chunk_pos;
+    int raw_chunk_start_pos;
 
     unsigned approx_n_insertions;
 
@@ -739,7 +755,8 @@ class CorrectedRead {
       }
 
       if (scores.size() > hammer::K) {
-        cread_.PushChunk(scores, approx_read_offset, approx_end_read_offset, rollback_end);
+        cread_.PushChunk(scores, raw_chunk_start_pos,
+                         approx_read_offset, approx_end_read_offset, rollback_end);
         pos = cread_.LastChunk().approx_end_read_offset_untrimmed() - hammer::K;
         pos += skipped;
       } else {
@@ -803,6 +820,8 @@ class CorrectedRead {
 
       last_good_center = center;
       last_good_center_is_defined = true;
+      if (raw_chunk_start_pos == -1)
+        raw_chunk_start_pos = raw_pos;
       approx_end_read_offset = center.end_offset;
       if (debug_mode_) {
         std::cerr << "e.o. = " << approx_end_read_offset << std::endl;
@@ -820,6 +839,7 @@ class CorrectedRead {
       is_first_center(true),
       replacing(false), rollback_size(0),
       need_to_align(false), approx_read_offset(0), scores(), chunk_pos(0),
+      raw_chunk_start_pos(-1),
       approx_n_insertions(0)
     {
       --pos;
@@ -829,7 +849,12 @@ class CorrectedRead {
     void Run() {
       double lowQualThreshold = cfg::get().kmer_qual_threshold;
 
-      int raw_pos = int(gen.trimmed_left()) - 1;
+      raw_pos = int(gen.trimmed_left()) - 1;
+
+      if (debug_mode_) {
+          std::cerr << "gen. trimmed = " << gen.trimmed_left() << std::endl;
+      }
+
       while (gen.HasMore()) {
         auto prev_chunk_pos = chunk_pos;
         auto seq = gen.kmer();
@@ -838,7 +863,9 @@ class CorrectedRead {
         ++raw_pos;
         if (debug_mode_) {
           std::cerr << "=================================" << std::endl;
-          std::cerr << "pos = " << pos << ", raw_pos = " << raw_pos << std::endl;
+          std::cerr << "pos = " << pos << ", raw_pos = " << raw_pos <<
+            ", last_good_center_is_defined = " << last_good_center_is_defined <<
+            ", skipped = " << skipped << std::endl;
         }
         ++chunk_pos;
 
@@ -852,6 +879,10 @@ class CorrectedRead {
         }
 
         if (qual > lowQualThreshold && last_good_center_is_defined && skipped == 0) {
+          if (debug_mode_) {
+            std::cerr << "raw_pos + hammer::K = " << raw_pos + hammer::K << std::endl;
+            std::cerr << "last_good_center.end_offset + 1 = " <<  last_good_center.end_offset + 1 << std::endl;
+          }
           // Finding a center by means of clustering failed.
           // Let's try the following: take last good center and make a new one
           // from it by appending next homopolymer run; if its quality is high, we use it.
@@ -916,6 +947,9 @@ class CorrectedRead {
             replacing = false;
           }
 
+          if (debug_mode_) {
+              std::cerr << "[include into consensus] raw_pos = " << raw_pos << std::endl;
+          }
           IncludeIntoConsensus(center);
         }
       }
@@ -1008,7 +1042,6 @@ class CorrectedRead {
   }
 };
 
-
 class SingleReadCorrector {
   const KMerData &kmer_data_;
 
@@ -1088,9 +1121,7 @@ public:
     debug_pred_(debug), select_pred_(select) {}
 
   boost::optional<io::SingleRead> operator()(const io::SingleRead &r) {
-    if (!select_pred_(r))
-        return boost::optional<io::SingleRead>();
-
+    if (!select_pred_(r))return boost::optional<io::SingleRead>();
     bool debug_mode = debug_pred_(r);
     if (debug_mode) {
       std::cerr << "=============================================" << std::endl;
@@ -1105,7 +1136,7 @@ public:
       read.AttachUncorrectedRuns();
 
     if (debug_mode) {
-        std::cerr << "final result: " << read.GetSequenceString() << std::endl;
+      std::cerr << "final result: " << read.GetSequenceString() << std::endl;
     }
 
     auto seq = read.GetSequenceString();
@@ -1119,6 +1150,10 @@ public:
   operator()(BamTools::BamAlignment &alignment) {
     VERIFY(sam_header_);
     io::SingleRead r(alignment.Name, alignment.QueryBases);
+    // reverse strand means we're working with a mapped BAM, might be
+    // the case for datasets downloaded from IonCommunity
+    if (alignment.IsReverseStrand())
+      r = !r;
     auto corrected_r = operator()(r);
     std::string rg;
     if (!alignment.GetTag("RG", rg) || !corrected_r)
@@ -1126,8 +1161,21 @@ public:
     auto flow_order = sam_header_->ReadGroups[rg].FlowOrder;
 
     float delta_score, fit_score;
-    BaseHypothesisEvaluator(alignment, flow_order,
-                            corrected_r.get().GetSequenceString(),
+    auto seq = corrected_r.get().GetSequenceString();
+    if (alignment.IsReverseStrand()) {
+      std::reverse(seq.begin(), seq.end());
+      for (auto it = seq.begin(); it != seq.end(); ++it) {
+        switch (*it) {
+        case 'A': *it = 'T'; break;
+        case 'C': *it = 'G'; break;
+        case 'G': *it = 'C'; break;
+        case 'T': *it = 'A'; break;
+        default: break;
+        }
+      }
+    }
+
+    BaseHypothesisEvaluator(alignment, flow_order, seq,
                             delta_score, fit_score, 0);
     std::stringstream ss;
     ss << alignment.Name << "_" << delta_score << "_" << fit_score;
