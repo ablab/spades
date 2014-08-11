@@ -656,7 +656,6 @@ def main(args):
 
                     log.info("\n===== %s started." % STAGE_NAME)
                     # detecting paired-end library with the largest insert size
-                    est_params_dataset = os.path.join(latest_dir, "final.lib_data")
                     cfg["mismatch_corrector"].__dict__["dataset"] = cfg["dataset"].yaml_filename
                     #TODO: add reads orientation
 
@@ -671,15 +670,12 @@ def main(args):
                         support.continue_from_here(log)
                         log.info("\n== Processing of " + assembly_type + "\n")
 
-                        #tmp_dir_for_corrector = support.get_tmp_dir(prefix="mis_cor_%s_" % assembly_type)
                         tmp_dir_for_corrector = os.path.join(cfg["common"].output_dir, "mismatch_corrector/" + assembly_type)
 
-                        #print tmp_dir_for_corrector + " tmp_dir_for_corrector"
                         cfg["mismatch_corrector"].__dict__["output_dir"] = tmp_dir_for_corrector
                         # correcting
                         corr_cfg = merge_configs(cfg["mismatch_corrector"], cfg["common"])
                         corrector_dataset_yaml_filename = os.path.join(corr_cfg.output_dir, "corrector.info")
-                        #print tmp_configs_dir
                         corrector_logic.run_corrector(corrected_dataset_yaml_filename, tmp_configs_dir, bin_home, corr_cfg,
                         ext_python_modules_home, log, assembled)
 
