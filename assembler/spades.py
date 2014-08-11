@@ -662,22 +662,6 @@ def main(args):
 
                     import corrector_logic
                     corrector_cfg = cfg["mismatch_corrector"]
-                    args = []
-                    for key, values in corrector_cfg.__dict__.items():
-                        if key == "output-dir":
-                            continue
-
-                        # for processing list of reads
-                        if not isinstance(values, list):
-                            values = [values]
-                        for value in values:
-                            if len(key) == 1:
-                                args.append('-' + key)
-                            else:
-                                args.append('--' + key)
-                            if value is not None:
-                                args.append(value)
-
                     # processing contigs and scaffolds (or only contigs)
                     for assembly_type, (corrected, assembled) in to_correct.items():
                         if options_storage.continue_mode and os.path.isfile(corrected):
@@ -687,20 +671,17 @@ def main(args):
                         support.continue_from_here(log)
                         log.info("\n== Processing of " + assembly_type + "\n")
 
-                        cur_args = args[:]
-                        cur_args += ['-c', assembled]
                         #tmp_dir_for_corrector = support.get_tmp_dir(prefix="mis_cor_%s_" % assembly_type)
                         tmp_dir_for_corrector = os.path.join(cfg["common"].output_dir, "mismatch_corrector/" + assembly_type)
 
                         #print tmp_dir_for_corrector + " tmp_dir_for_corrector"
-                        cur_args += ['--output-dir', tmp_dir_for_corrector]
                         cfg["mismatch_corrector"].__dict__["output_dir"] = tmp_dir_for_corrector
                         # correcting
                         corr_cfg = merge_configs(cfg["mismatch_corrector"], cfg["common"])
                         corrector_dataset_yaml_filename = os.path.join(corr_cfg.output_dir, "corrector.info")
                         #print tmp_configs_dir
                         corrector_logic.run_corrector(corrected_dataset_yaml_filename, tmp_configs_dir, bin_home, corr_cfg,
-                        ext_python_modules_home, log, cur_args)
+                        ext_python_modules_home, log, assembled)
 
                         result_corrected_filename = os.path.join(tmp_dir_for_corrector, "corrected_contigs.fasta")
                         if os.path.isfile(result_corrected_filename):

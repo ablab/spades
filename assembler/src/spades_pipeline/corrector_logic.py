@@ -55,11 +55,9 @@ def prepare_config_corr(filename, cfg, ext_python_modules_home):
     file_c.close()
 
 
-def main(args, joblib_path, log=None, config_file=None):
+def run_with_logger(to_correct, joblib_path, log=None, config_file=None):
 
-    if len(args) < 1:
-        usage()
-        sys.exit(0)
+
     addsitedir(joblib_path)
 
 
@@ -79,18 +77,19 @@ def main(args, joblib_path, log=None, config_file=None):
     path_to_config = os.path.join(os.path.dirname(os.path.realpath(__file__)) , '../../configs/corrector/corrector.info.template')
     if config_file:
         path_to_config = config_file
-    run_str = path_to_bin + ' ' + path_to_config + ' ' + config["contigs"]
+    run_str = path_to_bin + ' ' + path_to_config + ' ' + to_correct
     support.sys_call(run_str, log)
 
 
 
 def run_corrector(corrected_dataset_yaml_filename, configs_dir, execution_home, cfg,
-                ext_python_modules_home, log, args):
+                ext_python_modules_home, log, to_correct):
     addsitedir(ext_python_modules_home)
     if sys.version.startswith('2.'):
         import pyyaml2 as pyyaml
     elif sys.version.startswith('3.'):
         import pyyaml3 as pyyaml
+
     cfg.dataset_yaml_filename = corrected_dataset_yaml_filename
     dst_configs = os.path.join(cfg.output_dir, "configs")
     if os.path.exists(dst_configs):
@@ -119,13 +118,8 @@ def run_corrector(corrected_dataset_yaml_filename, configs_dir, execution_home, 
 
 
     log.info("\n== Dataset description file was created: " + cfg_file_name + "\n")
-    main(args, ext_python_modules_home, log, cfg_file_name)
+    run_with_logger(to_correct, ext_python_modules_home, log, cfg_file_name)
 
 
-
-if __name__ == '__main__':
-    joblib_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../ext/src/python_libs')
-    main(sys.argv[1:], joblib_path)
-    
 
 
