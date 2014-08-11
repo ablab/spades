@@ -35,15 +35,14 @@ def prepare_config_corr(filename, cfg, ext_python_modules_home):
 
 
 
-def run_corrector(corrected_dataset_yaml_filename, configs_dir, execution_home, cfg,
-                ext_python_modules_home, log, to_correct):
+def run_corrector(configs_dir, execution_home, cfg,
+                ext_python_modules_home, log, to_correct, result):
     addsitedir(ext_python_modules_home)
     if sys.version.startswith('2.'):
         import pyyaml2 as pyyaml
     elif sys.version.startswith('3.'):
         import pyyaml3 as pyyaml
 
-    cfg.dataset_yaml_filename = corrected_dataset_yaml_filename
     dst_configs = os.path.join(cfg.output_dir, "configs")
     if os.path.exists(dst_configs):
         shutil.rmtree(dst_configs)
@@ -65,16 +64,16 @@ def run_corrector(corrected_dataset_yaml_filename, configs_dir, execution_home, 
     binary_name = "corrector"
 
     command = [os.path.join(execution_home, binary_name),
-               os.path.abspath(cfg_file_name)]
+               os.path.abspath(cfg_file_name), os.path.abspath(to_correct)]
 
     log.info("\n== Running contig polishing tool: " + ' '.join(command) + "\n")
 
 
     log.info("\n== Dataset description file was created: " + cfg_file_name + "\n")
-    path_to_bin = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../bin/corrector')
-    path_to_config = cfg_file_name
-    run_str = path_to_bin + ' ' + path_to_config + ' ' + to_correct
-    support.sys_call(run_str, log)
+
+    support.sys_call(command, log)
+    if not os.path.isfile(result):
+        support.error("Mismatch correction finished abnormally: " + result + " not found!")
 
 
 

@@ -675,11 +675,12 @@ def main(args):
                         cfg["mismatch_corrector"].__dict__["output_dir"] = tmp_dir_for_corrector
                         # correcting
                         corr_cfg = merge_configs(cfg["mismatch_corrector"], cfg["common"])
-                        corrector_dataset_yaml_filename = os.path.join(corr_cfg.output_dir, "corrector.info")
-                        corrector_logic.run_corrector(corrected_dataset_yaml_filename, tmp_configs_dir, bin_home, corr_cfg,
-                        ext_python_modules_home, log, assembled)
-
+                        
                         result_corrected_filename = os.path.join(tmp_dir_for_corrector, "corrected_contigs.fasta")
+
+                        corrector_logic.run_corrector( tmp_configs_dir, bin_home, corr_cfg,
+                        ext_python_modules_home, log, assembled, result_corrected_filename)
+
                         if os.path.isfile(result_corrected_filename):
                             shutil.copyfile(result_corrected_filename, corrected)
                         tmp_d = os.path.join(tmp_dir_for_corrector, "tmp")
