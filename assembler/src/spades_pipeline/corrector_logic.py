@@ -7,31 +7,10 @@
 ############################################################################
 
 
-#Calculate coverage from raw file
-import glob
-import gzip
-import sys
-import os
-import datetime
-import getopt
-from site import addsitedir
-import logging
-import shutil
-
-from math import pow
-from support import universal_sys_call, error
-import options_storage
-
-#profile = []
-#insertions = {}
-config = {}
-#total_contigs
 import os
 import sys
-import glob
 import shutil
 import support
-import process_cfg
 from site import addsitedir
 from distutils import dir_util
 
@@ -46,7 +25,7 @@ def prepare_config_corr(filename, cfg, ext_python_modules_home):
     data = pyyaml.load(open(filename, 'r'))
     data["dataset"] = cfg.dataset
     data["output_dir"] = cfg.output_dir
-    data["work_dir"] = cfg.output_dir + '/tmp'
+    data["work_dir"] = os.path.join(cfg.output_dir, 'tmp')
     #data["hard_memory_limit"] = cfg.max_memory
     data["max_nthreads"] = cfg.max_threads
     data["bwa"] = cfg.bwa
