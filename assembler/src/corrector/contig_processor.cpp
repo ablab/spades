@@ -129,8 +129,7 @@ size_t ContigProcessor::ProcessMultipleSamFiles() {
         sm.close();
     }
 
-    size_t interesting = ipp_.FillInterestingPositions(charts_);
-    DEBUG("Interesting size : " << interesting);
+    ipp_.FillInterestingPositions(charts_);
     for (const auto &sf : sam_files_) {
         MappedSamStream sm(sf.first);
         while (!sm.eof()) {
@@ -168,7 +167,6 @@ size_t ContigProcessor::ProcessMultipleSamFiles() {
         oss << io::SingleRead(contig_name_, s_new_contig.str());
     }
     return total_changes;
-    //contig_name = ContigRenameWithLength(contig_name, s_new_contig.str().length());
 }
 
 }

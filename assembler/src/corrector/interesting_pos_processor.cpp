@@ -4,9 +4,8 @@
 using namespace std;
 
 namespace corrector {
-size_t InterestingPositionProcessor::FillInterestingPositions(vector<position_description> &charts) {
-    size_t count = 0;
-    set<int> tmp_pos;
+bool InterestingPositionProcessor::FillInterestingPositions(const vector<position_description> &charts) {
+    bool any_interesting = false;
     for (size_t i = 0; i < contig_.length(); i++) {
         int sum_total = 0;
         for (size_t j = 0; j < MAX_VARIANTS; j++) {
@@ -23,28 +22,23 @@ size_t InterestingPositionProcessor::FillInterestingPositions(vector<position_de
         }
         if (variants > 1 || contig_[i] == Variants::Undefined) {
             DEBUG("Adding interesting position: " << i << " " << charts[i].str());
-            tmp_pos.insert((int) i);
+            any_interesting = true;
+            is_interesting_[i] = true;
             for (int j = -kAnchorNum; j <= kAnchorNum; j++) {
                 int additional = (int) (i / kAnchorGap + j) * kAnchorGap;
-                if (additional >= 0 && additional < (int) contig_.length()) {
-                    tmp_pos.insert((int) (i / kAnchorGap + j) * kAnchorGap);
-                }
+                if (additional >= 0 && additional < (int) contig_.length())
+                    is_interesting_[additional] = true;
             }
         }
     }
-    for (const auto &pos : tmp_pos) {
-        DEBUG("position " << pos << " is interesting ");
-        DEBUG(charts[pos].str());
-        is_interesting_[pos] = 1;
-        count++;
-    }
-    return count;
+
+    return any_interesting;
 }
 
 void InterestingPositionProcessor::UpdateInterestingRead(const PositionDescriptionMap &ps) {
     vector<size_t> interesting_in_read;
     for (const auto &pos : ps) {
-        if (IsInteresting(pos.first)) {
+        if (is_interesting(pos.first)) {
             interesting_in_read.push_back(pos.first);
         }
     }
@@ -59,7 +53,7 @@ void InterestingPositionProcessor::UpdateInterestingRead(const PositionDescripti
     }
 }
 
-void InterestingPositionProcessor::set_contig(string &ctg) {
+void InterestingPositionProcessor::set_contig(const string &ctg) {
     contig_ = ctg;
     size_t len = contig_.length();
     is_interesting_.resize(len);

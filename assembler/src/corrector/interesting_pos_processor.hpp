@@ -10,7 +10,7 @@ typedef std::vector<WeightedPositionalRead> WeightedReadStorage;
 
 class InterestingPositionProcessor {
     std::string contig_;
-    std::vector<int> is_interesting_;
+    std::vector<bool> is_interesting_;
     std::vector<std::vector<size_t> > read_ids_;
     WeightedReadStorage wr_storage_;
     std::unordered_map<size_t, position_description> interesting_weights;
@@ -23,16 +23,15 @@ class InterestingPositionProcessor {
     const int error_weight[kMaxErrorCount] = { 100, 10, 8, 5, 2, 1 };
 
 public:
-    InterestingPositionProcessor() {
-    }
-    void set_contig(std::string &ctg);
-    inline int get_error_weight(size_t i) const {
+    InterestingPositionProcessor() {}
+    void set_contig(const std::string &ctg);
+    int get_error_weight(size_t i) const {
         if (i >= kMaxErrorCount)
             return 0;
         else
             return error_weight[i];
     }
-    inline bool IsInteresting(size_t position) const {
+    bool is_interesting(size_t position) const {
         return is_interesting_[position];
     }
 
@@ -42,7 +41,7 @@ public:
     void UpdateInterestingRead(const PositionDescriptionMap &ps);
     void UpdateInterestingPositions();
 
-    size_t FillInterestingPositions(std::vector<position_description> &charts);
+    bool FillInterestingPositions(const std::vector<position_description> &charts);
 
 };
 }

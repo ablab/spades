@@ -72,7 +72,7 @@ void DatasetProcessor::SplitSingleLibrary(const string &all_reads_filename, cons
 void DatasetProcessor::FlushAll(const size_t lib_count) {
     for (const auto &ac : all_contigs_) {
         ofstream stream(ac.second.sam_filenames[lib_count].first.c_str(), std::ios_base::app | std::ios_base::out);
-        for (string read : buffered_reads_[ac.first]) {
+        for (const string &read : buffered_reads_[ac.first]) {
             stream << read;
             stream << '\n';
         }
