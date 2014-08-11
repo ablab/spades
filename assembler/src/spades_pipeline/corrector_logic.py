@@ -55,24 +55,7 @@ def prepare_config_corr(filename, cfg, ext_python_modules_home):
     file_c.close()
 
 
-def run_with_logger(to_correct, joblib_path, log=None, config_file=None):
-
-
-    addsitedir(joblib_path)
-
-
-    if not log:
-        log = logging.getLogger('spades')
-        log.setLevel(logging.DEBUG)
-
-        console = logging.StreamHandler(sys.stdout)
-        console.setFormatter(logging.Formatter('%(message)s'))
-        console.setLevel(logging.DEBUG)
-        log.addHandler(console)
-
-        log_filename = os.path.join(config["output_dirpath"], "corrector.log")
-        log_handler = logging.FileHandler(log_filename, mode='w')
-        log.addHandler(log_handler)
+def run_bin(to_correct, joblib_path, log, config_file=None):
     path_to_bin = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../bin/corrector')
     path_to_config = os.path.join(os.path.dirname(os.path.realpath(__file__)) , '../../configs/corrector/corrector.info.template')
     if config_file:
@@ -118,7 +101,11 @@ def run_corrector(corrected_dataset_yaml_filename, configs_dir, execution_home, 
 
 
     log.info("\n== Dataset description file was created: " + cfg_file_name + "\n")
-    run_with_logger(to_correct, ext_python_modules_home, log, cfg_file_name)
+#    run_bin(to_correct, ext_python_modules_home, log, cfg_file_name)
+    path_to_bin = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../bin/corrector')
+    path_to_config = cfg_file_name
+    run_str = path_to_bin + ' ' + path_to_config + ' ' + to_correct
+    support.sys_call(run_str, log)
 
 
 
