@@ -356,14 +356,9 @@ void KMerCoverageModel::Fit() {
   // See, if we have sane ErrorThreshold_ and go down to something convervative, if not.
   if (converged_) {
       INFO("Preliminary threshold calculated as: " << ErrorThreshold_);
-      if (mean_coverage_ > 2*sd_coverage_)
-          ErrorThreshold_ = std::max(Valley_ + (size_t)(mean_coverage_ - Valley_) / 2,
-                                     std::min(ErrorThreshold_, (size_t)math::round(mean_coverage_ - 2*sd_coverage_)));
-      else if (Valley_ < mean_coverage_)
-          ErrorThreshold_ = Valley_ + (size_t)(mean_coverage_ - Valley_) / 2;
-      else
-          ErrorThreshold_ = Valley_;
-
+      ErrorThreshold_ = (Valley_ < mean_coverage_ ?
+                         std::min(Valley_ + (size_t)(mean_coverage_ - Valley_) / 2, ErrorThreshold_) :
+                         Valley_);
       INFO("Threshold adjusted to: " << ErrorThreshold_);
   } else {
       ErrorThreshold_ = Valley_;
