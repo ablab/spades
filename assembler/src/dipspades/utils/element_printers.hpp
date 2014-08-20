@@ -20,7 +20,7 @@ void PrintSimplePathWithVertices(ostream &out, Graph &g, vector<EdgeId> &path){
 	out << endl;
 }
 
-string SimplePathWithVerticesToString(Graph &g, vector<EdgeId> path){
+string SimplePathWithVerticesToString(const Graph &g, vector<EdgeId> path){
 	stringstream ss;
 	for(auto e = path.begin(); e != path.end(); e++)
 		ss << g.int_id(*e) << " (" << g.length(*e) << "), " << g.int_id(g.EdgeStart(*e)) << " - " <<

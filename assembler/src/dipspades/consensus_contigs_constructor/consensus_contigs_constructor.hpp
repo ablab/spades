@@ -137,6 +137,7 @@ class ConsensusContigsConstructor {
 							contig->src_file(),
 							!contig->seq(),
 							GetRCToMappingPath(graph_pack_.g, contig->mapping_path(), contig->seq().size()),
+							GetRCToPathSeq(graph_pack_.g, contig->path_seq()),
 							contig->id() + 1, contig->id()));
 			new_storage->Add(rc_contig);
 		}

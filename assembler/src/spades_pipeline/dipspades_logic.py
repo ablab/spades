@@ -21,7 +21,7 @@ from os.path import abspath, expanduser
 
 
 class DS_Args_List:
-    long_options = "expect-gaps expect-rearrangements hap= threads= memory= tmp-dir= dsdebug hap-assembly dsK=".split()
+    long_options = "expect-gaps expect-rearrangements hap= threads= memory= tmp-dir= dsdebug hap-assembly dsK= saves= start-from=".split()
     short_options = "o:t:m:"
 
 
@@ -37,6 +37,8 @@ class DS_Args:
     dev_mode = False
     haplotype_assembly = False
     k = 55
+    saves = ""
+    start_from = "dipspades"
 
 
 def print_ds_args(ds_args, log):
@@ -77,7 +79,16 @@ def write_haplocontigs_in_file(filename, haplocontigs):
         hapfile.write(hapcontig + "\n")
     hapfile.close()
 
-
+def ParseStartPoint(start_point_arg, log):
+    if start_point_arg == 'pbr':
+        return 'dipspades:polymorphic_br'
+    elif start_point_arg == 'cc':
+        return 'dipspades:consensus_construction'
+    elif start_point_arg == 'ha':
+        return 'dipspades:haplotype_assembly'
+    log.info("ERROR: Start point " + start_point_arg + " was undefined")
+    sys.exit(1)
+        
 def parse_arguments(argv, log):
     try:
         options, not_options = getopt.gnu_getopt(argv, DS_Args_List.short_options, DS_Args_List.long_options)
@@ -110,14 +121,24 @@ def parse_arguments(argv, log):
             ds_args.haplotype_assembly = True
         elif opt == '--dsK':
             ds_args.k = int(arg)
+        elif opt == '--saves':
+            ds_args.saves = os.path.abspath(arg)
+            ds_args.dev_mode = True
+        elif opt == '--start-from':
+            ds_args.start_from = ParseStartPoint(arg, log)
+            ds_args.dev_mode = True
     ds_args.haplocontigs = os.path.join(ds_args.output_dir, "haplocontigs")
 
     if not ds_args.output_dir:
         support.error("the output_dir is not set! It is a mandatory parameter (-o output_dir).", log, dipspades=True)
-    if not ds_args.haplocontigs_fnames:
+    if not ds_args.haplocontigs_fnames and ds_args.start_from == 'dipspades':
         support.error("cannot start dipSPAdes without at least one haplocontigs file!", log, dipspades=True)
     if not ds_args.tmp_dir:
         ds_args.tmp_dir = os.path.join(ds_args.output_dir, options_storage.TMP_DIR)
+
+    if ds_args.start_from != 'dipspades' and ds_args.saves == '':
+        support.error("saves were not defined! dipSPAdes can not start from " + ds_args.start_from)
+
     return ds_args
 
 
@@ -134,6 +155,8 @@ def prepare_config(config_fname, ds_args, log):
     args_dict["output_base"] = ""
     args_dict["ha_enabled"] = process_cfg.bool_to_str(ds_args.haplotype_assembly)
     args_dict["K"] = str(ds_args.k)
+    args_dict['saves'] = ds_args.saves
+    args_dict['entry_point'] = ds_args.start_from
     process_cfg.substitute_params(config_fname, args_dict, log)
 
 

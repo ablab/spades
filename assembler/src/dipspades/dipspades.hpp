@@ -198,7 +198,7 @@ void run_dipspades() {
     conj_gp.kmer_mapper.Attach();
 
     StageManager DS_Manager ( {dsp_cfg::get().rp.developer_mode,
-    						dsp_cfg::get().io.load_from,
+    						dsp_cfg::get().io.saves,
    						dsp_cfg::get().io.output_saves} );
     auto ds_phase = new DipSPAdes();
     ds_phase->add(new ContigGraphConstructionStage())->

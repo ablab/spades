@@ -69,6 +69,12 @@ public:
 	virtual VertexId end_vertex() = 0;
 	virtual bool IsSimple() = 0;
 	virtual bool IsEmpty() = 0;
+
+	virtual size_t BulgeLength() = 0;
+
+	virtual string StrId() = 0;
+	virtual string BulgeToString() = 0;
+
 	virtual ~BaseBulge() { }
 };
 
@@ -169,6 +175,21 @@ public:
 	bool IsSimple() { return path1_.size() == 1 && path2_.size() == 1; }
 
 	bool IsEmpty() { return path1_.size() == 0 || path2_.size() == 0; }
+
+	string StrId() {
+		string s1 = GetPathStr(path1());
+		string s2 = GetPathStr(path2());
+		return min<string>(s1,s2) + "_" + max<string>(s1,s2);
+	}
+
+	size_t BulgeLength() {
+		return max<size_t>(GetPathLength(graph_, path1()), GetPathLength(graph_, path2()));
+	}
+
+	string BulgeToString() {
+		return "Side1: " + SimplePathWithVerticesToString(graph_, path1()) + "\n" +
+				"Side2: " + SimplePathWithVerticesToString(graph_, path2());
+	}
 };
 
 class DirectedBulge : public BaseBulge {
@@ -221,6 +242,12 @@ public:
 	bool IsSimple() { return bulge_->IsSimple(); }
 
 	bool IsEmpty() { return bulge_-> IsEmpty(); }
+
+	string StrId() { return bulge_->StrId(); }
+
+	size_t BulgeLength() { return bulge_->BulgeLength(); }
+
+	string BulgeToString() { return bulge_->BulgeToString(); }
 };
 
 }

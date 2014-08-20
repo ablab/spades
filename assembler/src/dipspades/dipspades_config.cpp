@@ -45,9 +45,9 @@ void load(dipspades_config::io_params &io,
 	if (io.tmp_dir[io.tmp_dir.length() - 1] != '/')
 		io.tmp_dir += '/';
 
-	load(io.load_from		, pt, "load_from"		);
-	if(io.load_from[io.load_from.length() - 1] != '/')
-		io.load_from += '/';
+	load(io.saves		, pt, "saves"		);
+	if(io.saves[io.saves.length() - 1] != '/')
+		io.saves += '/';
 }
 
 void load(dipspades_config::run_params &rp,
@@ -65,7 +65,7 @@ void edit_io_params(bool developer_mode, dipspades_config::io_params &io){
 		io.output_suffix = MakeLaunchTimeDirName() + "/";
 		io.output_dir = io.output_root + io.output_suffix;
 		io.output_saves = io.output_dir + "saves/";
-		io.load_from = io.output_root + io.load_from;
+//		io.load_from = io.output_root + io.load_from;
 		if (io.tmp_dir[0] != '/') { // relative path
 			io.tmp_dir = io.output_dir + io.tmp_dir;
 		}
@@ -78,7 +78,7 @@ void edit_io_params(bool developer_mode, dipspades_config::io_params &io){
 	io.output_suffix = "";
 	io.output_base = "";
 	io.output_saves = io.output_dir;
-	io.load_from = "";
+	io.saves = "";
 	if (io.tmp_dir[0] != '/') { // relative path
 		io.tmp_dir = io.output_dir + io.tmp_dir;
 	}

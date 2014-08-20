@@ -55,6 +55,7 @@ class SimpleMappingContig : public MappingContig{
 	string src_file_;
 	Sequence seq_;
 	MappingPath<EdgeId> map_path_;
+	vector<EdgeId> edge_path_;
 	size_t id_, rc_id_;
 
 public:
@@ -66,12 +67,24 @@ public:
 				src_file_(src_file),
 				seq_(seq),
 				map_path_(map_path),
+				edge_path_(map_path_.simple_path()),
+				id_(id),
+				rc_id_(rc_id) {	}
+
+	SimpleMappingContig(string name, string src_file, Sequence seq,
+			MappingPath<EdgeId> map_path, vector<EdgeId> edge_path,
+			size_t id, size_t rc_id) :
+				name_(name),
+				src_file_(src_file),
+				seq_(seq),
+				map_path_(map_path),
+				edge_path_(edge_path),
 				id_(id),
 				rc_id_(rc_id) {	}
 
 	Sequence seq() { return seq_; }
 
-	vector<EdgeId> path_seq() { return map_path_.simple_path(); }
+	vector<EdgeId> path_seq() { return edge_path_; }
 
 	MappingPath<EdgeId> mapping_path() { return map_path_; }
 
@@ -79,7 +92,7 @@ public:
 
 	string src_file() { return src_file_; }
 
-	size_t size() { return map_path_.size(); }
+	size_t size() { return edge_path_.size(); }
 
 	size_t length() { return seq_.size(); }
 
