@@ -198,6 +198,9 @@ void ValidHKMerGenerator<kK>::Next() {
     // because one hk-mer can't have much influence on the consensus.
     if (pos_ >= end_) {
       last_ = true;
+      if (toadd > 0) {
+          has_more_ = false;
+      }
       return;
     }
 

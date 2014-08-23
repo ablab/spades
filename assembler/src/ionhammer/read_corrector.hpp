@@ -407,10 +407,10 @@ class CorrectedRead {
                    unsigned rollback_end,
                    const FlowSpaceRead &read,
                    bool debug_mode)
-      :   initial_read_offset_(initial_read_offset),
-          approx_read_offset(approximate_read_offset),
+      :   approx_read_offset(approximate_read_offset),
           approx_end_read_offset_(approximate_end_read_offset),
           rollback_end(rollback_end),
+          initial_read_offset_(initial_read_offset),
           alignment(kChunkNotAligned), raw_read(read),
           trimmed_left(0), trimmed_right(0), debug_mode(debug_mode)
     {
@@ -838,7 +838,9 @@ class CorrectedRead {
       last_good_center(), last_good_center_is_defined(false),
       is_first_center(true),
       replacing(false), rollback_size(0),
-      need_to_align(false), approx_read_offset(0), scores(), chunk_pos(0),
+      need_to_align(false),
+      approx_read_offset(0), approx_end_read_offset(0),
+      scores(), chunk_pos(0),
       raw_chunk_start_pos(-1),
       approx_n_insertions(0)
     {
@@ -1007,7 +1009,7 @@ class CorrectedRead {
     const auto& data = raw_read_.data();
     int n_raw = int(raw_read_.size());
     int end_read_offset = LastChunk().approx_end_read_offset();
-    if (end_read_offset < n_raw) {
+    if (end_read_offset < n_raw && end_read_offset >= 0) {
       corrected_runs_.insert(corrected_runs_.end(),
                              data.begin() + end_read_offset,
                              data.end());
