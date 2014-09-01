@@ -202,7 +202,7 @@ class GapCloser {
     const size_t min_intersection_;
     const size_t hamming_dist_bound_;
     const int init_gap_val_;
-    const omnigraph::de::Point::value_type weight_threshold_;
+    const omnigraph::de::DEWeight weight_threshold_;
 
     SequenceMapper mapper_;
     runtime_k::KmerSet new_kmers_;
@@ -462,7 +462,7 @@ class GapCloser {
     }
 
     GapCloser(Graph& g, omnigraph::de::PairedInfoIndexT<Graph>& tips_paired_idx,
-              size_t min_intersection, omnigraph::de::Point::value_type weight_threshold,
+              size_t min_intersection, double weight_threshold,
               const SequenceMapper& mapper,
               size_t hamming_dist_bound = 0 /*min_intersection_ / 5*/)
             : g_(g),

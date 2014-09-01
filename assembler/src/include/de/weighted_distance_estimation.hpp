@@ -65,7 +65,7 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
     if (forward.size() == 0)
       return result;
 
-    Point::value_type max_dist = (Point::value_type) this->max_distance_;
+    DEDistance max_dist = this->max_distance_;
     size_t cur_dist = 0;
     vector<double> weights(forward.size());
     for (auto iter = histogram.begin(); iter != histogram.end(); ++iter) {
@@ -78,7 +78,7 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
       if (cur_dist + 1 < forward.size() && ls((double) forward[cur_dist + 1] - point.d,
                                               point.d - (double) forward[cur_dist])) {
         ++cur_dist;
-        if (le(abs((Point::value_type) forward[cur_dist] - point.d), max_dist))
+        if (le(abs(forward[cur_dist] - point.d), max_dist))
           weights[cur_dist] += point.weight * weight_f_(forward[cur_dist] - rounded_d(point));
       }
       else if (cur_dist + 1 < forward.size() && eq(forward[cur_dist + 1] - point.d,

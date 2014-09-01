@@ -253,7 +253,7 @@ class DataPrinter {
                         fprintf(file, "%zu %zu %.2f %.2f %.2f .\n",
                                 e1.int_id(),
                                 e2.int_id(),
-                                point.d, point.weight, point.var);
+                                (double)point.d, (double)point.weight, (double)point.var);
                     }
             }
         }

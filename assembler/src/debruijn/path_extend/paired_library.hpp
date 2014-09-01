@@ -62,8 +62,8 @@ struct PairedInfoLibrary {
 
         for (auto it = index_.edge_begin(e); it != index_.edge_end(e); ++it) {
             if (it->first != e && g_.length(it->first) >= min_len &&
-                math::le(it->second.d, (Point::value_type) max_dist) &&
-                math::ge(it->second.d, (Point::value_type) min_dist)) {
+                math::le(it->second.d, (omnigraph::de::DEDistance) max_dist) &&
+                math::ge(it->second.d, (omnigraph::de::DEDistance) min_dist)) {
                 result.insert(it->first);
 
             }

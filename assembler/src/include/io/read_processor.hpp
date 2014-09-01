@@ -5,10 +5,14 @@
 
 #include "openmp_wrapper.h"
 
+#pragma GCC diagnostic push
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wunused-private-field"
+#endif
 namespace hammer {
 class ReadProcessor {
-  static size_t const         cacheline_size = 64;
-  typedef char                cacheline_pad_t [cacheline_size];
+  static size_t const cacheline_size = 64;
+  typedef char        cacheline_pad_t [cacheline_size];
 
   unsigned nthreads_;
   cacheline_pad_t pad0;
@@ -50,7 +54,7 @@ private:
 
 public:
   ReadProcessor(unsigned nthreads)
-      : nthreads_(nthreads), read_(0), processed_(0) {}
+          : nthreads_(nthreads), read_(0), processed_(0) {}
 
   size_t read() const { return read_; }
   size_t processed() const { return processed_; }
@@ -181,6 +185,8 @@ public:
       writer << outr;
   }
 };
+
+#pragma GCC diagnostic pop
 
 }
 

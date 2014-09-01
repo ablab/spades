@@ -213,13 +213,15 @@ class FloatingPoint {
   //   - treats really large numbers as almost equal to infinity.
   //   - thinks +0.0 and -0.0 are 0 DLP's apart.
 
-  bool AlmostEquals(const FloatingPoint& rhs) const {
+  template<class FloatingPoint2>
+  bool AlmostEquals(const FloatingPoint2& rhs) const {
+    static_assert(kBitCount == FloatingPoint2::kBitCount, "Can only compare similar sized types");
     // The IEEE standard says that any comparison operation involving
     // a NAN must return false.
     if (is_nan() || rhs.is_nan()) return false;
     //cout << "ULPS " << DistanceBetweenSignAndMagnitudeNumbers(u_.bits_, rhs.u_.bits_) << endl;
 
-    return DistanceBetweenSignAndMagnitudeNumbers(u_.bits_, rhs.u_.bits_)
+    return DistanceBetweenSignAndMagnitudeNumbers(u_.bits_, rhs.bits())
         <= kMaxUlps;
   }
 
@@ -283,8 +285,15 @@ bool eq(T lhs, T rhs) {
   //return !ls(lhs, rhs) && !ls(rhs, lhs)[> std::abs(lhs - rhs) < eps<T>()<];
 }
 
-template<class T> inline
-bool ls(T lhs, T rhs) {
+template<class T, class U> inline
+bool eq(T lhs, U rhs) {
+  const FloatingPoint<T> lhs_(lhs); const FloatingPoint<U> rhs_(rhs);
+  return lhs_.AlmostEquals(rhs_);
+  //return !ls(lhs, rhs) && !ls(rhs, lhs)[> std::abs(lhs - rhs) < eps<T>()<];
+}
+
+template<class T, class U> inline
+bool ls(T lhs, U rhs) {
   if (!eq(lhs, rhs))
     return (lhs < rhs);
   return false;
@@ -295,14 +304,14 @@ bool ls(T lhs, T rhs) {
   //return (eps<T>() < (rhs - lhs) / maxim);
 }
 
-template<class T> inline
-bool gr(T lhs, T rhs) { return ls(rhs, lhs); }
+template<class T, class U> inline
+bool gr(T lhs, U rhs) { return ls(rhs, lhs); }
 
-template<class T> inline
-bool le(T lhs, T rhs) { return !ls(rhs, lhs); }
+template<class T, class U> inline
+bool le(T lhs, U rhs) { return !ls(rhs, lhs); }
 
-template<class T> inline
-bool ge(T lhs, T rhs) { return !ls(lhs, rhs); }
+template<class T, class U> inline
+bool ge(T lhs, U rhs) { return !ls(lhs, rhs); }
 
 template<class T> inline
 T floor(T t) { return std::floor(t + eps<T>()); }

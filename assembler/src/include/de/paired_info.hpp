@@ -24,22 +24,63 @@ namespace omnigraph {
 
 namespace de {
 
+// Define several storage-only types which can be implicitly converted to / from
+// double.
+
+class DEDistance {
+  public:
+    DEDistance() = default;
+    DEDistance(int d)
+            : d_((float)d) {}
+    DEDistance(double d)
+            : d_((float)d) {}
+    DEDistance(size_t d)
+            : d_((float)d) {}
+    operator float() const { return d_; }
+    DEDistance operator+= (double d) {
+        d_ += (float)d;
+        return *this;
+    }
+    DEDistance operator*= (double d) {
+        d_ *= (float)d;
+        return *this;
+    }
+  private:
+    float d_;
+};
+
+class DEWeight {
+  public:
+    DEWeight() = default;
+    DEWeight(double d)
+            : d_((float)d) {}
+    operator float() const { return d_; }
+    DEWeight operator+= (double d) {
+        d_ += (float)d;
+        return *this;
+    }
+    DEWeight operator*= (double d) {
+        d_ *= (float)d;
+        return *this;
+    }
+  private:
+    float d_;
+};
+
 /**
  * PairInfo class represents basic data unit for paired information: edges first and second appear
  * in genome at distance d_ and this information has weight weight_.
  */
 struct Point {
   public:
-    typedef float value_type;
-
-    value_type d;
-    value_type weight;
-    value_type var;
+    DEDistance d;
+    DEWeight   weight;
+    DEWeight   var;
 
     Point()
             : d(0.0), weight(0.0), var(0.0) {}
 
-    explicit Point(value_type distance, value_type weight, value_type variance)
+    explicit Point(DEDistance distance, DEWeight weight, DEWeight variance)
             : d(distance), weight(weight), var(variance) {}
 
     Point(const Point& rhs)
@@ -55,9 +96,9 @@ struct Point {
 
     Point& operator=(const Point& rhs) {
         using namespace math;
-        update_value_if_needed<value_type>(d, rhs.d);
-        update_value_if_needed<value_type>(weight, rhs.weight);
-        update_value_if_needed<value_type>(var, rhs.var);
+        update_value_if_needed<DEDistance>(d, rhs.d);
+        update_value_if_needed<DEWeight>(weight, rhs.weight);
+        update_value_if_needed<DEWeight>(var, rhs.var);
         return *this;
     }
 
@@ -78,13 +119,13 @@ struct Point {
     }
 
     Point operator+(const Point &rhs) const {
-        value_type weight_rhs = rhs.weight;
+        auto weight_rhs = rhs.weight;
         // counting new bounds in the case, when we are merging pair infos with var != 0
-        value_type left_bound = std::min(d - var, rhs.d - rhs.var);
-        value_type right_bound = std::max(d + var, rhs.d + rhs.var);
-        value_type new_dist = (left_bound + right_bound) * 0.5f;
-        value_type new_weight = weight + weight_rhs;
-        value_type new_variance = (right_bound - left_bound) * 0.5f;
+        auto left_bound = std::min(d - var, rhs.d - rhs.var);
+        auto right_bound = std::max(d + var, rhs.d + rhs.var);
+        auto new_dist = (left_bound + right_bound) * 0.5f;
+        auto new_weight = weight + weight_rhs;
+        auto new_variance = (right_bound - left_bound) * 0.5f;
 
         return Point(new_dist, new_weight, new_variance);
     }
@@ -107,7 +148,7 @@ inline bool ClustersIntersect(Point p1, Point p2) {
 }
 
 inline Point ConjugatePoint(size_t l1, size_t l2, const Point& point) {
-    return Point(point.d + (Point::value_type) l2 - (Point::value_type) l1, point.weight, point.var);
+    return Point(point.d + DEDistance(l2 - l1), point.weight, point.var);
 }
 
 // tuple of a pair of edges @first, @second, and a @point
@@ -125,7 +166,7 @@ struct PairInfo {
             : first(pair_info.first), second(pair_info.second), point(pair_info.point)
     {}
 
-    PairInfo(EdgeId first, EdgeId second, Point::value_type d, Point::value_type weight, Point::value_type var)
+    PairInfo(EdgeId first, EdgeId second, DEDistance d, DEWeight weight, DEWeight var)
             : first(first), second(second), point(d, weight, var)
     {}
 
@@ -220,7 +261,6 @@ class PairedInfoStorage {
  public:
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Histogram::const_iterator HistIterator;
-    typedef typename Point::value_type PointValueType;
     typedef InnerMapType InnerMap;
     typedef typename IndexDataType::const_iterator DataIterator;
 
@@ -375,13 +415,13 @@ class PairedInfoStorage {
     }
 
     void AddPairInfo(const std::pair<EdgeId, EdgeId>& edge_pair,
-                     PointValueType d, PointValueType weight, PointValueType var,
+                     DEDistance d, DEWeight weight, DEWeight var,
                      bool add_reversed = true) {
         AddPairInfo(edge_pair.first, edge_pair.second, Point(d, weight, var), add_reversed);
     }
 
     void AddPairInfo(EdgeId e1, EdgeId e2,
-                     PointValueType d, PointValueType weight, PointValueType var,
+                     double d, double weight, double var,
                      bool add_reversed = true) {
         AddPairInfo(e1, e2, Point(d, weight, var), add_reversed);
     }
@@ -846,7 +886,7 @@ public:
     result_weight /= cov_norm_coeff;
 
     Point result(point);
-    result.weight = (float)result_weight;
+    result.weight = result_weight;
     return result;
   }
 };
@@ -900,8 +940,7 @@ class PairedInfoNormalizer {
 // temporary due to path_extend absolute thresholds
   void FillNormalizedIndex(const PairedInfoIndexT<Graph>& paired_index,
                                  PairedInfoIndexT<Graph>& normalized_index,
-                                 double coeff = 1.) const
-  {
+                                 double coeff = 1.) const {
     for (auto I = paired_index.begin(), E = paired_index.end(); I != E; ++I) {
       const Histogram& hist = *I;
       EdgeId e1 = I.first();
@@ -910,7 +949,7 @@ class PairedInfoNormalizer {
       for (auto it2 = hist.begin(); it2 != hist.end(); ++it2) {
         Point tmp(*it2);
         TRACE("TEMP point " << tmp);
-        tmp.weight *= coeff;
+        tmp.weight = tmp.weight * coeff;
         TRACE("Normalized pair info " << tmp << " " << normalizing_function_(e1, e2, tmp));
         normalized_index.AddPairInfo(e1, e2, normalizing_function_(e1, e2, tmp), false);
       }
