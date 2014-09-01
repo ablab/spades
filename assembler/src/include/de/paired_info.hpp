@@ -194,10 +194,6 @@ struct PairInfo {
     double d() const      { return point.d;      }
     double weight() const { return point.weight; }
     double var() const    { return point.var;    }
-
-    double& d()           { return point.d;      }
-    double& weight()      { return point.weight; }
-    double& var()         { return point.var;    }
 };
 
 template<typename EdgeId>
