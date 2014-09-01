@@ -31,6 +31,7 @@ class DebruijnOnlineVisualizer : public OnlineVisualizer<DebruijnEnvironment> {
     AddCommand(make_shared<DrawPoorlyAssembledCommand>());
     AddCommand(make_shared<DrawUnresolvedWRTAssemblyCommand>());
     AddCommand(make_shared<DrawUnresolvedWRTReferenceCommand>());
+    AddCommand(make_shared<DrawConnectedCommand>());
     AddCommand(make_shared<ShowPositionCommand>());
 
     AddCommand(make_shared<PrintPathsCommand>());

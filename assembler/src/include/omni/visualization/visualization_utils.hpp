@@ -33,6 +33,19 @@ void WriteComponents(const Graph& g,
 }
 
 template<class Graph>
+void WriteSizeLimitedComponents(const Graph& g,
+        const string& folder_name,
+        shared_ptr<GraphSplitter<Graph>> inner_splitter,
+        shared_ptr<GraphColorer<Graph>> colorer,
+        const GraphLabeler<Graph> &labeler, int min_component_size, int max_component_size, size_t max_components) {
+    EmptyGraphLinker<Graph> linker;
+
+    auto filter = make_shared<omnigraph::ComponentSizeFilter<Graph>>(g, 1000000000, (size_t) min_component_size, (size_t) max_component_size);
+    shared_ptr<GraphSplitter<Graph>> splitter = make_shared<omnigraph::CollectingSplitterWrapper<Graph>>(inner_splitter, filter);
+    omnigraph::visualization::SplittingGraphVisualizer<Graph>(g, labeler, *colorer, linker, false, max_components).SplitAndVisualize(*splitter, folder_name);
+}
+
+template<class Graph>
 void WriteComponent(const GraphComponent<Graph>& gc,
         const string& file_name, shared_ptr<GraphColorer<Graph>> colorer,
         const GraphLabeler<Graph> &labeler) {

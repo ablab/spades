@@ -744,6 +744,7 @@ def main(args):
             message = " * Assembled scaffolds are in " + support.process_spaces(result_scaffolds_filename)
             if os.path.isfile(result_scaffolds_filename[:-6] + ".fastg"):
                 message += " (" + os.path.basename(result_scaffolds_filename[:-6] + ".fastg") + ")"
+
             log.info(message)
         #log.info("")
 

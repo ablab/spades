@@ -827,6 +827,17 @@ shared_ptr<GraphSplitter<Graph>> ReliableSplitter(const Graph &graph,
 }
 
 template<class Graph>
+shared_ptr<GraphSplitter<Graph>> ConnectedSplitter(const Graph &graph,
+                            size_t edge_length_bound = 1000000,
+                            size_t max_size = 1000000) {
+    typedef typename Graph::VertexId VertexId;
+    shared_ptr<RelaxingIterator<VertexId>> inner_iterator = make_shared<CollectionIterator<set<VertexId>>>(graph.begin(), graph.end());
+    shared_ptr<AbstractNeighbourhoodFinder<Graph>> nf = make_shared<ReliableNeighbourhoodFinder<Graph>>(graph, edge_length_bound, max_size);
+    return make_shared<NeighbourhoodFindingSplitter<Graph>>(graph,
+            inner_iterator, nf);
+}
+
+template<class Graph>
 shared_ptr<GraphSplitter<Graph>> ReliableSplitterAlongPath(
         const Graph &graph, const vector<typename Graph::EdgeId>& path, size_t edge_length_bound = PathNeighbourhoodFinder<Graph>::DEFAULT_EDGE_LENGTH_BOUND,
                             size_t max_size = PathNeighbourhoodFinder<Graph>::DEFAULT_MAX_SIZE, 

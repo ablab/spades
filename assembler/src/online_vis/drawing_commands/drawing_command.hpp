@@ -60,6 +60,18 @@ protected:
         LOG("Contig " << contig.name() << " has been drawn");
     }
 
+    void DrawConnectedComponents (DebruijnEnvironment& curr_env,  int min_size, int max_size, string label = "") const {
+        make_dir(curr_env.folder_);
+        stringstream namestream;
+        namestream << curr_env.folder_ << "/" << curr_env.GetFormattedPictureCounter() << "_" << curr_env.file_name_base_ << "/";
+        make_dir(namestream.str());
+        namestream << label;
+        make_dir(namestream.str());
+        omnigraph::visualization::WriteSizeLimitedComponents<Graph>(curr_env.graph(), namestream.str(), omnigraph::ConnectedSplitter<Graph>(curr_env.graph()), curr_env.coloring_, curr_env.labeler(), min_size, max_size, 10000000);
+        cout << "The pictures is written to " << namestream.str() << endl;
+        curr_env.picture_counter_++;
+    }
+
     //TODO: copy zgrviewer
     int ShowPicture(DebruijnEnvironment& curr_env, VertexId vertex, string label = "") const {
         DrawPicture(curr_env, vertex, label);
