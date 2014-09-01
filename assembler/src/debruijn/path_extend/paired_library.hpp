@@ -61,7 +61,9 @@ struct PairedInfoLibrary {
             return result.size();
 
         for (auto it = index_.edge_begin(e); it != index_.edge_end(e); ++it) {
-            if (it->first != e && g_.length(it->first) >= min_len && math::le(it->second.d, (double) max_dist) && math::ge(it->second.d, (double) min_dist)) {
+            if (it->first != e && g_.length(it->first) >= min_len &&
+                math::le(it->second.d, (Point::value_type) max_dist) &&
+                math::ge(it->second.d, (Point::value_type) min_dist)) {
                 result.insert(it->first);
 
             }

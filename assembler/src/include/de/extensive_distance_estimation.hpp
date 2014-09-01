@@ -103,7 +103,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
     if (hist.size() == 0)
       return true;
 
-    double prev = hist.begin()->d;
+    auto prev = hist.begin()->d;
     for (auto it = hist.begin(); it != hist.end(); ++it) {
       if (math::gr(prev, it->d))
         return false;

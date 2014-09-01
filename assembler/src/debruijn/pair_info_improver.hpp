@@ -82,7 +82,7 @@ class PairInfoImprover {
       private:
         bool IsConsistent(EdgeId /*e*/, EdgeId e1, EdgeId e2,
                           const omnigraph::de::Point& p1, const omnigraph::de::Point& p2) const {
-            if (math::le(p1.d, 0.) || math::le(p2.d, 0.) || math::gr(p1.d, p2.d))
+            if (math::le(p1.d, 0.f) || math::le(p2.d, 0.f) || math::gr(p1.d, p2.d))
                 return true;
 
             double pi_dist = p2.d - p1.d;

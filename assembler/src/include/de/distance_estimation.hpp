@@ -326,7 +326,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
     vector<double> weights(forward.size(), 0.);
     for (auto iter = histogram.begin(), end_iter = histogram.end(); iter != end_iter; ++iter) {
       const Point& point = *iter;
-      if (ls(2. * point.d + (double) second_len, (double) first_len))
+      if (ls(2.f * point.d + (Point::value_type) second_len, (Point::value_type) first_len))
           continue;
       while (cur_dist + 1 < forward.size() && forward[cur_dist + 1] < point.d)
         ++cur_dist;
@@ -335,20 +335,20 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
           && ls(forward[cur_dist + 1] - point.d, point.d - forward[cur_dist]))
       {
         ++cur_dist;
-        if (le(abs(forward[cur_dist] - point.d), (double) max_distance_))
+        if (le(abs(forward[cur_dist] - point.d), (Point::value_type) max_distance_))
           weights[cur_dist] += point.weight;
       }
       else if (cur_dist + 1 < forward.size()
           && eq(forward[cur_dist + 1] - point.d,
               point.d - forward[cur_dist]))
       {
-        if (le(abs(forward[cur_dist] - point.d), (double) max_distance_))
+        if (le(abs(forward[cur_dist] - point.d), (Point::value_type) max_distance_))
           weights[cur_dist] += point.weight * 0.5;
         ++cur_dist;
-        if (le(abs(forward[cur_dist] - point.d), (double) max_distance_))
+        if (le(abs(forward[cur_dist] - point.d), (Point::value_type) max_distance_))
           weights[cur_dist] += point.weight * 0.5;
       } else {
-        if (le(abs(forward[cur_dist] - point.d), (double) max_distance_))
+          if (le(abs(forward[cur_dist] - point.d), (Point::value_type) max_distance_))
           weights[cur_dist] += point.weight;
       }
     }
@@ -408,8 +408,8 @@ template<class Graph> double DistanceEstimator<Graph>::time_clustering     = 0.;
 template<class Graph>
 class JumpingEstimator {
  public:
-  JumpingEstimator(const PairedInfoIndexT<Graph>& index) : index_(index) {
-  }
+  JumpingEstimator(const PairedInfoIndexT<Graph>& index)
+          : index_(index) {}
 
   void Estimate(PairedInfoIndexT<Graph>& result) {
     for (auto it = index_.begin(); it != index_.end(); ++it) {
@@ -418,7 +418,7 @@ class JumpingEstimator {
       EdgeId e2 = it.second();
       double forward = 0.;
       for (auto pi_it = infos.begin(); pi_it != infos.end(); ++pi_it)
-        if (math::gr(pi_it->d, 0.))
+        if (math::gr(pi_it->d, 0.f))
           forward += pi_it->weight;
       if (forward > 0)
         result.AddPairInfo(e1, e2, 1000000., forward, 0.);

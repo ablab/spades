@@ -30,7 +30,7 @@ namespace de {
  */
 struct Point {
   public:
-    typedef double value_type;
+    typedef float value_type;
 
     value_type d;
     value_type weight;
@@ -82,9 +82,9 @@ struct Point {
         // counting new bounds in the case, when we are merging pair infos with var != 0
         value_type left_bound = std::min(d - var, rhs.d - rhs.var);
         value_type right_bound = std::max(d + var, rhs.d + rhs.var);
-        value_type new_dist = (left_bound + right_bound) * 0.5;
+        value_type new_dist = (left_bound + right_bound) * 0.5f;
         value_type new_weight = weight + weight_rhs;
-        value_type new_variance = (right_bound - left_bound) * 0.5;
+        value_type new_variance = (right_bound - left_bound) * 0.5f;
 
         return Point(new_dist, new_weight, new_variance);
     }
@@ -107,7 +107,7 @@ inline bool ClustersIntersect(Point p1, Point p2) {
 }
 
 inline Point ConjugatePoint(size_t l1, size_t l2, const Point& point) {
-  return Point(point.d + (double) l2 - (double) l1, point.weight, point.var);
+    return Point(point.d + (Point::value_type) l2 - (Point::value_type) l1, point.weight, point.var);
 }
 
 // tuple of a pair of edges @first, @second, and a @point
@@ -125,7 +125,7 @@ struct PairInfo {
             : first(pair_info.first), second(pair_info.second), point(pair_info.point)
     {}
 
-    PairInfo(EdgeId first, EdgeId second, double d, double weight, double var)
+    PairInfo(EdgeId first, EdgeId second, Point::value_type d, Point::value_type weight, Point::value_type var)
             : first(first), second(second), point(d, weight, var)
     {}
 
@@ -133,7 +133,7 @@ struct PairInfo {
             : first(first), second(second), point(point) {}
 
     // Two paired infos are considered equal
-    // if they coinside in all parameters except for weight and variance.
+    // if they coincide in all parameters except for weight and variance.
     bool operator==(const PairInfo& rhs) const {
         const PairInfo &lhs = *this;
         return lhs.first == rhs.first && lhs.second == rhs.second && lhs.point == rhs.point;
@@ -551,7 +551,7 @@ class PairedInfoStorage {
   private:
     bool IsSymmetric(EdgeId e1, EdgeId e2,
                      Point point) const {
-        return (e1 == e2) && math::eq(point.d, 0.);
+        return (e1 == e2) && math::eq(point.d, 0.f);
     }
 
     // modifying the histogram
@@ -634,7 +634,7 @@ class PairedInfoStorage {
                                 cur_point.d - shift,
                                 weight_scale * cur_point.weight,
                                 cur_point.var);
-                } else if (!math::eq(cur_point.d, 0.)) {
+                } else if (!math::eq(cur_point.d, 0.f)) {
                     AddPairInfo(new_edge, new_edge,
                                 cur_point.d,
                                 weight_scale * 0.5 * cur_point.weight,
@@ -823,11 +823,10 @@ public:
 
   const Point NormalizeWeight(EdgeId e1, EdgeId e2, Point point) const {
     double w = 0.;
-    if (math::eq(point.d, 0.) && e1 == e2) {
+    if (math::eq(point.d, 0.f) && e1 == e2) {
       w = 0. + (double) g_.length(e1) - (double) insert_size_ + 2. * (double) read_length_ + 1. - (double) k_;
-    }
-    else {
-      if (math::ls(point.d, 0.)) {
+    } else {
+      if (math::ls(point.d, 0.f)) {
         using std::swap;
         swap(e1, e2);
       }
@@ -847,7 +846,7 @@ public:
     result_weight /= cov_norm_coeff;
 
     Point result(point);
-    result.weight = result_weight;
+    result.weight = (float)result_weight;
     return result;
   }
 };

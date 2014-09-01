@@ -74,7 +74,7 @@ void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_ind
                 double total_weight = prev_it->weight;
                 for (auto inner_it = it; inner_it != end_it; ++inner_it) {
                     total_weight += inner_it->weight;
-                    if (math::eq(inner_it->d + prev_it->d, 0.)) {
+                    if (math::eq(inner_it->d + prev_it->d, 0.f)) {
                         success = true;
                         double center = 0.;
                         double var = inner_it->d + inner_it->var;

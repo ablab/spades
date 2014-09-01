@@ -308,13 +308,13 @@ template<class T> inline
 T floor(T t) { return std::floor(t + eps<T>()); }
 
 template<class T> inline
-T round(T t) { return floor(t + 0.5); }
+T round(T t) { return floor(t + (T)0.5); }
 
 template<class T> inline
 int round_to_zero(T t) {
   using math::ls;
   int res = (int) math::round(std::abs(t));
-  if (ls(t, 0.))
+  if (ls(t, (T)0.))
     res = -res;
   return res;
 }
