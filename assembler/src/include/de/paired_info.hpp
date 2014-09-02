@@ -148,7 +148,7 @@ inline bool ClustersIntersect(Point p1, Point p2) {
 }
 
 inline Point ConjugatePoint(size_t l1, size_t l2, const Point& point) {
-    return Point(point.d + DEDistance(l2 - l1), point.weight, point.var);
+    return Point(point.d + DEDistance(l2) - DEDistance(l1), point.weight, point.var);
 }
 
 // tuple of a pair of edges @first, @second, and a @point
