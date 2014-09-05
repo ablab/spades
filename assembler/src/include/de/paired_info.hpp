@@ -13,6 +13,7 @@
 #include <boost/iterator/iterator_facade.hpp>
 
 #include <btree/btree_set.h>
+#include <btree/safe_btree_map.h>
 
 #include <cmath>
 #include <map>
@@ -251,8 +252,8 @@ inline bool IsSymmetric(PairInfo<EdgeId> const& pi) {
 
 // new map { EdgeId -> (EdgeId -> (d, weight, var)) }
 template<class Graph,
-         class InnerMapType = std::map<typename Graph::EdgeId, Histogram>,
-         class IndexDataType = std::map<typename Graph::EdgeId, InnerMapType> >
+         class InnerMapType = btree::safe_btree_map<typename Graph::EdgeId, Histogram>,
+         class IndexDataType = btree::safe_btree_map<typename Graph::EdgeId, InnerMapType> >
 class PairedInfoStorage {
  public:
     typedef typename Graph::EdgeId EdgeId;
