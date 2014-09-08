@@ -81,7 +81,7 @@ struct Point {
     Point()
             : d(0.0), weight(0.0), var(0.0) {}
 
-    explicit Point(DEDistance distance, DEWeight weight, DEWeight variance)
+    Point(DEDistance distance, DEWeight weight, DEWeight variance)
             : d(distance), weight(weight), var(variance) {}
 
     Point(const Point& rhs)
@@ -141,7 +141,7 @@ inline std::ostream& operator<<(std::ostream& os, const Point &point) {
 }
 
 //typedef std::set<Point> Histogram;
-typedef btree::btree_set<Point> Histogram;
+typedef btree::btree_set<Point, std::less<Point>, std::allocator<Point>, 4096> Histogram;
 
 inline bool ClustersIntersect(Point p1, Point p2) {
   return math::le(p1.d, p2.d + p1.var + p2.var) &&
@@ -411,18 +411,6 @@ class PairedInfoStorage {
         AddPairInfo(edge_pair.first, edge_pair.second, point_to_add, add_reversed);
     }
 
-    void AddPairInfo(const std::pair<EdgeId, EdgeId>& edge_pair,
-                     DEDistance d, DEWeight weight, DEWeight var,
-                     bool add_reversed = true) {
-        AddPairInfo(edge_pair.first, edge_pair.second, Point(d, weight, var), add_reversed);
-    }
-
-    void AddPairInfo(EdgeId e1, EdgeId e2,
-                     double d, double weight, double var,
-                     bool add_reversed = true) {
-        AddPairInfo(e1, e2, Point(d, weight, var), add_reversed);
-    }
-
     void AddPairInfo(EdgeId e1, EdgeId e2,
                      Point point_to_add,
                      bool add_reversed = true) {
@@ -668,19 +656,19 @@ class PairedInfoStorage {
                 Point cur_point = *point_iter;
                 if (old_edge != e2) {
                     AddPairInfo(new_edge, e2,
-                                cur_point.d - shift,
-                                weight_scale * cur_point.weight,
-                                cur_point.var);
+                                { cur_point.d - shift,
+                                  weight_scale * cur_point.weight,
+                                  cur_point.var });
                 } else if (!math::eq(cur_point.d, 0.f)) {
                     AddPairInfo(new_edge, new_edge,
-                                cur_point.d,
-                                weight_scale * 0.5 * cur_point.weight,
-                                cur_point.var);
+                                { cur_point.d,
+                                  weight_scale * 0.5 * cur_point.weight,
+                                  cur_point.var });
                 } else {
                     AddPairInfo(new_edge, new_edge,
-                                cur_point.d,
-                                weight_scale * cur_point.weight,
-                                cur_point.var);
+                                { cur_point.d,
+                                  weight_scale * cur_point.weight,
+                                  cur_point.var });
                 }
             }
         }
@@ -750,7 +738,7 @@ class PairedInfoIndexT: public GraphActionHandler<Graph>, public PairedInfoStora
 #pragma omp critical
         {
             TRACE("Handling Addition " << graph.int_id(edge));
-            this->AddPairInfo(edge, edge, 0., 0., 0.);
+            this->AddPairInfo(edge, edge, { 0., 0., 0. });
         }
     }
 
@@ -763,7 +751,7 @@ class PairedInfoIndexT: public GraphActionHandler<Graph>, public PairedInfoStora
 
     virtual void HandleMerge(const vector<EdgeId>& old_edges, EdgeId new_edge) {
         TRACE("Handling Merging");
-        this->AddPairInfo(new_edge, new_edge, 0., 0., 0.);
+        this->AddPairInfo(new_edge, new_edge, { 0., 0., 0. });
         int shift = 0;
         const Graph& graph = this->g();
         for (size_t i = 0; i < old_edges.size(); ++i) {

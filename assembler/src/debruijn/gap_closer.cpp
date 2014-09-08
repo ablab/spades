@@ -55,7 +55,7 @@ class GapCloserPairedIndexFiller {
                 for (size_t j = 0; j < path2.size(); ++j) {
                     auto InTipIter = InTipMap.find(path2[j]);
                     if (InTipIter != InTipMap.end())
-                        paired_index.AddPairInfo(OutTipIter->second.first, InTipIter->second.first, 1000000., 1., 0.);
+                        paired_index.AddPairInfo(OutTipIter->second.first, InTipIter->second.first, { 1000000., 1., 0. });
                 }
             }
         }

@@ -501,7 +501,7 @@ class DataScanner {
             if (e1 == EdgeId(NULL) || e2 == EdgeId(NULL))
                 continue;
             TRACE(e1 << " " << e2 << " " << d << " " << w);
-            paired_index.AddPairInfo(e1, e2, d, w, v, false);
+            paired_index.AddPairInfo(e1, e2, { d, w, v }, false);
         }
         DEBUG("PII SIZE " << paired_index.size());
         fclose(file);

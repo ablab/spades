@@ -29,7 +29,7 @@ public:
 
     virtual void StartProcessLibrary(size_t threads_count) {
         for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it)
-            paired_index_.AddPairInfo(*it, *it, 0., 0., 0.);
+            paired_index_.AddPairInfo(*it, *it, { 0., 0., 0. });
         for (size_t i = 0; i < threads_count; ++i)
             buffer_pi_.emplace_back();
     }
@@ -63,9 +63,9 @@ private:
                            const MappingPath<EdgeId>& path1,
                            const MappingPath<EdgeId>& path2, size_t read_distance) const {
         for (size_t i = 0; i < path1.size(); ++i) {
-            pair<EdgeId, MappingRange> mapping_edge_1 = path1[i];
+            std::pair<EdgeId, MappingRange> mapping_edge_1 = path1[i];
             for (size_t j = 0; j < path2.size(); ++j) {
-                pair<EdgeId, MappingRange> mapping_edge_2 = path2[j];
+                std::pair<EdgeId, MappingRange> mapping_edge_2 = path2[j];
                 double weight = weight_f_(mapping_edge_1.second,
                                           mapping_edge_2.second);
                 size_t kmer_distance = read_distance
@@ -75,9 +75,8 @@ private:
                         + (int) mapping_edge_1.second.mapped_range.start_pos
                         - (int) mapping_edge_2.second.mapped_range.end_pos;
 
-                paired_index.AddPairInfo(mapping_edge_1.first,
-                                         mapping_edge_2.first,
-                                         (double) edge_distance, weight, 0.);
+                paired_index.AddPairInfo(mapping_edge_1.first, mapping_edge_2.first,
+                                         { (double) edge_distance, weight, 0. });
             }
         }
     }
