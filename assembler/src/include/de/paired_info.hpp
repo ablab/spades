@@ -141,7 +141,7 @@ inline std::ostream& operator<<(std::ostream& os, const Point &point) {
 }
 
 //typedef std::set<Point> Histogram;
-typedef btree::btree_set<Point, std::less<Point>, std::allocator<Point>, 4096> Histogram;
+typedef btree::btree_set<Point, std::less<Point>, std::allocator<Point>, 1024> Histogram;
 
 inline bool ClustersIntersect(Point p1, Point p2) {
   return math::le(p1.d, p2.d + p1.var + p2.var) &&
