@@ -31,10 +31,9 @@ namespace path_extend {
 
 struct PairedInfoLibrary {
     PairedInfoLibrary(size_t k, Graph& g, size_t readS, size_t is, size_t is_min, size_t is_max, size_t is_div,
-                      const PairedInfoIndexT<Graph>& index, bool is_mp,
+                      bool is_mp,
                       const std::map<int, size_t>& is_distribution)
             : g_(g),
-              index_(index),
               k_(k),
               read_size_(readS),
               is_(is),
@@ -47,15 +46,67 @@ struct PairedInfoLibrary {
               ideal_pi_counter_(g, (int) is_min, (int) is_max, readS, is_distribution) {
     }
 
-    void SetCoverage(double cov) {
-        coverage_coeff_ = cov;
+    virtual ~PairedInfoLibrary() {}
+  
+    void SetCoverage(double cov) { coverage_coeff_ = cov; }
+    void SetSingleThreshold(double threshold) { single_threshold_ = threshold; }
+
+    virtual size_t FindJumpEdges(EdgeId e, set<EdgeId>& result, int min_dist = 0, int max_dist = 100000000, size_t min_len = 0) = 0;
+    virtual void CountDistances(EdgeId e1, EdgeId e2, vector<int>& dist, vector<double>& w) const = 0;
+    virtual double CountPairedInfo(EdgeId e1, EdgeId e2, int distance, bool from_interval = false) const = 0;
+    virtual double CountPairedInfo(EdgeId e1, EdgeId e2, size_t dist_min, size_t dist_max) const = 0;
+
+    double IdealPairedInfo(EdgeId e1, EdgeId e2, int distance, bool additive = false) {
+        return ideal_pi_counter_.IdealPairedInfo(e1, e2, distance, additive);
     }
 
-    void SetSingleThreshold(double threshold) {
-        single_threshold_ = threshold;
+    double NormalizeWeight(const DePairInfo& pair_info) {
+        double w = IdealPairedInfo(pair_info.first, pair_info.second,
+                                   rounded_d(pair_info));
+
+        double result_weight = pair_info.weight();
+        if (math::gr(w, 0.))
+            result_weight /= w;
+        else
+            result_weight = 0.0;
+
+        return result_weight;
     }
 
-    size_t FindJumpEdges(EdgeId e, set<EdgeId>& result, int min_dist = 0, int max_dist = 100000000, size_t min_len = 0) {
+    size_t GetISMin() const { return is_min_; }
+    double GetSingleThreshold() const { return single_threshold_; }
+    double GetCoverageCoeff() const { return coverage_coeff_; }
+    size_t GetISMax() const { return is_max_; }
+    size_t GetIsVar() const { return is_div_; }
+    size_t GetLeftVar() const { return is_ - is_min_; }
+    size_t GetRightVar() const { return is_max_ - is_; }
+    size_t GetReadSize() const { return read_size_; }
+    bool IsMp() const { return is_mp_; }
+
+    const Graph& g_;
+    size_t k_;
+    size_t read_size_;
+    size_t is_;
+    size_t is_min_;
+    size_t is_max_;
+    size_t is_div_;
+    bool is_mp_;
+    double single_threshold_;
+    double coverage_coeff_;
+    IdealPairInfoCounter ideal_pi_counter_;
+protected:
+    DECL_LOGGER("PathExtendPI");
+};
+
+template<class Index>
+struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
+    PairedInfoLibraryWithIndex(size_t k, Graph& g, size_t readS, size_t is, size_t is_min, size_t is_max, size_t is_div,
+                               const Index& index, bool is_mp,
+                               const std::map<int, size_t>& is_distribution)
+        : PairedInfoLibrary(k, g, readS, is, is_min, is_max, is_div, is_mp, is_distribution),
+          index_(index) {}
+          
+    virtual size_t FindJumpEdges(EdgeId e, set<EdgeId>& result, int min_dist = 0, int max_dist = 100000000, size_t min_len = 0) {
         result.clear();
         if (!index_.contains(e))
             return result.size();
@@ -71,7 +122,7 @@ struct PairedInfoLibrary {
         return result.size();
     }
 
-    void CountDistances(EdgeId e1, EdgeId e2, vector<int>& dist, vector<double>& w) const {
+    virtual void CountDistances(EdgeId e1, EdgeId e2, vector<int>& dist, vector<double>& w) const {
         if (e1 == e2)
             return;
 
@@ -85,13 +136,13 @@ struct PairedInfoLibrary {
         }
     }
 
-    double CountPairedInfo(EdgeId e1, EdgeId e2, int distance,
-                           bool from_interval = false) const {
+    virtual double CountPairedInfo(EdgeId e1, EdgeId e2, int distance,
+                                   bool from_interval = false) const {
         double weight = 0.0;
         auto pairs = index_.GetEdgePairInfo(e1, e2);
         for (auto pointIter = pairs.begin(); pointIter != pairs.end(); ++pointIter) {
             int pairedDistance = rounded_d(*pointIter);
-            int distanceDev = (int) pointIter->var;  //max((int) pointIter->var, (int) is_variation_);
+            int distanceDev = (int) pointIter->variation();  //max((int) pointIter->var, (int) is_variation_);
             //Can be modified according to distance comparison
             int d_min = distance - distanceDev;
             int d_max = distance + distanceDev;
@@ -106,7 +157,8 @@ struct PairedInfoLibrary {
         }
         return weight;
     }
-    double CountPairedInfo(EdgeId e1, EdgeId e2, size_t dist_min, size_t dist_max) const {
+
+    virtual double CountPairedInfo(EdgeId e1, EdgeId e2, size_t dist_min, size_t dist_max) const {
         double weight = 0.0;
         auto pairs = index_.GetEdgePairInfo(e1, e2);
         for (auto pointIter = pairs.begin(); pointIter != pairs.end(); ++pointIter) {
@@ -116,72 +168,8 @@ struct PairedInfoLibrary {
         }
         return weight;
     }
-    double IdealPairedInfo(EdgeId e1, EdgeId e2, int distance, bool additive = false) {
-        return ideal_pi_counter_.IdealPairedInfo(e1, e2, distance, additive);
-    }
 
-    double NormalizeWeight(const DePairInfo& pair_info) {
-        double w = IdealPairedInfo(pair_info.first, pair_info.second,
-                                   rounded_d(pair_info));
-
-        double result_weight = pair_info.weight();
-        if (math::gr(w, 0.)) {
-            result_weight /= w;
-        } else {
-            result_weight = 0.0;
-        }
-
-        return result_weight;
-    }
-
-    size_t GetISMin() const {
-        return is_min_;
-    }
-
-    double GetSingleThreshold() const {
-        return single_threshold_;
-    }
-
-    double GetCoverageCoeff() const {
-        return coverage_coeff_;
-    }
-
-    size_t GetISMax() const {
-        return is_max_;
-    }
-
-    size_t GetIsVar() const {
-    	return is_div_;
-    }
-
-    size_t GetLeftVar() const {
-        return is_ - is_min_;
-    }
-
-    size_t GetRightVar() const {
-        return is_max_ - is_;
-    }
-
-    size_t GetReadSize() const {
-        return read_size_;
-    }
-
-    bool IsMp() const {
-        return is_mp_;
-    }
-
-    const Graph& g_;
-    const PairedInfoIndexT<Graph>& index_;
-    size_t k_;
-    size_t read_size_;
-    size_t is_;
-    size_t is_min_;
-    size_t is_max_;
-    size_t is_div_;
-    bool is_mp_;
-    double single_threshold_;
-    double coverage_coeff_;
-    IdealPairInfoCounter ideal_pi_counter_;
+    const Index& index_;
 protected:
     DECL_LOGGER("PathExtendPI");
 };

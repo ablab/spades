@@ -4,13 +4,6 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-/*
- * graph_pack.hpp
- *
- *  Created on: Aug 18, 2011
- *      Author: sergey
- */
-
 #pragma once
 
 #include "omni/id_track_handler.hpp"
@@ -36,6 +29,7 @@ struct graph_pack: private boost::noncopyable {
     typedef SeqType seq_t;
     typedef EdgeIndex<graph_t, seq_t, KmerEdgeIndex> index_t;
     typedef omnigraph::de::PairedInfoIndicesT<Graph> PairedInfoIndicesT;
+    typedef omnigraph::de::UnclusteredPairedInfoIndicesT<Graph> UnclusteredPairedInfoIndicesT;
     typedef LongReadContainer<Graph> LongReadContainerT;
 
     size_t k_value;
@@ -44,7 +38,7 @@ struct graph_pack: private boost::noncopyable {
     index_t index;
     KmerMapper<graph_t, seq_t> kmer_mapper;
     FlankingCoverage<graph_t> flanking_cov;
-    PairedInfoIndicesT paired_indices;
+    UnclusteredPairedInfoIndicesT paired_indices;
     PairedInfoIndicesT clustered_indices;
     PairedInfoIndicesT scaffolding_indices;
     LongReadContainerT single_long_reads;
@@ -63,7 +57,7 @@ struct graph_pack: private boost::noncopyable {
             : k_value(k), g(k), index(g, workdir),
               kmer_mapper(g),
               flanking_cov(g, flanking_range),
-              paired_indices(g, lib_count),
+              paired_indices(lib_count),
               clustered_indices(g, lib_count),
               scaffolding_indices(g, lib_count),
               single_long_reads(g, lib_count),
@@ -123,7 +117,6 @@ struct graph_pack: private boost::noncopyable {
     }
 
     void InitRRIndices() {
-        paired_indices.Init();
         clustered_indices.Init();
         scaffolding_indices.Init();
     }
@@ -141,8 +134,10 @@ typedef graph_pack<ConjugateDeBruijnGraph, runtime_k::RtSeq, KmerFreeEdgeIndex<G
 typedef conj_graph_pack::index_t Index;
 
 typedef conj_graph_pack::PairedInfoIndicesT PairedIndicesT;
+typedef conj_graph_pack::UnclusteredPairedInfoIndicesT UnclusteredPairedIndicesT;
 typedef conj_graph_pack::LongReadContainerT LongReadContainerT;
 typedef omnigraph::de::PairedInfoIndexT<ConjugateDeBruijnGraph> PairedIndexT;
+typedef omnigraph::de::UnclusteredPairedInfoIndexT<ConjugateDeBruijnGraph> UnclusteredPairedIndexT;
 
 
 } // namespace debruijn_graph

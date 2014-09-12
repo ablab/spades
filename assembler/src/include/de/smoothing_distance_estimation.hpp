@@ -158,7 +158,7 @@ private:
     }
 
   virtual void ProcessEdge(EdgeId e1,
-                           const typename PairedInfoIndexT<Graph>::InnerMap& inner_map,
+                           const typename InPairedIndex::InnerMap& inner_map,
                            PairedInfoBuffer<Graph>& result) const {
     set<EdgeId> second_edges;
     for (auto I = inner_map.begin(), E = inner_map.end(); I != E; ++I)

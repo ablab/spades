@@ -21,7 +21,7 @@ namespace debruijn_graph {
 class LatePairedIndexFiller : public SequenceMapperListener {
     typedef boost::function<double(MappingRange, MappingRange)> WeightF;
 public:
-    LatePairedIndexFiller(const Graph &graph, WeightF weight_f, omnigraph::de::PairedInfoIndexT<Graph>& paired_index)
+    LatePairedIndexFiller(const Graph &graph, WeightF weight_f, omnigraph::de::UnclusteredPairedInfoIndexT<Graph>& paired_index)
             : graph_(graph),
               weight_f_(weight_f),
               paired_index_(paired_index) {
@@ -29,7 +29,7 @@ public:
 
     virtual void StartProcessLibrary(size_t threads_count) {
         for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it)
-            paired_index_.AddPairInfo(*it, *it, { 0., 0., 0. });
+            paired_index_.AddPairInfo(*it, *it, { 0., 0. });
         for (size_t i = 0; i < threads_count; ++i)
             buffer_pi_.emplace_back();
     }
@@ -84,7 +84,7 @@ private:
 private:
     const Graph& graph_;
     WeightF weight_f_;
-    omnigraph::de::PairedInfoIndexT<Graph>& paired_index_;
+    omnigraph::de::UnclusteredPairedInfoIndexT<Graph>& paired_index_;
     std::vector<omnigraph::de::PairedInfoBuffer<Graph> > buffer_pi_;
 
     DECL_LOGGER("LatePairedIndexFiller")

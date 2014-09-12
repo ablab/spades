@@ -18,10 +18,16 @@ namespace de {
 
 template<class Graph>
 class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
+ protected:
+  typedef DistanceEstimator<Graph> base;
+  typedef typename base::InPairedIndex InPairedIndex;
+  typedef typename base::OutPairedIndex OutPairedIndex;
+  typedef typename InPairedIndex::Histogram InHistogram;
+  typedef typename OutPairedIndex::Histogram OutHistogram;
 
  public:
   WeightedDistanceEstimator(const Graph &graph,
-                            const PairedInfoIndexT<Graph>& histogram,
+                            const InPairedIndex& histogram,
                             const GraphDistanceFinder<Graph>& distance_finder, boost::function<double(int)> weight_f,
       size_t linkage_distance, size_t max_distance) :
       base(graph, histogram, distance_finder, linkage_distance, max_distance), weight_f_(weight_f)
@@ -30,12 +36,6 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
   virtual ~WeightedDistanceEstimator() {}
 
  protected:
-  typedef DistanceEstimator<Graph> base;
-  typedef typename base::InPairedIndex InPairedIndex;
-  typedef typename base::OutPairedIndex OutPairedIndex;
-  typedef typename InPairedIndex::Histogram InHistogram;
-  typedef typename OutPairedIndex::Histogram OutHistogram;
-
   typedef typename Graph::EdgeId EdgeId;
 
   typedef vector<pair<int, double> > EstimHist;

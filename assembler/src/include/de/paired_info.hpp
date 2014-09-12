@@ -130,6 +130,10 @@ struct Point {
 
         return Point(new_dist, new_weight, new_variance);
     }
+
+  DEWeight variation() const {
+    return var;
+  }  
 };
 
 struct RawPoint {
@@ -182,6 +186,10 @@ struct RawPoint {
 
     RawPoint operator+(const RawPoint &rhs) const {
         return RawPoint(d, rhs.weight + weight);
+    }
+
+    DEWeight variation() const {
+      return 0;
     }
 };
 
@@ -690,7 +698,6 @@ class PairedInfoStorage {
             Histogram &hist_exists = map[I->first];
             const auto& hist_to_add = I->second;
 
-            // pretty much the same
             for (auto p_it = hist_to_add.begin(), E = hist_to_add.end(); p_it != E; ++p_it) {
               Point new_point = *p_it;
               const pair<hist_iterator, bool>& result = hist_exists.insert(new_point);
@@ -764,8 +771,8 @@ class PairedInfoIndexT: public PairedInfoStorage<Graph> {
   DECL_LOGGER("PairedInfoIndexT");
 };
 
-template <class Graph,
-          class IndexT = PairedInfoIndexT<Graph> >
+template<class Graph,
+         class IndexT = PairedInfoIndexT<Graph> >
 struct PairedInfoIndicesT {
     std::vector<IndexT> data_;
 
@@ -782,6 +789,12 @@ struct PairedInfoIndicesT {
 
     size_t size() const { return data_.size(); }
 };
+
+template<class Graph>
+using UnclusteredPairedInfoIndexT = PairedInfoStorage<Graph, RawHistogram>;
+
+template<class Graph>
+using UnclusteredPairedInfoIndicesT = std::vector<PairedInfoStorage<Graph, RawHistogram> >;
 
 //New metric weight normalizer
 template<class Graph>

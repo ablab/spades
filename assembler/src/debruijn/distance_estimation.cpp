@@ -102,7 +102,7 @@ void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_ind
 
 void estimate_distance(conj_graph_pack& gp,
                        const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
-                       const PairedIndexT& paired_index,
+                       const UnclusteredPairedIndexT& paired_index,
                        PairedIndexT& clustered_index,
                        PairedIndexT& scaffolding_index) {
     using debruijn_graph::estimation_mode;

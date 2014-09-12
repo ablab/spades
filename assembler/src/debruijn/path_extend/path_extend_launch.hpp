@@ -418,30 +418,31 @@ inline void ResolveRepeatsManyLibs(conj_graph_pack& gp,
     INFO("Path-Extend repeat resolving tool finished");
 }
 
+template<class Index>
 inline PairedInfoLibrary* MakeNewLib(conj_graph_pack::graph_t& g,
-                              const PairedInfoIndicesT& paired_index,
-                              size_t index) {
+                                     const Index& paired_index,
+                                     size_t index) {
     size_t read_length = cfg::get().ds.reads[index].data().read_length;
     size_t is = (size_t) cfg::get().ds.reads[index].data().mean_insert_size;
     int is_min = (int) cfg::get().ds.reads[index].data().insert_size_left_quantile;
     int is_max = (int) cfg::get().ds.reads[index].data().insert_size_right_quantile;
     int var = (int) cfg::get().ds.reads[index].data().insert_size_deviation;
     bool is_mp = cfg::get().ds.reads[index].type() == io::LibraryType::MatePairs;
-    PairedInfoLibrary* lib = new PairedInfoLibrary(
-            cfg::get().K, g, read_length, is, is_min > 0.0 ? size_t(is_min) : 0,
-            is_max > 0.0 ? size_t(is_max) : 0, size_t(var), paired_index[index], is_mp,
-            cfg::get().ds.reads[index].data().insert_size_distribution);
+    PairedInfoLibrary* lib = new PairedInfoLibraryWithIndex<decltype(paired_index[index])>(cfg::get().K, g, read_length,
+                                                                   is, is_min > 0.0 ? size_t(is_min) : 0, is_max > 0.0 ? size_t(is_max) : 0,
+                                                                   size_t(var),
+                                                                   paired_index[index], is_mp,
+                                                                   cfg::get().ds.reads[index].data().insert_size_distribution);
     return lib;
 }
 
 inline void DeleteLibs(vector<PairedInfoLibrary *>& libs) {
-    for (size_t j = 0; j < libs.size(); ++j) {
+    for (size_t j = 0; j < libs.size(); ++j)
         delete libs[j];
-    }
 }
 
 inline bool InsertSizeCompare(const PairedInfoLibrary* lib1,
-                       const PairedInfoLibrary* lib2) {
+                              const PairedInfoLibrary* lib2) {
     return lib1->GetISMax() < lib2->GetISMax();
 }
 
