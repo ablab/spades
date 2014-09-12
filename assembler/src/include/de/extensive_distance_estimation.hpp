@@ -60,9 +60,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
 // TODO: constant in the config
   virtual void ProcessEdge(EdgeId e1,
                            const typename PairedInfoIndexT<Graph>::InnerMap& inner_map,
-                           PairedInfoIndexT<Graph>& result,
-                           perf_counter& /*pc*/) const
-  {
+                           PairedInfoBuffer<Graph>& result) const {
     set<EdgeId> second_edges;
     for (auto I = inner_map.begin(), E = inner_map.end(); I != E; ++I)
       second_edges.insert(I->first);

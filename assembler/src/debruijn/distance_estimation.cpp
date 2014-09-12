@@ -32,7 +32,7 @@ void estimate_with_estimator(const Graph &graph,
     using debruijn_graph::estimation_mode;
     DEBUG("Estimating distances");
 
-    estimator.EstimateParallel(clustered_index, cfg::get().max_threads);
+    estimator.Estimate(clustered_index, cfg::get().max_threads);
 
     INFO("Filtering info");
     if(cfg::get().amb_de.enabled){
