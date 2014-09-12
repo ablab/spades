@@ -21,19 +21,21 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
 
  public:
   WeightedDistanceEstimator(const Graph &graph,
-      const PairedInfoIndexT<Graph>& histogram,
-      const GraphDistanceFinder<Graph>& distance_finder, boost::function<double(int)> weight_f,
+                            const PairedInfoIndexT<Graph>& histogram,
+                            const GraphDistanceFinder<Graph>& distance_finder, boost::function<double(int)> weight_f,
       size_t linkage_distance, size_t max_distance) :
       base(graph, histogram, distance_finder, linkage_distance, max_distance), weight_f_(weight_f)
-  {
-  }
+  {}
 
-  virtual ~WeightedDistanceEstimator()
-  {
-  }
+  virtual ~WeightedDistanceEstimator() {}
 
  protected:
   typedef DistanceEstimator<Graph> base;
+  typedef typename base::InPairedIndex InPairedIndex;
+  typedef typename base::OutPairedIndex OutPairedIndex;
+  typedef typename InPairedIndex::Histogram InHistogram;
+  typedef typename OutPairedIndex::Histogram OutHistogram;
+
   typedef typename Graph::EdgeId EdgeId;
 
   typedef vector<pair<int, double> > EstimHist;
@@ -43,9 +45,8 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
   boost::function<double(int)> weight_f_;
 
   virtual EstimHist EstimateEdgePairDistances(EdgePair ep,
-                                              const Histogram& histogram,
-                                              const GraphLengths& raw_forward) const
-  {
+                                              const InHistogram& histogram,
+                                              const GraphLengths& raw_forward) const {
     using std::abs;
     using namespace math;
     TRACE("Estimating with weight function");

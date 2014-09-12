@@ -50,7 +50,7 @@ class GapCloserPairedIndexFiller {
                 for (size_t j = 0; j < path2.size(); ++j) {
                     auto InTipIter = InTipMap.find(path2[j]);
                     if (InTipIter != InTipMap.end())
-                        paired_index.AddPairInfo(OutTipIter->second.first, InTipIter->second.first, { 1000000., 1., 0. });
+                        paired_index.AddPairInfo(OutTipIter->second.first, InTipIter->second.first, { 1000000., 1.});
                 }
             }
         }
@@ -192,15 +192,6 @@ class GapCloser {
         }
         std::vector<EdgeId> path = mapper_.MapSequence(s).simple_path();
         return path.empty();
-    }
-
-    bool WeightCondition(const omnigraph::de::Histogram& infos) const {
-        for (auto it = infos.begin(); it != infos.end(); ++it) {
-            //      VERIFY(math::eq(it->d, 100.));
-            if (math::ge(it->weight, weight_threshold_))
-                return true;
-        }
-        return false;
     }
 
     std::vector<size_t> DiffPos(const Sequence& s1, const Sequence& s2) const {

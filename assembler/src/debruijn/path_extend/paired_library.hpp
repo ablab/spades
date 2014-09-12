@@ -72,10 +72,10 @@ struct PairedInfoLibrary {
     }
 
     void CountDistances(EdgeId e1, EdgeId e2, vector<int>& dist, vector<double>& w) const {
-        if (e1 == e2) {
+        if (e1 == e2)
             return;
-        }
-        de::Histogram histogram = index_.GetEdgePairInfo(e1, e2);
+
+        auto histogram = index_.GetEdgePairInfo(e1, e2);
         for (auto pointIter = histogram.begin(); pointIter != histogram.end(); ++pointIter) {
             int pairedDistance = rounded_d(*pointIter);
             if (pairedDistance >= 0) {
@@ -88,9 +88,8 @@ struct PairedInfoLibrary {
     double CountPairedInfo(EdgeId e1, EdgeId e2, int distance,
                            bool from_interval = false) const {
         double weight = 0.0;
-        de::Histogram pairs = index_.GetEdgePairInfo(e1, e2);
-        for (auto pointIter = pairs.begin(); pointIter != pairs.end();
-                ++pointIter) {
+        auto pairs = index_.GetEdgePairInfo(e1, e2);
+        for (auto pointIter = pairs.begin(); pointIter != pairs.end(); ++pointIter) {
             int pairedDistance = rounded_d(*pointIter);
             int distanceDev = (int) pointIter->var;  //max((int) pointIter->var, (int) is_variation_);
             //Can be modified according to distance comparison
@@ -109,9 +108,8 @@ struct PairedInfoLibrary {
     }
     double CountPairedInfo(EdgeId e1, EdgeId e2, size_t dist_min, size_t dist_max) const {
         double weight = 0.0;
-        de::Histogram pairs = index_.GetEdgePairInfo(e1, e2);
-        for (auto pointIter = pairs.begin(); pointIter != pairs.end();
-                ++pointIter) {
+        auto pairs = index_.GetEdgePairInfo(e1, e2);
+        for (auto pointIter = pairs.begin(); pointIter != pairs.end(); ++pointIter) {
             int dist = rounded_d(*pointIter);
             if (dist > 0 and (size_t)dist >= dist_min and (size_t)dist <= dist_max)
                 weight += pointIter->weight;

@@ -132,6 +132,59 @@ struct Point {
     }
 };
 
+struct RawPoint {
+  public:
+    DEDistance d;
+    DEWeight   weight;
+
+    RawPoint()
+            : d(0.0), weight(0.0) {}
+
+    RawPoint(DEDistance distance, DEWeight weight)
+            : d(distance), weight(weight) {}
+
+    RawPoint(const Point& rhs)
+            : d(rhs.d), weight(rhs.weight) {}
+
+    operator Point() const {
+      return Point(d, weight, 0);
+    }
+
+    std::string str() const {
+        stringstream ss;
+        ss << "Point: " << " distance = " << this->d
+           << ", weight = " << this->weight;
+        return ss.str();
+    }
+
+    RawPoint& operator=(const RawPoint& rhs) {
+        using namespace math;
+        update_value_if_needed<DEDistance>(d, rhs.d);
+        update_value_if_needed<DEWeight>(weight, rhs.weight);
+        return *this;
+    }
+
+    bool operator<(const RawPoint& rhs) const {
+        return math::ls(this->d, rhs.d);
+    }
+
+    bool operator==(const RawPoint& rhs) const {
+        return math::eq(this->d, rhs.d);
+    }
+
+    bool operator!=(const RawPoint& rhs) const {
+        return !(operator==(rhs));
+    }
+
+    RawPoint operator-() const {
+        return RawPoint(-d, weight);
+    }
+
+    RawPoint operator+(const RawPoint &rhs) const {
+        return RawPoint(d, rhs.weight + weight);
+    }
+};
+
 inline int rounded_d(Point p) {
     return math::round_to_zero(p.d);
 }
@@ -140,8 +193,13 @@ inline std::ostream& operator<<(std::ostream& os, const Point &point) {
     return os << point.str();
 }
 
+inline std::ostream& operator<<(std::ostream& os, const RawPoint &point) {
+    return os << point.str();
+}
+
 //typedef std::set<Point> Histogram;
-typedef btree::btree_set<Point, std::less<Point>, std::allocator<Point>, 1024> Histogram;
+typedef btree::btree_set<Point, std::less<Point>, std::allocator<Point>, 1024> HistogramWithWeight;
+typedef btree::btree_set<RawPoint, std::less<RawPoint>, std::allocator<RawPoint>, 1024> RawHistogram;
 
 inline bool ClustersIntersect(Point p1, Point p2) {
   return math::le(p1.d, p2.d + p1.var + p2.var) &&
@@ -150,6 +208,10 @@ inline bool ClustersIntersect(Point p1, Point p2) {
 
 inline Point ConjugatePoint(size_t l1, size_t l2, const Point& point) {
     return Point(point.d + DEDistance(l2) - DEDistance(l1), point.weight, point.var);
+}
+
+inline RawPoint ConjugatePoint(size_t l1, size_t l2, const RawPoint& point) {
+    return RawPoint(point.d + DEDistance(l2) - DEDistance(l1), point.weight);
 }
 
 // tuple of a pair of edges @first, @second, and a @point
@@ -252,14 +314,17 @@ inline bool IsSymmetric(PairInfo<EdgeId> const& pi) {
 
 // new map { EdgeId -> (EdgeId -> (d, weight, var)) }
 template<class Graph,
-         class InnerMapType = btree::safe_btree_map<typename Graph::EdgeId, Histogram>,
+         class HistogramType = HistogramWithWeight,
+         class InnerMapType = btree::safe_btree_map<typename Graph::EdgeId, HistogramType>,
          class IndexDataType = btree::safe_btree_map<typename Graph::EdgeId, InnerMapType> >
 class PairedInfoStorage {
  public:
     typedef typename Graph::EdgeId EdgeId;
-    typedef typename Histogram::const_iterator HistIterator;
+    typedef HistogramType Histogram;
+    typedef typename HistogramType::const_iterator HistIterator;
     typedef InnerMapType InnerMap;
     typedef typename IndexDataType::const_iterator DataIterator;
+    typedef typename HistogramType::value_type Point;
 
     PairedInfoStorage()
             : size_(0) {}
@@ -594,8 +659,8 @@ class PairedInfoStorage {
         ++size_;
     }
 
-    void UpdateSinglePoint(Histogram &hist, Histogram::iterator point_to_update, Point new_point) {
-        Histogram::iterator after_removed = hist.erase(point_to_update);
+    void UpdateSinglePoint(Histogram &hist, typename Histogram::iterator point_to_update, Point new_point) {
+        typename Histogram::iterator after_removed = hist.erase(point_to_update);
         hist.insert(after_removed, new_point);
     }
 
@@ -611,7 +676,7 @@ class PairedInfoStorage {
         UpdateSinglePoint(histogram, histogram.find(point_to_update), point_to_update + point_to_add);
     }
 
-    void MergeData(Histogram& hist, Histogram::iterator to_update,
+    void MergeData(Histogram& hist, typename Histogram::iterator to_update,
                    Point point_to_add) {
         UpdateSinglePoint(hist, to_update, *to_update + point_to_add);
     }
@@ -622,21 +687,18 @@ class PairedInfoStorage {
         typedef typename Histogram::iterator hist_iterator;
         typedef typename InnerMap::iterator map_iterator;
         for (auto I = map_to_add.begin(), E = map_to_add.end(); I != E; ++I) {
-            const Histogram& hist_to_add = I->second;
-            const pair<map_iterator, bool>& result = map.insert(*I);
-            if (!result.second) { // in this case we need to merge two hists
-                Histogram& hist_exists = (result.first)->second;
-                // pretty much the same
-                for (auto p_it = hist_to_add.begin(), E = hist_to_add.end(); p_it != E; ++p_it) {
-                    Point new_point = *p_it;
-                    const pair<hist_iterator, bool>& result = hist_exists.insert(new_point);
-                    if (!result.second) { // in this case we need to merge two points
-                        MergeData(hist_exists, result.first, new_point);
-                    } else
-                        ++size_;
-                }
-            } else
-                size_ += hist_to_add.size();
+            Histogram &hist_exists = map[I->first];
+            const auto& hist_to_add = I->second;
+
+            // pretty much the same
+            for (auto p_it = hist_to_add.begin(), E = hist_to_add.end(); p_it != E; ++p_it) {
+              Point new_point = *p_it;
+              const pair<hist_iterator, bool>& result = hist_exists.insert(new_point);
+              if (!result.second) { // in this case we need to merge two points
+                MergeData(hist_exists, result.first, new_point);
+              } else
+                ++size_;
+            }
         }
     }
 
@@ -647,17 +709,18 @@ class PairedInfoStorage {
 
 template<class Graph>
 using PairedInfoBuffer = PairedInfoStorage<Graph,
-                                           std::unordered_map<typename Graph::EdgeId, Histogram>,
+                                           RawHistogram,
+                                           std::unordered_map<typename Graph::EdgeId, RawHistogram>,
                                            std::unordered_map<typename Graph::EdgeId,
-                                                              std::unordered_map<typename Graph::EdgeId, Histogram> > >;
+                                                              std::unordered_map<typename Graph::EdgeId, RawHistogram> > >;
 
 template<class Graph>
 class PairedInfoIndexT: public PairedInfoStorage<Graph> {
   public:
     typedef typename Graph::EdgeId EdgeId;
 
-    PairedInfoIndexT(const Graph& graph) :
-        graph_(graph) {}
+    PairedInfoIndexT(const Graph& graph)
+        : graph_(graph) {}
 
     ~PairedInfoIndexT() {
         TRACE("~PairedInfoIndexT ok");
@@ -683,7 +746,7 @@ class PairedInfoIndexT: public PairedInfoStorage<Graph> {
         size_t size = 0;
         for (auto I = this->begin(), E = this->end(); I != E; ++I) {
             EdgeId e1 = I.first(); EdgeId e2 = I.second();
-            const Histogram& histogram = *I;
+            const auto& histogram = *I;
             size += histogram.size();
             INFO("Histogram for edges "
                  << this->g().int_id(e1) << " "
@@ -697,13 +760,13 @@ class PairedInfoIndexT: public PairedInfoStorage<Graph> {
 
  private:
   const Graph& graph_;
- 
+
   DECL_LOGGER("PairedInfoIndexT");
 };
 
-template <class Graph>
+template <class Graph,
+          class IndexT = PairedInfoIndexT<Graph> >
 struct PairedInfoIndicesT {
-    typedef PairedInfoIndexT<Graph> IndexT;
     std::vector<IndexT> data_;
 
     PairedInfoIndicesT(const Graph& graph, size_t lib_num) {
@@ -776,39 +839,6 @@ public:
     return result;
   }
 };
-
-template<class Graph>
-class JumpingNormalizerFunction {
-private:
-  typedef typename Graph::EdgeId EdgeId;
-  const Graph& graph_;
-  size_t read_length_;
-  size_t max_norm_;
-
-public:
-  JumpingNormalizerFunction(const Graph& graph, size_t read_length,
-      size_t max_norm) :
-      graph_(graph), read_length_(read_length), max_norm_(max_norm) {
-  }
-
-  size_t norm(EdgeId e1, EdgeId e2) const {
-    return std::min(std::min(graph_.length(e1), graph_.length(e2)),
-        max_norm_) + read_length_ - graph_.k();
-  }
-
-  const Point operator()(EdgeId e1, EdgeId e2, Point point) const {
-    return Point(point.d,
-                 point.weight * 1. / (double) norm(e1, e2),
-                 point.var);
-  }
-};
-
-template<class Graph>
-const Point TrivialWeightNormalization(typename Graph::EdgeId,
-                                       typename Graph::EdgeId,
-                                       Point point) {
-  return point;
-}
 
 };
 

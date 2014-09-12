@@ -57,7 +57,7 @@ void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_ind
     for (auto iter = clustered_index.begin(); iter != clustered_index.end(); ++iter) {
         EdgeId first_edge = iter.first();
         EdgeId second_edge = iter.second();
-        const de::Histogram& infos = *iter;
+        const auto& infos = *iter;
         if (infos.size() == 0)
             continue;
 

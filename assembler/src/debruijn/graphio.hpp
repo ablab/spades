@@ -232,7 +232,7 @@ class DataPrinter {
             const auto& inner_map = paired_index.GetEdgeInfo(e1, 0);
             for (auto II = inner_map.begin(), IE = inner_map.end(); II != IE; ++II) {
                 EdgeId e2 = II->first;
-                const de::Histogram& hist = II->second;
+                const auto& hist = II->second;
                 if (component_.contains(e2)) { // if the second edge also lies in the same component
                     comp_size += hist.size();
                 }
@@ -246,7 +246,7 @@ class DataPrinter {
             const auto& inner_map = paired_index.GetEdgeInfo(e1, 0);
             for (auto II = inner_map.begin(), IE = inner_map.end(); II != IE; ++II) {
                 EdgeId e2 = II->first;
-                const Histogram& hist = II->second;
+                const auto& hist = II->second;
                 if (component_.contains(e2))
                     for (auto hist_it = hist.begin(); hist_it != hist.end(); ++hist_it) {
                         Point point = *hist_it;

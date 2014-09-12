@@ -33,7 +33,7 @@ class GraphDistanceFinder {
       gap_((int) (insert_size - 2 * read_length)),
       delta_((double) delta)
   {}
-  
+
   // finds all distances from a current edge to a set of edges
   const vector<GraphLengths> GetGraphDistancesLengths(EdgeId e1, const set<EdgeId>& second_edges) const {
     vector<VertexId> end_points;
@@ -133,14 +133,19 @@ class GraphDistanceFinder {
 
 template<class Graph>
 class AbstractDistanceEstimator {
+ protected:
+  typedef PairedInfoIndexT<Graph> InPairedIndex;
+  typedef PairedInfoIndexT<Graph> OutPairedIndex;
+  typedef typename InPairedIndex::Histogram InHistogram;
+  typedef typename OutPairedIndex::Histogram OutHistogram;
 
  public:
   AbstractDistanceEstimator(const Graph& graph,
-      const PairedInfoIndexT<Graph>& index,
-      const GraphDistanceFinder<Graph>& distance_finder,
-      size_t linkage_distance = 0) :
-      graph_(graph), index_(index),
-      distance_finder_(distance_finder), linkage_distance_(linkage_distance)
+                            const InPairedIndex& index,
+                            const GraphDistanceFinder<Graph>& distance_finder,
+                            size_t linkage_distance = 0)
+      : graph_(graph), index_(index),
+        distance_finder_(distance_finder), linkage_distance_(linkage_distance)
   {}
 
   virtual void Estimate(PairedInfoIndexT<Graph>& result, size_t nthreads) const = 0;
@@ -155,14 +160,14 @@ class AbstractDistanceEstimator {
 
   const Graph& graph() const { return graph_; }
 
-  const PairedInfoIndexT<Graph>& index() const { return index_; }
+  const InPairedIndex& index() const { return index_; }
 
   const vector<GraphLengths> GetGraphDistancesLengths(EdgeId e1, const set<EdgeId>& second_edges) const {
     return distance_finder_.GetGraphDistancesLengths(e1, second_edges);
   }
 
-  Histogram ClusterResult(EdgePair /*ep*/, const EstimHist& estimated) const {
-    Histogram result;
+  OutHistogram ClusterResult(EdgePair /*ep*/, const EstimHist& estimated) const {
+    OutHistogram result;
     for (size_t i = 0; i < estimated.size(); ++i) {
       size_t left = i;
       double weight = estimated[i].second;
@@ -178,7 +183,7 @@ class AbstractDistanceEstimator {
     return result;
   }
 
-  void AddToResult(const Histogram& clustered, EdgePair ep, PairedInfoBuffer<Graph>& result) const {
+  void AddToResult(const OutHistogram& clustered, EdgePair ep, PairedInfoBuffer<Graph>& result) const {
     for (auto it = clustered.begin(); it != clustered.end(); ++it) {
       result.AddPairInfo(ep, *it);
     }
@@ -201,12 +206,18 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
   typedef vector<pair<int, double> > EstimHist;
   typedef pair<EdgeId, EdgeId> EdgePair;
 
+ protected:
+  typedef typename AbstractDistanceEstimator<Graph>::InPairedIndex InPairedIndex;
+  typedef typename AbstractDistanceEstimator<Graph>::OutPairedIndex OutPairedIndex;
+  typedef typename InPairedIndex::Histogram InHistogram;
+  typedef typename OutPairedIndex::Histogram OutHistogram;
+
  public:
   DistanceEstimator(const Graph& graph,
-      const PairedInfoIndexT<Graph>& index,
-      const GraphDistanceFinder<Graph>& distance_finder,
-      size_t linkage_distance, size_t max_distance) :
-        base(graph, index, distance_finder, linkage_distance), max_distance_(max_distance)
+                    const PairedInfoIndexT<Graph>& index,
+                    const GraphDistanceFinder<Graph>& distance_finder,
+                    size_t linkage_distance, size_t max_distance)
+      : base(graph, index, distance_finder, linkage_distance), max_distance_(max_distance)
     {}
   virtual ~DistanceEstimator() {}
 
@@ -244,8 +255,8 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
  protected:
   const size_t max_distance_;
 
-  Histogram ConjugateInfos(EdgePair ep, const Histogram& histogram) const {
-    Histogram answer;
+  OutHistogram ConjugateInfos(EdgePair ep, const OutHistogram& histogram) const {
+    OutHistogram answer;
     const Graph& g = this->graph();
     for (auto it = histogram.begin(); it != histogram.end(); ++it) {
       answer.insert(ConjugatePoint(g.length(ep.first), g.length(ep.second), *it));
@@ -258,7 +269,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
   }
 
   virtual EstimHist EstimateEdgePairDistances(EdgePair ep,
-                                              const Histogram& histogram,
+                                              const InHistogram& histogram,
                                               const GraphLengths& raw_forward) const {
     using std::abs;
     using namespace math;
@@ -331,9 +342,8 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
         TRACE("Edge pair is " << this->graph().int_id(ep.first)
                        << " " << this->graph().int_id(ep.second));
         const GraphLengths& forward = lens_array[i];
-        const Histogram& histogram = I->second;
-        const EstimHist& estimated = this->EstimateEdgePairDistances(ep, histogram, forward);
-        Histogram res = this->ClusterResult(ep, estimated);
+        const EstimHist& estimated = this->EstimateEdgePairDistances(ep, I->second, forward);
+        OutHistogram res = this->ClusterResult(ep, estimated);
         this->AddToResult(res, ep, result);
         this->AddToResult(ConjugateInfos(ep, res), ConjugatePair(ep), result);
       }

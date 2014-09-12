@@ -76,7 +76,7 @@ private:
                         - (int) mapping_edge_2.second.mapped_range.end_pos;
 
                 paired_index.AddPairInfo(mapping_edge_1.first, mapping_edge_2.first,
-                                         { (double) edge_distance, weight, 0. });
+                                         { (double) edge_distance, weight });
             }
         }
     }
