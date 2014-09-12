@@ -133,7 +133,7 @@ struct Point {
 
   DEWeight variation() const {
     return var;
-  }  
+  }
 };
 
 struct RawPoint {
@@ -693,7 +693,6 @@ class PairedInfoStorage {
     void MergeInnerMaps(const OtherMap& map_to_add,
                         InnerMap& map) {
         typedef typename Histogram::iterator hist_iterator;
-        typedef typename InnerMap::iterator map_iterator;
         for (auto I = map_to_add.begin(), E = map_to_add.end(); I != E; ++I) {
             Histogram &hist_exists = map[I->first];
             const auto& hist_to_add = I->second;
