@@ -15,8 +15,6 @@
 
 #include <set>
 #include <stack>
-#include <type_traits>
-#include <unordered_map>
 
 namespace debruijn_graph {
 
@@ -98,7 +96,7 @@ class GapCloserPairedIndexFiller {
                     edge_stack.pop();
                     if (graph_.OutgoingEdgeCount(graph_.EdgeStart(checking_pair.first)) == 1) {
                         if (graph_.IncomingEdgeCount(graph_.EdgeStart(checking_pair.first))) {
-                            FOREACH (EdgeId e, graph_.IncomingEdges(graph_.EdgeStart(checking_pair.first))) {
+                            for (EdgeId e : graph_.IncomingEdges(graph_.EdgeStart(checking_pair.first))) {
                                 OutTipMap.insert(std::make_pair(e,
                                                                 std::make_pair(edge,
                                                                                graph_.length(e) + checking_pair.second)));
