@@ -25,11 +25,6 @@ class GapCloserPairedIndexFiller {
     const Graph &graph_;
     const SequenceMapper& mapper_;
 
-    std::map<EdgeId, pair<EdgeId, int> > OutTipMap;
-    std::map<EdgeId, pair<EdgeId, int> > InTipMap;
-    std::set<int> InTipsIds;
-    std::set<int> OutTipsIds;
-
     size_t CorrectLength(Path<EdgeId> path, size_t idx) const {
         size_t answer = graph_.length(path[idx]);
         if (idx == 0)
@@ -41,7 +36,9 @@ class GapCloserPairedIndexFiller {
 
     template<typename PairedRead>
     void ProcessPairedRead(omnigraph::de::PairedInfoBuffer<Graph> &paired_index,
-                           const PairedRead& p_r) const {
+                           const PairedRead& p_r,
+                           const std::unordered_map<EdgeId, pair<EdgeId, int> > OutTipMap,
+                           const std::unordered_map<EdgeId, pair<EdgeId, int> > InTipMap) const {
         Sequence read1 = p_r.first().sequence();
         Sequence read2 = p_r.second().sequence();
 
@@ -59,7 +56,8 @@ class GapCloserPairedIndexFiller {
         }
     }
 
-    void PrepareShiftMaps() {
+    void PrepareShiftMaps(std::unordered_map<EdgeId, pair<EdgeId, int> > OutTipMap,
+                          std::unordered_map<EdgeId, pair<EdgeId, int> > InTipMap) {
         std::stack<pair<EdgeId, int>> edge_stack;
         for (auto iterator = graph_.ConstEdgeBegin(); !iterator.IsEnd();) {
             EdgeId edge = *iterator;
@@ -113,7 +111,9 @@ class GapCloserPairedIndexFiller {
     }
 
     template<class Streams>
-    void MapReads(omnigraph::de::PairedInfoIndexT<Graph> &paired_index, Streams& streams) const {
+    void MapReads(omnigraph::de::PairedInfoIndexT<Graph> &paired_index, Streams& streams,
+                  const std::unordered_map<EdgeId, pair<EdgeId, int> > OutTipMap,
+                  const std::unordered_map<EdgeId, pair<EdgeId, int> > InTipMap) const {
         INFO("Processing paired reads (takes a while)");
 
         size_t nthreads = streams.size();
@@ -129,7 +129,7 @@ class GapCloserPairedIndexFiller {
             while (!stream.eof()) {
                 stream >> r;
                 ++counter;
-                ProcessPairedRead(buffer_pi[i], r);
+                ProcessPairedRead(buffer_pi[i], r, OutTipMap, InTipMap);
             }
         }
 
@@ -147,16 +147,17 @@ class GapCloserPairedIndexFiller {
     GapCloserPairedIndexFiller(const Graph &graph, const SequenceMapper& mapper)
             : graph_(graph), mapper_(mapper) {}
 
-
     /**
      * Method reads paired data from stream, maps it to genome and stores it in this PairInfoIndex.
      */
     template<class Streams>
     void FillIndex(omnigraph::de::PairedInfoIndexT<Graph> &paired_index, Streams& streams) {
-        INFO("Preparing shift maps");
-        PrepareShiftMaps();
+        std::unordered_map<EdgeId, pair<EdgeId, int> > OutTipMap, InTipMap;
 
-        MapReads(paired_index, streams);
+        INFO("Preparing shift maps");
+        PrepareShiftMaps(OutTipMap, InTipMap);
+
+        MapReads(paired_index, streams, OutTipMap, InTipMap);
     }
 
 };
