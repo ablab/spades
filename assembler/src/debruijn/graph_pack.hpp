@@ -123,19 +123,13 @@ struct graph_pack: private boost::noncopyable {
     }
 
     void InitRRIndices() {
-        paired_indices.Attach();
         paired_indices.Init();
-        clustered_indices.Attach();
         clustered_indices.Init();
-        scaffolding_indices.Attach();
         scaffolding_indices.Init();
     }
 
     void DetachAll() {
         index.Detach();
-        paired_indices.Detach();
-        clustered_indices.Detach();
-        scaffolding_indices.Detach();
         kmer_mapper.Detach();
         edge_pos.Detach();
         edge_qual.Detach();

@@ -640,37 +640,6 @@ class PairedInfoStorage {
         }
     }
 
-  protected:
-
-    void TransferInfo(EdgeId old_edge, EdgeId new_edge,
-                      int shift = 0,
-                      double weight_scale = 1.) {
-        const InnerMap& inner_map = this->GetEdgeInfo(old_edge, 0);
-        for (auto iter = inner_map.begin(); iter != inner_map.end(); ++iter) {
-            EdgeId e2 = iter->first;
-            const Histogram& histogram = iter->second;
-            for (auto point_iter = histogram.begin(); point_iter != histogram.end(); ++point_iter) {
-                Point cur_point = *point_iter;
-                if (old_edge != e2) {
-                    AddPairInfo(new_edge, e2,
-                                { cur_point.d - shift,
-                                  weight_scale * cur_point.weight,
-                                  cur_point.var });
-                } else if (!math::eq(cur_point.d, 0.f)) {
-                    AddPairInfo(new_edge, new_edge,
-                                { cur_point.d,
-                                  weight_scale * 0.5 * cur_point.weight,
-                                  cur_point.var });
-                } else {
-                    AddPairInfo(new_edge, new_edge,
-                                { cur_point.d,
-                                  weight_scale * cur_point.weight,
-                                  cur_point.var });
-                }
-            }
-        }
-    }
-
   private:
     IndexDataType index_;
     size_t size_;
@@ -683,31 +652,29 @@ using PairedInfoBuffer = PairedInfoStorage<Graph,
                                                               std::unordered_map<typename Graph::EdgeId, Histogram> > >;
 
 template<class Graph>
-class PairedInfoIndexT: public GraphActionHandler<Graph>, public PairedInfoStorage<Graph> {
+class PairedInfoIndexT: public PairedInfoStorage<Graph> {
   public:
     typedef typename Graph::EdgeId EdgeId;
 
     PairedInfoIndexT(const Graph& graph) :
-            GraphActionHandler<Graph>(graph, "PairedInfoIndexT") {}
+        graph_(graph) {}
 
     ~PairedInfoIndexT() {
         TRACE("~PairedInfoIndexT ok");
     }
 
     void Init() {
-        for (auto it = this->g().ConstEdgeBegin(); !it.IsEnd(); ++it) {
-            this->HandleAdd(*it);
-        }
+        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it)
+          this->AddPairInfo(*it, *it, { });
     }
 
     // method adds paired info to the conjugate edges
     void AddConjPairInfo(EdgeId e1, EdgeId e2,
                          Point point_to_add,
                          bool add_reversed = 1) {
-        const Graph& g = this->g();
-        this->AddPairInfo(g.conjugate(e2),
-                          g.conjugate(e1),
-                          ConjugatePoint(g.length(e1), g.length(e2), point_to_add),
+        this->AddPairInfo(graph_.conjugate(e2),
+                          graph_.conjugate(e1),
+                          ConjugatePoint(graph_.length(e1), graph_.length(e2), point_to_add),
                           add_reversed);
     }
 
@@ -728,52 +695,9 @@ class PairedInfoIndexT: public GraphActionHandler<Graph>, public PairedInfoStora
         VERIFY_MSG(this->size() == size, "Size " << size << " must have been equal to " << this->size());
     }
 
-    // Handlers
-    virtual void HandleAdd(EdgeId edge) {
-        const Graph& graph = this->g();
-#pragma omp critical
-        {
-            TRACE("Handling Addition " << graph.int_id(edge));
-            this->AddPairInfo(edge, edge, { });
-        }
-    }
-
-    virtual void HandleDelete(EdgeId edge) {
-        const Graph& graph = this->g();
-
-        TRACE("Handling Deleting " << graph.int_id(edge));
-        this->RemoveEdgeInfo(edge);
-    }
-
-    virtual void HandleMerge(const vector<EdgeId>& old_edges, EdgeId new_edge) {
-        TRACE("Handling Merging");
-        this->AddPairInfo(new_edge, new_edge, { });
-        int shift = 0;
-        const Graph& graph = this->g();
-        for (size_t i = 0; i < old_edges.size(); ++i) {
-            EdgeId old_edge = old_edges[i];
-            this->TransferInfo(old_edge, new_edge, shift);
-            shift -= (int) graph.length(old_edge);
-        }
-    }
-
-    virtual void HandleGlue(EdgeId new_edge, EdgeId e1, EdgeId e2) {
-        const Graph& graph = this->g();
-        TRACE("Handling Glueing " << graph.int_id(new_edge) << " " << graph.int_id(e1) << " "
-              << graph.int_id(e2));
-        this->TransferInfo(e2, new_edge);
-        this->TransferInfo(e1, new_edge);
-    }
-
-    virtual void HandleSplit(EdgeId old_edge, EdgeId new_edge_1, EdgeId new_edge_2) {
-        const Graph& graph = this->g();
-        TRACE("Handling Splitting " << graph.int_id(old_edge) << " " << graph.int_id(new_edge_1)
-              << " " << graph.int_id(new_edge_2));
-        double ratio = (double) graph.length(new_edge_1) * 1. / (double) graph.length(old_edge);
-        this->TransferInfo(old_edge, new_edge_1, 0, ratio);
-        this->TransferInfo(old_edge, new_edge_2, (int) graph.length(new_edge_1), 1. - ratio);
-    }
-
+ private:
+  const Graph& graph_;
+ 
   DECL_LOGGER("PairedInfoIndexT");
 };
 
@@ -787,32 +711,13 @@ struct PairedInfoIndicesT {
             data_.emplace_back(graph);
     }
 
-    void Init() {
-        for (auto& it : data_)
-            it.Init();
-    }
+    void Init() { for (auto& it : data_) it.Init(); }
 
-    void Attach() {
-        for (auto& it : data_)
-            it.Attach();
-    }
+    IndexT& operator[](size_t i) { return data_[i]; }
 
-    void Detach() {
-        for (auto& it : data_)
-            it.Detach();
-    }
+    const IndexT& operator[](size_t i) const { return data_[i]; }
 
-    IndexT& operator[](size_t i) {
-        return data_[i];
-    }
-
-    const IndexT& operator[](size_t i) const {
-        return data_[i];
-    }
-
-    size_t size() const {
-        return data_.size();
-    }
+    size_t size() const { return data_.size(); }
 };
 
 //New metric weight normalizer
