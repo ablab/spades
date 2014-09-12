@@ -32,7 +32,7 @@ class GapCloserPairedIndexFiller {
     std::set<int> InTipsIds;
     std::set<int> OutTipsIds;
 
-    size_t CorrectLength(Path<EdgeId> path, size_t idx) {
+    size_t CorrectLength(Path<EdgeId> path, size_t idx) const {
         size_t answer = graph_.length(path[idx]);
         if (idx == 0)
             answer -= path.start_pos();
@@ -42,8 +42,8 @@ class GapCloserPairedIndexFiller {
     }
 
     template<typename PairedRead>
-    void ProcessPairedRead(omnigraph::de::PairedInfoIndexT<Graph> &paired_index,
-                           PairedRead& p_r) {
+    void ProcessPairedRead(omnigraph::de::PairedInfoBuffer<Graph> &paired_index,
+                           const PairedRead& p_r) const {
         Sequence read1 = p_r.first().sequence();
         Sequence read2 = p_r.second().sequence();
 
@@ -114,54 +114,33 @@ class GapCloserPairedIndexFiller {
         }
     }
 
-    template<class PairedStream>
-    void FillUsualIndex(omnigraph::de::PairedInfoIndexT<Graph> &paired_index, PairedStream& stream) {
-        INFO("Processing paired reads (takes a while)");
-
-        stream.reset();
-        size_t n = 0;
-        while (!stream.eof()) {
-            typename PairedStream::ReadT p_r;
-            stream >> p_r;
-            ProcessPairedRead(paired_index, p_r);
-            VERBOSE_POWER(++n, " paired reads processed");
-        }
-    }
-
     template<class Streams>
-    void FillParallelIndex(omnigraph::de::PairedInfoIndexT<Graph> &paired_index, Streams& streams) {
+    void MapReads(omnigraph::de::PairedInfoIndexT<Graph> &paired_index, Streams& streams) const {
         INFO("Processing paired reads (takes a while)");
 
         size_t nthreads = streams.size();
-        vector<omnigraph::de::PairedInfoIndexT<Graph>*> buffer_pi(nthreads);
-        buffer_pi[0] = &paired_index;
-
-        for (size_t i = 1; i < nthreads; ++i) {
-            buffer_pi[i] = new omnigraph::de::PairedInfoIndexT<Graph>(graph_);
-        }
+        std::vector<omnigraph::de::PairedInfoBuffer<Graph> >buffer_pi(nthreads);
 
         size_t counter = 0;
-#pragma omp parallel num_threads(nthreads)
-        {
-#pragma omp for reduction(+ : counter)
-            for (size_t i = 0; i < nthreads; ++i) {
-                typename Streams::ReadT r;
-                auto& stream = streams[i];
-                stream.reset();
+#       pragma omp parallel for num_threads(nthreads) reduction(+ : counter)
+        for (size_t i = 0; i < nthreads; ++i) {
+            typename Streams::ReadT r;
+            auto& stream = streams[i];
+            stream.reset();
 
-                while (!stream.eof()) {
-                    stream >> r;
-                    ++counter;
-                    ProcessPairedRead(*buffer_pi[i], r);
-                }
+            while (!stream.eof()) {
+                stream >> r;
+                ++counter;
+                ProcessPairedRead(buffer_pi[i], r);
             }
         }
+
         INFO("Used " << counter << " paired reads");
 
         INFO("Merging paired indices");
-        for (size_t i = 1; i < nthreads; ++i) {
-            buffer_pi[0]->AddAll(*(buffer_pi[i]));
-            delete buffer_pi[i];
+        for (auto& index: buffer_pi) {
+          paired_index.AddAll(index);
+          index.Clear();
         }
     }
 
@@ -179,11 +158,7 @@ class GapCloserPairedIndexFiller {
         INFO("Preparing shift maps");
         PrepareShiftMaps();
 
-        if (streams.size() == 1) {
-            FillUsualIndex(paired_index, streams.back());
-        } else {
-            FillParallelIndex(paired_index, streams);
-        }
+        MapReads(paired_index, streams);
     }
 
 };
