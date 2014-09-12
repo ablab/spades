@@ -229,7 +229,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
   virtual void Estimate(PairedInfoIndexT<Graph>& result) const {
     this->Init();
     perf_counter pc;
-    for (auto it = this->index().Begin(); it != this->index().End(); ++it)
+    for (auto it = this->index().data_begin(); it != this->index().data_end(); ++it)
       ProcessEdge(it->first, it->second, result, pc);
   }
 
@@ -239,7 +239,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
 
     DEBUG("Collecting edge infos");
     vector<EdgeId> edges;
-    for (auto I = index.Begin(), E = index.End(); I != E; ++I) {
+    for (auto I = index.data_begin(), E = index.data_end(); I != E; ++I) {
       edges.push_back(I->first);
     }
 

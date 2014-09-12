@@ -373,11 +373,11 @@ class PairedInfoStorage {
         return EdgePairIterator(index_.end(), index_.end());
     }
 
-    DataIterator Begin() const {
+    DataIterator data_begin() const {
         return index_.begin();
     }
 
-    DataIterator End() const {
+    DataIterator data_end() const {
         return index_.end();
     }
 
@@ -561,11 +561,11 @@ class PairedInfoStorage {
     template<class Storage>
     void AddAll(const Storage& index_to_add) {
         IndexDataType& base_index = this->index_;
-        for (auto AddI = index_to_add.Begin(), E = index_to_add.End(); AddI != E; ++AddI) {
+        for (auto AddI = index_to_add.data_begin(), E = index_to_add.data_end(); AddI != E; ++AddI) {
             EdgeId e1_to_add = AddI->first;
             const auto& map_to_add = AddI->second;
             InnerMap& map_already_exists = base_index[e1_to_add];
-            MergeInnerMaps(e1_to_add, map_to_add, map_already_exists);
+            MergeInnerMaps(map_to_add, map_already_exists);
         }
     }
 
@@ -600,8 +600,7 @@ class PairedInfoStorage {
     }
 
     void MergeData(EdgeId e1, EdgeId e2,
-                   Point point_to_update,
-                   Point point_to_add,
+                   Point point_to_update, Point point_to_add,
                    bool add_reversed) {
         if (add_reversed) {
             Histogram& histogram = index_[e2][e1];
@@ -612,15 +611,13 @@ class PairedInfoStorage {
         UpdateSinglePoint(histogram, histogram.find(point_to_update), point_to_update + point_to_add);
     }
 
-    void MergeData(Histogram& hist,
-                   Histogram::iterator to_update,
+    void MergeData(Histogram& hist, Histogram::iterator to_update,
                    Point point_to_add) {
         UpdateSinglePoint(hist, to_update, *to_update + point_to_add);
     }
 
     template<class OtherMap>
-    void MergeInnerMaps(EdgeId /*e1_to_add*/,
-                        const OtherMap& map_to_add,
+    void MergeInnerMaps(const OtherMap& map_to_add,
                         InnerMap& map) {
         typedef typename Histogram::iterator hist_iterator;
         typedef typename InnerMap::iterator map_iterator;
@@ -718,15 +715,14 @@ class PairedInfoIndexT: public GraphActionHandler<Graph>, public PairedInfoStora
     void PrintAll() const {
         size_t size = 0;
         for (auto I = this->begin(), E = this->end(); I != E; ++I) {
-            EdgeId e1 = I.first();
-            EdgeId e2 = I.second();
+            EdgeId e1 = I.first(); EdgeId e2 = I.second();
             const Histogram& histogram = *I;
             size += histogram.size();
             INFO("Histogram for edges "
                  << this->g().int_id(e1) << " "
                  << this->g().int_id(e2));
-            for (auto it = histogram.begin(); it != histogram.end(); ++it) {
-                INFO("    Entry " << it->str());
+            for (const auto& point : histogram) {
+                INFO("    Entry " << point.str());
             }
         }
         VERIFY_MSG(this->size() == size, "Size " << size << " must have been equal to " << this->size());
@@ -738,7 +734,7 @@ class PairedInfoIndexT: public GraphActionHandler<Graph>, public PairedInfoStora
 #pragma omp critical
         {
             TRACE("Handling Addition " << graph.int_id(edge));
-            this->AddPairInfo(edge, edge, { 0., 0., 0. });
+            this->AddPairInfo(edge, edge, { });
         }
     }
 
@@ -751,7 +747,7 @@ class PairedInfoIndexT: public GraphActionHandler<Graph>, public PairedInfoStora
 
     virtual void HandleMerge(const vector<EdgeId>& old_edges, EdgeId new_edge) {
         TRACE("Handling Merging");
-        this->AddPairInfo(new_edge, new_edge, { 0., 0., 0. });
+        this->AddPairInfo(new_edge, new_edge, { });
         int shift = 0;
         const Graph& graph = this->g();
         for (size_t i = 0; i < old_edges.size(); ++i) {
@@ -905,46 +901,9 @@ public:
 template<class Graph>
 const Point TrivialWeightNormalization(typename Graph::EdgeId,
                                        typename Graph::EdgeId,
-                                       Point point)
-{
+                                       Point point) {
   return point;
 }
-
-template<class Graph>
-class PairedInfoNormalizer {
-  typedef typename Graph::EdgeId EdgeId;
-
- public:
-  typedef boost::function<const Point(EdgeId, EdgeId, Point)> WeightNormalizer;
-
-  PairedInfoNormalizer(WeightNormalizer normalizing_function) :
-      normalizing_function_(normalizing_function)
-  {
-  }
-
-// temporary due to path_extend absolute thresholds
-  void FillNormalizedIndex(const PairedInfoIndexT<Graph>& paired_index,
-                                 PairedInfoIndexT<Graph>& normalized_index,
-                                 double coeff = 1.) const {
-    for (auto I = paired_index.begin(), E = paired_index.end(); I != E; ++I) {
-      const Histogram& hist = *I;
-      EdgeId e1 = I.first();
-      EdgeId e2 = I.second();
-      TRACE("first second " << e1 << " " << e2);
-      for (auto it2 = hist.begin(); it2 != hist.end(); ++it2) {
-        Point tmp(*it2);
-        TRACE("TEMP point " << tmp);
-        tmp.weight = tmp.weight * coeff;
-        TRACE("Normalized pair info " << tmp << " " << normalizing_function_(e1, e2, tmp));
-        normalized_index.AddPairInfo(e1, e2, normalizing_function_(e1, e2, tmp), false);
-      }
-    }
-  }
-
- private:
-  WeightNormalizer normalizing_function_;
-  DECL_LOGGER("PairedInfoNormalizer");
-};
 
 };
 
