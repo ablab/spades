@@ -47,7 +47,7 @@ struct PairedInfoLibrary {
     }
 
     virtual ~PairedInfoLibrary() {}
-  
+
     void SetCoverage(double cov) { coverage_coeff_ = cov; }
     void SetSingleThreshold(double threshold) { single_threshold_ = threshold; }
 
@@ -105,20 +105,29 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
                                const std::map<int, size_t>& is_distribution)
         : PairedInfoLibrary(k, g, readS, is, is_min, is_max, is_div, is_mp, is_distribution),
           index_(index) {}
-          
-    virtual size_t FindJumpEdges(EdgeId e, set<EdgeId>& result, int min_dist = 0, int max_dist = 100000000, size_t min_len = 0) {
+
+    virtual size_t FindJumpEdges(EdgeId e, std::set<EdgeId>& result, int min_dist = 0, int max_dist = 100000000, size_t min_len = 0) {
         result.clear();
         if (!index_.contains(e))
             return result.size();
 
-        for (auto it = index_.edge_begin(e); it != index_.edge_end(e); ++it) {
-            if (it->first != e && g_.length(it->first) >= min_len &&
-                math::le(it->second.d, (omnigraph::de::DEDistance) max_dist) &&
-                math::ge(it->second.d, (omnigraph::de::DEDistance) min_dist)) {
-                result.insert(it->first);
+        const auto& infos = index_.GetEdgeInfo(e, 0);
+        for (const auto& it : infos) {
+          EdgeId e2 = it.first;
+          if (e2 == e)
+            continue;
+          if (g_.length(e2) < min_len)
+            continue;
 
+          for (const auto& point : it.second) {
+            if (math::le(point.d, (omnigraph::de::DEDistance) max_dist) &&
+                math::ge(point.d, (omnigraph::de::DEDistance) min_dist)) {
+              result.insert(e2);
+              break;
             }
+          }
         }
+
         return result.size();
     }
 

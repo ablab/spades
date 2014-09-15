@@ -337,144 +337,12 @@ class PairedInfoStorage {
     PairedInfoStorage()
             : size_(0) {}
 
-    class EdgePairIterator :
-            public boost::iterator_facade<EdgePairIterator,
-                                          const Histogram,
-                                          boost::forward_traversal_tag,
-                                          const Histogram& > {
-
-      public:
-        EdgePairIterator(DataIterator cedge, DataIterator eedge)
-                : cedge_(cedge), eedge_(eedge), sedge_() {
-            if (cedge_ == eedge_)
-                return;
-
-            sedge_ = cedge_->second.begin();
-            skip_empty();
-        }
-
-        EdgeId first() const { return cedge_->first; }
-        EdgeId second() const { return sedge_->first; }
-
-        friend ostream& operator<<(ostream& os, const EdgePairIterator& iter) {
-            return os << iter.first() << " " << iter.second();
-        }
-
-      private:
-        typedef typename InnerMap::const_iterator InnerIterator;
-
-        friend class boost::iterator_core_access;
-
-        void skip_empty() {
-            while (sedge_ == cedge_->second.end()) {
-                ++cedge_;
-                if (cedge_ == eedge_)
-                    break;
-                sedge_ = cedge_->second.begin();
-            }
-        }
-
-        void increment() {
-            ++sedge_;
-            skip_empty();
-        }
-
-        bool equal(const EdgePairIterator &other) const {
-            return other.cedge_ == cedge_ && (cedge_ == eedge_ || other.sedge_ == sedge_);
-        }
-
-        const Histogram& dereference() const {
-            return sedge_->second;
-        }
-
-        DataIterator cedge_, eedge_;
-        InnerIterator sedge_;
-    };
-
-    class EdgeIterator :
-            public boost::iterator_facade<EdgeIterator,
-                                          const std::pair<EdgeId, Point>,
-                                          boost::forward_traversal_tag,
-                                          const std::pair<EdgeId, Point> > {
-        typedef typename Histogram::const_iterator histogram_iterator;
-        typedef typename InnerMap::const_iterator InnerIterator;
-
-      public:
-        EdgeIterator(InnerIterator cedge, InnerIterator eedge)
-                : cedge_(cedge), eedge_(eedge), point_() {
-            if (cedge_ == eedge_)
-                return;
-
-            point_ = cedge_->second.begin();
-            skip_empty();
-        }
-
-      private:
-        friend class boost::iterator_core_access;
-
-        void skip_empty() {
-            while (point_ == cedge_->second.end()) {
-                ++cedge_;
-                if (cedge_ == eedge_)
-                    break;
-                point_ = cedge_->second.begin();
-            }
-        }
-
-        void increment() {
-            ++point_;
-            skip_empty();
-        }
-
-        bool equal(const EdgeIterator &other) const {
-            return other.cedge_ == cedge_ && (cedge_ == eedge_ || other.point_ == point_);
-        }
-
-        const std::pair<EdgeId, Point> dereference() const {
-            return std::make_pair(cedge_->first, *point_);
-        }
-
-        InnerIterator cedge_, eedge_;
-        histogram_iterator point_;
-    };
-
-    EdgePairIterator begin() const {
-        return EdgePairIterator(index_.begin(), index_.end());
-    }
-
-    EdgePairIterator end() const {
-        return EdgePairIterator(index_.end(), index_.end());
-    }
-
     DataIterator data_begin() const {
         return index_.begin();
     }
 
     DataIterator data_end() const {
         return index_.end();
-    }
-
-    EdgeIterator edge_begin(EdgeId edge) const {
-        VERIFY(contains(edge));
-        return edge_begin(index_.find(edge));
-    }
-
-    EdgeIterator edge_end(EdgeId edge) const {
-        VERIFY(contains(edge));
-        return edge_end(index_.find(edge));
-    }
-
-    bool contains(EdgeId edge) const {
-        return index_.count(edge);
-    }
-
-    // FIXME: Make these private
-    EdgeIterator edge_begin(typename IndexDataType::const_iterator entry) const {
-        return EdgeIterator(entry->second.begin(), entry->second.end());
-    }
-
-    EdgeIterator edge_end(typename IndexDataType::const_iterator entry) const {
-        return EdgeIterator(entry->second.end(), entry->second.end());
     }
 
     // adding pair infos
@@ -577,10 +445,11 @@ class PairedInfoStorage {
 
         std::vector<PairInfo<EdgeId> > result;
         result.reserve(iter->second.size());
-        for (auto I = edge_begin(iter), E = edge_end(iter); I != E; ++I) {
-            std::pair<EdgeId, Point> entry = *I;
-            result.push_back(PairInfo<EdgeId>(edge, entry.first, entry.second));
-        }
+
+        for (const auto& entry : iter->second)
+          for (const auto& point : entry.second)
+            result.push_back({edge, entry.first, point});
+
         return result;
     }
 
@@ -642,9 +511,9 @@ class PairedInfoStorage {
         }
     }
 
-    size_t size() const {
-        return size_;
-    }
+    bool contains(EdgeId edge) const { return index_.count(edge); }
+
+    size_t size() const { return size_; }
 
   private:
     bool IsSymmetric(EdgeId e1, EdgeId e2,
@@ -708,7 +577,7 @@ class PairedInfoStorage {
         }
     }
 
-  private:
+  protected:
     IndexDataType index_;
     size_t size_;
 };
@@ -722,7 +591,12 @@ using PairedInfoBuffer = PairedInfoStorage<Graph,
 
 template<class Graph>
 class PairedInfoIndexT: public PairedInfoStorage<Graph> {
+  typedef PairedInfoStorage<Graph> base;
+
   public:
+    typedef typename base::Histogram Histogram;
+    typedef typename base::DataIterator DataIterator;
+    typedef typename base::InnerMap InnerMap;
     typedef typename Graph::EdgeId EdgeId;
 
     PairedInfoIndexT(const Graph& graph)
@@ -764,10 +638,137 @@ class PairedInfoIndexT: public PairedInfoStorage<Graph> {
         VERIFY_MSG(this->size() == size, "Size " << size << " must have been equal to " << this->size());
     }
 
- private:
-  const Graph& graph_;
+    class EdgePairIterator :
+        public boost::iterator_facade<EdgePairIterator,
+                                      const Histogram,
+                                      boost::forward_traversal_tag,
+                                      const Histogram& > {
 
-  DECL_LOGGER("PairedInfoIndexT");
+     public:
+        EdgePairIterator(DataIterator cedge, DataIterator eedge)
+                : cedge_(cedge), eedge_(eedge), sedge_() {
+            if (cedge_ == eedge_)
+                return;
+
+            sedge_ = cedge_->second.begin();
+            skip_empty();
+        }
+
+        EdgeId first() const { return cedge_->first; }
+        EdgeId second() const { return sedge_->first; }
+
+        friend ostream& operator<<(ostream& os, const EdgePairIterator& iter) {
+            return os << iter.first() << " " << iter.second();
+        }
+
+      private:
+        typedef typename InnerMap::const_iterator InnerIterator;
+
+        friend class boost::iterator_core_access;
+
+        void skip_empty() {
+            while (sedge_ == cedge_->second.end()) {
+                ++cedge_;
+                if (cedge_ == eedge_)
+                    break;
+                sedge_ = cedge_->second.begin();
+            }
+        }
+
+        void increment() {
+            ++sedge_;
+            skip_empty();
+        }
+
+        bool equal(const EdgePairIterator &other) const {
+            return other.cedge_ == cedge_ && (cedge_ == eedge_ || other.sedge_ == sedge_);
+        }
+
+        const Histogram& dereference() const {
+            return sedge_->second;
+        }
+
+        DataIterator cedge_, eedge_;
+        InnerIterator sedge_;
+    };
+
+    class EdgeIterator :
+            public boost::iterator_facade<EdgeIterator,
+                                          const std::pair<EdgeId, Point>,
+                                          boost::forward_traversal_tag,
+                                          const std::pair<EdgeId, Point> > {
+        typedef typename Histogram::const_iterator histogram_iterator;
+        typedef typename InnerMap::const_iterator InnerIterator;
+
+      public:
+        EdgeIterator(InnerIterator cedge, InnerIterator eedge)
+                : cedge_(cedge), eedge_(eedge), point_() {
+            if (cedge_ == eedge_)
+                return;
+
+            point_ = cedge_->second.begin();
+            skip_empty();
+        }
+
+      private:
+        friend class boost::iterator_core_access;
+
+        void skip_empty() {
+            while (point_ == cedge_->second.end()) {
+                ++cedge_;
+                if (cedge_ == eedge_)
+                    break;
+                point_ = cedge_->second.begin();
+            }
+        }
+
+        void increment() {
+            ++point_;
+            skip_empty();
+        }
+
+        bool equal(const EdgeIterator &other) const {
+            return other.cedge_ == cedge_ && (cedge_ == eedge_ || other.point_ == point_);
+        }
+
+        const std::pair<EdgeId, Point> dereference() const {
+            return std::make_pair(cedge_->first, *point_);
+        }
+
+        InnerIterator cedge_, eedge_;
+        histogram_iterator point_;
+    };
+
+    EdgePairIterator begin() const {
+        return EdgePairIterator(this->index_.begin(), this->index_.end());
+    }
+
+    EdgePairIterator end() const {
+        return EdgePairIterator(this->index_.end(), this->index_.end());
+    }
+
+    EdgeIterator edge_begin(EdgeId edge) const {
+        VERIFY(this->contains(edge));
+        return edge_begin(this->index_.find(edge));
+    }
+
+    EdgeIterator edge_end(EdgeId edge) const {
+        VERIFY(this->contains(edge));
+        return edge_end(this->index_.find(edge));
+    }
+
+ private:
+    EdgeIterator edge_begin(DataIterator entry) const {
+      return EdgeIterator(entry->second.begin(), entry->second.end());
+    }
+
+    EdgeIterator edge_end(DataIterator entry) const {
+      return EdgeIterator(entry->second.end(), entry->second.end());
+    }
+
+    const Graph& graph_;
+
+    DECL_LOGGER("PairedInfoIndexT");
 };
 
 template<class Graph,
