@@ -14,6 +14,7 @@
 
 #include <btree/btree_set.h>
 #include <btree/safe_btree_map.h>
+#include <sparsehash/sparse_hash_map>
 
 #include <cmath>
 #include <map>
@@ -792,7 +793,11 @@ struct PairedInfoIndicesT {
 
 template<class Graph>
 //using UnclusteredPairedInfoIndexT = PairedInfoStorage<Graph, RawHistogram>;
-using UnclusteredPairedInfoIndexT = PairedInfoBuffer<Graph>;
+using UnclusteredPairedInfoIndexT = PairedInfoStorage<Graph,
+                                                      RawHistogram,
+                                                      google::sparse_hash_map<typename Graph::EdgeId, RawHistogram>,
+                                                      google::sparse_hash_map<typename Graph::EdgeId,
+                                                                              google::sparse_hash_map<typename Graph::EdgeId, RawHistogram> > >;
 
 template<class Graph>
 using UnclusteredPairedInfoIndicesT = std::vector<UnclusteredPairedInfoIndexT<Graph> >;
