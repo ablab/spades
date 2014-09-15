@@ -108,14 +108,13 @@ class GraphDistanceFinder {
   const vector<Path> GetGraphDistances(EdgeId e1, EdgeId e2) const {
     PathStorageCallback<Graph> callback(graph_);
 
-    PathProcessor<Graph> path_processor(
-        graph_,
-        omnigraph::PairInfoPathLengthLowerBound(graph_.k(),
-          graph_.length(e1), graph_.length(e2), gap_, delta_),
-        omnigraph::PairInfoPathLengthUpperBound(graph_.k(),
-          insert_size_, delta_),
-        graph_.EdgeEnd(e1),
-        graph_.EdgeStart(e2), callback);
+    PathProcessor<Graph> path_processor(graph_,
+                                        omnigraph::PairInfoPathLengthLowerBound(graph_.k(),
+                                                                                graph_.length(e1), graph_.length(e2), gap_, delta_),
+                                        omnigraph::PairInfoPathLengthUpperBound(graph_.k(),
+                                                                                insert_size_, delta_),
+                                        graph_.EdgeEnd(e1),
+                                        graph_.EdgeStart(e2), callback);
 
     path_processor.Process();
 
@@ -231,9 +230,8 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
 
     DEBUG("Collecting edge infos");
     vector<EdgeId> edges;
-    for (auto I = index.data_begin(), E = index.data_end(); I != E; ++I) {
-      edges.push_back(I->first);
-    }
+    for (auto it = this->graph().ConstEdgeBegin(); !it.IsEnd(); ++it)
+      edges.push_back(*it);
 
     std::vector<PairedInfoBuffer<Graph> > buffer(nthreads);
 
@@ -329,24 +327,27 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
   virtual void ProcessEdge(EdgeId e1,
                            const typename InPairedIndex::InnerMap& inner_map,
                            PairedInfoBuffer<Graph>& result) const {
-    set<EdgeId> second_edges;
-    for (auto I = inner_map.begin(), E = inner_map.end(); I != E; ++I)
-      second_edges.insert(I->first);
+    std::set<EdgeId> second_edges;
+    for (const auto &entry : inner_map)
+      second_edges.insert(entry.first);
+
     const vector<GraphLengths> lens_array = this->GetGraphDistancesLengths(e1, second_edges);
 
     size_t i = 0;
     VERIFY(second_edges.size() == lens_array.size());
-    for (auto I = inner_map.begin(), E = inner_map.end(); I != E; ++I, ++i) {
-      EdgePair ep(e1, I->first);
-      if (ep <= ConjugatePair(ep)) {
-        TRACE("Edge pair is " << this->graph().int_id(ep.first)
-                       << " " << this->graph().int_id(ep.second));
-        const GraphLengths& forward = lens_array[i];
-        const EstimHist& estimated = this->EstimateEdgePairDistances(ep, I->second, forward);
-        OutHistogram res = this->ClusterResult(ep, estimated);
-        this->AddToResult(res, ep, result);
-        this->AddToResult(ConjugateInfos(ep, res), ConjugatePair(ep), result);
-      }
+    for (const EdgeId e2 : second_edges) {
+      EdgePair ep(e1, e2);
+      if (ep > ConjugatePair(ep))
+        continue;
+
+      TRACE("Edge pair is " << this->graph().int_id(ep.first)
+            << " " << this->graph().int_id(ep.second));
+      const GraphLengths& forward = lens_array[i];
+      const InHistogram& hist = inner_map.find(e2)->second;
+      const EstimHist& estimated = this->EstimateEdgePairDistances(ep, hist, forward);
+      OutHistogram res = this->ClusterResult(ep, estimated);
+      this->AddToResult(res, ep, result);
+      this->AddToResult(ConjugateInfos(ep, res), ConjugatePair(ep), result);
     }
   }
 

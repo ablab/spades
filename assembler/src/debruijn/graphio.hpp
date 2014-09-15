@@ -220,13 +220,12 @@ class DataPrinter {
         SaveEdgeAssociatedInfo(flanking_cov, out);
     }
 
-      void SavePaired(const string& file_name,
-                      UnclusteredPairedInfoIndexT<Graph> const& paired_index) const {
+    void SavePaired(const string& file_name,
+                    UnclusteredPairedInfoIndexT<Graph> const& paired_index) const {
         FILE* file = fopen((file_name + ".prd").c_str(), "w");
         DEBUG("Saving paired info, " << file_name <<" created");
         VERIFY(file != NULL);
 
-        size_t comp_size = 0;
         for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
             EdgeId e1 = *I;
             const auto& inner_map = paired_index.GetEdgeInfo(e1, 0);

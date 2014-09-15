@@ -112,6 +112,8 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
             return result.size();
 
         const auto& infos = index_.GetEdgeInfo(e, 0);
+        // We do not care about iteration order here - all the edges collected
+        // will be inside std::set<EdgeId>
         for (const auto& it : infos) {
           EdgeId e2 = it.first;
           if (e2 == e)
