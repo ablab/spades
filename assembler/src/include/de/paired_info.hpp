@@ -791,10 +791,11 @@ struct PairedInfoIndicesT {
 };
 
 template<class Graph>
-using UnclusteredPairedInfoIndexT = PairedInfoStorage<Graph, RawHistogram>;
+//using UnclusteredPairedInfoIndexT = PairedInfoStorage<Graph, RawHistogram>;
+using UnclusteredPairedInfoIndexT = PairedInfoBuffer<Graph>;
 
 template<class Graph>
-using UnclusteredPairedInfoIndicesT = std::vector<PairedInfoStorage<Graph, RawHistogram> >;
+using UnclusteredPairedInfoIndicesT = std::vector<UnclusteredPairedInfoIndexT<Graph> >;
 
 //New metric weight normalizer
 template<class Graph>
