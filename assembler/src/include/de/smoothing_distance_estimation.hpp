@@ -169,10 +169,10 @@ private:
     size_t i = 0;
     for (EdgeId e2 : second_edges) {
       EdgePair ep(e1, e2);
+      const GraphLengths& forward = lens_array[i++];
+
       if (ep > this->ConjugatePair(ep))
           continue;
-
-      const GraphLengths& forward = lens_array[i++];
 
       TRACE("Processing edge pair " << this->graph().int_id(e1)
             << " " << this->graph().int_id(e2));

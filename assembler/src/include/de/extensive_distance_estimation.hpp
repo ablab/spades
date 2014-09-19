@@ -71,10 +71,11 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
     size_t i = 0;
     for (EdgeId e2 : second_edges) {
       EdgePair ep(e1, e2);
+      const GraphLengths& forward = lens_array[i++];
+
       if (ep > this->ConjugatePair(ep))
           continue;
 
-      const GraphLengths& forward = lens_array[i++];
       InHistogram hist = inner_map.find(e2)->second;
       DEBUG("Extending paired information");
       double weight_0 = WeightSum(hist);

@@ -337,12 +337,12 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
     VERIFY(second_edges.size() == lens_array.size());
     for (const EdgeId e2 : second_edges) {
       EdgePair ep(e1, e2);
+      const GraphLengths& forward = lens_array[i++];
       if (ep > ConjugatePair(ep))
           continue;
 
       TRACE("Edge pair is " << this->graph().int_id(ep.first)
             << " " << this->graph().int_id(ep.second));
-      const GraphLengths& forward = lens_array[i];
       const InHistogram& hist = inner_map.find(e2)->second;
       const EstimHist& estimated = this->EstimateEdgePairDistances(ep, hist, forward);
       OutHistogram res = this->ClusterResult(ep, estimated);
