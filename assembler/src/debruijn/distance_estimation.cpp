@@ -10,6 +10,7 @@
 
 #include "de/paired_info.hpp"
 #include "de/pair_info_filters.hpp"
+#include "de/distance_estimation.hpp"
 #include "de/weighted_distance_estimation.hpp"
 #include "de/extensive_distance_estimation.hpp"
 #include "de/smoothing_distance_estimation.hpp"

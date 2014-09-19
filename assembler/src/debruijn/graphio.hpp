@@ -220,8 +220,9 @@ class DataPrinter {
         SaveEdgeAssociatedInfo(flanking_cov, out);
     }
 
+    template<class Index>
     void SavePaired(const string& file_name,
-                    UnclusteredPairedInfoIndexT<Graph> const& paired_index) const {
+                    Index const& paired_index) const {
         FILE* file = fopen((file_name + ".prd").c_str(), "w");
         DEBUG("Saving paired info, " << file_name <<" created");
         VERIFY(file != NULL);
@@ -244,58 +245,13 @@ class DataPrinter {
         for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
             EdgeId e1 = *I;
             const auto& inner_map = paired_index.GetEdgeInfo(e1, 0);
-            for (auto II = inner_map.begin(), IE = inner_map.end(); II != IE; ++II) {
-                EdgeId e2 = II->first;
-                const auto& hist = II->second;
+            std::map<typename Graph::EdgeId, typename Index::Histogram> ordermap(inner_map.begin(), inner_map.end());
+            for (const auto& entry : ordermap) {
+                EdgeId e2 = entry.first; const auto& hist = entry.second;
                 if (component_.contains(e2))
-                    for (auto hist_it = hist.begin(); hist_it != hist.end(); ++hist_it) {
-                        Point point = *hist_it;
-                        fprintf(file, "%zu %zu %.2f %.2f %.2f .\n",
-                                e1.int_id(),
-                                e2.int_id(),
-                                (double)point.d, (double)point.weight, 0.0);
-                    }
-            }
-        }
-
-        fclose(file);
-    }
-
-    void SavePaired(const string& file_name,
-                    PairedInfoIndexT<Graph> const& paired_index) const {
-        FILE* file = fopen((file_name + ".prd").c_str(), "w");
-        DEBUG("Saving paired info, " << file_name <<" created");
-        VERIFY(file != NULL);
-
-        size_t comp_size = 0;
-        for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
-            EdgeId e1 = *I;
-            const auto& inner_map = paired_index.GetEdgeInfo(e1, 0);
-            for (auto II = inner_map.begin(), IE = inner_map.end(); II != IE; ++II) {
-                EdgeId e2 = II->first;
-                const auto& hist = II->second;
-                if (component_.contains(e2)) { // if the second edge also lies in the same component
-                    comp_size += hist.size();
-                }
-            }
-        }
-
-        fprintf(file, "%zu\n", comp_size);
-
-        for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
-            EdgeId e1 = *I;
-            const auto& inner_map = paired_index.GetEdgeInfo(e1, 0);
-            for (auto II = inner_map.begin(), IE = inner_map.end(); II != IE; ++II) {
-                EdgeId e2 = II->first;
-                const auto& hist = II->second;
-                if (component_.contains(e2))
-                    for (auto hist_it = hist.begin(); hist_it != hist.end(); ++hist_it) {
-                        Point point = *hist_it;
-                        fprintf(file, "%zu %zu %.2f %.2f %.2f .\n",
-                                e1.int_id(),
-                                e2.int_id(),
-                                (double)point.d, (double)point.weight, (double)point.var);
-                    }
+                  for (Point point : hist)
+                    fprintf(file, "%zu %zu %.2f %.2f %.2f .\n",
+                            e1.int_id(), e2.int_id(), (double)point.d, (double)point.weight, (double)point.variation());
             }
         }
 

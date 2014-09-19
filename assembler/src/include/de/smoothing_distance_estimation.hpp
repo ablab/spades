@@ -169,7 +169,8 @@ private:
     size_t i = 0;
     for (EdgeId e2 : second_edges) {
       EdgePair ep(e1, e2);
-      VERIFY(ep <= this->ConjugatePair(ep));
+      if (ep > this->ConjugatePair(ep))
+          continue;
 
       const GraphLengths& forward = lens_array[i++];
 

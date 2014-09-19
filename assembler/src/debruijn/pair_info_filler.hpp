@@ -73,6 +73,7 @@ private:
                 std::pair<EdgeId, MappingRange> mapping_edge_2 = path2[j];
 
                 EdgePair ep{mapping_edge_1.first, mapping_edge_2.first};
+
                 if (ep > ConjugatePair(ep))
                     continue;
 
