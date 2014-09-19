@@ -169,30 +169,29 @@ private:
     size_t i = 0;
     for (EdgeId e2 : second_edges) {
       EdgePair ep(e1, e2);
-      if (ep <= this->ConjugatePair(ep)) {
-        const GraphLengths& forward = lens_array[i++];
+      VERIFY(ep <= this->ConjugatePair(ep));
 
-        TRACE("Processing edge pair " << this->graph().int_id(e1)
-                               << " " << this->graph().int_id(e2));
-        InHistogram hist = inner_map.find(e2)->second;
-        EstimHist estimated;
-        //DEBUG("Extending paired information");
-        //DEBUG("Extend left");
-        //this->base::ExtendInfoLeft(e1, e2, hist, 1000);
-        DEBUG("Extend right");
-        this->ExtendInfoRight(e1, e2, hist, 1000);
-        if (forward.size() == 0) {
-          estimated = FindEdgePairDistances(ep, hist);
-          ++gap_distances;
-        }
-        else if (forward.size() > 0 && (!only_scaffolding_)) {
-          estimated = this->base::EstimateEdgePairDistances(ep, hist, forward);
-        }
-        DEBUG(gap_distances << " distances between gap edge pairs have been found");
-        OutHistogram res = this->ClusterResult(ep, estimated);
-        this->AddToResult(res, ep, result);
-        this->AddToResult(this->ConjugateInfos(ep, res), this->ConjugatePair(ep), result);
+      const GraphLengths& forward = lens_array[i++];
+
+      TRACE("Processing edge pair " << this->graph().int_id(e1)
+            << " " << this->graph().int_id(e2));
+      InHistogram hist = inner_map.find(e2)->second;
+      EstimHist estimated;
+      //DEBUG("Extending paired information");
+      //DEBUG("Extend left");
+      //this->base::ExtendInfoLeft(e1, e2, hist, 1000);
+      DEBUG("Extend right");
+      this->ExtendInfoRight(e1, e2, hist, 1000);
+      if (forward.size() == 0) {
+        estimated = FindEdgePairDistances(ep, hist);
+        ++gap_distances;
+      } else if (forward.size() > 0 && (!only_scaffolding_)) {
+        estimated = this->base::EstimateEdgePairDistances(ep, hist, forward);
       }
+      DEBUG(gap_distances << " distances between gap edge pairs have been found");
+      OutHistogram res = this->ClusterResult(ep, estimated);
+      this->AddToResult(res, ep, result);
+      this->AddToResult(this->ConjugateInfos(ep, res), this->ConjugatePair(ep), result);
     }
   }
 

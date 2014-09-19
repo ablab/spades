@@ -337,8 +337,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
     VERIFY(second_edges.size() == lens_array.size());
     for (const EdgeId e2 : second_edges) {
       EdgePair ep(e1, e2);
-      if (ep > ConjugatePair(ep))
-        continue;
+      VERIFY(ep <= ConjugatePair(ep));
 
       TRACE("Edge pair is " << this->graph().int_id(ep.first)
             << " " << this->graph().int_id(ep.second));

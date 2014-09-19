@@ -71,21 +71,21 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
     size_t i = 0;
     for (EdgeId e2 : second_edges) {
       EdgePair ep(e1, e2);
-      if (ep <= this->ConjugatePair(ep)) {
-        const GraphLengths& forward = lens_array[i++];
-        InHistogram hist = inner_map.find(e2)->second;
-        DEBUG("Extending paired information");
-        double weight_0 = WeightSum(hist);
-        DEBUG("Extend left");
-        ExtendInfoLeft(e1, e2, hist, 1000);
-        DEBUG("Extend right");
-        ExtendInfoRight(e1, e2, hist, 1000);
-        DEBUG("Weight increased " << (WeightSum(hist) - weight_0));
-        const EstimHist& estimated = this->EstimateEdgePairDistances(ep, hist, forward);
-        OutHistogram res = this->ClusterResult(ep, estimated);
-        this->AddToResult(res, ep, result);
-        this->AddToResult(this->ConjugateInfos(ep, res), this->ConjugatePair(ep), result);
-      }
+      VERIFY(ep <= this->ConjugatePair(ep));
+
+      const GraphLengths& forward = lens_array[i++];
+      InHistogram hist = inner_map.find(e2)->second;
+      DEBUG("Extending paired information");
+      double weight_0 = WeightSum(hist);
+      DEBUG("Extend left");
+      ExtendInfoLeft(e1, e2, hist, 1000);
+      DEBUG("Extend right");
+      ExtendInfoRight(e1, e2, hist, 1000);
+      DEBUG("Weight increased " << (WeightSum(hist) - weight_0));
+      const EstimHist& estimated = this->EstimateEdgePairDistances(ep, hist, forward);
+      OutHistogram res = this->ClusterResult(ep, estimated);
+      this->AddToResult(res, ep, result);
+      this->AddToResult(this->ConjugateInfos(ep, res), this->ConjugatePair(ep), result);
     }
   }
 
