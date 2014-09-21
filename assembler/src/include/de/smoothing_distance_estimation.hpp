@@ -160,22 +160,22 @@ private:
   virtual void ProcessEdge(EdgeId e1,
                            const typename InPairedIndex::InnerMap& inner_map,
                            PairedInfoBuffer<Graph>& result) const {
-    std::set<EdgeId> second_edges;
-    for (const auto &entry : inner_map)
-      second_edges.insert(entry.first);
+    typename base::LengthMap second_edges;
+    for (auto I = inner_map.begin(), E = inner_map.end(); I != E; ++I)
+      second_edges[I->first];
 
-    vector<GraphLengths> lens_array = this->GetGraphDistancesLengths(e1, second_edges);
+    this->FillGraphDistancesLengths(e1, second_edges);
 
-    size_t i = 0;
-    for (EdgeId e2 : second_edges) {
+    for (const auto& entry: second_edges) {
+      EdgeId e2 = entry.first;
       EdgePair ep(e1, e2);
-      const GraphLengths& forward = lens_array[i++];
 
       if (ep > this->ConjugatePair(ep))
           continue;
 
       TRACE("Processing edge pair " << this->graph().int_id(e1)
             << " " << this->graph().int_id(e2));
+      const GraphLengths& forward = entry.second;
       InHistogram hist = inner_map.find(e2)->second;
       EstimHist estimated;
       //DEBUG("Extending paired information");

@@ -23,28 +23,26 @@ template<class Graph>
 class GraphDistanceFinder {
   typedef typename Graph::EdgeId EdgeId;
   typedef typename Graph::VertexId VertexId;
-  typedef vector<EdgeId> Path;
-  typedef vector<size_t> GraphLengths;
+  typedef std::vector<EdgeId> Path;
+  typedef std::vector<size_t> GraphLengths;
+  typedef std::map<EdgeId, GraphLengths> LengthMap;
 
  public:
   GraphDistanceFinder(const Graph& graph, size_t insert_size, size_t read_length, size_t delta) :
-      graph_(graph),
-      insert_size_(insert_size),
-      gap_((int) (insert_size - 2 * read_length)),
+      graph_(graph), insert_size_(insert_size), gap_((int) (insert_size - 2 * read_length)),
       delta_((double) delta)
   {}
 
   // finds all distances from a current edge to a set of edges
-  const vector<GraphLengths> GetGraphDistancesLengths(EdgeId e1, const set<EdgeId>& second_edges) const {
+  void FillGraphDistancesLengths(EdgeId e1, LengthMap& second_edges) const {
     vector<VertexId> end_points;
     vector<size_t> path_lower_bounds;
-    size_t i = 0;
-    for (auto I = second_edges.begin(), E = second_edges.end(); I != E; ++I) {
-      EdgeId second_edge = *I;
+    for (const auto& entry : second_edges) {
+      EdgeId second_edge = entry.first;
       end_points.push_back(graph_.EdgeStart(second_edge));
       path_lower_bounds.push_back(PairInfoPathLengthLowerBound(graph_.k(), graph_.length(e1),
-        graph_.length(second_edge), gap_, delta_));
-      TRACE("Bounds for paths are " << path_lower_bounds[i++]);
+                                                               graph_.length(second_edge), gap_, delta_));
+      TRACE("Bounds for paths are " << path_lower_bounds.back());
     }
 
     size_t path_upper_bound = PairInfoPathLengthUpperBound(graph_.k(), insert_size_, delta_);
@@ -58,67 +56,22 @@ class GraphDistanceFinder {
 
     vector<GraphLengths> result;
 
-    typename set<EdgeId>::const_iterator e2_iter = second_edges.cbegin();
-    for (size_t i = 0; i < second_edges.size(); ++i, ++e2_iter) {
-      GraphLengths lengths = callback.distances(i);
+
+    size_t i = 0;
+    for (auto& entry : second_edges) {
+      GraphLengths lengths = callback.distances(i++);
       for (size_t j = 0; j < lengths.size(); ++j) {
         lengths[j] += graph_.length(e1);
         TRACE("Resulting distance set # " << i <<
-              " edge " << graph_.int_id(*e2_iter) << " #" << j << " length " << lengths[j]);
+              " edge " << graph_.int_id(entry.first) << " #" << j << " length " << lengths[j]);
       }
-      if (e1 == *e2_iter)
+
+      if (e1 == entry.first)
         lengths.push_back(0);
 
-      sort(lengths.begin(), lengths.end());
-      result.push_back(lengths);
+      std::sort(lengths.begin(), lengths.end());
+      entry.second = lengths;
     }
-
-    VERIFY(second_edges.size() == result.size());
-
-    return result;
-  }
-
-  const vector<size_t> GetGraphDistancesLengths(EdgeId e1, EdgeId e2) const {
-    DistancesLengthsCallback<Graph> callback(graph_);
-
-    size_t path_lower_bound =
-        omnigraph::PairInfoPathLengthLowerBound(graph_.k(),
-                                                graph_.length(e1), graph_.length(e2), gap_, delta_);
-    size_t path_upper_bound =
-        omnigraph::PairInfoPathLengthUpperBound(graph_.k(),
-                                                insert_size_, delta_);
-    TRACE("Bounds for paths are " << path_lower_bound << " " << path_upper_bound);
-    PathProcessor<Graph> path_processor(graph_, path_lower_bound, path_upper_bound,
-                                        graph_.EdgeEnd(e1), graph_.EdgeStart(e2), callback);
-    path_processor.Process();
-
-    vector<size_t> result = callback.distances();
-    for (size_t i = 0; i < result.size(); ++i) {
-      result[i] += graph_.length(e1);
-      TRACE("Resulting distance # " << i << " " << result[i]);
-    }
-
-    if (e1 == e2)
-      result.push_back(0);
-
-    sort(result.begin(), result.end());
-    return result;
-  }
-
-  const vector<Path> GetGraphDistances(EdgeId e1, EdgeId e2) const {
-    PathStorageCallback<Graph> callback(graph_);
-
-    PathProcessor<Graph> path_processor(graph_,
-                                        omnigraph::PairInfoPathLengthLowerBound(graph_.k(),
-                                                                                graph_.length(e1), graph_.length(e2), gap_, delta_),
-                                        omnigraph::PairInfoPathLengthUpperBound(graph_.k(),
-                                                                                insert_size_, delta_),
-                                        graph_.EdgeEnd(e1),
-                                        graph_.EdgeStart(e2), callback);
-
-    path_processor.Process();
-
-    return callback.paths();
   }
 
  private:
@@ -156,13 +109,14 @@ class AbstractDistanceEstimator {
   typedef pair<EdgeId, EdgeId> EdgePair;
   typedef vector<pair<int, double> > EstimHist;
   typedef vector<size_t> GraphLengths;
+  typedef std::map<EdgeId, GraphLengths> LengthMap;
 
   const Graph& graph() const { return graph_; }
 
   const InPairedIndex& index() const { return index_; }
 
-  const vector<GraphLengths> GetGraphDistancesLengths(EdgeId e1, const set<EdgeId>& second_edges) const {
-    return distance_finder_.GetGraphDistancesLengths(e1, second_edges);
+  void FillGraphDistancesLengths(EdgeId e1, LengthMap& second_edges) const {
+    return distance_finder_.FillGraphDistancesLengths(e1, second_edges);
   }
 
   OutHistogram ClusterResult(EdgePair /*ep*/, const EstimHist& estimated) const {
@@ -327,20 +281,19 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
   virtual void ProcessEdge(EdgeId e1,
                            const typename InPairedIndex::InnerMap& inner_map,
                            PairedInfoBuffer<Graph>& result) const {
-    std::set<EdgeId> second_edges;
-    for (const auto &entry : inner_map)
-      second_edges.insert(entry.first);
+    typename base::LengthMap second_edges;
+    for (auto I = inner_map.begin(), E = inner_map.end(); I != E; ++I)
+      second_edges[I->first];
 
-    const vector<GraphLengths> lens_array = this->GetGraphDistancesLengths(e1, second_edges);
+    this->FillGraphDistancesLengths(e1, second_edges);
 
-    size_t i = 0;
-    VERIFY(second_edges.size() == lens_array.size());
-    for (const EdgeId e2 : second_edges) {
+    for (const auto& entry: second_edges) {
+      EdgeId e2 = entry.first;
       EdgePair ep(e1, e2);
-      const GraphLengths& forward = lens_array[i++];
       if (ep > ConjugatePair(ep))
           continue;
 
+      const GraphLengths& forward = entry.second;
       TRACE("Edge pair is " << this->graph().int_id(ep.first)
             << " " << this->graph().int_id(ep.second));
       const InHistogram& hist = inner_map.find(e2)->second;
