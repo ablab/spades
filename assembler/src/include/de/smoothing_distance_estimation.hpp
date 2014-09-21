@@ -165,22 +165,21 @@ private:
                            perf_counter& pc) const
   {
     pc.reset();
-    set<EdgeId> second_edges;
+    typename base::LengthMap second_edges;
     for (auto I = inner_map.begin(), E = inner_map.end(); I != E; ++I)
-      second_edges.insert(I->first);
+      second_edges[I->first];
 
-    vector<GraphLengths> lens_array = this->GetGraphDistancesLengths(e1, second_edges);
+    this->FillGraphDistancesLengths(e1, second_edges);
 
-    size_t i = 0;
-    for (auto I = inner_map.begin(), E = inner_map.end(); I != E; ++I) {
-      EdgeId e2 = I->first;
+    for (const auto& entry: second_edges) {
+      EdgeId e2 = entry.first;
       EdgePair ep(e1, e2);
       if (ep <= this->ConjugatePair(ep)) {
-        const GraphLengths& forward = lens_array[i++];
+        const GraphLengths& forward = entry.second;
 
         TRACE("Processing edge pair " << this->graph().int_id(e1)
                                << " " << this->graph().int_id(e2));
-        Histogram hist = I->second;
+        Histogram hist = inner_map.find(e2)->second;
         EstimHist estimated;
         //DEBUG("Extending paired information");
         //DEBUG("Extend left");
@@ -190,8 +189,7 @@ private:
         if (forward.size() == 0) {
           estimated = FindEdgePairDistances(ep, hist);
           ++gap_distances;
-        }
-        else if (forward.size() > 0 && (!only_scaffolding_)) {
+        } else if (forward.size() > 0 && (!only_scaffolding_)) {
           estimated = this->base::EstimateEdgePairDistances(ep, hist, forward);
         }
         DEBUG(gap_distances << " distances between gap edge pairs have been found");

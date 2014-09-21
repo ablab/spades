@@ -63,19 +63,18 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
                            PairedInfoIndexT<Graph>& result,
                            perf_counter& /*pc*/) const
   {
-    set<EdgeId> second_edges;
+    typename base::LengthMap second_edges;
     for (auto I = inner_map.begin(), E = inner_map.end(); I != E; ++I)
-      second_edges.insert(I->first);
+      second_edges[I->first];
 
-    vector<GraphLengths> lens_array = this->GetGraphDistancesLengths(e1, second_edges);
+    this->FillGraphDistancesLengths(e1, second_edges);
 
-    size_t i = 0;
-    for (auto I = inner_map.begin(), E = inner_map.end(); I != E; ++I) {
-      EdgeId e2 = I->first;
+    for (const auto& entry: second_edges) {
+      EdgeId e2 = entry.first;
       EdgePair ep(e1, e2);
       if (ep <= this->ConjugatePair(ep)) {
-        const GraphLengths& forward = lens_array[i++];
-        Histogram hist = I->second;
+        const GraphLengths& forward = entry.second;
+        Histogram hist = inner_map.find(e2)->second;
         DEBUG("Extending paired information");
         double weight_0 = WeightSum(hist);
         DEBUG("Extend left");
