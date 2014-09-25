@@ -417,11 +417,11 @@ public:
         }
     }
 
-    void FindBestFittedEdgesForClustered(BidirectionalPath& path, EdgeContainer& edges, EdgeContainer& result) {
+    void FindBestFittedEdgesForClustered(BidirectionalPath& path, const set<EdgeId>& edges, EdgeContainer& result) {
         std::vector < pair<int, double> > histogram;
-        for (size_t i = 0; i < edges.size(); ++i) {
+        for (EdgeId e : edges) {
             histogram.clear();
-            CountAvrgDists(path, edges[i].e_, histogram);
+            CountAvrgDists(path, e, histogram);
             double sum = 0.0;
             for (size_t j = 0; j < histogram.size(); ++j) {
                 sum += histogram[j].second;
@@ -430,9 +430,9 @@ public:
                 return;
             }
             int gap = CountMean(histogram);
-            if (wc_->CountIdealInfo(path, edges[i].e_, gap) > 0.0) {
-                DEBUG("scaffolding " << g_.int_id(edges[i].e_) << " gap " << gap);
-                result.push_back(EdgeWithDistance(edges[i].e_, gap));
+            if (wc_->CountIdealInfo(path, e, gap) > 0.0) {
+                DEBUG("scaffolding " << g_.int_id(e) << " gap " << gap);
+                result.push_back(EdgeWithDistance(e, gap));
             }
         }
     }
@@ -441,8 +441,8 @@ public:
         return g_.IncomingEdgeCount(g_.EdgeStart(e)) == 0;
     }
 
-    EdgeContainer FindCandidates(BidirectionalPath& path) const {
-        EdgeContainer jumping_edges;
+    set<EdgeId> FindCandidates(BidirectionalPath& path) const {
+        set<EdgeId> jumping_edges;
         PairedInfoLibraries libs = wc_->getLibs();
         for (PairedInfoLibrary* lib : libs) {
             for (int i = (int) path.Size() - 1; i >= 0 && path.LengthAt(i) - g_.length(path.At(i)) <= lib->GetISMax(); --i) {
@@ -450,7 +450,7 @@ public:
                 lib->FindJumpEdges(path.At(i), jump_edges_i, (int)path.LengthAt(i) - (int)g_.k(), (int) (path.LengthAt(i) + lib->GetISMax()), 0);
                 for (EdgeId e : jump_edges_i) {
                     if (IsTip(e)) {
-                        jumping_edges.push_back(EdgeWithDistance(e, 0));
+                        jumping_edges.insert(e);
                     }
                 }
             }
@@ -462,7 +462,7 @@ public:
         if (edges.empty()) {
             return edges;
         }
-        EdgeContainer candidates = FindCandidates(path);
+        set<EdgeId> candidates = FindCandidates(path);
         EdgeContainer result;
         FindBestFittedEdgesForClustered(path, candidates, result);
         return result;
