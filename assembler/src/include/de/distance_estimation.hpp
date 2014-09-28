@@ -183,13 +183,12 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
     const auto& index = this->index();
 
     DEBUG("Collecting edge infos");
-    vector<EdgeId> edges;
+    std::vector<EdgeId> edges;
     for (auto it = this->graph().ConstEdgeBegin(); !it.IsEnd(); ++it)
       edges.push_back(*it);
 
-    std::vector<PairedInfoBuffer<Graph> > buffer(nthreads);
-
     DEBUG("Processing");
+    std::vector<PairedInfoBuffer<Graph> > buffer(nthreads);
 #   pragma omp parallel for num_threads(nthreads) schedule(guided, 10)
     for (size_t i = 0; i < edges.size(); ++i) {
       EdgeId edge = edges[i];
@@ -210,14 +209,14 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
   OutHistogram ConjugateInfos(EdgePair ep, const OutHistogram& histogram) const {
     OutHistogram answer;
     const Graph& g = this->graph();
-    for (auto it = histogram.begin(); it != histogram.end(); ++it) {
-      answer.insert(ConjugatePoint(g.length(ep.first), g.length(ep.second), *it));
-    }
+    for (auto point : histogram)
+      answer.insert(ConjugatePoint(g.length(ep.first), g.length(ep.second), point));
+
     return answer;
   }
 
   EdgePair ConjugatePair(EdgePair ep) const {
-    return make_pair(this->graph().conjugate(ep.second), this->graph().conjugate(ep.first));
+    return std::make_pair(this->graph().conjugate(ep.second), this->graph().conjugate(ep.first));
   }
 
   virtual EstimHist EstimateEdgePairDistances(EdgePair ep,
@@ -225,17 +224,16 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
                                               const GraphLengths& raw_forward) const {
     using std::abs;
     using namespace math;
-    EdgeId e1 = ep.first;
-    EdgeId e2 = ep.second;
-    size_t first_len  = this->graph().length(e1);
-    size_t second_len = this->graph().length(e2);
-    int maxD = rounded_d(*histogram.rbegin());
-    int minD = rounded_d(*histogram.begin());
+    EdgeId e1 = ep.first, e2 = ep.second;
+    size_t first_len  = this->graph().length(e1), second_len = this->graph().length(e2);
+    int maxD = rounded_d(*histogram.rbegin()), minD = rounded_d(*histogram.begin());
+
     TRACE("Bounds are " << minD << " " << maxD);
     EstimHist result;
     vector<int> forward;
-    for (auto I = raw_forward.begin(), E = raw_forward.end(); I != E; ++I) {
-      int length = int(*I);
+    forward.reserve(raw_forward.size());
+    for (auto raw_length : raw_forward) {
+      int length = int(raw_length);
       if (minD - int(max_distance_) <= length && length <= maxD + int(max_distance_))
         forward.push_back(length);
     }
@@ -244,8 +242,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
 
     size_t cur_dist = 0;
     vector<double> weights(forward.size(), 0.);
-    for (auto iter = histogram.begin(), end_iter = histogram.end(); iter != end_iter; ++iter) {
-      const Point& point = *iter;
+    for (auto point : histogram) {
       if (ls(2. * point.d + second_len, first_len))
           continue;
       while (cur_dist + 1 < forward.size() && forward[cur_dist + 1] < point.d)
@@ -254,6 +251,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
       if (cur_dist + 1 < forward.size() &&
           ls(forward[cur_dist + 1] - point.d, point.d - forward[cur_dist])) {
         ++cur_dist;
+
         if (le(abs(forward[cur_dist] - point.d), (DEDistance)max_distance_))
           weights[cur_dist] += point.weight;
       } else if (cur_dist + 1 < forward.size() &&
@@ -269,10 +267,10 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
       }
     }
 
-    for (size_t i = 0; i < forward.size(); ++i) {
+    for (size_t i = 0; i < forward.size(); ++i)
       if (ge(weights[i], 0.))
         result.push_back(make_pair(forward[i], weights[i]));
-    }
+
     VERIFY(result.size() == forward.size());
     return result;
   }
