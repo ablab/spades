@@ -108,24 +108,47 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
 
     virtual size_t FindJumpEdges(EdgeId e, std::set<EdgeId>& result, int min_dist = 0, int max_dist = 100000000, size_t min_len = 0) {
         result.clear();
-        if (!index_.contains(e))
-            return result.size();
 
-        const auto& infos = index_.GetEdgeInfo(e, 0);
-        // We do not care about iteration order here - all the edges collected
-        // will be inside std::set<EdgeId>
-        for (const auto& it : infos) {
-          EdgeId e2 = it.first;
-          if (e2 == e)
-            continue;
-          if (g_.length(e2) < min_len)
-            continue;
+        if (index_.contains(e)) {
+          const auto& infos = index_.GetEdgeInfo(e, 0);
+          // We do not care about iteration order here - all the edges collected
+          // will be inside std::set<EdgeId>
+          for (const auto& it : infos) {
+            EdgeId e2 = it.first;
+            if (e2 == e)
+              continue;
+            if (g_.length(e2) < min_len)
+              continue;
 
-          for (const auto& point : it.second) {
-            if (math::le(point.d, (omnigraph::de::DEDistance) max_dist) &&
-                math::ge(point.d, (omnigraph::de::DEDistance) min_dist)) {
-              result.insert(e2);
-              break;
+            for (const auto& point : it.second) {
+              if (math::le(point.d, (omnigraph::de::DEDistance) max_dist) &&
+                  math::ge(point.d, (omnigraph::de::DEDistance) min_dist)) {
+                result.insert(e2);
+                break;
+              }
+            }
+          }
+        }
+
+        e = g_.conjugate(e);
+        if (index_.contains(e)) {
+          const auto& infos = index_.GetEdgeInfo(e, 0);
+          // We do not care about iteration order here - all the edges collected
+          // will be inside std::set<EdgeId>
+          for (const auto& it : infos) {
+            EdgeId e2 = it.first;
+            if (e2 == e)
+              continue;
+            if (g_.length(e2) < min_len)
+              continue;
+
+            for (const auto& point : it.second) {
+              double dist = -point.d + g_.length(e) - g_.length(e2);
+              if (math::le(point.d, (omnigraph::de::DEDistance) max_dist) &&
+                  math::ge(point.d, (omnigraph::de::DEDistance) min_dist)) {
+                result.insert(g_.conjugate(e2));
+                break;
+              }
             }
           }
         }
@@ -137,8 +160,17 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
         if (e1 == e2)
             return;
 
-        auto histogram = index_.GetEdgePairInfo(e1, e2);
-        for (auto pointIter = histogram.begin(); pointIter != histogram.end(); ++pointIter) {
+        auto pairs = index_.GetEdgePairInfo(e1, e2);
+        auto cpairs = index_.GetEdgePairInfo(g_.conjugate(e2), g_.conjugate(e1));
+        for (auto entry : cpairs) {
+          Point cp = ConjugatePoint(g_.length(e2), g_.length(e1), entry);
+          auto it = pairs.find(cp);
+          if (it != pairs.end())
+            it->weight += cp.weight;
+          else
+            pairs.insert(cp);
+        }
+        for (auto pointIter = pairs.begin(); pointIter != pairs.end(); ++pointIter) {
             int pairedDistance = rounded_d(*pointIter);
             if (pairedDistance >= 0) {
                 dist.push_back(pairedDistance);
@@ -151,6 +183,15 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
                                    bool from_interval = false) const {
         double weight = 0.0;
         auto pairs = index_.GetEdgePairInfo(e1, e2);
+        auto cpairs = index_.GetEdgePairInfo(g_.conjugate(e2), g_.conjugate(e1));
+        for (auto entry : cpairs) {
+          Point cp = ConjugatePoint(g_.length(e2), g_.length(e1), entry);
+          auto it = pairs.find(cp);
+          if (it != pairs.end())
+            it->weight += cp.weight;
+          else
+            pairs.insert(cp);
+        }
         for (auto pointIter = pairs.begin(); pointIter != pairs.end(); ++pointIter) {
             int pairedDistance = rounded_d(*pointIter);
             int distanceDev = (int) pointIter->variation();  //max((int) pointIter->var, (int) is_variation_);
@@ -172,6 +213,15 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
     virtual double CountPairedInfo(EdgeId e1, EdgeId e2, size_t dist_min, size_t dist_max) const {
         double weight = 0.0;
         auto pairs = index_.GetEdgePairInfo(e1, e2);
+        auto cpairs = index_.GetEdgePairInfo(g_.conjugate(e2), g_.conjugate(e1));
+        for (auto entry : cpairs) {
+          Point cp = ConjugatePoint(g_.length(e2), g_.length(e1), entry);
+          auto it = pairs.find(cp);
+          if (it != pairs.end())
+            it->weight += cp.weight;
+          else
+            pairs.insert(cp);
+        }
         for (auto pointIter = pairs.begin(); pointIter != pairs.end(); ++pointIter) {
             int dist = rounded_d(*pointIter);
             if (dist > 0 and (size_t)dist >= dist_min and (size_t)dist <= dist_max)
