@@ -143,9 +143,9 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
               continue;
 
             for (const auto& point : it.second) {
-              double dist = -point.d + g_.length(e) - g_.length(e2);
-              if (math::le(point.d, (omnigraph::de::DEDistance) max_dist) &&
-                  math::ge(point.d, (omnigraph::de::DEDistance) min_dist)) {
+              omnigraph::de::DEDistance dist = -point.d + g_.length(e) - g_.length(e2);
+              if (math::le(dist, (omnigraph::de::DEDistance) max_dist) &&
+                  math::ge(dist, (omnigraph::de::DEDistance) min_dist)) {
                 result.insert(g_.conjugate(e2));
                 break;
               }
