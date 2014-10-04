@@ -248,12 +248,11 @@ bool TopologyClipTips(
     size_t max_length = LengthThresholdFinder::MaxTipLength(
         read_length, g.k(), ttc_config.length_coeff);
 
-    return TopologyTipClipper<Graph>(g,
-                                     ttc_config.uniqueness_length,
-                                     ttc_config.plausibility_length,
-                                     removal_handler)
-            .Process(LengthComparator<Graph>(g),
-                     make_shared<LengthUpperBound<Graph>>(g, max_length));
+    return ClipTips(g, max_length,
+                    make_shared<DefaultUniquenessPlausabilityCondition<Graph>>(g,
+                            ttc_config.uniqueness_length,
+                            ttc_config.plausibility_length),
+                    removal_handler);
 }
 
 template<class Graph>
