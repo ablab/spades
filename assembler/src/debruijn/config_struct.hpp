@@ -220,7 +220,7 @@ struct debruijn_config {
         };
 
         struct bulge_remover {
-        	bool   enabled;
+            bool enabled;
             double max_bulge_length_coefficient;
             size_t max_additive_length_coefficient;
             double max_coverage;

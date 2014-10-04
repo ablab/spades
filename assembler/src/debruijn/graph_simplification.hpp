@@ -82,6 +82,23 @@ private:
     ;
 };
 
+template<class Graph>
+bool ClipTips(
+    Graph& g,
+    const debruijn_config::simplification::tip_clipper& tc_config,
+    const SimplifInfoContainer& info,
+    boost::function<void(typename Graph::EdgeId)> removal_handler_f = 0) {
+
+    INFO("Clipping tips");
+
+    string condition_str = tc_config.condition;
+
+    ConditionParser<Graph> parser(g, condition_str, info);
+    auto condition = parser();
+
+    return ClipTips(g, parser.max_length_bound(), condition, removal_handler_f);
+}
+
 //enabling tip projection, todo optimize if hotspot
 template<class gp_t>
 boost::function<void(typename Graph::EdgeId)> WrapWithProjectionCallback(
@@ -96,38 +113,6 @@ boost::function<void(typename Graph::EdgeId)> WrapWithProjectionCallback(
 
     return boost::bind(func::Composition<EdgeId>, _1,
                        boost::ref(removal_handler_f), projecting_callback);
-}
-
-template<class Graph>
-bool ClipTips(
-    Graph& g,
-    const debruijn_config::simplification::tip_clipper& tc_config,
-    const SimplifInfoContainer& info,
-    boost::function<void(typename Graph::EdgeId)> removal_handler_f =
-    0) {
-
-    INFO("Clipping tips");
-
-    string condition_str = tc_config.condition;
-    ConditionParser<Graph> parser(g, condition_str, info);
-    auto condition = parser();
-    
-    return ClipTips(g, parser.max_length_bound(), condition, removal_handler_f);
-}
-
-template<class gp_t>
-bool ClipTips(
-    gp_t& gp,
-    const debruijn_config::simplification::tip_clipper& tc_config,
-    const SimplifInfoContainer& info,
-    bool enable_projection = false,
-    boost::function<void(typename gp_t::graph_t::EdgeId)> removal_handler_f =
-    0) {
-
-    if (enable_projection)
-        removal_handler_f = WrapWithProjectionCallback(gp, removal_handler_f);  
-
-    return ClipTips(gp.g, tc_config, info, removal_handler_f);
 }
 
 template<class Graph>
@@ -581,7 +566,7 @@ void NonParallelPreSimplification(conj_graph_pack& gp,
     debruijn_config::simplification::tip_clipper tc_config;
     tc_config.condition = presimp.tip_condition;
 
-    ClipTips(gp, tc_config, info, false, removal_handler);
+    ClipTips(gp.g, tc_config, info, removal_handler);
     
     cnt_callback.Report();
 
@@ -719,10 +704,10 @@ void PostSimplification(conj_graph_pack& gp,
                                                  info,
                                                  iteration);
 
-        enable_flag |= ClipTips(gp, cfg::get().simp.tc,
+        enable_flag |= ClipTips(gp.g, cfg::get().simp.tc,
                                               info,
-                                              cfg::get().graph_read_corr.enable,
-                                              removal_handler);
+                                              cfg::get().graph_read_corr.enable ?
+                                                      WrapWithProjectionCallback(gp, removal_handler) : removal_handler);
 
         enable_flag |= RemoveBulges(gp.g, cfg::get().simp.br, 0, removal_handler);
 
@@ -768,9 +753,10 @@ void SimplificationCycle(conj_graph_pack& gp,
                        cnt_handler);
 
     DEBUG(iteration << " TipClipping");
-    ClipTips(gp, cfg::get().simp.tc,
+    ClipTips(gp.g, cfg::get().simp.tc,
                            info_container,
-                           cfg::get().graph_read_corr.enable, removal_handler);
+                           cfg::get().graph_read_corr.enable ?
+                                   WrapWithProjectionCallback(gp, removal_handler) : removal_handler);
     cnt_callback.Report();
     DEBUG(iteration << " TipClipping stats");
     printer(ipp_tip_clipping, str(format("_%d") % iteration));

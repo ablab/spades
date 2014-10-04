@@ -30,12 +30,15 @@ class EdgeProcessingAlgorithm {
 
     }
 
-    template<class Comparator = std::less<EdgeId>>
-    bool Process(const Comparator& comp = Comparator(),
+    virtual ~EdgeProcessingAlgorithm() {
+    }
+
+    template<class SmartEdgeIt>
+    bool RunFromIterator(SmartEdgeIt& it,
                  ProceedConditionT proceed_condition = make_shared<func::AlwaysTrue<EdgeId>>()) {
         TRACE("Start processing");
         bool triggered = false;
-        for (auto it = this->g().SmartEdgeBegin(comp); !it.IsEnd(); ++it) {
+        for (; !it.IsEnd(); ++it) {
             if (!proceed_condition->Check(*it)) {
                 TRACE("Stop condition was reached.");
                 break;
@@ -46,6 +49,14 @@ class EdgeProcessingAlgorithm {
         }
         TRACE("Finished processing. Triggered = " << triggered);
         return triggered;
+    }
+
+    //todo rename into Run
+    template<class Comparator = std::less<EdgeId>>
+    bool Process(const Comparator& comp = Comparator(),
+                 ProceedConditionT proceed_condition = make_shared<func::AlwaysTrue<EdgeId>>()) {
+        auto it = g_.SmartEdgeBegin(comp);
+        return RunFromIterator(it, proceed_condition);
     }
 
  private:
@@ -187,12 +198,12 @@ class ComponentRemover {
             removal_handler_(edges);
         }
 
-        FOREACH (EdgeId e, edges) {
+        for (EdgeId e: edges) {
             g_.DeleteEdge(e);
         }
 
         if (alter_vertices) {
-            FOREACH (VertexId v, vertices) {
+            for (VertexId v: vertices) {
                 RemoveIsolatedOrCompress(g_, v);
             }
         }
