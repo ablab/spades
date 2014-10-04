@@ -20,27 +20,28 @@ class ParallelIterationHelper {
     const Graph& g_;
 public:
 
-    ParallelIterationHelper(const Graph& g) : g_(g) {
+    ParallelIterationHelper(const Graph& g)
+            : g_(g) {
 
     }
 
     vector<const_vertex_iterator> VertexChunks(size_t chunk_cnt) const {
-    	VERIFY(chunk_cnt > 0);
+        VERIFY(chunk_cnt > 0);
         //trying to split vertices into equal chunks, leftovers put into first chunk
-    	vector<const_vertex_iterator> answer;
-    	size_t vertex_cnt = g_.size();
-    	size_t chunk_size = vertex_cnt / chunk_cnt;
+        vector<const_vertex_iterator> answer;
+        size_t vertex_cnt = g_.size();
+        size_t chunk_size = vertex_cnt / chunk_cnt;
         auto it = g_.begin();
         answer.push_back(it);
         for (size_t i = 0; i + chunk_cnt * chunk_size < vertex_cnt; ++i) {
             it++;
         }
         if (chunk_size > 0) {
-    	    size_t i = 0;
+            size_t i = 0;
             do {
                 ++it;
-    	    	if (++i % chunk_size == 0) 
-    	    		answer.push_back(it);
+                if (++i % chunk_size == 0)
+                    answer.push_back(it);
             } while (it != g_.end());
 
             VERIFY(i == chunk_cnt * chunk_size);
@@ -49,15 +50,15 @@ public:
             answer.push_back(it);
         }
         VERIFY(answer.back() == g_.end());
-    	return answer;
+        return answer;
     }
 
     vector<omnigraph::GraphEdgeIterator<Graph>> EdgeChunks(size_t chunk_cnt) const {
-    	vector<omnigraph::GraphEdgeIterator<Graph>> answer;
-    	for (const_vertex_iterator v_it: VertexChunks(chunk_cnt)) {
-    		answer.push_back(omnigraph::GraphEdgeIterator<Graph>(g_, v_it));
-    	}
-    	return answer;
+        vector<omnigraph::GraphEdgeIterator<Graph>> answer;
+        for (const_vertex_iterator v_it : VertexChunks(chunk_cnt)) {
+            answer.push_back(omnigraph::GraphEdgeIterator<Graph>(g_, v_it));
+        }
+        return answer;
     }
 };
 
@@ -66,7 +67,7 @@ class ParallelTipClippingFunctor {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     typedef boost::function<void(EdgeId)> HandlerF;
-    typedef omnigraph::PairedVertexLock<VertexId> VertexLockT;
+    typedef omnigraph::GraphElementLock<VertexId> VertexLockT;
 
     Graph& g_;
     size_t length_bound_;
@@ -84,8 +85,7 @@ class ParallelTipClippingFunctor {
     }
 
     bool IsIncomingTip(EdgeId e) const {
-        return g_.length(e) <= length_bound_
-                && math::le(g_.coverage(e), coverage_bound_)
+        return g_.length(e) <= length_bound_ && math::le(g_.coverage(e), coverage_bound_)
                 && LockingIncomingCount(g_.EdgeStart(e)) + LockingOutgoingCount(g_.EdgeStart(e)) == 1;
     }
 
@@ -98,8 +98,7 @@ class ParallelTipClippingFunctor {
 
 public:
 
-    ParallelTipClippingFunctor(Graph& g, size_t length_bound, 
-                                double coverage_bound, HandlerF handler_f = 0)
+    ParallelTipClippingFunctor(Graph& g, size_t length_bound, double coverage_bound, HandlerF handler_f = 0)
             : g_(g),
               length_bound_(length_bound),
               coverage_bound_(coverage_bound),
@@ -118,7 +117,7 @@ public:
                 tips.push_back(e);
             }
         }
-        
+
         //if all of edges are tips, leave the longest one
         if (!tips.empty() && tips.size() == g_.IncomingEdgeCount(v)) {
             sort(tips.begin(), tips.end(), omnigraph::LengthComparator<Graph>(g_));
@@ -136,7 +135,7 @@ public:
     }
 
     bool ShouldFilterConjugate() const {
-    	return false;
+        return false;
     }
 };
 
@@ -152,36 +151,36 @@ public:
     }
 
     AlgorithmRunner(Graph& g)
-    : g_(g) {
+            : g_(g) {
 
     }
 
-    template <class Algo, class It>
+    template<class Algo, class It>
     void RunFromIterator(Algo& algo, It begin, It end) {
         for (auto it = begin; it != end; ++it) {
             algo(*it);
         }
     }
 
-    template <class Algo, class ItVec>
+    template<class Algo, class ItVec>
     void RunFromChunkIterators(Algo& algo, const ItVec& chunk_iterators) {
         DEBUG("Running from " << chunk_iterators.size() - 1 << "chunks");
-    	VERIFY(chunk_iterators.size() > 1);
+        VERIFY(chunk_iterators.size() > 1);
 #pragma omp parallel for schedule(guided)
-    	for (size_t i = 0; i < chunk_iterators.size() - 1; ++i) {
-    		RunFromIterator(algo, chunk_iterators[i], chunk_iterators[i+1]);
-    	}
-        DEBUG("Finished");
+        for (size_t i = 0; i < chunk_iterators.size() - 1; ++i) {
+            RunFromIterator(algo, chunk_iterators[i], chunk_iterators[i + 1]);
+        } DEBUG("Finished");
     }
 private:
-    DECL_LOGGER("AlgorithmRunner");
+    DECL_LOGGER("AlgorithmRunner")
+    ;
 };
 
 template<class Graph>
 class ParallelSimpleBRFunctor {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef omnigraph::PairedVertexLock<VertexId> VertexLockT;
+    typedef omnigraph::GraphElementLock<VertexId> VertexLockT;
 
     Graph& g_;
     size_t max_length_;
@@ -192,16 +191,14 @@ class ParallelSimpleBRFunctor {
     boost::function<void(EdgeId)> handler_f_;
 
     bool LengthDiffCheck(size_t l1, size_t l2, size_t delta) const {
-        return l1 <= l2 + delta  && l2 <= l1 + delta;
+        return l1 <= l2 + delta && l2 <= l1 + delta;
     }
 
     EdgeId Alternative(EdgeId e, const vector<EdgeId>& edges) const {
         size_t delta = omnigraph::CountMaxDifference(max_delta_, g_.length(e), max_relative_delta_);
         for (auto it = edges.rbegin(); it != edges.rend(); ++it) {
             EdgeId candidate = *it;
-            if (g_.EdgeEnd(candidate) == g_.EdgeEnd(e)
-                    && candidate != e
-                    && candidate != g_.conjugate(e)
+            if (g_.EdgeEnd(candidate) == g_.EdgeEnd(e) && candidate != e && candidate != g_.conjugate(e)
                     && LengthDiffCheck(g_.length(candidate), g_.length(e), delta)) {
                 return candidate;
             }
@@ -213,8 +210,7 @@ class ParallelSimpleBRFunctor {
         for (EdgeId e : edges) {
             if (g_.length(e) <= max_length_ && math::le(g_.coverage(e), max_coverage_)) {
                 EdgeId alt = Alternative(e, edges);
-                if (alt != EdgeId(0)
-                        && math::ge(g_.coverage(alt) * max_relative_coverage_, g_.coverage(e))) {
+                if (alt != EdgeId(0) && math::ge(g_.coverage(alt) * max_relative_coverage_, g_.coverage(e))) {
                     //todo is not work in multiple threads for now :)
                     //Reasons: id distribution, kmer-mapping
                     handler_f_(e);
@@ -261,8 +257,7 @@ class ParallelSimpleBRFunctor {
 
     bool CheckVertex(VertexId v) const {
         VertexLockT lock(v);
-        return MultiEdgeDestinations(v).size() == 1
-                && MultiEdgeDestinations(g_.conjugate(v)).size() == 0;
+        return MultiEdgeDestinations(v).size() == 1 && MultiEdgeDestinations(g_.conjugate(v)).size() == 0;
     }
 
     size_t MinId(VertexId v) const {
@@ -275,12 +270,7 @@ class ParallelSimpleBRFunctor {
 
 public:
 
-    ParallelSimpleBRFunctor(Graph& g,
-                            size_t max_length,
-                            double max_coverage,
-                            double max_relative_coverage,
-                            size_t max_delta,
-                            double max_relative_delta,
+    ParallelSimpleBRFunctor(Graph& g, size_t max_length, double max_coverage, double max_relative_coverage, size_t max_delta, double max_relative_delta,
                             boost::function<void(EdgeId)> handler_f = 0)
             : g_(g),
               max_length_(max_length),
@@ -312,8 +302,60 @@ public:
     }
 
     bool ShouldFilterConjugate() const {
-    	return false;
+        return false;
     }
+};
+
+template<class Graph>
+class CriticalEdgeMarker {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    typedef boost::function<void(EdgeId)> HandlerF;
+
+    Graph& g_;
+    size_t chunk_cnt_;
+    omnigraph::GraphElementMarker<EdgeId> edge_marker_;
+
+    void ProcessVertex(VertexId v) {
+        if (g_.OutgoingEdgeCount(v) > 0) {
+            auto max_cov_it =
+                    std::max_element(g_.out_begin(v), g_.out_end(v), CoverageComparator<Graph>(g_));
+            edge_marker_.mark(*max_cov_it);
+        }
+    }
+
+    template<class It>
+    void ProcessVertices(It begin, It end) {
+        for (auto it = begin; !(it == end); ++it) {
+            ProcessVertex(*it);
+        }
+    }
+
+public:
+
+    CriticalEdgeMarker(Graph& g, size_t  chunk_cnt) : g_(g), chunk_cnt_(chunk_cnt) {
+    }
+
+    void PutMarks() {
+        auto chunk_iterators = ParallelIterationHelper<Graph>(g_).VertexChunks(chunk_cnt_);
+
+        #pragma omp parallel for schedule(guided)
+        for (size_t i = 0; i < chunk_iterators.size() - 1; ++i) {
+            ProcessVertices(chunk_iterators[i], chunk_iterators[i + 1]);
+        }
+    }
+
+    void ClearMarks() {
+        auto chunk_iterators = ParallelIterationHelper<Graph>(g_).EdgeChunks(chunk_cnt_);
+
+        #pragma omp parallel for schedule(guided)
+        for (size_t i = 0; i < chunk_iterators.size() - 1; ++i) {
+            for (auto it = chunk_iterators[i]; it != chunk_iterators[i + 1]; ++ it) {
+                edge_marker_.unmark(*it);
+            }
+        }
+    }
+
 };
 
 template<class Graph>
@@ -321,13 +363,14 @@ class ParallelLowCoverageFunctor {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     typedef boost::function<void(EdgeId)> HandlerF;
-    typedef omnigraph::PairedVertexLock<VertexId> VertexLockT;
+    typedef omnigraph::GraphElementLock<VertexId> VertexLockT;
 
     Graph& g_;
     typename Graph::HelperT helper_;
     shared_ptr<func::Predicate<EdgeId>> ec_condition_;
     HandlerF handler_f_;
 
+    omnigraph::GraphElementMarker<EdgeId> edge_marker_;
     vector<EdgeId> edges_to_remove_;
 
     void UnlinkEdgeFromStart(EdgeId e) {
@@ -345,24 +388,20 @@ class ParallelLowCoverageFunctor {
 public:
 
     //should be launched with conjugate copies filtered
-    ParallelLowCoverageFunctor(Graph& g,
-                               size_t max_length,
-                               double max_coverage,
-                               HandlerF handler_f = 0)
+    ParallelLowCoverageFunctor(Graph& g, size_t max_length, double max_coverage, HandlerF handler_f = 0)
             : g_(g),
               helper_(g_.GetConstructionHelper()),
               ec_condition_(
                       func::And<EdgeId>(
-                      func::And<EdgeId>(make_shared<omnigraph::LengthUpperBound<Graph>>(g, max_length),
-                                        make_shared<omnigraph::CoverageUpperBound<Graph>>(g, max_coverage)),
-                      make_shared<omnigraph::AlternativesPresenceCondition<Graph>>(g))),
-              handler_f_(handler_f)
-    {
+                              func::And<EdgeId>(make_shared<omnigraph::LengthUpperBound<Graph>>(g, max_length),
+                                                make_shared<omnigraph::CoverageUpperBound<Graph>>(g, max_coverage)),
+                              make_shared<omnigraph::AlternativesPresenceCondition<Graph>>(g))),
+              handler_f_(handler_f) {
 
     }
 
     bool IsOfInterest(EdgeId e) const {
-        return ec_condition_->Check(e);
+        return !edge_marker_.is_marked(e) && ec_condition_->Check(e);
     }
 
     void PrepareForProcessing(size_t /*interesting_cnt*/) {
@@ -378,7 +417,7 @@ public:
     }
 
     bool ShouldFilterConjugate() const {
-    	return true;
+        return true;
     }
 //    bool operator()(EdgeId e) {
 //        if (ec_condition_->Check(e)) {
@@ -404,7 +443,7 @@ class ParallelCompressor {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::EdgeData EdgeData;
     typedef typename Graph::VertexId VertexId;
-    typedef omnigraph::PairedVertexLock<VertexId> VertexLockT;
+    typedef omnigraph::GraphElementLock<VertexId> VertexLockT;
 
     Graph& g_;
     typename Graph::HelperT helper_;
@@ -460,7 +499,7 @@ class ParallelCompressor {
             to_compress.clear();
             return false;
         }
-        if (IsBranching(v) ) {
+        if (IsBranching(v)) {
             if (!IsMinimal(init, v)) {
                 to_compress.clear();
             }
@@ -498,8 +537,7 @@ class ParallelCompressor {
 
     //not locking!
     //fixme duplication with abstract conj graph
-    vector<VertexId> VerticesToDelete(
-            const vector<EdgeId> &path) const {
+    vector<VertexId> VerticesToDelete(const vector<EdgeId> &path) const {
         set<VertexId> verticesToDelete;
         for (size_t i = 0; i + 1 < path.size(); i++) {
             EdgeId e = path[i + 1];
@@ -507,8 +545,7 @@ class ParallelCompressor {
             if (verticesToDelete.find(g_.conjugate(v)) == verticesToDelete.end())
                 verticesToDelete.insert(v);
         }
-        return vector<VertexId>(verticesToDelete.begin(),
-                                verticesToDelete.end());
+        return vector<VertexId>(verticesToDelete.begin(), verticesToDelete.end());
     }
     //todo end duplication with abstract conj graph
 
@@ -559,20 +596,18 @@ class ParallelCompressor {
             //so we can collect edges without any troubles (and actually without locks todo check!)
             vector<EdgeId> edges = CollectEdges(to_compress);
 
-            restricted::ListIdDistributor<restricted::SegmentIterator> id_distributor =
-                    segment_storage_.GetSegmentIdDistributor(2 * idx, 2 * idx + 1);
+            restricted::ListIdDistributor<restricted::SegmentIterator> id_distributor = segment_storage_.GetSegmentIdDistributor(2 * idx, 2 * idx + 1);
 
-            EdgeId new_edge = SyncAddEdge(g_.EdgeStart(edges.front()), g_.EdgeEnd(edges.back()),
-                                      MergeSequences(g_, edges), id_distributor);
+            EdgeId new_edge = SyncAddEdge(g_.EdgeStart(edges.front()), g_.EdgeEnd(edges.back()), MergeSequences(g_, edges), id_distributor);
 
             CallHandlers(edges, new_edge);
 
             VertexId final = g_.EdgeEnd(edges.back());
             UnlinkEdge(init, edges.front());
-            for (VertexId v: VerticesToDelete(edges/*to_compress*/)) {
+            for (VertexId v : VerticesToDelete(edges/*to_compress*/)) {
                 UnlinkEdges(v);
             }
-            
+
             if (g_.conjugate(new_edge) != new_edge) {
                 UnlinkEdge(g_.conjugate(final), g_.conjugate(edges.back()));
             }
@@ -582,7 +617,7 @@ class ParallelCompressor {
             }
         }
     }
-    
+
     //vertex is not consistent if the path has already been compressed or under compression right now
     //not needed here, but could check if vertex is fully isolated
     bool CheckConsistent(VertexId v) const {
@@ -605,7 +640,8 @@ class ParallelCompressor {
 public:
 
     ParallelCompressor(Graph& g)
-            : g_(g), helper_(g_.GetConstructionHelper()) {
+            : g_(g),
+              helper_(g_.GetConstructionHelper()) {
 
     }
 
@@ -615,19 +651,18 @@ public:
     }
 
     void PrepareForProcessing(size_t interesting_cnt) {
-        segment_storage_ =
-                g_.GetGraphIdDistributor().Reserve(interesting_cnt * 2);
+        segment_storage_ = g_.GetGraphIdDistributor().Reserve(interesting_cnt * 2);
     }
 
     bool Process(VertexId v, size_t idx) {
-		VertexId init = LockingGetInit(v);
-		if (init != VertexId(0))
-			ProcessBranching(v, init, idx);
+        VertexId init = LockingGetInit(v);
+        if (init != VertexId(0))
+            ProcessBranching(v, init, idx);
         return false;
     }
 
     bool ShouldFilterConjugate() const {
-    	return false;
+        return false;
     }
 
 };
@@ -641,38 +676,38 @@ class TwoStepAlgorithmRunner {
     const bool filter_conjugate_;
     vector<vector<ElementType>> elements_of_interest_;
 
-    template <class Algo>
+    template<class Algo>
     void ProcessBucket(Algo& algo, const vector<ElementType>& bucket, size_t idx_offset) const {
-    	for (ElementType el : bucket) {
-    		algo.Process(el, idx_offset++);
-    	}
-    }
-
-    template <class Algo>
-    void Process(Algo& algo) const {
-    	vector<size_t> cumulative_bucket_sizes;
-    	cumulative_bucket_sizes.push_back(0);
-    	for (const auto& bucket : elements_of_interest_) {
-        	cumulative_bucket_sizes.push_back(cumulative_bucket_sizes.back() + bucket.size());
-    	}
-        DEBUG("Preparing for processing");
-    	algo.PrepareForProcessing(cumulative_bucket_sizes.back());
-        DEBUG("Processing buckets");
-#pragma omp parallel for schedule(guided)
-        for (size_t i = 0; i < elements_of_interest_.size(); ++i) {
-        	ProcessBucket(algo, elements_of_interest_[i], cumulative_bucket_sizes[i]);
+        for (ElementType el : bucket) {
+            algo.Process(el, idx_offset++);
         }
     }
 
-    template <class Algo>
-    void CountElement(Algo& algo, ElementType el, size_t bucket) {
-    	if (filter_conjugate_ && g_.conjugate(el) < el)
-    		return;
-        if (algo.IsOfInterest(el))
-        	elements_of_interest_[bucket].push_back(el);
+    template<class Algo>
+    void Process(Algo& algo) const {
+        vector<size_t> cumulative_bucket_sizes;
+        cumulative_bucket_sizes.push_back(0);
+        for (const auto& bucket : elements_of_interest_) {
+            cumulative_bucket_sizes.push_back(cumulative_bucket_sizes.back() + bucket.size());
+        }
+        DEBUG("Preparing for processing");
+        algo.PrepareForProcessing(cumulative_bucket_sizes.back());
+        DEBUG("Processing buckets");
+#pragma omp parallel for schedule(guided)
+        for (size_t i = 0; i < elements_of_interest_.size(); ++i) {
+            ProcessBucket(algo, elements_of_interest_[i], cumulative_bucket_sizes[i]);
+        }
     }
 
-    template <class Algo, class It>
+    template<class Algo>
+    void CountElement(Algo& algo, ElementType el, size_t bucket) {
+        if (filter_conjugate_ && g_.conjugate(el) < el)
+            return;
+        if (algo.IsOfInterest(el))
+            elements_of_interest_[bucket].push_back(el);
+    }
+
+    template<class Algo, class It>
     void CountAll(Algo& algo, It begin, It end, size_t bucket) {
         for (auto it = begin; !(it == end); ++it) {
             CountElement(algo, *it, bucket);
@@ -689,43 +724,45 @@ public:
     //should be used only if both conjugate elements are simultaneously either interesting or not
     //fixme filter_conjugate is redundant
     TwoStepAlgorithmRunner(Graph& g, bool filter_conjugate)
-    : g_(g), filter_conjugate_(filter_conjugate) {
+            : g_(g),
+              filter_conjugate_(filter_conjugate) {
 
     }
 
-    template <class Algo, class ItVec>
+    template<class Algo, class ItVec>
     void RunFromChunkIterators(Algo& algo, const ItVec& chunk_iterators) {
         DEBUG("Started running from " << chunk_iterators.size() - 1 << " chunks");
-    	VERIFY(algo.ShouldFilterConjugate() == filter_conjugate_);
-    	VERIFY(chunk_iterators.size() > 1);
-    	elements_of_interest_.clear();
-    	elements_of_interest_.resize(chunk_iterators.size() - 1);
+        VERIFY(algo.ShouldFilterConjugate() == filter_conjugate_);
+        VERIFY(chunk_iterators.size() > 1);
+        elements_of_interest_.clear();
+        elements_of_interest_.resize(chunk_iterators.size() - 1);
         DEBUG("Searching elements of interest");
 #pragma omp parallel for schedule(guided)
-    	for (size_t i = 0; i < chunk_iterators.size() - 1; ++i) {
-            CountAll(algo, chunk_iterators[i], chunk_iterators[i+1], i);
-    	}
+        for (size_t i = 0; i < chunk_iterators.size() - 1; ++i) {
+            CountAll(algo, chunk_iterators[i], chunk_iterators[i + 1], i);
+        }
         DEBUG("Processing");
-    	Process(algo);
+        Process(algo);
         DEBUG("Finished");
     }
 
-    template <class Algo, class It>
+    template<class Algo, class It>
     void RunFromIterator(Algo& algo, It begin, It end) {
-    	RunFromChunkIterators(algo, vector<It>{begin, end});
+        RunFromChunkIterators(algo, vector<It> { begin, end });
     }
 private:
-    DECL_LOGGER("TwoStepAlgorithmRunner");
+    DECL_LOGGER("TwoStepAlgorithmRunner")
+    ;
 };
 
 template<class Graph, class AlgoRunner, class Algo>
 void RunVertexAlgorithm(Graph& g, AlgoRunner& runner, Algo& algo, size_t chunk_cnt) {
-	runner.RunFromChunkIterators(algo, ParallelIterationHelper<Graph>(g).VertexChunks(chunk_cnt));
+    runner.RunFromChunkIterators(algo, ParallelIterationHelper<Graph>(g).VertexChunks(chunk_cnt));
 }
 
 template<class Graph, class AlgoRunner, class Algo>
 void RunEdgeAlgorithm(Graph& g, AlgoRunner& runner, Algo& algo, size_t chunk_cnt) {
-	runner.RunFromChunkIterators(algo, ParallelIterationHelper<Graph>(g).EdgeChunks(chunk_cnt));
+    runner.RunFromChunkIterators(algo, ParallelIterationHelper<Graph>(g).EdgeChunks(chunk_cnt));
 }
 
 }

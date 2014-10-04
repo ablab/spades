@@ -539,6 +539,9 @@ bool ParallelEC(Graph& g,
     size_t max_length = parser.max_length_bound();
     double max_coverage = parser.max_coverage_bound();
 
+    debruijn::simplification::CriticalEdgeMarker<Graph> critical_marker(g, info.chunk_cnt());
+    critical_marker.PutMarks();
+
     debruijn::simplification::ParallelLowCoverageFunctor<Graph> ec_remover(g,
                             max_length,
                             max_coverage,
@@ -548,8 +551,9 @@ bool ParallelEC(Graph& g,
 
     debruijn::simplification::RunEdgeAlgorithm(g, runner, ec_remover, info.chunk_cnt());
 
+    critical_marker.ClearMarks();
+
     ParallelCompress(g, info);
-    
     return true;
 }
 
