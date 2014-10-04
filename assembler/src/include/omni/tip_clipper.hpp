@@ -102,50 +102,49 @@ public:
 };
 
 template<class Graph>
-class TipClipper: public EdgeRemovingAlgorithm<Graph, LengthComparator<Graph>> {
-    typedef EdgeRemovingAlgorithm<Graph, LengthComparator<Graph>> base;
+class TipClipper: public EdgeRemovingAlgorithm<Graph> {
+    typedef EdgeRemovingAlgorithm<Graph> base;
 
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
 
 public:
 
-    TipClipper(Graph& g, size_t max_tip_length,
+    TipClipper(Graph& g,
             const shared_ptr<Predicate<EdgeId>>& condition = make_shared<func::AlwaysTrue<EdgeId>>(),
             boost::function<void(EdgeId)> removal_handler = 0) :
             base(g,
                  And<EdgeId>(make_shared<TipCondition<Graph>>(g), condition),
-                 removal_handler, LengthComparator<Graph>(g),
-                 make_shared<LengthUpperBound<Graph>>(g, max_tip_length)) {
+                 removal_handler) {
     }
 
 private:
     DECL_LOGGER("TipClipper")
 };
 
-template<class Graph>
-class DefaultTipClipper: public TipClipper<Graph> {
-	typedef TipClipper<Graph> base;
-
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
-
-public:
-
-	DefaultTipClipper(Graph& g, size_t max_tip_length, size_t max_coverage,
-			double max_relative_coverage,
-			boost::function<void(EdgeId)> removal_handler = 0) :
-			base(g, max_tip_length,
-			     And<EdgeId>(make_shared<CoverageUpperBound<Graph>>(g,
-									max_coverage),
-							make_shared<RelativeCoverageTipCondition<Graph>>(
-									g, max_relative_coverage)),
-					removal_handler) {
-	}
-
-private:
-	DECL_LOGGER("DefaultTipClipper")
-};
+//template<class Graph>
+//class DefaultTipClipper: public TipClipper<Graph> {
+//	typedef TipClipper<Graph> base;
+//
+//	typedef typename Graph::EdgeId EdgeId;
+//	typedef typename Graph::VertexId VertexId;
+//
+//public:
+//
+//	DefaultTipClipper(Graph& g, size_t max_coverage,
+//			double max_relative_coverage,
+//			boost::function<void(EdgeId)> removal_handler = 0) :
+//			base(g,
+//			     And<EdgeId>(make_shared<CoverageUpperBound<Graph>>(g,
+//									max_coverage),
+//							make_shared<RelativeCoverageTipCondition<Graph>>(
+//									g, max_relative_coverage)),
+//					removal_handler) {
+//	}
+//
+//private:
+//	DECL_LOGGER("DefaultTipClipper")
+//};
 
 template<class Graph>
 class TopologyTipClipper: public TipClipper<Graph> {
@@ -156,10 +155,10 @@ class TopologyTipClipper: public TipClipper<Graph> {
 
 public:
 
-    TopologyTipClipper(Graph& g, size_t max_tip_length,
+    TopologyTipClipper(Graph& g,
                        size_t uniqueness_length, size_t plausibility_length,
                        boost::function<void(EdgeId)> removal_handler = 0) :
-            base(g, max_tip_length,
+            base(g,
                  make_shared<DefaultUniquenessPlausabilityCondition<Graph>>(g, uniqueness_length,
                  plausibility_length),
                  removal_handler) {
@@ -179,10 +178,11 @@ bool ClipTips(
 
     DEBUG("Max tip length: " << max_tip_length);
 
-    omnigraph::TipClipper<Graph> tc(graph, max_tip_length, condition,
+    omnigraph::TipClipper<Graph> tc(graph, condition,
                                     raw_removal_handler);
 
-    return tc.Process();
+    return tc.Process(LengthComparator<Graph>(graph),
+                      make_shared<LengthUpperBound<Graph>>(graph, max_tip_length));
 }
 
 } // namespace omnigraph

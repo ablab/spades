@@ -112,8 +112,8 @@ inline size_t CountMaxDifference(size_t absolute_diff, size_t length, double rel
  * if edge is judged to be one it is removed.
  */
 template<class Graph>
-class BulgeRemover: public EdgeProcessingAlgorithm<Graph, CoverageComparator<Graph>> {
-    typedef EdgeProcessingAlgorithm<Graph, CoverageComparator<Graph>> base;
+class BulgeRemover: public EdgeProcessingAlgorithm<Graph> {
+    typedef EdgeProcessingAlgorithm<Graph> base;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 
@@ -258,9 +258,7 @@ public:
 			double max_relative_delta,
 			BulgeCallbackF opt_callback = 0,
 			boost::function<void(EdgeId)> removal_handler = 0) :
-			base(graph,
-			     CoverageComparator<Graph>(graph),
-			     make_shared<CoverageUpperBound<Graph>>(graph, max_coverage)),
+			base(graph),
 			graph_(graph),
 			max_length_(max_length),
 			max_coverage_(max_coverage),
@@ -286,6 +284,7 @@ public:
 //	}
 
 private:
+	//fixme redundant field
 	Graph& graph_;
 	size_t max_length_;
 	double max_coverage_;

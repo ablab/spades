@@ -7,10 +7,13 @@
 namespace omnigraph {
 
 template<class Graph>
-class ProcessingAlgorithm : private boost::noncopyable {
-    Graph& g_;
+class EdgeProcessingAlgorithm {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef shared_ptr<func::Predicate<EdgeId>> ProceedConditionT;
 
+    Graph& g_;
  protected:
+
     Graph& g() {
         return g_;
     }
@@ -19,47 +22,21 @@ class ProcessingAlgorithm : private boost::noncopyable {
         return g_;
     }
 
+    virtual bool ProcessEdge(EdgeId e) = 0;
+
  public:
-    ProcessingAlgorithm(Graph& g)
+    EdgeProcessingAlgorithm(Graph& g)
             : g_(g) {
 
     }
 
-    virtual ~ProcessingAlgorithm() {
-    }
-
-    virtual bool Process() = 0;
-};
-
-template<class Graph, class Comparator = std::less<typename Graph::EdgeId>>
-class EdgeProcessingAlgorithm : public ProcessingAlgorithm<Graph> {
-    typedef ProcessingAlgorithm<Graph> base;
-    typedef typename Graph::EdgeId EdgeId;
-
-    const Comparator comp_;
-    const shared_ptr<func::Predicate<EdgeId>> proceed_condition_;
-
- protected:
-    //todo make private
-    virtual bool ProcessEdge(EdgeId e) = 0;
-
- public:
-    EdgeProcessingAlgorithm(
-            Graph& g,
-            const Comparator& c = Comparator(),
-            shared_ptr<func::Predicate<EdgeId>> proceed_condition = make_shared<
-                    func::AlwaysTrue<EdgeId>>())
-            : base(g),
-              comp_(c),
-              proceed_condition_(proceed_condition) {
-
-    }
-
-    bool Process() {
+    template<class Comparator = std::less<EdgeId>>
+    bool Process(const Comparator& comp = Comparator(),
+                 ProceedConditionT proceed_condition = make_shared<func::AlwaysTrue<EdgeId>>()) {
         TRACE("Start processing");
         bool triggered = false;
-        for (auto it = this->g().SmartEdgeBegin(comp_); !it.IsEnd(); ++it) {
-            if (!proceed_condition_->Check(*it)) {
+        for (auto it = this->g().SmartEdgeBegin(comp); !it.IsEnd(); ++it) {
+            if (!proceed_condition->Check(*it)) {
                 TRACE("Stop condition was reached.");
                 break;
             }
@@ -135,9 +112,9 @@ class EdgeRemover {
     ;
 };
 
-template<class Graph, class Comparator = std::less<typename Graph::EdgeId>>
-class EdgeRemovingAlgorithm : public EdgeProcessingAlgorithm<Graph, Comparator> {
-    typedef EdgeProcessingAlgorithm<Graph, Comparator> base;
+template<class Graph>
+class EdgeRemovingAlgorithm : public EdgeProcessingAlgorithm<Graph> {
+    typedef EdgeProcessingAlgorithm<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
 
     shared_ptr<func::Predicate<EdgeId>> remove_condition_;
@@ -156,11 +133,8 @@ class EdgeRemovingAlgorithm : public EdgeProcessingAlgorithm<Graph, Comparator> 
     EdgeRemovingAlgorithm(
             Graph& g,
             shared_ptr<func::Predicate<EdgeId>> remove_condition,
-            boost::function<void(EdgeId)> removal_handler = boost::none,
-            const Comparator& c = Comparator(),
-            shared_ptr<func::Predicate<EdgeId>> proceed_condition = make_shared<
-                    func::AlwaysTrue<EdgeId>>())
-            : base(g, c, proceed_condition),
+            boost::function<void(EdgeId)> removal_handler = boost::none)
+            : base(g),
               remove_condition_(remove_condition),
               edge_remover_(g, removal_handler) {
 

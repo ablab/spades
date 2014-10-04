@@ -158,7 +158,8 @@ bool RemoveBulges(
                            br_config.max_relative_delta,
                            opt_handler, removal_handler);
 
-    return br.Process();
+    return br.Process(CoverageComparator<Graph>(g),
+                      make_shared<CoverageUpperBound<Graph>>(g, br_config.max_coverage));
 }
 
 template<class Graph>
@@ -173,10 +174,10 @@ void RemoveLowCoverageEdges(
     ConditionParser<Graph> parser(g, ec_config.condition, info_container);
 
     auto condition = parser();
-
     omnigraph::IterativeLowCoverageEdgeRemover<Graph> erroneous_edge_remover(
-        g, parser.max_coverage_bound(), condition, removal_handler);
-    erroneous_edge_remover.Process();
+        g, condition, removal_handler);
+    erroneous_edge_remover.Process(CoverageComparator<Graph>(g),
+                                   make_shared<CoverageUpperBound<Graph>>(g, parser.max_coverage_bound()));
 
     DEBUG("Low coverage edges removed");
 }
@@ -186,8 +187,9 @@ void RemoveSelfConjugateEdges(
     Graph &g, size_t max_length, double max_coverage,
                 boost::function<void(EdgeId)> removal_handler = 0) {
     INFO("Removing short low covered self-conjugate connections");
-    LowCoveredSelfConjEdgeRemovingAlgorithm<Graph> algo(g, max_length, max_coverage, removal_handler);
-    algo.Process();
+    LowCoveredSelfConjEdgeRemovingAlgorithm<Graph> algo(g, max_length, removal_handler);
+    algo.Process(CoverageComparator<Graph>(g),
+                 make_shared<CoverageUpperBound<Graph>>(g, max_coverage));
     DEBUG("Short low covered self-conjugate connections removed");
 }
 
@@ -229,8 +231,10 @@ bool TopologyRemoveErroneousEdges(
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
         g.k(), tec_config.max_ec_length_coefficient);
     return omnigraph::TopologyChimericEdgeRemover<Graph>(
-        g, max_length, tec_config.uniqueness_length,
-        tec_config.plausibility_length, removal_handler).Process();
+        g, tec_config.uniqueness_length,
+        tec_config.plausibility_length, removal_handler)
+            .Process(LengthComparator<Graph>(g),
+                     make_shared<LengthUpperBound<Graph>>(g, max_length));
 }
 
 template<class Graph>
@@ -244,10 +248,12 @@ bool TopologyClipTips(
     size_t max_length = LengthThresholdFinder::MaxTipLength(
         read_length, g.k(), ttc_config.length_coeff);
 
-    return TopologyTipClipper<Graph>(g, max_length,
+    return TopologyTipClipper<Graph>(g,
                                      ttc_config.uniqueness_length,
                                      ttc_config.plausibility_length,
-                                     removal_handler).Process();
+                                     removal_handler)
+            .Process(LengthComparator<Graph>(g),
+                     make_shared<LengthUpperBound<Graph>>(g, max_length));
 }
 
 template<class Graph>
@@ -259,8 +265,10 @@ bool MultiplicityCountingRemoveErroneousEdges(
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
         g.k(), tec_config.max_ec_length_coefficient);
     return omnigraph::SimpleMultiplicityCountingChimericEdgeRemover<Graph>(
-        g, max_length, tec_config.uniqueness_length,
-        tec_config.plausibility_length, removal_handler).Process();
+        g, tec_config.uniqueness_length,
+        tec_config.plausibility_length, removal_handler)
+            .Process(LengthComparator<Graph>(g),
+                     make_shared<LengthUpperBound<Graph>>(g, max_length));
 }
 
 template<class Graph>
@@ -273,7 +281,7 @@ bool RemoveThorns(
         g.k(), isec_config.max_ec_length_coefficient);
     return ThornRemover<Graph>(g, max_unr_length, isec_config.uniqueness_length,
                                isec_config.span_distance, removal_handler)
-            .Process();
+            .Process(CoverageComparator<Graph>(g));
 }
 
 template<class Graph>
@@ -285,8 +293,10 @@ bool TopologyReliabilityRemoveErroneousEdges(
     size_t max_unr_length = LengthThresholdFinder::MaxErroneousConnectionLength(
         g.k(), trec_config.max_ec_length_coefficient);
     return TopologyAndReliablityBasedChimericEdgeRemover<Graph>(
-        g, max_unr_length, trec_config.uniqueness_length,
-        trec_config.unreliable_coverage, removal_handler).Process();
+        g, trec_config.uniqueness_length,
+        trec_config.unreliable_coverage, removal_handler)
+            .Process(LengthComparator<Graph>(g),
+                     make_shared<LengthUpperBound<Graph>>(g, max_unr_length));
 }
 
 template<class Graph>
