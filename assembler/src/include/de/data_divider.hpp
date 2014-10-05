@@ -125,7 +125,7 @@ class DataDivider {
 
   bool IsANewCluster(size_t index) {
     VERIFY(index < points_.size() - 1);
-    return (math::gr(abs(points_[index + 1].d - points_[index].d), (double) threshold_));
+    return (math::gr(abs(points_[index + 1].d - points_[index].d), (DEDistance)threshold_));
   }
 
   DECL_LOGGER("DataDivider");

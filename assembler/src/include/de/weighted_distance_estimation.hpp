@@ -18,22 +18,24 @@ namespace de {
 
 template<class Graph>
 class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
+ protected:
+  typedef DistanceEstimator<Graph> base;
+  typedef typename base::InPairedIndex InPairedIndex;
+  typedef typename base::OutPairedIndex OutPairedIndex;
+  typedef typename InPairedIndex::Histogram InHistogram;
+  typedef typename OutPairedIndex::Histogram OutHistogram;
 
  public:
   WeightedDistanceEstimator(const Graph &graph,
-      const PairedInfoIndexT<Graph>& histogram,
-      const GraphDistanceFinder<Graph>& distance_finder, boost::function<double(int)> weight_f,
+                            const InPairedIndex& histogram,
+                            const GraphDistanceFinder<Graph>& distance_finder, boost::function<double(int)> weight_f,
       size_t linkage_distance, size_t max_distance) :
       base(graph, histogram, distance_finder, linkage_distance, max_distance), weight_f_(weight_f)
-  {
-  }
+  {}
 
-  virtual ~WeightedDistanceEstimator()
-  {
-  }
+  virtual ~WeightedDistanceEstimator() {}
 
  protected:
-  typedef DistanceEstimator<Graph> base;
   typedef typename Graph::EdgeId EdgeId;
 
   typedef vector<pair<int, double> > EstimHist;
@@ -43,9 +45,8 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
   boost::function<double(int)> weight_f_;
 
   virtual EstimHist EstimateEdgePairDistances(EdgePair ep,
-                                              const Histogram& histogram,
-                                              const GraphLengths& raw_forward) const
-  {
+                                              const InHistogram& histogram,
+                                              const GraphLengths& raw_forward) const {
     using std::abs;
     using namespace math;
     TRACE("Estimating with weight function");
@@ -65,7 +66,7 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
     if (forward.size() == 0)
       return result;
 
-    double max_dist = (double) this->max_distance_;
+    DEDistance max_dist = this->max_distance_;
     size_t cur_dist = 0;
     vector<double> weights(forward.size());
     for (auto iter = histogram.begin(); iter != histogram.end(); ++iter) {
@@ -78,7 +79,7 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
       if (cur_dist + 1 < forward.size() && ls((double) forward[cur_dist + 1] - point.d,
                                               point.d - (double) forward[cur_dist])) {
         ++cur_dist;
-        if (le(abs((double) forward[cur_dist] - point.d), max_dist))
+        if (le(abs(forward[cur_dist] - point.d), max_dist))
           weights[cur_dist] += point.weight * weight_f_(forward[cur_dist] - rounded_d(point));
       }
       else if (cur_dist + 1 < forward.size() && eq(forward[cur_dist + 1] - point.d,

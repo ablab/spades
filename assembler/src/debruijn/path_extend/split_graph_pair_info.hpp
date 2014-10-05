@@ -244,14 +244,13 @@ public:
     SplitGraphPairInfo(conj_graph_pack& gp, size_t is,
                        size_t is_var,
                        size_t is_min, size_t is_max,
-                       size_t read_size, size_t k, size_t basket_size,
+                       size_t read_size, size_t /* k */, size_t basket_size,
                        const std::map<int, size_t>& is_distribution)
             : gp_(gp),
               is_(is),
               is_var_(is_var),
               is_min_(is_min),
               is_max_(is_max),
-              k_(k),
               basket_size_(basket_size),
               basket_index_(gp, basket_size),
               threshold_(-1),
@@ -415,7 +414,6 @@ private:
     size_t is_var_;
     size_t is_min_;
     size_t is_max_;
-    size_t k_;
     size_t basket_size_;
     BasketsPairInfoIndex basket_index_;
     vector<BasketsPairInfoIndex*> baskets_buffer_;

@@ -19,25 +19,28 @@ namespace de {
 
 template<class Graph>
 class SmoothingDistanceEstimator: public ExtensiveDistanceEstimator<Graph> {
+
+protected:
   typedef ExtensiveDistanceEstimator<Graph> base;
+  typedef typename base::InPairedIndex InPairedIndex;
+  typedef typename base::OutPairedIndex OutPairedIndex;
+  typedef typename InPairedIndex::Histogram InHistogram;
+  typedef typename OutPairedIndex::Histogram OutHistogram;
 
  public:
   SmoothingDistanceEstimator(const Graph& graph,
-                             const PairedInfoIndexT<Graph>& histogram,
+                             const InPairedIndex& histogram,
                              const GraphDistanceFinder<Graph>& dist_finder,
                              boost::function<double(int)> weight_f,
-                             size_t linkage_distance,
-                             size_t max_distance,
-                             size_t threshold,
-                             double range_coeff,
-                             double delta_coeff,
+                             size_t linkage_distance, size_t max_distance, size_t threshold,
+                             double range_coeff, double delta_coeff,
                              size_t cutoff,
                              size_t min_peak_points,
                              double inv_density,
                              double percentage,
                              double derivative_threshold,
                              bool only_scaffolding = false) :
-        base( graph, histogram, dist_finder, weight_f, linkage_distance, max_distance),
+        base(graph, histogram, dist_finder, weight_f, linkage_distance, max_distance),
         threshold_(threshold),
         range_coeff_(range_coeff),
         delta_coeff_(delta_coeff),
@@ -48,12 +51,9 @@ class SmoothingDistanceEstimator: public ExtensiveDistanceEstimator<Graph> {
         deriv_thr(derivative_threshold),
         only_scaffolding_(only_scaffolding),
         gap_distances(0)
-    {
-    }
+  {}
 
-    virtual ~SmoothingDistanceEstimator()
-    {
-    }
+    virtual ~SmoothingDistanceEstimator(){}
 
 protected:
   typedef typename Graph::EdgeId EdgeId;
@@ -63,8 +63,8 @@ protected:
   typedef vector<size_t> GraphLengths;
 
   virtual EstimHist EstimateEdgePairDistances(EdgePair /*ep*/,
-                                const Histogram& /*raw_data*/,
-                                const vector<size_t>& /*forward*/) const {
+                                              const InHistogram& /*raw_data*/,
+                                              const vector<size_t>& /*forward*/) const {
     VERIFY_MSG(false, "Sorry, the SMOOOOTHING estimator is not available anymore." <<
                "SPAdes is going to terminate");
 
@@ -86,15 +86,13 @@ private:
   mutable size_t gap_distances;
 
   EstimHist FindEdgePairDistances(EdgePair ep,
-                                  const Histogram& raw_hist) const
-  {
+                                  const InHistogram& raw_hist) const {
     size_t first_len = this->graph().length(ep.first);
     size_t second_len = this->graph().length(ep.second);
     TRACE("Lengths are " << first_len << " " << second_len);
-    Histogram data;
-    for (auto I = raw_hist.begin(), E = raw_hist.end(); I != E; ++I)
-    {
-      const Point& p = *I;
+    InHistogram data;
+    for (auto I = raw_hist.begin(), E = raw_hist.end(); I != E; ++I) {
+      Point p = *I;
       if (math::ge(2 * (long) rounded_d(p) + (long) second_len, (long) first_len))
         if ((long) rounded_d(p) >= (long) first_len)
           data.insert(p);
@@ -160,11 +158,8 @@ private:
     }
 
   virtual void ProcessEdge(EdgeId e1,
-                           const typename PairedInfoIndexT<Graph>::InnerMap& inner_map,
-                           PairedInfoIndexT<Graph>& result,
-                           perf_counter& pc) const
-  {
-    pc.reset();
+                           const typename InPairedIndex::InnerMap& inner_map,
+                           PairedInfoBuffer<Graph>& result) const {
     typename base::LengthMap second_edges;
     for (auto I = inner_map.begin(), E = inner_map.end(); I != E; ++I)
       second_edges[I->first];
@@ -174,29 +169,30 @@ private:
     for (const auto& entry: second_edges) {
       EdgeId e2 = entry.first;
       EdgePair ep(e1, e2);
-      if (ep <= this->ConjugatePair(ep)) {
-        const GraphLengths& forward = entry.second;
 
-        TRACE("Processing edge pair " << this->graph().int_id(e1)
-                               << " " << this->graph().int_id(e2));
-        Histogram hist = inner_map.find(e2)->second;
-        EstimHist estimated;
-        //DEBUG("Extending paired information");
-        //DEBUG("Extend left");
-        //this->base::ExtendInfoLeft(e1, e2, hist, 1000);
-        DEBUG("Extend right");
-        this->ExtendInfoRight(e1, e2, hist, 1000);
-        if (forward.size() == 0) {
-          estimated = FindEdgePairDistances(ep, hist);
-          ++gap_distances;
-        } else if (forward.size() > 0 && (!only_scaffolding_)) {
-          estimated = this->base::EstimateEdgePairDistances(ep, hist, forward);
-        }
-        DEBUG(gap_distances << " distances between gap edge pairs have been found");
-        Histogram res = this->ClusterResult(ep, estimated);
-        this->AddToResult(res, ep, result);
-        this->AddToResult(this->ConjugateInfos(ep, res), this->ConjugatePair(ep), result);
+      if (ep > this->ConjugatePair(ep))
+          continue;
+
+      TRACE("Processing edge pair " << this->graph().int_id(e1)
+            << " " << this->graph().int_id(e2));
+      const GraphLengths& forward = entry.second;
+      InHistogram hist = inner_map.find(e2)->second;
+      EstimHist estimated;
+      //DEBUG("Extending paired information");
+      //DEBUG("Extend left");
+      //this->base::ExtendInfoLeft(e1, e2, hist, 1000);
+      DEBUG("Extend right");
+      this->ExtendInfoRight(e1, e2, hist, 1000);
+      if (forward.size() == 0) {
+        estimated = FindEdgePairDistances(ep, hist);
+        ++gap_distances;
+      } else if (forward.size() > 0 && (!only_scaffolding_)) {
+        estimated = this->base::EstimateEdgePairDistances(ep, hist, forward);
       }
+      DEBUG(gap_distances << " distances between gap edge pairs have been found");
+      OutHistogram res = this->ClusterResult(ep, estimated);
+      this->AddToResult(res, ep, result);
+      this->AddToResult(this->ConjugateInfos(ep, res), this->ConjugatePair(ep), result);
     }
   }
 

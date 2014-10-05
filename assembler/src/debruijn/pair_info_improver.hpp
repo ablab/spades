@@ -22,7 +22,7 @@ bool TryToAddPairInfo(omnigraph::de::PairedInfoIndexT<Graph>& clustered_index,
                       bool reflected = true) {
     const omnigraph::de::Point& point_to_add = p;
 
-    const de::Histogram histogram = clustered_index.GetEdgePairInfo(e1, e2);
+    const auto histogram = clustered_index.GetEdgePairInfo(e1, e2);
     for (auto it = histogram.begin(); it != histogram.end(); ++it)
         if (ClustersIntersect(*it, point_to_add))
             return false;
@@ -82,7 +82,7 @@ class PairInfoImprover {
       private:
         bool IsConsistent(EdgeId /*e*/, EdgeId e1, EdgeId e2,
                           const omnigraph::de::Point& p1, const omnigraph::de::Point& p2) const {
-            if (math::le(p1.d, 0.) || math::le(p2.d, 0.) || math::gr(p1.d, p2.d))
+            if (math::le(p1.d, 0.f) || math::le(p2.d, 0.f) || math::gr(p1.d, p2.d))
                 return true;
 
             double pi_dist = p2.d - p1.d;
@@ -242,7 +242,7 @@ class PairInfoImprover {
             for (size_t i = 0; i < nthreads; ++i) {
                 DEBUG("Adding map #" << i << " " << j);
                 for (auto I = to_add[i][j].begin(), E = to_add[i][j].end(); I != E; ++I) {
-                    const de::Histogram& hist = *I;
+                    const auto& hist = *I;
                     EdgeId e1 = I.first();
                     EdgeId e2 = I.second();
                     for (auto it = hist.begin(); it != hist.end(); ++it)
@@ -258,9 +258,9 @@ class PairInfoImprover {
     }
 
   private:
-    size_t DeleteIfExist(EdgeId e1, EdgeId e2, const de::Histogram& infos) {
+    size_t DeleteIfExist(EdgeId e1, EdgeId e2, const de::HistogramWithWeight& infos) {
         size_t cnt = 0;
-        const de::Histogram histogram = index_.GetEdgePairInfo(e1, e2);
+        const auto histogram = index_.GetEdgePairInfo(e1, e2);
         for (auto I = infos.begin(), E = infos.end(); I != E; ++I) {
             const omnigraph::de::Point& point = *I;
             for (auto p_iter = histogram.begin(); p_iter != histogram.end(); ++p_iter) {
@@ -277,11 +277,11 @@ class PairInfoImprover {
         return cnt;
     }
 
-    size_t DeleteConjugateIfExist(EdgeId e1, EdgeId e2, const de::Histogram& infos) {
+    size_t DeleteConjugateIfExist(EdgeId e1, EdgeId e2, const de::HistogramWithWeight& infos) {
         size_t cnt = 0;
         EdgeId rc_e1 = graph_.conjugate(e2);
         EdgeId rc_e2 = graph_.conjugate(e1);
-        const de::Histogram histogram = index_.GetEdgePairInfo(rc_e1, rc_e2);
+        const auto histogram = index_.GetEdgePairInfo(rc_e1, rc_e2);
         for (auto I = infos.begin(), E = infos.end(); I != E; ++I) {
             const omnigraph::de::Point point = ConjugatePoint(graph_.length(e1), graph_.length(e2), *I);
             for (auto p_iter = histogram.begin(); p_iter != histogram.end(); ++p_iter) {

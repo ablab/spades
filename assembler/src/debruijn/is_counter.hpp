@@ -24,7 +24,7 @@ public:
             bool ignore_negative = false)
         : gp_(gp), hist_(), tmp_hists_(),
           total_(), counted_(), negative_(),
-          k_(gp.k_value), edge_length_threshold_(edge_length_threshold),
+          edge_length_threshold_(edge_length_threshold),
           ignore_negative_(ignore_negative) {
     }
 
@@ -213,7 +213,6 @@ private:
     count_data counted_;
     count_data negative_;
 
-    size_t k_;
     size_t edge_length_threshold_;
     bool ignore_negative_;
 };

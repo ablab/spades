@@ -10,6 +10,7 @@
 
 #include "de/paired_info.hpp"
 #include "de/pair_info_filters.hpp"
+#include "de/distance_estimation.hpp"
 #include "de/weighted_distance_estimation.hpp"
 #include "de/extensive_distance_estimation.hpp"
 #include "de/smoothing_distance_estimation.hpp"
@@ -32,7 +33,7 @@ void estimate_with_estimator(const Graph &graph,
     using debruijn_graph::estimation_mode;
     DEBUG("Estimating distances");
 
-    estimator.EstimateParallel(clustered_index, cfg::get().max_threads);
+    estimator.Estimate(clustered_index, cfg::get().max_threads);
 
     INFO("Filtering info");
     if(cfg::get().amb_de.enabled){
@@ -57,7 +58,7 @@ void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_ind
     for (auto iter = clustered_index.begin(); iter != clustered_index.end(); ++iter) {
         EdgeId first_edge = iter.first();
         EdgeId second_edge = iter.second();
-        const de::Histogram& infos = *iter;
+        const auto& infos = *iter;
         if (infos.size() == 0)
             continue;
 
@@ -74,7 +75,7 @@ void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_ind
                 double total_weight = prev_it->weight;
                 for (auto inner_it = it; inner_it != end_it; ++inner_it) {
                     total_weight += inner_it->weight;
-                    if (math::eq(inner_it->d + prev_it->d, 0.)) {
+                    if (math::eq(inner_it->d + prev_it->d, 0.f)) {
                         success = true;
                         double center = 0.;
                         double var = inner_it->d + inner_it->var;
@@ -102,7 +103,7 @@ void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_ind
 
 void estimate_distance(conj_graph_pack& gp,
                        const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
-                       const PairedIndexT& paired_index,
+                       const UnclusteredPairedIndexT& paired_index,
                        PairedIndexT& clustered_index,
                        PairedIndexT& scaffolding_index) {
     using debruijn_graph::estimation_mode;
