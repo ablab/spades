@@ -115,9 +115,10 @@ boost::function<void(typename Graph::EdgeId)> WrapWithProjectionCallback(
                        boost::ref(removal_handler_f), projecting_callback);
 }
 
-template<class Graph>
+template<class Graph, class SmartEdgeIt>
 bool RemoveBulges(
     Graph& g,
+    SmartEdgeIt& it,
     const debruijn_config::simplification::bulge_remover& br_config,
     boost::function<void(EdgeId, const std::vector<EdgeId> &)> opt_handler = 0,
     boost::function<void(EdgeId)> removal_handler = 0,
@@ -143,13 +144,25 @@ bool RemoveBulges(
                            br_config.max_relative_delta,
                            opt_handler, removal_handler);
 
-    return br.Process(CoverageComparator<Graph>(g),
+    return br.RunFromIterator(it,
                       make_shared<CoverageUpperBound<Graph>>(g, br_config.max_coverage));
 }
 
 template<class Graph>
+bool RemoveBulges(
+        Graph& g,
+        const debruijn_config::simplification::bulge_remover& br_config,
+        boost::function<void(EdgeId, const std::vector<EdgeId> &)> opt_handler = 0,
+        boost::function<void(EdgeId)> removal_handler = 0,
+        size_t additional_length_bound = 0) {
+    auto it = g.SmartEdgeBegin(CoverageComparator<Graph>(g));
+    return RemoveBulges(g, it, br_config, opt_handler, removal_handler, additional_length_bound);
+}
+
+template<class Graph, class SmartEdgeIt>
 void RemoveLowCoverageEdges(
     Graph &g,
+    SmartEdgeIt& it,
     const debruijn_config::simplification::erroneous_connections_remover& ec_config,
     const SimplifInfoContainer& info_container,
     boost::function<void(EdgeId)> removal_handler = 0) {
@@ -161,10 +174,20 @@ void RemoveLowCoverageEdges(
     auto condition = parser();
     omnigraph::IterativeLowCoverageEdgeRemover<Graph> erroneous_edge_remover(
         g, condition, removal_handler);
-    erroneous_edge_remover.Process(CoverageComparator<Graph>(g),
+    erroneous_edge_remover.RunFromIterator(it,
                                    make_shared<CoverageUpperBound<Graph>>(g, parser.max_coverage_bound()));
 
     DEBUG("Low coverage edges removed");
+}
+
+template<class Graph>
+void RemoveLowCoverageEdges(
+    Graph &g,
+    const debruijn_config::simplification::erroneous_connections_remover& ec_config,
+    const SimplifInfoContainer& info_container,
+    boost::function<void(EdgeId)> removal_handler = 0) {
+    auto it = g.SmartEdgeBegin(CoverageComparator<Graph>(g));
+    RemoveLowCoverageEdges(g, it, ec_config, info_container, removal_handler);
 }
 
 template<class Graph>
