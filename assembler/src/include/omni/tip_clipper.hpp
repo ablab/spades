@@ -101,6 +101,15 @@ public:
 
 };
 
+template<class Graph>
+shared_ptr<func::Predicate<typename Graph::EdgeId>> AddTipCondition(const Graph& g,
+                                                                  shared_ptr<func::Predicate<typename Graph::EdgeId>> condition) {
+    return func::And<typename Graph::EdgeId>(
+            make_shared<TipCondition<Graph>>(g),
+            condition);
+}
+
+//Should be used with LengthComparator!
 template<class Graph, class SmartEdgeIt>
 bool ClipTips(
         Graph& g,
@@ -112,13 +121,7 @@ bool ClipTips(
 
     DEBUG("Max tip length: " << max_length);
 
-    omnigraph::EdgeRemovingAlgorithm<Graph> tc(g,
-                                               And<typename Graph::EdgeId>(
-                                                       make_shared<TipCondition<Graph>>(g), condition),
-                                               removal_handler);
 
-    return tc.RunFromIterator(it,
-                      make_shared<LengthUpperBound<Graph>>(g, max_length));
 }
 
 template<class Graph>
@@ -129,8 +132,12 @@ bool ClipTips(
             = make_shared<func::AlwaysTrue<typename Graph::EdgeId>>(),
         boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
 
-    auto it = g.SmartEdgeBegin(LengthComparator<Graph>(g));
-    return ClipTips(g, it, max_length, condition, removal_handler);
+    omnigraph::EdgeRemovingAlgorithm<Graph> tc(g,
+                                               AddTipCondition(g, condition),
+                                               removal_handler);
+
+    return tc.Process(LengthComparator<Graph>(g),
+                      make_shared<LengthUpperBound<Graph>>(g, max_length));
 }
 
 } // namespace omnigraph

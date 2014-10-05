@@ -82,12 +82,13 @@ private:
     ;
 };
 
-template<class Graph>
+template<class Graph, class SmartEdgeIt>
 bool ClipTips(
     Graph& g,
+    SmartEdgeIt& it,
     const debruijn_config::simplification::tip_clipper& tc_config,
     const SimplifInfoContainer& info,
-    boost::function<void(typename Graph::EdgeId)> removal_handler_f = 0) {
+    boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
 
     INFO("Clipping tips");
 
@@ -96,14 +97,30 @@ bool ClipTips(
     ConditionParser<Graph> parser(g, condition_str, info);
     auto condition = parser();
 
-    return ClipTips(g, parser.max_length_bound(), condition, removal_handler_f);
+    omnigraph::EdgeRemovingAlgorithm<Graph> tc(g,
+                                               omnigraph::AddTipCondition(g, condition),
+                                               removal_handler);
+
+    return tc.RunFromIterator(it,
+                      make_shared<LengthUpperBound<Graph>>(g, parser.max_length_bound()));
+}
+
+template<class Graph>
+bool ClipTips(
+    Graph& g,
+    const debruijn_config::simplification::tip_clipper& tc_config,
+    const SimplifInfoContainer& info,
+    boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
+
+    auto it = g.SmartEdgeBegin(LengthComparator<Graph>(g));
+    return ClipTips(g, it, tc_config, info, removal_handler);
 }
 
 //enabling tip projection, todo optimize if hotspot
 template<class gp_t>
 boost::function<void(typename Graph::EdgeId)> WrapWithProjectionCallback(
     gp_t& gp,
-    boost::function<void(typename Graph::EdgeId)> removal_handler_f) {
+    boost::function<void(typename Graph::EdgeId)> removal_handler) {
     typedef typename Graph::EdgeId EdgeId;
     typedef boost::function<void(EdgeId)> HandlerF;
     TipsProjector<gp_t> tip_projector(gp);
@@ -112,7 +129,7 @@ boost::function<void(typename Graph::EdgeId)> WrapWithProjectionCallback(
                                                tip_projector, _1);
 
     return boost::bind(func::Composition<EdgeId>, _1,
-                       boost::ref(removal_handler_f), projecting_callback);
+                       boost::ref(removal_handler), projecting_callback);
 }
 
 template<class Graph, class SmartEdgeIt>
@@ -160,7 +177,7 @@ bool RemoveBulges(
 }
 
 template<class Graph, class SmartEdgeIt>
-void RemoveLowCoverageEdges(
+bool RemoveLowCoverageEdges(
     Graph &g,
     SmartEdgeIt& it,
     const debruijn_config::simplification::erroneous_connections_remover& ec_config,
@@ -172,33 +189,31 @@ void RemoveLowCoverageEdges(
     ConditionParser<Graph> parser(g, ec_config.condition, info_container);
 
     auto condition = parser();
-    omnigraph::IterativeLowCoverageEdgeRemover<Graph> erroneous_edge_remover(
-        g, condition, removal_handler);
-    erroneous_edge_remover.RunFromIterator(it,
+    omnigraph::EdgeRemovingAlgorithm<Graph> erroneous_edge_remover(
+        g, omnigraph::AddAlternativesPresenceCondition(g, condition), removal_handler);
+    return erroneous_edge_remover.RunFromIterator(it,
                                    make_shared<CoverageUpperBound<Graph>>(g, parser.max_coverage_bound()));
-
-    DEBUG("Low coverage edges removed");
 }
 
 template<class Graph>
-void RemoveLowCoverageEdges(
+bool RemoveLowCoverageEdges(
     Graph &g,
     const debruijn_config::simplification::erroneous_connections_remover& ec_config,
     const SimplifInfoContainer& info_container,
     boost::function<void(EdgeId)> removal_handler = 0) {
     auto it = g.SmartEdgeBegin(CoverageComparator<Graph>(g));
-    RemoveLowCoverageEdges(g, it, ec_config, info_container, removal_handler);
+    return RemoveLowCoverageEdges(g, it, ec_config, info_container, removal_handler);
 }
 
 template<class Graph>
-void RemoveSelfConjugateEdges(
+bool RemoveSelfConjugateEdges(
     Graph &g, size_t max_length, double max_coverage,
                 boost::function<void(EdgeId)> removal_handler = 0) {
     INFO("Removing short low covered self-conjugate connections");
-    LowCoveredSelfConjEdgeRemovingAlgorithm<Graph> algo(g, max_length, removal_handler);
-    algo.Process(CoverageComparator<Graph>(g),
-                 make_shared<CoverageUpperBound<Graph>>(g, max_coverage));
-    DEBUG("Short low covered self-conjugate connections removed");
+
+    auto condition = func::And<EdgeId>(make_shared<SelfConjugateCondition<Graph>>(g), make_shared<LengthUpperBound<Graph>>(g, max_length));
+
+    return omnigraph::RemoveErroneousEdgesInCoverageOrder(g, condition, max_coverage, removal_handler);
 }
 
 template<class Graph>
@@ -238,11 +253,10 @@ bool TopologyRemoveErroneousEdges(
     INFO("Removing connections based on topology");
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
         g.k(), tec_config.max_ec_length_coefficient);
-    return omnigraph::TopologyChimericEdgeRemover<Graph>(
-        g, tec_config.uniqueness_length,
-        tec_config.plausibility_length, removal_handler)
-            .Process(LengthComparator<Graph>(g),
-                     make_shared<LengthUpperBound<Graph>>(g, max_length));
+
+    auto condition = make_shared<DefaultUniquenessPlausabilityCondition<Graph>>(g, tec_config.uniqueness_length, tec_config.plausibility_length);
+
+    return omnigraph::RemoveErroneousEdgesInLengthOrder(g, condition, max_length, removal_handler);
 }
 
 template<class Graph>
@@ -271,11 +285,11 @@ bool MultiplicityCountingRemoveErroneousEdges(
     INFO("Removing connections based on topological multiplicity counting");
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
         g.k(), tec_config.max_ec_length_coefficient);
-    return omnigraph::SimpleMultiplicityCountingChimericEdgeRemover<Graph>(
-        g, tec_config.uniqueness_length,
-        tec_config.plausibility_length, removal_handler)
-            .Process(LengthComparator<Graph>(g),
-                     make_shared<LengthUpperBound<Graph>>(g, max_length));
+
+    auto condition = make_shared<MultiplicityCountingCondition<Graph>>(g, tec_config.uniqueness_length,
+            /*plausibility*/MakePathLengthLowerBound(g, PlausiblePathFinder<Graph>(g, 2 * tec_config.plausibility_length), tec_config.plausibility_length));
+
+    return omnigraph::RemoveErroneousEdgesInLengthOrder(g, condition, max_length, removal_handler);
 }
 
 template<class Graph>
@@ -284,11 +298,13 @@ bool RemoveThorns(
     const debruijn_config::simplification::interstrand_ec_remover& isec_config,
     boost::function<void(typename Graph::EdgeId)> removal_handler) {
     INFO("Removing interstrand connections");
-    size_t max_unr_length = LengthThresholdFinder::MaxErroneousConnectionLength(
+    size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
         g.k(), isec_config.max_ec_length_coefficient);
-    return ThornRemover<Graph>(g, max_unr_length, isec_config.uniqueness_length,
-                               isec_config.span_distance, removal_handler)
-            .Process(CoverageComparator<Graph>(g));
+
+    auto condition = func::And<EdgeId>(make_shared<LengthUpperBound<Graph>>(g, max_length),
+                                       make_shared<ThornCondition<Graph>>(g, isec_config.uniqueness_length, isec_config.span_distance));
+
+    return omnigraph::RemoveErroneousEdgesInCoverageOrder(g, condition, numeric_limits<double>::max(), removal_handler);
 }
 
 template<class Graph>
@@ -297,13 +313,17 @@ bool TopologyReliabilityRemoveErroneousEdges(
     const debruijn_config::simplification::tr_based_ec_remover& trec_config,
     boost::function<void(typename Graph::EdgeId)> removal_handler) {
     INFO("Removing connections based on topology and reliable coverage");
-    size_t max_unr_length = LengthThresholdFinder::MaxErroneousConnectionLength(
+    size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
         g.k(), trec_config.max_ec_length_coefficient);
-    return TopologyAndReliablityBasedChimericEdgeRemover<Graph>(
-        g, trec_config.uniqueness_length,
-        trec_config.unreliable_coverage, removal_handler)
-            .Process(LengthComparator<Graph>(g),
-                     make_shared<LengthUpperBound<Graph>>(g, max_unr_length));
+
+    auto condition = func::And<EdgeId>(make_shared<CoverageUpperBound<Graph>>(g, trec_config.unreliable_coverage),
+                                       make_shared<PredicateUniquenessPlausabilityCondition<Graph>>(
+                                               g,
+                                               /*uniqueness*/MakePathLengthLowerBound(g, UniquePathFinder<Graph>(g), trec_config.uniqueness_length),
+                                               /*plausibility*/make_shared<func::AlwaysTrue<EdgeId>>()));
+
+    return omnigraph::RemoveErroneousEdgesInLengthOrder(g, condition, max_length, removal_handler);
+
 }
 
 template<class Graph>
