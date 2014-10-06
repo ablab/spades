@@ -109,21 +109,6 @@ shared_ptr<func::Predicate<typename Graph::EdgeId>> AddTipCondition(const Graph&
             condition);
 }
 
-//Should be used with LengthComparator!
-template<class Graph, class SmartEdgeIt>
-bool ClipTips(
-        Graph& g,
-        SmartEdgeIt& it,
-        size_t max_length,
-        shared_ptr<Predicate<typename Graph::EdgeId>> condition
-            = make_shared<func::AlwaysTrue<typename Graph::EdgeId>>(),
-        boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
-
-    DEBUG("Max tip length: " << max_length);
-
-
-}
-
 template<class Graph>
 bool ClipTips(
         Graph& g,

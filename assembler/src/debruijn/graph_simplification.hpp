@@ -254,7 +254,7 @@ bool TopologyRemoveErroneousEdges(
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
         g.k(), tec_config.max_ec_length_coefficient);
 
-    auto condition = make_shared<DefaultUniquenessPlausabilityCondition<Graph>>(g, tec_config.uniqueness_length, tec_config.plausibility_length);
+    shared_ptr<Predicate<typename Graph::EdgeId>> condition = make_shared<DefaultUniquenessPlausabilityCondition<Graph>>(g, tec_config.uniqueness_length, tec_config.plausibility_length);
 
     return omnigraph::RemoveErroneousEdgesInLengthOrder(g, condition, max_length, removal_handler);
 }
@@ -270,11 +270,12 @@ bool TopologyClipTips(
     size_t max_length = LengthThresholdFinder::MaxTipLength(
         read_length, g.k(), ttc_config.length_coeff);
 
-    return ClipTips(g, max_length,
-                    make_shared<DefaultUniquenessPlausabilityCondition<Graph>>(g,
-                            ttc_config.uniqueness_length,
-                            ttc_config.plausibility_length),
-                    removal_handler);
+    shared_ptr<Predicate<typename Graph::EdgeId>> condition
+        = make_shared<DefaultUniquenessPlausabilityCondition<Graph>>(g,
+            ttc_config.uniqueness_length, ttc_config.plausibility_length);
+
+    return omnigraph::ClipTips(g, max_length,
+                    condition, removal_handler);
 }
 
 template<class Graph>
@@ -286,7 +287,8 @@ bool MultiplicityCountingRemoveErroneousEdges(
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
         g.k(), tec_config.max_ec_length_coefficient);
 
-    auto condition = make_shared<MultiplicityCountingCondition<Graph>>(g, tec_config.uniqueness_length,
+    shared_ptr<func::Predicate<typename Graph::EdgeId>> condition
+        = make_shared<MultiplicityCountingCondition<Graph>>(g, tec_config.uniqueness_length,
             /*plausibility*/MakePathLengthLowerBound(g, PlausiblePathFinder<Graph>(g, 2 * tec_config.plausibility_length), tec_config.plausibility_length));
 
     return omnigraph::RemoveErroneousEdgesInLengthOrder(g, condition, max_length, removal_handler);
@@ -301,7 +303,8 @@ bool RemoveThorns(
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
         g.k(), isec_config.max_ec_length_coefficient);
 
-    auto condition = func::And<EdgeId>(make_shared<LengthUpperBound<Graph>>(g, max_length),
+    shared_ptr<func::Predicate<typename Graph::EdgeId>> condition
+            = func::And<EdgeId>(make_shared<LengthUpperBound<Graph>>(g, max_length),
                                        make_shared<ThornCondition<Graph>>(g, isec_config.uniqueness_length, isec_config.span_distance));
 
     return omnigraph::RemoveErroneousEdgesInCoverageOrder(g, condition, numeric_limits<double>::max(), removal_handler);
@@ -316,7 +319,8 @@ bool TopologyReliabilityRemoveErroneousEdges(
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
         g.k(), trec_config.max_ec_length_coefficient);
 
-    auto condition = func::And<EdgeId>(make_shared<CoverageUpperBound<Graph>>(g, trec_config.unreliable_coverage),
+    shared_ptr<func::Predicate<typename Graph::EdgeId>> condition
+            = func::And<EdgeId>(make_shared<CoverageUpperBound<Graph>>(g, trec_config.unreliable_coverage),
                                        make_shared<PredicateUniquenessPlausabilityCondition<Graph>>(
                                                g,
                                                /*uniqueness*/MakePathLengthLowerBound(g, UniquePathFinder<Graph>(g), trec_config.uniqueness_length),
@@ -800,13 +804,20 @@ struct SmartIteratorsHolder {
         ec_smart_it(ec_smart_it_) {
     }
 
+    SmartIteratorsHolder(const Graph& g) :
+        tip_smart_it(g.SmartEdgeBegin(omnigraph::LengthComparator<Graph>(g))),
+        bulge_smart_it(g.SmartEdgeBegin(omnigraph::CoverageComparator<Graph>(g))),
+        ec_smart_it(g.SmartEdgeBegin(omnigraph::CoverageComparator<Graph>(g))) {
+    }
+
 };
 
+inline
 void SimplificationCycle(conj_graph_pack& gp,
                          const SimplifInfoContainer& info_container,
                          boost::function<void(EdgeId)> removal_handler,
                          stats::detail_info_printer &printer,
-                         boost::optional<SmartIteratorsHolder<Graph>> opt_iterators_holder) {
+                         boost::optional<SmartIteratorsHolder<Graph>> opt_iterators_holder = boost::none) {
     size_t iteration = info_container.iteration();
 
     INFO("PROCEDURE == Simplification cycle, iteration " << (iteration + 1));
@@ -818,20 +829,33 @@ void SimplificationCycle(conj_graph_pack& gp,
                        cnt_handler);
 
     DEBUG(iteration << " TipClipping");
-    ClipTips(gp.g, sih.tip_smart_it, cfg::get().simp.tc, info_container,
-             cfg::get().graph_read_corr.enable ? WrapWithProjectionCallback(gp, removal_handler) : removal_handler);
+    auto tip_removal_handler = cfg::get().graph_read_corr.enable ?
+            WrapWithProjectionCallback(gp, removal_handler) : removal_handler;
+    if (opt_iterators_holder) {
+        ClipTips(gp.g, opt_iterators_holder->tip_smart_it, cfg::get().simp.tc, info_container, tip_removal_handler);
+    } else {
+        ClipTips(gp.g, cfg::get().simp.tc, info_container, tip_removal_handler);
+    }
     cnt_callback.Report();
     DEBUG(iteration << " TipClipping stats");
     printer(ipp_tip_clipping, str(format("_%d") % iteration));
 
     DEBUG(iteration << " BulgeRemoval");
-    RemoveBulges(gp.g, sih.bulge_smart_it, cfg::get().simp.br, 0, removal_handler);
+    if (opt_iterators_holder) {
+        RemoveBulges(gp.g, opt_iterators_holder->bulge_smart_it, cfg::get().simp.br, 0, removal_handler);
+    } else {
+        RemoveBulges(gp.g, cfg::get().simp.br, 0, removal_handler);
+    }
     cnt_callback.Report();
     DEBUG(iteration << " BulgeRemoval stats");
     printer(ipp_bulge_removal, str(format("_%d") % iteration));
 
     DEBUG(iteration << " ErroneousConnectionsRemoval");
-    RemoveLowCoverageEdges(gp.g, sih.ec_smart_it, cfg::get().simp.ec, info_container, removal_handler);
+    if (opt_iterators_holder) {
+        RemoveLowCoverageEdges(gp.g, opt_iterators_holder->ec_smart_it, cfg::get().simp.ec, info_container, removal_handler);
+    } else {
+        RemoveLowCoverageEdges(gp.g, cfg::get().simp.ec, info_container, removal_handler);
+    }
     cnt_callback.Report();
     DEBUG(iteration << " ErroneousConnectionsRemoval stats");
     printer(ipp_err_con_removal, str(format("_%d") % iteration));
@@ -856,9 +880,10 @@ void SimplifyGraph(conj_graph_pack &gp,
     		info_container, removal_handler);
 
     info_container.set_iteration_count(iteration_count);
+    boost::optional<SmartIteratorsHolder<Graph>> opt_iterators_holder(SmartIteratorsHolder<Graph>(gp.g));
     for (size_t i = 0; i < iteration_count; i++) {
         info_container.set_iteration(i);
-        SimplificationCycle(gp, info_container, removal_handler, printer);
+        SimplificationCycle(gp, info_container, removal_handler, printer, opt_iterators_holder);
     }
 
     PostSimplification(gp, info_container, removal_handler, printer);
