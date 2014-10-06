@@ -428,11 +428,17 @@ bool RemoveIsolatedEdges(Graph &g, debruijn_config::simplification::isolated_edg
 template<class Graph>
 class CountingCallback {
     typedef typename Graph::EdgeId EdgeId;
+    bool report_on_destruction_;
     std::atomic<size_t> cnt_;
 
 public:
-    CountingCallback() : 
-            cnt_(0) {
+    CountingCallback(bool report_on_destruction = false) :
+            report_on_destruction_(report_on_destruction), cnt_(0) {
+    }
+
+    ~CountingCallback() {
+        if (report_on_destruction_)
+            Report();
     }
     
     void HandleDelete(EdgeId /*e*/) {
@@ -447,6 +453,18 @@ public:
 private:
     DECL_LOGGER("CountingCallback");
 };
+
+boost::function<void(EdgeId)> AddCountingCallback(CountingCallback<Graph>& cnt_callback, boost::function<void(EdgeId)> handler) {
+    boost::function<void(EdgeId)> cnt_handler = boost::bind(&CountingCallback<Graph>::HandleDelete, boost::ref(cnt_callback), _1);
+    return func::Composition<EdgeId>(handler, cnt_handler);
+}
+
+
+boost::function<void(EdgeId)> AddCountingCallback(boost::function<void(EdgeId)> handler) {
+    auto cnt_callback_ptr = make_shared<CountingCallback<Graph>>(true);
+    boost::function<void(EdgeId)> cnt_handler = boost::bind(&CountingCallback<Graph>::HandleDelete, cnt_callback_ptr, _1);
+    return func::Composition<EdgeId>(handler, cnt_handler);
+}
 
 template<class gp_t>
 bool FinalRemoveErroneousEdges(
@@ -605,8 +623,7 @@ void NonParallelPreSimplification(conj_graph_pack& gp,
     INFO("Non parallel mode");
     CountingCallback<Graph> cnt_callback;
 
-    boost::function<void(EdgeId)> cnt_handler = boost::bind(&CountingCallback<Graph>::HandleDelete, boost::ref(cnt_callback), _1); 
-    removal_handler = func::Composition<EdgeId>(removal_handler, cnt_handler);
+    removal_handler = AddCountingCallback(cnt_callback, removal_handler);
 
     debruijn_config::simplification::tip_clipper tc_config;
     tc_config.condition = presimp.tip_condition;
@@ -631,8 +648,7 @@ void ParallelPreSimplification(conj_graph_pack& gp,
     INFO("Parallel mode");
     CountingCallback<Graph> cnt_callback;
 
-    boost::function<void(EdgeId)> cnt_handler = boost::bind(&CountingCallback<Graph>::HandleDelete, boost::ref(cnt_callback), _1); 
-    removal_handler = func::Composition<EdgeId>(removal_handler, cnt_handler);
+    removal_handler = AddCountingCallback(cnt_callback, removal_handler);
 
     ParallelClipTips(gp.g, presimp.tip_condition, info,
                      removal_handler);
@@ -821,8 +837,7 @@ void SimplificationCycle(conj_graph_pack& gp,
     
     CountingCallback<Graph> cnt_callback;
 
-    boost::function<void(EdgeId)> cnt_handler = boost::bind(&CountingCallback<Graph>::HandleDelete, boost::ref(cnt_callback), _1); 
-    removal_handler = func::Composition<EdgeId>(removal_handler, cnt_handler);
+    removal_handler = AddCountingCallback(cnt_callback, removal_handler);
 
     DEBUG(iteration << " TipClipping");
     auto tip_removal_handler = cfg::get().graph_read_corr.enable ?
