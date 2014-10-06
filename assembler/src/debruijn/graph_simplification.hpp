@@ -128,8 +128,7 @@ boost::function<void(typename Graph::EdgeId)> WrapWithProjectionCallback(
     HandlerF projecting_callback = boost::bind(&TipsProjector<gp_t>::ProjectTip,
                                                tip_projector, _1);
 
-    return boost::bind(func::Composition<EdgeId>, _1,
-                       boost::ref(removal_handler), projecting_callback);
+    return func::Composition<EdgeId>(boost::ref(removal_handler), projecting_callback);
 }
 
 template<class Graph, class SmartEdgeIt>
@@ -607,8 +606,7 @@ void NonParallelPreSimplification(conj_graph_pack& gp,
     CountingCallback<Graph> cnt_callback;
 
     boost::function<void(EdgeId)> cnt_handler = boost::bind(&CountingCallback<Graph>::HandleDelete, boost::ref(cnt_callback), _1); 
-    removal_handler = boost::bind(func::Composition<EdgeId>, _1, removal_handler,
-                       cnt_handler);
+    removal_handler = func::Composition<EdgeId>(removal_handler, cnt_handler);
 
     debruijn_config::simplification::tip_clipper tc_config;
     tc_config.condition = presimp.tip_condition;
@@ -634,8 +632,7 @@ void ParallelPreSimplification(conj_graph_pack& gp,
     CountingCallback<Graph> cnt_callback;
 
     boost::function<void(EdgeId)> cnt_handler = boost::bind(&CountingCallback<Graph>::HandleDelete, boost::ref(cnt_callback), _1); 
-    removal_handler = boost::bind(func::Composition<EdgeId>, _1, removal_handler,
-                       cnt_handler);
+    removal_handler = func::Composition<EdgeId>(removal_handler, cnt_handler);
 
     ParallelClipTips(gp.g, presimp.tip_condition, info,
                      removal_handler);
@@ -825,8 +822,7 @@ void SimplificationCycle(conj_graph_pack& gp,
     CountingCallback<Graph> cnt_callback;
 
     boost::function<void(EdgeId)> cnt_handler = boost::bind(&CountingCallback<Graph>::HandleDelete, boost::ref(cnt_callback), _1); 
-    removal_handler = boost::bind(func::Composition<EdgeId>, _1, removal_handler,
-                       cnt_handler);
+    removal_handler = func::Composition<EdgeId>(removal_handler, cnt_handler);
 
     DEBUG(iteration << " TipClipping");
     auto tip_removal_handler = cfg::get().graph_read_corr.enable ?
