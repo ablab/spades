@@ -33,6 +33,15 @@ class GraphDistanceFinder {
       delta_((double) delta)
   {}
 
+  std::vector<size_t> GetGraphDistancesLengths(EdgeId e1, EdgeId e2) const {
+    LengthMap m;
+    m.insert({e2, { } });
+
+    FillGraphDistancesLengths(e1, m);
+
+    return m[e2];
+  }
+
   // finds all distances from a current edge to a set of edges
   void FillGraphDistancesLengths(EdgeId e1, LengthMap& second_edges) const {
     vector<VertexId> end_points;
