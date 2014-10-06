@@ -125,7 +125,7 @@ class AbstractDistanceEstimator {
   const InPairedIndex& index() const { return index_; }
 
   void FillGraphDistancesLengths(EdgeId e1, LengthMap& second_edges) const {
-    return distance_finder_.FillGraphDistancesLengths(e1, second_edges);
+      distance_finder_.FillGraphDistancesLengths(e1, second_edges);
   }
 
   OutHistogram ClusterResult(EdgePair /*ep*/, const EstimHist& estimated) const {
