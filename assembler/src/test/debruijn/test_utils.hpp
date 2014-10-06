@@ -166,36 +166,35 @@ typedef omnigraph::de::PairedInfoIndexT<Graph> PairedIndex;
 typedef omnigraph::de::PairInfo<EdgeId> PairInfo;
 typedef vector<PairInfo> PairInfos;
 
+template<class PairedIndex>
 void AssertPairInfo(const Graph& g, /*todo const */PairedIndex& paired_index, const EdgePairInfo& etalon_pair_info) {
-	for (auto it = paired_index.begin(); it != paired_index.end(); ++it) {
-		PairInfos infos;
-    infos.reserve(it->size());
-    for (auto set_it = it->begin(); set_it != it->end(); ++set_it)
-      infos.push_back(PairInfo(it.first(), it.second(), *set_it));
-		for (auto info_it = infos.begin(); info_it != infos.end(); ++info_it) {
-			PairInfo pair_info = *info_it;
-			if (pair_info.first == pair_info.second && rounded_d(pair_info) == 0) {
-				continue;
-			}
-			pair<MyEdge, MyEdge> my_edge_pair(g.EdgeNucls(pair_info.first).str(), g.EdgeNucls(pair_info.second).str());
-			auto equal_range = etalon_pair_info.equal_range(my_edge_pair);
+	for (auto it = paired_index.data_begin(); it != paired_index.data_end(); ++it) {
+      PairInfos infos = paired_index.GetEdgeInfo(it->first);
 
-			string my_edge_pair_str = "[" + my_edge_pair.first + ", " + my_edge_pair.second + "]";
-			BOOST_CHECK_MESSAGE(equal_range.first != equal_range.second,
-					"Pair of edges " << my_edge_pair_str << " wasn't found in etalon");
+      for (auto info_it = infos.begin(); info_it != infos.end(); ++info_it) {
+        PairInfo pair_info = *info_it;
+        if (pair_info.first == pair_info.second && rounded_d(pair_info) == 0)
+          continue;
 
-			double etalon_weight = -1.0;
+        pair<MyEdge, MyEdge> my_edge_pair(g.EdgeNucls(pair_info.first).str(), g.EdgeNucls(pair_info.second).str());
+        auto equal_range = etalon_pair_info.equal_range(my_edge_pair);
 
-			for (auto range_it = equal_range.first; range_it != equal_range.second; ++range_it) {
-				if ((*range_it).second.first == rounded_d(pair_info)) {
-					etalon_weight = (*range_it).second.second;
-				}
-			}
-			BOOST_CHECK_MESSAGE(etalon_weight > 0,
-					"Etalon didn't contain distance=" << rounded_d(pair_info) << " for edge pair " << my_edge_pair_str);
-			BOOST_CHECK_MESSAGE(EqualDouble(etalon_weight, pair_info.weight()),
-					"Actual weight for edge pair " << my_edge_pair_str << " on distance " << rounded_d(pair_info) << " was " << pair_info.weight() << " but etalon is " <<  etalon_weight);
-		}
+        string my_edge_pair_str = "[" + my_edge_pair.first + ", " + my_edge_pair.second + "]";
+        BOOST_CHECK_MESSAGE(equal_range.first != equal_range.second,
+                            "Pair of edges " << my_edge_pair_str << " wasn't found in etalon");
+
+        double etalon_weight = -1.0;
+
+        for (auto range_it = equal_range.first; range_it != equal_range.second; ++range_it) {
+          if ((*range_it).second.first == rounded_d(pair_info)) {
+            etalon_weight = (*range_it).second.second;
+          }
+        }
+        BOOST_CHECK_MESSAGE(etalon_weight > 0,
+                            "Etalon didn't contain distance=" << rounded_d(pair_info) << " for edge pair " << my_edge_pair_str);
+        BOOST_CHECK_MESSAGE(EqualDouble(etalon_weight, pair_info.weight()),
+                            "Actual weight for edge pair " << my_edge_pair_str << " on distance " << rounded_d(pair_info) << " was " << pair_info.weight() << " but etalon is " <<  etalon_weight);
+      }
 	}
 }
 
