@@ -780,11 +780,33 @@ void IdealSimplification(Graph& graph, Compressor<Graph>& compressor,
     compressor.CompressAllVertices();
 }
 
-inline
+template<class Graph>
+struct SmartIteratorsHolder {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::VertexIt VertexIt;
+    typedef omnigraph::ObservableGraph<VertexId, EdgeId, VertexIt> ObservableGraphT;
+    typedef omnigraph::SmartEdgeIterator<ObservableGraphT, omnigraph::CoverageComparator<Graph>> CoverageOrderIteratorT;
+    typedef omnigraph::SmartEdgeIterator<ObservableGraphT, omnigraph::LengthComparator<Graph>> LengthOrderIteratorT;
+    LengthOrderIteratorT tip_smart_it;
+    CoverageOrderIteratorT bulge_smart_it;
+    CoverageOrderIteratorT ec_smart_it;
+
+    SmartIteratorsHolder(const LengthOrderIteratorT& tip_smart_it_,
+                         const CoverageOrderIteratorT& bulge_smart_it_,
+                         const CoverageOrderIteratorT& ec_smart_it_) :
+        tip_smart_it(tip_smart_it_),
+        bulge_smart_it(bulge_smart_it_),
+        ec_smart_it(ec_smart_it_) {
+    }
+
+};
+
 void SimplificationCycle(conj_graph_pack& gp,
                          const SimplifInfoContainer& info_container,
                          boost::function<void(EdgeId)> removal_handler,
-                         stats::detail_info_printer &printer) {
+                         stats::detail_info_printer &printer,
+                         boost::optional<SmartIteratorsHolder<Graph>> opt_iterators_holder) {
     size_t iteration = info_container.iteration();
 
     INFO("PROCEDURE == Simplification cycle, iteration " << (iteration + 1));
@@ -796,22 +818,20 @@ void SimplificationCycle(conj_graph_pack& gp,
                        cnt_handler);
 
     DEBUG(iteration << " TipClipping");
-    ClipTips(gp.g, cfg::get().simp.tc,
-                           info_container,
-                           cfg::get().graph_read_corr.enable ?
-                                   WrapWithProjectionCallback(gp, removal_handler) : removal_handler);
+    ClipTips(gp.g, sih.tip_smart_it, cfg::get().simp.tc, info_container,
+             cfg::get().graph_read_corr.enable ? WrapWithProjectionCallback(gp, removal_handler) : removal_handler);
     cnt_callback.Report();
     DEBUG(iteration << " TipClipping stats");
     printer(ipp_tip_clipping, str(format("_%d") % iteration));
 
     DEBUG(iteration << " BulgeRemoval");
-    RemoveBulges(gp.g, cfg::get().simp.br, 0, removal_handler);
+    RemoveBulges(gp.g, sih.bulge_smart_it, cfg::get().simp.br, 0, removal_handler);
     cnt_callback.Report();
     DEBUG(iteration << " BulgeRemoval stats");
     printer(ipp_bulge_removal, str(format("_%d") % iteration));
 
     DEBUG(iteration << " ErroneousConnectionsRemoval");
-    RemoveLowCoverageEdges(gp.g, cfg::get().simp.ec, info_container, removal_handler);
+    RemoveLowCoverageEdges(gp.g, sih.ec_smart_it, cfg::get().simp.ec, info_container, removal_handler);
     cnt_callback.Report();
     DEBUG(iteration << " ErroneousConnectionsRemoval stats");
     printer(ipp_err_con_removal, str(format("_%d") % iteration));
