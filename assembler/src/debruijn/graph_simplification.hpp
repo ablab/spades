@@ -459,12 +459,11 @@ boost::function<void(EdgeId)> AddCountingCallback(CountingCallback<Graph>& cnt_c
     return func::Composition<EdgeId>(handler, cnt_handler);
 }
 
-
-boost::function<void(EdgeId)> AddCountingCallback(boost::function<void(EdgeId)> handler) {
-    auto cnt_callback_ptr = make_shared<CountingCallback<Graph>>(true);
-    boost::function<void(EdgeId)> cnt_handler = boost::bind(&CountingCallback<Graph>::HandleDelete, cnt_callback_ptr, _1);
-    return func::Composition<EdgeId>(handler, cnt_handler);
-}
+//boost::function<void(EdgeId)> AddCountingCallback(boost::function<void(EdgeId)> handler) {
+//    auto cnt_callback_ptr = make_shared<CountingCallback<Graph>>(true);
+//    boost::function<void(EdgeId)> cnt_handler = boost::bind(&CountingCallback<Graph>::HandleDelete, cnt_callback_ptr, _1);
+//    return func::Composition<EdgeId>(handler, cnt_handler);
+//}
 
 template<class gp_t>
 bool FinalRemoveErroneousEdges(

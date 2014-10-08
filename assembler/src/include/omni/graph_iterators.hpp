@@ -65,6 +65,17 @@ class SmartSetIterator : public SmartIterator<Graph, ElementId, Comparator> {
         this->insert(begin, end);
     }
 
+    SmartSetIterator(const Graph &graph,
+                     const Comparator& comparator = Comparator())
+            : SmartIterator<Graph, ElementId, Comparator>(
+                graph, "SmartSet " + ToString(this), false, comparator) {
+    }
+
+    template<typename InputIterator>
+    void insert(InputIterator begin, InputIterator end) {
+        this->insert(begin, end);
+    }
+
     virtual ~SmartSetIterator() {}
 };
 
@@ -363,6 +374,58 @@ class ParallelEdgeProcessor {
   private:
     hammer::ReadProcessor rp_;
     ConstEdgeIteratorWrapper it_;
+};
+
+
+template<class Graph>
+class ParallelIterationHelper {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::VertexIt const_vertex_iterator;
+
+    const Graph& g_;
+public:
+
+    ParallelIterationHelper(const Graph& g)
+            : g_(g) {
+
+    }
+
+    std::vector<const_vertex_iterator> VertexChunks(size_t chunk_cnt) const {
+        VERIFY(chunk_cnt > 0);
+        //trying to split vertices into equal chunks, leftovers put into first chunk
+        vector<const_vertex_iterator> answer;
+        size_t vertex_cnt = g_.size();
+        size_t chunk_size = vertex_cnt / chunk_cnt;
+        auto it = g_.begin();
+        answer.push_back(it);
+        for (size_t i = 0; i + chunk_cnt * chunk_size < vertex_cnt; ++i) {
+            it++;
+        }
+        if (chunk_size > 0) {
+            size_t i = 0;
+            do {
+                ++it;
+                if (++i % chunk_size == 0)
+                    answer.push_back(it);
+            } while (it != g_.end());
+
+            VERIFY(i == chunk_cnt * chunk_size);
+        } else {
+            VERIFY(it == g_.end());
+            answer.push_back(it);
+        }
+        VERIFY(answer.back() == g_.end());
+        return answer;
+    }
+
+    std::vector<omnigraph::GraphEdgeIterator<Graph>> EdgeChunks(size_t chunk_cnt) const {
+        vector<omnigraph::GraphEdgeIterator<Graph>> answer;
+        for (const_vertex_iterator v_it : VertexChunks(chunk_cnt)) {
+            answer.push_back(omnigraph::GraphEdgeIterator<Graph>(g_, v_it));
+        }
+        return answer;
+    }
 };
 
 }

@@ -121,20 +121,29 @@ public:
 	/**
 	 * Method compresses all vertices which can be compressed.
 	 */
-	void CompressAllVertices() {
+	void CompressAllVertices(size_t chunk_cnt = 1) {
 		TRACE("Vertex compressing started");
 		//SmartVertexIterator<Graph> end = graph_.SmartVertexEnd();
 
-		//todo is it still true???
-		//in current implementation will work incorrectly if smart iterator won't give vertex and its conjugate
-		//(in case of self-conjugate edges)
-		vector<VertexId> to_compress;
-		for (VertexId v : graph_) {
-			if (CanCompressVertex(v)) {
-				to_compress.push_back(v);
-			}
-		}
-		for (auto it = SmartSetIterator<Graph, VertexId>(graph_, to_compress.begin(), to_compress.end()); !it.IsEnd(); ++it) {
+		auto chunk_iterators = omnigraph::ParallelIterationHelper<Graph>(graph_).VertexChunks(chunk_cnt);
+        VERIFY(chunk_iterators.size() > 1);
+        std::vector<std::vector<VertexId>> to_compress(chunk_iterators.size() - 1);
+        DEBUG("Searching elements of interest");
+#pragma omp parallel for schedule(guided)
+        for (size_t i = 0; i < chunk_iterators.size() - 1; ++i) {
+            for (auto it = chunk_iterators[i], end = chunk_iterators[i + 1]; it != end; ++it) {
+                VertexId v = *it;
+                if (CanCompressVertex(v)) {
+                    to_compress[i].push_back(v);
+                }
+            }
+        }
+
+        auto it = SmartSetIterator<Graph, VertexId>(graph_);
+        for (auto& chunk : to_compress) {
+            it.insert(chunk.begin(), chunk.end());
+        }
+		for (; !it.IsEnd(); ++it) {
 			CompressVertex(*it);
 		}
 		TRACE("Vertex compressing finished")
