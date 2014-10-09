@@ -377,7 +377,9 @@ def get_tmp_dir(prefix="", base_dir=None):
 def get_short_reads_type(option):
     for short_reads_type in options_storage.SHORT_READS_TYPES.keys():
         if option.startswith('--' + short_reads_type):
-            return short_reads_type
+            # additional check to except collisions with LONG_READS_TYPES, e.g. --s<#> and --sanger
+            if option[len('--' + short_reads_type):len('--' + short_reads_type) + 1].isdigit():
+                return short_reads_type
     return None
 
 
