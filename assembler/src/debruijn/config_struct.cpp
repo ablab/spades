@@ -221,14 +221,12 @@ void load(debruijn_config::simplification::isolated_edges_remover& ier,
 }
 
 void load(debruijn_config::simplification::complex_bulge_remover& cbr,
-          boost::property_tree::ptree const& pt, bool /*complete*/) {
+          boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
 
   load(cbr.enabled, pt, "enabled");
-  load(cbr.pics_enabled, pt, "pics_enabled");
-  load(cbr.folder, pt, "folder");
-  load(cbr.max_relative_length, pt, "max_relative_length");
-  load(cbr.max_length_difference, pt, "max_length_difference");
+  load(cbr.max_relative_length, pt, "max_relative_length", complete);
+  load(cbr.max_length_difference, pt, "max_length_difference", complete);
 }
 
 void load(debruijn_config::simplification::erroneous_connections_remover& ec,
@@ -453,6 +451,8 @@ void load(debruijn_config::simplification& simp,
   load(simp.ier, pt, "ier", complete); // isolated edges remover
   load(simp.cbr, pt, "cbr", complete); // complex bulge remover
   load(simp.her, pt, "her", complete); // hidden ec remover
+  load(simp.persistent_cycle_iterators, pt, "persistent_cycle_iterators", complete);
+  load(simp.disable_br_in_cycle, pt, "disable_br_in_cycle", complete);
 //  load(simp.stats_mode, pt, "stats_mode", complete); // temporary stats counting mode
 }
 
@@ -679,6 +679,9 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 
   load(cfg.simp, pt, "default");
 
+  bool fast_simplification;
+  load(fast_simplification, pt, "fast_simplification");
+
   if (cfg.ds.single_cell)
     load(cfg.simp, pt, "sc", false);
 
@@ -686,9 +689,11 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
     load(cfg.simp, pt, "careful", false);
 
   if (cfg.diploid_mode)
-      load(cfg.simp, pt, "diploid_simp", false);
+    load(cfg.simp, pt, "diploid_simp", false);
 
-  cfg.simp.cbr.folder = cfg.output_dir + cfg.simp.cbr.folder + "/";
+  if (fast_simplification)
+    load(cfg.simp, pt, "fast_simp", false);
+
   load(cfg.info_printers, pt, "info_printers");
   if (!cfg.developer_mode) {
       for (auto iter = cfg.info_printers.begin(); iter != cfg.info_printers.end(); ++iter) {

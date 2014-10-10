@@ -272,8 +272,6 @@ struct debruijn_config {
 
         struct complex_bulge_remover {
             bool enabled;
-            bool pics_enabled;
-            std::string folder;
             double max_relative_length;
             size_t max_length_difference;
         };
@@ -319,7 +317,9 @@ struct debruijn_config {
         complex_bulge_remover cbr;
         hidden_ec_remover her;
         presimplification presimp;
-//        bool stats_mode;
+        //bool stats_mode;
+        bool persistent_cycle_iterators;
+        bool disable_br_in_cycle;
     };
 
     struct construction {

@@ -349,20 +349,14 @@ template<class Graph>
 bool RemoveComplexBulges(
     Graph& g,
     debruijn_config::simplification::complex_bulge_remover cbr_config,
-    size_t iteration = 0) {
+    size_t /*iteration*/ = 0) {
     if (!cbr_config.enabled)
         return false;
     INFO("Removing complex bulges");
     size_t max_length = (size_t) ((double) g.k() * cbr_config.max_relative_length);
     size_t max_diff = cbr_config.max_length_difference;
-    string output_dir = "";
-    if (cbr_config.pics_enabled) {
-        output_dir = cbr_config.folder;
-        make_dir(output_dir);
-        output_dir += ToString(iteration) + "/";
-    }
     omnigraph::complex_br::ComplexBulgeRemover<Graph> complex_bulge_remover(
-        g, max_length, max_diff, output_dir);
+        g, max_length, max_diff, "");
     return complex_bulge_remover.Run();
 }
 
@@ -454,6 +448,7 @@ private:
     DECL_LOGGER("CountingCallback");
 };
 
+inline
 boost::function<void(EdgeId)> AddCountingCallback(CountingCallback<Graph>& cnt_callback, boost::function<void(EdgeId)> handler) {
     boost::function<void(EdgeId)> cnt_handler = boost::bind(&CountingCallback<Graph>::HandleDelete, boost::ref(cnt_callback), _1);
     return func::Composition<EdgeId>(handler, cnt_handler);
@@ -804,24 +799,27 @@ struct SmartIteratorsHolder {
     typedef omnigraph::ObservableGraph<VertexId, EdgeId, VertexIt> ObservableGraphT;
     typedef omnigraph::SmartEdgeIterator<ObservableGraphT, omnigraph::CoverageComparator<Graph>> CoverageOrderIteratorT;
     typedef omnigraph::SmartEdgeIterator<ObservableGraphT, omnigraph::LengthComparator<Graph>> LengthOrderIteratorT;
-    LengthOrderIteratorT tip_smart_it;
-    CoverageOrderIteratorT bulge_smart_it;
-    CoverageOrderIteratorT ec_smart_it;
+    std::shared_ptr<LengthOrderIteratorT> tip_smart_it;
+    std::shared_ptr<CoverageOrderIteratorT> bulge_smart_it;
+    std::shared_ptr<CoverageOrderIteratorT> ec_smart_it;
 
-    SmartIteratorsHolder(const LengthOrderIteratorT& tip_smart_it_,
-                         const CoverageOrderIteratorT& bulge_smart_it_,
-                         const CoverageOrderIteratorT& ec_smart_it_) :
-        tip_smart_it(tip_smart_it_),
-        bulge_smart_it(bulge_smart_it_),
-        ec_smart_it(ec_smart_it_) {
+//    SmartIteratorsHolder(const LengthOrderIteratorT& tip_smart_it_,
+//                         const CoverageOrderIteratorT& bulge_smart_it_,
+//                         const CoverageOrderIteratorT& ec_smart_it_) :
+//        tip_smart_it(tip_smart_it_),
+//        bulge_smart_it(bulge_smart_it_),
+//        ec_smart_it(ec_smart_it_) {
+//    }
+
+    SmartIteratorsHolder(const Graph& g, bool init_bulge_it = true) :
+        tip_smart_it(make_shared<LengthOrderIteratorT>(g, omnigraph::LengthComparator<Graph>(g))),
+        ec_smart_it(make_shared<CoverageOrderIteratorT>(g, omnigraph::CoverageComparator<Graph>(g))) {
+        if (init_bulge_it)
+            bulge_smart_it = make_shared<CoverageOrderIteratorT>(g, omnigraph::CoverageComparator<Graph>(g));
     }
 
-    SmartIteratorsHolder(const Graph& g) :
-        tip_smart_it(g.SmartEdgeBegin(omnigraph::LengthComparator<Graph>(g))),
-        bulge_smart_it(g.SmartEdgeBegin(omnigraph::CoverageComparator<Graph>(g))),
-        ec_smart_it(g.SmartEdgeBegin(omnigraph::CoverageComparator<Graph>(g))) {
+    SmartIteratorsHolder() {
     }
-
 };
 
 inline
@@ -829,7 +827,7 @@ void SimplificationCycle(conj_graph_pack& gp,
                          const SimplifInfoContainer& info_container,
                          boost::function<void(EdgeId)> removal_handler,
                          stats::detail_info_printer &printer,
-                         boost::optional<SmartIteratorsHolder<Graph>> opt_iterators_holder = boost::none) {
+                         SmartIteratorsHolder<Graph> iterators_holder) {
     size_t iteration = info_container.iteration();
 
     INFO("PROCEDURE == Simplification cycle, iteration " << (iteration + 1));
@@ -841,8 +839,8 @@ void SimplificationCycle(conj_graph_pack& gp,
     DEBUG(iteration << " TipClipping");
     auto tip_removal_handler = cfg::get().graph_read_corr.enable ?
             WrapWithProjectionCallback(gp, removal_handler) : removal_handler;
-    if (opt_iterators_holder) {
-        ClipTips(gp.g, opt_iterators_holder->tip_smart_it, cfg::get().simp.tc, info_container, tip_removal_handler);
+    if (iterators_holder.tip_smart_it) {
+        ClipTips(gp.g, *iterators_holder.tip_smart_it, cfg::get().simp.tc, info_container, tip_removal_handler);
     } else {
         ClipTips(gp.g, cfg::get().simp.tc, info_container, tip_removal_handler);
     }
@@ -850,19 +848,23 @@ void SimplificationCycle(conj_graph_pack& gp,
     DEBUG(iteration << " TipClipping stats");
     printer(ipp_tip_clipping, str(format("_%d") % iteration));
 
-    DEBUG(iteration << " BulgeRemoval");
-    if (opt_iterators_holder) {
-        RemoveBulges(gp.g, opt_iterators_holder->bulge_smart_it, cfg::get().simp.br, 0, removal_handler);
+    if (!cfg::get().simp.disable_br_in_cycle) {
+        DEBUG(iteration << " BulgeRemoval");
+        if (iterators_holder.bulge_smart_it) {
+            RemoveBulges(gp.g, *iterators_holder.bulge_smart_it, cfg::get().simp.br, 0, removal_handler);
+        } else {
+            RemoveBulges(gp.g, cfg::get().simp.br, 0, removal_handler);
+        }
+        cnt_callback.Report();
+        DEBUG(iteration << " BulgeRemoval stats");
+        printer(ipp_bulge_removal, str(format("_%d") % iteration));
     } else {
-        RemoveBulges(gp.g, cfg::get().simp.br, 0, removal_handler);
+        INFO("Bulge remover in cycle was disabled");
     }
-    cnt_callback.Report();
-    DEBUG(iteration << " BulgeRemoval stats");
-    printer(ipp_bulge_removal, str(format("_%d") % iteration));
 
     DEBUG(iteration << " ErroneousConnectionsRemoval");
-    if (opt_iterators_holder) {
-        RemoveLowCoverageEdges(gp.g, opt_iterators_holder->ec_smart_it, cfg::get().simp.ec, info_container, removal_handler);
+    if (iterators_holder.ec_smart_it) {
+        RemoveLowCoverageEdges(gp.g, *iterators_holder.ec_smart_it, cfg::get().simp.ec, info_container, removal_handler);
     } else {
         RemoveLowCoverageEdges(gp.g, cfg::get().simp.ec, info_container, removal_handler);
     }
@@ -877,7 +879,7 @@ void SimplifyGraph(conj_graph_pack &gp,
                    boost::function<void(EdgeId)> removal_handler,
                    stats::detail_info_printer& printer, size_t iteration_count) {
     printer(ipp_before_simplification);
-    DEBUG("Graph simplification started");
+    INFO("Graph simplification started");
 
     SimplifInfoContainer info_container;
     info_container
@@ -890,10 +892,13 @@ void SimplifyGraph(conj_graph_pack &gp,
     		info_container, removal_handler);
 
     info_container.set_iteration_count(iteration_count);
-    boost::optional<SmartIteratorsHolder<Graph>> opt_iterators_holder(SmartIteratorsHolder<Graph>(gp.g));
+    SmartIteratorsHolder<Graph> iterators_holder;
+    if (cfg::get().simp.persistent_cycle_iterators) {
+        iterators_holder = SmartIteratorsHolder<Graph>(gp.g, !cfg::get().simp.disable_br_in_cycle);
+    }
     for (size_t i = 0; i < iteration_count; i++) {
         info_container.set_iteration(i);
-        SimplificationCycle(gp, info_container, removal_handler, printer, opt_iterators_holder);
+        SimplificationCycle(gp, info_container, removal_handler, printer, iterators_holder);
     }
 
     PostSimplification(gp, info_container, removal_handler, printer);

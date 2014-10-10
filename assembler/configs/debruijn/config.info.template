@@ -161,3 +161,5 @@ graph_read_corr
 
 ;flanking coverage range
 flanking_range 50
+
+fast_simplification false
