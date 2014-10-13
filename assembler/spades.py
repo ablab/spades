@@ -542,7 +542,6 @@ def main(args):
                     bh_cfg.__dict__["dataset_yaml_filename"] = cfg["dataset"].yaml_filename
 
                 log.info("\n===== %s started. \n" % STAGE_NAME)
-                print tmp_configs_dir
 
                 hammer_logic.run_hammer(corrected_dataset_yaml_filename, tmp_configs_dir, bin_home, bh_cfg, not_used_dataset_data,
                     ext_python_modules_home, log)
@@ -612,7 +611,6 @@ def main(args):
                         dataset_file.write(process_cfg.process_spaces(cfg["dataset"].reference) + '\n')
                     dataset_file.close()
                 spades_cfg.__dict__["dataset"] = dataset_filename
-                print tmp_configs_dir
 
                 latest_dir = spades_logic.run_spades(tmp_configs_dir, bin_home, spades_cfg, dataset_data, ext_python_modules_home, log)
 
