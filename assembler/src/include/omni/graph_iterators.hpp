@@ -73,7 +73,7 @@ class SmartSetIterator : public SmartIterator<Graph, ElementId, Comparator> {
 
     template<typename InputIterator>
     void insert(InputIterator begin, InputIterator end) {
-        this->insert(begin, end);
+        QueueIterator<ElementId, Comparator>::insert(begin, end);
     }
 
     virtual ~SmartSetIterator() {}
