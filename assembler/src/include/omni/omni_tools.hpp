@@ -11,6 +11,7 @@
 #include "simple_tools.hpp"
 
 #include "path_helper.hpp"
+#include "parallel_processing.hpp"
 
 #ifdef USE_GLIBCXX_PARALLEL
 #include <parallel/algorithm>
@@ -118,40 +119,27 @@ public:
 
 	}
 
-	/**
-	 * Method compresses all vertices which can be compressed.
-	 */
-	void CompressAllVertices(size_t chunk_cnt = 1) {
-		TRACE("Vertex compressing started");
-		//SmartVertexIterator<Graph> end = graph_.SmartVertexEnd();
+	bool IsOfInterest(VertexId v) const {
+	    return CanCompressVertex(v);
+	}
 
-		auto chunk_iterators = omnigraph::ParallelIterationHelper<Graph>(graph_).VertexChunks(chunk_cnt);
-        VERIFY(chunk_iterators.size() > 1);
-        std::vector<std::vector<VertexId>> to_compress(chunk_iterators.size() - 1);
-        DEBUG("Searching elements of interest");
-#pragma omp parallel for schedule(guided)
-        for (size_t i = 0; i < chunk_iterators.size() - 1; ++i) {
-            for (auto it = chunk_iterators[i], end = chunk_iterators[i + 1]; it != end; ++it) {
-                VertexId v = *it;
-                if (CanCompressVertex(v)) {
-                    to_compress[i].push_back(v);
-                }
-            }
-        }
-
-        auto it = SmartSetIterator<Graph, VertexId>(graph_);
-        for (auto& chunk : to_compress) {
-            it.insert(chunk.begin(), chunk.end());
-        }
-		for (; !it.IsEnd(); ++it) {
-			CompressVertex(*it);
-		}
-		TRACE("Vertex compressing finished")
+	bool Process(VertexId v) {
+	    return CompressVertex(v);
 	}
 
 private:
 	DECL_LOGGER("Compressor")
 };
+
+/**
+ * Method compresses all vertices which can be compressed.
+ */
+template<class Graph>
+bool CompressAllVertices(Graph& g, size_t chunk_cnt = 1) {
+    SemiParallelAlgorithmRunner<Graph, typename Graph::VertexId> runner(g);
+    Compressor<Graph> compressor(g);
+    RunVertexAlgorithm(g, runner, compressor, chunk_cnt);
+}
 
 template<class Graph>
 class Cleaner {

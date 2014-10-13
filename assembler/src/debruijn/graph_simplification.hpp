@@ -502,12 +502,6 @@ bool FinalRemoveErroneousEdges(
 }
 
 template<class Graph>
-void Compress(Graph& g) {
-    Compressor<Graph> compressor(g);
-    compressor.CompressAllVertices();
-}
-
-template<class Graph>
 void ParallelCompress(Graph& g, const SimplifInfoContainer& info) {
     INFO("Parallel compression");
     debruijn::simplification::ParallelCompressor<Graph> compressor(g);
@@ -520,7 +514,7 @@ void ParallelCompress(Graph& g, const SimplifInfoContainer& info) {
 
     //have to call "final" compression to get rid of loops
     INFO("Postcompression");
-    Compress(g);
+    CompressAllVertices(g);
 }
 
 template<class Graph>
@@ -780,16 +774,16 @@ void PostSimplification(conj_graph_pack& gp,
     }
 }
 
-inline
-void IdealSimplification(Graph& graph, Compressor<Graph>& compressor,
-                         boost::function<double(EdgeId)> quality_handler_f) {
-    for (auto iterator = graph.SmartEdgeBegin(); !iterator.IsEnd();
-         ++iterator) {
-        if (math::eq(quality_handler_f(*iterator), 0.))
-            graph.DeleteEdge(*iterator);
-    }
-    compressor.CompressAllVertices();
-}
+//inline
+//void IdealSimplification(Graph& graph,
+//                         boost::function<double(EdgeId)> quality_handler_f) {
+//    for (auto iterator = graph.SmartEdgeBegin(); !iterator.IsEnd();
+//         ++iterator) {
+//        if (math::eq(quality_handler_f(*iterator), 0.))
+//            graph.DeleteEdge(*iterator);
+//    }
+//    CompressAllVertices(graph);
+//}
 
 template<class Graph>
 struct SmartIteratorsHolder {

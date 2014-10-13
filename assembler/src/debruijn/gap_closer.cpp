@@ -422,8 +422,7 @@ class GapCloser {
         INFO("Closing short gaps complete: filled " << gaps_filled
              << " gaps after checking " << gaps_checked
              << " candidates");
-        omnigraph::Compressor<Graph> compressor(g_);
-        compressor.CompressAllVertices();
+        omnigraph::CompressAllVertices(g_);
     }
 
     GapCloser(Graph& g, omnigraph::de::PairedInfoIndexT<Graph>& tips_paired_idx,

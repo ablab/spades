@@ -83,8 +83,7 @@ public:
 			}
 			KillLoop(start, finish, component_set);
 		}
-		Compressor<Graph> compressor(graph_);
-		compressor.CompressAllVertices();
+		CompressAllVertices(graph_);
 	}
 
 	virtual void KillLoop(VertexId start, VertexId finish, const set<VertexId> &component) = 0;

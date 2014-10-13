@@ -496,7 +496,7 @@ public:
 					colouring);
 			component_remover_.DeleteComponent(to_remove.begin(), to_remove.end(), false);
 		}
-        Compressor<Graph>(g_).CompressAllVertices();
+        CompressAllVertices(g_);
         Cleaner<Graph>(g_).Clean();
 
 		return false;
