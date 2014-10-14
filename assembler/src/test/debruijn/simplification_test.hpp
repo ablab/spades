@@ -304,4 +304,31 @@ BOOST_AUTO_TEST_CASE( RelativeCoverageRemover ) {
     BOOST_CHECK_EQUAL(gp.g.size(), 12u/*28u*/);
 }
 
+BOOST_AUTO_TEST_CASE( ParallelCompressor1 ) {
+    string path = "";
+    size_t graph_size = 0;
+    conj_graph_pack gp(55, tmp_folder, 0);
+    graphio::ScanGraphPack(path, gp);
+    ParallelCompress(gp.g, standard_simplif_relevant_info(), false);
+    BOOST_CHECK_EQUAL(gp.g.size(), graph_size);
+}
+
+BOOST_AUTO_TEST_CASE( ParallelTipClipper1 ) {
+    string path = "./src/test/debruijn/graph_fragments/simpliest_tip/simpliest_tip";
+    size_t graph_size = 4;
+    conj_graph_pack gp(55, tmp_folder, 0);
+    graphio::ScanGraphPack(path, gp);
+    ParallelClipTips(gp.g, standard_tc_config().condition, standard_simplif_relevant_info());
+    BOOST_CHECK_EQUAL(gp.g.size(), graph_size);
+}
+
+BOOST_AUTO_TEST_CASE( ParallelECRemover ) {
+    string path = "";
+    size_t graph_size = 0;
+    conj_graph_pack gp(55, tmp_folder, 0);
+    graphio::ScanGraphPack(path, gp);
+    ParallelEC(gp.g, standard_ec_config().condition, standard_simplif_relevant_info());
+    BOOST_CHECK_EQUAL(gp.g.size(), graph_size);
+}
+
 BOOST_AUTO_TEST_SUITE_END()}

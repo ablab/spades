@@ -46,14 +46,6 @@ void VisualizeNontrivialComponentAutoInc(
 namespace relative_coverage {
 
 template<class Graph>
-vector<typename Graph::EdgeId> AdjacentEdges(const Graph& g, typename Graph::VertexId v) {
-    vector<typename Graph::EdgeId> answer;
-    push_back_all(answer, g.OutgoingEdges(v));
-    push_back_all(answer, g.IncomingEdges(v));
-    return answer;
-}
-
-template<class Graph>
 class Component {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
@@ -99,7 +91,7 @@ public:
             contains_deadends_ = true;
         }
         inner_vertices_.insert(v);
-        FOREACH(EdgeId e, AdjacentEdges(g_, v)) {
+        FOREACH(EdgeId e, g_.AdjacentEdges(v)) {
             //seems to correctly handle loops
             if (edges_.count(e) == 0) {
                 edges_.insert(e);
@@ -405,7 +397,7 @@ private:
 
     bool IsTerminateVertex(VertexId v) const {
         double base_coverage = rel_helper_.MaxLocalCoverage(
-                RetainEdgesFromComponent(AdjacentEdges(g_, v)), v);
+                RetainEdgesFromComponent(g_.AdjacentEdges(v)), v);
         return CheckAnyFilteredHighlyCovered(g_.OutgoingEdges(v),
                                              v, base_coverage)
                 && CheckAnyFilteredHighlyCovered(

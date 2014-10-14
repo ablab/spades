@@ -211,7 +211,7 @@ public:
 
 	virtual size_t OutgoingEdgeCount(VertexId v) const = 0;
 
-	//todo optimize if needed
+	//todo rename to "IncidentEdges" optimize if needed
 	vector<EdgeId> AdjacentEdges(VertexId v) const {
 	    vector<EdgeId> answer;
 	    push_back_all(answer, IncomingEdges(v));
