@@ -5,13 +5,6 @@
 #include "graph_pack.hpp"
 
 void create_console_logger() {
-	using namespace logging;
-
-    string log_props_file = cfg::get().log_filename;
-
-    if (!path::FileExists(log_props_file))
-        log_props_file = path::append_path(path::parent_path(cfg_filename), cfg::get().log_filename);
-
     logging::logger *log = logging::create_logger("", logging::L_INFO);
     log->add_writer(std::make_shared<logging::console_writer>());
     logging::attach_logger(log);
