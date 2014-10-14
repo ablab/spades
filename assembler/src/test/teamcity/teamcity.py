@@ -9,7 +9,6 @@
 #script for testing SPAdes
 #provide a directory with dataset.info file, or complete path to .info file
 
-
 import sys
 import os
 import shutil
@@ -196,6 +195,11 @@ if 'spades_compile' not in dataset_info.__dict__ or dataset_info.spades_compile:
 spades_output_dir_name = dataset_info.name
 if 'build_agent' in dataset_info.__dict__:
     spades_output_dir_name += "_" + dataset_info.build_agent
+
+output_dir = ""
+if len(sys.argv) == 3:
+    output_dir = os.path.join(sys.argv[2], spades_output_dir_name)
+else:
 output_dir = os.path.join(dataset_info.output_dir, spades_output_dir_name)
 
 history_log = read_log(output_dir, dataset_info)
@@ -396,8 +400,6 @@ if 'contig_storage' in dataset_info.__dict__:
         os.makedirs(quast_contig_dir)
 
     name_prefix = datetime.datetime.now().strftime('%Y%m%d-%H%M')
-    if len(sys.argv) == 3:
-        name_prefix += "_" + sys.argv[2]
     print("Contigs have prefix " + name_prefix)
 
     if 'dipspades' in dataset_info.__dict__ and dataset_info.dipspades:
