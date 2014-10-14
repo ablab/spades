@@ -1,6 +1,6 @@
 #pragma once
 
-#include "logger.hpp"
+#include "logger/logger.hpp"
 #include "graph_iterators.hpp"
 
 namespace omnigraph {

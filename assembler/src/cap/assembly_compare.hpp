@@ -61,7 +61,7 @@ void DeleteEdgesByColor(Graph& g, const ColorHandler<Graph>& coloring,
 			g.DeleteEdge(*it);
 		}
 	}
-	Cleaner<Graph>(g).Clean();
+	CleanGraph(g);
 }
 
 template<class Graph>

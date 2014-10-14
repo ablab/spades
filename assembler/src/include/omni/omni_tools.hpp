@@ -20,7 +20,7 @@
 namespace omnigraph {
 
 /**
- * Compresser compresses vertices with unique incoming and unique outgoing edge in linear time while
+ * Compressor compresses vertices with unique incoming and unique outgoing edge in linear time while
  * simple one-by-one compressing has square complexity.
  */
 template<class Graph>
@@ -76,7 +76,7 @@ class Compressor {
 	}
 
 	//todo use graph method!
-	bool CanCompressVertex(VertexId v) {
+	bool CanCompressVertex(VertexId v) const {
 		if (!graph_.CheckUniqueOutgoingEdge(v)
 			|| !graph_.CheckUniqueIncomingEdge(v)) {
 			TRACE(
@@ -138,7 +138,7 @@ template<class Graph>
 bool CompressAllVertices(Graph& g, size_t chunk_cnt = 1) {
     SemiParallelAlgorithmRunner<Graph, typename Graph::VertexId> runner(g);
     Compressor<Graph> compressor(g);
-    RunVertexAlgorithm(g, runner, compressor, chunk_cnt);
+    return RunVertexAlgorithm(g, runner, compressor, chunk_cnt);
 }
 
 template<class Graph>
@@ -146,24 +146,43 @@ class Cleaner {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 
-	Graph &graph_;
+	Graph& g_;
 
 public:
-	Cleaner(Graph &graph) :
-			graph_(graph) {
+	Cleaner(Graph& g) :
+			g_(g) {
 	}
 
-	void Clean() {
-		for (auto iter = graph_.SmartVertexBegin(); !iter.IsEnd(); ++iter) {
-			if (graph_.IsDeadStart(*iter) && graph_.IsDeadEnd(*iter)) {
-				graph_.DeleteVertex(*iter);
-			}
-		}
-	}
+    bool IsOfInterest(VertexId v) const {
+        return g_.IsDeadStart(v) && g_.IsDeadEnd(v);
+    }
+
+    bool Process(VertexId v) {
+        g_.DeleteVertex(v);
+        return true;
+    }
+
+//	void Clean() {
+//		for (auto iter = graph_.SmartVertexBegin(); !iter.IsEnd(); ++iter) {
+//			if (graph_.IsDeadStart(*iter) && graph_.IsDeadEnd(*iter)) {
+//				graph_.DeleteVertex(*iter);
+//			}
+//		}
+//	}
 
 private:
 	DECL_LOGGER("Cleaner")
 };
+
+/**
+ * Method removes isolated vertices from the graph.
+ */
+template<class Graph>
+bool CleanGraph(Graph& g, size_t chunk_cnt = 1) {
+    SemiParallelAlgorithmRunner<Graph, typename Graph::VertexId> runner(g);
+    Cleaner<Graph> cleaner(g);
+    return RunVertexAlgorithm(g, runner, cleaner, chunk_cnt);
+}
 
 template<class Graph>
 class IsolatedEdgeRemover {
@@ -196,8 +215,7 @@ public:
 
 			}
 		}
-		Cleaner<Graph> cleaner(g_);
-		cleaner.Clean();
+		CleanGraph(g_);
 
         return cnt;
 	}

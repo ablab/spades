@@ -502,19 +502,19 @@ bool FinalRemoveErroneousEdges(
 }
 
 template<class Graph>
-void ParallelCompress(Graph& g, const SimplifInfoContainer& info) {
+void ParallelCompress(Graph& g, const SimplifInfoContainer& info, bool loop_post_compression = true) {
     INFO("Parallel compression");
     debruijn::simplification::ParallelCompressor<Graph> compressor(g);
     debruijn::simplification::TwoStepAlgorithmRunner<Graph, typename Graph::VertexId> runner(g, false);
     debruijn::simplification::RunVertexAlgorithm(g, runner, compressor, info.chunk_cnt());
 
     //have to call cleaner to get rid of new isolated vertices
-    Cleaner<Graph> cleaner(g);
-    cleaner.Clean();
+    CleanGraph(g);
 
-    //have to call "final" compression to get rid of loops
-    INFO("Postcompression");
-    CompressAllVertices(g);
+    if (loop_post_compression) {
+        INFO("Launching post-compression to compress loops");
+        CompressAllVertices(g);
+    }
 }
 
 template<class Graph>
