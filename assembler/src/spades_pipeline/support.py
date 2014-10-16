@@ -82,6 +82,13 @@ def check_file_existence(filename, message="", log=None, dipspades=False):
     return filename
 
 
+def check_dir_existence(dirname, message="", log=None, dipspades=False):
+    dirname = os.path.abspath(dirname)
+    if not os.path.isdir(dirname):
+        error("directory not found: %s (%s)" % (dirname, message), log=log, dipspades=dipspades)
+    return dirname
+
+
 def check_files_duplication(filenames, log):
     for filename in filenames:
         if filenames.count(filename) != 1:

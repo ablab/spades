@@ -168,6 +168,8 @@ def fill_cfg(options_to_parse, log):
             options_storage.output_dir = os.path.abspath(arg)
         elif opt == "--tmp-dir":
             options_storage.tmp_dir = os.path.abspath(arg)
+        elif opt == "--configs-dir":
+            options_storage.configs_dir = support.check_dir_existence(arg)
         elif opt == "--reference":
             options_storage.reference = support.check_file_existence(arg, 'reference', log)
         elif opt == "--dataset":
@@ -509,7 +511,10 @@ def main(args):
         if os.path.isdir(tmp_configs_dir) and not options_storage.continue_mode:
             shutil.rmtree(tmp_configs_dir)
         if not os.path.isdir(tmp_configs_dir):
-            dir_util.copy_tree(os.path.join(spades_home, "configs"), tmp_configs_dir, preserve_times=False)
+            if options_storage.configs_dir:
+                dir_util.copy_tree(options_storage.configs_dir, tmp_configs_dir, preserve_times=False)
+            else:
+                dir_util.copy_tree(os.path.join(spades_home, "configs"), tmp_configs_dir, preserve_times=False)
 
         corrected_dataset_yaml_filename = ''
         if "error_correction" in cfg:
