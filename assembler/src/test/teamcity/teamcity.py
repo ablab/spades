@@ -510,11 +510,11 @@ try:
 
     #comparing misassemblies
     rewrite_latest = True
+    latest_found = True
     if 'contig_storage' in dataset_info.__dict__ and 'quast_params' in dataset_info.__dict__ and '-R' in dataset_info.quast_params and 'assess' in dataset_info.__dict__ and dataset_info.assess:
         contig_dir = dataset_info.contig_storage
         latest_ctg = os.path.join(contig_dir, "latest_contigs.fasta")
 
-        latest_found = True
         if not os.path.exists(latest_ctg):
             import glob
             prev_contigs = sorted(glob.glob(os.path.join(contig_dir, "*_ctg.fasta")))
@@ -543,10 +543,9 @@ try:
 
 
 
-    if 'contig_storage' in dataset_info.__dict__ and 'quast_params' in dataset_info.__dict__ and '-R' in dataset_info.quast_params and 'sc_assess' in dataset_info.__dict__ and dataset_info.sc_assess and os.path.exists(os.path.join(output_dir, "scaffolds.fasta")):
+    if 'contig_storage' in dataset_info.__dict__ and 'quast_params' in dataset_info.__dict__ and '-R' in dataset_info.quast_params and 'sc_assess' in dataset_info.__dict__ and dataset_info.sc_assess and os.path.exists(os.path.join(output_dir, "scaffolds.fasta")) and latest_found:
         contig_dir = dataset_info.contig_storage
         latest_ctg = os.path.join(contig_dir, "latest_scaffolds.fasta")
-        latest_found = True
         if not os.path.exists(latest_ctg):
             import glob
             prev_contigs = sorted(glob.glob(os.path.join(contig_dir, "*_scafs.fasta")))
