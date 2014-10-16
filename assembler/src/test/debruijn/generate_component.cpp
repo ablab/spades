@@ -82,14 +82,18 @@ namespace debruijn_graph {
     }
 }
 
-int main(int /*argc*/, char** argv) {
+int main(int argc, char** argv) {
+    VERIFY(argc >= 6)
     create_console_logger();
-    size_t K = 55;
-    string saves_path = "";
-    size_t start_vertex_int_id = 0;
-    vector<size_t> blocking_int_ids = {};
-    size_t edge_length_bound = 1000;
-    string component_out_path;
+    size_t K = lexical_cast<size_t>(argv[1]);
+    string saves_path = argv[2];
+    size_t start_vertex_int_id = lexical_cast<size_t>(argv[3]);
+    size_t edge_length_bound = lexical_cast<size_t>(argv[4]);
+    string component_out_path = argv[5];
+    vector<size_t> blocking_int_ids;
+    for (size_t i = 6; i < argc; ++i) {
+        blocking_int_ids.push_back(lexical_cast<size_t>(argv[i]));
+    }
 
     debruijn_graph::Launch(K, saves_path, start_vertex_int_id, blocking_int_ids, edge_length_bound, component_out_path);
     return 0;
