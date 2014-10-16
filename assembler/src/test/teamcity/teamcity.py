@@ -197,10 +197,10 @@ if 'build_agent' in dataset_info.__dict__:
     spades_output_dir_name += "_" + dataset_info.build_agent
 
 output_dir = ""
-if len(sys.argv) == 3:
+if len(sys.argv) > 2:
     output_dir = os.path.join(sys.argv[2], spades_output_dir_name)
 else:
-output_dir = os.path.join(dataset_info.output_dir, spades_output_dir_name)
+    output_dir = os.path.join(dataset_info.output_dir, spades_output_dir_name)
 
 history_log = read_log(output_dir, dataset_info)
 if history_log != "":
@@ -221,6 +221,10 @@ while i < len(dataset_info.spades_params):
         spades_params.append(os.path.join(dataset_path, str(dataset_info.spades_params[i + 1])))
         i += 1
     i += 1
+
+if len(sys.argv) > 3:
+    spades_params.append("--configs-dir")
+    spades_params.append(sys.argv[3])
 
 spades_cmd = ""
 if 'dipspades' in dataset_info.__dict__ and dataset_info.dipspades:
