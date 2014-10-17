@@ -2,6 +2,7 @@
 
 #include "logger/logger.hpp"
 #include "graph_iterators.hpp"
+#include "graph_processing_algorithm.hpp"
 
 namespace omnigraph {
 
@@ -164,9 +165,9 @@ public:
         #pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < chunk_iterators.size() - 1; ++i) {
             for (auto it = chunk_iterators[i], end = chunk_iterators[i + 1]; it != end; ++it) {
-                VertexId v = *it;
-                if (algo.IsOfInterest(v)) {
-                    of_interest[i].push_back(v);
+                ElementType t = *it;
+                if (algo.IsOfInterest(t)) {
+                    of_interest[i].push_back(t);
                 }
             }
         }
@@ -185,6 +186,32 @@ public:
 private:
     DECL_LOGGER("SemiParallelAlgorithmRunner")
     ;
+};
+
+//todo generalize to use for other algorithms if needed
+template<class Graph>
+class SemiParallelEdgeRemovingAlgorithm {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    Graph& g_;
+    shared_ptr<func::Predicate<EdgeId>> condition_;
+    EdgeRemover<Graph> edge_remover_;
+
+public:
+    SemiParallelEdgeRemovingAlgorithm(Graph& g,
+                                      shared_ptr<func::Predicate<EdgeId>> condition,
+                                      function<void(EdgeId)> removal_handler = 0) :
+            g_(g), condition_(condition), edge_remover_(g, removal_handler) {
+    }
+
+    bool IsOfInterest(EdgeId e) const {
+        return condition_->Check(e);
+    }
+
+    bool Process(EdgeId e) {
+        edge_remover_.DeleteEdge(e);
+        return true;
+    }
 };
 
 template<class Graph, class AlgoRunner, class Algo>

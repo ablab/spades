@@ -391,19 +391,21 @@ bool AllTopology(Graph &g,
 
 template<class Graph>
 bool RemoveIsolatedEdges(Graph &g, size_t max_length, double max_coverage, size_t max_length_any_cov,
-                 boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
+                 boost::function<void(typename Graph::EdgeId)> removal_handler = 0, size_t chunk_cnt = 1) {
     typedef typename Graph::EdgeId EdgeId;
-
-    return EdgeRemovingAlgorithm<Graph>(g,
-        func::And<EdgeId>(
+    auto condition = func::And<EdgeId>(
             make_shared<IsolatedEdgeCondition<Graph>>(g),
             func::Or<EdgeId>(
                 make_shared<LengthUpperBound<Graph>>(g, max_length_any_cov),
                 func::And<EdgeId>(
                     make_shared<LengthUpperBound<Graph>>(g, max_length),
                     make_shared<CoverageUpperBound<Graph>>(g, max_coverage)
-                )
-    )), removal_handler).Process();
+                )));
+
+    SemiParallelAlgorithmRunner<Graph, EdgeId> runner(g);
+    SemiParallelEdgeRemovingAlgorithm<Graph> removing_algo(g, condition, removal_handler);
+
+    return RunEdgeAlgorithm(g, runner, removing_algo, chunk_cnt);
 }
 
 template<class Graph>
@@ -505,8 +507,8 @@ template<class Graph>
 void ParallelCompress(Graph& g, const SimplifInfoContainer& info, bool loop_post_compression = true) {
     INFO("Parallel compression");
     debruijn::simplification::ParallelCompressor<Graph> compressor(g);
-    debruijn::simplification::TwoStepAlgorithmRunner<Graph, typename Graph::VertexId> runner(g, false);
-    debruijn::simplification::RunVertexAlgorithm(g, runner, compressor, info.chunk_cnt());
+    TwoStepAlgorithmRunner<Graph, typename Graph::VertexId> runner(g, false);
+    RunVertexAlgorithm(g, runner, compressor, info.chunk_cnt());
 
     //have to call cleaner to get rid of new isolated vertices
     CleanGraph(g);
@@ -533,9 +535,9 @@ bool ParallelClipTips(Graph& g,
     debruijn::simplification::ParallelTipClippingFunctor<Graph> tip_clipper(g, 
         parser.max_length_bound(), parser.max_coverage_bound(), removal_handler);
     
-    debruijn::simplification::AlgorithmRunner<Graph, typename Graph::VertexId> runner(g);
+    AlgorithmRunner<Graph, typename Graph::VertexId> runner(g);
 
-    debruijn::simplification::RunVertexAlgorithm(g, runner, tip_clipper, info.chunk_cnt());
+    RunVertexAlgorithm(g, runner, tip_clipper, info.chunk_cnt());
 
     ParallelCompress(g, info);
     //Cleaner is launched inside ParallelCompression
@@ -593,9 +595,9 @@ bool ParallelEC(Graph& g,
                             max_coverage,
                             removal_handler);
 
-    debruijn::simplification::TwoStepAlgorithmRunner<Graph, typename Graph::EdgeId> runner(g, true);
+    TwoStepAlgorithmRunner<Graph, typename Graph::EdgeId> runner(g, true);
 
-    debruijn::simplification::RunEdgeAlgorithm(g, runner, ec_remover, info.chunk_cnt());
+    RunEdgeAlgorithm(g, runner, ec_remover, info.chunk_cnt());
 
     critical_marker.ClearMarks();
 
@@ -684,7 +686,7 @@ bool EnableParallel(const conj_graph_pack& gp,
             if (gp.g.AllHandlersThreadSafe()) {
                 return true;
             } else {
-                INFO("Not all handlers are threadsafe, switching to non-parallel presimplif");
+                WARN("Not all handlers are threadsafe, switching to non-parallel presimplif");
                 //gp.g.PrintHandlersNames();
             }
         }

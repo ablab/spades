@@ -55,7 +55,7 @@ public:
 
     }
 
-    bool operator()(VertexId v) {
+    bool Process(VertexId v) {
         if (LockingOutgoingCount(v) == 0)
             return false;
 
@@ -86,43 +86,6 @@ public:
     bool ShouldFilterConjugate() const {
         return false;
     }
-};
-
-//todo add conjugate filtration
-template<class Graph, class ElementType>
-class AlgorithmRunner {
-    const Graph& g_;
-
-public:
-
-    const Graph& g() const {
-        return g_;
-    }
-
-    AlgorithmRunner(Graph& g)
-            : g_(g) {
-
-    }
-
-    template<class Algo, class It>
-    void RunFromIterator(Algo& algo, It begin, It end) {
-        for (auto it = begin; it != end; ++it) {
-            algo(*it);
-        }
-    }
-
-    template<class Algo, class ItVec>
-    void RunFromChunkIterators(Algo& algo, const ItVec& chunk_iterators) {
-        DEBUG("Running from " << chunk_iterators.size() - 1 << "chunks");
-        VERIFY(chunk_iterators.size() > 1);
-#pragma omp parallel for schedule(guided)
-        for (size_t i = 0; i < chunk_iterators.size() - 1; ++i) {
-            RunFromIterator(algo, chunk_iterators[i], chunk_iterators[i + 1]);
-        } DEBUG("Finished");
-    }
-private:
-    DECL_LOGGER("AlgorithmRunner")
-    ;
 };
 
 template<class Graph>
@@ -615,104 +578,6 @@ public:
     }
 
 };
-
-template<class Graph, class ElementType>
-class TwoStepAlgorithmRunner {
-    typedef typename Graph::VertexId VertexId;
-    typedef typename Graph::EdgeId EdgeId;
-
-    const Graph& g_;
-    const bool filter_conjugate_;
-    vector<vector<ElementType>> elements_of_interest_;
-
-    template<class Algo>
-    void ProcessBucket(Algo& algo, const vector<ElementType>& bucket, size_t idx_offset) const {
-        for (ElementType el : bucket) {
-            algo.Process(el, idx_offset++);
-        }
-    }
-
-    template<class Algo>
-    void Process(Algo& algo) const {
-        vector<size_t> cumulative_bucket_sizes;
-        cumulative_bucket_sizes.push_back(0);
-        for (const auto& bucket : elements_of_interest_) {
-            cumulative_bucket_sizes.push_back(cumulative_bucket_sizes.back() + bucket.size());
-        }
-        DEBUG("Preparing for processing");
-        algo.PrepareForProcessing(cumulative_bucket_sizes.back());
-        DEBUG("Processing buckets");
-#pragma omp parallel for schedule(guided)
-        for (size_t i = 0; i < elements_of_interest_.size(); ++i) {
-            ProcessBucket(algo, elements_of_interest_[i], cumulative_bucket_sizes[i]);
-        }
-    }
-
-    template<class Algo>
-    void CountElement(Algo& algo, ElementType el, size_t bucket) {
-        if (filter_conjugate_ && g_.conjugate(el) < el)
-            return;
-        if (algo.IsOfInterest(el))
-            elements_of_interest_[bucket].push_back(el);
-    }
-
-    template<class Algo, class It>
-    void CountAll(Algo& algo, It begin, It end, size_t bucket) {
-        for (auto it = begin; !(it == end); ++it) {
-            CountElement(algo, *it, bucket);
-        }
-    }
-
-public:
-
-    const Graph& g() const {
-        return g_;
-    }
-
-    //conjugate elements are filtered based on ids
-    //should be used only if both conjugate elements are simultaneously either interesting or not
-    //fixme filter_conjugate is redundant
-    TwoStepAlgorithmRunner(Graph& g, bool filter_conjugate)
-            : g_(g),
-              filter_conjugate_(filter_conjugate) {
-
-    }
-
-    template<class Algo, class ItVec>
-    void RunFromChunkIterators(Algo& algo, const ItVec& chunk_iterators) {
-        DEBUG("Started running from " << chunk_iterators.size() - 1 << " chunks");
-        VERIFY(algo.ShouldFilterConjugate() == filter_conjugate_);
-        VERIFY(chunk_iterators.size() > 1);
-        elements_of_interest_.clear();
-        elements_of_interest_.resize(chunk_iterators.size() - 1);
-        DEBUG("Searching elements of interest");
-#pragma omp parallel for schedule(guided)
-        for (size_t i = 0; i < chunk_iterators.size() - 1; ++i) {
-            CountAll(algo, chunk_iterators[i], chunk_iterators[i + 1], i);
-        }
-        DEBUG("Processing");
-        Process(algo);
-        DEBUG("Finished");
-    }
-
-    template<class Algo, class It>
-    void RunFromIterator(Algo& algo, It begin, It end) {
-        RunFromChunkIterators(algo, vector<It> { begin, end });
-    }
-private:
-    DECL_LOGGER("TwoStepAlgorithmRunner")
-    ;
-};
-
-template<class Graph, class AlgoRunner, class Algo>
-void RunVertexAlgorithm(Graph& g, AlgoRunner& runner, Algo& algo, size_t chunk_cnt) {
-    runner.RunFromChunkIterators(algo, ParallelIterationHelper<Graph>(g).VertexChunks(chunk_cnt));
-}
-
-template<class Graph, class AlgoRunner, class Algo>
-void RunEdgeAlgorithm(Graph& g, AlgoRunner& runner, Algo& algo, size_t chunk_cnt) {
-    runner.RunFromChunkIterators(algo, ParallelIterationHelper<Graph>(g).EdgeChunks(chunk_cnt));
-}
 
 }
 
