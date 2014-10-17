@@ -247,19 +247,4 @@ void CheckIndex(vector<string> reads, size_t k) {
     }
 }
 
-struct TmpFolderFixture
-{
-	TmpFolderFixture()
-    {
-        make_dir(tmp_folder);
-    }
-
-    ~TmpFolderFixture()
-    {
-    	//todo check that folder is empty
-    	remove_dir(tmp_folder);
-//        BOOST_TEST_MESSAGE("teardown mass");
-    }
-};
-
 }

@@ -20,6 +20,7 @@
 
 #include "verify.hpp"
 #include "io/ireader.hpp"
+#include "path_helper.hpp"
 #include <memory>
 #include <string>
 #include <set>
@@ -148,6 +149,21 @@ const std::vector<typename MMapT::mapped_type> get_all(const MMapT& from, const 
     }
 	return answer;
 }
+
+struct TmpFolderFixture
+{
+    std::string tmp_folder;
+    TmpFolderFixture(std::string tmp_folder_) :
+        tmp_folder(tmp_folder_)
+    {
+        path::make_dir(tmp_folder);
+    }
+
+    ~TmpFolderFixture()
+    {
+        path::remove_dir(tmp_folder);
+    }
+};
 
 namespace std
 {
