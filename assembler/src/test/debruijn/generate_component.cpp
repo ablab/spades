@@ -4,6 +4,7 @@
 
 #include "graphio.hpp"
 #include "graph_pack.hpp"
+#include "stats/debruijn_stats.hpp"
 
 void create_console_logger() {
     logging::logger *log = logging::create_logger("", logging::L_INFO);
@@ -76,13 +77,14 @@ void Launch(size_t K, string saves_path, size_t start_vertex_int_id,
         blocking_vertices.push_back(element_finder.ReturnVertexId(int_id));
     }
     BlockedComponentFinder<Graph> component_finder(gp.g, blocking_vertices, edge_length_bound);
-    GraphComponent<Graph> component_to_save = component_finder.Find(starting_vertex);
+    GraphComponent<Graph> component_to_save = ComponentCloser<Graph>(gp.g, 0).CloseComponent(component_finder.Find(starting_vertex));
     INFO("Blocked component has " << component_to_save.v_size() << " vertices");
     graphio::ConjugateDataPrinter<Graph> printer(component_to_save);
     graphio::PrintGraphPack(component_out_path, printer, gp);
-//    omnigraph::visualization::WriteComponent<Graph>(gp.g, component_out_path, debruijn_graph::DefaultColorer(gp),
-//                                                    LengthIdGraphLabeler(gp.g));
+    omnigraph::visualization::WriteComponent<Graph>(component_to_save, component_out_path + ".dot", debruijn_graph::stats::DefaultColorer(gp),
+                                                    omnigraph::LengthIdGraphLabeler<Graph>(gp.g));
 }
+
 }
 
 int main(int argc, char** argv) {
