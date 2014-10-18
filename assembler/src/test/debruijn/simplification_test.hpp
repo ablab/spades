@@ -9,6 +9,7 @@
 #include <boost/test/unit_test.hpp>
 #include "test_utils.hpp"
 #include "graph_simplification.hpp"
+#include "stats/debruijn_stats.hpp"
 //#include "repeat_resolving_routine.hpp"
 
 namespace debruijn_graph {
@@ -103,7 +104,8 @@ debruijn::simplification::SimplifInfoContainer standard_simplif_relevant_info() 
     return info.set_read_length(100)
             .set_detected_coverage_bound(10.)
             .set_iteration_count(1)
-            .set_iteration(0);
+            .set_iteration(0)
+            .set_chunk_cnt(10);
 }
 
 void PrintGraph(const Graph & g) {
@@ -254,7 +256,7 @@ BOOST_AUTO_TEST_CASE( ComplexBulgeRemoverOnSimpleBulge ) {
 }
 
 BOOST_AUTO_TEST_CASE( ComplexBulge ) {
-    conj_graph_pack gp(55, tmp_folder, 0);
+    conj_graph_pack gp(55, "tmp", 0);
        graphio::ScanGraphPack("./src/test/debruijn/graph_fragments/complex_bulge/complex_bulge", gp);
 //       OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
 //       licvidator.Licvidate();
@@ -267,7 +269,7 @@ BOOST_AUTO_TEST_CASE( ComplexBulge ) {
 }
 
 BOOST_AUTO_TEST_CASE( BigComplexBulge ) {
-    conj_graph_pack gp(55, tmp_folder, 0);
+    conj_graph_pack gp(55, "tmp", 0);
        graphio::ScanGraphPack("./src/test/debruijn/graph_fragments/big_complex_bulge/big_complex_bulge", gp);
 //       OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
 //       licvidator.Licvidate();
@@ -295,7 +297,7 @@ void FillKmerCoverageWithAvg(const Graph& g, InnerIndex& idx) {
 BOOST_AUTO_TEST_CASE( RelativeCoverageRemover ) {
     typedef graph_pack<ConjugateDeBruijnGraph, runtime_k::RtSeq, 
             KmerStoringEdgeIndex<ConjugateDeBruijnGraph, runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq>, SimpleStoring>> gp_t;
-    gp_t gp(55, tmp_folder, 0);
+    gp_t gp(55, "tmp", 0);
     graphio::ScanGraphPack("./src/test/debruijn/graph_fragments/rel_cov_ec/constructed_graph", gp);
     INFO("Relative coverage component removal:");
     FillKmerCoverageWithAvg(gp.g, gp.index.inner_index());
@@ -305,30 +307,34 @@ BOOST_AUTO_TEST_CASE( RelativeCoverageRemover ) {
 }
 
 BOOST_AUTO_TEST_CASE( ParallelCompressor1 ) {
-    string path = "";
-    size_t graph_size = 0;
-    conj_graph_pack gp(55, tmp_folder, 0);
+    string path = "./src/test/debruijn/graph_fragments/compression/graph";
+    size_t graph_size = 12;
+    conj_graph_pack gp(55, "tmp", 0);
     graphio::ScanGraphPack(path, gp);
     ParallelCompress(gp.g, standard_simplif_relevant_info(), false);
     BOOST_CHECK_EQUAL(gp.g.size(), graph_size);
 }
 
 BOOST_AUTO_TEST_CASE( ParallelTipClipper1 ) {
-    string path = "./src/test/debruijn/graph_fragments/simpliest_tip/simpliest_tip";
-    size_t graph_size = 4;
-    conj_graph_pack gp(55, tmp_folder, 0);
+    string path = "./src/test/debruijn/graph_fragments/tips/graph";
+    size_t graph_size = 12;
+    conj_graph_pack gp(55, "tmp", 0);
     graphio::ScanGraphPack(path, gp);
     ParallelClipTips(gp.g, standard_tc_config().condition, standard_simplif_relevant_info());
     BOOST_CHECK_EQUAL(gp.g.size(), graph_size);
+//    graphio::ConjugateDataPrinter<Graph> printer(gp.g);
+//    graphio::PrintGraphPack("gen_test/graph", printer, gp);
+//    omnigraph::visualization::WriteComponent<Graph>(GraphComponent<Graph>(gp.g), "gen_test/graph.dot", debruijn_graph::stats::DefaultColorer(gp),
+//                                                    omnigraph::LengthIdGraphLabeler<Graph>(gp.g));
 }
 
-BOOST_AUTO_TEST_CASE( ParallelECRemover ) {
-    string path = "";
-    size_t graph_size = 0;
-    conj_graph_pack gp(55, tmp_folder, 0);
-    graphio::ScanGraphPack(path, gp);
-    ParallelEC(gp.g, standard_ec_config().condition, standard_simplif_relevant_info());
-    BOOST_CHECK_EQUAL(gp.g.size(), graph_size);
-}
+//BOOST_AUTO_TEST_CASE( ParallelECRemover ) {
+//    string path = "";
+//    size_t graph_size = 0;
+//    conj_graph_pack gp(55, "tmp", 0);
+//    graphio::ScanGraphPack(path, gp);
+//    ParallelEC(gp.g, standard_ec_config().condition, standard_simplif_relevant_info());
+//    BOOST_CHECK_EQUAL(gp.g.size(), graph_size);
+//}
 
 BOOST_AUTO_TEST_SUITE_END()}

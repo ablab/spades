@@ -32,7 +32,3 @@
 
     return 0;
 }
-
-namespace debruijn_graph {
-	const string tmp_folder = "tmp/";
-}

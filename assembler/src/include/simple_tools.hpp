@@ -150,18 +150,20 @@ const std::vector<typename MMapT::mapped_type> get_all(const MMapT& from, const 
 	return answer;
 }
 
-struct TmpFolderFixture
+class TmpFolderFixture
 {
-    std::string tmp_folder;
-    TmpFolderFixture(std::string tmp_folder_) :
-        tmp_folder(tmp_folder_)
+    std::string tmp_folder_;
+
+public:
+    TmpFolderFixture(std::string tmp_folder = "tmp") :
+        tmp_folder_(tmp_folder)
     {
-        path::make_dir(tmp_folder);
+        path::make_dir(tmp_folder_);
     }
 
     ~TmpFolderFixture()
     {
-        path::remove_dir(tmp_folder);
+        path::remove_dir(tmp_folder_);
     }
 };
 
