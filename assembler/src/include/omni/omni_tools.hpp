@@ -137,9 +137,9 @@ private:
  * Method compresses all vertices which can be compressed.
  */
 template<class Graph>
-bool CompressAllVertices(Graph& g, size_t chunk_cnt = 1) {
+bool CompressAllVertices(Graph& g, bool safe_merging = true, size_t chunk_cnt = 1) {
     SemiParallelAlgorithmRunner<Graph, typename Graph::VertexId> runner(g);
-    Compressor<Graph> compressor(g);
+    Compressor<Graph> compressor(g, safe_merging);
     return RunVertexAlgorithm(g, runner, compressor, chunk_cnt);
 }
 
