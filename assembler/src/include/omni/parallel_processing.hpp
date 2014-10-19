@@ -200,7 +200,7 @@ class SemiParallelEdgeRemovingAlgorithm {
 public:
     SemiParallelEdgeRemovingAlgorithm(Graph& g,
                                       shared_ptr<func::Predicate<EdgeId>> condition,
-                                      function<void(EdgeId)> removal_handler = 0) :
+                                      std::function<void(EdgeId)> removal_handler = 0) :
             g_(g), condition_(condition), edge_remover_(g, removal_handler) {
     }
 
