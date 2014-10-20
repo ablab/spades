@@ -55,13 +55,13 @@ void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
 //todo return this functionality
 //        INFO("Removed " << removed << " edges");
 
-    size_t low_threshold = gp.ginfo.trusted_bound();
-    if (low_threshold) {
+    double low_threshold = gp.ginfo.trusted_bound();
+    if (math::ge(low_threshold, 0.0)) {
       EdgeRemover<Graph> remover(gp.g);
       INFO("Removing all the edges having coverage " << low_threshold << " and less");
       size_t cnt = 0;
       for (auto it = gp.g.SmartEdgeBegin(); !it.IsEnd(); ++it)
-        if (math::le(gp.g.coverage(*it), (double)low_threshold)) {
+        if (math::le(gp.g.coverage(*it), low_threshold)) {
           remover.DeleteEdge(*it);
           cnt += 1;
         }

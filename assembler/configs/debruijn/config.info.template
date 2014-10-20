@@ -124,6 +124,8 @@ gap_closer
 kmer_coverage_model {
     probability_threshold 0.05
     strong_probability_threshold 0.999
+    use_coverage_threshold false
+    coverage_threshold 10.0
 }
 
 pacbio_processor

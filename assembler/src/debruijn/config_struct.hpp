@@ -492,6 +492,8 @@ struct debruijn_config {
     struct kmer_coverage_model {
         double probability_threshold;
         double strong_probability_threshold;
+        double coverage_threshold;
+        bool use_coverage_threshold;
     };
 
     typedef std::map<info_printer_pos, info_printer> info_printers_t;

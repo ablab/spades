@@ -374,6 +374,8 @@ void load(debruijn_config::kmer_coverage_model& kcm,
   using config_common::load;
   load(kcm.probability_threshold, pt, "probability_threshold");
   load(kcm.strong_probability_threshold, pt, "strong_probability_threshold");
+  load(kcm.coverage_threshold, pt, "coverage_threshold");
+  load(kcm.use_coverage_threshold, pt, "use_coverage_threshold");
 }
 
 void load(debruijn_config::dataset& ds,

@@ -45,7 +45,7 @@ bool GenomicInfo::Load(const std::string &filename) {
 
     ec_bound_ = node["ec bound"].as<double>(0);
     estimated_mean_ = node["estimated mean"].as<double>(0);
-    trusted_bound_ = node["trusted bound"].as<size_t>(0);
+    trusted_bound_ = node["trusted bound"].as<double>(0);
     genome_size_ = node["genome size"].as<size_t>(0);
     cov_histogram_ = node["coverage histogram"].as<std::vector<size_t> >(std::vector<size_t>());
 
@@ -101,9 +101,17 @@ void GenomicInfoFiller::run(conj_graph_pack &gp, const char*) {
         if (CovModel.converged()) {
             gp.ginfo.set_estimated_mean((double)CovModel.GetMeanCoverage());
             INFO("Mean coverage was calculated as " << gp.ginfo.estimated_mean());
+            if (cfg::get().kcm.use_coverage_threshold) {
+              double coef = (cfg::get().ds.aRL() - cfg::get().K + 1) / cfg::get().ds.aRL();
+              if (coef < 0)
+                coef = (cfg::get().ds.RL() - cfg::get().K + 1) / cfg::get().ds.RL();
+              gp.ginfo.set_trusted_bound(cfg::get().kcm.coverage_threshold == 0.0 ?
+                                         CovModel.GetLowThreshold() :
+                                         cfg::get().kcm.coverage_threshold * coef);
+            }
         } else
             INFO("Failed to estimate mean coverage");
-        // ginfo.set.trusted_bound(CovModel.GetLowThreshold());
     }
     INFO("EC coverage threshold value was calculated as " << gp.ginfo.ec_bound());
+    INFO("Trusted kmer low bound: " << gp.ginfo.trusted_bound());
 }
