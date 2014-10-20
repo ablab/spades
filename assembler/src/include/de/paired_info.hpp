@@ -437,6 +437,10 @@ class PairedInfoStorage {
         size_ = 0;
     }
 
+    size_t Size() const {
+        return size_;
+    }
+
     // Usual implementation, the same as in the old paired index
     std::vector<PairInfo<EdgeId> > GetEdgeInfo(EdgeId edge) const {
         typename IndexDataType::const_iterator iter = index_.find(edge);

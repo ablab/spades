@@ -107,6 +107,7 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
           index_(index) {}
 
     virtual size_t FindJumpEdges(EdgeId e, std::set<EdgeId>& result, int min_dist = 0, int max_dist = 100000000, size_t min_len = 0) {
+        VERIFY(index_.Size() != 0);
         result.clear();
 
         if (index_.contains(e)) {
@@ -157,6 +158,7 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
     }
 
     virtual void CountDistances(EdgeId e1, EdgeId e2, vector<int>& dist, vector<double>& w) const {
+        VERIFY(index_.Size() != 0);
         if (e1 == e2)
             return;
 
@@ -181,6 +183,7 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
 
     virtual double CountPairedInfo(EdgeId e1, EdgeId e2, int distance,
                                    bool from_interval = false) const {
+        VERIFY(index_.Size() != 0);
         double weight = 0.0;
         auto pairs = index_.GetEdgePairInfo(e1, e2);
         auto cpairs = index_.GetEdgePairInfo(g_.conjugate(e2), g_.conjugate(e1));
@@ -211,6 +214,7 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
     }
 
     virtual double CountPairedInfo(EdgeId e1, EdgeId e2, size_t dist_min, size_t dist_max) const {
+        VERIFY(index_.Size() != 0);
         double weight = 0.0;
         auto pairs = index_.GetEdgePairInfo(e1, e2);
         auto cpairs = index_.GetEdgePairInfo(g_.conjugate(e2), g_.conjugate(e1));
