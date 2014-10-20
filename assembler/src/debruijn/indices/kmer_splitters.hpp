@@ -111,19 +111,25 @@ class DeBruijnKMerSplitter : public RtSeqKMerSplitter {
   DECL_LOGGER("DeBruijnKMerSplitter");
 };
 
+struct ReadStatistics {
+  size_t reads_;
+  size_t max_read_length_;
+  size_t bases_;
+};
+
 template<class Read, class KmerFilter>
 class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
   io::ReadStreamList<Read> &streams_;
   io::SingleStream *contigs_;
 
   template<class ReadStream>
-  std::pair<size_t, size_t>
+  ReadStatistics
   FillBufferFromStream(ReadStream& stream,
                        KMerBuffer &tmp_entries,
                        unsigned num_files, size_t cell_size) const;
 
-  size_t rl_;
-
+  ReadStatistics rs_;
+  
  public:
   DeBruijnReadKMerSplitter(const std::string &work_dir,
                            unsigned K, uint32_t seed,
@@ -131,30 +137,31 @@ class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
                            io::SingleStream* contigs_stream = 0,
                            size_t read_buffer_size = 0)
       : DeBruijnKMerSplitter<KmerFilter>(work_dir, K, KmerFilter(), read_buffer_size, seed),
-        streams_(streams), contigs_(contigs_stream), rl_(0) {
+      streams_(streams), contigs_(contigs_stream), rs_({0 ,0 ,0}) {
   }
 
   virtual path::files_t Split(size_t num_files);
 
-  size_t read_length() const { return rl_; }
+  size_t read_length() const { return rs_.max_read_length_; }
 };
 
 template<class Read, class KmerFilter> template<class ReadStream>
-std::pair<size_t, size_t>
+ReadStatistics
 DeBruijnReadKMerSplitter<Read, KmerFilter>::FillBufferFromStream(ReadStream &stream,
                                                      KMerBuffer &buffer,
                                                      unsigned num_files, size_t cell_size) const {
   typename ReadStream::ReadT r;
-  size_t reads = 0, kmers = 0, rl = 0;
+  size_t reads = 0, kmers = 0, rl = 0, bases = 0;
 
   while (!stream.eof() && kmers < num_files * cell_size) {
     stream >> r;
     rl = std::max(rl, r.size());
     reads += 1;
+    bases += r.size();
 
     kmers += this->FillBufferFromSequence(r.sequence(), buffer, num_files);
   }
-  return std::make_pair(reads, rl);
+  return { reads, rl, bases };
 }
 
 template<class Read, class KmerFilter>
@@ -196,20 +203,21 @@ path::files_t DeBruijnReadKMerSplitter<Read, KmerFilter>::Split(size_t num_files
     entry.resize(num_files, RtSeqKMerVector(this->K_, (size_t) (1.1 * (double) cell_size)));
   }
 
-  size_t counter = 0, rl = 0, n = 15;
+  size_t counter = 0, rl = 0, bases = 0, n = 15;
   streams_.reset();
   while (!streams_.eof()) {
-#   pragma omp parallel for num_threads(nthreads) reduction(+ : counter) shared(rl)
+#   pragma omp parallel for num_threads(nthreads) reduction(+ : counter) reduction(+ : bases) shared(rl)
     for (size_t i = 0; i < nthreads; ++i) {
-      std::pair<size_t, size_t> stats = FillBufferFromStream(streams_[i], tmp_entries[i], (unsigned) num_files, cell_size);
-      counter += stats.first;
+      ReadStatistics stats = FillBufferFromStream(streams_[i], tmp_entries[i], (unsigned) num_files, cell_size);
+      counter += stats.reads_;
+      bases += stats.bases_;
 
       // There is no max reduction in C/C++ OpenMP... Only in FORTRAN :(
 #     pragma omp flush(rl)
-      if (stats.second > rl)
+      if (stats.max_read_length_ > rl)
 #     pragma omp critical
       {
-        rl = std::max(rl, stats.second);
+        rl = std::max(rl, stats.max_read_length_);
       }
     }
 
@@ -234,7 +242,8 @@ path::files_t DeBruijnReadKMerSplitter<Read, KmerFilter>::Split(size_t num_files
   }
 
   INFO("Used " << counter << " reads. Maximum read length " << rl);
-  rl_ = rl;
+  INFO("Average read length " << 1.0 * bases / counter);
+  rs_ = { counter, rl, bases };
 
   return out;
 }
