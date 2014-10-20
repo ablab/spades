@@ -81,8 +81,9 @@ void Launch(size_t K, string saves_path, size_t start_vertex_int_id,
     INFO("Blocked component has " << component_to_save.v_size() << " vertices");
     graphio::ConjugateDataPrinter<Graph> printer(component_to_save);
     graphio::PrintGraphPack(component_out_path, printer, gp);
+    gp.edge_pos.Attach();
     omnigraph::visualization::WriteComponent<Graph>(component_to_save, component_out_path + ".dot", debruijn_graph::stats::DefaultColorer(gp),
-                                                    omnigraph::LengthIdGraphLabeler<Graph>(gp.g));
+                                                    omnigraph::DefaultLabeler<Graph>(gp.g, gp.edge_pos));
 }
 
 }

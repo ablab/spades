@@ -294,6 +294,7 @@ void FillKmerCoverageWithAvg(const Graph& g, InnerIndex& idx) {
     }
 }
 
+//todo review
 BOOST_AUTO_TEST_CASE( RelativeCoverageRemover ) {
     typedef graph_pack<ConjugateDeBruijnGraph, runtime_k::RtSeq, 
             KmerStoringEdgeIndex<ConjugateDeBruijnGraph, runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq>, SimpleStoring>> gp_t;
@@ -304,6 +305,24 @@ BOOST_AUTO_TEST_CASE( RelativeCoverageRemover ) {
     gp.flanking_cov.Fill(gp.index.inner_index());
     debruijn::simplification::RemoveRelativelyLowCoverageComponents(gp.g, gp.flanking_cov, standard_rcc_config(), standard_simplif_relevant_info());
     BOOST_CHECK_EQUAL(gp.g.size(), 12u/*28u*/);
+}
+
+BOOST_AUTO_TEST_CASE( RelativeCoverageRemover1 ) {
+    string path = "./src/test/debruijn/graph_fragments/ecs/graph";
+    size_t graph_size = 0;
+    conj_graph_pack gp(55, "tmp", 0);
+    graphio::ScanGraphPack(path, gp);
+    ParallelEC(gp.g, standard_ec_config().condition, standard_simplif_relevant_info());
+    BOOST_CHECK_EQUAL(gp.g.size(), graph_size);
+}
+
+BOOST_AUTO_TEST_CASE( RelativeCoverageRemover2 ) {
+    string path = "./src/test/debruijn/graph_fragments/ecs/graph";
+    size_t graph_size = 0;
+    conj_graph_pack gp(55, "tmp", 0);
+    graphio::ScanGraphPack(path, gp);
+    ParallelEC(gp.g, standard_ec_config().condition, standard_simplif_relevant_info());
+    BOOST_CHECK_EQUAL(gp.g.size(), graph_size);
 }
 
 BOOST_AUTO_TEST_CASE( ParallelCompressor1 ) {
@@ -322,19 +341,33 @@ BOOST_AUTO_TEST_CASE( ParallelTipClipper1 ) {
     graphio::ScanGraphPack(path, gp);
     ParallelClipTips(gp.g, standard_tc_config().condition, standard_simplif_relevant_info());
     BOOST_CHECK_EQUAL(gp.g.size(), graph_size);
-//    graphio::ConjugateDataPrinter<Graph> printer(gp.g);
-//    graphio::PrintGraphPack("gen_test/graph", printer, gp);
-//    omnigraph::visualization::WriteComponent<Graph>(GraphComponent<Graph>(gp.g), "gen_test/graph.dot", debruijn_graph::stats::DefaultColorer(gp),
-//                                                    omnigraph::LengthIdGraphLabeler<Graph>(gp.g));
 }
 
-//BOOST_AUTO_TEST_CASE( ParallelECRemover ) {
-//    string path = "";
-//    size_t graph_size = 0;
-//    conj_graph_pack gp(55, "tmp", 0);
-//    graphio::ScanGraphPack(path, gp);
-//    ParallelEC(gp.g, standard_ec_config().condition, standard_simplif_relevant_info());
-//    BOOST_CHECK_EQUAL(gp.g.size(), graph_size);
-//}
+BOOST_AUTO_TEST_CASE( ParallelECRemover ) {
+    string path = "./src/test/debruijn/graph_fragments/ecs/graph";
+    size_t graph_size = 0;
+    conj_graph_pack gp(55, "tmp", 0);
+    graphio::ScanGraphPack(path, gp);
+    ParallelEC(gp.g, standard_ec_config().condition, standard_simplif_relevant_info());
+    BOOST_CHECK_EQUAL(gp.g.size(), graph_size);
+}
+
+BOOST_AUTO_TEST_CASE( ComplexTipRemover ) {
+    string path = "./src/test/debruijn/graph_fragments/ecs/graph";
+    size_t graph_size = 0;
+    conj_graph_pack gp(55, "tmp", 0);
+    graphio::ScanGraphPack(path, gp);
+    ParallelEC(gp.g, standard_ec_config().condition, standard_simplif_relevant_info());
+    BOOST_CHECK_EQUAL(gp.g.size(), graph_size);
+}
+
+BOOST_AUTO_TEST_CASE( ComplexTipRemover2 ) {
+    string path = "./src/test/debruijn/graph_fragments/ecs/graph";
+    size_t graph_size = 0;
+    conj_graph_pack gp(55, "tmp", 0);
+    graphio::ScanGraphPack(path, gp);
+    ParallelEC(gp.g, standard_ec_config().condition, standard_simplif_relevant_info());
+    BOOST_CHECK_EQUAL(gp.g.size(), graph_size);
+}
 
 BOOST_AUTO_TEST_SUITE_END()}
