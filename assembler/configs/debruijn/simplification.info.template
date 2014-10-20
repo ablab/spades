@@ -267,7 +267,7 @@ fast_simp
     presimp 
     {
         enabled true
-        parallel true
+        parallel false
     }
 
     persistent_cycle_iterators true
