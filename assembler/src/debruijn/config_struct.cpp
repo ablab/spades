@@ -324,20 +324,6 @@ inline void load(debruijn_config::ambiguous_distance_estimator& amde,
     load(amde.relative_seq_threshold,		pt,		"relative_seq_threshold");
 }
 
-void load(debruijn_config::coverage_based_rr& cbrr,
-          boost::property_tree::ptree const& pt, bool /*complete*/) {
-  using config_common::load;
-
-    load(cbrr.coverage_threshold_one_list, pt, "coverage_threshold_one_list");
-    load(cbrr.coverage_threshold_match, pt, "coverage_threshold_match");
-    load(cbrr.coverage_threshold_global, pt, "coverage_threshold_global");
-    load(cbrr.tandem_ratio_lower_threshold, pt, "tandem_ratio_lower_threshold");
-    load(cbrr.tandem_ratio_upper_threshold, pt, "tandem_ratio_upper_threshold");
-    load(cbrr.repeat_length_upper_threshold, pt, "repeat_length_upper_threshold");
-
-}
-
-
 void load(debruijn_config::pacbio_processor& pb,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
@@ -585,10 +571,6 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   load(cfg.use_additional_contigs, pt, "use_additional_contigs");
   load(cfg.use_unipaths, pt, "use_unipaths");
 
-  load(cfg.coverage_based_rr_on, pt, "coverage_based_rr_on");
-  if (cfg.coverage_based_rr_on) {
-    load (cfg.cbrr, pt, "coverage_based_rr");
-  }
   load(cfg.pb, pt, "pacbio_processor");
 
   load(cfg.additional_contigs, pt, "additional_contigs");
@@ -597,7 +579,6 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   load(cfg.single_reads_rr, pt, "single_reads_rr");
   cfg.use_single_reads = false;
 
-  load(cfg.divide_clusters, pt, "divide_clusters");
   load(cfg.mismatch_careful, pt, "mismatch_careful");
   load(cfg.correct_mismatches, pt, "correct_mismatches");
   load(cfg.paired_info_statistics, pt, "paired_info_statistics");
@@ -669,8 +650,6 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
       cfg.pe_params.param_set.scaffolder_options.on = false;
   }
   load(cfg.avoid_rc_connections, pt, "avoid_rc_connections");
-
-  load(cfg.mask_all, pt, "mask_all");
 
   load(cfg.con, pt, "construction");
   load(cfg.gc, pt, "gap_closer");

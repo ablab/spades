@@ -18,7 +18,6 @@ tmp_dir	              spades_tmp/
 
 main_iteration  true
 additional_contigs	tmp_contigs.fasta
-coverage_based_rr_on	false
 load_from         latest/saves/ ; tmp or latest 
 
 
@@ -65,9 +64,6 @@ use_additional_contigs false
 ; use unipaths as additional contigs instead of just graph edges
 use_unipaths false 
 
-; set it true to separate the clusters after de stage
-divide_clusters false
-
 ;enables mismatch careful mode (primary changes some simplification settings)
 mismatch_careful    false
 
@@ -94,7 +90,6 @@ max_repeat_length_sc 8000
 resolving_mode path_extend
 
 use_scaffolder  true
-mask_all	true
 
 andrey_params {
 	#include "path_extend/pe_params.info"

@@ -516,18 +516,6 @@ struct debruijn_config {
     bool use_unipaths;
     std::string additional_contigs;
 
-    bool coverage_based_rr_on;
-    struct coverage_based_rr {
-        double coverage_threshold_one_list;
-        double coverage_threshold_match;
-        double coverage_threshold_global;
-        double tandem_ratio_lower_threshold;
-        double tandem_ratio_upper_threshold;
-        double repeat_length_upper_threshold;
-    };
-
-    coverage_based_rr cbrr;
-
     std::string load_from;
 
     std::string entry_point;
@@ -535,7 +523,6 @@ struct debruijn_config {
     bool rr_enable;
     single_read_resolving_mode single_reads_rr;
     bool use_single_reads;
-    bool divide_clusters;
 
     bool mismatch_careful;
     bool correct_mismatches;
@@ -574,7 +561,6 @@ struct debruijn_config {
     ambiguous_distance_estimator amb_de;
     pacbio_processor pb;
     bool use_scaffolder;
-    bool mask_all;
     dataset ds;
     position_handler pos;
     gap_closer gc;
