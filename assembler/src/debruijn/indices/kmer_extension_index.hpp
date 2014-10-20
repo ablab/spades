@@ -357,7 +357,7 @@ public:
 
 public:
     template<class Streams>
-    size_t BuildExtensionIndexFromStream(
+    ReadStatistics BuildExtensionIndexFromStream(
             IndexT &index, Streams &streams, io::SingleStream* contigs_stream = 0,
             size_t read_buffer_size = 0) const {
         unsigned nthreads = (unsigned) streams.size();
@@ -385,7 +385,7 @@ public:
             FillExtensionsFromIndex(counter.GetMergedKMersFname(i), index);
         INFO("Building k-mer extensions from k+1-mers finished.");
 
-        return splitter.read_length();
+        return splitter.stats();
     }
 
 private:

@@ -20,6 +20,7 @@ struct convert<io::SequencingLibrary<debruijn_graph::debruijn_config::DataSetDat
       // Now, save the remaining stuff
       auto const& data = rhs.data();
       node["read length"]                = data.read_length;
+      node["average read length"]        = data.avg_read_length;
       node["insert size mean"]           = data.mean_insert_size;
       node["insert size deviation"]      = data.insert_size_deviation;
       node["insert size left quantile"]  = data.insert_size_left_quantile;
@@ -40,7 +41,8 @@ struct convert<io::SequencingLibrary<debruijn_graph::debruijn_config::DataSetDat
       // Now load the remaining stuff
       auto& data = rhs.data();
       data.read_length                = node["read length"].as<size_t>(0);
-      data.mean_insert_size           = node["insert size mean"].as<double>(0);
+      data.avg_read_length            = node["average read length"].as<double>(0.0);
+      data.mean_insert_size           = node["insert size mean"].as<double>(0.0);
       data.insert_size_deviation      = node["insert size deviation"].as<double>(0.0);
       data.insert_size_left_quantile  = node["insert size left quantile"].as<double>(0.0);
       data.insert_size_right_quantile = node["insert size right quantile"].as<double>(0.0);
@@ -62,6 +64,7 @@ struct convert<debruijn_graph::debruijn_config::dataset> {
 
       node["reads"] = rhs.reads;
       node["max read length"] = rhs.RL();
+      node["avg read length"] = rhs.aRL();
       node["average coverage"] = rhs.avg_coverage();
 
       return node;
@@ -69,6 +72,7 @@ struct convert<debruijn_graph::debruijn_config::dataset> {
 
   static bool decode(const Node& node, debruijn_graph::debruijn_config::dataset &rhs) {
       rhs.set_RL(node["max read length"].as<size_t>(0));
+      rhs.set_aRL(node["avg read length"].as<double>(0.0));
       rhs.set_avg_coverage(node["average coverage"].as<double>(0.0));
       rhs.reads = node["reads"];
 
@@ -97,16 +101,19 @@ void load_lib_data(const std::string& prefix) {
   // Now, infer the common parameters
   const auto& reads = cfg::get().ds.reads;
   size_t max_rl = 0;
-  double avg_cov = 0.0;
+  double avg_cov = 0.0, avg_rl;
   for (auto it = reads.library_begin(), et = reads.library_end(); it != et; ++it) {
       auto const& data = it->data();
       if (it->is_graph_contructable())
           max_rl = std::max(max_rl, data.read_length);
       if (data.average_coverage > 0)
           avg_cov = data.average_coverage;
+      if (data.avg_read_length > 0)
+          avg_rl = data.avg_read_length;
   }
 
   cfg::get_writable().ds.set_RL(max_rl);
+  cfg::get_writable().ds.set_aRL(avg_rl);
   cfg::get_writable().ds.set_avg_coverage(avg_cov);
 }
 

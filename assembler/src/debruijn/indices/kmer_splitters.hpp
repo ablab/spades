@@ -143,6 +143,7 @@ class DeBruijnReadKMerSplitter : public DeBruijnKMerSplitter<KmerFilter> {
   virtual path::files_t Split(size_t num_files);
 
   size_t read_length() const { return rs_.max_read_length_; }
+  ReadStatistics stats() const { return rs_; }
 };
 
 template<class Read, class KmerFilter> template<class ReadStream>

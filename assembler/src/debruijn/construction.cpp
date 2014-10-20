@@ -25,12 +25,14 @@ void construct_graph(io::ReadStreamList<Read>& streams,
     debruijn_config::construction params = cfg::get().con;
     params.early_tc.enable &= !cfg::get().gap_closer_enable;
 
-    size_t rl = ConstructGraphWithCoverage(params, streams, gp.g,
-                                           gp.index, gp.flanking_cov, contigs_stream);
+    ReadStatistics stats = ConstructGraphWithCoverage(params, streams, gp.g,
+                                                      gp.index, gp.flanking_cov, contigs_stream);
+    size_t rl = stats.max_read_length_;
 
     if (!cfg::get().ds.RL()) {
         INFO("Figured out: read length = " << rl);
         cfg::get_writable().ds.set_RL(rl);
+        cfg::get_writable().ds.set_aRL(1.0 * stats.bases_ / stats.reads_);
     } else if (cfg::get().ds.RL() != rl)
         WARN("In datasets.info, wrong RL is specified: " << cfg::get().ds.RL() << ", not " << rl);
 }

@@ -385,6 +385,7 @@ struct debruijn_config {
 
     struct DataSetData {
         size_t read_length;
+        double avg_read_length;
         double mean_insert_size;
         double insert_size_deviation;
         double insert_size_left_quantile;
@@ -401,7 +402,7 @@ struct debruijn_config {
         std::string single_read_prefix;
         size_t thread_num;
 
-        DataSetData(): read_length(0),
+        DataSetData(): read_length(0), avg_read_length(0.0),
                 mean_insert_size(0.0),
                 insert_size_deviation(0.0),
                 insert_size_left_quantile(0.0),
@@ -419,10 +420,19 @@ struct debruijn_config {
 
         size_t max_read_length;
         double average_coverage;
+        double average_read_length;
 
         size_t RL() const { return max_read_length; }
         void set_RL(size_t RL) {
             max_read_length = RL;
+        }
+
+        double aRL() const { return average_read_length; }
+        void set_aRL(double aRL) {
+            average_read_length = aRL;
+            for (size_t i = 0; i < reads.lib_count(); ++i) {
+                reads[i].data().avg_read_length = aRL;
+            }
         }
 
         double avg_coverage() const { return average_coverage; }
