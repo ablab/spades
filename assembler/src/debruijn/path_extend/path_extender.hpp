@@ -606,7 +606,7 @@ private:
     void GrowAll(PathContainer& paths, PathContainer& usedPaths, PathContainer * result) {
         cover_map_.Clear();
         for (size_t i = 0; i < paths.size(); ++i) {
-            VERBOSE_POWER2(i, "Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size() << "%)");
+            VERBOSE_POWER_T2(i, 100, "Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size() << "%)");
             if (paths.size() > 10 && i % (paths.size() / 10 + 1) == 0) {
                 INFO("Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size() << "%)");
             }
