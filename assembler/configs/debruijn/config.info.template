@@ -91,7 +91,7 @@ resolving_mode path_extend
 
 use_scaffolder  true
 
-andrey_params {
+path_extend_params {
 	#include "path_extend/pe_params.info"
 }
 

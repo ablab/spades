@@ -641,7 +641,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   }
 
   cfg.pe_params.name = cfg.ds.single_cell ? "singlecell" : "multicell";
-  load(cfg.pe_params, pt, "andrey_params");
+  load(cfg.pe_params, pt, "path_extend_params");
   if (!cfg.developer_mode) {
       cfg.pe_params.debug_output = false;
       cfg.pe_params.viz.DisableAll();
