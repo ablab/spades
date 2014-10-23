@@ -606,6 +606,65 @@ bool ParallelEC(Graph& g,
     return true;
 }
 
+template<class Graph>
+class SmartIteratorsHolder {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::VertexIt VertexIt;
+    typedef omnigraph::ObservableGraph<VertexId, EdgeId, VertexIt> ObservableGraphT;
+    typedef omnigraph::SmartEdgeIterator<ObservableGraphT, omnigraph::CoverageComparator<Graph>> CoverageOrderIteratorT;
+    typedef omnigraph::SmartEdgeIterator<ObservableGraphT, omnigraph::LengthComparator<Graph>> LengthOrderIteratorT;
+    const Graph& g_;
+    const bool persistent_;
+    std::shared_ptr<LengthOrderIteratorT> tip_smart_it_;
+    std::shared_ptr<CoverageOrderIteratorT> bulge_smart_it_;
+    std::shared_ptr<CoverageOrderIteratorT> ec_smart_it_;
+
+//    SmartIteratorsHolder(const LengthOrderIteratorT& tip_smart_it_,
+//                         const CoverageOrderIteratorT& bulge_smart_it_,
+//                         const CoverageOrderIteratorT& ec_smart_it_) :
+//        tip_smart_it(tip_smart_it_),
+//        bulge_smart_it(bulge_smart_it_),
+//        ec_smart_it(ec_smart_it_) {
+//    }
+public:
+    SmartIteratorsHolder(const Graph& g, bool persistent) : g_(g), persistent_(persistent) {
+    }
+
+    std::shared_ptr<LengthOrderIteratorT> tip_smart_it() {
+        if (tip_smart_it_)
+            return tip_smart_it_;
+        auto answer = make_shared<LengthOrderIteratorT>(g_, omnigraph::LengthComparator<Graph>(g_));
+        if (persistent_)
+            tip_smart_it_ = answer;
+        return answer;
+}
+
+    std::shared_ptr<CoverageOrderIteratorT> bulge_smart_it() {
+        if (bulge_smart_it_)
+            return bulge_smart_it_;
+        auto answer = make_shared<CoverageOrderIteratorT>(g_, omnigraph::CoverageComparator<Graph>(g_));
+        if (persistent_)
+            bulge_smart_it_ = answer;
+        return answer;
+    }
+
+    std::shared_ptr<CoverageOrderIteratorT> ec_smart_it() {
+        if (ec_smart_it_)
+            return ec_smart_it_;
+        auto answer = make_shared<CoverageOrderIteratorT>(g_, omnigraph::CoverageComparator<Graph>(g_));
+        if (persistent_)
+            ec_smart_it_ = answer;
+        return answer;
+    }
+
+    void ResetIterators() {
+        tip_smart_it_ = 0;
+        ec_smart_it_ = 0;
+        bulge_smart_it_ = 0;
+    }
+};
+
 inline
 void NonParallelPreSimplification(conj_graph_pack& gp,
                        const debruijn_config::simplification::presimplification& presimp,
@@ -741,6 +800,9 @@ void PostSimplification(conj_graph_pack& gp,
 
     INFO("PROCEDURE == Post simplification");
     size_t iteration = 0;
+
+    SmartIteratorsHolder<Graph> iterators_holder(gp.g, cfg::get().simp.persistent_cycle_iterators);
+
     bool enable_flag = true;
     while (enable_flag) {
         enable_flag = false;
@@ -755,12 +817,12 @@ void PostSimplification(conj_graph_pack& gp,
                                                  info,
                                                  iteration);
 
-        enable_flag |= ClipTips(gp.g, cfg::get().simp.tc,
+        enable_flag |= ClipTips(gp.g, *iterators_holder.tip_smart_it(), cfg::get().simp.tc,
                                               info,
                                               cfg::get().graph_read_corr.enable ?
                                                       WrapWithProjectionCallback(gp, removal_handler) : removal_handler);
 
-        enable_flag |= RemoveBulges(gp.g, cfg::get().simp.br, 0, removal_handler);
+        enable_flag |= RemoveBulges(gp.g, *iterators_holder.bulge_smart_it(), cfg::get().simp.br, 0, removal_handler);
 
         enable_flag |= RemoveComplexBulges(gp.g, cfg::get().simp.cbr, iteration);
 
@@ -787,65 +849,6 @@ void PostSimplification(conj_graph_pack& gp,
 //    }
 //    CompressAllVertices(graph);
 //}
-
-template<class Graph>
-class SmartIteratorsHolder {
-    typedef typename Graph::EdgeId EdgeId;
-    typedef typename Graph::VertexId VertexId;
-    typedef typename Graph::VertexIt VertexIt;
-    typedef omnigraph::ObservableGraph<VertexId, EdgeId, VertexIt> ObservableGraphT;
-    typedef omnigraph::SmartEdgeIterator<ObservableGraphT, omnigraph::CoverageComparator<Graph>> CoverageOrderIteratorT;
-    typedef omnigraph::SmartEdgeIterator<ObservableGraphT, omnigraph::LengthComparator<Graph>> LengthOrderIteratorT;
-    const Graph& g_;
-    const bool persistent_;
-    std::shared_ptr<LengthOrderIteratorT> tip_smart_it_;
-    std::shared_ptr<CoverageOrderIteratorT> bulge_smart_it_;
-    std::shared_ptr<CoverageOrderIteratorT> ec_smart_it_;
-
-//    SmartIteratorsHolder(const LengthOrderIteratorT& tip_smart_it_,
-//                         const CoverageOrderIteratorT& bulge_smart_it_,
-//                         const CoverageOrderIteratorT& ec_smart_it_) :
-//        tip_smart_it(tip_smart_it_),
-//        bulge_smart_it(bulge_smart_it_),
-//        ec_smart_it(ec_smart_it_) {
-//    }
-public:
-    SmartIteratorsHolder(const Graph& g, bool persistent) : g_(g), persistent_(persistent) {
-    }
-
-    std::shared_ptr<LengthOrderIteratorT> tip_smart_it() {
-        if (tip_smart_it_)
-            return tip_smart_it_;
-        auto answer = make_shared<LengthOrderIteratorT>(g_, omnigraph::LengthComparator<Graph>(g_));
-        if (persistent_)
-            tip_smart_it_ = answer;
-        return answer;
-}
-
-    std::shared_ptr<CoverageOrderIteratorT> bulge_smart_it() {
-        if (bulge_smart_it_)
-            return bulge_smart_it_;
-        auto answer = make_shared<CoverageOrderIteratorT>(g_, omnigraph::CoverageComparator<Graph>(g_));
-        if (persistent_)
-            bulge_smart_it_ = answer;
-        return answer;
-    }
-
-    std::shared_ptr<CoverageOrderIteratorT> ec_smart_it() {
-        if (ec_smart_it_)
-            return ec_smart_it_;
-        auto answer = make_shared<CoverageOrderIteratorT>(g_, omnigraph::CoverageComparator<Graph>(g_));
-        if (persistent_)
-            ec_smart_it_ = answer;
-        return answer;
-    }
-
-    void ResetIterators() {
-        tip_smart_it_ = 0;
-        ec_smart_it_ = 0;
-        bulge_smart_it_ = 0;
-    }
-};
 
 inline
 void SimplificationCycle(conj_graph_pack& gp,

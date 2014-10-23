@@ -321,7 +321,8 @@ public:
 
     //no conjugate copies here!
     bool Process(EdgeId e, size_t /*idx*/) {
-        handler_f_(e);
+        if (handler_f_)
+            handler_f_(e);
         g_.FireDeleteEdge(e);
         UnlinkEdge(e);
         helper_.DeleteUnlinkedEdge(e);
