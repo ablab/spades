@@ -232,6 +232,7 @@ class CriticalEdgeMarker {
         if (g_.OutgoingEdgeCount(v) > 0) {
             auto max_cov_it =
                     std::max_element(g_.out_begin(v), g_.out_end(v), CoverageComparator<Graph>(g_));
+            DEBUG("Marking edge " << g_.str(*max_cov_it));
             edge_marker_.mark(*max_cov_it);
         }
     }
@@ -267,7 +268,8 @@ public:
             }
         }
     }
-
+private:
+    DECL_LOGGER("CriticalEdgeMarker");
 };
 
 template<class Graph>
@@ -323,6 +325,7 @@ public:
     bool Process(EdgeId e, size_t /*idx*/) {
         if (handler_f_)
             handler_f_(e);
+        DEBUG("Removing edge " << g_.str(e));
         g_.FireDeleteEdge(e);
         UnlinkEdge(e);
         helper_.DeleteUnlinkedEdge(e);
@@ -348,7 +351,8 @@ public:
 //            ++to_delete;
 //        }
 //    }
-
+private:
+    DECL_LOGGER("ParallelLowCoverageFunctor");
 };
 
 template<class Graph>

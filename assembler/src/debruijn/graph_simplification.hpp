@@ -603,6 +603,8 @@ bool ParallelEC(Graph& g,
     critical_marker.ClearMarks();
 
     ParallelCompress(g, info);
+    //called in parallel compress
+    //CleanGraph(g);
     return true;
 }
 

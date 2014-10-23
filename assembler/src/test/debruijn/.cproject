@@ -26,6 +26,7 @@
 									<listOptionValue builtIn="false" value="../../../include"/>
 									<listOptionValue builtIn="false" value="../../../debruijn"/>
 									<listOptionValue builtIn="false" value="../../../ext/include"/>
+									<listOptionValue builtIn="false" value="../../../../ext/include"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.779806316" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
@@ -36,6 +37,7 @@
 									<listOptionValue builtIn="false" value="../../../include"/>
 									<listOptionValue builtIn="false" value="../../../debruijn"/>
 									<listOptionValue builtIn="false" value="../../../ext/include"/>
+									<listOptionValue builtIn="false" value="../../../../ext/include"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.878423698" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__GXX_EXPERIMENTAL_CXX0X__=1"/>
@@ -55,6 +57,7 @@
 									<listOptionValue builtIn="false" value="../../../include"/>
 									<listOptionValue builtIn="false" value="../../../debruijn"/>
 									<listOptionValue builtIn="false" value="../../../ext/include"/>
+									<listOptionValue builtIn="false" value="../../../../ext/include"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.903170962" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
@@ -88,7 +91,7 @@
 								<option id="gnu.c.compiler.option.include.paths.81706677" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="../../../include"/>
 									<listOptionValue builtIn="false" value="../../../debruijn"/>
-									<listOptionValue builtIn="false" value="../../../ext/include"/>
+									<listOptionValue builtIn="false" value="../../../../ext/include"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.110587995" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
@@ -98,7 +101,7 @@
 								<option id="gnu.cpp.compiler.option.include.paths.1463960965" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="../../../include"/>
 									<listOptionValue builtIn="false" value="../../../debruijn"/>
-									<listOptionValue builtIn="false" value="../../../ext/include"/>
+									<listOptionValue builtIn="false" value="../../../../ext/include"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.1775222979" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__GXX_EXPERIMENTAL_CXX0X__=1"/>
@@ -117,7 +120,7 @@
 								<option id="gnu.both.asm.option.include.paths.330752739" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="../../../include"/>
 									<listOptionValue builtIn="false" value="../../../debruijn"/>
-									<listOptionValue builtIn="false" value="../../../ext/include"/>
+									<listOptionValue builtIn="false" value="../../../../ext/include"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.848573819" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>

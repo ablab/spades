@@ -16,7 +16,7 @@ namespace debruijn_graph {
 
 BOOST_FIXTURE_TEST_SUITE(graph_simplification_tests, TmpFolderFixture)
 
-static debruijn_config::simplification::bulge_remover standard_br_config_generation() {
+debruijn_config::simplification::bulge_remover standard_br_config_generation() {
 	debruijn_config::simplification::bulge_remover br_config;
 	br_config.enabled = true;
 	br_config.max_bulge_length_coefficient = 4;
@@ -37,7 +37,7 @@ debruijn_config::simplification::bulge_remover standard_br_config() {
 	return br_config;
 }
 
-static debruijn_config::simplification::erroneous_connections_remover standard_ec_config_generation() {
+debruijn_config::simplification::erroneous_connections_remover standard_ec_config_generation() {
 	debruijn_config::simplification::erroneous_connections_remover ec_config;
 	ec_config.condition = "{ cb 30 , ec_lb 20 }";
 	return ec_config;
@@ -48,7 +48,7 @@ debruijn_config::simplification::erroneous_connections_remover standard_ec_confi
 	return ec_config;
 }
 
-static debruijn_config::simplification::topology_based_ec_remover topology_based_ec_config_generation() {
+debruijn_config::simplification::topology_based_ec_remover topology_based_ec_config_generation() {
 	debruijn_config::simplification::topology_based_ec_remover tec_config;
 	tec_config.max_ec_length_coefficient = 20;
 	tec_config.plausibility_length = 200;
@@ -56,7 +56,7 @@ static debruijn_config::simplification::topology_based_ec_remover topology_based
 	return tec_config;
 }
 
-static debruijn_config::simplification::max_flow_ec_remover max_flow_based_ec_config_generation() {
+debruijn_config::simplification::max_flow_ec_remover max_flow_based_ec_config_generation() {
 	debruijn_config::simplification::max_flow_ec_remover mfec_config;
 	mfec_config.enabled = true;
 	mfec_config.max_ec_length_coefficient = 20;
@@ -75,7 +75,7 @@ debruijn_config::simplification::max_flow_ec_remover standard_mfec_config() {
 	return tec_config;
 }
 
-static debruijn_config::simplification::tip_clipper standard_tc_config_generation() {
+debruijn_config::simplification::tip_clipper standard_tc_config_generation() {
 	debruijn_config::simplification::tip_clipper tc_config;
 	tc_config.condition = "{ tc_lb 2.5 , cb 1000. , rctc 1.2 }";
 	return tc_config;
@@ -105,12 +105,16 @@ debruijn::simplification::SimplifInfoContainer standard_simplif_relevant_info() 
             .set_detected_coverage_bound(10.)
             .set_iteration_count(1)
             .set_iteration(0)
-            .set_chunk_cnt(10);
+            .set_chunk_cnt(1/*0*/);
+}
+
+std::string graph_fragment_root() {
+    return "./src/test/debruijn/graph_fragments/";
 }
 
 void PrintGraph(const Graph & g) {
-	FOREACH(VertexId v, g.vertices()) {
-		FOREACH(EdgeId e, g.OutgoingEdges(v)) {
+	for (VertexId v: g) {
+		for (EdgeId e: g.OutgoingEdges(v)) {
 			cout << g.int_id(e) << ":" << g.int_id(g.EdgeStart(e)) << " " << g.int_id(g.EdgeEnd(e)) << endl;
 		}
 	}
@@ -127,247 +131,279 @@ void DefaultRemoveBulges(Graph& graph) {
 }
 */
 
-BOOST_AUTO_TEST_CASE( SimpleTipClipperTest ) {
-    ConjugateDeBruijnGraph g(55);
-	graphio::ScanBasicGraph<ConjugateDeBruijnGraph>("./src/test/debruijn/graph_fragments/simpliest_tip/simpliest_tip", g);
-
-	DefaultClipTips(g);
-
-	BOOST_CHECK_EQUAL(g.size(), 4u);
-}
-
-BOOST_AUTO_TEST_CASE( SimpleBulgeRemovalTest ) {
-	Graph g(55);
-	graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/simpliest_bulge/simpliest_bulge", g);
-
-	debruijn::simplification::RemoveBulges(g, standard_br_config());
-
-	BOOST_CHECK_EQUAL(g.size(), 4u);
-}
-
-BOOST_AUTO_TEST_CASE( TipobulgeTest ) {
-	Graph g(55);
-	graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/tipobulge/tipobulge", g);
-
-	DefaultClipTips(g);
-
-	debruijn::simplification::RemoveBulges(g, standard_br_config());
-
-	BOOST_CHECK_EQUAL(g.size(), 16u);
-}
-
-BOOST_AUTO_TEST_CASE( SimpleECTest ) {
-	Graph g(55);
-	graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g);
-
-	debruijn_config::simplification::erroneous_connections_remover ec_config;
-	ec_config.condition = "{ icb 7000 , ec_lb 20 }";
-
-	debruijn::simplification::RemoveLowCoverageEdges(g, ec_config, standard_simplif_relevant_info());
-
-	BOOST_CHECK_EQUAL(g.size(), 16u);
-}
-
-BOOST_AUTO_TEST_CASE( IterECTest ) {
-	Graph g(55);
-	graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g);
-
-	debruijn_config::simplification::erroneous_connections_remover ec_config;
-	ec_config.condition = "{ icb 7000 , ec_lb 20 }";
-
-    auto info = standard_simplif_relevant_info();
-    info.set_iteration_count(2);
-
-	debruijn::simplification::RemoveLowCoverageEdges<Graph>(g, ec_config, info);
-
-	BOOST_CHECK_EQUAL(g.size(), 20u);
-
-    info.set_iteration(1);
-	debruijn::simplification::RemoveLowCoverageEdges<Graph>(g, ec_config, info);
-
-	BOOST_CHECK_EQUAL(g.size(), 16u);
-}
-
-BOOST_AUTO_TEST_CASE( IterUniquePath ) {
-	Graph g(55);
-	graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g);
-
-	auto tec_config = standard_tec_config();
-	while(debruijn::simplification::TopologyRemoveErroneousEdges<Graph>(g, tec_config, 0)) {
-	}
-
-	BOOST_CHECK_EQUAL(g.size(), 16u);
-}
-
-//BOOST_AUTO_TEST_CASE( MFIterUniquePath ) {
-//	Graph g(55);
-//	graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g);
+//BOOST_AUTO_TEST_CASE( SimpleTipClipperTest ) {
+//    ConjugateDeBruijnGraph g(55);
+//	graphio::ScanBasicGraph<ConjugateDeBruijnGraph>("./src/test/debruijn/graph_fragments/simpliest_tip/simpliest_tip", g);
 //
-//	debruijn_config::simplification::max_flow_ec_remover mfec_config = standard_mfec_config();
-//	mfec_config.uniqueness_length = 500;
-//	MaxFlowRemoveErroneousEdges<Graph>(g, mfec_config);
+//	DefaultClipTips(g);
+//
+//	BOOST_CHECK_EQUAL(g.size(), 4u);
+//}
+//
+//BOOST_AUTO_TEST_CASE( SimpleBulgeRemovalTest ) {
+//	Graph g(55);
+//	graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/simpliest_bulge/simpliest_bulge", g);
+//
+//	debruijn::simplification::RemoveBulges(g, standard_br_config());
+//
+//	BOOST_CHECK_EQUAL(g.size(), 4u);
+//}
+//
+//BOOST_AUTO_TEST_CASE( TipobulgeTest ) {
+//	Graph g(55);
+//	graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/tipobulge/tipobulge", g);
+//
+//	DefaultClipTips(g);
+//
+//	debruijn::simplification::RemoveBulges(g, standard_br_config());
 //
 //	BOOST_CHECK_EQUAL(g.size(), 16u);
 //}
-
-//todo very strange figure!!!
-BOOST_AUTO_TEST_CASE( MFUniquePath ) {
-	Graph g(55);
-	graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/unique_path", g);
-	debruijn_config::simplification::max_flow_ec_remover mfec_config = standard_mfec_config();
-	mfec_config.uniqueness_length = 400;
-	debruijn::simplification::MaxFlowRemoveErroneousEdges<Graph>(g, mfec_config);
-
-	BOOST_CHECK_EQUAL(g.size(), 12u);
-}
-
-//BOOST_AUTO_TEST_CASE( TopologyTC ) {
+//
+//BOOST_AUTO_TEST_CASE( SimpleECTest ) {
+//	Graph g(55);
+//	graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g);
+//
+//	debruijn_config::simplification::erroneous_connections_remover ec_config;
+//	ec_config.condition = "{ icb 7000 , ec_lb 20 }";
+//
+//	debruijn::simplification::RemoveLowCoverageEdges(g, ec_config, standard_simplif_relevant_info());
+//
+//	BOOST_CHECK_EQUAL(g.size(), 16u);
+//}
+//
+//BOOST_AUTO_TEST_CASE( IterECTest ) {
+//	Graph g(55);
+//	graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g);
+//
+//	debruijn_config::simplification::erroneous_connections_remover ec_config;
+//	ec_config.condition = "{ icb 7000 , ec_lb 20 }";
+//
+//    auto info = standard_simplif_relevant_info();
+//    info.set_iteration_count(2);
+//
+//	debruijn::simplification::RemoveLowCoverageEdges<Graph>(g, ec_config, info);
+//
+//	BOOST_CHECK_EQUAL(g.size(), 20u);
+//
+//    info.set_iteration(1);
+//	debruijn::simplification::RemoveLowCoverageEdges<Graph>(g, ec_config, info);
+//
+//	BOOST_CHECK_EQUAL(g.size(), 16u);
+//}
+//
+//BOOST_AUTO_TEST_CASE( IterUniquePath ) {
+//	Graph g(55);
+//	graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g);
+//
+//	auto tec_config = standard_tec_config();
+//	while(debruijn::simplification::TopologyRemoveErroneousEdges<Graph>(g, tec_config, 0)) {
+//	}
+//
+//	BOOST_CHECK_EQUAL(g.size(), 16u);
+//}
+//
+////BOOST_AUTO_TEST_CASE( MFIterUniquePath ) {
+////	Graph g(55);
+////	graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/iter_unique_path", g);
+////
+////	debruijn_config::simplification::max_flow_ec_remover mfec_config = standard_mfec_config();
+////	mfec_config.uniqueness_length = 500;
+////	MaxFlowRemoveErroneousEdges<Graph>(g, mfec_config);
+////
+////	BOOST_CHECK_EQUAL(g.size(), 16u);
+////}
+//
+////todo very strange figure!!!
+//BOOST_AUTO_TEST_CASE( MFUniquePath ) {
 //	Graph g(55);
 //	graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/unique_path", g);
-//	debruijn_config::simplification::max_flow_ec_remover tec_config = standard_mfec_config();
-//	tec_config.uniqueness_length = 400;
-//
-//	MaxFlowRemoveErroneousEdges<Graph>(g, tec_config, 0);
+//	debruijn_config::simplification::max_flow_ec_remover mfec_config = standard_mfec_config();
+//	mfec_config.uniqueness_length = 400;
+//	debruijn::simplification::MaxFlowRemoveErroneousEdges<Graph>(g, mfec_config);
 //
 //	BOOST_CHECK_EQUAL(g.size(), 12u);
 //}
-
-//BOOST_AUTO_TEST_CASE( SelfComp ) {
-//       Graph g(55);
-//       graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/self_comp", g);
-//       debruijn_config::simplification::max_flow_ec_remover mfec_config = standard_mfec_config();
-//       mfec_config.uniqueness_length = 1500;
-//       MaxFlowRemoveErroneousEdges<Graph>(g, mfec_config);
 //
+////BOOST_AUTO_TEST_CASE( TopologyTC ) {
+////	Graph g(55);
+////	graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/unique_path", g);
+////	debruijn_config::simplification::max_flow_ec_remover tec_config = standard_mfec_config();
+////	tec_config.uniqueness_length = 400;
+////
+////	MaxFlowRemoveErroneousEdges<Graph>(g, tec_config, 0);
+////
+////	BOOST_CHECK_EQUAL(g.size(), 12u);
+////}
+//
+////BOOST_AUTO_TEST_CASE( SelfComp ) {
+////       Graph g(55);
+////       graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/topology_ec/self_comp", g);
+////       debruijn_config::simplification::max_flow_ec_remover mfec_config = standard_mfec_config();
+////       mfec_config.uniqueness_length = 1500;
+////       MaxFlowRemoveErroneousEdges<Graph>(g, mfec_config);
+////
+////       BOOST_CHECK_EQUAL(g.size(), 4u);
+////}
+//
+//BOOST_AUTO_TEST_CASE( ComplexBulgeRemoverOnSimpleBulge ) {
+//       Graph g(55);
+//       graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/simpliest_bulge/simpliest_bulge", g);
+////       OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
+////       licvidator.Licvidate();
+//       omnigraph::complex_br::ComplexBulgeRemover<Graph> remover(g, g.k() * 5, 5);
+//       remover.Run();
+//       INFO("Done");
+//
+////       WriteGraphPack(gp, string("./src/test/debruijn/graph_fragments/complex_bulge/complex_bulge_res.dot"));
 //       BOOST_CHECK_EQUAL(g.size(), 4u);
 //}
-
-BOOST_AUTO_TEST_CASE( ComplexBulgeRemoverOnSimpleBulge ) {
-       Graph g(55);
-       graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/simpliest_bulge/simpliest_bulge", g);
-//       OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
-//       licvidator.Licvidate();
-       omnigraph::complex_br::ComplexBulgeRemover<Graph> remover(g, g.k() * 5, 5);
-       remover.Run();
-       INFO("Done");
-
-//       WriteGraphPack(gp, string("./src/test/debruijn/graph_fragments/complex_bulge/complex_bulge_res.dot"));
-       BOOST_CHECK_EQUAL(g.size(), 4u);
-}
-
-BOOST_AUTO_TEST_CASE( ComplexBulge ) {
-    conj_graph_pack gp(55, "tmp", 0);
-       graphio::ScanGraphPack("./src/test/debruijn/graph_fragments/complex_bulge/complex_bulge", gp);
-//       OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
-//       licvidator.Licvidate();
-
-       omnigraph::complex_br::ComplexBulgeRemover<Graph> remover(gp.g, gp.g.k() * 5, 5);
-       remover.Run();
-
-//       WriteGraphPack(gp, string("./src/test/debruijn/graph_fragments/complex_bulge/complex_bulge_res.dot"));
-       BOOST_CHECK_EQUAL(gp.g.size(), 8u);
-}
-
-BOOST_AUTO_TEST_CASE( BigComplexBulge ) {
-    conj_graph_pack gp(55, "tmp", 0);
-       graphio::ScanGraphPack("./src/test/debruijn/graph_fragments/big_complex_bulge/big_complex_bulge", gp);
-//       OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
-//       licvidator.Licvidate();
-       omnigraph::complex_br::ComplexBulgeRemover<Graph> remover(gp.g, gp.g.k() * 5, 5);
-       remover.Run();
-//       WriteGraphPack(gp, string("./src/test/debruijn/graph_fragments/big_complex_bulge/big_complex_bulge_res.dot"));
-       BOOST_CHECK_EQUAL(gp.g.size(), 66u);
-}
-
-template<class Graph, class InnerIndex>
-void FillKmerCoverageWithAvg(const Graph& g, InnerIndex& idx) {
-    for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-        EdgeId e = *it;
-        Sequence nucls = g.EdgeNucls(e);
-        double cov = g.coverage(e);
-        auto kpomer = idx.ConstructKWH(runtime_k::RtSeq(g.k() + 1, nucls));
-        kpomer >>= 0;
-        for (size_t i = 0; i < g.length(e); ++i) {
-            kpomer <<= nucls[i + g.k()];
-            idx.get_raw_value_reference(kpomer).count = unsigned(math::floor(cov));
-        }
-    }
-}
-
-//todo review
-BOOST_AUTO_TEST_CASE( RelativeCoverageRemover ) {
-    typedef graph_pack<ConjugateDeBruijnGraph, runtime_k::RtSeq, 
-            KmerStoringEdgeIndex<ConjugateDeBruijnGraph, runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq>, SimpleStoring>> gp_t;
-    gp_t gp(55, "tmp", 0);
-    graphio::ScanGraphPack("./src/test/debruijn/graph_fragments/rel_cov_ec/constructed_graph", gp);
-    INFO("Relative coverage component removal:");
-    FillKmerCoverageWithAvg(gp.g, gp.index.inner_index());
-    gp.flanking_cov.Fill(gp.index.inner_index());
-    debruijn::simplification::RemoveRelativelyLowCoverageComponents(gp.g, gp.flanking_cov, standard_rcc_config(), standard_simplif_relevant_info());
-    BOOST_CHECK_EQUAL(gp.g.size(), 12u/*28u*/);
-}
-
-BOOST_AUTO_TEST_CASE( RelativeCoverageRemover1 ) {
-    string path = "./src/test/debruijn/graph_fragments/ecs/graph";
-    size_t graph_size = 0;
-    conj_graph_pack gp(55, "tmp", 0);
-    graphio::ScanGraphPack(path, gp);
-    ParallelEC(gp.g, standard_ec_config().condition, standard_simplif_relevant_info());
-    BOOST_CHECK_EQUAL(gp.g.size(), graph_size);
-}
-
-BOOST_AUTO_TEST_CASE( RelativeCoverageRemover2 ) {
-    string path = "./src/test/debruijn/graph_fragments/ecs/graph";
-    size_t graph_size = 0;
-    conj_graph_pack gp(55, "tmp", 0);
-    graphio::ScanGraphPack(path, gp);
-    ParallelEC(gp.g, standard_ec_config().condition, standard_simplif_relevant_info());
-    BOOST_CHECK_EQUAL(gp.g.size(), graph_size);
-}
-
-BOOST_AUTO_TEST_CASE( ParallelCompressor1 ) {
-    string path = "./src/test/debruijn/graph_fragments/compression/graph";
-    size_t graph_size = 12;
-    conj_graph_pack gp(55, "tmp", 0);
-    graphio::ScanGraphPack(path, gp);
-    ParallelCompress(gp.g, standard_simplif_relevant_info(), false);
-    BOOST_CHECK_EQUAL(gp.g.size(), graph_size);
-}
-
-BOOST_AUTO_TEST_CASE( ParallelTipClipper1 ) {
-    string path = "./src/test/debruijn/graph_fragments/tips/graph";
-    size_t graph_size = 12;
-    conj_graph_pack gp(55, "tmp", 0);
-    graphio::ScanGraphPack(path, gp);
-    ParallelClipTips(gp.g, standard_tc_config().condition, standard_simplif_relevant_info());
-    BOOST_CHECK_EQUAL(gp.g.size(), graph_size);
-}
-
+//
+//BOOST_AUTO_TEST_CASE( ComplexBulge ) {
+//    conj_graph_pack gp(55, "tmp", 0);
+//       graphio::ScanGraphPack("./src/test/debruijn/graph_fragments/complex_bulge/complex_bulge", gp);
+////       OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
+////       licvidator.Licvidate();
+//
+//       omnigraph::complex_br::ComplexBulgeRemover<Graph> remover(gp.g, gp.g.k() * 5, 5);
+//       remover.Run();
+//
+////       WriteGraphPack(gp, string("./src/test/debruijn/graph_fragments/complex_bulge/complex_bulge_res.dot"));
+//       BOOST_CHECK_EQUAL(gp.g.size(), 8u);
+//}
+//
+//BOOST_AUTO_TEST_CASE( BigComplexBulge ) {
+//    conj_graph_pack gp(55, "tmp", 0);
+//       graphio::ScanGraphPack("./src/test/debruijn/graph_fragments/big_complex_bulge/big_complex_bulge", gp);
+////       OppositionLicvidator<Graph> licvidator(gp.g, gp.g.k() * 5, 5);
+////       licvidator.Licvidate();
+//       omnigraph::complex_br::ComplexBulgeRemover<Graph> remover(gp.g, gp.g.k() * 5, 5);
+//       remover.Run();
+////       WriteGraphPack(gp, string("./src/test/debruijn/graph_fragments/big_complex_bulge/big_complex_bulge_res.dot"));
+//       BOOST_CHECK_EQUAL(gp.g.size(), 66u);
+//}
+//
+//template<class Graph, class InnerIndex>
+//void FillKmerCoverageWithAvg(const Graph& g, InnerIndex& idx) {
+//    for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+//        EdgeId e = *it;
+//        Sequence nucls = g.EdgeNucls(e);
+//        double cov = g.coverage(e);
+//        auto kpomer = idx.ConstructKWH(runtime_k::RtSeq(g.k() + 1, nucls));
+//        kpomer >>= 0;
+//        for (size_t i = 0; i < g.length(e); ++i) {
+//            kpomer <<= nucls[i + g.k()];
+//            idx.get_raw_value_reference(kpomer).count = unsigned(math::floor(cov));
+//        }
+//    }
+//}
+//
+////Relative coverage removal tests
+//
+//void TestRelativeCoverageRemover(std::string path, size_t graph_size) {
+//    typedef graph_pack<ConjugateDeBruijnGraph, runtime_k::RtSeq,
+//            KmerStoringEdgeIndex<ConjugateDeBruijnGraph, runtime_k::RtSeq, kmer_index_traits<runtime_k::RtSeq>, SimpleStoring>> gp_t;
+//    gp_t gp(55, "tmp", 0);
+//    graphio::ScanGraphPack(path, gp);
+//    INFO("Relative coverage component removal:");
+//    if (!path::FileExists(path + ".flcvr") && !path::FileExists(path + ".kmidx")) {
+//        FillKmerCoverageWithAvg(gp.g, gp.index.inner_index());
+//        gp.flanking_cov.Fill(gp.index.inner_index());
+//    }
+//    debruijn::simplification::RemoveRelativelyLowCoverageComponents(gp.g, gp.flanking_cov,
+//                                                                    standard_rcc_config(), standard_simplif_relevant_info());
+//    BOOST_CHECK_EQUAL(gp.g.size(), graph_size);
+//}
+//
+////todo review
+//BOOST_AUTO_TEST_CASE( RelativeCoverageRemover ) {
+//    TestRelativeCoverageRemover(graph_fragment_root() + "rel_cov_ec/constructed_graph", 12u);
+//}
+//
+//BOOST_AUTO_TEST_CASE( RelativeCoverageRemover1 ) {
+//    TestRelativeCoverageRemover(graph_fragment_root() + "complex_bulge/complex_bulge", 6u);
+//}
+//
+//BOOST_AUTO_TEST_CASE( RelativeCoverageRemover2 ) {
+//    TestRelativeCoverageRemover(graph_fragment_root() + "complex_bulge_2/graph", 4u);
+//}
+//
+//BOOST_AUTO_TEST_CASE( RelativeCoverageRemover3 ) {
+//    TestRelativeCoverageRemover(graph_fragment_root() + "tipobulge/tipobulge", 4u);
+//}
+//
+//BOOST_AUTO_TEST_CASE( RelativeCoverageRemover4 ) {
+//    TestRelativeCoverageRemover(graph_fragment_root() + "tipobulge_2/graph", 4u);
+//}
+//
+////End of relative coverage removal tests
+//
+//BOOST_AUTO_TEST_CASE( ParallelCompressor1 ) {
+//    string path = "./src/test/debruijn/graph_fragments/compression/graph";
+//    size_t graph_size = 12;
+//    conj_graph_pack gp(55, "tmp", 0);
+//    graphio::ScanGraphPack(path, gp);
+//    ParallelCompress(gp.g, standard_simplif_relevant_info(), false);
+//    BOOST_CHECK_EQUAL(gp.g.size(), graph_size);
+//}
+//
+//BOOST_AUTO_TEST_CASE( ParallelTipClipper1 ) {
+//    string path = "./src/test/debruijn/graph_fragments/tips/graph";
+//    size_t graph_size = 12;
+//    conj_graph_pack gp(55, "tmp", 0);
+//    graphio::ScanGraphPack(path, gp);
+//    ParallelClipTips(gp.g, standard_tc_config().condition, standard_simplif_relevant_info());
+//    BOOST_CHECK_EQUAL(gp.g.size(), graph_size);
+//}
+//
 BOOST_AUTO_TEST_CASE( ParallelECRemover ) {
-    string path = "./src/test/debruijn/graph_fragments/ecs/graph";
-    size_t graph_size = 0;
+    string path = graph_fragment_root() + "complex_bulge/complex_bulge";
     conj_graph_pack gp(55, "tmp", 0);
     graphio::ScanGraphPack(path, gp);
-    ParallelEC(gp.g, standard_ec_config().condition, standard_simplif_relevant_info());
-    BOOST_CHECK_EQUAL(gp.g.size(), graph_size);
+    string condition = "{ cb 1000 , ec_lb 20 }";
+    ParallelEC(gp.g, condition, standard_simplif_relevant_info());
+    BOOST_CHECK_EQUAL(gp.g.size(), 16u);
+    ParallelEC(gp.g, condition, standard_simplif_relevant_info());
+    BOOST_CHECK_EQUAL(gp.g.size(), 12u);
 }
 
-BOOST_AUTO_TEST_CASE( ComplexTipRemover ) {
-    string path = "./src/test/debruijn/graph_fragments/ecs/graph";
-    size_t graph_size = 0;
+BOOST_AUTO_TEST_CASE( ParallelECRemover1 ) {
+    string path = graph_fragment_root() + "complex_bulge_2/graph";
+    string condition = "{ cb 100 , ec_lb 20 }";
     conj_graph_pack gp(55, "tmp", 0);
     graphio::ScanGraphPack(path, gp);
-    ParallelEC(gp.g, standard_ec_config().condition, standard_simplif_relevant_info());
-    BOOST_CHECK_EQUAL(gp.g.size(), graph_size);
+    ParallelEC(gp.g, condition, standard_simplif_relevant_info());
+    BOOST_CHECK_EQUAL(gp.g.size(), 20u);
+    ParallelEC(gp.g, condition, standard_simplif_relevant_info());
+    BOOST_CHECK_EQUAL(gp.g.size(), 4u);
+    BOOST_CHECK_EQUAL(GraphComponent<Graph>(gp.g).e_size(), 2u);
 }
 
-BOOST_AUTO_TEST_CASE( ComplexTipRemover2 ) {
-    string path = "./src/test/debruijn/graph_fragments/ecs/graph";
-    size_t graph_size = 0;
+BOOST_AUTO_TEST_CASE( ParallelECRemover2 ) {
+    string path = graph_fragment_root() + "rel_cov_ec/constructed_graph";
+    string condition = "{ cb 100 , ec_lb 20 }";
     conj_graph_pack gp(55, "tmp", 0);
     graphio::ScanGraphPack(path, gp);
-    ParallelEC(gp.g, standard_ec_config().condition, standard_simplif_relevant_info());
-    BOOST_CHECK_EQUAL(gp.g.size(), graph_size);
+    ParallelEC(gp.g, condition, standard_simplif_relevant_info());
+    BOOST_CHECK_EQUAL(gp.g.size(), 20u);
 }
+
+//BOOST_AUTO_TEST_CASE( ComplexTipRemover ) {
+//    string path = "./src/test/debruijn/graph_fragments/ecs/graph";
+//    size_t graph_size = 0;
+//    conj_graph_pack gp(55, "tmp", 0);
+//    graphio::ScanGraphPack(path, gp);
+//    ParallelEC(gp.g, standard_ec_config().condition, standard_simplif_relevant_info());
+//    BOOST_CHECK_EQUAL(gp.g.size(), graph_size);
+//}
+//
+//BOOST_AUTO_TEST_CASE( ComplexTipRemover2 ) {
+//    string path = "./src/test/debruijn/graph_fragments/ecs/graph";
+//    size_t graph_size = 0;
+//    conj_graph_pack gp(55, "tmp", 0);
+//    graphio::ScanGraphPack(path, gp);
+//    ParallelEC(gp.g, standard_ec_config().condition, standard_simplif_relevant_info());
+//    BOOST_CHECK_EQUAL(gp.g.size(), graph_size);
+//}
 
 BOOST_AUTO_TEST_SUITE_END()}

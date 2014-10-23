@@ -88,8 +88,12 @@ class TwoStepAlgorithmRunner {
     void CountElement(Algo& algo, ElementType el, size_t bucket) {
         if (filter_conjugate_ && g_.conjugate(el) < el)
             return;
-        if (algo.IsOfInterest(el))
+        if (algo.IsOfInterest(el)) {
+            INFO("Element " << g_.str(el) << " is of interest");
             elements_of_interest_[bucket].push_back(el);
+        } else {
+            INFO("Element " << g_.str(el) << " is not interesting");
+        }
     }
 
     template<class Algo, class It>
