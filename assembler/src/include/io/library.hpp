@@ -26,6 +26,7 @@ enum class LibraryType {
   HQMatePairs,
   PacBioReads,
   SangerReads,
+  NanoporeReads,
   TrustedContigs,
   UntrustedContigs,
 };
@@ -155,6 +156,7 @@ class SequencingLibraryBase {
             type_ == io::LibraryType::MatePairs ||
             type_ == io::LibraryType::PacBioReads ||
             type_ == io::LibraryType::SangerReads ||
+            type_ == io::LibraryType::NanoporeReads ||
             type_ == io::LibraryType::TrustedContigs ||
             type_ == io::LibraryType::UntrustedContigs);
   }
@@ -162,6 +164,7 @@ class SequencingLibraryBase {
   bool is_pacbio_alignable() const {
     return (type_ == io::LibraryType::PacBioReads ||
             type_ == io::LibraryType::SangerReads ||
+            type_ == io::LibraryType::NanoporeReads ||
             type_ == io::LibraryType::TrustedContigs ||
             type_ == io::LibraryType::UntrustedContigs);
   }

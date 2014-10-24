@@ -72,7 +72,9 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
     PathStorage<Graph>& long_reads = gp.single_long_reads[lib_id];
     pacbio::StatsCounter stats;
     size_t min_gap_quantity = 2;
-    if (cfg::get().ds.reads[lib_id].type() == io::LibraryType::PacBioReads || cfg::get().ds.reads[lib_id].type() == io::LibraryType::SangerReads) {
+    if (cfg::get().ds.reads[lib_id].type() == io::LibraryType::PacBioReads || 
+            cfg::get().ds.reads[lib_id].type() == io::LibraryType::SangerReads || 
+            cfg::get().ds.reads[lib_id].type() == io::LibraryType::NanoporeReads) {
         min_gap_quantity = cfg::get().pb.pacbio_min_gap_quantity;
     } else {
         min_gap_quantity = cfg::get().pb.contigs_min_gap_quantity;
@@ -130,6 +132,7 @@ void PacBioAligning::run(conj_graph_pack &gp, const char*) {
         io::LibraryType type = cfg::get().ds.reads[i].type();
         if (type == io::LibraryType::PacBioReads ||
                 type == io::LibraryType::SangerReads ||
+                type == io::LibraryType::NanoporeReads ||
                 type == io::LibraryType::TrustedContigs ||
                 type == io::LibraryType::UntrustedContigs) {
             lib_id = (int) i;

@@ -113,7 +113,7 @@ inline void AddPathsToContainer(const conj_graph_pack& gp,
 }
 
 double GetSingleReadsFilteringThreshold(const io::LibraryType& type) {
-    if (type == io::LibraryType::PacBioReads || type == io::LibraryType::SangerReads) {
+    if (type == io::LibraryType::PacBioReads || type == io::LibraryType::SangerReads || type == io::LibraryType::NanoporeReads) {
         return cfg::get().pe_params.long_reads.pacbio_reads.filtering;
     } else if (type == io::LibraryType::TrustedContigs || type == io::LibraryType::UntrustedContigs) {
         return cfg::get().pe_params.long_reads.contigs.filtering;
@@ -122,7 +122,7 @@ double GetSingleReadsFilteringThreshold(const io::LibraryType& type) {
 }
 
 double GetSingleReadsWeightPriorityThreshold(const io::LibraryType& type) {
-    if (type == io::LibraryType::PacBioReads || type == io::LibraryType::SangerReads) {
+    if (type == io::LibraryType::PacBioReads || type == io::LibraryType::SangerReads || type == io::LibraryType::NanoporeReads) {
         return cfg::get().pe_params.long_reads.pacbio_reads.weight_priority;
     } else if (type == io::LibraryType::TrustedContigs || type == io::LibraryType::UntrustedContigs) {
         return cfg::get().pe_params.long_reads.contigs.weight_priority;
@@ -132,10 +132,10 @@ double GetSingleReadsWeightPriorityThreshold(const io::LibraryType& type) {
 
 double GetSingleReadsUniqueEdgePriorityThreshold(const io::LibraryType& type) {
     if (cfg::get().ds.single_cell &&
-            (type == io::LibraryType::PacBioReads || type == io::LibraryType::SangerReads)) {
+            (type == io::LibraryType::PacBioReads || type == io::LibraryType::SangerReads || type == io::LibraryType::NanoporeReads)) {
         return 10000.0;
     }
-    if (type == io::LibraryType::PacBioReads || type == io::LibraryType::SangerReads) {
+    if (type == io::LibraryType::PacBioReads || type == io::LibraryType::SangerReads || type == io::LibraryType::NanoporeReads) {
         return cfg::get().pe_params.long_reads.pacbio_reads.unique_edge_priority;
     } else if (type == io::LibraryType::TrustedContigs || type == io::LibraryType::UntrustedContigs) {
         return cfg::get().pe_params.long_reads.contigs.unique_edge_priority;

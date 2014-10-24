@@ -25,7 +25,7 @@ MAX_LIBS_NUMBER = 5
 OLD_STYLE_READS_OPTIONS = ["--12", "-1", "-2", "-s"]
 SHORT_READS_TYPES = {"pe": "paired-end", "s": "single", "mp": "mate-pairs", "hqmp": "hq-mate-pairs"}
 # other libs types:
-LONG_READS_TYPES = ["pacbio", "sanger", "trusted-contigs", "untrusted-contigs"]
+LONG_READS_TYPES = ["pacbio", "sanger", "nanopore", "trusted-contigs", "untrusted-contigs"]
 
 #other constants
 MIN_K = 1
@@ -178,6 +178,7 @@ def usage(spades_version, show_hidden=False, dipspades=False):
                      " for high-quality mate-pair library number <#> (<#> = 1,2,3,4,5; <or> = fr, rf, ff)" + "\n")
     sys.stderr.write("--sanger\t<filename>\tfile with Sanger reads\n")
     sys.stderr.write("--pacbio\t<filename>\tfile with PacBio reads\n")
+    sys.stderr.write("--nanopore\t<filename>\tfile with Nanopore reads\n")
     sys.stderr.write("--trusted-contigs\t<filename>\tfile with trusted contigs\n")
     sys.stderr.write("--untrusted-contigs\t<filename>\tfile with untrusted contigs\n")
     if dipspades:
