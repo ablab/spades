@@ -435,12 +435,15 @@ def add_to_dataset(option, data, dataset_data):
         data = option[-2:]
 
     if lib_type in options_storage.SHORT_READS_TYPES:
-        record_id = options_storage.MAX_LIBS_NUMBER * sorted(options_storage.SHORT_READS_TYPES).index(lib_type) + lib_number - 1
-    else:  # long reads libraries
-        dataset_data += [{}]
-        record_id = len(dataset_data) - 1
+        record_id = options_storage.MAX_LIBS_NUMBER * sorted(options_storage.SHORT_READS_TYPES.keys()).index(lib_type) \
+                    + lib_number - 1
+    elif lib_type in options_storage.LONG_READS_TYPES:
+        record_id = options_storage.MAX_LIBS_NUMBER * len(options_storage.SHORT_READS_TYPES.keys()) \
+                    + options_storage.LONG_READS_TYPES.index(lib_type)
+    else:
+        error("can't detect library type from option %s!" % option)
 
-    if not dataset_data[record_id]: # setting default values for a new record
+    if not dataset_data[record_id]:  # setting default values for a new record
         if lib_type in options_storage.SHORT_READS_TYPES:
             dataset_data[record_id]['type'] = options_storage.SHORT_READS_TYPES[lib_type]
         else:

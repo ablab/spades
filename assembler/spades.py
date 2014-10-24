@@ -157,7 +157,8 @@ def fill_cfg(options_to_parse, log):
     cfg = dict()
     # dataset is stored here. We are prepared for up to MAX_LIBS_NUMBER for each type of short-reads libs
     dataset_data = [{} for i in range(options_storage.MAX_LIBS_NUMBER *
-                                      len(options_storage.SHORT_READS_TYPES.keys()))]  # "[{}]*num" doesn't work here!
+                                      len(options_storage.SHORT_READS_TYPES.keys()) +
+                                      len(options_storage.LONG_READS_TYPES))]  # "[{}]*num" doesn't work here!
 
     # for parsing options from "previous run command"
     options_storage.continue_mode = False
