@@ -60,6 +60,8 @@ struct convert<LibraryType> {
         return Node("pacbio");
       case LibraryType::SangerReads:
         return Node("sanger");
+      case LibraryType::NanoporeReads:
+        return Node("nanopore");
       case LibraryType::TrustedContigs:
         return Node("trusted-contigs");
       case LibraryType::UntrustedContigs:
@@ -84,6 +86,8 @@ struct convert<LibraryType> {
       rhs = LibraryType::SingleReads;
     else if (type == "sanger")
       rhs = LibraryType::SangerReads;
+    else if (type == "nanopore")
+      rhs = LibraryType::NanoporeReads;
     else if (type == "trusted-contigs")
       rhs = LibraryType::TrustedContigs;
     else if (type == "untrusted-contigs")
@@ -150,6 +154,7 @@ void SequencingLibraryBase::load(const YAML::Node &node) {
     case LibraryType::SingleReads:
     case LibraryType::PacBioReads:
     case LibraryType::SangerReads:
+    case LibraryType::NanoporeReads:
     case LibraryType::TrustedContigs:
     case LibraryType::UntrustedContigs:
       single_reads_ = node["single reads"].as<std::vector<std::string> >();
