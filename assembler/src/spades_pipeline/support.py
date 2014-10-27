@@ -812,3 +812,19 @@ def create_fastg_from_fasta(fasta_filename, fastg_filename, log=None):
             warning("Creating %s: failed to find appropriate name for contig %s (looking for names in %s)! Skipping this contig." %
                     (new_fastg_filename, name, fastg_filename))
     write_fasta(new_fastg_filename, new_fastg_data)
+
+
+def is_float(value):
+    try:
+        float(value)
+        return True
+    except ValueError:
+        return False
+
+
+def is_int(value):
+    try:
+        int(value)
+        return True
+    except ValueError:
+        return False

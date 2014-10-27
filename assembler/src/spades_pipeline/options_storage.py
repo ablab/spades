@@ -65,7 +65,8 @@ threads = None
 memory = None
 tmp_dir = None
 k_mers = None
-qvoffset = None # auto-detect by default
+qvoffset = None  # auto-detect by default
+cov_cutoff = 'off'  # default is 'off'
 
 # hidden options
 mismatch_corrector = None
@@ -88,6 +89,7 @@ restart_tmp_dir = None
 restart_k_mers = None
 original_k_mers = None
 restart_qvoffset = None
+restart_cov_cutoff = None
 restart_developer_mode = None
 restart_reference = None
 restart_read_buffer_size = None
@@ -101,7 +103,7 @@ long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc ionto
                "help test debug debug:false reference= config-file= dataset= "\
                "bh-heap-check= spades-heap-check= read-buffer-size= help-hidden "\
                "mismatch-correction mismatch-correction:false careful careful:false "\
-               "continue restart-from= diploid".split()
+               "continue restart-from= diploid cov-cutoff=".split()
 short_options = "o:1:2:s:k:t:m:i:h"
 
 # adding multiple paired-end, mate-pair and other (long reads) libraries support
@@ -221,7 +223,9 @@ def usage(spades_version, show_hidden=False, dipspades=False):
     sys.stderr.write("\t\t\t\t[default: <output_dir>/tmp]" + "\n")
     sys.stderr.write("-k\t\t<int,int,...>\tcomma-separated list of k-mer sizes"\
                          " (must be odd and" + "\n")
-    sys.stderr.write("\t\t\t\tless than " + str(MAX_K + 1) + ") [default: 'auto']" + "\n") # ",".join(map(str, k_mers_short))
+    sys.stderr.write("\t\t\t\tless than " + str(MAX_K + 1) + ") [default: 'auto']" + "\n")
+    sys.stderr.write("--cov-cutoff\t<float>\t\tcoverage cutoff value (a positive float number, "
+                     "or 'auto', or 'off') [default: 'off']" + "\n")
     sys.stderr.write("--phred-offset\t<33 or 64>\tPHRED quality offset in the"\
                          " input reads (33 or 64)" + "\n")
     sys.stderr.write("\t\t\t\t[default: auto-detect]" + "\n")    
@@ -260,6 +264,7 @@ def set_default_values():
     global mismatch_corrector
     global developer_mode
     global qvoffset
+    global cov_cutoff
     global tmp_dir
 
     if threads is None:
@@ -283,6 +288,8 @@ def set_default_values():
         developer_mode = False
     if qvoffset == 'auto':
         qvoffset = None
+    if cov_cutoff is None:
+        cov_cutoff = 'off'
     if tmp_dir is None:
         tmp_dir = os.path.join(output_dir, TMP_DIR)
 
@@ -318,6 +325,7 @@ def save_restart_options(log):
     global restart_memory
     global restart_tmp_dir
     global restart_qvoffset
+    global restart_cov_cutoff
     global restart_developer_mode
     global restart_reference
     global restart_read_buffer_size
@@ -331,6 +339,7 @@ def save_restart_options(log):
     restart_memory = memory
     restart_tmp_dir = tmp_dir
     restart_qvoffset = qvoffset
+    restart_cov_cutoff = cov_cutoff
     restart_developer_mode = developer_mode
     restart_reference = reference
     restart_read_buffer_size = read_buffer_size
@@ -346,6 +355,7 @@ def load_restart_options():
     global memory
     global tmp_dir
     global qvoffset
+    global cov_cutoff
     global developer_mode
     global reference
     global read_buffer_size
@@ -373,6 +383,8 @@ def load_restart_options():
         tmp_dir = restart_tmp_dir
     if restart_qvoffset is not None:
         qvoffset = restart_qvoffset
+    if restart_cov_cutoff is not None:
+        cov_cutoff = restart_cov_cutoff
     if restart_developer_mode is not None:
         developer_mode = restart_developer_mode
     if restart_reference is not None:

@@ -51,6 +51,14 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
     if "pacbio_mode" in cfg.__dict__:
         subst_dict["pacbio_test_on"] = bool_to_str(cfg.pacbio_mode)
         subst_dict["pacbio_reads"] = process_cfg.process_spaces(cfg.pacbio_reads)
+    if cfg.cov_cutoff == "off":
+        subst_dict["use_coverage_threshold"] = bool_to_str(False)
+    else:
+        subst_dict["use_coverage_threshold"] = bool_to_str(True)
+        if cfg.cov_cutoff == "auto":
+            subst_dict["coverage_threshold"] = 0.0
+        else:
+            subst_dict["coverage_threshold"] = cfg.cov_cutoff
 
     process_cfg.substitute_params(filename, subst_dict, log)
 

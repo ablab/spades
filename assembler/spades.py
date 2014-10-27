@@ -125,6 +125,12 @@ def print_used_values(cfg, log):
             log.info("  MismatchCorrector will be used")
         else:
             log.info("  MismatchCorrector will be SKIPPED")
+        if cfg["assembly"].cov_cutoff == 'off':
+            log.info("  Coverage cutoff is turned OFF")
+        elif cfg["assembly"].cov_cutoff == 'auto':
+            log.info("  Coverage cutoff is turned ON and threshold will be auto-detected")
+        else:
+            log.info("  Coverage cutoff is turned ON and threshold is " + str(cfg["assembly"].cov_cutoff))
 
     log.info("Other parameters:")
     print_value(cfg, "common", "tmp_dir", "Dir for temp files")
@@ -222,7 +228,8 @@ def fill_cfg(options_to_parse, log):
             options_storage.continue_mode = True
         elif opt == "--restart-from":
             if arg not in ['ec', 'as', 'mc'] and not arg.startswith('k'):
-                support.error("wrong value for --restart-from option: " + arg + " (only 'ec', 'as', 'k<int>', 'mc' are available)", log)
+                support.error("wrong value for --restart-from option: " + arg +
+                              " (should be 'ec', 'as', 'k<int>', or 'mc'", log)
             options_storage.continue_mode = True
             options_storage.restart_from = arg
 
@@ -236,7 +243,16 @@ def fill_cfg(options_to_parse, log):
             elif arg in ['33', '64']:
                 options_storage.qvoffset = int(arg)
             else:
-                support.error('wrong PHRED quality offset value ' + str(arg) + ': should be either 33 or 64', log)
+                support.error('wrong PHRED quality offset value: ' + arg +
+                              ' (should be either 33, 64, or \'auto\')', log)
+        elif opt == "--cov-cutoff":
+            if arg == 'auto' or arg == 'off':
+                options_storage.cov_cutoff = arg
+            elif support.is_float(arg) and float(arg) > 0.0:
+                options_storage.cov_cutoff = float(arg)
+            else:
+                support.error('wrong value for --cov-cutoff option: ' + arg +
+                              ' (should be a positive float number, or \'auto\', or \'off\')', log)
         elif opt == '-i' or opt == "--iterations":
             options_storage.iterations = int(arg)
 
@@ -351,6 +367,7 @@ def fill_cfg(options_to_parse, log):
         cfg["assembly"].__dict__["careful"] = options_storage.careful
         cfg["assembly"].__dict__["disable_rr"] = options_storage.disable_rr
         cfg["assembly"].__dict__["diploid_mode"] = options_storage.diploid_mode
+        cfg["assembly"].__dict__["cov_cutoff"] = options_storage.cov_cutoff
         if options_storage.spades_heap_check:
             cfg["assembly"].__dict__["heap_check"] = options_storage.spades_heap_check
         if options_storage.read_buffer_size:
