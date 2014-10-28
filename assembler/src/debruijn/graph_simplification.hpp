@@ -889,7 +889,6 @@ void SimplificationCycle(conj_graph_pack& gp,
     cnt_callback.Report();
     DEBUG(iteration << " ErroneousConnectionsRemoval stats");
     printer(ipp_err_con_removal, str(format("_%d") % iteration));
-
 }
 
 inline
@@ -898,6 +897,12 @@ void SimplifyGraph(conj_graph_pack &gp,
                    stats::detail_info_printer& printer, size_t iteration_count) {
     printer(ipp_before_simplification);
     INFO("Graph simplification started");
+    
+    if (cfg::get().fast_simplification) {
+        INFO("Fast simplification mode enabled");
+    } else {
+        INFO("Fast simplification mode disabled");
+    }
 
     SimplifInfoContainer info_container;
     info_container

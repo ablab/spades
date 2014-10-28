@@ -576,6 +576,7 @@ struct debruijn_config {
 
     bool diploid_mode;
     bool need_mapping;
+    bool fast_simplification;
 };
 
 void load(debruijn_config& cfg, const std::string &filename);
