@@ -803,6 +803,8 @@ void PostSimplification(conj_graph_pack& gp,
     INFO("PROCEDURE == Post simplification");
     size_t iteration = 0;
 
+    if (cfg::get().simp.persistent_cycle_iterators)
+        INFO("Using permanent iterators");
     SmartIteratorsHolder<Graph> iterators_holder(gp.g, cfg::get().simp.persistent_cycle_iterators);
 
     bool enable_flag = true;
@@ -880,9 +882,7 @@ void SimplificationCycle(conj_graph_pack& gp,
         cnt_callback.Report();
         DEBUG(iteration << " BulgeRemoval stats");
         printer(ipp_bulge_removal, str(format("_%d") % iteration));
-    } else {
-        INFO("Bulge remover in cycle was disabled");
-    }
+    } 
 
     DEBUG(iteration << " ErroneousConnectionsRemoval");
     RemoveLowCoverageEdges(gp.g, *iterators_holder.ec_smart_it(), cfg::get().simp.ec, info_container, removal_handler);
@@ -915,7 +915,15 @@ void SimplifyGraph(conj_graph_pack &gp,
     		info_container, removal_handler);
 
     info_container.set_iteration_count(iteration_count);
+
+    if (cfg::get().simp.persistent_cycle_iterators)
+        INFO("Using permanent iterators");
     SmartIteratorsHolder<Graph> iterators_holder(gp.g, cfg::get().simp.persistent_cycle_iterators);
+
+    if (cfg::get().simp.disable_br_in_cycle) {
+        INFO("Bulge remover is disabled until post-simplification");
+    }
+
     for (size_t i = 0; i < iteration_count; i++) {
         info_container.set_iteration(i);
         SimplificationCycle(gp, info_container, removal_handler, printer, iterators_holder);
