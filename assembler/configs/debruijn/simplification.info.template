@@ -106,7 +106,7 @@ default
 	; complex bulge remover
 	cbr
 	{
-		enabled	true
+		enabled	false
 		max_relative_length	5.
 		max_length_difference	5
 	}
