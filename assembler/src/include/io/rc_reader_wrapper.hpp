@@ -7,7 +7,6 @@
 #pragma once
 
 #include <boost/noncopyable.hpp>
-#include <boost/foreach.hpp>
 
 #include "read_stream_vector.hpp"
 #include "delegating_reader_wrapper.hpp"

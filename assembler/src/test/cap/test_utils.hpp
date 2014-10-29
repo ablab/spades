@@ -282,7 +282,7 @@ class ColoredGraphIsomorphismChecker {
     template<class EdgeContainer>
     vector<EdgeData> ConvertData(const EdgeContainer& edges, const Pack& pack) const {
         vector<EdgeData> ans;
-        FOREACH(EdgeId e, edges) {
+        for (EdgeId e : edges) {
             EdgeData data(pack.gp.g.EdgeNucls(e).str(), pack.col.Color(e));
             ans.push_back(data);
         }

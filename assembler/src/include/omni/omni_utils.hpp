@@ -381,7 +381,7 @@ class MultiplicityCounter {
                 }
             }
         }
-        FOREACH (EdgeId in_e, graph_.IncomingEdges(a)) {
+        for (EdgeId in_e : graph_.IncomingEdges(a)) {
             if (in_e == e) {
                 if (a != start) {
                     return false;
@@ -443,7 +443,7 @@ class DominatedSetFinder {
 
     bool CheckCanBeProcessed(VertexId v) const {
         DEBUG( "Check if vertex " << g_.str(v) << " is dominated close neighbour");
-        FOREACH (EdgeId e, g_.IncomingEdges(v)) {
+        for (EdgeId e : g_.IncomingEdges(v)) {
             if (dominated_.count(g_.EdgeStart(e)) == 0) {
                 DEBUG( "Blocked by external vertex " << g_.int_id(g_.EdgeStart(e)) << " that starts edge " << g_.int_id(e));
                 DEBUG("Check fail");
@@ -456,8 +456,8 @@ class DominatedSetFinder {
 
     void UpdateCanBeProcessed(VertexId v,
                               std::queue<VertexId>& can_be_processed) const {
-        DEBUG("Updating can be processed")
-        FOREACH (EdgeId e, g_.OutgoingEdges(v)) {
+        DEBUG("Updating can be processed");
+        for (EdgeId e : g_.OutgoingEdges(v)) {
             DEBUG("Considering edge " << ToString(e));
             VertexId neighbour_v = g_.EdgeEnd(e);
             if (CheckCanBeProcessed(neighbour_v)) {
@@ -472,7 +472,7 @@ class DominatedSetFinder {
         size_t max = 0;
         VERIFY(g_.IncomingEdgeCount(v) > 0);
         VERIFY(!dominated_only || CheckCanBeProcessed(v));
-        FOREACH (EdgeId e, g_.IncomingEdges(v)) {
+        for (EdgeId e : g_.IncomingEdges(v)) {
             //in case of dominated_only == false
             if (dominated_.count(g_.EdgeStart(e)) == 0)
                 continue;
@@ -491,7 +491,7 @@ class DominatedSetFinder {
     }
 
     bool CheckNoEdgeToStart(VertexId v) {
-        FOREACH (EdgeId e, g_.OutgoingEdges(v)) {
+        for (EdgeId e : g_.OutgoingEdges(v)) {
             if (g_.EdgeEnd(e) == start_vertex_) {
                 return false;
             }
@@ -544,8 +544,8 @@ class DominatedSetFinder {
     //little meaning if FillDominated returned false
     const map<VertexId, Range> CountBorder() const {
         map<VertexId, Range> border;
-        FOREACH(VertexId v, key_set(border)) {
-            FOREACH(EdgeId e, g_.OutgoingEdges(v)) {
+        for (VertexId v : key_set(border)) {
+            for (EdgeId e : g_.OutgoingEdges(v)) {
                 VertexId e_end = g_.EdgeEnd(e);
                 if (dominated_.count(e_end) == 0) {
                     border[e_end] = NeighbourDistanceRange(e_end, false);

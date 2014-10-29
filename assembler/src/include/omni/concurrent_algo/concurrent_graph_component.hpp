@@ -17,8 +17,6 @@
 #define CONCURRENT_GRAPH_COMPONENT_HPP_
 
 
-#include <boost/foreach.hpp>
-
 #include "standard_base.hpp"
 #include "order_and_law.hpp"
 #include "abstract_editable_graph.hpp"
@@ -46,7 +44,6 @@ public:
 	typedef AbstractEditableGraph<VertexId, EdgeId, DataMaster, VertexIterator> base;
 	typedef typename base::edge_const_iterator edge_const_iterator;
 
-
 	template<class InputVertexIterator>
 	ConcurrentGraphComponent(
 			Graph& graph,
@@ -58,7 +55,7 @@ public:
 				graph_(graph), vertices_(verticesBegin, verticesEnd),
 				edge_id_distributor_(id_distributor) {
 
-		BOOST_FOREACH(const VertexId& vertex, vertices_) {
+		for (const VertexId& vertex : vertices_) {
 			if (!IsInComponent(graph_.OutgoingEdges(vertex)) ||
 						!IsInComponent(graph_.IncomingEdges(vertex))) {
 
@@ -247,9 +244,8 @@ public:
 	}
 
 	void GetEdgesGoingOutOfComponent(vector<EdgeId>& output) {
-		BOOST_FOREACH(const VertexId& vertex, vertices_) {
-			vector<EdgeId> edges = graph_.OutgoingEdges(vertex);
-			BOOST_FOREACH(const EdgeId& edge, edges) {
+		for (const VertexId& vertex : vertices_) {
+			for (const EdgeId& edge : graph_.OutgoingEdges(vertex)) {
 				if (!IsInComponent(edge)) {
 					output.push_back(edge);
 				}
@@ -276,7 +272,7 @@ public:
 	}
 
 	bool IsInComponent(const std::vector<VertexId>& vertices) const {
-		BOOST_FOREACH(const VertexId& vertex, vertices) {
+		for (const VertexId& vertex : vertices) {
 			if (!IsInComponent(vertex)) {
 				return false;
 			}
@@ -286,7 +282,7 @@ public:
 	}
 
 	bool IsInComponent(const std::vector<EdgeId>& edges) const {
-		BOOST_FOREACH(const EdgeId& edge, edges) {
+		for (const EdgeId& edge : edges) {
 			if (!IsInComponent(edge)) {
 				return false;
 			}
@@ -310,7 +306,7 @@ public:
 	virtual bool IsInternalSafe(const EdgeId& edge) const = 0;
 
 	virtual bool IsInternalSafe(const vector<EdgeId>& path) const {
-		BOOST_FOREACH(EdgeId edge, path) {
+		for (EdgeId edge : path) {
 			if (!IsInternalSafe(edge)) {
 				return false;
 			}
@@ -320,7 +316,7 @@ public:
 	}
 
 	virtual bool IsInComponentSafe(const vector<EdgeId>& path) const {
-		BOOST_FOREACH(EdgeId edge, path) {
+		for (EdgeId edge : path) {
 			if (!IsInComponentSafe(edge)) {
 				return false;
 			}
@@ -333,11 +329,11 @@ public:
 		TRACE("Start synchronize");
 		edge_id_distributor_.Synchronize();
 
-		BOOST_FOREACH(VertexId vertex, deleted_vertices_) {
+		for (VertexId vertex : deleted_vertices_) {
 			graph_.HiddenDeleteVertex(vertex);
 		}
 
-		BOOST_FOREACH(VertexId vertex, vertices_to_compress_) {
+		for (VertexId vertex : vertices_to_compress_) {
 			if (graph_.CanCompressVertex(vertex)) {
 				base::CompressVertex(vertex);
 			}
@@ -441,7 +437,7 @@ protected:
 		vector<EdgeId> edges_from_component;
 		edges_from_component.reserve(edges.size());
 
-		BOOST_FOREACH(const EdgeId& edge, edges) {
+		for (const EdgeId& edge : edges) {
 			if (IsInComponent(graph_.EdgeStart(edge))) {
 				edges_from_component.push_back(edge);
 			}

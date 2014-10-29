@@ -168,7 +168,7 @@ class UniquenessPlausabilityCondition : public EdgeCondition<Graph> {
 
     bool ExistPlausible(EdgeId init_e, const vector<EdgeId>& edges,
                         bool forward) const {
-        FOREACH(EdgeId e, edges) {
+        for (EdgeId e : edges) {
             if (e == init_e)
                 continue;
             if (CheckPlausibility(e, forward)) {

@@ -80,7 +80,7 @@ public:
 		//TODO: doesn`t work with parallel simplification
 		for (auto I = g_.in_begin(v), E = g_.in_end(v); I != E; ++I) {
 			EdgeId edge = *I;
-//		BOOST_FOREACH(EdgeId edge, g_.IncomingEdges(v)) {
+//		for (EdgeId edge : g_.IncomingEdges(v)) {
 			path_.push_back(edge);
 			error_code |= Go(g_.EdgeStart(edge), min_len,
 					cur_len + g_.length(edge), dsts_to_start);

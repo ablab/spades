@@ -146,7 +146,7 @@ class CoordinatesUpdater {
     pair<Genome, Coordinates> answer;
     auto mapper = *MapperInstance(gp_);
     auto mapping_path = mapper.MapSequence(genome);
-    FOREACH(Range r, coords) {
+    for (Range r : coords) {
       answer.second.push_back(
           KmerToNuclRange(
               NewCoords(
@@ -175,7 +175,7 @@ struct GeneCollection {
   void LoadGenomes(const set<string>& genome_names,
                    const string& genomes_folder) {
     size_t id = 0;
-FOREACH  (string name, genome_names) {
+    for (string name : genome_names) {
     string filename = genomes_folder + name;
     path::CheckFileExistenceFATAL(filename);
     genomes.insert(
@@ -290,11 +290,11 @@ void Save(const string& root_folder, const string& genomes_folder,
 template<class gp_t>
 void Update(const gp_t& gp) {
   CoordinatesUpdater<gp_t> updater(gp);
-  FOREACH(GenomeId genome_id, key_set(genomes)) {
+  for (GenomeId genome_id : key_set(genomes)) {
     Coordinates gene_coords;
     vector<GeneId> gene_ids;
-    FOREACH (GeneId gene_id, key_set(genes)) {
-      FOREACH(Pos pos, get_all(genes[gene_id].gene_positions, genome_id)) {
+    for (GeneId gene_id : key_set(genes)) {
+      for (Pos pos:  get_all(genes[gene_id].gene_positions, genome_id)) {
         gene_ids.push_back(gene_id);
         VERIFY(pos.second);
         gene_coords.push_back(pos.first);
@@ -304,7 +304,7 @@ void Update(const gp_t& gp) {
     genomes.find(genome_id)->second.sequence = updated.first;
 
     //clearing gene positions
-    FOREACH(GeneId gene_id, key_set(genes)) {
+    for (GeneId gene_id : key_set(genes)) {
       genes[gene_id].gene_positions.clear();
     }
 
@@ -333,9 +333,9 @@ DECL_LOGGER("GeneCollection")
 //
 //    //todo improve later
 //    Sequence total_gene_sequence;
-//    FOREACH(GenomeId genome_id, key_set(gene_collection.genomes)) {
+//    for (GenomeId genome_id : key_set(gene_collection.genomes)) {
 //      const Sequence& genome = get(gene_collection.genomes, genome_id).sequence;
-//      FOREACH(Pos pos, get_all(gene_poss, genome_id)) {
+//      for (Pos pos : get_all(gene_poss, genome_id)) {
 //        total_gene_sequence = total_gene_sequence + genome.Subseq(pos.first.start_pos, pos.first.end_pos);
 //      }
 //    }

@@ -16,8 +16,6 @@
 #ifndef CONJUGATE_VERTEX_GLUED_GRAPH_HPP_
 #define CONJUGATE_VERTEX_GLUED_GRAPH_HPP_
 
-#include <boost/foreach.hpp>
-
 #include "omni_utils.hpp"
 #include "standard_base.hpp"
 
@@ -43,7 +41,7 @@ public:
 	ConjugateVertexGluedGraph(Graph& graph)
 			: graph_(graph) {
 
-		BOOST_FOREACH(const VertexId& vertex, graph_) {
+		for (const VertexId& vertex : graph_) {
 			vertices_.insert(GetMinWithConjugate(vertex));
 		}
 	}

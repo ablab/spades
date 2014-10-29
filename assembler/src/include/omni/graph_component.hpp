@@ -40,7 +40,7 @@ class GraphComponent {
 	void FillEdges() {
 		for (auto v_it = vertices_.begin(); v_it != vertices_.end(); ++v_it) {
 			TRACE("working with vertex " << graph_.str(*v_it));
-			FOREACH (EdgeId e,  graph_.OutgoingEdges(*v_it)) {
+			for (EdgeId e : graph_.OutgoingEdges(*v_it)) {
 				VertexId edge_end = graph_.EdgeEnd(e);
 				TRACE(graph_.coverage(e) << " " << graph_.length(e));
 				if (vertices_.count(edge_end) > 0) {
@@ -147,7 +147,7 @@ public:
 	bool IsBorder(VertexId v) const {
 		if(vertices_.count(v) == 0)
 			return false;
-		FOREACH (EdgeId e, graph_.AdjacentEdges(v)) {
+		for (EdgeId e : graph_.AdjacentEdges(v)) {
 			if (vertices_.count(graph_.EdgeStart(e)) == 0
 					|| vertices_.count(graph_.EdgeEnd(e)) == 0) {
 				return true;

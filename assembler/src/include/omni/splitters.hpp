@@ -372,12 +372,12 @@ public:
     void CloseComponent(set<VertexId> &component) const {
         set<VertexId> additional_vertices;
         for (auto it = component.begin(); it != component.end(); ++it) {
-            FOREACH (EdgeId e, graph_.OutgoingEdges(*it)) {
+            for (EdgeId e : graph_.OutgoingEdges(*it)) {
                 if (graph_.length(e) >= edge_length_bound_) {
                     additional_vertices.insert(graph_.EdgeEnd(e));
                 }
             }
-            FOREACH (EdgeId e, graph_.IncomingEdges(*it)) {
+            for (EdgeId e : graph_.IncomingEdges(*it)) {
                 if (graph_.length(e) >= edge_length_bound_) {
                     additional_vertices.insert(graph_.EdgeStart(e));
                 }
@@ -403,8 +403,8 @@ private:
 
     set<VertexId> FindNeighbours(const set<VertexId> &s) {
         set<VertexId> result(s.begin(), s.end());
-        FOREACH (VertexId v, result) {
-            FOREACH (EdgeId e, this->graph().AdjacentEdges(v)) {
+        for (VertexId v : result) {
+            for (EdgeId e : this->graph().AdjacentEdges(v)) {
                 if(this->graph().length(e) <= edge_length_bound_) {
                     result.insert(this->graph().EdgeEnd(e));
                     result.insert(this->graph().EdgeStart(e));

@@ -20,7 +20,7 @@ class ChimericEdgeClassifier {
     vector<EdgeId> FilterNotEqual(const EdgeContainer& edges,
             EdgeId edge) const {
         vector<EdgeId> answer;
-        FOREACH(EdgeId e, edges) {
+        for (EdgeId e : edges) {
             if (e != edge) {
                 answer.push_back(e);
             }

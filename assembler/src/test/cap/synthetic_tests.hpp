@@ -114,7 +114,7 @@ class SyntheticTestsRunner {
             const XmlTreeT& genome_node) const {
         vector<io::SingleRead> contigs;
         size_t contig_cnt = 0;
-        BOOST_FOREACH(const XmlNodeT& contig, genome_node) {
+        for (const XmlNodeT& contig : genome_node) {
             contigs.push_back(
                     io::SingleRead("contig_" + ToString(contig_cnt++),
                             contig.second.data()));
@@ -125,7 +125,7 @@ class SyntheticTestsRunner {
     void ProcessExample(const XmlTreeT& example_node, size_t id) const {
 
         vector<vector<io::SingleRead>> genomes;
-        BOOST_FOREACH (const XmlNodeT& genome, example_node) {
+        for (const XmlNodeT& genome : example_node) {
             if (genome.first == "genome") {
                 genomes.push_back(ParseGenome(genome.second));
             }
@@ -142,7 +142,7 @@ class SyntheticTestsRunner {
 
     vector<size_t> ProcessFile(const set<size_t>& ids_to_launch) const {
         vector<size_t> launched_tests;
-        BOOST_FOREACH (const XmlNodeT& example, xml_tree_.get_child("examples")) {
+        for (const XmlNodeT& example : xml_tree_.get_child("examples")) {
             size_t id = example.second.get<size_t>("<xmlattr>.n");
             if (ids_to_launch.empty() || ids_to_launch.count(id) > 0) {
                 ProcessExample(example.second, id);

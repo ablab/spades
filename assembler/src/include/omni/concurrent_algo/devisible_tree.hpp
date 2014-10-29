@@ -17,7 +17,6 @@
 #define DEVISIBLE_TREE_HPP_
 
 
-#include <boost/foreach.hpp>
 #include <boost/pending/disjoint_sets.hpp>
 #include <boost/property_map/property_map.hpp>
 #include <queue>
@@ -53,7 +52,7 @@ public:
 	}
 
 	void UpdateSubtreeSize() {
-		BOOST_FOREACH(TreeNode* node, children_) {
+		for (TreeNode* node : children_) {
 			subtree_size_ += node->GetSize();
 		}
 	}
@@ -83,7 +82,7 @@ public:
 	}
 
 	virtual void CollectNodes(std::queue<TreeNode<Value>*>& nodes) {
-		BOOST_FOREACH(TreeNode* node, children_) {
+		for (TreeNode* node : children_) {
 			nodes.push(node);
 		}
 		subtree_size_ = 0;
@@ -151,11 +150,11 @@ public:
 
 		boost::disjoint_sets<BoostRankMap, BoostParentMap> dset(boost_rank_map, boost_parent_map);
 
-		BOOST_FOREACH(const VertexId& vertex, graph_) {
+		for (const VertexId& vertex : graph_) {
 			dset.make_set(vertex);
 		}
 
-		BOOST_FOREACH(const VertexId& vertex, graph_) {
+		for (const VertexId& vertex : graph_) {
 			nodes_.push_back(Node(vertex));
 			index_[vertex] = nodes_.size() - 1;
 		}
@@ -165,8 +164,8 @@ public:
 
 // build trees
 //		for (auto it = graph_.SmartEdgeBegin(LengthComparator<Graph>(graph_)); !it.IsEnd(); ++it) {
-		BOOST_FOREACH(VertexId vertex, graph) {
-			BOOST_FOREACH(EdgeId edge, graph.OutgoingEdges(vertex)) {
+		for (VertexId vertex : graph) {
+			for (EdgeId edge : graph.OutgoingEdges(vertex)) {
 				VertexId start = graph_.EdgeStart(edge);
 				VertexId end = graph_.EdgeEnd(edge);
 
@@ -185,11 +184,11 @@ public:
 
 		unordered_set<VertexId> forest_roots;
 
-		BOOST_FOREACH(VertexId vertex, graph_) {
+		for (VertexId vertex : graph_) {
 			forest_roots.insert(dset.find_set(vertex));
 		}
 
-		BOOST_FOREACH(VertexId vertex, forest_roots) {
+		for (VertexId vertex : forest_roots) {
 			Node& node = GetNode(vertex);
 			TRACE("Adding " << vertex);
 			CreateTree(node, edges_);
@@ -238,7 +237,7 @@ private:
 
 	const vector<EdgeId> Filter(const vector<EdgeId>& vertex_edges, unordered_set<EdgeId>& edges) const {
 		vector<EdgeId> result;
-		BOOST_FOREACH(EdgeId edge, vertex_edges) {
+		for (EdgeId edge : vertex_edges) {
 			auto it = edges.find(edge);
 			if (it != edges.end()) {
 				TRACE("Edge " << edge << " went through the filter");
@@ -259,7 +258,7 @@ private:
 	const vector<VertexId> GetNeighbours(VertexId vertex, unordered_set<EdgeId>& edges) const {
 		const vector<EdgeId> vertex_tree_edges = Filter(GetEdges(vertex), edges);
 		vector<VertexId> neighbours;
-		BOOST_FOREACH(EdgeId edge, vertex_tree_edges) {
+		for (EdgeId edge : vertex_tree_edges) {
 			neighbours.push_back(GetSecond(vertex, edge));
 		}
 		return neighbours;
@@ -283,7 +282,7 @@ private:
 				nodes.push(stack_elem(node, grey));
 				const vector<VertexId> neighbours = GetNeighbours(node->GetValue(), tree_edges);
 				TRACE("Tree has " << tree_edges.size() << " edges");
-				BOOST_FOREACH(VertexId neighbour, neighbours) {
+				for (VertexId neighbour : neighbours) {
 					TRACE("Adding " << neighbour);
 					Node& child = GetNode(neighbour);
 					node->AddChild(child);

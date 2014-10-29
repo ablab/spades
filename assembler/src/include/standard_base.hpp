@@ -93,9 +93,6 @@ using std::make_shared;
 #include <boost/lexical_cast.hpp>
 #include <boost/noncopyable.hpp>
 
-#include <boost/foreach.hpp>
-#define FOREACH         BOOST_FOREACH
-
 using boost::bind;
 using boost::ref;
 using boost::cref;

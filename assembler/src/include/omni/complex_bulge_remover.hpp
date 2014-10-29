@@ -37,7 +37,7 @@ class LocalizedComponent: public GraphActionHandler<Graph> /*: public GraphCompo
 	size_t diff_threshold_;
 
 	bool AllEdgeOut(VertexId v) const {
-		FOREACH (EdgeId e, g_.OutgoingEdges(v)) {
+		for (EdgeId e : g_.OutgoingEdges(v)) {
 			if (contains(g_.EdgeEnd(e)))
 				return false;
 		}
@@ -45,7 +45,7 @@ class LocalizedComponent: public GraphActionHandler<Graph> /*: public GraphCompo
 	}
 
 	bool AllEdgeIn(VertexId v) const {
-		FOREACH (EdgeId e, g_.OutgoingEdges(v)) {
+		for (EdgeId e : g_.OutgoingEdges(v)) {
 			if (!contains(g_.EdgeEnd(e)))
 				return false;
 		}
@@ -72,7 +72,7 @@ public:
 	}
 
 	bool IsEndVertex(VertexId v) const {
-		FOREACH (EdgeId e, g_.OutgoingEdges(v)) {
+		for (EdgeId e : g_.OutgoingEdges(v)) {
 			if (contains(g_.EdgeEnd(e)))
 				return false;
 		}
@@ -87,7 +87,7 @@ public:
 		height_2_vertices_.insert(make_pair(Average(dist_range), v));
 		DEBUG(
 				"Range " << dist_range << " Average height " << Average(dist_range));
-		FOREACH (EdgeId e, g_.IncomingEdges(v)) {
+		for (EdgeId e : g_.IncomingEdges(v)) {
 			end_vertices_.erase(g_.EdgeStart(e));
 		}
 		if (IsEndVertex(v)) {
@@ -98,7 +98,7 @@ public:
 	//todo what if path processor will fail inside
 	size_t TotalPathCount() const {
 		size_t answer = 0;
-		FOREACH (VertexId end_v, end_vertices_) {
+		for (VertexId end_v : end_vertices_) {
 			PathStorageCallback<Graph> path_storage(g_);
 			Range r = vertex_depth_.find(end_v)->second;
 			PathProcessor<Graph> best_path_finder(g_, r.start_pos, r.end_pos,
@@ -110,7 +110,7 @@ public:
 	}
 
 	bool CheckCompleteness() const {
-		FOREACH (VertexId v, key_set(vertex_depth_)) {
+		for (VertexId v : key_set(vertex_depth_)) {
 			if (v == start_vertex_)
 				continue;
 			if (!AllEdgeIn(v) && !AllEdgeOut(v))
@@ -152,7 +152,7 @@ public:
 
 	set<size_t> avg_distances() const {
 		set<size_t> distances;
-		FOREACH(VertexId v, key_set(vertex_depth_)) {
+		for (VertexId v : key_set(vertex_depth_)) {
 			distances.insert(avg_distance(v));
 		}
 		return distances;
@@ -168,7 +168,7 @@ public:
 
 	bool CheckCloseNeighbour(VertexId v) const {
 		DEBUG("Check if vertex " << g_.str(v) << " can be processed");
-		FOREACH (EdgeId e, g_.IncomingEdges(v)) {
+		for (EdgeId e : g_.IncomingEdges(v)) {
 			if (!contains(g_.EdgeStart(e))) {
 				DEBUG(
 						"Blocked by unprocessed or external vertex " << g_.int_id(g_.EdgeStart(e)) << " that starts edge " << g_.int_id(e));
@@ -187,7 +187,7 @@ public:
 
 	bool ContainsConjugateVertices() const {
 		set<VertexId> conjugate_vertices;
-		FOREACH (VertexId v, key_set(vertex_depth_)) {
+		for (VertexId v : key_set(vertex_depth_)) {
 			if (conjugate_vertices.count(v) == 0) {
 				conjugate_vertices.insert(g_.conjugate(v));
 			} else {
@@ -309,7 +309,7 @@ public:
 
 	virtual void HandleMerge(const vector<EdgeId>& old_edges, EdgeId /*new_edge*/) {
 		//verify false
-		FOREACH (EdgeId e, old_edges) {
+		for (EdgeId e : old_edges) {
 			VERIFY(!Contains(e));
 		}
 	}
@@ -340,7 +340,7 @@ public:
 			const set<EdgeId>& edges) :
 			base(br_comp.g(), "br_tree"), br_comp_(br_comp), edges_(edges) {
 		DEBUG("Tree edges " << br_comp.g().str(edges));
-		FOREACH(EdgeId e, edges_) {
+		for (EdgeId e : edges_) {
 			vertices_.insert(br_comp_.g().EdgeStart(e));
 			vertices_.insert(br_comp_.g().EdgeEnd(e));
 		}
@@ -402,7 +402,7 @@ private:
 
 	mixed_color_t CountVertexColor(VertexId v) const {
 		mixed_color_t answer = mixed_color_t(0);
-		FOREACH(EdgeId e, comp_.g().OutgoingEdges(v)) {
+		for (EdgeId e : comp_.g().OutgoingEdges(v)) {
 			answer |= color(e);
 		}
 		return answer;
@@ -415,7 +415,7 @@ private:
 	void ColorComponent() {
 		DEBUG("Coloring component");
 		size_t cnt = 0;
-		FOREACH(VertexId v, comp_.end_vertices()) {
+		for (VertexId v : comp_.end_vertices()) {
 			mixed_color_t color = 1 << cnt;
 			DEBUG("Coloring exit " << comp_.g().str(v));
 			vertex_colors_.insert(make_pair(v, color));
@@ -529,7 +529,7 @@ class SkeletonTreeFinder {
 
 	vector<EdgeId> GoodOutgoingEdges(VertexId v) const {
 		vector<EdgeId> answer;
-		FOREACH(EdgeId e, component_.g().OutgoingEdges(v)) {
+		for (EdgeId e : component_.g().OutgoingEdges(v)) {
 			if (IsGoodEdge(e)) {
 				DEBUG("Edge " << component_.g().str(e) << " is classified as good");
 				answer.push_back(e);
@@ -542,7 +542,7 @@ class SkeletonTreeFinder {
 
 	vector<EdgeId> GoodOutgoingEdges(const vector<VertexId>& vertices) const {
 		vector<EdgeId> answer;
-		FOREACH(VertexId v, vertices) {
+		for (VertexId v : vertices) {
 			if (component_.end_vertices().count(v) == 0) {
 				push_back_all(answer, GoodOutgoingEdges(v));
 			}
@@ -568,7 +568,7 @@ class SkeletonTreeFinder {
 		VERIFY(component_.g().OutgoingEdgeCount(v) > 0);
 		primitive_color_t ds = GetCorrespondingDisjointSet(
 				coloring_.color(*(component_.g().OutgoingEdges(v).begin())));
-		FOREACH (EdgeId e, component_.g().OutgoingEdges(v)) {
+		for (EdgeId e : component_.g().OutgoingEdges(v)) {
 			current_color_partition_.unite(ds,
 					GetCorrespondingDisjointSet(coloring_.color(e)));
 		}
@@ -578,7 +578,7 @@ class SkeletonTreeFinder {
 		if (!ConsistentWithPartition(coloring_.color(v)))
 			return false;
 		mixed_color_t union_color_of_good_children = mixed_color_t(0);
-		FOREACH (EdgeId e, component_.g().OutgoingEdges(v)) {
+		for (EdgeId e : component_.g().OutgoingEdges(v)) {
 			if (good_edges_.count(e) > 0) {
 				union_color_of_good_children |= coloring_.color(e);
 			}
@@ -589,7 +589,7 @@ class SkeletonTreeFinder {
 	void Init() {
 		current_level_ = (int) level_heights_.size() - 1;
 		size_t end_cnt = 0;
-		FOREACH(VertexId v, component_.end_vertices()) {
+		for (VertexId v : component_.end_vertices()) {
 			good_vertices_.insert(v);
 			subtree_coverage_[v] = 0;
 			end_cnt++;
@@ -603,7 +603,7 @@ class SkeletonTreeFinder {
 	void UpdateNextEdgesAndCoverage(VertexId v) {
 		map<mixed_color_t, size_t> best_subtrees_coverage;
 		map<mixed_color_t, EdgeId> best_alternatives;
-		FOREACH (EdgeId e, component_.g().OutgoingEdges(v)) {
+		for (EdgeId e : component_.g().OutgoingEdges(v)) {
 			if (good_edges_.count(e) > 0) {
 				VertexId end = component_.g().EdgeEnd(e);
 				mixed_color_t color = coloring_.color(e);
@@ -617,7 +617,7 @@ class SkeletonTreeFinder {
 			}
 		}
 		size_t coverage = 0;
-		FOREACH (size_t cov, value_set(best_subtrees_coverage)) {
+		for (size_t cov : value_set(best_subtrees_coverage)) {
 			coverage += cov;
 		}
 		next_edges_[v] = SetAsVector<EdgeId>(value_set(best_alternatives));
@@ -645,7 +645,7 @@ public:
 			vertex_queue.pop();
 			if (next_edges_.count(v) == 0)
 				continue;
-			FOREACH (EdgeId e, next_edges_.find(v)->second) {
+			for (EdgeId e : next_edges_.find(v)->second) {
 				answer.insert(e);
 				vertex_queue.push(component_.g().EdgeEnd(e));
 			}
@@ -675,7 +675,7 @@ public:
 
 
 			//counting colors and color partitions
-			FOREACH(VertexId v, level_vertices) {
+			for (VertexId v : level_vertices) {
 				if (component_.end_vertices().count(v) == 0) {
 					UpdateColorPartitionWithVertex(v);
 					if (IsGoodVertex(v)) {
@@ -784,9 +784,9 @@ class ComponentProjector {
 		DEBUG("Getting height of vertex " << g_.str(g_.EdgeEnd(e)));
 		size_t end_height = component_.avg_distance(g_.EdgeEnd(e));
 		DEBUG("Done");
-		FOREACH (VertexId v, component_.vertices_on_height(start_height)) {
+		for (VertexId v : component_.vertices_on_height(start_height)) {
 			if (component_.end_vertices().count(v) == 0) {
-				FOREACH (EdgeId e, g_.OutgoingEdges(v)) {
+				for (EdgeId e : g_.OutgoingEdges(v)) {
 					VERIFY(
 							component_.avg_distance(g_.EdgeEnd(e)) == end_height);
 					if (tree_.Contains(e)
@@ -876,7 +876,7 @@ class LocalizedComponentFinder {
 	bool ProcessLocality(VertexId processing_v) {
 		vector<VertexId> processed_neighb;
 		vector<VertexId> unprocessed_neighb;
-		FOREACH (EdgeId e, g_.OutgoingEdges(processing_v)) {
+		for (EdgeId e : g_.OutgoingEdges(processing_v)) {
 			VertexId v = g_.EdgeEnd(e);
 			if (!comp_.contains(v)) {
 				unprocessed_neighb.push_back(v);
@@ -885,7 +885,7 @@ class LocalizedComponentFinder {
 			}
 		}
 		if (!processed_neighb.empty()) {
-			FOREACH (VertexId v, unprocessed_neighb) {
+			for (VertexId v : unprocessed_neighb) {
 				if (dominated_.count(v) > 0) {
 					interfering_.insert(v);
 				} else {
@@ -909,7 +909,7 @@ class LocalizedComponentFinder {
 			if (!comp_.contains(next_v)) {
 				VERIFY(dominated_.count(v) > 0);
 				comp_.AddVertex(next_v, dominated_.find(next_v)->second);
-				FOREACH(EdgeId e, g_.IncomingEdges(next_v)) {
+				for (EdgeId e : g_.IncomingEdges(next_v)) {
 					q.push(g_.EdgeStart(e));
 				}
 			}
@@ -936,7 +936,7 @@ class LocalizedComponentFinder {
 
 	bool CheckPathLengths() const {
 		VERIFY(CheckCompleteness());
-		FOREACH (VertexId v, comp_.end_vertices()) {
+		for (VertexId v : comp_.end_vertices()) {
 			if (comp_.distance_range(v).size() > length_diff_threshold_)
 				return false;
 		}
@@ -1126,7 +1126,7 @@ public:
 					}
 				}
 			}
-			FOREACH (VertexId v, vertices_to_post_process) {
+			for (VertexId v : vertices_to_post_process) {
 				it.HandleAdd(v);
 				g_.CompressVertex(v);
 			}

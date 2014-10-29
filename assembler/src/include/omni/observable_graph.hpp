@@ -26,7 +26,7 @@ class ObservableGraph : private boost::noncopyable {
     typedef ConstEdgeIterator<ObservableGraph> ConstEdgeIt;
 
     virtual void print_handlers() const {
-        FOREACH (Handler* handler_ptr, action_handler_list_) {
+        for (Handler* handler_ptr : action_handler_list_) {
             cout << handler_ptr->name() << endl;
         }
     }
@@ -39,7 +39,7 @@ class ObservableGraph : private boost::noncopyable {
 
  protected:
     bool VerifyAllDetached() {
-        FOREACH (Handler* handler_ptr, action_handler_list_) {
+        for (Handler* handler_ptr : action_handler_list_) {
             if(handler_ptr->IsAttached()) {
             	return false;
             }
@@ -51,7 +51,7 @@ class ObservableGraph : private boost::noncopyable {
  //todo make Fire* protected once again with helper friend class
     virtual void FireAddVertex(VertexId v) const {
         TRACE("FireAddVertex event of vertex inner_id=" << v.int_id() << " for " << action_handler_list_.size() << " handlers");
-        FOREACH (Handler* handler_ptr, action_handler_list_) {
+        for (Handler* handler_ptr : action_handler_list_) {
             if(handler_ptr->IsAttached()) {
             	TRACE("FireAddVertex to handler " << handler_ptr->name());
             	applier_->ApplyAdd(*handler_ptr, v);
@@ -61,7 +61,7 @@ class ObservableGraph : private boost::noncopyable {
 
     virtual void FireAddEdge(EdgeId e) const {
         TRACE("FireAddEdge event of edge inner_id=" << e.int_id() << " for " << action_handler_list_.size() << " handlers");
-        FOREACH (Handler* handler_ptr, action_handler_list_) {
+        for (Handler* handler_ptr : action_handler_list_) {
             if(handler_ptr->IsAttached()) {
             	TRACE("FireAddEdge to handler " << handler_ptr->name());
             	applier_->ApplyAdd(*handler_ptr, e);
@@ -92,7 +92,7 @@ class ObservableGraph : private boost::noncopyable {
 
     virtual void FireMerge(vector<EdgeId> old_edges, EdgeId new_edge) const {
         TRACE("FireMerge event, new edge inner_id=" << new_edge.int_id() << " for " << action_handler_list_.size() << " handlers");
-        FOREACH (Handler* handler_ptr, action_handler_list_) {
+        for (Handler* handler_ptr : action_handler_list_) {
             if(handler_ptr->IsAttached()) {
             	TRACE("FireMerge to handler " << handler_ptr->name());
             	applier_->ApplyMerge(*handler_ptr, old_edges, new_edge);
@@ -102,7 +102,7 @@ class ObservableGraph : private boost::noncopyable {
 
     virtual void FireGlue(EdgeId new_edge, EdgeId edge1, EdgeId edge2) const {
     	TRACE("FireGlue event, new edge inner_id=" << new_edge.int_id() << " for " << action_handler_list_.size() << " handlers");
-        FOREACH (Handler* handler_ptr, action_handler_list_) {
+        for (Handler* handler_ptr : action_handler_list_) {
             if(handler_ptr->IsAttached()) {
             	TRACE("FireGlue to handler " << handler_ptr->name());
             	applier_->ApplyGlue(*handler_ptr, new_edge, edge1, edge2);
@@ -114,7 +114,7 @@ class ObservableGraph : private boost::noncopyable {
     virtual void FireSplit(EdgeId edge, EdgeId new_edge1, EdgeId new_edge2) const {
         TRACE("FireSplit event, new edge1 inner_id=" << new_edge1.int_id() << ", new edge2 inner_id="
               << new_edge2.int_id() << " for " << new_edge2.int_id() << action_handler_list_.size() << " handlers");
-        FOREACH (Handler* handler_ptr, action_handler_list_) {
+        for (Handler* handler_ptr : action_handler_list_) {
             if(handler_ptr->IsAttached()) {
             	TRACE("FireSplit to handler " << handler_ptr->name());
             	applier_->ApplySplit(*handler_ptr, edge, new_edge1, new_edge2);
