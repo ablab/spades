@@ -6,14 +6,14 @@
 
 #pragma once
 
-#include "standard_base.hpp"
-#include "boost/function.hpp"
+#include <boost/bind.hpp>
+#include <boost/function.hpp>
 
 namespace func {
 
 //to use with boost::function-s
 template<class T>
-void Composition(T t, boost::function<void(T)> f1,
+void Compose(T t, boost::function<void(T)> f1,
 		boost::function<void(T)> f2) {
 	if (f1)
 		f1(t);
@@ -21,10 +21,16 @@ void Composition(T t, boost::function<void(T)> f1,
 		f2(t);
 }
 
+template<class T>
+boost::function<void(T)> Composition(boost::function<void(T)> f1,
+		boost::function<void(T)> f2) {
+    return boost::bind(func::Compose<T>, _1, f1, f2);
+}
+
 template<class A, class B>
 class Func {
 public:
-	typedef function<B(A)> function_t;
+	typedef boost::function<B(A)> function_t;
 
 	virtual B Apply(A a) const = 0;
 

@@ -167,50 +167,11 @@ private:
   size_t period_;
 };
 
-template<class LockT>
-class ReEnteringLock {
-    LockT& lock_;
-    bool reentered_;
-
-    uint16_t locking_thread() const {
-        return lock_.extra();
-    }
-
-    uint16_t current_thread() const {
-        return uint16_t(omp_get_thread_num());
-    }
-
-    void Lock() {
-        lock_.lock();
-        lock_.setExtra(current_thread());
-    }
-
-    void Unlock() {
-        lock_.setExtra(MAX_THREAD_CNT);
-        lock_.unlock();
-    }
-
-public:
-    ReEnteringLock(LockT& lock) :
-        lock_(lock),
-        reentered_(false) {
-        if (locking_thread() == current_thread()) {
-            reentered_ = true;
-        } else {
-            Lock();
-        }
-    }
-
-    ~ReEnteringLock() {
-        if (!reentered_) {
-            Unlock();
-        }
-    }
-};
-
-
-template<class P>
+template<class PurePtrT>
 class PurePtrLock;
+
+template<class PurePtrT>
+class PurePtrMarker;
 
 //todo maybe make it extend folly::PackedSyncPtr<T>?
 template<class T>
@@ -220,12 +181,12 @@ struct pure_pointer {
 
     explicit pure_pointer()
             : int_id_(0) {
-        ptr_.init(pointer_type(0), uint16_t(-1u));
+        ptr_.init(pointer_type(0), MAX_THREAD_CNT);
     }
 
     explicit pure_pointer(T *ptr)
             : int_id_(size_t(ptr)) {
-        ptr_.init(ptr, uint16_t(-1u));
+        ptr_.init(ptr, MAX_THREAD_CNT);
         VERIFY(int_id_ < 2);
     }
 
@@ -278,7 +239,8 @@ struct pure_pointer {
     }
 
 private:
-    friend class PurePtrLock<pure_pointer<T>> ;
+    friend class PurePtrLock<pure_pointer<T>>;
+    friend class PurePtrMarker<pure_pointer<T>>;
 
     typedef folly::PackedSyncPtr<T> lock_pointer_type;
 
@@ -295,6 +257,48 @@ private:
     size_t int_id_;
 };
 
+template<class LockT>
+class ReEnteringLock {
+    LockT& lock_;
+    bool reentered_;
+
+    uint16_t locking_thread() const {
+        //don't need barrier here (as folly documentation says)
+        return lock_.extra();
+    }
+
+    uint16_t current_thread() const {
+        return uint16_t(omp_get_thread_num());
+    }
+
+    void Lock() {
+        lock_.lock();
+        lock_.setExtra(current_thread());
+    }
+
+    void Unlock() {
+        lock_.setExtra(MAX_THREAD_CNT);
+        lock_.unlock();
+    }
+
+public:
+    ReEnteringLock(LockT& lock) :
+        lock_(lock),
+        reentered_(false) {
+        if (locking_thread() == current_thread()) {
+            reentered_ = true;
+        } else {
+            Lock();
+        }
+    }
+
+    ~ReEnteringLock() {
+        if (!reentered_) {
+            Unlock();
+        }
+    }
+};
+
 /**
  * Lock that uses a pure ptr as a target.
  * Be careful NOT to pass a COPY of pure ptr you want to use as locked object!
@@ -307,6 +311,41 @@ public:
     PurePtrLock(PurePtrT& pure_ptr) :
             inner_lock_(pure_ptr.ptr_)
     {
+    }
+
+};
+
+/**
+ * Way to "mark" pure pointer without using additional memory.
+ * Marking/unmarking operations are atomic
+ * Be careful NOT to pass a COPY of pure ptr you want to mark!
+ * Do not use with PurePtrLocks, they use the same space for storing data...
+ */
+template<class PurePtrT>
+class PurePtrMarker {
+    typedef typename PurePtrT::lock_pointer_type LockWithData;
+
+    void ChangeMark(PurePtrT& pure_ptr, uint16_t new_mark) const {
+        LockWithData& lock_with_data = pure_ptr.ptr_;
+        lock_with_data.lock();
+        lock_with_data.setExtra(new_mark);
+        lock_with_data.unlock();
+    }
+
+public:
+
+    void mark(PurePtrT& pure_ptr) const {
+        ChangeMark(pure_ptr, 0);
+    }
+
+    void unmark(PurePtrT& pure_ptr) const {
+        ChangeMark(pure_ptr, MAX_THREAD_CNT);
+    }
+
+    bool is_marked(const PurePtrT& pure_ptr) const {
+        uint16_t curr_mark = pure_ptr.ptr_.extra();
+        VERIFY(curr_mark == 0 || curr_mark == MAX_THREAD_CNT);
+        return curr_mark == 0;
     }
 
 };

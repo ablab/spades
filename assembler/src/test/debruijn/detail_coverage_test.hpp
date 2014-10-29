@@ -20,7 +20,7 @@ BOOST_FIXTURE_TEST_SUITE(detail_coverage_tests, TmpFolderFixture)
 BOOST_AUTO_TEST_CASE( AgreementTest ) {
     string filename = "./data/debruijn/ECOLI_IS220_QUAKE_400K/K55/latest/saves/construction";
 
-    conj_graph_pack gp(55, tmp_folder, 0,
+    conj_graph_pack gp(55, "tmp", 0,
                        Sequence(), 0,
                        false, false,
                        /*flanking_range*/50);
@@ -45,7 +45,7 @@ BOOST_AUTO_TEST_CASE( AgreementTest ) {
 BOOST_AUTO_TEST_CASE( AgreementTest2 ) {
     string filename = "./data/debruijn/ECOLI_IS220_QUAKE_400K/K55/latest/saves/simplification";
 
-    conj_graph_pack gp(55, tmp_folder, 0,
+    conj_graph_pack gp(55, "tmp", 0,
                        Sequence(), 0,
                        false, false,
                        /*flanking_range*/50);

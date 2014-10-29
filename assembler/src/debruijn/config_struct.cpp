@@ -207,15 +207,15 @@ void load(debruijn_config::simplification::topology_tip_clipper& ttc,
 }
 
 void load(debruijn_config::simplification::relative_coverage_comp_remover& rcc,
-          boost::property_tree::ptree const& pt, bool /*complete*/) {
+          boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
-  load(rcc.enabled, pt, "enabled");
-  load(rcc.coverage_gap, pt, "coverage_gap");
-  load(rcc.length_coeff, pt, "max_length_coeff");
-  load(rcc.tip_allowing_length_coeff, pt, "max_length_with_tips_coeff");
-  load(rcc.vertex_count_limit, pt, "max_vertex_cnt");
-  load(rcc.max_ec_length_coefficient, pt, "max_ec_length_coefficient");
-  load(rcc.max_coverage_coeff, pt, "max_coverage_coeff");
+  load(rcc.enabled, pt, "enabled", complete);
+  load(rcc.coverage_gap, pt, "coverage_gap", complete);
+  load(rcc.length_coeff, pt, "max_length_coeff", complete);
+  load(rcc.tip_allowing_length_coeff, pt, "max_length_with_tips_coeff", complete);
+  load(rcc.vertex_count_limit, pt, "max_vertex_cnt", complete);
+  load(rcc.max_ec_length_coefficient, pt, "max_ec_length_coefficient", complete);
+  load(rcc.max_coverage_coeff, pt, "max_coverage_coeff", complete);
 }
 
 void load(debruijn_config::simplification::isolated_edges_remover& ier,
@@ -228,14 +228,12 @@ void load(debruijn_config::simplification::isolated_edges_remover& ier,
 }
 
 void load(debruijn_config::simplification::complex_bulge_remover& cbr,
-          boost::property_tree::ptree const& pt, bool /*complete*/) {
+          boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
 
   load(cbr.enabled, pt, "enabled");
-  load(cbr.pics_enabled, pt, "pics_enabled");
-  load(cbr.folder, pt, "folder");
-  load(cbr.max_relative_length, pt, "max_relative_length");
-  load(cbr.max_length_difference, pt, "max_length_difference");
+  load(cbr.max_relative_length, pt, "max_relative_length", complete);
+  load(cbr.max_length_difference, pt, "max_length_difference", complete);
 }
 
 void load(debruijn_config::simplification::erroneous_connections_remover& ec,
@@ -423,7 +421,6 @@ void load(debruijn_config::simplification::presimplification& presimp,
 
   load(presimp.enabled, pt, "enabled", complete);
   load(presimp.parallel, pt, "parallel", complete);
-  load(presimp.chunk_cnt, pt, "chunk_cnt", complete);
   load(presimp.activation_cov, pt, "activation_cov", complete);
   load(presimp.tip_condition, pt, "tip_condition", complete); // pre tip clipper:
   load(presimp.ec_condition, pt, "ec_condition", complete); // pre ec remover:
@@ -448,6 +445,8 @@ void load(debruijn_config::simplification& simp,
   load(simp.ier, pt, "ier", complete); // isolated edges remover
   load(simp.cbr, pt, "cbr", complete); // complex bulge remover
   load(simp.her, pt, "her", complete); // hidden ec remover
+  load(simp.persistent_cycle_iterators, pt, "persistent_cycle_iterators", complete);
+  load(simp.disable_br_in_cycle, pt, "disable_br_in_cycle", complete);
 //  load(simp.stats_mode, pt, "stats_mode", complete); // temporary stats counting mode
 }
 
@@ -667,6 +666,10 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 
   load(cfg.simp, pt, "default");
 
+  load(cfg.fast_simplification, pt, "fast_simplification");
+  if (cfg.ds.single_cell /*|| cfg.main_iteration*/)
+    cfg.fast_simplification = false; 
+
   if (cfg.ds.single_cell)
     load(cfg.simp, pt, "sc", false);
 
@@ -674,9 +677,11 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
     load(cfg.simp, pt, "careful", false);
 
   if (cfg.diploid_mode)
-      load(cfg.simp, pt, "diploid_simp", false);
+    load(cfg.simp, pt, "diploid_simp", false);
 
-  cfg.simp.cbr.folder = cfg.output_dir + cfg.simp.cbr.folder + "/";
+  if (cfg.fast_simplification)
+    load(cfg.simp, pt, "fast_simp", false);
+
   load(cfg.info_printers, pt, "info_printers");
   if (!cfg.developer_mode) {
       for (auto iter = cfg.info_printers.begin(); iter != cfg.info_printers.end(); ++iter) {

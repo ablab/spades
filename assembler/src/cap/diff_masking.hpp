@@ -99,7 +99,7 @@ void RefineGP(gp_t& gp, size_t delta = 5) {
 
     debruijn::simplification::SimplifInfoContainer info_container;
 
-    debruijn::simplification::ClipTips(gp, tc_config, info_container, true);
+    debruijn::simplification::ClipTipsWithProjection(gp, tc_config, info_container);
 
     INFO("Remapped " << gp.kmer_mapper.size() << " k-mers");
 }

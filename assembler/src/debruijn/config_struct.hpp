@@ -220,7 +220,7 @@ struct debruijn_config {
         };
 
         struct bulge_remover {
-        	bool   enabled;
+            bool enabled;
             double max_bulge_length_coefficient;
             size_t max_additive_length_coefficient;
             double max_coverage;
@@ -272,8 +272,6 @@ struct debruijn_config {
 
         struct complex_bulge_remover {
             bool enabled;
-            bool pics_enabled;
-            std::string folder;
             double max_relative_length;
             size_t max_length_difference;
         };
@@ -298,7 +296,6 @@ struct debruijn_config {
         struct presimplification {
             bool enabled;
             bool parallel;
-            size_t chunk_cnt;
             double activation_cov;
             isolated_edges_remover ier;
             std::string tip_condition;
@@ -319,7 +316,9 @@ struct debruijn_config {
         complex_bulge_remover cbr;
         hidden_ec_remover her;
         presimplification presimp;
-//        bool stats_mode;
+        //bool stats_mode;
+        bool persistent_cycle_iterators;
+        bool disable_br_in_cycle;
     };
 
     struct construction {
@@ -574,6 +573,7 @@ struct debruijn_config {
 
     bool diploid_mode;
     bool need_mapping;
+    bool fast_simplification;
 };
 
 void load(debruijn_config& cfg, const std::string &filename);

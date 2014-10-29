@@ -23,54 +23,41 @@
 
 namespace omnigraph {
 
-template<class Graph, class Comparator = std::less<typename Graph::EdgeId>>
-class ChimericEdgeRemovingAlgorithm : public EdgeRemovingAlgorithm<Graph,
-        Comparator> {
-    typedef EdgeRemovingAlgorithm<Graph, Comparator> base;
-    typedef typename Graph::EdgeId EdgeId;
-
-//    shared_ptr<func::Predicate<EdgeId>> remove_condition_;
-//    boost::function<void(EdgeId)> removal_handler_;
-
- public:
-
-    ChimericEdgeRemovingAlgorithm(
-            Graph& g,
-            shared_ptr<func::Predicate<EdgeId>> remove_condition,
-            boost::function<void(EdgeId)> removal_handler = boost::none,
-            const Comparator& c = Comparator(),
-            shared_ptr<func::Predicate<EdgeId>> proceed_condition = make_shared<
-                    func::AlwaysTrue<EdgeId>>())
-            : base(g,
-                   func::And<EdgeId>(
-                           make_shared<AlternativesPresenceCondition<Graph>>(g),
-                           remove_condition),
-                   removal_handler, c, proceed_condition) {
-    }
-
- private:
-    DECL_LOGGER("EdgeRemovingAlgorithm")
-    ;
-};
-
-//todo refactor
 template<class Graph>
-class IterativeLowCoverageEdgeRemover : public ChimericEdgeRemovingAlgorithm<
-        Graph, CoverageComparator<Graph>> {
- private:
-    typedef typename Graph::EdgeId EdgeId;
-    typedef typename Graph::VertexId VertexId;
-    typedef ChimericEdgeRemovingAlgorithm<Graph, CoverageComparator<Graph>> base;
+shared_ptr<func::Predicate<typename Graph::EdgeId>> AddAlternativesPresenceCondition(const Graph& g,
+                                                                  shared_ptr<func::Predicate<typename Graph::EdgeId>> condition) {
+    return func::And<typename Graph::EdgeId>(
+            make_shared<AlternativesPresenceCondition<Graph>>(g),
+            condition);
+}
 
- public:
-    IterativeLowCoverageEdgeRemover(
-            Graph &g, double max_coverage,
-            shared_ptr<Predicate<EdgeId>> condition,
-            boost::function<void(EdgeId)> removal_handler)
-            : base(g, condition, removal_handler, CoverageComparator<Graph>(g),
-                   make_shared<CoverageUpperBound<Graph>>(g, max_coverage)) {
-    }
-};
+template<class Graph>
+bool RemoveErroneousEdgesInCoverageOrder(Graph &g,
+                                         shared_ptr<func::Predicate<typename Graph::EdgeId>> removal_condition,
+                                         double max_coverage,
+                                         boost::function<void(typename Graph::EdgeId)> removal_handler) {
+
+    omnigraph::EdgeRemovingAlgorithm<Graph> erroneous_edge_remover(g,
+                                                                   AddAlternativesPresenceCondition(g, removal_condition),
+                                                                   removal_handler);
+
+    return erroneous_edge_remover.Process(CoverageComparator<Graph>(g),
+                                          make_shared<CoverageUpperBound<Graph>>(g, max_coverage));
+}
+
+template<class Graph>
+bool RemoveErroneousEdgesInLengthOrder(Graph &g,
+                                       shared_ptr<func::Predicate<typename Graph::EdgeId>> removal_condition,
+                                       size_t max_length,
+                                       boost::function<void(typename Graph::EdgeId)> removal_handler) {
+
+    omnigraph::EdgeRemovingAlgorithm<Graph> erroneous_edge_remover(g,
+                                                                   AddAlternativesPresenceCondition(g, removal_condition),
+                                                                   removal_handler);
+
+    return erroneous_edge_remover.Process(LengthComparator<Graph>(g),
+                                          make_shared<LengthUpperBound<Graph>>(g, max_length));
+}
 
 template<class Graph>
 class SelfConjugateCondition : public EdgeCondition<Graph> {
@@ -138,59 +125,6 @@ class SelfConjugateCondition : public EdgeCondition<Graph> {
 //
 //};
 
-//template<class Graph>
-//class RelativeLowCoverageEdgeRemover : public ChimericEdgeRemovingAlgorithm<
-//        Graph, CoverageComparator<Graph>> {
-// private:
-//    typedef typename Graph::EdgeId EdgeId;
-//    typedef typename Graph::VertexId VertexId;
-//    typedef ChimericEdgeRemovingAlgorithm<Graph, CoverageComparator<Graph>> base;
-//
-// public:
-//    RelativeLowCoverageEdgeRemover(
-//            Graph& g, size_t max_length, double max_coverage,
-//            double coverage_gap, boost::function<void(EdgeId)> removal_handler)
-//            : base(g,
-//                   func::And<EdgeId>(
-//                           make_shared<RelativeCoverageCondition<Graph>>(
-//                                   g, coverage_gap),
-//                           make_shared<LengthUpperBound<Graph>>(g, max_length)),
-//                   removal_handler, CoverageComparator<Graph>(g),
-//                   make_shared<CoverageUpperBound<Graph>>(g, max_coverage)) {
-//    }
-//};
-
-template<class Graph>
-class TopologyAndReliablityBasedChimericEdgeRemover :
-        public ChimericEdgeRemovingAlgorithm<Graph, LengthComparator<Graph>> {
- private:
-    typedef typename Graph::EdgeId EdgeId;
-    typedef typename Graph::VertexId VertexId;
-    typedef ChimericEdgeRemovingAlgorithm<Graph, LengthComparator<Graph>> base;
-
- public:
-    TopologyAndReliablityBasedChimericEdgeRemover(
-            Graph& g, size_t max_length, size_t uniqueness_length,
-            double max_coverage, boost::function<void(EdgeId)> removal_handler)
-            : base(g,
-                   func::And<EdgeId>(
-                           make_shared<CoverageUpperBound<Graph>>(g,
-                                                                  max_coverage),
-                           make_shared<
-                                   PredicateUniquenessPlausabilityCondition<
-                                           Graph>>(
-                                   g,
-                                   /*uniqueness*/
-                                   MakePathLengthLowerBound(
-                                           g, UniquePathFinder<Graph>(g),
-                                           uniqueness_length),
-                                   /*plausibility*/make_shared<
-                                           func::AlwaysTrue<EdgeId>>())),
-                   removal_handler, LengthComparator<Graph>(g),
-                   make_shared<LengthUpperBound<Graph>>(g, max_length)) {
-    }
-};
-
 //todo refactor
 template<class Graph>
 class ThornCondition : public EdgeCondition<Graph> {
@@ -241,7 +175,7 @@ class ThornCondition : public EdgeCondition<Graph> {
 
     template<class EdgeContainer>
     bool CheckAlternativeCoverage(const EdgeContainer& edges, EdgeId base) const {
-        FOREACH (EdgeId e, edges) {
+        for (EdgeId e: edges) {
             if (e != base && this->g().length(e) < 400
                     && this->g().coverage(e) < 15 * this->g().coverage(base)) {
                 return false;
@@ -280,48 +214,6 @@ class ThornCondition : public EdgeCondition<Graph> {
     DECL_LOGGER("ThornCondition")
     ;
 
-};
-
-template<class Graph>
-class ThornRemover : public ChimericEdgeRemovingAlgorithm<Graph,
-    CoverageComparator<Graph>> {
- private:
-    typedef typename Graph::EdgeId EdgeId;
-    typedef typename Graph::VertexId VertexId;
-    typedef ChimericEdgeRemovingAlgorithm<Graph, CoverageComparator<Graph>> base;
-
- public:
-    ThornRemover(Graph& g, size_t max_length, size_t uniqueness_length,
-                 size_t dijkstra_depth,
-                 boost::function<void(EdgeId)> removal_handler)
-            : base(g,
-                   func::And<EdgeId>(make_shared<LengthUpperBound<Graph>>(g, max_length),
-                             make_shared<ThornCondition<Graph>>(g, uniqueness_length,
-                             dijkstra_depth)),
-                   removal_handler, CoverageComparator<Graph>(g)) {
-    }
-};
-
-//todo rename
-template<class Graph>
-class TopologyChimericEdgeRemover : public ChimericEdgeRemovingAlgorithm<Graph,
-        LengthComparator<Graph>> {
- private:
-    typedef typename Graph::EdgeId EdgeId;
-    typedef typename Graph::VertexId VertexId;
-    typedef ChimericEdgeRemovingAlgorithm<Graph, LengthComparator<Graph>> base;
-
- public:
-    TopologyChimericEdgeRemover(Graph& g, size_t max_length,
-                                size_t uniqueness_length,
-                                size_t plausibility_length,
-                                boost::function<void(EdgeId)> removal_handler)
-            : base(g,
-                   make_shared<DefaultUniquenessPlausabilityCondition<Graph>>(
-                           g, uniqueness_length, plausibility_length),
-                   removal_handler, LengthComparator<Graph>(g),
-                   make_shared<LengthUpperBound<Graph>>(g, max_length)) {
-    }
 };
 
 template<class Graph>
@@ -366,37 +258,8 @@ public:
 };
 
 template<class Graph>
-class SimpleMultiplicityCountingChimericEdgeRemover :
-        public ChimericEdgeRemovingAlgorithm<Graph, LengthComparator<Graph>> {
- private:
-    typedef typename Graph::EdgeId EdgeId;
-    typedef typename Graph::VertexId VertexId;
-    typedef ChimericEdgeRemovingAlgorithm<Graph, LengthComparator<Graph>> base;
-
- public:
-    SimpleMultiplicityCountingChimericEdgeRemover(
-            Graph& g, size_t max_length, size_t uniqueness_length,
-            size_t plausibility_length,
-            boost::function<void(EdgeId)> removal_handler)
-            : base(g,
-                   make_shared<MultiplicityCountingCondition<Graph>>(
-                           g,
-                           uniqueness_length,
-                           /*plausibility*/MakePathLengthLowerBound(
-                                   g,
-                                   PlausiblePathFinder<Graph>(
-                                           g, 2 * plausibility_length),
-                                   plausibility_length)),
-                   removal_handler, LengthComparator<Graph>(g),
-                   make_shared<LengthUpperBound<Graph>>(g, max_length)) {
-    }
-};
-
-template<class Graph>
-class HiddenECRemover: public EdgeProcessingAlgorithm<Graph,
-		std::less<typename Graph::EdgeId>> {
-	typedef std::less<typename Graph::EdgeId> Comparator;
-	typedef EdgeProcessingAlgorithm<Graph, Comparator> base;
+class HiddenECRemover: public EdgeProcessingAlgorithm<Graph> {
+	typedef EdgeProcessingAlgorithm<Graph> base;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 private:
@@ -476,7 +339,7 @@ public:
                     double unreliability_threshold, double ec_threshold,
                     double relative_threshold,
                     boost::function<void(EdgeId)> removal_handler = 0)
-            : base(g, Comparator(), make_shared<func::AlwaysTrue<EdgeId>>()), uniqueness_length_(uniqueness_length),
+            : base(g), uniqueness_length_(uniqueness_length),
               unreliability_threshold_(unreliability_threshold * ec_threshold), ec_threshold_(ec_threshold),
               relative_threshold_(relative_threshold), flanking_coverage_(flanking_coverage),
               edge_remover_(g, removal_handler),
@@ -487,26 +350,6 @@ public:
 
 private:
 	DECL_LOGGER("HiddenECRemover");
-};
-
-template<class Graph>
-class LowCoveredSelfConjEdgeRemovingAlgorithm : public EdgeRemovingAlgorithm<Graph,
-        CoverageComparator<Graph>> {
-    typedef EdgeRemovingAlgorithm<Graph, CoverageComparator<Graph>> base;
-    typedef typename Graph::EdgeId EdgeId;
-
- public:
-
-    LowCoveredSelfConjEdgeRemovingAlgorithm(
-            Graph &g, size_t max_length, double max_coverage,
-            boost::function<void(EdgeId)> removal_handler)
-            : base(g, func::And<EdgeId>(make_shared<SelfConjugateCondition<Graph>>(g), make_shared<LengthUpperBound<Graph>>(g, max_length)),
-                   removal_handler, CoverageComparator<Graph>(g),
-                   make_shared<CoverageUpperBound<Graph>>(g, max_coverage)) {
-    }
-
- private:
-    DECL_LOGGER("LowCoveredSelfConjEdgeRemovingAlgorithm");
 };
 
 }

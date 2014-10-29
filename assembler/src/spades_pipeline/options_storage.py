@@ -71,6 +71,7 @@ cov_cutoff = 'off'  # default is 'off'
 # hidden options
 mismatch_corrector = None
 reference = None
+configs_dir = None
 iterations = None
 bh_heap_check = None
 spades_heap_check = None
@@ -92,6 +93,7 @@ restart_qvoffset = None
 restart_cov_cutoff = None
 restart_developer_mode = None
 restart_reference = None
+restart_configs_dir = None
 restart_read_buffer_size = None
 
 dict_of_prefixes = dict()
@@ -103,7 +105,7 @@ long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc ionto
                "help test debug debug:false reference= config-file= dataset= "\
                "bh-heap-check= spades-heap-check= read-buffer-size= help-hidden "\
                "mismatch-correction mismatch-correction:false careful careful:false "\
-               "continue restart-from= diploid cov-cutoff=".split()
+               "continue restart-from= diploid cov-cutoff= configs-dir=".split()
 short_options = "o:1:2:s:k:t:m:i:h"
 
 # adding multiple paired-end, mate-pair and other (long reads) libraries support
@@ -238,6 +240,7 @@ def usage(spades_version, show_hidden=False, dipspades=False):
                              " of mismatches and short indels" + "\n")
         sys.stderr.write("--reference\t<filename>\tfile with reference for deep analysis"\
                              " (only in debug mode)" + "\n")
+        sys.stderr.write("--configs-dir\t<configs_dir>\tdirectory with configs" + "\n")
         sys.stderr.write("-i/--iterations\t<int>\t\tnumber of iterations for read error"\
                              " correction [default: %s]\n" % ITERATIONS)
         sys.stderr.write("--read-buffer-size\t<int>\t\tsets size of read buffer for graph construction")
@@ -328,6 +331,7 @@ def save_restart_options(log):
     global restart_cov_cutoff
     global restart_developer_mode
     global restart_reference
+    global restart_configs_dir
     global restart_read_buffer_size
 
     restart_k_mers = k_mers
@@ -342,6 +346,7 @@ def save_restart_options(log):
     restart_cov_cutoff = cov_cutoff
     restart_developer_mode = developer_mode
     restart_reference = reference
+    restart_configs_dir = configs_dir
     restart_read_buffer_size = read_buffer_size
 
 
@@ -358,6 +363,7 @@ def load_restart_options():
     global cov_cutoff
     global developer_mode
     global reference
+    global configs_dir
     global read_buffer_size
     global original_k_mers
 
@@ -389,5 +395,7 @@ def load_restart_options():
         developer_mode = restart_developer_mode
     if restart_reference is not None:
         reference = restart_reference
+    if restart_configs_dir is not None:
+        configs_dir = restart_configs_dir
     if restart_read_buffer_size is not None:
         read_buffer_size = restart_read_buffer_size

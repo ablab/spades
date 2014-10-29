@@ -24,8 +24,6 @@
 
 namespace debruijn_graph {
 
-extern const string tmp_folder;
-
 //void ConstructGraphFromGenome(size_t k, Graph& g, EdgeIndex<Graph>& index/*, CoverageHandler<DeBruijnGraph>& coverage_handler*/
 //, PairedInfoIndexT<Graph>& paired_index, const string& genome
 //		, size_t read_size) {
@@ -139,7 +137,7 @@ void AssertGraph(size_t k, const vector<string>& reads, const vector<string>& et
 	DEBUG("Asserting graph");
 	typedef io::VectorReadStream<io::SingleRead> RawStream;
 	Graph g(k);
-	graph_pack<Graph, runtime_k::RtSeq>::index_t index(g, tmp_folder);
+	graph_pack<Graph, runtime_k::RtSeq>::index_t index(g, "tmp");
     index.Detach();
 
     io::ReadStreamList<io::SingleRead> streams(io::RCWrap<io::SingleRead>(make_shared<RawStream>(MakeReads(reads))));
@@ -207,7 +205,7 @@ void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t /*rl
 	io::ReadStreamList<io::PairedRead> paired_streams(io::RCWrap<io::PairedRead>(make_shared<RawStream>(MakePairedReads(paired_reads, insert_size))));
 	DEBUG("Streams initialized");
 
-	conj_graph_pack gp(k, tmp_folder, 1);
+	conj_graph_pack gp(k, "tmp", 1);
 	DEBUG("Graph pack created");
 
 	io::ReadStreamList<io::SingleRead> single_stream_vector = io::SquashingWrap<io::PairedRead>(paired_streams);
@@ -246,20 +244,5 @@ void CheckIndex(vector<string> reads, size_t k) {
         }
     }
 }
-
-struct TmpFolderFixture
-{
-	TmpFolderFixture()
-    {
-        make_dir(tmp_folder);
-    }
-
-    ~TmpFolderFixture()
-    {
-    	//todo check that folder is empty
-    	remove_dir(tmp_folder);
-//        BOOST_TEST_MESSAGE("teardown mass");
-    }
-};
 
 }

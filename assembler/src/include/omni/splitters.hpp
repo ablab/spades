@@ -503,6 +503,7 @@ public:
     }
 };
 
+//todo delete and think if we really need hierarchy
 template<class Graph>
 class ShortEdgeComponentFinder : public AbstractNeighbourhoodFinder<Graph> {
 private:
@@ -518,7 +519,7 @@ public:
               edge_length_bound_(edge_length_bound) {
     }
 
-    GraphComponent<Graph> Find(typename Graph::VertexId v) {
+    GraphComponent<Graph> Find(VertexId v) {
     	auto cd = DijkstraHelper<Graph>::CreateShortEdgeDijkstra(this->graph(), edge_length_bound_);
         cd.run(v);
         set<VertexId> result = cd.ProcessedVertices();

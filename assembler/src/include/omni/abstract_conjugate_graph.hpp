@@ -23,8 +23,30 @@ class AbstractConjugateGraph;
 template<class DataMaster>
 class PairedEdge;
 
-template<class V>
-class PairedVertexLock;
+//todo make static
+template<class T>
+class PairedElementManipulationHelper {
+public:
+    bool IsMinimal(T t) const {
+        return !(t->conjugate_ < t);
+    }
+
+    T MinimalFromPair(T t) const {
+        if (IsMinimal(t)) {
+            return t;
+        } else {
+            return t->conjugate_;
+        }
+    }
+
+    T& GetElementToManipulate(T t) const {
+        return t->conjugate_;
+    }
+
+    T& ToManipulateFromPair(T t) const {
+        return GetElementToManipulate(MinimalFromPair(t));
+    }
+};
 
 template<class Graph>
 class ConstructionHelper {
@@ -143,7 +165,7 @@ private:
     friend class AbstractConjugateGraph<DataMaster> ;
     friend class ConstructionHelper<AbstractConjugateGraph<DataMaster>>;
     friend class PairedEdge<DataMaster> ;
-    friend class PairedVertexLock<restricted::pure_pointer<PairedVertex<DataMaster>>>;
+    friend class PairedElementManipulationHelper<restricted::pure_pointer<PairedVertex<DataMaster>>>;
     friend class conjugate_iterator;
 
     std::vector<EdgeId> outgoing_edges_;
@@ -238,34 +260,6 @@ private:
     }
 };
 
-template<class V>
-class PairedVertexLock {
-    restricted::PurePtrLock<V> inner_lock_;
-
-    static bool IsMinimal(V v) {
-        return !(v->conjugate_ < v);
-    }
-
-    static V MinimalFromPair(V v) {
-        if (IsMinimal(v)) {
-            return v;
-        } else {
-            return v->conjugate_;
-        }
-    }
-
-    static V& GetLockableElement(V v) {
-        return v->conjugate_;
-    }
-
-public:
-    PairedVertexLock(V v) :
-        inner_lock_(GetLockableElement(MinimalFromPair(v)))
-    {
-    }
-
-};
-
 template<class DataMaster>
 class PairedEdge {
  private:
@@ -277,6 +271,7 @@ class PairedEdge {
             restricted::pure_pointer<PairedEdge<DataMaster>>, DataMaster> ;
     friend class AbstractConjugateGraph<DataMaster> ;
     friend class ConstructionHelper<AbstractConjugateGraph<DataMaster>>;
+    friend class PairedElementManipulationHelper<restricted::pure_pointer<PairedEdge<DataMaster>>>;
     //todo unfriend
     friend class PairedVertex<DataMaster> ;
     VertexId end_;
@@ -324,6 +319,41 @@ public:
 
     size_t length(size_t k) const {
         return data_.size() - k;
+    }
+};
+
+template<class T>
+class GraphElementLock : PairedElementManipulationHelper<T> {
+    PairedElementManipulationHelper<T> helper_;
+    restricted::PurePtrLock<T> inner_lock_;
+
+public:
+    GraphElementLock(T  t) :
+        inner_lock_(helper_.ToManipulateFromPair(t))
+    {
+    }
+
+};
+
+/**
+ * Do not use with locks on same graph elements!
+ */
+template<class T>
+class GraphElementMarker {
+    PairedElementManipulationHelper<T> helper_;
+    restricted::PurePtrMarker<T> marker_;
+public:
+
+    void mark(T t) {
+        marker_.mark(helper_.ToManipulateFromPair(t));
+    }
+
+    void unmark(T t) {
+        marker_.unmark(helper_.ToManipulateFromPair(t));
+    }
+
+    bool is_marked(T t) const {
+        return marker_.is_marked(helper_.ToManipulateFromPair(t));
     }
 };
 

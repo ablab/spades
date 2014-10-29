@@ -6,6 +6,7 @@
 
 project(debruijn_test CXX)
 
+include_directories(${EXT_DIR}/include/ConsensusCore)
 include_directories("${CMAKE_SOURCE_DIR}/debruijn")
 
 add_executable(debruijn_test
@@ -14,6 +15,10 @@ add_executable(debruijn_test
  ${CMAKE_SOURCE_DIR}/debruijn/config_struct.cpp
  ${CMAKE_SOURCE_DIR}/debruijn/path_extend/pe_config_struct.cpp
  test.cpp)
- 
-include_directories(${EXT_DIR}/include/ConsensusCore)
+
 target_link_libraries(debruijn_test ${COMMON_LIBRARIES} ConsensusCore input mph_index nlopt ssw ${ZLIB_LIBRARIES})
+
+add_executable(component_generator
+ generate_component.cpp)
+ 
+target_link_libraries(component_generator ${COMMON_LIBRARIES} ConsensusCore input mph_index nlopt ssw ${ZLIB_LIBRARIES})
