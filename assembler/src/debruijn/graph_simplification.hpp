@@ -205,14 +205,18 @@ bool RemoveLowCoverageEdges(
 }
 
 template<class Graph>
-bool RemoveSelfConjugateEdges(
-    Graph &g, size_t max_length, double max_coverage,
-                boost::function<void(EdgeId)> removal_handler = 0) {
+bool RemoveSelfConjugateEdges(Graph &g, size_t max_length, double max_coverage,
+                boost::function<void(EdgeId)> removal_handler = 0, size_t chunk_cnt = 1) {
     INFO("Removing short low covered self-conjugate connections");
 
-    auto condition = func::And<EdgeId>(make_shared<SelfConjugateCondition<Graph>>(g), make_shared<LengthUpperBound<Graph>>(g, max_length));
+    auto condition = func::And<EdgeId>(make_shared<SelfConjugateCondition<Graph>>(g),
+                                       func::And<EdgeId>(make_shared<LengthUpperBound<Graph>>(g, max_length),
+                                                         make_shared<CoverageUpperBound<Graph>>(g, max_coverage)));
 
-    return omnigraph::RemoveErroneousEdgesInCoverageOrder(g, condition, max_coverage, removal_handler);
+    SemiParallelAlgorithmRunner<Graph, EdgeId> runner(g);
+    SemiParallelEdgeRemovingAlgorithm<Graph> removing_algo(g, condition, removal_handler);
+
+    return RunEdgeAlgorithm(g, runner, removing_algo, chunk_cnt);
 }
 
 template<class Graph>
@@ -393,6 +397,13 @@ template<class Graph>
 bool RemoveIsolatedEdges(Graph &g, size_t max_length, double max_coverage, size_t max_length_any_cov,
                  boost::function<void(typename Graph::EdgeId)> removal_handler = 0, size_t chunk_cnt = 1) {
     typedef typename Graph::EdgeId EdgeId;
+
+    //todo add info that some other edges might be removed =)
+    INFO("Removing isolated edges");
+    INFO("All edges shorter than " << max_length_any_cov << " will be removed");
+    INFO("Also edges shorter than " << max_length << " and coverage smaller than " << max_coverage << " will be removed");
+    //todo add warn on max_length_any_cov > max_length
+
     auto condition = func::And<EdgeId>(
             make_shared<IsolatedEdgeCondition<Graph>>(g),
             func::Or<EdgeId>(
@@ -402,22 +413,28 @@ bool RemoveIsolatedEdges(Graph &g, size_t max_length, double max_coverage, size_
                     make_shared<CoverageUpperBound<Graph>>(g, max_coverage)
                 )));
 
-    SemiParallelAlgorithmRunner<Graph, EdgeId> runner(g);
-    SemiParallelEdgeRemovingAlgorithm<Graph> removing_algo(g, condition, removal_handler);
+    if (chunk_cnt == 1) {
+        omnigraph::EdgeRemovingAlgorithm<Graph> erroneous_edge_remover(g,
+                                                                       condition,
+                                                                       removal_handler);
 
-    return RunEdgeAlgorithm(g, runner, removing_algo, chunk_cnt);
+        return erroneous_edge_remover.Process(LengthComparator<Graph>(g),
+                                              make_shared<LengthUpperBound<Graph>>(g, std::max(max_length, max_length_any_cov)));
+    } else {
+        SemiParallelAlgorithmRunner<Graph, EdgeId> runner(g);
+        SemiParallelEdgeRemovingAlgorithm<Graph> removing_algo(g, condition, removal_handler);
+
+        return RunEdgeAlgorithm(g, runner, removing_algo, chunk_cnt);
+    }
 }
 
 template<class Graph>
 bool RemoveIsolatedEdges(Graph &g, debruijn_config::simplification::isolated_edges_remover ier,
                  size_t read_length,
-                 boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
+                 boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
+                 size_t chunk_cnt = 1) {
     size_t max_length = std::max(read_length, cfg::get().simp.ier.max_length_any_cov);
-    //todo add info that some other edges might be removed =)
-    INFO("Removing isolated edges");
-    INFO("All edges shorter than " << max_length << " will be removed");
-    INFO("Also edges shorter than " << ier.max_length << " and coverage smaller than " << ier.max_coverage << " will be removed");
-    return RemoveIsolatedEdges(g, ier.max_length, ier.max_coverage, max_length, removal_handler);
+    return RemoveIsolatedEdges(g, ier.max_length, ier.max_coverage, max_length, removal_handler, chunk_cnt);
 }
 
 //todo move to some of the utils files
@@ -504,18 +521,18 @@ bool FinalRemoveErroneousEdges(
 }
 
 template<class Graph>
-void ParallelCompress(Graph& g, const SimplifInfoContainer& info, bool loop_post_compression = true) {
+void ParallelCompress(Graph& g, size_t chunk_cnt, bool loop_post_compression = true) {
     INFO("Parallel compression");
     debruijn::simplification::ParallelCompressor<Graph> compressor(g);
     TwoStepAlgorithmRunner<Graph, typename Graph::VertexId> runner(g, false);
-    RunVertexAlgorithm(g, runner, compressor, info.chunk_cnt());
+    RunVertexAlgorithm(g, runner, compressor, chunk_cnt);
 
     //have to call cleaner to get rid of new isolated vertices
-    CleanGraph(g);
+    CleanGraph(g, chunk_cnt);
 
     if (loop_post_compression) {
         INFO("Launching post-compression to compress loops");
-        CompressAllVertices(g);
+        CompressAllVertices(g, chunk_cnt);
     }
 }
 
@@ -539,9 +556,9 @@ bool ParallelClipTips(Graph& g,
 
     RunVertexAlgorithm(g, runner, tip_clipper, info.chunk_cnt());
 
-    ParallelCompress(g, info);
+    ParallelCompress(g, info.chunk_cnt());
     //Cleaner is launched inside ParallelCompression
-    //CleanGraph(g);
+    //CleanGraph(g, info.chunk_cnt());
 
     return true;
 }
@@ -602,9 +619,9 @@ bool ParallelEC(Graph& g,
 
     critical_marker.ClearMarks();
 
-    ParallelCompress(g, info);
+    ParallelCompress(g, info.chunk_cnt());
     //called in parallel compress
-    //CleanGraph(g);
+    //CleanGraph(g, info.chunk_cnt());
     return true;
 }
 
@@ -740,17 +757,12 @@ inline
 bool EnableParallel(const conj_graph_pack& gp,
                        const debruijn_config::simplification::presimplification& presimp) {
     if (presimp.parallel) {
-        INFO("Trying to enable parallel presimplification. Chunk count = " << presimp.chunk_cnt);
-        VERIFY(presimp.chunk_cnt > 0);
-        if (presimp.chunk_cnt == 1) {
+        INFO("Trying to enable parallel presimplification.");
+        if (gp.g.AllHandlersThreadSafe()) {
             return true;
         } else {
-            if (gp.g.AllHandlersThreadSafe()) {
-                return true;
-            } else {
-                WARN("Not all handlers are threadsafe, switching to non-parallel presimplif");
-                //gp.g.PrintHandlersNames();
-            }
+            WARN("Not all handlers are threadsafe, switching to non-parallel presimplif");
+            //gp.g.PrintHandlersNames();
         }
     }
     return false;
@@ -762,7 +774,7 @@ void PreSimplification(conj_graph_pack& gp,
                        const SimplifInfoContainer& info,
                        boost::function<void(EdgeId)> removal_handler) {
     INFO("PROCEDURE == Presimplification");
-    RemoveSelfConjugateEdges(gp.g, gp.k_value + 100, 1., removal_handler);
+    RemoveSelfConjugateEdges(gp.g, gp.k_value + 100, 1., removal_handler, info.chunk_cnt());
 
     if (!presimp.enabled) {
         INFO("Further presimplification is disabled");
@@ -770,7 +782,7 @@ void PreSimplification(conj_graph_pack& gp,
     }
     
     //todo make parallel version
-    RemoveIsolatedEdges(gp.g, presimp.ier, info.read_length(), removal_handler);
+    RemoveIsolatedEdges(gp.g, presimp.ier, info.read_length(), removal_handler, info.chunk_cnt());
 
     if (math::eq(info.detected_mean_coverage(), 0.)) {
     	INFO("Mean coverage wasn't reliably estimated, no further presimplification");
@@ -782,12 +794,8 @@ void PreSimplification(conj_graph_pack& gp,
     	return;
     }
     
-
-    if (EnableParallel(gp, presimp)) {
-        //fixme chunks configuration
-        SimplifInfoContainer presimp_info(info); 
-
-        ParallelPreSimplification(gp, presimp, presimp_info.set_chunk_cnt(presimp.chunk_cnt), removal_handler);
+    if (info.chunk_cnt() > 1 && EnableParallel(gp, presimp)) {
+        ParallelPreSimplification(gp, presimp, info, removal_handler);
     } else {
         NonParallelPreSimplification(gp, presimp, info, removal_handler);
     }
@@ -909,7 +917,8 @@ void SimplifyGraph(conj_graph_pack &gp,
         .set_detected_coverage_bound(gp.ginfo.ec_bound())
         //0 if model didn't converge
         .set_detected_mean_coverage(gp.ginfo.estimated_mean())
-        .set_read_length(cfg::get().ds.RL());
+        .set_read_length(cfg::get().ds.RL())
+        .set_chunk_cnt(cfg::get().max_threads);
 
     PreSimplification(gp, cfg::get().simp.presimp,
     		info_container, removal_handler);

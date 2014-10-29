@@ -296,7 +296,6 @@ struct debruijn_config {
         struct presimplification {
             bool enabled;
             bool parallel;
-            size_t chunk_cnt;
             double activation_cov;
             isolated_edges_remover ier;
             std::string tip_condition;
