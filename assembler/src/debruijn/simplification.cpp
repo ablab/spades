@@ -36,8 +36,7 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
 //            &QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
 //            boost::ref(qual_removal_handler), _1);
     debruijn::simplification::SimplifyGraph(gp, 0/*removal_handler_f*/,
-                  printer, /*iteration count*/10
-                  /*, etalon_paired_index*/);
+                  printer, /*iteration count*/10);
 
 
     AvgCovereageCounter<Graph> cov_counter(gp.g);
@@ -50,21 +49,16 @@ void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
 
     printer(ipp_removing_isolated_edges);
 
-    debruijn::simplification::RemoveIsolatedEdges(gp.g, cfg::get().simp.ier, cfg::get().ds.RL());
-//todo return this functionality
-//        INFO("Removed " << removed << " edges");
+    debruijn::simplification::RemoveIsolatedEdges(gp.g, cfg::get().simp.ier, cfg::get().ds.RL(), boost::function<void(EdgeId)>(0), cfg::get().max_threads);
 
     double low_threshold = gp.ginfo.trusted_bound();
     if (math::ge(low_threshold, 0.0)) {
-      EdgeRemover<Graph> remover(gp.g);
-      INFO("Removing all the edges having coverage " << low_threshold << " and less");
-      size_t cnt = 0;
-      for (auto it = gp.g.SmartEdgeBegin(); !it.IsEnd(); ++it)
-        if (math::le(gp.g.coverage(*it), low_threshold)) {
-          remover.DeleteEdge(*it);
-          cnt += 1;
-        }
-      INFO("Deleted " << cnt << " edges");
+        INFO("Removing all the edges having coverage " << low_threshold << " and less");
+        omnigraph::EdgeRemovingAlgorithm<Graph> removing_algo(gp.g,
+                                                              std::make_shared<func::AlwaysTrue<EdgeId>>(), 0);
+
+        removing_algo.Process(CoverageComparator<Graph>(gp.g),
+                              std::make_shared<CoverageUpperBound<Graph>>(gp.g, low_threshold));
     }
 
     printer(ipp_final_simplified);

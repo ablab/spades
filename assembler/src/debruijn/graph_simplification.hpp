@@ -414,12 +414,10 @@ bool RemoveIsolatedEdges(Graph &g, size_t max_length, double max_coverage, size_
                 )));
 
     if (chunk_cnt == 1) {
-        omnigraph::EdgeRemovingAlgorithm<Graph> erroneous_edge_remover(g,
-                                                                       condition,
-                                                                       removal_handler);
+        omnigraph::EdgeRemovingAlgorithm<Graph> removing_algo(g, condition, removal_handler);
 
-        return erroneous_edge_remover.Process(LengthComparator<Graph>(g),
-                                              make_shared<LengthUpperBound<Graph>>(g, std::max(max_length, max_length_any_cov)));
+        return removing_algo.Process(LengthComparator<Graph>(g),
+                                         make_shared<LengthUpperBound<Graph>>(g, std::max(max_length, max_length_any_cov)));
     } else {
         SemiParallelAlgorithmRunner<Graph, EdgeId> runner(g);
         SemiParallelEdgeRemovingAlgorithm<Graph> removing_algo(g, condition, removal_handler);
