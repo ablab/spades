@@ -280,7 +280,7 @@ def set_default_values():
         threads = THREADS
     if memory is None:
         if support.get_available_memory():
-            memory = min(MEMORY, support.get_available_memory())
+            memory = int(min(MEMORY, support.get_available_memory()))
         else:
             memory = MEMORY
     if iterations is None:
