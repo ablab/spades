@@ -511,12 +511,16 @@ def main(args):
         log.info("\n======= SPAdes pipeline started. Log can be found here: " + log_filename + "\n")
 
     # splitting interlaced reads and processing Ns in additional contigs if needed
-    if support.dataset_has_interlaced_reads(dataset_data) or support.dataset_has_additional_contigs(dataset_data):
+    if support.dataset_has_interlaced_reads(dataset_data) or support.dataset_has_additional_contigs(dataset_data)\
+            or support.dataset_has_lucigen_reads(dataset_data):
         dir_for_split_reads = os.path.join(options_storage.output_dir, 'split_input')
-        if support.dataset_has_interlaced_reads(dataset_data):
+        if support.dataset_has_interlaced_reads(dataset_data) or support.dataset_has_lucigen_reads(dataset_data):
             if not os.path.isdir(dir_for_split_reads):
                 os.makedirs(dir_for_split_reads)
-            dataset_data = support.split_interlaced_reads(dataset_data, dir_for_split_reads, log)
+            if support.dataset_has_interlaced_reads(dataset_data):
+                dataset_data = support.split_interlaced_reads(dataset_data, dir_for_split_reads, log)
+            if support.dataset_has_lucigen_reads(dataset_data):
+                dataset_data = support.process_lucigen_reads(dataset_data, dir_for_split_reads, log)
         if support.dataset_has_additional_contigs(dataset_data):
             dataset_data = support.process_Ns_in_additional_contigs(dataset_data, dir_for_split_reads, log)
         options_storage.dataset_yaml_filename = os.path.join(options_storage.output_dir, "input_dataset.yaml")
@@ -788,7 +792,7 @@ def main(args):
             else:
                 log.exception(exc_value)
                 support.error("exception caught: %s" % exc_type, log)
-    except BaseException: # since python 2.5 system-exiting exceptions (e.g. KeyboardInterrupt) are derived from BaseException
+    except BaseException:  # since python 2.5 system-exiting exceptions (e.g. KeyboardInterrupt) are derived from BaseException
         exc_type, exc_value, _ = sys.exc_info()
         if exc_type == SystemExit:
             sys.exit(exc_value)

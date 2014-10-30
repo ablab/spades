@@ -550,7 +550,6 @@ def check_single_reads_in_options(options, log):
                 "or --s<#> option instead of -s!", log)
 
 
-
 def get_lib_ids_by_type(dataset_data, types):
     if type(types) is not list:
         types = [types]
@@ -593,6 +592,13 @@ def dataset_has_interlaced_reads(dataset_data):
 def dataset_has_additional_contigs(dataset_data):
     for reads_library in dataset_data:
         if reads_library['type'].endswith('contigs'):
+            return True
+    return False
+
+
+def dataset_has_lucigen_reads(dataset_data):
+    for reads_library in dataset_data:
+        if reads_library['type'] == 'lucigen':
             return True
     return False
 
@@ -720,6 +726,33 @@ def split_interlaced_reads(dataset_data, dst, log):
                 del new_reads_library['interlaced reads']
         new_dataset_data.append(new_reads_library)
     return new_dataset_data
+
+
+def process_lucigen_reads(dataset_data, dst, log):
+    try:
+        import lucigen_nxmate
+        new_dataset_data = list()
+        for reads_library in dataset_data:
+            new_reads_library = dict(reads_library)
+            if new_reads_library['type'] == 'lucigen':
+                raw_left_reads = new_reads_library['left reads']
+                raw_right_reads = new_reads_library['right reads']
+                new_reads_library['left reads'] = []
+                new_reads_library['right reads'] = []
+                new_reads_library['single reads'] = []
+                for id, left_reads_fpath in enumerate(raw_left_reads):
+                    right_reads_fpath = raw_right_reads[id]
+                    processed_left_reads_fpath, processed_right_reads_fpath, single_reads_fpath = \
+                        lucigen_nxmate.process_reads(left_reads_fpath, right_reads_fpath, dst, log)
+                    new_reads_library['left reads'].append(processed_left_reads_fpath)
+                    new_reads_library['right reads'].append(processed_right_reads_fpath)
+                    new_reads_library['single reads'].append(single_reads_fpath)
+                new_reads_library['type'] = 'mate-pairs'
+                new_reads_library['orientation'] = 'fr'
+            new_dataset_data.append(new_reads_library)
+        return new_dataset_data
+    except ImportError:
+        error("Can't process Lucigen NxMate reads! lucigen_nxmate.py is missing!", log)
 
 
 def pretty_print_reads(dataset_data, log, indent='    '):
