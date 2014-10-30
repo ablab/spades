@@ -56,7 +56,10 @@ class ParseFastQ(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def next(self):  # for both Python2 and Python3
+        return self.__next__()
+
+    def __next__(self):
         """Reads in next element, parses, and does minimal verification.
         Returns: tuple: (seqHeader,seqStr,qualHeader,qualStr)"""
         # ++++ Get Next Four Lines ++++
@@ -138,7 +141,7 @@ def chimera_clean(infilename1, infilename2, dst, log, silent=True):
     #rec is tuple: (seqHeader,seqStr,qualHeader,qualStr)
     for recR1 in parserR1:
         readcounter += 1
-        recR2 = parserR2.next()
+        recR2 = parserR2.__next__()
 
         #check if rec.seqStr contains match to chimera pattern
         for cssindex, css1 in enumerate(csslist1):
@@ -239,7 +242,7 @@ def nx_seq_junstion(infilename1, infilename2, dst, log, silent=True):
     splitfilenameright = os.path.join(dst, 'R2_IJS7_' + os.path.basename(infilename2))
     splitfile2 = open(splitfilenameright, 'w')
 
-    unsplitfilename = os.path.join(dst, 'unsplit_IJS7_' + string.replace(os.path.basename(infilename1), '_R1_', '_R1R2_'))
+    unsplitfilename = os.path.join(dst, 'unsplit_IJS7_' + os.path.basename(infilename1).replace('_R1_', '_R1R2_'))
     unsplitfile = open(unsplitfilename, 'w')
 
     #jctstr = '(GGTTCATCGTCAGGCCTGACGATGAACC){e<=4}' # JS7 24/28 required results in ~92% detected in ion torrent
@@ -262,7 +265,7 @@ def nx_seq_junstion(infilename1, infilename2, dst, log, silent=True):
     #rec is tuple: (seqHeader,seqStr,qualHeader,qualStr)
     for recR1 in parserR1:
         readcounter += 1
-        recR2 = parserR2.next()
+        recR2 = parserR2.__next__()
 
         m = regex.search(jctstr, recR1[1])
         n = regex.search(jctstr, recR2[1])
