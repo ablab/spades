@@ -7,7 +7,6 @@
 #pragma once
 
 #include "omni/abstract_conjugate_graph.hpp"
-#include "omni/abstract_nonconjugate_graph.hpp"
 #include "omni/coverage.hpp"
 #include "omni/id_track_handler.hpp"
 #include "sequence/sequence_tools.hpp"
@@ -200,10 +199,8 @@ private:
 };
 
 typedef DeBruijnGraph<AbstractConjugateGraph<DeBruijnMaster>> ConjugateDeBruijnGraph;
-typedef DeBruijnGraph<AbstractNonconjugateGraph<DeBruijnMaster>> NonconjugateDeBruijnGraph;
 
 typedef ConjugateDeBruijnGraph Graph;
 typedef Graph::EdgeId EdgeId;
 typedef Graph::VertexId VertexId;
-typedef NonconjugateDeBruijnGraph NCGraph;
 }

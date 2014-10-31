@@ -9,7 +9,6 @@
 #include "standard.hpp"
 #include "omni/omni_utils.hpp"
 #include "omni/abstract_conjugate_graph.hpp"
-#include "omni/abstract_nonconjugate_graph.hpp"
 
 #include "omni/omni_tools.hpp"
 
@@ -351,46 +350,6 @@ class ConjugateDataPrinter: public DataPrinter<Graph> {
 };
 
 template<class Graph>
-class NonconjugateDataPrinter: public DataPrinter<Graph> {
-    typedef DataPrinter<Graph> base;
-    typedef typename Graph::EdgeId EdgeId;
-    typedef typename Graph::VertexId VertexId;
-  public:
-    NonconjugateDataPrinter(Graph const& g) :
-            base(g) {
-    }
-
-    NonconjugateDataPrinter(const GraphComponent<Graph>& graph_component) :
-            base(graph_component) {
-    }
-
-    template<class VertexIt>
-    NonconjugateDataPrinter(const Graph& g, VertexIt begin, VertexIt end) :
-            base(GraphComponent<Graph>(g, begin, end)) {
-    }
-
-    std::string ToPrint(VertexId v) const {
-        stringstream ss;
-        ss << "Vertex " << v.int_id() << " .";
-        return ss.str();
-    }
-
-    std::string ToPrint(EdgeId e) const {
-        stringstream ss;
-        ss
-                << "Edge "
-                << e.int_id()
-                << " : "
-                << this->component().g().EdgeStart(e).int_id()
-                << " -> "
-                << this->component().g().EdgeEnd(e).int_id()
-                << ", l = "
-                << this->component().g().length(e) << " .";
-        return ss.str();
-    }
-};
-
-template<class Graph>
 struct PrinterTraits {
     typedef DataPrinter<Graph> Printer;
 };
@@ -398,11 +357,6 @@ struct PrinterTraits {
 template<>
 struct PrinterTraits<ConjugateDeBruijnGraph> {
     typedef ConjugateDataPrinter<ConjugateDeBruijnGraph> Printer;
-};
-
-template<>
-struct PrinterTraits<NonconjugateDeBruijnGraph> {
-    typedef NonconjugateDataPrinter<NonconjugateDeBruijnGraph> Printer;
 };
 
 template<class Graph>
@@ -720,79 +674,6 @@ private:
 };
 
 template<class Graph>
-class NonconjugateDataScanner: public DataScanner<Graph> {
-    typedef DataScanner<Graph> base;
-    typedef typename Graph::EdgeId EdgeId;
-    typedef typename Graph::VertexId VertexId;
-  public:
-    /*virtual*/
-    void LoadGraph(const string& file_name) {
-        int flag;
-        FILE* file = fopen((file_name + ".grp").c_str(), "r");
-        VERIFY_MSG(file != NULL, "Couldn't find file " << (file_name + ".grp"));
-
-        FILE* sequence_file = fopen((file_name + ".sqn").c_str(), "r");
-        VERIFY_MSG(sequence_file != NULL, "Couldn't find file " << (file_name + ".sqn"));
-
-        INFO(
-            "Reading NON conjugate de bruujn graph from " << file_name << " started");
-        size_t vertex_count;
-        size_t edge_count;
-        flag = fscanf(file, "%ld %ld \n", &vertex_count, &edge_count);
-        VERIFY(flag == 2);
-        for (size_t i = 0; i < vertex_count; i++) {
-            size_t vertex_real_id;
-            flag = fscanf(file, "Vertex %ld", &vertex_real_id);
-            VERIFY(flag == 1);
-            char c = 'a';
-            while (c != '.') {
-                flag = fscanf(file, "%c", &c);
-                VERIFY(flag == 1);
-            }
-            flag = fscanf(file, "\n");
-            VERIFY(flag == 0);
-            VertexId vid = this->g().AddVertex();
-            this->vertex_id_map()[vertex_real_id] = vid;
-            TRACE(vid);
-        }
-        size_t tmp_edge_count;
-        flag = fscanf(sequence_file, "%ld", &tmp_edge_count);
-        VERIFY(flag == 1);
-        VERIFY(edge_count == tmp_edge_count);
-        char longstring[1000500];
-        for (size_t i = 0; i < edge_count; i++) {
-            int e_real_id, start_id, fin_id, length;
-            flag = fscanf(file, "Edge %d : %d -> %d, l = %d", &e_real_id,
-                          &start_id, &fin_id, &length);
-            VERIFY(flag == 4);
-            flag = fscanf(sequence_file, "%d %s .", &e_real_id, longstring);
-            VERIFY(flag == 2);
-            //does'nt matter, whether it was conjugate or not.
-            char c = 'a';
-            while (c != '.') {
-                flag = fscanf(file, "%c", &c);
-                VERIFY(flag == 1);
-            }
-            flag = fscanf(file, "\n");
-            VERIFY(flag == 0);
-            Sequence tmp(longstring);
-            VERIFY(this->vertex_id_map().find(start_id) != this->vertex_id_map().end());
-            VERIFY(this->vertex_id_map().find(fin_id) != this->vertex_id_map().end());
-            EdgeId eid = this->g().AddEdge(
-                this->vertex_id_map()[start_id],
-                this->vertex_id_map()[fin_id], tmp);
-            this->edge_id_map()[e_real_id] = eid;
-        }
-        fclose(file);
-        fclose(sequence_file);
-    }
-
-    NonconjugateDataScanner(Graph &g) :
-            base(g) {
-    }
-};
-
-template<class Graph>
 struct ScannerTraits {
     typedef DataScanner<Graph> Scanner;
 };
@@ -800,11 +681,6 @@ struct ScannerTraits {
 template<>
 struct ScannerTraits<ConjugateDeBruijnGraph> {
     typedef ConjugateDataScanner<ConjugateDeBruijnGraph> Scanner;
-};
-
-template<>
-struct ScannerTraits<NonconjugateDeBruijnGraph> {
-    typedef NonconjugateDataScanner<NonconjugateDeBruijnGraph> Scanner;
 };
 
 inline std::string MakeSingleReadsFileName(const std::string& file_name,

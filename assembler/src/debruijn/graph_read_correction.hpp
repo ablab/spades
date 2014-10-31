@@ -81,13 +81,6 @@ class TipsProjector {
 		AlignAndProject(!tip_seq, !alt_seq, !outgoing_tip);
 	}
 
-	void AlignAndProject(
-			const AbstractNonconjugateGraph<typename Graph::DataMaster>&,
-			const Sequence& tip_seq, const Sequence& alt_seq,
-			bool outgoing_tip) {
-		AlignAndProject(tip_seq, alt_seq, outgoing_tip);
-	}
-
 public:
 	TipsProjector(gp_t& gp) :
 			gp_(gp), unique_path_finder_(gp.g) {

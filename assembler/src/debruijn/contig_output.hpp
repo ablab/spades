@@ -274,18 +274,6 @@ void ReportEdge(io::osequencestream_cov& oss
 	}
 }
 
-void OutputContigs(NonconjugateDeBruijnGraph& g,
-		const string& contigs_output_filename,
-		bool output_unipath = false,
-		size_t solid_edge_length_bound = 0) {
-	INFO("Outputting contigs to " << contigs_output_filename << ".fasta");
-	io::osequencestream_cov oss(contigs_output_filename + ".fasta");
-	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-		ReportEdge(oss, g, *it, output_unipath, solid_edge_length_bound);
-	}
-	DEBUG("Contigs written");
-}
-
 void OutputContigs(ConjugateDeBruijnGraph& g,
 		const string& contigs_output_filename,
 		bool output_fastg = false,
@@ -390,23 +378,6 @@ void OutputCutContigs(ConjugateDeBruijnGraph& g,
 //		}
 //		//		oss << g.EdgeNucls(*it);
 //	}
-}
-
-void OutputSingleFileContigs(NonconjugateDeBruijnGraph& g,
-		const string& contigs_output_dir) {
-	INFO("Outputting contigs to " << contigs_output_dir);
-	int n = 0;
-	make_dir(contigs_output_dir);
-	char n_str[20];
-	for (auto it = g.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-		sprintf(n_str, "%d.fa", n);
-
-		io::osequencestream oss(contigs_output_dir + n_str);
-
-		//		osequencestream oss(contigs_output_dir + "tst.fasta");
-		oss << g.EdgeNucls(*it);
-		n++;
-	}DEBUG("SingleFileContigs written");
 }
 
 void OutputSingleFileContigs(ConjugateDeBruijnGraph& g,

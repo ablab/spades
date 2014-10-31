@@ -120,15 +120,6 @@ private:
 		}
 	}
 
-	VertexId FindEndMaybeMissing(const NonconjugateDeBruijnGraph&,
-			VertexId start, Kmer start_kmer, Kmer end_kmer) {
-		if (start_kmer == end_kmer) {
-			return start;
-		} else {
-			return FindVertexMaybeMissing(end_kmer);
-		}
-	}
-
 	void ConstructPart(const std::vector<KeyWithHash>& kwh_list,
 			std::vector<Sequence>& sequences) {
 		for (size_t i = 0; i < sequences.size(); ++i) {

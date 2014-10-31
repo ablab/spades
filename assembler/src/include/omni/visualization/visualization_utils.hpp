@@ -12,7 +12,6 @@
 #include "omni/dijkstra_tools/dijkstra_helper.hpp"
 #include "omni/splitters.hpp"
 #include "omni/abstract_conjugate_graph.hpp"
-#include "omni/abstract_nonconjugate_graph.hpp"
 #include "omni/graph_component.hpp"
 #include "visualizers.hpp"
 #include "vertex_linker.hpp"
