@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "standard_vis.hpp"
 #include "environment.hpp"
 #include "loaded_environments.hpp"
 #include "argument_list.hpp"
