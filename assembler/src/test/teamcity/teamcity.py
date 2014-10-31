@@ -256,7 +256,11 @@ def parse_misassembly(m1, m2):
     else:
         pos2 = m2_coords[0][1]
 
-    return (pos1, pos2)
+    if pos1 < pos2:
+        return (pos1, pos2)
+    else:
+        return (pos2, pos1)
+  
 
 
 def find_mis_positions(contig_report):
@@ -543,7 +547,7 @@ try:
             log.log("======= CONTIG COMPARISON =======")
             if not cmp_misassemblies(quast_output_dir, "latest_contigs", os.path.splitext(contigs)[0]):
                 rewrite_latest = False
-                exit_code = 13
+                #exit_code = 13
 
 
 
@@ -571,7 +575,7 @@ try:
             log.log("======= SCAFFOLD COMPARISON =======")
             if not cmp_misassemblies(quast_output_dir, "latest_scaffolds", os.path.splitext(contigs)[0]):
                 rewrite_latest = False
-                exit_code = 14
+                #exit_code = 14
 
     #writing log
     write_log(history_log, new_log, output_dir, dataset_info)
