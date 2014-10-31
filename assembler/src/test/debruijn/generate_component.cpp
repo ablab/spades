@@ -36,7 +36,7 @@ private:
 
         entered.insert(v);
 
-        for (EdgeId e : this->graph().AdjacentEdges(v)) {
+        for (EdgeId e : this->graph().IncidentEdges(v)) {
             VertexId adjacent_v = OtherEnd(e, v);
             if (this->graph().length(e) <= edge_length_bound_) {
                 Go(adjacent_v, entered);

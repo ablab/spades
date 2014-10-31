@@ -130,7 +130,7 @@ void WriteErrorLoc(const Graph &g,
                    const omnigraph::GraphLabeler<Graph>& labeler) {
     INFO("Writing error localities for graph to folder " << folder_name);
     GraphComponent<Graph> all(g, g.begin(), g.end());
-    set<EdgeId> edges = genome_colorer->ColoredWith(all.edges().begin(),
+    set<typename Graph::EdgeId> edges = genome_colorer->ColoredWith(all.edges().begin(),
                                                     all.edges().end(), "black");
     set<typename Graph::VertexId> to_draw;
     for (auto it = edges.begin(); it != edges.end(); ++it) {
@@ -208,7 +208,7 @@ void WriteKmerComponent(conj_graph_pack &gp, runtime_k::RtSeq const& kp1mer, con
     }
     VERIFY(gp.index.contains(kp1mer));
     auto pos = gp.index.get(kp1mer);
-    VertexId v = pos.second * 2 < gp.g.length(pos.first) ? gp.g.EdgeStart(pos.first) : gp.g.EdgeEnd(pos.first);
+    typename Graph::VertexId v = pos.second * 2 < gp.g.length(pos.first) ? gp.g.EdgeStart(pos.first) : gp.g.EdgeEnd(pos.first);
     GraphComponent<Graph> component = omnigraph::VertexNeighborhood<Graph>(gp.g, v);
     omnigraph::visualization::WriteComponent<Graph>(component, file, colorer, labeler);
 }

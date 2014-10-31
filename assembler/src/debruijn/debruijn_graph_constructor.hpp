@@ -14,7 +14,7 @@
 
 #include "utils.hpp"
 #include "debruijn_graph.hpp"
-#include "omni/abstract_editable_graph.hpp"
+#include "omni/construction_helper.hpp"
 #include "standard_base.hpp"
 #include "indices/kmer_extension_index.hpp"
 #include "openmp_wrapper.h"

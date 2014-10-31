@@ -404,7 +404,7 @@ private:
     set<VertexId> FindNeighbours(const set<VertexId> &s) {
         set<VertexId> result(s.begin(), s.end());
         for (VertexId v : result) {
-            for (EdgeId e : this->graph().AdjacentEdges(v)) {
+            for (EdgeId e : this->graph().IncidentEdges(v)) {
                 if(this->graph().length(e) <= edge_length_bound_) {
                     result.insert(this->graph().EdgeEnd(e));
                     result.insert(this->graph().EdgeStart(e));

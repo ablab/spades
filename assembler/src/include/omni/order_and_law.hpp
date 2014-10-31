@@ -12,6 +12,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <stacktrace.hpp>
+#include "openmp_wrapper.h"
 #include "folly/PackedSyncPtr.h"
 
 namespace restricted

@@ -21,6 +21,7 @@ namespace debruijn_graph {
   
 template<class Graph>
 class SensitiveReadMapper: public SequenceMapper<Graph> {
+    typedef typename Graph::EdgeId EdgeId;
     using SequenceMapper<Graph>::g_;
 private:
 

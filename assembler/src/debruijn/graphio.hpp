@@ -8,7 +8,6 @@
 
 #include "standard.hpp"
 #include "omni/omni_utils.hpp"
-#include "omni/abstract_conjugate_graph.hpp"
 
 #include "omni/omni_tools.hpp"
 
@@ -350,16 +349,6 @@ class ConjugateDataPrinter: public DataPrinter<Graph> {
 };
 
 template<class Graph>
-struct PrinterTraits {
-    typedef DataPrinter<Graph> Printer;
-};
-
-template<>
-struct PrinterTraits<ConjugateDeBruijnGraph> {
-    typedef ConjugateDataPrinter<ConjugateDeBruijnGraph> Printer;
-};
-
-template<class Graph>
 class DataScanner {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
@@ -673,16 +662,6 @@ private:
     }
 };
 
-template<class Graph>
-struct ScannerTraits {
-    typedef DataScanner<Graph> Scanner;
-};
-
-template<>
-struct ScannerTraits<ConjugateDeBruijnGraph> {
-    typedef ConjugateDataScanner<ConjugateDeBruijnGraph> Scanner;
-};
-
 inline std::string MakeSingleReadsFileName(const std::string& file_name,
                                     size_t index) {
     return file_name + "_paths_" + ToString(index) + ".mpr";
@@ -716,7 +695,7 @@ void PrintGraphPack(const string& file_name,
 
 template<class graph_pack>
 void PrintGraphPack(const string& file_name, const graph_pack& gp) {
-    typename PrinterTraits<typename graph_pack::graph_t>::Printer printer(gp.g);
+    ConjugateDataPrinter<typename graph_pack::graph_t> printer(gp.g);
     PrintGraphPack(file_name, printer, gp);
 }
 
@@ -824,7 +803,7 @@ void PrintSingleLongReads(const string& file_name, const LongReadContainer<Graph
 
 template<class graph_pack>
 void PrintAll(const string& file_name, const graph_pack& gp) {
-    typename PrinterTraits<typename graph_pack::graph_t>::Printer printer(gp.g, gp.g.begin(), gp.g.end());
+    ConjugateDataPrinter<typename graph_pack::graph_t> printer(gp.g, gp.g.begin(), gp.g.end());
     PrintGraphPack(file_name, printer, gp);
     PrintUnclusteredIndices(file_name, printer, gp.paired_indices);
     PrintClusteredIndices(file_name, printer, gp.clustered_indices);
@@ -838,7 +817,7 @@ void PrintWithPairedIndex(const string& file_name, const graph_pack& gp,
                           VertexIt begin, VertexIt end,
                           const PairedInfoIndexT<typename graph_pack::graph_t>& paired_index,
                           bool clustered_index = false) {
-    typename PrinterTraits<typename graph_pack::graph_t>::Printer printer(gp.g,
+    ConjugateDataPrinter<typename graph_pack::graph_t> printer(gp.g,
                                                                           begin, end);
     PrintWithPairedIndex(file_name, printer, gp, paired_index, clustered_index);
 }
@@ -847,7 +826,7 @@ template<class graph_pack, class VertexIt>
 void PrintWithClusteredIndex(const string& file_name, const graph_pack& gp,
                              VertexIt begin, VertexIt end,
                              const PairedInfoIndexT<typename graph_pack::graph_t>& clustered_index) {
-    typename PrinterTraits<typename graph_pack::graph_t>::Printer printer(gp.g,
+    ConjugateDataPrinter<typename graph_pack::graph_t> printer(gp.g,
                                                                           begin, end);
     PrintWithPairedIndex(file_name, printer, gp, clustered_index, true);
 }
@@ -863,7 +842,7 @@ void PrintWithPairedIndex(const string& file_name, const graph_pack& gp,
 template<class graph_pack, class VertexIt>
 void PrinGraphPack(const string& file_name, const graph_pack& gp,
                    VertexIt begin, VertexIt end) {
-    typename PrinterTraits<typename graph_pack::graph_t>::Printer printer(gp.g,
+    ConjugateDataPrinter<typename graph_pack::graph_t> printer(gp.g,
                                                                           begin, end);
     PrintGraphPack(file_name, printer, gp);
 }
@@ -879,8 +858,7 @@ void PrintWithPairedIndices(const string& file_name, const graph_pack& gp,
                             const PairedInfoIndicesT<typename graph_pack::graph_t>& paired_indices,
                             bool clustered_index = false) {
 
-    typename PrinterTraits<typename graph_pack::graph_t>::Printer
-            printer(gp.g, gp.g.begin(), gp.g.end());
+    ConjugateDataPrinter<typename graph_pack::graph_t> printer(gp.g, gp.g.begin(), gp.g.end());
 
     PrintWithPairedIndices(file_name, printer, gp, paired_indices, clustered_index);
 }
@@ -1003,7 +981,7 @@ template<class graph_pack>
 void ScanWithPairedIndex(const string& file_name, graph_pack& gp,
                          PairedInfoIndexT<typename graph_pack::graph_t>& paired_index,
                          bool clustered_index = false) {
-    typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(gp.g);
+    ConjugateDataScanner<typename graph_pack::graph_t> scanner(gp.g);
     ScanWithPairedIndex(file_name, scanner, gp, paired_index, clustered_index);
 }
 
@@ -1024,7 +1002,7 @@ template<class graph_pack>
 void ScanWithPairedIndices(const string& file_name, graph_pack& gp,
                            PairedInfoIndicesT<typename graph_pack::graph_t>& paired_indices,
                            bool clustered_index = false) {
-    typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(gp.g);
+    ConjugateDataScanner<typename graph_pack::graph_t> scanner(gp.g);
     ScanWithPairedIndices(file_name, scanner, gp, paired_indices, clustered_index);
 }
 
@@ -1037,7 +1015,7 @@ void ScanWithClusteredIndices(const string& file_name, graph_pack& gp,
 
 template<class Graph>
 void ScanBasicGraph(const string& file_name, Graph& g) {
-    typename ScannerTraits<Graph>::Scanner scanner(g);
+    ConjugateDataScanner<Graph> scanner(g);
     ScanBasicGraph<Graph>(file_name, scanner);
 }
 
@@ -1050,14 +1028,14 @@ void ScanSingleLongReads(const string& file_name, LongReadContainer<Graph>& sing
 
 template<class graph_pack>
 void ScanGraphPack(const string& file_name, graph_pack& gp) {
-    typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(gp.g);
+    ConjugateDataScanner<typename graph_pack::graph_t> scanner(gp.g);
     ScanGraphPack(file_name, scanner, gp);
 }
 
 template<class graph_pack>
 void ScanAll(const std::string& file_name, graph_pack& gp,
              bool force_exists = true) {
-    typename ScannerTraits<typename graph_pack::graph_t>::Scanner scanner(gp.g);
+    ConjugateDataScanner<typename graph_pack::graph_t> scanner(gp.g);
     ScanGraphPack(file_name, scanner, gp);
     ScanPairedIndices(file_name, scanner, gp.paired_indices, force_exists);
     ScanClusteredIndices(file_name, scanner, gp.clustered_indices, force_exists);

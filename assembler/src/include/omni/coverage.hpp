@@ -17,30 +17,6 @@
 
 namespace omnigraph {
 
-class CoverageData {
- private:
-    unsigned coverage_;
-
- public:
-    CoverageData()
-            : coverage_(0) {
-    }
-
-    void inc_coverage(int value) {
-        VERIFY(value >= 0 || coverage_ > unsigned(-value));
-        coverage_ += value;
-    }
-
-    void set_coverage(unsigned coverage) {
-        coverage_ = coverage;
-    }
-
-    //not length normalized
-    unsigned coverage() const {
-        return coverage_;
-    }
-};
-
 //todo save/load absolute coverage
 template<class Graph>
 class CoverageIndex : public GraphActionHandler<Graph> {

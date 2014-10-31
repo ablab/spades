@@ -73,14 +73,6 @@ class TipsProjector {
 		gp_.kmer_mapper.RemapKmers(aligned_tip, aligned_alt);
 	}
 
-	void AlignAndProject(
-			const AbstractConjugateGraph<typename Graph::DataMaster>& /*graph*/,
-			const Sequence& tip_seq, const Sequence& alt_seq,
-			bool outgoing_tip) {
-		AlignAndProject(tip_seq, alt_seq, outgoing_tip);
-		AlignAndProject(!tip_seq, !alt_seq, !outgoing_tip);
-	}
-
 public:
 	TipsProjector(gp_t& gp) :
 			gp_(gp), unique_path_finder_(gp.g) {
@@ -106,7 +98,8 @@ public:
 								<< alt_seq.size()
 								<< ". Trying to project partially");
 			}
-			AlignAndProject(gp_.g, tip_seq, alt_seq, outgoing_tip);
+	        AlignAndProject(tip_seq, alt_seq, outgoing_tip);
+	        AlignAndProject(!tip_seq, !alt_seq, !outgoing_tip);
 			TRACE("Tip projected");
 		}
 	}

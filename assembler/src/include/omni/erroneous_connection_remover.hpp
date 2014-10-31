@@ -186,9 +186,9 @@ class ThornCondition : public EdgeCondition<Graph> {
 
     bool CheckCoverageAround(EdgeId e) const {
         return CheckAlternativeCoverage(
-                this->g().AdjacentEdges(this->g().EdgeStart(e)), e)
+                this->g().IncidentEdges(this->g().EdgeStart(e)), e)
                 && CheckAlternativeCoverage(
-                        this->g().AdjacentEdges(this->g().EdgeEnd(e)), e);
+                        this->g().IncidentEdges(this->g().EdgeEnd(e)), e);
     }
 
     bool CheckUniqueness(EdgeId e, bool /*forward*/) const {

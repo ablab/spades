@@ -22,6 +22,7 @@ template<class Graph, class SequenceMapper>
 class GapCloserPairedIndexFiller {
   private:
     typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
     const Graph &graph_;
     const SequenceMapper& mapper_;
 

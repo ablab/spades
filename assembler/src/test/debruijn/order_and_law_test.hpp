@@ -129,11 +129,11 @@ BOOST_AUTO_TEST_CASE( OrderTest ) {
 	string file_name = "src/debruijn/test_save";
 	Graph graph(55);
 	RandomGraphConstructor<Graph>(1000, 100, 100).Generate(graph);
-	graphio::PrinterTraits<Graph>::Printer printer(graph);
+	graphio::ConjugateDataPrinter<Graph> printer(graph);
 	printer.SaveGraph(file_name);
 	printer.SaveEdgeSequences(file_name);
 	Graph new_graph(55);
-	graphio::ScannerTraits<Graph>::Scanner scanner(new_graph);
+	graphio::ConjugateDataScanner<Graph> scanner(new_graph);
 	scanner.LoadGraph(file_name);
 	IteratorOrderChecker<Graph> checker(graph, new_graph);
 	BOOST_CHECK(checker.CheckOrder(graph.SmartVertexBegin(), new_graph.SmartVertexBegin()));
