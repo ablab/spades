@@ -118,6 +118,10 @@ class DebruijnEnvironment : public Environment {
             return tmpstream.str();
         }
 
+        void inc_pic_counter() {
+            picture_counter_++;
+        }
+
         size_t k_value() const {
             return gp_.k_value;
         }
@@ -162,8 +166,16 @@ class DebruijnEnvironment : public Environment {
             folder_ = folder;
         }
 
+        string folder() const {
+            return folder_;
+        }
+
         void set_file_name(string file_name) {
             file_name_base_ = file_name;
+        }
+
+        string file_name() {
+            return file_name_base_;
         }
 
         FillerClass& filler() {

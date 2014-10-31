@@ -147,7 +147,7 @@ public:
 	bool IsBorder(VertexId v) const {
 		if(vertices_.count(v) == 0)
 			return false;
-		for (EdgeId e : graph_.AdjacentEdges(v)) {
+		for (EdgeId e : graph_.IncidentEdges(v)) {
 			if (vertices_.count(graph_.EdgeStart(e)) == 0
 					|| vertices_.count(graph_.EdgeEnd(e)) == 0) {
 				return true;

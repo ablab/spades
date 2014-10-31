@@ -91,7 +91,7 @@ public:
             contains_deadends_ = true;
         }
         inner_vertices_.insert(v);
-        for (EdgeId e : g_.AdjacentEdges(v)) {
+        for (EdgeId e : g_.IncidentEdges(v)) {
             //seems to correctly handle loops
             if (edges_.count(e) == 0) {
                 edges_.insert(e);
@@ -397,7 +397,7 @@ private:
 
     bool IsTerminateVertex(VertexId v) const {
         double base_coverage = rel_helper_.MaxLocalCoverage(
-                RetainEdgesFromComponent(g_.AdjacentEdges(v)), v);
+                RetainEdgesFromComponent(g_.IncidentEdges(v)), v);
         return CheckAnyFilteredHighlyCovered(g_.OutgoingEdges(v),
                                              v, base_coverage)
                 && CheckAnyFilteredHighlyCovered(

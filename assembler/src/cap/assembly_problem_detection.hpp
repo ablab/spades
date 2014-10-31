@@ -187,16 +187,16 @@
 //		return answer;
 //	}
 //
-//	vector<EdgeId> AdjacentEdges(VertexId v) {
+//	vector<EdgeId> IncidentEdges(VertexId v) {
 //		vector<EdgeId> ans;
 //		push_back_all(ans, gp_.g.IncomingEdges(v));
 //		push_back_all(ans, gp_.g.OutgoingEdges(v));
 //		return ans;
 //	}
 //
-//	vector<EdgeId> AdjacentEdgesInPath(VertexId v, const vector<EdgeId>& good_contig_path) {
+//	vector<EdgeId> IncidentEdgesInPath(VertexId v, const vector<EdgeId>& good_contig_path) {
 //		vector<EdgeId> ans;
-//		vector<EdgeId> adj = AdjacentEdges(v);
+//		vector<EdgeId> adj = IncidentEdges(v);
 //		for (size_t i = 0; i < adj.size(); ++i)
 //			if (find(good_contig_path.begin(), good_contig_path.end(), adj[i]) != good_contig_path.end())
 //				ans.push_back(adj[i]);
@@ -213,7 +213,7 @@
 //
 //		LabelFilter<typename gp_t::graph_t> lf(gp_.g, gp_.edge_pos);
 //		string file_name = folder + c.name() + "_|_" + best_contig + ".dot";
-//		EdgeId edge = AdjacentEdgesInPath(v, good_contig_path).front();
+//		EdgeId edge = IncidentEdgesInPath(v, good_contig_path).front();
 //		GraphComponent<Graph> component = omnigraph::EdgeNeighborhood(gp_.g, edge);
 //		if(lf.Check(vector<VertexId>(component.v_begin(), component.v_end()))) {
 //			WriteComponent(component, file_name, BorderDecorator<Graph>::GetInstance(component, coloring_.GetInstance()), labeler);
@@ -245,7 +245,7 @@
 //	}
 //
 //	size_t LengthToEndOnGoodContig(VertexId v, const vector<EdgeId>& good_contig_path, const set<EdgeId>& best_alt_contig_path) {
-//		vector<EdgeId> adj_in_path = AdjacentEdgesInPath(v, good_contig_path);
+//		vector<EdgeId> adj_in_path = IncidentEdgesInPath(v, good_contig_path);
 //		for (auto it = adj_in_path.begin(); it != adj_in_path.end(); ++it) {
 //			if (best_alt_contig_path.count(*it) == 0) {
 //				if (v == gp_.g.EdgeStart(*it)) {
@@ -267,10 +267,10 @@
 //			DEBUG("Vertex was an end of initial contig");
 //			return;
 //		}
-//		if (ContainsSingleAssemblyEdge(AdjacentEdgesInPath(v, good_contig_path), good_assembly_prefix_)) {
+//		if (ContainsSingleAssemblyEdge(IncidentEdgesInPath(v, good_contig_path), good_assembly_prefix_)) {
 //			DEBUG("Vertex has adjacent \"good\" assembly edge");
-//			if (SingleAssemblyEdges(AdjacentEdgesInPath(v, good_contig_path), good_assembly_prefix_).size() == 1) {
-//				EdgeId e = SingleAssemblyEdges(AdjacentEdgesInPath(v, good_contig_path), good_assembly_prefix_).front();
+//			if (SingleAssemblyEdges(IncidentEdgesInPath(v, good_contig_path), good_assembly_prefix_).size() == 1) {
+//				EdgeId e = SingleAssemblyEdges(IncidentEdgesInPath(v, good_contig_path), good_assembly_prefix_).front();
 //				if (e == good_contig_path.front() || e == good_contig_path.back()) {
 //					DEBUG("This edge is at the end of initial contig");
 //					DEBUG("Skipping");
@@ -281,14 +281,14 @@
 //			ReportLocality(v, good_contig_path, best_contig, c, dir_ + "/coverage_gaps/");
 //			return;
 //		}
-//		if (ContainsSingleAssemblyEdge(AdjacentEdges(v), bad_assembly_prefix_)
-//				&& !ContainsSingleAssemblyEdge(AdjacentEdgesInPath(v, good_contig_path), good_assembly_prefix_)) {
+//		if (ContainsSingleAssemblyEdge(IncidentEdges(v), bad_assembly_prefix_)
+//				&& !ContainsSingleAssemblyEdge(IncidentEdgesInPath(v, good_contig_path), good_assembly_prefix_)) {
 //			DEBUG("Reporting locality of vertex " << gp_.g.str(v) << " as possible EC problem");
 //			ReportLocality(v, good_contig_path, best_contig, c, dir_ + "/ec_problem/");
 //			return;
 //		}
-//		if (!ContainsSingleAssemblyEdge(AdjacentEdges(v), bad_assembly_prefix_)
-//				&& !ContainsSingleAssemblyEdge(AdjacentEdgesInPath(v, good_contig_path), good_assembly_prefix_)) {
+//		if (!ContainsSingleAssemblyEdge(IncidentEdges(v), bad_assembly_prefix_)
+//				&& !ContainsSingleAssemblyEdge(IncidentEdgesInPath(v, good_contig_path), good_assembly_prefix_)) {
 //			DEBUG("Possible RR problem. Checking remaining length");
 //			if (LengthToEndOnGoodContig(v, good_contig_path, MappingEdgeSet(best_contig)) > 10000) {
 //				DEBUG("Check ok");

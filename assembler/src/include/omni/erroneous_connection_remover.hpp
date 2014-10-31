@@ -115,8 +115,8 @@ class SelfConjugateCondition : public EdgeCondition<Graph> {
 //
 //    bool Check(EdgeId e) const {
 //        const Graph& g = this->g();
-//        return CheckAdjacent(g.AdjacentEdges(g.EdgeStart(e)), e)
-//                && CheckAdjacent(g.AdjacentEdges(g.EdgeEnd(e)), e);
+//        return CheckAdjacent(g.IncidentEdges(g.EdgeStart(e)), e)
+//                && CheckAdjacent(g.IncidentEdges(g.EdgeEnd(e)), e);
 //    }
 //
 // private:
@@ -186,9 +186,9 @@ class ThornCondition : public EdgeCondition<Graph> {
 
     bool CheckCoverageAround(EdgeId e) const {
         return CheckAlternativeCoverage(
-                this->g().AdjacentEdges(this->g().EdgeStart(e)), e)
+                this->g().IncidentEdges(this->g().EdgeStart(e)), e)
                 && CheckAlternativeCoverage(
-                        this->g().AdjacentEdges(this->g().EdgeEnd(e)), e);
+                        this->g().IncidentEdges(this->g().EdgeEnd(e)), e);
     }
 
     bool CheckUniqueness(EdgeId e, bool /*forward*/) const {
