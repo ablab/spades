@@ -23,7 +23,7 @@ ALLOWED_READS_EXTENSIONS += [x + '.gz' for x in ALLOWED_READS_EXTENSIONS]
 # we support up to MAX_LIBS_NUMBER libs for each type of short-reads libs
 MAX_LIBS_NUMBER = 5
 OLD_STYLE_READS_OPTIONS = ["--12", "-1", "-2", "-s"]
-SHORT_READS_TYPES = {"pe": "paired-end", "s": "single", "mp": "mate-pairs", "hqmp": "hq-mate-pairs", "lucigen": "lucigen"}
+SHORT_READS_TYPES = {"pe": "paired-end", "s": "single", "mp": "mate-pairs", "hqmp": "hq-mate-pairs", "nxmate": "nxmate"}
 # other libs types:
 LONG_READS_TYPES = ["pacbio", "sanger", "nanopore", "trusted-contigs", "untrusted-contigs"]
 
@@ -114,7 +114,7 @@ for i in range(MAX_LIBS_NUMBER):
     for type in SHORT_READS_TYPES.keys():
         if type == 's':  # single
             reads_options += ["s%d=" % (i+1)]
-        elif type == 'lucigen':  # special case: only left and right reads
+        elif type == 'nxmate':  # special case: only left and right reads
             reads_options += ("%s%d-1= %s%d-2=" % tuple([type, i + 1] * 2)).split()
         else:  # paired-end, mate-pairs, hq-mate-pairs
             reads_options += ("%s%d-1= %s%d-2= %s%d-12= %s%d-s= %s%d-rf %s%d-fr %s%d-ff" % tuple([type, i + 1] * 7)).split()
@@ -182,9 +182,9 @@ def usage(spades_version, show_hidden=False, dipspades=False):
                      " for high-quality mate-pair library number <#> (<#> = 1,2,3,4,5)" + "\n")
     sys.stderr.write("--hqmp<#>-<or>\torientation of reads"\
                      " for high-quality mate-pair library number <#> (<#> = 1,2,3,4,5; <or> = fr, rf, ff)" + "\n")
-    sys.stderr.write("--lucigen<#>-1\t<filename>\tfile with forward reads"\
+    sys.stderr.write("--nxmate<#>-1\t<filename>\tfile with forward reads"\
                          " for Lucigen NxMate library number <#> (<#> = 1,2,3,4,5)" + "\n")
-    sys.stderr.write("--lucigen<#>-2\t<filename>\tfile with reverse reads"\
+    sys.stderr.write("--nxmate<#>-2\t<filename>\tfile with reverse reads"\
                          " for Lucigen NxMate library number <#> (<#> = 1,2,3,4,5)" + "\n")
     sys.stderr.write("--sanger\t<filename>\tfile with Sanger reads\n")
     sys.stderr.write("--pacbio\t<filename>\tfile with PacBio reads\n")

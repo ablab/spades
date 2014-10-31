@@ -596,9 +596,9 @@ def dataset_has_additional_contigs(dataset_data):
     return False
 
 
-def dataset_has_lucigen_reads(dataset_data):
+def dataset_has_nxmate_reads(dataset_data):
     for reads_library in dataset_data:
-        if reads_library['type'] == 'lucigen':
+        if reads_library['type'] == 'nxmate':
             return True
     return False
 
@@ -728,13 +728,13 @@ def split_interlaced_reads(dataset_data, dst, log):
     return new_dataset_data
 
 
-def process_lucigen_reads(dataset_data, dst, log):
+def process_nxmate_reads(dataset_data, dst, log):
     try:
         import lucigen_nxmate
         new_dataset_data = list()
         for reads_library in dataset_data:
             new_reads_library = dict(reads_library)
-            if new_reads_library['type'] == 'lucigen':
+            if new_reads_library['type'] == 'nxmate':
                 raw_left_reads = new_reads_library['left reads']
                 raw_right_reads = new_reads_library['right reads']
                 new_reads_library['left reads'] = []
