@@ -666,6 +666,10 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 
   load(cfg.simp, pt, "default");
 
+  load(cfg.fast_simplification, pt, "fast_simplification");
+  if (cfg.ds.single_cell /*|| cfg.main_iteration*/)
+    cfg.fast_simplification = false; 
+
   if (cfg.ds.single_cell)
     load(cfg.simp, pt, "sc", false);
 
@@ -675,11 +679,6 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   if (cfg.diploid_mode)
     load(cfg.simp, pt, "diploid_simp", false);
 
-  load(cfg.fast_simplification, pt, "fast_simplification");
-
-  if (cfg.ds.single_cell || cfg.ds.reads[0].type() == io::LibraryType::HQMatePairs/*|| cfg.main_iteration*/)
-    cfg.fast_simplification = false; 
-  
   if (cfg.fast_simplification)
     load(cfg.simp, pt, "fast_simp", false);
 
