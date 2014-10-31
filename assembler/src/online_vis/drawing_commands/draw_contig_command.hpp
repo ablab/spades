@@ -18,6 +18,15 @@ namespace online_visualization {
                 const MappingPath<EdgeId>& mapping_path = curr_env.mapper().MapSequence(piece_of_genome);
                 DrawingCommand::DrawPicturesAlongPath(curr_env, mapping_path, label);
             }
+
+            io::SingleRead MakeValid(const io::SingleRead& contig) const {
+                std::string str = contig.GetSequenceString();
+                for (size_t i = 0; i < str.length(); ++i) {
+                    if (str[i] == 'N')
+                        str[i] = nucl(char(i % 4));
+                }
+                return io::SingleRead(contig.name(), str);
+            }
             
         protected:
             size_t MinArgNumber() const {
@@ -51,9 +60,11 @@ namespace online_visualization {
                     return;
 
                 string contig_name = args[1];
+            	LOG("Trying to draw contig " << contig_name);
+
 				bool starts_with = false;
-				if (contig_name[contig_name.size() - 1] == '*') {
-					starts_with = true;
+                if (contig_name[contig_name.size() - 1] == '*') {
+                    starts_with = true;
 					contig_name = contig_name.substr(0, contig_name.size() - 1);
 				}
                 string contigs_file = args[2];
@@ -68,14 +79,19 @@ namespace online_visualization {
                     //LOG("Contig " << read.name() << " is being processed now");
 
                     // if read is valid and also the name contains a given string <contig_name> as a substring.
-                    if (read.IsValid()) {
-						if((starts_with && read.name().find(contig_name) != string::npos) || contig_name == read.name()) {
-	                        const Sequence& contig = read.sequence();
-    	                    const string& label = read.name();
-        	                DrawPicturesAlongGenomePart(curr_env, contig, label);
-            	            LOG("Contig " << read.name() << " has been drawn");
-						}
-                    }                        
+					if((starts_with && read.name().find(contig_name) != string::npos) || contig_name == read.name()) {
+                        if (!read.IsValid()) {
+                            LOG("Contig is invalid, fixing");
+                            read = MakeValid(read);
+                            VERIFY(read.IsValid());
+                        }
+
+	                    const Sequence& contig = read.sequence();
+    	                const string& label = read.name();
+            	        LOG("Drawing");
+        	            DrawPicturesAlongGenomePart(curr_env, contig, label);
+            	        LOG("Contig has been drawn");
+					}
                 }
 
             }
