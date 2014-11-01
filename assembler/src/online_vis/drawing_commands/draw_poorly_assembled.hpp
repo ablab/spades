@@ -85,6 +85,7 @@ public:
         Go(v, 0, grey, black);
         last_inner_ = black;
         last_inner_.insert(v);
+        ComponentCloser<Graph>(graph(), 0).CloseComponent(grey);
         return GraphComponent<Graph>(graph(), grey.begin(), grey.end());
     }
 
