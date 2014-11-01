@@ -664,24 +664,6 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   load(cfg.sensitive_map, pt, "sensitive_mapper");
   load(cfg.flanking_range, pt, "flanking_range");
 
-  load(cfg.simp, pt, "default");
-
-  load(cfg.fast_simplification, pt, "fast_simplification");
-  if (cfg.ds.single_cell /*|| cfg.main_iteration*/)
-    cfg.fast_simplification = false; 
-
-  if (cfg.ds.single_cell)
-    load(cfg.simp, pt, "sc", false);
-
-  if (cfg.mismatch_careful)
-    load(cfg.simp, pt, "careful", false);
-
-  if (cfg.diploid_mode)
-    load(cfg.simp, pt, "diploid_simp", false);
-
-  if (cfg.fast_simplification)
-    load(cfg.simp, pt, "fast_simp", false);
-
   load(cfg.info_printers, pt, "info_printers");
   if (!cfg.developer_mode) {
       for (auto iter = cfg.info_printers.begin(); iter != cfg.info_printers.end(); ++iter) {
@@ -694,6 +676,24 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   cfg.need_mapping = cfg.developer_mode || cfg.correct_mismatches 
                         || cfg.gap_closer_enable || cfg.rr_enable;
 
+  load(cfg.simp, pt, "default");
+
+  if (cfg.ds.single_cell)
+    load(cfg.simp, pt, "sc", false);
+
+  if (cfg.mismatch_careful)
+    load(cfg.simp, pt, "careful", false);
+
+  if (cfg.diploid_mode)
+    load(cfg.simp, pt, "diploid_simp", false);
+
+  load(cfg.fast_simplification, pt, "fast_simplification");
+
+  if (cfg.ds.single_cell || cfg.ds.reads[0].type() == io::LibraryType::HQMatePairs/*|| cfg.main_iteration*/)
+    cfg.fast_simplification = false; 
+  
+  if (cfg.fast_simplification)
+    load(cfg.simp, pt, "fast_simp", false);
 }
 
 void load(debruijn_config& cfg, const std::string &filename) {
