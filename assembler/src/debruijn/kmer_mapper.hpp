@@ -80,8 +80,13 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
     Kmer old_kmer = old_s.start<Kmer>(k_);
     old_kmer >>= 0;
 
+    set<Kmer> old_kmers;
     for (size_t i = k_ - 1; i < old_s.size(); ++i) {
       old_kmer <<= old_s[i];
+      if(old_kmers.count(old_kmer) != 0) {
+        return false;
+      }
+      old_kmers.insert(old_kmer);
       size_t old_kmer_offset = i - k_ + 1;
       size_t new_kmer_offest = aligner.GetPosition(old_kmer_offset);
       if(old_kmer_offset * 2 + 1 == old_length && new_length % 2 == 0) {
