@@ -16,6 +16,7 @@ import gzip
 import tempfile
 import shutil
 import options_storage
+import itertools
 
 # constants to print and detect warnings and errors in logs
 SPADES_PY_ERROR_MESSAGE = "== Error == "
@@ -831,27 +832,67 @@ def break_scaffolds(input_filename, threshold, replace_char="N", gzipped=False):
     return modified, new_fasta
 
 
+def comp(letter):
+   return {'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C', 'N': 'N'}[letter.upper()]
+
+
+def rev_comp(seq):
+   return ''.join(itertools.imap(comp, seq[::-1]))
+
+
+def get_contig_id(s):
+    values = s.split("_")
+    if len(values) < 2 or (values[0] != ">NODE" and values[0] != "NODE"):
+        warning("Contig %s has unknown ID format" % (s))
+        return None
+    if s.find("'") != -1:
+        return (values[1] + "'")
+    return values[1]
+
+
 def create_fastg_from_fasta(fasta_filename, fastg_filename, log=None):
     '''
     contig names are taken from <fastg> and applied to <fasta> for creating new fastg (location is near with fasta)
     '''
-    fasta_data = read_fasta(fasta_filename)
+    #create fastg mapping
+    contig_graph = {}
     fastg_names = [name for (name, seq) in read_fasta(fastg_filename)]
-    new_fastg_data = []
-    new_fastg_filename = fasta_filename[:-6] + ".fastg"
-    for (name, seq) in fasta_data:
-        fastg_name = ""
-        for n in fastg_names:
-            if n.startswith(name):
-                fastg_name = n
-                break
-        if fastg_name:
-            fastg_names.remove(fastg_name)
-            new_fastg_data.append((fastg_name, seq))
+    for name in fastg_names:
+        adjacency = name.split(':')
+        if len(adjacency) == 1:
+            contig_graph[get_contig_id(adjacency[0])] = []
         else:
-            warning("Creating %s: failed to find appropriate name for contig %s (looking for names in %s)! Skipping this contig." %
-                    (new_fastg_filename, name, fastg_filename))
-    write_fasta(new_fastg_filename, new_fastg_data)
+            contig_graph[get_contig_id(adjacency[0])] = [get_contig_id(next) for next in adjacency[1].split(',')]
+
+    fasta_data = read_fasta(fasta_filename)
+    fasta_id_map = {}
+    for (name, seq) in fasta_data:
+        fasta_id_map[get_contig_id(name)] = name[1:]
+        fasta_id_map[get_contig_id(name) + "'"] = name[1:] + "'"
+
+    result_fastg = []
+    #print fasta_id_map
+    #print contig_graph
+    for (name, seq) in fasta_data:
+        cur_id = name
+        new_name = cur_id
+        adjacent_list = contig_graph[get_contig_id(cur_id)]
+        #print adjacent_list
+        if len(adjacent_list) > 0:
+            new_name += ":" + ",".join(map(lambda x : fasta_id_map[x], adjacent_list))
+        new_name += ";"
+        result_fastg.append((new_name, seq));
+
+        cur_id = name + "'"
+        new_name = cur_id
+        adjacent_list = contig_graph[get_contig_id(cur_id)]
+        if len(adjacent_list) > 0:
+            new_name += ":" + ",".join(map(lambda x : fasta_id_map[x], adjacent_list))
+        new_name += ";"
+        result_fastg.append((new_name, rev_comp(seq)));
+
+    new_fastg_filename = fasta_filename[:-6] + ".fastg"
+    write_fasta(new_fastg_filename, result_fastg)
 
 
 def is_float(value):

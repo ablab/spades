@@ -53,7 +53,7 @@ protected:
     }
 
 public:
-    osequencestream(const std::string& filename): id_(0) {
+    osequencestream(const std::string& filename): id_(1) {
         ofstream_.open(filename.c_str());
     }
 
@@ -166,7 +166,7 @@ protected:
     double cov_;
 
   virtual void write_header(const std::string& s) {
-        ofstream_ << ">" << MakeContigId(++id_, s.size(), cov_, uid_) << std::endl;
+        ofstream_ << ">" << MakeContigId(id_++, s.size(), cov_, uid_) << std::endl;
     }
 
 public:
@@ -295,10 +295,16 @@ public:
         header_=  h;
     }
 
-    osequencestream_for_fastg& operator<<(const std::vector<std::string>& v) {
+    osequencestream_for_fastg& operator<<(const std::set<std::string>& s) {
         write_header(header_);
-        for (size_t i = 0; i < v.size(); ++i) {
-            ofstream_ << ":" << v[i];
+        if (s.size() > 0) {
+            auto iter = s.begin();
+            ofstream_ << ":" << *iter;
+            ++iter;
+            while (iter != s.end()) {
+                ofstream_ << "," << *iter;
+                ++iter;
+            }
         }
         ofstream_ << ";" << std::endl;
         return *this;

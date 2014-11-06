@@ -76,7 +76,7 @@ protected:
 
     void MakeIDS(PathContainer& paths,
                  map<BidirectionalPath*, string >& ids,
-                 map<BidirectionalPath*, vector<string> >& next_ids) const {
+                 map<BidirectionalPath*, set<string> >& next_ids) const {
         int counter = 1;
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
             if (iter.get()->Size() == 0)
@@ -87,131 +87,136 @@ protected:
             string name = io::MakeContigId(counter++, p->Length() + k_, p->Coverage(), p->GetId());
             ids.insert(make_pair(p, name));
             ids.insert(make_pair(cp, name + "'"));
-            next_ids.insert(make_pair(p, vector<string>()));
-            next_ids.insert(make_pair(cp, vector<string>()));
+            next_ids.insert(make_pair(p, set<string>()));
+            next_ids.insert(make_pair(cp, set<string>()));
         }
     }
 
     void FindPathsOrder(PathContainer& paths,
-                        multimap<VertexId, BidirectionalPath*>& v_starting,
-                        multimap<EdgeId, BidirectionalPath*>& e_starting) const {
+                        map<VertexId, set<BidirectionalPath*> >& v_starting,
+                        map<EdgeId, set<BidirectionalPath*> >& e_starting) const {
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
             if (iter.get()->Size() == 0)
-                            continue;
+                continue;
 
             BidirectionalPath* path = iter.get();
             DEBUG(g_.int_id(g_.EdgeStart(path->Front())) << " -> " << path->Size() << ", " << path->Length());
-            v_starting.insert(make_pair(g_.EdgeStart(path->Front()), path));
-            e_starting.insert(make_pair(path->Front(), path));
-
+            EdgeId e = path->Front();
+            VertexId v = g_.EdgeStart(e);
+            if (v_starting.count(v) == 0) {
+                v_starting.insert(make_pair(v, set<BidirectionalPath*>()));
+            }
+            v_starting[v].insert(path);
+            if (path->Size() > 1) {
+                if (e_starting.count(e) == 0) {
+                    e_starting.insert(make_pair(e, set<BidirectionalPath*>()));
+                }
+                e_starting[e].insert(path);
+            }
 
             path = iter.getConjugate();
             DEBUG(g_.int_id(g_.EdgeStart(path->Front())) << " -> " << path->Size() << ", " << path->Length());
-            v_starting.insert(make_pair(g_.EdgeStart(path->Front()), path));
-            e_starting.insert(make_pair(path->Front(), path));
+            e = path->Front();
+            v = g_.EdgeStart(e);
+            if (v_starting.count(v) == 0) {
+                v_starting.insert(make_pair(v, set<BidirectionalPath*>()));
+            }
+            v_starting[v].insert(path);
+            if (path->Size() > 1) {
+                if (e_starting.count(e) == 0) {
+                    e_starting.insert(make_pair(e, set<BidirectionalPath*>()));
+                }
+                e_starting[e].insert(path);
+            }
         }
     }
 
     void VerifyIDS(PathContainer& paths,
                  map<BidirectionalPath*, string >& ids,
-                 map<BidirectionalPath*, vector<string> >& next_ids,
-                 multimap<VertexId, BidirectionalPath*>& v_starting,
-                 multimap<EdgeId, BidirectionalPath*>& e_starting) const {
+                 map<BidirectionalPath*, set<string> >& next_ids,
+                 map<VertexId, set<BidirectionalPath*> >& v_starting,
+                 map<EdgeId, set<BidirectionalPath*> >& e_starting) const {
 
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-            if (iter.get()->Size() == 0)
+            BidirectionalPath* path = iter.get();
+            if (path->Size() == 0)
                 continue;
 
-            BidirectionalPath* p = iter.get();
-            VertexId v = g_.EdgeEnd(p->Back());
-            TRACE("Node " << ids[p] << " is followed by: ");
-            for (auto v_it = v_starting.lower_bound(v); v_it != v_starting.upper_bound(v); ++v_it) {
-                TRACE("Vertex: " << ids[v_it->second]);
-                auto it = find(next_ids[p].begin(), next_ids[p].end(), ids[v_it->second]);
-                VERIFY(it != next_ids[p].end());
+            EdgeId e = path->Back();
+            VertexId v = g_.EdgeEnd(e);
+            TRACE("Node " << ids[path] << " is followed by: ");
+            for (BidirectionalPath* next_path: v_starting[v]) {
+                TRACE("Vertex: " << ids[next_path]);
+                auto it = next_ids[path].find(ids[next_path]);
+                VERIFY(it != next_ids[path].end());
+            }
+            TRACE("Node " << ids[path] << " is followed by: ");
+            for (BidirectionalPath* next_path: e_starting[e]) {
+                TRACE("Edge: " << ids[next_path]);
+                auto it = next_ids[path].find(ids[next_path]);
+                VERIFY(it != next_ids[path].end());
             }
 
-            EdgeId e = p->Back();
-            TRACE("Node " << ids[p] << " is followed by: ");
-            for (auto e_it = e_starting.lower_bound(e); e_it != e_starting.upper_bound(e); ++e_it) {
-               TRACE("Edge: " << ids[e_it->second]);
-               auto it = find(next_ids[p].begin(), next_ids[p].end(), ids[e_it->second]);
-               VERIFY(it != next_ids[p].end());
+            path = iter.getConjugate();
+            e = path->Back();
+            v = g_.EdgeEnd(e);
+            TRACE("Node " << ids[path] << " is followed by: ");
+            for (BidirectionalPath* next_path: v_starting[v]) {
+                TRACE("Vertex: " << ids[next_path]);
+                auto it = next_ids[path].find(ids[next_path]);
+                VERIFY(it != next_ids[path].end());
             }
-
-            p = iter.getConjugate();
-            v = g_.EdgeEnd(p->Back());
-            TRACE("Node " << ids[p] << " is followed by: ");
-            for (auto v_it = v_starting.lower_bound(v); v_it != v_starting.upper_bound(v); ++v_it) {
-                TRACE("Vertex: " << ids[v_it->second]);
-                auto it = find(next_ids[p].begin(), next_ids[p].end(), ids[v_it->second]);
-                VERIFY(it != next_ids[p].end());
-            }
-
-            e = p->Back();
-            TRACE("Node " << ids[p] << " is followed by: ");
-            for (auto e_it = e_starting.lower_bound(e); e_it != e_starting.upper_bound(e); ++e_it) {
-               TRACE("Edge: " << ids[e_it->second]);
-               auto it = find(next_ids[p].begin(), next_ids[p].end(), ids[e_it->second]);
-               VERIFY(it != next_ids[p].end());
+            TRACE("Node " << ids[path] << " is followed by: ");
+            for (BidirectionalPath* next_path: e_starting[e]) {
+                TRACE("Edge: " << ids[next_path]);
+                auto it = next_ids[path].find(ids[next_path]);
+                VERIFY(it != next_ids[path].end());
             }
         }
     }
 
     void ConstructFASTG(PathContainer& paths,
             map<BidirectionalPath*, string >& ids,
-            map<BidirectionalPath*, vector<string> >& next_ids) const {
+            map<BidirectionalPath*, set<string> >& next_ids) const {
 
         MakeIDS(paths, ids, next_ids);
 
-        multimap<VertexId, BidirectionalPath*> v_starting;
-        multimap<EdgeId, BidirectionalPath*> e_starting;
+        map<VertexId, set<BidirectionalPath*> > v_starting;
+        map<EdgeId, set<BidirectionalPath*> > e_starting;
         //set<VertexId> visited;
         //queue<BidirectionalPath*> path_queue;
         FindPathsOrder(paths, v_starting, e_starting);
 
-        DEBUG("RESULT");
-        for (auto it = v_starting.begin(); it != v_starting.end(); ++it){
-            BidirectionalPath* path = it->second;
-            DEBUG(g_.int_id(it->first) << " -> " << path->Size() << ", " << path->Length());
-        }
-
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
             if (iter.get()->Size() == 0)
-                            continue;
+                continue;
 
             BidirectionalPath* path = iter.get();
-            VertexId v = g_.EdgeEnd(path->Back());
-            TRACE("Node " << ids[path] << " is followed by: ");
-            for (auto v_it = v_starting.lower_bound(v); v_it != v_starting.upper_bound(v); ++v_it) {
-                BidirectionalPath* next_path = v_it->second;
-                TRACE(ids[next_path]);
-                next_ids[path].push_back(ids[next_path]);
-            }
-
             EdgeId e = path->Back();
+            VertexId v = g_.EdgeEnd(e);
             TRACE("Node " << ids[path] << " is followed by: ");
-            for (auto e_it = e_starting.lower_bound(e); e_it != e_starting.upper_bound(e); ++e_it) {
-                BidirectionalPath* next_path = e_it->second;
+            for (BidirectionalPath* next_path: v_starting[v]) {
                 TRACE(ids[next_path]);
-                next_ids[path].push_back(ids[next_path]);
+                next_ids[path].insert(ids[next_path]);
+            }
+            TRACE("Node " << ids[path] << " is followed by: ");
+            for (BidirectionalPath* next_path: e_starting[e]) {
+                TRACE(ids[next_path]);
+                next_ids[path].insert(ids[next_path]);
             }
 
             path = iter.getConjugate();
-            v = g_.EdgeEnd(path->Back());
-            TRACE("Node " << ids[path] << " is followed by: ");
-            for (auto v_it = v_starting.lower_bound(v); v_it != v_starting.upper_bound(v); ++v_it) {
-                BidirectionalPath* next_path = v_it->second;
-                TRACE(ids[next_path]);
-                next_ids[path].push_back(ids[next_path]);
-            }
-
             e = path->Back();
+            v = g_.EdgeEnd(e);
             TRACE("Node " << ids[path] << " is followed by: ");
-            for (auto e_it = e_starting.lower_bound(e); e_it != e_starting.upper_bound(e); ++e_it) {
-                BidirectionalPath* next_path = e_it->second;
+            for (BidirectionalPath* next_path: v_starting[v]) {
                 TRACE(ids[next_path]);
-                next_ids[path].push_back(ids[next_path]);
+                next_ids[path].insert(ids[next_path]);
+            }
+            TRACE("Node " << ids[path] << " is followed by: ");
+            for (BidirectionalPath* next_path: e_starting[e]) {
+                TRACE(ids[next_path]);
+                next_ids[path].insert(ids[next_path]);
             }
         }
 
@@ -329,7 +334,7 @@ public:
 
     void WritePathsToFASTG(PathContainer& paths, const string& filename, const string& fastafilename) const {
         map<BidirectionalPath*, string > ids;
-        map<BidirectionalPath*, vector<string> > next_ids;
+        map<BidirectionalPath*, set<string> > next_ids;
 
         INFO("Constructing FASTG file from paths ");
         ConstructFASTG(paths, ids, next_ids);
@@ -348,6 +353,17 @@ public:
             oss.setID((int) path->GetId());
             oss.setCoverage(path->Coverage());
             oss << ToString(*path);
+            fastg_oss.set_header(ids[path]);
+            fastg_oss << next_ids[path] << ToString(*path);
+            DEBUG("NODE " << ids[path]);
+            path->Print();
+
+            //Printing reverse complement to FASTG
+            path = iter.getConjugate();
+            if (path->Length() <= 0){
+                continue;
+            }
+            DEBUG(ids[path]);
             fastg_oss.set_header(ids[path]);
             fastg_oss << next_ids[path] << ToString(*path);
             DEBUG("NODE " << ids[path]);
