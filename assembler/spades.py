@@ -418,9 +418,21 @@ def get_options_from_params(params_filename, spades_py_name=None):
         return None, None
     params = open(params_filename, 'r')
     cmd_line = params.readline().strip()
+    spades_prev_version = None
+    for line in params:
+        if line.find('SPAdes version:') != -1:
+            spades_prev_version = line.split('SPAdes version:')[1]
+            break
     params.close()
+    if spades_prev_version is None:
+        support.error("failed to parse SPAdes version of the previous run! "
+                      "Please restart from the beginning or specify another output directory.")
+    if spades_prev_version.strip() != spades_version.strip():
+        support.error("SPAdes version of the previous run (%s) is not equal to the current version of SPAdes (%s)! "
+                      "Please restart from the beginning or specify another output directory."
+                      % (spades_prev_version.strip(), spades_version.strip()))
     if spades_py_name is None or cmd_line.find(os.path.basename(spades_py_name)) == -1:
-        spades_py_name = 'spades.py' # try default name
+        spades_py_name = 'spades.py'  # try default name
     else:
         spades_py_name = os.path.basename(spades_py_name)
     spades_py_pos = cmd_line.find(spades_py_name)
