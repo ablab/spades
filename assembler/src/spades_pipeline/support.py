@@ -850,6 +850,12 @@ def get_contig_id(s):
     return values[1]
 
 
+def remove_fasta_pref(s):
+    if s.startswith(">"):
+        return s[1:]
+    return s
+
+
 def create_fastg_from_fasta(fasta_filename, fastg_filename, log=None):
     '''
     contig names are taken from <fastg> and applied to <fasta> for creating new fastg (location is near with fasta)
@@ -867,8 +873,8 @@ def create_fastg_from_fasta(fasta_filename, fastg_filename, log=None):
     fasta_data = read_fasta(fasta_filename)
     fasta_id_map = {}
     for (name, seq) in fasta_data:
-        fasta_id_map[get_contig_id(name)] = name[1:]
-        fasta_id_map[get_contig_id(name) + "'"] = name[1:] + "'"
+        fasta_id_map[get_contig_id(name)] = remove_fasta_pref(name)
+        fasta_id_map[get_contig_id(name) + "'"] = remove_fasta_pref(name) + "'"
 
     result_fastg = []
     #print fasta_id_map
