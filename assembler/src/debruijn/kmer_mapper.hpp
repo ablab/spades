@@ -33,6 +33,21 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
   size_t k_;
   bool verification_on_;
 
+  bool CheckAllDifferent(const Sequence& old_s, const Sequence& new_s) const {
+    set<Kmer> kmers;
+    Kmer kmer = old_s.start<Kmer>(k_) >> 0;
+    for (size_t i = k_ - 1; i < old_s.size(); ++i) {
+      kmer <<= old_s[i];
+      kmers.insert(kmer);
+    }
+    kmer = new_s.start<Kmer>(k_) >> 0;
+    for (size_t i = k_ - 1; i < new_s.size(); ++i) {
+      kmer <<= new_s[i];
+      kmers.insert(kmer);
+    }
+    return kmers.size() == old_s.size() - k_ + 1 + new_s.size() - k_ + 1;
+  }
+
  public:
 
   KmerMapper(const Graph& g, bool verification_on = true) :
@@ -73,20 +88,16 @@ class KmerMapper : public omnigraph::GraphActionHandler<Graph> {
   }
 
   bool CheckCanRemap(const Sequence& old_s, const Sequence& new_s) const {
+    if(!CheckAllDifferent(old_s, new_s))
+      return false;
     size_t old_length = old_s.size() - k_ + 1;
     size_t new_length = new_s.size() - k_ + 1;
     UniformPositionAligner aligner(old_s.size() - k_ + 1,
                                    new_s.size() - k_ + 1);
     Kmer old_kmer = old_s.start<Kmer>(k_);
     old_kmer >>= 0;
-
-    set<Kmer> old_kmers;
     for (size_t i = k_ - 1; i < old_s.size(); ++i) {
       old_kmer <<= old_s[i];
-      if(old_kmers.count(old_kmer) != 0) {
-        return false;
-      }
-      old_kmers.insert(old_kmer);
       size_t old_kmer_offset = i - k_ + 1;
       size_t new_kmer_offest = aligner.GetPosition(old_kmer_offset);
       if(old_kmer_offset * 2 + 1 == old_length && new_length % 2 == 0) {
