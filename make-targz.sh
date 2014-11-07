@@ -11,6 +11,7 @@ cp -r assembler/src/io SPAdes-$VERSION/src/io
 cp -r assembler/src/mph_index SPAdes-$VERSION/src/mph_index
 cp -r assembler/src/cmake SPAdes-$VERSION/src/cmake
 cp -r assembler/src/ssw SPAdes-$VERSION/src/ssw
+cp -r assembler/src/corrector SPAdes-$VERSION/src/corrector
 cp -r assembler/src/spades_pipeline SPAdes-$VERSION/src/spades_pipeline
 cp assembler/src/CMakeLists.txt SPAdes-$VERSION/src/CMakeLists.txt
 
