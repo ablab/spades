@@ -283,13 +283,13 @@ class RuntimeSeq {
    */
   template<typename S>
   explicit RuntimeSeq(size_t k, const S &s, size_t offset = 0): size_(k) {
-    VERIFY(k <= max_size_);
+    VERIFY(size_ <= max_size_);
     //TRACE("New Constructor for seq " << s[0] << " is first symbol");
-    VERIFY(is_dignucl(s[0]) || is_nucl(s[0]));
+    VERIFY(size_ == 0 || is_dignucl(s[0]) || is_nucl(s[0]));
     VERIFY(offset + size_ <= this->size(s));
 
     // which symbols does our string contain : 0123 or ACGT?
-    bool digit_str = is_dignucl(s[0]);
+    bool digit_str = size_ == 0 || is_dignucl(s[0]);
 
     // data -- one temporary variable corresponding to the i-th array element
     // and some counters
