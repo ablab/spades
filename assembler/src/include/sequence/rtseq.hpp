@@ -211,7 +211,7 @@ class RuntimeSeq {
 
   const static size_t max_size = max_size_;
 
-  RuntimeSeq() {
+  RuntimeSeq() : size_(0) {
     std::fill(data_.begin(), data_.end(), 0);
   }
 
