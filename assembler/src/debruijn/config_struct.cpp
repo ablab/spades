@@ -689,7 +689,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 
   load(cfg.fast_simplification, pt, "fast_simplification");
 
-  if (cfg.ds.single_cell || cfg.ds.reads[0].type() == io::LibraryType::HQMatePairs/*|| cfg.main_iteration*/)
+  if (cfg.ds.single_cell || cfg.mismatch_careful || cfg.ds.reads[0].type() == io::LibraryType::HQMatePairs /*|| cfg.main_iteration*/)
     cfg.fast_simplification = false; 
   
   if (cfg.fast_simplification)
