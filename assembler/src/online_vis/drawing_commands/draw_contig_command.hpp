@@ -9,6 +9,7 @@
 #include "../environment.hpp"
 #include "../command.hpp"
 #include "../errors.hpp"
+#include "io/wrapper_collection.hpp"
 
 namespace online_visualization {
     class DrawContigCommand : public DrawingCommand {
@@ -19,15 +20,6 @@ namespace online_visualization {
                 DrawingCommand::DrawPicturesAlongPath(curr_env, mapping_path, label);
             }
 
-            io::SingleRead MakeValid(const io::SingleRead& contig) const {
-                std::string str = contig.GetSequenceString();
-                for (size_t i = 0; i < str.length(); ++i) {
-                    if (str[i] == 'N')
-                        str[i] = nucl(char(i % 4));
-                }
-                return io::SingleRead(contig.name(), str);
-            }
-            
         protected:
             size_t MinArgNumber() const {
                 return 2;   
@@ -71,21 +63,15 @@ namespace online_visualization {
                 if (!CheckFileExists(contigs_file))
                     return;
 
-                io::FileReadStream irs(contigs_file);
+                auto reader = make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(contigs_file));
 
-                while (!irs.eof()) {
+                while (!reader->eof()) {
                     io::SingleRead read;
-                    irs >> read;
+                    (*reader) >> read;
                     //LOG("Contig " << read.name() << " is being processed now");
 
                     // if read is valid and also the name contains a given string <contig_name> as a substring.
 					if((starts_with && read.name().find(contig_name) != string::npos) || contig_name == read.name()) {
-                        if (!read.IsValid()) {
-                            LOG("Contig is invalid, fixing");
-                            read = MakeValid(read);
-                            VERIFY(read.IsValid());
-                        }
-
 	                    const Sequence& contig = read.sequence();
     	                const string& label = read.name();
             	        LOG("Drawing");

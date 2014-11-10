@@ -4,6 +4,8 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
+#pragma once
+
 #include "delegating_reader_wrapper.hpp"
 
 namespace io {
@@ -40,6 +42,38 @@ public:
 		read.ChangeName(prefix_ + read.name());
 		return *this;
 	}
+};
+
+class FixingWrapper: public DelegatingWrapper<SingleRead> {
+	typedef DelegatingWrapper<SingleRead> base;
+
+    io::SingleRead MakeValid(const io::SingleRead& read) const {
+        std::string str = read.GetSequenceString();
+        for (size_t i = 0; i < str.length(); ++i) {
+            if (!is_nucl(str[i]))
+                str[i] = nucl(char(i % 4));
+        }
+        return io::SingleRead(read.name(), str);
+    }
+
+public:
+	FixingWrapper(base::ReadStreamPtrT reader) :
+			base(reader) {
+	}
+
+	/* virtual */
+	FixingWrapper& operator>>(SingleRead& read) {
+		this->reader() >> read;
+        if (!read.IsValid()) {
+            TRACE("Read " << read.name() << " was invalid. Fixing");
+            read = MakeValid(read);
+            VERIFY(read.IsValid());
+        }
+		return *this;
+	}
+
+private:
+    DECL_LOGGER("FixingWrapper");
 };
 
 }

@@ -95,6 +95,9 @@ class DebruijnEnvironment : public Environment {
         }
 
         void ResetPositions() {
+            if (!gp_.edge_pos.IsAttached())
+                gp_.edge_pos.Attach();
+
             gp_.edge_pos.clear();
             MapperClass mapper_(gp_.g, gp_.index, gp_.kmer_mapper);
             FillerClass filler_(gp_.g, mapper_, gp_.edge_pos);

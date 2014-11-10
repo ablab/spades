@@ -54,17 +54,15 @@ namespace online_visualization {
                 string name = args[1];
                 string file = args[2];
 
-                io::FileReadStream irs(file);
+                auto reader = make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(file));
                 
                 FillerClass& filler = curr_env.filler();
-                while (!irs.eof()) {
+                while (!reader->eof()) {
                     io::SingleRead read;
-                    irs >> read;
-                    if (read.IsValid()) {
-                        Sequence contig = read.sequence();
-                        filler.Process(contig,  name + "_" + read.name());
-                        filler.Process(!contig, name + "_" + read.name() + "_RC");
-                    }
+                    (*reader) >> read;
+                    Sequence contig = read.sequence();
+                    filler.Process(contig,  name + "_" + read.name());
+                    filler.Process(!contig, name + "_" + read.name() + "_RC");
                 }
             }
     };

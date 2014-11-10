@@ -9,6 +9,7 @@
 #include "../environment.hpp"
 #include "../command.hpp"
 #include "../errors.hpp"
+#include "io/wrapper_collection.hpp"
 #include "sequence_mapper.hpp"
 
 namespace online_visualization {
@@ -24,9 +25,12 @@ private:
     }
 
     bool Go(VertexId v, size_t curr_depth, set<VertexId>& grey, set<VertexId>& black) const {
-        //allows single vertex be visited many times with different depth values
-        if (curr_depth >= max_depth_)
+        //allows single vertex to be visited many times with different depth values
+        TRACE("Came to vertex " << this->graph().str(v) << " on depth " << curr_depth);
+        if (curr_depth >= max_depth_) {
+            TRACE("Too deep");
             return true;
+        }
         if (grey.size() >= max_size_)
             return false;
 
@@ -41,8 +45,10 @@ private:
         }
 
         for (EdgeId e : incident_non_path) {
-            if (graph().length(e) > edge_length_bound_)
+            if (graph().length(e) > edge_length_bound_) {
+                TRACE("Edge " << this->graph().str(e) << " is too long");
                 continue;
+            }
             if (!Go(OtherEnd(e, v), curr_depth + 1, grey, black))
                 return false;
         }
@@ -58,8 +64,8 @@ private:
 
 public:
     static const size_t DEFAULT_EDGE_LENGTH_BOUND = 500;
-    static const size_t DEFAULT_MAX_DEPTH = 3;
-    static const size_t DEFAULT_MAX_SIZE = 30;
+    static const size_t DEFAULT_MAX_DEPTH = 2;
+    static const size_t DEFAULT_MAX_SIZE = 20;
 
     set<EdgeId> path_edges_;
     const size_t edge_length_bound_;
@@ -79,6 +85,7 @@ public:
 
 
     GraphComponent<Graph> Find(VertexId v) {
+        TRACE("Starting from vertex " << this->graph().str(v));
         last_inner_.clear();
         set<VertexId> grey;
         set<VertexId> black;
@@ -92,6 +99,8 @@ public:
     vector<VertexId> InnerVertices(const GraphComponent<Graph> &/*component*/) {
         return vector<VertexId>(last_inner_.begin(), last_inner_.end());
     }
+private:
+    DECL_LOGGER("PathNeighbourhoodFinder");
 };
 
 class DrawPoorlyAssembledCommand : public DrawingCommand {
@@ -147,15 +156,6 @@ private:
         string label = contig.name();
         DrawPicturesAlongGenomePart(curr_env, seq, label);
         LOG("Contig " << contig.name() << " has been drawn");
-    }
-
-    io::SingleRead MakeValid(const io::SingleRead& contig) const {
-        std::string str = contig.GetSequenceString();
-        for (size_t i = 0; i < str.length(); ++i) {
-            if (str[i] == 'N')
-                str[i] = nucl(char(i % 4));
-        }
-        return io::SingleRead(contig.name(), str);
     }
 
     bool IsPoorlyAssembled(const GraphPack& gp, io::SingleRead contig, string base_assembly_prefix) const {
@@ -219,18 +219,14 @@ public:
             LOG("Will analyze first " << args[3] << " contigs");
             contig_cnt = lexical_cast<size_t>(args[3]);
         }
-
-        io::FileReadStream irs(contigs_file);
+        
+        auto reader = make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(contigs_file));
 
         size_t i = 0;
-        while (!irs.eof() && i < contig_cnt) {
+        while (!reader->eof() && i < contig_cnt) {
             io::SingleRead contig;
-            irs >> contig;
-            contig = MakeValid(contig);
+            (*reader) >> contig;
             LOG("Considering contig " << contig.name());
-
-            // if read is valid and also the name contains a given string <contig_name> as a substring.
-            VERIFY(contig.IsValid());
 
             if (IsPoorlyAssembled(curr_env.graph_pack(), contig, base_assembly_prefix)) {
                 LOG("Was poorly assembled, drawing");
