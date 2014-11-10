@@ -119,13 +119,16 @@ default
 	    unreliability_threshold     4
 	    relative_threshold          5     
 	}
+    
+    ;master switch over presimp, persistent iterators and disabling br
+    fast_features true
+    fast_activation_cov 10.
 
     presimp 
     {
-       enabled false
+       enabled true
        parallel false
        ; will be enabled only if average coverage \leq activate_cov
-       activation_cov 10.
        tip_condition   "{ tc_lb 3.5, cb auto }"
        ec_condition    "{ ec_lb 10, cb 2.0 }"
 
@@ -138,8 +141,8 @@ default
        }
     }
 
-    persistent_cycle_iterators false
-    disable_br_in_cycle false
+    persistent_cycle_iterators true
+    disable_br_in_cycle true
 }
 
 sc
@@ -226,12 +229,7 @@ sc
 	    relative_threshold          5     
 	}
 
-    presimp 
-    {
-        enabled false
-    }
-
-    stats_mode 0
+    fast_features false
 }
 
 careful
@@ -259,18 +257,8 @@ careful
 	{
         enabled false
 	}
-}
 
-fast_simp
-{
-    presimp 
-    {
-        enabled true
-        parallel false
-    }
-
-    persistent_cycle_iterators true
-    disable_br_in_cycle true
+    fast_features false
 }
 
 diploid_simp

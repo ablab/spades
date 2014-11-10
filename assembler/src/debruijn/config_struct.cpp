@@ -421,7 +421,6 @@ void load(debruijn_config::simplification::presimplification& presimp,
 
   load(presimp.enabled, pt, "enabled", complete);
   load(presimp.parallel, pt, "parallel", complete);
-  load(presimp.activation_cov, pt, "activation_cov", complete);
   load(presimp.tip_condition, pt, "tip_condition", complete); // pre tip clipper:
   load(presimp.ec_condition, pt, "ec_condition", complete); // pre ec remover:
   load(presimp.ier, pt, "ier", complete);
@@ -431,7 +430,6 @@ void load(debruijn_config::simplification& simp,
           boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
 
-  load(simp.presimp, pt, "presimp", complete); // presimplification
   load(simp.topology_simplif_enabled, pt, "topology_simplif_enabled", complete);
   load(simp.tc, pt, "tc", complete); // tip clipper:
   load(simp.ttc, pt, "ttc", complete); // topology tip clipper:
@@ -445,6 +443,9 @@ void load(debruijn_config::simplification& simp,
   load(simp.ier, pt, "ier", complete); // isolated edges remover
   load(simp.cbr, pt, "cbr", complete); // complex bulge remover
   load(simp.her, pt, "her", complete); // hidden ec remover
+  load(simp.fast_features, pt, "fast_features", complete); // master switch for speed-up tricks
+  load(simp.fast_activation_cov, pt, "fast_activation_cov", complete);
+  load(simp.presimp, pt, "presimp", complete); // presimplification
   load(simp.persistent_cycle_iterators, pt, "persistent_cycle_iterators", complete);
   load(simp.disable_br_in_cycle, pt, "disable_br_in_cycle", complete);
 //  load(simp.stats_mode, pt, "stats_mode", complete); // temporary stats counting mode
@@ -684,16 +685,10 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   if (cfg.mismatch_careful)
     load(cfg.simp, pt, "careful", false);
 
-  if (cfg.diploid_mode)
+  if (cfg.diploid_mode) {
     load(cfg.simp, pt, "diploid_simp", false);
+  }
 
-  load(cfg.fast_simplification, pt, "fast_simplification");
-
-  if (cfg.ds.single_cell || cfg.mismatch_careful || cfg.ds.reads[0].type() == io::LibraryType::HQMatePairs /*|| cfg.main_iteration*/)
-    cfg.fast_simplification = false; 
-  
-  if (cfg.fast_simplification)
-    load(cfg.simp, pt, "fast_simp", false);
 }
 
 void load(debruijn_config& cfg, const std::string &filename) {

@@ -646,6 +646,9 @@ class SmartIteratorsHolder {
 //    }
 public:
     SmartIteratorsHolder(const Graph& g, bool persistent) : g_(g), persistent_(persistent) {
+        if (persistent_) {
+            INFO("Using permanent iterators");
+        }
     }
 
     std::shared_ptr<LengthOrderIteratorT> tip_smart_it() {
@@ -774,23 +777,13 @@ void PreSimplification(conj_graph_pack& gp,
     INFO("PROCEDURE == Presimplification");
     RemoveSelfConjugateEdges(gp.g, gp.k_value + 100, 1., removal_handler, info.chunk_cnt());
 
-    if (!presimp.enabled) {
+    if (!presimp.enabled || !cfg::get().simp.fast_features) {
         INFO("Further presimplification is disabled");
         return;
     }
     
     //todo make parallel version
     RemoveIsolatedEdges(gp.g, presimp.ier, info.read_length(), removal_handler, info.chunk_cnt());
-
-    if (math::eq(info.detected_mean_coverage(), 0.)) {
-    	INFO("Mean coverage wasn't reliably estimated, no further presimplification");
-    	return;
-    } else if (math::ls(info.detected_mean_coverage(), presimp.activation_cov)) {
-    	INFO("Estimated mean coverage " << info.detected_mean_coverage()
-    			<< " is less than activation coverage " << presimp.activation_cov
-    			<< ", no further presimplification");
-    	return;
-    }
     
     if (info.chunk_cnt() > 1 && EnableParallel(gp, presimp)) {
         ParallelPreSimplification(gp, presimp, info, removal_handler);
@@ -882,7 +875,7 @@ void SimplificationCycle(conj_graph_pack& gp,
     DEBUG(iteration << " TipClipping stats");
     printer(ipp_tip_clipping, str(format("_%d") % iteration));
 
-    if (!cfg::get().simp.disable_br_in_cycle) {
+    if (!cfg::get().simp.disable_br_in_cycle || !cfg::get().simp.fast_features) {
         DEBUG(iteration << " BulgeRemoval");
         RemoveBulges(gp.g, *iterators_holder.bulge_smart_it(), cfg::get().simp.br, 0, removal_handler);
         cnt_callback.Report();
@@ -897,18 +890,33 @@ void SimplificationCycle(conj_graph_pack& gp,
     printer(ipp_err_con_removal, str(format("_%d") % iteration));
 }
 
+inline bool CorrectedFastMode(const SimplifInfoContainer& info) {
+    const auto& cfg = cfg::get();
+    if (cfg.ds.reads[0].type() == io::LibraryType::HQMatePairs) {
+        INFO("High quality mate-pairs detected");
+        return false;
+    }
+
+    if (math::eq(info.detected_mean_coverage(), 0.)) {
+        INFO("Mean coverage wasn't reliably estimated");
+        return false;
+    }
+
+    if (math::ls(info.detected_mean_coverage(), cfg.simp.fast_activation_cov)) {
+        INFO("Estimated mean coverage " << info.detected_mean_coverage() <<
+             " is less than fast mode activation coverage " << cfg.simp.fast_activation_cov);
+        return false;
+    }
+
+    return cfg.simp.fast_features;
+}
+
 inline
 void SimplifyGraph(conj_graph_pack &gp,
                    boost::function<void(EdgeId)> removal_handler,
                    stats::detail_info_printer& printer, size_t iteration_count) {
     printer(ipp_before_simplification);
     INFO("Graph simplification started");
-    
-    if (cfg::get().fast_simplification) {
-        INFO("Fast simplification mode enabled");
-    } else {
-        INFO("Fast simplification mode disabled");
-    }
 
     SimplifInfoContainer info_container;
     info_container
@@ -918,18 +926,21 @@ void SimplifyGraph(conj_graph_pack &gp,
         .set_read_length(cfg::get().ds.RL())
         .set_chunk_cnt(cfg::get().max_threads);
 
+    cfg::get_writable().simp.fast_features = CorrectedFastMode(info_container);
+
+    if (cfg::get().simp.fast_features) {
+        INFO("Fast simplification mode enabled")
+    } else {
+        INFO("Fast simplification mode disabled");
+    }
+
     PreSimplification(gp, cfg::get().simp.presimp,
     		info_container, removal_handler);
 
     info_container.set_iteration_count(iteration_count);
 
-    if (cfg::get().simp.persistent_cycle_iterators)
-        INFO("Using permanent iterators");
-    SmartIteratorsHolder<Graph> iterators_holder(gp.g, cfg::get().simp.persistent_cycle_iterators);
-
-    if (cfg::get().simp.disable_br_in_cycle) {
-        INFO("Bulge remover is disabled until post-simplification");
-    }
+    SmartIteratorsHolder<Graph> iterators_holder(gp.g, cfg::get().simp.persistent_cycle_iterators
+                                                 && cfg::get().simp.fast_features);
 
     for (size_t i = 0; i < iteration_count; i++) {
         info_container.set_iteration(i);

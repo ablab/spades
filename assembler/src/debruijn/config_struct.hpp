@@ -296,7 +296,6 @@ struct debruijn_config {
         struct presimplification {
             bool enabled;
             bool parallel;
-            double activation_cov;
             isolated_edges_remover ier;
             std::string tip_condition;
             std::string ec_condition;
@@ -315,8 +314,11 @@ struct debruijn_config {
         isolated_edges_remover ier;
         complex_bulge_remover cbr;
         hidden_ec_remover her;
-        presimplification presimp;
         //bool stats_mode;
+
+        bool fast_features;
+        double fast_activation_cov;
+        presimplification presimp;
         bool persistent_cycle_iterators;
         bool disable_br_in_cycle;
     };
@@ -573,7 +575,6 @@ struct debruijn_config {
 
     bool diploid_mode;
     bool need_mapping;
-    bool fast_simplification;
 };
 
 void load(debruijn_config& cfg, const std::string &filename);
