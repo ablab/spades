@@ -10,153 +10,12 @@
 #include "../command.hpp"
 #include "../errors.hpp"
 #include "io/wrapper_collection.hpp"
-#include "sequence_mapper.hpp"
 
 namespace online_visualization {
-
-class PathNeighbourhoodFinder : public AbstractNeighbourhoodFinder<Graph> {
-private:
-
-    VertexId OtherEnd(EdgeId e, VertexId v) const {
-        if (this->graph().EdgeStart(e) == v)
-            return this->graph().EdgeEnd(e);
-        else
-            return this->graph().EdgeStart(e);
-    }
-
-    bool Go(VertexId v, size_t curr_depth, set<VertexId>& grey, set<VertexId>& black) const {
-        //allows single vertex to be visited many times with different depth values
-        TRACE("Came to vertex " << this->graph().str(v) << " on depth " << curr_depth);
-        if (curr_depth >= max_depth_) {
-            TRACE("Too deep");
-            return true;
-        }
-        if (grey.size() >= max_size_)
-            return false;
-
-        grey.insert(v);
-        vector<EdgeId> incident_path;
-        vector<EdgeId> incident_non_path;
-        for (EdgeId e : graph().IncidentEdges(v)) {
-            if (path_edges_.count(e) && /*condition to stretch forward*/ graph().EdgeStart(e) == v)
-                incident_path.push_back(e);
-            else
-                incident_non_path.push_back(e);
-        }
-
-        for (EdgeId e : incident_non_path) {
-            if (graph().length(e) > edge_length_bound_) {
-                TRACE("Edge " << this->graph().str(e) << " is too long");
-                continue;
-            }
-            if (!Go(OtherEnd(e, v), curr_depth + 1, grey, black))
-                return false;
-        }
-
-        for (EdgeId e : incident_path) {
-            if (!Go(OtherEnd(e, v), curr_depth, grey, black))
-                return false;
-        }
-
-        black.insert(v);
-        return true;
-    }
-
-public:
-    static const size_t DEFAULT_EDGE_LENGTH_BOUND = 500;
-    static const size_t DEFAULT_MAX_DEPTH = 2;
-    static const size_t DEFAULT_MAX_SIZE = 20;
-
-    set<EdgeId> path_edges_;
-    const size_t edge_length_bound_;
-    const size_t max_depth_;
-    const size_t max_size_;
-
-    set<VertexId> last_inner_;
-
-    PathNeighbourhoodFinder(const Graph &graph, const vector<EdgeId>& path, size_t edge_length_bound = DEFAULT_EDGE_LENGTH_BOUND,
-                            size_t max_depth = DEFAULT_MAX_DEPTH, size_t max_size = DEFAULT_MAX_SIZE)
-            : AbstractNeighbourhoodFinder<Graph>(graph),
-              path_edges_(path.begin(), path.end()),
-              edge_length_bound_(edge_length_bound),
-              max_depth_(max_depth),
-              max_size_(max_size) {
-    }
-
-
-    GraphComponent<Graph> Find(VertexId v) {
-        TRACE("Starting from vertex " << this->graph().str(v));
-        last_inner_.clear();
-        set<VertexId> grey;
-        set<VertexId> black;
-        Go(v, 0, grey, black);
-        last_inner_ = black;
-        last_inner_.insert(v);
-        ComponentCloser<Graph>(graph(), 0).CloseComponent(grey);
-        return GraphComponent<Graph>(graph(), grey.begin(), grey.end());
-    }
-
-    vector<VertexId> InnerVertices(const GraphComponent<Graph> &/*component*/) {
-        return vector<VertexId>(last_inner_.begin(), last_inner_.end());
-    }
-private:
-    DECL_LOGGER("PathNeighbourhoodFinder");
-};
 
 class DrawPoorlyAssembledCommand : public DrawingCommand {
     const double WELL_ASSEMBLED_CONSTANT = 0.7;
 private:
-
-    shared_ptr<GraphSplitter<Graph>> SplitterAlongPath(
-            const Graph &graph, const Path<EdgeId>& path) const {
-        typedef typename Graph::VertexId VertexId;
-        shared_ptr<RelaxingIterator<VertexId>> inner_iterator = make_shared<
-                PathIterator<Graph>>(graph, path);
-        shared_ptr<AbstractNeighbourhoodFinder<Graph>> nf = make_shared<PathNeighbourhoodFinder>(graph, path.sequence());
-        return make_shared<NeighbourhoodFindingSplitter<Graph>>(graph,
-                                                                inner_iterator, nf);
-    }
-
-    void WriteAlongPath(const Graph& g, Path<EdgeId> path, const string& folder_name,
-                                  shared_ptr<omnigraph::visualization::GraphColorer<Graph>> colorer,
-                                  const GraphLabeler<Graph> &labeler, bool color_path = true) const {
-        using namespace omnigraph::visualization;
-        using std::make_shared;
-        auto edge_colorer = make_shared<CompositeEdgeColorer<Graph>>("black");
-        edge_colorer->AddColorer(colorer);
-        if (color_path) {
-            edge_colorer->AddColorer(make_shared<SetColorer<Graph>>(g, path.sequence(), "green"));
-        }
-        shared_ptr<GraphColorer<Graph>> resulting_colorer = make_shared<CompositeGraphColorer<Graph>>(colorer, edge_colorer);
-        shared_ptr<GraphSplitter<Graph>> rs = SplitterAlongPath(g, path);
-        auto filter = make_shared<omnigraph::SmallComponentFilter<Graph>>(g, 3);
-        shared_ptr<GraphSplitter<Graph>> splitter = make_shared<omnigraph::CondensingSplitterWrapper<Graph>>(rs, filter);
-        WriteComponents<Graph>(g, folder_name, splitter, resulting_colorer, labeler);
-    }
-
-    void DrawPicturesAlongGenomePart(DebruijnEnvironment& curr_env, const Sequence& piece_of_genome, string label = "") const {
-        const MappingPath<EdgeId>& mapping_path = curr_env.mapper().MapSequence(piece_of_genome);
-        make_dir(curr_env.folder());
-        stringstream namestream;
-        namestream << curr_env.folder() << "/" << curr_env.GetFormattedPictureCounter()
-                << "_" << curr_env.file_name() << "/";
-        make_dir(namestream.str());
-        namestream << label;
-        make_dir(namestream.str());
-        WriteAlongPath(curr_env.graph(), mapping_path.path(), namestream.str(),
-                                  curr_env.coloring(), curr_env.labeler());
-
-        cout << "The pictures is written to " << namestream.str() << endl;
-
-        curr_env.inc_pic_counter();
-    }
-
-    void DrawContig(DebruijnEnvironment& curr_env, io::SingleRead contig) const {
-        Sequence seq = contig.sequence();
-        string label = contig.name();
-        DrawPicturesAlongGenomePart(curr_env, seq, label);
-        LOG("Contig " << contig.name() << " has been drawn");
-    }
 
     bool IsPoorlyAssembled(const GraphPack& gp, io::SingleRead contig, string base_assembly_prefix) const {
         MappingPath<EdgeId> mapping_path = debruijn_graph::MapperInstance(gp)->MapRead(contig);
@@ -230,7 +89,7 @@ public:
 
             if (IsPoorlyAssembled(curr_env.graph_pack(), contig, base_assembly_prefix)) {
                 LOG("Was poorly assembled, drawing");
-                DrawContig(curr_env, contig);
+                DrawPicturesAlongContig(curr_env, contig);
             } else {
                 LOG("Was well assembled");
             }

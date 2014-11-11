@@ -447,42 +447,6 @@ public:
               max_size_(max_size) {
     }
 
-//template<class Graph>
-//class ReliableSplitterAlongPath: public GraphSplitter<Graph> {
-//private:
-//  typedef GraphSplitter<Graph> base;
-//  typedef typename Graph::VertexId VertexId;
-//  typedef typename Graph::EdgeId EdgeId;
-//  size_t max_size_;
-//  size_t edge_length_bound_;
-//  set<VertexId> last_component_;
-//  size_t current_index_;
-//  MappingPath<EdgeId> path_;
-//  Range covered_range_;
-//  bool start_processed_;
-//
-//  //todo edge not used in the body
-//  bool EdgeCovered(EdgeId /*edge*/) {
-//    return last_component_.count(
-//        this->graph().EdgeStart(path_[current_index_].first)) == 1
-//        && last_component_.count(
-//            this->graph().EdgeEnd(path_[current_index_].first)) == 1;
-//  }
-//
-//  void SkipVisited() {
-//    covered_range_.start_pos =
-//        path_[current_index_].second.initial_range.start_pos;
-//    covered_range_.end_pos =
-//        path_[current_index_].second.initial_range.end_pos;
-//    //always go forward at least one path element
-//    ++current_index_;
-//    while (current_index_ < path_.size()
-//        && EdgeCovered(path_[current_index_].first)) {
-//      covered_range_.end_pos =
-//          path_[current_index_].second.initial_range.end_pos;
-//      ++current_index_;
-//    }
-//  }
     GraphComponent<Graph> Find(typename Graph::VertexId v) {
     	auto cd = DijkstraHelper<Graph>::CreateCountingDijkstra(this->graph(), max_size_,
     			edge_length_bound_);
@@ -501,6 +465,111 @@ public:
         std::set_difference(component.vertices().begin(), component.vertices().end(), border.begin(), border.end(), std::inserter(result, result.end()));
         return vector<VertexId>(result.begin(), result.end());
     }
+};
+
+template<class Graph>
+class PathNeighbourhoodFinder : public AbstractNeighbourhoodFinder<Graph> {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+
+    VertexId OtherEnd(EdgeId e, VertexId v) const {
+        if (this->graph().EdgeStart(e) == v)
+            return this->graph().EdgeEnd(e);
+        else
+            return this->graph().EdgeStart(e);
+    }
+
+    bool Go(VertexId v, size_t curr_depth, set<VertexId>& grey, set<VertexId>& black) const {
+        //allows single vertex to be visited many times with different depth values
+        TRACE("Came to vertex " << this->graph().str(v) << " on depth " << curr_depth);
+        if (curr_depth >= max_depth_) {
+            TRACE("Too deep");
+            return true;
+        }
+        if (grey.size() >= max_size_) {
+            TRACE("Too many vertices");
+            return false;
+        }
+
+        TRACE("Started processing of vertex " << this->graph().str(v));
+        grey.insert(v);
+
+        TRACE("Sorting incident edges");
+        vector<EdgeId> incident_path;
+        vector<EdgeId> incident_non_path;
+        for (EdgeId e : this->graph().IncidentEdges(v)) {
+            if (path_edges_.count(e) != 0) {
+                /*condition not to go backward*/
+                if (this->graph().EdgeStart(e) == v) {
+                    incident_path.push_back(e);
+                }
+            } else {
+                incident_non_path.push_back(e);
+            }
+        }
+
+        for (EdgeId e : incident_non_path) {
+            if (this->graph().length(e) > edge_length_bound_) {
+                TRACE("Edge " << this->graph().str(e) << " is too long");
+                continue;
+            }
+            TRACE("Going along edge " << this->graph().str(e));
+            if (!Go(OtherEnd(e, v), curr_depth + 1, grey, black))
+                return false;
+        }
+
+        for (EdgeId e : incident_path) {
+            if (grey.count(OtherEnd(e, v)) != 0)
+                continue;
+            TRACE("Going along next path edge " << this->graph().str(e));
+            if (!Go(OtherEnd(e, v), 0, grey, black))
+                return false;
+        }
+
+        TRACE("End processing of vertex " << this->graph().str(v));
+        black.insert(v);
+        return true;
+    }
+
+public:
+    static const size_t DEFAULT_EDGE_LENGTH_BOUND = 500;
+    static const size_t DEFAULT_MAX_DEPTH = 2;
+    static const size_t DEFAULT_MAX_SIZE = 20;
+
+    set<EdgeId> path_edges_;
+    const size_t edge_length_bound_;
+    const size_t max_size_;
+    const size_t max_depth_;
+
+    set<VertexId> last_inner_;
+
+    PathNeighbourhoodFinder(const Graph &graph, const vector<EdgeId>& path, size_t edge_length_bound = DEFAULT_EDGE_LENGTH_BOUND,
+                            size_t max_size = DEFAULT_MAX_SIZE, size_t max_depth = DEFAULT_MAX_DEPTH)
+            : AbstractNeighbourhoodFinder<Graph>(graph),
+              path_edges_(path.begin(), path.end()),
+              edge_length_bound_(edge_length_bound),
+              max_size_(max_size),
+              max_depth_(max_depth) {
+    }
+
+
+    GraphComponent<Graph> Find(VertexId v) {
+        TRACE("Starting from vertex " << this->graph().str(v));
+        last_inner_.clear();
+        set<VertexId> grey;
+        set<VertexId> black;
+        Go(v, 0, grey, black);
+        last_inner_ = black;
+        last_inner_.insert(v);
+        ComponentCloser<Graph>(this->graph(), 0).CloseComponent(grey);
+        return GraphComponent<Graph>(this->graph(), grey.begin(), grey.end());
+    }
+
+    vector<VertexId> InnerVertices(const GraphComponent<Graph> &/*component*/) {
+        return vector<VertexId>(last_inner_.begin(), last_inner_.end());
+    }
+private:
+    DECL_LOGGER("PathNeighbourhoodFinder");
 };
 
 //todo delete and think if we really need hierarchy
@@ -758,14 +827,15 @@ shared_ptr<GraphSplitter<Graph>> ReliableSplitter(const Graph &graph,
 
 template<class Graph>
 shared_ptr<GraphSplitter<Graph>> ReliableSplitterAlongPath(
-        const Graph &graph, const Path<typename Graph::EdgeId>& path,
-                                    size_t edge_length_bound = ReliableNeighbourhoodFinder<Graph>::DEFAULT_EDGE_LENGTH_BOUND,
-                                    size_t max_size = ReliableNeighbourhoodFinder<Graph>::DEFAULT_MAX_SIZE) {
+        const Graph &graph, const Path<typename Graph::EdgeId>& path, size_t edge_length_bound = PathNeighbourhoodFinder<Graph>::DEFAULT_EDGE_LENGTH_BOUND,
+                            size_t max_size = PathNeighbourhoodFinder<Graph>::DEFAULT_MAX_SIZE, 
+                            size_t max_depth = PathNeighbourhoodFinder<Graph>::DEFAULT_MAX_DEPTH) {
     typedef typename Graph::VertexId VertexId;
     shared_ptr<RelaxingIterator<VertexId>> inner_iterator = make_shared<
             PathIterator<Graph>>(graph, path);
-    shared_ptr<AbstractNeighbourhoodFinder<Graph>> nf = make_shared<
-    		ReliableNeighbourhoodFinder<Graph>>(graph, edge_length_bound, max_size);
+    shared_ptr<AbstractNeighbourhoodFinder<Graph>> nf = make_shared<PathNeighbourhoodFinder<Graph>>(graph, path.sequence(), 
+                                                            edge_length_bound, max_size, max_depth);
+    
     return make_shared<NeighbourhoodFindingSplitter<Graph>>(graph,
                                                             inner_iterator, nf);
 }
