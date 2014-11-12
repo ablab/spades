@@ -518,6 +518,9 @@ class PathNeighbourhoodFinder : public AbstractNeighbourhoodFinder<Graph> {
                 return false;
         }
 
+        TRACE("End processing of vertex " << this->graph().str(v));
+        black.insert(v);
+
         for (EdgeId e : incident_path) {
             if (grey.count(OtherEnd(e, v)) != 0)
                 continue;
@@ -526,8 +529,6 @@ class PathNeighbourhoodFinder : public AbstractNeighbourhoodFinder<Graph> {
                 return false;
         }
 
-        TRACE("End processing of vertex " << this->graph().str(v));
-        black.insert(v);
         return true;
     }
 
