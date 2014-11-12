@@ -335,10 +335,16 @@ Illumina and IonTorrent libraries should not be assembled together. All other ty
 SPAdes supports mate-pair only assembly. However, we recommend to use only high-quality mate-pair libraries in this case (e.g. that do not have a paired-end part). We tested mate-pair only pipeline using Illumina Nextera mate-pairs. See more <a href="#hqmp">here</a>.
 
 <p>
-    Current version SPAdes also supports Lucigen NxMate mate-pair libraries, which always have forward-reverse orientation. If you wish to use Lucigen NxMate reads, you will need python <a href="https://pypi.python.org/pypi/regex">regex library</a> to be pre-installed on your machine. You can install it by running the following command as root:
+    Current version SPAdes also supports Lucigen NxMate mate-pair libraries, which always have forward-reverse orientation. If you wish to use Lucigen NxMate reads, you will need Python <a href="https://pypi.python.org/pypi/regex">regex library</a> to be pre-installed on your machine. You can install it with Python <a href="http://www.pip-installer.org/">pip-installer</a>:
 <pre class="code">
 <code>
     pip install regex
+</code>
+</pre>
+    or with the <a href="http://peak.telecommunity.com/DevCenter/EasyInstall">Easy Install</a> Python module:
+<pre class="code">
+<code>
+    easy_install regex
 </code>
 </pre>
 
