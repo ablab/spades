@@ -430,6 +430,6 @@ def nx_seq_junstion(infilename1, infilename2, dst, log, silent=True):
 def process_reads(left_reads_fpath, right_reads_fpath, dst, log):
     log.info("== Processing Lucigen NxMate reads (" + left_reads_fpath + " and " +
              os.path.basename(right_reads_fpath) + " (results are in " + dst + " directory)")
-    cleaned_filename1, cleaned_filename2 = chimera_clean(left_reads_fpath, right_reads_fpath, dst, log, silent=True)
-    split_filename1, split_filename2, unsplit_filename = nx_seq_junstion(cleaned_filename1, cleaned_filename2, dst, log, silent=True)
+    cleaned_filename1, cleaned_filename2 = chimera_clean(left_reads_fpath, right_reads_fpath, dst, log, silent=False)
+    split_filename1, split_filename2, unsplit_filename = nx_seq_junstion(cleaned_filename1, cleaned_filename2, dst, log, silent=False)
     return split_filename1, split_filename2, unsplit_filename
