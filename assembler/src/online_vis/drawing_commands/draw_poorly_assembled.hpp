@@ -29,9 +29,13 @@ private:
                 }
             }
         }
-        for (pair<string, size_t> entry : base_ctg_2_len)
-            if (double(entry.second) > double(contig.size()) * WELL_ASSEMBLED_CONSTANT)
+        for (pair<string, size_t> entry : base_ctg_2_len) {
+            if (double(entry.second) > double(contig.size()) * WELL_ASSEMBLED_CONSTANT) {
+                LOG("Contig " << contig.name() << 
+                        " was well covered by contig " << entry.first << " of base assembly")
                 return false;
+            }
+        }
 
         return true;
     }
