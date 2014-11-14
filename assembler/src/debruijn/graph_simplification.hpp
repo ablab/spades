@@ -892,10 +892,6 @@ void SimplificationCycle(conj_graph_pack& gp,
 
 inline bool CorrectedFastMode(const SimplifInfoContainer& info) {
     const auto& cfg = cfg::get();
-    if (cfg.ds.reads[0].type() == io::LibraryType::HQMatePairs) {
-        INFO("High quality mate-pairs detected");
-        return false;
-    }
 
     if (math::eq(info.detected_mean_coverage(), 0.)) {
         INFO("Mean coverage wasn't reliably estimated");

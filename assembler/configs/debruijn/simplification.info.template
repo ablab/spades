@@ -142,7 +142,7 @@ default
     }
 
     persistent_cycle_iterators true
-    disable_br_in_cycle true
+    disable_br_in_cycle false
 }
 
 sc
