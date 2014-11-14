@@ -50,16 +50,10 @@ class LoadGenomeCommand : public LocalCommand<DebruijnEnvironment> {
                 cout << "Warning: loading empty genome" << endl;
                 return;
             }
-            io::FileReadStream genome_stream(file);
+            auto genome_reader = make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(file));
             io::SingleRead genome;
-            genome_stream >> genome;
-            if (genome.IsValid()) {
-                curr_env.LoadNewGenome(genome.sequence());
-            }
-            else {
-                cout << "Reference genome (" + file + ") has non-ACGT characters. Skipping it" << endl;
-                cout << "Please try again" << endl;
-            }
+            (*genome_reader) >> genome;
+            curr_env.LoadNewGenome(genome.sequence());
         }
 };
 
