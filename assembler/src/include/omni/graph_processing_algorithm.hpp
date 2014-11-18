@@ -39,13 +39,17 @@ class EdgeProcessingAlgorithm {
         TRACE("Start processing");
         bool triggered = false;
         for (; !it.IsEnd(); ++it) {
-            if (!proceed_condition->Check(*it)) {
+            EdgeId e = *it;
+            TRACE("Current edge " << g_.str(e));
+            if (!proceed_condition->Check(e)) {
                 TRACE("Stop condition was reached.");
+                //need to release last element of the iterator to make it replacable by new elements
+                it.ReleaseCurrent();
                 break;
             }
 
-            TRACE("Processing edge " << this->g().str(*it));
-            triggered |= ProcessEdge(*it);
+            TRACE("Processing edge " << this->g().str(e));
+            triggered |= ProcessEdge(e);
         }
         TRACE("Finished processing. Triggered = " << triggered);
         return triggered;
@@ -133,10 +137,13 @@ class EdgeRemovingAlgorithm : public EdgeProcessingAlgorithm<Graph> {
 
  protected:
     bool ProcessEdge(EdgeId e) {
+        TRACE("Checking edge " << this->g().str(e) << " for the removal condition");
         if (remove_condition_->Check(e)) {
+            TRACE("Check passed, removing");
             edge_remover_.DeleteEdge(e);
             return true;
         }
+        TRACE("Check not passed");
         return false;
     }
 

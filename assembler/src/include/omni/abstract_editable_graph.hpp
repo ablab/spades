@@ -307,7 +307,7 @@ public:
         TRACE("Adding unlinked edge");
         EdgeId e = HiddenAddEdge(data, id_distributor);
         this->FireAddEdge(e);
-        TRACE("Added unlinked edge " << str(e) << " connecting ");
+        TRACE("Added unlinked edge " << str(e));
         return e;
     }
 
@@ -446,14 +446,17 @@ public:
 
 	EdgeId MergePath(const vector<EdgeId>& path, bool safe_merging = true) {
 		VERIFY(!path.empty());
-		for (size_t i = 0; i < path.size(); i++)
+		for (size_t i = 0; i < path.size(); i++) {
 			for (size_t j = i + 1; j < path.size(); j++) {
 				VERIFY(path[i] != path[j]);
 			}
+        }
+
 		if (path.size() == 1) {
-			TRACE(
-					"Path of single edge " << str(*(path.begin())) << ". Nothing to merge.");
-		}TRACE("Merging path of edges " << str(path));
+			TRACE("Path of single edge " << str(*(path.begin())) << ". Nothing to merge.");
+		}
+
+        TRACE("Merging path of edges " << str(path));
 
 		//		cerr << "Merging " << PrintDetailedPath(pObservableGraph<VertexIdT, EdgeIdT, VertexIt>ath) << endl;
 		//		cerr << "Conjugate " << PrintConjugatePath(path) << endl;
@@ -466,6 +469,7 @@ public:
 				++it) {
 			to_merge.push_back(&(data(*it)));
 		}
+
 		EdgeId new_edge = HiddenAddEdge(v1, v2, master_.MergeData(to_merge, safe_merging));
 		this->FireMerge(corrected_path, new_edge);
 		vector<EdgeId> edges_to_delete = EdgesToDelete(corrected_path);
@@ -474,8 +478,7 @@ public:
 		this->FireAddEdge(new_edge);
 
 		HiddenDeletePath(edges_to_delete, vertices_to_delete);
-		TRACE(
-				"Path merged. Corrected path merged into " << str(new_edge));
+		TRACE("Path merged. Corrected path merged into " << str(new_edge));
 		return new_edge;
 	}
 

@@ -101,6 +101,7 @@ bool ClipTips(
                                                omnigraph::AddTipCondition(g, condition),
                                                removal_handler);
 
+    TRACE("Tip length bound " << parser.max_length_bound());
     return tc.RunFromIterator(it,
                       make_shared<LengthUpperBound<Graph>>(g, parser.max_length_bound()));
 }
@@ -637,13 +638,6 @@ class SmartIteratorsHolder {
     std::shared_ptr<CoverageOrderIteratorT> bulge_smart_it_;
     std::shared_ptr<CoverageOrderIteratorT> ec_smart_it_;
 
-//    SmartIteratorsHolder(const LengthOrderIteratorT& tip_smart_it_,
-//                         const CoverageOrderIteratorT& bulge_smart_it_,
-//                         const CoverageOrderIteratorT& ec_smart_it_) :
-//        tip_smart_it(tip_smart_it_),
-//        bulge_smart_it(bulge_smart_it_),
-//        ec_smart_it(ec_smart_it_) {
-//    }
 public:
     SmartIteratorsHolder(const Graph& g, bool persistent) : g_(g), persistent_(persistent) {
         if (persistent_) {
@@ -658,7 +652,7 @@ public:
         if (persistent_)
             tip_smart_it_ = answer;
         return answer;
-}
+    }
 
     std::shared_ptr<CoverageOrderIteratorT> bulge_smart_it() {
         if (bulge_smart_it_)
@@ -802,8 +796,6 @@ void PostSimplification(conj_graph_pack& gp,
     INFO("PROCEDURE == Post simplification");
     size_t iteration = 0;
 
-    if (cfg::get().simp.persistent_cycle_iterators)
-        INFO("Using permanent iterators");
     SmartIteratorsHolder<Graph> iterators_holder(gp.g, cfg::get().simp.persistent_cycle_iterators);
 
     bool enable_flag = true;
@@ -858,7 +850,7 @@ void SimplificationCycle(conj_graph_pack& gp,
                          const SimplifInfoContainer& info_container,
                          boost::function<void(EdgeId)> removal_handler,
                          stats::detail_info_printer &printer,
-                         SmartIteratorsHolder<Graph> iterators_holder) {
+                         SmartIteratorsHolder<Graph>& iterators_holder) {
     size_t iteration = info_container.iteration();
 
     INFO("PROCEDURE == Simplification cycle, iteration " << (iteration + 1));

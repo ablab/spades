@@ -116,6 +116,10 @@ public:
 		current_actual_ = false;
 	}
 
+    void ReleaseCurrent() {
+        current_actual_ = false;
+    }
+
 	virtual ~QueueIterator() {
 	}
 };
