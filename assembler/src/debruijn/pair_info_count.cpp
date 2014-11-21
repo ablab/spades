@@ -40,13 +40,16 @@ bool RefineInsertSizeForLib(conj_graph_pack& gp, size_t ilib, size_t edge_length
 
   INFO(hist_counter.mapped() << " paired reads (" << ((double) hist_counter.mapped() * 100.0 / (double) hist_counter.total()) << "% of all) aligned to long edges");
   if (hist_counter.negative() > 3 * hist_counter.mapped())
-      WARN("Too much reads aligned with negative insert size. Does the library orientation set properly?");
+      WARN("Too much reads aligned with negative insert size. Is the library orientation set properly?");
   if (hist_counter.mapped() == 0)
     return false;
 
   std::map<size_t, size_t> percentiles;
   hist_counter.FindMean(reads.data().mean_insert_size, reads.data().insert_size_deviation, percentiles);
   hist_counter.FindMedian(reads.data().median_insert_size, reads.data().insert_size_mad, reads.data().insert_size_distribution);
+  if (reads.data().median_insert_size < gp.k_value + 2) {
+    return false;
+  }
 
   std::tie(reads.data().insert_size_left_quantile, reads.data().insert_size_right_quantile) = omnigraph::GetISInterval(0.8, reads.data().insert_size_distribution);
 
