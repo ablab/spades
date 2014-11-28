@@ -101,16 +101,18 @@ void GenomicInfoFiller::run(conj_graph_pack &gp, const char*) {
         if (CovModel.converged()) {
             gp.ginfo.set_estimated_mean((double)CovModel.GetMeanCoverage());
             INFO("Mean coverage was calculated as " << gp.ginfo.estimated_mean());
-            if (cfg::get().kcm.use_coverage_threshold) {
-              double coef = (cfg::get().ds.aRL() - cfg::get().K + 1) / cfg::get().ds.aRL();
-              if (coef < 0)
-                coef = (cfg::get().ds.RL() - cfg::get().K + 1) / cfg::get().ds.RL();
-              gp.ginfo.set_trusted_bound(cfg::get().kcm.coverage_threshold == 0.0 ?
-                                         CovModel.GetLowThreshold() :
-                                         cfg::get().kcm.coverage_threshold * coef);
-            }
         } else
             INFO("Failed to estimate mean coverage");
+
+        if (cfg::get().kcm.use_coverage_threshold) {
+            double coef = (cfg::get().ds.aRL() - cfg::get().K + 1) / cfg::get().ds.aRL();
+            if (coef < 0)
+                coef = (cfg::get().ds.RL() - cfg::get().K + 1) / cfg::get().ds.RL();
+            gp.ginfo.set_trusted_bound(CovModel.converged() && cfg::get().kcm.coverage_threshold == 0.0 ?
+                                       CovModel.GetLowThreshold() :
+                                       cfg::get().kcm.coverage_threshold * coef);
+        }
+
     }
     INFO("EC coverage threshold value was calculated as " << gp.ginfo.ec_bound());
     INFO("Trusted kmer low bound: " << gp.ginfo.trusted_bound());

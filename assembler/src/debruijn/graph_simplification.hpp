@@ -886,12 +886,15 @@ void SimplificationCycle(conj_graph_pack& gp,
 inline bool CorrectedFastMode(const SimplifInfoContainer& info) {
     const auto& cfg = cfg::get();
 
-    if (math::eq(info.detected_mean_coverage(), 0.)) {
-        INFO("Mean coverage wasn't reliably estimated");
+    if (math::eq(info.detected_mean_coverage(), 0.) &&
+        !cfg.kcm.use_coverage_threshold) {
+        WARN("Mean coverage wasn't reliably estimated");
         return false;
     }
 
-    if (math::ls(info.detected_mean_coverage(), cfg.simp.fast_activation_cov)) {
+    if (math::ls(info.detected_mean_coverage(), cfg.simp.fast_activation_cov) &&
+        !(cfg.kcm.use_coverage_threshold &&
+          math::ge(cfg.kcm.coverage_threshold, cfg.simp.fast_activation_cov))) {
         INFO("Estimated mean coverage " << info.detected_mean_coverage() <<
              " is less than fast mode activation coverage " << cfg.simp.fast_activation_cov);
         return false;
