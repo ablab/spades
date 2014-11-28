@@ -796,7 +796,8 @@ void PostSimplification(conj_graph_pack& gp,
     INFO("PROCEDURE == Post simplification");
     size_t iteration = 0;
 
-    SmartIteratorsHolder<Graph> iterators_holder(gp.g, cfg::get().simp.persistent_cycle_iterators);
+    SmartIteratorsHolder<Graph> iterators_holder(gp.g, cfg::get().simp.persistent_cycle_iterators 
+                                                            && cfg::get().simp.fast_features);
 
     bool enable_flag = true;
     while (enable_flag) {
