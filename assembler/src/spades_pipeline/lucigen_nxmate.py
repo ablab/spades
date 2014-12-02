@@ -24,6 +24,7 @@ import os
 import time
 import string
 import support
+import gzip
 
 try:
     import regex
@@ -46,10 +47,10 @@ class ParseFastQ(object):
 
         rec is tuple: (seqHeader,seqStr,qualHeader,qualStr)
         """
-        #  if filePath.endswith('.gz'):
-        #     self._file = gzip.open(filePath)
-        # else:
-        self._file = open(filePath, 'rU')  #filePath, 'rU') test with explicit filename
+        if filePath.endswith('.gz'):
+            self._file = gzip.open(filePath)
+        else:
+            self._file = open(filePath, 'rU')  #filePath, 'rU') test with explicit filename
         self._currentLineNumber = 0
         self._hdSyms = headerSymbols
 
@@ -100,21 +101,31 @@ class ParseFastQ(object):
         # ++++ Return fatsQ data as tuple ++++
         return tuple(elemList)
 
+    def close(self):
+        if self._file:
+            self._file.close()
+
 
 def chimera_clean(infilename1, infilename2, dst, log, silent=True):
     starttime = time.clock()
 
-    #open four  outfiles
-    outfilename1 = os.path.join(dst, 'mates_ICC4_' + os.path.basename(infilename1))
+    basename1 = os.path.basename(infilename1)
+    if os.path.splitext(basename1)[1] == '.gz':
+        basename1 = os.path.splitext(basename1)[0]
+    basename2 = os.path.basename(infilename2)
+    if os.path.splitext(basename2)[1] == '.gz':
+        basename2 = os.path.splitext(basename2)[0]
+    #open four outfiles
+    outfilename1 = os.path.join(dst, 'mates_ICC4_' + basename1)
     outfile1 = open(outfilename1, 'w')
 
-    slagfilename1 = os.path.join(dst, 'non-mates_ICC4_' + os.path.basename(infilename1))
+    slagfilename1 = os.path.join(dst, 'non-mates_ICC4_' + basename1)
     slagfile1 = open(slagfilename1, 'w')
 
-    outfilename2 = os.path.join(dst, 'mates_ICC4_' + os.path.basename(infilename2))
+    outfilename2 = os.path.join(dst, 'mates_ICC4_' + basename2)
     outfile2 = open(outfilename2, 'w')
 
-    slagfilename2 = os.path.join(dst, 'non-mates_ICC4_' + os.path.basename(infilename2))
+    slagfilename2 = os.path.join(dst, 'non-mates_ICC4_' + basename2)
     slagfile2 = open(slagfilename2, 'w')
 
     #set up regular expression patterns for chimera codes- for illumin use the  reverse complements of right codes
@@ -217,6 +228,8 @@ def chimera_clean(infilename1, infilename2, dst, log, silent=True):
     slagfile2.close()
     if TOTALmatecounter+slagcounter != readcounter:
         support.error("lucigen_nxmate.py, chimera_clean: error in the script somewhere! unequal read counts!", log)
+    if readcounter == 0:
+        support.error("lucigen_nxmate.py, chimera_clean: error in input data! Number of processed reads is 0!", log)
     if not silent:
         #print some stats
         percentmates = 100. * matecounter / readcounter
@@ -229,20 +242,28 @@ def chimera_clean(infilename1, infilename2, dst, log, silent=True):
         elapsedtime = time.clock() - starttime
         log.info("==== chimera_clean info: processed %d reads in %.1f seconds" % (readcounter, elapsedtime))
         log.info("==== chimera_clean info: " + str(csscounter))
+    parserR1.close()
+    parserR2.close()
     return outfilename1, outfilename2
 
 
 def nx_seq_junstion(infilename1, infilename2, dst, log, silent=True):
     starttime = time.clock()
 
-    #open three  outfiles
-    splitfilenameleft = os.path.join(dst, 'R1_IJS7_' + os.path.basename(infilename1))
+    basename1 = os.path.basename(infilename1)
+    if os.path.splitext(basename1)[1] == '.gz':
+        basename1 = os.path.splitext(basename1)[0]
+    basename2 = os.path.basename(infilename2)
+    if os.path.splitext(basename2)[1] == '.gz':
+        basename2 = os.path.splitext(basename2)[0]
+    #open three outfiles
+    splitfilenameleft = os.path.join(dst, 'R1_IJS7_' + basename1)
     splitfile1 = open(splitfilenameleft, 'w')
 
-    splitfilenameright = os.path.join(dst, 'R2_IJS7_' + os.path.basename(infilename2))
+    splitfilenameright = os.path.join(dst, 'R2_IJS7_' + basename2)
     splitfile2 = open(splitfilenameright, 'w')
 
-    unsplitfilename = os.path.join(dst, 'unsplit_IJS7_' + os.path.basename(infilename1).replace('_R1_', '_R1R2_'))
+    unsplitfilename = os.path.join(dst, 'unsplit_IJS7_' + basename1.replace('_R1_', '_R1R2_'))
     unsplitfile = open(unsplitfilename, 'w')
 
     #jctstr = '(GGTTCATCGTCAGGCCTGACGATGAACC){e<=4}' # JS7 24/28 required results in ~92% detected in ion torrent
@@ -407,6 +428,10 @@ def nx_seq_junstion(infilename1, infilename2, dst, log, silent=True):
     splitfile2.close()
     unsplitfile.close()
 
+    if readcounter == 0:
+        support.error("lucigen_nxmate.py, nx_seq_junstion: error in input data! Number of processed reads is 0!", log)
+    if splitcounter == 0:
+        support.error("lucigen_nxmate.py, nx_seq_junstion: error in input data! Number of split pairs is 0!", log)
     if not silent:
         #print some stats
         percentsplit = 100 * splitcounter / readcounter
@@ -424,6 +449,8 @@ def nx_seq_junstion(infilename1, infilename2, dst, log, silent=True):
                  % (R2jctcounter, percentR2))
         elapsedtime = time.clock() - starttime
         log.info("==== nx_seq_junstion info: processed %d reads in %.1f seconds" % (readcounter, elapsedtime))
+    parserR1.close()
+    parserR2.close()
     return splitfilenameleft, splitfilenameright, unsplitfilename
 
 
