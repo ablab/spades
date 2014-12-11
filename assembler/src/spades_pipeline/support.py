@@ -823,21 +823,23 @@ def break_scaffolds(input_filename, threshold, replace_char="N", gzipped=False):
             i = end + 1
             if (end - start) >= threshold:
                 modified = True
-                new_fasta.append((name.split()[0] + "_" + str(cur_contig_number),
-                                  seq[cur_contig_start:start].replace("N", replace_char)))
-                cur_contig_number += 1
+                if cur_contig_start != start:
+                    new_fasta.append((name.split()[0] + "_" + str(cur_contig_number) + " " + " ".join(name.split()[1:]),
+                                      seq[cur_contig_start:start].replace("N", replace_char)))
+                    cur_contig_number += 1
                 cur_contig_start = end
-        new_fasta.append((name.split()[0] + "_" + str(cur_contig_number),
-                          seq[cur_contig_start:].replace("N", replace_char)))
+        if cur_contig_start < len(seq):
+            new_fasta.append((name.split()[0] + "_" + str(cur_contig_number) + " " + " ".join(name.split()[1:]),
+                              seq[cur_contig_start:].replace("N", replace_char)))
     return modified, new_fasta
 
 
 def comp(letter):
-   return {'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C', 'N': 'N'}[letter.upper()]
+    return {'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C', 'N': 'N'}[letter.upper()]
 
 
 def rev_comp(seq):
-   return ''.join(itertools.imap(comp, seq[::-1]))
+    return ''.join(itertools.imap(comp, seq[::-1]))
 
 
 def get_contig_id(s):
