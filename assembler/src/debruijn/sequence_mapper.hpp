@@ -57,6 +57,8 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
 
  private:
   const Index& index_;
+  typedef typename Graph::EdgeId EdgeId;
+  typedef typename Graph::VertexId VertexId;
   typedef typename Index::KMer Kmer;
   typedef KmerMapper<Graph, Kmer> KmerSubs;
   const KmerSubs& kmer_mapper_;

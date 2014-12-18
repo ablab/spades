@@ -370,7 +370,7 @@ void CountAndSaveAllPaths(const Graph& g, const io::SequencingLibrary<debruijn_c
     std::string dir_name = cfg::get().output_dir + "estimation_qual/";
     make_dir(dir_name);
 
-    typename PrinterTraits<Graph>::Printer printer(g);
+    graphio::ConjugateDataPrinter<Graph> printer(g);
     printer.savePaired(dir_name + "paths", all_paths);
 
     //PairedIndexT& all_paths_2(g);
@@ -398,7 +398,7 @@ void FillAndCorrectEtalonPairedInfo(PairedIndexT&  corrected_etalon_index,
         else {
             INFO("Loading etalon pair info from the previous run...");
             Graph& graph = const_cast<Graph&>(gp.g);
-            ScannerTraits<Graph>::Scanner scanner(graph);
+            graphio::ConjugateDataScanner<Graph> scanner(graph);
             scanner.loadPaired(p, etalon_index);
             path::files_t files;
             files.push_back(p);

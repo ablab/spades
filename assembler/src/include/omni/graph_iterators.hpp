@@ -3,7 +3,7 @@
 
 #include "adt/queue_iterator.hpp"
 #include "io/read_processor.hpp"
-#include "omni/action_handlers.hpp"
+#include "action_handlers.hpp"
 
 #include <boost/iterator/iterator_facade.hpp>
 

@@ -777,7 +777,7 @@ public:
     //saving results
     INFO("Saving estimation statistic");
     make_dir(dir_name);
-    typename PrinterTraits<Graph>::Printer printer(graph_);
+    graphio::ConjugateDataPrinter<Graph> printer(graph_);
     printer.savePaired(dir_name + "fp", false_positives_);
     printer.savePaired(dir_name + "pm", perfect_matches_);
     printer.savePaired(dir_name + "im", imperfect_matches_);

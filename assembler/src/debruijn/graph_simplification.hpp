@@ -137,8 +137,8 @@ bool RemoveBulges(
     Graph& g,
     SmartEdgeIt& it,
     const debruijn_config::simplification::bulge_remover& br_config,
-    boost::function<void(EdgeId, const std::vector<EdgeId> &)> opt_handler = 0,
-    boost::function<void(EdgeId)> removal_handler = 0,
+    boost::function<void(typename Graph::EdgeId, const std::vector<typename Graph::EdgeId> &)> opt_handler = 0,
+    boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
     size_t additional_length_bound = 0) {
 
 	if(!br_config.enabled)
@@ -169,8 +169,8 @@ template<class Graph>
 bool RemoveBulges(
         Graph& g,
         const debruijn_config::simplification::bulge_remover& br_config,
-        boost::function<void(EdgeId, const std::vector<EdgeId> &)> opt_handler = 0,
-        boost::function<void(EdgeId)> removal_handler = 0,
+        boost::function<void(typename Graph::EdgeId, const std::vector<typename Graph::EdgeId> &)> opt_handler = 0,
+        boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
         size_t additional_length_bound = 0) {
     auto it = g.SmartEdgeBegin(CoverageComparator<Graph>(g));
     return RemoveBulges(g, it, br_config, opt_handler, removal_handler, additional_length_bound);
@@ -182,7 +182,7 @@ bool RemoveLowCoverageEdges(
     SmartEdgeIt& it,
     const debruijn_config::simplification::erroneous_connections_remover& ec_config,
     const SimplifInfoContainer& info_container,
-    boost::function<void(EdgeId)> removal_handler = 0) {
+    boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
 
     INFO("Removing low covered connections");
     //double max_coverage = cfg::get().simp.ec.max_coverage;
@@ -200,21 +200,21 @@ bool RemoveLowCoverageEdges(
     Graph &g,
     const debruijn_config::simplification::erroneous_connections_remover& ec_config,
     const SimplifInfoContainer& info_container,
-    boost::function<void(EdgeId)> removal_handler = 0) {
+    boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
     auto it = g.SmartEdgeBegin(CoverageComparator<Graph>(g));
     return RemoveLowCoverageEdges(g, it, ec_config, info_container, removal_handler);
 }
 
 template<class Graph>
 bool RemoveSelfConjugateEdges(Graph &g, size_t max_length, double max_coverage,
-                boost::function<void(EdgeId)> removal_handler = 0, size_t chunk_cnt = 1) {
+                boost::function<void(typename Graph::EdgeId)> removal_handler = 0, size_t chunk_cnt = 1) {
     INFO("Removing short low covered self-conjugate connections");
 
-    auto condition = func::And<EdgeId>(make_shared<SelfConjugateCondition<Graph>>(g),
-                                       func::And<EdgeId>(make_shared<LengthUpperBound<Graph>>(g, max_length),
+    auto condition = func::And<typename Graph::EdgeId>(make_shared<SelfConjugateCondition<Graph>>(g),
+                                       func::And<typename Graph::EdgeId>(make_shared<LengthUpperBound<Graph>>(g, max_length),
                                                          make_shared<CoverageUpperBound<Graph>>(g, max_coverage)));
 
-    SemiParallelAlgorithmRunner<Graph, EdgeId> runner(g);
+    SemiParallelAlgorithmRunner<Graph, typename Graph::EdgeId> runner(g);
     SemiParallelEdgeRemovingAlgorithm<Graph> removing_algo(g, condition, removal_handler);
 
     return RunEdgeAlgorithm(g, runner, removing_algo, chunk_cnt);
@@ -308,7 +308,7 @@ bool RemoveThorns(
         g.k(), isec_config.max_ec_length_coefficient);
 
     shared_ptr<func::Predicate<typename Graph::EdgeId>> condition
-            = func::And<EdgeId>(make_shared<LengthUpperBound<Graph>>(g, max_length),
+            = func::And<typename Graph::EdgeId>(make_shared<LengthUpperBound<Graph>>(g, max_length),
                                        make_shared<ThornCondition<Graph>>(g, isec_config.uniqueness_length, isec_config.span_distance));
 
     return omnigraph::RemoveErroneousEdgesInCoverageOrder(g, condition, numeric_limits<double>::max(), removal_handler);
@@ -324,11 +324,11 @@ bool TopologyReliabilityRemoveErroneousEdges(
         g.k(), trec_config.max_ec_length_coefficient);
 
     shared_ptr<func::Predicate<typename Graph::EdgeId>> condition
-            = func::And<EdgeId>(make_shared<CoverageUpperBound<Graph>>(g, trec_config.unreliable_coverage),
+            = func::And<typename Graph::EdgeId>(make_shared<CoverageUpperBound<Graph>>(g, trec_config.unreliable_coverage),
                                        make_shared<PredicateUniquenessPlausabilityCondition<Graph>>(
                                                g,
                                                /*uniqueness*/MakePathLengthLowerBound(g, UniquePathFinder<Graph>(g), trec_config.uniqueness_length),
-                                               /*plausibility*/make_shared<func::AlwaysTrue<EdgeId>>()));
+                                               /*plausibility*/make_shared<func::AlwaysTrue<typename Graph::EdgeId>>()));
 
     return omnigraph::RemoveErroneousEdgesInLengthOrder(g, condition, max_length, removal_handler);
 
@@ -370,7 +370,7 @@ bool RemoveHiddenEC(Graph& g,
                     const FlankingCoverage<Graph>& flanking_cov,
                     double determined_coverage_threshold,
                     debruijn_config::simplification::hidden_ec_remover her_config,
-                    boost::function<void(EdgeId)> removal_handler) {
+                    boost::function<void(typename Graph::EdgeId)> removal_handler) {
     if (her_config.enabled) {
         INFO("Removing hidden erroneous connections");
         return HiddenECRemover<Graph>(g, her_config.uniqueness_length, flanking_cov,
@@ -466,10 +466,10 @@ private:
     DECL_LOGGER("CountingCallback");
 };
 
-inline
-boost::function<void(EdgeId)> AddCountingCallback(CountingCallback<Graph>& cnt_callback, boost::function<void(EdgeId)> handler) {
-    boost::function<void(EdgeId)> cnt_handler = boost::bind(&CountingCallback<Graph>::HandleDelete, boost::ref(cnt_callback), _1);
-    return func::Composition<EdgeId>(handler, cnt_handler);
+template<class Graph>
+boost::function<void(typename Graph::EdgeId)> AddCountingCallback(CountingCallback<Graph>& cnt_callback, boost::function<void(typename Graph::EdgeId)> handler) {
+    boost::function<void(typename Graph::EdgeId)> cnt_handler = boost::bind(&CountingCallback<Graph>::HandleDelete, boost::ref(cnt_callback), _1);
+    return func::Composition<typename Graph::EdgeId>(handler, cnt_handler);
 }
 
 //boost::function<void(EdgeId)> AddCountingCallback(boost::function<void(EdgeId)> handler) {
@@ -502,10 +502,10 @@ bool FinalRemoveErroneousEdges(
 //                &omnigraph::simplification::SingleEdgeAdapter<set<EdgeId>>, _1, qual_removal_handler_f);
 //
 
-    boost::function<void(set<EdgeId>)> set_removal_handler_f(0);
+    boost::function<void(set<typename Graph::EdgeId>)> set_removal_handler_f(0);
     if (removal_handler) {
         set_removal_handler_f = boost::bind(
-                &omnigraph::simplification::SingleEdgeAdapter<set<EdgeId>>, _1, removal_handler);
+                &omnigraph::simplification::SingleEdgeAdapter<set<typename Graph::EdgeId>>, _1, removal_handler);
     }
 
     bool changed = RemoveRelativelyLowCoverageComponents(gp.g, gp.flanking_cov,
@@ -629,7 +629,8 @@ class SmartIteratorsHolder {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::VertexIt VertexIt;
-    typedef omnigraph::ObservableGraph<VertexId, EdgeId, VertexIt> ObservableGraphT;
+    typedef typename Graph::DataMasterT DataMasterT;
+    typedef omnigraph::ObservableGraph<DataMasterT> ObservableGraphT;
     typedef omnigraph::SmartEdgeIterator<ObservableGraphT, omnigraph::CoverageComparator<Graph>> CoverageOrderIteratorT;
     typedef omnigraph::SmartEdgeIterator<ObservableGraphT, omnigraph::LengthComparator<Graph>> LengthOrderIteratorT;
     const Graph& g_;
@@ -818,7 +819,8 @@ void PostSimplification(conj_graph_pack& gp,
                                               cfg::get().graph_read_corr.enable ?
                                                       WrapWithProjectionCallback(gp, removal_handler) : removal_handler);
 
-        enable_flag |= RemoveBulges(gp.g, *iterators_holder.bulge_smart_it(), cfg::get().simp.br, 0, removal_handler);
+        enable_flag |= RemoveBulges(gp.g, *iterators_holder.bulge_smart_it(), cfg::get().simp.br, 
+           (boost::function<void(EdgeId, const std::vector<EdgeId> &)>)0, removal_handler);
 
         enable_flag |= RemoveComplexBulges(gp.g, cfg::get().simp.cbr, iteration);
 
@@ -870,7 +872,8 @@ void SimplificationCycle(conj_graph_pack& gp,
 
     if (!cfg::get().simp.disable_br_in_cycle || !cfg::get().simp.fast_features) {
         DEBUG(iteration << " BulgeRemoval");
-        RemoveBulges(gp.g, *iterators_holder.bulge_smart_it(), cfg::get().simp.br, 0, removal_handler);
+        RemoveBulges(gp.g, *iterators_holder.bulge_smart_it(), cfg::get().simp.br, 
+            (boost::function<void(EdgeId, const std::vector<EdgeId> &)>)0, removal_handler);
         cnt_callback.Report();
         DEBUG(iteration << " BulgeRemoval stats");
         printer(ipp_bulge_removal, str(format("_%d") % iteration));

@@ -8,8 +8,8 @@
 
 #include "omni/id_track_handler.hpp"
 #include "omni/edges_position_handler.hpp"
-#include "de/paired_info.hpp"
 #include "debruijn_graph.hpp"
+#include "de/paired_info.hpp"
 #include "config_struct.hpp"
 #include "edge_index.hpp"
 #include "genomic_quality.hpp"

@@ -108,7 +108,7 @@ public:
 
 /**
  * Implementation of GraphLabeler for Graphs that have methods
- * str(VertexId) and str(EdgeId), such as AbstractConjugateGraph.
+ * str(VertexId) and str(EdgeId), such as AbstractGraph.
  */
 template<class Graph>
 class StrGraphLabeler : public AbstractGraphLabeler<Graph> {

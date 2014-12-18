@@ -4,7 +4,8 @@
 #include "omni/graph_processing_algorithm.hpp"
 #include "omni/basic_edge_conditions.hpp"
 #include "omni/bulge_remover.hpp"
-#include "omni/abstract_conjugate_graph.hpp"
+#include "omni/construction_helper.hpp"
+#include "omni/marks_and_locks.hpp"
 #include "simplification_settings.hpp"
 
 namespace debruijn {
@@ -490,7 +491,7 @@ class ParallelCompressor {
         return g_.master().MergeData(to_merge);
     }
 
-    EdgeId SyncAddEdge(VertexId v1, VertexId v2, const EdgeData& data, IdDistributor& id_distributor) {
+    EdgeId SyncAddEdge(VertexId v1, VertexId v2, const EdgeData& data, restricted::IdDistributor& id_distributor) {
         EdgeId new_edge = helper_.AddEdge(data, id_distributor);
         {
             VertexLockT lock(v1);

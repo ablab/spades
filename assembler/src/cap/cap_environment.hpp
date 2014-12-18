@@ -18,7 +18,7 @@ class CapEnvironment : public Environment {
   friend class CapEnvironmentManager;
 
  private:
-  typedef debruijn_graph::ConjugateDeBruijnGraph Graph;
+  typedef debruijn_graph::Graph Graph;
   typedef Graph::VertexId VertexId;
   typedef Graph::EdgeId EdgeId;
 

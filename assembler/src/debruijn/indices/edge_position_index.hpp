@@ -88,7 +88,7 @@ public:
         return kwh.key() == KMer(this->k(), graph_.EdgeNucls(entry.edge_id), entry.offset);
     }
 
-    void PutInIndex(KeyWithHash &kwh, EdgeId id, size_t offset) {
+    void PutInIndex(KeyWithHash &kwh, IdType id, size_t offset) {
         if (valid(kwh)) {
             auto &entry = this->get_raw_value_reference(kwh);
             if (!entry.valid() || contains(kwh)) {
@@ -171,7 +171,7 @@ public:
           reader.read((char*)&(this->data_[i].count), sizeof(this->data_[0].count));
       this->BinReadKmers(reader, FileName);
   }
-  void PutInIndex(KeyWithHash &kwh, EdgeId id, size_t offset) {
+  void PutInIndex(KeyWithHash &kwh, IdType id, size_t offset) {
       if (valid(kwh)) {
           auto &entry = this->get_raw_value_reference(kwh);
           if (!entry.valid() || contains(kwh)) {
