@@ -40,6 +40,9 @@ sga_mp_cor_run_script = os.path.join(runner_dirpath, 'SGA_mp_assemble_cor.sh')
 velvet_base = '/acestorage/software/velvet_1.2.10/'
 velvet_run_script = os.path.join(runner_dirpath, 'VELVET_assemble.sh')
 velvet_mp_run_script = os.path.join(runner_dirpath, 'VELVET_mp_assemble.sh')
+velvet_sc_base = '/acestorage/software/velvet-sc/'
+velvet_sc_run_script = os.path.join(runner_dirpath, 'VELVETSC_assemble.sh')
+velvet_sc_mp_run_script = os.path.join(runner_dirpath, 'VELVETSC_mp_assemble.sh')
 mira_base = '/acestorage/software/mira-4.0rc1/build/bin/'
 mira_config = os.path.join(runner_dirpath, 'MIRA_config.txt')
 mira_mp_config = os.path.join(runner_dirpath, 'MIRA_mp_config.txt')
@@ -49,7 +52,7 @@ long_options = "min-k= max-k= step-k= threads= is= dev= assemblers= mira-tmp-dir
 short_options = "o:1:2:r:t:"
 
 # options
-assemblers_to_run = ['abyss', 'msrca', 'soap', 'idba', 'spades', 'ray', 'cabog', 'sga', 'velvet', 'mira']
+assemblers_to_run = ['abyss', 'msrca', 'soap', 'idba', 'spades', 'ray', 'cabog', 'sga', 'velvet', 'velvet-sc', 'mira']
 output_dir = None
 mira_tmp_dir = os.path.abspath(os.path.expanduser('~/mira_tmp'))
 left = None
@@ -348,6 +351,41 @@ def run_velvet(K, log_filename):
         shutil.copy(velvet_mp_run_script, cur_velvet_run_script)
     else:
         shutil.copy(velvet_run_script, cur_velvet_run_script)
+    update_runner_params(cur_velvet_run_script, params_subst_dict)
+    cmd_line = cur_velvet_run_script
+    cmd_line += " >>%s 2>>%s" % (log_filename, log_filename)
+    log_file.write("Started: " + cmd_line + "\n\n")
+    log_file.write("Run script content:\n")
+    for line in open(cur_velvet_run_script, 'r'):
+        log_file.write(line)
+    log_file.write("\n\n")
+    log_file.flush()
+
+    return_code = os.system(cmd_line)
+
+    log_file.write("Finished, log is %s\n" % log_filename)
+    log_file.close()
+    contigs_path = "contigs.fa"
+    scaffolds_path = "scaffolds.fa"
+    return return_code, contigs_path, scaffolds_path
+
+
+def run_velvet_sc(K, log_filename):
+    log_file = open(log_filename, 'a')
+    cur_velvet_run_script = os.path.abspath(os.path.join(os.getcwd(), 'run.sh'))
+    #shutil.copy(velvet_run_script, cur_velvet_run_script)
+    params_subst_dict = dict(common_params_subst_dict)
+    params_subst_dict['K'] = str(K)
+    params_subst_dict['VELVET_BASE'] = velvet_sc_base
+    params_subst_dict['OUTPUT_DIR'] = os.path.dirname(log_filename)
+    if mate_left and mate_right and mate_is and mate_is_dev:
+        params_subst_dict['MP_LEFT'] = mate_left
+        params_subst_dict['MP_RIGHT'] = mate_right
+        params_subst_dict['MP_INSERT_SIZE'] = str(mate_is)
+        params_subst_dict['MP_DEVIATION'] = str(mate_is_dev)
+        shutil.copy(velvet_sc_mp_run_script, cur_velvet_run_script)
+    else:
+        shutil.copy(velvet_sc_run_script, cur_velvet_run_script)
     update_runner_params(cur_velvet_run_script, params_subst_dict)
     cmd_line = cur_velvet_run_script
     cmd_line += " >>%s 2>>%s" % (log_filename, log_filename)
@@ -923,7 +961,7 @@ def main():
 
     # run dependent on K assemblers
     for (name, run_tool_function) in [('abyss', run_abyss), ('msrca', run_msrca), ('soap', run_soap),
-        ('velvet', run_velvet), ('sga', run_sga), ('ray', run_ray)]:
+        ('velvet', run_velvet), ('velvet-sc', run_velvet_sc), ('sga', run_sga), ('ray', run_ray)]:
         if not name in assemblers_to_run:
             continue
         if corrected and name == 'sga':
