@@ -485,8 +485,7 @@ def iterate_K(name, run_tool_function):
     global_err_number = 0
     best_K = None
     best_assembly = None
-    for K_level_selection in [1, 2]:
-
+    for K_level_selection in ([1, 2] if k_2level_selection else [1]):
         # START OF TOOL with different K
         if K_level_selection == 1:
             k_list = range(min_k_rough, max_k_rough + 1, step_k_rough)
