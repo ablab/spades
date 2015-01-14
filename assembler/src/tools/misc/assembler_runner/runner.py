@@ -162,7 +162,7 @@ def check_options():
         error("you should set both insert size mean (--is) and insert size deviation (--dev)!", stdout=True)
         sys.exit(1)
     if interlaced and assemblers_to_run[0] == assemblers_to_run[-1] == 'velvet-sc':
-        if not os.path.isfile(left):
+        if not os.path.isfile(interlaced):
             error("file with interlaced reads doesn't exist! " + interlaced, stdout=True)
             sys.exit(1)
     else:
@@ -177,8 +177,12 @@ def check_options():
     else:
         reference = os.path.abspath(reference)
     output_dir = os.path.abspath(output_dir)
-    left = os.path.abspath(left)
-    right = os.path.abspath(right)
+    if left and right:
+        left = os.path.abspath(left)
+        right = os.path.abspath(right)
+    else:
+        left = ''
+        right = ''
     if interlaced:
         interlaced = os.path.abspath(interlaced)
 
