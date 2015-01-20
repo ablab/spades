@@ -28,7 +28,7 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
  public:
   WeightedDistanceEstimator(const Graph &graph,
                             const InPairedIndex& histogram,
-                            const GraphDistanceFinder<Graph>& distance_finder, boost::function<double(int)> weight_f,
+                            const GraphDistanceFinder<Graph>& distance_finder, std::function<double(int)> weight_f,
       size_t linkage_distance, size_t max_distance) :
       base(graph, histogram, distance_finder, linkage_distance, max_distance), weight_f_(weight_f)
   {}
@@ -42,7 +42,7 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
   typedef pair<EdgeId, EdgeId> EdgePair;
   typedef vector<size_t> GraphLengths;
 
-  boost::function<double(int)> weight_f_;
+  std::function<double(int)> weight_f_;
 
   virtual EstimHist EstimateEdgePairDistances(EdgePair ep,
                                               const InHistogram& histogram,

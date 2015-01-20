@@ -31,7 +31,7 @@ protected:
   SmoothingDistanceEstimator(const Graph& graph,
                              const InPairedIndex& histogram,
                              const GraphDistanceFinder<Graph>& dist_finder,
-                             boost::function<double(int)> weight_f,
+                             std::function<double(int)> weight_f,
                              size_t linkage_distance, size_t max_distance, size_t threshold,
                              double range_coeff, double delta_coeff,
                              size_t cutoff,

@@ -19,7 +19,7 @@ namespace debruijn_graph {
  * todo talk with Anton about simplification and speed-up of procedure with little quality loss
  */
 class LatePairedIndexFiller : public SequenceMapperListener {
-    typedef boost::function<double(MappingRange, MappingRange)> WeightF;
+    typedef std::function<double(MappingRange, MappingRange)> WeightF;
     typedef std::pair<EdgeId, EdgeId> EdgePair;
 public:
     LatePairedIndexFiller(const Graph &graph, WeightF weight_f, omnigraph::de::UnclusteredPairedInfoIndexT<Graph>& paired_index)

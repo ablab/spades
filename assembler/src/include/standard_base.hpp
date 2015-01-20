@@ -83,20 +83,12 @@ using std::make_shared;
 #include <boost/assert.hpp>
 #include <boost/algorithm/string.hpp>
 
-#include <boost/bind.hpp>
-#include <boost/function.hpp>
-
 #include <boost/optional.hpp>
 
 #include <boost/format.hpp>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/noncopyable.hpp>
-
-using boost::bind;
-using boost::ref;
-using boost::cref;
-using boost::function;
 
 using boost::optional;
 using boost::make_optional;

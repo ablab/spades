@@ -138,7 +138,7 @@ class DataPrinter {
 
     //todo reduce duplication
     template<class T>
-    void SaveEdgeAssociatedInfo(boost::function<T (EdgeId)> access_f, ostream& out) const {
+    void SaveEdgeAssociatedInfo(std::function<T (EdgeId)> access_f, ostream& out) const {
         out << component_.e_size() << endl;
         for (auto iter = component_.e_begin(); iter != component_.e_end(); ++iter) {
             EdgeId e = *iter;
@@ -354,7 +354,7 @@ class DataScanner {
     typedef typename Graph::VertexId VertexId;
 
     template<class T>
-    void LoadEdgeAssociatedInfo(boost::function<void (EdgeId, T)> setting_f, istream& in) const {
+    void LoadEdgeAssociatedInfo(std::function<void (EdgeId, T)> setting_f, istream& in) const {
         size_t cnt;
         in >> cnt;
         for (size_t i = 0 ; i < cnt; ++i) {

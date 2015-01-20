@@ -251,13 +251,13 @@ protected:
 
 public:
 
-	typedef boost::function<void(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackF;
+	typedef std::function<void(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackF;
     
 	BulgeRemover(Graph& graph, size_t max_length, double max_coverage,
 			double max_relative_coverage, size_t max_delta,
 			double max_relative_delta,
 			BulgeCallbackF opt_callback = 0,
-			boost::function<void(EdgeId)> removal_handler = 0) :
+			std::function<void(EdgeId)> removal_handler = 0) :
 			base(graph),
 			graph_(graph),
 			max_length_(max_length),
@@ -292,7 +292,7 @@ private:
 	size_t max_delta_;
 	double max_relative_delta_;
 	BulgeCallbackF opt_callback_;
-	boost::function<void(EdgeId)> removal_handler_;
+	std::function<void(EdgeId)> removal_handler_;
 
 private:
 	DECL_LOGGER("BulgeRemover")

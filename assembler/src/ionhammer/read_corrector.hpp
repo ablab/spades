@@ -675,7 +675,6 @@ class CorrectedRead {
   }
 
   class ChunkCollector {
-    const io::SingleRead &r;
     CorrectedRead &cread_;
     const KMerData &kmer_data_;
     bool debug_mode_;
@@ -833,7 +832,7 @@ class CorrectedRead {
   public:
     ChunkCollector(const io::SingleRead& r, CorrectedRead &cread,
                    const KMerData &kmer_data, bool debug_mode) :
-      r(r), cread_(cread), kmer_data_(kmer_data), debug_mode_(debug_mode),
+       cread_(cread), kmer_data_(kmer_data), debug_mode_(debug_mode),
       gen(r), pos(int(gen.trimmed_left())), skipped(0),
       last_good_center(), last_good_center_is_defined(false),
       is_first_center(true),

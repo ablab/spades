@@ -115,7 +115,7 @@ bool ClipTips(
         size_t max_length,
         shared_ptr<Predicate<typename Graph::EdgeId>> condition
             = make_shared<func::AlwaysTrue<typename Graph::EdgeId>>(),
-        boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
+        std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
 
     omnigraph::EdgeRemovingAlgorithm<Graph> tc(g,
                                                AddTipCondition(g, condition),

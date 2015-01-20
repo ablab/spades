@@ -6,15 +6,14 @@
 
 #pragma once
 
-#include <boost/bind.hpp>
-#include <boost/function.hpp>
+#include <functional>
 
 namespace func {
 
-//to use with boost::function-s
+//to use with std::function-s
 template<class T>
-void Compose(T t, boost::function<void(T)> f1,
-		boost::function<void(T)> f2) {
+void Compose(T t, std::function<void(T)> f1,
+		std::function<void(T)> f2) {
 	if (f1)
 		f1(t);
 	if (f2)
@@ -22,15 +21,15 @@ void Compose(T t, boost::function<void(T)> f1,
 }
 
 template<class T>
-boost::function<void(T)> Composition(boost::function<void(T)> f1,
-		boost::function<void(T)> f2) {
-    return boost::bind(func::Compose<T>, _1, f1, f2);
+std::function<void(T)> Composition(std::function<void(T)> f1,
+                                     std::function<void(T)> f2) {
+    return std::bind(func::Compose<T>, std::placeholders::_1, f1, f2);
 }
 
 template<class A, class B>
 class Func {
 public:
-	typedef boost::function<B(A)> function_t;
+	typedef std::function<B(A)> function_t;
 
 	virtual B Apply(A a) const = 0;
 
@@ -62,7 +61,7 @@ public:
 
 template<class T>
 class AdaptorPredicate: public Predicate<T> {
-    typedef boost::function<bool(T)> pred_func_t;
+    typedef std::function<bool(T)> pred_func_t;
     pred_func_t pred_f_;
 public:
     AdaptorPredicate(pred_func_t pred_f) :

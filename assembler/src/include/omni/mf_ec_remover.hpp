@@ -466,11 +466,11 @@ private:
 
 public:
 	MaxFlowECRemover(Graph& g, size_t max_length, size_t uniqueness_length,
-			size_t plausibility_length, boost::function<void (EdgeId)>
+			size_t plausibility_length, std::function<void (EdgeId)>
 	/*fixme ignored, fix after merge with relative coverage branch!!! removal_handler*/) :
 			g_(g), max_length_(max_length), uniqueness_length_(
 					uniqueness_length), plausibility_length_(
-					plausibility_length), component_remover_(g, (boost::function<void (set<EdgeId>)>) 0) {
+					plausibility_length), component_remover_(g, (std::function<void (set<EdgeId>)>) 0) {
 		VERIFY(uniqueness_length >= plausibility_length);
 		VERIFY(plausibility_length > max_length);
 	}

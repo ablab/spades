@@ -364,7 +364,7 @@ struct detail_info_printer {
 
   private:
     string folder_;
-    boost::function<void(info_printer_pos, string const&, string const&)> func_;
+    std::function<void(info_printer_pos, string const&, string const&)> func_;
     const conj_graph_pack::graph_t &graph_;
     size_t cnt;
 };

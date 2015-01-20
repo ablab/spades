@@ -81,7 +81,7 @@ template<class Graph>
 class EdgeRemover {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef boost::function<void(EdgeId)> HandlerF;
+    typedef std::function<void(EdgeId)> HandlerF;
 
     Graph& g_;
     HandlerF removal_handler_;
@@ -151,7 +151,7 @@ class EdgeRemovingAlgorithm : public EdgeProcessingAlgorithm<Graph> {
     EdgeRemovingAlgorithm(
             Graph& g,
             shared_ptr<func::Predicate<EdgeId>> remove_condition,
-            boost::function<void(EdgeId)> removal_handler = boost::none)
+            std::function<void(EdgeId)> removal_handler = boost::none)
             : base(g),
               remove_condition_(remove_condition),
               edge_remover_(g, removal_handler) {
@@ -169,7 +169,7 @@ class ComponentRemover {
  public:
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef boost::function<void(const set<EdgeId>&)> HandlerF;
+    typedef std::function<void(const set<EdgeId>&)> HandlerF;
 
  private:
     Graph& g_;

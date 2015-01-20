@@ -114,7 +114,7 @@ void estimate_distance(conj_graph_pack& gp,
     GraphDistanceFinder<Graph> dist_finder(gp.g,  (size_t)math::round(lib.data().mean_insert_size), lib.data().read_length, delta);
     size_t max_distance = size_t(config.de.max_distance_coeff * lib.data().insert_size_deviation);
 
-    boost::function<double(int)> weight_function;
+    std::function<double(int)> weight_function;
 
     if (config.est_mode == em_weighted   ||                                     // in these cases we need a weight function
         config.est_mode == em_smoothing  ||                                     // to estimate graph distances in the
@@ -126,7 +126,7 @@ void estimate_distance(conj_graph_pack& gp,
 
         WeightDEWrapper wrapper(lib.data().insert_size_distribution, lib.data().mean_insert_size);
         DEBUG("Weight Wrapper Done");
-        weight_function = boost::bind(&WeightDEWrapper::CountWeight, wrapper, _1);
+        weight_function = std::bind(&WeightDEWrapper::CountWeight, wrapper, std::placeholders::_1);
     }  else
         weight_function = UnityFunction;
 
@@ -198,7 +198,7 @@ void estimate_distance(conj_graph_pack& gp,
         GraphDistanceFinder<Graph> dist_finder(gp.g, (size_t) math::round(lib.data().mean_insert_size),
                                                lib.data().read_length, delta);
         size_t max_distance = size_t(cfg::get().de.max_distance_coeff_scaff * is_var);
-        boost::function<double(int)> weight_function;
+        std::function<double(int)> weight_function;
 
         DEBUG("Retaining insert size distribution for it");
         if (lib.data().insert_size_distribution.size() == 0) {
@@ -209,7 +209,7 @@ void estimate_distance(conj_graph_pack& gp,
 
         WeightDEWrapper wrapper(lib.data().insert_size_distribution, lib.data().mean_insert_size);
         DEBUG("Weight Wrapper Done");
-        weight_function = boost::bind(&WeightDEWrapper::CountWeight, wrapper, _1);
+        weight_function = std::bind(&WeightDEWrapper::CountWeight, wrapper, std::placeholders::_1);
 
 //        PairInfoWeightFilter<Graph> filter(gp.g, 0.);
         PairInfoWeightChecker<Graph> checker(gp.g, 0.);

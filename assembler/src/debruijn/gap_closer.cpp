@@ -166,7 +166,7 @@ class GapCloserPairedIndexFiller {
 template<class Graph, class SequenceMapper>
 class GapCloser {
   public:
-    typedef function<bool (const Sequence&)> SequenceCheckF;
+    typedef std::function<bool (const Sequence&)> SequenceCheckF;
   private:
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;

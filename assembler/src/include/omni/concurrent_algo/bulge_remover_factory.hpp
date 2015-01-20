@@ -45,7 +45,7 @@ public:
 			double max_relative_delta,
 			BulgeCallbackF bulge_condition,
 			BulgeCallbackF opt_callback = 0,
-			boost::function<void(EdgeId)> removal_handler = 0)
+			std::function<void(EdgeId)> removal_handler = 0)
 				: max_length_(max_length),
 				  max_coverage_(max_coverage),
 				  max_relative_coverage_(max_relative_coverage),
@@ -89,7 +89,7 @@ private:
 	double max_relative_delta_;
 	BulgeCallbackF bulge_condition_;
 	BulgeCallbackF opt_callback_;
-	boost::function<void(EdgeId)> removal_handler_;
+	std::function<void(EdgeId)> removal_handler_;
 	vector<Logger*> loggers_;
 
 };
