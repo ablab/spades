@@ -15,6 +15,8 @@
 #include "omni/graph_iterators.hpp"
 #include "omni/mapping_path.hpp"
 
+#include <queue>
+
 #include <cmath>
 #include <ctime>
 

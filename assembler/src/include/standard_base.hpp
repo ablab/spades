@@ -24,17 +24,13 @@
 #include <iostream>
 #include <iterator>
 #include <algorithm>
-#include <list>
 #include <map>
-#include <queue>
 #include <vector>
-#include <stack>
 #include <set>
 #include <string>
 #include <sstream>
 #include <utility>
 #include <array>
-#include <fstream>
 #include <unordered_map>
 #include <unordered_set>
 #include <deque>
@@ -45,15 +41,12 @@ using std::cin;
 using std::cout;
 using std::cerr;
 using std::endl;
-using std::list;
 using std::map;
 using std::multimap;
 using std::unordered_map;
 using std::unordered_set;
 using std::vector;
-using std::queue;
 using std::array;
-using std::stack;
 using std::set;
 using std::string;
 using std::pair;
@@ -67,7 +60,6 @@ using std::max;
 using std::abs;
 using std::stringstream;
 using std::numeric_limits;
-using std::deque;
 using std::ostream_iterator;
 using std::copy;
 
@@ -80,7 +72,6 @@ using std::make_shared;
 #define BOOST_ENABLE_ASSERT_HANDLER
 #endif
 
-#include <boost/assert.hpp>
 #include <boost/algorithm/string.hpp>
 
 #include <boost/optional.hpp>
