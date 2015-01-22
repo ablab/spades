@@ -302,7 +302,7 @@ class CoverageIndex : public GraphActionHandler<Graph> {
     }
 
     void Save(EdgeId e, ostream& out) const {
-        out << (boost::format("%.6f") % coverage(e)).str();
+        out << fmt::format("{:.6f}", coverage(e));
     }
 
     void Load(EdgeId e, istream& in) {

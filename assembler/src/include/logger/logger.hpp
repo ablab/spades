@@ -97,8 +97,8 @@ private:
 	perf_counter            timer_  ;
 };
 
-inline std::shared_ptr<logger>& __logger();
-inline logger* create_logger(std::string filename = "", level default_level = L_INFO);
+std::shared_ptr<logger>& __logger();
+logger* create_logger(std::string filename = "", level default_level = L_INFO);
 
 void attach_logger(logger *lg);
 void detach_logger();
@@ -144,7 +144,3 @@ inline const char* __scope_source_name() {
 #define WARN(message)                       LOG_MSG(logging::L_WARN, message)
 #define ERROR(message)                      LOG_MSG(logging::L_ERROR, message)
 #define FATAL_ERROR(message)                {ERROR(message); exit(-1);}
-
-
-/// implementation /////////////////////////////////////
-#include "logger_impl.hpp"

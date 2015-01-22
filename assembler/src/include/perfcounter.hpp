@@ -6,9 +6,8 @@
 
 #pragma once
 #include <sys/time.h>
-
-#include <boost/format.hpp>
 #include <string>
+#include <cppformat/format.h>
 
 struct perf_counter
 {
@@ -50,14 +49,14 @@ inline std::string human_readable_time(double time_in_sec)
     size_t mins  = (sec / 60) % 60;
     sec         %= 60;
 
-    return str(boost::format("%3d:%02d:%02d.%03d") % hours % mins % sec % msec);
+    return fmt::format("{:3d}:{:02d}:{:02d}.{:03d}", hours, mins, sec, msec);
 }
 
 inline std::string human_readable_memory(size_t max_rss) {
 	if (max_rss < 1024 * 1024) {
-		return str(boost::format("%4dM") % (max_rss / 1024));
-  } else {
-    return str(boost::format("%4dG") % (max_rss / (1024 * 1024)));
+		return fmt::format("{:d}M", (max_rss / 1024));
+    } else {
+        return fmt::format("{:d}G", (max_rss / (1024 * 1024)));
 	}
 }
 

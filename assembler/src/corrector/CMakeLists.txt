@@ -19,7 +19,7 @@ add_executable(corrector
 	config_struct.cpp
         main.cpp)
 
-target_link_libraries(corrector samtools input yaml-cpp ${COMMON_LIBRARIES})
+target_link_libraries(corrector samtools input yaml-cpp format ${COMMON_LIBRARIES})
 
 
 

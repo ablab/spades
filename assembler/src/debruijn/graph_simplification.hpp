@@ -868,7 +868,7 @@ void SimplificationCycle(conj_graph_pack& gp,
     ClipTips(gp.g, *iterators_holder.tip_smart_it(), cfg::get().simp.tc, info_container, tip_removal_handler);
     cnt_callback.Report();
     DEBUG(iteration << " TipClipping stats");
-    printer(ipp_tip_clipping, str(format("_%d") % iteration));
+    printer(ipp_tip_clipping, fmt::format("_{:d}", iteration));
 
     if (!cfg::get().simp.disable_br_in_cycle || !cfg::get().simp.fast_features) {
         DEBUG(iteration << " BulgeRemoval");
@@ -876,14 +876,14 @@ void SimplificationCycle(conj_graph_pack& gp,
             (std::function<void(EdgeId, const std::vector<EdgeId> &)>)0, removal_handler);
         cnt_callback.Report();
         DEBUG(iteration << " BulgeRemoval stats");
-        printer(ipp_bulge_removal, str(format("_%d") % iteration));
+        printer(ipp_bulge_removal, fmt::format("_{:d}", iteration));
     } 
 
     DEBUG(iteration << " ErroneousConnectionsRemoval");
     RemoveLowCoverageEdges(gp.g, *iterators_holder.ec_smart_it(), cfg::get().simp.ec, info_container, removal_handler);
     cnt_callback.Report();
     DEBUG(iteration << " ErroneousConnectionsRemoval stats");
-    printer(ipp_err_con_removal, str(format("_%d") % iteration));
+    printer(ipp_err_con_removal, fmt::format("_{:d}", iteration));
 }
 
 inline bool CorrectedFastMode(const SimplifInfoContainer& info) {

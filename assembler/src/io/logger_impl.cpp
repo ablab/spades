@@ -4,15 +4,15 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-#pragma once
-
-#include <boost/format.hpp>
 #include <boost/algorithm/string.hpp>
+#include <cppformat/format.h>
 
 #include <string>
 #include <map>
 #include <fstream>
 #include <vector>
+
+#include "logger/logger.hpp"
 
 #include "config.hpp"
 
@@ -20,24 +20,19 @@
 # include <jemalloc/jemalloc.h>
 #endif
 
-namespace logging
-{
+namespace logging {
 
-inline properties::properties(level default_level)
-    : def_level(default_level), all_default(true)
-{
-}
+properties::properties(level default_level)
+        : def_level(default_level), all_default(true) {}
 
-inline properties::properties(std::string filename, level default_level)
-    : def_level(default_level), all_default(true)
-{
+properties::properties(std::string filename, level default_level)
+    : def_level(default_level), all_default(true) {
     if (filename.empty())
         return;
 
     std::ifstream in(filename.c_str());
 
-    std::map<std::string, level> remap =
-    {
+    std::map<std::string, level> remap = {
         {"TRACE", L_TRACE},
         {"DEBUG", L_DEBUG},
         {"INFO" , L_INFO },
@@ -45,8 +40,7 @@ inline properties::properties(std::string filename, level default_level)
         {"ERROR", L_ERROR}
     };
 
-    while (!in.eof())
-    {
+    while (!in.eof()) {
         using namespace boost;
 
         char buf [0x400] = {};
@@ -88,15 +82,10 @@ inline properties::properties(std::string filename, level default_level)
 }
 
 
-////////////////////////////////////////////////////
-inline logger::logger(properties const& props)
-    : props_(props)
-{
-}
+logger::logger(properties const& props)
+    : props_(props) { }
 
-//
-inline bool logger::need_log(level desired_level, const char* source) const
-{
+bool logger::need_log(level desired_level, const char* source) const {
     level source_level = props_.def_level;
 
     if (!props_.all_default) {
@@ -110,7 +99,7 @@ inline bool logger::need_log(level desired_level, const char* source) const
 
 #ifdef SPADES_USE_JEMALLOC
 
-inline void logger::log(level desired_level, const char* file, size_t line_num, const char* source, const char* msg) {
+void logger::log(level desired_level, const char* file, size_t line_num, const char* source, const char* msg) {
   double time = timer_.time();
   const size_t *cmem = 0, *cmem_max = 0;
   size_t clen = sizeof(cmem);
@@ -122,7 +111,7 @@ inline void logger::log(level desired_level, const char* file, size_t line_num, 
     (*it)->write_msg(time, (*cmem) / 1024, (*cmem_max) / 1024, desired_level, file, line_num, source, msg);
 }
 #else
-inline void logger::log(level desired_level, const char* file, size_t line_num, const char* source, const char* msg) {
+void logger::log(level desired_level, const char* file, size_t line_num, const char* source, const char* msg) {
   double time = timer_.time();
   size_t max_rss = get_max_rss();
 
@@ -132,26 +121,26 @@ inline void logger::log(level desired_level, const char* file, size_t line_num, 
 #endif
 
 //
-inline void logger::add_writer(writer_ptr ptr)
+void logger::add_writer(writer_ptr ptr)
 {
     writers_.push_back(ptr);
 }
 
 ////////////////////////////////////////////////////
-inline std::shared_ptr<logger> &__logger() {
+std::shared_ptr<logger> &__logger() {
   static std::shared_ptr<logger> l;
   return l;
 }
 
-inline logger *create_logger(std::string filename, level default_level) {
+logger *create_logger(std::string filename, level default_level) {
   return new logger(properties(filename, default_level));
 }
 
-inline void attach_logger(logger *lg) {
+void attach_logger(logger *lg) {
   __logger().reset(lg);
 }
 
-inline void detach_logger() {
+void detach_logger() {
   __logger().reset();
 }
 

@@ -15,7 +15,6 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
-#include <boost/format.hpp>
 
 #include "config_struct_hammer.hpp"
 #include "hammer_tools.hpp"

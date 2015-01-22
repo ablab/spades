@@ -25,6 +25,8 @@
 #include "dataset_readers.hpp"
 #include "copy_file.hpp"
 
+#include <boost/algorithm/string.hpp>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <cmath>

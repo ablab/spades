@@ -24,6 +24,7 @@
 #ifdef USE_GLIBCXX_PARALLEL
 #include <parallel/algorithm>
 #endif
+#include <fstream>
 #include <vector>
 #include <cmath>
 

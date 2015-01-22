@@ -72,11 +72,7 @@ using std::make_shared;
 #define BOOST_ENABLE_ASSERT_HANDLER
 #endif
 
-#include <boost/algorithm/string.hpp>
-
 #include <boost/optional.hpp>
-
-#include <boost/format.hpp>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/noncopyable.hpp>
@@ -84,8 +80,6 @@ using std::make_shared;
 using boost::optional;
 using boost::make_optional;
 using boost::none;
-
-using boost::format;
 
 using boost::lexical_cast;
 using boost::noncopyable;

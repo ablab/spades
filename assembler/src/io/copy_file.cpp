@@ -9,6 +9,8 @@
 #include "path_helper.hpp"
 #include "logger/logger.hpp"
 
+#include <boost/algorithm/string.hpp>
+
 #include <iostream>
 #include <fstream>
 #include <string>
