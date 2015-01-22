@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <string>
 #include <sstream>
-#include <shared_ptr>
+#include <memory>
 
 #include "config.hpp"
 
