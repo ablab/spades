@@ -18,7 +18,6 @@
 #include "memory_limit.hpp"
 
 #include <libcxx/sort.hpp>
-#include <boost/lexical_cast.hpp>
 
 #include <algorithm>
 #ifdef USE_GLIBCXX_PARALLEL
@@ -249,7 +248,7 @@ class KMerSplitter {
   uint32_t seed_;
 
   std::string GetRawKMersFname(unsigned suffix) const {
-    return path::append_path(work_dir_, "kmers.raw." + boost::lexical_cast<std::string>(suffix));
+    return path::append_path(work_dir_, "kmers.raw." + std::to_string(suffix));
   }
 
   unsigned GetFileNumForSeq(const Seq &s, unsigned total) const {
@@ -399,7 +398,7 @@ public:
   }
 
   std::string GetMergedKMersFname(unsigned suffix) const {
-    return kmer_prefix_ + ".merged." + boost::lexical_cast<std::string>(suffix);
+    return kmer_prefix_ + ".merged." + std::to_string(suffix);
   }
 
   std::string GetFinalKMersFname() const {
@@ -415,7 +414,7 @@ private:
   std::vector<MMappedRecordArrayReader<typename Seq::DataType>*> buckets_;
 
   std::string GetUniqueKMersFname(unsigned suffix) const {
-    return kmer_prefix_ + ".unique." + boost::lexical_cast<std::string>(suffix);
+    return kmer_prefix_ + ".unique." + std::to_string(suffix);
   }
 
   size_t MergeKMers(const std::string &ifname, const std::string &ofname,

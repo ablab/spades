@@ -219,8 +219,8 @@ size_t CorrectAllReads() {
     size_t iread = 0;
     for (auto I = lib.paired_begin(), E = lib.paired_end(); I != E; ++I, ++iread) {
       INFO("Correcting pair of reads: " << I->first << " and " << I->second);
-      std::string usuffix =  boost::lexical_cast<std::string>(ilib) + "_" +
-                             boost::lexical_cast<std::string>(iread) + ".cor.fastq";
+      std::string usuffix =  std::to_string(ilib) + "_" +
+                             std::to_string(iread) + ".cor.fastq";
 
       std::string unpaired = getLargestPrefix(I->first, I->second) + "_unpaired";
 
@@ -246,8 +246,8 @@ size_t CorrectAllReads() {
 
     for (auto I = lib.single_begin(), E = lib.single_end(); I != E; ++I, ++iread) {
       INFO("Correcting single reads: " << *I);
-      std::string usuffix =  boost::lexical_cast<std::string>(ilib) + "_" +
-                             boost::lexical_cast<std::string>(iread) + ".cor.fastq";
+      std::string usuffix =  std::to_string(ilib) + "_" +
+                             std::to_string(iread) + ".cor.fastq";
 
       std::string outcor = getReadsFilename(cfg::get().output_dir, *I,  Globals::iteration_no, usuffix);
       std::ofstream ofgood(outcor.c_str());
