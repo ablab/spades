@@ -13,4 +13,4 @@ add_executable(debruijn_tools
  ${EXT_DIR}/include/teamcity_boost/teamcity_messages.cpp
  tools.cpp)
 
-target_link_libraries(debruijn_tools ${COMMON_LIBRARIES} input)
+target_link_libraries(debruijn_tools ConsensusCore input mph_index nlopt BamTools yaml-cpp format ${COMMON_LIBRARIES})

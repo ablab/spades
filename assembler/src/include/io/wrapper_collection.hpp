@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "single_read.hpp"
 #include "delegating_reader_wrapper.hpp"
 
 namespace io {
@@ -44,6 +45,7 @@ public:
 	}
 };
 
+//fixme currently leads to long stretches of ACGTACGT...
 class FixingWrapper: public DelegatingWrapper<SingleRead> {
 	typedef DelegatingWrapper<SingleRead> base;
 
@@ -74,6 +76,39 @@ public:
 
 private:
     DECL_LOGGER("FixingWrapper");
+};
+
+class NonNuclCollapsingWrapper: public DelegatingWrapper<SingleRead> {
+	typedef DelegatingWrapper<SingleRead> base;
+
+    io::SingleRead MakeValid(const io::SingleRead& read) const {
+        std::string str = read.GetSequenceString();
+        std::stringstream ss;
+        for (size_t i = 0; i < read.size(); ++i) {
+            if (is_nucl(str[i]))
+                ss << str[i];
+        }
+        return io::SingleRead(read.name(), ss.str());
+    }
+
+public:
+    NonNuclCollapsingWrapper(base::ReadStreamPtrT reader) :
+			base(reader) {
+	}
+
+	/* virtual */
+    NonNuclCollapsingWrapper& operator>>(SingleRead& read) {
+		this->reader() >> read;
+        if (!read.IsValid()) {
+            TRACE("Read " << read.name() << " was invalid. Collapsing non-nucls");
+            read = MakeValid(read);
+            VERIFY(read.IsValid());
+        }
+		return *this;
+	}
+
+private:
+    DECL_LOGGER("NonNuclCollapsingWrapper");
 };
 
 }

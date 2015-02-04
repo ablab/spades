@@ -7,6 +7,8 @@
 #include "logger/log_writers.hpp"
 #include "graphio.hpp"
 #include <boost/test/unit_test.hpp>
+#include "io/wrapper_collection.hpp"
+#include "io/osequencestream.hpp"
 
 ::boost::unit_test::test_suite*	init_unit_test_suite( int, char* [] )
 {
@@ -22,6 +24,21 @@
     return 0;
 }
 
-namespace debruijn {
+namespace debruijn_graph {
+
+BOOST_AUTO_TEST_CASE( FixReference ) {
+    string fn = "";
+    string out_fn = "";
+    auto reader = make_shared<io::NonNuclCollapsingWrapper>(make_shared<io::FileReadStream>(fn));
+    io::SingleRead read;
+    std::stringstream ss;
+    while (!reader->eof()) {
+        (*reader) >> read;
+        ss << read.GetSequenceString();
+    }
+    io::SingleRead concat("concat", ss.str());
+    io::osequencestream out(out_fn);
+    out << concat;
+}
 
 }
