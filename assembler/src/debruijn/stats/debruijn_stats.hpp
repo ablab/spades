@@ -194,7 +194,7 @@ void WriteGraphComponentsAlongContigs(const Graph& g,
     while (!contigs_to_thread->eof()) {
         (*contigs_to_thread) >> read;
         make_dir(folder + read.name());
-        omnigraph::visualization::WriteComponentsAlongPath(g, mapper.MapSequence(read.sequence()).path(), folder + read.name() + "/",
+        omnigraph::visualization::WriteComponentsAlongPath(g, mapper.MapSequence(read.sequence()).simple_path(), folder + read.name() + "/",
                                                            colorer, labeler);
     }
     INFO("Writing graph components along contigs finished");
@@ -306,7 +306,7 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
 
     if (config.write_components_along_genome) {
         make_dir(folder + "along_genome/");
-        omnigraph::visualization::WriteComponentsAlongPath(gp.g, path1, folder + "along_genome/", colorer, labeler);
+        omnigraph::visualization::WriteComponentsAlongPath(gp.g, path1.sequence(), folder + "along_genome/", colorer, labeler);
     }
 
     if (config.write_components_along_contigs) {

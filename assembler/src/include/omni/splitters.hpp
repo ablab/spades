@@ -260,7 +260,7 @@ private:
     vector<VertexId> path_;
     size_t current_;
 
-    static vector<VertexId> ExtractVertices(const Graph &graph, const Path<EdgeId> &path) {
+    static vector<VertexId> ExtractVertices(const Graph &graph, const vector<EdgeId> &path) {
         vector<VertexId> result;
         for(size_t i = 0; i < path.size(); i++) {
         	if(i == 0 || path[i] != path[i - 1]) {
@@ -272,7 +272,7 @@ private:
     }
 
 public:
-    PathIterator(const Graph &graph, const Path<EdgeId> &path)
+    PathIterator(const Graph &graph, const vector<EdgeId> &path)
             : graph_(graph), path_(ExtractVertices(graph, path)), current_(0) {
     }
 
@@ -828,13 +828,13 @@ shared_ptr<GraphSplitter<Graph>> ReliableSplitter(const Graph &graph,
 
 template<class Graph>
 shared_ptr<GraphSplitter<Graph>> ReliableSplitterAlongPath(
-        const Graph &graph, const Path<typename Graph::EdgeId>& path, size_t edge_length_bound = PathNeighbourhoodFinder<Graph>::DEFAULT_EDGE_LENGTH_BOUND,
+        const Graph &graph, const vector<typename Graph::EdgeId>& path, size_t edge_length_bound = PathNeighbourhoodFinder<Graph>::DEFAULT_EDGE_LENGTH_BOUND,
                             size_t max_size = PathNeighbourhoodFinder<Graph>::DEFAULT_MAX_SIZE, 
                             size_t max_depth = PathNeighbourhoodFinder<Graph>::DEFAULT_MAX_DEPTH) {
     typedef typename Graph::VertexId VertexId;
     shared_ptr<RelaxingIterator<VertexId>> inner_iterator = make_shared<
             PathIterator<Graph>>(graph, path);
-    shared_ptr<AbstractNeighbourhoodFinder<Graph>> nf = make_shared<PathNeighbourhoodFinder<Graph>>(graph, path.sequence(), 
+    shared_ptr<AbstractNeighbourhoodFinder<Graph>> nf = make_shared<PathNeighbourhoodFinder<Graph>>(graph, path, 
                                                             edge_length_bound, max_size, max_depth);
     
     return make_shared<NeighbourhoodFindingSplitter<Graph>>(graph,

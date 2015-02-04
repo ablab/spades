@@ -378,7 +378,6 @@ public:
         return true;
     }
 
-    //todo seems that we don't need optional here any more
     vector<EdgeId> TryFixPath(const vector<EdgeId>& edges) const {
         vector<EdgeId> answer;
         if (edges.empty()) {

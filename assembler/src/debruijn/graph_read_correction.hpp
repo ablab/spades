@@ -116,6 +116,7 @@ class GraphReadCorrector: public io::SequenceModifier {
 
 	const Graph& graph_;
 	const Mapper mapper_;
+	const MappingPathFixer<Graph> path_fixer_;
 
 	Path<EdgeId> TryFixPath(const Path<EdgeId>& path) const {
 		return Path <EdgeId> (path_fixer_.TryFixPath(path.sequence()), path.start_pos(), path.end_pos());
@@ -179,7 +180,6 @@ public:
 
 private:
 	DECL_LOGGER("ContigRefiner");
-	const MappingPathFixer<Graph> path_fixer_;
 };
 
 template<class Graph, class Mapper>

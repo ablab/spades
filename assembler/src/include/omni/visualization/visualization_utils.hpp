@@ -56,13 +56,13 @@ void WriteSimpleComponent(const GraphComponent<Graph>& gc,
 }
 
 template<class Graph>
-void WriteComponentsAlongPath(const Graph& g, Path<typename Graph::EdgeId> path,
+void WriteComponentsAlongPath(const Graph& g, vector<typename Graph::EdgeId> path,
         const string& folder_name, shared_ptr<GraphColorer<Graph>> colorer,
         const GraphLabeler<Graph> &labeler, bool color_path = true) {
     auto edge_colorer = make_shared<CompositeEdgeColorer<Graph>>("black");
     edge_colorer->AddColorer(colorer);
     if (color_path) {
-        edge_colorer->AddColorer(make_shared<SetColorer<Graph>>(g, path.sequence(), "green"));
+        edge_colorer->AddColorer(make_shared<SetColorer<Graph>>(g, path, "green"));
     }
     shared_ptr<GraphColorer<Graph>> resulting_colorer =  make_shared<CompositeGraphColorer<Graph>>(colorer, edge_colorer);
     shared_ptr<GraphSplitter<Graph>> rs = ReliableSplitterAlongPath<Graph>(g, path);

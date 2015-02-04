@@ -219,7 +219,8 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
             std::stringstream debug_stream;
             for (size_t i = 0; i < fixed_path.size(); ++i) {
                 debug_stream << g_.int_id(fixed_path[i]) << " ";
-            }TRACE(debug_stream.str());
+            }
+            TRACE(debug_stream.str());
             return vector<EdgeId>();
         }
         return fixed_path;
