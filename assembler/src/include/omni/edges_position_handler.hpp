@@ -33,7 +33,7 @@ struct EdgePosition {
     }
 };
 
-ostream& operator <<(ostream& os, const EdgePosition& ep) {
+inline ostream& operator <<(ostream& os, const EdgePosition& ep) {
     return os << ep.contigId << " " << ep.mr;
 }
 
