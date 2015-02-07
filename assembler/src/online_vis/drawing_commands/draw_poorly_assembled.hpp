@@ -10,15 +10,16 @@
 #include "../command.hpp"
 #include "../errors.hpp"
 #include "io/wrapper_collection.hpp"
+#include <boost/algorithm/string.hpp>
 
 namespace online_visualization {
 
 class DrawUnresolvedRepeatsCommand : public DrawingCommand {
 private:
     static const size_t LENGTH_THRESHOLD = 1500;
-    static const size_t GAP_DIFF_THRESHOLD = 1000;
     const string ref_prefix_;
-    const double good_mapping_coeff_ = 0.7;
+    const size_t gap_diff_threshold_;
+    const double good_mapping_coeff_;
 
     void DrawGap(DebruijnEnvironment& curr_env, const vector<EdgeId>& path, string filename, string /*label*/ = "") const {
         omnigraph::visualization::WriteComponentsAlongPath<Graph>(curr_env.graph(), path, filename, curr_env.coloring(), curr_env.labeler());
@@ -35,60 +36,60 @@ private:
         return answer;
     }
 
-    bool IsNext(MappingRange mr1, MappingRange mr2, size_t max_gap = 5) const {
-       return mr2.initial_range.start_pos >= mr1.initial_range.end_pos && mr2.initial_range.start_pos <= mr1.initial_range.end_pos + max_gap;
-    }
-
-    shared_ptr<MappingRange> FindNextRange(MappingRange curr_range, const set<MappingRange>& ranges) const {
-        cout << "Looking for next range for " << curr_range << endl;
-        for (auto r : ranges) {
-            cout << "Considering range " << r << endl;
-            if (IsNext(curr_range, r)) {
-                cout << "Found next" << endl;
-                return make_shared<MappingRange>(r);
-            }
-        }
-        cout << "Couldn't find suitable range" << endl;
-        return shared_ptr<MappingRange>(0);
-    }
-    
-    shared_ptr<pair<EdgeId, EdgePosition>> NextEdge(const GraphPack& gp, VertexId v, EdgePosition curr_pos) const {
-        for (EdgeId next_e : gp.g.OutgoingEdges(v)) {
-            cout << "Considering " << gp.g.str(next_e) << " as next edge " << endl;
-            set<MappingRange> relevant_ranges = gp.edge_pos.GetEdgePositions(next_e, curr_pos.contigId);
-            auto next_range = FindNextRange(curr_pos.mr, relevant_ranges);
-            cout << "Considered " << relevant_ranges.size() << " relevant ranges" << endl;
-            if (next_range) {
-                cout << "Found next edge" << endl;
-                return make_shared<pair<EdgeId, EdgePosition>>(next_e, EdgePosition(curr_pos.contigId, *next_range));
-            }
-        }
-        cout << "Couldn't find next edge" << endl;
-        return shared_ptr<pair<EdgeId, EdgePosition>>(0);
-    }
-
-    vector<EdgeId> FindReferencePath(const GraphPack& gp, EdgeId e1, EdgeId e2) const {
-        EdgePosition curr_pos = GatherPositions(gp, e1, ref_prefix_).front();
-        VertexId curr_v = gp.g.EdgeEnd(e1);
-        vector<EdgeId> answer;
-        answer.push_back(e1);
-    //    for (size_t i = 0 ; i < 1000 ; ++i) {
-        while(true) {
-            auto next_info = NextEdge(gp, curr_v, curr_pos);
-            if (next_info) {
-                EdgeId next_e = next_info->first;
-                answer.push_back(next_e);
-                if (next_e == e2) {
-                    break;
-                }
-                curr_v = gp.g.EdgeEnd(next_e);
-                curr_pos = next_info->second;
-            } else {
-                return vector<EdgeId>();
-            }
-        }
-        return answer;
-    }
+//    bool IsNext(MappingRange mr1, MappingRange mr2, size_t max_gap = 5) const {
+//       return mr2.initial_range.start_pos >= mr1.initial_range.end_pos && mr2.initial_range.start_pos <= mr1.initial_range.end_pos + max_gap;
+//    }
+//
+//    shared_ptr<MappingRange> FindNextRange(MappingRange curr_range, const set<MappingRange>& ranges) const {
+//        cout << "Looking for next range for " << curr_range << endl;
+//        for (auto r : ranges) {
+//            cout << "Considering range " << r << endl;
+//            if (IsNext(curr_range, r)) {
+//                cout << "Found next" << endl;
+//                return make_shared<MappingRange>(r);
+//            }
+//        }
+//        cout << "Couldn't find suitable range" << endl;
+//        return shared_ptr<MappingRange>(0);
+//    }
+//    
+//    shared_ptr<pair<EdgeId, EdgePosition>> NextEdge(const GraphPack& gp, VertexId v, EdgePosition curr_pos) const {
+//        for (EdgeId next_e : gp.g.OutgoingEdges(v)) {
+//            cout << "Considering " << gp.g.str(next_e) << " as next edge " << endl;
+//            set<MappingRange> relevant_ranges = gp.edge_pos.GetEdgePositions(next_e, curr_pos.contigId);
+//            auto next_range = FindNextRange(curr_pos.mr, relevant_ranges);
+//            cout << "Considered " << relevant_ranges.size() << " relevant ranges" << endl;
+//            if (next_range) {
+//                cout << "Found next edge" << endl;
+//                return make_shared<pair<EdgeId, EdgePosition>>(next_e, EdgePosition(curr_pos.contigId, *next_range));
+//            }
+//        }
+//        cout << "Couldn't find next edge" << endl;
+//        return shared_ptr<pair<EdgeId, EdgePosition>>(0);
+//    }
+//
+//    vector<EdgeId> FindReferencePath(const GraphPack& gp, EdgeId e1, EdgeId e2) const {
+//        EdgePosition curr_pos = GatherPositions(gp, e1, ref_prefix_).front();
+//        VertexId curr_v = gp.g.EdgeEnd(e1);
+//        vector<EdgeId> answer;
+//        answer.push_back(e1);
+//    //    for (size_t i = 0 ; i < 1000 ; ++i) {
+//        while(true) {
+//            auto next_info = NextEdge(gp, curr_v, curr_pos);
+//            if (next_info) {
+//                EdgeId next_e = next_info->first;
+//                answer.push_back(next_e);
+//                if (next_e == e2) {
+//                    break;
+//                }
+//                curr_v = gp.g.EdgeEnd(next_e);
+//                curr_pos = next_info->second;
+//            } else {
+//                return vector<EdgeId>();
+//            }
+//        }
+//        return answer;
+//    }
 
     MappingPath<EdgeId> FindReferencePath2(const GraphPack& gp, EdgeId e1, EdgeId e2) const {
         auto e1_poss = GatherPositions(gp, e1, ref_prefix_);
@@ -153,7 +154,10 @@ private:
         return double(mapped_range_length) > good_mapping_coeff_ * double(edge_length);
     }
 
-    bool AnalyzeGaps(DebruijnEnvironment& curr_env, const GraphPack& gp, io::SingleRead contig, string base_assembly_prefix) const {
+protected:
+    bool AnalyzeGaps(DebruijnEnvironment& curr_env, const GraphPack& gp, io::SingleRead contig, 
+                                        string base_assembly_prefix, size_t max_genomic_gap = numeric_limits<size_t>::max(), 
+                                        size_t max_gap_cnt = -1u) const {
         auto mapper_ptr = debruijn_graph::MapperInstance(gp);
         MappingPath<EdgeId> mapping_path = mapper_ptr->MapRead(contig);
         auto pos_handler = gp.edge_pos;
@@ -162,7 +166,7 @@ private:
         vector<size_t> long_unique_idx;
         for (size_t i = 0; i < simple_path.size(); ++i) {
             EdgeId e = simple_path[i];
-            if (gp.g.length(e) >= LENGTH_THRESHOLD 
+            if (gp.g.length(e) >= LENGTH_THRESHOLD
                     && IsOfMultiplicityOne(gp, e)
                     && CheckMapping(gp.g.length(e), mapping_path[i].second.mapped_range.size())) {
                 long_unique_idx.push_back(i);
@@ -172,6 +176,10 @@ private:
         bool found_smth = false;
         size_t cnt = 0;
         for (size_t i = 1; i < long_unique_idx.size(); ++i) {
+            if (max_gap_cnt != -1u && cnt >= max_gap_cnt) {
+                INFO("Number of gaps exceeded " << max_gap_cnt);
+                return found_smth;
+            }
             EdgeId e1 = simple_path[long_unique_idx[i-1]];
             EdgeId e2 = simple_path[long_unique_idx[i]];
             if (!BelongToSameContig(gp, e1, e2, base_assembly_prefix)) {
@@ -184,44 +192,59 @@ private:
                 //checking correctness of path is too restricting, check genomic distance instead
                 size_t genomic_gap = GenomicGap(gp, e1, e2);
                 size_t contig_gap = mapping_path[i].second.initial_range.start_pos - mapping_path[i-1].second.initial_range.end_pos;
-                if (genomic_gap != -1u && std::abs(int(genomic_gap) - int(contig_gap)) < GAP_DIFF_THRESHOLD) {
-                    INFO("Found genomic gap " << genomic_gap << 
-                        " between e1 " << gp.g.str(e1) << " genome pos : " << GatherPositions(gp, e1, "ref") << " and e2 " << gp.g.str(e2)
-                        << " genome pos : " << GatherPositions(gp, e2, "ref"));
-                    INFO("Looking for reference path");
-                    auto ref_mapping_path = FindReferencePath2(gp, e1, e2);
-                    if (ref_mapping_path.size() == 0) {
-                        WARN("Couldn't find ref path between " << gp.g.str(e1) << " and " << gp.g.str(e2));
-                    } else {
-                        found_smth = true;
-                        
-                        vector<EdgeId> ref_path = mapper_ptr->FindReadPath(ref_mapping_path);
-                        if (ref_path.empty()) {
-                            WARN("Couldn't fix ref path");
-                            ref_path = ref_mapping_path.simple_path();
-                        }
-                        INFO("Found ref path between " << gp.g.str(e1) << " and " << gp.g.str(e2));
-                        INFO(ref_path.size() << " edges of cumulative length " << CumulativeLength(gp.g, ref_path));
-                        
-                        make_dir(curr_env.folder());
-                        string pics_folder = curr_env.folder() + "/" + curr_env.GetFormattedPictureCounter()  + "_" + contig.name() + "/";
-                        make_dir(pics_folder);
-                        string pic_name = ToString(cnt++) + "_" +  ToString(GenomicGap(gp, e1, e2)) + "_" + ToString(gp.g.int_id(e1)) + "_" + ToString(gp.g.int_id(e2)) + "_";
-                        DrawGap(curr_env, ref_path, pics_folder + pic_name);
-                    }
+                if (genomic_gap == -1u) {
+                    WARN("Contig likely misassembled. Unique long regions in wrong order. e1 " << 
+                            gp.g.str(e1) << " genome pos : " << GatherPositions(gp, e1, "ref") << " and e2 " << gp.g.str(e2) << 
+                            " genome pos : " << GatherPositions(gp, e2, "ref"));
+                    continue;
+                }
+
+                if (std::abs(int(genomic_gap) - int(contig_gap)) >= gap_diff_threshold_) {
+                    WARN("Contig likely misassembled. Genomic gap is " << genomic_gap << " while contig gap was " << contig_gap);
+                    continue;
+                }
+
+                if (genomic_gap >= max_genomic_gap) {
+                    INFO("Genomic gap exceeded max_gap value and will be skipped. Gap " << genomic_gap << " max_gap " << max_genomic_gap);
+                    continue;
+                }
+
+                INFO("Found genomic gap " << genomic_gap << 
+                    " between e1 " << gp.g.str(e1) << " genome pos : " << GatherPositions(gp, e1, "ref") << " and e2 " << gp.g.str(e2)
+                    << " genome pos : " << GatherPositions(gp, e2, "ref"));
+                INFO("Looking for reference path");
+                auto ref_mapping_path = FindReferencePath2(gp, e1, e2);
+                if (ref_mapping_path.size() == 0) {
+                    WARN("Couldn't find ref path between " << gp.g.str(e1) << " and " << gp.g.str(e2));
                 } else {
-                    if (genomic_gap == -1u) {
-                        WARN("Contig likely misassembled. Unique long regions in wrong order. e1 " << 
-                                gp.g.str(e1) << " genome pos : " << GatherPositions(gp, e1, "ref") << " and e2 " << gp.g.str(e2) << 
-                                " genome pos : " << GatherPositions(gp, e2, "ref"));
-                    } else {
-                        WARN("Contig likely misassembled. Genomic gap is " << genomic_gap << " while contig gap was " << contig_gap);
+                    found_smth = true;
+                    
+                    vector<EdgeId> ref_path = mapper_ptr->FindReadPath(ref_mapping_path);
+                    if (ref_path.empty()) {
+                        WARN("Couldn't fix ref path");
+                        ref_path = ref_mapping_path.simple_path();
                     }
+                    INFO("Found ref path between " << gp.g.str(e1) << " and " << gp.g.str(e2));
+                    INFO(ref_path.size() << " edges of cumulative length " << CumulativeLength(gp.g, ref_path));
+                    
+                    make_dir(curr_env.folder());
+                    string pics_folder = curr_env.folder() + "/" + curr_env.GetFormattedPictureCounter()  + "_" + contig.name() + "/";
+                    make_dir(pics_folder);
+                    string pic_name = ToString(cnt++) + "_" +  ToString(GenomicGap(gp, e1, e2)) + "_" + ToString(gp.g.int_id(e1)) + "_" + ToString(gp.g.int_id(e2)) + "_";
+                    DrawGap(curr_env, ref_path, pics_folder + pic_name);
                 }
             }
         }
         return found_smth;
     }
+
+    DrawUnresolvedRepeatsCommand(const string& command_name)
+            : DrawingCommand(command_name), ref_prefix_("ref"), gap_diff_threshold_(1000), good_mapping_coeff_(0.7) {
+    }
+
+};
+
+class DrawUnresolvedWRTAssemblyCommand : public DrawUnresolvedRepeatsCommand {
 
 protected:
     size_t MinArgNumber() const {
@@ -236,16 +259,16 @@ protected:
     }
 
 public:
-    string Usage() const {
-        string answer;
-        answer = answer + "Command `draw_unresolved_repeats` \n" + "Usage:\n"
-                + "> draw_unresolved_repeats <contigs_file> <prefix_of_base_assembly> [first N contigs to analyze]\n"
-                + " Draws pictures of unresolved repeats.";
-        return answer;
+    DrawUnresolvedWRTAssemblyCommand() : 
+        DrawUnresolvedRepeatsCommand("draw_unresolved_wrt_assembly") {
     }
 
-    DrawUnresolvedRepeatsCommand()
-            : DrawingCommand("draw_unresolved_repeats"), ref_prefix_("ref"), good_mapping_coeff_(0.7) {
+    string Usage() const {
+        string answer;
+        answer = answer + "Command `draw_unresolved_wrt_assembly` \n" + "Usage:\n"
+                + "> draw_unresolved_wrt_assembly <contigs_file> <prefix_of_base_assembly> [first N contigs to analyze]\n"
+                + " Draws pictures of unresolved repeats.";
+        return answer;
     }
 
     void Execute(DebruijnEnvironment& curr_env, const ArgumentList& arg_list) const {
@@ -258,6 +281,7 @@ public:
 
         if (!CheckFileExists(contigs_file)) {
             LOG("File with contigs " << contigs_file << " not found");
+            return;
         }
 
         size_t contig_cnt = -1u;
@@ -284,6 +308,57 @@ public:
 
 };
 
+class DrawUnresolvedWRTReferenceCommand : public DrawUnresolvedRepeatsCommand {
+
+protected:
+    size_t MinArgNumber() const {
+        return 2;
+    }
+
+    bool CheckCorrectness(const vector<string>& args) const {
+        if (!CheckEnoughArguments(args))
+            return false;
+
+        return true;
+    }
+
+public:
+    DrawUnresolvedWRTReferenceCommand() : 
+        DrawUnresolvedRepeatsCommand("draw_unresolved_wrt_reference") {
+    }
+
+    string Usage() const {
+        string answer;
+        answer = answer + "Command `draw_unresolved_wrt_reference ` \n" + "Usage:\n"
+                + "> draw_unresolved_wrt_reference <gap_length> <prefix_of_base_assembly> [first N gaps to analyze]\n"
+                + " Draws pictures of unresolved repeats longer then gap_length between unique edges longer than some constant.";
+        return answer;
+    }
+
+    void Execute(DebruijnEnvironment& curr_env, const ArgumentList& arg_list) const {
+        const vector<string>& args = arg_list.GetAllArguments();
+        if (!CheckCorrectness(args))
+            return;
+
+        size_t max_interesting_gap = lexical_cast<size_t>(args[1]);
+        std::string base_assembly_prefix = args[2];
+
+        if (curr_env.graph_pack().genome.size() == 0) {
+            LOG("Reference genome hasn't been loaded");
+            return;
+        }
+
+        size_t gap_cnt = -1u;
+        if (args.size() > 3) {
+            LOG("Will analyze first " << args[3] << " gaps");
+            gap_cnt = lexical_cast<size_t>(args[3]);
+        }
+        
+        io::SingleRead ref_as_read("ref", curr_env.graph_pack().genome.str());
+        AnalyzeGaps(curr_env, curr_env.graph_pack(), ref_as_read, base_assembly_prefix, max_interesting_gap, gap_cnt);
+    }
+
+};
 class DrawPoorlyAssembledCommand : public DrawingCommand {
     const double WELL_ASSEMBLED_CONSTANT = 0.7;
 private:
