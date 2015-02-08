@@ -10,6 +10,7 @@
 #include "adt/pointer_iterator.hpp"
 
 #include "mphf.hpp"
+#include "base_hash.hpp"
 #include "hypergraph.hpp"
 #include "hypergraph_sorter_seq.hpp"
 #include "MurmurHash3.h"
@@ -88,7 +89,7 @@ struct kmer_index_traits {
           hash_triple_t h;
 
           MurmurHash3_x64_128(s.first, s.second - s.first, (uint32_t)seed_, &h);
-          std::get<2>(h) = (std::get<1>(h) + 0x9e3779b97f4a7c13ULL) ^ (seed_ + std::get<0>(h));
+          std::get<2>(h) = (std::get<1>(h) * 0x9e3779b97f4a7c13ULL) + seed_ + std::get<0>(h);
 
           return h;
       }
@@ -166,7 +167,7 @@ class KMerIndex {
   typedef size_t IdxType;
 
  private:
-  using KMerDataIndex = emphf::mphf<typename traits::MurMurHasher>;
+  using KMerDataIndex = emphf::mphf<emphf::jenkins64_hasher>;
   typedef KMerIndex __self;
 
  public:
