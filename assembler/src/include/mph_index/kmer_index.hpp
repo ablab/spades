@@ -5,10 +5,14 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-#include "mph_index.h"
 #include "io/mmapped_reader.hpp"
 #include "io/mmapped_writer.hpp"
 #include "adt/pointer_iterator.hpp"
+
+#include "mphf.hpp"
+#include "hypergraph.hpp"
+#include "hypergraph_sorter_seq.hpp"
+#include "MurmurHash3.h"
 
 #include "openmp_wrapper.h"
 
@@ -66,28 +70,60 @@ struct kmer_index_traits {
       return typename Seq::hash()(k.data(), k.size());
     }
   };
-  // This is really the most fragile part of the whole story.  Basically, we're
-  // building the PHM with "raw" data, but query the PHM with real Key-s!  We're
-  // relying on fact that hashes are exactly the same in both cases (thus - two
-  // almost equal implementations!).
-  struct seeded_hash_function {
-    static cxxmph::h128 hash128(const KMerRawData &k, uint32_t seed) {
-      cxxmph::h128 h;
-      MurmurHash3_x64_128(k.data(), k.data_size(), seed, &h);
-      return h;
-    }
 
-    static cxxmph::h128 hash128(const KMerRawReference k, uint32_t seed) {
-      cxxmph::h128 h;
-      MurmurHash3_x64_128(k.data(), k.data_size(), seed, &h);
-      return h;
-    }
+  struct MurMurHasher {
+      typedef uint64_t seed_t;
+      typedef uint64_t hash_t;
+      typedef std::tuple<hash_t, hash_t, hash_t> hash_triple_t;
 
-    static cxxmph::h128 hash128(const Seq &k, uint32_t seed) {
-      cxxmph::h128 h;
-      MurmurHash3_x64_128(k.data(), k.data_size() * sizeof(typename Seq::DataType), seed, &h);
-      return h;
-    }
+      MurMurHasher() {}
+
+      MurMurHasher(uint64_t seed)
+              : seed_(seed) {}
+
+      template <typename Rng>
+      static MurMurHasher generate(Rng& rng) { return MurMurHasher(rng()); }
+
+      hash_triple_t operator()(emphf::byte_range_t s) const {
+          hash_triple_t h;
+
+          MurmurHash3_x64_128(s.first, s.second - s.first, (uint32_t)seed_, &h);
+          std::get<2>(h) = (std::get<1>(h) + 0x9e3779b97f4a7c13ULL) ^ (seed_ + std::get<0>(h));
+
+          return h;
+      }
+
+      void swap(MurMurHasher& other) {
+          std::swap(seed_, other.seed_);
+      }
+
+      void save(std::ostream& os) const {
+          os.write(reinterpret_cast<char const*>(&seed_), sizeof(seed_));
+      }
+
+      void load(std::istream& is) {
+          is.read(reinterpret_cast<char*>(&seed_), sizeof(seed_));
+      }
+
+      seed_t seed() const {
+          return seed_;
+      }
+
+      seed_t seed_;
+  };
+
+  struct KMerRawReferenceAdaptor {
+      emphf::byte_range_t operator()(const KMerRawReference k) const {
+          const uint8_t * data = (const uint8_t*)k.data();
+          return std::make_pair(data, data + k.data_size());
+      }
+  };
+
+  struct KMerSeqAdaptor {
+      emphf::byte_range_t operator()(const Seq &k) const {
+          const uint8_t * data = (const uint8_t*)k.data();
+          return std::make_pair(data, data + k.data_size() * sizeof(typename Seq::DataType));
+      }
   };
 
   template<class Writer>
@@ -130,7 +166,7 @@ class KMerIndex {
   typedef size_t IdxType;
 
  private:
-  typedef cxxmph::SimpleMPHIndex<KMerSeq, typename traits::seeded_hash_function> KMerDataIndex;
+  using KMerDataIndex = emphf::mphf<typename traits::MurMurHasher>;
   typedef KMerIndex __self;
 
  public:
@@ -145,18 +181,14 @@ class KMerIndex {
     num_buckets_ = 0;
     bucket_starts_.clear();
 
-    for (size_t i = 0; i < num_buckets_; ++i) {
-      index_[i].clear();
-    }
-
     delete[] index_;
     index_ = NULL;
   }
 
   size_t mem_size() {
     size_t sz = 0;
-    for (size_t i = 0; i < num_buckets_; ++i)
-      sz += index_[i].mem_size();
+    //for (size_t i = 0; i < num_buckets_; ++i)
+    //  sz += index_[i].mem_size();
 
     return sz;
   }
@@ -170,26 +202,28 @@ class KMerIndex {
   }
 
   size_t size() const {
-	  return size_;
+      return size_;
   }
 
   size_t seq_idx(const KMerSeq &s) const {
     size_t bucket = seq_bucket(s);
 
-    return bucket_starts_[bucket] + index_[bucket].index(s);
+    return bucket_starts_[bucket] +
+            index_[bucket].lookup(s, typename traits::KMerSeqAdaptor());
   }
 
   size_t raw_seq_idx(const KMerRawReference data) const {
     size_t bucket = raw_seq_bucket(data);
 
-    return bucket_starts_[bucket] + index_[bucket].index(data);
+    return bucket_starts_[bucket] +
+            index_[bucket].lookup(data, typename traits::KMerRawReferenceAdaptor());
   }
 
   template<class Writer>
   void serialize(Writer &os) const {
     os.write((char*)&num_buckets_, sizeof(num_buckets_));
     for (size_t i = 0; i < num_buckets_; ++i)
-      index_[i].serialize(os);
+      index_[i].save(os);
     os.write((char*)&bucket_starts_[0], (num_buckets_ + 1) * sizeof(bucket_starts_[0]));
   }
 
@@ -201,7 +235,7 @@ class KMerIndex {
 
     index_ = new KMerDataIndex[num_buckets_];
     for (size_t i = 0; i < num_buckets_; ++i)
-      index_[i].deserialize(is);
+      index_[i].load(is);
 
     bucket_starts_.resize(num_buckets_ + 1);
     is.read((char*)&bucket_starts_[0], (num_buckets_ + 1) * sizeof(bucket_starts_[0]));
@@ -494,11 +528,11 @@ size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &count
     counter.OpenBucket(iFile, !save_final);
     size_t sz = counter.bucket_end(iFile) - counter.bucket_begin(iFile);
     index.bucket_starts_[iFile + 1] = sz;
-    if (!data_index.Reset(counter.bucket_begin(iFile), counter.bucket_end(iFile), (unsigned)sz)) {
-      INFO("Something went really wrong (read = this should not happen). Try to restart and see if the problem will be fixed.");
-      exit(-1);
-    }
-
+    typename kmer_index_traits::KMerRawReferenceAdaptor adaptor;
+    emphf::hypergraph_sorter_seq<emphf::hypergraph<uint32_t> > sorter;
+    typename KMerIndex<kmer_index_traits>::KMerDataIndex(sorter,
+                                                         sz, emphf::range(counter.bucket_begin(iFile), counter.bucket_end(iFile)),
+                                                         adaptor).swap(data_index);
     counter.ReleaseBucket(iFile);
   }
 
