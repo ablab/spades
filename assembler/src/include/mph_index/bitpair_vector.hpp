@@ -30,6 +30,10 @@ namespace emphf {
             return m_size;
         }
 
+        size_t mem_size() const {
+            return m_bits.size() * sizeof(m_bits[0]);
+        }
+
         uint64_t operator[](uint64_t pos) const
         {
             return (m_bits[pos / 32] >> ((pos % 32) * 2)) % 4;

@@ -32,6 +32,10 @@ namespace emphf {
             return m_bv.size();
         }
 
+        size_t mem_size() const {
+            return m_bv.mem_size() + m_block_ranks.size() * sizeof(m_block_ranks[0]);
+        }
+
         uint64_t operator[](uint64_t pos) const
         {
             return m_bv[pos];

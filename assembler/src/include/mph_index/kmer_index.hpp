@@ -147,8 +147,8 @@ class KMerIndex {
 
   size_t mem_size() {
     size_t sz = 0;
-    //for (size_t i = 0; i < num_buckets_; ++i)
-    //  sz += index_[i].mem_size();
+    for (size_t i = 0; i < num_buckets_; ++i)
+      sz += index_[i].mem_size();
 
     return sz;
   }
@@ -489,10 +489,19 @@ size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &count
     size_t sz = counter.bucket_end(iFile) - counter.bucket_begin(iFile);
     index.bucket_starts_[iFile + 1] = sz;
     typename kmer_index_traits::KMerRawReferenceAdaptor adaptor;
-    emphf::hypergraph_sorter_seq<emphf::hypergraph<uint32_t> > sorter;
-    typename KMerIndex<kmer_index_traits>::KMerDataIndex(sorter,
-                                                         sz, emphf::range(counter.bucket_begin(iFile), counter.bucket_end(iFile)),
-                                                         adaptor).swap(data_index);
+    size_t max_nodes = (size_t(std::ceil(double(sz) * 1.23)) + 2) / 3 * 3;
+    if (max_nodes >= uint64_t(1) << 32) {
+        emphf::hypergraph_sorter_seq<emphf::hypergraph<uint64_t> > sorter;
+        typename KMerIndex<kmer_index_traits>::KMerDataIndex(sorter,
+                                                             sz, emphf::range(counter.bucket_begin(iFile), counter.bucket_end(iFile)),
+                                                             adaptor).swap(data_index);
+    } else {
+        emphf::hypergraph_sorter_seq<emphf::hypergraph<uint32_t> > sorter;
+        typename KMerIndex<kmer_index_traits>::KMerDataIndex(sorter,
+                                                             sz, emphf::range(counter.bucket_begin(iFile), counter.bucket_end(iFile)),
+                                                             adaptor).swap(data_index);
+    }
+    
     counter.ReleaseBucket(iFile);
   }
 

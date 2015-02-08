@@ -77,6 +77,10 @@ namespace emphf {
             return m_n;
         }
 
+        size_t mem_size() const {
+            return m_bv.mem_size();
+        }
+
         BaseHasher const& base_hasher() const
         {
             return m_hasher;
