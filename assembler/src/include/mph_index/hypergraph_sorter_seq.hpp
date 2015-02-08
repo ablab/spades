@@ -46,7 +46,6 @@ namespace emphf {
 
             // generate edges
             if (verbose) {
-                INFO("Generating hyperedges and populating adjacency lists");
                 //logger() << "Generating hyperedges and populating adjacency lists"
                 //         << std::endl;
             }
@@ -67,7 +66,6 @@ namespace emphf {
 
             // peel
             if (verbose) {
-                INFO("Peeling");
                 // logger() << "Peeling" << std::endl;
             }
 
@@ -102,9 +100,6 @@ namespace emphf {
 
             if (m_peeling_order.size() < n) {
                 if (verbose) {
-                    INFO("Hypergraph is not peelable: "
-                         << (n - m_peeling_order.size()) << " edges remaining");
-
                     // logger() << "Hypergraph is not peelable: "
                     //         << (n - m_peeling_order.size()) << " edges remaining"
                     //         << std::endl;

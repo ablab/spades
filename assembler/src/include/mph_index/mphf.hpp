@@ -46,7 +46,6 @@ namespace emphf {
 
             for (size_t trial = 0; ; ++trial) {
                 //logger() << "Hypergraph generation: trial " << trial << std::endl;
-                INFO("Hypergraph generation: trial " << trial);
 
                 m_hasher = BaseHasher::generate(rng);
                 if (sorter.try_generate_and_sort(input_range, edge_gen,
@@ -57,7 +56,6 @@ namespace emphf {
             bitpair_vector bv(nodes_domain);
 
             //logger() << "Assigning values" << std::endl;
-            INFO("Assigning values");
 
             for (auto edge = peeling_order.first;
                  edge != peeling_order.second;

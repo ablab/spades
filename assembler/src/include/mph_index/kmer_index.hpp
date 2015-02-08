@@ -72,47 +72,6 @@ struct kmer_index_traits {
     }
   };
 
-  struct MurMurHasher {
-      typedef uint64_t seed_t;
-      typedef uint64_t hash_t;
-      typedef std::tuple<hash_t, hash_t, hash_t> hash_triple_t;
-
-      MurMurHasher() {}
-
-      MurMurHasher(uint64_t seed)
-              : seed_(seed) {}
-
-      template <typename Rng>
-      static MurMurHasher generate(Rng& rng) { return MurMurHasher(rng()); }
-
-      hash_triple_t operator()(emphf::byte_range_t s) const {
-          hash_triple_t h;
-
-          MurmurHash3_x64_128(s.first, s.second - s.first, (uint32_t)seed_, &h);
-          std::get<2>(h) = (std::get<1>(h) * 0x9e3779b97f4a7c13ULL) + seed_ + std::get<0>(h);
-
-          return h;
-      }
-
-      void swap(MurMurHasher& other) {
-          std::swap(seed_, other.seed_);
-      }
-
-      void save(std::ostream& os) const {
-          os.write(reinterpret_cast<char const*>(&seed_), sizeof(seed_));
-      }
-
-      void load(std::istream& is) {
-          is.read(reinterpret_cast<char*>(&seed_), sizeof(seed_));
-      }
-
-      seed_t seed() const {
-          return seed_;
-      }
-
-      seed_t seed_;
-  };
-
   struct KMerRawReferenceAdaptor {
       emphf::byte_range_t operator()(const KMerRawReference k) const {
           const uint8_t * data = (const uint8_t*)k.data();
