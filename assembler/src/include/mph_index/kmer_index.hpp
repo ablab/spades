@@ -134,7 +134,7 @@ class KMerIndex {
   typedef KMerIndex __self;
 
  public:
-  KMerIndex(/*unsigned k*/):/*k_(k), */index_(NULL),  num_buckets_(0), size_(0) {}
+  KMerIndex(): index_(NULL), num_buckets_(0), size_(0) {}
 
   KMerIndex(const KMerIndex&) = delete;
   KMerIndex& operator=(const KMerIndex&) = delete;
@@ -162,10 +162,10 @@ class KMerIndex {
   }
 
   void count_size() {
-      if(index_ == NULL)
+      if (index_ == NULL)
           return;
-	  size_ = 0;
-      for(size_t i = 0; i < num_buckets_; i++)
+      size_ = 0;
+      for (size_t i = 0; i < num_buckets_; i++)
           size_ += index_[i].size();
   }
 
@@ -209,7 +209,6 @@ class KMerIndex {
   }
 
  private:
-//  unsigned k_;
   KMerDataIndex *index_;
 
   size_t num_buckets_;
@@ -234,8 +233,7 @@ class KMerSplitter {
   KMerSplitter(const std::string &work_dir, unsigned K, uint32_t seed = 0)
       : work_dir_(work_dir), K_(K), seed_(seed) {}
 
-  virtual ~KMerSplitter() {
-  }
+  virtual ~KMerSplitter() {}
 
   virtual path::files_t Split(size_t num_files) = 0;
 

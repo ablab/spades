@@ -15,8 +15,6 @@
 
 #include "libcxx/sort.hpp"
 
-#include "boost/bimap.hpp"
-
 #include "kmer_splitters.hpp"
 #include "key_with_hash.hpp"
 #include "values.hpp"
