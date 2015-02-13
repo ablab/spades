@@ -8,6 +8,7 @@
 
 #include "adt/concurrent_dsu.hpp"
 #include "io/mmapped_reader.hpp"
+#include "parallel_radix_sort.hpp"
 
 #include "config_struct_hammer.hpp"
 #include "globals.hpp"
@@ -15,18 +16,29 @@
 #include <iostream>
 #include <sstream>
 
-#ifdef USE_GLIBCXX_PARALLEL
-#include <parallel/algorithm>
-#endif
-
-struct SubKMerComparator {
-  bool operator()(const SubKMerData &lhs, const SubKMerData &rhs) {
-    return SubKMer::less2_fast()(lhs.data, rhs.data);
+class EncoderKMer {
+public:
+  inline static size_t extract(const SubKMer &x, unsigned shift, unsigned Base) {
+    size_t idx = shift / SubKMer::TBits;
+    size_t ishift = shift - idx * SubKMer::TBits;
+    return (x.data()[idx] >> ishift) & ((1 << Base) - 1);
   }
 };
 
+struct SubKMerComparator {
+    bool operator()(const SubKMer &l, const SubKMer &r) const {
+      for (size_t i = 0; i < SubKMer::DataSize ; ++i) {
+        if (l.data()[i] != r.data()[i]) {
+          return (l.data()[i] < r.data()[i]);
+        }
+      }
+
+      return false;
+    }
+};
+
 std::pair<size_t, size_t> SubKMerSplitter::split() {
-  std::vector<SubKMerData> data; std::vector<size_t> blocks;
+  std::vector<SubKMer> data; std::vector<size_t> blocks;
 
   MMappedReader bifs(bifname_, /* unlink */ true);
   MMappedReader kifs(kifname_, /* unlink */ true);
@@ -34,19 +46,14 @@ std::pair<size_t, size_t> SubKMerSplitter::split() {
   VERIFY(ofs.good());
   size_t icnt = 0, ocnt = 0;
   while (bifs.good()) {
-    SubKMerComparator comp;
-
     deserialize(blocks, data, bifs, kifs);
 
-#ifdef USE_GLIBCXX_PARALLEL
-    // Explicitly force a call to parallel sort routine.
-    __gnu_parallel::sort(data.begin(), data.end(), comp);
-#else
-    std::sort(data.begin(), data.end(), comp);
-#endif
+    using PairSort = parallel_radix_sort::PairSort<SubKMer, size_t, SubKMer, EncoderKMer>;
+    PairSort::InitAndSort(data.data(), blocks.data(), data.size());
+
     for (auto start = data.begin(), end = data.end(); start != end;) {
-      auto chunk_end = std::upper_bound(start + 1, data.end(), *start, comp);
-      serialize(ofs, start, chunk_end);
+      auto chunk_end = std::upper_bound(start + 1, data.end(), *start, SubKMerComparator());
+      serialize(ofs, blocks.begin() + (start - data.begin()), chunk_end - start);
       start = chunk_end;
       ocnt += 1;
     }
