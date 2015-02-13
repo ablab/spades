@@ -153,8 +153,8 @@ void KMerHamClusterer::cluster(const std::string &prefix,
     BlockFile blocks(fname + ".gblocks", /* unlink */ true);
 
     fname = prefix + ".second", bfname = fname + ".blocks", kfname = fname + ".kmers";
-    std::ofstream bfs(bfname, std::ios::out | std::ios::binary);
-    std::ofstream kfs(kfname, std::ios::out | std::ios::binary);
+    bfs.open(bfname, std::ios::out | std::ios::binary);
+    kfs.open(kfname, std::ios::out | std::ios::binary);
     VERIFY(bfs.good()); VERIFY(kfs.good());
 
     while (blocks.read_block(block)) {

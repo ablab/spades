@@ -114,7 +114,7 @@ void serialize(Writer &blocks, Writer &kmers,
   size_t sz = (block == NULL ? data.size() : block->size());
   blocks.write((char*)&sz, sizeof(sz));
   if (block) {
-    blocks.write((char*)block->data(), sz * sizeof(block[0]));
+    blocks.write((char*)block->data(), sz * sizeof((*block)[0]));
   } else {
     for (size_t i = 0, e = sz; i != e; ++i)
       blocks.write((char*)&i, sizeof(i));
