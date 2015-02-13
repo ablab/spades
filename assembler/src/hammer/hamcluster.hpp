@@ -21,33 +21,26 @@ class ConcurrentDSU;
 
 typedef Seq<(hammer::K + 1) / 2, uint32_t> SubKMer;
 
-struct SubKMerData {
-  uint32_t idx;
-  SubKMer data;
-};
-
 template<class Reader>
-inline void binary_read(Reader &is, SubKMerData &s) {
+inline void binary_read(Reader &is, SubKMer &s) {
   SubKMer::DataType seq_data[SubKMer::DataSize];
 
-  is.read((char*)&s.idx, sizeof(s.idx));
   is.read((char*)seq_data, sizeof(seq_data));
 
-  s.data = SubKMer(seq_data);
+  s = SubKMer(seq_data);
 }
 
 template<class Writer>
-inline Writer &binary_write(Writer &os, const SubKMerData &s) {
+inline Writer &binary_write(Writer &os, const SubKMer &s) {
   SubKMer::DataType seq_data[SubKMer::DataSize];
-  s.data.copy_data(seq_data);
+  s.copy_data(seq_data);
 
-  os.write((char*)&s.idx, sizeof(s.idx));
   os.write((char*)seq_data, sizeof(seq_data));
 
   return os;
 }
 
-static_assert(sizeof(SubKMerData) == 8, "Too big SubKMer");
+static_assert(sizeof(SubKMer) == 4, "Too big SubKMer");
 
 class SubKMerPartSerializer{
   size_t from_;
@@ -57,18 +50,14 @@ public:
   SubKMerPartSerializer(size_t from, size_t to)
       :from_(from), to_(to) { VERIFY(to_ - from_ <= hammer::K); }
 
-  SubKMerData serialize(hammer::KMer k, size_t fidx) const {
-    SubKMerData s;
+  SubKMer serialize(hammer::KMer k) const {
+    SubKMer s;
 
-    s.idx = (uint32_t)fidx;
     // FIXME: Get rid of string here!
     std::string seq = k.str();
-    s.data = SubKMer(seq.data(),
-                     from_, to_ - from_,
-                     /* raw */ true);
-
-    // Yay for NRVO!
-    return s;
+    return SubKMer(seq.data(),
+                   from_, to_ - from_,
+                   /* raw */ true);
   }
 };
 
@@ -80,10 +69,8 @@ public:
   SubKMerStridedSerializer(size_t from, size_t stride)
       :from_(from), stride_(stride) { VERIFY(from_ + stride_ <= hammer::K); }
 
-  SubKMerData serialize(hammer::KMer k, size_t fidx) const {
-    SubKMerData s;
-
-    s.idx = (uint32_t)fidx;
+  SubKMer serialize(hammer::KMer k) const {
+    SubKMer s;
 
     size_t sz = (hammer::K - from_ + stride_ - 1) / stride_;
 
@@ -92,10 +79,7 @@ public:
     for (size_t i = from_, j = 0; i < hammer::K; i+= stride_, ++j)
       str[j] = nucl(k[i]);
 
-    s.data = SubKMer(str, 0, sz);
-
-    // Yay for NRVO!
-    return s;
+    return SubKMer(str, 0, sz);
   }
 };
 
@@ -138,7 +122,7 @@ void serialize(Writer &blocks, Writer &kmers,
 
   for (size_t i = 0, e = sz; i != e; ++i) {
     size_t idx = (block == NULL ? i : (*block)[i]);
-    SubKMerData s = serializer.serialize(data.kmer(idx), idx);
+    SubKMer s = serializer.serialize(data.kmer(idx));
     binary_write(kmers, s);
   }
 }
@@ -154,18 +138,15 @@ class SubKMerSplitter {
 
   template<class Writer>
   void serialize(Writer &os,
-                 const std::vector<SubKMerData>::iterator &start,
-                 const std::vector<SubKMerData>::iterator &end) {
-    size_t sz = end - start;
-
+                 const std::vector<size_t>::iterator &start,
+                 size_t sz) {
     os.write((char*)&sz, sizeof(sz));
-    for (auto I = start, E = end; I != E; ++I)
-      binary_write(os, *I);
+    os.write((char*)&*start, sz * sizeof(*start));
   }
 
   template<class Reader>
   void deserialize(std::vector<size_t> &blocks,
-                   std::vector<SubKMerData> &kmers,
+                   std::vector<SubKMer> &kmers,
                    Reader &bis, Reader &kis) {
     kmers.clear(); blocks.clear();
 
