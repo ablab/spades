@@ -51,13 +51,11 @@ public:
       :from_(from), to_(to) { VERIFY(to_ - from_ <= hammer::K); }
 
   SubKMer serialize(hammer::KMer k) const {
-    SubKMer s;
+    SubKMer res;
+    for (size_t i = 0; i < to_ - from_; ++i)
+      res.set(i, k[from_ + i]);
 
-    // FIXME: Get rid of string here!
-    std::string seq = k.str();
-    return SubKMer(seq.data(),
-                   from_, to_ - from_,
-                   /* raw */ true);
+    return res;
   }
 };
 
@@ -70,16 +68,12 @@ public:
       :from_(from), stride_(stride) { VERIFY(from_ + stride_ <= hammer::K); }
 
   SubKMer serialize(hammer::KMer k) const {
-    SubKMer s;
+    SubKMer res;
 
-    size_t sz = (hammer::K - from_ + stride_ - 1) / stride_;
-
-    // FIXME: Get rid of strings here!
-    std::string str(sz, 'A');
     for (size_t i = from_, j = 0; i < hammer::K; i+= stride_, ++j)
-      str[j] = nucl(k[i]);
+      res.set(j, k[i]);
 
-    return SubKMer(str, 0, sz);
+    return res;
   }
 };
 

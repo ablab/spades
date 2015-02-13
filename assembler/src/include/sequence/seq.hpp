@@ -125,13 +125,6 @@ class Seq {
     VERIFY(*s == 0); // C-string always ends on 0
   }
 
-  /**
-   * Sets i-th symbol of Seq with 0123-char
-   */
-  inline void set(const size_t i, char c) {
-    data_[i >> TNuclBits] = (data_[i >> TNuclBits] & ~((T) 3 << ((i & (TNucl - 1)) << 1))) | ((T) c << ((i & (TNucl - 1)) << 1));
-  }
-
   // Template voodoo to calculate the length of the string regardless whether it is std::string or const char*
   template<class S>
   size_t size(const S& t,
@@ -346,6 +339,13 @@ class Seq {
     return res;
   }
 
+  /**
+   * Sets i-th symbol of Seq with 0123-char
+   */
+  inline void set(const size_t i, char c) {
+    data_[i >> TNuclBits] = (data_[i >> TNuclBits] & ~((T) 3 << ((i & (TNucl - 1)) << 1))) | ((T) c << ((i & (TNucl - 1)) << 1));
+  }
+ 
   bool operator==(const Seq<size_, T>& s) const {
     return 0 == memcmp(data_.data(), s.data_.data(), sizeof(T) * DataSize);
   }
