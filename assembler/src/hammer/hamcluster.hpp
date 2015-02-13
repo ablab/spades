@@ -99,20 +99,16 @@ public:
   }
 };
 
-class SubKMerBlockFile {
+class BlockFile {
   MMappedReader ifs_;
 
  public:
-  SubKMerBlockFile(const std::string &fname, bool unlink = false)
+  BlockFile(const std::string &fname, bool unlink = false)
       : ifs_(fname, unlink) { }
 
-  bool get_block(std::vector<size_t> &block) {
+  bool read_block(std::vector<size_t> &block) {
     block.clear();
-#if 0
     block.shrink_to_fit();
-#else
-    std::vector<size_t>().swap(block);
-#endif
 
     if (!ifs_.good())
       return false;
@@ -120,11 +116,7 @@ class SubKMerBlockFile {
     size_t sz;
     ifs_.read((char*)&sz, sizeof(sz));
     block.resize(sz);
-    for (size_t i = 0; i < sz; ++i) {
-      SubKMerData s;
-      binary_read(ifs_, s);
-      block[i] = s.idx;
-    }
+    ifs_.read((char*)block.data(), sz * sizeof(block[0]));
 
     return true;
   }
@@ -132,25 +124,33 @@ class SubKMerBlockFile {
 
 template<class Writer,
          class SubKMerSerializer>
-void serialize(Writer &os,
+void serialize(Writer &blocks, Writer &kmers,
                const KMerData &data, const std::vector<size_t> *block = NULL,
                const SubKMerSerializer &serializer = SubKMerSerializer()) {
   size_t sz = (block == NULL ? data.size() : block->size());
-  os.write((char*)&sz, sizeof(sz));
+  blocks.write((char*)&sz, sizeof(sz));
+  if (block) {
+    blocks.write((char*)block->data(), sz * sizeof(block[0]));
+  } else {
+    for (size_t i = 0, e = sz; i != e; ++i)
+      blocks.write((char*)&i, sizeof(i));
+  }
+
   for (size_t i = 0, e = sz; i != e; ++i) {
     size_t idx = (block == NULL ? i : (*block)[i]);
     SubKMerData s = serializer.serialize(data.kmer(idx), idx);
-    binary_write(os, s);
+    binary_write(kmers, s);
   }
 }
 
 class SubKMerSplitter {
-  const std::string ifname_;
+  const std::string bifname_, kifname_;
   const std::string ofname_;
 
  public:
-  SubKMerSplitter(const std::string &ifname, const std::string &ofname)
-      : ifname_(ifname), ofname_(ofname) {}
+  SubKMerSplitter(const std::string &bifname, const std::string &kifname,
+                  const std::string &ofname)
+      : bifname_(bifname), kifname_(kifname), ofname_(ofname) {}
 
   template<class Writer>
   void serialize(Writer &os,
@@ -164,21 +164,19 @@ class SubKMerSplitter {
   }
 
   template<class Reader>
-  void deserialize(std::vector<SubKMerData> &res,
-                   Reader &is) {
-    res.clear();
-#if 0
-    res.shrink_to_fit();
-#else
-    std::vector<SubKMerData>().swap(res);
-#endif
+  void deserialize(std::vector<size_t> &blocks,
+                   std::vector<SubKMerData> &kmers,
+                   Reader &bis, Reader &kis) {
+    kmers.clear(); blocks.clear();
 
     size_t sz;
-    is.read((char*)&sz, sizeof(sz));
-    res.resize(sz);
+    bis.read((char*)&sz, sizeof(sz));
+    blocks.resize(sz);
+    bis.read((char*)blocks.data(), sz * sizeof(blocks[0]));
 
+    kmers.resize(sz);
     for (size_t i = 0, e = sz; i != e; ++i)
-      binary_read(is, res[i]);
+      binary_read(kis, kmers[i]);
   }
 
   std::pair<size_t, size_t> split();

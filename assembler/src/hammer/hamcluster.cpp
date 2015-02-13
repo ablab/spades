@@ -26,16 +26,17 @@ struct SubKMerComparator {
 };
 
 std::pair<size_t, size_t> SubKMerSplitter::split() {
-  std::vector<SubKMerData> data;
+  std::vector<SubKMerData> data; std::vector<size_t> blocks;
 
-  MMappedReader ifs(ifname_, /* unlink */ true);
+  MMappedReader bifs(bifname_, /* unlink */ true);
+  MMappedReader kifs(kifname_, /* unlink */ true);
   std::ofstream ofs(ofname_, std::ios::out | std::ios::binary);
   VERIFY(ofs.good());
   size_t icnt = 0, ocnt = 0;
-  while (ifs.good()) {
+  while (bifs.good()) {
     SubKMerComparator comp;
 
-    deserialize(data, ifs);
+    deserialize(blocks, data, bifs, kifs);
 
 #ifdef USE_GLIBCXX_PARALLEL
     // Explicitly force a call to parallel sort routine.
@@ -106,11 +107,10 @@ void KMerHamClusterer::cluster(const std::string &prefix,
                                const KMerData &data,
                                ConcurrentDSU &uf) {
   // First pass - split & sort the k-mers
-  std::ostringstream tmp;
-  tmp << prefix << ".first";
-  std::string fname(tmp.str());
-  std::ofstream ofs(fname, std::ios::out | std::ios::binary);
-  VERIFY(ofs.good());
+  std::string fname = prefix + ".first", bfname = fname + ".blocks", kfname = fname + ".kmers";
+  std::ofstream bfs(bfname, std::ios::out | std::ios::binary);
+  std::ofstream kfs(kfname, std::ios::out | std::ios::binary);
+  VERIFY(bfs.good()); VERIFY(kfs.good());
 
   INFO("Serializing sub-kmers.");
   for (unsigned i = 0; i < tau_ + 1; ++i) {
@@ -118,20 +118,20 @@ void KMerHamClusterer::cluster(const std::string &prefix,
     size_t to = (*Globals::subKMerPositions)[i+1];
 
     INFO("Serializing: [" << from << ", " << to << ")");
-    serialize(ofs, data, NULL,
+    serialize(bfs, kfs, data, NULL,
               SubKMerPartSerializer(from, to));
   }
-  VERIFY(!ofs.fail());
-  ofs.close();
+  VERIFY(!bfs.fail()); VERIFY(!kfs.fail());
+  bfs.close(); kfs.close();
 
   size_t big_blocks1 = 0;
   {
     INFO("Splitting sub-kmers, pass 1.");
-    SubKMerSplitter Splitter(fname, fname + ".blocks");
+    SubKMerSplitter Splitter(bfname, kfname, fname + ".gblocks");
     std::pair<size_t, size_t> stat = Splitter.split();
     INFO("Splitting done."
-            " Processed " << stat.first << " blocks."
-            " Produced " << stat.second << " blocks.");
+         " Processed " << stat.first << " blocks."
+         " Produced " << stat.second << " blocks.");
 
     // Sanity check - there cannot be more blocks than tau + 1 times of total
     // kmer number. And on the first pass we have only tau + 1 input blocks!
@@ -143,15 +143,14 @@ void KMerHamClusterer::cluster(const std::string &prefix,
     std::vector<size_t> block;
 
     INFO("Merge sub-kmers, pass 1");
-    SubKMerBlockFile blocks(fname + ".blocks", /* unlink */ true);
+    BlockFile blocks(fname + ".gblocks", /* unlink */ true);
 
-    std::ostringstream tmp;
-    tmp << prefix << ".second";
-    fname = tmp.str();
+    fname = prefix + ".second", bfname = fname + ".blocks", kfname = fname + ".kmers";
+    std::ofstream bfs(bfname, std::ios::out | std::ios::binary);
+    std::ofstream kfs(kfname, std::ios::out | std::ios::binary);
+    VERIFY(bfs.good()); VERIFY(kfs.good());
 
-    ofs.open(fname, std::ios::out | std::ios::binary);
-    VERIFY(ofs.good());
-    while (blocks.get_block(block)) {
+    while (blocks.read_block(block)) {
       unsigned block_thr = cfg::get().hamming_blocksize_quadratic_threshold;
       if (block.size() < block_thr) {
         // Merge small blocks.
@@ -160,20 +159,21 @@ void KMerHamClusterer::cluster(const std::string &prefix,
         big_blocks1 += 1;
         // Otherwise - dump for next iteration.
         for (unsigned i = 0; i < tau_ + 1; ++i) {
-          serialize(ofs, data, &block,
+          serialize(bfs, kfs,
+                    data, &block,
                     SubKMerStridedSerializer(i, tau_ + 1));
         }
       }
     }
-    VERIFY(!ofs.fail());
-    ofs.close();
+    VERIFY(!bfs.fail()); VERIFY(!kfs.fail());
+    bfs.close(); kfs.close();
     INFO("Merge done, total " << big_blocks1 << " new blocks generated.");
   }
 
   size_t big_blocks2 = 0;
   {
     INFO("Spliting sub-kmers, pass 2.");
-    SubKMerSplitter Splitter(fname, fname + ".blocks");
+    SubKMerSplitter Splitter(bfname, kfname, fname + ".gblocks");
     std::pair<size_t, size_t> stat = Splitter.split();
     INFO("Splitting done."
             " Processed " << stat.first << " blocks."
@@ -185,11 +185,11 @@ void KMerHamClusterer::cluster(const std::string &prefix,
     VERIFY(stat.second <= (tau_ + 1) * (tau_ + 1) * data.size());
 
     INFO("Merge sub-kmers, pass 2");
-    SubKMerBlockFile blocks(fname + ".blocks", /* unlink */ true);
+    BlockFile blocks(fname + ".gblocks", /* unlink */ true);
     std::vector<size_t> block;
 
     size_t nblocks = 0;
-    while (blocks.get_block(block)) {
+    while (blocks.read_block(block)) {
       if (block.size() > 50) {
         big_blocks2 += 1;
 #if 0
