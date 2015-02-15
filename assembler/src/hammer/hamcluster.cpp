@@ -49,7 +49,8 @@ std::pair<size_t, size_t> SubKMerSplitter::split() {
     deserialize(blocks, data, bifs, kifs);
 
     using PairSort = parallel_radix_sort::PairSort<SubKMer, size_t, SubKMer, EncoderKMer>;
-    PairSort::InitAndSort(data.data(), blocks.data(), data.size());
+    // PairSort::InitAndSort(data.data(), blocks.data(), data.size());
+    PairSort::InitAndSort(data.data(), blocks.data(), data.size(), data.size() > 1000*16 ? -1 : 1);
 
     for (auto start = data.begin(), end = data.end(); start != end;) {
       auto chunk_end = std::upper_bound(start + 1, data.end(), *start, SubKMerComparator());
