@@ -20,6 +20,19 @@ using namespace hammer;
 
 class BufferFiller;
 
+struct KMerComparator {
+    bool operator()(const KMer &l, const KMer &r) const {
+      for (size_t i = 0; i < KMer::DataSize ; ++i) {
+        if (l.data()[i] != r.data()[i]) {
+          return (l.data()[i] < r.data()[i]);
+        }
+      }
+
+      return false;
+    }
+};
+
+
 class HammerKMerSplitter : public KMerSplitter<hammer::KMer> {
   typedef std::vector<std::vector<KMer> > KMerBuffer;
 
@@ -54,7 +67,7 @@ void HammerKMerSplitter::DumpBuffers(size_t num_files, size_t nthreads,
       KMerBuffer &entry = buffers[i];
       SortBuffer.insert(SortBuffer.end(), entry[k].begin(), entry[k].end());
     }
-    libcxx::sort(SortBuffer.begin(), SortBuffer.end(), KMer::less2_fast());
+    libcxx::sort(SortBuffer.begin(), SortBuffer.end(), KMerComparator());
     auto it = std::unique(SortBuffer.begin(), SortBuffer.end());
 
 #   pragma omp critical
