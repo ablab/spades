@@ -30,9 +30,7 @@
 #ifndef PARALLEL_RADIX_SORT_H_
 #define PARALLEL_RADIX_SORT_H_
 
-#ifdef _OPENMP
-#include <omp.h>
-#endif
+#include "openmp_wrapper.h"
 
 #include <stdint.h>
 #include <cstring>
@@ -42,36 +40,6 @@
 #include <utility>
 
 namespace parallel_radix_sort {
-namespace utility {
-// Return the number of threads that would be executed in parallel regions
-int GetMaxThreads() {
-#ifdef _OPENMP
-  return omp_get_max_threads();
-#else
-  return 1;
-#endif
-}
-
-// Set the number of threads that would be executed in parallel regions
-void SetNumThreads(int num_threads) {
-#ifdef _OPENMP
-  omp_set_num_threads(num_threads);
-#else
-  if (num_threads != 1) {
-    assert(0 && "compile with -fopenmp");
-  }
-#endif
-}
-
-// Return the thread number, which lies in [0, the number of threads)
-int GetThreadId() {
-#ifdef _OPENMP
-  return omp_get_thread_num();
-#else
-  return 0;
-#endif
-}
-}  // namespace utility
 
 namespace internal {
 // Size of the software managed buffer
@@ -181,7 +149,7 @@ void ParallelRadixSortInternal
   max_elems_ = max_elems;
 
   if (max_threads == -1) {
-    max_threads = utility::GetMaxThreads();
+    max_threads = omp_get_max_threads();
   }
   assert(max_threads >= 1);
   max_threads_ = max_threads;
@@ -240,11 +208,9 @@ UnsignedType *ParallelRadixSortInternal
   assert(num_elems <= max_elems_);
 
   if (num_threads == -1) {
-    num_threads = utility::GetMaxThreads();
+    num_threads = omp_get_max_threads();
   }
   assert(1 <= num_threads && num_threads <= max_threads_);
-  utility::SetNumThreads(num_threads);
-  assert(utility::GetMaxThreads() == num_threads);
   num_threads_ = num_threads;
 
   value_manager_ = value_manager;
@@ -286,10 +252,10 @@ void ParallelRadixSortInternal
 ::ComputeHistogram(int b, UnsignedType *src) {
   // Compute local histogram
   #ifdef _OPENMP
-  #pragma omp parallel
+  #pragma omp parallel num_threads(num_threads_)
   #endif
   {
-    const int my_id = utility::GetThreadId();
+    const int my_id = omp_get_thread_num();
     const size_t my_bgn = pos_bgn_[my_id];
     const size_t my_end = pos_end_[my_id];
     size_t *my_histo = histo_[my_id];
@@ -319,10 +285,10 @@ void ParallelRadixSortInternal
 <PlainType, UnsignedType, Encoder, ValueManager, Base>
 ::Scatter(int b, UnsignedType *src, UnsignedType *dst) {
   #ifdef _OPENMP
-  #pragma omp parallel
+  #pragma omp parallel num_threads(num_threads_)
   #endif
   {
-    const int my_id = utility::GetThreadId();
+    const int my_id = omp_get_thread_num();
     const size_t my_bgn = pos_bgn_[my_id];
     const size_t my_end = pos_end_[my_id];
     size_t *my_histo = histo_[my_id];
@@ -465,7 +431,7 @@ template<typename ValueType, int Base>
 void PairValueManager<ValueType, Base>
 ::Init(size_t max_elems, int max_threads) {
   if (max_threads == -1) {
-    max_threads = utility::GetMaxThreads();
+    max_threads = omp_get_max_threads();
   }
   assert(max_threads >= 1);
 
