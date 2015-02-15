@@ -14,9 +14,46 @@
 
 namespace online_visualization {
 
+//class RepeatProcessor {
+//    const Graph& g_;
+//
+//protected:
+//    const Graph& g() const {
+//        return g_;
+//    }
+//
+//public:
+//    virtual void ProcessResolved(EdgeId e1, EdgeId e2, size_t gap_length, const vector<EdgeId> repeat_edges) {
+//    }
+//
+//    virtual void ProcessUnresolved(EdgeId e1, EdgeId e2, size_t gap_length, const vector<EdgeId> repeat_edges) {
+//    }
+//
+//    virtual ~RepeatProcessor() {
+//    }
+//};
+//
+//class CompositeRepeatProcessor : public RepeatProcessor {
+//    vector<shared_ptr<RepeatProcessor>> processors_;
+//
+//public:
+//    virtual void ProcessResolved(EdgeId e1, EdgeId e2, size_t gap_length, const vector<EdgeId> repeat_edges) {
+//        for (auto p : processors_) {
+//            p->ProcessResolved(e1, e2, gap_length, repeat_edges);
+//        }
+//    }
+//
+//    virtual void ProcessUnresolved(EdgeId e1, EdgeId e2, size_t gap_length, const vector<EdgeId> repeat_edges) {
+//        for (auto p : processors_) {
+//            p->ProcessUnresolved(e1, e2, gap_length, repeat_edges);
+//        }
+//    }
+//
+//};
+
 class DrawUnresolvedRepeatsCommand : public DrawingCommand {
 private:
-    static const size_t LENGTH_THRESHOLD = 1500;
+    const size_t length_threshold_;
     const string ref_prefix_;
     const size_t gap_diff_threshold_;
     const double good_mapping_coeff_;
@@ -154,92 +191,100 @@ private:
         return double(mapped_range_length) > good_mapping_coeff_ * double(edge_length);
     }
 
+    vector<EdgeId> EdgesOfInterest(const GraphPack& gp, const MappingPath<EdgeId>& mapping_path) const {
+        vector<EdgeId> answer;
+        for (size_t i = 0; i < mapping_path.size(); ++i) {
+            EdgeId e = mapping_path[i].first;
+            if (gp.g.length(e) >= length_threshold_ 
+                    && IsOfMultiplicityOne(gp, e)
+                    && CheckMapping(gp.g.length(e), mapping_path[i].second.mapped_range.size())) {
+                answer.push_back(e);
+            }
+        }
+        return answer;
+    }
+
 protected:
     bool AnalyzeGaps(DebruijnEnvironment& curr_env, const GraphPack& gp, io::SingleRead contig, 
-                                        string base_assembly_prefix, size_t max_genomic_gap = numeric_limits<size_t>::max(), 
+                                        string base_assembly_prefix, 
+                                        size_t max_genomic_gap = numeric_limits<size_t>::max(), 
                                         size_t max_gap_cnt = -1u) const {
         auto mapper_ptr = debruijn_graph::MapperInstance(gp);
         MappingPath<EdgeId> mapping_path = mapper_ptr->MapRead(contig);
         auto pos_handler = gp.edge_pos;
-
-        auto simple_path = mapping_path.simple_path();
-        vector<size_t> long_unique_idx;
-        for (size_t i = 0; i < simple_path.size(); ++i) {
-            EdgeId e = simple_path[i];
-            if (gp.g.length(e) >= LENGTH_THRESHOLD
-                    && IsOfMultiplicityOne(gp, e)
-                    && CheckMapping(gp.g.length(e), mapping_path[i].second.mapped_range.size())) {
-                long_unique_idx.push_back(i);
-            }
-        }
+        
+        auto long_unique = EdgesOfInterest(gp, mapping_path);
 
         bool found_smth = false;
         size_t cnt = 0;
-        for (size_t i = 1; i < long_unique_idx.size(); ++i) {
+        for (size_t i = 1; i < long_unique.size(); ++i) {
             if (max_gap_cnt != -1u && cnt >= max_gap_cnt) {
                 INFO("Number of gaps exceeded " << max_gap_cnt);
                 return found_smth;
             }
-            EdgeId e1 = simple_path[long_unique_idx[i-1]];
-            EdgeId e2 = simple_path[long_unique_idx[i]];
+            EdgeId e1 = long_unique[i-1];
+            EdgeId e2 = long_unique[i];
+
+            size_t contig_gap = mapping_path[i].second.initial_range.start_pos - mapping_path[i-1].second.initial_range.end_pos;
+            size_t genomic_gap = GenomicGap(gp, e1, e2);
+            if (genomic_gap == -1u) {
+                DEBUG("Contig likely misassembled. Unique long regions in wrong order. e1 " << 
+                        gp.g.str(e1) << " genome pos : " << GatherPositions(gp, e1, "ref") << " and e2 " << gp.g.str(e2) << 
+                        " genome pos : " << GatherPositions(gp, e2, "ref"));
+                continue;
+            }
+            DEBUG("Found genomic gap " << genomic_gap << 
+                " between e1 " << gp.g.str(e1) << " genome pos : " << GatherPositions(gp, e1, "ref") << " and e2 " << gp.g.str(e2)
+                << " genome pos : " << GatherPositions(gp, e2, "ref"));
+
+            DEBUG("Looking for reference path");
+            auto ref_mapping_path = FindReferencePath2(gp, e1, e2);
+            if (ref_mapping_path.size() == 0) {
+                DEBUG("Couldn't find ref path between " << gp.g.str(e1) << " and " << gp.g.str(e2));
+                continue;
+            } 
+
+            vector<EdgeId> ref_path = mapper_ptr->FindReadPath(ref_mapping_path);
+            if (ref_path.empty()) {
+                DEBUG("Couldn't fix ref path");
+                ref_path = ref_mapping_path.simple_path();
+            }
+            DEBUG("Found ref path between " << gp.g.str(e1) << " and " << gp.g.str(e2));
+            DEBUG(ref_path.size() << " edges of cumulative length " << CumulativeLength(gp.g, ref_path));
+                    
+            if (std::abs(int(genomic_gap) - int(contig_gap)) >= int(gap_diff_threshold_)) {
+                DEBUG("Contig likely misassembled. Genomic gap is " << genomic_gap << " while contig gap was " << contig_gap);
+                continue;
+            }
+
+            if (genomic_gap >= max_genomic_gap) {
+                DEBUG("Genomic gap exceeded max_gap value and will be skipped. Gap " << genomic_gap << " max_gap " << max_genomic_gap);
+                continue;
+            }
+            
+            string log = fmt::format("{:l} {:l} {:l} {:l} {:l}", genomic_gap, ref_path.size(), 
+                                CumulativeLength(gp.g, ref_path), gp.g.int_id(e1), gp.g.int_id(e2));
+
             if (!BelongToSameContig(gp, e1, e2, base_assembly_prefix)) {
-                INFO("Long unique edges not in the same contig of base assembly");
+                DEBUG("Long unique edges not in the same contig of base assembly");
+                cerr << "0 " << log << endl;
 
-                vector<EdgeId> contig_gap_path;
-                for (size_t j = long_unique_idx[i-1] + 1; j < long_unique_idx[i-1]; ++j) {
-                    contig_gap_path.push_back(simple_path[j]);
-                }
-                //checking correctness of path is too restricting, check genomic distance instead
-                size_t genomic_gap = GenomicGap(gp, e1, e2);
-                size_t contig_gap = mapping_path[i].second.initial_range.start_pos - mapping_path[i-1].second.initial_range.end_pos;
-                if (genomic_gap == -1u) {
-                    WARN("Contig likely misassembled. Unique long regions in wrong order. e1 " << 
-                            gp.g.str(e1) << " genome pos : " << GatherPositions(gp, e1, "ref") << " and e2 " << gp.g.str(e2) << 
-                            " genome pos : " << GatherPositions(gp, e2, "ref"));
-                    continue;
-                }
-
-                if (std::abs(int(genomic_gap) - int(contig_gap)) >= gap_diff_threshold_) {
-                    WARN("Contig likely misassembled. Genomic gap is " << genomic_gap << " while contig gap was " << contig_gap);
-                    continue;
-                }
-
-                if (genomic_gap >= max_genomic_gap) {
-                    INFO("Genomic gap exceeded max_gap value and will be skipped. Gap " << genomic_gap << " max_gap " << max_genomic_gap);
-                    continue;
-                }
-
-                INFO("Found genomic gap " << genomic_gap << 
-                    " between e1 " << gp.g.str(e1) << " genome pos : " << GatherPositions(gp, e1, "ref") << " and e2 " << gp.g.str(e2)
-                    << " genome pos : " << GatherPositions(gp, e2, "ref"));
-                INFO("Looking for reference path");
-                auto ref_mapping_path = FindReferencePath2(gp, e1, e2);
-                if (ref_mapping_path.size() == 0) {
-                    WARN("Couldn't find ref path between " << gp.g.str(e1) << " and " << gp.g.str(e2));
-                } else {
-                    found_smth = true;
-                    
-                    vector<EdgeId> ref_path = mapper_ptr->FindReadPath(ref_mapping_path);
-                    if (ref_path.empty()) {
-                        WARN("Couldn't fix ref path");
-                        ref_path = ref_mapping_path.simple_path();
-                    }
-                    INFO("Found ref path between " << gp.g.str(e1) << " and " << gp.g.str(e2));
-                    INFO(ref_path.size() << " edges of cumulative length " << CumulativeLength(gp.g, ref_path));
-                    
-                    make_dir(curr_env.folder());
-                    string pics_folder = curr_env.folder() + "/" + curr_env.GetFormattedPictureCounter()  + "_" + contig.name() + "/";
-                    make_dir(pics_folder);
-                    string pic_name = ToString(cnt++) + "_" +  ToString(GenomicGap(gp, e1, e2)) + "_" + ToString(gp.g.int_id(e1)) + "_" + ToString(gp.g.int_id(e2)) + "_";
-                    DrawGap(curr_env, ref_path, pics_folder + pic_name);
-                }
+                found_smth = true;
+                
+                make_dir(curr_env.folder());
+                string pics_folder = curr_env.folder() + "/" + curr_env.GetFormattedPictureCounter()  + "_" + contig.name() + "/";
+                make_dir(pics_folder);
+                string pic_name = ToString(cnt++) + "_" +  ToString(genomic_gap) + "_" + ToString(gp.g.int_id(e1)) + "_" + ToString(gp.g.int_id(e2)) + "_";
+                DrawGap(curr_env, ref_path, pics_folder + pic_name);
+            } else {
+                cerr << "1 " << log << endl;
             }
         }
         return found_smth;
     }
 
     DrawUnresolvedRepeatsCommand(const string& command_name)
-            : DrawingCommand(command_name), ref_prefix_("ref"), gap_diff_threshold_(1000), good_mapping_coeff_(0.7) {
+            : DrawingCommand(command_name), length_threshold_(1000), ref_prefix_("ref"), gap_diff_threshold_(1000), good_mapping_coeff_(0.7) {
     }
 
 };
