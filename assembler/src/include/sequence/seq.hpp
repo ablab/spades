@@ -152,7 +152,7 @@ class Seq {
   explicit Seq(T * data_array) {
     memcpy(data_.data(), data_array, TotalBytes);
   }
-  explicit Seq(size_t, T * data_array) {
+  explicit Seq(unsigned, const T * data_array) {
     memcpy(data_.data(), data_array, TotalBytes);
   }
 

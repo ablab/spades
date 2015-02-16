@@ -267,29 +267,26 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
   std::string workdir = cfg::get().input_working_dir;
   HammerKMerSplitter splitter(workdir);
   KMerDiskCounter<hammer::KMer> counter(workdir, splitter);
-  size_t kmers = KMerIndexBuilder<HammerKMerIndex>(workdir, num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save finall */ true);
+  size_t kmers = KMerIndexBuilder<HammerKMerIndex>(workdir, num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save final */ true);
 
   // Check, whether we'll ever have enough memory for running BH and bail out earlier
   if (1.25 * kmers * (sizeof(KMerStat) + sizeof(hammer::KMer)) > (double) get_memory_limit())
-      FATAL_ERROR("The reads contain too many k-mers to fit into available memory limit. Increase memory limit and restart")
+      FATAL_ERROR("The reads contain too many k-mers to fit into available memory limit. Increase memory limit and restart");
 
-  data.kmers_ = counter.GetFinalKMers();
+  {
+      MMappedFileRecordArrayIterator<hammer::KMer::DataType> kmer_it(counter.GetFinalKMersFname(), hammer::KMer::GetDataSize(hammer::K));
+      MMappedRecordArrayWriter<hammer::KMer::DataType> kmer_storage(counter.GetFinalKMersFname() + ".order", hammer::KMer::GetDataSize(hammer::K));
 
-  size_t swaps = 0;
-  INFO("Arranging kmers in hash map order");
-  for (auto I = data.kmers_->begin(), E = data.kmers_->end(); I != E; ++I) {
-    size_t cidx = I - data.kmers_->begin();
-    size_t kidx = data.index_.raw_seq_idx(*I);
-    while (cidx != kidx) {
-      auto J = data.kmers_->begin() + kidx;
-      using std::swap;
-      swap(*I, *J);
-      swaps += 1;
-
-      kidx = data.index_.raw_seq_idx(*I);
-    }
+      INFO("Arranging kmers in hash map order");
+      kmer_storage.reserve(kmers);
+      for (; kmer_it.good(); ++kmer_it) {
+          size_t kidx = data.index_.seq_idx(hammer::KMer(hammer::K, *kmer_it));
+          memcpy(&kmer_storage[kidx], *kmer_it, hammer::KMer::TotalBytes);
+      }
   }
-  INFO("Done. Total swaps: " << swaps);
+
+  unlink(counter.GetFinalKMersFname().c_str());
+  data.kmers_ = new MMappedRecordArrayReader<hammer::KMer::DataType>(counter.GetFinalKMersFname() + ".order", hammer::KMer::GetDataSize(hammer::K), /* unlink */ true);
 }
 
 void KMerDataCounter::FillKMerData(KMerData &data) {
