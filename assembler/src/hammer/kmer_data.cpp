@@ -274,25 +274,25 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
       FATAL_ERROR("The reads contain too many k-mers to fit into available memory limit. Increase memory limit and restart");
 
   {
-      MMappedFileRecordArrayIterator<hammer::KMer::DataType> kmer_it(counter.GetFinalKMersFname(), hammer::KMer::GetDataSize(hammer::K));
-      MMappedRecordArrayWriter<hammer::KMer::DataType> kmer_storage(counter.GetFinalKMersFname() + ".order", hammer::KMer::GetDataSize(hammer::K));
+    MMappedFileRecordArrayIterator<hammer::KMer::DataType> kmer_it(counter.GetFinalKMersFname(), hammer::KMer::GetDataSize(hammer::K));
 
-      INFO("Arranging kmers in hash map order");
-      kmer_storage.reserve(kmers);
-      for (; kmer_it.good(); ++kmer_it) {
-          size_t kidx = data.index_.seq_idx(hammer::KMer(hammer::K, *kmer_it));
-          memcpy(&kmer_storage[kidx], *kmer_it, hammer::KMer::TotalBytes);
-      }
+    INFO("Arranging kmers in hash map order");
+    data.kmers_.set_size(kmers);
+    data.kmers_.set_data(new hammer::KMer::DataType[kmers * hammer::KMer::GetDataSize(hammer::K)]);
+
+    for (; kmer_it.good(); ++kmer_it) {
+      size_t kidx = data.index_.seq_idx(hammer::KMer(hammer::K, *kmer_it));
+      memcpy(data.kmers_[kidx].data(), *kmer_it, hammer::KMer::TotalBytes);
+    }
+
+    unlink(counter.GetFinalKMersFname().c_str());
   }
-
-  unlink(counter.GetFinalKMersFname().c_str());
-  data.kmers_ = new MMappedRecordArrayReader<hammer::KMer::DataType>(counter.GetFinalKMersFname() + ".order", hammer::KMer::GetDataSize(hammer::K), /* unlink */ true);
 }
 
 void KMerDataCounter::FillKMerData(KMerData &data) {
   // Now use the index to fill the kmer quality information.
   INFO("Collecting K-mer information, this takes a while.");
-  data.data_.resize(data.kmers_->size());
+  data.data_.resize(data.kmers_.size());
 
   KMerDataFiller filler(data);
   const auto& dataset = cfg::get().dataset;

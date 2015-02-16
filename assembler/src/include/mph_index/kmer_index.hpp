@@ -45,6 +45,7 @@ struct kmer_index_traits {
   typedef typename RawKMerStorage::const_iterator       raw_data_const_iterator;
   typedef typename RawKMerStorage::iterator::value_type KMerRawData;
   typedef typename RawKMerStorage::iterator::reference  KMerRawReference;
+  typedef typename RawKMerStorage::const_iterator::reference  KMerRawConstReference;
 
   struct raw_equal_to {
     bool operator()(const Seq &lhs, const KMerRawReference rhs) {
@@ -54,6 +55,9 @@ struct kmer_index_traits {
 
   struct raw_create {
     Seq operator()(unsigned K, const KMerRawReference kmer) {
+      return Seq(K, kmer.data());
+    }
+    Seq operator()(unsigned K, const KMerRawConstReference kmer) {
       return Seq(K, kmer.data());
     }
   };

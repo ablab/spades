@@ -564,6 +564,10 @@ class array_vector {
     return const_iterator(data_ + size_ * el_sz_, el_sz_);
   }
 
+  size_t size() const { return size_; }
+
+  __storage_pointer data() const { return data_; }
+
   void set_size(size_t size) {
     size_ = size;
   }
