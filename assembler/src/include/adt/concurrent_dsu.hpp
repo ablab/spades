@@ -23,8 +23,8 @@ class ConcurrentDSU {
   union atomic_set_t {
     uint64_t raw;
     struct {
-      uint32_t next  : 32;
-      uint32_t size  : 31;
+      uint64_t next  : 40;
+      uint32_t size  : 23;
       uint32_t dirty : 1;
     };
   } __attribute__ ((packed));
@@ -32,20 +32,20 @@ class ConcurrentDSU {
  public:
   ConcurrentDSU(size_t size) :
       size(size) {
-    if (size > 0xFFFFFFFFULL) {
-      std::cerr << "Error, size greater than 2^32 -1";
+    if (size > 0xFFFFFFFFFULL) {
+      std::cerr << "Error, size greater than 2^40 -1";
       exit(-1);
     }
 
     data = new atomic_set_t[size];
     for (size_t i = 0; i < size; i++) {
-      data[i].next = (uint32_t) i;
+      data[i].next = i;
       data[i].size = 1;
       data[i].dirty = 0;
     }
   }
 
-  void unite(unsigned x, unsigned y) {
+  void unite(size_t x, size_t y) {
     while (true) {
       x = find_set(x);
       y = find_set(y);
@@ -67,7 +67,7 @@ class ConcurrentDSU {
           while (true) {
             atomic_set_t old = data[y];
             atomic_set_t nnew = old;
-            nnew.size = (uint32_t) ((nnew.size + data[x].size) & 0x7fffffff);
+            nnew.size = (uint32_t) ((nnew.size + data[x].size) & 0x7fffff);
             if (__sync_bool_compare_and_swap(&data[y].raw, old.raw, nnew.raw)) {
               break;
             }
@@ -78,13 +78,13 @@ class ConcurrentDSU {
     }
   }
 
-  size_t set_size(unsigned i) const {
-    unsigned el = find_set(i);
+  size_t set_size(size_t i) const {
+    size_t el = find_set(i);
     return data[el].size;
   }
 
-  unsigned find_set(unsigned x) const {
-    unsigned r = x;
+  size_t find_set(size_t x) const {
+    size_t r = x;
 
     // The version with full path compression
 
@@ -96,7 +96,7 @@ class ConcurrentDSU {
     unsigned r_size = data[r].size;
     unsigned x_size = data[x].size;
     while (x_size < r_size || (r_size == x_size && x < r)) {
-        unsigned next = data[x].next;
+        size_t next = data[x].next;
         atomic_set_t old = data[x];
         atomic_set_t nnew = old;
         nnew.next = r;
@@ -111,7 +111,7 @@ class ConcurrentDSU {
  #if 0
     // The version with path halving
     while (x != data[x].next) {
-      unsigned next = data[x].next;
+      size_t next = data[x].next;
       atomic_set_t old = data[x];
       atomic_set_t nnew = old;
       nnew.next = data[next].next;
@@ -135,7 +135,7 @@ class ConcurrentDSU {
     // First, touch all the sets to make them directly connect to the root
 #   pragma omp parallel for
     for (size_t x = 0; x < size; ++x)
-        (void) find_set((unsigned) x);
+        (void) find_set(x);
 
     std::unordered_map<size_t, size_t> sizes;
 
@@ -202,7 +202,7 @@ class ConcurrentDSU {
   void get_sets(std::vector<std::vector<size_t> > &otherWay) {
     otherWay.resize(size);
     for (size_t i = 0; i < size; i++) {
-      unsigned set = find_set((unsigned) i);
+      size_t set = find_set(i);
       otherWay[set].push_back(i);
     }
     otherWay.erase(remove_if(otherWay.begin(), otherWay.end(), zero_size),
@@ -210,7 +210,7 @@ class ConcurrentDSU {
   }
 
 private:
-  bool lock(unsigned y) {
+  bool lock(size_t y) {
     while (true) {
       atomic_set_t old = data[y];
       if (old.next != y) {
@@ -226,7 +226,7 @@ private:
     return false;
   }
 
-  void unlock(unsigned y) {
+  void unlock(size_t y) {
     data[y].dirty = 0;
   }
 
@@ -234,15 +234,15 @@ private:
     return v.size() == 0;
   }
 
-  bool update_root(uint32_t x, uint32_t oldrank, uint32_t y,
-                   uint32_t newrank) {
+  bool update_root(size_t x, uint32_t oldrank,
+                   size_t y, uint32_t newrank) {
     atomic_set_t old = data[x];
     if (old.next != x || old.size != oldrank) {
       return false;
     }
     atomic_set_t nnew = old;
     nnew.next = y;
-    nnew.size = newrank & 0x7fffffff;
+    nnew.size = newrank & 0x7fffff;
     return __sync_bool_compare_and_swap(&data[x].raw, old.raw, nnew.raw);
   }
 
