@@ -79,12 +79,14 @@ void DatasetProcessor::SplitSingleLibrary(const string &all_reads_filename, cons
 
 void DatasetProcessor::FlushAll(const size_t lib_count) {
     for (const auto &ac : all_contigs_) {
-        ofstream stream(ac.second.sam_filenames[lib_count].first.c_str(), std::ios_base::app | std::ios_base::out);
-        for (const string &read : buffered_reads_[ac.first]) {
-            stream << read;
-            stream << '\n';
+        if (buffered_reads_[ac.first].size() > 0) {
+            ofstream stream(ac.second.sam_filenames[lib_count].first.c_str(), std::ios_base::app | std::ios_base::out);
+            for (const string &read : buffered_reads_[ac.first]) {
+                stream << read;
+                stream << '\n';
+            }
+            buffered_reads_[ac.first].clear();
         }
-        buffered_reads_[ac.first].clear();
     }
 }
 
@@ -213,10 +215,9 @@ void DatasetProcessor::PrepareContigDirs(const size_t lib_count) {
     string out_dir = GetLibDir(lib_count);
     for (auto &ac : all_contigs_) {
         auto contig_name = ac.first;
-        string header = "@SQ\tSN:" + contig_name + "\tLN:" + to_string(all_contigs_[contig_name].contig_length);
-        BufferedOutputRead(header, contig_name, lib_count);
-        string out_name = path::append_path(out_dir, ac.first + ".sam");
+        string out_name = path::append_path(out_dir, contig_name + ".sam");
         ac.second.sam_filenames.push_back(make_pair(out_name, unsplitted_sam_files_[lib_count].second));
+        BufferedOutputRead("@SQ\tSN:" + contig_name + "\tLN:" + to_string(all_contigs_[contig_name].contig_length), contig_name, lib_count);
     }
     FlushAll(lib_count);
 }
@@ -237,6 +238,7 @@ void DatasetProcessor::ProcessDataset() {
                 INFO(left + " " + right);
                 string samf = RunPairedBwa(left, right, lib_num);
                 if (samf != "") {
+                    INFO("Adding samfile " << samf);
                     unsplitted_sam_files_.push_back(make_pair(samf, lib_type));
                     PrepareContigDirs(lib_num);
                     SplitPairedLibrary(samf, lib_num);
