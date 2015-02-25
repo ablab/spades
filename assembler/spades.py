@@ -488,7 +488,7 @@ def main(args):
                 if v == '-o' or v == '--restart-from':
                     flag = True
                     continue
-                if flag:
+                if flag or v.startswith('--restart-from='):  # you can specify '--restart-from=k33' but not '-o=out_dir'
                     flag = False
                     continue
                 updated_params += " " + v
