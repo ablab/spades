@@ -163,38 +163,6 @@ int main(int argc, char * argv[]) {
         }
 #endif
         INFO("Clustering done. Total clusters: " << num_classes);
-
-        if (cfg::get().general_debug) {
-          INFO("Debug mode on. Writing down clusters.");
-
-          std::string fname = hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming");
-          std::ofstream ofs(fname.c_str(),
-                            std::ios::binary | std::ios::out);
-
-          ofs.write((char*)&num_classes, sizeof(num_classes));
-          for (size_t i=0; i < classes.size(); ++i) {
-            size_t sz = classes[i].size();
-            ofs.write((char*)&sz, sizeof(sz));
-            ofs.write((char*)&classes[i][0], sz * sizeof(classes[i][0]));
-          }
-        }
-      } else {
-        INFO("Reading clusters");
-
-        std::string fname = hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming");
-        std::ifstream is(fname.c_str(), std::ios::binary | std::ios::in);
-        VERIFY(is.good());
-
-        size_t num_classes = 0;
-        is.read((char*)&num_classes, sizeof(num_classes));
-        classes.resize(num_classes);
-
-        for (size_t i = 0; i < num_classes; ++i) {
-          size_t sz = 0;
-          is.read((char*)&sz, sizeof(sz));
-          classes[i].resize(sz);
-          is.read((char*)&classes[i][0], sz * sizeof(classes[i][0]));
-        }
       }
 
       if (cfg::get().bayes_do || do_everything) {
@@ -220,7 +188,6 @@ int main(int argc, char * argv[]) {
         VERIFY(is.good());
         Globals::kmer_data->binary_read(is, fname);
       }
-      std::vector<std::vector<size_t>>().swap(classes);
 
       // expand the set of solid k-mers
       if (cfg::get().expand_do || do_everything) {

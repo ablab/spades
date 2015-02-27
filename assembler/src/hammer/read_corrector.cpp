@@ -6,135 +6,108 @@
 
 #include <string>
 #include <vector>
+#include <queue>
 
 using namespace hammer;
 
-static bool update(const KMerData &data,
-                   size_t pos,
-                   hammer::KMer kmer, const KMerStat & stat,
-                   std::vector<std::vector<unsigned> > & v,
-                   int & left, int & right, bool & isGood,
-                   bool correct_threshold, bool discard_singletons) {
-  bool res = false;
-  if (stat.isGoodForIterative() || (correct_threshold && stat.isGood())) {
-    isGood = true;
+struct state {
+    state(size_t p, std::string s, double pen, KMer l)
+            : pos(p), str(s), penalty(pen), last(l) {}
 
-    for (size_t j = 0; j < K; ++j)
-      v[kmer[j]][pos + j]++;
-    if ((int) pos < left)
-      left = (int)pos;
-    if ((int) pos > right)
-      right = (int)pos;
-  } else {
-    // if discard_only_singletons = true, we always use centers of clusters that do not coincide with the current center
-    if (stat.change() &&
-        (discard_singletons || data[stat.changeto].isGoodForIterative() ||
-         (correct_threshold && stat.isGood()))) {
+    size_t pos; std::string str; double penalty; KMer last;
+};
 
-      isGood = true;
-      if ((int) pos < left)
-        left = (int)pos;
-      if ((int) pos > right)
-        right = (int)pos;
-      KMer newkmer = data.kmer(stat.changeto);
-
-      for (size_t j = 0; j < K; ++j) {
-        v[newkmer[j]][pos + j]++;
-      }
-
-      res = true;
-    }
-  }
-
-  return res;
+std::ostream& operator<<(std::ostream &os, const state &state) {
+    os << "[pos: " << state.pos << ", last: " << state.last << " penalty: " << state.penalty << "]";
+    return os;
 }
+
+namespace std {
+template<>
+struct less<state> {
+    bool operator()(const state &lhs, const state &rhs) const {
+        return lhs.penalty < rhs.penalty ||
+               (lhs.penalty == rhs.penalty && lhs.pos < rhs.pos);
+    }
+};
+};
 
 bool ReadCorrector::CorrectOneRead(Read & r,
                                    bool correct_threshold, bool discard_singletons, bool discard_bad) {
-  bool isGood = false;
-  std::string seq = r.getSequenceString();
-  const std::string &qual = r.getQualityString();
-  
-  unsigned read_size = (unsigned)seq.size();
+    std::string seq = r.getSequenceString();
+    const std::string &qual = r.getQualityString();
 
-  VERIFY(read_size >= K);
+    size_t read_size = seq.size();
 
-  // create auxiliary structures for consensus
-  std::vector<std::vector<unsigned> > v(4, std::vector<unsigned>(read_size, 0));  // A=0, C=1, G=2, T=3
-  isGood = false;
+    // Find the longest "solid island"
+    size_t lleft_pos = -1ULL, lright_pos = -1ULL, solid_len = 0;
 
-  // getting the leftmost and rightmost positions of a solid kmer
-  int left = read_size; int right = -1;
-  bool changedRead = false;
-  ValidKMerGenerator<K> gen(seq.data(), qual.data(), read_size);
-  while (gen.HasMore()) {
-    size_t read_pos = gen.pos() - 1;
-    hammer::KMer kmer = gen.kmer();
-    const KMerStat &kmer_data = data_[kmer];
- 
-    changedRead = changedRead ||
-                  update(data_, read_pos,
-                         kmer, kmer_data, v,
-                         left, right, isGood, correct_threshold, discard_singletons);
+    ValidKMerGenerator<K> gen(seq.data(), qual.data(), read_size);
+    size_t left_pos = 0, right_pos = 0;
+    while (gen.HasMore()) {
+        size_t read_pos = gen.pos() - 1;
+        hammer::KMer kmer = gen.kmer();
+        const KMerStat &kmer_data = data_[kmer];
 
-    gen.Next();
-  }
+        if (kmer_data.isGood()) {
+            if (read_pos != right_pos - K + 2) {
+                left_pos = read_pos;
+                right_pos = left_pos + K - 1;
+            } else
+                right_pos += 1;
 
-  int left_rev = 0; int right_rev = read_size-(int)K;
+            if (right_pos - left_pos + 1 > solid_len) {
+                lleft_pos = left_pos;
+                lright_pos = right_pos;
+                solid_len = right_pos - left_pos + 1;
+            }
+        }
 
-  if (left <= right && left_rev <= right_rev) {
-    left = std::min(left, (int)read_size - left_rev - (int)K);
-    right = std::max(right, (int)read_size - right_rev - (int)K);
-  } else if ( left > right && left_rev <= right_rev ) {
-    left = (int)read_size - left_rev - (int)K;
-    right = (int)read_size - right_rev - (int)K;
-  }
+        // INFO("" << left_pos << ":" << right_pos << ":" << read_pos << ", " << lleft_pos << ":" << lright_pos << "(" << solid_len << "), " << (kmer_data.isGood() ? "solid" : "non-solid"));
 
-  // at this point the array v contains votes for consensus
-
-  size_t res = 0; // how many nucleotides have really changed?
-  size_t missed = 0;
-  // find max consensus element
-  for (size_t j=0; j < read_size; ++j) {
-    char cmax = seq[j]; unsigned nummax = 0;
-    for (unsigned char k=0; k < 4; ++k) {
-      if (v[k][j] > nummax) {
-        cmax = nucl(k); nummax = v[k][j];
-      }
+        gen.Next();
     }
-    if (seq[j] != cmax)
-      res += 1;
-    else if (nummax == 0)
-      missed += 1;
 
+    // Now iterate over all the k-mers of a read trying to make all the stuff solid and good.
+    if (solid_len && solid_len != read_size) {
+        std::string seq2 = seq;
+        //INFO(seq2.insert(lleft_pos, "[").insert(lright_pos + 2, "]"));
 
-    seq[j] = cmax;
-  }
+        std::priority_queue<state> corrections;
+        corrections.emplace(lright_pos, seq, 0.0, KMer(seq, lright_pos - K + 1, K, /* raw */ true));
+        while (!corrections.empty()) {
+            state correction = corrections.top(); corrections.pop();
+            //INFO("State: " << correction);
+            size_t pos = correction.pos + 1;
+            if (pos == read_size) {
+                //INFO(seq);
+                //INFO(correction.str);
+                //std::string qual2 = qual;
+                //for (size_t i = 0; i < qual2.size(); ++i)
+                //    qual2[i] += 33;
+                //INFO(qual2);
+                r.setSequence(correction.str.data(), /* preserve_trimming */ true);
+                return true;
+            } else {
+                for (char c = 0; c < 4; ++c) {
+                    KMer last = correction.last << c;
+                    size_t idx = data_.seq_idx(last);
+                    if (idx >= data_.size())
+                        continue;
 
-  r.setSequence(seq.data(), /* preserve_trimming */ true);
+                    const KMerStat &kmer_data = data_[idx];
+                    if (is_nucl(correction.str[pos]) && c == dignucl(correction.str[pos])) {
+                        // corrections.emplace(pos, correction.str, correction.penalty - (kmer_data.isGood() ? 0.0 : 1.0), last);
+                        corrections.emplace(pos, correction.str, correction.penalty + (kmer_data.isGood() ? 0.0 : Globals::quality_lprobs[qual[pos]]), last);
+                    } else if (kmer_data.isGood()) {
+                        std::string corrected = correction.str; corrected[pos] = nucl(c);
+                        // corrections.emplace(pos, corrected, correction.penalty - 1.0, last);
+                        corrections.emplace(pos, corrected, correction.penalty + Globals::quality_lrprobs[qual[pos]], last);
+                    }
+                }
+            }
+        }
+    }
 
-  // if discard_bad=false, we retain original sequences when needed
-  if (discard_bad) {
-    r.trimLeftRight(left, right+K-1);
-    if (left > 0 || right + K -1 < read_size)
-      changedRead = true;
-  }
-
-  if (res) {
-#   pragma omp atomic
-    changed_nucleotides_ += res;
-
-#   pragma omp atomic
-    changed_reads_ += 1;
-  }
-
-  if (missed) {
-#   pragma omp atomic
-    uncorrected_nucleotides_ += missed;
-  }
-
-# pragma omp atomic
-  total_nucleotides_ += read_size;
-
-  return isGood;
+    return solid_len == read_size;
 }
