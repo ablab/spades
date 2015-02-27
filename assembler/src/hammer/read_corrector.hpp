@@ -37,6 +37,12 @@ class ReadCorrector {
 
   bool CorrectOneRead(Read & r,
                       bool correct_threshold, bool discard_singletons, bool discard_bad);
+
+  private:
+    std::string CorrectReadLeft(const std::string &seq, const std::string &qual,
+                                size_t right_pos) const;
+    std::string CorrectReadRight(const std::string &seq, const std::string &qual,
+                                 size_t right_pos) const;
 };
 
 #endif

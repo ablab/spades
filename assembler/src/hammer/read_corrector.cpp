@@ -32,6 +32,85 @@ struct less<state> {
 };
 };
 
+std::string ReadCorrector::CorrectReadRight(const std::string &seq, const std::string &qual,
+                                            size_t right_pos) const {
+    size_t read_size = seq.size();
+    std::priority_queue<state> corrections;
+    corrections.emplace(right_pos, seq, 0.0, KMer(seq, right_pos - K + 1, K, /* raw */ true));
+    while (!corrections.empty()) {
+        state correction = corrections.top(); corrections.pop();
+        //INFO("State: " << correction);
+        size_t pos = correction.pos + 1;
+        if (pos == read_size) {
+            //INFO(seq);
+            //INFO(correction.str);
+            //std::string qual2 = qual;
+            //for (size_t i = 0; i < qual2.size(); ++i)
+            //    qual2[i] += 33;
+            //INFO(qual2);
+            return correction.str;
+        } else {
+            for (char c = 0; c < 4; ++c) {
+                KMer last = correction.last << c;
+                size_t idx = data_.seq_idx(last);
+                if (idx >= data_.size())
+                    continue;
+
+                const KMerStat &kmer_data = data_[idx];
+                if (is_nucl(correction.str[pos]) && c == dignucl(correction.str[pos])) {
+                    corrections.emplace(pos, correction.str, correction.penalty - (kmer_data.isGood() ? 0.0 : 1.0), last);
+                    //corrections.emplace(pos, correction.str, correction.penalty + (kmer_data.isGood() ? 0.0 : Globals::quality_lprobs[qual[pos]]), last);
+                } else if (kmer_data.isGood()) {
+                    std::string corrected = correction.str; corrected[pos] = nucl(c);
+                    corrections.emplace(pos, corrected, correction.penalty - 1.0, last);
+                    //corrections.emplace(pos, corrected, correction.penalty + Globals::quality_lrprobs[qual[pos]], last);
+                }
+            }
+        }
+    }
+
+    return seq;
+}
+
+std::string ReadCorrector::CorrectReadLeft(const std::string &seq, const std::string &qual,
+                                           size_t left_pos) const {
+    std::priority_queue<state> corrections;
+    corrections.emplace(left_pos, seq, 0.0, KMer(seq, left_pos, K, /* raw */ true));
+    while (!corrections.empty()) {
+        state correction = corrections.top(); corrections.pop();
+        //INFO("State: " << correction);
+        size_t pos = correction.pos - 1;
+        if (pos == -1ULL) {
+            //INFO(seq);
+            //INFO(correction.str);
+            //std::string qual2 = qual;
+            //for (size_t i = 0; i < qual2.size(); ++i)
+            //    qual2[i] += 33;
+            //INFO(qual2);
+            return correction.str;
+        } else {
+            for (char c = 0; c < 4; ++c) {
+                KMer last = correction.last >> c;
+                size_t idx = data_.seq_idx(last);
+                if (idx >= data_.size())
+                    continue;
+
+                const KMerStat &kmer_data = data_[idx];
+                if (is_nucl(correction.str[pos]) && c == dignucl(correction.str[pos])) {
+                    corrections.emplace(pos, correction.str, correction.penalty - (kmer_data.isGood() ? 0.0 : 1.0), last);
+                    //corrections.emplace(pos, correction.str, correction.penalty + (kmer_data.isGood() ? 0.0 : Globals::quality_lprobs[qual[pos]]), last);
+                } else if (kmer_data.isGood()) {
+                    std::string corrected = correction.str; corrected[pos] = nucl(c);
+                    corrections.emplace(pos, corrected, correction.penalty - 1.0, last);
+                    //corrections.emplace(pos, corrected, correction.penalty + Globals::quality_lrprobs[qual[pos]], last);
+                }
+            }
+        }
+    }
+
+    return seq;
+}
+
 bool ReadCorrector::CorrectOneRead(Read & r,
                                    bool correct_threshold, bool discard_singletons, bool discard_bad) {
     std::string seq = r.getSequenceString();
@@ -70,43 +149,19 @@ bool ReadCorrector::CorrectOneRead(Read & r,
 
     // Now iterate over all the k-mers of a read trying to make all the stuff solid and good.
     if (solid_len && solid_len != read_size) {
-        std::string seq2 = seq;
+        //std::string seq2 = seq;
         //INFO(seq2.insert(lleft_pos, "[").insert(lright_pos + 2, "]"));
 
-        std::priority_queue<state> corrections;
-        corrections.emplace(lright_pos, seq, 0.0, KMer(seq, lright_pos - K + 1, K, /* raw */ true));
-        while (!corrections.empty()) {
-            state correction = corrections.top(); corrections.pop();
-            //INFO("State: " << correction);
-            size_t pos = correction.pos + 1;
-            if (pos == read_size) {
-                //INFO(seq);
-                //INFO(correction.str);
-                //std::string qual2 = qual;
-                //for (size_t i = 0; i < qual2.size(); ++i)
-                //    qual2[i] += 33;
-                //INFO(qual2);
-                r.setSequence(correction.str.data(), /* preserve_trimming */ true);
-                return true;
-            } else {
-                for (char c = 0; c < 4; ++c) {
-                    KMer last = correction.last << c;
-                    size_t idx = data_.seq_idx(last);
-                    if (idx >= data_.size())
-                        continue;
+        seq = CorrectReadRight(seq, qual, lright_pos);
+        seq = CorrectReadLeft(seq, qual, lleft_pos);
 
-                    const KMerStat &kmer_data = data_[idx];
-                    if (is_nucl(correction.str[pos]) && c == dignucl(correction.str[pos])) {
-                        // corrections.emplace(pos, correction.str, correction.penalty - (kmer_data.isGood() ? 0.0 : 1.0), last);
-                        corrections.emplace(pos, correction.str, correction.penalty + (kmer_data.isGood() ? 0.0 : Globals::quality_lprobs[qual[pos]]), last);
-                    } else if (kmer_data.isGood()) {
-                        std::string corrected = correction.str; corrected[pos] = nucl(c);
-                        // corrections.emplace(pos, corrected, correction.penalty - 1.0, last);
-                        corrections.emplace(pos, corrected, correction.penalty + Globals::quality_lrprobs[qual[pos]], last);
-                    }
-                }
-            }
+        if (seq.size() != read_size){
+            INFO("Jere");
+            return false;
         }
+
+        r.setSequence(seq.data(), /* preserve_trimming */ true);
+        return true;
     }
 
     return solid_len == read_size;
