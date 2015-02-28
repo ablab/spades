@@ -5,6 +5,7 @@ class KMerData;
 struct KMerStat;
 class Read;
 
+#include <string>
 #include <vector>
 #include <cstddef>
 
