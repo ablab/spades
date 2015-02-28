@@ -33,12 +33,13 @@ struct less<state> {
 };
 
 std::string ReadCorrector::CorrectReadRight(const std::string &seq, const std::string &qual,
-                                            size_t right_pos) const {
+                                            size_t right_pos) {
     size_t read_size = seq.size();
     std::priority_queue<state> corrections;
     corrections.emplace(right_pos, seq, 0.0, KMer(seq, right_pos - K + 1, K, /* raw */ true));
     while (!corrections.empty()) {
         state correction = corrections.top(); corrections.pop();
+        changed_reads_ = std::max(changed_reads_, corrections.size());
         //INFO("State: " << correction);
         size_t pos = correction.pos + 1;
         if (pos == read_size) {
