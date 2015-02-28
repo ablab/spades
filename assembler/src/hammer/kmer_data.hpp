@@ -60,6 +60,14 @@ class KMerData {
     return kmer_push_back_buffer_[idx];
   }
 
+  size_t checking_seq_idx(hammer::KMer s) const {
+    size_t idx = seq_idx(s);
+    if (idx >= size())
+        return -1ULL;
+
+    return (s == kmer(idx) ? idx : -1ULL);
+  }
+
   KMerStat& operator[](hammer::KMer s) { return operator[](seq_idx(s)); }
   const KMerStat& operator[](hammer::KMer s) const { return operator[](seq_idx(s)); }
   size_t seq_idx(hammer::KMer s) const { return index_.seq_idx(s); }
