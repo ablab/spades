@@ -52,6 +52,9 @@ std::string ReadCorrector::CorrectReadRight(const std::string &seq, const std::s
             return correction.str;
         }
 
+	if (correction.penalty < 0.0 - read_size * 10 / 100)
+	    continue;
+
         char c = correction.str[pos];
         // See, whether it's enough to perform single nucl extension
         bool extended = false;
@@ -86,6 +89,9 @@ std::string ReadCorrector::CorrectReadRight(const std::string &seq, const std::s
             }
         }
     }
+
+    #pragma omp atomic
+    uncorrected_nucleotides_ += read_size;
 
     return seq;
 }
