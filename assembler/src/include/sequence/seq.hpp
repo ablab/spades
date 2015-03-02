@@ -170,12 +170,12 @@ class Seq {
   template<typename S>
   explicit Seq(const S &s, size_t offset = 0, size_t number_to_read = size_,
                bool raw = false) {
-    VERIFY(is_dignucl(s[0]) || is_nucl(s[0]));
+    VERIFY(is_dignucl(s[offset]) || is_nucl(s[offset]));
     if (!raw)
       VERIFY(offset + number_to_read <= this->size(s));
 
     // which symbols does our string contain : 0123 or ACGT?
-    bool digit_str = is_dignucl(s[0]);
+    bool digit_str = is_dignucl(s[offset]);
 
     // data -- one temporary variable corresponding to the i-th array element
     // and some counters
