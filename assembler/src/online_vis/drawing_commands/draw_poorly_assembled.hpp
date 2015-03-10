@@ -53,7 +53,6 @@ namespace online_visualization {
 
 class DrawUnresolvedRepeatsCommand : public DrawingCommand {
 private:
-    const size_t length_threshold_;
     const string ref_prefix_;
     const size_t gap_diff_threshold_;
     const double good_mapping_coeff_;
@@ -128,7 +127,7 @@ private:
 //        return answer;
 //    }
 
-    MappingPath<EdgeId> FindReferencePath2(const GraphPack& gp, EdgeId e1, EdgeId e2) const {
+    MappingPath<EdgeId> FindReferencePath(const GraphPack& gp, EdgeId e1, EdgeId e2) const {
         auto e1_poss = GatherPositions(gp, e1, ref_prefix_);
         auto e2_poss = GatherPositions(gp, e2, ref_prefix_);
         VERIFY(e1_poss.size() == 1 && e2_poss.size() == 1);
@@ -191,11 +190,11 @@ private:
         return double(mapped_range_length) > good_mapping_coeff_ * double(edge_length);
     }
 
-    vector<EdgeId> EdgesOfInterest(const GraphPack& gp, const MappingPath<EdgeId>& mapping_path) const {
+    vector<EdgeId> EdgesOfInterest(const GraphPack& gp, const MappingPath<EdgeId>& mapping_path, size_t length_threshold) const {
         vector<EdgeId> answer;
         for (size_t i = 0; i < mapping_path.size(); ++i) {
             EdgeId e = mapping_path[i].first;
-            if (gp.g.length(e) >= length_threshold_ 
+            if (gp.g.length(e) >= length_threshold 
                     && IsOfMultiplicityOne(gp, e)
                     && CheckMapping(gp.g.length(e), mapping_path[i].second.mapped_range.size())) {
                 answer.push_back(e);
@@ -207,13 +206,14 @@ private:
 protected:
     bool AnalyzeGaps(DebruijnEnvironment& curr_env, const GraphPack& gp, io::SingleRead contig, 
                                         string base_assembly_prefix, 
-                                        size_t max_genomic_gap = numeric_limits<size_t>::max(), 
+                                        size_t edge_length,
+                                        size_t max_genomic_gap, 
                                         size_t max_gap_cnt = -1u) const {
         auto mapper_ptr = debruijn_graph::MapperInstance(gp);
         MappingPath<EdgeId> mapping_path = mapper_ptr->MapRead(contig);
         auto pos_handler = gp.edge_pos;
         
-        auto long_unique = EdgesOfInterest(gp, mapping_path);
+        auto long_unique = EdgesOfInterest(gp, mapping_path, edge_length);
 
         bool found_smth = false;
         size_t cnt = 0;
@@ -238,7 +238,7 @@ protected:
                 << " genome pos : " << GatherPositions(gp, e2, "ref"));
 
             DEBUG("Looking for reference path");
-            auto ref_mapping_path = FindReferencePath2(gp, e1, e2);
+            auto ref_mapping_path = FindReferencePath(gp, e1, e2);
             if (ref_mapping_path.size() == 0) {
                 DEBUG("Couldn't find ref path between " << gp.g.str(e1) << " and " << gp.g.str(e2));
                 continue;
@@ -262,8 +262,10 @@ protected:
                 continue;
             }
             
-            string log = fmt::format("{:l} {:l} {:l} {:l} {:l}", genomic_gap, ref_path.size(), 
+            string log = fmt::format("{:d} {:d} {:d} {:d} {:d}", genomic_gap, ref_path.size(), 
                                 CumulativeLength(gp.g, ref_path), gp.g.int_id(e1), gp.g.int_id(e2));
+            string readable_log = fmt::format("Genomic gap: {:d}, number of edges: {:d}, edge 1: {:s}, edge 2 {:s}", genomic_gap, 
+                    ref_path.size(), gp.g.str(e1), gp.g.str(e2));
 
             if (!BelongToSameContig(gp, e1, e2, base_assembly_prefix)) {
                 DEBUG("Long unique edges not in the same contig of base assembly");
@@ -275,6 +277,8 @@ protected:
                 string pics_folder = curr_env.folder() + "/" + curr_env.GetFormattedPictureCounter()  + "_" + contig.name() + "/";
                 make_dir(pics_folder);
                 string pic_name = ToString(cnt++) + "_" +  ToString(genomic_gap) + "_" + ToString(gp.g.int_id(e1)) + "_" + ToString(gp.g.int_id(e2)) + "_";
+
+                LOG(readable_log);
                 DrawGap(curr_env, ref_path, pics_folder + pic_name);
             } else {
                 cerr << "1 " << log << endl;
@@ -284,7 +288,7 @@ protected:
     }
 
     DrawUnresolvedRepeatsCommand(const string& command_name)
-            : DrawingCommand(command_name), length_threshold_(1000), ref_prefix_("ref"), gap_diff_threshold_(1000), good_mapping_coeff_(0.7) {
+            : DrawingCommand(command_name), ref_prefix_("ref"), gap_diff_threshold_(1000), good_mapping_coeff_(0.7) {
     }
 
 };
@@ -293,7 +297,7 @@ class DrawUnresolvedWRTAssemblyCommand : public DrawUnresolvedRepeatsCommand {
 
 protected:
     size_t MinArgNumber() const {
-        return 2;
+        return 3;
     }
 
     bool CheckCorrectness(const vector<string>& args) const {
@@ -311,7 +315,7 @@ public:
     string Usage() const {
         string answer;
         answer = answer + "Command `draw_unresolved_wrt_assembly` \n" + "Usage:\n"
-                + "> draw_unresolved_wrt_assembly <contigs_file> <prefix_of_base_assembly> [first N contigs to analyze]\n"
+                + "> draw_unresolved_wrt_assembly <contigs_file> <prefix_of_base_assembly> <unique_edge_length> [first N contigs to analyze]\n"
                 + " Draws pictures of unresolved repeats.";
         return answer;
     }
@@ -323,6 +327,7 @@ public:
 
         std::string contigs_file = args[1];
         string base_assembly_prefix = args[2];
+        size_t edge_length = lexical_cast<size_t>(args[3]);
 
         if (!CheckFileExists(contigs_file)) {
             LOG("File with contigs " << contigs_file << " not found");
@@ -330,9 +335,9 @@ public:
         }
 
         size_t contig_cnt = -1u;
-        if (args.size() > 3) {
-            LOG("Will analyze first " << args[3] << " contigs");
-            contig_cnt = lexical_cast<size_t>(args[3]);
+        if (args.size() > 4) {
+            LOG("Will analyze first " << args[4] << " contigs");
+            contig_cnt = lexical_cast<size_t>(args[4]);
         }
         
         auto reader = make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(contigs_file));
@@ -343,7 +348,7 @@ public:
             (*reader) >> contig;
             LOG("Considering contig " << contig.name());
 
-            if (AnalyzeGaps(curr_env, curr_env.graph_pack(), contig, base_assembly_prefix)) {
+            if (AnalyzeGaps(curr_env, curr_env.graph_pack(), contig, base_assembly_prefix, edge_length, numeric_limits<size_t>::max())) {
                 curr_env.inc_pic_counter();
             }
             ++i;
@@ -357,7 +362,7 @@ class DrawUnresolvedWRTReferenceCommand : public DrawUnresolvedRepeatsCommand {
 
 protected:
     size_t MinArgNumber() const {
-        return 2;
+        return 3;
     }
 
     bool CheckCorrectness(const vector<string>& args) const {
@@ -375,7 +380,7 @@ public:
     string Usage() const {
         string answer;
         answer = answer + "Command `draw_unresolved_wrt_reference ` \n" + "Usage:\n"
-                + "> draw_unresolved_wrt_reference <gap_length> <prefix_of_base_assembly> [first N gaps to analyze]\n"
+                + "> draw_unresolved_wrt_reference <gap_length> <prefix_of_base_assembly> <unique_edge_length> [first N gaps to analyze]\n"
                 + " Draws pictures of unresolved repeats longer then gap_length between unique edges longer than some constant.";
         return answer;
     }
@@ -387,6 +392,7 @@ public:
 
         size_t max_interesting_gap = lexical_cast<size_t>(args[1]);
         std::string base_assembly_prefix = args[2];
+        size_t edge_length = lexical_cast<size_t>(args[3]);
 
         if (curr_env.graph_pack().genome.size() == 0) {
             LOG("Reference genome hasn't been loaded");
@@ -394,16 +400,18 @@ public:
         }
 
         size_t gap_cnt = -1u;
-        if (args.size() > 3) {
-            LOG("Will analyze first " << args[3] << " gaps");
-            gap_cnt = lexical_cast<size_t>(args[3]);
+        if (args.size() > 4) {
+            LOG("Will analyze first " << args[4] << " gaps");
+            gap_cnt = lexical_cast<size_t>(args[4]);
         }
         
         io::SingleRead ref_as_read("ref", curr_env.graph_pack().genome.str());
-        AnalyzeGaps(curr_env, curr_env.graph_pack(), ref_as_read, base_assembly_prefix, max_interesting_gap, gap_cnt);
+        AnalyzeGaps(curr_env, curr_env.graph_pack(), ref_as_read, 
+                    base_assembly_prefix, edge_length, max_interesting_gap, gap_cnt);
     }
 
 };
+
 class DrawPoorlyAssembledCommand : public DrawingCommand {
     const double WELL_ASSEMBLED_CONSTANT = 0.7;
 private:
