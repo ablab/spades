@@ -40,22 +40,12 @@ std::string ReadCorrector::CorrectReadRight(const std::string &seq, const std::s
     while (!corrections.empty()) {
         state correction = corrections.top(); corrections.pop();
         changed_reads_ = std::max(changed_reads_, corrections.size());
-        //INFO("State: " << correction);
         size_t pos = correction.pos + 1;
-        if (pos == read_size) {
-            //INFO(seq);
-            //INFO(correction.str);
-            //std::string qual2 = qual;
-            //for (size_t i = 0; i < qual2.size(); ++i)
-            //    qual2[i] += 33;
-            //INFO(qual2);
+        if (pos == read_size)
             return correction.str;
-        }
-
-	if (correction.penalty < 0.0 - read_size * 10 / 100)
-	    continue;
 
         char c = correction.str[pos];
+
         // See, whether it's enough to perform single nucl extension
         bool extended = false;
         if (is_nucl(c)) {
@@ -70,9 +60,15 @@ std::string ReadCorrector::CorrectReadRight(const std::string &seq, const std::s
             }
         }
 
+        // Ok, it's possible to extend using solely solid k-mer, do not try any other corrections.
         if (extended)
             continue;
 
+        // Do not allow too many corrections
+        if (correction.penalty < 0.0 - read_size * 10 / 100)
+            continue;
+
+        // Try corrections
         for (char cc = 0; cc < 4; ++cc) {
             KMer last = correction.last << cc;
             size_t idx = data_.checking_seq_idx(last);
