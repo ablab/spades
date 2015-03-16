@@ -10,15 +10,22 @@
 
 using namespace hammer;
 
-struct state {
-    state(size_t p, std::string s, double pen, KMer l)
-            : pos(p), str(s), penalty(pen), last(l) {}
+using positions_t = std::array<uint16_t, 4>;
 
-    size_t pos; std::string str; double penalty; KMer last;
+struct state {
+    state(size_t p, std::string s, double pen, KMer l, positions_t c)
+            : pos(p), str(s), penalty(pen), last(l), cpos(c) {}
+
+    size_t pos; std::string str; double penalty; KMer last; positions_t cpos;
 };
 
 std::ostream& operator<<(std::ostream &os, const state &state) {
     os << "[pos: " << state.pos << ", last: " << state.last << " penalty: " << state.penalty << "]";
+    return os;
+}
+
+std::ostream& operator<<(std::ostream &os, const positions_t &pos) {
+    os << "[" << pos[0] << ", " << pos[1] << ", " << pos[2] << ", " << pos[3] << "]";
     return os;
 }
 
@@ -36,10 +43,13 @@ std::string ReadCorrector::CorrectReadRight(const std::string &seq, const std::s
                                             size_t right_pos) {
     size_t read_size = seq.size();
     std::priority_queue<state> corrections;
-    corrections.emplace(right_pos, seq, 0.0, KMer(seq, right_pos - K + 1, K, /* raw */ true));
+    positions_t cpos{{(uint16_t)-1, (uint16_t)-1U, (uint16_t)-1U, (uint16_t)-1U}};
+
+    corrections.emplace(right_pos, seq,
+                        0.0, KMer(seq, right_pos - K + 1, K, /* raw */ true),
+                        cpos);
     while (!corrections.empty()) {
         state correction = corrections.top(); corrections.pop();
-        changed_reads_ = std::max(changed_reads_, corrections.size());
         size_t pos = correction.pos + 1;
         if (pos == read_size)
             return correction.str;
@@ -54,7 +64,7 @@ std::string ReadCorrector::CorrectReadRight(const std::string &seq, const std::s
             if (idx != -1ULL) {
                 const KMerStat &kmer_data = data_[idx];
                 if (kmer_data.isGood()) {
-                    corrections.emplace(pos, correction.str, correction.penalty, last);
+                    corrections.emplace(pos, correction.str, correction.penalty, last, correction.cpos);
                     extended = true;
                 }
             }
@@ -68,6 +78,12 @@ std::string ReadCorrector::CorrectReadRight(const std::string &seq, const std::s
         if (correction.penalty < 0.0 - read_size * 10 / 100)
             continue;
 
+        // Do not allow clustered corrections
+        if (pos - correction.cpos.front() < 8) {
+            // INFO("Cluster " << pos << "," << correction.cpos);
+            continue;
+        }
+
         // Try corrections
         for (char cc = 0; cc < 4; ++cc) {
             KMer last = correction.last << cc;
@@ -75,19 +91,22 @@ std::string ReadCorrector::CorrectReadRight(const std::string &seq, const std::s
             if (idx == -1ULL)
                 continue;
 
+            positions_t cpos = correction.cpos;
+            std::copy(cpos.begin() + 1, cpos.end(), cpos.begin());
+            cpos.back() = (uint16_t)pos;
             const KMerStat &kmer_data = data_[idx];
             char ncc = nucl(cc);
             if (c == ncc) {
-                corrections.emplace(pos, correction.str, correction.penalty - (kmer_data.isGood() ? 0.0 : 1.0), last);
+                corrections.emplace(pos, correction.str, correction.penalty - (kmer_data.isGood() ? 0.0 : 1.0), last, cpos);
             } else if (kmer_data.isGood()) {
                 std::string corrected = correction.str; corrected[pos] = ncc;
-                corrections.emplace(pos, corrected, correction.penalty - 1.0, last);
+                corrections.emplace(pos, corrected, correction.penalty - 1.0, last, cpos);
             }
         }
     }
 
-    #pragma omp atomic
-    uncorrected_nucleotides_ += read_size;
+#   pragma omp atomic
+    uncorrected_nucleotides_ += read_size - right_pos;
 
     return seq;
 }
@@ -128,14 +147,29 @@ bool ReadCorrector::CorrectOneRead(Read & r,
         gen.Next();
     }
 
+#   pragma omp atomic
+    total_nucleotides_ += read_size;
+
     // Now iterate over all the k-mers of a read trying to make all the stuff solid and good.
     if (solid_len && solid_len != read_size) {
         //std::string seq2 = seq;
         //INFO(seq2.insert(lleft_pos, "[").insert(lright_pos + 2, "]"));
 
-        seq = CorrectReadRight(seq, qual, lright_pos);
-        seq = ReverseComplement(CorrectReadRight(ReverseComplement(seq), Reverse(qual),
-                                                 read_size - 1 - lleft_pos));
+        std::string newseq = CorrectReadRight(seq, qual, lright_pos);
+        newseq = ReverseComplement(CorrectReadRight(ReverseComplement(newseq), Reverse(qual),
+                                                    read_size - 1 - lleft_pos));
+
+        unsigned corrected = 0;
+        for (size_t i = 0; i < read_size; ++i)
+            corrected += seq[i] != newseq[i];
+
+        if (corrected) {
+#           pragma omp atomic
+            changed_reads_ += 1;
+
+#           pragma omp atomic
+            changed_nucleotides_ += corrected;
+        }
 
         if (seq.size() != read_size) {
             INFO("Jere");
