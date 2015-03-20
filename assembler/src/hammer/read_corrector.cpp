@@ -176,7 +176,7 @@ bool ReadCorrector::CorrectOneRead(Read & r,
             return false;
         }
 
-        r.setSequence(seq.data(), /* preserve_trimming */ true);
+        r.setSequence(newseq.data(), /* preserve_trimming */ true);
         return true;
     }
 
