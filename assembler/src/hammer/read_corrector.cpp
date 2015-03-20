@@ -63,10 +63,9 @@ std::string ReadCorrector::CorrectReadRight(const std::string &seq, const std::s
             size_t idx = data_.checking_seq_idx(last);
             if (idx != -1ULL) {
                 const KMerStat &kmer_data = data_[idx];
-                if (kmer_data.isGood()) {
-                    corrections.emplace(pos, correction.str, correction.penalty, last, correction.cpos);
+                corrections.emplace(pos, correction.str, correction.penalty - (kmer_data.isGood() ? 0.0 : 1.0), last, cpos);
+                if (kmer_data.isGood())
                     extended = true;
-                }
             }
         }
 
@@ -85,20 +84,21 @@ std::string ReadCorrector::CorrectReadRight(const std::string &seq, const std::s
         }
 
         // Try corrections
+        positions_t cpos = correction.cpos;
+        std::copy(cpos.begin() + 1, cpos.end(), cpos.begin());
+        cpos.back() = (uint16_t)pos;
         for (char cc = 0; cc < 4; ++cc) {
+            char ncc = nucl(cc);
+            if (c == ncc)
+                continue;
+
             KMer last = correction.last << cc;
             size_t idx = data_.checking_seq_idx(last);
             if (idx == -1ULL)
                 continue;
 
-            positions_t cpos = correction.cpos;
-            std::copy(cpos.begin() + 1, cpos.end(), cpos.begin());
-            cpos.back() = (uint16_t)pos;
             const KMerStat &kmer_data = data_[idx];
-            char ncc = nucl(cc);
-            if (c == ncc) {
-                corrections.emplace(pos, correction.str, correction.penalty - (kmer_data.isGood() ? 0.0 : 1.0), last, cpos);
-            } else if (kmer_data.isGood()) {
+            if (kmer_data.isGood()) {
                 std::string corrected = correction.str; corrected[pos] = ncc;
                 corrections.emplace(pos, corrected, correction.penalty - 1.0, last, cpos);
             }
