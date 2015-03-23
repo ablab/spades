@@ -30,19 +30,19 @@ class ConcurrentDSU {
   } __attribute__ ((packed));
 
  public:
-  ConcurrentDSU(size_t size) :
-      size(size) {
-    if (size > 0xFFFFFFFFFULL) {
-      std::cerr << "Error, size greater than 2^40 -1";
-      exit(-1);
-    }
+  ConcurrentDSU(size_t size)
+     : size(size) {
+      if (size > ((1ULL << 40) - 1)) {
+          std::cerr << "Error, size greater than 2^40 -1";
+          exit(-1);
+      }
 
-    data = new atomic_set_t[size];
-    for (size_t i = 0; i < size; i++) {
-      data[i].next = i;
-      data[i].size = 1;
-      data[i].dirty = 0;
-    }
+      data = new atomic_set_t[size];
+      for (size_t i = 0; i < size; i++) {
+          data[i].next = i & ((1ULL << 40) - 1);
+          data[i].size = 1;
+          data[i].dirty = 0;
+      }
   }
 
   void unite(size_t x, size_t y) {
@@ -67,7 +67,7 @@ class ConcurrentDSU {
           while (true) {
             atomic_set_t old = data[y];
             atomic_set_t nnew = old;
-            nnew.size = (uint32_t) ((nnew.size + data[x].size) & 0x7fffff);
+            nnew.size = (uint32_t) (nnew.size + data[x].size) & ((1U << 23) - 1);
             if (__sync_bool_compare_and_swap(&data[y].raw, old.raw, nnew.raw)) {
               break;
             }
@@ -99,7 +99,7 @@ class ConcurrentDSU {
         size_t next = data[x].next;
         atomic_set_t old = data[x];
         atomic_set_t nnew = old;
-        nnew.next = r;
+        nnew.next = r & ((1ULL << 40) - 1);
         __sync_bool_compare_and_swap(&data[x].raw, old.raw, nnew.raw);
 
         x = next;
@@ -241,8 +241,8 @@ private:
       return false;
     }
     atomic_set_t nnew = old;
-    nnew.next = y;
-    nnew.size = newrank & 0x7fffff;
+    nnew.next = y & ((1ULL << 40) - 1);
+    nnew.size = newrank & ((1U << 23) - 1);
     return __sync_bool_compare_and_swap(&data[x].raw, old.raw, nnew.raw);
   }
 
