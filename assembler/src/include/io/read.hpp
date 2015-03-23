@@ -140,9 +140,8 @@ public:
 
   void setSequence(const char* s, bool preserve_trimming = false) {
     seq_ = s;
-    initial_size_ = (int)seq_.size();
     if (!preserve_trimming) {
-      ltrim_ = 0; rtrim_ = initial_size_;
+        ltrim_ = 0; rtrim_ = initial_size_ = (int)seq_.size();
     }
     valid_ = updateValid();
   }
@@ -206,7 +205,7 @@ public:
     return Read(newName, ReverseComplement(seq_), Reverse(qual_));
   }
 
-  void print(std::ofstream & outf, int offset) const {
+  void print(std::ostream & outf, int offset) const {
   	outf << "@" << name_.c_str() << "\n";
   	for (int i=0; i < ltrim_; ++i) outf << "N";
   	outf << seq_.c_str();
