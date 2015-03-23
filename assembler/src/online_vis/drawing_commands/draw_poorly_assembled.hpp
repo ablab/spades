@@ -51,16 +51,117 @@ namespace online_visualization {
 //
 //};
 
-class DrawUnresolvedRepeatsCommand : public DrawingCommand {
-private:
-    const string ref_prefix_;
-    const size_t gap_diff_threshold_;
-    const double good_mapping_coeff_;
+struct RepeatInfo {
+    EdgeId e1;
+    EdgeId e2;
+    size_t genomic_gap;
+    vector<EdgeId> ref_path;
+    string seq_name;
+    //number of repeat in seq
+    size_t local_cnt;
+
+    RepeatInfo(EdgeId e1_,
+    EdgeId e2_,
+    size_t genomic_gap_,
+    const vector<EdgeId>& ref_path_,
+    string seq_name_,
+    size_t local_cnt_) :
+        e1(e1_), e2(e2_),
+        genomic_gap(genomic_gap_), ref_path(ref_path_),
+        seq_name(seq_name_), local_cnt(local_cnt_) {
+
+    }
+};
+
+class RepeatProcessor {
+public:
+    virtual ~RepeatProcessor() {
+    }
+
+    virtual void ProcessUnresolved(DebruijnEnvironment&, const RepeatInfo&) const {}
+
+    virtual void ProcessResolved(DebruijnEnvironment&, const RepeatInfo&) const {}
+};
+
+class StructuredFileLogger : public RepeatProcessor {
+
+    string Log(const GraphPack& gp, const RepeatInfo& repeat_info) const {
+        return fmt::format("{:d} {:d} {:d} {:d} {:d}", repeat_info.genomic_gap, repeat_info.ref_path.size(),
+                                CumulativeLength(gp.g, repeat_info.ref_path),
+                                gp.g.int_id(repeat_info.e1), gp.g.int_id(repeat_info.e2));
+    }
+
+public:
+    virtual void ProcessUnresolved(DebruijnEnvironment& curr_env, const RepeatInfo& repeat_info) const {
+        cerr << "RI: 0 " << Log(curr_env.graph_pack(), repeat_info) << endl;
+
+    }
+
+    virtual void ProcessResolved(DebruijnEnvironment& curr_env, const RepeatInfo& repeat_info) const {
+        cerr << "RI: 1 " << Log(curr_env.graph_pack(), repeat_info) << endl;
+    }
+};
+
+class ReadableUnresolvedLogger : public RepeatProcessor {
+
+public:
+    virtual void ProcessUnresolved(DebruijnEnvironment& curr_env, const RepeatInfo& repeat_info) const {
+        LOG(fmt::format("Genomic gap: {:d}, number of edges: {:d}, edge 1: {:s}, edge 2 {:s}", repeat_info.genomic_gap,
+                        repeat_info.ref_path.size(), curr_env.graph().str(repeat_info.e1),
+                        curr_env.graph().str(repeat_info.e2)));
+    }
+
+};
+
+class UnresolvedPrinter : public RepeatProcessor {
 
     void DrawGap(DebruijnEnvironment& curr_env, const vector<EdgeId>& path, string filename, string /*label*/ = "") const {
         omnigraph::visualization::WriteComponentsAlongPath<Graph>(curr_env.graph(), path, filename, curr_env.coloring(), curr_env.labeler());
         LOG("The pictures is written to " << filename);
     }
+
+public:
+
+    virtual void ProcessUnresolved(DebruijnEnvironment& curr_env, const RepeatInfo& repeat_info) const {
+        make_dir(curr_env.folder());
+        string pics_folder = curr_env.folder() + "/" + curr_env.GetFormattedPictureCounter()  + "_" + repeat_info.seq_name + "/";
+        make_dir(pics_folder);
+        string pic_name = ToString(repeat_info.local_cnt) + "_" +  ToString(repeat_info.genomic_gap) +
+                "_" + ToString(curr_env.graph().int_id(repeat_info.e1)) + "_" + ToString(curr_env.graph().int_id(repeat_info.e2)) + "_";
+
+        DrawGap(curr_env, repeat_info.ref_path, pics_folder + pic_name);
+    }
+
+};
+
+class PairedInfoChecker : public RepeatProcessor {
+
+    bool CheckInfo(const omnigraph::de::PairedInfoIndexT<Graph>& clustered_pi_idx, EdgeId e1, EdgeId e2) const {
+        return !clustered_pi_idx.GetEdgePairInfo(e1, e2).empty();
+    }
+
+public:
+
+    virtual void ProcessUnresolved(DebruijnEnvironment& curr_env, const RepeatInfo& repeat_info) const {
+        const omnigraph::de::PairedInfoIndexT<Graph>& clustered_pi_idx = curr_env.graph_pack().clustered_indices[0];
+        const Graph& g = curr_env.graph();
+        for (EdgeId e : repeat_info.ref_path) {
+            if (!CheckInfo(clustered_pi_idx, repeat_info.e1, e)) {
+                cerr << "NO_PI: " << g.int_id(repeat_info.e1) <<
+                        " " << g.int_id(repeat_info.e2) <<
+                        " " << g.int_id(e) << endl;
+            }
+        }
+    }
+
+};
+
+class DrawUnresolvedRepeatsCommand : public DrawingCommand {
+private:
+    const string ref_prefix_;
+    const size_t gap_diff_threshold_;
+    const double good_mapping_coeff_;
+    vector<shared_ptr<RepeatProcessor>> processors_;
 
     vector<EdgePosition> GatherPositions(const GraphPack& gp, EdgeId e, const string& prefix) const {
         vector<EdgePosition> answer;
@@ -204,11 +305,14 @@ private:
     }
 
 protected:
-    bool AnalyzeGaps(DebruijnEnvironment& curr_env, const GraphPack& gp, io::SingleRead contig, 
+
+    bool AnalyzeGaps(DebruijnEnvironment& curr_env,
+                                        io::SingleRead contig,
                                         string base_assembly_prefix, 
                                         size_t edge_length,
                                         size_t max_genomic_gap, 
                                         size_t max_gap_cnt = -1u) const {
+        GraphPack& gp = curr_env.graph_pack();
         auto mapper_ptr = debruijn_graph::MapperInstance(gp);
         MappingPath<EdgeId> mapping_path = mapper_ptr->MapRead(contig);
         auto pos_handler = gp.edge_pos;
@@ -262,33 +366,26 @@ protected:
                 continue;
             }
             
-            string log = fmt::format("{:d} {:d} {:d} {:d} {:d}", genomic_gap, ref_path.size(), 
-                                CumulativeLength(gp.g, ref_path), gp.g.int_id(e1), gp.g.int_id(e2));
-            string readable_log = fmt::format("Genomic gap: {:d}, number of edges: {:d}, edge 1: {:s}, edge 2 {:s}", genomic_gap, 
-                    ref_path.size(), gp.g.str(e1), gp.g.str(e2));
-
+            RepeatInfo info(e1, e2, genomic_gap, ref_path, contig.name(), cnt++);
             if (!BelongToSameContig(gp, e1, e2, base_assembly_prefix)) {
                 DEBUG("Long unique edges not in the same contig of base assembly");
-                cerr << "0 " << log << endl;
-
+                for (auto processor : processors_) {
+                    processor->ProcessUnresolved(curr_env, info);
+                }
                 found_smth = true;
-                
-                make_dir(curr_env.folder());
-                string pics_folder = curr_env.folder() + "/" + curr_env.GetFormattedPictureCounter()  + "_" + contig.name() + "/";
-                make_dir(pics_folder);
-                string pic_name = ToString(cnt++) + "_" +  ToString(genomic_gap) + "_" + ToString(gp.g.int_id(e1)) + "_" + ToString(gp.g.int_id(e2)) + "_";
-
-                LOG(readable_log);
-                DrawGap(curr_env, ref_path, pics_folder + pic_name);
             } else {
-                cerr << "1 " << log << endl;
+                for (auto processor : processors_) {
+                    processor->ProcessResolved(curr_env, info);
+                }
             }
         }
         return found_smth;
     }
 
-    DrawUnresolvedRepeatsCommand(const string& command_name)
-            : DrawingCommand(command_name), ref_prefix_("ref"), gap_diff_threshold_(1000), good_mapping_coeff_(0.7) {
+    DrawUnresolvedRepeatsCommand(const string& command_name,
+                                 const vector<shared_ptr<RepeatProcessor>>& processors)
+            : DrawingCommand(command_name), ref_prefix_("ref"), gap_diff_threshold_(1000),
+              good_mapping_coeff_(0.7), processors_(processors) {
     }
 
 };
@@ -309,7 +406,8 @@ protected:
 
 public:
     DrawUnresolvedWRTAssemblyCommand() : 
-        DrawUnresolvedRepeatsCommand("draw_unresolved_wrt_assembly") {
+        DrawUnresolvedRepeatsCommand("draw_unresolved_wrt_assembly",
+                                     vector<shared_ptr<RepeatProcessor>>{make_shared<StructuredFileLogger>()}) {
     }
 
     string Usage() const {
@@ -348,7 +446,8 @@ public:
             (*reader) >> contig;
             LOG("Considering contig " << contig.name());
 
-            if (AnalyzeGaps(curr_env, curr_env.graph_pack(), contig, base_assembly_prefix, edge_length, numeric_limits<size_t>::max())) {
+            if (AnalyzeGaps(curr_env, contig, base_assembly_prefix,
+                            edge_length, numeric_limits<size_t>::max())) {
                 curr_env.inc_pic_counter();
             }
             ++i;
@@ -374,7 +473,9 @@ protected:
 
 public:
     DrawUnresolvedWRTReferenceCommand() : 
-        DrawUnresolvedRepeatsCommand("draw_unresolved_wrt_reference") {
+        DrawUnresolvedRepeatsCommand("draw_unresolved_wrt_reference",
+                                     vector<shared_ptr<RepeatProcessor>>{make_shared<StructuredFileLogger>(),
+                                     make_shared<PairedInfoChecker>()}) {
     }
 
     string Usage() const {
@@ -406,8 +507,8 @@ public:
         }
         
         io::SingleRead ref_as_read("ref", curr_env.graph_pack().genome.str());
-        AnalyzeGaps(curr_env, curr_env.graph_pack(), ref_as_read, 
-                    base_assembly_prefix, edge_length, max_interesting_gap, gap_cnt);
+        AnalyzeGaps(curr_env, ref_as_read, base_assembly_prefix,
+                    edge_length, max_interesting_gap, gap_cnt);
     }
 
 };

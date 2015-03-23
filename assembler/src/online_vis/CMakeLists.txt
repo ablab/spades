@@ -8,6 +8,7 @@ project(online_vis CXX)
 
 add_executable(online_vis
                ${CMAKE_SOURCE_DIR}/debruijn/config_struct.cpp
+               ${CMAKE_SOURCE_DIR}/debruijn/genomic_info_filler.cpp
                ${CMAKE_SOURCE_DIR}/debruijn/path_extend/pe_config_struct.cpp
                autocompletion.cpp
                main.cpp)
