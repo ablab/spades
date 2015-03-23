@@ -145,7 +145,11 @@ public:
     virtual void ProcessUnresolved(DebruijnEnvironment& curr_env, const RepeatInfo& repeat_info) const {
         const omnigraph::de::PairedInfoIndexT<Graph>& clustered_pi_idx = curr_env.graph_pack().clustered_indices[0];
         const Graph& g = curr_env.graph();
-        for (EdgeId e : repeat_info.ref_path) {
+        vector<EdgeId> edges;
+        edges.push_back(repeat_info.e1);
+        push_back_all(edges, repeat_info.ref_path);
+        edges.push_back(repeat_info.e2);
+        for (EdgeId e : edges) {
             if (!CheckInfo(clustered_pi_idx, repeat_info.e1, e)) {
                 cerr << "NO_PI: " << g.int_id(repeat_info.e1) <<
                         " " << g.int_id(repeat_info.e2) <<
