@@ -67,10 +67,10 @@ def break_scaffolds(argv):
     else:
         list_of_sizes = sizes_of_Ns_regions.keys()
         list_of_sizes.sort()
-    	avg_len = 0.0
-	    nruns = 0
+        avg_len = 0.0
+        nruns = 0
         for k,v in sizes_of_Ns_regions:
-			avg_len += k * v
+            avg_len += k * v
             nruns += v
             print k, sizes_of_Ns_regions[k]
         avg_len /= nruns
