@@ -78,9 +78,19 @@ public:
 		}
 		TRACE("Iterating through incoming edges of vertex " << g_.int_id(v))
 		//TODO: doesn`t work with parallel simplification
-		for (auto I = g_.in_begin(v), E = g_.in_end(v); I != E; ++I) {
-			EdgeId edge = *I;
-//		for (EdgeId edge : g_.IncomingEdges(v)) {
+        vector<EdgeId> incoming(g_.in_begin(v), g_.in_end(v));
+        std::sort(incoming.begin(), incoming.end(), 
+            [&] (EdgeId e1, EdgeId e2) {
+                VertexId s1 = g_.EdgeStart(e1);
+                VertexId s2 = g_.EdgeStart(e2);
+                if (!dsts_to_start.DistanceCounted(s2)) 
+                    return true;
+                if (!dsts_to_start.DistanceCounted(s1)) 
+                    return false;
+                return dsts_to_start.GetDistance(s1) < dsts_to_start.GetDistance(s2);
+            });
+
+        for (EdgeId edge : incoming) {
 			path_.push_back(edge);
 			error_code |= Go(g_.EdgeStart(edge), min_len,
 					cur_len + g_.length(edge), dsts_to_start);
