@@ -115,6 +115,8 @@ int main(int argc, char * argv[]) {
     // initialize subkmer positions
     hammer::InitializeSubKMerPositions();
 
+    INFO("Size of aux. kmer data " << sizeof(KMerStat) << " bytes");
+    
     int max_iterations = cfg::get().general_max_iterations;
 
     // now we can begin the iterations

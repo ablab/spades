@@ -43,55 +43,76 @@ static inline unsigned hamdistKMer(const hammer::KMer &x, const hammer::KMer &y,
   return dist;
 }
 
-struct QualBitSet {
-  unsigned char q_[hammer::K];
+template<unsigned N, unsigned bits,
+         typename Storage = uint64_t>
+class NibbleString {
+    static const unsigned StorageBits = sizeof(Storage) * 8;
+    static_assert(bits <= 8, "Too large nibbles");
+    static const unsigned K = (bits * N + StorageBits - 1) / StorageBits;
+    static const uint64_t MaxValue = (1ull << bits) - 1;
 
-  QualBitSet(const unsigned char *q = NULL) {
-    if (q)
-      memcpy(q_, q, hammer::K);
-    else
-      memset(q_, 0, hammer::K);
-  }
+  public:
+     NibbleString() { storage_.fill(0); }
 
-  // QualBitSet is POD-like object, use default stuff.
-  QualBitSet(const QualBitSet &qbs) = default;
-  QualBitSet& operator=(const QualBitSet &qbs) = default;
-  // Workaround gcc bug, it cannot generate default move ctor...
-  QualBitSet& operator=(QualBitSet &&qbs) {
-    memcpy(q_, qbs.q_, hammer::K);
+     explicit NibbleString(const uint8_t *data) {
+        for (unsigned i = 0; i < N; ++i)
+            set(i, data[i]);
+    }
 
-    return *this;
-  }
+    void set(size_t n, uint8_t value) {
+        // Determine the index of storage element and the offset.
+        size_t idx = n * bits / StorageBits, offset = n * bits - idx * StorageBits;
 
-  QualBitSet& operator+=(const unsigned char *data) {
-    for (size_t i = 0; i < hammer::K; ++i)
-      q_[i] = (unsigned char)std::min(255, data[i] + q_[i]);
+        storage_[idx] = (storage_[idx] & ~(MaxValue << offset)) | ((value & MaxValue) << offset);
+        // Hard case: stuff crosses the boundary
+        if (offset + bits >= StorageBits) {
+          size_t rbits = StorageBits - offset;
+          uint64_t mask = MaxValue >> rbits;
+          uint8_t remaining = (value >> rbits) & mask;
 
-    return *this;
-  }
+          storage_[idx + 1] = (storage_[idx + 1] & ~mask) | remaining;
+        }
+    }
 
-  QualBitSet& operator+=(const QualBitSet &qbs) {
-    const unsigned char* data = qbs.q_;
-    return this->operator+=(data);
-  }
+    uint8_t operator[](size_t n) const {
+        // Determine the index of storage element and the offset.
+        size_t idx = n * bits / StorageBits, offset = n * bits - idx * StorageBits;
 
-  unsigned short operator[](size_t n) const {
-    return (unsigned short)q_[n];
-  }
+        // Easy case: everything do not cross the boundary
+        if (offset + bits < StorageBits) {
+            return (storage_[idx] >> offset) & MaxValue;
+        }
 
-  unsigned short at(size_t n) const {
-    // FIXME: Bound checking
-    return (unsigned short)q_[n];
-  }
+        // Assemble stuff from parts
+        size_t rbits = StorageBits - offset;
+        uint64_t mask = MaxValue >> rbits;
+        return uint8_t((storage_[idx] >> offset) | ((storage_[idx + 1] & mask) << rbits));
+    }
 
-  void set(size_t n, unsigned short value) {
-    q_[n] = (unsigned char)value;
-  }
+    NibbleString& operator+=(const uint8_t *data) {
+        uint64_t mv = MaxValue;
+        for (unsigned i = 0; i < N; ++i)
+            set(i, (uint8_t)std::min(mv, (uint64_t)data[i] + operator[](i)));
 
-  void set(const char *value) {
-    memcpy(q_, value, hammer::K);
-  }
+        return *this;
+    }
+
+    NibbleString& operator+=(const NibbleString &data) {
+        uint64_t mv = MaxValue;
+        for (unsigned i = 0; i < N; ++i)
+            set(i, (uint8_t)std::min(mv, (uint64_t)data[i] + operator[](i)));
+
+        return *this;
+    }
+
+    Storage *data() { return storage_.data(); }
+    const Storage *data() const { return storage_.data(); }
+
+  private:
+    std::array<Storage, K> storage_;
 };
+
+using QualBitSet = NibbleString<hammer::K, 6>;
 
 struct KMerStat {
   enum {
@@ -113,8 +134,8 @@ struct KMerStat {
   union {
     struct {
       uint64_t changeto : 48;
-      unsigned status : 3;
-      unsigned res    : 13;
+      unsigned status   : 3;
+      unsigned res      : 13;
     };
     uint64_t raw_data;
   };
@@ -154,14 +175,14 @@ std::ostream& operator<<(std::ostream &os, const KMerStat &kms) {
 
 template<class Writer>
 inline Writer& binary_write(Writer &os, const QualBitSet &qbs) {
-  os.write((char*)&qbs.q_[0], sizeof(qbs.q_));
+  os.write((char*)qbs.data(), sizeof(qbs));
 
   return os;
 }
 
 template<class Reader>
 inline void binary_read(Reader &is, QualBitSet &qbs) {
-  is.read((char*)&qbs.q_[0], sizeof(qbs.q_));
+  is.read((char*)qbs.data(), sizeof(qbs));
 }
 
 template<class Writer>
