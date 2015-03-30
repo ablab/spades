@@ -11,6 +11,8 @@
 
 #include "sequence/seq.hpp"
 
+#include <folly/SmallLocks.h>
+
 #include <functional>
 #include <vector>
 #include <iostream>
@@ -124,11 +126,13 @@ struct KMerStat {
     MarkedForGoodIter  = 5
   } KMerStatus;
 
-  KMerStat(uint32_t cnt, float kquality, const unsigned char *quality) : totalQual(kquality), count(cnt), qual(quality), lock_(0) {
-    __sync_lock_release(&lock_);
+  KMerStat(uint32_t cnt, float kquality, const unsigned char *quality) : totalQual(kquality), qual(quality)  {
+      count_with_lock.init();
+      set_count(cnt);
   }
-  KMerStat() : totalQual(1.0), count(0), qual(), lock_(0) {
-    __sync_lock_release(&lock_);
+  KMerStat() : totalQual(1.0), qual() {
+      count_with_lock.init();
+      set_count(0);
   }
 
   union {
@@ -141,19 +145,14 @@ struct KMerStat {
   };
 
   float totalQual;
-  uint32_t count;
+  folly::PicoSpinLock<uint32_t> count_with_lock;
   QualBitSet qual;
-  uint8_t lock_; // FIXME: Turn into single bit of status field.
 
-  void lock() {
-    while (__sync_val_compare_and_swap(&lock_, 0, 1) == 1)
-      sched_yield();
-  }
-  void unlock() {
-    lock_ = 0;
-    __sync_synchronize();
-  }
-
+  void lock() { count_with_lock.lock(); }
+  void unlock() { count_with_lock.unlock(); }
+  uint32_t count() const { return count_with_lock.getData(); }
+  void set_count(uint32_t cnt) { count_with_lock.setData(cnt); }
+    
   bool isGood() const { return status >= Good; }
   bool isGoodForIterative() const { return (status == GoodIter); }
   void makeGoodForIterative() { status = GoodIter; }
@@ -168,7 +167,7 @@ struct KMerStat {
 
 inline
 std::ostream& operator<<(std::ostream &os, const KMerStat &kms) {
-  os << /* kms.kmer().str() << */ " (" << std::setw(3) << kms.count << ", " << std::setprecision(6) << std::setw(8) << (1-kms.totalQual) << ')';
+  os << /* kms.kmer().str() << */ " (" << std::setw(3) << kms.count() << ", " << std::setprecision(6) << std::setw(8) << (1-kms.totalQual) << ')';
 
   return os;
 }
@@ -187,7 +186,7 @@ inline void binary_read(Reader &is, QualBitSet &qbs) {
 
 template<class Writer>
 inline Writer& binary_write(Writer &os, const KMerStat &k) {
-  os.write((char*)&k.count, sizeof(k.count));
+  os.write((char*)&k.count_with_lock, sizeof(k.count_with_lock));
   os.write((char*)&k.raw_data, sizeof(k.raw_data));
   os.write((char*)&k.totalQual, sizeof(k.totalQual));
   return binary_write(os, k.qual);
@@ -195,7 +194,7 @@ inline Writer& binary_write(Writer &os, const KMerStat &k) {
 
 template<class Reader>
 inline void binary_read(Reader &is, KMerStat &k) {
-  is.read((char*)&k.count, sizeof(k.count));
+  is.read((char*)&k.count_with_lock, sizeof(k.count_with_lock));
   is.read((char*)&k.raw_data, sizeof(k.raw_data));
   is.read((char*)&k.totalQual, sizeof(k.totalQual));
   binary_read(is, k.qual);
@@ -232,7 +231,7 @@ class ExpandedKMer {
                             getRevProb(kmc, i, /* log */ true) - log(3) :
                             getProb(kmc, i, /* log */ true));
     }
-    count_ = kmc.count;
+    count_ = kmc.count();
   }
 
   double logL(const ExpandedSeq &center) const {

@@ -252,9 +252,9 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
   // Ad-hoc max cluster limit: we start to consider only those k-mers which
   // multiplicity differs from maximum multiplicity by 10x.
   size_t maxcls = 0;
-  size_t cntthr = std::max(10u, data_[block[0]].count / 10);
+  size_t cntthr = std::max(10u, data_[block[0]].count() / 10);
   for (size_t i = 0; i < block.size(); ++i)
-    maxcls += (data_[block[i]].count > cntthr);
+    maxcls += (data_[block[i]].count() > cntthr);
   // Another limit: we're interested in good centers only
   size_t maxgcnt = 0;
   for (size_t i = 0; i < block.size(); ++i) {
@@ -559,7 +559,7 @@ public:
   KMerStatCountComparator(const KMerData &data)
       : data_(data) {}
   bool operator()(size_t a, size_t b) {
-    return data_[a].count > data_[b].count;
+    return data_[a].count() > data_[b].count();
   }
 };
 

@@ -197,7 +197,7 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
 }
 
 static inline void Merge(KMerStat &lhs, const KMerStat &rhs) {
-  lhs.count += rhs.count;
+  lhs.set_count(lhs.count() + rhs.count());
   lhs.totalQual *= rhs.totalQual;
   lhs.qual += rhs.qual;
 }
@@ -308,11 +308,11 @@ void KMerDataCounter::FillKMerData(KMerData &data) {
 
   size_t singletons = 0;
   for (size_t i = 0; i < data.size(); ++i) {
-    VERIFY(data[i].count);
+    VERIFY(data[i].count());
     // Make sure all the kmers are marked as 'Bad' in the beginning
     data[i].status = KMerStat::Bad;
 
-    if (data[i].count == 1)
+    if (data[i].count() == 1)
       singletons += 1;
   }
 
