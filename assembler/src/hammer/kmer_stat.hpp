@@ -56,7 +56,7 @@ class NibbleString {
 
      explicit NibbleString(const uint8_t *data) {
         for (unsigned i = 0; i < N; ++i)
-            set(i, data[i]);
+            set(i, data ? data[i] : 0);
     }
 
     void set(size_t n, uint8_t value) {
