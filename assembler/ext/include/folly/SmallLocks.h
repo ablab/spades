@@ -207,7 +207,7 @@ struct PicoSpinLock {
    * guaranteed that no other threads may be trying to use this.
    */
   void setData(IntType w) {
-    lock_ = (lock_ & kLockBitMask_) | w;
+    lock_ = (lock_ & kLockBitMask_) | (w & ~kLockBitMask_);
   }
 
   /*

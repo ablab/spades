@@ -63,8 +63,8 @@ std::string ReadCorrector::CorrectReadRight(const std::string &seq, const std::s
             size_t idx = data_.checking_seq_idx(last);
             if (idx != -1ULL) {
                 const KMerStat &kmer_data = data_[idx];
-                corrections.emplace(pos, correction.str, correction.penalty - (kmer_data.isGood() ? 0.0 : 1.0), last, cpos);
-                if (kmer_data.isGood())
+                corrections.emplace(pos, correction.str, correction.penalty - (kmer_data.good() ? 0.0 : 1.0), last, cpos);
+                if (kmer_data.good())
                     extended = true;
             }
         }
@@ -98,7 +98,7 @@ std::string ReadCorrector::CorrectReadRight(const std::string &seq, const std::s
                 continue;
 
             const KMerStat &kmer_data = data_[idx];
-            if (kmer_data.isGood()) {
+            if (kmer_data.good()) {
                 std::string corrected = correction.str; corrected[pos] = ncc;
                 corrections.emplace(pos, corrected, correction.penalty - 1.0, last, cpos);
             }
@@ -128,7 +128,7 @@ bool ReadCorrector::CorrectOneRead(Read & r,
         hammer::KMer kmer = gen.kmer();
         const KMerStat &kmer_data = data_[kmer];
 
-        if (kmer_data.isGood()) {
+        if (kmer_data.good()) {
             if (read_pos != right_pos - K + 2) {
                 left_pos = read_pos;
                 right_pos = left_pos + K - 1;
@@ -142,7 +142,7 @@ bool ReadCorrector::CorrectOneRead(Read & r,
             }
         }
 
-        // INFO("" << left_pos << ":" << right_pos << ":" << read_pos << ", " << lleft_pos << ":" << lright_pos << "(" << solid_len << "), " << (kmer_data.isGood() ? "solid" : "non-solid"));
+        // INFO("" << left_pos << ":" << right_pos << ":" << read_pos << ", " << lleft_pos << ":" << lright_pos << "(" << solid_len << "), " << (kmer_data.good() ? "solid" : "non-solid"));
 
         gen.Next();
     }

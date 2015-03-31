@@ -209,7 +209,7 @@ int main(int argc, char * argv[]) {
             std::ofstream oftmp(hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "goodkmers", expand_iter_no).data());
             for (size_t n = 0; n < Globals::kmer_data->size(); ++n) {
               const KMerStat &kmer_data = (*Globals::kmer_data)[n];
-              if (kmer_data.isGoodForIterative())
+              if (kmer_data.good())
                 oftmp << Globals::kmer_data->kmer(n).str() << "\n>" << n
                       << "  cnt=" << kmer_data.count() << "  tql=" << (1-kmer_data.total_qual) << "\n";
             }

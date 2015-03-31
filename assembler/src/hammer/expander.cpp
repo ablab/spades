@@ -30,7 +30,7 @@ bool Expander::operator()(const Read &r) {
     size_t read_pos = gen.pos() - 1;
 
     kmer_indices[read_pos] = idx;
-    if (data_[idx].isGoodForIterative()) {
+    if (data_[idx].good()) {
       for (size_t j = read_pos; j < read_pos + hammer::K; ++j)
         covered_by_solid[j] = true;
     }
@@ -47,13 +47,12 @@ bool Expander::operator()(const Read &r) {
 
     // FIXME: Do not lock everything
     KMerStat &kmer_data = data_[kmer_indices[j]];
-    if (!kmer_data.isGoodForIterative() &&
-        !kmer_data.isMarkedGoodForIterative()) {
+    if (!kmer_data.good()) {
 #     pragma omp atomic
       changed_ += 1;
 
       kmer_data.lock();
-      kmer_data.makeGoodForIterative();
+      kmer_data.mark_good();
       kmer_data.unlock();
     }
   }

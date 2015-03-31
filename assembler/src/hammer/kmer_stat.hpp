@@ -117,32 +117,16 @@ class NibbleString {
 using QualBitSet = NibbleString<hammer::K, 6>;
 
 struct KMerStat {
-  enum {
-    Change             = 0,
-    Bad                = 1,
-    Good               = 2,
-    GoodIter           = 3,
-    GoodIterBad        = 4,
-    MarkedForGoodIter  = 5
-  } KMerStatus;
-
   KMerStat(uint32_t cnt, float kquality, const unsigned char *quality) : total_qual(kquality), qual(quality)  {
-      count_with_lock.init();
+      count_with_lock.init(0);
       set_count(cnt);
+      mark_bad();
   }
   KMerStat() : total_qual(1.0), qual() {
-      count_with_lock.init();
+      count_with_lock.init(0);
       set_count(0);
+      mark_bad();
   }
-
-  union {
-    struct {
-      uint64_t changeto : 48;
-      unsigned status   : 3;
-      unsigned res      : 13;
-    };
-    uint64_t raw_data;
-  };
 
   float total_qual;
   folly::PicoSpinLock<uint32_t> count_with_lock;
@@ -150,15 +134,17 @@ struct KMerStat {
 
   void lock() { count_with_lock.lock(); }
   void unlock() { count_with_lock.unlock(); }
-  uint32_t count() const { return count_with_lock.getData(); }
-  void set_count(uint32_t cnt) { count_with_lock.setData(cnt); }
-    
-  bool isGood() const { return status >= Good; }
-  bool isGoodForIterative() const { return (status == GoodIter); }
-  void makeGoodForIterative() { status = GoodIter; }
-  void markGoodForIterative() { status = MarkedForGoodIter; }
-  bool isMarkedGoodForIterative() { return (status == MarkedForGoodIter); }
-};
+  uint32_t count() const { return count_with_lock.getData() >> 1; }
+  void set_count(uint32_t cnt) { count_with_lock.setData((cnt << 1) | good()); }
+  bool good() const { return count_with_lock.getData() & 1; }
+  void mark_good() {
+      uint32_t val = count_with_lock.getData();
+      count_with_lock.setData(val | 1);
+  }
+  void mark_bad() {
+      uint32_t val = count_with_lock.getData();
+      count_with_lock.setData(val | ~1);
+  }};
 
 inline
 std::ostream& operator<<(std::ostream &os, const KMerStat &kms) {
@@ -182,7 +168,6 @@ inline void binary_read(Reader &is, QualBitSet &qbs) {
 template<class Writer>
 inline Writer& binary_write(Writer &os, const KMerStat &k) {
   os.write((char*)&k.count_with_lock, sizeof(k.count_with_lock));
-  os.write((char*)&k.raw_data, sizeof(k.raw_data));
   os.write((char*)&k.total_qual, sizeof(k.total_qual));
   return binary_write(os, k.qual);
 }
@@ -190,7 +175,6 @@ inline Writer& binary_write(Writer &os, const KMerStat &k) {
 template<class Reader>
 inline void binary_read(Reader &is, KMerStat &k) {
   is.read((char*)&k.count_with_lock, sizeof(k.count_with_lock));
-  is.read((char*)&k.raw_data, sizeof(k.raw_data));
   is.read((char*)&k.total_qual, sizeof(k.total_qual));
   binary_read(is, k.qual);
 }

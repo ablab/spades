@@ -406,7 +406,7 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
           KMer newkmer(bestCenters[k].center_);
 
           KMerStat kms(0 /* cnt */, 1.0 /* total quality */, NULL /*quality */);
-          kms.status = KMerStat::GoodIter;
+          kms.mark_good();
           new_idx = (unsigned)data_.push_back(newkmer, kms);
           if (data_.kmer(data_.seq_idx(newkmer)) != newkmer)
             newkmers += 1;
@@ -439,7 +439,7 @@ size_t KMerClustering::ProcessCluster(const std::vector<size_t> &cur_class,
         size_t idx = cur_class[0];
         KMerStat &singl = data_[idx];
         if ((1-singl.total_qual) > cfg::get().bayes_singleton_threshold) {
-            singl.status = KMerStat::GoodIter;
+            singl.mark_good();
             gsingl += 1;
 
             if (ofs.good()) {
@@ -450,9 +450,9 @@ size_t KMerClustering::ProcessCluster(const std::vector<size_t> &cur_class,
             }
         } else {
             if (cfg::get().correct_use_threshold && (1-singl.total_qual) > cfg::get().correct_threshold)
-                singl.status = KMerStat::GoodIterBad;
+                singl.mark_good();
             else
-                singl.status = KMerStat::Bad;
+                singl.mark_bad();
 
             if (ofs_bad.good()) {
 #               pragma omp critical
@@ -502,7 +502,7 @@ size_t KMerClustering::ProcessCluster(const std::vector<size_t> &cur_class,
         if ((center_quality > cfg::get().bayes_singleton_threshold &&
              cluster_quality > cfg::get().bayes_nonsingleton_threshold) ||
             cfg::get().bayes_hammer_mode) {
-          center.status = KMerStat::GoodIter;
+          center.mark_good();
 
           if (currentBlock.size() == 1)
               gcsingl += 1;
@@ -518,9 +518,9 @@ size_t KMerClustering::ProcessCluster(const std::vector<size_t> &cur_class,
           }
         } else {
             if (cfg::get().correct_use_threshold && center_quality > cfg::get().correct_threshold)
-                center.status = KMerStat::GoodIterBad;
+                center.mark_good();
             else
-                center.status = KMerStat::Bad;
+                center.mark_bad();
             if (ofs_bad.good()) {
 #               pragma omp critical
                 {

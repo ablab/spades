@@ -310,7 +310,7 @@ void KMerDataCounter::FillKMerData(KMerData &data) {
   for (size_t i = 0; i < data.size(); ++i) {
     VERIFY(data[i].count());
     // Make sure all the kmers are marked as 'Bad' in the beginning
-    data[i].status = KMerStat::Bad;
+    data[i].mark_bad();
 
     if (data[i].count() == 1)
       singletons += 1;
