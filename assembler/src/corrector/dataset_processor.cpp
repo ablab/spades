@@ -8,6 +8,8 @@
 #include "io/osequencestream.hpp"
 #include "openmp_wrapper.h"
 
+#include <boost/algorithm/string.hpp>
+
 #include <iostream>
 #include <unistd.h>
 

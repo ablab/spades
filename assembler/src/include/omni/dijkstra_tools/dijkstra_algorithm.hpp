@@ -8,6 +8,8 @@
 
 #include "dijkstra_settings.hpp"
 
+#include <queue>
+
 namespace omnigraph {
 
 template<typename Graph, typename distance_t = size_t>

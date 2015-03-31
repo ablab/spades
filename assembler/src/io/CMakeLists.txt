@@ -10,7 +10,8 @@ add_library(input STATIC
             parser.cpp
             path_helper.cpp
             copy_file.cpp
-            library.cpp)
+            library.cpp
+            logger_impl.cpp)
 
 target_link_libraries(input BamTools yaml-cpp)
 

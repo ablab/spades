@@ -12,7 +12,7 @@ namespace simplification {
 template<class EdgeContainer>
 void SingleEdgeAdapter(
         const EdgeContainer& edges,
-        boost::function<void(typename EdgeContainer::value_type)> single_edge_handler_f) {
+        std::function<void(typename EdgeContainer::value_type)> single_edge_handler_f) {
     for (auto e : edges) {
         single_edge_handler_f(e);
     }
@@ -151,7 +151,7 @@ template<class Graph>
 class RelativeCoverageHelper {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef boost::function<double(EdgeId, VertexId)> LocalCoverageFT;
+    typedef std::function<double(EdgeId, VertexId)> LocalCoverageFT;
 
     const Graph& g_;
     LocalCoverageFT local_coverage_f_;
@@ -446,7 +446,7 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
     typedef EdgeProcessingAlgorithm<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef boost::function<double(EdgeId, VertexId)> LocalCoverageFT;
+    typedef std::function<double(EdgeId, VertexId)> LocalCoverageFT;
     typedef typename ComponentRemover<Graph>::HandlerF HandlerF;
 
     RelativeCoverageHelper<Graph> rel_helper_;

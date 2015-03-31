@@ -31,7 +31,7 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
 //                                   cfg::get().output_dir + "pictures/colored_edges_deleted/");
 //
 //    //positive quality edges removed (folder colored_edges_deleted)
-//    boost::function<void(EdgeId)> removal_handler_f = boost::bind(
+//    std::function<void(EdgeId)> removal_handler_f = boost::bind(
 //            //            &QualityLoggingRemovalHandler<Graph>::HandleDelete,
 //            &QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
 //            boost::ref(qual_removal_handler), _1);
@@ -49,7 +49,7 @@ void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
 
     printer(ipp_removing_isolated_edges);
 
-    debruijn::simplification::RemoveIsolatedEdges(gp.g, cfg::get().simp.ier, cfg::get().ds.RL(), boost::function<void(EdgeId)>(0), cfg::get().max_threads);
+    debruijn::simplification::RemoveIsolatedEdges(gp.g, cfg::get().simp.ier, cfg::get().ds.RL(), std::function<void(EdgeId)>(0), cfg::get().max_threads);
 
     double low_threshold = gp.ginfo.trusted_bound();
     if (math::ge(low_threshold, 0.0)) {

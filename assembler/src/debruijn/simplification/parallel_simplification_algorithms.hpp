@@ -16,7 +16,7 @@ template<class Graph>
 class ParallelTipClippingFunctor {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef boost::function<void(EdgeId)> HandlerF;
+    typedef std::function<void(EdgeId)> HandlerF;
     typedef omnigraph::GraphElementLock<VertexId> VertexLockT;
 
     Graph& g_;
@@ -101,7 +101,7 @@ class ParallelSimpleBRFunctor {
     double max_relative_coverage_;
     size_t max_delta_;
     double max_relative_delta_;
-    boost::function<void(EdgeId)> handler_f_;
+    std::function<void(EdgeId)> handler_f_;
 
     bool LengthDiffCheck(size_t l1, size_t l2, size_t delta) const {
         return l1 <= l2 + delta && l2 <= l1 + delta;
@@ -184,7 +184,7 @@ class ParallelSimpleBRFunctor {
 public:
 
     ParallelSimpleBRFunctor(Graph& g, size_t max_length, double max_coverage, double max_relative_coverage, size_t max_delta, double max_relative_delta,
-                            boost::function<void(EdgeId)> handler_f = 0)
+                            std::function<void(EdgeId)> handler_f = 0)
             : g_(g),
               max_length_(max_length),
               max_coverage_(max_coverage),
@@ -223,7 +223,7 @@ template<class Graph>
 class CriticalEdgeMarker {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef boost::function<void(EdgeId)> HandlerF;
+    typedef std::function<void(EdgeId)> HandlerF;
 
     Graph& g_;
     size_t chunk_cnt_;
@@ -277,7 +277,7 @@ template<class Graph>
 class ParallelLowCoverageFunctor {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef boost::function<void(EdgeId)> HandlerF;
+    typedef std::function<void(EdgeId)> HandlerF;
     typedef omnigraph::GraphElementLock<VertexId> VertexLockT;
 
     Graph& g_;

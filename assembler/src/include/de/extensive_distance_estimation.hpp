@@ -33,7 +33,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
  public:
   ExtensiveDistanceEstimator(const Graph &graph,
                              const InPairedIndex& histogram,
-                             const GraphDistanceFinder<Graph>& distance_finder, boost::function<double(int)> weight_f,
+                             const GraphDistanceFinder<Graph>& distance_finder, std::function<double(int)> weight_f,
                              size_t linkage_distance, size_t max_distance) :
       base(graph, histogram, distance_finder, weight_f, linkage_distance, max_distance)
   {}

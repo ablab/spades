@@ -121,7 +121,7 @@ int main(int argc, char * argv[]) {
 
     // now we can begin the iterations
     for (Globals::iteration_no = 0; Globals::iteration_no < max_iterations; ++Globals::iteration_no) {
-      std::cout << "\n     === ITERATION " << Globals::iteration_no << " begins ===" << endl;
+      std::cout << "\n     === ITERATION " << Globals::iteration_no << " begins ===" << std::endl;
       bool do_everything = cfg::get().general_do_everything_after_first_iteration && (Globals::iteration_no > 0);
 
       // initialize k-mer structures

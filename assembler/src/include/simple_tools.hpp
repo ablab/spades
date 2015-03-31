@@ -26,8 +26,6 @@
 #include <set>
 #include <vector>
 
-#include <boost/format.hpp>
-
 /**
  * Converts anything to string (using ostringstream).
  */
@@ -67,32 +65,6 @@ std::string ToString(std::set<T>& t) {
 	ss<<"]";
 	return ss.str();
 }
-
-//taken from http://habrahabr.ru/post/131977/
-class FormattedString {
-
- public:
-  FormattedString(const char* fmt): m_fmt(fmt)
-  {
-  }
-
-  template<class T>
-  FormattedString& operator<< (const T& arg) {
-    m_fmt % arg;
-    return *this;
-  }
-
-  operator std::string() const {
-    return m_fmt.str();
-  }
-
-  std::string str() const {
-    return m_fmt.str();
-  }
-
- protected:
-  boost::format m_fmt;
-};
 
 template<typename T>
 inline const std::pair<T, T> ReversePair(std::pair<T, T> ep) {

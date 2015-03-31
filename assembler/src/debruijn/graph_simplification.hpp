@@ -88,7 +88,7 @@ bool ClipTips(
     SmartEdgeIt& it,
     const debruijn_config::simplification::tip_clipper& tc_config,
     const SimplifInfoContainer& info,
-    boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
+    std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
 
     INFO("Clipping tips");
 
@@ -111,7 +111,7 @@ bool ClipTips(
     Graph& g,
     const debruijn_config::simplification::tip_clipper& tc_config,
     const SimplifInfoContainer& info,
-    boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
+    std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
 
     auto it = g.SmartEdgeBegin(LengthComparator<Graph>(g));
     return ClipTips(g, it, tc_config, info, removal_handler);
@@ -119,17 +119,17 @@ bool ClipTips(
 
 //enabling tip projection, todo optimize if hotspot
 template<class gp_t>
-boost::function<void(typename Graph::EdgeId)> WrapWithProjectionCallback(
+std::function<void(typename Graph::EdgeId)> WrapWithProjectionCallback(
     gp_t& gp,
-    boost::function<void(typename Graph::EdgeId)> removal_handler) {
+    std::function<void(typename Graph::EdgeId)> removal_handler) {
     typedef typename Graph::EdgeId EdgeId;
-    typedef boost::function<void(EdgeId)> HandlerF;
+    typedef std::function<void(EdgeId)> HandlerF;
     TipsProjector<gp_t> tip_projector(gp);
 
-    HandlerF projecting_callback = boost::bind(&TipsProjector<gp_t>::ProjectTip,
-                                               tip_projector, _1);
+    HandlerF projecting_callback = std::bind(&TipsProjector<gp_t>::ProjectTip,
+                                             tip_projector, std::placeholders::_1);
 
-    return func::Composition<EdgeId>(boost::ref(removal_handler), projecting_callback);
+    return func::Composition<EdgeId>(std::ref(removal_handler), projecting_callback);
 }
 
 template<class Graph, class SmartEdgeIt>
@@ -137,8 +137,8 @@ bool RemoveBulges(
     Graph& g,
     SmartEdgeIt& it,
     const debruijn_config::simplification::bulge_remover& br_config,
-    boost::function<void(typename Graph::EdgeId, const std::vector<typename Graph::EdgeId> &)> opt_handler = 0,
-    boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
+    std::function<void(typename Graph::EdgeId, const std::vector<typename Graph::EdgeId> &)> opt_handler = 0,
+    std::function<void(typename Graph::EdgeId)> removal_handler = 0,
     size_t additional_length_bound = 0) {
 
 	if(!br_config.enabled)
@@ -169,8 +169,8 @@ template<class Graph>
 bool RemoveBulges(
         Graph& g,
         const debruijn_config::simplification::bulge_remover& br_config,
-        boost::function<void(typename Graph::EdgeId, const std::vector<typename Graph::EdgeId> &)> opt_handler = 0,
-        boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
+        std::function<void(typename Graph::EdgeId, const std::vector<typename Graph::EdgeId> &)> opt_handler = 0,
+        std::function<void(typename Graph::EdgeId)> removal_handler = 0,
         size_t additional_length_bound = 0) {
     auto it = g.SmartEdgeBegin(CoverageComparator<Graph>(g));
     return RemoveBulges(g, it, br_config, opt_handler, removal_handler, additional_length_bound);
@@ -182,7 +182,7 @@ bool RemoveLowCoverageEdges(
     SmartEdgeIt& it,
     const debruijn_config::simplification::erroneous_connections_remover& ec_config,
     const SimplifInfoContainer& info_container,
-    boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
+    std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
 
     INFO("Removing low covered connections");
     //double max_coverage = cfg::get().simp.ec.max_coverage;
@@ -200,14 +200,14 @@ bool RemoveLowCoverageEdges(
     Graph &g,
     const debruijn_config::simplification::erroneous_connections_remover& ec_config,
     const SimplifInfoContainer& info_container,
-    boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
+    std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
     auto it = g.SmartEdgeBegin(CoverageComparator<Graph>(g));
     return RemoveLowCoverageEdges(g, it, ec_config, info_container, removal_handler);
 }
 
 template<class Graph>
 bool RemoveSelfConjugateEdges(Graph &g, size_t max_length, double max_coverage,
-                boost::function<void(typename Graph::EdgeId)> removal_handler = 0, size_t chunk_cnt = 1) {
+                std::function<void(typename Graph::EdgeId)> removal_handler = 0, size_t chunk_cnt = 1) {
     INFO("Removing short low covered self-conjugate connections");
 
     auto condition = func::And<typename Graph::EdgeId>(make_shared<SelfConjugateCondition<Graph>>(g),
@@ -235,13 +235,13 @@ bool RemoveRelativelyLowCoverageComponents(
         omnigraph::simplification::relative_coverage::RelativeCoverageComponentRemover<
                 Graph> rel_rem(
                 g,
-                boost::bind(&FlankingCoverage<Graph>::LocalCoverage,
-                            boost::cref(flanking_cov), _1, _2),
-                            rcc_config.coverage_gap, size_t(double(info.read_length()) * rcc_config.length_coeff),
-                            size_t(double(info.read_length()) * rcc_config.tip_allowing_length_coeff),
-                            connecting_path_length_bound,
-                            info.detected_coverage_bound() * rcc_config.max_coverage_coeff,
-                            removal_handler, rcc_config.vertex_count_limit);
+                std::bind(&FlankingCoverage<Graph>::LocalCoverage,
+                          std::cref(flanking_cov), std::placeholders::_1, std::placeholders::_2),
+                rcc_config.coverage_gap, size_t(double(info.read_length()) * rcc_config.length_coeff),
+                size_t(double(info.read_length()) * rcc_config.tip_allowing_length_coeff),
+                connecting_path_length_bound,
+                info.detected_coverage_bound() * rcc_config.max_coverage_coeff,
+                removal_handler, rcc_config.vertex_count_limit);
         return rel_rem.Process();
     } else {
         INFO("Removal of relatively low covered connections disabled");
@@ -253,7 +253,7 @@ template<class Graph>
 bool TopologyRemoveErroneousEdges(
     Graph &g,
     const debruijn_config::simplification::topology_based_ec_remover& tec_config,
-    boost::function<void(typename Graph::EdgeId)> removal_handler) {
+    std::function<void(typename Graph::EdgeId)> removal_handler) {
     INFO("Removing connections based on topology");
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
         g.k(), tec_config.max_ec_length_coefficient);
@@ -268,7 +268,7 @@ bool TopologyClipTips(
     Graph &g,
     const debruijn_config::simplification::topology_tip_clipper& ttc_config,
     size_t read_length,
-    boost::function<void(typename Graph::EdgeId)> removal_handler) {
+    std::function<void(typename Graph::EdgeId)> removal_handler) {
     INFO("Clipping tips based on topology");
 
     size_t max_length = LengthThresholdFinder::MaxTipLength(
@@ -286,7 +286,7 @@ template<class Graph>
 bool MultiplicityCountingRemoveErroneousEdges(
     Graph &g,
     const debruijn_config::simplification::topology_based_ec_remover& tec_config,
-    boost::function<void(typename Graph::EdgeId)> removal_handler) {
+    std::function<void(typename Graph::EdgeId)> removal_handler) {
     INFO("Removing connections based on topological multiplicity counting");
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
         g.k(), tec_config.max_ec_length_coefficient);
@@ -302,7 +302,7 @@ template<class Graph>
 bool RemoveThorns(
     Graph &g,
     const debruijn_config::simplification::interstrand_ec_remover& isec_config,
-    boost::function<void(typename Graph::EdgeId)> removal_handler) {
+    std::function<void(typename Graph::EdgeId)> removal_handler) {
     INFO("Removing interstrand connections");
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
         g.k(), isec_config.max_ec_length_coefficient);
@@ -318,7 +318,7 @@ template<class Graph>
 bool TopologyReliabilityRemoveErroneousEdges(
     Graph &g,
     const debruijn_config::simplification::tr_based_ec_remover& trec_config,
-    boost::function<void(typename Graph::EdgeId)> removal_handler) {
+    std::function<void(typename Graph::EdgeId)> removal_handler) {
     INFO("Removing connections based on topology and reliable coverage");
     size_t max_length = LengthThresholdFinder::MaxErroneousConnectionLength(
         g.k(), trec_config.max_ec_length_coefficient);
@@ -338,7 +338,7 @@ template<class Graph>
 bool MaxFlowRemoveErroneousEdges(
     Graph &g,
     const debruijn_config::simplification::max_flow_ec_remover& mfec_config,
-    boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
+    std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
     if (!mfec_config.enabled)
         return false;
     INFO("Removing connections based on max flow strategy");
@@ -370,7 +370,7 @@ bool RemoveHiddenEC(Graph& g,
                     const FlankingCoverage<Graph>& flanking_cov,
                     double determined_coverage_threshold,
                     debruijn_config::simplification::hidden_ec_remover her_config,
-                    boost::function<void(typename Graph::EdgeId)> removal_handler) {
+                    std::function<void(typename Graph::EdgeId)> removal_handler) {
     if (her_config.enabled) {
         INFO("Removing hidden erroneous connections");
         return HiddenECRemover<Graph>(g, her_config.uniqueness_length, flanking_cov,
@@ -382,7 +382,7 @@ bool RemoveHiddenEC(Graph& g,
 
 template<class Graph>
 bool AllTopology(Graph &g,
-                 boost::function<void(typename Graph::EdgeId)> removal_handler,
+                 std::function<void(typename Graph::EdgeId)> removal_handler,
                  size_t /*iteration*/) {
     bool res = TopologyRemoveErroneousEdges(g, cfg::get().simp.tec,
                                             removal_handler);
@@ -396,7 +396,7 @@ bool AllTopology(Graph &g,
 
 template<class Graph>
 bool RemoveIsolatedEdges(Graph &g, size_t max_length, double max_coverage, size_t max_length_any_cov,
-                 boost::function<void(typename Graph::EdgeId)> removal_handler = 0, size_t chunk_cnt = 1) {
+                 std::function<void(typename Graph::EdgeId)> removal_handler = 0, size_t chunk_cnt = 1) {
     typedef typename Graph::EdgeId EdgeId;
 
     //todo add info that some other edges might be removed =)
@@ -430,7 +430,7 @@ bool RemoveIsolatedEdges(Graph &g, size_t max_length, double max_coverage, size_
 template<class Graph>
 bool RemoveIsolatedEdges(Graph &g, debruijn_config::simplification::isolated_edges_remover ier,
                  size_t read_length,
-                 boost::function<void(typename Graph::EdgeId)> removal_handler = 0,
+                 std::function<void(typename Graph::EdgeId)> removal_handler = 0,
                  size_t chunk_cnt = 1) {
     size_t max_length = std::max(read_length, cfg::get().simp.ier.max_length_any_cov);
     return RemoveIsolatedEdges(g, ier.max_length, ier.max_coverage, max_length, removal_handler, chunk_cnt);
@@ -467,21 +467,21 @@ private:
 };
 
 template<class Graph>
-boost::function<void(typename Graph::EdgeId)> AddCountingCallback(CountingCallback<Graph>& cnt_callback, boost::function<void(typename Graph::EdgeId)> handler) {
-    boost::function<void(typename Graph::EdgeId)> cnt_handler = boost::bind(&CountingCallback<Graph>::HandleDelete, boost::ref(cnt_callback), _1);
+std::function<void(typename Graph::EdgeId)> AddCountingCallback(CountingCallback<Graph>& cnt_callback, std::function<void(typename Graph::EdgeId)> handler) {
+    std::function<void(typename Graph::EdgeId)> cnt_handler = std::bind(&CountingCallback<Graph>::HandleDelete, std::ref(cnt_callback), std::placeholders::_1);
     return func::Composition<typename Graph::EdgeId>(handler, cnt_handler);
 }
 
-//boost::function<void(EdgeId)> AddCountingCallback(boost::function<void(EdgeId)> handler) {
+//std::function<void(EdgeId)> AddCountingCallback(std::function<void(EdgeId)> handler) {
 //    auto cnt_callback_ptr = make_shared<CountingCallback<Graph>>(true);
-//    boost::function<void(EdgeId)> cnt_handler = boost::bind(&CountingCallback<Graph>::HandleDelete, cnt_callback_ptr, _1);
+//    std::function<void(EdgeId)> cnt_handler = boost::bind(&CountingCallback<Graph>::HandleDelete, cnt_callback_ptr, _1);
 //    return func::Composition<EdgeId>(handler, cnt_handler);
 //}
 
 template<class gp_t>
 bool FinalRemoveErroneousEdges(
     gp_t &gp,
-    boost::function<void(typename Graph::EdgeId)> removal_handler,
+    std::function<void(typename Graph::EdgeId)> removal_handler,
     const SimplifInfoContainer& info,
     size_t iteration) {
 
@@ -493,19 +493,19 @@ bool FinalRemoveErroneousEdges(
 //                                   cfg::get().output_dir + "pictures/colored_edges_deleted/");
 //
 //    //positive quality edges removed (folder colored_edges_deleted)
-//    boost::function<void(EdgeId)> qual_removal_handler_f = boost::bind(
+//    std::function<void(EdgeId)> qual_removal_handler_f = boost::bind(
 //            //            &QualityLoggingRemovalHandler<Graph>::HandleDelete,
 //            &QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
 //            boost::ref(qual_removal_handler), _1);
 //
-//    boost::function<void(set<EdgeId>)> set_removal_handler_f = boost::bind(
+//    std::function<void(set<EdgeId>)> set_removal_handler_f = boost::bind(
 //                &omnigraph::simplification::SingleEdgeAdapter<set<EdgeId>>, _1, qual_removal_handler_f);
 //
 
-    boost::function<void(set<typename Graph::EdgeId>)> set_removal_handler_f(0);
+    std::function<void(set<typename Graph::EdgeId>)> set_removal_handler_f(0);
     if (removal_handler) {
-        set_removal_handler_f = boost::bind(
-                &omnigraph::simplification::SingleEdgeAdapter<set<typename Graph::EdgeId>>, _1, removal_handler);
+        set_removal_handler_f = std::bind(
+            &omnigraph::simplification::SingleEdgeAdapter<set<typename Graph::EdgeId>>, std::placeholders::_1, removal_handler);
     }
 
     bool changed = RemoveRelativelyLowCoverageComponents(gp.g, gp.flanking_cov,
@@ -539,7 +539,7 @@ template<class Graph>
 bool ParallelClipTips(Graph& g,
               const string& tip_condition,
               const SimplifInfoContainer& info,
-              boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
+              std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
     INFO("Parallel tip clipping");
 
     string condition_str = tip_condition;
@@ -566,7 +566,7 @@ bool ParallelClipTips(Graph& g,
 //bool ParallelRemoveBulges(Graph& g,
 //              const debruijn_config::simplification::bulge_remover& br_config,
 //              size_t /*read_length*/,
-//              boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
+//              std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
 //    INFO("Parallel bulge remover");
 //
 //    size_t max_length = LengthThresholdFinder::MaxBulgeLength(
@@ -594,7 +594,7 @@ template<class Graph>
 bool ParallelEC(Graph& g,
               const string& ec_condition,
               const SimplifInfoContainer& info,
-              boost::function<void(typename Graph::EdgeId)> removal_handler = 0) {
+              std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
     INFO("Parallel ec remover");
 
     ConditionParser<Graph> parser(g, ec_condition, info);
@@ -684,7 +684,7 @@ inline
 void NonParallelPreSimplification(conj_graph_pack& gp,
                        const debruijn_config::simplification::presimplification& presimp,
                        const SimplifInfoContainer& info,
-                       boost::function<void(EdgeId)> removal_handler) {
+                       std::function<void(EdgeId)> removal_handler) {
     INFO("Non parallel mode");
     CountingCallback<Graph> cnt_callback;
 
@@ -709,7 +709,7 @@ inline
 void ParallelPreSimplification(conj_graph_pack& gp,
                        const debruijn_config::simplification::presimplification& presimp,
                        const SimplifInfoContainer& info,
-                       boost::function<void(EdgeId)> removal_handler) {
+                       std::function<void(EdgeId)> removal_handler) {
     INFO("Parallel mode");
     CountingCallback<Graph> cnt_callback;
 
@@ -768,7 +768,7 @@ inline
 void PreSimplification(conj_graph_pack& gp,
                        const debruijn_config::simplification::presimplification& presimp,
                        const SimplifInfoContainer& info,
-                       boost::function<void(EdgeId)> removal_handler) {
+                       std::function<void(EdgeId)> removal_handler) {
     INFO("PROCEDURE == Presimplification");
     RemoveSelfConjugateEdges(gp.g, gp.k_value + 100, 1., removal_handler, info.chunk_cnt());
 
@@ -791,7 +791,7 @@ void PreSimplification(conj_graph_pack& gp,
 inline
 void PostSimplification(conj_graph_pack& gp,
                         const SimplifInfoContainer& info,
-                        boost::function<void(EdgeId)> &removal_handler,
+                        std::function<void(EdgeId)> &removal_handler,
                         stats::detail_info_printer& /*printer*/) {
 
     INFO("PROCEDURE == Post simplification");
@@ -820,7 +820,7 @@ void PostSimplification(conj_graph_pack& gp,
                                                       WrapWithProjectionCallback(gp, removal_handler) : removal_handler);
 
         enable_flag |= RemoveBulges(gp.g, *iterators_holder.bulge_smart_it(), cfg::get().simp.br, 
-           (boost::function<void(EdgeId, const std::vector<EdgeId> &)>)0, removal_handler);
+           (std::function<void(EdgeId, const std::vector<EdgeId> &)>)0, removal_handler);
 
         enable_flag |= RemoveComplexBulges(gp.g, cfg::get().simp.cbr, iteration);
 
@@ -839,7 +839,7 @@ void PostSimplification(conj_graph_pack& gp,
 
 //inline
 //void IdealSimplification(Graph& graph,
-//                         boost::function<double(EdgeId)> quality_handler_f) {
+//                         std::function<double(EdgeId)> quality_handler_f) {
 //    for (auto iterator = graph.SmartEdgeBegin(); !iterator.IsEnd();
 //         ++iterator) {
 //        if (math::eq(quality_handler_f(*iterator), 0.))
@@ -851,7 +851,7 @@ void PostSimplification(conj_graph_pack& gp,
 inline
 void SimplificationCycle(conj_graph_pack& gp,
                          const SimplifInfoContainer& info_container,
-                         boost::function<void(EdgeId)> removal_handler,
+                         std::function<void(EdgeId)> removal_handler,
                          stats::detail_info_printer &printer,
                          SmartIteratorsHolder<Graph>& iterators_holder) {
     size_t iteration = info_container.iteration();
@@ -868,22 +868,22 @@ void SimplificationCycle(conj_graph_pack& gp,
     ClipTips(gp.g, *iterators_holder.tip_smart_it(), cfg::get().simp.tc, info_container, tip_removal_handler);
     cnt_callback.Report();
     DEBUG(iteration << " TipClipping stats");
-    printer(ipp_tip_clipping, str(format("_%d") % iteration));
+    printer(ipp_tip_clipping, fmt::format("_{:d}", iteration));
 
     if (!cfg::get().simp.disable_br_in_cycle || !cfg::get().simp.fast_features) {
         DEBUG(iteration << " BulgeRemoval");
         RemoveBulges(gp.g, *iterators_holder.bulge_smart_it(), cfg::get().simp.br, 
-            (boost::function<void(EdgeId, const std::vector<EdgeId> &)>)0, removal_handler);
+            (std::function<void(EdgeId, const std::vector<EdgeId> &)>)0, removal_handler);
         cnt_callback.Report();
         DEBUG(iteration << " BulgeRemoval stats");
-        printer(ipp_bulge_removal, str(format("_%d") % iteration));
+        printer(ipp_bulge_removal, fmt::format("_{:d}", iteration));
     } 
 
     DEBUG(iteration << " ErroneousConnectionsRemoval");
     RemoveLowCoverageEdges(gp.g, *iterators_holder.ec_smart_it(), cfg::get().simp.ec, info_container, removal_handler);
     cnt_callback.Report();
     DEBUG(iteration << " ErroneousConnectionsRemoval stats");
-    printer(ipp_err_con_removal, str(format("_%d") % iteration));
+    printer(ipp_err_con_removal, fmt::format("_{:d}", iteration));
 }
 
 inline bool CorrectedFastMode(const SimplifInfoContainer& info) {
@@ -908,7 +908,7 @@ inline bool CorrectedFastMode(const SimplifInfoContainer& info) {
 
 inline
 void SimplifyGraph(conj_graph_pack &gp,
-                   boost::function<void(EdgeId)> removal_handler,
+                   std::function<void(EdgeId)> removal_handler,
                    stats::detail_info_printer& printer, size_t iteration_count) {
     printer(ipp_before_simplification);
     INFO("Graph simplification started");

@@ -7,7 +7,4 @@
 project(mph_index CXX)
 
 add_library(mph_index STATIC
-            MurmurHash3.cpp
-            mph_bits.cc
-            mph_index.cc
-            trigraph.cc)
+            MurmurHash3.cpp)

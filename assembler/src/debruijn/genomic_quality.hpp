@@ -228,14 +228,14 @@ private:
 //  const Graph& g_;
 //  const GraphLabeler<Graph>& labeler_;
 //  const string& output_folder_;
-//    boost::function<double (EdgeId)>& quality_f_;
+//    std::function<double (EdgeId)>& quality_f_;
 ////    size_t black_removed_;
 ////    size_t colored_removed_;
 //public:
 //  EdgeLocalityPrintingRH(const Graph& g
 //          , const GraphLabeler<Graph>& labeler
 //          , const string& output_folder
-//            , boost::function<double (EdgeId)> quality_f = 0) :
+//            , std::function<double (EdgeId)> quality_f = 0) :
 //          g_(g),
 //          labeler_(labeler), output_folder_(output_folder),
 //            quality_f_(quality_f){
@@ -506,14 +506,14 @@ private:
 //    const Graph& g_;
 //    const GraphLabeler<Graph>& labeler_;
 //    const string& output_folder_;
-//    boost::function<double (EdgeId)>& quality_f_;
+//    std::function<double (EdgeId)>& quality_f_;
 ////  size_t black_removed_;
 ////  size_t colored_removed_;
 //public:
 //    EdgeLocalityPrintingRH(const Graph& g
 //            , const GraphLabeler<Graph>& labeler
 //            , const string& output_folder
-//            , boost::function<double (EdgeId)> quality_f = 0) :
+//            , std::function<double (EdgeId)> quality_f = 0) :
 //            g_(g),
 //            labeler_(labeler), output_folder_(output_folder),
 //            quality_f_(quality_f){

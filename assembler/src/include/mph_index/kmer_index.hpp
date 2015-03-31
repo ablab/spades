@@ -5,10 +5,15 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-#include "mph_index.h"
 #include "io/mmapped_reader.hpp"
 #include "io/mmapped_writer.hpp"
 #include "adt/pointer_iterator.hpp"
+
+#include "mphf.hpp"
+#include "base_hash.hpp"
+#include "hypergraph.hpp"
+#include "hypergraph_sorter_seq.hpp"
+#include "MurmurHash3.h"
 
 #include "openmp_wrapper.h"
 
@@ -18,12 +23,12 @@
 #include "memory_limit.hpp"
 
 #include <libcxx/sort.hpp>
-#include <boost/lexical_cast.hpp>
 
 #include <algorithm>
 #ifdef USE_GLIBCXX_PARALLEL
 #include <parallel/algorithm>
 #endif
+#include <fstream>
 #include <vector>
 #include <cmath>
 
@@ -70,28 +75,19 @@ struct kmer_index_traits {
       return typename Seq::hash()(k.data(), k.size());
     }
   };
-  // This is really the most fragile part of the whole story.  Basically, we're
-  // building the PHM with "raw" data, but query the PHM with real Key-s!  We're
-  // relying on fact that hashes are exactly the same in both cases (thus - two
-  // almost equal implementations!).
-  struct seeded_hash_function {
-    static cxxmph::h128 hash128(const KMerRawData &k, uint32_t seed) {
-      cxxmph::h128 h;
-      MurmurHash3_x64_128(k.data(), k.data_size(), seed, &h);
-      return h;
-    }
 
-    static cxxmph::h128 hash128(const KMerRawReference k, uint32_t seed) {
-      cxxmph::h128 h;
-      MurmurHash3_x64_128(k.data(), k.data_size(), seed, &h);
-      return h;
-    }
+  struct KMerRawReferenceAdaptor {
+      emphf::byte_range_t operator()(const KMerRawReference k) const {
+          const uint8_t * data = (const uint8_t*)k.data();
+          return std::make_pair(data, data + k.data_size());
+      }
+  };
 
-    static cxxmph::h128 hash128(const Seq &k, uint32_t seed) {
-      cxxmph::h128 h;
-      MurmurHash3_x64_128(k.data(), k.data_size() * sizeof(typename Seq::DataType), seed, &h);
-      return h;
-    }
+  struct KMerSeqAdaptor {
+      emphf::byte_range_t operator()(const Seq &k) const {
+          const uint8_t * data = (const uint8_t*)k.data();
+          return std::make_pair(data, data + k.data_size() * sizeof(typename Seq::DataType));
+      }
   };
 
   template<class Writer>
@@ -134,11 +130,11 @@ class KMerIndex {
   typedef size_t IdxType;
 
  private:
-  typedef cxxmph::SimpleMPHIndex<KMerSeq, typename traits::seeded_hash_function> KMerDataIndex;
+  using KMerDataIndex = emphf::mphf<emphf::jenkins64_hasher>;
   typedef KMerIndex __self;
 
  public:
-  KMerIndex(/*unsigned k*/):/*k_(k), */index_(NULL),  num_buckets_(0), size_(0) {}
+  KMerIndex(): index_(NULL), num_buckets_(0), size_(0) {}
 
   KMerIndex(const KMerIndex&) = delete;
   KMerIndex& operator=(const KMerIndex&) = delete;
@@ -148,10 +144,6 @@ class KMerIndex {
   void clear() {
     num_buckets_ = 0;
     bucket_starts_.clear();
-
-    for (size_t i = 0; i < num_buckets_; ++i) {
-      index_[i].clear();
-    }
 
     delete[] index_;
     index_ = NULL;
@@ -166,34 +158,36 @@ class KMerIndex {
   }
 
   void count_size() {
-      if(index_ == NULL)
+      if (index_ == NULL)
           return;
-	  size_ = 0;
-      for(size_t i = 0; i < num_buckets_; i++)
+      size_ = 0;
+      for (size_t i = 0; i < num_buckets_; i++)
           size_ += index_[i].size();
   }
 
   size_t size() const {
-	  return size_;
+      return size_;
   }
 
   size_t seq_idx(const KMerSeq &s) const {
     size_t bucket = seq_bucket(s);
 
-    return bucket_starts_[bucket] + index_[bucket].index(s);
+    return bucket_starts_[bucket] +
+            index_[bucket].lookup(s, typename traits::KMerSeqAdaptor());
   }
 
   size_t raw_seq_idx(const KMerRawReference data) const {
     size_t bucket = raw_seq_bucket(data);
 
-    return bucket_starts_[bucket] + index_[bucket].index(data);
+    return bucket_starts_[bucket] +
+            index_[bucket].lookup(data, typename traits::KMerRawReferenceAdaptor());
   }
 
   template<class Writer>
   void serialize(Writer &os) const {
     os.write((char*)&num_buckets_, sizeof(num_buckets_));
     for (size_t i = 0; i < num_buckets_; ++i)
-      index_[i].serialize(os);
+      index_[i].save(os);
     os.write((char*)&bucket_starts_[0], (num_buckets_ + 1) * sizeof(bucket_starts_[0]));
   }
 
@@ -205,7 +199,7 @@ class KMerIndex {
 
     index_ = new KMerDataIndex[num_buckets_];
     for (size_t i = 0; i < num_buckets_; ++i)
-      index_[i].deserialize(is);
+      index_[i].load(is);
 
     bucket_starts_.resize(num_buckets_ + 1);
     is.read((char*)&bucket_starts_[0], (num_buckets_ + 1) * sizeof(bucket_starts_[0]));
@@ -213,7 +207,6 @@ class KMerIndex {
   }
 
  private:
-//  unsigned k_;
   KMerDataIndex *index_;
 
   size_t num_buckets_;
@@ -238,8 +231,7 @@ class KMerSplitter {
   KMerSplitter(const std::string &work_dir, unsigned K, uint32_t seed = 0)
       : work_dir_(work_dir), K_(K), seed_(seed) {}
 
-  virtual ~KMerSplitter() {
-  }
+  virtual ~KMerSplitter() {}
 
   virtual path::files_t Split(size_t num_files) = 0;
 
@@ -252,7 +244,7 @@ class KMerSplitter {
   uint32_t seed_;
 
   std::string GetRawKMersFname(unsigned suffix) const {
-    return path::append_path(work_dir_, "kmers.raw." + boost::lexical_cast<std::string>(suffix));
+    return path::append_path(work_dir_, "kmers.raw." + std::to_string(suffix));
   }
 
   unsigned GetFileNumForSeq(const Seq &s, unsigned total) const {
@@ -402,7 +394,7 @@ public:
   }
 
   std::string GetMergedKMersFname(unsigned suffix) const {
-    return kmer_prefix_ + ".merged." + boost::lexical_cast<std::string>(suffix);
+    return kmer_prefix_ + ".merged." + std::to_string(suffix);
   }
 
   std::string GetFinalKMersFname() const {
@@ -418,7 +410,7 @@ private:
   std::vector<MMappedRecordArrayReader<typename Seq::DataType>*> buckets_;
 
   std::string GetUniqueKMersFname(unsigned suffix) const {
-    return kmer_prefix_ + ".unique." + boost::lexical_cast<std::string>(suffix);
+    return kmer_prefix_ + ".unique." + std::to_string(suffix);
   }
 
   size_t MergeKMers(const std::string &ifname, const std::string &ofname,
@@ -500,11 +492,20 @@ size_t KMerIndexBuilder<Index>::BuildIndex(Index &index, KMerCounter<Seq> &count
     counter.OpenBucket(iFile, !save_final);
     size_t sz = counter.bucket_end(iFile) - counter.bucket_begin(iFile);
     index.bucket_starts_[iFile + 1] = sz;
-    if (!data_index.Reset(counter.bucket_begin(iFile), counter.bucket_end(iFile), (unsigned)sz)) {
-      INFO("Something went really wrong (read = this should not happen). Try to restart and see if the problem will be fixed.");
-      exit(-1);
+    typename kmer_index_traits::KMerRawReferenceAdaptor adaptor;
+    size_t max_nodes = (size_t(std::ceil(double(sz) * 1.23)) + 2) / 3 * 3;
+    if (max_nodes >= uint64_t(1) << 32) {
+        emphf::hypergraph_sorter_seq<emphf::hypergraph<uint64_t> > sorter;
+        typename KMerIndex<kmer_index_traits>::KMerDataIndex(sorter,
+                                                             sz, emphf::range(counter.bucket_begin(iFile), counter.bucket_end(iFile)),
+                                                             adaptor).swap(data_index);
+    } else {
+        emphf::hypergraph_sorter_seq<emphf::hypergraph<uint32_t> > sorter;
+        typename KMerIndex<kmer_index_traits>::KMerDataIndex(sorter,
+                                                             sz, emphf::range(counter.bucket_begin(iFile), counter.bucket_end(iFile)),
+                                                             adaptor).swap(data_index);
     }
-
+    
     counter.ReleaseBucket(iFile);
   }
 

@@ -35,7 +35,7 @@ class DataDivider {
   typedef vector<PairInfo<EdgeId> > PairInfos;
   typedef pair<EdgeId, EdgeId> EdgePair;
   typedef vector<Point> PointArray;
-  typedef boost::function<double(int)> WeightFunction;
+  typedef std::function<double(int)> WeightFunction;
 
   //	double LeftDerivative(int index, vector<int> x, vector<int> y) {
   //		return outf[dist - min_value_ + 1][0] - outf[dist - min][0];

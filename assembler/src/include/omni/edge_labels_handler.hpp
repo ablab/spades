@@ -20,8 +20,6 @@
 #include "visualization/graph_labeler.hpp"
 #include "simple_tools.hpp"
 #include <unordered_map>
-#include <boost/function.hpp>
-#include <boost/bind.hpp>
 #include <map>
 
 using namespace omnigraph;

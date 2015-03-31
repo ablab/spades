@@ -40,22 +40,27 @@ sga_mp_cor_run_script = os.path.join(runner_dirpath, 'SGA_mp_assemble_cor.sh')
 velvet_base = '/acestorage/software/velvet_1.2.10/'
 velvet_run_script = os.path.join(runner_dirpath, 'VELVET_assemble.sh')
 velvet_mp_run_script = os.path.join(runner_dirpath, 'VELVET_mp_assemble.sh')
+velvet_sc_base = '/acestorage/software/velvet-sc/'
+velvet_sc_run_script = os.path.join(runner_dirpath, 'VELVETSC_assemble.sh')
+velvet_sc_mp_run_script = os.path.join(runner_dirpath, 'VELVETSC_mp_assemble.sh')
 mira_base = '/acestorage/software/mira-4.0rc1/build/bin/'
 mira_config = os.path.join(runner_dirpath, 'MIRA_config.txt')
 mira_mp_config = os.path.join(runner_dirpath, 'MIRA_mp_config.txt')
 
 # IMPORTANT CONSTANTS
-long_options = "min-k= max-k= step-k= threads= is= dev= assemblers= mira-tmp-dir= corrected sc mp1= mp2= mp-orient= mp-is= mp-dev= phred64".split()
+long_options = "12= mp12= min-k= max-k= step-k= threads= is= dev= assemblers= mira-tmp-dir= corrected sc mp1= mp2= mp-orient= mp-is= mp-dev= phred64".split()
 short_options = "o:1:2:r:t:"
 
 # options
-assemblers_to_run = ['abyss', 'msrca', 'soap', 'idba', 'spades', 'ray', 'cabog', 'sga', 'velvet', 'mira']
+assemblers_to_run = ['abyss', 'msrca', 'soap', 'idba', 'spades', 'ray', 'cabog', 'sga', 'velvet', 'velvet-sc', 'mira']
 output_dir = None
 mira_tmp_dir = os.path.abspath(os.path.expanduser('~/mira_tmp'))
 left = None
 right = None
+interlaced = None
 mate_left = None
 mate_right = None
+mate_interlaced = None
 mate_orient = 'rf'
 mate_is = None
 mate_is_dev = None
@@ -144,30 +149,42 @@ def check_options():
     global output_dir
     global left
     global right
+    global interlaced
     global reference
 
     if not output_dir:
         error("output_dir is not set!", stdout=True)
         sys.exit(1)
-    if not left or not right:
+    if (not left or not right) and not (interlaced and assemblers_to_run[0] == assemblers_to_run[-1] == 'velvet-sc'):
         error("you should set both left and right reads!", stdout=True)
         sys.exit(1)
     if not insert_size or not is_dev:
         error("you should set both insert size mean (--is) and insert size deviation (--dev)!", stdout=True)
         sys.exit(1)
-    if not os.path.isfile(left):
-        error("file with left reads doesn't exist! " + left, stdout=True)
-        sys.exit(1)
-    if not os.path.isfile(right):
-        error("file with right reads doesn't exist! " + right, stdout=True)
-        sys.exit(1)
+    if interlaced and assemblers_to_run[0] == assemblers_to_run[-1] == 'velvet-sc':
+        if not os.path.isfile(interlaced):
+            error("file with interlaced reads doesn't exist! " + interlaced, stdout=True)
+            sys.exit(1)
+    else:
+        if not os.path.isfile(left):
+            error("file with left reads doesn't exist! " + left, stdout=True)
+            sys.exit(1)
+        if not os.path.isfile(right):
+            error("file with right reads doesn't exist! " + right, stdout=True)
+            sys.exit(1)
     if not reference or not os.path.isfile(reference):
         warning("reference is NOT SET, Quast will detect best assembly by N50!", stdout=True)
     else:
         reference = os.path.abspath(reference)
     output_dir = os.path.abspath(output_dir)
-    left = os.path.abspath(left)
-    right = os.path.abspath(right)
+    if left and right:
+        left = os.path.abspath(left)
+        right = os.path.abspath(right)
+    else:
+        left = ''
+        right = ''
+    if interlaced:
+        interlaced = os.path.abspath(interlaced)
 
 
 def fill_in_common_params_subst_dict():
@@ -367,6 +384,43 @@ def run_velvet(K, log_filename):
     return return_code, contigs_path, scaffolds_path
 
 
+def run_velvet_sc(K, log_filename):
+    log_file = open(log_filename, 'a')
+    cur_velvet_run_script = os.path.abspath(os.path.join(os.getcwd(), 'run.sh'))
+    #shutil.copy(velvet_run_script, cur_velvet_run_script)
+    params_subst_dict = dict(common_params_subst_dict)
+    params_subst_dict['K'] = str(K)
+    params_subst_dict['VELVET_BASE'] = velvet_sc_base
+    params_subst_dict['OUTPUT_DIR'] = os.path.dirname(log_filename)
+    params_subst_dict['INTERLACED'] = interlaced if interlaced else ''
+    if mate_left and mate_right and mate_is and mate_is_dev:
+        params_subst_dict['MP_LEFT'] = mate_left
+        params_subst_dict['MP_RIGHT'] = mate_right
+        params_subst_dict['MP_INSERT_SIZE'] = str(mate_is)
+        params_subst_dict['MP_DEVIATION'] = str(mate_is_dev)
+        params_subst_dict['MP_INTERLACED'] = mate_interlaced if mate_interlaced else ''
+        shutil.copy(velvet_sc_mp_run_script, cur_velvet_run_script)
+    else:
+        shutil.copy(velvet_sc_run_script, cur_velvet_run_script)
+    update_runner_params(cur_velvet_run_script, params_subst_dict)
+    cmd_line = cur_velvet_run_script
+    cmd_line += " >>%s 2>>%s" % (log_filename, log_filename)
+    log_file.write("Started: " + cmd_line + "\n\n")
+    log_file.write("Run script content:\n")
+    for line in open(cur_velvet_run_script, 'r'):
+        log_file.write(line)
+    log_file.write("\n\n")
+    log_file.flush()
+
+    return_code = os.system(cmd_line)
+
+    log_file.write("Finished, log is %s\n" % log_filename)
+    log_file.close()
+    contigs_path = "contigs.fa"
+    scaffolds_path = "scaffolds.fa"
+    return return_code, contigs_path, scaffolds_path
+
+
 def run_sga(K, log_filename):
     log_file = open(log_filename, 'a')
     cur_sga_run_script = os.path.abspath(os.path.join(os.getcwd(), 'run.sh'))
@@ -447,8 +501,7 @@ def iterate_K(name, run_tool_function):
     global_err_number = 0
     best_K = None
     best_assembly = None
-    for K_level_selection in [1, 2]:
-
+    for K_level_selection in ([1, 2] if k_2level_selection else [1]):
         # START OF TOOL with different K
         if K_level_selection == 1:
             k_list = range(min_k_rough, max_k_rough + 1, step_k_rough)
@@ -786,6 +839,7 @@ def main():
     global output_dir
     global left
     global right
+    global interlaced
     global reference
     global insert_size
     global is_dev
@@ -800,6 +854,7 @@ def main():
     global single_cell
     global mate_left
     global mate_right
+    global mate_interlaced
     global mate_orient
     global mate_is
     global mate_is_dev
@@ -820,18 +875,23 @@ def main():
         print("--mp1\t<file>\t\tleft mate-pairs reads (in FASTQ)")
         print("--mp2\t<file>\t\tright mate-pairs reads (in FASTQ)")
         print("--mp-is\t<int>\t\tmate-pairs insert size mean")
+        print("--mp-dev\t<int>\t\tmate-pairs insert size standard deviation")
         print("\nRecommended options:")
         print("-r\t\t<file>\treference (in FASTA)")
         print("--threads\t<int>\tmax threads number (default is %d)" % max_threads)
+        print("\nAssembler specific options:")
+        print("--sc\t\t\t\tdataset is single-cell [for SPAdes]")
+        print("--12\t<file>\t\tinterlaced reads (in FASTQ) [for Velvet-SC]")
+        print("--mp12\t<file>\t\tinterlaced mate-pairs reads (in FASTQ) [for Velvet-SC]")
+        print("--mira-tmp-dir\t<dir>\ttemporary dir [for MIRA assembler] (default is %s)" % mira_tmp_dir)
+        print("--corrected\t\t\treads are corrected (disable error correction [for SGA, SPAdes])")
         print("\nAdvanced options:")
         print("--min-k\t\t<int>\tmin K (default is auto from %s)" % str(min_k_rough - delta_k_accurate))
         print("--max-k\t\t<int>\tmax K (default is auto up to %s)" % str(max_k_rough + delta_k_accurate))
         print("--step-k\t<int>\tstep for K changing (default is auto, first %s and than %s)" % (str(step_k_rough), str(step_k_accurate)))
-        print("--mira-tmp-dir\t<dir>\ttemporary dir for MIRA assembler (default is %s)" % mira_tmp_dir)
-        print("--corrected\t\t\treads are corrected (disable error correction if it is configurable)")
-        print("--sc\t\t\t\tdataset is single-cell")
         print("--phred64\t\tdataset quality encoding is Phred+64 (default is Phred+33)")
         print("--assemblers\t<str,str>\tlist of assemblers to run (default is %s)" % assemblers_to_run)
+
         sys.exit(0)
 
     try:
@@ -849,6 +909,8 @@ def main():
             left = arg
         elif opt == '-2':
             right = arg
+        elif opt == '--12':
+            interlaced = arg
         elif opt == '-r':
             reference = arg
         elif opt == '--is':
@@ -859,6 +921,8 @@ def main():
             mate_left = arg
         elif opt == '--mp2':
             mate_right = arg
+        elif opt == '--mp12':
+            mate_interlaced = arg
         elif opt == '--mp-is':
             mate_is = int(arg)
         elif opt == '--mp-dev':
@@ -923,7 +987,7 @@ def main():
 
     # run dependent on K assemblers
     for (name, run_tool_function) in [('abyss', run_abyss), ('msrca', run_msrca), ('soap', run_soap),
-        ('velvet', run_velvet), ('sga', run_sga), ('ray', run_ray)]:
+        ('velvet', run_velvet), ('velvet-sc', run_velvet_sc), ('sga', run_sga), ('ray', run_ray)]:
         if not name in assemblers_to_run:
             continue
         if corrected and name == 'sga':

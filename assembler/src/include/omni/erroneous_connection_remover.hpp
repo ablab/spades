@@ -35,7 +35,7 @@ template<class Graph>
 bool RemoveErroneousEdgesInCoverageOrder(Graph &g,
                                          shared_ptr<func::Predicate<typename Graph::EdgeId>> removal_condition,
                                          double max_coverage,
-                                         boost::function<void(typename Graph::EdgeId)> removal_handler) {
+                                         std::function<void(typename Graph::EdgeId)> removal_handler) {
 
     omnigraph::EdgeRemovingAlgorithm<Graph> erroneous_edge_remover(g,
                                                                    AddAlternativesPresenceCondition(g, removal_condition),
@@ -49,7 +49,7 @@ template<class Graph>
 bool RemoveErroneousEdgesInLengthOrder(Graph &g,
                                        shared_ptr<func::Predicate<typename Graph::EdgeId>> removal_condition,
                                        size_t max_length,
-                                       boost::function<void(typename Graph::EdgeId)> removal_handler) {
+                                       std::function<void(typename Graph::EdgeId)> removal_handler) {
 
     omnigraph::EdgeRemovingAlgorithm<Graph> erroneous_edge_remover(g,
                                                                    AddAlternativesPresenceCondition(g, removal_condition),
@@ -338,7 +338,7 @@ public:
                     const AbstractFlankingCoverage<Graph> &flanking_coverage,
                     double unreliability_threshold, double ec_threshold,
                     double relative_threshold,
-                    boost::function<void(EdgeId)> removal_handler = 0)
+                    std::function<void(EdgeId)> removal_handler = 0)
             : base(g), uniqueness_length_(uniqueness_length),
               unreliability_threshold_(unreliability_threshold * ec_threshold), ec_threshold_(ec_threshold),
               relative_threshold_(relative_threshold), flanking_coverage_(flanking_coverage),

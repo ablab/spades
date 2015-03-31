@@ -7,7 +7,7 @@
 project(spades_pipeline)
 
 # SPAdes pipeline scripts
-install(FILES hammer_logic.py process_cfg.py spades_logic.py dipspades_logic.py corrector_logic.py support.py options_storage.py
+install(FILES hammer_logic.py process_cfg.py spades_logic.py dipspades_logic.py corrector_logic.py support.py options_storage.py lucigen_nxmate.py
         DESTINATION share/spades/spades_pipeline
         COMPONENT runtime)
 

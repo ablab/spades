@@ -18,13 +18,9 @@
 #include "verify.hpp"
 
 // todo: undo dirty fix
-#include <boost/format.hpp>
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/info_parser.hpp>
-#include <boost/utility/enable_if.hpp>
-#include <boost/type_traits.hpp>
-#include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
 
@@ -77,7 +73,7 @@ void load_items(std::vector<T>& vec, boost::property_tree::ptree const& pt,
 
     for (size_t i = 0; i != count; ++i) {
       T t;
-      load(t, pt.get_child(str(boost::format("%s.item_%d") % key % i)),
+      load(t, pt.get_child(fmt::format("{:s}.item_{:d}", key, i)),
            complete);
       vec.push_back(t);
     }

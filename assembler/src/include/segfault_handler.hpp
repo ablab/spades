@@ -9,11 +9,10 @@
 
 #include "stacktrace.hpp"
 
-#include <boost/function.hpp>
 #include <signal.h>
 
 struct segfault_handler : boost::noncopyable {
-  typedef boost::function<void ()> callback_t;
+  typedef std::function<void ()> callback_t;
   typedef void (*seg_handler_t)(int);
 
   segfault_handler(callback_t const& cb = 0) {

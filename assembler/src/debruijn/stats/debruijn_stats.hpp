@@ -25,6 +25,8 @@
 #include "dataset_readers.hpp"
 #include "copy_file.hpp"
 
+#include <boost/algorithm/string.hpp>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <cmath>
@@ -364,7 +366,7 @@ struct detail_info_printer {
 
   private:
     string folder_;
-    boost::function<void(info_printer_pos, string const&, string const&)> func_;
+    std::function<void(info_printer_pos, string const&, string const&)> func_;
     const conj_graph_pack::graph_t &graph_;
     size_t cnt;
 };

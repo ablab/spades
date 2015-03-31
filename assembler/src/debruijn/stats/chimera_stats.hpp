@@ -217,7 +217,7 @@ class ChimeraRelativeCoverageStats : public ChimericEdgeStats<Graph> {
     typedef ChimericEdgeStats<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
-    typedef boost::function<double(EdgeId, VertexId)> LocalCoverageFT;
+    typedef std::function<double(EdgeId, VertexId)> LocalCoverageFT;
 
     simplification::relative_coverage::RelativeCoverageHelper<Graph> rel_helper_;
 
