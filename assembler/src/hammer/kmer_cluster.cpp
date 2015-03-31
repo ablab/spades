@@ -258,7 +258,7 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
   // Another limit: we're interested in good centers only
   size_t maxgcnt = 0;
   for (size_t i = 0; i < block.size(); ++i) {
-    float center_quality = data_[block[i]].totalQual;
+    float center_quality = data_[block[i]].total_qual;
     if ((center_quality > cfg::get().bayes_singleton_threshold) ||
         (cfg::get().correct_use_threshold && center_quality > cfg::get().correct_threshold))
       maxgcnt += 1;
@@ -438,7 +438,7 @@ size_t KMerClustering::ProcessCluster(const std::vector<size_t> &cur_class,
     if (cur_class.size() == 1) {
         size_t idx = cur_class[0];
         KMerStat &singl = data_[idx];
-        if ((1-singl.totalQual) > cfg::get().bayes_singleton_threshold) {
+        if ((1-singl.total_qual) > cfg::get().bayes_singleton_threshold) {
             singl.status = KMerStat::GoodIter;
             gsingl += 1;
 
@@ -449,7 +449,7 @@ size_t KMerClustering::ProcessCluster(const std::vector<size_t> &cur_class,
                 }
             }
         } else {
-            if (cfg::get().correct_use_threshold && (1-singl.totalQual) > cfg::get().correct_threshold)
+            if (cfg::get().correct_use_threshold && (1-singl.total_qual) > cfg::get().correct_threshold)
                 singl.status = KMerStat::GoodIterBad;
             else
                 singl.status = KMerStat::Bad;
@@ -483,13 +483,13 @@ size_t KMerClustering::ProcessCluster(const std::vector<size_t> &cur_class,
         size_t cidx = currentBlock[0];
         KMerStat &center = data_[cidx];
         KMer ckmer = data_.kmer(cidx);
-        double center_quality = 1 - center.totalQual;
+        double center_quality = 1 - center.total_qual;
 
         // Computing the overall quality of a cluster.
         double cluster_quality = 1;
         if (currentBlock.size() > 1) {
             for (size_t j = 1; j < currentBlock.size(); ++j)
-                cluster_quality *= data_[currentBlock[j]].totalQual;
+                cluster_quality *= data_[currentBlock[j]].total_qual;
 
             cluster_quality = 1-cluster_quality;
         }
@@ -536,7 +536,6 @@ size_t KMerClustering::ProcessCluster(const std::vector<size_t> &cur_class,
             size_t eidx = currentBlock[j];
             KMerStat &kms = data_[eidx];
 
-            kms.set_change(cidx);
             UpdateErrors(errs, data_.kmer(eidx), ckmer);
 
             if (ofs_bad.good()) {

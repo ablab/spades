@@ -198,7 +198,7 @@ path::files_t HammerKMerSplitter::Split(size_t num_files) {
 
 static inline void Merge(KMerStat &lhs, const KMerStat &rhs) {
   lhs.set_count(lhs.count() + rhs.count());
-  lhs.totalQual *= rhs.totalQual;
+  lhs.total_qual *= rhs.total_qual;
   lhs.qual += rhs.qual;
 }
 

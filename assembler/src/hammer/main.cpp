@@ -211,7 +211,7 @@ int main(int argc, char * argv[]) {
               const KMerStat &kmer_data = (*Globals::kmer_data)[n];
               if (kmer_data.isGoodForIterative())
                 oftmp << Globals::kmer_data->kmer(n).str() << "\n>" << n
-                      << "  cnt=" << kmer_data.count() << "  tql=" << (1-kmer_data.totalQual) << "\n";
+                      << "  cnt=" << kmer_data.count() << "  tql=" << (1-kmer_data.total_qual) << "\n";
             }
           }
 

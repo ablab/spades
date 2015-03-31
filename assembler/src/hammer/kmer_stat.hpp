@@ -126,11 +126,11 @@ struct KMerStat {
     MarkedForGoodIter  = 5
   } KMerStatus;
 
-  KMerStat(uint32_t cnt, float kquality, const unsigned char *quality) : totalQual(kquality), qual(quality)  {
+  KMerStat(uint32_t cnt, float kquality, const unsigned char *quality) : total_qual(kquality), qual(quality)  {
       count_with_lock.init();
       set_count(cnt);
   }
-  KMerStat() : totalQual(1.0), qual() {
+  KMerStat() : total_qual(1.0), qual() {
       count_with_lock.init();
       set_count(0);
   }
@@ -144,7 +144,7 @@ struct KMerStat {
     uint64_t raw_data;
   };
 
-  float totalQual;
+  float total_qual;
   folly::PicoSpinLock<uint32_t> count_with_lock;
   QualBitSet qual;
 
@@ -158,16 +158,11 @@ struct KMerStat {
   void makeGoodForIterative() { status = GoodIter; }
   void markGoodForIterative() { status = MarkedForGoodIter; }
   bool isMarkedGoodForIterative() { return (status == MarkedForGoodIter); }
-  bool change() const { return status == Change; }
-  void set_change(uint64_t kmer) {
-    changeto = kmer & (((uint64_t) 1 << 48) - 1);
-    status = Change;
-  }
 };
 
 inline
 std::ostream& operator<<(std::ostream &os, const KMerStat &kms) {
-  os << /* kms.kmer().str() << */ " (" << std::setw(3) << kms.count() << ", " << std::setprecision(6) << std::setw(8) << (1-kms.totalQual) << ')';
+  os << /* kms.kmer().str() << */ " (" << std::setw(3) << kms.count() << ", " << std::setprecision(6) << std::setw(8) << (1-kms.total_qual) << ')';
 
   return os;
 }
@@ -188,7 +183,7 @@ template<class Writer>
 inline Writer& binary_write(Writer &os, const KMerStat &k) {
   os.write((char*)&k.count_with_lock, sizeof(k.count_with_lock));
   os.write((char*)&k.raw_data, sizeof(k.raw_data));
-  os.write((char*)&k.totalQual, sizeof(k.totalQual));
+  os.write((char*)&k.total_qual, sizeof(k.total_qual));
   return binary_write(os, k.qual);
 }
 
@@ -196,7 +191,7 @@ template<class Reader>
 inline void binary_read(Reader &is, KMerStat &k) {
   is.read((char*)&k.count_with_lock, sizeof(k.count_with_lock));
   is.read((char*)&k.raw_data, sizeof(k.raw_data));
-  is.read((char*)&k.totalQual, sizeof(k.totalQual));
+  is.read((char*)&k.total_qual, sizeof(k.total_qual));
   binary_read(is, k.qual);
 }
 
