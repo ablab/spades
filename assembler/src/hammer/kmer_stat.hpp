@@ -143,7 +143,7 @@ struct KMerStat {
   }
   void mark_bad() {
       uint32_t val = count_with_lock.getData();
-      count_with_lock.setData(val | ~1);
+      count_with_lock.setData(val & ~1);
   }};
 
 inline
