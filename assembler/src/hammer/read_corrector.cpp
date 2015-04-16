@@ -64,7 +64,7 @@ std::string ReadCorrector::CorrectReadRight(const std::string &seq, const std::s
             if (idx != -1ULL) {
                 const KMerStat &kmer_data = data_[idx];
                 corrections.emplace(pos, correction.str, correction.penalty - (kmer_data.good() ? 0.0 : 1.0), last, cpos);
-                if (kmer_data.good())
+                if (kmer_data.good() && qual[pos] >= 20)
                     extended = true;
             }
         }
