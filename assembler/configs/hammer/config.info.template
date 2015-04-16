@@ -9,7 +9,6 @@ output_dir                              ./test_dataset/input/corrected
 ; == HAMMER GENERAL ==
 ; general options
 general_do_everything_after_first_iteration	1
-general_reconstruct_only	1
 general_hard_memory_limit	150
 general_max_nthreads		16
 general_tau			1
@@ -29,7 +28,6 @@ hamming_blocksize_quadratic_threshold	50
 ; bayesian subclustering
 bayes_do				1
 bayes_nthreads				16
-bayes_quality_threshold			0.995
 bayes_singleton_threshold		0.995
 bayes_nonsingleton_threshold		0.9
 bayes_use_hamming_dist			0
@@ -49,7 +47,6 @@ expand_write_kmers_result		0
 ; read correction
 correct_do				1
 correct_discard_bad			0
-correct_use_threshold			1
 correct_use_threshold			1
 correct_threshold			0.98
 correct_nthreads			4

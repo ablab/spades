@@ -80,7 +80,7 @@ void CorrectReadsBatch(std::vector<bool> &res,
   unsigned correct_nthreads = min(cfg::get().correct_nthreads, cfg::get().general_max_nthreads);
   bool discard_singletons = cfg::get().bayes_discard_only_singletons;
   bool correct_threshold = cfg::get().correct_use_threshold;
-  bool discard_bad = cfg::get().correct_discard_bad && !cfg::get().correct_notrim;
+  bool discard_bad = cfg::get().correct_discard_bad;
 
   ReadCorrector corrector(data);
 # pragma omp parallel for shared(reads, res, data) num_threads(correct_nthreads)

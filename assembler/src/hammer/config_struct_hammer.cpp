@@ -28,7 +28,6 @@ void load(hammer_config& cfg, const std::string &filename) {
 void load(hammer_config& cfg, boost::property_tree::ptree const& pt) {
   using config_common::load;
   load(cfg.general_do_everything_after_first_iteration, pt, "general_do_everything_after_first_iteration");
-  load(cfg.general_reconstruct_only, pt, "general_reconstruct_only");
   load(cfg.general_hard_memory_limit, pt, "general_hard_memory_limit");
   load(cfg.general_max_nthreads, pt, "general_max_nthreads");
   load(cfg.general_tau, pt, "general_tau");
@@ -66,7 +65,6 @@ void load(hammer_config& cfg, boost::property_tree::ptree const& pt) {
   load(cfg.correct_use_threshold, pt, "correct_use_threshold");
   load(cfg.correct_readbuffer, pt, "correct_readbuffer");
   load(cfg.correct_discard_bad, pt, "correct_discard_bad");
-  cfg.correct_notrim = pt.get_optional<bool>("correct_notrim");
 
   std::string fname;
   load(fname, pt, "dataset");

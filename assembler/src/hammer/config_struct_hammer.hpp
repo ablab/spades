@@ -36,7 +36,6 @@ struct hammer_config {
   std::string output_dir;
 
   bool general_do_everything_after_first_iteration;
-  bool general_reconstruct_only;
   int general_hard_memory_limit;
   unsigned general_max_nthreads;
   int general_tau;
@@ -74,7 +73,6 @@ struct hammer_config {
   double correct_threshold;
   unsigned correct_readbuffer;
   unsigned correct_nthreads;
-  bool correct_notrim;
 };
 
 
