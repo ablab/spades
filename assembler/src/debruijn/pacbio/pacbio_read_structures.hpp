@@ -96,7 +96,7 @@ struct KmerCluster {
 
     string str(const Graph &g) const{
         stringstream s;
-        s << "Edge: " << g.int_id(edgeId) << " " << first_trustable_index<< " - "  <<last_trustable_index << " " <<size;
+        s << "Edge: " << g.int_id(edgeId) << " on edge: " << sorted_positions[first_trustable_index].edge_position<< " - "  << sorted_positions[last_trustable_index].edge_position<< ";on read: " << sorted_positions[first_trustable_index].read_position<< " - "  << sorted_positions[last_trustable_index].read_position<< ";size "<< size;
         return s.str();
     }
 };
