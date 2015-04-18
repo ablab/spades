@@ -49,7 +49,7 @@ const  char nucl_complement_map['T' + 1] = {
  * @return true if c is 'A', 'C', 'G' or 'T'.
  */
 inline bool is_nucl(char c) { // is ACGT
-	return isnucl_map[(unsigned)c];
+    return isnucl_map[(unsigned)c];
 }
 
 /**
@@ -58,7 +58,7 @@ inline bool is_nucl(char c) { // is ACGT
  * @return true if c is 0, 1, 2 or 3.
  */
 inline bool is_dignucl(char c) { // is 0123
-	return (c < 4);
+    return (c < 4);
 }
 
 /**
@@ -67,8 +67,8 @@ inline bool is_dignucl(char c) { // is 0123
  * @return c ^ 3
  */
 inline char complement(char c) {
-	// VERIFY(is_dignucl(c));
-	return c ^ 3;
+    // VERIFY(is_dignucl(c));
+    return c ^ 3;
 }
 
 /**
@@ -78,15 +78,17 @@ inline char complement(char c) {
  */
 
 struct nucl_complement_functor { // still unused
-	inline bool operator() (char c) const {
-		return nucl_complement_map[(unsigned)c];
-	}
+    inline bool operator() (char c) const {
+        char cc = nucl_complement_map[(unsigned)c];
+        return cc ? cc : 'N';
+    }
 };
 
 inline char nucl_complement(char c){
     // TODO: deal with 'N' case
-	//VERIFY(is_nucl(c));
-	return nucl_complement_map[(unsigned)c];
+    //VERIFY(is_nucl(c));
+    char cc = nucl_complement_map[(unsigned)c];
+    return cc ? cc : 'N';
 }
 
 /**
@@ -95,7 +97,7 @@ inline char nucl_complement(char c){
  * @return 0 => 'A', 1 => 'C', 2 => 'G', 3 => 'T'
  */
 inline char nucl(char c) {
-	return nucl_map[(unsigned)c];
+    return nucl_map[(unsigned)c];
 }
 
 /**
@@ -106,14 +108,14 @@ inline char nucl(char c) {
 
 /*
 struct dignucl : public unary_function<int,bool> {
-	bool operator()(signed char c) const {
-		return dignucl_map[c];		
-	}	
+    bool operator()(signed char c) const {
+        return dignucl_map[c];
+    }
 };*/
 
 inline char dignucl(char c) {
-	// VERIFY(is_nucl(c));
-	return dignucl_map[(unsigned)c];
+    // VERIFY(is_nucl(c));
+    return dignucl_map[(unsigned)c];
 }
 
 
