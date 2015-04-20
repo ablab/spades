@@ -45,6 +45,10 @@ class ConcurrentDSU {
       }
   }
 
+  ~ConcurrentDSU() {
+    delete[] data;
+  }
+
   void unite(size_t x, size_t y) {
     while (true) {
       x = find_set(x);
