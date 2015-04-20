@@ -41,8 +41,7 @@ protected:
         stringstream namestream;
         namestream << curr_env.folder_ << "/" << curr_env.GetFormattedPictureCounter() << "_" << curr_env.file_name_base_ << "/";
         make_dir(namestream.str());
-        namestream << label;
-        make_dir(namestream.str());
+        namestream << label << "_";
         omnigraph::visualization::WriteComponentsAlongPath<Graph>(curr_env.graph(), path, namestream.str(), curr_env.coloring_, curr_env.labeler());
         LOG("The pictures is written to " << namestream.str());
 

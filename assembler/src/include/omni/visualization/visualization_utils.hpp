@@ -70,7 +70,7 @@ void WriteSimpleComponent(const GraphComponent<Graph>& gc,
 
 template<class Graph>
 void WriteComponentsAlongPath(const Graph& g, vector<typename Graph::EdgeId> path,
-        const string& folder_name, shared_ptr<GraphColorer<Graph>> colorer,
+        const string& prefix_path, shared_ptr<GraphColorer<Graph>> colorer,
         const GraphLabeler<Graph> &labeler, bool color_path = true) {
     auto edge_colorer = make_shared<CompositeEdgeColorer<Graph>>("black");
     edge_colorer->AddColorer(colorer);
@@ -81,7 +81,7 @@ void WriteComponentsAlongPath(const Graph& g, vector<typename Graph::EdgeId> pat
     shared_ptr<GraphSplitter<Graph>> rs = ReliableSplitterAlongPath<Graph>(g, path);
     auto filter = make_shared<omnigraph::SmallComponentFilter<Graph>>(g, 3);
     shared_ptr<GraphSplitter<Graph>> splitter = make_shared<omnigraph::CondensingSplitterWrapper<Graph>>(rs, filter);
-    WriteComponents<Graph>(g, folder_name, splitter, resulting_colorer, labeler);
+    WriteComponents<Graph>(g, prefix_path, splitter, resulting_colorer, labeler);
 }
 
 template<class Graph>
