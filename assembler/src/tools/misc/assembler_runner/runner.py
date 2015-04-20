@@ -26,7 +26,7 @@ soap_run_script = os.path.join(runner_dirpath, 'SOAP_assemble.sh')
 soap_config = os.path.join(runner_dirpath, 'SOAP_config.txt')
 soap_mp_config = os.path.join(runner_dirpath, 'SOAP_mp_config.txt')
 idba_base = '/Molly/oldstorage/acestorage/software/idba-1.1.1/bin/'
-spades_base = '/Molly/oldstorage/acestorage/software/SPAdes-2.5.1/bin/'
+spades_base = '/Molly/oldstorage/acestorage/software/SPAdes-3.5.0-Linux/bin/'
 ray_base = '/Molly/oldstorage/acestorage/software/Ray-v2.2.0/Ray-Large-k-mers/'
 cabog_base = '/Molly/oldstorage/acestorage/software/CABOG_wgs_7.0/Linux-amd64/bin'
 cabog_run_script = os.path.join(runner_dirpath, 'CABOG_assemble.sh')
@@ -46,13 +46,14 @@ velvet_sc_mp_run_script = os.path.join(runner_dirpath, 'VELVETSC_mp_assemble.sh'
 mira_base = '/Molly/oldstorage/acestorage/software/mira-4.0rc1/build/bin/'
 mira_config = os.path.join(runner_dirpath, 'MIRA_config.txt')
 mira_mp_config = os.path.join(runner_dirpath, 'MIRA_mp_config.txt')
+perga_base = '/Molly/oldstorage/acestorage/software/perga-0.5.03.01/PERGA/bin/'
 
 # IMPORTANT CONSTANTS
 long_options = "12= mp12= min-k= max-k= step-k= threads= is= dev= assemblers= mira-tmp-dir= corrected sc mp1= mp2= mp-orient= mp-is= mp-dev= phred64".split()
 short_options = "o:1:2:r:t:"
 
 # options
-assemblers_to_run = ['abyss', 'msrca', 'soap', 'idba', 'spades', 'ray', 'cabog', 'sga', 'velvet', 'velvet-sc', 'mira']
+assemblers_to_run = ['abyss', 'msrca', 'soap', 'idba', 'spades', 'ray', 'cabog', 'sga', 'velvet', 'velvet-sc', 'mira', 'perga']
 output_dir = None
 mira_tmp_dir = os.path.abspath(os.path.expanduser('~/mira_tmp'))
 left = None
@@ -487,6 +488,21 @@ def run_ray(K, log_filename):
     log_file.close()
     contigs_path = os.path.join(out_subdir, "Contigs.fasta")
     scaffolds_path = os.path.join(out_subdir, "Scaffolds.fasta")
+    return return_code, contigs_path, scaffolds_path
+
+
+def run_perga(K, log_filename):
+    log_file = open(log_filename, 'a')
+    cmd_line = os.path.join(perga_base, "perga") + " all -k %d -p 1 -f %s %s -d . -ins_len %d -ins_sdev %d " % \
+        (K, left, right, insert_size, is_dev)
+    cmd_line += " >>%s 2>>%s" % (log_filename, log_filename)
+    log_file.write("Started: " + cmd_line + "\n\n")
+    log_file.flush()
+    return_code = os.system(cmd_line)
+    log_file.write("Finished, log is %s\n" % log_filename)
+    log_file.close()
+    contigs_path = "contigs.fa"
+    scaffolds_path = "scaffolds.fa"
     return return_code, contigs_path, scaffolds_path
 
 
@@ -987,7 +1003,7 @@ def main():
 
     # run dependent on K assemblers
     for (name, run_tool_function) in [('abyss', run_abyss), ('msrca', run_msrca), ('soap', run_soap),
-        ('velvet', run_velvet), ('velvet-sc', run_velvet_sc), ('sga', run_sga), ('ray', run_ray)]:
+        ('velvet', run_velvet), ('velvet-sc', run_velvet_sc), ('perga', run_perga), ('sga', run_sga), ('ray', run_ray)]:
         if not name in assemblers_to_run:
             continue
         if corrected and name == 'sga':
