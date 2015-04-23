@@ -39,10 +39,16 @@ public:
         size_t flank_legth = boost::lexical_cast<size_t>(args[1]);
         LOG("Flank length " << flank_legth);
 
+        stringstream ss;
+        ss << "Provided path: ";
         vector<EdgeId> edges;
         for (size_t i = 2; i < args.size(); ++i) {
-            edges.push_back(curr_env.finder().ReturnEdgeId(boost::lexical_cast<size_t>(args[i])));
+            EdgeId e = curr_env.finder().ReturnEdgeId(boost::lexical_cast<size_t>(args[i]));
+            edges.push_back(e);
+            ss << curr_env.graph().str(e) << " ; ";
         }
+
+        LOG(ss.str());
 
         if (curr_env.graph().length(edges.front()) < flank_legth || curr_env.graph().length(edges.back()) < flank_legth) {
             LOG("Flanking path edges can not be shorter than flank length!");
@@ -66,4 +72,5 @@ private:
     DECL_LOGGER("JunctionSequenceCommand")
     ;
 };
+
 }
