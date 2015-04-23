@@ -483,7 +483,9 @@ public:
                             || !IsConsistent(s, *(iter->second),
                                              *(next_iter->second))) {
                         if (next_iter != cur_cluster.end()) {
-                            DEBUG("cluster splitted...");
+                            DEBUG("clusters splitted:");
+                            DEBUG("on "<< iter->second->str(g_));
+			    DEBUG("and " << next_iter->second->str(g_));
                         }
                         vector<pair<size_t, typename ClustersSet::iterator> > splitted_cluster(
                                 cur_cluster_start, next_iter);
@@ -495,7 +497,13 @@ public:
                             sortedEdges.push_back(cur_sorted);
                         }
                         cur_cluster_start = next_iter;
+                    } else {
+			  DEBUG("connected consequtive clusters:");
+                          DEBUG("on "<< iter->second->str(g_));
+                          DEBUG("and " << next_iter->second->str(g_));
+
                     }
+	
                 }
             }
         }
@@ -547,7 +555,11 @@ public:
                      const KmerCluster<Graph> &b) {
         EdgeId a_edge = a.edgeId;
         EdgeId b_edge = b.edgeId;
+        size_t a_id =  g_.int_id(a_edge);
+        size_t b_id =  g_.int_id(b_edge);
+        DEBUG("clusters on " << a_id << " and " << b_id );
         if (abs(a.sorted_positions[a.last_trustable_index].read_position - b.sorted_positions[b.first_trustable_index].read_position) > 5000) {
+            DEBUG("...to far5000");
             return 0;
         }
         VertexId start_v = g_.EdgeEnd(a_edge);
@@ -555,6 +567,7 @@ public:
         VertexId end_v = g_.EdgeStart(b_edge);
         pair<VertexId, VertexId> vertex_pair = make_pair(start_v, end_v);
         vector<size_t> result;
+        DEBUG("seq dist:" << s.size()/3);
         if (distance_cashed.find(vertex_pair) == distance_cashed.end()) {
             DistancesLengthsCallback<Graph> callback(g_);
             PathProcessor<Graph> path_processor(g_, 0, s.size() / 3, start_v,
@@ -562,7 +575,13 @@ public:
             path_processor.Process();
             result = callback.distances();
             distance_cashed[vertex_pair] = result;
-        }
+        } else {
+	  DEBUG("taking from cashed");
+	}
+        DEBUG("addition: " << addition << " found " << result.size() << " lengths:" );
+        for (size_t i = 0; i < result.size(); i++) {
+            DEBUG(result[i]);
+	}
         result = distance_cashed[vertex_pair];
         //TODO: Serious optimization possible
         for (size_t i = 0; i < result.size(); i++) {
