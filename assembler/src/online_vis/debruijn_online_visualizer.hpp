@@ -37,6 +37,7 @@ class DebruijnOnlineVisualizer : public OnlineVisualizer<DebruijnEnvironment> {
 
     AddCommand(make_shared<PrintPathsCommand>());
     AddCommand(make_shared<PrintContigsStatsCommand>());
+    AddCommand(make_shared<JunctionSequenceCommand>());
 
     AddCommand(make_shared<ClipTipsCommand>());
   }

@@ -378,6 +378,10 @@ public:
         return true;
     }
 
+    Path<EdgeId> TryFixPath(const Path<EdgeId>& path) const {
+        return Path<EdgeId>(TryFixPath(path.sequence()), path.start_pos(), path.end_pos());
+    }
+
     vector<EdgeId> TryFixPath(const vector<EdgeId>& edges) const {
         vector<EdgeId> answer;
         if (edges.empty()) {
