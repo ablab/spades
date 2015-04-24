@@ -60,6 +60,7 @@ struct KmerCluster {
 	int last_trustable_index;
 	int first_trustable_index;
 	size_t average_read_position;
+	size_t average_edge_position;
 	EdgeId edgeId;
 	vector<MappingInstance> sorted_positions;
 	int size;
@@ -95,12 +96,15 @@ struct KmerCluster {
 		}
 		last_trustable_index = last_unique_ind;
 		first_trustable_index = first_unique_ind;
-		double tmp_read_position = 0;
+		double tmp_read_position = 0, tmp_edge_position = 0;;
 		for (auto mp : sorted_positions) {
 		   tmp_read_position += mp.read_position;
+		   tmp_edge_position += mp.edge_position;
 		}
 		tmp_read_position /= size;
+		tmp_edge_position /= size;
 		average_read_position = (size_t)trunc(tmp_read_position);
+		average_edge_position = (size_t)trunc(tmp_edge_position);
 	}
 
     string str(const Graph &g) const{

@@ -303,14 +303,7 @@ public:
                                      const Sequence &s) {
         vector<EdgeId> cur_sorted;
         EdgeId prev_edge = EdgeId(0);
-        if (read_count == 151) {
-            DEBUG("edges in cluster:")
-            for (auto iter = cur_cluster.begin(); iter != cur_cluster.end();
-                    ++iter) {
-                EdgeId cur_edge = iter->second->edgeId;
-                DEBUG(g_.int_id(cur_edge) << " " << iter->second->sorted_positions.size());
-            }
-        }
+
         for (auto iter = cur_cluster.begin(); iter != cur_cluster.end();
                 ++iter) {
             EdgeId cur_edge = iter->second->edgeId;
@@ -394,6 +387,8 @@ public:
     }
 
     vector<int> GetColors(ClustersSet &mapping_descr, Sequence &s) {
+//not used anymore
+//TODO: remove after
         int len = (int) mapping_descr.size();
 	DEBUG("getting colors, table size "<< len);
         vector<vector<int> > table(len);
@@ -627,7 +622,7 @@ public:
         int start_pos = a.sorted_positions[a.last_trustable_index].read_position;
         int end_pos = b.sorted_positions[b.first_trustable_index].read_position;
         int seq_len = -start_pos + end_pos;
-        PathStorageCallback<Graph> callback(g_);
+        //int new_seq_len =
 //TODO::something more reasonable
         int path_min_len = max(int(floor((seq_len - int(debruijn_k)) * cfg::get().pb.path_limit_pressing)), 0);
         int path_max_len = (int) ((double) (seq_len + (int) debruijn_k) * cfg::get().pb.path_limit_stretching);
