@@ -39,8 +39,25 @@ public:
 
   
     MappingPath<EdgeId> MapRead(const io::SingleRead &read) const {
-      VERIFY(read.IsValid());
-      return MapSequence(read.sequence());
+//      VERIFY(read.IsValid());
+        string s = read.GetSequenceString();
+        size_t l = 0, r = 0;
+        MappingPath<EdgeId> result;
+        for(size_t i = 0; i < s.size(); i++) {
+            if (read.GetSequenceString()[i] == 'N') {
+                if (r > l) {
+                    result.join(this->MapSequence(Sequence(s.substr(l, r - l))), l);
+                }
+                r = i + 1;
+                l = i + 1;
+            } else {
+                r++;
+            }
+        }
+        if (r > l) {
+            result.join(this->MapSequence(Sequence(s.substr(l, r - l))), l);
+        }
+      return result;
     }
 
     virtual size_t KmerSize() const = 0;
