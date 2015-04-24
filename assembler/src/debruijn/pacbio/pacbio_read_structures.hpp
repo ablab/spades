@@ -59,6 +59,7 @@ struct KmerCluster {
 	typedef typename Graph::EdgeId EdgeId;
 	int last_trustable_index;
 	int first_trustable_index;
+	size_t average_read_position;
 	EdgeId edgeId;
 	vector<MappingInstance> sorted_positions;
 	int size;
@@ -66,6 +67,7 @@ struct KmerCluster {
 	KmerCluster(EdgeId e, const vector<MappingInstance>& v) {
 		last_trustable_index = 0;
 		first_trustable_index = 0;
+		average_read_position = 0;
 		edgeId = e;
 		size = (int) v.size();
 		sorted_positions = v;
@@ -73,7 +75,8 @@ struct KmerCluster {
 	}
 
 	bool operator <(const KmerCluster & b) const {
-		return (edgeId < b.edgeId || (edgeId == b.edgeId && sorted_positions < b.sorted_positions));
+		return (average_read_position < b.average_read_position ||(average_read_position == b.average_read_position && edgeId < b.edgeId) ||
+		        (average_read_position == b.average_read_position && edgeId == b.edgeId && sorted_positions < b.sorted_positions));
 	}
 
 	bool CanFollow(const KmerCluster &b) const {
@@ -92,6 +95,12 @@ struct KmerCluster {
 		}
 		last_trustable_index = last_unique_ind;
 		first_trustable_index = first_unique_ind;
+		double tmp_read_position = 0;
+		for (auto mp : sorted_positions) {
+		   tmp_read_position += mp.read_position;
+		}
+		tmp_read_position /= size;
+		average_read_position = (size_t)trunc(tmp_read_position);
 	}
 
     string str(const Graph &g) const{

@@ -45,6 +45,7 @@ private:
     map<pair<VertexId, VertexId>, vector<size_t> > distance_cashed;
     size_t read_count;
     bool ignore_map_to_middle;
+
 public:
     MappingDescription Locate(const Sequence &s) const;
 
@@ -437,6 +438,89 @@ public:
         }
         return colors;
     }
+    vector<int> GetWeightedColors(ClustersSet &mapping_descr, Sequence &s) {
+        int len = (int) mapping_descr.size();
+        DEBUG("getting colors, table size "<< len);
+        vector<vector<int> > cons_table(len);
+
+        vector<int> colors(len);
+        vector<int> cluster_size(len);
+        vector<int> max_size(len);
+        vector<int> prev(len);
+
+        for (int i = 0; i < len; i++) {
+            cons_table[i].resize(len);
+            cons_table[i][i] = 0;
+            prev[i] = -1;
+        }
+        int i = 0;
+
+        for (int i = 0; i < len; i++) {
+            colors[i] = -1;
+        }
+        for (auto i_iter = mapping_descr.begin(); i_iter != mapping_descr.end();
+                ++i_iter, ++i) {
+            cluster_size[i] = i_iter->size;
+        }
+        i = 0;
+        if (len > 1) {
+            TRACE(len << "clusters");
+        }
+
+        for (auto i_iter = mapping_descr.begin(); i_iter != mapping_descr.end();
+                ++i_iter, ++i) {
+            int j = 0;
+            for (auto j_iter = i_iter;
+                    j_iter != mapping_descr.end(); ++j_iter, ++j) {
+                if (i_iter == j_iter)
+                    continue;
+                cons_table[i][j] = IsConsistent(s, *i_iter, *j_iter);
+            }
+        }
+        i = 0;
+        int cur_color = 0;
+
+        while (true) {
+            for (int i = 0; i < len; i++) {
+                max_size[i] = 0;
+                prev[i] = -1;
+            }
+
+            for (auto i_iter = mapping_descr.begin(); i_iter != mapping_descr.end();
+                        ++i_iter, ++i) {
+                if (colors[i] != -1) continue;
+                max_size[i] = cluster_size[i];
+                for (int j = 0; j < i; j ++) {
+                    if (colors[j] != -1) continue;
+                    if (cons_table[j][i] && max_size[i] < cluster_size[i] + max_size[j]) {
+                        max_size[i] = max_size[j] + cluster_size[i];
+                        prev[i] = j;
+                    }
+                }
+            }
+            int maxx = 0;
+            int maxi = -1;
+            for (int j = 0; j < len; j++) {
+                if (max_size[j] > maxx) {
+                    maxx = max_size[j];
+                    maxi = j;
+                }
+            }
+            if (maxi == -1) {
+                break;
+            }
+            colors[maxi] = cur_color;
+            while (prev[maxi] != -1) {
+                maxi = prev[maxi];
+                colors[maxi] = cur_color;
+            }
+            cur_color ++;
+        }
+        return colors;
+    }
+
+
+
 
     OneReadMapping<Graph> GetReadAlignment(Sequence &s) {
         ClustersSet mapping_descr = GetClusters(s);
@@ -444,7 +528,7 @@ public:
         int len = (int) mapping_descr.size();
         vector<size_t> real_length;
 
-        vector<int> colors = GetColors(mapping_descr, s);
+        vector<int> colors = GetWeightedColors(mapping_descr, s);
         vector<vector<EdgeId> > sortedEdges;
         vector<typename ClustersSet::iterator> start_clusters, end_clusters;
         vector<GapDescription<Graph> > illumina_gaps;
@@ -466,8 +550,7 @@ public:
                     if (colors[j] == cur_color) {
                         cur_cluster.push_back(
                                 make_pair(
-                                        i_iter->sorted_positions.begin()
-                                                ->read_position,
+                                        i_iter->average_read_position,
                                         i_iter));
                         used[j] = 1;
                     }
