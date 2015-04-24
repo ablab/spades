@@ -469,7 +469,7 @@ public:
 
         for (auto i_iter = mapping_descr.begin(); i_iter != mapping_descr.end();
                 ++i_iter, ++i) {
-            int j = 0;
+            int j = i;
             for (auto j_iter = i_iter;
                     j_iter != mapping_descr.end(); ++j_iter, ++j) {
                 if (i_iter == j_iter)
@@ -481,11 +481,11 @@ public:
         int cur_color = 0;
 
         while (true) {
-            for (int i = 0; i < len; i++) {
+            for (i = 0; i < len; i++) {
                 max_size[i] = 0;
                 prev[i] = -1;
             }
-
+            i = 0;
             for (auto i_iter = mapping_descr.begin(); i_iter != mapping_descr.end();
                         ++i_iter, ++i) {
                 if (colors[i] != -1) continue;
@@ -516,6 +516,13 @@ public:
             }
             cur_color ++;
         }
+        if (cur_color > 1) {
+            auto iter = mapping_descr.begin();
+            INFO("not evident clusters selection");
+	    for (int i = 0; i < len; i++, iter ++) {
+                 INFO(colors[i] <<" " << iter->str(g_));
+	    }
+	}
         return colors;
     }
 
