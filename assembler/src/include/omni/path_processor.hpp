@@ -388,11 +388,11 @@ public:
         return true;
     }
 
-    Path<EdgeId> TryFixPath(const Path<EdgeId>& path) const {
-        return Path<EdgeId>(TryFixPath(path.sequence()), path.start_pos(), path.end_pos());
+    Path<EdgeId> TryFixPath(const Path<EdgeId>& path, size_t length_bound = 70) const {
+        return Path<EdgeId>(TryFixPath(path.sequence(), length_bound), path.start_pos(), path.end_pos());
     }
 
-    vector<EdgeId> TryFixPath(const vector<EdgeId>& edges) const {
+    vector<EdgeId> TryFixPath(const vector<EdgeId>& edges, size_t length_bound = 70) const {
         vector<EdgeId> answer;
         if (edges.empty()) {
             //          WARN("Mapping path was empty");
@@ -403,7 +403,8 @@ public:
         for (size_t i = 1; i < edges.size(); ++i) {
             if (g_.EdgeEnd(edges[i - 1]) != g_.EdgeStart(edges[i])) {
                 vector<EdgeId> closure = TryCloseGap(g_.EdgeEnd(edges[i - 1]),
-                                                     g_.EdgeStart(edges[i]));
+                                                     g_.EdgeStart(edges[i]),
+                                                     length_bound);
                 answer.insert(answer.end(), closure.begin(), closure.end());
                 //                  make_dir("assembly_compare/tmp");
                 //                  WriteComponentsAroundEdge(graph_,
@@ -438,14 +439,14 @@ public:
     }
 
 private:
-    vector<EdgeId> TryCloseGap(VertexId v1, VertexId v2) const {
+    vector<EdgeId> TryCloseGap(VertexId v1, VertexId v2, size_t length_bound) const {
         if (v1 == v2)
             return vector<EdgeId>();
         TRACE(
                 "Trying to close gap between v1=" << g_.int_id(v1) << " and v2=" << g_.int_id(v2));
         PathStorageCallback<Graph> path_store(g_);
         //todo reduce value after investigation
-        PathProcessor<Graph> path_processor(g_, 0, 70, v1, v2, path_store);
+        PathProcessor<Graph> path_processor(g_, 0, length_bound, v1, v2, path_store);
         path_processor.Process();
 
         if (path_store.size() == 0) {

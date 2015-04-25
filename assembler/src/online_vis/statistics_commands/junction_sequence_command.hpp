@@ -22,9 +22,10 @@ protected:
 public:
     string Usage() const {
         return string() + "Command `junction_sequence` \n" + " Usage:\n"
-                + "> junction_sequence <flank length> <int ids of edges> \n"
+                + "> junction_sequence <insert size> <int ids of edges> \n"
                 + " Edges might be not consecutive, then will try to fix the path. \n"
-                + " <flank length> specifies how many bp will be taken from first and last edges in the path.";
+                + " <insert size> specifies how many bp will be taken from first and last edges in the path. \n "
+                + " flank size = IS - K - (cumulative length of intermediate edge).";
     }
 
     JunctionSequenceCommand()
@@ -36,8 +37,8 @@ public:
         if (!CheckCorrectness(args))
             return;
 
-        size_t flank_legth = boost::lexical_cast<size_t>(args[1]);
-        LOG("Flank length " << flank_legth);
+        size_t insert_size = boost::lexical_cast<size_t>(args[1]);
+        LOG("Insert size " << insert_size);
 
         stringstream ss;
         ss << "Provided path: ";
@@ -50,22 +51,35 @@ public:
 
         LOG(ss.str());
 
-        if (curr_env.graph().length(edges.front()) < flank_legth || curr_env.graph().length(edges.back()) < flank_legth) {
+        MappingPathFixer<Graph> path_fixer(curr_env.graph());
+        edges = path_fixer.TryFixPath(edges, insert_size);
+
+        if (path_fixer.CheckContiguous(edges)) {
+            LOG("Successfully fixed path");
+        } else {
+            LOG("Couldn't fix path!");
+            return;
+        }
+
+        VERIFY(edges.size() > 1);
+        size_t interm_length = CumulativeLength(curr_env.graph(), vector<EdgeId>(edges.begin() + 1, edges.end() - 1));
+        if (insert_size < curr_env.graph().k() + interm_length) {
+            LOG("Intermediate sequence too long");
+            return;
+        }
+
+        size_t flank_length = insert_size - curr_env.graph().k() - interm_length;
+        LOG("Flank length " << flank_length);
+
+        if (curr_env.graph().length(edges.front()) < flank_length || curr_env.graph().length(edges.back()) < flank_length) {
             LOG("Flanking path edges can not be shorter than flank length!");
             return;
         }
 
-        Path<EdgeId> path(edges, curr_env.graph().length(edges.front()) - flank_legth, flank_legth);
+        Path<EdgeId> path(edges, curr_env.graph().length(edges.front()) - flank_length, flank_length);
 
-        MappingPathFixer<Graph> path_fixer(curr_env.graph());
-        path = path_fixer.TryFixPath(path);
-
-        if (path_fixer.CheckContiguous(path.sequence())) {
-            LOG("Successfully fixed path, outputting sequence:");
-            LOG(PathSequence(curr_env.graph(), path));
-        } else {
-            LOG("Couldn't fix path!");
-        }
+        LOG("Outputting sequence:");
+        LOG(PathSequence(curr_env.graph(), path));
     }
 
 private:
