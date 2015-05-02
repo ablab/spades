@@ -428,11 +428,12 @@ inline PairedInfoLibrary* MakeNewLib(conj_graph_pack::graph_t& g,
     int is_max = (int) cfg::get().ds.reads[index].data().insert_size_right_quantile;
     int var = (int) cfg::get().ds.reads[index].data().insert_size_deviation;
     bool is_mp = cfg::get().ds.reads[index].type() == io::LibraryType::MatePairs;
-    PairedInfoLibrary* lib = new PairedInfoLibraryWithIndex<decltype(paired_index[index])>(cfg::get().K, g, read_length,
-                                                                   is, is_min > 0.0 ? size_t(is_min) : 0, is_max > 0.0 ? size_t(is_max) : 0,
-                                                                   size_t(var),
-                                                                   paired_index[index], is_mp,
-                                                                   cfg::get().ds.reads[index].data().insert_size_distribution);
+    PairedInfoLibrary* lib =
+            new PairedInfoLibraryWithIndex<decltype(paired_index[index])>(cfg::get().K, g, read_length,
+                                                                          is, is_min > 0.0 ? size_t(is_min) : 0, is_max > 0.0 ? size_t(is_max) : 0,
+                                                                          size_t(var),
+                                                                          paired_index[index], is_mp,
+                                                                          cfg::get().ds.reads[index].data().insert_size_distribution);
     return lib;
 }
 

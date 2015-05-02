@@ -106,6 +106,8 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
         : PairedInfoLibrary(k, g, readS, is, is_min, is_max, is_div, is_mp, is_distribution),
           index_(index) {}
 
+    static const bool is_unclustered_index = std::is_same<Index, omnigraph::de::UnclusteredPairedInfoIndexT<Graph> >::value;
+
     virtual size_t FindJumpEdges(EdgeId e, std::set<EdgeId>& result, int min_dist = 0, int max_dist = 100000000, size_t min_len = 0) {
         VERIFY(index_.Size() != 0);
         result.clear();
@@ -130,6 +132,9 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
             }
           }
         }
+
+        if (!is_unclustered_index)
+            return result.size();
 
         e = g_.conjugate(e);
         if (index_.contains(e)) {
@@ -163,14 +168,16 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
             return;
 
         auto pairs = index_.GetEdgePairInfo(e1, e2);
-        auto cpairs = index_.GetEdgePairInfo(g_.conjugate(e2), g_.conjugate(e1));
-        for (auto entry : cpairs) {
-          Point cp = ConjugatePoint(g_.length(e2), g_.length(e1), entry);
-          auto it = pairs.find(cp);
-          if (it != pairs.end())
-            it->weight += cp.weight;
-          else
-            pairs.insert(cp);
+        if (is_unclustered_index) {
+            auto cpairs = index_.GetEdgePairInfo(g_.conjugate(e2), g_.conjugate(e1));
+            for (auto entry : cpairs) {
+                Point cp = ConjugatePoint(g_.length(e2), g_.length(e1), entry);
+                auto it = pairs.find(cp);
+                if (it != pairs.end())
+                    it->weight += cp.weight;
+                else
+                    pairs.insert(cp);
+            }
         }
         for (auto pointIter = pairs.begin(); pointIter != pairs.end(); ++pointIter) {
             int pairedDistance = rounded_d(*pointIter);
@@ -186,14 +193,16 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
         VERIFY(index_.Size() != 0);
         double weight = 0.0;
         auto pairs = index_.GetEdgePairInfo(e1, e2);
-        auto cpairs = index_.GetEdgePairInfo(g_.conjugate(e2), g_.conjugate(e1));
-        for (auto entry : cpairs) {
-          Point cp = ConjugatePoint(g_.length(e2), g_.length(e1), entry);
-          auto it = pairs.find(cp);
-          if (it != pairs.end())
-            it->weight += cp.weight;
-          else
-            pairs.insert(cp);
+        if (is_unclustered_index) {
+            auto cpairs = index_.GetEdgePairInfo(g_.conjugate(e2), g_.conjugate(e1));
+            for (auto entry : cpairs) {
+                Point cp = ConjugatePoint(g_.length(e2), g_.length(e1), entry);
+                auto it = pairs.find(cp);
+                if (it != pairs.end())
+                    it->weight += cp.weight;
+                else
+              pairs.insert(cp);
+            }
         }
         for (auto pointIter = pairs.begin(); pointIter != pairs.end(); ++pointIter) {
             int pairedDistance = rounded_d(*pointIter);
@@ -217,14 +226,16 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
         VERIFY(index_.Size() != 0);
         double weight = 0.0;
         auto pairs = index_.GetEdgePairInfo(e1, e2);
-        auto cpairs = index_.GetEdgePairInfo(g_.conjugate(e2), g_.conjugate(e1));
-        for (auto entry : cpairs) {
-          Point cp = ConjugatePoint(g_.length(e2), g_.length(e1), entry);
-          auto it = pairs.find(cp);
-          if (it != pairs.end())
-            it->weight += cp.weight;
-          else
-            pairs.insert(cp);
+        if (is_unclustered_index) {
+            auto cpairs = index_.GetEdgePairInfo(g_.conjugate(e2), g_.conjugate(e1));
+            for (auto entry : cpairs) {
+                Point cp = ConjugatePoint(g_.length(e2), g_.length(e1), entry);
+                auto it = pairs.find(cp);
+                if (it != pairs.end())
+                    it->weight += cp.weight;
+                else
+                    pairs.insert(cp);
+            }
         }
         for (auto pointIter = pairs.begin(); pointIter != pairs.end(); ++pointIter) {
             int dist = rounded_d(*pointIter);
@@ -238,6 +249,7 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
 protected:
     DECL_LOGGER("PathExtendPI");
 };
+
 
 typedef std::vector<PairedInfoLibrary *> PairedInfoLibraries;
 
