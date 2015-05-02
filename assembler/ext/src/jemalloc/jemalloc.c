@@ -869,8 +869,9 @@ je_malloc(size_t size)
 label_oom:
 	if (ret == NULL) {
 		if (config_xmalloc && opt_xmalloc) {
-			malloc_write("<jemalloc>: Error in malloc(): "
-			    "out of memory\n");
+            size_t *cactive, sz = sizeof(cactive);
+            xmallctl("stats.cactive", &cactive, &sz, NULL, 0);
+			malloc_printf("<jemalloc>: Error in malloc(): out of memory. Requested: %zu, active: %zu\n", size, atomic_read_z(cactive));
 			abort();
 		}
 		set_errno(ENOMEM);
@@ -958,8 +959,9 @@ imemalign(void **memptr, size_t alignment, size_t size,
 
 	if (result == NULL) {
 		if (config_xmalloc && opt_xmalloc) {
-			malloc_write("<jemalloc>: Error allocating aligned "
-			    "memory: out of memory\n");
+            size_t *cactive, sz = sizeof(cactive);
+            xmallctl("stats.cactive", &cactive, &sz, NULL, 0);
+			malloc_printf("<jemalloc>: Error allocating aligned memory: out of memory. Requested: %zu, active: %zu\n", size, atomic_read_z(cactive));
 			abort();
 		}
 		ret = ENOMEM;
@@ -1161,9 +1163,10 @@ je_realloc(void *ptr, size_t size)
 label_oom:
 		if (ret == NULL) {
 			if (config_xmalloc && opt_xmalloc) {
-				malloc_write("<jemalloc>: Error in realloc(): "
-				    "out of memory\n");
-				abort();
+                size_t *cactive, sz = sizeof(cactive);
+                xmallctl("stats.cactive", &cactive, &sz, NULL, 0);
+                malloc_printf("<jemalloc>: Error in realloc(): out of memory. Requested: %zu, active: %zu\n", size, atomic_read_z(cactive));
+                abort();
 			}
 			set_errno(ENOMEM);
 		}
@@ -1203,8 +1206,9 @@ label_oom:
 
 		if (ret == NULL) {
 			if (config_xmalloc && opt_xmalloc) {
-				malloc_write("<jemalloc>: Error in realloc(): "
-				    "out of memory\n");
+                size_t *cactive, sz = sizeof(cactive);
+                xmallctl("stats.cactive", &cactive, &sz, NULL, 0);
+                malloc_printf("<jemalloc>: Error in realloc(): out of memory. Requested: %zu, active: %zu\n", size, atomic_read_z(cactive));
 				abort();
 			}
 			set_errno(ENOMEM);
@@ -1465,8 +1469,9 @@ je_allocm(void **ptr, size_t *rsize, size_t size, int flags)
 	return (ALLOCM_SUCCESS);
 label_oom:
 	if (config_xmalloc && opt_xmalloc) {
-		malloc_write("<jemalloc>: Error in allocm(): "
-		    "out of memory\n");
+        size_t *cactive, sz = sizeof(cactive);
+        xmallctl("stats.cactive", &cactive, &sz, NULL, 0);
+        malloc_printf("<jemalloc>: Error in allocm(): out of memory. Requested: %zu, active: %zu\n", size, atomic_read_z(cactive));
 		abort();
 	}
 	*ptr = NULL;
@@ -1594,8 +1599,9 @@ label_err:
 	}
 label_oom:
 	if (config_xmalloc && opt_xmalloc) {
-		malloc_write("<jemalloc>: Error in rallocm(): "
-		    "out of memory\n");
+        size_t *cactive, sz = sizeof(cactive);
+        xmallctl("stats.cactive", &cactive, &sz, NULL, 0);
+        malloc_printf("<jemalloc>: Error in rallocm(): out of memory. Requested: %zu, active: %zu\n", size, atomic_read_z(cactive));
 		abort();
 	}
 	UTRACE(p, size, 0);
