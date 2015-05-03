@@ -63,7 +63,7 @@ std::string ReadCorrector::CorrectReadRight(const std::string &seq, const std::s
             size_t idx = data_.checking_seq_idx(last);
             if (idx != -1ULL) {
                 const KMerStat &kmer_data = data_[idx];
-                corrections.emplace(pos, correction.str, correction.penalty - (kmer_data.good() ? 0.0 : 1.0), last, cpos);
+                corrections.emplace(pos, correction.str, correction.penalty - (kmer_data.good() ? 0.0 : 3.0), last, cpos);
                 if (kmer_data.good() && qual[pos] >= 20)
                     extended = true;
             }
@@ -74,7 +74,7 @@ std::string ReadCorrector::CorrectReadRight(const std::string &seq, const std::s
             continue;
 
         // Do not allow too many corrections
-        if (correction.penalty < 0.0 - read_size * 10 / 100)
+        if (correction.penalty < 0.0 - read_size * 15.0 / 100)
             continue;
 
         // Do not allow clustered corrections
@@ -100,7 +100,10 @@ std::string ReadCorrector::CorrectReadRight(const std::string &seq, const std::s
             const KMerStat &kmer_data = data_[idx];
             if (kmer_data.good()) {
                 std::string corrected = correction.str; corrected[pos] = ncc;
-                corrections.emplace(pos, corrected, correction.penalty - 1.0, last, cpos);
+                double penalty = correction.penalty - (is_nucl(c) ?
+                                                       (qual[pos] >= 20 ? 5.0 : 1.0) :
+                                                       0.0);
+                corrections.emplace(pos, corrected, penalty, last, cpos);
             }
         }
     }
