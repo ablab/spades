@@ -63,9 +63,17 @@ std::string ReadCorrector::CorrectReadRight(const std::string &seq, const std::s
             size_t idx = data_.checking_seq_idx(last);
             if (idx != -1ULL) {
                 const KMerStat &kmer_data = data_[idx];
-                corrections.emplace(pos, correction.str, correction.penalty - (kmer_data.good() ? 0.0 : 3.0), last, cpos);
+                corrections.emplace(pos, correction.str,
+                                    correction.penalty - (kmer_data.good() ?
+                                                          0.0 :
+                                                          (qual[pos] >= 20 ? 1.0 : 2.0)),
+                                    last, cpos);
                 if (kmer_data.good() && qual[pos] >= 20)
                     extended = true;
+            } else {
+                corrections.emplace(pos, correction.str,
+                                    correction.penalty - (qual[pos] >= 20 ? 2.0 : 3.0),
+                                    last, cpos);
             }
         }
 
