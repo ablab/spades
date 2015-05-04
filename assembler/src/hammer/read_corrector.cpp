@@ -39,10 +39,27 @@ struct less<state> {
 };
 };
 
+static void FlushCandidates(std::priority_queue<state>& corrections, std::priority_queue<state> &candidates,
+                            size_t size_limit) {
+    if (candidates.empty())
+        return;
+
+    if (corrections.size() > size_limit) {
+        corrections.emplace(candidates.top());
+    } else {
+        while (!candidates.empty()) {
+            corrections.emplace(candidates.top());
+            candidates.pop();
+        }
+    }
+
+    std::priority_queue<state>().swap(candidates);
+}
+
 std::string ReadCorrector::CorrectReadRight(const std::string &seq, const std::string &qual,
                                             size_t right_pos) {
     size_t read_size = seq.size();
-    std::priority_queue<state> corrections;
+    std::priority_queue<state> corrections, candidates;
     positions_t cpos{{(uint16_t)-1, (uint16_t)-1U, (uint16_t)-1U, (uint16_t)-1U}};
 
     corrections.emplace(right_pos, seq,
@@ -63,31 +80,36 @@ std::string ReadCorrector::CorrectReadRight(const std::string &seq, const std::s
             size_t idx = data_.checking_seq_idx(last);
             if (idx != -1ULL) {
                 const KMerStat &kmer_data = data_[idx];
-                corrections.emplace(pos, correction.str,
-                                    correction.penalty - (kmer_data.good() ?
-                                                          0.0 :
-                                                          (qual[pos] >= 20 ? 1.0 : 2.0)),
+                candidates.emplace(pos, correction.str,
+                                   correction.penalty - (kmer_data.good() ?
+                                                         0.0 :
+                                                         (qual[pos] >= 20 ? 1.0 : 2.0)),
                                     last, cpos);
                 if (kmer_data.good() && qual[pos] >= 20)
                     extended = true;
             } else {
-                corrections.emplace(pos, correction.str,
-                                    correction.penalty - (qual[pos] >= 20 ? 2.0 : 3.0),
-                                    last, cpos);
+                candidates.emplace(pos, correction.str,
+                                   correction.penalty - (qual[pos] >= 20 ? 2.0 : 3.0),
+                                   last, cpos);
             }
         }
 
         // Ok, it's possible to extend using solely solid k-mer, do not try any other corrections.
-        if (extended)
+        if (extended) {
+            FlushCandidates(corrections, candidates, 100 * read_size);
             continue;
+        }
 
         // Do not allow too many corrections
-        if (correction.penalty < 0.0 - read_size * 15.0 / 100)
+        if (correction.penalty < 0.0 - read_size * 15.0 / 100) {
+            FlushCandidates(corrections, candidates, 100 * read_size);
             continue;
+        }
 
         // Do not allow clustered corrections
         if (pos - correction.cpos.front() < 8) {
             // INFO("Cluster " << pos << "," << correction.cpos);
+            FlushCandidates(corrections, candidates, 100 * read_size);
             continue;
         }
 
@@ -111,9 +133,11 @@ std::string ReadCorrector::CorrectReadRight(const std::string &seq, const std::s
                 double penalty = correction.penalty - (is_nucl(c) ?
                                                        (qual[pos] >= 20 ? 5.0 : 1.0) :
                                                        0.0);
-                corrections.emplace(pos, corrected, penalty, last, cpos);
+                candidates.emplace(pos, corrected, penalty, last, cpos);
             }
         }
+
+        FlushCandidates(corrections, candidates, 100 * read_size);
     }
 
 #   pragma omp atomic
