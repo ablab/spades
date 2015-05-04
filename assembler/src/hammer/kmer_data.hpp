@@ -23,6 +23,8 @@ class KMerData {
   KMerData()
       : kmers_(nullptr, 0, hammer::KMer::GetDataSize(hammer::K)) {}
 
+  ~KMerData() { delete[] kmers_.data(); }
+
   size_t size() const { return kmers_.size() + push_back_buffer_.size(); }
 
   void clear() {
@@ -31,7 +33,6 @@ class KMerData {
     kmer_push_back_buffer_.clear();
     KMerDataStorageType().swap(data_);
     KMerDataStorageType().swap(push_back_buffer_);
-    delete[] kmers_.data();
   }
 
   size_t push_back(const hammer::KMer kmer, const KMerStat &k) {
