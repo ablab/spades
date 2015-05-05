@@ -129,12 +129,7 @@ void PacBioAligning::run(conj_graph_pack &gp, const char*) {
     omnigraph::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
     int lib_id = -1;
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        io::LibraryType type = cfg::get().ds.reads[i].type();
-        if (type == io::LibraryType::PacBioReads ||
-                type == io::LibraryType::SangerReads ||
-                type == io::LibraryType::NanoporeReads ||
-                type == io::LibraryType::TrustedContigs ||
-                type == io::LibraryType::UntrustedContigs) {
+        if ( cfg::get().ds.reads[i].is_pacbio_alignable() ) {
             lib_id = (int) i;
             align_pacbio(gp, lib_id);
         }
