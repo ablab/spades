@@ -25,7 +25,7 @@ namespace online_visualization {
     const char* operator[](size_t k) const {
       VERIFY(k < size_);
       //EntryT** my_history = history_list();
-      EntryT* entry = history_get(int(k));
+      EntryT* entry = history_get(int(k + 1));
       return entry->line;
     }
 
