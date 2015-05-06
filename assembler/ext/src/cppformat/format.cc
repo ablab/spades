@@ -1006,9 +1006,11 @@ const Char *fmt::BasicFormatter<Char>::format(
       } else {
         FMT_THROW(FormatError("missing precision specifier"));
       }
-      if (arg.type != Arg::DOUBLE && arg.type != Arg::LONG_DOUBLE) {
+      if (arg.type != Arg::DOUBLE && arg.type != Arg::LONG_DOUBLE &&
+          arg.type != Arg::CHAR && arg.type != Arg::CSTRING &&
+          arg.type != Arg::STRING && arg.type != Arg::WSTRING) {
         FMT_THROW(FormatError(
-            "precision specifier requires floating-point argument"));
+            "precision specifier requires floating-point or string argument"));
       }
     }
 
