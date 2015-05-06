@@ -142,6 +142,10 @@ namespace online_visualization {
           return true;
         }
 
+        virtual bool CheckCorrectness(const vector<string>& args) const {
+          return this->CheckEnoughArguments(args);
+        }
+
       public:
         string Usage() const {
           string answer;
@@ -166,6 +170,9 @@ namespace online_visualization {
             const ArgumentList& arg_list) const
         {
           vector<string> args = arg_list.GetAllArguments();
+          if (!CheckCorrectness(args))
+            return;
+
           string name  = args[1];
           string saves = args[2];
           size_t K;
