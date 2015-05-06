@@ -22,170 +22,198 @@ const string PrintPath(Graph& g, const vector<typename Graph::EdgeId>& edges) {
 	return ss.str();
 }
 
+
 template<class Graph>
 class PathProcessor {
 
-	typedef typename Graph::EdgeId EdgeId;
-	typedef typename Graph::VertexId VertexId;
-	typedef vector<EdgeId> Path;
-	typedef typename DijkstraHelper<Graph>::BoundedDijkstra DijkstraT;
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    typedef vector<EdgeId> Path;
+    typedef typename DijkstraHelper<Graph>::BoundedDijkstra DijkstraT;
 
-public:
-	class Callback {
+    void Push(EdgeId e) {
+        curr_len_ += g_.length(e);
+        reversed_edge_path_.push_back(e);
+    }
 
-	public:
-		virtual ~Callback() {
-		}
+    void Pop() {
+        VERIFY(!reversed_edge_path_.empty());
+        size_t len = g_.length(reversed_edge_path_.back());
+        VERIFY(curr_len_ >= len);
+        curr_len_ -= len;
+        reversed_edge_path_.pop_back();
+    }
 
-		virtual void Flush() {};
+    //returns true iff limits were exceeded
+    bool Go(VertexId v, const size_t min_len) {
+//        TRACE("Got to vertex " << g_.int_id(v));
+        if (++call_cnt_ >= MAX_CALL_CNT) {
+//            TRACE("Maximal count " << MAX_CALL_CNT << " of recursive calls was exceeded!");
+            return true;
+        }
 
-		virtual void HandleReversedPath(
-				const vector<EdgeId>& reversed_path) = 0;
+        if (!dijkstra_.DistanceCounted(v) || dijkstra_.GetDistance(v) + curr_len_ > max_len_) {
+            //if (!dijkstra_.DistanceCounted(v)) {
+            //TRACE("Distance not counted yet");
+            //}
+            //else
+            //TRACE("Shortest distance from this vertex is " << dijkstra_.GetDistance(v)
+            //<< " and sum with current path length " << cur_len
+            //<< " exceeded max length " << max_len_);
+            return false;
+        }
 
-	protected:
-		Path ReversePath(const Path& path) const {
-			Path result;
-			for (auto I = path.rbegin(), E = path.rend(); I != E; ++I)
-				result.push_back(*I);
-			return result;
-		}
-	};
+        if (v == start_ && curr_len_ >= min_len) {
+            //TRACE("New path found: " << PrintPath(g_, path_));
+            callback_->HandleReversedPath(reversed_edge_path_);
+        }
 
-	int Go(VertexId v, const size_t min_len, size_t cur_len,
-			const DijkstraT& dsts_to_start) {
-		int error_code = 0;
-		//TRACE("Now in the vertex " << g_.int_id(v));
-		if (++call_cnt_ >= MAX_CALL_CNT) {
-			//DEBUG("Maximal count " << MAX_CALL_CNT << " of recursive calls was exceeded!");
-			return 1;
-		}
+        TRACE("Iterating through incoming edges of vertex " << g_.int_id(v))
+        //TODO: doesn`t work with parallel simplification
+        vector<EdgeId> incoming;
+        incoming.reserve(4);
+        std::copy_if(g_.in_begin(v), g_.in_end(v), std::back_inserter(incoming), [&] (EdgeId e) {
+            return dijkstra_.DistanceCounted(g_.EdgeStart(e));
+        });
 
-		if (!dsts_to_start.DistanceCounted(v)
-				|| dsts_to_start.GetDistance(v) + cur_len > max_len_) {
-			//if (!dsts_to_start.DistanceCounted(v)) {
-			//TRACE("Distance not counted yet");
-			//}
-			//else
-			//TRACE("Shortest distance from this vertex is " << dsts_to_start.GetDistance(v)
-			//<< " and sum with current path length " << cur_len
-			//<< " exceeded max length " << max_len_);
-			return 0;
-		}
-
-		if (v == start_ && cur_len >= min_len) {
-			//TRACE("New path found: " << PrintPath(g_, path_));
-			callback_->HandleReversedPath(path_);
-		}
-		TRACE("Iterating through incoming edges of vertex " << g_.int_id(v))
-		//TODO: doesn`t work with parallel simplification
-        vector<EdgeId> incoming(g_.in_begin(v), g_.in_end(v));
-        std::sort(incoming.begin(), incoming.end(), 
-            [&] (EdgeId e1, EdgeId e2) {
-                VertexId s1 = g_.EdgeStart(e1);
-                VertexId s2 = g_.EdgeStart(e2);
-                if (!dsts_to_start.DistanceCounted(s2)) 
-                    return true;
-                if (!dsts_to_start.DistanceCounted(s1)) 
-                    return false;
-                return dsts_to_start.GetDistance(s1) < dsts_to_start.GetDistance(s2);
-            });
+        std::sort(incoming.begin(), incoming.end(), [&] (EdgeId e1, EdgeId e2) {
+            return dijkstra_.GetDistance(g_.EdgeStart(e1)) < dijkstra_.GetDistance(g_.EdgeStart(e2));
+        });
 
         for (EdgeId edge : incoming) {
-			path_.push_back(edge);
-			error_code |= Go(g_.EdgeStart(edge), min_len,
-					cur_len + g_.length(edge), dsts_to_start);
-			path_.pop_back();
-		}
-		//TRACE("Processing vertex " << g_.int_id(v) << " finished");
-		return error_code;
-	}
+            Push(edge);
+            bool exceeded_limits = Go(g_.EdgeStart(edge), min_len);
+            Pop();
+            if (exceeded_limits) {
+                return true;
+            }
+        }
+        //TRACE("Processing vertex " << g_.int_id(v) << " finished");
+        return false;
+    }
 
-	// constructor for paths between start vertex and a set of @end_points
-	PathProcessor(const Graph& g, vector<size_t> min_lens, size_t max_len,
-			VertexId start, vector<VertexId> end_points, Callback& callback) :
-			g_(g), min_lens_(min_lens), max_len_(max_len), start_(start), end_points_(
-					end_points), dijkstra_(
-					DijkstraHelper<Graph>::CreateBoundedDijkstra(g, max_len, MAX_DIJKSTRA_VERTICES)),
-					callback_(&callback), call_cnt_(0) {
-		dijkstra_.run(start);
-	}
+public:
+    class Callback {
 
-	// constructor when we have only one @end_point
-	PathProcessor(const Graph& g, size_t min_len, size_t max_len,
-			VertexId start, VertexId end_point, Callback& callback) :
-			g_(g), max_len_(max_len), start_(start), dijkstra_(
-					DijkstraHelper<Graph>::CreateBoundedDijkstra(g, max_len, MAX_DIJKSTRA_VERTICES)),
-					callback_(&callback), call_cnt_(0) {
-		min_lens_.push_back(min_len);
-		end_points_.push_back(end_point);
-		dijkstra_.run(start);
-	}
+    public:
+        virtual ~Callback() {
+        }
 
-	// dfs from the end vertices
-	int Process() {
-		int error_code = 0;
+        virtual void Flush() {
+        }
+        ;
 
-		if (dijkstra_.VertexLimitExceeded()) {
-			TRACE("dijkstra : vertex limit exceeded");
-			error_code = 2;
-		}
+        virtual void HandleReversedPath(const vector<EdgeId>& reversed_path) = 0;
 
-		TRACE("Start vertex is " << g_.int_id(start_));
-		for (size_t i = 0; i < end_points_.size(); ++i) {
-			call_cnt_ = 0;
-			VertexId current_end_ = end_points_[i];
-			TRACE("Bounds are " << min_lens_[i] << " " << max_len_);
-			TRACE("Current end vertex " << g_.int_id(current_end_));
-			error_code |= Go(current_end_, min_lens_[i], 0, dijkstra_);
-			callback_->Flush();
-		}
-		return error_code; // 3 two mistakes, 2 bad dijkstra, 1 bad dfs, 0 = okay
-	}
+    protected:
+        Path ReversePath(const Path& path) const {
+            Path result;
+            for (auto I = path.rbegin(), E = path.rend(); I != E; ++I)
+                result.push_back(*I);
+            return result;
+        }
+    };
 
-	//todo remove setters
-	void SetMinLens(const vector<size_t>& new_min_lens) {
-		min_lens_ = new_min_lens;
-	}
+    // constructor for paths between start vertex and a set of @end_points
+    PathProcessor(const Graph& g, const vector<size_t>& min_lens, size_t max_len, VertexId start,
+                  const vector<VertexId>& end_points, Callback& callback)
+            : g_(g),
+              min_lens_(min_lens),
+              max_len_(max_len),
+              start_(start),
+              end_points_(end_points),
+              dijkstra_(DijkstraHelper<Graph>::CreateBoundedDijkstra(g, max_len, MAX_DIJKSTRA_VERTICES)),
+              callback_(&callback),
+              curr_len_(0),
+              call_cnt_(0) {
+        dijkstra_.run(start);
+        reversed_edge_path_.reserve(MAX_CALL_CNT);
+    }
 
-	void SetMinLens(vector<size_t> && new_min_lens) {
-		min_lens_ = new_min_lens;
-	}
+    // constructor when we have only one @end_point
+    PathProcessor(const Graph& g, size_t min_len, size_t max_len, VertexId start, VertexId end_point, Callback& callback)
+            : g_(g),
+              max_len_(max_len),
+              start_(start),
+              dijkstra_(DijkstraHelper<Graph>::CreateBoundedDijkstra(g, max_len, MAX_DIJKSTRA_VERTICES)),
+              callback_(&callback),
+              curr_len_(0),
+              call_cnt_(0) {
+        min_lens_.push_back(min_len);
+        end_points_.push_back(end_point);
+        dijkstra_.run(start);
+        reversed_edge_path_.reserve(MAX_CALL_CNT);
+    }
 
-	void SetMaxLen(size_t new_max_len) {
-		max_len_ = new_max_len;
-	}
+    // dfs from the end vertices
+    // 3 two mistakes, 2 bad dijkstra, 1 bad dfs, 0 = okay
+    int Process() {
+        int error_code = 0;
 
-	void SetEndPoints(const vector<VertexId>& new_end_points) {
-		end_points_ = new_end_points;
-	}
+        if (dijkstra_.VertexLimitExceeded()) {
+            TRACE("dijkstra : vertex limit exceeded");
+            error_code = 2;
+        }
 
-	void SetEndPoints(vector<VertexId>&& new_end_points) {
-		end_points_ = new_end_points;
-	}
+        TRACE("Start vertex is " << g_.int_id(start_));
+        for (size_t i = 0; i < end_points_.size(); ++i) {
+            VERIFY(curr_len_ == 0);
+            call_cnt_ = 0;
+            VertexId current_end_ = end_points_[i];
+            TRACE("Bounds are " << min_lens_[i] << " " << max_len_);
+            TRACE("Current end vertex " << g_.int_id(current_end_));
+            error_code |= int(Go(current_end_, min_lens_[i]));
+            callback_->Flush();
+        }
+        return error_code;
+    }
 
-	void SetCallback(Callback* new_callback) {
-		callback_ = new_callback;
-	}
+    //todo remove setters
+    void SetMinLens(const vector<size_t>& new_min_lens) {
+        min_lens_ = new_min_lens;
+    }
 
-	void ResetCallCount() {
-		call_cnt_ = 0;
-	}
+    void SetMinLens(vector<size_t> && new_min_lens) {
+        min_lens_ = new_min_lens;
+    }
+
+    void SetMaxLen(size_t new_max_len) {
+        max_len_ = new_max_len;
+    }
+
+    void SetEndPoints(const vector<VertexId>& new_end_points) {
+        end_points_ = new_end_points;
+    }
+
+    void SetEndPoints(vector<VertexId> && new_end_points) {
+        end_points_ = new_end_points;
+    }
+
+    void SetCallback(Callback* new_callback) {
+        callback_ = new_callback;
+    }
+
+    void ResetCallCount() {
+        call_cnt_ = 0;
+    }
 
 private:
-	static const size_t MAX_CALL_CNT = 3000;
-	static const size_t MAX_DIJKSTRA_VERTICES = 3000;
+    static const size_t MAX_CALL_CNT = 3000;
+    static const size_t MAX_DIJKSTRA_VERTICES = 3000;
 
-	const Graph& g_;
-	vector<size_t> min_lens_;
-	size_t max_len_;
-	VertexId start_;
-	vector<VertexId> end_points_;
-	DijkstraT dijkstra_;
-	Callback* callback_;
-	Path path_;
-	size_t call_cnt_;
+    const Graph& g_;
+    vector<size_t> min_lens_;
+    size_t max_len_;
+    VertexId start_;
+    vector<VertexId> end_points_;
+    DijkstraT dijkstra_;
+    Callback* callback_;
 
-	DECL_LOGGER("PathProcessor")
+    Path reversed_edge_path_;
+    size_t curr_len_;
+    size_t call_cnt_;
+
+    DECL_LOGGER("PathProcessor")
 };
 
 template<class Graph>
