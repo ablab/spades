@@ -12,6 +12,8 @@
 #include "io/wrapper_collection.hpp"
 #include <boost/algorithm/string.hpp>
 
+#include <boost/algorithm/string/predicate.hpp>
+
 namespace online_visualization {
 
 //class RepeatProcessor {
