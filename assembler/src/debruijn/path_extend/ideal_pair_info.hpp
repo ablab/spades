@@ -15,7 +15,7 @@ using debruijn_graph::EdgeId;
 namespace path_extend {
 class IdealPairInfoCounter {
 public:
-    IdealPairInfoCounter(Graph& g, int d_min, int d_max, size_t read_size,
+    IdealPairInfoCounter(const Graph& g, int d_min, int d_max, size_t read_size,
                          const std::map<int, size_t>& is_distribution)
             : g_(g),
               d_min_(d_min),

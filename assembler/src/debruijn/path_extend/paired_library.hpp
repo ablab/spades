@@ -30,7 +30,7 @@ using omnigraph::de::Point;
 namespace path_extend {
 
 struct PairedInfoLibrary {
-    PairedInfoLibrary(size_t k, Graph& g, size_t readS, size_t is, size_t is_min, size_t is_max, size_t is_div,
+    PairedInfoLibrary(size_t k, const Graph& g, size_t readS, size_t is, size_t is_min, size_t is_max, size_t is_div,
                       bool is_mp,
                       const std::map<int, size_t>& is_distribution)
             : g_(g),
@@ -100,7 +100,7 @@ protected:
 
 template<class Index>
 struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
-    PairedInfoLibraryWithIndex(size_t k, Graph& g, size_t readS, size_t is, size_t is_min, size_t is_max, size_t is_div,
+    PairedInfoLibraryWithIndex(size_t k, const Graph& g, size_t readS, size_t is, size_t is_min, size_t is_max, size_t is_div,
                                const Index& index, bool is_mp,
                                const std::map<int, size_t>& is_distribution)
         : PairedInfoLibrary(k, g, readS, is, is_min, is_max, is_div, is_mp, is_distribution),
