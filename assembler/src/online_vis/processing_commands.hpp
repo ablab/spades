@@ -21,7 +21,7 @@ public:
     string Usage() const {
         string answer;
         answer = answer + "Command `clip_tips` \n" + "Usage:\n"
-                + "> clip_tips <length>\n (Y/y)" + " This command clips tips.\n"
+                + "> clip_tips <length> (Y/y)\n" + " This command clips tips.\n"
                 + " If length is not specified, "
                 + "it will be counted from global settings. "
                 + "If second argument Y/y is specified then genomic edges will be retained.";
@@ -29,13 +29,19 @@ public:
     }
 
     ClipTipsCommand()
-            : NewLocalCommand<DebruijnEnvironment>("clip_tips", 1) {
+            : NewLocalCommand<DebruijnEnvironment>("clip_tips", 0) {
     }
 
 private:
     /*virtual*/ void InnerExecute(DebruijnEnvironment& curr_env,
                  const vector<string>& args) const {
-        size_t length = GetInt(args[1]);
+        size_t length = 0;
+        if(args.size() > 0) {
+            length = GetInt(args[1]);
+        } else {
+            length = curr_env.edge_length_bound();
+        }
+
         shared_ptr<func::Predicate<EdgeId>> condition = make_shared<AlwaysTrue<EdgeId>>();
         if (args.size() > 2 && (args[2] == "Y" || args[2] == "y")) {
             cout << "Trying to activate genome quality condition" << endl;

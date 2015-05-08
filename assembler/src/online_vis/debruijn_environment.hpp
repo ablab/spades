@@ -182,6 +182,10 @@ class DebruijnEnvironment : public Environment {
             return file_name_base_;
         }
 
+        size_t edge_length_bound() const {
+            return edge_length_bound_;
+        }
+
         FillerClass& filler() {
             return filler_;
         }
