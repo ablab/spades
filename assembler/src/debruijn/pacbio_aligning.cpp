@@ -64,9 +64,16 @@ void ProcessReadsBatch(conj_graph_pack &gp,
 }
 
 void align_pacbio(conj_graph_pack &gp, int lib_id) {
-    auto pacbio_read_stream = single_easy_reader(cfg::get().ds.reads[lib_id],
-                                                 false, false);
-    io::ReadStreamList<io::SingleRead> streams(pacbio_read_stream);
+    io::ReadStreamList<io::SingleRead> streams;
+    for (auto it = cfg::get().ds.reads[lib_id].single_begin(); it != cfg::get().ds.reads[lib_id].single_end(); ++it) {
+          //do we need input_file function here?
+        streams.push_back(make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(*it)));
+    }
+    //make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(file));
+    //    auto pacbio_read_stream = single_easy_reader(cfg::get().ds.reads[lib_id],
+//    false, false);
+
+//    io::ReadStreamList<io::SingleRead> streams(pacbio_read_stream);
  //   pacbio_read_stream.release();
     int n = 0;
     PathStorage<Graph>& long_reads = gp.single_long_reads[lib_id];
