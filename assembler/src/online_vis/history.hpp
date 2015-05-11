@@ -32,7 +32,7 @@ namespace online_visualization {
     void SetEntry(size_t k, const string& entry) const {
       VERIFY(k < size_);
       //replace_history_entry(k, entry.c_str(), history_list()[k]->data);
-      replace_history_entry(int(k), entry.c_str(), history_get(int(k))->data);
+      replace_history_entry(int(k), entry.c_str(), history_get(int(k + 1))->data);
     }
 
     size_t size() const {
