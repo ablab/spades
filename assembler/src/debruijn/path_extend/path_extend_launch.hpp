@@ -229,13 +229,14 @@ inline void TraverseLoops(PathContainer& paths, GraphCoverageMap& cover_map, Con
 
 inline bool IsForSingleReadExtender(size_t lib_index) {
     io::LibraryType lt = cfg::get().ds.reads[lib_index].type();
-    return (lt == io::LibraryType::PacBioReads ||
+    return (cfg::get().ds.reads[lib_index].data().single_reads_mapped ||
+            lt == io::LibraryType::PacBioReads ||
             lt == io::LibraryType::SangerReads ||
             lt == io::LibraryType::NanoporeReads ||
             lt == io::LibraryType::TrustedContigs ||
-            lt == io::LibraryType::UntrustedContigs ||
-            lt == io::LibraryType::SingleReads );
+            lt == io::LibraryType::UntrustedContigs);
 }
+
 
 inline bool IsForPEExtender(size_t lib_index) {
     io::LibraryType lt = cfg::get().ds.reads[lib_index].type();
@@ -311,7 +312,8 @@ inline SimpleExtender * MakePEExtender(const conj_graph_pack& gp, const GraphCov
     PairedInfoLibrary* lib = MakeNewLib(gp.g, gp.clustered_indices, lib_index);
     if (use_auto_threshold) {
         lib->SetSingleThreshold(cfg::get().ds.reads[lib_index].data().pi_threshold);
-        INFO("Threshold for library #" << lib_index << " is " << cfg::get().ds.reads[lib_index].data().pi_threshold);
+        if (!investigate_loops)
+            INFO("Threshold for library #" << lib_index << " is " << cfg::get().ds.reads[lib_index].data().pi_threshold);
     }
     WeightCounter* wc = new PathCoverWeightCounter(gp.g, lib, GetWeightThreshold(lib, pset), GetSingleThreshold(lib, pset));
     wc->setNormalizeWeight(pset.normalize_weight);
@@ -320,13 +322,10 @@ inline SimpleExtender * MakePEExtender(const conj_graph_pack& gp, const GraphCov
 }
 
 inline PathExtender * MakeScaffoldingExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
-                                       size_t lib_index, const pe_config::ParamSetT& pset, bool use_auto_threshold) {
+                                       size_t lib_index, const pe_config::ParamSetT& pset) {
 
-    PairedInfoLibrary* lib = MakeNewLib(gp.g, gp.clustered_indices, lib_index);
-    if (use_auto_threshold) {
-        lib->SetSingleThreshold(cfg::get().ds.reads[lib_index].data().pi_threshold);
-        INFO("Threshold for library #" << lib_index << " is " << cfg::get().ds.reads[lib_index].data().pi_threshold);
-    }
+
+    PairedInfoLibrary* lib = MakeNewLib(gp.g, gp.scaffolding_indices, lib_index);
 
     WeightCounter* counter = new ReadCountWeightCounter(gp.g, lib);
     double prior_coef = GetPriorityCoeff(lib, pset);
@@ -385,18 +384,18 @@ inline vector<PathExtender* > MakeAllExtenders(PathExtendStage stage, const conj
                 result.push_back(MakeLongReadsExtender(gp, cov_map, i, pset));
                 ++single_read_libs;
             }
-            else if (IsForPEExtender(i) && stage == PathExtendStage::PEStage) {
+            if (IsForPEExtender(i) && stage == PathExtendStage::PEStage) {
                 pes.push_back(MakePEExtender(gp, cov_map, i, pset, use_auto_threshold, false));
             }
-            else if (IsForShortLoopExtender(i)) {
+            if (IsForShortLoopExtender(i)) {
                 pe_loops.push_back(MakePEExtender(gp, cov_map, i, pset, use_auto_threshold, true));
                 ++pe_libs;
             }
-            else if (IsForScaffoldingExtender(i) && cfg::get().use_scaffolder && pset.scaffolder_options.on) {
-                pe_scafs.push_back(MakeScaffoldingExtender(gp, cov_map, i, pset, use_auto_threshold));
+            if (IsForScaffoldingExtender(i) && cfg::get().use_scaffolder && pset.scaffolder_options.on) {
+                pe_scafs.push_back(MakeScaffoldingExtender(gp, cov_map, i, pset));
                 ++scf_pe_libs;
             }
-            else if (IsForMPExtender(i) && stage == PathExtendStage::MPStage) {
+            if (IsForMPExtender(i) && stage == PathExtendStage::MPStage) {
                 mps.push_back(MakeMPExtender(gp, cov_map, paths_for_mp, i, pset));
                 ++mp_libs;
             }
