@@ -7,6 +7,7 @@
 #pragma once
 
 #include "standard_base.hpp"
+#include "adt/bag.hpp"
 #include "dijkstra_tools/dijkstra_helper.hpp"
 
 namespace omnigraph {
@@ -31,17 +32,39 @@ class PathProcessor {
     typedef vector<EdgeId> Path;
     typedef typename DijkstraHelper<Graph>::BoundedDijkstra DijkstraT;
 
-    void Push(EdgeId e) {
+    void Push(EdgeId e, VertexId start_v) {
         curr_len_ += g_.length(e);
         reversed_edge_path_.push_back(e);
+        vertex_cnts_.put(start_v);
     }
 
     void Pop() {
         VERIFY(!reversed_edge_path_.empty());
-        size_t len = g_.length(reversed_edge_path_.back());
+        EdgeId e = reversed_edge_path_.back();
+        size_t len = g_.length(e);
         VERIFY(curr_len_ >= len);
-        curr_len_ -= len;
+
+        vertex_cnts_.take(g_.EdgeStart(e));
         reversed_edge_path_.pop_back();
+        curr_len_ -= len;
+    }
+
+    bool CanGo(EdgeId e, VertexId start_v) {
+//        VertexId v = g_.EdgeStart(e);
+        //if (!dijkstra_.DistanceCounted(v)) {
+        //TRACE("Distance not counted yet");
+        //}
+        //else
+        //TRACE("Shortest distance from this vertex is " << dijkstra_.GetDistance(v)
+        //<< " and sum with current path length " << cur_len
+        //<< " exceeded max length " << max_len_);
+        if (!dijkstra_.DistanceCounted(start_v))
+            return false;
+        if (dijkstra_.GetDistance(start_v) + g_.length(e) + curr_len_ > max_len_)
+            return false;
+        if (vertex_cnts_.mult(start_v) >= MAX_VERTEX_USAGE)
+            return false;
+        return true;
     }
 
     //returns true iff limits were exceeded
@@ -50,17 +73,6 @@ class PathProcessor {
         if (++call_cnt_ >= MAX_CALL_CNT) {
 //            TRACE("Maximal count " << MAX_CALL_CNT << " of recursive calls was exceeded!");
             return true;
-        }
-
-        if (!dijkstra_.DistanceCounted(v) || dijkstra_.GetDistance(v) + curr_len_ > max_len_) {
-            //if (!dijkstra_.DistanceCounted(v)) {
-            //TRACE("Distance not counted yet");
-            //}
-            //else
-            //TRACE("Shortest distance from this vertex is " << dijkstra_.GetDistance(v)
-            //<< " and sum with current path length " << cur_len
-            //<< " exceeded max length " << max_len_);
-            return false;
         }
 
         if (v == start_ && curr_len_ >= min_len) {
@@ -80,12 +92,14 @@ class PathProcessor {
             return dijkstra_.GetDistance(g_.EdgeStart(e1)) < dijkstra_.GetDistance(g_.EdgeStart(e2));
         });
 
-        for (EdgeId edge : incoming) {
-            Push(edge);
-            bool exceeded_limits = Go(g_.EdgeStart(edge), min_len);
-            Pop();
-            if (exceeded_limits) {
-                return true;
+        for (EdgeId e : incoming) {
+            VertexId start_v = g_.EdgeStart(e);
+            if (CanGo(e, start_v)) {
+                Push(e, start_v);
+                bool exceeded_limits = Go(start_v, min_len);
+                Pop();
+                if (exceeded_limits)
+                    return true;
             }
         }
         //TRACE("Processing vertex " << g_.int_id(v) << " finished");
@@ -146,7 +160,7 @@ public:
     }
 
     // dfs from the end vertices
-    // 3 two mistakes, 2 bad dijkstra, 1 bad dfs, 0 = okay
+    // 3 two mistakes, 2 bad dijkstra, 1 some bad dfs, 0 = okay
     int Process() {
         int error_code = 0;
 
@@ -158,11 +172,14 @@ public:
         TRACE("Start vertex is " << g_.int_id(start_));
         for (size_t i = 0; i < end_points_.size(); ++i) {
             VERIFY(curr_len_ == 0);
+            VERIFY(vertex_cnts_.size() == 0);
             call_cnt_ = 0;
-            VertexId current_end_ = end_points_[i];
+            VertexId current_end = end_points_[i];
             TRACE("Bounds are " << min_lens_[i] << " " << max_len_);
-            TRACE("Current end vertex " << g_.int_id(current_end_));
-            error_code |= int(Go(current_end_, min_lens_[i]));
+            TRACE("Current end vertex " << g_.int_id(current_end));
+            vertex_cnts_.put(current_end);
+            error_code |= int(Go(current_end, min_lens_[i]));
+            vertex_cnts_.take(current_end);
             callback_->Flush();
         }
         return error_code;
@@ -200,6 +217,7 @@ public:
 private:
     static const size_t MAX_CALL_CNT = 3000;
     static const size_t MAX_DIJKSTRA_VERTICES = 3000;
+    static const size_t MAX_VERTEX_USAGE = 5;
 
     const Graph& g_;
     vector<size_t> min_lens_;
@@ -210,6 +228,7 @@ private:
     Callback* callback_;
 
     Path reversed_edge_path_;
+    bag<VertexId> vertex_cnts_;
     size_t curr_len_;
     size_t call_cnt_;
 

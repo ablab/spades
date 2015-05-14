@@ -1,15 +1,19 @@
 #pragma once
 
+#include "verify.hpp"
+
 template<class T, class hash = std::hash<T>>
 class bag {
     typedef std::unordered_map<T, size_t, hash> Data;
     Data data_;
+    size_t size_;
 public:
     typedef typename Data::const_iterator const_iterator;
 
     void put(const T& t, size_t mult) {
         VERIFY(mult > 0);
         data_[t] += mult;
+        size_ += mult;
     }
 
     void put(const T& t) {
@@ -25,12 +29,15 @@ public:
             size_t have = it->second;
             if (have < mult) {
                 data_.erase(it->first);
+                size_ -= have;
                 return false;
             } else if (have == mult) {
                 data_.erase(it->first);
+                size_ -= have;
                 return true;
             } else {
                 it->second -= mult;
+                size_ -= mult;
                 return true;
             }
         }
@@ -51,6 +58,7 @@ public:
 
     void clear() {
         data_.clear();
+        size_ = 0;
     }
 
     const_iterator begin() const {
@@ -59,6 +67,10 @@ public:
 
     const_iterator end() const {
         return data_.end();
+    }
+
+    size_t size() const {
+        return size_;
     }
 
 };
