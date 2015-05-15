@@ -253,6 +253,7 @@ inline vector<BidirectionalPath*> NextPathSearcher::ScaffoldTree(const Bidirecti
     DEBUG( "for path " << path.GetId() << " several extension " << result_paths.size());
     return result_paths;
 }
+
 inline set<BidirectionalPath*> NextPathSearcher::FindNextPaths(const BidirectionalPath& path, EdgeId begin_edge, bool jump) {
     TRACE("begin find next paths");
     vector<Edge*> grow_paths;
@@ -273,10 +274,11 @@ inline set<BidirectionalPath*> NextPathSearcher::FindNextPaths(const Bidirection
     grow_paths.push_back(e);
 
     size_t ipath = 0;
+    DEBUG("Processing paths");
     while (ipath < grow_paths.size()) {
-        TRACE("Processing path " << ipath << " of " << grow_paths.size() << " need to grow " << count_to_grow);
+        DEBUG("Processing path " << ipath << " of " << grow_paths.size() << " need to grow " << count_to_grow);
         Edge* current_path = grow_paths[ipath++];
-        TRACE(" edge " << g_.int_id(current_path->GetId()));
+        DEBUG(" edge " << g_.int_id(current_path->GetId()));
         if (used_edges.count(current_path) > 0) {
             count_to_grow--;
             continue;
@@ -287,7 +289,9 @@ inline set<BidirectionalPath*> NextPathSearcher::FindNextPaths(const Bidirection
             count_to_grow--;
             continue;
         }
+        DEBUG("Growing path");
         vector<Edge*> to_add = GrowPath(path, current_path);
+        DEBUG("Path grown");
         if (to_add.empty() && current_path->IsCorrect()) {
             DEBUG("scaffold tip");
             ScaffoldTip(path, current_path, result_edges, stopped_paths, to_add, jump);
@@ -303,6 +307,7 @@ inline set<BidirectionalPath*> NextPathSearcher::FindNextPaths(const Bidirection
             return set<BidirectionalPath*>();
         }
     }
+    DEBUG("Paths processed");
 
     std::set<BidirectionalPath*> result_paths;
     TRACE("adding paths " << result_edges.size());

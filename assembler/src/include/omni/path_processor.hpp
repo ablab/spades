@@ -33,6 +33,7 @@ class PathProcessor {
     typedef typename DijkstraHelper<Graph>::BoundedDijkstra DijkstraT;
 
     void Push(EdgeId e, VertexId start_v) {
+        TRACE("Pushing edge " << g_.str(e));
         curr_len_ += g_.length(e);
         reversed_edge_path_.push_back(e);
         vertex_cnts_.put(start_v);
@@ -44,6 +45,7 @@ class PathProcessor {
         size_t len = g_.length(e);
         VERIFY(curr_len_ >= len);
 
+        TRACE("Popping edge " << g_.str(e));
         vertex_cnts_.take(g_.EdgeStart(e));
         reversed_edge_path_.pop_back();
         curr_len_ -= len;
@@ -69,9 +71,9 @@ class PathProcessor {
 
     //returns true iff limits were exceeded
     bool Go(VertexId v, const size_t min_len) {
-//        TRACE("Got to vertex " << g_.int_id(v));
+        TRACE("Got to vertex " << g_.str(v));
         if (++call_cnt_ >= MAX_CALL_CNT) {
-//            TRACE("Maximal count " << MAX_CALL_CNT << " of recursive calls was exceeded!");
+            TRACE("Maximal count " << MAX_CALL_CNT << " of recursive calls was exceeded!");
             return true;
         }
 
@@ -140,8 +142,10 @@ public:
               callback_(&callback),
               curr_len_(0),
               call_cnt_(0) {
+        TRACE("Dijkstra launched");
         dijkstra_.run(start);
         reversed_edge_path_.reserve(MAX_CALL_CNT);
+        TRACE("Dijkstra finished");
     }
 
     // constructor when we have only one @end_point
@@ -153,15 +157,18 @@ public:
               callback_(&callback),
               curr_len_(0),
               call_cnt_(0) {
+        TRACE("Dijkstra launched");
         min_lens_.push_back(min_len);
         end_points_.push_back(end_point);
         dijkstra_.run(start);
         reversed_edge_path_.reserve(MAX_CALL_CNT);
+        TRACE("Dijkstra finished");
     }
 
     // dfs from the end vertices
     // 3 two mistakes, 2 bad dijkstra, 1 some bad dfs, 0 = okay
     int Process() {
+        TRACE("Process launched");
         int error_code = 0;
 
         if (dijkstra_.VertexLimitExceeded()) {
@@ -182,6 +189,7 @@ public:
             vertex_cnts_.take(current_end);
             callback_->Flush();
         }
+        TRACE("Process finished with error code " << error_code);
         return error_code;
     }
 
