@@ -18,6 +18,7 @@
 #include "path_processor.hpp"
 #include "omni/visualization/visualization.hpp"
 
+
 namespace omnigraph {
 
 namespace complex_br {
@@ -723,6 +724,8 @@ void PrintComponent(const LocalizedComponent<Graph>& component,
 			omnigraph::visualization::DefaultColorer(component.g()),
 			*StrGraphLabelerInstance(component.g()));
 }
+
+
 
 template<class Graph>
 class ComponentProjector {

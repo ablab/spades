@@ -6,6 +6,7 @@
 
 #pragma once
 
+
 namespace omnigraph {
 
 //todo make handler!!!
@@ -18,6 +19,8 @@ class GraphComponent {
 	const Graph& graph_;
 	std::set<VertexId> vertices_;
 	std::set<EdgeId> edges_;
+    std::set<VertexId> sinks_;
+    std::set<VertexId> sources_;
 	string name_;
 
 
@@ -55,13 +58,39 @@ class GraphComponent {
 	void Fill(VertexIt begin, VertexIt end) {
 		FillVertices(begin, end);
 		FillEdges();
+		FindSinksAndSources();
 	}
 
 	template<class VertexIt>
 	void Fill(VertexIt begin, VertexIt end, bool add_conjugate) {
 		FillVertices(begin, end, add_conjugate);
 		FillEdges();
+		FindSinksAndSources();
 	}
+
+	void FindSinksAndSources()
+    {
+        for(auto v : vertices_)
+        {
+            for(auto e : graph_.IncomingEdges(v))
+            {
+                if(!contains(e) && !(contains(graph_.EdgeStart(e))))
+                {
+                    sources_.insert(v);
+                    break;
+                }
+            }
+
+            for(auto e : graph_.OutgoingEdges(v))
+            {
+                if(!contains(e) && !(contains(graph_.EdgeEnd(e))))
+                {
+                    sinks_.insert(v);
+                    break;
+                }
+            }
+        }
+    }
 
 public:
 	template<class VertexIt>
@@ -144,6 +173,22 @@ public:
 		return vertices_.end();
 	}
 
+    std::set<VertexId> getSinks() const {
+        return sinks_;
+    }
+
+    std::set<VertexId> getSources() const {
+        return sources_;
+    }
+
+    size_t getSinksCount() const {
+        return sinks_.size();
+    }
+
+    size_t getSourcesCount() const {
+        return sources_.size();
+    }
+
 	bool IsBorder(VertexId v) const {
 		if(vertices_.count(v) == 0)
 			return false;
@@ -157,4 +202,17 @@ public:
 	}
 
 };
+
+
+//    template<class Graph>
+//    void PrintComponent(const GraphComponent<Graph>& component,
+//            const string& file_name) {
+//        visualization::WriteComponent(component, file_name,
+//                DefaultColorer(component.g()),
+//                *StrGraphLabelerInstance(component.g()));
+//    }
+
 }
+
+
+
