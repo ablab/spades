@@ -62,7 +62,7 @@ void WriteComponentSinksSources(const GraphComponent<Graph>& gc,
         const string& file_name, shared_ptr<GraphColorer<Graph>> colorer,
         const GraphLabeler<Graph> &labeler) {
     EmptyGraphLinker<Graph> linker;
-    BorderDecorator<Graph> component_colorer(gc, *colorer, "yellow");
+    SinkSourceDecorator<Graph> component_colorer(gc, *colorer);
     ofstream os;
     os.open(file_name);
     omnigraph::visualization::ComponentVisualizer<Graph>(gc.g(), true).Visualize(gc, os, labeler, component_colorer, linker);

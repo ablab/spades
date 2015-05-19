@@ -230,6 +230,52 @@ public:
 	}
 };
 
+
+template<typename Graph>
+class SinkSourceDecorator : public GraphColorer<Graph> {
+private:
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+    const GraphComponent<Graph> &component_;
+//  const shared_ptr<const ElementColorer<typename Graph::VertexId>> vertex_colorer_ptr_;
+//  const shared_ptr<const ElementColorer<typename Graph::EdgeId>> edge_colorer_ptr_;
+    const ElementColorer<typename Graph::VertexId> &vertex_colorer_;
+    const ElementColorer<typename Graph::EdgeId> &edge_colorer_;
+    const string sink_color_;
+    const string source_color_;
+public:
+
+    SinkSourceDecorator(const GraphComponent<Graph> &component,
+            const GraphColorer<Graph> &colorer, const string &sink_color = "red", const string &source_color = "orange") :
+            component_(component), vertex_colorer_(colorer), edge_colorer_(colorer), sink_color_(sink_color), source_color_(source_color) {
+    }
+
+    string GetValue(VertexId v) const {
+        if(component_.isSink(v)) {
+            return sink_color_;
+        } else
+        {
+            if(component_.isSource(v))
+            {
+                return source_color_;
+            }
+            else
+            {
+                return vertex_colorer_.GetValue(v);
+            }
+        }
+    }
+
+    string GetValue(EdgeId e) const {
+        return edge_colorer_.GetValue(e);
+    }
+
+    static shared_ptr<SinkSourceDecorator<Graph>> GetInstance(const GraphComponent<Graph> &component,
+            const GraphColorer<Graph> &colorer, const string &sink_color = "red", const string &source_color = "orange") {
+        return make_shared<SinkSourceDecorator<Graph>>(component, colorer, sink_color, source_color);
+    }
+};
+
 template<class Graph>
 class CompositeGraphColorer: public GraphColorer<Graph> {
 private:

@@ -47,7 +47,7 @@ void DrawComponentsOfShortEdges(conj_graph_pack& gp, size_t min_length)
         if(component.v_size() > 3 && component.getSinksCount() == 1 && component.getSourcesCount() == 1)
         {
 
-            visualization::WriteComponent(component, pics_folder_ + "ShortComponents/"
+            visualization::WriteComponentSinksSources(component, pics_folder_ + "ShortComponents/"
                                                                                   + ToString(gp.g.int_id(*component.vertices().begin()))
                                                                                    + ".dot", visualization::DefaultColorer(gp.g),
                                                                                    *StrGraphLabelerInstance(component.g()));

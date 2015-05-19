@@ -189,6 +189,14 @@ public:
         return sources_.size();
     }
 
+    bool isSink(VertexId v) const {
+        return (sinks_.count(v) != 0);
+    }
+
+    bool isSource(VertexId v) const {
+        return (sources_.count(v) != 0);
+    }
+
 	bool IsBorder(VertexId v) const {
 		if(vertices_.count(v) == 0)
 			return false;
