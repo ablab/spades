@@ -1022,7 +1022,7 @@ void ScanBasicGraph(const string& file_name, Graph& g) {
 template<class Graph>
 void ScanSingleLongReads(const string& file_name, LongReadContainer<Graph>& single_long_reads) {
     for (size_t i = 0; i < single_long_reads.size(); ++i){
-        single_long_reads[i].LoadFromFile(MakeSingleReadsFileName(file_name, i));
+        single_long_reads[i].LoadFromFile(MakeSingleReadsFileName(file_name, i), false);
     }
 }
 

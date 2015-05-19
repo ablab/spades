@@ -316,6 +316,9 @@ struct debruijn_config {
         hidden_ec_remover her;
         //bool stats_mode;
 
+        tip_clipper final_tc;
+        bulge_remover final_br;
+
         bool fast_features;
         double fast_activation_cov;
         presimplification presimp;
@@ -448,6 +451,8 @@ struct debruijn_config {
         }
 
         bool single_cell;
+        bool meta;
+
         std::string reference_genome_filename;
         std::string reads_filename;
 
@@ -527,6 +532,8 @@ struct debruijn_config {
     std::string entry_point;
 
     bool rr_enable;
+    bool two_step_rr;
+
     single_read_resolving_mode single_reads_rr;
     bool use_single_reads;
 

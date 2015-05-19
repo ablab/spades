@@ -29,10 +29,13 @@ enum class LibraryType {
   NanoporeReads,
   TrustedContigs,
   UntrustedContigs,
+  PathExtendContigs
 };
 
-static std::vector<LibraryType> LibraryPriotity = {LibraryType::TrustedContigs, LibraryType::SangerReads, LibraryType::PacBioReads, LibraryType::NanoporeReads,
-                                            LibraryType::SingleReads, LibraryType::PairedEnd, LibraryType::HQMatePairs, LibraryType::MatePairs, LibraryType::UntrustedContigs};
+static const std::vector<LibraryType> LibraryPriotity = 
+                                      {LibraryType::TrustedContigs, LibraryType::SangerReads, LibraryType::PacBioReads, LibraryType::NanoporeReads,
+                                            LibraryType::SingleReads, LibraryType::PairedEnd, LibraryType::HQMatePairs, LibraryType::MatePairs, 
+                                            LibraryType::PathExtendContigs, LibraryType::UntrustedContigs};
 
 enum class LibraryOrientation {
   FR,
@@ -152,7 +155,6 @@ class SequencingLibraryBase {
             type_ == io::LibraryType::HQMatePairs);
   }
 
-
   bool is_repeat_resolvable() const {
     return (type_ == io::LibraryType::PairedEnd ||
             type_ == io::LibraryType::HQMatePairs ||
@@ -161,7 +163,8 @@ class SequencingLibraryBase {
             type_ == io::LibraryType::SangerReads ||
             type_ == io::LibraryType::NanoporeReads ||
             type_ == io::LibraryType::TrustedContigs ||
-            type_ == io::LibraryType::UntrustedContigs);
+            type_ == io::LibraryType::UntrustedContigs ||
+    		type_ == io::LibraryType::PathExtendContigs);
   }
 
   bool is_pacbio_alignable() const {

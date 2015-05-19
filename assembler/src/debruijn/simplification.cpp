@@ -35,9 +35,9 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
 //            //            &QualityLoggingRemovalHandler<Graph>::HandleDelete,
 //            &QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
 //            boost::ref(qual_removal_handler), _1);
-    debruijn::simplification::SimplifyGraph(gp, 0/*removal_handler_f*/,
-                  printer, /*iteration count*/10);
 
+    debruijn::simplification::SimplifyGraph(gp, 0/*removal_handler_f*/,
+                  printer, /*iteration count*/3, preliminary_);
 
     AvgCovereageCounter<Graph> cov_counter(gp.g);
     cfg::get_writable().ds.set_avg_coverage(cov_counter.Count());

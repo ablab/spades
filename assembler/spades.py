@@ -84,9 +84,12 @@ def print_used_values(cfg, log):
 
         if cfg["dataset"].single_cell:
             log.info("  Single-cell mode")
+        elif cfg["dataset"].meta:
+            log.info("  Metagenomic mode")
         else:
             log.info("  Multi-cell mode (you should set '--sc' flag if input data"\
-                     " was obtained with MDA (single-cell) technology")
+                     " was obtained with MDA (single-cell) technology"\
+                     " or --meta flag if processing metagenomic dataset)")
         if cfg["dataset"].iontorrent:
             log.info("  IonTorrent data")
 
@@ -199,6 +202,8 @@ def fill_cfg(options_to_parse, log):
 
         elif opt == "--sc":
             options_storage.single_cell = True
+        elif opt == "--meta":
+            options_storage.meta = True
         elif opt == "--iontorrent":
             options_storage.iontorrent = True
         elif opt == "--disable-gzip-output":
@@ -345,6 +350,7 @@ def fill_cfg(options_to_parse, log):
     # dataset section
     cfg["dataset"].__dict__["single_cell"] = options_storage.single_cell
     cfg["dataset"].__dict__["iontorrent"] = options_storage.iontorrent
+    cfg["dataset"].__dict__["meta"] = options_storage.meta
     cfg["dataset"].__dict__["yaml_filename"] = options_storage.dataset_yaml_filename
     if options_storage.developer_mode and options_storage.reference:
         cfg["dataset"].__dict__["reference"] = options_storage.reference
@@ -641,6 +647,7 @@ def main(args):
                     dataset_file = open(dataset_filename, 'w')
                     import process_cfg
                     dataset_file.write("single_cell" + '\t' + process_cfg.bool_to_str(cfg["dataset"].single_cell) + '\n')
+                    dataset_file.write("meta" + '\t' + process_cfg.bool_to_str(cfg["dataset"].meta) + '\n')
                     if os.path.isfile(corrected_dataset_yaml_filename):
                         dataset_file.write("reads" + '\t' + process_cfg.process_spaces(corrected_dataset_yaml_filename) + '\n')
                     else:

@@ -40,7 +40,7 @@ class ConsensusContigsConstructor {
 
 	vector<contig> ReadContigs(string contig_fname){
 		vector<contig> contigs;
-		auto fstream = EasyStream(contig_fname, false, PhredOffset, true);
+		auto fstream = io::SplittingWrap(EasyStream(contig_fname, false));
 
 		while(!fstream->eof()){
 			SingleRead single_read;

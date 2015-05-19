@@ -163,7 +163,7 @@ sc
 	{
 		enabled				true
 		max_bulge_length_coefficient	3.		; max_bulge_length = max_bulge_length_coefficient * k
-        	max_additive_length_coefficient 100
+       	max_additive_length_coefficient 100
 		max_coverage			1000000.0
 		max_relative_coverage		100000.		; bulge_cov < this * not_bulge_cov
 		max_delta			3
@@ -274,4 +274,62 @@ diploid_simp
 		max_delta			3
 		max_relative_delta		0.1
 	}
+}
+
+meta
+{
+	; erroneous connections remover:
+	ec
+	{
+       ; ec_lb: max_ec_length = k + ec_lb
+       ; icb: iterative coverage bound
+       ; condition               "{ ec_lb 30, icb 20.0 }"
+       condition               "{ ec_lb 30, icb 3.5 }"
+	}
+	
+	; relative coverage erroneous component remover:
+	rcc
+	{
+        enabled true
+        coverage_gap    20.
+        max_length_coeff    2.0
+        max_length_with_tips_coeff   3.0
+        max_vertex_cnt      30
+        max_ec_length_coefficient   30
+        max_coverage_coeff  5.0
+	}
+
+	; bulge remover:
+	br
+	{
+		enabled				true
+		max_bulge_length_coefficient	3.		; max_bulge_length = max_bulge_length_coefficient * k
+       	max_additive_length_coefficient 100
+		max_coverage			1000000.0
+		max_relative_coverage		0.5		; bulge_cov < this * not_bulge_cov
+		max_delta			10
+		max_relative_delta		0.1
+	}
+	
+	; final tip clipper:
+	final_tc
+	{
+        ; rctc: tip_cov < rctc * not_tip_cov
+        ; tc_lb: max_tip_length = max((min(k, read_length / 2) * tc_lb), read_length);
+        condition               "{ tc_lb 30, cb 20, rctc 0.5 }"
+	}
+
+	; final bulge remover:
+	final_br
+	{
+		enabled				true
+		max_bulge_length_coefficient	50.		; max_bulge_length = max_bulge_length_coefficient * k
+       	max_additive_length_coefficient 100
+		max_coverage			1000000.0
+		max_relative_coverage		0.5		; bulge_cov < this * not_bulge_cov
+		max_delta			1500
+		max_relative_delta		0.1
+	}
+
+    fast_features false
 }

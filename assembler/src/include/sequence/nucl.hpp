@@ -84,8 +84,7 @@ struct nucl_complement_functor { // still unused
 };
 
 inline char nucl_complement(char c){
-    // TODO: deal with 'N' case
-	//VERIFY(is_nucl(c));
+	VERIFY(is_nucl(c) || c == 'N');
 	return nucl_complement_map[(unsigned)c];
 }
 

@@ -322,7 +322,8 @@ public:
 };
 
 class PathCoverWeightCounter: public WeightCounter {
-
+	//fixme temporary solution, fix ASAP
+	static constexpr double CORRECTION_COEFF = 0.5;
 protected:
 
 	double singleThreshold;
@@ -349,6 +350,10 @@ protected:
 					pairedInfoLibrary.GetSingleThreshold() >= 0.0 ?
 							pairedInfoLibrary.GetSingleThreshold() :
 							singleThreshold;
+
+            threshold *= CORRECTION_COEFF;
+			TRACE("Threshold: " << threshold);
+
 			double singleWeight = libs_[libIndex]->CountPairedInfo(
 					path[iter->e_], e,
 					(int) path.LengthAt(iter->e_) + additionalGapLength);

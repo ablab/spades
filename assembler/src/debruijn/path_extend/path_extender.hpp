@@ -220,17 +220,12 @@ public:
 };
 
 class HammingGapJoiner: public GapJoiner {
-
-private:
-
+    const size_t PADDING_LENGTH = 10;
     double minGapScore_;
-
     int maxMustHaveOverlap_;
-
     int maxCanHaveOverlap_;
-
     int shortOverlap_;
-
+    int startOverlapSize_;
     //int noOverlapGap_;
 
     vector<size_t> DiffPos(const Sequence& s1, const Sequence& s2) const {
@@ -261,16 +256,19 @@ private:
 
 public:
 
+    //todo review parameters in usages
     HammingGapJoiner(const Graph& g,
             double minGapScore,
             int mustHaveOverlap,
             int canHaveOverlap,
-            int shortOverlap_):
+            int shortOverlap,
+            int startOverlapSize):
                 GapJoiner(g),
                 minGapScore_(minGapScore),
                 maxMustHaveOverlap_(mustHaveOverlap),
                 maxCanHaveOverlap_(canHaveOverlap),
-                shortOverlap_(shortOverlap_)
+                shortOverlap_(shortOverlap),
+                startOverlapSize_(startOverlapSize)
     {
     }
 
@@ -279,9 +277,10 @@ public:
             return initial_gap;
         }
 
-        int start = (int) g_.k();
+        int start = (int) g_.k() + min((int) min(g_.length(sink), g_.length(source)), startOverlapSize_);
+
         if (initial_gap < 0) {
-            start = (int) g_.k() + min( -initial_gap, (int) min(g_.length(sink), g_.length(source)));
+            start = (int) g_.k() + min(startOverlapSize_ - initial_gap, (int) min(g_.length(sink), g_.length(source)));
         }
 
         double max_score = minGapScore_;
@@ -320,7 +319,7 @@ public:
             }
             else {
                 DEBUG("Overlap is not found, initial gap: " << initial_gap << ", not changing.");
-                best_gap = initial_gap;
+                best_gap = max(initial_gap, int(g_.k() + PADDING_LENGTH));
             }
         }
         else {

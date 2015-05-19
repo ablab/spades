@@ -361,7 +361,7 @@ bool RemoveComplexBulges(
     size_t max_length = (size_t) ((double) g.k() * cbr_config.max_relative_length);
     size_t max_diff = cbr_config.max_length_difference;
     omnigraph::complex_br::ComplexBulgeRemover<Graph> complex_bulge_remover(
-        g, max_length, max_diff, "");
+        g, max_length, max_diff, cfg::get().output_saves + "/pics");
     return complex_bulge_remover.Run();
 }
 
@@ -814,13 +814,15 @@ void PostSimplification(conj_graph_pack& gp,
                                                  info,
                                                  iteration);
 
-        enable_flag |= ClipTips(gp.g, *iterators_holder.tip_smart_it(), cfg::get().simp.tc,
+        enable_flag |= ClipTips(gp.g, *iterators_holder.tip_smart_it(), 
+                                              cfg::get().main_iteration ? cfg::get().simp.final_tc : cfg::get().simp.tc,
                                               info,
                                               cfg::get().graph_read_corr.enable ?
                                                       WrapWithProjectionCallback(gp, removal_handler) : removal_handler);
 
-        enable_flag |= RemoveBulges(gp.g, *iterators_holder.bulge_smart_it(), cfg::get().simp.br, 
-           (std::function<void(EdgeId, const std::vector<EdgeId> &)>)0, removal_handler);
+        enable_flag |= RemoveBulges(gp.g, *iterators_holder.bulge_smart_it(), 
+                            cfg::get().main_iteration ? cfg::get().simp.final_br : cfg::get().simp.br, 
+                            (std::function<void(EdgeId, const std::vector<EdgeId> &)>)0, removal_handler);
 
         enable_flag |= RemoveComplexBulges(gp.g, cfg::get().simp.cbr, iteration);
 
@@ -888,7 +890,10 @@ void SimplificationCycle(conj_graph_pack& gp,
 
 inline bool CorrectedFastMode(const SimplifInfoContainer& info) {
     const auto& cfg = cfg::get();
-
+    if (cfg.ds.meta) {
+        //use what is stated in config
+        return cfg.simp.fast_features;
+    }
     if (math::eq(info.detected_mean_coverage(), 0.) &&
         !cfg.kcm.use_coverage_threshold) {
         WARN("Mean coverage wasn't reliably estimated");
@@ -909,7 +914,8 @@ inline bool CorrectedFastMode(const SimplifInfoContainer& info) {
 inline
 void SimplifyGraph(conj_graph_pack &gp,
                    std::function<void(EdgeId)> removal_handler,
-                   stats::detail_info_printer& printer, size_t iteration_count) {
+                   stats::detail_info_printer& printer, size_t iteration_count,
+                   bool preliminary = false) {
     printer(ipp_before_simplification);
     INFO("Graph simplification started");
 
@@ -942,7 +948,11 @@ void SimplifyGraph(conj_graph_pack &gp,
         SimplificationCycle(gp, info_container, removal_handler, printer, iterators_holder);
     }
 
-    PostSimplification(gp, info_container, removal_handler, printer);
+    if (!preliminary) {
+        PostSimplification(gp, info_container, removal_handler, printer);
+    } else {
+        INFO("Preliminary mode; PostSimplification disabled");
+    }
 }
 
 }

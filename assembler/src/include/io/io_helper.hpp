@@ -9,7 +9,6 @@
 #include "multifile_reader.hpp"
 #include "converting_reader_wrapper.hpp"
 #include "careful_filtering_reader_wrapper.hpp"
-#include "splitting_wrapper.hpp"
 #include "rc_reader_wrapper.hpp"
 
 namespace io {
@@ -65,14 +64,10 @@ namespace io {
     }
     
     inline SingleStreamPtr EasyStream(const std::string& filename, bool followed_by_rc,
-                                      OffsetType offset_type = PhredOffset, bool split = false) {
+                                      bool handle_Ns = true, OffsetType offset_type = PhredOffset) {
         SingleStreamPtr reader = make_shared<FileReadStream>(filename, offset_type);
-        if (split) {
-            reader = SplittingWrap(reader);
-        } else {
-            reader = std::shared_ptr<CarefulFilteringWrapper<SingleRead>>(
-                    new CarefulFilteringWrapper<SingleRead>(reader));
-            //reader = make_shared<CarefulFilteringWrapper<SingleRead>>(reader, false, LibraryOrientation::Undefined);
+        if (handle_Ns) {
+            reader = CarefulFilteringWrap<SingleRead>(reader);
         }
         if (followed_by_rc) {
             reader = RCWrap<SingleRead>(reader);

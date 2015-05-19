@@ -117,7 +117,7 @@ template<class gp_t>
 void FillPosWithRC(gp_t& gp, const string& contig_file, string prefix) {
     //  typedef typename gp_t::Graph::EdgeId EdgeId;
     INFO("Threading large contigs");
-    auto irs = io::EasyStream(contig_file, true, io::OffsetType::UnknownOffset, true);
+    auto irs = io::EasyStream(contig_file, true);
     while(!irs->eof()) {
         io::SingleRead read;
         (*irs) >> read;

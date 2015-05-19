@@ -17,6 +17,7 @@
 #include "simplification.hpp"
 #include "mismatch_correction.hpp"
 #include "pair_info_count.hpp"
+#include "pair_info_remover.hpp"
 #include "repeat_resolving.hpp"
 #include "distance_estimation.hpp"
 #include "pacbio_aligning.hpp"
@@ -32,9 +33,13 @@ void assemble_genome() {
                           cfg::get().load_from,
                           cfg::get().output_saves});
 
+    size_t read_index_cnt = cfg::get().ds.reads.lib_count();
+    if (cfg::get().two_step_rr)
+        read_index_cnt++;
+
     debruijn_graph::conj_graph_pack conj_gp(cfg::get().K,
                                             cfg::get().tmp_dir,
-                                            cfg::get().ds.reads.lib_count(),
+                                            read_index_cnt,
                                             cfg::get().ds.reference_genome,
                                             cfg::get().flanking_range,
                                             cfg::get().pos.max_mapping_gap,
@@ -44,19 +49,36 @@ void assemble_genome() {
         INFO("Will need read mapping, kmer mapper will be attached");
         conj_gp.kmer_mapper.Attach();
     }
-    
     // Build the pipeline
     SPAdes.add(new debruijn_graph::Construction());
     SPAdes.add(new debruijn_graph::GenomicInfoFiller());
     if (cfg::get().gap_closer_enable && cfg::get().gc.before_simplify)
         SPAdes.add(new debruijn_graph::GapClosing("early_gapcloser"));
-    SPAdes.add(new debruijn_graph::Simplification());
+
+    bool two_step_rr = cfg::get().two_step_rr && cfg::get().rr_enable;
+    INFO("Two-step RR enabled: " << two_step_rr);
+
+    SPAdes.add(new debruijn_graph::Simplification(two_step_rr));
+
     if (cfg::get().gap_closer_enable && cfg::get().gc.after_simplify)
         SPAdes.add(new debruijn_graph::GapClosing("late_gapcloser"));
+
     SPAdes.add(new debruijn_graph::SimplificationCleanup());
     if (cfg::get().correct_mismatches)
         SPAdes.add(new debruijn_graph::MismatchCorrection());
     if (cfg::get().rr_enable) {
+        if (two_step_rr) {
+            //will be enabled in the end of "PairInfoRemover"
+            VERIFY(cfg::get().pe_params.param_set.remove_overlaps);
+            cfg::get_writable().pe_params.param_set.remove_overlaps = false;
+            SPAdes.add(new debruijn_graph::PairInfoCount(true));
+            SPAdes.add(new debruijn_graph::DistanceEstimation(true));
+            SPAdes.add(new debruijn_graph::RepeatResolution(true));
+            SPAdes.add(new debruijn_graph::PairInfoRemover());
+            SPAdes.add(new debruijn_graph::Simplification());
+        }
+
+        //begin pacbio
         bool run_pacbio = false;
         for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
             if (cfg::get().ds.reads[i].is_pacbio_alignable()) {
@@ -65,8 +87,12 @@ void assemble_genome() {
             }
         }
         if (run_pacbio) {
+			//currently not integrated with two step rr process
+			VERIFY(!two_step_rr);
             SPAdes.add(new debruijn_graph::PacBioAligning());
         }
+        //end pacbio
+
         SPAdes.add(new debruijn_graph::PairInfoCount());
         SPAdes.add(new debruijn_graph::DistanceEstimation());
         SPAdes.add(new debruijn_graph::RepeatResolution());

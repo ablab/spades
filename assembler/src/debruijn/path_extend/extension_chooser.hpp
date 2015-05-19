@@ -378,6 +378,7 @@ public:
 
 
 class ScaffoldingExtensionChooser : public ExtensionChooser {
+    static const size_t IS_SCATTER = 1000;
 
 public:
     ScaffoldingExtensionChooser(const Graph& g, WeightCounter * wc, double priority) :
@@ -385,11 +386,13 @@ public:
         cl_weight_threshold_(cfg::get().pe_params.param_set.scaffolder_options.cl_threshold) {
     }
 
-    void AddInfoFromEdge(const std::vector<int>& distances, const std::vector<double>& weights, std::vector<pair<int, double> >& histogram,
+    void AddInfoFromEdge(const std::vector<int>& distances, const std::vector<double>& weights, 
+                         std::vector<pair<int, double>>& histogram,
                          size_t len_to_path_end) {
         for (size_t l = 0; l < distances.size(); ++l) {
-            if (distances[l] > max(0, (int) len_to_path_end - (int) g_.k()) && weights[l] >= weight_threshold_) {
-                histogram.push_back(make_pair(distances[l] - len_to_path_end, weights[l]));
+            //todo do we need "max(0" here
+            if (distances[l] > max(0, (int) len_to_path_end - (int) IS_SCATTER) && weights[l] >= weight_threshold_) {
+                histogram.push_back(make_pair(distances[l] - (int) len_to_path_end, weights[l]));
             }
         }
     }
@@ -405,29 +408,27 @@ public:
         return (int) round(dist);
     }
 
-    void CountAvrgDists(BidirectionalPath& path, EdgeId e, std::vector<pair<int, double> > & histogram) {
-        std::vector<int> distances;
-        std::vector<double> weights;
+    void CountAvrgDists(BidirectionalPath& path, EdgeId e, std::vector<pair<int, double>> & histogram) {
         for (size_t j = 0; j < path.Size(); ++j) {
+            std::vector<int> distances;
+            std::vector<double> weights;
             wc_->GetDistances(path.At(j), e, distances, weights);
             if (distances.size() > 0) {
                 AddInfoFromEdge(distances, weights, histogram, path.LengthAt(j));
             }
-            distances.clear();
         }
     }
 
     void FindBestFittedEdgesForClustered(BidirectionalPath& path, const set<EdgeId>& edges, EdgeContainer& result) {
-        std::vector < pair<int, double> > histogram;
         for (EdgeId e : edges) {
-            histogram.clear();
+            std::vector<pair<int, double>> histogram;
             CountAvrgDists(path, e, histogram);
             double sum = 0.0;
             for (size_t j = 0; j < histogram.size(); ++j) {
                 sum += histogram[j].second;
             }
             if (sum <= cl_weight_threshold_) {
-                return;
+                continue;
             }
             int gap = CountMean(histogram);
             if (wc_->CountIdealInfo(path, e, gap) > 0.0) {
@@ -447,7 +448,7 @@ public:
         for (PairedInfoLibrary* lib : libs) {
             for (int i = (int) path.Size() - 1; i >= 0 && path.LengthAt(i) - g_.length(path.At(i)) <= lib->GetISMax(); --i) {
                 set<EdgeId> jump_edges_i;
-                lib->FindJumpEdges(path.At(i), jump_edges_i, (int)path.LengthAt(i) - (int)g_.k(), (int) (path.LengthAt(i) + lib->GetISMax()), 0);
+                lib->FindJumpEdges(path.At(i), jump_edges_i, std::max(0, (int)path.LengthAt(i) - (int)IS_SCATTER), (int) (path.LengthAt(i) + lib->GetISMax() + IS_SCATTER), 0);
                 for (EdgeId e : jump_edges_i) {
                     if (IsTip(e)) {
                         jumping_edges.insert(e);

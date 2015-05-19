@@ -12,8 +12,9 @@ namespace debruijn_graph {
 
 class DistanceEstimation : public spades::AssemblyStage {
   public:
-    DistanceEstimation()
-        : AssemblyStage("Distance Estimation", "distance_estimation") {}
+    DistanceEstimation(bool preliminary = false)
+        : AssemblyStage(preliminary ? "Preliminary Distance Estimation" : "Distance Estimation",
+                        preliminary ? "distance_estimation_preliminary" : "distance_estimation") {}
 
     void run(conj_graph_pack &gp, const char*);
 };

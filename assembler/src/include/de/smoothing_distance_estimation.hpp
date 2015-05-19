@@ -19,7 +19,7 @@ namespace de {
 
 template<class Graph>
 class SmoothingDistanceEstimator: public ExtensiveDistanceEstimator<Graph> {
-
+    static const size_t OVERLAP_TOLERANCE = 1000;
 protected:
   typedef ExtensiveDistanceEstimator<Graph> base;
   typedef typename base::InPairedIndex InPairedIndex;
@@ -94,7 +94,7 @@ private:
     for (auto I = raw_hist.begin(), E = raw_hist.end(); I != E; ++I) {
       Point p = *I;
       if (math::ge(2 * (long) rounded_d(p) + (long) second_len, (long) first_len))
-        if ((long) rounded_d(p) >= (long) first_len)
+        if ((long) rounded_d(p) + OVERLAP_TOLERANCE >= (long) first_len)
           data.insert(p);
     }
     EstimHist result;

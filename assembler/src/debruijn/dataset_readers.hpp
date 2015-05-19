@@ -31,23 +31,33 @@ io::PairedStreamPtr paired_easy_reader(const io::SequencingLibrary<debruijn_conf
 }
 
 inline
-io::SingleStreamPtr single_easy_reader(const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
+io::ReadStreamList<io::SingleRead> single_easy_readers(const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
                                        bool followed_by_rc,
                                        bool including_paired_reads,
+                                       bool handle_Ns = true,
                                        io::OffsetType offset_type = io::PhredOffset) {
   io::ReadStreamList<io::SingleRead> streams;
   if (including_paired_reads) {
     for (auto it = lib.reads_begin(); it != lib.reads_end(); ++it) {
       //do we need input_file function here?
-      streams.push_back(io::EasyStream(*it, followed_by_rc, offset_type));
+      streams.push_back(io::EasyStream(*it, followed_by_rc, handle_Ns, offset_type));
     }
   } else {
     for (auto it = lib.single_begin(); it != lib.single_end(); ++it) {
-      streams.push_back(io::EasyStream(*it, followed_by_rc, offset_type));
+      streams.push_back(io::EasyStream(*it, followed_by_rc, handle_Ns, offset_type));
     }
   }
+  return streams;
+}
 
-  return io::MultifileWrap<io::SingleRead>(streams);
+inline
+io::SingleStreamPtr single_easy_reader(const io::SequencingLibrary<debruijn_config::DataSetData> &lib,
+                                       bool followed_by_rc,
+                                       bool including_paired_reads,
+                                       bool handle_Ns = true,
+                                       io::OffsetType offset_type = io::PhredOffset) {
+  return io::MultifileWrap<io::SingleRead>(
+          single_easy_readers(lib, followed_by_rc, including_paired_reads, handle_Ns, offset_type));
 }
 
 inline

@@ -47,6 +47,7 @@ TMP_DIR = "tmp"
 output_dir = None
 single_cell = False
 iontorrent = False
+meta = False
 test_mode = False
 
 # pipeline options
@@ -99,7 +100,7 @@ restart_read_buffer_size = None
 dict_of_prefixes = dict()
 
 # list of spades.py options
-long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc iontorrent "\
+long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc iontorrent meta "\
                "only-error-correction only-assembler "\
                "disable-gzip-output disable-gzip-output:false disable-rr disable-rr:false " \
                "help test debug debug:false reference= config-file= dataset= "\
@@ -136,6 +137,7 @@ def usage(spades_version, show_hidden=False, dipspades=False):
     sys.stderr.write("-o\t<output_dir>\tdirectory to store all the resulting files (required)" + "\n")
     if not dipspades:
         sys.stderr.write("--sc\t\t\tthis flag is required for MDA (single-cell) data" + "\n")
+        sys.stderr.write("--meta\t\t\tthis flag is required for metagenomic sample data" + "\n")
     sys.stderr.write("--iontorrent\t\tthis flag is required for IonTorrent data" + "\n")
     sys.stderr.write("--test\t\t\truns SPAdes on toy dataset" + "\n")
     sys.stderr.write("-h/--help\t\tprints this usage message" + "\n")
@@ -260,8 +262,8 @@ def usage(spades_version, show_hidden=False, dipspades=False):
 
 
 def auto_K_allowed():
-    return not k_mers and not single_cell and not iontorrent # kmers were set by default, not SC, and not IonTorrent data
-
+    return not k_mers and not single_cell and not iontorrent and not meta 
+    # kmers were set by default, not SC, and not IonTorrent data, and not metagenomic
 
 def set_default_values():
     global threads
@@ -310,6 +312,7 @@ def set_test_options():
 
     output_dir = os.path.abspath('spades_test')
     single_cell = False
+    meta = False
     test_mode = True
 
 
@@ -318,6 +321,8 @@ def save_restart_options(log):
         support.error("you cannot specify --dataset with --restart-from option!", log)
     if single_cell:
         support.error("you cannot specify --sc with --restart-from option!", log)
+    if meta:
+        support.error("you cannot specify --meta with --restart-from option!", log)
     if iontorrent:
         support.error("you cannot specify --iontorrent with --restart-from option!", log)
     if only_assembler:
