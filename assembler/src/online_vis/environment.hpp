@@ -14,7 +14,7 @@
 namespace online_visualization {
 
 typedef debruijn_graph::NewExtendedSequenceMapper<debruijn_graph::Graph, Index> MapperClass;
-typedef debruijn_graph::PosFiller<Graph, MapperClass> FillerClass;
+typedef debruijn_graph::PosFiller<Graph> FillerClass;
 typedef debruijn_graph::KmerMapper<Graph> KmerMapperClass;
 typedef omnigraph::GraphElementFinder<Graph> ElementFinder;
 typedef shared_ptr<omnigraph::visualization::GraphColorer<Graph>> ColoringClass;
