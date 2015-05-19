@@ -106,11 +106,15 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
         : PairedInfoLibrary(k, g, readS, is, is_min, is_max, is_div, is_mp, is_distribution),
           index_(index) {}
 
+    static const bool is_unclustered_index = std::is_same<Index, omnigraph::de::UnclusteredPairedInfoIndexT<Graph>>::value;
+
     virtual size_t FindJumpEdges(EdgeId e, std::set<EdgeId>& result, int min_dist = 0, int max_dist = 100000000, size_t min_len = 0) {
         VERIFY(index_.Size() != 0);
+        VERIFY(!is_unclustered_index);
         result.clear();
 
-        const auto& infos = index_.GetEdgeInfo(e, 0);
+        //is 0 just some int here?!!!
+        const auto infos = index_.GetEdgeInfo(e, 0);
         // We do not care about iteration order here - all the edges collected
         // will be inside std::set<EdgeId>
         for (const auto& it : infos) {
