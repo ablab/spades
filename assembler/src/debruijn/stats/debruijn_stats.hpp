@@ -61,11 +61,11 @@ template <class graph_pack>
 void CollectContigPositions(graph_pack &gp) {
     if (!cfg::get().pos.contigs_for_threading.empty() &&
         path::FileExists(cfg::get().pos.contigs_for_threading))
-      FillPosWithRC(gp, cfg::get().pos.contigs_for_threading, "thr_");
+      FillPos(gp, cfg::get().pos.contigs_for_threading, "thr_", true);
 
     if (!cfg::get().pos.contigs_to_analyze.empty() &&
         path::FileExists(cfg::get().pos.contigs_to_analyze))
-      FillPosWithRC(gp, cfg::get().pos.contigs_to_analyze, "anlz_");
+      FillPos(gp, cfg::get().pos.contigs_to_analyze, "anlz_", true);
 }
 
 template<class Graph, class Index>
