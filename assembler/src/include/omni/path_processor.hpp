@@ -16,7 +16,7 @@ const string PrintPath(Graph& g, const vector<typename Graph::EdgeId>& edges) {
 	string delim = "";
 	std::stringstream ss;
 	for (size_t i = 0; i < edges.size(); ++i) {
-		ss << delim << g.str(edges[i]) << " (" << g.length(edges[i]) << ")";
+		ss << delim << g.str(edges[i]);
 		delim = " -> ";
 	}
 	return ss.str();
