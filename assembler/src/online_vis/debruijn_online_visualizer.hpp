@@ -29,6 +29,7 @@ class DebruijnOnlineVisualizer : public OnlineVisualizer<DebruijnEnvironment> {
     AddCommand(make_shared<DrawPartOfGenomeCommand>());
     AddCommand(make_shared<DrawContigCommand>());
     AddCommand(make_shared<DrawContigsCommand>());
+    AddCommand(make_shared<DrawPolymorphicRegions>());
     AddCommand(make_shared<DrawPoorlyAssembledCommand>());
     AddCommand(make_shared<DrawUnresolvedWRTAssemblyCommand>());
     AddCommand(make_shared<DrawUnresolvedWRTReferenceCommand>());

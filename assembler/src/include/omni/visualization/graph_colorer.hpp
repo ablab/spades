@@ -243,27 +243,28 @@ private:
     const ElementColorer<typename Graph::EdgeId> &edge_colorer_;
     const string sink_color_;
     const string source_color_;
+    const string sinksource_color_;
 public:
 
     SinkSourceDecorator(const GraphComponent<Graph> &component,
-            const GraphColorer<Graph> &colorer, const string &sink_color = "red", const string &source_color = "orange") :
-            component_(component), vertex_colorer_(colorer), edge_colorer_(colorer), sink_color_(sink_color), source_color_(source_color) {
+            const GraphColorer<Graph> &colorer, const string &sink_color = "red", const string &source_color = "orange", const string &sinksource_color = "green") :
+            component_(component), vertex_colorer_(colorer), edge_colorer_(colorer), sink_color_(sink_color), source_color_(source_color), sinksource_color_(sinksource_color)  {
     }
 
     string GetValue(VertexId v) const {
-        if(component_.isSink(v)) {
+        if(component_.isSink(v) && !component_.isSource(v)) {
             return sink_color_;
-        } else
-        {
-            if(component_.isSource(v))
-            {
-                return source_color_;
-            }
-            else
-            {
-                return vertex_colorer_.GetValue(v);
-            }
         }
+        if(component_.isSource(v) && !component_.isSink(v))
+        {
+            return source_color_;
+        }
+        if(component_.isSource(v) && component_.isSink(v))
+        {
+            return sinksource_color_;
+        }
+
+        return vertex_colorer_.GetValue(v);
     }
 
     string GetValue(EdgeId e) const {

@@ -13,11 +13,11 @@
 #include "drawing_commands/draw_contig_command.hpp"
 #include "drawing_commands/draw_poorly_assembled.hpp"
 #include "drawing_commands/draw_connected_command.hpp"
-
 #include "environment.hpp"
 #include "command.hpp"
 #include "errors.hpp"
 #include "argument_list.hpp"
+#include "drawing_commands/draw_polymorphic_regions.hpp"
 
 namespace online_visualization {
 
