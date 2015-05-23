@@ -43,7 +43,7 @@ def prepare_config_spades(filename, cfg, log, additional_contigs_fname, K, stage
 #    subst_dict["topology_simplif_enabled"] = bool_to_str(last_one)
     subst_dict["max_threads"] = cfg.max_threads
     subst_dict["max_memory"] = cfg.max_memory
-    subst_dict["correct_mismatches"] = bool_to_str(last_one)
+#    subst_dict["correct_mismatches"] = bool_to_str(last_one)
     if "resolving_mode" in cfg.__dict__:
         subst_dict["resolving_mode"] = cfg.resolving_mode
     if "careful" in cfg.__dict__:
