@@ -301,6 +301,8 @@ struct debruijn_config {
             std::string ec_condition;
         };
 
+        size_t cycle_iter_count;
+        bool post_simplif_enabled;
         bool topology_simplif_enabled;
         tip_clipper tc;
         topology_tip_clipper ttc;
@@ -342,6 +344,7 @@ struct debruijn_config {
     bool need_consensus;
     double mismatch_ratio;
     simplification simp;
+    simplification preliminary_simp;
     
     struct sensitive_mapper {
         size_t k;

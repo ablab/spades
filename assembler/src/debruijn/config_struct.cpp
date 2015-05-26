@@ -435,6 +435,8 @@ void load(debruijn_config::simplification& simp,
           boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
 
+  load(simp.cycle_iter_count, pt, "cycle_iter_count", complete);
+  load(simp.post_simplif_enabled, pt, "post_simplif_enabled", complete);
   load(simp.topology_simplif_enabled, pt, "topology_simplif_enabled", complete);
   load(simp.tc, pt, "tc", complete); // tip clipper:
   load(simp.ttc, pt, "ttc", complete); // topology tip clipper:
@@ -457,7 +459,7 @@ void load(debruijn_config::simplification& simp,
 
   simp.final_tc = simp.tc; // final tip clipper:
   load(simp.final_tc, pt, "final_tc", false);
-  simp.final_br = simp.br; // final bulge remover:
+  //final bulge removers:
   load(simp.final_br, pt, "final_br", false);
 }
 
@@ -702,6 +704,8 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   if (cfg.ds.meta)
     load(cfg.simp, pt, "meta", false);
 
+  cfg.preliminary_simp = cfg.simp;
+  load(cfg.preliminary_simp, pt, "preliminary", false);
 }
 
 void load(debruijn_config& cfg, const std::string &filename) {

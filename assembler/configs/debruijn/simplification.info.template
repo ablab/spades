@@ -2,6 +2,12 @@
 
 default
 {
+    ; number of iterations in basic simplification cycle
+    cycle_iter_count 10
+
+    ; enable advanced simplification algo
+    post_simplif_enabled true
+    
     ; enable advanced ec removal algo
     topology_simplif_enabled false
     
@@ -263,6 +269,8 @@ careful
 
 diploid_simp
 {
+    post_simplif_enabled false
+
 	; bulge remover:
 	br
 	{
@@ -278,13 +286,15 @@ diploid_simp
 
 meta
 {
+    cycle_iter_count 3
+
 	; erroneous connections remover:
 	ec
 	{
        ; ec_lb: max_ec_length = k + ec_lb
        ; icb: iterative coverage bound
        ; condition               "{ ec_lb 30, icb 20.0 }"
-       condition               "{ ec_lb 30, icb 3.5 }"
+       condition               "{ ec_lb 30, icb 2.0 }"
 	}
 	
 	; relative coverage erroneous component remover:
@@ -306,11 +316,11 @@ meta
 		max_bulge_length_coefficient	3.		; max_bulge_length = max_bulge_length_coefficient * k
        	max_additive_length_coefficient 100
 		max_coverage			1000000.0
-		max_relative_coverage		0.5		; bulge_cov < this * not_bulge_cov
-		max_delta			10
+		max_relative_coverage		100000.		; bulge_cov < this * not_bulge_cov
+		max_delta			300
 		max_relative_delta		0.1
 	}
-	
+
 	; final tip clipper:
 	final_tc
 	{
@@ -332,4 +342,23 @@ meta
 	}
 
     fast_features false
+}
+
+preliminary
+{
+    post_simplif_enabled false
+
+	; bulge remover:
+	br
+	{
+		enabled				true
+		max_bulge_length_coefficient	3.		; max_bulge_length = max_bulge_length_coefficient * k
+       	max_additive_length_coefficient 100
+		max_coverage			1000000.0
+		max_relative_coverage		0.5		; bulge_cov < this * not_bulge_cov
+		max_delta			10
+		max_relative_delta		0.1
+	}
+	
+    fast_features true
 }
