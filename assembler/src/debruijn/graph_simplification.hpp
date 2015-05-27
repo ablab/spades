@@ -361,7 +361,7 @@ bool RemoveComplexBulges(
     size_t max_length = (size_t) ((double) g.k() * cbr_config.max_relative_length);
     size_t max_diff = cbr_config.max_length_difference;
     omnigraph::complex_br::ComplexBulgeRemover<Graph> complex_bulge_remover(
-        g, max_length, max_diff, cfg::get().output_saves + "/pics");
+        g, max_length, max_diff);
     return complex_bulge_remover.Run();
 }
 
