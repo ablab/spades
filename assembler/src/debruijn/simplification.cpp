@@ -51,7 +51,9 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
     //todo fix ugly logic
     simplif_cfg.fast_features = debruijn::simplification::CorrectedFastMode(info_container, simplif_cfg);
 
-    debruijn::simplification::SimplifyGraph(gp, info_container, simplif_cfg, 0/*removal_handler_f*/, printer);
+//    debruijn::simplification::SimplifyGraph(gp, info_container, simplif_cfg, 0/*removal_handler_f*/, printer);
+    debruijn::simplification::GraphSimplifier simplifier(gp, info_container, simplif_cfg, 0/*removal_handler_f*/, printer);
+    simplifier.SimplifyGraph();
 
     AvgCovereageCounter<Graph> cov_counter(gp.g);
     cfg::get_writable().ds.set_avg_coverage(cov_counter.Count());
