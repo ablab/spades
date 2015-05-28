@@ -327,7 +327,8 @@ inline SimpleExtender * MakePEExtender(const conj_graph_pack& gp, const GraphCov
     return new SimpleExtender(gp, cov_map, extension, lib->GetISMax(), pset.loop_removal.max_loops, investigate_loops, false);
 }
 
-inline PathExtender * MakeScaffoldingExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
+//todo make return shared_ptr
+inline PathExtender* MakeScaffoldingExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
                                        size_t lib_index, const pe_config::ParamSetT& pset) {
 
 
@@ -335,13 +336,13 @@ inline PathExtender * MakeScaffoldingExtender(const conj_graph_pack& gp, const G
 
     WeightCounter* counter = new ReadCountWeightCounter(gp.g, lib);
     double prior_coef = GetPriorityCoeff(lib, pset);
-    ScaffoldingExtensionChooser * scaff_chooser = new ScaffoldingExtensionChooser(gp.g, counter, prior_coef);
+    auto scaff_chooser = std::make_shared<ScaffoldingExtensionChooser>(gp.g, counter, prior_coef);
     //fixme review parameters
-    GapJoiner * gapJoiner = new HammingGapJoiner(gp.g, pset.scaffolder_options.min_gap_score,
+    auto gap_joiner = std::make_shared<HammingGapJoiner>(gp.g, pset.scaffolder_options.min_gap_score,
                                                  (int) (pset.scaffolder_options.max_must_overlap * (double) gp.g.k()),
                                                  (int) (pset.scaffolder_options.max_can_overlap * (double) gp.g.k()), pset.scaffolder_options.short_overlap,
-                                                 (int) cfg::get().ds.RL());
-    return new ScaffoldingPathExtender(gp, cov_map, scaff_chooser, gapJoiner, lib->GetISMax(), pset.loop_removal.max_loops, false);
+                                                 (int) cfg::get().ds.RL(), pset.scaffolder_options.artificial_gap);
+    return new ScaffoldingPathExtender(gp, cov_map, scaff_chooser, gap_joiner, lib->GetISMax(), pset.loop_removal.max_loops, false);
 }
 
 inline SimpleExtender * MakeMPExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, const PathContainer& paths,

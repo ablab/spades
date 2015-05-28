@@ -118,7 +118,7 @@ struct pe_config {
       double max_must_overlap;
       double max_can_overlap;
       int short_overlap;
-      int artificial_gap;
+      size_t artificial_gap;
     } scaffolder_options;
 
 

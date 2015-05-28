@@ -87,7 +87,7 @@ public:
     }
 
 protected:
-    DECL_LOGGER("ExtensionChooser")
+    DECL_LOGGER("PathAnalyzer")
 };
 
 
