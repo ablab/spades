@@ -338,10 +338,13 @@ inline PathExtender* MakeScaffoldingExtender(const conj_graph_pack& gp, const Gr
     double prior_coef = GetPriorityCoeff(lib, pset);
     auto scaff_chooser = std::make_shared<ScaffoldingExtensionChooser>(gp.g, counter, prior_coef);
     //fixme review parameters
+    double var_coeff = 3.0;
     auto gap_joiner = std::make_shared<HammingGapJoiner>(gp.g, pset.scaffolder_options.min_gap_score,
-                                                 (int) (pset.scaffolder_options.max_must_overlap * (double) gp.g.k()),
-                                                 (int) (pset.scaffolder_options.max_can_overlap * (double) gp.g.k()), pset.scaffolder_options.short_overlap,
-                                                 (int) cfg::get().ds.RL(), pset.scaffolder_options.artificial_gap);
+                                                 /*(int) (pset.scaffolder_options.max_must_overlap * (double) gp.g.k())*/
+                                                 int(math::round(gp.g.k() - var_coeff * lib->GetIsVar())),
+                                                 (int) (pset.scaffolder_options.max_can_overlap * (double) gp.g.k()),
+                                                 pset.scaffolder_options.short_overlap,
+                                                 (int) 2 * cfg::get().ds.RL(), pset.scaffolder_options.artificial_gap);
     return new ScaffoldingPathExtender(gp, cov_map, scaff_chooser, gap_joiner, lib->GetISMax(), pset.loop_removal.max_loops, false);
 }
 

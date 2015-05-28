@@ -226,7 +226,6 @@ class HammingGapJoiner: public GapJoiner {
     const size_t short_overlap_threshold_;
     const size_t basic_overlap_length_;
     const size_t artificial_gap_;
-    //int noOverlapGap_;
 
     vector<size_t> DiffPos(const Sequence& s1, const Sequence& s2) const {
         VERIFY(s1.size() == s2.size());
@@ -270,7 +269,7 @@ public:
                 basic_overlap_length_(basic_overlap_length),
                 artificial_gap_(artificial_gap)
     {
-        DEBUG("min_gap_score " << min_gap_score_ <<
+        DEBUG("HammingGapJoiner params: \n min_gap_score " << min_gap_score_ <<
               "\n must_overlap_threshold " << must_overlap_threshold_ <<
               "\n may_overlap_threshold " << may_overlap_threshold_ <<
               "\n short_overlap_threshold " << short_overlap_threshold_ <<
@@ -295,6 +294,8 @@ public:
 
         corrected_start_overlap = min(corrected_start_overlap,
                                       g_.k() + min(g_.length(sink), g_.length(source)));
+
+        DEBUG("Corrected max overlap " << corrected_start_overlap);
 
         double best_score = min_gap_score_;
         int fixed_gap = INVALID_GAP;
@@ -323,7 +324,7 @@ public:
         } else {
             //couldn't find decent overlap
             if (estimated_gap < must_overlap_threshold_) {
-                DEBUG("Estimated gap looks unrealiable");
+                DEBUG("Estimated gap looks unreliable");
                 return INVALID_GAP;
             } else {
                 DEBUG("Overlap was not found");

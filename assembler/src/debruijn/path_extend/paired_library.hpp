@@ -29,8 +29,10 @@ using omnigraph::de::Point;
 
 namespace path_extend {
 
+//todo rename is_div
 struct PairedInfoLibrary {
-    PairedInfoLibrary(size_t k, const Graph& g, size_t readS, size_t is, size_t is_min, size_t is_max, size_t is_div,
+    PairedInfoLibrary(size_t k, const Graph& g, size_t readS, size_t is,
+                      size_t is_min, size_t is_max, size_t is_div,
                       bool is_mp,
                       const std::map<int, size_t>& is_distribution)
             : g_(g),
