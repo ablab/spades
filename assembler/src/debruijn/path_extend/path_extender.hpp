@@ -16,6 +16,7 @@
 #include "pe_utils.hpp"
 #include "extension_chooser.hpp"
 #include "path_filter.hpp"
+#include <cmath>
 
 namespace path_extend {
 
@@ -247,8 +248,20 @@ class HammingGapJoiner: public GapJoiner {
         return dist;
     }
 
-    double ScoreGap(const Sequence& s1, const Sequence& s2, int gap, int initial_gap) const {
-        return 1.0 - (double) HammingDistance(s1, s2) / (double) s1.size() - (double) abs(gap - initial_gap) / (double) (2 * g_.k());
+//    double ScoreGap(const Sequence& s1, const Sequence& s2, int gap, int initial_gap) const {
+//        VERIFY(s1.size() == s2.size());
+//        return 1.0 - (double) HammingDistance(s1, s2) / (double) s1.size()
+//                - (double) abs(gap - initial_gap) / (double) (2 * g_.k());
+//    }
+
+    double ScoreGap(const Sequence& s1, const Sequence& s2) const {
+        static double match_prob = 0.9;
+        static double log_match_prob = log2(match_prob);
+        static double log_mismatch_prob = log2(1 - match_prob);
+        VERIFY(s1.size() == s2.size());
+        size_t n = s1.size();
+        size_t mismatches = HammingDistance(s1, s2);
+        return 2*n + (n - mismatches) * log_match_prob + mismatches * log_mismatch_prob;
     }
 
 public:
@@ -300,14 +313,18 @@ public:
         double best_score = min_gap_score_;
         int fixed_gap = INVALID_GAP;
 
-        for (size_t l = corrected_start_overlap; l > 0; --l) {
+        size_t estimated_overlap = g_.k() - estimated_gap;
+        double overlap_coeff = 0.3;
+        size_t min_overlap = max(size_t(math::round(overlap_coeff * estimated_overlap)), 1ul);
+        //todo better usage of estimated overlap
+        DEBUG("Min overlap " << min_overlap);
+
+        for (size_t l = corrected_start_overlap; l >= min_overlap; --l) {
             TRACE("Curr overlap " << l);
             TRACE("Sink: " << g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l).str());
             TRACE("Source: " << g_.EdgeNucls(source).Subseq(0, l));
             double score = ScoreGap(g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l),
-                                    g_.EdgeNucls(source).Subseq(0, l),
-                                    int(g_.k() - l),
-                                    estimated_gap);
+                                    g_.EdgeNucls(source).Subseq(0, l));
             TRACE("Score: " << score);
             if (math::gr(score, best_score)) {
                 best_score = score;
@@ -323,7 +340,8 @@ public:
 
         if (fixed_gap != INVALID_GAP) {
             DEBUG("Found candidate gap length with score " << best_score);
-            DEBUG("Initial: " << estimated_gap << ", new gap: " << fixed_gap);
+            DEBUG("Estimated gap: " << estimated_gap <<
+                  ", fixed gap: " << fixed_gap << " (overlap " << g_.k() - fixed_gap<< ")");
             return fixed_gap;
         } else {
             //couldn't find decent overlap
