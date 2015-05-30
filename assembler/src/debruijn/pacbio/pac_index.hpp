@@ -38,6 +38,8 @@ private:
     const static int short_edge_cutoff = 0;
     const static size_t min_cluster_size = 8;
     const static int max_similarity_distance = 500;
+    int good_follow = 0;
+    int bad_follow = 0;
     double compression_cutoff;
     double domination_cutoff;
     set<Sequence> banned_kmers;
@@ -65,7 +67,10 @@ public:
         //INFO(tmp_index.size());
         read_count = 0;
     }
+    ~PacBioMappingIndex(){
+        INFO("good/bad counts:" << good_follow << " " << bad_follow);
 
+    }
     void FillBannedKmers() {
         for (int i = 0; i < 4; i++) {
             auto base = nucl((unsigned char) i);
@@ -514,10 +519,26 @@ public:
         if (cur_color > 1) {
             auto iter = mapping_descr.begin();
             INFO("not evident clusters selection");
-	    for (int i = 0; i < len; i++, iter ++) {
-                 INFO(colors[i] <<" " << iter->str(g_));
-	    }
-	}
+            for (int i = 0; i < len; i++, iter ++) {
+                INFO(colors[i] <<" " << iter->str(g_));
+            }
+        }
+        vector<size_t> long_counts(cur_color);
+        i = 0;
+        for (auto i_iter = mapping_descr.begin(); i_iter != mapping_descr.end();
+                    ++i_iter, ++i) {
+            if (g_.length(i_iter->edgeId) > 500)
+                long_counts[colors[i]] ++;
+        }
+        int good_cl = 0;
+        for (size_t tmp_colors = 0; tmp_colors < cur_color; tmp_colors++) {
+            if (long_counts[tmp_colors] > 0) {
+                good_follow += long_counts[tmp_colors] - 1;
+                good_cl++;
+            }
+        }
+        if (good_cl > 0)
+            bad_follow += good_cl - 1;
         return colors;
     }
 
