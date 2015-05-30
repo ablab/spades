@@ -301,10 +301,14 @@ public:
         int fixed_gap = INVALID_GAP;
 
         for (size_t l = corrected_start_overlap; l > 0; --l) {
+            TRACE("Curr overlap " << l);
+            TRACE("Sink: " << g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l).str());
+            TRACE("Source: " << g_.EdgeNucls(source).Subseq(0, l));
             double score = ScoreGap(g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l),
                                     g_.EdgeNucls(source).Subseq(0, l),
                                     int(g_.k() - l),
                                     estimated_gap);
+            TRACE("Score: " << score);
             if (math::gr(score, best_score)) {
                 best_score = score;
                 fixed_gap = int(g_.k() - l);
