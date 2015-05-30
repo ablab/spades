@@ -698,7 +698,7 @@ class GraphSimplifier {
         INFO("Parallel mode");
         CountingCallback<Graph> cnt_callback;
 
-        HandlerF removal_handler = AddCountingCallback(cnt_callback, removal_handler);
+        HandlerF removal_handler = AddCountingCallback(cnt_callback, removal_handler_);
 
         ParallelClipTips(gp_.g, simplif_cfg_.presimp.tip_condition, info_container_,
                          removal_handler);
