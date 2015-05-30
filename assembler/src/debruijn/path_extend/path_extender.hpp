@@ -342,17 +342,17 @@ public:
             DEBUG("Found candidate gap length with score " << best_score);
             DEBUG("Estimated gap: " << estimated_gap <<
                   ", fixed gap: " << fixed_gap << " (overlap " << g_.k() - fixed_gap<< ")");
-            return fixed_gap;
         } else {
             //couldn't find decent overlap
             if (estimated_gap < must_overlap_threshold_) {
                 DEBUG("Estimated gap looks unreliable");
-                return INVALID_GAP;
             } else {
                 DEBUG("Overlap was not found");
-                return max(estimated_gap, int(g_.k() + artificial_gap_));
+                fixed_gap = max(estimated_gap, int(g_.k() + artificial_gap_));
             }
         }
+        DEBUG("Final fixed gap " << fixed_gap);
+        return fixed_gap;
     }
 
 private:
