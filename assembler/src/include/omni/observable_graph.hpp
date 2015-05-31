@@ -81,27 +81,27 @@ public:
    //smart iterators
    template<typename Comparator>
    SmartVertexIterator<ObservableGraph, Comparator> SmartVertexBegin(
-           const Comparator& comparator) const {
+           const Comparator& comparator, bool canonical_only = false) const {
        return SmartVertexIterator<ObservableGraph, Comparator>(*this,
-                                                               comparator);
+                                                               comparator, canonical_only);
    }
 
-   SmartVertexIterator<ObservableGraph> SmartVertexBegin() const {
-       return SmartVertexIterator<ObservableGraph>(*this);
+   SmartVertexIterator<ObservableGraph> SmartVertexBegin(bool canonical_only = false) const {
+       return SmartVertexIterator<ObservableGraph>(*this, canonical_only);
    }
 
    template<typename Comparator>
    SmartEdgeIterator<ObservableGraph, Comparator> SmartEdgeBegin(
-           const Comparator& comparator) const {
-       return SmartEdgeIterator<ObservableGraph, Comparator>(*this, comparator);
+           const Comparator& comparator, bool canonical_only = false) const {
+       return SmartEdgeIterator<ObservableGraph, Comparator>(*this, comparator, canonical_only);
    }
 
-   SmartEdgeIterator<ObservableGraph> SmartEdgeBegin() const {
-       return SmartEdgeIterator<ObservableGraph>(*this);
+   SmartEdgeIterator<ObservableGraph> SmartEdgeBegin(bool canonical_only = false) const {
+       return SmartEdgeIterator<ObservableGraph>(*this, canonical_only);
    }
 
-   ConstEdgeIterator<ObservableGraph> ConstEdgeBegin() const {
-       return ConstEdgeIterator<ObservableGraph>(*this);
+   ConstEdgeIterator<ObservableGraph> ConstEdgeBegin(bool canonical_only = false) const {
+       return ConstEdgeIterator<ObservableGraph>(*this, canonical_only);
    }
 
     void FireDeletePath(const std::vector<EdgeId>& edges_to_delete, const std::vector<VertexId>& vertices_to_delete) const;

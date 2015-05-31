@@ -9,7 +9,6 @@
 namespace omnigraph {
 
 /**
- * SmartIterator is abstract class which acts both as QueueIterator and GraphActionHandler. As QueueIterator
  * SmartIterator is able to iterate through collection content of which can be changed in process of
  * iteration. And as GraphActionHandler SmartIterator can change collection contents with respect to the
  * way graph is changed. Also one can define order of iteration by specifying Comparator.
@@ -19,27 +18,38 @@ class SmartIterator : public GraphActionHandler<Graph> {
     typedef GraphActionHandler<Graph> base;
     DynamicQueueIterator<ElementId, Comparator> inner_it_;
     bool add_new_;
+    bool canonical_only_;
 
 protected:
-    template<typename InputIterator>
-    void insert(InputIterator begin, InputIterator end) {
-        inner_it_.insert(begin, end);
-    }
 
     void push(const ElementId& el) {
-        inner_it_.push(el);
+        if (!canonical_only_ || el <= this->g().conjugate(el)) {
+            inner_it_.push(el);
+        }
+    }
+
+    template<typename InputIterator>
+    void insert(InputIterator begin, InputIterator end) {
+        for (auto it = begin; it != end; ++it) {
+            push(*it);
+        }
     }
 
     void erase(const ElementId& el) {
-        inner_it_.erase(el);
+        if (!canonical_only_ || el <= this->g().conjugate(el)) {
+            inner_it_.erase(el);
+        }
+    }
+
+    SmartIterator(const Graph &g, const string &name, bool add_new,
+                  const Comparator& comparator, bool canonical_only)
+            : base(g, name),
+              inner_it_(comparator),
+              add_new_(add_new),
+              canonical_only_(canonical_only) {
     }
 
 public:
-    SmartIterator(const Graph &graph, const string &name, bool add_new, const Comparator& comparator = Comparator())
-            : base(graph, name),
-              inner_it_(comparator),
-              add_new_(add_new) {
-    }
 
     virtual ~SmartIterator() {
     }
@@ -79,23 +89,23 @@ public:
  * way graph is changed. Also one can define order of iteration by specifying Comparator.
  */
 template<class Graph, typename ElementId,
-         typename Comparator = std::less<ElementId> >
+         typename Comparator = std::less<ElementId>>
 class SmartSetIterator : public SmartIterator<Graph, ElementId, Comparator> {
     typedef SmartIterator<Graph, ElementId, Comparator> base;
 
 public:
-    template<class Iterator>
-    SmartSetIterator(const Graph &graph, Iterator begin, Iterator end,
-                     const Comparator& comparator = Comparator())
-            : SmartIterator<Graph, ElementId, Comparator>(
-                graph, "SmartSet " + ToString(this), false, comparator) {
-        insert(begin, end);
+    SmartSetIterator(const Graph &g,
+                     const Comparator& comparator = Comparator(),
+                     bool canonical_only = false)
+            : base(g, "SmartSet " + ToString(this), false, comparator, canonical_only) {
     }
 
-    SmartSetIterator(const Graph &graph,
-                     const Comparator& comparator = Comparator())
-            : SmartIterator<Graph, ElementId, Comparator>(
-                graph, "SmartSet " + ToString(this), false, comparator) {
+    template<class Iterator>
+    SmartSetIterator(const Graph &g, Iterator begin, Iterator end,
+                     const Comparator& comparator = Comparator(),
+                     bool canonical_only = false)
+            : SmartSetIterator(g, comparator, canonical_only) {
+        insert(begin, end);
     }
 
     template<typename InputIterator>
@@ -179,10 +189,10 @@ class SmartVertexIterator : public SmartIterator<Graph,
 
   public:
     SmartVertexIterator(const Graph &g, const Comparator& comparator =
-                        Comparator())
+                        Comparator(), bool canonical_only = false)
             : SmartIterator<Graph, VertexId, Comparator>(
                 g, "SmartVertexIterator " + ToString(get_id()), true,
-                comparator) {
+                comparator, canonical_only) {
         this->insert(g.begin(), g.end());
     }
 
@@ -196,11 +206,18 @@ class GraphEdgeIterator : public boost::iterator_facade<GraphEdgeIterator<Graph>
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexIt const_vertex_iterator;
     typedef typename Graph::edge_const_iterator const_edge_iterator;
+
+    const Graph& g_;
+    const_vertex_iterator v_it_;
+    const_edge_iterator e_it_;
+    bool canonical_only_;
+
 public:
 
-    explicit GraphEdgeIterator(const Graph& g, const_vertex_iterator v_it)
+    GraphEdgeIterator(const Graph& g, const_vertex_iterator v_it, bool canonical_only = false)
             : g_(g),
-              v_it_(v_it) {
+              v_it_(v_it),
+              canonical_only_(canonical_only) {
         if (v_it_ != g_.end()) {
             e_it_ = g_.out_begin(*v_it_);
             Skip();
@@ -217,6 +234,11 @@ private:
             if (v_it_ == g_.end())
                 return;
             e_it_ = g_.out_begin(*v_it_);
+            if (canonical_only_) {
+                EdgeId e = *e_it_;
+                while (e_it_ != g_.out_end(*v_it_) && g_.conjugate(e) < e)
+                    e_it_++;
+            }
         }
     }
 
@@ -230,6 +252,8 @@ private:
     bool equal(const GraphEdgeIterator &other) const {
         if (other.v_it_ != v_it_)
             return false;
+        if (other.canonical_only_ != canonical_only_)
+            return false;
         if (v_it_ != g_.end() && other.e_it_ != e_it_)
             return false;
         return true;
@@ -240,9 +264,6 @@ private:
         return *e_it_;
     }
 
-    const Graph& g_;
-    const_vertex_iterator v_it_;
-    const_edge_iterator e_it_;
 };
 
 template<class Graph>
@@ -251,8 +272,8 @@ class ConstEdgeIterator {
     GraphEdgeIterator<Graph> begin_, end_;
 
   public:
-    ConstEdgeIterator(const Graph &g)
-            : begin_(g, g.begin()), end_(g, g.end()) {
+    ConstEdgeIterator(const Graph &g, bool canonical_only = false)
+            : begin_(g, g.begin(), canonical_only), end_(g, g.end(), canonical_only) {
     }
 
     bool IsEnd() const {
@@ -277,8 +298,7 @@ class ConstEdgeIterator {
  * event handlers.
  */
 template<class Graph, typename Comparator = std::less<typename Graph::EdgeId> >
-class SmartEdgeIterator : public SmartIterator<Graph, typename Graph::EdgeId,
-                                               Comparator> {
+class SmartEdgeIterator : public SmartIterator<Graph, typename Graph::EdgeId, Comparator> {
     typedef GraphEdgeIterator<Graph> EdgeIt;
   public:
     typedef typename Graph::EdgeId EdgeId;
@@ -290,11 +310,13 @@ class SmartEdgeIterator : public SmartIterator<Graph, typename Graph::EdgeId,
 
   public:
     //todo think of some parallel simplif problem O_o
-    SmartEdgeIterator(const Graph &g, Comparator comparator = Comparator())
+    SmartEdgeIterator(const Graph &g, Comparator comparator = Comparator(),
+                      bool canonical_only = false)
             : SmartIterator<Graph, EdgeId, Comparator>(
                 g, "SmartEdgeIterator " + ToString(get_id()), true,
-                comparator) {
+                comparator, canonical_only) {
         this->insert(EdgeIt(g, g.begin()), EdgeIt(g, g.end()));
+
 //        for (auto it = graph.begin(); it != graph.end(); ++it) {
 //            //todo: this solution doesn't work with parallel simplification
 //            this->insert(graph.out_begin(*it), graph.out_end(*it));
