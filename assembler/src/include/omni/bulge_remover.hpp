@@ -258,7 +258,7 @@ public:
 			double max_relative_delta,
 			BulgeCallbackF opt_callback = 0,
 			std::function<void(EdgeId)> removal_handler = 0) :
-			base(graph),
+			base(graph, true),
 			graph_(graph),
 			max_length_(max_length),
 			max_coverage_(max_coverage),

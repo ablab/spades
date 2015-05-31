@@ -54,6 +54,10 @@ public:
     virtual ~SmartIterator() {
     }
 
+    bool canonical_only() const {
+        return canonical_only_;
+    }
+
     bool IsEnd() const {
         return inner_it_.IsEnd();
     }

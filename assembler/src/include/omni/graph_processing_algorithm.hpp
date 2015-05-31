@@ -1,5 +1,6 @@
 #pragma once
 
+#include "logger/logger.hpp"
 #include "func.hpp"
 #include "graph_component.hpp"
 #include "coverage.hpp"
@@ -9,9 +10,10 @@ namespace omnigraph {
 template<class Graph>
 class EdgeProcessingAlgorithm {
     typedef typename Graph::EdgeId EdgeId;
-    typedef shared_ptr<func::Predicate<EdgeId>> ProceedConditionT;
+    typedef std::shared_ptr<func::Predicate<EdgeId>> ProceedConditionT;
 
     Graph& g_;
+    bool conjugate_symmetry_;
  protected:
 
     Graph& g() {
@@ -25,17 +27,22 @@ class EdgeProcessingAlgorithm {
     virtual bool ProcessEdge(EdgeId e) = 0;
 
  public:
-    EdgeProcessingAlgorithm(Graph& g)
-            : g_(g) {
+    EdgeProcessingAlgorithm(Graph& g, bool conjugate_symmetry = false)
+            : g_(g), conjugate_symmetry_(conjugate_symmetry) {
 
     }
 
     virtual ~EdgeProcessingAlgorithm() {
     }
 
+//    bool conjugate_symmetry() const {
+//        return conjugate_symmetry_;
+//    }
+
     template<class SmartEdgeIt>
     bool RunFromIterator(SmartEdgeIt& it,
-                 ProceedConditionT proceed_condition = make_shared<func::AlwaysTrue<EdgeId>>()) {
+                 ProceedConditionT proceed_condition = std::make_shared<func::AlwaysTrue<EdgeId>>()) {
+        VERIFY(!it.canonical_only || conjugate_symmetry_);
         TRACE("Start processing");
         bool triggered = false;
         for (; !it.IsEnd(); ++it) {
@@ -55,17 +62,15 @@ class EdgeProcessingAlgorithm {
         return triggered;
     }
 
-    //todo rename into Run
     template<class Comparator = std::less<EdgeId>>
-    bool Process(const Comparator& comp = Comparator(),
+    bool Run(const Comparator& comp = Comparator(),
                  ProceedConditionT proceed_condition = make_shared<func::AlwaysTrue<EdgeId>>()) {
-        auto it = g_.SmartEdgeBegin(comp);
+        auto it = g_.SmartEdgeBegin(comp, conjugate_symmetry_);
         return RunFromIterator(it, proceed_condition);
     }
 
  private:
-    DECL_LOGGER("EdgeProcessingAlgorithm")
-    ;
+    DECL_LOGGER("EdgeProcessingAlgorithm");
 };
 
 template<class Graph>
@@ -87,7 +92,7 @@ class EdgeRemover {
     HandlerF removal_handler_;
 
  public:
-    EdgeRemover(Graph& g, HandlerF removal_handler = 0)
+    EdgeRemover(Graph& g, HandlerF removal_handler = nullptr)
             : g_(g),
               removal_handler_(removal_handler) {
     }
@@ -123,8 +128,7 @@ class EdgeRemover {
     }
 
  private:
-    DECL_LOGGER("EdgeRemover")
-    ;
+    DECL_LOGGER("EdgeRemover");
 };
 
 template<class Graph>
@@ -151,16 +155,16 @@ class EdgeRemovingAlgorithm : public EdgeProcessingAlgorithm<Graph> {
     EdgeRemovingAlgorithm(
             Graph& g,
             shared_ptr<func::Predicate<EdgeId>> remove_condition,
-            std::function<void(EdgeId)> removal_handler = boost::none)
-            : base(g),
+            std::function<void (EdgeId)> removal_handler = boost::none,
+            bool conjugate_symmetry = false)
+            : base(g, conjugate_symmetry),
               remove_condition_(remove_condition),
               edge_remover_(g, removal_handler) {
 
     }
 
  private:
-    DECL_LOGGER("EdgeRemovingAlgorithm")
-    ;
+    DECL_LOGGER("EdgeRemovingAlgorithm");
 };
 
 //todo rewrite with SmartSetIterator
