@@ -42,7 +42,7 @@ class EdgeProcessingAlgorithm {
     template<class SmartEdgeIt>
     bool RunFromIterator(SmartEdgeIt& it,
                  ProceedConditionT proceed_condition = std::make_shared<func::AlwaysTrue<EdgeId>>()) {
-        VERIFY(!it.canonical_only || conjugate_symmetry_);
+        VERIFY(!it.canonical_only() || conjugate_symmetry_);
         TRACE("Start processing");
         bool triggered = false;
         for (; !it.IsEnd(); ++it) {

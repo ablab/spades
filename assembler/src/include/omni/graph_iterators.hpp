@@ -175,18 +175,25 @@ public:
     }
 
 private:
+    
+    bool Canonical(EdgeId e) const {
+        return e <= g_.conjugate(e);
+    }
+
     friend class boost::iterator_core_access;
 
     void Skip() {
         //VERIFY(v_it_ != g_.end());
-        while (e_it_ == g_.out_end(*v_it_)) {
-            v_it_++;
-            if (v_it_ == g_.end())
-                return;
-            e_it_ = g_.out_begin(*v_it_);
-            if (canonical_only_) {
-                EdgeId e = *e_it_;
-                while (e_it_ != g_.out_end(*v_it_) && g_.conjugate(e) < e)
+        while (true) {
+            if (e_it_ == g_.out_end(*v_it_)) {
+                v_it_++;
+                if (v_it_ == g_.end())
+                    return;
+                e_it_ = g_.out_begin(*v_it_);
+            } else {
+                if (!canonical_only_ || Canonical(*e_it_))
+                    return;
+                else
                     e_it_++;
             }
         }
@@ -202,9 +209,9 @@ private:
     bool equal(const GraphEdgeIterator &other) const {
         if (other.v_it_ != v_it_)
             return false;
-        if (other.canonical_only_ != canonical_only_)
-            return false;
         if (v_it_ != g_.end() && other.e_it_ != e_it_)
+            return false;
+        if (other.canonical_only_ != canonical_only_)
             return false;
         return true;
     }
