@@ -313,20 +313,23 @@ public:
         double best_score = min_gap_score_;
         int fixed_gap = INVALID_GAP;
 
-        size_t estimated_overlap = g_.k() - estimated_gap;
         double overlap_coeff = 0.3;
-        size_t min_overlap = max(size_t(math::round(overlap_coeff * estimated_overlap)), 1ul);
+        size_t min_overlap = 1ul;
+        if (estimated_gap < 0) {
+            size_t estimated_overlap = g_.k() - estimated_gap;
+            min_overlap = max(size_t(math::round(overlap_coeff * estimated_overlap)), 1ul);
+        }
         //todo better usage of estimated overlap
         DEBUG("Min overlap " << min_overlap);
 
         for (size_t l = corrected_start_overlap; l >= min_overlap; --l) {
-            TRACE("Curr overlap " << l);
-            TRACE("Sink: " << g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l).str());
-            TRACE("Source: " << g_.EdgeNucls(source).Subseq(0, l));
+            //TRACE("Sink: " << g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l).str());
+            //TRACE("Source: " << g_.EdgeNucls(source).Subseq(0, l));
             double score = ScoreGap(g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l),
                                     g_.EdgeNucls(source).Subseq(0, l));
-            TRACE("Score: " << score);
             if (math::gr(score, best_score)) {
+                TRACE("Curr overlap " << l);
+                TRACE("Score: " << score);
                 best_score = score;
                 fixed_gap = int(g_.k() - l);
             }
