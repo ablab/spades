@@ -1,5 +1,4 @@
-#ifndef __OMNI_GRAPH_ITERATORS_HPP__
-#define __OMNI_GRAPH_ITERATORS_HPP__
+#pragma once
 
 #include "adt/queue_iterator.hpp"
 #include "io/read_processor.hpp"
@@ -15,33 +14,62 @@ namespace omnigraph {
  * iteration. And as GraphActionHandler SmartIterator can change collection contents with respect to the
  * way graph is changed. Also one can define order of iteration by specifying Comparator.
  */
-template<class Graph, typename ElementId, typename Comparator = std::less<
-                                              ElementId> >
-class SmartIterator : public GraphActionHandler<Graph>, public QueueIterator<
-    ElementId, Comparator> {
-  public:
-    typedef typename Graph::VertexId VertexId;
-    typedef typename Graph::EdgeId EdgeId;
-  private:
+template<class Graph, typename ElementId, typename Comparator = std::less<ElementId>>
+class SmartIterator : public GraphActionHandler<Graph> {
+    typedef GraphActionHandler<Graph> base;
+    DynamicQueueIterator<ElementId, Comparator> inner_it_;
     bool add_new_;
-  public:
-    SmartIterator(const Graph &graph, const string &name, bool add_new,
-                  const Comparator& comparator = Comparator())
-            : GraphActionHandler<Graph>(graph, name),
-              QueueIterator<ElementId, Comparator>(comparator),
+
+protected:
+    template<typename InputIterator>
+    void insert(InputIterator begin, InputIterator end) {
+        inner_it_.insert(begin, end);
+    }
+
+    void push(const ElementId& el) {
+        inner_it_.push(el);
+    }
+
+    void erase(const ElementId& el) {
+        inner_it_.erase(el);
+    }
+
+public:
+    SmartIterator(const Graph &graph, const string &name, bool add_new, const Comparator& comparator = Comparator())
+            : base(graph, name),
+              inner_it_(comparator),
               add_new_(add_new) {
     }
 
-    virtual ~SmartIterator() {}
+    virtual ~SmartIterator() {
+    }
 
-    virtual void HandleAdd(ElementId v) {
+    bool IsEnd() const {
+        return inner_it_.IsEnd();
+    }
+
+    ElementId operator*() {
+        return *inner_it_;
+    }
+
+    void operator++() {
+        ++inner_it_;
+    }
+
+    void HandleAdd(ElementId v) override {
         if (add_new_)
-            this->push(v);
+            push(v);
     }
 
-    virtual void HandleDelete(ElementId v) {
-        this->erase(v);
+    void HandleDelete(ElementId v) override {
+        erase(v);
     }
+
+    //use carefully!
+    void ReleaseCurrent() {
+        inner_it_.ReleaseCurrent();
+    }
+
 };
 
 /**
@@ -53,16 +81,15 @@ class SmartIterator : public GraphActionHandler<Graph>, public QueueIterator<
 template<class Graph, typename ElementId,
          typename Comparator = std::less<ElementId> >
 class SmartSetIterator : public SmartIterator<Graph, ElementId, Comparator> {
-  public:
-    typedef typename Graph::VertexId VertexId;
-    typedef typename Graph::EdgeId EdgeId;
-  public:
+    typedef SmartIterator<Graph, ElementId, Comparator> base;
+
+public:
     template<class Iterator>
     SmartSetIterator(const Graph &graph, Iterator begin, Iterator end,
                      const Comparator& comparator = Comparator())
             : SmartIterator<Graph, ElementId, Comparator>(
                 graph, "SmartSet " + ToString(this), false, comparator) {
-        this->insert(begin, end);
+        insert(begin, end);
     }
 
     SmartSetIterator(const Graph &graph,
@@ -73,10 +100,9 @@ class SmartSetIterator : public SmartIterator<Graph, ElementId, Comparator> {
 
     template<typename InputIterator>
     void insert(InputIterator begin, InputIterator end) {
-        QueueIterator<ElementId, Comparator>::insert(begin, end);
+        base::insert(begin, end);
     }
 
-    virtual ~SmartSetIterator() {}
 };
 
 /*
@@ -90,7 +116,13 @@ class SmartSetIterator : public SmartIterator<Graph, ElementId, Comparator> {
  */
 template<class Graph, typename ElementId, class MergeHandler>
 class ConditionedSmartSetIterator : public SmartSetIterator<Graph, ElementId> {
+    typedef SmartSetIterator<Graph, ElementId> base;
+
+    MergeHandler &merge_handler_;
+    std::unordered_set<ElementId> true_elements_;
+
   public:
+
     template <class Iterator>
     ConditionedSmartSetIterator(const Graph &graph, Iterator begin, Iterator end,
                                 MergeHandler &merge_handler)
@@ -103,40 +135,27 @@ class ConditionedSmartSetIterator : public SmartSetIterator<Graph, ElementId> {
         }
     }
 
-    virtual ~ConditionedSmartSetIterator() {}
-
-    virtual void HandleAdd(ElementId v) {
+    void HandleAdd(ElementId v) override {
         TRACE("handleAdd " << this->g().str(v));
         if (true_elements_.count(v)) {
             this->push(v);
         }
     }
 
-    virtual void HandleDelete(ElementId v) {
+    void HandleDelete(ElementId v) override {
         TRACE("handleDel " << this->g().str(v));
-        super::HandleDelete(v);
+        base::HandleDelete(v);
         true_elements_.erase(v);
     }
 
-    virtual void HandleMerge(const std::vector<ElementId>& old_edges, ElementId new_edge) {
+    void HandleMerge(const std::vector<ElementId>& old_edges, ElementId new_edge) override {
         TRACE("handleMer " << this->g().str(new_edge));
         if (merge_handler_(old_edges, new_edge)) {
             true_elements_.insert(new_edge);
         }
     }
 
-    virtual void reset() {
-        TRACE("reset");
-        this->operator++();
-        this->insert(true_elements_.begin(), true_elements_.end());
-    }
-
-  private:
-    typedef SmartSetIterator<Graph, ElementId> super;
-
-    MergeHandler &merge_handler_;
-    std::unordered_set<ElementId> true_elements_;
-
+private:
     DECL_LOGGER("ConditionedSmartSetIterator");
 };
 
@@ -152,7 +171,6 @@ class SmartVertexIterator : public SmartIterator<Graph,
                                                  typename Graph::VertexId, Comparator> {
   public:
     typedef typename Graph::VertexId VertexId;
-    typedef typename Graph::EdgeId EdgeId;
 
     static size_t get_id() {
         static size_t id = 0;
@@ -160,60 +178,21 @@ class SmartVertexIterator : public SmartIterator<Graph,
     }
 
   public:
-    SmartVertexIterator(const Graph &graph, const Comparator& comparator =
+    SmartVertexIterator(const Graph &g, const Comparator& comparator =
                         Comparator())
             : SmartIterator<Graph, VertexId, Comparator>(
-                graph, "SmartVertexIterator " + ToString(get_id()), true,
+                g, "SmartVertexIterator " + ToString(get_id()), true,
                 comparator) {
-        this->insert(graph.begin(), graph.end());
+        this->insert(g.begin(), g.end());
     }
 
-    virtual ~SmartVertexIterator() {}
-};
-
-/**
- * SmartEdgeIterator iterates through edges of graph. It listens to AddEdge/DeleteEdge graph events
- * and correspondingly edits the set of edges to iterate through. Note: high level event handlers are
- * triggered before low level event handlers like HandleAdd/HandleDelete. Thus if Comparator uses certain
- * structure which is also updated with handlers make sure that all information is updated in high level
- * event handlers.
- */
-template<class Graph, typename Comparator = std::less<typename Graph::EdgeId> >
-class SmartEdgeIterator : public SmartIterator<Graph, typename Graph::EdgeId,
-                                               Comparator> {
-  public:
-    typedef QueueIterator<typename Graph::EdgeId, Comparator> base;
-    typedef typename Graph::VertexId VertexId;
-    typedef typename Graph::EdgeId EdgeId;
-
-    static size_t get_id() {
-        static size_t id = 0;
-        return id++;
-    }
-  public:
-    SmartEdgeIterator(const Graph &graph, Comparator comparator = Comparator(),
-                      vector<EdgeId>* edges = 0)
-            : SmartIterator<Graph, EdgeId, Comparator>(
-                graph, "SmartEdgeIterator " + ToString(get_id()), true,
-                comparator) {
-        if (edges == 0) {
-            for (auto it = graph.begin(); it != graph.end(); ++it) {
-                //todo: this solution doesn't work with parallel simplification
-                this->base::insert(graph.out_begin(*it), graph.out_end(*it));
-                //this does
-                //auto out = graph.OutgoingEdges(*it);
-                //this->base::insert(out.begin(), out.end());
-            }
-        } else {
-            this->base::insert(edges->begin(), edges->end());
-        }
-    }
 };
 
 //todo return verifies when they can be switched off
 template<class Graph>
-class GraphEdgeIterator : public boost::iterator_facade<GraphEdgeIterator<Graph>,
-        typename Graph::EdgeId, boost::forward_traversal_tag, typename Graph::EdgeId> {
+class GraphEdgeIterator : public boost::iterator_facade<GraphEdgeIterator<Graph>
+                                                    , typename Graph::EdgeId, boost::forward_traversal_tag
+                                                    , typename Graph::EdgeId> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexIt const_vertex_iterator;
     typedef typename Graph::edge_const_iterator const_edge_iterator;
@@ -222,10 +201,10 @@ public:
     explicit GraphEdgeIterator(const Graph& g, const_vertex_iterator v_it)
             : g_(g),
               v_it_(v_it) {
-    	if (v_it_ != g_.end()) {
-    	    e_it_ = g_.out_begin(*v_it_);
+        if (v_it_ != g_.end()) {
+            e_it_ = g_.out_begin(*v_it_);
             Skip();
-    	}
+        }
     }
 
 private:
@@ -234,25 +213,25 @@ private:
     void Skip() {
         //VERIFY(v_it_ != g_.end());
         while (e_it_ == g_.out_end(*v_it_)) {
-    	    v_it_++;
-            if (v_it_ == g_.end()) 
+            v_it_++;
+            if (v_it_ == g_.end())
                 return;
             e_it_ = g_.out_begin(*v_it_);
-    	}
+        }
     }
 
     void increment() {
-        if (v_it_ == g_.end()) 
-          return;
+        if (v_it_ == g_.end())
+            return;
         e_it_++;
         Skip();
     }
 
     bool equal(const GraphEdgeIterator &other) const {
-    	if (other.v_it_ != v_it_)
-    		return false;
+        if (other.v_it_ != v_it_)
+            return false;
         if (v_it_ != g_.end() && other.e_it_ != e_it_)
-        	return false;
+            return false;
         return true;
     }
 
@@ -290,56 +269,43 @@ class ConstEdgeIterator {
     }
 };
 
-//template<class Graph>
-//class ConstEdgeIterator :
-//        public boost::iterator_facade<ConstEdgeIterator<Graph>,
-//                                      typename Graph::EdgeId const,
-//                                      boost::forward_traversal_tag,
-//                                      typename Graph::EdgeId const> {
-//  public:
-//    ConstEdgeIterator(const Graph &g)
-//            : graph_(g),
-//              cvertex_(g.begin()), evertex_(g.end()),
-//              cedge_(g.out_begin(*cvertex_)), eedge_(g.out_end(*cvertex_)) {
-//        skip_empty();
-//    }
-//
-//    bool IsEnd() const {
-//        return cvertex_ == evertex_;
-//    }
-//
-//  private:
-//    friend class boost::iterator_core_access;
-//
-//    void skip_empty() {
-//        while (cedge_ == eedge_) {
-//            if (++cvertex_ == evertex_)
-//                break;
-//            cedge_ = graph_.out_begin(*cvertex_);
-//            eedge_ = graph_.out_end(*cvertex_);
-//        }
-//    }
-//
-//    void increment() {
-//        ++cedge_;
-//        skip_empty();
-//    }
-//
-//    bool equal(ConstEdgeIterator &other) const {
-//        return (graph_ == other.graph_ &&
-//                cvertex_ == other.cvertex_ &&
-//                cedge_ == other.cedge_);
-//    }
-//
-//    typename Graph::EdgeId const dereference() const {
-//        return *cedge_;
-//    }
-//
-//    const Graph &graph_;
-//    typename Graph::VertexIt cvertex_, evertex_;
-//    typename Graph::edge_const_iterator cedge_, eedge_;
-//};
+/**
+ * SmartEdgeIterator iterates through edges of graph. It listens to AddEdge/DeleteEdge graph events
+ * and correspondingly edits the set of edges to iterate through. Note: high level event handlers are
+ * triggered before low level event handlers like HandleAdd/HandleDelete. Thus if Comparator uses certain
+ * structure which is also updated with handlers make sure that all information is updated in high level
+ * event handlers.
+ */
+template<class Graph, typename Comparator = std::less<typename Graph::EdgeId> >
+class SmartEdgeIterator : public SmartIterator<Graph, typename Graph::EdgeId,
+                                               Comparator> {
+    typedef GraphEdgeIterator<Graph> EdgeIt;
+  public:
+    typedef typename Graph::EdgeId EdgeId;
 
+    static size_t get_id() {
+        static size_t id = 0;
+        return id++;
+    }
+
+  public:
+    //todo think of some parallel simplif problem O_o
+    SmartEdgeIterator(const Graph &g, Comparator comparator = Comparator())
+            : SmartIterator<Graph, EdgeId, Comparator>(
+                g, "SmartEdgeIterator " + ToString(get_id()), true,
+                comparator) {
+        this->insert(EdgeIt(g, g.begin()), EdgeIt(g, g.end()));
+//        for (auto it = graph.begin(); it != graph.end(); ++it) {
+//            //todo: this solution doesn't work with parallel simplification
+//            this->insert(graph.out_begin(*it), graph.out_end(*it));
+//            //this does
+//            //auto out = graph.OutgoingEdges(*it);
+//            //this->base::insert(out.begin(), out.end());
+//        }
+    }
+};
+
+//todo move out
 template<class Graph>
 class ParallelEdgeProcessor {
     class ConstEdgeIteratorWrapper {
@@ -376,7 +342,7 @@ class ParallelEdgeProcessor {
     ConstEdgeIteratorWrapper it_;
 };
 
-
+//todo move out
 template<class Graph>
 class ParallelIterationHelper {
     typedef typename Graph::EdgeId EdgeId;
@@ -429,5 +395,3 @@ public:
 };
 
 }
-
-#endif
