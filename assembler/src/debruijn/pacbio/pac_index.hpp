@@ -142,88 +142,6 @@ public:
         }
     }
 
-    ClustersSet GetClusters(const Sequence &s) const {
-        MappingDescription descr = Locate(s);
-        ClustersSet res;
-        TRACE(read_count << " read_count");
-
-        DEBUG(descr.size() <<"  clusters");
-        for (auto iter = descr.begin(); iter != descr.end(); ++iter) {
-            size_t edge_id = g_.int_id(iter->first);
-            DEBUG(edge_id);
-            sort(iter->second.begin(), iter->second.end(), ReadPositionComparator());
-            set<vector<MappingInstance> > edge_cluster_set;
-            size_t len = iter->second.size();
-            vector<vector<size_t> > similarity_list(len);
-            int cnt = 0;
-            for (size_t i = 0; i < len; i++){
-                for (size_t j = i + 1; j < len; j++){
-                    if (iter->second[i].read_position + max_similarity_distance < iter->second[j].read_position) {
-                        break;
-                    }
-                    if (similar(iter->second[i], iter->second[j])) {
-                        similarity_list[i].push_back(j);
-                        similarity_list[j].push_back(i);
-                        cnt ++;
-                        if (cnt % 10000 == 0) {
-                            DEBUG(cnt);
-                        }
-                    }
-                }
-            }
-            DEBUG(len <<"  kmers in cluster");
-            vector<int> used(len);
-            for (size_t i = 0; i < len; i++) {
-                if (!used[i]) {
-                    used[i] = 1;
-                    vector<MappingInstance> to_add;
-                    //to_add.push_back(iter->second[i]);
-                    //dfs_cluster(used, to_add, (int) i, iter);
-                    dfs_cluster_norec(used, to_add, (int) i, iter, similarity_list);
-                    sort(to_add.begin(), to_add.end(), ReadPositionComparator());
-                    DEBUG(to_add.size()<<" subcluster size");
-                    size_t count = 1;
-                    size_t longest_len = 0;
-                    auto cur_start = to_add.begin();
-                    auto best_start = to_add.begin();
-                    int cur_edge_len = (int)g_.length(iter->first);
-                    int j = 0;
-                        DEBUG("new_cluster sz " << to_add.size());
-                    for (auto j_iter = to_add.begin();
-                            j_iter < to_add.end() - 1; j_iter++, j++) {
-//Do not spilt clusters in the middle, only beginning is interesting.
-                        if ((j * 5 < (int)to_add.size() || (j + 1) * 5 > (int)to_add.size() * 4) &&
-                            !similar(*j_iter, *(j_iter + 1))
-                            && (j < 5000 && cur_edge_len - j < 5000)) {
-                            if (longest_len < count) {
-                                longest_len = count;
-                                best_start = cur_start;
-                            }
-                            count = 1;
-                            cur_start = j_iter + 1;
-                        } else {
-                            count++;
-                        }
-                    }
-                    if (longest_len < count) {
-                        longest_len = count;
-                        best_start = cur_start;
-                    }
-                    vector<MappingInstance> filtered(best_start,
-                                                     best_start + longest_len);
-                    if ((count < to_add.size()
-                            && to_add.size() > min_cluster_size)) {
-                        DEBUG("in cluster size " << to_add.size() << ", " << to_add.size() - longest_len<<"were removed as trash")
-                    }
-                    TRACE("adding cluster "" edge "<< edge_id << " len " <<to_add.size() )
-                    res.insert(KmerCluster<Graph>(iter->first, filtered));
-                }
-            }
-        }
-        FilterClusters(res);
-        return res;
-    }
-
     ClustersSet GetOrderClusters(const Sequence &s) const {
         MappingDescription descr = Locate(s);
         ClustersSet res;
@@ -821,7 +739,7 @@ public:
 
     // Short read alignment
     MappingPath<EdgeId> GetShortReadAlignment(const Sequence &s) const {
-        ClustersSet mapping_descr = GetClusters(s);
+        ClustersSet mapping_descr = GetOrderClusters(s);
         map<EdgeId, KmerCluster<Graph> > largest_clusters;
 
         //Selecting the biggest cluster for each edge
