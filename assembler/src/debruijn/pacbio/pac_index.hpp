@@ -224,6 +224,73 @@ public:
         return res;
     }
 
+    ClustersSet GetOrderClusters(const Sequence &s) const {
+        MappingDescription descr = Locate(s);
+        ClustersSet res;
+        TRACE(read_count << " read_count");
+
+        DEBUG(descr.size() <<"  clusters");
+        for (auto iter = descr.begin(); iter != descr.end(); ++iter) {
+            size_t edge_id = g_.int_id(iter->first);
+            DEBUG(edge_id);
+            sort(iter->second.begin(), iter->second.end(), ReadPositionComparator());
+            set<vector<MappingInstance> > edge_cluster_set;
+            size_t len = iter->second.size();
+            vector<vector<size_t> > similarity_list(len);
+            int cnt = 0;
+            for (size_t i = 0; i < len; i++){
+                for (size_t j = i + 1; j < len; j++){
+                    if (iter->second[i].read_position + max_similarity_distance < iter->second[j].read_position) {
+                        break;
+                    }
+                    if (similar(iter->second[i], iter->second[j])) {
+                        similarity_list[i].push_back(j);
+                        cnt ++;
+                        if (cnt % 10000 == 0) {
+                            DEBUG(cnt);
+                        }
+                    }
+                }
+            }
+
+            DEBUG(len <<"  kmers in cluster");
+            vector<int> used(len);
+            for (size_t i = 0; i < len; i++) {
+                if (!used[i]) {
+                    vector<int> new_cluster(len);
+                    vector<int> prev(len);
+                    for(size_t j = i; j < len; j++) {
+                        if (!used[j]) {
+                            if (new_cluster[j] == 0) new_cluster[j] = 1, prev[j] = -1;
+                            for(size_t k = 0; k < similarity_list[j].size(); k++) {
+                                size_t next_ind = similarity_list[j][k];
+                                if (!used[next_ind]) {
+                                    if (new_cluster[next_ind] < new_cluster[j] + 1)
+                                        new_cluster[next_ind] = new_cluster[j] + 1, prev[next_ind] = j;
+                                }
+                            }
+                        }
+                    }
+                    size_t maxx = 0;
+                    size_t maxj = i;
+                    for(size_t j = i; j < len; j++) {
+                        if (new_cluster[j] > maxx) maxj = j, maxx = new_cluster[j];
+                    }
+                    vector<MappingInstance> to_add;
+                    while (maxj != -1) {
+                        to_add.push_back(iter->second[maxj]);
+                        used[maxj] = 1;
+                        maxj = prev[maxj];
+                    }
+                    reverse(to_add.begin(), to_add.end());
+                    TRACE("adding cluster "" edge "<< edge_id << " len " <<to_add.size() )
+                    res.insert(KmerCluster<Graph>(iter->first, to_add));
+                }
+            }
+        }
+        FilterClusters(res);
+        return res;
+    }
     //filter clusters that are too small or fully located on a vertex or dominated by some other cluster.
     void FilterClusters(ClustersSet &clusters) const {
         for (auto i_iter = clusters.begin(); i_iter != clusters.end();) {
@@ -239,7 +306,7 @@ public:
                     iter < sorted_by_edge.end(); iter++) {
                 if (iter->IsUnique())
                     good++;
-//              good += 1.0 / (iter->quality * iter->quality);
+                //good += 1.0 / (iter->quality * iter->quality);
             }
             DEBUG("good " << good);
 
@@ -522,7 +589,7 @@ public:
 
 
     OneReadMapping<Graph> GetReadAlignment(Sequence &s) {
-        ClustersSet mapping_descr = GetClusters(s);
+        ClustersSet mapping_descr = GetOrderClusters(s);
         DEBUG("clusters got");
         int len = (int) mapping_descr.size();
         vector<size_t> real_length;
