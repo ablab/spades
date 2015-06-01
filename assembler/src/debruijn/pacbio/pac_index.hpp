@@ -475,11 +475,11 @@ public:
         }
         if (cur_color > 1) {
             auto iter = mapping_descr.begin();
-            INFO("not evident clusters selection");
+/*            INFO("not evident clusters selection");
             for (int i = 0; i < len; i++, iter ++) {
                 INFO(colors[i] <<" " << iter->str(g_));
             }
-        }
+*/        }
         vector<size_t> long_counts(cur_color);
         i = 0;
 
@@ -492,21 +492,23 @@ public:
                         VertexId start_v = g_.EdgeEnd(prev_iter->edgeId);
                         VertexId end_v = g_.EdgeStart(i_iter->edgeId);
                         if (cashed_dijkstra.find(start_v) == cashed_dijkstra.end()) {
-                            auto dij = DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, 10000);
+                            auto dij = DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, 5000);
                             dij.run(start_v);
                             auto distances = dij.GetDistances();
                             cashed_dijkstra[start_v] = std::map<VertexId, size_t>(distances.first, distances.second);
-                            if (cashed_dijkstra[start_v].find(end_v) == cashed_dijkstra[start_v].end()) {
-                                bad_follow++;
-                            } else if (cashed_dijkstra[start_v][end_v] + i_iter->average_edge_position +
-                                    g_.length(prev_iter->edgeId) - prev_iter->average_edge_position >
-                                1.5 *  (i_iter->average_read_position - prev_iter->average_read_position)) {
-                                half_bad_follow++;
-                            } else {
-                                good_follow ++;
-                            }
                         }
+                        if (cashed_dijkstra[start_v].find(end_v) == cashed_dijkstra[start_v].end()) {
+                            bad_follow++;
+                            INFO("bad follow edge_ids" << " " << g_.int_id(prev_iter->edgeId) << " " << g_.int_id(i_iter->edgeId));
+                        } else if (cashed_dijkstra[start_v][end_v] + i_iter->average_edge_position +
+                                g_.length(prev_iter->edgeId) - prev_iter->average_edge_position >
+                            1.5 *  (i_iter->average_read_position - prev_iter->average_read_position)) {
+                            half_bad_follow++;
+                            INFO("ugly follow edge_ids" << " " << g_.int_id(prev_iter->edgeId) << " " << g_.int_id(i_iter->edgeId));
 
+                        } else {
+                            good_follow ++;
+                        }
                     }
                 }
                 prev_iter = i_iter;

@@ -128,7 +128,7 @@ struct KmerCluster {
                 for (int d: distances) {
                     s << d << " ";
                 }
-                INFO(s.str());
+//                INFO(s.str());
 
             }
         }
