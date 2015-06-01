@@ -566,7 +566,7 @@ public:
                         }
                         if (cashed_dijkstra[start_v].find(end_v) == cashed_dijkstra[start_v].end()) {
                             bad_follow++;
-                            INFO("bad follow edge_ids" << " " << g_.int_id(prev_iter->edgeId) << " " << g_.int_id(i_iter->edgeId));
+                            INFO("bad follow edge_ids" << " " << g_.int_id(prev_iter->edgeId) << "( " << prev_iter->size << "),  " << g_.int_id(i_iter->edgeId) << "(" << i_iter->size << ")");
                         } else if (cashed_dijkstra[start_v][end_v] + i_iter->average_edge_position +
                                 g_.length(prev_iter->edgeId) - prev_iter->average_edge_position >
                             1.5 *  (i_iter->average_read_position - prev_iter->average_read_position)) {
