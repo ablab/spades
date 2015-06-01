@@ -39,7 +39,9 @@ private:
     const static size_t min_cluster_size = 8;
     const static int max_similarity_distance = 500;
     int good_follow = 0;
+    int half_bad_follow = 0;
     int bad_follow = 0;
+
     double compression_cutoff;
     double domination_cutoff;
     set<Sequence> banned_kmers;
@@ -47,6 +49,8 @@ private:
     map<pair<VertexId, VertexId>, vector<size_t> > distance_cashed;
     size_t read_count;
     bool ignore_map_to_middle;
+
+    map<VertexId, map<VertexId, size_t> > cashed_dijkstra;
 
 public:
     MappingDescription Locate(const Sequence &s) const;
@@ -68,7 +72,7 @@ public:
         read_count = 0;
     }
     ~PacBioMappingIndex(){
-        INFO("good/bad counts:" << good_follow << " " << bad_follow);
+        INFO("good/ugly/bad counts:" << good_follow << " "<<half_bad_follow << " " << bad_follow);
 
     }
     void FillBannedKmers() {
@@ -391,53 +395,6 @@ public:
         return res;
     }
 
-    vector<int> GetColors(ClustersSet &mapping_descr, Sequence &s) {
-//not used anymore
-//TODO: remove after
-        int len = (int) mapping_descr.size();
-	DEBUG("getting colors, table size "<< len);
-        vector<vector<int> > table(len);
-        for (int i = 0; i < len; i++) {
-            table[i].resize(len);
-            table[i][i] = 1;
-        }
-        int i = 0;
-        vector<int> colors(len);
-        vector<int> cluster_size(len);
-        for (int i = 0; i < len; i++) {
-            colors[i] = i;
-        }
-        for (auto i_iter = mapping_descr.begin(); i_iter != mapping_descr.end();
-                ++i_iter, ++i) {
-            cluster_size[i] = i_iter->size;
-        }
-        i = 0;
-        if (len > 1) {
-            TRACE(len << "clusters");
-        }
-        for (auto i_iter = mapping_descr.begin(); i_iter != mapping_descr.end();
-                ++i_iter, ++i) {
-            int j = 0;
-            for (auto j_iter = mapping_descr.begin();
-                    j_iter != mapping_descr.end(); ++j_iter, ++j) {
-                if (i_iter == j_iter)
-                    continue;
-                table[i][j] = IsConsistent(s, *i_iter, *j_iter);
-                if (table[i][j]) {
-                    int j_color = colors[j];
-                    for (int k = 0; k < int(len); k++) {
-                        if (colors[k] == j_color) {
-                            colors[k] = colors[i];
-                            TRACE("recoloring");
-                            cluster_size[i] += cluster_size[k];
-                            cluster_size[k] = 0;
-                        }
-                    }
-                }
-            }
-        }
-        return colors;
-    }
     vector<int> GetWeightedColors(ClustersSet &mapping_descr, Sequence &s) {
         int len = (int) mapping_descr.size();
         DEBUG("getting colors, table size "<< len);
@@ -525,20 +482,37 @@ public:
         }
         vector<size_t> long_counts(cur_color);
         i = 0;
+
+        auto prev_iter = mapping_descr.end();
         for (auto i_iter = mapping_descr.begin(); i_iter != mapping_descr.end();
                     ++i_iter, ++i) {
-            if (g_.length(i_iter->edgeId) > 500)
-                long_counts[colors[i]] ++;
-        }
-        int good_cl = 0;
-        for (size_t tmp_colors = 0; tmp_colors < cur_color; tmp_colors++) {
-            if (long_counts[tmp_colors] > 0) {
-                good_follow += long_counts[tmp_colors] - 1;
-                good_cl++;
+            if (g_.length(i_iter->edgeId) > 500) {
+                if (prev_iter != mapping_descr.end()) {
+                    if (i_iter->edgeId != prev_iter->edgeId && ! TopologyGap(i_iter->edgeId, prev_iter->edgeId, true)){
+                        VertexId start_v = g_.EdgeEnd(prev_iter->edgeId);
+                        VertexId end_v = g_.EdgeStart(i_iter->edgeId);
+                        if (cashed_dijkstra.find(start_v) == cashed_dijkstra.end()) {
+                            auto dij = DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, 10000);
+                            dij.run(start_v);
+                            auto distances = dij.GetDistances();
+                            cashed_dijkstra[start_v] = std::map<VertexId, size_t>(distances.first, distances.second);
+                            if (cashed_dijkstra[start_v].find(end_v) == cashed_dijkstra[start_v].end()) {
+                                bad_follow++;
+                            } else if (cashed_dijkstra[start_v][end_v] + i_iter->average_edge_position +
+                                    g_.length(prev_iter->edgeId) - prev_iter->average_edge_position >
+                                1.5 *  (i_iter->average_read_position - prev_iter->average_read_position)) {
+                                half_bad_follow++;
+                            } else {
+                                good_follow ++;
+                            }
+                        }
+
+                    }
+                }
+                prev_iter = i_iter;
             }
         }
-        if (good_cl > 0)
-            bad_follow += good_cl - 1;
+
         return colors;
     }
 
