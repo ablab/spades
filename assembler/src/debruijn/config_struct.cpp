@@ -460,6 +460,7 @@ void load(debruijn_config::simplification& simp,
   simp.final_tc = simp.tc; // final tip clipper:
   load(simp.final_tc, pt, "final_tc", false);
   //final bulge removers:
+  simp.final_br = simp.br; // final bulge remover:
   load(simp.final_br, pt, "final_br", false);
 }
 

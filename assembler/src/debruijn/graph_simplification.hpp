@@ -794,7 +794,6 @@ class GraphSimplifier {
         return changed;
     }
 
-    inline
     void PostSimplification() {
         typedef std::function<void(EdgeId, const std::vector<EdgeId>&)> opt_callback_f;
         INFO("PROCEDURE == Post simplification");
