@@ -249,7 +249,7 @@ class DataPrinter {
                 if (component_.contains(e2))
                   for (Point point : hist)
                     fprintf(file, "%zu %zu %.2f %.2f %.2f .\n",
-                            e1.int_id(), e2.int_id(), (double)point.d, (double)point.weight, (double)point.variation());
+                            e1.int_id(), e2.int_id(), math::eq((double)point.d, .0) ? .0 : (double)point.d, (double)point.weight, (double)point.variation());
             }
         }
 
