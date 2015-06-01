@@ -12,6 +12,8 @@
 #include "pacbio_read_structures.hpp"
 
 namespace pacbio {
+#define UNDEF_COLOR -1
+#define DELETED_COLOR -2
 
 template<class Graph>
 struct MappingDescription {
@@ -183,8 +185,10 @@ public:
                             for(size_t k = 0; k < similarity_list[j].size(); k++) {
                                 size_t next_ind = similarity_list[j][k];
                                 if (!used[next_ind]) {
-                                    if (new_cluster[next_ind] < new_cluster[j] + 1)
-                                        new_cluster[next_ind] = new_cluster[j] + 1, prev[next_ind] = j;
+                                    if (new_cluster[next_ind] < new_cluster[j] + 1){
+                                        new_cluster[next_ind] = new_cluster[j] + 1;
+                                        prev[next_ind] = j;
+                                    }
                                 }
                             }
                         }
@@ -195,11 +199,15 @@ public:
                         if (new_cluster[j] > maxx) maxj = j, maxx = new_cluster[j];
                     }
                     vector<MappingInstance> to_add;
+                    size_t real_maxj = maxj, first_j = maxj;
                     while (maxj != -1) {
                         to_add.push_back(iter->second[maxj]);
-                        used[maxj] = 1;
+                        //used[maxj] = 1;
+                        first_j = maxj;
                         maxj = prev[maxj];
                     }
+                    for (auto j = first_j; j < real_maxj; j++)
+                        used[j] = 1;
                     reverse(to_add.begin(), to_add.end());
                     TRACE("adding cluster "" edge "<< edge_id << " len " <<to_add.size() )
                     res.insert(KmerCluster<Graph>(iter->first, to_add));
@@ -398,7 +406,8 @@ public:
         int i = 0;
 
         for (int i = 0; i < len; i++) {
-            colors[i] = -1;
+//-1 not initialized, -2 - removed as trash
+            colors[i] = UNDEF_COLOR;
         }
         for (auto i_iter = mapping_descr.begin(); i_iter != mapping_descr.end();
                 ++i_iter, ++i) {
@@ -430,7 +439,7 @@ public:
             i = 0;
             for (auto i_iter = mapping_descr.begin(); i_iter != mapping_descr.end();
                         ++i_iter, ++i) {
-                if (colors[i] != -1) continue;
+                if (colors[i] != UNDEF_COLOR) continue;
                 max_size[i] = cluster_size[i];
                 for (int j = 0; j < i; j ++) {
                     if (colors[j] != -1) continue;
@@ -452,11 +461,21 @@ public:
                 break;
             }
             colors[maxi] = cur_color;
+            int real_maxi = maxi, min_i = maxi;
+
             while (prev[maxi] != -1) {
+                min_i = maxi;
                 maxi = prev[maxi];
                 colors[maxi] = cur_color;
             }
+            while (real_maxi >= min_i) {
+                if (colors[real_maxi] == UNDEF_COLOR) {
+                    colors[real_maxi] = DELETED_COLOR;
+                }
+                real_maxi --;
+            }
             cur_color ++;
+
         }
         if (cur_color > 1) {
             auto iter = mapping_descr.begin();
@@ -472,6 +491,12 @@ public:
         for (auto i_iter = mapping_descr.begin(); i_iter != mapping_descr.end();
                     ++i_iter, ++i) {
             if (g_.length(i_iter->edgeId) > 500) {
+                if (colors[i] == DELETED_COLOR) {
+                    if (i_iter->size > 100) {
+                        WARN("dominated huge cluster " << i_iter->str(g_));
+                    }
+                    continue;
+                }
                 if (prev_iter != mapping_descr.end()) {
                     if (i_iter->edgeId != prev_iter->edgeId && ! TopologyGap(i_iter->edgeId, prev_iter->edgeId, true)){
                         VertexId start_v = g_.EdgeEnd(prev_iter->edgeId);
@@ -529,6 +554,8 @@ public:
                 used[i] = 1;
                 int j = 0;
                 int cur_color = colors[i];
+                if (cur_color == DELETED_COLOR)
+                    continue;
                 for (auto i_iter = mapping_descr.begin();
                         i_iter != mapping_descr.end(); ++i_iter, ++j) {
                     if (colors[j] == cur_color) {
