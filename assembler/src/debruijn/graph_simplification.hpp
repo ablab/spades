@@ -815,14 +815,14 @@ class GraphSimplifier {
             enable_flag |= FinalRemoveErroneousEdges();
 
             enable_flag |= ClipTips(gp_.g, *iterators_holder.tip_smart_it(),
-                                                  cfg::get().main_iteration ? simplif_cfg_.final_tc : simplif_cfg_.tc, //todo get rid of this logic
+                                                  simplif_cfg_.final_tc, 
                                                   info_container_,
                                                   cfg::get().graph_read_corr.enable ?
                                                           WrapWithProjectionCallback(gp_, removal_handler_) : removal_handler_);
 
             enable_flag |= RemoveBulges(gp_.g, *iterators_holder.bulge_smart_it(),
-                                cfg::get().main_iteration ? simplif_cfg_.final_br : simplif_cfg_.br,
-                                //todo get rid of this logic and add br run with standard params
+                                simplif_cfg_.final_br,
+                                //todo add br run with standard params
                                 (opt_callback_f)0, removal_handler_);
 
             enable_flag |= RemoveComplexBulges(gp_.g, simplif_cfg_.cbr, iteration);
