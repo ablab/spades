@@ -341,7 +341,12 @@ meta
 		max_relative_delta		0.1
 	}
 
-    fast_features false
+    fast_features true
+
+    presimp 
+    {
+       enabled false
+    }
 }
 
 preliminary
@@ -360,5 +365,4 @@ preliminary
 		max_relative_delta		0.1
 	}
 	
-    fast_features true
 }

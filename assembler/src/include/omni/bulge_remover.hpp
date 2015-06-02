@@ -209,6 +209,10 @@ class BulgeRemover: public EdgeProcessingAlgorithm<Graph> {
 protected:
     /*virtual*/
     bool ProcessEdge(EdgeId edge) {
+        if (graph_.conjugate(edge) < edge) {
+            TRACE("Noncanonical edge");
+            return false;
+        }
         TRACE("Considering edge " << graph_.str(edge) << " of length " << graph_.length(edge) << " and avg coverage " << graph_.coverage(edge));
         TRACE("Is possible bulge " << PossibleBulgeEdge(edge));
 
