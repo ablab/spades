@@ -10,6 +10,7 @@ import os
 import shutil
 from site import addsitedir
 from distutils import dir_util
+from os.path import abspath, expanduser
 import sys
 import getopt
 import logging
@@ -172,9 +173,9 @@ def fill_cfg(options_to_parse, log):
 
     for opt, arg in options:
         if opt == '-o':
-            options_storage.output_dir = os.path.abspath(arg)
+            options_storage.output_dir = abspath(expanduser(arg))
         elif opt == "--tmp-dir":
-            options_storage.tmp_dir = os.path.abspath(arg)
+            options_storage.tmp_dir = abspath(expanduser(arg))
         elif opt == "--configs-dir":
             options_storage.configs_dir = support.check_dir_existence(arg)
         elif opt == "--reference":
@@ -483,13 +484,13 @@ def main(args):
         log.info("Restored from " + cmd_line)
         if options_storage.restart_from:
             updated_params = ""
-            flag = False
+            skip_next = False
             for v in args[1:]:
                 if v == '-o' or v == '--restart-from':
-                    flag = True
+                    skip_next = True
                     continue
-                if flag or v.startswith('--restart-from='):  # you can specify '--restart-from=k33' but not '-o=out_dir'
-                    flag = False
+                if skip_next or v.startswith('--restart-from='):  # you can specify '--restart-from=k33' but not '-o=out_dir'
+                    skip_next = False
                     continue
                 updated_params += " " + v
             updated_params = updated_params.strip()

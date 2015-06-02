@@ -17,6 +17,7 @@ import tempfile
 import shutil
 import options_storage
 import itertools
+from os.path import abspath, expanduser, join
 
 # constants to print and detect warnings and errors in logs
 SPADES_PY_ERROR_MESSAGE = "== Error == "
@@ -77,14 +78,14 @@ def check_binaries(binary_dir, log):
 
 
 def check_file_existence(filename, message="", log=None, dipspades=False):
-    filename = os.path.abspath(filename)
+    filename = abspath(expanduser(filename))
     if not os.path.isfile(filename):
         error("file not found: %s (%s)" % (filename, message), log=log, dipspades=dipspades)
     return filename
 
 
 def check_dir_existence(dirname, message="", log=None, dipspades=False):
-    dirname = os.path.abspath(dirname)
+    dirname = abspath(expanduser(dirname))
     if not os.path.isdir(dirname):
         error("directory not found: %s (%s)" % (dirname, message), log=log, dipspades=dipspades)
     return dirname
@@ -491,15 +492,15 @@ def correct_dataset(dataset_data):
     return corrected_dataset_data
 
 
-def relative2abs_paths(dataset_data, dir_name):
-    dir_name = os.path.abspath(dir_name)
+def relative2abs_paths(dataset_data, dirname):
+    dirname = abspath(expanduser(dirname))
     abs_paths_dataset_data = []
     for reads_library in dataset_data:
         for key, value in reads_library.items():
             if key.endswith('reads'):
                 abs_paths_reads = []
                 for reads_file in value:
-                    abs_path = os.path.join(dir_name, reads_file)
+                    abs_path = join(dirname, expanduser(reads_file))
                     if reads_file in options_storage.dict_of_prefixes and abs_path != reads_file:
                         options_storage.dict_of_prefixes[abs_path] = options_storage.dict_of_prefixes[reads_file]
                         del options_storage.dict_of_prefixes[reads_file]
