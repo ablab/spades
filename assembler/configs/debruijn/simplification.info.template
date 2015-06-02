@@ -317,7 +317,7 @@ meta
        	max_additive_length_coefficient 100
 		max_coverage			1000000.0
 		max_relative_coverage		100000.		; bulge_cov < this * not_bulge_cov
-		max_delta			300
+		max_delta			10
 		max_relative_delta		0.1
 	}
 
