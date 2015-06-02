@@ -32,35 +32,6 @@ void PEResolving(conj_graph_pack& gp) {
 }
 
 
-void DrawComponentsOfShortEdges(conj_graph_pack& gp, size_t min_length)
-{
-    vector<EdgeId> short_edges;
-    std::string pics_folder_ = cfg::get().output_saves + "/pics";
-    INFO("Writing pics with components consisting of short edges to " + pics_folder_);
-    shared_ptr<GraphSplitter<Graph>> splitter = LongEdgesExclusiveSplitter<Graph>(gp.g, min_length);
-    while (splitter->HasNext()) {
-        GraphComponent<Graph> component = splitter->Next();
-        if(component.v_size() > 3)
-        {
-            INFO("Component of size " << component.v_size() << " with " << component.sinks().size() << " sinks and " << component.sources().size() << "sources");
-        }
-        if(component.v_size() > 3 && component.sinks().size() == 1 && component.sources().size() == 1)
-        {
-
-            visualization::WriteComponentSinksSources(component, pics_folder_ + "ShortComponents/"
-                                                                                  + ToString(gp.g.int_id(*component.vertices().begin()))
-                                                                                   + ".dot", visualization::DefaultColorer(gp.g),
-                                                                                   *StrGraphLabelerInstance(component.g()));
-            INFO("Component is written to " + ToString(gp.g.int_id(*component.vertices().begin())) + ".dot");
-
-            //            PrintComponent(component,
-//                                pics_folder_ + "ShortComponents/"
-//                                        + ToString(gp.g.int_id(component.vertices_[0]))
-//                                         + ".dot");
-        }
-    }
-}
-
 void RepeatResolution::run(conj_graph_pack &gp, const char*) {
     if (cfg::get().developer_mode) {
         stats::PrepareForDrawing(gp);
