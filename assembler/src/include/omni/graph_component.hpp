@@ -68,23 +68,17 @@ class GraphComponent {
 		FindSinksAndSources();
 	}
 
-	void FindSinksAndSources()
-    {
-        for(auto v : vertices_)
-        {
-            for(auto e : graph_.IncomingEdges(v))
-            {
-                if(!contains(e) && !(contains(graph_.EdgeStart(e))))
-                {
+	void FindSinksAndSources() {
+        for(auto v : vertices_) {
+            for(auto e : graph_.IncomingEdges(v)) {
+                if(!contains(e) && !(contains(graph_.EdgeStart(e)))) {
                     sources_.insert(v);
                     break;
                 }
             }
 
-            for(auto e : graph_.OutgoingEdges(v))
-            {
-                if(!contains(e) && !(contains(graph_.EdgeEnd(e))))
-                {
+            for(auto e : graph_.OutgoingEdges(v)) {
+                if(!contains(e) && !(contains(graph_.EdgeEnd(e)))) {
                     sinks_.insert(v);
                     break;
                 }
@@ -173,28 +167,12 @@ public:
 		return vertices_.end();
 	}
 
-    std::set<VertexId> getSinks() const {
+    const std::set<VertexId>& sinks() const {
         return sinks_;
     }
 
-    std::set<VertexId> getSources() const {
+    const std::set<VertexId>& sources() const {
         return sources_;
-    }
-
-    size_t getSinksCount() const {
-        return sinks_.size();
-    }
-
-    size_t getSourcesCount() const {
-        return sources_.size();
-    }
-
-    bool isSink(VertexId v) const {
-        return (sinks_.count(v) != 0);
-    }
-
-    bool isSource(VertexId v) const {
-        return (sources_.count(v) != 0);
     }
 
 	bool IsBorder(VertexId v) const {
@@ -210,15 +188,6 @@ public:
 	}
 
 };
-
-
-//    template<class Graph>
-//    void PrintComponent(const GraphComponent<Graph>& component,
-//            const string& file_name) {
-//        visualization::WriteComponent(component, file_name,
-//                DefaultColorer(component.g()),
-//                *StrGraphLabelerInstance(component.g()));
-//    }
 
 }
 

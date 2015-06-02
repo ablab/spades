@@ -42,9 +42,9 @@ void DrawComponentsOfShortEdges(conj_graph_pack& gp, size_t min_length)
         GraphComponent<Graph> component = splitter->Next();
         if(component.v_size() > 3)
         {
-            INFO("Component of size " << component.v_size() << " with " << component.getSinksCount() << " sinks and " << component.getSourcesCount() << "sources");
+            INFO("Component of size " << component.v_size() << " with " << component.sinks().size() << " sinks and " << component.sources().size() << "sources");
         }
-        if(component.v_size() > 3 && component.getSinksCount() == 1 && component.getSourcesCount() == 1)
+        if(component.v_size() > 3 && component.sinks().size() == 1 && component.sources().size() == 1)
         {
 
             visualization::WriteComponentSinksSources(component, pics_folder_ + "ShortComponents/"

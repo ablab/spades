@@ -252,14 +252,14 @@ public:
     }
 
     string GetValue(VertexId v) const {
-        if(component_.isSink(v) && !component_.isSource(v)) {
+        if(component_.sinks().count(v) && !component_.sources().count(v)) {
             return sink_color_;
         }
-        if(component_.isSource(v) && !component_.isSink(v))
+        if(component_.sources().count(v) && !component_.sinks().count(v))
         {
             return source_color_;
         }
-        if(component_.isSource(v) && component_.isSink(v))
+        if(component_.sources().count(v) && component_.sinks().count(v))
         {
             return sinksource_color_;
         }
