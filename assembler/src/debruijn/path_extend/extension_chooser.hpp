@@ -113,7 +113,7 @@ public:
 protected:
     const Graph& g_;
 
-    WeightCounter * wc_;
+    shared_ptr<WeightCounter> wc_;
 
     PathAnalyzer analyzer_;
 
@@ -126,7 +126,7 @@ protected:
     std::vector<ExtensionChooserListener *> listeners_;
 
 public:
-    ExtensionChooser(const Graph& g, WeightCounter * wc = 0, double priority = 0.0): g_(g), wc_(wc), analyzer_(g), prior_coeff_(priority),
+    ExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc = shared_ptr<WeightCounter>(0), double priority = 0.0): g_(g), wc_(wc), analyzer_(g), prior_coeff_(priority),
         excludeTrivial_(true), excludeTrivialWithBulges_(true), listeners_() {
     }
 
@@ -208,12 +208,12 @@ protected:
 class JointExtensionChooser: public ExtensionChooser {
 
 protected:
-    ExtensionChooser * first_;
+    shared_ptr<ExtensionChooser> first_;
 
-    ExtensionChooser * second_;
+    shared_ptr<ExtensionChooser> second_;
 
 public:
-    JointExtensionChooser(Graph& g, ExtensionChooser * first, ExtensionChooser * second): ExtensionChooser(g),
+    JointExtensionChooser(Graph& g, shared_ptr<ExtensionChooser> first, shared_ptr<ExtensionChooser> second): ExtensionChooser(g),
         first_(first), second_(second)
     {
     }
@@ -243,7 +243,7 @@ public:
 class TrivialExtensionChooserWithPI: public ExtensionChooser {
 
 public:
-    TrivialExtensionChooserWithPI(Graph& g, WeightCounter * wc): ExtensionChooser(g, wc) {
+    TrivialExtensionChooserWithPI(Graph& g, shared_ptr<WeightCounter> wc): ExtensionChooser(g, wc) {
     }
 
     virtual EdgeContainer Filter(BidirectionalPath& path, EdgeContainer& edges) {
@@ -342,7 +342,7 @@ protected:
 		return result;
 	}
 public:
-	SimpleExtensionChooser(const Graph& g, WeightCounter * wc, double priority) :
+	SimpleExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc, double priority) :
 			ExtensionChooser(g, wc, priority) {
 
 	}
@@ -380,7 +380,7 @@ public:
 class ScaffoldingExtensionChooser : public ExtensionChooser {
 
 public:
-    ScaffoldingExtensionChooser(const Graph& g, WeightCounter * wc, double priority) :
+    ScaffoldingExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc, double priority) :
         ExtensionChooser(g, wc, priority), weight_threshold_(0.0),
         cl_weight_threshold_(cfg::get().pe_params.param_set.scaffolder_options.cl_threshold) {
     }
@@ -444,7 +444,7 @@ public:
     set<EdgeId> FindCandidates(BidirectionalPath& path) const {
         set<EdgeId> jumping_edges;
         PairedInfoLibraries libs = wc_->getLibs();
-        for (PairedInfoLibrary* lib : libs) {
+        for (auto lib : libs) {
             for (int i = (int) path.Size() - 1; i >= 0 && path.LengthAt(i) - g_.length(path.At(i)) <= lib->GetISMax(); --i) {
                 set<EdgeId> jump_edges_i;
                 lib->FindJumpEdges(path.At(i), jump_edges_i, (int)path.LengthAt(i) - (int)g_.k(), (int) (path.LengthAt(i) + lib->GetISMax()), 0);

@@ -18,7 +18,7 @@ class LoopTraverser {
 
 	const Graph& g_;
 	GraphCoverageMap& covMap_;
-	ContigsMaker* extender_;
+	shared_ptr<ContigsMaker> extender_;
 private:
 	EdgeId FindStart(const set<VertexId>& component_set) const{
 		EdgeId result;
@@ -115,7 +115,7 @@ private:
 	}
 
 public:
-	LoopTraverser(const Graph& g, GraphCoverageMap& coverageMap, ContigsMaker* extender) :
+	LoopTraverser(const Graph& g, GraphCoverageMap& coverageMap, shared_ptr<ContigsMaker> extender) :
 			g_(g), covMap_(coverageMap), extender_(extender) {
 	}
 

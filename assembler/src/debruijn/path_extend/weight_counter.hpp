@@ -134,7 +134,7 @@ class WeightCounter {
 protected:
 	const Graph& g_;
 	PairedInfoLibraries libs_;
-	std::vector<ExtentionAnalyzer *> analyzers_;
+	std::vector<shared_ptr<ExtentionAnalyzer> > analyzers_;
 	double avrageLibWeight_;
 
 	double threshold_;
@@ -149,7 +149,7 @@ public:
 	    InitAnalyzers();
 	}
 
-    WeightCounter(const Graph& g, PairedInfoLibrary* lib, double threshold = 0.0) :
+    WeightCounter(const Graph& g, shared_ptr<PairedInfoLibrary> lib, double threshold = 0.0) :
             g_(g), libs_(), threshold_(threshold), normalizeWeight_(true), excluded_edges_() {
         libs_.push_back(lib);
         InitAnalyzers();
@@ -157,9 +157,9 @@ public:
 
 
 	virtual ~WeightCounter() {
-		for (auto iter = analyzers_.begin(); iter != analyzers_.end(); ++iter) {
+		/*for (auto iter = analyzers_.begin(); iter != analyzers_.end(); ++iter) {
 			delete *iter;
-		}
+		}*/
 		analyzers_.clear();
 	}
 
@@ -215,7 +215,7 @@ private:
         avrageLibWeight_ = 0.0;
         analyzers_.reserve(libs_.size());
         for (auto iter = libs_.begin(); iter != libs_.end(); ++iter) {
-            analyzers_.push_back(new ExtentionAnalyzer(g_, **iter));
+            analyzers_.push_back(std::make_shared<ExtentionAnalyzer>(g_, **iter));
             avrageLibWeight_ += (*iter)->GetCoverageCoeff();
         }
         avrageLibWeight_ /= (double) max(libs_.size(), (size_t) 1);
@@ -254,14 +254,14 @@ protected:
 
 public:
 
-	ReadCountWeightCounter(const Graph& g_, PairedInfoLibraries& libs_,
+	ReadCountWeightCounter(const Graph& g_, PairedInfoLibraries& libs,
 			double threshold_ = 0.0) :
-			WeightCounter(g_, libs_, threshold_) {
+			WeightCounter(g_, libs, threshold_) {
 	}
 
-    ReadCountWeightCounter(const Graph& g_, PairedInfoLibrary* libs_,
+    ReadCountWeightCounter(const Graph& g_, shared_ptr<PairedInfoLibrary> lib,
             double threshold_ = 0.0) :
-            WeightCounter(g_, libs_, threshold_) {
+            WeightCounter(g_, lib, threshold_) {
     }
 
 	virtual void GetDistances(EdgeId e1, EdgeId e2, std::vector<int>& dist,
@@ -372,13 +372,13 @@ protected:
 
 public:
 
-	PathCoverWeightCounter(const Graph& g_, PairedInfoLibraries& libs_,
+	PathCoverWeightCounter(const Graph& g_, PairedInfoLibraries& libs,
 			double threshold_ = 0.0, double singleThreshold_ = 0.0) :
-			WeightCounter(g_, libs_, threshold_), singleThreshold(singleThreshold_) {
+			WeightCounter(g_, libs, threshold_), singleThreshold(singleThreshold_) {
 
 	}
 
-	PathCoverWeightCounter(const Graph& g_, PairedInfoLibrary* lib,
+	PathCoverWeightCounter(const Graph& g_, shared_ptr<PairedInfoLibrary> lib,
                            double threshold_ = 0.0, double singleThreshold_ = 0.0)
             : WeightCounter(g_, lib, threshold_),
               singleThreshold(singleThreshold_) {
