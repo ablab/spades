@@ -8,6 +8,10 @@ class bag {
     Data data_;
     size_t size_;
 public:
+    
+    bag() : size_(0) {
+    }
+
     typedef typename Data::const_iterator const_iterator;
 
     void put(const T& t, size_t mult) {
