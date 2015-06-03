@@ -239,8 +239,7 @@ inline bool IsForSingleReadExtender(size_t lib_index) {
             lt == io::LibraryType::PacBioReads ||
             lt == io::LibraryType::SangerReads ||
             lt == io::LibraryType::NanoporeReads ||
-            lt == io::LibraryType::TrustedContigs ||
-            lt == io::LibraryType::UntrustedContigs);
+            IsContigLib(lt));
 }
 
 
