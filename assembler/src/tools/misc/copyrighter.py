@@ -6,6 +6,9 @@
 # See file LICENSE for details.
 ############################################################################
 
+##### for updating copyrights (e.g. from 2014 to 2015):  #####
+### grep -rl "# Copyright (c) 2011-2014 Saint-Petersburg Academic University" . | xargs sed -i 's/# Copyright (c) 2011-2014 Saint-Petersburg Academic University/# Copyright (c) 2011-2015 Saint-Petersburg Academic University/g'
+#####
 
 import os
 import shutil
