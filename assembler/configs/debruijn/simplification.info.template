@@ -288,6 +288,9 @@ meta
 {
     cycle_iter_count 3
 
+    ; enable advanced ec removal algo
+    topology_simplif_enabled false
+
 	; erroneous connections remover:
 	ec
 	{
