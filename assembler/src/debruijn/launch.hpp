@@ -68,9 +68,6 @@ void assemble_genome() {
         SPAdes.add(new debruijn_graph::MismatchCorrection());
     if (cfg::get().rr_enable) {
         if (two_step_rr) {
-            //will be enabled in the end of "PairInfoRemover"
-            VERIFY(cfg::get().pe_params.param_set.remove_overlaps);
-            cfg::get_writable().pe_params.param_set.remove_overlaps = false;
             SPAdes.add(new debruijn_graph::PairInfoCount(true));
             SPAdes.add(new debruijn_graph::DistanceEstimation(true));
             SPAdes.add(new debruijn_graph::RepeatResolution(true));
