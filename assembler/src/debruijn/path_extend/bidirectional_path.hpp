@@ -770,6 +770,19 @@ public:
         }
     };
 
+    class ConstIterator : public PathContainerT::const_iterator {
+    public:
+        ConstIterator(const PathContainerT::const_iterator& iter)
+                : PathContainerT::const_iterator(iter) {
+        }
+        BidirectionalPath* get() const {
+            return this->operator *().first;
+        }
+        BidirectionalPath* getConjugate() const {
+            return this->operator *().second;
+        }
+    };
+
     PathContainer()
             : path_id_(0) {
     }
@@ -827,6 +840,15 @@ public:
 
     Iterator end() {
         return Iterator(data_.end());
+    }
+
+
+    ConstIterator begin() const {
+        return ConstIterator(data_.begin());
+    }
+
+    ConstIterator end() const {
+        return ConstIterator(data_.end());
     }
 
     Iterator erase(Iterator iter) {

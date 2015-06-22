@@ -248,7 +248,7 @@ public:
     }
 
 
-    void writePathEdges(PathContainer& paths, const string& filename) const {
+    void writePathEdges(const PathContainer& paths, const string& filename) const {
 		INFO("Outputting path data to " << filename);
 		std::ofstream oss;
         oss.open(filename.c_str());
@@ -380,7 +380,7 @@ protected:
 
 public:
 
-    void writePaths(PathContainer& paths, const string& filename){
+    void writePaths(const PathContainer& paths, const string& filename){
         std::ofstream oss(filename.c_str());
 
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {

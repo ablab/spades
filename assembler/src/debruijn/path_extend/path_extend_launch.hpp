@@ -42,7 +42,7 @@ inline string GetEtcDir(const std::string& output_dir) {
 }
 
 inline void DebugOutputPaths(const ContigWriter& writer, const conj_graph_pack& gp,
-                      const std::string& output_dir, PathContainer& paths,
+                      const std::string& output_dir, const PathContainer& paths,
                       const string& name) {
     PathInfoWriter path_writer;
     PathVisualizer visualizer;
