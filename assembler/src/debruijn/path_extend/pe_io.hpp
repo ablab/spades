@@ -74,7 +74,7 @@ protected:
         return result.BuildSequence();
     }
 
-    void MakeIDS(PathContainer& paths,
+    void MakeIDS(const PathContainer& paths,
                  map<BidirectionalPath*, string >& ids,
                  map<BidirectionalPath*, set<string> >& next_ids) const {
         int counter = 1;
@@ -92,7 +92,7 @@ protected:
         }
     }
 
-    void FindPathsOrder(PathContainer& paths,
+    void FindPathsOrder(const PathContainer& paths,
                         map<VertexId, set<BidirectionalPath*> >& v_starting,
                         map<EdgeId, set<BidirectionalPath*> >& e_starting) const {
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
@@ -131,7 +131,7 @@ protected:
         }
     }
 
-    void VerifyIDS(PathContainer& paths,
+    void VerifyIDS(const PathContainer& paths,
                  map<BidirectionalPath*, string >& ids,
                  map<BidirectionalPath*, set<string> >& next_ids,
                  map<VertexId, set<BidirectionalPath*> >& v_starting,
@@ -175,7 +175,7 @@ protected:
         }
     }
 
-    void ConstructFASTG(PathContainer& paths,
+    void ConstructFASTG(const PathContainer& paths,
             map<BidirectionalPath*, string >& ids,
             map<BidirectionalPath*, set<string> >& next_ids) const {
 
@@ -248,7 +248,7 @@ public:
     }
 
 
-    void writePathEdges(PathContainer& paths, const string& filename) const {
+    void writePathEdges(const PathContainer& paths, const string& filename) const {
 		INFO("Outputting path data to " << filename);
 		std::ofstream oss;
         oss.open(filename.c_str());
@@ -310,7 +310,7 @@ public:
         iss.close();
     }
 
-    void writePaths(PathContainer& paths, const string& filename) const {
+    void writePaths(const PathContainer& paths, const string& filename) const {
 
         INFO("Writing contigs to " << filename);
         io::osequencestream_with_data_for_scaffold oss(filename);
@@ -332,7 +332,7 @@ public:
         DEBUG("Contigs written");
     }
 
-    void WritePathsToFASTG(PathContainer& paths, const string& filename, const string& fastafilename) const {
+    void WritePathsToFASTG(const PathContainer& paths, const string& filename, const string& fastafilename) const {
         map<BidirectionalPath*, string > ids;
         map<BidirectionalPath*, set<string> > next_ids;
 
@@ -380,7 +380,7 @@ protected:
 
 public:
 
-    void writePaths(PathContainer& paths, const string& filename){
+    void writePaths(const PathContainer& paths, const string& filename){
         std::ofstream oss(filename.c_str());
 
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
