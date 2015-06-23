@@ -38,7 +38,7 @@ public:
         std::vector<EdgeId> edges = GetSortedEdges();
         for (size_t edgeId = 0; edgeId < edges.size(); ++edgeId) {
             EdgeId edge = edges.at(edgeId);
-            std::set<BidirectionalPath *> cov_paths = coverage_map_.GetCoveringPaths(edge);
+            BidirectionalPathSet cov_paths = coverage_map_.GetCoveringPaths(edge);
             std::vector<BidirectionalPath*> cov_vect(cov_paths.begin(), cov_paths.end());
             std::sort(cov_vect.begin(), cov_vect.end(), PathIdCompare);
             for (size_t vect_i = 0; vect_i < cov_vect.size(); ++vect_i) {
@@ -243,7 +243,7 @@ private:
                 or HasAlreadyOverlapedEnd(path1)) {
             return;
         }
-        std::set<BidirectionalPath *> paths =
+        BidirectionalPathSet paths =
                 coverage_map_.GetCoveringPaths(path1->At(last));
         BidirectionalPath* overlap_path = NULL;
         size_t overlap_size = 0;

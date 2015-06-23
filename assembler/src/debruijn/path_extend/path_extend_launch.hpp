@@ -216,7 +216,6 @@ inline void FinalizePaths(PathContainer& paths, GraphCoverageMap& cover_map, siz
         resolver.addUncoveredEdges(paths, cover_map);
     }
     paths.SortByLength();
-    paths.ResetPathsId();
 }
 
 inline void TraverseLoops(PathContainer& paths, GraphCoverageMap& cover_map, ContigsMaker* extender) {
@@ -224,7 +223,6 @@ inline void TraverseLoops(PathContainer& paths, GraphCoverageMap& cover_map, Con
     LoopTraverser loopTraverser(cover_map.graph(), cover_map, extender);
     loopTraverser.TraverseAllLoops();
     paths.SortByLength();
-    paths.ResetPathsId();
 }
 
 inline bool IsForSingleReadExtender(size_t lib_index) {
@@ -475,11 +473,9 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     auto seeds = resolver.makeSimpleSeeds();
     DebugOutputPaths(writer, gp, output_dir, seeds, "init_paths");
     seeds.SortByLength();
-    seeds.ResetPathsId();
     INFO("Growing paths using paired-end and long single reads");
     auto paths = resolver.extendSeeds(seeds, *mainPE);
     paths.SortByLength();
-    //paths.ResetPathsId();
     DebugOutputPaths(writer, gp, output_dir, paths, "pe_overlaped_paths");
 
     PathContainer clone_paths;

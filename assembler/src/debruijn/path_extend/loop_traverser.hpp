@@ -53,9 +53,9 @@ private:
 
 	void TraverseLoop(EdgeId start, EdgeId end) {
 	    DEBUG("start " << g_.int_id(start) << " end " << g_.int_id(end));
-		std::set<BidirectionalPath*> coveredStartPaths =
+	    BidirectionalPathSet coveredStartPaths =
 				covMap_.GetCoveringPaths(start);
-		std::set<BidirectionalPath*> coveredEndPaths =
+	    BidirectionalPathSet coveredEndPaths =
 				covMap_.GetCoveringPaths(end);
 		for (auto startPath = coveredStartPaths.begin();
 				startPath != coveredStartPaths.end(); ++startPath) {

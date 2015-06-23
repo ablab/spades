@@ -416,7 +416,7 @@ public:
             return empty_;
         }
         EdgeId last_e = p.Back();
-        set<BidirectionalPath*> cov_paths = cov_map_.GetCoveringPaths(last_e);
+        BidirectionalPathSet cov_paths = cov_map_.GetCoveringPaths(last_e);
         DEBUG("cov paths for e " << g_.int_id(last_e) << " size " << cov_paths.size());
         size_t max_common_size = 0;
         BidirectionalPath* result_p = empty_;

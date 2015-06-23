@@ -75,8 +75,8 @@ protected:
     }
 
     void MakeIDS(const PathContainer& paths,
-                 map<BidirectionalPath*, string >& ids,
-                 map<BidirectionalPath*, set<string> >& next_ids) const {
+            BidirectionalPathMap< string >& ids,
+            BidirectionalPathMap< set<string> >& next_ids) const {
         int counter = 1;
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
             if (iter.get()->Size() == 0)
@@ -93,8 +93,8 @@ protected:
     }
 
     void FindPathsOrder(const PathContainer& paths,
-                        map<VertexId, set<BidirectionalPath*> >& v_starting,
-                        map<EdgeId, set<BidirectionalPath*> >& e_starting) const {
+                        map<VertexId, BidirectionalPathSet >& v_starting,
+                        map<EdgeId, BidirectionalPathSet >& e_starting) const {
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
             if (iter.get()->Size() == 0)
                 continue;
@@ -104,12 +104,12 @@ protected:
             EdgeId e = path->Front();
             VertexId v = g_.EdgeStart(e);
             if (v_starting.count(v) == 0) {
-                v_starting.insert(make_pair(v, set<BidirectionalPath*>()));
+                v_starting.insert(make_pair(v, BidirectionalPathSet()));
             }
             v_starting[v].insert(path);
             if (path->Size() > 1) {
                 if (e_starting.count(e) == 0) {
-                    e_starting.insert(make_pair(e, set<BidirectionalPath*>()));
+                    e_starting.insert(make_pair(e, BidirectionalPathSet()));
                 }
                 e_starting[e].insert(path);
             }
@@ -119,12 +119,12 @@ protected:
             e = path->Front();
             v = g_.EdgeStart(e);
             if (v_starting.count(v) == 0) {
-                v_starting.insert(make_pair(v, set<BidirectionalPath*>()));
+                v_starting.insert(make_pair(v, BidirectionalPathSet()));
             }
             v_starting[v].insert(path);
             if (path->Size() > 1) {
                 if (e_starting.count(e) == 0) {
-                    e_starting.insert(make_pair(e, set<BidirectionalPath*>()));
+                    e_starting.insert(make_pair(e, BidirectionalPathSet()));
                 }
                 e_starting[e].insert(path);
             }
@@ -132,10 +132,10 @@ protected:
     }
 
     void VerifyIDS(const PathContainer& paths,
-                 map<BidirectionalPath*, string >& ids,
-                 map<BidirectionalPath*, set<string> >& next_ids,
-                 map<VertexId, set<BidirectionalPath*> >& v_starting,
-                 map<EdgeId, set<BidirectionalPath*> >& e_starting) const {
+                 BidirectionalPathMap<string>& ids,
+                 BidirectionalPathMap<set<string>>& next_ids,
+                 map<VertexId, BidirectionalPathSet >& v_starting,
+                 map<EdgeId, BidirectionalPathSet >& e_starting) const {
 
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
             BidirectionalPath* path = iter.get();
@@ -176,13 +176,13 @@ protected:
     }
 
     void ConstructFASTG(const PathContainer& paths,
-            map<BidirectionalPath*, string >& ids,
-            map<BidirectionalPath*, set<string> >& next_ids) const {
+            BidirectionalPathMap< string >& ids,
+            BidirectionalPathMap< set<string> >& next_ids) const {
 
         MakeIDS(paths, ids, next_ids);
 
-        map<VertexId, set<BidirectionalPath*> > v_starting;
-        map<EdgeId, set<BidirectionalPath*> > e_starting;
+        map<VertexId, BidirectionalPathSet > v_starting;
+        map<EdgeId, BidirectionalPathSet > e_starting;
         //set<VertexId> visited;
         //queue<BidirectionalPath*> path_queue;
         FindPathsOrder(paths, v_starting, e_starting);
@@ -333,8 +333,8 @@ public:
     }
 
     void WritePathsToFASTG(const PathContainer& paths, const string& filename, const string& fastafilename) const {
-        map<BidirectionalPath*, string > ids;
-        map<BidirectionalPath*, set<string> > next_ids;
+        BidirectionalPathMap< string > ids;
+        BidirectionalPathMap< set<string> > next_ids;
 
         INFO("Constructing FASTG file from paths ");
         ConstructFASTG(paths, ids, next_ids);
