@@ -48,19 +48,14 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
         stats::PrepareForDrawing(gp);
     }
 
-    omnigraph::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
-    stats::detail_info_printer printer(gp, labeler, cfg::get().output_dir);
-    printer(ipp_before_repeat_resolution);
-
     //todo awful hack to get around PE using cfg::get everywhere...
     auto tmp_params_storage = cfg::get().pe_params;
     if (preliminary_) {
         INFO("Setting up preliminary path extend settings")
         cfg::get_writable().pe_params = cfg::get().prelim_pe_params;
     }
-
-    OutputContigs(gp.g, cfg::get().output_dir + "before_rr");
-    OutputContigsToFASTG(gp.g, cfg::get().output_dir + "assembly_graph");
+    OutputContigs(gp.g, cfg::get().output_dir + "before_rr", false, 0, false);
+    OutputContigsToFASTG(gp.g, cfg::get().output_dir + "assembly_graph",gp.components);
 
     bool no_valid_libs = !HasValidLibs();
 
@@ -69,7 +64,7 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
         WARN("Insert size was not estimated for any of the paired libraries, repeat resolution module will not run.");
 
     if ((no_valid_libs || cfg::get().rm == debruijn_graph::resolving_mode::rm_none) && !use_single_reads) {
-        OutputContigs(gp.g, cfg::get().output_dir + "final_contigs");
+        OutputContigs(gp.g, cfg::get().output_dir + "final_contigs", false, 0, false);
         return;
     }
     if (cfg::get().rm == debruijn_graph::resolving_mode::rm_path_extend) {
@@ -77,7 +72,7 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
         PEResolving(gp);
     } else {
         INFO("Unsupported repeat resolver");
-        OutputContigs(gp.g, cfg::get().output_dir + "final_contigs");
+        OutputContigs(gp.g, cfg::get().output_dir + "final_contigs", false, 0, false);
     }
     if (preliminary_) {
         INFO("Restoring initial path extend settings")
@@ -87,10 +82,11 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
 
 void ContigOutput::run(conj_graph_pack &gp, const char*) {
     OutputContigs(gp.g, cfg::get().output_dir + "simplified_contigs", cfg::get().use_unipaths,
-                  cfg::get().simp.tec.plausibility_length);
-    OutputContigs(gp.g, cfg::get().output_dir + "before_rr");
-    OutputContigsToFASTG(gp.g, cfg::get().output_dir + "assembly_graph");
-    OutputContigs(gp.g, cfg::get().output_dir + "final_contigs");
+                  cfg::get().simp.tec.plausibility_length, false);
+    OutputContigs(gp.g, cfg::get().output_dir + "before_rr", false, 0, false);
+    OutputContigsToFASTG(gp.g, cfg::get().output_dir + "assembly_graph", gp.components);
+    OutputContigs(gp.g, cfg::get().output_dir + "final_contigs",  false, 0, false);
+
 }
 
 } // debruijn_graph

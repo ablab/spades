@@ -31,6 +31,8 @@ add_library(debruijn STATIC
             genomic_info_filler.cpp
             pacbio_aligning.cpp
             bwa_pair_info_filler.cpp
+            chromosome_removal.cpp
+            connected_component.cpp
             genome_storage.cpp)
   
 target_include_directories(debruijn PRIVATE ${EXT_DIR}/include/ConsensusCore)

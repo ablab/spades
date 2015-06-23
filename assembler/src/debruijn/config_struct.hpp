@@ -386,7 +386,17 @@ struct debruijn_config {
 		double relative_length_threshold;
 		double relative_seq_threshold;
 	};
+    struct plasmid {
+        bool plasmid_enabled;
+        size_t long_edge_length;
+        size_t edge_length_for_median;
+        double relative_coverage;
+        size_t small_component_size;
+        double small_component_relative_coverage;
+        size_t min_component_length;
+        size_t min_isolated_length;
 
+    };
     struct pacbio_processor {
   //align and traverse.
       size_t  pacbio_k; //13
@@ -603,7 +613,6 @@ struct debruijn_config {
     size_t max_memory;
 
     estimation_mode est_mode;
-
     resolving_mode rm;
     path_extend::pe_config::MainPEParamsT pe_params;
     path_extend::pe_config::MainPEParamsT prelim_pe_params;
@@ -623,7 +632,7 @@ struct debruijn_config {
     info_printers_t info_printers;
     kmer_coverage_model kcm;
     bwa_aligner bwa;
-
+    plasmid pd;
     size_t flanking_range;
 
     bool diploid_mode;

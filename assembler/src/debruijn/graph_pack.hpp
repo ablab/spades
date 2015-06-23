@@ -19,7 +19,7 @@
 #include "long_read_storage.hpp"
 #include "detail_coverage.hpp"
 #include "genome_storage.hpp"
-
+#include "connected_component.hpp"
 namespace debruijn_graph {
 
 /*KmerFree*//*KmerStoring*/
@@ -50,7 +50,7 @@ struct graph_pack: private boost::noncopyable {
     GenomeStorage genome;
 	EdgeQuality<Graph> edge_qual;
     mutable EdgesPositionHandler<graph_t> edge_pos;
- 
+    ConnectedComponentCounter components;
     graph_pack(size_t k, const std::string &workdir, size_t lib_count,
                         const std::string &genome = "",
                         size_t flanking_range = 50,
@@ -66,7 +66,8 @@ struct graph_pack: private boost::noncopyable {
               single_long_reads(g, lib_count),
               genome(genome),
               edge_qual(g),
-              edge_pos(g, max_mapping_gap + k, max_gap_diff)
+              edge_pos(g, max_mapping_gap + k, max_gap_diff),
+              components(g)
     { 
         if (detach_indices) {
             DetachAll();

@@ -417,6 +417,21 @@ void load(debruijn_config::position_handler& pos,
   load(pos.late_threading, pt, "late_threading");
   load(pos.careful_labeling, pt, "careful_labeling");
 }
+void load(debruijn_config::plasmid& pd,
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
+    using config_common::load;
+    load (pd.plasmid_enabled, pt, "plasmid_enabled");
+    load(pd.long_edge_length, pt, "long_edge_length");
+    load(pd.edge_length_for_median, pt, "edge_length_for_median");
+
+    load(pd.relative_coverage, pt, "relative_coverage");
+    load(pd.small_component_size, pt, "small_component_size");
+    load(pd.small_component_relative_coverage, pt, "small_component_relative_coverage");
+    load(pd.min_component_length, pt, "min_component_length");
+    load(pd.min_isolated_length, pt, "min_isolated_length");
+
+}
+
 
 void load(debruijn_config::gap_closer& gc,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
@@ -701,6 +716,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   load(cfg.pos, pt, "pos"); // position handler:
 
   load(cfg.est_mode, pt, "estimation_mode");
+  load(cfg.pd, pt, "plasmid");
 
   load(cfg.amb_de, pt, "amb_de");
   cfg.amb_de.enabled = (cfg.diploid_mode) ? true : false;

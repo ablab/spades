@@ -16,6 +16,8 @@
 
 namespace omnigraph {
 
+using std::vector;
+using std::set;
 template<class DataMaster>
 class ObservableGraph: public GraphCore<DataMaster> {
 public:

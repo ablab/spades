@@ -158,6 +158,51 @@ NecessaryTipCondition(const Graph& g, size_t max_length, double max_coverage) {
                                        CoverageUpperBound<Graph>(g, max_coverage)));
 }
 
+template<class Graph>
+class DeadEndCondition : public EdgeCondition<Graph> {
+    typedef EdgeCondition<Graph> base;
+
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+
+    /**
+     * This method checks if given vertex topologically looks like end of tip
+     * @param v vertex to be checked
+     * @return true if vertex judged to be tip and false otherwise.
+     */
+    bool IsDeadEnd(VertexId v) const {
+        return this->g().IncomingEdgeCount(v) * this->g().OutgoingEdgeCount(v) == 0;
+    }
+
+public:
+    DeadEndCondition(const Graph& g) : base(g) {
+    }
+
+    /**
+     * This method checks if given edge topologically looks like a tip.
+     * @param edge edge vertex to be checked
+     * @return true if edge judged to be tip and false otherwise.
+     */
+    /*virtual*/
+
+    //Careful - no alternative path check!
+    bool Check(EdgeId e) const {
+        return (IsDeadEnd(this->g().EdgeEnd(e)) || IsDeadEnd(this->g().EdgeStart(e)))
+                && (this->g().OutgoingEdgeCount(this->g().EdgeEnd(e))
+                        + this->g().IncomingEdgeCount(this->g().EdgeStart(e)) >= 1);
+    }
+
+};
+
+template<class Graph>
+pred::TypedPredicate<typename Graph::EdgeId>AddDeadEndCondition(const Graph& g,
+                                                                  pred::TypedPredicate<typename Graph::EdgeId> condition) {
+    return pred::And<typename Graph::EdgeId>(
+            make_shared<DeadEndCondition<Graph>>(g),
+            condition);
+}
+
+
 //template<class Graph>
 //bool ClipTips(
 //        Graph& g,

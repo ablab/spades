@@ -15,7 +15,6 @@
 #include <stacktrace.hpp>
 #include <algorithm>
 #include <map>
-
 #include "openmp_wrapper.h"
 #include "folly/PackedSyncPtr.h"
 

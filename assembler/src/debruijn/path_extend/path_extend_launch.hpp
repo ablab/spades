@@ -223,9 +223,6 @@ inline void ClonePathContainer(PathContainer& spaths, PathContainer& tpaths, Gra
 }
 
 inline void FinalizePaths(PathContainer& paths, GraphCoverageMap& cover_map, size_t min_edge_len, size_t max_path_diff, bool mate_pairs = false) {
-    DefaultContigCorrector<ConjugateDeBruijnGraph> corrector(cover_map.graph());
-    DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(cover_map.graph(), corrector);
-    ContigWriter writer(cover_map.graph(), constructor);
     PathExtendResolver resolver(cover_map.graph());
 
     resolver.removeOverlaps(paths, cover_map, min_edge_len, max_path_diff,
@@ -738,7 +735,8 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
 
     DefaultContigCorrector<ConjugateDeBruijnGraph> corrector(gp.g);
     DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(gp.g, corrector);
-    ContigWriter writer(gp.g, constructor);
+    ContigWriter writer(gp.g, constructor, gp.components);
+
 
 //make pe + long reads extenders
     GraphCoverageMap cover_map(gp.g);

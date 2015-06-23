@@ -5,13 +5,6 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-/*
- * pe_io.hpp
- *
- *  Created on: Mar 15, 2012
- *      Author: andrey
- */
-
 #ifndef PE_IO_HPP_
 #define PE_IO_HPP_
 
@@ -20,6 +13,10 @@
 #include "contig_output.hpp"
 #include "io/osequencestream.hpp"
 #include "genome_consistance_checker.hpp"
+#include <stack>
+#include <algorithm>
+#include "../connected_component.hpp"
+
 namespace path_extend {
 
 using namespace debruijn_graph;
@@ -79,7 +76,6 @@ protected:
     string ToFASTGString(const BidirectionalPath& path) const {
         if (path.Empty())
             return "";
-
         string res = ids_.at(path.Front()).short_id_;
         for (size_t i = 1; i < path.Size(); ++i) {
             if (g_.EdgeEnd(path[i - 1]) != g_.EdgeStart(path[i])) {
@@ -94,8 +90,13 @@ protected:
 
 
 public:
+    ContigWriter(const Graph& g, ContigConstructor<Graph> &constructor, const ConnectedComponentCounter &c_counter): g_(g), constructor_(constructor), k_(g.k()), ids_() {
+        MakeContigIdMap(g_, ids_, c_counter);
+    }
+
     ContigWriter(const Graph& g, ContigConstructor<Graph> &constructor): g_(g), constructor_(constructor), k_(g.k()), ids_() {
-        MakeContigIdMap(g_, ids_);
+        ConnectedComponentCounter c_counter(g_);
+        MakeContigIdMap(g_, ids_, c_counter);
     }
 
     void WriteEdges(const string &filename) const {
@@ -219,26 +220,9 @@ public:
         DEBUG("Contigs written");
     }
 
-
-    //TODO: DimaA insert somewhere
-    /*
-            auto map_res = genome_checker.CountMisassemblies(*path);
-            if (map_res.misassemblies > 0) {
-                INFO ("there are "<< map_res.misassemblies<<  " misassemblies in path: ");
-                path->PrintInfo();
-                total_mis += map_res.misassemblies;
-            }
-            if (map_res.wrong_gap_size > 0) {
-                INFO ("there are "<<map_res.wrong_gap_size <<" wrong gaps in path: ");
-                path->PrintInfo();
-                gap_mis += map_res.wrong_gap_size;
-            }
-      */
-
     void WriteFASTGPaths(const PathContainer& paths, const string& filename) const {
         INFO("Writing FASTG paths to " << filename);
         std::ofstream oss(filename.c_str());
-
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
             if (iter.get()->Length() <= 0)
                 continue;
@@ -259,7 +243,6 @@ public:
 class PathInfoWriter {
 protected:
     DECL_LOGGER("PathExtendIO")
-
 
 public:
 

@@ -11,11 +11,10 @@
  *  Created on: Nov 14, 2011
  *      Author: andrey
  */
-
-#ifndef BIDIRECTIONAL_PATH_H_
-#define BIDIRECTIONAL_PATH_H_
+#pragma once
 
 #include "../debruijn_graph.hpp"
+#include "../connected_component.hpp"
 
 using debruijn_graph::Graph;
 using debruijn_graph::EdgeId;
@@ -395,6 +394,26 @@ public:
             prev_size = Size();
             FindConjEdges(max_repeat_length);
         }
+    }
+
+    size_t GetComponent(const debruijn_graph::ConnectedComponentCounter &component_counter) const {
+        std::unordered_map <size_t, size_t> component_sizes;
+        for (size_t i = 0; i < this->Size(); i++) {
+            auto e = this->At(i);
+            size_t comp_id = component_counter.GetComponent(e);
+            if (component_sizes.find(comp_id) == component_sizes.end())
+                component_sizes[comp_id] = 0;
+            component_sizes[comp_id] += g_.length(e);
+        }
+        size_t ans = 0;
+        size_t maxans = 0;
+        for (auto pp: component_sizes) {
+            if (pp.second > maxans) {
+                ans = pp.first;
+                maxans = pp.second;
+            }
+        }
+        return ans;
     }
 
     void FindConjEdges(size_t max_repeat_length) {
@@ -1062,4 +1081,3 @@ inline void DeleteMapWithPaths(map<EdgeId, BidirectionalPath*> m) {
 
 }  // path extend
 
-#endif /* BIDIRECTIONAL_PATH_H_ */

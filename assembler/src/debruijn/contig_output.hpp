@@ -9,6 +9,7 @@
 
 #include "standard.hpp"
 #include "utils.hpp"
+#include "connected_component.hpp"
 
 namespace debruijn_graph {
 
@@ -197,12 +198,18 @@ struct ExtendedContigIdT {
 };
 
 template <class Graph>
-void MakeContigIdMap(const Graph& graph, map<EdgeId, ExtendedContigIdT>& ids) {
+void MakeContigIdMap(const Graph& graph, map<EdgeId, ExtendedContigIdT>& ids, const ConnectedComponentCounter &cc_counter_) {
     int counter = 0;
     for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it) {
         EdgeId e = *it;
         if (ids.count(e) == 0) {
-            string id = io::MakeContigId(++counter, graph.length(e) + graph.k(), graph.coverage(e), "EDGE");
+            string id;
+            if (cfg::get().pd.plasmid_enabled) {
+                size_t c_id = cc_counter_.GetComponent(e);
+                id = io::MakeContigComponentId(++counter, graph.length(e) + graph.k(), graph.coverage(e), c_id, "EDGE");
+            }
+            else
+                id = io::MakeContigId(++counter, graph.length(e) + graph.k(), graph.coverage(e), "EDGE");
             ids[e] = ExtendedContigIdT(id, ToString(counter) + "+");
             if (e != graph.conjugate(e))
                 ids[graph.conjugate(e)] =  ExtendedContigIdT(id + "'", ToString(counter) + "-");
@@ -215,7 +222,6 @@ class ContigPrinter {
 private:
 	const Graph &graph_;
 	ContigConstructor<Graph> &constructor_;
-
 	template<class sequence_stream>
 	void ReportEdge(sequence_stream& oss
 			, const pair<string, double> sequence_data) {
@@ -244,10 +250,9 @@ public:
 	}
 
 	template<class sequence_stream>
-    void PrintContigsFASTG(sequence_stream &os) {
+    void PrintContigsFASTG(sequence_stream &os, const ConnectedComponentCounter & cc_counter) {
 	    map<EdgeId, ExtendedContigIdT> ids;
-        MakeContigIdMap(graph_, ids);
-
+        MakeContigIdMap(graph_, ids, cc_counter);
         for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
             set<string> next;
             VertexId v = graph_.EdgeEnd(*it);
@@ -289,11 +294,11 @@ void ReportEdge(io::osequencestream_cov& oss
 	}
 }
 
-void OutputContigs(ConjugateDeBruijnGraph& g,
+inline void OutputContigs(ConjugateDeBruijnGraph& g,
 		const string& contigs_output_filename,
-		bool output_unipath = false,
-		size_t /*solid_edge_length_bound*/ = 0,
-		bool cut_bad_connections = false) {
+		bool output_unipath,
+		size_t ,
+		bool cut_bad_connections) {
 	INFO("Outputting contigs to " << contigs_output_filename << ".fasta");
 	DefaultContigCorrector<ConjugateDeBruijnGraph> corrector(g);
 	io::osequencestream_cov oss(contigs_output_filename + ".fasta");
@@ -301,6 +306,7 @@ void OutputContigs(ConjugateDeBruijnGraph& g,
 	if(!output_unipath) {
 		if(!cut_bad_connections) {
 			DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
+
 			ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);
 		} else {
 			CuttingContigConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
@@ -328,20 +334,20 @@ void OutputContigs(ConjugateDeBruijnGraph& g,
 //	}
 }
 
-void OutputContigsToFASTG(ConjugateDeBruijnGraph& g,
-				   const string& contigs_output_filename) {
+inline void OutputContigsToFASTG(ConjugateDeBruijnGraph& g,
+				   const string& contigs_output_filename, const ConnectedComponentCounter & cc_counter) {
 
 	INFO("Outputting graph to " << contigs_output_filename << ".fastg");
 	DefaultContigCorrector<ConjugateDeBruijnGraph> corrector(g);
 	DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
 	io::osequencestream_for_fastg ossfg(contigs_output_filename + ".fastg");
-	ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigsFASTG(ossfg);
+	ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigsFASTG(ossfg, cc_counter);
 }
 
 
 
 
-	bool ShouldCut(ConjugateDeBruijnGraph& g, VertexId v) {
+inline bool ShouldCut(ConjugateDeBruijnGraph& g, VertexId v) {
 	vector<EdgeId> edges;
 	push_back_all(edges, g.OutgoingEdges(v));
 
@@ -361,7 +367,7 @@ void OutputContigsToFASTG(ConjugateDeBruijnGraph& g,
 	return false;
 }
 
-void OutputCutContigs(ConjugateDeBruijnGraph& g,
+inline void OutputCutContigs(ConjugateDeBruijnGraph& g,
 		const string& contigs_output_filename,
 		bool /*output_unipath*/ = false,
 		size_t /*solid_edge_length_bound*/ = 0) {
@@ -369,7 +375,6 @@ void OutputCutContigs(ConjugateDeBruijnGraph& g,
 	DefaultContigCorrector<ConjugateDeBruijnGraph> corrector(g);
 	io::osequencestream_cov oss(contigs_output_filename);
 	CuttingContigConstructor<ConjugateDeBruijnGraph> constructor(g, corrector);
-	ContigPrinter<ConjugateDeBruijnGraph>(g, constructor).PrintContigs(oss);
 
 //	osequencestream_cov oss(contigs_output_filename);
 //	set<ConjugateDeBruijnGraph::EdgeId> edges;
@@ -397,7 +402,7 @@ void OutputCutContigs(ConjugateDeBruijnGraph& g,
 //	}
 }
 
-void OutputSingleFileContigs(ConjugateDeBruijnGraph& g,
+inline void OutputSingleFileContigs(ConjugateDeBruijnGraph& g,
 		const string& contigs_output_dir) {
 	INFO("Outputting contigs to " << contigs_output_dir);
 	int n = 0;

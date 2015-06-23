@@ -22,6 +22,7 @@
 #include "repeat_resolving.hpp"
 #include "distance_estimation.hpp"
 #include "pacbio_aligning.hpp"
+#include "chromosome_removal.hpp"
 #include "stage.hpp"
 
 namespace spades {
@@ -98,10 +99,13 @@ void assemble_genome() {
             SPAdes.add(new debruijn_graph::PacBioAligning());
         }
         //end pacbio
-
+        if (cfg::get().pd.plasmid_enabled) {
+            SPAdes.add(new debruijn_graph::ChromosomeRemoval());
+        }
         SPAdes.add(new debruijn_graph::PairInfoCount())
               .add(new debruijn_graph::DistanceEstimation())
               .add(new debruijn_graph::RepeatResolution());
+
     } else {
         SPAdes.add(new debruijn_graph::ContigOutput());
     }
