@@ -173,6 +173,8 @@ def fill_cfg(options_to_parse, log):
 
     for opt, arg in options:
         if opt == '-o':
+            if options_storage.output_dir is not None:
+                support.error('-o option was specified at least twice')
             options_storage.output_dir = abspath(expanduser(arg))
             options_storage.dict_of_rel2abs[arg] = options_storage.output_dir
         elif opt == "--tmp-dir":
