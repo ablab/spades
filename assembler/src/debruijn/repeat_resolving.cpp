@@ -75,7 +75,7 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
 
 namespace path_extend {
 
-uint64_t BidirectionalPath::path_id_ = 0;
+std::atomic<uint64_t> BidirectionalPath::path_id_{0};
 
 }
 
