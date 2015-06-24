@@ -40,7 +40,7 @@ inline bool InBuble(EdgeId e, const Graph& g) {
 class GraphCoverageMap: public PathListener {
 
 public:
-    typedef std::multiset <BidirectionalPath *> MapDataT;
+    typedef BidirectionalPathMultiset MapDataT;
 
 
 protected:
@@ -172,15 +172,15 @@ public:
         return cov;
     }
 
-    std::set<BidirectionalPath*> GetCoveringPaths(EdgeId e) const {
+    BidirectionalPathSet GetCoveringPaths(EdgeId e) const {
         auto mapData = GetEdgePaths(e);
-        return std::set<BidirectionalPath*>(mapData->begin(), mapData->end());
+        return BidirectionalPathSet(mapData->begin(), mapData->end());
 
     }
 
-    std::set<BidirectionalPath*> GetCoveringPaths(
+    BidirectionalPathSet GetCoveringPaths(
             const BidirectionalPath& path) const {
-        std::set<BidirectionalPath*> result;
+        BidirectionalPathSet result;
         if (path.Empty()) {
             return result;
         }
@@ -192,7 +192,7 @@ public:
         for (size_t i = 1; i < path.Size(); ++i) {
             data = GetEdgePaths(path[i]);
 
-            std::set<BidirectionalPath*> dataSet;
+            BidirectionalPathSet dataSet;
             dataSet.insert(data->begin(), data->end());
 
             for (auto iter = result.begin(); iter != result.end();) {

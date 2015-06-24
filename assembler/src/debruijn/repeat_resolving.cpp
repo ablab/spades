@@ -71,5 +71,11 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
     OutputContigs(gp.g, cfg::get().output_dir + "final_contigs", true);
 }
 
-
 } // debruijn_graph
+
+namespace path_extend {
+
+uint64_t BidirectionalPath::path_id_ = 0;
+
+}
+
