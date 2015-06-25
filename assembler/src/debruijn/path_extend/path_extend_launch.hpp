@@ -29,10 +29,10 @@ namespace path_extend {
 using namespace debruijn_graph;
 typedef omnigraph::de::PairedInfoIndicesT<Graph> PairedInfoIndicesT;
 
-inline size_t FindMaxOverlapedLen(const vector<PairedInfoLibrary*>& libes) {
+inline size_t FindMaxOverlapedLen(const vector<shared_ptr<PairedInfoLibrary> >& libs) {
     size_t max = 0;
-    for (size_t i = 0; i < libes.size(); ++i) {
-        max = std::max(libes[i]->GetISMax(), max);
+    for (size_t i = 0; i < libs.size(); ++i) {
+        max = std::max(libs[i]->GetISMax(), max);
     }
     return max;
 }
@@ -339,13 +339,13 @@ inline shared_ptr<SimpleExtender> MakeMPExtender(const conj_graph_pack& gp, cons
     size_t max_number_of_paths_to_search = GetNumberMPPaths(gp.g);
     DEBUG("max number of mp paths " << max_number_of_paths_to_search);
 
-    shared_ptr<MatePairExtensionChooser> chooser = make_shared<MatePairExtensionChooser>(gp.g, *lib, paths, max_number_of_paths_to_search);
+    shared_ptr<MatePairExtensionChooser> chooser = make_shared<MatePairExtensionChooser>(gp.g, lib, paths, max_number_of_paths_to_search);
     return make_shared<SimpleExtender>(gp, cov_map, chooser, lib->GetISMax(), pset.loop_removal.mp_max_loops, true, false);
 }
 
 
-inline bool InsertSizeCompare(const PairedInfoLibrary* lib1,
-                              const PairedInfoLibrary* lib2) {
+inline bool InsertSizeCompare(const shared_ptr<PairedInfoLibrary> lib1,
+                              const shared_ptr<PairedInfoLibrary> lib2) {
     return lib1->GetISMax() < lib2->GetISMax();
 }
 

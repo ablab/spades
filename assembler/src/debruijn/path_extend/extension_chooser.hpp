@@ -814,15 +814,15 @@ private:
 
 class MatePairExtensionChooser : public ExtensionChooser {
 public:
-    MatePairExtensionChooser(const Graph& g, PairedInfoLibrary& lib,
+    MatePairExtensionChooser(const Graph& g, shared_ptr<PairedInfoLibrary> lib,
                               const PathContainer& paths, size_t max_number_of_paths_to_search)
             : ExtensionChooser(g, 0, .0),
               g_(g),
               lib_(lib),
-              search_dist_(lib.GetISMax()),
+              search_dist_(lib->GetISMax()),
               weight_counter_(g, lib, 10),
               cov_map_(g_, paths),
-              path_searcher_(g_, cov_map_, lib_.GetISMax(), PathsWeightCounter(g, lib, 30), max_number_of_paths_to_search),
+              path_searcher_(g_, cov_map_, lib_->GetISMax(), PathsWeightCounter(g, lib, 30), max_number_of_paths_to_search),
               unique_edge_analyzer_(g, cov_map_, 0., 1000.),
               simple_scaffolder_(g) {
     }
@@ -830,7 +830,7 @@ public:
                                  EdgeContainer& init_edges) {
         DEBUG("mp chooser");
         path.Print();
-        if (path.Length() < lib_.GetISMin()) {
+        if (path.Length() < lib_->GetISMin()) {
             return EdgeContainer();
         }
         EdgeContainer edges = TryResolveBulge(path, init_edges);
@@ -1240,7 +1240,7 @@ private:
     }
 
     const Graph& g_;
-    PairedInfoLibrary& lib_;
+    shared_ptr<PairedInfoLibrary> lib_;
     size_t search_dist_;
     PathsWeightCounter weight_counter_;
     const GraphCoverageMap cov_map_;

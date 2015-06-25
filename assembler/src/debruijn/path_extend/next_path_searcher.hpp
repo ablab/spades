@@ -562,7 +562,7 @@ inline void NextPathSearcher::FindScaffoldingCandidates(EdgeId e, size_t distanc
     TRACE( distance_to_tip << " " << distance_to_tip - g_.length(e) << " " << search_dist_);
 
     set<EdgeId> candidate_edges;
-    int min_distance = std::max((int) distance_to_tip - (int) weight_counter_.GetLib().GetLeftVar(), 0);
+    int min_distance = std::max((int) distance_to_tip - (int) weight_counter_.GetLib()->GetLeftVar(), 0);
     int max_distance = (int) search_dist_ + (int) g_.length(e);
     TRACE("Looking in range " << min_distance << " " << max_distance);
     weight_counter_.FindJumpCandidates(e, min_distance, max_distance, long_edge_len_, candidate_edges);
@@ -832,7 +832,7 @@ inline void NextPathSearcher::JoinPathsByPI(ConstructedPathT& constructed_paths)
                 for (size_t j = 0; j < path2.Size(); ++j) {
                     size_t len_to_e2 = path2.Length() - path2.LengthAt(j);
                     size_t dist = path1.LengthAt(i) + len_to_e2;
-                    size_t min_dist = (size_t) max(0, (int) dist - (int) weight_counter_.GetLib().GetLeftVar());
+                    size_t min_dist = (size_t) max(0, (int) dist - (int) weight_counter_.GetLib()->GetLeftVar());
                     size_t max_dist = dist + search_dist_;
                     DEBUG("try to find pair info between " << g_.int_id(path1[i]) << " and  " << g_.int_id(path2[j])
                           << " distance from " << min_dist
