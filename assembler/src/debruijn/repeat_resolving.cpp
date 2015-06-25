@@ -73,9 +73,5 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
 
 } // debruijn_graph
 
-namespace path_extend {
 
-std::atomic<uint64_t> BidirectionalPath::path_id_{0};
-
-}
 

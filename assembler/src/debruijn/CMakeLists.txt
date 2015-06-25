@@ -10,6 +10,7 @@ add_executable(spades
                kmer_coverage_model.cpp
                config_struct.cpp
                path_extend/pe_config_struct.cpp
+               path_extend/bidirectional_path.cpp
                stage.cpp
                construction.cpp
                gap_closer.cpp

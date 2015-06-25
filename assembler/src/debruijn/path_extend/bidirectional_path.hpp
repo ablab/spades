@@ -336,15 +336,15 @@ public:
         return !operator==(path);
     }
 
-    void CheckConjugateEnd() {
+    void CheckConjugateEnd(size_t max_repeat_length) {
         size_t prev_size = 0;
         while (prev_size != Size()) {
             prev_size = Size();
-            FindConjEdges();
+            FindConjEdges(max_repeat_length);
         }
     }
 
-    void FindConjEdges() {
+    void FindConjEdges(size_t max_repeat_length) {
         for (size_t begin_pos = 0; begin_pos < Size(); ++begin_pos) {
             size_t begin = begin_pos;
             vector<size_t> conj_pos = FindAll(g_.conjugate(At(begin_pos)), begin + 1);
@@ -369,7 +369,7 @@ public:
                 size_t palindrom_len = (size_t) max((int) LengthAt(begin_pos) - (int) LengthAt(begin), 0);
                 size_t between = (size_t) max(0, (int) LengthAt(begin) - (int) (end < Size() - 1 ? LengthAt(end + 1) : 0));
                 DEBUG("tail len " << tail_len << " head len " << head_len << " palindrom_len "<< palindrom_len << " between " << between);
-                if (palindrom_len <= cfg::get().max_repeat_length) {
+                if (palindrom_len <= max_repeat_length) {
                     if (palindrom_len < head_len && palindrom_len < tail_len) {
                         DEBUG("too big head and end");
                         continue;
@@ -741,7 +741,7 @@ inline bool PathIdCompare(const BidirectionalPath* p1, const BidirectionalPath* 
 
 typedef std::pair<BidirectionalPath*, BidirectionalPath*> PathPair;
 
-bool compare_path_pairs(const PathPair& p1, const PathPair& p2) {
+inline bool compare_path_pairs(const PathPair& p1, const PathPair& p2) {
     if (p1.first->Length() != p2.first->Length() || p1.first->Size() == 0 || p2.first->Size() == 0) {
         return p1.first->Length() > p2.first->Length();
     }

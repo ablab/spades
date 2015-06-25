@@ -14,6 +14,7 @@ add_executable(dipspades
                ../debruijn/kmer_coverage_model.cpp
                ../debruijn/config_struct.cpp
                ../debruijn/path_extend/pe_config_struct.cpp
+               ../debruijn/path_extend/bidirectional_path.cpp
                ../debruijn/stage.cpp
                ../debruijn/construction.cpp
                ../debruijn/gap_closer.cpp
