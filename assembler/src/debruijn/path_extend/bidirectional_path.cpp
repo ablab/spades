@@ -4,8 +4,18 @@
 //* See file LICENSE for details.
 //****************************************************************************
 
-#pragma once
+/*
+ * bidirectional_path.cpp
+ *
+ *  Created on: Jun 25, 2015
+ *      Author: andrey
+ */
 
-#include "statistics_commands/print_paths_command.hpp"
-#include "statistics_commands/print_contigs_stats.hpp"
-#include "statistics_commands/junction_sequence_command.hpp"
+#include "standard.hpp"
+#include "bidirectional_path.hpp"
+
+namespace path_extend {
+
+std::atomic<uint64_t> BidirectionalPath::path_id_{0};
+
+}

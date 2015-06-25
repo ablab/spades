@@ -10,6 +10,7 @@ import os
 import shutil
 from site import addsitedir
 from distutils import dir_util
+from os.path import abspath, expanduser
 import sys
 import getopt
 import logging
@@ -172,9 +173,13 @@ def fill_cfg(options_to_parse, log):
 
     for opt, arg in options:
         if opt == '-o':
-            options_storage.output_dir = os.path.abspath(arg)
+            if options_storage.output_dir is not None:
+                support.error('-o option was specified at least twice')
+            options_storage.output_dir = abspath(expanduser(arg))
+            options_storage.dict_of_rel2abs[arg] = options_storage.output_dir
         elif opt == "--tmp-dir":
-            options_storage.tmp_dir = os.path.abspath(arg)
+            options_storage.tmp_dir = abspath(expanduser(arg))
+            options_storage.dict_of_rel2abs[arg] = options_storage.tmp_dir
         elif opt == "--configs-dir":
             options_storage.configs_dir = support.check_dir_existence(arg)
         elif opt == "--reference":
@@ -319,8 +324,8 @@ def fill_cfg(options_to_parse, log):
     else:
         dataset_data = support.correct_dataset(dataset_data)
         dataset_data = support.relative2abs_paths(dataset_data, os.getcwd())
-        options_storage.dataset_yaml_filename = os.path.join(options_storage.output_dir, "input_dataset.yaml")
-        pyyaml.dump(dataset_data, open(options_storage.dataset_yaml_filename, 'w'))
+    options_storage.dataset_yaml_filename = os.path.join(options_storage.output_dir, "input_dataset.yaml")
+    pyyaml.dump(dataset_data, open(options_storage.dataset_yaml_filename, 'w'))
 
     support.check_dataset_reads(dataset_data, options_storage.only_assembler, log)
     if not support.get_lib_ids_by_type(dataset_data, spades_logic.READS_TYPES_USED_IN_CONSTRUCTION):
@@ -483,13 +488,13 @@ def main(args):
         log.info("Restored from " + cmd_line)
         if options_storage.restart_from:
             updated_params = ""
-            flag = False
+            skip_next = False
             for v in args[1:]:
                 if v == '-o' or v == '--restart-from':
-                    flag = True
+                    skip_next = True
                     continue
-                if flag:
-                    flag = False
+                if skip_next or v.startswith('--restart-from='):  # you can specify '--restart-from=k33' but not '-o=out_dir'
+                    skip_next = False
                     continue
                 updated_params += " " + v
             updated_params = updated_params.strip()
@@ -504,9 +509,15 @@ def main(args):
     if options_storage.continue_mode:
         log.info(cmd_line)
     else:
-        command = "Command line:"
+        command = "Command line: "
         for v in args:
-            command += " " + v
+            # substituting relative paths with absolute ones (read paths, output dir path, etc)
+            v, prefix = support.get_option_prefix(v)
+            if v in options_storage.dict_of_rel2abs.keys():
+                v = options_storage.dict_of_rel2abs[v]
+            if prefix:
+                command += prefix + ":"
+            command += v + " "
         log.info(command)
 
     # special case
@@ -744,6 +755,7 @@ def main(args):
             message = " * Assembled scaffolds are in " + support.process_spaces(result_scaffolds_filename)
             if os.path.isfile(result_scaffolds_filename[:-6] + ".fastg"):
                 message += " (" + os.path.basename(result_scaffolds_filename[:-6] + ".fastg") + ")"
+
             log.info(message)
         #log.info("")
 

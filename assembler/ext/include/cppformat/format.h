@@ -1482,7 +1482,7 @@ class BasicWriter {
   // Writes a formatted string.
   template <typename StrChar>
   CharPtr write_str(
-      const StrChar *s, std::size_t size, const AlignSpec &spec);
+      const StrChar *s, std::size_t size, const FormatSpec &spec);
 
   template <typename StrChar>
   void write_str(
@@ -1648,8 +1648,10 @@ class BasicWriter {
 template <typename Char>
 template <typename StrChar>
 typename BasicWriter<Char>::CharPtr BasicWriter<Char>::write_str(
-      const StrChar *s, std::size_t size, const AlignSpec &spec) {
+      const StrChar *s, std::size_t size, const FormatSpec &spec) {
   CharPtr out = CharPtr();
+  if (size > spec.precision())
+    size = spec.precision();
   if (spec.width() > size) {
     out = grow_buffer(spec.width());
     Char fill = static_cast<Char>(spec.fill());

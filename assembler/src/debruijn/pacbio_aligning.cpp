@@ -64,9 +64,16 @@ void ProcessReadsBatch(conj_graph_pack &gp,
 }
 
 void align_pacbio(conj_graph_pack &gp, int lib_id) {
-    auto pacbio_read_stream = single_easy_reader(cfg::get().ds.reads[lib_id],
-                                                 false, false);
-    io::ReadStreamList<io::SingleRead> streams(pacbio_read_stream);
+    io::ReadStreamList<io::SingleRead> streams;
+    for (auto it = cfg::get().ds.reads[lib_id].single_begin(); it != cfg::get().ds.reads[lib_id].single_end(); ++it) {
+          //do we need input_file function here?
+        streams.push_back(make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(*it)));
+    }
+    //make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(file));
+    //    auto pacbio_read_stream = single_easy_reader(cfg::get().ds.reads[lib_id],
+//    false, false);
+
+//    io::ReadStreamList<io::SingleRead> streams(pacbio_read_stream);
  //   pacbio_read_stream.release();
     int n = 0;
     PathStorage<Graph>& long_reads = gp.single_long_reads[lib_id];
@@ -129,12 +136,7 @@ void PacBioAligning::run(conj_graph_pack &gp, const char*) {
     omnigraph::DefaultLabeler<Graph> labeler(gp.g, gp.edge_pos);
     int lib_id = -1;
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        io::LibraryType type = cfg::get().ds.reads[i].type();
-        if (type == io::LibraryType::PacBioReads ||
-                type == io::LibraryType::SangerReads ||
-                type == io::LibraryType::NanoporeReads ||
-                type == io::LibraryType::TrustedContigs ||
-                type == io::LibraryType::UntrustedContigs) {
+        if ( cfg::get().ds.reads[i].is_pacbio_alignable() ) {
             lib_id = (int) i;
             align_pacbio(gp, lib_id);
         }

@@ -52,7 +52,8 @@ class DebruijnEnvironment : public Environment {
 
             DEBUG("Environment constructor");
             gp_.kmer_mapper.Attach();
-            debruijn_graph::graphio::ScanGraphPack(path_, gp_);
+            debruijn_graph::graphio::ScanAll(path_, gp_);
+//            debruijn_graph::graphio::ScanGraphPack(path_, gp_);
             DEBUG("Graph pack created")
             LoadFromGP();
         }
@@ -179,6 +180,10 @@ class DebruijnEnvironment : public Environment {
 
         string file_name() {
             return file_name_base_;
+        }
+
+        size_t edge_length_bound() const {
+            return edge_length_bound_;
         }
 
         FillerClass& filler() {

@@ -10,6 +10,7 @@ add_executable(spades
                kmer_coverage_model.cpp
                config_struct.cpp
                path_extend/pe_config_struct.cpp
+               path_extend/bidirectional_path.cpp
                stage.cpp
                construction.cpp
                gap_closer.cpp
@@ -25,7 +26,7 @@ add_executable(spades
 # We have to do this to minimize changes in ConsensusCore itself
 include_directories(${EXT_DIR}/include/ConsensusCore)
 
-target_link_libraries(spades ConsensusCore input mph_index nlopt BamTools yaml-cpp format ${COMMON_LIBRARIES})
+target_link_libraries(spades ConsensusCore input mph_index nlopt BamTools yaml-cpp ${COMMON_LIBRARIES})
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(spades PROPERTIES LINK_SEARCH_END_STATIC 1)

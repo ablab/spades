@@ -24,12 +24,7 @@ namespace online_visualization {
                     return false;
                 //const string& name = args[1];
                 const string& file = args[2];
-
-                bool result = true;
-
-                result &= CheckFileExists(file);
-
-                return result;
+                return CheckFileExists(file);
             }
         public:
             string Usage() const {

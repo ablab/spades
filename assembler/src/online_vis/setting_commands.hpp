@@ -20,6 +20,8 @@ class LoadGenomeCommand : public LocalCommand<DebruijnEnvironment> {
         }
 
         bool CheckCorrectness(const vector<string>& args) const {
+            if (!CheckEnoughArguments(args))
+                return false;
             const string& file = args[1];
             if (!CheckFileExists(file))
                 return false;
@@ -46,10 +48,6 @@ class LoadGenomeCommand : public LocalCommand<DebruijnEnvironment> {
             if (!CheckCorrectness(args))
                 return;
             const string& file = args[1];
-            if (file == "") {
-                cout << "Warning: loading empty genome" << endl;
-                return;
-            }
             auto genome_reader = make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(file));
             io::SingleRead genome;
             (*genome_reader) >> genome;

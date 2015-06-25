@@ -17,6 +17,7 @@ import options_storage
 import support
 import process_cfg
 from distutils import dir_util
+from os.path import abspath, expanduser
 
 
 class DS_Args_List:
@@ -90,7 +91,7 @@ def parse_arguments(argv, log):
     ds_args = DS_Args()
     for opt, arg in options:
         if opt == '-o':
-            ds_args.output_dir = os.path.abspath(arg)
+            ds_args.output_dir = abspath(expanduser(arg))
         elif opt == '--expect-gaps':
             ds_args.allow_gaps = True
         elif opt == '--expect-rearrangements':
@@ -102,7 +103,7 @@ def parse_arguments(argv, log):
         elif opt == '-m' or opt == "--memory":
             ds_args.max_memory = int(arg)
         elif opt == '--tmp-dir':
-            ds_args.tmp_dir = os.path.abspath(arg)
+            ds_args.tmp_dir = abspath(expanduser(arg))
         elif opt == '--dsdebug':
             ds_args.dev_mode = True
         elif opt == '--hap-assembly':

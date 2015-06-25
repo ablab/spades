@@ -33,6 +33,10 @@ struct EdgePosition {
     }
 };
 
+inline ostream& operator <<(ostream& os, const EdgePosition& ep) {
+    return os << ep.contigId << " " << ep.mr;
+}
+
 template<class Graph>
 class EdgesPositionHandler: public GraphActionHandler<Graph> {
 	typedef typename Graph::VertexId VertexId;
@@ -74,11 +78,12 @@ public:
 		auto edge_it = edges_positions_.find(edge);
 		if(edge_it == edges_positions_.end())
 			return set<MappingRange>();
-		auto it = edge_it->second.find(contig_id);
-		if(it == edges_positions_.end())
+        const auto& positions = edge_it->second;
+		auto it = positions.find(contig_id);
+		if(it == positions.end())
 			return set<MappingRange>();
 		else
-			return *it;
+			return it->second;
 	}
 
 	vector<EdgePosition> GetEdgePositions(EdgeId edge) const {

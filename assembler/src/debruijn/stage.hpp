@@ -23,6 +23,8 @@ class AssemblyStage {
     AssemblyStage(const char *name, const char *id)
             : name_(name), id_(id), parent_(NULL) {}
 
+    virtual ~AssemblyStage() {}
+
     AssemblyStage(const AssemblyStage&) = delete;
     AssemblyStage& operator=(const AssemblyStage&) = delete;
 

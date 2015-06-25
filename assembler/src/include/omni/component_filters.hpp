@@ -97,8 +97,8 @@ public:
     }
 
     bool Check(const GraphComponent<Graph> & component) const {
-        if (component.v_size() <= min_vertex_number_
-                || component.v_size() >= max_vertex_number_)
+        if (component.v_size() < min_vertex_number_
+                || component.v_size() > max_vertex_number_)
             return false;
         for (auto iterator = component.e_begin(); iterator != component.e_end();
                 ++iterator) {

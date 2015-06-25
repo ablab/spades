@@ -94,6 +94,7 @@ def substitute_params(filename, var_dict, log):
 
     file = open(filename, "w")
     file.writelines(lines)
+    file.close()
 
 
 # configs with more priority should go first in parameters

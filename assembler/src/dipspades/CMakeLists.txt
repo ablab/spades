@@ -14,6 +14,7 @@ add_executable(dipspades
                ../debruijn/kmer_coverage_model.cpp
                ../debruijn/config_struct.cpp
                ../debruijn/path_extend/pe_config_struct.cpp
+               ../debruijn/path_extend/bidirectional_path.cpp
                ../debruijn/stage.cpp
                ../debruijn/construction.cpp
                ../debruijn/gap_closer.cpp
@@ -27,7 +28,7 @@ add_executable(dipspades
 	      utils/files_utils.cpp
           main.cpp)
 
-target_link_libraries(dipspades input mph_index BamTools yaml-cpp nlopt format ${COMMON_LIBRARIES} ssw)
+target_link_libraries(dipspades input mph_index BamTools yaml-cpp nlopt ${COMMON_LIBRARIES} ssw)
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(dipspades PROPERTIES LINK_SEARCH_END_STATIC 1)

@@ -31,6 +31,9 @@ enum class LibraryType {
   UntrustedContigs,
 };
 
+static std::vector<LibraryType> LibraryPriotity = {LibraryType::SingleReads, LibraryType::SangerReads, LibraryType::PacBioReads, LibraryType::NanoporeReads,
+                                            LibraryType::PairedEnd, LibraryType::HQMatePairs, LibraryType::MatePairs, LibraryType::TrustedContigs, LibraryType::UntrustedContigs};
+
 enum class LibraryOrientation {
   FR,
   FF,

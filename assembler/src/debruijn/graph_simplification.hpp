@@ -99,7 +99,7 @@ bool ClipTips(
 
     omnigraph::EdgeRemovingAlgorithm<Graph> tc(g,
                                                omnigraph::AddTipCondition(g, condition),
-                                               removal_handler);
+                                               removal_handler, true);
 
     TRACE("Tip length bound " << parser.max_length_bound());
     return tc.RunFromIterator(it,
@@ -113,7 +113,7 @@ bool ClipTips(
     const SimplifInfoContainer& info,
     std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
 
-    auto it = g.SmartEdgeBegin(LengthComparator<Graph>(g));
+    auto it = g.SmartEdgeBegin(LengthComparator<Graph>(g), true);
     return ClipTips(g, it, tc_config, info, removal_handler);
 }
 
@@ -172,7 +172,7 @@ bool RemoveBulges(
         std::function<void(typename Graph::EdgeId, const std::vector<typename Graph::EdgeId> &)> opt_handler = 0,
         std::function<void(typename Graph::EdgeId)> removal_handler = 0,
         size_t additional_length_bound = 0) {
-    auto it = g.SmartEdgeBegin(CoverageComparator<Graph>(g));
+    auto it = g.SmartEdgeBegin(CoverageComparator<Graph>(g), true);
     return RemoveBulges(g, it, br_config, opt_handler, removal_handler, additional_length_bound);
 }
 
@@ -190,7 +190,7 @@ bool RemoveLowCoverageEdges(
 
     auto condition = parser();
     omnigraph::EdgeRemovingAlgorithm<Graph> erroneous_edge_remover(
-        g, omnigraph::AddAlternativesPresenceCondition(g, condition), removal_handler);
+        g, omnigraph::AddAlternativesPresenceCondition(g, condition), removal_handler, true);
     return erroneous_edge_remover.RunFromIterator(it,
                                    make_shared<CoverageUpperBound<Graph>>(g, parser.max_coverage_bound()));
 }
@@ -201,7 +201,7 @@ bool RemoveLowCoverageEdges(
     const debruijn_config::simplification::erroneous_connections_remover& ec_config,
     const SimplifInfoContainer& info_container,
     std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
-    auto it = g.SmartEdgeBegin(CoverageComparator<Graph>(g));
+    auto it = g.SmartEdgeBegin(CoverageComparator<Graph>(g), true);
     return RemoveLowCoverageEdges(g, it, ec_config, info_container, removal_handler);
 }
 
@@ -242,7 +242,7 @@ bool RemoveRelativelyLowCoverageComponents(
                 connecting_path_length_bound,
                 info.detected_coverage_bound() * rcc_config.max_coverage_coeff,
                 removal_handler, rcc_config.vertex_count_limit);
-        return rel_rem.Process();
+        return rel_rem.Run();
     } else {
         INFO("Removal of relatively low covered connections disabled");
         return false;
@@ -331,7 +331,6 @@ bool TopologyReliabilityRemoveErroneousEdges(
                                                /*plausibility*/make_shared<func::AlwaysTrue<typename Graph::EdgeId>>()));
 
     return omnigraph::RemoveErroneousEdgesInLengthOrder(g, condition, max_length, removal_handler);
-
 }
 
 template<class Graph>
@@ -375,7 +374,7 @@ bool RemoveHiddenEC(Graph& g,
         INFO("Removing hidden erroneous connections");
         return HiddenECRemover<Graph>(g, her_config.uniqueness_length, flanking_cov,
                                her_config.unreliability_threshold, determined_coverage_threshold,
-                               cfg::get().simp.her.relative_threshold, removal_handler).Process();
+                               cfg::get().simp.her.relative_threshold, removal_handler).Run();
     }
     return false;
 }
@@ -417,7 +416,7 @@ bool RemoveIsolatedEdges(Graph &g, size_t max_length, double max_coverage, size_
     if (chunk_cnt == 1) {
         omnigraph::EdgeRemovingAlgorithm<Graph> removing_algo(g, condition, removal_handler);
 
-        return removing_algo.Process(LengthComparator<Graph>(g),
+        return removing_algo.Run(LengthComparator<Graph>(g),
                                          make_shared<LengthUpperBound<Graph>>(g, std::max(max_length, max_length_any_cov)));
     } else {
         SemiParallelAlgorithmRunner<Graph, EdgeId> runner(g);
@@ -481,7 +480,7 @@ std::function<void(typename Graph::EdgeId)> AddCountingCallback(CountingCallback
 template<class gp_t>
 bool FinalRemoveErroneousEdges(
     gp_t &gp,
-    std::function<void(typename Graph::EdgeId)> removal_handler,
+    std::function<void(typename gp_t::graph_t::EdgeId)> removal_handler,
     const SimplifInfoContainer& info,
     size_t iteration) {
 
@@ -502,10 +501,10 @@ bool FinalRemoveErroneousEdges(
 //                &omnigraph::simplification::SingleEdgeAdapter<set<EdgeId>>, _1, qual_removal_handler_f);
 //
 
-    std::function<void(set<typename Graph::EdgeId>)> set_removal_handler_f(0);
+    std::function<void(std::set<typename gp_t::graph_t::EdgeId>)> set_removal_handler_f;
     if (removal_handler) {
         set_removal_handler_f = std::bind(
-            &omnigraph::simplification::SingleEdgeAdapter<set<typename Graph::EdgeId>>, std::placeholders::_1, removal_handler);
+            &omnigraph::simplification::SingleEdgeAdapter<set<typename gp_t::graph_t::EdgeId>>, std::placeholders::_1, removal_handler);
     }
 
     bool changed = RemoveRelativelyLowCoverageComponents(gp.g, gp.flanking_cov,
@@ -649,7 +648,7 @@ public:
     std::shared_ptr<LengthOrderIteratorT> tip_smart_it() {
         if (tip_smart_it_)
             return tip_smart_it_;
-        auto answer = make_shared<LengthOrderIteratorT>(g_, omnigraph::LengthComparator<Graph>(g_));
+        auto answer = make_shared<LengthOrderIteratorT>(g_, omnigraph::LengthComparator<Graph>(g_), true);
         if (persistent_)
             tip_smart_it_ = answer;
         return answer;
@@ -658,7 +657,7 @@ public:
     std::shared_ptr<CoverageOrderIteratorT> bulge_smart_it() {
         if (bulge_smart_it_)
             return bulge_smart_it_;
-        auto answer = make_shared<CoverageOrderIteratorT>(g_, omnigraph::CoverageComparator<Graph>(g_));
+        auto answer = make_shared<CoverageOrderIteratorT>(g_, omnigraph::CoverageComparator<Graph>(g_), true);
         if (persistent_)
             bulge_smart_it_ = answer;
         return answer;
@@ -667,16 +666,16 @@ public:
     std::shared_ptr<CoverageOrderIteratorT> ec_smart_it() {
         if (ec_smart_it_)
             return ec_smart_it_;
-        auto answer = make_shared<CoverageOrderIteratorT>(g_, omnigraph::CoverageComparator<Graph>(g_));
+        auto answer = make_shared<CoverageOrderIteratorT>(g_, omnigraph::CoverageComparator<Graph>(g_), true);
         if (persistent_)
             ec_smart_it_ = answer;
         return answer;
     }
 
     void ResetIterators() {
-        tip_smart_it_ = 0;
-        ec_smart_it_ = 0;
-        bulge_smart_it_ = 0;
+        tip_smart_it_ = nullptr;
+        ec_smart_it_ = nullptr;
+        bulge_smart_it_ = nullptr;
     }
 };
 

@@ -121,7 +121,7 @@ bool ClipTips(
                                                AddTipCondition(g, condition),
                                                removal_handler);
 
-    return tc.Process(LengthComparator<Graph>(g),
+    return tc.Run(LengthComparator<Graph>(g),
                       make_shared<LengthUpperBound<Graph>>(g, max_length));
 }
 

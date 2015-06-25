@@ -994,7 +994,7 @@ Please note that in addition to the read length, the insert length also matters 
 
 <h4>Multi-cell data set with read length 2x150</h4>
 <p>
-Make sure your reads are corrected prior to assembly with Quake (recommended), or BayesHammer (integrated into SPAdes pipeline).
+Do not turn off SPAdes error correction (BayesHammer module), which is included in SPAdes default pipeline.
 <p>
 If you have enough coverage (50x+), then you may want to try to set k-mer lengths of 21, 33, 55, 77 (selected by default for reads with length 150bp).
 <p>
@@ -1020,7 +1020,7 @@ To correct and assemble the reads:
 
 <h4>Multi-cell data set with read lengths 2 x 250</h4>
 <p>
-Make sure your reads are corrected prior to assembly with Quake (recommended), or BayesHammer (integrated into SPAdes pipeline).
+Do not turn off SPAdes error correction (BayesHammer module), which is included in SPAdes default pipeline.
 <p>
 By default we suggest to increase k-mer lengths in increments of 22 until the  k-mer length reaches 127. The exact length of the k-mer depends on the coverage: k-mer length of 127 corresponds to 50x k-mer coverage and higher. For read length 250bp SPAdes automatically chooses K values equal to 21, 33, 55, 77, 99, 127.
 <p>

@@ -116,10 +116,7 @@ class GraphReadCorrector: public io::SequenceModifier {
 
 	const Graph& graph_;
 	const Mapper mapper_;
-
-	Path<EdgeId> TryFixPath(const Path<EdgeId>& path) const {
-		return Path <EdgeId> (path_fixer_.TryFixPath(path.sequence()), path.start_pos(), path.end_pos());
-	}
+	const MappingPathFixer<Graph> path_fixer_;
 
 public:
 	/*virtual*/
@@ -142,7 +139,7 @@ public:
 //			return Sequence();
 		}
 
-		Path<EdgeId> path = TryFixPath(mapping_path.path());
+		Path<EdgeId> path = path_fixer_.TryFixPath(mapping_path.path());
 //		TRACE("Mapped sequence to path " << graph_.str(path.sequence()));
 
 		if (!path_fixer_.CheckContiguous(path.sequence())) {
@@ -150,12 +147,7 @@ public:
 			return s;
 		} else {
 			TRACE("Fixed path is contiguous");
-			Sequence path_sequence = MergeSequences(graph_, path.sequence());
-			size_t start = path.start_pos();
-			size_t end = path_sequence.size()
-					- graph_.length(path[path.size() - 1]) + path.end_pos();
-			//todo we can do it more accurately with usage of mapping_path
-			Sequence answer = path_sequence.Subseq(start, end);
+			Sequence answer = PathSequence(graph_, path);
 //			if (answer != s) {
 //				if (answer.size() < 1000) {
 //					TRACE(
@@ -179,7 +171,6 @@ public:
 
 private:
 	DECL_LOGGER("ContigRefiner");
-	const MappingPathFixer<Graph> path_fixer_;
 };
 
 template<class Graph, class Mapper>

@@ -89,15 +89,39 @@ public:
 };
 
 template<class Graph>
+class CountingSizeComponentNameGenerator: public ComponentNameGenerator<Graph> {
+private:
+    string name_;
+    string extension_;
+    size_t cnt_;
+public:
+    CountingSizeComponentNameGenerator(string name, string extension): name_(name), extension_(extension), cnt_(0) {
+    }
+
+    string ComponentName(const GraphComponent<Graph>& component) {
+        cnt_++;
+        stringstream ss;
+        ss << name_ << "_" << cnt_;
+        if(component.name().size() > 0)
+            ss << "_" << component.name();
+        ss << "_size_" << component.size();
+        ss << "." << extension_;
+
+        return ss.str();
+    }
+};
+
+
+template<class Graph>
 class SplittingGraphVisualizer {
 private:
-	static const size_t DEFAULT_MAX_COMPONENT_NUMBER = 500;
 	const Graph& graph_;
 	const GraphLabeler<Graph> &labeler_;
 	const GraphColorer<Graph> &colorer_;
 	const VertexLinker<Graph> &linker_;
 	const bool paired_;
 	const size_t max_component_number_;
+    static const size_t DEFAULT_MAX_COMPONENT_NUMBER = 500;
 
     string ComponentFileName(size_t cnt, const string &folder, const GraphComponent<Graph>& component) {
         stringstream ss;
@@ -109,7 +133,7 @@ private:
     }
 
 public:
-	SplittingGraphVisualizer(const Graph& graph,
+    SplittingGraphVisualizer(const Graph& graph,
 			const GraphLabeler<Graph> &labeler,
 			const GraphColorer<Graph> &colorer,
 			const VertexLinker<Graph> &linker,

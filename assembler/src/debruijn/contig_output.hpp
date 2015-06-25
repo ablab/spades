@@ -214,9 +214,8 @@ public:
 
 	template<class sequence_stream>
 	void PrintContigs(sequence_stream &os) {
-		for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
+		for (auto it = graph_.ConstEdgeBegin(true); !it.IsEnd(); ++it) {
 			ReportEdge<sequence_stream>(os, constructor_.construct(*it));
-			it.HandleDelete(graph_.conjugate(*it));
 		}
 	}
 

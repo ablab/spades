@@ -28,7 +28,7 @@ namespace online_visualization {
         private:
             void DrawPicturesAlongGenomePart(DebruijnEnvironment& curr_env, const Sequence& piece_of_genome, string label = "") const {
                 const MappingPath<EdgeId>& mapping_path = curr_env.mapper().MapSequence(piece_of_genome);
-                DrawingCommand::DrawPicturesAlongPath(curr_env, mapping_path, label);
+                DrawingCommand::DrawPicturesAlongPath(curr_env, mapping_path.simple_path(), label);
             }
 
 //            void CountStatsAlongGenomePart(DebruijnEnvironment& curr_env, Sequence& piece_of_genome,

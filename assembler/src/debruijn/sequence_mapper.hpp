@@ -39,8 +39,25 @@ public:
 
   
     MappingPath<EdgeId> MapRead(const io::SingleRead &read) const {
-      VERIFY(read.IsValid());
-      return MapSequence(read.sequence());
+//      VERIFY(read.IsValid());
+        string s = read.GetSequenceString();
+        size_t l = 0, r = 0;
+        MappingPath<EdgeId> result;
+        for(size_t i = 0; i < s.size(); i++) {
+            if (read.GetSequenceString()[i] == 'N') {
+                if (r > l) {
+                    result.join(this->MapSequence(Sequence(s.substr(l, r - l))), (int) l);
+                }
+                r = i + 1;
+                l = i + 1;
+            } else {
+                r++;
+            }
+        }
+        if (r > l) {
+            result.join(this->MapSequence(Sequence(s.substr(l, r - l))), (int) l);
+        }
+      return result;
     }
 
     virtual size_t KmerSize() const = 0;
@@ -219,7 +236,8 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
             std::stringstream debug_stream;
             for (size_t i = 0; i < fixed_path.size(); ++i) {
                 debug_stream << g_.int_id(fixed_path[i]) << " ";
-            }TRACE(debug_stream.str());
+            }
+            TRACE(debug_stream.str());
             return vector<EdgeId>();
         }
         return fixed_path;

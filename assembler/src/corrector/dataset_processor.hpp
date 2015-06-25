@@ -21,6 +21,7 @@ struct OneContigDescription {
     size_t contig_length;
     sam_files_type sam_filenames;
     std::string sam_filename;
+    size_t id;
 };
 typedef std::unordered_map<std::string, OneContigDescription> ContigInfoMap;
 
@@ -34,7 +35,7 @@ class DatasetProcessor {
     std::unordered_map<std::string, std::vector<std::string> > buffered_reads_;
     size_t nthreads_;
     size_t buffered_count_;
-
+    std::unordered_map<size_t, std::string> lib_dirs_;
     const size_t kBuffSize = 100000;
     const size_t kMinContigLengthForInfo = 20000;
 public:
@@ -53,10 +54,10 @@ private:
     void SplitSingleLibrary(const std::string &out_contigs_filename, const size_t lib_count);
     void SplitPairedLibrary(const std::string &all_reads, const size_t lib_count);
     void GlueSplittedContigs(std::string &out_contigs_filename);
-    std::string RunPairedBwa(const std::string &left, const std::string &right, const size_t lib) const;
-    std::string RunSingleBwa(const std::string &single, const size_t lib) const;
+    std::string RunPairedBwa(const std::string &left, const std::string &right, const size_t lib);
+    std::string RunSingleBwa(const std::string &single, const size_t lib);
     void PrepareContigDirs(const size_t lib_count);
-
+    std::string GetLibDir(const size_t lib_count);
 };
 }
 ;

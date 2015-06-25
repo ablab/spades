@@ -22,6 +22,6 @@
     return 0;
 }
 
-namespace debruijn {
+namespace debruijn_graph {
 
 }

@@ -235,44 +235,6 @@ class SimpleIndelFinder {
     alternative_paths_.clear();
   }
 
-  // Deprecated
-  /*
-  void DeleteEdges() const {
-    TRACE("DELETE EDGES");
-    DeletingMergeHandler sure_merge_handler(sure_delete_list_);
-    ConditionedSmartSetIterator<Graph, EdgeId, DeletingMergeHandler> sure_smart_it(
-        g_, sure_delete_list_.begin(), sure_delete_list_.end(),
-        sure_merge_handler);
-
-    DeletingMergeHandler pro_merge_handler(probable_delete_list_);
-    ConditionedSmartSetIterator<Graph, EdgeId, DeletingMergeHandler> pro_smart_it(
-        g_, probable_delete_list_.begin(), probable_delete_list_.end(),
-        pro_merge_handler);
-
-    for (; !sure_smart_it.IsEnd(); ++sure_smart_it) {
-      edge_remover_.DeleteEdge(*sure_smart_it);
-    }
-
-    while (true) {
-      bool found = false;
-      for (; !pro_smart_it.IsEnd(); ++pro_smart_it) {
-        TRACE("Considering edge " << g_.str(*pro_smart_it));
-        VertexId edge_end = g_.EdgeEnd(*pro_smart_it);
-        if (g_.OutgoingEdgeCount(edge_end) == 0) {
-          found = true;
-          edge_remover_.DeleteEdge(*pro_smart_it);
-          break;
-        }
-      }
-
-      if (!found)
-        break;
-
-      pro_smart_it.reset();
-    }
-  }
-  */
-
   size_t EstimateSNPNumber(const size_t branch_len) {
     if (branch_len < 2) return 0;
     return 1 + (branch_len - (g_.k() + 1) + g_.k() - 1) / g_.k();

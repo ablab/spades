@@ -127,6 +127,12 @@ struct MappingRange {
     	return MappingRange(initial_range.Merge(other.initial_range), mapped_range.Merge(other.mapped_range));
     }
 
+    MappingRange ShiftInitial(int shift) const {
+        MappingRange result(*this);
+        result.initial_range.shift(shift);
+        return result;
+    }
+
     MappingRange Shift(int shift) const {
     	VERIFY(initial_range.end_pos >= initial_range.start_pos);
     	if(empty())
@@ -250,10 +256,10 @@ class MappingPath {
         return edges_;
     }
 
-    void join(const MappingPath<ElementId>& that) {
+    void join(const MappingPath<ElementId>& that, int pos_shift = 0) {
         for (size_t i = 0; i < that.size(); ++i) {
             edges_.push_back(that.edges_[i]);
-            range_mappings_.push_back(that.range_mappings_[i]);
+            range_mappings_.push_back(that.range_mappings_[i].ShiftInitial(pos_shift));
         }
     }
 

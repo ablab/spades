@@ -71,5 +71,7 @@ void ContigOutput::run(conj_graph_pack &gp, const char*) {
     OutputContigs(gp.g, cfg::get().output_dir + "final_contigs", true);
 }
 
-
 } // debruijn_graph
+
+
+

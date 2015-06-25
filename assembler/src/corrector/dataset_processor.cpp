@@ -16,12 +16,17 @@
 using namespace std;
 
 namespace corrector {
-static std::string GetLibDir(const size_t lib_count) {
-    return path::append_path(corr_cfg::get().work_dir, "lib" + to_string(lib_count));
+std::string DatasetProcessor::GetLibDir(const size_t lib_count) {
+    if (lib_dirs_.find(lib_count) != lib_dirs_.end())
+        return lib_dirs_[lib_count];
+    std::string res = path::make_temp_dir(corr_cfg::get().work_dir, "lib" + to_string(lib_count));
+    lib_dirs_[lib_count] = res;
+    return res;
 }
 
 void DatasetProcessor::SplitGenome(const string &genome_splitted_dir) {
     io::FileReadStream frs(genome_file_);
+    size_t cur_id = 0;
     while (!frs.eof()) {
         io::SingleRead cur_read;
         frs >> cur_read;
@@ -33,7 +38,8 @@ void DatasetProcessor::SplitGenome(const string &genome_splitted_dir) {
         string full_path = path::append_path(genome_splitted_dir, contig_name + ".fasta");
         string out_full_path = path::append_path(genome_splitted_dir, contig_name + ".ref.fasta");
         string sam_filename = path::append_path(genome_splitted_dir, contig_name + ".pair.sam");
-        all_contigs_[contig_name] = {full_path, out_full_path, contig_seq.length(), sam_files_type(), sam_filename};
+        all_contigs_[contig_name] = {full_path, out_full_path, contig_seq.length(), sam_files_type(), sam_filename, cur_id};
+        cur_id ++;
         buffered_reads_[contig_name].clear();
         io::osequencestream oss(full_path);
         oss << io::SingleRead(contig_name, contig_seq);
@@ -73,12 +79,14 @@ void DatasetProcessor::SplitSingleLibrary(const string &all_reads_filename, cons
 
 void DatasetProcessor::FlushAll(const size_t lib_count) {
     for (const auto &ac : all_contigs_) {
-        ofstream stream(ac.second.sam_filenames[lib_count].first.c_str(), std::ios_base::app | std::ios_base::out);
-        for (const string &read : buffered_reads_[ac.first]) {
-            stream << read;
-            stream << '\n';
+        if (buffered_reads_[ac.first].size() > 0) {
+            ofstream stream(ac.second.sam_filenames[lib_count].first.c_str(), std::ios_base::app | std::ios_base::out);
+            for (const string &read : buffered_reads_[ac.first]) {
+                stream << read;
+                stream << '\n';
+            }
+            buffered_reads_[ac.first].clear();
         }
-        buffered_reads_[ac.first].clear();
     }
 }
 
@@ -115,12 +123,8 @@ void DatasetProcessor::SplitPairedLibrary(const string &all_reads_filename, cons
     FlushAll(lib_count);
 }
 
-string DatasetProcessor::RunPairedBwa(const string &left, const string &right, const size_t lib) const {
+string DatasetProcessor::RunPairedBwa(const string &left, const string &right, const size_t lib)  {
     string cur_dir = GetLibDir(lib);
-    if (!path::make_dir(cur_dir)) {
-        WARN("Failed to create directory " << cur_dir << ", skipping sublib");
-        return "";
-    }
     int run_res = 0;
     string tmp1_sai_filename = path::append_path(cur_dir, "tmp1.sai");
     string tmp2_sai_filename = path::append_path(cur_dir, "tmp2.sai");
@@ -166,13 +170,9 @@ string DatasetProcessor::RunPairedBwa(const string &left, const string &right, c
     return tmp_sam_filename;
 }
 
-string DatasetProcessor::RunSingleBwa(const string &single, const size_t lib) const {
+string DatasetProcessor::RunSingleBwa(const string &single, const size_t lib)  {
     int run_res = 0;
     string cur_dir = GetLibDir(lib);
-    if (!path::make_dir(cur_dir)) {
-        WARN("Failed to create directory " << cur_dir << ", skipping sublib");
-        return "";
-    }
     string tmp_sai_filename = path::append_path(cur_dir, "tmp1.sai");
     string tmp_sam_filename = path::append_path(cur_dir, "tmp.sam");
     string isize_txt_filename = path::append_path(cur_dir, "isize.txt");
@@ -215,10 +215,9 @@ void DatasetProcessor::PrepareContigDirs(const size_t lib_count) {
     string out_dir = GetLibDir(lib_count);
     for (auto &ac : all_contigs_) {
         auto contig_name = ac.first;
-        string header = "@SQ\tSN:" + contig_name + "\tLN:" + to_string(all_contigs_[contig_name].contig_length);
-        BufferedOutputRead(header, contig_name, lib_count);
-        string out_name = path::append_path(out_dir, ac.first + ".sam");
+        string out_name = path::append_path(out_dir, contig_name + ".sam");
         ac.second.sam_filenames.push_back(make_pair(out_name, unsplitted_sam_files_[lib_count].second));
+        BufferedOutputRead("@SQ\tSN:" + contig_name + "\tLN:" + to_string(all_contigs_[contig_name].contig_length), contig_name, lib_count);
     }
     FlushAll(lib_count);
 }
@@ -239,6 +238,7 @@ void DatasetProcessor::ProcessDataset() {
                 INFO(left + " " + right);
                 string samf = RunPairedBwa(left, right, lib_num);
                 if (samf != "") {
+                    INFO("Adding samfile " << samf);
                     unsplitted_sam_files_.push_back(make_pair(samf, lib_type));
                     PrepareContigDirs(lib_num);
                     SplitPairedLibrary(samf, lib_num);
@@ -290,8 +290,13 @@ void DatasetProcessor::ProcessDataset() {
 
 void DatasetProcessor::GlueSplittedContigs(string &out_contigs_filename) {
     ofstream of_c(out_contigs_filename, std::ios_base::binary);
+    vector<string> ordered_names;
+    ordered_names.resize(all_contigs_.size());
     for (const auto &ac : all_contigs_) {
-        ifstream a_f(ac.second.output_contig_filename, std::ios_base::binary);
+        ordered_names[ac.second.id] = ac.first;
+    }
+    for (size_t i = 0; i < ordered_names.size(); i++) {
+        ifstream a_f(all_contigs_[ordered_names[i]].output_contig_filename, std::ios_base::binary);
         of_c << a_f.rdbuf();
     }
 }

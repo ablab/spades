@@ -12,6 +12,7 @@
 #include "drawing_commands/draw_part_of_genome_command.hpp"
 #include "drawing_commands/draw_contig_command.hpp"
 #include "drawing_commands/draw_poorly_assembled.hpp"
+#include "drawing_commands/draw_connected_command.hpp"
 
 #include "environment.hpp"
 #include "command.hpp"

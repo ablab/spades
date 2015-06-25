@@ -28,11 +28,16 @@ class DebruijnOnlineVisualizer : public OnlineVisualizer<DebruijnEnvironment> {
     AddCommand(make_shared<DrawPositionCommand>());
     AddCommand(make_shared<DrawPartOfGenomeCommand>());
     AddCommand(make_shared<DrawContigCommand>());
+    AddCommand(make_shared<DrawContigsCommand>());
     AddCommand(make_shared<DrawPoorlyAssembledCommand>());
+    AddCommand(make_shared<DrawUnresolvedWRTAssemblyCommand>());
+    AddCommand(make_shared<DrawUnresolvedWRTReferenceCommand>());
+    AddCommand(make_shared<DrawConnectedCommand>());
     AddCommand(make_shared<ShowPositionCommand>());
 
     AddCommand(make_shared<PrintPathsCommand>());
     AddCommand(make_shared<PrintContigsStatsCommand>());
+    AddCommand(make_shared<JunctionSequenceCommand>());
 
     AddCommand(make_shared<ClipTipsCommand>());
   }

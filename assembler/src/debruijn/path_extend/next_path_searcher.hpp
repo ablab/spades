@@ -170,7 +170,7 @@ public:
     typedef multimap<EdgeId, PathWithDistance> ConstructedPathT;
 
     NextPathSearcher(const Graph& g, const GraphCoverageMap& cover_map, size_t search_dist, PathsWeightCounter weight_counter, size_t max_number_of_paths_to_search);
-    set<BidirectionalPath*> FindNextPaths(const BidirectionalPath& path, EdgeId begin_edge, bool jump = true);
+    BidirectionalPathSet FindNextPaths(const BidirectionalPath& path, EdgeId begin_edge, bool jump = true);
     vector<BidirectionalPath*> ScaffoldTree(const BidirectionalPath& path);
 private:
     bool IsOutTip(VertexId v) const;
@@ -192,7 +192,7 @@ private:
                                      ConstructedPathT& constructed_paths, bool is_gap);
     int EstimateGapForPath(EdgeSet& candidate_set, const BidirectionalPath& p);
     void AddConstructedPath(const BidirectionalPath& cp, size_t from, int gap, ConstructedPathT& constructed_paths);
-    void FilterBackPaths(set<BidirectionalPath*>& back_paths, EdgeId edge_to_reach, set<BidirectionalPath*>& reached_paths, size_t max_len = -1UL);
+    void FilterBackPaths(BidirectionalPathSet& back_paths, EdgeId edge_to_reach, BidirectionalPathSet& reached_paths, size_t max_len = -1UL);
     void JoinPathsByGraph(ConstructedPathT& constructed_paths);
     void JoinPathsByPI(ConstructedPathT& constructed_paths);
     void JoinPathsByDejikstra(const BidirectionalPath& init_path, ConstructedPathT& constructed_paths);
@@ -253,7 +253,8 @@ inline vector<BidirectionalPath*> NextPathSearcher::ScaffoldTree(const Bidirecti
     DEBUG( "for path " << path.GetId() << " several extension " << result_paths.size());
     return result_paths;
 }
-inline set<BidirectionalPath*> NextPathSearcher::FindNextPaths(const BidirectionalPath& path, EdgeId begin_edge, bool jump) {
+
+inline BidirectionalPathSet NextPathSearcher::FindNextPaths(const BidirectionalPath& path, EdgeId begin_edge, bool jump) {
     TRACE("begin find next paths");
     vector<Edge*> grow_paths;
     vector<Edge*> result_edges;
@@ -273,10 +274,11 @@ inline set<BidirectionalPath*> NextPathSearcher::FindNextPaths(const Bidirection
     grow_paths.push_back(e);
 
     size_t ipath = 0;
+    DEBUG("Processing paths");
     while (ipath < grow_paths.size()) {
-        TRACE("Processing path " << ipath << " of " << grow_paths.size() << " need to grow " << count_to_grow);
+        DEBUG("Processing path " << ipath << " of " << grow_paths.size() << " need to grow " << count_to_grow);
         Edge* current_path = grow_paths[ipath++];
-        TRACE(" edge " << g_.int_id(current_path->GetId()));
+        DEBUG(" edge " << g_.int_id(current_path->GetId()));
         if (used_edges.count(current_path) > 0) {
             count_to_grow--;
             continue;
@@ -287,7 +289,9 @@ inline set<BidirectionalPath*> NextPathSearcher::FindNextPaths(const Bidirection
             count_to_grow--;
             continue;
         }
+        DEBUG("Growing path");
         vector<Edge*> to_add = GrowPath(path, current_path);
+        DEBUG("Path grown");
         if (to_add.empty() && current_path->IsCorrect()) {
             DEBUG("scaffold tip");
             ScaffoldTip(path, current_path, result_edges, stopped_paths, to_add, jump);
@@ -297,14 +301,16 @@ inline set<BidirectionalPath*> NextPathSearcher::FindNextPaths(const Bidirection
             grow_paths.push_back(e_to_add);
             count_to_grow++;
         }
-        if (count_to_grow > (int) max_paths_) {
+
+        if (count_to_grow > (int) max_paths_ || ipath > max_paths_ * 10) {
             DEBUG("too many paths");
             delete start_e;
-            return set<BidirectionalPath*>();
+            return BidirectionalPathSet();
         }
     }
+    DEBUG("Paths processed");
 
-    std::set<BidirectionalPath*> result_paths;
+    BidirectionalPathSet result_paths;
     TRACE("adding paths " << result_edges.size());
     for (size_t i = 0; i < result_edges.size(); ++i) {
         BidirectionalPath result_path = result_edges[i]->GetPrevPath(path.Size());
@@ -368,7 +374,7 @@ inline vector<Edge*> NextPathSearcher::GrowPath(const BidirectionalPath& init_pa
     }
     for (EdgeId next_edge : g_.OutgoingEdges(g_.EdgeEnd(e->GetId()))) {
         TRACE("Analyze outgoing edge " << g_.int_id(next_edge));
-        set<BidirectionalPath*> cov_paths = cover_map_.GetCoveringPaths(next_edge);
+        BidirectionalPathSet cov_paths = cover_map_.GetCoveringPaths(next_edge);
         TRACE("cov_map size " << cov_paths.size());
         bool already_added = false;
         for (auto inext_path = cov_paths.begin(); inext_path != cov_paths.end() && !already_added; ++inext_path) {
@@ -556,7 +562,7 @@ inline void NextPathSearcher::FindScaffoldingCandidates(EdgeId e, size_t distanc
     TRACE( distance_to_tip << " " << distance_to_tip - g_.length(e) << " " << search_dist_);
 
     set<EdgeId> candidate_edges;
-    int min_distance = std::max((int) distance_to_tip - (int) weight_counter_.GetLib().GetLeftVar(), 0);
+    int min_distance = std::max((int) distance_to_tip - (int) weight_counter_.GetLib()->GetLeftVar(), 0);
     int max_distance = (int) search_dist_ + (int) g_.length(e);
     TRACE("Looking in range " << min_distance << " " << max_distance);
     weight_counter_.FindJumpCandidates(e, min_distance, max_distance, long_edge_len_, candidate_edges);
@@ -624,7 +630,7 @@ inline void NextPathSearcher::ProcessScaffoldingCandidate(EdgeWithDistance& e, E
     TRACE( "Searchin for edge of length " << g_.length(e.e_) << " to dist " << max_length_back);
     NextPathSearcher back_searcher(g_, cover_map_, max_length_back, weight_counter_, max_paths_);
     BidirectionalPath jumped_edge(g_, g_.conjugate(e.e_));
-    set<BidirectionalPath*> back_paths = back_searcher.FindNextPaths(jumped_edge, jumped_edge.Back(), false);
+    BidirectionalPathSet back_paths = back_searcher.FindNextPaths(jumped_edge, jumped_edge.Back(), false);
     TRACE(" === DONE SEARCHING === ");
     TRACE("Found " << back_paths.size() << " is tip " << IsInTip(g_.EdgeStart(e.e_)) << " look for tip " << looking_for_tip);
 
@@ -637,7 +643,7 @@ inline void NextPathSearcher::ProcessScaffoldingCandidate(EdgeWithDistance& e, E
         }
     } else {
     	TRACE("Found several back paths " << back_paths.size());
-        set<BidirectionalPath*> reached_paths;
+        BidirectionalPathSet reached_paths;
         FilterBackPaths(back_paths, g_.conjugate(current_path->GetId()), reached_paths, search_dist_ - grown_path_len);
         //Found a path back to the init path
         if (reached_paths.size() > 0 && !looking_for_tip) {
@@ -746,7 +752,7 @@ inline bool NextPathSearcher::IsInTip(VertexId v) const {
     }
     return false;
 }
-inline void NextPathSearcher::FilterBackPaths(set<BidirectionalPath*>& back_paths, EdgeId edge_to_reach, set<BidirectionalPath*>& reached_paths,
+inline void NextPathSearcher::FilterBackPaths(BidirectionalPathSet& back_paths, EdgeId edge_to_reach, BidirectionalPathSet& reached_paths,
                                               size_t max_len) {
 	TRACE("Searching for proper back paths");
 
@@ -826,7 +832,7 @@ inline void NextPathSearcher::JoinPathsByPI(ConstructedPathT& constructed_paths)
                 for (size_t j = 0; j < path2.Size(); ++j) {
                     size_t len_to_e2 = path2.Length() - path2.LengthAt(j);
                     size_t dist = path1.LengthAt(i) + len_to_e2;
-                    size_t min_dist = (size_t) max(0, (int) dist - (int) weight_counter_.GetLib().GetLeftVar());
+                    size_t min_dist = (size_t) max(0, (int) dist - (int) weight_counter_.GetLib()->GetLeftVar());
                     size_t max_dist = dist + search_dist_;
                     DEBUG("try to find pair info between " << g_.int_id(path1[i]) << " and  " << g_.int_id(path2[j])
                           << " distance from " << min_dist

@@ -125,4 +125,13 @@ Sequence MergeSequences(const Graph& g,
 	return MergeOverlappingSequences(path_sequences, g.k());
 }
 
+template<class Graph>
+Sequence PathSequence(const Graph& g, const Path<typename Graph::EdgeId>& path) {
+    Sequence path_sequence = MergeSequences(g, path.sequence());
+    size_t start = path.start_pos();
+    size_t end = path_sequence.size()
+            - g.length(path[path.size() - 1]) + path.end_pos();
+    return path_sequence.Subseq(start, end);
+}
+
 }

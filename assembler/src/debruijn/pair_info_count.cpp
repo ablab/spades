@@ -62,8 +62,9 @@ void ProcessSingleReads(conj_graph_pack& gp, size_t ilib) {
     SimpleLongReadMapper read_mapper(gp, gp.single_long_reads[ilib]);
     notifier.Subscribe(ilib, &read_mapper);
 
-    auto single_streams = single_binary_readers(reads, true, false);
+    auto single_streams = single_binary_readers(reads, true, true);
     notifier.ProcessLibrary(single_streams, ilib, *ChooseProperMapper(gp, reads), single_streams.size());
+    cfg::get_writable().ds.reads[ilib].data().single_reads_mapped = true;
 }
 
 void ProcessPairedReads(conj_graph_pack& gp, size_t ilib, bool map_single_reads) {
