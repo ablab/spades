@@ -10,14 +10,13 @@
 
 namespace debruijn_graph {
 
-class PairInfoCount : public spades::AssemblyStage {
+//todo rename
+class SecondPhaseSetup : public spades::AssemblyStage {
   public:
-    PairInfoCount(bool preliminary = false)
-        : AssemblyStage(preliminary ? "Preliminary Paired Information Counting" : "Paired Information Counting",
-                        preliminary ? "late_pair_info_count_preliminary" : "late_pair_info_count") {}
+    SecondPhaseSetup()
+        : AssemblyStage("Second Phase Setup", "second_phase_setup") {}
 
     void run(conj_graph_pack &gp, const char*);
 };
 
 }
-

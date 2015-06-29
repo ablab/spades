@@ -29,6 +29,7 @@ class DebruijnOnlineVisualizer : public OnlineVisualizer<DebruijnEnvironment> {
     AddCommand(make_shared<DrawPartOfGenomeCommand>());
     AddCommand(make_shared<DrawContigCommand>());
     AddCommand(make_shared<DrawContigsCommand>());
+    AddCommand(make_shared<DrawPolymorphicRegions>());
     AddCommand(make_shared<DrawPoorlyAssembledCommand>());
     AddCommand(make_shared<DrawUnresolvedWRTAssemblyCommand>());
     AddCommand(make_shared<DrawUnresolvedWRTReferenceCommand>());
@@ -38,7 +39,7 @@ class DebruijnOnlineVisualizer : public OnlineVisualizer<DebruijnEnvironment> {
     AddCommand(make_shared<PrintPathsCommand>());
     AddCommand(make_shared<PrintContigsStatsCommand>());
     AddCommand(make_shared<JunctionSequenceCommand>());
-
+    AddCommand(make_shared<PrintEdgeCommand>());
     AddCommand(make_shared<ClipTipsCommand>());
   }
 

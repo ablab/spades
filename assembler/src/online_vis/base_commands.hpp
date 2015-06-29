@@ -352,7 +352,6 @@ namespace online_visualization {
             return CheckIsNumber(args[1]);
           return true;
         }
-
       public:
         string Usage() const {
           string answer;
@@ -369,12 +368,10 @@ namespace online_visualization {
 
         void Execute(shared_ptr<Env>& /* curr_env */, LoadedEnvironments<Env>& /* loaded_environments */, const ArgumentList& arg_list) const {
           vector<string> args = arg_list.GetAllArguments();
-
           if (!CheckCorrectness(args))
             return;
 
           History& history = History::GetHistory();
-
           if (args.size() > 1) {
             size_t number = GetInt(args[1]);
             if (number > history.size())
@@ -383,8 +380,9 @@ namespace online_visualization {
               cout << " " << history[history.size() - int(number) + i] << endl;
           }
           else {
-            for (size_t i = 0; i < history.size(); ++i)
+            for (size_t i = 0; i < history.size(); ++i) {
               cout << history[i] << endl;
+            }
           }
         }
     };

@@ -209,6 +209,10 @@ class BulgeRemover: public EdgeProcessingAlgorithm<Graph> {
 protected:
     /*virtual*/
     bool ProcessEdge(EdgeId edge) {
+        if (graph_.conjugate(edge) < edge) {
+            TRACE("Noncanonical edge");
+            return false;
+        }
         TRACE("Considering edge " << graph_.str(edge) << " of length " << graph_.length(edge) << " and avg coverage " << graph_.coverage(edge));
         TRACE("Is possible bulge " << PossibleBulgeEdge(edge));
 
@@ -267,6 +271,11 @@ public:
 			max_relative_delta_(max_relative_delta),
 			opt_callback_(opt_callback),
 			removal_handler_(removal_handler) {
+                DEBUG("Launching br max_length=" << max_length 
+                << " max_coverage=" << max_coverage 
+                << " max_relative_coverage=" << max_relative_coverage
+                << " max_delta=" << max_delta 
+                << " max_relative_delta=" << max_relative_delta);
 	}
 
 //  Old version. If it was math::gr then it would be equivalent to new one.

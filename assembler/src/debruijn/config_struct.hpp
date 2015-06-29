@@ -301,6 +301,8 @@ struct debruijn_config {
             std::string ec_condition;
         };
 
+        size_t cycle_iter_count;
+        bool post_simplif_enabled;
         bool topology_simplif_enabled;
         tip_clipper tc;
         topology_tip_clipper ttc;
@@ -315,6 +317,9 @@ struct debruijn_config {
         complex_bulge_remover cbr;
         hidden_ec_remover her;
         //bool stats_mode;
+
+        tip_clipper final_tc;
+        bulge_remover final_br;
 
         bool fast_features;
         double fast_activation_cov;
@@ -339,6 +344,7 @@ struct debruijn_config {
     bool need_consensus;
     double mismatch_ratio;
     simplification simp;
+    simplification preliminary_simp;
     
     struct sensitive_mapper {
         size_t k;
@@ -448,6 +454,8 @@ struct debruijn_config {
         }
 
         bool single_cell;
+        bool meta;
+
         std::string reference_genome_filename;
         std::string reads_filename;
 
@@ -527,6 +535,8 @@ struct debruijn_config {
     std::string entry_point;
 
     bool rr_enable;
+    bool two_step_rr;
+
     single_read_resolving_mode single_reads_rr;
     bool use_single_reads;
 

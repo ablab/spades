@@ -23,7 +23,7 @@ class DebruijnEnvironment : public Environment {
 
         GraphPack gp_;
         GraphElementFinder<Graph> element_finder_;
-        MapperClass mapper_;
+        std::shared_ptr<MapperClass> mapper_;
         FillerClass filler_;
         omnigraph::DefaultLabeler<Graph> labeler_;
         ColoringClass coloring_;
@@ -46,7 +46,7 @@ class DebruijnEnvironment : public Environment {
                   cfg::get().pos.max_mapping_gap,
                   cfg::get().pos.max_gap_diff),
               element_finder_(gp_.g),
-              mapper_(gp_.g, gp_.index, gp_.kmer_mapper),
+              mapper_(new MapperClass(gp_.g, gp_.index, gp_.kmer_mapper)),
               filler_(gp_.g, mapper_, gp_.edge_pos),
               labeler_(gp_.g, gp_.edge_pos) {
 
@@ -84,8 +84,8 @@ class DebruijnEnvironment : public Environment {
 
             //Loading Genome and Handlers
             DEBUG("Colorer done");
-            Path<EdgeId> path1 = mapper_.MapSequence(gp_.genome).path();
-            Path<EdgeId> path2 = mapper_.MapSequence(!gp_.genome).path();
+            Path<EdgeId> path1 = mapper_->MapSequence(gp_.genome).path();
+            Path<EdgeId> path2 = mapper_->MapSequence(!gp_.genome).path();
         	coloring_ = omnigraph::visualization::DefaultColorer(gp_.g, path1, path2);
             ResetPositions();
         }
@@ -100,8 +100,6 @@ class DebruijnEnvironment : public Environment {
                 gp_.edge_pos.Attach();
 
             gp_.edge_pos.clear();
-            MapperClass mapper_(gp_.g, gp_.index, gp_.kmer_mapper);
-            FillerClass filler_(gp_.g, mapper_, gp_.edge_pos);
             filler_.Process(gp_.genome, "ref0");
             filler_.Process(!gp_.genome, "ref1");
         }
@@ -147,7 +145,7 @@ class DebruijnEnvironment : public Environment {
         }
 
         const MapperClass& mapper() const {
-            return mapper_;
+            return *mapper_;
         }
 
         const EdgeIndexT& index() const {

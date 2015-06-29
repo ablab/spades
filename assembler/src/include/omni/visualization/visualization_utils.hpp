@@ -33,6 +33,37 @@ void WriteComponents(const Graph& g,
 }
 
 template<class Graph>
+void DrawComponentsOfShortEdges(const Graph& g, size_t min_length)
+{
+    vector<typename Graph::EdgeId> short_edges;
+    std::string pics_folder_ = cfg::get().output_saves + "/pics";
+    INFO("Writing pics with components consisting of short edges to " + pics_folder_);
+    shared_ptr<GraphSplitter<Graph>> splitter = LongEdgesExclusiveSplitter<Graph>(g, min_length);
+    while (splitter->HasNext()) {
+        GraphComponent<Graph> component = splitter->Next();
+        if(component.v_size() > 3)
+        {
+            INFO("Component of size " << component.v_size() << " with " << component.sinks().size() << " sinks and " << component.sources().size() << "sources");
+        }
+        if(component.v_size() > 3 && component.sinks().size() == 1 && component.sources().size() == 1)
+        {
+
+            WriteComponentSinksSources(component, pics_folder_ + "ShortComponents/"
+                                                                                  + ToString(g.int_id(*component.vertices().begin()))
+                                                                                   + ".dot", visualization::DefaultColorer(g),
+                                                                                   *StrGraphLabelerInstance(component.g()));
+            INFO("Component is written to " + ToString(g.int_id(*component.vertices().begin())) + ".dot");
+
+            //            PrintComponent(component,
+//                                pics_folder_ + "ShortComponents/"
+//                                        + ToString(gp.g.int_id(component.vertices_[0]))
+//                                         + ".dot");
+        }
+    }
+}
+
+
+template<class Graph>
 void WriteSizeLimitedComponents(const Graph& g,
         const string& folder_name,
         shared_ptr<GraphSplitter<Graph>> inner_splitter,
@@ -51,6 +82,18 @@ void WriteComponent(const GraphComponent<Graph>& gc,
         const GraphLabeler<Graph> &labeler) {
     EmptyGraphLinker<Graph> linker;
     BorderDecorator<Graph> component_colorer(gc, *colorer, "yellow");
+    ofstream os;
+    os.open(file_name);
+    omnigraph::visualization::ComponentVisualizer<Graph>(gc.g(), true).Visualize(gc, os, labeler, component_colorer, linker);
+    os.close();
+}
+
+template<class Graph>
+void WriteComponentSinksSources(const GraphComponent<Graph>& gc,
+        const string& file_name, shared_ptr<GraphColorer<Graph>> colorer,
+        const GraphLabeler<Graph> &labeler) {
+    EmptyGraphLinker<Graph> linker;
+    SinkSourceDecorator<Graph> component_colorer(gc, *colorer);
     ofstream os;
     os.open(file_name);
     omnigraph::visualization::ComponentVisualizer<Graph>(gc.g(), true).Visualize(gc, os, labeler, component_colorer, linker);

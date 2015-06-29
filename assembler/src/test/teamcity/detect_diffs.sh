@@ -6,6 +6,11 @@
 # See file LICENSE for details.
 ############################################################################
 	
+if [ "$#" -ne 2 ]; then
+    echo "Usage: detect_diffs.sh <target folder> <etalons folder>"
+    exit
+fi
+
 target_folder=$1
 etalons_folder=$2
 if [ ! -d $etalons_folder ]; then
@@ -14,7 +19,7 @@ if [ ! -d $etalons_folder ]; then
 fi
 
 diffs=0
-    for f in $etalons_folder/*/saves/*
+    for f in $etalons_folder/*/saves/* $etalons_folder/scaffolds* $etalons_folder/contigs*
     do
         echo "Checking diffs in " $f
         set +e

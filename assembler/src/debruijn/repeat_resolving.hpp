@@ -11,9 +11,12 @@
 namespace debruijn_graph {
 
 class RepeatResolution : public spades::AssemblyStage {
+    const bool preliminary_;
   public:
-    RepeatResolution()
-        : AssemblyStage("Repeat Resolving", "repeat_resolving") {}
+    RepeatResolution(bool preliminary = false)
+        : AssemblyStage(preliminary ? "Preliminary Repeat Resolving" : "Repeat Resolving",
+                        preliminary ? "repeat_resolving_preliminary" : "repeat_resolving"),
+                        preliminary_(preliminary) {}
 
     void load(conj_graph_pack&, const std::string &, const char*) {}
     void save(const conj_graph_pack&, const std::string &, const char*) const {}

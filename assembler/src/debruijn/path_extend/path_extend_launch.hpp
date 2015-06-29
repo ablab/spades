@@ -112,10 +112,16 @@ inline void AddPathsToContainer(const conj_graph_pack& gp,
     DEBUG("Long reads paths " << result.size() << " == ");
 }
 
+inline bool IsContigLib(const io::LibraryType& type) {
+    static set<io::LibraryType> contig_lib_types{io::LibraryType::TrustedContigs,
+        io::LibraryType::UntrustedContigs, io::LibraryType::PathExtendContigs};
+    return contig_lib_types.count(type);
+}
+
 double GetSingleReadsFilteringThreshold(const io::LibraryType& type) {
     if (type == io::LibraryType::PacBioReads || type == io::LibraryType::SangerReads || type == io::LibraryType::NanoporeReads) {
         return cfg::get().pe_params.long_reads.pacbio_reads.filtering;
-    } else if (type == io::LibraryType::TrustedContigs || type == io::LibraryType::UntrustedContigs) {
+    } else if (IsContigLib(type)) {
         return cfg::get().pe_params.long_reads.contigs.filtering;
     }
     return cfg::get().pe_params.long_reads.single_reads.filtering;
@@ -124,7 +130,7 @@ double GetSingleReadsFilteringThreshold(const io::LibraryType& type) {
 double GetSingleReadsWeightPriorityThreshold(const io::LibraryType& type) {
     if (type == io::LibraryType::PacBioReads || type == io::LibraryType::SangerReads || type == io::LibraryType::NanoporeReads) {
         return cfg::get().pe_params.long_reads.pacbio_reads.weight_priority;
-    } else if (type == io::LibraryType::TrustedContigs || type == io::LibraryType::UntrustedContigs) {
+    } else if (IsContigLib(type)) {
         return cfg::get().pe_params.long_reads.contigs.weight_priority;
     }
     return cfg::get().pe_params.long_reads.single_reads.weight_priority;
@@ -137,7 +143,7 @@ double GetSingleReadsUniqueEdgePriorityThreshold(const io::LibraryType& type) {
     }
     if (type == io::LibraryType::PacBioReads || type == io::LibraryType::SangerReads || type == io::LibraryType::NanoporeReads) {
         return cfg::get().pe_params.long_reads.pacbio_reads.unique_edge_priority;
-    } else if (type == io::LibraryType::TrustedContigs || type == io::LibraryType::UntrustedContigs) {
+    } else if (IsContigLib(type)) {
         return cfg::get().pe_params.long_reads.contigs.unique_edge_priority;
     }
     return cfg::get().pe_params.long_reads.single_reads.unique_edge_priority;
@@ -231,8 +237,7 @@ inline bool IsForSingleReadExtender(size_t lib_index) {
             lt == io::LibraryType::PacBioReads ||
             lt == io::LibraryType::SangerReads ||
             lt == io::LibraryType::NanoporeReads ||
-            lt == io::LibraryType::TrustedContigs ||
-            lt == io::LibraryType::UntrustedContigs);
+            IsContigLib(lt));
 }
 
 
@@ -311,7 +316,9 @@ inline shared_ptr<SimpleExtender> MakePEExtender(const conj_graph_pack& gp, cons
         if (!investigate_loops)
             INFO("Threshold for library #" << lib_index << " is " << cfg::get().ds.reads[lib_index].data().pi_threshold);
     }
-    shared_ptr<WeightCounter> wc = make_shared<PathCoverWeightCounter>(gp.g, lib, GetWeightThreshold(lib, pset), GetSingleThreshold(lib, pset));
+    //fixme temporary configuration for meta mode
+    shared_ptr<WeightCounter> wc = make_shared<PathCoverWeightCounter>(gp.g, lib, GetWeightThreshold(lib, pset), 
+                                                    GetSingleThreshold(lib, pset), cfg::get().ds.meta ? 0.5 : 1.0);
     wc->setNormalizeWeight(pset.normalize_weight);
     shared_ptr<SimpleExtensionChooser> extension = make_shared<SimpleExtensionChooser>(gp.g, wc, GetPriorityCoeff(lib, pset));
     return make_shared<SimpleExtender>(gp, cov_map, extension, lib->GetISMax(), pset.loop_removal.max_loops, investigate_loops, false);
@@ -325,11 +332,17 @@ inline shared_ptr<PathExtender> MakeScaffoldingExtender(const conj_graph_pack& g
 
     shared_ptr<WeightCounter> counter = make_shared<ReadCountWeightCounter>(gp.g, lib);
     double prior_coef = GetPriorityCoeff(lib, pset);
-    shared_ptr<ScaffoldingExtensionChooser> scaff_chooser = make_shared<ScaffoldingExtensionChooser>(gp.g, counter, prior_coef);
-    shared_ptr<GapJoiner> gapJoiner = make_shared<HammingGapJoiner>(gp.g, pset.scaffolder_options.min_gap_score,
-                                                 (int) (pset.scaffolder_options.max_must_overlap * (double) gp.g.k()),
-                                                 (int) (pset.scaffolder_options.max_can_overlap * (double) gp.g.k()), pset.scaffolder_options.short_overlap);
-    return make_shared<ScaffoldingPathExtender>(gp, cov_map, scaff_chooser, gapJoiner, lib->GetISMax(), pset.loop_removal.max_loops, false);
+    //fixme review parameters
+    //todo put parameters in config
+    //todo remove max_must_overlap from config
+    double var_coeff = 3.0;
+    auto scaff_chooser = std::make_shared<ScaffoldingExtensionChooser>(gp.g, counter, prior_coef, var_coeff);
+    auto gap_joiner = std::make_shared<HammingGapJoiner>(gp.g, pset.scaffolder_options.min_gap_score,
+                                                 int(math::round(gp.g.k() - var_coeff * lib->GetIsVar())),
+                                                 (int) (pset.scaffolder_options.max_can_overlap * (double) gp.g.k()),
+                                                 pset.scaffolder_options.short_overlap,
+                                                 (int) 2 * cfg::get().ds.RL(), pset.scaffolder_options.artificial_gap);
+    return make_shared<ScaffoldingPathExtender>(gp, cov_map, scaff_chooser, gap_joiner, lib->GetISMax(), pset.loop_removal.max_loops, false);
 }
 
 inline shared_ptr<SimpleExtender> MakeMPExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, const PathContainer& paths,
@@ -550,8 +563,6 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
 
     INFO("ExSPAnder repeat resolving tool finished");
 }
-
-
 
 } /* path_extend */
 

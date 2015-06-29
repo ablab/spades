@@ -16,8 +16,6 @@ namespace spades {
 
 class StageManager;
 
-class StageManager;
-
 class AssemblyStage {
   public:
     AssemblyStage(const char *name, const char *id)

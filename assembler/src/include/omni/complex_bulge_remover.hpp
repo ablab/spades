@@ -18,6 +18,7 @@
 #include "path_processor.hpp"
 #include "omni/visualization/visualization.hpp"
 
+
 namespace omnigraph {
 
 namespace complex_br {
@@ -711,7 +712,7 @@ void PrintComponent(const LocalizedComponent<Graph>& component,
 	shared_ptr<omnigraph::visualization::ElementColorer<typename Graph::EdgeId>> edge_colorer = make_shared<omnigraph::visualization::MapColorer<EdgeId>>(
 			tree_edges.begin(), tree_edges.end(),"green", ""
 		);
-	visualization::WriteComponent(component.AsGraphComponent(), file_name,
+	visualization::WriteComponentSinksSources(component.AsGraphComponent(), file_name,
 			omnigraph::visualization::DefaultColorer(component.g(), edge_colorer),
 			*StrGraphLabelerInstance(component.g()));
 }
@@ -723,6 +724,8 @@ void PrintComponent(const LocalizedComponent<Graph>& component,
 			omnigraph::visualization::DefaultColorer(component.g()),
 			*StrGraphLabelerInstance(component.g()));
 }
+
+
 
 template<class Graph>
 class ComponentProjector {

@@ -322,10 +322,9 @@ public:
 };
 
 class PathCoverWeightCounter: public WeightCounter {
-
+	double single_threshold_;
+    double correction_coeff_;
 protected:
-
-	double singleThreshold;
 
 	double CountSingleLib(int libIndex, BidirectionalPath& path, EdgeId e,
 			int additionalGapLength = 0.0) {
@@ -348,7 +347,11 @@ protected:
 			double threshold =
 					pairedInfoLibrary.GetSingleThreshold() >= 0.0 ?
 							pairedInfoLibrary.GetSingleThreshold() :
-							singleThreshold;
+							single_threshold_;
+
+            threshold *= correction_coeff_;
+			TRACE("Threshold: " << threshold);
+
 			double singleWeight = libs_[libIndex]->CountPairedInfo(
 					path[iter->e_], e,
 					(int) path.LengthAt(iter->e_) + additionalGapLength);
@@ -372,16 +375,21 @@ protected:
 
 public:
 
-	PathCoverWeightCounter(const Graph& g_, PairedInfoLibraries& libs,
-			double threshold_ = 0.0, double singleThreshold_ = 0.0) :
-			WeightCounter(g_, libs, threshold_), singleThreshold(singleThreshold_) {
+	PathCoverWeightCounter(const Graph& g, PairedInfoLibraries& libs,
+			double threshold_ = 0.0, double single_threshold = 0.0,
+			double correction_coeff = 1.0) :
+			WeightCounter(g, libs, threshold_), 
+            single_threshold_(single_threshold),
+			correction_coeff_(correction_coeff) {
 
 	}
 
-	PathCoverWeightCounter(const Graph& g_, shared_ptr<PairedInfoLibrary> lib,
-                           double threshold_ = 0.0, double singleThreshold_ = 0.0)
-            : WeightCounter(g_, lib, threshold_),
-              singleThreshold(singleThreshold_) {
+	PathCoverWeightCounter(const Graph& g, shared_ptr<PairedInfoLibrary> lib,
+                           double threshold = 0.0, double single_threshold = 0.0,
+                           double correction_coeff = 1.0)
+            : WeightCounter(g, lib, threshold),
+              single_threshold_(single_threshold),
+              correction_coeff_(correction_coeff) {
 
     }
 
@@ -436,7 +444,7 @@ public:
 			double threshold =
 					libs_[libIndex]->GetSingleThreshold() >= 0.0 ?
 							libs_[libIndex]->GetSingleThreshold() :
-							singleThreshold;
+							single_threshold_;
 			if (w > threshold) {
 				return true;
 			}

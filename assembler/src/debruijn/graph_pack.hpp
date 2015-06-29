@@ -121,6 +121,14 @@ struct graph_pack: private boost::noncopyable {
         scaffolding_indices.Init();
     }
 
+    void ClearRRIndices() {
+        for (auto& pi : paired_indices) {
+            pi.Clear();
+        }
+        clustered_indices.Clear();
+        scaffolding_indices.Clear();
+    }
+
     void DetachAll() {
         index.Detach();
         kmer_mapper.Detach();

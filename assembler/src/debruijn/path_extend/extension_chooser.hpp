@@ -87,7 +87,7 @@ public:
     }
 
 protected:
-    DECL_LOGGER("ExtensionChooser")
+    DECL_LOGGER("PathAnalyzer")
 };
 
 
@@ -375,21 +375,17 @@ public:
 
 };
 
-
-
 class ScaffoldingExtensionChooser : public ExtensionChooser {
+    double weight_threshold_;
+    double cl_weight_threshold_;
+    const double is_scatter_coeff_ = 3.0;
 
-public:
-    ScaffoldingExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc, double priority) :
-        ExtensionChooser(g, wc, priority), weight_threshold_(0.0),
-        cl_weight_threshold_(cfg::get().pe_params.param_set.scaffolder_options.cl_threshold) {
-    }
-
-    void AddInfoFromEdge(const std::vector<int>& distances, const std::vector<double>& weights, std::vector<pair<int, double> >& histogram,
-                         size_t len_to_path_end) {
+    void AddInfoFromEdge(const std::vector<int>& distances, const std::vector<double>& weights, 
+                         std::vector<pair<int, double>>& histogram, size_t len_to_path_end) {
         for (size_t l = 0; l < distances.size(); ++l) {
-            if (distances[l] > max(0, (int) len_to_path_end - (int) g_.k()) && weights[l] >= weight_threshold_) {
-                histogram.push_back(make_pair(distances[l] - len_to_path_end, weights[l]));
+            //todo commented out condition seems unnecessary and should be library dependent! do we need "max(0" there?
+            if (/*distances[l] > max(0, (int) len_to_path_end - int(1000)) && */math::ge(weights[l], weight_threshold_)) {
+                histogram.push_back(make_pair(distances[l] - (int) len_to_path_end, weights[l]));
             }
         }
     }
@@ -405,29 +401,27 @@ public:
         return (int) round(dist);
     }
 
-    void CountAvrgDists(BidirectionalPath& path, EdgeId e, std::vector<pair<int, double> > & histogram) {
-        std::vector<int> distances;
-        std::vector<double> weights;
+    void CountAvrgDists(BidirectionalPath& path, EdgeId e, std::vector<pair<int, double>> & histogram) {
         for (size_t j = 0; j < path.Size(); ++j) {
+            std::vector<int> distances;
+            std::vector<double> weights;
             wc_->GetDistances(path.At(j), e, distances, weights);
             if (distances.size() > 0) {
                 AddInfoFromEdge(distances, weights, histogram, path.LengthAt(j));
             }
-            distances.clear();
         }
     }
 
     void FindBestFittedEdgesForClustered(BidirectionalPath& path, const set<EdgeId>& edges, EdgeContainer& result) {
-        std::vector < pair<int, double> > histogram;
         for (EdgeId e : edges) {
-            histogram.clear();
+            std::vector<pair<int, double>> histogram;
             CountAvrgDists(path, e, histogram);
             double sum = 0.0;
             for (size_t j = 0; j < histogram.size(); ++j) {
                 sum += histogram[j].second;
             }
             if (sum <= cl_weight_threshold_) {
-                return;
+                continue;
             }
             int gap = CountMean(histogram);
             if (wc_->CountIdealInfo(path, e, gap) > 0.0) {
@@ -445,9 +439,15 @@ public:
         set<EdgeId> jumping_edges;
         PairedInfoLibraries libs = wc_->getLibs();
         for (auto lib : libs) {
+            //todo lib (and FindJumpEdges) knows its var so it can be counted there
+            int is_scatter = int(math::round(lib->GetIsVar() * is_scatter_coeff_));
             for (int i = (int) path.Size() - 1; i >= 0 && path.LengthAt(i) - g_.length(path.At(i)) <= lib->GetISMax(); --i) {
                 set<EdgeId> jump_edges_i;
-                lib->FindJumpEdges(path.At(i), jump_edges_i, (int)path.LengthAt(i) - (int)g_.k(), (int) (path.LengthAt(i) + lib->GetISMax()), 0);
+                lib->FindJumpEdges(path.At(i), jump_edges_i,
+                                   std::max(0, (int)path.LengthAt(i) - is_scatter),
+                                   //FIXME do we need is_scatter here?
+                                   int((path.LengthAt(i) + lib->GetISMax() + is_scatter)),
+                                   0);
                 for (EdgeId e : jump_edges_i) {
                     if (IsTip(e)) {
                         jumping_edges.insert(e);
@@ -458,7 +458,16 @@ public:
         return jumping_edges;
     }
 
-    virtual EdgeContainer Filter(BidirectionalPath& path, EdgeContainer& edges) {
+public:
+
+    ScaffoldingExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc, double priority, double is_scatter_coeff) :
+        ExtensionChooser(g, wc, priority), weight_threshold_(0.0),
+        cl_weight_threshold_(cfg::get().pe_params.param_set.scaffolder_options.cl_threshold),
+        is_scatter_coeff_(is_scatter_coeff) {
+    }
+
+    EdgeContainer Filter(BidirectionalPath& path, EdgeContainer& edges) override {
+        //FIXME WAT?
         if (edges.empty()) {
             return edges;
         }
@@ -467,10 +476,6 @@ public:
         FindBestFittedEdgesForClustered(path, candidates, result);
         return result;
     }
-
-private:
-    double weight_threshold_;
-    double cl_weight_threshold_;
 };
 
 inline bool EdgeWithWeightCompareReverse(const pair<EdgeId, double>& p1,

@@ -77,8 +77,13 @@ class OnlineVisualizer {
         //DEBUG("Processed string " << processed_command);
         string command_string = arg_list.GetAllArguments()[0];
         const Command<Env>& command = command_mapping_.GetCommand(command_string);
+        DEBUG("Command " << processed_command << " starting to execute");
         command.Execute(current_environment_, loaded_environments_, arg_list);
+        DEBUG("Command " << processed_command << " executed");
+
         history.AddEntry(processed_command);
+        DEBUG("Command " << processed_command << " added to history");
+
       }
       command_with_args = read_line();
     }

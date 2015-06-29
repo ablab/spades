@@ -35,9 +35,26 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
 //            //            &QualityLoggingRemovalHandler<Graph>::HandleDelete,
 //            &QualityEdgeLocalityPrintingRH<Graph>::HandleDelete,
 //            boost::ref(qual_removal_handler), _1);
-    debruijn::simplification::SimplifyGraph(gp, 0/*removal_handler_f*/,
-                  printer, /*iteration count*/10);
 
+
+    debruijn::simplification::SimplifInfoContainer info_container;
+    info_container
+        .set_detected_coverage_bound(gp.ginfo.ec_bound())
+        //0 if model didn't converge
+        .set_detected_mean_coverage(gp.ginfo.estimated_mean())
+        .set_read_length(cfg::get().ds.RL())
+        .set_chunk_cnt(cfg::get().max_threads);
+
+    debruijn_config::simplification& simplif_cfg =
+            preliminary_ ? cfg::get_writable().preliminary_simp : cfg::get_writable().simp;
+
+    //todo fix ugly logic
+    //fixme temporary solution!
+    simplif_cfg.fast_features &= !cfg::get().main_iteration;//debruijn::simplification::CorrectedFastMode(info_container, simplif_cfg);
+
+//    debruijn::simplification::SimplifyGraph(gp, info_container, simplif_cfg, 0/*removal_handler_f*/, printer);
+    debruijn::simplification::GraphSimplifier simplifier(gp, info_container, simplif_cfg, 0/*removal_handler_f*/, printer);
+    simplifier.SimplifyGraph();
 
     AvgCovereageCounter<Graph> cov_counter(gp.g);
     cfg::get_writable().ds.set_avg_coverage(cov_counter.Count());

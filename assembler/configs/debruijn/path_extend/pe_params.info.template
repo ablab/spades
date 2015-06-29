@@ -46,9 +46,9 @@ singlecell {
         cl_threshold    0
 
         fix_gaps        true
-        min_gap_score   0.7
+        min_gap_score   3.0
 
-        max_must_overlap  0.5
+        max_must_overlap  -2
         max_can_overlap   0.5
         short_overlap     6
         artificial_gap    10
@@ -99,9 +99,9 @@ multicell {
         cl_threshold  0
 
         fix_gaps       true
-        min_gap_score  0.7
+        min_gap_score   3.0
 
-        max_must_overlap  0.5
+        max_must_overlap  -2
         max_can_overlap   0.5
         short_overlap     6
         artificial_gap    10
@@ -115,7 +115,6 @@ multicell {
 
     remove_overlaps     true
 }
-
 
 long_reads {
 

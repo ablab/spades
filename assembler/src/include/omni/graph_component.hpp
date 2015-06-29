@@ -6,6 +6,7 @@
 
 #pragma once
 
+
 namespace omnigraph {
 
 //todo make handler!!!
@@ -18,6 +19,8 @@ class GraphComponent {
 	const Graph& graph_;
 	std::set<VertexId> vertices_;
 	std::set<EdgeId> edges_;
+    std::set<VertexId> sinks_;
+    std::set<VertexId> sources_;
 	string name_;
 
 
@@ -55,13 +58,33 @@ class GraphComponent {
 	void Fill(VertexIt begin, VertexIt end) {
 		FillVertices(begin, end);
 		FillEdges();
+		FindSinksAndSources();
 	}
 
 	template<class VertexIt>
 	void Fill(VertexIt begin, VertexIt end, bool add_conjugate) {
 		FillVertices(begin, end, add_conjugate);
 		FillEdges();
+		FindSinksAndSources();
 	}
+
+	void FindSinksAndSources() {
+        for(auto v : vertices_) {
+            for(auto e : graph_.IncomingEdges(v)) {
+                if(!contains(e) && !(contains(graph_.EdgeStart(e)))) {
+                    sources_.insert(v);
+                    break;
+                }
+            }
+
+            for(auto e : graph_.OutgoingEdges(v)) {
+                if(!contains(e) && !(contains(graph_.EdgeEnd(e)))) {
+                    sinks_.insert(v);
+                    break;
+                }
+            }
+        }
+    }
 
 public:
 	template<class VertexIt>
@@ -144,6 +167,14 @@ public:
 		return vertices_.end();
 	}
 
+    const std::set<VertexId>& sinks() const {
+        return sinks_;
+    }
+
+    const std::set<VertexId>& sources() const {
+        return sources_;
+    }
+
 	bool IsBorder(VertexId v) const {
 		if(vertices_.count(v) == 0)
 			return false;
@@ -157,4 +188,8 @@ public:
 	}
 
 };
+
 }
+
+
+

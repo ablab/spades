@@ -29,8 +29,10 @@ using omnigraph::de::Point;
 
 namespace path_extend {
 
+//todo rename is_div
 struct PairedInfoLibrary {
-    PairedInfoLibrary(size_t k, const Graph& g, size_t readS, size_t is, size_t is_min, size_t is_max, size_t is_div,
+    PairedInfoLibrary(size_t k, const Graph& g, size_t readS, size_t is,
+                      size_t is_min, size_t is_max, size_t is_div,
                       bool is_mp,
                       const std::map<int, size_t>& is_distribution)
             : g_(g),
@@ -106,55 +108,29 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
         : PairedInfoLibrary(k, g, readS, is, is_min, is_max, is_div, is_mp, is_distribution),
           index_(index) {}
 
-    static const bool is_unclustered_index = std::is_same<Index, omnigraph::de::UnclusteredPairedInfoIndexT<Graph> >::value;
+    static const bool is_unclustered_index = std::is_same<Index, omnigraph::de::UnclusteredPairedInfoIndexT<Graph>>::value;
 
     virtual size_t FindJumpEdges(EdgeId e, std::set<EdgeId>& result, int min_dist = 0, int max_dist = 100000000, size_t min_len = 0) {
         VERIFY(index_.Size() != 0);
+        VERIFY(!is_unclustered_index);
         result.clear();
 
-        if (index_.contains(e)) {
-          const auto& infos = index_.GetEdgeInfo(e, 0);
-          // We do not care about iteration order here - all the edges collected
-          // will be inside std::set<EdgeId>
-          for (const auto& it : infos) {
-            EdgeId e2 = it.first;
-            if (e2 == e)
-              continue;
-            if (g_.length(e2) < min_len)
-              continue;
+        //is 0 just some int here?!!!
+        const auto infos = index_.GetEdgeInfo(e, 0);
+        // We do not care about iteration order here - all the edges collected
+        // will be inside std::set<EdgeId>
+        for (const auto& it : infos) {
+          EdgeId e2 = it.first;
+          if (e2 == e)
+            continue;
+          if (g_.length(e2) < min_len)
+            continue;
 
-            for (const auto& point : it.second) {
-              if (math::le(point.d, (omnigraph::de::DEDistance) max_dist) &&
-                  math::ge(point.d, (omnigraph::de::DEDistance) min_dist)) {
-                result.insert(e2);
-                break;
-              }
-            }
-          }
-        }
-
-        if (!is_unclustered_index)
-            return result.size();
-
-        e = g_.conjugate(e);
-        if (index_.contains(e)) {
-          const auto& infos = index_.GetEdgeInfo(e, 0);
-          // We do not care about iteration order here - all the edges collected
-          // will be inside std::set<EdgeId>
-          for (const auto& it : infos) {
-            EdgeId e2 = it.first;
-            if (e2 == e)
-              continue;
-            if (g_.length(e2) < min_len)
-              continue;
-
-            for (const auto& point : it.second) {
-              omnigraph::de::DEDistance dist = -point.d + (omnigraph::de::DEDistance) g_.length(e) - (omnigraph::de::DEDistance) g_.length(e2);
-              if (math::le(dist, (omnigraph::de::DEDistance) max_dist) &&
-                  math::ge(dist, (omnigraph::de::DEDistance) min_dist)) {
-                result.insert(g_.conjugate(e2));
-                break;
-              }
+          for (const auto& point : it.second) {
+            if (math::le(point.d, (omnigraph::de::DEDistance) max_dist) &&
+                math::ge(point.d, (omnigraph::de::DEDistance) min_dist)) {
+              result.insert(e2);
+              break;
             }
           }
         }

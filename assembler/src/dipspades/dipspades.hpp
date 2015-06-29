@@ -4,6 +4,7 @@
 #include "consensus_contigs_constructor/consensus_contigs_constructor.hpp"
 #include "haplotype_assembly/haplotype_assembler.hpp"
 #include "../debruijn/graph_construction.hpp"
+#include "io/splitting_wrapper.hpp"
 #include "dipspades_config.hpp"
 
 using namespace debruijn_graph;
@@ -17,7 +18,7 @@ void construct_graph_from_contigs(debruijn_graph::conj_graph_pack &graph_pack){
 	for(auto fname = fnames.begin(); fname != fnames.end(); fname++)
 		if(fname_valid(*fname)){
 			INFO("Addition of contigs from " << *fname);
-			streams.push_back(EasyStream(*fname, true, PhredOffset, true));
+			streams.push_back(io::SplittingWrap(EasyStream(*fname, true)));
 		}
 
 	INFO("Construction of the de Bruijn graph with K=" << dsp_cfg::get().bp.K);

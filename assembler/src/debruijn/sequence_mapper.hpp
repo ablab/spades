@@ -17,6 +17,7 @@
 #include <cstdlib>
 
 namespace debruijn_graph {
+
 template<class Graph>
 class SequenceMapper {
 public:
@@ -46,7 +47,7 @@ public:
         for(size_t i = 0; i < s.size(); i++) {
             if (read.GetSequenceString()[i] == 'N') {
                 if (r > l) {
-                    result.join(this->MapSequence(Sequence(s.substr(l, r - l))), (int) l);
+                    result.join(MapSequence(Sequence(s.substr(l, r - l))), int(l));
                 }
                 r = i + 1;
                 l = i + 1;
@@ -55,7 +56,7 @@ public:
             }
         }
         if (r > l) {
-            result.join(this->MapSequence(Sequence(s.substr(l, r - l))), (int) l);
+            result.join(MapSequence(Sequence(s.substr(l, r - l))), int(l));
         }
       return result;
     }

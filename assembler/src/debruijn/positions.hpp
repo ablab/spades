@@ -1,18 +1,21 @@
 #pragma once
 
+#include "sequence_mapper.hpp"
 #include "omni/edges_position_handler.hpp"
+#include "io/wrapper_collection.hpp"
 
 namespace debruijn_graph {
 
-template<class Graph, class Mapper>
+template<class Graph>
 class PosFiller {
     typedef typename Graph::EdgeId EdgeId;
+    typedef std::shared_ptr<SequenceMapper<Graph>> MapperPtr;
     const Graph& g_;
-    const Mapper& mapper_;
+    MapperPtr mapper_;
     EdgesPositionHandler<Graph>& edge_pos_;
 
   public:
-    PosFiller(const Graph& g, const Mapper& mapper,
+    PosFiller(const Graph& g, MapperPtr mapper,
               EdgesPositionHandler<Graph>& edge_pos) :
             g_(g), mapper_(mapper), edge_pos_(edge_pos) {
 
@@ -20,16 +23,14 @@ class PosFiller {
 
     void Process(const Sequence& s, string name) const {
         //todo stupid conversion!
-
         return Process(io::SingleRead(name, s.str()));
     }
 
     void Process(const io::SingleRead& read) const {
-        MappingPath<EdgeId> path = mapper_.MapRead(read);
-        const string& name = read.name();
+        MappingPath<EdgeId> path = mapper_->MapRead(read);
+        const string name = read.name();
         int cur_pos = 0;
-        TRACE(
-            "Contig " << name << " mapped on " << path.size()
+        TRACE("Contig " << name << " mapped on " << path.size()
             << " fragments.");
         for (size_t i = 0; i < path.size(); i++) {
             EdgeId ei = path[i].first;
@@ -57,166 +58,46 @@ class PosFiller {
         }
     }
 
+    void Process(io::SingleStream& stream) const {
+        io::SingleRead read;
+        while (!stream.eof()) {
+            stream >> read;
+            Process(read);
+        }
+    }
+
   private:
-    DECL_LOGGER("PosFiller")
-    ;
+    DECL_LOGGER("PosFiller");
 };
 
-template<class Graph, class Mapper>
-void FillPos(const Graph& g, const Mapper& mapper,
-             EdgesPositionHandler<Graph>& edge_pos,
-             io::SingleStream& stream) {
-    PosFiller<Graph, Mapper> filler(g, mapper, edge_pos);
-    io::SingleRead read;
-    while (!stream.eof()) {
-        stream >> read;
-        filler.Process(read);
-    }
+template<class gp_t>
+void FillPos(gp_t& gp, const string& contig_file, string prefix, bool with_rc = false) {
+    PosFiller<typename gp_t::graph_t> pos_filler(gp.g, MapperInstance(gp), gp.edge_pos);
+    auto irs = std::make_shared<io::PrefixAddingReaderWrapper>(io::EasyStream(contig_file, with_rc), prefix);
+    pos_filler.Process(*irs);
 }
 
 template<class gp_t>
-void FillPos(gp_t& gp, io::SingleStream& stream) {
-    FillPos(gp.g, *MapperInstance(gp), gp.edge_pos, stream);
+void FillPos(gp_t& gp, const Sequence& s, string name) {
+    PosFiller<typename gp_t::graph_t> pos_filler(gp.g, MapperInstance(gp), gp.edge_pos);
+    pos_filler.Process(s, name);
 }
 
-template<class Graph, class Mapper>
-void FillPos(const Graph& g, const Mapper& mapper,
-             EdgesPositionHandler<Graph>& edge_pos, const Sequence& s,
-             const string& name) {
-    PosFiller<Graph, Mapper>(g, mapper, edge_pos).Process(s, name);
-}
-
-template<class gp_t>
-void FillPos(gp_t& gp, const Sequence& s, const string& name) {
-    FillPos(gp.g, *MapperInstance(gp), gp.edge_pos, s, name);
-}
-
-//deprecated, todo remove usages!!!
-template<class gp_t>
-void FillPos(gp_t& gp, const string& contig_file, string prefix) {
-    //	typedef typename gp_t::Graph::EdgeId EdgeId;
-    INFO("Threading large contigs");
-    io::FileReadStream irs(contig_file);
-    while(!irs.eof()) {
-        io::SingleRead read;
-        irs >> read;
-        DEBUG("Contig " << read.name() << ", length: " << read.size());
-        if (!read.IsValid()) {
-            WARN("Attention: contig " << read.name() << " contains Ns");
-            continue;
-        }
-        Sequence contig = read.sequence();
-        if (contig.size() < 1500000) {
-            //		continue;
-        }
-        FillPos(gp, contig, prefix + read.name());
-    }
-}
-
-template<class gp_t>
-void FillPosWithRC(gp_t& gp, const string& contig_file, string prefix) {
-    //  typedef typename gp_t::Graph::EdgeId EdgeId;
-    INFO("Threading large contigs");
-    auto irs = io::EasyStream(contig_file, true, io::OffsetType::UnknownOffset, true);
-    while(!irs->eof()) {
-        io::SingleRead read;
-        (*irs) >> read;
-        DEBUG("Contig " << read.name() << ", length: " << read.size());
-        if (!read.IsValid()) {
-            WARN("Attention: contig " << read.name()
-                 << " is not valid (possibly contains N's)");
-            continue;
-        }
-        Sequence contig = read.sequence();
-        FillPos(gp, contig, prefix + read.name());
-    }
-}
-
-inline
-void CollectPositions(conj_graph_pack &gp) {
-    gp.edge_pos.clear();
-    if (gp.genome.size() > 0) {
-        FillPos(gp, gp.genome, "ref0");
-        FillPos(gp, !gp.genome, "ref1");
-    }
-
-    if (!cfg::get().pos.contigs_for_threading.empty() &&
-        path::FileExists(cfg::get().pos.contigs_for_threading))
-      FillPosWithRC(gp, cfg::get().pos.contigs_for_threading, "thr_");
-
-    if (!cfg::get().pos.contigs_to_analyze.empty() &&
-        path::FileExists(cfg::get().pos.contigs_to_analyze))
-      FillPosWithRC(gp, cfg::get().pos.contigs_to_analyze, "anlz_");
-}
-
-}
-//version from master
-//
-//template<class Graph, class Mapper>
-//void FillPos(const Graph& g, const Mapper& mapper,
-//             EdgesPositionHandler<Graph>& edge_pos,
-//             io::SingleStream& stream) {
-//    PosFiller<Graph, Mapper> filler(g, mapper, edge_pos);
-//    io::SingleRead read;
-//    while (!stream.eof()) {
-//        stream >> read;
-//        filler.Process(read);
+//inline
+//void CollectPositions(conj_graph_pack &gp) {
+//    gp.edge_pos.clear();
+//    if (gp.genome.size() > 0) {
+//        FillPos(gp, gp.genome, "ref0");
+//        FillPos(gp, !gp.genome, "ref1");
 //    }
-//}
 //
-//template<class gp_t>
-//void FillPos(gp_t& gp, io::SingleStream& stream) {
-//    FillPos(gp.g, *MapperInstance(gp), gp.edge_pos, stream);
-//}
+//    if (!cfg::get().pos.contigs_for_threading.empty() &&
+//        path::FileExists(cfg::get().pos.contigs_for_threading))
+//      FillPos(gp, cfg::get().pos.contigs_for_threading, "thr_", true);
 //
-//template<class Graph, class Mapper>
-//void FillPos(const Graph& g, const Mapper& mapper, EdgesPositionHandler<Graph>& edge_pos, const Sequence& s, const string& name) {
-//    PosFiller<Graph, Mapper>(g, mapper, edge_pos).Process(s, name);
+//    if (!cfg::get().pos.contigs_to_analyze.empty() &&
+//        path::FileExists(cfg::get().pos.contigs_to_analyze))
+//      FillPos(gp, cfg::get().pos.contigs_to_analyze, "anlz_", true);
 //}
-//
-//template<class gp_t>
-//void FillPos(gp_t& gp, const Sequence& s, const string& name) {
-//    FillPos(gp.g, *MapperInstance(gp), gp.edge_pos, s, name);
-//}
-//
-////deprecated, todo remove usages!!!
-//template<class gp_t>
-//void FillPos(gp_t& gp, const string& contig_file, string prefix) {
-//    //	typedef typename gp_t::Graph::EdgeId EdgeId;
-//    INFO("Threading large contigs");
-//    io::FileReadStream irs(contig_file);
-//    while(!irs.eof()) {
-//        io::SingleRead read;
-//        irs >> read;
-//        DEBUG("Contig " << read.name() << ", length: " << read.size());
-//        if (!read.IsValid()) {
-//            WARN("Attention: contig " << read.name() << " contains Ns");
-//            continue;
-//        }
-//        Sequence contig = read.sequence();
-//        if (contig.size() < 1500000) {
-//            //		continue;
-//        }
-//        FillPos(gp, contig, prefix + read.name());
-//    }
-//}
-//
-//template<class gp_t>
-//void FillPosWithRC(gp_t& gp, const string& contig_file, string prefix) {
-//    //  typedef typename gp_t::Graph::EdgeId EdgeId;
-//    INFO("Threading large contigs");
-//    auto irs = io::EasyStream(contig_file, true, io::OffsetType::UnknownOffset, true);
-//    while(!irs->eof()) {
-//        io::SingleRead read;
-//        (*irs) >> read;
-//        DEBUG("Contig " << read.name() << ", length: " << read.size());
-//        if (!read.IsValid()) {
-//            WARN("Attention: contig " << read.name()
-//                 << " is not valid (possibly contains N's)");
-//            continue;
-//        }
-//        Sequence contig = read.sequence();
-//        FillPos(gp, contig, prefix + read.name());
-//    }
-//}
-//
+
+}

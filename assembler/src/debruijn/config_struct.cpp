@@ -384,6 +384,19 @@ void load(debruijn_config::dataset& ds,
 
   load(ds.reads_filename, pt, "reads");
   load(ds.single_cell, pt, "single_cell");
+  
+  //fixme temporary solution
+  boost::optional<std::string> meta_opt =
+      pt.get_optional<std::string>("meta");
+  if (meta_opt) {
+    load(ds.meta, pt, "meta");
+  } else {
+      ds.meta = false;
+  }
+
+  //fixme temporary solution
+  if (ds.meta)
+      ds.single_cell = true;
 
   ds.reference_genome_filename = "";
   boost::optional<std::string> refgen =
@@ -432,6 +445,8 @@ void load(debruijn_config::simplification& simp,
           boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
 
+  load(simp.cycle_iter_count, pt, "cycle_iter_count", complete);
+  load(simp.post_simplif_enabled, pt, "post_simplif_enabled", complete);
   load(simp.topology_simplif_enabled, pt, "topology_simplif_enabled", complete);
   load(simp.tc, pt, "tc", complete); // tip clipper:
   load(simp.ttc, pt, "ttc", complete); // topology tip clipper:
@@ -451,6 +466,12 @@ void load(debruijn_config::simplification& simp,
   load(simp.persistent_cycle_iterators, pt, "persistent_cycle_iterators", complete);
   load(simp.disable_br_in_cycle, pt, "disable_br_in_cycle", complete);
 //  load(simp.stats_mode, pt, "stats_mode", complete); // temporary stats counting mode
+
+  simp.final_tc = simp.tc; // final tip clipper:
+  load(simp.final_tc, pt, "final_tc", false);
+  //final bulge removers:
+  simp.final_br = simp.br; // final bulge remover:
+  load(simp.final_br, pt, "final_br", false);
 }
 
 void load(debruijn_config::info_printer& printer,
@@ -580,6 +601,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   load(cfg.additional_contigs, pt, "additional_contigs");
 
   load(cfg.rr_enable, pt, "rr_enable");
+  load(cfg.two_step_rr, pt, "two_step_rr");
   load(cfg.single_reads_rr, pt, "single_reads_rr");
   cfg.use_single_reads = false;
 
@@ -687,10 +709,14 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   if (cfg.mismatch_careful)
     load(cfg.simp, pt, "careful", false);
 
-  if (cfg.diploid_mode) {
+  if (cfg.diploid_mode)
     load(cfg.simp, pt, "diploid_simp", false);
-  }
 
+  if (cfg.ds.meta)
+    load(cfg.simp, pt, "meta", false);
+
+  cfg.preliminary_simp = cfg.simp;
+  load(cfg.preliminary_simp, pt, "preliminary", false);
 }
 
 void load(debruijn_config& cfg, const std::string &filename) {

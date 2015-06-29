@@ -31,9 +31,16 @@ void PEResolving(conj_graph_pack& gp) {
     path_extend::ResolveRepeatsPe(gp, cfg::get().output_dir, name, traverse_loops, boost::optional<std::string>("final_contigs"));
 }
 
+
 void RepeatResolution::run(conj_graph_pack &gp, const char*) {
     if (cfg::get().developer_mode) {
         stats::PrepareForDrawing(gp);
+    }
+
+    VERIFY(cfg::get().pe_params.param_set.remove_overlaps);
+    if (preliminary_) {
+        INFO("Overlap removal disabled for first-stage rr")
+        cfg::get_writable().pe_params.param_set.remove_overlaps = false;
     }
 
     OutputContigs(gp.g, cfg::get().output_dir + "before_rr", true);
@@ -61,6 +68,10 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
     } else {
         INFO("Unsupported repeat resolver");
         OutputContigs(gp.g, cfg::get().output_dir + "final_contigs", true);
+    }
+
+    if (preliminary_) {
+        cfg::get_writable().pe_params.param_set.remove_overlaps = true;
     }
 }
 

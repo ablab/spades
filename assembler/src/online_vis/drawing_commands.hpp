@@ -13,11 +13,11 @@
 #include "drawing_commands/draw_contig_command.hpp"
 #include "drawing_commands/draw_poorly_assembled.hpp"
 #include "drawing_commands/draw_connected_command.hpp"
-
 #include "environment.hpp"
 #include "command.hpp"
 #include "errors.hpp"
 #include "argument_list.hpp"
+#include "drawing_commands/draw_polymorphic_regions.hpp"
 
 namespace online_visualization {
 
@@ -41,7 +41,7 @@ namespace online_visualization {
                 string answer;
                 answer = answer + "Command `draw_vertex` \n" + 
                                 "Usage:\n" + 
-                                "> vertex <vertex_id>\n" + 
+                                "> draw_vertex <vertex_id>\n" +
                                 " This command prints pictures for a neigbourhood of a vertex in the DB graph.\n" + 
                                 " You should specify an id of the vertex in the DB graph, which neighbourhood you want to look at.";
                 return answer;
@@ -85,7 +85,7 @@ namespace online_visualization {
                 string answer;
                 answer = answer + "Command `draw_edge` \n" + 
                                 "Usage:\n" + 
-                                "> edge <edge_id>\n" + 
+                                "> draw_edge <edge_id>\n" +
                                 " This command prints pictures for a neigbourhood of an edge in the DB graph.\n" + 
                                 " You should specify an id of the edge in the DB graph, which location you want to look at.";
                 return answer;

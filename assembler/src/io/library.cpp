@@ -66,6 +66,8 @@ struct convert<LibraryType> {
         return Node("trusted-contigs");
       case LibraryType::UntrustedContigs:
         return Node("untrusted-contigs");
+      case LibraryType::PathExtendContigs:
+        return Node("path-extend-contigs");
       default:
         return Node();
     }
@@ -92,6 +94,8 @@ struct convert<LibraryType> {
       rhs = LibraryType::TrustedContigs;
     else if (type == "untrusted-contigs")
       rhs = LibraryType::UntrustedContigs;
+    else if (type == "path-extend-contigs")
+      rhs = LibraryType::PathExtendContigs;
     else
       return false;
     return true;
@@ -157,6 +161,7 @@ void SequencingLibraryBase::load(const YAML::Node &node) {
     case LibraryType::NanoporeReads:
     case LibraryType::TrustedContigs:
     case LibraryType::UntrustedContigs:
+    case LibraryType::PathExtendContigs:
       single_reads_ = node["single reads"].as<std::vector<std::string> >();
       break;
     default:

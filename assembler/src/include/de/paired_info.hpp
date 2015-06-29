@@ -788,6 +788,8 @@ struct PairedInfoIndicesT {
 
     void Init() { for (auto& it : data_) it.Init(); }
 
+    void Clear() { for (auto& it : data_) it.Clear(); }
+
     IndexT& operator[](size_t i) { return data_[i]; }
 
     const IndexT& operator[](size_t i) const { return data_[i]; }
