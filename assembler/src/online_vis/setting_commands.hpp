@@ -119,6 +119,7 @@ class SetFolderCommand : public LocalCommand<DebruijnEnvironment> {
             if (!CheckCorrectness(args))
                 return;
             string folder_name = args[1];
+            path::make_dirs(folder_name);
             curr_env.set_folder(folder_name);
         }
 };
