@@ -384,7 +384,15 @@ void load(debruijn_config::dataset& ds,
 
   load(ds.reads_filename, pt, "reads");
   load(ds.single_cell, pt, "single_cell");
-  load(ds.meta, pt, "meta");
+  
+  //fixme temporary solution
+  boost::optional<std::string> meta_opt =
+      pt.get_optional<std::string>("meta");
+  if (meta_opt) {
+    load(ds.meta, pt, "meta");
+  } else {
+      ds.meta = false;
+  }
 
   //fixme temporary solution
   if (ds.meta)
