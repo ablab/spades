@@ -19,7 +19,7 @@ if [ ! -d $etalons_folder ]; then
 fi
 
 diffs=0
-    for f in $etalons_folder/*/saves/*
+    for f in $etalons_folder/*/saves/* $etalons_folder/scaffolds* $etalons_folder/contigs*
     do
         echo "Checking diffs in " $f
         set +e
