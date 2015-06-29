@@ -800,6 +800,13 @@ class GraphSimplifier {
         SmartIteratorsHolder<Graph> iterators_holder(gp_.g, simplif_cfg_.persistent_cycle_iterators
                                                                 && simplif_cfg_.fast_features);
 
+        shared_ptr<SmartIteratorsHolder<Graph>> final_iterators_holder_ptr;
+        //fixme need better configuration
+        if (cfg::get().ds.meta && cfg::get().main_iteration) {
+            final_iterators_holder_ptr = make_shared<SmartIteratorsHolder<Graph>>(gp_.g, simplif_cfg_.persistent_cycle_iterators
+                                                                && simplif_cfg_.fast_features);
+        }
+
         bool enable_flag = true;
         while (enable_flag) {
             enable_flag = false;
@@ -813,15 +820,31 @@ class GraphSimplifier {
             enable_flag |= FinalRemoveErroneousEdges();
 
             enable_flag |= ClipTips(gp_.g, *iterators_holder.tip_smart_it(),
-                                                  cfg::get().main_iteration ? simplif_cfg_.final_tc : simplif_cfg_.tc, //todo get rid of this logic
+                                                  simplif_cfg_.tc, 
                                                   info_container_,
                                                   cfg::get().graph_read_corr.enable ?
                                                           WrapWithProjectionCallback(gp_, removal_handler_) : removal_handler_);
 
             enable_flag |= RemoveBulges(gp_.g, *iterators_holder.bulge_smart_it(),
-                                cfg::get().main_iteration ? simplif_cfg_.final_br : simplif_cfg_.br,
-                                //todo get rid of this logic and add br run with standard params
+                                simplif_cfg_.br,
                                 (opt_callback_f)0, removal_handler_);
+
+
+            //fixme need better configuration
+            if (cfg::get().ds.meta && cfg::get().main_iteration) {
+                enable_flag |= ClipTips(gp_.g, *final_iterators_holder_ptr->tip_smart_it(),
+                                                      simplif_cfg_.final_tc, //todo get rid of this logic
+                                                      info_container_,
+                                                      cfg::get().graph_read_corr.enable ?
+                                                              WrapWithProjectionCallback(gp_, removal_handler_) : removal_handler_);
+    
+    
+                enable_flag |= RemoveBulges(gp_.g, *final_iterators_holder_ptr->bulge_smart_it(),
+                                    simplif_cfg_.final_br,
+                                    //todo get rid of this logic and add br run with standard params
+                                    (opt_callback_f)0, removal_handler_);
+            }
+
 
             enable_flag |= RemoveComplexBulges(gp_.g, simplif_cfg_.cbr, iteration);
 
