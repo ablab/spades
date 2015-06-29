@@ -17,7 +17,7 @@
 #include "simplification.hpp"
 #include "mismatch_correction.hpp"
 #include "pair_info_count.hpp"
-#include "pair_info_remover.hpp"
+#include "second_phase_setup.hpp"
 #include "repeat_resolving.hpp"
 #include "distance_estimation.hpp"
 #include "pacbio_aligning.hpp"
@@ -29,12 +29,15 @@ void assemble_genome() {
     INFO("SPAdes started");
     INFO("Starting from stage: " << cfg::get().entry_point);
 
+    bool two_step_rr = cfg::get().two_step_rr && cfg::get().rr_enable && cfg::get().ds.meta;
+    INFO("Two-step RR enabled: " << two_step_rr);
+
     StageManager SPAdes({cfg::get().developer_mode,
                           cfg::get().load_from,
                           cfg::get().output_saves});
 
     size_t read_index_cnt = cfg::get().ds.reads.lib_count();
-    if (cfg::get().two_step_rr)
+    if (two_step_rr)
         read_index_cnt++;
 
     debruijn_graph::conj_graph_pack conj_gp(cfg::get().K,
@@ -55,9 +58,6 @@ void assemble_genome() {
     if (cfg::get().gap_closer_enable && cfg::get().gc.before_simplify)
         SPAdes.add(new debruijn_graph::GapClosing("early_gapcloser"));
 
-    bool two_step_rr = cfg::get().two_step_rr && cfg::get().rr_enable;
-    INFO("Two-step RR enabled: " << two_step_rr);
-
     SPAdes.add(new debruijn_graph::Simplification(two_step_rr));
 
     if (cfg::get().gap_closer_enable && cfg::get().gc.after_simplify)
@@ -71,7 +71,7 @@ void assemble_genome() {
             SPAdes.add(new debruijn_graph::PairInfoCount(true));
             SPAdes.add(new debruijn_graph::DistanceEstimation(true));
             SPAdes.add(new debruijn_graph::RepeatResolution(true));
-            SPAdes.add(new debruijn_graph::PairInfoRemover());
+            SPAdes.add(new debruijn_graph::SecondPhaseSetup());
             SPAdes.add(new debruijn_graph::Simplification());
         }
 

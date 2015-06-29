@@ -116,7 +116,6 @@ multicell {
     remove_overlaps     true
 }
 
-
 long_reads {
 
     pacbio_reads {

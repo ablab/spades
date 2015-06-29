@@ -320,7 +320,8 @@ inline SimpleExtender * MakePEExtender(const conj_graph_pack& gp, const GraphCov
         if (!investigate_loops)
             INFO("Threshold for library #" << lib_index << " is " << cfg::get().ds.reads[lib_index].data().pi_threshold);
     }
-    WeightCounter* wc = new PathCoverWeightCounter(gp.g, lib, GetWeightThreshold(lib, pset), GetSingleThreshold(lib, pset));
+    //fixme temporary configuration for meta mode
+    WeightCounter* wc = new PathCoverWeightCounter(gp.g, lib, GetWeightThreshold(lib, pset), GetSingleThreshold(lib, pset), cfg::get().ds.meta ? 0.5 : 1.0);
     wc->setNormalizeWeight(pset.normalize_weight);
     SimpleExtensionChooser * extension = new SimpleExtensionChooser(gp.g, wc, GetPriorityCoeff(lib, pset));
     return new SimpleExtender(gp, cov_map, extension, lib->GetISMax(), pset.loop_removal.max_loops, investigate_loops, false);
@@ -335,9 +336,10 @@ inline PathExtender* MakeScaffoldingExtender(const conj_graph_pack& gp, const Gr
 
     WeightCounter* counter = new ReadCountWeightCounter(gp.g, lib);
     double prior_coef = GetPriorityCoeff(lib, pset);
-    auto scaff_chooser = std::make_shared<ScaffoldingExtensionChooser>(gp.g, counter, prior_coef);
     //fixme review parameters
+    //todo put parameters in config
     double var_coeff = 3.0;
+    auto scaff_chooser = std::make_shared<ScaffoldingExtensionChooser>(gp.g, counter, prior_coef, var_coeff);
     auto gap_joiner = std::make_shared<HammingGapJoiner>(gp.g, pset.scaffolder_options.min_gap_score,
                                                  /*(int) (pset.scaffolder_options.max_must_overlap * (double) gp.g.k())*/
                                                  int(math::round(gp.g.k() - var_coeff * lib->GetIsVar())),

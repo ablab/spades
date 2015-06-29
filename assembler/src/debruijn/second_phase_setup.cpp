@@ -19,15 +19,15 @@
 #include "short_read_mapper.hpp"
 #include "long_read_mapper.hpp"
 #include "pair_info_filler.hpp"
-#include "pair_info_remover.hpp"
+#include "second_phase_setup.hpp"
 #include "stats/debruijn_stats.hpp"
 #include "path_extend/split_graph_pair_info.hpp"
 
 
 namespace debruijn_graph {
 
-void PairInfoRemover::run(conj_graph_pack &gp, const char*) {
-	INFO("Removing pair info started");
+void SecondPhaseSetup::run(conj_graph_pack &gp, const char*) {
+	INFO("Preparing second phase");
 	gp.ClearRRIndices();
 
 	std::string old_pe_contigs_filename = cfg::get().output_dir + "scaffolds.fasta";
@@ -47,7 +47,7 @@ void PairInfoRemover::run(conj_graph_pack &gp, const char*) {
 	untrusted_contigs.set_type(io::LibraryType::PathExtendContigs);
 	cfg::get_writable().ds.reads.push_back(untrusted_contigs);
 
-	INFO("Removing pair info ended");
+	INFO("Ready to run second phase");
 }
 
 }

@@ -322,11 +322,9 @@ public:
 };
 
 class PathCoverWeightCounter: public WeightCounter {
-	//fixme temporary solution, fix ASAP
-	static constexpr double CORRECTION_COEFF = 0.5;
+	double single_threshold_;
+    double correction_coeff_;
 protected:
-
-	double singleThreshold;
 
 	double CountSingleLib(int libIndex, BidirectionalPath& path, EdgeId e,
 			int additionalGapLength = 0.0) {
@@ -349,9 +347,9 @@ protected:
 			double threshold =
 					pairedInfoLibrary.GetSingleThreshold() >= 0.0 ?
 							pairedInfoLibrary.GetSingleThreshold() :
-							singleThreshold;
+							single_threshold_;
 
-            threshold *= CORRECTION_COEFF;
+            threshold *= correction_coeff_;
 			TRACE("Threshold: " << threshold);
 
 			double singleWeight = libs_[libIndex]->CountPairedInfo(
@@ -378,15 +376,20 @@ protected:
 public:
 
 	PathCoverWeightCounter(const Graph& g_, PairedInfoLibraries& libs_,
-			double threshold_ = 0.0, double singleThreshold_ = 0.0) :
-			WeightCounter(g_, libs_, threshold_), singleThreshold(singleThreshold_) {
+			double threshold_ = 0.0, double singleThreshold_ = 0.0,
+			double correction_coeff = 1.0) :
+			WeightCounter(g_, libs_, threshold_),
+			single_threshold_(singleThreshold_),
+			correction_coeff_(correction_coeff) {
 
 	}
 
 	PathCoverWeightCounter(const Graph& g_, PairedInfoLibrary* lib,
-                           double threshold_ = 0.0, double singleThreshold_ = 0.0)
+                           double threshold_ = 0.0, double singleThreshold_ = 0.0,
+                           double correction_coeff = 1.0)
             : WeightCounter(g_, lib, threshold_),
-              singleThreshold(singleThreshold_) {
+              single_threshold_(singleThreshold_),
+              correction_coeff_(correction_coeff) {
 
     }
 
@@ -441,7 +444,7 @@ public:
 			double threshold =
 					libs_[libIndex]->GetSingleThreshold() >= 0.0 ?
 							libs_[libIndex]->GetSingleThreshold() :
-							singleThreshold;
+							single_threshold_;
 			if (w > threshold) {
 				return true;
 			}

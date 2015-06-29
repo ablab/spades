@@ -11,10 +11,10 @@
 namespace debruijn_graph {
 
 //todo rename
-class PairInfoRemover : public spades::AssemblyStage {
+class SecondPhaseSetup : public spades::AssemblyStage {
   public:
-	PairInfoRemover()
-        : AssemblyStage("Pair Info Remover", "pair_info_remover") {}
+    SecondPhaseSetup()
+        : AssemblyStage("Second Phase Setup", "second_phase_setup") {}
 
     void run(conj_graph_pack &gp, const char*);
 };

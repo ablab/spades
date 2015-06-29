@@ -16,7 +16,7 @@ add_executable(spades
                simplification.cpp
                mismatch_correction.cpp
                pair_info_count.cpp
-               pair_info_remover.cpp
+               second_phase_setup.cpp
                distance_estimation.cpp
                repeat_resolving.cpp
                genomic_info_filler.cpp
