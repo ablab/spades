@@ -66,11 +66,11 @@ void ProcessSingleReads(conj_graph_pack& gp, size_t ilib,
 
     auto mapper_ptr = ChooseProperMapper(gp, reads);
     if (use_binary) {
-        auto single_streams = single_binary_readers(reads, true, false);
+        auto single_streams = single_binary_readers(reads, true, true);
         notifier.ProcessLibrary(single_streams, ilib, *mapper_ptr);
     } else {
-        auto single_streams = single_easy_readers(reads, false,
-                                                 false, /*handle Ns*/false);
+        auto single_streams = single_easy_readers(reads, true,
+                                                 true, /*handle Ns*/false);
         notifier.ProcessLibrary(single_streams, ilib, *mapper_ptr);
     }
     cfg::get_writable().ds.reads[ilib].data().single_reads_mapped = true;

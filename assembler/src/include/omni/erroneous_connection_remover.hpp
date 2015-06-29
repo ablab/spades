@@ -41,7 +41,7 @@ bool RemoveErroneousEdgesInCoverageOrder(Graph &g,
                                                                    AddAlternativesPresenceCondition(g, removal_condition),
                                                                    removal_handler);
 
-    return erroneous_edge_remover.Process(CoverageComparator<Graph>(g),
+    return erroneous_edge_remover.Run(CoverageComparator<Graph>(g),
                                           make_shared<CoverageUpperBound<Graph>>(g, max_coverage));
 }
 
@@ -55,7 +55,7 @@ bool RemoveErroneousEdgesInLengthOrder(Graph &g,
                                                                    AddAlternativesPresenceCondition(g, removal_condition),
                                                                    removal_handler);
 
-    return erroneous_edge_remover.Process(LengthComparator<Graph>(g),
+    return erroneous_edge_remover.Run(LengthComparator<Graph>(g),
                                           make_shared<LengthUpperBound<Graph>>(g, max_length));
 }
 

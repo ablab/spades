@@ -220,7 +220,7 @@ protected:
     DECL_LOGGER("PathExtendPI");
 };
 
-typedef std::vector<PairedInfoLibrary *> PairedInfoLibraries;
+typedef std::vector<shared_ptr<PairedInfoLibrary> > PairedInfoLibraries;
 
 }  // path extend
 

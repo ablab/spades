@@ -128,6 +128,7 @@ class GraphActionHandler : public ActionHandler<typename Graph::VertexId,
     typedef ActionHandler<typename Graph::VertexId, typename Graph::EdgeId> base;
 
     const Graph& g_;
+
   protected:
     const Graph& g() const {
         return g_;

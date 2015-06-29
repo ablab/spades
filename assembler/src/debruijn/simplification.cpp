@@ -74,7 +74,7 @@ void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
         omnigraph::EdgeRemovingAlgorithm<Graph> removing_algo(gp.g,
                                                               std::make_shared<func::AlwaysTrue<EdgeId>>(), 0);
 
-        removing_algo.Process(CoverageComparator<Graph>(gp.g),
+        removing_algo.Run(CoverageComparator<Graph>(gp.g),
                               std::make_shared<CoverageUpperBound<Graph>>(gp.g, low_threshold));
     }
 

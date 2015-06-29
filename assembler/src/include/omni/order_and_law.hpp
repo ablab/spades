@@ -214,9 +214,6 @@ struct pure_pointer {
 
     bool operator==(const pure_pointer &rhs) const {
         if (int_id_ == rhs.int_id_) {
-            if (ptr_.get() != rhs.ptr_.get()) {
-                print_stacktrace();
-            }
             VERIFY(ptr_.get() == rhs.ptr_.get());
             return true;
         }
@@ -229,6 +226,10 @@ struct pure_pointer {
 
     bool operator<(const pure_pointer &rhs) const {
         return this->int_id_ < rhs.int_id_;
+    }
+
+    bool operator<=(const pure_pointer &rhs) const {
+        return *this < rhs || *this == rhs;
     }
 
     size_t hash() const {

@@ -217,7 +217,7 @@ void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t /*rl
     SequenceMapperNotifier notifier(gp);
     LatePairedIndexFiller pif(gp.g, PairedReadCountWeight, gp.paired_indices[0]);
     notifier.Subscribe(0, &pif);
-    notifier.ProcessLibrary(paired_streams, 0, *MapperInstance(gp), paired_streams.size());
+    notifier.ProcessLibrary(paired_streams, 0, *MapperInstance(gp));
     
 	AssertEdges(gp.g, AddComplement(Edges(etalon_edges.begin(), etalon_edges.end())));
 

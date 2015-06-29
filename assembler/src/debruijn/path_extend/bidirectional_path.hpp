@@ -35,6 +35,8 @@ public:
 };
 
 class BidirectionalPath : public PathListener {
+private:
+    static std::atomic<uint64_t> path_id_;
 
 public:
     BidirectionalPath(const Graph& g)
@@ -44,7 +46,7 @@ public:
               cumulative_len_(),
               gap_len_(),
               listeners_(),
-              id_(0),
+              id_(path_id_++),
               weight_(1.0),
               has_overlaped_begin_(false),
               has_overlaped_end_(false),
@@ -71,7 +73,7 @@ public:
               cumulative_len_(path.cumulative_len_),
               gap_len_(path.gap_len_),
               listeners_(),
-              id_(path.id_),
+              id_(path_id_++),
               weight_(path.weight_),
               has_overlaped_begin_(path.has_overlaped_begin_),
               has_overlaped_end_(path.has_overlaped_end_),
@@ -192,10 +194,6 @@ public:
         while (!Empty()) {
             PopBack();
         }
-    }
-
-    void SetId(uint32_t uid) {
-        id_ = uid;
     }
 
     virtual void FrontEdgeAdded(EdgeId, BidirectionalPath*, int) {
@@ -338,15 +336,15 @@ public:
         return !operator==(path);
     }
 
-    void CheckConjugateEnd() {
+    void CheckConjugateEnd(size_t max_repeat_length) {
         size_t prev_size = 0;
         while (prev_size != Size()) {
             prev_size = Size();
-            FindConjEdges();
+            FindConjEdges(max_repeat_length);
         }
     }
 
-    void FindConjEdges() {
+    void FindConjEdges(size_t max_repeat_length) {
         for (size_t begin_pos = 0; begin_pos < Size(); ++begin_pos) {
             size_t begin = begin_pos;
             vector<size_t> conj_pos = FindAll(g_.conjugate(At(begin_pos)), begin + 1);
@@ -371,7 +369,7 @@ public:
                 size_t palindrom_len = (size_t) max((int) LengthAt(begin_pos) - (int) LengthAt(begin), 0);
                 size_t between = (size_t) max(0, (int) LengthAt(begin) - (int) (end < Size() - 1 ? LengthAt(end + 1) : 0));
                 DEBUG("tail len " << tail_len << " head len " << head_len << " palindrom_len "<< palindrom_len << " between " << between);
-                if (palindrom_len <= cfg::get().max_repeat_length) {
+                if (palindrom_len <= max_repeat_length) {
                     if (palindrom_len < head_len && palindrom_len < tail_len) {
                         DEBUG("too big head and end");
                         continue;
@@ -417,13 +415,8 @@ public:
         return cov / (double) Length();
     }
 
-    BidirectionalPath Conjugate(uint32_t id = 0) const {
+    BidirectionalPath Conjugate() const {
         BidirectionalPath result(g_);
-        if (id == 0) {
-            result.SetId(id_ % 2 == 0 ? id_ + 1 : id_ - 1);
-        } else {
-            result.SetId(id);
-        }
         if (Empty()) {
             return result;
         }
@@ -652,7 +645,7 @@ private:
     std::deque<size_t> cumulative_len_;  // Length from beginning of i-th edge to path end for forward directed path: L(e1 + e2 + ... + eN) ... L(eN)
     std::deque<int> gap_len_;  // e1 - gap2 - e2 - ... - gapN - eN
     std::vector<PathListener *> listeners_;
-    uint32_t id_;  //Unique ID in PathContainer
+    const uint64_t id_;  //Unique ID
     float weight_;
     bool has_overlaped_begin_;
     bool has_overlaped_end_;
@@ -735,21 +728,44 @@ inline size_t LastNotEqualPosition(const BidirectionalPath& path1, size_t pos1, 
     }
     return -1UL;
 }
+
 inline bool EqualEnds(const BidirectionalPath& path1, size_t pos1, const BidirectionalPath& path2, size_t pos2, bool use_gaps) {
     return LastNotEqualPosition(path1, pos1, path2, pos2, use_gaps) == -1UL;
 }
+
 inline bool PathIdCompare(const BidirectionalPath* p1, const BidirectionalPath* p2) {
     return p1->GetId() < p2->GetId();
 }
 
+
+
 typedef std::pair<BidirectionalPath*, BidirectionalPath*> PathPair;
-bool compare_path_pairs(const PathPair& p1, const PathPair& p2) {
+
+inline bool compare_path_pairs(const PathPair& p1, const PathPair& p2) {
     if (p1.first->Length() != p2.first->Length() || p1.first->Size() == 0 || p2.first->Size() == 0) {
         return p1.first->Length() > p2.first->Length();
     }
     const Graph& g = p1.first->graph();
     return g.int_id(p1.first->Front()) < g.int_id(p2.first->Front());
 }
+
+class PathComparator {
+public:
+    bool operator()(const BidirectionalPath& p1, const BidirectionalPath& p2) const {
+        return p1.GetId() < p2.GetId();
+    }
+
+    bool operator()(const BidirectionalPath* p1, const BidirectionalPath* p2) const {
+        return p1->GetId() < p2->GetId();
+    }
+};
+
+typedef set<BidirectionalPath*, PathComparator> BidirectionalPathSet;
+
+template<class Value>
+using BidirectionalPathMap = map<BidirectionalPath*, Value, PathComparator>;
+
+typedef std::multiset <BidirectionalPath *, PathComparator> BidirectionalPathMultiset;
 
 class PathContainer {
 
@@ -770,8 +786,20 @@ public:
         }
     };
 
-    PathContainer()
-            : path_id_(0) {
+    class ConstIterator : public PathContainerT::const_iterator {
+    public:
+        ConstIterator(const PathContainerT::const_iterator& iter)
+                : PathContainerT::const_iterator(iter) {
+        }
+        BidirectionalPath* get() const {
+            return this->operator *().first;
+        }
+        BidirectionalPath* getConjugate() const {
+            return this->operator *().second;
+        }
+    };
+
+    PathContainer() {
     }
 
     BidirectionalPath& operator[](size_t index) const {
@@ -811,8 +839,6 @@ public:
         cp->SetConjPath(p);
         p->Subscribe(cp);
         cp->Subscribe(p);
-        p->SetId(++path_id_);
-        cp->SetId(++path_id_);
         data_.push_back(std::make_pair(p, cp));
         return true;
     }
@@ -827,6 +853,15 @@ public:
 
     Iterator end() {
         return Iterator(data_.end());
+    }
+
+
+    ConstIterator begin() const {
+        return ConstIterator(data_.begin());
+    }
+
+    ConstIterator end() const {
+        return ConstIterator(data_.end());
     }
 
     Iterator erase(Iterator iter) {
@@ -865,17 +900,8 @@ public:
         DEBUG("deleted paths with interstand bulges");
     }
 
-    void ResetPathsId() {
-        path_id_ = 0;
-        for (size_t i = 0; i < data_.size(); ++i) {
-            data_[i].first->SetId(++path_id_);
-            data_[i].second->SetId(++path_id_);
-        }
-    }
-
 private:
     std::vector<PathPair> data_;
-    uint32_t path_id_;
 
 protected:
     DECL_LOGGER("BidirectionalPath");
@@ -925,7 +951,7 @@ inline pair<size_t, size_t> ComparePaths(size_t start_pos1, size_t start_pos2, c
     return make_pair(last1, last2);
 }
 
-inline void DeletePaths(set<BidirectionalPath*>& paths) {
+inline void DeletePaths(BidirectionalPathSet& paths) {
     for (auto i = paths.begin(); i != paths.end(); ++i) {
         delete (*i);
     }
@@ -942,6 +968,7 @@ inline void DeleteMapWithPaths(map<EdgeId, BidirectionalPath*> m) {
         delete i->second;
     }
 }
+
 }  // path extend
 
 #endif /* BIDIRECTIONAL_PATH_H_ */

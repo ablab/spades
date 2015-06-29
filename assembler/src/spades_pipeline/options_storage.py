@@ -98,6 +98,7 @@ restart_configs_dir = None
 restart_read_buffer_size = None
 
 dict_of_prefixes = dict()
+dict_of_rel2abs = dict()
 
 # list of spades.py options
 long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc iontorrent meta "\

@@ -113,7 +113,7 @@ public:
 protected:
     const Graph& g_;
 
-    WeightCounter * wc_;
+    shared_ptr<WeightCounter> wc_;
 
     PathAnalyzer analyzer_;
 
@@ -126,7 +126,7 @@ protected:
     std::vector<ExtensionChooserListener *> listeners_;
 
 public:
-    ExtensionChooser(const Graph& g, WeightCounter * wc = 0, double priority = 0.0): g_(g), wc_(wc), analyzer_(g), prior_coeff_(priority),
+    ExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc = shared_ptr<WeightCounter>(0), double priority = 0.0): g_(g), wc_(wc), analyzer_(g), prior_coeff_(priority),
         excludeTrivial_(true), excludeTrivialWithBulges_(true), listeners_() {
     }
 
@@ -208,12 +208,12 @@ protected:
 class JointExtensionChooser: public ExtensionChooser {
 
 protected:
-    ExtensionChooser * first_;
+    shared_ptr<ExtensionChooser> first_;
 
-    ExtensionChooser * second_;
+    shared_ptr<ExtensionChooser> second_;
 
 public:
-    JointExtensionChooser(Graph& g, ExtensionChooser * first, ExtensionChooser * second): ExtensionChooser(g),
+    JointExtensionChooser(Graph& g, shared_ptr<ExtensionChooser> first, shared_ptr<ExtensionChooser> second): ExtensionChooser(g),
         first_(first), second_(second)
     {
     }
@@ -243,7 +243,7 @@ public:
 class TrivialExtensionChooserWithPI: public ExtensionChooser {
 
 public:
-    TrivialExtensionChooserWithPI(Graph& g, WeightCounter * wc): ExtensionChooser(g, wc) {
+    TrivialExtensionChooserWithPI(Graph& g, shared_ptr<WeightCounter> wc): ExtensionChooser(g, wc) {
     }
 
     virtual EdgeContainer Filter(BidirectionalPath& path, EdgeContainer& edges) {
@@ -342,7 +342,7 @@ protected:
 		return result;
 	}
 public:
-	SimpleExtensionChooser(const Graph& g, WeightCounter * wc, double priority) :
+	SimpleExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc, double priority) :
 			ExtensionChooser(g, wc, priority) {
 
 	}
@@ -381,8 +381,7 @@ class ScaffoldingExtensionChooser : public ExtensionChooser {
     const double is_scatter_coeff_ = 3.0;
 
     void AddInfoFromEdge(const std::vector<int>& distances, const std::vector<double>& weights, 
-                         std::vector<pair<int, double>>& histogram,
-                         size_t len_to_path_end) {
+                         std::vector<pair<int, double>>& histogram, size_t len_to_path_end) {
         for (size_t l = 0; l < distances.size(); ++l) {
             //todo commented out condition seems unnecessary and should be library dependent! do we need "max(0" there?
             if (/*distances[l] > max(0, (int) len_to_path_end - int(1000)) && */math::ge(weights[l], weight_threshold_)) {
@@ -439,7 +438,7 @@ class ScaffoldingExtensionChooser : public ExtensionChooser {
     set<EdgeId> FindCandidates(BidirectionalPath& path) const {
         set<EdgeId> jumping_edges;
         PairedInfoLibraries libs = wc_->getLibs();
-        for (PairedInfoLibrary* lib : libs) {
+        for (auto lib : libs) {
             //todo lib (and FindJumpEdges) knows its var so it can be counted there
             int is_scatter = int(math::round(lib->GetIsVar() * is_scatter_coeff_));
             for (int i = (int) path.Size() - 1; i >= 0 && path.LengthAt(i) - g_.length(path.At(i)) <= lib->GetISMax(); --i) {
@@ -460,7 +459,8 @@ class ScaffoldingExtensionChooser : public ExtensionChooser {
     }
 
 public:
-    ScaffoldingExtensionChooser(const Graph& g, WeightCounter * wc, double priority, double is_scatter_coeff) :
+
+    ScaffoldingExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc, double priority, double is_scatter_coeff) :
         ExtensionChooser(g, wc, priority), weight_threshold_(0.0),
         cl_weight_threshold_(cfg::get().pe_params.param_set.scaffolder_options.cl_threshold),
         is_scatter_coeff_(is_scatter_coeff) {
@@ -556,7 +556,7 @@ private:
     bool CheckInconsistence(
             const BidirectionalPath& path1, size_t pos1,
             const BidirectionalPath& path2, size_t pos2,
-            const std::set<BidirectionalPath*>& cov_paths) const {
+            const BidirectionalPathSet& cov_paths) const {
         size_t first_diff_pos1 = FirstNotEqualPosition(path1, pos1, path2, pos2, false);
         size_t first_diff_pos2 = FirstNotEqualPosition(path2, pos2, path1, pos1, false);
         if (first_diff_pos1 != -1UL && first_diff_pos2 != -1UL) {
@@ -591,7 +591,7 @@ private:
     }
     std::pair<double, double> GetSubPathsWeights(
             const BidirectionalPath& cand1, const BidirectionalPath& cand2,
-            const std::set<BidirectionalPath*>& cov_paths) const {
+            const BidirectionalPathSet& cov_paths) const {
         double weight1 = 0.0;
         double weight2 = 0.0;
         for (auto iter = cov_paths.begin(); iter != cov_paths.end(); ++iter) {
@@ -740,7 +740,7 @@ public:
             weights_cands.insert(make_pair(it->e_, 0.0));
         }
         set<EdgeId> filtered_cands;
-        map<EdgeId, set<BidirectionalPath*> > support_paths_ends;
+        map<EdgeId, BidirectionalPathSet > support_paths_ends;
         auto support_paths = cov_map_.GetCoveringPaths(path.Back());
         for (auto it = support_paths.begin(); it != support_paths.end(); ++it) {
             auto positions = (*it)->FindAll(path.Back());
@@ -754,7 +754,7 @@ public:
                         weights_cands[next] += (*it)->GetWeight();
                         filtered_cands.insert(next);
                         if (support_paths_ends.count(next) == 0){
-                            support_paths_ends[next] = set<BidirectionalPath*>();
+                            support_paths_ends[next] = BidirectionalPathSet();
                         }
                         support_paths_ends[next].insert(new BidirectionalPath((*it)->SubPath(positions[i] + 1)));
                     }
@@ -819,15 +819,15 @@ private:
 
 class MatePairExtensionChooser : public ExtensionChooser {
 public:
-    MatePairExtensionChooser(const Graph& g, PairedInfoLibrary& lib,
+    MatePairExtensionChooser(const Graph& g, shared_ptr<PairedInfoLibrary> lib,
                               const PathContainer& paths, size_t max_number_of_paths_to_search)
             : ExtensionChooser(g, 0, .0),
               g_(g),
               lib_(lib),
-              search_dist_(lib.GetISMax()),
+              search_dist_(lib->GetISMax()),
               weight_counter_(g, lib, 10),
               cov_map_(g_, paths),
-              path_searcher_(g_, cov_map_, lib_.GetISMax(), PathsWeightCounter(g, lib, 30), max_number_of_paths_to_search),
+              path_searcher_(g_, cov_map_, lib_->GetISMax(), PathsWeightCounter(g, lib, 30), max_number_of_paths_to_search),
               unique_edge_analyzer_(g, cov_map_, 0., 1000.),
               simple_scaffolder_(g) {
     }
@@ -835,13 +835,13 @@ public:
                                  EdgeContainer& init_edges) {
         DEBUG("mp chooser");
         path.Print();
-        if (path.Length() < lib_.GetISMin()) {
+        if (path.Length() < lib_->GetISMin()) {
             return EdgeContainer();
         }
         EdgeContainer edges = TryResolveBulge(path, init_edges);
         map<EdgeId, BidirectionalPath*> best_paths;
         for (size_t iedge = 0; iedge < edges.size(); ++iedge) {
-            set<BidirectionalPath*> following_paths = path_searcher_.FindNextPaths(path, edges[iedge].e_);
+            BidirectionalPathSet following_paths = path_searcher_.FindNextPaths(path, edges[iedge].e_);
             vector<BidirectionalPath*> max_weighted = MaxWeightedPath(path, following_paths);
             if (max_weighted.size() == 0) {
                 DEBUG("too much paths or tip");
@@ -855,7 +855,7 @@ public:
             DeletePaths(following_paths);
         }
 
-        set<BidirectionalPath*> next_paths;
+        BidirectionalPathSet next_paths;
         if (edges.size() == 0) {
         	DEBUG("scaffolding edges size " << edges.size())
             next_paths = path_searcher_.FindNextPaths(path, path.Back());
@@ -949,7 +949,7 @@ private:
         return result;
     }
 
-    EdgeContainer ChooseBest(const BidirectionalPath& path, set<BidirectionalPath*>& next_paths) {
+    EdgeContainer ChooseBest(const BidirectionalPath& path, BidirectionalPathSet& next_paths) {
         DEBUG("Try to choose from best paths...");
         vector<BidirectionalPath*> best_path = MaxWeightedPath(path, next_paths);
         EdgeContainer result;
@@ -998,7 +998,7 @@ private:
         return false;
     }
 
-    set<size_t> FindNotCommonEdges(const BidirectionalPath& path, const std::map<BidirectionalPath*, map<size_t, double> >& all_pi) {
+    set<size_t> FindNotCommonEdges(const BidirectionalPath& path, const BidirectionalPathMap< map<size_t, double> >& all_pi) {
         set<size_t> res;
         for (size_t i = 0; i < path.Size(); ++i) {
             if (!unique_edge_analyzer_.IsUnique(path.At(i))) {
@@ -1017,7 +1017,7 @@ private:
         return res;
     }
 
-    void DeleteSmallWeights(const BidirectionalPath& path, set<BidirectionalPath*>& paths, std::map<BidirectionalPath*, map<size_t, double> >& all_pi) {
+    void DeleteSmallWeights(const BidirectionalPath& path, BidirectionalPathSet& paths, BidirectionalPathMap< map<size_t, double> >& all_pi) {
         double max_weight = 0.0;
         BidirectionalPath* max_path = NULL;
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
@@ -1026,7 +1026,7 @@ private:
                 max_path = *iter;
             }
         }
-        set<BidirectionalPath*> to_del;
+        BidirectionalPathSet to_del;
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
             if (math::gr(max_weight, (*iter)->GetWeight() * 1.5) //TODO: move 1.5 to config
                     && SignificallyDifferentEdges(path, *max_path, all_pi.find(max_path)->second, **iter, all_pi.find(*iter)->second,
@@ -1039,7 +1039,7 @@ private:
         }
     }
 
-    void DeleteCommonPi(const BidirectionalPath& p, const std::map<BidirectionalPath*, map<size_t, double> >& all_pi) {
+    void DeleteCommonPi(const BidirectionalPath& p, BidirectionalPathMap< map<size_t, double> >& all_pi) {
         weight_counter_.ClearCommonWeight();
         for (size_t i = 0; i < p.Size(); ++i) {
             double common = DBL_MAX;
@@ -1050,7 +1050,7 @@ private:
         }
     }
 
-    size_t FindCommonBegin(const set<BidirectionalPath*>& paths) const {
+    size_t FindCommonBegin(const BidirectionalPathSet& paths) const {
         if (paths.size() == 0) {
             return 0;
         }
@@ -1068,8 +1068,8 @@ private:
         return common_begin;
     }
 
-    void CountAllPairInfo(const BidirectionalPath& path, const set<BidirectionalPath*>& next_paths,
-                          std::map<BidirectionalPath*, map<size_t, double> >& result) {
+    void CountAllPairInfo(const BidirectionalPath& path, const BidirectionalPathSet& next_paths,
+                BidirectionalPathMap< map<size_t, double> >& result) {
         result.clear();
         size_t common_begin = FindCommonBegin(next_paths);
         DEBUG("common begin " << common_begin);
@@ -1078,8 +1078,8 @@ private:
         }
     }
 
-    void CountWeightsAndFilter(const BidirectionalPath& path, set<BidirectionalPath*>& next_paths, bool delete_small_w) {
-        std::map<BidirectionalPath*, map<size_t, double> > all_pi;
+    void CountWeightsAndFilter(const BidirectionalPath& path, BidirectionalPathSet& next_paths, bool delete_small_w) {
+        BidirectionalPathMap< map<size_t, double> > all_pi;
         CountAllPairInfo(path, next_paths, all_pi);
         DeleteCommonPi(path, all_pi);
         for (BidirectionalPath* next : next_paths) {
@@ -1091,7 +1091,7 @@ private:
     }
 
     struct PathWithWeightSort {
-        PathWithWeightSort(MatePairExtensionChooser& mp_chooser, const BidirectionalPath& path, std::map<BidirectionalPath*, map<size_t, double> >& all_pi)
+        PathWithWeightSort(MatePairExtensionChooser& mp_chooser, const BidirectionalPath& path, BidirectionalPathMap< map<size_t, double> >& all_pi)
                 : mp_chooser_(mp_chooser),
                   path_(path),
                   all_pi_(all_pi) {
@@ -1118,12 +1118,12 @@ private:
         }
         MatePairExtensionChooser& mp_chooser_;
         const BidirectionalPath& path_;
-        std::map<BidirectionalPath*, map<size_t, double> >& all_pi_;
+        BidirectionalPathMap< map<size_t, double> >& all_pi_;
         set<size_t> not_common_;
     };
 
-    vector<BidirectionalPath*> SortResult(const BidirectionalPath& path, set<BidirectionalPath*>& next_paths) {
-        std::map<BidirectionalPath*, map<size_t, double> > all_pi;
+    vector<BidirectionalPath*> SortResult(const BidirectionalPath& path, BidirectionalPathSet& next_paths) {
+        BidirectionalPathMap< map<size_t, double> > all_pi;
         CountAllPairInfo(path, next_paths, all_pi);
         CountWeightsAndFilter(path, next_paths, false);
         vector<BidirectionalPath*> to_sort(next_paths.begin(), next_paths.end());
@@ -1132,9 +1132,9 @@ private:
         return to_sort;
     }
 
-    vector<BidirectionalPath*> MaxWeightedPath(const BidirectionalPath& path, const set<BidirectionalPath*>& following_paths) {
-        set<BidirectionalPath*> result(following_paths);
-        set<BidirectionalPath*> prev_result;
+    vector<BidirectionalPath*> MaxWeightedPath(const BidirectionalPath& path, const BidirectionalPathSet& following_paths) {
+        BidirectionalPathSet result(following_paths);
+        BidirectionalPathSet prev_result;
         while (prev_result.size() != result.size()) {
             prev_result = result;
             DEBUG("iteration with paths " << result.size());
@@ -1245,7 +1245,7 @@ private:
     }
 
     const Graph& g_;
-    PairedInfoLibrary& lib_;
+    shared_ptr<PairedInfoLibrary> lib_;
     size_t search_dist_;
     PathsWeightCounter weight_counter_;
     const GraphCoverageMap cov_map_;

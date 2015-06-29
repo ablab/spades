@@ -10,10 +10,10 @@
 #include "verify.hpp"
 #include <set>
 
-template<typename Key, typename Comparator>
+template<typename T, typename Comparator>
 class erasable_priority_queue {
 private:
-	std::set<Key, Comparator> storage_;
+	std::set<T, Comparator> storage_;
 public:
 	/*
 	 * Be careful! This constructor requires Comparator to have default constructor even if you call it with
@@ -34,16 +34,16 @@ public:
 		storage_.erase(storage_.begin());
 	}
 
-	const Key& top() const {
+	const T& top() const {
 		VERIFY(!storage_.empty());
 		return *(storage_.begin());
 	}
 
-	void push(const Key& key) {
+	void push(const T& key) {
 		storage_.insert(key);
 	}
 
-	bool erase(const Key& key) {
+	bool erase(const T& key) {
 		bool res = storage_.erase(key) > 0;
 		return res;
 	}
@@ -63,41 +63,41 @@ public:
 
 };
 
-template<typename ElementId, typename Comparator = std::less<ElementId> >
-class QueueIterator {
-private:
-	bool current_actual_;
+template<typename T, typename Comparator = std::less<T>>
+class DynamicQueueIterator {
+
+    bool current_actual_;
 	bool current_deleted_;
-	ElementId current_;
-	erasable_priority_queue<ElementId, Comparator> queue_;
-protected:
+	T current_;
+	erasable_priority_queue<T, Comparator> queue_;
+
+public:
+
+	DynamicQueueIterator(const Comparator& comparator = Comparator()) :
+        current_actual_(false), current_deleted_(false), queue_(comparator) {
+    }
 
 	template<typename InputIterator>
 	void insert(InputIterator begin, InputIterator end) {
 		queue_.insert(begin, end);
 	}
 
-	QueueIterator(const Comparator& comparator = Comparator()) :
-		current_actual_(false), current_deleted_(false), queue_(comparator) {
+	void push(const T& to_add) {
+		queue_.push(to_add);
 	}
 
-	void push(const ElementId& toAdd) {
-		queue_.push(toAdd);
-	}
-
-public:
-	void erase(const ElementId& toRemove) {
-		if (current_actual_ && toRemove == current_) {
+	void erase(const T& to_remove) {
+		if (current_actual_ && to_remove == current_) {
 			current_deleted_ = true;
 		}
-		queue_.erase(toRemove);
+		queue_.erase(to_remove);
 	}
 
 	bool IsEnd() const {
 		return queue_.empty();
 	}
 
-	ElementId operator*() {
+	const T& operator*() {
 		VERIFY(!queue_.empty());
 		if(!current_actual_ || current_deleted_) {
 			current_ = queue_.top();
@@ -116,12 +116,11 @@ public:
 		current_actual_ = false;
 	}
 
+	//use carefully!
     void ReleaseCurrent() {
         current_actual_ = false;
     }
 
-	virtual ~QueueIterator() {
-	}
 };
 
 

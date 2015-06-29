@@ -9,6 +9,7 @@
 import os
 import sys
 import getopt
+from os.path import abspath, expanduser
 
 import spades
 import support
@@ -42,14 +43,14 @@ def main():
     for opt, arg in options:
         # processing some special options
         if opt == '--test':
-            output_dir = os.path.abspath("test_dipspades")
+            output_dir = abspath("test_dipspades")
             spades_py_args = ["--diploid", "-1", os.path.join(spades_init.spades_home, "test_dataset/ecoli_1K_1.fq.gz"),
                               "-2", os.path.join(spades_init.spades_home, "test_dataset/ecoli_1K_2.fq.gz"), "--only-assembler"]
             dipspades_logic_args = []
             spades_py_run_needed = True
             break
         if opt == '-o':
-            output_dir = os.path.abspath(arg) #arg
+            output_dir = abspath(expanduser(arg))
         elif opt == '--careful' or opt == '--mismatch-correction':
             continue
         if opt == '-h' or opt == '--help':

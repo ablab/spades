@@ -17,6 +17,7 @@ import tempfile
 import shutil
 import options_storage
 import itertools
+from os.path import abspath, expanduser, join
 
 # constants to print and detect warnings and errors in logs
 SPADES_PY_ERROR_MESSAGE = "== Error == "
@@ -76,17 +77,19 @@ def check_binaries(binary_dir, log):
             error("SPAdes binaries not found: " + binary_path + "\n" + get_spades_binaries_info_message(), log)
 
 
-def check_file_existence(filename, message="", log=None, dipspades=False):
-    filename = os.path.abspath(filename)
+def check_file_existence(input_filename, message="", log=None, dipspades=False):
+    filename = abspath(expanduser(input_filename))
     if not os.path.isfile(filename):
         error("file not found: %s (%s)" % (filename, message), log=log, dipspades=dipspades)
+    options_storage.dict_of_rel2abs[input_filename] = filename
     return filename
 
 
-def check_dir_existence(dirname, message="", log=None, dipspades=False):
-    dirname = os.path.abspath(dirname)
+def check_dir_existence(input_dirname, message="", log=None, dipspades=False):
+    dirname = abspath(expanduser(input_dirname))
     if not os.path.isdir(dirname):
         error("directory not found: %s (%s)" % (dirname, message), log=log, dipspades=dipspades)
+    options_storage.dict_of_rel2abs[input_dirname] = dirname
     return dirname
 
 
@@ -429,6 +432,14 @@ def get_data_type(option):
     return data_type
 
 
+def get_option_prefix(data):
+    prefix = None
+    if data.find(':') != -1 and ('.' + data[:data.find(':')]) in options_storage.ALLOWED_READS_EXTENSIONS:
+        prefix = data[:data.find(':')]
+        data = data[data.find(':') + 1:]
+    return data, prefix
+
+
 def add_to_dataset(option, data, dataset_data):
     lib_type, lib_number = get_lib_type_and_number(option)
     data_type = get_data_type(option)
@@ -450,10 +461,9 @@ def add_to_dataset(option, data, dataset_data):
         else:
             dataset_data[record_id]['type'] = lib_type
     if data_type.endswith('reads'):
-        if data.find(':') != -1 and ('.' + data[:data.find(':')]) in options_storage.ALLOWED_READS_EXTENSIONS:
-            prefix = '.' + data[:data.find(':')]
-            data = data[data.find(':') + 1:]
-            options_storage.dict_of_prefixes[data] = prefix
+        data, prefix = get_option_prefix(data)
+        if prefix:
+            options_storage.dict_of_prefixes[data] = '.' + prefix
         if data_type in dataset_data[record_id]:
             dataset_data[record_id][data_type].append(data)
         else:
@@ -491,15 +501,16 @@ def correct_dataset(dataset_data):
     return corrected_dataset_data
 
 
-def relative2abs_paths(dataset_data, dir_name):
-    dir_name = os.path.abspath(dir_name)
+def relative2abs_paths(dataset_data, dirname):
+    dirname = abspath(expanduser(dirname))
     abs_paths_dataset_data = []
     for reads_library in dataset_data:
         for key, value in reads_library.items():
             if key.endswith('reads'):
                 abs_paths_reads = []
                 for reads_file in value:
-                    abs_path = os.path.join(dir_name, reads_file)
+                    abs_path = abspath(join(dirname, expanduser(reads_file)))
+                    options_storage.dict_of_rel2abs[reads_file] = abs_path
                     if reads_file in options_storage.dict_of_prefixes and abs_path != reads_file:
                         options_storage.dict_of_prefixes[abs_path] = options_storage.dict_of_prefixes[reads_file]
                         del options_storage.dict_of_prefixes[reads_file]

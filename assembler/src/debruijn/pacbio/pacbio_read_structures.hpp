@@ -45,6 +45,9 @@ struct MappingInstance {
 		else
 			return false;
 	}
+private:
+    DECL_LOGGER("MappingInstance")
+    ;
 };
 
 //Less by READ position
@@ -59,6 +62,8 @@ struct KmerCluster {
 	typedef typename Graph::EdgeId EdgeId;
 	int last_trustable_index;
 	int first_trustable_index;
+	size_t average_read_position;
+	size_t average_edge_position;
 	EdgeId edgeId;
 	vector<MappingInstance> sorted_positions;
 	int size;
@@ -66,6 +71,7 @@ struct KmerCluster {
 	KmerCluster(EdgeId e, const vector<MappingInstance>& v) {
 		last_trustable_index = 0;
 		first_trustable_index = 0;
+		average_read_position = 0;
 		edgeId = e;
 		size = (int) v.size();
 		sorted_positions = v;
@@ -73,7 +79,8 @@ struct KmerCluster {
 	}
 
 	bool operator <(const KmerCluster & b) const {
-		return (edgeId < b.edgeId || (edgeId == b.edgeId && sorted_positions < b.sorted_positions));
+		return (average_read_position < b.average_read_position ||(average_read_position == b.average_read_position && edgeId < b.edgeId) ||
+		        (average_read_position == b.average_read_position && edgeId == b.edgeId && sorted_positions < b.sorted_positions));
 	}
 
 	bool CanFollow(const KmerCluster &b) const {
@@ -92,6 +99,39 @@ struct KmerCluster {
 		}
 		last_trustable_index = last_unique_ind;
 		first_trustable_index = first_unique_ind;
+		double tmp_read_position = 0, tmp_edge_position = 0;;
+		vector<size_t> diffs;
+		for (auto mp : sorted_positions) {
+		   tmp_read_position += mp.read_position;
+		   tmp_edge_position += mp.edge_position;
+		   diffs.push_back(mp.read_position - mp.edge_position);
+		}
+		sort(diffs.begin(), diffs.end());
+		int median_diff = diffs[size/2];
+
+		tmp_read_position /= size;
+		tmp_edge_position /= size;
+		average_read_position = (size_t)trunc(tmp_read_position);
+		average_edge_position = (size_t)trunc(tmp_edge_position);
+
+        if (size > 10) {
+            int max_debug_size = 10;
+            vector<int> distances(max_debug_size);
+            for (int df: diffs) {
+                size_t ind = abs(df - median_diff)/ 50;
+                if (ind > max_debug_size - 1) ind = max_debug_size - 1;
+                distances [ind] ++;
+            }
+            if (size > 100 || distances[0] * 5 < size * 4) {
+                stringstream s;
+
+                for (int d: distances) {
+                    s << d << " ";
+                }
+//                INFO(s.str());
+
+            }
+        }
 	}
 
     string str(const Graph &g) const{
@@ -99,6 +139,9 @@ struct KmerCluster {
         s << "Edge: " << g.int_id(edgeId) << " on edge: " << sorted_positions[first_trustable_index].edge_position<< " - "  << sorted_positions[last_trustable_index].edge_position<< ";on read: " << sorted_positions[first_trustable_index].read_position<< " - "  << sorted_positions[last_trustable_index].read_position<< ";size "<< size;
         return s.str();
     }
+private:
+    DECL_LOGGER("KmerCluster")
+    ;
 };
 
 template<class Graph>

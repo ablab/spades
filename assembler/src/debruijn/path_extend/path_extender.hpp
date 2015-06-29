@@ -445,7 +445,7 @@ public:
             return empty_;
         }
         EdgeId last_e = p.Back();
-        set<BidirectionalPath*> cov_paths = cov_map_.GetCoveringPaths(last_e);
+        BidirectionalPathSet cov_paths = cov_map_.GetCoveringPaths(last_e);
         DEBUG("cov paths for e " << g_.int_id(last_e) << " size " << cov_paths.size());
         size_t max_common_size = 0;
         BidirectionalPath* result_p = empty_;
@@ -543,7 +543,7 @@ public:
               max_diff_len_(max_diff_len) {
     }
 
-    CompositeExtender(Graph & g, GraphCoverageMap& cov_map, vector<PathExtender*> pes, size_t max_diff_len)
+    CompositeExtender(Graph & g, GraphCoverageMap& cov_map, vector<shared_ptr<PathExtender> > pes, size_t max_diff_len)
             : ContigsMaker(g),
               cover_map_(cov_map),
               repeat_detector_(g, cover_map_, 2 * cfg::get().max_repeat_length),  //TODO: move to config
@@ -552,7 +552,7 @@ public:
         extenders_ = pes;
     }
 
-    void AddExender(PathExtender* pe) {
+    void AddExender(shared_ptr<PathExtender> pe) {
         extenders_.push_back(pe);
     }
 
@@ -622,7 +622,7 @@ public:
 private:
     GraphCoverageMap& cover_map_;
     RepeatDetector repeat_detector_;
-    vector<PathExtender*> extenders_;
+    vector<shared_ptr<PathExtender> > extenders_;
     size_t max_diff_len_;
 
     void SubscribeCoverageMap(BidirectionalPath * path) {
@@ -654,7 +654,7 @@ private:
                     GrowPath(*path);
                     GrowPath(*conjugatePath);
                 } while (count_trying < 10 && (path->Length() != current_path_len));
-                path->CheckConjugateEnd();
+                path->CheckConjugateEnd(cfg::get().max_repeat_length);
                 DEBUG("result path " << path->GetId());
                 path->Print();
             }
@@ -861,7 +861,7 @@ class SimpleExtender: public LoopDetectingPathExtender {
 
 protected:
 
-    ExtensionChooser * extensionChooser_;
+    shared_ptr<ExtensionChooser> extensionChooser_;
     LoopResolver loopResolver_;
 
     void FindFollowingEdges(BidirectionalPath& path, ExtensionChooser::EdgeContainer * result) {
@@ -881,7 +881,7 @@ protected:
 
 public:
 
-    SimpleExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, ExtensionChooser * ec, size_t is, size_t max_loops, bool investigate_short_loops, bool use_short_loop_cov_resolver):
+    SimpleExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, shared_ptr<ExtensionChooser> ec, size_t is, size_t max_loops, bool investigate_short_loops, bool use_short_loop_cov_resolver):
         LoopDetectingPathExtender(gp, cov_map, max_loops, investigate_short_loops, use_short_loop_cov_resolver, is),
         extensionChooser_(ec),
         loopResolver_(gp.g, *extensionChooser_) {
@@ -967,7 +967,6 @@ public:
 };
 
 class ScaffoldingPathExtender: public LoopDetectingPathExtender {
-
     std::shared_ptr<ExtensionChooser> extension_chooser_;
     ExtensionChooser::EdgeContainer sources_;
     std::shared_ptr<GapJoiner> gap_joiner_;
