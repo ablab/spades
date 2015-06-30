@@ -295,8 +295,9 @@ inline shared_ptr<SimpleExtender> MakeLongReadsExtender(const conj_graph_pack& g
             make_shared<LongReadsExtensionChooser>(gp.g, paths, GetSingleReadsFilteringThreshold(lib.type()),
                                                    GetSingleReadsWeightPriorityThreshold(lib.type()),
                                                    GetSingleReadsUniqueEdgePriorityThreshold(lib.type()));
-    return make_shared<SimpleExtender>(gp, cov_map, longReadEC, 10000,  //FIXME
-                                       pset.loop_removal.max_loops, true, UseCoverageResolverForSingleReads(lib.type()));
+    INFO("max_repeat_length set to " << lib.data().read_length);
+    return make_shared<SimpleExtender>(gp, cov_map, longReadEC, lib.data().read_length,  
+            pset.loop_removal.max_loops, true, UseCoverageResolverForSingleReads(lib.type()));
 }
 
 inline shared_ptr<SimpleExtender> MakeLongEdgePEExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
