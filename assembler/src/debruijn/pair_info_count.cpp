@@ -156,7 +156,8 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
     gp.InitRRIndices();
     gp.EnsureBasicMapping();
 
-    size_t edge_length_threshold = 1000/*stats::Nx(gp.g, 50)*/;
+    //fixme implement better universal logic 
+    size_t edge_length_threshold = cfg::get().ds.meta ? 1000 : stats::Nx(gp.g, 50);
     INFO("Min edge length for estimation: " << edge_length_threshold);
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         INFO("Estimating insert size for library #" << i);
