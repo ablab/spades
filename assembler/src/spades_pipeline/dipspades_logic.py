@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ############################################################################
-# Copyright (c) 2011-2014 Saint-Petersburg Academic University
+# Copyright (c) 2011-2015 Saint-Petersburg Academic University
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
@@ -123,8 +123,8 @@ def parse_arguments(argv, log):
 
 def prepare_config(config_fname, ds_args, log):
     args_dict = dict()
-    args_dict["tails_lie_on_bulges"] = process_cfg.bool_to_str(ds_args.allow_gaps)
-    args_dict["align_bulge_sides"] = process_cfg.bool_to_str(ds_args.weak_align)
+    args_dict["tails_lie_on_bulges"] = process_cfg.bool_to_str(not ds_args.allow_gaps)
+    args_dict["align_bulge_sides"] = process_cfg.bool_to_str(not ds_args.weak_align)
     args_dict["haplocontigs"] = process_cfg.process_spaces(ds_args.haplocontigs)
     args_dict["output_dir"] = process_cfg.process_spaces(ds_args.output_dir)
     args_dict["developer_mode"] = process_cfg.bool_to_str(ds_args.dev_mode)

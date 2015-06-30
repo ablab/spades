@@ -204,8 +204,9 @@ void run_dipspades() {
     ds_phase->add(new ContigGraphConstructionStage())->
     	add(new PolymorphicBulgeRemoverStage())->
     	add(new ConsensusConstructionStage());
-    if(dsp_cfg::get().ha.ha_enabled)
-    	ds_phase->add(new HaplotypeAssemblyStage());
+    if(dsp_cfg::get().ha.ha_enabled) {
+		ds_phase->add(new HaplotypeAssemblyStage());
+	}
 
     DS_Manager.add(ds_phase);
     DS_Manager.run(conj_gp, dsp_cfg::get().rp.entry_point.c_str());
