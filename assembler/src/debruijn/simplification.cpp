@@ -48,9 +48,8 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
     debruijn_config::simplification& simplif_cfg =
             preliminary_ ? cfg::get_writable().preliminary_simp : cfg::get_writable().simp;
 
-    //todo fix ugly logic
-    //fixme temporary solution!
-    simplif_cfg.fast_features &= !cfg::get().main_iteration;//debruijn::simplification::CorrectedFastMode(info_container, simplif_cfg);
+    //todo fix logic
+    simplif_cfg.fast_features &= debruijn::simplification::FastModeAvailable(info_container, simplif_cfg.fast_activation_cov);
 
 //    debruijn::simplification::SimplifyGraph(gp, info_container, simplif_cfg, 0/*removal_handler_f*/, printer);
     debruijn::simplification::GraphSimplifier simplifier(gp, info_container, simplif_cfg, 0/*removal_handler_f*/, printer);

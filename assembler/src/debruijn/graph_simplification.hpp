@@ -623,8 +623,14 @@ public:
     }
 };
 
-inline bool CorrectedFastMode(const SimplifInfoContainer& info, const debruijn_config::simplification& simplif) {
+inline bool FastModeAvailable(const SimplifInfoContainer& info, double activation_cov_threshold) {
     const auto& cfg = cfg::get();
+
+    //todo fix logic
+    //also handles meta case for now
+    if (cfg.ds.single_cell) {
+        return !cfg::get().main_iteration;
+    }
 
     if (math::eq(info.detected_mean_coverage(), 0.) &&
         !cfg.kcm.use_coverage_threshold) {
@@ -632,15 +638,16 @@ inline bool CorrectedFastMode(const SimplifInfoContainer& info, const debruijn_c
         return false;
     }
 
-    if (math::ls(info.detected_mean_coverage(), simplif.fast_activation_cov) &&
+    //todo review logic
+    if (math::ls(info.detected_mean_coverage(), activation_cov_threshold) &&
         !(cfg.kcm.use_coverage_threshold &&
-          math::ge(cfg.kcm.coverage_threshold, simplif.fast_activation_cov))) {
+          math::ge(cfg.kcm.coverage_threshold, activation_cov_threshold))) {
         INFO("Estimated mean coverage " << info.detected_mean_coverage() <<
-             " is less than fast mode activation coverage " << simplif.fast_activation_cov);
+             " is less than fast mode activation coverage " << activation_cov_threshold);
         return false;
     }
 
-    return simplif.fast_features;
+    return true;
 }
 
 class GraphSimplifier {
@@ -943,7 +950,7 @@ public:
         if (simplif_cfg_.post_simplif_enabled) {
             PostSimplification();
         } else {
-            INFO("Preliminary mode; PostSimplification disabled");
+            INFO("PostSimplification disabled");
         }
     }
 };
