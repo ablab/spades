@@ -303,7 +303,8 @@ inline shared_ptr<SimpleExtender> MakeLongReadsExtender(const conj_graph_pack& g
     shared_ptr<ExtensionChooser> longReadEC = make_shared<LongReadsExtensionChooser>(gp.g, paths, GetSingleReadsFilteringThreshold(cfg::get().ds.reads[lib_index].type()),
                                                                   GetSingleReadsWeightPriorityThreshold(cfg::get().ds.reads[lib_index].type()),
                                                                   GetSingleReadsUniqueEdgePriorityThreshold(cfg::get().ds.reads[lib_index].type()));
-    return make_shared<SimpleExtender>(gp, cov_map, longReadEC, 10000,  //FIXME
+    INFO("max_repeat_length set to " << cfg::get().ds.reads[index].data().read_length);
+    return make_shared<SimpleExtender>(gp, cov_map, longReadEC, cfg::get().ds.reads[index].data().read_length,  //FIXME
             pset.loop_removal.max_loops, true, UseCoverageResolverForSingleReads(cfg::get().ds.reads[lib_index].type()));
 }
 
