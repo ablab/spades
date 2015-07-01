@@ -219,10 +219,6 @@ private:
         } else if (next_token_ == "disabled") {
             DEBUG("Creating disabling condition");
             return make_shared<func::AlwaysFalse<EdgeId>>();
-        } else if (next_token_ == "mmm") {
-            ReadNext();
-            DEBUG("Creating max mismatches cond " << next_token_);
-            return make_shared < MismatchTipCondition<Graph>> (g_, lexical_cast < size_t > (next_token_));
         } else {
             VERIFY(false);
             return make_shared<func::AlwaysTrue<EdgeId>>();

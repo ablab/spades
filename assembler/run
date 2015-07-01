@@ -17,7 +17,6 @@ cp -r configs $tmp_cfg_dir
 cfg_debruijn="$tmp_cfg_dir/configs/debruijn"
 cfg_cap="$tmp_cfg_dir/configs/cap"
 cfg_dipspades="$tmp_cfg_dir/configs/dipspades"
-cfg_moleculo="$tmp_cfg_dir/configs/moleculo"
 
 function run_n_measure
 {
@@ -114,10 +113,6 @@ else
     'dct' ) ./build/debug/bin/cap_test --log_level=test_suite ;;
     'rds' ) run_n_measure build/release/bin/dipspades $cfg_dipspades/config.info ;;
     'dds' ) run_n_measure build/debug/bin/dipspades $cfg_dipspades/config.info ;;
-    'rm' ) build/release/bin/scaffold_correction $cfg_moleculo/config.info ;;
-    'dm' ) build/debug/bin/scaffold_correction $cfg_moleculo/config.info ;;
-    'rts' ) build/release/bin/truseq_analysis $cfg_moleculo/config.info ;;
-    'dts' ) build/debug/bin/truseq_analysis $cfg_moleculo/config.info ;;
 
     * ) 
         change_config $1

@@ -87,7 +87,7 @@ void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {
     INFO("Average coverage = " << cfg::get().ds.avg_coverage());
     if (!cfg::get().ds.single_cell) {
         if (cfg::get().ds.avg_coverage() < gp.ginfo.ec_bound())
-            WARN("The determined errorneous connection coverage threshold may be determined improperly\n");
+            WARN("The determined errorneous connection coverage threshold may be dtermined improperly\n");
     }
 }
 

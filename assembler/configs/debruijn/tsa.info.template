@@ -1,5 +1,0 @@
-tsa
-{
-    scaffolds_file /home/anton/gitrep/algorithmic-biology/assembler/BC087/K55/scaffolds.fasta
-    genome_file genome.fasta
-}

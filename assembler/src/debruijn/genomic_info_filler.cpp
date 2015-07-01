@@ -9,7 +9,6 @@
 #include "graph_pack.hpp"
 #include "kmer_coverage_model.hpp"
 #include "omni/omni_tools.hpp"
-#include "../include/config_singl.hpp"
 
 #include <yaml-cpp/yaml.h>
 

@@ -159,41 +159,6 @@ public:
 };
 
 
-class osequencestream_simple: public osequencestream {
-protected:
-    std::string header_;
-
-    double cov_;
-
-    virtual void write_header(const std::string& /*s*/) {
-        ofstream_ << ">" << header_ << std::endl;
-    }
-
-public:
-    osequencestream_simple(const std::string& filename)
-            : osequencestream(filename), header_("") { }
-
-    virtual ~osequencestream_simple() {
-        ofstream_.close();
-    }
-
-    void set_header(const std::string &header) {
-        header_ = header;
-    }
-
-    osequencestream_simple& operator<<(const std::string& s) {
-        write_header(s);
-        write_str(s);
-        return *this;
-    }
-
-    osequencestream_simple& operator<<(const Sequence& seq) {
-        std::string s = seq.str();
-        return operator <<(s);
-    }
-
-};
-
 class osequencestream_with_id: public osequencestream {
 protected:
     int uid_;

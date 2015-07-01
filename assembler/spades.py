@@ -38,9 +38,6 @@ if sys.version.startswith('2.'):
 elif sys.version.startswith('3.'):
     import pyyaml3 as pyyaml
 
-import moleculo_postprocessing
-import alignment
-
 def print_used_values(cfg, log):
     def print_value(cfg, section, param, pretty_param="", margin="  "):
         if not pretty_param:
@@ -62,7 +59,7 @@ def print_used_values(cfg, log):
         log.info("  Python version: " + ".".join(map(str, sys.version_info[0:3])))
         # for more details: '[' + str(sys.version_info) + ']'
         log.info("  OS: " + platform.platform())
-        # for more details: '[' + str(platform.uname()) + ']'
+        # for more deatils: '[' + str(platform.uname()) + ']'
     except Exception:
         log.info("  Problem occurred when getting system information")
     log.info("")
@@ -90,8 +87,6 @@ def print_used_values(cfg, log):
             log.info("  Single-cell mode")
         elif cfg["dataset"].meta:
             log.info("  Metagenomic mode")
-        elif cfg["dataset"].truseq:
-            log.info(" Illumina TruSeq mode")
         else:
             log.info("  Multi-cell mode (you should set '--sc' flag if input data"\
                      " was obtained with MDA (single-cell) technology"\
@@ -155,10 +150,12 @@ def fill_cfg(options_to_parse, log):
         _, exc, _ = sys.exc_info()
         sys.stderr.write(str(exc) + "\n")
         sys.stderr.flush()
-        show_usage(1)
+        options_storage.usage(spades_version)
+        sys.exit(1)
 
     if not options:
-        show_usage(1)
+        options_storage.usage(spades_version)
+        sys.exit(1)
 
     if len(not_options) > 1:
         for opt, arg in options:
@@ -242,7 +239,7 @@ def fill_cfg(options_to_parse, log):
         elif opt == "--continue":
             options_storage.continue_mode = True
         elif opt == "--restart-from":
-            if arg not in ['ec', 'as', 'mc', "scc", "tpp"] and not arg.startswith('k'):
+            if arg not in ['ec', 'as', 'mc'] and not arg.startswith('k'):
                 support.error("wrong value for --restart-from option: " + arg +
                               " (should be 'ec', 'as', 'k<int>', or 'mc'", log)
             options_storage.continue_mode = True
@@ -290,9 +287,11 @@ def fill_cfg(options_to_parse, log):
             options_storage.careful = False
 
         elif opt == '-h' or opt == "--help":
-            show_usage(0)
+            options_storage.usage(spades_version)
+            sys.exit(0)
         elif opt == "--help-hidden":
-            show_usage(0)
+            options_storage.usage(spades_version, True)
+            sys.exit(0)
 
         elif opt == "--test":
             options_storage.set_test_options()
@@ -301,8 +300,6 @@ def fill_cfg(options_to_parse, log):
             #break
         elif opt == "--diploid":
             options_storage.diploid_mode = True
-        elif opt == "--truseq":
-            options_storage.enable_truseq_mode()
         else:
             raise ValueError
 
@@ -360,7 +357,6 @@ def fill_cfg(options_to_parse, log):
     cfg["dataset"].__dict__["iontorrent"] = options_storage.iontorrent
     cfg["dataset"].__dict__["meta"] = options_storage.meta
     cfg["dataset"].__dict__["yaml_filename"] = options_storage.dataset_yaml_filename
-    cfg["dataset"].__dict__["truseq"] = options_storage.truseq_mode
     if options_storage.developer_mode and options_storage.reference:
         cfg["dataset"].__dict__["reference"] = options_storage.reference
 
@@ -389,7 +385,6 @@ def fill_cfg(options_to_parse, log):
             cfg["assembly"].__dict__["heap_check"] = options_storage.spades_heap_check
         if options_storage.read_buffer_size:
             cfg["assembly"].__dict__["read_buffer_size"] = options_storage.read_buffer_size
-        cfg["assembly"].__dict__["correct_scaffolds"] = options_storage.correct_scaffolds
 
     #corrector can work only if contigs exist (not only error correction)
     if (not options_storage.only_error_correction) and options_storage.mismatch_corrector:
@@ -398,7 +393,7 @@ def fill_cfg(options_to_parse, log):
         cfg["mismatch_corrector"].__dict__["bwa"] = os.path.join(bin_home, "bwa-spades")
         cfg["mismatch_corrector"].__dict__["threads"] = options_storage.threads
         cfg["mismatch_corrector"].__dict__["output-dir"] = options_storage.output_dir
-    cfg["run_truseq_postprocessing"] = options_storage.run_truseq_postprocessing
+
     return cfg, dataset_data
 
 
@@ -456,18 +451,13 @@ def get_options_from_params(params_filename, spades_py_name=None):
         return None, None
     return cmd_line, cmd_line[spades_py_pos + len(spades_py_name):].split()
 
-def show_usage(code):
-    if options_storage.truseq_mode:
-        options_storage.tru_usage(spades_version)
-    else:
-        options_storage.usage(spades_version)
-    sys.exit(code)
 
 def main(args):
     os.environ["LC_ALL"] = "C"
 
     if len(args) == 1:
-        show_usage(0)
+        options_storage.usage(spades_version)
+        sys.exit(0)
 
     log = logging.getLogger('spades')
     log.setLevel(logging.DEBUG)
@@ -669,7 +659,6 @@ def main(args):
                     import process_cfg
                     dataset_file.write("single_cell" + '\t' + process_cfg.bool_to_str(cfg["dataset"].single_cell) + '\n')
                     dataset_file.write("meta" + '\t' + process_cfg.bool_to_str(cfg["dataset"].meta) + '\n')
-                    dataset_file.write("moleculo" + '\t' + process_cfg.bool_to_str(cfg["dataset"].truseq) + '\n')
                     if os.path.isfile(corrected_dataset_yaml_filename):
                         dataset_file.write("reads" + '\t' + process_cfg.process_spaces(corrected_dataset_yaml_filename) + '\n')
                     else:
@@ -693,22 +682,6 @@ def main(args):
                         k_str = k_str[:k_str.find(":")]
                     support.error("failed to continue from K=%s because this K was not processed in the original run!" % k_str, log)
                 log.info("\n===== %s finished. \n" % STAGE_NAME)
-
-            #postprocessing
-            truseq_long_reads_file_base = os.path.join(cfg["common"].output_dir, "truseq_long_reads")
-            truseq_long_reads_file = truseq_long_reads_file_base + ".fasta"
-            if cfg["run_truseq_postprocessing"]:
-                if options_storage.continue_mode and os.path.isfile(truseq_long_reads_file_base + ".fastq") and not options_storage.restart_from == 'tpp':
-                    log.info("\n===== Skipping %s (already processed). \n" % "TruSeq postprocessing")
-                else:
-                    support.continue_from_here(log)
-                    if os.path.isfile(result_scaffolds_filename):
-                        shutil.move(result_scaffolds_filename, assembled_scaffolds_filename)
-                    reads_library = dataset_data[0]
-                    alignment_bin = os.path.join(bin_home, "bwa-spades")
-                    alignment_dir = os.path.join(cfg["common"].output_dir, "alignment")
-                    sam_files = alignment.align_bwa(alignment_bin, assembled_scaffolds_filename, dataset_data, alignment_dir, log, options_storage.threads)
-                    moleculo_postprocessing.moleculo_postprocessing(assembled_scaffolds_filename, truseq_long_reads_file_base, sam_files, log)
 
             #corrector
             if "mismatch_corrector" in cfg and (os.path.isfile(result_contigs_filename) or
@@ -811,30 +784,26 @@ def main(args):
             log.info("\n======= SPAdes pipeline finished.")  # otherwise it finished WITH WARNINGS
 
         if options_storage.test_mode:
-            if options_storage.truseq_mode:
-                if not os.path.isfile(truseq_long_reads_file):
-                    support.error("TEST FAILED: %s does not exist!" % truseq_long_reads_file)
-            else:
-                for result_filename in [result_contigs_filename, result_scaffolds_filename]:
-                    if os.path.isfile(result_filename):
-                        result_fasta = list(support.read_fasta(result_filename))
-                        # correctness check: should be one contig of length 1000 bp
-                        correct_number = 1
-                        correct_length = 1000
-                        if not len(result_fasta):
-                            support.error("TEST FAILED: %s does not contain contigs!" % result_filename)
-                        elif len(result_fasta) > correct_number:
-                            support.error("TEST FAILED: %s contains more than %d contig (%d)!" %
-                                          (result_filename, correct_number, len(result_fasta)))
-                        elif len(result_fasta[0][1]) != correct_length:
-                            if len(result_fasta[0][1]) > correct_length:
-                                relation = "more"
-                            else:
-                                relation = "less"
-                            support.error("TEST FAILED: %s contains %s than %d bp (%d bp)!" %
-                                          (result_filename, relation, correct_length, len(result_fasta[0][1])))
-                    else:
-                        support.error("TEST FAILED: " + result_filename + " does not exist!")
+            for result_filename in [result_contigs_filename, result_scaffolds_filename]:
+                if os.path.isfile(result_filename):
+                    result_fasta = list(support.read_fasta(result_filename))
+                    # correctness check: should be one contig of length 1000 bp
+                    correct_number = 1
+                    correct_length = 1000
+                    if not len(result_fasta):
+                        support.error("TEST FAILED: %s does not contain contigs!" % result_filename)
+                    elif len(result_fasta) > correct_number:
+                        support.error("TEST FAILED: %s contains more than %d contig (%d)!" %
+                                      (result_filename, correct_number, len(result_fasta)))
+                    elif len(result_fasta[0][1]) != correct_length:
+                        if len(result_fasta[0][1]) > correct_length:
+                            relation = "more"
+                        else:
+                            relation = "less"
+                        support.error("TEST FAILED: %s contains %s than %d bp (%d bp)!" %
+                                      (result_filename, relation, correct_length, len(result_fasta[0][1])))
+                else:
+                    support.error("TEST FAILED: " + result_filename + " does not exist!")
             log.info("\n========= TEST PASSED CORRECTLY.")
 
 

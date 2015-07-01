@@ -37,7 +37,6 @@ case $arg in
   'con') $cmd configs/debruijn/construction.info.template   configs/debruijn/construction.info;;
   'cov') $cmd configs/debruijn/coverage_based_rr.info.template   configs/debruijn/coverage_based_rr.info;;
   'ds') $cmd configs/dipspades/config.info.template configs/dipspades/config.info;;
-  'tsa') $cmd configs/debruijn/tsa.info.template   configs/debruijn/tsa.info;;
   'logds') $cmd configs/dipspades/log.properties.template configs/dipspades/log.properties;;
   '-all')
  # 		echo ----------------------spades_config.info------------------------
@@ -61,15 +60,14 @@ case $arg in
 		echo --------------configs/debruijn/coverage_based_rr.info-----------
         $cmd configs/debruijn/coverage_based_rr.info.template   configs/debruijn/coverage_based_rr.info
 		echo ------------------configs/dipspades/configs.info----------------
-    	$cmd configs/dipspades/config.info.template	    configs/dipspades/config.info
-                echo --------------------configs/dipspades/tsa.info------------------
-        $cmd configs/debruijn/tsa.info.template   configs/debruijn/tsa.info
+	$cmd configs/dipspades/config.info.template	    configs/dipspades/config.info
 		echo ---------------configs/dipspades/log.properties-----------------
-    	$cmd configs/dipspades/log.properties.template configs/dipspades/log.properties
+	$cmd configs/dipspades/log.properties.template configs/dipspades/log.properties
 		echo ---------------configs/ionhammer/ionhammer.cfg----------------
 	$cmd configs/ionhammer/ionhammer.cfg.template configs/ionhammer/ionhammer.cfg 
                echo ---------------configs/corrector/corrector.info----------------
         $cmd configs/corrector/corrector.info.template configs/corrector/corrector.info
+
 esac
 
 done

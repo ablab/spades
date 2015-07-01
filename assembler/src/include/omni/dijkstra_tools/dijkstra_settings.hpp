@@ -29,11 +29,6 @@ class ComposedDijkstraSettings {
     NeighbourIteratorFactory neigh_iter_factory_;
 
 public:
-    typedef LengthCalculator LC;
-    typedef VertexProcessChecker VPrC;
-    typedef VertexPutChecker VPuC;
-    typedef NeighbourIteratorFactory NIF;
-
     ComposedDijkstraSettings(LengthCalculator len_calc,
     		VertexProcessChecker vert_proc_checker,
     		VertexPutChecker vert_put_checker,

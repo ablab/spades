@@ -101,52 +101,6 @@ public:
 
 };
 
-
-template<class Graph>
-class MismatchTipCondition : public EdgeCondition<Graph> {
-    typedef EdgeCondition<Graph> base;
-
-    typedef typename Graph::EdgeId EdgeId;
-    typedef typename Graph::VertexId VertexId;
-
-    size_t max_diff_;
-    size_t Hamming(EdgeId edge1, EdgeId edge2) const {
-        size_t len = std::min(this->g().length(edge1), this->g().length(edge2));
-        size_t cnt = 0;
-        Sequence seq1 = this->g().EdgeNucls(edge1);
-        Sequence seq2 = this->g().EdgeNucls(edge2);
-        for(size_t i = 0; i < len; i++) {
-            if(seq1[i] != seq2[i])
-                cnt++;
-        }
-        return cnt;
-    }
-
-public:
-    static const size_t INF = size_t(-1);
-    MismatchTipCondition(const Graph& g, size_t max_diff) : base(g), max_diff_(max_diff) {
-    }
-
-    /**
-     * This method checks if given edge topologically looks like a tip.
-     * @param edge edge vertex to be checked
-     * @return true if edge judged to be tip and false otherwise.
-     */
-    /*virtual*/ bool Check(EdgeId e) const {
-        if(max_diff_ == INF) {
-            return true;
-        }
-        auto alternatives = this->g().OutgoingEdges(this->g().EdgeStart(e));
-        for(auto it = alternatives.begin(); it != alternatives.end(); ++it) {
-            if(e != *it && this->g().length(e) < this->g().length(*it) && Hamming(e, *it) <= max_diff_) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-};
-
 template<class Graph>
 shared_ptr<func::Predicate<typename Graph::EdgeId>> AddTipCondition(const Graph& g,
                                                                   shared_ptr<func::Predicate<typename Graph::EdgeId>> condition) {

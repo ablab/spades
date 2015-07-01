@@ -335,6 +335,7 @@ public:
     void WritePathsToFASTG(const PathContainer& paths, const string& filename, const string& fastafilename) const {
         BidirectionalPathMap< string > ids;
         BidirectionalPathMap< set<string> > next_ids;
+
         INFO("Constructing FASTG file from paths ");
         ConstructFASTG(paths, ids, next_ids);
 
