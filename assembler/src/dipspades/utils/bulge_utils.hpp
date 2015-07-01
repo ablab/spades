@@ -95,6 +95,13 @@ class Bulge : public BaseBulge{
 		rel_align_ = RelAlignmentOfSequences(seq1, seq2);
 	}
 
+	string GetPathStr(vector<EdgeId> path) {
+		string s1 = "";
+		for(auto edge = path.begin(); edge != path.end(); edge++)
+			s1 = ToString(graph_.int_id(*edge)) + "-";
+		return s1.substr(0, s1.size() - 1);
+	}
+
 public:
 	Bulge(Graph &graph) : BaseBulge(graph), k_value_(graph.k()), path1_(), path2_(),
 	seq1_(), seq2_(), rel_length_(), rel_align_() { }

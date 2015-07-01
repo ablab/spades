@@ -71,9 +71,14 @@ public:
 		construct_graph_from_contigs(graph_pack);
 	}
 
-	void load(debruijn_graph::conj_graph_pack&,
-            const std::string &,
-            const char*) { }
+	void load(debruijn_graph::conj_graph_pack& gp,
+            const std::string &load_from,
+            const char* prefix) {
+		std::string p = path::append_path(load_from, prefix == NULL ? id() : prefix);
+		INFO("Loading current state from " << p);
+		debruijn_graph::graphio::ScanAll(p, gp, false);
+
+	}
 
 	void save(const debruijn_graph::conj_graph_pack& gp,
             const std::string & save_to,
@@ -94,7 +99,7 @@ public:
 	void run(debruijn_graph::conj_graph_pack &graph_pack, const char*){
 		if(dsp_cfg::get().pbr.enabled){
 			PolymorphicBulgeRemover(graph_pack, storage().bulge_len_histogram).Run();
-			INFO("Consensus graph was constructed");
+		  	INFO("Consensus graph was constructed");
 		}
 	}
 
@@ -162,17 +167,16 @@ public:
 		DipSPAdes::Phase("Haplotype assembly", "haplotype_assembly") { }
 
 	void run(debruijn_graph::conj_graph_pack &graph_pack, const char*) {
-			if(!storage().composite_storage || !storage().default_storage)
-				return;
-			if(storage().composite_storage->Size() == 0 ||
-					storage().default_storage->Size() == 0)
-				return;
-			INFO("Diploid graph construction");
-			conj_graph_pack double_graph_pack(graph_pack.k_value, dsp_cfg::get().io.tmp_dir,
-					dsp_cfg::get().io.num_libraries);
-			construct_graph_from_contigs(double_graph_pack);
-			HaplotypeAssembler(graph_pack, double_graph_pack, storage().default_storage,
-					storage().composite_storage, storage().redundancy_map).Run();
+		if(!storage().composite_storage || !storage().default_storage)
+			return;
+		if(storage().composite_storage->Size() == 0 || storage().default_storage->Size() == 0)
+			return;
+		INFO("Diploid graph construction");
+		conj_graph_pack double_graph_pack(graph_pack.k_value, dsp_cfg::get().io.tmp_dir,
+										  dsp_cfg::get().io.num_libraries);
+		construct_graph_from_contigs(double_graph_pack);
+		HaplotypeAssembler(graph_pack, double_graph_pack, storage().default_storage,
+						   storage().composite_storage, storage().redundancy_map).Run();
 	}
 
 	void load(debruijn_graph::conj_graph_pack&,
@@ -198,12 +202,12 @@ void run_dipspades() {
     conj_gp.kmer_mapper.Attach();
 
     StageManager DS_Manager ( {dsp_cfg::get().rp.developer_mode,
-    						dsp_cfg::get().io.saves,
-   						dsp_cfg::get().io.output_saves} );
+							   dsp_cfg::get().io.saves,
+							   dsp_cfg::get().io.output_saves} );
     auto ds_phase = new DipSPAdes();
-    ds_phase->add(new ContigGraphConstructionStage())->
-    	add(new PolymorphicBulgeRemoverStage())->
-    	add(new ConsensusConstructionStage());
+    ds_phase -> add(new ContigGraphConstructionStage()) ->
+			add(new PolymorphicBulgeRemoverStage()) ->
+			add(new ConsensusConstructionStage());
     if(dsp_cfg::get().ha.ha_enabled) {
 		ds_phase->add(new HaplotypeAssemblyStage());
 	}
