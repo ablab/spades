@@ -27,6 +27,8 @@ private:
 	}
 
 	void GlueEqualEdgeParts(EdgeId edge1, size_t pos1, EdgeId edge2, size_t pos2) {
+		TRACE("Edge1: " << graph_.int_id(edge1) << ", length: " << graph_.length(edge1) << ", pos: " << pos1);
+		TRACE("Edge2: " << graph_.int_id(edge2) << ", length: " << graph_.length(edge2) << ", pos: " << pos2);
 		VERIFY(edge1 != edge2 || pos1 != pos2);
 		if(edge1 == edge2) {
 			if(edge1 == graph_.conjugate(edge2)) {
@@ -104,6 +106,9 @@ public:
 		}
 		INFO(cnt << " kmers glued");
 	}
+
+private:
+	DECL_LOGGER("EqualSequencesGluer");
 };
 
 }
