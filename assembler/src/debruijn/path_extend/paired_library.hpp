@@ -90,7 +90,7 @@ struct PairedInfoLibrary {
     size_t is_;
     size_t is_min_;
     size_t is_max_;
-    size_t is_div_;
+    size_t is_var_;
     bool is_mp_;
     double single_threshold_;
     double coverage_coeff_;
