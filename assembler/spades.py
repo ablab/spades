@@ -143,7 +143,7 @@ def print_used_values(cfg, log):
     log.info("")
 
 
-def fill_cfg(options_to_parse, log):
+def fill_cfg(options_to_parse, log, skip_output_dir=False):
     try:
         options, not_options = getopt.gnu_getopt(options_to_parse, options_storage.short_options, options_storage.long_options)
     except getopt.GetoptError:
@@ -176,10 +176,11 @@ def fill_cfg(options_to_parse, log):
 
     for opt, arg in options:
         if opt == '-o':
-            if options_storage.output_dir is not None:
-                support.error('-o option was specified at least twice')
-            options_storage.output_dir = abspath(expanduser(arg))
-            options_storage.dict_of_rel2abs[arg] = options_storage.output_dir
+            if not skip_output_dir:
+                if options_storage.output_dir is not None:
+                    support.error('-o option was specified at least twice')
+                options_storage.output_dir = abspath(expanduser(arg))
+                options_storage.dict_of_rel2abs[arg] = options_storage.output_dir
         elif opt == "--tmp-dir":
             options_storage.tmp_dir = abspath(expanduser(arg))
             options_storage.dict_of_rel2abs[arg] = options_storage.tmp_dir
@@ -477,7 +478,7 @@ def main(args):
         cmd_line, options = get_options_from_params(os.path.join(options_storage.output_dir, "params.txt"), args[0])
         if not options:
             support.error("failed to parse command line of the previous run! Please restart from the beginning or specify another output directory.")
-        cfg, dataset_data = fill_cfg(options, log)
+        cfg, dataset_data = fill_cfg(options, log, skip_output_dir=True)
         if options_storage.restart_from:
             check_cfg_for_restart_from(cfg)
         options_storage.continue_mode = True
