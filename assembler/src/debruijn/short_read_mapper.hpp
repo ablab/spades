@@ -80,13 +80,13 @@ template<class graph_pack, class SequencingLib>
 std::shared_ptr<SequenceMapper<typename graph_pack::graph_t>> ChooseProperMapper(const graph_pack& gp, const SequencingLib& library) {
     if (library.type() == io::LibraryType::MatePairs) {
         INFO("Mapping mate-pair library, selecting sensitive read mapper with k=" << cfg::get().sensitive_map.k);
-        return std::shared_ptr<SequenceMapper<typename graph_pack::graph_t>> (new SensitiveReadMapper<typename graph_pack::graph_t>(gp.g, cfg::get().sensitive_map.k, gp.k_value));
+        return std::make_shared<SensitiveReadMapper<typename graph_pack::graph_t>>(gp.g, cfg::get().sensitive_map.k, gp.k_value);
     }
 
     size_t read_length = library.data().read_length;
     if (read_length < gp.k_value && library.type() == io::LibraryType::PairedEnd) {
         INFO("Read length = " << read_length << ", selecting short read mapper");
-        return std::shared_ptr<SequenceMapper<typename graph_pack::graph_t>> (new SensitiveReadMapper<typename graph_pack::graph_t> (gp.g, read_length/ 3, gp.k_value));
+        return std::make_shared<SensitiveReadMapper<typename graph_pack::graph_t>>(gp.g, read_length/ 3, gp.k_value);
     }
 
     INFO("Selecting usual mapper");
