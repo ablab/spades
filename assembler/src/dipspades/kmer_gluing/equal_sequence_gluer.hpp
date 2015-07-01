@@ -1,6 +1,6 @@
 #pragma once
 
-#include "edge_gluer.hpp"
+#include "../utils/edge_gluer.hpp"
 
 using namespace debruijn_graph;
 

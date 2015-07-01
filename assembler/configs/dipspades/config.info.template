@@ -24,6 +24,7 @@ rp {
     : entry_point   dipspades:heterozygosity_estimation
     ; entry_point   dipspades:contig_graph_construction
     ; entry_point   dipspades:polymorphic_br
+    ; entry_point   dipspades:dipspades
     ; entry_point   dipspades:consensus_construction
     ; entry_point   dipspades:haplotype_assembly
 	developer_mode	true

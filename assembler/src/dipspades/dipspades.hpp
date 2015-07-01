@@ -3,6 +3,7 @@
 #include "polymorphic_bulge_remover/polymorphic_bulge_remover.hpp"
 #include "consensus_contigs_constructor/consensus_contigs_constructor.hpp"
 #include "haplotype_assembly/haplotype_assembler.hpp"
+#include "kmer_gluing/equal_sequence_gluer.hpp"
 #include "../debruijn/graph_construction.hpp"
 #include "io/splitting_wrapper.hpp"
 #include "dipspades_config.hpp"
@@ -126,6 +127,40 @@ public:
 	virtual ~PolymorphicBulgeRemoverStage() { }
 };
 
+class EqualKmerGluingStage : public DipSPAdes::Phase {
+public:
+	EqualKmerGluingStage() :
+			DipSPAdes::Phase("Equal k-mer gluing", "kmer_gluer") { }
+
+	void run(debruijn_graph::conj_graph_pack &graph_pack, const char*) {
+		INFO("Glueing equal kmers starts");
+		EqualSequencesGluer<Graph>(graph_pack.g, graph_pack.index).GlueEqualKmers();
+		INFO("Glueing equal kmers ends");
+	}
+
+	void load(debruijn_graph::conj_graph_pack& gp,
+			  const std::string &load_from,
+			  const char* prefix) {
+		std::string p = path::append_path(load_from, prefix == NULL ? id() : prefix);
+		INFO("Loading current state from " << p);
+		debruijn_graph::graphio::ScanAll(p, gp, false);
+		INFO("Loading histogram of bulge length");
+		INFO("loading from " << p + ".hist");
+		storage().bulge_len_histogram.LoadFrom(p + ".hist");
+	}
+
+	void save(const debruijn_graph::conj_graph_pack& gp,
+			  const std::string & save_to,
+			  const char* prefix) const {
+		std::string p = path::append_path(save_to, prefix == NULL ? id() : prefix);
+		INFO("Saving current state to " << p);
+		debruijn_graph::graphio::PrintAll(p, gp);
+		storage().bulge_len_histogram.SaveToFile(p + ".hist");
+	}
+
+	virtual ~EqualKmerGluingStage() { }
+};
+
 class ConsensusConstructionStage : public DipSPAdes::Phase {
 public:
 	ConsensusConstructionStage() :
@@ -207,6 +242,7 @@ void run_dipspades() {
     auto ds_phase = new DipSPAdes();
     ds_phase -> add(new ContigGraphConstructionStage()) ->
 			add(new PolymorphicBulgeRemoverStage()) ->
+			add(new EqualKmerGluingStage()) ->
 			add(new ConsensusConstructionStage());
     if(dsp_cfg::get().ha.ha_enabled) {
 		ds_phase->add(new HaplotypeAssemblyStage());

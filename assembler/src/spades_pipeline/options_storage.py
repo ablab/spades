@@ -264,9 +264,9 @@ def usage(spades_version, show_hidden=False, dipspades=False):
         sys.stderr.write("HIDDEN dipSPAdes options:" + "\n")
         sys.stderr.write("--dsK\t\t<int>\t\tk value used in dipSPAdes [default: '55']" + '\n')
         sys.stderr.write("--dsdebug\t\t\tmakes saves and draws pictures" + '\n')
-        sys.stderr.write("--load-from\t<directory>\tdirectory with saves which will be used for graph loading" + '\n')
-        sys.stderr.write("--start-point\t<start_point>\tstart point of dipSPAdes:" + '\n')
-        sys.stderr.write("    pbr: polymorphic bulge remover\n    cc: consensus constructor\n    ha: haplotype assembly" + '\n')
+        sys.stderr.write("--saves\t<directory>\tdirectory with saves which will be used for graph loading" + '\n')
+        sys.stderr.write("--start-from\t<start_point>\tstart point of dipSPAdes:" + '\n')
+        sys.stderr.write("    pbr: polymorphic bulge remover\n    kmg: gluer of equal k-mers\n    cc: consensus constructor\n    ha: haplotype assembly" + '\n')
 
     sys.stderr.flush()
 

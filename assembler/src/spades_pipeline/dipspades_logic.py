@@ -82,6 +82,8 @@ def write_haplocontigs_in_file(filename, haplocontigs):
 def ParseStartPoint(start_point_arg, log):
     if start_point_arg == 'pbr':
         return 'dipspades:polymorphic_br'
+    elif start_point_arg == 'kmg':
+        return 'dipspades:kmer_gluer'
     elif start_point_arg == 'cc':
         return 'dipspades:consensus_construction'
     elif start_point_arg == 'ha':
