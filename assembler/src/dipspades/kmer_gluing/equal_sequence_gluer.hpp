@@ -45,6 +45,7 @@ private:
 			edge2 = split_edges.second;
 			pos2 = 0;
 		} else if(edge1 == graph_.conjugate(edge2)) {
+			TRACE("Edges are conjugate pairs");
 			if(pos1 + pos2 == graph_.length(edge1)) {
 				WARN("Very difficult situation in graph. Ignoring.");
 				return;
@@ -54,7 +55,11 @@ private:
 				pos1 = graph_.length(edge1) - pos2;
 				pos2 = graph_.length(edge1) - tmp;
 			}
+			TRACE("Edges will be splitted");
 			pair<EdgeId, EdgeId> split_edges = graph_.SplitEdge(edge1, pos1 + 1);
+			TRACE("Splitted pair was created");
+			TRACE("Edge1: " << graph_.int_id(split_edges.first) << ", length: " << graph_.length(split_edges.first));
+			TRACE("Edge2: " << graph_.int_id(split_edges.second) << ", length: " << graph_.length(split_edges.second));
 			edge1 = split_edges.first;
 			edge2 = graph_.conjugate(split_edges.second);
 		}
