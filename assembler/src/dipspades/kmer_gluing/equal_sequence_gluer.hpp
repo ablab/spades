@@ -37,9 +37,7 @@ private:
 				return;
 			}
 			if(pos1 > pos2) {
-				size_t tmp = pos1;
-				pos1 = pos2;
-				pos2 = tmp;
+				std::swap(pos1, pos2);
 			}
 			pair<EdgeId, EdgeId> split_edges = graph_.SplitEdge(edge1, pos2);
 			edge1 = split_edges.first;
@@ -47,21 +45,15 @@ private:
 			pos2 = 0;
 		} else if(edge1 == graph_.conjugate(edge2)) {
 			TRACE("Edges are conjugate pairs");
-			if(graph_.length(edge1) - pos1 - pos2 <= 1 or pos1 == pos2) {
+			if(abs(graph_.length(edge1) - pos1 - pos2 - 1) <= 1 or abs(pos1 - pos2) <= 1) {
 				WARN("Equal k-mer gluer faced a difficult situation in graph for edges " << graph_.int_id(edge1) <<
 							 " and " << graph_.int_id(edge2) << ". Equal k-mers were ignored.");
 				return;
 			}
-			// what is it?!
-//			if(pos1 + pos2 >= graph_.length(edge1)) {
-//				size_t tmp = pos1;
-//				pos1 = graph_.length(edge1) - pos2;
-//				pos2 = graph_.length(edge1) - tmp;
-//			}
-			if(pos1 > pos2) {
+			if(pos1 + pos2 >= graph_.length(edge1)) {
 				size_t tmp = pos1;
-				pos1 = pos2;
-				pos2 = tmp;
+				pos1 = graph_.length(edge1) - pos2 - 1;
+				pos2 = graph_.length(edge1) - tmp - 1;
 			}
 			TRACE("Edge1 " << graph_.int_id(edge1) << " will be splitted");
 			pair<EdgeId, EdgeId> split_edges = graph_.SplitEdge(edge1, pos1 + 1);
@@ -70,7 +62,7 @@ private:
 			TRACE("New edge2: " << graph_.int_id(split_edges.second) << ", length: " << graph_.length(split_edges.second));
 			edge1 = split_edges.first;
 			edge2 = graph_.conjugate(split_edges.second);
-			pos2 -= pos1 - 1;
+			pos2 -= pos1 + 1;
 			VERIFY(pos2 >= 0);
 		}
 		EdgeId se1 = ExtractShortEdge(edge1, pos1);
@@ -90,12 +82,19 @@ private:
 	}
 
 	void GlueEqualEdges(EdgeId edge1, EdgeId edge2) {
+		set<VertexId> endVertices = {graph_.EdgeStart(edge1), graph_.EdgeEnd(edge1),
+									 graph_.EdgeStart(edge2), graph_.EdgeEnd(edge2),
+									 graph_.conjugate(graph_.EdgeStart(edge1)),
+									 graph_.conjugate(graph_.EdgeEnd(edge1)),
+									 graph_.conjugate(graph_.EdgeStart(edge2)),
+									 graph_.conjugate(graph_.EdgeEnd(edge2))};
+		if(endVertices.size() != 8)
+			return;
 		SafelyGlueEdges(edge1, edge2);
 	}
 
 public:
-	EqualSequencesGluer(Graph &graph, conj_graph_pack::index_t &index): graph_(graph), index_(index) {
-	}
+	EqualSequencesGluer(Graph &graph, conj_graph_pack::index_t &index): graph_(graph), index_(index) { }
 
 	Sequence get(EdgeId e, size_t pos) const {
 		return graph_.EdgeNucls(e).subseq(pos, pos + graph_.k() + 1);
