@@ -70,7 +70,7 @@ private:
 			TRACE("New edge2: " << graph_.int_id(split_edges.second) << ", length: " << graph_.length(split_edges.second));
 			edge1 = split_edges.first;
 			edge2 = graph_.conjugate(split_edges.second);
-			pos2 -= pos2 - pos1 - 1;
+			pos2 -= pos1 - 1;
 			VERIFY(pos2 >= 0);
 		}
 		EdgeId se1 = ExtractShortEdge(edge1, pos1);
