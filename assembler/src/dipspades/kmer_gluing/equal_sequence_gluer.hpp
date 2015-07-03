@@ -32,7 +32,7 @@ private:
 		VERIFY(edge1 != edge2 || pos1 != pos2);
 		if(edge1 == edge2) {
 			if(edge1 == graph_.conjugate(edge2)) {
-				WARN("Very difficult situation in graph. Ignoring.");
+				WARN("Equal k-mer gluer faced a difficult situation in graph. Equal k-mers were ignored.");
 				return;
 			}
 			if(pos1 > pos2) {
@@ -46,8 +46,8 @@ private:
 			pos2 = 0;
 		} else if(edge1 == graph_.conjugate(edge2)) {
 			TRACE("Edges are conjugate pairs");
-			if(graph_.length(edge1) - pos1 - pos2 <= 1) {
-				WARN("Very difficult situation in graph. Ignoring.");
+			if(graph_.length(edge1) - pos1 - pos2 <= 1 or pos1 == pos2) {
+				WARN("Equal k-mer gluer faced a difficult situation in graph. Equal k-mers were ignored.");
 				return;
 			}
 			// what is it?!
