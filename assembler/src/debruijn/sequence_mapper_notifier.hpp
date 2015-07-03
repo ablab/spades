@@ -139,7 +139,7 @@ inline void SequenceMapperNotifier::NotifyProcessRead(const io::PairedReadSeq& r
         }
         else {
             TRACE("Dist: " << r.second().size() << " - " << r.insert_size() << " = " << r.second().size() - r.insert_size());
-            listeners_[ilib][ilistener]->ProcessPairedRead(ithread, path1, path2, r.second().size());
+            listeners_[ilib][ilistener]->ProcessPairedRead(ithread, path1, path2, r.second().size() - r.insert_size());
         }
         listeners_[ilib][ilistener]->ProcessSingleRead(ithread, path1);
         listeners_[ilib][ilistener]->ProcessSingleRead(ithread, path2);

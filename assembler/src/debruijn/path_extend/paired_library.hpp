@@ -29,10 +29,9 @@ using omnigraph::de::Point;
 
 namespace path_extend {
 
-//todo rename is_div
 struct PairedInfoLibrary {
     PairedInfoLibrary(size_t k, const Graph& g, size_t readS, size_t is,
-                      size_t is_min, size_t is_max, size_t is_div,
+                      size_t is_min, size_t is_max, size_t is_var,
                       bool is_mp,
                       const std::map<int, size_t>& is_distribution)
             : g_(g),
@@ -41,7 +40,7 @@ struct PairedInfoLibrary {
               is_(is),
               is_min_(is_min),
               is_max_(is_max),
-              is_div_(is_div),
+              is_var_(is_var),
               is_mp_(is_mp),
               single_threshold_(-1.0),
               coverage_coeff_(1.0),
@@ -79,7 +78,7 @@ struct PairedInfoLibrary {
     double GetSingleThreshold() const { return single_threshold_; }
     double GetCoverageCoeff() const { return coverage_coeff_; }
     size_t GetISMax() const { return is_max_; }
-    size_t GetIsVar() const { return is_div_; }
+    size_t GetIsVar() const { return is_var_; }
     size_t GetLeftVar() const { return is_ - is_min_; }
     size_t GetRightVar() const { return is_max_ - is_; }
     size_t GetReadSize() const { return read_size_; }
@@ -91,7 +90,7 @@ struct PairedInfoLibrary {
     size_t is_;
     size_t is_min_;
     size_t is_max_;
-    size_t is_div_;
+    size_t is_var_;
     bool is_mp_;
     double single_threshold_;
     double coverage_coeff_;
