@@ -111,24 +111,27 @@ void ProcessPairedReads(conj_graph_pack& gp, size_t ilib, bool map_single_reads)
     }
 }
 
-static bool HasGoodRRLibs() {
-    static bool has_good_rr_reads = false;
+bool HasGoodRRLibs() {
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        if (cfg::get().ds.reads[i].is_paired() &&
-                (cfg::get().ds.reads[i].data().mean_insert_size == 0.0 ||
-                cfg::get().ds.reads[i].data().mean_insert_size < 1.1 * (double) cfg::get().ds.reads[i].data().read_length)) {
+        const auto& lib = cfg::get().ds.reads[i];
+        if (lib.type() == io::LibraryType::PathExtendContigs)
+            continue;
+        if (lib.is_paired() &&
+                (lib.data().mean_insert_size == 0.0 ||
+                    lib.data().mean_insert_size < 1.1 * (double) lib.data().read_length)) {
             continue;
         }
-        if (cfg::get().ds.reads[i].is_repeat_resolvable()) {
-            has_good_rr_reads = true;
-            break;
+        if (lib.is_repeat_resolvable()) {
+            return true;
         }
     }
-    return has_good_rr_reads;
+    return false;
 }
 
-static bool HasOnlyMP() {
+bool HasOnlyMP() {
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+        if (cfg::get().ds.reads[i].type() == io::LibraryType::PathExtendContigs)
+            continue;
         if (cfg::get().ds.reads[i].type() != io::LibraryType::MatePairs && cfg::get().ds.reads[i].type() != io::LibraryType::HQMatePairs) {
             return false;
         }
@@ -136,6 +139,7 @@ static bool HasOnlyMP() {
     return true;
 }
 
+//todo improve logic
 bool ShouldMapSingleReads(size_t ilib) {
     switch (cfg::get().single_reads_rr) {
         case sr_none: {
@@ -189,25 +193,27 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
     }
 
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        bool map_single_reads = ShouldMapSingleReads(i);
-        cfg::get_writable().use_single_reads |= map_single_reads;
-
-
         INFO("Mapping library #" << i);
-        if (cfg::get().ds.reads[i].is_paired() && cfg::get().ds.reads[i].data().mean_insert_size != 0.0) {
-            INFO("Mapping paired reads (takes a while) ");
-            ProcessPairedReads(gp, i, map_single_reads);
-        } else if (map_single_reads) {
-            INFO("Mapping single reads (takes a while) ");
-            ProcessSingleReads(gp, i);
-        } else if (cfg::get().ds.reads[i].type() == io::LibraryType::PathExtendContigs) {
-            INFO("Mapping preliminary contigs from");
+        if (cfg::get().ds.reads[i].type() == io::LibraryType::PathExtendContigs) {
+            INFO("Mapping preliminary contigs");
             ProcessSingleReads(gp, i, false);
-		}
+		} else {
+            bool map_single_reads = ShouldMapSingleReads(i);
+            cfg::get_writable().use_single_reads |= map_single_reads;
 
-        if (map_single_reads) {
-            INFO("Total paths obtained from single reads: " << gp.single_long_reads[i].size());
+            if (cfg::get().ds.reads[i].is_paired() && cfg::get().ds.reads[i].data().mean_insert_size != 0.0) {
+                INFO("Mapping paired reads (takes a while) ");
+                ProcessPairedReads(gp, i, map_single_reads);
+            } else if (map_single_reads) {
+                INFO("Mapping single reads (takes a while) ");
+                ProcessSingleReads(gp, i);
+            } 
+
+            if (map_single_reads) {
+                INFO("Total paths obtained from single reads: " << gp.single_long_reads[i].size());
+            }
         }
+
     }
 
     SensitiveReadMapper<Graph>::EraseIndices();

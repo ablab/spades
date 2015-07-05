@@ -257,11 +257,12 @@ class HammingGapJoiner: public GapJoiner {
     double ScoreGap(const Sequence& s1, const Sequence& s2) const {
         static double match_prob = 0.9;
         static double log_match_prob = log2(match_prob);
-        static double log_mismatch_prob = log2(1 - match_prob);
+        static double log_mismatch_prob = log2(1. - match_prob);
         VERIFY(s1.size() == s2.size());
         size_t n = s1.size();
         size_t mismatches = HammingDistance(s1, s2);
-        return 2*n + (n - mismatches) * log_match_prob + mismatches * log_mismatch_prob;
+        VERIFY(mismatches <= n);
+        return 2.*double(n) + double(n - mismatches) * log_match_prob + double(mismatches) * log_mismatch_prob;
     }
 
 public:

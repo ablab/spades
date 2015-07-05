@@ -161,7 +161,6 @@ bool HasOnlyMPLibs() {
 
 bool UseCoverageResolverForSingleReads(const io::LibraryType& type) {
     return HasOnlyMPLibs() && (type == io::LibraryType::HQMatePairs);
-
 }
 
 inline size_t CountEdgesInGraph(const Graph& g) {

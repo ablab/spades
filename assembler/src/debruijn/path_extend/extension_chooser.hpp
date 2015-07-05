@@ -440,7 +440,7 @@ class ScaffoldingExtensionChooser : public ExtensionChooser {
         PairedInfoLibraries libs = wc_->getLibs();
         for (auto lib : libs) {
             //todo lib (and FindJumpEdges) knows its var so it can be counted there
-            int is_scatter = int(math::round(lib->GetIsVar() * is_scatter_coeff_));
+            int is_scatter = int(math::round(double(lib->GetIsVar()) * is_scatter_coeff_));
             for (int i = (int) path.Size() - 1; i >= 0 && path.LengthAt(i) - g_.length(path.At(i)) <= lib->GetISMax(); --i) {
                 set<EdgeId> jump_edges_i;
                 lib->FindJumpEdges(path.At(i), jump_edges_i,

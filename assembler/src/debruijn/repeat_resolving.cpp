@@ -45,9 +45,12 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
 
     OutputContigs(gp.g, cfg::get().output_dir + "before_rr", true);
 
+    //FIXME use HasGoodRRLibs here
     bool no_valid_libs = true;
     for (const auto& lib : cfg::get().ds.reads) {
-        if (lib.data().mean_insert_size != 0.0 || lib.is_pacbio_alignable()) {
+        if (lib.data().mean_insert_size != 0.0 || 
+            lib.is_pacbio_alignable() ||
+            lib.type() == io::LibraryType::PathExtendContigs) {
             no_valid_libs = false;
             break;
         }
