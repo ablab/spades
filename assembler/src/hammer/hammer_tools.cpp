@@ -211,8 +211,7 @@ size_t CorrectAllReads() {
   const io::DataSet<> &dataset = cfg::get().dataset;
   io::DataSet<> outdataset;
   size_t ilib = 0;
-  for (auto it = dataset.library_begin(), et = dataset.library_end(); it != et; ++it, ++ilib) {
-    const auto& lib = *it;
+  for (const auto& lib : dataset.libraries()) {
     auto outlib = lib;
     outlib.clear();
 
@@ -261,6 +260,7 @@ size_t CorrectAllReads() {
       outlib.push_back_single(outcor);
     }
     outdataset.push_back(outlib);
+    ilib += 1;
   }
 
   cfg::get_writable().dataset = outdataset;

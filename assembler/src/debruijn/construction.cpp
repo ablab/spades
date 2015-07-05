@@ -46,16 +46,16 @@ void Construction::run(conj_graph_pack &gp, const char*) {
     }
 
     bool trusted_contigs_exist = false;
-    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        if (cfg::get().ds.reads[i].type() == io::LibraryType::TrustedContigs) {
-            for (auto it = cfg::get().ds.reads[i].single_begin();
-                    it != cfg::get().ds.reads[i].single_end();
-                    ++it) {
-                trusted_contigs.push_back(io::EasyStream(*it, true));
-                trusted_contigs_exist = true;
-            }
+    for (const auto& lib : cfg::get().ds.reads) {
+        if (lib.type() != io::LibraryType::TrustedContigs)
+            continue;
+
+        for (auto it = lib.single_begin(); it != lib.single_end(); ++it) {
+            trusted_contigs.push_back(io::EasyStream(*it, true));
+            trusted_contigs_exist = true;
         }
     }
+
     if (trusted_contigs_exist)
         INFO("Trusted contigs will be used in graph construction");
     auto contigs_stream = MultifileWrap(trusted_contigs);
