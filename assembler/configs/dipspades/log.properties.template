@@ -14,8 +14,7 @@ default=INFO
 #ContigLabelAllocator=TRACE
 #OverlappedContigsMap=TRACE
 #OverlapCorrector=TRACE
-
-EqualSequencesGluer=TRACE
+#EqualSequencesGluer=TRACE
 
 #DeBruijnGraphConstructor=TRACE
 #PairedHandlerApplier=TRACE
