@@ -26,9 +26,12 @@ private:
 		return edge;
 	}
 
+    bool CheckClose(size_t a, size_t b, size_t diff) const {
+        return a <= b + diff && b <= a + diff;
+    }
+
     bool ConjugateEdgesCannotBeSplitted(size_t edge_length, size_t pos1, size_t pos2) {
-        return abs(int(edge_length) - int(pos1) - int(pos2) - 1) <= 1 or
-                abs(int(pos1) - int(pos2)) <= 1;
+        return CheckClose(edge_length, pos1 + pos2 + 1, 1) && CheckClose(pos1, pos2, 1);
     }
 
 	void GlueEqualEdgeParts(EdgeId edge1, size_t pos1, EdgeId edge2, size_t pos2) {
