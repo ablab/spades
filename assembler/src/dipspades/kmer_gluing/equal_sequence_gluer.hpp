@@ -26,6 +26,11 @@ private:
 		return edge;
 	}
 
+    bool ConjugateEdgesCannotBeSplitted(size_t edge_length, size_t pos1, size_t pos2) {
+        return abs(int(edge_length) - int(pos1) - int(pos2) - 1) <= 1 or
+                abs(int(pos1) - int(pos2)) <= 1;
+    }
+
 	void GlueEqualEdgeParts(EdgeId edge1, size_t pos1, EdgeId edge2, size_t pos2) {
 		TRACE("Edge1: " << graph_.int_id(edge1) << ", length: " << graph_.length(edge1) << ", pos: " << pos1);
 		TRACE("Edge2: " << graph_.int_id(edge2) << ", length: " << graph_.length(edge2) << ", pos: " << pos2);
@@ -45,7 +50,7 @@ private:
 			pos2 = 0;
 		} else if(edge1 == graph_.conjugate(edge2)) {
 			TRACE("Edges are conjugate pairs");
-			if(abs(graph_.length(edge1) - pos1 - pos2 - 1) <= 1 or abs(pos1 - pos2) <= 1) {
+            if(ConjugateEdgesCannotBeSplitted(graph_.length(edge1), pos1, pos2)) {
 				WARN("Equal k-mer gluer faced a difficult situation in graph for edges " << graph_.int_id(edge1) <<
 							 " and " << graph_.int_id(edge2) << ". Equal k-mers were ignored.");
 				return;
