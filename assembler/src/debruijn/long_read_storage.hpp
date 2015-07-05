@@ -327,38 +327,33 @@ private:
 
 template<class Graph>
 class LongReadContainer {
-
-private:
     Graph& g_;
-
-    vector< PathStorage<Graph>* > data_;
-
+    vector<PathStorage<Graph>> data_;
 
 public:
 
-    LongReadContainer(Graph& g, size_t count = 0): g_(g), data_(count) {
+    LongReadContainer(Graph& g, size_t count = 0): g_(g) {
         for (size_t i = 0; i < count; ++i) {
-            data_[i] = new PathStorage<Graph>(g_);
+            data_.emplace_back(g_);
         }
     }
-
-    ~LongReadContainer() {
-        for (size_t i = 0; i < data_.size(); ++i) {
-            delete data_[i];
-        }
-    }
-
 
     PathStorage<Graph>& operator[](size_t index) {
-        return *(data_[index]);
+        return data_[index];
     }
 
     const PathStorage<Graph>& operator[](size_t index) const {
-        return *(data_[index]);
+        return data_[index];
     }
 
     size_t size() const {
         return data_.size();
+    }
+
+    void Clear() {
+        for (auto& storage : data_) {
+            storage.Clear();
+        }
     }
 
 };

@@ -127,6 +127,7 @@ struct graph_pack: private boost::noncopyable {
         }
         clustered_indices.Clear();
         scaffolding_indices.Clear();
+        single_long_reads.Clear();
     }
 
     void DetachAll() {
