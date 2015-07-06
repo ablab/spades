@@ -1,5 +1,3 @@
-import barcode_extraction
-
 __author__ = 'anton'
 import os
 import sys
@@ -12,7 +10,7 @@ import parallel_launcher
 import reference_construction
 import launch_options
 import support
-
+import barcode_extraction
 
 def generate_dataset(input_dir):
     sys.stdout.write("Generating truseq dataset from files in directory " + input_dir + "\n")

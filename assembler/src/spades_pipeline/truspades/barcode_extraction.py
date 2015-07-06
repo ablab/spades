@@ -64,26 +64,48 @@ def normalizeLR(s):
         s = s[:pos] + s[rpos:]
     return s
 
-def generate_dataset(barcode):
+def generate_dataset(bid, barcode):
     datasets = dict()
     for file in barcode:
         datasets[normalizeR(file)] = []
     for file in barcode:
         datasets[normalizeR(file)].append(file)
-    return Barcode([value for key, value in datasets.iteritems()])
+    return Barcode([value for key, value in datasets.iteritems()], bid)
+
+def CommonPrefix(s1, s2):
+    n = 0
+    while n < len(s1) and n < len(s2) and s1[n] == s2[n]:
+        n += 1
+    return n
+
+def CommonSuffix(s1, s2):
+    n = 0
+    while n < len(s1) and n < len(s2) and s1[-n - 1] == s2[-n - 1]:
+        n += 1
+    return n
+
+def FindCommon(lines):
+    if len(lines) == 0:
+        return 0, 0
+    left = len(lines[0])
+    right = len(lines[0])
+    min_len = len(lines[0])
+    for line in lines:
+        l, r = CommonPrefix(line, lines[0]), CommonSuffix(line, lines[0])
+        left = min(left, l)
+        right = min(right, r)
+        min_len = min(min_len, len(line))
+    return left, min(right, min_len - left)
 
 def find_barcodesLR(files):
-    barcodes = list()
+    barcodes = dict()
     for file in files:
-        found = False
-        for i in range(len(barcodes)):
-            if normalizeLR(barcodes[i][0]) == normalizeLR(file):
-                found = True
-                barcodes[i].append(file)
-        if not found:
-            barcodes.append([file])
+        barcodes[normalizeLR(file)] = []
+    for file in files:
+        barcodes[normalizeLR(file)].append(file)
+    prefix, suffix = FindCommon([bid for bid, files in barcodes.iteritems()])
     tmp = 0
-    for barcode in barcodes:
+    for bid, barcode in barcodes.iteritems():
         if tmp == 0:
             tmp = len(barcode)
         else:
@@ -91,7 +113,7 @@ def find_barcodesLR(files):
                 return None
     if tmp % 2 == 1:
         return None
-    return [generate_dataset(barcode) for barcode in barcodes]
+    return [generate_dataset(bid[prefix: len(bid) - suffix], barcode) for bid, barcode in barcodes.iteritems()]
 
 
 def distance_based_pairing(files):
@@ -127,42 +149,11 @@ def generate_barcode_ids(barcodes):
         return sorted(barcodes, key=lambda barcode: int(barcode.id[3:]))
     return barcodes
 
-def prepare_barcodes(result, prefix, suffix):
-    result = generate_barcode_ids(result)
-    for barcode in result:
-        barcode.add_ps(prefix, suffix)
-    return result
-
-def common_prefix(s1, s2):
-    n = 0
-    while n < len(s1) and n < len(s2) and s1[n] == s2[n]:
-        n += 1
-    return n
-
-def common_suffix(s1, s2):
-    n = 0
-    while n < len(s1) and n < len(s2) and s1[-n - 1] == s2[-n - 1]:
-        n += 1
-    return n
-
-def cut_common(files):
-    prefix_len = len(files[0])
-    for f in files:
-        prefix_len = min(prefix_len, common_prefix(f, files[0]))
-    prefix = files[0][:prefix_len]
-    files = [f[prefix_len:] for f in files]
-    suffix_len = len(files[0])
-    for f in files:
-        suffix_len = min(suffix_len, common_suffix(f, files[0]))
-    suffix = files[0][-suffix_len:]
-    return [f[:-suffix_len] for f in files], prefix, suffix
-
 #todo: write better code
 def extract_barcodes(files):
-    files, prefix, suffix = cut_common(files)
     result = find_barcodesLR(files)
     if None != result:
-        return prepare_barcodes(result, prefix, suffix)
+        return generate_barcode_ids(result)
 #    result = distance_based_pairing(files)
 #    if None != result:
 #        return prepare_barcodes(result, prefix, suffix)

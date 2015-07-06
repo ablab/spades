@@ -10,12 +10,15 @@ def generate_ids(lines):
 
 
 def select_ids_from_candidates(id_candidates):
+    if len(id_candidates) == 1:
+        return [""]
     ids = [""] * len(id_candidates)
     for i in range(len(id_candidates[0])):
         for bcid in range(len(id_candidates)):
             ids[bcid] += id_candidates[bcid][i]
         if len(set(ids)) == len(ids):
             return ids
+    return None
 
 
 def generate_id_candidates(lines):
