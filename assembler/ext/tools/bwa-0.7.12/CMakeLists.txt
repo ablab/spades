@@ -11,6 +11,17 @@ if (CMAKE_USE_PTHREADS_INIT)
   add_definitions(-DHAVE_PTHREAD)
 endif()
 
+
+include(CheckFunctionExists)
+include(CheckLibraryExists)
+check_function_exists(shm_open HAVE_SHM_OPEN)
+if (NOT HAVE_SHM_OPEN)
+  check_library_exists(rt shm_open "" HAVE_SHM_OPEN_IN_RT)
+endif()
+if (NOT HAVE_SHM_OPEN AND NOT HAVE_SHM_OPEN_IN_RT)
+  error("Cannot find shm_open()")
+endif()
+
 add_executable(bwa-spades
                bamlite.c
                bwa.c
@@ -49,6 +60,9 @@ add_executable(bwa-spades
                )
 
 target_link_libraries(bwa-spades ${COMMON_LIBRARIES} m)
+if (HAVE_SHM_OPEN_IN_RT)
+  target_link_libraries(bwa-spades rt)
+endif()
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(bwa-spades PROPERTIES LINK_SEARCH_START_STATIC 1)
