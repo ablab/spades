@@ -58,11 +58,16 @@ private:
 							 " and " << graph_.int_id(edge2) << ". Equal k-mers were ignored.");
 				return;
 			}
-			if(pos1 + pos2 >= graph_.length(edge1)) {
+            if (pos1 + pos2 == graph_.length(edge1) - 1) {
+                WARN("Equal k-mer gluer faced a difficult situation in graph for edge " << graph_.int_id(edge1)
+                     << " Equal k-mers were ignored.");
+            }
+            if(pos1 + pos2 >= graph_.length(edge1) - 1) {
 				size_t tmp = pos1;
 				pos1 = graph_.length(edge1) - pos2 - 1;
 				pos2 = graph_.length(edge1) - tmp - 1;
 			}
+            INFO(pos1 << " " << pos2 << " " << graph_.length(edge1))
 			TRACE("Edge1 " << graph_.int_id(edge1) << " will be splitted");
 			pair<EdgeId, EdgeId> split_edges = graph_.SplitEdge(edge1, pos1 + 1);
 			TRACE("Splitted pair was created");
@@ -70,8 +75,7 @@ private:
 			TRACE("New edge2: " << graph_.int_id(split_edges.second) << ", length: " << graph_.length(split_edges.second));
 			edge1 = split_edges.first;
 			edge2 = graph_.conjugate(split_edges.second);
-			pos2 -= pos1 + 1;
-			VERIFY(pos2 >= 0);
+//			pos2 -= pos1 + 1;
 		}
 		EdgeId se1 = ExtractShortEdge(edge1, pos1);
 		EdgeId se2 = ExtractShortEdge(edge2, pos2);
