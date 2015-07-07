@@ -28,13 +28,3 @@ add_executable(truseq_analysis
 
 target_link_libraries(truseq_analysis input mph_index yaml-cpp nlopt ${COMMON_LIBRARIES} ssw)
 
-if (SPADES_STATIC_BUILD)
-  set_target_properties(truseq_analysis PROPERTIES LINK_SEARCH_END_STATIC 1)
-endif()
-
-install(TARGETS truseq_analysis
-        DESTINATION bin
-        COMPONENT runtime)
-install(DIRECTORY "${SPADES_CFG_DIR}/truseq_analysis"
-        DESTINATION share/spades/configs
-        FILES_MATCHING PATTERN "*.info.template")
