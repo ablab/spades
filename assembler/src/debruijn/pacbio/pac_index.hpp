@@ -181,13 +181,13 @@ public:
                     vector<size_t> prev(len);
                     for(size_t j = i; j < len; j++) {
                         if (!used[j]) {
-                            if (new_cluster[j] == 0) new_cluster[j] = 1, prev[j] = std::numeric_limits<size_t>::max();
+                            if (new_cluster[j] == 0) new_cluster[j] = 1, prev[j] = size_t(-1);
                             for(size_t k = 0; k < similarity_list[j].size(); k++) {
                                 size_t next_ind = similarity_list[j][k];
                                 if (!used[next_ind]) {
                                     if (new_cluster[next_ind] < new_cluster[j] + 1){
                                         new_cluster[next_ind] = new_cluster[j] + 1;
-                                        prev[next_ind] = int(j);
+                                        prev[next_ind] = j;
                                     }
                                 }
                             }
@@ -200,7 +200,7 @@ public:
                     }
                     vector<MappingInstance> to_add;
                     size_t real_maxj = maxj, first_j = maxj;
-                    while (maxj != std::numeric_limits<size_t>::max()) {
+                    while (maxj != size_t(-1)) {
                         to_add.push_back(iter->second[maxj]);
                         //used[maxj] = 1;
                         first_j = maxj;

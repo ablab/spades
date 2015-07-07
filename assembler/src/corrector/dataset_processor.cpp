@@ -190,7 +190,7 @@ string DatasetProcessor::RunSingleBwa(const string &single, const size_t lib)  {
 /*    string single_sai_line =  corr_cfg::get().bwa + " aln " + genome_file_ + " " + single + " -t " + nthreads_str + " -O 7 -E 2 -k 3 -n 0.08 -q 15 > "
             + tmp_sai_filename + " 2>" + tmp_file;
 
-/*    INFO("Running bwa aln ...:" + single_sai_line);
+    INFO("Running bwa aln ...:" + single_sai_line);
 
     run_res = system(single_sai_line.c_str());
     if (run_res != 0) {
