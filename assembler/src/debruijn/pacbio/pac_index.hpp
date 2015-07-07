@@ -177,7 +177,7 @@ public:
             vector<int> used(len);
             for (size_t i = 0; i < len; i++) {
                 if (!used[i]) {
-                    vector<int> new_cluster(len);
+                    vector<size_t> new_cluster(len);
                     vector<size_t> prev(len);
                     for(size_t j = i; j < len; j++) {
                         if (!used[j]) {
@@ -202,7 +202,6 @@ public:
                     size_t real_maxj = maxj, first_j = maxj;
                     while (maxj != size_t(-1)) {
                         to_add.push_back(iter->second[maxj]);
-                        //used[maxj] = 1;
                         first_j = maxj;
                         maxj = prev[maxj];
                     }
