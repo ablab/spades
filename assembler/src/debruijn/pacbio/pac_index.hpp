@@ -511,7 +511,7 @@ public:
 //                            INFO("bad follow edge_ids" << " " << g_.int_id(prev_iter->edgeId) << "( " << prev_iter->size << "),  " << g_.int_id(i_iter->edgeId) << "(" << i_iter->size << ")");
                         } else if (cashed_dijkstra[start_v][end_v] + i_iter->average_edge_position +
                                 g_.length(prev_iter->edgeId) - prev_iter->average_edge_position >
-                            1.5 *  (i_iter->average_read_position - prev_iter->average_read_position)) {
+                            1.5 *  double(i_iter->average_read_position - prev_iter->average_read_position)) {
                             half_bad_follow++;
 //                            INFO("ugly follow edge_ids" << " " << g_.int_id(prev_iter->edgeId) << " " << g_.int_id(i_iter->edgeId));
 
