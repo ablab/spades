@@ -178,16 +178,16 @@ public:
             for (size_t i = 0; i < len; i++) {
                 if (!used[i]) {
                     vector<int> new_cluster(len);
-                    vector<int> prev(len);
+                    vector<size_t> prev(len);
                     for(size_t j = i; j < len; j++) {
                         if (!used[j]) {
-                            if (new_cluster[j] == 0) new_cluster[j] = 1, prev[j] = -1;
+                            if (new_cluster[j] == 0) new_cluster[j] = 1, prev[j] = std::numeric_limits<size_t>::max();
                             for(size_t k = 0; k < similarity_list[j].size(); k++) {
                                 size_t next_ind = similarity_list[j][k];
                                 if (!used[next_ind]) {
                                     if (new_cluster[next_ind] < new_cluster[j] + 1){
                                         new_cluster[next_ind] = new_cluster[j] + 1;
-                                        prev[next_ind] = j;
+                                        prev[next_ind] = int(j);
                                     }
                                 }
                             }
@@ -200,7 +200,7 @@ public:
                     }
                     vector<MappingInstance> to_add;
                     size_t real_maxj = maxj, first_j = maxj;
-                    while (maxj != -1) {
+                    while (maxj != std::numeric_limits<size_t>::max()) {
                         to_add.push_back(iter->second[maxj]);
                         //used[maxj] = 1;
                         first_j = maxj;
@@ -478,8 +478,8 @@ public:
 
         }
         if (cur_color > 1) {
-            auto iter = mapping_descr.begin();
-/*            INFO("not evident clusters selection");
+/*            auto iter = mapping_descr.begin();
+            INFO("not evident clusters selection");
             for (int i = 0; i < len; i++, iter ++) {
                 INFO(colors[i] <<" " << iter->str(g_));
             }
