@@ -5,7 +5,7 @@ import break_by_coverage
 from Bio import SeqIO
 
 if len(sys.argv) < 4:
-    print "Usage: %s <contigs> <sam_file> <output_filename>" % sys.argv[0]
+    sys.stderr.write("Usage: %s <contigs> <sam_file> <output_filename>\n" % sys.argv[0])
     exit(1)
 
 contigs_file = sys.argv[1]

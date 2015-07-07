@@ -218,7 +218,6 @@ def sys_call(cmd, log=None, cwd=None):
 
 
 def universal_sys_call(cmd, log, out_filename=None, err_filename=None, cwd=None):
-    print out_filename, err_filename
     '''
     Runs cmd and redirects stdout to out_filename (if specified), stderr to err_filename (if specified), or to log otherwise
     '''

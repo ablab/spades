@@ -51,12 +51,8 @@ class Demultiplexer:
             self.barcode_mapping[barcode].write(rec)
 
     def close(self):
-        cnt = 0
         for barcode, writer in self.barcode_mapping.iteritems():
             writer.close()
-            if writer.count < 1000:
-                cnt += writer.count
-        print cnt
 
 def CollectBarcodes(f, extract_barcode):
     h = SeqIO.parse_fastq(SeqIO.Open(f, "r"))
@@ -79,8 +75,6 @@ def demultiplex(f, barcodes, extract_barcode):
     for record in f:
         cnt += 1
         d.write(record)
-        if cnt % 1000000 == 0:
-            print cnt
     d.close()
     f.close()
 
