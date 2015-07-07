@@ -11,8 +11,6 @@ if (CMAKE_USE_PTHREADS_INIT)
   add_definitions(-DHAVE_PTHREAD)
 endif()
 
-remove_definitions(-Wall -Wextra -Wconversion -Wno-long-long -Wwrite-strings -pedantic)
-
 add_executable(bwa-spades
                bamlite.c
                bwa.c
@@ -45,14 +43,12 @@ add_executable(bwa-spades
                bwamem_extra.c
                bwamem_pair.c
                kthread.c
-
                kstring.c
                ksw.c
                malloc_wrap.c
-
                )
 
-target_link_libraries(bwa-spades ${COMMON_LIBRARIES} m rt)
+target_link_libraries(bwa-spades ${COMMON_LIBRARIES} m)
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(bwa-spades PROPERTIES LINK_SEARCH_START_STATIC 1)

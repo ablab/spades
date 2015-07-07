@@ -1,7 +1,6 @@
 #pragma once
 
 #include "standard_base.hpp"
-#include <bits/stringfwd.h>
 #include <io/osequencestream.hpp>
 #include "../debruijn/stage.hpp"
 #include "../debruijn/config_struct.hpp"
