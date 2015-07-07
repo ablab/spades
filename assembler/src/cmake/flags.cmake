@@ -13,12 +13,8 @@ else ()
   endif()
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -Wno-deprecated")
-add_definitions(-Wall -Wextra -Wconversion -Wno-sign-conversion -Wno-long-long -Wwrite-strings)
-#add_definitions(-Wall)
-if (NOT OPENMP_FOUND)
-  add_definitions(-Wno-unknown-pragmas)
-endif()
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+add_compile_options(-Wno-deprecated)
 
 # Use libc++ with clang due to C++11 mode
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
@@ -32,19 +28,19 @@ endif()
 if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
   message("Making Debug Configuration...")
 
-  add_definitions(-g3)
+  add_compile_options(-g3)
   add_definitions(-D_GLIBCXX_DEBUG)
   set(SPADES_DEBUG_LOGGING)
 else()
   message("Making Release Configuration...")
 
   if (${CMAKE_BUILD_TYPE} STREQUAL "RelWithDebInfo")
-    add_definitions(-g3)
+    add_compile_options(-g3)
   else()
-    add_definitions(-g0)
+    add_compile_options(-g0)
   endif()
 
-  add_definitions(-O2)
+  add_compile_options(-O2)
   if (${CMAKE_BUILD_TYPE} STREQUAL "RelWithAsserts" OR
       ${CMAKE_BUILD_TYPE} STREQUAL "RelWithDebInfo")
     add_definitions(-UNDEBUG)
@@ -55,10 +51,5 @@ endif()
 
 # Make sure we're building with frame pointer if tcmalloc is in use
 if (SPADES_USE_TCMALLOC)
-  add_definitions(-fno-omit-frame-pointer)
-endif()
-
-# We will need this at least for jemalloc
-if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-all_load")
+  add_compile_options(-fno-omit-frame-pointer)
 endif()

@@ -60,6 +60,12 @@ configure_file("${SPADES_MAIN_INCLUDE_DIR}/config.hpp.in"
 add_subdirectory("${EXT_DIR}/src" "${Project_BINARY_DIR}/ext")
 add_subdirectory("${EXT_DIR}/tools" "${Project_BINARY_DIR}/ext_tools")
 
+# Setup warnings
+add_compile_options(-Wall -Wextra -Wconversion -Wno-sign-conversion -Wno-long-long -Wwrite-strings)
+if (NOT OPENMP_FOUND)
+  add_compile_options(-Wno-unknown-pragmas)
+endif()
+
 # sub projects
 add_subdirectory(io)
 add_subdirectory(mph_index)
