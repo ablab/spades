@@ -66,10 +66,10 @@ void ProcessSingleReads(conj_graph_pack& gp, size_t ilib,
 
     auto mapper_ptr = ChooseProperMapper(gp, reads);
     if (use_binary) {
-        auto single_streams = single_binary_readers(reads, true, true);
+        auto single_streams = single_binary_readers(reads, false, true);
         notifier.ProcessLibrary(single_streams, ilib, *mapper_ptr);
     } else {
-        auto single_streams = single_easy_readers(reads, true,
+        auto single_streams = single_easy_readers(reads, false,
                                                  true, /*handle Ns*/false);
         notifier.ProcessLibrary(single_streams, ilib, *mapper_ptr);
     }

@@ -176,7 +176,7 @@ long_reads {
     }
 
     single_reads {
-        filtering   2.5
+        filtering  1.25 
         weight_priority    5.0
         unique_edge_priority 1000.0
     }
