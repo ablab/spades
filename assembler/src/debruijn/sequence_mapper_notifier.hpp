@@ -1,18 +1,13 @@
-/*
- * sequence_mapper_notifier.hpp
- *
- *  Created on: Sep 3, 2013
- *      Author: ira
- */
-
 #ifndef SEQUENCE_MAPPER_NOTIFIER_HPP_
 #define SEQUENCE_MAPPER_NOTIFIER_HPP_
-#include <cstdlib>
-#include <vector>
+
 #include "sequence_mapper.hpp"
 #include "short_read_mapper.hpp"
 #include "io/paired_read.hpp"
 #include "graph_pack.hpp"
+
+#include <vector>
+#include <cstdlib>
 
 namespace debruijn_graph {
 //todo think if we still need all this
@@ -23,19 +18,15 @@ public:
     virtual void ProcessPairedRead(size_t thread_index, const MappingPath<EdgeId>& read1, const MappingPath<EdgeId>& read2, size_t dist) = 0;
     virtual void ProcessSingleRead(size_t thread_index, const MappingPath<EdgeId>& read) = 0;
     virtual void MergeBuffer(size_t thread_index) = 0;
-    virtual ~SequenceMapperListener(){
-    }
+    virtual ~SequenceMapperListener() {}
 };
 
 class SequenceMapperNotifier {
 public:
     typedef SequenceMapper<conj_graph_pack::graph_t> SequenceMapperT;
-//    typedef std::shared_ptr<
-//            const NewExtendedSequenceMapper<conj_graph_pack::graph_t, conj_graph_pack::index_t> > Mapper;
 
     SequenceMapperNotifier(const conj_graph_pack& gp, bool send_true_distance = true)
-            : gp_(gp), send_true_distance_(send_true_distance) {
-    }
+            : gp_(gp), send_true_distance_(send_true_distance) { }
 
     void Subscribe(size_t lib_index, SequenceMapperListener* listener) {
         while ((int)lib_index >= (int)listeners_.size() - 1) {
@@ -98,24 +89,18 @@ private:
     void NotifyProcessRead(const ReadType& r, const SequenceMapperT& mapper, size_t ilib, size_t ithread) const;
 
     void NotifyStartProcessLibrary(size_t ilib, size_t thread_count) const {
-        for (size_t ilistener = 0; ilistener < listeners_[ilib].size();
-                ++ilistener) {
-            listeners_[ilib][ilistener]->StartProcessLibrary(thread_count);
-        }
+        for (const auto& listener : listeners_[ilib])
+            listener->StartProcessLibrary(thread_count);
     }
 
     void NotifyStopProcessLibrary(size_t ilib) const {
-        for (size_t ilistener = 0; ilistener < listeners_[ilib].size();
-                ++ilistener) {
-            listeners_[ilib][ilistener]->StopProcessLibrary();
-        }
+        for (const auto& listener : listeners_[ilib])
+            listener->StopProcessLibrary();
     }
 
     void NotifyMergeBuffer(size_t ilib, size_t ithread) const {
-        for (size_t ilistener = 0; ilistener < listeners_[ilib].size();
-                ++ilistener) {
-            listeners_[ilib][ilistener]->MergeBuffer(ithread);
-        }
+        for (const auto& listener : listeners_[ilib])
+            listener->MergeBuffer(ithread);
     }
     const conj_graph_pack& gp_;
     bool send_true_distance_;
@@ -124,72 +109,60 @@ private:
 
 template<>
 inline void SequenceMapperNotifier::NotifyProcessRead(const io::PairedReadSeq& r,
-                                               const SequenceMapperT& mapper,
-                                               size_t ilib,
-                                               size_t ithread) const {
+                                                      const SequenceMapperT& mapper,
+                                                      size_t ilib,
+                                                      size_t ithread) const {
 
-    const Sequence read1 = r.first().sequence();
-    const Sequence read2 = r.second().sequence();
+    const Sequence& read1 = r.first().sequence();
+    const Sequence& read2 = r.second().sequence();
     MappingPath<EdgeId> path1 = mapper.MapSequence(read1);
     MappingPath<EdgeId> path2 = mapper.MapSequence(read2);
-    for (size_t ilistener = 0; ilistener < listeners_[ilib].size();
-            ++ilistener) {
-        if (send_true_distance_) {
-            listeners_[ilib][ilistener]->ProcessPairedRead(ithread, path1, path2, r.distance());
-        }
-        else {
-            TRACE("Dist: " << r.second().size() << " - " << r.insert_size() << " = " << r.second().size() - r.insert_size());
-            listeners_[ilib][ilistener]->ProcessPairedRead(ithread, path1, path2, r.second().size() - r.insert_size());
-        }
-        listeners_[ilib][ilistener]->ProcessSingleRead(ithread, path1);
-        listeners_[ilib][ilistener]->ProcessSingleRead(ithread, path2);
+    for (const auto& listener : listeners_[ilib]) {
+        TRACE("Dist: " << r.second().size() << " - " << r.insert_size() << " = " << r.second().size() - r.insert_size());
+        // FIXME: Cleanup this trash.
+        size_t distance = (send_true_distance_ ? r.distance() : r.second().size() - r.insert_size());
+        listener->ProcessPairedRead(ithread, path1, path2, distance);
+        listener->ProcessSingleRead(ithread, path1);
+        listener->ProcessSingleRead(ithread, path2);
     }
 }
 
 template<>
 inline void SequenceMapperNotifier::NotifyProcessRead(const io::PairedRead& r,
-                                               const SequenceMapperT& mapper,
-                                               size_t ilib,
-                                               size_t ithread) const {
+                                                      const SequenceMapperT& mapper,
+                                                      size_t ilib,
+                                                      size_t ithread) const {
     MappingPath<EdgeId> path1 = mapper.MapRead(r.first());
     MappingPath<EdgeId> path2 = mapper.MapRead(r.second());
-    for (size_t ilistener = 0; ilistener < listeners_[ilib].size();
-            ++ilistener) {
-        if (send_true_distance_) {
-            listeners_[ilib][ilistener]->ProcessPairedRead(ithread, path1, path2, r.distance());
-        }
-        else {
-            TRACE("Dist: " << r.second().size() << " - " << r.insert_size() << " = " << r.second().size() - r.insert_size());
-            listeners_[ilib][ilistener]->ProcessPairedRead(ithread, path1, path2, r.second().size() - r.insert_size());
-        }
-        listeners_[ilib][ilistener]->ProcessSingleRead(ithread, path1);
-        listeners_[ilib][ilistener]->ProcessSingleRead(ithread, path2);
+    for (const auto& listener : listeners_[ilib]) {
+        TRACE("Dist: " << r.second().size() << " - " << r.insert_size() << " = " << r.second().size() - r.insert_size());
+        // FIXME: Cleanup this trash.
+        size_t distance = (send_true_distance_ ? r.distance() : r.second().size() - r.insert_size());
+        listener->ProcessPairedRead(ithread, path1, path2, distance);
+        listener->ProcessSingleRead(ithread, path1);
+        listener->ProcessSingleRead(ithread, path2);
     }
 }
 
 template<>
 inline void SequenceMapperNotifier::NotifyProcessRead(const io::SingleReadSeq& r,
-                                               const SequenceMapperT& mapper,
-                                               size_t ilib,
-                                               size_t ithread) const {
-    Sequence read = r.sequence();
+                                                      const SequenceMapperT& mapper,
+                                                      size_t ilib,
+                                                      size_t ithread) const {
+    const Sequence& read = r.sequence();
     MappingPath<EdgeId> path = mapper.MapSequence(read);
-    for (size_t ilistener = 0; ilistener < listeners_[ilib].size();
-            ++ilistener) {
-        listeners_[ilib][ilistener]->ProcessSingleRead(ithread, path);
-    }
+    for (const auto& listener : listeners_[ilib])
+        listener->ProcessSingleRead(ithread, path);
 }
 
 template<>
 inline void SequenceMapperNotifier::NotifyProcessRead(const io::SingleRead& r,
-                                               const SequenceMapperT& mapper,
-                                               size_t ilib,
-                                               size_t ithread) const {
+                                                      const SequenceMapperT& mapper,
+                                                      size_t ilib,
+                                                      size_t ithread) const {
     MappingPath<EdgeId> path = mapper.MapRead(r);
-    for (size_t ilistener = 0; ilistener < listeners_[ilib].size();
-            ++ilistener) {
-        listeners_[ilib][ilistener]->ProcessSingleRead(ithread, path);
-    }
+    for (const auto& listener : listeners_[ilib])
+        listener->ProcessSingleRead(ithread, path);
 }
 
 } /*debruijn_graph*/
