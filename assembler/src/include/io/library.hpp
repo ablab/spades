@@ -2,6 +2,7 @@
 #define __IO_LIBRARY_HPP__
 
 #include "adt/chained_iterator.hpp"
+#include "adt/iterator_range.hpp"
 
 #include <boost/iterator/iterator_facade.hpp>
 #include <yaml-cpp/yaml.h>
@@ -246,12 +247,23 @@ class DataSet {
   Library& operator[](size_t n) { return libraries_[n]; }
   const Library& operator[](size_t n) const { return libraries_[n]; }
   size_t lib_count() const { return libraries_.size(); }
+
   iterator library_begin() { return libraries_.begin(); }
-  const_iterator library_begin() const { return libraries_.cbegin(); }
-  const_iterator library_cbegin() const { return libraries_.cbegin(); }
+  const_iterator library_begin() const { return libraries_.begin(); }
+  iterator begin() { return libraries_.begin(); }
+  const_iterator begin() const { return libraries_.begin(); }
+
   iterator library_end() { return libraries_.end(); }
-  const_iterator library_end() const { return libraries_.cend(); }
-  const_iterator library_cend() const { return libraries_.cend(); }
+  const_iterator library_end() const { return libraries_.end(); }
+  iterator end() { return libraries_.end(); }
+  const_iterator end() const { return libraries_.end(); }
+
+  iterator_range<iterator> libraries() {
+      return iterator_range<iterator>(library_begin(), library_end());
+  }
+  iterator_range<const_iterator> libraries() const {
+      return iterator_range<const_iterator>(library_begin(), library_end());
+  }
 
   single_reads_iterator reads_begin() const {
     auto it = libraries_.begin();
@@ -262,9 +274,11 @@ class DataSet {
 
     return res;
   }
-
   single_reads_iterator reads_end() const {
     return single_reads_iterator(libraries_.back().reads_end(), libraries_.back().reads_end());
+  }
+  iterator_range<single_reads_iterator> reads() {
+      return iterator_range<iterator>(reads_begin(), reads_end());
   }
 
   single_reads_iterator single_begin() const {
@@ -276,10 +290,13 @@ class DataSet {
 
     return res;
   }
-
   single_reads_iterator single_end() const {
     return single_reads_iterator(libraries_.back().single_end(), libraries_.back().single_end());
   }
+  iterator_range<single_reads_iterator> single_reads() {
+    return iterator_range<single_reads_iterator>(single_begin(), single_end());
+  }
+
 
   paired_reads_iterator paired_begin() const {
     auto it = libraries_.begin();
@@ -290,9 +307,11 @@ class DataSet {
 
     return res;
   }
-
   paired_reads_iterator paired_end() const {
     return paired_reads_iterator(libraries_.back().paired_end(), libraries_.back().paired_end());
+  }
+  iterator_range<paired_reads_iterator> paired_reads() {
+      return iterator_range<paired_reads_iterator>(paired_begin(), paired_end());
   }
 
  private:

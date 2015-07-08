@@ -7,12 +7,14 @@ default=INFO
 #GluingVericesDefiner=TRACE
 #GluingVericesDefinerResults=TRACE
 #ConsensusContigsConstructor=TRACE
+#CloseGapsCorrector=TRACE
 #LoopBulgeDeletionCorrector=TRACE
 #CompositeMappingContig=TRACE
 #DiploidContigSeparator=TRACE
 #ContigLabelAllocator=TRACE
 #OverlappedContigsMap=TRACE
 #OverlapCorrector=TRACE
+#EqualSequencesGluer=TRACE
 
 #DeBruijnGraphConstructor=TRACE
 #PairedHandlerApplier=TRACE

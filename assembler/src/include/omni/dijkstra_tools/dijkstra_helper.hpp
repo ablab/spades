@@ -92,7 +92,14 @@ public:
 			SubgraphPutChecker<Graph>,
 			UnorientedNeighbourIteratorFactory<Graph> > > SubgraphDijkstra;
 
-	//------------------------------
+    typedef ComposedDijkstraSettings<Graph,
+            PathIgnoringLengthCalculator<Graph>,
+            BoundProcessChecker<Graph>,
+            BoundPutChecker<Graph>,
+            ForwardNeighbourIteratorFactory<Graph> > PathIgnoringDijkstraSettings;
+
+
+    //------------------------------
 	// short edge dijkstra settings
 	//------------------------------
 	typedef ComposedDijkstraSettings<Graph,

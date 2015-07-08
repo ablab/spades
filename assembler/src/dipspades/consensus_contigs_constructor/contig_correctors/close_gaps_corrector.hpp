@@ -8,8 +8,11 @@ namespace dipspades {
 
 class CloseGapsCorrector : public AbstractContigCorrector{
 
-	vector<int> incorr_contigs;
+	set<size_t> incorr_contigs;
 	size_t num_corr;
+
+	size_t connected_length_;
+	size_t disconnected_length_;
 
 	vector<EdgeId> ClosePathGap(vector<EdgeId> path, vector<size_t> gap_index){
 		vector<EdgeId> new_path;
@@ -73,9 +76,11 @@ class CloseGapsCorrector : public AbstractContigCorrector{
 	}
 
 public:
-	CloseGapsCorrector(Graph &g) : AbstractContigCorrector(g) {
-		num_corr = 0;
-	}
+	CloseGapsCorrector(Graph &g) :
+		AbstractContigCorrector(g),
+		num_corr(0),
+		connected_length_(0),
+		disconnected_length_(0)	{ }
 
 	virtual ContigStoragePtr Correct(ContigStoragePtr storage){
 
@@ -84,8 +89,13 @@ public:
 
 		ProcessContigs(storage);
 
-		INFO(ToString(num_corr) + " contigs from " + ToString(storage->Size()) + " were corrected");
-		INFO(ToString(storage->Size() - num_corr) + " contigs from " << storage->Size() << " have gaps after correction");
+		INFO(ToString(num_corr) << " contigs from " <<
+				ToString(storage->Size()) << " with total length " << ToString(connected_length_) + " are correct");
+		INFO(ToString(storage->Size() - num_corr) << " contigs from "
+				<< ToString(storage->Size()) << " with total length " <<
+				ToString(disconnected_length_) + " have gaps after correction");
+
+		storage->DeleteByIDs(incorr_contigs);
 		return storage;
 	}
 
@@ -104,17 +114,34 @@ public:
 			}
 		}
 
-		if(gap_indexes.size() != 0){
-			vector<EdgeId> new_path = ClosePathGap(path, gap_indexes);
-			if(IsPathConnected(g_, new_path))
-				num_corr++;
+		TRACE("Contig " << contig->id() << " has " << gap_indexes.size() << " gaps");
+
+		// contig is connected
+		if(gap_indexes.size() == 0) {
+			num_corr++;
+			connected_length_ += GetPathLength(g_, contig->path_seq());
+			return contig;
+		}
+
+		TRACE("Contig path before correction: " << SimplePathWithVerticesToString(g_, contig->path_seq()));
+
+		vector<EdgeId> new_path = ClosePathGap(path, gap_indexes);
+		if(IsPathConnected(g_, new_path)) {
+			TRACE("Gaps were closed");
+			TRACE("Contig path after correction: " << SimplePathWithVerticesToString(g_, new_path));
+			num_corr++;
+			connected_length_ += GetPathLength(g_, new_path);
 			return MappingContigPtr(new ReplacedPathMappingContig(contig, new_path));
 		}
-		num_corr++;
-		TRACE("Contig " << contig->id() << " has a gap");
-		TRACE("Contig path: " << SimplePathWithVerticesToString(g_, contig->path_seq()));
+
+		TRACE("Contig " << contig->id() << " remains incorrected!");
+		incorr_contigs.insert(contig->id());
+		disconnected_length_ += GetPathLength(g_, contig->path_seq());
 		return contig;
 	}
+
+private:
+	DECL_LOGGER("CloseGapsCorrector")
 };
 
 }

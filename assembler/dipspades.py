@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ############################################################################
-# Copyright (c) 2011-2014 Saint-Petersburg Academic University
+# Copyright (c) 2011-2015 Saint-Petersburg Academic University
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
@@ -16,7 +16,6 @@ import support
 import options_storage
 import dipspades_logic
 import spades_init
-
 
 def main():
     all_long_options = list(set(options_storage.long_options + dipspades_logic.DS_Args_List.long_options))

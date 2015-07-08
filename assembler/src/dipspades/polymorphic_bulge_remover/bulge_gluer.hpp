@@ -4,7 +4,7 @@
 #include "gluing_vertices_definer.hpp"
 #include "bulge_splitter.hpp"
 #include "bulge_correction_condition.hpp"
-#include "edge_gluer.hpp"
+#include "../utils/edge_gluer.hpp"
 
 using namespace debruijn_graph;
 

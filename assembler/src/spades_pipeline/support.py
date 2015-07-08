@@ -92,6 +92,16 @@ def check_dir_existence(input_dirname, message="", log=None, dipspades=False):
     options_storage.dict_of_rel2abs[input_dirname] = dirname
     return dirname
 
+def ensure_dir_existence(dirname):
+    if os.path.isfile(dirname):
+        os.remove(dirname)
+    if not os.path.exists(dirname):
+        os.makedirs(dirname)
+
+def recreate_dir(dirname):
+    if os.path.exists(dirname):
+        shutil.rmtree(dirname)
+    os.makedirs(dirname)
 
 def check_files_duplication(filenames, log):
     for filename in filenames:
@@ -258,6 +268,8 @@ def universal_sys_call(cmd, log, out_filename=None, err_filename=None, cwd=None)
         stdout.close()
     if err_filename:
         stderr.close()
+    if proc.returncode:
+        error('system call for: "%s" finished abnormally, err code: %d' % (cmd, proc.returncode), log)
 
 
 def save_data_to_file(data, file):

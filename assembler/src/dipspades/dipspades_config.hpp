@@ -26,7 +26,7 @@ struct dipspades_config {
 
 		std::string dataset_name;
 
-		std::string load_from;
+		std::string saves;
 	};
 
 	struct run_params {

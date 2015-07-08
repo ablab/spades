@@ -1,6 +1,6 @@
 #pragma once
 
-#include "edge_gluer.hpp"
+#include "../utils/edge_gluer.hpp"
 
 using namespace debruijn_graph;
 
@@ -26,35 +26,56 @@ private:
 		return edge;
 	}
 
+    bool CheckClose(size_t a, size_t b, size_t diff) const {
+        return a <= b + diff && b <= a + diff;
+    }
+
+    bool ConjugateEdgesCannotBeSplitted(size_t edge_length, size_t pos1, size_t pos2) {
+        return CheckClose(edge_length, pos1 + pos2 + 1, 1) && CheckClose(pos1, pos2, 1);
+    }
+
 	void GlueEqualEdgeParts(EdgeId edge1, size_t pos1, EdgeId edge2, size_t pos2) {
+		TRACE("Edge1: " << graph_.int_id(edge1) << ", length: " << graph_.length(edge1) << ", pos: " << pos1);
+		TRACE("Edge2: " << graph_.int_id(edge2) << ", length: " << graph_.length(edge2) << ", pos: " << pos2);
 		VERIFY(edge1 != edge2 || pos1 != pos2);
 		if(edge1 == edge2) {
 			if(edge1 == graph_.conjugate(edge2)) {
-				WARN("Very difficult situation in graph. Ignoring.");
+				WARN("Equal k-mer gluer faced a difficult situation in graph for edge " << graph_.int_id(edge1)
+					 << " Equal k-mers were ignored.");
 				return;
 			}
 			if(pos1 > pos2) {
-				size_t tmp = pos1;
-				pos1 = pos2;
-				pos2 = tmp;
+				std::swap(pos1, pos2);
 			}
 			pair<EdgeId, EdgeId> split_edges = graph_.SplitEdge(edge1, pos2);
 			edge1 = split_edges.first;
 			edge2 = split_edges.second;
 			pos2 = 0;
 		} else if(edge1 == graph_.conjugate(edge2)) {
-			if(pos1 + pos2 == graph_.length(edge1)) {
-				WARN("Very difficult situation in graph. Ignoring.");
+			TRACE("Edges are conjugate pairs");
+            if(ConjugateEdgesCannotBeSplitted(graph_.length(edge1), pos1, pos2)) {
+				WARN("Equal k-mer gluer faced a difficult situation in graph for edges " << graph_.int_id(edge1) <<
+							 " and " << graph_.int_id(edge2) << ". Equal k-mers were ignored.");
 				return;
 			}
-			if(pos1 + pos2 >= graph_.length(edge1)) {
+            if (pos1 + pos2 == graph_.length(edge1) - 1) {
+                WARN("Equal k-mer gluer faced a difficult situation in graph for edge " << graph_.int_id(edge1)
+                     << " Equal k-mers were ignored.");
+            }
+            if(pos1 + pos2 >= graph_.length(edge1) - 1) {
 				size_t tmp = pos1;
-				pos1 = graph_.length(edge1) - pos2;
-				pos2 = graph_.length(edge1) - tmp;
+				pos1 = graph_.length(edge1) - pos2 - 1;
+				pos2 = graph_.length(edge1) - tmp - 1;
 			}
+            INFO(pos1 << " " << pos2 << " " << graph_.length(edge1))
+			TRACE("Edge1 " << graph_.int_id(edge1) << " will be splitted");
 			pair<EdgeId, EdgeId> split_edges = graph_.SplitEdge(edge1, pos1 + 1);
+			TRACE("Splitted pair was created");
+			TRACE("New edge1: " << graph_.int_id(split_edges.first) << ", length: " << graph_.length(split_edges.first));
+			TRACE("New edge2: " << graph_.int_id(split_edges.second) << ", length: " << graph_.length(split_edges.second));
 			edge1 = split_edges.first;
 			edge2 = graph_.conjugate(split_edges.second);
+//			pos2 -= pos1 + 1;
 		}
 		EdgeId se1 = ExtractShortEdge(edge1, pos1);
 		EdgeId se2 = ExtractShortEdge(edge2, pos2);
@@ -73,12 +94,19 @@ private:
 	}
 
 	void GlueEqualEdges(EdgeId edge1, EdgeId edge2) {
+		set<VertexId> endVertices = {graph_.EdgeStart(edge1), graph_.EdgeEnd(edge1),
+									 graph_.EdgeStart(edge2), graph_.EdgeEnd(edge2),
+									 graph_.conjugate(graph_.EdgeStart(edge1)),
+									 graph_.conjugate(graph_.EdgeEnd(edge1)),
+									 graph_.conjugate(graph_.EdgeStart(edge2)),
+									 graph_.conjugate(graph_.EdgeEnd(edge2))};
+		if(endVertices.size() != 8)
+			return;
 		SafelyGlueEdges(edge1, edge2);
 	}
 
 public:
-	EqualSequencesGluer(Graph &graph, conj_graph_pack::index_t &index): graph_(graph), index_(index) {
-	}
+	EqualSequencesGluer(Graph &graph, conj_graph_pack::index_t &index): graph_(graph), index_(index) { }
 
 	Sequence get(EdgeId e, size_t pos) const {
 		return graph_.EdgeNucls(e).subseq(pos, pos + graph_.k() + 1);
@@ -104,6 +132,9 @@ public:
 		}
 		INFO(cnt << " kmers glued");
 	}
+
+private:
+	DECL_LOGGER("EqualSequencesGluer");
 };
 
 }

@@ -11,8 +11,6 @@ if (CMAKE_USE_PTHREADS_INIT)
   add_definitions(-DHAVE_PTHREAD)
 endif()
 
-remove_definitions(-Wall -Wextra -Wconversion -Wno-long-long -Wwrite-strings -pedantic)
-
 add_executable(bwa-spades
                bamlite.c
                bwa.c

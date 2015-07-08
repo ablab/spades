@@ -132,7 +132,7 @@ string DatasetProcessor::RunPairedBwa(const string &left, const string &right, c
     string isize_txt_filename = path::append_path(cur_dir, "isize.txt");
     string tmp_file = path::append_path(cur_dir, "bwa.flood");
 
-    string index_line = corr_cfg::get().bwa + " index " + "-a " + "is " + genome_file_ + " " + " 2>" + tmp_file;
+    string index_line = corr_cfg::get().bwa + string(" index ") + "-a " + "is " + genome_file_ + " " + " 2>" + tmp_file;
     INFO("Running bwa index ...: " << index_line);
     run_res = system(index_line.c_str());
     if (run_res != 0) {
@@ -140,7 +140,7 @@ string DatasetProcessor::RunPairedBwa(const string &left, const string &right, c
         return "";
     }
     string nthreads_str = to_string(nthreads_);
-    string left_line = corr_cfg::get().bwa + " aln " + genome_file_ + " " + left + " -t " + nthreads_str + " -O 7 -E 2 -k 3 -n 0.08 -q 15 > "
+/*    string left_line = corr_cfg::get().bwa + " aln " + genome_file_ + " " + left + " -t " + nthreads_str + " -O 7 -E 2 -k 3 -n 0.08 -q 15 > "
             + tmp1_sai_filename + " 2>" + tmp_file;
 
     string right_line = corr_cfg::get().bwa + " aln " + genome_file_ + " " + right + " -t " + nthreads_str + " -O 7 -E 2 -k 3 -n 0.08 -q 15 > "
@@ -153,20 +153,21 @@ string DatasetProcessor::RunPairedBwa(const string &left, const string &right, c
         INFO("bwa failed, skipping sublib");
         return "";
     }
-
-    string last_line = corr_cfg::get().bwa + " sampe " + genome_file_ + " " + tmp1_sai_filename + " " + tmp2_sai_filename + " " + left + " " + right + "  > "
+*/
+    string last_line = corr_cfg::get().bwa + string(" mem ") + genome_file_ + " " + left + " " + right + "  > "
             + tmp_sam_filename + " 2>" + isize_txt_filename;
-    INFO("Running bwa sampe ...:" << last_line);
+    INFO("Running bwa mem ...:" << last_line);
     run_res = system(last_line.c_str());
     if (run_res != 0) {
         INFO("bwa failed, skipping sublib");
         return "";
     }
-    res1 = unlink(tmp1_sai_filename.c_str());
+/*    res1 = unlink(tmp1_sai_filename.c_str());
     res2 = unlink(tmp2_sai_filename.c_str());
     if (res1 != 0 || res2 != 0) {
         INFO("Failed to delete temporary sai files");
     }
+*/
     return tmp_sam_filename;
 }
 
@@ -178,7 +179,7 @@ string DatasetProcessor::RunSingleBwa(const string &single, const size_t lib)  {
     string isize_txt_filename = path::append_path(cur_dir, "isize.txt");
     string tmp_file = path::append_path(cur_dir, "bwa.flood");
 
-    string index_line = corr_cfg::get().bwa + " index " + "-a " + "is " + genome_file_ + " 2 " + "2>" + tmp_file;
+    string index_line = corr_cfg::get().bwa + string(" index ") + "-a " + "is " + genome_file_ + " 2 " + "2>" + tmp_file;
     INFO("Running bwa index ...: " << index_line);
     run_res = system(index_line.c_str());
     if (run_res != 0) {
@@ -186,7 +187,7 @@ string DatasetProcessor::RunSingleBwa(const string &single, const size_t lib)  {
         return "";
     }
     string nthreads_str = to_string(nthreads_);
-    string single_sai_line = corr_cfg::get().bwa + " aln " + genome_file_ + " " + single + " -t " + nthreads_str + " -O 7 -E 2 -k 3 -n 0.08 -q 15 > "
+/*    string single_sai_line =  corr_cfg::get().bwa + " aln " + genome_file_ + " " + single + " -t " + nthreads_str + " -O 7 -E 2 -k 3 -n 0.08 -q 15 > "
             + tmp_sai_filename + " 2>" + tmp_file;
 
     INFO("Running bwa aln ...:" + single_sai_line);
@@ -195,19 +196,20 @@ string DatasetProcessor::RunSingleBwa(const string &single, const size_t lib)  {
     if (run_res != 0) {
         INFO("bwa failed, skipping sublib");
         return "";
-    }
-    string last_line = corr_cfg::get().bwa + " samse " + genome_file_ + " " + tmp_sai_filename + " " + single + "  > " + tmp_sam_filename + " 2>"
+    }*/
+    string last_line = corr_cfg::get().bwa + " mem " + genome_file_ + " "  + single + "  > " + tmp_sam_filename + " 2>"
             + isize_txt_filename;
-    INFO("Running bwa samse ...:" << last_line);
+    INFO("Running bwa mem ...:" << last_line);
     run_res = system(last_line.c_str());
     if (run_res != 0) {
         INFO("bwa failed, skipping sublib");
         return "";
     }
-    run_res = unlink(tmp_sai_filename.c_str());
+/*    run_res = unlink(tmp_sai_filename.c_str());
     if (run_res != 0) {
         INFO("Failed to delete temporary sai files");
     }
+*/
     return tmp_sam_filename;
 }
 

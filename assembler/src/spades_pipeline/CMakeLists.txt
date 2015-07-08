@@ -10,4 +10,11 @@ project(spades_pipeline)
 install(FILES hammer_logic.py process_cfg.py spades_logic.py dipspades_logic.py corrector_logic.py support.py options_storage.py lucigen_nxmate.py
         DESTINATION share/spades/spades_pipeline
         COMPONENT runtime)
-
+# TruSpades module
+install(FILES truspades/moleculo_filter_contigs.py truspades/break_by_coverage.py truspades/moleculo_postprocessing.py truspades/barcode_extraction.py truspades/generate_quality.py truspades/id_generation.py truspades/launch_options.py truspades/string_dist_utils.py
+        DESTINATION share/spades/spades_pipeline/truspades
+        COMPONENT runtime)
+# Common module
+install(FILES common/alignment.py common/parallel_launcher.py common/sam_parser.py common/SeqIO.py
+        DESTINATION share/spades/spades_pipeline/common
+        COMPONENT runtime)

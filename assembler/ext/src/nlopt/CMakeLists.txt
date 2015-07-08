@@ -3,8 +3,6 @@ project(nlopt CXX C)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${EXT_DIR}/include)
 
-#remove_definitions(-Wall -Wextra -Wconversion -Wno-long-long -Wwrite-strings -pedantic)
-
 set(NLOPT_SRCS "api/general.c"
                "api/optimize.c"
                "api/options.c"

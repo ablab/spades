@@ -100,7 +100,7 @@ struct KmerCluster {
 		last_trustable_index = last_unique_ind;
 		first_trustable_index = first_unique_ind;
 		double tmp_read_position = 0, tmp_edge_position = 0;;
-		vector<size_t> diffs;
+		vector<int> diffs;
 		for (auto mp : sorted_positions) {
 		   tmp_read_position += mp.read_position;
 		   tmp_edge_position += mp.edge_position;
@@ -118,7 +118,7 @@ struct KmerCluster {
             int max_debug_size = 10;
             vector<int> distances(max_debug_size);
             for (int df: diffs) {
-                size_t ind = abs(df - median_diff)/ 50;
+                int ind = abs(df - median_diff)/ 50;
                 if (ind > max_debug_size - 1) ind = max_debug_size - 1;
                 distances [ind] ++;
             }

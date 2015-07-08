@@ -86,6 +86,7 @@ struct debruijn_config {
 
     //  bad fix, it is to be removed! To determine is it started from run.sh or from spades.py
     bool run_mode;
+    bool scaffold_correction_mode;
 
     bool developer_mode;
 
@@ -455,7 +456,7 @@ struct debruijn_config {
 
         bool single_cell;
         bool meta;
-
+        bool moleculo;
         std::string reference_genome_filename;
         std::string reads_filename;
 
@@ -530,6 +531,20 @@ struct debruijn_config {
     bool use_unipaths;
     std::string additional_contigs;
 
+    struct scaffold_correction {
+        std::string scaffolds_file;
+        bool output_unfilled;
+        size_t max_insert;
+        size_t max_cut_length;
+    };
+
+    struct truseq_analysis {
+        std::string scaffolds_file;
+        std::string genome_file;
+    };
+
+    scaffold_correction sc_cor;
+    truseq_analysis tsa;
     std::string load_from;
 
     std::string entry_point;

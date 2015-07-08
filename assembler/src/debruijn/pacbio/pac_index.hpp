@@ -177,11 +177,11 @@ public:
             vector<int> used(len);
             for (size_t i = 0; i < len; i++) {
                 if (!used[i]) {
-                    vector<int> new_cluster(len);
-                    vector<int> prev(len);
+                    vector<size_t> new_cluster(len);
+                    vector<size_t> prev(len);
                     for(size_t j = i; j < len; j++) {
                         if (!used[j]) {
-                            if (new_cluster[j] == 0) new_cluster[j] = 1, prev[j] = -1;
+                            if (new_cluster[j] == 0) new_cluster[j] = 1, prev[j] = size_t(-1);
                             for(size_t k = 0; k < similarity_list[j].size(); k++) {
                                 size_t next_ind = similarity_list[j][k];
                                 if (!used[next_ind]) {
@@ -200,9 +200,8 @@ public:
                     }
                     vector<MappingInstance> to_add;
                     size_t real_maxj = maxj, first_j = maxj;
-                    while (maxj != -1) {
+                    while (maxj != size_t(-1)) {
                         to_add.push_back(iter->second[maxj]);
-                        //used[maxj] = 1;
                         first_j = maxj;
                         maxj = prev[maxj];
                     }
@@ -478,8 +477,8 @@ public:
 
         }
         if (cur_color > 1) {
-            auto iter = mapping_descr.begin();
-/*            INFO("not evident clusters selection");
+/*            auto iter = mapping_descr.begin();
+            INFO("not evident clusters selection");
             for (int i = 0; i < len; i++, iter ++) {
                 INFO(colors[i] <<" " << iter->str(g_));
             }
@@ -512,7 +511,7 @@ public:
 //                            INFO("bad follow edge_ids" << " " << g_.int_id(prev_iter->edgeId) << "( " << prev_iter->size << "),  " << g_.int_id(i_iter->edgeId) << "(" << i_iter->size << ")");
                         } else if (cashed_dijkstra[start_v][end_v] + i_iter->average_edge_position +
                                 g_.length(prev_iter->edgeId) - prev_iter->average_edge_position >
-                            1.5 *  (i_iter->average_read_position - prev_iter->average_read_position)) {
+                            1.5 *  double(i_iter->average_read_position - prev_iter->average_read_position)) {
                             half_bad_follow++;
 //                            INFO("ugly follow edge_ids" << " " << g_.int_id(prev_iter->edgeId) << " " << g_.int_id(i_iter->edgeId));
 

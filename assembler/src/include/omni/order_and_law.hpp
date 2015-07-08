@@ -552,7 +552,7 @@ private:
 template<class T>
 ostream &operator<<(ostream &stream, const pure_pointer<T>& pointer)
 {
-  stream << pointer.get();
+  stream << pointer.int_id();
   return stream;
 }
 

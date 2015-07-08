@@ -2,7 +2,6 @@
 
 #include "simple_bulge_remover.hpp"
 #include "complex_bulge_remover.hpp"
-#include "equal_sequence_gluer.hpp"
 #include "iterative_tails_gluing.hpp"
 #include "../../debruijn/stats/debruijn_stats.hpp"
 
@@ -86,29 +85,15 @@ public:
 	void Run(){
 		if(!dsp_cfg::get().pbr.enabled)
 			return ;
-
 		WriteComponents("before_pbr");
-
 		graph_pack_.kmer_mapper.SetUnsafeMode(true);
-
 		INFO("Polymorphic bulge remover starts");
 		RunSimpleBRCycle();
 		BulgeRemoverCycle<LightBulgeRemover>("LightBulgeRemover", dsp_cfg::get().pbr.num_iters_lbr);
-
-//		INFO("Iterative tail gluing starts");
-//		IterativeTailGluing(graph_pack_.g, dsp_cfg::get().pbr.rel_bulge_align).IterativeProcessTails();
-//		CompressAllVertices(graph_pack_.g, false);
-//		INFO("Iterative tail gluing ends");
-
 		INFO("Index refilling");
 		graph_pack_.index.Refill();
-
-        INFO("Glueing equal kmers");
-        EqualSequencesGluer<Graph>(graph_pack_.g, graph_pack_.index).GlueEqualKmers();
 		INFO("Polymorphic ends remover ends");
-
 		WriteComponents("after_pbr");
-
 		graph_pack_.kmer_mapper.SetUnsafeMode(false);
 	}
 };

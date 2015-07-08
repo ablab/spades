@@ -9,6 +9,7 @@
 #include "graph_pack.hpp"
 #include "kmer_coverage_model.hpp"
 #include "omni/omni_tools.hpp"
+#include "../include/config_singl.hpp"
 
 #include <yaml-cpp/yaml.h>
 
@@ -75,7 +76,7 @@ void GenomicInfoFiller::run(conj_graph_pack &gp, const char*) {
         INFO("Graph threshold: " << gthr);
 
         gp.ginfo.set_cov_histogram(extract(hist));
-        gp.ginfo.set_ec_bound(std::max(avg, gthr));
+        gp.ginfo.set_ec_bound(std::min(avg, gthr));
     } else {
         // First, get k-mer coverage histogram
         std::map<size_t, size_t> tmp;

@@ -260,12 +260,80 @@ public:
     }
 };
 
-
-class SimpleExtensionChooser: public ExtensionChooser {
+class ExcludingExtensionChooser: public ExtensionChooser {
 
 protected:
 
-	void RemoveTrivialAndCommon(BidirectionalPath& path, EdgeContainer& edges) {
+    virtual void ExcludeEdges(BidirectionalPath& path, EdgeContainer& edges) = 0;
+
+    void FindWeights(BidirectionalPath& path, EdgeContainer& edges,
+            AlternativeConteiner& weights) {
+        for (auto iter = edges.begin(); iter != edges.end(); ++iter) {
+            double weight = wc_->CountWeight(path, iter->e_);
+            weights.insert(std::make_pair(weight, *iter));
+            DEBUG("Candidate " << g_.int_id(iter->e_) << " weight " << weight << " length " << g_.length(iter->e_));
+        }
+        NotifyAll(weights);
+    }
+
+    void FindPossibleEdges(AlternativeConteiner& weights, EdgeContainer& top,
+            double max_weight) {
+        auto possibleEdge = weights.lower_bound(max_weight / prior_coeff_);
+        for (auto iter = possibleEdge; iter != weights.end(); ++iter) {
+            top.push_back(iter->second);
+        }
+    }
+
+    EdgeContainer FindFilteredEdges(BidirectionalPath& path,
+            EdgeContainer& edges) {
+        AlternativeConteiner weights;
+        FindWeights(path, edges, weights);
+        EdgeContainer top;
+        auto maxWeight = (--weights.end())->first;
+        FindPossibleEdges(weights, top, maxWeight);
+        EdgeContainer result;
+        if (top.size() >= 1 && wc_->IsExtensionPossible(maxWeight)) {
+            result = top;
+        }
+        return result;
+    }
+public:
+    ExcludingExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc, double priority) :
+            ExtensionChooser(g, wc, priority) {
+
+    }
+
+    virtual EdgeContainer Filter(BidirectionalPath& path,
+            EdgeContainer& edges) {
+        DEBUG("Paired-end extension chooser");
+        if (edges.empty()) {
+            return edges;
+        }
+        RemoveTrivial(path);
+        path.Print();
+        EdgeContainer result = edges;
+        bool first_time = true;
+        bool changed = true;
+        if (first_time || (result.size() > 1 && changed)) {
+            first_time = false;
+            ExcludeEdges(path, result);
+            EdgeContainer new_result = FindFilteredEdges(path, result);
+            if (new_result.size() == result.size()) {
+                changed = false;
+            }
+            result = new_result;
+        }
+        if (result.size() == 1) {
+            DEBUG("Paired-end extension chooser helped");
+        }
+        return result;
+    }
+
+};
+
+class SimpleExtensionChooser: public ExcludingExtensionChooser {
+protected:
+	virtual void ExcludeEdges(BidirectionalPath& path, EdgeContainer& edges) {
         ClearExcludedEdges();
         if (edges.size() < 2) {
             return;
@@ -309,70 +377,38 @@ protected:
         }
         DEBUG(not_excl.str());
     }
-
-	void FindWeights(BidirectionalPath& path, EdgeContainer& edges,
-			AlternativeConteiner& weights) {
-		for (auto iter = edges.begin(); iter != edges.end(); ++iter) {
-			double weight = wc_->CountWeight(path, iter->e_);
-			weights.insert(std::make_pair(weight, *iter));
-			DEBUG("Candidate " << g_.int_id(iter->e_) << " weight " << weight << " length " << g_.length(iter->e_));
-		}
-		NotifyAll(weights);
-	}
-
-	void FindPossibleEdges(AlternativeConteiner& weights, EdgeContainer& top,
-			double max_weight) {
-		auto possibleEdge = weights.lower_bound(max_weight / prior_coeff_);
-		for (auto iter = possibleEdge; iter != weights.end(); ++iter) {
-			top.push_back(iter->second);
-		}
-	}
-
-	EdgeContainer FindFilteredEdges(BidirectionalPath& path,
-			EdgeContainer& edges) {
-		AlternativeConteiner weights;
-		FindWeights(path, edges, weights);
-		EdgeContainer top;
-		auto maxWeight = (--weights.end())->first;
-		FindPossibleEdges(weights, top, maxWeight);
-		EdgeContainer result;
-		if (top.size() >= 1 && wc_->IsExtensionPossible(maxWeight)) {
-			result = top;
-		}
-		return result;
-	}
 public:
+
 	SimpleExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc, double priority) :
-			ExtensionChooser(g, wc, priority) {
-
+	    ExcludingExtensionChooser(g, wc, priority) {
 	}
+};
 
-	virtual EdgeContainer Filter(BidirectionalPath& path,
-			EdgeContainer& edges) {
-	    DEBUG("Paired-end extension chooser");
-		if (edges.empty()) {
-			return edges;
-		}
-		RemoveTrivial(path);
-		path.Print();
-		EdgeContainer result = edges;
-		bool first_time = true;
-		bool changed = true;
-		if (first_time || (result.size() > 1 && changed)) {
-		    first_time = false;
-			RemoveTrivialAndCommon(path, result);
-			EdgeContainer new_result = FindFilteredEdges(path, result);
-			if (new_result.size() == result.size()) {
-				changed = false;
-			}
-			result = new_result;
-		}
-		if (result.size() == 1) {
-            DEBUG("Paired-end extension chooser helped");
+class LongEdgeExtensionChooser: public ExcludingExtensionChooser {
+protected:
+    virtual void ExcludeEdges(BidirectionalPath& path, EdgeContainer& edges) {
+        ClearExcludedEdges();
+        if (edges.size() < 2) {
+            return;
         }
-		return result;
-	}
-
+        RemoveTrivial(path);
+        int index = (int) path.Size() - 1;
+        std::map<size_t, double>& excluded_edges = wc_->GetExcludedEdges();
+        while (index >= 0) {
+            if (excluded_edges.find(index) != excluded_edges.end()) {
+                index--;
+                continue;
+            }
+            EdgeId path_edge = path[index];
+            if(path.graph().length(path_edge) < 200)
+                excluded_edges.insert(make_pair((size_t) index, 0.0));
+            index--;
+        }
+    }
+public:
+    LongEdgeExtensionChooser(const Graph& g, shared_ptr<WeightCounter> wc, double priority) :
+        ExcludingExtensionChooser(g, wc, priority) {
+    }
 };
 
 class ScaffoldingExtensionChooser : public ExtensionChooser {
@@ -440,7 +476,7 @@ class ScaffoldingExtensionChooser : public ExtensionChooser {
         PairedInfoLibraries libs = wc_->getLibs();
         for (auto lib : libs) {
             //todo lib (and FindJumpEdges) knows its var so it can be counted there
-            int is_scatter = int(math::round(lib->GetIsVar() * is_scatter_coeff_));
+            int is_scatter = int(math::round(double(lib->GetIsVar()) * is_scatter_coeff_));
             for (int i = (int) path.Size() - 1; i >= 0 && path.LengthAt(i) - g_.length(path.At(i)) <= lib->GetISMax(); --i) {
                 set<EdgeId> jump_edges_i;
                 lib->FindJumpEdges(path.At(i), jump_edges_i,
