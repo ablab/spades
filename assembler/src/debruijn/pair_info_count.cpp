@@ -35,7 +35,7 @@ bool RefineInsertSizeForLib(conj_graph_pack& gp, size_t ilib, size_t edge_length
 
   SequencingLib& reads = cfg::get_writable().ds.reads[ilib];
   VERIFY(reads.data().read_length != 0);
-  auto paired_streams = paired_binary_readers(reads, false, (size_t) reads.data().mean_insert_size);
+  auto paired_streams = paired_binary_readers(reads, false);
   notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads));
 
   INFO(hist_counter.mapped() << " paired reads (" <<
