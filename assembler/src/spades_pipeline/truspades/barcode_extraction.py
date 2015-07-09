@@ -49,7 +49,7 @@ def check_int_ids(ids):
 def generate_barcode_list(barcodes):
     ids = zip(barcodes, generate_ids(barcodes))
     if check_int_ids(ids):
-        return sorted(ids, key=lambda barcode: int(barcode[1]))
+        ids = sorted(ids, key=lambda barcode: int(barcode[1]))
     return [(bid, "BC_" + short_id) for bid, short_id in ids]
 
 def Normalize(file_path):
@@ -83,11 +83,9 @@ def ExtractBarcodes(dirs):
         return None
     for bid in list(barcode_dict.iterkeys()):
         barcode_dict[bid] = GroupBy(NormalizeR, barcode_dict[bid]).values()
-        print str(barcode_dict[bid])
         if not CheckSameSize(barcode_dict[bid], 2):
             return None
     short_barcodes = generate_barcode_list(list(barcode_dict.keys()))
-    print "\n".join([str(Barcode(short, barcode_dict[bid])) for bid, short in short_barcodes])
     return [Barcode(short, barcode_dict[bid]) for bid, short in short_barcodes]
 
 def ReadDataset(file):
