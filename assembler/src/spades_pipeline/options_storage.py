@@ -251,6 +251,7 @@ def usage(spades_version, show_hidden=False, dipspades=False):
         sys.stderr.write("" + "\n")
         sys.stderr.write("HIDDEN options:" + "\n")
         sys.stderr.write("--debug\t\t\t\truns SPAdes in debug mode (keeps intermediate output)" + "\n")
+        sys.stderr.write("--truseq\t\t\truns SPAdes in TruSeq mode\n")
         sys.stderr.write("--mismatch-correction\t\truns post processing correction"\
                              " of mismatches and short indels" + "\n")
         sys.stderr.write("--reference\t<filename>\tfile with reference for deep analysis"\

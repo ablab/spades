@@ -458,10 +458,7 @@ def get_options_from_params(params_filename, spades_py_name=None):
     return cmd_line, cmd_line[spades_py_pos + len(spades_py_name):].split()
 
 def show_usage(code):
-    if options_storage.truseq_mode:
-        options_storage.tru_usage(spades_version)
-    else:
-        options_storage.usage(spades_version)
+    options_storage.usage(spades_version)
     sys.exit(code)
 
 def main(args):

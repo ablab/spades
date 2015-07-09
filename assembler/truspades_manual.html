@@ -8,201 +8,50 @@
     </style>
 </head>
 <body>
-<h1>SPAdes 1.0 Manual</h1>
+<h1>TruSPAdes 1.0 Manual</h1>
 
 1. <a href="#sec1">About truSPAdes</a><br>
 &nbsp;&nbsp;&nbsp;&nbsp;1.1. <a href="#sec1.1">TruSeq data</a><br>
-&nbsp;&nbsp;&nbsp;&nbsp;1.2. <a href="#sec1.2">TruSPAdes performance</a><br>
-2. <a href="#sec2">Installation</a><br>
-&nbsp;&nbsp;&nbsp;&nbsp;2.1. <a href="#sec2.1">Downloading truSPAdes Linux binaries</a><br>
-&nbsp;&nbsp;&nbsp;&nbsp;2.2. <a href="#sec2.2">Downloading truSPAdes binaries for Mac</a><br>
-&nbsp;&nbsp;&nbsp;&nbsp;2.3. <a href="#sec2.3">Downloading and compiling truSPAdes source code</a><br>
-&nbsp;&nbsp;&nbsp;&nbsp;2.4. <a href="#sec2.4">Verifying your installation</a><br>
-3. <a href="#sec3">Running truSPAdes</a><br>
-&nbsp;&nbsp;&nbsp;&nbsp;3.1. <a href="#sec3.2">TruSPAdes command line options</a><br>
-&nbsp;&nbsp;&nbsp;&nbsp;3.2. <a href="#sec3.5">TruSPAdes output</a><br>
-&nbsp;&nbsp;&nbsp;&nbsp;3.3. <a href="#sec3.6">Assembly evaluation</a><br>
-4. <a href="#sec5">Feedback and bug reports</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;1.2. <a href="#sec1.2">TruSPAdes input</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;1.3. <a href="#sec1.3">TruSPAdes performance</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;1.4. <a href="#sec1.4">Installation</a><br>
+2. <a href="#sec2">Running truSPAdes</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;3.1. <a href="#sec2.1">TruSPAdes command line options</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;3.2. <a href="#sec2.2">TruSPAdes output</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;3.3. <a href="#sec2.3">Assembly evaluation</a><br>
+3. <a href="#sec3">Feedback and bug reports</a><br>
 <br>
 
 <a name="sec1"></a>
 <h2>1. About truSPAdes</h2>
 <p>
-    TruSPAdes is an assembler for short reads produced by Illumina TruSeq technology. TruSPAdes accepts as an input reads from single TruSeq barcodes and assembles long virtual reads. This manual will help you to install and run truSPAdes. TruSPAdes version 1.0 was released under GPLv2 on January 16, 2015 and can be downloaded from  <a href="http://bioinf.spbau.ru/en/truspades" target="_blank">http://bioinf.spbau.ru/en/truspades</a>. TruSPAdes is a modification of genome assembler <a href="http://bioinf.spbau.ru/en/spades" target="_blank">SPAdes</a>.
-
+    TruSPAdes is an assembler for short reads produced by Illumina TruSeq Long Read technology. TruSPAdes accepts as an input a collection of demultiplexed TruSeq reads and assembles long virtual reads. This manual will help you to use truSPAdes.</br>
 
 <a name="sec1.1"></a>
-<h3>1.1 TruSeq data</h3>
-    TruSeq Synthetic Long Reads technology is based on fragmenting genomic DNA into large segments (about 10Kb long) and forming random pools of the resulting segments (each pool contains about 300 segments). Next, these fragments are clonally amplified, sheared, and marked with a unique barcode. Afterwards, they are sequenced using the standard Illumina short reads technology. All short reads originating from the same barcode are assembled together resulting in a set of long contigs (this step is called TruSeq barcode assembly). Ideally, the result of such sequencing effort for a single barcode is the collection of approximately 300 fragments (each fragment is about 10kb long) from a genome forming 300 long virtual reads. Together, these segments are expected to cover about 3 million nucleotides (barcode span).
-    TruSPAdes is a tool for barcode assembly. Thus truSPAdes should be run separately on reads from each barcode. 
-    
+<h3>1.1 Illumina TruSeq data</h3>
+    TruSeq Synthetic Long Reads technology is based on fragmenting genomic DNA into large segments (about 10Kb long) and forming random pools of the resulting segments (each pool contains about 300 segments). Next, these fragments are clonally amplified, sheared, and marked with a unique barcode. Afterwards, they are sequenced using the standard Illumina short reads technology. All short reads originating from the same barcode are assembled together resulting in a set of long contigs (this step is called TruSeq barcode assembly). Ideally, the result of such sequencing effort for a single barcode is the collection of 300 fragments (each fragment is about 10kb long) from a genome forming 300 long virtual reads. Together, these segments are expected to cover about 3 million nucleotides (barcode span).
+    TruSPAdes is a tool for barcode assembly. TruSPAdes assembles each barcode separately and outputs assembled contigs as Virtual TruSeq Long Reads (TSLRs).
+
 <a name="sec1.2"></a>
+<h3>1.2 TruSPAdes input format</h3>
+    TruSPades requires demultiplexed Illumina sequencing data as an input. All files with reads should be in the same directory and their names should follow the format described below.
+        <l>
+            <item>Names of files with left (right) reads should contain "R1" ("R2") as their substring.</item>
+            <item>Names of files with paired-end reads that correspond to each other should differ only by substitution of "R1" to "R2"</item>
+            <item>If TruSeq reads were obtained from several runs of Illumina sequencing machine (e.g. several lanes were produced from the same barcoding), reads from all runs should be put into the same directory and their names should contain "L<n>" as a substring (where n is the number of lane)</item>
+            <item>Names of reads with the same barcode but from different lanes should </item>
+        </l>
+
+This naming format is normally used by Illumina .
+
+<a name="sec1.3"></a>
 <h3>1.2 TruSPAdes performance</h3>
-    TruSPAdes assembles average barcode (300000 reads) in 1 hour using one thread of Intel Xeon 2.27GHz processor and requires less than 2Gb RAM. TruSPAdes can be run in several threads to improve running time at the cost of increased memory consumption but we do not recommend it. Since truSPAdes should be run independantly on many barcodes we suggest running several instances of truSPAdes (on different barcodes) simultaneously each in one thread (or even on different nodes of cluster). This way standard TruSeq dataset with 394 barcodes can be processed in 24 hours using 16 threads and 32Gb RAM. Normally SPAdes assembles at least 2Mb virtual long reads from single barcode with N50 at least 7500.
+    TruSPAdes assembles standard Illumina TruSeq dataset (consisting of 384 barcodes) in 30 hours using 8 threads of Intel Xeon 2.27GHz processor and requires less than 16 Gb RAM (2Gb RAM per thread).
 
-<a name="sec2"></a>
-<h2>2. Installation</h2>
+<a name="sec1.4"></a>
+<h2>1.3 Installation</h2>
 <p>
-    TruSPAdes requires a 64-bit Linux system or Mac OS and Python (supported versions are 2.4, 2.5, 2.6, 2.7, 3.2 and 3.3) to be pre-installed on it. To obtain SPAdes you can either download binaries or download source code and compile it yourself.
-
-<a name="sec2.1"></a>
-<h3>2.1 Downloading truSPAdes Linux binaries</h3>
-
-<p>
-    To download <a href="http://spades.bioinf.spbau.ru/truSPAdes-1.0/truSPAdes-1.0-Linux.tar.gz">truSPAdes Linux binaries</a> and extract them, go to the directory in which you wish truSPAdes to be installed and run:
-
-<pre  class="code">
-<code>
-    wget http://spades.bioinf.spbau.ru/truSPAdes-1.0/truSPAdes-1.0-Linux.tar.gz
-    tar -xzf truSPAdes-1.0-Linux.tar.gz
-    cd SPAdes-1.0-Linux/bin/
-</code>
-</pre>
-
-<p>
-    In this case you do not need to run any installation scripts &ndash; truSPAdes is ready to use. The following files will be placed in the <code>bin</code> directory:
-    <ul>
-        <li><code>truspades.py</code>  (main executable script)</li>
-        <li><code>truspades</code>  (assembly module)</li>
-        <li><code>bwa-spades</code>  (<a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> alignment module which is required for mismatch correction)</li>
-    </ul>
-
-<p>
-    We also suggest adding truSPAdes installation directory to the <code>PATH</code> variable.
- 
-<a name="sec2.2"></a>
-<h3>2.2 Downloading truSPAdes binaries for Mac</h3>
-
-<p>
-    To download <a href="http://spades.bioinf.spbau.ru/truSPAdes-1.0/truSPAdes-1.0-Darwin.tar.gz">truSPAdes binaries for Mac</a>, go to the directory in which you wish truSPAdes to be installed and run:
-
-<pre  class="code">
-<code>
-    curl http://spades.bioinf.spbau.ru/truSPAdes-1.0/truSPAdes-1.0-Darwin.tar.gz -o truSPAdes-1.0-Darwin.tar.gz
-    tar -zxf truSPAdes-1.0-Darwin.tar.gz
-    cd truSPAdes-1.0-Darwin/bin/
-</code>
-</pre>
-
-<p>
-    Just as in Linux, SPAdes is ready to use and no further installation steps are required. You will get the same files in the <code>bin</code> directory:
-    <ul>
-        <li><code>truspades.py</code>  (main executable script)</li>
-        <li><code>truspades</code>  (assembly module)</li>
-        <li><code>bwa-spades</code>  (<a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> alignment module which is required for mismatch correction)</li>
-    </ul>
-
-<p>
-    We also suggest adding truSPAdes installation directory to the <code>PATH</code> variable.
- 
-
-<a name="sec2.3"></a>
-<h3>2.3 Downloading and compiling truSPAdes source code</h3>
-<p>
-    If you wish to compile truSPAdes by yourself you will need the following libraries to be pre-installed:
-    <ul>
-        <li>g++ (version 4.7 or higher)</li>
-        <li>cmake (version 2.8.8 or higher)</li>
-        <li>zlib</li>
-        <li>libbz2</li>
-    </ul>
-
-<p>
-    If you meet these requirements, you can download the <a href="http://spades.bioinf.spbau.ru/truSPAdes-1.0/truSPAdes-1.0.tar.gz">truSPAdes source code</a>: 
-
-<pre class="code">
-<code>
-    wget http://spades.bioinf.spbau.ru/truSPAdes-1.0/truSPAdes-1.0.tar.gz
-    tar -xzf truSPAdes-1.0.tar.gz
-    cd truSPAdes-1.0
-</code>
-</pre>
-
-<p>
-    and build it with the following script:
-
-<pre class="code">
-<code>
-    ./truspades_compile.sh
-</code>
-</pre>
-
-<p> 
-    TruSPAdes will be built in the directory <code>./bin</code>. If you wish to install truSPAdes into another directory, you can specify full path of destination folder by running the following command in <code>bash</code> or <code>sh</code>:
-
-<pre class="code">
-<code>
-    PREFIX=&lt;destination_dir> ./truspades_compile.sh
-</code>
-</pre>
-
-<p>
-    for example:
-
-<pre class="code">
-<code>
-    PREFIX=/usr/local ./truspades_compile.sh
-</code>
-</pre>
-
-<p>
-   which will install truSPAdes into <code>/usr/local/bin</code>.
-    
-<p>
-    After installation you will get the same files in <code>./bin</code> (or <code>&lt;destination_dir>/bin</code> if you specified PREFIX) directory:
-    <ul>
-        <li><code>truspades.py</code>  (main executable script)</li>
-        <li><code>truspades</code>  (assembly module)</li>
-        <li><code>bwa-spades</code>  (<a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> alignment module which is required for mismatch correction)</li>
-    </ul>
-
-<p>
-    We also suggest adding truSPAdes installation directory to the <code>PATH</code> variable.
-
-<a name="sec2.4"></a>
-<h3>2.4 Verifying your installation</h3>
-<p>
-    For testing purposes, truSPAdes comes with a toy data set. To try SPAdes on this data set, run:
-
-<pre class="code">
-<code>
-    &lt;spades installation dir>/truspades.py --test
-</code>
-</pre>
-
-<p>
-    If you added truSPAdes installation directory to the <code>PATH</code> variable, you can run:
-
-<pre class="code">
-<code>
-    truspades.py --test
-</code>
-</pre>
-
-    For the simplicity we further assume that truSPAdes installation directory is added to the <code>PATH</code> variable.
-
-
-<p>
-    If the installation is successful, you will find the following information at the end of the log:
-
-<pre class="code">
-<code>
-===== Assembling finished. 
-
- * Corrected reads are in truspades_test/corrected/
- * Assembled contigs are in truspades_test/contigs.fasta (contigs.fastg)
- * Assembled scaffolds are in truspades_test/scaffolds.fasta (scaffolds.fastg)
-
-======= truSPAdes pipeline finished.
-
-TruSPAdes log can be found here: &lt;your folder>/spades_test/spades.log
-
-Thank you for using truSPAdes!
-
-</code>
-</pre>
-
-
+     TruSPAdes comes as a part of SPAdes genome assembler. See <a href = manual.html#sec2>SPAdes manual</a> for installation instructions.
 
 <a name="sec3"></a>
 <h2>3. Running truSPAdes</h2>
@@ -214,7 +63,7 @@ Thank you for using truSPAdes!
 
 <pre class="code">
 <code>
-    spades.py [options] -1 &lt;left_reads_file> -2 &lt;right_reads_file> -o &lt;output_dir>
+    truspades.py [options] --input-dir &lt;left_reads_file> -2 &lt;right_reads_file> -o &lt;output_dir>
 </code>
 </pre>
 Note that we assume that truSPAdes installation directory is added to the <code>PATH</code> variable (provide full path to truSPAdes executable otherwise: <code>&lt;truspades installation dir>/truspades.py</code>). 

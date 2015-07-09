@@ -5,10 +5,9 @@ import sys
 
 class Options:
     def set_default_options(self):
-        self.help = False
         self.threads = 8
         self.dataset_file = None
-        self.input_dir = None
+        self.input_dirs = None
         self.print_dataset = False
         self.print_commands = False
         self.output_dir = None
@@ -24,7 +23,7 @@ class Options:
         if len(argv) == 1:
             print_usage()
             sys.exit(1)
-        long_params = "reference= reference-index= do= continue threads= help dataset= input-dir=".split(" ")
+        long_params = "help-hidden construct-dataset reference= reference-index= do= continue threads= help dataset= input-dir= additional-options".split(" ")
         short_params = "o:t:h"
         self.set_default_options()
         try:
@@ -37,13 +36,17 @@ class Options:
             sys.exit(1)
         for (key, value) in options_list:
             if key == "--help" or key == "-h":
-                self.help = True
+                print_usage(False)
             elif key == "--do":
                 self.mode = value
+            elif key == "--construct-dataset":
+                self.mode = "generate_dataset"
             elif key == "--dataset":
                 self.dataset_file = value
             elif key == "--input-dir":
-                self.input_dir = value
+                if self.input_dirs is None:
+                    self.input_dirs = []
+                self.input_dirs.append(value)
             elif key == "--run-truspades":
                 self.mode = "run_truspades"
             elif key == "--reference-index":
@@ -58,13 +61,13 @@ class Options:
                 self.output_dir = value
             elif key == "--threads" or key == "-t":
                 self.threads = int(value)
-        if self.help == True:
-            return
+            elif key == "--help-hidden":
+                print_usage(True)
         if not self.mode in self.possible_modes:
             sys.stderr.write("Error: --do parameter can only have one of the following values: " + ", ".join(self.possible_modes) + "\n")
             print_usage()
             sys.exit(1)
-        cnt = len([option for option in [self.dataset_file, self.input_dir, self.command_list] if option != None])
+        cnt = len([option for option in [self.dataset_file, self.input_dirs, self.command_list] if option != None])
         if cnt != 1:
             sys.stderr.write("Error: exactly one of dataset-file and input-dir must be specified\n")
             print_usage()
@@ -84,7 +87,7 @@ class Options:
                 sys.exit(1)
 
 
-def print_usage():
+def print_usage(show_hidden = False):
     sys.stderr.write("Usage: " + str(sys.argv[0]) + " [options] -o <output_dir>" + "\n")
     sys.stderr.write("" + "\n")
     sys.stderr.write("Basic options:" + "\n")
@@ -92,13 +95,17 @@ def print_usage():
     sys.stderr.write("-o\t<output_dir>\tdirectory to store all the resulting files (required)" + "\n")
     sys.stderr.write("-t/--threads\t<int>\t\tnumber of threads" + "\n")
     sys.stderr.write("--continue\t\tcontinue interrupted launch")
+    sys.stderr.write("--construct-dataset\t\tparse dataset from input folder")
     sys.stderr.write("" + "\n")
     sys.stderr.write("Input options:" + "\n")
-    sys.stderr.write("--input-dir\t<directory>\tdirectory with input data. Note that the directory should contain only files with reads" + "\n")
+    sys.stderr.write("--input-dir\t<directory>\tdirectory with input data. Note that the directory should contain only files with reads. This option can be used several times to provide several input directories." + "\n")
     sys.stderr.write("--dataset\t<file>\tfile with dataset description" + "\n")
-    sys.stderr.write("" + "\n")
-    sys.stderr.write("Output options:" + "\n")
-    sys.stderr.write("--print-dataset\tprints file with dataset generated after analysis of input directory contents" + "\n")
-    sys.stderr.write("--print-commands\tprints file with truspades commands that would assemble barcodes from dataset" + "\n")
-    sys.stderr.write("--run-truspades\truns truSPAdes on all barcodes" + "\n")
+    if show_hidden:
+        pass
+        #ToDo
+    # sys.stderr.write("" + "\n")
+    # sys.stderr.write("Output options:" + "\n")
+    # sys.stderr.write("--print-dataset\tprints file with dataset generated after analysis of input directory contents" + "\n")
+    # sys.stderr.write("--print-commands\tprints file with truspades commands that would assemble barcodes from dataset" + "\n")
+    # sys.stderr.write("--run-truspades\truns truSPAdes on all barcodes" + "\n")
     sys.stderr.flush()

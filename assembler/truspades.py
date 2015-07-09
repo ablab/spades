@@ -12,17 +12,16 @@ import launch_options
 import support
 import barcode_extraction
 
-def generate_dataset(input_dir):
-    sys.stdout.write("Generating truseq dataset from files in directory " + input_dir + "\n")
-    if os.path.exists(input_dir) and os.path.isdir(input_dir):
+def generate_dataset(input_dirs):
+    sys.stdout.write("Generating truseq dataset from input directories:\n" + "\n".join(input_dirs) + "\n")
+    for input_dir in input_dirs:
+        if not os.path.exists(input_dir) or not os.path.isdir(input_dir):
+            sys.stdout.write("Directory " + input_dir + " does not exist\n")
         files = [os.path.abspath(os.path.join(input_dir, file)) for file in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, file))]
         if len(files) == 0:
             sys.stdout.write("Error: Input directory does not contain reads\n")
             sys.exit(1)
-    else:
-        launch_options.print_usage()
-        sys.exit(1)
-    return barcode_extraction.extract_barcodes(files)
+    return barcode_extraction.ExtractBarcodes(input_dirs)
 
 def reads_line(libs):
     result = []
@@ -95,15 +94,12 @@ def RunTruSPAdes(dataset, log_dir, options):
 
 def main(argv):
     options = launch_options.Options(argv)
-    if options.help:
-        launch_options.print_usage()
-        sys.exit(0)
     dataset_file = os.path.join(options.output_dir, "dataset.info")
     support.ensure_dir_existence(options.output_dir)
-    if options.input_dir is not None:
-        dataset = generate_dataset(options.input_dir)
+    if options.input_dirs is not None:
+        dataset = generate_dataset(options.input_dirs)
         if dataset is None:
-            sys.stderr.write("Error: could not parse dataset from directory " + options.input_dir + "\n")
+            sys.stderr.write("Error: could not parse dataset from directory " + options.input_dirs + "\n")
             sys.exit(1)
         barcode_extraction.print_dataset(dataset, dataset_file)
         sys.stdout.write("Dataset generated. See result in " + dataset_file)
