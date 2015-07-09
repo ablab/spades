@@ -327,6 +327,7 @@ template<class Graph,
          class InnerMapType = btree::safe_btree_map<typename Graph::EdgeId, HistogramType>,
          class IndexDataType = btree::safe_btree_map<typename Graph::EdgeId, InnerMapType> >
 class PairedInfoStorage {
+    bool conj_symmetry_;
  public:
     typedef typename Graph::EdgeId EdgeId;
     typedef HistogramType Histogram;
@@ -335,8 +336,8 @@ class PairedInfoStorage {
     typedef typename IndexDataType::const_iterator DataIterator;
     typedef typename HistogramType::value_type Point;
 
-    PairedInfoStorage()
-            : size_(0) {}
+    PairedInfoStorage(bool conj_symmetry = false)
+            : size_(0), conj_symmetry_(conj_symmetry) {}
 
     DataIterator data_begin() const {
         return index_.begin();
@@ -344,6 +345,10 @@ class PairedInfoStorage {
 
     DataIterator data_end() const {
         return index_.end();
+    }
+
+    bool conj_symmetry() const {
+        return conj_symmetry_;
     }
 
     // adding pair infos
@@ -605,7 +610,7 @@ class PairedInfoIndexT: public PairedInfoStorage<Graph> {
     typedef typename Graph::EdgeId EdgeId;
 
     PairedInfoIndexT(const Graph& graph)
-        : graph_(graph) {}
+        : base(true), graph_(graph) {}
 
     ~PairedInfoIndexT() {
         TRACE("~PairedInfoIndexT ok");
