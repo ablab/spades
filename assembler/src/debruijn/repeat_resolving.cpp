@@ -31,6 +31,16 @@ void PEResolving(conj_graph_pack& gp) {
     path_extend::ResolveRepeatsPe(gp, cfg::get().output_dir, name, traverse_loops, boost::optional<std::string>("final_contigs"));
 }
 
+inline bool HasValidLibs() {
+    for (const auto& lib : cfg::get().ds.reads) {
+        if (lib.is_repeat_resolvable()) {
+            if (!lib.is_paired() || !math::eq(lib.data().mean_insert_size, 0.0)) {
+                return true;
+            } 
+        }
+    }
+    return false;
+}
 
 void RepeatResolution::run(conj_graph_pack &gp, const char*) {
     if (cfg::get().developer_mode) {
@@ -45,16 +55,7 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
 
     OutputContigs(gp.g, cfg::get().output_dir + "before_rr", true);
 
-    //FIXME use HasGoodRRLibs here
-    bool no_valid_libs = true;
-    for (const auto& lib : cfg::get().ds.reads) {
-        if (lib.data().mean_insert_size != 0.0 || 
-            lib.is_pacbio_alignable() ||
-            lib.type() == io::LibraryType::PathExtendContigs) {
-            no_valid_libs = false;
-            break;
-        }
-    }
+    bool no_valid_libs = !HasValidLibs();
 
     bool use_single_reads = cfg::get().use_single_reads;
     if (cfg::get().rr_enable && no_valid_libs && !use_single_reads)

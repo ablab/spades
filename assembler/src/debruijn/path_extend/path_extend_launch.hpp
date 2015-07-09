@@ -112,16 +112,10 @@ inline void AddPathsToContainer(const conj_graph_pack& gp,
     DEBUG("Long reads paths " << result.size() << " == ");
 }
 
-inline bool IsContigLib(const io::LibraryType& type) {
-    static set<io::LibraryType> contig_lib_types{io::LibraryType::TrustedContigs,
-        io::LibraryType::UntrustedContigs, io::LibraryType::PathExtendContigs};
-    return contig_lib_types.count(type);
-}
-
 double GetSingleReadsFilteringThreshold(const io::LibraryType& type) {
     if (type == io::LibraryType::PacBioReads || type == io::LibraryType::SangerReads || type == io::LibraryType::NanoporeReads) {
         return cfg::get().pe_params.long_reads.pacbio_reads.filtering;
-    } else if (IsContigLib(type)) {
+    } else if (io::SequencingLibraryBase::IsContigLib(type)) {
         return cfg::get().pe_params.long_reads.contigs.filtering;
     }
     return cfg::get().pe_params.long_reads.single_reads.filtering;
@@ -130,7 +124,7 @@ double GetSingleReadsFilteringThreshold(const io::LibraryType& type) {
 double GetSingleReadsWeightPriorityThreshold(const io::LibraryType& type) {
     if (type == io::LibraryType::PacBioReads || type == io::LibraryType::SangerReads || type == io::LibraryType::NanoporeReads) {
         return cfg::get().pe_params.long_reads.pacbio_reads.weight_priority;
-    } else if (IsContigLib(type)) {
+    } else if (io::SequencingLibraryBase::IsContigLib(type)) {
         return cfg::get().pe_params.long_reads.contigs.weight_priority;
     }
     return cfg::get().pe_params.long_reads.single_reads.weight_priority;
@@ -143,7 +137,7 @@ double GetSingleReadsUniqueEdgePriorityThreshold(const io::LibraryType& type) {
     }
     if (type == io::LibraryType::PacBioReads || type == io::LibraryType::SangerReads || type == io::LibraryType::NanoporeReads) {
         return cfg::get().pe_params.long_reads.pacbio_reads.unique_edge_priority;
-    } else if (IsContigLib(type)) {
+    } else if (io::SequencingLibraryBase::IsContigLib(type)) {
         return cfg::get().pe_params.long_reads.contigs.unique_edge_priority;
     }
     return cfg::get().pe_params.long_reads.single_reads.unique_edge_priority;
@@ -236,7 +230,7 @@ inline bool IsForSingleReadExtender(const io::SequencingLibrary<debruijn_config:
             lt == io::LibraryType::PacBioReads ||
             lt == io::LibraryType::SangerReads ||
             lt == io::LibraryType::NanoporeReads ||
-            IsContigLib(lt));
+            lib.is_contig_lib());
 }
 
 inline bool IsForPEExtender(const io::SequencingLibrary<debruijn_config::DataSetData> &lib) {
@@ -337,9 +331,9 @@ inline shared_ptr<PathExtender> MakeScaffoldingExtender(const conj_graph_pack& g
 
     shared_ptr<WeightCounter> counter = make_shared<ReadCountWeightCounter>(gp.g, lib);
     double prior_coef = GetPriorityCoeff(lib, pset);
-    //fixme review parameters
+    //FIXME review parameters
     //todo put parameters in config
-    //todo remove max_must_overlap from config
+    //FIXME remove max_must_overlap from config
     double var_coeff = 3.0;
     auto scaff_chooser = std::make_shared<ScaffoldingExtensionChooser>(gp.g, counter, prior_coef, var_coeff);
     auto gap_joiner = std::make_shared<HammingGapJoiner>(gp.g, pset.scaffolder_options.min_gap_score,

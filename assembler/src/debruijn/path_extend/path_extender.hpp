@@ -255,6 +255,7 @@ class HammingGapJoiner: public GapJoiner {
 //                - (double) abs(gap - initial_gap) / (double) (2 * g_.k());
 //    }
 
+    //FIXME use GC content, change match prob and use partition of tip sequence into bad and good part
     double ScoreGap(const Sequence& s1, const Sequence& s2) const {
         static double match_prob = 0.9;
         static double log_match_prob = log2(match_prob);
@@ -267,7 +268,7 @@ class HammingGapJoiner: public GapJoiner {
     }
 
     double OldScoreGap(const Sequence& s1, const Sequence& s2) const {
-        size_t mismatches = HammingDistance(s1, s2);
+        VERIFY(s1.size() == s2.size());
         return 1.0 - (double) HammingDistance(s1, s2) / (double) s1.size();
     }
 

@@ -167,10 +167,21 @@ class SequencingLibraryBase {
     		type_ == io::LibraryType::PathExtendContigs);
   }
 
+  static bool IsContigLib(const io::LibraryType& type) {
+    static std::set<io::LibraryType> contig_lib_types{io::LibraryType::TrustedContigs,
+        io::LibraryType::UntrustedContigs, io::LibraryType::PathExtendContigs};
+    return contig_lib_types.count(type);
+  }
+
+  bool is_contig_lib() const {
+    return IsContigLib(type_);
+  }
+
   bool is_pacbio_alignable() const {
     return (type_ == io::LibraryType::PacBioReads ||
             type_ == io::LibraryType::SangerReads ||
             type_ == io::LibraryType::NanoporeReads ||
+            //comment next line to switch alignment method for trusted contigs
             type_ == io::LibraryType::TrustedContigs ||
             type_ == io::LibraryType::UntrustedContigs);
   }

@@ -114,7 +114,7 @@ void ProcessPairedReads(conj_graph_pack& gp, size_t ilib, bool map_single_reads)
 bool HasGoodRRLibs() {
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         const auto& lib = cfg::get().ds.reads[i];
-        if (lib.type() == io::LibraryType::PathExtendContigs)
+        if (lib.is_contig_lib())
             continue;
         if (lib.is_paired() &&
                 (lib.data().mean_insert_size == 0.0 ||
@@ -194,14 +194,15 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
 
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         INFO("Mapping library #" << i);
-        if (cfg::get().ds.reads[i].type() == io::LibraryType::PathExtendContigs) {
-            INFO("Mapping preliminary contigs");
+        const auto& lib = cfg::get().ds.reads[i];
+        if (lib.is_contig_lib() && !lib.is_pacbio_alignable()) {
+            INFO("Mapping contigs library");
             ProcessSingleReads(gp, i, false);
 		} else {
             bool map_single_reads = ShouldMapSingleReads(i);
             cfg::get_writable().use_single_reads |= map_single_reads;
 
-            if (cfg::get().ds.reads[i].is_paired() && cfg::get().ds.reads[i].data().mean_insert_size != 0.0) {
+            if (lib.is_paired() && lib.data().mean_insert_size != 0.0) {
                 INFO("Mapping paired reads (takes a while) ");
                 ProcessPairedReads(gp, i, map_single_reads);
             } else if (map_single_reads) {
