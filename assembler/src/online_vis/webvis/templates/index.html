@@ -1,0 +1,32 @@
+<!doctype html> 
+<html> 
+  <head>
+    <title>WebVis</title>
+    <script type="text/javascript" src="static/jquery.js"></script>
+    <script type="text/javascript">
+      $(document).ready(function() {
+      $("input#command").keypress(function(event) {
+        if (event.which == 13) {
+          event.preventDefault();
+          var command = $("input#command").val();
+          $.ajax({
+            url: "/command",
+            type: "POST",
+            data: {command: command},
+            success: function(response) {
+              $("#console").html(response).hide().fadeIn(1500);
+            }
+          });
+          return false;
+        }
+      })
+      });
+    </script>
+  </head>
+     
+  <body>
+    <label for="command">GAF$&gt;</label>
+    <input type="text" id="command" >
+    <div id="console">{{ console }}</div>
+  </body>
+</html>
