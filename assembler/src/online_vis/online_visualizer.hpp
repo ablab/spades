@@ -47,6 +47,7 @@ class OnlineVisualizer {
   }
 
   string read_line() {
+    cout << "[end]" << endl;
       char* line = readline(prompt);
       if (!line)
         exit(1);
