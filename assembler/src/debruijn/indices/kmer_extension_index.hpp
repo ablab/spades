@@ -10,6 +10,8 @@
 #include "simple_tools.hpp"
 #include "storing_traits.hpp"
 
+#include <bitset>
+
 namespace debruijn_graph {
 
 inline uint8_t invert_byte_slow(uint8_t a) {
