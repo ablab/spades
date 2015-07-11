@@ -20,7 +20,7 @@ namespace emphf {
              Range const& input_range, Adaptor adaptor,
              double gamma = 1.23)
             : m_n(n)
-            , m_hash_domain((size_t(std::ceil(double(m_n) * gamma)) + 2) / 3)
+            , m_hash_domain(std::max((size_t(std::ceil(double(m_n) * gamma)) + 2) / 3, size_t(2)))
         {
             typedef typename HypergraphSorter::node_t node_t;
             typedef typename HypergraphSorter::hyperedge hyperedge;
