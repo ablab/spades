@@ -289,25 +289,27 @@ inline shared_ptr<SimpleExtender> MakeLongReadsExtender(const conj_graph_pack& g
             make_shared<LongReadsExtensionChooser>(gp.g, paths, GetSingleReadsFilteringThreshold(lib.type()),
                                                    GetSingleReadsWeightPriorityThreshold(lib.type()),
                                                    GetSingleReadsUniqueEdgePriorityThreshold(lib.type()));
-    INFO("max_repeat_length set to " << lib.data().read_length);
-    return make_shared<SimpleExtender>(gp, cov_map, longReadEC, lib.data().read_length,  
+
+    size_t max_repeat_length = std::max(10000ul, lib.data().read_length);
+    INFO("max_repeat_length set to " << max_repeat_length);
+    return make_shared<SimpleExtender>(gp, cov_map, longReadEC, max_repeat_length,  
             pset.loop_removal.max_loops, true, UseCoverageResolverForSingleReads(lib.type()));
 }
 
-inline shared_ptr<SimpleExtender> MakeLongEdgePEExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
-                                                         size_t lib_index, const pe_config::ParamSetT& pset, bool use_auto_threshold, bool investigate_loops) {
-    shared_ptr<PairedInfoLibrary> lib = MakeNewLib(gp.g, gp.clustered_indices, lib_index);
-    if (use_auto_threshold) {
-        lib->SetSingleThreshold(cfg::get().ds.reads[lib_index].data().pi_threshold);
-        if (!investigate_loops)
-            INFO("Threshold for library #" << lib_index << " is " << cfg::get().ds.reads[lib_index].data().pi_threshold);
-    }
-    shared_ptr<WeightCounter> wc = make_shared<PathCoverWeightCounter>(gp.g, lib, GetWeightThreshold(lib, pset),
-                                                                       GetSingleThreshold(lib, pset), cfg::get().ds.meta ? 0.5 : 1.0);
-    wc->setNormalizeWeight(pset.normalize_weight);
-    shared_ptr<ExtensionChooser> extension = make_shared<LongEdgeExtensionChooser>(gp.g, wc, GetPriorityCoeff(lib, pset));
-    return make_shared<SimpleExtender>(gp, cov_map, extension, lib->GetISMax(), pset.loop_removal.max_loops, investigate_loops, false);
-}
+//inline shared_ptr<SimpleExtender> MakeLongEdgePEExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
+//                                                         size_t lib_index, const pe_config::ParamSetT& pset, bool use_auto_threshold, bool investigate_loops) {
+//    shared_ptr<PairedInfoLibrary> lib = MakeNewLib(gp.g, gp.clustered_indices, lib_index);
+//    if (use_auto_threshold) {
+//        lib->SetSingleThreshold(cfg::get().ds.reads[lib_index].data().pi_threshold);
+//        if (!investigate_loops)
+//            INFO("Threshold for library #" << lib_index << " is " << cfg::get().ds.reads[lib_index].data().pi_threshold);
+//    }
+//    shared_ptr<WeightCounter> wc = make_shared<PathCoverWeightCounter>(gp.g, lib, GetWeightThreshold(lib, pset),
+//                                                                       GetSingleThreshold(lib, pset), cfg::get().ds.meta ? 0.5 : 1.0);
+//    wc->setNormalizeWeight(pset.normalize_weight);
+//    shared_ptr<ExtensionChooser> extension = make_shared<LongEdgeExtensionChooser>(gp.g, wc, GetPriorityCoeff(lib, pset));
+//    return make_shared<SimpleExtender>(gp, cov_map, extension, lib->GetISMax(), pset.loop_removal.max_loops, investigate_loops, false);
+//}
 
 inline shared_ptr<SimpleExtender> MakePEExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
                                        size_t lib_index, const pe_config::ParamSetT& pset, bool use_auto_threshold, bool investigate_loops) {
