@@ -4,7 +4,23 @@
     <title>WebVis</title>
     <script type="text/javascript" src="static/jquery.js"></script>
     <script type="text/javascript">
-      $(document).ready(function() {
+      $(function() {
+      /*$("a").click(function(event) {
+        event.preventDefault();
+        var href = $(this).attr('href');
+        $.confirm({
+          "title": "Download file",
+          "message": "This seems to be a .dot graph file. How do you want to get it?",
+          "buttons": {
+            "As is": {
+              "action": function() {window.location.replace(href);}
+            },
+            "PNG": {
+              "action": function() {window.location.replace(href.replace("get", "render"));}
+            }
+          }
+        });
+      });*/
       $("input#command").keypress(function(event) {
         if (event.which == 13) {
           event.preventDefault();
@@ -19,7 +35,7 @@
           });
           return false;
         }
-      })
+      });
       });
     </script>
   </head>
