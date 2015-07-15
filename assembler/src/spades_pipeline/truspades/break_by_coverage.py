@@ -37,6 +37,17 @@ def ConstructCoverage(sam, contigs, k):
             reads = []
     return cov
 
+def ConstructCoverageSingle(sam, contigs, k):
+    cov = dict()
+    for contig in range(len(contigs)):
+        cov[contig] = [0] * (len(contigs[contig]) + 1)
+    for rec in sam:
+        if rec.proper_alignment:
+            if rec.pos + k - 1 < rec.pos + rec.alen - k:
+                cov[rec.tid][rec.pos + k - 1] += 1
+                cov[rec.tid][rec.pos + rec.alen - k] -= 1
+    return cov
+
 def OutputHist(cov, contigs, folder):
     if os.path.exists(folder):
         shutil.rmtree(folder)
