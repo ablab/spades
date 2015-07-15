@@ -1,9 +1,3 @@
-############################################################################
-# Copyright (c) 2011-2014 Saint-Petersburg Academic University
-# All Rights Reserved
-# See file LICENSE for details.
-############################################################################
-
 """
 A context object for caching a function's return value each time it
 is called with the same input arguments.
