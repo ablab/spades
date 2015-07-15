@@ -30,12 +30,11 @@ import sys
 import os
 import shutil
 
-sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../../quality/libs'))
+sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../..'))
 chain_template = os.path.join(os.path.abspath(sys.path[0]), 'ideal_assembler_chain')
 ideal_assembler_bin_dir = os.path.join(os.path.abspath(sys.path[0]), '../../../..')
 ideal_assembler_bin = os.path.join(ideal_assembler_bin_dir, 'run_cap')
 
-import qconfig, qutils
 import fastaparser
 
 def update_template_params(filename, params_subst_dict):

@@ -13,7 +13,7 @@ import re
 
 # Deletes reverse-complementary duplicates and simple duplicates from FASTA-file
 
-sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../quality/libs'))
+sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '..'))
 
 import fastaparser
 

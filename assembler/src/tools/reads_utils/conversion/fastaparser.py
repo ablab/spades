@@ -1,1 +1,1 @@
-../../quality/libs/fastaparser.py
+../../fastaparser.py

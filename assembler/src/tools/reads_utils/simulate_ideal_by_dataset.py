@@ -19,7 +19,7 @@ import subprocess
 
 sys.path.append(os.path.join(os.path.abspath(sys.path[0]), 'conversion'))
 sys.path.append(os.path.join(os.path.abspath(sys.path[0]), 'stat'))
-sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../quality/libs'))
+sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '..'))
 
 bowtie_path  = os.path.join(os.path.abspath(sys.path[0]), '../../../../external_tools/bowtie-0.12.7')
 bowtie_build = os.path.join(bowtie_path, "bowtie-build")
