@@ -509,9 +509,9 @@ public:
         }
         os << "Path " << GetId() << endl;
         os << "Length " << Length() << endl;
-        os << "#, edge, length, total length" << endl;
+        os << "#, edge, length, gap, total length" << endl;
         for (size_t i = 0; i < Size(); ++i) {
-            os << i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << LengthAt(i) << endl;
+            os << i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i))  << ", " << GapAt(i) << ", " << LengthAt(i) << endl;
         }
     }
 
