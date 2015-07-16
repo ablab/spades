@@ -741,7 +741,7 @@ class ComponentProjector {
 //	DEBUG("Result: edges " << g_.str(split_res.first) << " " << g_.str(split_res.second));
 //	DEBUG("New vertex" << g_.str(inner_v) << " ");
 
-	void SplitComponent() {
+	bool SplitComponent() {
 		DEBUG("Splitting component");
 		set<size_t> level_heights(component_.avg_distances());
 		DEBUG("Level heights " << ToString<size_t>(level_heights));
@@ -768,6 +768,9 @@ class ComponentProjector {
 					continue;
 				DEBUG("Splitting on " << curr);
 				size_t pos = curr - offset;
+				if(pos >= g_.length(e)) {
+				    return false;
+				}
 				DEBUG("Splitting edge " << g_.str(e) << " on position " << pos);
 				pair<EdgeId, EdgeId> split_res = g_.SplitEdge(e, pos);
 				//checks accordance
@@ -778,6 +781,7 @@ class ComponentProjector {
 			}
 		}
 		DEBUG("Component split");
+		return true;
 	}
 
 	EdgeId CorrespondingTreeEdge(EdgeId e) const {
@@ -806,8 +810,11 @@ class ComponentProjector {
 
 public:
 
-	void ProjectComponent() {
-		SplitComponent();
+	bool ProjectComponent() {
+		if(!SplitComponent()) {
+	        DEBUG("Component can't be split");
+		    return false;
+		}
 
 		DEBUG("Projecting split component");
 		GraphComponent<Graph> gc = component_.AsGraphComponent();
@@ -826,6 +833,7 @@ public:
 			DEBUG("Edge processed");
 		}
 		DEBUG("Component projected");
+		return true;
 	}
 
 	ComponentProjector(Graph& g, const LocalizedComponent<Graph>& component,
@@ -1071,7 +1079,10 @@ class ComplexBulgeRemover {
 			}
 
 			ComponentProjector<Graph> projector(g_, component, coloring, tree);
-			projector.ProjectComponent();
+			if(!projector.ProjectComponent()) {
+	            DEBUG("Component can't be projected");
+			    return false;
+			}
 			DEBUG(
 					"Successfully processed component candidate " << candidate_cnt << " start_v " << g_.str(component.start_vertex()));
 			return true;
