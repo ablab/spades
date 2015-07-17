@@ -20,7 +20,6 @@ import subprocess
 
 sys.path.append(os.path.join(os.path.abspath(sys.path[0]), 'conversion'))
 sys.path.append(os.path.join(os.path.abspath(sys.path[0]), 'stat'))
-sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../quality/libs'))
 sys.path.append(os.path.join(os.path.abspath(sys.path[0]), '../../../ext/src/python_libs'))
 if sys.version.startswith('2.'):
     import pyyaml2 as pyyaml
