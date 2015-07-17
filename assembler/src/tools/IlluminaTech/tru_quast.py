@@ -4,6 +4,7 @@
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
+import itertools
 
 __author__ = 'anton'
 
@@ -25,12 +26,12 @@ def DefaultZero(d, key):
         return "0"
 
 
-def RunBarcodeQuast(ids, input_dir, barcode_quast_dir, reference_dir, threads):
+def RunBarcodeQuast(barcodes, barcode_quast_dir, reference_dir, threads):
     quast_format = " ".join(["quast", "--min-contig", "1000", "--contig-thresholds", "5000,8000,12000", "-e", "-R",
             os.path.join(reference_dir, "{0}.fasta"),
-            os.path.join(input_dir, "{0}", "truseq_long_reads.fasta"), "-o",
+            "{1}", "-o",
             os.path.join(barcode_quast_dir, "{0}")])
-    commands = [(barcode_id, quast_format.format(barcode_id)) for barcode_id in ids]
+    commands = [(barcode_id, quast_format.format(barcode_id, file_name)) for (barcode_id, file_name) in barcodes]
     support.recreate_dir(barcode_quast_dir)
     task = parallel_launcher.ExternalCallTask("", "")
     errors = parallel_launcher.run_in_parallel(task, commands, threads)
@@ -73,9 +74,15 @@ def CollectResults(names, reports):
 
 def RunTruQuast(input_dir, reference_dir, output_dir, threads):
     support.ensure_dir_existence(output_dir)
-    ids = [barcode.id for barcode in barcode_extraction.ReadDataset(os.path.join(input_dir, "dataset.info"))]
+    if os.path.exists(os.path.join(input_dir, "dataset.info"))
+        ids = [barcode.id for barcode in barcode_extraction.ReadDataset(os.path.join(input_dir, "dataset.info"))]
+        files = [os.path.join(input_dir, "barcodes", bid, "truseq_long_contigs.fasta") for bid in ids]
+    else:
+        files = [file for file in os.listdir(input_dir) if file.endswith(".fasta") or file.endswith(".fa")]
+        ids = [f[:f.rfind(".")] for f in files]
+
     barcode_quast_dir = os.path.join(output_dir, "barcode_quast")
-    RunBarcodeQuast(ids, input_dir, barcode_quast_dir, reference_dir, threads)
+    RunBarcodeQuast(zip(ids, files), barcode_quast_dir, reference_dir, threads)
     names, reports = ParseResults(barcode_quast_dir, ids)
     names.append("#partially unaligned")
     values = CollectResults(names, reports)
