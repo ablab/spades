@@ -26,13 +26,15 @@ def DefaultZero(d, key):
 
 
 def RunBarcodeQuast(ids, input_dir, barcode_quast_dir, reference_dir, threads):
-    quast_format = " ".join("quast", "--min-contig", "1000", "--contig-thresholds", "5000,8000,12000", "-e", "-R",
-                            os.path.join(reference_dir, "{1}.fasta"),
-                            os.path.join(input_dir, "{1}", "truseq_long_reads.fasta"), "-o",
-                            os.path.join(barcode_quast_dir, "{1}"))
-    commands = [quast_format.format(barcode_id) for barcode_id in ids]
-    support.recreate_dir(barcode_quast_dir);
-    parallel_launcher.run_in_parallel(parallel_launcher.ExternalCallTask, commands, threads)
+    quast_format = " ".join(["quast", "--min-contig", "1000", "--contig-thresholds", "5000,8000,12000", "-e", "-R",
+            os.path.join(reference_dir, "{0}.fasta"),
+            os.path.join(input_dir, "{0}", "truseq_long_reads.fasta"), "-o",
+            os.path.join(barcode_quast_dir, "{0}")])
+    commands = [(barcode_id, quast_format.format(barcode_id)) for barcode_id in ids]
+    support.recreate_dir(barcode_quast_dir)
+    task = parallel_launcher.ExternalCallTask("", "")
+    errors = parallel_launcher.run_in_parallel(task, commands, threads)
+    sys.stderr.write(str(errors) + " barcodes failed")
 
 
 def ParseResults(barcode_quast_dir, ids):
@@ -82,8 +84,8 @@ def RunTruQuast(input_dir, reference_dir, output_dir, threads):
         results.write(name + "\t" + str(int(values[name])) + "\t" + str(values[name] / len(ids)) + "\n")
     results.close()
 
-if __name__ == "main":
+if __name__ == "__main__":
     if len(sys.argv) != 5:
-        sys.stderr.write("Usage: python src/tools/IlluminaTech/tru_quast.py <input_dir> <references_dir> <output_dir> <threads>")
+        sys.stderr.write("Usage: python src/tools/IlluminaTech/tru_quast.py <input_dir> <references_dir> <output_dir> <threads>\n")
     else:
         RunTruQuast(sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4]))

@@ -45,7 +45,7 @@ def GetHandlers(output_file_pattern, err_file_pattern, bid):
         return (output, open(err_file_pattern.format(bid), "w"))
 
 class ExternalCallTask:
-    def __init__(self, output_pattern, err_pattern):
+    def __init__(self, output_pattern = "", err_pattern = ""):
         self.output_pattern = output_pattern
         self.err_pattern = err_pattern
 

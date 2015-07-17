@@ -57,7 +57,7 @@ def print_commands(commands, options):
     open(output_file, "w").write("\n".join([str(line).strip() for line in commands]) + "\n")
 
 def collect_contigs(dataset, output_dir, format):
-    output = open(os.path.join(output_dir, "truseq_long_reads." + format), "w")
+    output = open(os.path.join(output_dir, "TSLRs." + format), "w")
     for barcode in dataset:
         file = os.path.join(output_dir, barcode.id, "truseq_long_reads." + format)
         if os.path.exists(file):
@@ -68,7 +68,6 @@ def collect_contigs(dataset, output_dir, format):
         else:
             sys.stderr.write("Warning: could not find assembly results for barcode " + str(barcode.id) + "\n")
     output.close()
-
 
 def bwa_command_line(barcode, output_dir, index, threads):
     return " ".join(["bwa", "mem", "-t", str(threads), index, barcode.libs[0][0], barcode.libs[0][1]])
@@ -88,16 +87,18 @@ def ConstructSubreferences(dataset, options):
 def RunTruSPAdes(dataset, log_dir, options):
     sys.stdout.write("Launching truSPAdes assembly in " + str(options.threads) + " threads\n")
     sys.stdout.write("You can find logs for separate barcodes in " + log_dir + "\n")
-    commands = [(barcode.id, command_line(barcode, options.output_dir, options.spades_options, options.continue_launch))
+    barcodes_dir = os.path.join(options.output_dir, "barcodes")
+    support.ensure_dir_existence(barcodes_dir)
+    commands = [(barcode.id, command_line(barcode, barcodes_dir, options.spades_options, options.continue_launch))
                 for barcode in dataset]
     task = parallel_launcher.ExternalCallTask("", "")
     errors = parallel_launcher.run_in_parallel(task, commands, options.threads)
     if errors != 0:
         sys.stderr.write(str(errors) + " barcodes failed to assemble\n")
-    collect_contigs(dataset, options.output_dir, "fasta")
-    collect_contigs(dataset, options.output_dir, "fastq")
+    collect_contigs(dataset, barcodes_dir, "fasta")
+    collect_contigs(dataset, barcodes_dir, "fastq")
     sys.stdout.write("Assembled virtual long TruSeq reads can be found in " + os.path.join(options.output_dir,
-                                                                                           "truseq_long_reads.fasta") + "\n")
+                                                                                           "tSLRs.fasta") + "\n")
 
 
 def main(argv):
