@@ -65,7 +65,7 @@ bool TrivialCondition(typename Graph::EdgeId,
 }
 
 template<class Graph>
-class MostCoveredAlternativePathChooser: public PathProcessor<Graph>::Callback {
+class MostCoveredSimpleAlternativePathChooser: public PathProcessor<Graph>::Callback {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 
@@ -76,7 +76,7 @@ class MostCoveredAlternativePathChooser: public PathProcessor<Graph>::Callback {
 
 public:
 
-	MostCoveredAlternativePathChooser(Graph& g, EdgeId edge) :
+	MostCoveredSimpleAlternativePathChooser(Graph& g, EdgeId edge) :
 			g_(g), forbidden_edge_(edge), max_coverage_(-1.0) {
 
 	}
@@ -88,7 +88,7 @@ public:
 			if (path[i] == forbidden_edge_)
 				return;
 		}
-		if (path_cov > max_coverage_) {
+		if (path_cov > max_coverage_ && SimplePathCondition<Graph>(g_)(forbidden_edge_, path)) {
 			max_coverage_ = path_cov;
 			most_covered_path_ = path;
 		}
@@ -226,7 +226,7 @@ protected:
 
         size_t delta = CountMaxDifference(max_delta_, graph_.length(edge), max_relative_delta_);
 
-        MostCoveredAlternativePathChooser<Graph> path_chooser(graph_, edge);
+        MostCoveredSimpleAlternativePathChooser<Graph> path_chooser(graph_, edge);
 
         VertexId start = graph_.EdgeStart(edge);
         TRACE("Start " << graph_.str(start));
