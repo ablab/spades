@@ -15,18 +15,22 @@ app.config.from_object(__name__)
 Session(app)
 
 def make_url(string):
-    files = re.findall(r"(?:[\w\.]+\/)+(?:\w+\.\w+)", string)
+    files = re.findall(r"(?:[\w\-\.]+\/)+(?:[\w\-]+\.\w+)", string)
     res = string
     for f in files:
         method = "render" if f.endswith(".dot") else "get"
         url = "<a href=\"%s?file=%s\">%s</a>" % (method, quote(f), f)
         res = res.replace(f, url)
+    print res
     return res
 
 def format_output(lines):
-    return "<br/>".join(map(make_url, lines))
+    res = "<br/>".join(map(make_url, lines))
+    print res
+    return res
 
 env_path = "../../../"
+cache_path = "static/cache/"
 shellder = None
 
 @app.route("/", methods=['GET'])
@@ -56,18 +60,19 @@ def command():
 @app.route("/get")
 def get():
     file_path = env_path + unquote(request.args.get("file", ""))
-    print("Getting", file_path)
     return flask.send_file(file_path, as_attachment=True, attachment_filename=path.basename(file_path))
 
 @app.route("/render")
 def render():
+    global cache_path
     file_path = unquote(request.args.get("file", ""))
-    dirfile, _ = path.splitext(file_path)
-    res_path = dirfile + ".png"
+    _, full_name = path.split(file_path)
+    name_only, _ = path.splitext(full_name)
+    res_path = cache_path + name_only + ".png"
     result = open(res_path, "w")
-    subprocess.call(["dot", "-Tpng", file_path], stdout=result)
+    subprocess.call(["dot", "-Tpng", env_path + file_path], stdout=result)
     result.close()
-    return flask.redirect("/get?file=" + res_path)
+    return res_path
 
 if __name__ == "__main__":
     app.debug = True

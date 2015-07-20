@@ -3,7 +3,7 @@
   <head>
     <title>WebVis</title>
     <style>
-      div#console {font-family:monospace; height:480px; overflow:scroll}
+      div#console {font-family:monospace; width:600px; height:640px; overflow:scroll}
     </style>
     <script type="text/javascript" src="static/jquery.js"></script>
     <script type="text/javascript" src="static/sigma.min.js"></script>
@@ -18,11 +18,21 @@
             type: "POST",
             data: {command: command},
             success: function(response) {
-              $("#console").append(response).scrollTop(1E10);
+              $(function() {$("#console").append("<br/>" + response).scrollTop(1E10);});
             }
           });
           return false;
         }
+      });
+      $("div#console").on("click", "[href*='.dot']", function(event) {
+        event.preventDefault();
+        var url = $(this).attr("href");
+        $.ajax({
+          url: url,
+          success: function(response) {
+            $("#graph").html($("<img>").attr("src", response));
+          }
+        });
       });
       });
     </script>
@@ -32,7 +42,7 @@
     <p><a href="logout">Log out</a></p>
     <table width="100%"><tr height="100%">
 	<td width="50%"><div id="console">{{console|safe}}</div></td>
-	<td><!--The rendered graph will be displayed here--></td>
+	<td><div id="graph"><!--The rendered graph will be displayed here--></div></td>
     </tr></table>
     <label for="command">GAF$&gt;</label>
     <input type="text" id="command" size="100">

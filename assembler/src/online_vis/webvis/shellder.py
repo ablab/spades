@@ -18,8 +18,10 @@ class Shellder:
         self.pin = open(pipe_in, "w+")
         pin = open(pipe_in, "r+")
         pout = open(pipe_out, "w+")
+        pushd = os.getcwd()
         os.chdir(dir)
         self.proc = subprocess.Popen(["./run", "rv"], stdin=pin, stdout=pout)
+        os.chdir(pushd)
 
     def get_line(self):
         str = self.pout.readline()
