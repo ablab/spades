@@ -6,24 +6,9 @@
       div#console {font-family:monospace; height:480px; overflow:scroll}
     </style>
     <script type="text/javascript" src="static/jquery.js"></script>
+    <script type="text/javascript" src="static/sigma.min.js"></script>
     <script type="text/javascript">
       $(function() {
-      /*$("a").click(function(event) {
-        event.preventDefault();
-        var href = $(this).attr('href');
-        $.confirm({
-          "title": "Download file",
-          "message": "This seems to be a .dot graph file. How do you want to get it?",
-          "buttons": {
-            "As is": {
-              "action": function() {window.location.replace(href);}
-            },
-            "PNG": {
-              "action": function() {window.location.replace(href.replace("get", "render"));}
-            }
-          }
-        });
-      });*/
       $("input#command").keypress(function(event) {
         if (event.which == 13) {
           event.preventDefault();
@@ -33,7 +18,6 @@
             type: "POST",
             data: {command: command},
             success: function(response) {
-              //$("#console").html(response).hide().fadeIn(1500);
               $("#console").append(response).scrollTop(1E10);
             }
           });
@@ -46,7 +30,10 @@
      
   <body>
     <p><a href="logout">Log out</a></p>
-    <div id="console">{{ console }}</div>
+    <table width="100%"><tr height="100%">
+	<td width="50%"><div id="console">{{console|safe}}</div></td>
+	<td><!--The rendered graph will be displayed here--></td>
+    </tr></table>
     <label for="command">GAF$&gt;</label>
     <input type="text" id="command" size="100">
   </body>

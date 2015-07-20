@@ -19,7 +19,7 @@ What it will be able to do in future:
 Installing
 ----------
 
-WebVis is written in Python and Javascript, using Flask_ and jQuery. To launch it, of course you need Python and pip or easy_install. They are typically pre-installed in both Linux and Mac OS X, so no prerequisities needed. Then you need to install Flask via the VirtualEnv:
+WebVis is written in Python and Javascript, using Flask_ and jQuery . To launch it, of course you need Python and pip or easy_install. They are typically pre-installed in both Linux and Mac OS X, so no prerequisities needed. Then you need to install Flask via the VirtualEnv:
 - sudo easy_install virtualenv
 or
 - sudo pip virtualenv
@@ -28,6 +28,7 @@ Then:
 - virtualenv venv
 - . venv/bin/activate
 - pip install Flask
+- pip install Flask-Session
 
 Running
 -------
@@ -39,7 +40,7 @@ By default (and non-configurable, haha), it listens on localhost:5000.
 Using
 -----
 When the index page is visited, a global session is launched automatically. Currently it runs the background *./run rv* process infinitely. The environment folder, in which binaries must be located, is currently hard-coded to be in the assembler folder (path/to/webvis/../../../).
-To stop the session and all related processes, simply click "Log out" on the main page.
+All console output is stored in the session. To stop the session and all related processes, simply click "Log out" on the main page.
 On the main page, you can send text commands in the prompt as if it was a command line. No auto-completion, though.
 When WebVis receives a command response which contains a filepath, it automatically converts it into a download hyperlink. If it was a .dot file, a rendered .png is downloaded instead. Probably it will be a configurable option.
 
