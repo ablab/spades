@@ -11,6 +11,10 @@
 #include "standard_base.hpp"
 #include "simple_tools.hpp"
 #include "xmath.h"
+#include "graph_component.hpp"
+
+ #include "omni/action_handlers.hpp"
+ #include "omni/graph_iterators.hpp"
 
 #include "omni/action_handlers.hpp"
 #include "omni/graph_iterators.hpp"
@@ -542,6 +546,11 @@ class DominatedSetFinder {
 
     const map<VertexId, Range>& dominated() const {
         return dominated_;
+    }
+
+    GraphComponent<Graph> AsGraphComponent() const {
+        set<VertexId> vertices = key_set(dominated_);
+        return GraphComponent<Graph>(g_, vertices.begin(), vertices.end());
     }
 
     //little meaning if FillDominated returned false

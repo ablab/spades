@@ -34,25 +34,40 @@ void WriteComponents(const Graph& g,
 }
 
 template<class Graph>
-void DrawComponentsOfShortEdges(const Graph& g, size_t min_length)
+void DrawComponentsOfShortEdges(const Graph& g, size_t min_length, size_t sinks, size_t sources)
 {
     vector<typename Graph::EdgeId> short_edges;
-    std::string pics_folder_ = cfg::get().output_saves + "/pics";
+    std::string pics_folder_ = cfg::get().output_dir + ToString(min_length) + "_" + ToString(sinks) + "_" + ToString(sources) + "_"+ "pics_polymorphic/";
+    make_dir(pics_folder_);
     INFO("Writing pics with components consisting of short edges to " + pics_folder_);
     shared_ptr<GraphSplitter<Graph>> splitter = LongEdgesExclusiveSplitter<Graph>(g, min_length);
     while (splitter->HasNext()) {
         GraphComponent<Graph> component = splitter->Next();
-        if(component.v_size() > 3)
+        if(component.v_size() > 3 && component.sinks().size() == sinks && component.sources().size() == sources)
         {
-            INFO("Component of size " << component.v_size() << " with " << component.sinks().size() << " sinks and " << component.sources().size() << "sources");
-        }
-        if(component.v_size() > 3 && component.sinks().size() == 1 && component.sources().size() == 1)
-        {
+        	bool fail = false;
+        	for(auto v : component.sources()) {
+        		if(component.g().IncomingEdgeCount(v) != 1) {
+        			fail = true;
+        		}
+        	}
+        	for(auto v : component.sinks()) {
+        		if(component.g().OutgoingEdgeCount(v) != 1) {
+        			fail = true;
+        		}
+        	}
 
-            WriteComponentSinksSources(component, pics_folder_ + "ShortComponents/"
-                                                                                  + ToString(g.int_id(*component.vertices().begin()))
+        	if(fail)
+        	{
+        		continue;
+        	}
+
+            StrGraphLabeler<Graph> labeler(component.g());
+            CoverageGraphLabeler<Graph> labeler2(component.g());
+            CompositeLabeler<Graph> compositeLabeler(labeler, labeler2);
+            WriteComponentSinksSources(component, pics_folder_ + ToString(g.int_id(*component.vertices().begin()))
                                                                                    + ".dot", visualization::DefaultColorer(g),
-                                                                                   *StrGraphLabelerInstance(component.g()));
+                                                                                   compositeLabeler);
             INFO("Component is written to " + ToString(g.int_id(*component.vertices().begin())) + ".dot");
 
             //            PrintComponent(component,
@@ -99,6 +114,18 @@ void WriteComponentSinksSources(const GraphComponent<Graph>& gc,
     os.open(file_name);
     omnigraph::visualization::ComponentVisualizer<Graph>(gc.g(), true).Visualize(gc, os, labeler, component_colorer, linker);
     os.close();
+}
+
+template<class Graph>
+void WriteComponentSinksSources(const GraphComponent<Graph>& gc,
+        const string& file_name) {
+
+    StrGraphLabeler<Graph> labeler(gc.g());
+    CoverageGraphLabeler<Graph> labeler2(gc.g());
+    CompositeLabeler<Graph> compositeLabeler(labeler, labeler2);
+    EmptyGraphLinker<Graph> linker;
+    WriteComponentSinksSources(gc, file_name, DefaultColorer(gc.g()),
+            compositeLabeler);
 }
 
 template<class Graph>

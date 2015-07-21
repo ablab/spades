@@ -23,6 +23,7 @@
 #include "omni/omni_utils.hpp"
 #include "omni/omni_tools.hpp"
 #include "omni/tip_clipper.hpp"
+#include "omni/complex_tip_clipper.hpp"
 #include "omni/bulge_remover.hpp"
 #include "omni/complex_bulge_remover.hpp"
 #include "omni/erroneous_connection_remover.hpp"
@@ -507,6 +508,16 @@ bool ParallelClipTips(Graph& g,
     return true;
 }
 
+template<class Graph>
+bool ClipComplexTips(Graph& g) {
+    INFO("Complex tip clipping");
+    size_t max_edge_length = g.k() * 2;
+    ComplexTipClipper<Graph> tip_clipper(g, max_edge_length, "");
+    tip_clipper.Run();
+    return true;
+}
+
+
 //template<class Graph>
 //bool ParallelRemoveBulges(Graph& g,
 //              const debruijn_config::simplification::bulge_remover& br_config,
@@ -881,6 +892,8 @@ class GraphSimplifier {
     //    CompressAllVertices(graph);
     //}
 
+
+
     void SimplificationCycle(SmartIteratorsHolder<Graph>& iterators_holder) {
         size_t iteration = info_container_.iteration();
 
@@ -894,6 +907,7 @@ class GraphSimplifier {
         auto tip_removal_handler = cfg::get().graph_read_corr.enable ?
                 WrapWithProjectionCallback(gp_, removal_handler) : removal_handler;
         ClipTips(gp_.g, *iterators_holder.tip_smart_it(), simplif_cfg_.tc, info_container_, tip_removal_handler);
+        ClipComplexTips(gp_.g);
         cnt_callback.Report();
         DEBUG(iteration << " TipClipping stats");
         printer_(ipp_tip_clipping, fmt::format("_{:d}", iteration));
