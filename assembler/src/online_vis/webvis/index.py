@@ -7,6 +7,7 @@ import re
 from urllib import quote, unquote
 
 from shellder import *
+from dotjson import dot_to_json
 
 # General app settings
 app = Flask(__name__)
@@ -66,13 +67,24 @@ def get():
 def render():
     global cache_path
     file_path = unquote(request.args.get("file", ""))
+    type = request.args.get("method", "png")
     _, full_name = path.split(file_path)
     name_only, _ = path.splitext(full_name)
-    res_path = cache_path + name_only + ".png"
-    result = open(res_path, "w")
-    subprocess.call(["dot", "-Tpng", env_path + file_path], stdout=result)
-    result.close()
-    return res_path
+    if type == "png":
+        res_path = cache_path + name_only + ".png"
+        result = open(res_path, "w")
+        subprocess.call(["dot", "-Tpng", env_path + file_path], stdout=result)
+        result.close()
+        return res_path
+    elif type == "json":
+        input = open(env_path + file_path, "r")
+        res_path = cache_path + name_only + ".json"
+        result = open(res_path, "w")
+        result.write(dot_to_json(input.read()))
+        result.close()
+        return res_path
+    else:
+        return "Unknown method"
 
 if __name__ == "__main__":
     app.debug = True
