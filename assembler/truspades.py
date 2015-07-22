@@ -98,7 +98,7 @@ def RunTruSPAdes(dataset, log_dir, options):
     collect_contigs(dataset, barcodes_dir, "fasta")
     collect_contigs(dataset, barcodes_dir, "fastq")
     sys.stdout.write("Assembled virtual long TruSeq reads can be found in " + os.path.join(options.output_dir,
-                                                                                           "tSLRs.fasta") + "\n")
+                                                                                           "TSLRs.fasta") + "\n")
 
 
 def main(argv):
