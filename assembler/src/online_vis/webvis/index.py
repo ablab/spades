@@ -5,7 +5,10 @@ from flask.ext.session import Session
 #Aux imports
 import re
 from urllib import quote, unquote
-
+#System imports
+from os import listdir
+from os.path import isfile, join
+#App imports
 from shellder import *
 from dotjson import dot_to_json
 
@@ -15,8 +18,10 @@ SESSION_TYPE = "filesystem"
 app.config.from_object(__name__)
 Session(app)
 
+FILENAME_REGEXP = r"(?:[\w\-\.]+\/)+(?:[\w\-]+\.\w+)"
+
 def make_url(string):
-    files = re.findall(r"(?:[\w\-\.]+\/)+(?:[\w\-]+\.\w+)", string)
+    files = re.findall(FILENAME_REGEXP, string)
     res = string
     for f in files:
         method = "render" if f.endswith(".dot") else "get"
@@ -89,6 +94,21 @@ def render():
     else:
         return "Unknown method"
 
+@app.route("/static/cache/vertex/<vertex_id>")
+def vertex(vertex_id):
+    res_path = next((cache_path + f for f in listdir(cache_path) if f.endswith(vertex_id + "_.svg")), None)
+    if res_path is None:
+        #Render a new file
+        shellder.send("draw_vertex " + vertex_id)
+        file_path = re.finditer(FILENAME_REGEXP, shellder.get_output()[0]).next().group()
+        _, full_name = path.split(file_path)
+        name_only, _ = path.splitext(full_name)        
+        res_path = cache_path + name_only + ".svg"
+        result = open(res_path, "w")
+        subprocess.call(["dot", "-Tsvg", env_path + file_path], stdout=result)
+        result.close()
+    return flask.redirect(res_path)
+    
 if __name__ == "__main__":
     app.debug = True
     app.secret_key = "somekey"
