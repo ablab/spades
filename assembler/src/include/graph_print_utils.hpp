@@ -289,6 +289,8 @@ public:
 		this->recordParameter("label", constructComplexNodeLabel(vertex));
 		this->os() << ",";
 		this->recordParameter("color", "black");
+		this->os() << ",";
+		this->recordParameter("URL", "vertex/" + std::to_string(vertex.first.id_));
 		this->os() << "]" << endl;
 	}
 
