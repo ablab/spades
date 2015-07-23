@@ -74,12 +74,12 @@ def CollectResults(names, reports):
 
 def RunTruQuast(input_dir, reference_dir, output_dir, threads):
     support.ensure_dir_existence(output_dir)
-    if os.path.exists(os.path.join(input_dir, "dataset.info"))
+    if os.path.exists(os.path.join(input_dir, "dataset.info")):
         ids = [barcode.id for barcode in barcode_extraction.ReadDataset(os.path.join(input_dir, "dataset.info"))]
-        files = [os.path.join(input_dir, "barcodes", bid, "truseq_long_contigs.fasta") for bid in ids]
+        files = [os.path.join(input_dir, "barcodes", bid, "truseq_long_reads.fasta") for bid in ids]
     else:
-        files = [file for file in os.listdir(input_dir) if file.endswith(".fasta") or file.endswith(".fa")]
-        ids = [f[:f.rfind(".")] for f in files]
+        files = [os.path.join(input_dir, file) for file in os.listdir(input_dir) if file.endswith(".fasta") or file.endswith(".fa")]
+        ids = [f[:f.rfind(".")] for f in os.listdir(input_dir) if file.endswith(".fasta") or file.endswith(".fa")]
 
     barcode_quast_dir = os.path.join(output_dir, "barcode_quast")
     RunBarcodeQuast(zip(ids, files), barcode_quast_dir, reference_dir, threads)
