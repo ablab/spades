@@ -78,9 +78,12 @@ def render():
         return res_path
     elif type == "json":
         input = open(env_path + file_path, "r")
+        content = dot_to_json(input.read())
+        if (request.args.get("result", "") == "response"):
+           return content
         res_path = cache_path + name_only + ".json"
         result = open(res_path, "w")
-        result.write(dot_to_json(input.read()))
+        result.write(content)
         result.close()
         return res_path
     else:

@@ -11,45 +11,94 @@
     <script type="text/javascript" src="static/plugins/sigma.parsers.json.min.js"></script>
     <script type="text/javascript" src="static/plugins/sigma.layout.forceAtlas2.min.js"></script>
     <script type="text/javascript">
-      $(function() {
-      $("input#command").keypress(function(event) {
-        if (event.which == 13) {
-          event.preventDefault();
-          var command = $("input#command").val();
-          $.ajax({
-            url: "/command",
-            type: "POST",
-            data: {command: command},
-            success: function(response) {
-              $(function() {$("#console").append("<br/>" + response).scrollTop(1E10);});
-            }
-          });
-          return false;
+$(function() {
+  function sendCommand(command, callback) {
+    $.ajax({
+      url: "command",
+      type: "POST",
+      data: {command: command},
+      success: callback
+        //$(function() {$("#console").append("<br/>" + response).scrollTop(1E10);});
+    });
+  }
+  
+  $("input#command").keypress(function(event) {
+    if (event.which == 13) {
+      event.preventDefault();
+      var command = $("input#command").val();
+      sendCommand(command, function(response) {
+        $(function() {$("#console").append("<br/>" + response).scrollTop(1E10);});
+      });
+      return false;
+    }
+  });
+  
+  function addNodesCallback(id) {
+    var vertexId = id.split("_")[1]; //vertex_id1_id2
+    sendCommand("draw_vertex " + vertexId, function(response) {
+      var filemask = new RegExp("<a[^>]*>([^<]*)</a>");
+      var filename = response.match(filemask)[1];
+      $.ajax({
+        url: "render?file=" + filename + "&method=json&result=response",
+        success: function(response) {
+          graph = JSON.parse(response);
+          sWrap.killForceAtlas2();
+          sWrap.graph.unionWith(graph);
+          sWrap.refresh();
+          sWrap.startForceAtlas2();
         }
       });
-      $("div#console").on("click", "[href*='.dot']", function(event) {
-        event.preventDefault();
-        var url = $(this).attr("href");
-        $.ajax({
-          url: url + "&method=json",
-          success: function(response) {
-      //$("#graph").html($("<img>").attr("src", response));
-      //$("#graph").html(response);
-            sigma.parsers.json(
-              response,
-              sGraph,
-              function() {
-                sGraph.refresh();
-                sGraph.startForceAtlas2();
-              }
-            );
+    });
+  }
+  
+  $("div#console").on("click", "[href*='.dot']", function(event) {
+    event.preventDefault();
+    var url = $(this).attr("href");
+    $.ajax({
+      url: url + "&method=json",
+      success: function(response) {
+  //$("#graph").html($("<img>").attr("src", response));
+  //$("#graph").html(response);
+        sigma.parsers.json(
+          response,
+          sWrap,
+          function() {
+            sWrap.bind("clickNode", function(e) {
+              var nodeId = e.data.node.id;
+              addNodesCallback(nodeId);
+            });
+            sWrap.refresh();
+            sWrap.startForceAtlas2();
           }
-        });
-      });
+        );
+      }
+    });
+  });
 
-      var sGraph = new sigma("graph");
-      //sGraph.startForceAtlas2();
-      });
+  sigma.classes.graph.addMethod("hasNode", function(id) {
+    return typeof(this.nodes(id)) != "undefined";
+  });
+  
+  sigma.classes.graph.addMethod("hasEdge", function(id) {
+    return typeof(this.edges(id)) != "undefined";
+  });
+
+  sigma.classes.graph.addMethod("unionWith", function(graph) {
+    var self = this;
+    graph.nodes.forEach(function(node) {
+      //if (!self.hasNode(node))
+      if (typeof(self.nodes(node.id)) == "undefined")
+        self.addNode(node);
+    });
+    graph.edges.forEach(function(edge) {
+      //if (!self.hasEdge(edge))
+      if (typeof(self.edges(edge.id)) == "undefined")
+        self.addEdge(edge);
+    });
+  });
+
+  var sWrap = new sigma("graph");
+});
     </script>
   </head>
      
