@@ -1041,7 +1041,11 @@ void ScanAll(const std::string& file_name, graph_pack& gp,
     ScanClusteredIndices(file_name, scanner, gp.clustered_indices, force_exists);
     ScanScaffoldingIndices(file_name, scanner, gp.scaffolding_indices, force_exists);
     ScanSingleLongReads(file_name,  gp.single_long_reads);
+    cout << "gp.genome  - " << gp.genome << endl;
+    cout << "gp.genome.size()  - " << gp.genome.size() << endl;
     gp.ginfo.Load(file_name + ".ginfo");
+    cout << "gp.genome  - " << gp.genome << endl;
+    cout << "gp.genome.size()  - " << gp.genome.size() << endl;
 }
 }
 }
