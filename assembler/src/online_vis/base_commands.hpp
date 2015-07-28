@@ -169,6 +169,9 @@ namespace online_visualization {
             LoadedEnvironments<Env>& loaded_environments,
             const ArgumentList& arg_list) const
         {
+          cout << "curr_env.genome().size() - " << curr_env->genome().size() << endl;
+          cout << "curr_env.genome().sequence() - " << curr_env->genome() << endl;
+
           vector<string> args = arg_list.GetAllArguments();
           if (!CheckCorrectness(args))
             return;
@@ -189,6 +192,9 @@ namespace online_visualization {
           shared_ptr<Env> new_env = MakeNewEnvironment(name, saves, K);
           loaded_environments.insert(make_pair(name, new_env));
           curr_env = new_env;
+          cout << "curr_env.genome().size() - " << curr_env->genome().size() << endl;
+          cout << "curr_env.genome().sequence() - " << curr_env->genome() << endl;
+
         }
 
     };

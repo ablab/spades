@@ -90,9 +90,6 @@ class LocalCommand : public Command<Env> {
 
   // !!!! NO OVERRIDING !!!!
   virtual void Execute(shared_ptr<Env>& curr_env, LoadedEnvironments<Env>& loaded_environments, const ArgumentList& arg_list) const {
-    cout << "curr_env.genome().size() - " << curr_env.genome().size() << endl;
-    cout << "curr_env.genome().sequence() - " << curr_env.genome() << endl;
-
     if (arg_list["all"] == "true")
       for (auto iter = loaded_environments.begin(); iter != loaded_environments.end(); ++iter)
         Execute(*(iter->second), arg_list);
@@ -101,9 +98,6 @@ class LocalCommand : public Command<Env> {
     }
     else
       cout << "The environment is not loaded" << endl;
-    cout << "curr_env.genome().size() - " << curr_env.genome().size() << endl;
-    cout << "curr_env.genome().sequence() - " << curr_env.genome() << endl;
-
   }
 
  protected:
