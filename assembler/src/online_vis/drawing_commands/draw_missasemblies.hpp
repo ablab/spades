@@ -92,7 +92,7 @@ public:
             return;
         }
 
-        if(curr_env.genome() == Sequence()) {
+        if(curr_env.genome().size() == 0) {
             cout << "Reference should be loaded. Command will not be executed";
             return;
         }
@@ -110,6 +110,7 @@ public:
             filler.Process(!contig, "miss_" + read.name() + "_RC");
         }
         reader->close();
+        cout << "All contigs mapped to the graph";
 
         reader = make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(file));
 
