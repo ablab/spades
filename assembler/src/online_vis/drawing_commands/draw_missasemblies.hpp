@@ -16,7 +16,7 @@ protected:
     bool CheckCorrectness(const vector<string>& args) const {
         if (!CheckEnoughArguments(args))
             return false;
-        if(CheckFileExists(args[1]))
+        if(!CheckFileExists(args[1]))
             return false;
         return true;
     }
@@ -93,7 +93,7 @@ public:
         }
 
         if(curr_env.genome() == Sequence()) {
-            LOG("Reference should be loaded. Command is not executed");
+            cout << "Reference should be loaded. Command will not be executed";
             return;
         }
 
