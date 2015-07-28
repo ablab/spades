@@ -93,6 +93,8 @@ public:
         }
 
         cout << "curr_env.genome().size() - " << curr_env.genome().size() << endl;
+        cout << "curr_env.genome().sequence() - " << curr_env.genome() << endl;
+
         if(curr_env.genome() == Sequence()) {
             cout << "Reference should be loaded. Command will not be executed" << endl;
             return;
