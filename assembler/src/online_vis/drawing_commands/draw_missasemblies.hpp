@@ -92,8 +92,9 @@ public:
             return;
         }
 
-        if(curr_env.genome().size() == 0) {
-            cout << "Reference should be loaded. Command will not be executed";
+        cout << "curr_env.genome().size() - " << curr_env.genome().size() << endl;
+        if(curr_env.genome() == Sequence()) {
+            cout << "Reference should be loaded. Command will not be executed" << endl;
             return;
         }
 
@@ -110,16 +111,18 @@ public:
             filler.Process(!contig, "miss_" + read.name() + "_RC");
         }
         reader->close();
-        cout << "All contigs mapped to the graph";
-
+        cout << "All contigs are mapped" << endl;
         reader = make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(file));
 
         auto genome_mapping_path = curr_env.mapper().MapSequence(curr_env.genome());
+        cout << "Genome is mapped" << endl;
 
         while(!reader->eof()) {
             io::SingleRead read;
             (*reader) >> read;
             Sequence contig = read.sequence();
+            cout << "Read " << read.name() << " is processed." << endl;
+
             auto mapping_path = curr_env.mapper().MapSequence(contig);
             ProcessContig(curr_env, genome_mapping_path, mapping_path);
         }
