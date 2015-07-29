@@ -41,7 +41,7 @@ class DebruijnEnvironment : public Environment {
               max_vertices_(40),
               edge_length_bound_(1000),
               gp_(K, "./tmp", cfg::get().ds.reads.lib_count(), 
-                  cfg::get().ds.reference_genome,
+                  Sequence(),
                   cfg::get().flanking_range,
                   cfg::get().pos.max_mapping_gap,
                   cfg::get().pos.max_gap_diff),
