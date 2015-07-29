@@ -26,7 +26,7 @@ private:
     vector<EdgeId> FilterByLength(Graph& g, const vector<EdgeId>& edges) const {
         vector<EdgeId> filtered_edges;
         for(auto e : edges) {
-            if(g.length(e) > 1000) {
+            if(g.length(e) > 500) {
                 filtered_edges.push_back(e);
             }
         }
