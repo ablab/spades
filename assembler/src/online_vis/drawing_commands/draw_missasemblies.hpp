@@ -92,15 +92,10 @@ public:
             return;
         }
 
-        cout << "curr_env.genome().size() - " << curr_env.genome().size() << endl;
-        cout << "curr_env.genome().sequence() - " << curr_env.genome() << endl;
-
         if(curr_env.genome() == Sequence()) {
             cout << "Reference should be loaded. Command will not be executed" << endl;
             return;
         }
-
-
 
         string file = args[1];
         auto reader = make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(file));

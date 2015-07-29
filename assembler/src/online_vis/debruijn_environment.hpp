@@ -49,7 +49,6 @@ class DebruijnEnvironment : public Environment {
               mapper_(new MapperClass(gp_.g, gp_.index, gp_.kmer_mapper)),
               filler_(gp_.g, mapper_, gp_.edge_pos),
               labeler_(gp_.g, gp_.edge_pos) {
-            cout << cfg::get().ds.reference_genome << endl;
             DEBUG("Environment constructor");
             gp_.kmer_mapper.Attach();
             debruijn_graph::graphio::ScanAll(path_, gp_);
