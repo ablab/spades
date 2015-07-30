@@ -98,4 +98,10 @@ def comp(letter):
 
 def rev_comp(seq):
     return ''.join(itertools.imap(comp, seq[::-1]))
-	
+
+def remove_nonACGT(seq):
+    seq2 = []
+    for c in seq:
+        if c  in 'ACGT':
+	    seq2.append(c)
+    return string.join(seq2, '')	
