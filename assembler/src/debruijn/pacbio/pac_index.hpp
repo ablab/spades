@@ -81,7 +81,7 @@ public:
         read_count = 0;
     }
     ~PacBioMappingIndex(){
-        INFO("good/ugly/bad counts:" << good_follow << " "<<half_bad_follow << " " << bad_follow);
+        DEBUG("good/ugly/bad counts:" << good_follow << " "<<half_bad_follow << " " << bad_follow);
 
     }
     void FillBannedKmers() {
