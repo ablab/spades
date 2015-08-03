@@ -906,6 +906,9 @@ void Generate(size_t l, size_t r, vector<size_t> a,
 
 vector<vector<size_t> > Generate(size_t n, vector<PathWithDistance*>& all_paths, map<PathWithDistance*, set<PathWithDistance*> >& connections) {
 	vector<vector<size_t> > result;
+	if (n > 5) {
+	    return result;
+	}
 	vector<size_t> a;
 	for (size_t i = 0; i < n; ++i) {
 		a.push_back(i);
