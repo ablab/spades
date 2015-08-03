@@ -149,7 +149,7 @@ def print_used_values(cfg, log):
     log.info("")
 
 
-def fill_cfg(options_to_parse, log, skip_output_dir=False):
+def fill_cfg(options_to_parse, log, skip_output_dir=False, load_processed_dataset=False):
     try:
         options, not_options = getopt.gnu_getopt(options_to_parse, options_storage.short_options, options_storage.long_options)
     except getopt.GetoptError:
@@ -324,18 +324,30 @@ def fill_cfg(options_to_parse, log, skip_output_dir=False):
     if options_storage.continue_mode:
         return None, None
 
-    if options_storage.dataset_yaml_filename:
-        try:
-            dataset_data = pyyaml.load(open(options_storage.dataset_yaml_filename, 'r'))
-        except pyyaml.YAMLError:
-            _, exc, _ = sys.exc_info()
-            support.error('exception caught while parsing YAML file (' + options_storage.dataset_yaml_filename + '):\n' + str(exc))
-        dataset_data = support.relative2abs_paths(dataset_data, os.path.dirname(options_storage.dataset_yaml_filename))
+    existing_dataset_data = None
+    processed_dataset_fpath = os.path.join(options_storage.output_dir, "input_dataset.yaml")
+    if load_processed_dataset:
+        if os.path.isfile(processed_dataset_fpath):
+            try:
+                existing_dataset_data = pyyaml.load(open(processed_dataset_fpath, 'r'))
+            except pyyaml.YAMLError:
+                existing_dataset_data = None
+    if existing_dataset_data is not None:
+        dataset_data = existing_dataset_data
+        options_storage.dataset_yaml_filename = processed_dataset_fpath
     else:
-        dataset_data = support.correct_dataset(dataset_data)
-        dataset_data = support.relative2abs_paths(dataset_data, os.getcwd())
-    options_storage.dataset_yaml_filename = os.path.join(options_storage.output_dir, "input_dataset.yaml")
-    pyyaml.dump(dataset_data, open(options_storage.dataset_yaml_filename, 'w'))
+        if options_storage.dataset_yaml_filename:
+            try:
+                dataset_data = pyyaml.load(open(options_storage.dataset_yaml_filename, 'r'))
+            except pyyaml.YAMLError:
+                _, exc, _ = sys.exc_info()
+                support.error('exception caught while parsing YAML file (' + options_storage.dataset_yaml_filename + '):\n' + str(exc))
+            dataset_data = support.relative2abs_paths(dataset_data, os.path.dirname(options_storage.dataset_yaml_filename))
+        else:
+            dataset_data = support.correct_dataset(dataset_data)
+            dataset_data = support.relative2abs_paths(dataset_data, os.getcwd())
+        options_storage.dataset_yaml_filename = processed_dataset_fpath
+        pyyaml.dump(dataset_data, open(options_storage.dataset_yaml_filename, 'w'))
 
     support.check_dataset_reads(dataset_data, options_storage.only_assembler, log)
     if not support.get_lib_ids_by_type(dataset_data, spades_logic.READS_TYPES_USED_IN_CONSTRUCTION):
@@ -486,7 +498,7 @@ def main(args):
         cmd_line, options = get_options_from_params(os.path.join(options_storage.output_dir, "params.txt"), args[0])
         if not options:
             support.error("failed to parse command line of the previous run! Please restart from the beginning or specify another output directory.")
-        cfg, dataset_data = fill_cfg(options, log, skip_output_dir=True)
+        cfg, dataset_data = fill_cfg(options, log, skip_output_dir=True, load_processed_dataset=True)
         if options_storage.restart_from:
             check_cfg_for_restart_from(cfg)
         options_storage.continue_mode = True
