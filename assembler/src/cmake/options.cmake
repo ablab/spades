@@ -12,6 +12,13 @@ endif()
 # Define option for turning on/off debug logging
 option(SPADES_DEBUG_LOGGING "Turn on debug / trace logging" ON)
 
+# Define option to enable / disable ASAN
+option(SPADES_ENABLE_ASAN "Turn on / off address sanitizer" OFF)
+if (SPADES_ENABLE_ASAN)
+  add_compile_options(-fsanitize=address)
+  add_compile_options(-Wl,-fsanitize=address)
+endif()
+
 # Define option for static / dynamic build.
 option(SPADES_STATIC_BUILD "Link SPAdes statically" OFF)
 if (SPADES_STATIC_BUILD)
