@@ -16,7 +16,7 @@ option(SPADES_DEBUG_LOGGING "Turn on debug / trace logging" ON)
 option(SPADES_ENABLE_ASAN "Turn on / off address sanitizer" OFF)
 if (SPADES_ENABLE_ASAN)
   add_compile_options(-fsanitize=address)
-  add_compile_options(-Wl,-fsanitize=address)
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
 endif()
 
 # Define option for static / dynamic build.
