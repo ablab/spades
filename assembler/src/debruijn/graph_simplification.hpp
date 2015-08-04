@@ -907,7 +907,7 @@ class GraphSimplifier {
         auto tip_removal_handler = cfg::get().graph_read_corr.enable ?
                 WrapWithProjectionCallback(gp_, removal_handler) : removal_handler;
         ClipTips(gp_.g, *iterators_holder.tip_smart_it(), simplif_cfg_.tc, info_container_, tip_removal_handler);
-        ClipComplexTips(gp_.g);
+      //ClipComplexTips(gp_.g);
         cnt_callback.Report();
         DEBUG(iteration << " TipClipping stats");
         printer_(ipp_tip_clipping, fmt::format("_{:d}", iteration));
