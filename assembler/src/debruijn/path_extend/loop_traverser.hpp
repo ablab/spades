@@ -79,11 +79,23 @@ private:
 		if ((*startPath) == endPath->Conjugate()){
 			return;
 		}
+
+		BidirectionalPath startClone = *startPath;
+		BidirectionalPath endClone = *endPath;
+
 		DEBUG("Growing start")
 		extender_->GrowPath(*startPath);
 		DEBUG("Growing end")
 		extender_->GrowPath(*endPath->GetConjPath());
 		DEBUG("done")
+
+		if (!startPath->Contains(start) || !endPath->Contains(end)) {
+			DEBUG("Grown paths do not contain initial edges, rolling back");
+			startPath->Clear();
+			startPath->PushBack(startClone);
+			endPath->Clear();
+			endPath->PushBack(endClone);
+		}
 
 		size_t commonSize = startPath->CommonEndSize(*endPath);
 		size_t nLen = 0;
@@ -110,6 +122,7 @@ private:
 		}
 		for (size_t i = commonSize + 1; i < endPath->Size(); ++i) {
             startPath->PushBack(endPath->At(i), endPath->GapAt(i));
+			startPath->PushBack(endPath->At(i), endPath->GapAt(i));
 		}
 		DEBUG("travers");
 		startPath->Print();
