@@ -25,31 +25,6 @@ void SingleEdgeAdapter(
     }
 }
 
-template<class Graph>
-void VisualizeNontrivialComponentAutoInc(
-        const Graph& g, const set<typename Graph::EdgeId>& edges,
-        const string& folder, const GraphLabeler<Graph>& labeler,
-        shared_ptr<visualization::GraphColorer<Graph>> colorer) {
-    static size_t cnt = 0;
-
-    auto edge_colorer = make_shared<visualization::CompositeEdgeColorer<Graph>>("black");
-    edge_colorer->AddColorer(colorer);
-    edge_colorer->AddColorer(make_shared<visualization::SetColorer<Graph>>(g, edges, "green"));
-//    shared_ptr<visualization::GraphColorer<Graph>>
-    auto resulting_colorer = make_shared<visualization::CompositeGraphColorer<Graph>>(colorer, edge_colorer);
-    if (edges.size() > 1) {
-        set<typename Graph::VertexId> vertices;
-        for (auto e : edges) {
-            vertices.insert(g.EdgeStart(e));
-            vertices.insert(g.EdgeEnd(e));
-        }
-
-        visualization::WriteComponent(
-                ComponentCloser<Graph>(g, 0).CloseComponent(GraphComponent<Graph>(g, vertices.begin(), vertices.end())),
-                folder + ToString(cnt++) + ".dot", colorer, labeler);
-    }
-}
-
 namespace relative_coverage {
 
 template<class Graph>
@@ -480,6 +455,9 @@ class RelativeCoverageComponentRemover {
     std::string vis_dir_;
     ComponentRemover<Graph> component_remover_;
 
+    size_t fail_cnt_;
+    size_t succ_cnt_;
+
 public:
     RelativeCoverageComponentRemover(
             Graph& g, LocalCoverageFT local_coverage_f,
@@ -498,12 +476,16 @@ public:
               max_coverage_(max_coverage),
               vertex_count_limit_(vertex_count_limit),
               vis_dir_(vis_dir),
-              component_remover_(g, handler_function) {
+              component_remover_(g, handler_function),
+              fail_cnt_(0),
+              succ_cnt_(0) {
         VERIFY(math::gr(min_coverage_gap, 1.));
         VERIFY(tip_allowing_length_bound >= length_bound);
         TRACE("Coverage gap " << min_coverage_gap);
         if (!vis_dir_.empty()) {
             path::make_dirs(vis_dir_);
+            path::make_dirs(vis_dir_ + "/success/");
+            path::make_dirs(vis_dir_ + "/fail/");
         }
     }
 
@@ -549,6 +531,33 @@ public:
 
 private:
 
+    void VisualizeNontrivialComponent(const set<typename Graph::EdgeId>& edges, bool success) {
+        auto colorer = omnigraph::visualization::DefaultColorer(g_);
+        auto edge_colorer = make_shared<visualization::CompositeEdgeColorer<Graph>>("black");
+        edge_colorer->AddColorer(colorer);
+        edge_colorer->AddColorer(make_shared<visualization::SetColorer<Graph>>(g_, edges, "green"));
+    //    shared_ptr<visualization::GraphColorer<Graph>>
+        auto resulting_colorer = make_shared<visualization::CompositeGraphColorer<Graph>>(colorer, edge_colorer);
+
+        StrGraphLabeler<Graph> str_labeler(g_);
+        CoverageGraphLabeler<Graph> cov_labler(g_);
+        CompositeLabeler<Graph> labeler(str_labeler, cov_labler);
+
+        if (edges.size() > 1) {
+            set<typename Graph::VertexId> vertices;
+            for (auto e : edges) {
+                vertices.insert(g_.EdgeStart(e));
+                vertices.insert(g_.EdgeEnd(e));
+            }
+    
+    
+            auto filename = success ? vis_dir_ + "/success/" + ToString(succ_cnt_++) : vis_dir_ + "/fail/" + ToString(fail_cnt_++);
+            visualization::WriteComponent(
+                    ComponentCloser<Graph>(g_, 0).CloseComponent(GraphComponent<Graph>(g_, vertices.begin(), vertices.end())),
+                    filename + ".dot", colorer, labeler);
+        }
+    }
+
     bool ProcessEdge(EdgeId e, set<EdgeId>& edges_to_skip/*comes empty*/) {
         TRACE("Processing edge " << g_.str(e));
 
@@ -591,12 +600,7 @@ private:
 
                 if (!vis_dir_.empty()) {
                     TRACE("Outputting image");
-                    StrGraphLabeler<Graph> str_labeler(g_);
-                    CoverageGraphLabeler<Graph> cov_labler(g_);
-                    CompositeLabeler<Graph> labeler(str_labeler, cov_labler);
-
-                    VisualizeNontrivialComponentAutoInc(g_, component_searcher.component().edges(),
-                                 vis_dir_, labeler, omnigraph::visualization::DefaultColorer(g_));
+                    VisualizeNontrivialComponent(component_searcher.component().edges(), false);
                 }
         
             }
