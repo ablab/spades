@@ -70,7 +70,7 @@ class PathStorage {
 private:
 	Graph &g_;
 	InnerIndex inner_index_;
-
+	const size_t kLongEdgeForStats = 500;
 
 	void HiddenAddPath(const vector<EdgeId> &p, int w){
 		if (p.size() == 0 ) return;
@@ -189,7 +189,7 @@ public:
 		int long_gapped = 0;
 		int continued = 0;
 		for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-			if (g_.length(*iter) > 500) {
+			if (g_.length(*iter) > kLongEdgeForStats) {
 				if (!g_.IsDeadEnd(g_.EdgeEnd(*iter))) {
 					if (continued_edges.find(*iter) == continued_edges.end()) {
 						if ((replacement.find(*iter) != replacement.end() && continued_edges.find(replacement[*iter]) != continued_edges.end())) {
@@ -205,9 +205,10 @@ public:
 					long_gapped++;
 				}
 			}
-			//filestr <<"long not dead end: " << long_nongapped << " noncontinued: " << noncontinued << endl;
 		}
-		DEBUG("noncontinued/total long:" << noncontinued <<"/" << noncontinued + continued);
+		INFO("After PacBio(long reads) aligning, for edges longer than "<< kLongEdgeForStats << ":");
+		INFO("No continuation found for " <<  noncontinued + long_gapped <<" edges of " << noncontinued + continued + long_gapped);
+
 	}
 
 	vector<PathInfo<Graph> > GetAllPaths() const {
