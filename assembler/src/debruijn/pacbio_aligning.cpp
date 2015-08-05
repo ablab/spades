@@ -127,7 +127,7 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
     }
 
     gap_closer.DumpToFile(cfg::get().output_saves + "gaps_pb_closed.fasta");
-    INFO("PacBio test finished");
+    INFO("PacBio aligning finished");
     return;
 }
 

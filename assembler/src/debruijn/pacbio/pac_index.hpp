@@ -499,7 +499,7 @@ public:
             if (g_.length(i_iter->edgeId) > 500) {
                 if (colors[i] == DELETED_COLOR) {
                     if (i_iter->size > 100) {
-                        INFO("dominated huge cluster " << i_iter->str(g_));
+                        DEBUG("dominated huge cluster " << i_iter->str(g_));
                     }
                     continue;
                 }
