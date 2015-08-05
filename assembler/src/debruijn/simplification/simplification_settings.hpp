@@ -44,16 +44,16 @@ class SimplifInfoContainer {
 
 public: 
     SimplifInfoContainer() : 
-        read_length_(-1u),
+        read_length_(-1ul),
         detected_mean_coverage_(-1.0),
         detected_coverage_bound_(-1.0),
-        iteration_count_(-1u),
-        iteration_(-1u),
-        chunk_cnt_(-1u) {
+        iteration_count_(-1ul),
+        iteration_(-1ul),
+        chunk_cnt_(-1ul) {
     }
 
     size_t read_length() const {
-        VERIFY(read_length_ != -1u);
+        VERIFY(read_length_ != -1ul);
         return read_length_;
     }
 
@@ -68,17 +68,17 @@ public:
     }
 
     size_t iteration_count() const {
-        VERIFY(iteration_count_ != -1u);
+        VERIFY(iteration_count_ != -1ul);
         return iteration_count_;
     }
 
     size_t iteration() const {
-        VERIFY(iteration_ != -1u);
+        VERIFY(iteration_ != -1ul);
         return iteration_;
     }
     
     size_t chunk_cnt() const {
-        VERIFY(chunk_cnt_ != -1u);
+        VERIFY(chunk_cnt_ != -1ul);
         return chunk_cnt_;
     }
 

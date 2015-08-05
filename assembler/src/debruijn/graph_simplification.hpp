@@ -236,15 +236,19 @@ bool RemoveRelativelyLowCoverageComponents(
 
         std::string pics_dir = "";//cfg::get().output_dir + "rel_cov_components/"
 
-        omnigraph::simplification::relative_coverage::RelativeCoverageComponentRemover<
-                Graph> rel_rem(
+        double max_coverage = math::ge(rcc_config.max_coverage_coeff, 0.) 
+                                ? info.detected_coverage_bound() * rcc_config.max_coverage_coeff 
+                                : std::numeric_limits<double>::max();
+
+        omnigraph::simplification::relative_coverage::
+            RelativeCoverageComponentRemover<Graph> rel_rem(
                 g,
                 std::bind(&FlankingCoverage<Graph>::LocalCoverage,
                           std::cref(flanking_cov), std::placeholders::_1, std::placeholders::_2),
                 rcc_config.coverage_gap, size_t(double(info.read_length()) * rcc_config.length_coeff),
                 size_t(double(info.read_length()) * rcc_config.tip_allowing_length_coeff),
                 connecting_path_length_bound,
-                info.detected_coverage_bound() * rcc_config.max_coverage_coeff,
+                max_coverage,
                 removal_handler, rcc_config.vertex_count_limit, pics_dir);
         return rel_rem.Run();
     } else {
