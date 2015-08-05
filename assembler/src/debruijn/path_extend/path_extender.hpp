@@ -678,6 +678,7 @@ private:
 
 };
 
+//All Path-Extenders inherits this one.
 
 class LoopDetectingPathExtender : public PathExtender {
 
@@ -686,7 +687,7 @@ protected:
     bool investigateShortLoops_;
     bool use_short_loop_cov_resolver_;
     CovShortLoopResolver cov_loop_resolver_;
-    vector<pair<BidirectionalPath*, BidirectionalPath*> > visited_cycles_;
+    vector<pair<shared_ptr<BidirectionalPath>, shared_ptr<BidirectionalPath> > > visited_cycles_;
     InsertSizeLoopDetector is_detector_;
     const GraphCoverageMap& cov_map_;
 
@@ -724,13 +725,12 @@ public:
     bool InExistingLoop(const BidirectionalPath& path) {
         TRACE("Checking existing loops");
         int j = 0;
-        for (pair<BidirectionalPath*, BidirectionalPath*> cycle_pair : visited_cycles_) {
-            BidirectionalPath* cycle = cycle_pair.first;
-            BidirectionalPath* cycle_path = cycle_pair.second;
+        for (auto cycle_pair : visited_cycles_) {
+            shared_ptr<BidirectionalPath> cycle = cycle_pair.first;
+            shared_ptr<BidirectionalPath> cycle_path = cycle_pair.second;
             VERIFY(!cycle->Empty());
             VERIFY(!cycle_path->Empty());
-            VERBOSE_POWER2(j++, "checking ")
-
+            VERBOSE_POWER2(j++, "checking ");
             int pos = path.FindLast(*cycle_path);
             if (pos == -1)
                 continue;
@@ -781,7 +781,7 @@ public:
         }
         if (i < 0)
             i = 0;
-        visited_cycles_.push_back(make_pair(new BidirectionalPath(path.SubPath(pos)), new BidirectionalPath(path.SubPath(i))));
+        visited_cycles_.push_back(make_pair(std::make_shared<BidirectionalPath>(path.SubPath(pos)), std::make_shared<BidirectionalPath>(path.SubPath(i))));
         DEBUG("add cycle");
         path.SubPath(pos).Print();
     }
