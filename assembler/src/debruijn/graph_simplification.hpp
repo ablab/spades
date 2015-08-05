@@ -250,6 +250,16 @@ bool RemoveRelativelyLowCoverageComponents(
 }
 
 template<class Graph>
+bool DisconnectRelativelyLowCoverageEdges(Graph &g,
+        const FlankingCoverage<Graph>& flanking_cov) {
+	INFO("Disconnecting edges with relatively low coverage");
+	omnigraph::simplification::relative_coverage::RelativeCoverageHelper<Graph> helper(g, std::bind(&FlankingCoverage<Graph>::LocalCoverage,
+            std::cref(flanking_cov), std::placeholders::_1, std::placeholders::_2), 1.0);
+    omnigraph::simplification::relative_coverage::RelativeCoverageDisconnector<Graph> disconnector(g, helper);
+	return disconnector.Run();
+}
+
+template<class Graph>
 bool TopologyRemoveErroneousEdges(
     Graph &g,
     const debruijn_config::simplification::topology_based_ec_remover& tec_config,
@@ -827,6 +837,7 @@ class GraphSimplifier {
 
             enable_flag |= FinalRemoveErroneousEdges();
 
+
             enable_flag |= ClipTips(gp_.g, *iterators_holder.tip_smart_it(),
                                                   simplif_cfg_.tc, 
                                                   info_container_,
@@ -856,6 +867,7 @@ class GraphSimplifier {
 
             enable_flag |= RemoveComplexBulges(gp_.g, simplif_cfg_.cbr, iteration);
 
+            enable_flag |= DisconnectRelativelyLowCoverageEdges(gp_.g, gp_.flanking_cov);
             iteration++;
 
             //    printer(ipp_before_final_err_con_removal);
