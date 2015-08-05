@@ -122,7 +122,6 @@ private:
 		}
 		for (size_t i = commonSize + 1; i < endPath->Size(); ++i) {
             startPath->PushBack(endPath->At(i), endPath->GapAt(i));
-			startPath->PushBack(endPath->At(i), endPath->GapAt(i));
 		}
 		DEBUG("travers");
 		startPath->Print();
