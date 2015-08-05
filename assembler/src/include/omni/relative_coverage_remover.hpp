@@ -137,6 +137,18 @@ public:
         return terminating_vertices_;
     }
 
+    set<EdgeId> terminating_edges() const {
+        set<EdgeId> answer;
+        for (VertexId v : terminating_vertices()) {
+            for (EdgeId e : g_.IncidentEdges(v)) {
+                if (contains(e)) {
+                    answer.insert(e);
+                }
+            }
+        }
+        return answer;
+    }
+
     const Graph& g() const {
         return g_;
     }
@@ -297,9 +309,9 @@ class ComponentChecker {
 
     bool CoverageCheck(const Component<Graph>& component) const {
         for (EdgeId e : component.edges()) {
-            TRACE("Too high coverage! Component contains highly covered edge " << g_.str(e)
-                  << " while threshold was " << max_coverage_);
             if (math::gr(g_.coverage(e), max_coverage_)) {
+                TRACE("Too high coverage! Component contains highly covered edge " << g_.str(e)
+                     << " of coverage " << g_.coverage(e) << " while threshold was " << max_coverage_);
                 return false;
             }
         }
@@ -320,7 +332,7 @@ public:
 
     bool SizeCheck(const Component<Graph>& component) const {
         if (component.inner_vertex_cnt() > vertex_count_limit_) {
-            TRACE("Too many vertices! More than " << vertex_count_limit_);
+            TRACE("Too many vertices : " << component.inner_vertex_cnt() << " ! More than " << vertex_count_limit_);
             return false;
         }
         return true;
@@ -329,10 +341,11 @@ public:
     bool FullCheck(const Component<Graph>& component) const {
         TRACE("Performing full check of the component");
         size_t longest_connecting_path = LongestPathFinder<Graph>(component).Find();
-        bool answer = true;
         if (longest_connecting_path != -1u) {
-            TRACE("Length of longest path: " << longest_connecting_path << "; threshold: " << longest_connecting_path_bound_);
-            answer &= longest_connecting_path < longest_connecting_path_bound_;
+            if (longest_connecting_path >= longest_connecting_path_bound_) {
+                TRACE("Length of longest path: " << longest_connecting_path << "; threshold: " << longest_connecting_path_bound_);
+                return false;
+            }
         } else {
             TRACE("Failed to find longest connecting path (check for cycles)");
         }
@@ -345,7 +358,7 @@ public:
             return false;
         }
 
-        return answer && SizeCheck(component) && CoverageCheck(component);
+        return SizeCheck(component) && CoverageCheck(component);
     }
 
 private:
@@ -449,12 +462,13 @@ private:
 
 //currently works with conjugate graphs only (due to the assumption in the outer cycle)
 template<class Graph>
-class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
-    typedef EdgeProcessingAlgorithm<Graph> base;
+class RelativeCoverageComponentRemover {
+    Graph& g_;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     typedef std::function<double(EdgeId, VertexId)> LocalCoverageFT;
     typedef typename ComponentRemover<Graph>::HandlerF HandlerF;
+    typedef std::shared_ptr<func::Predicate<EdgeId>> ProceedConditionT;
 
     RelativeCoverageHelper<Graph> rel_helper_;
     size_t length_bound_;
@@ -463,6 +477,7 @@ class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
     double max_coverage_;
     //bound on the number of inner vertices
     size_t vertex_count_limit_;
+    std::string vis_dir_;
     ComponentRemover<Graph> component_remover_;
 
 public:
@@ -473,53 +488,97 @@ public:
             size_t tip_allowing_length_bound,
             size_t longest_connecting_path_bound,
             double max_coverage = std::numeric_limits<double>::max(),
-            HandlerF handler_function = 0, size_t vertex_count_limit = 10)
-            : base(g),
+            HandlerF handler_function = 0, size_t vertex_count_limit = 10, 
+            std::string vis_dir = "")
+            : g_(g),
               rel_helper_(g, local_coverage_f, min_coverage_gap),
               length_bound_(length_bound),
               tip_allowing_length_bound_(tip_allowing_length_bound),
               longest_connecting_path_bound_(longest_connecting_path_bound),
               max_coverage_(max_coverage),
               vertex_count_limit_(vertex_count_limit),
+              vis_dir_(vis_dir),
               component_remover_(g, handler_function) {
         VERIFY(math::gr(min_coverage_gap, 1.));
         VERIFY(tip_allowing_length_bound >= length_bound);
         TRACE("Coverage gap " << min_coverage_gap);
+        if (!vis_dir_.empty()) {
+            path::make_dirs(vis_dir_);
+        }
     }
 
-protected:
+    template<class SmartEdgeIt>
+    bool RunFromIterator(SmartEdgeIt& it,
+                 ProceedConditionT proceed_condition = std::make_shared<func::AlwaysTrue<EdgeId>>()) {
+        TRACE("Start processing");
+        bool triggered = false;
+        for (; !it.IsEnd(); ++it) {
+            EdgeId e = *it;
+            TRACE("Current edge " << g_.str(e));
+            if (!proceed_condition->Check(e)) {
+                TRACE("Stop condition was reached.");
+                //need to release last element of the iterator to make it replacable by new elements
+                it.ReleaseCurrent();
+                break;
+            }
 
-    /*virtual*/
-    bool ProcessEdge(EdgeId e) {
-        TRACE("Processing edge " << this->g().str(e));
+            set<EdgeId> to_skip_in_future;
+
+            TRACE("Processing edge " << g_.str(e));
+            bool processed = ProcessEdge(e, to_skip_in_future);
+
+            if (!processed) {
+                for (EdgeId e : to_skip_in_future) {
+                    it.HandleDelete(e);
+                    it.HandleDelete(g_.conjugate(e));
+                }
+            }
+
+            triggered |= processed;
+        }
+        TRACE("Finished processing. Triggered = " << triggered);
+        return triggered;
+    }
+
+    template<class Comparator = std::less<EdgeId>>
+    bool Run(const Comparator& comp = Comparator(),
+                 ProceedConditionT proceed_condition = make_shared<func::AlwaysTrue<EdgeId>>()) {
+        auto it = g_.SmartEdgeBegin(comp);
+        return RunFromIterator(it, proceed_condition);
+    }
+
+private:
+
+    bool ProcessEdge(EdgeId e, set<EdgeId>& edges_to_skip/*comes empty*/) {
+        TRACE("Processing edge " << g_.str(e));
 
         //here we use that the graph is conjugate!
-        VertexId v = this->g().EdgeStart(e);
-        if (this->g().IsDeadEnd(v) && this->g().IsDeadStart(v)) {
+        VertexId v = g_.EdgeStart(e);
+        if (g_.IsDeadEnd(v) && g_.IsDeadStart(v)) {
             TRACE("Isolated");
             return false;
         }
-        if (this->g().IsDeadEnd(v) || this->g().IsDeadStart(v)) {
+        if (g_.IsDeadEnd(v) || g_.IsDeadStart(v)) {
             TRACE("Tip");
             return false;
         }
 
         double local_cov = rel_helper_.LocalCoverage(e, v);
 
-        TRACE("Local coverage around start " << this->g().str(v) << " is " << local_cov);
+        TRACE("Local coverage around start " << g_.str(v) << " is " << local_cov);
 
         //since min_coverage_gap_ > 1, we don't need to think about e here
         TRACE("Checking presence of highly covered edges around start")
-        if (rel_helper_.CheckAnyHighlyCovered(this->g().OutgoingEdges(v), v, local_cov)
-                && rel_helper_.CheckAnyHighlyCovered(this->g().IncomingEdges(v), v,
+        if (rel_helper_.CheckAnyHighlyCovered(g_.OutgoingEdges(v), v, local_cov)
+                && rel_helper_.CheckAnyHighlyCovered(g_.IncomingEdges(v), v,
                                          local_cov)) {
             TRACE("Looking for component");
-            ComponentChecker<Graph> checker(this->g(), vertex_count_limit_, length_bound_,
+            ComponentChecker<Graph> checker(g_, vertex_count_limit_, length_bound_,
                                             tip_allowing_length_bound_,
                                             longest_connecting_path_bound_, max_coverage_);
             //case of e being loop is handled implicitly!
             ComponentSearcher<Graph> component_searcher(
-                    this->g(), rel_helper_, checker, e);
+                    g_, rel_helper_, checker, e);
             if (component_searcher.FindComponent()) {
                 TRACE("Deleting component");
                 const Component<Graph>& component = component_searcher.component();
@@ -527,15 +586,28 @@ protected:
                 return true;
             } else {
                 TRACE("Failed to find component");
+                TRACE("Removing found terminating edges from further iteration");
+                insert_all(edges_to_skip, component_searcher.component().terminating_edges());
+
+                if (!vis_dir_.empty()) {
+                    TRACE("Outputting image");
+                    StrGraphLabeler<Graph> str_labeler(g_);
+                    CoverageGraphLabeler<Graph> cov_labler(g_);
+                    CompositeLabeler<Graph> labeler(str_labeler, cov_labler);
+
+                    VisualizeNontrivialComponentAutoInc(g_, component_searcher.component().edges(),
+                                 vis_dir_, labeler, omnigraph::visualization::DefaultColorer(g_));
+                }
+        
             }
         } else {
             TRACE("No highly covered edges around");
         }
+
         return false;
     }
 private:
-    DECL_LOGGER("RelativeCoverageComponentRemover")
-    ;
+    DECL_LOGGER("RelativeCoverageComponentRemover");
 };
 
 }

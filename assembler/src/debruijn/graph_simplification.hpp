@@ -234,6 +234,8 @@ bool RemoveRelativelyLowCoverageComponents(
         size_t connecting_path_length_bound = LengthThresholdFinder::MaxErroneousConnectionLength(
             g.k(), rcc_config.max_ec_length_coefficient);
 
+        std::string pics_dir = "";//cfg::get().output_dir + "rel_cov_components/"
+
         omnigraph::simplification::relative_coverage::RelativeCoverageComponentRemover<
                 Graph> rel_rem(
                 g,
@@ -243,7 +245,7 @@ bool RemoveRelativelyLowCoverageComponents(
                 size_t(double(info.read_length()) * rcc_config.tip_allowing_length_coeff),
                 connecting_path_length_bound,
                 info.detected_coverage_bound() * rcc_config.max_coverage_coeff,
-                removal_handler, rcc_config.vertex_count_limit);
+                removal_handler, rcc_config.vertex_count_limit, pics_dir);
         return rel_rem.Run();
     } else {
         INFO("Removal of relatively low covered connections disabled");
