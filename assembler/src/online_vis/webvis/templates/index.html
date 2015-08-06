@@ -1,12 +1,12 @@
-<!doctype html> 
-<html> 
-  <head>
+<!doctype html>
+<html>
+<head>
     <title>WebVis</title>
     <link rel="stylesheet" href="static/jquery-ui.min.css">
     <style>
-      div#console {font-family:monospace; width:100%; height:640px; overflow:scroll}
-      div#graph {max-width:800px; height:640px; margin:auto}
-      input#command {width:100%}
+        div#console {font-family:monospace; width:100%; height:640px; overflow:scroll}
+        div#graph {max-width:800px; height:640px; margin:auto}
+        input#command {width:100%}
     </style>
     <script type="text/javascript" src="static/jquery.js"></script>
     <script type="text/javascript" src="static/jquery-ui.min.js"></script>
@@ -14,139 +14,155 @@
     <script type="text/javascript" src="static/plugins/sigma.parsers.json.min.js"></script>
     <script type="text/javascript" src="static/plugins/sigma.layout.forceAtlas2.min.js"></script>
     <script type="text/javascript">
-$(function() {
+        $(function() {
 
-  //Commands autocomplete
-  var standardCommands = ["batch", "clear_pos", "clip_tips", "draw_connected", "draw_contig",
-    "draw_contigs", "draw_edge", "draw_part_of_genome", "draw_polymorphic", "draw_poorly_assembled", 
-    "draw_position", "draw_unresolved_wrt_assembly", "draw_unresolved_wrt_reference", "draw_vertex", 
-    "exit", "fill_pos", "help", "junction_sequence", "list", "load", "load_genome", "log", 
-    "print_contigs_stats", "print_edge", "print_paths", "replay", "save", "set_file_name", 
-    "set_folder", "set_max_vertices", "show_position", "switch_env"
-  ]
-  
-  function sendCommand(command, callback) {
-    $.ajax({
-      url: "command",
-      type: "POST",
-      data: {command: command},
-      success: callback
-        //$(function() {$("#console").append("<br/>" + response).scrollTop(1E10);});
-    });
-  }
-  
-  function drawVertex(id) {
-    $(function() {
-      $("#graph").html($("<iframe>").attr("src", "static/cache/vertex/" + id));
-    });
-  }
-  
-  var specialFunctions = {
-    "draw_vertex": drawVertex
-  }
-  
-  $("input#command").autocomplete({
-    //appendTo: "input#command",
-    source: standardCommands
-  })
-  .keypress(function(event) {
-    if (event.which == 13) {
-      event.preventDefault();
-      var command = $("input#command").val();
-      
-      cArgs = command.split(" ");
-      if (specialFunctions[cArgs[0]]) {
-        specialFunctions[cArgs[0]](cArgs[1]);
-      } else {
-        sendCommand(command, function(response) {
-          $(function() {$("#console").append("<br/>" + response).scrollTop(1E10);});
-        });
-      }
-      return false;
-    }
-  });
-  
-  function addNodesCallback(id) {
-    var vertexId = id.split("_")[1]; //vertex_id1_id2
-    sendCommand("draw_vertex " + vertexId, function(response) {
-      var filemask = new RegExp("<a[^>]*>([^<]*)</a>");
-      var filename = response.match(filemask)[1];
-      $.ajax({
-        url: "render?file=" + filename + "&method=json&result=response",
-        success: function(response) {
-          graph = JSON.parse(response);
-          sWrap.killForceAtlas2();
-          sWrap.graph.unionWith(graph);
-          sWrap.refresh();
-          sWrap.startForceAtlas2();
-        }
-      });
-    });
-  }
-  
-  $("div#console").on("click", "[href*='.dot']", function(event) {
-    event.preventDefault();
-    var url = $(this).attr("href");
-    $.ajax({
-      url: url + "&method=json",
-      success: function(response) {
-  //$("#graph").html($("<img>").attr("src", response));
-  //$("#graph").html(response);
-        $(function () {$("#graph").html();});
-        sigma.parsers.json(
-          response,
-          sWrap,
-          function() {
-            sWrap.bind("clickNode", function(e) {
-              var nodeId = e.data.node.id;
-              addNodesCallback(nodeId);
+            //Commands autocomplete
+            var standardCommands = ["batch", "clear_pos", "clip_tips", "draw_connected", "draw_contig",
+                "draw_contigs", "draw_edge", "draw_part_of_genome", "draw_polymorphic", "draw_poorly_assembled",
+                "draw_position", "draw_unresolved_wrt_assembly", "draw_unresolved_wrt_reference", "draw_vertex",
+                "exit", "fill_pos", "help", "junction_sequence", "list", "load", "load_genome", "log",
+                "print_contigs_stats", "print_edge", "print_paths", "replay", "save", "set_file_name",
+                "set_folder", "set_max_vertices", "show_position", "switch_env"
+            ]
+
+            function sendCommand(command, callback) {
+                $.ajax({
+                    url: "command",
+                    type: "POST",
+                    data: {command: command},
+                    success: callback
+                    //$(function() {$("#console").append("<br/>" + response).scrollTop(1E10);});
+                });
+            }
+
+            function drawVertex(id) {
+                $(function() {
+                    $("#graph").html($("<iframe>").attr("src", "static/cache/vertex/" + id));
+                });
+            }
+
+            var specialFunctions = {
+                "draw_vertex": drawVertex
+            }
+
+            $("input#command").autocomplete({
+                //appendTo: "input#command",
+                source: standardCommands
+            })
+                    .keypress(function(event) {
+                        if (event.which == 13) {
+                            event.preventDefault();
+                            var command = $("input#command").val();
+
+                            cArgs = command.split(" ");
+                            if (specialFunctions[cArgs[0]]) {
+                                specialFunctions[cArgs[0]](cArgs[1]);
+                            } else {
+                                sendCommand(command, function(response) {
+                                    $(function() {$("#console").append("<br/>" + response).scrollTop(1E10);});
+                                });
+                            }
+                            return false;
+                        }
+                    });
+
+            function addNodesCallback(id) {
+                var vertexId = id.split("_")[1]; //vertex_id1_id2
+                sendCommand("draw_vertex " + vertexId, function(response) {
+                    var filemask = new RegExp("<a[^>]*>([^<]*)</a>");
+                    var filename = response.match(filemask)[1];
+                    $.ajax({
+                        url: "render?file=" + filename + "&method=json&result=response",
+                        success: function(response) {
+                            graph = JSON.parse(response);
+                            sWrap.killForceAtlas2();
+                            sWrap.graph.unionWith(graph);
+                            sWrap.refresh();
+                            sWrap.startForceAtlas2();
+                        }
+                    });
+                });
+            }
+
+            function updateDynamicGraph(url)
+            {
+                $.ajax({
+                    url: url + "&method=json",
+                    success: function (response) {
+                        $(function () {
+                            $("#graph").html();
+                        });
+                        sigma.parsers.json(
+                            response,
+                            sWrap,
+                            function () {
+                                sWrap.bind("clickNode", function (e) {
+                                    var nodeId = e.data.node.id;
+                                    addNodesCallback(nodeId);
+                                });
+                                sWrap.refresh();
+                                sWrap.startForceAtlas2();
+                            }
+                        );
+                    }
+                });
+            }
+
+            var dynamicGraph = false;
+
+            $("div#console").on("click", "[href*='.dot']", function(event) {
+                event.preventDefault();
+                var url = $(this).attr("href");
+                if (dynamicGraph) {
+                    updateDynamicGraph(url);
+                } else {
+                    $.ajax({
+                        url: url,
+                        success: function (response) {
+                            $("#graph").html($("<img>").attr("src", response));
+                        }
+                    });
+                }
             });
-            sWrap.refresh();
-            sWrap.startForceAtlas2();
-          }
-        );
-      }
-    });
-  });
 
-  sigma.classes.graph.addMethod("hasNode", function(id) {
-    return typeof(this.nodes(id)) != "undefined";
-  });
-  
-  sigma.classes.graph.addMethod("hasEdge", function(id) {
-    return typeof(this.edges(id)) != "undefined";
-  });
+            sigma.classes.graph.addMethod("hasNode", function(id) {
+                return typeof(this.nodes(id)) != "undefined";
+            });
 
-  sigma.classes.graph.addMethod("unionWith", function(graph) {
-    var self = this;
-    graph.nodes.forEach(function(node) {
-      //if (!self.hasNode(node))
-      if (typeof(self.nodes(node.id)) == "undefined")
-        self.addNode(node);
-    });
-    graph.edges.forEach(function(edge) {
-      //if (!self.hasEdge(edge))
-      if (typeof(self.edges(edge.id)) == "undefined")
-        self.addEdge(edge);
-    });
-  });
+            sigma.classes.graph.addMethod("hasEdge", function(id) {
+                return typeof(this.edges(id)) != "undefined";
+            });
 
-  var sWrap = new sigma("graph");
-});
+            sigma.classes.graph.addMethod("unionWith", function(graph) {
+                var self = this;
+                graph.nodes.forEach(function(node) {
+                    //if (!self.hasNode(node))
+                    if (typeof(self.nodes(node.id)) == "undefined")
+                        self.addNode(node);
+                });
+                graph.edges.forEach(function(edge) {
+                    //if (!self.hasEdge(edge))
+                    if (typeof(self.edges(edge.id)) == "undefined")
+                        self.addEdge(edge);
+                });
+            });
+
+            var sWrap = new sigma("graph");
+        });
     </script>
-  </head>
-     
-  <body>
-    <table width="100%"><tr height="100%">
-	<td width="50%">
-	  <table><tr><td><label for="command">GAF$&gt;</label></td>
-      <td width=100%><input type="text" id="command"/></td>
-      <td><a href="logout">Logout</a></td></tr></table>
-      <div id="console">{{console|safe}}</div>
+</head>
+
+<body>
+<table width="100%"><tr height="100%">
+    <td width="50%">
+        <table><tr><td><label for="command">GAF$&gt;</label></td>
+            <td width=100%><input type="text" id="command"/></td>
+            <td><a href="logout">Logout</a></td></tr></table>
+        <div id="console">{{console|safe}}</div>
     </td>
-	<td>
-	  <div id="graph"><!--The rendered graph will be displayed here--></div>
-	</td>
-    </tr></table>
-  </body>
+    <td>
+        <div id="graph"><!--The rendered graph will be displayed here--></div>
+    </td>
+</tr></table>
+</body>
 </html>
