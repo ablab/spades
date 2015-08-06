@@ -72,13 +72,13 @@ def get():
 def render():
     global cache_path
     file_path = unquote(request.args.get("file", ""))
-    type = request.args.get("method", "png")
+    type = request.args.get("method", "svg")
     _, full_name = path.split(file_path)
     name_only, _ = path.splitext(full_name)
-    if type == "png":
-        res_path = cache_path + name_only + ".png"
+    if type == "svg":
+        res_path = cache_path + name_only + ".svg"
         result = open(res_path, "w")
-        subprocess.call(["dot", "-Tpng", env_path + file_path], stdout=result)
+        subprocess.call(["dot", "-Tsvg", env_path + file_path], stdout=result)
         result.close()
         return res_path
     elif type == "json":
