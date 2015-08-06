@@ -290,7 +290,7 @@ public:
 		this->os() << ",";
 		this->recordParameter("color", "black");
 		this->os() << ",";
-		this->recordParameter("URL", "vertex/" + std::to_string(vertex.first.id_));
+		this->recordParameter("URL", "/vertex/" + std::to_string(vertex.first.id_));
 		this->os() << "]" << endl;
 	}
 

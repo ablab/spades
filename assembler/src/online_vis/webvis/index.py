@@ -94,7 +94,7 @@ def render():
     else:
         return "Unknown method"
 
-@app.route("/static/cache/vertex/<vertex_id>")
+@app.route("/vertex/<vertex_id>")
 def vertex(vertex_id):
     res_path = next((cache_path + f for f in listdir(cache_path) if f.endswith(vertex_id + "_.svg")), None)
     if res_path is None:
