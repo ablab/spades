@@ -68,37 +68,35 @@ public:
             }
             DEBUG("Processing vertex " << g_.str(*it));
 
-            {
-                DominatedSetFinder<Graph> dom_finder(g_, *it, max_length_ * 2);
-                dom_finder.FillDominated();
-                auto component = dom_finder.AsGraphComponent();
+			DominatedSetFinder<Graph> dom_finder(g_, *it, max_length_ * 2);
+			dom_finder.FillDominated();
+			auto component = dom_finder.AsGraphComponent();
 
-                if(!CheckEdgeLenghts(component)) {
-                    DEBUG("Tip contains too long edges");
-                    continue;
-                }
+			if(!CheckEdgeLenghts(component)) {
+				DEBUG("Tip contains too long edges");
+				continue;
+			}
 
-                if(!CheckSize(component)) {
-                    DEBUG("Component doesn't meet size requirements");
-                    continue;
-                }
-                auto dominated = dom_finder.dominated();
-                if(!CheckPathLengths(dominated)) {
-                    DEBUG("Tip contains too long paths");
-                    continue;
-                }
+			if(!CheckSize(component)) {
+				DEBUG("Component doesn't meet size requirements");
+				continue;
+			}
+			auto dominated = dom_finder.dominated();
+			if(!CheckPathLengths(dominated)) {
+				DEBUG("Tip contains too long paths");
+				continue;
+			}
 
-    			if (!pics_folder_.empty()) {
-    				visualization::WriteComponentSinksSources(component,
-    						pics_folder_
-    								+ ToString(g_.int_id(*it)) //+ "_" + ToString(candidate_cnt)
-    								+ ".dot");
-    			}
+			if (!pics_folder_.empty()) {
+				visualization::WriteComponentSinksSources(component,
+						pics_folder_
+								+ ToString(g_.int_id(*it)) //+ "_" + ToString(candidate_cnt)
+								+ ".dot");
+			}
 
-                something_done_flag = true;
-                cnt++;
-                RemoveComplexTip(component);
-            }
+			something_done_flag = true;
+			cnt++;
+			RemoveComplexTip(component);
         }
         CompressAllVertices(g_);
         INFO("Complex tip clipper finished");

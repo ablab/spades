@@ -19,7 +19,8 @@ default
         ; todo think about params one more time
         condition               "{ tc_lb 3.5, cb 1000000, rctc 2.0 } { tc_lb 10., cb auto }"
 	}
-	
+  
+
 	; bulge remover:
 	br
 	{
@@ -108,6 +109,12 @@ default
         plausibility_length 250
         uniqueness_length   1500
 	}
+
+	; complex tip clipper
+	complex_tc
+	{
+	enabled 0
+	}		
 
 	; complex bulge remover
 	cbr

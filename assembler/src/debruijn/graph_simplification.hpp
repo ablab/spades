@@ -509,7 +509,11 @@ bool ParallelClipTips(Graph& g,
 }
 
 template<class Graph>
-bool ClipComplexTips(Graph& g) {
+bool ClipComplexTips(Graph& g, debruijn_config::simplification::complex_tip_clipper ctc_conf) {
+    if(!ctc_conf.enabled) {
+        INFO("Complex tip clipping disabled");
+    	return false;
+    }
     INFO("Complex tip clipping");
     size_t max_edge_length = g.k() * 2;
     ComplexTipClipper<Graph> tip_clipper(g, max_edge_length, "");
@@ -839,6 +843,8 @@ class GraphSimplifier {
 
             enable_flag |= FinalRemoveErroneousEdges();
 
+            enable_flag |=  ClipComplexTips(gp_.g, simplif_cfg_.complex_tc);
+
             enable_flag |= ClipTips(gp_.g, *iterators_holder.tip_smart_it(),
                                                   simplif_cfg_.tc, 
                                                   info_container_,
@@ -907,7 +913,6 @@ class GraphSimplifier {
         auto tip_removal_handler = cfg::get().graph_read_corr.enable ?
                 WrapWithProjectionCallback(gp_, removal_handler) : removal_handler;
         ClipTips(gp_.g, *iterators_holder.tip_smart_it(), simplif_cfg_.tc, info_container_, tip_removal_handler);
-      //ClipComplexTips(gp_.g);
         cnt_callback.Report();
         DEBUG(iteration << " TipClipping stats");
         printer_(ipp_tip_clipping, fmt::format("_{:d}", iteration));
