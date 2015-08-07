@@ -94,18 +94,50 @@ public:
     }
 
 private:
+    
     void CompareAndCut(PathContainer& paths, EdgeId edge, BidirectionalPath* path1, BidirectionalPath* path2, size_t max_overlap, bool del_subpaths, bool del_begins,
                        bool del_all, bool add_overlap_begins) const {
-        vector<size_t> poses1 = path1->FindAll(edge);
-        for (size_t i1 = 0; i1 < poses1.size(); ++i1) {
-            vector<size_t> poses2 = path2->FindAll(edge);
-            for (size_t i2 = 0; i2 < poses2.size(); ++i2) {
-                CompareAndCutFromPos(paths, path1, (int) poses1[i1], path2,
-                                     (int) poses2[i2], (int) max_overlap,
+        vector<size_t> positions1 = path1->FindAll(edge);
+        vector<size_t> positions2 = path2->FindAll(edge);
+        size_t i1 = 0;
+        size_t i2 = 0;
+
+        bool renewed = false;
+        while (i1 < positions1.size()) {
+            while (i2 < positions2.size()) {
+                DEBUG("CompareAndCutFromPos paths " << g_.int_id(edge));
+                CompareAndCutFromPos(paths, path1, (int) positions1[i1], path2,
+                                     (int) positions2[i2], (int) max_overlap,
                                      del_subpaths, del_begins, del_all, add_overlap_begins);
+
+                if (positions1[i1] >= path1->Size() || path1->At(positions1[i1]) != edge || positions2[i2] >= path2->Size() || path2->At(positions2[i2]) != edge) {
+                    vector<size_t> new_positions1 = path1->FindAll(edge);
+                    vector<size_t> new_positions2 = path2->FindAll(edge);
+
+                    if (new_positions1.size() == positions1.size() && new_positions2.size() == positions2.size()) {
+                        return;
+                    }
+                    else {
+                        positions1 = new_positions1;
+                        positions2 = new_positions2;
+                        i1 = 0;
+                        i2 = 0;
+                        renewed = true;
+                        break;
+                    }
+                    ++i2;
+                }
+                ++i2;
             }
+
+            if (renewed) {
+                renewed = false;
+                continue;
+            }
+            ++i1;
         }
     }
+
     void CompareAndCutFromPos(PathContainer& paths, BidirectionalPath* path1, int pos1,
                        BidirectionalPath* path2, int pos2, int max_overlap,
                        bool delete_subpaths, bool delete_begins,

@@ -531,6 +531,8 @@ public:
 
     virtual void GrowPath(BidirectionalPath& path) = 0;
 
+    virtual void GrowPathSimple(BidirectionalPath& path) = 0;
+
     virtual void GrowAll(PathContainer & paths, PathContainer * result) = 0;
 
 protected:
@@ -583,47 +585,58 @@ public:
         while (MakeGrowStep(path)) { }
     }
 
-    bool MakeGrowStep(BidirectionalPath& path) {
+    virtual void GrowPathSimple(BidirectionalPath& path) {
+        while (MakeGrowStep(path, false)) { }
+    }
+
+    bool MakeGrowStep(BidirectionalPath& path, bool detect_repeats_online = true) {
         DEBUG("make grow step composite extender");
-        BidirectionalPath* repeat_path = repeat_detector_.RepeatPath(path);
-        size_t repeat_size = repeat_detector_.MaxCommonSize(path, *repeat_path);
-        if (repeat_size > 0) {
-            DEBUG("repeat with length " << repeat_size);
-            path.Print();
-            repeat_path->Print();
-            BidirectionalPath repeat = path.SubPath(path.Size() - repeat_size);
-            int begin_repeat = repeat_path->FindLast(repeat);
-            VERIFY(begin_repeat > -1);
-            size_t end_repeat = (size_t)begin_repeat + repeat_size;
-            DEBUG("not consistent subpaths ");
-            BidirectionalPath begin1 = path.SubPath(0, path.Size() - repeat_size);
-            begin1.Print();
-            BidirectionalPath begin2 = repeat_path->SubPath(0, begin_repeat);
-            begin2.Print();
-            int gpa_in_repeat_path = repeat_path->GapAt(begin_repeat);
-            BidirectionalPath end2 = repeat_path->SubPath(end_repeat);
-            BidirectionalPath begin1_conj = path.SubPath(0, path.Size() - repeat_size + 1).Conjugate();
-            BidirectionalPath begin2_conj = repeat_path->SubPath(0, begin_repeat + 1).Conjugate();
-            pair<size_t, size_t> last = ComparePaths(0, 0, begin1_conj, begin2_conj, max_diff_len_);
-            DEBUG("last " << last.first << " last2 " << last.second);
-            path.Clear();
-            repeat_path->Clear();
-            int gap_len = repeat.GapAt(0);
-            if (begin2.Size() == 0 || last.second != 0) { //TODO: incorrect: common edges, but then different ends
-                path.PushBack(begin1);
-                repeat_path->PushBack(begin2);
-            } else {
-               gap_len = gpa_in_repeat_path;
-               path.PushBack(begin2);
-               repeat_path->PushBack(begin1);
+
+        if (detect_repeats_online) {
+            BidirectionalPath *repeat_path = repeat_detector_.RepeatPath(path);
+            size_t repeat_size = repeat_detector_.MaxCommonSize(path, *repeat_path);
+
+            if (repeat_size > 0) {
+                DEBUG("repeat with length " << repeat_size);
+                path.Print();
+                repeat_path->Print();
+                BidirectionalPath repeat = path.SubPath(path.Size() - repeat_size);
+                int begin_repeat = repeat_path->FindLast(repeat);
+                VERIFY(begin_repeat > -1);
+                size_t end_repeat = (size_t) begin_repeat + repeat_size;
+                DEBUG("not consistent subpaths ");
+                BidirectionalPath begin1 = path.SubPath(0, path.Size() - repeat_size);
+                begin1.Print();
+                BidirectionalPath begin2 = repeat_path->SubPath(0, begin_repeat);
+                begin2.Print();
+                int gpa_in_repeat_path = repeat_path->GapAt(begin_repeat);
+                BidirectionalPath end2 = repeat_path->SubPath(end_repeat);
+                BidirectionalPath begin1_conj = path.SubPath(0, path.Size() - repeat_size + 1).Conjugate();
+                BidirectionalPath begin2_conj = repeat_path->SubPath(0, begin_repeat + 1).Conjugate();
+                pair<size_t, size_t> last = ComparePaths(0, 0, begin1_conj, begin2_conj, max_diff_len_);
+                DEBUG("last " << last.first << " last2 " << last.second);
+                path.Clear();
+                repeat_path->Clear();
+                int gap_len = repeat.GapAt(0);
+
+                if (begin2.Size() == 0 || last.second != 0) { //TODO: incorrect: common edges, but then different ends
+                    path.PushBack(begin1);
+                    repeat_path->PushBack(begin2);
+                } else {
+                    gap_len = gpa_in_repeat_path;
+                    path.PushBack(begin2);
+                    repeat_path->PushBack(begin1);
+                }
+
+                path.PushBack(repeat.At(0), gap_len);
+                path.PushBack(repeat.SubPath(1));
+                path.PushBack(end2);
+                DEBUG("new path");
+                path.Print();
+                return false;
             }
-            path.PushBack(repeat.At(0), gap_len);
-            path.PushBack(repeat.SubPath(1));
-            path.PushBack(end2);
-            DEBUG("new path");
-            path.Print();
-            return false;
         }
+
         size_t current = 0;
         while (current < extenders_.size()) {
             DEBUG("step " << current << " from " <<extenders_.size());
@@ -634,6 +647,7 @@ public:
         }
         return false;
     }
+    
 private:
     GraphCoverageMap& cover_map_;
     RepeatDetector repeat_detector_;
