@@ -118,3 +118,8 @@ include(CMakeListsInternal.txt)
 
 # Packaging
 include(pack)
+
+# Workaround for poor CLion users
+file(GLOB_RECURSE clion_all_headers
+  ${CMAKE_SOURCE_DIR}/*.hpp ${CMAKE_SOURCE_DIR}/*.h)
+add_custom_target(all_clion SOURCES ${clion_all_headers})
