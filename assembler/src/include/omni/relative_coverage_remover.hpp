@@ -353,7 +353,7 @@ class RelativeCoverageDisconnector : public EdgeProcessingAlgorithm<Graph> {
     typedef typename Graph::VertexId VertexId;
     typedef EdgeProcessingAlgorithm<Graph> base;
     const RelativeCoverageHelper<Graph>& rel_helper_;
-    const double minimum_coverage_diff_mult = 50.0;
+    const double minimum_coverage_diff_mult = 20.0;
 public:
     RelativeCoverageDisconnector(Graph& g,
                       const RelativeCoverageHelper<Graph>& rel_helper)

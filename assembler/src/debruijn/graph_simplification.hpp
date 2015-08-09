@@ -802,6 +802,8 @@ class GraphSimplifier {
         bool changed = RemoveRelativelyLowCoverageComponents(gp_.g, gp_.flanking_cov,
                                               simplif_cfg_.rcc, info_container_, set_removal_handler_f);
 
+        changed |= DisconnectRelativelyLowCoverageEdges(gp_.g, gp_.flanking_cov);
+
         if (simplif_cfg_.topology_simplif_enabled && cfg::get().main_iteration) {
             changed |= AllTopology();
             changed |= MaxFlowRemoveErroneousEdges(gp_.g, simplif_cfg_.mfec,
@@ -867,7 +869,7 @@ class GraphSimplifier {
 
             enable_flag |= RemoveComplexBulges(gp_.g, simplif_cfg_.cbr, iteration);
 
-            enable_flag |= DisconnectRelativelyLowCoverageEdges(gp_.g, gp_.flanking_cov);
+
             iteration++;
 
             //    printer(ipp_before_final_err_con_removal);
