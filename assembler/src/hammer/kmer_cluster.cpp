@@ -259,12 +259,13 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
   // Another limit: we're interested in good centers only
   size_t maxgcnt = 0;
   for (size_t i = 0; i < block.size(); ++i) {
-    float center_quality = data_[block[i]].total_qual;
+    float center_quality = 1 - data_[block[i]].total_qual;
     if ((center_quality > cfg::get().bayes_singleton_threshold) ||
         (cfg::get().correct_use_threshold && center_quality > cfg::get().correct_threshold))
       maxgcnt += 1;
   }
-  maxcls = std::max(1ul, std::min(maxcls, maxgcnt));
+  
+  maxcls = std::min(maxcls, maxgcnt) + 1;
 
   if (cfg::get().bayes_debug_output > 0) {
     #pragma omp critical
