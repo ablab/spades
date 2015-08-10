@@ -572,7 +572,7 @@ public:
                                         i_iter->average_read_position,
                                         i_iter));
                         used[j] = 1;
-                        cur_seed_count += i_iter->size;
+                        cur_seed_count += i_iter->sorted_positions.size();
                     }
                 }
                 sort(cur_cluster.begin(), cur_cluster.end(),
@@ -608,7 +608,7 @@ public:
                           DEBUG("and " << next_iter->second->str(g_));
 
                     }
-	
+
                 }
             }
         }
