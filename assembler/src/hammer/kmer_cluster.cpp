@@ -103,13 +103,20 @@ double KMerClustering::ClusterBIC(const std::vector<Center> &centers,
   double loglik = 0;
   unsigned total = 0;
   for (size_t i = 0; i < block_size; ++i) {
-    loglik += kmers[i].logL(centers[indices[i]].center_);
+    loglik += kmers[i].count()*kmers[i].logL(centers[indices[i]].center_);
     total += kmers[i].count();
   }
 
   size_t nparams = (clusters - 1) + clusters*K + 2*clusters*K;
 
-  return loglik - (double)nparams * log((double)block_size) / 2.0;
+  if (cfg::get().bayes_debug_output > 1) {
+#   pragma omp critical
+    {
+        std::cout << "  logL: " << loglik << ", clusters: " << clusters << ", nparams: " << nparams << ", N: " << block_size << std::endl;
+    }
+  }
+  
+  return loglik - (double)nparams * log((double)total) / 2.0;
 }
 
 
