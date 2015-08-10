@@ -205,8 +205,9 @@ struct OneReadMapping {
 	vector<vector<EdgeId> > main_storage;
 	vector<GapDescription<Graph> > gaps;
 	vector<size_t> real_length;
-	OneReadMapping(vector<vector<EdgeId> > &paths_description, vector<GapDescription<Graph> > &gaps_description, vector<size_t> real_length) :
-			main_storage(paths_description), gaps(gaps_description), real_length(real_length) {
+	size_t seed_num;
+	OneReadMapping(vector<vector<EdgeId> > &paths_description, vector<GapDescription<Graph> > &gaps_description, vector<size_t> real_length, size_t seed_num) :
+			main_storage(paths_description), gaps(gaps_description), real_length(real_length), seed_num(seed_num) {
 	}
 
 };
@@ -219,6 +220,7 @@ struct StatsCounter{
     size_t total_len ;
     size_t reads_with_conjugate;
     size_t subreads_count;
+	map<size_t, size_t> seeds_percentage;
     StatsCounter() {
         total_len = 0;
         reads_with_conjugate = 0;
@@ -230,6 +232,7 @@ struct StatsCounter{
         for (auto iter = other.subreads_length.begin(); iter != other.subreads_length.end(); ++iter) {
             subreads_length.push_back(*iter);
         }
+		
         for (auto iter = other.path_len_in_edges.begin(); iter != other.path_len_in_edges.end(); ++iter){
             auto j_iter = iter;
             if (( j_iter = path_len_in_edges.find(iter->first)) == other.path_len_in_edges.end()){
@@ -238,7 +241,32 @@ struct StatsCounter{
                 path_len_in_edges[j_iter->first] += iter->second;
             }
         }
+		for (auto iter = other.seeds_percentage.begin(); iter != other.seeds_percentage.end(); ++iter){
+			auto j_iter = iter;
+			if (( j_iter = seeds_percentage.find(iter->first)) == other.seeds_percentage.end()){
+				seeds_percentage.insert(make_pair(iter->first, iter->second));
+			} else {
+				seeds_percentage[j_iter->first] += iter->second;
+			}
+		}
     }
+
+	void report(){
+		size_t total = 0;
+		for (auto iter = seeds_percentage.begin(); iter != seeds_percentage.end(); ++iter){
+			total += iter->second;
+		}
+		size_t cur = 0;
+		size_t percentage = 0;
+		for (auto iter = seeds_percentage.begin(); iter != seeds_percentage.end(); ++iter){
+			cur += iter->second;
+			percentage = iter->first;
+			if (cur * 2 > total) break;
+		}
+		INFO("Median percentage of seeds in maximal alignmnent along reads of length > 500: " << double(percentage) * 0.001);
+	}
+private:
+	DECL_LOGGER("StatsCounter");
 
 };
 

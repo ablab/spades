@@ -548,14 +548,16 @@ public:
         vector<typename ClustersSet::iterator> start_clusters, end_clusters;
         vector<GapDescription<Graph> > illumina_gaps;
         vector<int> used(len);
-	auto iter = mapping_descr.begin();
+        size_t max_seed_count = 0;
+	    auto iter = mapping_descr.begin();
         for (int i = 0; i < len; i++, iter ++) {
             used[i] = 0; 
-	    DEBUG(colors[i] <<" " << iter->str(g_));
-	}
+	        DEBUG(colors[i] <<" " << iter->str(g_));
+	    }
         for (int i = 0; i < len; i++) {
             if (!used[i]) {
                 DEBUG("starting new subread");
+                size_t cur_seed_count = 0;
                 vector<pair<size_t, typename ClustersSet::iterator> > cur_cluster;
                 used[i] = 1;
                 int j = 0;
@@ -570,11 +572,14 @@ public:
                                         i_iter->average_read_position,
                                         i_iter));
                         used[j] = 1;
+                        cur_seed_count += i_iter->size;
                     }
                 }
                 sort(cur_cluster.begin(), cur_cluster.end(),
                      pair_iterator_less<typename ClustersSet::iterator>());
                 VERIFY(cur_cluster.size() > 0);
+                if (cur_seed_count > max_seed_count)
+                    max_seed_count = cur_seed_count;
                 auto cur_cluster_start = cur_cluster.begin();
                 for (auto iter = cur_cluster.begin(); iter != cur_cluster.end();
                         ++iter) {
@@ -607,7 +612,7 @@ public:
                 }
             }
         }
-	DEBUG("adding gaps between subreads");
+	    DEBUG("adding gaps between subreads");
         int alignments = int(sortedEdges.size());
         for (int i = 0; i < alignments; i++) {
             for (int j = 0; j < alignments; j++) {
@@ -628,7 +633,7 @@ public:
                 }
             }
         }
-        return OneReadMapping<Graph>(sortedEdges, illumina_gaps, real_length);
+        return OneReadMapping<Graph>(sortedEdges, illumina_gaps, real_length, max_seed_count);
     }
 
     std::pair<int, int> GetPathLimits(const KmerCluster<Graph> &a,
