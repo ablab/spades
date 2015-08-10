@@ -206,7 +206,7 @@ public:
 				}
 			}
 		}
-		INFO("After PacBio(long reads) aligning, for edges longer than "<< kLongEdgeForStats << ":");
+		INFO("After PacBio (long reads) aligning, for edges longer than "<< kLongEdgeForStats << ":");
 		INFO("No continuation found for " <<  noncontinued + long_gapped <<" edges of " << noncontinued + continued + long_gapped);
 
 	}
