@@ -64,6 +64,7 @@ private:
 				covMap_.GetCoveringPaths(start);
 	    BidirectionalPathSet coveredEndPaths =
 				covMap_.GetCoveringPaths(end);
+
 		for (auto startPath = coveredStartPaths.begin();
 				startPath != coveredStartPaths.end(); ++startPath) {
 			if ((*startPath)->FindAll(end).size() > 0) {
@@ -100,21 +101,27 @@ private:
 		size_t commonSize = startPath->CommonEndSize(*endPath);
 		size_t nLen = 0;
         DEBUG("Str " << startPath->Size() << ", end" << endPath->Size());
-        if (commonSize == 0 && startPath->Size() >= 1 && endPath->Size() >= 1) {
-            VertexId lastVertex = g_.EdgeEnd(startPath->At(startPath->Size() - 1));
-            VertexId firstVertex = g_.EdgeStart(endPath->At(0));
-            PathStorageCallback<Graph> path_store(g_);
-            PathProcessor<Graph> path_processor(g_, 0, 1000, lastVertex, firstVertex, path_store);
-            path_processor.Process();
-            if (path_store.size() == 0) {
-                TRACE("Failed to find closing path");
-                nLen = 100 + g_.k();
+        if (commonSize == 0 && !startPath->Empty() > 0 && !endPath->Empty()) {
+            DEBUG("Estimating gap size");
+            VertexId lastVertex = g_.EdgeEnd(startPath->Back());
+            VertexId firstVertex = g_.EdgeStart(endPath->Front());
+
+            if (firstVertex == lastVertex) {
+                nLen = 0;
             } else {
-                vector<EdgeId> answer = path_store.paths().front();
-                for (size_t i = 0; i < answer.size(); ++i) {
-                    nLen += g_.length(answer[i]);
+                DijkstraHelper<Graph>::BoundedDijkstra dijkstra(DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, 1000, 3000));
+                dijkstra.run(lastVertex);
+                vector<EdgeId> shortest_path = dijkstra.GetShortestPathTo(g_.EdgeStart(endPath->Front()));
+
+                if (shortest_path.size() == 0) {
+                    DEBUG("Failed to find closing path");
+                    return;
+                } else {
+                    for (size_t i = 0; i < shortest_path.size(); ++i) {
+                        nLen += g_.length(shortest_path[i]);
+                    }
+                    nLen += g_.k();
                 }
-                nLen += g_.k();
             }
         }
 		if (commonSize < endPath->Size()){
@@ -128,9 +135,7 @@ private:
 		endPath->Print();
 		DEBUG("conj");
 		endPath->GetConjPath()->Print();
-		DEBUG("hear1");
 		endPath->Clear();
-		DEBUG("hear2");
 	}
 
 public:
