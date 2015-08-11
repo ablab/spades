@@ -413,21 +413,15 @@ void load(debruijn_config::dataset& ds,
   using config_common::load;
 
   load(ds.reads_filename, pt, "reads");
-  load(ds.single_cell, pt, "single_cell");
-  //fixme temporary solution
-  boost::optional<std::string> meta_opt =
-      pt.get_optional<std::string>("meta");
-  if (meta_opt) {
-    load(ds.meta, pt, "meta");
-  } else {
-      ds.meta = false;
-  }
+
+  ds.single_cell = pt.get("single_cell", false);
+  ds.meta = pt.get("meta", false);
+  ds.moleculo = pt.get("moleculo", false);
 
   //fixme temporary solution
   if (ds.meta)
       ds.single_cell = true;
 
-  ds.moleculo = pt.get("moleculo", false);
   ds.reference_genome_filename = "";
   boost::optional<std::string> refgen =
       pt.get_optional<std::string>("reference_genome");
