@@ -64,6 +64,56 @@ singlecell {
     remove_overlaps     true
 }
 
+meta {
+    split_edge_length       99
+    normalize_weight        true
+    cut_all_overlaps  false
+
+    ; extension selection
+    extension_options
+    {
+        recalculate_threshold      false
+        single_threshold           0.035
+        weight_threshold           0.6
+        priority_coeff             1.5
+    }
+
+    mate_pair_options
+    {
+        recalculate_threshold      true
+        single_threshold           0.0001
+        weight_threshold           0.5
+        priority_coeff             1.5
+    }
+
+    scaffolder {
+        on              true
+        cutoff          2
+        rel_cutoff      0.1
+        sum_threshold   3  
+
+        cluster_info    true
+        cl_threshold    0
+
+        fix_gaps        true
+        min_gap_score   3.0
+
+        max_must_overlap  -2
+        max_can_overlap   0.5
+        short_overlap     6
+        artificial_gap    10
+        use_old_score   false
+    }
+    
+    loop_removal
+    {
+        max_loops       10
+        mp_max_loops    10
+    }
+
+    remove_overlaps     true
+}
+
 moleculo {
     split_edge_length       99
     normalize_weight        true
