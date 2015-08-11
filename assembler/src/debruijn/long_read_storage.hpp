@@ -160,7 +160,7 @@ public:
 		map <EdgeId, EdgeId> auxilary;
 		DumpToFile(filename, auxilary);
 	}
-	void DumpToFile(const string filename, map<EdgeId, EdgeId> &replacement) const {
+	void DumpToFile(const string filename, map<EdgeId, EdgeId> &replacement, bool need_log = false) const {
 		ofstream filestr(filename);
 		set<EdgeId> continued_edges;
 
@@ -188,27 +188,31 @@ public:
 		int noncontinued = 0;
 		int long_gapped = 0;
 		int continued = 0;
-		for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-			if (g_.length(*iter) > kLongEdgeForStats) {
-				if (!g_.IsDeadEnd(g_.EdgeEnd(*iter))) {
-					if (continued_edges.find(*iter) == continued_edges.end()) {
-						if ((replacement.find(*iter) != replacement.end() && continued_edges.find(replacement[*iter]) != continued_edges.end())) {
-						    TRACE("found in teplacement, edges "<< g_.int_id(*iter) <<" " <<g_.int_id(replacement[*iter]) <<" skipping ");
-							continue;
-						}
-						TRACE("noncontinued end left " << g_.int_id(*iter));
-						noncontinued++;
-					} else
-						continued++;
-				} else {
-				    TRACE("dead end left " << g_.int_id(*iter));
-					long_gapped++;
+		if (need_log) {
+			for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
+				if (g_.length(*iter) > kLongEdgeForStats) {
+					if (!g_.IsDeadEnd(g_.EdgeEnd(*iter))) {
+						if (continued_edges.find(*iter) == continued_edges.end()) {
+							if ((replacement.find(*iter) != replacement.end() &&
+								 continued_edges.find(replacement[*iter]) != continued_edges.end())) {
+								TRACE("found in teplacement, edges " << g_.int_id(*iter) << " " <<
+									  g_.int_id(replacement[*iter]) << " skipping ");
+								continue;
+							}
+							TRACE("noncontinued end left " << g_.int_id(*iter));
+							noncontinued++;
+						} else
+							continued++;
+					} else {
+						TRACE("dead end left " << g_.int_id(*iter));
+						long_gapped++;
+					}
 				}
 			}
+			INFO("After PacBio (long reads) aligning, for edges longer than " << kLongEdgeForStats << ":");
+			INFO("No continuation found for " << noncontinued + long_gapped << " edges of " <<
+				 noncontinued + continued + long_gapped);
 		}
-		INFO("After PacBio (long reads) aligning, for edges longer than "<< kLongEdgeForStats << ":");
-		INFO("No continuation found for " <<  noncontinued + long_gapped <<" edges of " << noncontinued + continued + long_gapped);
-
 	}
 
 	vector<PathInfo<Graph> > GetAllPaths() const {

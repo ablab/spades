@@ -136,7 +136,7 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
     stats.report();
     map<EdgeId, EdgeId> replacement;
     long_reads.DumpToFile(cfg::get().output_saves + "long_reads_before_rep.mpr",
-                          replacement);
+                          replacement, true);
     gaps.DumpToFile(cfg::get().output_saves + "gaps.mpr");
     gaps.PadGapStrings();
     gaps.DumpToFile(cfg::get().output_saves +  "gaps_padded.mpr");
