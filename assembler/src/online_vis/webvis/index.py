@@ -18,21 +18,26 @@ SESSION_TYPE = "filesystem"
 app.config.from_object(__name__)
 Session(app)
 
-FILENAME_REGEXP = r"(?:[\w\-\.]+\/)+(?:[\w\-]+\.\w+)"
+FILENAME_REGEXP = r"(?:\.{0,2}\/)?(?:[\w\-]+\/)+(?:[\w\-]+\.\w+)?"
 
 def make_url(string):
     files = re.findall(FILENAME_REGEXP, string)
     res = string
     for f in files:
-        method = "render" if f.endswith(".dot") else "get"
+        method = "get"
+        if f.endswith(".dot"):
+            method = "render"
+        elif f.endswith("/"):
+            method = "ls"
         url = "<a href=\"%s?file=%s\">%s</a>" % (method, quote(f), f)
         res = res.replace(f, url)
-    print res
+    #print res
     return res
 
 def format_output(lines):
     res = "<br/>".join(map(make_url, lines))
-    print res
+    #print res
+    #res = "<br/>".join(lines)
     return res
 
 env_path = "../../../"
@@ -61,11 +66,12 @@ def command():
     global shellder
     result = shellder.send(request.form["command"]).get_output()
     session["log"].extend(result)
+    #return result
     return format_output(result)
 
 @app.route("/get")
 def get():
-    file_path = env_path + unquote(request.args.get("file", ""))
+    file_path = augment(unquote(request.args.get("file", "")))
     return flask.send_file(file_path, as_attachment=True, attachment_filename=path.basename(file_path))
 
 @app.route("/render")
@@ -108,6 +114,26 @@ def vertex(vertex_id):
         subprocess.call(["dot", "-Tsvg", env_path + file_path], stdout=result)
         result.close()
     return flask.redirect(res_path)
+
+def augment(path):
+    global env_path
+    if path.startswith("/"):
+        return path
+    else:
+        return env_path + path
+
+#@app.route("/folder/<path:path>")
+def folder(path):
+    print "Getting contents of", path
+    global env_path
+    files = [path + f for f in os.listdir(augment(path))]
+    print files
+    return [f for f in files if isfile(augment(f))]
+
+@app.route("/ls")
+def ls():
+    dir_path = unquote(request.args.get("file", ""))
+    return format_output(folder(dir_path))
     
 if __name__ == "__main__":
     app.debug = True

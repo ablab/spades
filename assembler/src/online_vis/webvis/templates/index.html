@@ -3,6 +3,7 @@
 <head>
     <title>WebVis</title>
     <link rel="stylesheet" href="static/jquery-ui.min.css">
+    <link rel="stylesheet" href="static/themes/default/style.min.css">
     <style>
         div#console {font-family:monospace; width:100%; height:640px; overflow:scroll}
         div#graph {max-width:800px; height:640px; margin:auto}
@@ -15,11 +16,9 @@
     <script type="text/javascript" src="static/sigma.min.js"></script>
     <script type="text/javascript" src="static/plugins/sigma.parsers.json.min.js"></script>
     <script type="text/javascript" src="static/plugins/sigma.layout.forceAtlas2.min.js"></script>
-    <!--File tree plugins-->
-    <!--script type="text/javascript" src="static/jquery.aciPlugin.min.js"></script>
-    <script type="text/javascript" src="static/jquery.aciTree.min.js"></script-->
     <!--Local stuff-->
     <script type="text/javascript">
+        
         $(function() {
 
             //Commands autocomplete
@@ -56,22 +55,25 @@
                 //appendTo: "input#command",
                 source: standardCommands
             })
-                    .keypress(function(event) {
-                        if (event.which == 13) {
-                            event.preventDefault();
-                            var command = $("input#command").val();
+            .keypress(function(event) {
+                if (event.which == 13) {
+                    event.preventDefault();
+                    var command = $("input#command").val();
 
-                            cArgs = command.split(" ");
-                            if (specialFunctions[cArgs[0]]) {
-                                specialFunctions[cArgs[0]](cArgs[1]);
-                            } else {
-                                sendCommand(command, function(response) {
-                                    $(function() {$("#console").append("<br/>" + response).scrollTop(1E10);});
-                                });
-                            }
-                            return false;
-                        }
-                    });
+                    cArgs = command.split(" ");
+                    if (specialFunctions[cArgs[0]]) {
+                        specialFunctions[cArgs[0]](cArgs[1]);
+                    } else {
+                        sendCommand(command, function(response) {
+                            $(function() {
+                                $("#console").append(response + "<br/>").scrollTop(1E10);
+                                //checkFile(response);
+                            });
+                        });
+                    }
+                    return false;
+                }
+            });
 
             function addNodesCallback(id) {
                 var vertexId = id.split("_")[1]; //vertex_id1_id2
@@ -117,7 +119,8 @@
 
             var dynamicGraph = false;
 
-            $("div#console").on("click", "[href*='.dot']", function(event) {
+            //Clicking on .dot files loads them as an svg
+            $("div#console").on("click", "[href$='.dot']", function(event) {
                 event.preventDefault();
                 var url = $(this).attr("href");
                 if (dynamicGraph) {
@@ -130,6 +133,17 @@
                         }
                     });
                 }
+            });
+
+            $("div#console").on("click", "[href$='/']", function(event) {
+                event.preventDefault();
+                var url = $(this).attr("href");
+                $.ajax({
+                    url: url,
+                    success: function (response) {
+                        $("#console").append(response + "<br/>").scrollTop(1E10);
+                    }
+                });
             });
 
             //Prepare the graph drawer
@@ -157,15 +171,6 @@
             });
 
             var sWrap = new sigma("graph");
-
-            //Prepare the file tree
-            /*$("#tree").aciTree({
-                ajax: {
-                    url: "static/sample.json"
-                },
-                selectable: true
-            });*/
-
         });
     </script>
 </head>
@@ -178,7 +183,7 @@
             <td><a href="logout">Logout</a></td></tr>
         </table>
         <div id="console">{{console|safe}}</div>
-        <div id="tree"></div>
+        <div id="filetree"></div>
     </td>
     <td>
         <div id="graph"><!--The rendered graph will be displayed here--></div>
