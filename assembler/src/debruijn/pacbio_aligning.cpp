@@ -6,9 +6,6 @@
 
 #include "standard.hpp"
 #include "graph_simplification.hpp"
-#include "omni/visualization/graph_labeler.hpp"
-#include "io/single_read.hpp"
-#include <algorithm>
 #include "pacbio/pac_index.hpp"
 #include "pacbio/pacbio_gap_closer.hpp"
 #include "long_read_storage.hpp"
@@ -21,7 +18,7 @@ void ProcessReadsBatch(conj_graph_pack &gp,
                        std::vector<io::SingleRead>& reads,
                        pacbio::PacBioMappingIndex<ConjugateDeBruijnGraph>& pac_index,
                        PathStorage<Graph>& long_reads, pacbio::GapStorage<Graph>& gaps,
-                       size_t buf_size, int n, size_t min_gap_quantity, pacbio::StatsCounter stats) {
+                       size_t buf_size, int n, size_t min_gap_quantity, pacbio::StatsCounter& stats) {
     vector<PathStorage<Graph> > long_reads_by_thread(cfg::get().max_threads,
                                                      PathStorage<Graph>(gp.g));
     vector<pacbio::GapStorage<Graph> > gaps_by_thread(cfg::get().max_threads,
@@ -70,7 +67,7 @@ void ProcessReadsBatch(conj_graph_pack &gp,
             VERBOSE_POWER(n, " reads processed");
         }
     }
-    INFO("Read chunk of size: " << buf_size << "; reads aligned: " << aligned << "; paths of more than one edge received: " << nontrivial_aligned );
+    INFO("Read batch of size: " << buf_size << " processed; reads aligned: " << aligned << "; paths of more than one edge received: " << nontrivial_aligned );
     for (size_t i = 0; i < cfg::get().max_threads; i++) {
         long_reads.AddStorage(long_reads_by_thread[i]);
         gaps.AddStorage(gaps_by_thread[i]);
@@ -127,7 +124,7 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
             INFO("Prepared batch " << buffer_no << " of " << buf_size << " reads.");
             DEBUG("master thread number " << omp_get_thread_num());
             ProcessReadsBatch(gp, reads, pac_index, long_reads, gaps, buf_size, n, min_gap_quantity, stats);
-            INFO("Processed batch " << buffer_no);
+     //       INFO("Processed batch " << buffer_no);
             ++buffer_no;
         }
     }
