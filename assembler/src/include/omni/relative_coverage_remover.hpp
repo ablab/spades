@@ -380,7 +380,8 @@ private:
     	size_t len = this->g().length(edge);
     	if(len > 1) {
     		pair<EdgeId, EdgeId> split_res = this->g().SplitEdge(edge, len - 1);
-    		this->g().DeleteEdge(split_res.second);
+    		EdgeRemover<Graph> edge_remover(this->g());
+    		edge_remover.DeleteEdge(split_res.second);
     		return true;
     	}
     	return false;
