@@ -94,12 +94,15 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
     PathStorage<Graph>& long_reads = gp.single_long_reads[lib_id];
     pacbio::StatsCounter stats;
     size_t min_gap_quantity = 2;
+    size_t rtype = 0;
     if (cfg::get().ds.reads[lib_id].type() == io::LibraryType::PacBioReads || 
             cfg::get().ds.reads[lib_id].type() == io::LibraryType::SangerReads || 
             cfg::get().ds.reads[lib_id].type() == io::LibraryType::NanoporeReads) {
         min_gap_quantity = cfg::get().pb.pacbio_min_gap_quantity;
+        rtype = 1;
     } else {
         min_gap_quantity = cfg::get().pb.contigs_min_gap_quantity;
+        rtype = 2;
     }
     pacbio::GapStorage<ConjugateDeBruijnGraph> gaps(gp.g, min_gap_quantity);
     size_t read_buffer_size = 50000;
@@ -128,6 +131,8 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
             ++buffer_no;
         }
     }
+    string ss = (rtype == 1 ? "long reads": "contigs");
+    INFO("For lib " << lib_id << " of " << ss <<" :");
     stats.report();
     map<EdgeId, EdgeId> replacement;
     long_reads.DumpToFile(cfg::get().output_saves + "long_reads_before_rep.mpr",
