@@ -340,7 +340,7 @@ inline shared_ptr<PathExtender> MakeScaffoldingExtender(const conj_graph_pack& g
     double var_coeff = 3.0;
     auto scaff_chooser = std::make_shared<ScaffoldingExtensionChooser>(gp.g, counter, prior_coef, var_coeff);
     auto gap_joiner = std::make_shared<HammingGapJoiner>(gp.g, pset.scaffolder_options.min_gap_score,
-                                                 int(math::round(gp.g.k() - var_coeff * lib->GetIsVar())),
+                                                 int(math::round((double) gp.g.k() - var_coeff * (double) lib->GetIsVar())),
                                                  (int) (pset.scaffolder_options.max_can_overlap * (double) gp.g.k()),
                                                  pset.scaffolder_options.short_overlap,
                                                  (int) 2 * cfg::get().ds.RL(), pset.scaffolder_options.artificial_gap,

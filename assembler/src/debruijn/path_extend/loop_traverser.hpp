@@ -58,16 +58,58 @@ private:
 		return result;
 	}
 
-	void TraverseLoop(EdgeId start, EdgeId end) {
+	void TryToGrow(BidirectionalPath* path, EdgeId component_entrance) {
+		BidirectionalPath clone = *path;
+		extender_->GrowPath(*path);
+		if (!path->Contains(component_entrance)) {
+			DEBUG("Grown paths do not contain initial edges, rolling back");
+			path->Clear();
+			path->PushBack(clone);
+		}
+	}
+
+    bool IsEndInsideComponent(const BidirectionalPath &path,
+                              const set <VertexId> &component_set) {
+        if (component_set.count(g_.EdgeStart(path.Front())) == 0) {
+            return false;
+        }
+        for (size_t i = 0; i < path.Size(); ++i) {
+            if (component_set.count(g_.EdgeEnd(path.At(i))) == 0)
+                return false;
+        }
+        return true;
+    }
+
+
+    bool IsEndInsideComponent(const BidirectionalPath &path, EdgeId component_entrance,
+                              const set <VertexId> &component_set,
+                              bool conjugate = false) {
+        int i = path.FindLast(component_entrance);
+        VERIFY_MSG(i != -1, "Component edge is not found in the path")
+
+        if ((size_t) i == path.Size() - 1) {
+            if (conjugate)
+                return component_set.count(g_.conjugate(g_.EdgeEnd(path.Back()))) > 0;
+            else
+                return component_set.count(g_.EdgeEnd(path.Back())) > 0;
+        }
+
+        if (conjugate)
+            return IsEndInsideComponent(path.SubPath((size_t) i + 1).Conjugate(), component_set);
+        else
+            return IsEndInsideComponent(path.SubPath((size_t) i + 1), component_set);
+    }
+
+	void TraverseLoop(EdgeId start, EdgeId end, const set<VertexId>& component_set) {
 	    DEBUG("start " << g_.int_id(start) << " end " << g_.int_id(end));
 	    BidirectionalPathSet coveredStartPaths =
 				covMap_.GetCoveringPaths(start);
 	    BidirectionalPathSet coveredEndPaths =
 				covMap_.GetCoveringPaths(end);
 
-		for (auto startPath = coveredStartPaths.begin();
-				startPath != coveredStartPaths.end(); ++startPath) {
-			if ((*startPath)->FindAll(end).size() > 0) {
+		for (auto it_path = coveredStartPaths.begin();
+				it_path != coveredStartPaths.end(); ++it_path) {
+			if ((*it_path)->FindAll(end).size() > 0) {
 				return;
 			}
 		}
@@ -81,22 +123,15 @@ private:
 			return;
 		}
 
-		BidirectionalPath startClone = *startPath;
-		BidirectionalPath endClone = *endPath;
+		TryToGrow(startPath, start);
+		TryToGrow(endPath->GetConjPath(), g_.conjugate(end));
 
-		DEBUG("Growing start")
-		extender_->GrowPath(*startPath);
-		DEBUG("Growing end")
-		extender_->GrowPath(*endPath->GetConjPath());
-		DEBUG("done")
-
-		if (!startPath->Contains(start) || !endPath->Contains(end)) {
-			DEBUG("Grown paths do not contain initial edges, rolling back");
-			startPath->Clear();
-			startPath->PushBack(startClone);
-			endPath->Clear();
-			endPath->PushBack(endClone);
-		}
+		//Checking that paths ends are within component
+        if (!IsEndInsideComponent(*startPath, start, component_set) ||
+                !IsEndInsideComponent(*endPath->GetConjPath(), g_.conjugate(end), component_set, true)) {
+            DEBUG("Some path goes outside of the component")
+            return;
+        }
 
 		size_t commonSize = startPath->CommonEndSize(*endPath);
 		size_t nLen = 0;
@@ -115,6 +150,9 @@ private:
 
                 if (shortest_path.size() == 0) {
                     DEBUG("Failed to find closing path");
+                    return;
+                } else if (!IsEndInsideComponent(BidirectionalPath(g_, shortest_path), component_set)) {
+                    DEBUG("Closing path is outside the component");
                     return;
                 } else {
                     for (size_t i = 0; i < shortest_path.size(); ++i) {
@@ -156,7 +194,7 @@ public:
 			if (start == EdgeId() || finish == EdgeId()) {
 				continue;
 			}
-			TraverseLoop(start, finish);
+			TraverseLoop(start, finish, component_set);
 		}
 
 	}
