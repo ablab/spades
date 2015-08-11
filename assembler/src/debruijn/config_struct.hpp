@@ -221,6 +221,10 @@ struct debruijn_config {
             size_t plausibility_length;
         };
 
+        struct complex_tip_clipper {
+        	bool enabled;
+        };
+
         struct bulge_remover {
             bool enabled;
             double max_bulge_length_coefficient;
@@ -307,6 +311,7 @@ struct debruijn_config {
         bool post_simplif_enabled;
         bool topology_simplif_enabled;
         tip_clipper tc;
+        complex_tip_clipper complex_tc;
         topology_tip_clipper ttc;
         bulge_remover br;
         erroneous_connections_remover ec;

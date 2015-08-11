@@ -103,13 +103,20 @@ double KMerClustering::ClusterBIC(const std::vector<Center> &centers,
   double loglik = 0;
   unsigned total = 0;
   for (size_t i = 0; i < block_size; ++i) {
-    loglik += kmers[i].logL(centers[indices[i]].center_);
+    loglik += kmers[i].count()*kmers[i].logL(centers[indices[i]].center_);
     total += kmers[i].count();
   }
 
   size_t nparams = (clusters - 1) + clusters*K + 2*clusters*K;
 
-  return loglik - (double)nparams * log((double)block_size) / 2.0;
+  if (cfg::get().bayes_debug_output > 1) {
+#   pragma omp critical
+    {
+        std::cout << "  logL: " << loglik << ", clusters: " << clusters << ", nparams: " << nparams << ", N: " << block_size << std::endl;
+    }
+  }
+  
+  return loglik - (double)nparams * log((double)total) / 2.0;
 }
 
 
@@ -259,12 +266,13 @@ size_t KMerClustering::SubClusterSingle(const std::vector<size_t> & block, std::
   // Another limit: we're interested in good centers only
   size_t maxgcnt = 0;
   for (size_t i = 0; i < block.size(); ++i) {
-    float center_quality = data_[block[i]].total_qual;
+    float center_quality = 1 - data_[block[i]].total_qual;
     if ((center_quality > cfg::get().bayes_singleton_threshold) ||
         (cfg::get().correct_use_threshold && center_quality > cfg::get().correct_threshold))
       maxgcnt += 1;
   }
-  maxcls = std::max(1ul, std::min(maxcls, maxgcnt));
+  
+  maxcls = std::min(maxcls, maxgcnt) + 1;
 
   if (cfg::get().bayes_debug_output > 0) {
     #pragma omp critical

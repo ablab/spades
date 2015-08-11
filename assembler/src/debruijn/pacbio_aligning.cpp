@@ -47,8 +47,12 @@ void ProcessReadsBatch(conj_graph_pack &gp,
         for (auto iter = aligned_edges.begin(); iter != aligned_edges.end(); ++iter)
             long_reads_by_thread[thread_num].AddPath(*iter, 1, true);
         //counting stats:
-        for (auto iter = aligned_edges.begin(); iter != aligned_edges.end(); ++iter)
-            stats_by_thread[thread_num].path_len_in_edges[iter->size()] ++;
+        for (auto iter = aligned_edges.begin(); iter != aligned_edges.end(); ++iter) {
+            stats_by_thread[thread_num].path_len_in_edges[iter->size()]++;
+        }
+        if (seq.size() > 500) {
+            stats_by_thread[thread_num].seeds_percentage[size_t (floor(double(current_read_mapping.seed_num) * 1000.0 / (double) seq.size()))] ++;
+        }
 
 #       pragma omp critical
         {
@@ -95,6 +99,7 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
     pacbio::PacBioMappingIndex<ConjugateDeBruijnGraph> pac_index(gp.g,
                                                          cfg::get().pb.pacbio_k,
                                                          cfg::get().K, cfg::get().pb.ignore_middle_alignment);
+
 //    path_extend::ContigWriter cw(gp.g);
 //    cw.writeEdges("before_rr_with_ids.fasta");
 //    ofstream filestr("pacbio_mapped.mpr");
@@ -112,6 +117,7 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
             ++buffer_no;
         }
     }
+    stats.report();
     map<EdgeId, EdgeId> replacement;
     long_reads.DumpToFile(cfg::get().output_saves + "long_reads_before_rep.mpr",
                           replacement);
