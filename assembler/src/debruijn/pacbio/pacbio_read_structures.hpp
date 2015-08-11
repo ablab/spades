@@ -263,7 +263,7 @@ struct StatsCounter{
 			percentage = iter->first;
 			if (cur * 2 > total) break;
 		}
-		INFO("Median percentage of seeds in maximal alignmnent along reads of length > 500: " << double(percentage) * 0.001);
+		INFO("Median fraction of present seeds in maximal alignmnent among reads aligned to the graph: " << double(percentage) * 0.001);
 	}
 private:
 	DECL_LOGGER("StatsCounter");

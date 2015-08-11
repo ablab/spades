@@ -28,8 +28,9 @@ void ProcessReadsBatch(conj_graph_pack &gp,
                                               pacbio::GapStorage<Graph>(gp.g, min_gap_quantity));
     vector<pacbio::StatsCounter> stats_by_thread(cfg::get().max_threads);
 
-
-#   pragma omp parallel for shared(reads, long_reads_by_thread, pac_index, n)
+    size_t aligned = 0;
+    size_t nontrivial_aligned = 0;
+#   pragma omp parallel for shared(reads, long_reads_by_thread, pac_index, n, aligned, nontrivial_aligned)
     for (size_t i = 0; i < buf_size; ++i) {
         if (i % 1000 == 0) {
             DEBUG("thread number " << omp_get_thread_num());
@@ -50,16 +51,26 @@ void ProcessReadsBatch(conj_graph_pack &gp,
         for (auto iter = aligned_edges.begin(); iter != aligned_edges.end(); ++iter) {
             stats_by_thread[thread_num].path_len_in_edges[iter->size()]++;
         }
-        if (seq.size() > 500) {
-            stats_by_thread[thread_num].seeds_percentage[size_t (floor(double(current_read_mapping.seed_num) * 1000.0 / (double) seq.size()))] ++;
+#       pragma omp critical
+        {
+//            INFO(current_read_mapping.seed_num);
+            if (aligned_edges.size() > 0) {
+                aligned ++;
+                stats_by_thread[thread_num].seeds_percentage[size_t (floor(double(current_read_mapping.seed_num) * 1000.0 / (double) seq.size()))] ++;
+                for (size_t j = 0; j < aligned_edges.size(); j ++){
+                    if (aligned_edges[j].size() > 1) {
+                        nontrivial_aligned ++;
+                        break;
+                    }
+                }
+            }
         }
-
 #       pragma omp critical
         {
             VERBOSE_POWER(n, " reads processed");
         }
     }
-
+    INFO("Read chunk of size: " << buf_size << "; reads aligned: " << aligned << "; paths of more than one edge received: " << nontrivial_aligned );
     for (size_t i = 0; i < cfg::get().max_threads; i++) {
         long_reads.AddStorage(long_reads_by_thread[i]);
         gaps.AddStorage(gaps_by_thread[i]);
