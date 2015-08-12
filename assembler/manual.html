@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>SPAdes 3.5.0 Manual</title>
+    <title>SPAdes 3.6.0 Manual</title>
     <style type="text/css">
         .code {
             background-color: lightgray;
@@ -8,7 +8,7 @@
     </style>
 </head>
 <body>
-<h1>SPAdes 3.5.0 Manual</h1>
+<h1>SPAdes 3.6.0 Manual</h1>
 
 1. <a href="#sec1">About SPAdes</a><br>
 &nbsp;&nbsp;&nbsp;&nbsp;1.1. <a href="#sec1.1">Supported data types</a><br>
@@ -34,7 +34,7 @@
 <a name="sec1"></a>
 <h2>1. About SPAdes</h2>
 <p>
-    SPAdes &ndash; St. Petersburg genome assembler &ndash; is intended for both standard isolates and single-cell MDA bacteria assemblies. This manual will help you to install and run SPAdes. SPAdes version 3.5.0 was released under GPLv2 on December 7, 2014 and can be downloaded from  <a href="http://bioinf.spbau.ru/en/spades" target="_blank">http://bioinf.spbau.ru/en/spades</a>.
+    SPAdes &ndash; St. Petersburg genome assembler &ndash; is intended for both standard isolates and single-cell MDA bacteria assemblies. This manual will help you to install and run SPAdes. SPAdes version 3.6.0 was released under GPLv2 on August 17, 2014 and can be downloaded from  <a href="http://bioinf.spbau.ru/en/spades" target="_blank">http://bioinf.spbau.ru/en/spades</a>.
 
 
 <a name="sec1.1"></a>
@@ -42,7 +42,7 @@
 <p>
     The current version of SPAdes works with Illumina or IonTorrent reads and is capable of providing hybrid assemblies using PacBio, Oxford Nanopore and Sanger reads. You can also provide additional contigs that will be used as long reads.
 <p>
-    Version 3.5.0 of SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries simultaneously. 
+    Version 3.6.0 of SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries simultaneously. 
 <p>
     Note, that SPAdes was initially designed for small genomes. It was tested on single-cell and standard bacterial and fungal data sets. SPAdes is not intended for larger genomes (e.g. mammalian size genomes) and metagenomic projects. For such purposes you can use it at your own risk.
 <p>
@@ -140,7 +140,7 @@ SPAdes comes in several separate modules:
         <li> Running SPAdes without preliminary read error correction (e.g. without BayesHammer or IonHammer) will likely require more time and memory. </li>
         <li> Each module removes its temporary files as soon as it finishes. </li>
         <li> SPAdes uses 512 Mb per thread for buffers, which results in higher memory consumption. If you set memory limit manually, SPAdes will use smaller buffers and thus less RAM. </li>
-        <li> Performance statistics is given for SPAdes version 3.5. </li>
+        <li> Performance statistics is given for SPAdes version 3.6. </li>
     </ul>
 
 
@@ -153,13 +153,13 @@ SPAdes comes in several separate modules:
 <h3>2.1 Downloading SPAdes Linux binaries</h3>
 
 <p>
-    To download <a href="http://spades.bioinf.spbau.ru/release3.5.0/SPAdes-3.5.0-Linux.tar.gz">SPAdes Linux binaries</a> and extract them, go to the directory in which you wish SPAdes to be installed and run:
+    To download <a href="http://spades.bioinf.spbau.ru/release3.6.0/SPAdes-3.6.0-Linux.tar.gz">SPAdes Linux binaries</a> and extract them, go to the directory in which you wish SPAdes to be installed and run:
 
 <pre  class="code">
 <code>
-    wget http://spades.bioinf.spbau.ru/release3.5.0/SPAdes-3.5.0-Linux.tar.gz
-    tar -xzf SPAdes-3.5.0-Linux.tar.gz
-    cd SPAdes-3.5.0-Linux/bin/
+    wget http://spades.bioinf.spbau.ru/release3.6.0/SPAdes-3.6.0-Linux.tar.gz
+    tar -xzf SPAdes-3.6.0-Linux.tar.gz
+    cd SPAdes-3.6.0-Linux/bin/
 </code>
 </pre>
 
@@ -183,13 +183,13 @@ SPAdes comes in several separate modules:
 <h3>2.2 Downloading SPAdes binaries for Mac</h3>
 
 <p>
-    To obtain <a href="http://spades.bioinf.spbau.ru/release3.5.0/SPAdes-3.5.0-Darwin.tar.gz">SPAdes binaries for Mac</a>, go to the directory in which you wish SPAdes to be installed and run:
+    To obtain <a href="http://spades.bioinf.spbau.ru/release3.6.0/SPAdes-3.6.0-Darwin.tar.gz">SPAdes binaries for Mac</a>, go to the directory in which you wish SPAdes to be installed and run:
 
 <pre  class="code">
 <code>
-    curl http://spades.bioinf.spbau.ru/release3.5.0/SPAdes-3.5.0-Darwin.tar.gz -o SPAdes-3.5.0-Darwin.tar.gz
-    tar -zxf SPAdes-3.5.0-Darwin.tar.gz
-    cd SPAdes-3.5.0-Darwin/bin/
+    curl http://spades.bioinf.spbau.ru/release3.6.0/SPAdes-3.6.0-Darwin.tar.gz -o SPAdes-3.6.0-Darwin.tar.gz
+    tar -zxf SPAdes-3.6.0-Darwin.tar.gz
+    cd SPAdes-3.6.0-Darwin/bin/
 </code>
 </pre>
 
@@ -222,13 +222,13 @@ SPAdes comes in several separate modules:
     </ul>
 
 <p>
-    If you meet these requirements, you can download the <a href="http://spades.bioinf.spbau.ru/release3.5.0/SPAdes-3.5.0.tar.gz">SPAdes source code</a>: 
+    If you meet these requirements, you can download the <a href="http://spades.bioinf.spbau.ru/release3.6.0/SPAdes-3.6.0.tar.gz">SPAdes source code</a>: 
 
 <pre class="code">
 <code>
-    wget http://spades.bioinf.spbau.ru/release3.5.0/SPAdes-3.5.0.tar.gz
-    tar -xzf SPAdes-3.5.0.tar.gz
-    cd SPAdes-3.5.0
+    wget http://spades.bioinf.spbau.ru/release3.6.0/SPAdes-3.6.0.tar.gz
+    tar -xzf SPAdes-3.6.0.tar.gz
+    cd SPAdes-3.6.0
 </code>
 </pre>
 
@@ -321,8 +321,6 @@ Thank you for using SPAdes!
 </code>
 </pre>
 
-
-
 <a name="sec3"></a>
 <h2>3. Running SPAdes</h2>
 
@@ -332,7 +330,7 @@ Thank you for using SPAdes!
     SPAdes takes as input paired-end reads, mate-pairs and single (unpaired) reads in FASTA and FASTQ. For IonTorrent data SPAdes also supports unpaired reads in unmapped BAM format (like the one produced by Torrent Server). However, in order to run read error correction, reads should be in FASTQ or BAM format. Sanger, Oxford Nanopore and PacBio CLR reads can be provided in both formats since SPAdes does not run error correction for these types of data.
 
 <p>
-    To run SPAdes 3.5.0 you need at least one library of the following types:
+    To run SPAdes 3.6.0 you need at least one library of the following types:
     <ul>
         <li>Illumina paired-end/high-quality mate-pairs/unpaired reads</li>
         <li>IonTorrent paired-end/high-quality mate-pairs/unpaired reads</li>
@@ -345,13 +343,13 @@ Illumina and IonTorrent libraries should not be assembled together. All other ty
 SPAdes supports mate-pair only assembly. However, we recommend to use only high-quality mate-pair libraries in this case (e.g. that do not have a paired-end part). We tested mate-pair only pipeline using Illumina Nextera mate-pairs. See more <a href="#hqmp">here</a>.
 
 <p>
-    Current version SPAdes also supports Lucigen NxSeq&reg; Long Mate Pair libraries, which always have forward-reverse orientation. If you wish to use Lucigen NxSeq&reg; Long Mate Pair reads, you will need Python <a href="https://pypi.python.org/pypi/regex">regex library</a> to be pre-installed on your machine. You can install it with Python <a href="http://www.pip-installer.org/">pip-installer</a>:
+    Current version SPAdes also supports Lucigen NxSeq&reg; Long Mate Pair libraries, which always have forward-reverse orientation. If you wish to use Lucigen NxSeq&reg; Long Mate Pair reads, you will need Python <a href="https://pypi.python.org/pypi/regex" target="_blank">regex library</a> to be pre-installed on your machine. You can install it with Python <a href="http://www.pip-installer.org/" target="_blank">pip-installer</a>:
 <pre class="code">
 <code>
     pip install regex
 </code>
 </pre>
-    or with the <a href="http://peak.telecommunity.com/DevCenter/EasyInstall">Easy Install</a> Python module:
+    or with the <a href="http://peak.telecommunity.com/DevCenter/EasyInstall" target="_blank">Easy Install</a> Python module:
 <pre class="code">
 <code>
     easy_install regex
@@ -795,8 +793,6 @@ and PacBio CCS and CLR reads:
         <li> The <code>--dataset</code> option cannot be used with any other options for specifying input data. </li>
         <li> We recommend to nest all files with long reads of the same data type in a single library block.  </li>
     </ul>
-    Note that the <code>--dataset</code> option cannot be used with any other options for specifying input data.
-
 
 
 <a name="advancedopt">
@@ -1065,15 +1061,15 @@ However, it might be tricky to fully utilize the advantages of  long reads you h
     </ul>
 
 <p>
-
-
-
+   To view FASTG files we recommend to use  <a href="http://rrwick.github.io/Bandage/" target="_blank">Bandage tool</a>. Note that the assembly graph is stored in <code>before_rr.fastg</code>, while <code>contigs.fastg</code> and <code>scaffolds.fastg</code> correspond to the paths in the assembly graph after repeat resolution and scaffolding stages respectively.
+    
 <p>
 The full list of <code>&lt;output_dir></code> content is presented below: 
 </p>
 <pre>
     <code>contigs.fasta, contigs.fastg</code> &ndash; <i>resulting contigs</i>
     <code>scaffolds.fasta, scaffolds.fastg</code> &ndash; <i>resulting scaffolds </i>
+    <code>before_rr.fasta, before_rr.fastg</code> &ndash; <i>contigs before repeat resolution</i>
 
     <code>corrected/</code> &ndash; <i>files from read error correction</i>
         <code>configs/</code> &ndash; <i>configuration files for read error correction</i>
