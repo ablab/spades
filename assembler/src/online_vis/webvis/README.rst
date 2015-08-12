@@ -22,7 +22,7 @@ Installing
 WebVis is written in Python and Javascript, using Flask_ and jQuery. To launch it, of course you need Python and pip or easy_install. At least one of them is typically pre-installed in both Linux and Mac OS X, so no prerequisities needed. Then you need to install Flask via the VirtualEnv:
 - sudo easy_install virtualenv
 or
-- sudo pip virtualenv
+- sudo pip install virtualenv
 Then:
 - cd path/to/webvis
 - virtualenv venv
@@ -30,7 +30,7 @@ Then:
 - pip install Flask
 - pip install Flask-Session
 - pip install jsonpickle
-- mkdir static/cache
+- pip install parsing
 And, of course, don't forget to *make run*.
 
 Running
