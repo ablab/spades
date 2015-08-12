@@ -42,29 +42,43 @@ def format_output(lines):
 
 env_path = "../../../"
 cache_path = "static/cache/"
-shellder = None
+shellders = dict()
 
 @app.route("/", methods=['GET'])
 def index():
-    global shellder
-    if shellder is None:
-        shellder = Shellder("/tmp/vis_in", "/tmp/vis_out", env_path)
-        session["log"] = shellder.get_output()
-    return flask.render_template("index.html", console=format_output(session["log"]))
+    if "username" in session:
+        return flask.render_template("index.html", console=format_output(session["log"]))
+    else:
+        logged = shellders.keys()
+        return flask.render_template("login.html", names=logged)
 
+@app.route("/login", methods=['GET'])
+def login():
+    global shellders
+    if "username" not in session:
+        name = request.args.get("username", "gaf")
+        session["username"] = name
+        if name not in shellders:
+            shellders[name] = Shellder("/tmp/vis_in_" + name, "/tmp/vis_out_" + name, env_path)
+            session["log"] = shellders[name].get_output()
+        else:
+            session["log"] = ["<the previous session log has been lost>"]
+    return flask.redirect("/")
+        
 @app.route("/logout", methods=['GET'])
 def logout():
-    global shellder
-    if shellder is not None:
+    global shellders
+    if "username" in session:
+        name = session.pop("username")
+        shellder = shellders.pop(name, None)
         shellder.close()
-        shellder = None
-        return "You have been logged out"
+        return "<html><body><p>You have been logged out.</p><p><a href=\"/\">Return to main</a></p></body></html>"
     return "No opened session"
 
-@app.route("/command", methods=['POST'])
+@app.route("/command", methods=['GET'])
 def command():
     global shellder
-    result = shellder.send(request.form["command"]).get_output()
+    result = shellders[session["username"]].send(request.args.get("command", "")).get_output()
     session["log"].extend(result)
     #return result
     return format_output(result)

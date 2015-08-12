@@ -34,7 +34,7 @@
             function sendCommand(command, callback) {
                 $.ajax({
                     url: "command",
-                    type: "POST",
+                    type: "GET",
                     data: {command: command},
                     success: callback
                     //$(function() {$("#console").append("<br/>" + response).scrollTop(1E10);});
@@ -185,8 +185,8 @@
         <div id="console">{{console|safe}}</div>
         <div id="filetree"></div>
     </td>
-    <td>
-        <div id="graph"><!--The rendered graph will be displayed here--></div>
+    <td id="graph" width="50%">
+        <!--The rendered graph will be displayed here-->
     </td>
 </tr></table>
 </body>
