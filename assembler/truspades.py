@@ -108,7 +108,7 @@ def main(argv):
     if options.input_dirs is not None:
         dataset = generate_dataset(options.input_dirs)
         if dataset is None:
-            sys.stderr.write("Error: could not parse dataset input directories\n")
+            sys.stderr.write("Error: could not parse dataset from input directories\n")
             sys.exit(1)
         barcode_extraction.print_dataset(dataset, dataset_file)
         sys.stdout.write("Dataset generated. See result in " + dataset_file)

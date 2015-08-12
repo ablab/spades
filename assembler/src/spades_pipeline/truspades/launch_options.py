@@ -44,6 +44,7 @@ class Options:
         for (key, value) in options_list:
             if key == "--help" or key == "-h":
                 print_usage(False)
+                sys.exit(1)
             elif key == "--do":
                 self.mode = value
             elif key == "--construct-dataset":
@@ -74,13 +75,15 @@ class Options:
             sys.stderr.write("Error: --do parameter can only have one of the following values: " + ", ".join(self.possible_modes) + "\n")
             print_usage()
             sys.exit(1)
+        if None == self.output_dir or os.path.isfile(self.output_dir):
+            sys.stderr.write("Error: Please provide output directory\n")
+            print_usage()
+            sys.exit(1)
+        if self.continue_launch:
+            return
         cnt = len([option for option in [self.dataset_file, self.input_dirs, self.command_list] if option != None])
         if cnt != 1:
             sys.stderr.write("Error: exactly one of dataset-file and input-dir must be specified\n")
-            print_usage()
-            sys.exit(1)
-        if None == self.output_dir or os.path.isfile(self.output_dir):
-            sys.stderr.write("Error: Please provide output directory\n")
             print_usage()
             sys.exit(1)
         if self.mode == "construct_subreferences":
@@ -101,7 +104,7 @@ def print_usage(show_hidden = False):
     sys.stderr.write("-h/--help\t\tprints this usage message" + "\n")
     sys.stderr.write("-o\t<output_dir>\tdirectory to store all the resulting files (required)" + "\n")
     sys.stderr.write("-t/--threads\t<int>\t\tnumber of threads" + "\n")
-    sys.stderr.write("--continue\t\tcontinue interrupted launch")
+    sys.stderr.write("--continue\t\tcontinue interrupted launch" + "\n")
     sys.stderr.write("--construct-dataset\t\tparse dataset from input folder")
     sys.stderr.write("" + "\n")
     sys.stderr.write("Input options:" + "\n")

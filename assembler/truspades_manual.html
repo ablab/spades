@@ -12,16 +12,16 @@
 
 1. <a href="#sec1">About truSPAdes</a><br>
 &nbsp;&nbsp;&nbsp;&nbsp;1.1. <a href="#sec1.1">Illumina TruSeq data</a><br>
-&nbsp;&nbsp;&nbsp;&nbsp;1.2. <a href="#sec1.2">TruSPAdes input format</a><br>
-&nbsp;&nbsp;&nbsp;&nbsp;1.2.1. <a href="#sec1.2.1">Dataset file</a><br>
-&nbsp;&nbsp;&nbsp;&nbsp;1.2.2. <a href="#sec1.2.2">Read files naming</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;1.2. <a href="#sec1.2">TruSPAdes input</a><br>
 &nbsp;&nbsp;&nbsp;&nbsp;1.3. <a href="#sec1.3">TruSPAdes performance</a><br>
 &nbsp;&nbsp;&nbsp;&nbsp;1.4. <a href="#sec1.4">Installation</a><br>
-2. <a href="#sec2">Running truSPAdes</a><br>
-&nbsp;&nbsp;&nbsp;&nbsp;3.1. <a href="#sec2.1">TruSPAdes command line options</a><br>
-&nbsp;&nbsp;&nbsp;&nbsp;3.2. <a href="#sec2.2">TruSPAdes output</a><br>
-&nbsp;&nbsp;&nbsp;&nbsp;3.3. <a href="#sec2.3">Assembly evaluation</a><br>
-3. <a href="#sec3">Feedback and bug reports</a><br>
+2. <a href="#sec2">TruSPAdes input format</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;1.2.1. <a href="#sec2.1">Dataset file format</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;1.2.2. <a href="#sec2.2">Read files naming for automatic dataset file generation</a><br>
+3. <a href="#sec3">Running truSPAdes</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;3.1. <a href="#sec3.1">TruSPAdes command line options</a><br>
+&nbsp;&nbsp;&nbsp;&nbsp;3.2. <a href="#sec3.2">TruSPAdes output</a><br>
+4. <a href="#sec4">Feedback and bug reports</a><br>
 <br>
 
 <a name="sec1"></a>
@@ -43,19 +43,36 @@
     TruSPAdes assembles each barcode separately and outputs assembled contigs as Virtual TruSeq Long Reads (TSLRs).
 
 <a name="sec1.2"></a>
-<h3>1.2 TruSPAdes input format</h3>
-    TruSPades requires demultiplexed Illumina sequencing data as an input.
+<h3>1.2 TruSPAdes input</h3>
+    TruSPAdes requires demultiplexed sequencing data as an input.
     Each barcode is assembled from one or several (in case multiple lanes are available) libraries of paired-end reads in fastq format.
     Also note that truSPAdes can handle both compressed and decompressed reads.
-    These reads can be provided for truSPAdes in one of two ways: using dataset file or using specific naming of read files.
+    TruSPAdes uses <a href="#sec1.2.1">dataset file format</a> for TruSeq dataset description.
+    Dataset file can be either created manually or generated automatically. 
+    Since TruSeq reads are provided as a service by Illumina, most TruSeq read files have <a href="#sec1.2.2">particular naming patterns</a> that we use for autogeneration of dataset file.
+    See details in <a href="#sec2">section 2</a>.
 
-<a name="sec1.2.1"></a>
-<h4>1.2.1 Dataset file</h4>
-    Dataset file describes a collection of read files in the following way.
-    Dataset file can be provided using <code>--dataset</code> option (see <a href="#sec2.1">section 2.1<\a>).
+<a name="sec1.3"></a>
+<h3>1.3 TruSPAdes performance</h3>
+    TruSPAdes assembles standard Illumina TruSeq dataset (consisting of 384 barcodes) in 30 hours using 8 threads of Intel Xeon 2.27GHz processor and requires less than 16 Gb RAM (2Gb RAM per thread).
+
+<a name="sec1.4"></a>
+<h3>1.4 Installation</h3>
+<p>
+    TruSPAdes comes as a part of SPAdes genome assembler. See <a href = manual.html#sec2>SPAdes manual</a> for installation instructions.
+
+
+<a name="sec2"></a>
+<h2>2. TruSPAdes input format</h2>
+    TruSPAdes uses <a href="#sec1.2.1">dataset file format</a> for TruSeq dataset description.
+    Dataset file can be either created manually or generated automatically.
+    Below we describe dataset file format and conditions that enable automatic generation of dataset files.
+<a name="sec2.1"></a>
+<h3>2.1 Dataset file format</h3>
+    Dataset file describes a collection of read files.
     Each line in dataset file contains description of reads corresponding to a single barcode.
     Description should start with id of barcode (a string consisting of letters and digits) followed by paths to reads.
-    For example, for dataset with two barcodes dataset file should look like this:
+    For example, for dataset with three barcodes dataset file should look like this:
 
 <pre class="code">
 <code>
@@ -64,49 +81,63 @@
     barcodeId3 /FULL_PATH_TO_LEFT_READS3/LEFT_READS_FILE_NAME3.fastq.gz /FULL_PATH_TO_RIGHT_READS3/RIGHT_READS_FILE_NAME3.fastq.gz
 </code>
 </pre>
-    In case several lanes are available for single barcode, left and right reads should alternate in the barcode description so that paired reads from the same library are put together.
-    For wxample in case two lanes are available for barcode its description should look like this:
+    In case several lanes are available for a barcode, reads for each lane should be provided in the same line.
+    Reads from the same barcode should be written consequently, e.g., in case two lanes are available for barcode, its description should look like this:
 <pre class="code">
 <code>
     barcodeId /LEFT_READS_PATH_L1.fastq.gz /RIGHT_READS_PATH_L1.fastq.gz /LEFT_READS_PATH_L2.fastq.gz /RIGHT_READS_PATH_L2.fastq.gz
 </code>
 </pre>
+Dataset file can be provided using <code>--dataset</code> option (see <a href="#sec3">section 3</a>).
 
-<a name="sec1.2.2"></a>
-<h4>1.2.2 Read files naming</h4>
-    Since Illumina reads are provided as a service by Illumina, most TruSeq reads have particular naming patterns that we use to automatically generate dataset files.
-    If read naming in your dataset reads satisfies conditions described below you can avoid manual creation of dataset file and use <code>--input-dir</code> option instead (see <a href="#sec2.1">section 2.1<\a>).
+<a name="sec2.2"></a>
+<h3>2.2 Read files naming for automatic dataset file generation</h3>
+    Since TruSeq reads are provided as a service by Illumina, most TruSeq read files have particular naming patterns that we use to automatically generate dataset files.
+    If read naming in your dataset reads satisfies conditions described below you can avoid manual creation of dataset file and use <code>--input-dir</code> option instead (see <a href="#sec3">section 3</a>).
     The conditions that enable automatic dataset file generation are as follows:
-        <l>
-            <item>All reads should be in one or several directories provided using <code>--input-dir</code> option</item>
-            <item>No other files should be present in these directories</item>
-            <item>Names of files with left (right) reads should contain "R1" ("R2") as their substring.</item>
-            <item>Files with left and right reads of the same library should be in the same directory and their names should differ only by substitution of "R1" to "R2"</item>
-            <item>In case several lanes are available, reads from the same lane can be marked with "L<n>" label (i.e. contain it as a substring of read name) where n is the lane number. </item>
-            <item>Reads from the same barcode but from different lanes can be put into different directories but their names should either coinside or differ only by "L<n>" markings.</item>
-            <item>All barcodes should have the same number of paired-end libraries (lanes). This is to check for possibly missing or extra files in input directories.</item>
-        </l>
+    <ul>
+        <li>All reads should be in one or several directories provided using <code>--input-dir</code> option</li>
+        <li>No other files should be present in these directories</li>
+        <li>Names of files with left (right) reads should contain "R1" ("R2") as their substring.</li>
+        <li>Files with left and right reads of the same library should be in the same directory and their names should differ only by substitution of "R1" to "R2"</li>
+        <li>In case several lanes are available, reads from the same lane can be marked with "L&#60;n>" label (i.e. contain it as a substring of read name) where &#60;n> is the lane number. </li>
+        <li>Reads from the same barcode but from different lanes can be put into different directories but their names should either coinside or differ only by "L<n>" markings.</li>
+        <li>All barcodes should have the same number of paired-end libraries (lanes). This is to check for possibly missing or extra files in input directories.</li>
+    </ul>
+    For example dataset with two lanes and two barcodes can be put into single directory with the following file naming:
+<pre class = "code">
+<code>
+    dataset-directory:
+    &nbsp;&nbsp;&nbsp;&nbsp;reads_L1_R1.fastq
+    &nbsp;&nbsp;&nbsp;&nbsp;reads_L1_R2.fastq
+    &nbsp;&nbsp;&nbsp;&nbsp;reads_L2_R1.fastq
+    &nbsp;&nbsp;&nbsp;&nbsp;reads_L2_R2.fastq
+</code> 
+</pre>
+    Or dataset files can be put into two directories:
+<pre class = "code">
+<code>
+    dataset_directory_L1:
+    &nbsp;&nbsp;&nbsp;&nbsp;reads_R1.fastq
+    &nbsp;&nbsp;&nbsp;&nbsp;reads_R2.fastq
+    dataset_directory_L2:
+    &nbsp;&nbsp;&nbsp;&nbsp;reads_R1.fastq
+    &nbsp;&nbsp;&nbsp;&nbsp;reads_R2.fastq
+</code> 
+</pre>    
 
-<a name="sec1.3"></a>
-<h3>1.2 TruSPAdes performance</h3>
-    TruSPAdes assembles standard Illumina TruSeq dataset (consisting of 384 barcodes) in 30 hours using 8 threads of Intel Xeon 2.27GHz processor and requires less than 16 Gb RAM (2Gb RAM per thread).
-
-<a name="sec1.4"></a>
-<h2>1.3 Installation</h2>
-<p>
-     TruSPAdes comes as a part of SPAdes genome assembler. See <a href = manual.html#sec2>SPAdes manual</a> for installation instructions.
 
 <a name="sec3"></a>
 <h2>3. Running truSPAdes</h2>
 
-<a name="sec3.2"></a>
+<a name="sec3.1"></a>
 <h3>3.1 TruSPAdes command line options </h3>
 <p>
     To run truSPAdes from the command line, type 
 
 <pre class="code">
 <code>
-    truspades.py [options] --input-dir &lt;left_reads_file> -2 &lt;right_reads_file> -o &lt;output_dir>
+    truspades.py [options] -o &lt;output_dir>
 </code>
 </pre>
 Note that we assume that truSPAdes installation directory is added to the <code>PATH</code> variable (provide full path to truSPAdes executable otherwise: <code>&lt;truspades installation dir>/truspades.py</code>). 
@@ -119,136 +150,56 @@ Note that we assume that truSPAdes installation directory is added to the <code>
 </p>
 
 <p>
-    <code>--test</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Runs SPAdes on the toy data set; see <a href="#sec2.3">section 2.3</a>.
-</p>
-
-<p>
     <code>-h</code> (or <code>--help</code>)<br>
     &nbsp;&nbsp;&nbsp;&nbsp;Prints help.
 </p>
 
-
-
 <p>
     <code>--continue</code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Continues truSPAdes run from the specified output folder starting from the last available check-point. Check-points are made after:
-    <ul>
-        <li>iteration for each specified K value of assembly module is finished</li>
-        <li>scaffold correction step is finished</li>
-    </ul>
-For example, if specified K values are 21, 33 and 55 and SPAdes was stopped or crashed during assembly stage with K = 55, you can run SPAdes with the <code>--continue</code> option specifying the same output directory. SPAdes will continue the run starting from the assembly stage with K = 55. Error correction module and iterations for K equal to 21 and 33 will not be run again.
-Note that all options except <code>-o &lt;output_dir> </code> are ignored if <code>--continue</code> is set.
+    &nbsp;&nbsp;&nbsp;&nbsp;Continues truSPAdes run from the specified output folder.
 </p>
 
 <p>
-    <code>--restart-from &lt;check_point></code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Restart truSPAdes run from the specified output folder starting from the specified check-point. Check-points are:
-    <ul>
-        <li><code>as</code> &ndash; restart assembly module from the first iteration</li>
-        <li><code>k&lt;int></code> &ndash; restart from the iteration with specified k values, e.g. k55</li>
-        <li><code>sc</code> &ndash; restart scaffold correction</li>
-        <li><code>pp</code> &ndash; restart postprocessing based on alignment</li>
-    </ul>
-In comparison to the <code>--continue</code> option, you can change some of the options when using <code>--restart-from</code>. You can change any option except all basic options. For example, if you ran assembler with k values 21,33,45,55, you can add one more iteration with k=77 with following options:<br>
-     <code>--restart-from k55 -k 21,33,55,77 -o &lt;previous_output_dir></code>. 
-<br>Since all files will be overwritten, do not forget to copy your assembly from the previous run if you need it.
+    <code>-t &lt;int></code> (or <code>--threads &lt;int></code>)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Number of threads. The default value is 8.
 </p>
 
 <a name="inputdata"></a>
 <h4>Input data</h4>
 <p>
-    <code>-1 &lt;file_name> </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;File with forward reads.
+    <code>--dataset &lt;file_name> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Dataset file foratted as specified in <a href="#sec2.1">section 2.1</a>.
 </p>
 
 <p>
-    <code>-2 &lt;file_name> </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;File with reverse reads.
+    <code>--input-dir &lt;dir_name> </code><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Directory containing reads. Note that naming of read files should satisfy conditions described in <a href="#sec2.2">section 2.2</a>.
 </p>
 
-
-<a name="advancedopt">
-<h4>Advanced options</h4>
-
+<a name="sec3.2">
+<h3>3.2. TruSPAdes output</h3>
 <p>
-    <code>-t &lt;int></code> (or <code>--threads &lt;int></code>)<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Number of threads. The default value is 1.
-</p>
-
-<p>
-    <code>-m &lt;int></code> (or <code>--memory &lt;int></code>)<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Set memory limit in Gb. TruSPAdes terminates if it reaches this limit. The default value is 250 Gb. Actual amount of consumed RAM will be below this limit. Make sure this value is correct for the given machine. TruSPAdes uses the limit value to automatically determine the sizes of various buffers, etc.
-</p>
-
-<p>
-    <code>--tmp-dir &lt;dir_name></code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Set directory for temporary files from read error correction. The default value is <code>&lt;output_dir>/corrected/tmp</code>
-</p>
-
-<p>
-    <code>-k &lt;int,int,...></code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Comma-separated list of k-mer sizes to be used (all values must be odd, less than 128 and listed in ascending order). The default value depends on the read length. E.g. for reads of length 100 <code>&lt;21,33,45,55</code> is used.
-</p>
-
-<a name="examples">
-<h4>Examples</h4>
-<p>
-    To test the toy data set, you can also run the following command from the SPAdes <code>bin</code> directory:
-
-<pre class="code">
-<code>
-    spades.py -1 ../share/truspades/test_dataset/ecoli_1K_1.fq.gz \
-    -2 ../share/truspades/test_dataset/ecoli_1K_2.fq.gz -o truspades_test
-</code>
-</pre>
-
-<p>
-    If you want to use specific values of k:
-<pre class="code">
-<code>
-    spades.py -1 left_reads.fastq -2 right_reads.fastq -k 21,31,41,51,61 -o output_folder
-</code>
-</pre>
-
-<a name="sec3.5">
-<h3>3.2 TruSPAdes output</h3>
-<p>
-    SPAdes stores all output files in <code>&lt;output_dir> </code>, which is set by the user. Resulting TruSeq long reads will be stored in <code>&lt;output_dir>/truseq_long_reads.fasta</code>
-The full list of <code>&lt;output_dir></code> content is presented below: 
+    TruSPAdes stores all output files in <code>&lt;output_dir> </code>, which is set by the user.
+    Resulting TruSeq long reads will be stored in <code>&lt;output_dir>/truseq_long_reads.fastq</code>
+    The full list of <code>&lt;output_dir></code> content is presented below: 
 </p>
 <pre>
-    <code>truseq_long_reads.fasta</code> &ndash; <i>resulting truseq long reads</i>
-    <code>params.txt</code> &ndash; <i>information about truSPAdes parameters in this run</i>
+    <code>truseq_long_reads.fastq</code> &ndash; <i>resulting truseq long reads</i>
+    <code>truseq_long_reads.fasta</code> &ndash; <i>resulting truseq long reads in fasta format</i>
     <code>truspades.log</code> &ndash; <i>truSPAdes log</i>
-    <code>dataset.info</code> &ndash; <i>internal configuration file</i>
-    <code>input_dataset.yaml</code> &ndash; <i>internal YAML data set file</i>
-    <code>K&lt;##>/</code> &ndash; <i>directory containing files from the run with K=&lt;##> </i>
-    <code>SCC</code> &ndash; <i>directory containing files from the scaffold correction stage </i>
-    <code>alignment/</code> &ndash; <i>directory containing alignment files used in postprocessing stage </i>
-    <code>misc</code> &ndash; <i>directory containing scaffolds before postprocessing </i>
-    <code>corrected</code> &ndash; <i>directory containing internal information </i>
+    <code>dataset.info</code> &ndash; <i>dataset file</i>
+    <code>truspades.log</code> &ndash; <i>truSPAdes log file</i>
+    <code>barcodes</code> &ndash; <i>directory containing output files for separate barcodes</i>
+    <code>logs</code> &ndash; <i>directory containing log files for barcode assembly</i>
 </pre>
 
-<p>
-    TruSPAdes will overwrite these files and directories if they exist in the specified <code>&lt;output_dir></code>. 
-
-
-<a name="sec3.6">
-<h3>3.3 Assembly evaluation</h3>
-
-<p>
-
-    <a href="http://bioinf.spbau.ru/en/quast" target="_blank">QUAST</a> may be used to generate summary statistics (N50, maximum contig length, GC %, # genes found in a reference list or with built-in gene finding tools, etc.) for a single assembly. It may also be used to compare statistics for multiple assemblies of the same data set (e.g., truSPAdes run with different parameters, or several different assemblers).
-<br>
-
-<a name="sec5">
+<a name="sec4">
 <h2>4. Feedback and bug reports</h2>
 <p>
     Your comments, bug reports, and suggestions are very welcomed. They will help us to further improve truSPAdes.
-
+    
 <p>
-    If you have any troubles running truSPAdes, please send us <code>params.txt</code> and <code>truspades.log</code> from the directory <code>&lt;output_dir></code>.
+    If you have any troubles running truSPAdes, please send us <code>dataset.info</code> and <code>truspades.log</code> from the directory <code>&lt;output_dir></code>.
 
 <p>
     Address for communications: <a href="mailto:spades.support@bioinf.spbau.ru" target="_blank">spades.support@bioinf.spbau.ru</a>.
