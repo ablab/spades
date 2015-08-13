@@ -104,7 +104,10 @@ private:
             }
             int difference = (int)genome_path[index_genome].second.initial_range.start_pos - (int)path[index_contig].second.initial_range.start_pos;
             if(abs(difference - real_difference) > allowed_error) {
-                DrawVertex(curr_env, curr_env.graph().EdgeStart(filtered_edges[i]).int_id(), name);
+            	real_difference = (int)genome_path[index_genome].second.initial_range.start_pos - (int)path[index_contig].second.initial_range.start_pos;
+                vector<EdgeId> path_to_draw;
+                path_to_draw.push_back(genome_path[index_genome].first);
+            	DrawPicturesAlongPath(curr_env, path_to_draw, name);
             }
             ++i;
 
