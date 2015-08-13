@@ -105,7 +105,7 @@ private:
                 vector<EdgeId> path_to_draw;
                 path_to_draw.push_back(filtered_edges[i]);
                 DrawPicturesAlongPath(curr_env, path_to_draw, name);
-                INFO("Diff is set to " << real_difference);
+
                 ++i;
                 continue;
             }
