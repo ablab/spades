@@ -93,19 +93,15 @@ private:
         INFO("Diff is set to " << real_difference);
 
 
-        while(i < filtered_edges.size() && it_genome != genome_edges.end()) {
+        while(i < filtered_edges.size()) {
             INFO("Now at edge " << curr_env.graph().int_id(filtered_edges[i]));
             it_genome = find(genome_edges.begin(), genome_edges.end(), filtered_edges[i]);
             it_contig = find(edges.begin(), edges.end(), filtered_edges[i]);
 
             size_t index_genome = it_genome - genome_edges.begin();
             size_t index_contig = it_contig - edges.begin();
-            if(index_genome == genome_edges.size() || index_contig == edges.size()) {
-            	++i;
-                continue;
-            }
             int difference = (int)genome_path[index_genome].second.initial_range.start_pos - (int)path[index_contig].second.initial_range.start_pos;
-            if(abs(difference - real_difference) > allowed_error) {
+            if(abs(difference - real_difference) > allowed_error || it_genome == genome_edges.end()) {
             	real_difference = (int)genome_path[index_genome].second.initial_range.start_pos - (int)path[index_contig].second.initial_range.start_pos;
                 vector<EdgeId> path_to_draw;
                 path_to_draw.push_back(genome_path[index_genome].first);
