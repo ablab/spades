@@ -37,7 +37,7 @@ private:
         vector<EdgeId> filtered_edges;
         std::set<EdgeId> set_edges;
         std::set<EdgeId> non_unique;
-        std::set<EdgeId> genome_edges;
+        std::set<EdgeId> genome_set;
         std::set<EdgeId> non_unique_genome;
 
 
@@ -49,10 +49,10 @@ private:
         }
 
         for(auto e : genome_edges) {
-        	if(genome_edges.find(e) != genome_edges.end()) {
+        	if(genome_set.find(e) != genome_set.end()) {
             	non_unique_genome.insert(e);
         	}
-        	genome_edges.insert(e);
+        	genome_set.insert(e);
         }
 
 
@@ -75,13 +75,20 @@ private:
 
         auto it_genome = find(genome_edges.begin(), genome_edges.end(), filtered_edges[0]);
         size_t index_genome = it_genome - genome_edges.begin();
-        size_t i = 1;
+        size_t i = 0;
 
 
-        auto it_contig = find(edges.begin(), edges.end(), filtered_edges[0]);
+        auto it_contig = find(edges.begin(), edges.end(), filtered_edges[i]);
+        while(it_contig != edges.end()) {
+        	++i;
+        	if(i > filtered_edges.size()) {
+        		return;
+        	}
+        	it_contig = find(edges.begin(), edges.end(), filtered_edges[i]);
+        }
         size_t index_contig = it_contig - edges.begin();
 
-        const int allowed_error = 1000;
+        const int allowed_error = 3000;
         int real_difference = (int)genome_path[index_genome].second.initial_range.start_pos - (int)path[index_contig].second.initial_range.start_pos;
 
 
@@ -92,7 +99,8 @@ private:
             size_t index_genome = it_genome - genome_edges.begin();
             size_t index_contig = it_contig - edges.begin();
             if(index_genome == genome_edges.size() || index_contig == edges.size()) {
-                return;
+            	++i;
+                continue;
             }
             int difference = (int)genome_path[index_genome].second.initial_range.start_pos - (int)path[index_contig].second.initial_range.start_pos;
             if(abs(difference - real_difference) > allowed_error) {
