@@ -149,7 +149,11 @@ def print_used_values(cfg, log):
     log.info("")
 
 
-def fill_cfg(options_to_parse, log, skip_output_dir=False, load_processed_dataset=False):
+def fill_cfg(options_to_parse, log, secondary_filling=False):
+    skip_output_dir=secondary_filling
+    skip_run_to = secondary_filling
+    load_processed_dataset=secondary_filling
+
     try:
         options, not_options = getopt.gnu_getopt(options_to_parse, options_storage.short_options, options_storage.long_options)
     except getopt.GetoptError:
@@ -244,11 +248,17 @@ def fill_cfg(options_to_parse, log, skip_output_dir=False, load_processed_datase
         elif opt == "--continue":
             options_storage.continue_mode = True
         elif opt == "--restart-from":
-            if arg not in ['ec', 'as', 'mc', "scc", "tpp"] and not arg.startswith('k'):
+            if arg not in ['ec', 'as', 'mc', 'scc', 'tpp'] and not arg.startswith('k'):
                 support.error("wrong value for --restart-from option: " + arg +
                               " (should be 'ec', 'as', 'k<int>', or 'mc'", log)
             options_storage.continue_mode = True
             options_storage.restart_from = arg
+        elif opt == "--run-to":
+            if not skip_run_to:
+                if arg not in ['ec', 'as', 'mc', 'scc', 'tpp'] and not arg.startswith('k'):
+                    support.error("wrong value for --run-to option: " + arg +
+                                  " (should be 'ec', 'as', 'k<int>', or 'mc'", log)
+                options_storage.run_to = arg
 
         elif opt == '-t' or opt == "--threads":
             options_storage.threads = int(arg)
@@ -294,7 +304,7 @@ def fill_cfg(options_to_parse, log, skip_output_dir=False, load_processed_datase
         elif opt == '-h' or opt == "--help":
             show_usage(0)
         elif opt == "--help-hidden":
-            show_usage(0)
+            show_usage(0, show_hidden=True)
 
         elif opt == "--test":
             options_storage.set_test_options()
@@ -416,15 +426,26 @@ def fill_cfg(options_to_parse, log, skip_output_dir=False, load_processed_datase
     return cfg, dataset_data
 
 
-def check_cfg_for_restart_from(cfg):
-    if options_storage.restart_from == 'ec' and ("error_correction" not in cfg):
-        support.error("failed to restart from read error correction because this stage was not specified!")
-    if options_storage.restart_from == 'mc' and ("mismatch_corrector" not in cfg):
-        support.error("failed to restart from mismatch correction because this stage was not specified!")
-    if options_storage.restart_from == 'as' or options_storage.restart_from.startswith('k'):
+def check_cfg_for_partial_run(cfg, type='restart'):  # restart-from ot run-to
+    if type.startswith('restart'):
+        check_point = options_storage.restart_from
+        action = 'restart from'
+        verb = 'was'
+    elif type.startswith('run'):
+        check_point = options_storage.run_to
+        action = 'run to'
+        verb = 'is'
+    else:
+        return
+
+    if check_point == 'ec' and ("error_correction" not in cfg):
+        support.error("failed to " + action + " 'read error correction' ('" + check_point + "') because this stage " + verb + " not specified!")
+    if check_point == 'mc' and ("mismatch_corrector" not in cfg):
+        support.error("failed to " + action + " 'mismatch correction' ('" + check_point + "') because this stage " + verb + " not specified!")
+    if check_point == 'as' or check_point.startswith('k'):
         if "assembly" not in cfg:
-            support.error("failed to restart from assembling because this stage was not specified!")
-        if options_storage.restart_from.startswith('k'):
+            support.error("failed to " + action + " 'assembling' ('" + check_point + "') because this stage " + verb + " not specified!")
+        if check_point.startswith('k'):
             correct_k = False
             k_to_check = options_storage.k_mers
             if not k_to_check:
@@ -433,14 +454,14 @@ def check_cfg_for_restart_from(cfg):
                 else:
                     k_to_check = options_storage.K_MERS_SHORT
             for k in k_to_check:
-                if options_storage.restart_from == ("k%d" % k) or options_storage.restart_from.startswith("k%d:" % k):
+                if check_point == ("k%d" % k) or check_point.startswith("k%d:" % k):
                     correct_k = True
                     break
             if not correct_k:
-                k_str = options_storage.restart_from[1:]
+                k_str = check_point[1:]
                 if k_str.find(":") != -1:
                     k_str = k_str[:k_str.find(":")]
-                support.error("failed to restart from K=%s because this K was not specified!" % k_str)
+                support.error("failed to " + action + " K=%s because this K " % k_str + verb + " not specified!")
 
 
 def get_options_from_params(params_filename, spades_py_name=None):
@@ -470,9 +491,11 @@ def get_options_from_params(params_filename, spades_py_name=None):
         return None, None
     return cmd_line, cmd_line[spades_py_pos + len(spades_py_name):].split()
 
-def show_usage(code):
-    options_storage.usage(spades_version)
+
+def show_usage(code, show_hidden=False):
+    options_storage.usage(spades_version, show_hidden=show_hidden)
     sys.exit(code)
+
 
 def main(args):
     os.environ["LC_ALL"] = "C"
@@ -498,10 +521,12 @@ def main(args):
         cmd_line, options = get_options_from_params(os.path.join(options_storage.output_dir, "params.txt"), args[0])
         if not options:
             support.error("failed to parse command line of the previous run! Please restart from the beginning or specify another output directory.")
-        cfg, dataset_data = fill_cfg(options, log, skip_output_dir=True, load_processed_dataset=True)
+        cfg, dataset_data = fill_cfg(options, log, secondary_filling=True)
         if options_storage.restart_from:
-            check_cfg_for_restart_from(cfg)
+            check_cfg_for_partial_run(cfg, type='restart-from')
         options_storage.continue_mode = True
+    if options_storage.run_to:
+        check_cfg_for_partial_run(cfg, type='run-to')
 
     log_filename = os.path.join(cfg["common"].output_dir, "spades.log")
     if options_storage.continue_mode:
@@ -623,14 +648,18 @@ def main(args):
                 hammer_logic.run_hammer(corrected_dataset_yaml_filename, tmp_configs_dir, bin_home, bh_cfg, not_used_dataset_data,
                     ext_python_modules_home, log)
                 log.info("\n===== %s finished. \n" % STAGE_NAME)
+            if options_storage.run_to == 'ec':
+                support.finish_here(log)
 
         result_contigs_filename = os.path.join(cfg["common"].output_dir, "contigs.fasta")
         result_scaffolds_filename = os.path.join(cfg["common"].output_dir, "scaffolds.fasta")
+        truseq_long_reads_file_base = os.path.join(cfg["common"].output_dir, "truseq_long_reads")
+        truseq_long_reads_file = truseq_long_reads_file_base + ".fasta"
         misc_dir = os.path.join(cfg["common"].output_dir, "misc")
         ### if mismatch correction is enabled then result contigs are copied to misc directory
         assembled_contigs_filename = os.path.join(misc_dir, "assembled_contigs.fasta")
         assembled_scaffolds_filename = os.path.join(misc_dir, "assembled_scaffolds.fasta")
-        if "assembly" in cfg:
+        if "assembly" in cfg and not options_storage.run_completed:
             STAGE_NAME = "Assembling"
             spades_cfg = merge_configs(cfg["assembly"], cfg["common"])
             spades_cfg.__dict__["result_contigs"] = result_contigs_filename
@@ -640,6 +669,7 @@ def main(args):
                                                   or ("mismatch_corrector" in cfg and
                                                       os.path.isfile(assembled_contigs_filename)))\
                 and not options_storage.restart_from == 'as' \
+                and not options_storage.restart_from == 'scc' \
                 and not (options_storage.restart_from and options_storage.restart_from.startswith('k')):
 
                 log.info("\n===== Skipping %s (already processed). \n" % STAGE_NAME)
@@ -704,11 +734,12 @@ def main(args):
                         k_str = k_str[:k_str.find(":")]
                     support.error("failed to continue from K=%s because this K was not processed in the original run!" % k_str, log)
                 log.info("\n===== %s finished. \n" % STAGE_NAME)
+            if not options_storage.run_completed:
+                if options_storage.run_to == 'as' or options_storage.run_to == 'scc' or (options_storage.run_to and options_storage.run_to.startswith('k')):
+                    support.finish_here(log)
 
             #postprocessing
-            truseq_long_reads_file_base = os.path.join(cfg["common"].output_dir, "truseq_long_reads")
-            truseq_long_reads_file = truseq_long_reads_file_base + ".fasta"
-            if cfg["run_truseq_postprocessing"]:
+            if cfg["run_truseq_postprocessing"] and not options_storage.run_completed:
                 if options_storage.continue_mode and os.path.isfile(truseq_long_reads_file_base + ".fastq") and not options_storage.restart_from == 'tpp':
                     log.info("\n===== Skipping %s (already processed). \n" % "TruSeq postprocessing")
                 else:
@@ -720,10 +751,13 @@ def main(args):
                     alignment_dir = os.path.join(cfg["common"].output_dir, "alignment")
                     sam_files = alignment.align_bwa(alignment_bin, assembled_scaffolds_filename, dataset_data, alignment_dir, log, options_storage.threads)
                     moleculo_postprocessing.moleculo_postprocessing(assembled_scaffolds_filename, truseq_long_reads_file_base, sam_files, log)
+                if options_storage.run_to == 'tpp':
+                    support.finish_here(log)
 
             #corrector
-            if "mismatch_corrector" in cfg and (os.path.isfile(result_contigs_filename) or
-                                                (options_storage.continue_mode and os.path.isfile(assembled_contigs_filename))):
+            if "mismatch_corrector" in cfg and not options_storage.run_completed and \
+                    (os.path.isfile(result_contigs_filename) or
+                    (options_storage.continue_mode and os.path.isfile(assembled_contigs_filename))):
                 STAGE_NAME = "Mismatch correction"
                 to_correct = dict()
                 to_correct["contigs"] = (result_contigs_filename, assembled_contigs_filename)
@@ -784,25 +818,27 @@ def main(args):
                         if os.path.isfile(assembled_fastg):
                             support.create_fastg_from_fasta(corrected, assembled_fastg, log)
                     log.info("\n===== %s finished.\n" % STAGE_NAME)
+                if options_storage.run_to == 'mc':
+                    support.finish_here(log)
 
         if not cfg["common"].developer_mode and os.path.isdir(tmp_configs_dir):
             shutil.rmtree(tmp_configs_dir)
 
-        #log.info("")
-        if "error_correction" in cfg and os.path.isdir(os.path.dirname(corrected_dataset_yaml_filename)):
-            log.info(" * Corrected reads are in " + support.process_spaces(os.path.dirname(corrected_dataset_yaml_filename) + "/"))
-        if "assembly" in cfg and os.path.isfile(result_contigs_filename):
-            message = " * Assembled contigs are in " + support.process_spaces(result_contigs_filename)
-            if os.path.isfile(result_contigs_filename[:-6] + ".fastg"):
-                message += " (" + os.path.basename(result_contigs_filename[:-6] + ".fastg") + ")"
-            log.info(message)
-        if "assembly" in cfg and os.path.isfile(result_scaffolds_filename):
-            message = " * Assembled scaffolds are in " + support.process_spaces(result_scaffolds_filename)
-            if os.path.isfile(result_scaffolds_filename[:-6] + ".fastg"):
-                message += " (" + os.path.basename(result_scaffolds_filename[:-6] + ".fastg") + ")"
-
-            log.info(message)
-        #log.info("")
+        if not options_storage.run_completed:
+            #log.info("")
+            if "error_correction" in cfg and os.path.isdir(os.path.dirname(corrected_dataset_yaml_filename)):
+                log.info(" * Corrected reads are in " + support.process_spaces(os.path.dirname(corrected_dataset_yaml_filename) + "/"))
+            if "assembly" in cfg and os.path.isfile(result_contigs_filename):
+                message = " * Assembled contigs are in " + support.process_spaces(result_contigs_filename)
+                if os.path.isfile(result_contigs_filename[:-6] + ".fastg"):
+                    message += " (" + os.path.basename(result_contigs_filename[:-6] + ".fastg") + ")"
+                log.info(message)
+            if "assembly" in cfg and os.path.isfile(result_scaffolds_filename):
+                message = " * Assembled scaffolds are in " + support.process_spaces(result_scaffolds_filename)
+                if os.path.isfile(result_scaffolds_filename[:-6] + ".fastg"):
+                    message += " (" + os.path.basename(result_scaffolds_filename[:-6] + ".fastg") + ")"
+                log.info(message)
+            #log.info("")
 
         #breaking scaffolds
         if os.path.isfile(result_scaffolds_filename):

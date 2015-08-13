@@ -99,6 +99,10 @@ restart_reference = None
 restart_configs_dir = None
 restart_read_buffer_size = None
 
+# for running to specific check-point
+run_to = None
+run_completed = False
+
 #truseq options
 truseq_mode = False
 correct_scaffolds = False
@@ -114,7 +118,7 @@ long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc ionto
                "help test debug debug:false reference= config-file= dataset= "\
                "bh-heap-check= spades-heap-check= read-buffer-size= help-hidden "\
                "mismatch-correction mismatch-correction:false careful careful:false "\
-               "continue restart-from= diploid truseq cov-cutoff= configs-dir=".split()
+               "continue restart-from= diploid truseq cov-cutoff= configs-dir= run-to=".split()
 short_options = "o:1:2:s:k:t:m:i:h"
 
 # adding multiple paired-end, mate-pair and other (long reads) libraries support
@@ -252,6 +256,7 @@ def usage(spades_version, show_hidden=False, dipspades=False):
         sys.stderr.write("" + "\n")
         sys.stderr.write("HIDDEN options:" + "\n")
         sys.stderr.write("--debug\t\t\t\truns SPAdes in debug mode (keeps intermediate output)" + "\n")
+        sys.stderr.write("--run-to\t<cp>\truns SPAdes until the specified check-point ('ec', 'as', 'k<int>', 'mc') inclusive" + "\n")
         sys.stderr.write("--truseq\t\t\truns SPAdes in TruSeq mode\n")
         sys.stderr.write("--mismatch-correction\t\truns post processing correction"\
                              " of mismatches and short indels" + "\n")
@@ -459,6 +464,7 @@ def load_restart_options():
         configs_dir = restart_configs_dir
     if restart_read_buffer_size is not None:
         read_buffer_size = restart_read_buffer_size
+
 
 def enable_truseq_mode():
     global truseq_mode

@@ -369,6 +369,12 @@ def continue_from_here(log):
             continue_logfile_offset = log_file.tell()
 
 
+def finish_here(log):
+    log.info("\n======= Skipping the rest of SPAdes pipeline (--run-to was set to '%s'). "
+             "You can continue later with --continue or --restart-from options\n" % options_storage.run_to)
+    options_storage.run_completed = True
+
+
 def get_latest_dir(pattern):
     def atoi(text):
         if text.isdigit():

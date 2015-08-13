@@ -161,6 +161,7 @@ def run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one):
     command = [os.path.join(execution_home, "spades"), cfg_file_name]
     support.sys_call(command, log)
 
+
 def prepare_config_scaffold_correction(filename, cfg, log, saves_dir, scaffolds_file):
     subst_dict = dict()
 
@@ -179,11 +180,8 @@ def prepare_config_scaffold_correction(filename, cfg, log, saves_dir, scaffolds_
     subst_dict["scaffold_correction_mode"] = bool_to_str(True)
     subst_dict["scaffolds_file"] = scaffolds_file
 
-
     #todo
-
     process_cfg.substitute_params(filename, subst_dict, log)
-
 
 
 def run_scaffold_correction(configs_dir, execution_home, cfg, log, K):
@@ -261,50 +259,63 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, ext_python_module
         shutil.rmtree(bin_reads_dir)
     cfg.tmp_dir = support.get_tmp_dir(prefix="spades_")
 
+    finished_on_run_to = False
+    K = cfg.iterative_K[0]
     if len(cfg.iterative_K) == 1:
-        run_iteration(configs_dir, execution_home, cfg, log, cfg.iterative_K[0], None, True)
-        K = cfg.iterative_K[0]
+        run_iteration(configs_dir, execution_home, cfg, log, K, None, True)
     else:
-        run_iteration(configs_dir, execution_home, cfg, log, cfg.iterative_K[0], None, False)
-        prev_K = cfg.iterative_K[0]
-        RL = get_read_length(cfg.output_dir, cfg.iterative_K[0], ext_python_modules_home, log)
-        cfg.iterative_K = update_k_mers_in_special_cases(cfg.iterative_K, RL, log)
-        if cfg.iterative_K[1] + 1 > RL:
-            if cfg.rr_enable:
-                support.warning("Second value of iterative K (%d) exceeded estimated read length (%d). "
-                                "Rerunning for the first value of K (%d) with Repeat Resolving" %
-                                (cfg.iterative_K[1], RL, cfg.iterative_K[0]), log)
-                run_iteration(configs_dir, execution_home, cfg, log, cfg.iterative_K[0], None, True)
-                K = cfg.iterative_K[0]
+        run_iteration(configs_dir, execution_home, cfg, log, K, None, False)
+        if options_storage.run_to == "k%d" % K:
+            finished_on_run_to = True
         else:
-            rest_of_iterative_K = cfg.iterative_K
-            rest_of_iterative_K.pop(0)
-            count = 0
-            for K in rest_of_iterative_K:
-                count += 1
-                last_one = count == len(cfg.iterative_K) or (rest_of_iterative_K[count] + 1 > RL)
-                run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one)
-                prev_K = K
-                if last_one:
-                    break
-            if count < len(cfg.iterative_K):
-                support.warning("Iterations stopped. Value of K (%d) exceeded estimated read length (%d)" %
-                                (cfg.iterative_K[count], RL), log)
+            prev_K = K
+            RL = get_read_length(cfg.output_dir, K, ext_python_modules_home, log)
+            cfg.iterative_K = update_k_mers_in_special_cases(cfg.iterative_K, RL, log)
+            if cfg.iterative_K[1] + 1 > RL:
+                if cfg.rr_enable:
+                    support.warning("Second value of iterative K (%d) exceeded estimated read length (%d). "
+                                    "Rerunning for the first value of K (%d) with Repeat Resolving" %
+                                    (cfg.iterative_K[1], RL, cfg.iterative_K[0]), log)
+                    run_iteration(configs_dir, execution_home, cfg, log, cfg.iterative_K[0], None, True)
+                    K = cfg.iterative_K[0]
+            else:
+                rest_of_iterative_K = cfg.iterative_K
+                rest_of_iterative_K.pop(0)
+                count = 0
+                for K in rest_of_iterative_K:
+                    count += 1
+                    last_one = count == len(cfg.iterative_K) or (rest_of_iterative_K[count] + 1 > RL)
+                    run_iteration(configs_dir, execution_home, cfg, log, K, prev_K, last_one)
+                    prev_K = K
+                    if last_one:
+                        break
+                    if options_storage.run_to == "k%d" % K:
+                        finished_on_run_to = True
+                        break
+                if count < len(cfg.iterative_K) and not finished_on_run_to:
+                    support.warning("Iterations stopped. Value of K (%d) exceeded estimated read length (%d)" %
+                                    (cfg.iterative_K[count], RL), log)
 
+    if options_storage.run_to and options_storage.run_to.startswith('k'):
+        support.finish_here(log)
     latest = os.path.join(cfg.output_dir, "K%d" % K)
 
-    if cfg.correct_scaffolds:
-        if options_storage.continue_mode and os.path.isfile(os.path.join(cfg.output_dir, "SCC", "corrected_scaffolds.fasta")) and not options_storage.restart_from == "scc" :
+    if cfg.correct_scaffolds and not options_storage.run_completed:
+        if options_storage.continue_mode and os.path.isfile(os.path.join(cfg.output_dir, "SCC", "corrected_scaffolds.fasta")) and not options_storage.restart_from == "scc":
             log.info("\n===== Skipping %s (already processed). \n" % "scaffold correction")
         else:
             if options_storage.continue_mode:
                 support.continue_from_here(log)
             run_scaffold_correction(configs_dir, execution_home, cfg, log, K)
         latest = os.path.join(cfg.output_dir, "SCC")
+        if options_storage.run_to == 'scc':
+            support.finish_here(log)
 
     if cfg.correct_scaffolds:
-        shutil.copyfile(os.path.join(latest, "corrected_scaffolds.fasta"), cfg.result_scaffolds[:-6] + ".fasta")
-    else:
+        correct_scaffolds_fpath = os.path.join(latest, "corrected_scaffolds.fasta")
+        if os.path.isfile(correct_scaffolds_fpath):
+            shutil.copyfile(correct_scaffolds_fpath, cfg.result_scaffolds[:-6] + ".fasta")
+    elif not finished_on_run_to:  # interupted by --run-to, so final K is not processed!
         for format in [".fasta", ".fastg"]:
             if os.path.isfile(os.path.join(latest, "before_rr" + format)):
                 result_before_rr_contigs = os.path.join(os.path.dirname(cfg.result_contigs), "before_rr" + format)
@@ -322,7 +333,7 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, ext_python_module
     if cfg.developer_mode:
         # saves
         saves_link = os.path.join(os.path.dirname(cfg.result_contigs), "saves")
-        if os.path.lexists(saves_link): # exists return False for broken link! lexists return True
+        if os.path.lexists(saves_link):  # exists returns False for broken links! lexists return True
             os.remove(saves_link)
         os.symlink(os.path.join(latest, "saves"), saves_link)
 
