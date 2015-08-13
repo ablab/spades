@@ -45,7 +45,7 @@ private:
         	set_edges.insert(e);
         }
         for(auto e : edges) {
-        	if(non_unique.find(e) != non_unique.end()) {
+        	if(non_unique.find(e) == non_unique.end()) {
         		filtered_edges.push_back(e);
         	}
         }
