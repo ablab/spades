@@ -33,10 +33,13 @@ private:
         return filtered_edges;
     }
 
-    vector<EdgeId> FilterNonUnique(Graph& g, const vector<EdgeId>& edges) const {
+    vector<EdgeId> FilterNonUnique(Graph& g, const vector<EdgeId>& edges, const vector<EdgeId>& genome_edges) const {
         vector<EdgeId> filtered_edges;
         std::set<EdgeId> set_edges;
         std::set<EdgeId> non_unique;
+        std::set<EdgeId> genome_edges;
+        std::set<EdgeId> non_unique_genome;
+
 
         for(auto e : edges) {
         	if(set_edges.find(e) != set_edges.end()) {
@@ -44,18 +47,29 @@ private:
         	}
         	set_edges.insert(e);
         }
+
+        for(auto e : genome_edges) {
+        	if(genome_edges.find(e) != genome_edges.end()) {
+            	non_unique_genome.insert(e);
+        	}
+        	genome_edges.insert(e);
+        }
+
+
+
         for(auto e : edges) {
-        	if(non_unique.find(e) == non_unique.end()) {
+        	if(non_unique.find(e) == non_unique.end() && non_unique_genome.find(e) != non_unique_genome.end()) {
         		filtered_edges.push_back(e);
         	}
         }
         return filtered_edges;
     }
 
+
     void ProcessContig(DebruijnEnvironment& curr_env, MappingPath<EdgeId>& genome_path, MappingPath<EdgeId>& path, string name = "") const {
         vector<EdgeId> genome_edges = genome_path.simple_path();
         vector<EdgeId> edges = path.simple_path();
-        auto filtered_edges = FilterNonUnique(curr_env.graph(), edges);
+        auto filtered_edges = FilterNonUnique(curr_env.graph(), edges, genome_edges);
         if(filtered_edges.size() < 2)
             return;
 
@@ -67,7 +81,7 @@ private:
         auto it_contig = find(edges.begin(), edges.end(), filtered_edges[0]);
         size_t index_contig = it_contig - edges.begin();
 
-        const int allowed_error = 5000;
+        const int allowed_error = 1000;
         int real_difference = (int)genome_path[index_genome].second.initial_range.start_pos - (int)path[index_contig].second.initial_range.start_pos;
 
 
@@ -83,7 +97,6 @@ private:
             int difference = (int)genome_path[index_genome].second.initial_range.start_pos - (int)path[index_contig].second.initial_range.start_pos;
             if(abs(difference - real_difference) > allowed_error) {
                 DrawVertex(curr_env, curr_env.graph().EdgeStart(filtered_edges[i]).int_id(), name);
-                return;
             }
             ++i;
 
