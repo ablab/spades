@@ -58,7 +58,7 @@ private:
 
 
         for(auto e : edges) {
-        	if(non_unique.find(e) == non_unique.end() && non_unique_genome.find(e) != non_unique_genome.end()) {
+        	if(non_unique.find(e) == non_unique.end() && non_unique_genome.find(e) == non_unique_genome.end()) {
         		filtered_edges.push_back(e);
         	}
         }
