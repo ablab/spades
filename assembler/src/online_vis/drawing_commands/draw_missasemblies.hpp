@@ -79,7 +79,7 @@ private:
 
 
         auto it_contig = find(edges.begin(), edges.end(), filtered_edges[i]);
-        while(it_contig != edges.end()) {
+        while(it_contig == edges.end()) {
         	++i;
         	if(i > filtered_edges.size()) {
         		return;
