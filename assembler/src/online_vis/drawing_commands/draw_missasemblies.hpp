@@ -100,8 +100,18 @@ private:
 
             size_t index_genome = it_genome - genome_edges.begin();
             size_t index_contig = it_contig - edges.begin();
+
+            if(it_genome == genome_edges.end()) {
+                vector<EdgeId> path_to_draw;
+                path_to_draw.push_back(filtered_edges[i]);
+                DrawPicturesAlongPath(curr_env, path_to_draw, name);
+                INFO("Diff is set to " << real_difference);
+                ++i;
+                continue;
+            }
+
             int difference = (int)genome_path[index_genome].second.initial_range.start_pos - (int)path[index_contig].second.initial_range.start_pos;
-            if(abs(difference - real_difference) > allowed_error || it_genome == genome_edges.end()) {
+            if(abs(difference - real_difference) > allowed_error) {
             	real_difference = (int)genome_path[index_genome].second.initial_range.start_pos - (int)path[index_contig].second.initial_range.start_pos;
                 vector<EdgeId> path_to_draw;
                 path_to_draw.push_back(genome_path[index_genome].first);
