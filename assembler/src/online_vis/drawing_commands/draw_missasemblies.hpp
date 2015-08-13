@@ -33,10 +33,29 @@ private:
         return filtered_edges;
     }
 
+    vector<EdgeId> FilterNonUnique(Graph& g, const vector<EdgeId>& edges) const {
+        vector<EdgeId> filtered_edges;
+        std::set<EdgeId> set_edges;
+        std::set<EdgeId> non_unique;
+
+        for(auto e : edges) {
+        	if(set_edges.find(e) != set_edges.end()) {
+            	non_unique.insert(e);
+        	}
+        	set_edges.insert(e);
+        }
+        for(auto e : edges) {
+        	if(non_unique.find(e) != non_unique.end()) {
+        		filtered_edges.push_back(e);
+        	}
+        }
+        return filtered_edges;
+    }
+
     void ProcessContig(DebruijnEnvironment& curr_env, MappingPath<EdgeId>& genome_path, MappingPath<EdgeId>& path, string name = "") const {
         vector<EdgeId> genome_edges = genome_path.simple_path();
         vector<EdgeId> edges = path.simple_path();
-        auto filtered_edges = FilterByLength(curr_env.graph(), edges);
+        auto filtered_edges = FilterNonUnique(curr_env.graph(), edges);
         if(filtered_edges.size() < 2)
             return;
 
