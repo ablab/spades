@@ -124,6 +124,32 @@ public:
         return answer;
     }
 
+    //terminating edges, going into the component
+    set<EdgeId> terminating_in_edges() const {
+        set<EdgeId> answer;
+        for (VertexId v : terminating_vertices()) {
+            for (EdgeId e : g_.OutgoingEdges(v)) {
+                if (contains(e)) {
+                    answer.insert(e);
+                }
+            }
+        }
+        return answer;
+    }
+    
+    //terminating edges, going out of the component
+    set<EdgeId> terminating_out_edges() const {
+        set<EdgeId> answer;
+        for (VertexId v : terminating_vertices()) {
+            for (EdgeId e : g_.IncomingEdges(v)) {
+                if (contains(e)) {
+                    answer.insert(e);
+                }
+            }
+        }
+        return answer;
+    }
+
     const Graph& g() const {
         return g_;
     }
@@ -556,7 +582,6 @@ public:
             if (!processed) {
                 for (EdgeId e : to_skip_in_future) {
                     it.HandleDelete(e);
-                    it.HandleDelete(g_.conjugate(e));
                 }
             }
 
@@ -574,6 +599,14 @@ public:
     }
 
 private:
+
+    set<EdgeId> ConjugateEdges(const set<EdgeId>& edges) const {
+        set<EdgeId> answer;
+        for (auto e : edges) {
+            answer.insert(g_.conjugate(e));
+        }
+        return answer;
+    }
 
     void VisualizeNontrivialComponent(const set<typename Graph::EdgeId>& edges, bool success) {
         auto colorer = omnigraph::visualization::DefaultColorer(g_);
@@ -640,7 +673,8 @@ private:
             } else {
                 TRACE("Failed to find component");
                 TRACE("Removing found terminating edges from further iteration");
-                insert_all(edges_to_skip, component_searcher.component().terminating_edges());
+                insert_all(edges_to_skip, component_searcher.component().terminating_in_edges());
+                insert_all(edges_to_skip, ConjugateEdges(component_searcher.component().terminating_out_edges()));
 
                 if (!vis_dir_.empty()) {
                     TRACE("Outputting image");
@@ -654,6 +688,7 @@ private:
 
         return false;
     }
+
 private:
     DECL_LOGGER("RelativeCoverageComponentRemover");
 };
