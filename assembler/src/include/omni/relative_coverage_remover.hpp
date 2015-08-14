@@ -507,8 +507,8 @@ private:
 
 //currently works with conjugate graphs only (due to the assumption in the outer cycle)
 template<class Graph>
-class RelativeCoverageComponentRemover {
-    Graph& g_;
+class RelativeCoverageComponentRemover : public EdgeProcessingAlgorithm<Graph> {
+    typedef EdgeProcessingAlgorithm<Graph> base;
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
     typedef std::function<double(EdgeId, VertexId)> LocalCoverageFT;
@@ -528,6 +528,33 @@ class RelativeCoverageComponentRemover {
     size_t fail_cnt_;
     size_t succ_cnt_;
 
+    void VisualizeNontrivialComponent(const set<typename Graph::EdgeId>& edges, bool success) {
+        auto colorer = omnigraph::visualization::DefaultColorer(this->g());
+        auto edge_colorer = make_shared<visualization::CompositeEdgeColorer<Graph>>("black");
+        edge_colorer->AddColorer(colorer);
+        edge_colorer->AddColorer(make_shared<visualization::SetColorer<Graph>>(this->g(), edges, "green"));
+    //    shared_ptr<visualization::GraphColorer<Graph>>
+        auto resulting_colorer = make_shared<visualization::CompositeGraphColorer<Graph>>(colorer, edge_colorer);
+
+        StrGraphLabeler<Graph> str_labeler(this->g());
+        CoverageGraphLabeler<Graph> cov_labler(this->g());
+        CompositeLabeler<Graph> labeler(str_labeler, cov_labler);
+
+        if (edges.size() > 1) {
+            set<typename Graph::VertexId> vertices;
+            for (auto e : edges) {
+                vertices.insert(this->g().EdgeStart(e));
+                vertices.insert(this->g().EdgeEnd(e));
+            }
+    
+    
+            auto filename = success ? vis_dir_ + "/success/" + ToString(succ_cnt_++) : vis_dir_ + "/fail/" + ToString(fail_cnt_++);
+            visualization::WriteComponent(
+                    ComponentCloser<Graph>(this->g(), 0).CloseComponent(GraphComponent<Graph>(this->g(), vertices.begin(), vertices.end())),
+                    filename + ".dot", colorer, labeler);
+        }
+    }
+
 public:
     RelativeCoverageComponentRemover(
             Graph& g, LocalCoverageFT local_coverage_f,
@@ -538,7 +565,7 @@ public:
             double max_coverage = std::numeric_limits<double>::max(),
             HandlerF handler_function = 0, size_t vertex_count_limit = 10, 
             std::string vis_dir = "")
-            : g_(g),
+            : base(g),
               rel_helper_(g, local_coverage_f, min_coverage_gap),
               length_bound_(length_bound),
               tip_allowing_length_bound_(tip_allowing_length_bound),
@@ -559,112 +586,38 @@ public:
         }
     }
 
-    template<class SmartEdgeIt>
-    bool RunFromIterator(SmartEdgeIt& it,
-                 ProceedConditionT proceed_condition = std::make_shared<func::AlwaysTrue<EdgeId>>()) {
-        TRACE("Start processing");
-        bool triggered = false;
-        for (; !it.IsEnd(); ++it) {
-            EdgeId e = *it;
-            TRACE("Current edge " << g_.str(e));
-            if (!proceed_condition->Check(e)) {
-                TRACE("Stop condition was reached.");
-                //need to release last element of the iterator to make it replacable by new elements
-                it.ReleaseCurrent();
-                break;
-            }
+protected:
 
-            set<EdgeId> to_skip_in_future;
-
-            TRACE("Processing edge " << g_.str(e));
-            bool processed = ProcessEdge(e, to_skip_in_future);
-
-            if (!processed) {
-                for (EdgeId e : to_skip_in_future) {
-                    it.HandleDelete(e);
-                }
-            }
-
-            triggered |= processed;
-        }
-        TRACE("Finished processing. Triggered = " << triggered);
-        return triggered;
-    }
-
-    template<class Comparator = std::less<EdgeId>>
-    bool Run(const Comparator& comp = Comparator(),
-                 ProceedConditionT proceed_condition = make_shared<func::AlwaysTrue<EdgeId>>()) {
-        auto it = g_.SmartEdgeBegin(comp);
-        return RunFromIterator(it, proceed_condition);
-    }
-
-private:
-
-    set<EdgeId> ConjugateEdges(const set<EdgeId>& edges) const {
-        set<EdgeId> answer;
-        for (auto e : edges) {
-            answer.insert(g_.conjugate(e));
-        }
-        return answer;
-    }
-
-    void VisualizeNontrivialComponent(const set<typename Graph::EdgeId>& edges, bool success) {
-        auto colorer = omnigraph::visualization::DefaultColorer(g_);
-        auto edge_colorer = make_shared<visualization::CompositeEdgeColorer<Graph>>("black");
-        edge_colorer->AddColorer(colorer);
-        edge_colorer->AddColorer(make_shared<visualization::SetColorer<Graph>>(g_, edges, "green"));
-    //    shared_ptr<visualization::GraphColorer<Graph>>
-        auto resulting_colorer = make_shared<visualization::CompositeGraphColorer<Graph>>(colorer, edge_colorer);
-
-        StrGraphLabeler<Graph> str_labeler(g_);
-        CoverageGraphLabeler<Graph> cov_labler(g_);
-        CompositeLabeler<Graph> labeler(str_labeler, cov_labler);
-
-        if (edges.size() > 1) {
-            set<typename Graph::VertexId> vertices;
-            for (auto e : edges) {
-                vertices.insert(g_.EdgeStart(e));
-                vertices.insert(g_.EdgeEnd(e));
-            }
-    
-    
-            auto filename = success ? vis_dir_ + "/success/" + ToString(succ_cnt_++) : vis_dir_ + "/fail/" + ToString(fail_cnt_++);
-            visualization::WriteComponent(
-                    ComponentCloser<Graph>(g_, 0).CloseComponent(GraphComponent<Graph>(g_, vertices.begin(), vertices.end())),
-                    filename + ".dot", colorer, labeler);
-        }
-    }
-
-    bool ProcessEdge(EdgeId e, set<EdgeId>& edges_to_skip/*comes empty*/) {
-        TRACE("Processing edge " << g_.str(e));
+    bool ProcessEdge(EdgeId e) {
+        TRACE("Processing edge " << this->g().str(e));
 
         //here we use that the graph is conjugate!
-        VertexId v = g_.EdgeStart(e);
-        if (g_.IsDeadEnd(v) && g_.IsDeadStart(v)) {
+        VertexId v = this->g().EdgeStart(e);
+        if (this->g().IsDeadEnd(v) && this->g().IsDeadStart(v)) {
             TRACE("Isolated");
             return false;
         }
-        if (g_.IsDeadEnd(v) || g_.IsDeadStart(v)) {
+        if (this->g().IsDeadEnd(v) || this->g().IsDeadStart(v)) {
             TRACE("Tip");
             return false;
         }
 
         double local_cov = rel_helper_.LocalCoverage(e, v);
 
-        TRACE("Local coverage around start " << g_.str(v) << " is " << local_cov);
+        TRACE("Local coverage around start " << this->g().str(v) << " is " << local_cov);
 
         //since min_coverage_gap_ > 1, we don't need to think about e here
         TRACE("Checking presence of highly covered edges around start")
-        if (rel_helper_.CheckAnyHighlyCovered(g_.OutgoingEdges(v), v, local_cov)
-                && rel_helper_.CheckAnyHighlyCovered(g_.IncomingEdges(v), v,
+        if (rel_helper_.CheckAnyHighlyCovered(this->g().OutgoingEdges(v), v, local_cov)
+                && rel_helper_.CheckAnyHighlyCovered(this->g().IncomingEdges(v), v,
                                          local_cov)) {
             TRACE("Looking for component");
-            ComponentChecker<Graph> checker(g_, vertex_count_limit_, length_bound_,
+            ComponentChecker<Graph> checker(this->g(), vertex_count_limit_, length_bound_,
                                             tip_allowing_length_bound_,
                                             longest_connecting_path_bound_, max_coverage_);
             //case of e being loop is handled implicitly!
             ComponentSearcher<Graph> component_searcher(
-                    g_, rel_helper_, checker, e);
+                    this->g(), rel_helper_, checker, e);
             if (component_searcher.FindComponent()) {
                 TRACE("Deleting component");
                 const Component<Graph>& component = component_searcher.component();
@@ -672,15 +625,10 @@ private:
                 return true;
             } else {
                 TRACE("Failed to find component");
-                TRACE("Removing found terminating edges from further iteration");
-                insert_all(edges_to_skip, component_searcher.component().terminating_in_edges());
-                insert_all(edges_to_skip, ConjugateEdges(component_searcher.component().terminating_out_edges()));
-
                 if (!vis_dir_.empty()) {
                     TRACE("Outputting image");
                     VisualizeNontrivialComponent(component_searcher.component().edges(), false);
                 }
-        
             }
         } else {
             TRACE("No highly covered edges around");
