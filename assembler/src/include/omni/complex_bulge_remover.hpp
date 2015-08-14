@@ -562,7 +562,7 @@ class SkeletonTreeFinder {
 	}
 
 	primitive_color_t GetCorrespondingDisjointSet(mixed_color_t color) const {
-		return current_color_partition_.find_set(
+		return (primitive_color_t) current_color_partition_.find_set(
 				coloring_.GetAnyPrimitiveColor(color));
 	}
 
