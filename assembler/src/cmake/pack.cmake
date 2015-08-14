@@ -16,7 +16,7 @@ set(CPACK_PACKAGE_VERSION "3.6.0")
 set(CPACK_PACKAGE_VERSION_MAJOR "3")
 set(CPACK_PACKAGE_VERSION_MINOR "6")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
-set(CPACK_STRIP_FILES bin/spades bin/hammer bin/ionhammer bin/dipspades bin/spades-bwa)
+set(CPACK_STRIP_FILES bin/spades bin/hammer bin/ionhammer bin/dipspades bin/spades-bwa bin/corrector bin/scaffold_correction)
 
 # Source stuff
 set(CPACK_SOURCE_GENERATOR "TBZ2")

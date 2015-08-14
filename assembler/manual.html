@@ -59,6 +59,7 @@ SPAdes comes in several separate modules:
         <li> SPAdes &ndash; iterative short-read genome assembly module; values of K are selected automatically based on the read length and data set type. </li>
         <li> MismatchCorrector &ndash; a tool which improves mismatch and short indel rates in resulting contigs and scaffolds; this module uses the <a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> tool [<a href="http://www.ncbi.nlm.nih.gov/pubmed/19451168" target="_blank">Li H. and Durbin R., 2009</a>]; MismatchCorrector is turned off by default, but we recommend to turn it on (see <a href="#correctoropt">SPAdes options section</a>). </li>
         <li> dipSPAdes &ndash; module for assembling highly polymorphic diploid genomes; for more information see <a href="dipspades_manual.html" target="_blank">dipSPAdes manual</a>. </li>
+        <li> truSPAdes &ndash; an assembler for short reads produced by Illumina TruSeq Long Read technology; for more information see <a href="truspades_manual.html" target="_blank">truSPAdes manual</a>. </li>
     </ul>
 <p>
     We recommend to run SPAdes with BayesHammer/IonHammer to obtain high-quality assemblies. However, if you use your own read correction tool, it is possible to turn error correction module off. It is also possible to use only the read error correction stage, if you wish to use another assembler. See the <a href="#pipelineopt">SPAdes options section</a>.
@@ -73,7 +74,7 @@ SPAdes comes in several separate modules:
         <li> <a href="http://spades.bioinf.spbau.ru/spades_test_datasets/ecoli_sc/" target="_blank">MDA single-cell <i>E. coli</i></a>; 6.3 Gb, 29M reads, 2x100bp, insert size ~ 270bp </li>
     </ul>
 <p>
-    We ran SPAdes with default parameters using 16 threads on a server with Intel Xeon 2.27GHz processors. BayesHammer runs in approximately 40 minutes and takes up to 10Gb of RAM to perform read error correction on each data set. Assembly takes about half an hour for the <i>E. coli</i> isolate data set and a bit less than an hour for the <i>E. coli</i> single-cell data set. Both data sets require 9Gb of RAM (see notes below). MismatchCorrector runs for about an hour on standard <i>E. coli</i>, 1.5 hours on the single-cell data set, and requires 1Gb of RAM. All modules also require additional disk space for storing results (corrected reads, contigs, etc) and temporary files. See the table below for more precise values.
+    We ran SPAdes with default parameters using 16 threads on a server with Intel Xeon 2.27GHz processors. BayesHammer runs in approximately 30-40 minutes and takes up to 8Gb of RAM to perform read error correction on each data set. Assembly takes about 10 minutes for the <i>E. coli</i> isolate data set and 20 minutes for the <i>E. coli</i> single-cell data set. Both data sets require 9Gb of RAM (see notes below). MismatchCorrector runs for about an hour on standard <i>E. coli</i>, a bit more on the single-cell data set, and requires less than 1Gb of RAM. All modules also require additional disk space for storing results (corrected reads, contigs, etc) and temporary files. See the table below for more precise values.
 
 <p>
     <table border="1" cellpadding="4" cellspacing="0">
@@ -95,40 +96,40 @@ SPAdes comes in several separate modules:
 
         <tr>
             <td> BayesHammer </td>
-            <td align="center"> 40m </td> 
+            <td align="center"> 33m </td> 
+            <td align="center"> 7.5 </td>
             <td align="center"> 9 </td>
-            <td align="center"> 10 </td>
-            <td align="center"> 42m </td> 
-            <td align="center"> 9 </td>
+            <td align="center"> 41m </td> 
+            <td align="center"> 7 </td>
             <td align="center"> 10 </td>
         </tr>
 
         <tr>
             <td> SPAdes </td>
-            <td align="center"> 27m </td> 
+            <td align="center"> 12m </td> 
             <td align="center"> 9 </td>
-            <td align="center"> 2 </td>
-            <td align="center"> 52m </td> 
+            <td align="center"> 1.5 </td>
+            <td align="center"> 22m </td> 
             <td align="center"> 9 </td>
-            <td align="center"> 3 </td>
+            <td align="center"> 2.5 </td>
         </tr>
 
         <tr>
             <td> MismatchCorrector </td>
-            <td align="center"> 53m </td> 
+            <td align="center"> 1h 7m </td> 
             <td align="center"> 1 </td>
-            <td align="center"> 19 </td>
-            <td align="center"> 1h 36m </td> 
+            <td align="center"> 22 </td>
+            <td align="center"> 1h 18m </td> 
             <td align="center"> 1 </td>
-            <td align="center"> 19 </td>
+            <td align="center"> 24 </td>
         </tr>
 
         <tr>
             <td> Whole pipeline </td>
-            <td align="center"> 2h </td> 
+            <td align="center"> 1h 52m </td> 
             <td align="center"> 9 </td>
-            <td align="center"> 26 </td>
-            <td align="center"> 3h 10m </td> 
+            <td align="center"> 24 </td>
+            <td align="center"> 2h 21m </td> 
             <td align="center"> 9 </td>
             <td align="center"> 26 </td>
         </tr>
@@ -174,6 +175,8 @@ SPAdes comes in several separate modules:
         <li><code>corrector</code>  (mismatch correction module)</li>
         <li><code>dipspades.py</code>  (main executable script for <a href="dipspades_manual.html" target="_blank">dipSPAdes</a>)</li>
         <li><code>dipspades</code>  (assembly module for highly polymorphic diploid genomes)</li>
+        <li><code>truspades.py</code>  (main executable script for <a href="truspades_manual.html" target="_blank">truSPAdes</a>)</li>
+        <li><code>scaffold_correction</code>  (executable used in truSPAdes pipeline)</li>
     </ul>
 
 <p>
@@ -204,6 +207,8 @@ SPAdes comes in several separate modules:
         <li><code>corrector</code>  (mismatch correction module)</li>
         <li><code>dipspades.py</code>  (main executable script for <a href="dipspades_manual.html" target="_blank">dipSPAdes</a>)</li>
         <li><code>dipspades</code>  (assembly module for highly polymorphic diploid genomes)</li>
+        <li><code>truspades.py</code>  (main executable script for <a href="truspades_manual.html" target="_blank">truSPAdes</a>)</li>
+        <li><code>scaffold_correction</code>  (executable used in truSPAdes pipeline)</li>
     </ul>
 
 <p>
@@ -216,7 +221,7 @@ SPAdes comes in several separate modules:
     If you wish to compile SPAdes by yourself you will need the following libraries to be pre-installed:
     <ul>
         <li>g++ (version 4.7 or higher)</li>
-        <li>cmake (version 2.8.8 or higher)</li>
+        <li>cmake (version 2.8.12 or higher)</li>
         <li>zlib</li>
         <li>libbz2</li>
     </ul>
@@ -273,6 +278,8 @@ SPAdes comes in several separate modules:
         <li><code>corrector</code>  (mismatch correction module)</li>
         <li><code>dipspades.py</code>  (main executable script for <a href="dipspades_manual.html" target="_blank">dipSPAdes</a>)</li>
         <li><code>dipspades</code>  (assembly module for highly polymorphic diploid genomes)</li>
+        <li><code>truspades.py</code>  (main executable script for <a href="truspades_manual.html" target="_blank">truSPAdes</a>)</li>
+        <li><code>scaffold_correction</code>  (executable used in truSPAdes pipeline)</li>
     </ul>
 
 <p>

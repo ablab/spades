@@ -77,7 +77,6 @@ add_subdirectory(spades_pipeline)
 add_subdirectory(dipspades)
 add_subdirectory(corrector)
 add_subdirectory(scaffold_correction)
-add_subdirectory(truseq_analysis)
 
 # Main pipeline script
 install(PROGRAMS "${CMAKE_CURRENT_SOURCE_DIR}/../spades.py"
@@ -104,6 +103,9 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../manual.html"
         DESTINATION share/spades
         COMPONENT runtime)
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../dipspades_manual.html"
+        DESTINATION share/spades
+        COMPONENT runtime)
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../truspades_manual.html"
         DESTINATION share/spades
         COMPONENT runtime)
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../LICENSE"
