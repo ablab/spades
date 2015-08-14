@@ -66,15 +66,19 @@ private:
     }
 
 
-    void ProcessContig(DebruijnEnvironment& curr_env, MappingPath<EdgeId>& genome_path, MappingPath<EdgeId>& path, string name = "") const {
+    void ProcessContig(DebruijnEnvironment& curr_env, MappingPath<EdgeId>& genome_path, MappingPath<EdgeId>& reverse_genome_path, MappingPath<EdgeId>& path, string name = "") const {
+        genome_path.join(reverse_genome_path);
         vector<EdgeId> genome_edges = genome_path.simple_path();
+        vector<EdgeId> rc_genome_edges = reverse_genome_path.simple_path();
+        vector<EdgeId> rc_and_usual_genome_edges(genome_edges);
+        push_back_all(rc_and_usual_genome_edges, rc_genome_edges);
         vector<EdgeId> edges = path.simple_path();
-        auto filtered_edges = FilterNonUnique(curr_env.graph(), edges, genome_edges);
+        auto filtered_edges = FilterNonUnique(curr_env.graph(), edges, rc_and_usual_genome_edges);
         if(filtered_edges.size() < 2)
             return;
 
-        auto it_genome = find(genome_edges.begin(), genome_edges.end(), filtered_edges[0]);
-        size_t index_genome = it_genome - genome_edges.begin();
+        auto it_genome = find(rc_and_usual_genome_edges.begin(), rc_and_usual_genome_edges.end(), filtered_edges[0]);
+        size_t index_genome = it_genome - rc_and_usual_genome_edges.begin();
         size_t i = 0;
 
 
@@ -95,13 +99,13 @@ private:
 
         while(i < filtered_edges.size()) {
             INFO("Now at edge " << curr_env.graph().int_id(filtered_edges[i]));
-            it_genome = find(genome_edges.begin(), genome_edges.end(), filtered_edges[i]);
+            it_genome = find(rc_and_usual_genome_edges.begin(), rc_and_usual_genome_edges.end(), filtered_edges[i]);
             it_contig = find(edges.begin(), edges.end(), filtered_edges[i]);
 
-            size_t index_genome = it_genome - genome_edges.begin();
+            size_t index_genome = it_genome - rc_and_usual_genome_edges.begin();
             size_t index_contig = it_contig - edges.begin();
 
-            if(it_genome == genome_edges.end()) {
+            if(it_genome == rc_and_usual_genome_edges.end()) {
                 vector<EdgeId> path_to_draw;
                 path_to_draw.push_back(filtered_edges[i]);
                 DrawPicturesAlongPath(curr_env, path_to_draw, name);
@@ -164,6 +168,8 @@ public:
         reader = make_shared<io::FixingWrapper>(make_shared<io::FileReadStream>(file));
 
         auto genome_mapping_path = curr_env.mapper().MapSequence(curr_env.genome());
+        auto rc_genome_mapping_path = curr_env.mapper().MapSequence(!curr_env.genome());
+
         cout << "Genome is mapped" << endl;
 
         while(!reader->eof()) {
@@ -173,7 +179,7 @@ public:
             cout << "Read " << read.name() << " is processed." << endl;
 
             auto mapping_path = curr_env.mapper().MapSequence(contig);
-            ProcessContig(curr_env, genome_mapping_path, mapping_path);
+            ProcessContig(curr_env, genome_mapping_path, rc_genome_mapping_path, mapping_path);
         }
     }
 
