@@ -28,8 +28,7 @@ class Options:
 
     def __init__(self, argv):
         if len(argv) == 1:
-            print_usage()
-            sys.exit(1)
+            print_usage_and_exit(1)
         long_params = "help-hidden construct-dataset reference= reference-index= do= continue threads= help dataset= input-dir= additional-options".split(" ")
         short_params = "o:t:h"
         self.set_default_options()
@@ -38,13 +37,10 @@ class Options:
         except getopt.GetoptError:
             _, exc, _ = sys.exc_info()
             sys.stderr.write(str(exc) + "\n")
-            sys.stderr.flush()
-            print_usage()
-            sys.exit(1)
+            print_usage_and_exit(1)
         for (key, value) in options_list:
             if key == "--help" or key == "-h":
-                print_usage(False)
-                sys.exit(1)
+                print_usage_and_exit(1)
             elif key == "--do":
                 self.mode = value
             elif key == "--construct-dataset":
@@ -70,34 +66,29 @@ class Options:
             elif key == "--threads" or key == "-t":
                 self.threads = int(value)
             elif key == "--help-hidden":
-                print_usage(True)
+                print_usage_and_exit(0, True)
         if not self.mode in self.possible_modes:
             sys.stderr.write("Error: --do parameter can only have one of the following values: " + ", ".join(self.possible_modes) + "\n")
-            print_usage()
-            sys.exit(1)
+            print_usage_and_exit(1)
         if None == self.output_dir or os.path.isfile(self.output_dir):
             sys.stderr.write("Error: Please provide output directory\n")
-            print_usage()
-            sys.exit(1)
+            print_usage_and_exit(1)
         if self.continue_launch:
             return
         cnt = len([option for option in [self.dataset_file, self.input_dirs, self.command_list] if option != None])
         if cnt != 1:
             sys.stderr.write("Error: exactly one of dataset-file and input-dir must be specified\n")
-            print_usage()
-            sys.exit(1)
+            print_usage_and_exit(1)
         if self.mode == "construct_subreferences":
             if self.index == "":
                 sys.stderr.write("Error: Please provide reference index for BWA")
-                print_usage()
-                sys.exit(1)
+                print_usage_and_exit(1)
             if self.reference == "":
                 sys.stderr.write("Error: Please provide reference for subreference construction")
-                print_usage()
-                sys.exit(1)
+                print_usage_and_exit(1)
 
 
-def print_usage(show_hidden = False):
+def print_usage_and_exit(code, show_hidden = False):
     sys.stderr.write("Usage: " + str(sys.argv[0]) + " [options] -o <output_dir>" + "\n")
     sys.stderr.write("" + "\n")
     sys.stderr.write("Basic options:" + "\n")
@@ -119,3 +110,4 @@ def print_usage(show_hidden = False):
     # sys.stderr.write("--print-commands\tprints file with truspades commands that would assemble barcodes from dataset" + "\n")
     # sys.stderr.write("--run-truspades\truns truSPAdes on all barcodes" + "\n")
     sys.stderr.flush()
+    sys.exit(code)

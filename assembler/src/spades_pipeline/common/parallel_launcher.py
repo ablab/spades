@@ -13,6 +13,7 @@ import sys
 import signal
 import time
 import traceback
+import logging
 
 __author__ = 'anton'
 import subprocess
@@ -38,28 +39,29 @@ class PseudoLambda:
 def GetHandlers(output_file_pattern, err_file_pattern, bid):
     if output_file_pattern == "":
         output_file_pattern = "/dev/null"
-    output = open(output_file_pattern.format(bid), "w")
+    output = open(output_file_pattern.format(bid), "a")
     if err_file_pattern == "":
         return (output, subprocess.STDOUT)
     else:
-        return (output, open(err_file_pattern.format(bid), "w"))
+        return (output, open(err_file_pattern.format(bid), "a"))
 
 class ExternalCallTask:
-    def __init__(self, output_pattern = "", err_pattern = ""):
+    def __init__(self, output_pattern = "", err_pattern = "", log_name = None):
         self.output_pattern = output_pattern
         self.err_pattern = err_pattern
+        self.log_name = log_name
 
     def __call__(self, data):
         bid, command = data
         output, err = GetHandlers(self.output_pattern, self.err_pattern, bid)
-        sys.stdout.write("Starting: " + command + "\n")
-        sys.stdout.flush()
+        if self.log_name is not None:
+            logging.getLogger(self.log_name).info("Starting: " + str(bid))
         import shlex
         return_code = subprocess.call(shlex.split(command), stdout = output, stderr = err)
         if return_code == 0:
-            sys.stdout.write("Successfully finished: " + command + "\n")
+            logging.getLogger(self.log_name).info("Successfully finished: " + str(bid))
         else:
-            sys.stdout.write("Failed to finish: " + command + "\n")
+            logging.getLogger(self.log_name).info("Failed to finish: " + str(bid))
         return return_code
 
 

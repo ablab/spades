@@ -95,8 +95,8 @@ def ExtractBarcodes(dirs):
     short_barcodes = generate_barcode_list(list(barcode_dict.keys()))
     return [Barcode(short, barcode_dict[bid]) for bid, short in short_barcodes]
 
-def ReadDataset(file):
-    sys.stdout.write("Reading dataset from " + file + "\n")
+def ReadDataset(file, log):
+    log.info("Reading dataset from " + file + "\n")
     if os.path.exists(file) and os.path.isfile(file):
         result = []
         f = open(file, "r")
@@ -114,10 +114,10 @@ def ReadDataset(file):
         f.close()
         return result
     else:
-        sys.stderr.write("Error: Dataset file does not exist\n" + file + "\n")
+        log.info("Error: Dataset file does not exist\n" + file + "\n")
         sys.exit(1)
 
-def print_dataset(dataset, output_file):
-    sys.stdout.write("Printing dataset to " + output_file + "\n")
+def print_dataset(dataset, output_file, log):
+    log.info("Printing dataset to " + output_file + "\n")
     open(output_file, "w").write("\n".join([str(line).strip() for line in dataset]) + "\n")
 
