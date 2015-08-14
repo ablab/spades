@@ -370,8 +370,8 @@ def continue_from_here(log):
 
 
 def finish_here(log):
-    log.info("\n======= Skipping the rest of SPAdes pipeline (--run-to was set to '%s'). "
-             "You can continue later with --continue or --restart-from options\n" % options_storage.run_to)
+    log.info("\n======= Skipping the rest of SPAdes pipeline (--stop-after was set to '%s'). "
+             "You can continue later with --continue or --restart-from options\n" % options_storage.stop_after)
     options_storage.run_completed = True
 
 

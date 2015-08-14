@@ -151,7 +151,7 @@ def print_used_values(cfg, log):
 
 def fill_cfg(options_to_parse, log, secondary_filling=False):
     skip_output_dir=secondary_filling
-    skip_run_to = secondary_filling
+    skip_stop_after = secondary_filling
     load_processed_dataset=secondary_filling
 
     try:
@@ -253,12 +253,12 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
                               " (should be 'ec', 'as', 'k<int>', or 'mc'", log)
             options_storage.continue_mode = True
             options_storage.restart_from = arg
-        elif opt == "--run-to":
-            if not skip_run_to:
+        elif opt == "--stop-after":
+            if not skip_stop_after:
                 if arg not in ['ec', 'as', 'mc', 'scc', 'tpp'] and not arg.startswith('k'):
-                    support.error("wrong value for --run-to option: " + arg +
+                    support.error("wrong value for --stop-after option: " + arg +
                                   " (should be 'ec', 'as', 'k<int>', or 'mc'", log)
-                options_storage.run_to = arg
+                options_storage.stop_after = arg
 
         elif opt == '-t' or opt == "--threads":
             options_storage.threads = int(arg)
@@ -426,14 +426,14 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
     return cfg, dataset_data
 
 
-def check_cfg_for_partial_run(cfg, type='restart'):  # restart-from ot run-to
-    if type.startswith('restart'):
+def check_cfg_for_partial_run(cfg, type='restart-from'):  # restart-from ot stop-after
+    if type == 'restart-from':
         check_point = options_storage.restart_from
         action = 'restart from'
         verb = 'was'
-    elif type.startswith('run'):
-        check_point = options_storage.run_to
-        action = 'run to'
+    elif type == 'stop-after':
+        check_point = options_storage.stop_after
+        action = 'stop after'
         verb = 'is'
     else:
         return
@@ -525,8 +525,8 @@ def main(args):
         if options_storage.restart_from:
             check_cfg_for_partial_run(cfg, type='restart-from')
         options_storage.continue_mode = True
-    if options_storage.run_to:
-        check_cfg_for_partial_run(cfg, type='run-to')
+    if options_storage.stop_after:
+        check_cfg_for_partial_run(cfg, type='stop-after')
 
     log_filename = os.path.join(cfg["common"].output_dir, "spades.log")
     if options_storage.continue_mode:
@@ -648,7 +648,7 @@ def main(args):
                 hammer_logic.run_hammer(corrected_dataset_yaml_filename, tmp_configs_dir, bin_home, bh_cfg, not_used_dataset_data,
                     ext_python_modules_home, log)
                 log.info("\n===== %s finished. \n" % STAGE_NAME)
-            if options_storage.run_to == 'ec':
+            if options_storage.stop_after == 'ec':
                 support.finish_here(log)
 
         result_contigs_filename = os.path.join(cfg["common"].output_dir, "contigs.fasta")
@@ -735,7 +735,7 @@ def main(args):
                     support.error("failed to continue from K=%s because this K was not processed in the original run!" % k_str, log)
                 log.info("\n===== %s finished. \n" % STAGE_NAME)
             if not options_storage.run_completed:
-                if options_storage.run_to == 'as' or options_storage.run_to == 'scc' or (options_storage.run_to and options_storage.run_to.startswith('k')):
+                if options_storage.stop_after == 'as' or options_storage.stop_after == 'scc' or (options_storage.stop_after and options_storage.stop_after.startswith('k')):
                     support.finish_here(log)
 
             #postprocessing
@@ -751,7 +751,7 @@ def main(args):
                     alignment_dir = os.path.join(cfg["common"].output_dir, "alignment")
                     sam_files = alignment.align_bwa(alignment_bin, assembled_scaffolds_filename, dataset_data, alignment_dir, log, options_storage.threads)
                     moleculo_postprocessing.moleculo_postprocessing(assembled_scaffolds_filename, truseq_long_reads_file_base, sam_files, log)
-                if options_storage.run_to == 'tpp':
+                if options_storage.stop_after == 'tpp':
                     support.finish_here(log)
 
             #corrector
@@ -818,7 +818,7 @@ def main(args):
                         if os.path.isfile(assembled_fastg):
                             support.create_fastg_from_fasta(corrected, assembled_fastg, log)
                     log.info("\n===== %s finished.\n" % STAGE_NAME)
-                if options_storage.run_to == 'mc':
+                if options_storage.stop_after == 'mc':
                     support.finish_here(log)
 
         if not cfg["common"].developer_mode and os.path.isdir(tmp_configs_dir):

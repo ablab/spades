@@ -259,14 +259,14 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, ext_python_module
         shutil.rmtree(bin_reads_dir)
     cfg.tmp_dir = support.get_tmp_dir(prefix="spades_")
 
-    finished_on_run_to = False
+    finished_on_stop_after = False
     K = cfg.iterative_K[0]
     if len(cfg.iterative_K) == 1:
         run_iteration(configs_dir, execution_home, cfg, log, K, None, True)
     else:
         run_iteration(configs_dir, execution_home, cfg, log, K, None, False)
-        if options_storage.run_to == "k%d" % K:
-            finished_on_run_to = True
+        if options_storage.stop_after == "k%d" % K:
+            finished_on_stop_after = True
         else:
             prev_K = K
             RL = get_read_length(cfg.output_dir, K, ext_python_modules_home, log)
@@ -289,14 +289,14 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, ext_python_module
                     prev_K = K
                     if last_one:
                         break
-                    if options_storage.run_to == "k%d" % K:
-                        finished_on_run_to = True
+                    if options_storage.stop_after == "k%d" % K:
+                        finished_on_stop_after = True
                         break
-                if count < len(cfg.iterative_K) and not finished_on_run_to:
+                if count < len(cfg.iterative_K) and not finished_on_stop_after:
                     support.warning("Iterations stopped. Value of K (%d) exceeded estimated read length (%d)" %
                                     (cfg.iterative_K[count], RL), log)
 
-    if options_storage.run_to and options_storage.run_to.startswith('k'):
+    if options_storage.stop_after and options_storage.stop_after.startswith('k'):
         support.finish_here(log)
     latest = os.path.join(cfg.output_dir, "K%d" % K)
 
@@ -308,14 +308,14 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, ext_python_module
                 support.continue_from_here(log)
             run_scaffold_correction(configs_dir, execution_home, cfg, log, K)
         latest = os.path.join(cfg.output_dir, "SCC")
-        if options_storage.run_to == 'scc':
+        if options_storage.stop_after == 'scc':
             support.finish_here(log)
 
     if cfg.correct_scaffolds:
         correct_scaffolds_fpath = os.path.join(latest, "corrected_scaffolds.fasta")
         if os.path.isfile(correct_scaffolds_fpath):
             shutil.copyfile(correct_scaffolds_fpath, cfg.result_scaffolds[:-6] + ".fasta")
-    elif not finished_on_run_to:  # interupted by --run-to, so final K is not processed!
+    elif not finished_on_stop_after:  # interupted by --stop-after, so final K is not processed!
         for format in [".fasta", ".fastg"]:
             if os.path.isfile(os.path.join(latest, "before_rr" + format)):
                 result_before_rr_contigs = os.path.join(os.path.dirname(cfg.result_contigs), "before_rr" + format)

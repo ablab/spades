@@ -100,7 +100,7 @@ restart_configs_dir = None
 restart_read_buffer_size = None
 
 # for running to specific check-point
-run_to = None
+stop_after = None
 run_completed = False
 
 #truseq options
@@ -118,7 +118,7 @@ long_options = "12= threads= memory= tmp-dir= iterations= phred-offset= sc ionto
                "help test debug debug:false reference= config-file= dataset= "\
                "bh-heap-check= spades-heap-check= read-buffer-size= help-hidden "\
                "mismatch-correction mismatch-correction:false careful careful:false "\
-               "continue restart-from= diploid truseq cov-cutoff= configs-dir= run-to=".split()
+               "continue restart-from= diploid truseq cov-cutoff= configs-dir= stop-after=".split()
 short_options = "o:1:2:s:k:t:m:i:h"
 
 # adding multiple paired-end, mate-pair and other (long reads) libraries support
@@ -256,7 +256,7 @@ def usage(spades_version, show_hidden=False, dipspades=False):
         sys.stderr.write("" + "\n")
         sys.stderr.write("HIDDEN options:" + "\n")
         sys.stderr.write("--debug\t\t\t\truns SPAdes in debug mode (keeps intermediate output)" + "\n")
-        sys.stderr.write("--run-to\t<cp>\truns SPAdes until the specified check-point ('ec', 'as', 'k<int>', 'mc') inclusive" + "\n")
+        sys.stderr.write("--stop-after\t<cp>\truns SPAdes until the specified check-point ('ec', 'as', 'k<int>', 'mc') inclusive" + "\n")
         sys.stderr.write("--truseq\t\t\truns SPAdes in TruSeq mode\n")
         sys.stderr.write("--mismatch-correction\t\truns post processing correction"\
                              " of mismatches and short indels" + "\n")
@@ -283,41 +283,11 @@ def usage(spades_version, show_hidden=False, dipspades=False):
 
     sys.stderr.flush()
 
-def tru_usage(spades_version, show_hidden=False, dipspades=False):
-    sys.stderr.write("truSPAdes assembler v.1.0\n")
-    sys.stderr.write("Usage: " + str(sys.argv[0]) + " [options] -1 <left_reads> -2 <right_reads> -o <output_dir>" + "\n")
-    sys.stderr.write("" + "\n")
-    sys.stderr.write("Basic options:" + "\n")
-    sys.stderr.write("-o\t<output_dir>\tdirectory to store all the resulting files (required)" + "\n")
-    sys.stderr.write("-1\t<filename>\tfile with forward paired-end reads (required)" + "\n")
-    sys.stderr.write("-2\t<filename>\tfile with reverse paired-end reads (required)" + "\n")
-    sys.stderr.write("--test\t\t\truns SPAdes on toy dataset" + "\n")
-    sys.stderr.write("-h/--help\t\tprints this usage message" + "\n")
-
-    sys.stderr.write("" + "\n")
-    sys.stderr.write("Pipeline options:" + "\n")
-    sys.stderr.write("--continue\t\tcontinue run from the last available check-point" + "\n")
-    sys.stderr.write("--restart-from\t<cp>\trestart run with updated options and from the specified check-point ('ec', 'as', 'k<int>', 'mc')" + "\n")
-
-    sys.stderr.write("" + "\n")
-    sys.stderr.write("Advanced options:" + "\n")
-    sys.stderr.write("-t/--threads\t<int>\t\tnumber of threads" + "\n")
-    sys.stderr.write("\t\t\t\t[default: %s]\n" % THREADS)
-    sys.stderr.write("-m/--memory\t<int>\t\tRAM limit for SPAdes in Gb"\
-                         " (terminates if exceeded)" + "\n")
-    sys.stderr.write("\t\t\t\t[default: %s]\n" % MEMORY)
-    sys.stderr.write("--tmp-dir\t<dirname>\tdirectory for temporary files" + "\n")
-    sys.stderr.write("\t\t\t\t[default: <output_dir>/tmp]" + "\n")
-    sys.stderr.write("-k\t\t<int,int,...>\tcomma-separated list of k-mer sizes"\
-                         " (must be odd and" + "\n")
-    sys.stderr.write("\t\t\t\tless than " + str(MAX_K + 1) + ") [default: 'auto']" + "\n")
-
-    sys.stderr.flush()
-
 
 def auto_K_allowed():
     return not k_mers and not single_cell and not iontorrent and not meta 
     # kmers were set by default, not SC, and not IonTorrent data, and not metagenomic
+
 
 def set_default_values():
     global threads
