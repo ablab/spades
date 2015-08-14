@@ -824,7 +824,7 @@ class GraphSimplifier {
         bool changed = RemoveRelativelyLowCoverageComponents(gp_.g, gp_.flanking_cov,
                                               simplif_cfg_.rcc, info_container_, set_removal_handler_f);
 
-        changed |= DisconnectRelativelyLowCoverageEdges(gp_.g, gp_.flanking_cov);
+        //changed |= DisconnectRelativelyLowCoverageEdges(gp_.g, gp_.flanking_cov);
 
         if (simplif_cfg_.topology_simplif_enabled && cfg::get().main_iteration) {
             changed |= AllTopology();
