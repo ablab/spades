@@ -189,7 +189,7 @@ class SequencingLibraryBase {
             type_ == io::LibraryType::SangerReads ||
             type_ == io::LibraryType::NanoporeReads ||
             //comment next line to switch alignment method for trusted contigs
-            //type_ == io::LibraryType::TrustedContigs ||
+            type_ == io::LibraryType::TrustedContigs ||
             type_ == io::LibraryType::UntrustedContigs);
   }
 
