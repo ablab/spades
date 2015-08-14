@@ -251,12 +251,18 @@ bool RemoveRelativelyLowCoverageComponents(
 
 template<class Graph>
 bool DisconnectRelativelyLowCoverageEdges(Graph &g,
-        const FlankingCoverage<Graph>& flanking_cov) {
-	INFO("Disconnecting edges with relatively low coverage");
-	omnigraph::simplification::relative_coverage::RelativeCoverageHelper<Graph> helper(g, std::bind(&FlankingCoverage<Graph>::LocalCoverage,
-            std::cref(flanking_cov), std::placeholders::_1, std::placeholders::_2), 1.0);
-    omnigraph::simplification::relative_coverage::RelativeCoverageDisconnector<Graph> disconnector(g, helper);
-	return disconnector.Run();
+        const FlankingCoverage<Graph>& flanking_cov, const debruijn_config::simplification::relative_coverage_edge_disconnector& rced_config) {
+	if(rced_config.enabled) {
+	    INFO("Disconnecting edges with relatively low coverage");
+	    omnigraph::simplification::relative_coverage::RelativeCoverageHelper<Graph> helper(g, std::bind(&FlankingCoverage<Graph>::LocalCoverage,
+	            std::cref(flanking_cov), std::placeholders::_1, std::placeholders::_2), rced_config.diff_mult);
+	    omnigraph::simplification::relative_coverage::RelativeCoverageDisconnector<Graph> disconnector(g, helper);
+	    return disconnector.Run();
+	}
+	else {
+        INFO("Disconnection of relatively low covered edges disabled");
+        return false;
+	}
 }
 
 template<class Graph>
@@ -802,7 +808,8 @@ class GraphSimplifier {
         bool changed = RemoveRelativelyLowCoverageComponents(gp_.g, gp_.flanking_cov,
                                               simplif_cfg_.rcc, info_container_, set_removal_handler_f);
 
-        changed |= DisconnectRelativelyLowCoverageEdges(gp_.g, gp_.flanking_cov);
+        changed |= DisconnectRelativelyLowCoverageEdges(gp_.g, gp_.flanking_cov, simplif_cfg_.relative_ed);
+
 
         if (simplif_cfg_.topology_simplif_enabled && cfg::get().main_iteration) {
             changed |= AllTopology();

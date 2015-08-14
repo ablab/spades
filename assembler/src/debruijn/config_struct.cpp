@@ -208,6 +208,13 @@ void load(debruijn_config::simplification::topology_tip_clipper& ttc,
   load(ttc.uniqueness_length, pt, "uniqueness_length");
 }
 
+void load(debruijn_config::simplification::relative_coverage_edge_disconnector& relative_ed,
+        boost::property_tree::ptree const& pt, bool complete) {
+  using config_common::load;
+  load(relative_ed.enabled, pt, "enabled", complete);
+  load(relative_ed.diff_mult, pt, "diff_mult", complete);
+}
+
 void load(debruijn_config::simplification::relative_coverage_comp_remover& rcc,
           boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
