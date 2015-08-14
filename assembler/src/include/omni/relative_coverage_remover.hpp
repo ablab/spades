@@ -167,7 +167,7 @@ public:
     }
 
     double LocalCoverage(EdgeId e, VertexId v) const {
-        TRACE("Local coverage of edge " << g_.str(e) << " around vertex " << g_.str(v) << " was " << local_coverage_f_(e, v));
+        DEBUG("Local coverage of edge " << g_.str(e) << " around vertex " << g_.str(v) << " was " << local_coverage_f_(e, v));
         return local_coverage_f_(e, v);
     }
 
@@ -351,12 +351,13 @@ template<class Graph>
 class RelativeCoverageDisconnector: public EdgeProcessingAlgorithm<Graph> {
     typedef typename Graph::EdgeId EdgeId;
     typedef typename Graph::VertexId VertexId;
+    typedef std::function<double(EdgeId, VertexId)> LocalCoverageFT;
     typedef EdgeProcessingAlgorithm<Graph> base;
-    const RelativeCoverageHelper<Graph>& rel_helper_;
+    const RelativeCoverageHelper<Graph> rel_helper_;
 public:
     RelativeCoverageDisconnector(Graph& g,
-            const RelativeCoverageHelper<Graph> rel_helper) :
-            base(g, true), rel_helper_(rel_helper) {
+            LocalCoverageFT local_coverage_f, double diff_mult) :
+            base(g, false), rel_helper_(g, local_coverage_f, diff_mult) {
     }
 protected:
     bool ProcessEdge(EdgeId edge) {
@@ -373,9 +374,12 @@ protected:
         } else {
             DEBUG("No need to disconnect");
             return false;
-        }
+      }
     }
+
 private:
+
+
     bool DisconnectEdge(EdgeId edge) {
         size_t len = this->g().length(edge);
         if (len > 1) {

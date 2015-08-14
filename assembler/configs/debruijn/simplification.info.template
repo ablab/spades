@@ -54,12 +54,12 @@ default
         max_coverage_coeff  2.0
 	}
 	
-    ; relative edge disconnector:
-    relative_ed
-    {
-        enabled false
-        diff_mult  20.
-    }
+	; relative edge disconnector:
+	relative_ed
+	{
+	enabled false
+	diff_mult  20.
+	}
 	
 	; topology based erroneous connection remover
 	tec

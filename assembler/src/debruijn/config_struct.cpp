@@ -477,6 +477,7 @@ void load(debruijn_config::simplification& simp,
   load(simp.br, pt, "br", complete); // bulge remover:
   load(simp.ec, pt, "ec", complete); // erroneous connections remover:
   load(simp.rcc, pt, "rcc", complete); // relative coverage component remover:
+  load(simp.relative_ed, pt, "relative_ed", complete); // relative edge disconnector:
   load(simp.tec, pt, "tec", complete); // topology aware erroneous connections remover:
   load(simp.trec, pt, "trec", complete); // topology and reliability based erroneous connections remover:
   load(simp.isec, pt, "isec", complete); // interstrand erroneous connections remover (thorn remover):
