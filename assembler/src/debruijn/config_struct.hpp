@@ -289,6 +289,11 @@ struct debruijn_config {
             double relative_threshold;
         };
 
+        struct relative_coverage_edge_disconnector {
+            bool enabled;
+            double diff_mult;
+        };
+
         struct relative_coverage_comp_remover {
             bool enabled;
             double coverage_gap;
@@ -316,6 +321,7 @@ struct debruijn_config {
         bulge_remover br;
         erroneous_connections_remover ec;
         relative_coverage_comp_remover rcc;
+        relative_coverage_edge_disconnector relative_ed;
         topology_based_ec_remover tec;
         tr_based_ec_remover trec;
         interstrand_ec_remover isec;

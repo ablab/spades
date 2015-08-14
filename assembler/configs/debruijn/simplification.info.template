@@ -55,6 +55,13 @@ default
         max_coverage_coeff  2.0
 	}
 	
+	; relative edge disconnector:
+	relative_ed
+	{
+	enabled false
+	diff_mult  20.
+	}
+	
 	; topology based erroneous connection remover
 	tec
 	{
@@ -415,6 +422,13 @@ meta
         max_vertex_cnt      100
         max_ec_length_coefficient   300
         max_coverage_coeff  -1.0
+	}
+
+	; relative edge disconnector:
+	relative_ed
+	{
+	enabled true
+	diff_mult  20.
 	}
 
 	; bulge remover:

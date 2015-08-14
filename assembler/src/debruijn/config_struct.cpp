@@ -215,10 +215,19 @@ void load(debruijn_config::simplification::topology_tip_clipper& ttc,
   load(ttc.uniqueness_length, pt, "uniqueness_length");
 }
 
+
 void load(debruijn_config::simplification::complex_tip_clipper& ctc,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
   load(ctc.enabled, pt, "enabled");
+}
+
+
+void load(debruijn_config::simplification::relative_coverage_edge_disconnector& relative_ed,
+        boost::property_tree::ptree const& pt, bool complete) {
+  using config_common::load;
+  load(relative_ed.enabled, pt, "enabled", complete);
+  load(relative_ed.diff_mult, pt, "diff_mult", complete);
 }
 
 void load(debruijn_config::simplification::relative_coverage_comp_remover& rcc,
@@ -477,6 +486,7 @@ void load(debruijn_config::simplification& simp,
   load(simp.br, pt, "br", complete); // bulge remover:
   load(simp.ec, pt, "ec", complete); // erroneous connections remover:
   load(simp.rcc, pt, "rcc", complete); // relative coverage component remover:
+  load(simp.relative_ed, pt, "relative_ed", complete); // relative edge disconnector:
   load(simp.tec, pt, "tec", complete); // topology aware erroneous connections remover:
   load(simp.trec, pt, "trec", complete); // topology and reliability based erroneous connections remover:
   load(simp.isec, pt, "isec", complete); // interstrand erroneous connections remover (thorn remover):
