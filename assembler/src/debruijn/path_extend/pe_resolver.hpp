@@ -362,7 +362,7 @@ public:
 		std::set<EdgeId> included;
 		PathContainer edges;
 		for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
-			if (g_.int_id(*iter) <= 0 or InCycle(*iter, g_))
+			if (g_.int_id(*iter) <= 0 or InTwoEdgeCycle(*iter, g_))
 				continue;
             if (included.count(*iter) == 0) {
 				edges.AddPair(new BidirectionalPath(g_, *iter),

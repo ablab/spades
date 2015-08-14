@@ -20,7 +20,9 @@
 using namespace debruijn_graph;
 
 namespace path_extend {
-inline bool InCycle(EdgeId e, const Graph& g) {
+
+//Checks whether we are in a cycle of length 2, used only for seed selection.
+inline bool InTwoEdgeCycle(EdgeId e, const Graph &g) {
     auto v = g.EdgeEnd(e);
     if (g.OutgoingEdgeCount(v) >= 1) {
         auto edges = g.OutgoingEdges(v);

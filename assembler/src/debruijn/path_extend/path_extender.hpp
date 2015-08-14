@@ -411,7 +411,10 @@ public:
 //Tail
         BidirectionalPath last = path.SubPath(i);
         last.Print();
-        int pos = path.SubPath(0, i).FindFirst(last);
+
+        int pos = path.FindFirst(last);
+// not cycle
+        if (pos == i) pos = -1;
         DEBUG("looking for 1sr IS cycle " << pos);
         return pos;
     }
@@ -423,23 +426,17 @@ public:
             return -1;
         }
 
-        size_t skip_identical_edges = 0;
-        LoopDetector loop_detect(&path, cov_map_);
-        if (loop_detect.IsCycled(2, skip_identical_edges)) {
-            return -1;
-        } else {
-            int last_edge_pos = FindPosIS(path);
-            VERIFY(last_edge_pos > -1);
-            DEBUG("last edge pos " << last_edge_pos);
-            VERIFY(last_edge_pos > pos);
-            for (int i = (int) path.Size() - 1; i >= last_edge_pos; --i) {
-                path.PopBack();
-            }
-            VERIFY((int) path.Size() == last_edge_pos);
-            VERIFY(pos < (int) path.Size());
-            DEBUG("result pos " <<pos);
-            return pos;
+        int last_edge_pos = FindPosIS(path);
+        VERIFY(last_edge_pos > -1);
+        DEBUG("last edge pos " << last_edge_pos);
+        VERIFY(last_edge_pos > pos);
+        for (int i = (int) path.Size() - 1; i >= last_edge_pos; --i) {
+            path.PopBack();
         }
+        VERIFY((int) path.Size() == last_edge_pos);
+        VERIFY(pos < (int) path.Size());
+        DEBUG("result pos " <<pos);
+        return pos;
     }
 };
 
