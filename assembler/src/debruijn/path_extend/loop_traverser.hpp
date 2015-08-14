@@ -60,7 +60,7 @@ private:
 
 	void TryToGrow(BidirectionalPath* path, EdgeId component_entrance) {
 		BidirectionalPath clone = *path;
-		extender_->GrowPath(*path);
+		extender_->GrowPathSimple(*path);
 		if (!path->Contains(component_entrance)) {
 			DEBUG("Grown paths do not contain initial edges, rolling back");
 			path->Clear();
