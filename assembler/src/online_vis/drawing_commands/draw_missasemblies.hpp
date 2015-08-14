@@ -107,10 +107,17 @@ private:
 
             if(it_genome == rc_and_usual_genome_edges.end()) {
                 vector<EdgeId> path_to_draw;
-                path_to_draw.push_back(filtered_edges[i]);
-                DrawPicturesAlongPath(curr_env, path_to_draw, name);
-
-                ++i;
+                while(it_genome == rc_and_usual_genome_edges.end()) {
+                    path_to_draw.push_back(filtered_edges[i]);
+                    ++i;
+                    if(i == filtered_edges.size())
+                    {
+                        break;
+                    }
+                    it_genome = find(rc_and_usual_genome_edges.begin(), rc_and_usual_genome_edges.end(), filtered_edges[i]);
+                }
+                DrawPicturesAlongPath(curr_env, path_to_draw, name + "_" + ToString(curr_env.graph().int_id(filtered_edges[i])));
+                real_difference = (int)genome_path[index_genome].second.initial_range.start_pos - (int)path[index_contig].second.initial_range.start_pos;
                 continue;
             }
 
@@ -119,7 +126,7 @@ private:
             	real_difference = (int)genome_path[index_genome].second.initial_range.start_pos - (int)path[index_contig].second.initial_range.start_pos;
                 vector<EdgeId> path_to_draw;
                 path_to_draw.push_back(genome_path[index_genome].first);
-            	DrawPicturesAlongPath(curr_env, path_to_draw, name);
+            	DrawPicturesAlongPath(curr_env, path_to_draw, name + "_" + ToString(curr_env.graph().int_id(filtered_edges[i])));
                 INFO("Diff is set to " << real_difference);
             }
             ++i;
@@ -179,7 +186,7 @@ public:
             cout << "Read " << read.name() << " is processed." << endl;
 
             auto mapping_path = curr_env.mapper().MapSequence(contig);
-            ProcessContig(curr_env, genome_mapping_path, rc_genome_mapping_path, mapping_path);
+            ProcessContig(curr_env, genome_mapping_path, rc_genome_mapping_path, mapping_path, read.name());
         }
     }
 
