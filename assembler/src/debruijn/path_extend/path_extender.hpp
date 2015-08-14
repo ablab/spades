@@ -395,7 +395,7 @@ public:
     bool CheckCycled(const BidirectionalPath& path) const {
         return FindCycleStart(path) != -1;
     }
-
+//first suffix longer than min_cycle_len
     int FindPosIS(const BidirectionalPath& path) const {
         int i = (int) path.Size() - 1;
         while (i >= 0 && path.LengthAt(i) < min_cycle_len_) {
@@ -408,6 +408,7 @@ public:
         int i = FindPosIS(path);
         DEBUG("last is pos " << i);
         if (i < 0) return -1;
+//Tail
         BidirectionalPath last = path.SubPath(i);
         last.Print();
         int pos = path.SubPath(0, i).FindFirst(last);

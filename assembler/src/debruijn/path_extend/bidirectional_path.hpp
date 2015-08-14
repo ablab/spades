@@ -141,6 +141,8 @@ public:
         return data_[data_.size() - index - 1];
     }
 
+
+    // Length from beginning of i-th edge to path end for forward directed path: L(e1 + e2 + ... + eN)
     size_t LengthAt(size_t index) const {
         return cumulative_len_[index];
     }

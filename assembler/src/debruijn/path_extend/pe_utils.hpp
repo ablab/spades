@@ -44,6 +44,11 @@ inline bool InBuble(EdgeId e, const Graph& g) {
     return false;
 }
 
+
+// Handles all paths in PathContainer.
+// For each edge output all paths  that _traverse_ this path. If path contains multiple instances - count them. Position of the edge is not reported.
+//TODO: Inside is some WTF, should be rewritten.
+//TODO: Memory leaks, inefficient data structure.
 class GraphCoverageMap: public PathListener {
 
 public:
@@ -144,11 +149,9 @@ public:
         return empty_;
     }
 
-
     int GetCoverage(EdgeId e) const {
         return (int) GetEdgePaths(e)->size();
     }
-
 
     bool IsCovered(EdgeId e) const {
         return GetCoverage(e) > 0;
@@ -182,45 +185,10 @@ public:
     BidirectionalPathSet GetCoveringPaths(EdgeId e) const {
         auto mapData = GetEdgePaths(e);
         return BidirectionalPathSet(mapData->begin(), mapData->end());
-
-    }
-
-    BidirectionalPathSet GetCoveringPaths(
-            const BidirectionalPath& path) const {
-        BidirectionalPathSet result;
-        if (path.Empty()) {
-            return result;
-        }
-        MapDataT * data;
-        data = GetEdgePaths(path.Front());
-
-        result.insert(data->begin(), data->end());
-
-        for (size_t i = 1; i < path.Size(); ++i) {
-            data = GetEdgePaths(path[i]);
-
-            BidirectionalPathSet dataSet;
-            dataSet.insert(data->begin(), data->end());
-
-            for (auto iter = result.begin(); iter != result.end();) {
-                auto next = iter;
-                ++next;
-                if (dataSet.count(*iter) == 0) {
-                    result.erase(iter);
-                }
-                iter = next;
-            }
-        }
-
-        return result;
     }
 
     int GetUniqueCoverage(EdgeId e) const {
         return (int) GetCoveringPaths(e).size();
-    }
-
-    int GetUniqueCoverage(const BidirectionalPath& path) const {
-        return (int) GetCoveringPaths(path).size();
     }
 
     std::map <EdgeId, MapDataT * >::const_iterator begin() const {
