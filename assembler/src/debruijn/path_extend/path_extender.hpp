@@ -377,7 +377,7 @@ private:
     DECL_LOGGER("HammingGapJoiner");
 };
 
-
+//Detects a cycle as a minsuffix > IS present earlier in the path. Overlap is allowed.
 class InsertSizeLoopDetector {
 protected:
     const Graph& g_;
@@ -419,6 +419,8 @@ public:
         return pos;
     }
 
+//After cycle detected, removes min suffix > IS.
+//returns the beginning of the cycle.
     int RemoveCycle(BidirectionalPath& path) const {
         int pos = FindCycleStart(path);
         DEBUG("Found IS cycle " << pos);
@@ -699,7 +701,8 @@ protected:
     bool investigateShortLoops_;
     bool use_short_loop_cov_resolver_;
     CovShortLoopResolver cov_loop_resolver_;
-    vector<pair<shared_ptr<BidirectionalPath>, shared_ptr<BidirectionalPath> > > visited_cycles_;
+
+    vector<shared_ptr<BidirectionalPath> > visited_cycles_;
     InsertSizeLoopDetector is_detector_;
     const GraphCoverageMap& cov_map_;
 
@@ -733,21 +736,17 @@ public:
             this->maxLoops_ = maxLoops;
         }
     }
-
+//seems that it is outofdate
     bool InExistingLoop(const BidirectionalPath& path) {
         TRACE("Checking existing loops");
         int j = 0;
-        for (auto cycle_pair : visited_cycles_) {
-            shared_ptr<BidirectionalPath> cycle = cycle_pair.first;
-            shared_ptr<BidirectionalPath> cycle_path = cycle_pair.second;
-            VERIFY(!cycle->Empty());
-            VERIFY(!cycle_path->Empty());
+        for (auto cycle : visited_cycles_) {
             VERBOSE_POWER2(j++, "checking ");
-            int pos = path.FindLast(*cycle_path);
+            int pos = path.FindLast(*cycle);
             if (pos == -1)
                 continue;
 
-            int start_cycle_pos = pos + (int) cycle_path->Size();
+            int start_cycle_pos = pos + (int) cycle->Size();
             bool only_cycles_in_tail = true;
             int last_cycle_pos = start_cycle_pos;
             DEBUG("start_cycle pos "<< last_cycle_pos);
@@ -768,14 +767,26 @@ public:
                 path.Print();
                 DEBUG("last subpath");
                 path.SubPath(last_cycle_pos).Print();
-                DEBUG("cycle path");
-                cycle_path->Print();
                 DEBUG("cycle");
                 cycle->Print();
                 DEBUG("last_cycle_pos " << last_cycle_pos << " path size " << path.Size());
                 VERIFY(last_cycle_pos <= (int)path.Size());
                 DEBUG("last cycle pos + cycle " << last_cycle_pos + (int)cycle->Size());
                 VERIFY(last_cycle_pos + (int)cycle->Size() >= (int)path.Size());
+// seems that most of this is useless, checking
+                if (last_cycle_pos != start_cycle_pos) {
+                    INFO("find cycle " << last_cycle_pos);
+                    INFO("path");
+                    path.Print();
+                    INFO("last subpath");
+                    path.SubPath(last_cycle_pos).Print();
+                    INFO("cycle");
+                    cycle->Print();
+                    INFO("last_cycle_pos " << last_cycle_pos << " path size " << path.Size());
+                    VERIFY(last_cycle_pos <= (int)path.Size());
+                    INFO("last cycle pos + cycle " << last_cycle_pos + (int)cycle->Size());
+                    VERIFY(last_cycle_pos + (int)cycle->Size() >= (int)path.Size());
+                }
                 return true;
             }
         }
@@ -787,13 +798,7 @@ public:
             DEBUG("Wrong position in IS cycle");
             return;
         }
-        int i = (int) pos;
-        while (i >= 0 && path.LengthAt(i) < is_detector_.GetMinCycleLenth()) {
-            --i;
-        }
-        if (i < 0)
-            i = 0;
-        visited_cycles_.push_back(make_pair(std::make_shared<BidirectionalPath>(path.SubPath(pos)), std::make_shared<BidirectionalPath>(path.SubPath(i))));
+        visited_cycles_.push_back(std::make_shared<BidirectionalPath>(path.SubPath(pos)));
         DEBUG("add cycle");
         path.SubPath(pos).Print();
     }
@@ -808,20 +813,6 @@ public:
                 AddCycledEdges(path, loop_pos);
                 return true;
             }
-        }
-        size_t skip_identical_edges = 0;
-        LoopDetector loop_detect(&path, cov_map_);
-        if (loop_detect.IsCycled(maxLoops_, skip_identical_edges)) {
-            size_t loop_size = loop_detect.LoopEdges(skip_identical_edges, 1);
-            DEBUG("Path is Cycled! skip identival edges = " << skip_identical_edges);
-            path.Print();
-            loop_detect.RemoveLoop(skip_identical_edges, false);
-            DEBUG("After delete");
-            path.Print();
-
-            VERIFY(path.Size() >= loop_size);
-            AddCycledEdges(path, path.Size() - loop_size);
-            return true;
         }
         return false;
     }

@@ -310,7 +310,7 @@ public:
         }
         return -1;
     }
-
+//TODO: Why just naive search?
     int FindLast(const BidirectionalPath& path) const {
         if (path.Size() > Size()) {
             return -1;
