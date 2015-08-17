@@ -22,6 +22,8 @@
 #include "pe_utils.hpp"
 #include "next_path_searcher.hpp"
 
+#include "scaff_supplementary.hpp"
+
 namespace path_extend {
 
 typedef std::multimap<double, EdgeWithDistance> AlternativeConteiner;
@@ -520,12 +522,12 @@ inline bool EdgeWithWeightCompareReverse(const pair<EdgeId, double>& p1,
     return p1.second > p2.second;
 }
 
-class UniqueEdgeAnalyzer {
+class LongReadsUniqueEdgeAnalyzer {
 protected:
-    DECL_LOGGER("ExtensionChooser")
+    DECL_LOGGER("LongReadsUniqueEdgeAnalyzer")
 
 public:
-    UniqueEdgeAnalyzer(const Graph& g, const GraphCoverageMap& cov_map,
+    LongReadsUniqueEdgeAnalyzer(const Graph& g, const GraphCoverageMap& cov_map,
                        double filter_threshold, double prior_threshold)
             : g_(g),
               cov_map_(cov_map),
@@ -850,7 +852,7 @@ private:
     double filtering_threshold_;
     double weight_priority_threshold_;
     const GraphCoverageMap cov_map_;
-    UniqueEdgeAnalyzer unique_edge_analyzer_;
+    LongReadsUniqueEdgeAnalyzer unique_edge_analyzer_;
     SimpleScaffolding simple_scaffolding_;
 };
 
@@ -1287,7 +1289,7 @@ private:
     PathsWeightCounter weight_counter_;
     const GraphCoverageMap cov_map_;
     NextPathSearcher path_searcher_;
-    UniqueEdgeAnalyzer unique_edge_analyzer_;
+    LongReadsUniqueEdgeAnalyzer unique_edge_analyzer_;
     SimpleScaffolding simple_scaffolder_;
 };
 }

@@ -16,6 +16,8 @@
 
 #include "omni/edges_position_handler.hpp"
 #include "omni/mapping_path.hpp"
+#include "../include/omni/edges_position_handler.hpp"
+#include "../include/sequence/sequence.hpp"
 
 namespace debruijn_graph {
 
