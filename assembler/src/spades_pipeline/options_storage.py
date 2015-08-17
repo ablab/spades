@@ -49,7 +49,6 @@ TMP_DIR = "tmp"
 output_dir = None
 single_cell = False
 iontorrent = False
-meta = False
 test_mode = False
 
 # pipeline options
@@ -79,6 +78,7 @@ iterations = None
 bh_heap_check = None
 spades_heap_check = None
 read_buffer_size = None
+meta = False
 ### END OF OPTIONS
 
 # for restarting SPAdes
@@ -149,7 +149,6 @@ def usage(spades_version, show_hidden=False, dipspades=False):
     sys.stderr.write("-o\t<output_dir>\tdirectory to store all the resulting files (required)" + "\n")
     if not dipspades:
         sys.stderr.write("--sc\t\t\tthis flag is required for MDA (single-cell) data" + "\n")
-        sys.stderr.write("--meta\t\t\tthis flag is required for metagenomic sample data" + "\n")
     sys.stderr.write("--iontorrent\t\tthis flag is required for IonTorrent data" + "\n")
     sys.stderr.write("--test\t\t\truns SPAdes on toy dataset" + "\n")
     sys.stderr.write("-h/--help\t\tprints this usage message" + "\n")
@@ -271,6 +270,8 @@ def usage(spades_version, show_hidden=False, dipspades=False):
         sys.stderr.write("--spades-heap-check\t<value>\tsets HEAPCHECK environment variable"\
                              " for SPAdes" + "\n")
         sys.stderr.write("--help-hidden\tprints this usage message with all hidden options" + "\n")
+        if not dipspades:
+            sys.stderr.write("--meta\t\t\tthis flag is required for metagenomic sample data" + "\n")
 
     if show_hidden and dipspades:
         sys.stderr.write("" + "\n")
