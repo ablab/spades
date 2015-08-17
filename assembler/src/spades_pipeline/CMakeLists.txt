@@ -12,7 +12,7 @@ install(FILES hammer_logic.py process_cfg.py spades_logic.py dipspades_logic.py 
         DESTINATION share/spades/spades_pipeline
         COMPONENT runtime)
 # TruSpades module
-install(FILES truspades/moleculo_filter_contigs.py truspades/break_by_coverage.py truspades/moleculo_postprocessing.py truspades/barcode_extraction.py truspades/generate_quality.py truspades/id_generation.py truspades/launch_options.py truspades/string_dist_utils.py
+install(FILES truspades/reference_construction.py truspades/moleculo_filter_contigs.py truspades/break_by_coverage.py truspades/moleculo_postprocessing.py truspades/barcode_extraction.py truspades/generate_quality.py truspades/id_generation.py truspades/launch_options.py truspades/string_dist_utils.py
         DESTINATION share/spades/spades_pipeline/truspades
         COMPONENT runtime)
 # Common module
