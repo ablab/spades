@@ -417,12 +417,12 @@ meta
         max_coverage_coeff  1000.0
 	}
 
-    ; relative edge disconnector:
-    relative_ed
-    {
-        enabled true
-        diff_mult  20.
-    }
+	; relative edge disconnector:
+	relative_ed
+	{
+	enabled true
+	diff_mult  20.
+	}
 
 	; bulge remover:
 	br
