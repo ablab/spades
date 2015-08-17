@@ -322,9 +322,8 @@ inline shared_ptr<SimpleExtender> MakePEExtender(const conj_graph_pack& gp, cons
         if (!investigate_loops)
             INFO("Threshold for library #" << lib_index << " is " << cfg::get().ds.reads[lib_index].data().pi_threshold);
     }
-    //fixme temporary configuration for meta mode
     shared_ptr<WeightCounter> wc = make_shared<PathCoverWeightCounter>(gp.g, lib, GetWeightThreshold(lib, pset), 
-                                                                       GetSingleThreshold(lib, pset), cfg::get().ds.meta ? 0.25 : 1.0);
+                                                                       GetSingleThreshold(lib, pset));
     wc->setNormalizeWeight(pset.normalize_weight);
     shared_ptr<SimpleExtensionChooser> extension = make_shared<SimpleExtensionChooser>(gp.g, wc, GetPriorityCoeff(lib, pset));
     return make_shared<SimpleExtender>(gp, cov_map, extension, lib->GetISMax(), pset.loop_removal.max_loops, investigate_loops, false);
