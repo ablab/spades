@@ -8,7 +8,6 @@ cp -r assembler/src/debruijn $SRC_DIR/
 cp -r assembler/src/hammer $SRC_DIR/
 cp -r assembler/src/dipspades $SRC_DIR/
 cp -r assembler/src/ionhammer $SRC_DIR/
-cp -r assembler/src/truseq_analysis $SRC_DIR/
 cp -r assembler/src/scaffold_correction $SRC_DIR/
 cp -r assembler/src/include $SRC_DIR/
 cp -r assembler/src/io $SRC_DIR/
