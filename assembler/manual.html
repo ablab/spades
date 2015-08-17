@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>SPAdes 3.6.0 Manual</title>
+    <title>SPAdes 3.6.2 Manual</title>
     <style type="text/css">
         .code {
             background-color: lightgray;
@@ -8,7 +8,7 @@
     </style>
 </head>
 <body>
-<h1>SPAdes 3.6.0 Manual</h1>
+<h1>SPAdes 3.6.2 Manual</h1>
 
 1. <a href="#sec1">About SPAdes</a><br>
 &nbsp;&nbsp;&nbsp;&nbsp;1.1. <a href="#sec1.1">Supported data types</a><br>
@@ -35,15 +35,14 @@
 <h2>1. About SPAdes</h2>
 <p>
     SPAdes &ndash; St. Petersburg genome assembler &ndash; is intended for both standard isolates and single-cell MDA bacteria assemblies. This manual will help you to install and run SPAdes. 
-SPAdes version 3.6.1 was released under GPLv2 on October 4, 2015 and can be downloaded from  <a href="http://bioinf.spbau.ru/en/spades" target="_blank">http://bioinf.spbau.ru/en/spades</a>.
-
+SPAdes version 3.6.2 was released under GPLv2 on November 20, 2015 and can be downloaded from  <a href="http://bioinf.spbau.ru/en/spades" target="_blank">http://bioinf.spbau.ru/en/spades</a>.
 
 <a name="sec1.1"></a>
 <h3>1.1 Supported data types</h3>
 <p>
     The current version of SPAdes works with Illumina or IonTorrent reads and is capable of providing hybrid assemblies using PacBio, Oxford Nanopore and Sanger reads. You can also provide additional contigs that will be used as long reads.
 <p>
-    Version 3.6.0 of SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries simultaneously. 
+    Version 3.6.2 of SPAdes supports paired-end reads, mate-pairs and unpaired reads. SPAdes can take as input several paired-end and mate-pair libraries simultaneously. 
 <p>
     Note, that SPAdes was initially designed for small genomes. It was tested on single-cell and standard bacterial and fungal data sets. SPAdes is not intended for larger genomes (e.g. mammalian size genomes) and metagenomic projects. For such purposes you can use it at your own risk.
 <p>
@@ -142,26 +141,27 @@ SPAdes comes in several separate modules:
         <li> Running SPAdes without preliminary read error correction (e.g. without BayesHammer or IonHammer) will likely require more time and memory. </li>
         <li> Each module removes its temporary files as soon as it finishes. </li>
         <li> SPAdes uses 512 Mb per thread for buffers, which results in higher memory consumption. If you set memory limit manually, SPAdes will use smaller buffers and thus less RAM. </li>
-        <li> Performance statistics is given for SPAdes version 3.6. </li>
+        <li> Performance statistics is given for SPAdes version 3.6.2. </li>
     </ul>
 
 
 <a name="sec2"></a>
 <h2>2. Installation</h2>
 <p>
+
     SPAdes requires a 64-bit Linux system or Mac OS and Python (supported versions are 2.4, 2.5, 2.6, 2.7, 3.2, 3.3, 3.4 and 3.5) to be pre-installed on it. To obtain SPAdes you can either download binaries or download source code and compile it yourself.
 
 <a name="sec2.1"></a>
 <h3>2.1 Downloading SPAdes Linux binaries</h3>
 
 <p>
-    To download <a href="http://spades.bioinf.spbau.ru/release3.6.0/SPAdes-3.6.0-Linux.tar.gz">SPAdes Linux binaries</a> and extract them, go to the directory in which you wish SPAdes to be installed and run:
+    To download <a href="http://spades.bioinf.spbau.ru/release3.6.2/SPAdes-3.6.2-Linux.tar.gz">SPAdes Linux binaries</a> and extract them, go to the directory in which you wish SPAdes to be installed and run:
 
 <pre  class="code">
 <code>
-    wget http://spades.bioinf.spbau.ru/release3.6.0/SPAdes-3.6.0-Linux.tar.gz
-    tar -xzf SPAdes-3.6.0-Linux.tar.gz
-    cd SPAdes-3.6.0-Linux/bin/
+    wget http://spades.bioinf.spbau.ru/release3.6.2/SPAdes-3.6.2-Linux.tar.gz
+    tar -xzf SPAdes-3.6.2-Linux.tar.gz
+    cd SPAdes-3.6.2-Linux/bin/
 </code>
 </pre>
 
@@ -187,13 +187,13 @@ SPAdes comes in several separate modules:
 <h3>2.2 Downloading SPAdes binaries for Mac</h3>
 
 <p>
-    To obtain <a href="http://spades.bioinf.spbau.ru/release3.6.0/SPAdes-3.6.0-Darwin.tar.gz">SPAdes binaries for Mac</a>, go to the directory in which you wish SPAdes to be installed and run:
+    To obtain <a href="http://spades.bioinf.spbau.ru/release3.6.2/SPAdes-3.6.2-Darwin.tar.gz">SPAdes binaries for Mac</a>, go to the directory in which you wish SPAdes to be installed and run:
 
 <pre  class="code">
 <code>
-    curl http://spades.bioinf.spbau.ru/release3.6.0/SPAdes-3.6.0-Darwin.tar.gz -o SPAdes-3.6.0-Darwin.tar.gz
-    tar -zxf SPAdes-3.6.0-Darwin.tar.gz
-    cd SPAdes-3.6.0-Darwin/bin/
+    curl http://spades.bioinf.spbau.ru/release3.6.2/SPAdes-3.6.2-Darwin.tar.gz -o SPAdes-3.6.2-Darwin.tar.gz
+    tar -zxf SPAdes-3.6.2-Darwin.tar.gz
+    cd SPAdes-3.6.2-Darwin/bin/
 </code>
 </pre>
 
@@ -228,13 +228,13 @@ SPAdes comes in several separate modules:
     </ul>
 
 <p>
-    If you meet these requirements, you can download the <a href="http://spades.bioinf.spbau.ru/release3.6.0/SPAdes-3.6.0.tar.gz">SPAdes source code</a>: 
+    If you meet these requirements, you can download the <a href="http://spades.bioinf.spbau.ru/release3.6.2/SPAdes-3.6.2.tar.gz">SPAdes source code</a>: 
 
 <pre class="code">
 <code>
-    wget http://spades.bioinf.spbau.ru/release3.6.0/SPAdes-3.6.0.tar.gz
-    tar -xzf SPAdes-3.6.0.tar.gz
-    cd SPAdes-3.6.0
+    wget http://spades.bioinf.spbau.ru/release3.6.2/SPAdes-3.6.2.tar.gz
+    tar -xzf SPAdes-3.6.2.tar.gz
+    cd SPAdes-3.6.2
 </code>
 </pre>
 
@@ -338,7 +338,7 @@ Thank you for using SPAdes!
     SPAdes takes as input paired-end reads, mate-pairs and single (unpaired) reads in FASTA and FASTQ. For IonTorrent data SPAdes also supports unpaired reads in unmapped BAM format (like the one produced by Torrent Server). However, in order to run read error correction, reads should be in FASTQ or BAM format. Sanger, Oxford Nanopore and PacBio CLR reads can be provided in both formats since SPAdes does not run error correction for these types of data.
 
 <p>
-    To run SPAdes 3.6.0 you need at least one library of the following types:
+    To run SPAdes 3.6.2 you need at least one library of the following types:
     <ul>
         <li>Illumina paired-end/high-quality mate-pairs/unpaired reads</li>
         <li>IonTorrent paired-end/high-quality mate-pairs/unpaired reads</li>
@@ -398,7 +398,7 @@ SPAdes supports mate-pair only assembly. However, we recommend to use only high-
 <p>
     By using command line interface, you can specify up to nine different single-read libraries. To input more libraries, you can use <a href="#yaml">YAML data set file</a>.
 <p>
-    Single librairies are assumed to have high quality and a reasonable coverage. For example, you can provide PacBio CSS reads as a single-read library. Additionally, if you have merged a paired-end library with overlapping read-pairs (for example, using <a href="http://ccb.jhu.edu/software/FLASH/" target="_blank">FLASh</a>), you can provide the resulting reads as a single-read library.
+    Single librairies are assumed to have high quality and a reasonable coverage. For example, you can provide PacBio CCS reads as a single-read library. Additionally, if you have merged a paired-end library with overlapping read-pairs (for example, using <a href="http://ccb.jhu.edu/software/FLASH/" target="_blank">FLASh</a>), you can provide the resulting reads as a single-read library.
 <p>
     Note, that you should not specify PacBio CLR, Sanger reads or additional contigs as single-read libraries, each of them has a separate <a href="#inputdata">option</a>.
 
@@ -416,9 +416,7 @@ SPAdes supports mate-pair only assembly. However, we recommend to use only high-
     For PacBio you just need to have filtered subreads in FASTQ/FASTA format. Provide these filtered subreads using <code>--pacbio</code> option. Oxford Nanopore reads are provided with <code>--nanopore</code> option.
 
 <p>
-    PacBio CCS reads or pre-corrected (using third-party software) PacBio CLR / Oxford Nanopore reads can be simply provided as single reads to SPAdes.
-
-
+    PacBio CCS/Reads of Insert reads or pre-corrected (using third-party software) PacBio CLR / Oxford Nanopore reads can be simply provided as single reads to SPAdes.
 
 <h4>Additional contigs</h4>
 <p>
@@ -747,7 +745,7 @@ and PacBio CCS and CLR reads:
 
 <pre class="code">
 <code>
-    pacbio_css.fastq
+    pacbio_ccs.fastq
     pacbio_clr.fastq
 </code>
 </pre>
@@ -1069,14 +1067,17 @@ However, it might be tricky to fully utilize the advantages of  long reads you h
         <li><code>&lt;output_dir>/contigs.fasta</code> contains resulting contigs</li>
         <li><code>&lt;output_dir>/scaffolds.fasta</code> contains resulting scaffolds</li>
         <li><code>&lt;output_dir>/assembly_graph.fastg</code> contains SPAdes assembly graph in <a href="http://fastg.sourceforge.net/FASTG_Spec_v1.00.pdf" target="_blank">FASTG format</a></li>
-        <li><code>&lt;output_dir>/contigs.paths</code> paths in the assembly graph corresponding to contigs.fasta (see details below)</li>
-        <li><code>&lt;output_dir>/scaffolds.paths</code> paths in the assembly graph corresponding to scaffolds.fasta (see details below)</li>
+        <li><code>&lt;output_dir>/contigs.paths</code> contains paths in the assembly graph corresponding to contigs.fasta (see details below)</li>
+        <li><code>&lt;output_dir>/scaffolds.paths</code> contains paths in the assembly graph corresponding to scaffolds.fasta (see details below)</li>
     </ul>
+
+<p>
+   Contigs/scaffolds names in SPAdes output FASTA files have the following format: <br><code>>NODE_3_length_237403_cov_243.207_ID_45</code><br> Here <code>3</code> is the number of the contig/scaffold, <code>237403</code> is the sequence length in nucleotides and <code>243.207</code> is the k-mer coverage for the last (largest) k value used. Note that the k-mer coverage is always lower than the read (per-base) coverage. 
 
 <p>
    To view FASTG files we recommend to use <a href="http://rrwick.github.io/Bandage/" target="_blank">Bandage visualization tool</a>. Note that sequences stored in <code>assembly_graph.fastg</code> correspond to contigs before repeat resolution (edges of the assembly graph). Paths corresponding to contigs after repeat resolution (scaffolding) are stored in <code>contigs.paths</code> (<code>scaffolds.paths</code>) in the format accepted by Bandage (see <a href="https://github.com/rrwick/Bandage/wiki/Graph-paths" target="_blank">Bandage wiki</a> for details). The example is given below.
 
-<p> Let the contig with the name <code>NODE_1_length_100000_cov_215.651_ID_5</code> consist of the following edges of the assembly graph:
+<p> Let the contig with the name <code>NODE_5_length_100000_cov_215.651_ID_5</code> consist of the following edges of the assembly graph:
 <pre>
     <code>
     >EDGE_<b>2</b>_length_33280_cov_199.702
@@ -1090,7 +1091,7 @@ However, it might be tricky to fully utilize the advantages of  long reads you h
 Then, <code>contigs.paths</code> will contain the following record:
 <pre>
     <code>
-    NODE_1_length_100000_cov_215.651_ID_5
+    NODE_5_length_100000_cov_215.651_ID_5
     2+,5-,3+,5-,4+
     </code>
 </pre>
@@ -1099,12 +1100,12 @@ Then, <code>contigs.paths</code> will contain the following record:
 Since the current version of Bandage does not accept paths with gaps, paths corresponding contigs/scaffolds jumping over a gap in the assembly graph are splitted by semicolon at the gap positions. For example, the following record
 <pre>
     <code>
-    NODE_1_length_237403_cov_243.207_ID_45
+    NODE_3_length_237403_cov_243.207_ID_45
     21-,17-,15+,17-,16+;
     31+,23-,22+,23-,4-
     </code>
 </pre>
-states that <code>NODE_1_length_237403_cov_243.207_ID_45</code> corresponds to the path with 10 edges, but jumps over a gap between edges <code>EDGE_16_length_21503_cov_482.709</code> and <code>EDGE_31_length_140767_cov_220.239</code>.
+states that <code>NODE_3_length_237403_cov_243.207_ID_45</code> corresponds to the path with 10 edges, but jumps over a gap between edges <code>EDGE_16_length_21503_cov_482.709</code> and <code>EDGE_31_length_140767_cov_220.239</code>.
 
 <p>
 The full list of <code>&lt;output_dir></code> content is presented below: 
@@ -1112,8 +1113,10 @@ The full list of <code>&lt;output_dir></code> content is presented below:
 <pre>
     <code>contigs.fasta</code> &ndash; <i>resulting contigs</i>
     <code>scaffolds.fasta</code> &ndash; <i>resulting scaffolds </i>
-    <code>before_rr.fasta</code> &ndash; <i>contigs before repeat resolution</i>
     <code>assembly_graph.fastg</code> &ndash; <i>assembly graph</i>
+    <code>contigs.paths</code> &ndash; <i>contigs paths in the assembly graph</i>
+    <code>scaffolds.paths</code> &ndash; <i>scaffolds paths in the assembly graph</i>
+    <code>before_rr.fasta</code> &ndash; <i>contigs before repeat resolution</i>
 
     <code>corrected/</code> &ndash; <i>files from read error correction</i>
         <code>configs/</code> &ndash; <i>configuration files for read error correction</i>
