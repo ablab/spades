@@ -475,7 +475,7 @@ try:
         if 'dipspades' in dataset_info.__dict__ and dataset_info.dipspades:
             contigs = "consensus_contigs.fasta"
         elif 'truseq' in dataset_info.__dict__ and dataset_info.truseq:
-            contigs = "truseq_long_contigs.fasta"
+            contigs = "truseq_long_reads.fasta"
 
         quast_output_dir = os.path.join(output_dir, "QUAST_RESULTS")
         qcode = run_quast(dataset_info, [os.path.join(output_dir, contigs)], quast_output_dir)
