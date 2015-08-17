@@ -106,6 +106,9 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../manual.html"
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../dipspades_manual.html"
         DESTINATION share/spades
         COMPONENT runtime)
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../truspades_manual.html"
+        DESTINATION share/spades
+        COMPONENT runtime)
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../LICENSE"
         DESTINATION share/spades
         COMPONENT runtime)
