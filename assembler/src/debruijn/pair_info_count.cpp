@@ -118,8 +118,7 @@ bool HasGoodRRLibs() {
         if (lib.is_contig_lib())
             continue;
         if (lib.is_paired() &&
-                (lib.data().mean_insert_size == 0.0 ||
-                    lib.data().mean_insert_size < 1.1 * (double) lib.data().read_length)) {
+                lib.data().mean_insert_size == 0.0) {
             continue;
         }
         if (lib.is_repeat_resolvable()) {
@@ -166,29 +165,37 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
     INFO("Min edge length for estimation: " << edge_length_threshold);
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         INFO("Estimating insert size for library #" << i);
-        if (cfg::get().ds.reads[i].is_paired()) {
+        const auto& lib = cfg::get().ds.reads[i];
+        const auto& lib_data = lib.data();
+        size_t rl = lib_data.read_length;
+        size_t k = cfg::get().K;
+        if (lib.is_paired()) {
 
             bool insert_size_refined = RefineInsertSizeForLib(gp, i, edge_length_threshold);
 
             if (!insert_size_refined) {
                 cfg::get_writable().ds.reads[i].data().mean_insert_size = 0.0;
                 WARN("Unable to estimate insert size for paired library #" << i);
-                if (cfg::get().ds.reads[i].data().read_length > 0 && cfg::get().ds.reads[i].data().read_length <= cfg::get().K) {
-                    WARN("Maximum read length (" << cfg::get().ds.reads[i].data().read_length << ") should be greater than K (" << cfg::get().K << ")");
-                }
-                else if (cfg::get().ds.reads[i].data().read_length <= cfg::get().K * 11 / 10) {
-                    WARN("Maximum read length (" << cfg::get().ds.reads[i].data().read_length << ") is probably too close to K (" << cfg::get().K << ")");
+                if (rl > 0 && rl <= k) {
+                    WARN("Maximum read length (" << rl << ") should be greater than K (" << k << ")");
+                } else if (rl <= k * 11 / 10) {
+                    WARN("Maximum read length (" << rl << ") is probably too close to K (" << k << ")");
                 } else {
                     WARN("None of paired reads aligned properly. Please, check orientation of your read pairs.");
                 }
                 continue;
             } else {
                 INFO("  Estimated insert size for paired library #" << i);
-                INFO("  Insert size = " << cfg::get().ds.reads[i].data().mean_insert_size <<
-                        ", deviation = " << cfg::get().ds.reads[i].data().insert_size_deviation <<
-                        ", left quantile = " << cfg::get().ds.reads[i].data().insert_size_left_quantile <<
-                        ", right quantile = " << cfg::get().ds.reads[i].data().insert_size_right_quantile <<
-                        ", read length = " << cfg::get().ds.reads[i].data().read_length);
+                INFO("  Insert size = " << lib_data.mean_insert_size <<
+                        ", deviation = " << lib_data.insert_size_deviation <<
+                        ", left quantile = " << lib_data.insert_size_left_quantile <<
+                        ", right quantile = " << lib_data.insert_size_right_quantile <<
+                        ", read length = " << lib_data.read_length);
+
+                if (lib_data.mean_insert_size < 1.1 * (double) rl) {
+                    WARN("Estimated mean insert size " << lib_data.mean_insert_size
+                                << " is very small compared to read length " << rl);
+                }
             }
         }
     }
