@@ -762,6 +762,8 @@ public:
             DEBUG("last_cycle_pos " << last_cycle_pos);
             only_cycles_in_tail = only_cycles_in_tail && cycle->CompareFrom(0, path.SubPath(last_cycle_pos));
             if (only_cycles_in_tail) {
+// seems that most of this is useless, checking
+                VERIFY (last_cycle_pos == start_cycle_pos);
                 DEBUG("find cycle " << last_cycle_pos);
                 DEBUG("path");
                 path.Print();
@@ -773,20 +775,7 @@ public:
                 VERIFY(last_cycle_pos <= (int)path.Size());
                 DEBUG("last cycle pos + cycle " << last_cycle_pos + (int)cycle->Size());
                 VERIFY(last_cycle_pos + (int)cycle->Size() >= (int)path.Size());
-// seems that most of this is useless, checking
-                if (last_cycle_pos != start_cycle_pos) {
-                    INFO("find cycle " << last_cycle_pos);
-                    INFO("path");
-                    path.Print();
-                    INFO("last subpath");
-                    path.SubPath(last_cycle_pos).Print();
-                    INFO("cycle");
-                    cycle->Print();
-                    INFO("last_cycle_pos " << last_cycle_pos << " path size " << path.Size());
-                    VERIFY(last_cycle_pos <= (int)path.Size());
-                    INFO("last cycle pos + cycle " << last_cycle_pos + (int)cycle->Size());
-                    VERIFY(last_cycle_pos + (int)cycle->Size() >= (int)path.Size());
-                }
+
                 return true;
             }
         }
@@ -873,6 +862,8 @@ private:
     bool InvestigateShortLoop() {
         return investigateShortLoops_ && (use_short_loop_cov_resolver_ || CanInvistigateShortLoop());
     }
+protected:
+    DECL_LOGGER("LoopDetectingPathExtender")
 };
 
 class SimpleExtender: public LoopDetectingPathExtender {
@@ -964,23 +955,26 @@ public:
     }
 
     virtual bool ResolveShortLoopByPI(BidirectionalPath& path) {
-            if (extensionChooser_->WeighConterBased()) {
-                LoopDetector loop_detector(&path, cov_map_);
-                size_t init_len = path.Length();
-                bool result = false;
-                while (path.Size() >= 1 && loop_detector.EdgeInShortLoop(path.Back())) {
-                    loopResolver_.ResolveShortLoop(path);
-                    if (init_len == path.Length()) {
-                        return result;
-                    } else {
-                        result = true;
-                    }
-                    init_len = path.Length();
+        if (extensionChooser_->WeighConterBased()) {
+            LoopDetector loop_detector(&path, cov_map_);
+            size_t init_len = path.Length();
+            bool result = false;
+            while (path.Size() >= 1 && loop_detector.EdgeInShortLoop(path.Back())) {
+                loopResolver_.ResolveShortLoop(path);
+                if (init_len == path.Length()) {
+                    return result;
+                } else {
+                    result = true;
                 }
-                return true;
+                init_len = path.Length();
             }
-            return false;
+            return true;
         }
+        return false;
+    }
+
+protected:
+    DECL_LOGGER("SimpleExtender")
 
 };
 
@@ -1016,7 +1010,8 @@ public:
     }
 
     virtual bool MakeSimpleGrowStep(BidirectionalPath& path) {
-        if (path.Size() < 1 || !IsSink(path.Back())) {
+        //TODO :: removed condition  !IsSink(path.Back()); check.
+        if (path.Size() < 1 ) {
             return false;
         }
         DEBUG("scaffolding");

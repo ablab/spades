@@ -373,7 +373,8 @@ inline shared_ptr<PathExtender> MakeScaffolding2015Extender(const conj_graph_pac
     double prior_coef = GetPriorityCoeff(lib, pset);
     double var_coeff = 3.0;
     DEBUG("here creating extchooser");
-    auto scaff_chooser = std::make_shared<ExtensionChooser2015>(gp.g, counter, prior_coef, var_coeff, storage);
+    //TODO: 2 is relative weight cutoff, to config!
+    auto scaff_chooser = std::make_shared<ExtensionChooser2015>(gp.g, counter, prior_coef, var_coeff, storage, 2);
     //);
     auto gap_joiner = std::make_shared<HammingGapJoiner>(gp.g, pset.scaffolder_options.min_gap_score,
                                                          int(math::round((double) gp.g.k() - var_coeff * (double) lib->GetIsVar())),
@@ -408,7 +409,7 @@ inline vector<shared_ptr<PathExtender> > MakeAllScaffoldingExtenders2015(PathExt
                                                                          const pe_config::ParamSetT &pset,
                                                                          bool use_auto_threshold,
                                                                          const PathContainer &paths_for_mp = PathContainer()) {
-    ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, 1000, 1.5);
+    ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, 10000, 1.5);
     auto storage = std::make_shared<ScaffoldingUniqueEdgeStorage>();
     unique_edge_analyzer.FillUniqueEdgeStorage(*storage);
     vector<shared_ptr<PathExtender> > result;
@@ -680,8 +681,8 @@ inline void ScaffoldAll2015(conj_graph_pack& gp,
     }
     DebugOutputPaths(writer, gp, output_dir, paths, (mp_exist ? "final_pe_paths" : "final_paths"));
     writer.WritePathsToFASTG(paths,
-                             output_dir + (mp_exist ? "scaffolds2015" : contigs_name) + ".fastg",
-                             output_dir + (mp_exist ? "scaffolds2015" : contigs_name) + ".fasta" );
+                             output_dir + ("scaffolds2015") + ".fastg",
+                             output_dir + ("scaffolds2015") + ".fasta" );
 
     cover_map.Clear();
 

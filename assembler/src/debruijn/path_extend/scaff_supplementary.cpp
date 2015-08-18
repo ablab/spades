@@ -52,6 +52,9 @@ void ScaffoldingUniqueEdgeAnalyzer::FillUniqueEdgeStorage(ScaffoldingUniqueEdgeS
             unique_num ++;
         }
     }
+    for (auto iter = storage_.begin(); iter != storage_.end(); ++iter) {
+        DEBUG (gp_.g.int_id(*iter) << " " << gp_.g.coverage(*iter) << " " << gp_.g.length(*iter) );
+    }
     INFO ("With length cutoff: " << length_cutoff_ <<", median long edge coverage: " << median_coverage_ << ", and maximal unique coverage: " << max_relative_coverage_);
     INFO("Unique edges quantity: " << unique_num << ", unique edges length " << unique_len <<", total edges length" << total_len);
     if (unique_len * 2 < total_len) {
