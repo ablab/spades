@@ -59,6 +59,7 @@ SPAdes comes in several separate modules:
         <li> SPAdes &ndash; iterative short-read genome assembly module; values of K are selected automatically based on the read length and data set type. </li>
         <li> MismatchCorrector &ndash; a tool which improves mismatch and short indel rates in resulting contigs and scaffolds; this module uses the <a href="http://bio-bwa.sourceforge.net" target="_blank">BWA</a> tool [<a href="http://www.ncbi.nlm.nih.gov/pubmed/19451168" target="_blank">Li H. and Durbin R., 2009</a>]; MismatchCorrector is turned off by default, but we recommend to turn it on (see <a href="#correctoropt">SPAdes options section</a>). </li>
         <li> dipSPAdes &ndash; module for assembling highly polymorphic diploid genomes; for more information see <a href="dipspades_manual.html" target="_blank">dipSPAdes manual</a>. </li>
+        <li> truSPAdes &ndash; an assembler for short reads produced by Illumina TruSeq Long Read technology; for more information see <a href="truspades_manual.html" target="_blank">truSPAdes manual</a>. </li>
     </ul>
 <p>
     We recommend to run SPAdes with BayesHammer/IonHammer to obtain high-quality assemblies. However, if you use your own read correction tool, it is possible to turn error correction module off. It is also possible to use only the read error correction stage, if you wish to use another assembler. See the <a href="#pipelineopt">SPAdes options section</a>.
