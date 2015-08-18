@@ -417,11 +417,11 @@ meta
 	{
         enabled true
         coverage_gap    5.
-        max_length_coeff    2.0
+        max_length_coeff    3.0
         max_length_with_tips_coeff   5.0
         max_vertex_cnt      100
         max_ec_length_coefficient   300
-        max_coverage_coeff  -1.0
+        max_coverage_coeff  1000.0
 	}
 
 	; relative edge disconnector:
