@@ -1,12 +1,4 @@
 #!/usr/bin/env bash
-
-############################################################################
-# Copyright (c) 2015 Saint Petersburg State University
-# Copyright (c) 2011-2014 Saint Petersburg Academic University
-# All Rights Reserved
-# See file LICENSE for details.
-############################################################################
-
 wget https://dl.dropbox.com/u/7916095/const/dmd_2.062_linux_64.tar.bz2
 tar xjvf dmd_2.062_linux_64.tar.bz2
 export PATH=`pwd`/dmd2/linux/bin64:$PATH

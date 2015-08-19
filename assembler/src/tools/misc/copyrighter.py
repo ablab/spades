@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 
 ############################################################################
-# Copyright (c) 2015 Saint Petersburg State University
-# Copyright (c) 2011-2014 Saint Petersburg Academic University
+# Copyright (c) 2011-2014 Saint-Petersburg Academic University
 # All Rights Reserved
 # See file LICENSE for details.
 ############################################################################
@@ -11,22 +10,13 @@
 ### grep -rl "# Copyright (c) 2011-2014 Saint-Petersburg Academic University" . | xargs sed -i 's/# Copyright (c) 2011-2014 Saint-Petersburg Academic University/# Copyright (c) 2011-2015 Saint-Petersburg Academic University/g'
 #####
 
-##### for removing copyright #####
-###  perl -0777 -i -pe 's/############################################################################\n# Copyright \(c\) 2011-2014 Saint-Petersburg Academic University\n# All Rights Reserved\n# See file LICENSE for details.\n############################################################################\n\n//igs' *.{py,sh}
-#####
-
-##### for updating one-university copyright to two-university one #####
-### grep -rl "Copyright (c) 2011-2014" . | xargs perl -0777 -i -pe 's/\Q\/\/***************************************************************************\E\n\Q\/\/* Copyright (c) 2011-2014 Saint-Petersburg Academic University\E\n\Q\/\/* All Rights Reserved\E\n\Q\/\/* See file LICENSE for details.\E\n\Q\/\/****************************************************************************\E\n/\/\/***************************************************************************\n\/\/* Copyright \(c\) 2015 Saint Petersburg State University\n\/\/* Copyright \(c\) 2011-2014 Saint Petersburg Academic University\n\/\/* All Rights Reserved\n\/\/* See file LICENSE for details.\n\/\/***************************************************************************\n/igs'
-#####
-
 import os
 import shutil
 import sys
 
 script_comment = [
     '############################################################################',
-    '# Copyright (c) 2015 Saint Petersburg State University',
-    '# Copyright (c) 2011-2014 Saint Petersburg Academic University',
+    '# Copyright (c) 2011-2014 Saint-Petersburg Academic University',
     '# All Rights Reserved',
     '# See file LICENSE for details.',
     '############################################################################', 
@@ -34,20 +24,13 @@ script_comment = [
 
 code_comment = [
     '//***************************************************************************',
-    '//* Copyright (c) 2015 Saint Petersburg State University',
-    '//* Copyright (c) 2011-2014 Saint Petersburg Academic University',
+    '//* Copyright (c) 2011-2014 Saint-Petersburg Academic University',
     '//* All Rights Reserved',
     '//* See file LICENSE for details.',
-    '//***************************************************************************',
+    '//****************************************************************************',
     '']
 
-only_show = False
-
 def insert_in_script(filename):
-    print(filename)
-    if only_show:
-       return
-
     lines = open(filename).readlines()
     if (script_comment[1] + '\n') in lines:
         return
@@ -67,10 +50,6 @@ def insert_in_script(filename):
     modified.close() 
 
 def insert_in_code(filename):       
-    print(filename)
-    if only_show:
-       return
-
     lines = open(filename).readlines()
     if (code_comment[1] + '\n') in lines:
         return
@@ -100,8 +79,8 @@ def visit(arg, dirname, names):
         elif ext in ['.hpp', '.cpp', '.h', '.c']:
             insert_in_code(path)
 
-if len(sys.argv) < 2 or len(sys.argv) > 4:
-    print ("Usage: " + sys.argv[0] + " <src folder> [.ext -- only file with this extension will be modified; 'all' for all files] ['only-show' -- only show filepaths that will be copyrighted]")
+if len(sys.argv) < 2:
+    print ("Usage: " + sys.argv[0] + " <src folder> [.ext -- only file with this extension will be modified]")
     sys.exit(1)
 
 start_dir = sys.argv[1]
@@ -110,12 +89,6 @@ if not os.path.isdir(start_dir):
     sys.exit(1)   
 
 arg = None
-if len(sys.argv) >= 3:
+if len(sys.argv) == 3:
     arg = sys.argv[2]
-    if arg == "all":
-        arg = None
-
-if len(sys.argv) >= 4:
-    only_show = True
-
 os.path.walk(start_dir, visit, arg)

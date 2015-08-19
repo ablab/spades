@@ -1,3 +1,9 @@
+############################################################################
+# Copyright (c) 2011-2014 Saint-Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
+
 """
 Fast cryptographic hash of Python objects, with a special case for fast
 hashing of numpy arrays.
