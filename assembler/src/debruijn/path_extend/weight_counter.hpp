@@ -338,9 +338,10 @@ protected:
 				++iter) {
 			double ideal_weight = iter->pi_;
 			if (excluded_edges_.find(iter->e_) != excluded_edges_.end()) {
-				VERIFY(math::gr(ideal_weight, 0.0));
-				if (!math::gr(excluded_edges_[iter->e_], 0.0)) {
-				    continue;
+				if (!math::gr(excluded_edges_[iter->e_], 0.0) or !math::gr(ideal_weight, 0.0)) {
+					continue;
+				} else {
+					ideal_weight = excluded_edges_[iter->e_];
 				}
 			}
 
