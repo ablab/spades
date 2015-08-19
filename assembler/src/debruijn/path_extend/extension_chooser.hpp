@@ -313,17 +313,8 @@ public:
         RemoveTrivial(path);
         path.Print();
         EdgeContainer result = edges;
-        bool first_time = true;
-        bool changed = true;
-        if (first_time || (result.size() > 1 && changed)) {
-            first_time = false;
-            ExcludeEdges(path, result);
-            EdgeContainer new_result = FindFilteredEdges(path, result);
-            if (new_result.size() == result.size()) {
-                changed = false;
-            }
-            result = new_result;
-        }
+        ExcludeEdges(path, result);
+        result = FindFilteredEdges(path, result);
         if (result.size() == 1) {
             DEBUG("Paired-end extension chooser helped");
         }
