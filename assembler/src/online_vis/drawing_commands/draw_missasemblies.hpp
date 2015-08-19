@@ -69,8 +69,8 @@ private:
 
     void ProcessContig(DebruijnEnvironment& curr_env, MappingPath<EdgeId>& genome_path, MappingPath<EdgeId>& reverse_genome_path, MappingPath<EdgeId>& path, string name = "") const {
         genome_path.join(reverse_genome_path);
-        vector<EdgeId> genome_edges = genome_path.simple_path();
-        vector<EdgeId> rc_genome_edges = reverse_genome_path.simple_path();
+        vector<EdgeId> genome_edges = curr_env.mapper().FindReadPath(genome_path);
+        vector<EdgeId> rc_genome_edges = curr_env.mapper().FindReadPath(reverse_genome_path);
         vector<EdgeId> rc_and_usual_genome_edges(genome_edges);
         push_back_all(rc_and_usual_genome_edges, rc_genome_edges);
         vector<EdgeId> edges = path.simple_path();
