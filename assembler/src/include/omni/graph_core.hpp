@@ -366,6 +366,7 @@ protected:
     }
 
     void HiddenDeleteEdge(EdgeId edge) {
+        DEBUG("Hidden delete edge " << edge.int_id());
         EdgeId rcEdge = conjugate(edge);
         VertexId rcStart = conjugate(edge->end());
         VertexId start = conjugate(rcEdge->end());
