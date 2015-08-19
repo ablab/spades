@@ -1,9 +1,3 @@
-############################################################################
-# Copyright (c) 2011-2014 Saint-Petersburg Academic University
-# All Rights Reserved
-# See file LICENSE for details.
-############################################################################
-
 """
 Utilities for fast persistence of big data, with optional compression.
 """
