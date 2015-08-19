@@ -313,7 +313,7 @@ public:
 			if (normalizeWeight_) {
 				w /= w_ideal;
 			}
-			if (w > 0) {
+			if (math::gr(w, 0.0)) {
 				return true;
 			}
 		}
@@ -323,7 +323,7 @@ public:
 };
 
 class PathCoverWeightCounter: public WeightCounter {
-	double single_threshold_;
+
 protected:
 
 	double CountSingleLib(int libIndex, BidirectionalPath& path, EdgeId e,
@@ -338,32 +338,20 @@ protected:
 				++iter) {
 			double ideal_weight = iter->pi_;
 			if (excluded_edges_.find(iter->e_) != excluded_edges_.end()) {
-				if (!math::gr(excluded_edges_[iter->e_], 0.0) or !math::gr(ideal_weight, 0.0)) {
+				VERIFY(math::gr(ideal_weight, 0.0));
+				if (!math::gr(excluded_edges_[iter->e_], 0.0)) {
 				    continue;
-				} else {
-					ideal_weight = excluded_edges_[iter->e_];
 				}
 			}
-			double threshold =
-					pairedInfoLibrary.GetSingleThreshold() >= 0.0 ?
-							pairedInfoLibrary.GetSingleThreshold() :
-							single_threshold_;
-
-			TRACE("Threshold: " << threshold);
 
 			double singleWeight = libs_[libIndex]->CountPairedInfo(
 					path[iter->e_], e,
 					(int) path.LengthAt(iter->e_) + additionalGapLength);
-			/*DEBUG("weight edge " << iter->e_ <<
-			      " weight " << singleWeight
-			      << " norm " <<singleWeight / ideal_weight
-			      <<" threshold " << threshold
-			      <<" used " << math::ge(singleWeight, threshold));*/
 
 			if (normalizeWeight_) {
 				singleWeight /= ideal_weight;
 			}
-			if (math::ge(singleWeight, threshold)) {
+			if (math::ge(singleWeight, pairedInfoLibrary.GetSingleThreshold())) {
 				weight += ideal_weight;
 			}
 			idealWeight += ideal_weight;
@@ -375,16 +363,14 @@ protected:
 public:
 
 	PathCoverWeightCounter(const Graph& g, PairedInfoLibraries& libs,
-			double threshold_ = 0.0, double single_threshold = 0.0) :
-			WeightCounter(g, libs, threshold_), 
-            single_threshold_(single_threshold) {
+			double threshold_ = 0.0) :
+			WeightCounter(g, libs, threshold_) {
 
 	}
 
 	PathCoverWeightCounter(const Graph& g, shared_ptr<PairedInfoLibrary> lib,
-                           double threshold = 0.0, double single_threshold = 0.0)
-            : WeightCounter(g, lib, threshold),
-              single_threshold_(single_threshold) {
+                           double threshold = 0.0)
+            : WeightCounter(g, lib, threshold) {
 
     }
 
@@ -436,11 +422,8 @@ public:
 			if (normalizeWeight_) {
 				w /= w_ideal;
 			}
-			double threshold =
-					libs_[libIndex]->GetSingleThreshold() >= 0.0 ?
-							libs_[libIndex]->GetSingleThreshold() :
-							single_threshold_;
-			if (w > threshold) {
+
+			if (math::ge(w, libs_[libIndex]->GetSingleThreshold())) {
 				return true;
 			}
 		}

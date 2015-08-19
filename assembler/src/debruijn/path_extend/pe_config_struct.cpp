@@ -35,7 +35,7 @@ void load(pe_config::VisualizeParamsT& o, boost::property_tree::ptree const& pt,
 void load(pe_config::ParamSetT::ExtensionOptionsT& es,
           boost::property_tree::ptree const& pt, bool ) {
     using config_common::load;
-    load(es.recalculate_threshold, pt, "recalculate_threshold");
+    load(es.use_default_single_threshold, pt, "use_default_single_threshold");
     load(es.priority_coeff, pt, "priority_coeff");
     load(es.weight_threshold, pt, "weight_threshold");
     load(es.single_threshold, pt, "single_threshold");
