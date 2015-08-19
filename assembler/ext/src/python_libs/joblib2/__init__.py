@@ -1,9 +1,3 @@
-############################################################################
-# Copyright (c) 2011-2014 Saint-Petersburg Academic University
-# All Rights Reserved
-# See file LICENSE for details.
-############################################################################
-
 """ Joblib is a set of tools to provide **lightweight pipelining in
 Python**. In particular, joblib offers:
 
