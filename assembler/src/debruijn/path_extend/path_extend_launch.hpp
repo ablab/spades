@@ -66,13 +66,19 @@ inline double GetWeightThreshold(shared_ptr<PairedInfoLibrary> lib, const pe_con
     return lib->IsMp() ? pset.mate_pair_options.weight_threshold : pset.extension_options.weight_threshold;
 }
 
-inline double GetSingleThreshold(shared_ptr<PairedInfoLibrary> lib, const pe_config::ParamSetT& pset) {
-    return lib->IsMp() ? pset.mate_pair_options.single_threshold : pset.extension_options.single_threshold;
-}
-
 inline double GetPriorityCoeff(shared_ptr<PairedInfoLibrary> lib, const pe_config::ParamSetT& pset) {
     return lib->IsMp() ? pset.mate_pair_options.priority_coeff : pset.extension_options.priority_coeff;
 }
+
+inline void SetSingleThresholdForLib(shared_ptr<PairedInfoLibrary> lib, const pe_config::ParamSetT &pset, double threshold) {
+    if  (lib->IsMp())
+        lib->SetSingleThreshold(pset.mate_pair_options.use_default_single_threshold || math::le(threshold, 0.0) ?
+                                pset.mate_pair_options.single_threshold : threshold);
+    else
+        lib->SetSingleThreshold(pset.extension_options.use_default_single_threshold || math::le(threshold, 0.0) ?
+                                pset.extension_options.single_threshold : threshold);
+}
+
 
 inline string MakeNewName(const std::string& contigs_name, const std::string& subname) {
     return contigs_name.substr(0, contigs_name.rfind(".fasta")) + "_" + subname + ".fasta";
@@ -300,30 +306,22 @@ inline shared_ptr<SimpleExtender> MakeLongReadsExtender(const conj_graph_pack& g
 }
 
 inline shared_ptr<SimpleExtender> MakeLongEdgePEExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
-                                                         size_t lib_index, const pe_config::ParamSetT& pset, bool use_auto_threshold, bool investigate_loops) {
+                                                         size_t lib_index, const pe_config::ParamSetT& pset, bool investigate_loops) {
     shared_ptr<PairedInfoLibrary> lib = MakeNewLib(gp.g, gp.clustered_indices, lib_index);
-    if (use_auto_threshold) {
-        lib->SetSingleThreshold(cfg::get().ds.reads[lib_index].data().pi_threshold);
-        if (!investigate_loops)
-            INFO("Threshold for library #" << lib_index << " is " << cfg::get().ds.reads[lib_index].data().pi_threshold);
-    }
-    shared_ptr<WeightCounter> wc = make_shared<PathCoverWeightCounter>(gp.g, lib, GetWeightThreshold(lib, pset),
-                                                                       GetSingleThreshold(lib, pset));
+    SetSingleThresholdForLib(lib, pset, cfg::get().ds.reads[lib_index].data().pi_threshold);
+
+    shared_ptr<WeightCounter> wc = make_shared<PathCoverWeightCounter>(gp.g, lib, GetWeightThreshold(lib, pset));
     wc->setNormalizeWeight(pset.normalize_weight);
     shared_ptr<ExtensionChooser> extension = make_shared<LongEdgeExtensionChooser>(gp.g, wc, GetPriorityCoeff(lib, pset));
     return make_shared<SimpleExtender>(gp, cov_map, extension, lib->GetISMax(), pset.loop_removal.max_loops, investigate_loops, false);
 }
 
 inline shared_ptr<SimpleExtender> MakePEExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
-                                       size_t lib_index, const pe_config::ParamSetT& pset, bool use_auto_threshold, bool investigate_loops) {
+                                       size_t lib_index, const pe_config::ParamSetT& pset, bool investigate_loops) {
     shared_ptr<PairedInfoLibrary> lib = MakeNewLib(gp.g, gp.clustered_indices, lib_index);
-    if (use_auto_threshold) {
-        lib->SetSingleThreshold(cfg::get().ds.reads[lib_index].data().pi_threshold);
-        if (!investigate_loops)
-            INFO("Threshold for library #" << lib_index << " is " << cfg::get().ds.reads[lib_index].data().pi_threshold);
-    }
-    shared_ptr<WeightCounter> wc = make_shared<PathCoverWeightCounter>(gp.g, lib, GetWeightThreshold(lib, pset), 
-                                                                       GetSingleThreshold(lib, pset));
+    SetSingleThresholdForLib(lib, pset, cfg::get().ds.reads[lib_index].data().pi_threshold);
+
+    shared_ptr<WeightCounter> wc = make_shared<PathCoverWeightCounter>(gp.g, lib, GetWeightThreshold(lib, pset));
     wc->setNormalizeWeight(pset.normalize_weight);
     shared_ptr<SimpleExtensionChooser> extension = make_shared<SimpleExtensionChooser>(gp.g, wc, GetPriorityCoeff(lib, pset));
     return make_shared<SimpleExtender>(gp, cov_map, extension, lib->GetISMax(), pset.loop_removal.max_loops, investigate_loops, false);
@@ -434,7 +432,7 @@ inline vector<shared_ptr<PathExtender> > MakeAllScaffoldingExtenders2015(PathExt
 }
 
 inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage, const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
-                                            const pe_config::ParamSetT& pset, bool use_auto_threshold, const PathContainer& paths_for_mp = PathContainer()) {
+                                            const pe_config::ParamSetT& pset, const PathContainer& paths_for_mp = PathContainer()) {
 
     vector<shared_ptr<PathExtender> > result;
     vector<shared_ptr<PathExtender> > pes;
@@ -459,11 +457,11 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
             }
             if (IsForPEExtender(lib) && stage == PathExtendStage::PEStage) {
                 if(cfg::get().ds.moleculo)
-                    pes.push_back(MakeLongEdgePEExtender(gp, cov_map, i, pset, use_auto_threshold, false));
-                pes.push_back(MakePEExtender(gp, cov_map, i, pset, use_auto_threshold, false));
+                    pes.push_back(MakeLongEdgePEExtender(gp, cov_map, i, pset, false));
+                pes.push_back(MakePEExtender(gp, cov_map, i, pset, false));
             }
             if (IsForShortLoopExtender(lib)) {
-                pe_loops.push_back(MakePEExtender(gp, cov_map, i, pset, use_auto_threshold, true));
+                pe_loops.push_back(MakePEExtender(gp, cov_map, i, pset, true));
                 ++pe_libs;
             }
             if (IsForScaffoldingExtender(lib) && cfg::get().use_scaffolder && pset.scaffolder_options.on) {
@@ -522,8 +520,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
         const std::string& output_dir,
         const std::string& contigs_name,
         bool traversLoops,
-        boost::optional<std::string> broken_contigs,
-        bool use_auto_threshold = true) {
+        boost::optional<std::string> broken_contigs) {
 
     INFO("ExSPAnder repeat resolving tool started");
 
@@ -537,7 +534,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     GraphCoverageMap cover_map(gp.g);
     INFO("SUBSTAGE = paired-end libraries")
     PathExtendStage exspander_stage = PathExtendStage::PEStage;
-    vector<shared_ptr<PathExtender> > all_libs = MakeAllExtenders(exspander_stage, gp, cover_map, pset, use_auto_threshold);
+    vector<shared_ptr<PathExtender> > all_libs = MakeAllExtenders(exspander_stage, gp, cover_map, pset);
     size_t max_over = max(FindOverlapLenForStage(exspander_stage), gp.g.k() + 100);
     shared_ptr<CompositeExtender> mainPE = make_shared<CompositeExtender>(gp.g, cover_map, all_libs, max_over);
 
@@ -586,7 +583,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     INFO("SUBSTAGE = mate-pair libraries ")
     exspander_stage = PathExtendStage::MPStage;
     all_libs.clear();
-    all_libs = MakeAllExtenders(exspander_stage, gp, clone_map, pset, use_auto_threshold, clone_paths);
+    all_libs = MakeAllExtenders(exspander_stage, gp, clone_map, pset, clone_paths);
     max_over = FindOverlapLenForStage(exspander_stage);
     shared_ptr<CompositeExtender> mp_main_pe = make_shared<CompositeExtender>(gp.g, clone_map, all_libs, max_over);
 
@@ -606,7 +603,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     INFO("SUBSTAGE = polishing paths")
     exspander_stage = PathExtendStage::FinalizingPEStage;
     all_libs.clear();
-    all_libs = MakeAllExtenders(exspander_stage, gp, cover_map, pset, use_auto_threshold);
+    all_libs = MakeAllExtenders(exspander_stage, gp, cover_map, pset);
     max_over = FindOverlapLenForStage(exspander_stage);
     shared_ptr<CompositeExtender> last_extender = make_shared<CompositeExtender>(gp.g, clone_map, all_libs, max_over);
 

@@ -97,7 +97,7 @@ struct pe_config {
     bool cut_all_overlaps;
 
     struct ExtensionOptionsT {
-        bool recalculate_threshold;
+        bool use_default_single_threshold;
         double single_threshold;
         double weight_threshold;
         double priority_coeff;

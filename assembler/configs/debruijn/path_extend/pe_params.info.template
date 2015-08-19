@@ -22,7 +22,7 @@ singlecell {
     ; extension selection
     extension_options
     {
-        recalculate_threshold      true
+        use_default_single_threshold false
         single_threshold           0.001
         weight_threshold           0.6
         priority_coeff             1.5
@@ -30,7 +30,7 @@ singlecell {
 
     mate_pair_options
     {
-        recalculate_threshold      true
+        use_default_single_threshold true
         single_threshold           0.0001
         weight_threshold           0.5
         priority_coeff             1.5
@@ -72,7 +72,7 @@ meta {
     ; extension selection
     extension_options
     {
-        recalculate_threshold      false
+        use_default_single_threshold true
         single_threshold           0.035
         weight_threshold           0.6
         priority_coeff             1.5
@@ -80,7 +80,7 @@ meta {
 
     mate_pair_options
     {
-        recalculate_threshold      true
+        use_default_single_threshold true
         single_threshold           0.0001
         weight_threshold           0.5
         priority_coeff             1.5
@@ -122,7 +122,7 @@ moleculo {
     ; extension selection
     extension_options
     {
-        recalculate_threshold      true
+        use_default_single_threshold false
         single_threshold           0.001
         weight_threshold           0.6
         priority_coeff             1.5
@@ -130,7 +130,7 @@ moleculo {
 
     mate_pair_options
     {
-        recalculate_threshold      true
+	use_default_single_threshold true
         single_threshold           0.0001
         weight_threshold           0.5
         priority_coeff             1.5
@@ -172,7 +172,7 @@ multicell {
     ; extension selection
     extension_options
     {
-        recalculate_threshold      true
+        use_default_single_threshold false
         single_threshold           1.75676
 ;    A.mirum threshold 0.076
 ;    E.coli RL36 threshold 0.717949
@@ -183,7 +183,7 @@ multicell {
 
     mate_pair_options
     {
-        recalculate_threshold      true
+        use_default_single_threshold true
         single_threshold           0.001
         weight_threshold           0.5
         priority_coeff             1.5
