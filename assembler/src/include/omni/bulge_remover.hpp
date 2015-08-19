@@ -104,7 +104,7 @@ public:
 };
 
 inline size_t CountMaxDifference(size_t absolute_diff, size_t length, double relative_diff) {
-    return std::max((size_t) std::floor(relative_diff * (double) length), absolute_diff);
+    return std::min((size_t) std::floor(relative_diff * (double) length), absolute_diff);
 }
 
 /**
