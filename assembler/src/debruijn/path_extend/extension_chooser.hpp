@@ -862,7 +862,7 @@ public:
               search_dist_(lib->GetISMax()),
               weight_counter_(g, lib, 10),
               cov_map_(g_, paths),
-              path_searcher_(g_, cov_map_, lib_->GetISMax(), PathsWeightCounter(g, lib, 30), max_number_of_paths_to_search),
+              path_searcher_(g_, cov_map_, lib_->GetISMax(), PathsWeightCounter(g, lib, (size_t) lib->GetSingleThreshold()), max_number_of_paths_to_search),
               unique_edge_analyzer_(g, cov_map_, 0., 1000.),
               simple_scaffolder_(g) {
     }
