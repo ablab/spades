@@ -421,7 +421,7 @@ meta
         max_length_with_tips_coeff   5.0
         max_vertex_cnt      100
         max_ec_length_coefficient   300
-        max_coverage_coeff  1000.0
+        max_coverage_coeff  -1.0
 	}
 
 	; relative edge disconnector:
