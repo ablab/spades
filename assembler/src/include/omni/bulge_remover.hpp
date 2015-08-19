@@ -239,6 +239,10 @@ protected:
         path_finder.Process();
 
         const vector<EdgeId>& path = path_chooser.most_covered_path();
+        if(path.size() != 0) {
+            VERIFY(graph_.EdgeStart(path[0]) == start);
+            VERIFY(graph_.EdgeEnd(path.back()) == end);
+        }
 
         double path_coverage = path_chooser.max_coverage();
         TRACE("Best path with coverage " << path_coverage << " is " << PrintPath<Graph>(graph_, path));
