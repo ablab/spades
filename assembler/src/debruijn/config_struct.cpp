@@ -205,6 +205,7 @@ void load(debruijn_config::simplification::bulge_remover& br,
   load(br.max_relative_coverage,            pt,     "max_relative_coverage");
   load(br.max_delta,                        pt,     "max_delta");
   load(br.max_relative_delta,               pt,     "max_relative_delta");
+  load(br.max_number_edges,                 pt,     "max_number_edges");
 }
 
 void load(debruijn_config::simplification::topology_tip_clipper& ttc,
@@ -504,6 +505,8 @@ void load(debruijn_config::simplification& simp,
   //final bulge removers:
   simp.final_br = simp.br; // final bulge remover:
   load(simp.final_br, pt, "final_br", false);
+  simp.second_final_br = simp.br; // second final bulge remover:
+  load(simp.second_final_br, pt, "second_final_br", false);
 }
 
 void load(debruijn_config::info_printer& printer,

@@ -229,6 +229,7 @@ struct debruijn_config {
             double max_relative_coverage;
             size_t max_delta;
             double max_relative_delta;
+            size_t max_number_edges;
         };
 
         struct erroneous_connections_remover {
@@ -328,6 +329,7 @@ struct debruijn_config {
 
         tip_clipper final_tc;
         bulge_remover final_br;
+        bulge_remover second_final_br;
 
         bool fast_features;
         double fast_activation_cov;

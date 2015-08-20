@@ -161,6 +161,7 @@ bool RemoveBulges(
     BulgeRemover<Graph> br(g, max_length, br_config.max_coverage,
                            br_config.max_relative_coverage, br_config.max_delta,
                            br_config.max_relative_delta,
+                           br_config.max_number_edges,
                            opt_handler, removal_handler);
 
     return br.RunFromIterator(it,
@@ -871,6 +872,11 @@ class GraphSimplifier {
     
                 enable_flag |= RemoveBulges(gp_.g, *final_iterators_holder_ptr->bulge_smart_it(),
                                     simplif_cfg_.final_br,
+                                    //todo get rid of this logic and add br run with standard params
+                                    (opt_callback_f)0, removal_handler_);
+
+                enable_flag |= RemoveBulges(gp_.g, *final_iterators_holder_ptr->bulge_smart_it(),
+                                    simplif_cfg_.second_final_br,
                                     //todo get rid of this logic and add br run with standard params
                                     (opt_callback_f)0, removal_handler_);
             }
