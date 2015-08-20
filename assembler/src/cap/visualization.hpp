@@ -162,7 +162,7 @@ void PrintColoredGraphAlongRef(const gp_t& gp,
     TrivialBreakpointFinder<Graph> bp_f(gp.g, coloring, gp.edge_pos);
 
     WriteComponentsAlongSequence(gp, bp_f, labeler, output_filename, 1000000,
-            30, MapperInstance(gp)->MapSequence(gp.genome),
+            30, MapperInstance(gp)->MapSequence(gp.genome.GetSequence()),
             *ConstructBorderColorer(gp.g, coloring)
 //              *ConstructColorer(coloring)
                     );

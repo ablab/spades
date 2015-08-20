@@ -54,8 +54,8 @@ FindGenomeMappingPath(const Sequence& genome, const graph_pack& gp) {
 template <class graph_pack>
 shared_ptr<omnigraph::visualization::GraphColorer<Graph>> DefaultColorer(const graph_pack& gp) {
     return omnigraph::visualization::DefaultColorer(gp.g, 
-        FindGenomeMappingPath(gp.genome, gp.g, gp.index, gp.kmer_mapper).path(),
-        FindGenomeMappingPath(!gp.genome, gp.g, gp.index, gp.kmer_mapper).path());
+        FindGenomeMappingPath(gp.genome.GetSequence(), gp.g, gp.index, gp.kmer_mapper).path(),
+        FindGenomeMappingPath(!gp.genome.GetSequence(), gp.g, gp.index, gp.kmer_mapper).path());
 }
 
 template <class graph_pack>
@@ -78,8 +78,8 @@ class GenomeMappingStat: public AbstractStatCounter {
     Sequence genome_;
     size_t k_;
   public:
-    GenomeMappingStat(const Graph &graph, const Index &index,	Sequence genome, size_t k) :
-            graph_(graph), index_(index), genome_(genome), k_(k) {}
+    GenomeMappingStat(const Graph &graph, const Index &index, GenomeStorage genome, size_t k) :
+            graph_(graph), index_(index), genome_(genome.GetSequence()), k_(k) {}
 
     virtual ~GenomeMappingStat() {}
 
@@ -151,9 +151,9 @@ void CountStats(const graph_pack& gp) {
     typedef typename Graph::EdgeId EdgeId;
     INFO("Counting stats");
     StatList stats;
-    Path<EdgeId> path1 = FindGenomeMappingPath(gp.genome, gp.g, gp.index,
+    Path<EdgeId> path1 = FindGenomeMappingPath(gp.genome.GetSequence(), gp.g, gp.index,
                                       gp.kmer_mapper).path();
-    Path<EdgeId> path2 = FindGenomeMappingPath(!gp.genome, gp.g, gp.index,
+    Path<EdgeId> path2 = FindGenomeMappingPath(!gp.genome.GetSequence(), gp.g, gp.index,
                                       gp.kmer_mapper).path();
     stats.AddStat(new VertexEdgeStat<Graph>(gp.g));
     stats.AddStat(new BlackEdgesStat<Graph>(gp.g, path1, path2));
@@ -226,7 +226,7 @@ optional<runtime_k::RtSeq> FindCloseKP1mer(const conj_graph_pack &gp,
         for (int dir = -1; dir <= 1; dir += 2) {
             size_t pos = (gp.genome.size() - k + genome_pos + dir * diff) % (gp.genome.size() - k);
             runtime_k::RtSeq kp1mer = gp.kmer_mapper.Substitute(
-                runtime_k::RtSeq (k + 1, gp.genome, pos));
+                runtime_k::RtSeq (k + 1, gp.genome.GetSequence(), pos));
             if (gp.index.contains(kp1mer))
                 return optional<runtime_k::RtSeq>(kp1mer);
         }
@@ -269,7 +269,7 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
     make_dir(folder);
     PrepareForDrawing(gp);
 
-    auto path1 = FindGenomeMappingPath(gp.genome, gp.g, gp.index,
+    auto path1 = FindGenomeMappingPath(gp.genome.GetSequence(), gp.g, gp.index,
                                       gp.kmer_mapper).path();
 
     auto colorer = DefaultColorer(gp);
@@ -337,7 +337,7 @@ void ProduceDetailedInfo(conj_graph_pack &gp,
             } else {
                 WARN(
                     "Failed to find genome kp1mer close to the one at position "
-                    << *it << " in the graph. Which is " << runtime_k::RtSeq (gp.k_value + 1, gp.genome, boost::lexical_cast<int>(*it)));
+                    << *it << " in the graph. Which is " << runtime_k::RtSeq (gp.k_value + 1, gp.genome.GetSequence(), boost::lexical_cast<int>(*it)));
             }
         }
     }

@@ -23,6 +23,7 @@ add_executable(spades
                repeat_resolving.cpp
                genomic_info_filler.cpp
                pacbio_aligning.cpp
+               genome_storage.cpp
                main.cpp)
 
 # We have to do this to minimize changes in ConsensusCore itself

@@ -472,7 +472,7 @@ struct debruijn_config {
         std::string reference_genome_filename;
         std::string reads_filename;
 
-        Sequence reference_genome;
+        std::string reference_genome;
 
         dataset(): max_read_length(0), average_coverage(0.0) {
         }

@@ -84,9 +84,9 @@ private:
 public:
 	template<class GraphPack>
 	GenomeConsistenceChecker(const GraphPack gp, size_t max_gap, double relative_max_gap /*= 0.2*/) :
-			graph_(gp.g), genome_(gp.genome), genome_mapping_(gp.g), max_gap_(max_gap), relative_max_gap_(relative_max_gap) {
-        FillPos(gp, gp.genome, "0");
-        FillPos(gp, !gp.genome, "1");
+			graph_(gp.g), genome_(gp.genome.GetSequence()), genome_mapping_(gp.g), max_gap_(max_gap), relative_max_gap_(relative_max_gap) {
+        FillPos(gp, gp.genome.GetSequence(), "0");
+        FillPos(gp, !gp.genome.GetSequence(), "1");
 	}
 
 	bool IsConsistentWithGenome(vector<EdgeId> path) const {
