@@ -680,7 +680,7 @@ class GraphSimplifier {
 
     void PreSimplification() {
         INFO("PROCEDURE == Presimplification");
-        RemoveSelfConjugateEdges(gp_.g, gp_.k_value + 100, 1., removal_handler_, info_container_.chunk_cnt());
+        RemoveSelfConjugateEdges(gp_.g, gp_.k_value + 100, 20., removal_handler_, info_container_.chunk_cnt());
 
         if (!simplif_cfg_.presimp.enabled || !simplif_cfg_.fast_features) {
             INFO("Further presimplification is disabled");
