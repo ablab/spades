@@ -230,7 +230,7 @@ protected:
 
         size_t delta = CountMaxDifference(max_delta_, graph_.length(edge), max_relative_delta_);
 
-        MostCoveredAlternativePathChooser<Graph> path_chooser(graph_, edge);
+        MostCoveredAlternativePathChooser<Graph> path_chooser(graph_, edge, max_number_edges_);
 
         VertexId start = graph_.EdgeStart(edge);
         TRACE("Start " << graph_.str(start));
