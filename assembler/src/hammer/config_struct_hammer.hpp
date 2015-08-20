@@ -76,6 +76,7 @@ struct hammer_config {
   double correct_threshold;
   unsigned correct_readbuffer;
   unsigned correct_nthreads;
+  bool correct_stats;  
 };
 
 

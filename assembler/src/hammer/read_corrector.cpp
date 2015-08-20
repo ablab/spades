@@ -217,6 +217,15 @@ bool ReadCorrector::CorrectOneRead(Read & r,
 
 #           pragma omp atomic
             changed_nucleotides_ += corrected;
+            if (correct_stats_) {
+                std::string name = r.getName();
+                name += " BH:changed:" + std::to_string(corrected);
+                r.setName(name.data());
+            }
+        } else if (correct_stats_) {
+            std::string name = r.getName();
+            name += " BH:failed";
+            r.setName(name.data());
         }
 
         if (seq.size() != read_size) {
@@ -226,6 +235,10 @@ bool ReadCorrector::CorrectOneRead(Read & r,
 
         r.setSequence(newseq.data(), /* preserve_trimming */ true);
         return true;
+    } else if (solid_len == read_size && correct_stats_) {
+        std::string name = r.getName();
+        name += " BH:ok";
+        r.setName(name.data());
     }
 
     return solid_len == read_size;
