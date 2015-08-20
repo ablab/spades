@@ -441,7 +441,7 @@ void load_reads(debruijn_config::dataset& ds,
 void load_reference_genome(debruijn_config::dataset& ds,
                            std::string input_dir) {
   if (ds.reference_genome_filename == "") {
-    ds.reference_genome = Sequence();
+    ds.reference_genome = "";
     return;
   }
   if (ds.reference_genome_filename[0] != '/')
@@ -450,8 +450,7 @@ void load_reference_genome(debruijn_config::dataset& ds,
   io::FileReadStream genome_stream(ds.reference_genome_filename);
   io::SingleRead genome;
   genome_stream >> genome;
-  VERIFY(genome.IsValid());
-  ds.reference_genome = genome.sequence();
+  ds.reference_genome = genome.GetSequenceString();
 }
 
 void load(debruijn_config::simplification::presimplification& presimp,

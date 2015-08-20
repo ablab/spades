@@ -18,10 +18,11 @@
 #include "omni/mapping_path.hpp"
 #include "../include/omni/edges_position_handler.hpp"
 #include "../include/sequence/sequence.hpp"
+#include "graph_pack.hpp"
 
 namespace debruijn_graph {
 
-template<class Graph>
+
 class GenomeConsistenceChecker {
 private:
 	using omnigraph::MappingRange;
@@ -84,11 +85,10 @@ private:
 	}
 
 public:
-	template<class GraphPack>
-	GenomeConsistenceChecker(const GraphPack gp, size_t max_gap, double relative_max_gap /*= 0.2*/) :
-			graph_(gp.g), genome_(gp.genome), genome_mapping_(gp.g), max_gap_(max_gap), relative_max_gap_(relative_max_gap) {
-        FillPos(gp, gp.genome, "0");
-        FillPos(gp, !gp.genome, "1");
+	GenomeConsistenceChecker(const conj_graph_pack &gp, size_t max_gap, double relative_max_gap /*= 0.2*/) :
+			graph_(gp.g), genome_(gp.genome.GetSequence()), genome_mapping_(gp.g), max_gap_(max_gap), relative_max_gap_(relative_max_gap) {
+        FillPos(gp, gp.genome.GetSequence(), "0");
+        FillPos(gp, !gp.genome.GetSequence(), "1");
 	}
 
 	bool IsConsistentWithGenome(vector<EdgeId> path) const {

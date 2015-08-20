@@ -18,6 +18,7 @@
 #include "genomic_info.hpp"
 #include "long_read_storage.hpp"
 #include "detail_coverage.hpp"
+#include "genome_storage.hpp"
 
 namespace debruijn_graph {
 
@@ -45,12 +46,12 @@ struct graph_pack: private boost::noncopyable {
     LongReadContainerT single_long_reads;
     GenomicInfo ginfo;
 
-    Sequence genome;
+    GenomeStorage genome;
 	EdgeQuality<Graph> edge_qual;
     EdgesPositionHandler<graph_t> edge_pos;
  
     graph_pack(size_t k, const std::string &workdir, size_t lib_count,
-                        Sequence genome = Sequence(),
+                        const string &genome,
                         size_t flanking_range = 50,
                         size_t max_mapping_gap = 0,
                         size_t max_gap_diff = 0,
@@ -72,7 +73,7 @@ struct graph_pack: private boost::noncopyable {
     }
 
     void FillQuality() {
-        edge_qual.Fill(index, kmer_mapper, genome);
+        edge_qual.Fill(index, kmer_mapper, genome.GetSequence());
     }
 
     //todo remove with usages after checking
@@ -107,8 +108,8 @@ struct graph_pack: private boost::noncopyable {
             edge_pos.Attach();
         }
         edge_pos.clear();
-        FillPos(*this, genome, "ref0");
-        FillPos(*this, !genome, "ref1");
+        FillPos(*this, genome.GetSequence(), "ref0");
+        FillPos(*this, !genome.GetSequence(), "ref1");
     }
     
     void EnsureDebugInfo() {
