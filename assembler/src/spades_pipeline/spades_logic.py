@@ -313,6 +313,10 @@ def run_spades(configs_dir, execution_home, cfg, dataset_data, ext_python_module
             if os.path.isfile(os.path.join(latest, "final_contigs" + format)):
                 if not os.path.isfile(cfg.result_contigs[:-6] + format) or not options_storage.continue_mode:
                     shutil.copyfile(os.path.join(latest, "final_contigs" + format), cfg.result_contigs[:-6] + format)
+            if os.path.isfile(os.path.join(latest, "first_pe_contigs" + format)):
+                result_first_pe_contigs = os.path.join(os.path.dirname(cfg.result_contigs), "first_pe_contigs" + format)
+                if not os.path.isfile(result_first_pe_contigs) or not options_storage.continue_mode:
+                    shutil.copyfile(os.path.join(latest, "first_pe_contigs" + format), result_first_pe_contigs)
             if cfg.rr_enable:
                 if os.path.isfile(os.path.join(latest, "scaffolds" + format)):
                     if not os.path.isfile(cfg.result_scaffolds[:-6] + format) or not options_storage.continue_mode:
