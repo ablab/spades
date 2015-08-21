@@ -238,7 +238,7 @@ void run_dipspades() {
     		dsp_cfg::get().bp.K,
     		dsp_cfg::get().io.tmp_dir,
     		dsp_cfg::get().io.num_libraries,
-            Sequence(""), // reference genome
+            "", // reference genome
             1); // flanking range
 
     conj_gp.kmer_mapper.Attach();

@@ -25,6 +25,7 @@ add_executable(dipspades
                ../debruijn/distance_estimation.cpp
                ../debruijn/repeat_resolving.cpp
                ../debruijn/genomic_info_filler.cpp
+               ../debruijn/genome_storage.cpp
 		  dipspades_config.cpp
 	      utils/files_utils.cpp
           main.cpp)

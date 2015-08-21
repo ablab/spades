@@ -24,6 +24,7 @@ add_executable(scaffold_correction
                ../debruijn/distance_estimation.cpp
                ../debruijn/genomic_info_filler.cpp
                ../debruijn/config_struct.cpp
+               ../debruijn/genome_storage.cpp
           main.cpp)
 
 target_link_libraries(scaffold_correction input mph_index yaml-cpp nlopt ${COMMON_LIBRARIES} ssw)

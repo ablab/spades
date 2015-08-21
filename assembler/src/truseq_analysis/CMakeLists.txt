@@ -25,6 +25,7 @@ add_executable(truseq_analysis
                ../debruijn/distance_estimation.cpp
                ../debruijn/genomic_info_filler.cpp
                ../debruijn/config_struct.cpp
+               ../debruijn/genome_storage.cpp
           main.cpp alignment_analyser.cpp AlignmentAnalyserNew.cpp consistent_mapping.cpp analysis_pipeline.cpp)
 
 target_link_libraries(truseq_analysis input mph_index yaml-cpp nlopt ${COMMON_LIBRARIES} ssw)
