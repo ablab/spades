@@ -25,8 +25,10 @@ void ProcessReadsBatch(conj_graph_pack &gp,
                                               pacbio::GapStorage<Graph>(gp.g, min_gap_quantity));
     vector<pacbio::StatsCounter> stats_by_thread(cfg::get().max_threads);
 
+    size_t longer_500 = 0;
     size_t aligned = 0;
     size_t nontrivial_aligned = 0;
+
 #   pragma omp parallel for shared(reads, long_reads_by_thread, pac_index, n, aligned, nontrivial_aligned)
     for (size_t i = 0; i < buf_size; ++i) {
         if (i % 1000 == 0) {
@@ -51,13 +53,17 @@ void ProcessReadsBatch(conj_graph_pack &gp,
 #       pragma omp critical
         {
 //            INFO(current_read_mapping.seed_num);
-            if (aligned_edges.size() > 0) {
-                aligned ++;
-                stats_by_thread[thread_num].seeds_percentage[size_t (floor(double(current_read_mapping.seed_num) * 1000.0 / (double) seq.size()))] ++;
-                for (size_t j = 0; j < aligned_edges.size(); j ++){
-                    if (aligned_edges[j].size() > 1) {
-                        nontrivial_aligned ++;
-                        break;
+            if (seq.size() > 500) {
+                longer_500++;
+                if (aligned_edges.size() > 0) {
+                    aligned++;
+                    stats_by_thread[thread_num].seeds_percentage[size_t(
+                            floor(double(current_read_mapping.seed_num) * 1000.0 / (double) seq.size()))]++;
+                    for (size_t j = 0; j < aligned_edges.size(); j++) {
+                        if (aligned_edges[j].size() > 1) {
+                            nontrivial_aligned++;
+                            break;
+                        }
                     }
                 }
             }
@@ -67,7 +73,8 @@ void ProcessReadsBatch(conj_graph_pack &gp,
             VERBOSE_POWER(n, " reads processed");
         }
     }
-    INFO("Read batch of size: " << buf_size << " processed; reads aligned: " << aligned << "; paths of more than one edge received: " << nontrivial_aligned );
+    INFO("Read batch of size: " << buf_size << " processed; "<< longer_500 << " of them longer than 500; among long reads aligned: " << aligned << "; paths of more than one edge received: " << nontrivial_aligned );
+
     for (size_t i = 0; i < cfg::get().max_threads; i++) {
         long_reads.AddStorage(long_reads_by_thread[i]);
         gaps.AddStorage(gaps_by_thread[i]);
