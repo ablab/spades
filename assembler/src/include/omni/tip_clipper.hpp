@@ -46,7 +46,7 @@ class RelativeCoverageTipCondition: public EdgeCondition<Graph> {
 		VertexId start = g.EdgeStart(tip), end = g.EdgeEnd(tip);
 		auto out = g.OutgoingEdges(start);
 		auto in = g.IncomingEdges(end);
-		return std::min(
+		return std::max(
 						MaxCompetitorCoverage(tip, out.begin(),	out.end()),
 						MaxCompetitorCoverage(tip, in.begin(), in.end()));
 //		return std::max(
