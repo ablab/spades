@@ -468,6 +468,7 @@ void load(debruijn_config::simplification::presimplification& presimp,
 
   load(presimp.enabled, pt, "enabled", complete);
   load(presimp.parallel, pt, "parallel", complete);
+  load(presimp.early_ec_condition, pt, "early_ec_condition", complete); // early ec remover:
   load(presimp.tip_condition, pt, "tip_condition", complete); // pre tip clipper:
   load(presimp.ec_condition, pt, "ec_condition", complete); // pre ec remover:
   load(presimp.ier, pt, "ier", complete);

@@ -305,6 +305,7 @@ struct debruijn_config {
             bool enabled;
             bool parallel;
             isolated_edges_remover ier;
+            std::string early_ec_condition;
             std::string tip_condition;
             std::string ec_condition;
         };

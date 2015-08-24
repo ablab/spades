@@ -337,7 +337,7 @@ class PairedInfoStorage {
     typedef typename HistogramType::value_type Point;
 
     PairedInfoStorage(bool conj_symmetry = false)
-            : size_(0), conj_symmetry_(conj_symmetry) {}
+            : conj_symmetry_(conj_symmetry), size_(0) {}
 
     DataIterator data_begin() const {
         return index_.begin();

@@ -168,8 +168,9 @@ public:
 
     }
 
-    template<class Algo, class ItVec>
-    bool RunFromChunkIterators(Algo& algo, const ItVec& chunk_iterators) {
+    template<class Algo, class ItVec, class Comparator = std::less<ElementType>>
+    bool RunFromChunkIterators(Algo& algo, const ItVec& chunk_iterators, 
+            const Comparator& comp = Comparator()) {
         VERIFY(chunk_iterators.size() > 1);
         std::vector<std::vector<ElementType>> of_interest(chunk_iterators.size() - 1);
 
@@ -183,7 +184,7 @@ public:
             }
         }
 
-        auto it = SmartSetIterator<Graph, ElementType>(g_);
+        auto it = SmartSetIterator<Graph, ElementType, Comparator>(g_, comp);
         for (auto& chunk : of_interest) {
             it.insert(chunk.begin(), chunk.end());
         }

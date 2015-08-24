@@ -680,8 +680,9 @@ class GraphSimplifier {
 
     void PreSimplification() {
         INFO("PROCEDURE == Presimplification");
-        RemoveSelfConjugateEdges(gp_.g, gp_.k_value + 100, 20., removal_handler_, info_container_.chunk_cnt());
 
+        RemoveSelfConjugateEdges(gp_.g, gp_.k_value + 100, 20., removal_handler_, info_container_.chunk_cnt());
+        
         if (!simplif_cfg_.presimp.enabled || !simplif_cfg_.fast_features) {
             INFO("Further presimplification is disabled");
             return;
@@ -704,6 +705,15 @@ class GraphSimplifier {
 
         HandlerF removal_handler = AddCountingCallback(cnt_callback, removal_handler_);
 
+        //ultra low covered
+        if (simplif_cfg_.presimp.early_ec_condition != "") {
+            debruijn_config::simplification::erroneous_connections_remover early_ec_config;
+            early_ec_config.condition = simplif_cfg_.presimp.early_ec_condition;
+
+            RemoveLowCoverageEdges(gp_.g, early_ec_config, info_container_, removal_handler);
+        }
+        
+        //tip clipper
         debruijn_config::simplification::tip_clipper tc_config;
         tc_config.condition = simplif_cfg_.presimp.tip_condition;
 
@@ -711,6 +721,7 @@ class GraphSimplifier {
 
         cnt_callback.Report();
 
+        //erroneous connections
         debruijn_config::simplification::erroneous_connections_remover ec_config;
         ec_config.condition = simplif_cfg_.presimp.ec_condition;
 
@@ -720,6 +731,7 @@ class GraphSimplifier {
     }
 
     void ParallelPreSimplification() {
+        VERIFY(false);
         INFO("Parallel mode");
         CountingCallback<Graph> cnt_callback;
 

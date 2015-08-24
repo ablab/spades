@@ -143,6 +143,7 @@ default
        enabled true
        parallel false
        ; will be enabled only if average coverage \leq activate_cov
+       early_ec_condition    ""
        tip_condition   "{ tc_lb 3.5, cb auto }"
        ec_condition    "{ ec_lb 10, cb 2.0 }"
 
@@ -448,7 +449,8 @@ meta
     {
        enabled true
        parallel false
-       tip_condition   "{ tc_lb 3.5, cb 100 }"
+       early_ec_condition    "{ ec_lb 0, cb 0.1 }"
+       tip_condition   "{ tc_lb 3.5, cb 2.0 }"
        ec_condition    "{ ec_lb 10, cb 1.5 }"
     }
 
