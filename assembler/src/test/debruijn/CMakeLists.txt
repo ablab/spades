@@ -22,6 +22,7 @@ add_executable(debruijn_test
 target_link_libraries(debruijn_test ${COMMON_LIBRARIES} ConsensusCore input mph_index nlopt ssw format ${ZLIB_LIBRARIES})
 
 add_executable(component_generator
+ ${CMAKE_SOURCE_DIR}/debruijn/genome_storage.cpp
  generate_component.cpp)
 
 target_link_libraries(component_generator ${COMMON_LIBRARIES} ConsensusCore input mph_index nlopt ssw format ${ZLIB_LIBRARIES})
