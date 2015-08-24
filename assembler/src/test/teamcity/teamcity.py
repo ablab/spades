@@ -420,15 +420,14 @@ try:
     working_dir = os.getcwd()
 
     #make dirs and remembering history
-    spades_output_dir_name = dataset_info.name
+    output_dir = dataset_info.name
     if 'build_agent' in dataset_info.__dict__:
-        spades_output_dir_name += "_" + dataset_info.build_agent
+        output_dir += "_" + dataset_info.build_agent
 
-    output_dir = ""
     if len(sys.argv) > 2:
-       output_dir = os.path.join(sys.argv[2], spades_output_dir_name)
-    else:
-       output_dir = os.path.join(dataset_info.output_dir, spades_output_dir_name)
+        output_dir += "_" + sys.argv[2]
+
+    output_dir = os.path.join(dataset_info.output_dir, output_dir)
 
     history_log = read_log(output_dir, dataset_info)
     if history_log != "":
@@ -548,12 +547,18 @@ try:
             print("Comparing etalon saves finished abnormally with exit code " + str(ecode))
             exit_code = 12
 
+    contig_dir = ''
+    if 'contig_storage' in dataset_info.__dict__:
+        contig_dir = dataset_info.contig_storage
+
+        if len(sys.argv) > 2:
+            contig_dir += "_" + sys.argv[2]
 
     #comparing misassemblies
     rewrite_latest = True
     latest_found = True
-    if 'contig_storage' in dataset_info.__dict__ and 'quast_params' in dataset_info.__dict__ and '-R' in dataset_info.quast_params and 'assess' in dataset_info.__dict__ and dataset_info.assess:
-        contig_dir = dataset_info.contig_storage
+    if contig_dir != '' and 'quast_params' in dataset_info.__dict__ and '-R' in dataset_info.quast_params and 'assess' in dataset_info.__dict__ and dataset_info.assess:
+
         latest_ctg = os.path.join(contig_dir, "latest_contigs.fasta")
 
         if not os.path.exists(latest_ctg):
@@ -583,9 +588,7 @@ try:
                 #exit_code = 13
 
 
-
-    if 'contig_storage' in dataset_info.__dict__ and 'quast_params' in dataset_info.__dict__ and '-R' in dataset_info.quast_params and 'sc_assess' in dataset_info.__dict__ and dataset_info.sc_assess and os.path.exists(os.path.join(output_dir, "scaffolds.fasta")) and latest_found:
-        contig_dir = dataset_info.contig_storage
+    if contig_dir != '' and 'quast_params' in dataset_info.__dict__ and '-R' in dataset_info.quast_params and 'sc_assess' in dataset_info.__dict__ and dataset_info.sc_assess and os.path.exists(os.path.join(output_dir, "scaffolds.fasta")) and latest_found:
         latest_ctg = os.path.join(contig_dir, "latest_scaffolds.fasta")
         if not os.path.exists(latest_ctg):
             import glob
@@ -615,8 +618,7 @@ try:
 
 
     #saving contigs
-    if 'contig_storage' in dataset_info.__dict__:
-        contig_dir = dataset_info.contig_storage
+    if contig_dir != '':
         quast_contig_dir = os.path.join(contig_dir, "quast_results")
         if not os.path.exists(quast_contig_dir):
             os.makedirs(quast_contig_dir)
