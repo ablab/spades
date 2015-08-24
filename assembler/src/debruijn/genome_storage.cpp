@@ -27,7 +27,12 @@ namespace debruijn_graph {
         }
         return Sequence(ss.str());
     }
-
+    void GenomeStorage::SetSequence(const Sequence &s) {
+        s_ = s.str();
+    }
+    string GenomeStorage::str() const{
+        return s_;
+    }
     size_t GenomeStorage::size() const {
         return s_.size();
     }

@@ -19,6 +19,8 @@ namespace debruijn_graph {
         }
 
         Sequence GetSequence() const;
+        void SetSequence(const Sequence &s);
+        std::string str() const;
         size_t size() const;
     };
 }

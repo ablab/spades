@@ -242,7 +242,7 @@ private:
         EdgePosition e1_pos = e1_poss.front();
         EdgePosition e2_pos = e2_poss.front();
         VERIFY(e1_pos.contigId == e1_pos.contigId);
-        Sequence ref = (e1_pos.contigId == "ref0") ? gp.genome : !gp.genome;
+        Sequence ref = (e1_pos.contigId == "ref0") ? gp.genome.GetSequence() : !gp.genome.GetSequence();
         size_t gap_start = e1_pos.mr.initial_range.end_pos;
         size_t gap_end = e2_pos.mr.initial_range.start_pos + gp.g.k();
         VERIFY(gap_end >= gap_start && gap_end <= ref.size());

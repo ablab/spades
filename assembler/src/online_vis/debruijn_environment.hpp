@@ -85,14 +85,14 @@ class DebruijnEnvironment : public Environment {
 
             //Loading Genome and Handlers
             DEBUG("Colorer done");
-            Path<EdgeId> path1 = mapper_->MapSequence(gp_.genome).path();
-            Path<EdgeId> path2 = mapper_->MapSequence(!gp_.genome).path();
+            Path<EdgeId> path1 = mapper_->MapSequence(gp_.genome.GetSequence()).path();
+            Path<EdgeId> path2 = mapper_->MapSequence(!gp_.genome.GetSequence()).path();
         	coloring_ = omnigraph::visualization::DefaultColorer(gp_.g, path1, path2);
             ResetPositions();
         }
 
         void LoadNewGenome(const Sequence& genome) {
-            gp_.genome = genome;
+            gp_.genome.SetSequence(genome);
             ResetPositions();
         }
 
@@ -101,8 +101,8 @@ class DebruijnEnvironment : public Environment {
                 gp_.edge_pos.Attach();
 
             gp_.edge_pos.clear();
-            filler_.Process(gp_.genome, "ref0");
-            filler_.Process(!gp_.genome, "ref1");
+            filler_.Process(gp_.genome.GetSequence(), "ref0");
+            filler_.Process(!gp_.genome.GetSequence(), "ref1");
         }
 
         string GetFormattedPictureCounter() const {
@@ -142,7 +142,7 @@ class DebruijnEnvironment : public Environment {
         }
 
         const Sequence& genome() const {
-            return gp_.genome;
+            return gp_.genome.GetSequence();
         }
 
         const MapperClass& mapper() const {
