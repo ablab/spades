@@ -690,7 +690,7 @@ except BaseException as e:
     print_exc()
 finally:
     log.print_log()
-    #os.system("chmod -R 777 " + output_dir)
-    #sys.exit(exit_code)
+    os.system("chmod -R 777 " + output_dir)
+    sys.exit(exit_code)
 
 
