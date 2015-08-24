@@ -77,14 +77,19 @@ void FilterKmersAll(const std::vector<string>& files, int all_min, const string&
             break;
         }
         if (cnt_min >= all_min) {
-            output_kmer << min_kmer;
+            output_kmer << min_kmer + "\n";
             for (size_t i = 0; i < n; ++i) {
                 if (alive[i] && top_kmer[i].first == min_kmer) {
                     output_cnt.write((char*)&top_kmer[i].second, sizeof(int));
-                    alive[i] = ReadKmerWithAbundance(*infiles[i], top_kmer[i]);
                 } else {
-                    output_cnt.write(0, sizeof(int));
+                    int tmp = 0;
+                    output_cnt.write((char*)&tmp, sizeof(int));
                 }
+            }
+        }
+        for (size_t i = 0; i < n; ++i) {
+            if (alive[i] && top_kmer[i].first == min_kmer) {
+                alive[i] = ReadKmerWithAbundance(*infiles[i], top_kmer[i]);
             }
         }
     }
