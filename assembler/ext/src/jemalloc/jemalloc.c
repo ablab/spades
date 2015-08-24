@@ -261,7 +261,7 @@ malloc_ncpus(void)
 	GetSystemInfo(&si);
 	result = si.dwNumberOfProcessors;
 #else
-	result = sysconf(_SC_NPROCESSORS_ONLN);
+	result = sysconf(_SC_NPROCESSORS_CONF);
 #endif
 	if (result == -1) {
 		/* Error. */
