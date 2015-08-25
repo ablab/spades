@@ -630,6 +630,8 @@ try:
 
         if 'dipspades' in dataset_info.__dict__ and dataset_info.dipspades:
             shutil.copy(os.path.join(output_dir, "consensus_contigs.fasta"), os.path.join(contig_dir, name_prefix + "_ctg.fasta"))
+        elif 'truseq' in dataset_info.__dict__ and dataset_info.truseq:
+            shutil.copy(os.path.join(output_dir, "truseq_long_reads.fasta"), os.path.join(contig_dir, name_prefix + "_ctg.fasta"))
         else:
             shutil.copy(os.path.join(output_dir, "contigs.fasta"), os.path.join(contig_dir, name_prefix + "_ctg.fasta"))
         print("Contigs saved to " + os.path.join(contig_dir, name_prefix + "_ctg.fasta"))
