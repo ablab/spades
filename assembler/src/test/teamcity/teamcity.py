@@ -689,6 +689,10 @@ try:
     os.system("chmod -R 777 " + output_dir)
     sys.exit(exit_code)
 
-except BaseException as e:
+except SystemExit:
+    raise
+
+except:
+    print("Something unexpected happened!")
     print_exc()
     sys.exit(239)
