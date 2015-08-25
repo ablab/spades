@@ -648,6 +648,10 @@ inline bool FastModeAvailable(const SimplifInfoContainer& info, double activatio
 
     //todo fix logic
     //also handles meta case for now
+    if (cfg.ds.meta) {
+        return true;
+    }
+
     if (cfg.ds.single_cell) {
         return !cfg::get().main_iteration;
     }

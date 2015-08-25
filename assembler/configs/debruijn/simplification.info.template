@@ -427,8 +427,8 @@ meta
 	; relative edge disconnector:
 	relative_ed
 	{
-	enabled true
-	diff_mult  20.
+    	enabled true
+    	diff_mult  20.
 	}
 
 	; bulge remover:
@@ -444,7 +444,7 @@ meta
 		max_number_edges		1000
 	}
 
-    early_ec_condition    "{ ec_lb 0, cb 0.9 }"
+    early_ec_condition    ""
 
     fast_features true
 
@@ -452,8 +452,8 @@ meta
     {
        enabled true
        parallel false
-       tip_condition   "{ tc_lb 3.5, cb 2.0 }"
-       ec_condition    "{ ec_lb 10, cb 1.5 }"
+       tip_condition   "{ lb 20, cb 1.1 }"
+       ec_condition    "{ ec_lb 0, cb 0.9 }"
     }
 
 	; final tip clipper:
