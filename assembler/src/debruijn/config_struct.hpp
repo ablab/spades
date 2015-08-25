@@ -305,7 +305,6 @@ struct debruijn_config {
             bool enabled;
             bool parallel;
             isolated_edges_remover ier;
-            std::string early_ec_condition;
             std::string tip_condition;
             std::string ec_condition;
         };
@@ -332,6 +331,7 @@ struct debruijn_config {
         bulge_remover final_br;
         bulge_remover second_final_br;
 
+        std::string early_ec_condition;
         bool fast_features;
         double fast_activation_cov;
         presimplification presimp;

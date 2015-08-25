@@ -468,7 +468,6 @@ void load(debruijn_config::simplification::presimplification& presimp,
 
   load(presimp.enabled, pt, "enabled", complete);
   load(presimp.parallel, pt, "parallel", complete);
-  load(presimp.early_ec_condition, pt, "early_ec_condition", complete); // early ec remover:
   load(presimp.tip_condition, pt, "tip_condition", complete); // pre tip clipper:
   load(presimp.ec_condition, pt, "ec_condition", complete); // pre ec remover:
   load(presimp.ier, pt, "ier", complete);
@@ -494,6 +493,7 @@ void load(debruijn_config::simplification& simp,
   load(simp.ier, pt, "ier", complete); // isolated edges remover
   load(simp.cbr, pt, "cbr", complete); // complex bulge remover
   load(simp.her, pt, "her", complete); // hidden ec remover
+  load(simp.early_ec_condition, pt, "early_ec_condition", complete); // early ec remover:
   load(simp.fast_features, pt, "fast_features", complete); // master switch for speed-up tricks
   load(simp.fast_activation_cov, pt, "fast_activation_cov", complete);
   load(simp.presimp, pt, "presimp", complete); // presimplification
