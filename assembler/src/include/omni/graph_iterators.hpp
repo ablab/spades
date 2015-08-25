@@ -10,7 +10,7 @@
 #include "adt/queue_iterator.hpp"
 #include "io/read_processor.hpp"
 #include "action_handlers.hpp"
-
+#include "simple_tools.hpp"
 #include <boost/iterator/iterator_facade.hpp>
 
 namespace omnigraph {
@@ -48,7 +48,7 @@ protected:
         }
     }
 
-    SmartIterator(const Graph &g, const string &name, bool add_new,
+    SmartIterator(const Graph &g, const std::string &name, bool add_new,
                   const Comparator& comparator, bool canonical_only)
             : base(g, name),
               inner_it_(comparator),

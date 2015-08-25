@@ -16,6 +16,8 @@
 
 namespace omnigraph {
 
+using std::vector;
+using std::set;
 template<class DataMaster>
 class ObservableGraph: public GraphCore<DataMaster> {
 public:
@@ -236,14 +238,14 @@ void ObservableGraph<DataMaster>::CompressVertex(VertexId v) {
 template<class DataMaster>
 typename ObservableGraph<DataMaster>::EdgeId ObservableGraph<DataMaster>::UnsafeCompressVertex(VertexId v) {
     VERIFY(base::CanCompressVertex(v));
-    vector<EdgeId> edges_to_merge;
+    std::vector<EdgeId> edges_to_merge;
     edges_to_merge.push_back(base::GetUniqueIncomingEdge(v));
     edges_to_merge.push_back(base::GetUniqueOutgoingEdge(v));
     return MergePath(edges_to_merge);
 }
 
 template<class DataMaster>
-vector<typename ObservableGraph<DataMaster>::EdgeId> ObservableGraph<DataMaster>::EdgesToDelete(const vector<EdgeId>& path) const {
+std::vector<typename ObservableGraph<DataMaster>::EdgeId> ObservableGraph<DataMaster>::EdgesToDelete(const std::vector<EdgeId>& path) const {
     set<EdgeId> edgesToDelete;
     edgesToDelete.insert(path[0]);
     for (size_t i = 0; i + 1 < path.size(); i++) {
@@ -251,7 +253,7 @@ vector<typename ObservableGraph<DataMaster>::EdgeId> ObservableGraph<DataMaster>
         if (edgesToDelete.find(base::conjugate(e)) == edgesToDelete.end())
             edgesToDelete.insert(e);
     }
-    return vector<EdgeId>(edgesToDelete.begin(), edgesToDelete.end());
+    return std::vector<EdgeId>(edgesToDelete.begin(), edgesToDelete.end());
 }
 
 template<class DataMaster>
@@ -309,7 +311,7 @@ bool ObservableGraph<DataMaster>::AllHandlersThreadSafe() const {
 template<class DataMaster>
 void ObservableGraph<DataMaster>::PrintHandlersNames() const {
     for (Handler* handler : action_handler_list_) {
-        cout << handler->name() << " attached=" << handler->IsAttached() << endl;
+        std::cout << handler->name() << " attached=" << handler->IsAttached() << std::endl;
     }
 }
 
@@ -458,7 +460,7 @@ typename ObservableGraph<DataMaster>::EdgeId ObservableGraph<DataMaster>::MergeP
 template<class DataMaster>
 std::pair<typename ObservableGraph<DataMaster>::EdgeId, typename ObservableGraph<DataMaster>::EdgeId> ObservableGraph<DataMaster>::SplitEdge(EdgeId edge, size_t position) {
     VERIFY_MSG(position > 0 && position < base::length(edge), "Edge length is " << base::length(edge) << " but split pos was " << position);;
-    pair<VertexData, pair<EdgeData, EdgeData> > newData = base::master().SplitData(base::data(edge), position);
+    std::pair<VertexData, std::pair<EdgeData, EdgeData> > newData = base::master().SplitData(base::data(edge), position);
     VertexId splitVertex = base::HiddenAddVertex(newData.first);
     EdgeId new_edge1 = base::HiddenAddEdge(base::EdgeStart(edge), splitVertex, newData.second.first);
     EdgeId new_edge2 = base::HiddenAddEdge(splitVertex, base::EdgeEnd(edge), newData.second.second);

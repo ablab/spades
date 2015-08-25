@@ -15,9 +15,13 @@
 #pragma once
 
 #include "logger/logger.hpp"
-
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include "../xmath.h"
 namespace omnigraph {
 
+using std::vector;
 //todo save/load absolute coverage
 template<class Graph>
 class CoverageIndex : public GraphActionHandler<Graph> {
@@ -298,15 +302,15 @@ class CoverageIndex : public GraphActionHandler<Graph> {
 //		SetCoverage(newEdge1, coverage1);
 //		SetCoverage(newEdge2, coverage2);
         double avg_cov = coverage(old_edge);
-        SetRawCoverage(new_edge1, max(1, (int) math::round(avg_cov * (double) this->g().length(new_edge1))));
-        SetRawCoverage(new_edge2, max(1, (int) math::round(avg_cov * (double) this->g().length(new_edge2))));
+        SetRawCoverage(new_edge1, std::max(1, (int) math::round(avg_cov * (double) this->g().length(new_edge1))));
+        SetRawCoverage(new_edge2, std::max(1, (int) math::round(avg_cov * (double) this->g().length(new_edge2))));
     }
 
-    void Save(EdgeId e, ostream& out) const {
+    void Save(EdgeId e, std::ostream& out) const {
         out << fmt::format("{:.6f}", coverage(e));
     }
 
-    void Load(EdgeId e, istream& in) {
+    void Load(EdgeId e, std::istream& in) {
         double cov;
         in >> cov;
         SetAvgCoverage(e, cov);
