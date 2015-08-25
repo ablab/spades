@@ -13,6 +13,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <stacktrace.hpp>
+#include <algorithm>
 #include "openmp_wrapper.h"
 #include "folly/PackedSyncPtr.h"
 
@@ -160,7 +161,7 @@ public:
 
   void Synchronize() const {
     size_t& global_max_id = id_distributor_.max_int_id_;
-    global_max_id = max(cur_id_, global_max_id);
+    global_max_id = std::max(cur_id_, global_max_id);
   }
 
 private:
@@ -551,7 +552,7 @@ private:
 };
 
 template<class T>
-ostream &operator<<(ostream &stream, const pure_pointer<T>& pointer)
+std::ostream &operator<<(std::ostream &stream, const pure_pointer<T>& pointer)
 {
   stream << pointer.int_id();
   return stream;

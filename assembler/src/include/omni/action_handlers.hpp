@@ -12,9 +12,11 @@
 
 #include <boost/noncopyable.hpp>
 #include <string>
+#include <vector>
 
 namespace omnigraph {
 
+using std::vector;
 /**
  * ActionHandler is base listening class for graph events. All structures and information storages
  * which are meant to synchronize with graph should use this structure. In order to make handler listen
