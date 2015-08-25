@@ -685,12 +685,10 @@ try:
     #        print("Running quast for all saved contigs now...")
     #        os.system(quast_cmd + " -o " + quast_contig_dir + " " + os.path.join(contig_dir, "*.fasta") + " > " + os.path.join(contig_dir, "quast.log") + " 2> " + os.path.join(contig_dir, "quast.err"))
     #        print("Done")
-
-except BaseException as e:
-    print_exc()
-finally:
     log.print_log()
     os.system("chmod -R 777 " + output_dir)
     sys.exit(exit_code)
 
-
+except BaseException as e:
+    print_exc()
+    sys.exit(239)
