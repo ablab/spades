@@ -198,6 +198,7 @@ def run_quast(dataset_info, contigs, quast_output_dir):
                     i += 1
                 i += 1
 
+        print('Running ' + cmd + ' on ' + ','.join(contigs))
         quast_cmd = os.path.join(dataset_info.quast_dir, cmd) + " " + " ".join(quast_params)
         ecode = os.system(quast_cmd + " -o " + quast_output_dir + " " + " ".join(contigs) + " > /dev/null")
         os.system("chmod -R 777 " + quast_output_dir)
@@ -305,6 +306,7 @@ def quast_run_and_assess(dataset_info, fn, output_dir, name, prefix, special_exi
         print("Processing " + fn)
         qcode = 0
         qcode = run_quast(dataset_info, [fn], output_dir)
+        os.system("chmod -R 777 " + output_dir)
         if qcode != 0:
             print("Failed to estimate!")
             if (prefix + 'assess') in dataset_info.__dict__ and dataset_info.__dict__[prefix + 'assess']:
@@ -435,103 +437,102 @@ try:
     if history_log != "":
         print("Quality log found, going to append")
         
-#    if os.path.exists(output_dir):
-#        shutil.rmtree(output_dir)
-#    os.makedirs(output_dir)
-#    os.system("chmod -R 777 " + output_dir)
-#
-#    #clean
-#    if ('prepare_cfg' not in dataset_info.__dict__ or dataset_info.prepare_cfg) and ('spades_compile' not in dataset_info.__dict__ or dataset_info.spades_compile):
-#        shutil.rmtree('bin', True)
-#        shutil.rmtree('build', True)
-#        shutil.rmtree('build_spades', True)
-#
-#    #prepare cfg
-#    if 'prepare_cfg' not in dataset_info.__dict__ or dataset_info.prepare_cfg:
-#        ecode = os.system('./prepare_cfg')
-#        if ecode != 0:
-#            print("Preparing configuration files finished abnormally with exit code " + str(ecode))
-#            sys.exit(2)
-#
-#    #compile
-#    if 'spades_compile' not in dataset_info.__dict__ or dataset_info.spades_compile:
-#        comp_params = ' '
-#        if 'compilation_params' in dataset_info.__dict__:
-#            comp_params = " ".join(dataset_info.compilation_params)
-#
-#        ecode = os.system('./spades_compile.sh ' + comp_params)
-#        if ecode != 0:
-#            print("Compilation finished abnormally with exit code " + str(ecode))
-#            sys.exit(3)
-#
-#    #make correct files to files
-#    spades_params = []
-#    i = 0
-#    while i < len(dataset_info.spades_params):
-#        option = dataset_info.spades_params[i]
-#        spades_params.append(str(option))
-#        if i < len(dataset_info.spades_params) - 1 and (option == '-1' or option == '-2' or option == '--12' or option == '-s' or option == '--hap'  or option == '--trusted-contigs' or option == '--untrusted-contigs'  or option == '--pacbio' or option == '--sanger' or option == '--pe1-1' or option == '--pe1-2' or option == '--pe1-s' or option == '--pe2-1' or option == '--pe2-2' or option == '--pe2-s' or option == '--mp1-1' or option == '--mp1-2' or option == '--mp1-s' or option == '--mp2-1' or option == '--mp2-2' or option == '--mp2-s' or option == '--hqmp1-1' or option == '--hqmp1-2' or option == '--hqmp1-s' or option == '--hqmp2-1' or option == '--hqmp2-2' or option == '--hqmp2-s' or option == '--dataset' ):
-#            spades_params.append(os.path.join(dataset_info.dataset_path, str(dataset_info.spades_params[i + 1])))
-#            i += 1
-#        i += 1
-#
-#    if len(sys.argv) > 3:
-#        spades_params.append("--configs-dir")
-#        spades_params.append(sys.argv[3])
-#
-#    spades_cmd = ""
-#    if 'dipspades' in dataset_info.__dict__ and dataset_info.dipspades:
-#        spades_cmd = "./src/spades_pipeline/dipspades_logic.py " + " ".join(spades_params) + " -o " + output_dir
-#    else:
-#        spades_cmd = "./spades.py --disable-gzip-output " + " ".join(spades_params) + " -o " + output_dir
-#
-#    #run spades
-#    ecode = os.system(spades_cmd)
-#    os.system("chmod -R 777 " + output_dir)
-#
-#    if ecode != 0:
-#        print("SPAdes finished abnormally with exit code " + str(ecode))
-#        write_log(history_log, "", output_dir, dataset_info)
-#        sys.exit(4)
-#
-#    #reads quality
-#    if 'reads_quality_params' in dataset_info.__dict__:
-#        corrected_reads_dataset = os.path.join(output_dir, "corrected/corrected.yaml")
-#
-#        if not os.path.exists(corrected_reads_dataset):
-#            print("Corrected reads were not detected in " + corrected_reads_dataset)
-#            exit_code = 5
-#        else:
-#            rq_params = []
-#            i = 0
-#            while i < len(dataset_info.reads_quality_params):
-#                option = dataset_info.reads_quality_params[i]
-#                rq_params.append(str(option))
-#                if i < len(dataset_info.reads_quality_params) - 1 and option == '-r':
-#                    rq_params.append(os.path.join(dataset_info.dataset_path, str(dataset_info.reads_quality_params[i + 1])))
-#                    i += 1
-#                i += 1
-#
-#            rq_output_dir = os.path.join(output_dir, "RQ_RESULTS")
-#            rq_cmd = "./src/tools/reads_utils/reads_quality.py " + " ".join(rq_params) + " -o " + rq_output_dir + " " + corrected_reads_dataset
-#            ecode = os.system(rq_cmd)
-#            if ecode != 0:
-#                print("Reads quality tool finished abnormally with exit code " + str(ecode))
-#                write_log(history_log, "", output_dir, dataset_info)
-#                os.system("chmod -R 777 " + output_dir)
-#                exit_code = 6
-#            else:
-#                limit_map = {}
-#                if 'assess' in dataset_info.__dict__ and dataset_info.assess:
-#                    if 'min_genome_mapped' in dataset_info.__dict__:
-#                        limit_map["Genome mapped"] = [(float(dataset_info.min_genome_mapped), True)]
-#                    if 'min_aligned' in dataset_info.__dict__:
-#                        limit_map["Uniquely aligned reads"] = [(float(dataset_info.min_aligned), True)]
-#                    
-#                result = assess_reads(os.path.join(rq_output_dir, "report.horizontal.tsv"), limit_map)
-#                if result[0] != 0:
-#                    exit_code = 7
-#                new_log += result[1]
+    if os.path.exists(output_dir):
+        shutil.rmtree(output_dir)
+    os.makedirs(output_dir)
+
+    #clean
+    if ('prepare_cfg' not in dataset_info.__dict__ or dataset_info.prepare_cfg) and ('spades_compile' not in dataset_info.__dict__ or dataset_info.spades_compile):
+        shutil.rmtree('bin', True)
+        shutil.rmtree('build', True)
+        shutil.rmtree('build_spades', True)
+
+    #prepare cfg
+    if 'prepare_cfg' not in dataset_info.__dict__ or dataset_info.prepare_cfg:
+        ecode = os.system('./prepare_cfg')
+        if ecode != 0:
+            print("Preparing configuration files finished abnormally with exit code " + str(ecode))
+            sys.exit(2)
+
+    #compile
+    if 'spades_compile' not in dataset_info.__dict__ or dataset_info.spades_compile:
+        comp_params = ' '
+        if 'compilation_params' in dataset_info.__dict__:
+            comp_params = " ".join(dataset_info.compilation_params)
+
+        ecode = os.system('./spades_compile.sh ' + comp_params)
+        if ecode != 0:
+            print("Compilation finished abnormally with exit code " + str(ecode))
+            sys.exit(3)
+
+    #make correct files to files
+    spades_params = []
+    i = 0
+    while i < len(dataset_info.spades_params):
+        option = dataset_info.spades_params[i]
+        spades_params.append(str(option))
+        if i < len(dataset_info.spades_params) - 1 and (option == '-1' or option == '-2' or option == '--12' or option == '-s' or option == '--hap'  or option == '--trusted-contigs' or option == '--untrusted-contigs'  or option == '--pacbio' or option == '--sanger' or option == '--pe1-1' or option == '--pe1-2' or option == '--pe1-s' or option == '--pe2-1' or option == '--pe2-2' or option == '--pe2-s' or option == '--mp1-1' or option == '--mp1-2' or option == '--mp1-s' or option == '--mp2-1' or option == '--mp2-2' or option == '--mp2-s' or option == '--hqmp1-1' or option == '--hqmp1-2' or option == '--hqmp1-s' or option == '--hqmp2-1' or option == '--hqmp2-2' or option == '--hqmp2-s' or option == '--dataset' ):
+            spades_params.append(os.path.join(dataset_info.dataset_path, str(dataset_info.spades_params[i + 1])))
+            i += 1
+        i += 1
+
+    if len(sys.argv) > 3:
+        spades_params.append("--configs-dir")
+        spades_params.append(sys.argv[3])
+
+    spades_cmd = ""
+    if 'dipspades' in dataset_info.__dict__ and dataset_info.dipspades:
+        spades_cmd = "./src/spades_pipeline/dipspades_logic.py " + " ".join(spades_params) + " -o " + output_dir
+    else:
+        spades_cmd = "./spades.py --disable-gzip-output " + " ".join(spades_params) + " -o " + output_dir
+
+    #run spades
+    ecode = os.system(spades_cmd)
+u   os.system("chmod -R 777 " + output_dir)
+
+    if ecode != 0:
+        print("SPAdes finished abnormally with exit code " + str(ecode))
+        write_log(history_log, "", output_dir, dataset_info)
+        sys.exit(4)
+
+    #reads quality
+    if 'reads_quality_params' in dataset_info.__dict__:
+        corrected_reads_dataset = os.path.join(output_dir, "corrected/corrected.yaml")
+
+        if not os.path.exists(corrected_reads_dataset):
+            print("Corrected reads were not detected in " + corrected_reads_dataset)
+            exit_code = 5
+        else:
+            rq_params = []
+            i = 0
+            while i < len(dataset_info.reads_quality_params):
+                option = dataset_info.reads_quality_params[i]
+                rq_params.append(str(option))
+                if i < len(dataset_info.reads_quality_params) - 1 and option == '-r':
+                    rq_params.append(os.path.join(dataset_info.dataset_path, str(dataset_info.reads_quality_params[i + 1])))
+                    i += 1
+                i += 1
+
+            rq_output_dir = os.path.join(output_dir, "RQ_RESULTS")
+            rq_cmd = "./src/tools/reads_utils/reads_quality.py " + " ".join(rq_params) + " -o " + rq_output_dir + " " + corrected_reads_dataset
+            ecode = os.system(rq_cmd)
+            if ecode != 0:
+                print("Reads quality tool finished abnormally with exit code " + str(ecode))
+                write_log(history_log, "", output_dir, dataset_info)
+                os.system("chmod -R 777 " + output_dir)
+                exit_code = 6
+            else:
+                limit_map = {}
+                if 'assess' in dataset_info.__dict__ and dataset_info.assess:
+                    if 'min_genome_mapped' in dataset_info.__dict__:
+                        limit_map["Genome mapped"] = [(float(dataset_info.min_genome_mapped), True)]
+                    if 'min_aligned' in dataset_info.__dict__:
+                        limit_map["Uniquely aligned reads"] = [(float(dataset_info.min_aligned), True)]
+                    
+                result = assess_reads(os.path.join(rq_output_dir, "report.horizontal.tsv"), limit_map)
+                if result[0] != 0:
+                    exit_code = 7
+                new_log += result[1]
 
 
     #QUAST
