@@ -112,53 +112,34 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
         VERIFY(index_.Size() != 0);
         result.clear();
 
-        //FIXME reduce code duplication
-        if (index_.contains(e)) {
-          //fixme is 0 just some int here?!!!
-          const auto& infos = index_.GetEdgeInfo(e, 0);
-          // We do not care about iteration order here - all the edges collected
-          // will be inside std::set<EdgeId>
-          for (const auto& it : infos) {
-            EdgeId e2 = it.first;
-            if (e2 == e)
-              continue;
-            if (g_.length(e2) < min_len)
-              continue;
-
-            for (const auto& point : it.second) {
-              if (math::le(point.d, (omnigraph::de::DEDistance) max_dist) &&
-                  math::ge(point.d, (omnigraph::de::DEDistance) min_dist)) {
-                result.insert(e2);
-                break;
-              }
+        for (size_t conj_counter = 0; conj_counter < 2; conj_counter ++) {
+            if (index_.contains(e)) {
+                const auto &infos = index_.GetEdgeInfoMap(e);
+                // We do not care about iteration order here - all the edges collected
+                // will be inside std::set<EdgeId>
+                for (const auto &it : infos) {
+                    EdgeId e2 = it.first;
+                    if (e2 == e)
+                        continue;
+                    if (g_.length(e2) < min_len)
+                        continue;
+                    for (const auto &point : it.second) {
+                        omnigraph::de::DEDistance dist = point.d;
+                        if (conj_counter != 0)
+                            dist = -point.d + (omnigraph::de::DEDistance) g_.length(e) - (omnigraph::de::DEDistance) g_.length(e2);
+                        if (math::le(dist, (omnigraph::de::DEDistance) max_dist) &&
+                            math::ge(dist, (omnigraph::de::DEDistance) min_dist)) {
+                            if (conj_counter == 0)
+                                result.insert(e2);
+                            else
+                                result.insert(g_.conjugate(e2));
+                            break;
+                        }
+                    }
+                }
             }
-          }
+            e = g_.conjugate(e);
         }
-
-        e = g_.conjugate(e);
-        if (index_.contains(e)) {
-          //fixme is 0 just some int here?!!!
-          const auto& infos = index_.GetEdgeInfo(e, 0);
-          // We do not care about iteration order here - all the edges collected
-          // will be inside std::set<EdgeId>
-          for (const auto& it : infos) {
-            EdgeId e2 = it.first;
-            if (e2 == e)
-              continue;
-            if (g_.length(e2) < min_len)
-              continue;
-
-            for (const auto& point : it.second) {
-              omnigraph::de::DEDistance dist = -point.d + (omnigraph::de::DEDistance) g_.length(e) - (omnigraph::de::DEDistance) g_.length(e2);
-              if (math::le(dist, (omnigraph::de::DEDistance) max_dist) &&
-                  math::ge(dist, (omnigraph::de::DEDistance) min_dist)) {
-                result.insert(g_.conjugate(e2));
-                break;
-              }
-            }
-          }
-        }
-
         return result.size();
     }
 

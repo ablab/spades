@@ -229,7 +229,7 @@ class DataPrinter {
         size_t comp_size = 0;
         for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
             EdgeId e1 = *I;
-            const auto& inner_map = paired_index.GetEdgeInfo(e1, 0);
+            const auto& inner_map = paired_index.GetEdgeInfoMap(e1);
             for (auto II = inner_map.begin(), IE = inner_map.end(); II != IE; ++II) {
                 EdgeId e2 = II->first;
                 const auto& hist = II->second;
@@ -243,7 +243,7 @@ class DataPrinter {
 
         for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
             EdgeId e1 = *I;
-            const auto& inner_map = paired_index.GetEdgeInfo(e1, 0);
+            const auto& inner_map = paired_index.GetEdgeInfoMap(e1);
             std::map<typename Graph::EdgeId, typename Index::Histogram> ordermap(inner_map.begin(), inner_map.end());
             for (const auto& entry : ordermap) {
                 EdgeId e2 = entry.first; const auto& hist = entry.second;
