@@ -202,7 +202,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
 #   pragma omp parallel for num_threads(nthreads) schedule(guided, 10)
     for (size_t i = 0; i < edges.size(); ++i) {
       EdgeId edge = edges[i];
-      const auto& inner_map = index.GetEdgeInfo(edge, 0);
+      const auto& inner_map = index.GetEdgeInfoMap(edge);
       ProcessEdge(edge, inner_map, buffer[omp_get_thread_num()]);
     }
 

@@ -466,7 +466,7 @@ class PairedInfoStorage {
     // faster implementation, but less resolver-friendly
     // returns InnerMap instead of vector<>,
     // one can iterate it using FastIterator class
-    const InnerMap GetEdgeInfo(EdgeId edge, int) const {
+    const InnerMap GetEdgeInfoMap(EdgeId edge) const {
         typename IndexDataType::const_iterator iter = index_.find(edge);
         if (iter == index_.end())
             return InnerMap();
