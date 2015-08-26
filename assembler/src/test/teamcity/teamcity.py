@@ -488,7 +488,7 @@ try:
 
     #run spades
     ecode = os.system(spades_cmd)
-u   os.system("chmod -R 777 " + output_dir)
+    os.system("chmod -R 777 " + output_dir)
 
     if ecode != 0:
         print("SPAdes finished abnormally with exit code " + str(ecode))
