@@ -21,6 +21,9 @@ if os.path.isfile(os.path.join(truspades_home, 'spades')):
     truspades_home = os.path.join(install_prefix, 'share', 'spades')
     python_modules_home = truspades_home
 
+print os.path.join(python_modules_home, "spades_pipeline", "common")
+print os.path.join(python_modules_home, "spades_pipeline", "truspades")
+print os.path.join(python_modules_home, "spades_pipeline")
 sys.path.append(os.path.join(python_modules_home, "spades_pipeline", "common"))
 sys.path.append(os.path.join(python_modules_home, "spades_pipeline", "truspades"))
 sys.path.append(os.path.join(python_modules_home, "spades_pipeline"))
@@ -60,9 +63,9 @@ def reads_line(libs):
 def command_line(barcode, output_dir, params, continue_launch):
 #    logfile = os.path.join(output_dir, "logs", barcode.id + ".out")
     if continue_launch and os.path.exists(os.path.join(output_dir, barcode.id,  "params.txt")):
-        result = ["./" + os.path.join(bin_home, "spades.py"), "--truseq", "-o", os.path.join(output_dir, barcode.id), "--continue", " ".join(params)]
+        result = ["python " + os.path.join(bin_home, "spades.py"), "--truseq", "-o", os.path.join(output_dir, barcode.id), "--continue", " ".join(params)]
     else:
-       result = ["./" + os.path.join(bin_home, "spades.py"), "--truseq", "-t", "1", "-o", os.path.join(output_dir, barcode.id), reads_line(barcode.libs), " ".join(params)]
+       result = ["python " + os.path.join(bin_home, "spades.py"), "--truseq", "-t", "1", "-o", os.path.join(output_dir, barcode.id), reads_line(barcode.libs), " ".join(params)]
 #    result = ["./truspades.py", "-o", os.path.join(output_dir, barcode.id), reads_line(barcode.libs), " ".join(params), "\n"]
     return " ".join(result)
 
