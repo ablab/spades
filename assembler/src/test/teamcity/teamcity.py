@@ -198,8 +198,10 @@ def run_quast(dataset_info, contigs, quast_output_dir):
                     i += 1
                 i += 1
 
+        print('Running ' + cmd + ' on ' + ','.join(contigs))
         quast_cmd = os.path.join(dataset_info.quast_dir, cmd) + " " + " ".join(quast_params)
-        ecode = os.system(quast_cmd + " -o " + quast_output_dir + " " + " ".join(contigs) )
+        ecode = os.system(quast_cmd + " -o " + quast_output_dir + " " + " ".join(contigs) + " > /dev/null")
+        os.system("chmod -R 777 " + quast_output_dir)
         if ecode != 0:
             print("QUAST finished abnormally with exit code " + str(ecode))
             return 9
@@ -303,6 +305,7 @@ def quast_run_and_assess(dataset_info, fn, output_dir, name, prefix, special_exi
     if os.path.exists(fn):
         print("Processing " + fn)
         qcode = run_quast(dataset_info, [fn], output_dir)
+        os.system("chmod -R 777 " + output_dir)
         if qcode != 0:
             print("Failed to estimate!")
             if (prefix + 'assess') in dataset_info.__dict__ and dataset_info.__dict__[prefix + 'assess']:
@@ -436,7 +439,6 @@ try:
     if os.path.exists(output_dir):
         shutil.rmtree(output_dir)
     os.makedirs(output_dir)
-    os.system("chmod -R 777 " + output_dir)
 
     #clean
     if ('prepare_cfg' not in dataset_info.__dict__ or dataset_info.prepare_cfg) and ('spades_compile' not in dataset_info.__dict__ or dataset_info.spades_compile):
@@ -485,10 +487,11 @@ try:
 
     #run spades
     ecode = os.system(spades_cmd)
+    os.system("chmod -R 777 " + output_dir)
+
     if ecode != 0:
         print("SPAdes finished abnormally with exit code " + str(ecode))
         write_log(history_log, "", output_dir, dataset_info)
-        os.system("chmod -R 777 " + output_dir)
         sys.exit(4)
 
     #reads quality
@@ -557,7 +560,11 @@ try:
     #comparing misassemblies
     rewrite_latest = True
     latest_found = True
-    if contig_dir != '' and 'quast_params' in dataset_info.__dict__ and '-R' in dataset_info.quast_params and 'assess' in dataset_info.__dict__ and dataset_info.assess:
+    enable_comparison = True
+    if 'meta' in dataset_info.__dict__ and dataset_info.meta:
+        enable_comparison = False
+
+    if enable_comparison and contig_dir != '' and 'quast_params' in dataset_info.__dict__ and '-R' in dataset_info.quast_params and 'assess' in dataset_info.__dict__ and dataset_info.assess:
 
         latest_ctg = os.path.join(contig_dir, "latest_contigs.fasta")
 
@@ -588,7 +595,7 @@ try:
                 #exit_code = 13
 
 
-    if contig_dir != '' and 'quast_params' in dataset_info.__dict__ and '-R' in dataset_info.quast_params and 'sc_assess' in dataset_info.__dict__ and dataset_info.sc_assess and os.path.exists(os.path.join(output_dir, "scaffolds.fasta")) and latest_found:
+    if enable_comparison and contig_dir != '' and 'quast_params' in dataset_info.__dict__ and '-R' in dataset_info.quast_params and 'sc_assess' in dataset_info.__dict__ and dataset_info.sc_assess and os.path.exists(os.path.join(output_dir, "scaffolds.fasta")) and latest_found:
         latest_ctg = os.path.join(contig_dir, "latest_scaffolds.fasta")
         if not os.path.exists(latest_ctg):
             import glob
@@ -616,7 +623,6 @@ try:
     #writing log
     write_log(history_log, new_log, output_dir, dataset_info)
 
-
     #saving contigs
     if contig_dir != '':
         quast_contig_dir = os.path.join(contig_dir, "quast_results")
@@ -630,8 +636,6 @@ try:
 
         if 'dipspades' in dataset_info.__dict__ and dataset_info.dipspades:
             shutil.copy(os.path.join(output_dir, "consensus_contigs.fasta"), os.path.join(contig_dir, name_prefix + "_ctg.fasta"))
-        elif 'truseq' in dataset_info.__dict__ and dataset_info.truseq:
-            shutil.copy(os.path.join(output_dir, "truseq_long_reads.fasta"), os.path.join(contig_dir, name_prefix + "_ctg.fasta"))
         else:
             shutil.copy(os.path.join(output_dir, "contigs.fasta"), os.path.join(contig_dir, name_prefix + "_ctg.fasta"))
         print("Contigs saved to " + os.path.join(contig_dir, name_prefix + "_ctg.fasta"))
@@ -687,14 +691,14 @@ try:
     #        print("Running quast for all saved contigs now...")
     #        os.system(quast_cmd + " -o " + quast_contig_dir + " " + os.path.join(contig_dir, "*.fasta") + " > " + os.path.join(contig_dir, "quast.log") + " 2> " + os.path.join(contig_dir, "quast.err"))
     #        print("Done")
-    log.print_log()
-    os.system("chmod -R 777 " + output_dir)
     sys.exit(exit_code)
 
 except SystemExit:
+    log.print_log()
     raise
 
 except:
+    log.print_log()
     print("Something unexpected happened!")
     print_exc()
     sys.exit(239)
