@@ -199,7 +199,8 @@ def run_quast(dataset_info, contigs, quast_output_dir):
                 i += 1
 
         quast_cmd = os.path.join(dataset_info.quast_dir, cmd) + " " + " ".join(quast_params)
-        ecode = os.system(quast_cmd + " -o " + quast_output_dir + " " + " ".join(contigs) )
+        ecode = os.system(quast_cmd + " -o " + quast_output_dir + " " + " ".join(contigs) + " > /dev/null")
+        os.system("chmod -R 777 " + quast_output_dir)
         if ecode != 0:
             print("QUAST finished abnormally with exit code " + str(ecode))
             return 9
@@ -302,6 +303,7 @@ def find_mis_positions(contig_report):
 def quast_run_and_assess(dataset_info, fn, output_dir, name, prefix, special_exit_code):
     if os.path.exists(fn):
         print("Processing " + fn)
+        qcode = 0
         qcode = run_quast(dataset_info, [fn], output_dir)
         if qcode != 0:
             print("Failed to estimate!")
@@ -485,10 +487,11 @@ try:
 #
 #    #run spades
 #    ecode = os.system(spades_cmd)
+#    os.system("chmod -R 777 " + output_dir)
+#
 #    if ecode != 0:
 #        print("SPAdes finished abnormally with exit code " + str(ecode))
 #        write_log(history_log, "", output_dir, dataset_info)
-#        os.system("chmod -R 777 " + output_dir)
 #        sys.exit(4)
 #
 #    #reads quality
@@ -557,7 +560,11 @@ try:
     #comparing misassemblies
     rewrite_latest = True
     latest_found = True
-    if contig_dir != '' and 'quast_params' in dataset_info.__dict__ and '-R' in dataset_info.quast_params and 'assess' in dataset_info.__dict__ and dataset_info.assess:
+    enable_comparison = True
+    if 'meta' in dataset_info.__dict__ and dataset_info.meta:
+        enable_comparison = False
+
+    if enable_comparison and contig_dir != '' and 'quast_params' in dataset_info.__dict__ and '-R' in dataset_info.quast_params and 'assess' in dataset_info.__dict__ and dataset_info.assess:
 
         latest_ctg = os.path.join(contig_dir, "latest_contigs.fasta")
 
@@ -588,7 +595,7 @@ try:
                 #exit_code = 13
 
 
-    if contig_dir != '' and 'quast_params' in dataset_info.__dict__ and '-R' in dataset_info.quast_params and 'sc_assess' in dataset_info.__dict__ and dataset_info.sc_assess and os.path.exists(os.path.join(output_dir, "scaffolds.fasta")) and latest_found:
+    if enable_comparison and contig_dir != '' and 'quast_params' in dataset_info.__dict__ and '-R' in dataset_info.quast_params and 'sc_assess' in dataset_info.__dict__ and dataset_info.sc_assess and os.path.exists(os.path.join(output_dir, "scaffolds.fasta")) and latest_found:
         latest_ctg = os.path.join(contig_dir, "latest_scaffolds.fasta")
         if not os.path.exists(latest_ctg):
             import glob
@@ -685,7 +692,6 @@ try:
     #        os.system(quast_cmd + " -o " + quast_contig_dir + " " + os.path.join(contig_dir, "*.fasta") + " > " + os.path.join(contig_dir, "quast.log") + " 2> " + os.path.join(contig_dir, "quast.err"))
     #        print("Done")
     sys.exit(exit_code)
-#    os.system("chmod -R 777 " + output_dir)
 
 except SystemExit:
     log.print_log()
