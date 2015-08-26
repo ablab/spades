@@ -13,6 +13,7 @@ add_executable(spades
                path_extend/pe_config_struct.cpp
                path_extend/bidirectional_path.cpp
     	       path_extend/scaff_supplementary.cpp
+               path_extend/extension_chooser2015.cpp
                stage.cpp
                construction.cpp
                gap_closer.cpp

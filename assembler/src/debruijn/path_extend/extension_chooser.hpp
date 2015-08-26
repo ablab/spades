@@ -415,11 +415,11 @@ public:
 };
 
 class ScaffoldingExtensionChooser : public ExtensionChooser {
+protected:
     double weight_threshold_;
     double cl_weight_threshold_;
     const double is_scatter_coeff_ = 3.0;
-protected:
-    void AddInfoFromEdge(const std::vector<int>& distances, const std::vector<double>& weights, 
+    void AddInfoFromEdge(const std::vector<int>& distances, const std::vector<double>& weights,
                          std::vector<pair<int, double>>& histogram, size_t len_to_path_end) {
         for (size_t l = 0; l < distances.size(); ++l) {
             //todo commented out condition seems unnecessary and should be library dependent! do we need "max(0" there?

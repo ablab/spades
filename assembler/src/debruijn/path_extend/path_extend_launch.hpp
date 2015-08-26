@@ -23,6 +23,7 @@
 #include "loop_traverser.hpp"
 #include "long_read_storage.hpp"
 #include "next_path_searcher.hpp"
+#include "extension_chooser2015.hpp"
 
 
 namespace path_extend {
@@ -349,6 +350,29 @@ inline shared_ptr<PathExtender> MakeScaffoldingExtender(const conj_graph_pack& g
     return make_shared<ScaffoldingPathExtender>(gp, cov_map, scaff_chooser, gap_joiner, lib->GetISMax(), pset.loop_removal.max_loops, false);
 }
 
+
+inline shared_ptr<PathExtender> MakeScaffolding2015Extender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
+                                                        size_t lib_index, const pe_config::ParamSetT& pset, shared_ptr<ScaffoldingUniqueEdgeStorage> storage) {
+    shared_ptr<PairedInfoLibrary> lib = MakeNewLib(gp.g, gp.paired_indices, lib_index);
+
+    shared_ptr<WeightCounter> counter = make_shared<ReadCountWeightCounter>(gp.g, lib);
+    //TODO::was copypasted from MakeScaffoldingExtender
+    //TODO::REWRITE
+    double prior_coef = GetPriorityCoeff(lib, pset);
+    double var_coeff = 3.0;
+    DEBUG("here creating extchooser");
+    auto scaff_chooser = std::make_shared<ExtensionChooser2015>(gp.g, counter, prior_coef, var_coeff, storage);
+    //);
+    auto gap_joiner = std::make_shared<HammingGapJoiner>(gp.g, pset.scaffolder_options.min_gap_score,
+                                                         int(math::round((double) gp.g.k() - var_coeff * (double) lib->GetIsVar())),
+                                                         (int) (pset.scaffolder_options.max_can_overlap * (double) gp.g.k()),
+                                                         pset.scaffolder_options.short_overlap,
+                                                         (int) 2 * cfg::get().ds.RL(), pset.scaffolder_options.artificial_gap,
+                                                         cfg::get().pe_params.param_set.scaffolder_options.use_old_score);
+    return make_shared<ScaffoldingPathExtender>(gp, cov_map, scaff_chooser, gap_joiner, lib->GetISMax(), pset.loop_removal.max_loops, false);
+}
+
+
 inline shared_ptr<SimpleExtender> MakeMPExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, const PathContainer& paths,
                                        size_t lib_index, const pe_config::ParamSetT& pset) {
 
@@ -366,10 +390,31 @@ inline bool InsertSizeCompare(const shared_ptr<PairedInfoLibrary> lib1,
     return lib1->GetISMax() < lib2->GetISMax();
 }
 
-inline vector<shared_ptr<PathExtender> > MakeAllScaffoldingExtenders (PathExtendStage stage, const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
-                                                                      const pe_config::ParamSetT& pset, bool use_auto_threshold, const PathContainer& paths_for_mp = PathContainer()) {
+inline vector<shared_ptr<PathExtender> > MakeAllScaffoldingExtenders2015(PathExtendStage stage,
+                                                                         const conj_graph_pack &gp,
+                                                                         const GraphCoverageMap &cov_map,
+                                                                         const pe_config::ParamSetT &pset,
+                                                                         bool use_auto_threshold,
+                                                                         const PathContainer &paths_for_mp = PathContainer()) {
+    ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, 1000, 1.5);
+    auto storage = std::make_shared<ScaffoldingUniqueEdgeStorage>();
+    unique_edge_analyzer.FillUniqueEdgeStorage(*storage);
     vector<shared_ptr<PathExtender> > result;
-    //TODO::compilation placeholder
+    DEBUG(cfg::get().ds.reads.lib_count());
+    for (io::LibraryType lt : io::LibraryPriotity) {
+        DEBUG("strt");
+        for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+            const auto &lib = cfg::get().ds.reads[i];                        
+            if (lib.type() != lt)
+                continue;
+            if (IsForMPExtender(lib) || IsForPEExtender(lib)) {
+                DEBUG("pushing");
+                result.push_back(MakeScaffolding2015Extender(gp, cov_map, i, pset, storage));
+            } else {
+                DEBUG("sinlge read only")
+            }
+        }
+    }
     return result;
 }
 
@@ -583,7 +628,7 @@ inline void ScaffoldAll2015(conj_graph_pack& gp,
                              boost::optional<std::string> broken_contigs,
                              bool use_auto_threshold = true) {
 
-    INFO("ExSPAnder scaffolding tool started");
+    INFO("Scaffolding 2015 started");
 
     make_dir(output_dir);
     make_dir(GetEtcDir(output_dir));
@@ -595,7 +640,8 @@ inline void ScaffoldAll2015(conj_graph_pack& gp,
     GraphCoverageMap cover_map(gp.g);
     INFO("SUBSTAGE = paired-end libraries")
     PathExtendStage exspander_stage = PathExtendStage::Scaffold2015;
-    vector<shared_ptr<PathExtender> > all_libs = MakeAllScaffoldingExtenders(exspander_stage, gp, cover_map, pset, use_auto_threshold);
+    vector<shared_ptr<PathExtender> > all_libs = MakeAllScaffoldingExtenders2015(exspander_stage, gp, cover_map, pset,
+                                                                                 use_auto_threshold);
     size_t max_over = max(FindOverlapLenForStage(exspander_stage), gp.g.k() + 100);
     shared_ptr<CompositeExtender> main_extender = make_shared<CompositeExtender>(gp.g, cover_map, all_libs, max_over);
 
@@ -622,8 +668,8 @@ inline void ScaffoldAll2015(conj_graph_pack& gp,
     }
     DebugOutputPaths(writer, gp, output_dir, paths, (mp_exist ? "final_pe_paths" : "final_paths"));
     writer.WritePathsToFASTG(paths,
-                             output_dir + (mp_exist ? "scaffolds" : contigs_name) + ".fastg",
-                             output_dir + (mp_exist ? "scaffolds" : contigs_name) + ".fasta" );
+                             output_dir + (mp_exist ? "scaffolds2015" : contigs_name) + ".fastg",
+                             output_dir + (mp_exist ? "scaffolds2015" : contigs_name) + ".fasta" );
 
     cover_map.Clear();
 

@@ -2,10 +2,9 @@
 // Created by lab42 on 8/18/15.
 //
 
-#ifndef PROJECT_PE_SCAFF_SUPPLEMENTARY_HPP
-#define PROJECT_PE_SCAFF_SUPPLEMENTARY_HPP
-
+#pragma once
 #include "graph_pack.hpp"
+#include "logger/logger.hpp"
 
 namespace path_extend {
     typedef debruijn_graph::EdgeId EdgeId;
@@ -19,8 +18,11 @@ namespace path_extend {
     private:
         set <EdgeId> unique_edges_;
     public:
+        ScaffoldingUniqueEdgeStorage(): unique_edges_(){
+            DEBUG("storage created, empty");
+        }
 
-        bool IsUnique(EdgeId e) {
+        bool IsUnique(EdgeId e) const {
             return (unique_edges_.find(e) != unique_edges_.end());
         }
 
@@ -31,6 +33,13 @@ namespace path_extend {
         decltype(unique_edges_.end()) end() const {
             return unique_edges_.end();
         }
+
+        size_t size() const {
+            return unique_edges_.size();
+        }
+   protected:
+        DECL_LOGGER("ScaffoldingUniqueEdgeStorage")
+
     };
 
 
@@ -61,4 +70,4 @@ namespace path_extend {
     };
 }
 
-#endif //PROJECT_PE_SCAFF_SUPPLEMENTARY_HPP
+
