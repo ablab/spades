@@ -309,6 +309,12 @@ struct debruijn_config {
             std::string ec_condition;
         };
 
+        struct init_cleaning {
+            std::string self_conj_condition;
+            std::string tip_condition;
+            std::string ec_condition;
+        };
+
         size_t cycle_iter_count;
         bool post_simplif_enabled;
         bool topology_simplif_enabled;
@@ -331,7 +337,8 @@ struct debruijn_config {
         bulge_remover final_br;
         bulge_remover second_final_br;
 
-        std::string early_ec_condition;
+        init_cleaning init_clean;
+
         bool fast_features;
         double fast_activation_cov;
         presimplification presimp;

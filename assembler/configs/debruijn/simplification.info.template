@@ -133,9 +133,14 @@ default
 	    unreliability_threshold     4
 	    relative_threshold          5     
 	}
-    
-    early_ec_condition    ""
 
+    init_clean
+    {
+        self_conj_condition "{ ec_lb 100, cb 1.0 }"
+        tip_condition   ""
+        ec_condition    ""
+    }
+    
     ;master switch over presimp, persistent iterators and disabling br
     fast_features true
     fast_activation_cov 10.
@@ -444,16 +449,14 @@ meta
 		max_number_edges		1000
 	}
 
-    early_ec_condition    ""
-
     fast_features true
 
     presimp 
     {
        enabled true
        parallel false
-       tip_condition   "{ lb 20, cb 1.1 }"
-       ec_condition    "{ ec_lb 0, cb 0.9 }"
+       tip_condition   "{ tc_lb 3.5, cb 2.0 }"
+       ec_condition    "{ ec_lb 10, cb 1.5 }"
     }
 
 	; final tip clipper:
@@ -494,6 +497,13 @@ meta
 
 preliminary
 {
+    init_clean
+    {
+        self_conj_condition "{ ec_lb 100, cb 20.0 }"
+        tip_condition   "{ lb 20, cb 1.1 }"
+        ec_condition    "{ ec_lb 0, cb 0.9 }"
+    }
+
     post_simplif_enabled false
 
 	; bulge remover:

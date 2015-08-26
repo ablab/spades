@@ -244,6 +244,15 @@ void load(debruijn_config::simplification::isolated_edges_remover& ier,
   load(ier.max_length_any_cov, pt, "max_length_any_cov");
 }
 
+void load(debruijn_config::simplification::init_cleaning& init_clean,
+          boost::property_tree::ptree const& pt, bool complete) {
+  using config_common::load;
+
+  load(init_clean.self_conj_condition, pt, "self_conj_condition", complete);
+  load(init_clean.tip_condition, pt, "tip_condition", complete);
+  load(init_clean.ec_condition, pt, "ec_condition", complete);
+}
+
 void load(debruijn_config::simplification::complex_bulge_remover& cbr,
           boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
@@ -493,7 +502,7 @@ void load(debruijn_config::simplification& simp,
   load(simp.ier, pt, "ier", complete); // isolated edges remover
   load(simp.cbr, pt, "cbr", complete); // complex bulge remover
   load(simp.her, pt, "her", complete); // hidden ec remover
-  load(simp.early_ec_condition, pt, "early_ec_condition", complete); // early ec remover:
+  load(simp.init_clean, pt, "init_clean", complete); // presimplification
   load(simp.fast_features, pt, "fast_features", complete); // master switch for speed-up tricks
   load(simp.fast_activation_cov, pt, "fast_activation_cov", complete);
   load(simp.presimp, pt, "presimp", complete); // presimplification
