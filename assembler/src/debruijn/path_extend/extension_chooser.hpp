@@ -418,7 +418,7 @@ class ScaffoldingExtensionChooser : public ExtensionChooser {
     double weight_threshold_;
     double cl_weight_threshold_;
     const double is_scatter_coeff_ = 3.0;
-
+protected:
     void AddInfoFromEdge(const std::vector<int>& distances, const std::vector<double>& weights, 
                          std::vector<pair<int, double>>& histogram, size_t len_to_path_end) {
         for (size_t l = 0; l < distances.size(); ++l) {
@@ -505,7 +505,7 @@ public:
         is_scatter_coeff_(is_scatter_coeff) {
     }
 
-    EdgeContainer Filter(BidirectionalPath& path, EdgeContainer& edges) override {
+    virtual EdgeContainer Filter(BidirectionalPath& path, EdgeContainer& edges) override {
         //FIXME WAT?
         if (edges.empty()) {
             return edges;

@@ -24,11 +24,11 @@ namespace path_extend {
             return (unique_edges_.find(e) != unique_edges_.end());
         }
 
-        set<EdgeId>::iterator begin() {
+        decltype(unique_edges_.begin()) begin() const {
             return unique_edges_.begin();
         }
 
-        set<EdgeId>::iterator end() {
+        decltype(unique_edges_.end()) end() const {
             return unique_edges_.end();
         }
     };

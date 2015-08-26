@@ -259,6 +259,7 @@ enum class PathExtendStage {
     PEStage,
     MPStage,
     FinalizingPEStage,
+    Scaffold2015,
 };
 
 template<class Index>
@@ -365,6 +366,12 @@ inline bool InsertSizeCompare(const shared_ptr<PairedInfoLibrary> lib1,
     return lib1->GetISMax() < lib2->GetISMax();
 }
 
+inline vector<shared_ptr<PathExtender> > MakeAllScaffoldingExtenders (PathExtendStage stage, const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
+                                                                      const pe_config::ParamSetT& pset, bool use_auto_threshold, const PathContainer& paths_for_mp = PathContainer()) {
+    vector<shared_ptr<PathExtender> > result;
+    //TODO::compilation placeholder
+    return result;
+}
 
 inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage, const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
                                             const pe_config::ParamSetT& pset, bool use_auto_threshold, const PathContainer& paths_for_mp = PathContainer()) {
@@ -564,6 +571,73 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
 
     INFO("ExSPAnder repeat resolving tool finished");
 }
+
+inline void FinalizeUniquenessPaths(){
+//TODO::compilation placeholder
+}
+
+inline void ScaffoldAll2015(conj_graph_pack& gp,
+                             const std::string& output_dir,
+                             const std::string& contigs_name,
+                             bool traversLoops,
+                             boost::optional<std::string> broken_contigs,
+                             bool use_auto_threshold = true) {
+
+    INFO("ExSPAnder scaffolding tool started");
+
+    make_dir(output_dir);
+    make_dir(GetEtcDir(output_dir));
+    const pe_config::ParamSetT& pset = cfg::get().pe_params.param_set;
+
+    ContigWriter writer(gp.g);
+
+//make pe + long reads extenders
+    GraphCoverageMap cover_map(gp.g);
+    INFO("SUBSTAGE = paired-end libraries")
+    PathExtendStage exspander_stage = PathExtendStage::Scaffold2015;
+    vector<shared_ptr<PathExtender> > all_libs = MakeAllScaffoldingExtenders(exspander_stage, gp, cover_map, pset, use_auto_threshold);
+    size_t max_over = max(FindOverlapLenForStage(exspander_stage), gp.g.k() + 100);
+    shared_ptr<CompositeExtender> main_extender = make_shared<CompositeExtender>(gp.g, cover_map, all_libs, max_over);
+
+//extend pe + long reads
+    PathExtendResolver resolver(gp.g);
+    auto seeds = resolver.makeSimpleSeeds();
+    DebugOutputPaths(writer, gp, output_dir, seeds, "init_paths");
+    seeds.SortByLength();
+    INFO("Growing paths using paired-end and long single reads");
+    auto paths = resolver.extendSeeds(seeds, *main_extender);
+    paths.SortByLength();
+    DebugOutputPaths(writer, gp, output_dir, paths, "pe_overlaped_paths");
+
+    PathContainer clone_paths;
+    GraphCoverageMap clone_map(gp.g);
+    bool mp_exist = MPLibsExist();
+
+    FinalizeUniquenessPaths();
+
+    writer.WritePathsToFASTG(paths, GetEtcDir(output_dir) + "scaf_before_traversal.fastg", GetEtcDir(output_dir) + "scaf_before_traversal.fasta");
+    DebugOutputPaths(writer, gp, output_dir, paths, "before_traverse_scaf");
+    if (traversLoops) {
+        TraverseLoops(paths, cover_map, main_extender);
+    }
+    DebugOutputPaths(writer, gp, output_dir, paths, (mp_exist ? "final_pe_paths" : "final_paths"));
+    writer.WritePathsToFASTG(paths,
+                             output_dir + (mp_exist ? "scaffolds" : contigs_name) + ".fastg",
+                             output_dir + (mp_exist ? "scaffolds" : contigs_name) + ".fasta" );
+
+    cover_map.Clear();
+
+
+
+    writer.WritePathsToFASTG(paths, output_dir + contigs_name + ".fastg", output_dir + contigs_name + ".fasta");
+
+    paths.DeleteAllPaths();
+    seeds.DeleteAllPaths();
+    clone_paths.DeleteAllPaths();
+
+    INFO("ExSPAnder repeat resolving tool finished");
+}
+
 
 } /* path_extend */
 
