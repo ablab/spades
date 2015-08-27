@@ -205,7 +205,9 @@ static inline void Merge(KMerStat &lhs, const KMerStat &rhs) {
 
 static void PushKMer(KMerData &data,
                      KMer kmer, const unsigned char *q, double prob) {
-  size_t idx = data.seq_idx(kmer);
+  size_t idx = data.checking_seq_idx(kmer);
+  if (idx == -1ULL)
+      return;
   KMerStat &kmc = data[idx];
   kmc.lock();
   Merge(kmc,
@@ -222,7 +224,9 @@ static void PushKMerRC(KMerData &data,
   for (unsigned i = 0; i < K; ++i)
     rcq[K - i - 1] = q[i];
 
-  size_t idx = data.seq_idx(kmer);
+  size_t idx = data.checking_seq_idx(kmer);
+  if (idx == -1ULL)
+      return;
   KMerStat &kmc = data[idx];
   kmc.lock();
   Merge(kmc,
