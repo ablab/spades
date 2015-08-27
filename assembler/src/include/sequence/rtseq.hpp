@@ -700,7 +700,19 @@ class RuntimeSeq {
    */
   struct less2_fast {
     bool operator()(const RuntimeSeq<max_size_, T> &l, const RuntimeSeq<max_size_, T> &r) const {
-      return 0 > memcmp(l.data(), r.data(), sizeof(T) * l.data_size());
+        return 0 > memcmp(l.data(), r.data(), sizeof(T) * l.data_size());
+    }
+  };
+
+  struct less3 {
+    bool operator()(const RuntimeSeq<max_size_, T> &l, const RuntimeSeq<max_size_, T> &r) const {
+        VERIFY(l.size() == r.size());
+        T* l_data = l.data();
+        T* r_data = r.data();
+        for (size_t i = 0; i < l.size(); ++i)
+          if (l_data[i] != r_data[i])
+            return l_data[i] < r_data[i];
+        return false;
     }
   };
 
