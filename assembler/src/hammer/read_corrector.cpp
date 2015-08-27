@@ -168,19 +168,21 @@ bool ReadCorrector::CorrectOneRead(Read & r,
     while (gen.HasMore()) {
         size_t read_pos = gen.pos() - 1;
         hammer::KMer kmer = gen.kmer();
-        const KMerStat &kmer_data = data_[kmer];
+        size_t idx = data_.checking_seq_idx(kmer);
+        if (idx != -1ULL) {
+            const KMerStat &kmer_data = data_[idx];
+            if (kmer_data.good()) {
+                if (read_pos != right_pos - K + 2) {
+                    left_pos = read_pos;
+                    right_pos = left_pos + K - 1;
+                } else
+                    right_pos += 1;
 
-        if (kmer_data.good()) {
-            if (read_pos != right_pos - K + 2) {
-                left_pos = read_pos;
-                right_pos = left_pos + K - 1;
-            } else
-                right_pos += 1;
-
-            if (right_pos - left_pos + 1 > solid_len) {
-                lleft_pos = left_pos;
-                lright_pos = right_pos;
-                solid_len = right_pos - left_pos + 1;
+                if (right_pos - left_pos + 1 > solid_len) {
+                    lleft_pos = left_pos;
+                    lright_pos = right_pos;
+                    solid_len = right_pos - left_pos + 1;
+                }
             }
         }
 

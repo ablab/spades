@@ -33,13 +33,15 @@ bool Expander::operator()(const Read &r) {
   ValidKMerGenerator<hammer::K> gen(cr);
   while (gen.HasMore()) {
     hammer::KMer kmer = gen.kmer();
-    size_t idx = data_.seq_idx(kmer);
-    size_t read_pos = gen.pos() - 1;
+    size_t idx = data_.checking_seq_idx(kmer);
+    if (idx != -1ULL) {
+      size_t read_pos = gen.pos() - 1;
 
-    kmer_indices[read_pos] = idx;
-    if (data_[idx].good()) {
-      for (size_t j = read_pos; j < read_pos + hammer::K; ++j)
-        covered_by_solid[j] = true;
+      kmer_indices[read_pos] = idx;
+      if (data_[idx].good()) {
+        for (size_t j = read_pos; j < read_pos + hammer::K; ++j)
+          covered_by_solid[j] = true;
+      }
     }
     gen.Next();
   }
