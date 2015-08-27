@@ -207,6 +207,13 @@ class KMerIndex {
     count_size();
   }
 
+  void swap(KMerIndex<traits> &other) {
+    std::swap(index_, other.index_);
+    std::swap(num_buckets_, other.num_buckets_);
+    std::swap(size_, other.size_);
+    std::swap(bucket_starts_, other.bucket_starts_);
+  }
+
  private:
   KMerDataIndex *index_;
 
