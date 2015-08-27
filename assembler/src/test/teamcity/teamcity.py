@@ -328,41 +328,18 @@ def quast_run_and_assess(dataset_info, fn, output_dir, name, prefix, special_exi
         print("File not found " + fn)
         return 8, ""
 
-def quast_analysis(dataset_info, folder):
+def quast_analysis(contigs, dataset_info, folder):
     exit_code = 0
     new_log = ''
-    contigs = "contigs"
-    ds = 'dipspades' in dataset_info.__dict__ and dataset_info.dipspades
-    ts = 'truseq' in dataset_info.__dict__ and dataset_info.truseq
-    if ds:
-        contigs = "consensus_contigs"
-    elif ts:
-        contigs = "truseq_long_reads"
-
-    log.log("======= CONTIG SUMMARY =======")
-    qcode, qlog = quast_run_and_assess(dataset_info, os.path.join(folder, contigs + ".fasta"), 
-                    os.path.join(folder, "QUAST_RESULTS"), contigs, "", 10)
-    new_log += qlog
-    if qcode != 0:
-        print("Contig analysis exit with code " + str(qcode))
-        exit_code = qcode
-
-    if not ds and not ts:
-        log.log("======= SCAFFOLD SUMMARY =======")
-        qcode, qlog = quast_run_and_assess(dataset_info, os.path.join(folder, "scaffolds.fasta"),
-                    os.path.join(folder, "QUAST_RESULTS_SCAF"), "scaffolds", "sc_", 11)
+    for name, file_name, prefix in contigs:
+        log.log("======= " + name.upper() + " SUMMARY =======")
+        if prefix != "":
+            prefix = prefix + "_"
+        qcode, qlog = quast_run_and_assess(dataset_info, os.path.join(folder, file_name + ".fasta"),
+                        os.path.join(folder, "QUAST_RESULTS_" +name.upper()), name, prefix, 10)
         new_log += qlog
         if qcode != 0:
-            print("Scaffold analysis exit with code " + str(qcode))
-            exit_code = qcode
-
-    if os.path.exists(os.path.join(folder, "first_pe_contigs.fasta")):
-        log.log("======= PRELIMINARY SUMMARY =======")
-        qcode, qlog = quast_run_and_assess(dataset_info, os.path.join(folder, "first_pe_contigs.fasta"), 
-                        os.path.join(folder, "QUAST_RESULTS_PRELIM"), "preliminary", "prelim_", 25)
-        new_log += qlog
-        if qcode != 0:
-            print("Preliminary scaffold analysis exit with code ", qcode)
+            print(name + " analysis exit with code " + str(qcode))
             exit_code = qcode
 
     return exit_code, new_log
@@ -412,6 +389,15 @@ def cmp_misassemblies(quast_output_dir, old_ctgs, new_ctgs):
                     log.log("      " + ctg)
         return False
         
+def GetContigsList(dataset_info, folder):
+    contigs = [("contigs", "contigs", ""), ("scaffolds", "scaffolds", "sc")]
+    if 'dipspades' in dataset_info.__dict__ and dataset_info.dipspades:
+        contigs = [("contigs", "consensus_contigs", "")]
+    if 'truseq' in dataset_info.__dict__ and dataset_info.truseq:
+        contigs = [("contigs", "truseq_long_reads", "")]
+    if os.path.exists(os.path.join(folder, "first_pe_contigs.fasta")):
+        contigs.append(("preliminary", "first_pe_contigs", "prelim"))
+    return contigs
 
 ### main ###
 try:
@@ -438,7 +424,7 @@ try:
     history_log = read_log(output_dir, dataset_info)
     if history_log != "":
         print("Quality log found, going to append")
-        
+
     if os.path.exists(output_dir):
         shutil.rmtree(output_dir)
     os.makedirs(output_dir)
@@ -530,21 +516,22 @@ try:
                         limit_map["Genome mapped"] = [(float(dataset_info.min_genome_mapped), True)]
                     if 'min_aligned' in dataset_info.__dict__:
                         limit_map["Uniquely aligned reads"] = [(float(dataset_info.min_aligned), True)]
-                    
+
                 result = assess_reads(os.path.join(rq_output_dir, "report.horizontal.tsv"), limit_map)
                 if result[0] != 0:
                     exit_code = 7
                 new_log += result[1]
 
 
+    contigs = GetContigsList(dataset_info, output_dir)
     #QUAST
     if 'quast_params' in dataset_info.__dict__:
-        ecode, qlog = quast_analysis(dataset_info, output_dir)
+        ecode, qlog = quast_analysis(contigs, dataset_info, output_dir)
         new_log += qlog
         if ecode != 0:
             print("Quast analysis finished abnormally with exit code " + str(ecode))
             exit_code = ecode
-                
+
     #etalon saves
     if 'etalon_saves' in dataset_info.__dict__:
         print("Comparing etalon saves now")
@@ -582,18 +569,14 @@ try:
                 os.chdir(contig_dir)
                 os.symlink(os.path.basename(prev_contigs[-1]), "latest_contigs.fasta")
                 os.chdir(working_dir)
-        
-        if latest_found:
-            contigs = "contigs.fasta"
-            if 'dipspades' in dataset_info.__dict__ and dataset_info.dipspades:
-                contigs = "consensus_contigs.fasta"
 
+        if latest_found:
             quast_output_dir = os.path.join(output_dir, "QUAST_RESULTS_CMP")
-            qcode = run_quast(dataset_info, [os.path.join(output_dir, contigs), latest_ctg], quast_output_dir)
+            qcode = run_quast(dataset_info, [os.path.join(output_dir, contigs[0][1] + ".fasta"), latest_ctg], quast_output_dir)
 
             #compare_misassemblies
             log.log("======= CONTIG COMPARISON =======")
-            if not cmp_misassemblies(quast_output_dir, "latest_contigs", os.path.splitext(contigs)[0]):
+            if not cmp_misassemblies(quast_output_dir, "latest_contigs", contigs[0][1]):
                 rewrite_latest = False
                 #exit_code = 13
 
@@ -611,7 +594,7 @@ try:
                 os.chdir(contig_dir)
                 os.symlink(os.path.basename(prev_contigs[-1]), "latest_scaffolds.fasta")
                 os.chdir(working_dir)
-        
+
         if latest_found:
             contigs = "scaffolds.fasta"
             quast_output_dir = os.path.join(output_dir, "QUAST_RESULTS_CMP_SC")
@@ -633,14 +616,11 @@ try:
             os.makedirs(quast_contig_dir)
 
         name_prefix = datetime.datetime.now().strftime('%Y%m%d-%H%M')
-#        if len(sys.argv) == 3:
-#            name_prefix += "_" + sys.argv[2]
+        #        if len(sys.argv) == 3:
+        #            name_prefix += "_" + sys.argv[2]
         print("Contigs have prefix " + name_prefix)
 
-        if 'dipspades' in dataset_info.__dict__ and dataset_info.dipspades:
-            shutil.copy(os.path.join(output_dir, "consensus_contigs.fasta"), os.path.join(contig_dir, name_prefix + "_ctg.fasta"))
-        else:
-            shutil.copy(os.path.join(output_dir, "contigs.fasta"), os.path.join(contig_dir, name_prefix + "_ctg.fasta"))
+        shutil.copy(os.path.join(output_dir, contigs[0][1] + ".fasta"), os.path.join(contig_dir, name_prefix + "_ctg.fasta"))
         print("Contigs saved to " + os.path.join(contig_dir, name_prefix + "_ctg.fasta"))
 
         if rewrite_latest:
