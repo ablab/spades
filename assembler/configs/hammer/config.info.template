@@ -20,6 +20,7 @@ count_do				1
 count_numfiles				16
 count_merge_nthreads			16
 count_split_buffer			0
+count_filter_singletons                 0
 
 ; hamming graph clustering
 hamming_do				1
