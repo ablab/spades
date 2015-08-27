@@ -332,9 +332,11 @@ def quast_analysis(dataset_info, folder):
     exit_code = 0
     new_log = ''
     contigs = "contigs"
-    if 'dipspades' in dataset_info.__dict__ and dataset_info.dipspades:
+    ds = 'dipspades' in dataset_info.__dict__ and dataset_info.dipspades
+    ts = 'truseq' in dataset_info.__dict__ and dataset_info.truseq
+    if ds:
         contigs = "consensus_contigs"
-    elif 'truseq' in dataset_info.__dict__ and dataset_info.truseq:
+    elif ts:
         contigs = "truseq_long_reads"
 
     log.log("======= CONTIG SUMMARY =======")
@@ -342,16 +344,17 @@ def quast_analysis(dataset_info, folder):
                     os.path.join(folder, "QUAST_RESULTS"), contigs, "", 10)
     new_log += qlog
     if qcode != 0:
-        print("Contig analysis exit with code ", qcode)
+        print("Contig analysis exit with code " + str(qcode))
         exit_code = qcode
 
-    log.log("======= SCAFFOLD SUMMARY =======")
-    qcode, qlog = quast_run_and_assess(dataset_info, os.path.join(folder, "scaffolds.fasta"), 
+    if not ds and not ts:
+        log.log("======= SCAFFOLD SUMMARY =======")
+        qcode, qlog = quast_run_and_assess(dataset_info, os.path.join(folder, "scaffolds.fasta"),
                     os.path.join(folder, "QUAST_RESULTS_SCAF"), "scaffolds", "sc_", 11)
-    new_log += qlog
-    if qcode != 0:
-        print("Scaffold analysis exit with code ", qcode)
-        exit_code = qcode
+        new_log += qlog
+        if qcode != 0:
+            print("Scaffold analysis exit with code " + str(qcode))
+            exit_code = qcode
 
     if os.path.exists(os.path.join(folder, "first_pe_contigs.fasta")):
         log.log("======= PRELIMINARY SUMMARY =======")
