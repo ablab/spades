@@ -166,7 +166,7 @@ def main(argv):
         RunTruSPAdes(dataset, log_dir, options, log)
     elif options.mode == "construct_subreferences":
         reference_construction.ConstructSubreferences(dataset, options.reference, options.output_dir, options.index, options.threads, log = None)
-    sys.stdout.write("TruSPAdes launch successfully finished\n")
+    log.info("TruSPAdes launch successfully finished")
 
 if __name__ == '__main__':
     main(sys.argv)

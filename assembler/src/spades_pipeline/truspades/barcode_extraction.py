@@ -118,6 +118,6 @@ def ReadDataset(file, log):
         sys.exit(1)
 
 def print_dataset(dataset, output_file, log):
-    log.info("Printing dataset to " + output_file + "\n")
+    log.info("Printing dataset to " + output_file)
     open(output_file, "w").write("\n".join([str(line).strip() for line in dataset]) + "\n")
 
