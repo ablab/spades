@@ -140,7 +140,7 @@ reads_options += OLD_STYLE_READS_OPTIONS
 
 def usage(spades_version, show_hidden=False, dipspades=False):
     if not dipspades:
-        sys.stderr.write("SPAdes genome assembler v." + str(spades_version) + "\n")
+        sys.stderr.write("SPAdes genome assembler v" + str(spades_version) + "\n")
     else:
         sys.stderr.write("dipSPAdes 1.0: genome assembler designed for diploid genomes with high heterozygosity rate\n\n")
     sys.stderr.write("Usage: " + str(sys.argv[0]) + " [options] -o <output_dir>" + "\n")
