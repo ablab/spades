@@ -25,13 +25,16 @@ class Options:
         self.reference = ""
         self.mode = "run_truspades"
         self.possible_modes = ["run_truspades", "generate_dataset", "construct_subreferences"]
+        self.test = False
 
-    def __init__(self, argv):
+    def __init__(self, argv, bin, home):
         if len(argv) == 1:
             print_usage_and_exit(1)
-        long_params = "help-hidden construct-dataset reference= reference-index= do= continue threads= help dataset= input-dir= additional-options".split(" ")
+        long_params = "test help-hidden construct-dataset reference= reference-index= do= continue threads= help dataset= input-dir= additional-options".split(" ")
         short_params = "o:t:h"
         self.set_default_options()
+        self.bin = bin
+        self.home = home
         try:
             options_list, self.spades_options = getopt.gnu_getopt(argv[1:], short_params, long_params)
         except getopt.GetoptError:
@@ -41,6 +44,11 @@ class Options:
         for (key, value) in options_list:
             if key == "--help" or key == "-h":
                 print_usage_and_exit(1)
+            elif key == "--test":
+                dir = os.path.abspath("spades_test") + "_truspades"
+                self.output_dir = dir
+                self.input_dirs = [os.path.join(self.home, "test_dataset_truspades")]
+                self.test = True
             elif key == "--do":
                 self.mode = value
             elif key == "--construct-dataset":
