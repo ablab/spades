@@ -42,10 +42,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/toxa31/work/algorithmic-biology/kmer-abundance-filter
+CMAKE_SOURCE_DIR = /home/toxa31/work/algorithmic-biology/assembler/src/kmer_count_filter
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/toxa31/work/algorithmic-biology/kmer-abundance-filter
+CMAKE_BINARY_DIR = /home/toxa31/work/algorithmic-biology/assembler/src/kmer_count_filter
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -72,9 +72,9 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/toxa31/work/algorithmic-biology/kmer-abundance-filter/CMakeFiles /home/toxa31/work/algorithmic-biology/kmer-abundance-filter/CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/toxa31/work/algorithmic-biology/assembler/src/kmer_count_filter/CMakeFiles /home/toxa31/work/algorithmic-biology/assembler/src/kmer_count_filter/CMakeFiles/progress.marks
 	$(MAKE) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/toxa31/work/algorithmic-biology/kmer-abundance-filter/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/toxa31/work/algorithmic-biology/assembler/src/kmer_count_filter/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -102,24 +102,96 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named kmer_abundance_filter
+# Target rules for targets named kmer_count_filter
 
 # Build rule for target.
-kmer_abundance_filter: cmake_check_build_system
-	$(MAKE) -f CMakeFiles/Makefile2 kmer_abundance_filter
-.PHONY : kmer_abundance_filter
+kmer_count_filter: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 kmer_count_filter
+.PHONY : kmer_count_filter
 
 # fast build rule for target.
-kmer_abundance_filter/fast:
-	$(MAKE) -f CMakeFiles/kmer_abundance_filter.dir/build.make CMakeFiles/kmer_abundance_filter.dir/build
-.PHONY : kmer_abundance_filter/fast
+kmer_count_filter/fast:
+	$(MAKE) -f CMakeFiles/kmer_count_filter.dir/build.make CMakeFiles/kmer_count_filter.dir/build
+.PHONY : kmer_count_filter/fast
+
+kmc_api/kmc_file.o: kmc_api/kmc_file.cpp.o
+.PHONY : kmc_api/kmc_file.o
+
+# target to build an object file
+kmc_api/kmc_file.cpp.o:
+	$(MAKE) -f CMakeFiles/kmer_count_filter.dir/build.make CMakeFiles/kmer_count_filter.dir/kmc_api/kmc_file.cpp.o
+.PHONY : kmc_api/kmc_file.cpp.o
+
+kmc_api/kmc_file.i: kmc_api/kmc_file.cpp.i
+.PHONY : kmc_api/kmc_file.i
+
+# target to preprocess a source file
+kmc_api/kmc_file.cpp.i:
+	$(MAKE) -f CMakeFiles/kmer_count_filter.dir/build.make CMakeFiles/kmer_count_filter.dir/kmc_api/kmc_file.cpp.i
+.PHONY : kmc_api/kmc_file.cpp.i
+
+kmc_api/kmc_file.s: kmc_api/kmc_file.cpp.s
+.PHONY : kmc_api/kmc_file.s
+
+# target to generate assembly for a file
+kmc_api/kmc_file.cpp.s:
+	$(MAKE) -f CMakeFiles/kmer_count_filter.dir/build.make CMakeFiles/kmer_count_filter.dir/kmc_api/kmc_file.cpp.s
+.PHONY : kmc_api/kmc_file.cpp.s
+
+kmc_api/kmer_api.o: kmc_api/kmer_api.cpp.o
+.PHONY : kmc_api/kmer_api.o
+
+# target to build an object file
+kmc_api/kmer_api.cpp.o:
+	$(MAKE) -f CMakeFiles/kmer_count_filter.dir/build.make CMakeFiles/kmer_count_filter.dir/kmc_api/kmer_api.cpp.o
+.PHONY : kmc_api/kmer_api.cpp.o
+
+kmc_api/kmer_api.i: kmc_api/kmer_api.cpp.i
+.PHONY : kmc_api/kmer_api.i
+
+# target to preprocess a source file
+kmc_api/kmer_api.cpp.i:
+	$(MAKE) -f CMakeFiles/kmer_count_filter.dir/build.make CMakeFiles/kmer_count_filter.dir/kmc_api/kmer_api.cpp.i
+.PHONY : kmc_api/kmer_api.cpp.i
+
+kmc_api/kmer_api.s: kmc_api/kmer_api.cpp.s
+.PHONY : kmc_api/kmer_api.s
+
+# target to generate assembly for a file
+kmc_api/kmer_api.cpp.s:
+	$(MAKE) -f CMakeFiles/kmer_count_filter.dir/build.make CMakeFiles/kmer_count_filter.dir/kmc_api/kmer_api.cpp.s
+.PHONY : kmc_api/kmer_api.cpp.s
+
+kmc_api/mmer.o: kmc_api/mmer.cpp.o
+.PHONY : kmc_api/mmer.o
+
+# target to build an object file
+kmc_api/mmer.cpp.o:
+	$(MAKE) -f CMakeFiles/kmer_count_filter.dir/build.make CMakeFiles/kmer_count_filter.dir/kmc_api/mmer.cpp.o
+.PHONY : kmc_api/mmer.cpp.o
+
+kmc_api/mmer.i: kmc_api/mmer.cpp.i
+.PHONY : kmc_api/mmer.i
+
+# target to preprocess a source file
+kmc_api/mmer.cpp.i:
+	$(MAKE) -f CMakeFiles/kmer_count_filter.dir/build.make CMakeFiles/kmer_count_filter.dir/kmc_api/mmer.cpp.i
+.PHONY : kmc_api/mmer.cpp.i
+
+kmc_api/mmer.s: kmc_api/mmer.cpp.s
+.PHONY : kmc_api/mmer.s
+
+# target to generate assembly for a file
+kmc_api/mmer.cpp.s:
+	$(MAKE) -f CMakeFiles/kmer_count_filter.dir/build.make CMakeFiles/kmer_count_filter.dir/kmc_api/mmer.cpp.s
+.PHONY : kmc_api/mmer.cpp.s
 
 main.o: main.cpp.o
 .PHONY : main.o
 
 # target to build an object file
 main.cpp.o:
-	$(MAKE) -f CMakeFiles/kmer_abundance_filter.dir/build.make CMakeFiles/kmer_abundance_filter.dir/main.cpp.o
+	$(MAKE) -f CMakeFiles/kmer_count_filter.dir/build.make CMakeFiles/kmer_count_filter.dir/main.cpp.o
 .PHONY : main.cpp.o
 
 main.i: main.cpp.i
@@ -127,7 +199,7 @@ main.i: main.cpp.i
 
 # target to preprocess a source file
 main.cpp.i:
-	$(MAKE) -f CMakeFiles/kmer_abundance_filter.dir/build.make CMakeFiles/kmer_abundance_filter.dir/main.cpp.i
+	$(MAKE) -f CMakeFiles/kmer_count_filter.dir/build.make CMakeFiles/kmer_count_filter.dir/main.cpp.i
 .PHONY : main.cpp.i
 
 main.s: main.cpp.s
@@ -135,7 +207,7 @@ main.s: main.cpp.s
 
 # target to generate assembly for a file
 main.cpp.s:
-	$(MAKE) -f CMakeFiles/kmer_abundance_filter.dir/build.make CMakeFiles/kmer_abundance_filter.dir/main.cpp.s
+	$(MAKE) -f CMakeFiles/kmer_count_filter.dir/build.make CMakeFiles/kmer_count_filter.dir/main.cpp.s
 .PHONY : main.cpp.s
 
 # Help Target
@@ -146,7 +218,16 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... kmer_abundance_filter"
+	@echo "... kmer_count_filter"
+	@echo "... kmc_api/kmc_file.o"
+	@echo "... kmc_api/kmc_file.i"
+	@echo "... kmc_api/kmc_file.s"
+	@echo "... kmc_api/kmer_api.o"
+	@echo "... kmc_api/kmer_api.i"
+	@echo "... kmc_api/kmer_api.s"
+	@echo "... kmc_api/mmer.o"
+	@echo "... kmc_api/mmer.i"
+	@echo "... kmc_api/mmer.s"
 	@echo "... main.o"
 	@echo "... main.i"
 	@echo "... main.s"
