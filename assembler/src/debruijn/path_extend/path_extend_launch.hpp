@@ -353,7 +353,19 @@ inline shared_ptr<PathExtender> MakeScaffoldingExtender(const conj_graph_pack& g
 
 inline shared_ptr<PathExtender> MakeScaffolding2015Extender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
                                                         size_t lib_index, const pe_config::ParamSetT& pset, shared_ptr<ScaffoldingUniqueEdgeStorage> storage) {
-    shared_ptr<PairedInfoLibrary> lib = MakeNewLib(gp.g, gp.paired_indices, lib_index);
+    shared_ptr<PairedInfoLibrary> lib;
+    INFO("for lib " << lib_index);
+
+    //TODO:: temporary solution
+   if (gp.paired_indices[lib_index].size() > gp.clustered_indices[lib_index].size()) {
+        INFO("Paired unclustered indices not empty, using them");
+        lib = MakeNewLib(gp.g, gp.paired_indices, lib_index);
+    } else if (gp.clustered_indices[lib_index].size() != 0 ) {
+        INFO("clustered indices not empty, using them");
+        lib = MakeNewLib(gp.g, gp.clustered_indices, lib_index);
+    } else {
+        ERROR("All paired indices are empty!");
+    }
 
     shared_ptr<WeightCounter> counter = make_shared<ReadCountWeightCounter>(gp.g, lib);
     //TODO::was copypasted from MakeScaffoldingExtender
