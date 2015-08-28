@@ -144,6 +144,7 @@ int main(int /*argc*/, char** argv) {
     limit_memory(cfg::get().max_memory * GB);
 
     // assemble it!
+    INFO("Starting SPAdes, built from " SPADES_GIT_REFSPEC ", git revision " SPADES_GIT_SHA1);
     INFO("Assembling dataset (" << cfg::get().dataset_file << ") with K=" << cfg::get().K);
 
     spades::assemble_genome();

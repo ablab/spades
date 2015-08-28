@@ -94,6 +94,7 @@ int main(int /*argc*/, char** argv) {
 
     limit_memory(dsp_cfg::get().bp.max_memory * GB);
 
+    INFO("Starting dipSPAdes, built from " SPADES_GIT_REFSPEC ", git revision " SPADES_GIT_SHA1);
     INFO("Assembling dataset (" << dsp_cfg::get().io.dataset_name << ") with K=" << dsp_cfg::get().bp.K);
     dipspades::run_dipspades();
 
