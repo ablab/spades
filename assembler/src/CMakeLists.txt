@@ -54,6 +54,11 @@ include(includes)
 # Handle common libs
 include(libs)
 
+include(GetGitRevisionDescription)
+get_git_head_revision(SPADES_GIT_REFSPEC SPADES_GIT_SHA1)
+
+message("Building SPAdes from ${SPADES_GIT_REFSPEC}, sha: ${SPADES_GIT_SHA1}")
+
 configure_file("${SPADES_MAIN_INCLUDE_DIR}/config.hpp.in"
                "${SPADES_BUILT_INCLUDE_DIR}/config.hpp")
 
