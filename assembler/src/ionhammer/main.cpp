@@ -78,6 +78,7 @@ int main(int argc, char** argv) {
 
     std::string config_file = "hammer-it.cfg";
     if (argc > 1) config_file = argv[1];
+    INFO("Starting IonHammer, built from " SPADES_GIT_REFSPEC ", git revision " SPADES_GIT_SHA1);
     INFO("Loading config from " << config_file.c_str());
     cfg::create_instance(config_file);
 
