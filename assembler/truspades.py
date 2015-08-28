@@ -121,7 +121,7 @@ def RunTruSPAdes(dataset, log_dir, options, log):
     collect_contigs(dataset, barcodes_dir, output_base, "fasta")
     collect_contigs(dataset, barcodes_dir, output_base, "fastq")
     log.info("Assembled virtual long TruSeq reads can be found in " + os.path.join(options.output_dir,
-                                                                                           "TSLRs.fasta"))
+                                                                                           "TSLR.fasta"))
 
 
 def create_log(options):
@@ -140,8 +140,20 @@ def create_log(options):
     return log
 
 
+def CheckTestSuccess(options, log):
+    output = os.path.join(options.output_dir, "TSLR.fasta")
+    if not os.path.isfile(output):
+        log.info("TruSPAdes test launch failed: can not find output files")
+        sys.exit(1)
+    if not (os.path.getsize(output) > 20000 and os.path.getsize(output) < 20100):
+        log.info("TruSPAdes test launch failed: incorrect output files")
+        sys.exit(1)
+    log.info("TruSPAdes test passed corectly")
+
+
+
 def main(argv):
-    options = launch_options.Options(argv)
+    options = launch_options.Options(argv, bin_home, truspades_home)
     support.ensure_dir_existence(options.output_dir)
     log = create_log(options)
     dataset_file = os.path.join(options.output_dir, "dataset.info")
@@ -166,7 +178,9 @@ def main(argv):
         RunTruSPAdes(dataset, log_dir, options, log)
     elif options.mode == "construct_subreferences":
         reference_construction.ConstructSubreferences(dataset, options.reference, options.output_dir, options.index, options.threads, log = None)
-    sys.stdout.write("TruSPAdes launch successfully finished\n")
+    log.info("TruSPAdes launch successfully finished")
+    if options.test:
+        CheckTestSuccess(options, log)
 
 if __name__ == '__main__':
     main(sys.argv)
