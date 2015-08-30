@@ -532,14 +532,21 @@ bool ParallelClipTips(Graph& g,
 }
 
 template<class Graph>
-bool ClipComplexTips(Graph& g, debruijn_config::simplification::complex_tip_clipper ctc_conf) {
+bool ClipComplexTips(Graph& g, debruijn_config::simplification::complex_tip_clipper ctc_conf, std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
     if(!ctc_conf.enabled) {
         INFO("Complex tip clipping disabled");
     	return false;
     }
+
+    std::function<void(set<EdgeId>)> set_removal_handler_f(0);
+    if (removal_handler) {
+        set_removal_handler_f = std::bind(
+            &omnigraph::simplification::SingleEdgeAdapter<set<EdgeId>>, std::placeholders::_1, removal_handler);
+    }
+
     INFO("Complex tip clipping");
     size_t max_edge_length = g.k() * 2;
-    ComplexTipClipper<Graph> tip_clipper(g, max_edge_length, "");
+    ComplexTipClipper<Graph> tip_clipper(g, max_edge_length, "", set_removal_handler_f);
     tip_clipper.Run();
     return true;
 }
@@ -870,7 +877,7 @@ class GraphSimplifier {
 
             enable_flag |= FinalRemoveErroneousEdges();
 
-            enable_flag |=  ClipComplexTips(gp_.g, simplif_cfg_.complex_tc);
+            enable_flag |=  ClipComplexTips(gp_.g, simplif_cfg_.complex_tc, removal_handler_);
 
             enable_flag |= ClipTips(gp_.g, *iterators_holder.tip_smart_it(),
                                                   simplif_cfg_.tc, 

@@ -17,7 +17,7 @@ class ComplexTipClipper {
     Graph& g_;
     size_t max_length_;
     string pics_folder_;
-
+    std::function<void(const set<EdgeId>&)> removal_handler_;
     const size_t edge_length_treshold = 100;
 
     bool CheckEdgeLenghts(const GraphComponent<Graph>& component) const {
@@ -35,7 +35,7 @@ class ComplexTipClipper {
     }
 
     void RemoveComplexTip(GraphComponent<Graph>& component) {
-        ComponentRemover<Graph> remover(g_);
+        ComponentRemover<Graph> remover(g_, removal_handler_);
         remover.DeleteComponent(component.edges().begin(), component.edges().end());
     }
 
@@ -50,8 +50,8 @@ class ComplexTipClipper {
     }
 
 public:
-    ComplexTipClipper(Graph& g, size_t max_length, const string& pics_folder = "") :
-            g_(g), max_length_(max_length), pics_folder_(pics_folder)
+    ComplexTipClipper(Graph& g, size_t max_length, const string& pics_folder = "", std::function<void(const set<EdgeId>&)> removal_handler = 0) :
+            g_(g), max_length_(max_length), pics_folder_(pics_folder), removal_handler_(removal_handler)
     { }
 
     bool Run() {
