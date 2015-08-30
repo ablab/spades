@@ -59,15 +59,16 @@ def login():
         name = request.args.get("username", "gaf")
         session["username"] = name
         if name not in shellders:
-            shellders[name] = Shellder("/tmp/vis_in_" + name, "/tmp/vis_out_" + name, env_path)
-            session["log"] = shellders[name].get_output()
+            shellders[name] = Shellder("/tmp/vis_in_" + name, "/tmp/vis_out_", env_path)
+            log = shellders[name].get_output()
+            print "Got", log
+            session["log"] = log
         else:
-            session["log"] = ["<the previous session log has been lost>"]
+            session["log"] = ["(the previous session log has been lost)"]
     return flask.redirect("/")
-        
+
 @app.route("/logout", methods=['GET'])
 def logout():
-    global shellders
     if "username" in session:
         name = session.pop("username")
         shellder = shellders.pop(name, None)
@@ -77,11 +78,18 @@ def logout():
 
 @app.route("/command", methods=['GET'])
 def command():
-    global shellder
-    result = shellders[session["username"]].send(request.args.get("command", "")).get_output()
+    sh = shellders[session["username"]]
+    com = request.args.get("command", "")
+    if len(com):
+        print "Sending `%s`..." % com
+        sh.send(com)
+    result = sh.get_output(5)
+    complete = False
+    if len(result) and result[-1] == sh.end_out:
+        complete = True
     session["log"].extend(result)
     #return result
-    return format_output(result)
+    return flask.jsonify(log=format_output(result), complete=complete)
 
 @app.route("/get")
 def get():
@@ -116,13 +124,14 @@ def render():
 
 @app.route("/vertex/<vertex_id>")
 def vertex(vertex_id):
+    shellder = shellders[session["username"]]
     res_path = next((cache_path + f for f in listdir(cache_path) if f.endswith(vertex_id + "_.svg")), None)
     if res_path is None:
         #Render a new file
         shellder.send("draw_vertex " + vertex_id)
         file_path = re.finditer(FILENAME_REGEXP, shellder.get_output()[0]).next().group()
         _, full_name = path.split(file_path)
-        name_only, _ = path.splitext(full_name)        
+        name_only, _ = path.splitext(full_name)
         res_path = cache_path + name_only + ".svg"
         result = open(res_path, "w")
         subprocess.call(["dot", "-Tsvg", env_path + file_path], stdout=result)
@@ -148,7 +157,7 @@ def folder(path):
 def ls():
     dir_path = unquote(request.args.get("file", ""))
     return format_output(folder(dir_path))
-    
+
 if __name__ == "__main__":
     app.debug = True
     app.secret_key = "somekey"
