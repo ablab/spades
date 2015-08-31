@@ -596,13 +596,13 @@ try:
                 os.chdir(working_dir)
 
         if latest_found:
-            contigs = "scaffolds.fasta"
+            scaffolds = "scaffolds.fasta"
             quast_output_dir = os.path.join(output_dir, "QUAST_RESULTS_CMP_SC")
-            qcode = run_quast(dataset_info, [os.path.join(output_dir, contigs), latest_ctg], quast_output_dir)
+            qcode = run_quast(dataset_info, [os.path.join(output_dir, scaffolds), latest_ctg], quast_output_dir)
 
             #compare_misassemblies
             log.log("======= SCAFFOLD COMPARISON =======")
-            if not cmp_misassemblies(quast_output_dir, "latest_scaffolds", os.path.splitext(contigs)[0]):
+            if not cmp_misassemblies(quast_output_dir, "latest_scaffolds", os.path.splitext(scaffolds)[0]):
                 rewrite_latest = False
                 #exit_code = 14
 
