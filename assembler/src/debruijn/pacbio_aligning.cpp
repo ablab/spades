@@ -6,9 +6,6 @@
 
 #include "standard.hpp"
 #include "graph_simplification.hpp"
-#include "omni/visualization/graph_labeler.hpp"
-#include "io/single_read.hpp"
-#include <algorithm>
 #include "pacbio/pac_index.hpp"
 #include "pacbio/pacbio_gap_closer.hpp"
 #include "long_read_storage.hpp"
@@ -21,15 +18,16 @@ void ProcessReadsBatch(conj_graph_pack &gp,
                        std::vector<io::SingleRead>& reads,
                        pacbio::PacBioMappingIndex<ConjugateDeBruijnGraph>& pac_index,
                        PathStorage<Graph>& long_reads, pacbio::GapStorage<Graph>& gaps,
-                       size_t buf_size, int n, size_t min_gap_quantity, pacbio::StatsCounter stats) {
+                       size_t buf_size, int n, size_t min_gap_quantity, pacbio::StatsCounter& stats) {
     vector<PathStorage<Graph> > long_reads_by_thread(cfg::get().max_threads,
                                                      PathStorage<Graph>(gp.g));
     vector<pacbio::GapStorage<Graph> > gaps_by_thread(cfg::get().max_threads,
                                               pacbio::GapStorage<Graph>(gp.g, min_gap_quantity));
     vector<pacbio::StatsCounter> stats_by_thread(cfg::get().max_threads);
 
-
-#   pragma omp parallel for shared(reads, long_reads_by_thread, pac_index, n)
+    size_t aligned = 0;
+    size_t nontrivial_aligned = 0;
+#   pragma omp parallel for shared(reads, long_reads_by_thread, pac_index, n, aligned, nontrivial_aligned)
     for (size_t i = 0; i < buf_size; ++i) {
         if (i % 1000 == 0) {
             DEBUG("thread number " << omp_get_thread_num());
@@ -50,16 +48,26 @@ void ProcessReadsBatch(conj_graph_pack &gp,
         for (auto iter = aligned_edges.begin(); iter != aligned_edges.end(); ++iter) {
             stats_by_thread[thread_num].path_len_in_edges[iter->size()]++;
         }
-        if (seq.size() > 500) {
-            stats_by_thread[thread_num].seeds_percentage[size_t (floor(double(current_read_mapping.seed_num) * 1000.0 / (double) seq.size()))] ++;
+#       pragma omp critical
+        {
+//            INFO(current_read_mapping.seed_num);
+            if (aligned_edges.size() > 0) {
+                aligned ++;
+                stats_by_thread[thread_num].seeds_percentage[size_t (floor(double(current_read_mapping.seed_num) * 1000.0 / (double) seq.size()))] ++;
+                for (size_t j = 0; j < aligned_edges.size(); j ++){
+                    if (aligned_edges[j].size() > 1) {
+                        nontrivial_aligned ++;
+                        break;
+                    }
+                }
+            }
         }
-
 #       pragma omp critical
         {
             VERBOSE_POWER(n, " reads processed");
         }
     }
-
+    INFO("Read batch of size: " << buf_size << " processed; reads aligned: " << aligned << "; paths of more than one edge received: " << nontrivial_aligned );
     for (size_t i = 0; i < cfg::get().max_threads; i++) {
         long_reads.AddStorage(long_reads_by_thread[i]);
         gaps.AddStorage(gaps_by_thread[i]);
@@ -83,12 +91,15 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
     PathStorage<Graph>& long_reads = gp.single_long_reads[lib_id];
     pacbio::StatsCounter stats;
     size_t min_gap_quantity = 2;
+    size_t rtype = 0;
     if (cfg::get().ds.reads[lib_id].type() == io::LibraryType::PacBioReads || 
             cfg::get().ds.reads[lib_id].type() == io::LibraryType::SangerReads || 
             cfg::get().ds.reads[lib_id].type() == io::LibraryType::NanoporeReads) {
         min_gap_quantity = cfg::get().pb.pacbio_min_gap_quantity;
+        rtype = 1;
     } else {
         min_gap_quantity = cfg::get().pb.contigs_min_gap_quantity;
+        rtype = 2;
     }
     pacbio::GapStorage<ConjugateDeBruijnGraph> gaps(gp.g, min_gap_quantity);
     size_t read_buffer_size = 50000;
@@ -113,14 +124,16 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
             INFO("Prepared batch " << buffer_no << " of " << buf_size << " reads.");
             DEBUG("master thread number " << omp_get_thread_num());
             ProcessReadsBatch(gp, reads, pac_index, long_reads, gaps, buf_size, n, min_gap_quantity, stats);
-            INFO("Processed batch " << buffer_no);
+     //       INFO("Processed batch " << buffer_no);
             ++buffer_no;
         }
     }
+    string ss = (rtype == 1 ? "long reads": "contigs");
+    INFO("For lib " << lib_id << " of " << ss <<" :");
     stats.report();
     map<EdgeId, EdgeId> replacement;
     long_reads.DumpToFile(cfg::get().output_saves + "long_reads_before_rep.mpr",
-                          replacement);
+                          replacement, true);
     gaps.DumpToFile(cfg::get().output_saves + "gaps.mpr");
     gaps.PadGapStrings();
     gaps.DumpToFile(cfg::get().output_saves +  "gaps_padded.mpr");

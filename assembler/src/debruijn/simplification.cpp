@@ -39,11 +39,14 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
 
     debruijn::simplification::SimplifInfoContainer info_container;
     info_container
-        .set_detected_coverage_bound(gp.ginfo.ec_bound())
         //0 if model didn't converge
         .set_detected_mean_coverage(gp.ginfo.estimated_mean())
         .set_read_length(cfg::get().ds.RL())
         .set_chunk_cnt(cfg::get().max_threads);
+
+    if (!cfg::get().ds.meta) {
+        info_container.set_detected_coverage_bound(gp.ginfo.ec_bound());
+    }
 
     debruijn_config::simplification& simplif_cfg =
             preliminary_ ? cfg::get_writable().preliminary_simp : cfg::get_writable().simp;
