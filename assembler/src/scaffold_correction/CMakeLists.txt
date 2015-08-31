@@ -7,11 +7,9 @@
 
 project(moleculo CXX)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-
-include_directories(${CMAKE_SOURCE_DIR}/debruijn)
 
 add_executable(scaffold_correction
+<<<<<<< HEAD
                ../debruijn/kmer_coverage_model.cpp
                ../debruijn/config_struct.cpp
                ../debruijn/path_extend/pe_config_struct.cpp
@@ -27,6 +25,11 @@ add_executable(scaffold_correction
           main.cpp)
 
 target_link_libraries(scaffold_correction input mph_index yaml-cpp nlopt ${COMMON_LIBRARIES} ssw)
+=======
+               main.cpp)
+target_include_directories(scaffold_correction PRIVATE ${CMAKE_SOURCE_DIR}/debruijn)
+target_link_libraries(scaffold_correction debruijn)
+>>>>>>> 0897e96... Introduce new 'debruijn' project which contains bulk of SPAdes core.
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(scaffold_correction PROPERTIES LINK_SEARCH_END_STATIC 1)

@@ -7,31 +7,33 @@
 
 project(spades CXX)
 
-add_executable(spades
-               kmer_coverage_model.cpp
-               config_struct.cpp
-               path_extend/pe_config_struct.cpp
-               path_extend/bidirectional_path.cpp
-    	       path_extend/scaff_supplementary.cpp
-               path_extend/extension_chooser2015.cpp
-               stage.cpp
-               construction.cpp
-               gap_closer.cpp
-               simplification.cpp
-               mismatch_correction.cpp
-               pair_info_count.cpp
-               second_phase_setup.cpp
-               distance_estimation.cpp
-               repeat_resolving.cpp
-               genomic_info_filler.cpp
-               pacbio_aligning.cpp
-               genome_storage.cpp
-               main.cpp)
-
+add_library(debruijn STATIC
+            kmer_coverage_model.cpp
+            config_struct.cpp
+            path_extend/pe_config_struct.cpp
+            path_extend/bidirectional_path.cpp
+            path_extend/scaff_supplementary.cpp
+            path_extend/extension_chooser2015.cpp
+            stage.cpp
+            construction.cpp
+            gap_closer.cpp
+            simplification.cpp
+            mismatch_correction.cpp
+            pair_info_count.cpp
+            second_phase_setup.cpp
+            distance_estimation.cpp
+            repeat_resolving.cpp
+            genomic_info_filler.cpp
+            pacbio_aligning.cpp
+            genome_storage.cpp)
+  
 # We have to do this to minimize changes in ConsensusCore itself
-include_directories(${EXT_DIR}/include/ConsensusCore)
+target_include_directories(debruijn PRIVATE ${EXT_DIR}/include/ConsensusCore)
+target_link_libraries(debruijn ConsensusCore input mph_index nlopt BamTools yaml-cpp ${COMMON_LIBRARIES})
 
-target_link_libraries(spades ConsensusCore input mph_index nlopt BamTools yaml-cpp ${COMMON_LIBRARIES})
+add_executable(spades
+               main.cpp)
+target_link_libraries(spades debruijn)
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(spades PROPERTIES LINK_SEARCH_END_STATIC 1)
