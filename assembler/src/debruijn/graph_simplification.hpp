@@ -515,12 +515,6 @@ std::function<void(typename Graph::EdgeId)> AddCountingCallback(CountingCallback
     return func::Composition<typename Graph::EdgeId>(handler, cnt_handler);
 }
 
-//std::function<void(EdgeId)> AddCountingCallback(std::function<void(EdgeId)> handler) {
-//    auto cnt_callback_ptr = make_shared<CountingCallback<Graph>>(true);
-//    std::function<void(EdgeId)> cnt_handler = boost::bind(&CountingCallback<Graph>::HandleDelete, cnt_callback_ptr, _1);
-//    return func::Composition<EdgeId>(handler, cnt_handler);
-//}
-
 template<class Graph>
 void ParallelCompress(Graph& g, size_t chunk_cnt, bool loop_post_compression = true) {
     INFO("Parallel compression");
@@ -735,6 +729,8 @@ class GraphSimplifier {
     conj_graph_pack &gp_;
     SimplifInfoContainer info_container_;
     const debruijn_config::simplification simplif_cfg_;
+
+    CountingCallback<Graph> cnt_callback_;
     HandlerF removal_handler_;
     stats::detail_info_printer& printer_;
 
@@ -742,10 +738,13 @@ class GraphSimplifier {
         INFO("PROCEDURE == InitialCleaning");
 
         RemoveSelfConjugateEdges(gp_.g, simplif_cfg_.init_clean.self_conj_condition, info_container_, removal_handler_);
+        cnt_callback_.Report();
 
         ClipTips(gp_.g, simplif_cfg_.init_clean.tip_condition, info_container_, removal_handler_);
+        cnt_callback_.Report();
 
         RemoveLowCoverageEdges(gp_.g, simplif_cfg_.init_clean.ec_condition, info_container_, removal_handler_);
+        cnt_callback_.Report();
     }
 
     void PreSimplification() {
@@ -758,6 +757,7 @@ class GraphSimplifier {
 
         //todo make parallel version
         RemoveIsolatedEdges(gp_.g, simplif_cfg_.presimp.ier, info_container_.read_length(), removal_handler_, info_container_.chunk_cnt());
+        cnt_callback_.Report();
 
         if (info_container_.chunk_cnt() > 1 && EnableParallel()) {
             ParallelPreSimplification();
@@ -769,32 +769,24 @@ class GraphSimplifier {
     
     void NonParallelPreSimplification() {
         INFO("Non parallel mode");
-        CountingCallback<Graph> cnt_callback;
-
-        HandlerF removal_handler = AddCountingCallback(cnt_callback, removal_handler_);
- 
         //tip clipper
-        ClipTips(gp_.g, simplif_cfg_.presimp.tip_condition, info_container_, removal_handler);
+        ClipTips(gp_.g, simplif_cfg_.presimp.tip_condition, info_container_, removal_handler_);
 
-        cnt_callback.Report();
+        cnt_callback_.Report();
 
         //erroneous connections
-        RemoveLowCoverageEdges(gp_.g, simplif_cfg_.presimp.ec_condition, info_container_, removal_handler);
-
-        cnt_callback.Report();
+        RemoveLowCoverageEdges(gp_.g, simplif_cfg_.presimp.ec_condition, info_container_, removal_handler_);
+        cnt_callback_.Report();
     }
 
     void ParallelPreSimplification() {
         VERIFY(false);
         INFO("Parallel mode");
-        CountingCallback<Graph> cnt_callback;
-
-        HandlerF removal_handler = AddCountingCallback(cnt_callback, removal_handler_);
 
         ParallelClipTips(gp_.g, simplif_cfg_.presimp.tip_condition, info_container_,
-                         removal_handler);
+                         removal_handler_);
 
-        cnt_callback.Report();
+        cnt_callback_.Report();
         //    INFO("Early tip clipping");
         //
         //    ClipTipsWithProjection(gp, cfg::get().simp.tc,
@@ -809,9 +801,9 @@ class GraphSimplifier {
     //    cnt_callback.Report();
 
         ParallelEC(gp_.g, simplif_cfg_.presimp.ec_condition, info_container_,
-                   removal_handler);
+                   removal_handler_);
 
-        cnt_callback.Report();
+        cnt_callback_.Report();
 
         //todo maybe enable with small
     //    INFO("Isolated edge remover");
@@ -841,11 +833,15 @@ class GraphSimplifier {
     bool AllTopology() {
         bool res = TopologyRemoveErroneousEdges(gp_.g, simplif_cfg_.tec,
                                                 removal_handler_);
+        cnt_callback_.Report();
         res |= TopologyReliabilityRemoveErroneousEdges(gp_.g, simplif_cfg_.trec,
                                                        removal_handler_);
+        cnt_callback_.Report();
         res |= RemoveThorns(gp_.g, simplif_cfg_.isec, removal_handler_);
+        cnt_callback_.Report();
         res |= MultiplicityCountingRemoveErroneousEdges(gp_.g, simplif_cfg_.tec,
                                                         removal_handler_);
+        cnt_callback_.Report();
         return res;
     }
 
@@ -877,13 +873,15 @@ class GraphSimplifier {
         bool changed = RemoveRelativelyLowCoverageComponents(gp_.g, gp_.flanking_cov,
                                               simplif_cfg_.rcc, info_container_, set_removal_handler_f);
 
-        changed |= DisconnectRelativelyLowCoverageEdges(gp_.g, gp_.flanking_cov, simplif_cfg_.relative_ed);
+        cnt_callback_.Report();
 
+        changed |= DisconnectRelativelyLowCoverageEdges(gp_.g, gp_.flanking_cov, simplif_cfg_.relative_ed);
 
         if (simplif_cfg_.topology_simplif_enabled && cfg::get().main_iteration) {
             changed |= AllTopology();
             changed |= MaxFlowRemoveErroneousEdges(gp_.g, simplif_cfg_.mfec,
                                                    removal_handler_);
+            cnt_callback_.Report();
         }
         return changed;
     }
@@ -914,6 +912,7 @@ class GraphSimplifier {
             }
 
             enable_flag |= FinalRemoveErroneousEdges();
+            cnt_callback_.Report();
 
             enable_flag |=  ClipComplexTips(gp_.g, simplif_cfg_.complex_tc, removal_handler_);
 
@@ -922,11 +921,13 @@ class GraphSimplifier {
                                                   info_container_,
                                                   cfg::get().graph_read_corr.enable ?
                                                           WrapWithProjectionCallback(gp_, removal_handler_) : removal_handler_);
+            cnt_callback_.Report();
 
             enable_flag |= RemoveBulges(gp_.g, *iterators_holder.bulge_smart_it(),
                                 simplif_cfg_.br,
                                 (opt_callback_f)0, removal_handler_);
 
+            cnt_callback_.Report();
 
             //fixme need better configuration
             if (cfg::get().ds.meta && cfg::get().main_iteration) {
@@ -935,22 +936,24 @@ class GraphSimplifier {
                                                       info_container_,
                                                       cfg::get().graph_read_corr.enable ?
                                                               WrapWithProjectionCallback(gp_, removal_handler_) : removal_handler_);
+                cnt_callback_.Report();
     
     
                 enable_flag |= RemoveBulges(gp_.g, *final_iterators_holder_ptr->bulge_smart_it(),
                                     simplif_cfg_.final_br,
                                     //todo get rid of this logic and add br run with standard params
                                     (opt_callback_f)0, removal_handler_);
+                cnt_callback_.Report();
 
                 enable_flag |= RemoveBulges(gp_.g, *final_iterators_holder_ptr->bulge_smart_it(),
                                     simplif_cfg_.second_final_br,
                                     //todo get rid of this logic and add br run with standard params
                                     (opt_callback_f)0, removal_handler_);
+                cnt_callback_.Report();
             }
 
 
             enable_flag |= RemoveComplexBulges(gp_.g, simplif_cfg_.cbr, iteration);
-
 
             iteration++;
 
@@ -962,6 +965,8 @@ class GraphSimplifier {
 
         if (simplif_cfg_.topology_simplif_enabled) {
             RemoveHiddenEC(gp_.g, gp_.flanking_cov, info_container_.detected_coverage_bound(), simplif_cfg_.her, removal_handler_);
+
+            cnt_callback_.Report();
         }
     }
 
@@ -983,30 +988,26 @@ class GraphSimplifier {
 
         INFO("PROCEDURE == Simplification cycle, iteration " << (iteration + 1));
 
-        CountingCallback<Graph> cnt_callback;
-
-        HandlerF removal_handler = AddCountingCallback(cnt_callback, removal_handler_);
-
         DEBUG(iteration << " TipClipping");
         auto tip_removal_handler = cfg::get().graph_read_corr.enable ?
-                WrapWithProjectionCallback(gp_, removal_handler) : removal_handler;
+                WrapWithProjectionCallback(gp_, removal_handler_) : removal_handler_;
         ClipTips(gp_.g, *iterators_holder.tip_smart_it(), simplif_cfg_.tc, info_container_, tip_removal_handler);
-        cnt_callback.Report();
+        cnt_callback_.Report();
         DEBUG(iteration << " TipClipping stats");
         printer_(ipp_tip_clipping, fmt::format("_{:d}", iteration));
 
         if (!simplif_cfg_.disable_br_in_cycle || !simplif_cfg_.fast_features) {
             DEBUG(iteration << " BulgeRemoval");
             RemoveBulges(gp_.g, *iterators_holder.bulge_smart_it(), simplif_cfg_.br,
-                (std::function<void(EdgeId, const std::vector<EdgeId> &)>)0, removal_handler);
-            cnt_callback.Report();
+                (std::function<void(EdgeId, const std::vector<EdgeId> &)>)0, removal_handler_);
+            cnt_callback_.Report();
             DEBUG(iteration << " BulgeRemoval stats");
             printer_(ipp_bulge_removal, fmt::format("_{:d}", iteration));
         }
 
         DEBUG(iteration << " ErroneousConnectionsRemoval");
-        RemoveLowCoverageEdges(gp_.g, *iterators_holder.ec_smart_it(), simplif_cfg_.ec, info_container_, removal_handler);
-        cnt_callback.Report();
+        RemoveLowCoverageEdges(gp_.g, *iterators_holder.ec_smart_it(), simplif_cfg_.ec, info_container_, removal_handler_);
+        cnt_callback_.Report();
         DEBUG(iteration << " ErroneousConnectionsRemoval stats");
         printer_(ipp_err_con_removal, fmt::format("_{:d}", iteration));
     }
@@ -1019,9 +1020,9 @@ public:
             : gp_(gp),
               info_container_(info_container),
               simplif_cfg_(simplif_cfg),
-              removal_handler_(removal_handler),
+              removal_handler_(AddCountingCallback(cnt_callback_, removal_handler)),
               printer_(printer) {
-
+        
     }
 
     void SimplifyGraph() {

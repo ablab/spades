@@ -375,11 +375,17 @@ class RelativeCoverageDisconnector: public EdgeProcessingAlgorithm<Graph> {
     typedef std::function<double(EdgeId, VertexId)> LocalCoverageFT;
     typedef EdgeProcessingAlgorithm<Graph> base;
     const RelativeCoverageHelper<Graph> rel_helper_;
+    size_t cnt_;
 public:
     RelativeCoverageDisconnector(Graph& g,
             LocalCoverageFT local_coverage_f, double diff_mult) :
-            base(g, false), rel_helper_(g, local_coverage_f, diff_mult) {
+            base(g, false), rel_helper_(g, local_coverage_f, diff_mult), cnt_(0) {
     }
+
+    ~RelativeCoverageDisconnector() {
+        INFO("Disconnected edge cnt " << cnt_);
+    }
+
 protected:
     bool ProcessEdge(EdgeId edge) {
         DEBUG("Processing edge " << this->g().int_id(edge));
@@ -407,6 +413,7 @@ private:
             pair<EdgeId, EdgeId> split_res = this->g().SplitEdge(edge, len - 1);
             EdgeRemover<Graph> edge_remover(this->g());
             edge_remover.DeleteEdge(split_res.second);
+            cnt_++;
             return true;
         }
         return false;
