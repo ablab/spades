@@ -1291,5 +1291,20 @@ private:
 
     DECL_LOGGER("MatePairExtensionChooser");
 };
+
+class CoordiantedCoverageExtensionChooser : public ExtensionChooser {
+public:
+    CoordiantedCoverageExtensionChooser(const Graph& g)
+    : ExtensionChooser(g)
+    { }
+
+    virtual EdgeContainer Filter(BidirectionalPath& path, EdgeContainer& edges) {
+        return EdgeContainer();
+    }
+
+private:
+
+};
+
 }
 #endif /* EXTENSION_HPP_ */

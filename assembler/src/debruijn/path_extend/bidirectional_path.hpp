@@ -378,7 +378,7 @@ public:
                         continue;
                     }
                     if (between > palindrom_len) {
-                        DEBUG("to big part between");
+                        DEBUG("too big part between");
                         continue;
                     }
                 }
