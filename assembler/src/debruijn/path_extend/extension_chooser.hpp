@@ -1299,11 +1299,120 @@ public:
     { }
 
     virtual EdgeContainer Filter(BidirectionalPath& path, EdgeContainer& edges) {
-        return EdgeContainer();
+        DEBUG("Coordianted coverage extension chooser");
+        if(path.Length() < min_path_length_) {
+            DEBUG("Path is too short");
+            return EdgeContainer();
+        }
+        double path_coverage = MinCoverageLongEdges(path);
+        if(path_coverage == std::numeric_limits<double>::max() || path_coverage < minimum_coverage_) {
+            DEBUG("Path coverage can't be calculated or too low");
+            return EdgeContainer();
+        }
+        edges.clear();
+        return FindExtensionTroughRepeat(path, edges, path_coverage);
     }
 
 private:
 
+    void UpdateCanBeProcessed(VertexId v, std::queue<VertexId>& can_be_processed) const {
+        DEBUG("Updating can be processed");
+        for (EdgeId e : this->g_.OutgoingEdges(v)) {
+            DEBUG("Considering edge " << ToString(e));
+            VertexId neighbour_v = this->g_.EdgeEnd(e);
+            if (this->g_.length(e) < min_edge_length_in_repeat) {
+                can_be_processed.push(neighbour_v);
+            }
+        }
+    }
+
+    GraphComponent<Graph> GetRepeatComponent(const VertexId& start) {
+        set<VertexId> vertices_of_component;
+        vertices_of_component.insert(start);
+        std::queue<VertexId> can_be_processed;
+        UpdateCanBeProcessed(start, can_be_processed);
+        while (!can_be_processed.empty()) {
+            VertexId v = can_be_processed.front();
+            can_be_processed.pop();
+            if(vertices_of_component.find(v) != vertices_of_component.end())
+            {
+                DEBUG("Component is too complex");
+                return GraphComponent<Graph>(this->g_);
+            }
+            DEBUG("Adding vertex " << this->g_.str(v) << " to component set");
+            vertices_of_component.insert(v);
+            UpdateCanBeProcessed(v, can_be_processed);
+        }
+
+        GraphComponent<Graph> gc(this->g_, vertices_of_component.begin(), vertices_of_component.end());
+        return gc;
+    }
+
+
+    EdgeContainer FinalFilter(EdgeContainer& edges, EdgeId& edge_to_extend) {
+        EdgeContainer result;
+        for(auto e_with_d : edges) {
+            if(e_with_d.e_ == edge_to_extend) {
+                result.push_back(e_with_d);
+            }
+        }
+        return result;
+    }
+
+    EdgeContainer FindExtensionTroughRepeat(BidirectionalPath& path, EdgeContainer& edges, double path_coverage) {
+        GraphComponent<Graph> gc = GetRepeatComponent(this->g_.EdgeEnd(path.Back()));
+        vector<EdgeId> good_extensions;
+        for(auto v : gc.sinks()) {
+            for(auto e : this->g_.OutgoingEdges(v)) {
+                if(this->g_.coverage(e) + this->g_.coverage(e) * 0.1 > path_coverage && this->g_.coverage(e) - this->g_.coverage(e) * 0.1 < path_coverage) {
+                    good_extensions.push_back(e);
+                }
+            }
+        }
+        DEBUG("Number of good extensions is " << good_extensions.size());
+
+        if(good_extensions.size() != 1) {
+            DEBUG("Returning");
+            return EdgeContainer();
+        }
+        EdgeId edge_to_extend;
+        if(this->g_.EdgeEnd(path.Back()) != this->g_.EdgeStart(good_extensions[0])) {
+            PathStorageCallback<Graph> callback(this->g_);
+            PathProcessor<Graph> path_processor(this->g_, 0, 1000, this->g_.EdgeEnd(path.Back()), this->g_.EdgeStart(good_extensions[0]), callback);
+            path_processor.Process();
+            if(callback.size() != 1) {
+                DEBUG("Not a single path to good extension");
+                return EdgeContainer();
+            }
+            edge_to_extend = callback.paths()[0][0];
+        }
+        else {
+            edge_to_extend = good_extensions[0];
+        }
+        DEBUG("Filtering... Extend with edge " << edge_to_extend.int_id());
+        auto path_to_draw = path.ToVector();
+        path_to_draw.push_back(edge_to_extend);
+        make_dir(cfg::get().output_dir + "new_extender");
+
+        visualization::WriteComponentsAlongPath(this->g_, path_to_draw, cfg::get().output_dir + "new_extender", visualization::DefaultColorer(this->g_), *StrGraphLabelerInstance(this->g_));
+
+        return FinalFilter(edges, edge_to_extend);
+    }
+
+    double MinCoverageLongEdges(BidirectionalPath& path, size_t min_edge_length_to_consider = 500) {
+        double coverage = std::numeric_limits<double>::max();
+        for(auto e : path.ToVector()) {
+            if(this->g_.length(e) >= min_edge_length_to_consider) {
+                coverage = min(coverage, this->g_.coverage(e));
+            }
+        }
+        return coverage;
+    }
+
+    const size_t min_path_length_ = 2000;
+    const size_t min_edge_length_in_repeat = 100;
+    const double minimum_coverage_ = 10.0;
+    const double max_delta_ = 0.1;
 };
 
 }

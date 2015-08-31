@@ -381,6 +381,12 @@ inline shared_ptr<SimpleExtender> MakeMPExtender(const conj_graph_pack& gp, cons
     return make_shared<SimpleExtender>(gp, cov_map, chooser, lib->GetISMax(), pset.loop_removal.mp_max_loops, true, false);
 }
 
+inline shared_ptr<SimpleExtender> MakeCoordCoverageExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
+                                       const pe_config::ParamSetT& pset) {
+    shared_ptr<CoordiantedCoverageExtensionChooser> chooser = make_shared<CoordiantedCoverageExtensionChooser>(gp.g);
+    return make_shared<SimpleExtender>(gp, cov_map, chooser, -1ul, pset.loop_removal.mp_max_loops, true, false);
+}
+
 
 inline bool InsertSizeCompare(const shared_ptr<PairedInfoLibrary> lib1,
                               const shared_ptr<PairedInfoLibrary> lib2) {
@@ -455,6 +461,10 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
     INFO("Using " << mp_libs << " mate-pair " << LibStr(mp_libs));
     INFO("Using " << single_read_libs << " single read " << LibStr(single_read_libs));
     INFO("Scaffolder is " << (pset.scaffolder_options.on ? "on" : "off"));
+    if(cfg::get().ds.meta) {
+        INFO("Using additional coordinated coverage extender");
+        result.push_back(MakeCoordCoverageExtender(gp, cov_map, pset));
+    }
     return result;
 }
 
