@@ -136,6 +136,7 @@ struct pe_config {
     } loop_removal;
 
     bool remove_overlaps;
+    bool use_coordinated_coverage;
   };
 
   struct LongReads {

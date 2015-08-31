@@ -65,7 +65,7 @@ singlecell {
         max_loops       10
         mp_max_loops    10
     }
-
+    use_coordinated_coverage false
     remove_overlaps     true
 }
 
@@ -122,6 +122,7 @@ meta {
     }
 
     remove_overlaps     true
+    use_coordinated_coverage true
 }
 
 moleculo {
@@ -176,6 +177,7 @@ moleculo {
     }
 
     remove_overlaps     true
+    use_coordinated_coverage false
 }
 
 multicell {
@@ -234,6 +236,7 @@ multicell {
     }
 
     remove_overlaps     true
+    use_coordinated_coverage false
 }
 
 long_reads {

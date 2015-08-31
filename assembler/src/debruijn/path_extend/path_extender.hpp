@@ -385,6 +385,7 @@ private:
     DECL_LOGGER("HammingGapJoiner");
 };
 
+
 //if I was in LA
 class LAGapJoiner: public GapJoiner {
 public:
@@ -487,6 +488,7 @@ private:
 };
 
 
+
 //Just for test. Look at overlap_analysis_tests
 inline Gap MimicLAGapJoiner(Sequence& s1, Sequence& s2) {
     const int INVALID_GAP = -1000000;
@@ -510,6 +512,7 @@ inline Gap MimicLAGapJoiner(Sequence& s1, Sequence& s2) {
             (uint32_t) (s1.size() - overlap_info.r1.end_pos),
             (uint32_t) overlap_info.r2.start_pos);
 }
+
 
 class InsertSizeLoopDetector {
 protected:

@@ -1292,6 +1292,150 @@ private:
     DECL_LOGGER("MatePairExtensionChooser");
 };
 
+class CoordiantedCoverageExtensionChooser : public ExtensionChooser {
+public:
+    CoordiantedCoverageExtensionChooser(const Graph& g)
+    : ExtensionChooser(g)
+    { }
+
+    virtual EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges) const {
+        DEBUG("Coordianted coverage extension chooser");
+        if(path.Length() < min_path_length_) {
+            DEBUG("Path is too short");
+            return EdgeContainer();
+        }
+        path.PrintInfo();
+        double path_coverage = MinCoverageLongEdges(path);
+        //TODO: temp fix
+        if(path_coverage > 999990.0 || path_coverage < minimum_coverage_) {
+            DEBUG("Path coverage can't be calculated or too low");
+            return EdgeContainer();
+        }
+        DEBUG("Path coverage is " << path_coverage);
+        for(auto e_d : edges) {
+            if(path.Contains(this->g_.EdgeEnd(e_d.e_))) {
+                DEBUG("Avoid to create loops");
+                return EdgeContainer();
+            }
+        }
+        return FindExtensionTroughRepeat(path, edges, path_coverage);
+    }
+
+private:
+
+    void UpdateCanBeProcessed(VertexId v, std::queue<VertexId>& can_be_processed) const {
+        DEBUG("Updating can be processed");
+        for (EdgeId e : this->g_.OutgoingEdges(v)) {
+            VertexId neighbour_v = this->g_.EdgeEnd(e);
+            if (this->g_.length(e) < min_edge_length_in_repeat) {
+                DEBUG("Adding vertex " << neighbour_v.int_id() << "through edge " << ToString(e));
+                can_be_processed.push(neighbour_v);
+            }
+        }
+    }
+
+    GraphComponent<Graph> GetRepeatComponent(const VertexId& start) const {
+        set<VertexId> vertices_of_component;
+        vertices_of_component.insert(start);
+        std::queue<VertexId> can_be_processed;
+        UpdateCanBeProcessed(start, can_be_processed);
+        while (!can_be_processed.empty()) {
+            VertexId v = can_be_processed.front();
+            can_be_processed.pop();
+            if(vertices_of_component.find(v) != vertices_of_component.end())
+            {
+                DEBUG("Component is too complex");
+                vertices_of_component.clear();
+                return GraphComponent<Graph>(this->g_, vertices_of_component.begin(), vertices_of_component.end());
+            }
+            DEBUG("Adding vertex " << this->g_.str(v) << " to component set");
+            vertices_of_component.insert(v);
+            UpdateCanBeProcessed(v, can_be_processed);
+        }
+
+        GraphComponent<Graph> gc(this->g_, vertices_of_component.begin(), vertices_of_component.end());
+        return gc;
+    }
+
+
+    EdgeContainer FinalFilter(const EdgeContainer& edges, EdgeId& edge_to_extend) const {
+        EdgeContainer result;
+        for(auto e_with_d : edges) {
+            if(e_with_d.e_ == edge_to_extend) {
+                result.push_back(e_with_d);
+            }
+        }
+        return result;
+    }
+
+    EdgeContainer FindExtensionTroughRepeat(const BidirectionalPath& path, const EdgeContainer& edges, double path_coverage) const {
+        GraphComponent<Graph> gc = GetRepeatComponent(this->g_.EdgeEnd(path.Back()));
+        vector<EdgeId> good_extensions;
+        vector<EdgeId> bad_extensions;
+
+        for(auto e : gc.edges()) {
+            if(this->g_.length(e) > min_edge_length_in_repeat) {
+                DEBUG("Repeat component contains long edges");
+                return EdgeContainer();
+            }
+        }
+
+        for(auto v : gc.sinks()) {
+            for(auto e : this->g_.OutgoingEdges(v)) {
+                if(this->g_.coverage(e) > path_coverage - path_coverage * min_delta_) {
+                    good_extensions.push_back(e);
+                }
+            }
+        }
+
+
+        DEBUG("Number of good extensions is " << good_extensions.size());
+
+        if(good_extensions.size() != 1) {
+            DEBUG("Returning");
+            return EdgeContainer();
+        }
+        EdgeId edge_to_extend;
+        if(this->g_.EdgeEnd(path.Back()) != this->g_.EdgeStart(good_extensions[0])) {
+            PathStorageCallback<Graph> callback(this->g_);
+            PathProcessor<Graph> path_processor(this->g_, this->g_.EdgeEnd(path.Back()), 1000);
+            path_processor.Process(this->g_.EdgeStart(good_extensions[0]), 0, 1000, callback);
+            if(callback.size() != 1) {
+                DEBUG("Not a single path to good extension");
+                return EdgeContainer();
+            }
+            edge_to_extend = callback.paths()[0][0];
+        }
+        else {
+            edge_to_extend = good_extensions[0];
+        }
+        DEBUG("Filtering... Extend with edge " << edge_to_extend.int_id());
+        auto path_to_draw = path.ToVector();
+        path_to_draw.push_back(edge_to_extend);
+        make_dir(cfg::get().output_dir + "new_extender");
+        StrGraphLabeler<Graph> labeler1(this->g_);
+        CoverageGraphLabeler<Graph> labeler2(this->g_);
+        visualization::WriteComponentsAlongPath(this->g_, path_to_draw, cfg::get().output_dir + "new_extender/" + ToString(path.GetId()), visualization::DefaultColorer(this->g_), CompositeLabeler<Graph>(labeler1, labeler2));
+        return FinalFilter(edges, edge_to_extend);
+    }
+
+    double MinCoverageLongEdges(const BidirectionalPath& path, size_t min_edge_length_to_consider = 500) const {
+        double coverage = 1000000.0;
+        for(auto e : path.ToVector()) {
+            if(this->g_.length(e) >= min_edge_length_to_consider) {
+                coverage = min(coverage, this->g_.coverage(e));
+            }
+        }
+        return coverage;
+    }
+
+    const size_t min_path_length_ = 2000;
+    const size_t min_edge_length_in_repeat = 100;
+    const double minimum_coverage_ = 10.0;
+    const double min_delta_ = 0.4;
+protected:
+    DECL_LOGGER("CoordCoverageExtensionChooser");
+};
 
 }
 #endif /* EXTENSION_HPP_ */

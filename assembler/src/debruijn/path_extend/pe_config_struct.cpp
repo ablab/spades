@@ -82,6 +82,7 @@ void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool /
   load(p.scaffolder_options, pt, "scaffolder");
     load(p.loop_removal, pt, "loop_removal");
     load(p.remove_overlaps, pt, "remove_overlaps");
+    load(p.use_coordinated_coverage, pt, "use_coordinated_coverage");
 }
 
 void load(pe_config::LongReads& p, boost::property_tree::ptree const& pt,

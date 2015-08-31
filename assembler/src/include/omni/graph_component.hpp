@@ -103,7 +103,7 @@ public:
 
 	//Full graph component
 	GraphComponent(const Graph &g, const string &name = "") : graph_(g), name_(name) {
-		Fill(g.begin(), g.end());
+//		Fill(g.begin(), g.end());
 	}
 
 	//may be used for conjugate closure

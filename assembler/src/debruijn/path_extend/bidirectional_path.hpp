@@ -275,6 +275,15 @@ public:
         return FindFirst(e) != -1;
     }
 
+    bool Contains(VertexId v) const {
+        for(auto edge : data_) {
+            if(g_.EdgeEnd(edge) == v || g_.EdgeStart(edge) == v ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     vector<size_t> FindAll(EdgeId e, size_t start = 0) const {
         vector<size_t> result;
         for (size_t i = start; i < Size(); ++i) {
