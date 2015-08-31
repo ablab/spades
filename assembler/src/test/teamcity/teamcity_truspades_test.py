@@ -1,3 +1,11 @@
+#!/usr/bin/python
+
+############################################################################
+# Copyright (c) 2015 Saint Petersburg State University
+# Copyright (c) 2011-2014 Saint Petersburg Academic University
+# All Rights Reserved
+# See file LICENSE for details.
+############################################################################
 import os
 import shutil
 import sys
@@ -15,9 +23,9 @@ def run_test():
     if ecode != 0:
         print("Compilation finished abnormally with exit code " + str(ecode))
         sys.exit(3)
-    cmd = "./truspades.py --disable-gzip-output --test"
+    cmd = "./truspades.py --test"
     ecode = os.system(cmd)
-    output_dir = "test_dataset_truspades"
+    output_dir = "spades_test_truspades"
     os.system("chmod -R 777 " + output_dir)
     if ecode != 0:
         print("SPAdes finished abnormally with exit code " + str(ecode))
