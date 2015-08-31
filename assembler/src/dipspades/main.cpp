@@ -9,16 +9,15 @@
  * Assembler Main
  */
 #include "standard.hpp"
-#include "../include/logger/log_writers.hpp"
+#include "logger/log_writers.hpp"
 
-#include "../include/segfault_handler.hpp"
-#include "../include/stacktrace.hpp"
-#include "../include/memory_limit.hpp"
-#include "../include/copy_file.hpp"
-#include "../include/perfcounter.hpp"
-#include "../include/runtime_k.hpp"
+#include "segfault_handler.hpp"
+#include "stacktrace.hpp"
+#include "memory_limit.hpp"
+#include "copy_file.hpp"
+#include "perfcounter.hpp"
+#include "runtime_k.hpp"
 
-//#include "config_struct.hpp"
 
 #include "graph_pack.hpp"
 #include "construction.hpp"
@@ -34,11 +33,11 @@
 #include "../include/segfault_handler.hpp"
 
 void make_dirs(){
-	  make_dir(dsp_cfg::get().io.output_base);
-	  make_dir(dsp_cfg::get().io.output_root);
-	  make_dir(dsp_cfg::get().io.output_dir);
-	  make_dir(dsp_cfg::get().io.output_saves);
-	  make_dir(dsp_cfg::get().io.tmp_dir);
+    make_dir(dsp_cfg::get().io.output_base);
+    make_dir(dsp_cfg::get().io.output_root);
+    make_dir(dsp_cfg::get().io.output_dir);
+    make_dir(dsp_cfg::get().io.output_saves);
+    make_dir(dsp_cfg::get().io.tmp_dir);
 }
 
 void copy_configs(string cfg_filename, string to) {
@@ -86,7 +85,7 @@ int main(int /*argc*/, char** argv) {
     load_config          (cfg_filename);
     make_dirs();
     if(dsp_cfg::get().rp.developer_mode)
-    	copy_configs(cfg_filename, path::append_path(dsp_cfg::get().io.output_dir, "configs"));
+        copy_configs(cfg_filename, path::append_path(dsp_cfg::get().io.output_dir, "configs"));
     create_console_logger(cfg_filename);
 
     VERIFY(dsp_cfg::get().bp.K >= runtime_k::MIN_K && dsp_cfg::get().bp.K < runtime_k::MAX_K);
@@ -97,7 +96,6 @@ int main(int /*argc*/, char** argv) {
     INFO("Starting dipSPAdes, built from " SPADES_GIT_REFSPEC ", git revision " SPADES_GIT_SHA1);
     INFO("Assembling dataset (" << dsp_cfg::get().io.dataset_name << ") with K=" << dsp_cfg::get().bp.K);
     dipspades::run_dipspades();
-
 //    link_output("latest_success");
   } catch (std::bad_alloc const& e) {
     std::cerr << "Not enough memory to run SPAdes. " << e.what() << std::endl;

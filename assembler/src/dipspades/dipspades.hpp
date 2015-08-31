@@ -5,15 +5,17 @@
 //* See file LICENSE for details.
 //***************************************************************************
 
-#include "../debruijn/stage.hpp"
+
+#include "io/splitting_wrapper.hpp"
+#include "graph_construction.hpp"
+#include "stage.hpp"
+
+#include "dipspades_config.hpp"
 
 #include "polymorphic_bulge_remover/polymorphic_bulge_remover.hpp"
 #include "consensus_contigs_constructor/consensus_contigs_constructor.hpp"
 #include "haplotype_assembly/haplotype_assembler.hpp"
 #include "kmer_gluing/equal_sequence_gluer.hpp"
-#include "../debruijn/graph_construction.hpp"
-#include "io/splitting_wrapper.hpp"
-#include "dipspades_config.hpp"
 
 using namespace debruijn_graph;
 using namespace spades;
