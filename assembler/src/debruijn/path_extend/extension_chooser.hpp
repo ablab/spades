@@ -429,7 +429,7 @@ protected:
         }
     }
 
-    int CountMean(vector<pair<int, double> >& histogram) {
+    int CountMean(const vector<pair<int, double> >& histogram) const {
         double dist = 0.0;
         double sum = 0.0;
         for (size_t i = 0; i < histogram.size(); ++i) {
@@ -440,7 +440,7 @@ protected:
         return (int) round(dist);
     }
 
-    void CountAvrgDists(BidirectionalPath& path, EdgeId e, std::vector<pair<int, double>> & histogram) {
+    void CountAvrgDists(const BidirectionalPath& path, EdgeId e, std::vector<pair<int, double>> & histogram) {
         for (size_t j = 0; j < path.Size(); ++j) {
             std::vector<int> distances;
             std::vector<double> weights;
@@ -451,7 +451,7 @@ protected:
         }
     }
 
-    void FindBestFittedEdgesForClustered(BidirectionalPath& path, const set<EdgeId>& edges, EdgeContainer& result) {
+    void FindBestFittedEdgesForClustered(const BidirectionalPath& path, const set<EdgeId>& edges, EdgeContainer& result) {
         for (EdgeId e : edges) {
             std::vector<pair<int, double>> histogram;
             CountAvrgDists(path, e, histogram);
