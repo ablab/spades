@@ -23,11 +23,7 @@ class Shellder:
         pushd = os.getcwd()
         #Launch the reader
         self.queue = Queue.Queue()
-        def reader(q):
-            while True:
-                q.put(self.pout.readline())
-        self.reader = threading.Thread(target=reader, args=(self.queue,))
-        self.reader.start()
+        self.reader = None
         #Launch the process
         os.chdir(dir)
         self.proc = subprocess.Popen(["./run", "rv"], stdin=pin, stdout=pout)
@@ -42,13 +38,24 @@ class Shellder:
 
     #Reads the whole output and returns as a list of strings
     def get_output(self, timeout=None):
+        if self.reader is None or not self.reader.is_alive():
+            def reader():
+                #TODO: refactor doublecode
+                while True:
+                    str = self.pout.readline()
+                    self.queue.put(str)
+                    if str == self.end_out:
+                        break
+            self.reader = threading.Thread(target=reader)
+            self.reader.start()
         res = []
-        str = self.get_line(timeout)
-        while str is not None:
+        while True:
+            str = self.get_line(timeout)
+            if str is None:
+                break
             res.append(str)
             if str == self.end_out:
                 break
-            str = self.get_line(timeout)
         return res
 
     #Sends a command, like "help"
@@ -58,8 +65,6 @@ class Shellder:
         return self
 
     def close(self):
-        #TODO: fix close error
-        self.reader.join(0.1)
-        self.pin.close()
-        self.pout.close()
         self.proc.kill()
+        self.pout.close()
+        self.pin.close()

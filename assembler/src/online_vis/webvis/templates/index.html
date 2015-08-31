@@ -30,14 +30,22 @@ var standardCommands = ["batch", "clear_pos", "clip_tips", "draw_connected", "dr
     "set_folder", "set_max_vertices", "show_position", "switch_env"
 ]
 
+function startWheel(where) {
+    $(where).loader("show", "<img src=\"static/assets/wheel.gif\">");
+}
+
+function stopWheel(where) {
+    $(where).loader("hide");
+}
+
 function sendCommand(command, callback) {
-    $("#console").loader("show", "<img src=\"static/assets/wheel.gif\">");
+    startWheel("#console_container");
     $.ajax({
         url: "command",
         type: "GET",
         data: {command: command},
         success: function(response) {
-            $("#console").loader("hide");
+            stopWheel("#console_container");
             callback(response);
         }
     });
@@ -69,6 +77,7 @@ $(function() {
             cArgs = command.split(" ");
             if (specialFunctions[cArgs[0]]) {
                 specialFunctions[cArgs[0]](cArgs[1]);
+                $("input#command").prop("disabled", false);
             } else {
                 sendCommand(command, function getLog(response) {
                     $(function() {
@@ -79,6 +88,7 @@ $(function() {
                         if (response.complete)
                             $("input#command").prop("disabled", false);
                         else
+                            //TODO: get rid of recursion (How?!)
                             sendCommand("", getLog);
                     });
                 });
@@ -138,9 +148,11 @@ $(function() {
         if (dynamicGraph) {
             updateDynamicGraph(url);
         } else {
+            startWheel("#graph");
             $.ajax({
                 url: url,
                 success: function (response) {
+                    stopWheel("#graph");
                     $("#graph").html($("<iframe>").attr("src", response));
                 }
             });
@@ -189,13 +201,12 @@ $(function() {
 
 <body>
 <table width="100%"><tr height="100%">
-    <td width="50%">
+    <td width="50%" id="console_container">
         <table><tr><td><label for="command">GAF$&gt;</label></td>
             <td width=100%><input type="text" id="command"/></td>
             <td><a href="logout">Logout</a></td></tr>
         </table>
         <div id="console">{{console|safe}}</div>
-        <div id="filetree"></div>
     </td>
     <td id="graph" width="50%">
         <!--The rendered graph will be displayed here-->
