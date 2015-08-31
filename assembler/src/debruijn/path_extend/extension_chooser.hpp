@@ -474,7 +474,7 @@ protected:
         return g_.IncomingEdgeCount(g_.EdgeStart(e)) == 0;
     }
 
-    set<EdgeId> FindCandidates(BidirectionalPath& path) const {
+    set<EdgeId> FindCandidates(const BidirectionalPath& path) const {
         set<EdgeId> jumping_edges;
         PairedInfoLibraries libs = wc_->getLibs();
         for (auto lib : libs) {
