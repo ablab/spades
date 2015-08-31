@@ -7,30 +7,13 @@
 
 project(dipspades CXX)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-
-include_directories(${CMAKE_SOURCE_DIR}/debruijn)
-
 add_executable(dipspades
-               ../debruijn/kmer_coverage_model.cpp
-               ../debruijn/config_struct.cpp
-               ../debruijn/path_extend/pe_config_struct.cpp
-               ../debruijn/path_extend/bidirectional_path.cpp
-               ../debruijn/stage.cpp
-               ../debruijn/construction.cpp
-               ../debruijn/gap_closer.cpp
-               ../debruijn/simplification.cpp
-               ../debruijn/mismatch_correction.cpp
-               ../debruijn/pair_info_count.cpp
-               ../debruijn/distance_estimation.cpp
-               ../debruijn/repeat_resolving.cpp
-               ../debruijn/genomic_info_filler.cpp
-               ../debruijn/genome_storage.cpp
-		  dipspades_config.cpp
-	      utils/files_utils.cpp
-          main.cpp)
+	       dipspades_config.cpp
+	       utils/files_utils.cpp
+               main.cpp)
 
-target_link_libraries(dipspades input mph_index BamTools yaml-cpp nlopt ${COMMON_LIBRARIES} ssw)
+target_include_directories(dipspades PRIVATE ${CMAKE_SOURCE_DIR}/debruijn)
+target_link_libraries(dipspades debruijn)
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(dipspades PROPERTIES LINK_SEARCH_END_STATIC 1)
