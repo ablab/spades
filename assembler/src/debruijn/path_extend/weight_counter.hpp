@@ -55,8 +55,6 @@ struct EdgeWithPairedInfo {
 			e_(e_), pi_(pi) {
 
 	}
-protected:
-    DECL_LOGGER("WeightCounter");
 };
 
 struct EdgeWithDistance {
@@ -76,8 +74,6 @@ struct EdgeWithDistance {
 	};
 
 	static DistanceComparator comparator;
-protected:
-    DECL_LOGGER("WeightCounter");
 };
 
 class ExtentionAnalyzer {
@@ -126,8 +122,8 @@ public:
 			++i;
 		}
 	}
-protected:
-    DECL_LOGGER("WeightCounter");
+private:
+    DECL_LOGGER("ExtensionAnalyzer");
 };
 
 class WeightCounter {
@@ -135,81 +131,58 @@ class WeightCounter {
 protected:
 	const Graph& g_;
 	PairedInfoLibraries libs_;
-	std::vector<shared_ptr<ExtentionAnalyzer> > analyzers_;
+	std::vector<shared_ptr<ExtentionAnalyzer>> analyzers_;
 	double avrageLibWeight_;
 
-	double threshold_;
 	bool normalizeWeight_;
 
-	std::map<size_t, double> excluded_edges_;
+	//std::set<size_t> excluded_edges_;
 
 public:
 
-	WeightCounter(const Graph& g, PairedInfoLibraries& libs, double threshold = 0.0) :
-			g_(g), libs_(libs), threshold_(threshold), normalizeWeight_(true), excluded_edges_() {
+	WeightCounter(const Graph& g, const PairedInfoLibraries& libs) :
+			g_(g), libs_(libs), normalizeWeight_(true) {
 	    InitAnalyzers();
 	}
 
-    WeightCounter(const Graph& g, shared_ptr<PairedInfoLibrary> lib, double threshold = 0.0) :
-            g_(g), libs_(), threshold_(threshold), normalizeWeight_(true), excluded_edges_() {
+    WeightCounter(const Graph& g, shared_ptr<PairedInfoLibrary> lib) :
+            g_(g), libs_(), normalizeWeight_(true) {
         libs_.push_back(lib);
         InitAnalyzers();
     }
 
+	virtual bool PairInfoExist(EdgeId first, EdgeId second, int distance) const = 0;
 
-	virtual ~WeightCounter() {
-		/*for (auto iter = analyzers_.begin(); iter != analyzers_.end(); ++iter) {
-			delete *iter;
-		}*/
-		analyzers_.clear();
-	}
-
-	virtual bool PairInfoExist(EdgeId first, EdgeId second, int distance) = 0;
-
-	virtual double CountWeight(BidirectionalPath& path, EdgeId e,
-			int gapLength = 0) = 0;
+	virtual double CountWeight(const BidirectionalPath& path, EdgeId e,
+			const std::set<size_t>& excluded_edges, int gapLength = 0) const = 0;
 
 	virtual void GetDistances(EdgeId e1, EdgeId e2, std::vector<int>& dist,
-			std::vector<double>& w) = 0;
+			std::vector<double>& w) const = 0;
 
-	virtual double CountIdealInfo(EdgeId e1, EdgeId e2, size_t dist) = 0;
+	virtual double CountIdealInfo(EdgeId e1, EdgeId e2, size_t dist) const = 0;
 
-	virtual double CountIdealInfo(const BidirectionalPath& p, EdgeId e,
-			size_t gap) = 0;
+//	virtual double CountIdealInfo(const BidirectionalPath& p, EdgeId e,
+//			const std::set<size_t>& excluded_edges, size_t gap) const = 0;
 
-	virtual bool IsExtensionPossible(BidirectionalPath& path, EdgeId e) {
-		return IsExtensionPossible(CountWeight(path, e)) ? true : false;
-	}
+//	virtual bool IsExtensionPossible(const BidirectionalPath& path, std::set<size_t>& excluded_edges, EdgeId e) const {
+//		return IsExtensionPossible(CountWeight(path, e, excluded_edges)) ? true : false;
+//	}
 
-	virtual bool IsExtensionPossible(double weight) const {
-		return math::ge(weight, threshold_) ? true : false;
-	}
+//	virtual bool IsExtensionPossible(double weight) const {
+//		return math::ge(weight, threshold_) ? true : false;
+//	}
 
-	std::map<size_t, double>& GetExcludedEdges() {
-		return excluded_edges_;
-	}
-
-	double getThreshold() const {
-		return threshold_;
-	}
-
-	bool isNormalizeWeight() const {
+	bool normalize_weight() const {
 		return normalizeWeight_;
 	}
 
-	void setNormalizeWeight(bool normalizeWeight) {
-		this->normalizeWeight_ = normalizeWeight;
+	void set_normalize_weight(bool normalize_weight) {
+		this->normalizeWeight_ = normalize_weight;
 	}
 
-	void setThreshold(double threshold) {
-		this->threshold_ = threshold;
-	}
-
-	PairedInfoLibraries& getLibs() {
+	const PairedInfoLibraries& getLibs() const {
 		return libs_;
 	}
-protected:
-    DECL_LOGGER("WeightCounter");
 
 private:
     void InitAnalyzers() {
@@ -221,14 +194,14 @@ private:
         }
         avrageLibWeight_ /= (double) max(libs_.size(), (size_t) 1);
     }
+
+    DECL_LOGGER("WeightCounter");
 };
 
 class ReadCountWeightCounter: public WeightCounter {
 
-protected:
-
-	double CountSingleLib(int libIndex, BidirectionalPath& path, EdgeId e,
-			int additionalGapLength = 0.0) {
+	double CountSingleLib(int libIndex, const BidirectionalPath& path, EdgeId e,
+			const std::set<size_t>& excluded_edges, int additionalGapLength = 0.0) const {
 
 		double weight = 0.0;
 
@@ -237,7 +210,7 @@ protected:
 
 		for (auto iter = coveredEdges.begin(); iter != coveredEdges.end();
 				++iter) {
-			if (excluded_edges_.find((int) iter->e_) != excluded_edges_.end()) {
+			if (excluded_edges.count(iter->e_)) {
 				continue;
 			}
 			double w = libs_[libIndex]->CountPairedInfo(path[iter->e_], e,
@@ -255,24 +228,22 @@ protected:
 
 public:
 
-	ReadCountWeightCounter(const Graph& g_, PairedInfoLibraries& libs,
-			double threshold_ = 0.0) :
-			WeightCounter(g_, libs, threshold_) {
+	ReadCountWeightCounter(const Graph& g_, PairedInfoLibraries& libs) :
+			WeightCounter(g_, libs) {
 	}
 
-    ReadCountWeightCounter(const Graph& g_, shared_ptr<PairedInfoLibrary> lib,
-            double threshold_ = 0.0) :
-            WeightCounter(g_, lib, threshold_) {
+    ReadCountWeightCounter(const Graph& g_, shared_ptr<PairedInfoLibrary> lib) :
+            WeightCounter(g_, lib) {
     }
 
 	virtual void GetDistances(EdgeId e1, EdgeId e2, std::vector<int>& dist,
-			std::vector<double>& w) {
+			std::vector<double>& w) const {
 		for (size_t i = 0; i < libs_.size(); ++i) {
 			libs_[i]->CountDistances(e1, e2, dist, w);
 		}
 	}
 
-	virtual double CountIdealInfo(EdgeId e1, EdgeId e2, size_t dist) {
+	virtual double CountIdealInfo(EdgeId e1, EdgeId e2, size_t dist) const {
 		double res = 0.0;
 		for (size_t i = 0; i < libs_.size(); ++i) {
 			res += libs_[i]->IdealPairedInfo(e1, e2, (int) dist);
@@ -280,28 +251,28 @@ public:
 		return res;
 	}
 
-	virtual double CountIdealInfo(const BidirectionalPath& p, EdgeId e,
-			size_t gap) {
-		double w = 0.0;
-		for (int i = (int) p.Size() - 1; i >= 0; --i) {
-			w += CountIdealInfo(p[i], e, gap + p.LengthAt(i));
-		}
-		return w;
-	}
+//	virtual double CountIdealInfo(const BidirectionalPath& p, EdgeId e, 
+//            const std::set<size_t>& excluded_edges, size_t gap) const {
+//		double w = 0.0;
+//		for (int i = (int) p.Size() - 1; i >= 0; --i) {
+//			w += CountIdealInfo(p[i], e, gap + p.LengthAt(i));
+//		}
+//		return w;
+//	}
 
-	virtual double CountWeight(BidirectionalPath& path, EdgeId e,
-			int gapLength = 0) {
+	virtual double CountWeight(const BidirectionalPath& path, EdgeId e, 
+            const std::set<size_t>& excluded_edges, int gapLength = 0) const {
 		double weight = 0.0;
 		std::vector<EdgeWithDistance> edges;
 
 		for (size_t i = 0; i < libs_.size(); ++i) {
-			weight += CountSingleLib((int) i, path, e, gapLength);
+			weight += CountSingleLib((int) i, path, e, excluded_edges, gapLength);
 		}
 
 		return weight;
 	}
 
-	virtual bool PairInfoExist(EdgeId first, EdgeId second, int distance) {
+	virtual bool PairInfoExist(EdgeId first, EdgeId second, int distance) const {
 		for (size_t libIndex = 0; libIndex < libs_.size(); ++libIndex) {
 			double w = libs_[libIndex]->CountPairedInfo(first, second,
 					distance);
@@ -324,10 +295,8 @@ public:
 
 class PathCoverWeightCounter: public WeightCounter {
 
-protected:
-
-	double CountSingleLib(int libIndex, BidirectionalPath& path, EdgeId e,
-			int additionalGapLength = 0.0) {
+	double CountSingleLib(int libIndex, const BidirectionalPath& path, EdgeId e,
+			const std::set<size_t>& excluded_edges, int additionalGapLength = 0.0) const {
 		PairedInfoLibrary& pairedInfoLibrary = *libs_[libIndex];
 		double weight = 0.0;
 		double idealWeight = 0.0;
@@ -337,11 +306,9 @@ protected:
 		for (auto iter = coveredEdges.begin(); iter != coveredEdges.end();
 				++iter) {
 			double ideal_weight = iter->pi_;
-			if (excluded_edges_.find(iter->e_) != excluded_edges_.end()) {
+			if (excluded_edges.count(iter->e_)) {
 				VERIFY(math::gr(ideal_weight, 0.0));
-				if (!math::gr(excluded_edges_[iter->e_], 0.0)) {
-					continue;
-				}
+				continue;
 			}
 
 			double singleWeight = libs_[libIndex]->CountPairedInfo(
@@ -362,27 +329,25 @@ protected:
 
 public:
 
-	PathCoverWeightCounter(const Graph& g, PairedInfoLibraries& libs,
-			double threshold_ = 0.0) :
-			WeightCounter(g, libs, threshold_) {
+	PathCoverWeightCounter(const Graph& g, PairedInfoLibraries& libs) :
+			WeightCounter(g, libs) {
 
 	}
 
-	PathCoverWeightCounter(const Graph& g, shared_ptr<PairedInfoLibrary> lib,
-                           double threshold = 0.0)
-            : WeightCounter(g, lib, threshold) {
+	PathCoverWeightCounter(const Graph& g, shared_ptr<PairedInfoLibrary> lib)
+            : WeightCounter(g, lib) {
 
     }
 
 
 	virtual void GetDistances(EdgeId e1, EdgeId e2, std::vector<int>& dist,
-			std::vector<double>& w) {
+			std::vector<double>& w) const {
 		for (size_t i = 0; i < libs_.size(); ++i) {
 			libs_[i]->CountDistances(e1, e2, dist, w);
 		}
 	}
 
-	virtual double CountIdealInfo(EdgeId e1, EdgeId e2, size_t dist) {
+	virtual double CountIdealInfo(EdgeId e1, EdgeId e2, size_t dist) const {
 		double res = 0.0;
 		for (size_t i = 0; i < libs_.size(); ++i) {
 			res += libs_[i]->IdealPairedInfo(e1, e2, (int) dist);
@@ -390,27 +355,27 @@ public:
 		return res;
 	}
 
-	virtual double CountIdealInfo(const BidirectionalPath& p, EdgeId e,
-			size_t gap) {
-		double w = 0.0;
-		for (int i = (int) p.Size() - 1; i >= 0; --i) {
-			w += g_.length(p[i]) ?
-					CountIdealInfo(p[i], e, gap + p.LengthAt(i)) > 0 : 0;
-		}
-		return w;
-	}
+//	virtual double CountIdealInfo(const BidirectionalPath& p, EdgeId e,
+//			size_t gap) const {
+//		double w = 0.0;
+//		for (int i = (int) p.Size() - 1; i >= 0; --i) {
+//			w += CountIdealInfo(p[i], e, gap + p.LengthAt(i)) > 0 ?
+//					g_.length(p[i]) : 0;
+//		}
+//		return w;
+//	}
 
-	virtual double CountWeight(BidirectionalPath& path, EdgeId e,
-			int gapLength = 0) {
+	virtual double CountWeight(const BidirectionalPath& path, EdgeId e,
+			const std::set<size_t>& excluded_edges, int gapLength = 0) const {
 		double weight = 0.0;
 		for (size_t i = 0; i < libs_.size(); ++i) {
-			weight += CountSingleLib((int) i, path, e, gapLength);
+			weight += CountSingleLib((int) i, path, e, excluded_edges, gapLength);
 		}
 
 		return weight / (double) max(libs_.size(), (size_t) 1);
 	}
 
-	virtual bool PairInfoExist(EdgeId first, EdgeId second, int distance) {
+	virtual bool PairInfoExist(EdgeId first, EdgeId second, int distance) const {
 		for (size_t libIndex = 0; libIndex < libs_.size(); ++libIndex) {
 			double w = libs_[libIndex]->CountPairedInfo(first, second,
 					distance);
@@ -431,6 +396,7 @@ public:
 	}
 
 };
+
 struct PathsPairIndexInfo {
     PathsPairIndexInfo(size_t edge1_, size_t edge2_, double w_, double dist_)
             : edge1(edge1_),
@@ -444,6 +410,7 @@ struct PathsPairIndexInfo {
     double w;
     double dist;
 };
+
 class PathsWeightCounter {
 public:
     PathsWeightCounter(const Graph& g, shared_ptr<PairedInfoLibrary> lib, size_t min_read_count);
@@ -458,8 +425,8 @@ public:
                          size_t to1, EdgeId edge, size_t gap) const;
     void SetCommonWeightFrom(size_t iedge, double weight);
     void ClearCommonWeight();
-    void FindJumpCandidates(EdgeId e, int min_dist, int max_dist, size_t min_len, set<EdgeId>& result);
-    void FindJumpEdges(EdgeId e, set<EdgeId>& candidates, int min_dist, int max_dist, vector<EdgeWithDistance>& result);
+    void FindJumpCandidates(EdgeId e, int min_dist, int max_dist, size_t min_len, set<EdgeId>& result) const;
+    void FindJumpEdges(EdgeId e, set<EdgeId>& candidates, int min_dist, int max_dist, vector<EdgeWithDistance>& result) const;
     const shared_ptr<PairedInfoLibrary> GetLib() const {
         return lib_;
     }
@@ -480,7 +447,6 @@ private:
     shared_ptr<PairedInfoLibrary> lib_;
     std::map<size_t, double> common_w_;
     size_t min_read_count_;
-protected:
     DECL_LOGGER("WeightCounter");
 };
 inline PathsWeightCounter::PathsWeightCounter(const Graph& g, shared_ptr<PairedInfoLibrary>lib, size_t min_read_count):g_(g), lib_(lib), min_read_count_(min_read_count){
@@ -574,11 +540,11 @@ inline map<size_t, double> PathsWeightCounter::FindPairInfoFromPath(
     FindPairInfo(path1, from1, to1, path2, from2, to2, pi, ideal_pi);
     return pi;
 }
-inline void PathsWeightCounter::FindJumpCandidates(EdgeId e, int min_dist, int max_dist, size_t min_len, set<EdgeId>& result) {
+inline void PathsWeightCounter::FindJumpCandidates(EdgeId e, int min_dist, int max_dist, size_t min_len, set<EdgeId>& result) const {
     result.clear();
     lib_->FindJumpEdges(e, result, min_dist, max_dist, min_len);
 }
-inline void PathsWeightCounter::FindJumpEdges(EdgeId e, set<EdgeId>& edges, int min_dist, int max_dist, vector<EdgeWithDistance>& result) {
+inline void PathsWeightCounter::FindJumpEdges(EdgeId e, set<EdgeId>& edges, int min_dist, int max_dist, vector<EdgeWithDistance>& result) const {
     result.clear();
 
     for (auto e2 = edges.begin(); e2 != edges.end(); ++e2) {

@@ -137,26 +137,27 @@ protected:
 
 class LoopResolver : public ShortLoopResolver {
     static const size_t iter_ = 10;
-    ExtensionChooser& chooser_;
+    const WeightCounter& wc_;
 
 public:
-    LoopResolver(const Graph& g, ExtensionChooser& chooser)
+    LoopResolver(const Graph& g, const WeightCounter& wc)
             : ShortLoopResolver(g),
-              chooser_(chooser) { }
+              wc_(wc) { }
 
     void MakeBestChoice(BidirectionalPath& path, pair<EdgeId, EdgeId>& edges) {
         UndoCycles(path, edges.first);
-        chooser_.ClearExcludedEdges();
         BidirectionalPath experiment(path);
-        double maxWeight = chooser_.CountWeight(experiment, edges.second);
-        double diff = maxWeight - chooser_.CountWeight(experiment, edges.first);
+        //FIXME remove after refactoring
+        std::set<size_t> empty_set;
+        double maxWeight = wc_.CountWeight(experiment, edges.second, empty_set);
+        double diff = maxWeight - wc_.CountWeight(experiment, edges.first, empty_set);
         size_t maxIter = 0;
         for (size_t i = 1; i <= iter_; ++i) {
-            double weight = chooser_.CountWeight(experiment, edges.first);
+            double weight = wc_.CountWeight(experiment, edges.first, empty_set);
             if (weight > 0) {
                 MakeCycleStep(experiment, edges.first);
-                weight = chooser_.CountWeight(experiment, edges.second);
-                double weight2 = chooser_.CountWeight(experiment, edges.first);
+                weight = wc_.CountWeight(experiment, edges.second, empty_set);
+                double weight2 = wc_.CountWeight(experiment, edges.first, empty_set);
                 if (weight > maxWeight || (weight == maxWeight && weight - weight2 > diff)
                         || (weight == maxWeight && weight - weight2 == diff && i == 1)) {
                     maxWeight = weight;
@@ -891,7 +892,7 @@ public:
     SimpleExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, shared_ptr<ExtensionChooser> ec, size_t is, size_t max_loops, bool investigate_short_loops, bool use_short_loop_cov_resolver):
         LoopDetectingPathExtender(gp, cov_map, max_loops, investigate_short_loops, use_short_loop_cov_resolver, is),
         extensionChooser_(ec),
-        loopResolver_(gp.g, *extensionChooser_) {
+        loopResolver_(gp.g, extensionChooser_->wc()) {
     }
 
     virtual bool MakeSimpleGrowStep(BidirectionalPath& path) {
