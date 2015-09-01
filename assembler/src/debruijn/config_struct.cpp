@@ -205,6 +205,7 @@ void load(debruijn_config::simplification::bulge_remover& br,
   load(br.max_relative_coverage,            pt,     "max_relative_coverage");
   load(br.max_delta,                        pt,     "max_delta");
   load(br.max_relative_delta,               pt,     "max_relative_delta");
+  load(br.max_number_edges,                 pt,     "max_number_edges");
 }
 
 void load(debruijn_config::simplification::topology_tip_clipper& ttc,
@@ -215,13 +216,11 @@ void load(debruijn_config::simplification::topology_tip_clipper& ttc,
   load(ttc.uniqueness_length, pt, "uniqueness_length");
 }
 
-
 void load(debruijn_config::simplification::complex_tip_clipper& ctc,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
   load(ctc.enabled, pt, "enabled");
 }
-
 
 void load(debruijn_config::simplification::relative_coverage_edge_disconnector& relative_ed,
         boost::property_tree::ptree const& pt, bool complete) {
@@ -249,6 +248,15 @@ void load(debruijn_config::simplification::isolated_edges_remover& ier,
   load(ier.max_length, pt, "max_length");
   load(ier.max_coverage, pt, "max_coverage");
   load(ier.max_length_any_cov, pt, "max_length_any_cov");
+}
+
+void load(debruijn_config::simplification::init_cleaning& init_clean,
+          boost::property_tree::ptree const& pt, bool complete) {
+  using config_common::load;
+
+  load(init_clean.self_conj_condition, pt, "self_conj_condition", complete);
+  load(init_clean.tip_condition, pt, "tip_condition", complete);
+  load(init_clean.ec_condition, pt, "ec_condition", complete);
 }
 
 void load(debruijn_config::simplification::complex_bulge_remover& cbr,
@@ -493,6 +501,7 @@ void load(debruijn_config::simplification& simp,
   load(simp.ier, pt, "ier", complete); // isolated edges remover
   load(simp.cbr, pt, "cbr", complete); // complex bulge remover
   load(simp.her, pt, "her", complete); // hidden ec remover
+  load(simp.init_clean, pt, "init_clean", complete); // presimplification
   load(simp.fast_features, pt, "fast_features", complete); // master switch for speed-up tricks
   load(simp.fast_activation_cov, pt, "fast_activation_cov", complete);
   load(simp.presimp, pt, "presimp", complete); // presimplification
@@ -505,6 +514,8 @@ void load(debruijn_config::simplification& simp,
   //final bulge removers:
   simp.final_br = simp.br; // final bulge remover:
   load(simp.final_br, pt, "final_br", false);
+  simp.second_final_br = simp.br; // second final bulge remover:
+  load(simp.second_final_br, pt, "second_final_br", false);
 }
 
 void load(debruijn_config::info_printer& printer,

@@ -71,18 +71,23 @@ class MostCoveredSimpleAlternativePathChooser: public PathProcessor<Graph>::Call
 
 	Graph& g_;
 	EdgeId forbidden_edge_;
+	size_t max_number_of_edges_;
+
 	double max_coverage_;
 	vector<EdgeId> most_covered_path_;
 
 public:
 
-	MostCoveredSimpleAlternativePathChooser(Graph& g, EdgeId edge) :
-			g_(g), forbidden_edge_(edge), max_coverage_(-1.0) {
+	MostCoveredSimpleAlternativePathChooser(Graph& g, EdgeId edge, size_t max_number_of_edges = -1ul) :
+			g_(g), forbidden_edge_(edge), max_number_of_edges_(max_number_of_edges), max_coverage_(-1.0) {
 
 	}
 
 	virtual void HandleReversedPath(const vector<EdgeId>& reversed_path) {
-		vector<EdgeId> path = this->ReversePath(reversed_path);
+	    if (reversed_path.size() > max_number_of_edges_) {
+	        return;
+	    }
+	    vector<EdgeId> path = this->ReversePath(reversed_path);
 		double path_cov = AvgCoverage(g_, path);
 		for (size_t i = 0; i < path.size(); i++) {
 			if (path[i] == forbidden_edge_)
@@ -226,7 +231,7 @@ protected:
 
         size_t delta = CountMaxDifference(max_delta_, graph_.length(edge), max_relative_delta_);
 
-        MostCoveredSimpleAlternativePathChooser<Graph> path_chooser(graph_, edge);
+        MostCoveredSimpleAlternativePathChooser<Graph> path_chooser(graph_, edge, max_number_edges_);
 
         VertexId start = graph_.EdgeStart(edge);
         TRACE("Start " << graph_.str(start));
@@ -239,6 +244,10 @@ protected:
         path_finder.Process();
 
         const vector<EdgeId>& path = path_chooser.most_covered_path();
+        if(path.size() != 0) {
+            VERIFY(graph_.EdgeStart(path[0]) == start);
+            VERIFY(graph_.EdgeEnd(path.back()) == end);
+        }
 
         double path_coverage = path_chooser.max_coverage();
         TRACE("Best path with coverage " << path_coverage << " is " << PrintPath<Graph>(graph_, path));
@@ -261,6 +270,7 @@ public:
 	BulgeRemover(Graph& graph, size_t max_length, double max_coverage,
 			double max_relative_coverage, size_t max_delta,
 			double max_relative_delta,
+			size_t max_number_edges,
 			BulgeCallbackF opt_callback = 0,
 			std::function<void(EdgeId)> removal_handler = 0) :
 			base(graph, true),
@@ -270,13 +280,15 @@ public:
 			max_relative_coverage_(max_relative_coverage),
 			max_delta_(max_delta),
 			max_relative_delta_(max_relative_delta),
+			max_number_edges_(max_number_edges),
 			opt_callback_(opt_callback),
 			removal_handler_(removal_handler) {
                 DEBUG("Launching br max_length=" << max_length 
                 << " max_coverage=" << max_coverage 
                 << " max_relative_coverage=" << max_relative_coverage
                 << " max_delta=" << max_delta 
-                << " max_relative_delta=" << max_relative_delta);
+                << " max_relative_delta=" << max_relative_delta
+                << " max_number_edges=" << max_number_edges);
 	}
 
 //  Old version. If it was math::gr then it would be equivalent to new one.
@@ -301,6 +313,7 @@ private:
 	double max_relative_coverage_;
 	size_t max_delta_;
 	double max_relative_delta_;
+	size_t max_number_edges_;
 	BulgeCallbackF opt_callback_;
 	std::function<void(EdgeId)> removal_handler_;
 

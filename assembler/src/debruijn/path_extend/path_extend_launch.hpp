@@ -69,7 +69,8 @@ inline double GetPriorityCoeff(shared_ptr<PairedInfoLibrary> lib, const pe_confi
     return lib->IsMp() ? pset.mate_pair_options.priority_coeff : pset.extension_options.priority_coeff;
 }
 
-inline double SetSingleThresholdForLib(shared_ptr<PairedInfoLibrary> lib, const pe_config::ParamSetT &pset, double threshold) {
+inline double SetSingleThresholdForLib(shared_ptr<PairedInfoLibrary> lib, const pe_config::ParamSetT &pset, 
+                                        double threshold, double correction_coeff = 1.0) {
     double t = 0.0;
     if (lib->IsMp())
         t = pset.mate_pair_options.use_default_single_threshold || math::le(threshold, 0.0) ?
@@ -77,10 +78,10 @@ inline double SetSingleThresholdForLib(shared_ptr<PairedInfoLibrary> lib, const 
     else
         t = pset.extension_options.use_default_single_threshold || math::le(threshold, 0.0) ?
             pset.extension_options.single_threshold : threshold;
+    t = correction_coeff * t;
     lib->SetSingleThreshold(t);
     return t;
 }
-
 
 inline string MakeNewName(const std::string& contigs_name, const std::string& subname) {
     return contigs_name.substr(0, contigs_name.rfind(".fasta")) + "_" + subname + ".fasta";
@@ -309,6 +310,7 @@ inline shared_ptr<SimpleExtender> MakeLongReadsExtender(const conj_graph_pack& g
 inline shared_ptr<SimpleExtender> MakeLongEdgePEExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
                                                          size_t lib_index, const pe_config::ParamSetT& pset, bool investigate_loops) {
     shared_ptr<PairedInfoLibrary> lib = MakeNewLib(gp.g, gp.clustered_indices, lib_index);
+    //FIXME side effect in logging!
     INFO("Threshold for lib #" << lib_index << ": " << SetSingleThresholdForLib(lib, pset, cfg::get().ds.reads[lib_index].data().pi_threshold));
 
     shared_ptr<WeightCounter> wc = make_shared<PathCoverWeightCounter>(gp.g, lib, GetWeightThreshold(lib, pset));
@@ -320,7 +322,10 @@ inline shared_ptr<SimpleExtender> MakeLongEdgePEExtender(const conj_graph_pack& 
 inline shared_ptr<SimpleExtender> MakePEExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
                                        size_t lib_index, const pe_config::ParamSetT& pset, bool investigate_loops) {
     shared_ptr<PairedInfoLibrary> lib = MakeNewLib(gp.g, gp.clustered_indices, lib_index);
-    INFO("Threshold for lib #" << lib_index << ": " << SetSingleThresholdForLib(lib, pset, cfg::get().ds.reads[lib_index].data().pi_threshold));
+    //fixme temporary configuration for meta mode
+    INFO("Threshold for lib #" << lib_index << ": " << 
+            SetSingleThresholdForLib(lib, pset, cfg::get().ds.reads[lib_index].data().pi_threshold, 
+                                        cfg::get().ds.meta ? 0.25 : 1.0));
 
     shared_ptr<WeightCounter> wc = make_shared<PathCoverWeightCounter>(gp.g, lib, GetWeightThreshold(lib, pset));
     wc->setNormalizeWeight(pset.normalize_weight);

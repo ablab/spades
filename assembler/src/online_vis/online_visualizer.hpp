@@ -43,7 +43,7 @@ class OnlineVisualizer {
     InitAutocompletion(command_mapping_.GetCommandNamesList());
     const Command<Env>& load_command = command_mapping_.GetCommand("load");
     DEBUG("Loading current environment");
-    load_command.Execute(current_environment_, loaded_environments_, ss);
+    //load_command.Execute(current_environment_, loaded_environments_, ss);
     DEBUG("Environment loaded");
   }
 
