@@ -31,7 +31,7 @@ def run_test():
         print("SPAdes finished abnormally with exit code " + str(ecode))
         sys.exit(4)
     log = open(os.path.join(output_dir, "truspades.log")).readlines()
-    if log[-1] != "TruSPAdes test passed corectly":
+    if log[-1].strip() != "TruSPAdes test passed corectly":
         sys.exit(5)
 
 if __name__ == "__main__":
