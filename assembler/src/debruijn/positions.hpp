@@ -90,6 +90,8 @@ void FillPos(gp_t& gp, const Sequence& s, string name) {
     pos_filler.Process(s, name);
 }
 
+
+
 //inline
 //void CollectPositions(conj_graph_pack &gp) {
 //    gp.edge_pos.clear();

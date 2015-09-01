@@ -33,7 +33,7 @@ void ExtensionChooser2015::FindBestFittedEdges(BidirectionalPath& path, const se
         CountAvrgDists(path, e, histogram);
         double sum = 0.0;
         for (size_t j = 0; j < histogram.size(); ++j) {
-            DEBUG(histogram[j].first << " " << histogram[j].second);
+            TRACE(histogram[j].first << " " << histogram[j].second);
             sum += histogram[j].second;
         }
         DEBUG("edge " << g_.int_id(e) << " weight " << sum);

@@ -24,7 +24,7 @@
 #include "long_read_storage.hpp"
 #include "next_path_searcher.hpp"
 #include "extension_chooser2015.hpp"
-
+#include "../genome_consistance_checker.hpp"
 
 namespace path_extend {
 
@@ -409,9 +409,12 @@ inline vector<shared_ptr<PathExtender> > MakeAllScaffoldingExtenders2015(PathExt
                                                                          const pe_config::ParamSetT &pset,
                                                                          bool use_auto_threshold,
                                                                          const PathContainer &paths_for_mp = PathContainer()) {
-    ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, 10000, 1.5);
+    ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, 1000, 1.5);
     auto storage = std::make_shared<ScaffoldingUniqueEdgeStorage>();
+
     unique_edge_analyzer.FillUniqueEdgeStorage(*storage);
+    GenomeConsistenceChecker genome_checker (gp, *storage, 500, 0.2);
+    genome_checker.SpellGenome();
     vector<shared_ptr<PathExtender> > result;
     DEBUG(cfg::get().ds.reads.lib_count());
     for (io::LibraryType lt : io::LibraryPriotity) {

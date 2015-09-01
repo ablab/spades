@@ -13,92 +13,67 @@
  */
 
 #pragma once
-
+#include "omni/visualization/graph_labeler.hpp"
 #include "omni/edges_position_handler.hpp"
 #include "omni/mapping_path.hpp"
 #include "../include/omni/edges_position_handler.hpp"
 #include "../include/sequence/sequence.hpp"
 #include "graph_pack.hpp"
+#include "positions.hpp"
+#include "path_extend/bidirectional_path.hpp"
+#include "path_extend/scaff_supplementary.hpp"
 
 namespace debruijn_graph {
 
 
+using path_extend::BidirectionalPath;
+using path_extend::ScaffoldingUniqueEdgeStorage;
+
+struct PathScore{
+    size_t misassemblies;
+    size_t wrong_gap_size;
+    size_t mapped_length;
+};
 class GenomeConsistenceChecker {
+
 private:
-	using omnigraph::MappingRange;
+    const conj_graph_pack &gp_;
 	const Graph &graph_;
+    //EdgesPositionHandler<Graph> &position_handler_;
 	Sequence genome_;
-	omnigraph::EdgesPositionHandler<Graph> genome_mapping_;
-	size_t max_gap_;
+    ScaffoldingUniqueEdgeStorage storage_;
+	size_t absolute_max_gap_;
 	double relative_max_gap_;
+    set<EdgeId> excluded_unique_;
+//map from unique edges to their order in genome spelling;
+    mutable map<EdgeId, size_t> genome_spelled_;
+    bool consequent(const Range &mr1, const Range &mr2);
+	bool consequent(const MappingRange &mr1, const MappingRange &mr2) ;
 
-	bool consequent(const MappingRange &mr1, const MappingRange &mr2, size_t gap) const {
-		if (mr2.mapped_range.start_pos == 0 && mr1.mapped_range.end_pos == genome_.size())
-			return true;
-		if (mr1.initial_range.end_pos > mr2.initial_range.start_pos + gap)
-			return false;
-		if (mr1.initial_range.end_pos + gap > mr2.initial_range.start_pos)
-			return false;
-		if (mr1.mapped_range.end_pos > mr2.mapped_range.start_pos + gap)
-			return false;
-		if (mr1.mapped_range.end_pos + gap > mr2.mapped_range.start_pos)
-			return false;
-		return true;
-	}
+    PathScore CountMisassembliesWithStrand(BidirectionalPath &path, string strand) const;
+    void RefillPos();
+    void RefillPos(const string &strand);
+    void RefillPos(const string &strand, const EdgeId &e);
 
-	set<MappingRange> FillPositionGaps(const set<MappingRange> &info, size_t gap) const {
-		set<MappingRange> result;
-		auto cur = info.begin();
-		while(cur != info.end()) {
-			MappingRange new_range = *cur;
-			++cur;
-			while(cur != info.end() && consequent(new_range, *cur, gap)) {
-				new_range = new_range.Merge(*cur);
-				++cur;
-			}
-			result.insert(new_range);
-		}
-		return result;
-	}
-
-	void Merge(set<MappingRange> &ranges, set<MappingRange> &to_merge, int shift) {
-		for(set<MappingRange>::iterator it = to_merge.begin(); it != to_merge.end(); ++it) {
-			ranges.insert(genome_mapping_.EraseAndExtract(ranges, it->Shift(shift)));
-		}
-	}
-
-	bool IsConsistentWithGenomeStrand(const vector<EdgeId> &path, const string &strand) const {
-		size_t len = graph_.length(path[0]);
-		for (size_t i = 1; i < path.size(); i++) {
-			Merge(res, genome_mapping_.GetEdgePositions(path[i], strand));
-			len += graph_.length(path[i]);
-		}
-		FillPositionGaps(res, len);
-		if (res.size() > 0) {
-			for (size_t i = 0; i < res.size(); i++) {
-				size_t m_len = res[i].initial_range.size();
-				if (abs(int(res[i].initial_range.size()) - int(len)) < max(1.0 * max_gap_, 0.07 * len))
-					return true;
-			}
-		}
-		return false;
-	}
 
 public:
-	GenomeConsistenceChecker(const conj_graph_pack &gp, size_t max_gap, double relative_max_gap /*= 0.2*/) :
-			graph_(gp.g), genome_(gp.genome.GetSequence()), genome_mapping_(gp.g), max_gap_(max_gap), relative_max_gap_(relative_max_gap) {
-        FillPos(gp, gp.genome.GetSequence(), "0");
-        FillPos(gp, !gp.genome.GetSequence(), "1");
+	GenomeConsistenceChecker(const conj_graph_pack &gp, ScaffoldingUniqueEdgeStorage &storage, size_t max_gap, double relative_max_gap /*= 0.2*/) : gp_(gp),
+			graph_(gp.g), /*position_handler_(gp.edge_pos),*/ genome_(gp.genome.GetSequence()), storage_(storage),
+        absolute_max_gap_(max_gap), relative_max_gap_(relative_max_gap), excluded_unique_() {
+        if (!gp.edge_pos.IsAttached()) {
+            gp.edge_pos.Attach();
+        }
+        FillPos(gp_, gp_.genome.GetSequence(), "0");
+        FillPos(gp_, !gp_.genome.GetSequence(), "1");
+        RefillPos();
 	}
+//first - number of misassemblies without respect to gap size between unique edges
+//second - number of wrong gap size between two consecutive unique edges in path
+	PathScore CountMisassemblies(BidirectionalPath &path) const;
+//spells genome in language of long unique edges from storage;
+    void SpellGenome() const;
 
-	bool IsConsistentWithGenome(vector<EdgeId> path) const {
-		if (path.size() == 0)
-			return false;
-		for (size_t i = 0; i + 1 < path.size(); i++) {
-			if (graph_.EdgeStart(path[i + 1]) != graph_.EdgeEnd(path[i]))
-				return false;
-		}
-		return IsConsistentWithGenomeStrand(path, "0") || IsConsistentWithGenomeStrand(path, "1");
-	}
 };
+
+
 }

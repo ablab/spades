@@ -14,6 +14,7 @@ add_library(debruijn STATIC
             path_extend/bidirectional_path.cpp
             path_extend/scaff_supplementary.cpp
             path_extend/extension_chooser2015.cpp
+            genome_consistance_checker.cpp
             stage.cpp
             construction.cpp
             gap_closer.cpp
