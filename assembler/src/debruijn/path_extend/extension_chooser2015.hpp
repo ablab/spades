@@ -4,6 +4,7 @@
 #pragma once
 
 #include "extension_chooser.hpp"
+#include "genome_consistance_checker.hpp"
 #include "logger/logger.hpp"
 #include <map>
 #include <set>
