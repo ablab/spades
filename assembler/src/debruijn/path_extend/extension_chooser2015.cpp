@@ -6,7 +6,7 @@
 namespace path_extend {
 using namespace std;
 
-int ExtensionChooser2015::CountMedian(vector<pair<int, double> >& histogram) {
+int ExtensionChooser2015::CountMedian(vector<pair<int, double> >& histogram) const{
     double dist = 0.0;
     double sum = 0.0;
     double sum2 = 0.0;
@@ -26,7 +26,7 @@ int ExtensionChooser2015::CountMedian(vector<pair<int, double> >& histogram) {
     return (int) round(histogram[i].first);
 }
 
-void ExtensionChooser2015::FindBestFittedEdges(BidirectionalPath& path, const set<EdgeId>& edges, EdgeContainer& result) {
+void ExtensionChooser2015::FindBestFittedEdges(const BidirectionalPath& path, const set<EdgeId>& edges, EdgeContainer& result) const {
     vector<pair<double, pair<EdgeId, int >>> to_sort;
     for (EdgeId e : edges) {
         std::vector <pair<int, double>> histogram;
@@ -62,7 +62,7 @@ void ExtensionChooser2015::FindBestFittedEdges(BidirectionalPath& path, const se
     }
 
 }
-set<EdgeId> ExtensionChooser2015::FindCandidates(BidirectionalPath& path) const {
+set<EdgeId> ExtensionChooser2015::FindCandidates(const BidirectionalPath& path) const {
     set<EdgeId> jumping_edges;
     PairedInfoLibraries libs = wc_->getLibs();
     for (auto lib : libs) {

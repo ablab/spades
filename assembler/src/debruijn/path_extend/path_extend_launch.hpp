@@ -310,9 +310,9 @@ inline shared_ptr<SimpleExtender> MakeLongEdgePEExtender(const conj_graph_pack& 
     shared_ptr<PairedInfoLibrary> lib = MakeNewLib(gp.g, gp.clustered_indices, lib_index);
     SetSingleThresholdForLib(lib, pset, cfg::get().ds.reads[lib_index].data().pi_threshold);
 
-    shared_ptr<WeightCounter> wc = make_shared<PathCoverWeightCounter>(gp.g, lib, GetWeightThreshold(lib, pset));
-    wc->setNormalizeWeight(pset.normalize_weight);
-    shared_ptr<ExtensionChooser> extension = make_shared<LongEdgeExtensionChooser>(gp.g, wc, GetPriorityCoeff(lib, pset));
+    shared_ptr<WeightCounter> wc = make_shared<PathCoverWeightCounter>(gp.g, lib);
+    wc->set_normalize_weight(pset.normalize_weight);
+    shared_ptr<ExtensionChooser> extension = make_shared<LongEdgeExtensionChooser>(gp.g, wc, GetWeightThreshold(lib, pset), GetPriorityCoeff(lib, pset));
     return make_shared<SimpleExtender>(gp, cov_map, extension, lib->GetISMax(), pset.loop_removal.max_loops, investigate_loops, false);
 }
 
@@ -321,9 +321,9 @@ inline shared_ptr<SimpleExtender> MakePEExtender(const conj_graph_pack& gp, cons
     shared_ptr<PairedInfoLibrary> lib = MakeNewLib(gp.g, gp.clustered_indices, lib_index);
     SetSingleThresholdForLib(lib, pset, cfg::get().ds.reads[lib_index].data().pi_threshold);
 
-    shared_ptr<WeightCounter> wc = make_shared<PathCoverWeightCounter>(gp.g, lib, GetWeightThreshold(lib, pset));
-    wc->setNormalizeWeight(pset.normalize_weight);
-    shared_ptr<SimpleExtensionChooser> extension = make_shared<SimpleExtensionChooser>(gp.g, wc, GetPriorityCoeff(lib, pset));
+    shared_ptr<WeightCounter> wc = make_shared<PathCoverWeightCounter>(gp.g, lib);
+    wc->set_normalize_weight(pset.normalize_weight);
+    shared_ptr<SimpleExtensionChooser> extension = make_shared<SimpleExtensionChooser>(gp.g, wc, GetWeightThreshold(lib, pset), GetPriorityCoeff(lib, pset));
     return make_shared<SimpleExtender>(gp, cov_map, extension, lib->GetISMax(), pset.loop_removal.max_loops, investigate_loops, false);
 }
 
@@ -332,12 +332,13 @@ inline shared_ptr<PathExtender> MakeScaffoldingExtender(const conj_graph_pack& g
     shared_ptr<PairedInfoLibrary> lib = MakeNewLib(gp.g, gp.scaffolding_indices, lib_index);
 
     shared_ptr<WeightCounter> counter = make_shared<ReadCountWeightCounter>(gp.g, lib);
-    double prior_coef = GetPriorityCoeff(lib, pset);
+    //FIXME this variable was not used!
+    //double prior_coef = GetPriorityCoeff(lib, pset);
     //FIXME review parameters
     //todo put parameters in config
     //FIXME remove max_must_overlap from config
     double var_coeff = 3.0;
-    auto scaff_chooser = std::make_shared<ScaffoldingExtensionChooser>(gp.g, counter, prior_coef, var_coeff);
+    auto scaff_chooser = std::make_shared<ScaffoldingExtensionChooser>(gp.g, counter, var_coeff);
     auto gap_joiner = std::make_shared<HammingGapJoiner>(gp.g, pset.scaffolder_options.min_gap_score,
                                                  int(math::round((double) gp.g.k() - var_coeff * (double) lib->GetIsVar())),
                                                  (int) (pset.scaffolder_options.max_can_overlap * (double) gp.g.k()),
