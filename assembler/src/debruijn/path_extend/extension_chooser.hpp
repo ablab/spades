@@ -338,6 +338,14 @@ protected:
             }
             EdgeId path_edge = path[index];
 
+            for (size_t i = 0; i < edges.size(); ++i) {
+                if (math::eq(wc_->CountIdealInfo(path_edge,
+                           edges.at(i).e_,
+                           path.LengthAt(index)), 0.)) {
+                    to_exclude.insert((size_t) index);
+                }
+            }
+
             bool common = true;
             for (size_t i = 0; i < edges.size(); ++i) {
                 if (!wc_->PairInfoExist(path_edge, edges.at(i).e_,
