@@ -110,6 +110,7 @@ public:
 protected:
     const Graph& g_;
     shared_ptr<WeightCounter> wc_;
+    //FIXME memory leak?!
     std::vector<ExtensionChooserListener *> listeners_;
 
 private:
@@ -155,24 +156,19 @@ public:
         return math::ge(weight, weight_threshold_);
     }
 
-    const PairedInfoLibraries& getLibs() {
-        VERIFY(wc_);
-        return wc_->getLibs();
-    }
-
     void Subscribe(ExtensionChooserListener * listener) {
         listeners_.push_back(listener);
     }
 
     void NotifyAll(double weight) const {
-        for (auto iter = listeners_.begin(); iter != listeners_.end(); ++iter) {
-            (*iter)->ExtensionChosen(weight);
+        for (auto listener_ptr : listeners_) {
+            listener_ptr->ExtensionChosen(weight);
         }
     }
 
     void NotifyAll(const AlternativeContainer& alts) const {
-        for (auto iter = listeners_.begin(); iter != listeners_.end(); ++iter) {
-            (*iter)->ExtensionChosen(alts);
+        for (auto listener_ptr : listeners_) {
+            listener_ptr->ExtensionChosen(alts);
         }
     }
 
@@ -193,6 +189,10 @@ protected:
             analyzer_.ExcludeTrivial(path, to_exclude);
         }
     }
+
+	double CountIdealInfo(EdgeId e1, EdgeId e2, size_t dist) const {
+        return wc_->lib().IdealPairedInfo(e1, e2, (int) dist);
+	}
 
 private:
     DECL_LOGGER("ExtensionChooser");
@@ -255,7 +255,7 @@ public:
 };
 
 class ExcludingExtensionChooser: public ExtensionChooser {
-
+    //FIXME what is the logic behind it?
     double prior_coeff_;
 
     AlternativeContainer FindWeights(const BidirectionalPath& path, const EdgeContainer& edges, const std::set<size_t>& to_exclude) const {
@@ -326,10 +326,11 @@ private:
 
 class SimpleExtensionChooser: public ExcludingExtensionChooser {
 protected:
-	virtual void ExcludeEdges(const BidirectionalPath& path, const EdgeContainer& edges, std::set<size_t>& to_exclude) const {
+	void ExcludeEdges(const BidirectionalPath& path, const EdgeContainer& edges, std::set<size_t>& to_exclude) const override {
         if (edges.size() < 2) {
             return;
         }
+        //excluding based on absense of ideal info
         int index = (int) path.Size() - 1;
         while (index >= 0) {
             if (to_exclude.count(index)) {
@@ -339,26 +340,28 @@ protected:
             EdgeId path_edge = path[index];
 
             for (size_t i = 0; i < edges.size(); ++i) {
-                if (math::eq(wc_->CountIdealInfo(path_edge,
+                if (math::eq(CountIdealInfo(path_edge,
                            edges.at(i).e_,
                            path.LengthAt(index)), 0.)) {
                     to_exclude.insert((size_t) index);
                 }
             }
 
-            bool common = true;
-            for (size_t i = 0; i < edges.size(); ++i) {
-                if (!wc_->PairInfoExist(path_edge, edges.at(i).e_,
-                                        (int) path.LengthAt(index))) {
-                    common = false;
-                }
-            }
-            if (common) {
-                DEBUG("common info from " << index);
-                to_exclude.insert((size_t) index);
-            } 
-
             index--;
+        }
+        
+        //excluding based on presense of ambiguous paired info
+        map<size_t, unsigned> edge_2_extension_cnt;
+        for (size_t i = 0; i < edges.size(); ++i) {
+            for (size_t e : wc_->PairInfoExist(path, edges.at(i).e_)) {
+                edge_2_extension_cnt[e] += 1;
+            }
+        }
+
+        for (auto e_w_ec : edge_2_extension_cnt) {
+            if (e_w_ec.second == edges.size()) {
+                to_exclude.insert(e_w_ec.first);
+            }
         }
     }
 
@@ -398,6 +401,7 @@ public:
 };
 
 class ScaffoldingExtensionChooser : public ExtensionChooser {
+    typedef ExtensionChooser base;
     double raw_weight_threshold_;
     double cl_weight_threshold_;
     const double is_scatter_coeff_ = 3.0;
@@ -423,11 +427,16 @@ class ScaffoldingExtensionChooser : public ExtensionChooser {
         return (int) round(dist);
     }
 
+	void GetDistances(EdgeId e1, EdgeId e2, std::vector<int>& dist,
+			std::vector<double>& w) const {
+		wc_->lib().CountDistances(e1, e2, dist, w);
+	}
+
     void CountAvrgDists(const BidirectionalPath& path, EdgeId e, std::vector<pair<int, double>> & histogram) const {
         for (size_t j = 0; j < path.Size(); ++j) {
             std::vector<int> distances;
             std::vector<double> weights;
-            wc_->GetDistances(path.At(j), e, distances, weights);
+            GetDistances(path.At(j), e, distances, weights);
             if (distances.size() > 0) {
                 AddInfoFromEdge(distances, weights, histogram, path.LengthAt(j));
             }
@@ -437,7 +446,7 @@ class ScaffoldingExtensionChooser : public ExtensionChooser {
 	double CountIdealInfo(const BidirectionalPath& p, EdgeId e, size_t gap) const {
 		double w = 0.0;
 		for (int i = (int) p.Size() - 1; i >= 0; --i) {
-			w += wc_->CountIdealInfo(p[i], e, gap + p.LengthAt(i));
+			w += base::CountIdealInfo(p[i], e, gap + p.LengthAt(i));
 		}
 		return w;
 	}
@@ -467,21 +476,19 @@ class ScaffoldingExtensionChooser : public ExtensionChooser {
 
     set<EdgeId> FindCandidates(const BidirectionalPath& path) const {
         set<EdgeId> jumping_edges;
-        PairedInfoLibraries libs = wc_->getLibs();
-        for (auto lib : libs) {
-            //todo lib (and FindJumpEdges) knows its var so it can be counted there
-            int is_scatter = int(math::round(double(lib->GetIsVar()) * is_scatter_coeff_));
-            for (int i = (int) path.Size() - 1; i >= 0 && path.LengthAt(i) - g_.length(path.At(i)) <= lib->GetISMax(); --i) {
-                set<EdgeId> jump_edges_i;
-                lib->FindJumpEdges(path.At(i), jump_edges_i,
-                                   std::max(0, (int)path.LengthAt(i) - is_scatter),
-                                   //FIXME do we need is_scatter here?
-                                   int((path.LengthAt(i) + lib->GetISMax() + is_scatter)),
-                                   0);
-                for (EdgeId e : jump_edges_i) {
-                    if (IsTip(e)) {
-                        jumping_edges.insert(e);
-                    }
+        const auto& lib = wc_->lib();
+        //todo lib (and FindJumpEdges) knows its var so it can be counted there
+        int is_scatter = int(math::round(double(lib.GetIsVar()) * is_scatter_coeff_));
+        for (int i = (int) path.Size() - 1; i >= 0 && path.LengthAt(i) - g_.length(path.At(i)) <= lib.GetISMax(); --i) {
+            set<EdgeId> jump_edges_i;
+            lib.FindJumpEdges(path.At(i), jump_edges_i,
+                               std::max(0, (int)path.LengthAt(i) - is_scatter),
+                               //FIXME do we need is_scatter here?
+                               int((path.LengthAt(i) + lib.GetISMax() + is_scatter)),
+                               0);
+            for (EdgeId e : jump_edges_i) {
+                if (IsTip(e)) {
+                    jumping_edges.insert(e);
                 }
             }
         }

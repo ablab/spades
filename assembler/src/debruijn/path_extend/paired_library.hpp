@@ -53,26 +53,13 @@ struct PairedInfoLibrary {
     void SetCoverage(double cov) { coverage_coeff_ = cov; }
     void SetSingleThreshold(double threshold) { single_threshold_ = threshold; }
 
-    virtual size_t FindJumpEdges(EdgeId e, set<EdgeId>& result, int min_dist = 0, int max_dist = 100000000, size_t min_len = 0) = 0;
+    virtual size_t FindJumpEdges(EdgeId e, set<EdgeId>& result, int min_dist = 0, int max_dist = 100000000, size_t min_len = 0) const = 0;
     virtual void CountDistances(EdgeId e1, EdgeId e2, vector<int>& dist, vector<double>& w) const = 0;
     virtual double CountPairedInfo(EdgeId e1, EdgeId e2, int distance, bool from_interval = false) const = 0;
     virtual double CountPairedInfo(EdgeId e1, EdgeId e2, size_t dist_min, size_t dist_max) const = 0;
 
-    double IdealPairedInfo(EdgeId e1, EdgeId e2, int distance, bool additive = false) {
+    double IdealPairedInfo(EdgeId e1, EdgeId e2, int distance, bool additive = false) const {
         return ideal_pi_counter_.IdealPairedInfo(e1, e2, distance, additive);
-    }
-
-    double NormalizeWeight(const DePairInfo& pair_info) {
-        double w = IdealPairedInfo(pair_info.first, pair_info.second,
-                                   rounded_d(pair_info));
-
-        double result_weight = pair_info.weight();
-        if (math::gr(w, 0.))
-            result_weight /= w;
-        else
-            result_weight = 0.0;
-
-        return result_weight;
     }
 
     size_t GetISMin() const { return is_min_; }
@@ -108,7 +95,7 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
         : PairedInfoLibrary(k, g, readS, is, is_min, is_max, is_div, is_mp, is_distribution),
           index_(index) {}
 
-    virtual size_t FindJumpEdges(EdgeId e, std::set<EdgeId>& result, int min_dist = 0, int max_dist = 100000000, size_t min_len = 0) {
+    virtual size_t FindJumpEdges(EdgeId e, std::set<EdgeId>& result, int min_dist = 0, int max_dist = 100000000, size_t min_len = 0) const {
         VERIFY(index_.Size() != 0);
         result.clear();
 

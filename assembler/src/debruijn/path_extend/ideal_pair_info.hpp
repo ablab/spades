@@ -41,7 +41,7 @@ public:
         PreCalculateNotTotalReadsWeight();
     }
 
-    double IdealPairedInfo(EdgeId e1, EdgeId e2, int dist, bool additive = false) {
+    double IdealPairedInfo(EdgeId e1, EdgeId e2, int dist, bool additive = false) const {
         std::pair<size_t, size_t> lengths = make_pair(g_.length(e1), g_.length(e2));
         if (pi_.find(lengths) == pi_.end()) {
             pi_.insert(make_pair(lengths, std::map<int, double>()));
@@ -52,6 +52,7 @@ public:
         }
         return weights[dist];
     }
+
     double IdealPairedInfo(size_t len1, size_t len2, int dist, bool additive = false) const {
         double result = 0.0;
         for (auto it = insert_size_distrib_.lower_bound(max(d_min_, 0)); it != insert_size_distrib_.upper_bound(d_max_); ++it) {
@@ -115,7 +116,7 @@ private:
     size_t read_size_;
     std::vector<double> weights_;
     std::map<int, double> insert_size_distrib_;
-    std::map<std::pair<size_t, size_t>, std::map<int, double> > pi_;
+    mutable std::map<std::pair<size_t, size_t>, std::map<int, double> > pi_;
     std::vector<double> not_total_weights_right_;
     std::vector<double> not_total_weights_left_;
 protected:
