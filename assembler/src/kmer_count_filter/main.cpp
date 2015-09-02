@@ -80,7 +80,7 @@ void FilterKmersAll(const std::vector<string>& files, int all_min, size_t k, con
     size_t n = files.size();
     vector<shared_ptr<std::ifstream>> infiles;
     for (size_t i = 0; i < n; ++i) {
-        string name = files[i] + ".sorted" + KMER_PARSED_EXTENSION;
+        string name = files[i] + KMER_SORTED_EXTENSION;
         infiles.push_back(std::make_shared<std::ifstream>(name));
     }
     vector<std::pair<RtSeq, uint32>> top_kmer(n, {RtSeq(k), 0});
@@ -99,6 +99,11 @@ void FilterKmersAll(const std::vector<string>& files, int all_min, size_t k, con
         for (size_t i = 0; i < n; ++i) {
             if (alive[i]) {
                 RtSeq& cur_kmer = top_kmer[i].first;
+                bool t1, t2;
+                if (min_kmer) {
+                    t1 = kmer_less(cur_kmer, *min_kmer);
+                    t2 = cur_kmer == *min_kmer;
+                }
                 if (!min_kmer || kmer_less(cur_kmer, *min_kmer)) {
                     min_kmer = boost::optional<RtSeq>(cur_kmer);
                     cnt_min = 0;
