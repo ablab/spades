@@ -105,7 +105,7 @@ public:
                                     int gap = 0) const = 0;
 
 	virtual double CountWeight(const BidirectionalPath& path, EdgeId e,
-			const std::set<size_t>& excluded_edges, int gapLength = 0) const = 0;
+			const std::set<size_t>& excluded_edges = std::set<size_t>(), int gapLength = 0) const = 0;
 
 	bool normalize_weight() const {
 		return normalize_weight_;
@@ -149,7 +149,7 @@ public:
 	}
 
 	double CountWeight(const BidirectionalPath& path, EdgeId e, 
-                        const std::set<size_t>& excluded_edges, int gap = 0) const override {
+                        const std::set<size_t>& excluded_edges, int gap) const override {
 		double weight = 0.0;
 
         for (const auto& e_w_pi : CountLib(path, e, gap)) {
@@ -219,7 +219,7 @@ public:
 	}
 
 	double CountWeight(const BidirectionalPath& path, EdgeId e,
-			const std::set<size_t>& excluded_edges, int gap = 0) const override {
+			const std::set<size_t>& excluded_edges, int gap) const override {
         double lib_weight = 0.;
         const auto ideal_coverage = FindCoveredEdges(path, e);
 

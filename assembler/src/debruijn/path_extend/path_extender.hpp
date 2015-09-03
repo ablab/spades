@@ -27,7 +27,7 @@ public:
 
     virtual ~ShortLoopResolver() { }
 
-    virtual void ResolveShortLoop(BidirectionalPath& path) = 0;
+    virtual void ResolveShortLoop(BidirectionalPath& path) const = 0;
 
 protected:
     DECL_LOGGER("PathExtender")
@@ -48,7 +48,7 @@ protected:
         }
     }
 
-    void MakeCycleStep(BidirectionalPath& path, EdgeId e) {
+    void MakeCycleStep(BidirectionalPath& path, EdgeId e) const {
         if (path.Size() == 0) {
             return;
         }
@@ -64,7 +64,8 @@ public:
             : ShortLoopResolver(gp.g), gp_(gp) {
 
     }
-    virtual void ResolveShortLoop(BidirectionalPath& path) {
+
+    void ResolveShortLoop(BidirectionalPath& path) const override {
         DEBUG("resolve short loop by coverage");
         path.Print();
 
@@ -119,7 +120,7 @@ class SimpleLoopResolver : public ShortLoopResolver {
 public:
     SimpleLoopResolver(Graph& g) : ShortLoopResolver(g) { }
 
-    virtual void ResolveShortLoop(BidirectionalPath& path) {
+    void ResolveShortLoop(BidirectionalPath& path) const override {
         pair<EdgeId, EdgeId> edges;
         if (path.Size() >= 1 && GetLoopAndExit(g_, path.Back(), edges)) {
             DEBUG("Resolving short loop...");
@@ -136,7 +137,7 @@ protected:
 };
 
 class LoopResolver : public ShortLoopResolver {
-    static const size_t iter_ = 10;
+    static const size_t ITER_COUNT = 10;
     const WeightCounter& wc_;
 
 public:
@@ -144,23 +145,21 @@ public:
             : ShortLoopResolver(g),
               wc_(wc) { }
 
-    void MakeBestChoice(BidirectionalPath& path, pair<EdgeId, EdgeId>& edges) {
+    void MakeBestChoice(BidirectionalPath& path, pair<EdgeId, EdgeId>& edges) const {
         UndoCycles(path, edges.first);
         BidirectionalPath experiment(path);
-        //FIXME remove after refactoring
-        std::set<size_t> empty_set;
-        double maxWeight = wc_.CountWeight(experiment, edges.second, empty_set);
-        double diff = maxWeight - wc_.CountWeight(experiment, edges.first, empty_set);
+        double max_weight = wc_.CountWeight(experiment, edges.second);
+        double diff = max_weight - wc_.CountWeight(experiment, edges.first);
         size_t maxIter = 0;
-        for (size_t i = 1; i <= iter_; ++i) {
-            double weight = wc_.CountWeight(experiment, edges.first, empty_set);
+        for (size_t i = 1; i <= ITER_COUNT; ++i) {
+            double weight = wc_.CountWeight(experiment, edges.first);
             if (weight > 0) {
                 MakeCycleStep(experiment, edges.first);
-                weight = wc_.CountWeight(experiment, edges.second, empty_set);
-                double weight2 = wc_.CountWeight(experiment, edges.first, empty_set);
-                if (weight > maxWeight || (weight == maxWeight && weight - weight2 > diff)
-                        || (weight == maxWeight && weight - weight2 == diff && i == 1)) {
-                    maxWeight = weight;
+                weight = wc_.CountWeight(experiment, edges.second);
+                double weight2 = wc_.CountWeight(experiment, edges.first);
+                if (weight > max_weight || (weight == max_weight && weight - weight2 > diff)
+                        || (weight == max_weight && weight - weight2 == diff && i == 1)) {
+                    max_weight = weight;
                     maxIter = i;
                     diff = weight - weight2;
                 }
@@ -172,7 +171,7 @@ public:
         path.PushBack(edges.second);
     }
 
-    virtual void ResolveShortLoop(BidirectionalPath& path) {
+    void ResolveShortLoop(BidirectionalPath& path) const override {
         pair<EdgeId, EdgeId> edges;
         if (path.Size() >=1 && GetLoopAndExit(g_, path.Back(), edges)) {
             DEBUG("Resolving short loop...");
@@ -813,7 +812,7 @@ public:
 
     virtual bool ResolveShortLoopByPI(BidirectionalPath& path) = 0;
 
-    virtual bool CanInvistigateShortLoop() const {
+    virtual bool CanInvestigateShortLoop() const {
         return false;
     }
 
@@ -861,7 +860,7 @@ private:
     }
 
     bool InvestigateShortLoop() {
-        return investigateShortLoops_ && (use_short_loop_cov_resolver_ || CanInvistigateShortLoop());
+        return investigateShortLoops_ && (use_short_loop_cov_resolver_ || CanInvestigateShortLoop());
     }
 };
 
@@ -870,7 +869,6 @@ class SimpleExtender: public LoopDetectingPathExtender {
 protected:
 
     shared_ptr<ExtensionChooser> extensionChooser_;
-    LoopResolver loopResolver_;
 
     void FindFollowingEdges(BidirectionalPath& path, ExtensionChooser::EdgeContainer * result) {
         DEBUG("Looking for the following edges")
@@ -889,10 +887,10 @@ protected:
 
 public:
 
-    SimpleExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, shared_ptr<ExtensionChooser> ec, size_t is, size_t max_loops, bool investigate_short_loops, bool use_short_loop_cov_resolver):
+    SimpleExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, shared_ptr<ExtensionChooser> ec, 
+                    size_t is, size_t max_loops, bool investigate_short_loops, bool use_short_loop_cov_resolver):
         LoopDetectingPathExtender(gp, cov_map, max_loops, investigate_short_loops, use_short_loop_cov_resolver, is),
-        extensionChooser_(ec),
-        loopResolver_(gp.g, extensionChooser_->wc()) {
+        extensionChooser_(ec) {
     }
 
     virtual bool MakeSimpleGrowStep(BidirectionalPath& path) {
@@ -908,7 +906,7 @@ public:
         if (candidates.size() == 1) {
             LoopDetector loop_detector(&path, cov_map_);
             if (!investigateShortLoops_ && (loop_detector.EdgeInShortLoop(path.Back()) or loop_detector.EdgeInShortLoop(candidates.back().e_))
-                    && extensionChooser_->WeighConterBased()) {
+                    && extensionChooser_->WeightCounterBased()) {
                 return false;
             }
         }
@@ -921,7 +919,7 @@ public:
             DEBUG("loop detecor");
             if (!investigateShortLoops_ &&
                     (loop_detector.EdgeInShortLoop(path.Back())  or loop_detector.EdgeInShortLoop(candidates.back().e_))
-                    && extensionChooser_->WeighConterBased()) {
+                    && extensionChooser_->WeightCounterBased()) {
                 return false;
             }
             DEBUG("push");
@@ -933,8 +931,8 @@ public:
     }
 
 
-    virtual bool CanInvistigateShortLoop() const {
-        return extensionChooser_->WeighConterBased();
+    bool CanInvestigateShortLoop() const override {
+        return extensionChooser_->WeightCounterBased();
     }
 
     virtual bool ResolveShortLoopByCov(BidirectionalPath& path) {
@@ -954,23 +952,24 @@ public:
     }
 
     virtual bool ResolveShortLoopByPI(BidirectionalPath& path) {
-            if (extensionChooser_->WeighConterBased()) {
-                LoopDetector loop_detector(&path, cov_map_);
-                size_t init_len = path.Length();
-                bool result = false;
-                while (path.Size() >= 1 && loop_detector.EdgeInShortLoop(path.Back())) {
-                    loopResolver_.ResolveShortLoop(path);
-                    if (init_len == path.Length()) {
-                        return result;
-                    } else {
-                        result = true;
-                    }
-                    init_len = path.Length();
+        if (extensionChooser_->WeightCounterBased()) {
+            LoopResolver loop_resolver(g_, extensionChooser_->wc());
+            LoopDetector loop_detector(&path, cov_map_);
+            size_t init_len = path.Length();
+            bool result = false;
+            while (path.Size() >= 1 && loop_detector.EdgeInShortLoop(path.Back())) {
+                loop_resolver.ResolveShortLoop(path);
+                if (init_len == path.Length()) {
+                    return result;
+                } else {
+                    result = true;
                 }
-                return true;
+                init_len = path.Length();
             }
-            return false;
+            return true;
         }
+        return false;
+    }
 
 };
 
