@@ -310,9 +310,18 @@ inline shared_ptr<SimpleExtender> MakeLongEdgePEExtender(const conj_graph_pack& 
     shared_ptr<PairedInfoLibrary> lib = MakeNewLib(gp.g, gp.clustered_indices, lib_index);
     SetSingleThresholdForLib(lib, pset, cfg::get().ds.reads[lib_index].data().pi_threshold);
 
-    shared_ptr<WeightCounter> wc = make_shared<PathCoverWeightCounter>(gp.g, lib);
-    wc->set_normalize_weight(pset.normalize_weight);
+    shared_ptr<WeightCounter> wc = make_shared<PathCoverWeightCounter>(gp.g, lib, pset.normalize_weight);
     shared_ptr<ExtensionChooser> extension = make_shared<LongEdgeExtensionChooser>(gp.g, wc, GetWeightThreshold(lib, pset), GetPriorityCoeff(lib, pset));
+    return make_shared<SimpleExtender>(gp, cov_map, extension, lib->GetISMax(), pset.loop_removal.max_loops, investigate_loops, false);
+}
+
+inline shared_ptr<SimpleExtender> MakeMetaExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
+                                       size_t lib_index, const pe_config::ParamSetT& pset, bool investigate_loops) {
+    shared_ptr<PairedInfoLibrary> lib = MakeNewLib(gp.g, gp.clustered_indices, lib_index);
+
+    shared_ptr<WeightCounter> wc = make_shared<MetagenomicWeightCounter>(gp.g, lib, /*read_length*/cfg::get().ds.RL(), 
+                            /*normalized_threshold*/ 0.3, /*raw_threshold*/ 3, /*estimation_edge_length*/ 500);
+    shared_ptr<SimpleExtensionChooser> extension = make_shared<SimpleExtensionChooser>(gp.g, wc, GetWeightThreshold(lib, pset), GetPriorityCoeff(lib, pset));
     return make_shared<SimpleExtender>(gp, cov_map, extension, lib->GetISMax(), pset.loop_removal.max_loops, investigate_loops, false);
 }
 
@@ -321,8 +330,7 @@ inline shared_ptr<SimpleExtender> MakePEExtender(const conj_graph_pack& gp, cons
     shared_ptr<PairedInfoLibrary> lib = MakeNewLib(gp.g, gp.clustered_indices, lib_index);
     SetSingleThresholdForLib(lib, pset, cfg::get().ds.reads[lib_index].data().pi_threshold);
 
-    shared_ptr<WeightCounter> wc = make_shared<PathCoverWeightCounter>(gp.g, lib);
-    wc->set_normalize_weight(pset.normalize_weight);
+    shared_ptr<WeightCounter> wc = make_shared<PathCoverWeightCounter>(gp.g, lib, pset.normalize_weight);
     shared_ptr<SimpleExtensionChooser> extension = make_shared<SimpleExtensionChooser>(gp.g, wc, GetWeightThreshold(lib, pset), GetPriorityCoeff(lib, pset));
     return make_shared<SimpleExtender>(gp, cov_map, extension, lib->GetISMax(), pset.loop_removal.max_loops, investigate_loops, false);
 }
@@ -457,9 +465,13 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
                 ++single_read_libs;
             }
             if (IsForPEExtender(lib) && stage == PathExtendStage::PEStage) {
-                if(cfg::get().ds.moleculo)
-                    pes.push_back(MakeLongEdgePEExtender(gp, cov_map, i, pset, false));
-                pes.push_back(MakePEExtender(gp, cov_map, i, pset, false));
+//                if (cfg::get().ds.meta) {
+//                    pes.push_back(MakeMetaExtender(gp, cov_map, i, pset, false));
+//                } else {
+                    if (cfg::get().ds.moleculo)
+                        pes.push_back(MakeLongEdgePEExtender(gp, cov_map, i, pset, false));
+                    pes.push_back(MakePEExtender(gp, cov_map, i, pset, false));
+//                }
             }
             if (IsForShortLoopExtender(lib)) {
                 pe_loops.push_back(MakePEExtender(gp, cov_map, i, pset, true));
