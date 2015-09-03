@@ -190,8 +190,15 @@ protected:
         }
     }
 
-	double CountIdealInfo(EdgeId e1, EdgeId e2, size_t dist) const {
-        return wc_->lib().IdealPairedInfo(e1, e2, (int) dist);
+    bool HasIdealInfo(EdgeId e1, EdgeId e2, size_t dist) const {
+        return math::gr(wc_->lib().IdealPairedInfo(e1, e2, (int) dist), 0.);
+	}
+
+	bool HasIdealInfo(const BidirectionalPath& p, EdgeId e, size_t gap) const {
+        for (int i = (int) p.Size() - 1; i >= 0; --i)
+			if (HasIdealInfo(p[i], e, gap + p.LengthAt(i)))
+                return true;
+        return false;
 	}
 
 private:
@@ -340,9 +347,9 @@ protected:
             EdgeId path_edge = path[index];
 
             for (size_t i = 0; i < edges.size(); ++i) {
-                if (math::eq(CountIdealInfo(path_edge,
+                if (!HasIdealInfo(path_edge,
                            edges.at(i).e_,
-                           path.LengthAt(index)), 0.)) {
+                           path.LengthAt(index))) {
                     to_exclude.insert((size_t) index);
                 }
             }
@@ -443,14 +450,6 @@ class ScaffoldingExtensionChooser : public ExtensionChooser {
         }
     }
 
-	double CountIdealInfo(const BidirectionalPath& p, EdgeId e, size_t gap) const {
-		double w = 0.0;
-		for (int i = (int) p.Size() - 1; i >= 0; --i) {
-			w += base::CountIdealInfo(p[i], e, gap + p.LengthAt(i));
-		}
-		return w;
-	}
-
     void FindBestFittedEdgesForClustered(const BidirectionalPath& path, const set<EdgeId>& edges, EdgeContainer& result) const {
         for (EdgeId e : edges) {
             std::vector<pair<int, double>> histogram;
@@ -463,7 +462,7 @@ class ScaffoldingExtensionChooser : public ExtensionChooser {
                 continue;
             }
             int gap = CountMean(histogram);
-            if (CountIdealInfo(path, e, gap) > 0.0) {
+            if (HasIdealInfo(path, e, gap)) {
                 DEBUG("scaffolding " << g_.int_id(e) << " gap " << gap);
                 result.push_back(EdgeWithDistance(e, gap));
             }
