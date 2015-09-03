@@ -137,13 +137,20 @@ def vertex(vertex_id):
     if res_path is None:
         #Render a new file
         shellder.send("draw_vertex " + vertex_id)
-        file_path = re.finditer(FILENAME_REGEXP, shellder.get_output()[0]).next().group()
-        _, full_name = path.split(file_path)
-        name_only, _ = path.splitext(full_name)
-        res_path = cache_path + name_only + ".svg"
-        result = open(res_path, "w")
-        subprocess.call(["dot", "-Tsvg", env_path + file_path], stdout=result)
-        result.close()
+        out = shellder.get_output()
+        try:
+            file_path = re.finditer(FILENAME_REGEXP, out[0]).next().group()
+            _, full_name = path.split(file_path)
+            name_only, _ = path.splitext(full_name)
+            res_path = cache_path + name_only + ".svg"
+            result = open(res_path, "w")
+            subprocess.call(["dot", "-Tsvg", env_path + file_path], stdout=result)
+            result.close()
+        except:
+            res_path = cache_path + vertex_id + "_err.txt"
+            result = open(res_path, "w")
+            result.write("\n".join(out))
+            result.close()
     return flask.redirect(res_path)
 
 def augment(path):
