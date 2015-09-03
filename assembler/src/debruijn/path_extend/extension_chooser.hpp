@@ -174,7 +174,7 @@ public:
         }
     }
 
-    bool WeighConterBased() const {
+    bool WeightCounterBased() const {
         return wc_ != nullptr;
     }
 
