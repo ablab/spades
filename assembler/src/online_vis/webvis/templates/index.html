@@ -8,6 +8,7 @@
         div#console {font-family:monospace; width:100%; height:640px; overflow:scroll}
         div#graph {max-width:800px; height:640px; margin:auto}
         input#command {width:100%}
+        iframe {width:100%; height:640px; overflow:scroll}
     </style>
     <!--Basic interaction plugins-->
     <script type="text/javascript" src="static/jquery.js"></script>
@@ -53,7 +54,7 @@ function sendCommand(command, callback) {
 
 function drawVertex(id) {
     $(function() {
-        $("#graph").html($("<iframe width=\"100%\" height=\"100%\" style=\"overflow:auto\">").attr("src", "/vertex/" + id));
+        $("#graph").html($("<iframe>").attr("src", "/vertex/" + id));
     });
 }
 
@@ -81,10 +82,8 @@ $(function() {
             } else {
                 sendCommand(command, function getLog(response) {
                     $(function() {
-                        if (response.log) {
-                            $("#console").append(response.log + "<br/>");
-                            $("#console").scrollTop(1E10);
-                        }
+                        $("#console").append(response.log);
+                        $("#console").scrollTop(1E10);
                         if (response.complete)
                             $("input#command").prop("disabled", false);
                         else

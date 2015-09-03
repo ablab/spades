@@ -2,6 +2,7 @@
 import flask
 from flask import Flask, session, request
 from flask.ext.session import Session
+from jinja2 import Markup
 #Aux imports
 import re
 from urllib import quote, unquote
@@ -18,7 +19,7 @@ SESSION_TYPE = "filesystem"
 app.config.from_object(__name__)
 Session(app)
 
-FILENAME_REGEXP = r"(?:\.{0,2}\/)?(?:[\w\-]+\/)+(?:[\w\-]+\.\w+)?"
+FILENAME_REGEXP = r"(?:\.{0,2}\/)?(?:[\w\-]+\/)+(?:[\w\-\.]+)?"
 
 def make_url(string):
     files = re.findall(FILENAME_REGEXP, string)
@@ -35,10 +36,7 @@ def make_url(string):
     return res
 
 def format_output(lines):
-    res = "<br/>".join(map(make_url, lines))
-    #print res
-    #res = "<br/>".join(lines)
-    return res
+    return "\n".join(make_url(str(flask.escape(line))) + "<br/>" for line in lines)
 
 env_path = "../../../"
 cache_path = "static/cache/"
@@ -69,19 +67,24 @@ def login():
 
 @app.route("/logout", methods=['GET'])
 def logout():
+    message = "No opened session."
     if "username" in session:
         name = session.pop("username")
         shellder = shellders.pop(name, None)
-        shellder.close()
-        return "<html><body><p>You have been logged out.</p><p><a href=\"/\">Return to main</a></p></body></html>"
-    return "No opened session"
+        if shellder is not None:
+            shellder.close()
+        message = "You have been logged out."
+    return flask.render_template("logout.html", message=message)
 
 @app.route("/command", methods=['GET'])
 def command():
+    if session["username"] not in shellders:
+        return "online_vis is disconnected"
     sh = shellders[session["username"]]
     com = request.args.get("command", "")
     if len(com):
         print "Sending `%s`..." % com
+        session["log"].append(">" + com)
         sh.send(com)
     result = sh.get_output(5)
     complete = False
@@ -93,8 +96,11 @@ def command():
 
 @app.route("/get")
 def get():
-    file_path = augment(unquote(request.args.get("file", "")))
-    return flask.send_file(file_path, as_attachment=True, attachment_filename=path.basename(file_path))
+    try:
+        file_path = augment(unquote(request.args.get("file", "")))
+        return flask.send_file(file_path, as_attachment=True, attachment_filename=path.basename(file_path))
+    except IOError:
+        return flask.abort(404)
 
 @app.route("/render")
 def render():
@@ -124,6 +130,8 @@ def render():
 
 @app.route("/vertex/<vertex_id>")
 def vertex(vertex_id):
+    if session["username"] not in shellders:
+        return flask.abort(500)
     shellder = shellders[session["username"]]
     res_path = next((cache_path + f for f in listdir(cache_path) if f.endswith(vertex_id + "_.svg")), None)
     if res_path is None:
@@ -149,9 +157,12 @@ def augment(path):
 def folder(path):
     print "Getting contents of", path
     global env_path
-    files = [path + f for f in os.listdir(augment(path))]
-    print files
-    return [f for f in files if isfile(augment(f))]
+    try:
+        files = [path + f for f in os.listdir(augment(path))]
+        print files
+        return [f for f in files if isfile(augment(f))]
+    except IOError as err:
+        return [err.strerror]
 
 @app.route("/ls")
 def ls():
