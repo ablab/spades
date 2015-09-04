@@ -413,8 +413,8 @@ inline vector<shared_ptr<PathExtender> > MakeAllScaffoldingExtenders2015(PathExt
     auto storage = std::make_shared<ScaffoldingUniqueEdgeStorage>();
 
     unique_edge_analyzer.FillUniqueEdgeStorage(*storage);
-    GenomeConsistenceChecker genome_checker (gp, *storage, 500, 0.2);
-    genome_checker.SpellGenome();
+//    GenomeConsistenceChecker genome_checker (gp, *storage, 500, 0.2);
+//    genome_checker.SpellGenome();
     vector<shared_ptr<PathExtender> > result;
     DEBUG(cfg::get().ds.reads.lib_count());
     for (io::LibraryType lt : io::LibraryPriotity) {
@@ -685,13 +685,12 @@ inline void ScaffoldAll2015(conj_graph_pack& gp,
     DebugOutputPaths(writer, gp, output_dir, paths, (mp_exist ? "final_pe_paths" : "final_paths"));
     writer.WritePathsToFASTG(paths,
                              output_dir + ("scaffolds2015") + ".fastg",
-                             output_dir + ("scaffolds2015") + ".fasta" );
+                             output_dir + ("scaffolds2015") + ".fasta" , gp);
 
     cover_map.Clear();
 
 
 
-    writer.WritePathsToFASTG(paths, output_dir + contigs_name + ".fastg", output_dir + contigs_name + ".fasta");
 
     paths.DeleteAllPaths();
     seeds.DeleteAllPaths();

@@ -18,7 +18,7 @@
 
 #include "bidirectional_path.hpp"
 #include "io/osequencestream.hpp"
-
+#include "genome_consistance_checker.hpp"
 namespace path_extend {
 
 using namespace debruijn_graph;
@@ -332,6 +332,57 @@ public:
         }
         DEBUG("Contigs written");
     }
+//TODO: exterminate code dup
+    void WritePathsToFASTG(const PathContainer& paths, const string& filename, const string& fastafilename, const debruijn_graph::conj_graph_pack &gp) const {
+        BidirectionalPathMap< string > ids;
+        BidirectionalPathMap< set<string> > next_ids;
+        INFO("Constructing FASTG file from paths ");
+        ConstructFASTG(paths, ids, next_ids);
+
+        INFO("Writing contigs in FASTG to " << filename);
+        INFO("Writing contigs in FASTA to " << fastafilename);
+        io::osequencestream_for_fastg fastg_oss(filename);
+        io::osequencestream_with_id oss(fastafilename);
+        ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, 10000, 15);
+        auto storage = std::make_shared<ScaffoldingUniqueEdgeStorage>();
+
+        unique_edge_analyzer.FillUniqueEdgeStorage(*storage);
+        debruijn_graph::GenomeConsistenceChecker genome_checker (gp, *storage, 500, 0.2);
+        genome_checker.SpellGenome();
+        size_t total_mis = 0;
+        for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
+            BidirectionalPath* path = iter.get();
+            if (path->Length() <= 0){
+                continue;
+            }
+            DEBUG(ids[path]);
+
+            oss.setID((int) path->GetId());
+            oss.setCoverage(path->Coverage());
+            oss << ToString(*path);
+            fastg_oss.set_header(ids[path]);
+            fastg_oss << next_ids[path] << ToString(*path);
+            DEBUG("NODE " << ids[path]);
+            path->Print();
+            auto map_res = genome_checker.CountMisassemblies(*path);
+            if (map_res.misassemblies > 0) {
+                INFO ("there are misassemblies in path: ");
+                path->PrintInfo();
+                total_mis += map_res.misassemblies;
+            }
+            //Printing reverse complement to FASTG
+            path = iter.getConjugate();
+            if (path->Length() <= 0){
+                continue;
+            }
+            DEBUG(ids[path]);
+            fastg_oss.set_header(ids[path]);
+            fastg_oss << next_ids[path] << ToString(*path);
+            DEBUG("NODE " << ids[path]);
+            path->Print();
+        }
+        INFO("there are " << total_mis<< " missasemblies in " << fastafilename);
+    }
 
     void WritePathsToFASTG(const PathContainer& paths, const string& filename, const string& fastafilename) const {
         BidirectionalPathMap< string > ids;
@@ -370,7 +421,9 @@ public:
             path->Print();
         }
     }
+
 };
+
 
 
 class PathInfoWriter {

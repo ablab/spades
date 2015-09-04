@@ -66,6 +66,7 @@ public:
         if (!gp.edge_pos.IsAttached()) {
             gp.edge_pos.Attach();
         }
+        gp.edge_pos.clear();
         FillPos(gp_, gp_.genome.GetSequence(), "0");
         FillPos(gp_, !gp_.genome.GetSequence(), "1");
         RefillPos();
