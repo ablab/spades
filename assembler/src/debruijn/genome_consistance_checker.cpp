@@ -24,8 +24,8 @@ bool GenomeConsistenceChecker::consequent(const Range &mr1, const Range &mr2) {
 }
 bool GenomeConsistenceChecker::consequent(const MappingRange &mr1, const MappingRange &mr2) {
     //do not want to think about handling gaps near 0 position.
-    if (mr2.initial_range.start_pos <= absolute_max_gap_ && mr1.initial_range.end_pos + absolute_max_gap_ >= genome_.size() )
-        return true;
+//    if (mr2.initial_range.start_pos <= absolute_max_gap_ && mr1.initial_range.end_pos + absolute_max_gap_ >= genome_.size() )
+//        return true;
     if (!consequent(mr1.initial_range, mr2.initial_range) || !consequent(mr1.mapped_range, mr2.mapped_range))
         return false;
     size_t initial_gap = gap(mr1.initial_range, mr2.initial_range);
@@ -85,14 +85,14 @@ bool GenomeConsistenceChecker::IsConsistentWithGenome(vector<EdgeId> path) const
 }
 
 */
-PathScore GenomeConsistenceChecker::CountMisassemblies(BidirectionalPath &path) const {
+PathScore GenomeConsistenceChecker::CountMisassemblies(const BidirectionalPath &path) const {
     PathScore straight = CountMisassembliesWithStrand(path, "0");
     PathScore reverse = CountMisassembliesWithStrand(path, "1");
     size_t total_length = path.LengthAt(0);
 //TODO: constant;
     if (total_length > std::max(straight.mapped_length, reverse.mapped_length) * 2) {
         INFO("mapped less than half of the path, skipping");
-        return PathScore();
+        return PathScore(0,0,0);
     } else {
         if (straight.mapped_length > reverse.mapped_length) {
             return straight;
@@ -129,8 +129,38 @@ void GenomeConsistenceChecker::SpellGenome() const {
     }
 }
 
-PathScore GenomeConsistenceChecker::CountMisassembliesWithStrand(BidirectionalPath &path, string strand) const {
-    return debruijn_graph::PathScore();
+PathScore GenomeConsistenceChecker::CountMisassembliesWithStrand(const BidirectionalPath &path, const string strand) const {
+    if (strand == "1") {
+        return (CountMisassembliesWithStrand(*path.GetConjPath(), "0"));
+    }
+    PathScore res(0, 0, 0);
+    EdgeId prev;
+    int prev_in_genome = -1;
+    int prev_in_path = -1;
+    MappingRange prev_range;
+    for (size_t i = 0; i < path.Size(); i++) {
+        if (genome_spelled_.find(path.At(i)) != genome_spelled_.end()) {
+            int cur_in_genome = genome_spelled_[path.At(i)];
+            MappingRange cur_range = *gp_.edge_pos.GetEdgePositions(path.At(i), "fxd0").begin();
+            if (prev_in_genome != -1) {
+                if (cur_in_genome == prev_in_genome + 1) {
+                    int dist_in_genome = cur_range.initial_range.start_pos - prev_range.initial_range.end_pos;
+                    int dist_in_path = path.LengthAt(prev_in_path + 1) - path.LengthAt(i) + cur_range.mapped_range.start_pos + gp_.g.length(prev) - prev_range.mapped_range.end_pos;
+                    if (abs(dist_in_genome - dist_in_path) >absolute_max_gap_ && dist_in_genome * (1 + relative_max_gap_) < dist_in_path && dist_in_path * (1 + relative_max_gap_) < dist_in_genome) {
+                        res.wrong_gap_size ++;
+                    }
+                } else {
+                    res.misassemblies++;
+                }
+            }
+            res.mapped_length += cur_range.mapped_range.size();
+            prev = path.At(i);
+            prev_in_genome = cur_in_genome;
+            prev_range = cur_range;
+            prev_in_path = i;
+        }
+    }
+    return res;
 }
 void GenomeConsistenceChecker::RefillPos() {
     RefillPos("0");
@@ -237,9 +267,13 @@ void GenomeConsistenceChecker::RefillPos(const string &strand, const EdgeId &e) 
 
     }
     if (total_mapped - used_mapped >= 0.1 * gp_.g.length(e)) {
+        if ("")
         INFO ("Edge " << gp_.g.int_id(e) << " length "<< gp_.g.length(e)  << "is potentially misassembled! mappings: ");
         for (auto mp:old_mappings) {
             INFO("mp_range "<< mp.mapped_range.start_pos << " - " << mp.mapped_range.end_pos << " init_range " << mp.initial_range.start_pos << " - " << mp.initial_range.end_pos );
+            if (mp.initial_range.start_pos < absolute_max_gap_) {
+                INFO ("Fake(linear order) misassembly" );
+            }
         }
 
     }

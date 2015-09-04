@@ -409,7 +409,7 @@ inline vector<shared_ptr<PathExtender> > MakeAllScaffoldingExtenders2015(PathExt
                                                                          const pe_config::ParamSetT &pset,
                                                                          bool use_auto_threshold,
                                                                          const PathContainer &paths_for_mp = PathContainer()) {
-    ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, 1000, 1.5);
+    ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, 10000, 15);
     auto storage = std::make_shared<ScaffoldingUniqueEdgeStorage>();
 
     unique_edge_analyzer.FillUniqueEdgeStorage(*storage);

@@ -33,6 +33,7 @@ struct PathScore{
     size_t misassemblies;
     size_t wrong_gap_size;
     size_t mapped_length;
+    PathScore(size_t m, size_t w, size_t ml): misassemblies(m), wrong_gap_size(w), mapped_length(ml) {}
 };
 class GenomeConsistenceChecker {
 
@@ -50,10 +51,11 @@ private:
     bool consequent(const Range &mr1, const Range &mr2);
 	bool consequent(const MappingRange &mr1, const MappingRange &mr2) ;
 
-    PathScore CountMisassembliesWithStrand(BidirectionalPath &path, string strand) const;
+    PathScore CountMisassembliesWithStrand(const BidirectionalPath &path, const string strand) const;
     void RefillPos();
     void RefillPos(const string &strand);
     void RefillPos(const string &strand, const EdgeId &e);
+DECL_LOGGER("GenomeConsistenceChecker");
 
 
 public:
@@ -69,7 +71,7 @@ public:
 	}
 //first - number of misassemblies without respect to gap size between unique edges
 //second - number of wrong gap size between two consecutive unique edges in path
-	PathScore CountMisassemblies(BidirectionalPath &path) const;
+	PathScore CountMisassemblies(const BidirectionalPath &path) const;
 //spells genome in language of long unique edges from storage;
     void SpellGenome() const;
 
