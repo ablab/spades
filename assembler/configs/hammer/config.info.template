@@ -36,6 +36,7 @@ bayes_debug_output			0
 bayes_hammer_mode			0
 bayes_write_solid_kmers			0
 bayes_write_bad_kmers			0
+bayes_initial_refine                    0
 
 ; iterative expansion step
 expand_do				1

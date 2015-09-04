@@ -53,6 +53,7 @@ void load(hammer_config& cfg, boost::property_tree::ptree const& pt) {
   load(cfg.bayes_hammer_mode, pt, "bayes_hammer_mode");
   load(cfg.bayes_write_bad_kmers, pt, "bayes_write_bad_kmers");
   load(cfg.bayes_write_solid_kmers, pt, "bayes_write_solid_kmers");
+  load(cfg.bayes_initial_refine, pt, "bayes_initial_refine");
 
   load(cfg.expand_do, pt, "expand_do");
   load(cfg.expand_max_iterations, pt, "expand_max_iterations");

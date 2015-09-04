@@ -61,6 +61,7 @@ struct hammer_config {
   bool bayes_hammer_mode;
   bool bayes_write_solid_kmers;
   bool bayes_write_bad_kmers;
+  bool bayes_initial_refine;
 
   bool expand_do;
   unsigned expand_max_iterations;
