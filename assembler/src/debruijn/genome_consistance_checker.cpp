@@ -147,10 +147,14 @@ PathScore GenomeConsistenceChecker::CountMisassembliesWithStrand(const Bidirecti
                     int dist_in_genome = cur_range.initial_range.start_pos - prev_range.initial_range.end_pos;
                     int dist_in_path = path.LengthAt(prev_in_path + 1) - path.LengthAt(i) + cur_range.mapped_range.start_pos + gp_.g.length(prev) - prev_range.mapped_range.end_pos;
                     if (abs(dist_in_genome - dist_in_path) >absolute_max_gap_ && dist_in_genome * (1 + relative_max_gap_) < dist_in_path && dist_in_path * (1 + relative_max_gap_) < dist_in_genome) {
+
                         res.wrong_gap_size ++;
                     }
                 } else {
-                    res.misassemblies++;
+                    if (path.At(i) != circular_edge_ && path.At(prev_in_path) != circular_edge_)
+                        res.misassemblies++;
+                    else
+                        INFO("Skipping fake(circular) misassembly");
                 }
             }
             res.mapped_length += cur_range.mapped_range.size();
@@ -272,7 +276,10 @@ void GenomeConsistenceChecker::RefillPos(const string &strand, const EdgeId &e) 
         for (auto mp:old_mappings) {
             INFO("mp_range "<< mp.mapped_range.start_pos << " - " << mp.mapped_range.end_pos << " init_range " << mp.initial_range.start_pos << " - " << mp.initial_range.end_pos );
             if (mp.initial_range.start_pos < absolute_max_gap_) {
-                INFO ("Fake(linear order) misassembly" );
+                INFO ("Fake(linear order) misassembly on edge "<< e.int_id());
+                if (strand == "0") {
+                    circular_edge_ = e;
+                }
             }
         }
 
