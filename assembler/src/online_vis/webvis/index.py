@@ -36,7 +36,7 @@ def make_url(string):
     return res
 
 def format_output(lines):
-    return "\n".join(make_url(str(flask.escape(line))) + "<br/>" for line in lines)
+    return "".join(make_url(str(flask.escape(line))) + "<br/>" for line in lines)
 
 env_path = "../../../"
 cache_path = "static/cache/"
@@ -45,10 +45,17 @@ shellders = dict()
 @app.route("/", methods=['GET'])
 def index():
     if "username" in session:
-        return flask.render_template("index.html", console=format_output(session["log"]))
+        return flask.render_template("index.html", username=session["username"])
     else:
         logged = shellders.keys()
         return flask.render_template("login.html", names=logged)
+
+@app.route("/log", methods=['GET'])
+def log():
+    if "username" in session:
+        return format_output(session["log"])
+    else:
+        return ""
 
 @app.route("/login", methods=['GET'])
 def login():
