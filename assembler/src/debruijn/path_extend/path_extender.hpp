@@ -377,7 +377,55 @@ private:
     DECL_LOGGER("HammingGapJoiner");
 };
 
-//Detects a cycle as a minsuffix > IS present earlier in the path. Overlap is allowed.
+
+
+class NewGapJoiner {
+
+public:
+    const int INVALID_GAP = -1000000;
+    NewGapJoiner(const Graph& g)
+            : g_(g) { }
+
+    virtual Gap FixGap(EdgeId sink, EdgeId source, int initial_gap) const = 0;
+
+    virtual ~NewGapJoiner() { }
+protected:
+    const Graph& g_;
+};
+
+
+//if I was in LA
+class LAGapJoiner: public NewGapJoiner {
+    public:
+        LAGapJoiner(const Graph& g)
+        : NewGapJoiner(g), min_la_length_(g.k()*2), max_length_la_and_trash_(g.k()*4), min_edge_length_(g.k()*2)
+        { }
+
+        Gap FixGap(EdgeId sink, EdgeId source, int initial_gap) const {
+            if(this->g_.length(sink) < min_edge_length_ || this->g_.length(sink) < min_edge_length_) {
+                DEBUG("Edges are too short");
+                return Gap(INVALID_GAP);
+            }
+
+            Sequence sink_seq = this->g_.EdgeNucls(sink).Subseq(max(0, (int)this->g_.length(sink) - (int)max_length_la_and_trash_));
+            Sequence source_seq = this->g_.EdgeNucls(source).Subseq(max(0, (int)this->g_.length(source) - (int)max_length_la_and_trash_));
+
+            //TODO: work with alignment
+            //
+            //
+
+
+            return Gap(INVALID_GAP);
+        }
+    private:
+        DECL_LOGGER("LAGapJoiner");
+        const size_t min_la_length_;
+        constexpr static double identity_ratio_ = 0.9;
+        const size_t max_length_la_and_trash_;
+        const size_t min_edge_length_;
+};
+
+
 class InsertSizeLoopDetector {
 protected:
     const Graph& g_;

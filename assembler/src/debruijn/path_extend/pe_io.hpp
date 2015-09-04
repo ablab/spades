@@ -58,7 +58,13 @@ protected:
 				    WARN("Such scaffolding logic leads to local misassemblies");
 					continue;
 				}
-                ss << constructor_.construct(path[i]).first.substr((size_t) overlapLen);
+				auto temp_str = g_.EdgeNucls(path[i]).Subseq(overlapLen).str();
+				if(i != path.Size() - 1) {
+	                for(size_t j = 0 ; j < path.TrashPreviousAt(i + 1); ++j) {
+	                    temp_str.pop_back();
+	                }
+				}
+				ss << temp_str;
 			}
 		}
 		return ss.str();
