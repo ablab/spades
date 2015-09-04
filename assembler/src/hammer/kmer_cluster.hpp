@@ -50,7 +50,7 @@ private:
     * @param centers fill array indices with ints from 0 to l that denote which kmers belong where
     * @return the resulting likelihood of this clustering
     */
-  double lMeansClustering(unsigned l, const std::vector<size_t> & kmerinds, const std::vector<hammer::ExpandedKMer> &kmers,
+  double lMeansClustering(unsigned l, const std::vector<hammer::ExpandedKMer> &kmers,
                           std::vector<size_t> & indices, std::vector<Center> & centers);
 
   size_t SubClusterSingle(const std::vector<size_t> & block, std::vector< std::vector<size_t> > & vec);
