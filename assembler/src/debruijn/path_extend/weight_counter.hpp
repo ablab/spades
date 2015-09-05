@@ -268,7 +268,7 @@ public:
 };
 
 class CoverageAwareIdealInfoProvider : public BasicIdealInfoProvider {
-    static constexpr double MAGIC_COEFF = 1.6;
+    static constexpr double MAGIC_COEFF = 2.;
 	const Graph& g_;
     size_t read_length_; 
     size_t estimation_edge_length_;
@@ -311,7 +311,6 @@ public:
 
 //FIXME optimize number of calls of EstimatePathCoverage(path)
 class MetagenomicWeightCounter: public WeightCounter {
-    static const size_t LENGTH_BOUND = 500;
     shared_ptr<CoverageAwareIdealInfoProvider> cov_info_provider_;
     shared_ptr<WeightCounter> normalizing_wc_;
     shared_ptr<WeightCounter> raw_wc_;
@@ -320,7 +319,7 @@ public:
 
 	MetagenomicWeightCounter(const Graph& g, const shared_ptr<PairedInfoLibrary>& lib,
                              size_t read_length, double normalized_threshold, double raw_threshold, 
-                             size_t estimation_edge_length = LENGTH_BOUND) :
+                             size_t estimation_edge_length) :
 			WeightCounter(g, lib) {
         cov_info_provider_ = make_shared<CoverageAwareIdealInfoProvider>(g, lib, read_length, estimation_edge_length);
         normalizing_wc_ = make_shared<PathCoverWeightCounter>(g, lib, true, normalized_threshold, cov_info_provider_);

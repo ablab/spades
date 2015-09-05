@@ -323,7 +323,7 @@ inline shared_ptr<SimpleExtender> MakeMetaExtender(const conj_graph_pack& gp, co
     shared_ptr<PairedInfoLibrary> lib = MakeNewLib(gp.g, gp.clustered_indices, lib_index);
 
     shared_ptr<WeightCounter> wc = make_shared<MetagenomicWeightCounter>(gp.g, lib, /*read_length*/cfg::get().ds.RL(), 
-                            /*normalized_threshold*/ 0.3, /*raw_threshold*/ 3, /*estimation_edge_length*/ 500);
+                            /*normalized_threshold*/ 0.3, /*raw_threshold*/ 3, /*estimation_edge_length*/ 300);
     shared_ptr<SimpleExtensionChooser> extension = make_shared<SimpleExtensionChooser>(gp.g, wc, GetWeightThreshold(lib, pset), GetPriorityCoeff(lib, pset));
     return make_shared<SimpleExtender>(gp, cov_map, extension, lib->GetISMax(), pset.loop_removal.max_loops, investigate_loops, false);
 }
@@ -405,16 +405,20 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
                 ++single_read_libs;
             }
             if (IsForPEExtender(lib) && stage == PathExtendStage::PEStage) {
-//                if (cfg::get().ds.meta) {
-//                    pes.push_back(MakeMetaExtender(gp, cov_map, i, pset, false));
-//                } else {
+                if (cfg::get().ds.meta) {
+                    pes.push_back(MakeMetaExtender(gp, cov_map, i, pset, false));
+                } else {
                     if (cfg::get().ds.moleculo)
                         pes.push_back(MakeLongEdgePEExtender(gp, cov_map, i, pset, false));
                     pes.push_back(MakePEExtender(gp, cov_map, i, pset, false));
-//                }
+                }
             }
             if (IsForShortLoopExtender(lib)) {
-                pe_loops.push_back(MakePEExtender(gp, cov_map, i, pset, true));
+                if (cfg::get().ds.meta) {
+                    pes.push_back(MakeMetaExtender(gp, cov_map, i, pset, true));
+                } else {
+                    pe_loops.push_back(MakePEExtender(gp, cov_map, i, pset, true));
+                }
                 ++pe_libs;
             }
             if (IsForScaffoldingExtender(lib) && cfg::get().use_scaffolder && pset.scaffolder_options.on) {
