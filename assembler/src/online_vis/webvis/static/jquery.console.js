@@ -666,36 +666,51 @@
     return false;
   };
 
+  function longestCommonPrefix(strings) {
+    var arr = strings.concat().sort();
+    var i = 0;
+    for (var i = 0; i < arr[0].length; ++i) {
+      if (arr[0][i] != arr[arr.length - 1][i])
+        break;
+    }
+    return arr[0].substring(0, i);
+  }
+
   function doComplete() {
     if(typeof config.completeHandle == 'function') {
       var completions = config.completeHandle(promptText);
       var len = completions.length;
       if (len === 1) {
         extern.promptText(promptText + completions[0]);
-      } else if (len > 1 && config.cols) {
-        var prompt = promptText;
-        // Compute the number of rows that will fit in the width
-        var max = 0;
-        for (var i = 0;i < len;i++) {
-          max = Math.max(max, completions[i].length);
-        }
-        max += 2;
-        var n = Math.floor(config.cols / max);
-        var buffer = "";
-        var col = 0;
-        for (i = 0;i < len;i++) {
-          var completion = completions[i];
-          buffer += completions[i];
-          for (var j = completion.length;j < max;j++) {
-            buffer += " ";
+      } else if (len > 1) {
+        var prefix = longestCommonPrefix(completions);
+        if (prefix.length > 0) {
+          extern.promptText(promptText + prefix);
+        } else if (config.cols) {
+          var prompt = promptText;
+          // Compute the number of rows that will fit in the width
+          var max = 0;
+          for (var i = 0;i < len;i++) {
+            max = Math.max(max, completions[i].length);
           }
-          if (++col >= n) {
-            buffer += "\n";
-            col = 0;
+          max += 2;
+          var n = Math.floor(config.cols / max);
+          var buffer = "";
+          var col = 0;
+          for (i = 0;i < len;i++) {
+            var completion = completions[i];
+            buffer += completions[i];
+            for (var j = completion.length;j < max;j++) {
+              buffer += " ";
+            }
+            if (++col >= n) {
+              buffer += "\n";
+              col = 0;
+            }
           }
+          commandResult(buffer,"jquery-console-message-value");
+          extern.promptText(prompt);
         }
-        commandResult(buffer,"jquery-console-message-value");
-        extern.promptText(prompt);
       }
     }
   };

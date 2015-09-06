@@ -90,15 +90,32 @@ $(function() {
       });
       return true;
     },
+    cols: 80,
     animateScroll: true,
     promptHistory: true,
     completeHandle: function(prefix) {
       var ret = [];
-      standardCommands.forEach(function(command) {
-        if (command.lastIndexOf(prefix, 0) === 0) {
-          ret.push(command.substring(prefix.length));
-        }
-      });
+      var args = prefix.split(" ");
+      if (args.length == 1) {
+        //Completing the command name
+        standardCommands.forEach(function(command) {
+          if (command.lastIndexOf(prefix, 0) === 0) {
+            ret.push(command.substring(prefix.length));
+          }
+        });
+      } else {
+        var path = args[args.length - 1];
+        //Completing the arg-path
+        $.ajax({
+          url: "/ls?path=" + path + "*",
+          async: false,
+          success: function (response) {
+            ret = response.split(" ").map(function (name) {
+              return name.substr(path.length);
+            });
+          }
+        });
+      }
       return ret;
     }
   });

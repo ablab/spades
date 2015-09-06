@@ -30,7 +30,7 @@ def make_url(string):
             method = "render"
         elif f.endswith("/"):
             method = "ls"
-        url = "<a href=\"%s?file=%s\">%s</a>" % (method, quote(f), f)
+        url = "<a href=\"%s?path=%s\">%s</a>" % (method, quote(f), f)
         res = res.replace(f, url)
     #print res
     return res
@@ -104,7 +104,7 @@ def command():
 @app.route("/get")
 def get():
     try:
-        file_path = augment(unquote(request.args.get("file", "")))
+        file_path = augment(unquote(request.args.get("path", "")))
         return flask.send_file(file_path, as_attachment=True, attachment_filename=path.basename(file_path))
     except IOError:
         return flask.abort(404)
@@ -112,7 +112,7 @@ def get():
 @app.route("/render")
 def render():
     global cache_path
-    file_path = unquote(request.args.get("file", ""))
+    file_path = unquote(request.args.get("path", ""))
     type = request.args.get("method", "svg")
     _, full_name = path.split(file_path)
     name_only, _ = path.splitext(full_name)
@@ -169,21 +169,25 @@ def augment(path):
     else:
         return env_path + path
 
-#@app.route("/folder/<path:path>")
-def folder(path):
-    print "Getting contents of", path
-    global env_path
-    try:
-        files = [path + f for f in os.listdir(augment(path))]
-        print files
-        return [f for f in files if isfile(augment(f))]
-    except IOError as err:
-        return [err.strerror]
-
 @app.route("/ls")
 def ls():
-    dir_path = unquote(request.args.get("file", ""))
-    return format_output(folder(dir_path))
+    path = unquote(request.args.get("path", None))
+    print "Getting contents of", path
+    if path[-1] == "*":
+        try:
+            files = subprocess.check_output("ls -pd " + path, shell=True).split("\n")[0:-1]
+            print files
+            #TODO: unify
+            return " ".join(files)
+        except:
+            return ""
+    try:
+        content = [augment(f) for f in os.listdir(augment(path))]
+        files = [f for f in content if isfile(augment(f))]
+        print files
+        return format_output(files)
+    except IOError as err:
+        return err.strerror
 
 if __name__ == "__main__":
     app.debug = True
