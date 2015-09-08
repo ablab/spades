@@ -12,6 +12,7 @@ from os.path import isfile, join
 #App imports
 from shellder import *
 from dotjson import dot_to_json
+from ConfigParser import ConfigParser
 
 # General app settings
 app = Flask(__name__)
@@ -192,6 +193,10 @@ def ls():
         return err.strerror
 
 if __name__ == "__main__":
-    app.debug = True
+    config = ConfigParser()
+    config.readfp(open("webvis.cfg"))
+    env_path = config.get("server", "env")
+    port = config.getint("server", "port")
+    app.debug = config.getboolean("server", "debug")
     app.secret_key = "somekey"
-    app.run()
+    app.run(port=port)
