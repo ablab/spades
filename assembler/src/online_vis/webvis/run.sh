@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ $1 == clean ];
+if [ -n $1 ];
 then
   pkill online_vis
   rm flask_session/*

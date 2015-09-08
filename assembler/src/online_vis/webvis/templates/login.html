@@ -1,13 +1,21 @@
 <!doctype html>
 <html>
 <head>
-    <title>WebVis Login</title>
+  <title>WebVis Login</title>
+  <link rel="stylesheet" href="static/style.css">
+  <style>
+  body {background-image: url(static/assets/back.jpg); background-position: center}
+  div#block {width:300px; margin-left:auto; margin-right:auto}
+  </style>
 </head>
 <body>
-  <p>Already logged: {{names}}</p>
-  <form action="/login">
-    <input type="text" name="username" value="gaf">
-    <input type="submit" value="Login">
-  </form>    
+  <div class="block">
+    <img src="static/assets/logo.png"/>
+    <p>Already logged: {{names}}</p>
+    <form action="/login">
+      <p><input type="text" name="username" value="" placeholder="Username (default is gaf)"></p>
+      <p class="submit"><input type="submit" value="Login"></p>
+    </form>
+  </div>
 </body>
 </html>

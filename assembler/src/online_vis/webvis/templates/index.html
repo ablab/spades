@@ -2,20 +2,20 @@
 <html>
 <head>
   <title>WebVis</title>
-  <link rel="stylesheet" href="static/jquery-ui.min.css">
-  <link rel="stylesheet" href="static/themes/default/style.min.css">
+  <link rel="stylesheet" href="static/style.css">
   <style>
-  div.console { font-size:14px; font-family:monospace }
+  div.console { font-size: 14px; font-family: monospace }
   div.console div.jquery-console-inner
-  { width:100%; height:640px; padding:0.5em; overflow:auto }
+  { width:100%; height:640px; padding: 0.5em; overflow: auto }
   /*div.console div.jquery-console-prompt-box
   { color:#fff; }*/
   div.console div.jquery-console-focus span.jquery-console-cursor
-  { background:#111; color:#333; font-weight:bold }
-  div.console span.jquery-console-prompt-label { font-weight:bold }
-  div#graph {max-width:800px; height:640px; margin:auto}
-  input#command {width:100%}
-  iframe {width:100%; height:640px; overflow:scroll}
+  { background: #111; color: #333; font-weight: bold }
+  div.console span.jquery-console-prompt-label { font-weight: bold }
+  div#graph {max-width: 800px; height: 640px; margin: auto}
+  input#command {width: 100%}
+  iframe {width: 100%; height: 640px; overflow: scroll}
+  .bordered {border: 2px solid #777}
   </style>
   <!--Basic interaction plugins-->
   <script type="text/javascript" src="static/jquery.js"></script>
@@ -160,12 +160,12 @@ $(function() {
       <table>
         <tr>
           <td width=100%>Welcome to WebVis, {{username}}</td>
-          <td><a href="logout">Logout</a></td>
+          <td><a href="/logout">Logout</a></td>
         </tr>
       </table>
-      <div class="console"></div>
+      <div class="console bordered"></div>
     </td>
-    <td id="graph" width="50%">
+    <td class="bordered" id="graph" width="50%">
       <!--The rendered graph will be displayed here-->
     </td>
   </tr></table>

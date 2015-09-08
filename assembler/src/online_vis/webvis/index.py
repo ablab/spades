@@ -47,7 +47,7 @@ def index():
     if "username" in session:
         return flask.render_template("index.html", username=session["username"])
     else:
-        logged = shellders.keys()
+        logged = ", ".join(shellders.keys())
         return flask.render_template("login.html", names=logged)
 
 @app.route("/log", methods=['GET'])
@@ -61,7 +61,9 @@ def log():
 def login():
     global shellders
     if "username" not in session:
-        name = request.args.get("username", "gaf")
+        name = request.args.get("username")
+        if not name:
+            name = "gaf"
         session["username"] = name
         if name not in shellders:
             shellders[name] = Shellder("/tmp/vis_in_" + name, "/tmp/vis_out_", env_path)
@@ -182,7 +184,7 @@ def ls():
         except:
             return ""
     try:
-        content = [augment(f) for f in os.listdir(augment(path))]
+        content = [path + f for f in os.listdir(augment(path))]
         files = [f for f in content if isfile(augment(f))]
         print files
         return format_output(files)
