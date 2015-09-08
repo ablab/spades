@@ -91,7 +91,7 @@ void FilterKmersAll(const std::vector<string>& files, int all_min, size_t k, con
     }
 
     std::ofstream output_kmer(output_file + ".kmer", std::ios::binary);
-    std::ofstream output_cnt(output_file + ".cnt", std::ios::binary);
+    std::ofstream output_cnt(output_file + ".mpl", std::ios::binary);
     RtSeq::less3 kmer_less;
     while (true) {
         boost::optional<RtSeq> min_kmer;

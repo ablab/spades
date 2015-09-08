@@ -35,20 +35,38 @@ struct SimpleStoring {
 };
 
 struct InvertableStoring {
-    template<class K, class V>
-    static V get_value(const ValueArray<V> &values, const K& key) {
+    template<typename V>
+    struct default_inverter {
+        template<typename K>
+        V operator()(const V& v, const K& k) const {
+            return v.conjugate(k);
+        }
+    };
+
+    template<typename V>
+    struct immutant_inverter {
+        template<typename K>
+        V operator()(const V& v, const K& k) const {
+            return v;
+        }
+    };
+
+    template<class K, class V, class F = default_inverter<V>>
+    static V get_value(const ValueArray<V> &values, const K& key,
+                       const F& inverter = F()) {
         if(key.is_minimal())
             return values[key.idx()];
         else
-            return values[key.idx()].conjugate(key);
+            return inverter(values[key.idx()], key);
     }
 
-    template<class K, class V>
-    static void set_value(ValueArray<V> &values, const K& key, const V& value) {
+    template<class K, class V, class F = default_inverter<V>>
+    static void set_value(ValueArray<V> &values, const K& key, const V& value,
+                          const F& inverter = F()) {
         if(key.is_minimal())
             values[key.idx()] = value;
         else
-            values[key.idx()] = value.conjugate(key);
+            values[key.idx()] = inverter(value, key);
     }
 
     static bool IsInvertable() {

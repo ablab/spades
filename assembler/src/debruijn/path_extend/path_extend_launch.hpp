@@ -23,6 +23,7 @@
 #include "loop_traverser.hpp"
 #include "long_read_storage.hpp"
 #include "next_path_searcher.hpp"
+#include "../contigs_multiplicity.hpp"
 
 
 namespace path_extend {
@@ -501,7 +502,6 @@ inline bool MPLibsExist() {
     return false;
 }
 
-
 inline void ResolveRepeatsPe(conj_graph_pack& gp,
         const std::string& output_dir,
         const std::string& contigs_name,
@@ -557,11 +557,8 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     DebugOutputPaths(gp, output_dir, paths, (mp_exist ? "final_pe_paths" : "final_paths"));
     writer.OutputPaths(paths, output_dir + (mp_exist ? "pe_scaffolds" : contigs_name));
 
-    cover_map.Clear();
-    paths.DeleteAllPaths();
-    if (!mp_exist) {
-        return;
-    }
+    INFO("Before31");
+    ContigsMultiplicity::Calculate(gp, paths, "/home/toxa31/work/kmers_mpl/nice", "contigs");
 
 //MP
     DebugOutputPaths(gp, output_dir, clone_paths, "before_mp_paths");
@@ -584,6 +581,10 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
         writer.OutputPaths(mp_paths, output_dir + "mp_paths");
     }
 //MP end
+
+//    ContigsMultiplicity::Calculate(gp, paths,
+//                                   "/home/toxa31/work/kmers_mpl/nice",
+//                                   "/home/toxa31/work/contigs");
 
 //pe again
     INFO("SUBSTAGE = polishing paths")
