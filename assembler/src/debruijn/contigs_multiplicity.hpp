@@ -2,6 +2,7 @@
 
 #include <array>
 #include <string>
+#include <iostream>
 #include "path_extend/bidirectional_path.hpp"
 
 using namespace path_extend;
@@ -47,47 +48,54 @@ private:
     }
 
     template<typename K, typename T, typename S>
-    static void FillMplMap(PerfectHashMap<K, MplStoringValue, T, S>& map, conj_graph_pack& graph_pack,
+    static void FillMplMap(PerfectHashMap<K, MplStoringValue, T, S>& map, const conj_graph_pack& graph_pack,
                            const std::string& kmers_mpl_file) {
-        INFO("Fill start");
+        //INFO("Fill start");
         for (auto it = map.value_begin(); it != map.value_end(); ++it) {
             it->fill(0);
         }
-        INFO("Fill zero end");
+        //INFO("Fill zero end");
         std::ifstream kmers_in(kmers_mpl_file + ".kmer", std::ios::binary);
         std::ifstream kmers_mpl_in(kmers_mpl_file + ".mpl", std::ios::binary);
-        INFO("Files opened");
+        //INFO("Files opened");
         size_t kmer_len = graph_pack.g.k() + 1;
-        INFO("kmer_len = " << kmer_len);
+        //INFO("kmer_len = " << kmer_len);
         while (true) {
             conj_graph_pack::seq_t kmer(kmer_len);
-//            INFO("kmer create");
+            //INFO("kmer create");
             MplStoringValue kmer_mpl;
-//            INFO("kmer_mpl create");
+            //INFO("kmer_mpl create");
             kmer.BinRead(kmers_in);
-//            INFO("kmer.BinRead");
+            //INFO("kmer.BinRead");
             for (size_t i = 0; i < COUNT_SAMPLES; ++i) {
                 kmers_mpl_in.read((char*) &kmer_mpl[i], sizeof(uint32_t));
-//                INFO("kmer_mpl read");
+                //INFO("kmer_mpl read");
             }
             if (kmers_in.fail() || kmers_mpl_in.fail()) {
-//                INFO("one failed");
+                //INFO("one failed");
                 break;
             }
-//            INFO("noone failed");
+            //INFO("noone failed");
             kmer = graph_pack.kmer_mapper.Substitute(kmer);
-//            INFO("substitude");
+            //INFO("substitude");
             if (!graph_pack.index.contains(kmer)) {
-//                INFO("not contains");
+                INFO("not contains");
                 continue;
             }
-//            INFO("contains");
+            //INFO("contains");
             auto key_with_hash = map.ConstructKWH(kmer);
-//            INFO("construct kwh");
-            map.put_value(key_with_hash, kmer_mpl, DefaultStoring::immutant_inverter<MplStoringValue>());
-//            INFO("put value");
+            //INFO("construct kwh");
+            //INFO("construct kwh2");
+            //std::cout << "std::cout" << std::endl;
+            //std::cout.flush();
+            //std::cerr << "std::cerr" << std::endl;
+            //std::cerr.flush();
+            auto inverter_ = DefaultStoring::immutant_inverter<MplStoringValue>();
+            //INFO("inverter");
+            map.put_value(key_with_hash, kmer_mpl, inverter_);
+            //INFO("put value");
         }
-        INFO("Fill done");
+        //INFO("Fill done");
     }
 
     template<typename K, typename T, typename S>
