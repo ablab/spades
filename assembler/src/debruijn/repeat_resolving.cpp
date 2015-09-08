@@ -48,8 +48,8 @@ void RepeatResolution::run(conj_graph_pack &gp, const char*) {
         stats::PrepareForDrawing(gp);
     }
 
-    VERIFY(cfg::get().pe_params.param_set.remove_overlaps);
     if (preliminary_) {
+        VERIFY(cfg::get().pe_params.param_set.remove_overlaps);
         INFO("Overlap removal disabled for first-stage rr")
         cfg::get_writable().pe_params.param_set.remove_overlaps = false;
     }
