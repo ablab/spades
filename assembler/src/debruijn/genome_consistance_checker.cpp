@@ -1,4 +1,4 @@
-//
+///
 // Created by lab42 on 9/1/15.
 //
 
@@ -145,7 +145,7 @@ PathScore GenomeConsistenceChecker::CountMisassembliesWithStrand(const Bidirecti
             if (prev_in_genome != -1) {
                 if (cur_in_genome == prev_in_genome + 1) {
                     int dist_in_genome = cur_range.initial_range.start_pos - prev_range.initial_range.end_pos;
-                    int dist_in_path = path.LengthAt(prev_in_path + 1) - path.LengthAt(i) + cur_range.mapped_range.start_pos + gp_.g.length(prev) - prev_range.mapped_range.end_pos;
+                    int dist_in_path = path.LengthAt(prev_in_path) - path.LengthAt(i) + cur_range.mapped_range.start_pos - prev_range.mapped_range.end_pos;
                     DEBUG(i);
                     DEBUG(dist_in_genome << " " << dist_in_path);
                     if (abs(dist_in_genome - dist_in_path) >absolute_max_gap_ && (dist_in_genome * (1 + relative_max_gap_) < dist_in_path || dist_in_path * (1 + relative_max_gap_) < dist_in_genome)) {
