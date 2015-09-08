@@ -193,6 +193,13 @@ public:
         NotifyBackEdgeAdded(e, gap_struct.gap_);
     }
 
+    void PushBack(EdgeId e, Gap gap) {
+        data_.push_back(e);
+        gap_len_.push_back(gap);
+        IncreaseLengths(g_.length(e), gap);
+        NotifyBackEdgeAdded(e, gap.gap_);
+    }
+
     void PushBack(const BidirectionalPath& path) {
         for (size_t i = 0; i < path.Size(); ++i) {
             PushBack(path.At(i), path.GapAt(i), path.TrashPreviousAt(i), path.TrashCurrentAt(i));

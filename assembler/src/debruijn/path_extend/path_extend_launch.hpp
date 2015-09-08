@@ -364,7 +364,8 @@ inline shared_ptr<PathExtender> MakeScaffoldingExtender(const conj_graph_pack& g
                                                  pset.scaffolder_options.short_overlap,
                                                  (int) 2 * cfg::get().ds.RL(), pset.scaffolder_options.artificial_gap,
                                                  cfg::get().pe_params.param_set.scaffolder_options.use_old_score);
-    return make_shared<ScaffoldingPathExtender>(gp, cov_map, scaff_chooser, gap_joiner, lib->GetISMax(), pset.loop_removal.max_loops, false);
+    auto new_gap_joiner = std::make_shared<LAGapJoiner>(gp.g);
+    return make_shared<ScaffoldingPathExtender>(gp, cov_map, scaff_chooser, gap_joiner, new_gap_joiner, lib->GetISMax(), pset.loop_removal.max_loops, false);
 }
 
 inline shared_ptr<SimpleExtender> MakeMPExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, const PathContainer& paths,

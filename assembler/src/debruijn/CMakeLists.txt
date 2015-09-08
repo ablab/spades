@@ -29,9 +29,11 @@ add_library(debruijn STATIC
 target_include_directories(debruijn PRIVATE ${EXT_DIR}/include/ConsensusCore)
 target_link_libraries(debruijn ConsensusCore input mph_index nlopt BamTools yaml-cpp ${COMMON_LIBRARIES})
 
+
 add_executable(spades
                main.cpp)
 target_link_libraries(spades debruijn)
+
 
 if (SPADES_STATIC_BUILD)
   set_target_properties(spades PROPERTIES LINK_SEARCH_END_STATIC 1)

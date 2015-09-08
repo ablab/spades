@@ -2,6 +2,7 @@
 
 #include <boost/test/unit_test.hpp>
 #include "overlap_analysis.hpp"
+#include "../../debruijn/path_extend/path_extender.hpp"
 //#include "repeat_resolving_routine.hpp"
 
 namespace debruijn_graph {
@@ -124,6 +125,17 @@ BOOST_AUTO_TEST_CASE( LargeTest ) {
     BOOST_CHECK_EQUAL(overlap.r1, Range(8, 24));
     BOOST_CHECK_EQUAL(overlap.r1, Range(8, 24));
 }
+
+BOOST_AUTO_TEST_CASE( SimpleGapTest ) {
+    Sequence s1("AAAAAAAACGCGCTTTCGCTTTAA");
+    Sequence s2("GGGGCGCGCTTTCGCTAAAAAAAAAA");
+    path_extend::Gap g = path_extend::MimicLAGapJoiner(s1, s2);
+    BOOST_CHECK_EQUAL(14, 14);
+    BOOST_CHECK_EQUAL(g.trash_current_, 4);
+    BOOST_CHECK_EQUAL(g.trash_previous_, 4);
+    BOOST_CHECK_EQUAL(g.gap_, -20);
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()
 

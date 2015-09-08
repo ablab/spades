@@ -12,10 +12,10 @@
 #include "test_utils.hpp"
 
 //headers with tests
-#include "debruijn_graph_test.hpp"
-#include "simplification_test.hpp"
-#include "order_and_law_test.hpp"
-#include "path_extend_test.hpp"
+//#include "debruijn_graph_test.hpp"
+//#include "simplification_test.hpp"
+//#include "order_and_law_test.hpp"
+//#include "path_extend_test.hpp"
 #include "overlap_analysis_test.hpp"
 //#include "detail_coverage_test.hpp"
 //fixme why is it disabled

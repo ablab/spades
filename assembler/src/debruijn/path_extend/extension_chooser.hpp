@@ -21,7 +21,7 @@
 #include "weight_counter.hpp"
 #include "pe_utils.hpp"
 #include "next_path_searcher.hpp"
-#include "../overlap_analysis.hpp"
+
 namespace path_extend {
 
 typedef std::multimap<double, EdgeWithDistance> AlternativeContainer;
