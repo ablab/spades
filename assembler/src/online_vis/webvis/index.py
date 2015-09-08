@@ -1,3 +1,4 @@
+from __future__ import print_function
 #Flask imports
 import flask
 from flask import Flask, session, request
@@ -22,6 +23,10 @@ Session(app)
 
 FILENAME_REGEXP = r"(?:\.{0,2}\/)?(?:[\w\-]+\/)+(?:[\w\-\.]+)?"
 
+def _debug(*args):
+    if app.debug:
+        print(*args)
+
 def make_url(string):
     files = re.findall(FILENAME_REGEXP, string)
     res = string
@@ -33,7 +38,6 @@ def make_url(string):
             method = "ls"
         url = "<a href=\"%s?path=%s\">%s</a>" % (method, quote(f), f)
         res = res.replace(f, url)
-    #print res
     return res
 
 def format_output(lines):
@@ -69,7 +73,7 @@ def login():
         if name not in shellders:
             shellders[name] = Shellder("/tmp/vis_in_" + name, "/tmp/vis_out_", env_path)
             log = shellders[name].get_output()
-            print "Got", log
+            _debug("Got", log)
             session["log"] = log
         else:
             session["log"] = ["(the previous session log has been lost)"]
@@ -93,7 +97,7 @@ def command():
     sh = shellders[session["username"]]
     com = request.args.get("command", "")
     if len(com):
-        print "Sending `%s`..." % com
+        _debug("Sending `%s`..." % com)
         session["log"].append(">" + com)
         sh.send(com)
     result = sh.get_output(5)
@@ -175,11 +179,11 @@ def augment(path):
 @app.route("/ls")
 def ls():
     path = unquote(request.args.get("path", None))
-    print "Getting contents of", path
+    _debug("Getting contents of", path)
     if path[-1] == "*":
         try:
             files = subprocess.check_output("ls -pd " + path, shell=True).split("\n")[0:-1]
-            print files
+            _debug(files)
             #TODO: unify
             return " ".join(files)
         except:
@@ -187,7 +191,7 @@ def ls():
     try:
         content = [path + f for f in os.listdir(augment(path))]
         files = [f for f in content if isfile(augment(f))]
-        print files
+        _debug(files)
         return format_output(files)
     except IOError as err:
         return err.strerror
