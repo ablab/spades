@@ -79,7 +79,7 @@ private:
             kmer = graph_pack.kmer_mapper.Substitute(kmer);
             //INFO("substitude");
             if (!graph_pack.index.contains(kmer)) {
-                INFO("not contains");
+//                INFO("not contains");
                 continue;
             }
             //INFO("contains");

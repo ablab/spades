@@ -558,7 +558,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     writer.OutputPaths(paths, output_dir + (mp_exist ? "pe_scaffolds" : contigs_name));
 
     INFO("Before31");
-    ContigsMultiplicity::Calculate(gp, paths, "/home/avgarder/mpl/nice", "contigs");
+    ContigsMultiplicity::Calculate(gp, paths, "/home/toxa31/work/kmers-mpl/kmers", "contigs");
 
 //MP
     DebugOutputPaths(gp, output_dir, clone_paths, "before_mp_paths");

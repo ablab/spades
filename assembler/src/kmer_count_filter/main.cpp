@@ -135,6 +135,11 @@ void FilterKmersAll(const std::vector<string>& files, int all_min, size_t k, con
     }
     output_kmer.close();
     output_cnt.close();
+
+    for (size_t i = 0; i < n; ++i) {
+        string name = files[i] + KMER_SORTED_EXTENSION;
+        system(("rm -f " + name).c_str());
+    }
 }
 
 int main(int argc, char *argv[]) {
