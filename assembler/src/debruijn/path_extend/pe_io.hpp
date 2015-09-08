@@ -350,6 +350,7 @@ public:
         debruijn_graph::GenomeConsistenceChecker genome_checker (gp, *storage, 500, 0.2);
         genome_checker.SpellGenome();
         size_t total_mis = 0;
+        size_t gap_mis = 0;
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
             BidirectionalPath* path = iter.get();
             if (path->Length() <= 0){
@@ -366,9 +367,14 @@ public:
             path->Print();
             auto map_res = genome_checker.CountMisassemblies(*path);
             if (map_res.misassemblies > 0) {
-                INFO ("there are misassemblies in path: ");
+                INFO ("there are "<< map_res.misassemblies<<  " misassemblies in path: ");
                 path->PrintInfo();
                 total_mis += map_res.misassemblies;
+            }
+            if (map_res.wrong_gap_size > 0) {
+                INFO ("there are "<<map_res.wrong_gap_size <<" wrong gaps in path: ");
+                path->PrintInfo();
+                gap_mis += map_res.wrong_gap_size;
             }
             //Printing reverse complement to FASTG
             path = iter.getConjugate();
@@ -381,7 +387,7 @@ public:
             DEBUG("NODE " << ids[path]);
             path->Print();
         }
-        INFO("there are " << total_mis<< " missasemblies in " << fastafilename);
+        INFO("there are " << total_mis<< " missasemblies and "<< gap_mis << " wrong gap size estimations in " << fastafilename);
     }
 
     void WritePathsToFASTG(const PathContainer& paths, const string& filename, const string& fastafilename) const {
