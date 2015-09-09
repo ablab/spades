@@ -347,7 +347,7 @@ public:
         auto storage = std::make_shared<ScaffoldingUniqueEdgeStorage>();
 
         unique_edge_analyzer.FillUniqueEdgeStorage(*storage);
-        debruijn_graph::GenomeConsistenceChecker genome_checker (gp, *storage, 500, 0.2);
+        debruijn_graph::GenomeConsistenceChecker genome_checker (gp, *storage, 1000, 0.2);
         genome_checker.SpellGenome();
         size_t total_mis = 0;
         size_t gap_mis = 0;
