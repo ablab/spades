@@ -982,7 +982,7 @@ class ScaffoldingPathExtender: public LoopDetectingPathExtender {
     std::shared_ptr<ExtensionChooser> extension_chooser_;
     ExtensionChooser::EdgeContainer sources_;
     std::shared_ptr<GapJoiner> gap_joiner_;
-
+    bool check_sink_;
     void InitSources() {
         sources_.clear();
 
@@ -1001,7 +1001,7 @@ class ScaffoldingPathExtender: public LoopDetectingPathExtender {
 public:
 
     ScaffoldingPathExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, std::shared_ptr<ExtensionChooser> extension_chooser,
-                            std::shared_ptr<GapJoiner> gap_joiner, size_t is, size_t max_loops, bool investigateShortLoops):
+                            std::shared_ptr<GapJoiner> gap_joiner, size_t is, size_t max_loops, bool investigateShortLoops, bool check_sink_ = true):
         LoopDetectingPathExtender(gp, cov_map, max_loops, investigateShortLoops, false, is),
             extension_chooser_(extension_chooser),
             gap_joiner_(gap_joiner)
@@ -1011,7 +1011,7 @@ public:
 
     virtual bool MakeSimpleGrowStep(BidirectionalPath& path) {
         //TODO :: removed condition  !IsSink(path.Back()); check.
-        if (path.Size() < 1 ) {
+        if (path.Size() < 1 || (check_sink_ && !IsSink(path.Back())) ) {
             return false;
         }
         DEBUG("scaffolding");

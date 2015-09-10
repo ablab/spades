@@ -382,7 +382,7 @@ inline shared_ptr<PathExtender> MakeScaffolding2015Extender(const conj_graph_pac
                                                          pset.scaffolder_options.short_overlap,
                                                          (int) 2 * cfg::get().ds.RL(), pset.scaffolder_options.artificial_gap,
                                                          cfg::get().pe_params.param_set.scaffolder_options.use_old_score);
-    return make_shared<ScaffoldingPathExtender>(gp, cov_map, scaff_chooser, gap_joiner, lib->GetISMax(), pset.loop_removal.max_loops, false);
+    return make_shared<ScaffoldingPathExtender>(gp, cov_map, scaff_chooser, gap_joiner, lib->GetISMax(), pset.loop_removal.max_loops, false , false);
 }
 
 
