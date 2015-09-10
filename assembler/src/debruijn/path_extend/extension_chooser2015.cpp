@@ -64,23 +64,25 @@ void ExtensionChooser2015::FindBestFittedEdges(const BidirectionalPath& path, co
 }
 set<EdgeId> ExtensionChooser2015::FindCandidates(const BidirectionalPath& path) const {
     set<EdgeId> jumping_edges;
-    PairedInfoLibraries libs = wc_->getLibs();
-    for (auto lib : libs) {
+    //PairedInfoLibraries libs = wc_->getLibs();
+//TODO: multiple libs?
+    const auto& lib = wc_->lib();
+    //for (auto lib : libs) {
         //todo lib (and FindJumpEdges) knows its var so it can be counted there
-        int is_scatter = int(math::round(double(lib->GetIsVar()) * is_scatter_coeff_));
+        int is_scatter = int(math::round(double(lib.GetIsVar()) * is_scatter_coeff_));
         DEBUG("starting..., path.size" << path.Size() );
         DEBUG("is_unique_ size " << unique_edges_->size());
-        for (int i = (int) path.Size() - 1; i >= 0 && path.LengthAt(i) - g_.length(path.At(i)) <= lib->GetISMax(); --i) {
+        for (int i = (int) path.Size() - 1; i >= 0 && path.LengthAt(i) - g_.length(path.At(i)) <= lib.GetISMax(); --i) {
             DEBUG("edge ");
             DEBUG(path.At(i).int_id());
             set<EdgeId> jump_edges_i;
             if (unique_edges_->IsUnique(path.At(i))) {
                 DEBUG("Is Unique Ok");
-                lib->FindJumpEdges(path.At(i), jump_edges_i,
+                lib.FindJumpEdges(path.At(i), jump_edges_i,
                                    std::max(0, (int) path.LengthAt(i) - is_scatter),
                         //FIXME do we need is_scatter here?
                         //FIXME or just 0, inf?
-                                   int((path.LengthAt(i) + lib->GetISMax() + is_scatter)),
+                                   int((path.LengthAt(i) + lib.GetISMax() + is_scatter)),
                                    0);
                 DEBUG("Jump edges found");
                 for (EdgeId e : jump_edges_i) {
@@ -90,7 +92,7 @@ set<EdgeId> ExtensionChooser2015::FindCandidates(const BidirectionalPath& path) 
                 }
             }
         }
-    }
+    //}
     DEBUG("found " << jumping_edges.size() << " jump edges");
     return jumping_edges;
 }
