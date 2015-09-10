@@ -1001,10 +1001,10 @@ class ScaffoldingPathExtender: public LoopDetectingPathExtender {
 public:
 
     ScaffoldingPathExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, std::shared_ptr<ExtensionChooser> extension_chooser,
-                            std::shared_ptr<GapJoiner> gap_joiner, size_t is, size_t max_loops, bool investigateShortLoops, bool check_sink_ = true):
+                            std::shared_ptr<GapJoiner> gap_joiner, size_t is, size_t max_loops, bool investigateShortLoops, bool check_sink = true):
         LoopDetectingPathExtender(gp, cov_map, max_loops, investigateShortLoops, false, is),
             extension_chooser_(extension_chooser),
-            gap_joiner_(gap_joiner)
+            gap_joiner_(gap_joiner),check_sink_(check_sink)
     {
         InitSources();
     }
