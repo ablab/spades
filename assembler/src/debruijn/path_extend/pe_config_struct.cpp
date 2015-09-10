@@ -89,6 +89,13 @@ void load(pe_config::LongReads& p, boost::property_tree::ptree const& pt,
     load(p.unique_edge_priority, pt, "unique_edge_priority");
 }
 
+void load(pe_config::Scaffolding2015& p, boost::property_tree::ptree const& pt,
+          bool) {
+    using config_common::load;
+    load(p.min_unique_length, pt, "min_unique_length");
+    load(p.unique_coverage_variation, pt, "unique_coverage_variation");
+}
+
 void load(pe_config::AllLongReads& p, boost::property_tree::ptree const& pt,
           bool) {
     using config_common::load;
@@ -110,6 +117,7 @@ void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt,
         p.output.DisableAll();
         p.viz.DisableAll();
     }
+    load(p.scaffolding2015, pt, "scaffolding2015");
     p.etc_dir = "path_extend";
 }
 

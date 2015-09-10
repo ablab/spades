@@ -126,7 +126,7 @@ class BulgeRemover: public EdgeProcessingAlgorithm<Graph> {
 
 	/**
 	 * Checks if alternative path is simple (doesn't contain conjugate edges, edge e or conjugate(e))
-	 * and its average coverage is greater than max_relative_coverage_ * g.coverage(e)
+	 * and its average coverage is greater than relative_coverage_variation_ * g.coverage(e)
 	 */
 	bool BulgeCondition(EdgeId e, const vector<EdgeId>& path,
 			double path_coverage) {

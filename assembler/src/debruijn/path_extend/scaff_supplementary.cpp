@@ -46,7 +46,8 @@ void ScaffoldingUniqueEdgeAnalyzer::FillUniqueEdgeStorage(ScaffoldingUniqueEdgeS
     for (auto iter = gp_.g.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
         size_t tlen = gp_.g.length(*iter);
         total_len += tlen;
-        if (gp_.g.length(*iter) >= length_cutoff_ && gp_.g.coverage(*iter) > median_coverage_ / max_relative_coverage_ && gp_.g.coverage(*iter) < median_coverage_ * max_relative_coverage_ ) {
+        if (gp_.g.length(*iter) >= length_cutoff_ && gp_.g.coverage(*iter) > median_coverage_ * (1 - relative_coverage_variation_)
+                && gp_.g.coverage(*iter) < median_coverage_ * (1 + relative_coverage_variation_) ) {
             storage_.unique_edges_.insert(*iter);
             unique_len += tlen;
             unique_num ++;
@@ -55,7 +56,8 @@ void ScaffoldingUniqueEdgeAnalyzer::FillUniqueEdgeStorage(ScaffoldingUniqueEdgeS
     for (auto iter = storage_.begin(); iter != storage_.end(); ++iter) {
         DEBUG (gp_.g.int_id(*iter) << " " << gp_.g.coverage(*iter) << " " << gp_.g.length(*iter) );
     }
-    INFO ("With length cutoff: " << length_cutoff_ <<", median long edge coverage: " << median_coverage_ << ", and maximal unique coverage: " << max_relative_coverage_);
+    INFO ("With length cutoff: " << length_cutoff_ <<", median long edge coverage: " << median_coverage_ << ", and maximal unique coverage: " <<
+                                                                                                            relative_coverage_variation_);
     INFO("Unique edges quantity: " << unique_num << ", unique edges length " << unique_len <<", total edges length" << total_len);
     if (unique_len * 2 < total_len) {
         WARN("Less than half of genome in unique edges!");

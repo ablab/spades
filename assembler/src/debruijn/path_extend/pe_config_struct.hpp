@@ -146,6 +146,11 @@ struct pe_config {
       LongReads contigs;
   };
 
+    struct Scaffolding2015 {
+        size_t min_unique_length;
+        double unique_coverage_variation;
+    };
+
   struct MainPEParamsT {
     std::string name;
     output_broken_scaffolds obs;
@@ -157,6 +162,7 @@ struct pe_config {
     VisualizeParamsT viz;
     ParamSetT param_set;
     AllLongReads long_reads;
+      Scaffolding2015 scaffolding2015;
   } params;
 
   std::string dataset_name;

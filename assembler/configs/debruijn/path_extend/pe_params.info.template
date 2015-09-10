@@ -217,8 +217,8 @@ multicell {
     remove_overlaps     true
 }
 
-long_reads {
 
+long_reads {
     pacbio_reads {
         filtering   2.5
         weight_priority    1.2
@@ -237,3 +237,9 @@ long_reads {
         unique_edge_priority 2.0
     }
 }
+scaffolding2015 {
+    min_unique_length 10000
+    unique_coverage_variation 0.5
+    ; (median * (1+variation) > unique > median * (1 - variation))
+}
+

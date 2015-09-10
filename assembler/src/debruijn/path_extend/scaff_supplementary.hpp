@@ -50,7 +50,7 @@ namespace path_extend {
         const debruijn_graph::conj_graph_pack &gp_;
         size_t length_cutoff_;
         double median_coverage_;
-        double max_relative_coverage_;
+        double relative_coverage_variation_;
     protected:
         DECL_LOGGER("ScaffoldingUniqueEdgeAnalyzer")
 
@@ -62,7 +62,7 @@ namespace path_extend {
         void SetCoverageBasedCutoff();
     public:
 //default: 1000, 1.5 ?
-        ScaffoldingUniqueEdgeAnalyzer(const debruijn_graph::conj_graph_pack &gp, size_t apriori_length_cutoff, double max_relative_coverage):gp_(gp), length_cutoff_(apriori_length_cutoff), max_relative_coverage_(max_relative_coverage){
+        ScaffoldingUniqueEdgeAnalyzer(const debruijn_graph::conj_graph_pack &gp, size_t apriori_length_cutoff, double max_relative_coverage):gp_(gp), length_cutoff_(apriori_length_cutoff), relative_coverage_variation_(max_relative_coverage){
             SetInsertSizeBasedCutoff();
             SetCoverageBasedCutoff();
         }
