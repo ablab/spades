@@ -464,7 +464,7 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
     INFO("Scaffolder is " << (pset.scaffolder_options.on ? "on" : "off"));
     if(cfg::get().ds.meta) {
         INFO("Using additional coordinated coverage extender");
-        result.push_back(MakeCoordCoverageExtender(gp, cov_map, pset));
+    //    result.push_back(MakeCoordCoverageExtender(gp, cov_map, pset));
     }
     return result;
 }
