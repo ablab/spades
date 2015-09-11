@@ -19,6 +19,7 @@
 #include "../overlap_analysis.hpp"
 #include <cmath>
 
+
 namespace path_extend {
 
 class ShortLoopResolver {
@@ -399,16 +400,22 @@ protected:
 class LAGapJoiner: public NewGapJoiner {
     public:
         LAGapJoiner(const Graph& g)
-        : NewGapJoiner(g), min_edge_length_(g.k()*2), min_la_length_(g.k()*2), overlap_analyzer_(g.k()*4)
+        : NewGapJoiner(g), min_edge_length_(g.k()*2), min_la_length_(g.k()*2), max_flank_size_(g.k()*2)
         { }
 
         Gap FixGap(EdgeId sink, EdgeId source, int initial_gap) const {
+
+            SWOverlapAnalyzer overlap_analyzer(initial_gap * estimated_gap_multiplier);
             if(this->g_.length(sink) < min_edge_length_ || this->g_.length(sink) < min_edge_length_) {
                 DEBUG("Edges are too short");
                 return Gap(INVALID_GAP);
             }
 
-            auto overlap_info = overlap_analyzer_.AnalyzeOverlap(this->g_, sink, source);
+
+            auto overlap_info = overlap_analyzer.AnalyzeOverlap(this->g_, sink, source);
+
+            DEBUG(overlap_info);
+            DEBUG("Edges - " << sink.int_id() << " and " << source.int_id());
 
             if(overlap_info.size() < min_la_length_) {
                 DEBUG("Low alignment size");
@@ -419,16 +426,33 @@ class LAGapJoiner: public NewGapJoiner {
                 DEBUG("Low identity score");
                 return Gap(INVALID_GAP);
             }
+            ofstream of(cfg::get().output_dir + "/existingtextfile.txt", ofstream::app);
+            if(overlap_info.r2.start_pos > 75) {
+                of << ">" << source.int_id() << endl;
+                of << this->g_.EdgeNucls(source).Subseq(0, overlap_info.r2.start_pos).str() << endl;
+            }
 
-            return Gap((int)this->g_.k() - (int)overlap_info.r1.size() - (this->g_.length(sink) - overlap_info.r1.end_pos) - overlap_info.r2.start_pos,
-                    this->g_.length(sink) - overlap_info.r1.end_pos , overlap_info.r2.start_pos);
+            if(this->g_.length(sink) + this->g_.k() - overlap_info.r1.end_pos > 75) {
+                of << ">" << sink.int_id() << endl;
+                of << this->g_.EdgeNucls(sink).Subseq(overlap_info.r1.end_pos - this->g_.k()).str() << endl;
+            }
+            of.close();
+/*            if(this->g_.length(sink) + this->g_.k() - overlap_info.r1.end_pos > max_flank_size_ || overlap_info.r2.start_pos > max_flank_size_ ) {
+                DEBUG("Flank size exceeds threshold");
+                return Gap(INVALID_GAP);
+            }*/
+
+
+            return Gap(-(int)overlap_info.r1.size() - ((int)this->g_.length(sink) - (int)overlap_info.r1.end_pos) - (int)overlap_info.r2.start_pos,
+                    (int)this->g_.length(sink) - (int)overlap_info.r1.end_pos + (int)this->g_.k(), overlap_info.r2.start_pos);
         }
     private:
         DECL_LOGGER("LAGapJoiner");
         const size_t min_la_length_;
         constexpr static double identity_ratio_ = 0.9;
         const size_t min_edge_length_;
-        SWOverlapAnalyzer overlap_analyzer_;
+        const size_t max_flank_size_;
+        constexpr static double estimated_gap_multiplier = 2.0;
 };
 
 

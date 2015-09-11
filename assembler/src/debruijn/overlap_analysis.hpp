@@ -74,7 +74,6 @@ class SWOverlapAnalyzer {
         StripedSmithWaterman::Alignment alignment;
         if (aligner_.Align(s1.str().c_str(), s2.str().c_str(), int(s2.size()), filter_, &alignment)) {
             if (alignment.sw_score > 0) {
-//                INFO(alignment.cigar_string);
                 return OverlapInfo(Range(alignment.query_begin, alignment.query_end + 1),
                             Range(alignment.ref_begin, alignment.ref_end + 1),
                             CountMatches(alignment.cigar));

@@ -592,13 +592,13 @@ private:
 
     void IncreaseLengths(size_t length, Gap gap_struct) {
         for (auto iter = cumulative_len_.begin(); iter != cumulative_len_.end(); ++iter) {
-            *iter += length + gap_struct.gap_ - gap_struct.trash_current_ - gap_struct.trash_previous_;
+            *iter += length + gap_struct.gap_ - gap_struct.trash_previous_;
         }
         cumulative_len_.push_back(length);
     }
 
     void DecreaseLengths() {
-        size_t length = g_.length(data_.back()) + gap_len_.back().gap_ - gap_len_.back().trash_current_ - gap_len_.back().trash_previous_;
+        size_t length = g_.length(data_.back()) + gap_len_.back().gap_ - gap_len_.back().trash_previous_;
 
         for (auto iter = cumulative_len_.begin(); iter != cumulative_len_.end(); ++iter) {
             *iter -= length;
