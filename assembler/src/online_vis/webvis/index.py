@@ -22,6 +22,9 @@ app.config.from_object(__name__)
 Session(app)
 
 FILENAME_REGEXP = r"(?:\.{0,2}\/)?(?:[\w\-]+\/)+(?:[\w\-\.]+)?"
+SVG = ".svg"
+JSON = ".json"
+DOT = ".dot"
 
 def _debug(*args):
     if app.debug:
@@ -32,11 +35,11 @@ def make_url(string):
     res = string
     for f in files:
         method = "get"
-        if f.endswith(".dot"):
+        if f.endswith(DOT):
             method = "render"
         elif f.endswith("/"):
             method = "ls"
-        url = "<a href=\"%s?path=%s\">%s</a>" % (method, quote(f), f)
+        url = "<a href=\"/%s?path=%s\">%s</a>" % (method, quote(f), f)
         res = res.replace(f, url)
     return res
 
@@ -71,7 +74,7 @@ def login():
             name = "gaf"
         session["username"] = name
         if name not in shellders:
-            shellders[name] = Shellder("/tmp/vis_in_" + name, "/tmp/vis_out_", env_path)
+            shellders[name] = Shellder("/tmp/vis_in_" + name, "/tmp/vis_out_" + name, env_path)
             log = shellders[name].get_output()
             _debug("Got", log)
             session["log"] = log
@@ -110,58 +113,71 @@ def command():
 
 @app.route("/get")
 def get():
+    full_path = augment(unquote(request.args.get("path", "")))
     try:
-        file_path = augment(unquote(request.args.get("path", "")))
-        return flask.send_file(file_path, as_attachment=True, attachment_filename=path.basename(file_path))
+        return flask.send_file(full_path, as_attachment=True, attachment_filename=path.basename(full_path))
     except IOError:
         return flask.abort(404)
 
+def doRender(full_path):
+    file_name = path.basename(full_path)
+    name_only, ext = path.splitext(file_name)
+    #if not ext == DOT:
+    #    raise RuntimeError()
+    res_path = cache_path + name_only + SVG
+    result = open(res_path, "w")
+    subprocess.call(["dot", "-Tsvg", full_path], stdout=result)
+    result.close()
+    _debug("Written to", res_path)
+    return res_path
+
 @app.route("/render")
 def render():
-    global cache_path
-    file_path = unquote(request.args.get("path", ""))
-    type = request.args.get("method", "svg")
-    _, full_name = path.split(file_path)
-    name_only, _ = path.splitext(full_name)
-    if type == "svg":
-        res_path = cache_path + name_only + ".svg"
-        result = open(res_path, "w")
-        subprocess.call(["dot", "-Tsvg", env_path + file_path], stdout=result)
-        result.close()
-        return res_path
-    elif type == "json":
-        input = open(env_path + file_path, "r")
-        content = dot_to_json(input.read())
-        if (request.args.get("result", "") == "response"):
-           return content
-        res_path = cache_path + name_only + ".json"
-        result = open(res_path, "w")
-        result.write(content)
-        result.close()
-        return res_path
-    else:
-        return "Unknown method"
+    full_path = augment(unquote(request.args.get("path", "")))
+    _debug("Rendering", full_path)
+    try:
+        return doRender(full_path)
+    except:
+        flask.abort(500)
 
-@app.route("/vertex/<vertex_id>")
-def vertex(vertex_id):
+def doGraph(full_path):
+    file_name = path.basename(full_path)
+    name_only, ext = path.splitext(file_name)
+    #if not ext == DOT:
+    #    raise RuntimeError()
+    input = open(full_path, "r")
+    content = dot_to_json(input.read())
+    input.close()
+    return content
+
+@app.route("/graph")
+def graph():
+    full_path = augment(unquote(request.args.get("path", "")))
+    _debug("Building ", full_path)
+    try:
+        return doGraph(full_path)
+    except:
+        flask.abort(500)
+
+@app.route("/vertex/<name>")
+def vertex(name):
     if session["username"] not in shellders:
         return flask.abort(500)
     shellder = shellders[session["username"]]
-    res_path = next((cache_path + f for f in listdir(cache_path) if f.endswith(vertex_id + "_.svg")), None)
+    vertex_id, ext = path.splitext(name)
+    res_path = next((augment(f) for f in listdir(cache_path) if f.endswith(name)), None)
     if res_path is None:
         #Render a new file
         shellder.send("draw_vertex " + vertex_id)
-        out = "\n".join(shellder.get_output())
+        out = " ".join(shellder.get_output())
         try:
-            file_path = re.finditer(FILENAME_REGEXP, out).next().group()
-            if not file_path.endswith(".dot"):
-                raise RuntimeError()
-            _, full_name = path.split(file_path)
-            name_only, _ = path.splitext(full_name)
-            res_path = cache_path + name_only + ".svg"
-            result = open(res_path, "w")
-            subprocess.call(["dot", "-Tsvg", env_path + file_path], stdout=result)
-            result.close()
+            full_path = augment(re.finditer(FILENAME_REGEXP, out).next().group())
+            if ext == SVG:
+                return flask.redirect(doRender(full_path))
+            elif ext == JSON:
+                return doGraph(full_path)
+            else:
+                return flask.error(500)
         except:
             res_path = cache_path + vertex_id + "_err.txt"
             result = open(res_path, "w")
@@ -178,18 +194,19 @@ def augment(path):
 
 @app.route("/ls")
 def ls():
-    path = unquote(request.args.get("path", None))
+    path = unquote(request.args.get("path", ""))
+    full_path = augment(path)
     _debug("Getting contents of", path)
-    if path[-1] == "*":
+    if full_path[-1] == "*":
         try:
-            files = subprocess.check_output("ls -pd " + path, shell=True).split("\n")[0:-1]
+            files = subprocess.check_output("ls -pd " + full_path, shell=True).split("\n")[0:-1]
             _debug(files)
             #TODO: unify
             return " ".join(files)
         except:
             return ""
     try:
-        content = [path + f for f in os.listdir(augment(path))]
+        content = [path + f for f in os.listdir(full_path)]
         files = [f for f in content if isfile(augment(f))]
         _debug(files)
         return format_output(files)
