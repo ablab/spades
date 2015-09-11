@@ -415,6 +415,7 @@ inline vector<shared_ptr<PathExtender> > MakeAllScaffoldingExtenders2015(PathExt
                                                                          const pe_config::ParamSetT &pset,
                                                                          bool use_auto_threshold,
                                                                          const PathContainer &paths_for_mp = PathContainer()) {
+    VERIFY_MSG(false, 'Do not use MakeAllScaffoldingExtenders2015')
     ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, cfg::get().pe_params.scaffolding2015.min_unique_length, cfg::get().pe_params.scaffolding2015.unique_coverage_variation);
     auto storage = std::make_shared<ScaffoldingUniqueEdgeStorage>();
 
@@ -454,6 +455,10 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
     size_t scf_pe_libs = 0;
     size_t mp_libs = 0;
 
+    ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, cfg::get().pe_params.scaffolding2015.min_unique_length, cfg::get().pe_params.scaffolding2015.unique_coverage_variation);
+    auto storage = std::make_shared<ScaffoldingUniqueEdgeStorage>();
+    unique_edge_analyzer.FillUniqueEdgeStorage(*storage);
+
     for (io::LibraryType lt : io::LibraryPriotity) {
         for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
             const auto& lib = cfg::get().ds.reads[i];            
@@ -465,25 +470,34 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
                 ++single_read_libs;
             }
             if (IsForPEExtender(lib) && stage == PathExtendStage::PEStage) {
-//                if (cfg::get().ds.meta) {
-//                    pes.push_back(MakeMetaExtender(gp, cov_map, i, pset, false));
-//                } else {
+                ++pe_libs;
+                if (pset.sm == sm_old_pe_2015 || pset.sm == sm_old || pset.sm == sm_combined) {
                     if (cfg::get().ds.moleculo)
                         pes.push_back(MakeLongEdgePEExtender(gp, cov_map, i, pset, false));
                     pes.push_back(MakePEExtender(gp, cov_map, i, pset, false));
-//                }
+                }
             }
-            if (IsForShortLoopExtender(lib)) {
+            if (IsForShortLoopExtender(lib) && (pset.sm == sm_old_pe_2015 || pset.sm == sm_old || pset.sm == sm_combined)) {
                 pe_loops.push_back(MakePEExtender(gp, cov_map, i, pset, true));
-                ++pe_libs;
+            }
+            if (IsForPEExtender(lib) && stage == PathExtendStage::PEStage && (pset.sm == sm_combined || pset.sm == sm_2015)) {
+                result.push_back(MakeScaffolding2015Extender(gp, cov_map, i, pset, storage));
             }
             if (IsForScaffoldingExtender(lib) && cfg::get().use_scaffolder && pset.scaffolder_options.on) {
-                pe_scafs.push_back(MakeScaffoldingExtender(gp, cov_map, i, pset));
                 ++scf_pe_libs;
+                if (pset.sm == sm_old || pset.sm == sm_combined)
+                    pe_scafs.push_back(MakeScaffoldingExtender(gp, cov_map, i, pset));
+                else if (pset.sm == sm_old_pe_2015 || pset.sm == sm_2015 || pset.sm == sm_combined) {
+                    result.push_back(MakeScaffolding2015Extender(gp, cov_map, i, pset, storage));
+                }
             }
             if (IsForMPExtender(lib) && stage == PathExtendStage::MPStage) {
-                mps.push_back(MakeMPExtender(gp, cov_map, paths_for_mp, i, pset));
                 ++mp_libs;
+                if (pset.sm == sm_old || pset.sm == sm_combined)
+                    mps.push_back(MakeMPExtender(gp, cov_map, paths_for_mp, i, pset));
+                else if (pset.sm == sm_old_pe_2015 ||pset.sm == sm_2015 || pset.sm == sm_combined) {
+                    result.push_back(MakeScaffolding2015Extender(gp, cov_map, i, pset, storage));
+                }
             }
         }
 
@@ -528,6 +542,9 @@ inline bool MPLibsExist() {
     return false;
 }
 
+inline void FinalizeUniquenessPaths(){
+//TODO::compilation placeholder
+}
 
 inline void ResolveRepeatsPe(conj_graph_pack& gp,
         const std::string& output_dir,
@@ -634,16 +651,14 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     DebugOutputPaths(writer, gp, output_dir, last_paths, "last_paths");
     writer.WritePathsToFASTG(last_paths, output_dir + contigs_name + ".fastg", output_dir + contigs_name + ".fasta");
 
+    FinalizeUniquenessPaths();
+
     last_paths.DeleteAllPaths();
     seeds.DeleteAllPaths();
     mp_paths.DeleteAllPaths();
     clone_paths.DeleteAllPaths();
 
     INFO("ExSPAnder repeat resolving tool finished");
-}
-
-inline void FinalizeUniquenessPaths(){
-//TODO::compilation placeholder
 }
 
 inline void ScaffoldAll2015(conj_graph_pack& gp,
@@ -697,9 +712,6 @@ inline void ScaffoldAll2015(conj_graph_pack& gp,
                              output_dir + ("scaffolds2015") + ".fasta" , gp);
 
     cover_map.Clear();
-
-
-
 
     paths.DeleteAllPaths();
     seeds.DeleteAllPaths();

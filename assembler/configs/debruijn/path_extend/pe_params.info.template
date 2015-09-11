@@ -14,7 +14,11 @@ visualize {
 
 ; none | break_gaps | break_all
 output_broken_scaffolds     break_gaps
+
 singlecell {
+    ; old | 2015 | combined | old_pe_2015
+    scaffolding_mode old
+
     split_edge_length       99
     normalize_weight        true
     cut_all_overlaps  false
@@ -65,6 +69,9 @@ singlecell {
 }
 
 meta {
+    ; old | 2015 | combined | old_pe_2015
+    scaffolding_mode old
+
     split_edge_length       99
     normalize_weight        true
     cut_all_overlaps  false
@@ -115,6 +122,9 @@ meta {
 }
 
 moleculo {
+    ; old | 2015 | combined | old_pe_2015
+    scaffolding_mode old
+
     split_edge_length       99
     normalize_weight        true
     cut_all_overlaps  true
@@ -165,6 +175,9 @@ moleculo {
 }
 
 multicell {
+    ; old | 2015 | combined | old_pe_2015
+    scaffolding_mode old
+
     split_edge_length    99
     normalize_weight     false
     cut_all_overlaps  false

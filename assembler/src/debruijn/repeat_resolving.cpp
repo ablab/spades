@@ -29,7 +29,7 @@ void PEResolving(conj_graph_pack& gp) {
         name = "final_contigs";
         traverse_loops = false;
     }
-    path_extend::ScaffoldAll2015(gp, cfg::get().output_dir, name, traverse_loops, boost::optional<std::string>("final_contigs"));
+    path_extend::ResolveRepeatsPe(gp, cfg::get().output_dir, name, traverse_loops, boost::optional<std::string>("final_contigs"));
 }
 
 inline bool HasValidLibs() {

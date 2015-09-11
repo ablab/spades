@@ -11,12 +11,17 @@
 namespace path_extend {
 
 void load(output_broken_scaffolds& obs, boost::property_tree::ptree const& pt, std::string const& key, bool complete) {
-
   if (complete || pt.find(key) != pt.not_found()) {
     std::string ep = pt.get<std::string>(key);
     obs = pe_config::output_broken_scaffolds_id(ep);
   }
+}
 
+void load(scaffolding_mode &sm, boost::property_tree::ptree const& pt, std::string const& key, bool complete) {
+    if (complete || pt.find(key) != pt.not_found()) {
+        std::string ep = pt.get<std::string>(key);
+        sm = pe_config::scaffolding_mode_id(ep);
+    }
 }
 
 void load(pe_config::OutputParamsT& o, boost::property_tree::ptree const& pt, bool /*complete*/) {
@@ -71,6 +76,7 @@ void load(pe_config::ParamSetT::ScaffolderOptionsT& so, boost::property_tree::pt
 void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool /*complete*/) {
 
   using config_common::load;
+  load(p.sm, pt, "scaffolding_mode");
   load(p.normalize_weight, pt,  "normalize_weight");
   load(p.cut_all_overlaps, pt, "cut_all_overlaps");
   load(p.split_edge_length, pt, "split_edge_length");
@@ -112,6 +118,7 @@ void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt,
     load(p.viz, pt, "visualize");
     load(p.param_set, pt, p.name.c_str());
     load(p.obs, pt, "output_broken_scaffolds");
+
     load(p.long_reads, pt, "long_reads");
     if (!p.debug_output) {
         p.output.DisableAll();
