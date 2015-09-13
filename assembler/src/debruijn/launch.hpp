@@ -30,6 +30,11 @@ void assemble_genome() {
     INFO("SPAdes started");
     INFO("Starting from stage: " << cfg::get().entry_point);
 
+    if (cfg::get().ds.meta) {
+        ERROR("Metagenomic mode not available yet");
+        return;
+    }
+
     bool two_step_rr = cfg::get().two_step_rr && cfg::get().rr_enable && cfg::get().ds.meta;
     INFO("Two-step RR enabled: " << two_step_rr);
 

@@ -95,8 +95,7 @@ def print_used_values(cfg, log):
             log.info(" Illumina TruSeq mode")
         else:
             log.info("  Multi-cell mode (you should set '--sc' flag if input data"\
-                     " was obtained with MDA (single-cell) technology"\
-                     " or --meta flag if processing metagenomic dataset)")
+                     " was obtained with MDA (single-cell) technology")
         if cfg["dataset"].iontorrent:
             log.info("  IonTorrent data")
 
@@ -217,7 +216,7 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         elif opt == "--sc":
             options_storage.single_cell = True
         elif opt == "--meta":
-            options_storage.meta = True
+            support.error('--meta option not available yet')
         elif opt == "--iontorrent":
             options_storage.iontorrent = True
         elif opt == "--disable-gzip-output":
