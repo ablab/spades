@@ -13,7 +13,7 @@
 //Form validator
 $(function () {
   $("#login-form").submit(function () {
-    if (!/^[\w]+$/.test($("#login-name").val())) {
+    if (!/^[\w]*$/.test($("#login-name").val())) {
       $("#error").text("Names may only contain Latin alphanumeric characters.").fadeIn(500);
       return false;
     }

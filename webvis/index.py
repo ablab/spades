@@ -46,7 +46,7 @@ def make_url(string):
 def format_output(lines):
     return "".join(make_url(str(flask.escape(line))) + "<br/>" for line in lines)
 
-env_path = "../../../"
+env_path = ""
 cache_path = "static/cache/"
 shellders = dict()
 
