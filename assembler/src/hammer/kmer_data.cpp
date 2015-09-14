@@ -520,7 +520,7 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
   size_t kmers = KMerIndexBuilder<HammerKMerIndex>(workdir, num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save final */ true);
   std::string final_kmers = counter.GetFinalKMersFname();
   // Optionally perform a filtering step
-  {
+  if (cfg::get().count_filter_singletons) {
       INFO("Filtering singleton k-mers");
       data.kmers_.set_size(kmers);
       KMerMultiplicityCounter mcounter(data);
