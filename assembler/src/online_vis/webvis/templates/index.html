@@ -68,7 +68,7 @@ function drawDynamic(id) {
   $.ajax({
     url: "/vertex/" + id + ".json",
     success: function(response) {
-      $("#graph").html();
+      $("#graph").empty();
       sWrap = new sigma("graph");
       sWrap.graph.unionWith(JSON.parse(response));
       sWrap.bind("clickNode", function(e) {

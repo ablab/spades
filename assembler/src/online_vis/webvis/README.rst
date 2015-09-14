@@ -10,7 +10,7 @@ Currently it can:
 * provide auto-completion for commands and file paths;
 * send console commands;
 * auto-detect filenames and provide downloading URLs;
-* auto-convert .dot graphs into .png when downloading;
+* auto-convert .dot graphs into .svg when downloading;
 * and show then in the window.
 What it will be able to do in future:
 * provide dialogs for loading environment and other commands;
@@ -19,16 +19,14 @@ What it will be able to do in future:
 Installing
 ----------
 
-First, of course, don't forget to *make run*.
-WebVis is written in Python and Javascript, using Flask_ and jQuery. To launch it, of course you need Python and pip or easy_install. At least one of them is typically pre-installed in both Linux and Mac OS X, so no prerequisites needed.
-You may run the auto-build script:
-- ./build.sh
-If you encounter problems, you may do it manually. The better way is to do it via the *virtualenv* sandbox:
+First, of course, don't forget to build *online_vis* itself – *make rv* in the *assembler* folder.
+WebVis is written in Python and Javascript, using Flask_ and jQuery. To launch it, of course you need Python and *pip* or *easy_install*. At least one of them is typically pre-installed in both Linux and Mac OS X, so no prerequisites needed. Use it to install the sandbox:
 - sudo easy_install virtualenv
-or
+or:
 - sudo pip install virtualenv
-Then:
-- cd path/to/webvis
+Then you may run the auto-build script to install packages needed:
+- ./build.sh
+If you encounter unlikely problems, you may do it manually:
 - virtualenv venv
 - . venv/bin/activate
 - pip install Flask
@@ -37,41 +35,46 @@ Then:
 - pip install pyparsing
 
 Configuring
-___________
+-----------
 
-All configuration options are set in the *webvis.cfg* file:
+Default configuration is just enough for a successful launch. If you need to change something, all options are set in the *webvis.cfg* file:
 - *debug*: when set to *true*, enables debug output in the server stdout. Default is *true*.
 - *env*: sets the environment folder, where *online_vis* binaries are located. Default is *../../../* (assembler sources folder).
 - *port*: HTTP server port. Default is 5000.
-Default configuration is just enough for a successful launch.
 
 Running
 -------
 
 After installing, you can launch the server:
 - ./run.sh
-The same, manual way:
+Or, if you dislike scripts:
 - . venv/bin/activate #if it wasn't activated already
 - python index.py
-By default, it listens on localhost:5000.
+It listens on *localhost:<port>* (default port is 5000) which can be visited, well, locally. If you plan to install and run it on the remote server and don't want to (or may not) configure ports, you can use an SSH tunnel. Run this command on your machine:
+- ssh -p 23 -L <port>:localhost:<port> <server-login>@<server-ip>
+Then you can visit *localhost:<port>* just as if WebVis was installed on your local machine.
 
 Using
 -----
-There is a small login form at the index page. Enter the unique name to start your session (other logged users are shown to avoid conflicts). Currently it runs the background *./run rv* process in the *env* folder infinitely.
+There is a small login form at the index page. Enter the unique name to start your session. Names may contain only latin letters and digits. Other logged users are shown to avoid conflicts, which are currently NOT checked. Currently it runs the background *./run rv* process in the *env* folder infinitely.
 On the main page, you can send text commands in the prompt as if it was a command line. There is auto-completion for command names and file paths, browsed on the server.
 All console output is stored in the session. To stop the session and all related processes, simply click "Log out" on the main page.
 When WebVis receives a command response which contains a file or directory path, it automatically converts it into a download hyperlink. If it was a .dot file, a rendered .svg is shown on the page instead. If it is a directory, its content is loaded into the console log, so you can load some of its files.
 You can also traverse the rendered SVG graph by clicking vertices. Then, *draw_vertex* is called and the graph is replaced with a newly rendered one.
+There is also an experimental feature to render dynamic force-directed graphs which can be expanded with node clicking, but it's hardly useful at present. If you still want to use it, call *draw_dynamic* instead of *draw_vertex*.
 
 Troubleshooting
 ---------------
 
 *Sending commands, clicking URLS doesn't do anything*
-Check if the web server has started. Try to refresh the page and/or re-login.
+Check if the web server has started. Try to refresh the page and/or re-login. If the server hangs, restart it.
+
+*I receive a console or renders from old sessions*
+Run a clean restart:
+- ./run.sh clean
 
 *Can't launch the server, the port is busy*
-Probably a hanging *online_vis* process holds it. Kill it with fire^W^W. Or run the cleaner:
-- ./run.sh clean
+Probably a hanging *online_vis* process holds it. Kill it with fire^W^W.
 
 *The browser spits out Python error messages*
 There is a bug, report that to the developer_.

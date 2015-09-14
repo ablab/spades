@@ -1,8 +1,9 @@
 #!/bin/bash
 
-if [ -n $1 ];
+if [ $1 ];
 then
-  pkill online_vis
+  echo Cleaning leftovers...
+  rm static/cache/*
   rm flask_session/*
 fi
 
