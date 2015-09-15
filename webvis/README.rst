@@ -61,7 +61,7 @@ There is a small login form at the index page. Enter the unique name to start yo
 On the main page, you can send text commands in the prompt as if it was a command line. There is auto-completion for command names and file paths, browsed on the server.
 All console output is stored in the session. To stop the session and all related processes, simply click "Log out" on the main page.
 When WebVis receives a command response which contains a file or directory path, it automatically converts it into a download hyperlink. If it was a .dot file, a rendered .svg is shown on the page instead. If it is a directory, its content is loaded into the console log, so you can load some of its files. Rendered files are placed in the *static/cache/<username>* folder, so they aren't re-rendered in next time.
-You can also traverse the rendered SVG graph by clicking vertices. Then, *draw_vertex* is called and the graph is replaced with a newly rendered one.
+You can also traverse the rendered SVG graph by clicking vertices. Then, *draw_vertex* is called and the graph is replaced with a newly rendered one. WARNING: currently that only works for paired graphs and only for the first vertex in the node (due to .dot format limitations).
 There is also an experimental feature to render dynamic force-directed graphs which can be expanded with node clicking, but it's hardly useful at present. If you still want to use it, call *draw_dynamic* instead of *draw_vertex*.
 
 Troubleshooting

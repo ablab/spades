@@ -76,9 +76,12 @@ def login():
         if not name:
             name = "gaf"
         session["username"] = name
-        os.mkdir(path.join(cache_path, name))
+        try:
+            os.mkdir(path.join(cache_path, name))
+        except OSError:
+            pass
         if name not in shellders:
-            shellders[name] = Shellder("/tmp/vis_in_" + name, "/tmp/vis_out_" + name, env_path)            
+            shellders[name] = Shellder("/tmp/vis_in_" + name, "/tmp/vis_out_" + name, env_path)
             session["log"] = shellders[name].get_output()
         else:
             session["log"] = ["(the previous session log has been lost)"]
