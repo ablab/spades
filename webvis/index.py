@@ -8,6 +8,7 @@ from jinja2 import Markup
 import re
 from urllib import quote, unquote
 #System imports
+import os
 from os import listdir
 from os.path import isfile, join
 #App imports
@@ -34,13 +35,14 @@ def make_url(string):
     files = re.findall(FILENAME_REGEXP, string)
     res = string
     for f in files:
-        method = "get"
+        method = None
         if f.endswith(DOT):
             method = "render"
         elif f.endswith("/"):
             method = "ls"
-        url = "<a href=\"/%s?path=%s\">%s</a>" % (method, quote(f), f)
-        res = res.replace(f, url)
+        if method is not None:
+            url = "<a href=\"/%s?path=%s\">%s</a>" % (method, quote(f), f)
+            res = res.replace(f, url)
     return res
 
 def format_output(lines):
@@ -70,14 +72,14 @@ def login():
     global shellders
     if "username" not in session:
         name = request.args.get("username")
+        #TODO: server name validation
         if not name:
             name = "gaf"
         session["username"] = name
+        os.mkdir(path.join(cache_path, name))
         if name not in shellders:
-            shellders[name] = Shellder("/tmp/vis_in_" + name, "/tmp/vis_out_" + name, env_path)
-            log = shellders[name].get_output()
-            _debug("Got", log)
-            session["log"] = log
+            shellders[name] = Shellder("/tmp/vis_in_" + name, "/tmp/vis_out_" + name, env_path)            
+            session["log"] = shellders[name].get_output()
         else:
             session["log"] = ["(the previous session log has been lost)"]
     return flask.redirect("/")
@@ -103,10 +105,7 @@ def command():
         _debug("Sending `%s`..." % com)
         session["log"].append(">" + com)
         sh.send(com)
-    result = sh.get_output(5)
-    complete = False
-    if len(result) and result[-1] == sh.end_out:
-        complete = True
+    (result, complete) = sh.get_output(5)
     session["log"].extend(result)
     #return result
     return flask.jsonify(log=format_output(result), complete=complete)
@@ -119,12 +118,16 @@ def get():
     except IOError:
         return flask.abort(404)
 
-def doRender(full_path):
+def make_cached(basename):
+    return path.join(cache_path, session["username"], basename)
+
+def do_render(full_path):
     file_name = path.basename(full_path)
     name_only, ext = path.splitext(file_name)
     #if not ext == DOT:
     #    raise RuntimeError()
-    res_path = cache_path + name_only + SVG
+    name = session["username"]
+    res_path = make_cached(name_only + SVG)
     result = open(res_path, "w")
     subprocess.call(["dot", "-Tsvg", full_path], stdout=result)
     result.close()
@@ -136,11 +139,11 @@ def render():
     full_path = augment(unquote(request.args.get("path", "")))
     _debug("Rendering", full_path)
     try:
-        return doRender(full_path)
+        return do_render(full_path)
     except:
         flask.abort(500)
 
-def doGraph(full_path):
+def do_graph(full_path):
     file_name = path.basename(full_path)
     name_only, ext = path.splitext(file_name)
     #if not ext == DOT:
@@ -155,7 +158,7 @@ def graph():
     full_path = augment(unquote(request.args.get("path", "")))
     _debug("Building ", full_path)
     try:
-        return doGraph(full_path)
+        return do_graph(full_path)
     except:
         flask.abort(500)
 
@@ -173,13 +176,13 @@ def vertex(name):
         try:
             full_path = augment(re.finditer(FILENAME_REGEXP, out).next().group())
             if ext == SVG:
-                return flask.redirect(doRender(full_path))
+                return flask.redirect(do_render(full_path))
             elif ext == JSON:
-                return doGraph(full_path)
+                return do_graph(full_path)
             else:
                 return flask.error(500)
         except:
-            res_path = cache_path + vertex_id + "_err.txt"
+            res_path = make_cached(vertex_id + "_err.txt")
             result = open(res_path, "w")
             result.write(out)
             result.close()
@@ -198,6 +201,7 @@ def ls():
     full_path = augment(path)
     _debug("Getting contents of", path)
     if full_path[-1] == "*":
+        #For path completion
         try:
             files = subprocess.check_output("ls -pd " + full_path, shell=True).split("\n")[0:-1]
             _debug(files)
@@ -206,6 +210,7 @@ def ls():
         except:
             return ""
     try:
+        #For accessing folder content
         content = [path + f for f in os.listdir(full_path)]
         files = [f for f in content if isfile(augment(f))]
         _debug(files)

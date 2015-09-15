@@ -3,7 +3,7 @@
 if [ $1 ];
 then
   echo Cleaning leftovers...
-  rm static/cache/*
+  rm -rf static/cache/*
   rm flask_session/*
 fi
 
