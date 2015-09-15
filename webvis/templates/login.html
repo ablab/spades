@@ -1,0 +1,37 @@
+<!doctype html>
+<html>
+<head>
+  <title>WebVis Login</title>
+  <link rel="stylesheet" href="static/style.css">
+  <style>
+  body {background-image: url(static/assets/back.jpg); background-position: center -256px}
+  div#block {width: 300px; margin-left: auto; margin-right: auto}
+  p#error {color: #FF2266}
+  </style>
+  <script type="text/javascript" src="static/jquery.js"></script>
+  <script type="text/javascript">
+//Form validator
+$(function () {
+  $("#login-form").submit(function () {
+    if (!/^[\w]*$/.test($("#login-name").val())) {
+      $("#error").text("Names may only contain Latin alphanumeric characters.").fadeIn(500);
+      return false;
+    }
+    $("#error").empty();
+    return true;
+  });
+});
+  </script>
+</head>
+<body>
+  <div class="block">
+    <img src="static/assets/logo.png"/>
+    <p>Already logged: {{names}}</p>
+    <form id="login-form" action="/login">
+      <p><input type="text" id="login-name" name="username" value="" placeholder="Username (default is gaf)"></p>
+      <p id="error"></p>
+      <p class="submit"><input type="submit" value="Login"></p>
+    </form>
+  </div>
+</body>
+</html>
