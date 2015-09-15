@@ -11,21 +11,30 @@ import os
 import sys
 import sendgrid
 
+def send_messages(user_list, subject, text):
+    i = 0
+    for address in user_list:
+        i += 1
+        print '\rSending ' + str(i) + '/' + str(len(user_list)),
+        sys.stdout.flush()
+        send_message(address, subject, text)    
+    print '\nDone'
 
-def send_message(user_list, subject, text):
+def send_message(address, subject, text):
     sg = sendgrid.SendGridClient("spades", "5phGnoqf2n")
     message = sendgrid.Mail()
 
-    message.add_to("spades.support@bioinf.spbau.ru")
-    for address in user_list:
-        message.add_bcc(user_list)
-
+    message.add_to(address)
     message.set_from("spades.support@bioinf.spbau.ru")
     message.set_subject(subject)
     message.set_html(text)
 
-    sg.send(message)
-
+    try:
+        sg.send(message)
+    except SendGridClientError:
+        print('Client error occured while sending to ' + address)
+    except SendGridServerError:
+        print('Server error occured while sending to ' + address)
 
 def save_user_list(file_name, email_list):
     out_file = open(file_name, 'w')
@@ -66,8 +75,7 @@ for line in message_file:
 
 send = raw_input('Are you sure you want to send the message with subject "' + subject + '" to ' + str(len(user_set)) + ' users? (yes/no) ')
 if (send.strip().upper() == 'YES'):
-    send_message(user_set, subject, message)
-    print("Message sent")
+    send_messages(user_set, subject, message)
 else:
     print("Aborted")
 
