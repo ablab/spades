@@ -183,6 +183,12 @@ bool RemoveBulges(
 
     return br.RunFromIterator(it,
                       make_shared<CoverageUpperBound<Graph>>(g, br_config.max_coverage));
+    //ParallelBulgeRemover<Graph> br(g,/*chunk_size*/ 10000, max_length, br_config.max_coverage,
+    //                       br_config.max_relative_coverage, br_config.max_delta,
+    //                       br_config.max_relative_delta,
+    //                       opt_handler, removal_handler);
+
+    //return br.RunFromIterator(it);
 }
 
 template<class Graph>

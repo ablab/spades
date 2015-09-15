@@ -124,6 +124,9 @@ public:
         base::insert(begin, end);
     }
 
+    void push(const ElementId& el) {
+        base::push(el);
+    }
 };
 
 /**

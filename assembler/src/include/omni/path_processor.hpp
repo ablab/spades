@@ -14,7 +14,7 @@
 namespace omnigraph {
 
 template<class Graph>
-const string PrintPath(Graph& g, const vector<typename Graph::EdgeId>& edges) {
+const string PrintPath(const Graph& g, const vector<typename Graph::EdgeId>& edges) {
 	string delim = "";
 	std::stringstream ss;
 	for (size_t i = 0; i < edges.size(); ++i) {
