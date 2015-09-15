@@ -17,6 +17,7 @@
 
 
 #include "bidirectional_path.hpp"
+#include "contig_output.hpp"
 #include "io/osequencestream.hpp"
 
 namespace path_extend {
@@ -28,51 +29,37 @@ protected:
     DECL_LOGGER("PathExtendIO")
 
 protected:
-	const Graph& g_;
-
+    const Graph& g_;
+    ContigConstructor<Graph> &constructor_;
     size_t k_;
 
-	string ToString(const BidirectionalPath& path) const {
-		stringstream ss;
-		if (path.IsInterstrandBulge() && path.Size() == 1) {
-		    ss << g_.EdgeNucls(path.Back()).Subseq(k_, g_.length(path.Back())).str();
-		    return ss.str();
-		}
-
-		if (!path.Empty()) {
-			ss << g_.EdgeNucls(path[0]).Subseq(0, k_).str();
-		}
-
-		for (size_t i = 0; i < path.Size(); ++i) {
-			int gap = i == 0 ? 0 : path.GapAt(i);
-			if (gap > (int) k_) {
-				for (size_t j = 0; j < gap - k_; ++j) {
-					ss << "N";
-				}
-				ss << g_.EdgeNucls(path[i]).str();
-			} else {
-				int overlapLen = (int) k_ - gap;
-				if (overlapLen >= (int) g_.length(path[i]) + (int) k_) {
-					continue;
-				}
-
-				ss << g_.EdgeNucls(path[i]).Subseq(overlapLen).str();
-			}
-		}
-		return ss.str();
-	}
-
-    Sequence ToSequence(const BidirectionalPath& path) const {
-        SequenceBuilder result;
+    string ToString(const BidirectionalPath& path) const {
+        stringstream ss;
+        if (path.IsInterstrandBulge() && path.Size() == 1) {
+            ss << constructor_.construct(path.Back()).first.substr(k_, g_.length(path.Back()));
+            return ss.str();
+        }
 
         if (!path.Empty()) {
-            result.append(g_.EdgeNucls(path[0]).Subseq(0, k_));
-        }
-        for (size_t i = 0; i < path.Size(); ++i) {
-            result.append(g_.EdgeNucls(path[i]).Subseq(k_));
+            ss << constructor_.construct(path[0]).first.substr(0, k_);
         }
 
-        return result.BuildSequence();
+        for (size_t i = 0; i < path.Size(); ++i) {
+            int gap = i == 0 ? 0 : path.GapAt(i);
+            if (gap > (int) k_) {
+                for (size_t j = 0; j < gap - k_; ++j) {
+                    ss << "N";
+                }
+                ss << constructor_.construct(path[i]).first;
+            } else {
+                int overlapLen = (int) k_ - gap;
+                if (overlapLen >= (int) g_.length(path[i]) + (int) k_) {
+                    continue;
+                }
+                ss << constructor_.construct(path[i]).first.substr((size_t) overlapLen);
+            }
+        }
+        return ss.str();
     }
 
     void MakeIDS(const PathContainer& paths,
@@ -226,7 +213,7 @@ protected:
 
 
 public:
-    ContigWriter(const Graph& g): g_(g), k_(g.k()){
+    ContigWriter(const Graph& g, ContigConstructor<Graph> &constructor): g_(g), constructor_(constructor), k_(g.k()) {
 
     }
 
@@ -250,27 +237,27 @@ public:
 
 
     void writePathEdges(const PathContainer& paths, const string& filename) const {
-		INFO("Outputting path data to " << filename);
-		std::ofstream oss;
+        INFO("Outputting path data to " << filename);
+        std::ofstream oss;
         oss.open(filename.c_str());
         int i = 1;
         oss << paths.size() << endl;
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-			//oss << i << endl;
-			i++;
+            //oss << i << endl;
+            i++;
             BidirectionalPath* path = iter.get();
             if (path->GetId() % 2 != 0) {
                 path = path->GetConjPath();
             }
             oss << "PATH " << path->GetId() << " " << path->Size() << " " << path->Length() + k_ << endl;
             for (size_t j = 0; j < path->Size(); ++j) {
-			    oss << g_.int_id(path->At(j)) << " " << g_.length(path->At(j)) <<  " " << path->GapAt(j) << endl;
+                oss << g_.int_id(path->At(j)) << " " << g_.length(path->At(j)) <<  " " << path->GapAt(j) << endl;
             }
             //oss << endl;
-		}
-		oss.close();
-		DEBUG("Edges written");
-	}
+        }
+        oss.close();
+        DEBUG("Edges written");
+    }
 
     void loadPaths(PathContainer& paths,  GraphCoverageMap& cover_map, const string& filename) const {
         paths.clear();
@@ -317,16 +304,13 @@ public:
         io::osequencestream_with_data_for_scaffold oss(filename);
         int i = 0;
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-        	if (iter.get()->Length() <= 0){
-        		continue;
-        	}
-        	DEBUG("NODE " << ++i);
-            BidirectionalPath* path = iter.get();
-            if (path->GetId() % 2 != 0) {
-                path = path->GetConjPath();
+            if (iter.get()->Length() <= 0){
+                continue;
             }
+            DEBUG("NODE " << ++i);
+            BidirectionalPath* path = iter.get();
             path->Print();
-        	oss.setID((int) path->GetId());
+            oss.setID((int) path->GetId());
             oss.setCoverage(path->Coverage());
             oss << ToString(*path);
         }
@@ -334,6 +318,7 @@ public:
     }
 
     void WritePathsToFASTG(const PathContainer& paths, const string& filename, const string& fastafilename) const {
+        VERIFY_MSG(false, "FASTG output is deprecated for paths")
         BidirectionalPathMap< string > ids;
         BidirectionalPathMap< set<string> > next_ids;
         INFO("Constructing FASTG file from paths ");
