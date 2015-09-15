@@ -316,8 +316,8 @@ SPAdes comes in several separate modules:
 ===== Assembling finished. 
 
  * Corrected reads are in spades_test/corrected/
- * Assembled contigs are in spades_test/contigs.fasta (contigs.fastg)
- * Assembled scaffolds are in spades_test/scaffolds.fasta (scaffolds.fastg)
+ * Assembled contigs are in spades_test/contigs.fasta
+ * Assembled scaffolds are in spades_test/scaffolds.fasta
 
 ======= SPAdes pipeline finished.
 
@@ -1062,21 +1062,21 @@ However, it might be tricky to fully utilize the advantages of  long reads you h
     <ul>
         <li><code>&lt;output_dir>/corrected/</code> directory contains reads corrected by BayesHammer in <code>*.fastq.gz</code> files; if compression is disabled, reads are stored in uncompressed  <code>*.fastq</code> files</li>
         <li><code>&lt;output_dir>/contigs.fasta</code> contains resulting contigs</li>
-        <li><code>&lt;output_dir>/contigs.fastg</code> resulting contigs in <a href="http://fastg.sourceforge.net/FASTG_Spec_v1.00.pdf" target="_blank">FASTG format</a></li>
         <li><code>&lt;output_dir>/scaffolds.fasta</code> contains resulting scaffolds</li>
-        <li><code>&lt;output_dir>/scaffolds.fastg</code> resulting scaffolds in <a href="http://fastg.sourceforge.net/FASTG_Spec_v1.00.pdf" target="_blank">FASTG format</a></li>
+        <li><code>&lt;output_dir>/assembly_graph.fastg</code> contains  SPAdes assembly graph in <a href="http://fastg.sourceforge.net/FASTG_Spec_v1.00.pdf" target="_blank">FASTG format</a></li>
     </ul>
 
 <p>
-   To view FASTG files we recommend to use  <a href="http://rrwick.github.io/Bandage/" target="_blank">Bandage tool</a>. Note that the assembly graph is stored in <code>before_rr.fastg</code>, while <code>contigs.fastg</code> and <code>scaffolds.fastg</code> correspond to the paths in the assembly graph after repeat resolution and scaffolding stages respectively.
+   To view FASTG files we recommend to use <a href="http://rrwick.github.io/Bandage/" target="_blank">Bandage tool</a>. Note that sequences stored in <code>assembly_graph.fastg</code> correspond to contigs before repeat resolution (edges of the assembly graph). Contigs after repeat resolution (scaffolding) are stored in <code>contigs.fasta</code> (<code>scaffolds.fasta</code>) and can be represented as paths in the assembly graph.
     
 <p>
 The full list of <code>&lt;output_dir></code> content is presented below: 
 </p>
 <pre>
-    <code>contigs.fasta, contigs.fastg</code> &ndash; <i>resulting contigs</i>
-    <code>scaffolds.fasta, scaffolds.fastg</code> &ndash; <i>resulting scaffolds </i>
-    <code>before_rr.fasta, before_rr.fastg</code> &ndash; <i>contigs before repeat resolution</i>
+    <code>contigs.fasta</code> &ndash; <i>resulting contigs</i>
+    <code>scaffolds.fasta</code> &ndash; <i>resulting scaffolds </i>
+    <code>before_rr.fasta</code> &ndash; <i>contigs before repeat resolution</i>
+    <code>assembly_graph.fastg</code> &ndash; <i>assembly graph</i>
 
     <code>corrected/</code> &ndash; <i>files from read error correction</i>
         <code>configs/</code> &ndash; <i>configuration files for read error correction</i>
