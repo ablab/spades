@@ -108,7 +108,7 @@ inline void OutputBrokenScaffolds(PathContainer& paths, int k,
     breaker.Split(paths);
     breaker.container().SortByLength();
     //writer.writePaths(breaker.container(), filename + ".fasta");
-    writer.WritePathsToFASTG(breaker.container(), filename + ".fastg", filename + ".fasta");
+    writer.writePaths(breaker.container(), filename + ".fasta");
 }
 
 inline void AddPathsToContainer(const conj_graph_pack& gp,
@@ -217,7 +217,9 @@ inline void ClonePathContainer(PathContainer& spaths, PathContainer& tpaths, Gra
 }
 
 inline void FinalizePaths(PathContainer& paths, GraphCoverageMap& cover_map, size_t max_overlap, bool mate_pairs = false) {
-    ContigWriter writer(cover_map.graph());
+    DefaultContigCorrector<ConjugateDeBruijnGraph> corrector(cover_map.graph());
+    DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(cover_map.graph(), corrector);
+    ContigWriter writer(cover_map.graph(), constructor);
     PathExtendResolver resolver(cover_map.graph());
 
     resolver.removeOverlaps(paths, cover_map, max_overlap, cfg::get().pe_params.param_set.remove_overlaps, cfg::get().pe_params.param_set.cut_all_overlaps);
@@ -300,7 +302,6 @@ inline shared_ptr<SimpleExtender> MakeLongReadsExtender(const conj_graph_pack& g
     PathContainer paths;
     AddPathsToContainer(gp, gp.single_long_reads[lib_index].GetAllPaths(), 1, paths);
 
-    ContigWriter writer(gp.g);
     const auto& lib = cfg::get().ds.reads[lib_index];
     shared_ptr<ExtensionChooser> longReadEC =
             make_shared<LongReadsExtensionChooser>(gp.g, paths, GetSingleReadsFilteringThreshold(lib.type()),
@@ -492,7 +493,9 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     make_dir(GetEtcDir(output_dir));
     const pe_config::ParamSetT& pset = cfg::get().pe_params.param_set;
 
-    ContigWriter writer(gp.g);
+    DefaultContigCorrector<ConjugateDeBruijnGraph> corrector(gp.g);
+    DefaultContigConstructor<ConjugateDeBruijnGraph> constructor(gp.g, corrector);
+    ContigWriter writer(gp.g, constructor);
 
 //make pe + long reads extenders
     GraphCoverageMap cover_map(gp.g);
@@ -525,15 +528,13 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
         OutputBrokenScaffolds(paths, (int) gp.g.k(), writer,
                               output_dir + (mp_exist ? "pe_contigs" : broken_contigs.get()));
     }
-    writer.WritePathsToFASTG(paths, GetEtcDir(output_dir) + "pe_before_traversal.fastg", GetEtcDir(output_dir) + "pe_before_traversal.fasta");
+    writer.writePaths(paths, GetEtcDir(output_dir) + "pe_before_traversal.fasta");
     DebugOutputPaths(writer, gp, output_dir, paths, "before_traverse_pe");
     if (traversLoops) {
         TraverseLoops(paths, cover_map, mainPE);
     }
     DebugOutputPaths(writer, gp, output_dir, paths, (mp_exist ? "final_pe_paths" : "final_paths"));
-    writer.WritePathsToFASTG(paths,
-                             output_dir + (mp_exist ? "pe_scaffolds" : contigs_name) + ".fastg",
-                             output_dir + (mp_exist ? "pe_scaffolds" : contigs_name) + ".fasta" );
+    writer.writePaths(paths,output_dir + (mp_exist ? "pe_scaffolds" : contigs_name) + ".fasta" );
 
     cover_map.Clear();
     paths.DeleteAllPaths();
@@ -555,7 +556,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     auto mp_paths = resolver.extendSeeds(clone_paths, *mp_main_pe);
     FinalizePaths(mp_paths, clone_map, max_over, true);
     DebugOutputPaths(writer, gp, output_dir, mp_paths, "mp_final_paths");
-    writer.WritePathsToFASTG(mp_paths, GetEtcDir(output_dir) + "mp_prefinal.fastg", GetEtcDir(output_dir) + "mp_prefinal.fasta");
+    writer.writePaths(mp_paths, GetEtcDir(output_dir) + "mp_prefinal.fasta");
 
     DEBUG("Paths are grown with mate-pairs");
     if (cfg::get().pe_params.debug_output) {
@@ -574,7 +575,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     auto last_paths = resolver.extendSeeds(mp_paths, *last_extender);
     FinalizePaths(last_paths, clone_map, max_over);
 
-    writer.WritePathsToFASTG(last_paths, GetEtcDir(output_dir) + "mp_before_traversal.fastg", GetEtcDir(output_dir) + "mp_before_traversal.fasta");
+    writer.writePaths(last_paths, GetEtcDir(output_dir) + "mp_before_traversal.fasta");
     DebugOutputPaths(writer, gp, output_dir, last_paths, "before_traverse_mp");
     TraverseLoops(last_paths, clone_map, last_extender);
 
@@ -583,7 +584,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
         OutputBrokenScaffolds(last_paths, (int) gp.g.k(), writer, output_dir + broken_contigs.get());
     }
     DebugOutputPaths(writer, gp, output_dir, last_paths, "last_paths");
-    writer.WritePathsToFASTG(last_paths, output_dir + contigs_name + ".fastg", output_dir + contigs_name + ".fasta");
+    writer.writePaths(last_paths, output_dir + contigs_name + ".fasta");
 
     last_paths.DeleteAllPaths();
     seeds.DeleteAllPaths();

@@ -22,16 +22,16 @@
 
 namespace io {
 
-inline std::string MakeContigId(int number, size_t length) {
-    return  "NODE_" + ToString(number) + "_length_" + ToString(length);
+inline std::string MakeContigId(int number, size_t length, const string& prefix = "NODE") {
+    return prefix + "_" + ToString(number) + "_length_" + ToString(length);
 }
 
-inline std::string MakeContigId(int number, size_t length, double coverage) {
-    return "NODE_" + ToString(number)  + "_length_" + ToString(length) + "_cov_" + ToString(coverage);
+inline std::string MakeContigId(int number, size_t length, double coverage, const string& prefix = "NODE") {
+    return prefix + "_" + ToString(number)  + "_length_" + ToString(length) + "_cov_" + ToString(coverage);
 }
 
-inline std::string MakeContigId(int number, size_t length, double coverage, size_t id) {
-    return "NODE_" + ToString(number)  + "_length_" + ToString(length) + "_cov_" + ToString(coverage)  + "_ID_" +  ToString(id);
+inline std::string MakeContigId(int number, size_t length, double coverage, size_t id, const string& prefix = "NODE") {
+    return prefix + "_" + ToString(number)  + "_length_" + ToString(length) + "_cov_" + ToString(coverage)  + "_ID_" +  ToString(id);
 }
 
 class osequencestream {
@@ -319,7 +319,8 @@ protected:
     }
 
 public:
-    osequencestream_for_fastg(const std::string& filename): osequencestream_with_id(filename) {
+    osequencestream_for_fastg(const std::string& filename):
+            osequencestream_with_id(filename) {
         id_ = 1;
     }
 
