@@ -888,51 +888,6 @@ def remove_fasta_pref(s):
     return s
 
 
-def create_fastg_from_fasta(fasta_filename, fastg_filename, log=None):
-    '''
-    contig names are taken from <fastg> and applied to <fasta> for creating new fastg (location is near with fasta)
-    '''
-    #create fastg mapping
-    contig_graph = {}
-    fastg_names = [name for (name, seq) in read_fasta(fastg_filename)]
-    for name in fastg_names:
-        adjacency = name.split(':')
-        if len(adjacency) == 1:
-            contig_graph[get_contig_id(adjacency[0])] = []
-        else:
-            contig_graph[get_contig_id(adjacency[0])] = [get_contig_id(next) for next in adjacency[1].split(',')]
-
-    fasta_data = read_fasta(fasta_filename)
-    fasta_id_map = {}
-    for (name, seq) in fasta_data:
-        fasta_id_map[get_contig_id(name)] = remove_fasta_pref(name)
-        fasta_id_map[get_contig_id(name) + "'"] = remove_fasta_pref(name) + "'"
-
-    result_fastg = []
-    #print fasta_id_map
-    #print contig_graph
-    for (name, seq) in fasta_data:
-        cur_id = name
-        new_name = cur_id
-        adjacent_list = contig_graph[get_contig_id(cur_id)]
-        #print adjacent_list
-        if len(adjacent_list) > 0:
-            new_name += ":" + ",".join(map(lambda x : fasta_id_map[x], adjacent_list))
-        new_name += ";"
-        result_fastg.append((new_name, seq));
-
-        cur_id = name + "'"
-        new_name = cur_id
-        adjacent_list = contig_graph[get_contig_id(cur_id)]
-        if len(adjacent_list) > 0:
-            new_name += ":" + ",".join(map(lambda x : fasta_id_map[x], adjacent_list))
-        new_name += ";"
-        result_fastg.append((new_name, rev_comp(seq)));
-
-    new_fastg_filename = fasta_filename[:-6] + ".fastg"
-    write_fasta(new_fastg_filename, result_fastg)
-
-
 def is_float(value):
     try:
         float(value)
