@@ -22,15 +22,15 @@
 
 namespace io {
 
-inline std::string MakeContigId(int number, size_t length, const string& prefix = "NODE") {
+inline std::string MakeContigId(int number, size_t length, const std::string& prefix = "NODE") {
     return prefix + "_" + ToString(number) + "_length_" + ToString(length);
 }
 
-inline std::string MakeContigId(int number, size_t length, double coverage, const string& prefix = "NODE") {
+inline std::string MakeContigId(int number, size_t length, double coverage, const std::string& prefix = "NODE") {
     return prefix + "_" + ToString(number)  + "_length_" + ToString(length) + "_cov_" + ToString(coverage);
 }
 
-inline std::string MakeContigId(int number, size_t length, double coverage, size_t id, const string& prefix = "NODE") {
+inline std::string MakeContigId(int number, size_t length, double coverage, size_t id, const std::string& prefix = "NODE") {
     return prefix + "_" + ToString(number)  + "_length_" + ToString(length) + "_cov_" + ToString(coverage)  + "_ID_" +  ToString(id);
 }
 
