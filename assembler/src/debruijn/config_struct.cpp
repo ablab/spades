@@ -690,6 +690,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   load(cfg.max_memory, pt, "max_memory");
 
   load(cfg.diploid_mode, pt,	"diploid_mode");
+  load(cfg.parallel_br, pt,	"parallel_br");
 
   path::CheckFileExistenceFATAL(cfg.dataset_file);
   boost::property_tree::ptree ds_pt;

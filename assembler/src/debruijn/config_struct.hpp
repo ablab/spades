@@ -625,6 +625,7 @@ struct debruijn_config {
 
     bool diploid_mode;
     bool need_mapping;
+    bool parallel_br;
 };
 
 void load(debruijn_config& cfg, const std::string &filename);

@@ -175,20 +175,30 @@ bool RemoveBulges(
         max_length = additional_length_bound;
     }
 
-    BulgeRemover<Graph> br(g, max_length, br_config.max_coverage,
-                           br_config.max_relative_coverage, br_config.max_delta,
-                           br_config.max_relative_delta,
-                           br_config.max_number_edges,
-                           opt_handler, removal_handler);
+    perf_counter perf;
 
-    return br.RunFromIterator(it,
-                      make_shared<CoverageUpperBound<Graph>>(g, br_config.max_coverage));
-    //ParallelBulgeRemover<Graph> br(g,/*chunk_size*/ 10000, max_length, br_config.max_coverage,
-    //                       br_config.max_relative_coverage, br_config.max_delta,
-    //                       br_config.max_relative_delta,
-    //                       opt_handler, removal_handler);
+    bool modified = false;
+    if (cfg::get().parallel_br) {
+		ParallelBulgeRemover<Graph> br(g,/*chunk_size*/ 10000, max_length, br_config.max_coverage,
+							   br_config.max_relative_coverage, br_config.max_delta,
+							   br_config.max_relative_delta,
+                               br_config.max_number_edges,
+							   opt_handler, removal_handler);
 
-    //return br.RunFromIterator(it);
+		modified = br.RunFromIterator(it);
+    } else {
+		BulgeRemover<Graph> br(g, max_length, br_config.max_coverage,
+							   br_config.max_relative_coverage, br_config.max_delta,
+							   br_config.max_relative_delta,
+                               br_config.max_number_edges,
+							   opt_handler, removal_handler);
+
+		modified = br.RunFromIterator(it,
+						  make_shared<CoverageUpperBound<Graph>>(g, br_config.max_coverage));
+    }
+
+    INFO("BR time " << perf.time());
+    return modified;
 }
 
 template<class Graph>

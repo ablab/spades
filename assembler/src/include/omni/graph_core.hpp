@@ -287,6 +287,10 @@ private:
        delete conjugate.get();
    }
 
+   bool AdditionalCompressCondition(VertexId v) const {
+       return !(EdgeEnd(GetUniqueOutgoingEdge(v)) == conjugate(v) && EdgeStart(GetUniqueIncomingEdge(v)) == conjugate(v));
+   }
+
 protected:
 
    VertexId CreateVertex(const VertexData& data1, const VertexData& data2, restricted::IdDistributor& id_distributor) {
@@ -385,6 +389,13 @@ protected:
             delete rcEdge.get();
         }
         delete edge.get();
+    }
+
+    void HiddenDeletePath(const std::vector<EdgeId>& edgesToDelete, const std::vector<VertexId>& verticesToDelete) {
+        for (auto it = edgesToDelete.begin(); it != edgesToDelete.end(); ++it)
+            HiddenDeleteEdge(*it);
+        for (auto it = verticesToDelete.begin(); it != verticesToDelete.end(); ++it)
+            HiddenDeleteVertex(*it);
     }
 
 public:
@@ -506,13 +517,6 @@ public:
 
     //////////////////////shortcut methods
 
-    void HiddenDeletePath(const std::vector<EdgeId>& edgesToDelete, const std::vector<VertexId>& verticesToDelete) {
-        for (auto it = edgesToDelete.begin(); it != edgesToDelete.end(); ++it)
-            HiddenDeleteEdge(*it);
-        for (auto it = verticesToDelete.begin(); it != verticesToDelete.end(); ++it)
-            HiddenDeleteVertex(*it);
-    }
-
     std::vector<EdgeId> IncidentEdges(VertexId v) const {
         vector<EdgeId> answer;
         push_back_all(answer, IncomingEdges(v));
@@ -544,10 +548,6 @@ public:
 
     bool IsDeadStart(VertexId v) const {
         return IncomingEdgeCount(v) == 0;
-    }
-
-    bool AdditionalCompressCondition(VertexId v) const {
-        return !(EdgeEnd(GetUniqueOutgoingEdge(v)) == conjugate(v) && EdgeStart(GetUniqueIncomingEdge(v)) == conjugate(v));
     }
     
     bool CanCompressVertex(VertexId v) const {

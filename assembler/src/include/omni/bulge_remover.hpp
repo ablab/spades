@@ -427,6 +427,7 @@ class ParallelBulgeRemover {
 public:
 
     typedef std::function<void(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackF;
+    typedef SmartSetIterator<Graph, EdgeId, CoverageComparator<Graph>> SmartEdgeSet;
 
     ParallelBulgeRemover(Graph& g, size_t chunk_size,
                          size_t max_length, double max_coverage,
@@ -481,6 +482,8 @@ public:
     //false if time to stop
     template<class SmartEdgeIt>
     bool FillEdgeBuffer(SmartEdgeIt& it, vector<EdgeId>& buffer) const {
+        INFO("Filling edge buffer");
+        perf_counter perf;
         VERIFY(buffer.empty());
         auto proceed_condition = make_shared<CoverageUpperBound<Graph>>(g_, max_coverage_);
 
@@ -508,26 +511,32 @@ public:
                 TRACE("Can not be bulge");
             }
         }
-
+        INFO("Buffer filled in " << perf.time() << " seconds");
         TRACE("No more edges in iterator");
         return false;
     }
     
-    std::vector<std::vector<BulgeInfo>> BulgeBuffers(const std::vector<EdgeId> edge_buffer) const {
-       std::vector<std::vector<BulgeInfo>> bulge_buffers(omp_get_max_threads());
-       size_t n = edge_buffer.size();
-       #pragma omp parallel for schedule(guided)
-       for (size_t i = 0; i < n; ++i) {
-           EdgeId e = edge_buffer[i];
-           auto alternative = alternatives_analyzer_(e);
-           if (!alternative.empty()) {
-               bulge_buffers[omp_get_thread_num()].push_back(BulgeInfo(i, e, std::move(alternative)));
-           }
-       }
-       return bulge_buffers;
+    std::vector<std::vector<BulgeInfo>> FindBulges(const std::vector<EdgeId> edge_buffer) const {
+    	INFO("Looking for bulges (in parallel)");
+        perf_counter perf;
+        std::vector<std::vector<BulgeInfo>> bulge_buffers(omp_get_max_threads());
+        size_t n = edge_buffer.size();
+        #pragma omp parallel for schedule(guided)
+        for (size_t i = 0; i < n; ++i) {
+            EdgeId e = edge_buffer[i];
+            auto alternative = alternatives_analyzer_(e);
+            if (!alternative.empty()) {
+                bulge_buffers[omp_get_thread_num()].push_back(BulgeInfo(i, e, std::move(alternative)));
+            }
+        }
+        INFO("Buffers found in " << perf.time() << " seconds");
+        return bulge_buffers;
     }
 
     std::vector<BulgeInfo> MergeBuffers(std::vector<std::vector<BulgeInfo>>&& buffers) const {
+        INFO("Merging buffers");
+        perf_counter perf;
+
         std::vector<BulgeInfo> merged_bulges;
         for (auto& bulge_buffer : buffers) {
             std::copy(std::make_move_iterator(bulge_buffer.begin()),
@@ -536,18 +545,19 @@ public:
         }
 
         std::sort(merged_bulges.begin(), merged_bulges.end());
+        INFO("Buffers merged in " << perf.time() << " seconds");
         return merged_bulges;
     }
 
-    SmartSetIterator<Graph, EdgeId, CoverageComparator<Graph>> 
-            RetainIndependentBulges(std::vector<BulgeInfo>& bulges) const {
+    SmartEdgeSet RetainIndependentBulges(std::vector<BulgeInfo>& bulges) const {
+        INFO("Looking for independent bulges");
+        perf_counter perf;
 
         std::vector<BulgeInfo> filtered;
         filtered.reserve(bulges.size());
         //fixme switch to involved vertices for fully parallel glueing
         std::unordered_set<EdgeId> involved_edges;
-        SmartSetIterator<Graph, EdgeId, CoverageComparator<Graph>> interacting_edges(g_,
-                                                                                     CoverageComparator<Graph>(g_));
+        SmartEdgeSet interacting_edges(g_, CoverageComparator<Graph>(g_));
 
         for (BulgeInfo& info : bulges) {
             if (CheckInteracting(info, involved_edges)) {
@@ -558,13 +568,39 @@ public:
             }
         }
         bulges = std::move(filtered);
+
+        INFO("Independent bulges identified in " << perf.time() << " seconds");
+        INFO("Independent cnt " << bulges.size());
+        INFO("Interacting cnt " << interacting_edges.size());
         return interacting_edges;
+    }
+
+    bool ProcessBulges(const std::vector<BulgeInfo>& bulges, SmartEdgeSet& interacting_edges) {
+        INFO("Processing bulges");
+        perf_counter perf;
+
+    	bool triggered = false;
+
+        for (const BulgeInfo& info : bulges) {
+        	triggered = true;
+            gluer_(info.e, info.alternative);
+        }
+        INFO("Independent bulges glued in " << perf.time() << " seconds");
+        perf.reset();
+
+        triggered |= usual_br_.RunFromIterator(interacting_edges,
+                              make_shared<CoverageUpperBound<Graph>>(g_, max_coverage_));
+
+        INFO("Interacting edges processed in " << perf.time() << " seconds");
+        return triggered;
     }
 
     template<class SmartEdgeIt>
     bool RunFromIterator(SmartEdgeIt& it) {
         VERIFY(it.canonical_only());
         TRACE("Start processing");
+
+        perf_counter perf;
 
         bool triggered = false;
 
@@ -574,20 +610,11 @@ public:
             edge_buffer.reserve(chunk_size_);
             proceed = FillEdgeBuffer(it, edge_buffer);
 
+            std::vector<BulgeInfo> bulges = MergeBuffers(FindBulges(edge_buffer));
 
-            std::vector<BulgeInfo> bulges = MergeBuffers(BulgeBuffers(edge_buffer));
-
-            std::vector<BulgeInfo> filtered_bulges;
-            //SmartSetIterator<Graph, EdgeId, CoverageComparator<Graph>> interacting_edges(g_,
-            //                                                                         CoverageComparator<Graph>(g_));
             auto interacting_edges = RetainIndependentBulges(bulges);
 
-            for (const BulgeInfo& info : bulges) {
-                gluer_(info.e, info.alternative);
-            }
-
-            usual_br_.RunFromIterator(interacting_edges,
-                                  make_shared<CoverageUpperBound<Graph>>(g_, max_coverage_));
+            triggered |= ProcessBulges(bulges, interacting_edges);
         }
 
         TRACE("Finished processing. Triggered = " << triggered);
