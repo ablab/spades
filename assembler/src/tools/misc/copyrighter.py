@@ -52,6 +52,7 @@ code_comment = [
 
 only_show = False
 
+
 def insert_in_script(filename):
     print(filename)
     if only_show:
@@ -75,6 +76,7 @@ def insert_in_script(filename):
 
     modified.close() 
 
+
 def insert_in_code(filename):       
     print(filename)
     if only_show:
@@ -94,6 +96,7 @@ def insert_in_code(filename):
 
     modified.close()
 
+
 def visit(arg, dirname, names):
     for name in names:
         path = os.path.join(dirname, name)
@@ -109,13 +112,15 @@ def visit(arg, dirname, names):
         elif ext in ['.hpp', '.cpp', '.h', '.c']:
             insert_in_code(path)
 
+
 if len(sys.argv) < 2 or len(sys.argv) > 4:
-    print ("Usage: " + sys.argv[0] + " <src folder> [.ext -- only file with this extension will be modified; 'all' for all files] ['only-show' -- only show filepaths that will be copyrighted]")
+    print ("Usage: " + sys.argv[0] + " <dirname/filename> [.ext -- only file with this extension will be modified; 'all' for all files] ['only-show' -- only show filepaths that will be copyrighted]")
     sys.exit(1)
 
 start_dir = sys.argv[1]
-if not os.path.isdir(start_dir):
-    print("Error! " + start_dir + " is not a directory!")
+
+if not os.path.exists(start_dir):
+    print("Error! " + start_dir + " does not exist!")
     sys.exit(1)   
 
 arg = None
@@ -127,4 +132,7 @@ if len(sys.argv) >= 3:
 if len(sys.argv) >= 4:
     only_show = True
 
-os.path.walk(start_dir, visit, arg)
+if os.path.isfile(start_dir):
+    visit(arg, '', [start_dir])
+else:
+    os.path.walk(start_dir, visit, arg)
