@@ -36,7 +36,7 @@ protected:
     string ToString(const BidirectionalPath& path) const {
         stringstream ss;
         if (path.IsInterstrandBulge() && path.Size() == 1) {
-            ss << constructor_.construct(path.Back()).first.substr(k_, g_.length(path.Back()));
+            ss << constructor_.construct(path.Back()).first.substr(k_, g_.length(path.Back()) - k_);
             return ss.str();
         }
 
