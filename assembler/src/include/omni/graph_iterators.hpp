@@ -58,9 +58,6 @@ protected:
 
 public:
 
-    virtual ~SmartIterator() {
-    }
-
     bool canonical_only() const {
         return canonical_only_;
     }
@@ -68,6 +65,10 @@ public:
     bool IsEnd() const {
         return inner_it_.IsEnd();
     }
+
+    bool size() const {
+		return inner_it_.size();
+	}
 
     ElementId operator*() {
         return *inner_it_;
