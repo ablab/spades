@@ -11,8 +11,12 @@
 ### grep -rl "# Copyright (c) 2011-2014 Saint-Petersburg Academic University" . | xargs sed -i 's/# Copyright (c) 2011-2014 Saint-Petersburg Academic University/# Copyright (c) 2011-2015 Saint-Petersburg Academic University/g'
 #####
 
-##### for removing copyright #####
+##### for removing copyright (script-style, only SPbAU) #####
 ###  perl -0777 -i -pe 's/############################################################################\n# Copyright \(c\) 2011-2014 Saint-Petersburg Academic University\n# All Rights Reserved\n# See file LICENSE for details.\n############################################################################\n\n//igs' *.{py,sh}
+#####
+
+##### for removing copyright (code-style, two universities) #####
+###  grep -rl "State University" . | grep -v "kmer_index.hpp" | xargs perl -0777 -i -pe 's/\Q\/\/***************************************************************************\E\n\Q\/\/* Copyright (c) 2015 Saint Petersburg State University\E\n\Q\/\/* Copyright (c) 2011-2014 Saint Petersburg Academic University\E\n\Q\/\/* All Rights Reserved\E\n\Q\/\/* See file LICENSE for details.\E\n\Q\/\/***************************************************************************\E\n\n//igs'
 #####
 
 ##### for updating one-university copyright to two-university one #####
@@ -26,7 +30,7 @@ import sys
 script_comment = [
     '############################################################################',
     '# Copyright (c) 2015 Saint Petersburg State University',
-    '# Copyright (c) 2011-2014 Saint Petersburg Academic University',
+    #'# Copyright (c) 2011-2014 Saint Petersburg Academic University',  # new copyrights should be with SPbSU only
     '# All Rights Reserved',
     '# See file LICENSE for details.',
     '############################################################################', 
@@ -35,7 +39,7 @@ script_comment = [
 code_comment = [
     '//***************************************************************************',
     '//* Copyright (c) 2015 Saint Petersburg State University',
-    '//* Copyright (c) 2011-2014 Saint Petersburg Academic University',
+    #'//* Copyright (c) 2011-2014 Saint Petersburg Academic University',  # new copyrights should be with SPbSU only
     '//* All Rights Reserved',
     '//* See file LICENSE for details.',
     '//***************************************************************************',
