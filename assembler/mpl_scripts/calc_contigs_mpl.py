@@ -2,6 +2,7 @@
 
 import os
 import subprocess
+import sys
 
 SAMPLES_DIR = "gen-samples"
 SPADES = "/home/toxa31/work/algorithmic-biology/assembler/spades.py"
@@ -19,12 +20,12 @@ else:
 	os.system("rm -rf " + OUTPUT_DIR + "/*")
 
 for f in files:
-	cmd = "{spades} --only-assembler -1 {dir}/{read}.r1.fastq -2 {dir}/{read}.r2.fastq -o /home/toxa31/work/assembled".format(
+	cmd = "{spades} -k 55 --only-assembler -1 {dir}/{read}.r1.fastq -2 {dir}/{read}.r2.fastq -o /home/toxa31/work/assembled".format(
 		spades=SPADES, read=f, dir=SAMPLES_DIR)
 	if subprocess.call(cmd, shell=True) != 0:
 		print("")
 		print("Finished with error!")
-		break
+		sys.exit(1)
 
 
 	os.system("mv contigs.id " + OUTPUT_DIR + "/" + f + ".ctg.id")

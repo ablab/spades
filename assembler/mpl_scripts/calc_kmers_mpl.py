@@ -27,6 +27,8 @@ def calc_mpl(args):
 
 	cmd = cmd + " " + args.output
 
+	print(cmd)
+
 	os.system(cmd)
 
 def main():

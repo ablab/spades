@@ -25,7 +25,7 @@ const string KMER_PARSED_EXTENSION = ".bin";
 const string KMER_SORTED_EXTENSION = ".sorted";
 
 void PrintUsageInfo() {
-    puts("Usage: kmer-abundance-filter [options] <file 1> <file 2> ... <file N> <output file>");
+    puts("Usage: kmer-abundance-filter [options] <read 1> <read 2> [<read 1> <read 2> ...] <output file>");
     puts("Options:");
     puts("-one-min - minimal kmer abundance in each file");
     puts("-all-min - minimal kmer abundance in all files");
@@ -90,8 +90,10 @@ void FilterKmersAll(const std::vector<string>& files, int all_min, size_t k, con
         alive[i] = ReadKmerWithCount(*infiles[i], top_kmer[i]);
     }
 
-    std::ofstream output_kmer(output_file + ".kmer", std::ios::binary);
-    std::ofstream output_cnt(output_file + ".mpl", std::ios::binary);
+//    std::ofstream output_kmer(output_file + ".kmer", std::ios::binary);
+//    std::ofstream output_cnt(output_file + ".mpl", std::ios::binary);
+    std::ofstream output_kmer(output_file + ".kmer");
+    std::ofstream output_cnt(output_file + ".mpl");
     RtSeq::less3 kmer_less;
     while (true) {
         boost::optional<RtSeq> min_kmer;
@@ -116,17 +118,26 @@ void FilterKmersAll(const std::vector<string>& files, int all_min, size_t k, con
         if (!min_kmer) {
             break;
         }
+        std::vector<uint32> cnt_vector(n / 2, 0);
         if (cnt_min >= all_min) {
-            min_kmer.get().BinWrite(output_kmer);
+//            min_kmer.get().BinWrite(output_kmer);
+            output_kmer << min_kmer.get().str() << "\n";
             for (size_t i = 0; i < n; ++i) {
+                if (i != 0) {
+                    output_cnt << " ";
+                }
                 if (alive[i] && top_kmer[i].first == *min_kmer) {
-                    output_cnt.write((char*)&top_kmer[i].second, sizeof(uint32));
-                } else {
-                    int tmp = 0;
-                    output_cnt.write((char*)&tmp, sizeof(uint32));
+                    cnt_vector[i / 2] += top_kmer[i].second;
                 }
             }
         }
+        for (size_t i = 0; i < cnt_vector.size(); ++i) {
+            if (i != 0) {
+                output_cnt << " ";
+            }
+            output_cnt << cnt_vector[i];
+        }
+        output_cnt << "\n";
         for (size_t i = 0; i < n; ++i) {
             if (alive[i] && top_kmer[i].first == *min_kmer) {
                 alive[i] = ReadKmerWithCount(*infiles[i], top_kmer[i]);
@@ -163,7 +174,7 @@ int main(int argc, char *argv[]) {
         }
         i += 2;
     }
-    if (argc - i < 2) {
+    if (argc - i < 3 || (argc - i - 1) % 2 != 0) {
         PrintUsageInfo();
         return 0;
     }
