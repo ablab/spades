@@ -37,7 +37,7 @@ protected:
 	string ToString(const BidirectionalPath& path) const {
 		stringstream ss;
 		if (path.IsInterstrandBulge() && path.Size() == 1) {
-		    ss << constructor_.construct(path.Back()).first.substr(k_);
+		    ss << constructor_.construct(path.Back()).first.substr(k_, g_.length(path.Back()));
 		    return ss.str();
 		}
 
@@ -58,7 +58,7 @@ protected:
 				    WARN("Such scaffolding logic leads to local misassemblies");
 					continue;
 				}
-                ss << constructor_.construct(path[i]).first.substr(overlapLen);
+                ss << constructor_.construct(path[i]).first.substr((size_t) overlapLen);
 			}
 		}
 		return ss.str();
