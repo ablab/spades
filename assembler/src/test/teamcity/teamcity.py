@@ -163,20 +163,20 @@ def assess_quast(report, limit_map, name = ""):
     return result[0], log_str
 
 
-def filter_file_list(file_list):
-    current = 0
-    result_list = [file_list[current]]    
-    current_set = compare_fasta.read_fasta(file_list[current])
-
-    i = 1
-    while i < len(file_list):
-        if not compare_contigs(current_set, read_fasta(file_list[i])):
-            current = i
-            result_list.append(file_list[current])
-            current_set = compare_fasta.read_fasta(file_list[current])
-        i += 1
-    
-    return result_list
+# def filter_file_list(file_list):
+#     current = 0
+#     result_list = [file_list[current]]
+#     current_set = compare_fasta.read_fasta(file_list[current])
+#
+#     i = 1
+#     while i < len(file_list):
+#         if not compare_contigs(current_set, read_fasta(file_list[i])):
+#             current = i
+#             result_list.append(file_list[current])
+#             current_set = compare_fasta.read_fasta(file_list[current])
+#         i += 1
+#
+#     return result_list
 
 
 def run_quast(dataset_info, contigs, quast_output_dir):
@@ -554,7 +554,9 @@ try:
     if 'meta' in dataset_info.__dict__ and dataset_info.meta:
         enable_comparison = False
 
-    if enable_comparison and contig_dir != '' and 'quast_params' in dataset_info.__dict__ and '-R' in dataset_info.quast_params and 'assess' in dataset_info.__dict__ and dataset_info.assess:
+    if enable_comparison and contig_dir != '' and \
+      'quast_params' in dataset_info.__dict__ and dataset_info.quast_params and '-R' in dataset_info.quast_params \
+      and 'assess' in dataset_info.__dict__ and dataset_info.assess:
 
         latest_ctg = os.path.join(contig_dir, "latest_contigs.fasta")
 
@@ -581,7 +583,11 @@ try:
                 #exit_code = 13
 
 
-    if enable_comparison and contig_dir != '' and 'quast_params' in dataset_info.__dict__ and '-R' in dataset_info.quast_params and 'sc_assess' in dataset_info.__dict__ and dataset_info.sc_assess and os.path.exists(os.path.join(output_dir, "scaffolds.fasta")) and latest_found:
+    if enable_comparison and contig_dir != '' and \
+      'quast_params' in dataset_info.__dict__ and dataset_info.quast_params and '-R' in dataset_info.quast_params and \
+      'sc_assess' in dataset_info.__dict__ and dataset_info.sc_assess and \
+      os.path.exists(os.path.join(output_dir, "scaffolds.fasta")) and latest_found:
+
         latest_ctg = os.path.join(contig_dir, "latest_scaffolds.fasta")
         if not os.path.exists(latest_ctg):
             import glob
