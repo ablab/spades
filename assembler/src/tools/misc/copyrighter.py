@@ -23,6 +23,11 @@
 ### grep -rl "Copyright (c) 2011-2014" . | xargs perl -0777 -i -pe 's/\Q\/\/***************************************************************************\E\n\Q\/\/* Copyright (c) 2011-2014 Saint-Petersburg Academic University\E\n\Q\/\/* All Rights Reserved\E\n\Q\/\/* See file LICENSE for details.\E\n\Q\/\/****************************************************************************\E\n/\/\/***************************************************************************\n\/\/* Copyright \(c\) 2015 Saint Petersburg State University\n\/\/* Copyright \(c\) 2011-2014 Saint Petersburg Academic University\n\/\/* All Rights Reserved\n\/\/* See file LICENSE for details.\n\/\/***************************************************************************\n/igs'
 #####
 
+##### for removing SPbAU copyrights from new files (specified in <LIST OF FILES>)
+### for i in `cat <LIST OF FILES>`; do sed -i '' '/Saint Petersburg Academic University/d' $i; done
+#####
+
+
 import os
 import shutil
 import sys
