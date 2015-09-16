@@ -412,10 +412,8 @@ inline bool InsertSizeCompare(const shared_ptr<PairedInfoLibrary> lib1,
 inline vector<shared_ptr<PathExtender> > MakeAllScaffoldingExtenders2015(PathExtendStage stage,
                                                                          const conj_graph_pack &gp,
                                                                          const GraphCoverageMap &cov_map,
-                                                                         const pe_config::ParamSetT &pset,
-                                                                         bool use_auto_threshold,
-                                                                         const PathContainer &paths_for_mp = PathContainer()) {
-    VERIFY_MSG(false, 'Do not use MakeAllScaffoldingExtenders2015')
+                                                                         const pe_config::ParamSetT &pset) {
+    VERIFY_MSG(false, "Do not use MakeAllScaffoldingExtenders2015");
     ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, cfg::get().pe_params.scaffolding2015.min_unique_length, cfg::get().pe_params.scaffolding2015.unique_coverage_variation);
     auto storage = std::make_shared<ScaffoldingUniqueEdgeStorage>();
 
@@ -441,11 +439,19 @@ inline vector<shared_ptr<PathExtender> > MakeAllScaffoldingExtenders2015(PathExt
     return result;
 }
 
+inline void PrintExtenders(vector<shared_ptr<PathExtender> >& extenders) {
+    INFO("Extenders in vector:");
+    for(size_t i = 0; i < extenders.size(); ++i) {
+        INFO("Extender #i" << typeid(*extenders[i]).name());
+    }
+}
+
 inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage, const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
                                             const pe_config::ParamSetT& pset, const PathContainer& paths_for_mp = PathContainer()) {
 
     vector<shared_ptr<PathExtender> > result;
     vector<shared_ptr<PathExtender> > pes;
+    vector<shared_ptr<PathExtender> > pes2015;
     vector<shared_ptr<PathExtender> > pe_loops;
     vector<shared_ptr<PathExtender> > pe_scafs;
     vector<shared_ptr<PathExtender> > mps;
@@ -481,14 +487,14 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
                 pe_loops.push_back(MakePEExtender(gp, cov_map, i, pset, true));
             }
             if (IsForPEExtender(lib) && stage == PathExtendStage::PEStage && (pset.sm == sm_combined || pset.sm == sm_2015)) {
-                result.push_back(MakeScaffolding2015Extender(gp, cov_map, i, pset, storage));
+                pes2015.push_back(MakeScaffolding2015Extender(gp, cov_map, i, pset, storage));
             }
             if (IsForScaffoldingExtender(lib) && cfg::get().use_scaffolder && pset.scaffolder_options.on) {
                 ++scf_pe_libs;
                 if (pset.sm == sm_old || pset.sm == sm_combined)
                     pe_scafs.push_back(MakeScaffoldingExtender(gp, cov_map, i, pset));
                 else if (pset.sm == sm_old_pe_2015 || pset.sm == sm_2015 || pset.sm == sm_combined) {
-                    result.push_back(MakeScaffolding2015Extender(gp, cov_map, i, pset, storage));
+                    pe_scafs.push_back(MakeScaffolding2015Extender(gp, cov_map, i, pset, storage));
                 }
             }
             if (IsForMPExtender(lib) && stage == PathExtendStage::MPStage) {
@@ -496,13 +502,14 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
                 if (pset.sm == sm_old || pset.sm == sm_combined)
                     mps.push_back(MakeMPExtender(gp, cov_map, paths_for_mp, i, pset));
                 else if (pset.sm == sm_old_pe_2015 ||pset.sm == sm_2015 || pset.sm == sm_combined) {
-                    result.push_back(MakeScaffolding2015Extender(gp, cov_map, i, pset, storage));
+                    mps.push_back(MakeScaffolding2015Extender(gp, cov_map, i, pset, storage));
                 }
             }
         }
 
         //std::sort(scaff_libs.begin(), scaff_libs.end(), InsertSizeCompare);
         result.insert(result.end(), pes.begin(), pes.end());
+        result.insert(result.end(), pes2015.begin(), pes2015.end());
         result.insert(result.end(), pe_loops.begin(), pe_loops.end());
         result.insert(result.end(), pe_scafs.begin(), pe_scafs.end());
         result.insert(result.end(), mps.begin(), mps.end());
@@ -517,6 +524,7 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
     INFO("Using " << mp_libs << " mate-pair " << LibStr(mp_libs));
     INFO("Using " << single_read_libs << " single read " << LibStr(single_read_libs));
     INFO("Scaffolder is " << (pset.scaffolder_options.on ? "on" : "off"));
+    PrintExtenders(result);
     return result;
 }
 
@@ -546,6 +554,7 @@ inline void FinalizeUniquenessPaths(){
 //TODO::compilation placeholder
 }
 
+
 inline void ResolveRepeatsPe(conj_graph_pack& gp,
         const std::string& output_dir,
         const std::string& contigs_name,
@@ -565,6 +574,8 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     INFO("SUBSTAGE = paired-end libraries")
     PathExtendStage exspander_stage = PathExtendStage::PEStage;
     vector<shared_ptr<PathExtender> > all_libs = MakeAllExtenders(exspander_stage, gp, cover_map, pset);
+
+
     size_t max_over = max(FindOverlapLenForStage(exspander_stage), gp.g.k() + 100);
     shared_ptr<CompositeExtender> mainPE = make_shared<CompositeExtender>(gp.g, cover_map, all_libs, max_over);
 
@@ -680,8 +691,7 @@ inline void ScaffoldAll2015(conj_graph_pack& gp,
     GraphCoverageMap cover_map(gp.g);
     INFO("SUBSTAGE = paired-end libraries")
     PathExtendStage exspander_stage = PathExtendStage::Scaffold2015;
-    vector<shared_ptr<PathExtender> > all_libs = MakeAllScaffoldingExtenders2015(exspander_stage, gp, cover_map, pset,
-                                                                                 use_auto_threshold);
+    vector<shared_ptr<PathExtender> > all_libs = MakeAllScaffoldingExtenders2015(exspander_stage, gp, cover_map, pset);
     size_t max_over = max(FindOverlapLenForStage(exspander_stage), gp.g.k() + 100);
     shared_ptr<CompositeExtender> main_extender = make_shared<CompositeExtender>(gp.g, cover_map, all_libs, max_over);
 
