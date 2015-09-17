@@ -66,7 +66,7 @@ public:
         return inner_it_.IsEnd();
     }
 
-    bool size() const {
+    size_t size() const {
 		return inner_it_.size();
 	}
 

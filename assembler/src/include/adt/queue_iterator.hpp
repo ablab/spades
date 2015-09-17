@@ -98,7 +98,7 @@ public:
 		return queue_.empty();
 	}
 
-	bool size() const {
+	size_t size() const {
 		return queue_.size();
 	}
 
