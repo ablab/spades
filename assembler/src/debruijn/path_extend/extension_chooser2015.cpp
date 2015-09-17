@@ -59,7 +59,7 @@ void ExtensionChooser2015::FindBestFittedEdges(const BidirectionalPath& path, co
         int gap = CountMedian(histogram);
         //TODO reconsider condition
         int cur_is = wc_->lib().GetISMax();
-        if (gap < cur_is * -1 || gap > cur_is * 2) {
+        if (gap < cur_is * -2 || gap > cur_is * 3) {
             DEBUG("Edge " << g_.int_id(e)  << " gap "<< gap <<  " failed insert size conditions, IS= " << cur_is);
             continue;
         }
@@ -93,7 +93,8 @@ set<EdgeId> ExtensionChooser2015::FindCandidates(const BidirectionalPath& path) 
         int is_scatter = int(math::round(double(lib.GetIsVar()) * is_scatter_coeff_));
         DEBUG("starting..., path.size" << path.Size() );
         DEBUG("is_unique_ size " << unique_edges_->size());
-        for (int i = (int) path.Size() - 1; i >= 0 && path.LengthAt(i) - g_.length(path.At(i)) <= lib.GetISMax(); --i) {
+        //insted of commented, just break after first unique
+        for (int i = (int) path.Size() - 1; i >= 0/* && path.LengthAt(i) - g_.length(path.At(i)) <=  lib.GetISMax() */; --i) {
             DEBUG("edge ");
             DEBUG(path.At(i).int_id());
             set<EdgeId> jump_edges_i;
