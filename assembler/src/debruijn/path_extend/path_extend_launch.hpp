@@ -25,6 +25,8 @@
 #include "next_path_searcher.hpp"
 #include "extension_chooser2015.hpp"
 #include "../genome_consistance_checker.hpp"
+#include "scaffold_graph.hpp"
+#include "scaffold_graph_visualizer.hpp"
 
 namespace path_extend {
 
@@ -483,7 +485,7 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
             if (lib.type() != lt)
                 continue;
 
-            if (IsForSingleReadExtender(lib)  && pset.sm != sm_2015) {
+            if (IsForSingleReadExtender(lib) && pset.sm != sm_2015) {
                 result.push_back(MakeLongReadsExtender(gp, cov_map, i, pset));
                 ++single_read_libs;
             }
@@ -543,7 +545,65 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
     return result;
 }
 
-size_t FindOverlapLenForStage(PathExtendStage stage) {
+inline shared_ptr<scaffold_graph::ScaffoldGraph> ConstructScaffoldGraph(const conj_graph_pack& gp,
+                                                                        const set<EdgeId>& edge_set,
+                                                                        const pe_config::ScaffoldGraphParamsT& params) {
+    using namespace scaffold_graph;
+    vector<shared_ptr<ConnectionCondition>> conditions;
+
+    INFO("Constructing connection");
+    if (params.graph_connectivity) {
+        conditions.push_back(make_shared<AssemblyGraphConnectionCondition>(gp.g, params.max_path_length));
+    }
+    for (size_t lib_index = 0; lib_index < cfg::get().ds.reads.lib_count(); ++lib_index) {
+        auto lib = cfg::get().ds.reads[lib_index];
+        if (lib.is_paired()) {
+            shared_ptr<PairedInfoLibrary> paired_lib;
+            if (IsForMPExtender(lib))
+                paired_lib = MakeNewLib(gp.g, gp.paired_indices, lib_index);
+            else if (IsForPEExtender(lib))
+                paired_lib = MakeNewLib(gp.g, gp.clustered_indices, lib_index);
+            else
+                INFO("Unusable paired lib #" << lib_index);
+            conditions.push_back(make_shared<PairedLibConnectionCondition>(gp.g, paired_lib, lib_index, params.min_read_count));
+        }
+    }
+    INFO("Total conditions " << conditions.size());
+
+    INFO("Constructing scaffold graph");
+    auto scaffoldGraph = make_shared<ScaffoldGraph>(gp.g, edge_set, conditions);
+    INFO("Scaffold graph contains " << scaffoldGraph->VertexCount() << " vertices and " << scaffoldGraph->EdgeCount() << " edges");
+    return scaffoldGraph;
+}
+
+
+inline void PrintScaffoldGraph(shared_ptr<scaffold_graph::ScaffoldGraph> scaffoldGraph,
+                               const string& filename) {
+    using namespace scaffold_graph;
+
+    INFO("Visualizing single grpah");
+    ScaffoldGraphVisualizer singleVisualizer(*scaffoldGraph, false);
+    std::ofstream single_dot;
+    single_dot.open((filename + "_single.dot").c_str());
+    singleVisualizer.Visualize(single_dot);
+    single_dot.close();
+
+    INFO("Visualizing paired grpah");
+    ScaffoldGraphVisualizer pairedVisualizer(*scaffoldGraph, true);
+    std::ofstream paired_dot;
+    paired_dot.open((filename + "_paired.dot").c_str());
+    pairedVisualizer.Visualize(paired_dot);
+    paired_dot.close();
+
+    INFO("Printing scaffold grpah");
+    std::ofstream data_stream;
+    data_stream.open((filename + ".data").c_str());
+    scaffoldGraph->Print(data_stream);
+    data_stream.close();
+}
+
+
+inline size_t FindOverlapLenForStage(PathExtendStage stage) {
     size_t res = 0;
     for (const auto& lib : cfg::get().ds.reads) {
         if (IsForPEExtender(lib) && stage == PathExtendStage::PEStage) {
@@ -586,10 +646,18 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
 
     make_dir(output_dir);
     make_dir(GetEtcDir(output_dir));
-    const pe_config::ParamSetT& pset = cfg::get().pe_params.param_set;
+    const pe_config::ParamSetT &pset = cfg::get().pe_params.param_set;
+
+    //Scaffold graph
+    shared_ptr<scaffold_graph::ScaffoldGraph> scaffoldGraph;
+    if (cfg::get().pe_params.scaffold_graph_params.construct) {
+        scaffoldGraph = ConstructScaffoldGraph(gp, storage->GetSet(), cfg::get().pe_params.scaffold_graph_params);
+        if (cfg::get().pe_params.scaffold_graph_params.output) {
+            PrintScaffoldGraph(scaffoldGraph, "scaffold_graph");
+        }
+    }
 
     ContigWriter writer(gp.g);
-
 //make pe + long reads extenders
     GraphCoverageMap cover_map(gp.g);
     INFO("SUBSTAGE = paired-end libraries")

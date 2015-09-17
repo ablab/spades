@@ -120,6 +120,14 @@ struct pe_config {
     }
   };
 
+  struct ScaffoldGraphParamsT {
+      bool construct;
+      bool output;
+      size_t min_read_count;
+      bool graph_connectivity;
+      size_t max_path_length;
+  };
+
   struct VisualizeParamsT {
     bool print_overlaped_paths;
     bool print_paths;
@@ -204,7 +212,8 @@ struct pe_config {
     VisualizeParamsT viz;
     ParamSetT param_set;
     AllLongReads long_reads;
-      Scaffolding2015 scaffolding2015;
+    Scaffolding2015 scaffolding2015;
+    ScaffoldGraphParamsT scaffold_graph_params;
   } params;
 
   std::string dataset_name;

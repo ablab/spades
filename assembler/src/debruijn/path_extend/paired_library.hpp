@@ -21,14 +21,14 @@
 
 #include "xmath.h"
 
+namespace path_extend {
+
 using debruijn_graph::Graph;
 using debruijn_graph::EdgeId;
 
 using omnigraph::de::PairedInfoIndexT;
 typedef omnigraph::de::PairInfo<EdgeId> DePairInfo;
 using omnigraph::de::Point;
-
-namespace path_extend {
 
 struct PairedInfoLibrary {
     PairedInfoLibrary(size_t k, const Graph& g, size_t readS, size_t is,
@@ -56,7 +56,7 @@ struct PairedInfoLibrary {
     virtual size_t FindJumpEdges(EdgeId e, set<EdgeId>& result, int min_dist = 0, int max_dist = 100000000, size_t min_len = 0) const = 0;
     virtual void CountDistances(EdgeId e1, EdgeId e2, vector<int>& dist, vector<double>& w) const = 0;
     virtual double CountPairedInfo(EdgeId e1, EdgeId e2, int distance, bool from_interval = false) const = 0;
-    virtual double CountPairedInfo(EdgeId e1, EdgeId e2, size_t dist_min, size_t dist_max) const = 0;
+    virtual double CountPairedInfo(EdgeId e1, EdgeId e2, size_t dist_min = 0, size_t dist_max = 100000000) const = 0;
 
     double IdealPairedInfo(EdgeId e1, EdgeId e2, int distance, bool additive = false) const {
         return ideal_pi_counter_.IdealPairedInfo(e1, e2, distance, additive);
@@ -190,7 +190,7 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
         return weight;
     }
 
-    virtual double CountPairedInfo(EdgeId e1, EdgeId e2, size_t dist_min, size_t dist_max) const {
+    virtual double CountPairedInfo(EdgeId e1, EdgeId e2, size_t dist_min = 0, size_t dist_max = 100000000) const {
         VERIFY(index_.Size() != 0);
         double weight = 0.0;
         auto pairs = index_.GetEdgePairInfo(e1, e2);

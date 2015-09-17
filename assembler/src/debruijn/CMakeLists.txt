@@ -26,7 +26,7 @@ add_library(debruijn STATIC
             repeat_resolving.cpp
             genomic_info_filler.cpp
             pacbio_aligning.cpp
-            genome_storage.cpp)
+            genome_storage.cpp path_extend/scaffold_graph.cpp path_extend/scaffold_graph_visualizer.cpp)
   
 # We have to do this to minimize changes in ConsensusCore itself
 target_include_directories(debruijn PRIVATE ${EXT_DIR}/include/ConsensusCore)

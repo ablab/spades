@@ -252,9 +252,17 @@ long_reads {
         unique_edge_priority 2.0
     }
 }
+
 scaffolding2015 {
     min_unique_length 10000
     unique_coverage_variation 0.5
     ; (median * (1+variation) > unique > median * (1 - variation))
 }
 
+scaffold_graph {
+    construct    true
+    output       true
+    min_read_count 20
+    graph_connectivity false
+    max_path_length 10000
+}

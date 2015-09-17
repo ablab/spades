@@ -37,6 +37,10 @@ namespace path_extend {
         size_t size() const {
             return unique_edges_.size();
         }
+
+        const set<EdgeId>& GetSet() const {
+            return unique_edges_;
+        }
    protected:
         DECL_LOGGER("ScaffoldingUniqueEdgeStorage")
 

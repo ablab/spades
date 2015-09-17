@@ -24,6 +24,15 @@ void load(scaffolding_mode &sm, boost::property_tree::ptree const& pt, std::stri
     }
 }
 
+void load(pe_config::ScaffoldGraphParamsT& sg, boost::property_tree::ptree const& pt, bool /*complete*/) {
+    using config_common::load;
+    load(sg.construct,          pt, "construct"         );
+    load(sg.output,             pt, "output"            );
+    load(sg.min_read_count,     pt, "min_read_count"    );
+    load(sg.graph_connectivity, pt, "graph_connectivity");
+    load(sg.max_path_length,    pt, "max_path_length"   );
+}
+
 void load(pe_config::OutputParamsT& o, boost::property_tree::ptree const& pt, bool /*complete*/) {
   using config_common::load;
 
@@ -126,6 +135,7 @@ void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt,
         p.viz.DisableAll();
     }
     load(p.scaffolding2015, pt, "scaffolding2015");
+    load(p.scaffold_graph_params, pt, "scaffold_graph");
     p.etc_dir = "path_extend";
 }
 
