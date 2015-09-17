@@ -443,7 +443,7 @@ protected:
 		wc_->lib().CountDistances(e1, e2, dist, w);
 	}
 
-    void CountAvrgDists(const BidirectionalPath& path, EdgeId e, std::vector<pair<int, double>> & histogram) const {
+    virtual void CountAvrgDists(const BidirectionalPath& path, EdgeId e, std::vector<pair<int, double>> & histogram) const {
         for (size_t j = 0; j < path.Size(); ++j) {
             std::vector<int> distances;
             std::vector<double> weights;

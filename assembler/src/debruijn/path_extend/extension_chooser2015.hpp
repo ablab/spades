@@ -17,6 +17,7 @@ protected:
     int CountMedian(std::vector<std::pair<int, double> >& histogram) const;
     void FindBestFittedEdges(const BidirectionalPath& path, const std::set<EdgeId>& edges, EdgeContainer& result) const;
     std::set<EdgeId> FindCandidates(const BidirectionalPath& path) const ;
+    void CountAvrgDists(const BidirectionalPath& path, EdgeId e, std::vector<pair<int, double>> & histogram) const override;
     DECL_LOGGER("ExtensionChooser2015")
 public:
     ExtensionChooser2015(const Graph& g, shared_ptr<WeightCounter> wc, double priority, double is_scatter_coeff,

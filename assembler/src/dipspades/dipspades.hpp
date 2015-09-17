@@ -217,7 +217,7 @@ public:
 			return;
 		INFO("Diploid graph construction");
 		conj_graph_pack double_graph_pack(graph_pack.k_value, dsp_cfg::get().io.tmp_dir,
-										  dsp_cfg::get().io.num_libraries);
+										  dsp_cfg::get().io.num_libraries, "");
 		construct_graph_from_contigs(double_graph_pack);
 		HaplotypeAssembler(graph_pack, double_graph_pack, storage().default_storage,
 						   storage().composite_storage, storage().redundancy_map).Run();
@@ -240,7 +240,7 @@ void run_dipspades() {
     		dsp_cfg::get().bp.K,
     		dsp_cfg::get().io.tmp_dir,
     		dsp_cfg::get().io.num_libraries,
-            Sequence(""), // reference genome
+            "", // reference genome
             1); // flanking range
 
     conj_gp.kmer_mapper.Attach();

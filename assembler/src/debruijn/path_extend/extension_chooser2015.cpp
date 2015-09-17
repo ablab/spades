@@ -26,6 +26,20 @@ int ExtensionChooser2015::CountMedian(vector<pair<int, double> >& histogram) con
     return (int) round(histogram[i].first);
 }
 
+void ExtensionChooser2015::CountAvrgDists(const BidirectionalPath& path, EdgeId e, std::vector<pair<int, double>> & histogram) const {
+    for (int j = (int) path.Size() -1; j >= 0; --j) {
+        if (unique_edges_->IsUnique(path.At(j))) {
+            std::vector<int> distances;
+            std::vector<double> weights;
+            GetDistances(path.At(j), e, distances, weights);
+            if (distances.size() > 0) {
+                AddInfoFromEdge(distances, weights, histogram, path.LengthAt(j));
+            }
+//we are not interested on info over an unique edge now
+            break;
+        }
+    }
+}
 void ExtensionChooser2015::FindBestFittedEdges(const BidirectionalPath& path, const set<EdgeId>& edges, EdgeContainer& result) const {
     vector<pair<double, pair<EdgeId, int >>> to_sort;
     for (EdgeId e : edges) {
@@ -44,9 +58,10 @@ void ExtensionChooser2015::FindBestFittedEdges(const BidirectionalPath& path, co
         }
         int gap = CountMedian(histogram);
         //TODO reconsider condition
-        auto cur_is = wc_->lib().GetISMax();
+        int cur_is = wc_->lib().GetISMax();
         if (gap < cur_is * -1 || gap > cur_is * 2) {
             DEBUG("Edge " << g_.int_id(e)  << " gap "<< gap <<  " failed insert size conditions, IS= " << cur_is);
+            continue;
         }
 
         //Here check about ideal info removed
@@ -100,6 +115,8 @@ set<EdgeId> ExtensionChooser2015::FindCandidates(const BidirectionalPath& path) 
                         }
                     }
                 }
+//we are not interested on info over an unique edge now
+                break;
             }
         }
     //}
