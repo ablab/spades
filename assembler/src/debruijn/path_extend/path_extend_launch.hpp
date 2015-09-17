@@ -439,10 +439,26 @@ inline vector<shared_ptr<PathExtender> > MakeAllScaffoldingExtenders2015(PathExt
     return result;
 }
 
+template<typename Base, typename T>
+inline bool instanceof(const T *ptr) {
+    return dynamic_cast<const Base*>(ptr) != nullptr;
+}
+
 inline void PrintExtenders(vector<shared_ptr<PathExtender> >& extenders) {
     INFO("Extenders in vector:");
     for(size_t i = 0; i < extenders.size(); ++i) {
-        INFO("Extender #i" << typeid(*extenders[i]).name());
+        string type = typeid(*extenders[i]).name();
+        INFO("Extender #i" << type);
+        if (instanceof<SimpleExtender>(extenders[i].get())) {
+            auto ec = ((SimpleExtender *) extenders[i].get())->GetExtensionChooser();
+            string chooser_type = typeid(*ec).name();
+            INFO("    Extender #i" << chooser_type);
+        }
+        else if (instanceof<ScaffoldingPathExtender>(extenders[i].get())) {
+            auto ec = ((ScaffoldingPathExtender *) extenders[i].get())->GetExtensionChooser();
+            string chooser_type = typeid(*ec).name();
+            INFO("    Extender #i" << chooser_type);
+        }
     }
 }
 
@@ -494,7 +510,7 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
                 if (pset.sm == sm_old || pset.sm == sm_combined) {
                     pe_scafs.push_back(MakeScaffoldingExtender(gp, cov_map, i, pset));
                 }
-                else if (pset.sm == sm_old_pe_2015 || pset.sm == sm_combined) {
+                if (pset.sm == sm_old_pe_2015 || pset.sm == sm_combined) {
                     pe_scafs.push_back(MakeScaffolding2015Extender(gp, cov_map, i, pset, storage));
                 }
             }
@@ -503,7 +519,7 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
                 if (pset.sm == sm_old || pset.sm == sm_combined) {
                     mps.push_back(MakeMPExtender(gp, cov_map, paths_for_mp, i, pset));
                 }
-                else if (pset.sm == sm_old_pe_2015 ||pset.sm == sm_2015 || pset.sm == sm_combined) {
+                if (pset.sm == sm_old_pe_2015 || pset.sm == sm_2015 || pset.sm == sm_combined) {
                     mps.push_back(MakeScaffolding2015Extender(gp, cov_map, i, pset, storage));
                 }
             }
@@ -518,6 +534,7 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
         pes.clear();
         pe_loops.clear();
         pe_scafs.clear();
+        pes2015.clear();
         mps.clear();
     }
 

@@ -43,6 +43,12 @@ void ExtensionChooser2015::FindBestFittedEdges(const BidirectionalPath& path, co
             continue;
         }
         int gap = CountMedian(histogram);
+        //TODO reconsider condition
+        auto cur_is = wc_->lib().GetISMax();
+        if (gap < cur_is * -1 || gap > cur_is * 2) {
+            DEBUG("Edge " << g_.int_id(e)  << " gap "<< gap <<  " failed insert size conditions, IS= " << cur_is);
+        }
+
         //Here check about ideal info removed
         to_sort.push_back(make_pair(sum, make_pair(e, gap)));
 
@@ -86,8 +92,12 @@ set<EdgeId> ExtensionChooser2015::FindCandidates(const BidirectionalPath& path) 
                                    0);
                 DEBUG("Jump edges found");
                 for (EdgeId e : jump_edges_i) {
-                    if (unique_edges_->IsUnique(e)) {
-                        jumping_edges.insert(e);
+                    if (unique_edges_->IsUnique(e) ) {
+                        if ( e == path.At(i) || e->conjugate() == path.At(i)) {
+                            DEBUG("skipping info on itself or conjugate " << e.int_id());
+                        } else {
+                            jumping_edges.insert(e);
+                        }
                     }
                 }
             }

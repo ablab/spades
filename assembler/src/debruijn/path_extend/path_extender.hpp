@@ -895,6 +895,10 @@ public:
         extensionChooser_(ec) {
     }
 
+    std::shared_ptr<ExtensionChooser> GetExtensionChooser() const {
+        return extensionChooser_;
+    }
+
     virtual bool MakeSimpleGrowStep(BidirectionalPath& path) {
         if (path.Size() == 0) {
             return false;
@@ -1044,6 +1048,10 @@ public:
 	virtual bool ResolveShortLoopByPI(BidirectionalPath&) {
 		return false;
 	}
+
+    std::shared_ptr<ExtensionChooser> GetExtensionChooser() const {
+        return extension_chooser_;
+    }
 
 private:
 	DECL_LOGGER("ScaffoldingPathExtender");
