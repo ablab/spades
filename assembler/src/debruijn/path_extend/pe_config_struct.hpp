@@ -123,6 +123,10 @@ struct pe_config {
       size_t artificial_gap;
 
       bool use_old_score;
+
+      size_t min_overlap_length;
+      double flank_addition_coefficient;
+      double flank_multiplication_coefficient;
     } scaffolder_options;
 
 

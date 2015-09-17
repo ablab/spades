@@ -103,6 +103,10 @@ meta {
         short_overlap     6
         artificial_gap    10
         use_old_score   false
+
+        min_overlap_length 10
+        flank_addition_coefficient -7.9
+        flank_multiplication_coefficient 1.29
     }
     
     loop_removal
@@ -153,6 +157,10 @@ moleculo {
         short_overlap     10
         artificial_gap    10
         use_old_score     true
+
+        min_overlap_length 10
+        flank_addition_coefficient -7.9
+        flank_multiplication_coefficient 1.29
     }
     
     loop_removal
@@ -206,6 +214,10 @@ multicell {
         short_overlap     6
         artificial_gap    10
         use_old_score   false
+
+        min_overlap_length 10
+        flank_addition_coefficient -7.9
+        flank_multiplication_coefficient 1.29
     }
     
     loop_removal

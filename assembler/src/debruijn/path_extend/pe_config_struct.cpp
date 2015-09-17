@@ -66,6 +66,9 @@ void load(pe_config::ParamSetT::ScaffolderOptionsT& so, boost::property_tree::pt
   load(so.short_overlap      , pt, "short_overlap"      );
   load(so.artificial_gap      , pt, "artificial_gap"      );
   load(so.use_old_score      , pt, "use_old_score"      );
+  load(so.min_overlap_length, pt, "min_overlap_length");
+  load(so.flank_addition_coefficient, pt, "flank_addition_coefficient");
+  load(so.flank_multiplication_coefficient, pt, "flank_multiplication_coefficient");
 }
 
 void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool /*complete*/) {
