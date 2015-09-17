@@ -4,13 +4,15 @@
 //* All Rights Reserved
 //* See file LICENSE for details.
 //***************************************************************************
-
 #pragma once
 
+#include "simple_tools.hpp"
 #include "dijkstra_settings.hpp"
-#include "standard_base.hpp"
 
 #include <queue>
+#include <vector>
+#include <set>
+#include <map>
 
 namespace omnigraph {
 
@@ -47,15 +49,15 @@ public:
 };
 
 template<class Graph, class DijkstraSettings, typename distance_t = size_t>
-class Dijkstra {
+class Dijkstra : private boost::noncopyable {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 	typedef distance_t DistanceType;
 
 	typedef std::map<VertexId, distance_t> distances_map;
 	typedef typename distances_map::const_iterator distances_map_ci;
-	typedef typename std::priority_queue<element_t<Graph, distance_t>, vector<element_t<Graph, distance_t> >,
-	                                       ReverseDistanceComparator<element_t<Graph, distance_t> > > queue_t;
+	typedef typename std::priority_queue<element_t<Graph, distance_t>, std::vector<element_t<Graph, distance_t>>,
+	                                       ReverseDistanceComparator<element_t<Graph, distance_t>>> queue_t;
 
 	// constructor parameters
 	const Graph& graph_;
@@ -69,10 +71,10 @@ class Dijkstra {
 
 	// accumulative structures
 	distances_map distances_;
-	set<VertexId> processed_vertices_;
-	std::map<VertexId, pair<VertexId, EdgeId> > prev_vert_map_;
+	std::set<VertexId> processed_vertices_;
+	std::map<VertexId, pair<VertexId, EdgeId>> prev_vert_map_;
 
-	void initialize(VertexId start, queue_t &queue){
+	void Init(VertexId start, queue_t &queue){
 		vertex_number_ = 0;
 		distances_.clear();
 		processed_vertices_.clear();
@@ -92,6 +94,34 @@ public:
 		vertex_number_(0),
 		vertex_limit_exceeded_(false) { }
 
+	//FIXME why default was ill formed?
+    Dijkstra(Dijkstra&& other) :
+            graph_(other.graph_),
+            settings_(other.settings_),
+            max_vertex_number_(other.max_vertex_number_),
+            finished_(other.finished_),
+            vertex_number_(other.vertex_number_),
+            vertex_limit_exceeded_(other.vertex_limit_exceeded_),
+            distances_(std::move(distances_)),
+            processed_vertices_(std::move(processed_vertices_)),
+            prev_vert_map_(std::move(prev_vert_map_))
+    {
+    }
+
+	//FIXME why default was ill formed
+	Dijkstra& operator=(Dijkstra&& other) {
+	    graph_ = other.graph_;
+	    settings_ = other.settings_;
+	    max_vertex_number_ = other.max_vertex_number_;
+	    finished = other.finished;
+	    vertex_number_ = other.vertex_number_;
+	    vertex_limit_exceeded_ = other.vertex_limit_exceeded_;
+	    distances_ = std::move(distances_);
+	    processed_vertices_ = std::move(processed_vertices_);
+	    prev_vert_map_ = std::move(prev_vert_map_);
+	    return *this;
+	}
+
 	bool finished() const {
 		return finished_;
 	}
@@ -109,7 +139,7 @@ public:
 		return distances_.find(vertex)->second;
 	}
 
-	pair<distances_map_ci, distances_map_ci> GetDistances() const {
+	std::pair<distances_map_ci, distances_map_ci> GetDistances() const {
 		distances_map_ci begin = distances_.begin();
 		distances_map_ci end = distances_.end();
 		return make_pair(begin, end);
@@ -136,30 +166,31 @@ public:
 		return settings_.GetLength(edge);
 	}
 
-	std::vector<EdgeId> GetShortestPathTo(VertexId vertex){
-		std::vector<EdgeId> path;
-		if(prev_vert_map_.find(vertex) == prev_vert_map_.end())
-			return path;
+    std::vector<EdgeId> GetShortestPathTo(VertexId vertex){
+        std::vector<EdgeId> path;
+        if (prev_vert_map_.find(vertex) == prev_vert_map_.end())
+            return path;
 
-		VertexId curr_vertex = vertex;
-		VertexId prev_vertex = prev_vert_map_[vertex].first;
-		EdgeId edge = prev_vert_map_[curr_vertex].second;
+        VertexId curr_vertex = vertex;
+        VertexId prev_vertex = get(prev_vert_map_, vertex).first;
+        EdgeId edge = get(prev_vert_map_, curr_vertex).second;
 
-		while(prev_vertex != VertexId(0)){
-			if(graph_.EdgeStart(edge) == prev_vertex)
-				path.insert(path.begin(), edge);
-			else
-				path.push_back(edge);
-			curr_vertex = prev_vertex;
-			prev_vertex = prev_vert_map_[curr_vertex].first;
-			edge = prev_vert_map_[curr_vertex].second;
-		}
-		return path;
-	}
+        while (prev_vertex != VertexId(0)){
+            if (graph_.EdgeStart(edge) == prev_vertex)
+                path.insert(path.begin(), edge);
+            else
+                path.push_back(edge);
+            curr_vertex = prev_vertex;
+            const auto& prev_v_e = get(prev_vert_map_, curr_vertex);
+            prev_vertex = prev_v_e.first;
+            edge = prev_v_e.second;
+        }
+        return path;
+    }
 
 	void AddNeighboursToQueue(VertexId cur_vertex, distance_t cur_dist, queue_t& queue) {
 		auto neigh_iterator = settings_.GetIterator(cur_vertex);
-		while(neigh_iterator.HasNext()){
+		while (neigh_iterator.HasNext()){
 			TRACE("Checking new neighbour of vertex " << graph_.str(cur_vertex) << " started");
 			auto cur_pair = neigh_iterator.Next();
 			if (!DistanceCounted(cur_pair.vertex)) {
@@ -177,10 +208,10 @@ public:
 		TRACE("All neighbours of vertex " << graph_.str(cur_vertex) << " processed");
 	}
 
-	void run(VertexId start) {
+	void Run(VertexId start) {
 		TRACE("Starting dijkstra run from vertex " << graph_.str(start));
 		queue_t queue;
-		initialize(start, queue);
+		Init(start, queue);
 		TRACE("Priority queue initialized. Starting search");
 
 		while (!queue.empty() && !finished()) {
@@ -220,13 +251,14 @@ public:
     return result;
   }
 
-  const set<VertexId>& ProcessedVertices() {
+  const set<VertexId>& ProcessedVertices() const {
     return processed_vertices_;
   }
 
-  bool VertexLimitExceeded(){
+  bool VertexLimitExceeded() const {
 	  return vertex_limit_exceeded_;
   }
+
 private:
   DECL_LOGGER("Dijkstra");
 };

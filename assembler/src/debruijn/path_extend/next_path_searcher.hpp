@@ -919,7 +919,7 @@ inline map<PathWithDistance*, size_t> NextPathSearcher::FindDistances(const Bidi
     DEBUG("find distances from e " << g_.int_id(p.Back()))
 	map<PathWithDistance*, size_t> result;
     DijkstraHelper<Graph>::BoundedDijkstra dijkstra(DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, search_dist_, 3000));
-    dijkstra.run(g_.EdgeEnd(p.Back()));
+    dijkstra.Run(g_.EdgeEnd(p.Back()));
     DEBUG("paths size " << paths.size());
     for (auto ipath = paths.begin(); ipath != paths.end(); ++ipath) {
         vector<EdgeId> shortest_path = dijkstra.GetShortestPathTo(g_.EdgeStart((*ipath)->p_.Front()));

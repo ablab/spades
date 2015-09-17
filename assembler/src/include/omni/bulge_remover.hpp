@@ -239,9 +239,8 @@ protected:
         VertexId end = graph_.EdgeEnd(edge);
         TRACE("End " << graph_.str(end));
 
-        PathProcessor<Graph> path_finder(graph_, (graph_.length(edge) > delta) ? graph_.length(edge) - delta : 0, graph_.length(edge) + delta, start, end, path_chooser);
-
-        path_finder.Process();
+        ProcessPaths(graph_, (graph_.length(edge) > delta) ? graph_.length(edge) - delta : 0,
+                graph_.length(edge) + delta, start, end, path_chooser);
 
         const vector<EdgeId>& path = path_chooser.most_covered_path();
         if(path.size() != 0) {

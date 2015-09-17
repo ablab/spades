@@ -133,8 +133,8 @@ public:
 			size_t edge_length_bound, size_t max_vertex_number = size_t(-1)){
 		return CountingDijkstra(graph, UnorientCountingDijkstraSettings(graph,
     					shared_ptr<LengthCalculator<Graph> >(),
-    					shared_ptr<VertexProcessChecker<Graph> >(),
-    					shared_ptr<VertexPutChecker<Graph> >(),
+    					shared_ptr<VertexProcessChecker<Graph>>(),
+    					shared_ptr<VertexPutChecker<Graph>>(),
     					UnorientedNeighbourIteratorFactory<Graph>(graph),
     					max_size, edge_length_bound), max_vertex_number);
 	}

@@ -451,7 +451,7 @@ public:
     GraphComponent<Graph> Find(typename Graph::VertexId v) {
     	auto cd = DijkstraHelper<Graph>::CreateCountingDijkstra(this->graph(), max_size_,
     			edge_length_bound_);
-        cd.run(v);
+        cd.Run(v);
         vector<VertexId> result_vector = cd.ReachedVertices();
         set<VertexId> result(result_vector.begin(), result_vector.end());
         ComponentCloser<Graph> cc(this->graph(), edge_length_bound_);
@@ -592,7 +592,7 @@ public:
 
     GraphComponent<Graph> Find(VertexId v) {
     	auto cd = DijkstraHelper<Graph>::CreateShortEdgeDijkstra(this->graph(), edge_length_bound_);
-        cd.run(v);
+        cd.Run(v);
         set<VertexId> result = cd.ProcessedVertices();
         return GraphComponent<Graph>(this->graph(), result.begin(),
                                      result.end());

@@ -356,10 +356,9 @@ public:
                         if (cfg::get().pb.additional_debug_info) {
                             DEBUG(" escpected gap length: " << -int(g_.length(prev_edge)) + int(prev_last_index.edge_position) - int(cur_first_index.edge_position) + int(debruijn_k - pacbio_k ) - seq_start + seq_end);
                             PathStorageCallback<Graph> callback(g_);
-                            PathProcessor<Graph> path_processor(g_, 0, 4000,
-                                                                start_v, end_v,
-                                                                callback);
-                            path_processor.Process();
+                            ProcessPaths(g_, 0, 4000,
+                                            start_v, end_v,
+                                            callback);
                             vector<vector<EdgeId> > paths = callback.paths();
                             stringstream s_buf;
                             for (auto p_iter = paths.begin();
@@ -509,7 +508,7 @@ public:
                         VertexId end_v = g_.EdgeStart(i_iter->edgeId);
                         if (cashed_dijkstra.find(start_v) == cashed_dijkstra.end()) {
                             auto dij = DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, 5000);
-                            dij.run(start_v);
+                            dij.Run(start_v);
                             auto distances = dij.GetDistances();
                             cashed_dijkstra[start_v] = std::map<VertexId, size_t>(distances.first, distances.second);
                         }
@@ -675,9 +674,8 @@ public:
         DEBUG("seq dist:" << s.size()/3);
         if (distance_cashed.find(vertex_pair) == distance_cashed.end()) {
             DistancesLengthsCallback<Graph> callback(g_);
-            PathProcessor<Graph> path_processor(g_, 0, s.size() / 3, start_v,
-                                                end_v, callback);
-            path_processor.Process();
+            ProcessPaths(g_, 0, s.size() / 3, start_v,
+                             end_v, callback);
             result = callback.distances();
             distance_cashed[vertex_pair] = result;
         } else {
@@ -733,11 +731,10 @@ public:
                                   string &e_add) {
         DEBUG(" Traversing tangled region. Start and end vertices resp: " << g_.int_id(start_v) <<" " << g_.int_id(end_v));
         PathStorageCallback<Graph> callback(g_);
-        PathProcessor<Graph> path_processor(g_,
-                                            path_min_length, path_max_length,
-                                            start_v, end_v,
-                                            callback);
-        path_processor.Process();
+        ProcessPaths(g_,
+                    path_min_length, path_max_length,
+                    start_v, end_v,
+                    callback);
         vector<vector<EdgeId> > paths = callback.paths();
         DEBUG("taking subseq" << start_pos <<" "<< end_pos <<" " << s.size());
         int s_len = int(s.size());

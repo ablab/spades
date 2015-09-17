@@ -127,7 +127,7 @@ private:
                 auto new_it_contig = find(edges.begin(), edges.end(), filtered_edges[i]);
                 size_t new_index_contig = new_it_contig - edges.begin();
 
-                for(int z = index_contig; z <= new_index_contig ; ++z) {
+                for(size_t z = index_contig; z <= new_index_contig ; ++z) {
                     path_to_draw.push_back(edges[z]);
                 }
 

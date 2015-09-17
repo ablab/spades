@@ -96,7 +96,7 @@ namespace scaffold_correction {
             size_t max_path_length = max_insert_ + 2 * max_cut_length_;
             DS ds(DS::LC(graph_, path), DS::VPrC(max_path_length), DS::VPuC(max_path_length), DS::NIF(graph_));
             omnigraph::Dijkstra<Graph, DS> dj(graph_, ds);
-            dj.run(v1);
+            dj.Run(v1);
             if(dj.DistanceCounted(v2) && dj.GetDistance(v2) <= max_insert_) {
                 vector<EdgeId> result = dj.GetShortestPathTo(v2);
                 VERIFY(graph_.EdgeStart(result.front()) == v1);

@@ -145,7 +145,7 @@ private:
                 nLen = 0;
             } else {
                 DijkstraHelper<Graph>::BoundedDijkstra dijkstra(DijkstraHelper<Graph>::CreateBoundedDijkstra(g_, 1000, 3000));
-                dijkstra.run(lastVertex);
+                dijkstra.Run(lastVertex);
                 vector<EdgeId> shortest_path = dijkstra.GetShortestPathTo(g_.EdgeStart(endPath->Front()));
 
                 if (shortest_path.size() == 0) {

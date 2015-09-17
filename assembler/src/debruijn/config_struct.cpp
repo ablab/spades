@@ -110,7 +110,8 @@ void load_lib_data(const std::string& prefix) {
   // Now, infer the common parameters
   const auto& reads = cfg::get().ds.reads;
   size_t max_rl = 0;
-  double avg_cov = 0.0, avg_rl;
+  double avg_cov = 0.0;
+  double avg_rl = 0.0;
   for (auto it = reads.library_begin(), et = reads.library_end(); it != et; ++it) {
       auto const& data = it->data();
       if (it->is_graph_contructable())

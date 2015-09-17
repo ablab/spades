@@ -140,7 +140,7 @@ class DebruijnEnvironment : public Environment {
             return gp_.g;
         }
 
-        const Sequence& genome() const {
+        Sequence genome() const {
             return gp_.genome.GetSequence();
         }
 

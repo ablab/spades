@@ -263,12 +263,12 @@ public:
 				// find vertex v, such that paths starts are reachable from v
 				auto path_searcher1 = DijkstraHelper<Graph>::CreateBackwardBoundedDijkstra(g_,
 						max_tail_length_);
-				path_searcher1.run(start1);
+				path_searcher1.Run(start1);
 				auto reached_vert1 = path_searcher1.ReachedVertices();
 
 				auto path_searcher2 = DijkstraHelper<Graph>::CreateBackwardBoundedDijkstra(g_,
 						max_tail_length_);
-				path_searcher2.run(start2);
+				path_searcher2.Run(start2);
 				auto reached_vert2 = path_searcher2.ReachedVertices();
 
 				for(size_t i = 0; i < pos1[0]; i++)
@@ -353,12 +353,12 @@ public:
 					// find vertex v, such that paths ends are reachable from v
 					auto path_searcher1 = DijkstraHelper<Graph>::CreateBackwardBoundedDijkstra(g_,
 							max_tail_length_);
-					path_searcher1.run(end1);
+					path_searcher1.Run(end1);
 					auto reached_vert1 = path_searcher1.ReachedVertices();
 
 					auto path_searcher2 = DijkstraHelper<Graph>::CreateBackwardBoundedDijkstra(g_,
 							max_tail_length_);
-					path_searcher2.run(end2);
+					path_searcher2.Run(end2);
 					auto reached_vert2 = path_searcher2.ReachedVertices();
 
 					for(size_t i = ConvInd(pos1[pos1.size() - 1], path1.size()); i < path1.size(); i++)

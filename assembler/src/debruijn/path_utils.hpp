@@ -35,12 +35,8 @@ namespace debruijn_graph {
                                           //max_dist - g.length(e1),
           //g.EdgeEnd(e1), g.EdgeStart(e2), callback);
 
-      path_processor.SetMinLens({min_dist - g.length(e1)});
-      path_processor.SetMaxLen(max_dist - g.length(e1));
-      path_processor.SetEndPoints({g.EdgeStart(e2)});
-      path_processor.SetCallback(&callback);
-      path_processor.ResetCallCount();
-      int error_code = path_processor.Process();
+      int error_code = path_processor.Process(g.EdgeStart(e2), min_dist - g.length(e1),
+                                              max_dist - g.length(e1), callback);
       vector<Path> paths = callback.paths();
 
       vector<EdgeId> result;
@@ -79,12 +75,11 @@ namespace debruijn_graph {
         typename Graph::EdgeId& e2, size_t min_dist,
         size_t max_dist) {
       PathStorageCallback<Graph> callback(g);
-      PathProcessor<Graph> path_processor(g,
+      ProcessPaths(g,
           min_dist,
           max_dist, //0, *cfg::get().ds.IS - K + size_t(*cfg::get().ds.is_var),
           g.EdgeEnd(e1), g.EdgeStart(e2),
           callback);
-      path_processor.Process();
       auto paths = callback.paths();
       return paths;
     }

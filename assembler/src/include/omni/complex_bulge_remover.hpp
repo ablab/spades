@@ -103,9 +103,7 @@ public:
 		for (VertexId end_v : end_vertices_) {
 			PathStorageCallback<Graph> path_storage(g_);
 			Range r = vertex_depth_.find(end_v)->second;
-			PathProcessor<Graph> best_path_finder(g_, r.start_pos, r.end_pos,
-					start_vertex_, end_v, path_storage);
-			best_path_finder.Process();
+			ProcessPaths(g_, r.start_pos, r.end_pos, start_vertex_, end_v, path_storage);
 			answer += path_storage.size();
 		}
 		return answer;
