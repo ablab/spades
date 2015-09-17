@@ -486,21 +486,23 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
             if (IsForShortLoopExtender(lib) && (pset.sm == sm_old_pe_2015 || pset.sm == sm_old || pset.sm == sm_combined)) {
                 pe_loops.push_back(MakePEExtender(gp, cov_map, i, pset, true));
             }
-            if (IsForPEExtender(lib) && stage == PathExtendStage::PEStage && (pset.sm == sm_combined || pset.sm == sm_2015)) {
+            if (IsForPEExtender(lib) && pset.sm == sm_2015) {
                 pes2015.push_back(MakeScaffolding2015Extender(gp, cov_map, i, pset, storage));
             }
             if (IsForScaffoldingExtender(lib) && cfg::get().use_scaffolder && pset.scaffolder_options.on) {
                 ++scf_pe_libs;
-                if (pset.sm == sm_old || pset.sm == sm_combined)
+                if (pset.sm == sm_old || pset.sm == sm_combined) {
                     pe_scafs.push_back(MakeScaffoldingExtender(gp, cov_map, i, pset));
-                else if (pset.sm == sm_old_pe_2015 || pset.sm == sm_2015 || pset.sm == sm_combined) {
+                }
+                else if (pset.sm == sm_old_pe_2015 || pset.sm == sm_combined) {
                     pe_scafs.push_back(MakeScaffolding2015Extender(gp, cov_map, i, pset, storage));
                 }
             }
             if (IsForMPExtender(lib) && stage == PathExtendStage::MPStage) {
                 ++mp_libs;
-                if (pset.sm == sm_old || pset.sm == sm_combined)
+                if (pset.sm == sm_old || pset.sm == sm_combined) {
                     mps.push_back(MakeMPExtender(gp, cov_map, paths_for_mp, i, pset));
+                }
                 else if (pset.sm == sm_old_pe_2015 ||pset.sm == sm_2015 || pset.sm == sm_combined) {
                     mps.push_back(MakeScaffolding2015Extender(gp, cov_map, i, pset, storage));
                 }
