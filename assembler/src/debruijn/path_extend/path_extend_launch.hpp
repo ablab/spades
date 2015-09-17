@@ -487,7 +487,7 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
             if (lib.type() != lt)
                 continue;
 
-            if (IsForSingleReadExtender(lib)) {
+            if (IsForSingleReadExtender(lib)  && pset.sm != sm_2015) {
                 result.push_back(MakeLongReadsExtender(gp, cov_map, i, pset));
                 ++single_read_libs;
             }
@@ -616,7 +616,8 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
         ClonePathContainer(paths, clone_paths, clone_map);
     }
 
-    FinalizePaths(paths, cover_map, max_over);
+    if (pset.sm != sm_2015)
+        FinalizePaths(paths, cover_map, max_over);
     if (broken_contigs.is_initialized()) {
         OutputBrokenScaffolds(paths, (int) gp.g.k(), writer,
                               output_dir + (mp_exist ? "pe_contigs" : broken_contigs.get()));
@@ -649,7 +650,8 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
 
     INFO("Growing paths using mate-pairs");
     auto mp_paths = resolver.extendSeeds(clone_paths, *mp_main_pe);
-    FinalizePaths(mp_paths, clone_map, max_over, true);
+    if (pset.sm != sm_2015)
+        FinalizePaths(mp_paths, clone_map, max_over, true);
     DebugOutputPaths(writer, gp, output_dir, mp_paths, "mp_final_paths");
     writer.WritePathsToFASTG(mp_paths, GetEtcDir(output_dir) + "mp_prefinal.fastg", GetEtcDir(output_dir) + "mp_prefinal.fasta");
 
@@ -668,7 +670,8 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     shared_ptr<CompositeExtender> last_extender = make_shared<CompositeExtender>(gp.g, clone_map, all_libs, max_over);
 
     auto last_paths = resolver.extendSeeds(mp_paths, *last_extender);
-    FinalizePaths(last_paths, clone_map, max_over);
+    if (pset.sm != sm_2015)
+        FinalizePaths(last_paths, clone_map, max_over);
 
     writer.WritePathsToFASTG(last_paths, GetEtcDir(output_dir) + "mp_before_traversal.fastg", GetEtcDir(output_dir) + "mp_before_traversal.fasta");
     DebugOutputPaths(writer, gp, output_dir, last_paths, "before_traverse_mp");
