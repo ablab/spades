@@ -463,7 +463,7 @@ inline void PrintExtenders(vector<shared_ptr<PathExtender> >& extenders) {
 }
 
 inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage, const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
-                                            const pe_config::ParamSetT& pset, const PathContainer& paths_for_mp = PathContainer()) {
+                                            const pe_config::ParamSetT& pset, shared_ptr<ScaffoldingUniqueEdgeStorage> storage, const PathContainer& paths_for_mp = PathContainer()) {
 
     vector<shared_ptr<PathExtender> > result;
     vector<shared_ptr<PathExtender> > pes;
@@ -476,10 +476,6 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
     size_t pe_libs = 0;
     size_t scf_pe_libs = 0;
     size_t mp_libs = 0;
-
-    ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, cfg::get().pe_params.scaffolding2015.min_unique_length, cfg::get().pe_params.scaffolding2015.unique_coverage_variation);
-    auto storage = std::make_shared<ScaffoldingUniqueEdgeStorage>();
-    unique_edge_analyzer.FillUniqueEdgeStorage(*storage);
 
     for (io::LibraryType lt : io::LibraryPriotity) {
         for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
@@ -582,6 +578,11 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
 
     INFO("ExSPAnder repeat resolving tool started");
 
+
+    ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, cfg::get().pe_params.scaffolding2015.min_unique_length, cfg::get().pe_params.scaffolding2015.unique_coverage_variation);
+    auto storage = std::make_shared<ScaffoldingUniqueEdgeStorage>();
+    unique_edge_analyzer.FillUniqueEdgeStorage(*storage);
+
     make_dir(output_dir);
     make_dir(GetEtcDir(output_dir));
     const pe_config::ParamSetT& pset = cfg::get().pe_params.param_set;
@@ -592,11 +593,11 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     GraphCoverageMap cover_map(gp.g);
     INFO("SUBSTAGE = paired-end libraries")
     PathExtendStage exspander_stage = PathExtendStage::PEStage;
-    vector<shared_ptr<PathExtender> > all_libs = MakeAllExtenders(exspander_stage, gp, cover_map, pset);
+    vector<shared_ptr<PathExtender> > all_libs = MakeAllExtenders(exspander_stage, gp, cover_map, pset, storage);
 
 
     size_t max_over = max(FindOverlapLenForStage(exspander_stage), gp.g.k() + 100);
-    shared_ptr<CompositeExtender> mainPE = make_shared<CompositeExtender>(gp.g, cover_map, all_libs, max_over);
+    shared_ptr<CompositeExtender> mainPE = make_shared<CompositeExtender>(gp.g, cover_map, all_libs, max_over, storage);
 
 //extend pe + long reads
     PathExtendResolver resolver(gp.g);
@@ -616,7 +617,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
         ClonePathContainer(paths, clone_paths, clone_map);
     }
 
-    if (pset.sm != sm_2015)
+    if (cfg::get().pe_params.finalize_paths)
         FinalizePaths(paths, cover_map, max_over);
     if (broken_contigs.is_initialized()) {
         OutputBrokenScaffolds(paths, (int) gp.g.k(), writer,
@@ -644,13 +645,13 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     INFO("SUBSTAGE = mate-pair libraries ")
     exspander_stage = PathExtendStage::MPStage;
     all_libs.clear();
-    all_libs = MakeAllExtenders(exspander_stage, gp, clone_map, pset, clone_paths);
+    all_libs = MakeAllExtenders(exspander_stage, gp, clone_map, pset, storage, clone_paths);
     max_over = FindOverlapLenForStage(exspander_stage);
-    shared_ptr<CompositeExtender> mp_main_pe = make_shared<CompositeExtender>(gp.g, clone_map, all_libs, max_over);
+    shared_ptr<CompositeExtender> mp_main_pe = make_shared<CompositeExtender>(gp.g, clone_map, all_libs, max_over, storage);
 
     INFO("Growing paths using mate-pairs");
     auto mp_paths = resolver.extendSeeds(clone_paths, *mp_main_pe);
-    if (pset.sm != sm_2015)
+    if (cfg::get().pe_params.finalize_paths)
         FinalizePaths(mp_paths, clone_map, max_over, true);
     DebugOutputPaths(writer, gp, output_dir, mp_paths, "mp_final_paths");
     writer.WritePathsToFASTG(mp_paths, GetEtcDir(output_dir) + "mp_prefinal.fastg", GetEtcDir(output_dir) + "mp_prefinal.fasta");
@@ -665,12 +666,12 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     INFO("SUBSTAGE = polishing paths")
     exspander_stage = PathExtendStage::FinalizingPEStage;
     all_libs.clear();
-    all_libs = MakeAllExtenders(exspander_stage, gp, cover_map, pset);
+    all_libs = MakeAllExtenders(exspander_stage, gp, cover_map, pset, storage);
     max_over = FindOverlapLenForStage(exspander_stage);
-    shared_ptr<CompositeExtender> last_extender = make_shared<CompositeExtender>(gp.g, clone_map, all_libs, max_over);
+    shared_ptr<CompositeExtender> last_extender = make_shared<CompositeExtender>(gp.g, clone_map, all_libs, max_over, storage);
 
     auto last_paths = resolver.extendSeeds(mp_paths, *last_extender);
-    if (pset.sm != sm_2015)
+    if (cfg::get().pe_params.finalize_paths)
         FinalizePaths(last_paths, clone_map, max_over);
 
     writer.WritePathsToFASTG(last_paths, GetEtcDir(output_dir) + "mp_before_traversal.fastg", GetEtcDir(output_dir) + "mp_before_traversal.fasta");
@@ -693,7 +694,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
 
     INFO("ExSPAnder repeat resolving tool finished");
 }
-
+/*
 inline void ScaffoldAll2015(conj_graph_pack& gp,
                              const std::string& output_dir,
                              const std::string& contigs_name,
@@ -752,7 +753,7 @@ inline void ScaffoldAll2015(conj_graph_pack& gp,
     INFO("ExSPAnder repeat resolving tool finished");
 }
 
-
+*/
 } /* path_extend */
 
 

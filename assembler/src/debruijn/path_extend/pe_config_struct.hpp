@@ -196,7 +196,7 @@ struct pe_config {
     std::string name;
     output_broken_scaffolds obs;
 
-
+    bool finalize_paths;
     bool debug_output;
     std::string etc_dir;
 

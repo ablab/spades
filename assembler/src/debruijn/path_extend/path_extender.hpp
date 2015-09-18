@@ -540,13 +540,30 @@ protected:
     DECL_LOGGER("PathExtender")
 };
 
+struct UsedUniqueStorage {
+    set<EdgeId> used_;
+
+    shared_ptr<ScaffoldingUniqueEdgeStorage> unique_;
+    void insert(EdgeId e) {
+        used_.insert(e);
+        used_.insert(e->conjugate());
+    }
+    bool IsUsedAndUnique (EdgeId e) {
+        return (unique_->IsUnique(e) && used_.find(e) != used_.end());
+    }
+    UsedUniqueStorage(  shared_ptr<ScaffoldingUniqueEdgeStorage> unique ):used_(), unique_(unique) {}
+};
 class PathExtender {
 public:
     PathExtender(const Graph & g): g_(g){ }
     virtual ~PathExtender() { }
     virtual bool MakeGrowStep(BidirectionalPath& path) = 0;
+    void AddUniqueEdgeStorage(shared_ptr<UsedUniqueStorage> used_storage) {
+        used_storage_ = used_storage;
+    }
 protected:
     const Graph& g_;
+    shared_ptr<UsedUniqueStorage> used_storage_;
     DECL_LOGGER("PathExtender")
 };
 
@@ -560,17 +577,22 @@ public:
               max_diff_len_(max_diff_len) {
     }
 
-    CompositeExtender(Graph & g, GraphCoverageMap& cov_map, vector<shared_ptr<PathExtender> > pes, size_t max_diff_len)
+    CompositeExtender(Graph & g, GraphCoverageMap& cov_map, vector<shared_ptr<PathExtender> > pes, size_t max_diff_len, shared_ptr<ScaffoldingUniqueEdgeStorage> unique)
             : ContigsMaker(g),
               cover_map_(cov_map),
               repeat_detector_(g, cover_map_, 2 * cfg::get().max_repeat_length),  //TODO: move to config
               extenders_(),
               max_diff_len_(max_diff_len) {
         extenders_ = pes;
+        used_storage_ = make_shared<UsedUniqueStorage>(UsedUniqueStorage( unique));
+        for (auto ex: extenders_) {
+            ex->AddUniqueEdgeStorage(used_storage_);
+        }
     }
 
-    void AddExender(shared_ptr<PathExtender> pe) {
+    void AddExtender(shared_ptr<PathExtender> pe) {
         extenders_.push_back(pe);
+        pe->AddUniqueEdgeStorage(used_storage_);
     }
 
     virtual void GrowAll(PathContainer& paths, PathContainer * result) {
@@ -653,7 +675,7 @@ private:
     RepeatDetector repeat_detector_;
     vector<shared_ptr<PathExtender> > extenders_;
     size_t max_diff_len_;
-
+    shared_ptr<UsedUniqueStorage> used_storage_;
     void SubscribeCoverageMap(BidirectionalPath * path) {
         path->Subscribe(&cover_map_);
         for (size_t i = 0; i < path->Size(); ++i) {

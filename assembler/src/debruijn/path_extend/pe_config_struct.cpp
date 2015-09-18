@@ -114,6 +114,7 @@ void load(pe_config::MainPEParamsT& p, boost::property_tree::ptree const& pt,
           bool /*complete*/) {
     using config_common::load;
     load(p.debug_output, pt, "debug_output");
+    load(p.finalize_paths, pt, "finalize_paths");
     load(p.output, pt, "output");
     load(p.viz, pt, "visualize");
     load(p.param_set, pt, p.name.c_str());
