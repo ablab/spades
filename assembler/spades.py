@@ -398,6 +398,8 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         if options_storage.bh_heap_check:
             cfg["error_correction"].__dict__["heap_check"] = options_storage.bh_heap_check
         cfg["error_correction"].__dict__["iontorrent"] = options_storage.iontorrent
+        if options_storage.meta:
+            cfg["error_correction"].__dict__["count_filter_singletons"] = 1
 
     # assembly
     if not options_storage.only_error_correction:
