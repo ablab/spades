@@ -582,6 +582,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, cfg::get().pe_params.scaffolding2015.min_unique_length, cfg::get().pe_params.scaffolding2015.unique_coverage_variation);
     auto storage = std::make_shared<ScaffoldingUniqueEdgeStorage>();
     unique_edge_analyzer.FillUniqueEdgeStorage(*storage);
+    auto sc_mode = cfg::get().pe_params.param_set.sm;
 
     make_dir(output_dir);
     make_dir(GetEtcDir(output_dir));
@@ -617,7 +618,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
         ClonePathContainer(paths, clone_paths, clone_map);
     }
 
-    if (cfg::get().pe_params.finalize_paths)
+    if (!(sc_mode == sm_old_pe_2015 || sc_mode == sm_2015 || sc_mode == sm_combined))
         FinalizePaths(paths, cover_map, max_over);
     if (broken_contigs.is_initialized()) {
         OutputBrokenScaffolds(paths, (int) gp.g.k(), writer,
@@ -651,7 +652,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
 
     INFO("Growing paths using mate-pairs");
     auto mp_paths = resolver.extendSeeds(clone_paths, *mp_main_pe);
-    if (cfg::get().pe_params.finalize_paths)
+    if (!(sc_mode == sm_old_pe_2015 || sc_mode == sm_2015 || sc_mode == sm_combined))
         FinalizePaths(mp_paths, clone_map, max_over, true);
     DebugOutputPaths(writer, gp, output_dir, mp_paths, "mp_final_paths");
     writer.WritePathsToFASTG(mp_paths, GetEtcDir(output_dir) + "mp_prefinal.fastg", GetEtcDir(output_dir) + "mp_prefinal.fasta");
@@ -671,9 +672,8 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     shared_ptr<CompositeExtender> last_extender = make_shared<CompositeExtender>(gp.g, clone_map, all_libs, max_over, storage);
 
     auto last_paths = resolver.extendSeeds(mp_paths, *last_extender);
-    if (cfg::get().pe_params.finalize_paths)
+    if (!(sc_mode == sm_old_pe_2015 || sc_mode == sm_2015 || sc_mode == sm_combined))
         FinalizePaths(last_paths, clone_map, max_over);
-
     writer.WritePathsToFASTG(last_paths, GetEtcDir(output_dir) + "mp_before_traversal.fastg", GetEtcDir(output_dir) + "mp_before_traversal.fasta");
     DebugOutputPaths(writer, gp, output_dir, last_paths, "before_traverse_mp");
     TraverseLoops(last_paths, clone_map, last_extender);
@@ -685,7 +685,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     DebugOutputPaths(writer, gp, output_dir, last_paths, "last_paths");
     writer.WritePathsToFASTG(last_paths, output_dir + contigs_name + ".fastg", output_dir + contigs_name + ".fasta");
 
-    FinalizeUniquenessPaths();
+    //FinalizeUniquenessPaths();
 
     last_paths.DeleteAllPaths();
     seeds.DeleteAllPaths();

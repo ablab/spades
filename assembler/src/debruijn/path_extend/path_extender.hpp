@@ -615,7 +615,11 @@ public:
 
     bool MakeGrowStep(BidirectionalPath& path, bool detect_repeats_online = true) {
         DEBUG("make grow step composite extender");
-
+        auto sc_mode = cfg::get().pe_params.param_set.sm;
+        if (sc_mode == sm_old_pe_2015 || sc_mode == sm_2015 || sc_mode == sm_combined) {
+            DEBUG("force switch off online repeats detect, 2015 on");
+            detect_repeats_online = false;
+        }
         if (detect_repeats_online) {
             BidirectionalPath *repeat_path = repeat_detector_.RepeatPath(path);
             size_t repeat_size = repeat_detector_.MaxCommonSize(path, *repeat_path);
@@ -953,7 +957,16 @@ public:
                 return false;
             }
             DEBUG("push");
-            path.PushBack(candidates.back().e_, candidates.back().d_);
+            auto sc_mode = cfg::get().pe_params.param_set.sm;
+            EdgeId eid = candidates.back().e_;
+            if (sc_mode == sm_old_pe_2015 || sc_mode == sm_2015 || sc_mode == sm_combined) {
+                if (used_storage_->IsUsedAndUnique(eid)) {
+                    return false;
+                } else {
+                    used_storage_->insert(eid);
+                }
+            }
+            path.PushBack(eid, candidates.back().d_);
             DEBUG("push done");
             return true;
         }
