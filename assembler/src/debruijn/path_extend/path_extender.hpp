@@ -545,8 +545,10 @@ struct UsedUniqueStorage {
 
     shared_ptr<ScaffoldingUniqueEdgeStorage> unique_;
     void insert(EdgeId e) {
-        used_.insert(e);
-        used_.insert(e->conjugate());
+        if (unique_->IsUnique(e)) {
+            used_.insert(e);
+            used_.insert(e->conjugate());
+        }
     }
     bool IsUsedAndUnique (EdgeId e) {
         return (unique_->IsUnique(e) && used_.find(e) != used_.end());
@@ -1052,8 +1054,19 @@ public:
 
             if (gap != GapJoiner::INVALID_GAP) {
                 DEBUG("Scaffolding. PathId: " << path.GetId() << " path length: " << path.Length() << ", fixed gap length: " << gap);
-                path.PushBack(candidates.back().e_, gap);
+                auto sc_mode = cfg::get().pe_params.param_set.sm;
+                EdgeId eid = candidates.back().e_;
+                if (sc_mode == sm_old_pe_2015 || sc_mode == sm_2015 || sc_mode == sm_combined) {
+                    if (used_storage_->IsUsedAndUnique(eid)) {
+                        return false;
+                    } else {
+                        used_storage_->insert(eid);
+                    }
+                }
+                path.PushBack(eid, gap);
                 return true;
+
+
             } else {
                 DEBUG("Looks like wrong scaffolding. PathId: " << path.GetId() << " path length: " << path.Length() << ", fixed gap length: " << candidates.back().d_);
                 return false;
