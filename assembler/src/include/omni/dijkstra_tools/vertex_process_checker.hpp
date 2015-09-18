@@ -14,21 +14,22 @@ class VertexProcessChecker {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 public:
-	VertexProcessChecker() { }
+	VertexProcessChecker() {}
 	virtual bool Check(VertexId, distance_t) { return true; }
-	virtual ~VertexProcessChecker() { }
+	virtual ~VertexProcessChecker() {}
 };
 
 template<class Graph, typename distance_t = size_t>
 class BoundProcessChecker : public VertexProcessChecker<Graph, distance_t> {
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
-    const distance_t bound_;
+    const distance_t distance_bound_;
 public:
-    BoundProcessChecker(distance_t bound) : VertexProcessChecker<Graph, distance_t>(),
-    	bound_(bound) { }
-    bool Check(VertexId, distance_t distance) {
-    	return distance <= bound_;
+    BoundProcessChecker(distance_t distance_bound) :
+		distance_bound_(distance_bound) {}
+
+    bool Check(VertexId, distance_t distance) override {
+    	return distance <= distance_bound_;
     }
 };
 
@@ -37,33 +38,35 @@ class ZeroLengthProcessChecker : public VertexProcessChecker<Graph, distance_t> 
 	typedef typename Graph::VertexId VertexId;
 	typedef typename Graph::EdgeId EdgeId;
 public:
-	ZeroLengthProcessChecker() : VertexProcessChecker<Graph, distance_t>() { }
-    bool Check(VertexId, distance_t distance) {
+	ZeroLengthProcessChecker() {}
+
+    bool Check(VertexId, distance_t distance) override {
     	return distance == 0;
     }
 };
 
 template<class Graph, typename distance_t = size_t>
-class BoundedVertexTargetedProcessChecker : public VertexProcessChecker<Graph, distance_t> {
-	typedef typename Graph::VertexId VertexId;
-	typedef typename Graph::EdgeId EdgeId;
-	VertexId target_vertex_;
-	size_t bound_;
+class BoundedVertexTargetedProcessChecker : public BoundProcessChecker<Graph, distance_t> {
+    typedef BoundProcessChecker<Graph, distance_t> base;
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
 
-	bool target_reached_;
+    VertexId target_vertex_;
+    bool target_reached_;
 public:
-	BoundedVertexTargetedProcessChecker(VertexId target_vertex, size_t bound) :
-		VertexProcessChecker<Graph, distance_t>(),
-		target_vertex_(target_vertex),
-		bound_(bound),
-		target_reached_(false) { }
+    BoundedVertexTargetedProcessChecker(VertexId target_vertex, size_t bound) :
+        base(bound),
+        target_vertex_(target_vertex),
+        target_reached_(false) { }
 
-    bool Check(VertexId vertex, distance_t distance) {
-    	if(vertex == target_vertex_)
-    		target_reached_ = true;
-    	if(!target_reached_)
-    		return distance <= bound_;
-    	return false;
+    bool Check(VertexId vertex, distance_t distance) override {
+        if (vertex == target_vertex_)
+            target_reached_ = true;
+        if (target_reached_)
+            return false;
+        else
+            return base::Check(vertex, distance);
     }
 };
+
 }

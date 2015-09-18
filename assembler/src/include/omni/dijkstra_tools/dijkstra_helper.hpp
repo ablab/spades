@@ -40,12 +40,12 @@ public:
 
 	typedef Dijkstra<Graph, BoundedDijkstraSettings> BoundedDijkstra;
 
-	static BoundedDijkstra CreateBoundedDijkstra(const Graph &graph, size_t bound,
-			size_t max_vertex_number = size_t(-1)){
+	static BoundedDijkstra CreateBoundedDijkstra(const Graph &graph, size_t length_bound,
+			size_t max_vertex_number = -1ul){
 		return BoundedDijkstra(graph, BoundedDijkstraSettings(
         				LengthCalculator<Graph>(graph),
-        				BoundProcessChecker<Graph>(bound),
-        				BoundPutChecker<Graph>(bound),
+        				BoundProcessChecker<Graph>(length_bound),
+        				BoundPutChecker<Graph>(length_bound),
         				ForwardNeighbourIteratorFactory<Graph>(graph)),
 				max_vertex_number);
 	}
@@ -132,34 +132,32 @@ public:
 	static CountingDijkstra CreateCountingDijkstra(const Graph &graph, size_t max_size,
 			size_t edge_length_bound, size_t max_vertex_number = size_t(-1)){
 		return CountingDijkstra(graph, UnorientCountingDijkstraSettings(graph,
-    					shared_ptr<LengthCalculator<Graph> >(),
-    					shared_ptr<VertexProcessChecker<Graph>>(),
-    					shared_ptr<VertexPutChecker<Graph>>(),
     					UnorientedNeighbourIteratorFactory<Graph>(graph),
     					max_size, edge_length_bound), max_vertex_number);
 	}
 
-	//------------------------------
-	// targeted bounded dijkstra
-	//------------------------------
 
-	typedef ComposedDijkstraSettings<Graph,
-			LengthCalculator<Graph>,
-			BoundedVertexTargetedProcessChecker<Graph>,
-			BoundPutChecker<Graph>,
-			ForwardNeighbourIteratorFactory<Graph> > TargeredBoundedDijkstraSettings;
+    //------------------------------
+    // targeted bounded dijkstra
+    //------------------------------
 
-	typedef Dijkstra<Graph, TargeredBoundedDijkstraSettings> TargeredBoundedDijkstra;
+    typedef ComposedDijkstraSettings<Graph,
+            LengthCalculator<Graph>,
+            BoundedVertexTargetedProcessChecker<Graph>,
+            BoundPutChecker<Graph>,
+            ForwardNeighbourIteratorFactory<Graph> > TargeredBoundedDijkstraSettings;
 
-	static TargeredBoundedDijkstra CreateTargeredBoundedDijkstra(const Graph &graph,
-			VertexId target_vertex, size_t bound, size_t max_vertex_number = size_t(-1)){
-		return TargeredBoundedDijkstra(graph,
-				TargeredBoundedDijkstraSettings(LengthCalculator<Graph>(graph),
-						BoundedVertexTargetedProcessChecker<Graph>(target_vertex, bound),
-						BoundPutChecker<Graph>(bound),
-						ForwardNeighbourIteratorFactory<Graph>(graph)),
-				max_vertex_number);
-	}
+    typedef Dijkstra<Graph, TargeredBoundedDijkstraSettings> TargeredBoundedDijkstra;
+
+    static TargeredBoundedDijkstra CreateTargeredBoundedDijkstra(const Graph &graph,
+            VertexId target_vertex, size_t bound, size_t max_vertex_number = size_t(-1)){
+        return TargeredBoundedDijkstra(graph,
+                TargeredBoundedDijkstraSettings(LengthCalculator<Graph>(graph),
+                        BoundedVertexTargetedProcessChecker<Graph>(target_vertex, bound),
+                        BoundPutChecker<Graph>(bound),
+                        ForwardNeighbourIteratorFactory<Graph>(graph)),
+                max_vertex_number);
+    }
 };
 
 }

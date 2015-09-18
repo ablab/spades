@@ -62,8 +62,10 @@ private:
         size_t min_len_;
         size_t max_len_;
         Callback& callback_;
+        size_t edge_depth_bound_;
 
         size_t curr_len_;
+        size_t curr_depth_;
         size_t call_cnt_;
         Path reversed_edge_path_;
         bag<VertexId> vertex_cnts_;
@@ -74,6 +76,7 @@ private:
         void Push(EdgeId e, VertexId start_v) {
             TRACE("Pushing edge " << g_.str(e));
             curr_len_ += g_.length(e);
+            curr_depth_++;
             reversed_edge_path_.push_back(e);
             vertex_cnts_.put(start_v);
         }
@@ -88,20 +91,15 @@ private:
             vertex_cnts_.take(g_.EdgeStart(e));
             reversed_edge_path_.pop_back();
             curr_len_ -= len;
+            curr_depth_--;
         }
 
         bool CanGo(EdgeId e, VertexId start_v) {
-    //        VertexId v = g_.EdgeStart(e);
-            //if (!dijkstra_.DistanceCounted(v)) {
-            //TRACE("Distance not counted yet");
-            //}
-            //else
-            //TRACE("Shortest distance from this vertex is " << dijkstra_.GetDistance(v)
-            //<< " and sum with current path length " << cur_len
-            //<< " exceeded max length " << max_len_);
             if (!dijkstra_.DistanceCounted(start_v))
                 return false;
             if (dijkstra_.GetDistance(start_v) + g_.length(e) + curr_len_ > max_len_)
+                return false;
+            if (curr_depth_ >= edge_depth_bound_)
                 return false;
             if (vertex_cnts_.mult(start_v) >= PathProcessor::MAX_VERTEX_USAGE)
                 return false;
@@ -146,11 +144,14 @@ private:
         }
 
     public:
-        Traversal(const PathProcessor& outer, VertexId end, size_t min_len, size_t max_len, Callback& callback) :
+        Traversal(const PathProcessor& outer, VertexId end,
+                  size_t min_len, size_t max_len,
+                  Callback& callback, size_t edge_depth_bound) :
             outer_(outer), end_(end),
             min_len_(min_len), max_len_(max_len),
             callback_(callback),
-            curr_len_(0), call_cnt_(0),
+            edge_depth_bound_(edge_depth_bound),
+            curr_len_(0), curr_depth_(0), call_cnt_(0), 
             g_(outer.g_),
             dijkstra_(outer.dijkstra_) {
             reversed_edge_path_.reserve(PathProcessor::MAX_CALL_CNT);
@@ -161,6 +162,7 @@ private:
         bool Go() {
             bool code = Go(end_, min_len_);
             VERIFY(curr_len_ == 0);
+            VERIFY(curr_depth_ == 0);
             vertex_cnts_.take(end_);
             VERIFY(vertex_cnts_.size() == 0);
             return code;
@@ -171,8 +173,8 @@ private:
 
 public:
 
-    PathProcessor(const Graph& g, VertexId start, size_t length_bound)
-            : g_(g),
+    PathProcessor(const Graph& g, VertexId start, size_t length_bound) :
+    		  g_(g),
               start_(start),
               dijkstra_(DijkstraHelper<Graph>::CreateBoundedDijkstra(g, length_bound, MAX_DIJKSTRA_VERTICES)) {
         TRACE("Dijkstra launched");
@@ -182,7 +184,7 @@ public:
 
     // dfs from the end vertices
     // 3 two mistakes, 2 bad dijkstra, 1 some bad dfs, 0 = okay
-    int Process(VertexId end, size_t min_len, size_t max_len, Callback& callback) const {
+    int Process(VertexId end, size_t min_len, size_t max_len, Callback& callback, size_t edge_depth_bound = -1ul) const {
         TRACE("Process launched");
         int error_code = 0;
 
@@ -195,7 +197,7 @@ public:
         TRACE("Bounds are " << min_len << " " << max_len);
         TRACE("End vertex " << g_.str(end));
 
-        Traversal traversal(*this, end, min_len, max_len, callback);
+        Traversal traversal(*this, end, min_len, max_len, callback, edge_depth_bound);
         error_code |= int(traversal.Go());
 
         callback.Flush();
@@ -218,9 +220,9 @@ private:
 template<class Graph>
 int ProcessPaths(const Graph& g, size_t min_len, size_t max_len,
                  typename Graph::VertexId start, typename Graph::VertexId end,
-                 typename PathProcessor<Graph>::Callback& callback) {
+                 typename PathProcessor<Graph>::Callback& callback, size_t max_edge_cnt = -1ul) {
     PathProcessor<Graph> processor(g, start, max_len);
-    return processor.Process(end, min_len, max_len, callback);
+    return processor.Process(end, min_len, max_len, callback, max_edge_cnt);
 }
 
 template<class Graph>
@@ -280,9 +282,7 @@ private:
 };
 
 
-
-
-    template<class Graph>
+template<class Graph>
 class PathStorageCallback: public PathProcessor<Graph>::Callback {
 	typedef typename Graph::EdgeId EdgeId;
 	typedef vector<EdgeId> Path;

@@ -70,9 +70,6 @@ class CountingDijkstraSettings {
     typedef typename Graph::EdgeId EdgeId;
 
     const Graph &graph_;
-    shared_ptr<LengthCalculator<Graph> > len_calc_;
-    shared_ptr<VertexProcessChecker<Graph> > vert_proc_checker_;
-    shared_ptr<VertexPutChecker<Graph> > vert_put_checker_;
 
     NeighbourIteratorFactory neigh_iter_factory_;
     static const distance_t inf = 100000000;
@@ -82,15 +79,9 @@ class CountingDijkstraSettings {
 
 public:
     CountingDijkstraSettings(const Graph &graph,
-    	    shared_ptr<LengthCalculator<Graph> > len_calc,
-    	    shared_ptr<VertexProcessChecker<Graph> > vert_proc_checker,
-    	    shared_ptr<VertexPutChecker<Graph> > vert_put_checker,
     		NeighbourIteratorFactory neigh_iter_factory,
     		size_t max_size, size_t edge_length_bound) :
        	graph_(graph),
-       	len_calc_(len_calc),
-       	vert_proc_checker_(vert_proc_checker),
-       	vert_put_checker_(vert_put_checker),
        	neigh_iter_factory_(neigh_iter_factory),
         max_size_(max_size),
         edge_length_bound_(edge_length_bound),
@@ -101,22 +92,16 @@ public:
     }
 
 	distance_t GetLength(EdgeId edge) const{
-		if(len_calc_)
-			return len_calc_->GetLength(edge);
 		if (graph_.length(edge) <= edge_length_bound_)
 			return graph_.length(edge);
         return inf;
 	}
 
-	bool CheckProcessVertex(VertexId vertex, distance_t distance){
-		if(vert_proc_checker_)
-			return vert_proc_checker_->Check(vertex, distance);
+	bool CheckProcessVertex(VertexId , distance_t ){
 		return current_ < max_size_;
 	}
 
-	bool CheckPutVertex(VertexId vertex, EdgeId edge, distance_t length) const{
-		if(vert_put_checker_)
-			return vert_put_checker_->Check(vertex, edge, length);
+	bool CheckPutVertex(VertexId , EdgeId edge, distance_t ) const{
         if (current_ < max_size_)
             ++current_;
         if (current_ < max_size_ && GetLength(edge) < inf)

@@ -24,17 +24,17 @@ namespace debruijn_graph {
         typename Graph::EdgeId e2,
         size_t min_dist,
         size_t max_dist,
-        PathProcessor<Graph>& path_processor) 
+		const PathProcessor<Graph>& path_processor)
   {
       typedef typename Graph::EdgeId EdgeId;
       typedef vector<EdgeId> Path;
 
-      PathStorageCallback<Graph> callback(g);
       //PathProcessor<Graph> path_processor(g,
                                           //min_dist - g.length(e1),
                                           //max_dist - g.length(e1),
           //g.EdgeEnd(e1), g.EdgeStart(e2), callback);
 
+      PathStorageCallback<Graph> callback(g);
       int error_code = path_processor.Process(g.EdgeStart(e2), min_dist - g.length(e1),
                                               max_dist - g.length(e1), callback);
       vector<Path> paths = callback.paths();
