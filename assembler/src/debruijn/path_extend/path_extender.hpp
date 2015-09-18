@@ -696,6 +696,23 @@ private:
             if (paths.size() > 10 && i % (paths.size() / 10 + 1) == 0) {
                 INFO("Processed " << i << " paths from " << paths.size() << " (" << i * 100 / paths.size() << "%)");
             }
+            //TODO: coverage_map should be exterminated later
+            auto sc_mode = cfg::get().pe_params.param_set.sm;
+            if (sc_mode == sm_old_pe_2015 || sc_mode == sm_2015 || sc_mode == sm_combined) {
+                bool was_used = false;
+                for (auto ind =0; ind < paths.Get(i)->Size(); ind++) {
+                    EdgeId eid = paths.Get(i)->At(ind);
+                    if (used_storage_->IsUsedAndUnique(eid)) {
+                        was_used = true; break;
+                    } else {
+                        used_storage_->insert(eid);
+                    }
+                }
+                if (was_used) {
+                    DEBUG("skupping already used seed");
+                    continue;
+                }
+            }
             if (!cover_map_.IsCovered(*paths.Get(i))) {
                 usedPaths.AddPair(paths.Get(i), paths.GetConjugate(i));
                 BidirectionalPath * path = new BidirectionalPath(*paths.Get(i));
