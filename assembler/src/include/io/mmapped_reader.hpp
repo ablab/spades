@@ -291,6 +291,10 @@ class MMappedRecordArrayReader : public MMappedReader {
   const_iterator cend() const { return const_iterator(data() + size()*elcnt_, elcnt_); }
 };
 
+static inline size_t round_up(size_t value, size_t boundary) {
+    return (value + boundary - 1) / boundary * boundary;
+}
+
 template<class T>
 class MMappedFileRecordArrayIterator :
         public boost::iterator_facade<MMappedFileRecordArrayIterator<T>,
@@ -299,16 +303,17 @@ class MMappedFileRecordArrayIterator :
                                       const T*> {
   public:
     // Default ctor, used to implement "end" iterator
-    MMappedFileRecordArrayIterator(): value_(NULL), reader_(), elcnt_(0), good_(false) {}
+    MMappedFileRecordArrayIterator(): value_(NULL), array_size_(0), reader_(), good_(false) {}
     MMappedFileRecordArrayIterator(const std::string &FileName, size_t elcnt)
             : value_(NULL),
+              array_size_(sizeof(T) * elcnt),
               reader_(FileName, false,
-                      64*1024*1024 / (sizeof(T) * (unsigned)getpagesize() * elcnt) * (sizeof(T) * (unsigned)getpagesize() * elcnt)),
-              elcnt_(elcnt), good_(true) {
+                      round_up(64*1024*1024, array_size_ * (unsigned)getpagesize())),
+              good_(false) {
         increment();
     }
     MMappedFileRecordArrayIterator(MMappedRecordReader<T> &&reader, size_t elcnt)
-            : value_(NULL), reader_(std::move(reader)), elcnt_(elcnt), good_(true) {
+            : value_(NULL), array_size_(sizeof(T) * elcnt), reader_(std::move(reader)), good_(false) {
         increment();
     }
 
@@ -319,8 +324,7 @@ class MMappedFileRecordArrayIterator :
 
     void increment() {
         good_ = reader_.good();
-        if (good_)
-            value_ = (T*)reader_.skip(elcnt_ * sizeof(T));
+        value_ = (good_ ? (T*)reader_.skip(array_size_) : NULL);
     }
     bool equal(const MMappedFileRecordArrayIterator &other) const {
         return value_ == other.value_;
@@ -328,8 +332,8 @@ class MMappedFileRecordArrayIterator :
     const T* dereference() const { return value_; }
 
     T* value_;
+    size_t array_size_;
     MMappedRecordReader<T> reader_;
-    size_t elcnt_;
     bool good_;
 };
 
