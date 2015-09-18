@@ -21,8 +21,8 @@ for f in files:
 	ctg_id = open(os.path.join(CONTIGS_MPL_DIR, f + ".id"), "r")
 	ctg_mpl = open(os.path.join(CONTIGS_MPL_DIR, f + ".mpl"), "r")
 	while True:
-		cid = ctg_id.readLine()
-		cmpl = ctg_mpl.readLine()
+		cid = ctg_id.readline().strip()
+		cmpl = ctg_mpl.readline().strip()
 		if ((cid == "") != (cmpl == "")):
 			print("Unexpected end of file")
 			sys.exit(1)
