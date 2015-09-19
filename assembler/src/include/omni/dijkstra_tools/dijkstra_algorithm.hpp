@@ -152,7 +152,7 @@ public:
         graph_ = other.graph_;
         settings_ = other.settings_;
         max_vertex_number_ = other.max_vertex_number_;
-        finished = other.finished;
+        finished_ = other.finished_;
         vertex_number_ = other.vertex_number_;
         vertex_limit_exceeded_ = other.vertex_limit_exceeded_;
         distances_ = std::move(distances_);
