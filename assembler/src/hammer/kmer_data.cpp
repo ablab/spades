@@ -11,6 +11,7 @@
 
 #include "io/mmapped_writer.hpp"
 #include "io/ireadstream.hpp"
+#include "io/kmer_iterator.hpp"
 #include "config_struct_hammer.hpp"
 
 #include "file_limit.hpp"
@@ -319,87 +320,36 @@ class KMerMultiplicityCounter {
     }
 };
 
-class ParallelKMerProcessor {
-    class KMerIteratorWrapper {
-      public:
-        typedef hammer::KMer ReadT;
-
-        KMerIteratorWrapper(const std::string &filename)
-                : it_(filename, hammer::KMer::GetDataSize(hammer::K)) {}
-
-        bool eof() const { return !it_.good(); }
-
-        KMerIteratorWrapper& operator>>(hammer::KMer &val) {
-            val = hammer::KMer(hammer::K, *it_);
-            ++it_;
-            return *this;
-        }
-
-      private:
-        MMappedFileRecordArrayIterator<hammer::KMer::DataType> it_;
-    };
-
-  public:
-    ParallelKMerProcessor(const std::string &filename, unsigned nthreads)
-            : rp_(nthreads), it_(filename) {}
-
-    template <class Processor>
-    bool Run(Processor &op) { return rp_.Run(it_, op); }
-
-    bool IsEnd() const { return it_.eof(); }
-    size_t processed() const { return rp_.processed(); }
-    size_t read() const { return rp_.read(); }
-
-  private:
-    hammer::ReadProcessor rp_;
-    KMerIteratorWrapper it_;
-};
-
 class NonSingletonKMerSplitter : public KMerSplitter<hammer::KMer> {
     typedef std::vector<std::vector<KMer> > KMerBuffer;
 
-    class BufferFiller {
-        std::vector<KMerBuffer> &tmp_entries_;
-        unsigned num_files_;
-        size_t cell_size_;
-        size_t processed_;
-        size_t non_singleton_;
-        const NonSingletonKMerSplitter &splitter_;
-        const KMerData &data_;
-        const KMerMultiplicityCounter &counter_;
+    std::pair<size_t, size_t>
+    FillBufferFromStream(io::raw_kmer_iterator<hammer::KMer> &it,
+                         KMerBuffer &entry,
+                         size_t cell_size, size_t num_files) {
+        size_t processed = 0, non_singleton = 0 ;
+        for ( ; it.good(); ++it) {
+            hammer::KMer seq(hammer::K, *it);
 
-      public:
-        BufferFiller(std::vector<KMerBuffer> &tmp_entries, size_t cell_size,
-                     const NonSingletonKMerSplitter &splitter,
-                     const KMerData &data, const KMerMultiplicityCounter &counter)
-                : tmp_entries_(tmp_entries), num_files_((unsigned)tmp_entries[0].size()),
-                  cell_size_(cell_size), processed_(0), non_singleton_(0),
-                  splitter_(splitter), data_(data), counter_(counter) {}
-
-        size_t processed() const { return processed_; }
-        size_t non_singleton() const { return non_singleton_; }
-
-        bool operator()(const KMer &seq) {
             size_t kidx = data_.seq_idx(seq);
             size_t cnt = counter_.count(kidx);
 
-#           pragma omp atomic
-            processed_ += 1;
+            processed += 1;
 
             if (cnt == 1)
-                return false;
+                continue;
 
-#           pragma omp atomic
-            non_singleton_ += 1;
+            non_singleton += 1;
 
-            KMerBuffer &entry = tmp_entries_[omp_get_thread_num()];
-            size_t idx = splitter_.GetFileNumForSeq(seq, (unsigned)num_files_);
-
+            size_t idx = this->GetFileNumForSeq(seq, (unsigned)num_files);
             entry[idx].push_back(seq);
 
-            return entry[idx].size() > cell_size_;
+
+            if (entry[idx].size() > cell_size)
+                break;
         }
-    };
+        return std::make_pair(processed, non_singleton);
+    }
 
     void DumpBuffers(size_t num_files, size_t nthreads,
                      std::vector<KMerBuffer> &buffers,
@@ -485,21 +435,28 @@ class NonSingletonKMerSplitter : public KMerSplitter<hammer::KMer> {
         }
 
         size_t n = 15;
-        ParallelKMerProcessor processor(final_kmers_, nthreads);
-        BufferFiller filler(tmp_entries, cell_size, *this, data_, counter_);
-        while (!processor.IsEnd()) {
-            processor.Run(filler);
-            DumpBuffers(num_files, nthreads, tmp_entries, out);
-            VERIFY_MSG(processor.read() == processor.processed(), "Queue unbalanced");
+        size_t total_kmers = 0, non_singletons = 0;
+        auto kmers = io::make_kmer_iterator<hammer::KMer>(final_kmers_, hammer::K, nthreads);
+        while (std::any_of(kmers.begin(), kmers.end(),
+                           [](const io::raw_kmer_iterator<hammer::KMer> &it) { return it.good(); })) {
+#           pragma omp parallel for num_threads(nthreads) reduction(+ : total_kmers) reduction(+ : non_singletons)
+            for (size_t i = 0; i < kmers.size(); ++i) {
+                size_t kc, nsc;
+                std::tie(kc, nsc) = FillBufferFromStream(kmers[i], tmp_entries[i], cell_size, num_files);
+                total_kmers += kc;
+                non_singletons += nsc;
+            }
 
-            if (filler.processed() >> n) {
-                INFO("Processed " << filler.processed() << " kmers");
+            DumpBuffers(num_files, nthreads, tmp_entries, out);
+            if (total_kmers >> n) {
+                INFO("Processed " << total_kmers << " kmers");
                 n += 1;
             }
         }
-        INFO("Processed " << filler.processed() << " kmers");
+        INFO("Processed " << total_kmers << " kmers");
 
-        INFO("Total " << filler.non_singleton() << " non-singleton k-mers written");
+        INFO("Total " << non_singletons << " non-singleton k-mers written");
+
         unlink(final_kmers_.c_str());
 
         return out;
@@ -541,7 +498,7 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
           singletons += cnt == 1;
       }
       INFO("There are " << data.size() << " kmers in total. "
-           "Among them " << singletons << " (" <<  100.0 * (double)singletons / (double)data.size() << "%) are singletons.");
+           "Among them " << data.size() - singletons << " (" <<  100.0 * (double)(data.size() - singletons) / (double)data.size() << "%) are non-singletons.");
 
       NonSingletonKMerSplitter nssplitter(workdir, final_kmers, data, mcounter);
       KMerDiskCounter<hammer::KMer> nscounter(workdir, nssplitter);
@@ -556,7 +513,7 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
       FATAL_ERROR("The reads contain too many k-mers to fit into available memory limit. Increase memory limit and restart");
 
   {
-    MMappedFileRecordArrayIterator<hammer::KMer::DataType> kmer_it(final_kmers, hammer::KMer::GetDataSize(hammer::K));
+    auto kmer_it = io::make_kmer_iterator<hammer::KMer>(final_kmers, hammer::K);
 
     INFO("Arranging kmers in hash map order");
     data.kmers_.set_size(kmers);
