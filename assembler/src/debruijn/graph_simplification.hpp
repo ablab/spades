@@ -175,11 +175,9 @@ bool RemoveBulges(
         max_length = additional_length_bound;
     }
 
-    perf_counter perf;
-
     bool modified = false;
-    if (cfg::get().parallel_br) {
-		ParallelBulgeRemover<Graph> br(g,/*chunk_size*/ 10000, max_length, br_config.max_coverage,
+    if (br_config.parallel) {
+		ParallelBulgeRemover<Graph> br(g, br_config.chunk_size, max_length, br_config.max_coverage,
 							   br_config.max_relative_coverage, br_config.max_delta,
 							   br_config.max_relative_delta,
                                br_config.max_number_edges,
@@ -197,7 +195,6 @@ bool RemoveBulges(
 						  make_shared<CoverageUpperBound<Graph>>(g, br_config.max_coverage));
     }
 
-    INFO("BR time " << perf.time());
     return modified;
 }
 

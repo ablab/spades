@@ -254,9 +254,9 @@ public:
                 g_.length(edge) + delta, start, end, path_chooser, max_edge_cnt_);
 
         const vector<EdgeId>& path = path_chooser.most_covered_path();
-        if(path.size() != 0) {
-            VERIFY(graph_.EdgeStart(path[0]) == start);
-            VERIFY(graph_.EdgeEnd(path.back()) == end);
+        if (!path.empty()) {
+            VERIFY(g_.EdgeStart(path[0]) == start);
+            VERIFY(g_.EdgeEnd(path.back()) == end);
         }
 
         double path_coverage = path_chooser.max_coverage();
@@ -482,7 +482,7 @@ public:
     //false if time to stop
     template<class SmartEdgeIt>
     bool FillEdgeBuffer(SmartEdgeIt& it, vector<EdgeId>& buffer) const {
-        INFO("Filling edge buffer");
+        DEBUG("Filling edge buffer chunk size " << chunk_size_);
         perf_counter perf;
         VERIFY(buffer.empty());
         auto proceed_condition = make_shared<CoverageUpperBound<Graph>>(g_, max_coverage_);
@@ -511,13 +511,13 @@ public:
                 TRACE("Can not be bulge");
             }
         }
-        INFO("Buffer filled in " << perf.time() << " seconds");
+        DEBUG("Buffer filled in " << perf.time() << " seconds");
         TRACE("No more edges in iterator");
         return false;
     }
     
     std::vector<std::vector<BulgeInfo>> FindBulges(const std::vector<EdgeId> edge_buffer) const {
-    	INFO("Looking for bulges (in parallel)");
+    	DEBUG("Looking for bulges (in parallel). Edge buffer size " << edge_buffer.size());
         perf_counter perf;
         std::vector<std::vector<BulgeInfo>> bulge_buffers(omp_get_max_threads());
         size_t n = edge_buffer.size();
@@ -529,12 +529,12 @@ public:
                 bulge_buffers[omp_get_thread_num()].push_back(BulgeInfo(i, e, std::move(alternative)));
             }
         }
-        INFO("Buffers found in " << perf.time() << " seconds");
+        DEBUG("Bulges found in " << perf.time() << " seconds");
         return bulge_buffers;
     }
 
     std::vector<BulgeInfo> MergeBuffers(std::vector<std::vector<BulgeInfo>>&& buffers) const {
-        INFO("Merging buffers");
+        DEBUG("Merging bulge buffers");
         perf_counter perf;
 
         std::vector<BulgeInfo> merged_bulges;
@@ -545,17 +545,19 @@ public:
         }
 
         std::sort(merged_bulges.begin(), merged_bulges.end());
-        INFO("Buffers merged in " << perf.time() << " seconds");
+        DEBUG("Total bulges " << merged_bulges.size());
+        DEBUG("Buffers merged in " << perf.time() << " seconds");
         return merged_bulges;
     }
 
     SmartEdgeSet RetainIndependentBulges(std::vector<BulgeInfo>& bulges) const {
-        INFO("Looking for independent bulges");
+        DEBUG("Looking for independent bulges");
+        size_t total_cnt = bulges.size();
         perf_counter perf;
 
         std::vector<BulgeInfo> filtered;
         filtered.reserve(bulges.size());
-        //fixme switch to involved vertices for fully parallel glueing
+        //fixme switch to involved vertices to bring fully parallel glueing closer
         std::unordered_set<EdgeId> involved_edges;
         SmartEdgeSet interacting_edges(g_, CoverageComparator<Graph>(g_));
 
@@ -569,29 +571,35 @@ public:
         }
         bulges = std::move(filtered);
 
-        INFO("Independent bulges identified in " << perf.time() << " seconds");
-        INFO("Independent cnt " << bulges.size());
-        INFO("Interacting cnt " << interacting_edges.size());
+        DEBUG("Independent bulges identified in " << perf.time() << " seconds");
+        DEBUG("Independent cnt " << bulges.size());
+        DEBUG("Interacting cnt " << interacting_edges.size());
+        VERIFY(bulges.size() + interacting_edges.size() == total_cnt);
+
+        if (!interacting_edges.IsEnd()) {
+            DEBUG("First interacting edge " << g_.str(*interacting_edges));
+        }
         return interacting_edges;
     }
 
-    bool ProcessBulges(const std::vector<BulgeInfo>& bulges, SmartEdgeSet& interacting_edges) {
-        INFO("Processing bulges");
+    bool ProcessBulges(const std::vector<BulgeInfo>& independent_bulges, SmartEdgeSet& interacting_edges) {
+        DEBUG("Processing bulges");
         perf_counter perf;
 
     	bool triggered = false;
 
-        for (const BulgeInfo& info : bulges) {
+        for (const BulgeInfo& info : independent_bulges) {
         	triggered = true;
             gluer_(info.e, info.alternative);
         }
-        INFO("Independent bulges glued in " << perf.time() << " seconds");
+        DEBUG("Independent bulges glued in " << perf.time() << " seconds");
         perf.reset();
 
+        DEBUG("Processing remaining interacting bulges " << interacting_edges.size());
         triggered |= usual_br_.RunFromIterator(interacting_edges,
                               make_shared<CoverageUpperBound<Graph>>(g_, max_coverage_));
 
-        INFO("Interacting edges processed in " << perf.time() << " seconds");
+        DEBUG("Interacting edges processed in " << perf.time() << " seconds");
         return triggered;
     }
 
@@ -614,7 +622,9 @@ public:
 
             auto interacting_edges = RetainIndependentBulges(bulges);
 
-            triggered |= ProcessBulges(bulges, interacting_edges);
+            bool inner_triggered = ProcessBulges(bulges, interacting_edges);
+            proceed |= inner_triggered;
+            triggered |= inner_triggered;
         }
 
         TRACE("Finished processing. Triggered = " << triggered);

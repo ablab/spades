@@ -66,13 +66,13 @@ void RefineGP(gp_t& gp, size_t delta = 5) {
     using namespace debruijn_graph;
     INFO("Constructing graph pack for refinement");
 
-    //todo configure!!!
-    debruijn_config::simplification::bulge_remover br_config;
-    br_config.max_bulge_length_coefficient = 3;
-    br_config.max_coverage = 1000.;
-    br_config.max_relative_coverage = 1.2;
-    br_config.max_delta = double(delta);
-    br_config.max_relative_delta = 0.1;
+    //outdated
+    //debruijn_config::simplification::bulge_remover br_config;
+    //br_config.max_bulge_length_coefficient = 3;
+    //br_config.max_coverage = 1000.;
+    //br_config.max_relative_coverage = 1.2;
+    //br_config.max_delta = double(delta);
+    //br_config.max_relative_delta = 0.1;
 
     INFO("Removing bulges");
     debruijn::simplification::RemoveBulges(gp.g, br_config);
