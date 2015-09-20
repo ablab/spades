@@ -27,6 +27,8 @@ debruijn_config::simplification::bulge_remover standard_br_config_generation() {
 	br_config.max_delta = 3;
 	br_config.max_number_edges = -1ul;
 	br_config.max_relative_delta = 0.1;
+	br_config.parallel = false;
+	br_config.chunk_size = -1ul;
 	return br_config;
 }
 

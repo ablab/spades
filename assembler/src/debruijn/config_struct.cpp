@@ -207,6 +207,8 @@ void load(debruijn_config::simplification::bulge_remover& br,
   load(br.max_delta,                        pt,     "max_delta");
   load(br.max_relative_delta,               pt,     "max_relative_delta");
   load(br.max_number_edges,                 pt,     "max_number_edges");
+  load(br.parallel,                         pt,     "parallel");
+  load(br.chunk_size,                       pt,     "chunk_size");
 }
 
 void load(debruijn_config::simplification::topology_tip_clipper& ttc,
@@ -690,7 +692,6 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
   load(cfg.max_memory, pt, "max_memory");
 
   load(cfg.diploid_mode, pt,	"diploid_mode");
-  load(cfg.parallel_br, pt,	"parallel_br");
 
   path::CheckFileExistenceFATAL(cfg.dataset_file);
   boost::property_tree::ptree ds_pt;
