@@ -27,7 +27,7 @@ add_library(debruijn STATIC
   
 # We have to do this to minimize changes in ConsensusCore itself
 target_include_directories(debruijn PRIVATE ${EXT_DIR}/include/ConsensusCore)
-target_link_libraries(debruijn ConsensusCore input mph_index nlopt BamTools yaml-cpp ${COMMON_LIBRARIES})
+target_link_libraries(debruijn ConsensusCore input mph_index nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})
 
 
 add_executable(spades
