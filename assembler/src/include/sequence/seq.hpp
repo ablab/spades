@@ -348,7 +348,10 @@ class Seq {
   }
  
   bool operator==(const Seq<size_, T>& s) const {
-    return 0 == memcmp(data_.data(), s.data_.data(), sizeof(T) * DataSize);
+    for (size_t i = 0; i < DataSize; ++i)
+      if (data_[i] != s.data_[i])
+        return false;
+    return true;
   }
 
   /**
