@@ -406,16 +406,16 @@ public:
     int FindCycleStart(const BidirectionalPath& path) const {
         TRACE("Looking for IS cycle " << min_cycle_len_);
         int i = FindPosIS(path);
-        DEBUG("last is pos " << i);
+        TRACE("last is pos " << i);
         if (i < 0) return -1;
 //Tail
         BidirectionalPath last = path.SubPath(i);
-        last.Print();
+        //last.Print();
 
         int pos = path.FindFirst(last);
 // not cycle
         if (pos == i) pos = -1;
-        DEBUG("looking for 1sr IS cycle " << pos);
+        TRACE("looking for 1sr IS cycle " << pos);
         return pos;
     }
 
@@ -1072,7 +1072,9 @@ public:
         if (path.Size() < 1 || (check_sink_ && !IsSink(path.Back())) ) {
             return false;
         }
-        DEBUG("scaffolding");
+        DEBUG("scaffolding:");
+        DEBUG("Simple grow step, growing path");
+        path.Print();
         ExtensionChooser::EdgeContainer candidates = extension_chooser_->Filter(path, sources_);
         DEBUG("scaffolding candidates " << candidates.size() << " from sources " << sources_.size());
         if (candidates.size() == 1) {

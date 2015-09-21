@@ -91,7 +91,7 @@ PathScore GenomeConsistenceChecker::CountMisassemblies(const BidirectionalPath &
     size_t total_length = path.LengthAt(0);
 //TODO: constant;
     if (total_length > std::max(straight.mapped_length, reverse.mapped_length) * 2) {
-        INFO("mapped less than half of the path, skipping");
+        DEBUG("mapped less than half of the path, skipping");
         return PathScore(0,0,0);
     } else {
         if (straight.mapped_length > reverse.mapped_length) {
@@ -146,8 +146,8 @@ PathScore GenomeConsistenceChecker::CountMisassembliesWithStrand(const Bidirecti
                 if (cur_in_genome == prev_in_genome + 1) {
                     int dist_in_genome = cur_range.initial_range.start_pos - prev_range.initial_range.end_pos;
                     int dist_in_path = path.LengthAt(prev_in_path) - path.LengthAt(i) + cur_range.mapped_range.start_pos - prev_range.mapped_range.end_pos;
-                    DEBUG(i);
-                    DEBUG(dist_in_genome << " " << dist_in_path);
+                    DEBUG("Edge position in genome ordering: " << prev_in_genome);
+                    DEBUG("Gap in genome / gap in path: " << dist_in_genome << " / " << dist_in_path);
                     if (abs(dist_in_genome - dist_in_path) >absolute_max_gap_ && (dist_in_genome * (1 + relative_max_gap_) < dist_in_path || dist_in_path * (1 + relative_max_gap_) < dist_in_genome)) {
 
                         res.wrong_gap_size ++;
