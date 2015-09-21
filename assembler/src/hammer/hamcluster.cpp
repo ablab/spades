@@ -202,3 +202,27 @@ void KMerHamClusterer::cluster(const std::string &prefix,
     INFO("Merge done, saw " << big_blocks2 << " big blocks out of " << nblocks << " processed.");
   }
 }
+
+void TauOneKMerHamClusterer::cluster(const std::string &, const KMerData &data, ConcurrentDSU &uf) {
+    unsigned nthreads = cfg::get().general_max_nthreads;
+#   pragma omp parallel for num_threads(nthreads)
+    for (size_t idx = 0; idx < data.size(); ++idx) {
+        hammer::KMer kmer = data.kmer(idx);
+        size_t kidx = data.seq_idx(kmer);
+        // INFO("" << kmer << ":" << kidx);
+
+        for (size_t k = 0; k < hammer::K; ++k) {
+            hammer::KMer candidate = kmer;
+            char c = candidate[k];
+            for (char nc = 0; nc < 4; ++nc) {
+                if (nc == c)
+                    continue;
+                candidate.set(k, nc);
+                size_t cidx = data.checking_seq_idx(candidate);
+                // INFO("" << candidate << ":" << cidx);
+                if (cidx != -1ULL && uf.find_set(kidx) != uf.find_set(cidx))
+                    uf.unite(kidx, cidx);
+            }
+        }
+    }
+}

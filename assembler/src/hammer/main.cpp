@@ -151,7 +151,11 @@ int main(int argc, char * argv[]) {
       std::vector<std::vector<size_t> > classes;
       if (cfg::get().hamming_do || do_everything) {
         ConcurrentDSU uf(Globals::kmer_data->size());
+#if 0
         KMerHamClusterer clusterer(cfg::get().general_tau);
+#else
+        TauOneKMerHamClusterer clusterer;
+#endif
         INFO("Clustering Hamming graph.");
         clusterer.cluster(hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamcls"),
                           *Globals::kmer_data, uf);
