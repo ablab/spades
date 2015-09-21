@@ -205,7 +205,7 @@ void KMerHamClusterer::cluster(const std::string &prefix,
 
 void TauOneKMerHamClusterer::cluster(const std::string &, const KMerData &data, ConcurrentDSU &uf) {
     unsigned nthreads = cfg::get().general_max_nthreads;
-#   pragma omp parallel for num_threads(nthreads)
+#   pragma omp parallel for num_threads(nthreads) schedule(guided)
     for (size_t idx = 0; idx < data.size(); ++idx) {
         hammer::KMer kmer = data.kmer(idx);
 
