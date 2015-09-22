@@ -333,7 +333,7 @@ public:
         DEBUG("Contigs written");
     }
 //TODO: exterminate code dup
-    void WritePathsToFASTG(const PathContainer& paths, const string& filename, const string& fastafilename, const debruijn_graph::conj_graph_pack &gp) const {
+    void WritePathsToFASTG(const PathContainer& paths, const string& filename, const string& fastafilename, const debruijn_graph::conj_graph_pack &gp, shared_ptr<ScaffoldingUniqueEdgeStorage> storage) const {
         BidirectionalPathMap< string > ids;
         BidirectionalPathMap< set<string> > next_ids;
         INFO("Constructing FASTG file from paths ");
@@ -343,10 +343,9 @@ public:
         INFO("Writing contigs in FASTA to " << fastafilename);
         io::osequencestream_for_fastg fastg_oss(filename);
         io::osequencestream_with_id oss(fastafilename);
-        ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, 10000, 15);
-        auto storage = std::make_shared<ScaffoldingUniqueEdgeStorage>();
-
-        unique_edge_analyzer.FillUniqueEdgeStorage(*storage);
+//        ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, 10000, 15);
+//        auto storage = std::make_shared<ScaffoldingUniqueEdgeStorage>();
+//        unique_edge_analyzer.FillUniqueEdgeStorage(*storage);
         debruijn_graph::GenomeConsistenceChecker genome_checker (gp, *storage, 1000, 0.2);
         genome_checker.SpellGenome();
         size_t total_mis = 0;

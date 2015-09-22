@@ -59,7 +59,7 @@ void ExtensionChooser2015::FindBestFittedEdges(const BidirectionalPath& path, co
         int gap = CountMedian(histogram);
         //TODO reconsider condition
         int cur_is = wc_->lib().GetISMax();
-        if (gap < cur_is * -2 || gap > cur_is * 3) {
+        if (gap < cur_is * -1 || gap > cur_is * 2) {
             DEBUG("Edge " << g_.int_id(e)  << " gap "<< gap <<  " failed insert size conditions, IS= " << cur_is);
             continue;
         }
