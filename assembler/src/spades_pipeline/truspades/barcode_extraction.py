@@ -104,7 +104,7 @@ def ReadDataset(file, log):
             line = line.strip()
             if line == "":
                 continue
-            split = line.split(" ")
+            split = line.split()
             id = split[0]
             datasets = []
             for i in range(1, len(split), 2):
