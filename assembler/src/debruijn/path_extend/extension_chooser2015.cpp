@@ -33,7 +33,7 @@ void ExtensionChooser2015::CountAvrgDists(const BidirectionalPath& path, EdgeId 
             std::vector<double> weights;
             GetDistances(path.At(j), e, distances, weights);
             if (distances.size() > 0) {
-                AddInfoFromEdge(distances, weights, histogram, path.LengthAt(j));
+                AddInfoFromEdge(distances, weights, histogram, g_.length(path.At(j)));
             }
 //we are not interested on info over an unique edge now
             break;
@@ -101,10 +101,11 @@ set<EdgeId> ExtensionChooser2015::FindCandidates(const BidirectionalPath& path) 
             if (unique_edges_->IsUnique(path.At(i))) {
                 DEBUG("Is Unique Ok");
                 lib.FindJumpEdges(path.At(i), jump_edges_i,
-                                   std::max(0, (int) path.LengthAt(i) - is_scatter),
+                                   std::max((int)0, (int )g_.length(path.At(i)) - (int) lib.GetISMax() - is_scatter),
+//TODO: Reconsider limits
                         //FIXME do we need is_scatter here?
                         //FIXME or just 0, inf?
-                                   int((path.LengthAt(i) + lib.GetISMax() + is_scatter)),
+                                   int(g_.length(path.At(i)) + 2 * lib.GetISMax() + is_scatter),
                                    0);
                 DEBUG("Jump edges found");
                 for (EdgeId e : jump_edges_i) {
