@@ -96,10 +96,10 @@ class TwoStepAlgorithmRunner {
         if (filter_conjugate_ && g_.conjugate(el) < el)
             return;
         if (algo.IsOfInterest(el)) {
-            INFO("Element " << g_.str(el) << " is of interest");
+            TRACE("Element " << g_.str(el) << " is of interest");
             elements_of_interest_[bucket].push_back(el);
         } else {
-            INFO("Element " << g_.str(el) << " is not interesting");
+            TRACE("Element " << g_.str(el) << " is not interesting");
         }
     }
 

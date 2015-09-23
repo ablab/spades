@@ -58,9 +58,6 @@ protected:
 
 public:
 
-    virtual ~SmartIterator() {
-    }
-
     bool canonical_only() const {
         return canonical_only_;
     }
@@ -68,6 +65,10 @@ public:
     bool IsEnd() const {
         return inner_it_.IsEnd();
     }
+
+    size_t size() const {
+		return inner_it_.size();
+	}
 
     ElementId operator*() {
         return *inner_it_;
@@ -124,6 +125,9 @@ public:
         base::insert(begin, end);
     }
 
+    void push(const ElementId& el) {
+        base::push(el);
+    }
 };
 
 /**

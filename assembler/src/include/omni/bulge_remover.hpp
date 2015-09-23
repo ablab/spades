@@ -69,7 +69,7 @@ class MostCoveredSimpleAlternativePathChooser: public PathProcessor<Graph>::Call
 	typedef typename Graph::EdgeId EdgeId;
 	typedef typename Graph::VertexId VertexId;
 
-	Graph& g_;
+	const Graph& g_;
 	EdgeId forbidden_edge_;
 
 	double max_coverage_;
@@ -77,7 +77,7 @@ class MostCoveredSimpleAlternativePathChooser: public PathProcessor<Graph>::Call
 
 public:
 
-	MostCoveredSimpleAlternativePathChooser(Graph& g, EdgeId edge) :
+	MostCoveredSimpleAlternativePathChooser(const Graph& g, EdgeId edge) :
 			g_(g), forbidden_edge_(edge), max_coverage_(-1.0) {
 
 	}
@@ -108,6 +108,175 @@ inline size_t CountMaxDifference(size_t absolute_diff, size_t length, double rel
     return std::max((size_t) std::floor(relative_diff * (double) length), absolute_diff);
 }
 
+template<class Graph>
+class BulgeGluer {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    typedef std::function<void(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackF;
+    Graph& g_;
+    BulgeCallbackF opt_callback_;
+    std::function<void(EdgeId)> removal_handler_;
+
+    void InnerProcessBulge(EdgeId edge, const vector<EdgeId>& path) {
+
+        EnsureEndsPositionAligner aligner(CumulativeLength(g_, path),
+                g_.length(edge));
+        double prefix_length = 0.;
+        vector<size_t> bulge_prefix_lengths;
+
+        for (EdgeId e : path) {
+            prefix_length += (double) g_.length(e);
+            bulge_prefix_lengths.push_back(aligner.GetPosition((size_t) prefix_length));
+        }
+
+        EdgeId edge_to_split = edge;
+        size_t prev_length = 0;
+
+        TRACE("Process bulge " << path.size() << " edges");
+
+        //fixme remove after checking results
+        bool flag = false;
+        VERIFY(bulge_prefix_lengths.back() == g_.length(edge));
+
+        for (size_t i = 0; i < path.size(); ++i) {
+            if (bulge_prefix_lengths[i] > prev_length) {
+                if (bulge_prefix_lengths[i] - prev_length
+                        != g_.length(edge_to_split)) {
+
+                    TRACE("SplitEdge " << g_.str(edge_to_split));
+                    TRACE(
+                            "Start: " << g_.str(g_.EdgeStart(edge_to_split)));
+                    TRACE(
+                            "Start: " << g_.str(g_.EdgeEnd(edge_to_split)));
+
+                    pair<EdgeId, EdgeId> split_result = g_.SplitEdge(
+                            edge_to_split,
+                            bulge_prefix_lengths[i] - prev_length);
+
+                    edge_to_split = split_result.second;
+
+                    TRACE("GlueEdges " << g_.str(split_result.first));
+                    flag = true;
+                    g_.GlueEdges(split_result.first, path[i]);
+
+                } else {
+                    TRACE("GlueEdges " << g_.str(edge_to_split));
+                    flag = true;
+                    g_.GlueEdges(edge_to_split, path[i]);
+                }
+            }
+            prev_length = bulge_prefix_lengths[i];
+        }
+        VERIFY(flag);
+    }
+
+public:
+
+    BulgeGluer(Graph& g, BulgeCallbackF opt_callback = 0,
+               std::function<void(EdgeId)> removal_handler = 0) :
+               g_(g),
+               opt_callback_(opt_callback),
+               removal_handler_(removal_handler) {
+
+    }
+
+    void operator()(EdgeId edge, const vector<EdgeId>& path) {
+        if (opt_callback_)
+            opt_callback_(edge, path);
+
+        if (removal_handler_)
+            removal_handler_(edge);
+
+        VertexId start = g_.EdgeStart(edge);
+        VertexId end = g_.EdgeEnd(edge);
+
+        TRACE("Projecting edge " << g_.str(edge));
+        InnerProcessBulge(edge, path);
+
+        TRACE("Compressing start vertex " << g_.str(start));
+        g_.CompressVertex(start);
+
+        TRACE("Compressing end vertex " << g_.str(end));
+        g_.CompressVertex(end);
+    }
+
+};
+
+template<class Graph>
+class AlternativesAnalyzer {
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    const Graph& g_;
+    double max_relative_coverage_;
+    size_t max_delta_;
+    double max_relative_delta_;
+    size_t max_edge_cnt_;
+
+    static vector<EdgeId> EmptyPath() {
+        static vector<EdgeId> vec = {};
+        return vec;
+    }
+
+    /**
+     * Checks if alternative path is simple (doesn't contain conjugate edges, edge e or conjugate(e))
+     * and its average coverage is greater than max_relative_coverage_ * g.coverage(e)
+     */
+    bool BulgeCondition(EdgeId e, const vector<EdgeId>& path,
+            double path_coverage) const {
+        return math::ge(path_coverage * max_relative_coverage_,
+                g_.coverage(e)) && SimplePathCondition<Graph>(g_)(e, path);
+    }
+
+public:
+    AlternativesAnalyzer(const Graph& g, double max_relative_coverage, size_t max_delta,
+                         double max_relative_delta, size_t max_edge_cnt) :
+                         g_(g),
+                         max_relative_coverage_(max_relative_coverage),
+                         max_delta_(max_delta),
+                         max_relative_delta_(max_relative_delta),
+                         max_edge_cnt_(max_edge_cnt) {
+    }
+
+    vector<EdgeId> operator()(EdgeId edge) const {
+        size_t kplus_one_mer_coverage = (size_t) math::round((double) g_.length(edge) * g_.coverage(edge));
+        TRACE("Processing edge " << g_.str(edge) << " and coverage " << kplus_one_mer_coverage);
+
+        size_t delta = CountMaxDifference(max_delta_, g_.length(edge), max_relative_delta_);
+
+        MostCoveredSimpleAlternativePathChooser<Graph> path_chooser(g_, edge);
+
+        VertexId start = g_.EdgeStart(edge);
+        TRACE("Start " << g_.str(start));
+        VertexId end = g_.EdgeEnd(edge);
+        TRACE("End " << g_.str(end));
+
+        ProcessPaths(g_, (g_.length(edge) > delta) ? g_.length(edge) - delta : 0,
+                g_.length(edge) + delta, start, end, path_chooser, max_edge_cnt_);
+
+        const vector<EdgeId>& path = path_chooser.most_covered_path();
+        if (!path.empty()) {
+            VERIFY(g_.EdgeStart(path[0]) == start);
+            VERIFY(g_.EdgeEnd(path.back()) == end);
+        }
+
+        double path_coverage = path_chooser.max_coverage();
+        if (math::gr(path_coverage, 0.)) {
+            TRACE("Best path with coverage " << path_coverage << " is " << PrintPath(g_, path));
+
+            if (BulgeCondition(edge, path, path_coverage)) {
+                TRACE("Satisfied condition");
+                return path;
+            } else {
+                TRACE("Didn't satisfy condition");
+                return EmptyPath();
+            }
+        } else {
+            TRACE("Didn't find alternative");
+            return EmptyPath();
+        }
+    }
+};
+
 /**
  * This class removes simple bulges from given graph with the following algorithm: it iterates through all edges of
  * the graph and for each edge checks if this edge is likely to be a simple bulge
@@ -120,140 +289,35 @@ class BulgeRemover: public EdgeProcessingAlgorithm<Graph> {
 	typedef typename Graph::VertexId VertexId;
 
 	bool PossibleBulgeEdge(EdgeId e) const {
-	  return (graph_.length(e) <= max_length_ && graph_.coverage(e) < max_coverage_ &&
-	          graph_.OutgoingEdgeCount(graph_.EdgeStart(e)) > 1 &&
-	          graph_.IncomingEdgeCount(graph_.EdgeEnd(e)) > 1);
-	}
-
-	/**
-	 * Checks if alternative path is simple (doesn't contain conjugate edges, edge e or conjugate(e))
-	 * and its average coverage is greater than max_relative_coverage_ * g.coverage(e)
-	 */
-	bool BulgeCondition(EdgeId e, const vector<EdgeId>& path,
-			double path_coverage) {
-		return math::ge(path_coverage * max_relative_coverage_,
-				graph_.coverage(e)) && SimplePathCondition<Graph>(graph_)(e, path);
-	}
-
-	void ProcessBulge(EdgeId edge, const vector<EdgeId>& path) {
-		if (opt_callback_)
-			opt_callback_(edge, path);
-
-		if (removal_handler_)
-			removal_handler_(edge);
-
-		VertexId start = graph_.EdgeStart(edge);
-		VertexId end = graph_.EdgeEnd(edge);
-
-		TRACE("Projecting edge " << graph_.str(edge));
-		InnerProcessBulge(edge, path);
-
-		TRACE("Compressing start vertex " << graph_.str(start));
-		graph_.CompressVertex(start);
-
-		TRACE("Compressing end vertex " << graph_.str(end));
-		graph_.CompressVertex(end);
-	}
-
-	void InnerProcessBulge(EdgeId edge, const vector<EdgeId>& path) {
-
-		EnsureEndsPositionAligner aligner(CumulativeLength(graph_, path),
-				graph_.length(edge));
-		double prefix_length = 0.;
-		vector<size_t> bulge_prefix_lengths;
-
-		for (EdgeId e : path) {
-			prefix_length += (double) graph_.length(e);
-			bulge_prefix_lengths.push_back(aligner.GetPosition((size_t) prefix_length));
-		}
-
-		EdgeId edge_to_split = edge;
-		size_t prev_length = 0;
-
-		TRACE("Process bulge " << path.size() << " edges");
-
-		//fixme remove after checking results
-		bool flag = false;
-        VERIFY(bulge_prefix_lengths.back() == graph_.length(edge));
-
-		for (size_t i = 0; i < path.size(); ++i) {
-			if (bulge_prefix_lengths[i] > prev_length) {
-				if (bulge_prefix_lengths[i] - prev_length
-						!= graph_.length(edge_to_split)) {
-
-					TRACE("SplitEdge " << graph_.str(edge_to_split));
-					TRACE(
-							"Start: " << graph_.str(graph_.EdgeStart(edge_to_split)));
-					TRACE(
-							"Start: " << graph_.str(graph_.EdgeEnd(edge_to_split)));
-
-					pair<EdgeId, EdgeId> split_result = graph_.SplitEdge(
-							edge_to_split,
-							bulge_prefix_lengths[i] - prev_length);
-
-					edge_to_split = split_result.second;
-
-					TRACE("GlueEdges " << graph_.str(split_result.first));
-					flag = true;
-					graph_.GlueEdges(split_result.first, path[i]);
-
-				} else {
-					TRACE("GlueEdges " << graph_.str(edge_to_split));
-					flag = true;
-					graph_.GlueEdges(edge_to_split, path[i]);
-				}
-			}
-			prev_length = bulge_prefix_lengths[i];
-		}
-		VERIFY(flag);
+	  return (this->g().length(e) <= max_length_ && this->g().coverage(e) < max_coverage_ &&
+	          this->g().OutgoingEdgeCount(this->g().EdgeStart(e)) > 1 &&
+	          this->g().IncomingEdgeCount(this->g().EdgeEnd(e)) > 1);
 	}
 
 protected:
-    /*virtual*/
-    bool ProcessEdge(EdgeId edge) {
-        if (graph_.conjugate(edge) < edge) {
+
+	/*virtual*/
+    bool ProcessEdge(EdgeId e) {
+        if (this->g().conjugate(e) < e) {
             TRACE("Noncanonical edge");
-            return false;
-        }
-        TRACE("Considering edge " << graph_.str(edge) << " of length " << graph_.length(edge) << " and avg coverage " << graph_.coverage(edge));
-        TRACE("Is possible bulge " << PossibleBulgeEdge(edge));
-
-        if (!PossibleBulgeEdge(edge)) {
+            VERIFY(false);
             return false;
         }
 
-        size_t kplus_one_mer_coverage = (size_t) math::round((double) graph_.length(edge) * graph_.coverage(edge));
-        TRACE("Processing edge " << graph_.str(edge) << " and coverage " << kplus_one_mer_coverage);
+        TRACE("Considering edge " << this->g().str(e)
+                      << " of length " << this->g().length(e)
+                      << " and avg coverage " << this->g().coverage(e));
+        TRACE("Is possible bulge " << PossibleBulgeEdge(e));
 
-        size_t delta = CountMaxDifference(max_delta_, graph_.length(edge), max_relative_delta_);
-
-        MostCoveredSimpleAlternativePathChooser<Graph> path_chooser(graph_, edge);
-
-        VertexId start = graph_.EdgeStart(edge);
-        TRACE("Start " << graph_.str(start));
-
-        VertexId end = graph_.EdgeEnd(edge);
-        TRACE("End " << graph_.str(end));
-
-        ProcessPaths(graph_, (graph_.length(edge) > delta) ? graph_.length(edge) - delta : 0,
-                graph_.length(edge) + delta, start, end, path_chooser, max_edge_cnt_);
-
-        const vector<EdgeId>& path = path_chooser.most_covered_path();
-        if(path.size() != 0) {
-            VERIFY(graph_.EdgeStart(path[0]) == start);
-            VERIFY(graph_.EdgeEnd(path.back()) == end);
+        if (!PossibleBulgeEdge(e)) {
+            return false;
         }
 
-        double path_coverage = path_chooser.max_coverage();
-        TRACE("Best path with coverage " << path_coverage << " is " << PrintPath<Graph>(graph_, path));
-
-        if (BulgeCondition(edge, path, path_coverage)) {
-            TRACE("Satisfied condition");
-
-            ProcessBulge(edge, path);
+        vector<EdgeId> alternative = alternatives_analyzer_(e);
+        if (!alternative.empty()) {
+            gluer_(e, alternative);
             return true;
         } else {
-            TRACE("Didn't satisfy condition");
             return false;
         }
     }
@@ -262,22 +326,18 @@ public:
 
 	typedef std::function<void(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackF;
     
-	BulgeRemover(Graph& graph, size_t max_length, double max_coverage,
+	BulgeRemover(Graph& g, size_t max_length, double max_coverage,
 			double max_relative_coverage, size_t max_delta,
 			double max_relative_delta,
 			size_t max_edge_cnt,
 			BulgeCallbackF opt_callback = 0,
 			std::function<void(EdgeId)> removal_handler = 0) :
-			base(graph, true),
-			graph_(graph),
+			base(g, true),
 			max_length_(max_length),
 			max_coverage_(max_coverage),
-			max_relative_coverage_(max_relative_coverage),
-			max_delta_(max_delta),
-			max_relative_delta_(max_relative_delta),
-			max_edge_cnt_(max_edge_cnt),
-			opt_callback_(opt_callback),
-			removal_handler_(removal_handler) {
+			alternatives_analyzer_(g, max_relative_coverage, max_delta, 
+                                    max_relative_delta, max_edge_cnt),
+			gluer_(g, opt_callback, removal_handler) {
                 DEBUG("Launching br max_length=" << max_length 
                 << " max_coverage=" << max_coverage 
                 << " max_relative_coverage=" << max_relative_coverage
@@ -286,34 +346,307 @@ public:
                 << " max_number_edges=" << max_edge_cnt);
 	}
 
-//  Old version. If it was math::gr then it would be equivalent to new one.
-//	bool RemoveBulges() {
-//		bool changed = false;
-//		CoverageComparator<Graph> comparator(graph_);
-//		for (auto iterator = graph_.SmartEdgeBegin(comparator);
-//				!iterator.IsEnd(); ++iterator) {
-//			EdgeId e = *iterator;
-//			if (math::ge(graph_.coverage(e), max_coverage_))
-//				break;
-//			changed |= ProcessNext(e);
-//		}
-//		return changed;
-//	}
-
 private:
-	//fixme redundant field
-	Graph& graph_;
 	size_t max_length_;
 	double max_coverage_;
-	double max_relative_coverage_;
-	size_t max_delta_;
-	double max_relative_delta_;
-	size_t max_edge_cnt_;
-	BulgeCallbackF opt_callback_;
-	std::function<void(EdgeId)> removal_handler_;
-
+	AlternativesAnalyzer<Graph> alternatives_analyzer_;
+	BulgeGluer<Graph> gluer_;
 private:
 	DECL_LOGGER("BulgeRemover")
+};
+
+template<class Graph>
+class ParallelBulgeRemover {
+    typedef EdgeProcessingAlgorithm<Graph> base;
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+
+//    typedef std::pair<EdgeId, vector<EdgeId>> BulgeInfo;
+
+    struct BulgeInfo : private boost::noncopyable {
+        size_t id;
+        EdgeId e;
+        std::vector<EdgeId> alternative;
+
+        BulgeInfo() :
+            id(-1ul) {
+        }
+
+        BulgeInfo(size_t id_, EdgeId e_, std::vector<EdgeId> alternative_) :
+            id(id_), e(e_), alternative(std::move(alternative_)) {
+
+        }
+
+        BulgeInfo(BulgeInfo&& that) {
+            *this = std::move(that);
+        }
+
+        BulgeInfo& operator= (BulgeInfo&& that) {
+            id = that.id;
+            e = that.e;
+            alternative = std::move(that.alternative);
+            return *this;
+        }
+
+//        BulgeInfo(size_t id_, EdgeId e_, std::vector<EdgeId>&& alternative_) :
+//            id(id_), e(e_), alternative(std::move(alternative_)) {
+//
+//        }
+//
+        bool operator< (const BulgeInfo& that) const {
+            VERIFY(id != that.id);
+            return id < that.id;
+        }
+
+    };
+
+    bool PossibleBulgeEdge(EdgeId e) const {
+      return (g_.length(e) <= max_length_ && g_.coverage(e) < max_coverage_ &&
+              g_.OutgoingEdgeCount(g_.EdgeStart(e)) > 1 &&
+              g_.IncomingEdgeCount(g_.EdgeEnd(e)) > 1);
+    }
+
+    bool CheckInteracting(const BulgeInfo& info, const std::unordered_set<EdgeId>& involved_edges) const {
+        if (involved_edges.count(info.e))
+            return true;
+        for (EdgeId e : info.alternative)
+            if (involved_edges.count(e))
+                return true;
+        return false;
+    }
+
+    void AccountEdges(const BulgeInfo& info, std::unordered_set<EdgeId>& involved_edges) const {
+        involved_edges.insert(info.e);
+        involved_edges.insert(g_.conjugate(info.e));
+        for (EdgeId e : info.alternative) {
+            involved_edges.insert(e);
+            involved_edges.insert(g_.conjugate(e));
+        }
+    }
+
+public:
+
+    typedef std::function<void(EdgeId edge, const vector<EdgeId>& path)> BulgeCallbackF;
+    typedef SmartSetIterator<Graph, EdgeId, CoverageComparator<Graph>> SmartEdgeSet;
+
+    ParallelBulgeRemover(Graph& g, size_t chunk_size,
+                         size_t max_length, double max_coverage,
+                         double max_relative_coverage, size_t max_delta,
+                         double max_relative_delta,
+                         size_t max_edge_cnt,
+                         BulgeCallbackF opt_callback = 0,
+                         std::function<void(EdgeId)> removal_handler = 0) :
+                         g_(g),
+                         chunk_size_(chunk_size),
+                         max_length_(max_length),
+                         max_coverage_(max_coverage),
+                         alternatives_analyzer_(g, max_relative_coverage, max_delta, 
+                                   max_relative_delta, max_edge_cnt),
+                         gluer_(g, opt_callback, removal_handler),
+                         usual_br_(g, max_length, max_coverage, max_relative_coverage,
+                                   max_delta, max_relative_delta, max_edge_cnt, 
+                                   opt_callback, removal_handler) {
+                             DEBUG("Launching br max_length=" << max_length
+                             << " max_coverage=" << max_coverage
+                             << " max_relative_coverage=" << max_relative_coverage
+                             << " max_delta=" << max_delta
+                             << " max_relative_delta=" << max_relative_delta);
+                             VERIFY(chunk_size_ > 0);
+                 }
+
+    bool ProcessEdge(EdgeId e) {
+        if (g_.conjugate(e) < e) {
+            TRACE("Noncanonical edge");
+            VERIFY(false);
+            return false;
+        }
+
+        TRACE("Considering edge " << g_.str(e)
+                      << " of length " << g_.length(e)
+                      << " and avg coverage " << g_.coverage(e));
+        TRACE("Is possible bulge " << PossibleBulgeEdge(e));
+
+        if (!PossibleBulgeEdge(e)) {
+            return false;
+        }
+
+        vector<EdgeId> alternative = alternatives_analyzer_(e);
+        if (!alternative.empty()) {
+            gluer_(e, alternative);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    //false if time to stop
+    template<class SmartEdgeIt>
+    bool FillEdgeBuffer(SmartEdgeIt& it, vector<EdgeId>& buffer) const {
+        DEBUG("Filling edge buffer chunk size " << chunk_size_);
+        perf_counter perf;
+        VERIFY(buffer.empty());
+        auto proceed_condition = make_shared<CoverageUpperBound<Graph>>(g_, max_coverage_);
+
+        for (; !it.IsEnd(); ++it) {
+            EdgeId e = *it;
+            TRACE("Current edge " << g_.str(e));
+            if (!proceed_condition->Check(e)) {
+                TRACE("Stop condition was reached.");
+                //need to release last element of the iterator to make it replacable by new elements
+                it.ReleaseCurrent();
+                return false;
+            }
+
+            if (PossibleBulgeEdge(e)) {
+                TRACE("Potential bulge edge");
+                buffer.push_back(e);
+
+                if (buffer.size() == chunk_size_) {
+                    TRACE("Buffer filled");
+                    //need to release last element of the iterator to make it replacable by new elements
+                    it.ReleaseCurrent();
+                    return true;
+                }
+            } else {
+                TRACE("Can not be bulge");
+            }
+        }
+        DEBUG("Buffer filled in " << perf.time() << " seconds");
+        TRACE("No more edges in iterator");
+        return false;
+    }
+    
+    std::vector<std::vector<BulgeInfo>> FindBulges(const std::vector<EdgeId> edge_buffer) const {
+    	DEBUG("Looking for bulges (in parallel). Edge buffer size " << edge_buffer.size());
+        perf_counter perf;
+        std::vector<std::vector<BulgeInfo>> bulge_buffers(omp_get_max_threads());
+        size_t n = edge_buffer.size();
+        #pragma omp parallel for schedule(guided)
+        for (size_t i = 0; i < n; ++i) {
+            EdgeId e = edge_buffer[i];
+            auto alternative = alternatives_analyzer_(e);
+            if (!alternative.empty()) {
+                bulge_buffers[omp_get_thread_num()].push_back(BulgeInfo(i, e, std::move(alternative)));
+            }
+        }
+        DEBUG("Bulges found in " << perf.time() << " seconds");
+        return bulge_buffers;
+    }
+
+    std::vector<BulgeInfo> MergeBuffers(std::vector<std::vector<BulgeInfo>>&& buffers) const {
+        DEBUG("Merging bulge buffers");
+        perf_counter perf;
+
+        std::vector<BulgeInfo> merged_bulges;
+        for (auto& bulge_buffer : buffers) {
+            std::copy(std::make_move_iterator(bulge_buffer.begin()),
+                      std::make_move_iterator(bulge_buffer.end()),
+                      std::back_inserter(merged_bulges));
+        }
+
+        std::sort(merged_bulges.begin(), merged_bulges.end());
+        DEBUG("Total bulges " << merged_bulges.size());
+        DEBUG("Buffers merged in " << perf.time() << " seconds");
+        return merged_bulges;
+    }
+
+    SmartEdgeSet RetainIndependentBulges(std::vector<BulgeInfo>& bulges) const {
+        DEBUG("Looking for independent bulges");
+        size_t total_cnt = bulges.size();
+        perf_counter perf;
+
+        std::vector<BulgeInfo> filtered;
+        filtered.reserve(bulges.size());
+        //fixme switch to involved vertices to bring fully parallel glueing closer
+        std::unordered_set<EdgeId> involved_edges;
+        SmartEdgeSet interacting_edges(g_, CoverageComparator<Graph>(g_));
+
+        for (BulgeInfo& info : bulges) {
+            if (CheckInteracting(info, involved_edges)) {
+                interacting_edges.push(info.e);
+            } else {
+                AccountEdges(info, involved_edges);
+                filtered.push_back(std::move(info));
+            }
+        }
+        bulges = std::move(filtered);
+
+        DEBUG("Independent bulges identified in " << perf.time() << " seconds");
+        DEBUG("Independent cnt " << bulges.size());
+        DEBUG("Interacting cnt " << interacting_edges.size());
+        VERIFY(bulges.size() + interacting_edges.size() == total_cnt);
+
+        if (!interacting_edges.IsEnd()) {
+            DEBUG("First interacting edge " << g_.str(*interacting_edges));
+        }
+        return interacting_edges;
+    }
+
+    bool ProcessBulges(const std::vector<BulgeInfo>& independent_bulges, SmartEdgeSet& interacting_edges) {
+        DEBUG("Processing bulges");
+        perf_counter perf;
+
+    	bool triggered = false;
+
+        for (const BulgeInfo& info : independent_bulges) {
+        	triggered = true;
+            gluer_(info.e, info.alternative);
+        }
+        DEBUG("Independent bulges glued in " << perf.time() << " seconds");
+        perf.reset();
+
+        DEBUG("Processing remaining interacting bulges " << interacting_edges.size());
+        triggered |= usual_br_.RunFromIterator(interacting_edges,
+                              make_shared<CoverageUpperBound<Graph>>(g_, max_coverage_));
+
+        DEBUG("Interacting edges processed in " << perf.time() << " seconds");
+        return triggered;
+    }
+
+    template<class SmartEdgeIt>
+    bool RunFromIterator(SmartEdgeIt& it) {
+        VERIFY(it.canonical_only());
+        TRACE("Start processing");
+
+        perf_counter perf;
+
+        bool triggered = false;
+
+        bool proceed = true;
+        while (proceed) {
+            std::vector<EdgeId> edge_buffer;
+            edge_buffer.reserve(chunk_size_);
+            proceed = FillEdgeBuffer(it, edge_buffer);
+
+            std::vector<BulgeInfo> bulges = MergeBuffers(FindBulges(edge_buffer));
+
+            auto interacting_edges = RetainIndependentBulges(bulges);
+
+            bool inner_triggered = ProcessBulges(bulges, interacting_edges);
+            proceed |= inner_triggered;
+            triggered |= inner_triggered;
+        }
+
+        TRACE("Finished processing. Triggered = " << triggered);
+        return triggered;
+    }
+
+    bool Run() {
+        auto it = g_.SmartEdgeBegin(CoverageComparator<Graph>(g_), true);
+        return RunFromIterator(it);
+    }
+
+private:
+    Graph& g_;
+    size_t chunk_size_;
+    size_t max_length_;
+    double max_coverage_;
+    AlternativesAnalyzer<Graph> alternatives_analyzer_;
+    BulgeGluer<Graph> gluer_;
+    BulgeRemover<Graph> usual_br_;
+
+private:
+    DECL_LOGGER("ParallelBulgeRemover")
 };
 
 }
