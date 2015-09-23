@@ -369,6 +369,7 @@ public:
                 size_t palindrom_half_size = begin - begin_pos;
                 size_t head_len = Length() - LengthAt(begin_pos);
                 size_t tail_len = *end_pos < Size() - 1 ? LengthAt(*end_pos + 1) : 0;
+//TODO : this is not true in case of gaps inside the palindrom_len;
                 size_t palindrom_len = (size_t) max((int) LengthAt(begin_pos) - (int) LengthAt(begin), 0);
                 size_t between = (size_t) max(0, (int) LengthAt(begin) - (int) (end < Size() - 1 ? LengthAt(end + 1) : 0));
                 DEBUG("tail len " << tail_len << " head len " << head_len << " palindrom_len "<< palindrom_len << " between " << between);
@@ -388,9 +389,11 @@ public:
                 }
                 if (delete_tail) {
                     PopBack(tail_size + palindrom_half_size);
+                    DEBUG("Deleting tail  because of palindrom removal");
                     return;
                 } else {
                     GetConjPath()->PopBack(head_size + palindrom_half_size);
+                    DEBUG("Deleting head because of palindrom removal");
                     return;
                 }
             }
