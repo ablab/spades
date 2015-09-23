@@ -143,9 +143,9 @@ public:
         finished_(other.finished_),
         vertex_number_(other.vertex_number_),
         vertex_limit_exceeded_(other.vertex_limit_exceeded_),
-        distances_(std::move(distances_)),
-        processed_vertices_(std::move(processed_vertices_)),
-        prev_vert_map_(std::move(prev_vert_map_)) {}
+        distances_(std::move(other.distances_)),
+        processed_vertices_(std::move(other.processed_vertices_)),
+        prev_vert_map_(std::move(other.prev_vert_map_)) {}
 
     //FIXME why default was ill formed
     Dijkstra& operator=(Dijkstra&& other) {
@@ -155,9 +155,9 @@ public:
         finished_ = other.finished_;
         vertex_number_ = other.vertex_number_;
         vertex_limit_exceeded_ = other.vertex_limit_exceeded_;
-        distances_ = std::move(distances_);
-        processed_vertices_ = std::move(processed_vertices_);
-        prev_vert_map_ = std::move(prev_vert_map_);
+        distances_ = std::move(other.distances_);
+        processed_vertices_ = std::move(other.processed_vertices_);
+        prev_vert_map_ = std::move(other.prev_vert_map_);
         return *this;
     }
 
