@@ -51,7 +51,7 @@ struct graph_pack: private boost::noncopyable {
     EdgesPositionHandler<graph_t> edge_pos;
  
     graph_pack(size_t k, const std::string &workdir, size_t lib_count,
-                        const string &genome = "",
+                        const std::string &genome = "",
                         size_t flanking_range = 50,
                         size_t max_mapping_gap = 0,
                         size_t max_gap_diff = 0,
@@ -149,6 +149,5 @@ typedef conj_graph_pack::UnclusteredPairedInfoIndicesT UnclusteredPairedIndicesT
 typedef conj_graph_pack::LongReadContainerT LongReadContainerT;
 typedef omnigraph::de::PairedInfoIndexT<ConjugateDeBruijnGraph> PairedIndexT;
 typedef omnigraph::de::UnclusteredPairedInfoIndexT<ConjugateDeBruijnGraph> UnclusteredPairedIndexT;
-
 
 } // namespace debruijn_graph

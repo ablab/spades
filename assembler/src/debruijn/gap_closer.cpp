@@ -58,7 +58,7 @@ class GapCloserPairedIndexFiller {
                 for (size_t j = 0; j < path2.size(); ++j) {
                     auto InTipIter = InTipMap.find(path2[j]);
                     if (InTipIter != InTipMap.end())
-                        paired_index.AddPairInfo(OutTipIter->second.first, InTipIter->second.first, { 1000000., 1.});
+                        paired_index.Add(OutTipIter->second.first, InTipIter->second.first, { 1000000., 1.});
                 }
             }
         }
@@ -125,11 +125,13 @@ class GapCloserPairedIndexFiller {
         INFO("Processing paired reads (takes a while)");
 
         size_t nthreads = streams.size();
-        std::vector<omnigraph::de::PairedInfoBuffer<Graph> >buffer_pi(nthreads);
+        std::vector<omnigraph::de::PairedInfoBuffer<Graph> >buffer_pi;
+        buffer_pi.reserve(nthreads);
 
         size_t counter = 0;
 #       pragma omp parallel for num_threads(nthreads) reduction(+ : counter)
         for (size_t i = 0; i < nthreads; ++i) {
+            buffer_pi.emplace_back(graph_);
             typename Streams::ReadT r;
             auto& stream = streams[i];
             stream.reset();
@@ -145,7 +147,7 @@ class GapCloserPairedIndexFiller {
 
         INFO("Merging paired indices");
         for (auto& index: buffer_pi) {
-          paired_index.AddAll(index);
+          paired_index.Add(index);
           index.Clear();
         }
     }
@@ -283,7 +285,7 @@ class GapCloser {
             DEBUG("Splitting first edge.");
             pair<EdgeId, EdgeId> split_res = g_.SplitEdge(first, g_.length(first) - overlap + diff_pos.front());
             first = split_res.first;
-            tips_paired_idx_.RemoveEdgeInfo(split_res.second);
+            tips_paired_idx_.Remove(split_res.second);
             DEBUG("Adding new edge.");
             VERIFY(MatchesEnd(new_sequence, g_.VertexNucls(g_.EdgeEnd(first)), true));
             VERIFY(MatchesEnd(new_sequence, g_.VertexNucls(g_.EdgeStart(second)), false));
@@ -307,7 +309,7 @@ class GapCloser {
             DEBUG("Splitting second edge.");
             pair<EdgeId, EdgeId> split_res = g_.SplitEdge(second, diff_pos.back() + 1);
             second = split_res.second;
-            tips_paired_idx_.RemoveEdgeInfo(split_res.first);
+            tips_paired_idx_.Remove(split_res.first);
             DEBUG("Adding new edge.");
             VERIFY(MatchesEnd(new_sequence, g_.VertexNucls(g_.EdgeEnd(first)), true));
             VERIFY(MatchesEnd(new_sequence, g_.VertexNucls(g_.EdgeStart(second)), false));
@@ -398,30 +400,25 @@ class GapCloser {
 
   public:
     void CloseShortGaps() {
-        typedef typename omnigraph::de::PairedInfoIndexT<Graph>::EdgeIterator EdgeIterator;
-
         INFO("Closing short gaps");
         size_t gaps_filled = 0;
         size_t gaps_checked = 0;
         for (auto edge = g_.SmartEdgeBegin(); !edge.IsEnd(); ++edge) {
             EdgeId first_edge = *edge;
-            auto edge_info = tips_paired_idx_.GetEdgeInfoMap(first_edge);
 
-            for (EdgeIterator it(edge_info.begin(), edge_info.end()),
-                         et(edge_info.end(), edge_info.end());
-                 it != et; ++it) {
-                std::pair<EdgeId, omnigraph::de::Point> entry = *it;
-                EdgeId second_edge = entry.first;
-                const omnigraph::de::Point& point = entry.second;
-                if (first_edge != second_edge && math::ge(point.weight, weight_threshold_)) {
-                    if (!g_.IsDeadEnd(g_.EdgeEnd(first_edge)) || !g_.IsDeadStart(g_.EdgeStart(second_edge))) {
-                        // WARN("Topologically wrong tips");
-                        continue;
-                    }
-                    ++gaps_checked;
-                    if (ProcessPair(first_edge, second_edge)) {
-                        ++gaps_filled;
-                        break;
+            for (auto i : tips_paired_idx_.Get(first_edge)) {
+                EdgeId second_edge = i.first;
+                for (auto point : i.second) {
+                    if (first_edge != second_edge && math::ge(point.weight, weight_threshold_)) {
+                        if (!g_.IsDeadEnd(g_.EdgeEnd(first_edge)) || !g_.IsDeadStart(g_.EdgeStart(second_edge))) {
+                            // WARN("Topologically wrong tips");
+                            continue;
+                        }
+                        ++gaps_checked;
+                        if (ProcessPair(first_edge, second_edge)) {
+                            ++gaps_filled;
+                            break;
+                        }
                     }
                 }
             }

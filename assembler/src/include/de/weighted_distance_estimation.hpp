@@ -23,8 +23,8 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
   typedef DistanceEstimator<Graph> base;
   typedef typename base::InPairedIndex InPairedIndex;
   typedef typename base::OutPairedIndex OutPairedIndex;
-  typedef typename InPairedIndex::Histogram InHistogram;
-  typedef typename OutPairedIndex::Histogram OutHistogram;
+  typedef typename base::InHistogram InHistogram;
+  typedef typename base::OutHistogram OutHistogram;
 
  public:
   WeightedDistanceEstimator(const Graph &graph,
@@ -55,8 +55,8 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
     size_t second_len = this->graph().length(ep.second);
 
     EstimHist result;
-    int maxD = rounded_d(*histogram.rend());
-    int minD = rounded_d(*histogram.rbegin());
+    int maxD = rounded_d(histogram.back());
+    int minD = rounded_d(histogram.front());
     vector<int> forward;
     for (auto I = raw_forward.begin(), E = raw_forward.end(); I != E; ++I) {
       int length = (int) *I;

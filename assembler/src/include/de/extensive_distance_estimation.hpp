@@ -28,8 +28,8 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
   typedef WeightedDistanceEstimator<Graph> base;
   typedef typename base::InPairedIndex InPairedIndex;
   typedef typename base::OutPairedIndex OutPairedIndex;
-  typedef typename InPairedIndex::Histogram InHistogram;
-  typedef typename OutPairedIndex::Histogram OutHistogram;
+  typedef typename base::InHistogram InHistogram;
+  typedef typename base::OutHistogram OutHistogram;
 
  public:
   ExtensiveDistanceEstimator(const Graph &graph,
@@ -60,11 +60,12 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
   typedef pair<EdgeId, EdgeId> EdgePair;
 
   virtual void ProcessEdge(EdgeId e1,
-                           const typename InPairedIndex::InnerMap& inner_map,
+                           const InPairedIndex& pi,
                            PairedInfoBuffer<Graph>& result) const {
+    auto inner_map = pi.Get(e1);
     typename base::LengthMap second_edges;
-    for (auto I = inner_map.begin(), E = inner_map.end(); I != E; ++I)
-      second_edges[I->first];
+    for (auto i : inner_map)
+      second_edges[i.first];
 
     this->FillGraphDistancesLengths(e1, second_edges);
 
@@ -76,7 +77,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
           continue;
 
       const GraphLengths& forward = entry.second;
-      InHistogram hist = inner_map.find(e2)->second;
+      InHistogram hist = inner_map[e2];
       DEBUG("Extending paired information");
       double weight_0 = WeightSum(hist);
       DEBUG("Extend left");
@@ -176,7 +177,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
       return;
 
     for (EdgeId next : this->graph().IncomingEdges(start)) {
-      auto hist = this->index().GetEdgePairInfo(next, last);
+      auto hist = this->index().Get(next, last);
       if (-shift < (int) max_shift)
         ExtendLeftDFS(next, last, data, shift - (int) this->graph().length(next), max_shift);
       auto filtered_infos = FilterPositive(hist, this->graph().length(next), this->graph().length(last));
@@ -194,7 +195,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
       return;
 
     for (EdgeId next : this->graph().OutgoingEdges(end)) {
-      auto hist = this->index().GetEdgePairInfo(first, next);
+      auto hist = this->index().Get(first, next);
       if (-shift < (int) max_shift)
         ExtendRightDFS(first, next, data, shift - (int) this->graph().length(current), max_shift);
 

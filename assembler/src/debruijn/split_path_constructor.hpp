@@ -18,6 +18,7 @@
 #include "logger/logger.hpp"
 #include "de/paired_info.hpp"
 #include "omni/path_processor.hpp"
+#include "../include/de/paired_info.hpp"
 
 namespace debruijn_graph {
 
@@ -61,12 +62,13 @@ class SplitPathConstructor {
   public:
     SplitPathConstructor(const Graph &graph): graph_(graph) {}
 
-    vector<PathInfo> ConvertPIToSplitPaths(const std::vector<PairInfo>& pair_infos, double is, double is_var) const {
+    vector<PathInfo> ConvertPIToSplitPaths(EdgeId cur_edge, const omnigraph::de::PairedInfoIndexT<Graph> &pi, double is, double is_var) const {
+        auto pair_infos = pi.Get(cur_edge);
         vector<PathInfo> result;
         if (pair_infos.size() == 0)
             return result;
 
-        EdgeId cur_edge = pair_infos[0].first;
+        //EdgeId cur_edge = pair_infos[0].first;
         vector<bool> pair_info_used(pair_infos.size());
         TRACE("Preparing path_processor for this base edge");
         size_t path_upper_bound = PairInfoPathLengthUpperBound(graph_.k(), (size_t) is, is_var);
@@ -78,44 +80,52 @@ class SplitPathConstructor {
 
         TRACE("Path_processor is done");
 
-        for (size_t i = pair_infos.size(); i > 0; --i) {
-            const PairInfo& cur_info = pair_infos[i - 1];
-            if (math::le(cur_info.d(), 0.))
-                continue;
-            if (pair_info_used[i - 1])
-                continue;
-            DEBUG("SPC: pi " << cur_info);
-            vector<EdgeId> common_part = GetCommonPathsEnd(graph_, cur_edge, cur_info.second,
-                                                           (size_t) (cur_info.d() - cur_info.var()),
-                                                           //FIXME is it a bug?!
-                                                           (size_t) (cur_info.d() - cur_info.var()),
-                                                           path_processor);
-            DEBUG("Found common part of size " << common_part.size());
-            PathInfoClass<Graph> sub_res(cur_edge);
-            if (common_part.size() > 0) {
-                size_t total_length = 0;
-                for (size_t j = 0; j < common_part.size(); ++j)
-                    total_length += graph_.length(common_part[j]);
+        //for (size_t i = pair_infos.size(); i > 0; --i) {
+        //TODO: Wat's going on?!
+        size_t i = pair_infos.size();
+        for (auto info = pair_infos.begin(); info != pair_infos.end(); ++info, --i) {
+            auto next_edge = info->first;
+            for (auto point : info->second) {
 
-                DEBUG("Common part " << ToString(common_part));
-                for (size_t j = 0; j < common_part.size(); ++j) {
-                    PairInfo cur_pi(cur_edge, common_part[j],
-                                    cur_info.d() - (double) total_length,
-                                    cur_info.weight(),
-                                    cur_info.var());
+                PairInfo cur_info(cur_edge, next_edge, point);
 
-                    sub_res.push_back(cur_pi);
-                    total_length -= graph_.length(common_part[j]);
-                    for (size_t ind = 0; ind + 1 < i; ++ind) {
-                        if (cur_pi == pair_infos[ind])
-                            pair_info_used[ind] = true;
+                if (math::le(cur_info.d(), 0.))
+                    continue;
+                if (pair_info_used[i - 1])
+                    continue;
+                DEBUG("SPC: pi " << cur_info);
+                vector<EdgeId> common_part = GetCommonPathsEnd(graph_, cur_edge, cur_info.second,
+                                                               (size_t) (cur_info.d() - cur_info.var()),
+                        //FIXME is it a bug?!
+                                                               (size_t) (cur_info.d() - cur_info.var()),
+                                                               path_processor);
+                DEBUG("Found common part of size " << common_part.size());
+                PathInfoClass<Graph> sub_res(cur_edge);
+                if (common_part.size() > 0) {
+                    size_t total_length = 0;
+                    for (size_t j = 0; j < common_part.size(); ++j)
+                        total_length += graph_.length(common_part[j]);
+
+                    DEBUG("Common part " << ToString(common_part));
+                    for (size_t j = 0; j < common_part.size(); ++j) {
+                        PairInfo cur_pi(cur_edge, common_part[j],
+                                        cur_info.d() - (double) total_length,
+                                        cur_info.weight(),
+                                        cur_info.var());
+
+                        sub_res.push_back(cur_pi);
+                        total_length -= graph_.length(common_part[j]);
+                        for (size_t ind = 0; ind + 1 < i; ++ind) {
+                            if (cur_pi == pair_infos[ind])
+                                pair_info_used[ind] = true;
+                        }
                     }
                 }
-            }
 
-            sub_res.push_back(cur_info);
-            result.push_back(sub_res);
-            DEBUG(sub_res.PrintPath(graph_));
+                sub_res.push_back(cur_info);
+                result.push_back(sub_res);
+                DEBUG(sub_res.PrintPath(graph_));
+            }
         }
         return result;
     }

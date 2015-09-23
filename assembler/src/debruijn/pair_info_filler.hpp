@@ -36,10 +36,11 @@ public:
     }
 
     virtual void StartProcessLibrary(size_t threads_count) {
-        for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it)
-            paired_index_.AddPairInfo(*it, *it, { 0., 0. });
+        paired_index_.Init();
+        //for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it)
+        //    paired_index_.Add(*it, *it, { 0., 0. });
         for (size_t i = 0; i < threads_count; ++i)
-            buffer_pi_.emplace_back();
+            buffer_pi_.emplace_back(graph_);
     }
 
     virtual void StopProcessLibrary() {
@@ -60,7 +61,7 @@ public:
                                    const MappingPath<EdgeId>&) {}
 
     virtual void MergeBuffer(size_t thread_index) {
-        paired_index_.AddAll(buffer_pi_[thread_index]);
+        paired_index_.Add(buffer_pi_[thread_index]);
         buffer_pi_[thread_index].Clear();
     }
 
@@ -79,10 +80,10 @@ private:
             for (size_t j = 0; j < path2.size(); ++j) {
                 std::pair<EdgeId, MappingRange> mapping_edge_2 = path2[j];
 
-                EdgePair ep{mapping_edge_1.first, mapping_edge_2.first};
+                //EdgePair ep{mapping_edge_1.first, mapping_edge_2.first};
 
-                if (ep > ConjugatePair(ep))
-                    continue;
+                //if (ep > ConjugatePair(ep))
+                //    continue;
 
                 double weight = weight_f_(mapping_edge_1.second,
                                           mapping_edge_2.second);
@@ -93,7 +94,7 @@ private:
                         + (int) mapping_edge_1.second.mapped_range.start_pos
                         - (int) mapping_edge_2.second.mapped_range.end_pos;
 
-                paired_index.AddPairInfo(mapping_edge_1.first, mapping_edge_2.first,
+                paired_index.Add(mapping_edge_1.first, mapping_edge_2.first,
                                          { (double) edge_distance, weight });
             }
         }

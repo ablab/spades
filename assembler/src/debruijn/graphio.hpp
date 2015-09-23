@@ -229,10 +229,10 @@ class DataPrinter {
         size_t comp_size = 0;
         for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
             EdgeId e1 = *I;
-            const auto& inner_map = paired_index.GetEdgeInfoMap(e1);
-            for (auto II = inner_map.begin(), IE = inner_map.end(); II != IE; ++II) {
-                EdgeId e2 = II->first;
-                const auto& hist = II->second;
+            auto inner_map = paired_index.Get(e1); //TODO Paired: GetRaw
+            for (auto entry : inner_map) {
+                EdgeId e2 = entry.first;
+                const auto& hist = entry.second;
                 if (component_.contains(e2)) { // if the second edge also lies in the same component
                     comp_size += hist.size();
                 }
@@ -243,12 +243,12 @@ class DataPrinter {
 
         for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
             EdgeId e1 = *I;
-            const auto& inner_map = paired_index.GetEdgeInfoMap(e1);
+            const auto& inner_map = paired_index.Get(e1); //TODO Paired: GetRaw
             std::map<typename Graph::EdgeId, typename Index::Histogram> ordermap(inner_map.begin(), inner_map.end());
             for (const auto& entry : ordermap) {
                 EdgeId e2 = entry.first; const auto& hist = entry.second;
                 if (component_.contains(e2))
-                  for (Point point : hist)
+                  for (auto point : hist)
                     fprintf(file, "%zu %zu %.2f %.2f %.2f .\n",
                             e1.int_id(), e2.int_id(), math::eq((double)point.d, .0) ? .0 : (double)point.d, (double)point.weight, (double)point.variation());
             }
@@ -442,7 +442,7 @@ class DataScanner {
             if (e1 == EdgeId(NULL) || e2 == EdgeId(NULL))
                 continue;
             TRACE(e1 << " " << e2 << " " << d << " " << w);
-            paired_index.AddPairInfo(e1, e2, { d, w, v }, false);
+            paired_index.Add(e1, e2, { d, w, v });
         }
         DEBUG("PII SIZE " << paired_index.size());
         fclose(file);
@@ -478,7 +478,7 @@ class DataScanner {
             if (e1 == EdgeId(NULL) || e2 == EdgeId(NULL))
                 continue;
             TRACE(e1 << " " << e2 << " " << d << " " << w);
-            paired_index.AddPairInfo(e1, e2, { d, w }, false);
+            paired_index.Add(e1, e2, { d, w });
         }
         DEBUG("PII SIZE " << paired_index.size());
         fclose(file);

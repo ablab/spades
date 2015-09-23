@@ -9,7 +9,7 @@
 #include "dataset_readers.hpp"
 #include "pair_info_improver.hpp"
 
-#include "de/paired_info.hpp"
+#include "de/paired_info_helpers.hpp"
 #include "de/pair_info_filters.hpp"
 #include "de/distance_estimation.hpp"
 #include "de/weighted_distance_estimation.hpp"
@@ -56,7 +56,7 @@ void estimate_with_estimator(const Graph &graph,
 // Postprocessing, checking that clusters do not intersect
 template<class Graph>
 void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_index) {
-    for (auto iter = clustered_index.begin(); iter != clustered_index.end(); ++iter) {
+    for (auto iter = pair_begin(clustered_index); iter != pair_end(clustered_index); ++iter) {
         EdgeId first_edge = iter.first();
         EdgeId second_edge = iter.second();
         const auto& infos = *iter;
@@ -82,12 +82,12 @@ void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_ind
                         double var = inner_it->d + inner_it->var;
                         for (auto inner_it_2 = prev_it; inner_it_2 != inner_it; ++inner_it_2) {
                             TRACE("Removing pair info " << *inner_it_2);
-                            clustered_index.RemovePairInfo(first_edge, second_edge, *inner_it_2);
+                            clustered_index.Remove(first_edge, second_edge, *inner_it_2);
                         }
-                        clustered_index.RemovePairInfo(first_edge, second_edge, *inner_it);
+                        clustered_index.Remove(first_edge, second_edge, *inner_it);
                         Point new_point(center, total_weight, var);
                         TRACE("Adding new pair info " << first_edge << " " << second_edge << " " << new_point);
-                        clustered_index.AddPairInfo(first_edge, second_edge, new_point);
+                        clustered_index.Add(first_edge, second_edge, new_point);
                         break;
                     }
                 }

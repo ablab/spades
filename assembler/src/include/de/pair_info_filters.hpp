@@ -8,108 +8,11 @@
 #ifndef PAIR_INFO_FILTERS_HPP_
 #define PAIR_INFO_FILTERS_HPP_
 
+#include "paired_info_helpers.hpp"
+
 namespace omnigraph {
 
 namespace de {
-
-/*
-template<class Graph>
-class AbstractPairInfoFilter {
-
- private:
-  typedef typename Graph::VertexId VertexId;
-  typedef typename Graph::EdgeId EdgeId;
-  typedef PairInfo<EdgeId> PairInfoT;
-
- protected:
-  virtual bool Check(const PairInfoT&) const {
-    return true;
-  }
-
-  virtual bool Check(EdgeId, EdgeId, const Point&) const {
-    return true;
-  }
-
-  const Graph& graph_;
-
- public:
-  AbstractPairInfoFilter(const Graph& graph) :
-          graph_(graph) {}
-
-  void Filter(PairedInfoIndexT<Graph>& index) const {
-    TRACE("index size: " << index.size());
-    for (auto it = index.begin(); it != index.end(); ++it) {
-      // This is dirty hack, but it's safe here
-      Histogram& infos = const_cast<Histogram&>(*it);
-      const EdgeId& e1 = it.first();
-      const EdgeId& e2 = it.second();
-
-      for (auto p_iter = infos.begin(); p_iter != infos.end(); ) {
-        const Point& point = *p_iter;
-        if (!Check(e1, e2, point))
-            p_iter = infos.erase(p_iter);
-        else
-            ++p_iter;
-      }
-    }
-
-    INFO("Pruning the index");
-    index.Prune();
-  }
-
-  virtual ~AbstractPairInfoFilter() {}
-};
-
-template<class Graph>
-class PairInfoWeightFilter: public AbstractPairInfoFilter<Graph> {
-
- private:
-  typedef typename Graph::EdgeId EdgeId;
-  typedef PairInfo<EdgeId> PairInfoT;
-  double weight_threshold_;
-
- public:
-  PairInfoWeightFilter(const Graph& graph, double weight_threshold) :
-    AbstractPairInfoFilter<Graph>(graph), weight_threshold_(weight_threshold) {
-  }
-
- protected:
-  virtual bool Check(EdgeId, EdgeId, const Point& p) const {
-    return math::ge(p.weight, weight_threshold_);
-  }
-
-  virtual bool Check(const PairInfoT& info) const {
-    return math::ge(info.weight(), weight_threshold_);
-  }
-};
-
-
-template<class Graph>
-class PairInfoWeightFilterWithCoverage: public AbstractPairInfoFilter<Graph> {
-
- private:
-  typedef typename Graph::EdgeId EdgeId;
-  typedef PairInfo<EdgeId> PairInfoT;
-  double weight_threshold_;
-
- public:
-  PairInfoWeightFilterWithCoverage(const Graph& graph, double weight_threshold) :
-          AbstractPairInfoFilter<Graph>(graph), weight_threshold_(weight_threshold)
-    {}
-
- protected:
-  virtual bool Check(EdgeId e1, EdgeId e2, const Point& p) const {
-    double info_weight = p.weight;
-    return math::ge(info_weight, weight_threshold_) ||
-           math::ge(info_weight, 0.1 * this->graph_.coverage(e1)) ||
-           math::ge(info_weight, 0.1 * this->graph_.coverage(e2));
-  }
-
-  virtual bool Check(const PairInfoT& info) const {
-    return Check(info.first, info.second, info.point);
-  }
-};
-*/
 
 template<class Graph>
 class AbstractPairInfoChecker{
@@ -192,7 +95,7 @@ class AmbiguousPairInfoChecker : public AbstractPairInfoChecker<Graph> {
   }
 
   bool IsPairInfoGood(EdgeId edge1, EdgeId edge2){
-	  return index_.GetEdgePairInfo(edge1, edge2).size() <= 1;
+	  return index_.Get(edge1, edge2).size() <= 1;
   }
 
   bool EdgesAreFromSimpleBulgeWithAmbPI(const PairInfoT& info){
@@ -239,9 +142,11 @@ class AmbiguousPairInfoChecker : public AbstractPairInfoChecker<Graph> {
   }
 
   double GetPairInfoWeight(EdgeId edge1, EdgeId edge2){
-	  if(index_.GetEdgePairInfo(edge1, edge2).size() == 1)
-		  return index_.GetEdgePairInfo(edge1, edge2).begin()->weight;
-	  return 0;
+	  //if(index_.GetEdgePairInfo(edge1, edge2).size() == 1)
+		//  return index_.GetEdgePairInfo(edge1, edge2).begin()->weight;
+      const auto &map = index_.Get(edge1, edge2);
+      return (map.size() == 1) ? (double)map.begin()->weight : 0.0;
+	  //return 0;
   }
 
   bool InnerCheck(const PairInfoT& info){
@@ -338,7 +243,7 @@ public:
 
   void Filter(PairedInfoIndexT<Graph>& index){
     TRACE("Index size: " << index.size());
-    for (auto it = index.begin(); it != index.end(); ++it) {
+    /*for (auto it = index.begin(); it != index.end(); ++it) {
       auto points = *it;
       auto e1 = it.first();
       auto e2 = it.second();
@@ -346,14 +251,21 @@ public:
         for (auto p_iter = points.begin(); p_iter != points.end(); ) {
           const Point& point = *p_iter++;
           if (!pair_info_checker_.Check(PairInfoT(e1, e2, point))) {
-            index.DeletePairInfo(e1, e2, point);
-            index.DeletePairInfo(e2, e1, -point);
+            index.Delete(e1, e2, point);
           }
         }
       }
+    }*/
+    for (auto iter = pair_begin(index); iter != pair_end(index); ++iter) {
+      auto e1 = iter.first();
+      auto e2 = iter.second();
+      if (pair_info_checker_.Check(e1, e2)) {
+        for (auto point : *iter) {
+          if (!pair_info_checker_.Check(PairInfoT(e1, e2, point)))
+            index.Remove(e1, e2, point);
+        }
+      }
     }
-    INFO("Pruning the index");
-    index.Prune();
   }
 };
 

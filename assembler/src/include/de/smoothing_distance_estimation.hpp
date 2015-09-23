@@ -26,8 +26,8 @@ protected:
   typedef ExtensiveDistanceEstimator<Graph> base;
   typedef typename base::InPairedIndex InPairedIndex;
   typedef typename base::OutPairedIndex OutPairedIndex;
-  typedef typename InPairedIndex::Histogram InHistogram;
-  typedef typename OutPairedIndex::Histogram OutHistogram;
+  typedef typename base::InHistogram InHistogram;
+  typedef typename base::OutHistogram OutHistogram;
 
  public:
   SmoothingDistanceEstimator(const Graph& graph,
@@ -160,11 +160,12 @@ private:
     }
 
   virtual void ProcessEdge(EdgeId e1,
-                           const typename InPairedIndex::InnerMap& inner_map,
+                           const InPairedIndex& pi,
                            PairedInfoBuffer<Graph>& result) const {
     typename base::LengthMap second_edges;
-    for (auto I = inner_map.begin(), E = inner_map.end(); I != E; ++I)
-      second_edges[I->first];
+    auto inner_map = pi.Get(e1);
+    for (auto I : inner_map)
+      second_edges[I.first];
 
     this->FillGraphDistancesLengths(e1, second_edges);
 
@@ -172,13 +173,13 @@ private:
       EdgeId e2 = entry.first;
       EdgePair ep(e1, e2);
 
-      if (ep > this->ConjugatePair(ep))
-          continue;
+      //if (ep > this->ConjugatePair(ep))
+      //    continue;
 
       TRACE("Processing edge pair " << this->graph().int_id(e1)
             << " " << this->graph().int_id(e2));
       const GraphLengths& forward = entry.second;
-      InHistogram hist = inner_map.find(e2)->second;
+      InHistogram hist = inner_map.Get(e2);
       EstimHist estimated;
       //DEBUG("Extending paired information");
       //DEBUG("Extend left");
@@ -194,7 +195,7 @@ private:
       DEBUG(gap_distances << " distances between gap edge pairs have been found");
       OutHistogram res = this->ClusterResult(ep, estimated);
       this->AddToResult(res, ep, result);
-      this->AddToResult(this->ConjugateInfos(ep, res), this->ConjugatePair(ep), result);
+      //this->AddToResult(this->ConjugateInfos(ep, res), this->ConjugatePair(ep), result);
     }
   }
 
