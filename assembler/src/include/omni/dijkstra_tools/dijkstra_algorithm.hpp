@@ -49,7 +49,7 @@ public:
 };
 
 template<class Graph, class DijkstraSettings, typename distance_t = size_t>
-class Dijkstra : private boost::noncopyable {
+class Dijkstra {
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::EdgeId EdgeId;
     typedef distance_t DistanceType;
@@ -135,31 +135,9 @@ public:
         vertex_number_(0),
         vertex_limit_exceeded_(false) {}
 
-    //FIXME why default was ill formed?
-    Dijkstra(Dijkstra&& other) :
-        graph_(other.graph_),
-        settings_(other.settings_),
-        max_vertex_number_(other.max_vertex_number_),
-        finished_(other.finished_),
-        vertex_number_(other.vertex_number_),
-        vertex_limit_exceeded_(other.vertex_limit_exceeded_),
-        distances_(std::move(other.distances_)),
-        processed_vertices_(std::move(other.processed_vertices_)),
-        prev_vert_map_(std::move(other.prev_vert_map_)) {}
+    Dijkstra(Dijkstra&& other) = default; 
 
-    //FIXME why default was ill formed
-    Dijkstra& operator=(Dijkstra&& other) {
-        graph_ = other.graph_;
-        settings_ = other.settings_;
-        max_vertex_number_ = other.max_vertex_number_;
-        finished_ = other.finished_;
-        vertex_number_ = other.vertex_number_;
-        vertex_limit_exceeded_ = other.vertex_limit_exceeded_;
-        distances_ = std::move(other.distances_);
-        processed_vertices_ = std::move(other.processed_vertices_);
-        prev_vert_map_ = std::move(other.prev_vert_map_);
-        return *this;
-    }
+    Dijkstra& operator=(Dijkstra&& other) = default;
 
     bool finished() const {
         return finished_;
