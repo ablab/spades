@@ -653,7 +653,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     if (cfg::get().pe_params.scaffold_graph_params.construct) {
         scaffoldGraph = ConstructScaffoldGraph(gp, storage->GetSet(), cfg::get().pe_params.scaffold_graph_params);
         if (cfg::get().pe_params.scaffold_graph_params.output) {
-            PrintScaffoldGraph(scaffoldGraph, "scaffold_graph");
+            PrintScaffoldGraph(scaffoldGraph, GetEtcDir(output_dir) + "scaffold_graph");
         }
     }
 

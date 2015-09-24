@@ -40,6 +40,10 @@ private:
 
     size_t min_read_count_;
 
+    int left_dist_delta_;
+
+    int right_dist_delta_;
+
 
 public:
     PairedLibConnectionCondition(const debruijn_graph::Graph& graph,
@@ -49,8 +53,9 @@ public:
             graph_(graph),
             lib_(lib),
             lib_index_(lib_index),
-            min_read_count_(min_read_count) {
-
+            min_read_count_(min_read_count),
+            left_dist_delta_(5 * (int) lib_->GetIsVar()),
+            right_dist_delta_(5 * (int) lib_->GetISMax()) {
     }
 
     size_t GetLibIndex() const {
@@ -59,10 +64,23 @@ public:
 
     set<debruijn_graph::EdgeId> ConnectedWith(debruijn_graph::EdgeId e) const {
         set<debruijn_graph::EdgeId> all_edges;
-        lib_->FindJumpEdges(e, all_edges);
+        int e_length = (int) graph_.length(e);
+        lib_->FindJumpEdges(e, all_edges, e_length - left_dist_delta_, e_length + right_dist_delta_);
 
         set<debruijn_graph::EdgeId> result;
         for (auto edge : all_edges) {
+
+//            set<debruijn_graph::EdgeId> c_edges;
+//            lib_->FindJumpEdges(graph_.conjugate(edge), c_edges,
+//                                (int) graph_.length(edge) - left_dist_delta_,
+//                                (int) graph_.length(edge) + right_dist_delta_);
+//            if (c_edges.count(graph_.conjugate(e)) > 0) {
+//                INFO(graph_.int_id(e) << " -> " << graph_.int_id(edge));
+//            }
+//            else {
+//                WARN(graph_.int_id(e) << " ---> " << graph_.int_id(edge));
+//            }
+
             if (edge != e && edge != graph_.conjugate(e) && math::ge(GetWeight(e, edge), (double) min_read_count_)) {
                 result.insert(edge);
             }
@@ -71,7 +89,12 @@ public:
     }
 
     double GetWeight(debruijn_graph::EdgeId e1, debruijn_graph::EdgeId e2) const {
-        return lib_->CountPairedInfo(e1, e2);
+        int e_length = (int) graph_.length(e1);
+        double res = lib_->CountPairedInfo(e1, e2, e_length - left_dist_delta_, e_length + right_dist_delta_);
+        VERIFY(res == lib_->CountPairedInfo(graph_.conjugate(e2), graph_.conjugate(e1),
+               (int) graph_.length(e2) - left_dist_delta_, (int) graph_.length(e2) + right_dist_delta_));
+
+        return res;
     }
 };
 

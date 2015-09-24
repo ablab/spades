@@ -532,7 +532,7 @@ inline double PathsWeightCounter::IdealPI(EdgeId e1, EdgeId e2, int dist) const 
 }
 
 inline bool PathsWeightCounter::HasPI(EdgeId e1, EdgeId e2, size_t dist_min, size_t dist_max) const {
-    return lib_->CountPairedInfo(e1, e2, dist_min, dist_max) > min_read_count_;
+    return lib_->CountPairedInfo(e1, e2, (int) dist_min, (int) dist_max) > min_read_count_;
 }
 };
 
