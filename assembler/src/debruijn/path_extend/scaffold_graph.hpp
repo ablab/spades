@@ -393,7 +393,7 @@ public:
     }
 
     VertexStorage::const_iterator vend() const {
-        return vertices_.cbegin();
+        return vertices_.cend();
     }
 
     ConstScaffoldEdgeIterator ebegin() const {

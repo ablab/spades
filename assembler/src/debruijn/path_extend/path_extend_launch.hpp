@@ -551,7 +551,7 @@ inline shared_ptr<scaffold_graph::ScaffoldGraph> ConstructScaffoldGraph(const co
     using namespace scaffold_graph;
     vector<shared_ptr<ConnectionCondition>> conditions;
 
-    INFO("Constructing connection");
+    INFO("Constructing connections");
     if (params.graph_connectivity) {
         conditions.push_back(make_shared<AssemblyGraphConnectionCondition>(gp.g, params.max_path_length));
     }
