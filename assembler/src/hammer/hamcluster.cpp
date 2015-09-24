@@ -208,7 +208,12 @@ void TauOneKMerHamClusterer::cluster(const std::string &, const KMerData &data, 
 #   pragma omp parallel for num_threads(nthreads)
     for (size_t idx = 0; idx < data.size(); ++idx) {
         hammer::KMer kmer = data.kmer(idx);
+
+        if (kmer.GetHash() > (!kmer).GetHash())
+            continue;
+
         size_t kidx = data.seq_idx(kmer);
+        size_t rckidx = data.seq_idx(!kmer);
         // INFO("" << kmer << ":" << kidx);
 
         for (size_t k = 0; k < hammer::K; ++k) {
@@ -220,8 +225,14 @@ void TauOneKMerHamClusterer::cluster(const std::string &, const KMerData &data, 
                 candidate.set(k, nc);
                 size_t cidx = data.checking_seq_idx(candidate);
                 // INFO("" << candidate << ":" << cidx);
-                if (cidx != -1ULL && uf.find_set(kidx) != uf.find_set(cidx))
-                    uf.unite(kidx, cidx);
+                if (cidx != -1ULL) {
+                    if (uf.find_set(kidx) != uf.find_set(cidx))
+                        uf.unite(kidx, cidx);
+
+                    size_t rccidx = data.seq_idx(!candidate);
+                    if (uf.find_set(rckidx) != uf.find_set(rccidx))
+                        uf.unite(rckidx, rccidx);
+                }
             }
         }
     }
