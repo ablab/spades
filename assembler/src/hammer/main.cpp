@@ -159,6 +159,7 @@ int main(int argc, char * argv[]) {
         INFO("Clustering Hamming graph.");
         clusterer.cluster(hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamcls"),
                           *Globals::kmer_data, uf);
+        INFO("Extracting clusters");
         size_t num_classes = uf.extract_to_file(hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamming"));
 
 #if 0
