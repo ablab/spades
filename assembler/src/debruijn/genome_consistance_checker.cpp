@@ -5,7 +5,7 @@
 #include "genome_consistance_checker.hpp"
 #include "debruijn_graph.hpp"
 #include <algorithm>
-
+#include <limits>
 namespace debruijn_graph {
 using omnigraph::MappingRange;
 using namespace std;
@@ -31,7 +31,7 @@ bool GenomeConsistenceChecker::consequent(const MappingRange &mr1, const Mapping
     size_t initial_gap = gap(mr1.initial_range, mr2.initial_range);
     size_t mapped_gap = gap(mr1.mapped_range, mr2.mapped_range);
     size_t max_gap = max(initial_gap, mapped_gap);
-    if (1.* max_gap > relative_max_gap_* max (min(mr1.initial_range.size(), mr1.mapped_range.size()), min(mr2.initial_range.size(), mr2.mapped_range.size())))
+    if ( max_gap > relative_max_gap_* double (max (min(mr1.initial_range.size(), mr1.mapped_range.size()), min(mr2.initial_range.size(), mr2.mapped_range.size()))))
         return false;
     return true;
 }
@@ -135,17 +135,17 @@ PathScore GenomeConsistenceChecker::CountMisassembliesWithStrand(const Bidirecti
     }
     PathScore res(0, 0, 0);
     EdgeId prev;
-    int prev_in_genome = -1;
-    int prev_in_path = -1;
+    size_t prev_in_genome = std::numeric_limits<std::size_t>::max();
+    size_t prev_in_path = std::numeric_limits<std::size_t>::max();
     MappingRange prev_range;
-    for (size_t i = 0; i < path.Size(); i++) {
+    for (int i = 0; i < (int) path.Size(); i++) {
         if (genome_spelled_.find(path.At(i)) != genome_spelled_.end()) {
-            int cur_in_genome = genome_spelled_[path.At(i)];
+            size_t cur_in_genome =  genome_spelled_[path.At(i)];
             MappingRange cur_range = *gp_.edge_pos.GetEdgePositions(path.At(i), "fxd0").begin();
-            if (prev_in_genome != -1) {
+            if (prev_in_genome != std::numeric_limits<std::size_t>::max()) {
                 if (cur_in_genome == prev_in_genome + 1) {
-                    int dist_in_genome = cur_range.initial_range.start_pos - prev_range.initial_range.end_pos;
-                    int dist_in_path = path.LengthAt(prev_in_path) - path.LengthAt(i) + cur_range.mapped_range.start_pos - prev_range.mapped_range.end_pos;
+                    int dist_in_genome = (int) cur_range.initial_range.start_pos -  (int) prev_range.initial_range.end_pos;
+                    int dist_in_path = (int) path.LengthAt(prev_in_path) - (int) path.LengthAt(i) +  (int) cur_range.mapped_range.start_pos - (int) prev_range.mapped_range.end_pos;
                     DEBUG("Edge " << prev.int_id() << "  position in genome ordering: " << prev_in_genome);
                     DEBUG("Gap in genome / gap in path: " << dist_in_genome << " / " << dist_in_path);
                     if (abs(dist_in_genome - dist_in_path) >absolute_max_gap_ && (dist_in_genome * (1 + relative_max_gap_) < dist_in_path || dist_in_path * (1 + relative_max_gap_) < dist_in_genome)) {
@@ -166,7 +166,7 @@ PathScore GenomeConsistenceChecker::CountMisassembliesWithStrand(const Bidirecti
             prev_in_path = i;
         }
     }
-    if (prev_in_path != -1)
+    if (prev_in_path != std::numeric_limits<std::size_t>::max())
         DEBUG("Edge " << prev.int_id() << "  position in genome ordering: " << prev_in_genome);
     return res;
 }
@@ -190,13 +190,13 @@ void GenomeConsistenceChecker::RefillPos(const string &strand, const EdgeId &e) 
     for (auto mp:old_mappings) {
         total_mapped += mp.initial_range.size();
     }
-    if (total_mapped * 1. > gp_.g.length(e) * 1.5) {
+    if (total_mapped  > (double) gp_.g.length(e) * 1.5) {
        INFO ("Edge " << gp_.g.int_id(e) << "is not unique, excluding");
        excluded_unique_.insert(e);
        return;
     }
 //TODO: support non-unique edges;
-    if (total_mapped * 1. < gp_.g.length(e) * 0.5) {
+    if (total_mapped  < (double) gp_.g.length(e) * 0.5) {
         DEBUG ("Edge " << gp_.g.int_id(e) << "is not mapped on strand "<< strand <<", not used");
         //excluded_unique_.insert(e);
         return;
@@ -227,10 +227,10 @@ void GenomeConsistenceChecker::RefillPos(const string &strand, const EdgeId &e) 
     }
     TRACE("graph constructed");
     vector<size_t> scores(sz);
-    vector<int> prev(sz);
+    vector<size_t> prev(sz);
     for(size_t i = 0; i < sz; i++) {
         scores[i] = to_process[i].initial_range.size();
-        prev[i] = -1;
+        prev[i] = std::numeric_limits<std::size_t>::max();
     }
     for(size_t i = 0; i < sz; i++) {
         for (size_t j = 0; j < consecutive_mappings[i].size(); j++) {
@@ -251,7 +251,7 @@ void GenomeConsistenceChecker::RefillPos(const string &strand, const EdgeId &e) 
             cur_i = i;
         }
     }
-    while (cur_i != -1) {
+    while (cur_i != std::numeric_limits<std::size_t>::max()) {
         used_mappings.push_back(cur_i);
         cur_i = prev[cur_i];
     }
@@ -274,8 +274,7 @@ void GenomeConsistenceChecker::RefillPos(const string &strand, const EdgeId &e) 
 
 
     }
-    if (total_mapped - used_mapped >= 0.1 * gp_.g.length(e)) {
-        if ("")
+    if (total_mapped * 10  >=  used_mapped * 10  + gp_.g.length(e)) {
         INFO ("Edge " << gp_.g.int_id(e) << " length "<< gp_.g.length(e)  << "is potentially misassembled! mappings: ");
         for (auto mp:old_mappings) {
             INFO("mp_range "<< mp.mapped_range.start_pos << " - " << mp.mapped_range.end_pos << " init_range " << mp.initial_range.start_pos << " - " << mp.initial_range.end_pos );
