@@ -265,7 +265,7 @@ vector<typename ObservableGraph<DataMaster>::VertexId> ObservableGraph<DataMaste
         if (verticesToDelete.find(base::conjugate(v)) == verticesToDelete.end())
             verticesToDelete.insert(v);
     }
-    return vector < VertexId > (verticesToDelete.begin(), verticesToDelete.end());
+    return vector<VertexId>(verticesToDelete.begin(), verticesToDelete.end());
 }
 
 template<class DataMaster>

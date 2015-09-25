@@ -175,14 +175,29 @@ bool RemoveBulges(
         max_length = additional_length_bound;
     }
 
-    BulgeRemover<Graph> br(g, max_length, br_config.max_coverage,
-                           br_config.max_relative_coverage, br_config.max_delta,
-                           br_config.max_relative_delta,
-                           br_config.max_number_edges,
-                           opt_handler, removal_handler);
+    bool modified = false;
+    if (br_config.parallel) {
+        INFO("In parallel");
+		ParallelBulgeRemover<Graph> br(g, br_config.chunk_size, max_length, br_config.max_coverage,
+							   br_config.max_relative_coverage, br_config.max_delta,
+							   br_config.max_relative_delta,
+                               br_config.max_number_edges,
+							   opt_handler, removal_handler);
 
-    return br.RunFromIterator(it,
-                      make_shared<CoverageUpperBound<Graph>>(g, br_config.max_coverage));
+		modified = br.RunFromIterator(it);
+    } else {
+        INFO("Not in parallel");
+		BulgeRemover<Graph> br(g, max_length, br_config.max_coverage,
+							   br_config.max_relative_coverage, br_config.max_delta,
+							   br_config.max_relative_delta,
+                               br_config.max_number_edges,
+							   opt_handler, removal_handler);
+
+		modified = br.RunFromIterator(it,
+						  make_shared<CoverageUpperBound<Graph>>(g, br_config.max_coverage));
+    }
+
+    return modified;
 }
 
 template<class Graph>

@@ -20,23 +20,24 @@ default
         condition               "{ tc_lb 3.5, cb 1000000, rctc 2.0 } { tc_lb 10., cb auto }"
     }
   
-
-    ; bulge remover:
-    br
-    {
-        enabled             true
-        max_bulge_length_coefficient    3.  ; max_bulge_length = max_bulge_length_coefficient * k
-        max_additive_length_coefficient 100
-        max_coverage            1000.0
-        max_relative_coverage       1.1 ; bulge_cov < this * not_bulge_cov
-        max_delta           3
-        max_relative_delta      0.1
+	; bulge remover:
+	br
+	{
+		enabled				true
+		max_bulge_length_coefficient	3.	; max_bulge_length = max_bulge_length_coefficient * k
+       	max_additive_length_coefficient 100
+		max_coverage			1000.0
+		max_relative_coverage		1.1	; bulge_cov < this * not_bulge_cov
+		max_delta			3
+		max_relative_delta		0.1
         max_number_edges        1000
-    }
-    
-    ; erroneous connections remover:
-    ec
-    {
+        parallel false
+        chunk_size 10000
+	}
+	
+	; erroneous connections remover:
+	ec
+	{
        ; ec_lb: max_ec_length = k + ec_lb
        ; icb: iterative coverage bound
        ; to_ec_lb: max_ec_length = 2*tip_length(to_ec_lb) - 1
@@ -170,7 +171,7 @@ default
     }
 
     persistent_cycle_iterators true
-    disable_br_in_cycle false
+    disable_br_in_cycle false    
 }
 
 sc
@@ -184,24 +185,26 @@ sc
         ; rctc: tip_cov < rctc * not_tip_cov
         ; tc_lb: max_tip_length = max((min(k, read_length / 2) * tc_lb), read_length);
         condition               "{ tc_lb 3.5, cb 100000, rctc 10000 }"
-    }
+	}
 
-    ; bulge remover:
-    br
-    {
-        enabled             true
-        max_bulge_length_coefficient    3.      ; max_bulge_length = max_bulge_length_coefficient * k
-        max_additive_length_coefficient 100
-        max_coverage            1000000.0
-        max_relative_coverage       100000.     ; bulge_cov < this * not_bulge_cov
-        max_delta           3
-        max_relative_delta      0.1
+	; bulge remover:
+	br
+	{
+		enabled				true
+		max_bulge_length_coefficient	3.		; max_bulge_length = max_bulge_length_coefficient * k
+       	max_additive_length_coefficient 100
+		max_coverage			1000000.0
+		max_relative_coverage		100000.		; bulge_cov < this * not_bulge_cov
+		max_delta			3
+		max_relative_delta		0.1
         max_number_edges        1000
-    }
-    
-    ; erroneous connections remover:
-    ec
-    {
+        parallel false
+        chunk_size 10000
+	}
+	
+	; erroneous connections remover:
+	ec
+	{
        ; ec_lb: max_ec_length = k + ec_lb
        ; icb: iterative coverage bound
        ; condition               "{ ec_lb 30, icb 20.0 }"
@@ -279,12 +282,14 @@ moleculo
     {
         enabled             true
         max_bulge_length_coefficient    3.      ; max_bulge_length = max_bulge_length_coefficient * k
-            max_additive_length_coefficient 100
+        max_additive_length_coefficient 100
         max_coverage            3
         max_relative_coverage       100000.     ; bulge_cov < this * not_bulge_cov
         max_delta           3
         max_relative_delta      0.1
         max_number_edges        1000
+        parallel false
+        chunk_size 10000
     }
     
     ; erroneous connections remover:
@@ -373,6 +378,8 @@ careful
         max_delta           3
         max_relative_delta      0.1
         max_number_edges        1000
+        parallel false
+        chunk_size 10000
     }
     
     ; complex bulge remover
@@ -394,18 +401,20 @@ diploid_simp
 {
     post_simplif_enabled false
 
-    ; bulge remover:
-    br
-    {
-        enabled             false
-        max_bulge_length_coefficient    3.      ; max_bulge_length = max_bulge_length_coefficient * k
-        max_additive_length_coefficient 100
-        max_coverage            1000000.0
-        max_relative_coverage       1.5     ; bulge_cov < this * not_bulge_cov
-        max_delta           3
-        max_relative_delta      0.1
+	; bulge remover:
+	br
+	{
+		enabled				false
+		max_bulge_length_coefficient	3.		; max_bulge_length = max_bulge_length_coefficient * k
+       	max_additive_length_coefficient 100
+		max_coverage			1000000.0
+		max_relative_coverage		1.5		; bulge_cov < this * not_bulge_cov
+		max_delta			3
+		max_relative_delta		0.1
         max_number_edges        1000
-    }
+        parallel false
+        chunk_size 10000
+	}
 }
 
 meta
@@ -434,27 +443,29 @@ meta
         max_vertex_cnt      100
         max_ec_length_coefficient   300
         max_coverage_coeff  -1.0
-    }
+	}
 
-    ; relative edge disconnector:
-    relative_ed
-    {
+	; relative edge disconnector:
+	relative_ed
+	{
         enabled true
         diff_mult  20.
-    }
+	}
 
-    ; bulge remover:
-    br
-    {
-        enabled             true
-        max_bulge_length_coefficient    3.      ; max_bulge_length = max_bulge_length_coefficient * k
-        max_additive_length_coefficient 100
-        max_coverage            1000000.0
-        max_relative_coverage       100000.     ; bulge_cov < this * not_bulge_cov
-        max_delta           10
-        max_relative_delta      0.1
+	; bulge remover:
+	br
+	{
+		enabled				true
+		max_bulge_length_coefficient	3.		; max_bulge_length = max_bulge_length_coefficient * k
+       	max_additive_length_coefficient 100
+		max_coverage			1000000.0
+		max_relative_coverage		100000.		; bulge_cov < this * not_bulge_cov
+		max_delta			10
+		max_relative_delta		0.1
         max_number_edges        1000
-    }
+        parallel true
+        chunk_size 10000
+	}
 
     fast_features true
 
@@ -485,6 +496,8 @@ meta
         max_delta           50
         max_relative_delta      0.1
         max_number_edges        1000
+        parallel true
+        chunk_size 10000
     }
 
     ; second final bulge remover:
@@ -498,6 +511,8 @@ meta
         max_delta           1500
         max_relative_delta      0.1
         max_number_edges        3
+        parallel true
+        chunk_size 10000
     }
 
 }
@@ -513,17 +528,19 @@ preliminary
 
     post_simplif_enabled false
 
-    ; bulge remover:
-    br
-    {
-        enabled             true
-        max_bulge_length_coefficient    3.      ; max_bulge_length = max_bulge_length_coefficient * k
-        max_additive_length_coefficient 100
-        max_coverage            1000000.0
-        max_relative_coverage       0.5     ; bulge_cov < this * not_bulge_cov
-        max_delta           10
-        max_relative_delta      0.1
+	; bulge remover:
+	br
+	{
+		enabled				true
+		max_bulge_length_coefficient	3.		; max_bulge_length = max_bulge_length_coefficient * k
+       	max_additive_length_coefficient 100
+		max_coverage			1000000.0
+		max_relative_coverage		0.5		; bulge_cov < this * not_bulge_cov
+		max_delta			10
+		max_relative_delta		0.1
         max_number_edges        1000
-    }
-    
+        parallel true
+        chunk_size 10000
+	}
+	
 }

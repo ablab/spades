@@ -98,6 +98,10 @@ public:
 		return queue_.empty();
 	}
 
+	size_t size() const {
+		return queue_.size();
+	}
+
 	const T& operator*() {
 		VERIFY(!queue_.empty());
 		if(!current_actual_ || current_deleted_) {

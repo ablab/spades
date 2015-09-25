@@ -140,7 +140,7 @@ public:
         if (gap_len_.size() == 0 || cumulative_len_.size() == 0) {
             return 0;
         }
-        return cumulative_len_[0];
+        return cumulative_len_[0] + gap_len_[0].gap_;
     }
 
     EdgeId operator[](size_t index) const {
@@ -430,7 +430,7 @@ public:
     BidirectionalPath SubPath(size_t from, size_t to) const {
         BidirectionalPath result(g_);
         for (size_t i = from; i < min(to, Size()); ++i) {
-            result.PushBack(data_[i], (i == from) ? 0 : gap_len_[i].gap_, (i == from) ? 0 : gap_len_[i].trash_previous_, (i == from) ? 0 : gap_len_[i].trash_current_);
+            result.PushBack(data_[i], gap_len_[i]);
         }
         return result;
     }
