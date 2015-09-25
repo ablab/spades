@@ -187,8 +187,11 @@ typedef struct __kstring_t {
 		} \
 		while ((c = ks_getc(ks)) != -1 && c != '>' && c != '+' && c != '@') { \
 			if (c == '\n') continue; /* skip empty lines */ \
+            size_t str_from = seq->seq.l;                               \
 			seq->seq.s[seq->seq.l++] = c; /* this is safe: we always have enough space for 1 char */ \
 			ks_getuntil2(ks, KS_SEP_LINE, &seq->seq, 0, 1); /* read the rest of the line */ \
+            for (size_t j = str_from; j < seq->seq.l; ++j)               \
+                seq->seq.s[j] = toupper(seq->seq.s[j]);                 \
 		} \
 		if (c == '>' || c == '@') seq->last_char = c; /* the first header char has been read */	\
 		if (seq->seq.l + 1 >= seq->seq.m) { /* seq->seq.s[seq->seq.l] below may be out of boundary */ \
