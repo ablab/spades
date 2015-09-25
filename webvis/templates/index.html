@@ -6,7 +6,7 @@
   <style>
   div.console { font-size: 14px; font-family: monospace }
   div.console div.jquery-console-inner
-  { width:100%; height:640px; padding: 0.5em; overflow: auto }
+  { height:640px; padding: 0.5em; overflow: auto; word-wrap: break-word }
   /*div.console div.jquery-console-prompt-box
   { color:#fff; }*/
   div.console div.jquery-console-focus span.jquery-console-cursor
@@ -222,7 +222,7 @@ $(function() {
       </table>
       <div class="console bordered"></div>
     </td>
-    <td class="bordered"width="50%">
+    <td class="bordered">
       <div id="graph"></div>
       <!--The rendered graph will be displayed here-->
     </td>

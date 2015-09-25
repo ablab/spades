@@ -75,16 +75,21 @@ def login():
         #TODO: server name validation
         if not name:
             name = "gaf"
-        session["username"] = name
         try:
             os.mkdir(path.join(cache_path, name))
         except OSError:
             pass
         if name not in shellders:
-            shellders[name] = Shellder("/tmp/vis_in_" + name, "/tmp/vis_out_" + name, env_path)
+            try:
+                launch = Shellder("/tmp/vis_in_" + name, "/tmp/vis_out_" + name, env_path)
+                shellders[name] = launch
+            except IOError as e:
+                message = "Cannot start online_vis session: " + str(e);
+                return flask.render_template("logout.html", message=message)
             session["log"] = shellders[name].get_output()
         else:
             session["log"] = ["(the previous session log has been lost)"]
+        session["username"] = name
     return flask.redirect("/")
 
 @app.route("/logout", methods=['GET'])

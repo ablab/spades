@@ -15,16 +15,17 @@ class Shellder:
         #Open two-sided named pipes
         self.pipe_in = pipe_in
         self.pipe_out = pipe_out
-        prepare_pipe(pipe_in)
-        prepare_pipe(pipe_out)
-        self.pout = open(pipe_out, "r+")
         self.end_out = end_out
-        self.pin = open(pipe_in, "w+")
         #Prepare the reader
         self.queue = Queue.Queue()
         self.proc = None
         self.reader = None
         self.dir = dir
+        #Open IO pipes
+        prepare_pipe(pipe_in)
+        prepare_pipe(pipe_out)
+        self.pout = open(pipe_out, "r+")
+        self.pin = open(pipe_in, "w+")
 
     def launch_if_needed(self):
         #Launch online_vis process if it hasn't started yet or was aborted
@@ -57,17 +58,21 @@ class Shellder:
 
     #Reads the whole output and returns as a list of strings
     def get_output(self, timeout=None):
-        self.launch_if_needed()
         res = []
         complete = False
-        while True:
-            str = self.get_line(timeout)
-            if str is None:
-                break
-            if str == self.end_out:
-                complete = True
-                break
-            res.append(str)
+        try:
+            self.launch_if_needed()
+            while True:
+                str = self.get_line(timeout)
+                if str is None:
+                    break
+                if str == self.end_out:
+                    complete = True
+                    break
+                res.append(str)
+        except IOError as e:
+            res.append("Cannot communicate with online_vis: {}\n".format(str(e)))
+            complete = True
         if timeout is None:
             return res
         return (res, complete)
