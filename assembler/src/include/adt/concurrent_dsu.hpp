@@ -33,17 +33,9 @@ class ConcurrentDSU {
  public:
     ConcurrentDSU(size_t size)
         : data_(size) {
-      if (size > ((1ULL << 40) - 1)) {
-          std::cerr << "Error, size greater than 2^40 -1";
-          exit(-1);
-      }
 
-      for (size_t i = 0; i < size; i++) {
-          data_[i] = {
-              .data = 1,
-              .root = true,
-          };
-      }
+      for (size_t i = 0; i < size; i++)
+          data_[i] = { .data = 1, .root = true };
   }
 
   ~ConcurrentDSU() { }
