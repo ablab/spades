@@ -99,7 +99,7 @@ static void processBlockQuadratic(ConcurrentDSU  &uf,
     for (size_t j = i + 1; j < block_size; j++) {
       size_t y = block[j];
       hammer::KMer kmery = data.kmer(y);
-      if (uf.find_set(x) != uf.find_set(y) &&
+      if (!uf.same(x, y) &&
           canMerge(uf, x, y) &&
           hamdistKMer(kmerx, kmery, tau) <= tau) {
         uf.unite(x, y);
@@ -226,12 +226,10 @@ void TauOneKMerHamClusterer::cluster(const std::string &, const KMerData &data, 
                 size_t cidx = data.checking_seq_idx(candidate);
                 // INFO("" << candidate << ":" << cidx);
                 if (cidx != -1ULL) {
-                    if (uf.find_set(kidx) != uf.find_set(cidx))
-                        uf.unite(kidx, cidx);
+                    uf.unite(kidx, cidx);
 
                     size_t rccidx = data.seq_idx(!candidate);
-                    if (uf.find_set(rckidx) != uf.find_set(rccidx))
-                        uf.unite(rckidx, rccidx);
+                    uf.unite(rckidx, rccidx);
                 }
             }
         }
