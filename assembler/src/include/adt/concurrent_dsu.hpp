@@ -22,12 +22,9 @@
 #include <atomic>
 
 class ConcurrentDSU {
-  union atomic_set_t {
-    uint64_t raw;
-    struct {
+  struct atomic_set_t {
       uint64_t data  : 63;
       bool     root  : 1;
-    };
   } __attribute__ ((packed));
 
  public:
