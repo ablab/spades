@@ -205,6 +205,7 @@ struct OneReadMapping {
 	vector<vector<EdgeId> > main_storage;
 	vector<GapDescription<Graph> > gaps;
 	vector<size_t> real_length;
+//Total used seeds. sum over all subreads;
 	size_t seed_num;
 	OneReadMapping(vector<vector<EdgeId> > &paths_description, vector<GapDescription<Graph> > &gaps_description, vector<size_t> real_length, size_t seed_num) :
 			main_storage(paths_description), gaps(gaps_description), real_length(real_length), seed_num(seed_num) {

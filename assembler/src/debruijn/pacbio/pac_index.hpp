@@ -547,7 +547,7 @@ public:
         vector<typename ClustersSet::iterator> start_clusters, end_clusters;
         vector<GapDescription<Graph> > illumina_gaps;
         vector<int> used(len);
-        size_t max_seed_count = 0;
+        size_t used_seed_count = 0;
 	    auto iter = mapping_descr.begin();
         for (int i = 0; i < len; i++, iter ++) {
             used[i] = 0; 
@@ -577,8 +577,8 @@ public:
                 sort(cur_cluster.begin(), cur_cluster.end(),
                      pair_iterator_less<typename ClustersSet::iterator>());
                 VERIFY(cur_cluster.size() > 0);
-                if (cur_seed_count > max_seed_count)
-                    max_seed_count = cur_seed_count;
+                //if (cur_seed_count > used_seed_count)
+                used_seed_count += cur_seed_count;
                 auto cur_cluster_start = cur_cluster.begin();
                 for (auto iter = cur_cluster.begin(); iter != cur_cluster.end();
                         ++iter) {
@@ -632,7 +632,7 @@ public:
                 }
             }
         }
-        return OneReadMapping<Graph>(sortedEdges, illumina_gaps, real_length, max_seed_count);
+        return OneReadMapping<Graph>(sortedEdges, illumina_gaps, real_length, used_seed_count);
     }
 
     std::pair<int, int> GetPathLimits(const KmerCluster<Graph> &a,
