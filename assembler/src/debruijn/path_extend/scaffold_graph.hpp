@@ -70,16 +70,11 @@ public:
         set<debruijn_graph::EdgeId> result;
         for (auto edge : all_edges) {
 
-//            set<debruijn_graph::EdgeId> c_edges;
-//            lib_->FindJumpEdges(graph_.conjugate(edge), c_edges,
-//                                (int) graph_.length(edge) - left_dist_delta_,
-//                                (int) graph_.length(edge) + right_dist_delta_);
-//            if (c_edges.count(graph_.conjugate(e)) > 0) {
-//                INFO(graph_.int_id(e) << " -> " << graph_.int_id(edge));
-//            }
-//            else {
-//                WARN(graph_.int_id(e) << " ---> " << graph_.int_id(edge));
-//            }
+            set<debruijn_graph::EdgeId> c_edges;
+            lib_->FindJumpEdges(graph_.conjugate(edge), c_edges,
+                                (int) graph_.length(edge) - left_dist_delta_,
+                                (int) graph_.length(edge) + right_dist_delta_);
+            VERIFY(c_edges.count(graph_.conjugate(e)) > 0);
 
             if (edge != e && edge != graph_.conjugate(e) && math::ge(GetWeight(e, edge), (double) min_read_count_)) {
                 result.insert(edge);
