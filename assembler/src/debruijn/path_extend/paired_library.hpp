@@ -148,7 +148,6 @@ public:
 
         auto pairs = index_.GetEdgePairInfo(e1, e2);
         if (!index_.conj_symmetry()) {
-            INFO("Non-symmetric index");
             auto cpairs = index_.GetEdgePairInfo(g_.conjugate(e2), g_.conjugate(e1));
             for (auto entry : cpairs) {
                 Point cp = ConjugatePoint(g_.length(e2), g_.length(e1), entry);
