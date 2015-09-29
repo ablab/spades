@@ -8,7 +8,7 @@
 #include "graphio.hpp"
 #include "scaffold_graph.hpp"
 
-namespace scaffold_graph {
+namespace path_extend { namespace scaffold_graph {
 
 using namespace omnigraph::visualization;
 
@@ -89,6 +89,8 @@ public:
     }
 };
 
-}
+} //scaffold_graph
+} //path_extend
+
 
 #endif //PROJECT_SCAFFOLD_GRAPH_VISUALIZER_HPP

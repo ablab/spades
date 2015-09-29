@@ -17,6 +17,7 @@ namespace path_extend {
         friend class ScaffoldingUniqueEdgeAnalyzer;
     private:
         set <EdgeId> unique_edges_;
+        size_t min_unique_length_;
     public:
         ScaffoldingUniqueEdgeStorage(): unique_edges_(){
             DEBUG("storage created, empty");
@@ -37,6 +38,15 @@ namespace path_extend {
         size_t size() const {
             return unique_edges_.size();
         }
+        size_t GetMinLength() const {
+            return min_unique_length_;
+        }
+        size_t SetMinLength(size_t min_length)  {
+            min_unique_length_ = min_length;
+        }
+
+
+
 
         const set<EdgeId>& GetSet() const {
             return unique_edges_;

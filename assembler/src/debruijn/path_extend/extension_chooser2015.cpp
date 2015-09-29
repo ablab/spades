@@ -26,23 +26,27 @@ int ExtensionChooser2015::CountMedian(vector<pair<int, double> >& histogram) con
     return (int) round(histogram[i].first);
 }
 
+void ExtensionChooser2015::CountAvrgDists(const EdgeId from, const EdgeId to, std::vector<pair<int, double>> & histogram) const {
+    std::vector<int> distances;
+    std::vector<double> weights;
+    GetDistances(from, to, distances, weights);
+    if (distances.size() > 0) {
+        AddInfoFromEdge(distances, weights, histogram, g_.length(from));
+    }
+}
+
 void ExtensionChooser2015::CountAvrgDists(const BidirectionalPath& path, EdgeId e, std::vector<pair<int, double>> & histogram) const {
     for (int j = (int) path.Size() -1; j >= 0; --j) {
         if (unique_edges_->IsUnique(path.At(j))) {
-            std::vector<int> distances;
-            std::vector<double> weights;
-            GetDistances(path.At(j), e, distances, weights);
-            if (distances.size() > 0) {
-                AddInfoFromEdge(distances, weights, histogram, g_.length(path.At(j)));
-            }
+            CountAvrgDists(path.At(j), e, histogram);
 //we are not interested on info over an unique edge now
             break;
         }
     }
 }
-void ExtensionChooser2015::FindBestFittedEdges(const BidirectionalPath& path, const set<EdgeId>& edges, EdgeContainer& result) const {
+void ExtensionChooser2015::FindBestFittedEdges(const BidirectionalPath& path, const set<EdgeId>&candidate_edges, EdgeContainer& result) const {
     vector<pair<double, pair<EdgeId, int >>> to_sort;
-    for (EdgeId e : edges) {
+    for (EdgeId e : candidate_edges) {
         std::vector <pair<int, double>> histogram;
         CountAvrgDists(path, e, histogram);
         double sum = 0.0;
@@ -81,46 +85,51 @@ void ExtensionChooser2015::FindBestFittedEdges(const BidirectionalPath& path, co
             break;
         }
     }
-
 }
+/*
+ * set<EdgeId> ExtensionChooser2015::FindCandidates(const EdgeId from) const {
+
+} */
+
 set<EdgeId> ExtensionChooser2015::FindCandidates(const BidirectionalPath& path) const {
     set<EdgeId> jumping_edges;
     //PairedInfoLibraries libs = wc_->getLibs();
 //TODO: multiple libs?
     const auto& lib = wc_->lib();
     //for (auto lib : libs) {
-        //todo lib (and FindJumpEdges) knows its var so it can be counted there
-        int is_scatter = int(math::round(double(lib.GetIsVar()) * is_scatter_coeff_));
-        DEBUG("starting..., path.size" << path.Size() );
-        DEBUG("is_unique_ size " << unique_edges_->size());
-        //insted of commented, just break after first unique
-        for (int i = (int) path.Size() - 1; i >= 0/* && path.LengthAt(i) - g_.length(path.At(i)) <=  lib.GetISMax() */; --i) {
-            DEBUG("edge ");
-            DEBUG(path.At(i).int_id());
-            set<EdgeId> jump_edges_i;
-            if (unique_edges_->IsUnique(path.At(i))) {
-                DEBUG("Is Unique Ok");
-                lib.FindJumpEdges(path.At(i), jump_edges_i,
-                                   std::max((int)0, (int )g_.length(path.At(i)) - (int) lib.GetISMax() - is_scatter),
+    //todo lib (and FindJumpEdges) knows its var so it can be counted there
+    int is_scatter = int(math::round(double(lib.GetIsVar()) * is_scatter_coeff_));
+    DEBUG("starting..., path.size" << path.Size() );
+    DEBUG("is_unique_ size " << unique_edges_->size());
+    //insted of commented, just break after first unique
+    for (int i = (int) path.Size() - 1; i >= 0/* && path.LengthAt(i) - g_.length(path.At(i)) <=  lib.GetISMax() */; --i) {
+        DEBUG("edge ");
+        DEBUG(path.At(i).int_id());
+        set<EdgeId> jump_edges_i;
+        if (unique_edges_->IsUnique(path.At(i))) {
+            //FindCandidates (path.At(i));
+            DEBUG("Is Unique Ok");
+            lib.FindJumpEdges(path.At(i), jump_edges_i,
+                               std::max((int)0, (int )g_.length(path.At(i)) - (int) lib.GetISMax() - is_scatter),
 //TODO: Reconsider limits
-                        //FIXME do we need is_scatter here?
-                        //FIXME or just 0, inf?
-                                   int(g_.length(path.At(i)) + 2 * lib.GetISMax() + is_scatter),
-                                   0);
-                DEBUG("Jump edges found");
-                for (EdgeId e : jump_edges_i) {
-                    if (unique_edges_->IsUnique(e) ) {
-                        if ( e == path.At(i) || e->conjugate() == path.At(i)) {
-                            DEBUG("skipping info on itself or conjugate " << e.int_id());
-                        } else {
-                            jumping_edges.insert(e);
-                        }
+                    //FIXME do we need is_scatter here?
+                    //FIXME or just 0, inf?
+                               int(g_.length(path.At(i)) + 2 * lib.GetISMax() + is_scatter),
+                               0);
+            DEBUG("Jump edges found");
+            for (EdgeId e : jump_edges_i) {
+                if (unique_edges_->IsUnique(e) ) {
+                    if ( e == path.At(i) || e->conjugate() == path.At(i)) {
+                        DEBUG("skipping info on itself or conjugate " << e.int_id());
+                    } else {
+                        jumping_edges.insert(e);
                     }
                 }
-//we are not interested on info over an unique edge now
-                break;
             }
+//we are not interested on info over an unique edge now
+            break;
         }
+    }
     //}
     DEBUG("found " << jumping_edges.size() << " jump edges");
     return jumping_edges;

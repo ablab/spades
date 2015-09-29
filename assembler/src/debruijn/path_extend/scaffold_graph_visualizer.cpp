@@ -4,7 +4,7 @@
 
 #include "scaffold_graph_visualizer.hpp"
 
-namespace scaffold_graph {
+namespace path_extend{ namespace scaffold_graph {
 
 const map<size_t, string> ScaffoldEdgeColorer::color_map =
         {{(size_t) -1, "black"},
@@ -17,4 +17,8 @@ const map<size_t, string> ScaffoldEdgeColorer::color_map =
 
 const string ScaffoldEdgeColorer::default_color = "black";
 
-}
+} //scaffold_graph
+} //path_extend
+
+
+

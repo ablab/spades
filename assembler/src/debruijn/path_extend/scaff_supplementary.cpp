@@ -43,6 +43,7 @@ void ScaffoldingUniqueEdgeAnalyzer::FillUniqueEdgeStorage(ScaffoldingUniqueEdgeS
     size_t total_len = 0;
     size_t unique_len = 0;
     size_t unique_num = 0;
+    storage_.SetMinLength(length_cutoff_);
     for (auto iter = gp_.g.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
         size_t tlen = gp_.g.length(*iter);
         total_len += tlen;
