@@ -58,7 +58,9 @@ class GapCloserPairedIndexFiller {
                 for (size_t j = 0; j < path2.size(); ++j) {
                     auto InTipIter = InTipMap.find(path2[j]);
                     if (InTipIter != InTipMap.end())
-                        paired_index.Add(OutTipIter->second.first, InTipIter->second.first, { 1000000., 1.});
+                        paired_index.Add(OutTipIter->second.first,
+                                         InTipIter->second.first,
+                                         omnigraph::de::RawPoint(1000000., 1.));
                 }
             }
         }

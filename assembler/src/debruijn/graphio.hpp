@@ -243,8 +243,9 @@ class DataPrinter {
 
         for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
             EdgeId e1 = *I;
-            const auto& inner_map = paired_index.Get(e1); //TODO Paired: GetRaw
-            std::map<typename Graph::EdgeId, typename Index::Histogram> ordermap(inner_map.begin(), inner_map.end());
+            const auto& inner_map = paired_index.RawGet(e1);
+            std::map<typename Graph::EdgeId, typename Index::RawHistProxy> ordermap(inner_map.begin(), inner_map.end());
+            //std::map<typename Graph::EdgeId, typename Index::HistProxy> ordermap;
             for (const auto& entry : ordermap) {
                 EdgeId e2 = entry.first; const auto& hist = entry.second;
                 if (component_.contains(e2))

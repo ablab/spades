@@ -265,7 +265,7 @@ class PairInfoImprover {
     }
 
   private:
-    size_t DeleteIfExist(EdgeId e1, EdgeId e2, const typename Index::HistProxy& infos) {
+    size_t DeleteIfExist(EdgeId e1, EdgeId e2, const typename Index::FullHistProxy& infos) {
         size_t cnt = 0;
         for (auto point : infos) {
             for (auto p : index_.Get(e1, e2)) {

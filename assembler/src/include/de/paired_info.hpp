@@ -32,18 +32,22 @@ public:
 
     //--Data access types--
 
+    typedef typename StorageMap::const_iterator ImplIterator;
+
+    template<bool full = true>
     class HistProxy {
 
     public:
-
         class Iterator: public boost::iterator_facade<Iterator, Point, boost::forward_traversal_tag, Point> {
             typedef typename Histogram::const_iterator const_iterator;
 
         public:
-            Iterator(const_iterator iter, int offset = 0)
+            Iterator(const_iterator iter, const_iterator end_iter, int offset = 0)
                 : iter_(iter)
+                , end_iter_(end_iter)
                 , offset_(offset)
             {}
+
             Point dereference() const {
                 Point result = *iter_;
                 result.d += offset_;
@@ -52,18 +56,15 @@ public:
 
             void increment() {
                 ++iter_;
+                while (!full && (iter_ != end_iter_) && (math::le(dereference().d, 0.0f)))
+                    ++iter_;
             }
 
             bool equal(const Iterator &other) const {
                 return iter_ == other.iter_;
             }
         private:
-
-            void SkipEmpty() {
-
-            }
-
-            const_iterator iter_;
+            const_iterator iter_, end_iter_;
             int offset_;
         };
 
@@ -72,11 +73,15 @@ public:
             , offset_(offset)
         {}
 
-        Iterator begin() const { return Iterator(hist_.begin(), offset_); }
-        Iterator end() const { return Iterator(hist_.begin(), offset_); }
+        Iterator begin() const { return Iterator(hist_.begin(), hist_.end(), offset_); }
+        Iterator end() const { return Iterator(hist_.end(), hist_.end(), offset_); }
 
         Point front() const { return begin().dereference(); }
-        Point back() const { return Iterator(--hist_.end(), offset_).dereference(); }
+        Point back() const { return Iterator(--hist_.end(), hist_.end(), offset_).dereference(); }
+
+        Histogram Unwrap() {
+            return Histogram(begin(), end());
+        }
 
         size_t size() const;
 
@@ -85,16 +90,22 @@ public:
         int offset_;
     };
 
-    typedef typename HistProxy::Iterator HistIterator;
+    typedef HistProxy<true> FullHistProxy;
+    typedef HistProxy<false> RawHistProxy;
+
+    typedef typename HistProxy<true>::Iterator HistIterator;
+    typedef typename HistProxy<false>::Iterator RawHistIterator;
 
     //---- Traversing edge neighbours ----
 
-    typedef std::pair<EdgeId, HistProxy> EdgeHist;
+    template<bool full = true>
+    using EdgeHist = std::pair<EdgeId, HistProxy<full>>;
 
+    template<bool full = true>
     class EdgeProxy {
     public:
 
-        class Iterator: public boost::iterator_facade<Iterator, EdgeHist, boost::forward_traversal_tag, EdgeHist> {
+        class Iterator: public boost::iterator_facade<Iterator, EdgeHist<full>, boost::forward_traversal_tag, EdgeHist<full>> {
             typedef typename InnerMap::const_iterator const_iterator;
 
         public:
@@ -109,24 +120,31 @@ public:
 
             void increment() {
                 ++iter_;
-                if (!conj_ && iter_ == index_.storage_.find(edge_)->second.end()) {
+                if (full && !conj_ && iter_ == index_.storage_.find(edge_)->second.end()) {
                     conj_ = true;
                     iter_ = index_.storage_.find(index_.graph_.conjugate(edge_))->second.begin();
                 }
+            }
+
+            void operator=(const Iterator &other) {
+                //VERIFY(index_ == other.index_); //TODO: is this risky?
+                iter_ = other.iter_;
+                edge_ = other.edge_;
+                conj_ = other.conj_;
             }
 
             bool equal(const Iterator &other) const {
                 return iter_ == other.iter_;
             }
 
-            EdgeHist dereference() const {
+            EdgeHist<full> dereference() const {
                 if (conj_) {
                     int offset = (int)index_.graph_.length(edge_) - (int)index_.graph_.length(iter_->first);
                     return std::make_pair(index_.graph_.conjugate(iter_->first),
-                                          HistProxy(iter_->second, offset));
+                                          HistProxy<full>(iter_->second, offset));
                 }
                 else
-                    return std::make_pair(iter_->first, HistProxy(iter_->second));
+                    return std::make_pair(iter_->first, HistProxy<full>(iter_->second));
             }
 
         private:
@@ -145,26 +163,29 @@ public:
             return Iterator(index_, i->second.begin(), edge_, false);
         }
         Iterator end() const {
-            auto i = index_.storage_.find(index_.graph_.conjugate(edge_));
-            return Iterator(index_, i->second.end(), edge_, true);
+            auto e = full ? index_.graph_.conjugate(edge_) : edge_;
+            auto i = index_.storage_.find(e);
+            return Iterator(index_, i->second.end(), edge_, full);
         }
 
-        HistProxy operator[](EdgeId e2) const {
+        HistProxy<full> operator[](EdgeId e2) const {
             auto i = index_.storage_.find(edge_);
             if (i != index_.storage_.end()) {
                 auto j = i->second.find(e2);
                 if (j != i->second.end()) {
-                    return HistProxy(j->second, 0);
+                    return HistProxy<full>(j->second, 0);
                 }
             }
-            i = index_.storage_.find(index_.graph_.conjugate(edge_));
-            if (i != index_.storage_.end()) {
-                auto j = i->second.find(index_.graph_.conjugate(edge_));
-                if (j != i->second.end()) {
-                    return HistProxy(j->second, index_.CalcOffset(edge_, e2));
+            if (full) {
+                i = index_.storage_.find(index_.graph_.conjugate(edge_));
+                if (i != index_.storage_.end()) {
+                    auto j = i->second.find(index_.graph_.conjugate(edge_));
+                    if (j != i->second.end()) {
+                        return HistProxy<full>(j->second, index_.CalcOffset(edge_, e2));
+                    }
                 }
             }
-            return VERIFY(false);
+            VERIFY(false);
         }
 
         size_t size() const;
@@ -173,7 +194,8 @@ public:
         EdgeId edge_;
     };
 
-    typedef typename EdgeProxy::Iterator EdgeIterator;
+    typedef typename EdgeProxy<true>::Iterator EdgeIterator;
+    typedef typename EdgeProxy<false>::Iterator RawEdgeIterator;
 
     //--Constructor--
 
@@ -182,11 +204,11 @@ public:
     {}
 
     //--Inserting--
-private:
+public:
     EdgePair ConjugatePair(EdgePair ep) const {
         return std::make_pair(graph_.conjugate(ep.second), graph_.conjugate(ep.first));
     }
-
+private:
     bool SwapConj(EdgeId &e1, EdgeId &e2) const {
         EdgePair ep(e1, e2), ep_conj = ConjugatePair(ep);
         if (ep > ep_conj) {
@@ -223,6 +245,21 @@ public:
             MergeData(e1, e2, *iterator_to_point, point);
         else
             InsertPoint(e1, e2, histogram, point);
+    }
+
+    //Adds a whole histogram, merging histograms if there's already one
+    void AddMany(EdgeId e1, EdgeId e2, const Histogram& hist) {
+        bool swapped = SwapConj(e1, e2);
+        Hist& histogram = storage_[e1][e2];
+        for (auto point : hist) {
+            if (swapped)
+                point.d += CalcOffset(e1, e2);
+            auto iterator_to_point = histogram.find(point);
+            if (iterator_to_point != histogram.end())
+                MergeData(e1, e2, *iterator_to_point, point);
+            else
+                InsertPoint(e1, e2, histogram, point);
+        }
     }
 
 private:
@@ -364,50 +401,63 @@ public:
 
     // --Accessing--
 
-    typedef typename StorageMap::const_iterator DataIterator;
-
-    //Underlying raw data
-    inline DataIterator data_begin() const {
+    //Underlying raw implementation data
+    inline ImplIterator data_begin() const {
         return storage_.begin();
     }
 
-    inline DataIterator data_end() const {
+    /*inline const InnerMap& RawGet(EdgeId edge) const {
+        VERIFY(storage_.count(edge) > 0);
+        return storage_.find(edge)->second;
+    }*/
+
+    inline ImplIterator data_end() const {
         return storage_.end();
     }
 
-    std::pair<EdgeId, EdgeIterator> begin() const;
-    std::pair<EdgeId, EdgeIterator> end() const;
+    EdgeHist<> begin() const;
+
+    EdgeHist<false> raw_begin() const;
+
+    EdgeHist<> end() const;
+
+    EdgeHist<false> raw_end() const;
 
     // Returns a proxy map to neighboring edges
-    inline EdgeProxy Get(EdgeId id) const {
-        return EdgeProxy(*this, id);
+    inline EdgeProxy<> Get(EdgeId id) const {
+        return EdgeProxy<>(*this, id);
+    }
+
+    // Returns a proxy map to neighboring edges
+    inline EdgeProxy<false> RawGet(EdgeId id) const {
+        return EdgeProxy<false>(*this, id);
     }
 
     // Operator alias
-    inline EdgeProxy operator[](EdgeId id) const {
+    inline EdgeProxy<> operator[](EdgeId id) const {
         //TODO: what if doesn't contain?
         return Get(id);
     }
 
 private:
-    typename InnerMap::const_iterator RawGet(EdgeId e1, EdgeId e2) const {
+    const Histogram& GetImpl(EdgeId e1, EdgeId e2) const {
         //TODO: make it stable
-        return storage_.find(e1)->second.find(e2);
+        return storage_.find(e1)->second.find(e2)->second;
     }
 public:
 
     // Returns a proxy map to points
-    HistProxy Get(EdgeId e1, EdgeId e2) const {
+    HistProxy<> Get(EdgeId e1, EdgeId e2) const {
         int offset = CalcOffset(e1, e2);
         if (SwapConj(e1, e2)) {
-            return HistProxy(RawGet(e1, e2), 0);
+            return HistProxy<>(GetImpl(e1, e2), 0);
         } else {
-            return HistProxy(RawGet(e1, e2), offset);
+            return HistProxy<>(GetImpl(e1, e2), offset);
         }
     }
 
     // Operator alias
-    inline HistProxy operator[](EdgePair p) const {
+    inline HistProxy<> operator[](EdgePair p) const {
         //TODO: what if doesn't contain?
         return Get(p.first, p.second);
     }
@@ -418,10 +468,13 @@ public:
 
     // --Miscellaneous--
 
+    //Returns the graph the index is based on
+    const Graph &graph() const { return graph_; }
+
     //Inits the index with graph data
     void Init() {
         for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it)
-            Add(*it, *it, { });
+            Add(*it, *it, Point());
     }
 
     //Clears the whole index

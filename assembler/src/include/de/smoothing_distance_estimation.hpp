@@ -28,6 +28,7 @@ protected:
   typedef typename base::OutPairedIndex OutPairedIndex;
   typedef typename base::InHistogram InHistogram;
   typedef typename base::OutHistogram OutHistogram;
+  typedef typename InPairedIndex::Histogram TempHistogram;
 
  public:
   SmoothingDistanceEstimator(const Graph& graph,
@@ -92,7 +93,7 @@ private:
     size_t first_len = this->graph().length(ep.first);
     size_t second_len = this->graph().length(ep.second);
     TRACE("Lengths are " << first_len << " " << second_len);
-    InHistogram data;
+    TempHistogram data;
     for (auto I = raw_hist.begin(), E = raw_hist.end(); I != E; ++I) {
       Point p = *I;
       if (math::ge(2 * (long) rounded_d(p) + (long) second_len, (long) first_len))
@@ -179,7 +180,8 @@ private:
       TRACE("Processing edge pair " << this->graph().int_id(e1)
             << " " << this->graph().int_id(e2));
       const GraphLengths& forward = entry.second;
-      InHistogram hist = inner_map.Get(e2);
+
+      TempHistogram hist = inner_map[e2].Unwrap();
       EstimHist estimated;
       //DEBUG("Extending paired information");
       //DEBUG("Extend left");
