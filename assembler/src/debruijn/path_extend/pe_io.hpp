@@ -55,7 +55,9 @@ protected:
 			} else {
 				int overlapLen = (int) k_ - gap;
 				if (overlapLen >= (int) g_.length(path[i]) + (int) k_) {
-				    WARN("Such scaffolding logic leads to local misassemblies");
+				    if(overlapLen > (int) g_.length(path[i]) + (int) k_) {
+	                    WARN("Such scaffolding logic leads to local misassemblies");
+				    }
 					continue;
 				}
 				auto temp_str = g_.EdgeNucls(path[i]).Subseq(overlapLen).str();
