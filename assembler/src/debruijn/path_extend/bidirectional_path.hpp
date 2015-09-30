@@ -190,14 +190,14 @@ public:
         Gap gap_struct(gap, trash_previous, trash_current);
         gap_len_.push_back(gap_struct);
         IncreaseLengths(g_.length(e), gap_struct);
-        NotifyBackEdgeAdded(e, gap_struct.gap_);
+        NotifyBackEdgeAdded(e, gap_struct);
     }
 
     void PushBack(EdgeId e, Gap gap) {
         data_.push_back(e);
         gap_len_.push_back(gap);
         IncreaseLengths(g_.length(e), gap);
-        NotifyBackEdgeAdded(e, gap.gap_);
+        NotifyBackEdgeAdded(e, gap);
     }
 
     void PushBack(const BidirectionalPath& path) {
@@ -232,7 +232,15 @@ public:
     virtual void FrontEdgeAdded(EdgeId, BidirectionalPath*, int) {
     }
 
+    virtual void FrontEdgeAdded(EdgeId, BidirectionalPath*, Gap) {
+    }
+
+
     virtual void BackEdgeAdded(EdgeId e, BidirectionalPath*, int gap) {
+        PushFront(g_.conjugate(e), gap);
+    }
+
+    virtual void BackEdgeAdded(EdgeId e, BidirectionalPath*, Gap gap) {
         PushFront(g_.conjugate(e), gap);
     }
 
@@ -514,7 +522,7 @@ public:
         DEBUG("Weight " << weight_);
         DEBUG("#, edge, length, gap length, trash length, total length, total length from begin");
         for (size_t i = 0; i < Size(); ++i) {
-            DEBUG(i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << GapAt(i) << ", " << TrashPreviousAt(i)<< "-" << TrashCurrentAt(i) <<", " << LengthAt(i) << ", " << Length() - LengthAt(i));
+            DEBUG(i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << GapAt(i) << ", " << TrashPreviousAt(i)<< "-" << TrashCurrentAt(i) <<", " << LengthAt(i) << ", " << (Length() < LengthAt(i)) ? 0 : Length() - LengthAt(i));
         }
     }
 
@@ -612,7 +620,19 @@ private:
         }
     }
 
+    void NotifyFrontEdgeAdded(EdgeId e, Gap gap) {
+        for (auto i = listeners_.begin(); i != listeners_.end(); ++i) {
+            (*i)->FrontEdgeAdded(e, this, gap);
+        }
+    }
+
     void NotifyBackEdgeAdded(EdgeId e, int gap) {
+        for (auto i = listeners_.begin(); i != listeners_.end(); ++i) {
+            (*i)->BackEdgeAdded(e, this, gap);
+        }
+    }
+
+    void NotifyBackEdgeAdded(EdgeId e, Gap gap) {
         for (auto i = listeners_.begin(); i != listeners_.end(); ++i) {
             (*i)->BackEdgeAdded(e, this, gap);
         }
@@ -630,7 +650,11 @@ private:
         }
     }
 
-    void PushFront(EdgeId e, int gap = 0, int trash_previous = 0, int trash_current = 0) {
+    void PushFront(EdgeId e, Gap gap) {
+        PushFront(e, gap.gap_, gap.trash_previous_, gap.trash_current_);
+    }
+
+    void PushFront(EdgeId e, int gap = 0, uint32_t trash_previous = 0, uint32_t trash_current = 0) {
         data_.push_front(e);
         if (gap_len_.size() > 0) {
             gap_len_[0].gap_ += gap;
