@@ -924,7 +924,7 @@ private:
         if (!next_paths.empty() && next_paths.back()->Size() > 0) {
             BidirectionalPath* res = next_paths.back();
             for (size_t i = 0; i < res->Size() - 1; ++i) {
-                path.PushBack(res->At(i), res->GapAt(i));
+                path.PushBack(res->At(i), res->GapAt(i), res->TrashPreviousAt(i), res->TrashCurrentAt(i));
             }
             result = EdgeContainer(1, EdgeWithDistance(res->Back(), res->GapAt(res->Size() - 1)));
         }

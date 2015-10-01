@@ -41,15 +41,8 @@ struct Gap {
 
 class PathListener {
 public:
-    virtual void FrontEdgeAdded(EdgeId e, BidirectionalPath * path, int gap = 0) = 0;
-    virtual void BackEdgeAdded(EdgeId e, BidirectionalPath * path, int gap = 0) = 0;
-    virtual void FrontEdgeAdded(EdgeId, BidirectionalPath *, Gap) {
-
-    };
-
-    virtual void BackEdgeAdded(EdgeId, BidirectionalPath *, Gap) {
-
-    };
+    virtual void FrontEdgeAdded(EdgeId e, BidirectionalPath * path, Gap gap) = 0;
+    virtual void BackEdgeAdded(EdgeId e, BidirectionalPath * path, Gap gap) = 0;
 
     virtual void FrontEdgeRemoved(EdgeId e, BidirectionalPath * path) = 0;
     virtual void BackEdgeRemoved(EdgeId e, BidirectionalPath * path) = 0;
@@ -473,7 +466,7 @@ public:
         }
         result.PushBack(g_.conjugate(Back()), 0);
         for (int i = ((int) Size()) - 2; i >= 0; --i) {
-            result.PushBack(g_.conjugate(data_[i]), gap_len_[i + 1].gap_, gap_len_[i + 1].trash_current_, gap_len_[i + 1].trash_previous_);
+            result.PushBack(g_.conjugate(data_[i]), gap_len_[i + 1].gap_ + gap_len_[i + 1].trash_current_ - gap_len_[i + 1].trash_previous_, gap_len_[i + 1].trash_current_, gap_len_[i + 1].trash_previous_);
         }
 
         return result;
@@ -661,7 +654,7 @@ private:
     }
 
     void PushFront(EdgeId e, Gap gap) {
-        PushFront(e, gap.gap_, gap.trash_previous_, gap.trash_current_);
+        PushFront(e, gap.gap_ + gap.trash_current_ - gap.trash_previous_, gap.trash_current_, gap.trash_previous_);
     }
 
     void PushFront(EdgeId e, int gap = 0, uint32_t trash_previous = 0, uint32_t trash_current = 0) {
@@ -677,7 +670,7 @@ private:
         if (cumulative_len_.empty()) {
             cumulative_len_.push_front(length);
         } else {
-            cumulative_len_.push_front(length + gap - trash_current - trash_previous + cumulative_len_.front());
+            cumulative_len_.push_front(length + cumulative_len_.front() + gap - trash_previous );
         }
         NotifyFrontEdgeAdded(e, gap);
     }

@@ -391,7 +391,10 @@ class LAGapJoiner: public GapJoiner {
         LAGapJoiner(const Graph& g, size_t min_la_length, double flank_multiplication_coefficient, double flank_addition_coefficient)
         : GapJoiner(g), min_la_length_(min_la_length), flank_addition_coefficient_(flank_addition_coefficient),
           flank_multiplication_coefficient_(flank_multiplication_coefficient)
-        { }
+        {
+            DEBUG("flank_multiplication_coefficient - " << flank_multiplication_coefficient_);
+            DEBUG("flank_addition_coefficient_  - " << flank_addition_coefficient_ );
+        }
 
         Gap FixGap(EdgeId sink, EdgeId source, int initial_gap) const {
 
@@ -415,8 +418,6 @@ class LAGapJoiner: public GapJoiner {
 
             size_t max_flank_length = max(overlap_info.r2.start_pos, this->g_.length(sink) + this->g_.k() - overlap_info.r1.end_pos);
             DEBUG("Max flank length - " << max_flank_length);
-            DEBUG("flank_multiplication_coefficient - " << flank_multiplication_coefficient_);
-            DEBUG("flank_addition_coefficient_  - " << flank_addition_coefficient_ );
 
             if((double)max_flank_length * flank_multiplication_coefficient_ + flank_addition_coefficient_ > overlap_info.size()) {
                 DEBUG("Too long flanks for such alignment");
@@ -427,8 +428,10 @@ class LAGapJoiner: public GapJoiner {
                 DEBUG("Low identity score");
                 return Gap(INVALID_GAP);
             }
-
-            return Gap(-(int)overlap_info.r1.size() - ((int)this->g_.length(sink) - (int)overlap_info.r1.end_pos) - (int)overlap_info.r2.start_pos,
+            if(overlap_info.r2.start_pos > 1 && (int)this->g_.length(sink) - (int)overlap_info.r1.end_pos + (int)this->g_.k() > 1) {
+                DEBUG("Look here!");
+            }
+            return Gap(-(int)overlap_info.r1.size() - (int)overlap_info.r2.start_pos + this->g_.k(),
                     (int)this->g_.length(sink) - (int)overlap_info.r1.end_pos + (int)this->g_.k(), overlap_info.r2.start_pos);
         }
     private:
