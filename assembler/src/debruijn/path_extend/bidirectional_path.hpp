@@ -25,16 +25,6 @@ namespace path_extend {
 
 class BidirectionalPath;
 
-class PathListener {
-public:
-    virtual void FrontEdgeAdded(EdgeId e, BidirectionalPath * path, int gap = 0) = 0;
-    virtual void BackEdgeAdded(EdgeId e, BidirectionalPath * path, int gap = 0) = 0;
-    virtual void FrontEdgeRemoved(EdgeId e, BidirectionalPath * path) = 0;
-    virtual void BackEdgeRemoved(EdgeId e, BidirectionalPath * path) = 0;
-    virtual ~PathListener() {
-    }
-};
-
 struct Gap {
     int gap_;
     uint32_t trash_previous_;
@@ -47,6 +37,26 @@ struct Gap {
      : gap_(gap), trash_previous_(trash_previous), trash_current_(trash_current)
      { }
 };
+
+
+class PathListener {
+public:
+    virtual void FrontEdgeAdded(EdgeId e, BidirectionalPath * path, int gap = 0) = 0;
+    virtual void BackEdgeAdded(EdgeId e, BidirectionalPath * path, int gap = 0) = 0;
+    virtual void FrontEdgeAdded(EdgeId, BidirectionalPath *, Gap) {
+
+    };
+
+    virtual void BackEdgeAdded(EdgeId, BidirectionalPath *, Gap) {
+
+    };
+
+    virtual void FrontEdgeRemoved(EdgeId e, BidirectionalPath * path) = 0;
+    virtual void BackEdgeRemoved(EdgeId e, BidirectionalPath * path) = 0;
+    virtual ~PathListener() {
+    }
+};
+
 
 class BidirectionalPath : public PathListener {
 private:
