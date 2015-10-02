@@ -52,6 +52,22 @@ public:
     }
 };
 
+class ScaffoldVertexSetColorer : public ElementColorer<ScaffoldGraph::VertexId> {
+ private:
+  set<ScaffoldGraph::VertexId> vertex_set_;
+
+ public:
+  ScaffoldVertexSetColorer(const set<ScaffoldGraph::VertexId>& vertex_set): vertex_set_(vertex_set) {
+  }
+
+  string GetValue(ScaffoldGraph::VertexId v) const {
+      if (vertex_set_.count(v) > 0)
+          return "white";
+      return "yellow";
+  }
+};
+
+
 
 class ScaffoldGraphVisualizer {
 
@@ -73,10 +89,8 @@ public:
             graph_(graph), paired_(paired) {
     }
 
-    void Visualize(ostream &os) {
+    void Visualize(ostream &os, CompositeGraphColorer<ScaffoldGraph>& colorer) {
         ScaffoldGraphLabeler labeler(graph_);
-        CompositeGraphColorer <ScaffoldGraph> colorer(make_shared<FixedColorer < ScaffoldGraph::VertexId>>("white"),
-                                                      make_shared<ScaffoldEdgeColorer>());
         EmptyGraphLinker<ScaffoldGraph> linker;
 
         if (paired_) {
@@ -88,6 +102,7 @@ public:
         }
     }
 };
+
 
 } //scaffold_graph
 } //path_extend

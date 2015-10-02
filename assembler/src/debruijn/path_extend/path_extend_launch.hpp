@@ -382,7 +382,7 @@ inline shared_ptr<PathExtender> MakeScaffolding2015Extender(const conj_graph_pac
     double var_coeff = 3.0;
     DEBUG("here creating extchooser");
     //TODO: 2 is relative weight cutoff, to config!
-    auto scaff_chooser = std::make_shared<ExtensionChooser2015>(gp.g, counter, prior_coef, var_coeff, storage, 2);
+    auto scaff_chooser = std::make_shared<ExtensionChooser2015>(gp.g, counter, prior_coef, var_coeff, storage, 2, lib_index);
     //);
     auto gap_joiner = std::make_shared<HammingGapJoiner>(gp.g, pset.scaffolder_options.min_gap_score,
                                                          int(math::round((double) gp.g.k() - var_coeff * (double) lib->GetIsVar())),
@@ -546,7 +546,7 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
 }
 
 inline shared_ptr<scaffold_graph::ScaffoldGraph> ConstructScaffoldGraph(const conj_graph_pack& gp,
-                                                                        const set<EdgeId>& edge_set,
+                                                                        shared_ptr<ScaffoldingUniqueEdgeStorage> edge_storage,
                                                                         const pe_config::ScaffoldGraphParamsT& params) {
     using namespace scaffold_graph;
     vector<shared_ptr<ConnectionCondition>> conditions;
@@ -571,28 +571,39 @@ inline shared_ptr<scaffold_graph::ScaffoldGraph> ConstructScaffoldGraph(const co
     INFO("Total conditions " << conditions.size());
 
     INFO("Constructing scaffold graph");
-    auto scaffoldGraph = make_shared<ScaffoldGraph>(gp.g, edge_set, conditions);
+    auto scaffoldGraph = make_shared<ScaffoldGraph>(gp.g);
+    ScaffoldGraphConstructor constructor(*scaffoldGraph);
+    constructor.ConstructFromSet(edge_storage->GetSet(), conditions);
+
+    LengthEdgeCondition edge_condition(gp.g, edge_storage->GetMinLength());
+    constructor.ConstructFromEdgeConditions(edge_condition, conditions);
+
     INFO("Scaffold graph contains " << scaffoldGraph->VertexCount() << " vertices and " << scaffoldGraph->EdgeCount() << " edges");
     return scaffoldGraph;
 }
 
 
 inline void PrintScaffoldGraph(shared_ptr<scaffold_graph::ScaffoldGraph> scaffoldGraph,
+                               const set<EdgeId> main_edge_set,
                                const string& filename) {
     using namespace scaffold_graph;
+
+    auto vcolorer = make_shared<ScaffoldVertexSetColorer>(main_edge_set);
+    auto ecolorer = make_shared<ScaffoldEdgeColorer>();
+    CompositeGraphColorer <ScaffoldGraph> colorer(vcolorer, ecolorer);
 
     INFO("Visualizing single grpah");
     ScaffoldGraphVisualizer singleVisualizer(*scaffoldGraph, false);
     std::ofstream single_dot;
     single_dot.open((filename + "_single.dot").c_str());
-    singleVisualizer.Visualize(single_dot);
+    singleVisualizer.Visualize(single_dot, colorer);
     single_dot.close();
 
     INFO("Visualizing paired grpah");
     ScaffoldGraphVisualizer pairedVisualizer(*scaffoldGraph, true);
     std::ofstream paired_dot;
     paired_dot.open((filename + "_paired.dot").c_str());
-    pairedVisualizer.Visualize(paired_dot);
+    pairedVisualizer.Visualize(paired_dot, colorer);
     paired_dot.close();
 
     INFO("Printing scaffold grpah");
@@ -651,9 +662,9 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     //Scaffold graph
     shared_ptr<scaffold_graph::ScaffoldGraph> scaffoldGraph;
     if (cfg::get().pe_params.scaffold_graph_params.construct) {
-        scaffoldGraph = ConstructScaffoldGraph(gp, storage->GetSet(), cfg::get().pe_params.scaffold_graph_params);
+        scaffoldGraph = ConstructScaffoldGraph(gp, storage, cfg::get().pe_params.scaffold_graph_params);
         if (cfg::get().pe_params.scaffold_graph_params.output) {
-            PrintScaffoldGraph(scaffoldGraph, GetEtcDir(output_dir) + "scaffold_graph");
+            PrintScaffoldGraph(scaffoldGraph, storage->GetSet(), GetEtcDir(output_dir) + "scaffold_graph");
         }
     }
 

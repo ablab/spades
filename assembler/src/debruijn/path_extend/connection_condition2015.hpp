@@ -2,8 +2,8 @@
 // Created by lab42 on 9/29/15.
 //
 
-#ifndef PROJECT_CONNECTION_CONDITION2015_HPP
-#define PROJECT_CONNECTION_CONDITION2015_HPP
+#ifndef CONNECTION_CONDITION2015_HPP
+#define CONNECTION_CONDITION2015_HPP
 #include "genome_consistance_checker.hpp"
 #include "logger/logger.hpp"
 #include "paired_library.hpp"
@@ -27,10 +27,10 @@ namespace path_extend {
         shared_ptr <PairedInfoLibrary> lib_;
         size_t lib_index_;
         size_t min_read_count_;
+    public:
         int left_dist_delta_;
         int right_dist_delta_;
 
-    public:
         PairedLibConnectionCondition(const debruijn_graph::Graph &graph,
                                      shared_ptr <PairedInfoLibrary> lib,
                                      size_t lib_index,
@@ -38,6 +38,7 @@ namespace path_extend {
         size_t GetLibIndex() const;
         set <debruijn_graph::EdgeId> ConnectedWith(debruijn_graph::EdgeId e) const;
         double GetWeight(debruijn_graph::EdgeId e1, debruijn_graph::EdgeId e2) const;
+        int GetMedianGap (debruijn_graph::EdgeId e1, debruijn_graph::EdgeId e2) const;
     };
 
     class AssemblyGraphConnectionCondition : public ConnectionCondition {

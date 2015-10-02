@@ -700,7 +700,7 @@ private:
             auto sc_mode = cfg::get().pe_params.param_set.sm;
             if (sc_mode == sm_old_pe_2015 || sc_mode == sm_2015 || sc_mode == sm_combined) {
                 bool was_used = false;
-                for (auto ind =0; ind < paths.Get(i)->Size(); ind++) {
+                for (size_t ind =0; ind < paths.Get(i)->Size(); ind++) {
                     EdgeId eid = paths.Get(i)->At(ind);
                     if (used_storage_->IsUsedAndUnique(eid)) {
                         was_used = true; break;

@@ -54,7 +54,7 @@ int SingleSamRead::CountPositions(unordered_map<size_t, position_description> &p
     int shift = 0;
     size_t skipped = 0;
     size_t deleted = 0;
-    string insertion_string = "";
+    string insertion_string  = "";
     auto seq = bam1_seq(data_);
     for (size_t i = 0; i < l_read; i++) {
         DEBUG(i << " " << position << " " << skipped);

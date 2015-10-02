@@ -132,6 +132,10 @@ public:
 		return *lib_;
 	}
 
+    const shared_ptr<PairedInfoLibrary> get_libptr() const {
+        return lib_;
+    };
+
 private:
     DECL_LOGGER("WeightCounter");
 };

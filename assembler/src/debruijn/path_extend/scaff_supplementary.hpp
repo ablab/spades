@@ -41,12 +41,9 @@ namespace path_extend {
         size_t GetMinLength() const {
             return min_unique_length_;
         }
-        size_t SetMinLength(size_t min_length)  {
+        void SetMinLength(size_t min_length)  {
             min_unique_length_ = min_length;
         }
-
-
-
 
         const set<EdgeId>& GetSet() const {
             return unique_edges_;

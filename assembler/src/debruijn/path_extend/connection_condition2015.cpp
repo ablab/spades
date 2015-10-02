@@ -53,6 +53,36 @@ namespace path_extend {
         return res;
     }
 
+//We use same part of index twice, is it necessary?
+    int PairedLibConnectionCondition::GetMedianGap(debruijn_graph::EdgeId e1, debruijn_graph::EdgeId e2) const {
+        std::vector<int> distances;
+        std::vector<double> weights;
+        int e_length = (int) graph_.length(e1);
+        lib_->CountDistances(e1, e2, distances, weights);
+        std::vector<pair<int, double> >h(distances.size());
+        for (size_t i = 0; i< distances.size(); i++) {
+            if (distances[i] >= e_length - left_dist_delta_ && distances[i] <= e_length + right_dist_delta_)
+                h.push_back(std::make_pair(distances[i], weights[i]));
+        }
+//TODO: is it really necessary?
+        std::sort(h.begin(), h.end());
+        double sum = 0.0;
+        double sum2 = 0.0;
+        for (size_t j = 0; j< h.size(); ++j) {
+            sum += h[j].second;
+        }
+        size_t i = 0;
+        for (; i < h.size(); ++i) {
+            sum2 += h[i].second;
+            if (sum2 * 2 > sum)
+                break;
+        }
+        if (i >= h.size()) {
+            WARN("Count median error");
+            i = h.size() - 1;
+        }
+        return (int) round(h[i].first - e_length);
+    }
 
     AssemblyGraphConnectionCondition::AssemblyGraphConnectionCondition(const debruijn_graph::Graph &g, size_t max_connection_length) :
             g_(g),

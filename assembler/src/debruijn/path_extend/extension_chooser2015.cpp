@@ -3,74 +3,51 @@
 //
 
 #include "extension_chooser2015.hpp"
+
 namespace path_extend {
 using namespace std;
 
-int ExtensionChooser2015::CountMedian(vector<pair<int, double> >& histogram) const{
-    double dist = 0.0;
-    double sum = 0.0;
-    double sum2 = 0.0;
-    for (size_t j = 0; j< histogram.size(); ++j) {
-        sum += histogram[j].second;
-    }
-    size_t i = 0;
-    for (; i < histogram.size(); ++i) {
-        sum2 += histogram[i].second;
-        if (sum2 * 2 > sum)
-            break;
-    }
-    if (i >= histogram.size()) {
-        WARN("Count median error");
-        i = histogram.size() - 1;
-    }
-    return (int) round(histogram[i].first);
-}
-
-void ExtensionChooser2015::CountAvrgDists(const EdgeId from, const EdgeId to, std::vector<pair<int, double>> & histogram) const {
-    std::vector<int> distances;
-    std::vector<double> weights;
-    GetDistances(from, to, distances, weights);
-    if (distances.size() > 0) {
-        AddInfoFromEdge(distances, weights, histogram, g_.length(from));
-    }
-}
-
-void ExtensionChooser2015::CountAvrgDists(const BidirectionalPath& path, EdgeId e, std::vector<pair<int, double>> & histogram) const {
-    for (int j = (int) path.Size() -1; j >= 0; --j) {
-        if (unique_edges_->IsUnique(path.At(j))) {
-            CountAvrgDists(path.At(j), e, histogram);
-//we are not interested on info over an unique edge now
-            break;
+std::pair<EdgeId, int> ExtensionChooser2015::FindLastUniqueInPath(const BidirectionalPath& path) const {
+    for (int i =  (int)path.Size() - 1; i >= 0; --i) {
+        if (unique_edges_->IsUnique(path.At(i))) {
+            return std::make_pair(path.At(i), i);
         }
     }
+    return std::make_pair(EdgeId(0), -1);
 }
-void ExtensionChooser2015::FindBestFittedEdges(const BidirectionalPath& path, const set<EdgeId>&candidate_edges, EdgeContainer& result) const {
+
+ExtensionChooser::EdgeContainer ExtensionChooser2015::FindNextUniqueEdge(const EdgeId from) const {
+    VERIFY(unique_edges_->IsUnique(from));
+    EdgeContainer result;
+    set<EdgeId> candidate_edges = paired_connection_condition_.ConnectedWith(from);
     vector<pair<double, pair<EdgeId, int >>> to_sort;
     for (EdgeId e : candidate_edges) {
-        std::vector <pair<int, double>> histogram;
-        CountAvrgDists(path, e, histogram);
-        double sum = 0.0;
-        for (size_t j = 0; j < histogram.size(); ++j) {
-            TRACE(histogram[j].first << " " << histogram[j].second);
-            sum += histogram[j].second;
+        if (!unique_edges_->IsUnique(e)) {
+            continue;
         }
+        double sum = paired_connection_condition_.GetWeight(from, e);
         DEBUG("edge " << g_.int_id(e) << " weight " << sum);
         //TODO reconsider threshold
-        if (sum <= cl_weight_threshold_) {
-            DEBUG("Edge " << g_.int_id(e)  << " weight "<< sum <<  " failed absolute weight threshold " << cl_weight_threshold_);
+        if (sum < absolute_weight_threshold_) {
+            DEBUG("Edge " << g_.int_id(e)  << " weight " << sum << " failed absolute weight threshold " << absolute_weight_threshold_);
             continue;
         }
-        int gap = CountMedian(histogram);
+        int gap = paired_connection_condition_.GetMedianGap(from, e);
         //TODO reconsider condition
-        int cur_is = wc_->lib().GetISMax();
+        int cur_is = (int) wc_->lib().GetISMax();
         if (gap < cur_is * -1 || gap > cur_is * 2) {
-            DEBUG("Edge " << g_.int_id(e)  << " gap "<< gap <<  " failed insert size conditions, IS= " << cur_is);
-            continue;
+
+//There are also conditions in condition_checker, but their are a bit different.
+            WARN("Edge " << g_.int_id(e)  << " gap "<< gap <<  " failed old insert size conditions, IS= " << cur_is);
+            WARN ("new conditions are: " << paired_connection_condition_.left_dist_delta_<<" " << paired_connection_condition_.right_dist_delta_ << " edge length: " << g_.length(from));
+            //continue;
         }
 
-        //Here check about ideal info removed
+        auto connected_with = graph_connection_condition_.ConnectedWith(from);
+        if (connected_with.find(e) != connected_with.end()) {
+            sum *= graph_connection_bonus_;
+        }
         to_sort.push_back(make_pair(sum, make_pair(e, gap)));
-
     }
 //descending order, reverse iterators;
     sort(to_sort.rbegin(), to_sort.rend());
@@ -78,61 +55,36 @@ void ExtensionChooser2015::FindBestFittedEdges(const BidirectionalPath& path, co
         if (j == 0 || to_sort[j].first* relative_weight_threshold_ > to_sort[j - 1].first) {
             result.push_back(EdgeWithDistance(to_sort[j].second.first, to_sort[j].second.second));
 
-            DEBUG("Edge " << g_.int_id(to_sort[j].second.first) << " gap " << to_sort[j].second.second << " weight "<< to_sort[j].first <<  " passed absolute weight threshold " << cl_weight_threshold_);
+            DEBUG("Edge " << g_.int_id(to_sort[j].second.first) << " gap " << to_sort[j].second.second << " weight "<< to_sort[j].first <<  " passed absolute weight threshold " << absolute_weight_threshold_);
         } else {
             DEBUG ("Edge " << g_.int_id(to_sort[j].second.first) << " weight " << to_sort[j].first << " failed relative weight threshold " << relative_weight_threshold_);
             DEBUG("other removed");
             break;
         }
     }
+    return result;
 }
-/*
- * set<EdgeId> ExtensionChooser2015::FindCandidates(const EdgeId from) const {
 
-} */
-
-set<EdgeId> ExtensionChooser2015::FindCandidates(const BidirectionalPath& path) const {
-    set<EdgeId> jumping_edges;
-    //PairedInfoLibraries libs = wc_->getLibs();
-//TODO: multiple libs?
-    const auto& lib = wc_->lib();
-    //for (auto lib : libs) {
-    //todo lib (and FindJumpEdges) knows its var so it can be counted there
-    int is_scatter = int(math::round(double(lib.GetIsVar()) * is_scatter_coeff_));
-    DEBUG("starting..., path.size" << path.Size() );
-    DEBUG("is_unique_ size " << unique_edges_->size());
-    //insted of commented, just break after first unique
-    for (int i = (int) path.Size() - 1; i >= 0/* && path.LengthAt(i) - g_.length(path.At(i)) <=  lib.GetISMax() */; --i) {
-        DEBUG("edge ");
-        DEBUG(path.At(i).int_id());
-        set<EdgeId> jump_edges_i;
-        if (unique_edges_->IsUnique(path.At(i))) {
-            //FindCandidates (path.At(i));
-            DEBUG("Is Unique Ok");
-            lib.FindJumpEdges(path.At(i), jump_edges_i,
-                               std::max((int)0, (int )g_.length(path.At(i)) - (int) lib.GetISMax() - is_scatter),
-//TODO: Reconsider limits
-                    //FIXME do we need is_scatter here?
-                    //FIXME or just 0, inf?
-                               int(g_.length(path.At(i)) + 2 * lib.GetISMax() + is_scatter),
-                               0);
-            DEBUG("Jump edges found");
-            for (EdgeId e : jump_edges_i) {
-                if (unique_edges_->IsUnique(e) ) {
-                    if ( e == path.At(i) || e->conjugate() == path.At(i)) {
-                        DEBUG("skipping info on itself or conjugate " << e.int_id());
-                    } else {
-                        jumping_edges.insert(e);
-                    }
-                }
-            }
-//we are not interested on info over an unique edge now
-            break;
-        }
+ExtensionChooser::EdgeContainer ExtensionChooser2015::Filter(const BidirectionalPath& path, const ExtensionChooser::EdgeContainer& edges) const {
+    set<EdgeId> candidates = FindCandidates(path);
+    pair<EdgeId, int> last_unique = FindLastUniqueInPath(path);
+    EdgeContainer result;
+    if (last_unique.second < 0) {
+        return result;
     }
-    //}
-    DEBUG("found " << jumping_edges.size() << " jump edges");
-    return jumping_edges;
+
+    result = FindNextUniqueEdge(last_unique.first);
+
+    if (result.size() == 1) {
+        DEBUG("For edge " << g_.int_id(last_unique.first) << " unique next edge "<< result[0].e_ <<" found, doing backwards check ");
+        EdgeContainer backwards_check = FindNextUniqueEdge(g_.conjugate(result[0].e_));
+        if ((backwards_check.size() != 1) || (g_.conjugate(backwards_check[0].e_) != last_unique.first)) {
+            result.clear();
+        }
+//We should reduce gap size with length of the edges that came after last unique.
+        result[0].d_ -= (path.LengthAt(last_unique.second) - g_.length(last_unique.first));
+    }
+    return result;
 }
 
 }

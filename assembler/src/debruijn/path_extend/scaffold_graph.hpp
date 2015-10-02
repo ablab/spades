@@ -181,13 +181,6 @@ public:
     ScaffoldGraph(const debruijn_graph::Graph& g): assembly_graph_(g) {
     }
 
-    ScaffoldGraph(const debruijn_graph::Graph& g,
-                  const set<debruijn_graph::EdgeId> edge_set,
-                  const vector<shared_ptr<ConnectionCondition>>& conditions):
-            assembly_graph_(g) {
-        vertices_.insert(edge_set.begin(), edge_set.end());
-        ConstructFromConditions(conditions);
-    }
 
     bool Exists(ScaffoldVertex assembly_graph_edge) const {
         return vertices_.count(assembly_graph_edge) != 0;
@@ -223,6 +216,12 @@ public:
             return true;
         }
         return false;
+    }
+
+    void AddVertices(const set<ScaffoldVertex>& vertices) {
+        for (auto v : vertices) {
+            AddVertex(v);
+        }
     }
 
     bool AddEdge(ScaffoldVertex v1, ScaffoldVertex v2, size_t lib_id, double weight) {
@@ -375,25 +374,6 @@ public:
         return edges_.at(incoming_edges_.find(assembly_graph_edge)->second);
     }
 
-    void ConstructFromSingleCondition(const shared_ptr<ConnectionCondition> condition) {
-        for (auto v : vertices_) {
-            TRACE("Vertex " << assembly_graph_.int_id(v));
-            auto connected_with = condition->ConnectedWith(v);
-            for (auto connected : connected_with) {
-                TRACE("Connected with " << assembly_graph_.int_id(connected));
-                if (vertices_.count(connected) != 0) {
-                    AddEdge(v, connected, condition->GetLibIndex(), condition->GetWeight(v, connected));
-                }
-            }
-        }
-    }
-
-    void ConstructFromConditions(const vector<shared_ptr<ConnectionCondition>>& conditions) {
-        for (auto condition : conditions) {
-            ConstructFromSingleCondition(condition);
-        }
-    }
-
     void Print(ostream& os) const {
         for (auto v: vertices_) {
             os << "Vertex " << int_id(v) << " ~ " << int_id(conjugate(v))
@@ -406,6 +386,78 @@ public:
         }
     }
 
+};
+
+class EdgeCondition {
+public:
+    virtual bool IsSuitable(debruijn_graph::EdgeId e) const = 0;
+
+    virtual ~EdgeCondition() {}
+
+};
+
+class LengthEdgeCondition: public EdgeCondition {
+    const debruijn_graph::Graph& graph_;
+
+    size_t min_length_;
+
+public:
+    LengthEdgeCondition(const debruijn_graph::Graph& graph, size_t min_len): graph_(graph), min_length_(min_len) {
+
+    }
+
+    bool IsSuitable(debruijn_graph::EdgeId e) const {
+        return graph_.length(e) >= min_length_;
+    }
+};
+
+
+class ScaffoldGraphConstructor {
+private:
+    ScaffoldGraph& graph_;
+
+    void ConstructFromSingleCondition(const shared_ptr<ConnectionCondition> condition, bool use_terminal_vertices_only) {
+        for (auto v = graph_.vbegin(); v != graph_.vend(); ++v) {
+            TRACE("Vertex " << graph_.int_id(*v));
+
+            if (use_terminal_vertices_only && graph_.OutgoingEdgeCount(*v) > 0)
+                continue;
+
+            auto connected_with = condition->ConnectedWith(*v);
+            for (auto connected : connected_with) {
+                TRACE("Connected with " << graph_.int_id(connected));
+                if (graph_.Exists(connected)) {
+                    if (use_terminal_vertices_only && graph_.IncomingEdgeCount(connected) > 0)
+                        continue;
+                    graph_.AddEdge(*v, connected, condition->GetLibIndex(), condition->GetWeight(*v, connected));
+                }
+            }
+        }
+    }
+
+public:
+    ScaffoldGraphConstructor(ScaffoldGraph& graph): graph_(graph) {
+    }
+
+    void ConstructFromConditions(vector<shared_ptr<ConnectionCondition>>& connection_conditions, bool use_terminal_vertices_only = false) {
+        for (auto condition : connection_conditions) {
+            ConstructFromSingleCondition(condition, use_terminal_vertices_only);
+        }
+    }
+
+    void ConstructFromSet(set<EdgeId> edge_set, vector<shared_ptr<ConnectionCondition>>& connection_conditions, bool use_terminal_vertices_only = false) {
+        graph_.AddVertices(edge_set);
+        ConstructFromConditions(connection_conditions, use_terminal_vertices_only);
+    }
+
+    void ConstructFromEdgeConditions(const EdgeCondition& edge_condition, vector<shared_ptr<ConnectionCondition>>& connection_conditions, bool use_terminal_vertices_only = false) {
+        for (auto e = graph_.AssemblyGraph().ConstEdgeBegin(); !e.IsEnd(); ++e) {
+            if (edge_condition.IsSuitable(*e)) {
+                graph_.AddVertex(*e);
+            }
+        }
+        ConstructFromConditions(connection_conditions, use_terminal_vertices_only);
+    }
 };
 
 
