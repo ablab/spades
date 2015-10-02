@@ -335,17 +335,16 @@ Thank you for using SPAdes!
 <a name="sec3.1"></a>
 <h3>3.1 SPAdes input</h3>
 <p>
-    SPAdes takes as input paired-end reads, mate-pairs and single (unpaired) reads in FASTA and FASTQ. For IonTorrent data SPAdes also supports unpaired reads in unmapped BAM format (like the one produced by Torrent Server). However, in order to run read error correction, reads should be in FASTQ or BAM format. Sanger, Oxford Nanopore and PacBio CLR reads can be provided in both formats since SPAdes does not run error correction for these types of data.
+    SPAdes takes as input paired-end reads, mate-pairs and single (unpaired) reads in FASTA and FASTQ. For IonTorrent data SPAdes also supports unpaired reads in unmapped BAM format (like the one produced by Torrent Server). However, in order to run read error correction, reads should be in FASTQ or BAM format. Sanger, Oxford Nanopore and PacBio reads can be provided in both formats since SPAdes does not run error correction for these types of data.
 
 <p>
     To run SPAdes 3.6.1 you need at least one library of the following types:
     <ul>
         <li>Illumina paired-end/high-quality mate-pairs/unpaired reads</li>
         <li>IonTorrent paired-end/high-quality mate-pairs/unpaired reads</li>
-        <li>PacBio CCS reads</li>
     </ul>
 <p>
-Illumina and IonTorrent libraries should not be assembled together. All other types of input data are compatible. SPAdes should not be used if only PacBio CLR, Oxford Nanopore, Sanger reads or additional contigs are available.
+Illumina and IonTorrent libraries should not be assembled together. All other types of input data are compatible. SPAdes should not be used if only PacBio, Oxford Nanopore, Sanger reads or additional contigs are available.
 
 <p>
 SPAdes supports mate-pair only assembly. However, we recommend to use only high-quality mate-pair libraries in this case (e.g. that do not have a paired-end part). We tested mate-pair only pipeline using Illumina Nextera mate-pairs. See more <a href="#hqmp">here</a>.
@@ -398,9 +397,9 @@ SPAdes supports mate-pair only assembly. However, we recommend to use only high-
 <p>
     By using command line interface, you can specify up to five different single-read libraries. To input more libraries, you can use <a href="#yaml">YAML data set file</a>. 
 <p>
-    Single librairies are assumed to have high quality and a reasonable coverage. For example, you can provide PacBio CSS reads as a single-read library. Additionally, if you have merged a paired-end library with overlapping read-pairs (for example, using <a href="http://ccb.jhu.edu/software/FLASH/" target="_blank">FLASh</a>), you can provide the resulting reads as a single-read library.
+    Single librairies are assumed to have high quality and a reasonable coverage. Additionally, if you have merged a paired-end library with overlapping read-pairs (for example, using <a href="http://ccb.jhu.edu/software/FLASH/" target="_blank">FLASh</a>), you can provide the resulting reads as a single-read library.
 <p>
-    Note, that you should not specify PacBio CLR, Sanger reads or additional contigs as single-read libraries, each of them has a separate <a href="#inputdata">option</a>.
+    Note, that you should not specify PacBio, Oxford Nanopore, Sanger reads or additional contigs as single-read libraries, each of them has a separate <a href="#inputdata">option</a>.
 
 
 <a name="pacbio"></a>
@@ -410,13 +409,13 @@ SPAdes supports mate-pair only assembly. However, we recommend to use only high-
     SPAdes can take as an input an unlimited number of PacBio and Oxford Nanopore libraries. 
 
 <p> 
-    PacBio CLR and Oxford Nanopore reads are used for hybrid assemblies (e.g. with Illumina or IonTorrent). There is no need to pre-correct this kind of data. SPAdes will use PacBio CLR and Oxford Nanopore reads for gap closure and repeat resolution.
+    PacBio and Oxford Nanopore reads are used for hybrid assemblies (e.g. with Illumina or IonTorrent). There is no need to pre-correct this kind of data. SPAdes will use PacBio and Oxford Nanopore reads for gap closure and repeat resolution.
 
 <p> 
     For PacBio you just need to have filtered subreads in FASTQ/FASTA format. Provide these filtered subreads using <code>--pacbio</code> option. Oxford Nanopore reads are provided with <code>--nanopore</code> option.
 
 <p>
-    PacBio CCS reads or pre-corrected (using third-party software) PacBio CLR / Oxford Nanopore reads can be simply provided as single reads to SPAdes.
+    PacBio CCS reads or pre-corrected (using third-party software) PacBio CLR / Oxford Nanopore reads can be simply provided as single reads to SPAdes (use <code>--only-assembler</code> option).
 
 
 
@@ -666,7 +665,7 @@ In comparison to the <code>--continue</code> option, you can change some of the 
 
 <p>
     <code>--pacbio &lt;file_name> </code><br>
-    &nbsp;&nbsp;&nbsp;&nbsp;File with PacBio CLR reads. For PacBio CCS reads use <code>-s</code> option. More information on PacBio reads is provided in <a href="#pacbio">section 3.1</a>. 
+    &nbsp;&nbsp;&nbsp;&nbsp;File with PacBio reads. More information on PacBio reads is provided in <a href="#pacbio">section 3.1</a>. 
 </p>
 
 
@@ -739,12 +738,11 @@ one mate-pair library:
     lib_mp1_right.fastq
 </code>
 </pre>
-and PacBio CCS and CLR reads:
+and PacBio reads:
 
 <pre class="code">
 <code>
-    pacbio_css.fastq
-    pacbio_clr.fastq
+    pacbio_reads.fastq
 </code>
 </pre>
 </pre>
@@ -776,15 +774,9 @@ and PacBio CCS and CLR reads:
         ]
       },
       {
-        type: "single",
-        single reads: [
-          "/FULL_PATH_TO_DATASET/pacbio_ccs.fastq" 
-        ]
-      },
-      {
         type: "pacbio",
         single reads: [
-          "/FULL_PATH_TO_DATASET/pacbio_clr.fastq" 
+          "/FULL_PATH_TO_DATASET/pacbio_reads.fastq" 
         ]
       }
     ]
@@ -928,12 +920,12 @@ and PacBio CCS and CLR reads:
 </pre>
 
 <p>
-    If you have IonTorrent unpaired reads, PacBio CLR and additional reliable contigs:
+    If you have IonTorrent unpaired reads, PacBio and additional reliable contigs:
 
 <pre class="code">
 <code>
     it_reads.fastq
-    pacbio_clr.fastq
+    pacbio_reads.fastq
     contigs.fasta
 </code>
 </pre>
@@ -944,7 +936,7 @@ and PacBio CCS and CLR reads:
 <pre class="code">
 <code>
     spades.py --iontorrent -s it_reads.fastq \
-    --pacbio pacbio_clr.fastq --trusted-contigs contigs.fastq \
+    --pacbio pacbio_reads.fastq --trusted-contigs contigs.fastq \
     -o spades_output
 </code>
 </pre>
