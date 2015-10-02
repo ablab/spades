@@ -194,7 +194,7 @@ public:
     GapJoiner(const Graph& g)
             : g_(g) { }
 
-    virtual Gap FixGap(EdgeId sink, EdgeId source, int initial_gap) const = 0;
+    virtual Gap FixGap( EdgeId source, EdgeId sink, int initial_gap) const = 0;
 
     virtual ~GapJoiner() { }
 protected:
@@ -211,12 +211,12 @@ class SimpleGapJoiner : public GapJoiner {
 public:
     SimpleGapJoiner(const Graph& g) : GapJoiner(g) { }
 
-    virtual Gap FixGap(EdgeId sink, EdgeId source, int initial_gap) const {
+    virtual Gap FixGap(EdgeId source, EdgeId sink, int initial_gap) const {
         if (initial_gap > 2 * (int) g_.k()) {
             return Gap(initial_gap);
         }
         for (int l = (int) g_.k(); l > 0; --l) {
-            if (g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l) == g_.EdgeNucls(source).Subseq(0, l)) {
+            if (g_.EdgeNucls(sink).Subseq(g_.length(source) + g_.k() - l) == g_.EdgeNucls(sink).Subseq(0, l)) {
                 DEBUG("Found correct gap length");
                 DEBUG("Inintial: " << initial_gap << ", new gap: " << g_.k() - l);
                 return Gap((int) g_.k() - l);
@@ -309,9 +309,9 @@ public:
     }
 
     //estimated_gap is in k-mers
-    virtual Gap FixGap(EdgeId sink, EdgeId source, int estimated_gap) const {
+    virtual Gap FixGap(EdgeId source, EdgeId sink, int estimated_gap) const {
         DEBUG("Trying to fix estimated gap " << estimated_gap <<
-              " between " << g_.str(sink) << " and " << g_.str(source));
+              " between " << g_.str(source) << " and " << g_.str(sink));
 
         if (estimated_gap > int(g_.k() + may_overlap_threshold_)) {
             DEBUG("Edges are supposed to be too far to check overlaps");
@@ -324,7 +324,7 @@ public:
         }
 
         corrected_start_overlap = min(corrected_start_overlap,
-                                      g_.k() + min(g_.length(sink), g_.length(source)));
+                                      g_.k() + min(g_.length(source), g_.length(sink)));
 
         DEBUG("Corrected max overlap " << corrected_start_overlap);
 
@@ -345,11 +345,11 @@ public:
             //TRACE("Source: " << g_.EdgeNucls(source).Subseq(0, l));
             double score = 0;
             if(use_old_score_)
-                score = OldScoreGap(g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l),
-                                    g_.EdgeNucls(source).Subseq(0, l));
+                score = OldScoreGap(g_.EdgeNucls(source).Subseq(g_.length(source) + g_.k() - l),
+                                    g_.EdgeNucls(sink).Subseq(0, l));
             else
-                score = ScoreGap(g_.EdgeNucls(sink).Subseq(g_.length(sink) + g_.k() - l),
-                                    g_.EdgeNucls(source).Subseq(0, l));
+                score = ScoreGap(g_.EdgeNucls(source).Subseq(g_.length(source) + g_.k() - l),
+                                    g_.EdgeNucls(sink).Subseq(0, l));
             if (math::gr(score, best_score)) {
                 TRACE("Curr overlap " << l);
                 TRACE("Score: " << score);
@@ -396,27 +396,29 @@ class LAGapJoiner: public GapJoiner {
             DEBUG("flank_addition_coefficient_  - " << flank_addition_coefficient_ );
         }
 
-        Gap FixGap(EdgeId sink, EdgeId source, int initial_gap) const {
+        Gap FixGap(EdgeId source, EdgeId sink, int initial_gap) const {
 
-            SWOverlapAnalyzer overlap_analyzer(size_t(initial_gap * estimated_gap_multiplier));
-
-
+            DEBUG("Trying to fix estimated gap " << initial_gap <<
+                  " between " << g_.str(source) << " and " << g_.str(sink));
             if (initial_gap > int(g_.k())) {
                 DEBUG("Edges are supposed to be too far to check overlaps");
                 return Gap(initial_gap);
             }
 
-            auto overlap_info = overlap_analyzer.AnalyzeOverlap(this->g_, sink, source);
+
+            DEBUG("Overlap doesn't exceed " << size_t(abs(initial_gap) * estimated_gap_multiplier) + 30);
+            SWOverlapAnalyzer overlap_analyzer(size_t(abs(initial_gap) * estimated_gap_multiplier) + 30);
+
+            auto overlap_info = overlap_analyzer.AnalyzeOverlap(this->g_, source, sink);
 
             DEBUG(overlap_info);
-            DEBUG("Edges - " << sink.int_id() << " and " << source.int_id());
 
             if(overlap_info.size() < min_la_length_) {
                 DEBUG("Low alignment size");
                 return Gap(INVALID_GAP);
             }
 
-            size_t max_flank_length = max(overlap_info.r2.start_pos, this->g_.length(sink) + this->g_.k() - overlap_info.r1.end_pos);
+            size_t max_flank_length = max(overlap_info.r2.start_pos, this->g_.length(source) + this->g_.k() - overlap_info.r1.end_pos);
             DEBUG("Max flank length - " << max_flank_length);
 
             if((double)max_flank_length * flank_multiplication_coefficient_ + flank_addition_coefficient_ > overlap_info.size()) {
@@ -428,11 +430,11 @@ class LAGapJoiner: public GapJoiner {
                 DEBUG("Low identity score");
                 return Gap(INVALID_GAP);
             }
-            if(overlap_info.r2.start_pos > 1 && (int)this->g_.length(sink) - (int)overlap_info.r1.end_pos + (int)this->g_.k() > 1) {
+            if(overlap_info.r2.start_pos > 1 && (int)this->g_.length(source) - (int)overlap_info.r1.end_pos + (int)this->g_.k() > 1) {
                 DEBUG("Look here!");
             }
-            return Gap(-(int)overlap_info.r1.size() - (int)overlap_info.r2.start_pos + this->g_.k(),
-                    (int)this->g_.length(sink) - (int)overlap_info.r1.end_pos + (int)this->g_.k(), overlap_info.r2.start_pos);
+            return Gap(-(int)overlap_info.r1.size() - (int)overlap_info.r2.start_pos + (int)this->g_.k(),
+                    (int)this->g_.length(source) - (int)overlap_info.r1.end_pos + (int)this->g_.k(), (uint32_t)overlap_info.r2.start_pos);
         }
     private:
         DECL_LOGGER("LAGapJoiner");
@@ -454,9 +456,9 @@ public:
         joiners_.push_back(additional_joiner);
     }
 
-    Gap FixGap(EdgeId sink, EdgeId source, int initial_gap) const {
+    Gap FixGap(EdgeId source, EdgeId sink, int initial_gap) const {
         for(auto joiner : joiners_) {
-            Gap gap = joiner->FixGap(sink, source, initial_gap);
+            Gap gap = joiner->FixGap(source, sink, initial_gap);
             if(gap.gap_ != GapJoiner::INVALID_GAP) {
                 return gap;
             }
@@ -484,8 +486,8 @@ Gap MimicLAGapJoiner(Sequence& s1, Sequence& s2) {
         return Gap(INVALID_GAP);
     }
     std::cout << overlap_info;
-    return Gap(- (int)overlap_info.r1.size() - (s1.size() - overlap_info.r1.end_pos) - overlap_info.r2.start_pos,
-            s1.size() - overlap_info.r1.end_pos , overlap_info.r2.start_pos);
+    return Gap(- (int)overlap_info.r1.size() - ((int)s1.size() - (int)overlap_info.r1.end_pos) - (int)overlap_info.r2.start_pos,
+            (uint32_t)s1.size() - (uint32_t)overlap_info.r1.end_pos , (uint32_t)overlap_info.r2.start_pos);
 }
 
 class InsertSizeLoopDetector {
@@ -1085,20 +1087,20 @@ public:
 
 class ScaffoldingPathExtender: public LoopDetectingPathExtender {
     std::shared_ptr<ExtensionChooser> extension_chooser_;
-    ExtensionChooser::EdgeContainer sources_;
+    ExtensionChooser::EdgeContainer sinks_;
     std::shared_ptr<GapJoiner> gap_joiner_;
 
-    void InitSources() {
-        sources_.clear();
+    void InitSinks() {
+        sinks_.clear();
 
         for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
             if (g_.IncomingEdgeCount(g_.EdgeStart(*iter)) == 0) {
-                sources_.push_back(EdgeWithDistance(*iter, 0));
+                sinks_.push_back(EdgeWithDistance(*iter, 0));
             }
         }
     }
 
-    bool IsSink(EdgeId e) const	{
+    bool IsSource(EdgeId e) const	{
 		return g_.OutgoingEdgeCount(g_.EdgeEnd(e)) == 0;
 	}
 
@@ -1111,16 +1113,16 @@ public:
             extension_chooser_(extension_chooser),
             gap_joiner_(gap_joiner)
     {
-        InitSources();
+        InitSinks();
     }
 
     virtual bool MakeSimpleGrowStep(BidirectionalPath& path) {
-        if (path.Size() < 1 || !IsSink(path.Back())) {
+        if (path.Size() < 1 || !IsSource(path.Back())) {
             return false;
         }
         DEBUG("scaffolding");
-        ExtensionChooser::EdgeContainer candidates = extension_chooser_->Filter(path, sources_);
-        DEBUG("scaffolding candidates " << candidates.size() << " from sources " << sources_.size());
+        ExtensionChooser::EdgeContainer candidates = extension_chooser_->Filter(path, sinks_);
+        DEBUG("scaffolding candidates " << candidates.size() << " from sinks " << sinks_.size());
         if (candidates.size() == 1) {
             if (candidates[0].e_ == path.Back() || (cfg::get().avoid_rc_connections && candidates[0].e_ == g_.conjugate(path.Back()))) {
                 return false;
@@ -1128,7 +1130,7 @@ public:
 //            int gap = cfg::get().pe_params.param_set.scaffolder_options.fix_gaps ?
 //                            gap_joiner_->FixGap(path.Back(), candidates.back().e_, candidates.back().d_) : candidates.back().d_;
             if(cfg::get().pe_params.param_set.scaffolder_options.fix_gaps) {
-                Gap gap = gap_joiner_   ->FixGap(path.Back(), candidates.back().e_, candidates.back().d_);
+                Gap gap = gap_joiner_->FixGap(path.Back(), candidates.back().e_, candidates.back().d_);
                 if (gap.gap_ != GapJoiner::INVALID_GAP) {
                     DEBUG("Scaffolding. PathId: " << path.GetId() << " path length: " << path.Length() << ", fixed gap length: " << gap.gap_ << ", trash length: " << gap.trash_previous_ << "-" <<  gap.trash_current_);
                     path.PushBack(candidates.back().e_, gap);
