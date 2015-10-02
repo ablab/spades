@@ -261,7 +261,7 @@ public:
             }
             oss << "PATH " << path->GetId() << " " << path->Size() << " " << path->Length() + k_ << endl;
             for (size_t j = 0; j < path->Size(); ++j) {
-			    oss << g_.int_id(path->At(j)) << " " << g_.length(path->At(j)) <<  " " << path->GapAt(j) << endl;
+			    oss << g_.int_id(path->At(j)) << " " << g_.length(path->At(j)) <<  " " << path->GapAt(j) <<  " " << path->TrashPreviousAt(j) <<  " " << path->TrashCurrentAt(j) << endl;
             }
             //oss << endl;
 		}
@@ -297,9 +297,13 @@ public:
                 size_t eid;
                 size_t elen;
                 int gap;
-                iss >> eid >> elen >> gap;
+                uint32_t trash_prev;
+                uint32_t trash_current;
+
+                iss >> eid >> elen >> gap >> trash_prev >> trash_current;
+                Gap gap_struct(gap, trash_prev, trash_current);
                 EdgeId edge = int_ids[eid];
-                conjugatePath->PushBack(edge, gap);
+                conjugatePath->PushBack(edge, gap_struct);
                 VERIFY(g_.length(edge) == elen);
             }
             VERIFY(path->Length() + k_ == len);

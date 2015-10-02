@@ -166,7 +166,7 @@ private:
 			startPath->PushBack(endPath->At(commonSize), (int) nLen);
 		}
 		for (size_t i = commonSize + 1; i < endPath->Size(); ++i) {
-            startPath->PushBack(endPath->At(i), endPath->GapAt(i));
+            startPath->PushBack(endPath->At(i), endPath->GapAt(i), endPath->TrashPreviousAt(i), endPath->TrashCurrentAt(i));
 		}
 		DEBUG("travers");
 		startPath->Print();
