@@ -653,11 +653,7 @@ private:
     }
 
     void PushFront(EdgeId e, Gap gap) {
-<<<<<<< HEAD
         PushFront(e, gap.gap_ + gap.trash_current_ - gap.trash_previous_, gap.trash_current_, gap.trash_previous_);
-=======
-        PushFront(e, gap.gap_, gap.trash_previous_, gap.trash_current_);
->>>>>>> master
     }
 
     void PushFront(EdgeId e, int gap = 0, uint32_t trash_previous = 0, uint32_t trash_current = 0) {
