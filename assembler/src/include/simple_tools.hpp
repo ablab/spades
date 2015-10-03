@@ -165,6 +165,20 @@ std::ostream& operator<< (std::ostream& os, const std::vector<T>& v)
  	return os;
 }
 
+template<class T>
+std::ostream& operator<< (std::ostream& os, const std::set<T>& set)
+{
+	os << "{";
+	bool delim = false;
+	for (const auto& i : set) {
+		if (delim) os << ", ";
+		os << delim << i;
+		delim = true;
+	}
+	os << "}";
+	return os;
+}
+
 }
 
 #endif /* SIMPLE_TOOLS_HPP_ */

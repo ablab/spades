@@ -18,16 +18,17 @@ namespace omnigraph {
 
 namespace de {
 
-template<typename Graph, typename Hist, template<typename, typename> class Container>
+template<typename G, typename H, template<typename, typename> class Container>
 class PairedIndex {
 
 public:
-    typedef Hist Histogram;
+    typedef G Graph;
+    typedef H Histogram;
     typedef typename Graph::EdgeId EdgeId;
     typedef std::pair<EdgeId, EdgeId> EdgePair;
-    typedef typename Hist::value_type Point;
+    typedef typename Histogram::value_type Point;
 
-    typedef Container<EdgeId, Hist> InnerMap;
+    typedef Container<EdgeId, Histogram> InnerMap;
     typedef Container<EdgeId, InnerMap> StorageMap;
 
     //--Data access types--
@@ -83,7 +84,7 @@ public:
             return Histogram(begin(), end());
         }
 
-        size_t size() const;
+        size_t size() const { return hist_.size(); }
 
     private:
         const Histogram &hist_;
@@ -238,63 +239,53 @@ public:
     //Adds a single pair info, merging histograms if there's already one
     void Add(EdgeId e1, EdgeId e2, Point point) {
         SwapConj(e1, e2, point);
-        Hist& histogram = storage_[e1][e2];
-        auto iterator_to_point = histogram.find(point);
-
-        if (iterator_to_point != histogram.end())
-            MergeData(e1, e2, *iterator_to_point, point);
-        else
-            InsertPoint(e1, e2, histogram, point);
+        InsertOrMerge(storage_[e1][e2], storage_[e2][e1], point);
     }
 
     //Adds a whole histogram, merging histograms if there's already one
     void AddMany(EdgeId e1, EdgeId e2, const Histogram& hist) {
         bool swapped = SwapConj(e1, e2);
-        Hist& histogram = storage_[e1][e2];
+        Histogram& straight = storage_[e1][e2], reversed = storage_[e2][e1];
         for (auto point : hist) {
             if (swapped)
                 point.d += CalcOffset(e1, e2);
-            auto iterator_to_point = histogram.find(point);
-            if (iterator_to_point != histogram.end())
-                MergeData(e1, e2, *iterator_to_point, point);
-            else
-                InsertPoint(e1, e2, histogram, point);
+            InsertOrMerge(straight, reversed, point);
         }
     }
 
 private:
+
+    void InsertOrMerge(Histogram& straight, Histogram& reversed,
+                       const Point &sp) {
+        auto si = straight.find(sp);
+        auto rp = -sp;
+        auto ri = reversed.find(rp);
+        if (si != straight.end()) {
+            MergeData(straight, si, sp);
+            MergeData(reversed, ri, rp);
+        }
+        else {
+            InsertPoint(straight, sp);
+            //if (!IsSymmetric(e1, e2, point)) TODO
+                InsertPoint(reversed, rp);
+        }
+    }
 
     static bool IsSymmetric(EdgeId e1, EdgeId e2, Point point) {
         return (e1 == e2) && math::eq(point.d, 0.f);
     }
 
     // modifying the histogram
-    void InsertPoint(EdgeId e1, EdgeId e2, Hist& histogram, Point point) {
-        // first backwards
-        if (!IsSymmetric(e1, e2, point)) {
-            storage_[e2][e1].insert(-point);
-            ++size_;
-        }
-
+    inline void InsertPoint(Histogram& histogram, Point point) {
         histogram.insert(point);
         ++size_;
     }
 
-    void UpdateSinglePoint(Hist& hist, typename Hist::iterator point_to_update, const Point& new_point) {
-        typename Hist::iterator after_removed = hist.erase(point_to_update);
-        hist.insert(after_removed, new_point);
-    }
-
-    void MergeData(EdgeId e1, EdgeId e2, const Point& point_to_update, const Point& point_to_add) {
-        Hist& reversed = storage_[e2][e1];
-        UpdateSinglePoint(reversed, reversed.find(-point_to_update), -(point_to_update + point_to_add));
-
-        Hist& straight = storage_[e1][e2];
-        UpdateSinglePoint(straight, straight.find(point_to_update), point_to_update + point_to_add);
-    }
-
-    void MergeData(Hist& hist, typename Hist::iterator to_update, const Point& point_to_add) {
-        UpdateSinglePoint(hist, to_update, *to_update + point_to_add);
+    void MergeData(Histogram& hist, typename Histogram::iterator to_update, const Point& to_merge) {
+        //UpdateSinglePoint(hist, to_update, *to_update + point_to_add);
+        auto to_add = *to_update + to_merge;
+        auto after_removed = hist.erase(to_update);
+        hist.insert(after_removed, to_add);
     }
 
 public:
@@ -314,13 +305,12 @@ private:
     template<class OtherMap>
     void MergeInnerMaps(const OtherMap& map_to_add,
                         InnerMap& map) {
-        typedef typename Hist::iterator hist_iterator;
-        for (auto I = map_to_add.begin(), E = map_to_add.end(); I != E; ++I) {
-            Hist &hist_exists = map[I->first];
-            const auto& hist_to_add = I->second;
+        typedef typename Histogram::iterator hist_iterator;
+        for (auto &i : map_to_add) {
+            Histogram &hist_exists = map[i.first];
+            const auto& hist_to_add = i.second;
 
-            for (auto p_it = hist_to_add.begin(), E = hist_to_add.end(); p_it != E; ++p_it) {
-                Point new_point = *p_it;
+            for (auto new_point : hist_to_add) {
                 const std::pair<hist_iterator, bool>& result = hist_exists.insert(new_point);
                 if (!result.second) { // in this case we need to merge two points
                     MergeData(hist_exists, result.first, new_point);
@@ -352,7 +342,7 @@ private:
             auto &map = i1->second;
             auto i2 = map.find(e2);
             if (i2 != map.end()) {
-                Hist& hist = i2->second;
+                Histogram& hist = i2->second;
                 if (hist.erase(point))
                     --size_;
                 if (hist.empty())
@@ -369,7 +359,7 @@ private:
             auto &map = i1->second;
             auto i2 = map.find(e2);
             if (i2 != map.end()) {
-                Hist& hist = i2->second;
+                Histogram& hist = i2->second;
                 size_t size_decrease = hist.size();
                 map.erase(i2);
                 size_ -= size_decrease;
@@ -520,12 +510,14 @@ using sparse_hash_map = google::sparse_hash_map<K, V>; //Two-parameters wrapper
 template<typename Graph>
 using UnclusteredPairedInfoIndexT = PairedIndex<Graph, RawHistogram, sparse_hash_map>;
 
-template<class Graph>
-struct PairedInfoIndicesT {
-    typedef PairedInfoIndexT<Graph> IndexT;
-    std::vector<IndexT> data_;
+template<class Index>
+class PairedIndices {
+    typedef std::vector<Index> Storage;
+    Storage data_;
 
-    PairedInfoIndicesT(const Graph& graph, size_t lib_num) {
+public:
+
+    PairedIndices(const typename Index::Graph& graph, size_t lib_num) {
         data_.reserve(lib_num);
         for (size_t i = 0; i < lib_num; ++i)
             data_.emplace_back(graph);
@@ -535,21 +527,29 @@ struct PairedInfoIndicesT {
 
     void Clear() { for (auto& it : data_) it.Clear(); }
 
-    IndexT& operator[](size_t i) { return data_[i]; }
+    Index& operator[](size_t i) { return data_[i]; }
 
-    const IndexT& operator[](size_t i) const { return data_[i]; }
+    const Index& operator[](size_t i) const { return data_[i]; }
 
     size_t size() const { return data_.size(); }
+
+    typename Storage::iterator begin() { return data_.begin(); }
+    typename Storage::iterator end() { return data_.end(); }
+
+    typename Storage::const_iterator begin() const { return data_.begin(); }
+    typename Storage::const_iterator end() const { return data_.end(); }
 };
 
 template<class Graph>
-using UnclusteredPairedInfoIndicesT = std::vector<UnclusteredPairedInfoIndexT<Graph> >;
+using PairedInfoIndicesT = PairedIndices<PairedInfoIndexT<Graph>>;
+
+template<class Graph>
+using UnclusteredPairedInfoIndicesT = PairedIndices<UnclusteredPairedInfoIndexT<Graph>>;
 
 template<typename K, typename V>
 using unordered_map = std::unordered_map<K, V>; //Two-parameters wrapper
 template<class Graph>
 using PairedInfoBuffer = PairedIndex<Graph, RawHistogram, unordered_map>;
-
 
 }
 

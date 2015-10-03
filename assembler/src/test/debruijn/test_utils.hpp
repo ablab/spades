@@ -16,6 +16,7 @@
 #include "io/converting_reader_wrapper.hpp"
 #include "io/read_stream_vector.hpp"
 #include "simple_tools.hpp"
+#include "de/paired_info_helpers.hpp"
 
 #include "sequence_mapper_notifier.hpp"
 #include "pair_info_filler.hpp"
@@ -167,11 +168,13 @@ typedef vector<PairInfo> PairInfos;
 
 template<class PairedIndex>
 void AssertPairInfo(const Graph& g, /*todo const */PairedIndex& paired_index, const EdgePairInfo& etalon_pair_info) {
-	for (auto it = paired_index.data_begin(); it != paired_index.data_end(); ++it) {
-      PairInfos infos = paired_index.GetEdgeInfo(it->first);
+	for (auto i = omnigraph::de::pair_begin(paired_index); i != omnigraph::de::pair_end(paired_index); ++i) {
+	//for (auto it = paired_index.data_begin(); it != paired_index.data_end(); ++it) {
+      //PairInfos infos = paired_index.GetEdgeInfo(it->first);
 
-      for (auto info_it = infos.begin(); info_it != infos.end(); ++info_it) {
-        PairInfo pair_info = *info_it;
+      //for (auto info_it = infos.begin(); info_it != infos.end(); ++info_it) {
+	  for (auto j : *i) {
+        PairInfo pair_info(i.first(), i.second(), j);
         if (pair_info.first == pair_info.second && rounded_d(pair_info) == 0)
           continue;
 
