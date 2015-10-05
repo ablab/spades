@@ -46,7 +46,7 @@ protected:
 		}
 
 		for (size_t i = 0; i < path.Size(); ++i) {
-			int gap = i == 0 ? 0 : path.GapAt(i) + path.TrashPreviousAt(i);
+			int gap = i == 0 ? 0 : path.GapAt(i);
 			if (gap > (int) k_) {
 				for (size_t j = 0; j < gap - k_; ++j) {
 					ss << "N";
