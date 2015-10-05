@@ -167,11 +167,11 @@ public:
         return gap_len_[index].gap_;
     }
 
-    int TrashCurrentAt(size_t index) const {
+    uint32_t TrashCurrentAt(size_t index) const {
         return gap_len_[index].trash_current_;
     }
 
-    int TrashPreviousAt(size_t index) const {
+    uint32_t TrashPreviousAt(size_t index) const {
         return gap_len_[index].trash_previous_;
     }
 

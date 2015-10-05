@@ -55,8 +55,8 @@ singlecell {
         use_old_score   false
 
         min_overlap_length 10
-        flank_addition_coefficient -7.9
-        flank_multiplication_coefficient 1.29
+        flank_addition_coefficient -5.9
+        flank_multiplication_coefficient 0.97
     }
     
     loop_removal
@@ -109,8 +109,8 @@ meta {
         use_old_score   false
 
         min_overlap_length 10
-        flank_addition_coefficient -7.9
-        flank_multiplication_coefficient 1.29
+        flank_addition_coefficient -5.9
+        flank_multiplication_coefficient 0.97
     }
     
     loop_removal
@@ -163,8 +163,8 @@ moleculo {
         use_old_score     true
 
         min_overlap_length 10
-        flank_addition_coefficient -7.9
-        flank_multiplication_coefficient 1.29
+        flank_addition_coefficient -5.9
+        flank_multiplication_coefficient 0.97
     }
     
     loop_removal
@@ -220,8 +220,8 @@ multicell {
         use_old_score   false
 
         min_overlap_length 10
-        flank_addition_coefficient -7.9
-        flank_multiplication_coefficient 1.29
+        flank_addition_coefficient -5.9
+        flank_multiplication_coefficient 0.97
     }
     
     loop_removal
