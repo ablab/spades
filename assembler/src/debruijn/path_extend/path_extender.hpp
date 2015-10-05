@@ -433,6 +433,17 @@ class LAGapJoiner: public GapJoiner {
             if(overlap_info.r2.start_pos > 1 && (int)this->g_.length(source) - (int)overlap_info.r1.end_pos + (int)this->g_.k() > 1) {
                 DEBUG("Look here!");
             }
+
+            if(((int)this->g_.length(source) - (int)overlap_info.r1.end_pos + (int)this->g_.k()) > this->g_.length(source)) {
+                DEBUG("Save kmers. Don't want to have edges shorter than k");
+                return Gap(INVALID_GAP);
+            }
+
+            if((uint32_t)overlap_info.r2.start_pos > this->g_.length(sink)) {
+                DEBUG("Save kmers. Don't want to have edges shorter than k");
+                return Gap(INVALID_GAP);
+            }
+
             return Gap(-(int)overlap_info.r1.size() - (int)overlap_info.r2.start_pos + (int)this->g_.k(),
                     (int)this->g_.length(source) - (int)overlap_info.r1.end_pos + (int)this->g_.k(), (uint32_t)overlap_info.r2.start_pos);
         }
@@ -506,6 +517,18 @@ public:
 
     bool CheckCycled(const BidirectionalPath& path) const {
         return FindCycleStart(path) != -1;
+    }
+
+    bool CheckCycledNonIS(const BidirectionalPath& path) const {
+        if(path.Size() <= 2) {
+            return false;
+        }
+        BidirectionalPath last = path.SubPath(path.Size() - 2);
+        int pos = path.FindFirst(last);
+        if (pos == path.Size() - 2) {
+            pos = -1;
+        }
+        return (pos != -1);
     }
 //first suffix longer than min_cycle_len
     int FindPosIS(const BidirectionalPath& path) const {
@@ -918,6 +941,10 @@ public:
         return false;
     }
 
+    bool DetectCycleScaffolding(BidirectionalPath& path) {
+        return is_detector_.CheckCycledNonIS(path);
+    }
+
     virtual bool MakeSimpleGrowStep(BidirectionalPath& path) = 0;
 
     virtual bool ResolveShortLoopByCov(BidirectionalPath& path) = 0;
@@ -1125,6 +1152,11 @@ public:
         DEBUG("scaffolding candidates " << candidates.size() << " from sinks " << sinks_.size());
         if (candidates.size() == 1) {
             if (candidates[0].e_ == path.Back() || (cfg::get().avoid_rc_connections && candidates[0].e_ == g_.conjugate(path.Back()))) {
+                return false;
+            }
+            BidirectionalPath temp_path(path);
+            temp_path.PushBack(candidates[0].e_);
+            if(this->DetectCycleScaffolding(temp_path)) {
                 return false;
             }
 //            int gap = cfg::get().pe_params.param_set.scaffolder_options.fix_gaps ?
