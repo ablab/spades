@@ -60,16 +60,15 @@ protected:
 				    }
 					continue;
 				}
-				INFO("Overlap len is " << overlapLen);
-				INFO("Nucls size " << g_.EdgeNucls(path[i]).size());
-				INFO("Edge len in kmers" << g_.length(path[i]));				
-auto temp_str = g_.EdgeNucls(path[i]).Subseq(overlapLen).str();
+				auto temp_str = g_.EdgeNucls(path[i]).Subseq(overlapLen).str();
 				if(i != path.Size() - 1) {
 	                for(size_t j = 0 ; j < path.TrashPreviousAt(i + 1); ++j) {
 	                    temp_str.pop_back();
+	                    if(temp_str.size() == 0) {
+	                        break;
+	                    }
 	                }
 				}
-				INFO("Temp str size is " << temp_str.length());
 				ss << temp_str;
 			}
 		}
