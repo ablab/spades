@@ -11,12 +11,30 @@
 #include <btree/btree_set.h>
 #include <btree/safe_btree_map.h>
 #include <sparsehash/sparse_hash_map>
+#include <mach/mach_types.h>
 
 #include "index_point.hpp"
 
 namespace omnigraph {
 
 namespace de {
+
+/*template<template<typename T> class S>
+struct StorageInitializer
+{
+    template<typename T>
+    static void init(S<T> &s) {}
+};
+
+template<>
+struct StorageInitializer<google::sparse_hash_map>
+{
+    static void init(google::sparse_hash_map &s) {
+        s.set_deleted_key(T)
+    }
+};
+
+template<>*/
 
 template<typename G, typename H, template<typename, typename> class Container>
 class PairedIndex {
@@ -47,7 +65,9 @@ public:
                 : iter_(iter)
                 , end_iter_(end_iter)
                 , offset_(offset)
-            {}
+            {
+                Skip();
+            }
 
             Point dereference() const {
                 Point result = *iter_;
@@ -57,8 +77,7 @@ public:
 
             void increment() {
                 ++iter_;
-                while (!full && (iter_ != end_iter_) && (math::le(dereference().d, 0.0f)))
-                    ++iter_;
+                Skip();
             }
 
             bool equal(const Iterator &other) const {
@@ -67,6 +86,11 @@ public:
         private:
             const_iterator iter_, end_iter_;
             int offset_;
+
+            inline void Skip() {
+                while (!full && (iter_ != end_iter_) && (math::le(dereference().d, 0.0f)))
+                    ++iter_;
+            }
         };
 
         HistProxy(const Histogram &hist, int offset = 0)
@@ -110,9 +134,13 @@ public:
             typedef typename InnerMap::const_iterator const_iterator;
 
         public:
-            Iterator(const PairedIndex &index, const_iterator iter, EdgeId edge, bool conj)
+            Iterator(const PairedIndex &index, const_iterator iter,
+                     const_iterator stop_iter, const_iterator jump_iter,
+                     EdgeId edge, bool conj)
                     : index_ (index)
                     , iter_(iter)
+                    , stop_iter_(stop_iter)
+                    , jump_iter_(jump_iter)
                     , edge_(edge)
                     , conj_(conj)
             {}
@@ -121,21 +149,23 @@ public:
 
             void increment() {
                 ++iter_;
-                if (full && !conj_ && iter_ == index_.storage_.find(edge_)->second.end()) {
+                if (full && !conj_ && iter_ == stop_iter_) {
                     conj_ = true;
-                    iter_ = index_.storage_.find(index_.graph_.conjugate(edge_))->second.begin();
+                    iter_ = jump_iter_;
                 }
             }
 
             void operator=(const Iterator &other) {
                 //VERIFY(index_ == other.index_); //TODO: is this risky?
                 iter_ = other.iter_;
+                stop_iter_ = other.stop_iter_;
+                jump_iter_ = other.jump_iter_;
                 edge_ = other.edge_;
                 conj_ = other.conj_;
             }
 
             bool equal(const Iterator &other) const {
-                return iter_ == other.iter_;
+                return iter_ == other.iter_ && conj_ == other.conj_;
             }
 
             EdgeHist<full> dereference() const {
@@ -150,23 +180,42 @@ public:
 
         private:
             const PairedIndex &index_;
-            const_iterator iter_;
+            const_iterator iter_, stop_iter_, jump_iter_;
             EdgeId edge_;
             bool conj_;
         };
 
         EdgeProxy(const PairedIndex &index, EdgeId edge)
-            : index_(index), edge_(edge)
-        {}
+            : index_(index), edge_(edge) {}
 
         Iterator begin() const {
-            auto i = index_.storage_.find(edge_);
-            return Iterator(index_, i->second.begin(), edge_, false);
+            const auto &s = index_.storage_;
+            auto i = s.find(edge_);
+            auto j = s.find(index_.graph_.conjugate(edge_));
+            bool conj = i == s.end();
+            if (full) {
+                auto start = (i == s.end() ? j : i)->second.begin();
+                auto stop = (i == s.end() ? j : i)->second.end();
+                auto jump = (j == s.end()) ? i->second.end() : j->second.begin();
+                return Iterator(index_, start, stop, jump, edge_, conj);
+            } else {
+                auto start = (i == s.end()) ? j->second.end() : i->second.begin();
+                auto stop = (i == s.end() ? j : i)->second.end();
+                return Iterator(index_, start, stop, stop, edge_, conj);
+            }
         }
+
         Iterator end() const {
-            auto e = full ? index_.graph_.conjugate(edge_) : edge_;
-            auto i = index_.storage_.find(e);
-            return Iterator(index_, i->second.end(), edge_, full);
+            const auto &s = index_.storage_;
+            auto i = s.find(edge_);
+            auto j = s.find(index_.graph_.conjugate(edge_));
+            if (full) {
+                auto stop = (j == s.end() ? i : j)->second.end();
+                return Iterator(index_, stop, stop, stop, edge_, j == s.end());
+            } else {
+                auto stop = (i == s.end() ? j : i)->second.end();
+                return Iterator(index_, stop, stop, stop, edge_, i == s.end());
+            }
         }
 
         HistProxy<full> operator[](EdgeId e2) const {
@@ -206,26 +255,30 @@ public:
 
     //--Inserting--
 public:
-    EdgePair ConjugatePair(EdgePair ep) const {
+    inline EdgePair ConjugatePair(EdgePair ep) const {
         return std::make_pair(graph_.conjugate(ep.second), graph_.conjugate(ep.first));
     }
 private:
     bool SwapConj(EdgeId &e1, EdgeId &e2) const {
-        EdgePair ep(e1, e2), ep_conj = ConjugatePair(ep);
-        if (ep > ep_conj) {
-            e1 = ep.first;
-            e2 = ep.second;
+        /*EdgePair ep(e1, e2), ep_conj = ConjugatePair(ep);
+        if ((e1 < e2) ^ (ep < ep_conj)) {
+            e1 = ep_conj.first;
+            e2 = ep_conj.second;
+            return true;
+        }*/
+        EdgeId m = std::min(e1, e2);
+        if (graph_.conjugate(m) < m) {
+            EdgePair ep_conj = ConjugatePair({e1, e2});
+            e1 = ep_conj.first;
+            e2 = ep_conj.second;
             return true;
         }
         return false;
     }
 
     bool SwapConj(EdgeId &e1, EdgeId &e2, Point &p) const {
-        EdgePair ep(e1, e2), ep_conj = ConjugatePair(ep);
-        if (ep > ep_conj) {
+        if (SwapConj(e1, e2)) {
             p.d += CalcOffset(e1, e2);
-            e1 = ep.first;
-            e2 = ep.second;
             return true;
         }
         return false;
@@ -239,13 +292,21 @@ public:
     //Adds a single pair info, merging histograms if there's already one
     void Add(EdgeId e1, EdgeId e2, Point point) {
         SwapConj(e1, e2, point);
-        InsertOrMerge(storage_[e1][e2], storage_[e2][e1], point);
+        //auto& reversed = storage_[e2][e1];
+        //auto& straight = storage_[e1][e2];
+        /*auto& s1 = storage_[e1];
+        auto& straight = s1[e2];
+        auto& r1 = storage_[e2];
+        auto& reversed = r1[e1];*/
+        InsertOrMerge(e1, e2, point);
+        //InsertOrMerge(straight, reversed, point);
     }
 
     //Adds a whole histogram, merging histograms if there's already one
     void AddMany(EdgeId e1, EdgeId e2, const Histogram& hist) {
         bool swapped = SwapConj(e1, e2);
-        Histogram& straight = storage_[e1][e2], reversed = storage_[e2][e1];
+        auto& straight = storage_[e1][e2];
+        auto& reversed = storage_[e2][e1];
         for (auto point : hist) {
             if (swapped)
                 point.d += CalcOffset(e1, e2);
@@ -255,19 +316,38 @@ public:
 
 private:
 
-    void InsertOrMerge(Histogram& straight, Histogram& reversed,
+    void InsertOrMerge(EdgeId e1, EdgeId e2,
                        const Point &sp) {
+        auto& straight = storage_[e1][e2];
         auto si = straight.find(sp);
         auto rp = -sp;
-        auto ri = reversed.find(rp);
         if (si != straight.end()) {
             MergeData(straight, si, sp);
+            auto& reversed = storage_[e2][e1];
+            auto ri = reversed.find(rp);
             MergeData(reversed, ri, rp);
         }
         else {
             InsertPoint(straight, sp);
+            auto& reversed = storage_[e2][e1];
+            InsertPoint(reversed, rp);
+        }
+    }
+
+    void InsertOrMerge(Histogram& straight, Histogram& reversed,
+                       const Point &sp) {
+        auto si = straight.find(sp);
+        auto rp = -sp;
+        if (si != straight.end()) {
+            MergeData(straight, si, sp);
+            auto ri = reversed.find(rp);
+            MergeData(reversed, ri, rp);
+        }
+        else {
+            InsertPoint(reversed, rp);
+            InsertPoint(straight, sp);
             //if (!IsSymmetric(e1, e2, point)) TODO
-                InsertPoint(reversed, rp);
+
         }
     }
 
@@ -326,11 +406,13 @@ public:
     //Removes the specific entry
     // Returns the number of deleted entries
     size_t Remove(EdgeId e1, EdgeId e2, Point point) {
+        SwapConj(e1, e2);
         return RemoveSingle(e1, e2, point) + RemoveSingle(e2, e1, -point);
     }
     // Removes the whole histogram
     // Returns the number of deleted entries
     size_t Remove(EdgeId e1, EdgeId e2) {
+        SwapConj(e1, e2);
         return RemoveSingle(e1, e2) + RemoveSingle(e2, e1);
     }
 
@@ -339,14 +421,18 @@ private:
     size_t RemoveSingle(EdgeId e1, EdgeId e2, Point point) {
         auto i1 = storage_.find(e1);
         if (i1 != storage_.end()) {
-            auto &map = i1->second;
+            auto& map = i1->second;
             auto i2 = map.find(e2);
             if (i2 != map.end()) {
                 Histogram& hist = i2->second;
                 if (hist.erase(point))
                     --size_;
                 if (hist.empty())
-                    storage_.erase(i1);
+                    //map.erase(i2);
+                    map.erase(e2);
+                if (map.empty())
+                    storage_.erase(e1);
+                    //storage_.erase(i1);
                 return 1;
             }
         }
@@ -356,7 +442,7 @@ private:
     size_t RemoveSingle(EdgeId e1, EdgeId e2) {
         auto i1 = storage_.find(e1);
         if (i1 != storage_.end()) {
-            auto &map = i1->second;
+            auto& map = i1->second;
             auto i2 = map.find(e2);
             if (i2 != map.end()) {
                 Histogram& hist = i2->second;
@@ -396,11 +482,6 @@ public:
         return storage_.begin();
     }
 
-    /*inline const InnerMap& RawGet(EdgeId edge) const {
-        VERIFY(storage_.count(edge) > 0);
-        return storage_.find(edge)->second;
-    }*/
-
     inline ImplIterator data_end() const {
         return storage_.end();
     }
@@ -425,30 +506,25 @@ public:
 
     // Operator alias
     inline EdgeProxy<> operator[](EdgeId id) const {
-        //TODO: what if doesn't contain?
         return Get(id);
     }
 
 private:
     const Histogram& GetImpl(EdgeId e1, EdgeId e2) const {
-        //TODO: make it stable
         return storage_.find(e1)->second.find(e2)->second;
     }
 public:
 
     // Returns a proxy map to points
     HistProxy<> Get(EdgeId e1, EdgeId e2) const {
-        int offset = CalcOffset(e1, e2);
-        if (SwapConj(e1, e2)) {
-            return HistProxy<>(GetImpl(e1, e2), 0);
-        } else {
-            return HistProxy<>(GetImpl(e1, e2), offset);
-        }
+        int offset = CalcOffset(e1, e2); //we need to calculate the offset with initial edges
+        if (!SwapConj(e1, e2))
+            offset = 0;
+        return HistProxy<>(GetImpl(e1, e2), offset);
     }
 
     // Operator alias
     inline HistProxy<> operator[](EdgePair p) const {
-        //TODO: what if doesn't contain?
         return Get(p.first, p.second);
     }
 

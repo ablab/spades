@@ -172,7 +172,7 @@ std::ostream& operator<< (std::ostream& os, const std::set<T>& set)
 	bool delim = false;
 	for (const auto& i : set) {
 		if (delim) os << ", ";
-		os << delim << i;
+		os << i;
 		delim = true;
 	}
 	os << "}";
