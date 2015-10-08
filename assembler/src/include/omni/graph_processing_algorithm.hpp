@@ -9,10 +9,14 @@
 
 #include "logger/logger.hpp"
 #include "func.hpp"
+#include "graph_iterators.hpp"
 #include "graph_component.hpp"
 #include "coverage.hpp"
 
 namespace omnigraph {
+
+template<class Graph>
+using HandlerF = std::function<void(typename Graph::EdgeId)>;
 
 template<class Graph>
 class EdgeProcessingAlgorithm {
@@ -34,7 +38,8 @@ class EdgeProcessingAlgorithm {
     virtual bool ProcessEdge(EdgeId e) = 0;
 
  public:
-    EdgeProcessingAlgorithm(Graph& g, bool conjugate_symmetry = false)
+    EdgeProcessingAlgorithm(Graph& g,
+                             bool conjugate_symmetry = false)
             : g_(g), conjugate_symmetry_(conjugate_symmetry) {
 
     }
@@ -46,19 +51,16 @@ class EdgeProcessingAlgorithm {
 //        return conjugate_symmetry_;
 //    }
 
-    template<class SmartEdgeIt>
-    bool RunFromIterator(SmartEdgeIt& it,
-                 ProceedConditionT proceed_condition = std::make_shared<func::AlwaysTrue<EdgeId>>()) {
-        VERIFY(!it.canonical_only() || conjugate_symmetry_);
+    template<class Comparator = std::less<EdgeId>>
+    bool Run(const Comparator& comp = Comparator(),
+                 ProceedConditionT proceed_condition = make_shared<func::AlwaysTrue<EdgeId>>()) {
         TRACE("Start processing");
         bool triggered = false;
-        for (; !it.IsEnd(); ++it) {
+        for (auto it = g_.SmartEdgeBegin(comp, conjugate_symmetry_); !it.IsEnd(); ++it) {
             EdgeId e = *it;
             TRACE("Current edge " << g_.str(e));
             if (!proceed_condition->Check(e)) {
                 TRACE("Stop condition was reached.");
-                //need to release last element of the iterator to make it replacable by new elements
-                it.ReleaseCurrent();
                 break;
             }
 
@@ -69,17 +71,44 @@ class EdgeProcessingAlgorithm {
         return triggered;
     }
 
-    template<class Comparator = std::less<EdgeId>>
-    bool Run(const Comparator& comp = Comparator(),
-                 ProceedConditionT proceed_condition = make_shared<func::AlwaysTrue<EdgeId>>()) {
-        auto it = g_.SmartEdgeBegin(comp, conjugate_symmetry_);
-        return RunFromIterator(it, proceed_condition);
-    }
-
  private:
     DECL_LOGGER("EdgeProcessingAlgorithm");
 };
 
+template<class Graph>
+class CountingCallback {
+    typedef typename Graph::EdgeId EdgeId;
+    bool report_on_destruction_;
+    std::atomic<size_t> cnt_;
+
+public:
+    CountingCallback(bool report_on_destruction = false) :
+            report_on_destruction_(report_on_destruction), cnt_(0) {
+    }
+
+    ~CountingCallback() {
+        if (report_on_destruction_)
+            Report();
+    }
+
+    void HandleDelete(EdgeId /*e*/) {
+        cnt_++;
+    }
+
+    void Report() {
+        TRACE(cnt_ << " edges were removed.")
+        cnt_ = 0;
+    }
+
+private:
+    DECL_LOGGER("CountingCallback");
+};
+
+template<class Graph>
+std::function<void(typename Graph::EdgeId)> AddCountingCallback(CountingCallback<Graph>& cnt_callback, std::function<void(typename Graph::EdgeId)> handler) {
+    std::function<void(typename Graph::EdgeId)> cnt_handler = std::bind(&CountingCallback<Graph>::HandleDelete, std::ref(cnt_callback), std::placeholders::_1);
+    return func::Composition<typename Graph::EdgeId>(handler, cnt_handler);
+}
 template<class Graph>
 void RemoveIsolatedOrCompress(Graph& g, typename Graph::VertexId v) {
     if (g.IsDeadStart(v) && g.IsDeadEnd(v)) {
@@ -104,7 +133,6 @@ class EdgeRemover {
               removal_handler_(removal_handler) {
     }
 
-    //todo how is it even compiling with const?!!!
     void DeleteEdge(EdgeId e) {
         VertexId start = g_.EdgeStart(e);
         VertexId end = g_.EdgeEnd(e);

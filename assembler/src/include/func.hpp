@@ -50,6 +50,8 @@ class NotOperator;
 template<class T>
 class Predicate: public Func<T, bool> {
 public:
+    typedef T checked_type;
+
 	bool Apply(T t) const {
 		return Check(t);
 	}

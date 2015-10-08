@@ -46,14 +46,7 @@ enum info_printer_pos {
     ipp_default = 0,
     ipp_before_first_gap_closer,
     ipp_before_simplification,
-    ipp_tip_clipping,
-    ipp_bulge_removal,
-    ipp_err_con_removal,
     ipp_before_post_simplification,
-    ipp_final_err_con_removal,
-    ipp_final_tip_clipping,
-    ipp_final_bulge_removal,
-    ipp_removing_isolated_edges,
     ipp_final_simplified,
     ipp_final_gap_closed,
     ipp_before_repeat_resolution,
@@ -65,11 +58,8 @@ namespace details {
 
 inline const char* info_printer_pos_name(size_t pos) {
     const char* names[] = { "default", "before_first_gap_closer",
-                            "before_simplification", "tip_clipping", "bulge_removal",
-                            "err_con_removal", "before_post_simplification",
-                            "final_err_con_removal", "final_tip_clipping",
-                            "final_bulge_removal", "removing_isolated_edges",
-                            "final_simplified","final_gap_closed", "before_repeat_resolution" };
+                            "before_simplification", "before_post_simplification",
+                            "final_simplified", "final_gap_closed", "before_repeat_resolution" };
 
     utils::check_array_size < ipp_total > (names);
     return names[pos];
@@ -213,6 +203,8 @@ struct debruijn_config {
     struct simplification {
         struct tip_clipper {
             std::string condition;
+            tip_clipper() {}
+            tip_clipper(std::string condition_) : condition(condition_) {}
         };
 
         struct topology_tip_clipper {
@@ -240,6 +232,8 @@ struct debruijn_config {
 
         struct erroneous_connections_remover {
             std::string condition;
+            erroneous_connections_remover() {}
+            erroneous_connections_remover(std::string condition_) : condition(condition_) {}
         };
 
         struct relative_coverage_ec_remover {
@@ -274,6 +268,7 @@ struct debruijn_config {
         };
 
         struct isolated_edges_remover {
+            bool enabled;
             size_t max_length;
             double max_coverage;
             size_t max_length_any_cov;
@@ -307,16 +302,12 @@ struct debruijn_config {
             size_t vertex_count_limit;
         };
 
-        struct presimplification {
-            bool enabled;
-            bool parallel;
-            isolated_edges_remover ier;
-            std::string tip_condition;
-            std::string ec_condition;
-        };
-
         struct init_cleaning {
             std::string self_conj_condition;
+
+            bool early_it_only;
+            double activation_cov;
+            isolated_edges_remover ier;
             std::string tip_condition;
             std::string ec_condition;
         };
@@ -338,19 +329,12 @@ struct debruijn_config {
         isolated_edges_remover ier;
         complex_bulge_remover cbr;
         hidden_ec_remover her;
-        //bool stats_mode;
 
         tip_clipper final_tc;
         bulge_remover final_br;
         bulge_remover second_final_br;
 
         init_cleaning init_clean;
-
-        bool fast_features;
-        double fast_activation_cov;
-        presimplification presimp;
-        bool persistent_cycle_iterators;
-        bool disable_br_in_cycle;
     };
 
     struct construction {

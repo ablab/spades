@@ -15,6 +15,7 @@
 #include "perfect_hash_map.hpp"
 #include "edge_info_updater.hpp"
 #include "kmer_splitters.hpp"
+#include "edge_position_index.hpp"
 
 namespace debruijn_graph {
 
