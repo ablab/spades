@@ -387,90 +387,96 @@ private:
 
 //if I was in LA
 class LAGapJoiner: public GapJoiner {
-    public:
-        LAGapJoiner(const Graph& g, size_t min_la_length, double flank_multiplication_coefficient, double flank_addition_coefficient)
-        : GapJoiner(g), min_la_length_(min_la_length), flank_addition_coefficient_(flank_addition_coefficient),
-          flank_multiplication_coefficient_(flank_multiplication_coefficient)
-        {
-            DEBUG("flank_multiplication_coefficient - " << flank_multiplication_coefficient_);
-            DEBUG("flank_addition_coefficient_  - " << flank_addition_coefficient_ );
+public:
+    LAGapJoiner(const Graph& g, size_t min_la_length,
+            double flank_multiplication_coefficient,
+            double flank_addition_coefficient) :
+            GapJoiner(g), min_la_length_(min_la_length), flank_addition_coefficient_(
+                    flank_addition_coefficient), flank_multiplication_coefficient_(
+                    flank_multiplication_coefficient) {
+        DEBUG("flank_multiplication_coefficient - " << flank_multiplication_coefficient_); DEBUG("flank_addition_coefficient_  - " << flank_addition_coefficient_ );
+    }
+
+    Gap FixGap(EdgeId source, EdgeId sink, int initial_gap) const override {
+
+        DEBUG("Trying to fix estimated gap " << initial_gap <<
+                " between " << g_.str(source) << " and " << g_.str(sink));
+        if (initial_gap > int(g_.k())) {
+            DEBUG("Edges are supposed to be too far to check overlaps");
+            return Gap(initial_gap);
         }
 
-        Gap FixGap(EdgeId source, EdgeId sink, int initial_gap) const {
+        DEBUG("Overlap doesn't exceed " << size_t(abs(initial_gap) * ESTIMATED_GAP_MULTIPLIER) + GAP_ADDITIONAL_COEFFICIENT);
+        SWOverlapAnalyzer overlap_analyzer(
+                size_t(abs(initial_gap) * ESTIMATED_GAP_MULTIPLIER) + GAP_ADDITIONAL_COEFFICIENT);
 
-            DEBUG("Trying to fix estimated gap " << initial_gap <<
-                  " between " << g_.str(source) << " and " << g_.str(sink));
-            if (initial_gap > int(g_.k())) {
-                DEBUG("Edges are supposed to be too far to check overlaps");
-                return Gap(initial_gap);
-            }
+        auto overlap_info = overlap_analyzer.AnalyzeOverlap(g_, source,
+                sink);
 
+        DEBUG(overlap_info);
 
-            DEBUG("Overlap doesn't exceed " << size_t(abs(initial_gap) * estimated_gap_multiplier) + 30);
-            SWOverlapAnalyzer overlap_analyzer(size_t(abs(initial_gap) * estimated_gap_multiplier) + 30);
-
-            auto overlap_info = overlap_analyzer.AnalyzeOverlap(this->g_, source, sink);
-
-            DEBUG(overlap_info);
-
-            if(overlap_info.size() < min_la_length_) {
-                DEBUG("Low alignment size");
-                return Gap(INVALID_GAP);
-            }
-
-            size_t max_flank_length = max(overlap_info.r2.start_pos, this->g_.length(source) + this->g_.k() - overlap_info.r1.end_pos);
-            DEBUG("Max flank length - " << max_flank_length);
-
-            if((double)max_flank_length * flank_multiplication_coefficient_ + flank_addition_coefficient_ > overlap_info.size()) {
-                DEBUG("Too long flanks for such alignment");
-                return Gap(INVALID_GAP);
-            }
-
-            if(overlap_info.identity() < identity_ratio_) {
-                DEBUG("Low identity score");
-                return Gap(INVALID_GAP);
-            }
-            if(overlap_info.r2.start_pos > 1 && (int)this->g_.length(source) - (int)overlap_info.r1.end_pos + (int)this->g_.k() > 1) {
-                DEBUG("Look here!");
-            }
-
-            if(((int)this->g_.length(source) - (int)overlap_info.r1.end_pos + (int)this->g_.k()) > this->g_.length(source)) {
-                DEBUG("Save kmers. Don't want to have edges shorter than k");
-                return Gap(INVALID_GAP);
-            }
-
-            if((uint32_t)overlap_info.r2.start_pos > this->g_.length(sink)) {
-                DEBUG("Save kmers. Don't want to have edges shorter than k");
-                return Gap(INVALID_GAP);
-            }
-
-            return Gap(-(int)overlap_info.r1.size() - (int)overlap_info.r2.start_pos + (int)this->g_.k(),
-                    (int)this->g_.length(source) - (int)overlap_info.r1.end_pos + (int)this->g_.k(), (uint32_t)overlap_info.r2.start_pos);
+        if (overlap_info.size() < min_la_length_) {
+            DEBUG("Low alignment size");
+            return Gap(INVALID_GAP);
         }
-    private:
-        DECL_LOGGER("LAGapJoiner");
-        const size_t min_la_length_;
-        const double flank_addition_coefficient_;
-        const double flank_multiplication_coefficient_;
-        constexpr static double identity_ratio_ = 0.9;
-        constexpr static double estimated_gap_multiplier = 2.0;
+
+        size_t max_flank_length = max(overlap_info.r2.start_pos,
+                g_.length(source) + g_.k() - overlap_info.r1.end_pos);
+        DEBUG("Max flank length - " << max_flank_length);
+
+        if ((double) max_flank_length * flank_multiplication_coefficient_
+                + flank_addition_coefficient_ > overlap_info.size()) {
+            DEBUG("Too long flanks for such alignment");
+            return Gap(INVALID_GAP);
+        }
+
+        if (overlap_info.identity() < IDENTITY_RATIO) {
+            DEBUG("Low identity score");
+            return Gap(INVALID_GAP);
+        }
+
+        if ((g_.length(source) + g_.k())  - overlap_info.r1.end_pos > g_.length(source)) {
+            DEBUG("Save kmers. Don't want to have edges shorter than k");
+            return Gap(INVALID_GAP);
+        }
+
+        if (overlap_info.r2.start_pos > g_.length(sink)) {
+            DEBUG("Save kmers. Don't want to have edges shorter than k");
+            return Gap(INVALID_GAP);
+        }
+
+        return Gap(
+                (int) (-overlap_info.r1.size() - overlap_info.r2.start_pos
+                        + g_.k()),
+                (uint32_t) (g_.length(source) + g_.k()
+                        - overlap_info.r1.end_pos),
+                (uint32_t) overlap_info.r2.start_pos);
+    }
+private:
+    DECL_LOGGER("LAGapJoiner");
+    const size_t min_la_length_;
+    const double flank_addition_coefficient_;
+    const double flank_multiplication_coefficient_;
+    constexpr static double IDENTITY_RATIO = 0.9;
+    constexpr static double ESTIMATED_GAP_MULTIPLIER = 2.0;
+    const size_t GAP_ADDITIONAL_COEFFICIENT = 30;
 };
 
 
-class CompositeGapJoiner : public GapJoiner {
+class CompositeGapJoiner: public GapJoiner {
 public:
 
-    CompositeGapJoiner(const Graph& g, shared_ptr<GapJoiner> main_joiner, shared_ptr<GapJoiner> additional_joiner)
-    : GapJoiner(g)
-    {
+    CompositeGapJoiner(const Graph& g, shared_ptr<GapJoiner> main_joiner,
+            shared_ptr<GapJoiner> additional_joiner) :
+            GapJoiner(g) {
         joiners_.push_back(main_joiner);
         joiners_.push_back(additional_joiner);
     }
 
     Gap FixGap(EdgeId source, EdgeId sink, int initial_gap) const {
-        for(auto joiner : joiners_) {
+        for (auto joiner : joiners_) {
             Gap gap = joiner->FixGap(source, sink, initial_gap);
-            if(gap.gap_ != GapJoiner::INVALID_GAP) {
+            if (gap.gap_ != GapJoiner::INVALID_GAP) {
                 return gap;
             }
         }
@@ -482,23 +488,27 @@ private:
 
 
 //Just for test. Look at overlap_analysis_tests
-Gap MimicLAGapJoiner(Sequence& s1, Sequence& s2) {
+inline Gap MimicLAGapJoiner(Sequence& s1, Sequence& s2) {
     const int INVALID_GAP = -1000000;
+    constexpr static double IDENTITY_RATIO = 0.9;
+
     SWOverlapAnalyzer overlap_analyzer_(10000);
     auto overlap_info = overlap_analyzer_.AnalyzeOverlap(s1, s2);
     size_t min_la_length_ = 4;
-    if(overlap_info.size() < min_la_length_) {
+    if (overlap_info.size() < min_la_length_) {
         DEBUG("Low alignment size");
         return Gap(INVALID_GAP);
     }
-    constexpr static double identity_ratio_ = 0.9;
-    if(overlap_info.identity() < identity_ratio_) {
+    if (overlap_info.identity() < IDENTITY_RATIO) {
         DEBUG("Low identity score");
         return Gap(INVALID_GAP);
     }
     std::cout << overlap_info;
-    return Gap(- (int)overlap_info.r1.size() - ((int)s1.size() - (int)overlap_info.r1.end_pos) - (int)overlap_info.r2.start_pos,
-            (uint32_t)s1.size() - (uint32_t)overlap_info.r1.end_pos , (uint32_t)overlap_info.r2.start_pos);
+
+    return Gap(
+            (int) (-overlap_info.r1.size() - overlap_info.r2.start_pos),
+            (uint32_t) (s1.size() + overlap_info.r1.end_pos),
+            (uint32_t) overlap_info.r2.start_pos);
 }
 
 class InsertSizeLoopDetector {
@@ -517,18 +527,6 @@ public:
 
     bool CheckCycled(const BidirectionalPath& path) const {
         return FindCycleStart(path) != -1;
-    }
-
-    bool CheckCycledNonIS(const BidirectionalPath& path) const {
-        if(path.Size() <= 2) {
-            return false;
-        }
-        BidirectionalPath last = path.SubPath(path.Size() - 2);
-        int pos = path.FindFirst(last);
-        if (pos == path.Size() - 2) {
-            pos = -1;
-        }
-        return (pos != -1);
     }
 //first suffix longer than min_cycle_len
     int FindPosIS(const BidirectionalPath& path) const {
@@ -941,10 +939,6 @@ public:
         return false;
     }
 
-    bool DetectCycleScaffolding(BidirectionalPath& path) {
-        return is_detector_.CheckCycledNonIS(path);
-    }
-
     virtual bool MakeSimpleGrowStep(BidirectionalPath& path) = 0;
 
     virtual bool ResolveShortLoopByCov(BidirectionalPath& path) = 0;
@@ -1152,11 +1146,6 @@ public:
         DEBUG("scaffolding candidates " << candidates.size() << " from sinks " << sinks_.size());
         if (candidates.size() == 1) {
             if (candidates[0].e_ == path.Back() || (cfg::get().avoid_rc_connections && candidates[0].e_ == g_.conjugate(path.Back()))) {
-                return false;
-            }
-            BidirectionalPath temp_path(path);
-            temp_path.PushBack(candidates[0].e_);
-            if(this->DetectCycleScaffolding(temp_path)) {
                 return false;
             }
 //            int gap = cfg::get().pe_params.param_set.scaffolder_options.fix_gaps ?
