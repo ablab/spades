@@ -219,7 +219,7 @@ public:
     {
     }
 
-    virtual EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges) {
+    EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges) const override {
         EdgeContainer e1 = first_->Filter(path, edges);
         return second_->Filter(path, e1);
     }
@@ -232,7 +232,7 @@ public:
     TrivialExtensionChooser(Graph& g): ExtensionChooser(g)  {
     }
 
-    virtual EdgeContainer Filter(const BidirectionalPath& /*path*/, const EdgeContainer& edges) {
+    EdgeContainer Filter(const BidirectionalPath& /*path*/, const EdgeContainer& edges) const override {
         if (edges.size() == 1) {
              return edges;
         }
@@ -248,7 +248,7 @@ public:
             ExtensionChooser(g, wc, weight_threshold) {
     }
 
-    virtual EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges) {
+    EdgeContainer Filter(const BidirectionalPath& path, const EdgeContainer& edges) const override {
         if (edges.size() == 1) {
             double weight = wc_->CountWeight(path, edges.back().e_, std::set<size_t>());
             NotifyAll(weight);
