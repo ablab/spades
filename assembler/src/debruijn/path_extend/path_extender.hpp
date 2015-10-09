@@ -507,7 +507,7 @@ inline Gap MimicLAGapJoiner(Sequence& s1, Sequence& s2) {
 
     return Gap(
             (int) (-overlap_info.r1.size() - overlap_info.r2.start_pos),
-            (uint32_t) (s1.size() + overlap_info.r1.end_pos),
+            (uint32_t) (s1.size() - overlap_info.r1.end_pos),
             (uint32_t) overlap_info.r2.start_pos);
 }
 

@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE( SimpleGapTest ) {
     BOOST_CHECK_EQUAL(14, 14);
     BOOST_CHECK_EQUAL(g.trash_current_, 4);
     BOOST_CHECK_EQUAL(g.trash_previous_, 4);
-    BOOST_CHECK_EQUAL(g.gap_, -20);
+    BOOST_CHECK_EQUAL(g.gap_, -16);
 }
 
 
