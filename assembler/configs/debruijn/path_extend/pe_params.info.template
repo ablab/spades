@@ -52,7 +52,7 @@ singlecell {
         max_can_overlap   0.5
         short_overlap     6
         artificial_gap    10
-        use_old_score   false
+        use_old_score   true
 
         min_overlap_length 10
         flank_addition_coefficient -5.9
@@ -106,7 +106,7 @@ meta {
         max_can_overlap   0.5
         short_overlap     6
         artificial_gap    10
-        use_old_score   false
+        use_old_score   true
 
         min_overlap_length 10
         flank_addition_coefficient -5.9
@@ -217,7 +217,7 @@ multicell {
         max_can_overlap   0.5
         short_overlap     6
         artificial_gap    10
-        use_old_score   false
+        use_old_score   true
 
         min_overlap_length 10
         flank_addition_coefficient -5.9
