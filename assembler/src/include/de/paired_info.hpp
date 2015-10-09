@@ -19,23 +19,6 @@ namespace omnigraph {
 
 namespace de {
 
-/*template<template<typename T> class S>
-struct StorageInitializer
-{
-    template<typename T>
-    static void init(S<T> &s) {}
-};
-
-template<>
-struct StorageInitializer<google::sparse_hash_map>
-{
-    static void init(google::sparse_hash_map &s) {
-        s.set_deleted_key(T)
-    }
-};
-
-template<>*/
-
 template<typename G, typename H, template<typename, typename> class Container>
 class PairedIndex {
 
@@ -259,6 +242,8 @@ public:
         return std::make_pair(graph_.conjugate(ep.second), graph_.conjugate(ep.first));
     }
 private:
+    //Of all 4 edge pairs {(a, b, p), (b, a, -p), (b', a', p'), (a', b', -p')} (where ' means conjugation),
+    //we store lexicographical minimum of 1,2 and 3,4 for consistency.
     bool SwapConj(EdgeId &e1, EdgeId &e2) const {
         /*EdgePair ep(e1, e2), ep_conj = ConjugatePair(ep);
         if ((e1 < e2) ^ (ep < ep_conj)) {
@@ -402,6 +387,8 @@ private:
 
 public:
     //--Deleting--
+    //TODO: that's currently unsafe for unclustered index,
+    //because hashmaps require set_deleted_item
 
     //Removes the specific entry
     // Returns the number of deleted entries
@@ -530,6 +517,17 @@ public:
 
     bool contains(EdgeId edge) const {
         return storage_.count(edge) + storage_.count(graph_.conjugate(edge)) > 0;
+    }
+
+    bool contains(EdgeId e1, EdgeId e2) const {
+        SwapConj(e1, e2);
+        auto i1 = storage_.find(e1);
+        if (i1 != storage_.end() && i1->second.count(e2))
+            return true;
+        auto i2 = storage_.find(e2);
+        if (i2 != storage_.end() && i1->second.count(e1))
+            return true;
+        return false;
     }
 
     // --Miscellaneous--
