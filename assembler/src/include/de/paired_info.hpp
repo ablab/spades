@@ -93,6 +93,8 @@ public:
 
         size_t size() const { return hist_.size(); }
 
+        bool empty() const { return hist_.empty(); }
+
     private:
         const Histogram &hist_;
         int offset_;
@@ -176,12 +178,19 @@ public:
             auto i = s.find(edge_);
             auto j = s.find(index_.graph_.conjugate(edge_));
             bool conj = i == s.end();
+            //In a properly formed index, either i or j is presented
+            //TODO: reorganize
+            if (i == s.end() && j == s.end()) {
+                auto stop = empty_.end();
+                return Iterator(index_, stop, stop, stop, edge_, false);
+            }
             if (full) {
                 auto start = (i == s.end() ? j : i)->second.begin();
                 auto stop = (i == s.end() ? j : i)->second.end();
                 auto jump = (j == s.end()) ? i->second.end() : j->second.begin();
                 return Iterator(index_, start, stop, jump, edge_, conj);
             } else {
+                //Conjugate map is not actually used here, only to provide end iterators
                 auto start = (i == s.end()) ? j->second.end() : i->second.begin();
                 auto stop = (i == s.end() ? j : i)->second.end();
                 return Iterator(index_, start, stop, stop, edge_, conj);
@@ -192,6 +201,12 @@ public:
             const auto &s = index_.storage_;
             auto i = s.find(edge_);
             auto j = s.find(index_.graph_.conjugate(edge_));
+            //In a properly formed index, either i or j is presented
+            //TODO: reorganize
+            if (i == s.end() && j == s.end()) {
+                auto stop = empty_.end();
+                return Iterator(index_, stop, stop, stop, edge_, false);
+            }
             if (full) {
                 auto stop = (j == s.end() ? i : j)->second.end();
                 return Iterator(index_, stop, stop, stop, edge_, j == s.end());
@@ -225,6 +240,7 @@ public:
     private:
         const PairedIndex &index_;
         EdgeId edge_;
+        PairedIndex::InnerMap empty_; //used to provide null iterators for empty submaps
     };
 
     typedef typename EdgeProxy<true>::Iterator EdgeIterator;
@@ -277,25 +293,16 @@ public:
     //Adds a single pair info, merging histograms if there's already one
     void Add(EdgeId e1, EdgeId e2, Point point) {
         SwapConj(e1, e2, point);
-        //auto& reversed = storage_[e2][e1];
-        //auto& straight = storage_[e1][e2];
-        /*auto& s1 = storage_[e1];
-        auto& straight = s1[e2];
-        auto& r1 = storage_[e2];
-        auto& reversed = r1[e1];*/
         InsertOrMerge(e1, e2, point);
-        //InsertOrMerge(straight, reversed, point);
     }
 
     //Adds a whole histogram, merging histograms if there's already one
     void AddMany(EdgeId e1, EdgeId e2, const Histogram& hist) {
         bool swapped = SwapConj(e1, e2);
-        auto& straight = storage_[e1][e2];
-        auto& reversed = storage_[e2][e1];
         for (auto point : hist) {
             if (swapped)
                 point.d += CalcOffset(e1, e2);
-            InsertOrMerge(straight, reversed, point);
+            InsertOrMerge(e1, e2, point);
         }
     }
 
@@ -319,6 +326,7 @@ private:
         }
     }
 
+    //Unstable due to the iterator invalidation
     void InsertOrMerge(Histogram& straight, Histogram& reversed,
                        const Point &sp) {
         auto si = straight.find(sp);
@@ -404,6 +412,7 @@ public:
     }
 
 private:
+
     //TODO: remove duplicode
     size_t RemoveSingle(EdgeId e1, EdgeId e2, Point point) {
         auto i1 = storage_.find(e1);
@@ -498,7 +507,13 @@ public:
 
 private:
     const Histogram& GetImpl(EdgeId e1, EdgeId e2) const {
-        return storage_.find(e1)->second.find(e2)->second;
+        auto i = storage_.find(e1);
+        if (i != storage_.end()) {
+            auto j = i->second.find(e2);
+            if (j != i->second.end())
+                return j->second;
+        }
+        return empty_hist_;
     }
 public:
 
@@ -571,6 +586,7 @@ private:
     size_t size_;
     const Graph& graph_;
     StorageMap storage_;
+    Histogram empty_hist_; //null object
 };
 
 //Aliases for common graphs

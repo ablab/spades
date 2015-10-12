@@ -229,7 +229,7 @@ class DataPrinter {
         size_t comp_size = 0;
         for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
             EdgeId e1 = *I;
-            auto inner_map = paired_index.Get(e1); //TODO Paired: GetRaw
+            auto inner_map = paired_index.Get(e1); //TODO Paired: GetRaw?
             for (auto entry : inner_map) {
                 EdgeId e2 = entry.first;
                 const auto& hist = entry.second;
