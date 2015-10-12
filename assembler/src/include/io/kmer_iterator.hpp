@@ -17,7 +17,7 @@ raw_kmer_iterator<Seq> make_kmer_iterator(const std::string &FileName,
 
 template<class Seq>
 std::vector<raw_kmer_iterator<Seq>> make_kmer_iterator(const std::string &FileName,
-                                                       unsigned K, unsigned amount) {
+                                                       size_t K, size_t amount) {
   std::vector<raw_kmer_iterator<Seq>> res;  
   if (amount == 1) {
     res.emplace_back(FileName, Seq::GetDataSize(K));

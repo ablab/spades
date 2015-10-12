@@ -43,13 +43,20 @@ public:
 
 	//TODO make parallel
 	void CleanLinks() {
-		for (auto it  = index_.kmer_begin(); it.good(); ++it) {
-		    KeyWithHash kh = index_.ConstructKWH(runtime_k::RtSeq(index_.k(), *it));
-			for(char i = 0; i < 4; i++) {
-				CleanForwardLinks(kh, i);
-				CleanBackwardLinks(kh, i);
-			}
-		}
+        vector<Index::kmer_iterator> iters = index_.kmer_begin(10 * cfg::get().max_threads);
+#   pragma omp parallel for schedule(guided)
+        for(size_t i = 0; i < iters.size(); i++) {
+            for (Index::kmer_iterator &it = iters[i]; it.good(); ++it) {
+                KeyWithHash kh = index_.ConstructKWH(runtime_k::RtSeq(index_.k(), *it));
+                if (kh.is_minimal()) {
+                    KeyWithHash kh = index_.ConstructKWH(runtime_k::RtSeq(index_.k(), *it));
+                    for (char i = 0; i < 4; i++) {
+                        CleanForwardLinks(kh, i);
+                        CleanBackwardLinks(kh, i);
+                    }
+                }
+            }
+        }
 	}
 };
 
@@ -218,17 +225,26 @@ private:
 
 	//TODO make parallel
 	size_t RoughClipTips() {
-		size_t result = 0;
-		for (auto it  = index_.kmer_begin(); it.good(); ++it) {
-			KeyWithHash kh = index_.ConstructKWH(runtime_k::RtSeq(index_.k(), *it));
-			if(index_.OutgoingEdgeCount(kh)  >= 2) {
-				result += RemoveForward(kh);
-			}
-			if(index_.IncomingEdgeCount(kh)  >= 2) {
-				result += RemoveBackward(kh);
-			}
-		}
-		return result;
+        vector<Index::kmer_iterator> iters = index_.kmer_begin(10 * cfg::get().max_threads);
+        vector<size_t> result(iters.size());
+#   pragma omp parallel for schedule(guided)
+        for(size_t i = 0; i < iters.size(); i++) {
+            for(Index::kmer_iterator &it = iters[i]; it.good(); ++it) {
+                KeyWithHash kh = index_.ConstructKWH(runtime_k::RtSeq(index_.k(), *it));
+                if(kh.is_minimal()) {
+                    if (index_.OutgoingEdgeCount(kh) >= 2) {
+                        result[i] += RemoveForward(kh);
+                    }
+                    if (index_.IncomingEdgeCount(kh) >= 2) {
+                        result[i] += RemoveBackward(kh);
+                    }
+                }
+            }
+        }
+        size_t sum = 0;
+        for(size_t i = 0; i < result.size(); i++)
+            sum += result[i];
+		return sum;
 	}
 
 
