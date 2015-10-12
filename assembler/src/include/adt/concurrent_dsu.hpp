@@ -27,7 +27,9 @@ class ConcurrentDSU {
       bool     root  : 1;
   } __attribute__ ((packed));
 
- public:
+  static_assert(sizeof(atomic_set_t) == 8, "Unexpected size of atomic_set_t");
+
+  public:
     ConcurrentDSU(size_t size)
         : data_(size) {
 
@@ -141,6 +143,10 @@ class ConcurrentDSU {
     }
 
     return count;
+  }
+
+  bool is_root(size_t entry) const {
+    return data_[entry].load(std::memory_order_relaxed).root;
   }
 
   size_t extract_to_file(const std::string& Prefix) {
