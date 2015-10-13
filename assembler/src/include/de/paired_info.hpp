@@ -11,7 +11,6 @@
 #include <btree/btree_set.h>
 #include <btree/safe_btree_map.h>
 #include <sparsehash/sparse_hash_map>
-#include <mach/mach_types.h>
 
 #include "index_point.hpp"
 
@@ -173,7 +172,7 @@ public:
         EdgeProxy(const PairedIndex &index, EdgeId edge)
             : index_(index), edge_(edge) {}
 
-        Iterator begin() const {
+        /*Iterator begin() const {
             const auto &s = index_.storage_;
             auto i = s.find(edge_);
             auto j = s.find(index_.graph_.conjugate(edge_));
@@ -181,7 +180,7 @@ public:
             //In a properly formed index, either i or j is presented
             //TODO: reorganize
             if (i == s.end() && j == s.end()) {
-                auto stop = empty_.end();
+                auto stop = index_.empty_map_.end();
                 return Iterator(index_, stop, stop, stop, edge_, false);
             }
             if (full) {
@@ -204,7 +203,7 @@ public:
             //In a properly formed index, either i or j is presented
             //TODO: reorganize
             if (i == s.end() && j == s.end()) {
-                auto stop = empty_.end();
+                auto stop = index_.empty_map_.end();
                 return Iterator(index_, stop, stop, stop, edge_, false);
             }
             if (full) {
@@ -213,6 +212,56 @@ public:
             } else {
                 auto stop = (i == s.end() ? j : i)->second.end();
                 return Iterator(index_, stop, stop, stop, edge_, i == s.end());
+            }
+        }*/
+
+        Iterator begin() const {
+            const auto &s = index_.storage_;
+            auto i = s.find(edge_);
+            //In a properly formed index, either straight or conjugate edge is presented
+            //In case of unexisting edge access, return an iterator fake empty map
+            if (full) { //Only one branch will actually be in the binary
+                auto j = s.find(index_.graph_.conjugate(edge_));
+                bool conj_empty = j == s.end();
+                if (i == s.end()) { //The straight halfmap is empty, traverse from the conjugate one
+                    auto stop = conj_empty ? index_.empty_map_.end() : j->second.end();
+                    auto start = conj_empty ? stop : j->second.begin();
+                    return Iterator(index_, start, stop, stop, edge_, true);
+                } else { //Traverse from the straight, then jump to the conjugate, if exists
+                    auto start = i->second.begin();
+                    auto stop = i->second.end();
+                    auto jump = conj_empty ? stop : j->second.begin();
+                    return Iterator(index_, start, stop, jump, edge_, false);
+                }
+            } else {
+                if (i == s.end()) {
+                    auto stop = index_.empty_map_.end();
+                    return Iterator(index_, stop, stop, stop, edge_, false);
+                } else {
+                    auto start = i->second.begin();
+                    auto stop = i->second.end();
+                    return Iterator(index_, start, stop, stop, edge_, false);
+                }
+            }
+        }
+
+        Iterator end() const {
+            const auto &s = index_.storage_;
+            auto i = s.find(edge_);
+            //In a properly formed index, either straight or conjugate edge is presented
+            //In case of unexisting edge access, return an iterator fake empty map
+            if (full) { //Only one branch will actually be in the binary
+                auto j = s.find(index_.graph_.conjugate(edge_));
+                if (j == s.end()) { //The conjugate halfmap is empty, stop on the straight one (or fake empty)
+                    auto stop = i == s.end() ? index_.empty_map_.end() : i->second.end();
+                    return Iterator(index_, stop, stop, stop, edge_, true);
+                } else {
+                    auto stop = j->second.end();
+                    return Iterator(index_, stop, stop, stop, edge_, true);
+                }
+            } else {
+                auto stop = i == s.end() ? index_.empty_map_.end() : i->second.end();
+                return Iterator(index_, stop, stop, stop, edge_, false);
             }
         }
 
@@ -225,7 +274,7 @@ public:
                 }
             }
             if (full) {
-                i = index_.storage_.find(index_.graph_.conjugate(edge_));
+                i = index_.storage_.find(index_.graph_.conjugate(e2));
                 if (i != index_.storage_.end()) {
                     auto j = i->second.find(index_.graph_.conjugate(edge_));
                     if (j != i->second.end()) {
@@ -233,14 +282,17 @@ public:
                     }
                 }
             }
-            VERIFY(false);
+            return HistProxy<full>(index_.empty_hist_, 0);
         }
 
-        size_t size() const;
+        //size_t size() const; //currently not used
+
+        bool empty() const {
+            return !index_.contains(edge_);
+        }
     private:
         const PairedIndex &index_;
         EdgeId edge_;
-        PairedIndex::InnerMap empty_; //used to provide null iterators for empty submaps
     };
 
     typedef typename EdgeProxy<true>::Iterator EdgeIterator;
@@ -586,6 +638,7 @@ private:
     size_t size_;
     const Graph& graph_;
     StorageMap storage_;
+    InnerMap empty_map_;   //null object
     Histogram empty_hist_; //null object
 };
 

@@ -89,6 +89,25 @@ inline EdgePairIterator<Storage> pair_end(const Storage &s) {
     return EdgePairIterator<Storage>::end(s);
 }
 
+//Small wrapper for range-based loops
+//Usage: for (auto i in PairsOf(index))
+/*template <typename Storage>
+class PairsOf {
+public:
+    EdgePairIterator<Storage> begin() const{
+        return pair_begin(storage_);
+    }
+
+    EdgePairIterator<Storage> end() const{
+        return pair_begin(storage_);
+    }
+
+    PairsOf(const Storage& storage)
+            : storage_(storage) {}
+private:
+    const Storage& storage_;
+};*/
+
 }
 
 }

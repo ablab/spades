@@ -56,7 +56,8 @@ using MockIndex = UnclusteredPairedInfoIndexT<MockGraph>;
 using ClMockIndex = PairedInfoIndexT<MockGraph>;
 using EdgeSet = std::set<MockIndex::EdgeId>;
 
-EdgeSet GetNeighbours(const MockIndex &pi, MockGraph::EdgeId e) {
+template<typename Index>
+EdgeSet GetNeighbours(const Index &pi, MockGraph::EdgeId e) {
     EdgeSet result;
     for (auto i : pi.Get(e))
         result.insert(i.first);
@@ -138,7 +139,7 @@ BOOST_AUTO_TEST_CASE(PairedInfoConstruct) {
 
 BOOST_AUTO_TEST_CASE(PairedInfoRemove) {
     MockGraph graph;
-    ClMockIndex pi(graph);
+    ClMockIndex pi(graph); //Deleting currently works only with the clustered index
     pi.Add(1, 2, {1, 1, 0});
     pi.Add(1, 3, {2, 2, 0});
     pi.Add(1, 3, {3, 1, 0});
@@ -148,15 +149,36 @@ BOOST_AUTO_TEST_CASE(PairedInfoRemove) {
     test1.insert({3, 2, 0});
     BOOST_CHECK_EQUAL(pi.Get(1, 3).Unwrap(), test1);
     pi.Remove(1, 3, {3, 1, 0});
-    HistogramWithWeight test2;
-    //BOOST_CHECK_EQUAL(pi.Get(1, 3).Unwrap(), test2);
     BOOST_CHECK(!pi.contains(1, 3));
     //Check for full remove
     pi.Add(1, 3, {2, 2, 0});
     pi.Add(1, 3, {3, 1, 0});
     pi.Remove(1, 3);
-    //BOOST_CHECK_EQUAL(pi.Get(1, 3).Unwrap(), test2);
     BOOST_CHECK(!pi.contains(1, 3));
+    //Check for neighbours remove
+    pi.Add(1, 3, {3, 1, 0});
+    pi.Add(2, 13, {7, 1, 0});
+    pi.Add(8, 14, {3, 1, 0});
+    pi.Add(13, 4, {5, 1, 0});
+    BOOST_CHECK(pi.contains(1, 14));
+    pi.Remove(1);
+    EdgeSet test3 = {3, 8};
+    BOOST_CHECK_EQUAL(GetNeighbours(pi, 14), test3);
+}
+
+BOOST_AUTO_TEST_CASE(PairedInfoUnexistingEdges) {
+    //Check that accessing missing edges doesn't broke index
+    MockGraph graph;
+    MockIndex pi(graph);
+    pi.Add(1, 2, {1, 1});
+    pi.Add(1, 3, {2, 2});
+    EdgeSet empty;
+    BOOST_CHECK(pi.Get(14).empty());
+    BOOST_CHECK_EQUAL(GetNeighbours(pi, 5), empty);
+    BOOST_CHECK_EQUAL(GetNeighbours(pi, 8), empty);
+    RawHistogram empty_hist;
+    BOOST_CHECK_EQUAL(pi.Get(1, 5).Unwrap(), empty_hist);
+    BOOST_CHECK_EQUAL(pi.Get(1, 8).Unwrap(), empty_hist);
 }
 
 BOOST_AUTO_TEST_CASE(PairedInfoNeighbours) {
@@ -175,11 +197,6 @@ BOOST_AUTO_TEST_CASE(PairedInfoNeighbours) {
 
     EdgeSet test2 = {1, 3, 8};
     BOOST_CHECK_EQUAL(GetNeighbours(pi, 14), test2);
-
-    //Check for neighbours remove
-    //pi.Remove(1);
-    //EdgeSet test3 = {3, 8};
-    //BOOST_CHECK_EQUAL(GetNeighbours(pi, 14), test3);
 }
 
 /*BOOST_AUTO_TEST_CASE(PairedInfoRawNeighbours) {
