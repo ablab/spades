@@ -670,11 +670,11 @@ public:
 
     void Clear() { for (auto& it : data_) it.Clear(); }
 
-    Index& operator[](size_t i) { return data_[i]; }
+    inline Index& operator[](size_t i) { return data_[i]; }
 
-    const Index& operator[](size_t i) const { return data_[i]; }
+    inline const Index& operator[](size_t i) const { return data_[i]; }
 
-    size_t size() const { return data_.size(); }
+    inline size_t size() const { return data_.size(); }
 
     typename Storage::iterator begin() { return data_.begin(); }
     typename Storage::iterator end() { return data_.end(); }
@@ -693,6 +693,9 @@ template<typename K, typename V>
 using unordered_map = std::unordered_map<K, V>; //Two-parameters wrapper
 template<class Graph>
 using PairedInfoBuffer = PairedIndex<Graph, RawHistogram, unordered_map>;
+
+template<class Graph>
+using PairedInfoBuffersT = PairedIndices<PairedInfoBuffer<Graph>>;
 
 }
 

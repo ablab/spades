@@ -127,13 +127,11 @@ class GapCloserPairedIndexFiller {
         INFO("Processing paired reads (takes a while)");
 
         size_t nthreads = streams.size();
-        std::vector<omnigraph::de::PairedInfoBuffer<Graph> >buffer_pi;
-        buffer_pi.reserve(nthreads);
+        omnigraph::de::PairedInfoBuffersT<Graph> buffer_pi(graph_, nthreads);
 
         size_t counter = 0;
 #       pragma omp parallel for num_threads(nthreads) reduction(+ : counter)
         for (size_t i = 0; i < nthreads; ++i) {
-            buffer_pi.emplace_back(graph_);
             typename Streams::ReadT r;
             auto& stream = streams[i];
             stream.reset();

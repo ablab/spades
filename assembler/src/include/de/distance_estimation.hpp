@@ -200,10 +200,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
       edges.push_back(*it);
 
     DEBUG("Processing");
-    std::vector<PairedInfoBuffer<Graph> > buffer;
-    buffer.reserve(nthreads);
-    for (size_t i = 0; i < nthreads; ++i)
-      buffer.emplace_back(this->graph());
+    PairedInfoBuffersT<Graph> buffer(this->graph(), nthreads);
 #   pragma omp parallel for num_threads(nthreads) schedule(guided, 10)
     for (size_t i = 0; i < edges.size(); ++i) {
       EdgeId edge = edges[i];
@@ -213,7 +210,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
     INFO("Merging maps");
     for (size_t i = 0; i < nthreads; ++i) {
       result.Add(std::move(buffer[i]));
-      //buffer[i].Clear();
+      buffer[i].Clear();
     }
   }
 
