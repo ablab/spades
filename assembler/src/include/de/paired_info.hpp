@@ -154,7 +154,7 @@ public:
 
             EdgeHist<full> dereference() const {
                 if (conj_) {
-                    int offset = (int)index_.graph_.length(edge_) - (int)index_.graph_.length(iter_->first);
+                    int offset = index_.CalcOffset(edge_, iter_->first);
                     return std::make_pair(index_.graph_.conjugate(iter_->first),
                                           HistProxy<full>(iter_->second, offset));
                 }
@@ -313,12 +313,6 @@ private:
     //Of all 4 edge pairs {(a, b, p), (b, a, -p), (b', a', p'), (a', b', -p')} (where ' means conjugation),
     //we store lexicographical minimum of 1,2 and 3,4 for consistency.
     bool SwapConj(EdgeId &e1, EdgeId &e2) const {
-        /*EdgePair ep(e1, e2), ep_conj = ConjugatePair(ep);
-        if ((e1 < e2) ^ (ep < ep_conj)) {
-            e1 = ep_conj.first;
-            e2 = ep_conj.second;
-            return true;
-        }*/
         EdgeId m = std::min(e1, e2);
         if (graph_.conjugate(m) < m) {
             EdgePair ep_conj = ConjugatePair({e1, e2});
@@ -338,7 +332,7 @@ private:
     }
 
     int CalcOffset(EdgeId e1, EdgeId e2) const {
-        return (int)graph_.length(e1) - (int)graph_.length(e2);
+        return (int)graph_.length(e2) - (int)graph_.length(e1);
     }
 
 public:
@@ -534,14 +528,6 @@ public:
         return storage_.end();
     }
 
-    EdgeHist<> begin() const;
-
-    EdgeHist<false> raw_begin() const;
-
-    EdgeHist<> end() const;
-
-    EdgeHist<false> raw_end() const;
-
     // Returns a proxy map to neighboring edges
     inline EdgeProxy<> Get(EdgeId id) const {
         return EdgeProxy<>(*this, id);
@@ -571,7 +557,7 @@ public:
 
     // Returns a proxy map to points
     HistProxy<> Get(EdgeId e1, EdgeId e2) const {
-        int offset = CalcOffset(e1, e2); //we need to calculate the offset with initial edges
+        int offset = CalcOffset(e2, e1); //we need to calculate the offset with initial edges
         if (!SwapConj(e1, e2))
             offset = 0;
         return HistProxy<>(GetImpl(e1, e2), offset);
@@ -616,23 +602,6 @@ public:
 
     // Returns the total index size
     size_t size() const { return size_; }
-
-    // Prints the contents of index
-    void PrintAll() const {
-        size_t size = 0;
-        for (const auto i: storage_) {
-            EdgeId e1 = i.first.first; EdgeId e2 = i.first.second;
-            const auto& histogram = i.second;
-            size += histogram.size();
-            INFO("Histogram for edges "
-                 << graph_.int_id(e1) << " "
-                 << graph_.int_id(e2));
-            for (const auto& point : histogram) {
-                INFO("    Entry " << point.str());
-            }
-        }
-        VERIFY_MSG(this->size() == size, "Size " << size << " must have been equal to " << this->size());
-    }
 
 private:
     size_t size_;

@@ -249,10 +249,9 @@ class PairInfoImprover {
             for (size_t i = 0; i < nthreads; ++i) {
                 DEBUG("Adding map #" << i << " " << j);
                 for (auto I = omnigraph::de::pair_begin(to_add[i][j]); I != omnigraph::de::pair_end(to_add[i][j]); ++I) {
-                    const auto& hist = *I;
                     EdgeId e1 = I.first();
                     EdgeId e2 = I.second();
-                    for (auto p : hist)
+                    for (auto p : *I)
                         cnt += TryToAddPairInfo(index_, e1, e2, p);
                 }
             }

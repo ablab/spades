@@ -59,8 +59,8 @@ void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_ind
     for (auto iter = pair_begin(clustered_index); iter != pair_end(clustered_index); ++iter) {
         EdgeId first_edge = iter.first();
         EdgeId second_edge = iter.second();
-        const auto& infos = *iter;
-        if (infos.size() == 0)
+        auto infos = *iter;
+        if (infos.empty())
             continue;
 
         auto prev_it = infos.begin();

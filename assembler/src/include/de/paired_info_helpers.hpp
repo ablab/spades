@@ -38,7 +38,8 @@ public:
                 conj_ = true;
                 i_ = index_.data_begin();
             }
-            j_ = (i_ == index_.data_end()) ? InnerIterator() : index_.Get(i_->first).begin();
+            auto edge = conj_ ? index_.graph().conjugate(i_->first) : i_->first;
+            j_ = (i_ == index_.data_end()) ? InnerIterator() : index_.Get(edge).begin();
         }
     }
 
@@ -47,12 +48,12 @@ public:
     }
 
     bool equal(const EdgePairIterator &other) const {
-        return (i_ == other.i_) && (j_ == other.j_) && (!j_ || (conj_ == other.conj_));
+        return (j_ == other.j_) && (conj_ == other.conj_);
     }
 
     typename Index::EdgeId first() const {
         if (conj_)
-            return index_.graph().conjugate((*j_)->first);
+            return (*j_)->first;
         return i_->first;
     }
 
@@ -62,12 +63,11 @@ public:
         return (*j_)->first;
     }
 
-    //TODO: what if index is empty?
     static EdgePairIterator begin(const Index& index) {
         InnerIterator inner;
         if (index.size())
             inner = index.Get(index.data_begin()->first).begin();
-        return EdgePairIterator(index, index.data_begin(), inner);
+        return EdgePairIterator(index, index.data_begin(), inner, !inner);
     }
     static EdgePairIterator end(const Index& index) {
         return EdgePairIterator(index, index.data_end(), InnerIterator(), true);

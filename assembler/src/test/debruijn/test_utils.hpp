@@ -206,7 +206,7 @@ void AssertGraph(size_t k, const vector<MyPairedRead>& paired_reads, size_t /*rl
 
 	DEBUG("Asserting graph with etalon data");
 
-	io::ReadStreamList<io::PairedRead> paired_streams(io::RCWrap<io::PairedRead>(make_shared<RawStream>(MakePairedReads(paired_reads, insert_size))));
+	io::ReadStreamList<io::PairedRead> paired_streams(make_shared<RawStream>(MakePairedReads(paired_reads, insert_size)));
 	DEBUG("Streams initialized");
 
 	conj_graph_pack gp(k, "tmp", 1);

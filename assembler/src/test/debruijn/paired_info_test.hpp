@@ -27,8 +27,8 @@ public:
         for (const auto &pair : data) {
             conjs_[pair.first] = pair.second;
             conjs_[pair.second] = pair.first;
-            lengths_[pair.first] = 1;
-            lengths_[pair.second] = 1;
+            lengths_[pair.first] = pair.first;
+            lengths_[pair.second] = pair.first;
         }
     }
 
@@ -38,6 +38,10 @@ public:
 
     int length(EdgeId id) const {
         return lengths_.find(id)->second;
+    }
+
+    int int_id(EdgeId id) const {
+        return id;
     }
 
 private:
@@ -96,21 +100,6 @@ bool Contains(const MockIndex &pi, MockGraph::EdgeId e1, MockGraph::EdgeId e2, f
     return str;
 }*/
 
-void PrintPi(const MockIndex &pi) {
-    std::cout << "--Size: " << pi.size() << "--\n";
-    for (auto i = pi.data_begin(); i != pi.data_end(); ++i ) {
-        std::cout << i->first << ": " << i->second.size() << ": ";
-        for (auto j : i->second) {
-            std::cout << "[" << j.first << ": " << j.second.size() << ": ";
-            for (auto k : j.second)
-                std::cout << k << ", ";
-            std::cout << "]";
-        }
-        std::cout << std::endl;
-    }
-    std::cout << "------------\n";
-}
-
 BOOST_AUTO_TEST_SUITE(pair_info_tests)
 
 BOOST_AUTO_TEST_CASE(PairedInfoConstruct) {
@@ -122,7 +111,7 @@ BOOST_AUTO_TEST_CASE(PairedInfoConstruct) {
     //Check for reversed info
     BOOST_CHECK(Contains(pi, 8, 1, -1));
     //Check for conjugate info
-    BOOST_CHECK(Contains(pi, 9, 2, 1));
+    BOOST_CHECK(Contains(pi, 9, 2, 8));
     pi.Add(1, 3, {2, 2});
     pi.Add(1, 3, {3, 1});
     BOOST_CHECK(Contains(pi, 1, 8, 1));
@@ -181,6 +170,19 @@ BOOST_AUTO_TEST_CASE(PairedInfoUnexistingEdges) {
     BOOST_CHECK_EQUAL(pi.Get(1, 8).Unwrap(), empty_hist);
 }
 
+BOOST_AUTO_TEST_CASE(PairedInfoConjugate) {
+    MockGraph graph;
+    MockIndex pi(graph);
+    pi.Add(1, 3, {10, 2});
+    BOOST_CHECK(Contains(pi, 1, 3, 10));
+    BOOST_CHECK(Contains(pi, 3, 1, -10));
+    BOOST_CHECK(Contains(pi, 4, 2, 12));
+    BOOST_CHECK(Contains(pi, 2, 4, -12));
+    pi.Add(8, 14, {10, 2});
+    BOOST_CHECK(Contains(pi, 13, 9, 15));
+    BOOST_CHECK(Contains(pi, 9, 13, -15));
+}
+
 BOOST_AUTO_TEST_CASE(PairedInfoNeighbours) {
     MockGraph graph;
     MockIndex pi(graph);
@@ -223,13 +225,17 @@ BOOST_AUTO_TEST_CASE(PairedInfoNeighbours) {
 BOOST_AUTO_TEST_CASE(PairedInfoPairTraverse) {
     MockGraph graph;
     MockIndex pi(graph);
-    //Check that an empty index has empty iterator range
+    //Check that an empty index has an empty iterator range
     BOOST_CHECK(omnigraph::de::pair_begin(pi) == omnigraph::de::pair_end(pi));
-    RawPoint p1 = {1, 1}, p2 = {2, 1};
+    EdgeDataSet empty;
+    BOOST_CHECK_EQUAL(GetEdgePairInfo(pi), empty);
+    RawPoint p1 = {10, 1}, p2 = {20, 1}, pj1 = {12, 1}, pj2 = {27, 1};
     pi.Add(1, 3, p1);
     pi.Add(1, 9, p2);
+    BOOST_CHECK(omnigraph::de::pair_begin(pi) != omnigraph::de::pair_end(pi));
 
-    EdgeDataSet test1 = {{1, 3, p1}, {3, 1, -p1}, {1, 9, p2}, {9, 1, -p2}, {2, 4, -p1}, {4, 2, p1}, {8, 2, p2}, {2, 8, -p2}};
+    EdgeDataSet test1 = {{1, 3, p1}, {3, 1, -p1}, {2, 4, -pj1}, {4, 2, pj1},
+                         {1, 9, p2}, {9, 1, -p2}, {2, 8, -pj2}, {8, 2, pj2}};
     BOOST_CHECK_EQUAL(GetEdgePairInfo(pi), test1);
 }
 
