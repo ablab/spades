@@ -525,6 +525,18 @@ public:
         return min_cycle_len_;
     }
 
+    bool CheckCycledNonIS(const BidirectionalPath& path) const {
+        if (path.Size() <= 2) {
+            return false;
+        }
+        BidirectionalPath last = path.SubPath(path.Size() - 2);
+        int pos = path.FindFirst(last);
+        if (pos == path.Size() - 2) {
+            pos = -1;
+        }
+        return (pos != -1);
+    }
+
     bool CheckCycled(const BidirectionalPath& path) const {
         return FindCycleStart(path) != -1;
     }
@@ -939,6 +951,10 @@ public:
         return false;
     }
 
+    bool DetectCycleScaffolding(BidirectionalPath& path) {
+          return is_detector_.CheckCycledNonIS(path);
+    }
+
     virtual bool MakeSimpleGrowStep(BidirectionalPath& path) = 0;
 
     virtual bool ResolveShortLoopByCov(BidirectionalPath& path) = 0;
@@ -1148,6 +1164,12 @@ public:
             if (candidates[0].e_ == path.Back() || (cfg::get().avoid_rc_connections && candidates[0].e_ == g_.conjugate(path.Back()))) {
                 return false;
             }
+            BidirectionalPath temp_path(path);
+            temp_path.PushBack(candidates[0].e_);
+            if(this->DetectCycleScaffolding(temp_path)) {
+                return false;
+            }
+
 //            int gap = cfg::get().pe_params.param_set.scaffolder_options.fix_gaps ?
 //                            gap_joiner_->FixGap(path.Back(), candidates.back().e_, candidates.back().d_) : candidates.back().d_;
             if(cfg::get().pe_params.param_set.scaffolder_options.fix_gaps) {

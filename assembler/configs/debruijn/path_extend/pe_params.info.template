@@ -46,7 +46,8 @@ singlecell {
         cl_threshold    0
 
         fix_gaps        true
-        min_gap_score   3.0
+	;next param should be 0.51 - 1.0 if use_old_score = true and 3.0 otherwise
+        min_gap_score   0.7
 
         max_must_overlap  -2
         max_can_overlap   0.5
@@ -100,7 +101,8 @@ meta {
         cl_threshold    0
 
         fix_gaps        true
-        min_gap_score   3.0
+	;next param should be 0.51 - 1.0 if use_old_score = true and 3.0 otherwise
+        min_gap_score   0.7
 
         max_must_overlap  -2
         max_can_overlap   0.5
@@ -211,7 +213,8 @@ multicell {
         cl_threshold  0
 
         fix_gaps       true
-        min_gap_score   3.0
+	;next param should be 0.51 - 1.0 if use_old_score = true and 3.0 otherwise
+        min_gap_score   0.7
 
         max_must_overlap  -2
         max_can_overlap   0.5
