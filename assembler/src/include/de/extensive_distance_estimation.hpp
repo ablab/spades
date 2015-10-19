@@ -96,8 +96,8 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
 
   double WeightSum(const InHistogram& hist) const {
     double answer = 0.;
-    for (auto iter = hist.begin(); iter != hist.end(); ++iter) {
-      answer += iter->weight;
+    for (const auto& p : hist) {
+      answer += p.weight;
     }
     return answer;
   }
@@ -107,11 +107,11 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
       return true;
 
     auto prev = hist.begin()->d;
-    for (auto it = hist.begin(); it != hist.end(); ++it) {
-      if (math::gr(prev, it->d))
+    for (auto p : hist) {
+      if (math::gr(prev, p.d))
         return false;
 
-      prev = it->d;
+      prev = p.d;
     }
     return true;
   }
@@ -122,8 +122,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
       return;
 
     if (where.size() == 0) {
-      for (auto iter = what.begin(); iter != what.end(); ++iter) {
-        Point to_be_added = *iter;
+      for (auto to_be_added : what) {
         to_be_added.d += shift;
         where.insert(to_be_added);
       }
@@ -136,14 +135,12 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
     // straightforwardly.
     if (math::ls(where.rbegin()->d, what.begin()->d + shift) ||
         math::gr(where.begin()->d, what.rbegin()->d + shift)) {
-      for (auto iter = what.begin(); iter != what.end(); ++iter) {
-        Point to_be_added = *iter;
+      for (auto to_be_added : what) {
         to_be_added.d += shift;
         where.insert(to_be_added);
       }
     } else {
-      for (auto iter = what.begin(); iter != what.end(); ++iter) {
-        Point to_be_added(*iter);
+      for (auto to_be_added : what) {
         to_be_added.d += shift;
         auto low_bound = std::lower_bound(where.begin(), where.end(), to_be_added);
         if (to_be_added == *low_bound) {

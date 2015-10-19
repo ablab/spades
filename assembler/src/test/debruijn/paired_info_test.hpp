@@ -112,6 +112,7 @@ BOOST_AUTO_TEST_CASE(PairedInfoConstruct) {
     BOOST_CHECK(Contains(pi, 8, 1, -1));
     //Check for conjugate info
     BOOST_CHECK(Contains(pi, 9, 2, 8));
+    BOOST_CHECK(Contains(pi, 2, 9, -8));
     pi.Add(1, 3, {2, 2});
     pi.Add(1, 3, {3, 1});
     BOOST_CHECK(Contains(pi, 1, 8, 1));
@@ -119,6 +120,7 @@ BOOST_AUTO_TEST_CASE(PairedInfoConstruct) {
     RawHistogram test1;
     test1.insert({2, 1});
     test1.insert({3, 2});
+    //pi.PrintAll();
     BOOST_CHECK_EQUAL(pi.Get(1, 3).Unwrap(), test1);
     RawHistogram test2;
     test2.insert({-2, 1});
@@ -150,7 +152,7 @@ BOOST_AUTO_TEST_CASE(PairedInfoRemove) {
     pi.Add(8, 14, {3, 1, 0});
     pi.Add(13, 4, {5, 1, 0});
     BOOST_CHECK(pi.contains(1, 14));
-    pi.Remove(1);
+    pi.Remove(1); //TODO: fix that
     EdgeSet test3 = {3, 8};
     BOOST_CHECK_EQUAL(GetNeighbours(pi, 14), test3);
 }
