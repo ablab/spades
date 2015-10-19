@@ -137,6 +137,12 @@ struct pe_config {
 
     bool remove_overlaps;
     bool use_coordinated_coverage;
+
+    struct CoordinatedCoverageT {
+      size_t max_edge_length_in_repeat;
+      double delta;
+    } coordinated_coverage;
+
   };
 
   struct LongReads {

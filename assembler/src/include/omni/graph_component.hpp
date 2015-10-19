@@ -102,8 +102,10 @@ public:
 	}
 
 	//Full graph component
-	GraphComponent(const Graph &g, const string &name = "") : graph_(g), name_(name) {
-//		Fill(g.begin(), g.end());
+	GraphComponent(const Graph &g, bool fill = true, const string &name = "") : graph_(g), name_(name) {
+		if(fill) {
+	        Fill(g.begin(), g.end());
+		}
 	}
 
 	//may be used for conjugate closure

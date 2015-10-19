@@ -1292,39 +1292,30 @@ private:
     DECL_LOGGER("MatePairExtensionChooser");
 };
 
-//fixme misprint in name
-class CoordiantedCoverageExtensionChooser: public ExtensionChooser {
+class CoordinatedCoverageExtensionChooser: public ExtensionChooser {
 public:
-    CoordiantedCoverageExtensionChooser(const Graph& g) :
-            ExtensionChooser(g) {
+    CoordinatedCoverageExtensionChooser(const Graph& g, CoverageAwareIdealInfoProvider& coverage_provider, size_t max_edge_length_in_repeat, double delta) :
+            ExtensionChooser(g), provider_(coverage_provider), max_edge_length_in_repeat_(max_edge_length_in_repeat), delta_(delta) {
     }
 
     EdgeContainer Filter(const BidirectionalPath& path,
             const EdgeContainer& edges) const override {
-        DEBUG("Coordianted coverage extension chooser");
-        //fixme what is this bound for?
-        if (path.Length() < MIN_PATH_LENGTH) {
-            DEBUG("Path is too short");
-            return EdgeContainer();
-        }
-        path.PrintInfo();
-        double path_coverage = MinCoverageLongEdges(path);
-        //fixme it usually makes sense to use -1. as a non-valid return value. 99999???
-        //TODO: temp fix
-        if (path_coverage > 999990.0 || path_coverage < MINIMUM_PATH_COVERAGE) {
-            DEBUG("Path coverage can't be calculated or too low");
+
+
+        double path_coverage = provider_.EstimatePathCoverage(path);
+        if (math::eq(path_coverage, -1.0)) {
+            DEBUG("Path coverage can't be calculated");
             return EdgeContainer();
         }
         DEBUG("Path coverage is " << path_coverage);
-        //fixme let's think of less straightforward criteria
+
         for (auto e_d : edges) {
-            //fixme this->
-            if (path.Contains(this->g_.EdgeEnd(e_d.e_))) {
+            if (path.Contains(g_.EdgeEnd(e_d.e_))) {
                 DEBUG("Avoid to create loops");
                 return EdgeContainer();
             }
         }
-        return FindExtensionTroughRepeat(path, edges, path_coverage);
+        return FindExtensionTroughRepeat(edges, path_coverage);
     }
 
 private:
@@ -1332,22 +1323,18 @@ private:
     void UpdateCanBeProcessed(VertexId v,
             std::queue<VertexId>& can_be_processed) const {
         DEBUG("Updating can be processed");
-            //fixme this->
-        for (EdgeId e : this->g_.OutgoingEdges(v)) {
+        for (EdgeId e : g_.OutgoingEdges(v)) {
             VertexId neighbour_v = this->g_.EdgeEnd(e);
-            //fixme this->
-            if (this->g_.length(e) < MAX_EDGE_LENGTH_IN_REPEAT) {
+            if (g_.length(e) < max_edge_length_in_repeat_) {
                 DEBUG(
                         "Adding vertex " << neighbour_v.int_id()
-            //fixme g_.str(e)??? What does ToString(e) return?
-                                << "through edge " << ToString(e));
+                                << "through edge " << g_.str(e));
                 can_be_processed.push(neighbour_v);
             }
         }
     }
 
-    //fixme no need to pass VertexId via const&
-    GraphComponent<Graph> GetRepeatComponent(const VertexId& start) const {
+    GraphComponent<Graph> GetRepeatComponent(const VertexId start) const {
         set<VertexId> vertices_of_component;
         vertices_of_component.insert(start);
         std::queue<VertexId> can_be_processed;
@@ -1355,29 +1342,23 @@ private:
         while (!can_be_processed.empty()) {
             VertexId v = can_be_processed.front();
             can_be_processed.pop();
-            //fixme count == 0 is shorter
-            if (vertices_of_component.find(v) != vertices_of_component.end()) {
-                //fixme what is the problem with such components
+            if (vertices_of_component.count(v) != 0) {
+
                 DEBUG("Component is too complex");
-                //fixme why clear? Add constructor to create empty component, if it is not there
-                vertices_of_component.clear();
-                return GraphComponent<Graph>(this->g_,
-                        vertices_of_component.begin(),
-                        vertices_of_component.end());
+                return GraphComponent<Graph>(g_, false);
             }
-            DEBUG("Adding vertex " << this->g_.str(v) << " to component set");
+            DEBUG("Adding vertex " << g_.str(v) << " to component set");
             vertices_of_component.insert(v);
             UpdateCanBeProcessed(v, can_be_processed);
         }
 
-        GraphComponent<Graph> gc(this->g_, vertices_of_component.begin(),
+        GraphComponent<Graph> gc(g_, vertices_of_component.begin(),
                 vertices_of_component.end());
         return gc;
     }
 
     EdgeContainer FinalFilter(const EdgeContainer& edges,
-    //fixme EdgeId& ???
-            EdgeId& edge_to_extend) const {
+            EdgeId edge_to_extend) const {
         EdgeContainer result;
         for (auto e_with_d : edges) {
             if (e_with_d.e_ == edge_to_extend) {
@@ -1387,101 +1368,58 @@ private:
         return result;
     }
 
-    EdgeContainer FindExtensionTroughRepeat(const BidirectionalPath& path,
-            const EdgeContainer& edges, double path_coverage) const {
-        GraphComponent<Graph> gc = GetRepeatComponent(
-                this->g_.EdgeEnd(path.Back()));
-        vector<EdgeId> good_extensions;
-        //fixme is it used anywhere?
-        vector<EdgeId> bad_extensions;
-
-        for (auto e : gc.edges()) {
-            //fixme exterminate this->
-            if (this->g_.length(e) > MAX_EDGE_LENGTH_IN_REPEAT) {
-                DEBUG("Repeat component contains long edges");
-                return EdgeContainer();
-            }
+    bool GoodExtension(EdgeId e, double path_coverage) const {
+        if (math::ge(g_.coverage(e), path_coverage - path_coverage * delta_)) {
+            return true;
         }
+        else {
+            return false;
+        }
+    }
 
-        for (auto v : gc.sinks()) {
-            for (auto e : this->g_.OutgoingEdges(v)) {
-                //fixme use math:: for comparison of doubles
-                if (this->g_.coverage(e)
-                        > path_coverage - path_coverage * DELTA) {
-                    good_extensions.push_back(e);
+    EdgeContainer FindExtensionTroughRepeat(const EdgeContainer& edges, double path_coverage) const {
+        set<EdgeId> good_extensions;
+        for(auto edge : edges) {
+
+            if(g_.length(edge.e_) > max_edge_length_in_repeat_) {
+                if(GoodExtension(edge.e_, path_coverage)) {
+                    good_extensions.insert(edge.e_);
+                    continue;
+                }
+            }
+
+            GraphComponent<Graph> gc = GetRepeatComponent(g_.EdgeEnd(edge.e_));
+            for (auto e : gc.edges()) {
+                if (g_.length(e) > max_edge_length_in_repeat_) {
+                    DEBUG("Repeat component contains long edges");
+                    return EdgeContainer();
+                }
+            }
+
+            for (auto v : gc.sinks()) {
+                for (auto e : g_.OutgoingEdges(v)) {
+                    if(GoodExtension(edge.e_, path_coverage)) {
+                        good_extensions.insert(edge.e_);
+                    }
                 }
             }
         }
 
         DEBUG("Number of good extensions is " << good_extensions.size());
 
-        //fixme this logic is a bit strange. What if there are multiple edges there, 
-        // but all correspond to a single path extension edge? Seems like a valid situation for me.
         if (good_extensions.size() != 1) {
             DEBUG("Returning");
             return EdgeContainer();
         }
 
-        EdgeId edge_to_extend = EdgeId();
-        //fixme wouldn't overall logic be simpler if we launch 
-        // traversals from each extension edge (in edges container) and look at where we come
-        // if we come to good edges from single extension, then it is the answer.
-        // Without any backtracking.
-        //fixme probably use .front() instead of [0], but it is a matter of habit
-        if (this->g_.EdgeEnd(path.Back())
-                != this->g_.EdgeStart(good_extensions[0])) {
-            PathStorageCallback<Graph> callback(this->g_);
-            //fixme magic constants
-            PathProcessor<Graph> path_processor(this->g_,
-                    this->g_.EdgeEnd(path.Back()), 1000);
-            path_processor.Process(this->g_.EdgeStart(good_extensions[0]), 0,
-                    1000, callback);
-            if (callback.size() != 1) {
-                //fixme why is that bad?
-                DEBUG("Not a single path to good extension");
-                return EdgeContainer();
-            }
-            edge_to_extend = callback.paths()[0][0];
-        } else {
-            //fixme WAT? What is it for, is it why we need strange FinalFilter?
-            edge_to_extend = good_extensions[0];
-        }
-        DEBUG("Filtering... Extend with edge " << edge_to_extend.int_id());
-        //fixme move to a separate function
-        auto path_to_draw = path.ToVector();
-        path_to_draw.push_back(edge_to_extend);
-        //fixme do not access cfg::get() in algorithms, only in pipeline logic. 
-        // Pass pictures folder as an optional argument instead.
-        make_dir(cfg::get().output_dir + "new_extender");
-        StrGraphLabeler<Graph> labeler1(this->g_);
-        CoverageGraphLabeler<Graph> labeler2(this->g_);
-        visualization::WriteComponentsAlongPath(this->g_, path_to_draw,
-                cfg::get().output_dir + "new_extender/"
-                        + ToString(path.GetId()),
-                visualization::DefaultColorer(this->g_),
-                CompositeLabeler < Graph > (labeler1, labeler2));
-        return FinalFilter(edges, edge_to_extend);
+        DEBUG("Filtering... Extend with edge " << good_extensions.begin()->int_id());
+        return FinalFilter(edges, *good_extensions.begin());
     }
-
-//fixme you can use CoverageAwareIdealInfoProvider instead of this method
-    double MinCoverageLongEdges(const BidirectionalPath& path,
-    //fixme magic constant
-            size_t min_edge_length_to_consider = 2000) const {
-    //fixme use std::numeric_limits
-        double coverage = 1000000.0;
-        for (auto e : path.ToVector()) {
-            if (this->g_.length(e) >= min_edge_length_to_consider) {
-                coverage = min(coverage, this->g_.coverage(e));
-            }
-        }
-        return coverage;
-    }
-
-    //fixme make fields and configure via constructor
-    const size_t MIN_PATH_LENGTH = 2000;
-    const size_t MAX_EDGE_LENGTH_IN_REPEAT = 300;
-    const double MINIMUM_PATH_COVERAGE = 10.0;
-    const double DELTA = 0.4;
+    
+    //fixme codestyle
+    const size_t max_edge_length_in_repeat_;
+    const double delta_;
+    CoverageAwareIdealInfoProvider provider_;
 protected:
     DECL_LOGGER("CoordCoverageExtensionChooser");
 };

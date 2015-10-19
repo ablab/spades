@@ -67,6 +67,11 @@ singlecell {
     }
     use_coordinated_coverage false
     remove_overlaps     true
+    coordinated_coverage
+    {
+       max_edge_length_repeat 300
+       delta                  0.4
+    }
 }
 
 meta {
@@ -122,7 +127,13 @@ meta {
     }
 
     remove_overlaps     true
-    use_coordinated_coverage true
+    use_coordinated_coverage false
+    
+    coordinated_coverage
+    {
+       max_edge_length_repeat 300
+       delta                  0.4
+    }
 }
 
 moleculo {
@@ -178,6 +189,11 @@ moleculo {
 
     remove_overlaps     true
     use_coordinated_coverage false
+    coordinated_coverage
+    {
+       max_edge_length_repeat 300
+       delta                  0.4
+    }
 }
 
 multicell {
@@ -237,6 +253,11 @@ multicell {
 
     remove_overlaps     true
     use_coordinated_coverage false
+    coordinated_coverage
+    {
+       max_edge_length_repeat 300
+       delta                  0.4
+    }
 }
 
 long_reads {
