@@ -32,34 +32,26 @@ enum OffsetType {
 
 //todo extract code about offset from here
 
-/**
- * It includes 3 strings: with id, sequence and quality of the input read.
- */
+typedef uint16_t SequenceOffsetT;
+
+
 class SingleRead {
  public:
+
   static std::string EmptyQuality(const std::string& seq) {
     return std::string(seq.size(), (char) 33);
   }
 
   static const int BAD_QUALITY_THRESHOLD = 2;
 
-  /*
-   * Default constructor.
-   */
   SingleRead() :
-      name_(""), seq_(""), qual_(""), valid_(false) {
+      name_(""), seq_(""), qual_(""), left_offset_(0), right_offset_(0), valid_(false) {
   }
 
-  /*
-   * Test constructor.
-   *
-   * @param name The name of the SingleRead (id in input file).
-   * @param seq The sequence of ATGC letters.
-   * @param qual The quality of the SingleRead sequence.
-   */
   SingleRead(const std::string& name, const std::string& seq,
-             const std::string& qual, OffsetType offset) :
-      name_(name), seq_(seq), qual_(qual) {
+             const std::string& qual, OffsetType offset,
+             SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0) :
+      name_(name), seq_(seq), qual_(qual), left_offset_(left_offset), right_offset_(right_offset) {
     Init();
     for (size_t i = 0; i < qual_.size(); ++i) {
       qual_[i] = (char)(qual_[i] - offset);
@@ -67,60 +59,36 @@ class SingleRead {
   }
 
   SingleRead(const std::string& name, const std::string& seq,
-             const std::string& qual) :
-      name_(name), seq_(seq), qual_(qual) {
+             const std::string& qual,
+             SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0) :
+      name_(name), seq_(seq), qual_(qual), left_offset_(left_offset), right_offset_(right_offset) {
     Init();
   }
 
-  SingleRead(const std::string& name, const std::string& seq) :
-      name_(name), seq_(seq), qual_(EmptyQuality(seq_)) {
+  SingleRead(const std::string& name, const std::string& seq,
+             SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0) :
+      name_(name), seq_(seq), qual_(EmptyQuality(seq_)), left_offset_(left_offset), right_offset_(right_offset) {
     Init();
   }
 
-  /*
-   * Check whether SingleRead is valid.
-   *
-   * @return true if SingleRead is valid (there is no N in sequence
-   * and sequence size is equal to quality size), and false otherwise
-   */
   bool IsValid() const {
     return valid_;
   }
 
-  /*
-   * Return Sequence object, got from sequence string.
-   *
-   * @return SingleRead sequence.
-   */
   Sequence sequence(bool rc = false) const {
     VERIFY(valid_);
     return Sequence(seq_, rc);
   }
 
-  /*
-   * Return Quality object, got from quality string.
-   *
-   * @return SingleRead quality.
-   */
   Quality quality() const {
     VERIFY(valid_);
     return Quality(qual_);
   }
 
-  /*
-   * Return name of single read.
-   *
-   * @return SingleRead name.
-   */
   const std::string& name() const {
     return name_;
   }
 
-  /*
-   * Return size of SingleRead.
-   *
-   * @return The size of SingleRead sequence.
-   */
   size_t size() const {
     return seq_.size();
   }
@@ -129,31 +97,14 @@ class SingleRead {
     return size();
   }
 
-  /*
-   * Return SingleRead sequence string (in readable form with ATGC).
-   *
-   * @return SingleRead sequence string.
-   */
   const std::string& GetSequenceString() const {
     return seq_;
   }
 
-  /*
-   * Return SingleRead quality string (in readable form).
-   *
-   * @return SingleRead quality string.
-   */
   const std::string& GetQualityString() const {
     return qual_;
   }
 
-  /*
-   * Return SingleRead quality string, where every quality value is
-   * increased by PhredOffset (need for normalization of quality values).
-   * Do not modify original quality values.
-   *
-   * @return Modified SingleRead quality string.
-   */
   std::string GetPhredQualityString() const {
     int offset = PhredOffset;
     std::string res = qual_;
@@ -175,12 +126,6 @@ class SingleRead {
     return dignucl(seq_[i]);
   }
 
-  /*
-   * Return reversed complimentary SingleRead (SingleRead with new
-   * name, reversed complimentary sequence, and reversed quality).
-   *
-   * @return Reversed complimentary SingleRead.
-   */
   SingleRead operator!() const {
     std::string new_name;
     if (name_.length() >= 3 && name_.substr(name_.length() - 3) == "_RC") {
@@ -194,20 +139,21 @@ class SingleRead {
     //		} else {
     //			new_name = name_.substr(1, name_.length());
     //		}
-    return SingleRead(new_name, ReverseComplement(seq_), Reverse(qual_));
+    return SingleRead(new_name, ReverseComplement(seq_), Reverse(qual_), right_offset_, left_offset_);
   }
 
   SingleRead SubstrStrict(size_t from, size_t to) const {
     size_t len = to - from;
     //		return SingleRead(name_, seq_.substr(from, len), qual_.substr(from, len));
-    //		TODO make naming nicer
+    //		TODO remove naming?
     std::string new_name;
     if (name_.length() >= 3 && name_.substr(name_.length() - 3) == "_RC") {
       new_name = name_.substr(0, name_.length() - 3) + "_SUBSTR(" + ToString(size() - to) + "," + ToString(size() - from) + ")" + "_RC";
     } else {
       new_name = name_ + "_SUBSTR(" + ToString(from) + "," + ToString(to) + ")";
     }
-    return SingleRead(new_name, seq_.substr(from, len), qual_.substr(from, len));
+    return SingleRead(new_name, seq_.substr(from, len), qual_.substr(from, len),
+                      SequenceOffsetT(from + (size_t) left_offset_), SequenceOffsetT(size() - to + (size_t) right_offset_));
   }
 
   SingleRead Substr(size_t from, size_t to) const {
@@ -221,14 +167,6 @@ class SingleRead {
     return SubstrStrict(from, to);
   }
 
-  /*
-   * Check whether two SingleReads are equal.
-   *
-   * @param singleread The SingleRead we want to compare ours with.
-   *
-   * @return true if these two single reads have similar sequences,
-   * and false otherwise.
-   */
   bool operator==(const SingleRead& singleread) const {
     return seq_ == singleread.seq_;
   }
@@ -236,11 +174,6 @@ class SingleRead {
   void ChangeName(const std::string& new_name) {
     name_ = new_name;
   }
-
-  //	void ClearQuality() {
-  //		qual_ = std::string(seq_.size(), (char) 0);
-  //		UpdateValid();
-  //	}
 
   static bool IsValid(const std::string& seq) {
     for (size_t i = 0; i < seq.size(); ++i) {
@@ -251,9 +184,24 @@ class SingleRead {
     return true;
   }
 
+  SequenceOffsetT GetLeftOffset() const {
+      return left_offset_;
+  }
+
+  SequenceOffsetT GetRightOffset() const {
+      return right_offset_;
+  }
 
   bool BinWrite(std::ostream& file, bool rc = false) const {
-    return sequence(rc).BinWrite(file);
+    sequence(rc).BinWrite(file);
+    if (rc) {
+      file.write((const char *) &right_offset_, sizeof(right_offset_));
+      file.write((const char *) &left_offset_, sizeof(left_offset_));
+    } else {
+      file.write((const char *) &left_offset_, sizeof(left_offset_));
+      file.write((const char *) &right_offset_, sizeof(right_offset_));
+    }
+    return !file.fail();
   }
 
 
@@ -278,6 +226,12 @@ class SingleRead {
   /*
    * @variable The flag of SingleRead correctness.
    */
+
+  //Left and right offsets with respect to original sequence
+  SequenceOffsetT left_offset_;
+
+  SequenceOffsetT right_offset_;
+
   bool valid_;
 
   void Init() {
@@ -295,18 +249,34 @@ inline std::ostream& operator<<(std::ostream& os, const SingleRead& read) {
 class SingleReadSeq {
 
  public:
-  SingleReadSeq(const Sequence& s): seq_(s) {
+  SingleReadSeq(const Sequence& s,
+                SequenceOffsetT left_offset = 0, SequenceOffsetT right_offset = 0):
+      seq_(s), left_offset_(left_offset), right_offset_(right_offset) {
   }
 
-  SingleReadSeq() {
+  SingleReadSeq(): seq_(), left_offset_(0), right_offset_(0) {
   }
 
   bool BinRead(std::istream& file) {
-    return seq_.BinRead(file);
+    seq_.BinRead(file);
+    file.read((char*) &left_offset_, sizeof(left_offset_));
+    file.read((char*) &right_offset_, sizeof(right_offset_));
+    return !file.fail();
   }
 
-  bool BinWrite(std::ostream& file) const {
-    return seq_.BinWrite(file);
+  bool BinWrite(std::ostream& file, bool rc = false) const {
+    if (rc)
+      (!seq_).BinWrite(file);
+    else
+      seq_.BinWrite(file);
+    if (rc) {
+      file.write((const char *) &right_offset_, sizeof(right_offset_));
+      file.write((const char *) &left_offset_, sizeof(left_offset_));
+    } else {
+      file.write((const char *) &left_offset_, sizeof(left_offset_));
+      file.write((const char *) &right_offset_, sizeof(right_offset_));
+    }
+    return !file.fail();
   }
 
   //    SingleReadSeq(std::istream& file): seq_(file, true) {
@@ -332,8 +302,21 @@ class SingleReadSeq {
     return SingleReadSeq(!seq_);
   }
 
+  SequenceOffsetT GetLeftOffset() const {
+    return left_offset_;
+  }
+
+  SequenceOffsetT GetRightOffset() const {
+    return right_offset_;
+  }
+
  private:
   Sequence seq_;
+
+  //Left and right offsets with respect to original sequence
+  SequenceOffsetT left_offset_;
+
+  SequenceOffsetT right_offset_;
 };
 
 inline std::ostream& operator<<(std::ostream& os, const SingleReadSeq& read) {
