@@ -17,6 +17,8 @@ import shutil
 import getopt
 import re
 import datetime
+import argparse
+import subprocess
 from traceback import print_exc
 
 sys.path.append('./src/spades_pipeline/')
@@ -401,14 +403,22 @@ def GetContigsList(dataset_info, folder):
 
 ### main ###
 try:
-    if len(sys.argv) < 2:
-        print("Data set info is not provided")
+    if len(sys.argv) == 1:
+        command = 'python {} -h'.format(sys.argv[0])
+        subprocess.call(command, shell=True)
         sys.exit(1)
+
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('info', metavar='CONFIG_FILE', type=str,  help='teamcity.py info config')
+    parser.add_argument("--run_name", "-n", help="output dir custom suffix", type=str)
+    parser.add_argument("--spades_cfg_dir", "-c", help="SPAdes config directory", type=str)
+    parser.add_argument("--local_output_dir", "-o", help="use this output dir, override output directory provided in config", type=str)
+    args = parser.parse_args()
 
     new_log = ''
     exit_code = 0
 
-    dataset_info = load_info(sys.argv[1])
+    dataset_info = load_info(args.info)
     working_dir = os.getcwd()
 
     #make dirs and remembering history
@@ -416,10 +426,15 @@ try:
     if 'build_agent' in dataset_info.__dict__:
         output_dir += "_" + dataset_info.build_agent
 
-    if len(sys.argv) > 2:
-        output_dir += "_" + sys.argv[2]
+    #add custom suffix if present
+    if args.run_name:
+        output_dir += "_" + args.run_name
 
-    output_dir = os.path.join(dataset_info.output_dir, output_dir)
+    #override output dir set by .info config
+    if args.local_output_dir:
+        output_dir = os.path.join(args.local_output_dir, output_dir)
+    else:
+        output_dir = os.path.join(dataset_info.output_dir, output_dir)
 
     history_log = read_log(output_dir, dataset_info)
     if history_log != "":
@@ -464,9 +479,9 @@ try:
             i += 1
         i += 1
 
-    if len(sys.argv) > 3:
+    if args.spades_cfg_dir:
         spades_params.append("--configs-dir")
-        spades_params.append(sys.argv[3])
+        spades_params.append(args.spades_cfg_dir)
 
     spades_cmd = ""
     if 'dipspades' in dataset_info.__dict__ and dataset_info.dipspades:
@@ -544,8 +559,8 @@ try:
     if 'contig_storage' in dataset_info.__dict__:
         contig_dir = dataset_info.contig_storage
 
-        if len(sys.argv) > 2:
-            contig_dir += "_" + sys.argv[2]
+        if args.run_name:
+            contig_dir += "_" + args.run_name
 
     #comparing misassemblies
     rewrite_latest = True
@@ -622,8 +637,8 @@ try:
             os.makedirs(quast_contig_dir)
 
         name_prefix = datetime.datetime.now().strftime('%Y%m%d-%H%M')
-        #        if len(sys.argv) == 3:
-        #            name_prefix += "_" + sys.argv[2]
+        #        if args.run_name:
+        #            name_prefix += "_" + args.run_name
         print("Contigs have prefix " + name_prefix)
 
         shutil.copy(os.path.join(output_dir, contigs[0][1] + ".fasta"), os.path.join(contig_dir, name_prefix + "_ctg.fasta"))
