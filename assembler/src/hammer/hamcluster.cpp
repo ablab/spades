@@ -203,10 +203,11 @@ void KMerHamClusterer::cluster(const std::string &prefix,
   }
 }
 
-void TauOneKMerHamClusterer::cluster(const std::string &, const KMerData &data, ConcurrentDSU &uf) {
+static void ClusterChunk(size_t start_idx, size_t end_idx, const KMerData &data, ConcurrentDSU &uf) {
     unsigned nthreads = cfg::get().general_max_nthreads;
+
 #   pragma omp parallel for num_threads(nthreads) schedule(guided)
-    for (size_t idx = 0; idx < data.size(); ++idx) {
+    for (size_t idx = start_idx; idx < end_idx; ++idx) {
         hammer::KMer kmer = data.kmer(idx);
 
         if (kmer.GetHash() > (!kmer).GetHash())
@@ -233,5 +234,18 @@ void TauOneKMerHamClusterer::cluster(const std::string &, const KMerData &data, 
                 }
             }
         }
+    }
+}
+
+void TauOneKMerHamClusterer::cluster(const std::string &, const KMerData &data, ConcurrentDSU &uf) {
+    size_t start_idx = 0;
+    while (start_idx < data.size()) {
+        size_t end_idx = start_idx + 100500;
+        if (end_idx > data.size())
+            end_idx = data.size();
+
+        ClusterChunk(start_idx, end_idx, data, uf);
+
+        start_idx = end_idx;
     }
 }
