@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include <boost/optional.hpp>
 #include "paired_info.hpp"
+#include "boost/optional.hpp"
 
 namespace omnigraph {
 
@@ -25,23 +25,53 @@ class EdgePairIterator :
 
 protected:
     //They're not intended to be constucted explicitly, only via begin/end.
-    EdgePairIterator(const Index& index, OuterIterator i, InnerIterator j, bool conj = false)
-        : index_(index), i_(i), j_(j), conj_(conj)
-    {}
+    EdgePairIterator(const Index& index, OuterIterator i, bool conj = false)
+        : index_(index), i_(i), conj_(conj)
+    {
+        StartOver();
+    }
 
 public:
     void increment() {
-        ++(*j_);
-        if (j_ == index_.Get(i_->first).end()) {
+        INFO("PP was at [" << conj_ << "] " << first() << "->" << second());
+        j_->increment();
+        if (j_ == stop_j_) { //Traversed all neighbours, jump to the next edge
+            INFO("NEXT EDGE");
             ++i_;
-            if (!conj_ && i_ == index_.data_end()) {
-                conj_ = true;
-                i_ = index_.data_begin();
+            if (i_ == index_.data_end()) {
+                if (conj_) {
+                    INFO("FULL STOP");
+                } else {
+                    INFO("PP SWITCH CONJ");
+                    conj_ = true;
+                    i_ = index_.data_begin();
+                }
+            } else {
+                INFO("NEXT NEIGH");
             }
-            auto edge = conj_ ? index_.graph().conjugate(i_->first) : i_->first;
-            j_ = (i_ == index_.data_end()) ? InnerIterator() : index_.Get(edge).begin();
+            StartOver();
         }
     }
+
+private:
+    void StartOver() {
+        if (i_ == index_.data_end()) {
+            j_.reset();
+        } else {
+            auto edge = conj_ ? index_.graph().conjugate(i_->first) : i_->first;
+            auto ep = index_.Get(edge);
+            j_ = ep.begin();
+            stop_j_ = ep.end();
+            //
+            InnerIterator k = j_;
+            while (k != stop_j_)
+                k->increment();
+            INFO("CHECKED");
+            //
+        }
+    }
+
+public:
 
     typename Index::FullHistProxy dereference() const {
         return (*j_)->second;
@@ -64,18 +94,15 @@ public:
     }
 
     static EdgePairIterator begin(const Index& index) {
-        InnerIterator inner;
-        if (index.size())
-            inner = index.Get(index.data_begin()->first).begin();
-        return EdgePairIterator(index, index.data_begin(), inner, !inner);
+        return EdgePairIterator(index, index.data_begin(), !index.size());
     }
     static EdgePairIterator end(const Index& index) {
-        return EdgePairIterator(index, index.data_end(), InnerIterator(), true);
+        return EdgePairIterator(index, index.data_end(), true);
     }
 private:
     const Index &index_;
     OuterIterator i_;
-    InnerIterator j_;
+    InnerIterator j_, stop_j_;
     bool conj_;
 };
 

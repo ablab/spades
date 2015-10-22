@@ -175,6 +175,9 @@ BOOST_AUTO_TEST_CASE(PairedInfoUnexistingEdges) {
 BOOST_AUTO_TEST_CASE(PairedInfoConjugate) {
     MockGraph graph;
     MockIndex pi(graph);
+    pi.Add(1, 1, {0, 2});
+    BOOST_CHECK(Contains(pi, 1, 1, 0));
+    BOOST_CHECK(Contains(pi, 2, 2, 0));
     pi.Add(1, 3, {10, 2});
     BOOST_CHECK(Contains(pi, 1, 3, 10));
     BOOST_CHECK(Contains(pi, 3, 1, -10));
@@ -183,6 +186,11 @@ BOOST_AUTO_TEST_CASE(PairedInfoConjugate) {
     pi.Add(8, 14, {10, 2});
     BOOST_CHECK(Contains(pi, 13, 9, 15));
     BOOST_CHECK(Contains(pi, 9, 13, -15));
+    pi.Add(2, 4, {10, 2});
+    BOOST_CHECK(Contains(pi, 2, 4, 10));
+    BOOST_CHECK(Contains(pi, 4, 2, -10));
+    BOOST_CHECK(Contains(pi, 1, 3, -12));
+    BOOST_CHECK(Contains(pi, 3, 1, 12));
 }
 
 BOOST_AUTO_TEST_CASE(PairedInfoNeighbours) {
@@ -203,7 +211,24 @@ BOOST_AUTO_TEST_CASE(PairedInfoNeighbours) {
     BOOST_CHECK_EQUAL(GetNeighbours(pi, 14), test2);
 }
 
-/*BOOST_AUTO_TEST_CASE(PairedInfoRawNeighbours) {
+BOOST_AUTO_TEST_CASE(PairedInfoRawData) {
+    MockGraph graph;
+    MockIndex pi(graph);
+    pi.Add(1, 3, RawPoint(2, 1));
+    pi.Add(2, 4, RawPoint(-3, 1));
+    RawHistogram test1;
+    test1.insert({1, 1});
+    test1.insert({2, 1});
+    BOOST_CHECK_EQUAL(pi.Get(1, 3).Unwrap(), test1);
+    RawHistogram test2;
+    test2.insert({2, 1});
+    BOOST_CHECK_EQUAL(pi.RawGet(1, 3).Unwrap(), test2);
+    RawHistogram test3;
+    test3.insert({-3, 1});
+    BOOST_CHECK_EQUAL(pi.RawGet(2, 4).Unwrap(), test3);
+}
+
+BOOST_AUTO_TEST_CASE(PairedInfoRawNeighbours) {
     MockGraph graph;
     MockIndex pi(graph);
     pi.Add(1, 3, RawPoint(1, 1));
@@ -214,15 +239,15 @@ BOOST_AUTO_TEST_CASE(PairedInfoNeighbours) {
     pi.Add(9, 2, RawPoint(6, 1));
     pi.Add(2, 13, RawPoint(7, 1));
 
-    PrintPi(pi);
+    //PrintPi(pi);
 
     EdgeSet test1 = {3, 4, 8, 9};
     BOOST_CHECK_EQUAL(GetRawNeighbours(pi, 1), test1);
-    EdgeSet test2 = {};
+    EdgeSet test2 = {13};
     BOOST_CHECK_EQUAL(GetRawNeighbours(pi, 2), test2);
-    EdgeSet test3 = {1};
+    EdgeSet test3 = {3};
     BOOST_CHECK_EQUAL(GetRawNeighbours(pi, 14), test3);
-}*/
+}
 
 BOOST_AUTO_TEST_CASE(PairedInfoPairTraverse) {
     MockGraph graph;
@@ -231,13 +256,17 @@ BOOST_AUTO_TEST_CASE(PairedInfoPairTraverse) {
     BOOST_CHECK(omnigraph::de::pair_begin(pi) == omnigraph::de::pair_end(pi));
     EdgeDataSet empty;
     BOOST_CHECK_EQUAL(GetEdgePairInfo(pi), empty);
-    RawPoint p1 = {10, 1}, p2 = {20, 1}, pj1 = {12, 1}, pj2 = {27, 1};
+    RawPoint p0 = {0, 0}, p1 = {10, 1}, p2 = {20, 1}, pj1 = {12, 1}, pj2 = {27, 1};
     pi.Add(1, 3, p1);
     pi.Add(1, 9, p2);
+    pi.Add(1, 1, p0);
+    pi.Add(2, 4, p1);
     BOOST_CHECK(omnigraph::de::pair_begin(pi) != omnigraph::de::pair_end(pi));
-
-    EdgeDataSet test1 = {{1, 3, p1}, {3, 1, -p1}, {2, 4, -pj1}, {4, 2, pj1},
-                         {1, 9, p2}, {9, 1, -p2}, {2, 8, -pj2}, {8, 2, pj2}};
+    INFO("----border----")
+    EdgeDataSet test1 = {{1, 1, p0}, {2, 2, p0},
+                         {1, 3, p1}, {3, 1, -p1}, {2, 4, -pj1}, {4, 2, pj1},
+                         {1, 9, p2}, {9, 1, -p2}, {2, 8, -pj2}, {8, 2, pj2},
+                         {2, 4, p1}, {4, 2, -p1}, {1, 3, -pj1}, {3, 1, pj1}};
     BOOST_CHECK_EQUAL(GetEdgePairInfo(pi), test1);
 }
 

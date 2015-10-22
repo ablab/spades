@@ -39,7 +39,7 @@ public:
     class HistProxy {
 
     public:
-        class Iterator: public boost::iterator_facade<Iterator, Point, boost::forward_traversal_tag, Point> {
+        class Iterator: public boost::iterator_facade<Iterator, Point, boost::bidirectional_traversal_tag, Point> {
             typedef typename Histogram::const_iterator const_iterator;
 
         public:
@@ -61,10 +61,20 @@ public:
             }
 
             void increment() {
+                INFO("HP: was at " << "[" << conj_ << "], " << dereference());
                 ++iter_;
                 if (full && !conj_ && iter_ == stop_iter_) {
+                    INFO("HP SWITCH CONJ");
                     conj_ = true;
                     iter_ = jump_iter_;
+                }
+            }
+
+            void decrement() {
+                --iter_;
+                if (full && conj_ && iter_ == jump_iter_) {
+                    conj_ = false;
+                    iter_ = stop_iter_;
                 }
             }
 
@@ -95,36 +105,31 @@ public:
         {}
 
         Iterator begin() const {
-            if (full) {
-                if (hist_.empty()) {
-                    auto stop = conj_hist_.end();
-                    return Iterator(conj_hist_.begin(), stop, stop, offset_, true);
-                } else {
-                    auto stop = hist_.end();
-                    auto jump = conj_hist_.empty() ? stop : conj_hist_.begin();
-                    return Iterator(hist_.begin(), stop, jump, offset_, false);
-                }
+            if (full) { //Only one branch will actually be in the binary
+                auto conj = hist_.empty();
+                auto start = conj ? conj_hist_.begin() : hist_.begin();
+                return Iterator(start, hist_.end(), conj_hist_.begin(), offset_, conj);
+            } else {
+                auto stop = hist_.end();
+                return Iterator(hist_.begin(), stop, stop, 0, false);
             }
-            //return Iterator(hist_.begin(), offset_);
         }
         Iterator end() const {
             if (full) {
-                if (conj_hist_.empty()) {
-                    auto stop = hist_.end();
-                    return Iterator(stop, stop, stop, offset_, true);
-                } else {
-                    auto stop = conj_hist_.end();
-                    return Iterator(stop, stop, stop, offset_, true);
-                }
+                auto stop = conj_hist_.end();
+                return Iterator(stop, stop, stop, offset_, true);
+            } else {
+                auto stop = hist_.end();
+                return Iterator(stop, stop, stop, 0, false);
             }
-            //return Iterator(hist_.end(), offset_);
         }
 
         Point front() const {
             return begin().dereference();
         }
+
         Point back() const {
-            //return Iterator(--hist_.end(), offset_).dereference();
+            return (--end()).dereference();
         }
 
         Histogram Unwrap() {
@@ -177,9 +182,11 @@ public:
             //friend class boost::iterator_core_access;
 
             void increment() {
+                INFO("EP (" << edge_ << "): was at [" << conj_ << "], " << dereference().first)
                 ++iter_;
                 if (full) { //For a full iterator, jump from the straight submap onto a conjugate one
                     if (!conj_ && iter_ == stop_iter_) {
+                        INFO("EP SWITCH CONJ");
                         conj_ = true;
                         iter_ = jump_iter_;
                     }
@@ -203,14 +210,14 @@ public:
             }
 
             EdgeHist<full> dereference() const {
-                if (full && conj_) {
+                if (full) {
                     int offset = index_.CalcOffset(edge_, iter_->first);
                     EdgePair conj = index_.ConjugatePair(edge_, iter_->first);
-                    const auto& hist = index_.GetImpl(conj);
-                    const auto& conj_hist = iter_->second;
-                    return std::make_pair(conj.first, HistProxy<full>(hist, conj_hist, offset));
-                }
-                else {
+                    const auto& hist = conj_ ? index_.GetImpl(conj) : iter_->second;
+                    const auto& conj_hist = conj_ ? iter_->second : index_.GetImpl(conj);
+                    auto edge = conj_ ? conj.first : iter_->first;
+                    return std::make_pair(edge, HistProxy<full>(hist, conj_hist, offset));
+                } else {
                     const auto& hist = iter_->second;
                     const auto& conj_hist = index_.GetImpl(index_.ConjugatePair(edge_, iter_->first));
                     return std::make_pair(iter_->first, HistProxy<full>(hist, conj_hist));
@@ -224,55 +231,27 @@ public:
             bool conj_;
         };
 
-        EdgeProxy(const PairedIndex &index, EdgeId edge)
-            : index_(index), edge_(edge) {}
+        EdgeProxy(const PairedIndex &index, const InnerMap& map, const InnerMap& conj_map, EdgeId edge)
+            : index_(index), map_(map), conj_map_(conj_map), edge_(edge)
+        {}
 
         Iterator begin() const {
-            const auto &s = index_.storage_;
-            auto i = s.find(edge_);
-            //In a properly formed index, either straight or conjugate edge is presented
-            //In case of unexisting edge access, return an iterator fake empty map
             if (full) { //Only one branch will actually be in the binary
-                auto j = s.find(index_.graph_.conjugate(edge_));
-                bool conj_empty = j == s.end();
-                if (i == s.end()) { //The straight halfmap is empty, traverse from the conjugate one
-                    auto stop = conj_empty ? index_.empty_map_.end() : j->second.end();
-                    auto start = conj_empty ? stop : j->second.begin();
-                    return Iterator(index_, start, stop, stop, edge_, true);
-                } else { //Traverse from the straight, then jump to the conjugate, if exists
-                    auto start = i->second.begin();
-                    auto stop = i->second.end();
-                    auto jump = conj_empty ? stop : j->second.begin();
-                    return Iterator(index_, start, stop, jump, edge_, false);
-                }
+                auto conj = map_.empty();
+                auto start = conj ? conj_map_.begin() : map_.begin();
+                return Iterator(index_, start, map_.end(), conj_map_.begin(), edge_, conj);
             } else {
-                if (i == s.end()) {
-                    auto stop = index_.empty_map_.end();
-                    return Iterator(index_, stop, stop, stop, edge_, false);
-                } else {
-                    auto start = i->second.begin();
-                    auto stop = i->second.end();
-                    return Iterator(index_, start, stop, stop, edge_, false);
-                }
+                auto stop = map_.end();
+                return Iterator(index_, map_.begin(), stop, stop, edge_, false);
             }
         }
 
         Iterator end() const {
-            const auto &s = index_.storage_;
-            auto i = s.find(edge_);
-            //In a properly formed index, either straight or conjugate edge is presented
-            //In case of unexisting edge access, return an iterator fake empty map
             if (full) { //Only one branch will actually be in the binary
-                auto j = s.find(index_.graph_.conjugate(edge_));
-                if (j == s.end()) { //The conjugate halfmap is empty, stop on the straight one (or fake empty)
-                    auto stop = i == s.end() ? index_.empty_map_.end() : i->second.end();
-                    return Iterator(index_, stop, stop, stop, edge_, true);
-                } else {
-                    auto stop = j->second.end();
-                    return Iterator(index_, stop, stop, stop, edge_, true);
-                }
+                auto stop = conj_map_.end();
+                return Iterator(index_, stop, stop, stop, edge_, true);
             } else {
-                auto stop = i == s.end() ? index_.empty_map_.end() : i->second.end();
+                auto stop = map_.end();
                 return Iterator(index_, stop, stop, stop, edge_, false);
             }
         }
@@ -286,8 +265,15 @@ public:
         bool empty() const {
             return !index_.contains(edge_);
         }
+
+        /*static const InnerMap& empty_map() {
+            static InnerMap res;
+            return res;
+        }*/
+
     private:
-        const PairedIndex &index_;
+        const PairedIndex& index_;
+        const InnerMap& map_, conj_map_;
         EdgeId edge_;
     };
 
@@ -358,19 +344,23 @@ private:
         auto rp = -sp;
         if (si != straight.end()) {
             MergeData(straight, si, sp);
-            auto& reversed = storage_[e2][e1];
-            auto ri = reversed.find(rp);
-            MergeData(reversed, ri, rp);
+            if (!IsSymmetric(e1, e2, sp)) {
+                auto& reversed = storage_[e2][e1];
+                auto ri = reversed.find(rp);
+                MergeData(reversed, ri, rp);
+            }
         }
         else {
             InsertPoint(straight, sp);
-            auto& reversed = storage_[e2][e1];
-            InsertPoint(reversed, rp);
+            if (!IsSymmetric(e1, e2, sp)) {
+                auto &reversed = storage_[e2][e1];
+                InsertPoint(reversed, rp);
+            }
         }
     }
 
-    //Unstable due to the iterator invalidation
-    void InsertOrMerge(Histogram& straight, Histogram& reversed,
+    //Unstable for hash_map due to the iterator invalidation
+    /*void InsertOrMerge(Histogram& straight, Histogram& reversed,
                        const Point &sp) {
         auto si = straight.find(sp);
         auto rp = -sp;
@@ -385,7 +375,7 @@ private:
             //if (!IsSymmetric(e1, e2, point)) TODO
 
         }
-    }
+    }*/
 
     static bool IsSymmetric(EdgeId e1, EdgeId e2, Point point) {
         return (e1 == e2) && math::eq(point.d, 0.f);
@@ -445,13 +435,19 @@ public:
     // Returns the number of deleted entries
     size_t Remove(EdgeId e1, EdgeId e2, Point point) {
         SwapConj(e1, e2);
-        return RemoveSingle(e1, e2, point) + RemoveSingle(e2, e1, -point);
+        auto res = RemoveSingle(e1, e2, point);
+        if (!IsSymmetric(e1, e2, point))
+            res += RemoveSingle(e2, e1, -point);
+        return res;
     }
     // Removes the whole histogram
     // Returns the number of deleted entries
     size_t Remove(EdgeId e1, EdgeId e2) {
         SwapConj(e1, e2);
-        return RemoveSingle(e1, e2) + RemoveSingle(e2, e1);
+        auto res = RemoveSingle(e1, e2);
+        if (e1 != e2)
+            res += RemoveSingle(e2, e1);
+        return res;
     }
 
 private:
@@ -526,12 +522,12 @@ public:
 
     // Returns a proxy map to neighboring edges
     inline EdgeProxy<> Get(EdgeId id) const {
-        return EdgeProxy<>(*this, id);
+        return EdgeProxy<>(*this, GetImpl(id), GetImpl(graph_.conjugate(id)), id);
     }
 
     // Returns a proxy map to neighboring edges
     inline EdgeProxy<false> RawGet(EdgeId id) const {
-        return EdgeProxy<false>(*this, id);
+        return EdgeProxy<false>(*this, GetImpl(id), empty_map_, id);
     }
 
     // Operator alias
@@ -540,6 +536,14 @@ public:
     }
 
 private:
+    //Returns a fake map for safety
+    const InnerMap& GetImpl(EdgeId e1) const {
+        auto i = storage_.find(e1);
+        if (i == storage_.end())
+            return empty_map_;
+        return i->second;
+    }
+
     //Returns a fake histogram for safety
     const Histogram& GetImpl(EdgeId e1, EdgeId e2) const {
         auto i = storage_.find(e1);
@@ -557,17 +561,21 @@ private:
 
 public:
 
-    // Returns a proxy map to points
+    // Returns a proxy set of points
     HistProxy<> Get(EdgeId e1, EdgeId e2) const {
         int offset = CalcOffset(e2, e1); //we need to calculate the offset with initial edges
-        //if (!SwapConj(e1, e2))
-        //    offset = 0;
         return HistProxy<>(GetImpl(e1, e2), GetImpl(ConjugatePair(e1, e2)), offset);
     }
 
     // Operator alias
     inline HistProxy<> operator[](EdgePair p) const {
         return Get(p.first, p.second);
+    }
+
+
+    HistProxy<false> RawGet(EdgeId e1, EdgeId e2) const {
+        SwapConj(e1, e2);
+        return HistProxy<false>(GetImpl(e1, e2), HistProxy<false>::empty_hist(), 0);
     }
 
     bool contains(EdgeId edge) const {

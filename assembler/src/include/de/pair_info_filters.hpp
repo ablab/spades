@@ -229,44 +229,60 @@ private:
 template<class Graph>
 class PairInfoFilter{
 private:
-  typedef typename Graph::VertexId VertexId;
-  typedef typename Graph::EdgeId EdgeId;
-  typedef PairInfo<EdgeId> PairInfoT;
+    typedef typename Graph::VertexId VertexId;
+    typedef typename Graph::EdgeId EdgeId;
+    typedef PairInfo<EdgeId> PairInfoT;
 
 protected:
-  AbstractPairInfoChecker<Graph> &pair_info_checker_;
+    AbstractPairInfoChecker<Graph> &pair_info_checker_;
 
 public:
-  PairInfoFilter(AbstractPairInfoChecker<Graph> &pair_info_checker) :
-	pair_info_checker_(pair_info_checker){
-  }
+    PairInfoFilter(AbstractPairInfoChecker<Graph> &pair_info_checker) :
+            pair_info_checker_(pair_info_checker)
+    {}
 
-  void Filter(PairedInfoIndexT<Graph>& index){
-    TRACE("Index size: " << index.size());
-    /*for (auto it = index.begin(); it != index.end(); ++it) {
-      auto points = *it;
-      auto e1 = it.first();
-      auto e2 = it.second();
-      if (pair_info_checker_.Check(e1, e2)) {
-        for (auto p_iter = points.begin(); p_iter != points.end(); ) {
-          const Point& point = *p_iter++;
-          if (!pair_info_checker_.Check(PairInfoT(e1, e2, point))) {
-            index.Delete(e1, e2, point);
+    void Filter(PairedInfoIndexT<Graph>& index) {
+        TRACE("Index size: " << index.size());
+        /*for (auto it = index.begin(); it != index.end(); ++it) {
+          auto points = *it;
+          auto e1 = it.first();
+          auto e2 = it.second();
+          if (pair_info_checker_.Check(e1, e2)) {
+            for (auto p_iter = points.begin(); p_iter != points.end(); ) {
+              const Point& point = *p_iter++;
+              if (!pair_info_checker_.Check(PairInfoT(e1, e2, point))) {
+                index.Delete(e1, e2, point);
+              }
+            }
           }
-        }
-      }
-    }*/
-    for (auto iter = pair_begin(index); iter != pair_end(index); ++iter) {
-      auto e1 = iter.first();
-      auto e2 = iter.second();
-      if (pair_info_checker_.Check(e1, e2)) {
-        for (auto point : *iter) {
-          if (!pair_info_checker_.Check(PairInfoT(e1, e2, point)))
-            index.Remove(e1, e2, point);
-        }
-      }
+        }*/
+        /*for (auto iter = pair_begin(index); iter != pair_end(index); ++iter) {
+          auto e1 = iter.first();
+          auto e2 = iter.second();
+          if (pair_info_checker_.Check(e1, e2)) {
+            for (auto point : *iter) {
+              if (!pair_info_checker_.Check(PairInfoT(e1, e2, point)))
+                index.Remove(e1, e2, point);
+            }
+          }
+        }*/
+        //We can't filter while traversing, because Remove may invalidate iterators
+        //So let's save edge pairs first
+        INFO("Start filtering " << index.size());
+        using EdgePair = std::pair<EdgeId, EdgeId>;
+        std::vector<EdgePair> pairs;
+        for (auto i = pair_begin(index); i != pair_end(index); ++i)
+            if (pair_info_checker_.Check(i.first(), i.second()))
+                pairs.push_back({i.first(), i.second()});
+        INFO("Continue filtering");
+        for (auto pair : pairs)
+            for (auto point : index[pair])
+                if (!pair_info_checker_.Check(PairInfoT(pair.first, pair.second, point))) {
+                    INFO("Removing " << pair);
+                    index.Remove(pair.first, pair.second, point);
+                }
+        INFO("Done filtering");
     }
-  }
 };
 
 }

@@ -229,12 +229,10 @@ class DataPrinter {
         size_t comp_size = 0;
         for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
             EdgeId e1 = *I;
-            auto inner_map = paired_index.Get(e1); //TODO Paired: GetRaw?
+            auto inner_map = paired_index.RawGet(e1);
             for (auto entry : inner_map) {
-                EdgeId e2 = entry.first;
-                const auto& hist = entry.second;
-                if (component_.contains(e2)) { // if the second edge also lies in the same component
-                    comp_size += hist.size();
+                if (component_.contains(entry.first)) { // if the second edge also lies in the same component
+                    comp_size += entry.second.size();
                 }
             }
         }
@@ -245,11 +243,10 @@ class DataPrinter {
             EdgeId e1 = *I;
             const auto& inner_map = paired_index.RawGet(e1);
             std::map<typename Graph::EdgeId, typename Index::RawHistProxy> ordermap(inner_map.begin(), inner_map.end());
-            //std::map<typename Graph::EdgeId, typename Index::HistProxy> ordermap;
-            for (const auto& entry : ordermap) {
-                EdgeId e2 = entry.first; const auto& hist = entry.second;
+            for (auto entry : ordermap) {
+                EdgeId e2 = entry.first;
                 if (component_.contains(e2))
-                  for (auto point : hist)
+                  for (auto point : entry.second)
                     fprintf(file, "%zu %zu %.2f %.2f %.2f .\n",
                             e1.int_id(), e2.int_id(), math::eq((double)point.d, .0) ? .0 : (double)point.d, (double)point.weight, (double)point.variation());
             }
