@@ -25,6 +25,7 @@
 #include <cerrno>
 
 #include <string>
+#include <algorithm>
 
 class MMappedReader {
   int StreamFile;
@@ -320,7 +321,7 @@ class MMappedFileRecordArrayIterator :
             : value_(NULL),
               array_size_(sizeof(T) * elcnt),
               reader_(FileName, false,
-                      round_up(64 * 1024 * 1024, array_size_ * (unsigned)getpagesize()),
+                      round_up(filesize > 0 ? std::min(size_t(64 * 1024 * 1024), filesize) : 64 * 1024 * 1024, array_size_ * (unsigned)getpagesize()),
                       offset, filesize),
               good_(false) {
         increment();
