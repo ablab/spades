@@ -20,7 +20,7 @@ std::vector<raw_kmer_iterator<Seq>> make_kmer_iterator(const std::string &FileNa
                                                        size_t K, size_t amount) {
   std::vector<raw_kmer_iterator<Seq>> res;  
   if (amount == 1) {
-    res.emplace_back(FileName, Seq::GetDataSize(K));
+      res.emplace_back(FileName, Seq::GetDataSize(K));
     return res;
   }
 

@@ -203,6 +203,27 @@ void KMerHamClusterer::cluster(const std::string &prefix,
   }
 }
 
+enum {
+  UNLOCKED = 0,
+  PARTIALLY_LOCKED = 1,
+  FULLY_LOCKED = 3
+};
+
+static bool canMerge2(const ConcurrentDSU &uf, size_t kidx, size_t cidx) {
+    // If either of indices is fully locked - bail out
+    uint64_t kaux = uf.root_aux(kidx), caux = uf.root_aux(cidx);
+    if (kaux == FULLY_LOCKED || caux == FULLY_LOCKED)
+        return false;
+
+    // Otherwise there is a possibility to merge stuff.
+    if (0 && (kaux == PARTIALLY_LOCKED || caux == PARTIALLY_LOCKED)) {
+        // We cannot merge two partially locked clusters.
+        return kaux != caux;
+    }
+
+    return true;
+}
+
 static void ClusterChunk(size_t start_idx, size_t end_idx, const KMerData &data, ConcurrentDSU &uf) {
     unsigned nthreads = cfg::get().general_max_nthreads;
 
@@ -214,7 +235,7 @@ static void ClusterChunk(size_t start_idx, size_t end_idx, const KMerData &data,
             continue;
 
         size_t kidx = data.seq_idx(kmer);
-        size_t rckidx = data.seq_idx(!kmer);
+        size_t rckidx = -1ULL;
         // INFO("" << kmer << ":" << kidx);
 
         for (size_t k = 0; k < hammer::K; ++k) {
@@ -226,14 +247,29 @@ static void ClusterChunk(size_t start_idx, size_t end_idx, const KMerData &data,
                 candidate.set(k, nc);
                 size_t cidx = data.checking_seq_idx(candidate);
                 // INFO("" << candidate << ":" << cidx);
-                if (cidx != -1ULL) {
+                if (cidx != -1ULL && canMerge2(uf, kidx, cidx)) {
                     uf.unite(kidx, cidx);
 
                     size_t rccidx = data.seq_idx(!candidate);
+                    if (rckidx == -1ULL)
+                        rckidx = data.seq_idx(!kmer);
                     uf.unite(rckidx, rccidx);
                 }
             }
         }
+    }
+}
+
+static void LockSets(const KMerData &data, ConcurrentDSU &uf) {
+    unsigned nthreads = cfg::get().general_max_nthreads;
+
+#   pragma omp parallel for num_threads(nthreads) schedule(guided)
+    for (size_t idx = 0; idx < data.size(); ++idx) {
+        if (uf.set_size(idx) < 2500)
+            continue;
+
+        if (uf.aux(idx) != FULLY_LOCKED)
+            uf.set_aux(idx, FULLY_LOCKED);
     }
 }
 
@@ -245,6 +281,7 @@ void TauOneKMerHamClusterer::cluster(const std::string &, const KMerData &data, 
             end_idx = data.size();
 
         ClusterChunk(start_idx, end_idx, data, uf);
+        LockSets(data, uf);
 
         start_idx = end_idx;
     }

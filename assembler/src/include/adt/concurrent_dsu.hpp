@@ -23,7 +23,8 @@
 
 class ConcurrentDSU {
   struct atomic_set_t {
-      uint64_t data  : 63;
+      uint64_t data  : 61;
+      uint64_t aux   : 2;
       bool     root  : 1;
   } __attribute__ ((packed));
 
@@ -34,13 +35,14 @@ class ConcurrentDSU {
         : data_(size) {
 
       for (size_t i = 0; i < size; i++)
-          data_[i] = { .data = 1, .root = true };
+          data_[i] = { .data = 1, .aux = 0, .root = true };
   }
 
   ~ConcurrentDSU() { }
 
   void unite(size_t x, size_t y) {
       uint64_t x_size, y_size;
+      uint64_t x_aux, y_aux;
 
       // Step one: update the links
       while (true) {
@@ -56,14 +58,16 @@ class ConcurrentDSU {
 
           // We need to link the smallest subtree to the largest
           x_size = x_entry.data, y_size = y_entry.data;
+          x_aux = x_entry.aux, y_aux = y_entry.aux;
           if (x_size > y_size || (x_size == y_size && x > y)) {
               std::swap(x, y);
               std::swap(x_size, y_size);
+              std::swap(x_aux, y_aux);
               std::swap(x_entry, y_entry);
           }
 
           // Link 'x' to 'y'. If someone already changed 'x' => try again.
-          atomic_set_t new_x_entry =  { .data = y, .root = false };
+          atomic_set_t new_x_entry =  { .data = y, .aux = x_aux, .root = false };
           if (!data_[x].compare_exchange_strong(x_entry, new_x_entry))
               continue;
 
@@ -80,7 +84,7 @@ class ConcurrentDSU {
               continue;
 
           // Update the size. If someone already changed 'y' => try again.
-          atomic_set_t new_y_entry = { .data = x_size + y_entry.data, .root = true };
+          atomic_set_t new_y_entry = { .data = x_size + y_entry.data, .aux = y_aux, .root = true };
           if (!data_[y].compare_exchange_strong(y_entry, new_y_entry))
               continue;
 
@@ -117,7 +121,7 @@ class ConcurrentDSU {
               break;
 
           // Try to update parent (may fail, it's ok)
-          atomic_set_t new_x_entry = { .data = r, .root = false };
+          atomic_set_t new_x_entry = { .data = r, .aux = x_entry.aux, .root = false };
           data_[x].compare_exchange_weak(x_entry, new_x_entry);
           x = x_entry.data;
       }
@@ -145,8 +149,50 @@ class ConcurrentDSU {
     return count;
   }
 
-  bool is_root(size_t entry) const {
-    return data_[entry].load(std::memory_order_relaxed).root;
+  bool is_root(size_t x) const {
+    return data_[x].load(std::memory_order_relaxed).root;
+  }
+
+  uint64_t aux(size_t x) const {
+    return data_[x].load(std::memory_order_relaxed).aux;
+  }
+
+  uint64_t root_aux(size_t x) const {
+      while (true) {
+          x = find_set(x);
+          atomic_set_t entry = data_[x];
+
+          if (!entry.root)
+              continue;
+
+          return entry.aux;
+      }
+  }
+
+  void set_aux(size_t x, uint64_t data) {
+      while (true) {
+        atomic_set_t x_entry = data_[x];
+        atomic_set_t new_x_entry = { .data = x_entry.data, .aux = data, .root = x_entry.root };
+        if (!data_[x].compare_exchange_strong(x_entry, new_x_entry))
+            continue;
+
+        break;
+      }
+  }
+
+  void set_root_aux(size_t x, uint64_t data) {
+      while (true) {
+          x = find_set(x);
+          atomic_set_t x_entry = data_[x];
+          if (!x_entry.root)
+              continue;
+
+          atomic_set_t new_x_entry = { .data = x_entry.data, .aux = data, .root = true };
+          if (!data_[x].compare_exchange_strong(x_entry, new_x_entry))
+              continue;
+
+          break;
+      }
   }
 
   size_t extract_to_file(const std::string& Prefix) {
@@ -232,10 +278,6 @@ private:
   size_t parent(size_t x) const {
      atomic_set_t val = data_[x];
      return (val.root ? x : val.data);
-  }
-
-  bool is_root(size_t x) {
-      return data_[x].load().root;
   }
 
   static bool zero_size(const std::vector<size_t> & v) {
