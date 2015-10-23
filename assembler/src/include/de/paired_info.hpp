@@ -61,21 +61,19 @@ public:
             }
 
             void increment() {
-                INFO("HP: was at " << "[" << conj_ << "], " << dereference());
                 ++iter_;
                 if (full && !conj_ && iter_ == stop_iter_) {
-                    INFO("HP SWITCH CONJ");
                     conj_ = true;
                     iter_ = jump_iter_;
                 }
             }
 
             void decrement() {
-                --iter_;
                 if (full && conj_ && iter_ == jump_iter_) {
                     conj_ = false;
                     iter_ = stop_iter_;
                 }
+                --iter_;
             }
 
             bool equal(const Iterator &other) const {
@@ -115,12 +113,11 @@ public:
             }
         }
         Iterator end() const {
-            if (full) {
-                auto stop = conj_hist_.end();
-                return Iterator(stop, stop, stop, offset_, true);
+            if (full) { //Only one branch will actually be in the binary
+                return Iterator(conj_hist_.end(), hist_.end(), conj_hist_.begin(), offset_, true);
             } else {
                 auto stop = hist_.end();
-                return Iterator(stop, stop, stop, 0, false);
+                return Iterator(hist_.end(), stop, stop, 0, false);
             }
         }
 
@@ -182,11 +179,9 @@ public:
             //friend class boost::iterator_core_access;
 
             void increment() {
-                INFO("EP (" << edge_ << "): was at [" << conj_ << "], " << dereference().first)
                 ++iter_;
                 if (full) { //For a full iterator, jump from the straight submap onto a conjugate one
                     if (!conj_ && iter_ == stop_iter_) {
-                        INFO("EP SWITCH CONJ");
                         conj_ = true;
                         iter_ = jump_iter_;
                     }
@@ -257,9 +252,10 @@ public:
         }
 
         HistProxy<full> operator[](EdgeId e2) const {
+            //TODO: optimize
             const auto& hist = index_.GetImpl(edge_, e2);
             const auto& conj_hist = full ? index_.GetImpl(index_.ConjugatePair(edge_, e2)) : HistProxy<full>::empty_hist();
-            return HistProxy<full>(hist, conj_hist, 0);
+            return HistProxy<full>(hist, conj_hist, index_.CalcOffset(e2, edge_));
         }
 
         bool empty() const {
@@ -279,6 +275,28 @@ public:
 
     typedef typename EdgeProxy<true>::Iterator EdgeIterator;
     typedef typename EdgeProxy<false>::Iterator RawEdgeIterator;
+
+    /*typedef std::pair<EdgeId, EdgeProxy<true>> EdgeEdge;
+
+    class Iterator : public boost::iterator_facade<Iterator, EdgeEdge, boost::forward_traversal_tag, EdgeEdge> {
+    public:
+        typedef typename InnerMap::const_iterator const_iterator;
+
+        void increment() {
+
+        }
+
+        EdgeEdge dereference() const {
+
+
+        }
+
+    private:
+        const PairedIndex& pi;
+        const_iterator iter_, end_iter_;
+        bool conj_;
+
+    };*/
 
     //--Constructor--
 

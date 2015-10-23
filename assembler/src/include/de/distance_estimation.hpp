@@ -226,7 +226,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
     size_t first_len  = this->graph().length(e1), second_len = this->graph().length(e2);
     int maxD = rounded_d(histogram.front()), minD = rounded_d(histogram.back());
 
-    TRACE("Bounds are " << minD << " " << maxD);
+    INFO("Bounds are " << minD << " " << maxD);
     EstimHist result;
     vector<int> forward;
     forward.reserve(raw_forward.size());
@@ -279,8 +279,10 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
                            PairedInfoBuffer<Graph>& result) const {
     typename base::LengthMap second_edges;
     auto inner_map = pi.Get(e1);
-    for (auto i : inner_map)
-      second_edges[i.first];
+    for (auto i : inner_map) {
+        VERIFY(!i.second.empty());
+        second_edges[i.first];
+    }
 
     this->FillGraphDistancesLengths(e1, second_edges);
 
@@ -289,9 +291,10 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
       EdgePair ep(e1, e2);
 
       const GraphLengths& forward = entry.second;
-      TRACE("Edge pair is " << this->graph().int_id(ep.first)
+      INFO("Edge pair is " << this->graph().int_id(ep.first)
             << " " << this->graph().int_id(ep.second));
       auto hist = inner_map[e2]; //TODO
+        VERIFY(!hist.empty());
       const EstimHist& estimated = this->EstimateEdgePairDistances(ep, hist, forward);
       OutHistogram res = this->ClusterResult(ep, estimated);
       this->AddToResult(res, ep, result);

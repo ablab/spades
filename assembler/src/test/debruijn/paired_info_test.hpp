@@ -79,9 +79,11 @@ using EdgeDataSet = std::set<omnigraph::de::PairInfo<MockIndex::EdgeId>>;
 
 EdgeDataSet GetEdgePairInfo(const MockIndex &pi) {
     EdgeDataSet result;
-    for (auto i = omnigraph::de::pair_begin(pi); i != omnigraph::de::pair_end(pi); ++i)
-        for (auto j : *i)
+    for (auto i = omnigraph::de::pair_begin(pi); i != omnigraph::de::pair_end(pi); ++i) {
+        for (auto j : *i) {
             result.emplace(i.first(), i.second(), j);
+        }
+    }
     return result;
 }
 
@@ -92,13 +94,22 @@ bool Contains(const MockIndex &pi, MockGraph::EdgeId e1, MockGraph::EdgeId e2, f
     return false;
 }
 
-/*std::ostream& operator<<(std::ostream& str, const EdgeSet &set) {
-    str << "{";
-    for (const auto i : set)
-        str << i << ",";
-    str << "}";
-    return str;
-}*/
+void PrintPI(const MockIndex &pi) {
+    std::cout << "--- PI of size " << pi.size() << "---\n";
+
+    for (auto i = pi.data_begin(); i != pi.data_end(); ++i) {
+        auto e1 = i->first;
+        std::cout << e1 << "has: \n";
+
+        for (auto j = i->second.begin(); j != i->second.end(); ++j) {
+            std::cout << "- " << j->first << ": ";
+            for (auto p : j->second)
+                std::cout << p << ", ";
+            std::cout << std::endl;
+        }
+    }
+    INFO("----border----")
+}
 
 BOOST_AUTO_TEST_SUITE(pair_info_tests)
 
@@ -126,6 +137,41 @@ BOOST_AUTO_TEST_CASE(PairedInfoConstruct) {
     test2.insert({-2, 1});
     test2.insert({-3, 2});
     BOOST_CHECK_EQUAL(pi.Get(3, 1).Unwrap(), test2);
+}
+
+BOOST_AUTO_TEST_CASE(PairedInfoAccess) {
+    MockGraph graph;
+    MockIndex pi(graph);
+    pi.Add(1, 8, {1, 3});
+    pi.Add(1, 3, {2, 2});
+    pi.Add(1, 3, {3, 1});
+    RawHistogram test0;
+    RawHistogram test1;
+    test1.insert({2, 1});
+    test1.insert({3, 2});
+    auto proxy1 = pi.Get(1);
+    BOOST_CHECK_EQUAL(proxy1[3].front(), RawPoint(2, 1));
+    BOOST_CHECK_EQUAL(proxy1[3].back(), RawPoint(3, 1));
+    BOOST_CHECK_EQUAL(proxy1[1].Unwrap(), test0);
+    BOOST_CHECK_EQUAL(proxy1[3].Unwrap(), test1);
+    RawHistogram test2;
+    test2.insert({-2, 1});
+    test2.insert({-3, 2});
+    auto proxy3 = pi.Get(3);
+    BOOST_CHECK_EQUAL(proxy3[7].Unwrap(), test0);
+    BOOST_CHECK_EQUAL(proxy3[1].Unwrap(), test2);
+    RawHistogram test3;
+    test3.insert({-4, 1});
+    test3.insert({-5, 2});
+    auto proxy2 = pi.Get(2);
+    BOOST_CHECK_EQUAL(proxy2[1].Unwrap(), test0);
+    BOOST_CHECK_EQUAL(proxy2[4].Unwrap(), test3);
+    RawHistogram test4;
+    test4.insert({4, 1});
+    test4.insert({5, 2});
+    auto proxy4 = pi.Get(4);
+    BOOST_CHECK_EQUAL(proxy4[1].Unwrap(), test0);
+    BOOST_CHECK_EQUAL(proxy4[2].Unwrap(), test4);
 }
 
 BOOST_AUTO_TEST_CASE(PairedInfoRemove) {
@@ -249,6 +295,25 @@ BOOST_AUTO_TEST_CASE(PairedInfoRawNeighbours) {
     BOOST_CHECK_EQUAL(GetRawNeighbours(pi, 14), test3);
 }
 
+BOOST_AUTO_TEST_CASE(PairedInfoMoreNeighbours) {
+    MockGraph graph;
+    MockIndex pi(graph);
+    //Check that an empty index has an empty iterator range
+    BOOST_CHECK(omnigraph::de::pair_begin(pi) == omnigraph::de::pair_end(pi));
+    EdgeDataSet empty;
+    BOOST_CHECK_EQUAL(GetEdgePairInfo(pi), empty);
+    RawPoint p0 = {0, 0}, p1 = {10, 1}, p2 = {20, 1};
+    pi.Add(1, 3, p1);
+    pi.Add(1, 9, p2);
+    pi.Add(1, 1, p0);
+    pi.Add(2, 4, p1);
+    EdgeSet test1 = {1, 3, 9};
+    BOOST_CHECK_EQUAL(GetNeighbours(pi, 1), test1);
+    EdgeSet test2 = {2, 4, 8};
+    BOOST_CHECK_EQUAL(GetNeighbours(pi, 2), test2);
+}
+
+
 BOOST_AUTO_TEST_CASE(PairedInfoPairTraverse) {
     MockGraph graph;
     MockIndex pi(graph);
@@ -262,7 +327,7 @@ BOOST_AUTO_TEST_CASE(PairedInfoPairTraverse) {
     pi.Add(1, 1, p0);
     pi.Add(2, 4, p1);
     BOOST_CHECK(omnigraph::de::pair_begin(pi) != omnigraph::de::pair_end(pi));
-    INFO("----border----")
+    //PrintPI(pi);
     EdgeDataSet test1 = {{1, 1, p0}, {2, 2, p0},
                          {1, 3, p1}, {3, 1, -p1}, {2, 4, -pj1}, {4, 2, pj1},
                          {1, 9, p2}, {9, 1, -p2}, {2, 8, -pj2}, {8, 2, pj2},

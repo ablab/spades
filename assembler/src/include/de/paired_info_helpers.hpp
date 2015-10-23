@@ -21,7 +21,7 @@ class EdgePairIterator :
                 typename Index::FullHistProxy>
 {
     typedef typename Index::ImplIterator OuterIterator;
-    typedef boost::optional<typename Index::EdgeIterator> InnerIterator;
+    typedef boost::optional<typename Index::InnerMap::const_iterator> InnerIterator;
 
 protected:
     //They're not intended to be constucted explicitly, only via begin/end.
@@ -33,21 +33,12 @@ protected:
 
 public:
     void increment() {
-        INFO("PP was at [" << conj_ << "] " << first() << "->" << second());
-        j_->increment();
-        if (j_ == stop_j_) { //Traversed all neighbours, jump to the next edge
-            INFO("NEXT EDGE");
+        ++(*j_);
+        if (j_ == i_->second.end()) { //Traversed all neighbours, jump to the next edge
             ++i_;
-            if (i_ == index_.data_end()) {
-                if (conj_) {
-                    INFO("FULL STOP");
-                } else {
-                    INFO("PP SWITCH CONJ");
-                    conj_ = true;
-                    i_ = index_.data_begin();
-                }
-            } else {
-                INFO("NEXT NEIGH");
+            if (!conj_ && i_ == index_.data_end()) {
+                conj_ = true;
+                i_ = index_.data_begin();
             }
             StartOver();
         }
@@ -58,23 +49,20 @@ private:
         if (i_ == index_.data_end()) {
             j_.reset();
         } else {
-            auto edge = conj_ ? index_.graph().conjugate(i_->first) : i_->first;
-            auto ep = index_.Get(edge);
-            j_ = ep.begin();
-            stop_j_ = ep.end();
-            //
+            j_ = i_->second.begin();
+            /*
             InnerIterator k = j_;
             while (k != stop_j_)
                 k->increment();
             INFO("CHECKED");
-            //
+            */
         }
     }
 
 public:
 
     typename Index::FullHistProxy dereference() const {
-        return (*j_)->second;
+        return index_.Get(first(), second()); //TODO: optimize
     }
 
     bool equal(const EdgePairIterator &other) const {
@@ -83,7 +71,7 @@ public:
 
     typename Index::EdgeId first() const {
         if (conj_)
-            return (*j_)->first;
+            return index_.graph().conjugate((*j_)->first);
         return i_->first;
     }
 
