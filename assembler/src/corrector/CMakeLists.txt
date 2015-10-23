@@ -12,8 +12,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(corrector
 	positional_read.cpp
-	read.cpp
-	sam_reader.cpp
+        ../include/sam/read.cpp
+        ../include/sam/sam_reader.cpp
 	interesting_pos_processor.cpp
 	contig_processor.cpp
 	dataset_processor.cpp

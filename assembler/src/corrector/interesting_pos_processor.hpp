@@ -6,7 +6,7 @@
 //***************************************************************************
 
 #pragma once
-#include "read.hpp"
+#include "positional_read.hpp"
 
 #include <vector>
 #include <string>

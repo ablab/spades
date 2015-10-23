@@ -14,7 +14,8 @@
 #include <samtools/bam.h>
 
 #include <string>
-namespace corrector {
+
+namespace sam_reader {
 
 class MappedSamStream {
 public:

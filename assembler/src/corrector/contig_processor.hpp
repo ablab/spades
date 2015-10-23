@@ -13,8 +13,8 @@
  */
 
 #pragma once
-#include "sam_reader.hpp"
-#include "read.hpp"
+#include "sam/sam_reader.hpp"
+#include "sam/read.hpp"
 #include "interesting_pos_processor.hpp"
 #include "positional_read.hpp"
 
@@ -26,6 +26,9 @@
 #include <unordered_map>
 
 namespace corrector {
+
+using namespace sam_reader;
+
 typedef std::vector<std::pair<std::string, io::LibraryType> > sam_files_type;
 class ContigProcessor {
     sam_files_type sam_files_;
@@ -48,6 +51,10 @@ public:
     size_t ProcessMultipleSamFiles();
 private:
     void ReadContig();
+
+    int CountPositions(const SingleSamRead &read, std::unordered_map<size_t, position_description> &ps, const size_t &contig_length) const;
+
+    int CountPositions(const PairedSamRead &read, std::unordered_map<size_t, position_description> &ps, const size_t &contig_length) const;
 
     void UpdateOneRead(const SingleSamRead &tmp, MappedSamStream &sm);
     //returns: number of changed nucleotides;

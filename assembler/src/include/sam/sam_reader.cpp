@@ -8,11 +8,9 @@
 #include "read.hpp"
 #include "sam_reader.hpp"
 
-#include <samtools/sam.h>
-#include "samtools/bam.h"
 using namespace std;
 
-namespace corrector {
+namespace sam_reader {
 
 bool MappedSamStream::eof() const {
     return eof_;
