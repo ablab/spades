@@ -227,49 +227,50 @@ static bool canMerge2(const ConcurrentDSU &uf, size_t kidx, size_t cidx) {
 static void ClusterChunk(size_t start_idx, size_t end_idx, const KMerData &data, ConcurrentDSU &uf) {
     unsigned nthreads = cfg::get().general_max_nthreads;
 
-#   pragma omp parallel for num_threads(nthreads)
-    for (size_t idx = start_idx; idx < end_idx; ++idx) {
-        hammer::KMer kmer = data.kmer(idx);
+    // INFO("Cluster: " << start_idx << ":" << end_idx);
+#   pragma omp parallel num_threads(nthreads)
+    {
+#       pragma omp for
+        for (size_t idx = start_idx; idx < end_idx; ++idx) {
+            hammer::KMer kmer = data.kmer(idx);
 
-        if (kmer.GetHash() > (!kmer).GetHash())
-            continue;
+            if (kmer.GetHash() > (!kmer).GetHash())
+                continue;
 
-        size_t kidx = data.seq_idx(kmer);
-        size_t rckidx = -1ULL;
-        // INFO("" << kmer << ":" << kidx);
+            size_t kidx = data.seq_idx(kmer);
+            size_t rckidx = -1ULL;
+            // INFO("" << kmer << ":" << kidx);
 
-        for (size_t k = 0; k < hammer::K; ++k) {
-            hammer::KMer candidate = kmer;
-            char c = candidate[k];
-            for (char nc = 0; nc < 4; ++nc) {
-                if (nc == c)
-                    continue;
-                candidate.set(k, nc);
-                size_t cidx = data.checking_seq_idx(candidate);
-                // INFO("" << candidate << ":" << cidx);
-                if (cidx != -1ULL && canMerge2(uf, kidx, cidx)) {
-                    uf.unite(kidx, cidx);
+            for (size_t k = 0; k < hammer::K; ++k) {
+                hammer::KMer candidate = kmer;
+                char c = candidate[k];
+                for (char nc = 0; nc < 4; ++nc) {
+                    if (nc == c)
+                        continue;
+                    candidate.set(k, nc);
+                    size_t cidx = data.checking_seq_idx(candidate);
+                    // INFO("" << candidate << ":" << cidx);
+                    if (cidx != -1ULL && canMerge2(uf, kidx, cidx)) {
+                        uf.unite(kidx, cidx);
 
-                    size_t rccidx = data.seq_idx(!candidate);
-                    if (rckidx == -1ULL)
-                        rckidx = data.seq_idx(!kmer);
-                    uf.unite(rckidx, rccidx);
+                        size_t rccidx = data.seq_idx(!candidate);
+                        if (rckidx == -1ULL)
+                            rckidx = data.seq_idx(!kmer);
+                        uf.unite(rckidx, rccidx);
+                    }
                 }
             }
         }
-    }
-}
+#       pragma omp barrier
+        //INFO("Lock: " << start_idx << ":" << end_idx);
+#       pragma omp for
+        for (size_t idx = start_idx; idx < end_idx; ++idx) {
+            if (uf.set_size(idx) < 2500)
+                continue;
 
-static void LockSets(size_t start_idx, size_t end_idx, const KMerData &data, ConcurrentDSU &uf) {
-    unsigned nthreads = cfg::get().general_max_nthreads;
-
-#   pragma omp parallel for num_threads(nthreads)
-    for (size_t idx = start_idx; idx < end_idx; ++idx) {
-        if (uf.set_size(idx) < 2500)
-            continue;
-
-        if (uf.root_aux(idx) != FULLY_LOCKED)
-            uf.set_root_aux(idx, FULLY_LOCKED);
+            if (uf.root_aux(idx) != FULLY_LOCKED)
+                uf.set_root_aux(idx, FULLY_LOCKED);
+        }
     }
 }
 
@@ -280,10 +281,7 @@ void TauOneKMerHamClusterer::cluster(const std::string &, const KMerData &data, 
         if (end_idx > data.size())
             end_idx = data.size();
 
-        //INFO("Cluster: " << start_idx << ":" << end_idx);
         ClusterChunk(start_idx, end_idx, data, uf);
-        //INFO("Lock: " << start_idx << ":" << end_idx);
-        LockSets(start_idx, end_idx, data, uf);
 
         start_idx = end_idx;
     }
