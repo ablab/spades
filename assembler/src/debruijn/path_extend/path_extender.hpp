@@ -1206,6 +1206,121 @@ public:
 
 };
 
+
+class LongReadsSimpleExtender: public LoopDetectingPathExtender {
+
+protected:
+
+    shared_ptr<ExtensionChooser> extensionChooser_;
+
+    void FindFollowingEdges(BidirectionalPath& path, ExtensionChooser::EdgeContainer * result) {
+        auto support_paths = cov_map_.GetCoveringPaths(path.Back());
+        for (auto it = support_paths.begin(); it != support_paths.end(); ++it) {
+            auto positions = (*it)->FindAll(path.Back());
+            for (size_t i = 0; i < positions.size(); ++i) {
+                if ((int) positions[i] < (int) (*it)->Size() - 1) {
+                        EdgeId next = (*it)->At(positions[i] + 1);
+                        result->push_back(EdgeWithDistance(next, 0));
+                    }
+                }
+            }
+    }
+
+
+public:
+
+    LongReadsSimpleExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map, shared_ptr<ExtensionChooser> ec,
+                    size_t is, size_t max_loops, bool investigate_short_loops, bool use_short_loop_cov_resolver):
+        LoopDetectingPathExtender(gp, cov_map, max_loops, investigate_short_loops, use_short_loop_cov_resolver, is),
+        extensionChooser_(ec) {
+    }
+
+    virtual bool MakeSimpleGrowStep(BidirectionalPath& path) {
+        if (path.Size() == 0) {
+            return false;
+        }
+        DEBUG("Simple grow step");
+        path.Print();
+        ExtensionChooser::EdgeContainer candidates;
+        FindFollowingEdges(path, &candidates);
+        DEBUG("found candidates");
+        DEBUG(candidates.size())
+        if (candidates.size() == 1) {
+            LoopDetector loop_detector(&path, cov_map_);
+            if (!investigateShortLoops_ && (loop_detector.EdgeInShortLoop(path.Back()) or loop_detector.EdgeInShortLoop(candidates.back().e_))
+                    && extensionChooser_->WeightCounterBased()) {
+                return false;
+            }
+        }
+        DEBUG("more filtering");
+        candidates = extensionChooser_->Filter(path, candidates);
+        DEBUG("found candidates 2");
+        DEBUG(candidates.size())
+        if (candidates.size() == 1) {
+            LoopDetector loop_detector(&path, cov_map_);
+            DEBUG("loop detecor");
+            if (!investigateShortLoops_ &&
+                    (loop_detector.EdgeInShortLoop(path.Back())  or loop_detector.EdgeInShortLoop(candidates.back().e_))
+                    && extensionChooser_->WeightCounterBased()) {
+                return false;
+            }
+            DEBUG("push");
+            if(g_.EdgeStart(candidates.back().e_) != g_.EdgeEnd(path.Back())) {
+                path.PushBack(candidates.back().e_, g_.k() + 10);
+            } else {
+                path.PushBack(candidates.back().e_, candidates.back().d_);
+            }
+            DEBUG("push done");
+            return true;
+        }
+        return false;
+    }
+
+
+    bool CanInvestigateShortLoop() const override {
+        return extensionChooser_->WeightCounterBased();
+    }
+
+    virtual bool ResolveShortLoopByCov(BidirectionalPath& path) {
+        LoopDetector loop_detector(&path, cov_map_);
+        size_t init_len = path.Length();
+        bool result = false;
+        while (path.Size() >= 1 && loop_detector.EdgeInShortLoop(path.Back())) {
+            cov_loop_resolver_.ResolveShortLoop(path);
+            if (init_len == path.Length()) {
+                return result;
+            } else {
+                result = true;
+            }
+            init_len = path.Length();
+        }
+        return true;
+    }
+
+    virtual bool ResolveShortLoopByPI(BidirectionalPath& path) {
+        if (extensionChooser_->WeightCounterBased()) {
+            LoopResolver loop_resolver(g_, extensionChooser_->wc());
+            LoopDetector loop_detector(&path, cov_map_);
+            size_t init_len = path.Length();
+            bool result = false;
+            while (path.Size() >= 1 && loop_detector.EdgeInShortLoop(path.Back())) {
+                loop_resolver.ResolveShortLoop(path);
+                if (init_len == path.Length()) {
+                    return result;
+                } else {
+                    result = true;
+                }
+                init_len = path.Length();
+            }
+            return true;
+        }
+        return false;
+    }
+
+};
+
+
+
 class ScaffoldingPathExtender: public LoopDetectingPathExtender {
     std::shared_ptr<ExtensionChooser> extension_chooser_;
     ExtensionChooser::EdgeContainer sinks_;

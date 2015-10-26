@@ -159,6 +159,7 @@ inline void SequenceMapperNotifier::NotifyProcessRead(const io::SingleReadSeq& r
                                                       const SequenceMapperT& mapper,
                                                       size_t ilib,
                                                       size_t ithread) const {
+    INFO(r.sequence().Subseq(0, 100) << " is processed");
     const Sequence& read = r.sequence();
     MappingPath<EdgeId> path = mapper.MapSequence(read);
     for (const auto& listener : listeners_[ilib])
@@ -170,6 +171,7 @@ inline void SequenceMapperNotifier::NotifyProcessRead(const io::SingleRead& r,
                                                       const SequenceMapperT& mapper,
                                                       size_t ilib,
                                                       size_t ithread) const {
+    INFO(r.name() << " is processed");
     MappingPath<EdgeId> path = mapper.MapRead(r);
     for (const auto& listener : listeners_[ilib])
         listener->ProcessSingleRead(ithread, r, path);

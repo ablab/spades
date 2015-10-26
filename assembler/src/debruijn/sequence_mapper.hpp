@@ -78,8 +78,11 @@ public:
 
     bool CheckContiguous(const vector<typename Graph::EdgeId>& path) const {
         for (size_t i = 1; i < path.size(); ++i) {
-            if (g_.EdgeEnd(path[i - 1]) != g_.EdgeStart(path[i]))
+
+            if (g_.EdgeEnd(path[i - 1]) != g_.EdgeStart(path[i])) {
+                DEBUG("Path fix failed between " << path[i - 1].int_id() << " and " << path[i].int_id());
                 return false;
+            }
         }
         return true;
     }
@@ -91,7 +94,7 @@ public:
     vector<EdgeId> TryFixPath(const vector<EdgeId>& edges, size_t length_bound = 70) const {
         vector<EdgeId> answer;
         if (edges.empty()) {
-            //          WARN("Mapping path was empty");
+            // WARN("Mapping path was empty");
             return vector<EdgeId>();
         }
         answer.push_back(edges[0]);
@@ -147,11 +150,175 @@ private:
             TRACE("Several closing paths found, first chosen");
         }
         vector<EdgeId> answer = path_store.paths().front();
-        TRACE("Gap closed");
-        TRACE( "Cumulative closure length is " << CumulativeLength(g_, answer));
+        DEBUG("Gap closed");
+        DEBUG( "Cumulative closure length is " << CumulativeLength(g_, answer));
         return answer;
     }
+    DECL_LOGGER("PathFixer");
     const Graph& g_;
+};
+
+template<class Graph>
+class ReadPathFinder {
+private:
+    typedef typename Graph::EdgeId EdgeId;
+    typedef typename Graph::VertexId VertexId;
+    const Graph& g_;
+    typedef MappingPathFixer<Graph> GraphMappingPathFixer;
+    const GraphMappingPathFixer path_fixer_;
+public:
+    ReadPathFinder (const Graph& g) :
+        g_(g), path_fixer_(g)
+    {   }
+
+    vector<EdgeId> FindReadPath(const MappingPath<EdgeId>& mapping_path) const {
+          if (!IsMappingPathValid(mapping_path)) {
+              TRACE("read unmapped");
+              return vector<EdgeId>();
+          }
+          vector<EdgeId> corrected_path = path_fixer_.DeleteSameEdges(
+                  mapping_path.simple_path());
+          PrintPathInfo(corrected_path);
+          if(corrected_path.size() != mapping_path.simple_path().size()) {
+              DEBUG("Some edges were deleted");
+          }
+          vector<EdgeId> fixed_path = path_fixer_.TryFixPath(corrected_path);
+          if (!path_fixer_.CheckContiguous(fixed_path)) {
+              TRACE("read unmapped");
+              std::stringstream debug_stream;
+              for (size_t i = 0; i < fixed_path.size(); ++i) {
+                  debug_stream << g_.int_id(fixed_path[i]) << " ";
+              }
+              TRACE(debug_stream.str());
+              return vector<EdgeId>();
+          } else {
+              DEBUG("Path fix works");
+          }
+          return fixed_path;
+      }
+
+    vector<vector<EdgeId>> FindReadPathWithGaps(const MappingPath<EdgeId>& mapping_path) const {
+          if (!IsMappingPathValid(mapping_path)) {
+              TRACE("read unmapped");
+              return vector<vector<EdgeId>>();
+          }
+          vector<EdgeId> corrected_path = path_fixer_.DeleteSameEdges(
+                  mapping_path.simple_path());
+          PrintPathInfo(corrected_path);
+          if(corrected_path.size() != mapping_path.simple_path().size()) {
+              DEBUG("Some edges were deleted");
+          }
+          vector<EdgeId> fixed_path = path_fixer_.TryFixPath(corrected_path);
+          vector<vector<EdgeId>> splitted_path = NotSplitScaffoldingPoints(fixed_path);
+
+          vector<vector<EdgeId>> result;
+          for(auto subpath : splitted_path) {
+                 result.push_back(subpath);
+          }
+          return result;
+      }
+
+private:
+
+      vector<vector<EdgeId>> SplitScaffoldingPoints(vector<EdgeId>& path) const {
+          vector<vector<EdgeId>> result;
+          size_t prev_start = 0;
+          for (size_t i = 1; i < path.size(); ++i) {
+              if (g_.EdgeEnd(path[i - 1]) != g_.EdgeStart(path[i])) {
+                  if(IsTip(g_.EdgeEnd(path[i - 1])) && IsTip(g_.EdgeStart(path[i]))) {
+                      result.push_back(vector<EdgeId>(path.begin() + prev_start, path.begin() + i));
+                      prev_start = i;
+                  }
+              }
+          }
+          return result;
+      }
+
+      vector<vector<EdgeId>> NotSplitScaffoldingPoints(vector<EdgeId>& path) const {
+          vector<vector<EdgeId>> result;
+          vector<EdgeId> temp_result;
+          temp_result.push_back(path[0]);
+          for (size_t i = 1; i < path.size(); ++i) {
+              //case of continious path
+              if (g_.EdgeEnd(path[i - 1]) == g_.EdgeStart(path[i])) {
+                  temp_result.push_back(path[i]);
+              }
+
+              if (g_.EdgeEnd(path[i - 1]) != g_.EdgeStart(path[i])) {
+                  //from tip to tip
+                  if(IsTip(g_.EdgeEnd(path[i - 1])) && IsTip(g_.EdgeStart(path[i]))) {
+                      temp_result.push_back(path[i]);
+                      continue;
+                  }
+
+                  //if not tip -- erase all previous path and go to nearest tip
+                  if(!IsTip(g_.EdgeEnd(path[i - 1])) && !IsTip(g_.EdgeStart(path[i]))) {
+                      temp_result.clear();
+                      size_t j = i;
+                      while(j < path.size() && !IsTip(g_.EdgeStart(path[j]))) {
+                          j++;
+                      }
+                      if(j != path.size()) {
+                          temp_result.push_back(path[j]);
+                      }
+                      i = j;
+                      continue;
+                  }
+
+                  if(IsTip(g_.EdgeEnd(path[i - 1])) && !IsTip(g_.EdgeStart(path[i]))) {
+                      size_t j = i;
+                      while(j < path.size() && !IsTip(g_.EdgeStart(path[j]))) {
+                          j++;
+                      }
+
+                      if(j == path.size()) {
+                          continue;
+                      }
+
+                      if(j - i < 4) {
+                          temp_result.push_back(path[j]);
+                          i = j;
+                          continue;
+                      } else {
+                          result.push_back(temp_result);
+                          temp_result.clear();
+                          i = j;
+                          temp_result.push_back(path[j]);
+                          continue;
+                      }
+
+                  }
+
+                  //not tip - tip - erase previous, start from next
+                  if(!IsTip(g_.EdgeEnd(path[i - 1])) && IsTip(g_.EdgeStart(path[i]))) {
+                      temp_result.clear();
+                      temp_result.push_back(path[i]);
+                      continue;
+                  }
+
+
+
+              }
+          }
+          if(temp_result.size() != 0) {
+              result.push_back(temp_result);
+          }
+          return result;
+      }
+
+      bool IsTip(VertexId v) const {
+          return g_.IncomingEdgeCount(v) + g_.OutgoingEdgeCount(v) == 1;
+      }
+
+      bool IsMappingPathValid(const MappingPath<EdgeId>& path) const {
+          return path.size() != 0;
+      }
+
+      void PrintPathInfo(vector<EdgeId>& corrected_path) const {
+          for(size_t i = 0; i < corrected_path.size(); ++i) {
+              DEBUG(i + 1 << "-th edge is " << corrected_path[i].int_id());
+          }
+      }
 };
 
 template<class Graph, class Index>
@@ -161,7 +328,7 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
 
  public:
   typedef std::vector<MappingRange> RangeMappings;
-  typedef MappingPathFixer<Graph> GraphMappingPathFixer;
+
 
  private:
   const Index& index_;
@@ -170,7 +337,6 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
   typedef typename Index::KMer Kmer;
   typedef KmerMapper<Graph, Kmer> KmerSubs;
   const KmerSubs& kmer_mapper_;
-  const GraphMappingPathFixer path_fixer_;
   size_t k_;
   bool optimization_on_;
   //	mutable size_t mapped_;
@@ -271,7 +437,7 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
                             const Index& index,
                             const KmerSubs& kmer_mapper,
 			    bool optimization_on = true) :
-      SequenceMapper<Graph>(g), index_(index), kmer_mapper_(kmer_mapper), path_fixer_(g), k_(g.k()+1),
+      SequenceMapper<Graph>(g), index_(index), kmer_mapper_(kmer_mapper), k_(g.k()+1),
 	optimization_on_(optimization_on) { }
 
   ~NewExtendedSequenceMapper() {
@@ -314,30 +480,7 @@ class NewExtendedSequenceMapper: public SequenceMapper<Graph> {
       return k_;
   }
 
-  vector<EdgeId> FindReadPath(const MappingPath<EdgeId>& mapping_path) const {
-        if (!IsMappingPathValid(mapping_path)) {
-            TRACE("read unmapped");
-            return vector<EdgeId>();
-        }
-        vector<EdgeId> corrected_path = path_fixer_.DeleteSameEdges(
-                mapping_path.simple_path());
-        vector<EdgeId> fixed_path = path_fixer_.TryFixPath(corrected_path);
-        if (!path_fixer_.CheckContiguous(fixed_path)) {
-            TRACE("read unmapped");
-            std::stringstream debug_stream;
-            for (size_t i = 0; i < fixed_path.size(); ++i) {
-                debug_stream << g_.int_id(fixed_path[i]) << " ";
-            }
-            TRACE(debug_stream.str());
-            return vector<EdgeId>();
-        }
-        return fixed_path;
-    }
 
-private:
-    bool IsMappingPathValid(const MappingPath<EdgeId>& path) const {
-        return path.size() != 0;
-    }
     DECL_LOGGER("NewExtendedSequenceMapper");
 };
 
