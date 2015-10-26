@@ -24,18 +24,20 @@ class Shellder:
         #Open IO pipes
         prepare_pipe(pipe_in)
         prepare_pipe(pipe_out)
+        self.cout = open(pipe_out, "w+")
         self.pout = open(pipe_out, "r+")
+        self.cin = open(pipe_in, "r+")
         self.pin = open(pipe_in, "w+")
 
     def launch_if_needed(self):
         #Launch online_vis process if it hasn't started yet or was aborted
         if self.proc is None or self.proc.poll() is not None:
             #Launch the process
-            pin = open(self.pipe_in, "r+")
-            pout = open(self.pipe_out, "w+")
+            #pin = open(self.pipe_in, "r+")
+            #pout = open(self.pipe_out, "w+")
             pushd = os.getcwd()
             os.chdir(self.dir)
-            self.proc = subprocess.Popen(["./run", "rv"], stdin=pin, stdout=pout)
+            self.proc = subprocess.Popen(["./run", "rv"], stdin=self.cin, stdout=self.cout, stderr=self.cout)
             os.chdir(pushd)
 
         #Launch the reader thread
