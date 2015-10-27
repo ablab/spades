@@ -23,7 +23,7 @@ bool TryToAddPairInfo(omnigraph::de::PairedInfoIndexT<Graph>& clustered_index,
                       const omnigraph::de::Point& p) {
     const omnigraph::de::Point& point_to_add = p;
 
-    const auto histogram = clustered_index.Get(e1, e2);
+    auto histogram = clustered_index.Get(e1, e2);
     for (auto i : histogram)
         if (ClustersIntersect(i, point_to_add))
             return false;
@@ -108,7 +108,7 @@ class PairInfoImprover {
             }
         }
 
-        // Checking the consitency of two edge pairs (e, e_1) and (e, e_2) for all pairs (e, <some_edge>)
+        // Checking the consistency of two edge pairs (e, e_1) and (e, e_2) for all pairs (base_edge, <some_edge>)
         void FindInconsistent(EdgeId base_edge,
                               Index& pi) const {
             for (auto i1 : pi.Get(base_edge)) {
@@ -128,27 +128,6 @@ class PairInfoImprover {
                         }
                     }
                 }
-
-            /*for (EdgeIterator I_1(start), E(end); I_1 != E; ++I_1) {
-                for (EdgeIterator I_2(start); I_2 != E; ++I_2) {
-                    if (I_1 == I_2)
-                        continue;
-
-                    std::pair<EdgeId, omnigraph::de::Point> entry1 = *I_1;
-                    std::pair<EdgeId, omnigraph::de::Point> entry2 = *I_2;
-
-                    EdgeId e1 = entry1.first;
-                    const omnigraph::de::Point& p1 = entry1.second;
-                    EdgeId e2 = entry2.first;
-                    const omnigraph::de::Point& p2 = entry2.second;
-                    if (!IsConsistent(base_edge, e1, e2, p1, p2)) {
-                        if (math::le(p1.weight, p2.weight)) {
-                            pi.Add(base_edge, e1, p1);
-                        } else {
-                            pi.Add(base_edge, e2, p2);
-                    }
-                }
-            }*/
             }
         }
 
@@ -172,7 +151,7 @@ class PairInfoImprover {
 
         DEBUG("Merging maps");
         for (size_t i = 1; i < nthreads; ++i) {
-            to_remove[0].Add(to_remove[i]);
+            to_remove[0].Merge(to_remove[i]);
             to_remove[i].Clear();
         }
         DEBUG("Resulting size " << to_remove[0].size());
@@ -202,15 +181,16 @@ class PairInfoImprover {
             std::vector<PathInfoClass<Graph> > paths =
                     spc_.ConvertPIToSplitPaths(e, index_,
                                                lib_.data().mean_insert_size, lib_.data().insert_size_deviation);
-            for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-                TRACE("Path " << iter->PrintPath(graph_));
-
-                const PathInfoClass<Graph>& path = *iter;
-                for (auto pi_iter = path.begin(); pi_iter != path.end(); ++pi_iter) {
-                    const auto& pi = *pi_iter;
+            for (const auto& path : paths) {
+                TRACE("Path " << path.PrintPath(graph_));
+                for (const auto& pi : path) {
                     EdgeId e1 = pi.first;
                     EdgeId e2 = pi.second;
-                    TryToAddPairInfo(to_add_[omp_get_thread_num()][0], e1, e2, pi.point);
+                    auto ep = std::make_pair(e1, e2);
+                    if (ep <= ConjugatePair(ep))
+                        TryToAddPairInfo(to_add_[omp_get_thread_num()][0], e1, e2, pi.point);
+                    else
+                        TryToAddPairInfo(to_add_[omp_get_thread_num()][1], e1, e2, pi.point);
                 }
             }
 
@@ -266,28 +246,17 @@ class PairInfoImprover {
   private:
     size_t DeleteIfExist(EdgeId e1, EdgeId e2, const typename Index::FullHistProxy& infos) {
         size_t cnt = 0;
+        auto hist = index_.Get(e1, e2);
         for (auto point : infos) {
-            for (auto p : index_.Get(e1, e2)) {
+            for (auto p : hist) {
                 if (math::eq(p.d, point.d)) {
                     cnt += index_.Remove(e1, e2, p);
                     TRACE("Removed pi " << graph_.int_id(e1) << " " << graph_.int_id(e2)
                           << " dist " << p.d << " var " << p.var);
                 }
             }
-    }
-        /*const auto histogram = index_.Get(e1, e2);
-        for (auto I = infos.begin(), E = infos.end(); I != E; ++I) {
-            const omnigraph::de::Point& point = *I;
-            for (auto p : histogram) {
-                if (math::eq(p.d, point.d)) {
-                    cnt += index_.Remove(e1, e2, p);
-                    TRACE("Removed pi " << graph_.int_id(e1) << " " << graph_.int_id(e2)
-                          << " dist " << p.d << " var " << p.var);
-                }
-            }
-
             TRACE("cnt += " << cnt);
-        }*/
+        }
         return cnt;
     }
 

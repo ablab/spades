@@ -64,7 +64,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
   virtual void ProcessEdge(EdgeId e1,
                            const InPairedIndex& pi,
                            PairedInfoBuffer<Graph>& result) const {
-    auto inner_map = pi.Get(e1);
+    auto inner_map = pi.RawGet(e1);
     typename base::LengthMap second_edges;
     for (auto i : inner_map)
       second_edges[i.first];
@@ -176,7 +176,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
       return;
 
     for (EdgeId next : this->graph().IncomingEdges(start)) {
-      auto hist = this->index().Get(next, last);
+      auto hist = this->index().RawGet(next, last);
       if (-shift < (int) max_shift)
         ExtendLeftDFS(next, last, data, shift - (int) this->graph().length(next), max_shift);
       auto filtered_infos = FilterPositive(hist, this->graph().length(next), this->graph().length(last));
@@ -194,7 +194,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
       return;
 
     for (EdgeId next : this->graph().OutgoingEdges(end)) {
-      auto hist = this->index().Get(first, next);
+      auto hist = this->index().RawGet(first, next);
       if (-shift < (int) max_shift)
         ExtendRightDFS(first, next, data, shift - (int) this->graph().length(current), max_shift);
 

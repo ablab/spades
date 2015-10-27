@@ -63,7 +63,7 @@ class SplitPathConstructor {
     SplitPathConstructor(const Graph &graph): graph_(graph) {}
 
     vector<PathInfo> ConvertPIToSplitPaths(EdgeId cur_edge, const omnigraph::de::PairedInfoIndexT<Graph> &pi, double is, double is_var) const {
-        vector<PairInfo> pair_infos; //TODO: this is an adapter to the old implementation
+        vector<PairInfo> pair_infos; //TODO: this is an adaptor for the old implementation
         for (auto i : pi.Get(cur_edge))
             for (auto j : i.second)
                 pair_infos.emplace_back(cur_edge, i.first, j);
@@ -72,7 +72,6 @@ class SplitPathConstructor {
         if (pair_infos.size() == 0)
             return result;
 
-        //EdgeId cur_edge = pair_infos[0].first;
         vector<bool> pair_info_used(pair_infos.size());
         TRACE("Preparing path_processor for this base edge");
         size_t path_upper_bound = PairInfoPathLengthUpperBound(graph_.k(), (size_t) is, is_var);

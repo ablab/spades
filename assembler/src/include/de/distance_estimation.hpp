@@ -99,7 +99,7 @@ class AbstractDistanceEstimator {
  protected:
   typedef UnclusteredPairedInfoIndexT<Graph> InPairedIndex;
   typedef PairedInfoIndexT<Graph> OutPairedIndex;
-  typedef typename InPairedIndex::FullHistProxy InHistogram;
+  typedef typename InPairedIndex::RawHistProxy InHistogram;
   typedef typename OutPairedIndex::Histogram OutHistogram;
 
  public:
@@ -193,7 +193,6 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
     this->Init();
     const auto& index = this->index();
 
-      //TODO: Use ParallelIteratorHelper
     DEBUG("Collecting edge infos");
     std::vector<EdgeId> edges;
     for (auto it = this->graph().ConstEdgeBegin(); !it.IsEnd(); ++it)
@@ -209,7 +208,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
 
     INFO("Merging maps");
     for (size_t i = 0; i < nthreads; ++i) {
-      result.Add(std::move(buffer[i]));
+      result.Merge(buffer[i]);
       buffer[i].Clear();
     }
   }
@@ -224,7 +223,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
     using namespace math;
     EdgeId e1 = ep.first, e2 = ep.second;
     size_t first_len  = this->graph().length(e1), second_len = this->graph().length(e2);
-    int maxD = rounded_d(histogram.front()), minD = rounded_d(histogram.back());
+    int maxD = rounded_d(histogram.back()), minD = rounded_d(histogram.front());
 
     TRACE("Bounds are " << minD << " " << maxD);
     EstimHist result;
@@ -278,7 +277,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
                            const InPairedIndex& pi,
                            PairedInfoBuffer<Graph>& result) const {
     typename base::LengthMap second_edges;
-    auto inner_map = pi.Get(e1);
+    auto inner_map = pi.RawGet(e1);
     for (auto i : inner_map)
         second_edges[i.first];
 
@@ -287,6 +286,8 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
     for (const auto& entry: second_edges) {
       EdgeId e2 = entry.first;
       EdgePair ep(e1, e2);
+      if (ep > pi.ConjugatePair(ep))
+        continue;
 
       const GraphLengths& forward = entry.second;
       TRACE("Edge pair is " << this->graph().int_id(ep.first)

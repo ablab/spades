@@ -164,7 +164,7 @@ private:
                            const InPairedIndex& pi,
                            PairedInfoBuffer<Graph>& result) const {
     typename base::LengthMap second_edges;
-    auto inner_map = pi.Get(e1);
+    auto inner_map = pi.RawGet(e1);
     for (auto I : inner_map)
       second_edges[I.first];
 
@@ -174,8 +174,8 @@ private:
       EdgeId e2 = entry.first;
       EdgePair ep(e1, e2);
 
-      //if (ep > this->ConjugatePair(ep))
-      //    continue;
+      if (ep > pi.ConjugatePair(ep))
+          continue;
 
       TRACE("Processing edge pair " << this->graph().int_id(e1)
             << " " << this->graph().int_id(e2));
@@ -197,7 +197,6 @@ private:
       DEBUG(gap_distances << " distances between gap edge pairs have been found");
       OutHistogram res = this->ClusterResult(ep, estimated);
       this->AddToResult(res, ep, result);
-      //this->AddToResult(this->ConjugateInfos(ep, res), this->ConjugatePair(ep), result);
     }
   }
 

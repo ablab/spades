@@ -147,7 +147,7 @@ class GapCloserPairedIndexFiller {
 
         INFO("Merging paired indices");
         for (auto& index: buffer_pi) {
-          paired_index.Add(index);
+          paired_index.Merge(index);
           index.Clear();
         }
     }

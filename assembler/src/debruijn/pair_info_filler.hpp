@@ -37,8 +37,6 @@ public:
 
     virtual void StartProcessLibrary(size_t threads_count) {
         paired_index_.Init();
-        //for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it)
-        //    paired_index_.Add(*it, *it, { 0., 0. });
         for (size_t i = 0; i < threads_count; ++i)
             buffer_pi_.emplace_back(graph_);
     }
@@ -61,7 +59,7 @@ public:
                                    const MappingPath<EdgeId>&) {}
 
     virtual void MergeBuffer(size_t thread_index) {
-        paired_index_.Add(buffer_pi_[thread_index]);
+        paired_index_.Merge(buffer_pi_[thread_index]);
         buffer_pi_[thread_index].Clear();
     }
 
@@ -104,7 +102,7 @@ private:
     const Graph& graph_;
     WeightF weight_f_;
     omnigraph::de::UnclusteredPairedInfoIndexT<Graph>& paired_index_;
-    std::vector<omnigraph::de::PairedInfoBuffer<Graph> > buffer_pi_;
+    std::vector<omnigraph::de::PairedInfoBuffer<Graph> > buffer_pi_; //TODO: PairedInfoIndices
 
     DECL_LOGGER("LatePairedIndexFiller")
     ;

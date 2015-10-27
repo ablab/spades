@@ -58,8 +58,7 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
     int maxD = rounded_d(histogram.front());
     int minD = rounded_d(histogram.back());
     vector<int> forward;
-    for (auto I = raw_forward.begin(), E = raw_forward.end(); I != E; ++I) {
-      int length = (int) *I;
+    for (auto length : raw_forward) {
       if (minD - (int) this->max_distance_ <= length && length <= maxD + (int) this->max_distance_) {
         forward.push_back(length);
       }

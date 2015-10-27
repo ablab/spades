@@ -43,15 +43,13 @@ public:
             typedef typename Histogram::const_iterator const_iterator;
 
         public:
-            Iterator(const_iterator iter, const_iterator stop_iter, const_iterator end_iter, int offset, bool conj)
+            Iterator(const_iterator iter, const_iterator stop_iter, const_iterator end_iter, float offset, bool conj)
                     : iter_(iter)
                     , stop_iter_(stop_iter)
                     , jump_iter_(end_iter)
                     , conj_(conj)
                     , offset_(offset)
-            {
-                //Skip();
-            }
+            {}
 
             Point dereference() const {
                 Point result = *iter_;
@@ -82,10 +80,10 @@ public:
         private:
             const_iterator iter_, stop_iter_, jump_iter_;
             bool conj_;
-            int offset_;
+            float offset_;
         };
 
-        HistProxy(const Histogram& hist, const Histogram& conj_hist, int offset = 0)
+        HistProxy(const Histogram& hist, const Histogram& conj_hist, float offset = 0)
             : hist_(hist)
             , conj_hist_(conj_hist)
             , offset_(offset)
@@ -96,7 +94,7 @@ public:
             return res;
         }
 
-        HistProxy(const Histogram& hist, int offset = 0)
+        HistProxy(const Histogram& hist, float offset = 0)
                 : hist_(hist)
                 , conj_hist_(HistProxy::empty_hist())
                 , offset_(offset)
@@ -143,7 +141,7 @@ public:
 
     private:
         const Histogram& hist_, & conj_hist_;
-        int offset_;
+        float offset_;
     };
 
     typedef HistProxy<true> FullHistProxy;
@@ -164,6 +162,11 @@ public:
         class Iterator: public boost::iterator_facade<Iterator, EdgeHist<full>, boost::forward_traversal_tag, EdgeHist<full>> {
             typedef typename InnerMap::const_iterator const_iterator;
 
+            void Skip() {//For a raw iterator, skip conjugate pairs
+                while (iter_ != stop_iter_ && iter_->first < edge_)
+                    ++iter_;
+            }
+
         public:
             Iterator(const PairedIndex &index, const_iterator iter,
                      const_iterator stop_iter, const_iterator jump_iter,
@@ -174,9 +177,10 @@ public:
                     , jump_iter_(jump_iter)
                     , edge_(edge)
                     , conj_(conj)
-            {}
-
-            //friend class boost::iterator_core_access;
+            {
+                if (!full)
+                    Skip();
+            }
 
             void increment() {
                 ++iter_;
@@ -185,10 +189,8 @@ public:
                         conj_ = true;
                         iter_ = jump_iter_;
                     }
-                } else { //For a raw iterator, skip conjugate pairs
-                    while (iter_ != stop_iter_ && iter_->first < edge_)
-                        ++iter_;
-                }
+                } else
+                    Skip();
             }
 
             void operator=(const Iterator &other) {
@@ -206,7 +208,7 @@ public:
 
             EdgeHist<full> dereference() const {
                 if (full) {
-                    int offset = index_.CalcOffset(edge_, iter_->first);
+                    float offset = index_.CalcOffset(edge_, iter_->first);
                     EdgePair conj = index_.ConjugatePair(edge_, iter_->first);
                     const auto& hist = conj_ ? index_.GetImpl(conj) : iter_->second;
                     const auto& conj_hist = conj_ ? iter_->second : index_.GetImpl(conj);
@@ -262,11 +264,6 @@ public:
             return !index_.contains(edge_);
         }
 
-        /*static const InnerMap& empty_map() {
-            static InnerMap res;
-            return res;
-        }*/
-
     private:
         const PairedIndex& index_;
         const InnerMap& map_, conj_map_;
@@ -275,28 +272,6 @@ public:
 
     typedef typename EdgeProxy<true>::Iterator EdgeIterator;
     typedef typename EdgeProxy<false>::Iterator RawEdgeIterator;
-
-    /*typedef std::pair<EdgeId, EdgeProxy<true>> EdgeEdge;
-
-    class Iterator : public boost::iterator_facade<Iterator, EdgeEdge, boost::forward_traversal_tag, EdgeEdge> {
-    public:
-        typedef typename InnerMap::const_iterator const_iterator;
-
-        void increment() {
-
-        }
-
-        EdgeEdge dereference() const {
-
-
-        }
-
-    private:
-        const PairedIndex& pi;
-        const_iterator iter_, end_iter_;
-        bool conj_;
-
-    };*/
 
     //--Constructor--
 
@@ -332,8 +307,8 @@ private:
         return false;
     }
 
-    int CalcOffset(EdgeId e1, EdgeId e2) const {
-        return (int)graph_.length(e2) - (int)graph_.length(e1);
+    float CalcOffset(EdgeId e1, EdgeId e2) const {
+        return float(graph_.length(e2)) - graph_.length(e1);
     }
 
 public:
@@ -415,7 +390,7 @@ private:
 public:
     //Adds a lot of info, using fast merging strategy
     template<class Index>
-    void Add(const Index& index_to_add) {
+    void Merge(const Index& index_to_add) {
         auto& base_index = storage_;
         for (auto AddI = index_to_add.data_begin(); AddI != index_to_add.data_end(); ++AddI) {
             EdgeId e1_to_add = AddI->first;
@@ -430,11 +405,11 @@ private:
     void MergeInnerMaps(const OtherMap& map_to_add,
                         InnerMap& map) {
         typedef typename Histogram::iterator hist_iterator;
-        for (auto &i : map_to_add) {
-            Histogram &hist_exists = map[i.first];
+        for (const auto& i : map_to_add) {
+            Histogram& hist_exists = map[i.first];
             const auto& hist_to_add = i.second;
 
-            for (auto new_point : hist_to_add) {
+            for (const auto& new_point : hist_to_add) {
                 const std::pair<hist_iterator, bool>& result = hist_exists.insert(new_point);
                 if (!result.second) { // in this case we need to merge two points
                     MergeData(hist_exists, result.first, new_point);
@@ -581,7 +556,7 @@ public:
 
     // Returns a proxy set of points
     HistProxy<> Get(EdgeId e1, EdgeId e2) const {
-        int offset = CalcOffset(e2, e1); //we need to calculate the offset with initial edges
+        auto offset = CalcOffset(e2, e1); //we need to calculate the offset with initial edges
         return HistProxy<>(GetImpl(e1, e2), GetImpl(ConjugatePair(e1, e2)), offset);
     }
 
