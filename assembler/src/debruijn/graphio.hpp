@@ -237,7 +237,7 @@ class DataPrinter {
             }
         }
 
-        fprintf(file, "%zu\n", comp_size);
+        fprintf(file, "%zu\n", comp_size / 2);
 
         for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
             EdgeId e1 = *I;

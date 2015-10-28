@@ -7,11 +7,11 @@
 
 #pragma once
 
-#include <boost/iterator/iterator_facade.hpp>
 #include <btree/btree_set.h>
 #include <btree/safe_btree_map.h>
 #include <sparsehash/sparse_hash_map>
 
+#include "conj_iterator.hpp"
 #include "index_point.hpp"
 
 namespace omnigraph {
@@ -40,52 +40,41 @@ public:
 
     public:
         class Iterator: public boost::iterator_facade<Iterator, Point, boost::bidirectional_traversal_tag, Point> {
-            typedef typename Histogram::const_iterator const_iterator;
 
         public:
-            Iterator(const_iterator iter, const_iterator stop_iter, const_iterator end_iter, float offset, bool conj)
+            typedef typename ConjProxy<Histogram>::Iterator InnerIterator;
+
+            Iterator(InnerIterator iter, float offset)
                     : iter_(iter)
-                    , stop_iter_(stop_iter)
-                    , jump_iter_(end_iter)
-                    , conj_(conj)
                     , offset_(offset)
             {}
 
             Point dereference() const {
                 Point result = *iter_;
-                if (conj_)
+                if (full && iter_.Conj())
                     result.d += offset_;
                 return result;
             }
 
-            void increment() {
+            inline void increment() {
                 ++iter_;
-                if (full && !conj_ && iter_ == stop_iter_) {
-                    conj_ = true;
-                    iter_ = jump_iter_;
-                }
             }
 
-            void decrement() {
-                if (full && conj_ && iter_ == jump_iter_) {
-                    conj_ = false;
-                    iter_ = stop_iter_;
-                }
+            inline void decrement() {
                 --iter_;
             }
 
-            bool equal(const Iterator &other) const {
+            inline bool equal(const Iterator &other) const {
                 return iter_ == other.iter_;
             }
+
         private:
-            const_iterator iter_, stop_iter_, jump_iter_;
-            bool conj_;
+            InnerIterator iter_;
             float offset_;
         };
 
         HistProxy(const Histogram& hist, const Histogram& conj_hist, float offset = 0)
-            : hist_(hist)
-            , conj_hist_(conj_hist)
+            : hist_(hist, conj_hist)
             , offset_(offset)
         {}
 
@@ -95,28 +84,18 @@ public:
         }
 
         HistProxy(const Histogram& hist, float offset = 0)
-                : hist_(hist)
-                , conj_hist_(HistProxy::empty_hist())
+                : hist_(hist, HistProxy::empty_hist())
                 , offset_(offset)
         {}
 
         Iterator begin() const {
-            if (full) { //Only one branch will actually be in the binary
-                auto conj = hist_.empty();
-                auto start = conj ? conj_hist_.begin() : hist_.begin();
-                return Iterator(start, hist_.end(), conj_hist_.begin(), offset_, conj);
-            } else {
-                auto stop = hist_.end();
-                return Iterator(hist_.begin(), stop, stop, 0, false);
-            }
+            return Iterator(hist_.begin(), offset_);
         }
+
         Iterator end() const {
-            if (full) { //Only one branch will actually be in the binary
-                return Iterator(conj_hist_.end(), hist_.end(), conj_hist_.begin(), offset_, true);
-            } else {
-                auto stop = hist_.end();
-                return Iterator(hist_.end(), stop, stop, 0, false);
-            }
+            //TODO: simplify?
+            auto i = full ? hist_.end() : hist_.conj_begin();
+            return Iterator(i, offset_);
         }
 
         Point front() const {
@@ -127,20 +106,20 @@ public:
             return (--end()).dereference();
         }
 
-        Histogram Unwrap() {
+        inline Histogram Unwrap() {
             return Histogram(begin(), end());
         }
 
-        size_t size() const {
-            return hist_.size() + conj_hist_.size();
+        inline size_t size() const {
+            return hist_.size();
         }
 
-        bool empty() const {
-            return hist_.empty() && conj_hist_.empty();
+        inline bool empty() const {
+            return hist_.empty();
         }
 
     private:
-        const Histogram& hist_, & conj_hist_;
+        const ConjProxy<Histogram> hist_;
         float offset_;
     };
 
@@ -160,60 +139,47 @@ public:
     public:
 
         class Iterator: public boost::iterator_facade<Iterator, EdgeHist<full>, boost::forward_traversal_tag, EdgeHist<full>> {
-            typedef typename InnerMap::const_iterator const_iterator;
 
-            void Skip() {//For a raw iterator, skip conjugate pairs
-                while (iter_ != stop_iter_ && iter_->first < edge_)
+            typedef typename ConjProxy<InnerMap>::Iterator InnerIterator;
+
+            void Skip() { //For a raw iterator, skip conjugate pairs
+                while (!full && !iter_.Conj() && iter_->first < edge_)
                     ++iter_;
             }
 
         public:
-            Iterator(const PairedIndex &index, const_iterator iter,
-                     const_iterator stop_iter, const_iterator jump_iter,
-                     EdgeId edge, bool conj)
+            Iterator(const PairedIndex &index, InnerIterator iter, EdgeId edge)
                     : index_ (index)
                     , iter_(iter)
-                    , stop_iter_(stop_iter)
-                    , jump_iter_(jump_iter)
                     , edge_(edge)
-                    , conj_(conj)
             {
-                if (!full)
-                    Skip();
+                Skip();
             }
 
             void increment() {
                 ++iter_;
-                if (full) { //For a full iterator, jump from the straight submap onto a conjugate one
-                    if (!conj_ && iter_ == stop_iter_) {
-                        conj_ = true;
-                        iter_ = jump_iter_;
-                    }
-                } else
-                    Skip();
+                Skip();
             }
 
             void operator=(const Iterator &other) {
                 //VERIFY(index_ == other.index_); //TODO: is this risky?
                 iter_ = other.iter_;
-                stop_iter_ = other.stop_iter_;
-                jump_iter_ = other.jump_iter_;
                 edge_ = other.edge_;
-                conj_ = other.conj_;
             }
 
             bool equal(const Iterator &other) const {
-                return iter_ == other.iter_ && conj_ == other.conj_;
+                return iter_ == other.iter_;
             }
 
             EdgeHist<full> dereference() const {
                 if (full) {
                     float offset = index_.CalcOffset(edge_, iter_->first);
                     EdgePair conj = index_.ConjugatePair(edge_, iter_->first);
-                    const auto& hist = conj_ ? index_.GetImpl(conj) : iter_->second;
-                    const auto& conj_hist = conj_ ? iter_->second : index_.GetImpl(conj);
-                    auto edge = conj_ ? conj.first : iter_->first;
-                    return std::make_pair(edge, HistProxy<full>(hist, conj_hist, offset));
+                    if (iter_.Conj()) {
+                        return std::make_pair(conj.first, HistProxy<full>(index_.GetImpl(conj), iter_->second, offset));
+                    } else {
+                        return std::make_pair(iter_->first, HistProxy<full>(iter_->second, index_.GetImpl(conj), offset));
+                    }
                 } else {
                     const auto& hist = iter_->second;
                     const auto& conj_hist = index_.GetImpl(index_.ConjugatePair(edge_, iter_->first));
@@ -223,34 +189,22 @@ public:
 
         private:
             const PairedIndex &index_;
-            const_iterator iter_, stop_iter_, jump_iter_;
+            InnerIterator iter_;
             EdgeId edge_;
-            bool conj_;
         };
 
         EdgeProxy(const PairedIndex &index, const InnerMap& map, const InnerMap& conj_map, EdgeId edge)
-            : index_(index), map_(map), conj_map_(conj_map), edge_(edge)
+            : index_(index), map_(map, conj_map), edge_(edge)
         {}
 
         Iterator begin() const {
-            if (full) { //Only one branch will actually be in the binary
-                auto conj = map_.empty();
-                auto start = conj ? conj_map_.begin() : map_.begin();
-                return Iterator(index_, start, map_.end(), conj_map_.begin(), edge_, conj);
-            } else {
-                auto stop = map_.end();
-                return Iterator(index_, map_.begin(), stop, stop, edge_, false);
-            }
+            return Iterator(index_, map_.begin(), edge_);
         }
 
         Iterator end() const {
-            if (full) { //Only one branch will actually be in the binary
-                auto stop = conj_map_.end();
-                return Iterator(index_, stop, stop, stop, edge_, true);
-            } else {
-                auto stop = map_.end();
-                return Iterator(index_, stop, stop, stop, edge_, false);
-            }
+            //TODO: simplify?
+            auto i = full ? map_.end() : map_.conj_begin();
+            return Iterator(index_, i, edge_);
         }
 
         HistProxy<full> operator[](EdgeId e2) const {
@@ -260,13 +214,13 @@ public:
             return HistProxy<full>(hist, conj_hist, index_.CalcOffset(e2, edge_));
         }
 
-        bool empty() const {
-            return !index_.contains(edge_);
+        inline bool empty() const {
+            return map_.empty();
         }
 
     private:
         const PairedIndex& index_;
-        const InnerMap& map_, conj_map_;
+        const ConjProxy<InnerMap> map_;
         EdgeId edge_;
     };
 

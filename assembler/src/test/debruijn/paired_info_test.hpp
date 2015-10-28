@@ -174,6 +174,35 @@ BOOST_AUTO_TEST_CASE(PairedInfoAccess) {
     BOOST_CHECK_EQUAL(proxy4[2].Unwrap(), test4);
 }
 
+BOOST_AUTO_TEST_CASE(PairedInfoRawAccess) {
+    MockGraph graph;
+    MockIndex pi(graph);
+    pi.Add(1, 8, {1, 3});
+    pi.Add(1, 3, {2, 2});
+    pi.Add(1, 3, {3, 1});
+    RawHistogram test0;
+    RawHistogram test1;
+    test1.insert({2, 1});
+    test1.insert({3, 2});
+    auto proxy1 = pi.RawGet(1);
+    BOOST_CHECK_EQUAL(proxy1[3].front(), RawPoint(2, 1));
+    BOOST_CHECK_EQUAL(proxy1[3].back(), RawPoint(3, 1));
+    BOOST_CHECK_EQUAL(proxy1[1].Unwrap(), test0);
+    BOOST_CHECK_EQUAL(proxy1[3].Unwrap(), test1);
+    RawHistogram test2;
+    test2.insert({-2, 1});
+    test2.insert({-3, 2});
+    auto proxy3 = pi.RawGet(3);
+    BOOST_CHECK_EQUAL(proxy3[7].Unwrap(), test0);
+    BOOST_CHECK_EQUAL(proxy3[1].Unwrap(), test2);
+    auto proxy2 = pi.RawGet(2);
+    BOOST_CHECK_EQUAL(proxy2[1].Unwrap(), test0);
+    BOOST_CHECK_EQUAL(proxy2[4].Unwrap(), test0);
+    auto proxy4 = pi.RawGet(4);
+    BOOST_CHECK_EQUAL(proxy4[1].Unwrap(), test0);
+    BOOST_CHECK_EQUAL(proxy4[2].Unwrap(), test0);
+}
+
 BOOST_AUTO_TEST_CASE(PairedInfoRemove) {
     MockGraph graph;
     ClMockIndex pi(graph); //Deleting currently works only with the clustered index
@@ -291,7 +320,7 @@ BOOST_AUTO_TEST_CASE(PairedInfoRawNeighbours) {
     BOOST_CHECK_EQUAL(GetRawNeighbours(pi, 1), test1);
     EdgeSet test2 = {13};
     BOOST_CHECK_EQUAL(GetRawNeighbours(pi, 2), test2);
-    EdgeSet test3 = {3};
+    EdgeSet test3 = {};
     BOOST_CHECK_EQUAL(GetRawNeighbours(pi, 14), test3);
 }
 

@@ -228,7 +228,10 @@ class PairInfoImprover {
         for (size_t j = 0; j < 2; ++j)
             for (size_t i = 0; i < nthreads; ++i) {
                 DEBUG("Adding map #" << i << " " << j);
-                for (auto I = omnigraph::de::pair_begin(to_add[i][j]); I != omnigraph::de::pair_end(to_add[i][j]); ++I) {
+                for (auto I = omnigraph::de::raw_pair_begin(to_add[i][j]);
+                     I != omnigraph::de::raw_pair_end(to_add[i][j]);
+                     ++I)
+                {
                     EdgeId e1 = I.first();
                     EdgeId e2 = I.second();
                     for (auto p : *I)
