@@ -1389,6 +1389,10 @@ private:
             }
 
             GraphComponent<Graph> gc = GetRepeatComponent(g_.EdgeEnd(edge.e_));
+            if(gc.v_size() == 0) {
+                return EdgeContainer();
+            }
+
             for (auto e : gc.edges()) {
                 if (g_.length(e) > max_edge_length_in_repeat_) {
                     DEBUG("Repeat component contains long edges");
@@ -1398,7 +1402,7 @@ private:
 
             for (auto v : gc.sinks()) {
                 for (auto e : g_.OutgoingEdges(v)) {
-                    if(GoodExtension(edge.e_, path_coverage)) {
+                    if(GoodExtension(e, path_coverage)) {
                         good_extensions.insert(edge.e_);
                     }
                 }
