@@ -66,10 +66,6 @@ public:
     virtual ~LatePairedIndexFiller() {}
 
 private:
-    EdgePair ConjugatePair(EdgePair ep) const {
-        return std::make_pair(graph_.conjugate(ep.second), graph_.conjugate(ep.first));
-    }
-
     void ProcessPairedRead(omnigraph::de::PairedInfoBuffer<Graph>& paired_index,
                            const MappingPath<EdgeId>& path1,
                            const MappingPath<EdgeId>& path2, size_t read_distance) const {
@@ -78,10 +74,10 @@ private:
             for (size_t j = 0; j < path2.size(); ++j) {
                 std::pair<EdgeId, MappingRange> mapping_edge_2 = path2[j];
 
-                //EdgePair ep{mapping_edge_1.first, mapping_edge_2.first};
+                EdgePair ep{mapping_edge_1.first, mapping_edge_2.first};
 
-                //if (ep > ConjugatePair(ep))
-                //    continue;
+                if (ep > paired_index.ConjugatePair(ep))
+                    continue;
 
                 double weight = weight_f_(mapping_edge_1.second,
                                           mapping_edge_2.second);
