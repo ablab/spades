@@ -233,6 +233,7 @@ class DataPrinter {
             for (auto entry : inner_map) {
                 if (component_.contains(entry.first)) { // if the second edge also lies in the same component
                     comp_size += entry.second.size();
+                    continue;
                 }
             }
         }

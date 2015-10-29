@@ -75,9 +75,6 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
       EdgeId e2 = entry.first;
       EdgePair ep(e1, e2);
 
-      if (ep > pi.ConjugatePair(ep))
-          continue;
-
       const GraphLengths& forward = entry.second;
       TempHistogram hist = inner_map[e2].Unwrap();
       DEBUG("Extending paired information");
@@ -90,7 +87,6 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
       const EstimHist& estimated = this->EstimateEdgePairDistances(ep, hist, forward);
       OutHistogram res = this->ClusterResult(ep, estimated);
       this->AddToResult(res, ep, result);
-      //this->AddToResult(this->ConjugateInfos(ep, res), this->ConjugatePair(ep), result);
     }
   }
 
@@ -154,7 +150,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
     VERIFY(IsSorted(where));
   }
 
-  TempHistogram FilterPositive(const InHistogram& hist, size_t first_len, size_t second_len) const {
+  TempHistogram FilterPositive(const typename InPairedIndex::FullHistProxy& hist, size_t first_len, size_t second_len) const {
     // assuming it is sorted
     //if (hist.size() == 0)
     //  return hist;
@@ -176,7 +172,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
       return;
 
     for (EdgeId next : this->graph().IncomingEdges(start)) {
-      auto hist = this->index().RawGet(next, last);
+      auto hist = this->index().Get(next, last);
       if (-shift < (int) max_shift)
         ExtendLeftDFS(next, last, data, shift - (int) this->graph().length(next), max_shift);
       auto filtered_infos = FilterPositive(hist, this->graph().length(next), this->graph().length(last));
@@ -194,7 +190,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
       return;
 
     for (EdgeId next : this->graph().OutgoingEdges(end)) {
-      auto hist = this->index().RawGet(first, next);
+      auto hist = this->index().Get(first, next);
       if (-shift < (int) max_shift)
         ExtendRightDFS(first, next, data, shift - (int) this->graph().length(current), max_shift);
 

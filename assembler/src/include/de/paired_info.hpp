@@ -211,7 +211,7 @@ public:
             //TODO: optimize
             const auto& hist = index_.GetImpl(edge_, e2);
             const auto& conj_hist = full ? index_.GetImpl(index_.ConjugatePair(edge_, e2)) : HistProxy<full>::empty_hist();
-            return HistProxy<full>(hist, conj_hist, index_.CalcOffset(e2, edge_));
+            return HistProxy<full>(hist, conj_hist, index_.CalcOffset(edge_, e2));
         }
 
         inline bool empty() const {
@@ -262,7 +262,7 @@ private:
     }
 
     float CalcOffset(EdgeId e1, EdgeId e2) const {
-        return float(graph_.length(e2)) - graph_.length(e1);
+        return float(graph_.length(e1)) - graph_.length(e2);
     }
 
 public:
@@ -273,14 +273,15 @@ public:
     }
 
     //Adds a whole histogram, merging histograms if there's already one
-    void AddMany(EdgeId e1, EdgeId e2, const Histogram& hist) {
+    /*void AddMany(EdgeId e1, EdgeId e2, const Histogram& hist) {
         bool swapped = SwapConj(e1, e2);
+        float offset = CalcOffset(e1, e2);
         for (auto point : hist) {
             if (swapped)
-                point.d += CalcOffset(e1, e2);
+                point.d += offset;
             InsertOrMerge(e1, e2, point);
         }
-    }
+    }*/
 
 private:
 
@@ -381,7 +382,7 @@ public:
     //Removes the specific entry
     // Returns the number of deleted entries
     size_t Remove(EdgeId e1, EdgeId e2, Point point) {
-        SwapConj(e1, e2);
+        SwapConj(e1, e2, point);
         auto res = RemoveSingle(e1, e2, point);
         if (!IsSymmetric(e1, e2, point))
             res += RemoveSingle(e2, e1, -point);
@@ -510,7 +511,7 @@ public:
 
     // Returns a proxy set of points
     HistProxy<> Get(EdgeId e1, EdgeId e2) const {
-        auto offset = CalcOffset(e2, e1); //we need to calculate the offset with initial edges
+        auto offset = CalcOffset(e1, e2);
         return HistProxy<>(GetImpl(e1, e2), GetImpl(ConjugatePair(e1, e2)), offset);
     }
 

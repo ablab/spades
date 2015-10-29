@@ -137,6 +137,10 @@ BOOST_AUTO_TEST_CASE(PairedInfoConstruct) {
     test2.insert({-2, 1});
     test2.insert({-3, 2});
     BOOST_CHECK_EQUAL(pi.Get(3, 1).Unwrap(), test2);
+    //Check for adding conjugate info
+    pi.Add(4, 2, {4, 2});
+    BOOST_CHECK_EQUAL(pi.Get(1, 3).Unwrap(), test1);
+    BOOST_CHECK_EQUAL(pi.Get(3, 1).Unwrap(), test2);
 }
 
 BOOST_AUTO_TEST_CASE(PairedInfoAccess) {
