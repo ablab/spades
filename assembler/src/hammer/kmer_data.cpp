@@ -520,7 +520,7 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
     unsigned nthreads = std::min(cfg::get().count_merge_nthreads, cfg::get().general_max_nthreads);
     auto kmers_its = io::make_kmer_iterator<hammer::KMer>(final_kmers, hammer::K, 16*nthreads);
 
-#   pragma omp parallel for nthreads(nthreads) schedule(guided)
+#   pragma omp parallel for num_threads(nthreads) schedule(guided)
     for (size_t i = 0; i < kmers_its.size(); ++i) {
         auto &kmer_it = kmers_its[i];
         for (; kmer_it.good(); ++kmer_it) {
