@@ -11,13 +11,13 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 
 add_executable(corrector
-	positional_read.cpp
+	    positional_read.cpp
         ../include/sam/read.cpp
         ../include/sam/sam_reader.cpp
-	interesting_pos_processor.cpp
-	contig_processor.cpp
-	dataset_processor.cpp
-	config_struct.cpp
+        interesting_pos_processor.cpp
+        contig_processor.cpp
+        dataset_processor.cpp
+        config_struct.cpp
         main.cpp)
 
 target_link_libraries(corrector samtools input yaml-cpp ${COMMON_LIBRARIES})

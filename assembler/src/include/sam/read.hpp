@@ -62,6 +62,10 @@ public:
         return is_aligned() && get_map_qual() != 0;
     }
 
+    bool get_strand() const {
+        return (data_->core.flag & 0x10) == 0;
+    }
+
     uint32_t get_map_qual() const {
         return data_->core.qual;
     }

@@ -8,6 +8,8 @@
 project(spades CXX)
 
 add_library(debruijn STATIC
+            ../include/sam/read.cpp
+            ../include/sam/sam_reader.cpp
             kmer_coverage_model.cpp
             config_struct.cpp
             path_extend/pe_config_struct.cpp
@@ -29,11 +31,13 @@ add_library(debruijn STATIC
             genome_storage.cpp 
             path_extend/scaffold_graph.cpp 
             path_extend/scaffold_graph_visualizer.cpp 
-            path_extend/connection_condition2015.cpp bwa_pair_info_count.cpp bwa_pair_info_filler.cpp)
+            path_extend/connection_condition2015.cpp
+            bwa_pair_info_count.cpp
+            bwa_pair_info_filler.cpp)
   
 # We have to do this to minimize changes in ConsensusCore itself
 target_include_directories(debruijn PRIVATE ${EXT_DIR}/include/ConsensusCore)
-target_link_libraries(debruijn ConsensusCore input mph_index nlopt BamTools yaml-cpp ${COMMON_LIBRARIES})
+target_link_libraries(debruijn ConsensusCore input samtools mph_index nlopt BamTools yaml-cpp ${COMMON_LIBRARIES})
 
 add_executable(spades
                main.cpp)

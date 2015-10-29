@@ -43,8 +43,8 @@ MappedSamStream& MappedSamStream::operator >>(PairedSamRead& read) {
     return *this;
 }
 
-const char* MappedSamStream::get_contig_name(size_t i) const {
-    VERIFY(i < (size_t) reader_->header->n_targets);
+const char* MappedSamStream::get_contig_name(int i) const {
+    VERIFY(i < reader_->header->n_targets);
     return (reader_->header->target_name[i]);
 }
 

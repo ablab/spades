@@ -353,6 +353,12 @@ void load(debruijn_config::truseq_analysis& tsa,
   load(tsa.genome_file, pt, "genome_file");
 }
 
+void load(debruijn_config::bwa_aligner& bwa,
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
+    using config_common::load;
+    load(bwa.path_to_bwa, pt, "path_to_bwa");
+    load(bwa.min_contig_len, pt, "min_contig_len");
+}
 
 void load(debruijn_config::pacbio_processor& pb,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
@@ -753,6 +759,7 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 
   cfg.preliminary_simp = cfg.simp;
   load(cfg.preliminary_simp, pt, "preliminary", false);
+  load(cfg.bwa, pt, "bwa_aligner", false);
 }
 
 void load(debruijn_config& cfg, const std::string &filename) {

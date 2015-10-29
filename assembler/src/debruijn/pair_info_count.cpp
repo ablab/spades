@@ -22,6 +22,7 @@
 #include "pair_info_filler.hpp"
 #include "stats/debruijn_stats.hpp"
 #include "path_extend/split_graph_pair_info.hpp"
+#include "bwa_pair_info_filler.hpp"
 
 namespace debruijn_graph {
     typedef io::SequencingLibrary<debruijn_config::DataSetData> SequencingLib;
@@ -100,8 +101,8 @@ void ProcessPairedReads(conj_graph_pack& gp, size_t ilib, bool map_single_reads)
         notifier.Subscribe(ilib, &split_graph);
     }
 
-    LatePairedIndexFiller pif(gp.g, PairedReadCountWeight, gp.paired_indices[ilib]);
-    notifier.Subscribe(ilib, &pif);
+    //LatePairedIndexFiller pif(gp.g, PairedReadCountWeight, gp.paired_indices[ilib]);
+    //notifier.Subscribe(ilib, &pif);
 
     auto paired_streams = paired_binary_readers(reads, true, (size_t) reads.data().mean_insert_size);
     notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads));
@@ -193,6 +194,12 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
         }
     }
 
+    bwa_pair_info::BWAPairInfoFiller bwa_counter(gp.g,
+                                                 cfg::get().bwa.path_to_bwa,
+                                                 path::append_path(cfg::get().output_dir, "bwa_count"),
+                                                 cfg::get().bwa.min_contig_len,
+                                                 cfg::get().max_threads);
+
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         INFO("Mapping library #" << i);
         const auto& lib = cfg::get().ds.reads[i];
@@ -206,6 +213,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
             if (lib.is_paired() && lib.data().mean_insert_size != 0.0) {
                 INFO("Mapping paired reads (takes a while) ");
                 ProcessPairedReads(gp, i, map_single_reads);
+                bwa_counter.ProcessLib(i, lib, gp.paired_indices[i]);
             } else if (map_single_reads) {
                 INFO("Mapping single reads (takes a while) ");
                 ProcessSingleReads(gp, i);

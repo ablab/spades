@@ -515,6 +515,11 @@ struct debruijn_config {
         bool use_coverage_threshold;
     };
 
+    struct bwa_aligner {
+        std::string path_to_bwa;
+        size_t min_contig_len;
+    };
+
     typedef std::map<info_printer_pos, info_printer> info_printers_t;
 
     std::string dataset_file;
@@ -604,6 +609,7 @@ struct debruijn_config {
     graph_read_corr_cfg graph_read_corr;
     info_printers_t info_printers;
     kmer_coverage_model kcm;
+    bwa_aligner bwa;
 
     size_t flanking_range;
 

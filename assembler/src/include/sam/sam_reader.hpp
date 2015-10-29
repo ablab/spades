@@ -31,7 +31,7 @@ public:
     bool eof() const;
     MappedSamStream& operator >>(SingleSamRead& read);
     MappedSamStream& operator >>(PairedSamRead& read);
-const char* get_contig_name(size_t i) const;
+    const char* get_contig_name(int i) const;
     void close();
     void reset();
 
