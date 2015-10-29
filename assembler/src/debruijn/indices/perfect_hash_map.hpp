@@ -25,7 +25,6 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstdint>
-#include <io/kmer_iterator.hpp>
 
 namespace debruijn_graph {
 
@@ -338,11 +337,6 @@ public:
     kmer_iterator kmer_begin() const {
         return kmer_iterator(this->KMersFilename_, KMer::GetDataSize(base::k()));
     }
-
-    std::vector<kmer_iterator> kmer_begin(size_t parts) const {
-        return io::make_kmer_iterator<KMer>(this->KMersFilename_, base::k(), parts);
-    }
-
 
     template<class KmerCounter>
     void BuildIndex(KmerCounter& counter, size_t bucket_num,
