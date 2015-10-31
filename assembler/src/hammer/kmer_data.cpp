@@ -271,7 +271,7 @@ void KMerDataCounter::BuildKMerIndex(KMerData &data) {
   size_t kmers = KMerIndexBuilder<HammerKMerIndex>(workdir, num_files_, omp_get_max_threads()).BuildIndex(data.index_, counter, /* save final */ true);
 
   // Check, whether we'll ever have enough memory for running BH and bail out earlier
-  if (1.25 * kmers * (sizeof(KMerStat) + sizeof(hammer::KMer)) > (double) get_memory_limit())
+  if (1.25 * (double)kmers * (sizeof(KMerStat) + sizeof(hammer::KMer)) > (double) get_memory_limit())
       FATAL_ERROR("The reads contain too many k-mers to fit into available memory limit. Increase memory limit and restart");
 
   {
