@@ -65,9 +65,13 @@ static void FlushCandidates(std::priority_queue<state>& corrections, std::priori
 
 std::string ReadCorrector::CorrectReadRight(const std::string &seq, const std::string &qual,
                                             size_t right_pos) {
-    size_t read_size = seq.size();
+    const size_t read_size = seq.size();
     std::priority_queue<state> corrections, candidates;
     positions_t cpos{{(uint16_t)-1, (uint16_t)-1U, (uint16_t)-1U, (uint16_t)-1U}};
+
+    const size_t size_thr = 100 * read_size;
+    const double penalty_thr = -(double)read_size * 15.0 / 100;
+    const size_t pos_thr = 8;
 
     corrections.emplace(right_pos, seq,
                         0.0, KMer(seq, right_pos - K + 1, K, /* raw */ true),
@@ -103,20 +107,20 @@ std::string ReadCorrector::CorrectReadRight(const std::string &seq, const std::s
 
         // Ok, it's possible to extend using solely solid k-mer, do not try any other corrections.
         if (extended) {
-            FlushCandidates(corrections, candidates, 100 * read_size);
+            FlushCandidates(corrections, candidates, size_thr);
             continue;
         }
 
         // Do not allow too many corrections
-        if (correction.penalty < 0.0 - read_size * 15.0 / 100) {
-            FlushCandidates(corrections, candidates, 100 * read_size);
+        if (correction.penalty < penalty_thr) {
+            FlushCandidates(corrections, candidates, size_thr);
             continue;
         }
 
         // Do not allow clustered corrections
-        if (pos - correction.cpos.front() < 8) {
+        if (pos - correction.cpos.front() < pos_thr) {
             // INFO("Cluster " << pos << "," << correction.cpos);
-            FlushCandidates(corrections, candidates, 100 * read_size);
+            FlushCandidates(corrections, candidates, size_thr);
             continue;
         }
 
@@ -144,7 +148,7 @@ std::string ReadCorrector::CorrectReadRight(const std::string &seq, const std::s
             }
         }
 
-        FlushCandidates(corrections, candidates, 100 * read_size);
+        FlushCandidates(corrections, candidates, size_thr);
     }
 
 #   pragma omp atomic
