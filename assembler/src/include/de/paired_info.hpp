@@ -176,9 +176,13 @@ public:
                     float offset = index_.CalcOffset(edge_, iter_->first);
                     EdgePair conj = index_.ConjugatePair(edge_, iter_->first);
                     if (iter_.Conj()) {
-                        return std::make_pair(conj.first, HistProxy<full>(index_.GetImpl(conj), iter_->second, offset));
+                        return std::make_pair(conj.first,
+                            HistProxy<full>(index_.GetImpl(edge_, conj.first),
+                                            index_.GetImpl(iter_->first, conj.second),
+                                            offset));
                     } else {
-                        return std::make_pair(iter_->first, HistProxy<full>(iter_->second, index_.GetImpl(conj), offset));
+                        return std::make_pair(iter_->first,
+                            HistProxy<full>(iter_->second, index_.GetImpl(conj), offset));
                     }
                 } else {
                     const auto& hist = iter_->second;
@@ -273,15 +277,14 @@ public:
     }
 
     //Adds a whole histogram, merging histograms if there's already one
-    /*void AddMany(EdgeId e1, EdgeId e2, const Histogram& hist) {
-        bool swapped = SwapConj(e1, e2);
-        float offset = CalcOffset(e1, e2);
+    template<typename TH>
+    void AddMany(EdgeId e1, EdgeId e2, const TH& hist) {
+        float offset = SwapConj(e1, e2) ? CalcOffset(e1, e2) : 0.0;
         for (auto point : hist) {
-            if (swapped)
-                point.d += offset;
+            point.d += offset;
             InsertOrMerge(e1, e2, point);
         }
-    }*/
+    }
 
 private:
 
@@ -336,7 +339,8 @@ private:
     }
 
     void MergeData(Histogram& hist, typename Histogram::iterator to_update, const Point& to_merge) {
-        //UpdateSinglePoint(hist, to_update, *to_update + point_to_add);
+        //We can't just modify the existing point, because if variation is non-zero,
+        //resulting distance will differ
         auto to_add = *to_update + to_merge;
         auto after_removed = hist.erase(to_update);
         hist.insert(after_removed, to_add);
@@ -382,10 +386,11 @@ public:
     //Removes the specific entry
     // Returns the number of deleted entries
     size_t Remove(EdgeId e1, EdgeId e2, Point point) {
-        SwapConj(e1, e2, point);
-        auto res = RemoveSingle(e1, e2, point);
-        if (!IsSymmetric(e1, e2, point))
-            res += RemoveSingle(e2, e1, -point);
+        auto res = RemoveImpl(e1, e2, point);
+        auto conj = ConjugatePair(e1, e2);
+        auto conj_point = point;
+        point.d += CalcOffset(e2, e1);
+        res += RemoveImpl(conj.first, conj.second, conj_point);
         return res;
     }
     // Removes the whole histogram
@@ -399,6 +404,13 @@ public:
     }
 
 private:
+
+    size_t RemoveImpl(EdgeId e1, EdgeId e2, Point point) {
+        auto res = RemoveSingle(e1, e2, point);
+        if (!IsSymmetric(e1, e2, point))
+            res += RemoveSingle(e2, e1, -point);
+        return res;
+    }
 
     //TODO: remove duplicode
     size_t RemoveSingle(EdgeId e1, EdgeId e2, Point point) {
@@ -432,7 +444,7 @@ private:
                 size_ -= size_decrease;
                 if (map.empty())
                     storage_.erase(i1);
-                return 1;
+                return size_decrease;
             }
         }
         return 0;
@@ -622,6 +634,46 @@ using PairedInfoBuffer = PairedIndex<Graph, RawHistogram, unordered_map>;
 
 template<class Graph>
 using PairedInfoBuffersT = PairedIndices<PairedInfoBuffer<Graph>>;
+
+template<typename T>
+std::ostream& operator<<(std::ostream& str, const PairedInfoBuffer<T>& pi) {
+    str << "--- PI of size " << pi.size() << "---\n";
+
+    for (auto i = pi.data_begin(); i != pi.data_end(); ++i) {
+        auto e1 = i->first;
+        str << e1 << " has: \n";
+
+        for (auto j = i->second.begin(); j != i->second.end(); ++j) {
+            str << "- " << j->first << ": ";
+            for (auto p : j->second)
+                str << p << ", ";
+            str << std::endl;
+        }
+    }
+
+    str << "-------\n";
+    return str;
+}
+
+template<typename T>
+std::ostream& operator<<(std::ostream& str, const PairedInfoIndexT<T>& pi) {
+    str << "--- PI of size " << pi.size() << "---\n";
+
+    for (auto i = pi.data_begin(); i != pi.data_end(); ++i) {
+        auto e1 = i->first;
+        str << e1 << " has: \n";
+
+        for (auto j = i->second.begin(); j != i->second.end(); ++j) {
+            str << "- " << j->first << ": ";
+            for (auto p : j->second)
+                str << p << ", ";
+            str << std::endl;
+        }
+    }
+
+    str << "-------\n";
+    return str;
+}
 
 }
 

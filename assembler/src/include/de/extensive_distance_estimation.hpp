@@ -152,13 +152,10 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
 
   TempHistogram FilterPositive(const typename InPairedIndex::FullHistProxy& hist, size_t first_len, size_t second_len) const {
     // assuming it is sorted
-    //if (hist.size() == 0)
-    //  return hist;
-
     TempHistogram answer;
-    for (auto iterator = hist.begin(); iterator != hist.end(); ++iterator) {
-      if (math::ge(2. * iterator->d + (double) second_len, (double) first_len))
-        answer.insert(*iterator);
+    for (auto point : hist) {
+      if (math::ge(2. * point.d + (double) second_len, (double) first_len))
+        answer.insert(point);
     }
     return answer;
   }

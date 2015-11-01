@@ -20,9 +20,7 @@ template<class Graph>
 static
 bool TryToAddPairInfo(omnigraph::de::PairedInfoIndexT<Graph>& clustered_index,
                       typename Graph::EdgeId e1, typename Graph::EdgeId e2,
-                      const omnigraph::de::Point& p) {
-    const omnigraph::de::Point& point_to_add = p;
-
+                      const omnigraph::de::Point& point_to_add) {
     auto histogram = clustered_index.Get(e1, e2);
     for (auto i : histogram)
         if (ClustersIntersect(i, point_to_add))
@@ -111,9 +109,9 @@ class PairInfoImprover {
         // Checking the consistency of two edge pairs (e, e_1) and (e, e_2) for all pairs (base_edge, <some_edge>)
         void FindInconsistent(EdgeId base_edge,
                               Index& pi) const {
-            for (auto i1 : pi.Get(base_edge)) {
+            for (auto i1 : index_.Get(base_edge)) {
                 auto e1 = i1.first;
-                for (auto i2 : pi.Get(base_edge)) {
+                for (auto i2 : index_.Get(base_edge)) {
                     auto e2 = i2.first;
                     if (e1 == e2)
                         continue;
@@ -249,17 +247,11 @@ class PairInfoImprover {
   private:
     size_t DeleteIfExist(EdgeId e1, EdgeId e2, const typename Index::FullHistProxy& infos) {
         size_t cnt = 0;
-        auto hist = index_.Get(e1, e2);
         for (auto point : infos) {
-            for (auto p : hist) {
-                if (math::eq(p.d, point.d)) {
-                    cnt += index_.Remove(e1, e2, p);
-                    TRACE("Removed pi " << graph_.int_id(e1) << " " << graph_.int_id(e2)
-                          << " dist " << p.d << " var " << p.var);
-                }
-            }
+            cnt += index_.Remove(e1, e2, point);
             TRACE("cnt += " << cnt);
         }
+
         return cnt;
     }
 

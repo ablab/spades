@@ -69,7 +69,7 @@ class SplitPathConstructor {
                 pair_infos.emplace_back(cur_edge, i.first, j);
 
         vector<PathInfo> result;
-        if (pair_infos.size() == 0)
+        if (pair_infos.empty())
             return result;
 
         vector<bool> pair_info_used(pair_infos.size());

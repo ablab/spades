@@ -95,7 +95,7 @@ public:
 
     static EdgePairIterator end(const Index& index) {
         auto stop = full ? index.data_end() : index.data_begin();
-        auto i = OuterIterator(index.data_end(), index.data_end(), index.data_begin(), true);
+        auto i = OuterIterator(stop, index.data_end(), index.data_begin(), true);
         return EdgePairIterator(index, i);
     }
 

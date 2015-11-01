@@ -87,6 +87,14 @@ EdgeDataSet GetEdgePairInfo(const MockIndex &pi) {
     return result;
 }
 
+EdgeDataSet GetNeighbourInfo(const MockIndex &pi, MockGraph::EdgeId e) {
+    EdgeDataSet result;
+    for (auto i : pi.Get(e))
+        for (auto j : i.second)
+            result.emplace(e, i.first, j);
+    return result;
+}
+
 bool Contains(const MockIndex &pi, MockGraph::EdgeId e1, MockGraph::EdgeId e2, float distance) {
     for (auto p : pi.Get(e1, e2))
         if (math::eq(p.d, distance))
@@ -99,7 +107,7 @@ void PrintPI(const MockIndex &pi) {
 
     for (auto i = pi.data_begin(); i != pi.data_end(); ++i) {
         auto e1 = i->first;
-        std::cout << e1 << "has: \n";
+        std::cout << e1 << " has: \n";
 
         for (auto j = i->second.begin(); j != i->second.end(); ++j) {
             std::cout << "- " << j->first << ": ";
@@ -108,7 +116,7 @@ void PrintPI(const MockIndex &pi) {
             std::cout << std::endl;
         }
     }
-    INFO("----border----")
+    std::cout << "----border----";
 }
 
 BOOST_AUTO_TEST_SUITE(pair_info_tests)
@@ -128,6 +136,8 @@ BOOST_AUTO_TEST_CASE(PairedInfoConstruct) {
     pi.Add(1, 3, {3, 1});
     BOOST_CHECK(Contains(pi, 1, 8, 1));
     BOOST_CHECK(Contains(pi, 1, 3, 2));
+    BOOST_CHECK(Contains(pi, 4, 2, 4));
+    BOOST_CHECK(Contains(pi, 2, 4, -4));
     RawHistogram test1;
     test1.insert({2, 1});
     test1.insert({3, 2});
@@ -141,6 +151,9 @@ BOOST_AUTO_TEST_CASE(PairedInfoConstruct) {
     pi.Add(4, 2, {4, 2});
     BOOST_CHECK_EQUAL(pi.Get(1, 3).Unwrap(), test1);
     BOOST_CHECK_EQUAL(pi.Get(3, 1).Unwrap(), test2);
+    pi.Add(2, 4, {-5, 1});
+    PrintPI(pi);
+    std::cout << GetEdgePairInfo(pi);
 }
 
 BOOST_AUTO_TEST_CASE(PairedInfoAccess) {
@@ -176,6 +189,10 @@ BOOST_AUTO_TEST_CASE(PairedInfoAccess) {
     auto proxy4 = pi.Get(4);
     BOOST_CHECK_EQUAL(proxy4[1].Unwrap(), test0);
     BOOST_CHECK_EQUAL(proxy4[2].Unwrap(), test4);
+    pi.Add(2, 14, {10, 1});
+    RawHistogram test5;
+    test5.insert({-22, 1});
+    BOOST_CHECK_EQUAL(proxy1[13].Unwrap(), test5);
 }
 
 BOOST_AUTO_TEST_CASE(PairedInfoRawAccess) {
@@ -286,8 +303,21 @@ BOOST_AUTO_TEST_CASE(PairedInfoNeighbours) {
     EdgeSet test1 = {3, 4, 8, 9, 14};
     BOOST_CHECK_EQUAL(GetNeighbours(pi, 1), test1);
 
-    EdgeSet test2 = {1, 3, 8};
-    BOOST_CHECK_EQUAL(GetNeighbours(pi, 14), test2);
+    EdgeSet test2 = {3, 4, 8, 9, 13};
+    BOOST_CHECK_EQUAL(GetNeighbours(pi, 2), test2);
+
+    EdgeSet test3 = {1, 2, 14};
+    BOOST_CHECK_EQUAL(GetNeighbours(pi, 3), test3);
+
+    EdgeSet test14 = {1, 3, 8};
+    BOOST_CHECK_EQUAL(GetNeighbours(pi, 14), test14);
+
+    EdgeDataSet testF1 = {{1, 3, RawPoint(1, 1)}, {1, 4, RawPoint(2, 1)}, {1, 8, RawPoint(-1, 1)},
+                          {1, 9, RawPoint(2, 1)}, {1, 14, RawPoint(-19, 1)}};
+    BOOST_CHECK_EQUAL(GetNeighbourInfo(pi, 1), testF1);
+
+    EdgeDataSet testF3 = {{3, 1, RawPoint(-1, 1)}, {3, 2, RawPoint(4, 1)}, {3, 14, RawPoint(-5, 1)}};
+    BOOST_CHECK_EQUAL(GetNeighbourInfo(pi, 3), testF3);
 }
 
 BOOST_AUTO_TEST_CASE(PairedInfoRawData) {

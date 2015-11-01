@@ -17,7 +17,7 @@ namespace de {
 // implicitly converted to / from double.
 
 class DEDistance {
-  public:
+public:
     DEDistance() = default;
     DEDistance(int d)
             : d_((float)d) {}
@@ -34,12 +34,12 @@ class DEDistance {
         d_ *= (float)d;
         return *this;
     }
-  private:
+private:
     float d_;
 };
 
 class DEWeight {
-  public:
+public:
     DEWeight() = default;
     DEWeight(double d)
             : d_((float)d) {}
@@ -52,7 +52,7 @@ class DEWeight {
         d_ *= (float)d;
         return *this;
     }
-  private:
+private:
     float d_;
 };
 
@@ -101,7 +101,7 @@ struct RawPoint {
     }
 
     DEWeight variation() const {
-      return 0;
+        return 0;
     }
 
     RawPoint Conjugate(size_t l1, size_t l2) const
@@ -111,25 +111,37 @@ struct RawPoint {
 };
 
 struct Point : public RawPoint {
-	DEWeight var;
-	Point()
-		: var(0.0) {}
+    DEDistance var;
+    Point()
+            : var(0.0) {}
 
-	Point(DEDistance distance, DEWeight weight, DEWeight variance)
-	    : RawPoint(distance, weight), var(variance) {}
+    Point(DEDistance distance, DEWeight weight, DEDistance variance)
+            : RawPoint(distance, weight), var(variance) {}
 
-	Point(const Point &rhs)
-		: RawPoint(rhs), var(rhs.var) {}
+    Point(const Point &rhs)
+            : RawPoint(rhs), var(rhs.var) {}
 
     Point(const RawPoint &rhs)
-        : RawPoint(rhs), var(0) {}
+            : RawPoint(rhs), var(0.0) {}
 
     Point& operator=(const Point& rhs) {
         using namespace math;
         update_value_if_needed<DEDistance>(d, rhs.d);
         update_value_if_needed<DEWeight>(weight, rhs.weight);
-        update_value_if_needed<DEWeight>(var, rhs.var);
+        update_value_if_needed<DEDistance>(var, rhs.var);
         return *this;
+    }
+
+    bool operator<(const Point& rhs) const {
+        return math::ls(this->d, rhs.d);
+    }
+
+    bool operator==(const Point& rhs) const {
+        return math::eq(this->d, rhs.d);
+    }
+
+    bool operator!=(const Point& rhs) const {
+        return !(operator==(rhs));
     }
 
     Point operator-() const {
@@ -148,8 +160,8 @@ struct Point : public RawPoint {
         return Point(new_dist, new_weight, new_variance);
     }
 
-    DEWeight variation() const {
-    	return var;
+    DEDistance variation() const {
+        return var;
     }
 
     Point Conjugate(size_t l1, size_t l2) const
@@ -194,7 +206,7 @@ struct PairInfo {
             : first(pair_info.first), second(pair_info.second), point(pair_info.point)
     {}
 
-    PairInfo(EdgeId first, EdgeId second, DEDistance d, DEWeight weight, DEWeight var)
+    PairInfo(EdgeId first, EdgeId second, DEDistance d, DEWeight weight, DEDistance var)
             : first(first), second(second), point(d, weight, var)
     {}
 
@@ -214,9 +226,9 @@ struct PairInfo {
 
     bool operator<(const PairInfo<EdgeId>& rhs) const {
         const PairInfo<EdgeId>& lhs = *this;
-        return (lhs.first == rhs.first ?
-                (lhs.second == rhs.second ? lhs.point < rhs.point : lhs.second < rhs.second)
-                                       : lhs.first  < rhs.first);
+        return lhs.first == rhs.first ?
+               (lhs.second == rhs.second ? lhs.point < rhs.point : lhs.second < rhs.second)
+               : lhs.first < rhs.first;
     }
 
     double d() const      { return point.d;      }
