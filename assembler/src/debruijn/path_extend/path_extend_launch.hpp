@@ -411,36 +411,6 @@ inline bool InsertSizeCompare(const shared_ptr<PairedInfoLibrary> lib1,
     return lib1->GetISMax() < lib2->GetISMax();
 }
 
-inline vector<shared_ptr<PathExtender> > MakeAllScaffoldingExtenders2015(PathExtendStage stage,
-                                                                         const conj_graph_pack &gp,
-                                                                         const GraphCoverageMap &cov_map,
-                                                                         const pe_config::ParamSetT &pset) {
-    VERIFY_MSG(false, "Do not use MakeAllScaffoldingExtenders2015");
-    ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, cfg::get().pe_params.scaffolding2015.min_unique_length, cfg::get().pe_params.scaffolding2015.unique_coverage_variation);
-    auto storage = std::make_shared<ScaffoldingUniqueEdgeStorage>();
-
-    unique_edge_analyzer.FillUniqueEdgeStorage(*storage);
-//    GenomeConsistenceChecker genome_checker (gp, *storage, 500, 0.2);
-//    genome_checker.SpellGenome();
-    vector<shared_ptr<PathExtender> > result;
-    DEBUG(cfg::get().ds.reads.lib_count());
-    for (io::LibraryType lt : io::LibraryPriotity) {
-        DEBUG("strt");
-        for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-            const auto &lib = cfg::get().ds.reads[i];                        
-            if (lib.type() != lt)
-                continue;
-            if (IsForMPExtender(lib) || IsForPEExtender(lib)) {
-                DEBUG("pushing");
-                result.push_back(MakeScaffolding2015Extender(gp, cov_map, i, pset, storage));
-            } else {
-                DEBUG("sinlge read only")
-            }
-        }
-    }
-    return result;
-}
-
 template<typename Base, typename T>
 inline bool instanceof(const T *ptr) {
     return dynamic_cast<const Base*>(ptr) != nullptr;
@@ -649,8 +619,38 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
 
     INFO("ExSPAnder repeat resolving tool started");
 
+    auto min_unique_length  = cfg::get().pe_params.scaffolding2015.min_unique_length;
+    auto unique_variaton = cfg::get().pe_params.scaffolding2015.unique_coverage_variation;
+    if (cfg::get().pe_params.scaffolding2015.autodetect) {
+        INFO("Autodetecting unique edge set parameters...");
+        bool pe_found = false;
+        size_t min_MP_IS = 10000;
+        for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
 
-    ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, cfg::get().pe_params.scaffolding2015.min_unique_length, cfg::get().pe_params.scaffolding2015.unique_coverage_variation);
+            if (IsForPEExtender(cfg::get().ds.reads[i])) {
+                pe_found = true;
+            }
+            if (IsForMPExtender(cfg::get().ds.reads[i])) {
+                min_MP_IS = min(min_MP_IS, (size_t)cfg::get().ds.reads[i].data().mean_insert_size);
+            }
+        }
+        if ( pe_found) {
+//TODO constants;
+            unique_variaton = 0.5;
+            INFO("PE lib found, we believe in coverage");
+        } else {
+            unique_variaton = 50;
+            INFO("No paired libs found, we do not believe in coverage");
+        }
+        min_unique_length = min_MP_IS;
+        INFO("Minimal unique edge length set to the smallest MP library IS: " << min_unique_length);
+
+    } else {
+        INFO("Unique edge set constructed with parameters from config : length " << min_unique_length << " variation " << unique_variaton);
+    }
+    ScaffoldingUniqueEdgeAnalyzer unique_edge_analyzer(gp, min_unique_length, unique_variaton);
+
+
     auto storage = std::make_shared<ScaffoldingUniqueEdgeStorage>();
     unique_edge_analyzer.FillUniqueEdgeStorage(*storage);
     auto sc_mode = cfg::get().pe_params.param_set.sm;
@@ -773,66 +773,7 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
 
     INFO("ExSPAnder repeat resolving tool finished");
 }
-/*
-inline void ScaffoldAll2015(conj_graph_pack& gp,
-                             const std::string& output_dir,
-                             const std::string& contigs_name,
-                             bool traversLoops,
-                             boost::optional<std::string> broken_contigs,
-                             bool use_auto_threshold = true) {
 
-    INFO("Scaffolding 2015 started");
-
-    make_dir(output_dir);
-    make_dir(GetEtcDir(output_dir));
-    const pe_config::ParamSetT& pset = cfg::get().pe_params.param_set;
-
-    ContigWriter writer(gp.g);
-
-//make pe + long reads extenders
-    GraphCoverageMap cover_map(gp.g);
-    INFO("SUBSTAGE = paired-end libraries")
-    PathExtendStage exspander_stage = PathExtendStage::Scaffold2015;
-    vector<shared_ptr<PathExtender> > all_libs = MakeAllScaffoldingExtenders2015(exspander_stage, gp, cover_map, pset);
-    size_t max_over = max(FindOverlapLenForStage(exspander_stage), gp.g.k() + 100);
-    shared_ptr<CompositeExtender> main_extender = make_shared<CompositeExtender>(gp.g, cover_map, all_libs, max_over);
-
-//extend pe + long reads
-    PathExtendResolver resolver(gp.g);
-    auto seeds = resolver.makeSimpleSeeds();
-    DebugOutputPaths(writer, gp, output_dir, seeds, "init_paths");
-    seeds.SortByLength();
-    INFO("Growing paths using paired-end and long single reads");
-    auto paths = resolver.extendSeeds(seeds, *main_extender);
-    paths.SortByLength();
-    DebugOutputPaths(writer, gp, output_dir, paths, "pe_overlaped_paths");
-
-    PathContainer clone_paths;
-    GraphCoverageMap clone_map(gp.g);
-    bool mp_exist = MPLibsExist();
-
-    FinalizeUniquenessPaths();
-
-    writer.WritePathsToFASTG(paths, GetEtcDir(output_dir) + "scaf_before_traversal.fastg", GetEtcDir(output_dir) + "scaf_before_traversal.fasta");
-    DebugOutputPaths(writer, gp, output_dir, paths, "before_traverse_scaf");
-    if (traversLoops) {
-        TraverseLoops(paths, cover_map, main_extender);
-    }
-    DebugOutputPaths(writer, gp, output_dir, paths, (mp_exist ? "final_pe_paths" : "final_paths"));
-    writer.WritePathsToFASTG(paths,
-                             output_dir + ("scaffolds2015") + ".fastg",
-                             output_dir + ("scaffolds2015") + ".fasta" , gp);
-
-    cover_map.Clear();
-
-    paths.DeleteAllPaths();
-    seeds.DeleteAllPaths();
-    clone_paths.DeleteAllPaths();
-
-    INFO("ExSPAnder repeat resolving tool finished");
-}
-
-*/
 } /* path_extend */
 
 

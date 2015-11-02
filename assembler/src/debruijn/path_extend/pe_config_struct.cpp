@@ -107,6 +107,7 @@ void load(pe_config::LongReads& p, boost::property_tree::ptree const& pt,
 void load(pe_config::Scaffolding2015& p, boost::property_tree::ptree const& pt,
           bool) {
     using config_common::load;
+    load(p.autodetect, pt, "autodetect");
     load(p.min_unique_length, pt, "min_unique_length");
     load(p.unique_coverage_variation, pt, "unique_coverage_variation");
 }

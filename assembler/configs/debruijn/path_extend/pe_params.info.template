@@ -254,6 +254,7 @@ long_reads {
 }
 
 scaffolding2015 {
+    autodetect      true
     min_unique_length 10000
     unique_coverage_variation 0.5
     ; (median * (1+variation) > unique > median * (1 - variation))

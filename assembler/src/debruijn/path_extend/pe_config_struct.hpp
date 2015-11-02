@@ -196,6 +196,7 @@ struct pe_config {
   };
 
     struct Scaffolding2015 {
+        bool autodetect;
         size_t min_unique_length;
         double unique_coverage_variation;
     };
