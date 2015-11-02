@@ -99,14 +99,14 @@ bool BWAPairInfoFiller::AlignLib(const SequencingLibraryT& lib,
     return any_aligned;
 }
 
-void BWAPairInfoFiller::ProcessPairedRead(const SequencingLibraryT& lib,
+int BWAPairInfoFiller::ProcessPairedRead(const SequencingLibraryT& lib,
                                           const MapperReadT& l, const MapperReadT& r,
                                           PairedInfoIndexT& paired_index) {
     using debruijn_graph::EdgeId;
     using io::LibraryOrientation;
 
     if (!l.IsValid() || !r.IsValid()) {
-        return;
+        return -1;
     }
 
     EdgeId e1 = edge_id_map_[stoi(l.get_contig_id())];
@@ -131,6 +131,7 @@ void BWAPairInfoFiller::ProcessPairedRead(const SequencingLibraryT& lib,
 
     EdgePair ep{e1, e2};
     TRACE("Lpos " << l_pos << ", Rpos " << r_pos);
+    TRACE("Ldist " << l_from_pos_to_left_end << ", Rdist " << r_from_pos_to_right_end)
     int edge_distance = (int) lib.data().mean_insert_size - l_from_pos_to_left_end - r_from_pos_to_right_end - r_pos + l_pos;
     TRACE("Distance " << edge_distance);
 
@@ -141,6 +142,7 @@ void BWAPairInfoFiller::ProcessPairedRead(const SequencingLibraryT& lib,
     }
 
     paired_index.AddPairInfo(ep.first, ep.second, { (double) edge_distance, 1.0 });
+    return edge_distance;
 }
 
 void BWAPairInfoFiller::ParseSAMFiles(const SequencingLibraryT& lib,
@@ -172,6 +174,10 @@ void BWAPairInfoFiller::ParseSAMFiles(const SequencingLibraryT& lib,
                                         left_read.get_strand(),
                                         left_read.get_cigar());
             }
+            else if (!left_read.is_main_alignment()) {
+                TRACE("Ignoring left read");
+                l_name = "";
+            }
         }
         if (!rf.eof()) {
             rf >> right_read;
@@ -184,10 +190,14 @@ void BWAPairInfoFiller::ParseSAMFiles(const SequencingLibraryT& lib,
                                          right_read.get_strand(),
                                          right_read.get_cigar());
             }
+            else if (!right_read.is_main_alignment()) {
+                TRACE("Ignoring right read");
+                r_name = "";
+            }
         }
 
         if (l_name == r_name) {
-            INFO("Equal processing");
+            TRACE("Equal processing");
             ProcessPairedRead(lib, left_data, right_data, paired_index);
             continue;
         }
@@ -195,26 +205,35 @@ void BWAPairInfoFiller::ParseSAMFiles(const SequencingLibraryT& lib,
         if (r_name != "") {
             auto it = left_reads.find(r_name);
             if (it != left_reads.end())  {
-                INFO("Right read's mate found, processing");
+                TRACE("Right read's mate found, processing");
                 ProcessPairedRead(lib, it->second, right_data, paired_index);
                 left_reads.erase(it);
             }
             else {
                 TRACE("Right read's mate not found, adding to map");
-                right_reads.emplace(r_name, right_data);
+                if (right_reads.count(r_name) == 0) {
+                    right_reads.emplace(r_name, right_data);
+                } else {
+                    WARN("Right read " << r_name << " is duplicated!");
+                }
             }
         }
 
         if (l_name != "") {
             auto it = right_reads.find(l_name);
             if (it != right_reads.end()) {
-                INFO("Left read's mate found, processing");
+                TRACE("Left read's mate found, processing");
                 ProcessPairedRead(lib, left_data, it->second, paired_index);
                 right_reads.erase(it);
             }
             else {
                 TRACE("Left read's mate not found, adding to map");
-                left_reads.emplace(l_name, left_data);
+                if (left_reads.count(l_name) == 0) {
+                    left_reads.emplace(l_name, left_data);
+                } else {
+                    WARN("Left read " << r_name << " is duplicated!");
+                }
+
             }
         }
     }
@@ -242,6 +261,9 @@ bool BWAPairInfoFiller::ProcessLib(size_t lib_index,
         WARN("Failed to align lib #" << lib_index);
         return false;
     }
+
+    for (auto it = g_.ConstEdgeBegin(); !it.IsEnd(); ++it)
+        paired_index.AddPairInfo(*it, *it, { 0., 0. });
 
     INFO("Processing SAM files for lib #" << lib_index);
     for (auto sam_pair : sam_files) {

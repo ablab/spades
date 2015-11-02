@@ -122,7 +122,7 @@ private:
                       vector<pair<string, string>>& resulting_sam_files);
 
 
-    void ProcessPairedRead(const SequencingLibraryT& lib,
+    int ProcessPairedRead(const SequencingLibraryT& lib,
                                const MapperReadT& l, const MapperReadT& r,
                                PairedInfoIndexT& paired_index);
 

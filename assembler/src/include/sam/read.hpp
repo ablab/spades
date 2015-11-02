@@ -58,8 +58,12 @@ public:
         return (data_->core.flag & 0x4) == 0;
     }
 
+    bool is_main_alignment() const {
+        return (data_->core.flag & 0x900) == 0;
+    }
+
     bool is_properly_aligned() const {
-        return is_aligned() && get_map_qual() != 0;
+        return is_aligned() && is_main_alignment() && get_map_qual() != 0;
     }
 
     bool get_strand() const {
