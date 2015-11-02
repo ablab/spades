@@ -46,7 +46,7 @@ protected:
 		}
 
 		for (size_t i = 0; i < path.Size(); ++i) {
-			int gap = i == 0 ? 0 : path.GapAt(i) + path.TrashPreviousAt(i);
+			int gap = i == 0 ? 0 : path.GapAt(i);
 			if (gap > (int) k_) {
 				for (size_t j = 0; j < gap - k_; ++j) {
 					ss << "N";
@@ -55,13 +55,18 @@ protected:
 			} else {
 				int overlapLen = (int) k_ - gap;
 				if (overlapLen >= (int) g_.length(path[i]) + (int) k_) {
-				    WARN("Such scaffolding logic leads to local misassemblies");
+				    if(overlapLen > (int) g_.length(path[i]) + (int) k_) {
+	                    WARN("Such scaffolding logic leads to local misassemblies");
+				    }
 					continue;
 				}
 				auto temp_str = g_.EdgeNucls(path[i]).Subseq(overlapLen).str();
 				if(i != path.Size() - 1) {
 	                for(size_t j = 0 ; j < path.TrashPreviousAt(i + 1); ++j) {
 	                    temp_str.pop_back();
+	                    if(temp_str.size() == 0) {
+	                        break;
+	                    }
 	                }
 				}
 				ss << temp_str;
@@ -259,7 +264,7 @@ public:
             }
             oss << "PATH " << path->GetId() << " " << path->Size() << " " << path->Length() + k_ << endl;
             for (size_t j = 0; j < path->Size(); ++j) {
-			    oss << g_.int_id(path->At(j)) << " " << g_.length(path->At(j)) <<  " " << path->GapAt(j) << endl;
+			    oss << g_.int_id(path->At(j)) << " " << g_.length(path->At(j)) <<  " " << path->GapAt(j) <<  " " << path->TrashPreviousAt(j) <<  " " << path->TrashCurrentAt(j) << endl;
             }
             //oss << endl;
 		}
@@ -295,9 +300,13 @@ public:
                 size_t eid;
                 size_t elen;
                 int gap;
-                iss >> eid >> elen >> gap;
+                uint32_t trash_prev;
+                uint32_t trash_current;
+
+                iss >> eid >> elen >> gap >> trash_prev >> trash_current;
+                Gap gap_struct(gap, trash_prev, trash_current);
                 EdgeId edge = int_ids[eid];
-                conjugatePath->PushBack(edge, gap);
+                conjugatePath->PushBack(edge, gap_struct);
                 VERIFY(g_.length(edge) == elen);
             }
             VERIFY(path->Length() + k_ == len);

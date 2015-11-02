@@ -31,7 +31,7 @@ bool RefineInsertSizeForLib(conj_graph_pack& gp, size_t ilib, size_t edge_length
 
   INFO("Estimating insert size (takes a while)");
   InsertSizeCounter hist_counter(gp, edge_length_threshold, /* ignore negative */ true);
-  SequenceMapperNotifier notifier(gp, false);
+  SequenceMapperNotifier notifier(gp);
   notifier.Subscribe(ilib, &hist_counter);
 
   SequencingLib& reads = cfg::get_writable().ds.reads[ilib];

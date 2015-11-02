@@ -367,7 +367,7 @@ inline shared_ptr<PathExtender> MakeScaffoldingExtender(const conj_graph_pack& g
     auto new_gap_joiner = std::make_shared<LAGapJoiner>(gp.g, pset.scaffolder_options.min_overlap_length,
                                                 pset.scaffolder_options.flank_multiplication_coefficient,
                                                 pset.scaffolder_options.flank_addition_coefficient);
-    auto composite_gap_joiner = std::make_shared<CompositeGapJoiner>(gp.g, gap_joiner, new_gap_joiner);
+    auto composite_gap_joiner = std::make_shared<CompositeGapJoiner>(gp.g, new_gap_joiner, gap_joiner);
     return make_shared<ScaffoldingPathExtender>(gp, cov_map, scaff_chooser, composite_gap_joiner, lib->GetISMax(), pset.loop_removal.max_loops, false);
 }
 
@@ -383,6 +383,15 @@ inline shared_ptr<SimpleExtender> MakeMPExtender(const conj_graph_pack& gp, cons
 
     shared_ptr<MatePairExtensionChooser> chooser = make_shared<MatePairExtensionChooser>(gp.g, lib, paths, max_number_of_paths_to_search);
     return make_shared<SimpleExtender>(gp, cov_map, chooser, lib->GetISMax(), pset.loop_removal.mp_max_loops, true, false);
+}
+
+inline shared_ptr<SimpleExtender> MakeCoordCoverageExtender(const conj_graph_pack& gp, const GraphCoverageMap& cov_map,
+                                       const pe_config::ParamSetT& pset) {
+    shared_ptr<PairedInfoLibrary> lib = MakeNewLib(gp.g, gp.paired_indices, 0);
+    CoverageAwareIdealInfoProvider provider(gp.g, lib, 1000, 2000);
+    shared_ptr<CoordinatedCoverageExtensionChooser> chooser = make_shared<CoordinatedCoverageExtensionChooser>(gp.g, provider,
+            pset.coordinated_coverage.max_edge_length_in_repeat, pset.coordinated_coverage.delta);
+    return make_shared<SimpleExtender>(gp, cov_map, chooser, -1ul, pset.loop_removal.mp_max_loops, true, false);
 }
 
 
@@ -459,6 +468,10 @@ inline vector<shared_ptr<PathExtender> > MakeAllExtenders(PathExtendStage stage,
     INFO("Using " << mp_libs << " mate-pair " << LibStr(mp_libs));
     INFO("Using " << single_read_libs << " single read " << LibStr(single_read_libs));
     INFO("Scaffolder is " << (pset.scaffolder_options.on ? "on" : "off"));
+    if(pset.use_coordinated_coverage) {
+        INFO("Using additional coordinated coverage extender");
+        result.push_back(MakeCoordCoverageExtender(gp, cov_map, pset));
+    }
     return result;
 }
 

@@ -271,6 +271,10 @@ int main(int argc, char * argv[]) {
   } catch (std::exception const& e) {
     std::cerr << "Exception caught " << e.what() << std::endl;
     return EINTR;
+  } catch (const std::string& ex) {
+    std::cerr << "Exception caught: " << ex << std::endl;
+  } catch (const char* s) {
+    std::cerr << "Exception caught: " << s << std::endl;
   } catch (...) {
     std::cerr << "Unknown exception caught " << std::endl;
     return EINTR;

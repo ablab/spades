@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 ############################################################################
 # Copyright (c) 2015 Saint Petersburg State University
@@ -9,7 +9,7 @@
 
 set -e
 
-if [ "x$PREFIX" == "x" ]; then
+if [ "x$PREFIX" = "x" ]; then
   PREFIX=`pwd`
 fi
 BUILD_DIR=build_spades

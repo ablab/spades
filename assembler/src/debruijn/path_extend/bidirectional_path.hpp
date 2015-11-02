@@ -25,16 +25,6 @@ namespace path_extend {
 
 class BidirectionalPath;
 
-class PathListener {
-public:
-    virtual void FrontEdgeAdded(EdgeId e, BidirectionalPath * path, int gap = 0) = 0;
-    virtual void BackEdgeAdded(EdgeId e, BidirectionalPath * path, int gap = 0) = 0;
-    virtual void FrontEdgeRemoved(EdgeId e, BidirectionalPath * path) = 0;
-    virtual void BackEdgeRemoved(EdgeId e, BidirectionalPath * path) = 0;
-    virtual ~PathListener() {
-    }
-};
-
 struct Gap {
     int gap_;
     uint32_t trash_previous_;
@@ -47,6 +37,18 @@ struct Gap {
      : gap_(gap), trash_previous_(trash_previous), trash_current_(trash_current)
      { }
 };
+
+
+class PathListener {
+public:
+    virtual void FrontEdgeAdded(EdgeId e, BidirectionalPath * path, Gap gap) = 0;
+    virtual void BackEdgeAdded(EdgeId e, BidirectionalPath * path, Gap gap) = 0;
+    virtual void FrontEdgeRemoved(EdgeId e, BidirectionalPath * path) = 0;
+    virtual void BackEdgeRemoved(EdgeId e, BidirectionalPath * path) = 0;
+    virtual ~PathListener() {
+    }
+};
+
 
 class BidirectionalPath : public PathListener {
 private:
@@ -165,11 +167,11 @@ public:
         return gap_len_[index].gap_;
     }
 
-    int TrashCurrentAt(size_t index) const {
+    uint32_t TrashCurrentAt(size_t index) const {
         return gap_len_[index].trash_current_;
     }
 
-    int TrashPreviousAt(size_t index) const {
+    uint32_t TrashPreviousAt(size_t index) const {
         return gap_len_[index].trash_previous_;
     }
 
@@ -190,14 +192,14 @@ public:
         Gap gap_struct(gap, trash_previous, trash_current);
         gap_len_.push_back(gap_struct);
         IncreaseLengths(g_.length(e), gap_struct);
-        NotifyBackEdgeAdded(e, gap_struct.gap_);
+        NotifyBackEdgeAdded(e, gap_struct);
     }
 
     void PushBack(EdgeId e, Gap gap) {
         data_.push_back(e);
         gap_len_.push_back(gap);
         IncreaseLengths(g_.length(e), gap);
-        NotifyBackEdgeAdded(e, gap.gap_);
+        NotifyBackEdgeAdded(e, gap);
     }
 
     void PushBack(const BidirectionalPath& path) {
@@ -232,7 +234,15 @@ public:
     virtual void FrontEdgeAdded(EdgeId, BidirectionalPath*, int) {
     }
 
+    virtual void FrontEdgeAdded(EdgeId, BidirectionalPath*, Gap) {
+    }
+
+
     virtual void BackEdgeAdded(EdgeId e, BidirectionalPath*, int gap) {
+        PushFront(g_.conjugate(e), gap);
+    }
+
+    virtual void BackEdgeAdded(EdgeId e, BidirectionalPath*, Gap gap) {
         PushFront(g_.conjugate(e), gap);
     }
 
@@ -263,6 +273,15 @@ public:
 
     bool Contains(EdgeId e) const {
         return FindFirst(e) != -1;
+    }
+
+    bool Contains(VertexId v) const {
+        for(auto edge : data_) {
+            if(g_.EdgeEnd(edge) == v || g_.EdgeStart(edge) == v ) {
+                return true;
+            }
+        }
+        return false;
     }
 
     vector<size_t> FindAll(EdgeId e, size_t start = 0) const {
@@ -455,7 +474,7 @@ public:
         }
         result.PushBack(g_.conjugate(Back()), 0);
         for (int i = ((int) Size()) - 2; i >= 0; --i) {
-            result.PushBack(g_.conjugate(data_[i]), gap_len_[i + 1].gap_, gap_len_[i + 1].trash_current_, gap_len_[i + 1].trash_previous_);
+            result.PushBack(g_.conjugate(data_[i]), gap_len_[i + 1].gap_ + gap_len_[i + 1].trash_current_ - gap_len_[i + 1].trash_previous_, gap_len_[i + 1].trash_current_, gap_len_[i + 1].trash_previous_);
         }
 
         return result;
@@ -514,7 +533,7 @@ public:
         DEBUG("Weight " << weight_);
         DEBUG("#, edge, length, gap length, trash length, total length, total length from begin");
         for (size_t i = 0; i < Size(); ++i) {
-            DEBUG(i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << GapAt(i) << ", " << TrashPreviousAt(i)<< "-" << TrashCurrentAt(i) <<", " << LengthAt(i) << ", " << Length() - LengthAt(i));
+            DEBUG(i << ", " << g_.int_id(At(i)) << ", " << g_.length(At(i)) << ", " << GapAt(i) << ", " << TrashPreviousAt(i)<< "-" << TrashCurrentAt(i) <<", " << LengthAt(i) << ", " << ((Length() < LengthAt(i)) ? 0 : Length() - LengthAt(i)));
         }
     }
 
@@ -612,7 +631,19 @@ private:
         }
     }
 
+    void NotifyFrontEdgeAdded(EdgeId e, Gap gap) {
+        for (auto i = listeners_.begin(); i != listeners_.end(); ++i) {
+            (*i)->FrontEdgeAdded(e, this, gap);
+        }
+    }
+
     void NotifyBackEdgeAdded(EdgeId e, int gap) {
+        for (auto i = listeners_.begin(); i != listeners_.end(); ++i) {
+            (*i)->BackEdgeAdded(e, this, gap);
+        }
+    }
+
+    void NotifyBackEdgeAdded(EdgeId e, Gap gap) {
         for (auto i = listeners_.begin(); i != listeners_.end(); ++i) {
             (*i)->BackEdgeAdded(e, this, gap);
         }
@@ -630,7 +661,11 @@ private:
         }
     }
 
-    void PushFront(EdgeId e, int gap = 0, int trash_previous = 0, int trash_current = 0) {
+    void PushFront(EdgeId e, Gap gap) {
+        PushFront(e, gap.gap_ + gap.trash_current_ - gap.trash_previous_, gap.trash_current_, gap.trash_previous_);
+    }
+
+    void PushFront(EdgeId e, int gap = 0, uint32_t trash_previous = 0, uint32_t trash_current = 0) {
         data_.push_front(e);
         if (gap_len_.size() > 0) {
             gap_len_[0].gap_ += gap;
@@ -643,7 +678,7 @@ private:
         if (cumulative_len_.empty()) {
             cumulative_len_.push_front(length);
         } else {
-            cumulative_len_.push_front(length + gap - trash_current - trash_previous + cumulative_len_.front());
+            cumulative_len_.push_front(length + cumulative_len_.front() + gap - trash_previous );
         }
         NotifyFrontEdgeAdded(e, gap);
     }

@@ -277,16 +277,26 @@ public:
     }
 
     virtual void ProcessPairedRead(size_t thread_index,
+                                   const io::PairedRead& r,
                                    const MappingPath<EdgeId>& read1,
-                                   const MappingPath<EdgeId>& read2,
-                                   size_t dist) {
-        ProcessPairedRead(*baskets_buffer_[thread_index], read1, read2, dist);
+                                   const MappingPath<EdgeId>& read2) {
+        ProcessPairedRead(*baskets_buffer_[thread_index], read1, read2, r.distance());
     }
 
-    virtual void ProcessSingleRead(size_t, const MappingPath<EdgeId>&) {
+    virtual void ProcessPairedRead(size_t thread_index,
+                                   const io::PairedReadSeq& r,
+                                   const MappingPath<EdgeId>& read1,
+                                   const MappingPath<EdgeId>& read2) {
+        ProcessPairedRead(*baskets_buffer_[thread_index], read1, read2, r.distance());
+    }
+
+    virtual void ProcessSingleRead(size_t, const io::SingleRead&, const MappingPath<EdgeId>&) {
         //only paired reads are interesting
     }
 
+    virtual void ProcessSingleRead(size_t, const io::SingleReadSeq&, const MappingPath<EdgeId>&) {
+        //only paired reads are interesting
+    }
     virtual void MergeBuffer(size_t thread_index) {
         basket_index_.AddAll(*baskets_buffer_[thread_index]);
         baskets_buffer_[thread_index]->Clear();

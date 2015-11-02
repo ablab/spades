@@ -48,6 +48,13 @@ void load(pe_config::ParamSetT::LoopRemovalT& lr,
     load(lr.mp_max_loops, pt, "mp_max_loops");
 }
 
+void load(pe_config::ParamSetT::CoordinatedCoverageT& coord_cov,
+          boost::property_tree::ptree const& pt, bool /*complete*/) {
+    using config_common::load;
+    load(coord_cov.max_edge_length_in_repeat, pt, "max_edge_length_repeat");
+    load(coord_cov.delta, pt, "delta");
+}
+
 void load(pe_config::ParamSetT::ScaffolderOptionsT& so, boost::property_tree::ptree const& pt, bool /*complete*/)
 {
   using config_common::load;
@@ -81,7 +88,9 @@ void load(pe_config::ParamSetT& p, boost::property_tree::ptree const& pt, bool /
   load(p.mate_pair_options, pt, "mate_pair_options");
   load(p.scaffolder_options, pt, "scaffolder");
     load(p.loop_removal, pt, "loop_removal");
+    load(p.coordinated_coverage, pt, "coordinated_coverage");
     load(p.remove_overlaps, pt, "remove_overlaps");
+    load(p.use_coordinated_coverage, pt, "use_coordinated_coverage");
 }
 
 void load(pe_config::LongReads& p, boost::property_tree::ptree const& pt,

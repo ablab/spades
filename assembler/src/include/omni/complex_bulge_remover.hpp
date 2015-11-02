@@ -1107,7 +1107,7 @@ public:
 
 	bool Run() {
         size_t cnt = 0;
-		INFO("Complex bulge remover started");
+		DEBUG("Complex bulge remover started");
 		if (!pics_folder_.empty()) {
 //			remove_dir(pics_folder_);
 			make_dir(pics_folder_);
@@ -1144,8 +1144,8 @@ public:
 				g_.CompressVertex(v);
 			}
 		}
-		INFO("Complex bulge remover finished");
-        INFO("Bulges processed " << cnt);
+		DEBUG("Complex bulge remover finished");
+        DEBUG("Bulges processed " << cnt);
 		return something_done_flag;
 	}
 

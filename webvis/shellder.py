@@ -15,26 +15,29 @@ class Shellder:
         #Open two-sided named pipes
         self.pipe_in = pipe_in
         self.pipe_out = pipe_out
-        prepare_pipe(pipe_in)
-        prepare_pipe(pipe_out)
-        self.pout = open(pipe_out, "r+")
         self.end_out = end_out
-        self.pin = open(pipe_in, "w+")
         #Prepare the reader
         self.queue = Queue.Queue()
         self.proc = None
         self.reader = None
         self.dir = dir
+        #Open IO pipes
+        prepare_pipe(pipe_in)
+        prepare_pipe(pipe_out)
+        self.cout = open(pipe_out, "w+")
+        self.pout = open(pipe_out, "r+")
+        self.cin = open(pipe_in, "r+")
+        self.pin = open(pipe_in, "w+")
 
     def launch_if_needed(self):
         #Launch online_vis process if it hasn't started yet or was aborted
         if self.proc is None or self.proc.poll() is not None:
             #Launch the process
-            pin = open(self.pipe_in, "r+")
-            pout = open(self.pipe_out, "w+")
+            #pin = open(self.pipe_in, "r+")
+            #pout = open(self.pipe_out, "w+")
             pushd = os.getcwd()
             os.chdir(self.dir)
-            self.proc = subprocess.Popen(["./run", "rv"], stdin=pin, stdout=pout)
+            self.proc = subprocess.Popen(["./run", "rv"], stdin=self.cin, stdout=self.cout, stderr=self.cout)
             os.chdir(pushd)
 
         #Launch the reader thread
@@ -57,17 +60,21 @@ class Shellder:
 
     #Reads the whole output and returns as a list of strings
     def get_output(self, timeout=None):
-        self.launch_if_needed()
         res = []
         complete = False
-        while True:
-            str = self.get_line(timeout)
-            if str is None:
-                break
-            if str == self.end_out:
-                complete = True
-                break
-            res.append(str)
+        try:
+            self.launch_if_needed()
+            while True:
+                str = self.get_line(timeout)
+                if str is None:
+                    break
+                if str == self.end_out:
+                    complete = True
+                    break
+                res.append(str)
+        except IOError as e:
+            res.append("Cannot communicate with online_vis: {}\n".format(str(e)))
+            complete = True
         if timeout is None:
             return res
         return (res, complete)
