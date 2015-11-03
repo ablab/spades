@@ -69,7 +69,7 @@ std::string ReadCorrector::CorrectReadRight(const std::string &seq, const std::s
     std::priority_queue<state> corrections, candidates;
     positions_t cpos{{(uint16_t)-1, (uint16_t)-1U, (uint16_t)-1U, (uint16_t)-1U}};
 
-    const size_t size_thr = 100 * log2(read_size - right_pos) + 1;
+    const size_t size_thr = size_t(100 * log2(read_size - right_pos)) + 1;
     const double penalty_thr = -(double)(read_size - right_pos) * 15.0 / 100;
     const size_t pos_thr = 8;
 
@@ -158,7 +158,7 @@ std::string ReadCorrector::CorrectReadRight(const std::string &seq, const std::s
 }
 
 bool ReadCorrector::CorrectOneRead(Read & r,
-                                   bool correct_threshold, bool discard_singletons, bool discard_bad) {
+                                   bool, bool, bool) {
     std::string seq = r.getSequenceString();
     const std::string &qual = r.getQualityString();
 
