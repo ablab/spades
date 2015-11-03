@@ -88,9 +88,6 @@ private:
 
                 EdgePair ep{mapping_edge_1.first, mapping_edge_2.first};
 
-                if (ep > paired_index.ConjugatePair(ep))
-                    continue;
-
                 double weight = weight_f_(mapping_edge_1.second,
                                           mapping_edge_2.second);
                 size_t kmer_distance = read_distance

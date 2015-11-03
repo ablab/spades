@@ -99,33 +99,22 @@ struct PairedInfoLibraryWithIndex : public PairedInfoLibrary {
         VERIFY(index_.size() > 0);
         result.clear();
 
-        for (size_t conj_counter = 0; conj_counter < 2; conj_counter ++) {
-            if (index_.contains(e)) {
-                auto infos = index_.Get(e);
-                // We do not care about iteration order here - all the edges collected
-                // will be inside std::set<EdgeId>
-                for (auto it : infos) {
-                    EdgeId e2 = it.first;
-                    if (e2 == e)
-                        continue;
-                    if (g_.length(e2) < min_len)
-                        continue;
-                    for (auto point : it.second) {
-                        omnigraph::de::DEDistance dist = point.d;
-                        if (conj_counter != 0)
-                            dist = -point.d + (omnigraph::de::DEDistance) g_.length(e) - (omnigraph::de::DEDistance) g_.length(e2);
-                        if (math::le(dist, (omnigraph::de::DEDistance) max_dist) &&
-                            math::ge(dist, (omnigraph::de::DEDistance) min_dist)) {
-                            if (conj_counter == 0)
-                                result.insert(e2);
-                            else
-                                result.insert(g_.conjugate(e2));
-                            break;
-                        }
-                    }
+        auto infos = index_.Get(e);
+        // We do not care about iteration order here - all the edges collected
+        // will be inside std::set<EdgeId>
+        for (auto it : infos) {
+            EdgeId e2 = it.first;
+            if (e2 == e)
+                continue;
+            if (g_.length(e2) < min_len)
+                continue;
+            for (auto point : it.second) {
+                omnigraph::de::DEDistance dist = point.d;
+                if (math::le(dist, (omnigraph::de::DEDistance) max_dist) &&
+                    math::ge(dist, (omnigraph::de::DEDistance) min_dist)) {
+                    result.insert(e2);
                 }
             }
-            e = g_.conjugate(e);
         }
         return result.size();
     }

@@ -106,7 +106,7 @@ public:
             return (--end()).dereference();
         }
 
-        inline Histogram Unwrap() {
+        inline Histogram Unwrap() const {
             return Histogram(begin(), end());
         }
 
