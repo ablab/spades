@@ -360,13 +360,14 @@ inline shared_ptr<PathExtender> MakeScaffoldingExtender(const conj_graph_pack& g
     auto scaff_chooser = std::make_shared<ScaffoldingExtensionChooser>(gp.g, counter, var_coeff);
     auto gap_joiner = std::make_shared<HammingGapJoiner>(gp.g, pset.scaffolder_options.min_gap_score,
                                                  int(math::round((double) gp.g.k() - var_coeff * (double) lib->GetIsVar())),
-                                                 (int) (pset.scaffolder_options.max_can_overlap * (double) gp.g.k()),
+                                                 (size_t) (pset.scaffolder_options.max_can_overlap * (double) gp.g.k()),
                                                  pset.scaffolder_options.short_overlap,
                                                  (int) 2 * cfg::get().ds.RL(), pset.scaffolder_options.artificial_gap,
                                                  cfg::get().pe_params.param_set.scaffolder_options.use_old_score);
     auto new_gap_joiner = std::make_shared<LAGapJoiner>(gp.g, pset.scaffolder_options.min_overlap_length,
                                                 pset.scaffolder_options.flank_multiplication_coefficient,
-                                                pset.scaffolder_options.flank_addition_coefficient);
+                                                pset.scaffolder_options.flank_addition_coefficient,
+                                                (size_t) (pset.scaffolder_options.max_can_overlap * (double) gp.g.k()));
     auto composite_gap_joiner = std::make_shared<CompositeGapJoiner>(gp.g, new_gap_joiner, gap_joiner);
     return make_shared<ScaffoldingPathExtender>(gp, cov_map, scaff_chooser, composite_gap_joiner, lib->GetISMax(), pset.loop_removal.max_loops, false);
 }

@@ -391,10 +391,10 @@ class LAGapJoiner: public GapJoiner {
 public:
     LAGapJoiner(const Graph& g, size_t min_la_length,
             double flank_multiplication_coefficient,
-            double flank_addition_coefficient) :
+            double flank_addition_coefficient, size_t may_overlap_treshold) :
             GapJoiner(g), min_la_length_(min_la_length), flank_addition_coefficient_(
                     flank_addition_coefficient), flank_multiplication_coefficient_(
-                    flank_multiplication_coefficient) {
+                    flank_multiplication_coefficient), may_overlap_treshold_(may_overlap_treshold) {
         DEBUG("flank_multiplication_coefficient - " << flank_multiplication_coefficient_); DEBUG("flank_addition_coefficient_  - " << flank_addition_coefficient_ );
     }
 
@@ -402,7 +402,7 @@ public:
 
         DEBUG("Trying to fix estimated gap " << initial_gap <<
                 " between " << g_.str(source) << " and " << g_.str(sink));
-        if (initial_gap > int(g_.k())) {
+        if (initial_gap > int(g_.k()) + may_overlap_treshold_) {
             DEBUG("Edges are supposed to be too far to check overlaps");
             return Gap(INVALID_GAP);
         }
@@ -458,6 +458,7 @@ private:
     const size_t min_la_length_;
     const double flank_addition_coefficient_;
     const double flank_multiplication_coefficient_;
+    const size_t may_overlap_treshold_;
     constexpr static double IDENTITY_RATIO = 0.9;
     constexpr static double ESTIMATED_GAP_MULTIPLIER = 2.0;
     const size_t GAP_ADDITIONAL_COEFFICIENT = 30;
