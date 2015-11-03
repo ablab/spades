@@ -404,7 +404,7 @@ public:
                 " between " << g_.str(source) << " and " << g_.str(sink));
         if (initial_gap > int(g_.k())) {
             DEBUG("Edges are supposed to be too far to check overlaps");
-            return Gap(initial_gap);
+            return Gap(INVALID_GAP);
         }
 
         DEBUG("Overlap doesn't exceed " << size_t(abs(initial_gap) * ESTIMATED_GAP_MULTIPLIER) + GAP_ADDITIONAL_COEFFICIENT);
