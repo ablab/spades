@@ -22,6 +22,7 @@ using namespace sam_reader;
 
 class BWAPairInfoFiller {
 public:
+    DECL_LOGGER("BWAPairInfo");
 
     typedef std::pair<debruijn_graph::EdgeId, debruijn_graph::EdgeId> EdgePair;
 

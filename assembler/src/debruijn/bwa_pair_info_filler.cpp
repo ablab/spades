@@ -199,6 +199,21 @@ void BWAPairInfoFiller::ParseSAMFiles(const SequencingLibraryT& lib,
         if (l_name == r_name) {
             TRACE("Equal processing");
             ProcessPairedRead(lib, left_data, right_data, paired_index);
+                MapperReadT& ltmp = left_data;
+                MapperReadT& rtmp = right_data;
+
+                if ((ltmp.get_contig_id() == "113712" && rtmp.get_contig_id() == "109906") ||
+                    (rtmp.get_contig_id() == "109906" && ltmp.get_contig_id() == "113712")) {
+
+                    INFO("Connecting reads " << l_name);
+                    INFO(ltmp.get_contig_id() << " -> " << rtmp.get_contig_id());
+                    INFO(ltmp.get_pos() << " -> " << rtmp.get_pos());
+                    INFO((ltmp.is_forward() ? "+" : "-")  << " -> " << (rtmp.is_forward() ? "+" : "-") );
+                    INFO("(" << ltmp.get_left_hard_clip() << ", " << ltmp.get_right_hard_clip() << ") -> ("
+                             << rtmp.get_left_hard_clip() << ", " << rtmp.get_right_hard_clip() << ")");
+                    INFO("(" << ltmp.get_left_soft_clip() << ", " << ltmp.get_right_soft_clip() << ") -> ("
+                             << rtmp.get_left_soft_clip() << ", " << rtmp.get_right_soft_clip() << ")");
+                }
             continue;
         }
 
@@ -207,6 +222,21 @@ void BWAPairInfoFiller::ParseSAMFiles(const SequencingLibraryT& lib,
             if (it != left_reads.end())  {
                 TRACE("Right read's mate found, processing");
                 ProcessPairedRead(lib, it->second, right_data, paired_index);
+                MapperReadT& ltmp = it->second;
+                MapperReadT& rtmp = right_data;
+                if ((ltmp.get_contig_id() == "113712" && rtmp.get_contig_id() == "109906") ||
+                    (rtmp.get_contig_id() == "109906" && ltmp.get_contig_id() == "113712")) {
+
+                    INFO("Connecting reads " << r_name);
+                    INFO(ltmp.get_contig_id() << " -> " << rtmp.get_contig_id());
+                    INFO(ltmp.get_pos() << " -> " << rtmp.get_pos());
+                    INFO((ltmp.is_forward() ? "+" : "-")  << " -> " << (rtmp.is_forward() ? "+" : "-") );
+                    INFO("(" << ltmp.get_left_hard_clip() << ", " << ltmp.get_right_hard_clip() << ") -> ("
+                             << rtmp.get_left_hard_clip() << ", " << rtmp.get_right_hard_clip() << ")");
+                    INFO("(" << ltmp.get_left_soft_clip() << ", " << ltmp.get_right_soft_clip() << ") -> ("
+                             << rtmp.get_left_soft_clip() << ", " << rtmp.get_right_soft_clip() << ")");
+                }
+
                 left_reads.erase(it);
             }
             else {
@@ -224,6 +254,21 @@ void BWAPairInfoFiller::ParseSAMFiles(const SequencingLibraryT& lib,
             if (it != right_reads.end()) {
                 TRACE("Left read's mate found, processing");
                 ProcessPairedRead(lib, left_data, it->second, paired_index);
+                MapperReadT& ltmp = left_data;
+                MapperReadT& rtmp = it->second;
+                if ((ltmp.get_contig_id() == "113712" && rtmp.get_contig_id() == "109906") ||
+                    (rtmp.get_contig_id() == "109906" && ltmp.get_contig_id() == "113712")) {
+
+                    INFO("Connecting reads " << l_name);
+                    INFO(ltmp.get_contig_id() << " -> " << rtmp.get_contig_id());
+                    INFO(ltmp.get_pos() << " -> " << rtmp.get_pos());
+                    INFO((ltmp.is_forward() ? "+" : "-")  << " -> " << (rtmp.is_forward() ? "+" : "-") );
+                    INFO("(" << ltmp.get_left_hard_clip() << ", " << ltmp.get_right_hard_clip() << ") -> ("
+                             << rtmp.get_left_hard_clip() << ", " << rtmp.get_right_hard_clip() << ")");
+                    INFO("(" << ltmp.get_left_soft_clip() << ", " << ltmp.get_right_soft_clip() << ") -> ("
+                             << rtmp.get_left_soft_clip() << ", " << rtmp.get_right_soft_clip() << ")");
+                }
+
                 right_reads.erase(it);
             }
             else {

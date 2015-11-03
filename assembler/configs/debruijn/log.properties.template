@@ -48,3 +48,5 @@ default=INFO
 #LoopDetectingPathExtender=DEBUG
 #SimpleExtender=DEBUG
 #ScaffoldingPathExtender=DEBUG
+
+#BWAPairInfo=TRACE
