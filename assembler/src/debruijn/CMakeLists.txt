@@ -32,7 +32,6 @@ add_library(debruijn STATIC
             path_extend/scaffold_graph.cpp 
             path_extend/scaffold_graph_visualizer.cpp 
             path_extend/connection_condition2015.cpp
-            bwa_pair_info_count.cpp
             bwa_pair_info_filler.cpp)
   
 # We have to do this to minimize changes in ConsensusCore itself

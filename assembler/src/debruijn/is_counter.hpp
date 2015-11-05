@@ -21,8 +21,9 @@
 
 namespace debruijn_graph {
 
+using namespace omnigraph;
+
 class InsertSizeCounter: public SequenceMapperListener {
-    typedef std::map<int, size_t> HistType;
 
 public:
 
@@ -109,86 +110,11 @@ public:
     }
 
     void FindMean(double& mean, double& delta, std::map<size_t, size_t>& percentiles) const {
-        double median = get_median(hist_);
-        double mad = get_mad(hist_, median);
-        double low = median - 5. * 1.4826 * mad;
-        double high = median + 5. * 1.4826 * mad;
-
-        DEBUG("Median IS: " << median);
-        DEBUG("MAD: " << mad);
-        DEBUG("Thresholds set to: [" << low << ", " << high << "]");
-
-        size_t n = 0;
-        double sum = 0.;
-        double sum2 = 0.;
-        DEBUG("Counting average");
-        for (auto iter = hist_.begin(); iter != hist_.end(); ++iter) {
-            if (iter->first < low || iter->first > high) {
-                continue;
-            }
-            n += iter->second;
-            sum += (double) iter->second * 1. * (double) iter->first;
-            sum2 += (double)iter->second * 1. * (double)iter->first * (double)iter->first;
-        }
-        mean = sum / (double) n;
-        delta = sqrt(sum2 / (double) n - mean * mean);
-
-        low = mean - 5 * delta;
-        high = mean + 5 * delta;
-
-        DEBUG("Mean IS: " << mean);
-        DEBUG("sd: " << delta);
-        DEBUG("Thresholds set to: [" << low << ", " << high << "]");
-
-        n = 0;
-        sum = 0.;
-        sum2 = 0.;
-        for (auto iter = hist_.begin(); iter != hist_.end(); ++iter) {
-            if (iter->first < low || iter->first > high) {
-                continue;
-            }
-            n += iter->second;
-            sum += (double) iter->second * 1. * (double) iter->first;
-            sum2 += (double) iter->second * 1. * (double) iter->first * (double) iter->first;
-        }
-        mean = sum / (double) n;
-        delta = sqrt(sum2 / (double) n - mean * mean);
-
-        DEBUG("Mean IS: " << mean);
-        DEBUG("sd: " << delta);
-
-        size_t m = 0;
-
-        DEBUG("Counting percentiles");
-        //todo optimize
-        size_t q[19];
-        for (size_t i = 1; i < 20; ++i) {
-            q[i - 1] = 5 * i;
-        }
-        for (auto iter = hist_.begin(); iter != hist_.end(); ++iter) {
-            if (iter->first < low || iter->first > high) {
-                continue;
-            }
-            size_t mm = m + iter->second;
-            for (size_t i = 0; i < utils::array_size(q); i++) {
-                size_t scaled_q_i((size_t) ((double) q[i] / 100. * (double) n));
-                if (m < scaled_q_i && mm >= scaled_q_i) {
-                    percentiles[q[i]] = iter->first;
-                }
-            }
-            m = mm;
-        }
+        find_mean(hist_, mean, delta, percentiles);
     }
 
     void FindMedian(double& median, double& mad, HistType& histogram) const {
-        DEBUG("Counting median and MAD");
-        median = get_median(hist_);
-        mad = get_mad(hist_, median);
-        double low = median - 5. * 1.4826 * mad;
-        double high = median + 5. * 1.4826 * mad;
-        omnigraph::hist_crop(hist_, low, high, histogram);
-        median = get_median(histogram);
-        mad = get_mad(histogram, median);
+        find_median(hist_, median, mad, histogram);
     }
 
 private:

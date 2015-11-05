@@ -101,6 +101,7 @@ void ProcessPairedReads(conj_graph_pack& gp, size_t ilib, bool map_single_reads)
         notifier.Subscribe(ilib, &split_graph);
     }
 
+    //TODO: uncomment
     //LatePairedIndexFiller pif(gp.g, PairedReadCountWeight, gp.paired_indices[ilib]);
     //notifier.Subscribe(ilib, &pif);
 
@@ -197,7 +198,6 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
     bwa_pair_info::BWAPairInfoFiller bwa_counter(gp.g,
                                                  cfg::get().bwa.path_to_bwa,
                                                  path::append_path(cfg::get().output_dir, "bwa_count"),
-                                                 cfg::get().bwa.min_contig_len,
                                                  cfg::get().max_threads);
 
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
@@ -207,13 +207,21 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
             INFO("Mapping contigs library");
             ProcessSingleReads(gp, i, false);
 		} else {
+            if (lib.type() == io::LibraryType::MatePairs && cfg::get().bwa.on) {
+                bwa_counter.ProcessLib(i, cfg::get_writable().ds.reads[i], gp.paired_indices[i],
+                                       edge_length_threshold, cfg::get().bwa.min_contig_len);
+                continue;
+            }
+
             bool map_single_reads = ShouldMapSingleReads(i);
             cfg::get_writable().use_single_reads |= map_single_reads;
 
             if (lib.is_paired() && lib.data().mean_insert_size != 0.0) {
                 INFO("Mapping paired reads (takes a while) ");
                 ProcessPairedReads(gp, i, map_single_reads);
-                bwa_counter.ProcessLib(i, lib, gp.paired_indices[i]);
+                //TODO: remove and turn on normal read mapping back
+                bwa_counter.ProcessLib(i, cfg::get_writable().ds.reads[i], gp.paired_indices[i],
+                                       edge_length_threshold, cfg::get().bwa.min_contig_len);
             } else if (map_single_reads) {
                 INFO("Mapping single reads (takes a while) ");
                 ProcessSingleReads(gp, i);

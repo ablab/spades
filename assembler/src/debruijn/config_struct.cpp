@@ -356,6 +356,7 @@ void load(debruijn_config::truseq_analysis& tsa,
 void load(debruijn_config::bwa_aligner& bwa,
           boost::property_tree::ptree const& pt, bool /*complete*/) {
     using config_common::load;
+    load(bwa.on, pt, "on");
     load(bwa.path_to_bwa, pt, "path_to_bwa");
     load(bwa.min_contig_len, pt, "min_contig_len");
 }
