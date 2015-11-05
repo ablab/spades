@@ -55,8 +55,10 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
     size_t second_len = this->graph().length(ep.second);
 
     EstimHist result;
-    int maxD = rounded_d(histogram.front());
-    int minD = rounded_d(histogram.back());
+    //TODO: optimize
+    auto th = histogram.Unwrap();
+    int maxD = rounded_d(*th.rbegin());
+    int minD = rounded_d(*th.begin());
     vector<int> forward;
     for (auto length : raw_forward) {
       if (minD - (int) this->max_distance_ <= length && length <= maxD + (int) this->max_distance_) {

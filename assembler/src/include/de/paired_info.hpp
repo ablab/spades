@@ -18,6 +18,11 @@ namespace omnigraph {
 
 namespace de {
 
+/**
+ * @brief Paired reads info storage. Arranged as a map of map of info points.
+ * @param G graph type
+ * @param H map-like container type (parameterized by key and value type)
+ */
 template<typename G, typename H, template<typename, typename> class Container>
 class PairedIndex {
 
@@ -35,10 +40,26 @@ public:
 
     typedef typename StorageMap::const_iterator ImplIterator;
 
+    /**
+     * @brief Smart proxy set representing a composite histogram of points between two edges.
+     * @param full When true, represents the whole histogram (consisting both of directly added points
+     *             and "restored" conjugates).
+     *             When false, proxifies only the added points.
+     * @detail You can work with the proxy just like with any constant set.
+     *         The only major difference is that it returns all consisting points by value,
+     *         becauses some of them don't exist in the underlying sets and are
+     *         restored from the conjugate info on-the-fly.
+     */
     template<bool full = true>
     class HistProxy {
 
     public:
+        /**
+         * @brief Iterator over a proxy set.
+         * @param full When true, traverses both straight and conjugate points,
+         *             and automatically recalculates the distance for latter.
+         *             When false, traverses only the added points and skips the rest.
+         */
         class Iterator: public boost::iterator_facade<Iterator, Point, boost::bidirectional_traversal_tag, Point> {
 
         public:
@@ -69,8 +90,8 @@ public:
             }
 
         private:
-            InnerIterator iter_;
-            float offset_;
+            InnerIterator iter_; //current position
+            float offset_;       //offset to be added for conjugate distance
         };
 
         HistProxy(const Histogram& hist, const Histogram& conj_hist, float offset = 0)
@@ -78,6 +99,9 @@ public:
             , offset_(offset)
         {}
 
+        /**
+         * @brief Returns an empty proxy (effectively a Null object pattern).
+         */
         static const Histogram& empty_hist() {
             static Histogram res;
             return res;
@@ -93,19 +117,13 @@ public:
         }
 
         Iterator end() const {
-            //TODO: simplify?
             auto i = full ? hist_.end() : hist_.conj_begin();
             return Iterator(i, offset_);
         }
 
-        Point front() const {
-            return begin().dereference();
-        }
-
-        Point back() const {
-            return (--end()).dereference();
-        }
-
+        /**
+         * @brief Returns the copy of all points in a simple histogram.
+         */
         inline Histogram Unwrap() const {
             return Histogram(begin(), end());
         }
@@ -123,7 +141,13 @@ public:
         float offset_;
     };
 
+    /**
+     * @brief Type synonym for full histogram proxies (with added and conjugated points)
+     */
     typedef HistProxy<true> FullHistProxy;
+    /**
+     * @brief Type synonym for raw histogram proxies (only with directly added points)
+     */
     typedef HistProxy<false> RawHistProxy;
 
     typedef typename HistProxy<true>::Iterator HistIterator;
@@ -134,10 +158,27 @@ public:
     template<bool full = true>
     using EdgeHist = std::pair<EdgeId, HistProxy<full>>;
 
+    /**
+     * @brief A proxy map representing neighbourhood of an edge,
+     *        where `Key` is the graph edge ID and `Value` is the proxy histogram.
+     * @param full When true, represents all neighbours (consisting both of directly added data
+     *             and "restored" conjugates).
+     *             When false, proxifies only the added edges.
+     * @detail You can work with the proxy just like with any constant map.
+     *         The only major difference is that it returns all consisting pairs by value,
+     *         becauses some of them don't exist in the underlying sets and are
+     *         restored from the conjugate info on-the-fly.
+     */
     template<bool full = true>
     class EdgeProxy {
     public:
 
+        /**
+         * @brief Iterator over a proxy map.
+         * @param full When true, traverses both straight and conjugate pairs,
+         *             and automatically recalculates the distance for latter.
+         *             When false, traverses only the added points and skips the rest.
+         */
         class Iterator: public boost::iterator_facade<Iterator, EdgeHist<full>, boost::forward_traversal_tag, EdgeHist<full>> {
 
             typedef typename ConjProxy<InnerMap>::Iterator InnerIterator;
@@ -162,7 +203,8 @@ public:
             }
 
             void operator=(const Iterator &other) {
-                //VERIFY(index_ == other.index_); //TODO: is this risky?
+                //TODO: is this risky without an assertion?
+                //We shouldn't reassign iterators from one index onto another
                 iter_ = other.iter_;
                 edge_ = other.edge_;
             }
@@ -206,7 +248,6 @@ public:
         }
 
         Iterator end() const {
-            //TODO: simplify?
             auto i = full ? map_.end() : map_.conj_begin();
             return Iterator(index_, i, edge_);
         }
@@ -239,10 +280,15 @@ public:
 
     //--Inserting--
 public:
+    /**
+     * @brief Returns a conjugate pair for two edges.
+     */
     inline EdgePair ConjugatePair(EdgeId e1, EdgeId e2) const {
         return std::make_pair(graph_.conjugate(e2), graph_.conjugate(e1));
     }
-
+    /**
+     * @brief Returns a conjugate pair for a pair of edges.
+     */
     inline EdgePair ConjugatePair(EdgePair ep) const {
         return ConjugatePair(ep.first, ep.second);
     }
@@ -270,13 +316,18 @@ private:
     }
 
 public:
-    //Adds a single pair info, merging histograms if there's already one
+    /**
+     * @brief Adds a point between two edges to the index,
+     *        merging weights if there's already one with the same distance.
+     */
     void Add(EdgeId e1, EdgeId e2, Point point) {
         SwapConj(e1, e2, point);
         InsertOrMerge(e1, e2, point);
     }
 
-    //Adds a whole histogram, merging histograms if there's already one
+    /**
+     * @brief Adds a whole set of points between two edges to the index.
+     */
     template<typename TH>
     void AddMany(EdgeId e1, EdgeId e2, const TH& hist) {
         float offset = SwapConj(e1, e2) ? CalcOffset(e1, e2) : 0.0;
@@ -310,7 +361,7 @@ private:
         }
     }
 
-    //Unstable for hash_map due to the iterator invalidation
+    //Would be faster, but unstable for hash_map due to the iterator invalidation
     /*void InsertOrMerge(Histogram& straight, Histogram& reversed,
                        const Point &sp) {
         auto si = straight.find(sp);
@@ -347,7 +398,10 @@ private:
     }
 
 public:
-    //Adds a lot of info, using fast merging strategy
+    /**
+     * @brief Adds a lot of info from another index, using fast merging strategy.
+     *        Should be used instead of point-by-point index merge.
+     */
     template<class Index>
     void Merge(const Index& index_to_add) {
         auto& base_index = storage_;
@@ -379,12 +433,13 @@ private:
     }
 
 public:
-    //--Deleting--
-    //TODO: that's currently unsafe for unclustered index,
-    //because hashmaps require set_deleted_item
+    //--Data deleting methods--
 
-    //Removes the specific entry
-    // Returns the number of deleted entries
+    /**
+     * @brief Removes the specific entry from the index.
+     * @warning Don't use it on unclustered index, because hashmaps require set_deleted_item
+     * @return The number of deleted entries (0 if there wasn't such entry)
+     */
     size_t Remove(EdgeId e1, EdgeId e2, Point point) {
         auto res = RemoveImpl(e1, e2, point);
         auto conj = ConjugatePair(e1, e2);
@@ -393,13 +448,17 @@ public:
         res += RemoveImpl(conj.first, conj.second, conj_point);
         return res;
     }
-    // Removes the whole histogram
-    // Returns the number of deleted entries
+
+    /**
+     * @brief Removes the whole histogram from the index.
+     * @warning Don't use it on unclustered index, because hashmaps require set_deleted_item
+     * @return The number of deleted entries
+     */
     size_t Remove(EdgeId e1, EdgeId e2) {
         SwapConj(e1, e2);
-        auto res = RemoveSingle(e1, e2);
+        auto res = RemoveMany(e1, e2);
         if (e1 != e2)
-            res += RemoveSingle(e2, e1);
+            res += RemoveMany(e2, e1);
         return res;
     }
 
@@ -432,7 +491,7 @@ private:
         return 0;
     }
 
-    size_t RemoveSingle(EdgeId e1, EdgeId e2) {
+    size_t RemoveMany(EdgeId e1, EdgeId e2) {
         auto i1 = storage_.find(e1);
         if (i1 != storage_.end()) {
             auto& map = i1->second;
@@ -452,9 +511,12 @@ private:
 
 public:
 
-    //Removes all points, which refer to this edge,
-    //and all backward information
-    //Returns the number of deleted entries
+    /**
+     * @brief Removes all neighbourhood of an edge (all edges referring to it, and their histograms)
+     * @warning Currently doesn't check the conjugate info (should it?), so it may actually
+     *          skip some data.
+     * @return The number of deleted entries
+     */
     size_t Remove(EdgeId edge) {
         InnerMap& inner_map = storage_[edge];
         for (auto iter = inner_map.begin(); iter != inner_map.end(); ++iter) {
@@ -471,32 +533,45 @@ public:
 
     // --Accessing--
 
-    //Underlying raw implementation data
+    /**
+     * @brief Underlying raw implementation data (for custom iterator helpers).
+     */
     inline ImplIterator data_begin() const {
         return storage_.begin();
     }
 
+    /**
+     * @brief Underlying raw implementation data (for custom iterator helpers).
+     */
     inline ImplIterator data_end() const {
         return storage_.end();
     }
 
-    // Returns a proxy map to neighboring edges
+    /**
+     * @brief Returns a full proxy map to the neighbourhood of some edge.
+     */
     inline EdgeProxy<> Get(EdgeId id) const {
         return EdgeProxy<>(*this, GetImpl(id), GetImpl(graph_.conjugate(id)), id);
     }
 
-    // Returns a proxy map to neighboring edges
+    /**
+     * @brief Returns a raw proxy map to neighboring edges
+     * @detail You should use it when you don't care for backward
+     *         and conjugate info, or don't want to process them twice.
+     */
     inline EdgeProxy<false> RawGet(EdgeId id) const {
         return EdgeProxy<false>(*this, GetImpl(id), empty_map_, id);
     }
 
-    // Operator alias
+    /**
+     * @brief Operator alias of Get(id).
+     */
     inline EdgeProxy<> operator[](EdgeId id) const {
         return Get(id);
     }
 
 private:
-    //Returns a fake map for safety
+    //When there is no such edge, returns a fake empty map for safety
     const InnerMap& GetImpl(EdgeId e1) const {
         auto i = storage_.find(e1);
         if (i == storage_.end())
@@ -504,7 +579,7 @@ private:
         return i->second;
     }
 
-    //Returns a fake histogram for safety
+    //When there is no such histogram, returns a fake empty histogram for safety
     const Histogram& GetImpl(EdgeId e1, EdgeId e2) const {
         auto i = storage_.find(e1);
         if (i != storage_.end()) {
@@ -521,27 +596,39 @@ private:
 
 public:
 
-    // Returns a proxy set of points
+    /**
+     * @brief Returns a full histogram proxy for all points between two edges.
+     */
     HistProxy<> Get(EdgeId e1, EdgeId e2) const {
         auto offset = CalcOffset(e1, e2);
         return HistProxy<>(GetImpl(e1, e2), GetImpl(ConjugatePair(e1, e2)), offset);
     }
 
-    // Operator alias
+    /**
+     * @brief Operator alias of Get(e1, e2).
+     */
     inline HistProxy<> operator[](EdgePair p) const {
         return Get(p.first, p.second);
     }
 
-
+    /**
+     * @brief Returns a raw histogram proxy for only straight points between two edges.
+     */
     HistProxy<false> RawGet(EdgeId e1, EdgeId e2) const {
         SwapConj(e1, e2);
         return HistProxy<false>(GetImpl(e1, e2), HistProxy<false>::empty_hist(), 0);
     }
 
+    /**
+     * @brief Checks if an edge (or its conjugated twin) is consisted in the index.
+     */
     bool contains(EdgeId edge) const {
         return storage_.count(edge) + storage_.count(graph_.conjugate(edge)) > 0;
     }
 
+    /**
+     * @brief Checks if there is a histogram for two points (or their conjugate pair).
+     */
     bool contains(EdgeId e1, EdgeId e2) const {
         auto conj = ConjugatePair(e1, e2);
         auto i1 = storage_.find(e1);
@@ -555,29 +642,38 @@ public:
 
     // --Miscellaneous--
 
-    //Returns the graph the index is based on
+    /**
+     * Returns the graph the index is based on. Needed for custom iterators.
+     */
     const Graph &graph() const { return graph_; }
 
-    //Inits the index with graph data
+    /**
+     * @brief Inits the index with graph data. Used in clustered indexes.
+     */
     void Init() {
         for (auto it = graph_.ConstEdgeBegin(); !it.IsEnd(); ++it)
             Add(*it, *it, Point());
     }
 
-    //Clears the whole index
+    /**
+     * @brief Clears the whole index. Used in merging.
+     */
     void Clear() {
         storage_.clear();
         size_ = 0;
     }
 
-    // Returns the total index size
+    /**
+     * @brief Returns the physical index size (total count of all edge pairs)
+     * @warning (not really total, doesn't include the conjugate info)
+     */
     size_t size() const { return size_; }
 
 private:
     size_t size_;
     const Graph& graph_;
     StorageMap storage_;
-    InnerMap empty_map_;   //null object
+    InnerMap empty_map_; //null object
 };
 
 //Aliases for common graphs
@@ -591,6 +687,10 @@ using sparse_hash_map = google::sparse_hash_map<K, V>; //Two-parameters wrapper
 template<typename Graph>
 using UnclusteredPairedInfoIndexT = PairedIndex<Graph, RawHistogram, sparse_hash_map>;
 
+/**
+ * @brief A collection of paired indexes which can be manipulated as one.
+ *        Used as a convenient wrapper in parallel index processing.
+ */
 template<class Index>
 class PairedIndices {
     typedef std::vector<Index> Storage;
@@ -604,8 +704,14 @@ public:
             data_.emplace_back(graph);
     }
 
+    /**
+     * @brief Inits all indexes.
+     */
     void Init() { for (auto& it : data_) it.Init(); }
 
+    /**
+     * @brief Clears all indexes.
+     */
     void Clear() { for (auto& it : data_) it.Clear(); }
 
     inline Index& operator[](size_t i) { return data_[i]; }
@@ -635,6 +741,8 @@ using PairedInfoBuffer = PairedIndex<Graph, RawHistogram, unordered_map>;
 template<class Graph>
 using PairedInfoBuffersT = PairedIndices<PairedInfoBuffer<Graph>>;
 
+/*
+//Debug
 template<typename T>
 std::ostream& operator<<(std::ostream& str, const PairedInfoBuffer<T>& pi) {
     str << "--- PI of size " << pi.size() << "---\n";
@@ -655,6 +763,7 @@ std::ostream& operator<<(std::ostream& str, const PairedInfoBuffer<T>& pi) {
     return str;
 }
 
+//Debug
 template<typename T>
 std::ostream& operator<<(std::ostream& str, const PairedInfoIndexT<T>& pi) {
     str << "--- PI of size " << pi.size() << "---\n";
@@ -674,6 +783,7 @@ std::ostream& operator<<(std::ostream& str, const PairedInfoIndexT<T>& pi) {
     str << "-------\n";
     return str;
 }
+*/
 
 }
 

@@ -238,12 +238,12 @@ class DataPrinter {
             }
         }
 
-        fprintf(file, "%zu\n", comp_size / 2);
+        fprintf(file, "%zu\n", comp_size);
 
         for (auto I = component_.e_begin(), E = component_.e_end(); I != E; ++I) {
             EdgeId e1 = *I;
-            const auto& inner_map = paired_index.Get(e1);
-            std::map<typename Graph::EdgeId, typename Index::FullHistProxy> ordermap(inner_map.begin(), inner_map.end());
+            const auto& inner_map = paired_index.RawGet(e1);
+            std::map<typename Graph::EdgeId, typename Index::RawHistProxy> ordermap(inner_map.begin(), inner_map.end());
             for (auto entry : ordermap) {
                 EdgeId e2 = entry.first;
                 if (component_.contains(e2))
@@ -411,8 +411,9 @@ class DataScanner {
         return true;
     }
 
+    template<typename Index>
     void LoadPaired(const string& file_name,
-                    PairedInfoIndexT<Graph>& paired_index,
+                    Index& paired_index,
                     bool force_exists = true) {
         typedef typename Graph::EdgeId EdgeId;
         FILE* file = fopen((file_name + ".prd").c_str(), "r");
@@ -428,7 +429,7 @@ class DataScanner {
         size_t paired_count;
         int read_count = fscanf(file, "%zu \n", &paired_count);
         VERIFY(read_count == 1);
-        for (size_t i = 0; i < paired_count; i++) {
+        while (!feof(file)) {
             size_t first_real_id, second_real_id;
             double w, d, v;
             read_count = fscanf(file, "%zu %zu %lf %lf %lf .\n",
@@ -442,42 +443,6 @@ class DataScanner {
                 continue;
             TRACE(e1 << " " << e2 << " " << d << " " << w);
             paired_index.Add(e1, e2, { d, w, v });
-        }
-        DEBUG("PII SIZE " << paired_index.size());
-        fclose(file);
-    }
-
-      void LoadPaired(const string& file_name,
-                      UnclusteredPairedInfoIndexT<Graph>& paired_index,
-                      bool force_exists = true) {
-        typedef typename Graph::EdgeId EdgeId;
-        FILE* file = fopen((file_name + ".prd").c_str(), "r");
-        INFO((file_name + ".prd"));
-        if (force_exists) {
-            VERIFY(file != NULL);
-        } else if (file == NULL) {
-            INFO("Paired info not found, skipping");
-            return;
-        }
-        INFO("Reading paired info from " << file_name << " started");
-
-        size_t paired_count;
-        int read_count = fscanf(file, "%zu \n", &paired_count);
-        VERIFY(read_count == 1);
-        for (size_t i = 0; i < paired_count; i++) {
-            size_t first_real_id, second_real_id;
-            double w, d, v;
-            read_count = fscanf(file, "%zu %zu %lf %lf %lf .\n",
-                                &first_real_id, &second_real_id, &d, &w, &v);
-            VERIFY(read_count == 5);
-            TRACE(first_real_id<< " " << second_real_id << " " << d << " " << w);
-            VERIFY(this->edge_id_map().find(first_real_id) != this->edge_id_map().end())
-            EdgeId e1 = this->edge_id_map()[first_real_id];
-            EdgeId e2 = this->edge_id_map()[second_real_id];
-            if (e1 == EdgeId(NULL) || e2 == EdgeId(NULL))
-                continue;
-            TRACE(e1 << " " << e2 << " " << d << " " << w);
-            paired_index.Add(e1, e2, { d, w });
         }
         DEBUG("PII SIZE " << paired_index.size());
         fclose(file);

@@ -167,8 +167,6 @@ BOOST_AUTO_TEST_CASE(PairedInfoAccess) {
     test1.insert({2, 1});
     test1.insert({3, 2});
     auto proxy1 = pi.Get(1);
-    BOOST_CHECK_EQUAL(proxy1[3].front(), RawPoint(2, 1));
-    BOOST_CHECK_EQUAL(proxy1[3].back(), RawPoint(3, 1));
     BOOST_CHECK_EQUAL(proxy1[1].Unwrap(), test0);
     BOOST_CHECK_EQUAL(proxy1[3].Unwrap(), test1);
     RawHistogram test2;
@@ -206,8 +204,6 @@ BOOST_AUTO_TEST_CASE(PairedInfoRawAccess) {
     test1.insert({2, 1});
     test1.insert({3, 2});
     auto proxy1 = pi.RawGet(1);
-    BOOST_CHECK_EQUAL(proxy1[3].front(), RawPoint(2, 1));
-    BOOST_CHECK_EQUAL(proxy1[3].back(), RawPoint(3, 1));
     BOOST_CHECK_EQUAL(proxy1[1].Unwrap(), test0);
     BOOST_CHECK_EQUAL(proxy1[3].Unwrap(), test1);
     RawHistogram test2;

@@ -66,6 +66,9 @@ struct RawPoint {
     RawPoint(DEDistance distance, DEWeight weight)
             : d(distance), weight(weight) {}
 
+    RawPoint(DEDistance distance, DEWeight weight, DEDistance)
+            : d(distance), weight(weight) {}
+
     std::string str() const {
         stringstream ss;
         ss << "Point: " << " distance = " << this->d
