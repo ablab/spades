@@ -82,7 +82,7 @@ public:
 
 	}
 
-	virtual void HandleReversedPath(const vector<EdgeId>& reversed_path) {
+	void HandleReversedPath(const vector<EdgeId>& reversed_path) override {
 	    vector<EdgeId> path = this->ReversePath(reversed_path);
 		double path_cov = AvgCoverage(g_, path);
 		for (size_t i = 0; i < path.size(); i++) {
@@ -598,6 +598,7 @@ class ParallelBulgeRemover : public PersistentAlgorithmBase<Graph> {
         perf_counter perf;
         std::vector<std::vector<BulgeInfo>> bulge_buffers(omp_get_max_threads());
         size_t n = edge_buffer.size();
+        //order is in agreement with coverage
         #pragma omp parallel for schedule(guided)
         for (size_t i = 0; i < n; ++i) {
             EdgeId e = edge_buffer[i];
@@ -622,6 +623,7 @@ class ParallelBulgeRemover : public PersistentAlgorithmBase<Graph> {
         }
 
         DEBUG("Sorting");
+        //order is in agreement with coverage
         std::sort(merged_bulges.begin(), merged_bulges.end());
         DEBUG("Total bulges " << merged_bulges.size());
         DEBUG("Buffers merged in " << perf.time() << " seconds");

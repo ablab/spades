@@ -67,14 +67,13 @@ class GraphSimplifier {
 
     bool PerformInitCleaning() {
         if (simplif_cfg_.init_clean.early_it_only && info_container_.main_iteration()) {
-            INFO("Further init cleaning disabled on main iteration");
+            INFO("Most init cleaning disabled on main iteration");
             return false;
         }
 
-        //todo review logic
         if (math::ge(simplif_cfg_.init_clean.activation_cov, 0.)
                 && math::ls(info_container_.detected_mean_coverage(), simplif_cfg_.init_clean.activation_cov)) {
-            INFO("Further init cleaning disabled since detected mean " << info_container_.detected_mean_coverage()
+            INFO("Most init cleaning disabled since detected mean " << info_container_.detected_mean_coverage()
                  << " was less than activation coverage " << simplif_cfg_.init_clean.activation_cov);
             return false;
         }
@@ -381,10 +380,6 @@ void Simplification::run(conj_graph_pack &gp, const char*) {
                                                                  nullptr/*removal_handler_f*/,
                                                                  printer);
     simplifier.SimplifyGraph();
-
-    //todo remove?
-    AvgCovereageCounter<Graph> cov_counter(gp.g);
-    cfg::get_writable().ds.set_avg_coverage(cov_counter.Count());
 }
 
 void SimplificationCleanup::run(conj_graph_pack &gp, const char*) {

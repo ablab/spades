@@ -131,7 +131,7 @@ private:
             RelaxMin(min_length_bound, length_bound);
             return std::make_shared<LengthUpperBound<Graph>>(g_, length_bound);
         } else if (next_token_ == "ec_lb") {
-            size_t length_coeff = lexical_cast<size_t>(ReadNext());
+            size_t length_coeff = boost::lexical_cast<size_t>(ReadNext());
 
             DEBUG("Creating ec length bound. Coeff " << length_coeff);
             size_t length_bound =
@@ -210,7 +210,7 @@ public:
         DEBUG("Creating parser for string " << input);
         using namespace boost;
         vector<string> tmp_tokenized_input;
-        split(tmp_tokenized_input, input_, is_any_of(" ,;"), token_compress_on);
+        boost::split(tmp_tokenized_input, input_, boost::is_any_of(" ,;"), boost::token_compress_on);
         for (auto it = tmp_tokenized_input.begin();
              it != tmp_tokenized_input.end(); ++it) {
             tokenized_input_.push(*it);
@@ -411,8 +411,6 @@ template<class Graph>
 AlgoPtr<Graph> SelfConjugateEdgeRemoverInstance(Graph &g, const string& condition_str,
                 const SimplifInfoContainer& info,
                 HandlerF<Graph> removal_handler = 0) {
-    INFO("Removing short low covered self-conjugate connections");
-
     ConditionParser<Graph> parser(g, condition_str, info);
     auto condition = func::And<typename Graph::EdgeId>(make_shared<SelfConjugateCondition<Graph>>(g), parser());
     
@@ -557,9 +555,9 @@ AlgoPtr<Graph> IsolatedEdgeRemoverInstance(Graph &g,
     //todo document behavior
     size_t max_length_any_cov = std::max(info.read_length(), ier.max_length_any_cov);
 
-    INFO("Removing isolated edges");
-    INFO("All edges shorter than " << max_length_any_cov << " will be removed");
-    INFO("Also edges shorter than " << ier.max_length << " and coverage smaller than " << ier.max_coverage << " will be removed");
+//    INFO("Removing isolated edges");
+//    INFO("All edges shorter than " << max_length_any_cov << " will be removed");
+//    INFO("Also edges shorter than " << ier.max_length << " and coverage smaller than " << ier.max_coverage << " will be removed");
     //todo add warn on max_length_any_cov > max_length
 
     auto condition = func::And<EdgeId>(
