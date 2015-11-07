@@ -153,7 +153,7 @@ int main(int argc, char * argv[]) {
         ConcurrentDSU uf(Globals::kmer_data->size());
         std::string ham_prefix = hammer::getFilename(cfg::get().input_working_dir, Globals::iteration_no, "kmers.hamcls");
         INFO("Clustering Hamming graph.");
-        if (1 || cfg::get().general_tau > 1) {
+        if (cfg::get().general_tau > 1) {
           KMerHamClusterer(cfg::get().general_tau).cluster(ham_prefix, *Globals::kmer_data, uf);
         } else {
           TauOneKMerHamClusterer().cluster(ham_prefix, *Globals::kmer_data, uf);

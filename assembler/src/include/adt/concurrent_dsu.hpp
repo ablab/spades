@@ -115,7 +115,7 @@ class ConcurrentDSU {
       // Step two: traverse the path from 'x' to root trying to update the links
       // Note that the links might change, therefore we stop as soon as we'll
       // end at 'some' root.
-      while (true) {
+      while (x != r) {
           atomic_set_t x_entry = data_[x];
           if (x_entry.root)
               break;
