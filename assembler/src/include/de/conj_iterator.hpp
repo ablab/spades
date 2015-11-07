@@ -34,10 +34,13 @@ public:
         Iterator(InnerIterator start_iter, InnerIterator stop_iter, InnerIterator jump_iter, bool conj)
                 : iter_(start_iter), stop_iter_(stop_iter), jump_iter_(jump_iter), conj_(conj) { }
 
+    private:
+        friend class boost::iterator_core_access;
+
         /**
          * @brief Increments the iterator.
          * @detail The underlying iterator is incremented; when it reaches the `stop` position,
-         *         it jumps to the `jump` position.
+         *         it jumps to the `jump` position which is on the conjugate half.
          */
         void increment() {
             ++iter_;
@@ -55,32 +58,33 @@ public:
             --iter_;
         }
 
-        inline bool equal(const Iterator &other) const {
+        bool equal(const Iterator &other) const {
             return iter_ == other.iter_ && conj_ == other.conj_;
         }
 
-        inline typename C::const_reference dereference() const {
+        typename C::const_reference dereference() const {
             return *iter_;
         }
 
+    public:
         /**
          * @brief Returns the container const_iterator to the current element.
          */
-        inline InnerIterator Iter() const {
+        InnerIterator Iter() const {
             return iter_;
         }
 
         /**
          * @brief Returns if the iterator is on the conjugate half.
          */
-        inline bool Conj() const {
+        bool Conj() const {
             return conj_;
         }
 
     private:
         InnerIterator iter_, //the current position
-                stop_iter_,  //when to stop and jump
-                jump_iter_;  //where to jump
+                stop_iter_,  //when to stop and jump (typically `end` of the straight half)
+                jump_iter_;  //where to jump (typically `begin` of the conjugate half)
         bool conj_;
     };
 
@@ -101,34 +105,44 @@ public:
      * @brief Raw iterator should end right after the jumping, i.e. on the beginning
      *        of the conjugate half.
      */
-    inline Iterator conj_begin() const {
+    Iterator conj_begin() const {
         return Iterator(conj_cont_.begin(), cont_.end(), conj_cont_.begin(), true);
     }
 
     /**
      * @brief Full iterator ends on the end of the conjugate half.
      */
-    inline Iterator end() const {
+    Iterator end() const {
         return Iterator(conj_cont_.end(), cont_.end(), conj_cont_.begin(), true);
     }
 
     /**
      * @brief Returns the total size of both halves.
      */
-    inline size_t size() const {
+    size_t size() const {
         return cont_.size() + conj_cont_.size();
     }
 
     /**
      * @brief Returns if both halves are empty.
      */
-    inline bool empty() const {
+    bool empty() const {
         return cont_.empty() && conj_cont_.empty();
     }
 
 private:
     const Container &cont_, &conj_cont_;
 };
+
+/**
+ * @brief An extension of conjugate proxy which can find min-max of its elements.
+ *        For this, the container must be ordered.
+ */
+/*template<typename T>
+class ConjOrdered : public ConjProxy {
+public:
+
+};*/
 
 }
 

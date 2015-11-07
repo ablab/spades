@@ -83,7 +83,6 @@ class SplitPathConstructor {
 
         TRACE("Path_processor is done");
 
-        //TODO: WAT's going on?!
         for (size_t i = pair_infos.size(); i > 0; --i) {
             const PairInfo& cur_info = pair_infos[i - 1];
             if (math::le(cur_info.d(), 0.))

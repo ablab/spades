@@ -220,10 +220,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
     using namespace math;
     EdgeId e1 = ep.first, e2 = ep.second;
     size_t first_len  = this->graph().length(e1), second_len = this->graph().length(e2);
-    auto th = histogram.Unwrap();
-    //int maxD = rounded_d(histogram.back()), minD = rounded_d(histogram.front());
-    //TODO: write optimal min() and max()q q
-    int maxD = rounded_d(*th.rbegin()), minD = rounded_d(*th.begin());
+    int minD = rounded_d(histogram.min()), maxD = rounded_d(histogram.max());
 
     TRACE("Bounds are " << minD << " " << maxD);
     EstimHist result;
@@ -287,8 +284,7 @@ class DistanceEstimator: public AbstractDistanceEstimator<Graph> {
       EdgeId e2 = entry.first;
       EdgePair ep(e1, e2);
 
-      if (ep > pi.ConjugatePair(ep))
-        continue;
+      VERIFY(ep <= pi.ConjugatePair(ep));
 
       const GraphLengths& forward = entry.second;
       TRACE("Edge pair is " << this->graph().int_id(ep.first)

@@ -206,12 +206,10 @@ struct PairInfo {
 
 
     PairInfo(const PairInfo& pair_info)
-            : first(pair_info.first), second(pair_info.second), point(pair_info.point)
-    {}
+            : first(pair_info.first), second(pair_info.second), point(pair_info.point) {}
 
     PairInfo(EdgeId first, EdgeId second, DEDistance d, DEWeight weight, DEDistance var)
-            : first(first), second(second), point(d, weight, var)
-    {}
+            : first(first), second(second), point(d, weight, var) {}
 
     PairInfo(EdgeId first, EdgeId second, Point point)
             : first(first), second(second), point(point) {}

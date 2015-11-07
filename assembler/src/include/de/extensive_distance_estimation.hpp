@@ -63,7 +63,7 @@ class ExtensiveDistanceEstimator: public WeightedDistanceEstimator<Graph> {
 
   virtual void ProcessEdge(EdgeId e1,
                            const InPairedIndex& pi,
-                           PairedInfoBuffer<Graph>& result) const {
+                           PairedInfoBuffer<Graph>& result) const override {
     auto inner_map = pi.RawGet(e1);
     typename base::LengthMap second_edges;
     for (auto i : inner_map)

@@ -160,9 +160,9 @@ private:
     return new_result;
     }
 
-  virtual void ProcessEdge(EdgeId e1,
-                           const InPairedIndex& pi,
-                           PairedInfoBuffer<Graph>& result) const {
+  void ProcessEdge(EdgeId e1,
+                   const InPairedIndex& pi,
+                   PairedInfoBuffer<Graph>& result) const override {
     typename base::LengthMap second_edges;
     auto inner_map = pi.RawGet(e1);
     for (auto I : inner_map)

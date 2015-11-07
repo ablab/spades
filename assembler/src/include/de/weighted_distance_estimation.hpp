@@ -47,7 +47,7 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
 
   virtual EstimHist EstimateEdgePairDistances(EdgePair ep,
                                               const InHistogram& histogram,
-                                              const GraphLengths& raw_forward) const {
+                                              const GraphLengths& raw_forward) const override {
     using std::abs;
     using namespace math;
     TRACE("Estimating with weight function");
@@ -55,10 +55,7 @@ class WeightedDistanceEstimator: public DistanceEstimator<Graph> {
     size_t second_len = this->graph().length(ep.second);
 
     EstimHist result;
-    //TODO: optimize
-    auto th = histogram.Unwrap();
-    int maxD = rounded_d(*th.rbegin());
-    int minD = rounded_d(*th.begin());
+    int maxD = rounded_d(histogram.max()), minD = rounded_d(histogram.min());
     vector<int> forward;
     for (auto length : raw_forward) {
       if (minD - (int) this->max_distance_ <= length && length <= maxD + (int) this->max_distance_) {

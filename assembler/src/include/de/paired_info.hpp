@@ -62,13 +62,16 @@ public:
          */
         class Iterator: public boost::iterator_facade<Iterator, Point, boost::bidirectional_traversal_tag, Point> {
 
-        public:
             typedef typename ConjProxy<Histogram>::Iterator InnerIterator;
 
+        public:
             Iterator(InnerIterator iter, float offset)
                     : iter_(iter)
                     , offset_(offset)
             {}
+
+        private:
+            friend class boost::iterator_core_access;
 
             Point dereference() const {
                 Point result = *iter_;
@@ -77,11 +80,11 @@ public:
                 return result;
             }
 
-            inline void increment() {
+            void increment() {
                 ++iter_;
             }
 
-            inline void decrement() {
+            void decrement() {
                 --iter_;
             }
 
@@ -89,7 +92,6 @@ public:
                 return iter_ == other.iter_;
             }
 
-        private:
             InnerIterator iter_; //current position
             float offset_;       //offset to be added for conjugate distance
         };
@@ -122,17 +124,55 @@ public:
         }
 
         /**
+         * @brief Finds the point with the minimal distance.
+         * @todo Simplify
+         */
+        Point min() const {
+            //Our histograms are ordered, so the minimum is `begin` of either
+            //straight or conjugate half, but we should beware of emptiness.
+            VERIFY(!empty());
+            auto i1 = begin();
+            if (full) {
+                auto i2 = Iterator(hist_.conj_begin(), offset_);
+                if (i1 == i2 || i2 == end())
+                    return *i1;
+                return std::min(*i1, *i2);
+            } else {
+                return *i1;
+            }
+        }
+
+        /**
+         * @brief Finds the point with the maximal distance.
+         * @todo Simplify
+         */
+        Point max() const {
+            //Our histograms are ordered, so the minimum is `rbegin` of either
+            //straight or conjugate half, but we should beware of emptiness.
+            VERIFY(!empty());
+            auto i1 = --end();
+            if (full) {
+                auto i2 = Iterator(hist_.conj_begin(), offset_);
+                if (i1 == i2 || i2 == begin())
+                    return *i1;
+                return std::max(*i1, *--i2);
+            } else {
+                return *i1;
+            }
+        }
+
+        /**
          * @brief Returns the copy of all points in a simple histogram.
          */
-        inline Histogram Unwrap() const {
+        Histogram Unwrap() const {
             return Histogram(begin(), end());
         }
 
-        inline size_t size() const {
+        size_t size() const {
             return hist_.size();
         }
 
-        inline bool empty() const {
+        bool empty() const {
             return hist_.empty();
         }
 
@@ -208,6 +248,9 @@ public:
                 iter_ = other.iter_;
                 edge_ = other.edge_;
             }
+
+        private:
+            friend class boost::iterator_core_access;
 
             bool equal(const Iterator &other) const {
                 return iter_ == other.iter_;
