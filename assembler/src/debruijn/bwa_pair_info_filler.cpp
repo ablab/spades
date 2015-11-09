@@ -331,8 +331,7 @@ bool BWAPairInfoFiller::ProcessLib(size_t lib_index,
         result = true;
     }
 
-    //TODO: uncomment
-    //path::remove_dir(lib_dir);
+    path::remove_dir(lib_dir);
     return result;
 }
 

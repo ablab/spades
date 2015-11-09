@@ -101,9 +101,8 @@ void ProcessPairedReads(conj_graph_pack& gp, size_t ilib, bool map_single_reads)
         notifier.Subscribe(ilib, &split_graph);
     }
 
-    //TODO: uncomment
-    //LatePairedIndexFiller pif(gp.g, PairedReadCountWeight, gp.paired_indices[ilib]);
-    //notifier.Subscribe(ilib, &pif);
+    LatePairedIndexFiller pif(gp.g, PairedReadCountWeight, gp.paired_indices[ilib]);
+    notifier.Subscribe(ilib, &pif);
 
     auto paired_streams = paired_binary_readers(reads, true, (size_t) reads.data().mean_insert_size);
     notifier.ProcessLibrary(paired_streams, ilib, *ChooseProperMapper(gp, reads));
@@ -219,9 +218,6 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
             if (lib.is_paired() && lib.data().mean_insert_size != 0.0) {
                 INFO("Mapping paired reads (takes a while) ");
                 ProcessPairedReads(gp, i, map_single_reads);
-                //TODO: remove and turn on normal read mapping back
-                bwa_counter.ProcessLib(i, cfg::get_writable().ds.reads[i], gp.paired_indices[i],
-                                       edge_length_threshold, cfg::get().bwa.min_contig_len);
             } else if (map_single_reads) {
                 INFO("Mapping single reads (takes a while) ");
                 ProcessSingleReads(gp, i);

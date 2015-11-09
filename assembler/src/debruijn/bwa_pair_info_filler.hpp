@@ -226,8 +226,7 @@ public:
     }
 
     ~BWAPairInfoFiller() {
-        //TODO: uncomment
-        //path::remove_if_exists(work_dir_);
+        path::remove_if_exists(work_dir_);
     }
 
     bool ProcessLib(size_t lib_index,
