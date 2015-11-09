@@ -617,7 +617,7 @@ public:
         }
         BidirectionalPath last = path.SubPath(path.Size() - 2);
         int pos = path.FindFirst(last);
-        VERIFY(pos > 0);
+        VERIFY(pos >= 0);
         return size_t(pos) != path.Size() - 2;
     }
 
