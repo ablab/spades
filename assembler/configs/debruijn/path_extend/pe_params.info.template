@@ -261,8 +261,8 @@ scaffolding2015 {
 }
 
 scaffold_graph {
-    construct    true
-    output       true
+    construct    false
+    output       false
     min_read_count 20
     graph_connectivity false
     max_path_length 10000

@@ -156,6 +156,18 @@ class SequencingLibraryBase {
             type_ == io::LibraryType::HQMatePairs);
   }
 
+  bool is_bwa_alignable() const {
+    return type_ == io::LibraryType::MatePairs;
+  }
+
+  bool is_mismatch_correctable() const {
+      return is_graph_contructable();
+  }
+
+  bool needs_binary_coversion() {
+      return is_graph_contructable() || is_mismatch_correctable() || (is_paired() && !is_bwa_alignable());
+  }
+
   bool is_paired() const {
     return (type_ == io::LibraryType::PairedEnd ||
             type_ == io::LibraryType::MatePairs||

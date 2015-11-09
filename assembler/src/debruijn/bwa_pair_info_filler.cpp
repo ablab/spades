@@ -182,6 +182,9 @@ void BWAPairInfoFiller::ProcessSAMFiles(const string &left_sam, const string &ri
                                         BWAPairedReadProcessor& processor) {
     unordered_map<string, MapperReadT> left_reads;
     unordered_map<string, MapperReadT> right_reads;
+    size_t counter = 0;
+    bool left_duplicated = false;
+    bool right_duplicated = false;
 
     INFO("Reading SAM files " << left_sam << " and " << right_sam);
     MappedSamStream lf(left_sam);
@@ -231,6 +234,7 @@ void BWAPairInfoFiller::ProcessSAMFiles(const string &left_sam, const string &ri
         if (l_name == r_name) {
             TRACE("Equal processing");
             processor.ProcessPairedRead(left_data, right_data);
+            VERBOSE_POWER2(++counter, "Processed " << counter << " paired reads");
             continue;
         }
 
@@ -239,6 +243,7 @@ void BWAPairInfoFiller::ProcessSAMFiles(const string &left_sam, const string &ri
             if (it != left_reads.end())  {
                 TRACE("Right read's mate found, processing");
                 processor.ProcessPairedRead(it->second, right_data);
+                VERBOSE_POWER2(++counter, "Processed " << counter << " paired reads");
                 left_reads.erase(it);
             }
             else {
@@ -246,7 +251,8 @@ void BWAPairInfoFiller::ProcessSAMFiles(const string &left_sam, const string &ri
                 if (right_reads.count(r_name) == 0) {
                     right_reads.emplace(r_name, right_data);
                 } else {
-                    WARN("Right read " << r_name << " is duplicated!");
+                    DEBUG("Right read " << r_name << " is duplicated!");
+                    right_duplicated = true;
                 }
             }
         }
@@ -256,6 +262,7 @@ void BWAPairInfoFiller::ProcessSAMFiles(const string &left_sam, const string &ri
             if (it != right_reads.end()) {
                 TRACE("Left read's mate found, processing");
                 processor.ProcessPairedRead(left_data, it->second);
+                VERBOSE_POWER2(++counter, "Processed " << counter << " paired reads");
                 right_reads.erase(it);
             }
             else {
@@ -263,12 +270,18 @@ void BWAPairInfoFiller::ProcessSAMFiles(const string &left_sam, const string &ri
                 if (left_reads.count(l_name) == 0) {
                     left_reads.emplace(l_name, left_data);
                 } else {
-                    WARN("Left read " << r_name << " is duplicated!");
+                    DEBUG("Left read " << r_name << " is duplicated!");
+                    left_duplicated = true;
                 }
 
             }
         }
     }
+
+    if (left_duplicated)
+        WARN("SAM file " << left_sam << " contains duplicated read ids");
+    if (right_duplicated)
+        WARN("SAM file " << right_sam << " contains duplicated read ids");
 }
 
 bool BWAPairInfoFiller::Init() {
@@ -296,7 +309,7 @@ bool BWAPairInfoFiller::ProcessLib(size_t lib_index,
     vector<pair<string, string>> sam_files;
     bool result = false;
 
-    INFO("Processing lib #" << lib_index);
+    INFO("Mapping lib #" << lib_index << " using BWA");
     if (!AlignLib(lib, path::append_path(lib_dir, "single"), sam_files)) {
         WARN("Failed to align lib #" << lib_index);
         return false;
@@ -330,8 +343,8 @@ bool BWAPairInfoFiller::ProcessLib(size_t lib_index,
         }
         result = true;
     }
-
-    path::remove_dir(lib_dir);
+    if (remove_tmp_files_)
+        path::remove_dir(lib_dir);
     return result;
 }
 

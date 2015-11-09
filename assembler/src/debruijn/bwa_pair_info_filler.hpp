@@ -193,6 +193,8 @@ private:
 
     bool index_constructed_;
 
+    bool remove_tmp_files_;
+
     unordered_map<size_t, debruijn_graph::EdgeId> edge_id_map_;
 
 private:
@@ -219,14 +221,17 @@ public:
     BWAPairInfoFiller(const debruijn_graph::Graph& g,
                       const string& bwa_path,
                       const string& work_dir,
-                      size_t nthreads = 1):
+                      size_t nthreads = 1,
+                      bool remove_tmp = true):
         g_(g), bwa_path_(bwa_path), work_dir_(work_dir),
         nthreads_(nthreads), index_base_(""), index_constructed_(false),
+        remove_tmp_files_(remove_tmp),
         edge_id_map_() {
     }
 
     ~BWAPairInfoFiller() {
-        path::remove_if_exists(work_dir_);
+        if (remove_tmp_files_)
+            path::remove_if_exists(work_dir_);
     }
 
     bool ProcessLib(size_t lib_index,
@@ -236,6 +241,6 @@ public:
                     size_t index_filler_edge_len);
 };
 
-};
+}
 
 #endif //PROJECT_BWA_PAIR_INFO_FILLER_HPP_H

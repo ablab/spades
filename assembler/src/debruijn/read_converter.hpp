@@ -78,6 +78,9 @@ private:
 
         INFO("Converting reads to binary format (takes a while)");
         for (size_t i = 0; i < dataset.lib_count(); ++i) {
+            if (dataset[i].type() == io::LibraryType::MatePairs && cfg::get().bwa.on) {
+                continue;
+            }
             INFO("Paired reads for library #" << i);
             dataset[i].data().thread_num = cfg::get().max_threads;
             dataset[i].data().paired_read_prefix = cfg::get().paired_read_prefix + "_" + ToString(i);

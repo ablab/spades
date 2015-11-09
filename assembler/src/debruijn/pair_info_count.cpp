@@ -165,53 +165,56 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
     //fixme implement better universal logic 
     size_t edge_length_threshold = cfg::get().ds.meta ? 1000 : stats::Nx(gp.g, 50);
     INFO("Min edge length for estimation: " << edge_length_threshold);
-    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        INFO("Estimating insert size for library #" << i);
-        if (cfg::get().ds.reads[i].is_paired()) {
+    bwa_pair_info::BWAPairInfoFiller bwa_counter(gp.g,
+                                                 cfg::get().bwa.path_to_bwa,
+                                                 path::append_path(cfg::get().output_dir, "bwa_count"),
+                                                 cfg::get().max_threads, !cfg::get().bwa.debug);
 
+    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+        const auto& lib = cfg::get().ds.reads[i];
+
+        if (cfg::get().bwa.on && lib.is_bwa_alignable()) {
+            bwa_counter.ProcessLib(i, cfg::get_writable().ds.reads[i], gp.paired_indices[i],
+                                   edge_length_threshold, cfg::get().bwa.min_contig_len);
+        }
+        else if (lib.is_paired()) {
+            INFO("Estimating insert size for library #" << i);
             bool insert_size_refined = RefineInsertSizeForLib(gp, i, edge_length_threshold);
 
             if (!insert_size_refined) {
                 cfg::get_writable().ds.reads[i].data().mean_insert_size = 0.0;
                 WARN("Unable to estimate insert size for paired library #" << i);
-                if (cfg::get().ds.reads[i].data().read_length > 0 && cfg::get().ds.reads[i].data().read_length <= cfg::get().K) {
-                    WARN("Maximum read length (" << cfg::get().ds.reads[i].data().read_length << ") should be greater than K (" << cfg::get().K << ")");
+                if (lib.data().read_length > 0 && lib.data().read_length <= cfg::get().K) {
+                    WARN("Maximum read length (" << lib.data().read_length << ") should be greater than K (" << cfg::get().K << ")");
                 }
-                else if (cfg::get().ds.reads[i].data().read_length <= cfg::get().K * 11 / 10) {
-                    WARN("Maximum read length (" << cfg::get().ds.reads[i].data().read_length << ") is probably too close to K (" << cfg::get().K << ")");
+                else if (lib.data().read_length <= cfg::get().K * 11 / 10) {
+                    WARN("Maximum read length (" << lib.data().read_length << ") is probably too close to K (" << cfg::get().K << ")");
                 } else {
                     WARN("None of paired reads aligned properly. Please, check orientation of your read pairs.");
                 }
                 continue;
             } else {
                 INFO("  Estimated insert size for paired library #" << i);
-                INFO("  Insert size = " << cfg::get().ds.reads[i].data().mean_insert_size <<
-                        ", deviation = " << cfg::get().ds.reads[i].data().insert_size_deviation <<
-                        ", left quantile = " << cfg::get().ds.reads[i].data().insert_size_left_quantile <<
-                        ", right quantile = " << cfg::get().ds.reads[i].data().insert_size_right_quantile <<
-                        ", read length = " << cfg::get().ds.reads[i].data().read_length);
+                INFO("  Insert size = " << lib.data().mean_insert_size <<
+                        ", deviation = " << lib.data().insert_size_deviation <<
+                        ", left quantile = " << lib.data().insert_size_left_quantile <<
+                        ", right quantile = " << lib.data().insert_size_right_quantile <<
+                        ", read length = " << lib.data().read_length);
             }
         }
     }
-
-    bwa_pair_info::BWAPairInfoFiller bwa_counter(gp.g,
-                                                 cfg::get().bwa.path_to_bwa,
-                                                 path::append_path(cfg::get().output_dir, "bwa_count"),
-                                                 cfg::get().max_threads);
 
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
         INFO("Mapping library #" << i);
         const auto& lib = cfg::get().ds.reads[i];
         if (lib.is_contig_lib() && !lib.is_pacbio_alignable()) {
-            INFO("Mapping contigs library");
+            INFO("Mapping contigs library #" << i);
             ProcessSingleReads(gp, i, false);
-		} else {
-            if (lib.type() == io::LibraryType::MatePairs && cfg::get().bwa.on) {
-                bwa_counter.ProcessLib(i, cfg::get_writable().ds.reads[i], gp.paired_indices[i],
-                                       edge_length_threshold, cfg::get().bwa.min_contig_len);
-                continue;
-            }
-
+		}
+        else if (cfg::get().bwa.on && lib.is_bwa_alignable()) {
+            continue;
+        }
+        else {
             bool map_single_reads = ShouldMapSingleReads(i);
             cfg::get_writable().use_single_reads |= map_single_reads;
 
@@ -227,7 +230,6 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
                 INFO("Total paths obtained from single reads: " << gp.single_long_reads[i].size());
             }
         }
-
     }
 
     SensitiveReadMapper<Graph>::EraseIndices();
