@@ -437,16 +437,16 @@ public:
         SimpleOverlapRemover remover(g_, coverage_map);
         if (cfg::get().ds.moleculo)
             remover.CutPseudoSelfConjugatePaths(paths);
-        //writer.writePaths(paths, output_dir + "/before.fasta");
+        //writer.WritePathsToFASTA(paths, output_dir + "/before.fasta");
         //DEBUG("Removing subpaths");
         //delete not only eq,
         remover.RemoveSimilarPaths(paths, max_overlap, false, true, true, false, add_overlaps_begin);
-        //writer.writePaths(paths, output_dir + "/remove_similar.fasta");
+        //writer.WritePathsToFASTA(paths, output_dir + "/remove_similar.fasta");
         //DEBUG("Remove overlaps")
         remover.RemoveOverlaps(paths);
-        //writer.writePaths(paths, output_dir + "/after_remove_overlaps.fasta");
+        //writer.WritePathsToFASTA(paths, output_dir + "/after_remove_overlaps.fasta");
         remover.RemoveSimilarPaths(paths, max_overlap, true, false, false, false, add_overlaps_begin);
-        //writer.writePaths(paths, output_dir + "/remove_equal.fasta");
+        //writer.WritePathsToFASTA(paths, output_dir + "/remove_equal.fasta");
         //DEBUG("remove similar path. Max difference " << max_overlap);
         remover.RemoveSimilarPaths(paths, max_overlap, false, true, true, true, add_overlaps_begin);
         DEBUG("end removing");

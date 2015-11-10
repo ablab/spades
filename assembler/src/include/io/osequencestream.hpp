@@ -62,13 +62,13 @@ public:
         ofstream_.close();
     }
 
-    osequencestream& operator<<(const std::string& s) {
+    virtual osequencestream& operator<<(const std::string& s) {
         write_header(s);
         write_str(s);
         return *this;
     }
 
-    osequencestream& operator<<(const Sequence& seq) {
+    virtual osequencestream& operator<<(const Sequence& seq) {
         std::string s = seq.str();
         return operator <<(s);
     }
@@ -77,7 +77,7 @@ public:
      * Has different way of making headers
      * Doesn't increase counters, don't mix with other methods!
      */
-    osequencestream& operator<<(const SingleRead& read) {
+    virtual osequencestream& operator<<(const SingleRead& read) {
         ofstream_ << ">" << read.name() << std::endl;
         size_t cur = 0;
         std::string s = read.GetSequenceString();
@@ -197,12 +197,13 @@ public:
 
 class osequencestream_with_id: public osequencestream {
 protected:
-    int uid_;
+    size_t uid_;
 
     double cov_;
 
-  virtual void write_header(const std::string& s) {
-        ofstream_ << ">" << MakeContigId(id_++, s.size(), cov_, uid_) << std::endl;
+    virtual void write_header(const std::string& s) {
+        ofstream_ << ">" << GetId(s) << std::endl;
+        id_++;
     }
 
 public:
@@ -213,11 +214,15 @@ public:
         ofstream_.close();
     }
 
+    string GetId(const std::string& s) const {
+        return MakeContigId(id_, s.size(), cov_, uid_);
+    }
+
     void setCoverage(double c) {
         cov_ = c;
     }
 
-    void setID(int uid) {
+    void setID(size_t uid) {
         uid_ = uid;
     }
 
@@ -226,6 +231,7 @@ public:
         write_str(s);
         return *this;
     }
+
     osequencestream_with_id& operator<<(double coverage) {
         cov_ = coverage;
         return *this;
@@ -307,7 +313,6 @@ public:
         std::string s = seq.str();
         return operator <<(s);
     }
-
 };
 
 class osequencestream_for_fastg: public osequencestream_with_id  {

@@ -187,6 +187,29 @@ public:
 	}
 };
 
+struct ExtendedContigIdT {
+    string full_id_;
+    string short_id_;
+
+    ExtendedContigIdT(): full_id_(""), short_id_("") {}
+
+    ExtendedContigIdT(string full_id, string short_id): full_id_(full_id), short_id_(short_id) {}
+};
+
+template <class Graph>
+void MakeContigIdMap(const Graph& graph, map<EdgeId, ExtendedContigIdT>& ids) {
+    int counter = 0;
+    for (auto it = graph.ConstEdgeBegin(); !it.IsEnd(); ++it) {
+        EdgeId e = *it;
+        if (ids.count(e) == 0) {
+            string id = io::MakeContigId(++counter, graph.length(e) + graph.k(), graph.coverage(e), "EDGE");
+            ids[e] = ExtendedContigIdT(id, ToString(counter) + "+");
+            if (e != graph.conjugate(e))
+                ids[graph.conjugate(e)] =  ExtendedContigIdT(id + "'", ToString(counter) + "-");
+        }
+    }
+}
+
 template<class Graph>
 class ContigPrinter {
 private:
@@ -222,25 +245,17 @@ public:
 
 	template<class sequence_stream>
     void PrintContigsFASTG(sequence_stream &os) {
-	    map<EdgeId, string> ids;
-	    int counter = 0;
-	    for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
-	        EdgeId e = *it;
-	        if (ids.count(e) == 0) {
-	            string id = io::MakeContigId(++counter, graph_.length(e) + graph_.k(), graph_.coverage(e), "EDGE");
-	            ids[e] = id;
-	            ids[graph_.conjugate(e)] = id + "'";
-	        }
-        }
+	    map<EdgeId, ExtendedContigIdT> ids;
+        MakeContigIdMap(graph_, ids);
 
         for (auto it = graph_.SmartEdgeBegin(); !it.IsEnd(); ++it) {
             set<string> next;
             VertexId v = graph_.EdgeEnd(*it);
             auto edges = graph_.OutgoingEdges(v);
             for (auto next_it = edges.begin(); next_it != edges.end(); ++next_it) {
-                next.insert(ids[*next_it]);
+                next.insert(ids[*next_it].full_id_);
             }
-            ReportEdge(os, constructor_.construct(*it).first, ids[*it], next);
+            ReportEdge(os, constructor_.construct(*it).first, ids[*it].full_id_, next);
             //FASTG always needs both sets of edges
             //it.HandleDelete(graph_.conjugate(*it));
         }
