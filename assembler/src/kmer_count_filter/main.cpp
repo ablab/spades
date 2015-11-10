@@ -11,61 +11,65 @@
 #include "kmc_api/kmc_file.h"
 #include <runtime_k.hpp>
 #include <boost/optional/optional.hpp>
+#include <boost/lexical_cast.hpp>
 
 using std::string;
 using std::vector;
 using std::shared_ptr;
 using std::make_shared;
 using runtime_k::RtSeq;
+using boost::lexical_cast;
 
-const string DEFAULT_ONE_MIN = "3";
-const string DEFAULT_ALL_MIN = "3";
-const string DEFAULT_KMER_LENGTH = "31";
 const string KMER_PARSED_EXTENSION = ".bin";
+const string KMC_EXTENSION = ".kmc";
 const string KMER_SORTED_EXTENSION = ".sorted";
 
 void PrintUsageInfo() {
-    puts("Usage: kmer-abundance-filter [options] <read 1> <read 2> [<read 1> <read 2> ...] <output file>");
-    puts("Options:");
-    puts("-one-min - minimal kmer abundance in each file");
-    puts("-all-min - minimal kmer abundance in all files");
-    puts("-kl - kmer length");
+    std::cout << "Usage: kmer-abundance-filter [options] <sample_desc_1> [<sample_desc_2> ...]" << std::endl;
+    std::cout << "Options:" << std::endl;
+    std::cout << "-k - kmer length" << std::endl;
+    std::cout << "-o - output file" << std::endl;
+    std::cout << "--mult - minimal occurence per file" << std::endl;
+    std::cout << "--sample - minimal number of samples to contain kmer" << std::endl;
+    std::cout << "sample_desc_X is a file with list of fastq files (gzipped or not) related to sample X" << std::endl;
 }
 
-void parseKmc(const string& filename, const size_t k) {
-    std::ofstream output(filename + KMER_PARSED_EXTENSION, std::ios::binary);
-
+void ParseKmc(const string& filename, const size_t k) {
     CKMCFile kmcFile;
-    kmcFile.OpenForListing(filename);
+    kmcFile.OpenForListing(filename + KMC_EXTENSION);
     CKmerAPI kmer(k);
     uint32 count;
+
+    std::ofstream output(filename + KMER_PARSED_EXTENSION, std::ios::binary);
     while (kmcFile.ReadNextKmer(kmer, count)) {
-        RtSeq seq(k, kmer.to_string().c_str());
+        RtSeq seq(k, kmer.to_string());
         seq.BinWrite(output);
         seq_element_type tmp = count;
         output.write((char*) &(tmp), sizeof(seq_element_type));
     }
-
     output.close();
 }
 
-void SortKmersCountFile(const string &filename, const size_t k) {
-    MMappedRecordArrayReader<seq_element_type > ins(filename + KMER_PARSED_EXTENSION, RtSeq::GetDataSize(k) + 1, false);
+void SortKmersCountFile(const string& filename, const size_t k) {
+    MMappedRecordArrayReader<seq_element_type> ins(filename + KMER_PARSED_EXTENSION, RtSeq::GetDataSize(k) + 1, false);
     libcxx::sort(ins.begin(), ins.end(), array_less<seq_element_type>());
     std::ofstream out(filename + KMER_SORTED_EXTENSION);
     out.write((char*) ins.data(), ins.data_size());
     out.close();
 }
 
-void CountKmersOne(const string& filename, const string& abundance_min, const string& kmer_length) {
-    system(("~/libs/kmc/kmc -k" + kmer_length + " -ci" + abundance_min + " " + filename + " " + filename + " .").c_str());
-    parseKmc(filename, (size_t) atoi(kmer_length.c_str()));
-    system(("rm -f " + filename + ".kmc_pre " + filename + ".kmc_suf").c_str());
-    SortKmersCountFile(filename, (const size_t) atoi(kmer_length.c_str()));
+string CountSample(const string& filename, size_t min_mult, size_t k) {
+    stringstream cmd;
+    cmd << "~/libs/kmc/kmc -k" << k << " -ci" << min_mult << " @" << filename << " " << filename << KMC_EXTENSION << " .";
+    system(cmd.str().c_str());
+    ParseKmc(filename, k);
+    system(("rm -f " + filename + KMC_EXTENSION + "*").c_str());
+    SortKmersCountFile(filename, k);
     system(("rm -f " + filename + KMER_PARSED_EXTENSION).c_str());
+    return filename + KMER_SORTED_EXTENSION;
 }
 
-bool ReadKmerWithCount(std::ifstream &infile, std::pair<RtSeq, uint32> &res) {
+bool ReadKmerWithCount(std::ifstream& infile, std::pair<RtSeq, uint32>& res) {
     RtSeq seq(res.first.size());
     if (!seq.BinRead(infile)) {
         return false;
@@ -76,15 +80,14 @@ bool ReadKmerWithCount(std::ifstream &infile, std::pair<RtSeq, uint32> &res) {
     return true;
 }
 
-void FilterKmersAll(const std::vector<string>& files, int all_min, size_t k, const string& output_file) {
+void FilterKmers(const std::vector<string>& files, size_t all_min, size_t k, const string& output_file) {
     size_t n = files.size();
     vector<shared_ptr<std::ifstream>> infiles;
-    for (size_t i = 0; i < n; ++i) {
-        string name = files[i] + KMER_SORTED_EXTENSION;
-        infiles.push_back(std::make_shared<std::ifstream>(name));
+    for (auto fn : files) {
+        infiles.push_back(std::make_shared<std::ifstream>(fn));
     }
     vector<std::pair<RtSeq, uint32>> top_kmer(n, {RtSeq(k), 0});
-    vector<bool> alive(n);
+    vector<bool> alive(n, false);
 
     for (size_t i = 0; i < n; i++) {
         alive[i] = ReadKmerWithCount(*infiles[i], top_kmer[i]);
@@ -118,26 +121,25 @@ void FilterKmersAll(const std::vector<string>& files, int all_min, size_t k, con
         if (!min_kmer) {
             break;
         }
-        std::vector<uint32> cnt_vector(n / 2, 0);
+        std::vector<uint32> cnt_vector(n, 0);
         if (cnt_min >= all_min) {
 //            min_kmer.get().BinWrite(output_kmer);
-            output_kmer << min_kmer.get().str() << "\n";
+            output_kmer << min_kmer.get().str() << std::endl;
             for (size_t i = 0; i < n; ++i) {
                 if (i != 0) {
                     output_cnt << " ";
                 }
                 if (alive[i] && top_kmer[i].first == *min_kmer) {
-                    cnt_vector[i / 2] += top_kmer[i].second;
+                    cnt_vector[i] += top_kmer[i].second;
                 }
             }
         }
-        for (size_t i = 0; i < cnt_vector.size(); ++i) {
-            if (i != 0) {
-                output_cnt << " ";
-            }
-            output_cnt << cnt_vector[i];
+        string delim = "";
+        for (auto cnt : cnt_vector) {
+            output_cnt << delim << cnt;
+            delim = " ";
         }
-        output_cnt << "\n";
+        output_cnt << std::endl;
         for (size_t i = 0; i < n; ++i) {
             if (alive[i] && top_kmer[i].first == *min_kmer) {
                 alive[i] = ReadKmerWithCount(*infiles[i], top_kmer[i]);
@@ -146,11 +148,6 @@ void FilterKmersAll(const std::vector<string>& files, int all_min, size_t k, con
     }
     output_kmer.close();
     output_cnt.close();
-
-    for (size_t i = 0; i < n; ++i) {
-        string name = files[i] + KMER_SORTED_EXTENSION;
-        system(("rm -f " + name).c_str());
-    }
 }
 
 int main(int argc, char *argv[]) {
@@ -158,34 +155,48 @@ int main(int argc, char *argv[]) {
         PrintUsageInfo();
         return 0;
     }
-    string one_min = DEFAULT_ONE_MIN;
-    string all_min = DEFAULT_ALL_MIN;
-    string kmer_length = DEFAULT_KMER_LENGTH;
+    size_t min_mult = -1ul;
+    size_t min_sample_count = -1ul;
+    size_t k = -1ul;
+    string output = "";
     int i = 1;
     while (i < argc && argv[i][0] == '-') {
-        if (strncmp(argv[i], "-one-min", 8) == 0) {
-            one_min = argv[i + 1];
+        VERIFY(i + 1 < argc);
+
+        string arg = argv[i];
+        if (arg == "--mult") {
+            min_mult = lexical_cast<size_t>(argv[i + 1]);
         }
-        if (strncmp(argv[i], "-all-min", 8) == 0) {
-            all_min = argv[i + 1];
+        if (arg == "--sample") {
+            min_sample_count = lexical_cast<size_t>(argv[i + 1]);
         }
-        if (strncmp(argv[i], "-kl", 3) == 0) {
-            kmer_length = argv[i + 1];
+        if (arg == "-k") {
+            k = lexical_cast<size_t>(argv[i + 1]);
+        }
+        if (arg == "-o") {
+            output = argv[i + 1];
         }
         i += 2;
     }
-    if (argc - i < 3 || (argc - i - 1) % 2 != 0) {
+    if (argc - i < 3 || (argc - i - 1) % 2 != 0
+        || min_mult == -1ul
+        || min_sample_count == -1ul
+        || k == -1ul
+        || output == "") {
         PrintUsageInfo();
         return 0;
     }
+
     std::vector<string> input_files;
-    for (; i + 1 < argc; ++i) {
+    for (; i < argc; ++i) {
         input_files.push_back(argv[i]);
     }
-    for (const string& file : input_files) {
-        CountKmersOne(file, one_min, kmer_length);
+
+    vector<string> kmer_cnt_files;
+    for (const auto& file : input_files) {
+        kmer_cnt_files.push_back(CountSample(file, min_mult, k));
     }
 
-    FilterKmersAll(input_files, atoi(all_min.c_str()), atoi(kmer_length.c_str()), argv[argc - 1]);
+    FilterKmers(kmer_cnt_files, min_sample_count, k, output);
     return 0;
 }
