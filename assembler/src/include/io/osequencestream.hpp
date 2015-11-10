@@ -214,7 +214,7 @@ public:
         ofstream_.close();
     }
 
-    string GetId(const std::string& s) const {
+    std::string GetId(const std::string& s) const {
         return MakeContigId(id_, s.size(), cov_, uid_);
     }
 
