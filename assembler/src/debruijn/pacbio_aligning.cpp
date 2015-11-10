@@ -113,7 +113,7 @@ void align_pacbio(conj_graph_pack &gp, int lib_id) {
                                                          cfg::get().K, cfg::get().pb.ignore_middle_alignment);
 
 //    path_extend::ContigWriter cw(gp.g);
-//    cw.writeEdges("before_rr_with_ids.fasta");
+//    cw.WriteEdges("before_rr_with_ids.fasta");
 //    ofstream filestr("pacbio_mapped.mpr");
 //    filestr.close();
     for (auto iter = streams.begin(); iter != streams.end(); ++iter) {

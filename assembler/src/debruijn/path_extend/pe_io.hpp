@@ -32,6 +32,7 @@ protected:
     const Graph& g_;
     ContigConstructor<Graph> &constructor_;
     size_t k_;
+    map<EdgeId, ExtendedContigIdT> ids_;
 
     string ToString(const BidirectionalPath& path) const {
         stringstream ss;
@@ -62,164 +63,26 @@ protected:
         return ss.str();
     }
 
-    void MakeIDS(const PathContainer& paths,
-            BidirectionalPathMap< string >& ids,
-            BidirectionalPathMap< set<string> >& next_ids) const {
-        int counter = 1;
-        for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-            if (iter.get()->Size() == 0)
-                continue;
+    string ToFASTGString(const BidirectionalPath& path) const {
+        if (path.Empty())
+            return "";
 
-            BidirectionalPath* p = iter.get();
-            BidirectionalPath* cp = iter.getConjugate();
-            string name = io::MakeContigId(counter++, p->Length() + k_, p->Coverage(), p->GetId());
-            ids.insert(make_pair(p, name));
-            ids.insert(make_pair(cp, name + "'"));
-            next_ids.insert(make_pair(p, set<string>()));
-            next_ids.insert(make_pair(cp, set<string>()));
+        string res = ids_.at(path.Front()).short_id_;
+        for (size_t i = 1; i < path.Size(); ++i) {
+            res += "," + ids_.at(path[i]).short_id_;
         }
-    }
-
-    void FindPathsOrder(const PathContainer& paths,
-                        map<VertexId, BidirectionalPathSet >& v_starting,
-                        map<EdgeId, BidirectionalPathSet >& e_starting) const {
-        for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-            if (iter.get()->Size() == 0)
-                continue;
-
-            BidirectionalPath* path = iter.get();
-            DEBUG(g_.int_id(g_.EdgeStart(path->Front())) << " -> " << path->Size() << ", " << path->Length());
-            EdgeId e = path->Front();
-            VertexId v = g_.EdgeStart(e);
-            if (v_starting.count(v) == 0) {
-                v_starting.insert(make_pair(v, BidirectionalPathSet()));
-            }
-            v_starting[v].insert(path);
-            if (path->Size() > 1) {
-                if (e_starting.count(e) == 0) {
-                    e_starting.insert(make_pair(e, BidirectionalPathSet()));
-                }
-                e_starting[e].insert(path);
-            }
-
-            path = iter.getConjugate();
-            DEBUG(g_.int_id(g_.EdgeStart(path->Front())) << " -> " << path->Size() << ", " << path->Length());
-            e = path->Front();
-            v = g_.EdgeStart(e);
-            if (v_starting.count(v) == 0) {
-                v_starting.insert(make_pair(v, BidirectionalPathSet()));
-            }
-            v_starting[v].insert(path);
-            if (path->Size() > 1) {
-                if (e_starting.count(e) == 0) {
-                    e_starting.insert(make_pair(e, BidirectionalPathSet()));
-                }
-                e_starting[e].insert(path);
-            }
-        }
-    }
-
-    void VerifyIDS(const PathContainer& paths,
-                 BidirectionalPathMap<string>& ids,
-                 BidirectionalPathMap<set<string>>& next_ids,
-                 map<VertexId, BidirectionalPathSet >& v_starting,
-                 map<EdgeId, BidirectionalPathSet >& e_starting) const {
-
-        for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-            BidirectionalPath* path = iter.get();
-            if (path->Size() == 0)
-                continue;
-
-            EdgeId e = path->Back();
-            VertexId v = g_.EdgeEnd(e);
-            TRACE("Node " << ids[path] << " is followed by: ");
-            for (BidirectionalPath* next_path: v_starting[v]) {
-                TRACE("Vertex: " << ids[next_path]);
-                auto it = next_ids[path].find(ids[next_path]);
-                VERIFY(it != next_ids[path].end());
-            }
-            TRACE("Node " << ids[path] << " is followed by: ");
-            for (BidirectionalPath* next_path: e_starting[e]) {
-                TRACE("Edge: " << ids[next_path]);
-                auto it = next_ids[path].find(ids[next_path]);
-                VERIFY(it != next_ids[path].end());
-            }
-
-            path = iter.getConjugate();
-            e = path->Back();
-            v = g_.EdgeEnd(e);
-            TRACE("Node " << ids[path] << " is followed by: ");
-            for (BidirectionalPath* next_path: v_starting[v]) {
-                TRACE("Vertex: " << ids[next_path]);
-                auto it = next_ids[path].find(ids[next_path]);
-                VERIFY(it != next_ids[path].end());
-            }
-            TRACE("Node " << ids[path] << " is followed by: ");
-            for (BidirectionalPath* next_path: e_starting[e]) {
-                TRACE("Edge: " << ids[next_path]);
-                auto it = next_ids[path].find(ids[next_path]);
-                VERIFY(it != next_ids[path].end());
-            }
-        }
-    }
-
-    void ConstructFASTG(const PathContainer& paths,
-            BidirectionalPathMap< string >& ids,
-            BidirectionalPathMap< set<string> >& next_ids) const {
-
-        MakeIDS(paths, ids, next_ids);
-
-        map<VertexId, BidirectionalPathSet > v_starting;
-        map<EdgeId, BidirectionalPathSet > e_starting;
-        //set<VertexId> visited;
-        //queue<BidirectionalPath*> path_queue;
-        FindPathsOrder(paths, v_starting, e_starting);
-
-        for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-            if (iter.get()->Size() == 0)
-                continue;
-
-            BidirectionalPath* path = iter.get();
-            EdgeId e = path->Back();
-            VertexId v = g_.EdgeEnd(e);
-            TRACE("Node " << ids[path] << " is followed by: ");
-            for (BidirectionalPath* next_path: v_starting[v]) {
-                TRACE(ids[next_path]);
-                next_ids[path].insert(ids[next_path]);
-            }
-            TRACE("Node " << ids[path] << " is followed by: ");
-            for (BidirectionalPath* next_path: e_starting[e]) {
-                TRACE(ids[next_path]);
-                next_ids[path].insert(ids[next_path]);
-            }
-
-            path = iter.getConjugate();
-            e = path->Back();
-            v = g_.EdgeEnd(e);
-            TRACE("Node " << ids[path] << " is followed by: ");
-            for (BidirectionalPath* next_path: v_starting[v]) {
-                TRACE(ids[next_path]);
-                next_ids[path].insert(ids[next_path]);
-            }
-            TRACE("Node " << ids[path] << " is followed by: ");
-            for (BidirectionalPath* next_path: e_starting[e]) {
-                TRACE(ids[next_path]);
-                next_ids[path].insert(ids[next_path]);
-            }
-        }
-
-        VerifyIDS(paths, ids, next_ids, v_starting, e_starting);
+        return res;
     }
 
 
 public:
-    ContigWriter(const Graph& g, ContigConstructor<Graph> &constructor): g_(g), constructor_(constructor), k_(g.k()) {
-
+    ContigWriter(const Graph& g, ContigConstructor<Graph> &constructor): g_(g), constructor_(constructor), k_(g.k()), ids_() {
+        MakeContigIdMap(g_, ids_);
     }
 
-    void writeEdges(const string& filename) const {
+    void WriteEdges(const string &filename) const {
         INFO("Outputting edges to " << filename);
-        io::osequencestream_with_data_for_scaffold oss(filename);
+        io::osequencestream_with_id oss(filename);
 
         set<EdgeId> included;
         for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
@@ -236,9 +99,9 @@ public:
     }
 
 
-    void writePathEdges(const PathContainer& paths, const string& filename) const {
-        INFO("Outputting path data to " << filename);
-        std::ofstream oss;
+    void WritePaths(const PathContainer &paths, const string &filename) const {
+		INFO("Outputting path data to " << filename);
+		std::ofstream oss;
         oss.open(filename.c_str());
         int i = 1;
         oss << paths.size() << endl;
@@ -259,7 +122,7 @@ public:
         DEBUG("Edges written");
     }
 
-    void loadPaths(PathContainer& paths,  GraphCoverageMap& cover_map, const string& filename) const {
+    void LoadPaths(PathContainer &paths, GraphCoverageMap &cover_map, const string &filename) const {
         paths.clear();
         map<size_t, EdgeId> int_ids;
         for (auto iter = g_.ConstEdgeBegin(); !iter.IsEnd(); ++iter) {
@@ -298,62 +161,57 @@ public:
         iss.close();
     }
 
-    void writePaths(const PathContainer& paths, const string& filename) const {
+    void WritePathsToFASTA(const PathContainer &paths,
+                           const string &filename_base,
+                           bool write_fastg = true) const {
 
-        INFO("Writing contigs to " << filename);
-        io::osequencestream_with_data_for_scaffold oss(filename);
+        INFO("Writing contigs to " << filename_base);
+        io::osequencestream_with_id oss(filename_base + ".fasta");
+
+        std::ofstream os_fastg;
+        if (write_fastg)
+            os_fastg.open((filename_base + ".paths").c_str());
+
         int i = 0;
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-            if (iter.get()->Length() <= 0){
-                continue;
-            }
-            DEBUG("NODE " << ++i);
+        	if (iter.get()->Length() <= 0)
+        		continue;
+        	DEBUG("NODE " << ++i);
             BidirectionalPath* path = iter.get();
             path->Print();
             oss.setID((int) path->GetId());
             oss.setCoverage(path->Coverage());
-            oss << ToString(*path);
+            string path_string = ToString(*path);
+
+            if (write_fastg) {
+                os_fastg << oss.GetId(path_string) << endl;
+                os_fastg << ToFASTGString(*iter.get()) << endl;
+                os_fastg << oss.GetId(path_string) << "'" << endl;
+                os_fastg << ToFASTGString(*iter.getConjugate()) << endl;
+            }
+
+            oss << path_string;
         }
+        if (write_fastg)
+            os_fastg.close();
         DEBUG("Contigs written");
     }
 
-    void WritePathsToFASTG(const PathContainer& paths, const string& filename, const string& fastafilename) const {
-        VERIFY_MSG(false, "FASTG output is deprecated for paths")
-        BidirectionalPathMap< string > ids;
-        BidirectionalPathMap< set<string> > next_ids;
-        INFO("Constructing FASTG file from paths ");
-        ConstructFASTG(paths, ids, next_ids);
+    void WriteFASTGPaths(const PathContainer& paths, const string& filename) const {
+        INFO("Writing FASTG paths to " << filename);
+        std::ofstream oss(filename.c_str());
 
-        INFO("Writing contigs in FASTG to " << filename);
-        INFO("Writing contigs in FASTA to " << fastafilename);
-        io::osequencestream_for_fastg fastg_oss(filename);
-        io::osequencestream_with_id oss(fastafilename);
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
-            BidirectionalPath* path = iter.get();
-            if (path->Length() <= 0){
+            if (iter.get()->Length() <= 0)
                 continue;
-            }
-            DEBUG(ids[path]);
-
-            oss.setID((int) path->GetId());
-            oss.setCoverage(path->Coverage());
-            oss << ToString(*path);
-            fastg_oss.set_header(ids[path]);
-            fastg_oss << next_ids[path] << ToString(*path);
-            DEBUG("NODE " << ids[path]);
-            path->Print();
-
-            //Printing reverse complement to FASTG
-            path = iter.getConjugate();
-            if (path->Length() <= 0){
-                continue;
-            }
-            DEBUG(ids[path]);
-            fastg_oss.set_header(ids[path]);
-            fastg_oss << next_ids[path] << ToString(*path);
-            DEBUG("NODE " << ids[path]);
-            path->Print();
+            oss << ToFASTGString(*iter.get()) << endl;
+            oss << ToFASTGString(*iter.getConjugate()) << endl;
         }
+        oss.close();
+    }
+
+    void OutputPaths(const PathContainer& paths, const string& filename_base) const {
+        WritePathsToFASTA(paths, filename_base);
     }
 };
 
@@ -365,7 +223,7 @@ protected:
 
 public:
 
-    void writePaths(const PathContainer& paths, const string& filename){
+    void WritePaths(const PathContainer &paths, const string &filename){
         std::ofstream oss(filename.c_str());
 
         for (auto iter = paths.begin(); iter != paths.end(); ++iter) {
