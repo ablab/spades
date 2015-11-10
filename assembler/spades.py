@@ -332,7 +332,7 @@ def fill_cfg(options_to_parse, log, secondary_filling=False):
         else:  # overriding previous run parameters
             options_storage.load_restart_options()
     if options_storage.meta:
-        if options_storage.careful or options_storage.mismatch_corrector or options_storage.cov_cutoff:
+        if options_storage.careful or options_storage.mismatch_corrector or options_storage.cov_cutoff != "off":
             support.error("you cannot specify --careful, --mismatch-correction or --cov-cutoff in metagenomic mode!", log)
     if options_storage.continue_mode:
         return None, None
