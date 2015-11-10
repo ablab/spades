@@ -356,6 +356,7 @@ struct detail_info_printer {
                     string const& folder_suffix = "") {
         cnt++;
         string pos_name = details::info_printer_pos_name(pos);
+
         VertexEdgeStat<conj_graph_pack::graph_t> stats(graph_);
         TRACE("Number of vertices : " << stats.vertices() << ", number of edges : " << stats.edges() << ", sum length of edges : " << stats.edge_length());
         func_(pos,

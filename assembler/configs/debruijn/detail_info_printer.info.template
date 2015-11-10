@@ -17,9 +17,6 @@ info_printers
 }
 
 ;	before_simplification
-;	tip_clipping
-;	bulge_removal
-;	err_con_removal
 ;	before_post_simplification
 ;	final_err_con_removal
 ;	final_tip_clipping

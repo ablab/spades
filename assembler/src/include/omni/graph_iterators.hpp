@@ -26,11 +26,14 @@ class SmartIterator : public GraphActionHandler<Graph> {
     DynamicQueueIterator<ElementId, Comparator> inner_it_;
     bool add_new_;
     bool canonical_only_;
+    //todo think of checking it in HandleAdd
+    std::shared_ptr<func::Predicate<ElementId>> add_condition_;
 
 protected:
 
     void push(const ElementId& el) {
-        if (!canonical_only_ || el <= this->g().conjugate(el)) {
+        if ((!canonical_only_ || el <= this->g().conjugate(el))
+                && add_condition_->Check(el)) {
             inner_it_.push(el);
         }
     }
@@ -48,12 +51,19 @@ protected:
         }
     }
 
+    void clear() {
+        inner_it_.clear();
+    }
+
     SmartIterator(const Graph &g, const std::string &name, bool add_new,
-                  const Comparator& comparator, bool canonical_only)
+                  const Comparator& comparator, bool canonical_only,
+                  std::shared_ptr<func::Predicate<ElementId>> add_condition
+                                  = std::make_shared<func::AlwaysTrue<ElementId>>())
             : base(g, name),
               inner_it_(comparator),
               add_new_(add_new),
-              canonical_only_(canonical_only) {
+              canonical_only_(canonical_only),
+              add_condition_(add_condition) {
     }
 
 public:
@@ -107,16 +117,22 @@ class SmartSetIterator : public SmartIterator<Graph, ElementId, Comparator> {
 
 public:
     SmartSetIterator(const Graph &g,
+                     bool add_new = false,
                      const Comparator& comparator = Comparator(),
-                     bool canonical_only = false)
-            : base(g, "SmartSet " + ToString(this), false, comparator, canonical_only) {
+                     bool canonical_only = false,
+                     std::shared_ptr<func::Predicate<ElementId>> add_condition
+                                                       = std::make_shared<func::AlwaysTrue<ElementId>>())
+            : base(g, "SmartSet " + ToString(this), add_new, comparator, canonical_only, add_condition) {
     }
 
     template<class Iterator>
     SmartSetIterator(const Graph &g, Iterator begin, Iterator end,
+                     bool add_new = false,
                      const Comparator& comparator = Comparator(),
-                     bool canonical_only = false)
-            : SmartSetIterator(g, comparator, canonical_only) {
+                     bool canonical_only = false,
+                     std::shared_ptr<func::Predicate<ElementId>> add_condition
+                                                       = std::make_shared<func::AlwaysTrue<ElementId>>())
+            : SmartSetIterator(g, add_new, comparator, canonical_only, add_condition) {
         insert(begin, end);
     }
 
@@ -127,6 +143,10 @@ public:
 
     void push(const ElementId& el) {
         base::push(el);
+    }
+
+    void clear() {
+        base::clear();
     }
 };
 
@@ -277,7 +297,6 @@ class SmartEdgeIterator : public SmartIterator<Graph, typename Graph::EdgeId, Co
     }
 
   public:
-    //todo think of some parallel simplif problem O_o
     SmartEdgeIterator(const Graph &g, Comparator comparator = Comparator(),
                       bool canonical_only = false)
             : SmartIterator<Graph, EdgeId, Comparator>(
@@ -333,22 +352,35 @@ class ParallelEdgeProcessor {
 };
 
 //todo move out
+template<class Graph, class ElementId>
+class IterationHelper {
+};
+
 template<class Graph>
-class ParallelIterationHelper {
-    typedef typename Graph::EdgeId EdgeId;
+class IterationHelper<Graph, typename Graph::VertexId> {
+    const Graph& g_;
+public:
     typedef typename Graph::VertexId VertexId;
     typedef typename Graph::VertexIt const_vertex_iterator;
 
-    const Graph& g_;
-public:
-
-    ParallelIterationHelper(const Graph& g)
+    IterationHelper(const Graph& g)
             : g_(g) {
-
     }
 
-    std::vector<const_vertex_iterator> VertexChunks(size_t chunk_cnt) const {
+    const_vertex_iterator begin() const {
+        return g_.begin();
+    }
+
+    const_vertex_iterator end() const {
+        return g_.end();
+    }
+
+    std::vector<const_vertex_iterator> Chunks(size_t chunk_cnt) const {
         VERIFY(chunk_cnt > 0);
+        if (chunk_cnt == 1) {
+            return {begin(), end()};
+        }
+
         //trying to split vertices into equal chunks, leftovers put into first chunk
         vector<const_vertex_iterator> answer;
         size_t vertex_cnt = g_.size();
@@ -375,9 +407,38 @@ public:
         return answer;
     }
 
-    std::vector<omnigraph::GraphEdgeIterator<Graph>> EdgeChunks(size_t chunk_cnt) const {
+};
+
+//todo move out
+template<class Graph>
+class IterationHelper<Graph, typename Graph::EdgeId> {
+    typedef typename Graph::VertexId VertexId;
+
+    const Graph& g_;
+public:
+    typedef typename Graph::EdgeId EdgeId;
+    typedef GraphEdgeIterator<Graph> const_edge_iterator;
+
+    IterationHelper(const Graph& g)
+            : g_(g) {
+    }
+
+    const_edge_iterator begin() const {
+        return const_edge_iterator(g_, g_.begin());
+    }
+
+    const_edge_iterator end() const {
+        return const_edge_iterator(g_, g_.end());
+    }
+
+    std::vector<omnigraph::GraphEdgeIterator<Graph>> Chunks(size_t chunk_cnt) const {
+        if (chunk_cnt == 1) {
+            return {begin(), end()};
+        }
+
         vector<omnigraph::GraphEdgeIterator<Graph>> answer;
-        for (const_vertex_iterator v_it : VertexChunks(chunk_cnt)) {
+
+        for (auto v_it : IterationHelper<Graph, VertexId>(g_).Chunks(chunk_cnt)) {
             answer.push_back(omnigraph::GraphEdgeIterator<Graph>(g_, v_it));
         }
         return answer;

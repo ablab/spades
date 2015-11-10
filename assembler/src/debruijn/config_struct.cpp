@@ -245,19 +245,21 @@ void load(debruijn_config::simplification::relative_coverage_comp_remover& rcc,
 }
 
 void load(debruijn_config::simplification::isolated_edges_remover& ier,
-          boost::property_tree::ptree const& pt, bool /*complete*/) {
+          boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
-
-  load(ier.max_length, pt, "max_length");
-  load(ier.max_coverage, pt, "max_coverage");
-  load(ier.max_length_any_cov, pt, "max_length_any_cov");
+  load(ier.enabled, pt, "enabled", complete);
+  load(ier.max_length, pt, "max_length", complete);
+  load(ier.max_coverage, pt, "max_coverage", complete);
+  load(ier.max_length_any_cov, pt, "max_length_any_cov", complete);
 }
 
 void load(debruijn_config::simplification::init_cleaning& init_clean,
           boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
-
   load(init_clean.self_conj_condition, pt, "self_conj_condition", complete);
+  load(init_clean.early_it_only, pt, "early_it_only", complete);
+  load(init_clean.activation_cov, pt, "activation_cov", complete);
+  load(init_clean.ier, pt, "ier", complete);
   load(init_clean.tip_condition, pt, "tip_condition", complete);
   load(init_clean.ec_condition, pt, "ec_condition", complete);
 }
@@ -473,17 +475,6 @@ void load_reference_genome(debruijn_config::dataset& ds,
   ds.reference_genome = genome.GetSequenceString();
 }
 
-void load(debruijn_config::simplification::presimplification& presimp,
-          boost::property_tree::ptree const& pt, bool complete) {
-  using config_common::load;
-
-  load(presimp.enabled, pt, "enabled", complete);
-  load(presimp.parallel, pt, "parallel", complete);
-  load(presimp.tip_condition, pt, "tip_condition", complete); // pre tip clipper:
-  load(presimp.ec_condition, pt, "ec_condition", complete); // pre ec remover:
-  load(presimp.ier, pt, "ier", complete);
-}
-
 void load(debruijn_config::simplification& simp,
           boost::property_tree::ptree const& pt, bool complete) {
   using config_common::load;
@@ -505,12 +496,6 @@ void load(debruijn_config::simplification& simp,
   load(simp.cbr, pt, "cbr", complete); // complex bulge remover
   load(simp.her, pt, "her", complete); // hidden ec remover
   load(simp.init_clean, pt, "init_clean", complete); // presimplification
-  load(simp.fast_features, pt, "fast_features", complete); // master switch for speed-up tricks
-  load(simp.fast_activation_cov, pt, "fast_activation_cov", complete);
-  load(simp.presimp, pt, "presimp", complete); // presimplification
-  load(simp.persistent_cycle_iterators, pt, "persistent_cycle_iterators", complete);
-  load(simp.disable_br_in_cycle, pt, "disable_br_in_cycle", complete);
-//  load(simp.stats_mode, pt, "stats_mode", complete); // temporary stats counting mode
 
   simp.final_tc = simp.tc; // final tip clipper:
   load(simp.final_tc, pt, "final_tc", false);

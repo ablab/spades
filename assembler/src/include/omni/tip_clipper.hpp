@@ -18,6 +18,7 @@
 
 #include "omni_utils.hpp"
 #include "xmath.h"
+#include "func.hpp"
 #include "basic_edge_conditions.hpp"
 #include "graph_processing_algorithm.hpp"
 
@@ -157,19 +158,26 @@ shared_ptr<func::Predicate<typename Graph::EdgeId>> AddTipCondition(const Graph&
 }
 
 template<class Graph>
-bool ClipTips(
-        Graph& g,
-        size_t max_length,
-        shared_ptr<Predicate<typename Graph::EdgeId>> condition
-            = make_shared<func::AlwaysTrue<typename Graph::EdgeId>>(),
-        std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
-
-    omnigraph::EdgeRemovingAlgorithm<Graph> tc(g,
-                                               AddTipCondition(g, condition),
-                                               removal_handler);
-
-    return tc.Run(LengthComparator<Graph>(g),
-                      make_shared<LengthUpperBound<Graph>>(g, max_length));
+shared_ptr<func::Predicate<typename Graph::EdgeId>>
+NecessaryTipCondition(const Graph& g, size_t max_length, double max_coverage) {
+    return AddTipCondition(g, func::And<typename Graph::EdgeId>(std::make_shared<LengthUpperBound<Graph>>(g, max_length),
+                               std::make_shared<CoverageUpperBound<Graph>>(g, max_coverage)));
 }
+
+//template<class Graph>
+//bool ClipTips(
+//        Graph& g,
+//        size_t max_length,
+//        shared_ptr<Predicate<typename Graph::EdgeId>> condition
+//            = make_shared<func::AlwaysTrue<typename Graph::EdgeId>>(),
+//        std::function<void(typename Graph::EdgeId)> removal_handler = 0) {
+//
+//    omnigraph::EdgeRemovingAlgorithm<Graph> tc(g,
+//                                               AddTipCondition(g, condition),
+//                                               removal_handler);
+//
+//    return tc.Run(LengthComparator<Graph>(g),
+//                      make_shared<LengthUpperBound<Graph>>(g, max_length));
+//}
 
 } // namespace omnigraph

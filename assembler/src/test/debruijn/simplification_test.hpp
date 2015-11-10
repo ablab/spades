@@ -9,7 +9,8 @@
 
 #include <boost/test/unit_test.hpp>
 #include "test_utils.hpp"
-#include "graph_simplification.hpp"
+#include "simplification/graph_simplification.hpp"
+#include "simplification/parallel_simplification_algorithms.hpp"
 #include "stats/debruijn_stats.hpp"
 //#include "repeat_resolving_routine.hpp"
 
@@ -27,8 +28,8 @@ debruijn_config::simplification::bulge_remover standard_br_config_generation() {
 	br_config.max_delta = 3;
 	br_config.max_number_edges = -1ul;
 	br_config.max_relative_delta = 0.1;
-	br_config.parallel = false;
-	br_config.chunk_size = -1ul;
+	br_config.parallel = true;
+	br_config.chunk_size = 10000;
 	return br_config;
 }
 
@@ -107,9 +108,8 @@ debruijn::simplification::SimplifInfoContainer standard_simplif_relevant_info() 
     debruijn::simplification::SimplifInfoContainer info;
     return info.set_read_length(100)
             .set_detected_coverage_bound(10.)
-            .set_iteration_count(1)
-            .set_iteration(0)
-            .set_chunk_cnt(1/*0*/);
+            .set_main_iteration(true)
+            .set_chunk_cnt(1);
 }
 
 std::string graph_fragment_root() {
@@ -126,7 +126,11 @@ void PrintGraph(const Graph & g) {
 }
 
 void DefaultClipTips(Graph& graph) {
-	debruijn::simplification::ClipTips(graph, standard_tc_config(), standard_simplif_relevant_info());
+	debruijn::simplification::TipClipperInstance(graph, standard_tc_config(), standard_simplif_relevant_info(), (HandlerF<Graph>)nullptr)->Run();
+}
+
+void DefaultRemoveBulges(Graph& graph) {
+	debruijn::simplification::ParallelBRInstance(graph, standard_br_config(), standard_simplif_relevant_info(), (HandlerF<Graph>)nullptr)->Run();
 }
 
 BOOST_AUTO_TEST_CASE( SimpleTipClipperTest ) {
@@ -142,7 +146,7 @@ BOOST_AUTO_TEST_CASE( SimpleBulgeRemovalTest ) {
 	Graph g(55);
 	graphio::ScanBasicGraph("./src/test/debruijn/graph_fragments/simpliest_bulge/simpliest_bulge", g);
 
-	debruijn::simplification::RemoveBulges(g, standard_br_config());
+	DefaultRemoveBulges(g);
 
 	BOOST_CHECK_EQUAL(g.size(), 4u);
 }
@@ -153,7 +157,7 @@ BOOST_AUTO_TEST_CASE( TipobulgeTest ) {
 
 	DefaultClipTips(g);
 
-	debruijn::simplification::RemoveBulges(g, standard_br_config());
+	DefaultRemoveBulges(g);
 
 	BOOST_CHECK_EQUAL(g.size(), 16u);
 }
@@ -165,7 +169,7 @@ BOOST_AUTO_TEST_CASE( SimpleECTest ) {
 	debruijn_config::simplification::erroneous_connections_remover ec_config;
 	ec_config.condition = "{ icb 7000 , ec_lb 20 }";
 
-	debruijn::simplification::RemoveLowCoverageEdges(g, ec_config, standard_simplif_relevant_info());
+	debruijn::simplification::ECRemoverInstance(g, ec_config, standard_simplif_relevant_info(), (HandlerF<Graph>)nullptr)->Run();
 
 	BOOST_CHECK_EQUAL(g.size(), 16u);
 }
@@ -177,16 +181,12 @@ BOOST_AUTO_TEST_CASE( IterECTest ) {
 	debruijn_config::simplification::erroneous_connections_remover ec_config;
 	ec_config.condition = "{ icb 7000 , ec_lb 20 }";
 
-    auto info = standard_simplif_relevant_info();
-    info.set_iteration_count(2);
+    auto ec_remover_ptr = debruijn::simplification::ECRemoverInstance(g, ec_config, standard_simplif_relevant_info(), (HandlerF<Graph>)nullptr, 2);
 
-	debruijn::simplification::RemoveLowCoverageEdges<Graph>(g, ec_config, info);
+    ec_remover_ptr->Run();
+    BOOST_CHECK_EQUAL(g.size(), 20u);
 
-	BOOST_CHECK_EQUAL(g.size(), 20u);
-
-    info.set_iteration(1);
-	debruijn::simplification::RemoveLowCoverageEdges<Graph>(g, ec_config, info);
-
+    ec_remover_ptr->Run();
 	BOOST_CHECK_EQUAL(g.size(), 16u);
 }
 
