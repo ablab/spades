@@ -110,11 +110,8 @@ public:
         } else if (b.read_position == a.read_position) {
             return (abs(int(b.edge_position) + shift - int(a.edge_position)) < 2);
         } else {
-            return ((b.edge_position + shift - a.edge_position
-                    >= (b.read_position - a.read_position) * compression_cutoff)
-                    && (b.edge_position + shift - a.edge_position
-                            <= (b.read_position - a.read_position)
-                                    / compression_cutoff));
+            return ((b.edge_position + shift - a.edge_position >= (b.read_position - a.read_position) * compression_cutoff) &&
+	            ((b.edge_position + shift - a.edge_position) * compression_cutoff <= (b.read_position - a.read_position)));
         }
     }
 
