@@ -926,7 +926,7 @@ class GraphSimplifier {
                                                 removal_handler_);
             }
 
-
+            enable_flag |= FinalRemoveErroneousEdges();
             cnt_callback_.Report();
 
             enable_flag |=  ClipComplexTips(gp_.g, simplif_cfg_.complex_tc, removal_handler_);
@@ -978,7 +978,6 @@ class GraphSimplifier {
             //        printer(ipp_final_bulge_removal, str(format("_%d") % iteration));
         }
 
-        enable_flag |= FinalRemoveErroneousEdges();
         if (simplif_cfg_.topology_simplif_enabled) {
             RemoveHiddenEC(gp_.g, gp_.flanking_cov, info_container_.detected_coverage_bound(), simplif_cfg_.her, removal_handler_);
 

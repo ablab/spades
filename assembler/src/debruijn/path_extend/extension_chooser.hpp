@@ -781,8 +781,7 @@ public:
                 if ((int) positions[i] < (int) (*it)->Size() - 1
                         && EqualBegins(path, (int) path.Size() - 1, **it,
                                        positions[i], true)) {
-                    DEBUG("positions[i] is " << (int)positions[i]);
-                    DEBUG("Covering path size is  " << (*it)->Size());
+
                     if (UniqueBackPath(**it, positions[i])) {
                         EdgeId next = (*it)->At(positions[i] + 1);
                         weights_cands[next] += (*it)->GetWeight();
@@ -823,11 +822,6 @@ public:
         if (result.size() != 1) {
             DEBUG("Long reads doesn't help =(");
         }
-
-        if (result.size() == 1) {
-            DEBUG("Extending with ''long'' reads: " << path.Back().int_id() << " " << result[0].e_.int_id());
-        }
-
         return result;
     }
 

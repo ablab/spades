@@ -387,27 +387,6 @@ public:
     }
 
 protected:
-
-    bool CheckSimpleLoop(EdgeId edge) {
-        VertexId v = this->g().EdgeEnd(edge);
-        auto incomingEdges = this->g().IncomingEdges(v);
-        auto outgoingEdges = this->g().OutgoingEdges(v);
-        set<VertexId> verticesOfOutgoing;
-        for(auto e : outgoingEdges) {
-            if(e == edge)
-                continue;
-            verticesOfOutgoing.insert(this->g().EdgeEnd(e));
-        }
-
-        for(auto e : incomingEdges) {
-            if(verticesOfOutgoing.count(this->g().EdgeStart(e)) > 0) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     bool ProcessEdge(EdgeId edge) {
         DEBUG("Processing edge " << this->g().int_id(edge));
         VertexId v = this->g().EdgeEnd(edge);
@@ -418,9 +397,6 @@ protected:
         if(rel_helper_.CheckAnyHighlyCovered(this->g().IncomingEdges(v), v, coverage_edge_around_v) &&
                 rel_helper_.CheckAnyHighlyCovered(this->g().OutgoingEdges(v), v, coverage_edge_around_v)) {
             DEBUG("Disconnecting");
-            if(CheckSimpleLoop(edge)) {
-                return false;
-            }
             return DisconnectEdge(edge);
         } else {
             DEBUG("No need to disconnect");
