@@ -39,10 +39,6 @@ include_directories(${EXT_DIR}/include/ConsensusCore)
 
 target_link_libraries(spades ConsensusCore input mph_index nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})
 
-add_executable(annotation_propagator
-               propagate.cpp)
-target_link_libraries(annotation_propagator ConsensusCore input mph_index nlopt BamTools ssw yaml-cpp ${COMMON_LIBRARIES})
-
 if (SPADES_STATIC_BUILD)
   set_target_properties(spades PROPERTIES LINK_SEARCH_END_STATIC 1)
 endif()
