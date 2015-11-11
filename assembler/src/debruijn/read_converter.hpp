@@ -78,29 +78,30 @@ private:
 
         INFO("Converting reads to binary format (takes a while)");
         for (size_t i = 0; i < dataset.lib_count(); ++i) {
-            if (dataset[i].type() == io::LibraryType::MatePairs && cfg::get().bwa.on) {
-                continue;
+            if (dataset[i].needs_binary_coversion() || (dataset[i].is_bwa_alignable() && !cfg::get().bwa.on)) {
+                INFO("Paired reads for library #" << i);
+                dataset[i].data().thread_num = cfg::get().max_threads;
+                dataset[i].data().paired_read_prefix = cfg::get().paired_read_prefix + "_" + ToString(i);
+
+                io::PairedStreamPtr paired_reader = paired_easy_reader(dataset[i], false, 0, false, false);
+                io::BinaryWriter paired_converter
+                    (dataset[i].data().paired_read_prefix, cfg::get().max_threads, cfg::get().buffer_size);
+                io::ReadStreamStat paired_stat = paired_converter.ToBinary(*paired_reader, dataset[i].orientation());
+                paired_stat.read_count_ *= 2;
+                total_stat.merge(paired_stat);
+
+                INFO("Single reads for library #" << i);
+                dataset[i].data().single_read_prefix = cfg::get().single_read_prefix + "_" + ToString(i);
+                io::SingleStreamPtr single_reader = single_easy_reader(dataset[i], false, false);
+                io::BinaryWriter single_converter
+                    (dataset[i].data().single_read_prefix, cfg::get().max_threads, cfg::get().buffer_size);
+                io::ReadStreamStat single_stat = single_converter.ToBinary(*single_reader);
+                total_stat.merge(single_stat);
+
+                paired_stat.merge(single_stat);
+                dataset[i].data().read_length = paired_stat.max_len_;
+                dataset[i].data().total_nucls = paired_stat.total_len_;
             }
-            INFO("Paired reads for library #" << i);
-            dataset[i].data().thread_num = cfg::get().max_threads;
-            dataset[i].data().paired_read_prefix = cfg::get().paired_read_prefix + "_" + ToString(i);
-
-            io::PairedStreamPtr paired_reader = paired_easy_reader(dataset[i], false, 0, false, false);
-            io::BinaryWriter paired_converter(dataset[i].data().paired_read_prefix, cfg::get().max_threads, cfg::get().buffer_size);
-            io::ReadStreamStat paired_stat = paired_converter.ToBinary(*paired_reader, dataset[i].orientation());
-            paired_stat.read_count_ *= 2;
-            total_stat.merge(paired_stat);
-
-            INFO("Single reads for library #" << i);
-            dataset[i].data().single_read_prefix = cfg::get().single_read_prefix + "_" + ToString(i);
-            io::SingleStreamPtr single_reader = single_easy_reader(dataset[i], false, false);
-            io::BinaryWriter single_converter(dataset[i].data().single_read_prefix, cfg::get().max_threads, cfg::get().buffer_size);
-            io::ReadStreamStat single_stat = single_converter.ToBinary(*single_reader);
-            total_stat.merge(single_stat);
-
-            paired_stat.merge(single_stat);
-            dataset[i].data().read_length = paired_stat.max_len_;
-            dataset[i].data().total_nucls = paired_stat.total_len_;
         }
         info.open(cfg::get().temp_bin_reads_info.c_str(), std::ios_base::out);
         info << current_binary_format_version << " " << cfg::get().max_threads << " " << cfg::get().ds.reads.lib_count() << " " <<
