@@ -205,7 +205,6 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
     }
 
     for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
-        INFO("Mapping library #" << i);
         const auto& lib = cfg::get().ds.reads[i];
         if (lib.is_contig_lib() && !lib.is_pacbio_alignable()) {
             INFO("Mapping contigs library #" << i);
@@ -215,6 +214,7 @@ void PairInfoCount::run(conj_graph_pack &gp, const char*) {
             continue;
         }
         else {
+            INFO("Mapping library #" << i);
             bool map_single_reads = ShouldMapSingleReads(i);
             cfg::get_writable().use_single_reads |= map_single_reads;
 
