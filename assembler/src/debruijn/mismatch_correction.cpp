@@ -14,7 +14,12 @@ namespace debruijn_graph {
 
 void MismatchCorrection::run(conj_graph_pack &gp, const char*) {
     gp.EnsureBasicMapping();
-    auto streams = single_binary_readers(true,  true);
+    std::vector<size_t> libs;
+    for (size_t i = 0; i < cfg::get().ds.reads.lib_count(); ++i) {
+        if (cfg::get().ds.reads[i].is_mismatch_correctable())
+            libs.push_back(i);
+    }
+    auto streams = single_binary_readers_for_libs(libs, true,  true);
     size_t corrected = MismatchShallNotPass<conj_graph_pack, io::SingleReadSeq>(gp, 2).ParallelStopAllMismatches(streams, 1);
     INFO("Corrected " << corrected << " nucleotides");
 }
