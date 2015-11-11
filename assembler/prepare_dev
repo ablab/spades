@@ -19,13 +19,15 @@ echo "/********** copying configs  ***********/"
 echo "/**************************************/"
 ./cpcfg
 
+rm -rf $build
+
 echo "/**************************************/"
 echo "/********  preparing debug ************/"
 echo "/**************************************/"
 
 mkdir -p $build/debug
 cd $build/debug
-cmake $src -DCMAKE_BUILD_TYPE="Debug" -DSPADES_BUILD_INTERNAL=1
+cmake $src -DCMAKE_CXX_COMPILER=g++-mp-4.7 -DCMAKE_C_COMPILER=gcc-mp-4.7 -DCMAKE_BUILD_TYPE="Debug" -DSPADES_BUILD_INTERNAL=1
 
 echo "/**************************************/"
 echo "/********  preparing release **********/"
@@ -33,5 +35,5 @@ echo "/**************************************/"
 
 mkdir -p $build/release
 cd $build/release
-cmake $src -DCMAKE_BUILD_TYPE="RelWithAsserts" -DSPADES_BUILD_INTERNAL=1
+cmake $src -DCMAKE_CXX_COMPILER=g++-mp-4.7 -DCMAKE_C_COMPILER=gcc-mp-4.7 -DCMAKE_BUILD_TYPE="RelWithAsserts" -DSPADES_BUILD_INTERNAL=1
 cd $assembler

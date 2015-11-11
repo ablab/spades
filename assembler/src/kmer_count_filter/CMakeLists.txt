@@ -7,8 +7,8 @@ include_directories(kmc_api)
 include_directories(../include)
 include_directories(../../ext/include)
 
-add_executable(kmer_count_filter
+add_executable(kmer_multiplicity_counter
         kmc_api/kmc_file.cpp
         kmc_api/kmer_api.cpp
         kmc_api/mmer.cpp
-        main.cpp)
+        kmer_multiplicity_counter.cpp)
