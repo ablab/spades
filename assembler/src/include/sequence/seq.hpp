@@ -32,11 +32,13 @@
 #include <cstring>
 #include <iostream>
 
+#include <city/city.h>
+
 #include "verify.hpp"
 #include "sequence/nucl.hpp"
 #include "log.hpp"
 #include "seq_common.hpp"
-#include "mph_index/MurmurHash3.h"
+
 
 /**
  * @param T is max number of nucleotides, type for storage
@@ -452,9 +454,7 @@ class Seq {
   }
 
   static size_t GetHash(const DataType *data, size_t sz = DataSize, uint32_t seed = 0) {
-    uint64_t res[2];
-    MurmurHash3_x64_128(data,  sz * sizeof(DataType), 0x9E3779B9 ^ seed, res);
-    return res[0] ^ res[1];
+    return CityHash64WithSeed((const char*)data, sz * sizeof(DataType), 0x9E3779B9 ^ seed);
   }
 
   size_t GetHash(uint32_t seed = 0) const {

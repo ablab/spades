@@ -14,7 +14,6 @@
 #include "base_hash.hpp"
 #include "hypergraph.hpp"
 #include "hypergraph_sorter_seq.hpp"
-#include "MurmurHash3.h"
 
 #include "openmp_wrapper.h"
 
