@@ -38,11 +38,10 @@ public:
 	typedef traits traits_t;
 protected:
 	typedef KMerIndex<traits>        KMerIndexT;
-	//these fields are protected only for reduction of storage in edge indices BinWrite
-	std::shared_ptr<KMerIndexT> index_ptr_;
 private:
 	std::string workdir_;
 	unsigned k_;
+	std::shared_ptr<KMerIndexT> index_ptr_;
 
 protected:
 	size_t raw_seq_idx(const typename KMerIndexT::KMerRawReference s) const {
@@ -52,6 +51,15 @@ protected:
 	bool valid(const size_t idx) const {
 		return idx != InvalidIdx && idx < index_ptr_->size();
 	}
+
+    std::shared_ptr<KMerIndexT> index_ptr() const {
+        return index_ptr_;
+    }
+
+    void set_index_ptr(std::shared_ptr<KMerIndexT> index_ptr) {
+        index_ptr_ = index_ptr;
+    }
+
 public:
 	IndexWrapper(size_t k, const std::string &workdir) : k_((unsigned) k) {
 		//fixme string literal
@@ -74,7 +82,6 @@ public:
 
 	unsigned k() const { return k_; }
 
-public:
 	template<class Writer>
 	void BinWrite(Writer &writer) const {
 		index_ptr_->serialize(writer);
@@ -89,6 +96,7 @@ public:
 	const std::string &workdir() const {
 		return workdir_;
 	}
+
 };
 
 template<class K, class V, class traits, class StoringType>
@@ -98,12 +106,12 @@ public:
     typedef K KeyType;
     typedef ValueArray<V> ValueBase;
     typedef IndexWrapper<KeyType, traits> KeyBase;
-    using KeyBase::index_ptr_;
+    using KeyBase::index_ptr;
     typedef typename KeyBase::KMerIndexT KMerIndexT;
     typedef typename StoringTraits<K, KMerIndexT, StoringType>::KeyWithHash KeyWithHash;
 
     KeyWithHash ConstructKWH(const KeyType &key) const {
-        return KeyWithHash(key, *index_ptr_);
+        return KeyWithHash(key, *index_ptr());
     }
 
     bool valid(const KeyWithHash &kwh) const {
@@ -131,7 +139,7 @@ public:
     }
 
     template<typename F>
-    const V get_value(const KeyWithHash &kwh, const F& inverter) {
+    const V get_value(const KeyWithHash &kwh, const F& inverter) const {
         return StoringType::get_value(*this, kwh, inverter);
     }
 
@@ -171,8 +179,9 @@ protected:
         KMerIndexBuilder<KMerIndexT> builder(this->workdir(),
                              (unsigned) bucket_num,
                              (unsigned) thread_num);
-        index_ptr_ = make_shared<KMerIndexT>();
-        size_t sz = builder.BuildIndex(*index_ptr_, counter, save_final);
+        auto index_ptr = make_shared<KMerIndexT>();
+        size_t sz = builder.BuildIndex(*index_ptr, counter, save_final);
+        this->set_index_ptr(index_ptr);
         ValueBase::resize(sz);
     }
 };

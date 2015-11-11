@@ -691,6 +691,9 @@ void load(debruijn_config& cfg, boost::property_tree::ptree const& pt,
 
   load(cfg.max_memory, pt, "max_memory");
 
+  load(cfg.kmer_mult_path, pt, "kmer_mult_path");
+  load(cfg.sample_cnt, pt, "sample_cnt");
+
   load(cfg.diploid_mode, pt,	"diploid_mode");
 
   path::CheckFileExistenceFATAL(cfg.dataset_file);

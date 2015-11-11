@@ -557,8 +557,10 @@ inline void ResolveRepeatsPe(conj_graph_pack& gp,
     DebugOutputPaths(gp, output_dir, paths, (mp_exist ? "final_pe_paths" : "final_paths"));
     writer.OutputPaths(paths, output_dir + (mp_exist ? "pe_scaffolds" : contigs_name));
 
-    INFO("Before31");
-    ContigsMultiplicity::Calculate(gp, paths, "/home/toxa31/work/kmers-mpl/kmers", "contigs");
+    if (!cfg::get().kmer_mult_path.empty()) {
+        debruijn_graph::ContigAbundanceCounter abundance_counter(gp, cfg::get().sample_cnt, cfg::get().kmer_mult_path);
+        abundance_counter(paths, cfg::get().output_dir + "/contig_abundance");
+    }
 
 //MP
     DebugOutputPaths(gp, output_dir, clone_paths, "before_mp_paths");

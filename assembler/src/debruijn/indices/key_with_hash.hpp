@@ -95,7 +95,7 @@ public:
     }
 
     bool is_minimal() const {
-        return true;;
+        return true;
     }
 };
 

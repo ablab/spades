@@ -46,7 +46,7 @@ struct InvertableStoring {
     template<typename V>
     struct immutant_inverter {
         template<typename K>
-        V operator()(const V& v, const K& k) const {
+        V operator()(const V& v, const K& /*k*/) const {
             return v;
         }
     };
