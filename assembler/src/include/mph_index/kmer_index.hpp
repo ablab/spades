@@ -130,7 +130,7 @@ class KMerIndex {
   typedef size_t IdxType;
 
  private:
-  using KMerDataIndex = emphf::mphf<emphf::jenkins64_hasher>;
+  using KMerDataIndex = emphf::mphf<emphf::city_hasher>;
   typedef KMerIndex __self;
 
  public:
