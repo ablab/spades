@@ -37,15 +37,14 @@ public:
 
     virtual void StartProcessLibrary(size_t threads_count) {
         paired_index_.Init();
-        for (size_t i = 0; i < threads_count; ++i)
-            buffer_pi_.emplace_back(graph_);
+        buffer_pi_ = {graph_, threads_count};
     }
 
     virtual void StopProcessLibrary() {
         for (size_t i = 0; i < buffer_pi_.size(); ++i)
             MergeBuffer(i);
 
-        buffer_pi_.clear();
+        buffer_pi_.Clear();
     }
 
     virtual void ProcessPairedRead(size_t thread_index,
@@ -107,7 +106,7 @@ private:
     const Graph& graph_;
     WeightF weight_f_;
     omnigraph::de::UnclusteredPairedInfoIndexT<Graph>& paired_index_;
-    std::vector<omnigraph::de::PairedInfoBuffer<Graph> > buffer_pi_; //TODO: PairedInfoIndices
+    omnigraph::de::PairedInfoBuffersT<Graph> buffer_pi_;
 
     DECL_LOGGER("LatePairedIndexFiller")
     ;

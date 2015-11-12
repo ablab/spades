@@ -55,7 +55,9 @@ public:
 
     public:
         /**
-         * @brief Iterator over a proxy set.
+         * @brief Iterator over a proxy set of points.
+         * @warning Generally, the proxy is unordered even if the set is ordered.
+         *          If you require that, convert it into a flat histogram with Unwrap().
          * @param full When true, traverses both straight and conjugate points,
          *             and automatically recalculates the distance for latter.
          *             When false, traverses only the added points and skips the rest.
@@ -499,9 +501,9 @@ public:
      */
     size_t Remove(EdgeId e1, EdgeId e2) {
         SwapConj(e1, e2);
-        auto res = RemoveMany(e1, e2);
+        auto res = RemoveAll(e1, e2);
         if (e1 != e2)
-            res += RemoveMany(e2, e1);
+            res += RemoveAll(e2, e1);
         return res;
     }
 
@@ -534,7 +536,7 @@ private:
         return 0;
     }
 
-    size_t RemoveMany(EdgeId e1, EdgeId e2) {
+    size_t RemoveAll(EdgeId e1, EdgeId e2) {
         auto i1 = storage_.find(e1);
         if (i1 != storage_.end()) {
             auto& map = i1->second;
@@ -561,7 +563,7 @@ public:
      * @return The number of deleted entries
      */
     size_t Remove(EdgeId edge) {
-        InnerMap& inner_map = storage_[edge];
+        InnerMap &inner_map = storage_[edge];
         for (auto iter = inner_map.begin(); iter != inner_map.end(); ++iter) {
             EdgeId e2 = iter->first;
             if (edge != e2) {
@@ -740,6 +742,7 @@ class PairedIndices {
     Storage data_;
 
 public:
+    PairedIndices() {}
 
     PairedIndices(const typename Index::Graph& graph, size_t lib_num) {
         data_.reserve(lib_num);
@@ -757,11 +760,11 @@ public:
      */
     void Clear() { for (auto& it : data_) it.Clear(); }
 
-    inline Index& operator[](size_t i) { return data_[i]; }
+    Index& operator[](size_t i) { return data_[i]; }
 
-    inline const Index& operator[](size_t i) const { return data_[i]; }
+    const Index& operator[](size_t i) const { return data_[i]; }
 
-    inline size_t size() const { return data_.size(); }
+    size_t size() const { return data_.size(); }
 
     typename Storage::iterator begin() { return data_.begin(); }
     typename Storage::iterator end() { return data_.end(); }

@@ -59,7 +59,7 @@ void RefinePairedInfo(const Graph& graph, PairedInfoIndexT<Graph>& clustered_ind
     for (auto iter = pair_begin(clustered_index); iter != pair_end(clustered_index); ++iter) {
         EdgeId first_edge = iter.first();
         EdgeId second_edge = iter.second();
-        auto infos = *iter;
+        auto infos = iter->Unwrap(); //we need an ordered histogram here
         if (infos.empty())
             continue;
 

@@ -244,14 +244,18 @@ public:
         INFO("Start filtering; index size: " << index.size());
         using EdgePair = std::pair<EdgeId, EdgeId>;
         std::vector<EdgePair> pairs;
+        std::map<EdgePair, HistogramWithWeight> to_remove;
         for (auto i = pair_begin(index); i != pair_end(index); ++i)
             if (pair_info_checker_.Check(i.first(), i.second()))
                 pairs.push_back({i.first(), i.second()});
+
+        //TODO: implement fast removing of the whole set of points
         for (auto pair : pairs)
             for (auto point : index[pair])
                 if (!pair_info_checker_.Check(PairInfoT(pair.first, pair.second, point))) {
                     index.Remove(pair.first, pair.second, point);
                 }
+
         INFO("Done filtering");
     }
 };
