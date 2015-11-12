@@ -20,9 +20,6 @@ if os.path.isfile(os.path.join(truspades_home, 'spades')):
     truspades_home = os.path.join(install_prefix, 'share', 'spades')
     python_modules_home = truspades_home
 
-print os.path.join(python_modules_home, "spades_pipeline", "common")
-print os.path.join(python_modules_home, "spades_pipeline", "truspades")
-print os.path.join(python_modules_home, "spades_pipeline")
 sys.path.append(os.path.join(python_modules_home, "spades_pipeline", "common"))
 sys.path.append(os.path.join(python_modules_home, "spades_pipeline", "truspades"))
 sys.path.append(os.path.join(python_modules_home, "spades_pipeline"))
